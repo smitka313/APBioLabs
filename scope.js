@@ -35,6 +35,17 @@
  *   opts.focusLabel  knob label (default 'Focus')
  *   opts.seed        seed for frame irregularity, dust motes and best-focus point (default random)
  *   opts.maxRes      max offscreen device pixels per base unit (default 1.5)
+ *   opts.zoom        false turns off the zoom controls (default on); opts.maxZoom (default 3)
+ *
+ * ZOOM (automatic, 1× to 3×): "−" / "+" buttons (and the + − 0 keys on the focused canvas), Ctrl/⌘ + mouse
+ *   wheel (also a trackpad pinch), and a two-finger pinch on touch. It zooms about the pointer / pinch centre and
+ *   works with drag, arrow-key and two-finger panning. At zoom z the canvas shows viewW/z × viewH/z world units,
+ *   so view.pan is still the top-left corner of what you see; toWorld() and onClick(x, y) already account for the
+ *   zoom, so hit-testing needs no change. overlay() is drawn in world units and scales with the slide. Built-in
+ *   hud.bar lengths grow with the zoom (a "Zoom 2×" note appears). A page-drawn hud function receives (ctx, view):
+ *   multiply the length of its scale bar by view.zoom. "Center slide" also resets the zoom; setSpecimen() with
+ *   recenter resets it too. view.zoom (read) and view.setZoom(z, ax = 0.5, ay = 0.5) (ax, ay = fixed point as a
+ *   fraction of the canvas).
  *   view.setSpecimen({render, layers, world, seed, refocus = true, recenter = true})  new slide;
  *                    refocus picks a new best-focus point near the knob centre and sets the knob
  *                    slightly off it (students must focus).
@@ -107,7 +118,11 @@
 .scope-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;font-size:.9rem}
 .scope-ctl label{font-weight:600;color:var(--ink);white-space:nowrap}
 .scope-ctl input[type=range]{flex:1 1 140px;min-width:0;accent-color:var(--accent)}
-.scope-ctl .scope-hint{flex:1 1 100%;margin:0;color:var(--muted);font-size:.82rem}`;
+.scope-ctl .scope-hint{flex:1 1 100%;margin:0;color:var(--muted);font-size:.82rem}
+.scope-zoom{display:inline-flex;align-items:center;gap:4px}
+.scope-zoom .btn{min-width:40px;min-height:40px;padding:0 10px;font-size:1.15rem;line-height:1;font-weight:700}
+.scope-zoom .btn:disabled{opacity:.4}
+.scope-zoom-val{min-width:2.8em;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink)}`;
     document.head.appendChild(st);
   }
 
@@ -169,16 +184,17 @@
   }
   function supports(ctx, op) { const old = ctx.globalCompositeOperation; ctx.globalCompositeOperation = op; const ok = ctx.globalCompositeOperation === op; ctx.globalCompositeOperation = old; return ok; }
 
-  function drawHud(ctx, hud, sc) {
+  function drawHud(ctx, hud, sc, zoom) {
     ctx.save(); ctx.scale(sc, sc);
     ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
     ctx.fillStyle = 'rgba(255,255,255,0.94)'; ctx.font = '600 17px "JetBrains Mono", ui-monospace, monospace'; ctx.textAlign = 'left';
     const mag = typeof hud.mag === 'function' ? hud.mag() : hud.mag; if (mag) ctx.fillText(mag, 18, 32);
-    if (hud.bar) {
-      const b = hud.bar.units, x1 = 612, x0 = x1 - b, y = 454;
+    if (hud.bar && hud.bar.units * zoom <= 380) {   // the bar is a real length, so it grows with the zoom
+      const b = hud.bar.units * zoom, x1 = 612, x0 = x1 - b, y = 454;
       ctx.fillRect(x0, y - 2, b, 4); ctx.fillRect(x0, y - 7, 1.6, 14); ctx.fillRect(x1 - 1.6, y - 7, 1.6, 14);
       ctx.textAlign = 'right'; ctx.font = '600 15px "JetBrains Mono", ui-monospace, monospace'; ctx.fillText(hud.bar.label, x1, y - 12);
     }
+    if (zoom > 1.001) { ctx.textAlign = 'left'; ctx.font = '600 15px "JetBrains Mono", ui-monospace, monospace'; ctx.fillText('Zoom ' + (Math.round(zoom * 10) / 10) + '×', 18, 454); }
     ctx.restore();
   }
 
@@ -193,19 +209,21 @@
     const canMultiply = supports(ctx, 'multiply'), canOverlay = supports(ctx, 'overlay');
     canvas.classList.add('scope-canvas'); canvas.tabIndex = 0;
     const id = canvas.id || ('scope' + frameSeed);
+    const zoomOn = o.zoom !== false, maxZoom = Math.max(1, +o.maxZoom || 3);
 
     // controls: focus knob, centre button, description
     const box = o.controls || document.createElement('div'); box.classList.add('scope-ctl');
     if (!o.controls) canvas.insertAdjacentElement('afterend', box);
-    box.innerHTML = `<label for="${id}-focus">${o.focusLabel}</label><input type="range" id="${id}-focus" min="0" max="100" step="0.5" value="50" aria-describedby="${id}-hint"><button type="button" class="btn btn--sm btn--ghost" id="${id}-center">Center slide</button><p class="scope-hint" id="${id}-hint">Turn the focus knob until the specimen is sharp. Drag the slide to move it, or select the view and use the arrow keys.</p>`;
-    const knob = box.querySelector('input'), hint = box.querySelector('.scope-hint');
+    box.innerHTML = `<label for="${id}-focus">${o.focusLabel}</label><input type="range" id="${id}-focus" min="0" max="100" step="0.5" value="50" aria-describedby="${id}-hint">${zoomOn ? `<span class="scope-zoom" role="group" aria-label="Zoom"><button type="button" class="btn btn--sm" id="${id}-zoom-out" aria-label="Zoom out" title="Zoom out">−</button><output class="scope-zoom-val" id="${id}-zoom-val" for="${id}-zoom-in ${id}-zoom-out">1×</output><button type="button" class="btn btn--sm" id="${id}-zoom-in" aria-label="Zoom in" title="Zoom in">+</button></span>` : ''}<button type="button" class="btn btn--sm btn--ghost" id="${id}-center">Center slide</button><p class="scope-hint" id="${id}-hint">Turn the focus knob until the specimen is sharp. Drag the slide to move it, or select the view and use the arrow keys.${zoomOn ? ' To see small things, zoom in with the + button, Ctrl + scroll, or pinch.' : ''}</p>`;
+    const knob = box.querySelector('input[type=range]'), hint = box.querySelector('.scope-hint');
     const prevDesc = canvas.getAttribute('aria-describedby'); canvas.setAttribute('aria-describedby', (prevDesc ? prevDesc + ' ' : '') + id + '-hint');
 
     let W = 0, H = 0, cssW = 0, dpr = 1, sc = 1, lamp = null, frame = null, grain = null, temp = null, tctx = null;
-    let res = 1, levels = [], pan = { x: 0, y: 0 }, best = 50, raf = 0, rerenderT = 0, anim = 0;
-    const maxPan = () => ({ x: Math.max(0, o.world.w - o.viewW), y: Math.max(0, o.world.h - o.viewH) });
+    let res = 1, levels = [], pan = { x: 0, y: 0 }, best = 50, raf = 0, rerenderT = 0, anim = 0, zoom = 1;
+    // zoom 1–3×: the canvas shows viewW/zoom × viewH/zoom world units; pan stays the top-left corner of that window
+    const maxPan = () => ({ x: Math.max(0, o.world.w - o.viewW / zoom), y: Math.max(0, o.world.h - o.viewH / zoom) });
 
-    function wantRes() { return clamp((cssW / o.viewW) * dpr, 0.75, o.maxRes); }
+    function wantRes() { return clamp((cssW / o.viewW) * dpr * zoom, 0.75, o.maxRes * zoom); }
     function size() {
       cssW = Math.max(200, canvas.clientWidth || (canvas.parentElement && canvas.parentElement.clientWidth) || 640);
       const cssH = Math.round(cssW * o.aspect); dpr = window.devicePixelRatio || 1;
@@ -228,7 +246,7 @@
     }
     function blurOf(i) { const L = o.layers[i] || { z: 0 }; return clamp(Math.abs(+knob.value - (best + L.z * 100)) / 6, 0, 3); }
     function crop(img, s, alpha) {
-      const k = s * res, sw = o.viewW * k, sh = o.viewH * k; let sx = pan.x * k, sy = pan.y * k;
+      const k = s * res, sw = o.viewW / zoom * k, sh = o.viewH / zoom * k; let sx = pan.x * k, sy = pan.y * k;
       sx = clamp(sx, 0, Math.max(0, img.width - 1)); sy = clamp(sy, 0, Math.max(0, img.height - 1));
       const w = Math.min(sw, img.width - sx), h = Math.min(sh, img.height - sy); if (w <= 0 || h <= 0) return;
       tctx.globalAlpha = alpha; tctx.drawImage(img, sx, sy, w, h, 0, 0, w / sw * W, h / sh * H);
@@ -247,12 +265,16 @@
         else { ctx.globalAlpha = i ? 0.5 : 1; ctx.drawImage(temp, 0, 0); ctx.globalAlpha = 0.14; ctx.drawImage(lamp, 0, 0); ctx.globalAlpha = 1; }
         ctx.globalCompositeOperation = 'source-over';
       });
-      if (o.overlay) { ctx.save(); ctx.setTransform(sc, 0, 0, sc, -pan.x * sc, -pan.y * sc); try { o.overlay(ctx, api); } catch (e) { console.error(e); } ctx.restore(); }
+      if (o.overlay) { ctx.save(); ctx.setTransform(sc * zoom, 0, 0, sc * zoom, -pan.x * sc * zoom, -pan.y * sc * zoom); try { o.overlay(ctx, api); } catch (e) { console.error(e); } ctx.restore(); }
       if (canOverlay) { ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.16; ctx.drawImage(grain, 0, 0); }
       else { ctx.globalAlpha = 0.04; ctx.drawImage(grain, 0, 0); }
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       ctx.drawImage(frame, 0, 0);
-      if (typeof o.hud === 'function') { ctx.save(); ctx.scale(sc, sc); o.hud(ctx, api); ctx.restore(); } else if (o.hud) drawHud(ctx, o.hud, sc);
+      if (typeof o.hud === 'function') { ctx.save(); ctx.scale(sc, sc); o.hud(ctx, api); if (zoom > 1.001) zoomChip(ctx); ctx.restore(); } else if (o.hud) drawHud(ctx, o.hud, sc, zoom);
+    }
+    function zoomChip(ctx) { // page-drawn HUDs get a "Zoom n×" note too (they should scale their own scale bar by view.zoom)
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.font = '600 15px "JetBrains Mono", ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillText('Zoom ' + (Math.round(zoom * 10) / 10) + '×', 18, o.viewH - 26); ctx.restore();
     }
     function redraw() { if (!raf) raf = requestAnimationFrame(composite); }
     function sharpText() { const b = blurOf(0); return b < 0.3 ? 'sharp' : b < 1 ? 'slightly soft' : b < 2 ? 'blurry' : 'very blurry'; }
@@ -266,7 +288,23 @@
       anim = requestAnimationFrame(step);
     }
     function center(animate) { const m = maxPan(); glide(m.x / 2, m.y / 2, animate); }
-    function toWorld(cx, cy) { const r = canvas.getBoundingClientRect(), k = o.viewW / r.width; return { x: (cx - r.left) * k + pan.x, y: (cy - r.top) * k + pan.y }; }
+    function toWorld(cx, cy) { const r = canvas.getBoundingClientRect(); return { x: (cx - r.left) / r.width * o.viewW / zoom + pan.x, y: (cy - r.top) / r.height * o.viewH / zoom + pan.y }; }
+    const zoomBtns = zoomOn ? { out: box.querySelector('#' + CSS.escape(id + '-zoom-out')), inn: box.querySelector('#' + CSS.escape(id + '-zoom-in')), val: box.querySelector('#' + CSS.escape(id + '-zoom-val')) } : null;
+    function syncZoom() {
+      if (!zoomBtns) return;
+      zoomBtns.val.textContent = (Math.round(zoom * 10) / 10) + '×';
+      zoomBtns.out.disabled = zoom <= 1.001; zoomBtns.inn.disabled = zoom >= maxZoom - 0.001;
+    }
+    const sharpenSoon = () => { clearTimeout(rerenderT); rerenderT = setTimeout(() => { if (Math.abs(wantRes() - res) / res > 0.25) { renderSpecimen(); redraw(); } }, 250); };   // a magnified view wants a sharper slide render
+    /* Zoom so that the slide point under view fraction (ax, ay) stays under it. */
+    function setZoom(z, ax = 0.5, ay = 0.5) {
+      z = clamp(Math.round(z * 100) / 100, 1, maxZoom); if (z === zoom) return;
+      const wx = pan.x + ax * o.viewW / zoom, wy = pan.y + ay * o.viewH / zoom;
+      zoom = z; cancelAnimationFrame(anim);
+      setPan(wx - ax * o.viewW / zoom, wy - ay * o.viewH / zoom);
+      syncZoom(); sharpenSoon();
+    }
+    const stepZoom = d => setZoom(Math.round((zoom + d) * 2) / 2);
     function refocus(seed) {
       const R = rng(seed); best = 50 + (R.uniform() - 0.5) * 30;
       const off = (6.5 + R.uniform() * 4.5) * (R.chance(0.5) ? 1 : -1); let v = best + off; if (v < 2 || v > 98) v = best - off;
@@ -275,40 +313,70 @@
     function setSpecimen(s = {}) {
       if (s.render) o.render = s.render; if (s.layers) o.layers = s.layers; if (s.world) o.world = s.world;
       if (s.refocus !== false) refocus(s.seed != null ? s.seed + 17 : undefined);
-      if (s.recenter !== false) { const m = maxPan(); pan.x = m.x / 2; pan.y = m.y / 2; }
+      if (s.recenter !== false) { zoom = 1; syncZoom(); const m = maxPan(); pan.x = m.x / 2; pan.y = m.y / 2; }
       renderSpecimen(); syncKnob(); redraw();
     }
 
     // pointer: drag pans, a short press is a click
-    let ptr = null;
+    let ptr = null, pinch = null; const touches = new Map();   // two pointers down = pinch zoom (and two-finger pan)
+    const mid = () => { const a = Array.from(touches.values()); return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1 }; };
     canvas.addEventListener('pointerdown', e => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if (ptr) { ptr.multi = true; return; }
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (ptr) {
+        ptr.multi = true;
+        if (zoomOn && touches.size === 2) { const m = mid(); pinch = { d0: m.d, z0: zoom, w: toWorld(m.x, m.y) }; canvas.classList.remove('is-panning'); }
+        return;
+      }
       ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, drag: false };
       try { canvas.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
     });
     canvas.addEventListener('pointermove', e => {
+      if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && touches.size >= 2) {
+        const m = mid(), r = canvas.getBoundingClientRect(); cancelAnimationFrame(anim);
+        zoom = clamp(Math.round(pinch.z0 * m.d / pinch.d0 * 100) / 100, 1, maxZoom);
+        setPan(pinch.w.x - (m.x - r.left) / r.width * o.viewW / zoom, pinch.w.y - (m.y - r.top) / r.height * o.viewH / zoom);
+        syncZoom(); sharpenSoon();
+        e.preventDefault(); return;
+      }
       if (!ptr || e.pointerId !== ptr.id) return;
       const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y;
       if (!ptr.drag && Math.hypot(dx, dy) > 5) { ptr.drag = true; canvas.classList.add('is-panning'); cancelAnimationFrame(anim); }
-      if (ptr.drag) { const k = o.viewW / canvas.getBoundingClientRect().width; setPan(ptr.px - dx * k, ptr.py - dy * k); e.preventDefault(); }
+      if (ptr.drag) { const r = canvas.getBoundingClientRect(); setPan(ptr.px - dx / r.width * o.viewW / zoom, ptr.py - dy / r.height * o.viewH / zoom); e.preventDefault(); }
     });
     const up = e => {
+      touches.delete(e.pointerId); if (touches.size < 2) pinch = null;
       if (!ptr || e.pointerId !== ptr.id) return; const p = ptr; ptr = null; canvas.classList.remove('is-panning');
       if (e.type === 'pointerup' && !p.drag && !p.multi && o.onClick) { const w = toWorld(e.clientX, e.clientY); o.onClick(w.x, w.y, e); }
     };
     canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
     canvas.addEventListener('keydown', e => {
-      const st = e.shiftKey ? 72 : 24, d = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
+      if (zoomOn && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === '+' || e.key === '=') { e.preventDefault(); stepZoom(0.5); return; }
+        if (e.key === '-' || e.key === '_') { e.preventDefault(); stepZoom(-0.5); return; }
+        if (e.key === '0') { e.preventDefault(); setZoom(1); return; }
+      }
+      const st = (e.shiftKey ? 72 : 24) / zoom, d = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
       if (!d) return; e.preventDefault(); glide(pan.x + d[0], pan.y + d[1], true);
     });
     knob.addEventListener('input', () => { syncKnob(); redraw(); });
-    box.querySelector('button').addEventListener('click', () => center(true));
+    box.querySelector('#' + CSS.escape(id + '-center')).addEventListener('click', () => { if (zoom > 1.001) setZoom(1); center(true); });
+    if (zoomOn) {
+      zoomBtns.inn.addEventListener('click', () => stepZoom(0.5)); zoomBtns.out.addEventListener('click', () => stepZoom(-0.5));
+      canvas.addEventListener('wheel', e => {   // Ctrl/⌘ + wheel (also a trackpad pinch) zooms; a plain wheel still scrolls the page
+        if (!(e.ctrlKey || e.metaKey)) return;
+        e.preventDefault(); const r = canvas.getBoundingClientRect();
+        setZoom(zoom * Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0025)), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
+      }, { passive: false });
+      syncZoom();
+    }
 
     const api = {
       canvas, controls: box, focusInput: knob, hint, setSpecimen, redraw, setPan, center, toWorld, blurOf,
       panBy: (dx, dy, animate) => glide(pan.x + dx, pan.y + dy, animate),
       setFocus: v => { knob.value = String(clamp(v, 0, 100)); syncKnob(); redraw(); },
+      setZoom: (z, ax, ay) => setZoom(z, ax, ay), get zoom() { return zoom; },
       get pan() { return { x: pan.x, y: pan.y }; },
       get focus() { return { value: +knob.value, best }; },
       get world() { return o.world; }, get viewW() { return o.viewW; }, get viewH() { return o.viewH; }

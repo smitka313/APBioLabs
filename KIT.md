@@ -233,6 +233,12 @@ Lab.validate.clear($('#csv'));
 - Do not compute or draw a result while a message is showing. Never silently clamp; if you must change a value,
   say so ("p can't be more than 1, so it was set to 1").
 
+### 9. Microscope zoom (`Scope.view`)
+Every `Scope.view` has a zoom of 1× to 3× (−/+ buttons, Ctrl/⌘ + wheel, pinch on touch, keys + − 0) that works with
+panning. Lab pages get it automatically; keep using `onClick(x, y)` and `view.toWorld()` (both are zoom-aware)
+and draw marks in `overlay()` (world units). If a page draws its own `hud` function, multiply its scale-bar length
+by `view.zoom` (second argument: `hud: (ctx, view) => …`). Pass `{ zoom: false }` to opt out.
+
 ### `Lab.onShow` example
 ```js
 // Something that measures itself (not a Lab.canvas, Lab.chart or Scope view, which are handled for you):

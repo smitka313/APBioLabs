@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scope zoom fixture</title>
+<link rel="stylesheet" href="../../style.css">
+</head><body>
+<main class="wrap gutter" style="max-width:640px">
+  <canvas id="z-cv" class="viz" aria-label="Test slide"></canvas>
+</main>
+<script src="../../lab.js"></script>
+<script src="../../scope.js"></script>
+<script>
+  // A 1280 × 960 slide (view 640 × 480) with one dark dot at world (900, 700).
+  window.clicks = [];
+  window.view = Scope.view('#z-cv', {
+    aspect: 0.75, world: { w: 1280, h: 960 }, seed: 5,
+    render: ctx => { ctx.fillStyle = 'rgb(15,15,15)'; ctx.beginPath(); ctx.arc(900, 700, 18, 0, Math.PI * 2); ctx.fill(); },
+    hud: { mag: '400×', bar: { units: 50, label: '10 µm' } },
+    onClick: (x, y) => window.clicks.push([x, y]),
+  });
+  window.view.setFocus(window.view.focus.best);
+</script>
+</body></html>
