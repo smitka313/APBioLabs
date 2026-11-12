@@ -414,6 +414,10 @@
   function renderIdentity(box, mode) {
     const idn = storedIdentity();
     box.innerHTML = '';
+    if (!idn && mode !== 'form' && box._compact) {
+      box.append(h('p', { class: 'id-line' }, 'Not signed in yet · ', h('button', { class: 'linkbtn id-change', type: 'button', onclick: () => { renderIdentity(box, 'form'); focusIn(box, 'input'); } }, 'Enter your name and class period')));
+      return;
+    }
     if (!idn || mode === 'form') {
       const pre = idn || effectiveIdentity() || { name: '', period: '' };
       const uid = 'ident' + idHosts.indexOf(box);
@@ -428,7 +432,7 @@
           h('div', { class: 'field id-f-name' }, h('label', { for: uid + '-name' }, 'Enter your name as it appears in Schoology'), nameIn),
           h('div', { class: 'field id-f-period' }, h('label', { for: uid + '-period' }, 'Class period'), perSel),
           h('div', { class: 'id-actions' }, h('button', { class: 'btn btn--primary', type: 'submit' }, 'Save'),
-            idn ? h('button', { class: 'btn btn--ghost', type: 'button', onclick: () => { renderIdentity(box); focusIn(box, '.id-change'); } }, 'Cancel') : null)),
+            idn || box._compact ? h('button', { class: 'btn btn--ghost', type: 'button', onclick: () => { renderIdentity(box); focusIn(box, '.id-change'); } }, 'Cancel') : null)),
         err);
       form.addEventListener('submit', ev => {
         ev.preventDefault();
@@ -465,10 +469,10 @@
   Lab.identity = {
     get: () => { const e = effectiveIdentity(); return e ? { name: e.name, period: e.period } : null; },
     set(idn) { const ok = setIdentity(idn); idHosts.forEach(b => renderIdentity(b)); return ok; },
-    mount(el) {
+    mount(el, opts = {}) {
       if (typeof el === 'string') el = $(el);
       if (!el || PAGE.kind === 'teacher') return null;
-      const box = h('div', { class: 'id-box' }); idHosts.push(box); el.append(box); renderIdentity(box); return box;
+      const box = h('div', { class: 'id-box' }); box._compact = !!opts.compact; idHosts.push(box); el.append(box); renderIdentity(box); return box;
     },
     newDataset() {
       const idn = effectiveIdentity(); if (!idn || !IS_LAB) return false;
@@ -941,25 +945,161 @@
     return [bar, status, note];
   }
 
-  /* ---------------- Step navigation ---------------- */
-  function buildNav() {
-    const nav = $('.step-nav ol'); if (!nav) return;
-    const steps = $$('section.step');
+  /* ---------------- Step navigation, deep links, progress ----------------
+     Every section.step gets a readable id from its data-step ("Root tips" → #root-tips).
+     Old #step-N links still work. Lab pages get "Copy link to this part" buttons and progress checkmarks. */
+  const RESERVED_IDS = /^(settings|sidebar|customize|upgrade|downloads|comment-.*)$/;
+  const slugify = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  function assignStepIds(steps) {
+    const used = new Set();
     steps.forEach((s, i) => {
-      if (!s.id) s.id = 'step-' + (i + 1);
-      nav.append(h('li', null, h('a', { href: '#' + s.id }, h('span', { class: 'n' }, String(i + 1)), s.dataset.step || ('Step ' + (i + 1)))));
+      if (s.id) { used.add(s.id); return; }
+      let base = slugify(s.dataset.step) || 'part-' + (i + 1);
+      if (RESERVED_IDS.test(base) || /^step-\d+$/.test(base)) base = 'part-' + base;
+      let id = base, n = 2;
+      while (used.has(id) || document.getElementById(id)) id = base + '-' + n++;
+      used.add(id); s.id = id;
+    });
+  }
+  function hashTarget() {
+    let raw = ''; try { raw = decodeURIComponent(location.hash.slice(1)); } catch (e) { raw = location.hash.slice(1); }
+    if (!raw) return null;
+    let el = document.getElementById(raw);
+    const m = /^step-(\d+)$/.exec(raw);
+    if (!el && m) el = $$('section.step')[+m[1] - 1] || null;
+    return el;
+  }
+  let userScrolled = false;
+  function scrollToHash() { const el = hashTarget(); if (el && el.matches('section.step')) el.scrollIntoView({ block: 'start' }); }
+  function setupDeepLinks() {
+    ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => window.addEventListener(ev, () => { userScrolled = true; }, { passive: true }));
+    window.addEventListener('hashchange', () => { scrollToHash(); });
+    if (!location.hash) return;
+    // Page scripts build content after Lab.init, and charts and fonts shift layout, so settle the scroll a few times.
+    const again = () => { if (!userScrolled) scrollToHash(); };
+    setTimeout(again, 0);
+    window.addEventListener('load', () => { again(); setTimeout(again, 350); setTimeout(again, 1000); });
+  }
+  const LINK_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L11.6 6M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.6-1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  function addCopyLinks(steps) {
+    steps.forEach(s => {
+      const hd = $(':scope > header', s); if (!hd || $('.link-tools', hd)) return;
+      const name = (s.dataset.step || '').trim();
+      const status = h('span', { class: 'link-status', 'aria-live': 'polite' });
+      const tools = h('div', { class: 'link-tools' });
+      const btn = h('button', { class: 'link-btn', type: 'button', 'aria-label': 'Copy link to this part' + (name ? ': ' + name : ''), title: 'Copy link to this part', html: LINK_SVG + '<span class="lb-text">Copy link</span>' });
+      btn.addEventListener('click', async () => {
+        const url = location.href.split('#')[0] + '#' + s.id;
+        const old = $('.link-fallback', tools); if (old) old.remove();
+        try { await navigator.clipboard.writeText(url); status.textContent = 'Link copied'; }
+        catch (e) {
+          const inp = h('input', { type: 'text', class: 'link-fallback', readonly: true, value: url, 'aria-label': 'Link to this part' });
+          tools.append(inp); inp.focus(); inp.select(); status.textContent = 'Press Ctrl+C to copy';
+        }
+        setTimeout(() => { status.textContent = ''; }, 3000);
+      });
+      tools.append(btn, status);
+      hd.classList.add('has-link'); hd.append(tools);
+    });
+  }
+  /* A section is done when every prompt textarea is filled, every quiz question checked,
+     and every saved data table has a row. Sections without student inputs get no check. */
+  function sectionWork(sec) {
+    let total = 0, done = 0;
+    $$('textarea[data-save]', sec).forEach(t => { if (t.closest('.id-box')) return; total++; if (t.value.trim()) done++; });
+    REG.quizzes.forEach(q => { if (!sec.contains(q.el)) return; const st = q.state() || {}; q.questions.forEach((_, i) => { total++; if (st[i]) done++; }); });
+    REG.tables.forEach(t => { if (!t.opts.save || !sec.contains(t.el)) return; total++; if (t.getRows().length) done++; });
+    return { total, done };
+  }
+  let navProgressEl = null, lastSummary = '';
+  function updateProgress() {
+    const nav = $('.step-nav ol'); if (!nav) return null;
+    let parts = 0, complete = 0;
+    $$('section.step').forEach(s => {
+      const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
+      const r = sectionWork(s), sr = $('.done-sr', link);
+      if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
+      parts++; const ok = r.done === r.total; if (ok) complete++;
+      link.classList.add('has-work'); link.classList.toggle('is-done', ok);
+      if (sr) sr.textContent = ok ? ' (done)' : '';
+      link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
+    });
+    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `${complete} of ${parts}<span class="np-long"> parts</span> done`; }
+    const sum = JSON.stringify([complete, parts]);
+    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, t: Date.now() }); }
+    return { done: complete, total: parts };
+  }
+  function buildNav() {
+    const nav = $('.step-nav ol');
+    const steps = $$('section.step');
+    assignStepIds(steps);
+    setupDeepLinks();
+    if (!nav) return;
+    steps.forEach((s, i) => {
+      nav.append(h('li', null, h('a', { href: '#' + s.id }, h('span', { class: 'n' }, String(i + 1)), s.dataset.step || ('Step ' + (i + 1)), IS_LAB ? h('span', { class: 'sr-only done-sr' }) : null)));
     });
     const links = $$('a', nav);
-    const setActive = id => links.forEach(a => {
-      const on = a.getAttribute('href') === '#' + id; a.setAttribute('aria-current', on ? 'true' : 'false');
-      if (on) { const r = a.getBoundingClientRect(), nr = nav.getBoundingClientRect(); if (r.left < nr.left || r.right > nr.right) nav.scrollLeft += r.left - nr.left - 16; }
-    });
+    let lastId = null;
+    const setActive = id => {
+      links.forEach(a => {
+        const on = a.getAttribute('href') === '#' + id; a.setAttribute('aria-current', on ? 'true' : 'false');
+        if (on) { const r = a.getBoundingClientRect(), nr = nav.getBoundingClientRect(); if (r.left < nr.left || r.right > nr.right) nav.scrollLeft += r.left - nr.left - 16; }
+      });
+      if (IS_LAB && id !== lastId) { lastId = id; const s = document.getElementById(id); gstore.set('last', { lab: PAGE.id, step: id, name: s ? s.dataset.step || '' : '', title: document.title, t: Date.now() }); }
+    };
     if ('IntersectionObserver' in window) {
       const io = new IntersectionObserver(es => { es.filter(e => e.isIntersecting).forEach(e => setActive(e.target.id)); }, { rootMargin: '-30% 0px -60% 0px' });
       steps.forEach(s => io.observe(s));
     }
-    if (steps[0]) setActive(steps[0].id);
+    const first = hashTarget();
+    if (steps[0]) setActive(first && first.matches('section.step') ? first.id : steps[0].id);
+    if (IS_LAB) {
+      const wrap = nav.parentElement;
+      navProgressEl = h('p', { class: 'nav-progress', hidden: true });
+      wrap.classList.add('has-progress'); wrap.append(navProgressEl);
+      addCopyLinks(steps);
+      workListeners.push(updateProgress);
+      setTimeout(updateProgress, 0);
+      window.addEventListener('load', () => setTimeout(updateProgress, 50));
+    }
   }
+  Lab.progress = {
+    update: updateProgress,
+    /* For the home page: {done, total, started} cached by the lab page, {started:true} if work exists but no summary yet, or null. */
+    forLab(id) {
+      const p = gstore.get('progress:' + id);
+      let started = false;
+      try { started = Object.keys(localStorage).some(k => k.startsWith(`aplab:${id}:`) && !k.endsWith(':field:student-name')); } catch (e) { /* blocked */ }
+      if (p && p.total) return Object.assign({ started }, p);
+      return started ? { started: true } : null;
+    },
+    last: () => gstore.get('last'),
+  };
+
+  /* Home page (index.html): identity line, per-lab progress on [data-lab-progress] elements, resume link. */
+  Lab.home = function (o = {}) {
+    if (o.identity) { const host = typeof o.identity === 'string' ? $(o.identity) : o.identity; Lab.identity.mount(host, { compact: true }); }
+    $$('[data-lab-progress]').forEach(el => {
+      const p = Lab.progress.forLab(el.dataset.labProgress);
+      el.innerHTML = '';
+      if (!p || (p.total && !p.done && !p.started)) { el.append(h('span', { class: 'prog-text' }, 'Not started')); return; }
+      if (!p.total) { el.append(h('span', { class: 'prog-text' }, 'Started')); return; }
+      const pct = Math.round(100 * p.done / p.total);
+      el.append(h('span', { class: 'prog-text' }, p.done === p.total ? `All ${p.total} parts done` : `${p.done} of ${p.total} parts`),
+        h('span', { class: 'prog-bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pct}%` })));
+    });
+    if (o.resume) {
+      const el = typeof o.resume === 'string' ? $(o.resume) : o.resume;
+      const last = gstore.get('last');
+      if (el && last && /^lab\d\d$/.test(last.lab)) {
+        const labName = String(last.title || last.lab);
+        el.innerHTML = '';
+        el.append(h('a', { class: 'btn btn--primary resume-link', href: `${last.lab}.html${last.step ? '#' + encodeURIComponent(last.step) : ''}` }, 'Resume where you left off'),
+          h('span', { class: 'small muted' }, labName + (last.name ? ' · ' + last.name : '')));
+        el.hidden = false;
+      }
+    }
+  };
 
   /* ---------------- Init ---------------- */
   Lab.init = function (o = {}) {

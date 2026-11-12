@@ -23,7 +23,7 @@
   .bi-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
   .bi-head .eyebrow { color: var(--stain); }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
-  .card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 8px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, transform .15s; }
+  .card { display: grid; grid-template-rows: auto auto 1fr auto auto; gap: 8px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, transform .15s; }
   .card:hover { border-color: var(--accent); transform: translateY(-2px); }
   .card .num { font-family: var(--f-mono); font-size: .78rem; color: var(--accent); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
   .card h3 { font-size: 1.22rem; }
@@ -46,8 +46,9 @@
       <div><strong>Run the procedure</strong><span>Simulations produce realistic data with real variability, including replicates.</span></div>
       <div><strong>Design your own test</strong><span>Choose a variable, set levels and replicates, and collect your own data.</span></div>
       <div><strong>Analyze like a scientist</strong><span>Graphs with error bars, standard error, chi-square and regression are built in.</span></div>
-      <div><strong>Hand it in</strong><span>Work saves in your browser. Copy every answer in one click to paste into your class LMS.</span></div>
+      <div><strong>Hand it in</strong><span>Work saves in your browser. Download a Word or PDF lab report to upload to Schoology.</span></div>
     </div>
+    <div class="home-status"><div id="home-identity"></div><p class="resume" id="resume" hidden></p></div>
   </div>
 </header>
 
@@ -66,6 +67,7 @@
   <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
 </div></footer>
 
+<script src="lab.js"></script>
 <script>
 const BIG_IDEAS = [
   { n: 1, name: 'Evolution', units: 'Units 5–7', labs: [
@@ -102,10 +104,12 @@ document.getElementById('labs').innerHTML = BIG_IDEAS.map(b => `
         <span class="dq">${esc(l.q)}</span>
         <span class="sim-line">${l.sim}</span>
         <span class="meta">${l.topics.map(t => `<span class="tag">${t}</span>`).join('')}</span>
+        <span class="lab-prog" data-lab-progress="lab${pad(l.id)}"></span>
       </a>`).join('')}
     </div>
   </section>`).join('');
 document.getElementById('teacher-links').innerHTML = BIG_IDEAS.flatMap(b => b.labs).map(l => `<a href="teacher-lab${pad(l.id)}.html">Lab ${l.id} notes</a>`).join('');
+Lab.home({ identity: '#home-identity', resume: '#resume' });
 </script>
 </body>
 </html>
