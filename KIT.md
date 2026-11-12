@@ -40,6 +40,7 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
   "Copy link" button. A section is done when its prompt textareas are filled, quiz questions checked and saved
   tables have a row. `Lab.progress.update()`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
+- **Time estimates and arrow keys.** `data-minutes="15"` on a `section.step` renders a "≈ 15 min" chip (read as "About 15 minutes") beside the part eyebrow and adds "≈ N min total" to the header tags; round to 5. In paged mode ← / → change part unless focus is in a text field, select, slider, tab or other arrow-key control, the tour is open, or a modifier is held.
 - **First-visit tour.** After sign-in, the first lab page a browser opens shows a 5-step dismissible tour
   (`localStorage['aplab:tour']`, site-wide; `Lab.tour.start({force:true})`, `.reset()`; "Help" link in the sign-in line).
   It anchors to `.step-nav`, `.steps-box`, `.sim-tabs`, `.id-box`, `.report-bar`; a step whose element is hidden is

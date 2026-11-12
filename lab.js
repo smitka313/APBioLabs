@@ -1362,7 +1362,8 @@
       s.append(h('nav', { class: 'pager', 'aria-label': 'Move between parts' },
         prev ? h('a', { class: 'btn pager-prev', href: '#' + prev.id, rel: 'prev' }, h('span', { 'aria-hidden': 'true' }, '←'), h('span', null, 'Back', h('span', { class: 'pager-name' }, ': ' + partName(prev, i - 1)))) : h('span', { class: 'pager-gap' }),
         h('span', { class: 'pager-mid' }, h('span', { class: 'pager-pos' }, `Part ${i + 1} of ${steps.length}`),
-          h('button', { class: 'linkbtn pager-all', type: 'button', onclick: () => setAllParts(true) }, 'Show all parts on one page')),
+          h('button', { class: 'linkbtn pager-all', type: 'button', onclick: () => setAllParts(true) }, 'Show all parts on one page'),
+          h('span', { class: 'pager-tip' }, 'Tip: use ← → to move between parts')),
         next ? h('a', { class: 'btn btn--primary pager-next', href: '#' + next.id, rel: 'next' }, h('span', null, 'Next', h('span', { class: 'pager-name' }, ': ' + partName(next, i + 1))), h('span', { 'aria-hidden': 'true' }, '→'))
           : h('a', { class: 'btn pager-next', href: 'index.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
     });
@@ -1400,6 +1401,25 @@
         const el = byIdOrAlias(decodeURIComponent(href.slice(1)));
         if (el && el.matches('section.step')) { e.preventDefault(); goPart(el, { focus: true }); }
       }
+    });
+    // ← / → move between parts, unless the keys belong to something else (typing, sliders, tabs, the tour...).
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (!pages.on || pages.suspended || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.isComposing) return;
+      const b = document.body;
+      if (b.classList.contains('tour-open') || b.classList.contains('report-mode') || b.classList.contains('worksheet-mode')) return;
+      const t = e.target;
+      if (t && t.closest) {
+        if (t.isContentEditable || t.closest('[contenteditable]:not([contenteditable="false"])')) return;
+        if (t.closest('textarea, select, [role="slider"], [role="spinbutton"], [role="tab"], [role="tablist"], [role="radio"], [role="radiogroup"], [role="listbox"], [role="option"], [role="combobox"], [role="menu"], [role="menuitem"], [role="tree"], [role="grid"], [role="textbox"], [role="scrollbar"], [role="separator"], video, audio, dialog, [aria-modal="true"]')) return;
+        const inp = t.closest('input');
+        if (inp && !/^(button|checkbox|submit|reset|image)$/i.test(inp.type)) return; // text, number, range, radio, date... use the arrows themselves
+        if (t.scrollWidth > t.clientWidth + 2 && t !== document.body && t !== document.documentElement && /(auto|scroll)/.test(getComputedStyle(t).overflowX)) return; // a focused scroller
+      }
+      const i = pages.steps.indexOf(pages.cur); if (i < 0) return;
+      const to = pages.steps[i + (e.key === 'ArrowRight' ? 1 : -1)]; if (!to) return;
+      e.preventDefault();
+      goPart(to, { hash: true, focus: true });
     });
     // Printing (Ctrl+P) shows every part, with disclosures open.
     let printing = null;
@@ -1869,7 +1889,7 @@
   const firstShown = sel => $$(sel).find(shown) || null;
   const tourDefs = () => [
     { id: 'nav', find: () => firstShown('.step-nav'), title: 'Move through the lab one part at a time',
-      body: 'Use the part tabs up here, or the Back and Next buttons at the bottom of each part. A check mark means the part is done. “All parts” shows the whole lab on one page.' },
+      body: 'Use the part tabs up here, or the Back and Next buttons at the bottom of each part (the left and right arrow keys work too). A check mark means the part is done. “All parts” shows the whole lab on one page.' },
     { id: 'steps', find: () => firstShown('.steps-box'), title: 'Follow the Steps checklist',
       body: 'Each simulation part starts with a Steps list. A step ticks itself off when you finish it, and the “Next:” line under it tells you what to do now.',
       plain: 'Each simulation part starts with a Steps list. A step ticks itself off when you finish it, and a “Next:” line tells you what to do now. You will see it as soon as you open a simulation part.' },
@@ -2011,10 +2031,29 @@
     if (document.readyState === 'complete') go(); else window.addEventListener('load', go, { once: true });
   }
 
+  /* ---------------- Time estimates ----------------
+     A part with data-minutes="15" gets a "≈ 15 min" chip beside its eyebrow in the header (read aloud as
+     "About 15 minutes"); the lab header's tag row gets "≈ N min total". */
+  const minutesText = n => n === 1 ? 'About 1 minute' : 'About ' + n + ' minutes';
+  function addTimeChips() {
+    let total = 0;
+    $$('section.step[data-minutes]').forEach(sec => {
+      const n = Math.round(parseFloat(sec.dataset.minutes)); if (!(n > 0)) return;
+      total += n;
+      const hd = $(':scope > header', sec); if (!hd || $('.time-chip', hd)) return;
+      const chip = h('span', { class: 'time-chip' }, h('span', { 'aria-hidden': 'true' }, '≈ ' + n + ' min'), h('span', { class: 'sr-only' }, minutesText(n)));
+      const eb = $('.eyebrow', hd);
+      if (eb && eb.parentElement === hd) { const row = h('div', { class: 'eyebrow-row' }); eb.before(row); row.append(eb, chip); }
+      else hd.prepend(chip);
+    });
+    const tags = $('.lab-header .tags');
+    if (total && tags && !$('.tag--time', tags)) tags.append(h('span', { class: 'tag tag--time' }, h('span', { 'aria-hidden': 'true' }, '≈ ' + total + ' min total'), h('span', { class: 'sr-only' }, minutesText(total) + ' in total')));
+  }
+
   /* ---------------- Init ---------------- */
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
-    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); }
+    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); addTimeChips(); }
     buildNav();
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
