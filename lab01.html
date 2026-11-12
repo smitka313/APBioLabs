@@ -650,7 +650,7 @@
     const fg = c.createLinearGradient(0, top, 0, tray.h); fg.addColorStop(0, '#f3f4ef'); fg.addColorStop(1, '#d4d7cf');
     c.fillStyle = fg; c.fillRect(0, 0, tray.w, tray.h);
     // reflective floor liner: faint creases and grain
-    c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 1; for (let i = 0; i < 9; i++) { const x0 = R.uniform() * tray.w; c.beginPath(); c.moveTo(x0, top); c.lineTo(x0 + (R.uniform() - 0.5) * 60, tray.h); c.stroke(); }
+    c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = 1; for (let i = 0; i < 6; i++) { const x0 = R.uniform() * tray.w; c.beginPath(); c.moveTo(x0, top); c.lineTo(x0 + (R.uniform() - 0.5) * 60, tray.h); c.stroke(); }
     specks(c, R, Math.round(tray.w * tray.h / 90), 0, top, tray.w, tray.h - top, [[150, 156, 146], [255, 255, 255]], 0.3, 0.8, 0.15, 0.4);
     const seen = new Set();
     P.forEach(q => { if (seen.has(q.b)) return; seen.add(q.b); bottleTop(c, q.bx, q.by, q.R, q.b + 1, q.b * 131 + 7); });
@@ -935,38 +935,158 @@
   /* bee stick canvas */
   const bee = Lab.canvas('#bee', window.innerWidth < 600 ? 0.7 : 0.42);
   let beeState = null; const beeLoop = Lab.loop(dt => stepBee(dt));
+  /* Side view of the isolated light box: shelves of wick-watered bottles under fluorescent tubes. Each plant is
+     in flower (small four-petal yellow flowers on a raceme). Layout (also used for the bee's flight path):
+     each shelf row is a band with a light bank at its top and the bottles standing on a shelf at its bottom. */
+  const BEE_TOP = 18;
   function beeLayout() {
     const n = selected ? selected.length : 0, cols = Math.min(n, bee.w < 500 ? 8 : 15) || 1, rows = Math.ceil(n / cols) || 1;
-    const cw = bee.w / cols, ch = (bee.h - 24) / rows, out = [];
+    const cw = bee.w / cols, ch = (bee.h - BEE_TOP) / rows, out = [];
     for (let i = 0; i < n; i++) {
-      const cx = cw * (i % cols + 0.5), base = 24 + ch * (Math.floor(i / cols) + 1) - 4, top = base - ch * 0.78;
+      const row = Math.floor(i / cols), jr = Lab.rng(i * 977 + 5);
+      const bandTop = BEE_TOP + ch * row, lamp = Math.max(5, ch * 0.07), shelf = bandTop + ch - 3;
+      const bh = ch * 0.27, bw = Math.min(cw * 0.66, bh * 0.78), soil = shelf - bh * 0.6;
+      const cx = cw * (i % cols + 0.5) + (jr.uniform() - 0.5) * cw * 0.06, base = soil, top = bandTop + lamp + ch * (0.1 + jr.uniform() * 0.05);
       const fl = [0, 1, 2].map(k => ({ x: cx + (k - 1) * Math.min(cw * 0.26, 12), y: top + (k === 1 ? 0 : ch * 0.12) }));
-      out.push({ cx, base, top, fl });
+      out.push({ cx, base, top, fl, row, bandTop, lamp, shelf, bh, bw, ch, cw, lean: (jr.uniform() - 0.5) * cw * 0.12, R: jr });
     }
     return out;
   }
+  const flR = q => clamp(Math.min(q.cw * 0.085, q.ch * 0.045), 2.4, 7);
+  /* One open Brassica flower: four obovate yellow petals in a cross, stamens and a green pistil. */
+  function flower(c, x, y, r, rot) {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    c.fillStyle = 'rgba(40,40,10,0.22)'; c.beginPath(); c.arc(r * 0.25, r * 0.35, r * 1.05, 0, TAU); c.fill();
+    for (let k = 0; k < 4; k++) {
+      c.save(); c.rotate(k * Math.PI / 2 + 0.06 * (k % 2));
+      const g = c.createLinearGradient(0, 0, r * 1.1, 0); g.addColorStop(0, rgba(PL.petalLo)); g.addColorStop(0.35, rgba(PL.petal)); g.addColorStop(1, rgba(mixc(PL.petal, [255, 250, 200], 0.4)));
+      c.fillStyle = g; c.beginPath(); c.moveTo(r * 0.12, 0); c.bezierCurveTo(r * 0.4, -r * 0.18, r * 1.15, -r * 0.62, r * 1.1, 0); c.bezierCurveTo(r * 1.15, r * 0.62, r * 0.4, r * 0.18, r * 0.12, 0); c.fill();
+      c.strokeStyle = 'rgba(190,130,0,0.35)'; c.lineWidth = 0.4; c.stroke(); c.restore();
+    }
+    c.fillStyle = '#e8b40e'; for (let k = 0; k < 6; k++) { const a = k * TAU / 6 + 0.3; c.beginPath(); c.arc(Math.cos(a) * r * 0.3, Math.sin(a) * r * 0.3, Math.max(0.5, r * 0.11), 0, TAU); c.fill(); }
+    c.fillStyle = '#7fa64a'; c.beginPath(); c.arc(0, 0, Math.max(0.6, r * 0.16), 0, TAU); c.fill();
+    c.restore();
+  }
+  /* Side view of a wick-watered bottle: soil in the inverted top, wick down into the water reservoir. */
+  function bottleSide(c, x, shelf, bw, bh, R, num) {
+    const top = shelf - bh, mid = shelf - bh * 0.55;
+    c.fillStyle = 'rgba(0,0,0,0.28)'; c.beginPath(); c.ellipse(x + bw * 0.12, shelf, bw * 0.62, Math.max(1.5, bh * 0.05), 0, 0, TAU); c.fill();
+    // water in the reservoir, tinted by depth, with a meniscus line
+    const wy = shelf - bh * 0.3, wg = c.createLinearGradient(0, wy, 0, shelf); wg.addColorStop(0, 'rgba(150,196,214,0.55)'); wg.addColorStop(1, 'rgba(90,150,180,0.7)');
+    c.fillStyle = wg; c.fillRect(x - bw / 2 + 1, wy, bw - 2, shelf - wy - 1);
+    c.strokeStyle = 'rgba(230,246,252,0.9)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x - bw / 2 + 1, wy - 0.6); c.quadraticCurveTo(x, wy + 0.8, x + bw / 2 - 1, wy - 0.6); c.stroke();
+    // wick
+    c.strokeStyle = '#efe8d8'; c.lineWidth = Math.max(0.8, bw * 0.06); c.beginPath(); c.moveTo(x, mid); c.quadraticCurveTo(x + bw * 0.08, wy, x - bw * 0.05, shelf - 2); c.stroke();
+    // potting mix in the inverted bottle top (funnel shape)
+    const sg = c.createLinearGradient(x - bw / 2, 0, x + bw / 2, 0); sg.addColorStop(0, '#5f4330'); sg.addColorStop(0.5, '#4a3324'); sg.addColorStop(1, '#2e2016');
+    c.fillStyle = sg; c.beginPath(); c.moveTo(x - bw / 2 + 1, top + bh * 0.06); c.lineTo(x + bw / 2 - 1, top + bh * 0.06); c.lineTo(x + bw / 2 - 1, mid - bh * 0.1); c.quadraticCurveTo(x + bw * 0.12, mid - bh * 0.02, x + bw * 0.1, mid); c.lineTo(x - bw * 0.1, mid); c.quadraticCurveTo(x - bw * 0.12, mid - bh * 0.02, x - bw / 2 + 1, mid - bh * 0.1); c.closePath(); c.fill();
+    specks(c, R, Math.round(bw * bh * 0.15), x - bw / 2 + 1, top + bh * 0.07, bw - 2, bh * 0.25, [[230, 228, 220], [190, 150, 90], [26, 18, 12]], 0.25, 0.8, 0.5, 0.95);
+    // clear plastic body: refraction-darkened edges, specular stripe from the upper-left light
+    const pg = c.createLinearGradient(x - bw / 2, 0, x + bw / 2, 0);
+    pg.addColorStop(0, 'rgba(120,140,146,0.55)'); pg.addColorStop(0.12, 'rgba(255,255,255,0.12)'); pg.addColorStop(0.8, 'rgba(255,255,255,0.05)'); pg.addColorStop(1, 'rgba(90,108,114,0.6)');
+    c.fillStyle = pg; c.beginPath(); c.roundRect ? c.roundRect(x - bw / 2, top, bw, bh, [1, 1, bw * 0.12, bw * 0.12]) : c.rect(x - bw / 2, top, bw, bh); c.fill();
+    c.strokeStyle = 'rgba(80,96,100,0.6)'; c.lineWidth = 0.7; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.65)'; c.fillRect(x - bw * 0.36, top + bh * 0.08, Math.max(0.8, bw * 0.06), bh * 0.8);
+    c.strokeStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.moveTo(x - bw / 2, mid - bh * 0.1); c.lineTo(x + bw / 2, mid - bh * 0.1); c.stroke(); // where the bottle was cut
+    if (bw > 16) { const lh = Math.max(5, bh * 0.13); c.fillStyle = '#efe4c4'; c.fillRect(x - bw * 0.3, shelf - bh * 0.5, bw * 0.6, lh); c.fillStyle = '#1c2a6b'; c.font = `italic 600 ${Math.max(5, Math.round(lh * 0.8))}px ${bodyFont()}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('S' + num, x, shelf - bh * 0.5 + lh / 2 + 0.3); }
+  }
+  /* A flowering plant: purple-tinged stem, serrated alternate leaves, raceme with buds; pods once pollinated. */
+  function floweringPlant(c, q, p, podded) {
+    const R = Lab.rng(p.id * 31 + 3), sx = q.cx, sy = q.shelf - q.bh * 0.93, tx = q.cx + q.lean, ty = q.top + q.ch * 0.1, H = sy - ty;
+    const sw = Math.max(1.2, Math.min(3, q.cw * 0.035)), anth = p.ph.antho;
+    const ll = Math.min(q.cw * 0.5, q.ch * 0.25);
+    [[0.16, -1, 1], [0.36, 1, 0.9], [0.56, -1, 0.72]].forEach(([f, side, sc]) => {
+      const lx = sx + (tx - sx) * f, ly = sy - H * f, a = side < 0 ? Math.PI + 0.55 + R.uniform() * 0.2 : -0.55 - R.uniform() * 0.2, l = ll * sc;
+      c.save(); c.translate(lx, ly); c.rotate(a);
+      c.fillStyle = 'rgba(0,0,0,0.12)'; c.save(); c.translate(1.5, 2); leafPath(c, l, l * 0.55, 5); c.fill(); c.restore();
+      c.strokeStyle = rgba(stemCol(anth, 0.5)); c.lineWidth = Math.max(0.8, sw * 0.6); c.beginPath(); c.moveTo(0, 0); c.lineTo(l * 0.2, 0); c.stroke();
+      c.translate(l * 0.15, 0); leafPath(c, l, l * 0.55, 5); shadeLeaf(c, l, l * 0.55, a, PL.mid, PL.hi, PL.lo, 0.65); leafVeins(c, l, l * 0.55, 0.45, 3);
+      c.restore();
+    });
+    // stem: anthocyanin strongest near the base
+    const sg = c.createLinearGradient(0, sy, 0, ty); sg.addColorStop(0, rgba(stemCol(anth, 1))); sg.addColorStop(0.6, rgba(stemCol(anth, 0.35))); sg.addColorStop(1, rgba(PL.stem));
+    c.strokeStyle = sg; c.lineWidth = sw; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(sx + q.lean * 0.2, sy - H * 0.5, tx, ty); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.3)'; c.lineWidth = Math.max(0.4, sw * 0.3); c.beginPath(); c.moveTo(sx - sw * 0.25, sy); c.quadraticCurveTo(sx + q.lean * 0.2 - sw * 0.25, sy - H * 0.5, tx - sw * 0.25, ty); c.stroke();
+    const r = flR(q);
+    c.strokeStyle = rgba(PL.stem); c.lineWidth = Math.max(0.7, sw * 0.55); c.beginPath();
+    q.fl.forEach(f => { c.moveTo(tx, ty); c.quadraticCurveTo((tx + f.x) / 2, ty - 2, f.x, f.y + r * 0.3); }); c.stroke();
+    if (!podded) for (let k = 0; k < 3; k++) { c.fillStyle = k ? '#b9c860' : '#d8d45a'; c.beginPath(); c.ellipse(q.fl[1].x + (k - 1) * r * 0.55, q.fl[1].y - r * (1.0 + (k % 2) * 0.35), r * 0.32, r * 0.42, 0, 0, TAU); c.fill(); }
+    q.fl.forEach((f, k) => {
+      if (podded) { // developing siliques: slender green pods angled upward, withered petals below them
+        c.strokeStyle = '#5e8c34'; c.lineWidth = Math.max(1.2, r * 0.38); c.beginPath(); c.moveTo(f.x, f.y + r * 0.2); c.lineTo(f.x + (k - 1) * r * 0.9, f.y - r * 2.6); c.stroke();
+        c.strokeStyle = 'rgba(220,240,180,0.6)'; c.lineWidth = Math.max(0.4, r * 0.1); c.beginPath(); c.moveTo(f.x - r * 0.1, f.y); c.lineTo(f.x + (k - 1) * r * 0.9 - r * 0.1, f.y - r * 2.4); c.stroke();
+        c.fillStyle = 'rgba(214,190,90,0.85)'; c.beginPath(); c.ellipse(f.x + r * 0.4, f.y + r * 0.3, r * 0.4, r * 0.2, 0.8, 0, TAU); c.fill();
+      } else flower(c, f.x, f.y, r, R.uniform() * 0.6);
+    });
+  }
+  let beeScene = null, beeSprite = null;
+  function buildBeeScene() {
+    const sel = selected, key = bee.w + 'x' + bee.h + ':' + DPR() + ':' + pollinated;
+    if (beeScene && beeScene.key === key && beeScene.sel === sel) return beeScene.o;
+    const o = off(bee.w, bee.h), c = o.x, W = bee.w, H = bee.h, R = Lab.rng(99);
+    const L = beeLayout(), n = sel ? sel.length : 0, cols = Math.min(n, W < 500 ? 8 : 15) || 1, rows = Math.ceil(n / cols) || 1, ch = (H - BEE_TOP) / rows;
+    for (let r = 0; r < rows; r++) {
+      const bt = BEE_TOP + ch * r, lamp = Math.max(5, ch * 0.07);
+      // reflective back wall, brightest under the tubes
+      const g = c.createLinearGradient(0, bt, 0, bt + ch); g.addColorStop(0, '#f4f5f1'); g.addColorStop(0.7, '#d9dcd5'); g.addColorStop(1, '#c4c8c0');
+      c.fillStyle = g; c.fillRect(0, bt, W, ch);
+      c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 1; for (let i = 0; i < W / 60; i++) { const x0 = R.uniform() * W; c.beginPath(); c.moveTo(x0, bt + lamp); c.lineTo(x0 + (R.uniform() - 0.5) * 20, bt + ch); c.stroke(); }
+      specks(c, R, Math.round(W * ch / 120), 0, bt, W, ch, [[160, 164, 158], [255, 255, 255]], 0.3, 0.8, 0.15, 0.35);
+      const sy = bt + ch - 3, sg = c.createLinearGradient(0, sy, 0, sy + 3); sg.addColorStop(0, '#8b8f93'); sg.addColorStop(1, '#3f4245');
+      c.fillStyle = sg; c.fillRect(0, sy, W, 3);
+      lightBank(c, 0, bt, W, lamp);
+    }
+    L.forEach((q, i) => bottleSide(c, q.cx, q.shelf, q.bw, q.bh, q.R, i + 1));
+    L.forEach((q, i) => floweringPlant(c, q, sel[i], pollinated));
+    beeScene = { key, sel, o }; return o;
+  }
+  /* Bee stick: a dried honeybee thorax glued to a toothpick, its branched hairs dusted with pollen. */
+  function buildBeeSprite(s) {
+    if (beeSprite && beeSprite.s === s && beeSprite.d === DPR()) return beeSprite;
+    const S = s * 4, o = off(S, S), c = o.x, R = Lab.rng(2024), cx = S / 2, cy = S / 2;
+    c.strokeStyle = '#1e140c'; c.lineWidth = Math.max(0.6, s * 0.09); c.lineCap = 'round';
+    for (let k = 0; k < 3; k++) { const x0 = cx - s * 0.35 + k * s * 0.35; c.beginPath(); c.moveTo(x0, cy + s * 0.4); c.lineTo(x0 - s * 0.2 + k * s * 0.1, cy + s * 0.95); c.lineTo(x0 + s * 0.15, cy + s * 1.25); c.stroke(); }
+    const bg = c.createRadialGradient(cx - s * 0.25, cy - s * 0.3, s * 0.1, cx, cy, s * 0.8); bg.addColorStop(0, '#9a7442'); bg.addColorStop(0.5, '#5a3d1e'); bg.addColorStop(1, '#241509');
+    c.fillStyle = bg; c.beginPath(); c.ellipse(cx, cy, s * 0.78, s * 0.64, -0.2, 0, TAU); c.fill();
+    for (let i = 0; i < 260; i++) {   // fuzzy pile of fine hairs, golden on the lit side
+      const a = R.uniform() * TAU, rr = Math.sqrt(R.uniform()) * s * 0.7, x = cx + Math.cos(a) * rr * 1.1, y = cy + Math.sin(a) * rr * 0.9;
+      const out = a + (R.uniform() - 0.5) * 0.9, l = s * (0.18 + R.uniform() * 0.35), lit = Math.cos(a + Math.PI * 0.75) * 0.5 + 0.5;
+      c.strokeStyle = rgba(mixc([70, 46, 20], [232, 196, 120], lit * R.uniform()), 0.55 + R.uniform() * 0.4); c.lineWidth = Math.max(0.3, s * 0.035);
+      c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(out + 0.4) * l * 0.5, y + Math.sin(out + 0.4) * l * 0.5, x + Math.cos(out) * l, y + Math.sin(out) * l); c.stroke();
+    }
+    c.fillStyle = 'rgba(220,228,236,0.35)'; c.strokeStyle = 'rgba(80,70,60,0.5)'; c.lineWidth = 0.4;   // wing stub
+    c.beginPath(); c.ellipse(cx - s * 0.5, cy - s * 0.65, s * 0.5, s * 0.18, -0.6, 0, TAU); c.fill(); c.stroke();
+    const gg = c.createRadialGradient(cx + s * 0.55, cy + s * 0.45, 0, cx + s * 0.55, cy + s * 0.45, s * 0.3); gg.addColorStop(0, 'rgba(255,255,240,0.9)'); gg.addColorStop(0.4, 'rgba(230,220,180,0.55)'); gg.addColorStop(1, 'rgba(200,180,120,0.2)');
+    c.fillStyle = gg; c.beginPath(); c.arc(cx + s * 0.55, cy + s * 0.45, s * 0.28, 0, TAU); c.fill();   // glue blob
+    const pollen = []; for (let i = 0; i < 60; i++) { const a = R.uniform() * TAU, rr = Math.sqrt(R.uniform()) * s * 0.85; pollen.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.85, s * (0.05 + R.uniform() * 0.06)]); }
+    beeSprite = { s, d: DPR(), o, pollen }; return beeSprite;
+  }
+  function drawBeeStick(c, x, y, s, load) {
+    const sp = buildBeeSprite(s), len = s * 6, ang = 0.85, ex = x + Math.cos(ang) * len, ey = y + Math.sin(ang) * len;
+    c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = s * 0.3; c.lineCap = 'round'; c.beginPath(); c.moveTo(x + 6, y + 9); c.lineTo(ex + 6, ey + 9); c.stroke();
+    const g = c.createLinearGradient(x - s * 0.15, y + s * 0.15, x + s * 0.15, y - s * 0.15); g.addColorStop(0, '#c9a46c'); g.addColorStop(0.5, '#ecd2a0'); g.addColorStop(1, '#a8834e');
+    c.strokeStyle = g; c.lineWidth = Math.max(1.5, s * 0.26); c.beginPath(); c.moveTo(x + s * 0.4, y + s * 0.35); c.lineTo(ex, ey); c.stroke();
+    c.drawImage(sp.o.c, x - sp.o.w / 2, y - sp.o.h / 2, sp.o.w, sp.o.h);
+    const np = Math.round(sp.pollen.length * load);
+    for (let i = 0; i < np; i++) { const [px, py, pr] = sp.pollen[i]; c.fillStyle = i % 3 ? '#f2c22a' : '#e89a18'; c.beginPath(); c.arc(x - sp.o.w / 2 + px, y - sp.o.h / 2 + py, pr, 0, TAU); c.fill(); }
+  }
   function drawBee() {
-    const c = bee.ctx; c.clearRect(0, 0, bee.w, bee.h); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, bee.w, bee.h);
+    const c = bee.ctx; c.clearRect(0, 0, bee.w, bee.h);
+    blit(c, buildBeeScene());
     c.fillStyle = Lab.color('--surface-2'); c.fillRect(0, 0, bee.w, 16);
-    c.fillStyle = Lab.color('--muted'); c.font = `600 11px ${getComputedStyle(document.body).fontFamily}`; c.textAlign = 'left'; c.textBaseline = 'middle';
+    c.fillStyle = Lab.color('--muted'); c.font = `600 11px ${bodyFont()}`; c.textAlign = 'left'; c.textBaseline = 'middle';
     if (!selected) { c.fillText('Isolated light box (empty until you select parents)', 8, 8); return; }
     c.fillText(`Isolated light box · ${selected.length} selected plants` + (beeState ? ` · day ${Math.min(3, beeState.day + 1)} of 3` : pollinated ? ' · pollinated, pods forming' : ''), 8, 8);
-    const L = beeLayout(), green = Lab.color('--s6'), yel = Lab.color('--s4'), stain = Lab.color('--stain');
-    L.forEach((q, i) => {
-      c.strokeStyle = green; c.lineWidth = 2; c.beginPath(); c.moveTo(q.cx, q.base); c.lineTo(q.cx, q.top + 4); q.fl.forEach(f => { c.moveTo(q.cx, q.top + 10); c.lineTo(f.x, f.y); }); c.stroke();
-      c.fillStyle = green; c.beginPath(); c.ellipse(q.cx - 6, q.base - (q.base - q.top) * 0.35, 6, 3, -0.5, 0, Math.PI * 2); c.ellipse(q.cx + 6, q.base - (q.base - q.top) * 0.5, 6, 3, 0.5, 0, Math.PI * 2); c.fill();
-      q.fl.forEach((f, k) => {
-        const done = pollinated || (beeState && beeState.visited.has(i * 3 + k));
-        c.fillStyle = yel; for (let a = 0; a < 4; a++) { c.beginPath(); c.arc(f.x + Math.cos(a * Math.PI / 2 + 0.78) * 3.2, f.y + Math.sin(a * Math.PI / 2 + 0.78) * 3.2, 2.6, 0, Math.PI * 2); c.fill(); }
-        if (done) { c.fillStyle = stain; c.beginPath(); c.arc(f.x, f.y, 1.8, 0, Math.PI * 2); c.fill(); }
-        if (pollinated) { c.strokeStyle = green; c.lineWidth = 2; c.beginPath(); c.moveTo(f.x + 3, f.y + 4); c.lineTo(f.x + 5, f.y + 13); c.stroke(); }
-      });
-    });
+    const L = beeLayout();
+    if (!pollinated && beeState) L.forEach((q, i) => q.fl.forEach((f, k) => {
+      if (!beeState.visited.has(i * 3 + k)) return;   // orange pollen load left on the stigma of each visited flower
+      const r = flR(q); c.fillStyle = '#d97a0c'; c.beginPath(); c.arc(f.x, f.y, Math.max(1.3, r * 0.32), 0, TAU); c.fill();
+      c.fillStyle = 'rgba(255,240,200,0.9)'; c.beginPath(); c.arc(f.x - r * 0.1, f.y - r * 0.1, Math.max(0.5, r * 0.1), 0, TAU); c.fill();
+      c.fillStyle = '#f0b020'; for (let j = 0; j < 3; j++) { c.beginPath(); c.arc(f.x + Math.cos(j * 2.1 + i) * r * 0.65, f.y + Math.sin(j * 2.1 + i) * r * 0.65, Math.max(0.4, r * 0.08), 0, TAU); c.fill(); }
+    }));
     if (beeState) {
-      const { x, y } = beeState.pos;
-      c.strokeStyle = Lab.color('--warn'); c.lineWidth = 2; c.beginPath(); c.moveTo(x + 4, y + 4); c.lineTo(x + 26, y + 30); c.stroke();
-      c.fillStyle = yel; c.beginPath(); c.ellipse(x, y, 6, 4.5, 0.7, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = Lab.color('--ink'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - 2, y - 3); c.lineTo(x - 4, y + 2); c.moveTo(x + 1, y - 2); c.lineTo(x - 1, y + 4); c.stroke();
+      const { x, y } = beeState.pos, s = clamp(flR(L[0]) * 1.7, 5.5, 11);
+      drawBeeStick(c, x, y, s, Math.min(1, 0.15 + beeState.visited.size / Math.max(1, selected.length * 3)));
     }
   }
   function stepBee(dt) {
@@ -1107,30 +1227,78 @@
   });
   const dCanvas = Lab.canvas('#d-canvas', window.innerWidth < 600 ? 0.75 : 0.5);
   let dLast = null;
+  /* Representative 12-day-old plants from each generation of the first selected line, photographed in their
+     bottles against a grey card beside a cm ruler: height, stem anthocyanin and hairs are drawn from each
+     plant's phenotype. The backdrop is physical (fixed colours); the generation labels are UI (theme tokens). */
+  let dBg = null;
+  function designBackground(W, H, groundY, rulerW) {
+    const key = W + 'x' + H + ':' + DPR();
+    if (dBg && dBg.key === key) return dBg.o;
+    const o = off(W, H), c = o.x, R = Lab.rng(31);
+    const g = c.createRadialGradient(W * 0.3, H * 0.1, 0, W * 0.5, H * 0.5, Math.max(W, H)); g.addColorStop(0, '#6c737a'); g.addColorStop(1, '#3a3f44');
+    c.fillStyle = g; c.fillRect(0, 0, W, groundY);
+    specks(c, R, Math.round(W * H / 60), 0, 0, W, groundY, [[90, 96, 102], [50, 54, 58]], 0.3, 0.7, 0.2, 0.45);
+    // bench strip the bottles stand on
+    const bg = c.createLinearGradient(0, groundY - 6, 0, groundY); bg.addColorStop(0, '#2a2c2e'); bg.addColorStop(1, '#16181a');
+    c.fillStyle = bg; c.fillRect(0, groundY - 6, W, 6);
+    // white plastic cm ruler
+    const pxcm = (groundY - 10) / 22, top = Math.max(2, groundY - 6 - pxcm * 24);
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(4, top + 2, rulerW, groundY - 6 - top);
+    const rg = c.createLinearGradient(2, 0, 2 + rulerW, 0); rg.addColorStop(0, '#fbfbf7'); rg.addColorStop(1, '#dcdcd4');
+    c.fillStyle = rg; c.fillRect(2, top, rulerW, groundY - 6 - top);
+    c.strokeStyle = '#1d1d1d'; c.fillStyle = '#1d1d1d'; c.lineWidth = 0.7; c.font = `600 8px ${bodyFont()}`; c.textAlign = 'right'; c.textBaseline = 'middle';
+    for (let mm = 0; mm <= 240; mm++) {
+      const y = groundY - 6 - mm * pxcm / 10; if (y < top + 2) break;
+      const L = mm % 10 === 0 ? rulerW * 0.45 : mm % 5 === 0 ? rulerW * 0.3 : rulerW * 0.16;
+      if (pxcm < 6 && mm % 5) continue;
+      c.beginPath(); c.moveTo(2 + rulerW, y); c.lineTo(2 + rulerW - L, y); c.stroke();
+      if (mm % 50 === 0 && mm) c.fillText(String(mm / 10), 2 + rulerW * 0.5, y);
+    }
+    dBg = { key, o }; return o;
+  }
   function drawDesign() {
-    const c = dCanvas.ctx, W = dCanvas.w, H = dCanvas.h; c.clearRect(0, 0, W, H); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, W, H);
-    const font = getComputedStyle(document.body).fontFamily;
-    if (!dLast) { c.fillStyle = Lab.color('--muted'); c.font = `600 13px ${font}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Set up your experiment and press Run.', W / 2, H / 2); return; }
+    const c = dCanvas.ctx, W = dCanvas.w, H = dCanvas.h; c.clearRect(0, 0, W, H);
+    const font = bodyFont(), groundY = H - 22, rulerW = 18, x00 = rulerW + 8;
+    blit(c, designBackground(W, H, groundY, rulerW));
+    c.fillStyle = Lab.color('--surface-2'); c.fillRect(0, groundY, W, H - groundY);
+    if (!dLast) { c.fillStyle = '#e8ebee'; c.font = `600 13px ${font}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Set up your experiment and press Run.', (W + x00) / 2, groundY / 2); return; }
     const gens = dLast.line; const idx = gens.length <= 6 ? gens.map((_, i) => i) : [0, 1, 2, gens.length - 3, gens.length - 2, gens.length - 1];
-    const colW = W / idx.length, per = Math.max(3, Math.min(6, Math.floor(colW / 16))), groundY = H - 22;
-    const green = Lab.color('--s6'), purple = Lab.color('--s5'), ink = Lab.color('--ink'), mut = Lab.color('--muted');
-    c.strokeStyle = Lab.color('--line'); c.beginPath(); c.moveTo(0, groundY); c.lineTo(W, groundY); c.stroke();
+    const colW = (W - x00) / idx.length, per = Math.max(3, Math.min(6, Math.floor(colW / 16)));
+    const soilY = groundY - 6;
     idx.forEach((gi, col) => {
-      const plants = gens[gi].slice(0, per), x0 = col * colW;
-      c.fillStyle = mut; c.font = `600 11px ${font}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText(`Gen ${gi + 1}`, x0 + colW / 2, H - 6);
+      const plants = gens[gi].slice(0, per), x0 = x00 + col * colW;
+      if (col) { c.strokeStyle = 'rgba(255,255,255,0.12)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, 6); c.lineTo(x0, soilY); c.stroke(); }
+      c.fillStyle = Lab.color('--muted'); c.font = `600 11px ${font}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText(`Gen ${gi + 1}`, x0 + colW / 2, H - 6);
       plants.forEach((p, k) => {
-        const x = x0 + colW * (k + 0.5) / per, hgt = Math.min(groundY - 14, (p.ph.height / 22) * (groundY - 10));
-        c.strokeStyle = green; c.lineWidth = 2; c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY - hgt); c.stroke();
-        c.globalAlpha = Math.min(1, p.ph.antho / 8); c.strokeStyle = purple; c.lineWidth = 2.4; c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY - hgt * 0.6); c.stroke(); c.globalAlpha = 1;
-        const lw = Math.max(5, Math.min(9, colW / per * 0.4));
-        c.fillStyle = green; c.beginPath(); c.ellipse(x - lw * 0.9, groundY - hgt * 0.55, lw, lw * 0.45, -0.4, 0, Math.PI * 2); c.ellipse(x + lw * 0.9, groundY - hgt * 0.75, lw, lw * 0.45, 0.4, 0, Math.PI * 2); c.fill();
-        const hairs = Math.min(12, Math.round(p.ph.trich / 4)); c.strokeStyle = ink; c.lineWidth = 0.8; c.beginPath();
-        for (let i = 0; i < hairs; i++) { const yy = groundY - hgt * (0.1 + 0.85 * i / Math.max(1, hairs)); const s = i % 2 ? 1 : -1; c.moveTo(x, yy); c.lineTo(x + s * 3, yy - 2); }
+        const x = x0 + colW * (k + 0.5) / per, hgt = Math.min(soilY - 8, (p.ph.height / 22) * (groundY - 10));
+        const R = Lab.rng(gi * 1009 + k * 17 + 1), lean = (R.uniform() - 0.5) * 4, tx = x + lean, ty = soilY - hgt;
+        const sw = Math.max(1.4, Math.min(2.6, colW / per * 0.1)), lw = Math.max(6, Math.min(15, colW / per * 0.6));
+        // soil plug in a small pot
+        const pw = Math.min(colW / per * 0.7, 16);
+        c.fillStyle = '#3d2a1c'; c.fillRect(x - pw / 2, soilY - 3, pw, 3);
+        c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(x - pw / 2 + 1.5, soilY, pw, 1.5);
+        // cotyledons near the base and two serrated true leaves higher up
+        [[0.18, -1, 0.75, true], [0.22, 1, 0.7, true], [0.55, -1, 1, false], [0.78, 1, 0.9, false]].forEach(([f, side, sc, cot]) => {
+          const lx = x + lean * f, ly = soilY - hgt * f, a = side < 0 ? Math.PI + 0.45 : -0.45, l = lw * sc;
+          c.save(); c.translate(lx, ly); c.rotate(a);
+          if (cot) { cotPath(c, l, l * 1.15); shadeLeaf(c, l, l * 1.15, a, PL.mid, PL.hi, PL.lo, 0.6); }
+          else { leafPath(c, l * 1.3, l * 0.75, 5); shadeLeaf(c, l * 1.3, l * 0.75, a, PL.tl, PL.tlHi, PL.lo, 0.7); leafVeins(c, l * 1.3, l * 0.75, 0.4, 2); }
+          c.restore();
+        });
+        // stem: anthocyanin purple strongest toward the base, scaled by the plant's score
+        const sg = c.createLinearGradient(0, soilY, 0, ty); sg.addColorStop(0, rgba(stemCol(p.ph.antho, 1))); sg.addColorStop(0.65, rgba(stemCol(p.ph.antho, 0.3))); sg.addColorStop(1, rgba(PL.stem));
+        c.strokeStyle = sg; c.lineWidth = sw; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, soilY); c.quadraticCurveTo(x + lean * 0.3, soilY - hgt * 0.5, tx, ty); c.stroke();
+        c.fillStyle = '#86a84a'; c.beginPath(); c.arc(tx, ty, sw * 0.9, 0, TAU); c.fill();
+        // trichomes: fine translucent white hairs along the stem, more on hairier plants
+        const hairs = Math.min(14, Math.round(p.ph.trich / 3.5));
+        c.strokeStyle = 'rgba(236,244,230,0.85)'; c.lineWidth = 0.6; c.beginPath();
+        for (let i = 0; i < hairs; i++) { const t = 0.08 + 0.85 * (i + R.uniform() * 0.6) / Math.max(1, hairs), yy = soilY - hgt * t, xx = x + lean * t, s = i % 2 ? 1 : -1; c.moveTo(xx + s * sw * 0.4, yy); c.lineTo(xx + s * (sw * 0.4 + 3.2), yy - 2.2); }
         c.stroke();
       });
     });
   }
   dCanvas.onresize = drawDesign; drawDesign();
+  themeHooks.push(drawAll, drawBee, drawDesign);
   let runNo = (dTable.getRows().reduce((m, r) => Math.max(m, r.run || 0), 0));
   $('#d-run').addEventListener('click', () => {
     const k = $('#d-trait').value, T = TRAITS[k], frac = +dEls.pct.value / 100, N = +dEls.n.value, G = +dEls.gens.value, reps = +dEls.reps.value;
