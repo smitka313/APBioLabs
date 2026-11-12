@@ -47,11 +47,7 @@
   .bitkey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
   .bitkey i { display: inline-block; width: 18px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
   .graphic text { font-family: var(--f-body); font-size: 11px; fill: var(--ink); }
-  .fossil-svg .rock { fill: var(--surface-2); stroke: var(--line); }
-  .fossil-svg .bone { stroke: var(--ink); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
-  .fossil-svg .feather { stroke: var(--muted); stroke-width: 1.2; fill: none; }
-  .fossil-svg .soft { fill: var(--stain-soft); stroke: var(--stain); stroke-dasharray: 3 3; }
-  .fossil-svg text { font-family: var(--f-body); font-size: 12px; fill: var(--muted); }
+  .fossil-cv { width: 100%; display: block; }
   .bg-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
   .bg-svg .ln { stroke: var(--ink); stroke-width: 2; fill: none; }
   .bg-svg .tr { fill: var(--stain); font-weight: 700; font-size: 12px; }
@@ -171,23 +167,8 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         <h3 style="margin-top:18px">3 · Observe the fossil and make a hypothesis</h3>
         <div class="grid-2">
           <figure>
-            <svg class="fossil-svg" viewBox="0 0 360 230" role="img" aria-label="Drawing of the fossil slab: a small two-legged skeleton with a long bony tail, toothed jaws, clawed three-fingered hands, and feather impressions along the arms, legs and tail">
-              <rect class="rock" x="4" y="4" width="352" height="222" rx="14"/>
-              <path class="feather" d="M150 112 l-14 -30 M158 110 l-10 -34 M166 108 l-4 -34 M174 108 l2 -32 M140 116 l-22 -24 M120 150 l-20 26 M126 154 l-12 30 M134 156 l-4 30 M220 120 l10 -18 M240 124 l12 -16 M260 128 l14 -14 M280 132 l16 -12 M300 136 l16 -10 M320 140 l14 -8"/>
-              <path class="bone" d="M66 74 q-14 -6 -30 6 q12 10 32 6 z"/>
-              <path class="bone" d="M40 84 l4 4 M46 85 l3 4 M52 85 l3 4 M58 84 l3 4"/>
-              <path class="bone" d="M68 80 q16 6 24 22 q8 16 30 18"/>
-              <ellipse class="bone" cx="150" cy="122" rx="34" ry="14"/>
-              <path class="bone" d="M184 124 q60 4 150 18"/>
-              <path class="bone" d="M196 126 v-4 M210 127 v-4 M224 129 v-4 M238 130 v-4 M252 132 v-4 M266 133 v-4 M280 135 v-4 M294 137 v-4 M308 139 v-4 M322 141 v-4"/>
-              <path class="bone" d="M132 112 l-20 -20 l-14 6 M98 98 l-8 -4 M98 98 l-8 4 M98 98 l-6 10"/>
-              <path class="bone" d="M150 134 l-14 30 l8 26 l-12 10 M144 200 l10 0 M144 200 l6 6"/>
-              <path class="bone" d="M166 134 l4 30 l18 24 l-6 10 M188 188 l10 2"/>
-              <ellipse class="soft" cx="138" cy="126" rx="12" ry="7"/>
-              <text x="16" y="218">5 cm</text><path class="bone" d="M16 206 h46" style="stroke-width:2"/>
-              <path d="M128 130 L80 160" style="stroke:var(--stain);stroke-width:1"/><text x="30" y="172" style="fill:var(--stain)">soft tissue</text>
-            </svg>
-            <figcaption class="small muted">A sketch of the fossil (the manual's Figure 3 shows a photo). It is a small, two-legged animal about 60 cm long, found in about 125-million-year-old rock.</figcaption>
+            <canvas id="fossil-cv" class="fossil-cv" role="img" aria-label="The fossil slab: a split slab of pale limestone holding a small two-legged skeleton in relief, with the skull thrown back, toothed jaws, clawed three-fingered hands, a long bony tail of many vertebrae, feather impressions fanning from both arms and along both sides of the tail, and a dark patch of preserved soft tissue in the body cavity. A 5 cm scale bar is at lower left."></canvas>
+            <figcaption class="small muted">A drawing of the fossil slab (the manual's Figure 3 shows a photo). It is a small, two-legged animal about 60 cm long, found in about 125-million-year-old rock.</figcaption>
           </figure>
           <div class="prose" style="align-content:start">
             <p><strong>Observations from the specimen:</strong></p>
@@ -632,6 +613,168 @@ Lab.$('#fossil-final').addEventListener('change', e => { Lab.store.set('fossil-f
 Lab.prompt('#obs-prompt', { key: 'fossil-obs', label: 'Record your observations of the fossil\'s morphology. Which traits from the trait table does it have, and which does it lack?', rows: 3 });
 Lab.prompt('#hyp-prompt', { key: 'fossil-hyp-why', label: 'Explain your hypothesis using shared derived characters.', rows: 3 });
 renderDataset();
+
+/* ---------------- Fossil slab (procedural canvas) ----------------
+   A split slab of fine-grained limestone: broken edges with visible thickness, a glued crack, bedding
+   laminae, manganese dendrites and grain. The skeleton is drawn in relief (cast shadow, body tone,
+   highlight; light from the upper left); feathers are shallow impressions (shadow and highlight swapped).
+   Physical object → fixed colours, identical in light and dark themes. Pre-rendered once per size. */
+(function fossilSlab() {
+  const cv = Lab.$('#fossil-cv'); if (!cv) return;
+  const BW = 720, BH = 460, TAU = Math.PI * 2;
+  const P = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  function quadPts(p0, c, p1, n) { const out = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; out.push([u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]]); } return out; }
+  function polyLen(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; }
+  function along(pts, n) {   // n points evenly spaced along a polyline, with tangent angle
+    const out = [], L = polyLen(pts); let seg = 0, acc = 0;
+    for (let k = 0; k < n; k++) {
+      const d = L * (k + 0.5) / n;
+      while (seg < pts.length - 2 && acc + Math.hypot(pts[seg + 1][0] - pts[seg][0], pts[seg + 1][1] - pts[seg][1]) < d) { acc += Math.hypot(pts[seg + 1][0] - pts[seg][0], pts[seg + 1][1] - pts[seg][1]); seg++; }
+      const a = pts[seg], b = pts[seg + 1], sl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, t = (d - acc) / sl;
+      out.push({ x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, ang: Math.atan2(b[1] - a[1], b[0] - a[0]) });
+    }
+    return out;
+  }
+  const BONE = { sh: 'rgba(62,42,22,0.42)', base: '#5f4029', mid: '#73502f', hi: 'rgba(196,156,104,0.45)' };
+  function reliefStroke(x, path, w) {
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    x.save(); x.translate(1.8, 2.4); x.strokeStyle = BONE.sh; x.lineWidth = w + 1.6; x.stroke(path); x.restore();
+    x.strokeStyle = BONE.base; x.lineWidth = w; x.stroke(path);
+    x.strokeStyle = BONE.mid; x.lineWidth = w * 0.62; x.stroke(path);
+    x.save(); x.translate(-w * 0.16, -w * 0.2); x.strokeStyle = BONE.hi; x.lineWidth = Math.max(0.7, w * 0.26); x.stroke(path); x.restore();
+  }
+  function reliefFill(x, path, gx, gy, r) {
+    x.save(); x.translate(2, 2.6); x.fillStyle = BONE.sh; x.fill(path); x.restore();
+    const g = x.createRadialGradient(gx - r * 0.35, gy - r * 0.4, r * 0.1, gx, gy, r); g.addColorStop(0, '#94693f'); g.addColorStop(0.55, '#714d2f'); g.addColorStop(1, '#583b24');
+    x.fillStyle = g; x.fill(path); x.strokeStyle = 'rgba(60,38,20,0.55)'; x.lineWidth = 0.8; x.stroke(path);
+  }
+  const line = pts => { const p = new Path2D(); pts.forEach((q, i) => (i ? p.lineTo(q[0], q[1]) : p.moveTo(q[0], q[1]))); return p; };
+  function bone(x, a, b, w, knob = 1) {   // long bone with knobbly ends
+    reliefStroke(x, line([a, b]), w);
+    [a, b].forEach(q => { const p = new Path2D(); p.arc(q[0], q[1], w * knob * 0.55, 0, TAU); reliefFill(x, p, q[0], q[1], w * knob * 0.55); });
+  }
+  function vertebra(x, v, len, wid) {
+    const p = new Path2D(), c = Math.cos(v.ang), s = Math.sin(v.ang), hl = len / 2 - 0.6, hw = wid / 2;
+    const pt = (u, w) => [v.x + c * u - s * w, v.y + s * u + c * w];
+    const q = [pt(-hl, -hw * 0.8), pt(-hl * 0.5, -hw * 0.62), pt(hl * 0.5, -hw * 0.62), pt(hl, -hw * 0.8), pt(hl, hw * 0.8), pt(hl * 0.5, hw * 0.62), pt(-hl * 0.5, hw * 0.62), pt(-hl, hw * 0.8)];
+    p.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length; i++) p.lineTo(q[i][0], q[i][1]); p.closePath();
+    reliefFill(x, p, v.x, v.y, Math.max(len, wid) * 0.7);
+  }
+  function claw(x, base, ang, L) {
+    const c = Math.cos(ang), s = Math.sin(ang), n = [-s, c], p = new Path2D();
+    p.moveTo(base[0] + n[0] * L * 0.22, base[1] + n[1] * L * 0.22);
+    p.quadraticCurveTo(base[0] + c * L * 0.7 + n[0] * L * 0.3, base[1] + s * L * 0.7 + n[1] * L * 0.3, base[0] + c * L + n[0] * L * 0.42, base[1] + s * L + n[1] * L * 0.42);
+    p.quadraticCurveTo(base[0] + c * L * 0.5 - n[0] * L * 0.05, base[1] + s * L * 0.5 - n[1] * L * 0.05, base[0] - n[0] * L * 0.2, base[1] - n[1] * L * 0.2); p.closePath();
+    x.save(); x.translate(1.4, 1.8); x.fillStyle = BONE.sh; x.fill(p); x.restore(); x.fillStyle = '#4e3520'; x.fill(p); x.strokeStyle = 'rgba(200,160,110,0.5)'; x.lineWidth = 0.6; x.stroke(p);
+  }
+  function digit(x, pts, w) { for (let i = 1; i < pts.length; i++) bone(x, pts[i - 1], pts[i], w * (1 - i * 0.12), 0.95); const a = pts[pts.length - 2], b = pts[pts.length - 1]; claw(x, b, Math.atan2(b[1] - a[1], b[0] - a[0]), w * 3.2); }
+  function feather(x, base, ang, len, wid, bend, R) {   // impression: grooves with the highlight on the lower-right lip
+    const c = Math.cos(ang), s = Math.sin(ang), n = [-s, c], tip = [base[0] + c * len, base[1] + s * len], ctl = [base[0] + c * len * 0.5 + n[0] * bend, base[1] + s * len * 0.5 + n[1] * bend];
+    const rach = quadPts(base, ctl, tip, 24), vane = new Path2D(), L2 = [], R2 = [];
+    rach.forEach((q, i) => { const t = i / 24, prof = Math.sin(Math.PI * Math.min(1, t * 1.15)) * (t < 0.12 ? t / 0.12 : 1); L2.push([q[0] + n[0] * wid * 0.62 * prof, q[1] + n[1] * wid * 0.62 * prof]); R2.push([q[0] - n[0] * wid * prof, q[1] - n[1] * wid * prof]); });
+    L2.forEach((q, i) => (i ? vane.lineTo(q[0], q[1]) : vane.moveTo(q[0], q[1]))); R2.reverse().forEach(q => vane.lineTo(q[0], q[1])); vane.closePath();
+    x.fillStyle = 'rgba(96,74,46,0.10)'; x.fill(vane);
+    x.lineCap = 'round';
+    for (let i = 2; i < rach.length - 1; i++) {   // barbs angled toward the tip
+      const q = rach[i], t = i / 24, prof = Math.sin(Math.PI * Math.min(1, t * 1.15));
+      [[wid * 0.62, 1], [wid, -1]].forEach(([wv, side]) => {
+        const bl = wv * prof * (0.8 + R.uniform() * 0.4), ba = ang + side * (Math.PI / 2 - 0.55), ex = q[0] + Math.cos(ba) * bl, ey = q[1] + Math.sin(ba) * bl;
+        x.strokeStyle = `rgba(84,62,38,${(0.13 + R.uniform() * 0.12).toFixed(2)})`; x.lineWidth = 0.7; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(ex, ey); x.stroke();
+        x.strokeStyle = 'rgba(255,246,226,0.16)'; x.beginPath(); x.moveTo(q[0] + 0.6, q[1] + 0.7); x.lineTo(ex + 0.6, ey + 0.7); x.stroke();
+      });
+    }
+    const rp = line(rach); x.strokeStyle = 'rgba(70,50,30,0.5)'; x.lineWidth = 1.3; x.stroke(rp);
+    x.save(); x.translate(0.8, 1); x.strokeStyle = 'rgba(255,244,222,0.4)'; x.lineWidth = 0.7; x.stroke(rp); x.restore();
+  }
+  function dendrite(x, X, Y, ang, len, depth, R) {
+    if (depth <= 0 || len < 1.5) return;
+    let px = X, py = Y; const steps = 4;
+    x.strokeStyle = `rgba(48,36,24,${(0.25 + depth * 0.08).toFixed(2)})`; x.lineWidth = Math.max(0.4, depth * 0.45); x.beginPath(); x.moveTo(px, py);
+    for (let i = 0; i < steps; i++) { ang += R.normal(0, 0.25); px += Math.cos(ang) * len / steps; py += Math.sin(ang) * len / steps; x.lineTo(px, py); if (R.uniform() < 0.55) dendrite(x, px, py, ang + (R.uniform() < 0.5 ? -1 : 1) * (0.5 + R.uniform() * 0.5), len * 0.55, depth - 1, R); }
+    x.stroke();
+  }
+  function paint(x) {
+    const R = Lab.rng(1250);
+    // slab outline: broken, irregular edges
+    const edge = []; const jag = (a, b, n) => { for (let i = 0; i < n; i++) { const p = P(a, b, i / n); edge.push([p[0] + R.normal(0, 2.2), p[1] + R.normal(0, 2.2)]); } };
+    jag([16, 22], [380, 10], 30); jag([380, 10], [706, 30], 30); jag([706, 30], [712, 300], 22); jag([712, 300], [690, 446], 14); jag([690, 446], [300, 452], 30); jag([300, 452], [10, 430], 26); jag([10, 430], [16, 22], 32);
+    const slab = line(edge); slab.closePath();
+    // thickness (side face) + cast shadow
+    x.save(); x.shadowColor = 'rgba(0,0,0,0.45)'; x.shadowBlur = 14; x.shadowOffsetX = 5; x.shadowOffsetY = 8; x.translate(5, 8); x.fillStyle = '#9d896a'; x.fill(slab); x.restore();
+    x.save(); x.translate(5, 8); const side = x.createLinearGradient(0, 0, 0, BH); side.addColorStop(0, '#a99574'); side.addColorStop(1, '#85735a'); x.fillStyle = side; x.fill(slab);
+    x.strokeStyle = 'rgba(70,58,40,0.35)'; x.lineWidth = 0.7; for (let k = 1; k < 3; k++) { x.save(); x.translate(-k * 1.6, -k * 2.4); x.stroke(slab); x.restore(); } x.restore();
+    // bedding-plane surface
+    x.save(); x.clip(slab);
+    const g = x.createLinearGradient(0, 0, BW, BH); g.addColorStop(0, '#e9dcbd'); g.addColorStop(0.55, '#dccaa3'); g.addColorStop(1, '#c9b48a'); x.fillStyle = g; x.fillRect(0, 0, BW, BH);
+    for (let i = 0; i < 70; i++) { const cx = R.uniform() * BW, cy = R.uniform() * BH, r = 20 + R.uniform() * 70, mg = x.createRadialGradient(cx, cy, 0, cx, cy, r), dark = R.uniform() < 0.5; mg.addColorStop(0, dark ? 'rgba(150,120,80,0.10)' : 'rgba(255,248,230,0.12)'); mg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = mg; x.fillRect(cx - r, cy - r, 2 * r, 2 * r); }
+    for (let i = 0; i < 9; i++) { const oy = 30 + i * 48 + R.normal(0, 8); x.strokeStyle = `rgba(150,124,86,${(0.08 + R.uniform() * 0.08).toFixed(2)})`; x.lineWidth = 1 + R.uniform() * 2; x.beginPath(); for (let xx = 0; xx <= BW; xx += 20) x.lineTo(xx, oy + Math.sin(xx * 0.012 + i) * 6 + R.normal(0, 0.8)); x.stroke(); }
+    for (let i = 0; i < 4200; i++) { const d = R.uniform() < 0.6; x.fillStyle = d ? `rgba(110,88,60,${(R.uniform() * 0.35).toFixed(2)})` : `rgba(255,252,240,${(R.uniform() * 0.5).toFixed(2)})`; const s = 0.5 + R.uniform() * 1.1; x.fillRect(R.uniform() * BW, R.uniform() * BH, s, s); }
+    // iron-oxide staining and manganese dendrites along old cracks
+    [[60, 400, 70], [660, 70, 60], [700, 400, 45]].forEach(([cx, cy, r]) => { const og = x.createRadialGradient(cx, cy, 0, cx, cy, r); og.addColorStop(0, 'rgba(176,112,52,0.32)'); og.addColorStop(1, 'rgba(176,112,52,0)'); x.fillStyle = og; x.fillRect(cx - r, cy - r, 2 * r, 2 * r); });
+    dendrite(x, 22, 140, -0.2, 46, 4, R); dendrite(x, 24, 300, 0.25, 40, 4, R); dendrite(x, 700, 120, Math.PI + 0.2, 44, 4, R); dendrite(x, 560, 446, -1.7, 38, 4, R); dendrite(x, 120, 20, 1.3, 30, 3, R);
+    // feather impressions (under the bones)
+    const S = [312, 206], E = [268, 246], W = [214, 248], E2 = [352, 172], W2 = [398, 150];
+    for (let k = 0; k < 15; k++) { const t = k / 14, base = t < 0.55 ? P(E, W, t / 0.55) : P(W, [176, 238], (t - 0.55) / 0.45), ang = Math.PI / 2 + 0.25 + t * 1.15 + R.normal(0, 0.03); feather(x, base, ang, 78 + t * 30 + R.normal(0, 3), 9 + t * 2, 6, R); }
+    for (let k = 0; k < 14; k++) { const t = k / 13, base = t < 0.55 ? P(E2, W2, t / 0.55) : P(W2, [430, 132], (t - 0.55) / 0.45), ang = -Math.PI / 2 - 0.5 + t * 1.2 + R.normal(0, 0.03); feather(x, base, ang, 70 + t * 28 + R.normal(0, 3), 8.5 + t * 2, -6, R); }
+    const tail = quadPts([394, 238], [540, 236], [698, 290], 40), tv = along(tail, 22);
+    tv.forEach((v, i) => { if (i < 3) return; const f = i / 21; [-1, 1].forEach(sd => feather(x, [v.x, v.y], v.ang + sd * (0.62 - f * 0.25), 44 + f * 22, 6.5, sd * 4, R)); });
+    // hind-limb contour feathers (short, soft)
+    for (let k = 0; k < 6; k++) feather(x, P([420, 280], [438, 304], k / 5), 0.25 + k * 0.08, 26, 4.5, 3, R);
+    // soft tissue: dark organic film in the body cavity
+    x.save(); x.translate(352, 252); x.rotate(0.32); for (let i = 0; i < 26; i++) { const rx = R.normal(0, 12), ry = R.normal(0, 6), rr = 5 + R.uniform() * 10, sg = x.createRadialGradient(rx, ry, 0, rx, ry, rr); sg.addColorStop(0, 'rgba(66,40,30,0.30)'); sg.addColorStop(1, 'rgba(66,40,30,0)'); x.fillStyle = sg; x.fillRect(rx - rr, ry - rr, rr * 2, rr * 2); } x.restore();
+    // skeleton: spine (neck, back, tail), skull, ribs, girdles, limbs
+    const neck = along([[262, 120], [268, 142], [280, 166], [295, 190], [312, 206]], 9), back = along([[312, 206], [340, 216], [366, 226], [392, 236]], 9);
+    // ribs first (behind vertebrae)
+    back.forEach((v, i) => { if (i < 1 || i > 7) return; const L = 40 - i * 2.5; reliefStroke(x, (() => { const p = new Path2D(); p.moveTo(v.x, v.y + 2); p.quadraticCurveTo(v.x + 12, v.y + L * 0.5, v.x - 4 - i, v.y + L); return p; })(), 2.6); });
+    bone(x, [316, 204], [344, 192], 5.5);   // scapula
+    bone(x, [306, 214], [330, 236], 4.2);   // coracoid / furcula
+    neck.forEach(v => vertebra(x, v, 13, 7)); back.forEach(v => vertebra(x, v, 8.5, 8));
+    tv.forEach((v, i) => vertebra(x, v, 12.5 - i * 0.2, 7.5 - i * 0.2));
+    // skull with orbit, nostril and small conical teeth
+    x.save(); x.translate(266, 116); x.rotate(0.42);
+    const jaw = new Path2D(); jaw.moveTo(-2, 8); jaw.quadraticCurveTo(-30, 15, -56, 7); jaw.lineTo(-55, 10.5); jaw.quadraticCurveTo(-30, 20, -4, 14); jaw.closePath(); reliefFill(x, jaw, -24, 12, 30);
+    for (let t = 0; t < 12; t++) { const tx = -54 + t * 3.5, ty = 7.2 - t * 0.12; x.fillStyle = '#e9dcbc'; x.beginPath(); x.moveTo(tx - 1.1, ty - 0.6); x.lineTo(tx + 1.1, ty - 0.6); x.quadraticCurveTo(tx + 0.6, ty + 1.6, tx - 0.3, ty + 3); x.closePath(); x.fill(); x.strokeStyle = 'rgba(80,55,30,0.55)'; x.lineWidth = 0.4; x.stroke(); }
+    const sk = new Path2D(); sk.moveTo(6, -6); sk.quadraticCurveTo(4, -15, -12, -14); sk.quadraticCurveTo(-36, -12, -58, -3); sk.quadraticCurveTo(-62, 0, -58, 3); sk.lineTo(-40, 6); sk.lineTo(-8, 8); sk.quadraticCurveTo(6, 6, 6, -6); sk.closePath();
+    reliefFill(x, sk, -20, -4, 34);
+    const hole = (cx, cy, rx, ry) => { const h = new Path2D(); h.ellipse(cx, cy, rx, ry, 0, 0, TAU); x.fillStyle = '#cdb98f'; x.fill(h); x.save(); x.clip(h); x.strokeStyle = 'rgba(60,40,22,0.6)'; x.lineWidth = 2.4; x.beginPath(); x.ellipse(cx - 1, cy - 1.3, rx, ry, 0, 0, TAU); x.stroke(); x.restore(); x.strokeStyle = 'rgba(210,180,135,0.5)'; x.lineWidth = 0.6; x.stroke(h); };
+    hole(-11, -4, 7.5, 6.5); hole(-30, -3, 7, 3); hole(-49, -2, 2.6, 1.5);
+    x.restore();
+    // pelvis
+    const il = new Path2D(); il.ellipse(392, 236, 22, 8, 0.3, 0, TAU); reliefFill(x, il, 392, 236, 22);
+    bone(x, [396, 246], [418, 290], 5); bone(x, [404, 246], [416, 270], 4.5);
+    // wings: humerus, radius + ulna, three clawed fingers
+    bone(x, S, E, 7); bone(x, E, W, 4); bone(x, [E[0] - 1, E[1] + 5], [W[0] + 2, W[1] + 5], 3.2);
+    digit(x, [W, [196, 236], [180, 226], [170, 214]], 3.4); digit(x, [W, [194, 244], [174, 242], [158, 238], [148, 234]], 3.2); digit(x, [[W[0], W[1] + 3], [196, 254], [182, 262], [172, 268]], 3);
+    bone(x, S, E2, 7); bone(x, E2, W2, 4); bone(x, [E2[0] + 4, E2[1] + 4], [W2[0] + 3, W2[1] + 5], 3.2);
+    digit(x, [W2, [414, 136], [424, 122], [430, 110]], 3.2); digit(x, [W2, [418, 146], [434, 140], [446, 136], [456, 132]], 3); digit(x, [[W2[0] + 2, W2[1] + 3], [418, 158], [432, 160], [442, 164]], 2.8);
+    // hind limbs: femur, tibia + fibula, metatarsus, toes
+    const legs = [[[398, 246], [432, 302], [400, 356], [424, 394]], [[404, 248], [462, 286], [472, 350], [500, 382]]];
+    legs.forEach(([h, k, a, f], li) => {
+      bone(x, h, k, 8.5, 1.1); bone(x, k, a, 6.5); bone(x, [k[0] + 4, k[1] + 3], [a[0] + 4, a[1] - 3], 2.6); bone(x, a, f, 5);
+      digit(x, [f, [f[0] + 14, f[1] + 2], [f[0] + 26, f[1] + 2], [f[0] + 34, f[1] + 1]], 3); digit(x, [f, [f[0] + 13, f[1] + 9], [f[0] + 24, f[1] + 15], [f[0] + 31, f[1] + 19]], 3); digit(x, [f, [f[0] + 6, f[1] + 12], [f[0] + 12, f[1] + 22]], 2.8); digit(x, [f, [f[0] - 9, f[1] + 5], [f[0] - 16, f[1] + 9]], 2.6);
+    });
+    // the slab split along a crack (glued): dark seam with a bright chipped lip
+    const crack = []; for (let yy = 0; yy <= BH; yy += 12) crack.push([560 + Math.sin(yy * 0.03) * 16 + R.normal(0, 2.5), yy]);
+    const cp = line(crack); x.lineCap = 'round'; x.strokeStyle = 'rgba(80,62,40,0.75)'; x.lineWidth = 1.6; x.stroke(cp); x.save(); x.translate(1.4, 1); x.strokeStyle = 'rgba(255,248,232,0.55)'; x.lineWidth = 0.9; x.stroke(cp); x.restore();
+    // edge relief: upper-left lip catches light, lower-right falls into shadow
+    x.restore();
+    x.save(); x.clip(slab); x.lineWidth = 3; x.strokeStyle = 'rgba(255,250,236,0.35)'; x.translate(1.5, 1.5); x.stroke(slab); x.restore();
+    x.strokeStyle = 'rgba(90,72,48,0.6)'; x.lineWidth = 0.9; x.stroke(slab);
+    // scale bar (5 cm; the animal is about 60 cm from snout to tail tip) and soft-tissue label
+    x.fillStyle = '#211a12'; x.fillRect(40, 404, 42, 5); x.fillStyle = '#f7f2e6'; x.fillRect(61, 405, 20, 3);
+    x.font = '600 15px "Source Sans 3", sans-serif'; x.textBaseline = 'alphabetic'; x.textAlign = 'left'; x.fillStyle = '#211a12'; x.fillText('5 cm', 40, 398);
+    x.strokeStyle = 'rgba(33,26,18,0.85)'; x.lineWidth = 1; x.beginPath(); x.moveTo(346, 258); x.lineTo(300, 330); x.lineTo(250, 330); x.stroke(); x.beginPath(); x.arc(346, 258, 2, 0, TAU); x.fillStyle = '#211a12'; x.fill();
+    x.fillText('soft tissue', 176, 334);
+  }
+  function render() {
+    const w = cv.clientWidth; if (!w) return; const h = Math.round(w * BH / BW), dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    if (cv.width === Math.round(w * dpr) && cv.height === Math.round(h * dpr)) return;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); cv.style.height = h + 'px';
+    const x = cv.getContext('2d'); x.setTransform(dpr * w / BW, 0, 0, dpr * w / BW, 0, 0); paint(x);
+  }
+  render();
+  if ('ResizeObserver' in window) new ResizeObserver(render).observe(cv); else window.addEventListener('resize', render);
+})();
 
 /* ---------------- Mini-BLAST output ---------------- */
 const fmtE = E => { if (E < 1e-180) return '0.0'; if (E >= 0.01) return E >= 1 ? E.toFixed(1) : E.toFixed(3); const ex = Math.floor(Math.log10(E)); let man = Math.round(E / Math.pow(10, ex)); return man >= 10 ? `1e-${String(-(ex + 1)).padStart(2, '0')}` : `${man}e-${String(-ex).padStart(2, '0')}`; };
