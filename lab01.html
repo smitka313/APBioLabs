@@ -979,6 +979,29 @@
   }
   $('#bin-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; binW = +b.dataset.bin; Lab.$$('#bin-seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); updateScoring(); renderCompare(); });
 
+  /* ---- number-field validation: plain-language message under the field, aria-invalid, no result on bad input ---- */
+  function fieldError(input, msg) {
+    const box = input.closest('.field') || input.parentNode;
+    let m = box.querySelector(':scope > .feedback.bad');
+    if (!msg) { if (m) m.remove(); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); return; }
+    if (!m) { m = document.createElement('p'); m.className = 'feedback bad'; m.setAttribute('role', 'alert'); m.id = input.id + '-err'; m.style.margin = '6px 0 0'; box.appendChild(m); }
+    m.textContent = msg; input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', m.id);
+  }
+  /* rules: [{el, name, min, max, int, gt}] → true when every field is a valid number (every problem is shown at once) */
+  function checkFields(rules) {
+    let bad = 0;
+    rules.forEach(r => {
+      const raw = r.el.value.trim(), v = Number(raw); let msg = '';
+      if (raw === '') msg = `Enter ${r.name}.`;
+      else if (!isFinite(v) || r.el.validity.badInput) msg = `${r.name[0].toUpperCase() + r.name.slice(1)} must be a number.`;
+      else if (r.int && !Number.isInteger(v)) msg = `${r.name[0].toUpperCase() + r.name.slice(1)} must be a whole number.`;
+      else if (r.min != null && v < r.min) msg = r.minMsg || `${r.name[0].toUpperCase() + r.name.slice(1)} can't be less than ${r.min}.`;
+      else if (r.gt != null && v <= r.gt) msg = r.gtMsg || `${r.name[0].toUpperCase() + r.name.slice(1)} must be greater than ${r.gt}.`;
+      else if (r.max != null && v > r.max) msg = `${r.name[0].toUpperCase() + r.name.slice(1)} can't be more than ${r.max}.`;
+      fieldError(r.el, msg); if (msg) bad++;
+    });
+    return !bad;
+  }
   const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
   $('#record').addEventListener('click', () => {
     if (!cur) return;
@@ -1273,6 +1296,7 @@
   $('#check-calc').addEventListener('click', () => {
     if (!(selected && selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#calc-status', 'Score generation 2 first so there are numbers to check against.', 'bad'); return; }
     const m1 = S.mean(scoredVals(g1)), Sv = S.mean(selected.map(valOf)) - m1, Rv = S.mean(scoredVals(selLine[1])) - m1, h2 = Rv / Sv;
+    if (!checkFields([{ el: $('#in-S'), name: 'your value for S (selection differential)' }, { el: $('#in-R'), name: 'your value for R (response)' }, { el: $('#in-h2'), name: 'your value for h² (heritability)' }])) { status('#calc-status', 'Fix the highlighted entries, then press Check again.', 'bad'); return; }
     const iS = parseFloat($('#in-S').value), iR = parseFloat($('#in-R').value), ih = parseFloat($('#in-h2').value);
     const okS = Math.abs(iS - Sv) <= 0.15, okR = Math.abs(iR - Rv) <= 0.15, okh = Math.abs(ih - h2) <= 0.03;
     const msg = [okS ? 'S ✓' : `S: check (expected about ${fmt(Sv, 2)})`, okR ? 'R ✓' : `R: check (expected about ${fmt(Rv, 2)})`, okh ? 'h² ✓' : `h²: check (expected about ${fmt(h2, 2)})`].join(' · ');
@@ -1410,13 +1434,25 @@
 
   /* ================= ANALYZE ================= */
   function runT() {
-    const v = id => parseFloat($(id).value);
+    const el = id => $(id), v = id => parseFloat($(id).value);
+    const clearOut = () => ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(id => $(id).textContent = '—');
+    const ok = checkFields([
+      { el: el('#ta-m'), name: 'the mean for Population A' }, { el: el('#ta-s'), name: 'the standard deviation for Population A', min: 0, minMsg: 'A standard deviation can\'t be negative.' }, { el: el('#ta-n'), name: 'the sample size (n) for Population A', int: true, min: 2, minMsg: 'Enter at least 2 measurements for Population A (n must be 2 or more).' },
+      { el: el('#tb-m'), name: 'the mean for Population B' }, { el: el('#tb-s'), name: 'the standard deviation for Population B', min: 0, minMsg: 'A standard deviation can\'t be negative.' }, { el: el('#tb-n'), name: 'the sample size (n) for Population B', int: true, min: 2, minMsg: 'Enter at least 2 measurements for Population B (n must be 2 or more).' }
+    ]);
+    if (ok && v('#ta-s') === 0 && v('#tb-s') === 0) {
+      fieldError(el('#ta-s'), 'Both groups have a standard deviation of 0, so every value is identical and a t-test can\'t be calculated. Check your SDs.');
+      fieldError(el('#tb-s'), 'Both groups have a standard deviation of 0, so a t-test can\'t be calculated.');
+      clearOut(); status('#tt-status', 'No t calculated: fix the highlighted entries.', 'bad'); return;
+    }
+    if (!ok) { clearOut(); status('#tt-status', 'No t calculated: fix the highlighted entries.', 'bad'); return; }
     const w = welch(v('#ta-m'), v('#ta-s'), v('#ta-n'), v('#tb-m'), v('#tb-s'), v('#tb-n'));
     $('#tt-d').textContent = fmt(v('#tb-m') - v('#ta-m'), 2); $('#tt-t').textContent = fmt(w.t, 2); $('#tt-df').textContent = fmt(w.df, 1); $('#tt-c').textContent = fmt(w.crit, 2);
-    if (!isFinite(w.t)) status('#tt-status', 'Enter a mean, SD (greater than 0) and n (2 or more) for both populations.', 'bad');
+    if (!isFinite(w.t)) { clearOut(); status('#tt-status', 'The t statistic could not be calculated from these numbers. Check each entry.', 'bad'); }
     else status('#tt-status', w.sig ? `|t| = ${fmt(Math.abs(w.t), 2)} > ${fmt(w.crit, 2)}: the means are significantly different (p < 0.05).` : `|t| = ${fmt(Math.abs(w.t), 2)} ≤ ${fmt(w.crit, 2)}: the difference could be due to chance (not significant at p = 0.05).`, w.sig ? 'ok' : 'warn');
   }
   $('#tt-run').addEventListener('click', runT);
+  ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n', '#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   $('#tt-fill').addEventListener('click', () => {
     if (!(selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#tt-status', 'Score generation 2 in the simulation first.', 'bad'); return; }
     const a = scoredVals(g1), b = scoredVals(selLine[1]);
