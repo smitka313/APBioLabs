@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 13 · Enzyme Activity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .step > * { min-width: 0; }
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .diagram text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
+  .diagram .sub { fill: var(--muted); font-size: 11.5px; }
+  .diagram figcaption { font-size: .86rem; color: var(--muted); margin-top: 6px; }
+  .palette { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+  .sw { aspect-ratio: 1 / 1.4; border-radius: 6px; border: 1px solid var(--line); display: grid; place-items: end center; padding-bottom: 3px; font-family: var(--f-mono); font-size: .78rem; font-weight: 600; }
+  .snaps { display: grid; grid-template-columns: 62px repeat(6, minmax(0, 1fr)); gap: 4px; align-items: center; font-size: .82rem; }
+  .snaps .lab { color: var(--muted); font-size: .8rem; }
+  .snaps .sw { aspect-ratio: auto; height: 34px; }
+  .palette .sw { aspect-ratio: auto; height: 46px; }
+  .snaps .hd { text-align: center; font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+  .note { font-size: .88rem; color: var(--muted); }
+  .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .progress { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .recipe { font-size: .88rem; display: grid; gap: 4px; }
+  .recipe b { font-weight: 600; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 2 · Energetics</span></nav>
+    <div class="eyebrow">Investigation 13</div>
+    <h1>Enzyme Activity</h1>
+    <p class="driving-q">How do abiotic or biotic factors influence the rates of enzymatic reactions?</p>
+    <div class="tags"><span class="tag">Unit 3: Cellular Energetics</span><span class="tag">ENE-1.F</span><span class="tag">ENE-1.G</span><span class="tag">SYI-3.A</span><span class="tag">Science Practices 6.C, 6.E</span><span class="tag">≈ 3–4 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>Watching an enzyme work, one shade of brown at a time</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Turnip roots are full of <strong>peroxidase</strong>, an enzyme that breaks down hydrogen peroxide, a toxic by-product of aerobic metabolism. You will mix a turnip extract with dilute hydrogen peroxide and an indicator, guaiacol, that turns brown as the reaction proceeds. The faster the browning, the faster the enzyme is working.</p>
+      <div class="callout callout--question"><div class="callout-title">What you will do</div>
+        <ul>
+          <li><strong>Procedure 1:</strong> Develop a reliable assay and establish a <em>baseline</em>: an enzyme tube compared with a no-enzyme control, read every minute for 5 minutes with a 1–10 color palette or a spectrophotometer at 470 nm.</li>
+          <li><strong>Procedure 2:</strong> Replace the water in the enzyme tube with buffers from pH 3 to pH 10 and find the pH optimum.</li>
+          <li><strong>Your investigation:</strong> Test temperature, substrate concentration, enzyme concentration, heat treatment, or an inhibitor, and compare initial reaction rates.</li>
+        </ul>
+      </div>
+      <div class="callout callout--key"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>ENE-1.F</strong> Explain how changes to the structure of an enzyme may affect its function.</li>
+          <li><strong>ENE-1.G</strong> Explain how the cellular environment affects enzyme activity.</li>
+          <li><strong>SYI-3.A</strong> Connect variation in molecules (such as different forms of an enzyme) to an organism’s ability to survive in different environments.</li>
+          <li><strong>Science practices 6.C, 6.E</strong> Justify claims with evidence; predict the effects of a change in a biological system.</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety</div>
+        <ul>
+          <li>Wear goggles, a lab coat, closed-toe shoes, and gloves. Guaiacol can irritate skin at high concentration.</li>
+          <li>Use pipette pumps or syringes. Never pipette by mouth. Use a separate, labeled pipette for each solution.</li>
+          <li>The 0.1% hydrogen peroxide and dilute guaiacol used here can go down the drain. Broken glass goes in the glass container.</li>
+          <li>Inhibitors such as hydroxylamine also act on human enzymes. In this lab they appear only in the simulation; do not handle them at the bench.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Enzymes, shape, and rate</h2></header>
+    <div class="step-body prose">
+      <p>Enzymes are protein catalysts. They speed reactions by lowering the <strong>activation energy</strong>, the energy needed to reach the unstable transition state between reactants and products. The substrate binds in the enzyme’s <strong>active site</strong>, a pocket whose shape comes from the protein’s folding: primary structure (amino acid sequence) determines the hydrogen bonds, ionic bonds, hydrophobic interactions, and disulfide bridges that build secondary, tertiary, and sometimes quaternary structure. Anything that disturbs those interactions can change the active site and the rate.</p>
+      <div class="equation">2 H<sub>2</sub>O<sub>2</sub> &nbsp;—peroxidase→&nbsp; 2 H<sub>2</sub>O + O<sub>2</sub></div>
+      <p>The oxygen released reacts with colorless <strong>guaiacol</strong> to form <strong>tetraguaiacol</strong>, which is brown. More product means a darker tube. You can rank the color against a 1–10 palette (a <em>relative</em> rate) or measure absorbance of 470 nm light with a spectrophotometer (an <em>absolute</em> rate, such as 0.083 absorbance units per minute). By the Beer–Lambert law, absorbance is proportional to the concentration of the brown product: A = εlc.</p>
+      <div class="grid-2">
+        <figure class="diagram">
+          <svg viewBox="0 0 340 230" role="img" aria-labelledby="ea-t"><title id="ea-t">Energy diagram: the enzyme-catalyzed path has a lower activation energy hump than the uncatalyzed path</title>
+            <line x1="40" y1="200" x2="330" y2="200" style="stroke:var(--muted)"/><line x1="40" y1="200" x2="40" y2="20" style="stroke:var(--muted)"/>
+            <path d="M50 130 C110 130 120 30 170 30 C220 30 230 165 320 165" fill="none" style="stroke:var(--s2)" stroke-width="2.5" stroke-dasharray="6 4"/>
+            <path d="M50 130 C110 130 125 85 170 85 C215 85 230 165 320 165" fill="none" style="stroke:var(--accent)" stroke-width="3"/>
+            <text x="54" y="122">reactants</text><text x="262" y="158">products</text>
+            <text x="176" y="26" class="sub">no enzyme</text><text x="176" y="80" class="sub">with enzyme</text>
+            <line x1="150" y1="130" x2="150" y2="34" style="stroke:var(--s2)" marker-end="url(#a1)"/><line x1="185" y1="130" x2="185" y2="89" style="stroke:var(--accent)"/>
+            <line x1="140" y1="130" x2="195" y2="130" style="stroke:var(--line)" stroke-dasharray="3 3"/>
+            <text x="190" y="115" class="sub">E<tspan font-size="9" dy="3">a</tspan></text>
+            <text x="190" y="218" text-anchor="middle" class="sub">progress of reaction →</text><text x="14" y="110" class="sub" transform="rotate(-90 14 110)">free energy</text>
+          </svg>
+          <figcaption>Peroxidase lowers the activation energy; it does not change the energy difference (ΔG) between reactants and products.</figcaption>
+        </figure>
+        <figure class="diagram">
+          <svg viewBox="0 0 340 230" role="img" aria-labelledby="mm-t"><title id="mm-t">Michaelis–Menten curve: rate rises with substrate concentration and levels off at Vmax; Km is the concentration at half Vmax</title>
+            <line x1="40" y1="200" x2="330" y2="200" style="stroke:var(--muted)"/><line x1="40" y1="200" x2="40" y2="20" style="stroke:var(--muted)"/>
+            <path d="M40 200 Q70 70 140 58 T330 42" fill="none" style="stroke:var(--accent)" stroke-width="3"/>
+            <line x1="40" y1="38" x2="330" y2="38" style="stroke:var(--muted)" stroke-dasharray="5 4"/><text x="282" y="32" class="sub">V<tspan font-size="9" dy="3">max</tspan></text>
+            <line x1="40" y1="119" x2="74" y2="119" style="stroke:var(--stain)" stroke-dasharray="4 3"/><line x1="74" y1="119" x2="74" y2="200" style="stroke:var(--stain)" stroke-dasharray="4 3"/>
+            <text x="78" y="214" class="sub">K<tspan font-size="9" dy="3">m</tspan></text><text x="46" y="114" class="sub">½V<tspan font-size="9" dy="3">max</tspan></text>
+            <text x="190" y="226" text-anchor="middle" class="sub">[H₂O₂] →</text><text x="14" y="110" class="sub" transform="rotate(-90 14 110)">initial rate</text>
+          </svg>
+          <figcaption>With plenty of substrate the active sites are saturated, so adding enzyme speeds the reaction but adding substrate barely does.</figcaption>
+        </figure>
+      </div>
+      <div class="equation">initial rate v = V<sub>max</sub>[S] ÷ (K<sub>m</sub> + [S]) &nbsp;&nbsp;·&nbsp;&nbsp; V<sub>max</sub> ∝ [enzyme]</div>
+      <p><strong>Temperature</strong> speeds molecular collisions, so rate rises at first (roughly doubling for each 10 °C), but heat also shakes apart the weak bonds that hold the enzyme’s shape. Above the optimum the protein unfolds; at high temperature the unfolding becomes permanent (<strong>denaturation</strong>), and cooling does not bring the activity back. <strong>pH</strong> changes the charges on amino acid side chains in and around the active site, so each enzyme works best in a narrow pH range that often matches where it normally functions. Peroxidases from different sources have optimum pH values from 4 to 11 and optimum temperatures from 10 to 70 °C. <strong>Inhibitors</strong> bind the enzyme and reduce its activity.</p>
+      <p>A <strong>baseline</strong> is the standard reaction you compare everything else to. Because product builds up and conditions change as the reaction runs, compare treatments using the <strong>initial rate</strong>: the slope of absorbance (or color) versus time over the first minutes, when the graph is still nearly straight.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body"><div id="prelab"></div></div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Procedure 1">
+    <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>Developing the assay and determining a baseline</h2></header>
+    <div class="step-body">
+      <div class="grid-2">
+        <div class="callout callout--tip"><div class="callout-title">Tube recipes (each 7.5 mL; combined 15.0 mL)</div>
+          <div class="recipe"><div><b>Substrate tube:</b> 7.0 mL distilled water + 0.3 mL 0.1% H<sub>2</sub>O<sub>2</sub> + 0.2 mL guaiacol</div><div><b>Enzyme tube:</b> 6.0 mL distilled water + 1.5 mL turnip peroxidase</div><div><b>No-enzyme control:</b> enzyme tube with 7.5 mL water and no peroxidase</div><div><b>Spectrophotometer blank:</b> 13.3 mL water + 0.2 mL guaiacol + 1.5 mL enzyme (everything except substrate), λ = 470 nm</div></div></div>
+        <div class="callout callout--tip"><div class="callout-title">Steps</div><ol style="margin:0;padding-left:20px"><li>Combine the substrate and enzyme tubes, cover with Parafilm, invert twice, and start the timer at once.</li><li>Rotate the tube before each reading and record color (or absorbance) at 0, 1, 2, 3, 4, and 5 minutes. A phone photo helps.</li><li>Match each photo to the palette and record a number from 1 to 10.</li><li>Run at least 3 trials.</li></ol></div>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><span class="label" id="m1-l">How will you measure?</span><div class="seg" role="group" aria-labelledby="m1-l" id="m1"><button type="button" data-v="palette" aria-pressed="true">Color palette</button><button type="button" data-v="spec" aria-pressed="false">Spectrophotometer</button></div></div>
+          <div class="field"><span class="label" id="sp1-l">Clock speed</span><div class="seg" role="group" aria-labelledby="sp1-l" id="sp1"><button type="button" data-v="10" aria-pressed="false">10×</button><button type="button" data-v="30" aria-pressed="true">30×</button><button type="button" data-v="60" aria-pressed="false">60×</button></div></div>
+          <button class="btn btn--primary" id="p1-run" type="button">Combine tubes &amp; start timer</button>
+          <div class="progress" aria-hidden="true"><i id="p1-prog"></i></div>
+          <p class="note" id="p1-status">Tubes are prepared. Combine them to start trial 1.</p>
+          <button class="btn btn--ghost btn--sm" id="p1-clear" type="button">Clear Procedure 1 data</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="p1-canvas" aria-label="Test tube rack with the enzyme reaction tube and the no-enzyme control tube in front of a white card, with a timer"></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Time</span><span class="v" id="p1-time">0:00</span></div>
+            <div class="readout"><span class="k">A₄₇₀ enzyme</span><span class="v" id="p1-ae">—</span></div>
+            <div class="readout"><span class="k">A₄₇₀ control</span><span class="v" id="p1-ac">—</span></div>
+            <div class="readout"><span class="k">Trial</span><span class="v" id="p1-trial">—</span></div>
+          </div>
+          <div>
+            <div class="note" style="margin-bottom:6px">Photos from the latest trial (match these to the palette below)</div>
+            <div class="snaps" id="p1-snaps"></div>
+          </div>
+          <div>
+            <div class="note" style="margin-bottom:6px">Turnip peroxidase color palette</div>
+            <div class="palette" id="palette1" aria-label="Color palette from 1 (colorless) to 10 (dark brown)"></div>
+          </div>
+        </div>
+      </div>
+      <h3>Data: record a palette number (1–10) for every reading</h3>
+      <div id="p1-table"></div>
+      <p class="note" id="p1-match" aria-live="polite"></p>
+      <div id="p1-chart"></div>
+      <div class="readouts" id="p1-rates"></div>
+      <div class="grid-2">
+        <div class="field"><label for="base-time">Time you will use as your baseline reading for later assays</label>
+          <select id="base-time" data-save="base-time" data-label="Baseline time chosen (min)"><option value="1">1 min</option><option value="2">2 min</option><option value="3" selected>3 min</option><option value="4">4 min</option><option value="5">5 min</option></select></div>
+      </div>
+      <div id="p1-prompts"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Procedure 2: pH">
+    <header><div class="eyebrow">Procedure 2 · Structured inquiry</div><h2>The effect of pH on peroxidase activity</h2></header>
+    <div class="step-body">
+      <p>Make six tube pairs. Each substrate tube is the same as before. In each enzyme tube, replace the 6.0 mL of distilled water with 6.0 mL of a buffer (pH 3, 5, 6, 7, 8, or 10). Combine all pairs, then read each tube at 0 minutes and at your baseline time.</p>
+      <div id="p2-predict"></div>
+      <div class="sim">
+        <div class="controls">
+          <fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label" style="font-size:.86rem;font-weight:600">Buffers to test</legend><div class="levels" id="p2-ph"></div></fieldset>
+          <div class="field"><span class="label" id="m2-l">How will you measure?</span><div class="seg" role="group" aria-labelledby="m2-l" id="m2"><button type="button" data-v="palette" aria-pressed="true">Color palette</button><button type="button" data-v="spec" aria-pressed="false">Spectrophotometer</button></div></div>
+          <p class="note">Reading time: <strong id="p2-bt">3</strong> min (your Procedure 1 choice).</p>
+          <button class="btn btn--primary" id="p2-run" type="button">Combine all pairs &amp; start</button>
+          <div class="progress" aria-hidden="true"><i id="p2-prog"></i></div>
+          <p class="note" id="p2-status">Run at least 3 trials.</p>
+          <button class="btn btn--ghost btn--sm" id="p2-clear" type="button">Clear Procedure 2 data</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="p2-canvas" aria-label="Rack of six reaction tubes, each with a different pH buffer, darkening at different rates"></canvas>
+          <div class="readouts" id="p2-read"></div>
+          <div><div class="note" style="margin-bottom:6px">Palette</div><div class="palette" id="palette2"></div></div>
+        </div>
+      </div>
+      <div id="p2-table"></div>
+      <p class="note" id="p2-match"></p>
+      <div id="p2-chart"></div>
+      <div id="p2-prompts"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Test your own factor</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Start from the manual’s questions: <em>In Procedure 1, was the limiting factor of your baseline reaction the enzyme or the substrate? How could you modify the procedure to find out?</em> and <em>Which environmental factors that vary where organisms live could affect enzyme activity?</em> Keep the total volume at 15.0 mL: if you add less enzyme or substrate, add that much more water.</p></div>
+      <div class="grid-2" id="d-plan"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv">
+            <option value="temp">Temperature (water bath)</option><option value="sub">Substrate (mL of 0.1% H₂O₂)</option><option value="enz">Enzyme (mL of turnip extract)</option><option value="inh">Inhibitor (hydroxylamine, mM)</option><option value="heat">Heat-treat enzyme 5 min, then cool to 25 °C</option><option value="ph">pH (fine buffer series)</option></select></div>
+          <div class="field"><label for="d-levels">Levels (comma-separated)</label><input id="d-levels" type="text"><span class="hint" id="d-hint"></span></div>
+          <div class="field" id="d-pre-wrap"><label for="d-pre">Pre-incubation in bath <output id="d-pre-out" class="val"></output></label><input id="d-pre" type="range" min="0" max="15" step="1" value="5"></div>
+          <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="2" max="6" value="3"></div>
+          <p class="note">Readings: spectrophotometer, 470 nm, every minute for 5 minutes.</p>
+          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+          <div class="progress" aria-hidden="true"><i id="d-prog"></i></div>
+          <p class="note" id="d-status"></p>
+          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="d-canvas" aria-label="Rack of tubes, one per level, in a water bath; tubes darken as product forms"></canvas>
+          <div class="readouts" id="d-read"></div>
+        </div>
+      </div>
+      <h3>Absorbance readings and initial rates</h3>
+      <div id="d-table"></div>
+      <h3>Summary</h3>
+      <div id="d-sum"></div>
+      <div class="grid-2"><div id="d-chart1"></div><div id="d-chart2"></div></div>
+      <p class="note" id="d-stat"></p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>What controls the rate?</h2></header>
+    <div class="step-body" id="analysis"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Reflect">
+    <header><div class="eyebrow">Evaluate and reflect</div><h2>Going beyond the turnip</h2></header>
+    <div class="step-body" id="reflect"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+  'use strict';
+  Lab.init({ id: 'lab13' });
+  const { $, $$, h, fmt, stats } = Lab;
+  const rng = Lab.rng();
+  let PC = {}; const C = n => PC[n] || (PC[n] = Lab.color(n)); const fresh = () => { PC = {}; };
+
+  /* ===================== KINETIC MODEL =====================
+     Reaction in 15.0 mL: [H2O2]0 = 0.588 mM × (mL H2O2 / 0.3); enzyme e = mL extract / 1.5.
+     dA/dt = v0 · e · Arr(T) · fN(T) · fpH(pH) · act(t) · [S]/(Km + [S]) · 1/(1 + [I]/Ki) · (1 − A/Acap)
+       v0 = 0.096 A/min (baseline, water, 25 °C); Km = 0.1 mM; hydroxylamine Ki = 0.05 mM (treated as noncompetitive).
+       Arr(T) = exp(−Ea/R (1/T − 1/298)), Ea/R = 3800 K (Ea ≈ 32 kJ/mol; Q10 ≈ 1.5).
+       Lumry–Eyring unfolding: N ⇌ U (fast, ΔH/R = 9000 K, Tm = 50 °C) → D (irreversible, k = 0.01·e^((T−60)/5) min⁻¹ × fraction U).
+       fN = native fraction relative to 25 °C. Irreversible loss accrues during pre-incubation and the assay; cooling refolds U but not D.
+       fpH: log-linear interpolation through activities fitted to the manual's pH data (optimum pH 5; ~0 at pH 3 and 10).
+       Unbuffered extract in water behaves like pH 6.15.
+       (1 − A/Acap), Acap = 0.85, lumps guaiacol/product limits and enzyme inactivation by H2O2 (kop = 0.03 min⁻¹) so curves bend as in the manual's Table 3.
+       Substrate is consumed: d[S]/dt = −(dA/dt)/6.65 mM per A unit (tetraguaiacol ε470 = 26.6 mM⁻¹cm⁻¹, 4 H2O2 per product).
+     Noise: pipetting (enzyme CV 4%, substrate CV 3%), extract batch per trial (CV 5%), spectrophotometer (±0.004 A + 1.5%).
+     Calibration check (no noise): baseline A at 1–5 min ≈ .077 .145 .205 .258 .306 (manual: .083 .141 .198 .287 .314);
+     pH 3/5/6/7/8/10 at 5 min ≈ .002/.62/.34/.15/.04/.002 (manual: −.001/.663/.347/.170/.047/.003). */
+  const P = { v0: 0.096, EaR: 3800, dHR: 9000, Tm: 50, k0: 0.01, Tref: 60, tau: 5, Acap: 0.85, kop: 0.03, Km: 0.1, Ki: 0.05 };
+  const PH_KNOTS = [[2, -9], [3, -6.2], [4, -0.9], [4.5, -0.2], [5, 0], [5.5, -0.35], [6, -0.94], [7, -1.91], [8, -3.27], [9, -4.6], [10, -6.2], [11, -8]];
+  function fpH(pH) { if (pH == null) pH = 6.15; if (pH <= PH_KNOTS[0][0]) return Math.exp(PH_KNOTS[0][1]); for (let i = 0; i < PH_KNOTS.length - 1; i++) { const [a, la] = PH_KNOTS[i], [b, lb] = PH_KNOTS[i + 1]; if (pH <= b) return Math.exp(la + (lb - la) * (pH - a) / (b - a)); } return Math.exp(-8); }
+  const U = T => 1 / (1 + Math.exp(-P.dHR * (1 / (P.Tm + 273.15) - 1 / (T + 273.15))));
+  const kirr = T => P.k0 * Math.exp((T - P.Tref) / P.tau);
+  // Returns true absorbance every 0.05 min from 0 to tEnd.
+  function react({ T = 25, pH = null, enzMl = 1.5, subMl = 0.3, I = 0, pre = 0, heatT = null, batch = 1 } = {}, tEnd = 5) {
+    const e = enzMl / 1.5 * (enzMl > 0 ? rng.normal(1, 0.04) : 0) * batch, S0 = 0.588 * subMl / 0.3 * rng.normal(1, 0.03);
+    let act = 1;
+    if (heatT != null) act *= Math.exp(-kirr(heatT) * U(heatT) * 5);           // heat-treated 5 min then cooled
+    act *= Math.exp(-kirr(T) * U(T) * pre);                                       // equilibration in the bath
+    const arr = Math.exp(-P.EaR * (1 / (T + 273.15) - 1 / 298.15)), fN = (1 - U(T)) / (1 - U(25));
+    const k = P.v0 * arr * fN * fpH(pH) / fpH(null) / (1 + I / P.Ki);
+    let S = S0, A = 0; const out = [0], dt = 0.005;
+    for (let i = 1; i <= Math.round(tEnd / dt); i++) {
+      const v = (k * e * act * S / (P.Km + S) + (S > 0 ? 0.0012 * S0 / 0.588 : 0)) * (1 - A / P.Acap);   // + slow non-enzymatic oxidation
+      A += v * dt; S = Math.max(0, S - v * dt / 6.65); act *= Math.exp(-(P.kop + kirr(T) * U(T)) * dt);
+      if (i % 10 === 0) out.push(A);
+    }
+    return out;
+  }
+  const at = (tr, t) => { const i = t / 0.05, i0 = Math.floor(i), f = i - i0; return i0 >= tr.length - 1 ? tr[tr.length - 1] : tr[i0] * (1 - f) + tr[i0 + 1] * f; };
+  const readSpec = A => +(A * rng.normal(1, 0.015) + rng.normal(0, 0.004)).toFixed(3);
+  /* Palette: number n ↔ absorbance 0.075 (n − 1). Tube color: white card seen through the tube; each RGB channel is attenuated
+     by 10^(−k·A·L) with tetraguaiacol absorbing blue most, red least (k = 0.30, 0.58, 1.0; path L = 1.6 cm). These are
+     specimen colors computed from physics, so they stay the same in light and dark themes, like a real photo. */
+  const palNum = A => Math.max(1, Math.min(10, Math.round(A / 0.075) + 1));
+  function liquidRGB(A) { const L = 1.6, base = [250, 248, 238], k = [0.30, 0.58, 1.0]; return base.map((b, i) => Math.round(b * Math.pow(10, -k[i] * Math.max(0, A) * L))); }
+  const rgbStr = A => `rgb(${liquidRGB(A).join(',')})`;
+  function buildPalette(el) { el = $(el); el.innerHTML = ''; for (let n = 1; n <= 10; n++) { const A = 0.075 * (n - 1); el.append(h('div', { class: 'sw', style: `background:${rgbStr(A)};color:${A > 0.35 ? 'rgb(250,248,238)' : 'rgb(40,30,20)'}`, title: 'Palette ' + n }, String(n))); } }
+  buildPalette('#palette1'); buildPalette('#palette2');
+
+  /* ---------- seg helper ---------- */
+  function seg(el, onChange) { el = $(el); const btns = $$('button', el); btns.forEach(b => b.addEventListener('click', () => { btns.forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); onChange && onChange(b.dataset.v); })); return () => (btns.find(b => b.getAttribute('aria-pressed') === 'true') || btns[0]).dataset.v; }
+
+  /* ---------- tube rack renderer ---------- */
+  function drawRack(cv, tubes, t, opts = {}) {
+    fresh(); const { ctx, w, h: H } = cv; ctx.clearRect(0, 0, w, H);
+    const n = tubes.length, fs = Math.max(10, Math.min(13, w / 50));
+    if (opts.bath) { ctx.save(); ctx.globalAlpha = 0.22; ctx.fillStyle = opts.bath; ctx.fillRect(w * 0.02, H * 0.42, w * 0.96, H * 0.42); ctx.restore(); ctx.strokeStyle = C('--line'); ctx.strokeRect(w * 0.02, H * 0.42, w * 0.96, H * 0.42); }
+    // white card behind the tubes (as students hold tubes against white paper)
+    ctx.fillStyle = 'rgb(250,250,247)'; ctx.fillRect(w * 0.05, H * 0.12, w * 0.9, H * 0.66);
+    const slot = (w * 0.86) / n, tw = Math.min(30, slot * 0.42), th = H * 0.54, top = H * 0.17;
+    tubes.forEach((tb, i) => {
+      const cx = w * 0.07 + slot * (i + 0.5), x = cx - tw / 2, A = tb.trace ? at(tb.trace, Math.min(t, tb.tEnd || 5)) : 0;
+      const fill = top + th * 0.18;
+      ctx.fillStyle = rgbStr(A); ctx.beginPath(); ctx.moveTo(x, fill); ctx.lineTo(x, top + th - tw / 2); ctx.arc(cx, top + th - tw / 2, tw / 2, Math.PI, 0, true); ctx.lineTo(x + tw, fill); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgb(120,130,128)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + th - tw / 2); ctx.arc(cx, top + th - tw / 2, tw / 2, Math.PI, 0, true); ctx.lineTo(x + tw, top); ctx.stroke();
+      ctx.fillStyle = 'rgb(200,205,200)'; ctx.fillRect(x - 3, top - 4, tw + 6, 5); // parafilm
+      ctx.fillStyle = C('--ink'); ctx.font = `${fs}px sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText(tb.label, cx, H * 0.88); if (tb.sub) { ctx.fillStyle = C('--muted'); ctx.fillText(tb.sub, cx, H * 0.88 + fs + 2); }
+    });
+    // rack bar
+    ctx.fillStyle = C('--muted'); ctx.fillRect(w * 0.04, top + th * 0.62, w * 0.92, 5);
+    ctx.textAlign = 'right'; ctx.fillStyle = C('--ink'); ctx.font = `600 ${fs + 3}px monospace`;
+    const s = Math.round(t * 60); ctx.fillText(`${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, w * 0.95, H * 0.09);
+    if (opts.caption) { ctx.textAlign = 'left'; ctx.font = `${fs}px sans-serif`; ctx.fillStyle = C('--muted'); ctx.fillText(opts.caption, w * 0.05, H * 0.09); }
+    ctx.textAlign = 'left';
+  }
+  function animate(cv, tubes, tEnd, speed, opts, onTick, onDone) {
+    let t = 0; const lp = Lab.loop(dt => { t = Math.min(tEnd, t + dt * speed / 60); drawRack(cv, tubes, t, opts); onTick && onTick(t); if (t >= tEnd) { onDone && onDone(); return false; } });
+    if (Lab.reducedMotion()) { drawRack(cv, tubes, tEnd, opts); onTick && onTick(tEnd); onDone && onDone(); return; }
+    lp.start();
+  }
+
+  /* ===================== PRE-LAB ===================== */
+  Lab.quiz('#prelab', [
+    { type: 'num', q: 'Your teacher makes the substrate by mixing 15 mL of drugstore 3% H<sub>2</sub>O<sub>2</sub> with 435 mL of distilled water. What is the new concentration?', answer: 0.1, tol: 0.002, unit: '%', explain: '3% × 15 mL ÷ (15 + 435) mL = 3% × 15/450 = 0.1%.' },
+    { type: 'num', q: 'The reaction tube receives 0.3 mL of 0.1% H<sub>2</sub>O<sub>2</sub> and has a final volume of 15.0 mL. What is the final H<sub>2</sub>O<sub>2</sub> concentration?', answer: 0.002, tol: 0.0001, unit: '%', explain: '0.1% × 0.3/15.0 = 0.002%. The substrate is very dilute, which keeps the reaction slow enough to time.' },
+    { type: 'mc', q: 'You use a 1.0 mL pipette whose smallest divisions are 0.01 mL to measure 0.3 mL of H<sub>2</sub>O<sub>2</sub>. Why does careful reading matter so much here?', choices: ['A misread such as 0.03 mL or 3.0 mL changes the substrate by a power of ten', 'Pipettes measure only to the nearest whole milliliter', 'Hydrogen peroxide evaporates instantly', 'The 1.0 mL pipette is only for water'], answer: 0, explain: 'Reading the wrong set of graduations changes the volume tenfold. Small volumes with big consequences are the main source of error in this lab.' },
+    { type: 'mc', q: 'What does guaiacol do in this assay?', choices: ['It is the enzyme’s substrate that is split into water and oxygen', 'It reacts with the oxygen released to form brown tetraguaiacol, so color shows how much product formed', 'It buffers the pH at 7', 'It denatures the enzyme to stop the reaction'], answer: 1, explain: 'Guaiacol is an indicator. Oxidized guaiacol (tetraguaiacol) is brown and absorbs light at 470 nm.' },
+    { type: 'mc', q: 'The spectrophotometer blank contains water, guaiacol and enzyme extract but <em>no hydrogen peroxide</em>. Why?', choices: ['So the machine reads zero for everything except the brown product made by the reaction', 'Because the blank must contain no enzyme', 'To measure the fastest possible rate', 'Hydrogen peroxide would break the cuvette'], answer: 0, explain: 'The blank zeroes out the color and cloudiness of the extract and guaiacol. Any absorbance afterward comes from tetraguaiacol formed by the reaction.' },
+    { type: 'num', q: 'A baseline tube reads 0.000, 0.083, 0.141, and 0.198 absorbance units at 0, 1, 2, and 3 minutes. What is the average rate over the first 3 minutes?', answer: 0.066, tol: 0.002, unit: 'absorbance/min', explain: '(0.198 − 0.000) ÷ 3 min = 0.066 per minute. The first minute alone gives 0.083/min; the rate slows as the reaction proceeds, which is why we compare initial rates.' },
+    { type: 'mc', q: 'In Procedure 2, what changes between the six tube pairs, and what stays the same?', choices: ['The 6.0 mL of water in the enzyme tube is replaced by a different pH buffer; enzyme, substrate, guaiacol, volume and time stay the same', 'The amount of enzyme changes; pH stays the same', 'The substrate tube gets the buffer and the enzyme is left out', 'Every tube gets a different temperature'], answer: 0, explain: 'Only one variable (pH) changes. Keeping volumes, reagents and reading time identical lets you attribute differences to pH.' },
+    { type: 'mc', q: 'What is the difference between a <em>relative</em> rate and an <em>absolute</em> rate in this lab?', choices: ['Relative rates come from comparing colors on a palette (faster/slower/same); absolute rates come from a measured change, such as absorbance per minute', 'Relative rates are always larger', 'Absolute rates need no time measurement', 'There is no difference'], answer: 0, explain: 'A palette lets you rank tubes. A spectrophotometer gives a number with units (e.g., 0.083 absorbance/min) that can be compared across labs.' }
+  ], { id: 'prelab' });
+
+  /* ===================== PROCEDURE 1 ===================== */
+  const mode1 = seg('#m1', () => { syncP1(); });
+  const speed1 = seg('#sp1');
+  const cv1 = Lab.canvas('#p1-canvas', 0.5);
+  let p1Tubes = [{ label: 'Enzyme + substrate', trace: null }, { label: 'No-enzyme control', trace: null }], p1Busy = false;
+  cv1.onresize = () => drawRack(cv1, p1Tubes, p1Tubes[0].trace ? 5 : 0);
+  drawRack(cv1, p1Tubes, 0);
+  const t1 = Lab.table('#p1-table', {
+    save: 'p1',
+    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 't', label: 'Time', unit: 'min', num: true, digits: 0 }, { key: 'aE', label: 'Enzyme A₄₇₀', num: true, digits: 3 }, { key: 'aC', label: 'Control A₄₇₀', num: true, digits: 3 },
+      { key: 'cE', label: 'Enzyme color', unit: '1–10', num: true, editable: true }, { key: 'cC', label: 'Control color', unit: '1–10', num: true, editable: true }],
+    onChange: () => syncP1()
+  });
+  const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance at 470 nm', xMin: 0, xMax: 5, yMin: 0, series: [] });
+  function seriesByTime(rows, key) { const out = []; for (let t = 0; t <= 5; t++) { const v = rows.filter(r => r.t === t && r[key] != null && isFinite(r[key])).map(r => r[key]); if (v.length) out.push({ x: t, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); } return out; }
+  function slope(pts) { const p = pts.filter(q => q.x <= 2); return p.length >= 2 ? stats.linreg(p.map(q => q.x), p.map(q => q.y)).m : NaN; }
+  function syncP1() {
+    const rows = t1.getRows(), spec = mode1() === 'spec';
+    const kE = spec ? 'aE' : 'cE', kC = spec ? 'aC' : 'cC';
+    const sE = seriesByTime(rows, kE), sC = seriesByTime(rows, kC);
+    ch1.update({ yLabel: spec ? 'Absorbance at 470 nm (mean ± 2 SE)' : 'Color palette number (mean ± 2 SE)', yMin: 0, yMax: spec ? undefined : 10,
+      series: [{ name: 'Enzyme + substrate', points: sE }, { name: 'No-enzyme control', points: sC }] });
+    const r = $('#p1-rates'); r.innerHTML = '';
+    const u = spec ? 'A/min' : 'units/min';
+    [['Initial rate, enzyme (0–2 min)', slope(sE)], ['Initial rate, control (0–2 min)', slope(sC)]].forEach(([k, v]) => r.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, isFinite(v) ? fmt(v, 3) + ' ' + u : '—'))));
+    // palette-matching feedback
+    let n = 0, ok = 0; rows.forEach(row => [['cE', '_AE'], ['cC', '_AC']].forEach(([c, a]) => { if (row[c] != null && isFinite(row[c])) { n++; if (Math.abs(row[c] - palNum(row[a])) <= 1) ok++; } }));
+    $('#p1-match').textContent = n ? `${ok} of ${n} of your palette matches are within ±1 of the palette value equivalent to the tube’s true color.` + (ok < n ? ' Look again at the ones that are far off.' : '') : 'Enter a palette number for each reading (even if you also used the spectrophotometer).';
+  }
+  function snapsUI(trial) {
+    const el = $('#p1-snaps'); el.innerHTML = '';
+    el.append(h('span', { class: 'lab' }, ''), ...[0, 1, 2, 3, 4, 5].map(t => h('span', { class: 'hd' }, t + ' min')));
+    if (!trial) return;
+    [['Enzyme', '_AE'], ['Control', '_AC']].forEach(([lab, key]) => {
+      el.append(h('span', { class: 'lab' }, lab));
+      trial.forEach(row => el.append(h('div', { class: 'sw', style: `background:${rgbStr(row[key])}`, title: `${lab} at ${row.t} min` })));
+    });
+  }
+  function lastTrialRows() { const rows = t1.getRows(); if (!rows.length) return null; const tr = rows[rows.length - 1].trial; return rows.filter(r => r.trial === tr); }
+  snapsUI(lastTrialRows());
+  $('#p1-run').addEventListener('click', () => {
+    if (p1Busy) { $('#p1-status').textContent = 'The timer is running. Wait for the 5-minute reading.'; return; }
+    p1Busy = true;
+    const batch = rng.normal(1, 0.05), trial = (t1.getRows().reduce((m, r) => Math.max(m, r.trial), 0)) + 1, spec = mode1() === 'spec';
+    p1Tubes = [{ label: 'Enzyme + substrate', trace: react({ batch }) }, { label: 'No-enzyme control', trace: react({ enzMl: 0 }) }];
+    const rows = []; let next = 0;
+    $('#p1-trial').textContent = trial; $('#p1-status').textContent = `Trial ${trial} running…`;
+    animate(cv1, p1Tubes, 5, +speed1(), {}, t => {
+      const s = Math.round(t * 60); $('#p1-time').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; $('#p1-prog').style.width = (t / 5 * 100) + '%';
+      while (next <= 5 && t >= next - 1e-9) {
+        const AE = at(p1Tubes[0].trace, next), AC = at(p1Tubes[1].trace, next);
+        const aE = spec ? readSpec(AE) : null, aC = spec ? readSpec(AC) : null;
+        rows.push({ trial, t: next, aE, aC, cE: null, cC: null, _AE: AE, _AC: AC });
+        $('#p1-ae').textContent = spec ? fmt(aE, 3) : '—'; $('#p1-ac').textContent = spec ? fmt(aC, 3) : '—';
+        next++;
+      }
+    }, () => {
+      p1Busy = false; t1.setRows(t1.getRows().concat(rows)); snapsUI(rows);
+      $('#p1-status').textContent = `Trial ${trial} done. Record palette numbers for each time, then run another trial.`;
+    });
+  });
+  $('#p1-clear').addEventListener('click', () => { if (!p1Busy) { t1.clear(); snapsUI(null); } });
+  syncP1();
+  Lab.prompt('#p1-prompts', { key: 'p1-time', label: 'You measured color at several times. Which time will you use as the baseline reading for later assays, and why? (Think about when the enzyme and control tubes are clearly different but the reaction is still in its nearly straight, early phase.)', rows: 3 });
+  Lab.prompt('#p1-prompts', { key: 'p1-const', label: 'When you use this assay to test factors that change enzyme activity, which components will you change and which will you keep constant? What does the no-enzyme control rule out?', rows: 3 });
+
+  /* ===================== PROCEDURE 2: pH ===================== */
+  const PHS = [3, 5, 6, 7, 8, 10];
+  const phBox = $('#p2-ph'); PHS.forEach(p => phBox.append(h('label', { class: 'check', for: 'ph-' + p }, h('input', { type: 'checkbox', id: 'ph-' + p, value: p, checked: true }), 'pH ' + p)));
+  const mode2 = seg('#m2', () => syncP2());
+  const baseT = () => +$('#base-time').value;
+  $('#base-time').addEventListener('change', () => { $('#p2-bt').textContent = baseT(); });
+  $('#p2-bt').textContent = baseT();
+  const cv2 = Lab.canvas('#p2-canvas', 0.48);
+  let p2Tubes = PHS.map(p => ({ label: 'pH ' + p, trace: null })), p2Busy = false, p2T = 0;
+  cv2.onresize = () => drawRack(cv2, p2Tubes, p2T);
+  drawRack(cv2, p2Tubes, 0);
+  const t2 = Lab.table('#p2-table', {
+    save: 'p2',
+    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 'pH', label: 'pH', num: true, digits: 0 }, { key: 'tr', label: 'Read at', unit: 'min', num: true, digits: 0 }, { key: 'a0', label: 'A₄₇₀ at 0', num: true, digits: 3 }, { key: 'a1', label: 'A₄₇₀ at read', num: true, digits: 3 }, { key: 'dA', label: 'ΔA', num: true, digits: 3 }, { key: 'c', label: 'Color at read', unit: '1–10', num: true, editable: true }],
+    onChange: () => syncP2()
+  });
+  const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'ΔA', xMin: 2, xMax: 11, yMin: 0, series: [] });
+  function syncP2() {
+    const rows = t2.getRows(), spec = mode2() === 'spec', key = spec ? 'dA' : 'c';
+    const pts = []; PHS.forEach(p => { const v = rows.filter(r => r.pH === p && r[key] != null && isFinite(r[key])).map(r => r[key]); if (v.length) pts.push({ x: p, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); });
+    ch2.update({ yLabel: spec ? 'Change in absorbance, ΔA (mean ± 2 SE)' : 'Color palette number (mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
+    let n = 0, ok = 0; rows.forEach(r => { if (r.c != null && isFinite(r.c)) { n++; if (Math.abs(r.c - palNum(r._A)) <= 1) ok++; } });
+    $('#p2-match').textContent = n ? `${ok} of ${n} palette matches are within ±1 of the true color.` : 'Record a palette number for each tube at your reading time.';
+  }
+  $('#p2-run').addEventListener('click', () => {
+    if (p2Busy) { $('#p2-status').textContent = 'Reactions are running. Wait for the reading time.'; return; }
+    const sel = PHS.filter(p => $('#ph-' + p).checked); if (!sel.length) { $('#p2-status').textContent = 'Choose at least one buffer.'; return; }
+    p2Busy = true; const tb = baseT(), batch = rng.normal(1, 0.05), spec = mode2() === 'spec', trial = t2.getRows().reduce((m, r) => Math.max(m, r.trial), 0) + 1;
+    p2Tubes = sel.map(p => ({ label: 'pH ' + p, trace: react({ pH: p, batch }, tb), tEnd: tb, pH: p }));
+    $('#p2-status').textContent = `Trial ${trial}: reading at 0 and ${tb} min…`;
+    animate(cv2, p2Tubes, tb, 30, {}, t => { p2T = t; $('#p2-prog').style.width = (t / tb * 100) + '%'; }, () => {
+      p2Busy = false;
+      const rows = p2Tubes.map(tu => { const A = at(tu.trace, tb), a0 = spec ? readSpec(0) : null, a1 = spec ? readSpec(A) : null; return { trial, pH: tu.pH, tr: tb, a0, a1, dA: spec ? +(a1 - a0).toFixed(3) : null, c: null, _A: A }; });
+      t2.setRows(t2.getRows().concat(rows));
+      const rd = $('#p2-read'); rd.innerHTML = '';
+      if (spec) rows.forEach(r => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'pH ' + r.pH + ' ΔA'), h('span', { class: 'v' }, fmt(r.dA, 3)))));
+      $('#p2-status').textContent = `Trial ${trial} done. Record a palette number for each tube.`;
+    });
+  });
+  $('#p2-clear').addEventListener('click', () => { if (!p2Busy) t2.clear(); });
+  syncP2();
+  Lab.prompt('#p2-predict', { key: 'p2-pred', label: 'Predict: What will happen to the reaction rate if the pH changes? Justify your prediction using what pH does to amino acid side chains.', rows: 3 });
+  Lab.prompt('#p2-prompts', { key: 'p2-concl', label: 'Step 4: Describe your graph of color intensity (or ΔA) versus pH. What is the optimum pH of turnip peroxidase, and what conclusions can you draw? Is the drop-off symmetric on either side of the optimum?', rows: 4 });
+
+  /* ===================== DESIGN ===================== */
+  const DIV = {
+    temp: { label: 'Temperature', unit: '°C', def: '4, 15, 25, 43, 55, 70, 100', hint: 'Water bath 0–100 °C. Tubes equilibrate in the bath before mixing.', min: 0, max: 100, opt: x => ({ T: x }) },
+    sub: { label: 'H₂O₂ volume', unit: 'mL', def: '0, 0.05, 0.1, 0.15, 0.3, 0.6, 1.2', hint: 'Baseline 0.3 mL. Water in the substrate tube is adjusted to keep 7.5 mL.', min: 0, max: 1.5, opt: x => ({ subMl: x }) },
+    enz: { label: 'Enzyme extract', unit: 'mL', def: '0, 0.375, 0.75, 1.5, 3', hint: 'Baseline 1.5 mL. Water in the enzyme tube is adjusted to keep 7.5 mL.', min: 0, max: 7.5, opt: x => ({ enzMl: x }) },
+    inh: { label: 'Hydroxylamine', unit: 'mM', def: '0, 0.01, 0.03, 0.1, 0.3', hint: 'Final concentration in the reaction. Simulation only.', min: 0, max: 5, opt: x => ({ I: x }) },
+    heat: { label: 'Heat treatment', unit: '°C', def: '25, 50, 70, 80, 90, 100', hint: 'Enzyme held 5 min at this temperature, cooled to 25 °C, then assayed at 25 °C.', min: 0, max: 100, opt: x => ({ heatT: x }) },
+    ph: { label: 'pH', unit: '', def: '3, 4, 4.5, 5, 5.5, 6, 7, 8', hint: 'Buffers from pH 2 to 11 replace the water in the enzyme tube.', min: 2, max: 11, opt: x => ({ pH: x }) }
+  };
+  const ivSel = $('#d-iv');
+  function ivChanged() { const d = DIV[ivSel.value]; $('#d-levels').value = d.def; $('#d-hint').textContent = d.hint; $('#d-pre-wrap').hidden = ivSel.value !== 'temp'; drawD(0); }
+  ivSel.addEventListener('change', ivChanged);
+  const o = (id, f) => { const s = () => $(id + '-out').textContent = f($(id).value); $(id).addEventListener('input', s); s(); };
+  o('#d-pre', v => v + ' min'); o('#d-reps', v => v);
+  const cvD = Lab.canvas('#d-canvas', 0.48);
+  let dTubes = [], dT = 0, dBusy = false;
+  function levelsParsed() { const d = DIV[ivSel.value]; return [...new Set($('#d-levels').value.split(/[,;\s]+/).map(Number).filter(x => isFinite(x) && x >= d.min && x <= d.max))].slice(0, 8); }
+    function drawD(t) {
+    if (!dTubes.length) { const d = DIV[ivSel.value]; drawRack(cvD, levelsParsed().map(x => ({ label: x + (d.unit ? ' ' + d.unit : '') })), 0, { caption: d.label }); return; }
+    drawRack(cvD, dTubes, t, { caption: DIV[dTubes.iv].label + ' · replicate 1 shown', bath: dTubes.iv === 'temp' ? C('--s3') : null });
+  }
+  cvD.onresize = () => drawD(dT);
+  $('#d-levels').addEventListener('change', () => drawD(0));
+  const dTable = Lab.table('#d-table', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, ...[1, 2, 3, 4, 5].map(i => ({ key: 'a' + i, label: `A at ${i} min`, num: true, digits: 3 })), { key: 'rate', label: 'Initial rate', unit: 'A/min', num: true, digits: 4 }] });
+  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean rate', unit: 'A/min', num: true, digits: 4 }, { key: 'se', label: 'SE', num: true, digits: 4 }, { key: 'ci', label: '95% CI (± 2 SE)' }] });
+  const dC1 = Lab.chart('#d-chart1', { xLabel: 'Time (min)', yLabel: 'Mean absorbance', xMin: 0, xMax: 5, yMin: 0, height: 320, series: [] });
+  const dC2 = Lab.chart('#d-chart2', { xLabel: 'Level', yLabel: 'Initial rate (A/min)', yMin: 0, height: 320, series: [] });
+  let dRes = Lab.store.get('d-res');
+  function renderD() {
+    if (!dRes) return;
+    const d = DIV[dRes.iv];
+    dC1.update({ series: dRes.levels.slice(0, 6).map(L => ({ name: L.x + (d.unit ? ' ' + d.unit : ''), points: [0, 1, 2, 3, 4, 5].map(t => ({ x: t, y: stats.mean(L.reps.map(r => r.read[t])) })), dots: true })) });
+    dC2.update({ xLabel: d.label + (d.unit ? ' (' + d.unit + ')' : ''), xMin: Math.min(0, ...dRes.levels.map(L => L.x)), series: [{ name: 'Mean initial rate ± 2 SE', points: dRes.levels.map(L => ({ x: L.x, y: L.mean, err: 2 * L.se })) }] });
+    let msg = '';
+    if (dRes.iv === 'sub') {
+      const pts = dRes.levels.filter(L => L.x > 0 && L.mean > 0.002);
+      if (pts.length >= 3) { const f = stats.linreg(pts.map(L => 1 / (0.588 * L.x / 0.3)), pts.map(L => 1 / L.mean)); const Vmax = 1 / f.b, Km = f.m * Vmax;
+        msg = `Lineweaver–Burk estimate (1/rate vs 1/[H₂O₂], with [H₂O₂] = 0.588 mM per 0.3 mL): Vmax ≈ ${fmt(Vmax, 3)} A/min, Km ≈ ${fmt(Km, 3)} mM (R² = ${fmt(f.r2, 3)}). The baseline [H₂O₂] is 0.588 mM. `; }
+    }
+    const Ls = dRes.levels, best = Ls.reduce((a, b) => b.mean > a.mean ? b : a);
+    msg += `Highest mean initial rate at ${best.x}${d.unit ? ' ' + d.unit : ''}. Levels whose ±2 SE intervals do not overlap are likely truly different.`;
+    $('#d-stat').textContent = msg;
+  }
+  $('#d-run').addEventListener('click', () => {
+    if (dBusy) { $('#d-status').textContent = 'Experiment running…'; return; }
+    const iv = ivSel.value, d = DIV[iv], lv = levelsParsed(), reps = +$('#d-reps').value, pre = iv === 'temp' ? +$('#d-pre').value : 0;
+    if (lv.length < 2) { $('#d-status').textContent = 'Enter at least two valid levels.'; return; }
+    dBusy = true;
+    const res = { iv, levels: lv.map(x => ({ x, reps: [] })) };
+    for (let r = 0; r < reps; r++) { const batch = rng.normal(1, 0.05); res.levels.forEach(L => { const opt = Object.assign({ batch, pre }, d.opt(L.x)); const tr = react(opt); const read = [0, 1, 2, 3, 4, 5].map(t => t === 0 ? readSpec(0) : readSpec(at(tr, t))); L.reps.push({ tr, read, rate: stats.linreg([0, 1, 2], read.slice(0, 3)).m }); }); }
+    res.levels.forEach(L => { const v = L.reps.map(r => r.rate); L.mean = stats.mean(v); L.se = stats.se(v); });
+    dTubes = res.levels.map(L => ({ label: L.x + (d.unit ? ' ' + d.unit : ''), trace: L.reps[0].tr })); dTubes.iv = iv;
+    $('#d-status').textContent = 'Running all tubes for 5 minutes…';
+    animate(cvD, dTubes, 5, 60, { caption: d.label + ' · replicate 1 shown', bath: iv === 'temp' ? C('--s3') : null }, t => { dT = t; $('#d-prog').style.width = (t / 5 * 100) + '%'; }, () => {
+      dBusy = false;
+      dTable.setRows(res.levels.flatMap(L => L.reps.map((r, i) => ({ level: L.x + (d.unit ? ' ' + d.unit : ''), rep: i + 1, a1: r.read[1], a2: r.read[2], a3: r.read[3], a4: r.read[4], a5: r.read[5], rate: r.rate }))));
+      dSum.setRows(res.levels.map(L => ({ level: L.x + (d.unit ? ' ' + d.unit : ''), n: L.reps.length, mean: L.mean, se: L.se, ci: fmt(L.mean - 2 * L.se, 4) + ' to ' + fmt(L.mean + 2 * L.se, 4) })));
+      dRes = { iv, levels: res.levels.map(L => ({ x: L.x, mean: L.mean, se: L.se, reps: L.reps.map(r => ({ read: r.read, rate: r.rate })) })) };
+      Lab.store.set('d-res', dRes); renderD();
+      const rd = $('#d-read'); rd.innerHTML = '';
+      res.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, L.x + (d.unit ? ' ' + d.unit : '')), h('span', { class: 'v' }, fmt(L.mean, 3)))));
+      $('#d-status').textContent = 'Done. Initial rate = slope of absorbance from 0 to 2 min.';
+    });
+  });
+  $('#d-clear').addEventListener('click', () => { if (dBusy) return; dRes = null; Lab.store.set('d-res', null); dTable.clear(); dSum.clear(); dC1.update({ series: [] }); dC2.update({ series: [] }); $('#d-stat').textContent = ''; $('#d-read').innerHTML = ''; dTubes = []; drawD(0); });
+  ivChanged();
+  if (dRes) { ivSel.value = dRes.iv; $('#d-levels').value = dRes.levels.map(L => L.x).join(', '); $('#d-hint').textContent = DIV[dRes.iv].hint; $('#d-pre-wrap').hidden = dRes.iv !== 'temp'; drawD(0); renderD(); }
+  const plan = $('#d-plan');
+  [['d-q', 'Your question:'], ['d-h', 'Hypothesis and prediction (If … then … because …), based on enzyme structure:'], ['d-v', 'Independent variable, dependent variable (how you will calculate rate), and the variables you will hold constant:'], ['d-c', 'Your control(s), and how you will keep total volume at 15.0 mL:']]
+    .forEach(([k, l]) => { const dd = h('div'); plan.append(dd); Lab.prompt(dd, { key: k, label: l, rows: 3 }); });
+
+  /* ===================== ANALYZE & REFLECT ===================== */
+  const an = $('#analysis');
+  Lab.prompt(an, { key: 'a-limit', label: 'Was the limiting factor in your baseline reaction the enzyme or the substrate? Use initial rates from runs with doubled and halved enzyme and substrate (your design data or a quick extra run) as evidence.', rows: 4 });
+  Lab.prompt(an, { key: 'a-graph', label: 'Graph and describe your independent investigation. Compare the effects of the biotic and abiotic factors you (and your classmates) tested on the rate of the reaction, and explain the differences.', rows: 4 });
+  Lab.prompt(an, { key: 'a-denature', label: 'If you tested temperature or heat treatment: at what temperature did activity peak, and above what temperature was the loss permanent? Explain the shape of the curve at the level of protein structure.', rows: 4 });
+  Lab.prompt(an, { key: 'a-palette', label: 'Compare the palette (relative) and spectrophotometer (absolute) methods. How well did your palette numbers agree with absorbance? Which would you trust to detect a 10% difference in rate?', rows: 3 });
+  const cer = h('div', { class: 'cer' }); an.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
+  [['cer-c', 'C', 'Claim: Answer the driving question for one factor you tested.'], ['cer-e', 'E', 'Evidence: Cite initial rates with error bars (± 2 SE) from your data.'], ['cer-r', 'R', 'Reasoning: Connect the evidence to enzyme structure, the active site, and collision theory.']]
+    .forEach(([k, L, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 4 }); p.querySelector('label').dataset.letter = L; });
+  const rf = $('#reflect');
+  Lab.prompt(rf, { key: 'r-error', label: 'List the largest sources of error in this assay (timing, pipetting, mixing, judging color, temperature drift). For each, suggest how to reduce it.', rows: 3 });
+  Lab.prompt(rf, { key: 'r-veg', label: 'Peroxidase from a turnip root growing in cool soil might differ from peroxidase in a leaf or a fruit. Predict how optimum temperature or pH might differ, and describe the observations you would make before extracting the enzyme.', rows: 3 });
+  Lab.prompt(rf, { key: 'r-homeo', label: 'Make a strong argument for the role of enzymes in maintaining homeostasis at the cellular level. Why does a cell need peroxidase at all?', rows: 3 });
+  Lab.prompt(rf, { key: 'r-next', label: 'Choose one extension and outline it: (A) an enzyme conserved across all domains of life—how similar are its function and sequence? (B) how soil conditions affect crop enzymes; or (C) whether plants from extreme habitats have different enzyme optima.', rows: 3 });
+})();
+</script>
+</body>
+</html>

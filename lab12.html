@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 12 · Fruit Fly Behavior</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step, .step-body, .sim > .stage, .sim > .controls { grid-template-columns: minmax(0, 1fr); }
+  @media (max-width: 760px) { .sim { grid-template-columns: minmax(0, 1fr); } }
+  .sim > .controls { min-width: 0; }
+  select { max-width: 100%; min-width: 0; }
+  .fig { margin: 1rem 0; }
+  .fig svg { width: 100%; height: auto; display: block; }
+  .fig figcaption { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+  .svg-t { fill: var(--ink); font-family: var(--f-body); font-size: 14px; }
+  .svg-s { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+  .lc-stage { cursor: pointer; }
+  .lc-stage circle { fill: var(--surface-2); stroke: var(--line); stroke-width: 2; }
+  .lc-stage.on circle { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 3; }
+  .lc-stage:focus-visible circle { stroke: var(--accent); stroke-width: 4; }
+  .lc-info { background: var(--surface-2); border-radius: var(--r); padding: 12px 14px; font-size: .95rem; min-height: 4.5em; }
+  .count-panel { background: var(--warn-soft); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; }
+  .count-panel .row .field { flex: 1 1 120px; }
+  .fb { font-size: .95rem; min-height: 1.3em; }
+  .fb.ok { color: var(--ok); } .fb.bad { color: var(--bad); }
+  .chi-out { font-family: var(--f-mono); font-size: .9rem; background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; }
+  #ro-time, #ro-a, #ro-b, #ro-pct { font-size: 1rem; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions</span></nav>
+    <div class="eyebrow">Investigation 12</div>
+    <h1>Fruit Fly Behavior</h1>
+    <p class="driving-q">What environmental factors trigger a fruit fly response?</p>
+    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-3.D</span><span class="tag">IST-5.A</span><span class="tag">SYI-1.H</span><span class="tag">Science Practices 3.C, 5.A</span><span class="tag">≈ 2–4 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Fruit flies find food and places to lay eggs by responding to cues in their environment. In this lab you'll put 20–40 flies into a choice chamber made from two plastic bottles, give them a different stimulus at each end, and count where they go. A chi-square test will tell you whether the flies really prefer one end or are just spread out by chance.</p>
+      <p>First you'll learn to tell male and female flies apart and review the fly life cycle. Then you'll watch flies respond to gravity in a vial, run a structured set of choice-chamber trials with household substances, and finally design your own investigation of chemotaxis, phototaxis, or geotaxis.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>ENE-3.D</strong> Explain how the behavioral and/or physiological response of an organism is related to changes in its internal or external environment.</li>
+          <li><strong>IST-5.A</strong> Explain how the behavioral responses of organisms affect their overall fitness and may contribute to the success of the population.</li>
+          <li><strong>SYI-1.H</strong> Explain how the density of a population affects and is determined by resource availability in the environment.</li>
+          <li><strong>Science Practices 3.C</strong> Identify experimental procedures that are aligned to the question; <strong>5.A</strong> Perform mathematical calculations (chi-square).</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety at the real bench</div>
+        <ul>
+          <li>Only add substances your teacher has approved, in small amounts (5–10 drops on a cotton ball).</li>
+          <li>Ethanol is flammable. Keep it away from flames and heat sources. Wear goggles when handling liquids.</li>
+          <li>Many test substances are foods. Do not eat any of them.</li>
+          <li>Never release flies outdoors. When you finish, tap them through a funnel into the "morgue" (a beaker of salad oil or 70% alcohol).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>The dew-loving, black-bellied fly</h2></header>
+    <div class="step-body prose">
+      <p><em>Drosophila melanogaster</em> has been a model organism since Thomas Hunt Morgan began breeding it in 1907. It is small, cheap to raise, has a short generation time, and its genome is fully sequenced. The genus name means "lover of dew," because adults tend to emerge from their pupal cases in the early morning. The species name means "black belly," after the dark abdomen of the males. In the wild it feeds on fruit and on the yeasts and other fungi that grow on fruit as it rots.</p>
+      <h3>Life cycle</h3>
+      <p>Fruit flies go through <strong>complete metamorphosis</strong>. At 25 °C the whole cycle takes about 9–10 days. Click a stage to learn more.</p>
+      <figure class="fig">
+        <svg viewBox="0 0 640 300" role="group" aria-label="Fruit fly life cycle diagram: egg, larva, pupa, adult, arranged in a cycle. Each stage is a button.">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" style="fill:var(--muted)"/></marker></defs>
+          <path d="M215 70 Q320 20 425 70" style="fill:none;stroke:var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M520 130 Q560 150 520 175" style="fill:none;stroke:var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M425 235 Q320 285 215 235" style="fill:none;stroke:var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M120 175 Q80 150 120 130" style="fill:none;stroke:var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+          <g class="lc-stage" data-stage="egg" tabindex="0" role="button" aria-label="Egg stage"><circle cx="160" cy="95" r="52"/><ellipse cx="160" cy="88" rx="9" ry="20" style="fill:var(--surface);stroke:var(--muted)"/><text x="160" y="128" text-anchor="middle" class="svg-t">Egg</text><text x="160" y="164" text-anchor="middle" class="svg-s">≈ 1 day</text></g>
+          <g class="lc-stage" data-stage="larva" tabindex="0" role="button" aria-label="Larva stage"><circle cx="480" cy="95" r="52"/><path d="M450 90 q30 -18 60 0" style="fill:none;stroke:var(--muted)" stroke-width="10" stroke-linecap="round"/><text x="480" y="128" text-anchor="middle" class="svg-t">Larva</text><text x="480" y="164" text-anchor="middle" class="svg-s">3 instars, ≈ 4 days</text></g>
+          <g class="lc-stage" data-stage="pupa" tabindex="0" role="button" aria-label="Pupa stage"><circle cx="480" cy="215" r="52"/><ellipse cx="480" cy="205" rx="22" ry="10" style="fill:var(--s4)"/><text x="480" y="245" text-anchor="middle" class="svg-t">Pupa</text><text x="480" y="284" text-anchor="middle" class="svg-s">≈ 4 days</text></g>
+          <g class="lc-stage" data-stage="adult" tabindex="0" role="button" aria-label="Adult stage"><circle cx="160" cy="215" r="52"/><ellipse cx="160" cy="210" rx="7" ry="16" style="fill:var(--ink)"/><ellipse cx="150" cy="212" rx="9" ry="5" style="fill:var(--line)" transform="rotate(-25 150 212)"/><ellipse cx="170" cy="212" rx="9" ry="5" style="fill:var(--line)" transform="rotate(25 170 212)"/><circle cx="160" cy="194" r="5" style="fill:var(--bad)"/><text x="160" y="245" text-anchor="middle" class="svg-t">Adult</text><text x="160" y="284" text-anchor="middle" class="svg-s">mates within ≈ 8–12 h</text></g>
+        </svg>
+        <figcaption>Fruit fly life cycle at 25 °C. Cooler temperatures slow every stage.</figcaption>
+      </figure>
+      <div class="lc-info" id="lc-info" aria-live="polite">Click or tab to a stage above.</div>
+
+      <h3 style="margin-top:20px">Taxis and kinesis</h3>
+      <p>Animals move in response to stimuli. A <strong>taxis</strong> is <em>oriented</em> movement: the animal turns and moves directly toward (positive taxis) or away from (negative taxis) a stimulus. A <strong>chemotaxis</strong> is a response to a chemical, a <strong>phototaxis</strong> a response to light, and a <strong>geotaxis</strong> a response to gravity. Adult fruit flies show a <em>negative</em> geotaxis: they climb upward. Adults also move toward bright light, while larvae move away from it.</p>
+      <p>A <strong>kinesis</strong> is <em>not</em> oriented. The stimulus changes how fast an animal moves or how often it turns, but not its direction. Animals that slow down in good conditions and speed up in bad ones end up collecting in the good areas just by chance. Both mechanisms can put animals in the same place, so you have to watch <em>how</em> they get there.</p>
+      <div class="sim">
+        <div class="controls">
+          <button class="btn btn--primary" id="tk-play" type="button">Play demo</button>
+          <button class="btn btn--sm" id="tk-reset" type="button">Reset</button>
+          <p class="small muted">Left: each animal turns toward the light (taxis). Right: animals move in random directions but move slowly in the humid zone (kinesis).</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="tk" aria-label="Side-by-side animation. Left panel: animals steer toward a light on the right edge. Right panel: animals wander randomly but slow down in the humid right half, so they pile up there."></canvas>
+          <div class="readouts"><div class="readout"><span class="k">Taxis: in right half</span><span class="v" id="tk-a">—</span></div><div class="readout"><span class="k">Kinesis: in right half</span><span class="v" id="tk-b">—</span></div></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:20px">Is the pattern real? The chi-square test</h3>
+      <p>Even flies that don't care will rarely split exactly 15:15. The <strong>chi-square (χ²) test</strong> asks how likely your counts would be if the <strong>null hypothesis</strong> were true. For a choice chamber the null hypothesis is "flies have no preference," so the expected count at each end is half the flies.</p>
+      <div class="equation">χ² = Σ (o − e)² ⁄ e &nbsp;&nbsp; degrees of freedom = (number of categories) − 1 = 1</div>
+      <p>With 1 degree of freedom, the critical value at p = 0.05 is <strong>3.84</strong>. If χ² is greater than 3.84, a difference this large would happen by chance less than 5% of the time, so you reject the null hypothesis and conclude the flies show a preference. If χ² is smaller, you fail to reject the null hypothesis: your data do not show a preference.</p>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab · Getting started</div><h2>Male or female?</h2></header>
+    <div class="step-body">
+      <p class="prose">Look at the abdomen. <strong>Females</strong> are larger, with a longer, pointed abdomen that has separate dark stripes all the way to a light tip. <strong>Males</strong> are smaller, with a rounded abdomen whose last segments are fused into one solid dark patch, and they have tiny dark <strong>sex combs</strong> on their front legs. Use the reference, then identify the flies.</p>
+      <div class="sim">
+        <div class="controls">
+          <canvas class="viz" id="sex-ref" aria-label="Reference drawing: female fruit fly on the left with a long, pointed, striped abdomen; male on the right with a smaller, rounded abdomen with a solid black tip and sex combs on the front legs."></canvas>
+          <div class="readouts"><div class="readout"><span class="k">Correct</span><span class="v" id="sex-score">0 of 0</span></div></div>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="sex-cv" aria-label="A single fruit fly seen from above. Decide whether it is female or male."></canvas>
+          <div class="row">
+            <button class="btn btn--primary" id="sex-f" type="button">Female ♀</button>
+            <button class="btn btn--primary" id="sex-m" type="button">Male ♂</button>
+            <button class="btn" id="sex-next" type="button">Next fly</button>
+          </div>
+          <div class="fb" id="sex-fb" aria-live="polite"></div>
+        </div>
+      </div>
+      <div id="prelab"></div>
+      <div id="prelab-prompts"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Geotaxis vial">
+    <header><div class="eyebrow">Getting started · Observation</div><h2>Which way is up?</h2></header>
+    <div class="step-body">
+      <p class="prose">Toss 10–20 flies into an empty vial (no anesthetic). Tap the vial on the table so the flies fall to the bottom, then stand it upright and watch. Record how many flies are in the top half after 15 and 30 seconds. Repeat a few times.</p>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="vial-n">Flies in vial <output id="vial-n-out" class="val"></output></label><input id="vial-n" type="range" min="10" max="20" value="15"></div>
+          <div class="field"><label for="vial-age">Fly age</label><select id="vial-age"><option value="young">Young adults (2–5 days)</option><option value="old">Old adults (4 weeks)</option></select></div>
+          <button class="btn btn--primary" id="vial-run" type="button">Tap down and watch 30 s</button>
+          <p class="small muted">The clock runs at 2× speed.</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="vial" aria-label="An upright vial of fruit flies. After tapping, flies start at the bottom and most climb toward the top."></canvas>
+          <div class="readouts"><div class="readout"><span class="k">Time</span><span class="v" id="vial-t">0 s</span></div><div class="readout"><span class="k">Top half</span><span class="v" id="vial-top">—</span></div><div class="readout"><span class="k">Bottom half</span><span class="v" id="vial-bot">—</span></div></div>
+          <div id="vial-table"></div>
+        </div>
+      </div>
+      <div id="vial-prompts"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Choice chamber">
+    <header><div class="eyebrow">Procedure · Structured inquiry</div><h2>The choice chamber</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Two bottles with their bottoms cut off are taped together; end A and end B each have a cap holding a cotton ball with 5–10 drops of a test substance. Follow the manual's steps:</p>
+        <ol>
+          <li>Start with <strong>distilled water at both ends</strong>, lay the chamber flat, and count after 5 minutes. This control tells you whether something other than your substances (light from a window, a tilt) is moving the flies.</li>
+          <li>Predict what the flies will prefer, then test at least four substances, each against distilled water. Change caps between substances.</li>
+          <li>Rotate the chamber (<strong>Swap ends</strong>) and repeat to check that position is not the cause.</li>
+          <li>Count flies at each end at each time point, then use chi-square to test the final counts.</li>
+        </ol>
+      </div>
+      <div id="predict-prompt"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="c-a">Cap A cotton ball</label><select id="c-a"></select></div>
+          <div class="field"><label for="c-b">Cap B cotton ball</label><select id="c-b"></select></div>
+          <label class="check"><input type="checkbox" id="c-film"> Wrap both cotton balls in Parafilm</label>
+          <div class="field"><span class="label" id="c-orient-l">Chamber position</span>
+            <div class="seg" role="group" aria-labelledby="c-orient-l" id="c-orient"><button type="button" data-v="h" aria-pressed="true">Flat</button><button type="button" data-v="vA" aria-pressed="false">Upright, A up</button><button type="button" data-v="vB" aria-pressed="false">Upright, B up</button></div></div>
+          <div class="field"><label for="c-light">Light</label><select id="c-light"><option value="none">Even room light</option><option value="lampA">Lamp at end A</option><option value="lampB">Lamp at end B</option><option value="foilA">Foil over end A (dark)</option><option value="foilB">Foil over end B (dark)</option></select></div>
+          <div class="field"><label for="c-color">Lamp color</label><select id="c-color"><option value="white">White</option><option value="blue">Blue film</option><option value="green">Green film</option><option value="red">Red film</option></select></div>
+          <div class="field"><label for="c-type">Flies</label><select id="c-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings (cannot fly)</option><option value="w">White eyes</option><option value="adh">Adh-negative (cannot break down alcohol)</option></select></div>
+          <div class="field"><label for="c-n">Number of flies <output id="c-n-out" class="val"></output></label><input id="c-n" type="range" min="20" max="40" value="30"></div>
+          <div class="field"><label for="c-int">Count every</label><select id="c-int"><option value="30">30 s</option><option value="60" selected>1 min</option><option value="120">2 min</option></select></div>
+          <div class="field"><label for="c-dur">Trial length</label><select id="c-dur"><option value="300" selected>5 min</option><option value="600">10 min</option></select></div>
+          <label class="check"><input type="checkbox" id="c-pause" checked> Pause so I can count the flies myself</label>
+          <div class="field"><span class="label" id="c-speed-l">Playback speed</span>
+            <div class="seg" role="group" aria-labelledby="c-speed-l" id="c-speed"><button type="button" data-v="5" aria-pressed="false">5×</button><button type="button" data-v="15" aria-pressed="true">15×</button><button type="button" data-v="40" aria-pressed="false">40×</button></div></div>
+          <div class="row"><button class="btn btn--primary" id="c-run" type="button">Run trial</button><button class="btn" id="c-swap" type="button">Swap ends</button></div>
+          <button class="btn btn--ghost btn--sm" id="c-stop" type="button">Stop trial</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="ch-h" aria-label="Choice chamber lying flat: two bottles taped together with cap A and cap B. Small dark dots are fruit flies."></canvas>
+          <canvas class="viz" id="ch-v" hidden aria-label="Choice chamber standing upright with one cap at the top."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Time</span><span class="v" id="ro-time">0:00</span></div>
+            <div class="readout"><span class="k">Flies at A side</span><span class="v" id="ro-a">—</span></div>
+            <div class="readout"><span class="k">Flies at B side</span><span class="v" id="ro-b">—</span></div>
+            <div class="readout"><span class="k">% at A</span><span class="v" id="ro-pct">—</span></div>
+          </div>
+          <div class="count-panel" id="count-panel" hidden>
+            <strong id="count-title">Count the flies</strong>
+            <div class="row">
+              <div class="field"><label for="cnt-a">Flies on A side</label><input id="cnt-a" type="number" min="0" step="1"></div>
+              <div class="field"><label for="cnt-b">Flies on B side</label><input id="cnt-b" type="number" min="0" step="1"></div>
+            </div>
+            <label class="check"><input type="checkbox" id="quad"> Show quadrant lines to help count</label>
+            <div class="row"><button class="btn btn--primary" id="cnt-rec" type="button">Record and continue</button><span class="small muted">Flies on the midline: count them where most of the body is.</span></div>
+          </div>
+          <h3>This trial</h3>
+          <div id="int-table"></div>
+          <div id="int-chart"></div>
+        </div>
+      </div>
+      <h3 style="margin-top:24px">All trials</h3>
+      <p class="small muted">Each finished trial is tested with chi-square against a 50:50 null hypothesis (df = 1, critical value 3.84). Your own final counts are used when you entered them.</p>
+      <div id="trials-table"></div>
+      <div id="pref-chart"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own fruit fly experiment</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Now that you've seen how flies respond to single substances, ask your own question. Some starting points from the manual: Do preferred substances share an ingredient? Does a phototactic response override a chemotactic one? Does fly age change geotaxis? Do mutant flies choose differently? Does the flies' choice depend on smell or on sight (try Parafilm)?</p>
+        <p>Choose the stimuli, set up the chamber, and decide how many trials to run. Swapping ends between trials controls for position effects. Each run below adds one condition to your results so you can compare conditions.</p>
+      </div>
+      <div id="design-prompts"></div>
+      <div class="sim" style="margin-top:16px">
+        <div class="controls">
+          <div class="field"><label for="d-a">End A</label><select id="d-a"></select></div>
+          <div class="field"><label for="d-b">End B</label><select id="d-b"></select></div>
+          <label class="check"><input type="checkbox" id="d-film"> Parafilm over cotton balls</label>
+          <div class="field"><label for="d-orient">Chamber position</label><select id="d-orient"><option value="h">Flat</option><option value="vA">Upright, A up</option><option value="vB">Upright, B up</option></select></div>
+          <div class="field"><label for="d-light">Light</label><select id="d-light"><option value="none">Even room light</option><option value="lampA">White lamp at A</option><option value="lampB">White lamp at B</option><option value="lampA-red">Red-filtered lamp at A</option><option value="lampA-blue">Blue-filtered lamp at A</option><option value="foilA">Foil over A</option></select></div>
+          <div class="field"><label for="d-type">Flies</label><select id="d-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings</option><option value="w">White eyes</option><option value="adh">Adh-negative</option></select></div>
+          <div class="field"><label for="d-n">Flies per trial <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="20" max="40" value="30"></div>
+          <div class="field"><label for="d-trials">Number of trials <output id="d-trials-out" class="val"></output></label><input id="d-trials" type="range" min="1" max="10" value="4"></div>
+          <label class="check"><input type="checkbox" id="d-swap" checked> Swap ends between trials</label>
+          <button class="btn btn--primary" id="d-run" type="button">Run trials (5 min each)</button>
+          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+        </div>
+        <div class="stage">
+          <div class="readouts"><div class="readout"><span class="k">Last run</span><span class="v" id="d-last" style="font-size:.95rem">—</span></div></div>
+          <div id="d-table"></div>
+          <div id="d-chart"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>Patterns in fly behavior</h2></header>
+    <div class="step-body">
+      <h3>Chi-square calculator</h3>
+      <p class="small muted">Enter observed counts at each end. Expected counts come from your null hypothesis of no preference (half the flies at each end).</p>
+      <div class="grid-2">
+        <div class="field"><label for="x-a">Observed at end A</label><input id="x-a" type="number" min="0" step="1" value="21"></div>
+        <div class="field"><label for="x-b">Observed at end B</label><input id="x-b" type="number" min="0" step="1" value="9"></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn btn--primary" id="x-run" type="button">Calculate χ²</button><button class="btn btn--sm" id="x-last" type="button">Use my last trial</button></div>
+      <div class="chi-out" id="x-out" aria-live="polite">—</div>
+      <h3 style="margin-top:20px">Questions</h3>
+      <div id="an-prompts"></div>
+      <h3 style="margin-top:20px">Claim, evidence, reasoning</h3>
+      <div class="cer" id="cer"></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
+    <div class="step-body" id="evaluate"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+Lab.init({ id: 'lab12' });
+const { $, $$ } = Lab;
+const rng = Lab.rng();
+
+/* ---------- Color helpers (tokens only) ---------- */
+const C = n => Lab.color(n);
+function rgb(c) {
+  c = String(c).trim();
+  if (c[0] === '#') { if (c.length === 4) c = '#' + [...c.slice(1)].map(x => x + x).join(''); return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
+  const m = c.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [128, 128, 128];
+}
+function mix(a, b, t) { const A = rgb(C(a)), B = rgb(C(b)); return `rgb(${A.map((v, i) => Math.round(v * (1 - t) + B[i] * t)).join(',')})`; }
+function alpha(a, al) { return `rgba(${rgb(C(a)).join(',')},${al})`; }
+function lum(n) { const [r, g, b] = rgb(C(n)); return .299 * r + .587 * g + .114 * b; }
+const lightTok = () => lum('--ink') > lum('--surface') ? '--ink' : '--surface';
+const darkTok = () => lum('--ink') > lum('--surface') ? '--surface' : '--ink';
+const font = (px, wt = 600) => `${wt} ${px}px "Source Sans 3", system-ui, sans-serif`;
+
+/* ---------- Life cycle ---------- */
+const LC = {
+  egg: '<strong>Egg (≈ 1 day).</strong> A female lays several hundred tiny white eggs, about 0.5 mm long, on the surface of rotting fruit or culture food. Two filaments at one end keep the egg from sinking into the soft food.',
+  larva: '<strong>Larva (≈ 4 days, 3 instars).</strong> The larva eats constantly and molts twice, so there are three larval stages (instars). Third-instar larvae stop feeding and crawl up out of the moist food onto a drier surface to pupate. Larvae move away from bright light.',
+  pupa: '<strong>Pupa (≈ 4 days).</strong> The larval skin hardens into a brown puparium. Inside, most larval tissues are broken down by programmed cell death (<strong>apoptosis</strong>) while groups of cells called imaginal discs build the adult legs, wings, eyes, and genitalia.',
+  adult: '<strong>Adult.</strong> Adults emerge (eclose), usually in the early morning. Newly emerged flies are pale with folded wings. Females can mate after about 8–12 hours and start laying eggs about 2 days after emerging. Adults can live several weeks.'
+};
+$$('.lc-stage').forEach(g => {
+  const pick = () => { $$('.lc-stage').forEach(x => x.classList.toggle('on', x === g)); $('#lc-info').innerHTML = LC[g.dataset.stage]; };
+  g.addEventListener('click', pick); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+});
+
+/* ---------- Fly drawing (dorsal view) ---------- */
+function drawFly(ctx, x, y, s, ang, sex, o = {}) {
+  const light = lightTok(), dark = darkTok();
+  const body = mix('--warn', light, 0.45), stripe = mix(dark, '--warn', 0.15);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s);
+  const fem = sex === 'f', aL = fem ? 1.25 : 0.95, aW = fem ? 0.62 : 0.55, aY = 0.32;
+  ctx.strokeStyle = stripe; ctx.lineWidth = 0.035; ctx.lineCap = 'round';
+  [[-1, -0.05], [-1, 0.12], [-1, 0.28], [1, -0.05], [1, 0.12], [1, 0.28]].forEach(([sd, ly], i) => {
+    ctx.beginPath(); ctx.moveTo(sd * 0.15, ly); const k = i % 3;
+    ctx.lineTo(sd * 0.55, ly + (k - 1) * 0.25); ctx.lineTo(sd * 0.75, ly + (k - 1) * 0.55 + 0.1); ctx.stroke();
+    if (!fem && k === 0 && o.combs !== false) { ctx.fillStyle = stripe; ctx.beginPath(); ctx.ellipse(sd * 0.56, ly - 0.24, 0.06, 0.035, 0, 0, 7); ctx.fill(); }
+  });
+  // abdomen
+  ctx.save();
+  ctx.beginPath();
+  if (fem) { ctx.moveTo(0, aY + aL); ctx.bezierCurveTo(aW * 0.9, aY + aL * 0.75, aW, aY + 0.1, 0, aY); ctx.bezierCurveTo(-aW, aY + 0.1, -aW * 0.9, aY + aL * 0.75, 0, aY + aL); }
+  else ctx.ellipse(0, aY + aL / 2, aW / 2 + 0.02, aL / 2, 0, 0, 7);
+  ctx.fillStyle = body; ctx.fill(); ctx.clip();
+  ctx.fillStyle = stripe;
+  if (fem) { for (let i = 0; i < 6; i++) ctx.fillRect(-1, aY + 0.14 + i * 0.17, 2, 0.075); }
+  else { for (let i = 0; i < 3; i++) ctx.fillRect(-1, aY + 0.12 + i * 0.16, 2, 0.07); ctx.fillRect(-1, aY + aL * 0.62, 2, 1); }
+  ctx.restore();
+  // thorax and head
+  ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(0, 0.08, 0.27, 0.32, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = stripe; ctx.lineWidth = 0.02; for (const bx of [-0.12, 0.12]) { ctx.beginPath(); ctx.moveTo(bx, -0.05); ctx.lineTo(bx * 1.3, 0.3); ctx.stroke(); }
+  ctx.beginPath(); ctx.ellipse(0, -0.36, 0.24, 0.17, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = C('--bad'); for (const ex of [-1, 1]) { ctx.beginPath(); ctx.ellipse(ex * 0.17, -0.37, 0.1, 0.14, ex * 0.3, 0, 7); ctx.fill(); }
+  // wings
+  ctx.fillStyle = alpha(light, 0.38); ctx.strokeStyle = alpha('--muted', 0.7); ctx.lineWidth = 0.02;
+  const spread = o.spread != null ? o.spread : 0.32;
+  for (const sd of [-1, 1]) { ctx.save(); ctx.translate(sd * 0.12, 0.12); ctx.rotate(sd * spread); ctx.beginPath(); ctx.ellipse(0, 0.6, 0.2, 0.62, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  ctx.restore();
+}
+
+/* ---------- Sexing practice ---------- */
+const sexRef = Lab.canvas('#sex-ref', 0.95), sexCv = Lab.canvas('#sex-cv', 0.62);
+function drawRef() {
+  const { ctx, w, h } = sexRef; ctx.clearRect(0, 0, w, h); ctx.fillStyle = C('--surface'); ctx.fillRect(0, 0, w, h);
+  const s = Math.min(w * 0.19, h * 0.3);
+  drawFly(ctx, w * 0.27, h * 0.3, s * 1.08, 0, 'f', { spread: 0.45 });
+  drawFly(ctx, w * 0.73, h * 0.3, s * 0.92, 0, 'm', { spread: 0.45 });
+  ctx.fillStyle = C('--ink'); ctx.textAlign = 'center'; ctx.font = font(Math.max(11, w / 22), 700);
+  ctx.fillText('Female', w * 0.27, h * 0.88); ctx.fillText('Male', w * 0.73, h * 0.88);
+  ctx.font = font(Math.max(9, w / 30), 400); ctx.fillStyle = C('--muted');
+  ctx.fillText('pointed, striped tip', w * 0.27, h * 0.96); ctx.fillText('rounded, solid dark tip', w * 0.73, h * 0.96);
+}
+let sexCur = null, sexAns = false, sexRight = 0, sexTot = 0;
+function newSexFly() { sexCur = { sex: rng.chance(0.5) ? 'f' : 'm', ang: rng.uniform() * Math.PI * 2, size: 0.9 + rng.uniform() * 0.2, spread: 0.2 + rng.uniform() * 0.4 }; sexAns = false; $('#sex-fb').textContent = ''; $('#sex-fb').className = 'fb'; drawSex(); }
+function drawSex() {
+  const { ctx, w, h } = sexCv; ctx.clearRect(0, 0, w, h); ctx.fillStyle = C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  if (!sexCur) return;
+  const s = Math.min(w, h) * 0.2 * sexCur.size * (sexCur.sex === 'f' ? 1.06 : 0.94);
+  drawFly(ctx, w / 2, h / 2 - s * 0.35 * Math.cos(sexCur.ang), s, sexCur.ang, sexCur.sex, { spread: sexCur.spread });
+}
+function answerSex(g) {
+  if (!sexCur || sexAns) return; sexAns = true; sexTot++;
+  const ok = g === sexCur.sex; if (ok) sexRight++;
+  $('#sex-score').textContent = `${sexRight} of ${sexTot}`;
+  const fb = $('#sex-fb'); fb.className = 'fb ' + (ok ? 'ok' : 'bad');
+  fb.textContent = (ok ? 'Correct. ' : 'Not quite. ') + (sexCur.sex === 'f' ? 'This is a female: long, pointed abdomen with separate stripes to a light tip, and no sex combs.' : 'This is a male: smaller, rounded abdomen with a solid dark tip, and dark sex combs on the front legs.');
+}
+$('#sex-f').addEventListener('click', () => answerSex('f'));
+$('#sex-m').addEventListener('click', () => answerSex('m'));
+$('#sex-next').addEventListener('click', newSexFly);
+sexRef.onresize = drawRef; sexCv.onresize = drawSex;
+
+Lab.quiz('#prelab', [
+  { type: 'mc', q: 'Which sequence shows the fruit fly life cycle in order?', choices: ['Egg → pupa → larva → adult', 'Egg → larva (3 instars) → pupa → adult', 'Larva → egg → pupa → adult', 'Egg → nymph → adult'], answer: 1, explain: 'Drosophila undergo complete metamorphosis: egg, three larval instars, pupa, adult. At 25 °C this takes about 9–10 days.' },
+  { type: 'mc', q: 'During the pupal stage, most larval tissues disappear. Which process removes them?', choices: ['Mitosis', 'Apoptosis (programmed cell death)', 'Meiosis', 'Fermentation'], answer: 1, explain: 'Apoptosis removes larval cells while imaginal discs grow into adult structures.' },
+  { type: 'mc', q: 'Which observation describes a <em>kinesis</em> rather than a taxis?', choices: ['Moths fly straight toward a porch light', 'Woodlice move faster and turn more often in dry air and slow down in humid air, so they collect in damp places', 'Fruit flies climb straight up the wall of a vial', 'Bacteria swim up a sugar gradient by steering toward it'], answer: 1, explain: 'In a kinesis the stimulus changes speed or turning rate, not direction. Animals end up in favorable places without steering toward them.' },
+  { type: 'mc', q: 'You tap flies to the bottom of a vial and within 15 seconds most are at the top. This is best described as:', choices: ['Positive phototaxis', 'Positive geotaxis', 'Negative geotaxis', 'Chemokinesis'], answer: 2, explain: 'The flies move against gravity, a negative geotaxis.' },
+  { type: 'mc', q: 'Why does the manual have you start with distilled water on cotton balls at <em>both</em> ends of the choice chamber?', choices: ['Water attracts flies, so it speeds up the experiment', 'It is a control: if flies still gather at one end, something other than the test substance (light, tilt, the chamber) is affecting them', 'To keep the flies from drying out', 'To dilute the test substances'], answer: 1, explain: 'With identical stimuli at both ends, you expect about 50:50. A strong imbalance means there is an uncontrolled variable.' },
+  { type: 'num', q: '30 flies are in a chamber with a substance at end A and water at end B. After 5 minutes, 21 are at A and 9 are at B. Calculate χ² for a 50:50 null hypothesis.', answer: 4.8, tol: 0.05, unit: '', explain: 'Expected = 15 at each end. χ² = (21 − 15)²/15 + (9 − 15)²/15 = 2.4 + 2.4 = 4.8.' },
+  { type: 'mc', q: 'With 1 degree of freedom, the critical value at p = 0.05 is 3.84. What do you conclude from χ² = 4.8?', choices: ['Fail to reject the null; no preference', 'Reject the null; the difference is unlikely to be due to chance, so the flies show a preference for A', 'The flies were certainly attracted to A with 100% certainty', 'The test needs 2 degrees of freedom'], answer: 1, explain: '4.8 > 3.84, so p < 0.05. Reject the null hypothesis. Chi-square never proves a hypothesis; it says the data are unlikely under the null.' },
+  { type: 'mc', q: 'Is the sex of the flies important for your choice-chamber experiment?', choices: ['It cannot matter, since males and females have the same genes', 'It might: females looking for egg-laying sites could respond differently from males, so it is a variable you could test or control', 'Only males respond to stimuli', 'Only if you are using vestigial flies'], answer: 1, explain: 'Sex is a possible variable. You can test it (for example with white-eyed males and red-eyed females) or keep the mix constant across trials.' }
+], { id: 'prelab' });
+Lab.prompt('#prelab-prompts', { key: 'pre-where', label: 'Where and when have you seen fruit flies outside the lab? What do those places have in common?', rows: 3 });
+
+/* ---------- Taxis vs kinesis demo ---------- */
+const tk = Lab.canvas('#tk', 0.42);
+let tkP = null;
+function tkInit() { tkP = [0, 1].map(() => Array.from({ length: 30 }, () => ({ x: rng.uniform() * 0.5, y: rng.uniform(), th: rng.uniform() * 6.28 }))); tkDraw(); }
+function tkStep(dt) {
+  // Taxis: heading turns toward the light (+x). Kinesis: random heading; speed 1.0 in dry half, 0.15 in humid half.
+  tkP[0].forEach(p => { p.th += rng.normal(0, 0.4) - 1.6 * Math.sin(p.th) * dt; tkMove(p, 0.18 * dt); });
+  tkP[1].forEach(p => { p.th += rng.normal(0, 1.2); tkMove(p, (p.x > 0.5 ? 0.04 : 0.28) * dt); });
+}
+function tkMove(p, d) { p.x += d * Math.cos(p.th); p.y += d * Math.sin(p.th) * 2.2; if (p.x < 0) { p.x = 0; p.th = Math.PI - p.th; } if (p.x > 1) { p.x = 1; p.th = Math.PI - p.th; } if (p.y < 0) { p.y = 0; p.th = -p.th; } if (p.y > 1) { p.y = 1; p.th = -p.th; } }
+function tkDraw() {
+  const { ctx, w, h } = tk; ctx.clearRect(0, 0, w, h);
+  const pw = (w - 30) / 2, fs = Math.max(10, Math.min(13, w / 50));
+  [0, 1].forEach(k => {
+    const x0 = 10 + k * (pw + 10), y0 = fs + 12, ph = h - y0 - 8;
+    ctx.fillStyle = C('--surface'); ctx.fillRect(x0, y0, pw, ph);
+    if (k === 0) { const g = ctx.createLinearGradient(x0, 0, x0 + pw, 0); g.addColorStop(0, alpha('--warn', 0)); g.addColorStop(1, alpha('--warn', 0.35)); ctx.fillStyle = g; ctx.fillRect(x0, y0, pw, ph); ctx.fillStyle = C('--warn'); ctx.beginPath(); ctx.arc(x0 + pw - 6, y0 + ph / 2, 7, 0, 7); ctx.fill(); }
+    else { ctx.fillStyle = alpha('--s3', 0.2); ctx.fillRect(x0 + pw / 2, y0, pw / 2, ph); ctx.fillStyle = C('--muted'); ctx.font = font(fs - 2, 400); ctx.textAlign = 'center'; ctx.fillText('dry', x0 + pw / 4, y0 + ph - 6); ctx.fillText('humid', x0 + pw * 3 / 4, y0 + ph - 6); }
+    ctx.strokeStyle = C('--line'); ctx.strokeRect(x0, y0, pw, ph);
+    ctx.fillStyle = C('--ink'); ctx.font = font(fs, 700); ctx.textAlign = 'left'; ctx.fillText(k ? 'Kinesis' : 'Taxis (toward light)', x0, fs + 4);
+    ctx.fillStyle = C('--ink');
+    tkP[k].forEach(p => { const px = x0 + 4 + p.x * (pw - 8), py = y0 + 4 + p.y * (ph - 8); ctx.beginPath(); ctx.ellipse(px, py, 3.2, 1.8, p.th, 0, 7); ctx.fill(); });
+  });
+  $('#tk-a').textContent = tkP[0].filter(p => p.x > 0.5).length + ' of 30';
+  $('#tk-b').textContent = tkP[1].filter(p => p.x > 0.5).length + ' of 30';
+}
+const tkLoop = Lab.loop(dt => { tkStep(dt); tkDraw(); });
+$('#tk-play').addEventListener('click', () => { if (tkLoop.running) { tkLoop.stop(); $('#tk-play').textContent = 'Play demo'; } else { tkLoop.start(); $('#tk-play').textContent = 'Pause demo'; } });
+$('#tk-reset').addEventListener('click', tkInit);
+tk.onresize = tkDraw;
+
+/* ---------- Geotaxis vial ----------
+   Each fly climbs at an individual speed (negative geotaxis); 10% wander randomly.
+   Old flies (4 weeks) climb about half as fast (age-related decline, as in RING assays). */
+const vialCv = Lab.canvas('#vial', 0.55);
+let vialF = [], vialT = 0, vialRec = {};
+const vialN = $('#vial-n'); const syncVN = () => $('#vial-n-out').textContent = vialN.value; vialN.addEventListener('input', syncVN); syncVN();
+function vialSetup(atBottom) {
+  vialF = Array.from({ length: +vialN.value }, () => ({ x: rng.uniform() * 2 - 1, y: atBottom ? 0.9 + rng.uniform() * 0.08 : rng.uniform(), v: rng.chance(0.1) ? 0 : 0.035 + rng.uniform() * 0.06, th: rng.uniform() * 6.28, rest: 0 }));
+}
+function vialStep(dt) {
+  const age = $('#vial-age').value === 'old' ? 0.45 : 1;
+  vialF.forEach(f => {
+    if (f.rest > 0) { f.rest -= dt; return; }
+    if (rng.chance(0.08 * dt)) { f.rest = 1 + rng.uniform() * 3; return; }
+    f.th += rng.normal(0, 0.5);
+    f.y += (-f.v * age + 0.03 * Math.sin(f.th)) * dt; f.x += 0.12 * Math.cos(f.th) * dt;
+    if (f.x < -1) f.x = -1; if (f.x > 1) f.x = 1; if (f.y < 0.02) f.y = 0.02; if (f.y > 0.98) f.y = 0.98;
+  });
+}
+function vialDraw() {
+  const { ctx, w, h } = vialCv; ctx.clearRect(0, 0, w, h); ctx.fillStyle = C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  const vw = Math.min(w * 0.22, h * 0.36), vh = h * 0.84, x0 = w * 0.35 - vw / 2, y0 = h * 0.1;
+  ctx.fillStyle = alpha(lightTok(), 0.5); ctx.fillRect(x0, y0, vw, vh);
+  ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y0 + vh - 8); ctx.quadraticCurveTo(x0, y0 + vh, x0 + 8, y0 + vh); ctx.lineTo(x0 + vw - 8, y0 + vh); ctx.quadraticCurveTo(x0 + vw, y0 + vh, x0 + vw, y0 + vh - 8); ctx.lineTo(x0 + vw, y0); ctx.stroke();
+  ctx.fillStyle = mix('--s4', '--surface', 0.4); ctx.fillRect(x0 - 3, y0 - h * 0.07, vw + 6, h * 0.08);
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = C('--stain'); ctx.beginPath(); ctx.moveTo(x0 - 10, y0 + vh / 2); ctx.lineTo(x0 + vw + 10, y0 + vh / 2); ctx.stroke(); ctx.setLineDash([]);
+  vialF.forEach(f => drawDot(ctx, x0 + vw / 2 + f.x * (vw / 2 - 5), y0 + 4 + f.y * (vh - 8), f.th, Math.max(2.3, vw * 0.035), f.rest <= 0));
+  ctx.fillStyle = C('--ink'); ctx.font = font(Math.max(11, w / 45)); ctx.textAlign = 'left';
+  ctx.fillText('top half', x0 + vw + 16, y0 + vh * 0.25); ctx.fillText('bottom half', x0 + vw + 16, y0 + vh * 0.75);
+  const top = vialF.filter(f => f.y < 0.5).length;
+  $('#vial-top').textContent = top; $('#vial-bot').textContent = vialF.length - top; $('#vial-t').textContent = Math.floor(vialT) + ' s';
+}
+function drawDot(ctx, x, y, th, s, moving) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(th);
+  ctx.fillStyle = alpha(lightTok() === '--ink' ? '--ink' : '--muted', 0.55);
+  ctx.beginPath(); ctx.ellipse(-s * 0.2, -s * 0.55, s * 0.7, s * 0.35, -0.5, 0, 7); ctx.ellipse(-s * 0.2, s * 0.55, s * 0.7, s * 0.35, 0.5, 0, 7); ctx.fill();
+  ctx.fillStyle = mix(darkTok(), '--warn', 0.2); ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = C('--bad'); ctx.beginPath(); ctx.arc(s * 0.85, 0, s * 0.32, 0, 7); ctx.fill();
+  ctx.restore();
+}
+const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Flies' }, { key: 't0', label: 'Top half at 0 s', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top half at 15 s', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top half at 30 s', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total flies', num: true, digits: 0 }] });
+const vialLoop = Lab.loop(dt => {
+  const step = dt * 2; let left = step;
+  while (left > 0) { const d = Math.min(0.05, left); vialStep(d); left -= d; }
+  const prev = vialT; vialT += step;
+  const top = () => vialF.filter(f => f.y < 0.5).length;
+  if (prev < 15 && vialT >= 15) vialRec.t15 = top();
+  if (vialT >= 30) { vialT = 30; vialRec.t30 = top(); vialDraw(); vialTable.addRow(vialRec); $('#vial-run').disabled = false; return false; }
+  vialDraw();
+});
+$('#vial-run').addEventListener('click', () => {
+  vialSetup(true); vialT = 0; $('#vial-run').disabled = true;
+  vialRec = { trial: vialTable.getRows().length + 1, age: $('#vial-age').value === 'old' ? 'Old (4 wk)' : 'Young', t0: vialF.filter(f => f.y < 0.5).length, n: vialF.length };
+  if (Lab.reducedMotion()) { for (let t = 0; t < 30; t += 0.05) { vialStep(0.05); if (Math.abs(t - 15) < 0.025) vialRec.t15 = vialF.filter(f => f.y < 0.5).length; } vialT = 30; vialRec.t30 = vialF.filter(f => f.y < 0.5).length; vialDraw(); vialTable.addRow(vialRec); $('#vial-run').disabled = false; return; }
+  vialLoop.start();
+});
+vialCv.onresize = vialDraw;
+[['v-q1', 'What was the flies\' response? Did most of them move in the same general direction?'], ['v-q2', 'Was this an orientation movement? To what stimulus were the flies most likely responding? Could it have been a chemical change in the vial instead? How could you tell?'], ['v-q3', 'Is this a taxis or a kinesis? Explain using your observations. What new questions do your observations raise?']].forEach(([key, label]) => Lab.prompt('#vial-prompts', { key, label, rows: 3 }));
+
+/* ---------- Choice chamber model ----------
+   Each fly does a persistent random walk (walking, resting, short flights) inside the chamber.
+   Stimuli define a preference potential Φ(u) along the chamber axis (u = 0 at end A, 1 at end B).
+   A proposed step is accepted with probability min(1, e^(r·ΔΦ)) (Metropolis rule); a rejected step makes
+   the fly turn back. Long-run density along the chamber ∝ width(u)·e^(r·Φ(u)), an oriented response (taxis).
+   Odor shape: e^(−distance/0.28) from the cotton ball; light and gravity: linear gradients.
+   r = individual responsiveness (10% of flies ignore the stimulus). Each stimulus strength is solved so that
+   it alone (vs. water, 5 min, wild-type flies) gives a target fraction at its end, e.g. vinegar ≈ 0.84,
+   ripe banana ≈ 0.73, ammonia ≈ 0.22, negative geotaxis ≈ 0.80. Effects add when stimuli are combined.
+   A weak hidden room-light bias (window on one side, ≈ 0.53) can be detected with water/water controls and swapping ends. */
+const RESP = [[0, 0.1], [0.6, 0.3], [1, 0.3], [1.4, 0.3]];
+const LAM = 0.28, RHO = 0.075;
+function halfW(x) { const n = 0.03, s = 0.13; if (x < n || x > 1 - n) return 0.32; const d = Math.min(x, 1 - x); return d < s ? 0.32 + 0.68 * Math.sin((d - n) / (s - n) * Math.PI / 2) : 1; }
+const chemA = u => Math.exp(-u / LAM), chemB = u => Math.exp(-(1 - u) / LAM), linA = u => 1 - u, linB = u => u;
+function fracA(phi) {
+  let tot = 0;
+  for (const [r, wr] of RESP) { let a = 0, b = 0; for (let i = 0; i < 200; i++) { const x = (i + .5) / 200, v = halfW(x) * Math.exp(r * phi(x)); if (x < .5) a += v; else b += v; } tot += wr * a / (a + b); }
+  return tot;
+}
+function solveK(target, shape) { let lo = -12, hi = 12; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (fracA(x => m * shape(x)) < target) lo = m; else hi = m; } return (lo + hi) / 2; }
+const SUBS = [
+  ['water', 'Distilled water', 0.50, '--s3'], ['banana', 'Ripe banana', 0.73, '--warn'], ['rotten', 'Overripe (rotting) banana', 0.80, '--s4'],
+  ['green', 'Green (unripe) banana', 0.56, '--s6'], ['vinegar', 'Apple cider vinegar', 0.84, '--s4'], ['ethanol', 'Ethanol, 10%', 0.68, '--s3'],
+  ['yeast', 'Yeast + sugar water', 0.79, '--warn'], ['mustard', 'Mustard', 0.70, '--warn'], ['ketchup', 'Ketchup', 0.65, '--bad'],
+  ['mayo', 'Mayonnaise', 0.62, '--surface-2'], ['capers', 'Capers in brine', 0.71, '--s6'], ['jelly', 'Grape jelly', 0.58, '--s5'],
+  ['pb', 'Peanut butter', 0.53, '--s4'], ['alka', 'Alka-Seltzer tablet in water (CO₂)', 0.36, '--s3'], ['ammonia', 'Ammonia, dilute', 0.22, '--s3']
+];
+const SUB = Object.fromEntries(SUBS.map(([id, name, target, col]) => [id, { id, name, col, k: solveK(target, chemA) }]));
+const K_ETH_ADH = solveK(0.38, chemA);
+const K_LIGHT = { white: solveK(0.68, linA), blue: solveK(0.71, linA), green: solveK(0.69, linA), red: solveK(0.535, linA) };
+const K_FOIL = solveK(0.63, linA);
+const K_GRAV = { young: solveK(0.80, linA), old: solveK(0.66, linA) };
+const K_ROOM = solveK(0.53, linA) * (rng.chance(0.5) ? 1 : -1); // + favors screen-left
+const FLY = { wt: { speed: 1, fly: true, light: 1, grav: 'young' }, old: { speed: 0.7, fly: true, light: 1, grav: 'old' }, vg: { speed: 0.8, fly: false, light: 1, grav: 'young' }, w: { speed: 1, fly: true, light: 0.25, grav: 'young' }, adh: { speed: 1, fly: true, light: 1, grav: 'young', adh: true } };
+/* Build Φ(u). cfg: {a, b, film, orient, light, color, type, flipped} */
+function makePhi(cfg) {
+  const ft = FLY[cfg.type], film = cfg.film ? 0.1 : 1;
+  const kOf = id => (ft.adh && id === 'ethanol') ? K_ETH_ADH : SUB[id].k;
+  const kA = kOf(cfg.a) * film, kB = kOf(cfg.b) * film;
+  let kLA = 0;
+  if (cfg.light === 'lampA') kLA = K_LIGHT[cfg.color] * ft.light;
+  else if (cfg.light === 'lampB') kLA = -K_LIGHT[cfg.color] * ft.light;
+  else if (cfg.light === 'foilA') kLA = -K_FOIL * ft.light;
+  else if (cfg.light === 'foilB') kLA = K_FOIL * ft.light;
+  const kG = cfg.orient === 'vA' ? K_GRAV[ft.grav] : cfg.orient === 'vB' ? -K_GRAV[ft.grav] : 0;
+  const kR = cfg.orient === 'h' ? (cfg.flipped ? -K_ROOM : K_ROOM) : 0; // room bias tied to the screen side
+  return u => kA * chemA(u) + kB * chemB(u) + (kLA + kG + kR) * linA(u);
+}
+function makeFlies(n) {
+  return Array.from({ length: n }, () => {
+    const q = rng.uniform(); let acc = 0, r = 1; for (const [rv, w] of RESP) { acc += w; if (q < acc) { r = rv; break; } }
+    const x = 0.35 + 0.3 * rng.uniform();
+    return { x, y: (rng.uniform() * 2 - 1) * 0.8 * RHO * halfW(x), th: rng.uniform() * Math.PI * 2, r, state: 'walk', t: rng.uniform() * 5 };
+  });
+}
+function stepFlies(fl, phi, dt, ft) {
+  const vW = 0.045 * ft.speed, vF = 0.3;
+  for (const f of fl) {
+    f.t -= dt;
+    if (f.state === 'rest') { if (f.t <= 0) { f.state = 'walk'; f.t = 2 + rng.uniform() * 8; } continue; }
+    if (f.state === 'fly' && f.t <= 0) { f.state = 'walk'; f.t = 2 + rng.uniform() * 8; }
+    if (f.state === 'walk' && f.t <= 0) {
+      const q = rng.uniform();
+      if (ft.fly && q < 0.3) { f.state = 'fly'; f.t = 0.5 + rng.uniform(); }
+      else if (q < 0.65) { f.state = 'rest'; f.t = 1 + rng.uniform() * 5; continue; }
+      else f.t = 2 + rng.uniform() * 8;
+    }
+    const v = f.state === 'fly' ? vF : vW, Dr = f.state === 'fly' ? 0.4 : 1.5;
+    f.th += rng.normal(0, Math.sqrt(2 * Dr * dt));
+    const nx = f.x + v * Math.cos(f.th) * dt, ny = f.y + v * Math.sin(f.th) * dt;
+    if (nx < 0.012 || nx > 0.988) { f.th = Math.PI - f.th; continue; }
+    if (Math.abs(ny) > RHO * halfW(nx)) { f.th = -f.th; continue; }
+    const dP = f.r * (phi(nx) - phi(f.x));
+    if (dP >= 0 || rng.uniform() < Math.exp(dP)) { f.x = nx; f.y = ny; }
+    else f.th = Math.PI - f.th + rng.normal(0, 0.5);
+  }
+}
+const countA = fl => fl.filter(f => f.x < 0.5).length;
+function runHeadless(cfg, n, seconds) { const phi = makePhi(cfg), ft = FLY[cfg.type], fl = makeFlies(n); for (let t = 0; t < seconds; t += 0.1) stepFlies(fl, phi, 0.1, ft); return countA(fl); }
+
+/* ---------- Choice chamber UI ---------- */
+const subOpts = cur => SUBS.map(([id, name]) => `<option value="${id}" ${id === cur ? 'selected' : ''}>${name}</option>`).join('');
+$('#c-a').innerHTML = subOpts('water'); $('#c-b').innerHTML = subOpts('water');
+$('#d-a').innerHTML = subOpts('vinegar'); $('#d-b').innerHTML = subOpts('water');
+const cvH = Lab.canvas('#ch-h', window.innerWidth < 600 ? 0.55 : 0.4), cvV = Lab.canvas('#ch-v', 1.05);
+let orient = 'h', flipped = false, speedX = 15, flies = [], simT = 0, trial = null, paused = false, nextCount = 0;
+function segBind(id, cb) { $$('#' + id + ' button').forEach(b => b.addEventListener('click', () => { $$('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', x === b)); cb(b.dataset.v); })); }
+segBind('c-orient', v => { if (trial) return setOrientBtn(); orient = v; showCanvas(); drawChamber(); });
+segBind('c-speed', v => { speedX = +v; });
+function setOrientBtn() { $$('#c-orient button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === orient)); }
+function showCanvas() { $('#ch-h').hidden = orient !== 'h'; $('#ch-v').hidden = orient === 'h'; const c = orient === 'h' ? cvH : cvV; c.resize(); }
+const cn = $('#c-n'); const syncCN = () => $('#c-n-out').textContent = cn.value; cn.addEventListener('input', () => { syncCN(); if (!trial) { flies = makeFlies(+cn.value); drawChamber(); } }); syncCN();
+function cfgNow() { return { a: $('#c-a').value, b: $('#c-b').value, film: $('#c-film').checked, orient, light: $('#c-light').value, color: $('#c-color').value, type: $('#c-type').value, flipped }; }
+['#c-a', '#c-b', '#c-film', '#c-light', '#c-color'].forEach(s => $(s).addEventListener('change', () => { if (!trial) drawChamber(); }));
+
+/* geometry: map chamber coords (u along axis from A, y across) to canvas pixels */
+function geom() {
+  if (orient === 'h') {
+    const { w, h } = cvH, len = w * 0.82, x0 = (w - len) / 2, R = Math.min(h * 0.36, len * RHO * (w < 600 ? 2.4 : 1.6)), cy = h * 0.5;
+    return { cv: cvH, len, R, A: flipped ? 'right' : 'left', map: (u, y) => { const s = flipped ? 1 - u : u; return [x0 + s * len, cy + (y / RHO) * R]; } };
+  }
+  const { w, h } = cvV, len = h * 0.82, y0 = (h - len) / 2, R = Math.min(w * 0.22, len * RHO * 1.6), cx = w * 0.5;
+  const aTop = orient === 'vA';
+  return { cv: cvV, len, R, A: aTop ? 'top' : 'bottom', map: (u, y) => { const s = aTop ? u : 1 - u; return [cx + (y / RHO) * R, y0 + s * len]; } };
+}
+function drawChamber() {
+  const g = geom(), { ctx, w, h } = g.cv, cfg = cfgNow();
+  ctx.clearRect(0, 0, w, h); ctx.fillStyle = C('--surface'); ctx.fillRect(0, 0, w, h);
+  const fs = Math.max(11, Math.min(15, w / 45));
+  // light / foil
+  const endPt = u => g.map(u, 0);
+  if (cfg.light.startsWith('lamp')) {
+    const [lx, ly] = endPt(cfg.light === 'lampA' ? -0.04 : 1.04);
+    const tint = { white: '--warn', blue: '--s3', green: '--s6', red: '--bad' }[cfg.color];
+    const gr = ctx.createRadialGradient(lx, ly, 2, lx, ly, g.len * 0.6); gr.addColorStop(0, alpha(tint, 0.45)); gr.addColorStop(1, alpha(tint, 0));
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = C(tint); ctx.beginPath(); ctx.arc(lx, ly, Math.max(5, g.R * 0.25), 0, 7); ctx.fill();
+  }
+  // chamber outline
+  const top = [], bot = [];
+  for (let i = 0; i <= 80; i++) { const u = i / 80, hw = RHO * halfW(u); top.push(g.map(u, -hw)); bot.push(g.map(u, hw)); }
+  ctx.beginPath(); top.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); bot.reverse().forEach(([x, y]) => ctx.lineTo(x, y)); ctx.closePath();
+  ctx.fillStyle = alpha('--s3', 0.07); ctx.fill(); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.5; ctx.stroke();
+  if (cfg.light.startsWith('foil')) {
+    ctx.save(); ctx.clip();
+    const [fx0, fy0] = g.map(cfg.light === 'foilA' ? 0 : 0.6, 0), [fx1, fy1] = g.map(cfg.light === 'foilA' ? 0.4 : 1, 0);
+    ctx.fillStyle = alpha('--ink', 0.25);
+    if (orient === 'h') ctx.fillRect(Math.min(fx0, fx1), 0, Math.abs(fx1 - fx0), h); else ctx.fillRect(0, Math.min(fy0, fy1), w, Math.abs(fy1 - fy0));
+    ctx.restore();
+  }
+  // tape band in the middle
+  const [mx, my] = g.map(0.5, 0);
+  ctx.fillStyle = alpha('--muted', 0.18);
+  if (orient === 'h') ctx.fillRect(mx - g.R * 0.25, my - g.R * 1.05, g.R * 0.5, g.R * 2.1); else ctx.fillRect(mx - g.R * 1.05, my - g.R * 0.25, g.R * 2.1, g.R * 0.5);
+  // midline / quadrants
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = C('--stain'); ctx.lineWidth = 1.2;
+  const lineAt = u => { const [x1, y1] = g.map(u, -RHO * 1.1), [x2, y2] = g.map(u, RHO * 1.1); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+  lineAt(0.5);
+  if ($('#quad').checked && paused) { ctx.strokeStyle = alpha('--stain', 0.5); lineAt(0.25); lineAt(0.75); const [a1, b1] = g.map(0, 0), [a2, b2] = g.map(1, 0); ctx.beginPath(); ctx.moveTo(a1, b1); ctx.lineTo(a2, b2); ctx.stroke(); }
+  ctx.setLineDash([]);
+  // caps & cotton balls
+  [['A', 0, cfg.a], ['B', 1, cfg.b]].forEach(([lab, u, sid]) => {
+    const [cx, cy] = g.map(u === 0 ? -0.012 : 1.012, 0), cr = g.R * 0.42;
+    ctx.fillStyle = mix('--s2', '--surface', 0.35);
+    if (orient === 'h') ctx.fillRect(cx - cr * 0.7, cy - cr * 1.1, cr * 1.4, cr * 2.2); else ctx.fillRect(cx - cr * 1.1, cy - cr * 0.7, cr * 2.2, cr * 1.4);
+    ctx.fillStyle = mix(lightTok(), SUB[sid].col, 0.35); ctx.beginPath(); ctx.arc(cx, cy, cr * 0.75, 0, 7); ctx.fill();
+    if (cfg.film) { ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1; ctx.stroke(); }
+    const [lx, ly] = g.map(u === 0 ? 0.08 : 0.92, -RHO * 1.55);
+    ctx.fillStyle = C('--ink'); ctx.font = font(fs + 3, 700); ctx.textAlign = 'center'; ctx.fillText(lab, orient === 'h' ? lx : g.map(u, 0)[0] - g.R * 1.6, orient === 'h' ? ly : g.map(u, 0)[1] + 5);
+  });
+  // substance labels
+  ctx.font = font(fs - 1, 400); ctx.fillStyle = C('--muted');
+  if (orient === 'h') {
+    const [ax, ay] = g.map(0.02, RHO * 1.2), [bx, by] = g.map(0.98, RHO * 1.2);
+    ctx.textAlign = flipped ? 'right' : 'left'; ctx.fillText(SUB[cfg.a].name, ax, ay + fs);
+    ctx.textAlign = flipped ? 'left' : 'right'; ctx.fillText(SUB[cfg.b].name, bx, by + fs);
+  } else {
+    const [ax, ay] = g.map(0, 0), [bx, by] = g.map(1, 0);
+    ctx.textAlign = 'left'; ctx.fillText(SUB[cfg.a].name, ax + g.R * 0.9, ay + 4); ctx.fillText(SUB[cfg.b].name, bx + g.R * 0.9, by + 4);
+  }
+  // flies
+  const s = Math.max(2.2, g.R * 0.08);
+  flies.forEach(f => { const [px, py] = g.map(f.x, f.y); const ang = orient === 'h' ? (flipped ? Math.PI - f.th : f.th) : (orient === 'vA' ? Math.PI / 2 - f.th : -Math.PI / 2 + f.th); drawDot(ctx, px, py, ang, f.state === 'fly' ? s * 1.15 : s, true); });
+  // readouts
+  const a = countA(flies), hide = paused && $('#c-pause').checked;
+  $('#ro-time').textContent = clock(simT);
+  $('#ro-a').textContent = hide ? 'count!' : a; $('#ro-b').textContent = hide ? 'count!' : flies.length - a;
+  $('#ro-pct').textContent = hide || !flies.length ? '—' : Math.round(100 * a / flies.length) + '%';
+}
+const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+cvH.onresize = drawChamber; cvV.onresize = drawChamber;
+
+const intChart = Lab.chart('#int-chart', { xLabel: 'Time (min)', yLabel: '% of flies at A side', yMin: 0, yMax: 100, xMin: 0, series: [], hLines: [{ y: 50, label: 'no preference' }] });
+const intTable = Lab.table('#int-table', {
+  save: 'intervals',
+  columns: [{ key: 't', label: 'Time', unit: 'min', num: true, digits: 1 }, { key: 'a', label: 'Your count A', num: true, digits: 0, editable: true }, { key: 'b', label: 'Your count B', num: true, digits: 0, editable: true }, { key: 'aa', label: 'Actual A', num: true, digits: 0 }, { key: 'ab', label: 'Actual B', num: true, digits: 0 }],
+  onChange: rows => intChart.update({ series: [{ name: '% at A', points: rows.map(r => { const A = r.a != null ? r.a : r.aa, B = r.b != null ? r.b : r.ab; return { x: r.t, y: A != null && B != null && A + B > 0 ? 100 * A / (A + B) : NaN }; }) }] })
+});
+const prefChart = Lab.chart('#pref-chart', { type: 'bar', xLabel: 'Choice (A vs B)', yLabel: 'Mean % of flies at A', yMin: 0, yMax: 100, series: [], categories: [] });
+function chi(a, b) { return Lab.stats.chiSquare([a, b], [(a + b) / 2, (a + b) / 2]); }
+function drawPref(rows) {
+  const groups = {};
+  rows.forEach(r => { const k = r.choice; (groups[k] = groups[k] || []).push(100 * r.A / (r.A + r.B)); });
+  const cats = Object.keys(groups);
+  prefChart.update({ categories: cats, series: [{ name: 'Mean % at A (± 2 SE)', points: cats.map(c => ({ x: c, y: Lab.stats.mean(groups[c]), err: groups[c].length > 1 ? 2 * Lab.stats.se(groups[c]) : 0 })) }] });
+}
+const trialsTable = Lab.table('#trials-table', {
+  save: 'trials',
+  columns: [{ key: 'n', label: 'Trial' }, { key: 'choice', label: 'A vs B' }, { key: 'setup', label: 'Setup' }, { key: 'A', label: 'Final A', num: true, digits: 0 }, { key: 'B', label: 'Final B', num: true, digits: 0 }, { key: 'chi2', label: 'χ²', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  onChange: drawPref
+});
+function setupLabel(cfg) {
+  const parts = [cfg.orient === 'h' ? 'flat' : cfg.orient === 'vA' ? 'upright, A up' : 'upright, B up'];
+  if (cfg.light !== 'none') parts.push({ lampA: 'lamp at A', lampB: 'lamp at B', foilA: 'foil over A', foilB: 'foil over B' }[cfg.light] + (cfg.light.startsWith('lamp') && cfg.color !== 'white' ? ` (${cfg.color})` : ''));
+  if (cfg.film) parts.push('Parafilm');
+  if (cfg.type !== 'wt') parts.push({ old: 'old flies', vg: 'vestigial', w: 'white-eyed', adh: 'Adh−' }[cfg.type]);
+  if (cfg.orient === 'h' && cfg.flipped) parts.push('ends swapped');
+  return parts.join(', ');
+}
+const shortName = id => SUB[id].name.replace(/ \(.*\)|, .*$| in brine| tablet in water| \+ sugar water/g, '');
+
+const chLoop = Lab.loop(dt => {
+  if (!trial || paused) { drawChamber(); return false; }
+  let adv = dt * speedX;
+  while (adv > 1e-9) {
+    const d = Math.min(0.1, adv, nextCount - simT + 1e-9);
+    stepFlies(flies, trial.phi, Math.max(d, 1e-4), trial.ft); simT += Math.max(d, 1e-4); adv -= Math.max(d, 1e-4);
+    if (simT >= nextCount - 1e-6) { simT = nextCount; if (hitInterval()) break; }
+  }
+  drawChamber();
+  if (!trial || paused) return false;
+});
+function hitInterval() {
+  const a = countA(flies), b = flies.length - a;
+  trial.pending = { t: +(simT / 60).toFixed(2), aa: a, ab: b };
+  if ($('#c-pause').checked) {
+    paused = true; $('#count-panel').hidden = false; $('#count-title').textContent = `Time ${clock(simT)}: count the flies on each side of the dashed midline`;
+    $('#cnt-a').value = ''; $('#cnt-b').value = ''; $('#cnt-a').focus({ preventScroll: true });
+    return true;
+  }
+  recordInterval(null, null); return !trial;
+}
+function recordInterval(a, b) {
+  const p = trial.pending; trial.rows.push({ t: p.t, a, b, aa: null, ab: null, _aa: p.aa, _ab: p.ab });
+  intTable.setRows(trial.rows.map(r => Object.assign({}, r, { aa: null, ab: null })));
+  nextCount += trial.int;
+  if (simT >= trial.dur - 1e-6) finishTrial();
+}
+$('#cnt-rec').addEventListener('click', () => {
+  if (!trial || !paused) return;
+  const a = $('#cnt-a').value === '' ? null : +$('#cnt-a').value, b = $('#cnt-b').value === '' ? null : +$('#cnt-b').value;
+  paused = false; $('#count-panel').hidden = true;
+  recordInterval(a, b);
+  if (trial) chLoop.start(); else drawChamber();
+});
+$('#quad').addEventListener('change', drawChamber);
+function finishTrial() {
+  const rows = trial.rows.map(r => Object.assign({}, r, { aa: r._aa, ab: r._ab }));
+  intTable.setRows(rows);
+  const last = rows[rows.length - 1];
+  const A = last.a != null && last.b != null ? last.a : last.aa, B = last.a != null && last.b != null ? last.b : last.ab;
+  const x = chi(A, B);
+  trialsTable.addRow({ n: trialsTable.getRows().length + 1, choice: `${shortName(trial.cfg.a)} vs ${shortName(trial.cfg.b)}`, setup: setupLabel(trial.cfg), A, B, chi2: x.chi2, sig: x.reject ? 'Yes: preference' : 'No' });
+  trial = null; paused = false; $('#c-run').disabled = false; $('#count-panel').hidden = true;
+}
+$('#c-run').addEventListener('click', () => {
+  if (trial) return;
+  const cfg = cfgNow();
+  flies = makeFlies(+cn.value); simT = 0;
+  trial = { cfg, phi: makePhi(cfg), ft: FLY[cfg.type], int: +$('#c-int').value, dur: +$('#c-dur').value, rows: [] };
+  nextCount = trial.int; paused = false; intTable.clear();
+  $('#c-run').disabled = true;
+  chLoop.start();
+});
+$('#c-stop').addEventListener('click', () => { if (!trial) return; trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); });
+$('#c-swap').addEventListener('click', () => {
+  if (trial) return;
+  if (orient === 'h') flipped = !flipped;
+  else { orient = orient === 'vA' ? 'vB' : 'vA'; setOrientBtn(); }
+  flies.forEach(f => { f.x = 1 - f.x; });
+  drawChamber();
+});
+flies = makeFlies(+cn.value);
+Lab.prompt('#predict-prompt', { key: 'predict', label: 'Step 6: List the substances you will test and predict which the flies will prefer or avoid. Explain your reasoning.', rows: 3 });
+
+/* ---------- Design ---------- */
+['question:Your question', 'hyp:Hypothesis (and the null hypothesis you will test with chi-square)', 'ctrl:Independent variable, controls, and what you will hold constant'].forEach(s => { const [k, l] = s.split(':'); Lab.prompt('#design-prompts', { key: 'd-' + k, label: l, rows: 3 }); });
+const dn = $('#d-n'), dtr = $('#d-trials');
+const syncD = () => { $('#d-n-out').textContent = dn.value; $('#d-trials-out').textContent = dtr.value; }; dn.addEventListener('input', syncD); dtr.addEventListener('input', syncD); syncD();
+const dChart = Lab.chart('#d-chart', { type: 'bar', xLabel: 'Condition', yLabel: 'Mean % of flies at A', yMin: 0, yMax: 100, series: [], categories: [] });
+const dTable = Lab.table('#d-table', {
+  save: 'design',
+  columns: [{ key: 'cond', label: 'Condition' }, { key: 'trials', label: 'Trials (A:B each)' }, { key: 'A', label: 'Total A', num: true, digits: 0 }, { key: 'B', label: 'Total B', num: true, digits: 0 }, { key: 'pct', label: 'Mean % at A', num: true, digits: 1 }, { key: 'err', label: '2 SE', num: true, digits: 1 }, { key: 'chi2', label: 'Pooled χ²', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  onChange: rows => dChart.update({ categories: rows.map((r, i) => `${i + 1}`), series: [{ name: 'Mean % at A (± 2 SE)', points: rows.map((r, i) => ({ x: `${i + 1}`, y: r.pct, err: r.err || 0 })) }] })
+});
+$('#d-run').addEventListener('click', () => {
+  const lightV = $('#d-light').value, [light, color] = lightV.includes('-') ? lightV.split('-') : [lightV, 'white'];
+  const base = { a: $('#d-a').value, b: $('#d-b').value, film: $('#d-film').checked, orient: $('#d-orient').value, light, color, type: $('#d-type').value };
+  const nT = +dtr.value, n = +dn.value, swap = $('#d-swap').checked, res = [];
+  for (let i = 0; i < nT; i++) { const cfg = Object.assign({}, base, { flipped: swap && i % 2 === 1 }); const a = runHeadless(cfg, n, 300); res.push([a, n - a]); }
+  const A = Lab.stats.sum(res.map(r => r[0])), B = Lab.stats.sum(res.map(r => r[1])), pcts = res.map(r => 100 * r[0] / n), x = chi(A, B);
+  const cond = `${shortName(base.a)} vs ${shortName(base.b)}; ${setupLabel(Object.assign({}, base, { flipped: false }))}${swap ? '; ends swapped each trial' : ''}`;
+  dTable.addRow({ cond: `${dTable.getRows().length + 1}. ${cond}`, trials: res.map(r => r.join(':')).join(', '), A, B, pct: Lab.stats.mean(pcts), err: nT > 1 ? 2 * Lab.stats.se(pcts) : null, chi2: x.chi2, sig: x.reject ? 'Yes' : 'No' });
+  $('#d-last').textContent = `${cond}: ${A} at A, ${B} at B (χ² = ${Lab.fmt(x.chi2, 2)})`;
+});
+$('#d-clear').addEventListener('click', () => dTable.clear());
+
+/* ---------- Analyze ---------- */
+function runChi() {
+  const a = parseFloat($('#x-a').value), b = parseFloat($('#x-b').value);
+  if (!isFinite(a) || !isFinite(b) || a < 0 || b < 0 || a + b === 0) { $('#x-out').textContent = 'Enter two non-negative counts.'; return; }
+  const e = (a + b) / 2, x = chi(a, b);
+  $('#x-out').innerHTML = `Expected at each end: ${Lab.fmt(e, 1)}<br>A: (${a} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[0], 3)}<br>B: (${b} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[1], 3)}<br>χ² = ${Lab.fmt(x.chi2, 3)}, df = 1, critical value (p = 0.05) = 3.84<br><strong>${x.reject ? 'χ² > 3.84: reject the null hypothesis. The flies show a preference.' : 'χ² ≤ 3.84: fail to reject the null hypothesis. No significant preference.'}</strong>`;
+}
+$('#x-run').addEventListener('click', runChi);
+$('#x-last').addEventListener('click', () => { const r = trialsTable.getRows(); if (!r.length) { $('#x-out').textContent = 'Finish a choice-chamber trial first.'; return; } const l = r[r.length - 1]; $('#x-a').value = l.A; $('#x-b').value = l.B; runChi(); });
+runChi();
+[['an1', 'Describe the patterns in where the flies went. Which substances produced the strongest positive chemotaxis? The strongest negative chemotaxis? Support your answer with % at each end and χ² values.'],
+ ['an2', 'Using data from the whole class (or all your trials), build a preference table ranking the substances from most to least attractive.'],
+ ['an3', 'Were your hypotheses about the flies\' preferences supported? Do the attractive substances have anything in common? Look at their ingredients.'],
+ ['an4', 'Did your water/water control and your swapped-end trials show any position effect? How did that affect how you interpret the other trials?'],
+ ['an5', 'How will you share your results and conclusions with classmates? Describe the graph you would use.']
+].forEach(([key, label]) => Lab.prompt('#an-prompts', { key, label, rows: 3 }));
+[['C', 'cer-c', 'Claim: What environmental factor(s) trigger a fruit fly response, and in which direction?'], ['E', 'cer-e', 'Evidence: Which counts, percentages, and chi-square results support your claim?'], ['R', 'cer-r', 'Reasoning: Why would this behavior increase a fruit fly\'s fitness? Connect it to finding food and egg-laying sites.']].forEach(([L, key, label]) => { const p = Lab.prompt('#cer', { key, label, rows: 3 }); $('label', p).dataset.letter = L; });
+[['ev1', 'Is there anything shared by all of the factors the flies were attracted to?'],
+ ['ev2', 'Is there anything shared by all of the factors the flies avoided?'],
+ ['ev3', 'How do you explain the behavior of fruit flies in someone\'s kitchen or in nature based on your data? Do your data explain all fruit fly movements? Should they really be called "fruit" flies?'],
+ ['ev4', 'What factors had to be controlled in your experiment, and which ones were hardest to control in a real choice chamber?'],
+ ['ev5', 'Where can you go from here? Name an organism you expect to behave like fruit flies and one you expect to behave differently (for example ladybugs, houseflies, or mealworms), and describe a choice-chamber test for it.']
+].forEach(([key, label]) => Lab.prompt('#evaluate', { key, label, rows: 3 }));
+
+/* ---------- Initial draw ---------- */
+tkInit(); drawRef(); newSexFly(); vialSetup(false); vialDraw(); showCanvas(); drawChamber();
+</script>
+</body>
+</html>

@@ -1,0 +1,1484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 7 · Cell Division: Mitosis and Meiosis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* Page-specific styles (tokens only) */
+  .sim h3 { font-size: 1.02rem; }
+  .txt { max-width: 68ch; }
+  .step-body > *, .sim > *, .grid-2 > *, .stack > * { min-width: 0; }
+  canvas.mic { cursor: crosshair; touch-action: manipulation; }
+  svg.model { width: 100%; height: auto; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); user-select: none; -webkit-user-select: none; }
+  svg.model .drag { cursor: grab; touch-action: none; }
+  svg.model .tap { cursor: pointer; }
+  svg.model text { font-family: var(--f-body); }
+  .status { font-size: .92rem; background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 12px; }
+  .status strong { color: var(--accent); }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sortrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .sortcard { display: grid; gap: 6px; padding: 8px; border: 2px solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; font: inherit; color: var(--ink); text-align: center; font-size: .86rem; }
+  .sortcard canvas { width: 100%; display: block; border-radius: var(--r-sm); }
+  .sortcard[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .sortcard.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .sortcard.bad { border-color: var(--bad); background: var(--bad-soft); }
+  .sortcard .pos { font-family: var(--f-mono); font-size: .78rem; color: var(--muted); }
+  table.data input.is-right { border-color: var(--ok); background: var(--ok-soft); }
+  table.data input.is-wrong { border-color: var(--bad); background: var(--bad-soft); }
+  .tools .seg button { min-width: 44px; }
+  .counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; }
+  .prep-list { display: grid; gap: 6px; }
+  .prep-list .check { font-size: .88rem; }
+  .calc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+  .calc-grid .field input { font-family: var(--f-mono); }
+  .kary { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: var(--r); }
+  .kary .chr { transition: transform .9s cubic-bezier(.4,.1,.2,1); cursor: pointer; }
+  .kary .chr .mk { opacity: 0; transition: opacity .15s; }
+  .kary .chr.counted .mk { opacity: 1; }
+  .kary .abn-ring { opacity: 0; }
+  .kary.show-abn .abn-ring { opacity: 1; }
+  .kary .glabel { transition: opacity .5s; }
+  .kary.spread .glabel { opacity: 0; }
+  .legend-row { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .86rem; color: var(--muted); }
+  .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--line); }
+  figure { margin: 0; }
+  .cycle-fig { width: 100%; max-width: 520px; margin-inline: auto; }
+  .cycle-fig svg { width: 100%; height: auto; display: block; }
+  .mini-fig { max-width: 560px; }
+  .gamete-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .gamete-list .readout .v { font-size: 1rem; }
+  .chi-wrap .table-wrap { margin-top: 8px; }
+  .decision { padding: 10px 12px; border-radius: var(--r-sm); background: var(--surface-2); font-size: .95rem; }
+  .decision.rej { background: var(--ok-soft); border-left: 3px solid var(--ok); }
+  .decision.keep { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+  .exp-in { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  #d-field-wrap { max-width: 320px; }
+  @media (max-width: 520px) { .sortrow { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 3 · Information Storage and Transmission</span></nav>
+    <div class="eyebrow">Investigation 7</div>
+    <h1>Cell Division: Mitosis and Meiosis</h1>
+    <p class="driving-q">How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?</p>
+    <div class="tags"><span class="tag">Unit 4: Cell Cycle</span><span class="tag">Unit 5: Heredity</span><span class="tag">IST-1.B</span><span class="tag">IST-1.C</span><span class="tag">IST-1.F</span><span class="tag">IST-1.G</span><span class="tag">Science Practices 1.B, 4.B, 5.A</span><span class="tag">≈ 4–5 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ 1. OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Every one of your trillions of cells came from a single zygote, and every egg or sperm you make carries exactly half of your chromosomes. In this lab you will model how chromosomes move in mitosis and meiosis, count dividing cells in onion root tips to test whether a fungal lectin speeds up mitosis, compare the chromosomes of normal and cancer cells, and use the fungus <i>Sordaria fimicola</i> to measure how often crossing over happens.</p>
+      <p>The investigation has five parts:</p>
+      <ol>
+        <li><strong>Modeling mitosis</strong> with pop-bead chromosomes, then putting real cell images in order.</li>
+        <li><strong>Effects of environment on mitosis</strong>: score onion root-tip squashes from control and lectin-treated bulbs, pool class data, and run a chi-square test.</li>
+        <li><strong>Loss of cell cycle control in cancer</strong>: count and compare chromosomes in normal, HeLa, and leukemia karyotypes.</li>
+        <li><strong>Modeling meiosis</strong> with crossing over, independent assortment, and nondisjunction.</li>
+        <li><strong>Crossing over in <i>Sordaria</i></strong>: score asci and calculate the gene-to-centromere map distance.</li>
+      </ol>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>IST-1.B</strong> Describe the events that occur in the cell cycle.</li>
+          <li><strong>IST-1.C</strong> Explain how mitosis results in the transmission of chromosomes from one generation to the next.</li>
+          <li><strong>IST-1.F</strong> Explain how meiosis results in the transmission of chromosomes from one generation to the next.</li>
+          <li><strong>IST-1.G</strong> Describe similarities and differences between the phases and outcomes of mitosis and meiosis.</li>
+        </ul>
+        <p class="small" style="margin-top:8px">Science practices: <strong>1.B</strong> explain biological concepts and processes · <strong>4.B</strong> describe data from a table or graph · <strong>5.A</strong> perform mathematical calculations (mitotic index, chi-square, map distance).</p>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
+        <p>Root-tip squashes use 1 M hydrochloric acid, Carnoy's fixative (glacial acetic acid and ethanol), and carbol-fuchsin stain, which contains phenol. Wear goggles and disposable gloves for Parts 2 and 5. Use a razor blade with care, and press cover slips with a pencil eraser through a lab wipe, never your thumb. Purified lectin can irritate skin and airways. Dispose of chemicals as your teacher directs.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>The cell cycle, its controls, and two kinds of division</h2></header>
+    <div class="step-body prose">
+      <p>Bacteria and archaea divide by <strong>binary fission</strong>, and so do mitochondria and chloroplasts, which is one line of evidence that these organelles descended from free-living prokaryotes. Eukaryotic cells have a harder job: they must copy many linear chromosomes, sort the copies precisely, and split a large cytoplasm full of organelles. The sequence of events that does this is the <strong>cell cycle</strong>.</p>
+      <figure class="cycle-fig">
+        <svg id="cycle-svg" viewBox="0 0 420 340" role="img" aria-label="Cell cycle diagram: G1, S, G2 and M phases arranged in a circle, with the G1, G2 and M-spindle checkpoints marked and G0 branching off G1."></svg>
+      </figure>
+      <p><strong>Interphase</strong> takes up most of the cycle. In <strong>G<sub>1</sub></strong> the cell grows and makes organelles. In <strong>S</strong> phase every chromosome is replicated, so each chromosome now consists of two identical <strong>sister chromatids</strong> held together at the centromere. In <strong>G<sub>2</sub></strong> the cell checks the new DNA and prepares to divide. A G<sub>2</sub> cell has twice the DNA of a G<sub>1</sub> cell but no new genetic information, because the sisters are copies. Cells that stop dividing leave the cycle and sit in <strong>G<sub>0</sub></strong>.</p>
+      <p>In <strong>mitosis</strong> the condensed chromosomes line up at the metaphase plate, the sister chromatids are pulled to opposite poles by spindle microtubules attached at their kinetochores, and two nuclei form. <strong>Cytokinesis</strong> then splits the cytoplasm (a furrow in animal cells, a cell plate in plant cells). Condensing first matters: long, tangled interphase DNA would snag and break if it were dragged across the cell, like trying to separate cooked spaghetti, whereas compact chromosomes move like pieces of macaroni.</p>
+      <h3>Cyclins, CDKs, and checkpoints</h3>
+      <p>Progress through the cycle is driven by <strong>cyclin-dependent kinases (CDKs)</strong>, enzymes that are active only when bound to a <strong>cyclin</strong>. Cyclin levels rise and fall each cycle. When enough mitotic cyclin accumulates, it binds CDK to form <strong>MPF</strong> (mitosis-promoting factor), which phosphorylates proteins that launch mitosis; cyclin is then destroyed and MPF activity crashes so the cell can finish dividing.</p>
+      <div id="mpf-chart" aria-label="Graph of cyclin concentration rising through interphase and MPF activity peaking at each mitosis."></div>
+      <p>Three <strong>checkpoints</strong> stop the cycle if something is wrong. The <strong>G<sub>1</sub> checkpoint</strong> asks whether the cell is big enough and has growth signals such as platelet-derived growth factor (PDGF). The <strong>G<sub>2</sub> checkpoint</strong> asks whether DNA replication is complete and undamaged. The <strong>M-spindle checkpoint</strong> holds anaphase until every kinetochore is attached to spindle microtubules. Tumor-suppressor proteins such as <strong>p53</strong> and <strong>Rb</strong> enforce these stops; when they are mutated, damaged cells keep dividing, which is a hallmark of cancer.</p>
+      <h3>Mitosis versus meiosis</h3>
+      <p><strong>Meiosis</strong> is a reduction division. After one round of DNA replication the cell divides twice, turning one diploid (2<i>n</i>) cell into four haploid (<i>n</i>) cells. In prophase I homologous chromosomes pair and non-sister chromatids exchange segments by <strong>crossing over</strong>. In metaphase I each homologous pair lines up independently of the others (<strong>independent assortment</strong>), and in anaphase I the homologs, not the sisters, separate. Meiosis II then separates sister chromatids. If homologs or sisters fail to separate (<strong>nondisjunction</strong>), gametes end up with an extra or a missing chromosome.</p>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th></th><th>Mitosis</th><th>Meiosis</th></tr></thead>
+        <tbody>
+          <tr><td>Divisions after one S phase</td><td>1</td><td>2</td></tr>
+          <tr><td>Homologs pair (synapsis)?</td><td>No</td><td>Yes, prophase I</td></tr>
+          <tr><td>Crossing over</td><td>Rare</td><td>Common, prophase I</td></tr>
+          <tr><td>What separates in anaphase</td><td>Sister chromatids</td><td>Homologs (I), then sisters (II)</td></tr>
+          <tr><td>Products</td><td>2 cells, 2<i>n</i>, identical</td><td>4 cells, <i>n</i>, genetically different</td></tr>
+          <tr><td>Role</td><td>Growth, repair, asexual reproduction</td><td>Gametes or spores for sexual life cycles</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Two numbers you'll calculate</h3>
+      <div class="equation">mitotic index = (cells in prophase + metaphase + anaphase + telophase) ÷ total cells counted</div>
+      <div class="equation">gene–centromere distance (map units) = (% asci showing crossover) ÷ 2</div>
+      <p>The mitotic index estimates the fraction of a tissue's cells that are dividing at the moment it was fixed. One map unit equals 1% recombinant products. In a <i>Sordaria</i> ascus with a crossover, only half of the spores carry recombinant chromatids, which is why the percentage is divided by 2.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body">
+      <p class="txt">These questions come from the manual's Getting Started discussion and the calculations you will do later. Check each answer; the explanation appears after you check.</p>
+      <div id="prelab"></div>
+      <div id="prelab-prompts" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. PART 1: MITOSIS MODEL ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Mitosis model">
+    <header><div class="eyebrow">Part 1 · Modeling mitosis</div><h2>Move the chromosomes yourself</h2></header>
+    <div class="step-body">
+      <p class="txt">This cell has 2<i>n</i> = 4: a long and a short pair of homologous chromosomes. Blue beads came from the mother, orange from the father, and the dark block in each strand is the centromere. Step through the cycle. In metaphase you drag chromosomes onto the plate; in anaphase you drag each chromatid to a pole. Try sending both sisters to the same pole once to see what happens.</p>
+      <div class="sim">
+        <div class="controls">
+          <div class="status" id="mit-stage" aria-live="polite">Stage: G<sub>1</sub></div>
+          <p class="small" id="mit-msg"></p>
+          <div class="btnrow">
+            <button class="btn btn--primary" id="mit-next" type="button">Replicate DNA (S phase)</button>
+          </div>
+          <div class="btnrow">
+            <button class="btn btn--sm" id="mit-align" type="button">Align on plate for me</button>
+            <button class="btn btn--sm" id="mit-pull" type="button">Pull chromatids for me</button>
+            <button class="btn btn--sm btn--ghost" id="mit-reset" type="button">Reset cell</button>
+          </div>
+          <div class="legend-row"><span><i class="sw" style="background:var(--s3)"></i>maternal</span><span><i class="sw" style="background:var(--s4)"></i>paternal</span></div>
+        </div>
+        <div class="stage">
+          <svg class="model" id="mit-svg" viewBox="0 0 640 400" role="img" aria-label="Pop-bead model of a cell with four chromosomes. Chromosomes can be dragged during metaphase and anaphase."><g id="mit-layer"></g></svg>
+          <div class="readouts">
+            <div class="readout"><span class="k">Chromosomes (centromeres)</span><span class="v" id="mit-ro-chr">4</span></div>
+            <div class="readout"><span class="k">DNA molecules</span><span class="v" id="mit-ro-dna">4</span></div>
+            <div class="readout"><span class="k">Daughter cells</span><span class="v" id="mit-ro-daughters">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Record what the model shows</h3>
+      <p class="txt">Fill in the table for this 2<i>n</i> = 4 cell. Count a chromosome by its centromeres. DNA amount is in units of <i>c</i>, where 1<i>c</i> is the DNA in one haploid set.</p>
+      <div id="mit-table"></div>
+      <div class="row"><button class="btn btn--sm" id="mit-check-table" type="button">Check my table</button><span class="pill" id="mit-table-pill">not checked</span></div>
+
+      <h3>Put real cells in order</h3>
+      <p class="txt">These are stained onion root-tip cells at 400×. Click one card and then another to swap them, until they run in order from interphase to cytokinesis. Then check.</p>
+      <div class="sortrow" id="sort-row" role="list"></div>
+      <div class="row" style="margin-top:10px"><button class="btn btn--sm btn--primary" id="sort-check" type="button">Check order</button><button class="btn btn--sm" id="sort-shuffle" type="button">Shuffle</button><span class="small" id="sort-msg" aria-live="polite"></span></div>
+
+      <h3>Think about it</h3>
+      <div id="p1-prompts" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ 5. PART 2: ROOT TIPS ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Root tips">
+    <header><div class="eyebrow">Part 2 · Effects of environment on mitosis</div><h2>Does a fungal lectin speed up mitosis in root tips?</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Soybean crops did poorly during three wet years, and their roots were stunted. A lectin-like protein, possibly secreted by a soil fungus, was found around the roots. Lectins are proteins that bind specific carbohydrates, and some act as <strong>mitogens</strong> that push cells into mitosis; tissue that divides too fast can be weak. You will test the idea with onion bulbs, which grow roots more easily than soybeans. One jar of bulbs grew in sand wet with water (control); the other grew in sand wet with lectin solution (PHA-M, 10 mg in 200 mL).</p>
+      </div>
+      <div id="p2-design-prompts" class="stack"></div>
+
+      <div class="sim" style="margin-top:14px">
+        <div class="controls">
+          <h3>1 · Prepare the squash</h3>
+          <div class="field"><span class="label" id="rt-treat-lbl">Root tips from</span>
+            <div class="seg" role="group" aria-labelledby="rt-treat-lbl"><button type="button" id="rt-t-control" data-treat="control" aria-pressed="true">Control jar</button><button type="button" id="rt-t-lectin" data-treat="lectin" aria-pressed="false">Lectin jar</button></div></div>
+          <div class="field"><span class="label" id="rt-tip-lbl">Root tip</span>
+            <div class="seg" role="group" aria-labelledby="rt-tip-lbl"><button type="button" id="rt-tip-1" data-tip="1" aria-pressed="true">Tip 1</button><button type="button" id="rt-tip-2" data-tip="2" aria-pressed="false">Tip 2</button><button type="button" id="rt-tip-3" data-tip="3" aria-pressed="false">Tip 3</button></div></div>
+          <div class="prep-list" role="group" aria-label="Squash procedure steps">
+            <label class="check"><input type="checkbox" id="prep-hcl" checked> 1 M HCl, 4 min (soften)</label>
+            <label class="check"><input type="checkbox" id="prep-fix" checked> Carnoy's fixative, 4 min</label>
+            <label class="check"><input type="checkbox" id="prep-cut" checked> Keep only the distal 2 mm</label>
+            <label class="check"><input type="checkbox" id="prep-stain" checked> Carbol-fuchsin, 2 min; blot; add water</label>
+            <label class="check"><input type="checkbox" id="prep-squash" checked> Tease apart, cover slip, press with eraser</label>
+          </div>
+          <button class="btn btn--primary" id="rt-prep" type="button">Make slide and view at 400×</button>
+          <h3>2 · Classify cells</h3>
+          <div class="field tools"><span class="label" id="rt-tool-lbl">Click a cell to mark it as</span>
+            <div class="seg" role="group" aria-labelledby="rt-tool-lbl" id="rt-tools">
+              <button type="button" id="rt-tool-I" data-tool="I" aria-pressed="true" title="Interphase">I</button><button type="button" id="rt-tool-P" data-tool="P" aria-pressed="false" title="Prophase">P</button><button type="button" id="rt-tool-M" data-tool="M" aria-pressed="false" title="Metaphase">M</button><button type="button" id="rt-tool-A" data-tool="A" aria-pressed="false" title="Anaphase">A</button><button type="button" id="rt-tool-T" data-tool="T" aria-pressed="false" title="Telophase">T</button><button type="button" id="rt-tool-X" data-tool="X" aria-pressed="false" title="Erase mark">✕</button>
+            </div>
+            <span class="hint">I interphase · P prophase · M metaphase · A anaphase · T telophase. Count only whole cells inside the field.</span></div>
+          <div class="btnrow">
+            <button class="btn btn--sm" id="rt-checkids" type="button" aria-pressed="false">Check my IDs</button>
+            <button class="btn btn--sm btn--ghost" id="rt-auto" type="button">Auto-score rest (demo)</button>
+          </div>
+          <button class="btn btn--primary" id="rt-record" type="button">Record counts for this tip</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz mic" id="rt-canvas" aria-label="Microscope field at 400 times showing stained onion root-tip cells. Click a cell to classify it."></canvas>
+          <p class="small" id="rt-quality" aria-live="polite"></p>
+          <div class="counts readouts">
+            <div class="readout"><span class="k">Interphase</span><span class="v" id="rt-n-I">0</span></div>
+            <div class="readout"><span class="k">Prophase</span><span class="v" id="rt-n-P">0</span></div>
+            <div class="readout"><span class="k">Metaphase</span><span class="v" id="rt-n-M">0</span></div>
+            <div class="readout"><span class="k">Anaphase</span><span class="v" id="rt-n-A">0</span></div>
+            <div class="readout"><span class="k">Telophase</span><span class="v" id="rt-n-T">0</span></div>
+            <div class="readout"><span class="k">Unmarked</span><span class="v" id="rt-n-left">0</span></div>
+            <div class="readout"><span class="k">Mitotic index</span><span class="v" id="rt-mi">—</span></div>
+          </div>
+          <p class="small" id="rt-acc" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <h3>Table 1 · Onion root-tip cell phase data</h3>
+      <div class="grid-2">
+        <div><h4>Control group</h4><div id="rt-table-c"></div></div>
+        <div><h4>Lectin-treated group</h4><div id="rt-table-t"></div></div>
+      </div>
+      <div class="row" style="margin-top:8px"><button class="btn btn--sm btn--ghost" id="rt-clear-mine" type="button">Clear my tips</button></div>
+
+      <h3>Class data</h3>
+      <p class="txt">One group's three tips are not enough to beat the noise. Pool your counts with the rest of the class (seven other lab groups, simulated).</p>
+      <div class="btnrow"><button class="btn btn--primary" id="rt-class" type="button">Add class data</button><button class="btn btn--sm" id="rt-sample" type="button">Use the manual's sample totals instead</button><button class="btn btn--sm btn--ghost" id="rt-class-clear" type="button">Clear class data</button></div>
+      <div id="rt-class-table" style="margin-top:10px"></div>
+      <div class="readouts" style="margin-top:10px">
+        <div class="readout"><span class="k">Control MI, mean ± SD</span><span class="v" id="rt-mean-c">—</span></div>
+        <div class="readout"><span class="k">Lectin MI, mean ± SD</span><span class="v" id="rt-mean-t">—</span></div>
+      </div>
+      <div id="rt-chart" style="margin-top:10px"></div>
+
+      <h3>Chi-square test</h3>
+      <div class="chi-wrap">
+        <p class="txt">Null hypothesis: the lectin has no effect, so treated roots have the same proportion of cells in mitosis as control roots. The manual gives two ways to get expected values; both have df = 1 and a critical value of 3.84 at <i>p</i> = 0.05.</p>
+        <div class="field"><span class="label" id="chi-m-lbl">Method</span>
+          <div class="seg" role="group" aria-labelledby="chi-m-lbl"><button type="button" id="chi-m-gof" data-m="gof" aria-pressed="true">Expected from control %</button><button type="button" id="chi-m-ct" data-m="ct" aria-pressed="false">2 × 2 table (Tables 2–4)</button></div></div>
+        <div id="chi-obs"></div>
+        <p class="small" id="chi-howto"></p>
+        <div class="exp-in" id="chi-exp"></div>
+        <div class="row" style="margin-top:8px"><button class="btn btn--sm" id="chi-checkexp" type="button">Check my expected values</button><button class="btn btn--primary" id="chi-run" type="button">Calculate χ²</button></div>
+        <div id="chi-out" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 6. PART 3: KARYOTYPES ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Cancer karyotypes">
+    <header><div class="eyebrow">Part 3 · Loss of cell cycle control in cancer</div><h2>Do cancer cells have different chromosomes?</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Cancer can begin when tumor-suppressor genes such as <strong>p53</strong> or <strong>Rb</strong> are mutated and checkpoints stop working. Before you look, write a hypothesis about how the chromosomes of a cancer cell might differ from a normal cell's and how that might connect to how cancer cells behave.</p>
+      </div>
+      <div id="p3-pre" class="stack"></div>
+      <div class="sim" style="margin-top:14px">
+        <div class="controls">
+          <div class="field"><span class="label" id="k-cell-lbl">Cells</span>
+            <div class="seg" role="group" aria-labelledby="k-cell-lbl"><button type="button" id="k-normal" data-k="normal" aria-pressed="true">Normal</button><button type="button" id="k-hela" data-k="hela" aria-pressed="false">HeLa</button><button type="button" id="k-cml" data-k="cml" aria-pressed="false">CML</button></div></div>
+          <div class="field"><span class="label" id="k-view-lbl">View</span>
+            <div class="seg" role="group" aria-labelledby="k-view-lbl"><button type="button" id="k-view-spread" data-v="spread" aria-pressed="true">Metaphase spread</button><button type="button" id="k-view-kary" data-v="kary" aria-pressed="false">Karyotype</button></div></div>
+          <p class="small" id="k-desc"></p>
+          <div class="readouts"><div class="readout"><span class="k">Chromosomes you've clicked</span><span class="v" id="k-count">0</span></div></div>
+          <p class="small">Click each chromosome once to tally it (click again to untick). Arranging into a karyotype keeps your marks.</p>
+          <div class="btnrow"><button class="btn btn--sm" id="k-reset-count" type="button">Clear my tally</button></div>
+          <label class="check"><input type="checkbox" id="k-abn"> Outline structurally abnormal chromosomes</label>
+        </div>
+        <div class="stage">
+          <svg class="kary spread" id="k-svg" viewBox="0 0 760 470" role="img" aria-label="Chromosomes of the selected cell, shown as a metaphase spread or arranged into a karyotype."></svg>
+        </div>
+      </div>
+      <h3>Record your counts and observations</h3>
+      <div id="k-table"></div>
+      <div class="row" style="margin-top:8px"><button class="btn btn--sm" id="k-check" type="button">Check my counts</button><span class="small" id="k-check-msg" aria-live="polite"></span></div>
+      <h3>Case 1 · HeLa cells</h3>
+      <p class="txt">HeLa cells came from the cervical tumor of Henrietta Lacks in 1951 and were grown without her knowledge or consent. They were the first human cells to divide indefinitely in culture and still are used in labs worldwide. Her tumor cells carry DNA from human papillomavirus 18 (HPV-18), whose E6 and E7 proteins disable p53 and Rb.</p>
+      <div id="p3-case1" class="stack"></div>
+      <h3>Case 2 · Philadelphia chromosome</h3>
+      <p class="txt">Chronic myelogenous leukemia (CML) cells often contain a Philadelphia chromosome. Switch to <strong>CML</strong>, arrange the karyotype, and compare pairs 9 and 22 closely with the normal cell.</p>
+      <div id="p3-case2" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ 7. PART 4: MEIOSIS MODEL ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Meiosis model">
+    <header><div class="eyebrow">Part 4 · Modeling meiosis</div><h2>Crossing over, independent assortment, and nondisjunction</h2></header>
+    <div class="step-body">
+      <p class="txt">The same 2<i>n</i> = 4 cell now undergoes meiosis. The long chromosome carries gene <strong>A</strong> (mother's allele A in blue, father's allele a in orange) on the ringed bead four beads below the centromere; the short chromosome carries gene <strong>B/b</strong>. Choose whether a crossover happens and where, flip tetrads at metaphase I, and add nondisjunction if you like. Then step through to the four gametes.</p>
+      <div class="sim">
+        <div class="controls">
+          <label class="check"><input type="checkbox" id="mei-xo" checked> Crossover in the long pair (prophase I)</label>
+          <div class="field"><label for="mei-xopos">Chiasma position <output id="mei-xopos-out" class="val"></output></label><input id="mei-xopos" type="range" min="1" max="5" step="1" value="2"><span class="hint">Beads below the centromere; gene A sits at bead 4.</span></div>
+          <div class="field"><label for="mei-ndj">Nondisjunction</label>
+            <select id="mei-ndj"><option value="none">None</option><option value="I">Long pair fails to separate in meiosis I</option><option value="II">Long chromatids fail to separate in meiosis II (left cell)</option></select></div>
+          <div class="btnrow"><button class="btn btn--sm" id="mei-flipL" type="button">Flip long tetrad</button><button class="btn btn--sm" id="mei-flipS" type="button">Flip short tetrad</button></div>
+          <div class="btnrow"><button class="btn btn--sm" id="mei-back" type="button">◀ Back</button><button class="btn btn--primary" id="mei-next" type="button">Next stage ▶</button><button class="btn btn--sm btn--ghost" id="mei-reset" type="button">Start over</button></div>
+          <button class="btn btn--sm" id="mei-record" type="button">Record these gametes</button>
+        </div>
+        <div class="stage">
+          <div class="status" aria-live="polite"><strong id="mei-stage-name">Interphase (G1)</strong> · <span id="mei-desc"></span></div>
+          <svg class="model" id="mei-svg" viewBox="0 0 800 420" role="img" aria-label="Pop-bead model of meiosis. During metaphase I, click a tetrad to flip its orientation."></svg>
+          <div class="gamete-list" id="mei-gametes"></div>
+        </div>
+      </div>
+      <div id="mei-table" style="margin-top:12px"></div>
+      <h3>Many meioses at once</h3>
+      <p class="txt">One meiosis is a single draw. Run 200 meioses with random tetrad orientation and a chiasma in the long pair 60% of the time, and look at the four gamete types.</p>
+      <div class="row"><button class="btn btn--primary" id="mei-run" type="button">Run 200 meioses</button><span class="small" id="mei-run-out" aria-live="polite"></span></div>
+      <div id="mei-chart" style="margin-top:8px"></div>
+      <div id="p4-quiz" style="margin-top:12px"></div>
+      <div id="p4-prompts" class="stack" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ============ 8. PART 5: SORDARIA ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Sordaria">
+    <header><div class="eyebrow">Part 5 · Meiosis and crossing over in Sordaria</div><h2>How far is the tan gene from its centromere?</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p><i>Sordaria fimicola</i> is a fungus whose haploid hyphae fuse where two strains meet on a plate. The brief diploid zygote undergoes meiosis and then one mitosis inside a sac called an <strong>ascus</strong>, giving eight spores lined up in the order the nuclei divided. You crossed wild type (+, black spores) with tan (tn). Without a crossover between the spore-color gene and the centromere, the alleles separate in meiosis I and the ascus shows a <strong>4:4</strong> pattern. A crossover delays separation to meiosis II, giving <strong>2:2:2:2</strong> or <strong>2:4:2</strong>.</p>
+      </div>
+      <div class="grid-2" style="align-items:start">
+        <figure class="mini-fig">
+          <svg class="model" id="xo-svg" viewBox="0 0 460 240" role="img" aria-label="Diagram linking a tetrad with or without a crossover to the order of eight spores in an ascus."></svg>
+        </figure>
+        <div class="stack">
+          <label class="check"><input type="checkbox" id="xo-demo" > Crossover between gene and centromere</label>
+          <button class="btn btn--sm" id="xo-flip" type="button" style="justify-self:start">Flip a meiosis II spindle</button>
+          <p class="small" id="xo-msg" aria-live="polite"></p>
+          <div id="p5-pre" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="sim" style="margin-top:14px">
+        <div class="controls">
+          <p class="small">Scrape perithecia from where the strains meet, squash under a cover slip, and look at 400×. Score only <strong>mature</strong> asci whose eight spores you can see clearly. Pale asci are immature.</p>
+          <div class="field tools"><span class="label" id="s-tool-lbl">Click an ascus to score it as</span>
+            <div class="seg" role="group" aria-labelledby="s-tool-lbl" id="s-tools"><button type="button" id="s-tool-P" data-stool="P" aria-pressed="true">4:4 (no crossover)</button><button type="button" id="s-tool-R" data-stool="R" aria-pressed="false">Crossover</button><button type="button" id="s-tool-E" data-stool="E" aria-pressed="false" title="Erase">✕</button></div></div>
+          <div class="btnrow"><button class="btn btn--sm" id="s-check" type="button" aria-pressed="false">Check my scoring</button><button class="btn btn--sm btn--ghost" id="s-auto" type="button">Auto-score rest (demo)</button></div>
+          <button class="btn btn--primary" id="s-record" type="button">Record this field</button>
+          <button class="btn" id="s-new" type="button">New squash / next field</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz mic" id="s-canvas" aria-label="Microscope field showing a squashed Sordaria perithecium with a rosette of asci containing black and tan spores. Click an ascus to score it."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">4:4 scored</span><span class="v" id="s-n-P">0</span></div>
+            <div class="readout"><span class="k">Crossover scored</span><span class="v" id="s-n-R">0</span></div>
+            <div class="readout"><span class="k">Mature, unscored</span><span class="v" id="s-n-left">0</span></div>
+            <div class="readout"><span class="k">Recorded so far</span><span class="v" id="s-n-tot">0</span></div>
+          </div>
+          <p class="small" id="s-msg" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <h3>Table 3 · Analysis of results</h3>
+      <div id="s-table"></div>
+      <p class="txt" style="margin-top:8px">Count at least 50 asci. Then calculate from your totals:</p>
+      <div class="calc-grid">
+        <div class="field"><label for="s-pct">% asci showing crossover</label><input id="s-pct" type="number" step="any" data-save="s-pct" data-label="% asci showing crossover"></div>
+        <div class="field"><label for="s-mu">Gene-to-centromere distance (map units)</label><input id="s-mu" type="number" step="any" data-save="s-mu" data-label="Gene-to-centromere distance (map units)"></div>
+        <div class="row"><button class="btn btn--sm" id="s-calc-check" type="button">Check my calculations</button></div>
+      </div>
+      <p class="small" id="s-calc-msg" aria-live="polite"></p>
+      <h3>Class data</h3>
+      <div class="btnrow"><button class="btn btn--primary" id="s-class" type="button">Add class data</button><button class="btn btn--sm btn--ghost" id="s-class-clear" type="button">Clear class data</button></div>
+      <div id="s-class-table" style="margin-top:10px"></div>
+      <div id="s-chart" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ============ 9. DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>What else in the soil changes the rate of mitosis?</h2></header>
+    <div class="step-body">
+      <p class="txt">Choose one biotic or abiotic factor that might raise or lower the mitotic index in root tips. Plan your levels, replicates, and controls before you run anything. Each tip is scored automatically here so you can focus on design and analysis.</p>
+      <div id="d-plan" class="stack"></div>
+      <div class="sim" style="margin-top:14px">
+        <div class="controls">
+          <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
+          <div class="field"><span class="label" id="d-lv-lbl">Levels to test</span><div class="levels" id="d-levels" role="group" aria-labelledby="d-lv-lbl"></div><span class="hint" id="d-ref-hint"></span></div>
+          <div class="field"><label for="d-reps">Root tips per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="3" max="10" value="5"></div>
+          <div class="field"><label for="d-cells">Cells scored per tip <output id="d-cells-out" class="val"></output></label><input id="d-cells" type="range" min="50" max="400" step="25" value="150"></div>
+          <button class="btn btn--primary" id="d-run" type="button">Grow, fix, and score roots</button>
+          <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear results</button>
+        </div>
+        <div class="stage">
+          <div id="d-chart"></div>
+          <div id="d-field-wrap"><canvas class="viz" id="d-field" aria-label="Example microscope field from the most recent level tested."></canvas><p class="small" id="d-field-cap"></p></div>
+        </div>
+      </div>
+      <div id="d-table" style="margin-top:10px"></div>
+      <div id="d-analysis" class="stack" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ============ 10. ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
+    <div class="step-body">
+      <h3>Root tips (postlab review)</h3>
+      <div id="an-p2" class="stack"></div>
+      <h3>Claim, evidence, reasoning</h3>
+      <p class="txt">Does the fungal lectin increase the proportion of root-tip cells in mitosis?</p>
+      <div class="cer" id="an-cer"></div>
+      <h3><i>Sordaria</i> (evaluating results)</h3>
+      <div id="an-p5" class="stack"></div>
+      <h3>Chi-square calculator</h3>
+      <p class="txt">Use this for any goodness-of-fit test, such as your own design data or the 200-meiosis run.</p>
+      <div id="cs-rows" class="stack"></div>
+      <div class="row" style="margin-top:8px"><button class="btn btn--sm" id="cs-add" type="button">Add category</button><button class="btn btn--sm btn--primary" id="cs-run" type="button">Calculate</button></div>
+      <div id="cs-out" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============ 11. REFLECT ============ -->
+  <section class="step wrap gutter" data-step="Reflect">
+    <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
+    <div class="step-body" id="reflect"></div>
+  </section>
+
+  <!-- ============ 12. SUBMIT ============ -->
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+'use strict';
+Lab.init({ id: 'lab07' });
+const $ = Lab.$, $$ = Lab.$$, ST = Lab.stats, fmt = Lab.fmt;
+const rng = Lab.rng();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const reduced = Lab.reducedMotion();
+const TAU = Math.PI * 2;
+
+/* ---------- Colour helpers: every colour is derived from theme tokens at draw time ---------- */
+function rgbOf(name) {
+  const c = Lab.color(name);
+  if (c[0] === '#') { let x = c.slice(1); if (x.length === 3) x = [...x].map(ch => ch + ch).join(''); return [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16)); }
+  const m = c.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [128, 128, 128];
+}
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const css = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const lum = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
+/* Microscope palette. Bright-field views use the lightest theme neutral as the lamp and a deep
+   magenta (carbol-fuchsin) derived from --stain, so slides look like slides in both themes. */
+function scope() {
+  const bg = rgbOf('--bg'), ink = rgbOf('--ink');
+  const light = lum(bg) > lum(ink) ? bg : ink, dark = lum(bg) > lum(ink) ? ink : bg;
+  const deepen = c => lum(c) > 0.45 ? mix(c, dark, 0.45) : c;
+  const st = rgbOf('--stain'), warn = rgbOf('--warn');
+  const stain = mix(st, dark, lum(st) > 0.5 ? 0.42 : 0.1);
+  const tanBase = lum(warn) > 0.5 ? warn : mix(warn, light, 0.38);
+  return {
+    light, dark, stain, field: mix(light, stain, 0.06),
+    black: mix(dark, warn, 0.14), tan: mix(tanBase, light, 0.12), hyaline: mix(light, rgbOf('--accent'), 0.14),
+    acc: deepen(rgbOf('--accent')), ok: deepen(rgbOf('--ok')), bad: deepen(rgbOf('--bad')), warn
+  };
+}
+const themeHooks = [];
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => themeHooks.forEach(f => f())); } catch (e) { /* old browsers */ }
+
+/* ---------- Shared canvas drawing ---------- */
+function roundPoly(ctx, pts, r) {
+  const n = pts.length; ctx.moveTo((pts[0][0] + pts[n - 1][0]) / 2, (pts[0][1] + pts[n - 1][1]) / 2);
+  for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; ctx.arcTo(p[0], p[1], q[0], q[1], r); }
+  ctx.closePath();
+}
+function capsule(ctx, x, y, w, hh) { const r = hh / 2; ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2); ctx.lineTo(x + r, y + hh); ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); ctx.closePath(); }
+/* Microscope field in 640 × 480 base units: dark eyepiece surround, lamp-lit circle, edge vignette. */
+const FC = { x: 320, y: 240, r: 226 };
+function scopeFrame(ctx, P, content) {
+  ctx.fillStyle = css(P.dark); ctx.fillRect(0, 0, 640, 480);
+  ctx.save(); ctx.beginPath(); ctx.arc(FC.x, FC.y, FC.r, 0, TAU); ctx.clip();
+  const g = ctx.createRadialGradient(FC.x - 40, FC.y - 50, 20, FC.x, FC.y, FC.r);
+  g.addColorStop(0, css(mix(P.field, P.light, 0.6))); g.addColorStop(0.7, css(P.field)); g.addColorStop(1, css(mix(P.field, P.dark, 0.16)));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 480);
+  content();
+  const v = ctx.createRadialGradient(FC.x, FC.y, FC.r * 0.78, FC.x, FC.y, FC.r);
+  v.addColorStop(0, css(P.dark, 0)); v.addColorStop(1, css(P.dark, 0.5));
+  ctx.fillStyle = v; ctx.fillRect(0, 0, 640, 480); ctx.restore();
+}
+function scopeLabels(ctx, P, mag, barPx, barLabel) {
+  ctx.fillStyle = css(P.light, 0.92); ctx.font = '600 18px "JetBrains Mono", monospace'; ctx.textAlign = 'left'; ctx.fillText(mag, 18, 32);
+  ctx.fillRect(612 - barPx, 452, barPx, 5); ctx.textAlign = 'right'; ctx.fillText(barLabel, 612, 442); ctx.textAlign = 'left';
+}
+function debris(ctx, P, seed, n) {
+  const R = Lab.rng(seed);
+  for (let i = 0; i < n; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * FC.r; ctx.fillStyle = css(P.stain, 0.12 + R.uniform() * 0.25); ctx.beginPath(); ctx.arc(FC.x + Math.cos(a) * d, FC.y + Math.sin(a) * d, 0.6 + R.uniform() * 2.2, 0, TAU); ctx.fill(); }
+}
+
+/* ---------- Onion root-tip cell (carbol-fuchsin squash) ----------
+   Cell local frame: x runs along the cell file (the spindle axis), so the metaphase plate is vertical. */
+function nucleus(ctx, R, x, y, r, k, P) {
+  const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+  g.addColorStop(0, css(P.stain, 0.26 * k)); g.addColorStop(0.82, css(P.stain, 0.4 * k)); g.addColorStop(1, css(P.stain, 0.62 * k));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.9, R.uniform() * 3, 0, TAU); ctx.fill();
+  ctx.fillStyle = css(P.stain, 0.34 * k);
+  for (let i = 0; i < 36; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * r * 0.85; ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.9, 0.5 + R.uniform() * 1.0, 0, TAU); ctx.fill(); }
+  const nn = R.int(1, 2); ctx.fillStyle = css(P.stain, 0.85 * k);
+  for (let i = 0; i < nn; i++) { ctx.beginPath(); ctx.arc(x + R.normal(0, r * 0.22), y + R.normal(0, r * 0.22), r * (0.15 + R.uniform() * 0.07), 0, TAU); ctx.fill(); }
+}
+function drawOnionCell(ctx, c, P, ink) {
+  const R = Lab.rng(c.seed), k = (c.k || 1) * ink, w = c.w, hh = c.h, S = Math.min(w, hh);
+  ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a);
+  const pts = [[-w / 2, -hh / 2], [w / 2, -hh / 2], [w / 2, hh / 2], [-w / 2, hh / 2]].map(([x, y]) => [x + R.normal(0, 1.3), y + R.normal(0, 1.3)]);
+  ctx.beginPath(); roundPoly(ctx, pts, 6);
+  ctx.fillStyle = css(P.stain, 0.06 * k + 0.02); ctx.fill();
+  ctx.lineWidth = 1.7; ctx.strokeStyle = css(P.stain, 0.28 * k + 0.06); ctx.stroke();
+  ctx.fillStyle = css(P.stain, 0.1 * k);
+  for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.arc((R.uniform() - 0.5) * w * 0.8, (R.uniform() - 0.5) * hh * 0.8, 0.5 + R.uniform() * 0.9, 0, TAU); ctx.fill(); }
+  const ox = R.normal(0, S * 0.03), oy = R.normal(0, S * 0.03);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const chrom = a => css(P.stain, a * k);
+  switch (c.phase) {
+    case 'I': nucleus(ctx, R, ox, oy, S * (0.24 + R.uniform() * 0.05), k, P); break;
+    case 'P': {
+      const r = S * 0.3;
+      ctx.fillStyle = chrom(0.12); ctx.beginPath(); ctx.arc(ox, oy, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = chrom(0.22); ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = chrom(0.85);
+      for (let i = 0; i < 10; i++) {
+        let px = ox + R.normal(0, r * 0.4), py = oy + R.normal(0, r * 0.4);
+        ctx.lineWidth = S * (0.035 + R.uniform() * 0.025); ctx.beginPath(); ctx.moveTo(px, py);
+        for (let j = 0; j < 3; j++) {
+          const cx = clamp(px + R.normal(0, r * 0.45), ox - r * 0.85, ox + r * 0.85), cy = clamp(py + R.normal(0, r * 0.45), oy - r * 0.85, oy + r * 0.85);
+          px = clamp(px + R.normal(0, r * 0.4), ox - r * 0.8, ox + r * 0.8); py = clamp(py + R.normal(0, r * 0.4), oy - r * 0.8, oy + r * 0.8);
+          ctx.quadraticCurveTo(cx, cy, px, py);
+        }
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'M': {
+      ctx.strokeStyle = chrom(0.05); ctx.lineWidth = 1;
+      for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(-w * 0.42, oy); ctx.lineTo(ox, oy + i * S * 0.1); ctx.lineTo(w * 0.42, oy); ctx.stroke(); }
+      ctx.strokeStyle = chrom(0.92);
+      for (let i = 0; i < 12; i++) {
+        const y = oy - S * 0.32 + i * (S * 0.64 / 11) + R.normal(0, 1.2), x = ox + R.normal(0, 1.3), an = R.normal(0, 0.45), L = S * (0.12 + R.uniform() * 0.1);
+        ctx.lineWidth = S * 0.06; ctx.beginPath(); ctx.moveTo(x - Math.cos(an) * L / 2, y - Math.sin(an) * L / 2); ctx.lineTo(x + Math.cos(an) * L / 2, y + Math.sin(an) * L / 2); ctx.stroke();
+      }
+      break;
+    }
+    case 'A': {
+      const d = S * (0.17 + R.uniform() * 0.13); ctx.strokeStyle = chrom(0.9); ctx.lineWidth = S * 0.048;
+      [-1, 1].forEach(sd => {
+        for (let i = 0; i < 9; i++) {
+          const y = oy - S * 0.28 + i * (S * 0.56 / 8) + R.normal(0, 1), vx = ox + sd * (d + R.normal(0, 1.2)), arm = S * (0.1 + R.uniform() * 0.06);
+          ctx.beginPath(); ctx.moveTo(vx - sd * arm, y - S * 0.045); ctx.lineTo(vx, y); ctx.lineTo(vx - sd * arm, y + S * 0.045); ctx.stroke();
+        }
+      });
+      break;
+    }
+    case 'T': {
+      [-1, 1].forEach(sd => {
+        const x = ox + sd * w * 0.3;
+        ctx.fillStyle = chrom(0.78); ctx.beginPath(); ctx.ellipse(x, oy, S * 0.1, S * 0.28, R.normal(0, 0.08), 0, TAU); ctx.fill();
+        ctx.fillStyle = chrom(0.95);
+        for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.arc(x + R.normal(0, S * 0.04), oy + R.normal(0, S * 0.12), 0.8 + R.uniform(), 0, TAU); ctx.fill(); }
+      });
+      ctx.strokeStyle = chrom(0.38); ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(ox, -hh * 0.32); ctx.lineTo(ox, hh * 0.32); ctx.stroke(); ctx.setLineDash([]);
+      break;
+    }
+    case 'C': {
+      ctx.strokeStyle = css(P.stain, 0.34 * k + 0.06); ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(R.normal(0, 1), -hh / 2); ctx.lineTo(R.normal(0, 1), hh / 2); ctx.stroke();
+      nucleus(ctx, R, -w * 0.25, oy, S * 0.17, k, P); nucleus(ctx, R, w * 0.25, oy, S * 0.17, k, P);
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   BACKGROUND FIGURES
+   ===================================================================== */
+(function cycleFigure() {
+  const svg = $('#cycle-svg'), cx = 210, cy = 172, r0 = 78, r1 = 118;
+  const pt = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; };
+  const arc = (a0, a1) => { const [x0, y0] = pt(r1, a0), [x1, y1] = pt(r1, a1), [x2, y2] = pt(r0, a1), [x3, y3] = pt(r0, a0), lg = a1 - a0 > 180 ? 1 : 0; return `M${x0},${y0} A${r1},${r1} 0 ${lg} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${lg} 0 ${x3},${y3} Z`; };
+  const ph = [['G₁', 0, 150, '--s1', 'Growth; organelles copied'], ['S', 152, 258, '--s3', 'DNA replicated'], ['G₂', 260, 318, '--s5', 'DNA checked; prep'], ['M', 320, 358, '--s2', 'Mitosis + cytokinesis']];
+  let s = '';
+  ph.forEach(([n, a0, a1, col]) => {
+    s += `<path d="${arc(a0, a1)}" style="fill:var(${col})" opacity=".88"/>`;
+    const [tx, ty] = pt((r0 + r1) / 2, (a0 + a1) / 2); s += `<text x="${tx}" y="${ty + 6}" text-anchor="middle" style="fill:var(--surface);font-weight:700;font-size:18px">${n}</text>`;
+  });
+  const lab = (deg, rr, text, anchor) => { const [x, y] = pt(rr, deg); return `<text x="${x}" y="${y}" text-anchor="${anchor}" style="fill:var(--ink);font-size:12.5px">${text}</text>`; };
+  s += lab(75, 138, 'Growth; organelles copied', 'start') + lab(205, 140, 'DNA replicated', 'end') + lab(289, 136, 'Repair; get ready', 'end') + lab(339, 132, 'Mitosis + cytokinesis', 'end');
+  const cp = (deg, label, anchor, dy) => { const [x0, y0] = pt(r0 - 6, deg), [x1, y1] = pt(r1 + 8, deg), [lx, ly] = pt(r0 - 18, deg); return `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" style="stroke:var(--bad)" stroke-width="4" stroke-linecap="round"/><text x="${lx}" y="${ly + dy}" text-anchor="${anchor}" style="fill:var(--bad);font-size:11.5px;font-weight:700">${label}</text>`; };
+  s += cp(140, 'G₁ checkpoint', 'end', 4) + cp(318, 'G₂', 'start', 4) + cp(343, 'M', 'start', 10);
+  const [gx, gy] = pt(r1, 60); s += `<path d="M${gx},${gy} q 40 -6 58 18" fill="none" style="stroke:var(--muted)" stroke-width="1.6" stroke-dasharray="4 3"/><circle cx="${gx + 70}" cy="${gy + 30}" r="16" style="fill:var(--surface-2);stroke:var(--muted)"/><text x="${gx + 70}" y="${gy + 35}" text-anchor="middle" style="fill:var(--ink);font-size:13px;font-weight:700">G₀</text>`;
+  s += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" style="fill:var(--muted);font-size:13px">interphase</text><text x="${cx}" y="${cy + 14}" text-anchor="middle" style="fill:var(--muted);font-size:13px">= G₁ + S + G₂</text>`;
+  svg.innerHTML = s;
+})();
+(function mpfChart() {
+  // Illustrative model: cyclin rises steadily through interphase and is destroyed at the end of M; MPF activity spikes only once cyclin passes a threshold.
+  const cyc = [], mpf = [];
+  for (let t = 0; t <= 3; t += 0.02) {
+    const f = t % 1, c = f < 0.9 ? 0.08 + 0.92 * f / 0.9 : 1 - (f - 0.9) / 0.1 * 0.92;
+    cyc.push({ x: +t.toFixed(2), y: +c.toFixed(3) });
+    mpf.push({ x: +t.toFixed(2), y: +(f > 0.78 && f < 0.97 ? Math.sin((f - 0.78) / 0.19 * Math.PI) : 0.02).toFixed(3) });
+  }
+  Lab.chart('#mpf-chart', { xLabel: 'Time (cell cycles; mitosis at the end of each)', yLabel: 'Relative level', height: 260, yMin: 0, yMax: 1.1, series: [{ name: 'Mitotic cyclin', points: cyc, dots: false }, { name: 'MPF activity', points: mpf, dots: false, dash: true }] });
+})();
+
+/* =====================================================================
+   PRE-LAB
+   ===================================================================== */
+Lab.quiz('#prelab', [
+  { type: 'num', q: 'You began as one zygote and now have roughly 1 × 10<sup>14</sup> (100 trillion) cells. If every cell divided by mitosis each round, about how many rounds of division would that take?', answer: 46.5, tol: 0.6, unit: 'rounds', explain: '2<sup><i>n</i></sup> = 1 × 10<sup>14</sup>, so <i>n</i> = log(10<sup>14</sup>) ÷ log 2 = 14 ÷ 0.301 ≈ 46.5, which means about 47 rounds. Real development is not synchronous and many cells die or stop dividing, but the doubling math shows how few rounds are needed.' },
+  { type: 'mc', q: 'Compared with the same cell in G<sub>1</sub>, a cell in G<sub>2</sub> has…', choices: ['the same DNA and the same information', 'twice the DNA but no new genetic information', 'twice the DNA and twice the genetic information', 'half the DNA, because chromosomes are condensed'], answer: 1, explain: 'S phase copies every chromosome into two identical sister chromatids. DNA mass doubles, but the sisters carry the same sequence, so no new information is added.' },
+  { type: 'mc', q: 'A cell has lined up its chromosomes, but one kinetochore is not attached to any spindle microtubule. Which checkpoint stops it from entering anaphase?', choices: ['G<sub>1</sub> checkpoint', 'G<sub>2</sub> checkpoint', 'M-spindle (metaphase) checkpoint', 'No checkpoint; anaphase starts on a timer'], answer: 2, explain: 'The M-spindle checkpoint holds the cell in metaphase until every kinetochore is attached, preventing chromatids from going to the wrong pole.' },
+  { type: 'mc', q: 'MPF activity falls sharply at the end of mitosis because…', choices: ['the CDK is degraded', 'cyclin is degraded, leaving CDK inactive', 'DNA replication turns it off', 'growth factors are removed'], answer: 1, explain: 'CDK levels stay fairly constant; cyclin is destroyed at the end of M, and CDK without cyclin is inactive. New cyclin must build up again during the next interphase.' },
+  { type: 'mc', q: 'What is the <strong>null</strong> hypothesis for the lectin experiment?', choices: ['Lectin increases the proportion of cells in mitosis.', 'Lectin has no effect on the proportion of root-tip cells in mitosis.', 'Lectin decreases root growth.', 'Control roots will have no cells in mitosis.'], answer: 1, explain: 'The null hypothesis states there is no difference between treated and control groups. The experimental hypothesis (lectin raises the mitotic index) is different; your data either reject the null or fail to reject it.' },
+  { type: 'num', q: 'In the manual\'s sample data, control roots had 25 mitotic cells out of 173. Treated roots had 249 cells in total. If lectin had no effect, how many treated cells would you <strong>expect</strong> to be in mitosis?', answer: 35.98, tol: 0.5, unit: 'cells', explain: 'Control proportion in mitosis = 25 ÷ 173 = 0.1445. Expected treated mitotic cells = 0.1445 × 249 ≈ 36.0. (The treated roots actually had 88.)' },
+  { type: 'num', q: 'A student scores 62 <i>Sordaria</i> asci: 30 show a 4:4 pattern and 32 show crossover patterns. What is the gene-to-centromere distance?', answer: 25.8, tol: 0.2, unit: 'map units', explain: '% crossover asci = 32 ÷ 62 × 100 = 51.6%. Divide by 2: 51.6 ÷ 2 = 25.8 map units, close to the published 26.' },
+  { type: 'mc', q: 'Why is the percentage of crossover asci divided by 2 to get map units?', choices: ['Each ascus has two nuclei.', 'Only two of the four chromatids in a tetrad take part in a single crossover, so half the spores in a crossover ascus are recombinant.', 'Sordaria is diploid.', 'Mitosis after meiosis doubles the spore number.'], answer: 1, explain: 'A single crossover involves two of the four chromatids. The other two are parental, so only half of the spores in a crossover ascus are recombinant. Map units count recombinant products, not recombinant asci.' }
+], { id: 'prelab' });
+[['gs-asexual', 'What are some advantages of asexual reproduction (mitosis) in plants?'], ['gs-control', 'How is the cell cycle controlled? What would happen if that control were defective?']].forEach(([k, l]) => Lab.prompt('#prelab-prompts', { key: k, label: l, rows: 3 }));
+
+/* =====================================================================
+   PART 1: POP-BEAD MITOSIS MODEL (SVG, drag with pointer events)
+   ===================================================================== */
+const SP = 12, BR = 5.4;
+function beads(x, y, n, c, colorAt, sp, wavy, ringAt, br = BR) {
+  let s = '';
+  for (let i = 0; i < n; i++) {
+    const yy = y + (i - c) * sp, xx = x + (wavy ? Math.sin(i * 1.7 + x * 0.07) * br * 0.6 : 0);
+    if (i === c) { s += `<rect x="${xx - br}" y="${yy - br * 0.75}" width="${br * 2}" height="${br * 1.5}" rx="2" style="fill:var(--ink)" opacity=".72"/>`; continue; }
+    s += `<circle cx="${xx}" cy="${yy}" r="${br}" style="fill:${colorAt(i)};stroke:var(--ink)" stroke-opacity="${i === ringAt ? 0.9 : 0.3}" stroke-width="${i === ringAt ? 2.6 : 1}"/><circle cx="${xx - br * 0.31}" cy="${yy - br * 0.33}" r="${br * 0.3}" style="fill:var(--surface)" opacity=".55"/>`;
+  }
+  return s;
+}
+const MIT = (function () {
+  const svg = $('#mit-svg'), layer = $('#mit-layer');
+  const DEF = [{ id: 'L-mat', n: 7, c: 3, col: 'var(--s3)', home: [250, 180] }, { id: 'L-pat', n: 7, c: 3, col: 'var(--s4)', home: [372, 210] }, { id: 'S-mat', n: 5, c: 2, col: 'var(--s3)', home: [312, 270] }, { id: 'S-pat', n: 5, c: 2, col: 'var(--s4)', home: [318, 130] }];
+  const NAMES = ['Interphase · G<sub>1</sub>', 'Interphase · G<sub>2</sub> (after S)', 'Prophase', 'Metaphase', 'Anaphase', 'Telophase and cytokinesis'];
+  const MSG = [
+    'Each chromosome is a single DNA molecule. Replicate the DNA to enter S phase.',
+    'Each chromosome is now two sister chromatids joined at the centromere. Next, condense them.',
+    'Chromatin condenses into compact chromosomes and the nuclear envelope breaks down. Next, the spindle forms.',
+    'Drag each chromosome (by any bead) so its centromere sits on the dashed metaphase plate. Homologs do not pair in mitosis.',
+    'Cohesion between sisters is cut. Drag each chromatid toward the left or right pole.',
+    'Nuclei re-form and the cell plate splits the cytoplasm. Compare the daughters with the parent cell.'
+  ];
+  const NEXT = ['Replicate DNA (S phase)', 'Condense chromosomes (prophase)', 'Form spindle (to metaphase)', 'Begin anaphase', 'Telophase + cytokinesis', 'Start again'];
+  let st, drag = null;
+  function reset() { st = { stage: 0, ch: DEF.map(d => ({ ...d, x: d.home[0], y: d.home[1], t: [{ x: d.home[0] - 7, y: d.home[1] }, { x: d.home[0] + 7, y: d.home[1] }] })) }; render(); }
+  const span = d => [d.y - d.c * SP - BR, d.y + (d.n - 1 - d.c) * SP + BR];
+  function alignedCount() { return st.ch.filter(d => Math.abs(d.x - 320) < 1).length; }
+  function overlaps() { const a = st.ch.map(span); for (let i = 0; i < a.length; i++) for (let j = i + 1; j < a.length; j++) if (a[i][0] < a[j][1] && a[j][0] < a[i][1]) return true; return false; }
+  function sides() { const L = [], R = [], mid = []; st.ch.forEach(d => d.t.forEach((t, k) => { const o = { d, k }; if (t.x < 250) L.push(o); else if (t.x > 390) R.push(o); else mid.push(o); })); return { L, R, mid }; }
+  function canNext() {
+    if (st.stage === 3) return alignedCount() === 4 && !overlaps();
+    if (st.stage === 4) return sides().mid.length === 0;
+    return true;
+  }
+  function render() {
+    const s = st.stage; let g = '';
+    if (s < 5) {
+      g += `<ellipse cx="320" cy="200" rx="300" ry="185" style="fill:var(--surface);stroke:var(--muted)" stroke-width="2"/>`;
+      if (s <= 1) g += `<circle cx="318" cy="205" r="128" style="fill:var(--surface-2);stroke:var(--muted)" stroke-width="1.5"/>`;
+      if (s === 2) g += `<circle cx="318" cy="205" r="128" fill="none" style="stroke:var(--muted)" stroke-width="1.5" stroke-dasharray="6 7" opacity=".7"/>`;
+      if (s >= 2) [[48, 200], [592, 200]].forEach(([x, y]) => { for (let a = 0; a < 8; a++) g += `<line x1="${x}" y1="${y}" x2="${x + Math.cos(a * Math.PI / 4) * 12}" y2="${y + Math.sin(a * Math.PI / 4) * 12}" style="stroke:var(--accent)" stroke-width="2"/>`; });
+      if (s >= 3) {
+        g += `<line x1="320" y1="28" x2="320" y2="372" style="stroke:var(--stain)" stroke-width="2" stroke-dasharray="8 6"/><text x="328" y="42" style="fill:var(--stain);font-size:13px">metaphase plate</text>`;
+        st.ch.forEach(d => { if (s === 3) { if (Math.abs(d.x - 320) < 1) g += `<line x1="48" y1="200" x2="${d.x - 7}" y2="${d.y}" style="stroke:var(--accent)" opacity=".45"/><line x1="592" y1="200" x2="${d.x + 7}" y2="${d.y}" style="stroke:var(--accent)" opacity=".45"/>`; } else d.t.forEach(t => { const px = t.x < 320 ? 48 : 592; g += `<line x1="${px}" y1="200" x2="${t.x}" y2="${t.y}" style="stroke:var(--accent)" opacity=".45"/>`; }); });
+      }
+      st.ch.forEach((d, i) => {
+        const wavy = s <= 1, sp = s <= 1 ? SP + 1 : SP;
+        if (s === 0) g += `<g>${beads(d.x, d.y, d.n, d.c, () => d.col, sp, wavy)}</g>`;
+        else if (s <= 3) g += `<g class="${s === 3 ? 'drag' : ''}" data-drag="${i}">${beads(d.x - 7, d.y, d.n, d.c, () => d.col, sp, wavy)}${beads(d.x + 7, d.y, d.n, d.c, () => d.col, sp, wavy)}</g>`;
+        else d.t.forEach((t, k) => { g += `<g class="drag" data-drag="${i}-${k}">${beads(t.x, t.y, d.n, d.c, () => d.col, SP, false)}</g>`; });
+      });
+    } else {
+      const sd = sides();
+      [[165, sd.L], [475, sd.R]].forEach(([cx, list]) => {
+        g += `<ellipse cx="${cx}" cy="200" rx="148" ry="178" style="fill:var(--surface);stroke:var(--muted)" stroke-width="2"/><circle cx="${cx}" cy="205" r="92" style="fill:var(--surface-2);stroke:var(--muted)" stroke-width="1.5"/>`;
+        list.forEach((o, j) => { const x = cx + (j - (list.length - 1) / 2) * 24; g += beads(x, 200, o.d.n, o.d.c, () => o.d.col, SP + 1, true); });
+        g += `<text x="${cx}" y="392" text-anchor="middle" style="fill:var(--ink);font-size:15px;font-weight:600">${list.length} chromosomes</text>`;
+      });
+      g += `<line x1="320" y1="40" x2="320" y2="360" style="stroke:var(--accent)" stroke-width="4" opacity=".6"/>`;
+    }
+    layer.innerHTML = g;
+    $('#mit-stage').innerHTML = 'Stage: <strong>' + NAMES[s] + '</strong>';
+    let msg = MSG[s];
+    if (s === 3) msg += ` <strong>${alignedCount()} of 4 aligned.</strong>` + (alignedCount() === 4 && overlaps() ? ' Spread them out so they do not overlap.' : '');
+    if (s === 4) { const m = sides().mid.length; msg += m ? ` <strong>${m} chromatid${m > 1 ? 's' : ''} still near the plate.</strong>` : ' All chromatids have reached a pole.'; }
+    $('#mit-msg').innerHTML = msg;
+    const nb = $('#mit-next'); nb.textContent = NEXT[s]; nb.disabled = !canNext();
+    $('#mit-align').disabled = s !== 3; $('#mit-pull').disabled = s !== 4;
+    const chr = s === 4 ? 8 : 4, dna = s === 0 ? 4 : 8;
+    const sd5 = s === 5 ? sides() : null;
+    $('#mit-ro-chr').textContent = s === 5 ? `${sd5.L.length} | ${sd5.R.length}` : String(chr);
+    $('#mit-ro-dna').textContent = s === 5 ? `${sd5.L.length} | ${sd5.R.length}` : String(dna);
+    if (s === 5) {
+      const sd = sides(), ids = l => l.map(o => o.d.id).sort().join(',');
+      const full = DEF.map(d => d.id).sort().join(',');
+      const ok = ids(sd.L) === full && ids(sd.R) === full;
+      $('#mit-ro-daughters').innerHTML = ok ? '<span class="pill ok">2 identical, 2n = 4</span>' : `<span class="pill bad">aneuploid: ${sd.L.length} + ${sd.R.length}</span>`;
+      $('#mit-msg').innerHTML = ok ? 'Each daughter received one copy of every chromosome: both are genetically identical to the parent (2<i>n</i> = 4).' : `Sister chromatids went to the same pole, so one daughter has ${Math.max(sd.L.length, sd.R.length)} chromosomes and the other ${Math.min(sd.L.length, sd.R.length)}. This is nondisjunction in mitosis.`;
+    } else $('#mit-ro-daughters').textContent = '—';
+  }
+  function tween(targets, done) {
+    if (reduced) { targets.forEach(([o, x, y]) => { o.x = x; o.y = y; }); done && done(); render(); return; }
+    const from = targets.map(([o]) => [o.x, o.y]); let t = 0;
+    Lab.loop(dt => { t = Math.min(1, t + dt / 0.7); const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; targets.forEach(([o, x, y], i) => { o.x = from[i][0] + (x - from[i][0]) * e; o.y = from[i][1] + (y - from[i][1]) * e; }); render(); if (t >= 1) { done && done(); return false; } }).start();
+  }
+  function next() {
+    const s = st.stage;
+    if (s === 5) { reset(); return; }
+    if (!canNext()) return;
+    if (s === 3) st.ch.forEach(d => { d.t = [{ x: d.x - 7, y: d.y }, { x: d.x + 7, y: d.y }]; });
+    st.stage++; render();
+  }
+  function svgPt(e) { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  svg.addEventListener('pointerdown', e => {
+    const g = e.target.closest('[data-drag]'); if (!g || (st.stage !== 3 && st.stage !== 4)) return;
+    const [i, k] = g.dataset.drag.split('-').map(Number); const o = st.stage === 3 ? st.ch[i] : st.ch[i].t[k]; const p = svgPt(e);
+    drag = { o, dx: o.x - p.x, dy: o.y - p.y }; try { svg.setPointerCapture(e.pointerId); } catch (er) {} e.preventDefault();
+  });
+  svg.addEventListener('pointermove', e => { if (!drag) return; const p = svgPt(e); drag.o.x = clamp(p.x + drag.dx, 40, 600); drag.o.y = clamp(p.y + drag.dy, 50, 350); render(); });
+  const end = () => { if (!drag) return; if (st.stage === 3 && Math.abs(drag.o.x - 320) < 26) drag.o.x = 320; drag = null; render(); };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  $('#mit-next').addEventListener('click', next);
+  $('#mit-reset').addEventListener('click', reset);
+  $('#mit-align').addEventListener('click', () => { if (st.stage !== 3) return; const order = [0, 2, 1, 3]; let top = 36; tween(order.map(ci => { const d = st.ch[ci], y = top + BR + d.c * SP; top += (d.n - 1) * SP + 2 * BR + 9; return [d, 320, y]; })); });
+  $('#mit-pull').addEventListener('click', () => { if (st.stage !== 4) return; const tg = []; st.ch.forEach(d => { tg.push([d.t[0], 150 + (d.n === 7 ? 0 : 22), d.t[0].y]); tg.push([d.t[1], 490 - (d.n === 7 ? 0 : 22), d.t[1].y]); }); tween(tg); });
+  reset();
+  return { reset };
+})();
+// Table for Part 1 (students compute; checked without revealing values)
+const MIT_ANS = [[4, 4, 2], [4, 8, 4], [4, 8, 4], [8, 8, 4], [4, 4, 2]];
+Lab.table('#mit-table', { save: 'mit-dna', columns: [{ key: 'stage', label: 'Stage' }, { key: 'chr', label: 'Chromosomes', num: true, digits: 0, editable: true }, { key: 'mol', label: 'DNA molecules', num: true, digits: 0, editable: true }, { key: 'amt', label: 'DNA amount', unit: 'c', num: true, digits: 0, editable: true }],
+  rows: ['G1 (before S phase)', 'G2 (after S phase)', 'Metaphase', 'Anaphase (whole cell)', 'Each daughter after cytokinesis'].map(stage => ({ stage, chr: null, mol: null, amt: null })) });
+$('#mit-check-table').addEventListener('click', () => {
+  let right = 0, tot = 0; const keys = ['chr', 'mol', 'amt'];
+  $$('#mit-table input').forEach(inp => { const r = +inp.dataset.r, ki = keys.indexOf(inp.dataset.k); if (ki < 0) return; tot++; const ok = inp.value !== '' && +inp.value === MIT_ANS[r][ki]; inp.classList.toggle('is-right', ok); inp.classList.toggle('is-wrong', !ok); if (ok) right++; });
+  const p = $('#mit-table-pill'); p.textContent = `${right} of ${tot} correct`; p.className = 'pill ' + (right === tot ? 'ok' : right > tot / 2 ? 'warn' : 'bad');
+});
+
+/* ---- Phase-order sorting with drawn onion cells ---- */
+(function sorter() {
+  const PH = [['I', 'Interphase'], ['P', 'Prophase'], ['M', 'Metaphase'], ['A', 'Anaphase'], ['T', 'Telophase'], ['C', 'Cytokinesis']];
+  const seeds = { I: 11, P: 907, M: 33, A: 4321, T: 77, C: 512 };
+  let order = rng.shuffle(PH.map(p => p[0])), sel = null;
+  const row = $('#sort-row'); const cvs = {};
+  function drawThumb(cv, ph) {
+    const o = cvs[ph] || (cvs[ph] = Lab.canvas(cv, 1)); const P = scope(), ctx = o.ctx, s = o.w / 70;
+    ctx.save(); ctx.clearRect(0, 0, o.w, o.h); ctx.scale(s, s);
+    const g = ctx.createRadialGradient(30, 28, 4, 35, 35, 52); g.addColorStop(0, css(mix(P.field, P.light, 0.6))); g.addColorStop(1, css(mix(P.field, P.dark, 0.1)));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 70, 70);
+    const big = ph === 'A' || ph === 'T' || ph === 'C';
+    [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [0, 1]].forEach(([i, j], n) => drawOnionCell(ctx, { x: 35 + i * (big ? 60 : 50), y: 35 + j * 47, w: 46, h: 44, a: 0, phase: 'I', seed: 50 + n, k: 0.75 }, P, 1));
+    drawOnionCell(ctx, { x: 35, y: 35, w: big ? 62 : 48, h: 46, a: 0.05, phase: ph, seed: seeds[ph], k: 1.05 }, P, 1);
+    ctx.restore();
+  }
+  function render() {
+    row.innerHTML = '';
+    order.forEach((ph, i) => {
+      const b = Lab.h('button', { type: 'button', class: 'sortcard', id: 'sort-card-' + i, role: 'listitem', 'aria-pressed': sel === i ? 'true' : 'false', 'aria-label': `Cell image in position ${i + 1}. Click to select, then click another card to swap.` });
+      const cv = Lab.h('canvas', { 'aria-hidden': 'true' }); b.append(cv, Lab.h('span', { class: 'pos' }, 'Position ' + (i + 1)));
+      b.addEventListener('click', () => { if (sel == null) { sel = i; } else { [order[sel], order[i]] = [order[i], order[sel]]; sel = null; $('#sort-msg').textContent = ''; } render(); });
+      row.append(b); delete cvs[ph]; drawThumb(cv, ph);
+    });
+  }
+  $('#sort-shuffle').addEventListener('click', () => { order = rng.shuffle(order); sel = null; $('#sort-msg').textContent = ''; render(); });
+  $('#sort-check').addEventListener('click', () => {
+    let n = 0; order.forEach((ph, i) => { const ok = ph === PH[i][0]; if (ok) n++; const c = $('#sort-card-' + i); c.classList.toggle('ok', ok); c.classList.toggle('bad', !ok); });
+    $('#sort-msg').innerHTML = n === 6 ? '<span class="pill ok">All 6 in order</span> Interphase → prophase → metaphase → anaphase → telophase → cytokinesis.' : `<span class="pill warn">${n} of 6 in the right place</span> Look at where the chromatin is: diffuse, threads, a plate, two moving groups, two tight masses, two new cells.`;
+  });
+  render(); themeHooks.push(() => order.forEach((ph, i) => { const cv = $('#sort-card-' + i + ' canvas'); if (cv) drawThumb(cv, ph); }));
+})();
+[['p1-info', 'If a cell contains a set of duplicated chromosomes, does it contain any more genetic information than the cell before the chromosomes were duplicated? Explain.'],
+ ['p1-condense', 'What is the significance of the fact that chromosomes condense before they are moved?'],
+ ['p1-separate', 'How are the sister chromatids separated from each other?'],
+ ['p1-fail', 'What happened in your model when sister chromatids failed to separate? What would this mean for the daughter cells?']].forEach(([k, l]) => Lab.prompt('#p1-prompts', { key: k, label: l, rows: 3 }));
+
+/* =====================================================================
+   PART 2: ONION ROOT TIPS
+   Model: each cell in the distal 2 mm is in mitosis with probability equal to the tip's mitotic
+   index. Tip MI ~ Normal(μ, 0.025) with μ = 0.145 (control) and 0.353 (lectin), matching the
+   manual's sample data (25/173 and 88/249). Within mitosis, phases occur in proportion to their
+   duration: prophase 45%, metaphase 20%, anaphase 12%, telophase 23%.
+   ===================================================================== */
+const MI_MU = { control: 0.145, lectin: 0.353 };
+function pickPhase(R, mi) { if (!R.chance(mi)) return 'I'; const u = R.uniform(); return u < 0.45 ? 'P' : u < 0.65 ? 'M' : u < 0.77 ? 'A' : 'T'; }
+function genRootField(seed, mi, q) {
+  const R = Lab.rng(seed), cells = [], ang = R.normal(0, 0.35), ux = Math.cos(ang), uy = Math.sin(ang), vx = -uy, vy = ux;
+  const H0 = 46, sep = q.hcl && q.squash, gap = sep ? 4 : 0.6, jit = sep ? 1 : 0.25;
+  for (let j = -7; j <= 7; j++) {
+    let t = -340 + R.uniform() * 40; const off = j * (H0 + gap) + R.normal(0, 2);
+    while (t < 340) {
+      const ph = pickPhase(R, mi), base = q.cut ? 44 : 104;
+      const w = base * (0.84 + R.uniform() * 0.32) * (ph === 'A' || ph === 'T' ? 1.28 : 1), hh = H0 * (0.9 + R.uniform() * 0.16);
+      const al = t + w / 2, ac = off + R.normal(0, 2.4 * jit);
+      const x = FC.x + ux * al + vx * ac + R.normal(0, 2 * jit), y = FC.y + uy * al + vy * ac + R.normal(0, 2 * jit);
+      const c = { x, y, w, h: hh, a: ang + R.normal(0, 0.07 * jit), phase: ph, seed: R.int(1, 1e9), k: 0.8 + R.uniform() * 0.4 };
+      c.edge = Math.hypot(x - FC.x, y - FC.y) > FC.r * 0.86;
+      if (Math.hypot(x - FC.x, y - FC.y) < FC.r + 60) cells.push(c);
+      t += w + gap * (0.5 + R.uniform());
+    }
+  }
+  return cells;
+}
+function hitCell(cells, px, py) {
+  for (let i = cells.length - 1; i >= 0; i--) { const c = cells[i], dx = px - c.x, dy = py - c.y, u = dx * Math.cos(c.a) + dy * Math.sin(c.a), v = -dx * Math.sin(c.a) + dy * Math.cos(c.a); if (Math.abs(u) < c.w / 2 && Math.abs(v) < c.h / 2) return i; }
+  return -1;
+}
+function drawRootField(o, f, marks, checking) {
+  const ctx = o.ctx, s = o.w / 640, P = scope();
+  ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0); ctx.clearRect(0, 0, o.w, o.h); ctx.scale(s, s);
+  scopeFrame(ctx, P, () => {
+    if (f.under) { ctx.save(); ctx.globalAlpha = 0.42; try { ctx.filter = 'blur(1.6px)'; } catch (e) {} f.under.forEach(c => drawOnionCell(ctx, c, P, f.ink)); ctx.restore(); }
+    f.cells.forEach(c => drawOnionCell(ctx, c, P, f.ink));
+    debris(ctx, P, f.seed + 3, 40);
+    if (marks) marks.forEach((lab, i) => {
+      const c = f.cells[i];
+      if (checking) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.strokeStyle = css(lab === c.phase ? P.ok : P.bad); ctx.lineWidth = 3; ctx.strokeRect(-c.w / 2 + 2, -c.h / 2 + 2, c.w - 4, c.h - 4); ctx.restore(); }
+      ctx.fillStyle = css(P.acc, 0.88); ctx.beginPath(); ctx.arc(c.x, c.y - c.h * 0.28, 9, 0, TAU); ctx.fill();
+      ctx.fillStyle = css(P.light); ctx.font = '700 12px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(lab, c.x, c.y - c.h * 0.28 + 4.2);
+    });
+  });
+  scopeLabels(ctx, P, '400×', 46, '30 µm');
+  ctx.restore();
+}
+const ROOT = (function () {
+  const o = Lab.canvas('#rt-canvas', 0.75);
+  let treat = 'control', tip = 1, tool = 'I', checking = false, field = null, marks = new Map(), salt = rng.int(1, 1e6);
+  const prep = () => ({ hcl: $('#prep-hcl').checked, fix: $('#prep-fix').checked, cut: $('#prep-cut').checked, stain: $('#prep-stain').checked, squash: $('#prep-squash').checked });
+  function make() {
+    const q = prep(), seed = (salt += 7919) + tip * 31 + (treat === 'lectin' ? 1000 : 0), R = Lab.rng(seed);
+    let mi = clamp(R.normal(MI_MU[treat], 0.025), 0.04, 0.6); if (!q.cut) mi *= 0.12;
+    field = { seed, mi, q, cells: genRootField(seed, mi, q), ink: (q.stain ? 1 : 0.2) * (q.fix ? 1 : 0.78) };
+    if (!q.hcl || !q.squash) field.under = genRootField(seed + 99, mi, q).map(c => ({ ...c, x: c.x + 14, y: c.y + 11 }));
+    marks = new Map(); checking = false; $('#rt-checkids').setAttribute('aria-pressed', 'false');
+    const notes = [];
+    if (!q.hcl) notes.push('Without HCl the middle lamellae were not softened, so cells stayed stuck together in thick layers.');
+    if (!q.fix) notes.push('Skipping the second fixative let the acid keep working: chromatin looks pale and swollen.');
+    if (!q.cut) notes.push('You kept tissue far from the tip: these long cells are from the elongation zone, where very few cells divide.');
+    if (!q.stain) notes.push('Unstained chromatin is nearly invisible.');
+    if (!q.squash) notes.push('Without a firm squash the cells overlap and are out of focus.');
+    $('#rt-quality').innerHTML = (notes.length ? '<span class="pill warn">Poor slide</span> ' + notes.join(' ') : '<span class="pill ok">Good squash</span> Cells are spread in a single layer.') + ` Slide: ${treat === 'control' ? 'control' : 'lectin'} jar, tip ${tip}.`;
+    $('#rt-acc').textContent = '';
+    draw(); counts();
+  }
+  function draw() { drawRootField(o, field, marks, checking); }
+  function counts() {
+    const n = { I: 0, P: 0, M: 0, A: 0, T: 0 }; marks.forEach(v => n[v]++);
+    Object.keys(n).forEach(k => $('#rt-n-' + k).textContent = n[k]);
+    const scorable = field.cells.filter(c => !c.edge).length; $('#rt-n-left').textContent = scorable - marks.size;
+    const tot = marks.size, mit = tot - n.I; $('#rt-mi').textContent = tot ? fmt(100 * mit / tot, 1) + '%' : '—';
+    return n;
+  }
+  o.onresize = draw;
+  o.canvas.addEventListener('click', e => {
+    const r = o.canvas.getBoundingClientRect(), s = o.w / 640, px = (e.clientX - r.left) / s, py = (e.clientY - r.top) / s;
+    const i = hitCell(field.cells, px, py); if (i < 0) return;
+    if (field.cells[i].edge) { $('#rt-acc').textContent = 'That cell is cut off by the edge of the field. Count only whole cells.'; return; }
+    if (tool === 'X') marks.delete(i); else marks.set(i, tool);
+    $('#rt-acc').textContent = ''; draw(); counts();
+  });
+  $$('[data-treat]').forEach(b => b.addEventListener('click', () => { treat = b.dataset.treat; $$('[data-treat]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); make(); }));
+  $$('[data-tip]').forEach(b => b.addEventListener('click', () => { tip = +b.dataset.tip; $$('[data-tip]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); make(); }));
+  $$('[data-tool]').forEach(b => b.addEventListener('click', () => { tool = b.dataset.tool; $$('[data-tool]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); }));
+  $('#rt-prep').addEventListener('click', make);
+  $('#rt-checkids').addEventListener('click', () => {
+    checking = !checking; $('#rt-checkids').setAttribute('aria-pressed', String(checking));
+    let ok = 0; marks.forEach((v, i) => { if (v === field.cells[i].phase) ok++; });
+    $('#rt-acc').textContent = checking ? (marks.size ? `${ok} of ${marks.size} identifications match the key (green = match, red = check again).` : 'Mark some cells first.') : '';
+    draw();
+  });
+  $('#rt-auto').addEventListener('click', () => { field.cells.forEach((c, i) => { if (!c.edge && !marks.has(i)) marks.set(i, c.phase); }); draw(); counts(); });
+  $('#rt-record').addEventListener('click', () => {
+    if (!marks.size) { $('#rt-acc').textContent = 'Classify the cells in the field before recording.'; return; }
+    const n = counts(), mit = n.P + n.M + n.A + n.T, total = mit + n.I, left = field.cells.filter(c => !c.edge).length - marks.size;
+    const tb = treat === 'control' ? tabC : tabT, rows = tb.getRows().filter(r => r.tip !== tip);
+    rows.push({ tip, I: n.I, P: n.P, M: n.M, A: n.A, T: n.T, mit, total, mi: 100 * mit / total }); rows.sort((a, b) => a.tip - b.tip); tb.setRows(rows);
+    $('#rt-acc').textContent = `Recorded tip ${tip} (${treat}).` + (left > 0 ? ` ${left} whole cells were left unmarked and are not counted.` : '');
+  });
+  themeHooks.push(draw);
+  make();
+  return { draw };
+})();
+const tipCols = [{ key: 'tip', label: 'Tip', num: true, digits: 0 }, { key: 'I', label: 'Interphase', num: true, digits: 0 }, { key: 'P', label: 'P', num: true, digits: 0 }, { key: 'M', label: 'M', num: true, digits: 0 }, { key: 'A', label: 'A', num: true, digits: 0 }, { key: 'T', label: 'T', num: true, digits: 0 }, { key: 'mit', label: 'Mitotic', num: true, digits: 0 }, { key: 'total', label: 'Total', num: true, digits: 0 }, { key: 'mi', label: 'MI', unit: '%', num: true, digits: 1 }];
+const tipFoot = rows => { const sm = k => ST.sum(rows.map(r => r[k])); const mit = sm('mit'), tot = sm('total'); return ['Total', sm('I'), sm('P'), sm('M'), sm('A'), sm('T'), mit, tot, tot ? fmt(100 * mit / tot, 1) : '—']; };
+const tabC = Lab.table('#rt-table-c', { save: 'rt-control', columns: tipCols, footer: tipFoot, onChange: () => classUpdate() });
+const tabT = Lab.table('#rt-table-t', { save: 'rt-lectin', columns: tipCols, footer: tipFoot, onChange: () => classUpdate() });
+$('#rt-clear-mine').addEventListener('click', () => { tabC.clear(); tabT.clear(); });
+
+const classTab = Lab.table('#rt-class-table', {
+  columns: [{ key: 'g', label: 'Group' }, { key: 'ci', label: 'Control interphase', num: true, digits: 0 }, { key: 'cm', label: 'Control mitotic', num: true, digits: 0 }, { key: 'cmi', label: 'Control MI', unit: '%', num: true, digits: 1 }, { key: 'ti', label: 'Lectin interphase', num: true, digits: 0 }, { key: 'tm', label: 'Lectin mitotic', num: true, digits: 0 }, { key: 'tmi', label: 'Lectin MI', unit: '%', num: true, digits: 1 }],
+  footer: rows => { const sm = k => ST.sum(rows.map(r => r[k] || 0)); const ci = sm('ci'), cm = sm('cm'), ti = sm('ti'), tm = sm('tm'); return ['Class total', ci, cm, ci + cm ? fmt(100 * cm / (ci + cm), 1) : '—', ti, tm, ti + tm ? fmt(100 * tm / (ti + tm), 1) : '—']; },
+  onChange: rows => classStats(rows)
+});
+const rtChart = Lab.chart('#rt-chart', { type: 'bar', yLabel: 'Mitotic index (%), mean ± 2 SE', xLabel: 'Treatment', categories: ['Control', 'Lectin'], series: [{ name: 'Mean mitotic index', points: [] }], height: 300 });
+function myGroupRow() {
+  const c = tabC.getRows(), t = tabT.getRows(); if (!c.length && !t.length) return null;
+  const sm = (rows, k) => ST.sum(rows.map(r => r[k]));
+  const ci = sm(c, 'I'), cm = sm(c, 'mit'), ti = sm(t, 'I'), tm = sm(t, 'mit');
+  return { g: 'Your group', ci, cm, cmi: ci + cm ? 100 * cm / (ci + cm) : null, ti, tm, tmi: ti + tm ? 100 * tm / (ti + tm) : null };
+}
+function classUpdate() { const mine = myGroupRow(), sim = Lab.store.get('rt-sim', []); classTab.setRows([...(mine ? [mine] : []), ...sim]); }
+function classStats(rows) {
+  const cm = rows.filter(r => r.ci + r.cm > 0).map(r => 100 * r.cm / (r.ci + r.cm)), tm = rows.filter(r => r.ti + r.tm > 0).map(r => 100 * r.tm / (r.ti + r.tm));
+  $('#rt-mean-c').textContent = cm.length ? `${fmt(ST.mean(cm), 1)} ± ${cm.length > 1 ? fmt(ST.sd(cm), 1) : '—'}%` : '—';
+  $('#rt-mean-t').textContent = tm.length ? `${fmt(ST.mean(tm), 1)} ± ${tm.length > 1 ? fmt(ST.sd(tm), 1) : '—'}%` : '—';
+  rtChart.update({ series: [{ name: 'Mean mitotic index', points: [{ x: 'Control', y: cm.length ? ST.mean(cm) : NaN, err: cm.length > 1 ? 2 * ST.se(cm) : 0 }, { x: 'Lectin', y: tm.length ? ST.mean(tm) : NaN, err: tm.length > 1 ? 2 * ST.se(tm) : 0 }] }] });
+  CHI.setObs(rows);
+}
+$('#rt-class').addEventListener('click', () => {
+  const sim = [];
+  for (let g = 2; g <= 8; g++) {
+    const grp = { g: 'Group ' + g, ci: 0, cm: 0, ti: 0, tm: 0 };
+    ['control', 'lectin'].forEach(tr => { for (let t = 0; t < 3; t++) { const n = rng.int(48, 66), mi = clamp(rng.normal(MI_MU[tr], 0.03), 0.03, 0.6), m = rng.binomial(n, mi); if (tr === 'control') { grp.ci += n - m; grp.cm += m; } else { grp.ti += n - m; grp.tm += m; } } });
+    grp.cmi = 100 * grp.cm / (grp.ci + grp.cm); grp.tmi = 100 * grp.tm / (grp.ti + grp.tm); sim.push(grp);
+  }
+  Lab.store.set('rt-sim', sim); classUpdate();
+});
+$('#rt-sample').addEventListener('click', () => { Lab.store.set('rt-sim', [{ g: 'Manual sample (pooled)', ci: 148, cm: 25, cmi: 100 * 25 / 173, ti: 161, tm: 88, tmi: 100 * 88 / 249 }]); tabC.clear(); tabT.clear(); classUpdate(); });
+$('#rt-class-clear').addEventListener('click', () => { Lab.store.set('rt-sim', []); classUpdate(); });
+
+/* ---- Chi-square for Part 2 ---- */
+const CHI = (function () {
+  let method = 'gof', obs = null;
+  const tbl = (head, rows) => `<div class="table-wrap"><table class="data"><thead><tr>${head.map((h, i) => `<th class="${i ? 'num' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i ? 'num' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  function expected() {
+    const { A, B, C, D } = obs, N = A + B + C + D;
+    if (method === 'gof') return [['Lectin interphase', C, A / (A + B) * (C + D)], ['Lectin mitosis', D, B / (A + B) * (C + D)]];
+    return [['Control interphase', A, (A + B) * (A + C) / N], ['Control mitosis', B, (A + B) * (B + D) / N], ['Lectin interphase', C, (C + D) * (A + C) / N], ['Lectin mitosis', D, (C + D) * (B + D) / N]];
+  }
+  function setObs(rows) {
+    const sm = k => ST.sum(rows.map(r => r[k] || 0)); const A = sm('ci'), B = sm('cm'), C = sm('ti'), D = sm('tm');
+    obs = (A + B > 0 && C + D > 0) ? { A, B, C, D } : null; render();
+  }
+  function render() {
+    $$('[data-m]').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === method ? 'true' : 'false'));
+    $('#chi-out').innerHTML = '';
+    if (!obs) { $('#chi-obs').innerHTML = '<p class="small muted">Record tips from both jars or add class data to fill Table 2.</p>'; $('#chi-exp').innerHTML = ''; $('#chi-howto').textContent = ''; return; }
+    const { A, B, C, D } = obs;
+    $('#chi-obs').innerHTML = '<h4 style="margin:8px 0 4px">Table 2 · Observed values (o)</h4>' + tbl(['', 'Interphase', 'Mitosis', 'Total'], [['Control', `A = ${A}`, `B = ${B}`, A + B], ['Lectin', `C = ${C}`, `D = ${D}`, C + D], ['Total', A + C, B + D, `N = ${A + B + C + D}`]]);
+    $('#chi-howto').innerHTML = method === 'gof' ? 'Find the proportion of control cells in each phase, then multiply by the total number of lectin-treated cells. Enter your expected values (to one decimal place):' : 'Expected value for each cell of the table = (row total × column total) ÷ N (Table 3). Enter your expected values:';
+    const ex = expected();
+    $('#chi-exp').innerHTML = ex.map((e, i) => `<div class="field"><label for="chi-e-${i}">Expected, ${e[0].toLowerCase()}</label><input id="chi-e-${i}" type="number" step="any"><span class="small" id="chi-e-${i}-fb"></span></div>`).join('');
+  }
+  $$('[data-m]').forEach(b => b.addEventListener('click', () => { method = b.dataset.m; render(); }));
+  $('#chi-checkexp').addEventListener('click', () => {
+    if (!obs) return; expected().forEach((e, i) => { const v = parseFloat($('#chi-e-' + i).value), ok = isFinite(v) && Math.abs(v - e[2]) <= Math.max(0.6, e[2] * 0.01); $('#chi-e-' + i + '-fb').innerHTML = isFinite(v) ? (ok ? '<span class="pill ok">correct</span>' : '<span class="pill bad">recheck</span>') : ''; });
+  });
+  $('#chi-run').addEventListener('click', () => {
+    if (!obs) { $('#chi-out').innerHTML = '<p class="small">No data yet.</p>'; return; }
+    const ex = expected(), r = ST.chiSquare(ex.map(e => e[1]), ex.map(e => e[2]));
+    const df = 1, crit = ST.chiCrit(1), crit01 = ST.chiCrit(1, 0.01), rej = r.chi2 >= crit;
+    const rows = ex.map((e, i) => [e[0], e[1], fmt(e[2], 1), fmt(e[1] - e[2], 1), fmt((e[1] - e[2]) ** 2, 1), fmt(r.terms[i], 2)]);
+    rows.push(['<strong>χ² = Σ (o − e)²/e</strong>', '', '', '', '', `<strong>${fmt(r.chi2, 2)}</strong>`]);
+    $('#chi-out').innerHTML = '<h4 style="margin:10px 0 4px">Table 4 · Calculation of chi-square</h4>' + tbl(['Group', 'Observed (o)', 'Expected (e)', 'o − e', '(o − e)²', '(o − e)²/e'], rows) +
+      `<div class="decision ${rej ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${df}, critical value = ${crit} (<i>p</i> = 0.05)${r.chi2 >= crit01 ? `; it also exceeds ${crit01} (<i>p</i> = 0.01)` : ''}. ${rej ? 'Because χ² ≥ the critical value, <strong>reject the null hypothesis</strong>: the difference in mitotic cells is unlikely to be due to chance alone.' : 'Because χ² is below the critical value, <strong>fail to reject the null hypothesis</strong>: the difference could be due to chance.'}</div>`;
+  });
+  render();
+  return { setObs };
+})();
+[['p2-hyp', 'What is your experimental hypothesis? What is your null hypothesis? Are these the same?'], ['p2-measure', 'What will you measure, and how? What is the appropriate control?']].forEach(([k, l]) => Lab.prompt('#p2-design-prompts', { key: k, label: l, rows: 3 }));
+classUpdate();
+
+/* =====================================================================
+   PART 3: KARYOTYPES (G-banded, drawn from approximate human chromosome lengths)
+   ===================================================================== */
+const KARYO = (function () {
+  // [name, length (Mb, GRCh38, rounded), centromere position as a fraction from the p-arm end]
+  const CH = [['1', 248, .50], ['2', 242, .39], ['3', 198, .46], ['4', 190, .26], ['5', 181, .27], ['6', 171, .35], ['7', 159, .38], ['8', 145, .31], ['9', 138, .31], ['10', 134, .30], ['11', 135, .39], ['12', 133, .27], ['13', 114, .15], ['14', 107, .16], ['15', 102, .18], ['16', 90, .41], ['17', 83, .30], ['18', 80, .22], ['19', 59, .45], ['20', 64, .43], ['21', 47, .25], ['22', 51, .28], ['X', 156, .39], ['Y', 57, .19]];
+  const DEFS = {};
+  CH.forEach(([n, len, cen], i) => {
+    const R = Lab.rng(1000 + i * 77), bands = []; let p = R.uniform() * 0.03;
+    while (p < 0.98) { const w = (3 + R.uniform() * 7) / len; const dark = R.chance(0.48) && Math.abs(p + w / 2 - cen) > 0.03; if (dark) bands.push([p, Math.min(0.985, p + w)]); p += w + (2 + R.uniform() * 5) / len; }
+    DEFS[n] = { name: n, len, cen, bands };
+  });
+  function derive(name, parts) {
+    let bands = [], pos = 0, cenAt = 0;
+    parts.forEach(([n, s, e], pi) => {
+      const d = DEFS[n], lo = Math.min(s, e), hi = Math.max(s, e), segLen = (hi - lo) * d.len;
+      if (pi === 0) cenAt = (d.cen - s) / (e - s) * segLen;
+      d.bands.forEach(([b0, b1]) => { const o0 = Math.max(b0, lo), o1 = Math.min(b1, hi); if (o1 > o0) { let r0 = (o0 - lo) / (hi - lo), r1 = (o1 - lo) / (hi - lo); if (s > e) [r0, r1] = [1 - r1, 1 - r0]; bands.push([pos + r0 * segLen, pos + r1 * segLen]); } });
+      pos += segLen;
+    });
+    return { name, len: pos, cen: cenAt / pos, bands: bands.map(([a, b]) => [a / pos, b / pos]), abn: true };
+  }
+  const autos = Array.from({ length: 22 }, (_, i) => String(i + 1));
+  const HELA_CN = { 1: 3, 2: 3, 3: 3, 4: 3, 5: 4, 6: 3, 7: 3, 8: 3, 9: 3, 10: 3, 11: 3, 12: 3, 13: 3, 14: 3, 15: 3, 16: 4, 17: 4, 18: 3, 19: 3, 20: 4, 21: 3, 22: 3, X: 3 };
+  const HELA_M = [['M1', [['5', 0, .27], ['5', .27, 0]]], ['M2', [['3', 1, .46], ['3', .46, 1]]], ['M3', [['1', 0, .62], ['9', .45, 1]]], ['M4', [['11', 0, .7]]], ['M5', [['9', 0, .4], ['3', .7, 1]]], ['M6', [['X', 0, .5], ['7', .6, 1]]], ['M7', [['22', 0, .6], ['3', .5, .8]]], ['M8', [['1', 0, .55], ['15', .4, 1]]], ['M9', [['6', 0, .45], ['2', .8, 1]]]];
+  const SETS = {
+    normal: { label: '46,XX', desc: 'Normal female cell (46,XX). Each autosome is present as a matched pair with identical banding.', list: () => [...autos.flatMap(n => [DEFS[n], DEFS[n]]), DEFS.X, DEFS.X] },
+    hela: { label: 'HeLa', desc: 'HeLa cervical cancer cell (representative composite). Hypertriploid: most chromosomes are present in three or four copies, plus rearranged "marker" chromosomes (M1–M9) built from pieces of several chromosomes.', list: () => [...autos.flatMap(n => Array(HELA_CN[n]).fill(DEFS[n])), ...Array(HELA_CN.X).fill(DEFS.X), ...HELA_M.map(([m, p]) => derive(m, p))] },
+    cml: { label: '46,XY,t(9;22)', desc: 'Bone-marrow cell from a man with chronic myelogenous leukemia (CML). Count carefully, then compare pairs 9 and 22 with the normal cell.', list: () => { const l = []; autos.forEach(n => { if (n === '9') l.push(DEFS['9'], derive('9', [['9', 0, .96], ['22', .33, 1]])); else if (n === '22') l.push(DEFS['22'], derive('22', [['22', 0, .33], ['9', .96, 1]])); else l.push(DEFS[n], DEFS[n]); }); l.push(DEFS.X, DEFS.Y); return l; } }
+  };
+  const TRUE = { normal: 46, hela: 82, cml: 46 };
+  const K = 0.36, W = 760, H = 470, svg = $('#k-svg');
+  let cur = 'normal', view = 'spread', counted = {}, chroms = [];
+  function groupKey(d) { return d.name[0] === 'M' ? 'M' : d.name; }
+  function build() {
+    const P = scope(), list = SETS[cur].list();
+    chroms = list.map((d, i) => ({ d, i }));
+    const R = Lab.rng(cur.length * 131 + 7), placed = [];
+    // spread: random non-overlapping-ish positions inside an ellipse, random angles
+    chroms.forEach(c => {
+      const L = c.d.len * K; let best = null;
+      for (let t = 0; t < 900; t++) {
+        const a = R.uniform() * TAU, rr = Math.sqrt(R.uniform()), x = W / 2 + Math.cos(a) * rr * 330, y = H / 2 + Math.sin(a) * rr * 200;
+        const okk = placed.every(p => Math.hypot(p.x - x, p.y - y) > (p.L + L) * (t < 600 ? 0.42 : 0.3) + 10);
+        if (okk) { best = { x, y }; break; } if (!best) best = { x, y };
+      }
+      c.sx = best.x; c.sy = best.y; c.sr = R.uniform() * 360 - 180; placed.push({ x: best.x, y: best.y, L });
+    });
+    // karyotype rows, centromeres aligned in each row
+    const ROWS = [['1', '2', '3', '4', '5'], ['6', '7', '8', '9', '10', '11', '12', 'X'], ['13', '14', '15', '16', '17', '18'], ['19', '20', '21', '22', 'Y'], ['M']];
+    let y = 14; const labels = [];
+    ROWS.forEach(row => {
+      const groups = row.map(g => chroms.filter(c => groupKey(c.d) === g)).filter(g => g.length);
+      if (!groups.length) return;
+      const maxP = Math.max(...groups.flat().map(c => c.d.len * K * c.d.cen)), maxQ = Math.max(...groups.flat().map(c => c.d.len * K * (1 - c.d.cen)));
+      const widths = groups.map(g => g.length * 15), gap = 20, total = ST.sum(widths) + gap * (groups.length - 1);
+      let x = (W - total) / 2; const line = y + maxP;
+      groups.forEach((g, gi) => {
+        g.forEach((c, j) => { const L = c.d.len * K; c.kx = x + 7.5 + j * 15; c.ky = line + L / 2 - c.d.cen * L; });
+        labels.push([x + widths[gi] / 2, line + maxQ + 13, groupKey(g[0].d) === 'M' ? 'markers' : g[0].d.name]);
+        x += widths[gi] + gap;
+      });
+      y = line + maxQ + 24;
+    });
+    const fillC = css(mix(P.light, P.dark, 0.13)), strokeC = css(mix(P.light, P.dark, 0.55)), bandC = css(mix(P.dark, P.light, 0.22)), lab = css(mix(P.dark, P.light, 0.3));
+    let s = `<rect x="0" y="0" width="${W}" height="${H}" rx="10" style="fill:${css(P.light)}"/>`;
+    s += labels.map(([x, yy, t]) => `<text class="glabel" x="${x}" y="${yy}" text-anchor="middle" style="fill:${lab};font-size:11px;font-family:var(--f-mono)">${t}</text>`).join('');
+    chroms.forEach(c => {
+      const L = c.d.len * K, pL = L * c.d.cen, top = -L / 2;
+      let g = `<rect class="abn-ring" x="-9" y="${top - 4}" width="18" height="${L + 8}" rx="6" fill="none" style="stroke:${css(P.bad)}" stroke-width="2.4" ${c.d.abn ? '' : 'visibility="hidden"'}/>`;
+      g += `<rect x="-5.5" y="${top}" width="11" height="${Math.max(2, pL - 0.8)}" rx="4.5" style="fill:${fillC};stroke:${strokeC}" stroke-width=".8"/>`;
+      g += `<rect x="-5.5" y="${top + pL + 0.8}" width="11" height="${Math.max(2, L - pL - 0.8)}" rx="4.5" style="fill:${fillC};stroke:${strokeC}" stroke-width=".8"/>`;
+      c.d.bands.forEach(([a, b]) => { const y0 = top + a * L, y1 = top + b * L; if (Math.abs((a + b) / 2 - c.d.cen) < 0.015) return; g += `<rect x="-5" y="${y0}" width="10" height="${Math.max(0.8, y1 - y0)}" style="fill:${bandC}" opacity=".85"/>`; });
+      g += `<line x1="0" y1="${top + 2}" x2="0" y2="${top + L - 2}" style="stroke:${css(P.light)}" stroke-width=".7" opacity=".7"/>`;
+      g += `<rect x="-9" y="${top - 3}" width="18" height="${L + 6}" fill="transparent"/>`;
+      g += `<circle class="mk" cx="0" cy="${top + pL}" r="4.5" style="fill:${css(P.acc)};stroke:${css(P.light)}" stroke-width="1.2"/>`;
+      s += `<g class="chr${counted[c.i] ? ' counted' : ''}" data-i="${c.i}" style="transform:${tf(c)}">${g}</g>`;
+    });
+    svg.innerHTML = s;
+    svg.classList.toggle('spread', view === 'spread');
+    svg.classList.toggle('show-abn', $('#k-abn').checked);
+    $('#k-desc').textContent = SETS[cur].desc;
+    $('#k-count').textContent = Object.keys(counted).length;
+  }
+  const tf = c => view === 'spread' ? `translate(${c.sx}px,${c.sy}px) rotate(${c.sr}deg)` : `translate(${c.kx}px,${c.ky}px) rotate(0deg)`;
+  function setView(v) { view = v; $$('[data-v]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v ? 'true' : 'false')); svg.classList.toggle('spread', v === 'spread'); $$('.chr', svg).forEach(g => { g.style.transform = tf(chroms[+g.dataset.i]); }); }
+  svg.addEventListener('click', e => { const g = e.target.closest('.chr'); if (!g) return; const i = +g.dataset.i; if (counted[i]) delete counted[i]; else counted[i] = 1; g.classList.toggle('counted', !!counted[i]); $('#k-count').textContent = Object.keys(counted).length; });
+  $$('[data-k]').forEach(b => b.addEventListener('click', () => { cur = b.dataset.k; counted = {}; $$('[data-k]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); build(); }));
+  $$('[data-v]').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)));
+  $('#k-reset-count').addEventListener('click', () => { counted = {}; $$('.chr', svg).forEach(g => g.classList.remove('counted')); $('#k-count').textContent = '0'; });
+  $('#k-abn').addEventListener('change', () => svg.classList.toggle('show-abn', $('#k-abn').checked));
+  themeHooks.push(build);
+  build();
+  return { TRUE };
+})();
+const kTab = Lab.table('#k-table', { save: 'kary', columns: [{ key: 'cell', label: 'Cell type' }, { key: 'n', label: 'Chromosome count', num: true, digits: 0, editable: true }, { key: 'obs', label: 'What you notice (pairs, sizes, banding)', editable: true }],
+  rows: [{ cell: 'Normal (46,XX)', n: null, obs: '' }, { cell: 'HeLa (cervical cancer)', n: null, obs: '' }, { cell: 'CML (leukemia)', n: null, obs: '' }] });
+$('#k-check').addEventListener('click', () => {
+  const keys = ['normal', 'hela', 'cml'], names = ['Normal', 'HeLa', 'CML'];
+  $('#k-check-msg').innerHTML = kTab.getRows().map((r, i) => { const ok = r.n != null && Math.abs(r.n - KARYO.TRUE[keys[i]]) <= (keys[i] === 'hela' ? 1 : 0); return `${names[i]}: <span class="pill ${r.n == null ? '' : ok ? 'ok' : 'bad'}">${r.n == null ? 'no count' : ok ? 'matches' : 'recount'}</span>`; }).join(' ');
+});
+Lab.prompt('#p3-pre', { key: 'p3-hyp', label: 'Hypothesis: how might the chromosomes of a cancer cell differ from those of a normal cell, and how could that relate to the cancer cell\'s behavior?', rows: 3 });
+Lab.prompt('#p3-pre', { key: 'p3-diff', label: 'How are normal cells and cancer cells different from each other? What goes wrong in the cell cycle of a cancer cell?', rows: 3 });
+[['p3-support', 'Do your observations support your hypothesis? If not, what information would you need to understand them? If so, what could you find to validate your conclusion?'], ['p3-hela', 'From your observations, what went wrong in Henrietta Lacks\'s cervical cells that made them cancerous?'], ['p3-hpv', 'How does infection with human papillomavirus (HPV) increase the risk of cervical cancer?'], ['p3-ethics', 'Should tissue be removed from a patient for research without consent? Should the Lacks family share in what was gained from her cells? Explain your position.']].forEach(([k, l]) => Lab.prompt('#p3-case1', { key: k, label: l, rows: 3 }));
+[['p3-mut', 'What normally happens in a cell whose DNA has mutations? What would happen if cells with mutated DNA replicated anyway?'], ['p3-monitor', 'How do cells monitor DNA integrity?'], ['p3-ph', 'How are chromosomes 9 and 22 different in the CML cell compared with the normal cell, and how could that difference lead to cancer?']].forEach(([k, l]) => Lab.prompt('#p3-case2', { key: k, label: l, rows: 3 }));
+
+/* =====================================================================
+   PART 4: POP-BEAD MEIOSIS MODEL
+   ===================================================================== */
+const MEI = (function () {
+  const svg = $('#mei-svg'), MSP = 16, MBR = 7;
+  const DEF = { L: { n: 9, c: 3, gene: 7, al: ['A', 'a'] }, S: { n: 5, c: 2, gene: 4, al: ['B', 'b'] } };
+  const CT = []; ['L', 'S'].forEach(chr => ['m', 'p'].forEach(par => [1, 2].forEach(k => CT.push({ id: chr + par + k, chr, par, k }))));
+  const NAMES = ['Interphase (G1)', 'S phase / G2', 'Prophase I', 'Metaphase I', 'Anaphase I', 'Telophase I', 'Metaphase II', 'Anaphase II', 'Telophase II'];
+  const DESC = [
+    'Each chromosome is one DNA molecule. Blue came from the mother (A, B); orange from the father (a, b).',
+    'DNA replication: each chromosome now has two identical sister chromatids.',
+    'Homologs pair (synapsis) to form tetrads. Non-sister chromatids may cross over at a chiasma (pink ✕).',
+    'Tetrads line up on the plate. Click a tetrad (or use the flip buttons) to change which homolog faces each pole.',
+    'Homologs separate; sister chromatids stay together. Chromosome number is halved here.',
+    'Two haploid cells; each chromosome still has two chromatids. No DNA replication follows.',
+    'Chromosomes line up singly on a new plate in each cell.',
+    'Sister chromatids separate, as in mitosis.',
+    'Four haploid cells. Read each genotype and chromosome number below.'
+  ];
+  let st = { stage: 0, oL: 0, oS: 0, xo: true, xoPos: 2, ndj: 'none' }, cur = null, anim = null;
+  const leftPar = (s, chr) => ((chr === 'L' ? s.oL : s.oS) === 0 ? 'm' : 'p');
+  const cellOf = (s, t) => (s.ndj === 'I' && t.chr === 'L') ? 0 : (t.par === leftPar(s, t.chr) ? 0 : 1);
+  const gamOf = (s, t) => { const c = cellOf(s, t); if (s.ndj === 'II' && c === 0 && t.chr === 'L') return 0; return c * 2 + (t.k === 1 ? 0 : 1); };
+  function beadPar(s, t, i) { if (s.stage >= 2 && s.xo && t.chr === 'L' && ((t.par === 'm' && t.k === 2) || (t.par === 'p' && t.k === 1)) && i >= DEF.L.c + s.xoPos) return t.par === 'm' ? 'p' : 'm'; return t.par; }
+  const allele = (s, t) => DEF[t.chr].al[beadPar(Object.assign({}, s, { stage: 9 }), t, DEF[t.chr].gene) === 'm' ? 0 : 1];
+  function gametes(s) { const G = [[], [], [], []]; CT.forEach(t => G[gamOf(s, t)].push(t)); return G.map(list => ({ list, geno: list.map(t => allele(s, t)).sort((a, b) => a.toUpperCase() === b.toUpperCase() ? (a < b ? -1 : 1) : (a.toUpperCase() < b.toUpperCase() ? -1 : 1)).join(''), n: list.length })); }
+  const tid = (chr, par, k) => CT.find(t => t.id === chr + par + k);
+  function order(s, chr) { const lp = leftPar(s, chr), rp = lp === 'm' ? 'p' : 'm'; return [[lp, lp === 'm' ? 1 : 2], [lp, lp === 'm' ? 2 : 1], [rp, rp === 'm' ? 2 : 1], [rp, rp === 'm' ? 1 : 2]]; }
+  const height = chr => (DEF[chr].n - 1) * MSP + 2 * MBR;
+  function layout(s) {
+    const pos = {}, set = (t, x, y, o = 1) => { pos[t.id] = { x, y, o }; }, stg = s.stage, OFF = [-27, -9, 9, 27];
+    const base = { Lm: [320, 175], Lp: [470, 205], Sm: [395, 300], Sp: [430, 115] };
+    if (stg <= 1) { CT.forEach(t => { const b = base[t.chr + t.par]; set(t, b[0] + (t.k === 2 && stg === 1 ? 12 : 0), b[1], stg === 0 && t.k === 2 ? 0 : 1); }); return pos; }
+    if (stg === 2) { [['L', 345, 185], ['S', 470, 230]].forEach(([chr, x, y]) => order(s, chr).forEach(([p, k], i) => set(tid(chr, p, k), x + OFF[i], y))); return pos; }
+    const rowY = { L: 150, S: 300 };
+    if (stg === 3) { ['L', 'S'].forEach(chr => order(s, chr).forEach(([p, k], i) => set(tid(chr, p, k), 400 + OFF[i], rowY[chr]))); return pos; }
+    const cellX = c => (c === 0 ? 200 : 600);
+    const chromsIn = c => { const out = []; ['L', 'S'].forEach(chr => ['m', 'p'].forEach(par => { const t1 = tid(chr, par, 1); if (cellOf(s, t1) === c) out.push([chr, par]); })); return out; };
+    if (stg === 4) { [0, 1].forEach(c => { const cs = chromsIn(c); ['L', 'S'].forEach(chr => { const mine = cs.filter(x => x[0] === chr); mine.forEach(([ch, par], j) => { const x = (c === 0 ? 150 : 650) + (j - (mine.length - 1) / 2) * 42; set(tid(ch, par, 1), x - 9, rowY[chr]); set(tid(ch, par, 2), x + 9, rowY[chr]); }); }); }); return pos; }
+    if (stg === 5) { [0, 1].forEach(c => { const cs = chromsIn(c); cs.forEach(([ch, par], j) => { const x = cellX(c) + (j - (cs.length - 1) / 2) * 44; set(tid(ch, par, 1), x - 9, 195); set(tid(ch, par, 2), x + 9, 195); }); }); return pos; }
+    if (stg === 6 || stg === 7) {
+      [0, 1].forEach(c => {
+        const cs = chromsIn(c), tot = ST.sum(cs.map(([ch]) => height(ch))) + 8 * Math.max(0, cs.length - 1); let y = 210 - tot / 2;
+        cs.forEach(([ch, par]) => {
+          const cy = y + DEF[ch].c * MSP + MBR; y += height(ch) + 8;
+          [1, 2].forEach(k => { const t = tid(ch, par, k); if (stg === 6) set(t, cellX(c) + (k === 1 ? -9 : 9), cy); else { const g = gamOf(s, t), side = g % 2 === 0 ? -1 : 1, same = s.ndj === 'II' && c === 0 && ch === 'L'; set(t, cellX(c) + side * 100 + (same ? (k === 1 ? -9 : 9) : 0), cy); } });
+        });
+      });
+      return pos;
+    }
+    const G = gametes(s);
+    G.forEach((g, gi) => { const gx = 100 + gi * 200; g.list.forEach((t, j) => set(t, gx + (j - (g.list.length - 1) / 2) * 20, 190)); });
+    return pos;
+  }
+  function render(pos) {
+    const s = st, stg = s.stage; let g = '';
+    const cell = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" style="fill:var(--surface);stroke:var(--muted)" stroke-width="2"/>`;
+    if (stg <= 4) { g += cell(400, 210, 388, 200); if (stg <= 1) g += `<circle cx="400" cy="210" r="150" style="fill:var(--surface-2);stroke:var(--muted)" stroke-width="1.5"/>`; if (stg === 2) g += `<circle cx="400" cy="210" r="150" fill="none" style="stroke:var(--muted)" stroke-dasharray="6 7"/>`; }
+    else if (stg <= 7) { g += cell(200, 210, 192, 198) + cell(600, 210, 192, 198); if (stg === 5) g += `<circle cx="200" cy="200" r="105" style="fill:var(--surface-2);stroke:var(--muted)"/><circle cx="600" cy="200" r="105" style="fill:var(--surface-2);stroke:var(--muted)"/>`; }
+    else [0, 1, 2, 3].forEach(i => { g += cell(100 + i * 200, 200, 94, 170); });
+    if (stg === 3 || stg === 4) { g += `<line x1="400" y1="20" x2="400" y2="400" style="stroke:var(--stain)" stroke-width="2" stroke-dasharray="8 6" opacity="${stg === 3 ? 1 : 0.35}"/>`; CT.forEach(t => { const p = pos[t.id], px = p.x < 400 ? 24 : 776; g += `<line x1="${px}" y1="210" x2="${p.x}" y2="${p.y}" style="stroke:var(--accent)" opacity=".3"/>`; }); }
+    if (stg === 6 || stg === 7) [200, 600].forEach(cx => { g += `<line x1="${cx}" y1="30" x2="${cx}" y2="390" style="stroke:var(--stain)" stroke-width="2" stroke-dasharray="8 6" opacity="${stg === 6 ? 1 : 0.35}"/>`; CT.forEach(t => { const p = pos[t.id]; if (Math.abs(p.x - cx) > 190) return; const px = p.x < cx ? cx - 175 : cx + 175; g += `<line x1="${px}" y1="210" x2="${p.x}" y2="${p.y}" style="stroke:var(--accent)" opacity=".3"/>`; }); });
+    const wavy = stg <= 1 || stg === 5 || stg === 8;
+    ['L', 'S'].forEach(chr => {
+      let grp = '';
+      CT.filter(t => t.chr === chr).forEach(t => {
+        const p = pos[t.id]; if (p.o <= 0.01) return;
+        grp += `<g opacity="${p.o}">${beads(p.x, p.y, DEF[chr].n, DEF[chr].c, i => beadPar(s, t, i) === 'm' ? 'var(--s3)' : 'var(--s4)', MSP, wavy, DEF[chr].gene, MBR)}</g>`;
+      });
+      if (stg === 3) { const xs = CT.filter(t => t.chr === chr).map(t => pos[t.id]); const minY = Math.min(...xs.map(p => p.y)) - DEF[chr].c * MSP - 10; grp = `<g class="tap" data-tetrad="${chr}" role="button" aria-label="Flip ${chr === 'L' ? 'long' : 'short'} tetrad"><rect x="358" y="${minY}" width="84" height="${height(chr) + 14}" rx="8" fill="transparent" style="stroke:var(--accent)" stroke-dasharray="3 4" opacity=".7"/>${grp}</g>`; }
+      g += grp;
+    });
+    if ((stg === 2 || stg === 3) && s.xo) { const ord = order(s, 'L'), a = pos[tid('L', ord[1][0], ord[1][1]).id], b = pos[tid('L', ord[2][0], ord[2][1]).id], x = (a.x + b.x) / 2, y = a.y + (s.xoPos - 0.5) * MSP; g += `<path d="M${x - 8},${y - 8} L${x + 8},${y + 8} M${x + 8},${y - 8} L${x - 8},${y + 8}" style="stroke:var(--stain)" stroke-width="3" stroke-linecap="round"/>`; }
+    if (stg === 8) gametes(s).forEach((gm, gi) => { const gx = 100 + gi * 200, ok = gm.n === 2; g += `<text x="${gx}" y="318" text-anchor="middle" style="fill:var(--ink);font-size:20px;font-weight:700">${gm.geno || '—'}</text><text x="${gx}" y="340" text-anchor="middle" style="fill:var(${ok ? '--ok' : '--bad'});font-size:15px;font-weight:600">${ok ? 'n = 2' : gm.n > 2 ? 'n + 1 = ' + gm.n : 'n − 1 = ' + gm.n}</text>`; });
+    svg.innerHTML = g;
+  }
+  function info() {
+    const s = st; $('#mei-stage-name').textContent = NAMES[s.stage]; $('#mei-desc').textContent = DESC[s.stage];
+    $('#mei-back').disabled = s.stage === 0; $('#mei-next').disabled = s.stage === 8;
+    $('#mei-xopos-out').textContent = 'bead ' + s.xoPos + (s.xoPos <= 4 ? ' (between centromere and A)' : ' (beyond A)');
+    const box = $('#mei-gametes'); box.innerHTML = '';
+    if (s.stage === 8) gametes(s).forEach((gm, i) => box.append(Lab.h('div', { class: 'readout' }, Lab.h('span', { class: 'k' }, 'Gamete ' + (i + 1)), Lab.h('span', { class: 'v', html: `${gm.geno || '—'} <span class="pill ${gm.n === 2 ? 'ok' : 'bad'}">${gm.n === 2 ? 'normal' : gm.n > 2 ? 'n+1' : 'n−1'}</span>` }))));
+    else box.append(Lab.h('div', { class: 'readout' }, Lab.h('span', { class: 'k' }, 'Chromosomes per cell'), Lab.h('span', { class: 'v' }, s.stage <= 3 ? '4 (2n)' : s.stage === 4 ? '4 → 2 + 2' : s.stage <= 6 ? (s.ndj === 'I' ? '3 and 1' : '2 and 2') : 'separating')));
+  }
+  function go(animate) {
+    const target = layout(st);
+    if (!cur || !animate || reduced) { cur = target; render(cur); info(); return; }
+    const from = JSON.parse(JSON.stringify(cur)); let t = 0; if (anim) anim.stop();
+    info();
+    anim = Lab.loop(dt => { t = Math.min(1, t + dt / 0.65); const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; const p = {}; Object.keys(target).forEach(id => { const a = from[id] || target[id], b = target[id]; p[id] = { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, o: a.o + (b.o - a.o) * e }; }); cur = p; render(p); if (t >= 1) { cur = target; return false; } });
+    anim.start();
+  }
+  const flip = chr => { if (chr === 'L') st.oL ^= 1; else st.oS ^= 1; go(true); };
+  svg.addEventListener('click', e => { const g = e.target.closest('[data-tetrad]'); if (g && st.stage === 3) flip(g.dataset.tetrad); });
+  $('#mei-next').addEventListener('click', () => { if (st.stage < 8) { st.stage++; go(true); } });
+  $('#mei-back').addEventListener('click', () => { if (st.stage > 0) { st.stage--; go(true); } });
+  $('#mei-reset').addEventListener('click', () => { st.stage = 0; go(true); });
+  $('#mei-flipL').addEventListener('click', () => flip('L')); $('#mei-flipS').addEventListener('click', () => flip('S'));
+  $('#mei-xo').addEventListener('change', e => { st.xo = e.target.checked; go(false); });
+  $('#mei-xopos').addEventListener('input', e => { st.xoPos = +e.target.value; go(false); });
+  $('#mei-ndj').addEventListener('change', e => { st.ndj = e.target.value; go(true); });
+  const recTab = Lab.table('#mei-table', { save: 'mei-runs', columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'orient', label: 'Metaphase I (left side)' }, { key: 'xo', label: 'Crossover' }, { key: 'ndj', label: 'Nondisjunction' }, { key: 'g', label: 'Gamete genotypes' }, { key: 'n', label: 'Chromosome numbers' }] });
+  $('#mei-record').addEventListener('click', () => {
+    if (st.stage !== 8) { $('#mei-desc').textContent = 'Step through to Telophase II first, then record.'; return; }
+    const G = gametes(st);
+    recTab.addRow({ run: recTab.getRows().length + 1, orient: `long: ${leftPar(st, 'L') === 'm' ? 'blue' : 'orange'}, short: ${leftPar(st, 'S') === 'm' ? 'blue' : 'orange'}`, xo: st.xo ? 'yes, bead ' + st.xoPos : 'no', ndj: st.ndj === 'none' ? 'none' : 'meiosis ' + st.ndj, g: G.map(x => x.geno || '—').join(' | '), n: G.map(x => x.n).join(', ') });
+  });
+  const ch = Lab.chart('#mei-chart', { type: 'bar', xLabel: 'Gamete genotype', yLabel: 'Number of gametes', categories: ['AB', 'Ab', 'aB', 'ab'], series: [{ name: 'Observed', points: [] }, { name: 'Expected (1:1:1:1)', points: [] }], height: 280 });
+  $('#mei-run').addEventListener('click', () => {
+    const tally = { AB: 0, Ab: 0, aB: 0, ab: 0 }; let recA = 0;
+    for (let i = 0; i < 200; i++) {
+      const s = { stage: 9, oL: rng.int(0, 1), oS: rng.int(0, 1), xo: rng.chance(0.6), xoPos: rng.int(1, 5), ndj: 'none' };
+      const G = gametes(s); G.forEach(gm => { tally[gm.geno]++; });
+      if (s.xo && s.xoPos <= 4) recA++;
+    }
+    const obs = ['AB', 'Ab', 'aB', 'ab'].map(k => tally[k]), r = ST.chiSquare(obs, [200, 200, 200, 200]);
+    ch.update({ series: [{ name: 'Observed', points: ['AB', 'Ab', 'aB', 'ab'].map(k => ({ x: k, y: tally[k] })) }, { name: 'Expected (1:1:1:1)', points: ['AB', 'Ab', 'aB', 'ab'].map(k => ({ x: k, y: 200 })) }] });
+    $('#mei-run-out').innerHTML = `800 gametes: AB ${tally.AB}, Ab ${tally.Ab}, aB ${tally.aB}, ab ${tally.ab}. χ² = ${fmt(r.chi2, 2)} (df = 3, critical 7.81): ${r.reject ? 'differs from' : 'consistent with'} 1:1:1:1. A crossover between gene A and its centromere happened in ${recA} of 200 meioses.`;
+  });
+  themeHooks.push(() => render(cur));
+  go(false);
+})();
+Lab.quiz('#p4-quiz', [
+  { type: 'num', q: 'Humans have <i>n</i> = 23. Counting independent assortment only (no crossing over), how many genetically different gametes can one person make? (2<sup><i>n</i></sup>)', answer: 8388608, tol: 1, unit: 'kinds of gametes', explain: '2<sup>23</sup> = 8,388,608. Crossing over and random fertilization multiply the variety far beyond this.' },
+  { type: 'mc', q: 'Run the model with nondisjunction in meiosis I, then in meiosis II. Which statement matches what you see?', choices: ['Both give four normal gametes.', 'Meiosis I nondisjunction makes all four gametes abnormal (two n+1, two n−1); meiosis II nondisjunction makes two normal, one n+1 and one n−1.', 'Meiosis II nondisjunction makes all four gametes abnormal.', 'Nondisjunction only affects chromosome number in mitosis.'], answer: 1, explain: 'If homologs fail to separate in meiosis I, both daughter cells are wrong and so are all their products. If sister chromatids fail to separate in one cell in meiosis II, only that cell\'s two gametes are affected. Fertilization of an n+1 gamete gives trisomy, such as trisomy 21 (Down syndrome).' },
+  { type: 'mc', q: 'In the model, set the chiasma at bead 5 (beyond gene A). After meiosis, are any gametes recombinant for A relative to its centromere?', choices: ['Yes, always', 'No; the exchanged segment does not include gene A, so A stays with its original centromere', 'Only if nondisjunction occurs'], answer: 1, explain: 'Only crossovers that fall between a gene and the centromere move that gene to a chromatid with the other homolog\'s centromere. The farther a gene is from the centromere, the more room there is for a crossover to land in between, so crossover frequency rises with distance.' }
+], { id: 'p4' });
+[['p4-when', 'When is DNA replicated during meiosis? Are homologous chromosomes exact copies of each other?'], ['p4-xo', 'What is crossing over, and what physical constraints control how often it happens between two points?'], ['p4-ia', 'What is meant by independent assortment? How can you calculate the possible number of kinds of gametes?'], ['p4-ndj', 'What happens if a homologous pair fails to separate, and how could this contribute to disorders such as Down syndrome? (Cri du chat is a deletion of part of chromosome 5p; how is that different?)'], ['p4-diff', 'How are mitosis and meiosis fundamentally different?']].forEach(([k, l]) => Lab.prompt('#p4-prompts', { key: k, label: l, rows: 3 }));
+
+/* =====================================================================
+   PART 5: SORDARIA
+   Model: a crossover between the spore-colour gene and its centromere occurs in a fraction
+   p = 0.52 of meioses (published distance 26 map units = 52% crossover asci ÷ 2). Crossover
+   asci show one of four equally likely patterns (2:2:2:2 or 2:4:2, either orientation);
+   parental asci show 4:4 in either orientation. About 14% of asci are still immature.
+   ===================================================================== */
+const P_XO = 0.52;
+(function xoDiagram() {
+  const svg = $('#xo-svg'); let xo = false, f1 = false, f2 = false;
+  function draw() {
+    // chromatids after meiosis I: top cell gets homolog +, bottom gets homolog tn (centromeres segregate at MI)
+    const top = xo ? ['+', 'tn'] : ['+', '+'], bot = xo ? ['+', 'tn'] : ['tn', 'tn'];
+    const t = f1 ? [top[1], top[0]] : top, b = f2 ? [bot[1], bot[0]] : bot;
+    const nuclei = [t[0], t[1], b[0], b[1]], spores = nuclei.flatMap(x => [x, x]);
+    const col = a => a === '+' ? 'var(--ink)' : 'var(--s4)';
+    let g = `<text x="12" y="20" style="fill:var(--muted);font-size:12px">Tetrad (prophase I)</text>`;
+    const strands = xo ? [['+', '+'], ['+', 'tn'], ['tn', '+'], ['tn', 'tn']] : [['+', '+'], ['+', '+'], ['tn', 'tn'], ['tn', 'tn']];
+    strands.forEach((s, i) => { const x = 30 + i * 18, cen = i < 2 ? 'var(--s3)' : 'var(--s4)'; g += `<rect x="${x - 4}" y="34" width="8" height="58" rx="3" style="fill:${i < 2 ? 'var(--s3)' : 'var(--s4)'}" opacity=".55"/>`; if (xo && (i === 1 || i === 2)) g += `<rect x="${x - 4}" y="92" width="8" height="58" rx="3" style="fill:${i === 1 ? 'var(--s4)' : 'var(--s3)'}" opacity=".55"/>`; else g += `<rect x="${x - 4}" y="92" width="8" height="58" rx="3" style="fill:${cen}" opacity=".55"/>`; g += `<circle cx="${x}" cy="40" r="5" style="fill:var(--ink)"/><text x="${x}" y="168" text-anchor="middle" style="fill:var(--ink);font-size:11px;font-weight:700">${s[1] === '+' ? '+' : 'tn'}</text>`; });
+    g += `<text x="12" y="228" style="fill:var(--muted);font-size:11px">● = centromere; allele label sits under each chromatid</text>`;
+    if (xo) g += `<path d="M${30 + 18 + 4},${92} l10,0" style="stroke:var(--stain)" stroke-width="3"/>`;
+    g += `<path d="M120,95 h40" style="stroke:var(--muted)" stroke-width="2" marker-end="url(#ah)"/><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>`;
+    g += `<text x="172" y="20" style="fill:var(--muted);font-size:12px">4 nuclei → mitosis → 8 spores (ascus)</text>`;
+    g += `<rect x="180" y="34" width="250" height="40" rx="20" style="fill:var(--surface);stroke:var(--muted)"/>`;
+    spores.forEach((s, i) => { g += `<ellipse cx="${199 + i * 30}" cy="54" rx="13" ry="12" style="fill:${col(s)};stroke:var(--ink)" stroke-opacity=".4"/>`; });
+    nuclei.forEach((n, i) => { g += `<text x="${214 + i * 60}" y="96" text-anchor="middle" style="fill:var(--ink);font-size:12px">${n}</text>`; });
+    const pat = (() => { const runs = []; spores.forEach(s => { if (runs.length && runs[runs.length - 1][0] === s) runs[runs.length - 1][1]++; else runs.push([s, 1]); }); return runs.map(r => r[1]).join(':'); })();
+    g += `<text x="305" y="130" text-anchor="middle" style="fill:var(--accent);font-size:20px;font-weight:700">${pat} pattern</text>`;
+    g += `<text x="305" y="152" text-anchor="middle" style="fill:var(--muted);font-size:12px">${xo ? 'alleles separate in meiosis II' : 'alleles separate in meiosis I'}</text>`;
+    g += `<g transform="translate(180,186)"><ellipse cx="10" cy="10" rx="9" ry="8" style="fill:var(--ink)"/><text x="26" y="15" style="fill:var(--ink);font-size:12px">+ (wild type, black)</text><ellipse cx="160" cy="10" rx="9" ry="8" style="fill:var(--s4)"/><text x="176" y="15" style="fill:var(--ink);font-size:12px">tn (tan)</text></g>`;
+    svg.innerHTML = g;
+    $('#xo-msg').textContent = xo ? `With a crossover, each meiosis I daughter carries one + and one tn chromatid, so the ascus shows ${pat}. Flip a meiosis II spindle to see the other arrangement.` : 'No crossover: the + and tn centromeres (and alleles) separate at meiosis I, giving 4:4. Flipping a meiosis II spindle changes nothing visible.';
+  }
+  $('#xo-demo').addEventListener('change', e => { xo = e.target.checked; draw(); });
+  $('#xo-flip').addEventListener('click', () => { if (Math.random() < 0.5) f1 = !f1; else f2 = !f2; draw(); });
+  draw();
+})();
+[['p5-diff', 'How do you explain the differences between recombinant asci and parental (4:4) asci? What meiotic event accounts for the difference?'], ['p5-predict', 'Using the model chromosomes from Part 4, predict the possible arrangements of spores in an ascus.']].forEach(([k, l]) => Lab.prompt('#p5-pre', { key: k, label: l, rows: 3 }));
+function sporePattern(R) { if (R.chance(P_XO)) return { xo: true, s: R.pick(['++tt++tt', 'tt++tt++', '++tttt++', 'tt++++tt']) }; return { xo: false, s: R.chance(0.5) ? '++++tttt' : 'tttt++++' }; }
+const SORD = (function () {
+  const o = Lab.canvas('#s-canvas', 0.75);
+  let field, marks = new Map(), tool = 'P', checking = false, fieldNo = 0, salt = rng.int(1, 1e6);
+  function gen(seed) {
+    const R = Lab.rng(seed), asci = [];
+    const pc = { x: FC.x + R.normal(0, 30), y: FC.y + R.normal(0, 22), r: 44 + R.uniform() * 8 };
+    const n = R.int(20, 23), a0 = R.uniform() * TAU;
+    const mk = (x, y, a, L) => { const mature = R.chance(0.86); const c = { x, y, a, L, w: 14.5, mature, pat: sporePattern(R), seed: R.int(1, 1e9) }; const ends = [-1, 1].map(sd => Math.hypot(x + Math.cos(a) * L / 2 * sd - FC.x, y + Math.sin(a) * L / 2 * sd - FC.y)); c.edge = Math.max(...ends) > FC.r - 6; return c; };
+    for (let i = 0; i < n; i++) { const a = a0 + i * TAU / n + R.normal(0, 0.05), L = 112 + R.uniform() * 30, d = pc.r * 0.82 + L / 2 + R.normal(0, 3); asci.push(mk(pc.x + Math.cos(a) * d, pc.y + Math.sin(a) * d, a, L)); }
+    const loose = R.int(3, 6);
+    for (let i = 0; i < loose; i++) {
+      for (let t = 0; t < 40; t++) {
+        const a = R.uniform() * TAU, rr = 120 + R.uniform() * 80, x = FC.x + Math.cos(a) * rr, y = FC.y + Math.sin(a) * rr, an = R.uniform() * TAU, L = 110 + R.uniform() * 28;
+        const c = mk(x, y, an, L); if (c.edge) continue;
+        const clash = asci.some(b => Math.hypot(b.x - x, b.y - y) < 60);
+        if (!clash) { asci.push(c); break; }
+      }
+    }
+    const spores = []; for (let i = 0; i < 9; i++) spores.push({ x: FC.x + R.normal(0, 140), y: FC.y + R.normal(0, 110), a: R.uniform() * TAU, tan: R.chance(0.5) });
+    return { seed, pc, asci, spores };
+  }
+  function drawSpore(ctx, P, x, y, rx, ry, kind) {
+    let g;
+    if (kind === 'h') { ctx.fillStyle = css(P.hyaline, 0.85); ctx.strokeStyle = css(P.dark, 0.18); }
+    else if (kind === '+') { g = ctx.createRadialGradient(x - rx * 0.3, y - ry * 0.35, 0.5, x, y, Math.max(rx, ry)); g.addColorStop(0, css(mix(P.black, P.light, 0.35))); g.addColorStop(0.55, css(P.black)); g.addColorStop(1, css(P.black)); ctx.fillStyle = g; ctx.strokeStyle = css(P.black); }
+    else { g = ctx.createRadialGradient(x - rx * 0.3, y - ry * 0.35, 0.5, x, y, Math.max(rx, ry)); g.addColorStop(0, css(mix(P.tan, P.light, 0.45))); g.addColorStop(1, css(P.tan)); ctx.fillStyle = g; ctx.strokeStyle = css(mix(P.tan, P.dark, 0.4)); }
+    ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  }
+  function drawAscus(ctx, P, c) {
+    ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a);
+    ctx.beginPath(); capsule(ctx, -c.L / 2, -c.w / 2, c.L, c.w); ctx.fillStyle = css(P.light, 0.45); ctx.fill(); ctx.strokeStyle = css(P.dark, 0.3); ctx.lineWidth = 1; ctx.stroke();
+    const sp = (c.L - 10) / 8, R = Lab.rng(c.seed);
+    for (let i = 0; i < 8; i++) { const x = -c.L / 2 + 5 + sp * (i + 0.5) + R.normal(0, 0.4); drawSpore(ctx, P, x, R.normal(0, 0.5), sp * 0.47, c.w * 0.37, c.mature ? c.pat.s[i] : 'h'); }
+    ctx.restore();
+  }
+  function draw() {
+    const ctx = o.ctx, s = o.w / 640, P = scope();
+    ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0); ctx.clearRect(0, 0, o.w, o.h); ctx.scale(s, s);
+    scopeFrame(ctx, P, () => {
+      const f = field, R = Lab.rng(f.seed + 5);
+      // fungal hyphae fragments
+      ctx.strokeStyle = css(P.dark, 0.16); ctx.lineWidth = 2.2;
+      for (let i = 0; i < 9; i++) { let x = FC.x + R.normal(0, 150), y = FC.y + R.normal(0, 120); ctx.beginPath(); ctx.moveTo(x, y); for (let j = 0; j < 4; j++) { x += R.normal(0, 40); y += R.normal(0, 40); ctx.lineTo(x, y); } ctx.stroke(); }
+      f.spores.forEach(sp => { ctx.save(); ctx.translate(sp.x, sp.y); ctx.rotate(sp.a); drawSpore(ctx, P, 0, 0, 7, 5.2, sp.tan ? 't' : '+'); ctx.restore(); });
+      f.asci.forEach(c => drawAscus(ctx, P, c));
+      // perithecium: dark, irregular, textured flask wall
+      const pc = f.pc; ctx.beginPath();
+      for (let i = 0; i <= 20; i++) { const a = i / 20 * TAU, rr = pc.r * (0.92 + R.uniform() * 0.2); i ? ctx.lineTo(pc.x + Math.cos(a) * rr, pc.y + Math.sin(a) * rr) : ctx.moveTo(pc.x + Math.cos(a) * rr, pc.y + Math.sin(a) * rr); }
+      const g = ctx.createRadialGradient(pc.x - pc.r * 0.3, pc.y - pc.r * 0.3, 4, pc.x, pc.y, pc.r * 1.1); g.addColorStop(0, css(mix(P.black, P.tan, 0.35))); g.addColorStop(1, css(P.black));
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = css(P.tan, 0.25); ctx.lineWidth = 1;
+      for (let i = 0; i < 26; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * pc.r * 0.85; ctx.beginPath(); ctx.arc(pc.x + Math.cos(a) * d, pc.y + Math.sin(a) * d, 3 + R.uniform() * 4, 0, TAU); ctx.stroke(); }
+      debris(ctx, P, f.seed + 9, 25);
+      f.asci.forEach((c, i) => {
+        const m = marks.get(i); if (!m) return;
+        if (checking) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.beginPath(); capsule(ctx, -c.L / 2 - 2, -c.w / 2 - 2, c.L + 4, c.w + 4); ctx.strokeStyle = css((m === 'R') === c.pat.xo ? P.ok : P.bad); ctx.lineWidth = 3; ctx.stroke(); ctx.restore(); }
+        const tx = c.x + Math.cos(c.a) * (c.L / 2 + 10), ty = c.y + Math.sin(c.a) * (c.L / 2 + 10);
+        ctx.fillStyle = css(m === 'R' ? P.bad : P.acc, 0.9); ctx.beginPath(); ctx.arc(tx, ty, 9, 0, TAU); ctx.fill();
+        ctx.fillStyle = css(P.light); ctx.font = '700 11px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(m === 'R' ? 'X' : '4', tx, ty + 4);
+      });
+    });
+    scopeLabels(ctx, P, '400× · field ' + fieldNo, 50, '50 µm');
+    ctx.restore();
+  }
+  function counts() {
+    let p = 0, r = 0; marks.forEach(v => { if (v === 'P') p++; else r++; });
+    const scorable = field.asci.filter(c => c.mature && !c.edge).length;
+    $('#s-n-P').textContent = p; $('#s-n-R').textContent = r; $('#s-n-left').textContent = scorable - marks.size;
+    return { p, r };
+  }
+  function newField() { fieldNo++; field = gen((salt += 104729)); marks = new Map(); checking = false; $('#s-check').setAttribute('aria-pressed', 'false'); $('#s-msg').textContent = ''; draw(); counts(); }
+  o.onresize = draw;
+  o.canvas.addEventListener('click', e => {
+    const r = o.canvas.getBoundingClientRect(), s = o.w / 640, px = (e.clientX - r.left) / s, py = (e.clientY - r.top) / s;
+    let best = -1, bv = 1e9;
+    field.asci.forEach((c, i) => { const dx = px - c.x, dy = py - c.y, u = dx * Math.cos(c.a) + dy * Math.sin(c.a), v = -dx * Math.sin(c.a) + dy * Math.cos(c.a); if (Math.abs(u) < c.L / 2 + 2 && Math.abs(v) < c.w / 2 + 4 && Math.abs(v) < bv) { bv = Math.abs(v); best = i; } });
+    if (best < 0) return; const c = field.asci[best];
+    if (!c.mature) { $('#s-msg').textContent = 'That ascus is immature: its spores have not darkened yet, so it cannot be scored.'; return; }
+    if (c.edge) { $('#s-msg').textContent = 'That ascus runs off the edge of the field. Score only asci you can see completely.'; return; }
+    if (tool === 'E') marks.delete(best); else marks.set(best, tool);
+    $('#s-msg').textContent = ''; draw(); counts();
+  });
+  $$('[data-stool]').forEach(b => b.addEventListener('click', () => { tool = b.dataset.stool; $$('[data-stool]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); }));
+  $('#s-new').addEventListener('click', newField);
+  $('#s-check').addEventListener('click', () => { checking = !checking; $('#s-check').setAttribute('aria-pressed', String(checking)); let ok = 0; marks.forEach((v, i) => { if ((v === 'R') === field.asci[i].pat.xo) ok++; }); $('#s-msg').textContent = checking ? (marks.size ? `${ok} of ${marks.size} scores match the key (green = match, red = look again).` : 'Score some asci first.') : ''; draw(); });
+  $('#s-auto').addEventListener('click', () => { field.asci.forEach((c, i) => { if (c.mature && !c.edge && !marks.has(i)) marks.set(i, c.pat.xo ? 'R' : 'P'); }); draw(); counts(); });
+  $('#s-record').addEventListener('click', () => {
+    const { p, r } = counts(); if (!p && !r) { $('#s-msg').textContent = 'Score the asci in this field before recording.'; return; }
+    const rows = sTab.getRows(); rows.push({ field: rows.length + 1, p, r, tot: p + r }); sTab.setRows(rows);
+    $('#s-msg').textContent = `Field recorded (${p + r} asci). ` + (ST.sum(sTab.getRows().map(x => x.tot)) < 50 ? 'Make a new squash or move to the next field and keep counting until you reach 50.' : 'You have at least 50 asci.');
+  });
+  themeHooks.push(draw);
+  newField();
+  return {};
+})();
+const sTab = Lab.table('#s-table', { save: 'sord', columns: [{ key: 'field', label: 'Field', num: true, digits: 0 }, { key: 'p', label: 'Asci showing 4:4', num: true, digits: 0 }, { key: 'r', label: 'Asci showing crossover', num: true, digits: 0 }, { key: 'tot', label: 'Total asci', num: true, digits: 0 }],
+  footer: rows => ['Total', ST.sum(rows.map(r => r.p)), ST.sum(rows.map(r => r.r)), ST.sum(rows.map(r => r.tot))], onChange: () => { $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot)); sClassUpdate(); } });
+$('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot));
+$('#s-calc-check').addEventListener('click', () => {
+  const rows = sTab.getRows(), P = ST.sum(rows.map(r => r.p)), R = ST.sum(rows.map(r => r.r)), T = P + R;
+  if (!T) { $('#s-calc-msg').textContent = 'Record at least one field first.'; return; }
+  const pct = 100 * R / T, mu = pct / 2, a = parseFloat($('#s-pct').value), b = parseFloat($('#s-mu').value);
+  const okA = Math.abs(a - pct) <= 0.15, okB = Math.abs(b - mu) <= 0.15 || (isFinite(a) && Math.abs(b - a / 2) <= 0.1 && okA);
+  $('#s-calc-msg').innerHTML = `% crossover: <span class="pill ${okA ? 'ok' : 'bad'}">${isFinite(a) ? (okA ? 'correct' : 'recheck') : 'missing'}</span> Map distance: <span class="pill ${okB ? 'ok' : 'bad'}">${isFinite(b) ? (okB ? 'correct' : 'recheck') : 'missing'}</span>` + (T < 50 ? ' <span class="pill warn">fewer than 50 asci</span>' : '');
+});
+const sClassTab = Lab.table('#s-class-table', { columns: [{ key: 'g', label: 'Group' }, { key: 'p', label: '4:4', num: true, digits: 0 }, { key: 'r', label: 'Crossover', num: true, digits: 0 }, { key: 't', label: 'Total', num: true, digits: 0 }, { key: 'pct', label: '% crossover', num: true, digits: 1 }, { key: 'mu', label: 'Map units', num: true, digits: 1 }],
+  footer: rows => { const p = ST.sum(rows.map(r => r.p)), r = ST.sum(rows.map(r => r.r)), t = p + r; return ['Class', p, r, t, t ? fmt(100 * r / t, 1) : '—', t ? fmt(50 * r / t, 1) : '—']; },
+  onChange: rows => {
+    const pts = rows.map((r, i) => ({ x: i + 1, y: r.mu })), t = ST.sum(rows.map(r => r.t)), cm = t ? 50 * ST.sum(rows.map(r => r.r)) / t : NaN;
+    sChart.update({ series: [{ name: 'Group map distance', points: pts, line: false }], hLines: [{ y: 26, label: 'Published: 26 map units' }].concat(isFinite(cm) ? [{ y: cm, label: 'Class: ' + fmt(cm, 1) }] : []) });
+  } });
+const sChart = Lab.chart('#s-chart', { xLabel: 'Lab group (1 = yours)', yLabel: 'Gene–centromere distance (map units)', xMin: 0, xMax: 9, yMin: 0, yMax: 40, series: [], hLines: [{ y: 26, label: 'Published: 26 map units' }], height: 300 });
+function sClassUpdate() {
+  const rows = sTab.getRows(), p = ST.sum(rows.map(r => r.p)), r = ST.sum(rows.map(r => r.r)), sim = Lab.store.get('s-sim', []);
+  const mine = p + r ? [{ g: 'Your group', p, r, t: p + r, pct: 100 * r / (p + r), mu: 50 * r / (p + r) }] : [];
+  sClassTab.setRows([...mine, ...sim]);
+}
+$('#s-class').addEventListener('click', () => { const sim = []; for (let g = 2; g <= 8; g++) { const t = rng.int(50, 75), r = rng.binomial(t, P_XO); sim.push({ g: 'Group ' + g, p: t - r, r, t, pct: 100 * r / t, mu: 50 * r / t }); } Lab.store.set('s-sim', sim); sClassUpdate(); });
+$('#s-class-clear').addEventListener('click', () => { Lab.store.set('s-sim', []); sClassUpdate(); });
+sClassUpdate();
+
+/* =====================================================================
+   DESIGN YOUR OWN: mitotic index vs an environmental factor
+   Illustrative dose-response models (assumptions, tuned so the control level gives MI ≈ 14–15%):
+   lectin: MI = 0.145 + 0.287·c/(c + 20)  (50 µg/mL → 0.35, as in the manual's sample)
+   NaCl:   MI = 0.145 / (1 + c/90)        (salt stress slows the cycle)
+   pH:     MI = 0.150·exp(−((pH − 6.4)/1.6)²)
+   temp:   MI = 0.155·exp(−((T − 24)/10)²)
+   nematodes: MI = 0.145 + 0.08·n/(n + 300) (feeding sites stimulate division)
+   Tip-to-tip biological SD = 0.15·MI + 0.012; counting noise is binomial.
+   ===================================================================== */
+const IVS = {
+  lectin: { label: 'Lectin (PHA-M) concentration', unit: 'µg/mL', levels: [0, 10, 25, 50, 100], on: [0, 25, 50, 100], ref: 0, mi: c => 0.145 + 0.287 * c / (c + 20) },
+  nacl: { label: 'Salinity (NaCl)', unit: 'mM', levels: [0, 25, 50, 100, 200], on: [0, 50, 100, 200], ref: 0, mi: c => 0.145 / (1 + c / 90) },
+  ph: { label: 'Soil-water pH', unit: 'pH units', levels: [4, 5, 6, 6.5, 7, 8, 9], on: [4, 5, 6.5, 8], ref: 6.5, mi: p => 0.15 * Math.exp(-(((p - 6.4) / 1.6) ** 2)) },
+  temp: { label: 'Growth temperature', unit: '°C', levels: [5, 10, 15, 20, 25, 30, 35], on: [10, 20, 25, 35], ref: 20, mi: T => 0.155 * Math.exp(-(((T - 24) / 10) ** 2)) },
+  nem: { label: 'Root-knot nematodes (biotic)', unit: 'juveniles per jar', levels: [0, 100, 500, 1000], on: [0, 100, 500, 1000], ref: 0, mi: n => 0.145 + 0.08 * n / (n + 300) }
+};
+(function design() {
+  const sel = $('#d-iv'); Object.entries(IVS).forEach(([k, v]) => sel.append(Lab.h('option', { value: k }, v.label)));
+  const reps = $('#d-reps'), cells = $('#d-cells');
+  const syncR = () => { $('#d-reps-out').textContent = reps.value + ' tips'; $('#d-cells-out').textContent = cells.value + ' cells'; };
+  reps.addEventListener('input', syncR); cells.addEventListener('input', syncR); syncR();
+  function levels() { const iv = IVS[sel.value]; $('#d-levels').innerHTML = iv.levels.map((L, i) => `<label class="check"><input type="checkbox" id="d-lv-${i}" value="${L}" ${iv.on.includes(L) ? 'checked' : ''}> ${L}${iv.unit === 'pH units' ? '' : ' ' + iv.unit}</label>`).join(''); $('#d-ref-hint').textContent = `Control (reference) level: ${iv.ref}${iv.unit === 'pH units' ? '' : ' ' + iv.unit}. Chi-square compares each level with it.`; }
+  sel.addEventListener('change', levels); levels();
+  const tab = Lab.table('#d-table', { save: 'design', columns: [{ key: 'lv', label: 'Level', num: true, digits: 1 }, { key: 'n', label: 'Tips', num: true, digits: 0 }, { key: 'I', label: 'Interphase', num: true, digits: 0 }, { key: 'M', label: 'Mitotic', num: true, digits: 0 }, { key: 'mean', label: 'Mean MI', unit: '%', num: true, digits: 1 }, { key: 'sd', label: 'SD', unit: '%', num: true, digits: 1 }, { key: 'se', label: 'SE', unit: '%', num: true, digits: 2 }, { key: 'chi', label: 'χ² vs control', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+    onChange: rows => { const iv = IVS[(rows[0] && rows[0].iv) || sel.value]; chart.update({ xLabel: `${iv.label} (${iv.unit})`, series: [{ name: 'Mean mitotic index ± 2 SE', points: rows.map(r => ({ x: r.lv, y: r.mean, err: 2 * r.se })) }] }); } });
+  const chart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Mitotic index (%)', yMin: 0, series: [], height: 300 });
+  const fo = Lab.canvas('#d-field', 0.75);
+  let last = null; fo.onresize = () => last && drawRootField(fo, last, null, false);
+  themeHooks.push(() => last && drawRootField(fo, last, null, false));
+  $('#d-run').addEventListener('click', () => {
+    const iv = IVS[sel.value], lv = $$('#d-levels input:checked').map(i => +i.value), nr = +reps.value, nc = +cells.value;
+    if (lv.length < 2) { $('#d-field-cap').textContent = 'Choose at least two levels, including the control.'; return; }
+    const raw = lv.map(L => { const tips = []; for (let r = 0; r < nr; r++) { const mu = iv.mi(L), mi = clamp(rng.normal(mu, 0.15 * mu + 0.012), 0.003, 0.8), n = Math.max(20, Math.round(rng.normal(nc, nc * 0.06))), m = rng.binomial(n, mi); tips.push({ n, m, mi }); } return { L, tips }; });
+    const ref = raw.find(r => r.L === iv.ref) || raw[0];
+    const RI = ST.sum(ref.tips.map(t => t.n - t.m)), RM = ST.sum(ref.tips.map(t => t.m));
+    const rows = raw.map(({ L, tips }) => {
+      const I = ST.sum(tips.map(t => t.n - t.m)), M = ST.sum(tips.map(t => t.m)), mis = tips.map(t => 100 * t.m / t.n);
+      const isRef = L === ref.L, tot = I + M; let chi = null, sig = 'control';
+      if (!isRef) { const r = ST.chiSquare([I, M], [RI / (RI + RM) * tot, RM / (RI + RM) * tot]); chi = r.chi2; sig = r.reject ? 'yes' : 'no'; }
+      return { iv: sel.value, lv: L, n: tips.length, I, M, mean: ST.mean(mis), sd: ST.sd(mis), se: ST.se(mis), chi, sig };
+    });
+    tab.setRows(rows);
+    const lastL = raw[raw.length - 1], lt = lastL.tips[lastL.tips.length - 1];
+    last = { seed: rng.int(1, 1e9), cells: null, ink: 1 }; last.cells = genRootField(last.seed, lt.mi, { hcl: true, fix: true, cut: true, stain: true, squash: true });
+    drawRootField(fo, last, null, false);
+    $('#d-field-cap').textContent = `One field from a tip at ${lastL.L} ${iv.unit === 'pH units' ? '(pH)' : iv.unit} (tip MI ≈ ${fmt(100 * lt.mi, 0)}%).`;
+  });
+  $('#d-clear').addEventListener('click', () => tab.clear());
+  last = { seed: 4242, ink: 1, cells: genRootField(4242, 0.145, { hcl: true, fix: true, cut: true, stain: true, squash: true }) }; drawRootField(fo, last, null, false);
+  $('#d-field-cap').textContent = 'Example control field (MI ≈ 15%).';
+})();
+[['d-q', 'Your question: what factor will you test, and why might it change the rate of mitosis in roots?'], ['d-h', 'Hypothesis and null hypothesis (state both).'], ['d-ctrl', 'Controlled variables and your control group. How many tips per level, and why?']].forEach(([k, l]) => Lab.prompt('#d-plan', { key: k, label: l, rows: 3 }));
+[['d-res', 'Describe your results using the graph and table. Which levels differ significantly from the control (χ², df = 1, critical value 3.84)? Do the 95% confidence intervals (±2 SE) overlap?'], ['d-concl', 'Conclusion: was your hypothesis supported? What are the limits of using the mitotic index as a measure of the rate of cell division?']].forEach(([k, l]) => Lab.prompt('#d-analysis', { key: k, label: l, rows: 4 }));
+
+/* =====================================================================
+   ANALYZE + REFLECT
+   ===================================================================== */
+[['an-class', 'What was the importance of collecting the class data?'], ['an-sig', 'Was there a significant difference between the groups? Give your χ² value and the critical value.'], ['an-lectin', 'Did the fungal pathogen lectin increase the number of root-tip cells in mitosis?'], ['an-more', 'What other experiments should you perform to verify your findings?'], ['an-faster', 'Does a larger number of cells in mitosis mean that these cells are dividing faster than cells in roots with fewer cells in mitosis? Explain.'], ['an-rate', 'What other way could you determine how fast mitosis is occurring in root tips?']].forEach(([k, l]) => Lab.prompt('#an-p2', { key: k, label: l, rows: 3 }));
+const cer = $('#an-cer');
+[['C', 'cer-c', 'Claim'], ['E', 'cer-e', 'Evidence (cite mitotic indices, class means ± SD, and χ²)'], ['R', 'cer-r', 'Reasoning (connect lectins, mitogens, and the cell cycle)']].forEach(([L, k, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 5 }); $('label', p).dataset.letter = L; });
+[['ev-1', '1. Why did you divide the percentage of asci showing crossover by 2?'], ['ev-2', '2. The published gene-to-centromere distance for the tan gene is 26 map units. How did your class data compare?'], ['ev-3', '3. How can you account for any disparities between the class data and the published value?'], ['ev-4', '4. Describe (or sketch and describe) what happened during meiosis to produce the patterns you saw.'], ['ev-5', '5. Do you think the Philadelphia chromosome results from crossing over as seen in Sordaria, or from some other chromosomal abnormality? Explain.'], ['ev-6', '6. Could the cell cycle described for mitosis apply to meiosis as well? Explain.']].forEach(([k, l]) => Lab.prompt('#an-p5', { key: k, label: l, rows: 3 }));
+(function chiCalc() {
+  const box = $('#cs-rows'); let n = 0;
+  const add = (lab = '', o = '', e = '') => { const i = n++; box.append(Lab.h('div', { class: 'calc-grid' }, Lab.h('div', { class: 'field' }, Lab.h('label', { for: `cs-l-${i}` }, 'Category ' + (i + 1)), Lab.h('input', { id: `cs-l-${i}`, type: 'text', value: lab })), Lab.h('div', { class: 'field' }, Lab.h('label', { for: `cs-o-${i}` }, 'Observed'), Lab.h('input', { id: `cs-o-${i}`, type: 'number', step: 'any', value: o })), Lab.h('div', { class: 'field' }, Lab.h('label', { for: `cs-e-${i}` }, 'Expected'), Lab.h('input', { id: `cs-e-${i}`, type: 'number', step: 'any', value: e })))); };
+  add('Lectin interphase', 161, 213.0); add('Lectin mitosis', 88, 36.0);
+  $('#cs-add').addEventListener('click', () => { if (n < 8) add(); });
+  $('#cs-run').addEventListener('click', () => {
+    const O = [], E = [], L = [];
+    for (let i = 0; i < n; i++) { const o = parseFloat($('#cs-o-' + i).value), e = parseFloat($('#cs-e-' + i).value); if (isFinite(o) && isFinite(e) && e > 0) { O.push(o); E.push(e); L.push($('#cs-l-' + i).value || 'Category ' + (i + 1)); } }
+    if (O.length < 2) { $('#cs-out').innerHTML = '<p class="small">Enter at least two categories with expected values above 0.</p>'; return; }
+    const r = ST.chiSquare(O, E);
+    $('#cs-out').innerHTML = `<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Category</th><th class="num">o</th><th class="num">e</th><th class="num">(o − e)²/e</th></tr></thead><tbody>${O.map((o, i) => `<tr><td>${Lab.esc(L[i])}</td><td class="num">${fmt(o, 1)}</td><td class="num">${fmt(E[i], 1)}</td><td class="num">${fmt(r.terms[i], 3)}</td></tr>`).join('')}</tbody></table></div><div class="decision ${r.reject ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${r.df}, critical value (p = 0.05) = ${r.crit}. ${r.reject ? 'Reject the null hypothesis.' : 'Fail to reject the null hypothesis.'}</div>`;
+  });
+})();
+const rf = $('#reflect');
+[['wh-1', 'Could the same environmental factors you tested affect how much crossing over occurs in Sordaria (for example humidity or pH)? How would you set up that experiment?'], ['wh-2', 'How do crossing over, independent assortment, segregation, nondisjunction, and random fertilization each affect genetic diversity and evolution?'], ['wh-3', 'Research how a growth factor such as PDGF moves a cell past the G₁ checkpoint. How does this connect to cell communication?'], ['wh-4', 'Choose one tumor suppressor (p53, Rb, BRCA1, or BRCA2) or one virus (HPV). What does it normally do in the cell cycle, and what cancers are linked to its loss?'], ['wh-5', 'Revisit the learning objectives. Which part of mitosis or meiosis could you now teach to another class, and which still confuses you?']].forEach(([k, l]) => Lab.prompt(rf, { key: k, label: l, rows: 3 }));
+})();
+</script>
+</body>
+</html>

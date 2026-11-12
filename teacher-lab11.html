@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 11 Teacher Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > * { min-width: 0; }
+  dl.answers { display: grid; gap: 12px; margin: 0; }
+  dl.answers dt { font-weight: 700; }
+  dl.answers dd { margin: 0; max-width: 72ch; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions</span><a href="lab11.html">Student lab</a></nav>
+    <div class="eyebrow">Investigation 11 · Teacher notes</div>
+    <h1>Transpiration</h1>
+    <p class="driving-q">What factors, including environmental variables, affect the rate of transpiration in plants?</p>
+    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-3.D</span><span class="tag">IST-5.A</span><span class="tag">SYI-1.H</span><span class="tag">Science Practices 3.C, 5.A</span><span class="tag">≈ 4 × 45 min</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Sections"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <section class="step wrap gutter" data-step="At a glance">
+    <header><div class="eyebrow">At a glance</div><h2>Timing, alignment, and flow</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Timing:</strong> about four 45-minute periods: leaf area and stomatal peels; experimental design; at least one period running experiments; one period sharing class results. Potometer data are most reliable over longer runs (up to 24 h), and the whole-plant method needs daily weighings for several days.</li>
+        <li><strong>Enduring understandings:</strong> ENE-3, IST-5, SYI-1. Learning objectives ENE-3.D, IST-5.A, SYI-1.H. The manual also places the lab under Big Idea 2 (cellular processes) and Big Idea 4 (interactions), with links to evolution.</li>
+        <li><strong>Science practices:</strong> 3.C (procedures aligned to the question) and 5.A (mathematical calculations).</li>
+        <li><strong>Prerequisites:</strong> cell structure and function, properties of water, osmosis, diffusion and active transport, water potential, photosynthesis gas exchange.</li>
+        <li><strong>Page flow:</strong> Overview → Background → Pre-lab (8 auto-checked items + 2 diagram prompts) → Leaf area (grid tracing) → Stomata (nail-polish peel microscope) → Water loss (potometer / whole plant / pressure sensor; control vs. fan, lamp, mist, dark) → Design (seven variables, t-test) → Analyze → Evaluate → Submit.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Preparation">
+    <header><div class="eyebrow">Preparation</div><h2>Real materials (summary)</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Plants available locally: Impatiens (moisture-loving), Coleus, oleander (drought tolerant), bean seedlings, peas, tomato, peppers, ferns, or Wisconsin Fast Plants. Campus cuttings work for multi-species comparisons.</li>
+        <li>Microscopes, slides, clear cellophane tape, clear nail polish, scissors; graph paper (4 squares = 1 cm²) and metric rulers.</li>
+        <li>Potometers: clear plastic tubing in several diameters, ring stand and clamp, 0.1 mL or 1.0 mL pipettes, a needle-free syringe or wash bottle for filling, petroleum jelly or small clamps for sealing. Or a gas pressure sensor connected directly to the tubing.</li>
+        <li>Whole-plant method: small potted plants with many leaves, one-gallon plastic bags (no zipper), string, a balance.</li>
+        <li>Environmental treatments: fan, heat lamp, spray bottle and plastic bag, salt, other materials students request.</li>
+      </ul>
+      <div class="callout callout--safety"><div class="callout-title">Safety</div><p>Razor blades and scalpels: cut away from fingers, ideally with the stem under water. Goggles during experiments. Nail polish is toxic by ingestion and inhalation; ventilate and avoid eye contact. Remove needles from syringes. Plant waste goes in the trash; tubing and pipettes can be reused.</p></div>
+      <div class="callout callout--tip"><div class="callout-title">Bench tips from the manual</div>
+        <ul>
+          <li>The water column must touch the cut end of the stem; a small gap stops uptake.</li>
+          <li>To fill tubing without bubbles, attach a syringe to the pipette end with rubber tubing and pull water up; leave it on to keep the water under tension, then remove it carefully once the cutting is sealed.</li>
+          <li>0.1 mL pipettes are hard to read. Consider the whole-plant method if potometer assembly stalls.</li>
+          <li>Peels need no stain; close the condenser diaphragm to increase contrast.</li>
+          <li>Use the leaf-tracing method rather than leaf mass. Leaf thickness varies, so mass-based area estimates differ a lot between groups.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Simulation">
+    <header><div class="eyebrow">How the simulation maps to the bench</div><h2>Model, procedure, and limits</h2></header>
+    <div class="step-body prose">
+      <p><strong>Leaf area.</strong> A random leaf outline (bean, Coleus, Impatiens, or tomato leaflet; 5–30 cm²) is drawn on 0.5 cm grid paper. Students type their counts of full and partial squares; the page computes (full + ½ partial)/4 and compares it to the exact polygon area ("planimeter value"). A checkbox shades full and partial squares so students can check their count.</p>
+      <p><strong>Stomatal peel.</strong> Ten species with the manual's Table 1 densities, upper or lower surface, 100X (field 1.8 mm) or 400X (field 0.45 mm, 0.159 mm²). Each field draws a Poisson count around the species density (with ~15% patch variation), spaced so stomata never touch, set in a jigsaw Voronoi epidermis (elongated cells and rows for corn and oats). Students click stomata to tally them; recording a field shows the true count beside theirs. The density check needs at least three 400X fields.</p>
+      <p><strong>Transpiration model.</strong> E = g·VPD/P with 1/g = 1/g<sub>s</sub> + 1/g<sub>b</sub>. VPD uses the Tetens equation at leaf temperature; g<sub>s</sub> = g<sub>max</sub>(species) × a light response × a VPD-closure term × a salt term × the fraction of stomata left unsealed by petroleum jelly (× a soil-water term in the whole-plant method); g<sub>b</sub> = 0.19√(u/0.05). Each plant gets a lognormal g<sub>max</sub> (CV ≈ 18%) and leaf area ±15%. Instrument noise: pipette ±0.005 mL, balance ±0.1 g, pressure ±0.01 kPa. Methods: potometer (readings every 3 min for 30 min), pressure sensor (every minute for 20 min; 8 mL of air in the line), and whole plant (daily mass for 4 days with 14 h light / 10 h dark).</p>
+      <p>Students fill in rate ÷ leaf area themselves (scaled ×10<sup>4</sup>, ×10<sup>3</sup>, or ×10<sup>2</sup>, as Step 5 in the manual suggests), and a check button grades the entries. The class table computes means, ±2 SE, adjusted rate (treatment − control), and a Welch t-test vs. control, following the manual's Step 6.</p>
+      <div class="callout callout--key"><div class="callout-title">Limits to discuss</div>
+        <ul>
+          <li>The model ignores stomatal response time, xylem cavitation, and leaf wilting dynamics. Real fans also cool leaves, and real lamps heat air unevenly.</li>
+          <li>Cuttings in the sim never get air-locked. On the bench, air bubbles and stem gaps are the main cause of failed runs.</li>
+          <li>In the whole-plant method, the soil water reservoir (≈ 220 g available) can run low by days 3–4 under strong treatments, which compresses differences between fan, lamp, and control. This is a good discussion point about controlling soil water.</li>
+          <li>Units differ by method; compare treatments only within one method and one species.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Misconceptions">
+    <header><div class="eyebrow">Common misconceptions</div><h2>What students often get wrong</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>"Roots push water up."</strong> Root pressure is small; the main driver is the tension created by evaporation from leaves (TACT).</li>
+        <li><strong>"Plants use most of the water they absorb."</strong> Most is transpired; only a small fraction is used in growth and photosynthesis.</li>
+        <li><strong>"Stomata are there to lose water."</strong> They exist to admit CO<sub>2</sub>; water loss is the cost.</li>
+        <li><strong>"Double the traced area because leaves have two sides."</strong> Report one-side (projected) area. Stomata are usually concentrated on one surface (often the lower), and transpiration rates are conventionally per one-side area.</li>
+        <li><strong>"Heat always increases transpiration."</strong> Heat raises VPD, but very high VPD or water stress makes guard cells close stomata (abscisic acid), limiting the rise.</li>
+        <li><strong>"Water moves toward more water."</strong> Water moves toward lower water potential, which usually means more solute or more tension.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Answers">
+    <header><div class="eyebrow">Suggested answers</div><h2>Pre-lab, procedure questions, and analysis</h2></header>
+    <div class="step-body prose">
+      <h3>Getting Started</h3>
+      <dl class="answers">
+        <dt>1. Cell with lower ψ than surroundings.</dt><dd>The cell gains water. The diagram should show ψ<sub>outside</sub> &gt; ψ<sub>cell</sub>, an arrow inward, and turgor pressure building until ψ is equal.</dd>
+        <dt>2. Road salt and grass.</dt><dd>Salt makes ψ<sub>S</sub> of soil water very negative, so ψ<sub>soil</sub> &lt; ψ<sub>root</sub>; roots cannot absorb water and may lose it (plasmolysis); grass dies of water stress.</dd>
+        <dt>3. Xylem vs. phloem.</dt><dd>Xylem: dead, hollow, lignified tracheids and vessel elements forming continuous tubes that withstand tension. Phloem: living sieve-tube elements with sieve plates, supported by companion cells, for active sugar loading and pressure-flow transport.</dd>
+        <dt>4. Transplanting a tree.</dt><dd>In winter (or when dormant and leafless). Transpiration is minimal, so the damaged roots do not need to supply much water.</dd>
+        <dt>5–7. Calculations.</dt><dd>0.159 mm²; 28 ÷ 0.159 = 176 stomata/mm²; (92 + 15)/4 = 26.75 cm² = 2675 mm².</dd>
+        <dt>8. CO<sub>2</sub> and stomatal density.</dt><dd>High CO<sub>2</sub> selects for fewer stomata (enough CO<sub>2</sub> enters with less water loss); low CO<sub>2</sub> selects for more.</dd>
+      </dl>
+      <h3>Procedure Step 1</h3>
+      <dl class="answers">
+        <dt>a–b.</dt><dd>Trace and count squares (÷ 4 for cm², × 100 for mm²). Estimate a whole plant's leaf area as mean area of a sample of leaves × number of leaves.</dd>
+        <dt>c–e.</dt><dd>More stomata per mm² and more leaf area mean more total water loss; fewer or smaller leaves reduce total transpiration (shown by the "leaves left" slider; the rate per cm² stays similar).</dd>
+        <dt>f.</dt><dd>Generally no: use one-side area, because stomata are mostly on one side (Table 1) and rates are compared per projected area. Accept a well-argued alternative if applied consistently.</dd>
+        <dt>h.</dt><dd>Yes. Water lily (floating leaves) has 460/mm² on the upper surface only, where it touches air; submerged Anacharis has none; most land plants put most stomata on the shaded, cooler lower surface, which reduces water loss. Grasses (oats, corn) with upright leaves have stomata on both sides.</dd>
+      </dl>
+      <h3>Expected results (simulation, Impatiens)</h3>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Condition</th><th class="num">Potometer <span class="unit">(×10⁻⁴ mL·min⁻¹·cm⁻²)</span></th><th class="num">Pressure <span class="unit">(×10⁻³ kPa·min⁻¹·cm⁻²)</span></th><th class="num">Whole plant <span class="unit">(×10⁻² g·day⁻¹·cm⁻²)</span></th></tr></thead>
+        <tbody>
+          <tr><td>Control</td><td class="num">≈ 1.3</td><td class="num">≈ 1.7</td><td class="num">≈ 12</td></tr>
+          <tr><td>Fan</td><td class="num">≈ 2.0</td><td class="num">≈ 2.2</td><td class="num">≈ 13</td></tr>
+          <tr><td>Heat lamp</td><td class="num">≈ 2.3</td><td class="num">≈ 2.8</td><td class="num">≈ 16</td></tr>
+          <tr><td>Mist + bag</td><td class="num">≈ 0.2</td><td class="num">≈ 0.3</td><td class="num">≈ 2.3</td></tr>
+          <tr><td>Dark</td><td class="num">≈ 0.35</td><td class="num">≈ 0.5</td><td class="num">≈ 6</td></tr>
+        </tbody>
+      </table></div>
+      <p>Expect the lamp and fan to raise transpiration by roughly 1.5–1.8×, the misted bag to cut it to about 15%, and darkness to about 25–30% (cuticular loss plus some stomatal leakage). Oleander and fern transpire much less than Impatiens or bean. Sealing the lower surface of Impatiens or bean cuts transpiration by about 60–75%; sealing the upper surface barely matters.</p>
+      <h3>Analyzing results</h3>
+      <dl class="answers">
+        <dt>1–3.</dt><dd>Answers depend on data. The heat lamp or fan usually gives the largest increase. Lamp: raises leaf temperature (higher saturation vapor pressure, larger VPD) and opens stomata in bright light. Fan: thins the boundary layer, raising total conductance. Humidity lowers VPD toward zero.</dd>
+        <dt>4. Why leaf area?</dt><dd>Plants and cuttings differ in size; dividing by area makes rates comparable between plants and groups.</dd>
+        <dt>5. Adaptations.</dt><dd>Waxy cuticle, stomata on the lower surface or sunken in pits (oleander), trichomes that thicken the boundary layer, fewer or smaller leaves, leaf shedding, CAM or C<sub>4</sub> photosynthesis, guard-cell closing triggered by abscisic acid and K<sup>+</sup> efflux.</dd>
+        <dt>6. Stomata number.</dt><dd>Predict a positive relationship. Test by comparing species of known density, or by sealing one surface with petroleum jelly (sim: jelly option).</dd>
+        <dt>7. TACT in a 100-ft tree.</dt><dd>Evaporation in leaves creates tension; cohesion (hydrogen bonds) transmits it down continuous xylem columns; adhesion to narrow xylem walls resists the column breaking and gravity. A large temperature rise increases VPD and transpiration until water stress triggers guard cells to close stomata, which then cuts transpiration (and CO<sub>2</sub> uptake).</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Student designs">
+    <header><div class="eyebrow">Student-designed investigations</div><h2>Ideas that work well</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Wind dose-response:</strong> 0, 1, 2, 3, 4 m/s, 4+ replicates; graph means ± 2 SE and fit a curve. The response saturates because stomata become limiting.</li>
+        <li><strong>Humidity:</strong> RH 30–90%; rate falls roughly linearly with VPD.</li>
+        <li><strong>Light intensity:</strong> 0–1200 µmol·m⁻²·s⁻¹; a saturating stomatal light response.</li>
+        <li><strong>Salt:</strong> 0–0.3 M NaCl; rate falls as root water uptake becomes harder (connects to the road-salt question).</li>
+        <li><strong>Habitat comparison:</strong> Impatiens vs. oleander or fern under identical conditions (the manual's "Where can you go" #2).</li>
+        <li><strong>Structure:</strong> petroleum jelly on upper vs. lower surfaces, or removing 25–75% of leaves, linking back to the stomatal density data.</li>
+      </ul>
+      <p>The t-test panel compares any two groups (Welch's t, two-tailed). Remind students to change one variable at a time; all trials share one table, and grouping only separates the variable they choose.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Extensions">
+    <header><div class="eyebrow">Extensions</div><h2>Where students can go next</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Investigate guard-cell control: the roles of K<sup>+</sup> uptake, abscisic acid, and blue light.</li>
+        <li>Compare stomatal density of sun and shade leaves on the same campus tree, or of herbarium leaves collected decades apart (rising CO<sub>2</sub>).</li>
+        <li>Thin stem sections to identify xylem and phloem and relate structure to function.</li>
+        <li>Read about the synthetic "tree" that moves water under negative pressure (Wheeler and Stroock, <em>Nature</em> 2008).</li>
+        <li>Summative ideas from the manual: a class graph of all variables, a mini-lesson on transpiration for younger students, a list of misconceptions students held before the lab, and student-written AP-style questions.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>Lab.init({ id: 'teacher-lab11' });</script>
+</body>
+</html>

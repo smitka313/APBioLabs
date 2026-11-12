@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 13 Teacher Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .step > * { min-width: 0; }
+  .prose ol, .prose ul { display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 2 · Energetics</span><a href="lab13.html">Student lab</a></nav>
+    <div class="eyebrow">Investigation 13 · Teacher notes</div>
+    <h1>Enzyme Activity</h1>
+    <p class="driving-q">How do abiotic or biotic factors influence the rates of enzymatic reactions?</p>
+    <div class="tags"><span class="tag">Unit 3: Cellular Energetics</span><span class="tag">ENE-1.F, ENE-1.G, SYI-3.A</span><span class="tag">Science Practices 6.C, 6.E</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Sections"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <section class="step wrap gutter" data-step="At a glance">
+    <header><div class="eyebrow">At a glance</div><h2>What students do and how long it takes</h2></header>
+    <div class="step-body prose">
+      <div class="readouts">
+        <div class="readout"><span class="k">Total time</span><span class="v">3–4 × 45 min</span></div>
+        <div class="readout"><span class="k">Skills (Proc. 1–2)</span><span class="v">≈ 40 min</span></div>
+        <div class="readout"><span class="k">Grouping</span><span class="v">pairs / small groups</span></div>
+        <div class="readout"><span class="k">Tubes per group</span><span class="v">≈ 14</span></div>
+      </div>
+      <p>Students assay turnip peroxidase with 0.1% H<sub>2</sub>O<sub>2</sub> and guaiacol, which turns brown (tetraguaiacol) as O<sub>2</sub> is released. Procedure 1 builds the assay and a baseline (enzyme vs. no-enzyme control, read every minute for 5 min by color palette or A<sub>470</sub>). Procedure 2 swaps the water in the enzyme tube for pH 3–10 buffers. Students then design their own test of temperature, substrate or enzyme concentration, heat treatment, pH, or (simulation only) an inhibitor, and compare initial rates.</p>
+      <ul>
+        <li><strong>Learning objectives:</strong> ENE-1.F (structure changes affect enzyme function), ENE-1.G (cellular environment affects activity), SYI-3.A (molecular variation and survival in different environments).</li>
+        <li><strong>Science practices:</strong> 6.C (justify claims), 6.E (predict effects of a change in a system).</li>
+        <li><strong>Prerequisites:</strong> levels of protein structure, induced fit, the role of enzymes, and that structure, function, and environment together determine activity.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Preparation">
+    <header><div class="eyebrow">Preparation</div><h2>Real materials (summary)</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Turnip peroxidase:</strong> peel the outer 2–4 mm of a turnip root; blend 20 g in 500 mL distilled water (pulse); filter through triple cheesecloth, then coarse filter paper or a coffee filter. Refrigerate in brown bottles. Let starch settle and decant, or use rutabaga. Make one batch for all experiments (activity varies by source and season); it can be frozen for up to 3 months.</li>
+        <li><strong>0.1% H<sub>2</sub>O<sub>2</sub>:</strong> 15 mL drugstore 3% + 435 mL distilled water; refrigerate in brown bottles.</li>
+        <li><strong>Guaiacol:</strong> 1.5 mL in 500 mL distilled water, made the day before (slow to dissolve); keep cold and dark. Stock is 96–98% pure, so take care when diluting.</li>
+        <li><strong>Buffers:</strong> pHydrion or phosphate buffers at pH 3, 5, 6, 7, 8, 10.</li>
+        <li>16 × 150 mm test tubes and rack, Parafilm, 1-, 5-, and 10-mL pipettes with pumps (or syringes), timer, optional spectrophotometer (470 nm) or probe system.</li>
+      </ul>
+      <div class="callout callout--tip"><div class="callout-title">A better palette</div><p>Mix the equivalent of 10 reactions, let it react overnight so all guaiacol converts, then dilute to 10%, 20%, … 100% brown product. That gives a palette tied to known product concentrations.</p></div>
+      <div class="callout callout--safety"><div class="callout-title">Safety</div><p>Goggles, gloves, lab coats; no mouth pipetting; dilute reagents can go down the drain. The manual advises against students handling inhibitors because many also inhibit human enzymes, so the hydroxylamine option exists only in the simulation.</p></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Simulation map">
+    <header><div class="eyebrow">How the simulation maps to the bench</div><h2>Model, calibration, and limits</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Kinetics:</strong> Michaelis–Menten in H<sub>2</sub>O<sub>2</sub> (K<sub>m</sub> = 0.1 mM; baseline [H<sub>2</sub>O<sub>2</sub>] = 0.588 mM, so the enzyme is about 85% saturated). V<sub>max</sub> scales with enzyme volume. A capacity term and slow enzyme inactivation by H<sub>2</sub>O<sub>2</sub> make the curves bend as in the manual’s Table 3. Substrate is depleted, so very low H<sub>2</sub>O<sub>2</sub> plateaus early.</li>
+        <li><strong>Temperature:</strong> Arrhenius rise (Ea ≈ 32 kJ/mol) multiplied by a Lumry–Eyring unfolding model (reversible unfolding, T<sub>m</sub> ≈ 50 °C, plus irreversible denaturation of unfolded protein that becomes fast above ~70 °C). Tubes pre-incubate in the bath (default 5 min). The heat-treatment option (5 min at T, cool, assay at 25 °C) shows that activity lost above ~80 °C does not return.</li>
+        <li><strong>pH:</strong> activity interpolated from the manual’s pH data: optimum pH 5, ~50% of that at pH 6, ~15% at 7, ~4% at 8, near zero at 3 and 10. Unbuffered extract behaves like pH ≈ 6.</li>
+        <li><strong>Inhibitor:</strong> hydroxylamine as a reversible noncompetitive inhibitor, K<sub>i</sub> = 0.05 mM (simplification; it can also inactivate heme peroxidases).</li>
+        <li><strong>Noise:</strong> pipetting CV 3–4%, extract batch CV 5% per trial, spectrophotometer ±0.004 A plus 1.5%.</li>
+        <li><strong>Color:</strong> tube colors are computed from absorbance (Beer–Lambert per color channel); palette number n ≈ A<sub>470</sub>/0.075 + 1. Students must type their own palette matches; the page tells them how many are within ±1 of the true value.</li>
+      </ul>
+      <h3>Calibration against the manual’s sample data</h3>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Condition</th><th>Manual</th><th>Simulation (no noise)</th></tr></thead>
+        <tbody>
+          <tr><td>Baseline A at 1–5 min</td><td>.083 .141 .198 .287 .314</td><td>.077 .145 .205 .258 .306</td></tr>
+          <tr><td>2× enzyme, A at 5 min</td><td>.469</td><td>≈ .50</td></tr>
+          <tr><td>½× enzyme, A at 5 min</td><td>.151</td><td>≈ .17</td></tr>
+          <tr><td>2× / ½× substrate, A at 5 min</td><td>.345 / .287</td><td>≈ .33 / .27</td></tr>
+          <tr><td>pH 3, 5, 6, 7, 8, 10 (5 min)</td><td>−.001 .663 .347 .170 .047 .003</td><td>.002 .62 .34 .15 .04 .002</td></tr>
+          <tr><td>Temperature 4–100 °C (3 min, relative to 25 °C)</td><td>0.42 0.71 1 1.24 1.15 0.65 0</td><td>≈ 0.45 0.71 1 1.38 1.30 0.68 0</td></tr>
+        </tbody></table></div>
+      <p class="muted">Limits: no bubbles or foaming, no starch cloudiness, no temperature drift after tubes leave the bath, and the pH optimum is that of the manual’s turnip sample; peroxidases from other sources differ (pH 4–11, 10–70 °C).</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Misconceptions">
+    <header><div class="eyebrow">Common misconceptions</div><h2>What to listen for</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>"Enzymes are used up."</strong> Peroxidase appears on both sides of the equation; slowing is due to product build-up, substrate use, and some inactivation.</li>
+        <li><strong>"Heat kills enzymes" (at any temperature above body temperature).</strong> Rate rises up to the optimum; loss above it is first partly reversible, then permanent.</li>
+        <li><strong>"Cold denatures enzymes."</strong> Cold slows collisions; activity returns on warming.</li>
+        <li><strong>"More substrate always means faster."</strong> Near saturation, extra substrate barely helps; extra enzyme does.</li>
+        <li><strong>"Darkest color at 5 minutes = fastest initial rate."</strong> Compare slopes over the early, linear part.</li>
+        <li><strong>"Guaiacol is the substrate."</strong> It is an electron donor/indicator; H<sub>2</sub>O<sub>2</sub> is the substrate studied.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Answers">
+    <header><div class="eyebrow">Suggested answers and expected results</div><h2>Answer key</h2></header>
+    <div class="step-body prose">
+      <h3>Pre-lab</h3>
+      <ol>
+        <li>3% × 15/450 = 0.1%.</li>
+        <li>0.1% × 0.3/15 = 0.002%.</li>
+        <li>A misread changes the volume by a factor of ten.</li>
+        <li>Guaiacol is oxidized to brown tetraguaiacol, an indicator of product formed.</li>
+        <li>The blank zeroes absorbance from extract and guaiacol so only reaction product is measured.</li>
+        <li>0.198 ÷ 3 = 0.066 A/min (first minute alone ≈ 0.083).</li>
+        <li>Only the buffer in the enzyme tube changes; all else stays constant.</li>
+        <li>Relative = ranked by palette; absolute = measured change per time (e.g., A/min).</li>
+      </ol>
+      <h3>Procedure 1</h3>
+      <p>Enzyme tube: palette ≈ 1 → 2 → 3 → 4 → 4–5 → 5 over 5 min; A ≈ 0.08, 0.15, 0.21, 0.26, 0.31. Initial rate ≈ 0.07–0.08 A/min. Control stays at palette 1 (A &lt; 0.01). A good baseline time is 2–3 min: clearly different from the control while still near-linear. Keep enzyme source, volumes (15.0 mL), guaiacol, temperature, and reading time constant; the no-enzyme control rules out non-enzymatic browning.</p>
+      <h3>Procedure 2</h3>
+      <p>Peak at pH 5 (palette ≈ 7–9 at 3–5 min), lower at pH 6, much lower at 7–8, essentially none at pH 3 and 10. The curve drops more steeply on the acid side (pH 3 inactivates the enzyme). Explanation: pH alters the ionization of side chains in the active site and the ionic/hydrogen bonds that maintain tertiary structure.</p>
+      <h3>Design and analysis</h3>
+      <ul>
+        <li><strong>Limiting factor:</strong> doubling enzyme nearly doubles the initial rate (≈ 0.08 → 0.15 A/min), while doubling substrate raises it only ≈ 10%. In the baseline, enzyme is limiting; substrate is near saturation.</li>
+        <li><strong>Substrate series:</strong> hyperbolic curve; Lineweaver–Burk gives K<sub>m</sub> ≈ 0.1 mM and V<sub>max</sub> ≈ 0.09–0.1 A/min.</li>
+        <li><strong>Temperature:</strong> rate rises from 4 to ≈ 43 °C, falls at 55–70 °C, zero at 100 °C. Heat treatment: activity largely survives 50–70 °C (peroxidase is unusually heat-stable) but is permanently lost by 85–100 °C.</li>
+        <li><strong>Hydroxylamine:</strong> rate falls by half near 0.05 mM and is mostly blocked by 0.3 mM.</li>
+        <li><strong>CER exemplar:</strong> Claim: pH (or temperature) changes peroxidase rate with a clear optimum. Evidence: initial rates with non-overlapping ±2 SE intervals. Reasoning: the active site’s shape and charge depend on weak bonds that pH and heat disrupt; above the optimum, unfolding outweighs faster collisions.</li>
+        <li><strong>Homeostasis:</strong> enzymes such as peroxidase and catalase remove H<sub>2</sub>O<sub>2</sub> produced by aerobic metabolism before it damages membranes, proteins, and DNA; cells regulate pH and temperature partly to keep enzymes near their optima.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Student designs">
+    <header><div class="eyebrow">Ideas for student-designed investigations</div><h2>Questions that work well</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Is the baseline reaction limited by enzyme or substrate? (vary each, keep 15.0 mL total)</li>
+        <li>What is the temperature optimum, and is high-temperature loss reversible?</li>
+        <li>Do peroxidases from root, leaf, and fruit tissue (turnip root vs. leaves, horseradish, potato) have different pH or temperature optima? Measure tissue pH with test strips first.</li>
+        <li>How do salt concentration or heavy-metal ions (teacher-approved, dilute) affect activity?</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Extensions">
+    <header><div class="eyebrow">Extensions</div><h2>Going further</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Topic A:</strong> enzymes conserved across domains (e.g., a dehydrogenase in <em>E. coli</em>, corn, horse, sheep): compare sequences with NCBI tools (<a href="https://www.ncbi.nlm.nih.gov/">ncbi.nlm.nih.gov</a>).</li>
+        <li><strong>Topic B:</strong> as a soybean farmer, which soil conditions maximize productivity, and how do enzymes explain it?</li>
+        <li><strong>Topic C:</strong> do plants from salt marshes, deserts, or acidified habitats have different enzyme optima?</li>
+        <li>Mini-poster session or lab report as summative assessment.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>Lab.init({ id: 'teacher-lab13' });</script>
+</body>
+</html>

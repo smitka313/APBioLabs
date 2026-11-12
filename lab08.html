@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 8 · Biotechnology: Bacterial Transformation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .proto { margin: 0; padding-left: 1.4em; font-size: .86rem; line-height: 1.4; color: var(--muted); display: grid; gap: 3px; }
+  .proto li.done { color: var(--ok); }
+  .proto li.skipped { color: var(--warn); }
+  .proto li.cur { color: var(--ink); font-weight: 700; }
+  .step-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; }
+  .step-card h3 { font-size: 1.02rem; }
+  .step-card p { margin: 0; font-size: .9rem; }
+  .msg { font-size: .9rem; min-height: 1.2em; }
+  .msg.bad { color: var(--bad); } .msg.ok { color: var(--ok); }
+  .pred-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .pred-grid .field label { font-size: .8rem; }
+  .pred-grid .pill { justify-self: start; font-size: .75rem; }
+  @media (max-width: 560px) { .pred-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .count-wrap { max-width: 520px; }
+  #ro-plus, #ro-minus, #ro-status, #plate-readouts .v { font-size: .95rem; }
+  @media (max-width: 760px) { .sim { grid-template-columns: minmax(0, 1fr); } }
+  .step, .step-body, .sim > .stage, .sim > .controls { grid-template-columns: minmax(0, 1fr); }
+  .sim > .controls { min-width: 0; }
+  .pred-grid select, .step-card select { width: 100%; }
+  select { max-width: 100%; min-width: 0; }
+  .fig { margin: 1rem 0; }
+  .fig svg { width: 100%; height: auto; display: block; }
+  .fig figcaption { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+  .svg-t { fill: var(--ink); font-family: var(--f-body); font-size: 13px; }
+  .svg-s { fill: var(--muted); font-family: var(--f-body); font-size: 11px; }
+  .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .calc-fb { font-size: .9rem; display: grid; gap: 4px; }
+  .calc-fb .ok { color: var(--ok); } .calc-fb .bad { color: var(--bad); }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 3 · Information</span></nav>
+    <div class="eyebrow">Investigation 8</div>
+    <h1>Biotechnology: Bacterial Transformation</h1>
+    <p class="driving-q">How can we use genetic engineering techniques to manipulate heritable information?</p>
+    <div class="tags"><span class="tag">Unit 6: Gene Expression and Regulation</span><span class="tag">IST-1.P</span><span class="tag">Science Practice 6.D</span><span class="tag">≈ 4 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">You will move a jellyfish gene into <em>E. coli</em>. Using the pGLO plasmid, you'll make bacteria competent with calcium chloride, heat-shock them, let them recover, and spread them on three kinds of agar plates. After incubation you'll find out which cells picked up the plasmid, which ones glow green, and how efficient your transformation was.</p>
+      <p>In the virtual bench below you carry out each step of the real protocol. You can follow it exactly, or change a step (skip the ice, shorten the heat shock, add more plasmid) and see how the outcome changes. You'll predict every plate before you see it, count colonies, and calculate transformation efficiency the same way the manual does. Then you'll design your own experiment on what makes transformation work.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>IST-1.P</strong> Explain the use of genetic engineering techniques in analyzing or manipulating DNA.</li>
+          <li><strong>Science Practice 6.D</strong> Explain the relationship between experimental results and larger biological concepts, processes, or theories.</li>
+          <li>Use selection (ampicillin) and an inducible gene (GFP under arabinose control) to tell transformed cells from untransformed cells.</li>
+          <li>Calculate transformation efficiency and report it in scientific notation.</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety at the real bench</div>
+        <ul>
+          <li>Use sterile technique. Do not touch the loop ring, pipette tips, or agar surface, and never set them on the bench.</li>
+          <li>The <em>E. coli</em> strain is not pathogenic, but treat it with care: wear goggles and gloves, wash your hands before and after, and keep food, drinks, cosmetics, and phones out of the work area.</li>
+          <li>Wipe down work surfaces with 10% bleach. Soak all used tubes, loops, and plates in 10% bleach for 20 minutes (or autoclave) before disposal.</li>
+          <li>Ampicillin is in the penicillin family. If you are allergic to penicillin, avoid contact with it. Rinse eyes with water if exposed.</li>
+          <li>Keep your nose and mouth away from the tip when pipetting cell suspensions.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Moving genes into bacteria</h2></header>
+    <div class="step-body prose">
+      <p>Information in DNA directs a cell through RNA and protein. Change a cell's DNA and you can change what it makes and how it behaves. Biotechnologists use this to make bacteria that produce human insulin, vaccine proteins, and industrial enzymes. The same tools raise real questions, such as whether genetically modified crops like Bt corn are safe to eat.</p>
+      <p>Bacteria gain new genes in three natural ways: <strong>conjugation</strong> (direct cell-to-cell transfer), <strong>transduction</strong> (a virus carries DNA in), and <strong>transformation</strong> (a cell takes up "naked" DNA from its surroundings). Frederick Griffith first saw transformation in 1928, when harmless pneumonia bacteria became deadly after mixing with heat-killed deadly ones.</p>
+      <p>Most lab transformations use <strong>plasmids</strong>: small, circular DNA molecules that copy themselves separately from the bacterial chromosome. A plasmid needs an origin of replication (<em>ori</em>) and usually carries a few useful genes. The plasmid you'll use, <strong>pGLO</strong>, carries three genes that matter for this lab:</p>
+      <ul>
+        <li><strong><em>bla</em></strong> codes for beta-lactamase, an enzyme the cell secretes that breaks down ampicillin. Cells with pGLO survive on ampicillin; cells without it die.</li>
+        <li><strong>GFP</strong> codes for green fluorescent protein from the jellyfish <em>Aequorea victoria</em>. It glows green under UV light.</li>
+        <li><strong><em>araC</em></strong> codes for a regulatory protein. Without the sugar arabinose, AraC keeps the GFP gene switched off. When arabinose binds AraC, the protein changes shape and turns on transcription of GFP. This is an <strong>inducible operon</strong>, similar to the <em>lac</em> operon.</li>
+      </ul>
+      <figure class="fig">
+        <svg viewBox="0 0 640 250" role="img" aria-label="Map of the pGLO plasmid showing the bla gene, the GFP gene, the araC gene, and the origin of replication, with arrows showing direction of transcription.">
+          <circle cx="160" cy="125" r="88" style="fill:none;stroke:var(--line)" stroke-width="14"/>
+          <path d="M160 37 A88 88 0 0 1 246 108" style="fill:none;stroke:var(--s1)" stroke-width="14"/>
+          <path d="M240 160 A88 88 0 0 1 170 212" style="fill:none;stroke:var(--s4)" stroke-width="14"/>
+          <path d="M120 203 A88 88 0 0 1 73 120" style="fill:none;stroke:var(--s3)" stroke-width="14"/>
+          <path d="M80 85 A88 88 0 0 1 120 47" style="fill:none;stroke:var(--s2)" stroke-width="14"/>
+          <polygon points="246,108 236,96 254,98" style="fill:var(--s1)"/>
+          <polygon points="170,212 184,206 180,222" style="fill:var(--s4)"/>
+          <polygon points="73,120 64,132 84,132" style="fill:var(--s3)"/>
+          <text x="160" y="120" text-anchor="middle" class="svg-t" font-weight="700">pGLO</text>
+          <text x="160" y="138" text-anchor="middle" class="svg-s">≈ 5.4 kb</text>
+          <text x="262" y="66" class="svg-t">GFP</text>
+          <text x="248" y="206" class="svg-t"><tspan font-style="italic">bla</tspan> (amp<tspan baseline-shift="super" font-size="9">R</tspan>)</text>
+          <text x="10" y="186" class="svg-t"><tspan font-style="italic">araC</tspan></text>
+          <text x="58" y="48" class="svg-t"><tspan font-style="italic">ori</tspan></text>
+          <g transform="translate(360 20)">
+            <text x="0" y="12" class="svg-t" font-weight="700">GFP switch (arabinose operon)</text>
+            <text x="0" y="40" class="svg-s">No arabinose</text>
+            <rect x="0" y="50" width="70" height="22" rx="4" style="fill:var(--surface-2);stroke:var(--line)"/><text x="35" y="66" text-anchor="middle" class="svg-s">P<tspan baseline-shift="sub" font-size="8">BAD</tspan></text>
+            <rect x="70" y="50" width="180" height="22" rx="4" style="fill:var(--accent-soft);stroke:var(--line)"/><text x="160" y="66" text-anchor="middle" class="svg-s">GFP gene</text>
+            <ellipse cx="35" cy="44" rx="22" ry="11" style="fill:var(--s3)"/><text x="35" y="48" text-anchor="middle" class="svg-s" style="fill:var(--surface)">AraC</text>
+            <text x="0" y="92" class="svg-s">AraC blocks transcription → no GFP, cells look white</text>
+            <text x="0" y="130" class="svg-s">With arabinose</text>
+            <rect x="0" y="140" width="70" height="22" rx="4" style="fill:var(--surface-2);stroke:var(--line)"/><text x="35" y="156" text-anchor="middle" class="svg-s">P<tspan baseline-shift="sub" font-size="8">BAD</tspan></text>
+            <rect x="70" y="140" width="180" height="22" rx="4" style="fill:var(--accent-soft);stroke:var(--line)"/><text x="160" y="156" text-anchor="middle" class="svg-s">GFP gene</text>
+            <ellipse cx="35" cy="134" rx="22" ry="11" style="fill:var(--s3)"/><circle cx="58" cy="128" r="6" style="fill:var(--s4)"/>
+            <path d="M75 176 H245" style="stroke:var(--s1)" stroke-width="3"/><polygon points="245,171 255,176 245,181" style="fill:var(--s1)"/>
+            <text x="0" y="200" class="svg-s">AraC + arabinose recruits RNA polymerase → GFP made,</text>
+            <text x="0" y="214" class="svg-s">colonies glow green under UV</text>
+          </g>
+        </svg>
+        <figcaption>The pGLO plasmid (left) and how arabinose switches on the GFP gene (right). Arrows show the direction of transcription.</figcaption>
+      </figure>
+      <p><strong>Why the procedure works.</strong> DNA and the cell's outer membrane are both negatively charged, so they repel each other. Calcium ions (Ca<sup>2+</sup>) in the cold transformation solution neutralize those charges and let plasmids stick to the cell surface. Chilling makes the membrane rigid. A sudden <strong>heat shock</strong> (0 °C → 42 °C → 0 °C) creates a temperature imbalance across the membrane that helps pull plasmids inside. The cells then <strong>recover</strong> in LB broth so they can repair their membranes and start making beta-lactamase before they meet ampicillin.</p>
+      <p><strong>How you know it worked.</strong> Each colony on an agar plate grows from one cell. Only transformed cells can grow on LB/amp, so counting colonies there counts transformation events. On LB/amp/ara plates, transformed colonies also glow. Plates without ampicillin are controls that show the cells were alive.</p>
+      <p><strong>Transformation efficiency</strong> tells you how many cells were transformed per microgram of plasmid that reached the plate:</p>
+      <div class="equation">Transformation efficiency = colonies on the LB/amp plate ÷ µg of plasmid DNA spread on that plate</div>
+      <div class="equation">DNA used (µg) = concentration (µg/µL) × volume (µL)<br>Fraction spread = volume spread (µL) ÷ total volume in tube (µL)<br>DNA spread (µg) = DNA used × fraction spread</div>
+      <p>Efficiencies are large numbers, so report them in scientific notation, for example 3.1 × 10<sup>3</sup> transformants/µg.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body"><div id="prelab"></div></div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Transform">
+    <header><div class="eyebrow">Procedure · Structured inquiry</div><h2>Transform <em>E. coli</em> with pGLO</h2></header>
+    <div class="step-body">
+      <p class="prose">Work through the protocol one step at a time. Each step shows the manual's setting by default. Change a setting or press <strong>Skip step</strong> if you want to test what that step does. Before incubation you must predict what each plate will look like.</p>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><span class="label">Protocol</span><ol id="proto-list" class="proto"></ol></div>
+          <div class="step-card" id="step-card" aria-live="polite"></div>
+          <div class="row">
+            <button class="btn btn--primary" id="do-step" type="button">Do this step</button>
+            <button class="btn" id="skip-step" type="button">Skip step</button>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="restart" type="button">Start a new transformation</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="bench" aria-label="Lab bench with a tube rack, an ice bucket, a 42 degree water bath, and the reagents. The +pGLO and −pGLO tubes move between stations as you do each step."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">+pGLO tube</span><span class="v" id="ro-plus">—</span></div>
+            <div class="readout"><span class="k">−pGLO tube</span><span class="v" id="ro-minus">—</span></div>
+            <div class="readout"><span class="k">Status</span><span class="v" id="ro-status">Ready</span></div>
+          </div>
+          <div class="row"><span class="small muted">Lighting:</span>
+            <div class="seg" role="group" aria-label="Lighting for viewing plates"><button type="button" id="uv-off" aria-pressed="true">Room light</button><button type="button" id="uv-on" aria-pressed="false">UV light</button></div>
+          </div>
+          <canvas class="viz" id="plates" aria-label="Six agar plates: LB, LB/amp, and LB/amp/ara for the −pGLO tube (top row) and the +pGLO tube (bottom row)."></canvas>
+          <div class="readouts" id="plate-readouts"></div>
+          <div>
+            <h3 style="margin-bottom:8px">Your predictions</h3>
+            <div class="pred-grid" id="pred-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin:24px 0 8px">Count the colonies</h3>
+      <p class="prose small">Choose a plate, then click (or tap) each colony to mark it. Click a mark again to remove it. Each colony grew from one cell. Plates with a lawn are "too many to count."</p>
+      <div class="grid-2">
+        <div class="count-wrap">
+          <canvas class="viz" id="zoom" aria-label="Enlarged view of the selected plate for counting colonies. Click a colony to mark it."></canvas>
+        </div>
+        <div class="stack">
+          <div class="field"><label for="zoom-plate">Plate to count</label><select id="zoom-plate"></select></div>
+          <div class="readouts"><div class="readout"><span class="k">Colonies you marked</span><span class="v" id="mark-count">0</span></div></div>
+          <div class="row"><button class="btn btn--sm" id="clear-marks" type="button">Clear marks</button><button class="btn btn--sm" id="use-count" type="button">Use this count below</button></div>
+          <p class="small muted" id="zoom-note">Incubate your plates first.</p>
+        </div>
+      </div>
+
+      <h3 style="margin:24px 0 8px">Calculate transformation efficiency</h3>
+      <p class="prose small">Use the +pGLO LB/amp plate, as the manual does. Look back at the protocol for the plasmid concentration (0.005 µg/µL) and every volume you added to the +pGLO tube.</p>
+      <div class="readouts"><div class="readout"><span class="k">Volumes in your +pGLO tube</span><span class="v" id="vol-list" style="font-size:.9rem">—</span></div></div>
+      <div class="grid-2" style="margin-top:12px">
+        <div class="field"><label for="c-count">Colonies on +pGLO LB/amp plate</label><input id="c-count" type="number" step="1" min="0"></div>
+        <div class="field"><label for="c-mass">a. Total plasmid DNA used (µg)</label><input id="c-mass" type="number" step="any"></div>
+        <div class="field"><label for="c-frac">b. Fraction of the tube spread on the plate</label><input id="c-frac" type="number" step="any"></div>
+        <div class="field"><label for="c-spread">c. Plasmid DNA spread on the plate (µg)</label><input id="c-spread" type="number" step="any"></div>
+        <div class="field"><label for="c-eff">Transformation efficiency (transformants/µg)</label><input id="c-eff" type="number" step="any"></div>
+        <div class="field"><label for="c-sci">Efficiency in scientific notation (e.g. 3.1 × 10^3)</label><input id="c-sci" type="text"></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn btn--primary" id="calc-check" type="button">Check my calculations</button><button class="btn" id="calc-add" type="button">Add this run to my results</button></div>
+      <div class="calc-fb" id="calc-fb" aria-live="polite"></div>
+
+      <h3 style="margin:24px 0 8px">Results from your transformations</h3>
+      <div id="runs-table"></div>
+      <div id="runs-chart"></div>
+      <p class="small muted">Dashed lines mark the range the manual gives for this protocol: 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.</p>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>What helps or hurts transformation?</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Do bacteria take up more plasmid under some conditions than others? Pick one variable from the transformation process, hold everything else at the manual's settings, and measure how efficiency changes. Run several replicate transformations at each level so you can judge variability with error bars (mean ± 2 SE).</p>
+      </div>
+      <div id="design-prompts"></div>
+      <div class="sim" style="margin-top:16px">
+        <div class="controls">
+          <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
+          <div class="field"><span class="label">Levels to test</span><div class="levels" id="d-levels"></div></div>
+          <div class="field"><label for="d-reps">Replicate transformations per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="6" value="3"></div>
+          <p class="small muted" id="d-controls">Held constant: everything else at the manual's settings.</p>
+          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+        </div>
+        <div class="stage">
+          <div id="d-table"></div>
+          <div id="d-chart"></div>
+        </div>
+      </div>
+
+      <h3 style="margin:28px 0 8px">Are satellite colonies transformed?</h3>
+      <div class="prose"><p>After 48 hours you may see tiny <strong>satellite colonies</strong> clustered around big colonies on ampicillin plates. The manual asks you to design a test: do satellites carry pGLO? Pick a colony, streak it onto a fresh plate, incubate, and look under room light and UV.</p></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="s-src">Colony to pick</label><select id="s-src"><option value="big">Large colony (center of cluster)</option><option value="sat">Satellite colony (small, at edge)</option></select></div>
+          <div class="field"><label for="s-med">Streak onto</label><select id="s-med"><option value="lb">LB</option><option value="amp">LB/amp</option><option value="ara" selected>LB/amp/ara</option></select></div>
+          <label class="check"><input type="checkbox" id="s-uv"> View under UV light</label>
+          <button class="btn btn--primary" id="s-run" type="button">Streak and incubate 24 h</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="sat-canvas" aria-label="Left: source LB/amp plate with a large colony surrounded by satellites. Right: the new plate you streaked."></canvas>
+          <div class="readouts"><div class="readout"><span class="k">Result</span><span class="v" id="s-result" style="font-size:.95rem">Pick a colony and streak it.</span></div></div>
+          <div id="s-table"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>What happened on your plates?</h2></header>
+    <div class="step-body">
+      <h3>Before you looked</h3>
+      <div id="an-pre"></div>
+      <h3 style="margin-top:20px">After incubation</h3>
+      <div id="an-post"></div>
+      <h3 style="margin-top:20px">What does your efficiency mean?</h3>
+      <div id="an-eff"></div>
+      <h3 style="margin-top:20px">Claim, evidence, reasoning</h3>
+      <div class="cer" id="cer"></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
+    <div class="step-body" id="evaluate"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+Lab.init({ id: 'lab08' });
+const { $, $$ } = Lab;
+
+/* ---------- Pre-lab ---------- */
+Lab.quiz('#prelab', [
+  { type: 'mc', q: 'Before transformation, what phenotype do you expect the host <em>E. coli</em> to have?', choices: ['White colonies that grow on LB but not on LB/amp', 'Green glowing colonies that grow on LB/amp', 'White colonies that grow on both LB and LB/amp', 'No growth on any plate'], answer: 0, explain: 'The host strain has no ampicillin-resistance gene and no GFP gene, so its colonies are off-white and it is killed by ampicillin.' },
+  { type: 'mc', q: 'You grow untransformed <em>E. coli</em> on an LB/amp plate. Will exposure to ampicillin cause the cells to evolve resistance?', choices: ['Yes, the cells will make the resistance gene because they need it', 'No; resistance must already exist (by mutation or gene transfer) before selection acts, and a population does not change in one exposure', 'Yes, but only if the plate is incubated longer', 'No, because bacteria cannot evolve'], answer: 1, explain: 'Selection acts on variation that already exists. Ampicillin kills sensitive cells; it does not create resistance genes on demand.' },
+  { type: 'multi', q: 'Which two plates should you compare to show that genetic transformation happened? (Choose two.)', choices: ['−pGLO on LB/amp', '+pGLO on LB/amp', '−pGLO on LB', '+pGLO on LB'], answer: [0, 1], explain: 'The only difference between these plates is whether the cells were given plasmid. Growth on +pGLO LB/amp but not on −pGLO LB/amp shows that the plasmid gave the cells resistance.' },
+  { type: 'mc', q: 'What is the main job of the cold CaCl<sub>2</sub> transformation solution?', choices: ['It kills cells that do not take up DNA', 'Ca<sup>2+</sup> ions shield the negative charges on DNA and the cell membrane so plasmids can attach to the cell surface', 'It provides food for the bacteria', 'It turns on the GFP gene'], answer: 1, explain: 'Both DNA (phosphate backbone) and the outer membrane (lipopolysaccharide) are negatively charged. Ca<sup>2+</sup> neutralizes the repulsion. The heat shock then helps plasmids move inside.' },
+  { type: 'mc', q: 'Transformed cells on an LB/amp plate (no arabinose) will look:', choices: ['Green under UV, because they carry the GFP gene', 'White under room light and not glowing under UV, because AraC keeps GFP switched off without arabinose', 'Blue', 'They will not grow'], answer: 1, explain: 'The GFP gene is present, but it is not transcribed unless arabinose binds AraC. Colonies glow only on LB/amp/ara.' },
+  { type: 'num', q: 'You add 10 µL of plasmid at 0.005 µg/µL. What total mass of plasmid DNA did you use?', answer: 0.05, tol: 0.0005, unit: 'µg', explain: '0.005 µg/µL × 10 µL = 0.05 µg.' },
+  { type: 'num', q: 'The +pGLO tube holds 250 µL CaCl<sub>2</sub> + 10 µL plasmid + 250 µL LB broth. You spread 100 µL on the LB/amp plate. What fraction of the DNA reached the plate? (3 decimal places)', answer: 0.196, tol: 0.002, unit: '', explain: 'Total volume = 250 + 10 + 250 = 510 µL. Fraction = 100 ÷ 510 = 0.196.' },
+  { type: 'num', q: 'Using your last two answers, 40 colonies grew on the LB/amp plate. What is the transformation efficiency?', answer: 4080, tolPct: 0.03, unit: 'transformants/µg', explain: 'DNA spread = 0.05 µg × 0.196 = 0.0098 µg. Efficiency = 40 ÷ 0.0098 ≈ 4.1 × 10<sup>3</sup> transformants/µg, inside the 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> range the manual expects.' }
+], { id: 'prelab' });
+
+/* ---------- Color helpers (tokens only) ---------- */
+const C = n => Lab.color(n);
+function rgb(c) {
+  c = String(c).trim();
+  if (c[0] === '#') { if (c.length === 4) c = '#' + [...c.slice(1)].map(x => x + x).join(''); return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
+  const m = c.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [128, 128, 128];
+}
+function mix(a, b, t) { const A = rgb(C(a)), B = rgb(C(b)); return `rgb(${A.map((v, i) => Math.round(v * (1 - t) + B[i] * t)).join(',')})`; }
+function alpha(a, al) { return `rgba(${rgb(C(a)).join(',')},${al})`; }
+function lum(n) { const [r, g, b] = rgb(C(n)); return .299 * r + .587 * g + .114 * b; }
+const lightTok = () => lum('--ink') > lum('--surface') ? '--ink' : '--surface';
+const darkTok = () => lum('--ink') > lum('--surface') ? '--surface' : '--ink';
+
+/* ---------- Transformation model ----------
+   Expected transformant colonies on one +pGLO LB/amp plate:
+   λ = 30 × f_solution × f_cells × f_plasmid × f_prechill × f_ice × f_heat × f_return × f_recovery × (µL plated / 100) × lognormal(0, 0.3)
+   Baseline (manual protocol) ≈ 30 colonies → 30 / 0.0098 µg ≈ 3 × 10^3 transformants/µg (manual range 8.0×10^2–7.0×10^3).
+   f_plasmid = 2V/(V+10) (uptake saturates; extra DNA lowers efficiency per µg), small decline above 20 µL.
+   f_heat: uptake = 0.1 + 0.9·a(T)·(1 − e^(−t/15)), a(T) = (T−22)/20 capped; survival = e^(−max(0,t−50)/58) · e^(−max(0,T−43)·t/220).
+     No heat shock → ~0.1 (manual: 10-fold fewer); 90 s → ~0.5 (manual: half as many as 50 s).
+   Colonies counted on a plate are Poisson. Satellites (untransformed cells protected by secreted β-lactamase) appear mostly after 48 h. */
+const CONC = 0.005; // µg/µL plasmid
+const DEFAULTS = { sol: 'cold', prechill: true, cells: 'one', vol: 10, ice: 10, hsT: 42, hsTime: 50, ret: true, recov: 10, plateUL: 100, incub: 24 };
+const F_SOL = { cold: 1, warm: 0.5, water: 0.03 };
+const F_CELLS = { one: 1, few: 1.5, smear: 0.5 };
+const LAWN_CELLS = { one: 1, few: 2, smear: 3 };
+const LABEL_SOL = { cold: 'ice-cold CaCl₂', warm: 'room-temp CaCl₂', water: 'sterile water' };
+const LABEL_CELLS = { one: '1 colony', few: '2–4 fat colonies', smear: 'large smear' };
+function heatParts(T, t) {
+  const a = Math.min(1.15, Math.max(0, (T - 22) / 20));
+  const uptake = 0.1 + 0.9 * a * (1 - Math.exp(-t / 15));
+  const surv = Math.exp(-Math.max(0, t - 50) / 58) * Math.exp(-Math.max(0, T - 43) * t / 220);
+  return { uptake, surv, f: uptake * surv / 0.968 };
+}
+function fPlasmid(V) { return V <= 0 ? 0 : (2 * V / (V + 10)) * (V > 20 ? Math.exp(-(V - 20) / 60) : 1); }
+function fIce(m) { return m <= 0 ? 0.3 : (1 - Math.exp(-m / 3.5)) / (1 - Math.exp(-10 / 3.5)); }
+const F_RECOV = { 0: 0.35, 5: 0.75, 10: 1, 20: 1.3 };
+function expectedAmp(S) {
+  const h = heatParts(S.hsT, S.hsTime);
+  return 30 * F_SOL[S.sol] * F_CELLS[S.cells] * fPlasmid(S.vol) * (S.prechill ? 1 : 0.8) * fIce(S.ice) * h.f * (S.ret ? 1 : 0.6) * (F_RECOV[S.recov] ?? 1) * (S.plateUL / 100);
+}
+function survival(S) { return heatParts(S.hsT, S.hsTime).surv; }
+function dnaSpread(S) { return CONC * S.vol * S.plateUL / (500 + S.vol); }
+function summary(S) {
+  return `${LABEL_SOL[S.sol]}${S.prechill ? '' : ' (not pre-chilled)'} · ${LABEL_CELLS[S.cells]} · ${S.vol} µL pGLO · ice ${S.ice} min · ${S.hsTime ? S.hsT + ' °C/' + S.hsTime + ' s' : 'no heat shock'} · ${S.ret ? 'ice 2 min' : 'no ice after'} · LB ${S.recov} min · ${S.plateUL} µL plated`;
+}
+
+const rng = Lab.rng();
+function makeColonies(n, R0, sats, glow) {
+  const cols = [];
+  for (let i = 0; i < n; i++) {
+    let x, y, tries = 0;
+    do { const a = rng.uniform() * Math.PI * 2, r = 0.86 * Math.sqrt(rng.uniform()); x = r * Math.cos(a); y = r * Math.sin(a); tries++; }
+    while (tries < 30 && cols.some(c => (c.x - x) ** 2 + (c.y - y) ** 2 < (c.r + R0 * 1.4) ** 2));
+    const r = R0 * (0.75 + 0.5 * rng.uniform());
+    cols.push({ x, y, r, glow, sat: false });
+    const ns = rng.poisson(sats);
+    for (let k = 0; k < ns; k++) { const a = rng.uniform() * Math.PI * 2, d = r * (1.7 + rng.uniform() * 1.3); const sx = x + d * Math.cos(a), sy = y + d * Math.sin(a); if (sx * sx + sy * sy < 0.85) cols.push({ x: sx, y: sy, r: r * (0.25 + 0.15 * rng.uniform()), glow: false, sat: true }); }
+  }
+  return cols;
+}
+function lawnTexture() { const d = []; for (let i = 0; i < 260; i++) { const a = rng.uniform() * Math.PI * 2, r = 0.9 * Math.sqrt(rng.uniform()); d.push([r * Math.cos(a), r * Math.sin(a), 0.006 + rng.uniform() * 0.012]); } return d; }
+
+const PLATES = [
+  { id: 'm-lb', tube: 'minus', med: 'lb', name: '−pGLO LB' },
+  { id: 'm-amp', tube: 'minus', med: 'amp', name: '−pGLO LB/amp' },
+  { id: 'm-ara', tube: 'minus', med: 'ara', name: '−pGLO LB/amp/ara' },
+  { id: 'p-lb', tube: 'plus', med: 'lb', name: '+pGLO LB' },
+  { id: 'p-amp', tube: 'plus', med: 'amp', name: '+pGLO LB/amp' },
+  { id: 'p-ara', tube: 'plus', med: 'ara', name: '+pGLO LB/amp/ara' }
+];
+function incubatePlates(S) {
+  const lam = expectedAmp(S) * Math.exp(rng.normal(0, 0.3));
+  const sats = S.incub >= 48 ? 1.6 : 0.15;
+  const R0 = S.incub >= 48 ? 0.032 : 0.022;
+  const lawnN = 3e5 * LAWN_CELLS[S.cells] * survival(S) * S.plateUL / 100;
+  const out = {};
+  PLATES.forEach(p => {
+    const o = { incubated: true, lawn: false, cols: [], count: 0, cls: 'none' };
+    if (p.med === 'lb') {
+      if (lawnN > 400) { o.lawn = true; o.tex = lawnTexture(); o.cls = 'lawn'; o.count = Infinity; }
+      else { const n = rng.poisson(lawnN); o.cols = makeColonies(n, R0, 0, false); o.count = n; o.cls = n ? 'white' : 'none'; }
+    } else if (p.tube === 'plus') {
+      const n = rng.poisson(lam);
+      o.cols = makeColonies(n, R0, sats, p.med === 'ara'); o.count = n; o.big = n;
+      o.cls = n === 0 ? 'none' : (p.med === 'ara' ? 'glow' : 'white');
+    }
+    out[p.id] = o;
+  });
+  return out;
+}
+
+/* ---------- Protocol state ---------- */
+let S, choices = Object.assign({}, DEFAULTS), stepIdx, plates, tubes, marks, done, runCount = 0, uv = false;
+const STEPS = [
+  { key: 'sol', title: 'Add transformation solution', skip: false,
+    desc: 'Label two tubes "+pGLO" and "−pGLO". Pipette 250 µL of ice-cold transformation solution (50 mM CaCl₂, pH 6.1) into each tube.',
+    opts: () => sel('o-sol', 'Solution', [['cold', 'Ice-cold 50 mM CaCl₂ (manual)'], ['warm', 'CaCl₂ at room temperature'], ['water', 'Sterile water (no CaCl₂)']], choices.sol) },
+  { key: 'prechill', title: 'Place both tubes on ice', skip: true,
+    desc: 'Push both tubes down into the crushed ice so the solution stays near 0 °C.', opts: () => '' },
+  { key: 'cells', title: 'Add E. coli to each tube', skip: false,
+    desc: 'With a sterile loop, pick cells from the starter plate, spin the loop in the solution of each tube until the cells disperse, then pipette up and down to resuspend. Return tubes to ice.',
+    opts: () => sel('o-cells', 'Cells picked', [['one', 'A single colony (manual)'], ['few', '2–4 fat colonies, 1–1.5 mm'], ['smear', 'A large smear from the dense area']], choices.cells) },
+  { key: 'vol', title: 'Add pGLO plasmid to +pGLO tube only', skip: true,
+    desc: 'Add plasmid solution (0.005 µg/µL) directly into the cell suspension in the +pGLO tube. Tap to mix. Do not add plasmid to the −pGLO tube.',
+    opts: () => sel('o-vol', 'Plasmid volume', [[2, '2 µL'], [5, '5 µL'], [10, '10 µL (manual)'], [20, '20 µL'], [40, '40 µL']], choices.vol) },
+  { key: 'ice', title: 'Incubate on ice', skip: true,
+    desc: 'Keep both tubes on ice so the bottoms touch the ice.',
+    opts: () => sel('o-ice', 'Time on ice', [[2, '2 min'], [5, '5 min'], [10, '10 min (manual)'], [15, '15 min']], choices.ice) },
+  { key: 'heat', title: 'Heat shock', skip: true,
+    desc: 'Move the tubes straight from ice into the water bath, pushed all the way down, then remove them.',
+    opts: () => sel('o-hsT', 'Water bath temperature', [[22, '22 °C (room temperature)'], [37, '37 °C'], [42, '42 °C (manual)'], [47, '47 °C'], [52, '52 °C']], choices.hsT) +
+      `<div class="field"><label for="o-hsTime">Time in bath <output id="o-hsTime-out" class="val">${choices.hsTime} s</output></label><input id="o-hsTime" type="range" min="5" max="120" step="5" value="${choices.hsTime}"></div>` },
+  { key: 'ret', title: 'Return tubes to ice', skip: true,
+    desc: 'Put both tubes back on ice right away for 2 minutes. The change 0 °C → 42 °C → 0 °C should be fast.', opts: () => '' },
+  { key: 'recov', title: 'Add LB broth and let cells recover', skip: false,
+    desc: 'Move tubes to the rack. Add 250 µL of LB nutrient broth to each tube, tap to mix, and leave at room temperature.',
+    opts: () => sel('o-recov', 'Recovery time', [[0, 'Plate right away (0 min)'], [5, '5 min'], [10, '10 min (manual)'], [20, '20 min']], choices.recov) },
+  { key: 'plate', title: 'Spread cells on plates', skip: false,
+    desc: 'Flick each tube to resuspend. Using a fresh pipette for each transfer, put the suspension on LB, LB/amp, and LB/amp/ara plates, and spread it with a new sterile loop.',
+    opts: () => sel('o-plateUL', 'Volume per plate', [[50, '50 µL'], [100, '100 µL (manual)'], [150, '150 µL']], choices.plateUL) },
+  { key: 'incub', title: 'Predict, then incubate at 37 °C', skip: false,
+    desc: 'Fill in a prediction for all six plates (below the plates). Then stack the plates upside down and incubate.',
+    opts: () => sel('o-incub', 'Incubation time', [[24, '24 hours'], [48, '48 hours']], choices.incub) }
+];
+function sel(id, label, opts, cur) { return `<div class="field"><label for="${id}">${label}</label><select id="${id}">${opts.map(([v, t]) => `<option value="${v}" ${String(v) === String(cur) ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`; }
+
+const PRED_OPTS = [['', 'Choose…'], ['none', 'No growth'], ['lawn', 'Lawn (too many to count)'], ['white', 'Separate colonies, not glowing'], ['glow', 'Separate colonies that glow green under UV']];
+function buildPreds() {
+  $('#pred-grid').innerHTML = PLATES.map(p => `<div class="field"><label for="pr-${p.id}">${p.name}</label><select id="pr-${p.id}">${PRED_OPTS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select><span class="pill" id="pp-${p.id}" hidden></span></div>`).join('');
+}
+
+function reset() {
+  S = Object.assign({}, DEFAULTS, { sol: choices.sol, cells: choices.cells });
+  stepIdx = 0; done = []; plates = null; marks = {};
+  tubes = [
+    { name: '+pGLO', at: 'rack', x: 0, y: 0, vol: 0, cells: 0, plasmid: 0, cap: '--s2' },
+    { name: '−pGLO', at: 'rack', x: 0, y: 0, vol: 0, cells: 0, plasmid: 0, cap: '--s3' }
+  ];
+  placeTubes(); buildPreds(); renderSteps(); drawBench(); drawPlates(); renderPlateReadouts(); setupZoom(); updateRO('Ready');
+  $('#calc-fb').innerHTML = '';
+}
+
+function renderSteps() {
+  $('#proto-list').innerHTML = STEPS.map((s, i) => `<li class="${i < stepIdx ? (done[i] === 'skip' ? 'skipped' : 'done') : i === stepIdx ? 'cur' : ''}">${s.title}${done[i] === 'skip' ? ' (skipped)' : ''}</li>`).join('');
+  const card = $('#step-card');
+  if (stepIdx >= STEPS.length) {
+    card.innerHTML = `<h3>Plates incubated</h3><p>Look at your plates under room light and UV light, check your predictions, then count colonies and calculate efficiency. Start a new transformation to try different settings.</p>`;
+    $('#do-step').disabled = true; $('#skip-step').disabled = true; return;
+  }
+  const s = STEPS[stepIdx];
+  card.innerHTML = `<div class="eyebrow">Step ${stepIdx + 1} of ${STEPS.length}</div><h3>${s.title}</h3><p>${s.desc}</p>${s.opts()}<div class="msg" id="step-msg"></div>`;
+  $('#do-step').disabled = busy; $('#skip-step').disabled = busy || !s.skip;
+  $('#do-step').textContent = s.key === 'incub' ? 'Incubate plates' : 'Do this step';
+  const ht = $('#o-hsTime'); if (ht) ht.addEventListener('input', () => { $('#o-hsTime-out').textContent = ht.value + ' s'; });
+  $$('select, input', card).forEach(el => el.addEventListener('change', readOpts));
+}
+function readOpts() {
+  const g = id => $('#' + id);
+  if (g('o-sol')) choices.sol = g('o-sol').value;
+  if (g('o-cells')) choices.cells = g('o-cells').value;
+  if (g('o-vol')) choices.vol = +g('o-vol').value;
+  if (g('o-ice')) choices.ice = +g('o-ice').value;
+  if (g('o-hsT')) choices.hsT = +g('o-hsT').value;
+  if (g('o-hsTime')) choices.hsTime = +g('o-hsTime').value;
+  if (g('o-recov')) choices.recov = +g('o-recov').value;
+  if (g('o-plateUL')) choices.plateUL = +g('o-plateUL').value;
+  if (g('o-incub')) choices.incub = +g('o-incub').value;
+}
+
+/* ---------- Bench animation ---------- */
+const bench = Lab.canvas('#bench', window.innerWidth < 600 ? 0.66 : 0.5);
+const POS = { rack: [[0.10, 0.84], [0.17, 0.84]], ice: [[0.33, 0.78], [0.41, 0.78]], bath: [[0.59, 0.76], [0.67, 0.76]] };
+function placeTubes() { tubes.forEach((t, i) => { t.x = POS[t.at][i][0]; t.y = POS[t.at][i][1]; }); }
+let queue = [], phase = null, busy = false, overlay = '', pipette = null;
+const speed = () => Lab.reducedMotion() ? 0.25 : 1;
+const loop = Lab.loop(dt => {
+  if (!phase && queue.length) { phase = queue.shift(); phase.t = 0; phase.start && phase.start(); }
+  if (phase) {
+    phase.t += dt;
+    const k = Math.min(1, phase.t / (phase.dur * speed()));
+    phase.tick && phase.tick(k);
+    if (k >= 1) { phase.end && phase.end(); phase = null; }
+  }
+  drawBench();
+  if (!phase && !queue.length) { busy = false; overlay = ''; pipette = null; drawBench(); renderSteps(); return false; }
+});
+function run(phases) { busy = true; queue.push(...phases); $('#do-step').disabled = true; $('#skip-step').disabled = true; loop.start(); }
+const ease = k => k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+function move(to, dur = 0.9) {
+  let from;
+  return { dur, start() { from = tubes.map(t => [t.x, t.y]); tubes.forEach(t => t.at = to); },
+    tick(k) { const e = ease(k); tubes.forEach((t, i) => { const [tx, ty] = POS[to][i]; const lift = Math.sin(Math.PI * e) * 0.18; t.x = from[i][0] + (tx - from[i][0]) * e; t.y = from[i][1] + (ty - from[i][1]) * e - lift; }); } };
+}
+function wait(label, simSec, dur = 1.6) { return { dur, tick(k) { overlay = `${label} · ${clock(simSec * k)} / ${clock(simSec)}`; }, end() { overlay = ''; } }; }
+function clock(s) { s = Math.round(s); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`; }
+function drop(ti, what, apply, dur = 0.7) { return { dur, tick(k) { pipette = { ti, k, what }; }, end() { pipette = null; apply(); } }; }
+function fn(f) { return { dur: 0, end: f }; }
+function updateRO(status) {
+  const d = t => t.vol ? `${t.vol} µL${t.cells ? ', cloudy' : ', clear'}${t.plasmid ? ', +plasmid' : ''}` : 'empty';
+  $('#ro-plus').textContent = d(tubes[0]); $('#ro-minus').textContent = d(tubes[1]);
+  if (status) $('#ro-status').textContent = status;
+}
+
+function drawBench() {
+  const { ctx, w, h } = bench; ctx.clearRect(0, 0, w, h);
+  const ink = C('--ink'), muted = C('--muted'), line = C('--line');
+  ctx.fillStyle = C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = mix('--line', darkTok(), 0.15); ctx.fillRect(0, h * 0.86, w, h * 0.14);
+  const fs = Math.max(10, Math.min(13, w / 55));
+  ctx.font = `600 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center';
+  // rack
+  ctx.fillStyle = mix('--s4', '--surface', 0.55); ctx.fillRect(w * 0.05, h * 0.70, w * 0.17, h * 0.16);
+  ctx.fillStyle = ink; ctx.fillText('Tube rack', w * 0.135, h * 0.97);
+  // ice bucket
+  ctx.fillStyle = mix('--s3', lightTok(), 0.6); roundRect(ctx, w * 0.27, h * 0.56, w * 0.20, h * 0.30, 8); ctx.fill();
+  ctx.fillStyle = mix('--s3', lightTok(), 0.85);
+  for (let i = 0; i < 14; i++) { const x = w * (0.28 + (i % 7) * 0.027), y = h * (0.58 + Math.floor(i / 7) * 0.05); ctx.fillRect(x, y, w * 0.022, h * 0.04); }
+  ctx.fillStyle = ink; ctx.fillText('Ice · 0 °C', w * 0.37, h * 0.97);
+  // water bath
+  ctx.fillStyle = mix('--line', '--surface', 0.3); roundRect(ctx, w * 0.53, h * 0.50, w * 0.20, h * 0.36, 8); ctx.fill();
+  ctx.fillStyle = alpha('--s3', 0.35); ctx.fillRect(w * 0.545, h * 0.58, w * 0.17, h * 0.26);
+  ctx.fillStyle = C('--surface'); roundRect(ctx, w * 0.565, h * 0.39, w * 0.13, h * 0.09, 4); ctx.fill(); ctx.strokeStyle = line; ctx.stroke();
+  ctx.fillStyle = C('--bad'); ctx.font = `600 ${fs}px "JetBrains Mono", monospace`;
+  const shownT = stepIdx === 5 ? choices.hsT : 42; ctx.fillText(`${shownT} °C`, w * 0.63, h * 0.45);
+  ctx.font = `600 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.fillStyle = ink; ctx.fillText('Water bath', w * 0.63, h * 0.97);
+  // reagents
+  const rx = w * 0.78;
+  bottle(ctx, rx, h * 0.84, w * 0.05, h * 0.26, alpha('--s3', 0.2), 'CaCl₂');
+  bottle(ctx, rx + w * 0.07, h * 0.84, w * 0.05, h * 0.26, mix('--s4', '--surface', 0.45), 'LB');
+  bottle(ctx, rx + w * 0.135, h * 0.84, w * 0.035, h * 0.14, alpha('--s1', 0.25), 'pGLO');
+  ctx.fillStyle = ink; ctx.fillText('Reagents', w * 0.88, h * 0.97);
+  // starter plate
+  ctx.fillStyle = mix('--warn', darkTok(), 0.5); ctx.beginPath(); ctx.ellipse(w * 0.87, h * 0.22, w * 0.07, h * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = mix(lightTok(), '--warn', 0.12); for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(w * (0.83 + (i % 3) * 0.03), h * (0.20 + Math.floor(i / 3) * 0.02), 2.2, 0, 7); ctx.fill(); }
+  ctx.fillStyle = muted; ctx.font = `${fs - 1}px "Source Sans 3", system-ui, sans-serif`; ctx.fillText('Starter plate', w * 0.87, h * 0.34);
+  // tubes
+  tubes.forEach(t => drawTube(ctx, t, w, h, fs));
+  // pipette
+  if (pipette) {
+    const t = tubes[pipette.ti], x = t.x * w, top = t.y * h - h * 0.42;
+    ctx.strokeStyle = muted; ctx.lineWidth = 2; ctx.fillStyle = alpha('--muted', 0.25);
+    ctx.beginPath(); ctx.moveTo(x - 4, top - h * 0.12); ctx.lineTo(x + 4, top - h * 0.12); ctx.lineTo(x + 1.5, top); ctx.lineTo(x - 1.5, top); ctx.closePath(); ctx.fill(); ctx.stroke();
+    const col = pipette.what === 'cells' ? mix(lightTok(), '--warn', 0.2) : pipette.what === 'plasmid' ? C('--s1') : pipette.what === 'lb' ? mix('--s4', '--surface', 0.3) : C('--s3');
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, top + pipette.k * h * 0.2, 3.5, 0, 7); ctx.fill();
+  }
+  if (overlay) {
+    ctx.font = `600 ${fs + 1}px "JetBrains Mono", monospace`; const tw = ctx.measureText(overlay).width + 20;
+    ctx.fillStyle = alpha('--surface', 0.92); roundRect(ctx, 10, 10, Math.min(w - 20, tw), fs + 16, 6); ctx.fill();
+    ctx.fillStyle = C('--accent'); ctx.textAlign = 'left'; ctx.fillText(overlay, 20, 10 + fs + 4, w - 40);
+  }
+}
+function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function bottle(ctx, x, yb, bw, bh, fill, label) {
+  ctx.fillStyle = fill; ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.2;
+  roundRect(ctx, x - bw / 2, yb - bh, bw, bh, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C('--muted'); ctx.fillRect(x - bw * 0.3, yb - bh - 6, bw * 0.6, 6);
+  ctx.fillStyle = C('--ink'); ctx.font = `600 ${Math.max(9, bw * 0.28)}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillText(label, x, yb - bh / 2);
+}
+function drawTube(ctx, t, w, h, fs) {
+  const x = t.x * w, yb = t.y * h, tw = Math.max(11, w * 0.032), th = h * 0.36;
+  const path = () => { ctx.beginPath(); ctx.moveTo(x - tw / 2, yb - th); ctx.lineTo(x + tw / 2, yb - th); ctx.lineTo(x + tw / 2, yb - tw * 1.1); ctx.lineTo(x, yb); ctx.lineTo(x - tw / 2, yb - tw * 1.1); ctx.closePath(); };
+  path(); ctx.fillStyle = alpha(lightTok(), 0.55); ctx.fill();
+  if (t.vol) {
+    ctx.save(); path(); ctx.clip();
+    const lh = (t.vol / 620) * th * 0.95;
+    ctx.fillStyle = t.cells ? mix(lightTok(), '--warn', 0.25) : alpha('--s3', 0.35);
+    ctx.fillRect(x - tw, yb - lh, tw * 2, lh);
+    if (t.plasmid) { ctx.fillStyle = alpha('--s1', 0.35); ctx.fillRect(x - tw, yb - lh, tw * 2, lh); }
+    ctx.restore();
+  }
+  path(); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.3; ctx.stroke();
+  ctx.fillStyle = C(t.cap); ctx.fillRect(x - tw / 2 - 2, yb - th - 7, tw + 4, 7);
+  ctx.fillStyle = C('--ink'); ctx.font = `700 ${fs - 1}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillText(w < 520 ? t.name[0] : t.name, x, yb - th - 11);
+}
+bench.onresize = drawBench;
+
+/* ---------- Step actions ---------- */
+function doStep(skip) {
+  if (busy || stepIdx >= STEPS.length) return;
+  readOpts();
+  const s = STEPS[stepIdx], P = [];
+  const msg = m => { const el = $('#step-msg'); if (el) { el.className = 'msg bad'; el.textContent = m; } };
+  switch (s.key) {
+    case 'sol': S.sol = choices.sol;
+      P.push(drop(0, 'sol', () => { tubes[0].vol = 250; updateRO(); }), drop(1, 'sol', () => { tubes[1].vol = 250; updateRO(`250 µL ${LABEL_SOL[S.sol]} added`); })); break;
+    case 'prechill': S.prechill = !skip;
+      if (!skip) P.push(move('ice'), wait('Chilling on ice', 60, 0.8), fn(() => updateRO('Tubes on ice'))); else P.push(fn(() => updateRO('Tubes left at room temperature'))); break;
+    case 'cells': S.cells = choices.cells;
+      P.push(drop(0, 'cells', () => { tubes[0].cells = 1; updateRO(); }, 0.9), drop(1, 'cells', () => { tubes[1].cells = 1; updateRO(`Cells resuspended (${LABEL_CELLS[S.cells]})`); }, 0.9));
+      if (S.prechill) P.push(fn(() => {})); break;
+    case 'vol': S.vol = skip ? 0 : choices.vol;
+      if (!skip) P.push(drop(0, 'plasmid', () => { tubes[0].plasmid = 1; tubes[0].vol += S.vol; updateRO(`${S.vol} µL pGLO added to +pGLO tube`); }));
+      else P.push(fn(() => updateRO('No plasmid added'))); break;
+    case 'ice': S.ice = skip ? 0 : choices.ice;
+      if (!skip) P.push(move('ice'), wait('Incubating on ice', S.ice * 60, 1.8), fn(() => updateRO(`${S.ice} min on ice`)));
+      else P.push(fn(() => updateRO('Ice incubation skipped'))); break;
+    case 'heat':
+      S.hsT = skip ? 22 : choices.hsT; S.hsTime = skip ? 0 : choices.hsTime;
+      if (!skip) P.push(move('bath', 0.6), wait(`Heat shock at ${S.hsT} °C`, S.hsTime, Math.max(1, S.hsTime / 25)), fn(() => updateRO(`Heat shocked ${S.hsTime} s at ${S.hsT} °C`)));
+      else P.push(fn(() => updateRO('No heat shock'))); break;
+    case 'ret': S.ret = !skip;
+      if (!skip) P.push(move('ice', 0.6), wait('Back on ice', 120, 1.2), fn(() => updateRO('2 min on ice')));
+      else P.push(move('rack'), fn(() => updateRO('Tubes left at room temperature'))); break;
+    case 'recov': S.recov = choices.recov;
+      P.push(move('rack'), drop(0, 'lb', () => { tubes[0].vol += 250; updateRO(); }), drop(1, 'lb', () => { tubes[1].vol += 250; updateRO(); }));
+      if (S.recov) P.push(wait('Recovering at room temperature', S.recov * 60, 1.6));
+      P.push(fn(() => updateRO(`LB added, ${S.recov} min recovery`))); break;
+    case 'plate': S.plateUL = choices.plateUL;
+      P.push(drop(1, 'cells', () => {}, 0.5), drop(0, 'cells', () => {}, 0.5), fn(() => {
+        tubes.forEach(t => t.vol -= 3 * S.plateUL);
+        PLATES.forEach(p => { if (!plates) plates = {}; plates[p.id] = { wet: true }; });
+        drawPlates(); updateRO(`${S.plateUL} µL spread on each of 6 plates`);
+      })); break;
+    case 'incub': {
+      const missing = PLATES.filter(p => !$('#pr-' + p.id).value);
+      if (missing.length) { msg(`Make a prediction for every plate first (${missing.length} left).`); return; }
+      S.incub = choices.incub;
+      P.push(fn(() => { overlay = ''; }), wait('Incubating at 37 °C', S.incub * 3600, 1.6), fn(() => {
+        plates = incubatePlates(S); runCount++;
+        drawPlates(); renderPlateReadouts(); gradePreds(); setupZoom(); fillVolumes();
+        updateRO(`Incubated ${S.incub} h at 37 °C`);
+        $$('#pred-grid select').forEach(e => e.disabled = true);
+      })); break;
+    }
+  }
+  done[stepIdx] = skip ? 'skip' : 'do'; stepIdx++;
+  run(P);
+}
+$('#do-step').addEventListener('click', () => doStep(false));
+$('#skip-step').addEventListener('click', () => doStep(true));
+$('#restart').addEventListener('click', () => { if (!busy) reset(); });
+
+/* ---------- Plates ---------- */
+const platesCv = Lab.canvas('#plates', 0.66);
+function drawPlate(ctx, cx, cy, R, p, med, mk) {
+  const dark = darkTok(), light = lightTok();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R * 1.04, 0, Math.PI * 2); ctx.fillStyle = alpha('--muted', 0.35); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = uv ? mix('--s5', dark, 0.78) : mix('--warn', dark, 0.55); ctx.fill();
+  ctx.clip();
+  if (p && p.wet && !p.incubated) { ctx.fillStyle = alpha(light, 0.12); ctx.beginPath(); ctx.ellipse(cx - R * 0.25, cy - R * 0.25, R * 0.5, R * 0.3, -0.6, 0, 7); ctx.fill(); }
+  if (p && p.incubated) {
+    if (p.lawn) {
+      ctx.fillStyle = uv ? alpha(light, 0.18) : alpha(light, 0.55); ctx.beginPath(); ctx.arc(cx, cy, R * 0.93, 0, 7); ctx.fill();
+      ctx.fillStyle = uv ? alpha(light, 0.2) : mix(light, '--warn', 0.2);
+      p.tex.forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, Math.max(0.8, r * R), 0, 7); ctx.fill(); });
+    }
+    p.cols.forEach(c => {
+      const x = cx + c.x * R, y = cy + c.y * R, r = Math.max(1.2, c.r * R);
+      if (uv && c.glow) { ctx.shadowColor = C('--s1'); ctx.shadowBlur = r * 2.5; ctx.fillStyle = mix('--s1', light, 0.25); }
+      else { ctx.shadowBlur = 0; ctx.fillStyle = uv ? alpha(light, 0.32) : mix(light, '--warn', 0.12); }
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  }
+  if (mk) mk.forEach(([x, y], i) => { ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, Math.max(5, R * 0.035), 0, 7); ctx.stroke(); });
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.strokeStyle = C('--line'); ctx.lineWidth = 1.5; ctx.stroke();
+}
+function drawPlates() {
+  const { ctx, w, h } = platesCv; ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = uv ? mix(darkTok(), '--s5', 0.12) : C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  const fs = Math.max(10, Math.min(14, w / 48));
+  const left = Math.min(70, w * 0.13), cw = (w - left - 8) / 3, rh = (h - fs * 2.2) / 2;
+  const R = Math.min(cw, rh) * 0.42;
+  ctx.font = `700 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center';
+  ctx.fillStyle = uv ? C(lightTok()) : C('--ink');
+  ['LB', 'LB/amp', 'LB/amp/ara'].forEach((t, i) => ctx.fillText(t, left + cw * (i + 0.5), fs * 1.3));
+  ctx.textAlign = 'left';
+  ['−pGLO', '+pGLO'].forEach((t, r) => ctx.fillText(t, 4, fs * 2.2 + rh * (r + 0.5) + fs / 3));
+  PLATES.forEach((p, i) => {
+    const col = i % 3, row = Math.floor(i / 3);
+    drawPlate(ctx, left + cw * (col + 0.5), fs * 2.2 + rh * (row + 0.5), R, plates && plates[p.id], p.med);
+  });
+  if (uv) { ctx.fillStyle = C(lightTok()); ctx.font = `${fs - 1}px "Source Sans 3", system-ui`; ctx.textAlign = 'right'; ctx.fillText('UV light', w - 6, h - 6); }
+}
+platesCv.onresize = drawPlates;
+function renderPlateReadouts() {
+  const el = $('#plate-readouts');
+  if (!plates || !plates['p-amp'] || !plates['p-amp'].incubated) { el.innerHTML = `<div class="readout"><span class="k">Plates</span><span class="v" style="font-size:.95rem">${plates ? 'Spread, not yet incubated' : 'Not yet plated'}</span></div>`; return; }
+  const desc = { none: 'No growth', lawn: 'Lawn', white: 'Colonies', glow: 'Colonies' };
+  el.innerHTML = PLATES.map(p => `<div class="readout"><span class="k">${p.name}</span><span class="v" style="font-size:.95rem">${desc[plates[p.id].cls]}</span></div>`).join('');
+}
+function gradePreds() {
+  PLATES.forEach(p => {
+    const v = $('#pr-' + p.id).value, act = plates[p.id].cls, pill = $('#pp-' + p.id);
+    pill.hidden = false;
+    if (v === act) { pill.className = 'pill ok'; pill.textContent = 'Matches prediction'; }
+    else { pill.className = 'pill warn'; pill.textContent = 'Differs: ' + PRED_OPTS.find(o => o[0] === act)[1]; }
+  });
+}
+function setUV(on) { uv = on; $('#uv-on').setAttribute('aria-pressed', on); $('#uv-off').setAttribute('aria-pressed', !on); drawPlates(); drawZoom(); }
+$('#uv-on').addEventListener('click', () => setUV(true));
+$('#uv-off').addEventListener('click', () => setUV(false));
+
+/* ---------- Counting ---------- */
+const zoom = Lab.canvas('#zoom', 1);
+const zsel = $('#zoom-plate');
+zsel.innerHTML = PLATES.map(p => `<option value="${p.id}" ${p.id === 'p-amp' ? 'selected' : ''}>${p.name}</option>`).join('');
+function setupZoom() { drawZoom(); }
+function drawZoom() {
+  const { ctx, w, h } = zoom; ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = uv ? mix(darkTok(), '--s5', 0.12) : C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  const id = zsel.value, p = plates && plates[id];
+  drawPlate(ctx, w / 2, h / 2, w * 0.46, p, PLATES.find(q => q.id === id).med, marks[id] || []);
+  const n = (marks[id] || []).length; $('#mark-count').textContent = n;
+  $('#zoom-note').textContent = !p || !p.incubated ? 'Incubate your plates first.' : p.lawn ? 'This plate has a lawn: too many colonies to count (TMTC).' : 'Mark every colony, including tiny ones. Do you think satellites should count as transformants?';
+}
+zoom.onresize = drawZoom;
+zsel.addEventListener('change', drawZoom);
+$('#zoom').addEventListener('click', e => {
+  const id = zsel.value, p = plates && plates[id]; if (!p || !p.incubated || p.lawn) return;
+  const r = e.currentTarget.getBoundingClientRect(), R = zoom.w * 0.46;
+  const x = (e.clientX - r.left - zoom.w / 2) / R, y = (e.clientY - r.top - zoom.h / 2) / R;
+  if (x * x + y * y > 1) return;
+  const m = marks[id] = marks[id] || [];
+  const hit = m.findIndex(([mx, my]) => (mx - x) ** 2 + (my - y) ** 2 < 0.035 ** 2);
+  if (hit >= 0) m.splice(hit, 1); else m.push([x, y]);
+  drawZoom();
+});
+$('#clear-marks').addEventListener('click', () => { marks[zsel.value] = []; drawZoom(); });
+$('#use-count').addEventListener('click', () => { $('#c-count').value = (marks[zsel.value] || []).length; });
+
+/* ---------- Calculations ---------- */
+function fillVolumes() {
+  $('#vol-list').innerHTML = `250 µL transformation solution + ${S.vol} µL plasmid + 250 µL LB; spread ${S.plateUL} µL per plate`;
+}
+function parseSci(s) {
+  s = String(s).replace(/\s/g, '').replace(/×|x|X|\*/g, 'x');
+  let m = s.match(/^([\d.]+)x10\^?\+?(-?\d+)$/); if (m) return +m[1] * 10 ** +m[2];
+  m = s.match(/^([\d.]+)e\+?(-?\d+)$/i); if (m) return +m[1] * 10 ** +m[2];
+  return NaN;
+}
+function checkCalc() {
+  const fb = $('#calc-fb');
+  if (!plates || !plates['p-amp'] || !plates['p-amp'].incubated) { fb.innerHTML = '<span class="bad">Finish and incubate a transformation first.</span>'; return null; }
+  const count = parseFloat($('#c-count').value);
+  const mass = CONC * S.vol, frac = S.plateUL / (500 + S.vol), spread = mass * frac;
+  const near = (v, t) => isFinite(v) && Math.abs(v - t) <= Math.abs(t) * 0.03 + 1e-9;
+  const lines = [];
+  if (!isFinite(count)) lines.push(['bad', 'Enter your colony count first.']);
+  else if (Math.abs(count - plates['p-amp'].count) > Math.max(2, 0.1 * plates['p-amp'].count)) lines.push(['bad', `Your count (${count}) is quite different from the number of colonies on the plate. Recount, and decide whether you are counting satellites.`]);
+  else lines.push(['ok', 'Your colony count is reasonable.']);
+  lines.push(near(parseFloat($('#c-mass').value), mass) ? ['ok', 'a. Total DNA: correct.'] : ['bad', 'a. Total DNA: multiply concentration (µg/µL) by the volume of plasmid you added.']);
+  lines.push(near(parseFloat($('#c-frac').value), frac) ? ['ok', 'b. Fraction spread: correct.'] : ['bad', 'b. Fraction: volume spread ÷ total volume in the tube. Did you add all the volumes?']);
+  lines.push(near(parseFloat($('#c-spread').value), spread) ? ['ok', 'c. DNA spread: correct.'] : ['bad', 'c. DNA spread = total DNA × fraction spread.']);
+  let eff = NaN;
+  if (S.vol === 0) lines.push(['bad', 'No plasmid was added, so efficiency cannot be calculated (division by zero).']);
+  else if (isFinite(count)) {
+    eff = count / spread;
+    lines.push(near(parseFloat($('#c-eff').value), eff) ? ['ok', 'Efficiency: correct.'] : ['bad', 'Efficiency = your colony count ÷ µg of DNA spread.']);
+    const sci = parseSci($('#c-sci').value);
+    lines.push(isFinite(sci) && Math.abs(sci - eff) <= eff * 0.06 ? ['ok', 'Scientific notation: correct.'] : ['bad', 'Write the efficiency as a number from 1 to 10 times a power of ten, e.g. 3.1 × 10^3.']);
+  }
+  fb.innerHTML = lines.map(([c, t]) => `<span class="${c}">${c === 'ok' ? '✓' : '✗'} ${t}</span>`).join('');
+  return { count, spread, eff };
+}
+$('#calc-check').addEventListener('click', checkCalc);
+const sciStr = v => { if (!isFinite(v) || v <= 0) return '—'; const e = Math.floor(Math.log10(v)); return `${(v / 10 ** e).toFixed(1)} × 10^${e}`; };
+const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number', yLabel: 'Efficiency (transformants/µg)', series: [], hLines: [{ y: 800, label: '8.0 × 10²' }, { y: 7000, label: '7.0 × 10³' }], xMin: 0 });
+const runsTable = Lab.table('#runs-table', {
+  save: 'runs',
+  columns: [{ key: 'run', label: 'Run' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Efficiency', unit: 'per µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
+  onChange: rows => runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) })
+});
+$('#calc-add').addEventListener('click', () => {
+  const r = checkCalc(); if (!r) return;
+  if (!isFinite(r.count)) return;
+  const araN = plates['p-ara'].cols.filter(c => !c.sat).length;
+  runsTable.addRow({ run: runsTable.getRows().length + 1, cond: summary(S), amp: r.count, ara: araN, dna: r.spread, eff: isFinite(r.eff) ? r.eff : null, sci: sciStr(r.eff) });
+});
+
+/* ---------- Design your own ---------- */
+Lab.prompt('#design-prompts', { key: 'd-question', label: 'Your testable question', rows: 2, placeholder: 'e.g. How does the length of the heat shock affect transformation efficiency?' });
+Lab.prompt('#design-prompts', { key: 'd-hyp', label: 'Hypothesis and prediction (include the biological reasoning)', rows: 3 });
+Lab.prompt('#design-prompts', { key: 'd-controls', label: 'Controls: which plates and conditions serve as controls, and what do you hold constant?', rows: 3 });
+const IVS = {
+  hsTime: { label: 'Heat-shock time (s)', key: 'hsTime', levels: [0, 10, 25, 50, 75, 90, 120], on: [0, 25, 50, 90, 120], num: true },
+  hsT: { label: 'Heat-shock temperature (°C)', key: 'hsT', levels: [22, 37, 42, 47, 52], on: [22, 37, 42, 47, 52], num: true },
+  vol: { label: 'Plasmid volume (µL of 0.005 µg/µL)', key: 'vol', levels: [2, 5, 10, 20, 40], on: [2, 5, 10, 20, 40], num: true },
+  ice: { label: 'Time on ice before heat shock (min)', key: 'ice', levels: [0, 2, 5, 10, 15], on: [0, 2, 5, 10, 15], num: true },
+  recov: { label: 'Recovery time in LB (min)', key: 'recov', levels: [0, 5, 10, 20], on: [0, 5, 10, 20], num: true },
+  cells: { label: 'Amount of cells picked', key: 'cells', levels: ['one', 'few', 'smear'], on: ['one', 'few', 'smear'], names: LABEL_CELLS },
+  sol: { label: 'Transformation solution', key: 'sol', levels: ['cold', 'warm', 'water'], on: ['cold', 'warm', 'water'], names: LABEL_SOL }
+};
+const div = $('#d-iv');
+div.innerHTML = Object.entries(IVS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+function buildLevels() {
+  const iv = IVS[div.value];
+  $('#d-levels').innerHTML = iv.levels.map((l, i) => `<label class="check"><input type="checkbox" id="lv-${i}" value="${l}" ${iv.on.includes(l) ? 'checked' : ''}> ${iv.names ? iv.names[l] : l}</label>`).join('');
+}
+div.addEventListener('change', () => { buildLevels(); });
+buildLevels();
+const reps = $('#d-reps'), repsOut = $('#d-reps-out');
+const syncReps = () => repsOut.textContent = reps.value; reps.addEventListener('input', syncReps); syncReps();
+const dChart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Efficiency (transformants/µg)', series: [] });
+function drawDesign(rows) {
+  if (!rows.length) { dChart.update({ type: 'xy', series: [], categories: undefined }); return; }
+  const iv = IVS[rows[0].iv];
+  if (iv && iv.num) dChart.update({ type: 'xy', xLabel: iv.label, categories: undefined, series: [{ name: 'Mean ± 2 SE', points: rows.map(r => ({ x: +r.level, y: r.mean, err: r.err2 })), line: true }] });
+  else dChart.update({ type: 'bar', xLabel: iv ? iv.label : 'Level', categories: rows.map(r => r.name), series: [{ name: 'Mean ± 2 SE', points: rows.map(r => ({ x: r.name, y: r.mean, err: r.err2 })) }] });
+}
+const dTable = Lab.table('#d-table', {
+  save: 'design',
+  columns: [{ key: 'name', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'counts', label: 'Colonies per plate' }, { key: 'mean', label: 'Mean efficiency', unit: 'per µg', num: true, digits: 0 }, { key: 'sd', label: 'SD', num: true, digits: 0 }, { key: 'err2', label: '2 SE', num: true, digits: 0 }],
+  onChange: drawDesign
+});
+$('#d-run').addEventListener('click', () => {
+  const ivKey = div.value, iv = IVS[ivKey];
+  const levels = $$('#d-levels input:checked').map(i => iv.num ? +i.value : i.value);
+  if (!levels.length) return;
+  const n = +reps.value;
+  const rows = levels.map(l => {
+    const Sx = Object.assign({}, DEFAULTS, { [iv.key]: l });
+    if (iv.key === 'hsTime' && l === 0) Sx.hsT = 22;
+    const counts = [], effs = [];
+    for (let i = 0; i < n; i++) { const c = rng.poisson(expectedAmp(Sx) * Math.exp(rng.normal(0, 0.3))); counts.push(c); effs.push(c / dnaSpread(Sx)); }
+    const sd = Lab.stats.sd(effs);
+    return { iv: ivKey, level: l, name: iv.names ? iv.names[l] : String(l), n, counts: counts.join(', '), mean: Lab.stats.mean(effs), sd: isFinite(sd) ? sd : null, err2: n > 1 ? 2 * Lab.stats.se(effs) : 0 };
+  });
+  dTable.setRows(rows);
+});
+$('#d-clear').addEventListener('click', () => dTable.clear());
+
+/* ---------- Satellite test ---------- */
+const satCv = Lab.canvas('#sat-canvas', 0.5);
+let satSrc = null, satRes = null;
+(function initSat() { satSrc = { incubated: true, cols: [{ x: 0, y: 0, r: 0.16, glow: false }] }; const a0 = rng.uniform() * 6; for (let k = 0; k < 7; k++) { const a = a0 + k * 0.9, d = 0.32 + 0.12 * rng.uniform(); satSrc.cols.push({ x: d * Math.cos(a), y: d * Math.sin(a), r: 0.045, glow: false, sat: true }); } })();
+function streak(n) { const c = []; for (let i = 0; i < n; i++) { const t = i / n, x = -0.7 + 1.4 * t, y = 0.35 * Math.sin(t * 9) + (rng.uniform() - .5) * 0.1; if (x * x + y * y < 0.8) c.push({ x, y, r: 0.03 + 0.02 * rng.uniform(), glow: false }); } return c; }
+function drawSat() {
+  const { ctx, w, h } = satCv; ctx.clearRect(0, 0, w, h);
+  const su = $('#s-uv').checked, keep = uv; uv = su;
+  ctx.fillStyle = su ? mix(darkTok(), '--s5', 0.12) : C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  const R = Math.min(w * 0.21, h * 0.4), fs = Math.max(10, Math.min(13, w / 45));
+  drawPlate(ctx, w * 0.25, h * 0.47, R, satSrc, 'amp');
+  drawPlate(ctx, w * 0.75, h * 0.47, R, satRes, satRes ? satRes.med : $('#s-med').value);
+  ctx.fillStyle = su ? C(lightTok()) : C('--ink'); ctx.font = `600 ${fs}px "Source Sans 3", system-ui`; ctx.textAlign = 'center';
+  ctx.fillText('Source: +pGLO LB/amp, 48 h', w * 0.25, h - 6);
+  ctx.fillText(satRes ? `New ${({ lb: 'LB', amp: 'LB/amp', ara: 'LB/amp/ara' })[satRes.med]} plate, 24 h` : 'New plate', w * 0.75, h - 6);
+  uv = keep;
+}
+satCv.onresize = drawSat;
+const sTable = Lab.table('#s-table', { save: 'sat', columns: [{ key: 'src', label: 'Colony picked' }, { key: 'med', label: 'New plate' }, { key: 'growth', label: 'Growth?' }, { key: 'glow', label: 'Glows under UV?' }] });
+$('#s-run').addEventListener('click', () => {
+  const src = $('#s-src').value, med = $('#s-med').value;
+  const transformed = src === 'big' ? true : rng.chance(0.05);
+  const grows = med === 'lb' || transformed;
+  const glows = grows && transformed && med === 'ara';
+  satRes = { incubated: true, med, cols: grows ? streak(60).map(c => Object.assign(c, { glow: glows })) : [] };
+  const names = { lb: 'LB', amp: 'LB/amp', ara: 'LB/amp/ara' };
+  $('#s-result').textContent = `${src === 'big' ? 'Large colony' : 'Satellite'} on ${names[med]}: ${grows ? 'growth' : 'no growth'}${med === 'ara' && grows ? (glows ? ', glows green under UV' : ', no glow under UV') : ''}.`;
+  sTable.addRow({ src: src === 'big' ? 'Large colony' : 'Satellite', med: names[med], growth: grows ? 'Yes' : 'No', glow: med === 'ara' ? (glows ? 'Yes' : 'No') : 'n/a (no arabinose)' });
+  drawSat();
+});
+$('#s-uv').addEventListener('change', drawSat);
+$('#s-med').addEventListener('change', () => { if (!satRes) drawSat(); });
+
+/* ---------- Analysis & reflection ---------- */
+[['an-pre', [
+  ['a-p1', 'On which plates would you expect bacteria most like the original untransformed <em>E. coli</em>? Why?'],
+  ['a-p2', 'If any cells were transformed, on which plate(s) would they most likely be? Why?'],
+  ['a-p3', 'Which plates should be compared to decide whether transformation happened? Why?'],
+  ['a-p4', 'What barriers might keep a bacterial cell from taking up a plasmid?'],
+  ['a-p5', 'How do the CaCl<sub>2</sub> treatment and the heat shock help plasmids get into <em>E. coli</em>?']]],
+ ['an-post', [
+  ['a-q1', 'Do your results support your predictions about +pGLO versus −pGLO cells? Refer to specific plates.'],
+  ['a-q2', 'Which traits of the original <em>E. coli</em> did not change? Which traits are clearly different after transformation?'],
+  ['a-q3', 'What evidence shows the changes were caused by the transformation procedure and not by something else?'],
+  ['a-q4', 'GFP is made only when arabinose is present. What advantage would a bacterium gain by being able to turn genes on or off in response to conditions?'],
+  ['a-q5', 'Was your transformation successful? How successful?']]],
+ ['an-eff', [
+  ['a-e1', 'Report your calculated transformation efficiency in scientific notation, and show each step (DNA used, fraction spread, DNA spread).'],
+  ['a-e2', 'What does your efficiency number mean in terms of cells and DNA?'],
+  ['a-e3', 'The manual says this protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.']]]
+].forEach(([el, list]) => list.forEach(([key, label]) => Lab.prompt('#' + el, { key, label, rows: 3 })));
+const cer = $('#cer');
+[['C', 'cer-c', 'Claim: Did your +pGLO cells take up and express the plasmid genes?'], ['E', 'cer-e', 'Evidence: Which plates, colony counts, and UV observations support your claim?'], ['R', 'cer-r', 'Reasoning: Connect your evidence to the genes on pGLO (bla, GFP, araC) and to selection.']].forEach(([L, key, label]) => {
+  const p = Lab.prompt(cer, { key, label, rows: 3 }); $('label', p).dataset.letter = L;
+});
+[['ev1', 'What challenges did you run into? Did you make any incorrect assumptions?'],
+ ['ev2', 'What are possible sources of error in the transformation procedure? How would you reduce them if you repeated it?'],
+ ['ev3', 'Were the efficiency calculations straightforward? Which step was hardest?'],
+ ['ev4', 'What preliminary activities would have prepared you better for this investigation?'],
+ ['ev5', 'Would a cell take in a plasmid carrying genes it already has? If so, would that affect your efficiency calculation?'],
+ ['ev6', 'Satellites: what did your streak test show about whether satellite colonies carry pGLO? Explain the result using beta-lactamase.'],
+ ['ev7', 'Where can you go from here? Respond to the idea "Just because science can do something doesn\'t mean that it should," using an example such as GM foods or engineered bacteria.']
+].forEach(([key, label]) => Lab.prompt('#evaluate', { key, label, rows: 3 }));
+
+reset();
+drawSat();
+</script>
+</body>
+</html>

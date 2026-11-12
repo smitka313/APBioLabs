@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 5 · Photosynthesis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step > *, .step-body > *, .sim > *, .stage > *, .controls > * { min-width: 0; }
+  h3 { margin-top: 6px; }
+  .diagram { width: 100%; height: auto; display: block; }
+  .diagram text { font-family: var(--f-body); fill: var(--ink); }
+  .diagram .lbl-muted { fill: var(--muted); }
+  .fb { font-size: .92rem; display: grid; gap: 4px; }
+  .fb:empty { display: none; }
+  .checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 4px 10px; }
+  .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 2 · Cellular Processes</span></nav>
+    <div class="eyebrow">Investigation 5</div>
+    <h1>Photosynthesis</h1>
+    <p class="driving-q">What factors affect the rate of photosynthesis in living leaves?</p>
+    <div class="tags"><span class="tag">Unit 3: Cellular Energetics</span><span class="tag">ENE-1.I</span><span class="tag">ENE-1.J</span><span class="tag">Science Practice 6.B</span><span class="tag">≈ 3–4 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Photosynthesis is hard to watch directly, but a cheap trick makes it visible. Punch small disks from a leaf, pull the air out of them so they sink, and put them under a lamp in a bicarbonate solution. As the disks make oxygen, they float back up. How fast they rise tells you how fast net photosynthesis is going.</p>
+      <p>First you will learn the <strong>floating leaf disk assay</strong>: infiltrating disks with a syringe, counting floating disks each minute, and summarizing a trial with the <strong>ET<sub>50</sub></strong>, the estimated time for 50% of the disks to float. Then you will design your own experiment that tests light intensity, light color, CO<sub>2</sub> supply, temperature, or a leaf feature.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>ENE-1.I</strong> Describe the photosynthetic processes that allow organisms to capture and store energy.</li>
+          <li><strong>ENE-1.J</strong> Explain how cells capture energy from light and transfer it to biological molecules for storage and use.</li>
+        </ul>
+      </div>
+      <div class="callout callout--tip"><div class="callout-title">Science practice</div>
+        <ul><li><strong>6.B</strong> Support a claim with evidence from biological principles, concepts, processes, and/or data.</li></ul>
+        <p class="small">You will also practice building indices (ET<sub>50</sub>), using reciprocals to replot data, and using medians and ±2 SE error bars to show variability.</p>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
+        <p>Wear goggles and an apron. You will work close to hot, exposed lightbulbs: keep solutions and wet hands away from bulbs and electrical cords, since a drip can shatter a hot bulb. Do not lean on lamps. Test your syringes before use, because some fail under vacuum. If you study temperature, never heat a solution above 50–60 °C.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Measuring photosynthesis with buoyancy</h2></header>
+    <div class="step-body prose">
+      <p>In photosynthesis, chloroplasts capture light energy and use it to make carbohydrate from CO<sub>2</sub> and water, releasing O<sub>2</sub>:</p>
+      <div class="equation">2 H<sub>2</sub>O + CO<sub>2</sub> + light → (CH<sub>2</sub>O) + O<sub>2</sub> + H<sub>2</sub>O</div>
+      <p>In the light reactions, pigments in the thylakoid membranes absorb photons. The energy splits water, releasing O<sub>2</sub>, and drives the production of ATP and NADPH. In the Calvin cycle, the enzyme rubisco fixes CO<sub>2</sub>, and ATP and NADPH power its reduction to sugar. For every CO<sub>2</sub> fixed, one O<sub>2</sub> is released, so a mole of glucose (C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>) means six moles of O<sub>2</sub>. You could measure either CO<sub>2</sub> used or O<sub>2</sub> made. This lab tracks O<sub>2</sub>.</p>
+      <svg class="diagram" viewBox="0 0 540 220" role="img" aria-label="Leaf cross-section: upper epidermis, a palisade layer of tall columnar cells, spongy mesophyll with large air spaces, and lower epidermis with a stoma.">
+        <rect x="20" y="20" width="400" height="14" rx="4" style="fill:var(--surface-2);stroke:var(--muted)"/>
+        <g style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.2">
+          <rect x="22" y="38" width="34" height="62" rx="10"/><rect x="62" y="38" width="34" height="62" rx="10"/><rect x="102" y="38" width="34" height="62" rx="10"/><rect x="142" y="38" width="34" height="62" rx="10"/><rect x="182" y="38" width="34" height="62" rx="10"/><rect x="222" y="38" width="34" height="62" rx="10"/><rect x="262" y="38" width="34" height="62" rx="10"/><rect x="302" y="38" width="34" height="62" rx="10"/><rect x="342" y="38" width="34" height="62" rx="10"/><rect x="382" y="38" width="34" height="62" rx="10"/>
+          <circle cx="45" cy="122" r="17"/><circle cx="110" cy="138" r="19"/><circle cx="175" cy="118" r="15"/><circle cx="235" cy="142" r="18"/><circle cx="300" cy="120" r="17"/><circle cx="370" cy="138" r="19"/><circle cx="60" cy="160" r="14"/><circle cx="160" cy="162" r="14"/><circle cx="330" cy="164" r="13"/><circle cx="405" cy="112" r="12"/>
+        </g>
+        <g style="fill:var(--s6)"><circle cx="30" cy="50" r="2.4"/><circle cx="48" cy="80" r="2.4"/><circle cx="70" cy="58" r="2.4"/><circle cx="88" cy="86" r="2.4"/><circle cx="112" cy="52" r="2.4"/><circle cx="150" cy="72" r="2.4"/><circle cx="196" cy="60" r="2.4"/><circle cx="232" cy="84" r="2.4"/><circle cx="276" cy="56" r="2.4"/><circle cx="318" cy="80" r="2.4"/><circle cx="356" cy="62" r="2.4"/><circle cx="398" cy="78" r="2.4"/></g>
+        <g style="fill:var(--s3)" opacity=".5"><circle cx="140" cy="125" r="4"/><circle cx="205" cy="135" r="3"/><circle cx="270" cy="132" r="4"/><circle cx="340" cy="125" r="3"/><circle cx="80" cy="140" r="3"/></g>
+        <rect x="20" y="180" width="170" height="14" rx="4" style="fill:var(--surface-2);stroke:var(--muted)"/><rect x="250" y="180" width="170" height="14" rx="4" style="fill:var(--surface-2);stroke:var(--muted)"/>
+        <ellipse cx="205" cy="187" rx="12" ry="9" style="fill:var(--accent-soft);stroke:var(--accent)"/><ellipse cx="235" cy="187" rx="12" ry="9" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+        <text x="430" y="31" font-size="12" class="lbl-muted">Upper epidermis</text>
+        <text x="430" y="72" font-size="12">Palisade layer</text>
+        <text x="430" y="132" font-size="12">Spongy mesophyll</text>
+        <text x="430" y="148" font-size="12" class="lbl-muted">(air spaces)</text>
+        <text x="220" y="214" font-size="12" text-anchor="middle">Stoma</text>
+      </svg>
+      <h3>Why the disks sink and rise</h3>
+      <p>The spongy mesophyll is full of air spaces, so leaf disks normally float. If you hold a disk under vacuum in a syringe of solution, the gas is pulled out of those spaces. When the vacuum is released, liquid floods in. The disk is now denser than the solution and sinks. A drop of dilute soap acts as a wetting agent so the solution can get past the waxy leaf surface.</p>
+      <p>The solution contains sodium bicarbonate (HCO<sub>3</sub><sup>−</sup>), which gives the chloroplasts a supply of CO<sub>2</sub>. In the light, photosynthesis releases O<sub>2</sub> into the air spaces. Bubbles build up until the disk becomes buoyant and rises. But leaf cells have mitochondria too. <strong>Cellular respiration</strong> uses some of that O<sub>2</sub> at the same time. Rising disks therefore measure <strong>net photosynthesis</strong> (gross photosynthesis minus respiration). In the dark, respiration alone slowly uses up the trapped O<sub>2</sub>, and floating disks sink again.</p>
+      <svg class="diagram" viewBox="0 0 520 150" role="img" aria-label="Three stages of a leaf disk: floating with air spaces full of gas, sunk after vacuum infiltration with spaces full of solution, and rising again as oxygen from photosynthesis accumulates.">
+        <g style="stroke:var(--muted);fill:none" stroke-width="1.5"><path d="M20 20 L35 130 H125 L140 20"/><path d="M190 20 L205 130 H295 L310 20"/><path d="M360 20 L375 130 H465 L480 20"/></g>
+        <g style="fill:var(--s3)" opacity=".14"><path d="M24 40 L35 130 H125 L136 40Z"/><path d="M194 40 L205 130 H295 L306 40Z"/><path d="M364 40 L375 130 H465 L476 40Z"/></g>
+        <g style="fill:var(--s6)"><ellipse cx="80" cy="42" rx="22" ry="5"/><ellipse cx="250" cy="125" rx="22" ry="5"/><ellipse cx="420" cy="78" rx="22" ry="5"/></g>
+        <g style="fill:var(--surface);stroke:var(--s3)"><circle cx="410" cy="66" r="3"/><circle cx="426" cy="62" r="2.5"/><circle cx="418" cy="54" r="2"/></g>
+        <text x="80" y="146" text-anchor="middle" font-size="12">Fresh disk: gas-filled, floats</text>
+        <text x="250" y="146" text-anchor="middle" font-size="12">After vacuum: sinks</text>
+        <text x="420" y="146" text-anchor="middle" font-size="12">Light + HCO₃⁻: O₂ builds, rises</text>
+      </svg>
+      <h3>Turning floating disks into a rate</h3>
+      <p>Every minute you count how many disks are floating. Disks do not all rise together, and once in a while one never rises, so the <strong>median</strong> time is a better summary than the mean. The ET<sub>50</sub> is the time when half the disks are floating. You can read it off the floating-versus-time graph by linear interpolation between the two minutes on either side of 50%.</p>
+      <p>A faster process gives a <em>smaller</em> ET<sub>50</sub>, so graphing ET<sub>50</sub> against light intensity slopes downward. Taking the reciprocal, <strong>1/ET<sub>50</sub></strong> (min<sup>−1</sup>), gives a quantity that rises with the rate. Plotted against light, it makes the familiar curve that rises and then levels off.</p>
+      <div class="equation">rate ∝ 1 / ET<sub>50</sub> &nbsp;&nbsp;&nbsp; light intensity ∝ 1 / (distance)<sup>2</sup></div>
+      <p>Light intensity from a small lamp follows the <strong>inverse square law</strong>: doubling the distance spreads the light over four times the area, so only ¼ as many photons reach the disks. Chlorophyll <em>a</em> and <em>b</em> absorb blue and red light strongly and green light weakly, which is why leaves look green and why green light drives photosynthesis poorly.</p>
+    </div>
+  </section>
+
+  <!-- ============ PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body"><div id="prelab"></div></div>
+  </section>
+
+  <!-- ============ PROCEDURE A ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Sink disks">
+    <header><div class="eyebrow">Procedure · Steps 1–6</div><h2>Infiltrate the leaf disks</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p><strong>Set up.</strong> Make 300 mL of 0.2% sodium bicarbonate and pour about 3 cm into a cup labeled "With CO<sub>2</sub>". Fill a second cup with water only and label it "Without CO<sub>2</sub>". This cup is your control. Add one drop of dilute soap to each cup, and avoid making suds. Punch 10 uniform spinach disks for each cup, avoiding big veins.</p>
+        <p><strong>Infiltrate.</strong> Put 10 disks in each syringe, push the plunger in until less than 10% air remains, and draw up about 5 mL of the matching solution. Then cap the tip with a finger, pull back the plunger to make a vacuum for about 10 seconds while swirling, and release. This is the step that takes practice. Repeat until the disks sink, but more than three vacuums can damage them. If they still won't sink, add soap.</p>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="inf-soap">Soap in each cup</label><select id="inf-soap"><option value="0">No soap</option><option value="1" selected>1 drop dilute soap</option><option value="2">2 drops</option><option value="3">3 drops</option></select><span class="hint">The soap wets the waxy cuticle so solution can enter.</span></div>
+          <button class="btn btn--primary" id="inf-pull" type="button">Pull vacuum 10 s, then release</button>
+          <button class="btn" id="inf-pour" type="button">Pour disks into the cups</button>
+          <button class="btn btn--ghost btn--sm" id="inf-reset" type="button">Start over with fresh disks</button>
+          <div class="fb" id="inf-fb" aria-live="polite"></div>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="inf-viz" aria-label="Two syringes, one with bicarbonate solution and one with water, each holding ten leaf disks. Floating disks sit near the top; sunk disks rest at the bottom."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Vacuums applied</span><span class="v" id="inf-n">0</span></div>
+            <div class="readout"><span class="k">Sunk · with CO₂</span><span class="v" id="inf-a">0 / 10</span></div>
+            <div class="readout"><span class="k">Sunk · without CO₂</span><span class="v" id="inf-b">0 / 10</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROCEDURE B ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Float assay">
+    <header><div class="eyebrow">Procedure · Steps 7–9</div><h2>Count floating disks and find ET<sub>50</sub></h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Put both cups under the lamp and start the timer. At the end of each minute, count the floating disks and then swirl the cups to free any disks stuck to the sides. Keep going until every disk in the bicarbonate cup is floating. To see respiration, put a box over the cups after the disks have floated and keep counting.</p>
+        <p>Before you start: if you treat the disks in a way that increases net photosynthesis, should they float faster or slower? What do you predict for the water-only cup?</p>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="callout callout--tip"><div class="callout-title">Fixed conditions</div><p class="small">Spinach, mature leaves · 100 W-equivalent CFL lamp 15 cm above the cups (≈400 µmol photons m⁻² s⁻¹) · 0.2% NaHCO₃ · room temperature 25 °C</p></div>
+          <div class="field"><label for="cup-len">Run for <output id="cup-len-out" class="val"></output></label><input id="cup-len" type="range" min="10" max="45" step="1" value="20"></div>
+          <div class="field"><label for="cup-speed">Speed</label><select id="cup-speed"><option value="0.5">1 min per 0.5 s</option><option value="1" selected>1 min per second</option><option value="2">1 min per 2 s</option></select></div>
+          <button class="btn btn--primary" id="cup-run" type="button">Start timer</button>
+          <button class="btn" id="cup-dark" type="button" aria-pressed="false">Cover cups with a box (dark)</button>
+          <p class="small muted">The table records the count at the end of each minute, just as you would.</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="cup-viz" aria-label="Two clear cups under a lamp, each with ten leaf disks. Disks rise from the bottom to the surface as oxygen accumulates."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Time</span><span class="v" id="cup-t">0.0 min</span></div>
+            <div class="readout"><span class="k">Floating · with CO₂</span><span class="v" id="cup-a">0</span></div>
+            <div class="readout"><span class="k">Floating · without CO₂</span><span class="v" id="cup-b">0</span></div>
+            <div class="readout"><span class="k">Lamp</span><span class="v" id="cup-l">On</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="cup-table"></div>
+      <div id="cup-chart"></div>
+      <h3>Calculate ET<sub>50</sub> and the rate</h3>
+      <p class="small">Find the two minutes on either side of 5 floating disks in the "With CO<sub>2</sub>" column. Interpolate: ET<sub>50</sub> = t<sub>before</sub> + (5 − n<sub>before</sub>) ÷ (n<sub>after</sub> − n<sub>before</sub>). Then take the reciprocal.</p>
+      <div class="calc">
+        <div class="field"><label for="et-in">Your ET<sub>50</sub> (min)</label><input id="et-in" type="number" step="any" data-save="et-in" data-label="ET50 for the bicarbonate cup (min)"></div>
+        <div class="field"><label for="ret-in">Your 1/ET<sub>50</sub> (min⁻¹)</label><input id="ret-in" type="number" step="any" data-save="ret-in" data-label="1/ET50 (per min)"></div>
+        <button class="btn" type="button" id="et-check">Check</button>
+      </div>
+      <div class="fb" id="et-fb" aria-live="polite"></div>
+      <div id="proc-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Test a variable of your choice</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Now that you can run the assay, choose a variable that might change the net rate of photosynthesis. It could be environmental (light intensity, color, CO<sub>2</sub> supply, temperature) or a feature of the leaf (plant type, leaf age). Each cup holds 10 disks, and each cup gives one ET<sub>50</sub>. Use several cups per level so you can see how much results vary.</p>
+      </div>
+      <div class="grid-2" id="design-plan"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="d-iv">Independent variable</label>
+            <select id="d-iv">
+              <option value="dist">Light intensity: lamp distance (cm)</option>
+              <option value="color">Light color (colored filter)</option>
+              <option value="bicarb">Bicarbonate concentration (%)</option>
+              <option value="temp">Temperature of solution (°C)</option>
+              <option value="leaf">Type of plant</option>
+              <option value="age">Leaf age</option>
+            </select></div>
+          <div class="field" id="d-num"><label for="d-levels">Levels (comma-separated)</label><input id="d-levels" type="text" value="10, 15, 20, 30, 45"><span class="hint" id="d-hint"></span></div>
+          <div class="field" id="d-cat" hidden><span class="label" id="d-cat-lbl">Levels to test</span><div class="checks" id="d-checks"></div></div>
+          <div class="field"><label for="d-reps">Cups per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="5" step="1" value="3"></div>
+          <label class="check"><input type="checkbox" id="d-filter" checked> Water heat filter between lamp and cups</label>
+          <div class="callout callout--tip"><div class="callout-title">Held constant</div><p class="small" id="d-const"></p></div>
+          <button class="btn btn--primary" id="d-run" type="button">Run all cups</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="d-viz" aria-label="A grid of cups, one per replicate of each level. Leaf disks rise as the simulated minutes pass."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Time</span><span class="v" id="d-t">0 min</span></div>
+            <div class="readout"><span class="k">Cups</span><span class="v" id="d-n">—</span></div>
+            <div class="readout"><span class="k">Water temp.</span><span class="v" id="d-wt">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="d-sum"></div>
+      <div class="grid-2"><div id="d-chart"></div><div id="d-chart2"></div></div>
+      <details class="disclose"><summary>ET<sub>50</sub> for every cup</summary><div class="inner"><div id="d-raw"></div></div></details>
+      <div id="design-after"></div>
+    </div>
+  </section>
+
+  <!-- ============ ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
+    <div class="step-body" id="analysis"></div>
+  </section>
+
+  <!-- ============ EVALUATE ============ -->
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
+    <div class="step-body" id="evaluate"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+Lab.init({ id: 'lab05' });
+(function () {
+  'use strict';
+  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, tok = Lab.color, rng = Lab.rng();
+  const FONT = '"Source Sans 3", "Segoe UI", sans-serif';
+  const near = (a, b, rel, abs) => a != null && isFinite(a) && Math.abs(a - b) <= Math.max(Math.abs(b) * (rel || 0), abs || 0) + 1e-9;
+  function slider(id, outId, f) { const el = $('#' + id), out = $('#' + outId); const s = () => { out.textContent = f(+el.value); }; el.addEventListener('input', s); s(); return el; }
+  function fbList(el, items) { el.innerHTML = items.map(t => `<div>${t}</div>`).join(''); }
+  function rr(ctx, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+  /* =====================================================================
+     RATE MODEL (units: fraction of the O2 volume a disk needs to float, per minute)
+     • Light: PAR at the cups I = 400·(15/d)² µmol m⁻² s⁻¹ (inverse square law, 100 W-eq CFL),
+       times the filter's transmission. Photosynthetically effective light = I·a(λ), where a is an
+       action-spectrum weight (red 1.0, blue 0.9, orange 0.85, violet 0.75, yellow 0.7, green 0.35).
+     • Gross rate = Pmax · I/(I+K_I) · C/(C+K_C) · f(T) · age factor. The light term saturates
+       (rectangular hyperbola). CO2 supply C = NaHCO3 % + 0.004 % (dissolved air CO2) uses Michaelis–Menten.
+     • f(T) = exp(−((T−T_opt)/w)²) / (1 + e^((T−46)/2)), w = 18 °C: an enzyme-like
+       optimum (rubisco) plus heat denaturation.
+     • Respiration R = R25 · 2^((T−25)/10) (Q10 = 2). Net = gross − R.
+     • Lamp heating: water warms by 30·(5/d)² °C without a heat filter (×0.2 with one).
+     • Disk-to-disk variability: each disk's rate × lognormal(σ = 0.25); the O2 needed to float is
+       N(1, 0.1). About 3 % of disks are "slow" (×0.35, e.g. a vein or a fold).
+     • A disk floats when stored O2 ≥ its threshold and sinks again in the dark when the store falls
+       below 0.8 × threshold. Stored O2 is capped at 1.5 × threshold because excess bubbles escape.
+     Calibrated: spinach, 15 cm, 0.2 % NaHCO3, 25 °C gives ET50 ≈ 11 min, as in the manual's sample data.
+     ===================================================================== */
+  const COLORS = {
+    white: { name: 'White (no filter)', T: 1, a: 1, tok: '--s4' }, red: { name: 'Red', T: 0.45, a: 1, tok: '--bad' }, orange: { name: 'Orange', T: 0.45, a: 0.85, tok: '--s4' },
+    yellow: { name: 'Yellow', T: 0.45, a: 0.7, tok: '--warn' }, green: { name: 'Green', T: 0.45, a: 0.35, tok: '--ok' }, blue: { name: 'Blue', T: 0.45, a: 0.9, tok: '--s3' }, violet: { name: 'Violet', T: 0.45, a: 0.75, tok: '--s5' }
+  };
+  const LEAVES = {
+    spinach: { name: 'Spinach', Pmax: 0.25, K: 250, Kc: 0.05, R: 0.015, Topt: 30 },
+    ivysun: { name: 'English ivy (sun)', Pmax: 0.22, K: 260, Kc: 0.05, R: 0.018, Topt: 29 },
+    ivyshade: { name: 'English ivy (shade)', Pmax: 0.13, K: 90, Kc: 0.05, R: 0.01, Topt: 27 },
+    variegated: { name: 'Variegated ivy', Pmax: 0.12, K: 250, Kc: 0.05, R: 0.017, Topt: 29 },
+    lettuce: { name: 'Romaine (pale inner leaf)', Pmax: 0.15, K: 220, Kc: 0.05, R: 0.018, Topt: 27 },
+    corn: { name: 'Corn (C₄)', Pmax: 0.36, K: 450, Kc: 0.015, R: 0.02, Topt: 34 }
+  };
+  const AGES = { young: { name: 'Young (expanding)', P: 0.7, R: 1.4 }, mature: { name: 'Mature', P: 1, R: 1 }, old: { name: 'Old (yellowing)', P: 0.5, R: 1.1 } };
+  const BASE = { dist: 15, color: 'white', bicarb: 0.2, temp: 25, leaf: 'spinach', age: 'mature', filter: true };
+  function par(c) { return 400 * (15 / c.dist) ** 2 * COLORS[c.color].T; }
+  function waterTemp(c) { return c.temp + (c.filter ? 0.2 : 1) * 30 * (5 / c.dist) ** 2; }
+  function rates(c) {
+    const L = LEAVES[c.leaf], A = AGES[c.age], T = waterTemp(c);
+    const Ie = par(c) * COLORS[c.color].a, Cc = c.bicarb + 0.004;
+    const fT = Math.exp(-(((T - L.Topt) / 18) ** 2)) / (1 + Math.exp((T - 46) / 2));
+    const gross = L.Pmax * Ie / (Ie + L.K) * Cc / (Cc + L.Kc) * fT * A.P;
+    const R = L.R * A.R * 2 ** ((T - 25) / 10);
+    return { gross, R, net: gross - R, T };
+  }
+  function makeDisks(c, n, damage, sunk) {
+    const r = rates(c), list = [];
+    for (let i = 0; i < n; i++) {
+      let m = Math.exp(rng.normal(0, 0.25 + 0.08 * damage)) * Math.pow(0.85, damage);
+      if (rng.chance(0.03)) m *= 0.35;
+      const g = r.gross * m, Ri = r.R * Math.exp(rng.normal(0, 0.15));
+      list.push({ g, R: Ri, B: Math.max(0.7, rng.normal(1, 0.1)), O: sunk && !sunk[i] ? 1.3 : 0, up: sunk ? !sunk[i] : false, y: sunk && !sunk[i] ? 1 : 0, x: 0.12 + 0.76 * rng.uniform(), tilt: rng.uniform() * 0.6 - 0.3 });
+    }
+    return list;
+  }
+  function stepDisks(disks, dtMin, dark) {
+    disks.forEach(d => {
+      d.O = Math.min(1.5 * d.B, Math.max(0, d.O + ((dark ? 0 : d.g) - d.R) * dtMin));
+      if (!d.up && d.O >= d.B) d.up = true; else if (d.up && d.O < 0.8 * d.B) d.up = false;
+    });
+    return disks.filter(d => d.up).length;
+  }
+  function et50(counts, n) {
+    const half = n / 2;
+    for (let m = 0; m < counts.length; m++) if (counts[m] >= half) { if (m === 0) return 0; const a = counts[m - 1], b = counts[m]; return m - 1 + (half - a) / (b - a); }
+    return null;
+  }
+  // Draws cups with disks. cups: [{label, sub, disks, tint, tintA}], opts: {lamp, lampCol, dark, cols}
+  function drawCups(cv, cups, o) {
+    const { ctx, w, h } = cv; ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
+    const lampH = o.lamp ? Math.min(54, h * 0.2) : 0;
+    const cols = o.cols || cups.length, rows = Math.ceil(cups.length / cols);
+    const cellW = w / cols, cellH = (h - lampH) / rows;
+    if (o.lamp) {
+      const lw = Math.min(w * 0.5, 220);
+      ctx.fillStyle = tok('--muted'); rr(ctx, w / 2 - lw / 2, 6, lw, 14, 6); ctx.fill();
+      if (!o.dark) {
+        ctx.globalAlpha = 0.18; ctx.fillStyle = tok(o.lampCol || '--s4');
+        ctx.beginPath(); ctx.moveTo(w / 2 - lw / 2, 20); ctx.lineTo(w / 2 + lw / 2, 20); ctx.lineTo(w - 4, h - 20); ctx.lineTo(4, h - 20); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = tok(o.lampCol || '--s4'); rr(ctx, w / 2 - lw / 2 + 8, 18, lw - 16, 6, 3); ctx.fill();
+      }
+    }
+    if (o.dark) { ctx.globalAlpha = 0.35; ctx.fillStyle = tok('--ink'); ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
+    cups.forEach((c, i) => {
+      const col = i % cols, row = Math.floor(i / cols), x0 = col * cellW, y0 = lampH + row * cellH;
+      const lab = cellH > 90 ? 30 : 16, cupW = Math.min(cellW * 0.8, 170), top = y0 + 6, bot = y0 + cellH - lab, cx = x0 + cellW / 2;
+      const tw = cupW / 2, bw = cupW * 0.38, ly = top + (bot - top) * 0.12;
+      const xAt = (y, s) => cx + s * (tw + (bw - tw) * (y - top) / (bot - top));
+      ctx.beginPath(); ctx.moveTo(xAt(ly, -1), ly); ctx.lineTo(xAt(bot, -1), bot); ctx.lineTo(xAt(bot, 1), bot); ctx.lineTo(xAt(ly, 1), ly); ctx.closePath();
+      ctx.globalAlpha = c.tintA || 0.16; ctx.fillStyle = tok(c.tint || '--s3'); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.moveTo(cx - tw, top); ctx.lineTo(cx - bw, bot); ctx.lineTo(cx + bw, bot); ctx.lineTo(cx + tw, top); ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.4; ctx.stroke();
+      const dr = Math.max(3, Math.min(cupW * 0.07, 11));
+      c.disks.forEach(d => {
+        const yy = (bot - dr * 0.8) + (ly + dr * 0.6 - (bot - dr * 0.8)) * d.y;
+        const half = xAt(yy, 1) - cx - dr * 1.2, xx = cx + (d.x * 2 - 1) * Math.max(0, half);
+        ctx.fillStyle = tok('--s6'); ctx.beginPath(); ctx.ellipse(xx, yy, dr, dr * (0.32 + 0.1 * Math.abs(d.tilt)), d.tilt * 0.4, 0, 7); ctx.fill();
+        if (d.O > 0.3 && !d.up && dr > 4) { ctx.fillStyle = tok('--surface'); ctx.beginPath(); ctx.arc(xx + dr * 0.3, yy - dr * 0.45, Math.min(2.5, dr * 0.25) * Math.min(1, d.O), 0, 7); ctx.fill(); }
+      });
+      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${cellW < 90 ? 10 : 12}px ${FONT}`; ctx.fillText(c.label, cx, bot + 13);
+      if (lab > 20 && c.sub) { ctx.fillStyle = tok('--muted'); ctx.font = `11px ${FONT}`; ctx.fillText(c.sub, cx, bot + 26); }
+    });
+  }
+  const easeDisks = (disks, k) => disks.forEach(d => { d.y += ((d.up ? 1 : 0) - d.y) * Math.min(1, k); });
+
+  /* =====================================================================
+     PRE-LAB
+     ===================================================================== */
+  Lab.quiz('#prelab', [
+    { type: 'num', q: 'Using the summary equation, how many molecules of O<sub>2</sub> are released for each molecule of glucose (C<sub>6</sub>H<sub>12</sub>O<sub>6</sub>) made?', answer: 6, tol: 0, unit: 'O<sub>2</sub>', explain: 'One O<sub>2</sub> is released per CO<sub>2</sub> fixed, and glucose contains 6 carbons, so 6 CO<sub>2</sub> are consumed and 6 O<sub>2</sub> are released.' },
+    { type: 'mc', q: 'Why do leaf disks sink after you pull a vacuum on them in the syringe and release it?', choices: ['Gas in the spongy mesophyll is removed and replaced by solution, so the disk becomes denser than the solution.', 'The vacuum kills the cells so they stop photosynthesizing.', 'The soap makes the disks heavier.', 'Bicarbonate crystals collect inside the leaf.'], answer: 0, explain: 'Leaves float because their air spaces hold gas. Under vacuum the gas expands and escapes; on release, liquid floods the spaces, the disk becomes denser than the solution, and it sinks.' },
+    { type: 'mc', q: 'If you treat leaf disks in a way that increases the net rate of photosynthesis, how will they behave?', choices: ['They will float sooner, so ET<sub>50</sub> gets smaller.', 'They will float later, so ET<sub>50</sub> gets larger.', 'ET<sub>50</sub> will not change.', 'They will never sink in the first place.'], answer: 0, explain: 'A faster net rate fills the air spaces with O<sub>2</sub> sooner, so disks rise sooner and ET<sub>50</sub> drops. That inverse relationship is why we plot 1/ET<sub>50</sub>.' },
+    { type: 'num', q: 'A cup of 10 disks gives these counts of floating disks at the end of minutes 0–12: 0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 4, 6, 8. Estimate ET<sub>50</sub> by linear interpolation.', answer: 10.5, tol: 0.05, unit: 'min', explain: 'Half of 10 is 5. At 10 min, 4 disks float; at 11 min, 6. ET<sub>50</sub> = 10 + (5 − 4)/(6 − 4) = 10.5 min.' },
+    { type: 'num', q: 'Another trial gives ET<sub>50</sub> = 8 min. What is 1/ET<sub>50</sub>?', answer: 0.125, tol: 0.001, unit: 'min⁻¹', explain: '1 ÷ 8 = 0.125 min⁻¹. Bigger values mean faster net photosynthesis.' },
+    { type: 'num', q: 'You move a lamp from 10 cm to 20 cm above the cups. What fraction of the original light intensity reaches the disks?', answer: 0.25, tol: 0.005, unit: '(as a decimal)', explain: 'Intensity ∝ 1/d². Doubling d gives (10/20)² = 1/4 = 0.25.' },
+    { type: 'mc', q: 'Why would leaf disks under green light rise more slowly than disks under the same number of red or blue photons?', choices: ['Chlorophylls absorb red and blue light strongly but absorb little green light, which is mostly reflected or transmitted.', 'Green light has more energy per photon than red light, which damages chloroplasts.', 'Green light cannot pass through water.', 'Green light speeds up respiration instead.'], answer: 0, explain: 'Chlorophyll <em>a</em> and <em>b</em> absorb in the blue and red regions. Green is absorbed weakly, which is why leaves look green, so fewer photons drive the light reactions.' },
+    { type: 'mc', q: 'Why is the median (ET<sub>50</sub>) a better summary for a cup than the mean time to float?', choices: ['A disk occasionally rises very late or never, which would drag the mean far off but barely moves the median.', 'The median is always larger than the mean.', 'You cannot calculate a mean for counts.', 'The mean ignores the control cup.'], answer: 0, explain: 'The median resists outliers. One stuck or damaged disk can make the mean meaningless, or impossible to calculate if it never floats.' }
+  ], { id: 'prelab' });
+
+  /* =====================================================================
+     PROCEDURE A — infiltration
+     Each vacuum sinks each still-buoyant disk with probability p(soap): 0.12, 0.6, 0.75, 0.8.
+     More than 3 vacuums damages tissue: rate × 0.85 per extra pull and more variability.
+     ===================================================================== */
+  const SINKP = [0.12, 0.6, 0.75, 0.8];
+  const infcv = Lab.canvas('#inf-viz', 0.62);
+  let inf = null, infAnim = null;
+  function infReset() { inf = { pulls: 0, a: Array(10).fill(false), b: Array(10).fill(false), plunger: 0, bubbles: 0, xa: Array.from({ length: 10 }, () => rng.uniform()), xb: Array.from({ length: 10 }, () => rng.uniform()) }; infDraw(); infRead(); $('#inf-fb').innerHTML = ''; }
+  function infDraw() {
+    const { ctx, w, h } = infcv; ctx.clearRect(0, 0, w, h); ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
+    [['With CO₂ (NaHCO₃ + soap)', inf.a, inf.xa, w * 0.27], ['Without CO₂ (water + soap)', inf.b, inf.xb, w * 0.73]].forEach(([lbl, sunk, xs, cx]) => {
+      const bw = Math.min(w * 0.18, 70), top = 34, bot = h - 34, tipH = 14, pl = inf.plunger;
+      const barrelTop = top + 20, liqTop = barrelTop + 26 + pl * 30;
+      ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.6;
+      rr(ctx, cx - bw / 2, barrelTop, bw, bot - barrelTop - tipH, 6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - 5, bot - tipH); ctx.lineTo(cx - 3, bot); ctx.lineTo(cx + 3, bot); ctx.lineTo(cx + 5, bot - tipH); ctx.stroke();
+      ctx.fillStyle = tok('--ink'); ctx.beginPath(); ctx.arc(cx, bot + 4, 6, 0, 7); ctx.globalAlpha = pl > 0.05 ? 0.6 : 0; ctx.fill(); ctx.globalAlpha = 1; // finger over tip
+      // plunger (from top): stopper position
+      const stopY = barrelTop + 6 - pl * 0;
+      ctx.fillStyle = tok('--surface-2'); ctx.fillRect(cx - 3, top - 18 - pl * 20, 6, stopY - top + 18 + pl * 20);
+      ctx.fillStyle = tok('--muted'); ctx.fillRect(cx - bw / 2 + 2, stopY - pl * 20, bw - 4, 8); ctx.fillRect(cx - 18, top - 22 - pl * 20, 36, 5);
+      ctx.globalAlpha = 0.22; ctx.fillStyle = tok('--s3'); ctx.fillRect(cx - bw / 2 + 2, liqTop, bw - 4, bot - tipH - liqTop - 2); ctx.globalAlpha = 1;
+      const dr = Math.min(bw * 0.2, 11);
+      sunk.forEach((s, i) => {
+        const yy = s ? bot - tipH - 6 - (i % 4) * dr * 0.6 : liqTop + 5 + (i % 3) * dr * 0.6;
+        const xx = cx - bw / 2 + dr + 2 + xs[i] * (bw - 2 * dr - 4);
+        ctx.fillStyle = tok('--s6'); ctx.beginPath(); ctx.ellipse(xx, yy, dr, dr * 0.35, 0, 0, 7); ctx.fill();
+        if (inf.bubbles > 0 && !s) { ctx.fillStyle = tok('--surface'); ctx.strokeStyle = tok('--s3'); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(xx + 3, yy - 6 - inf.bubbles * 10, 2.5, 0, 7); ctx.fill(); ctx.stroke(); }
+      });
+      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${w < 420 ? 11 : 12}px ${FONT}`; ctx.fillText(lbl, cx, h - 8);
+    });
+  }
+  function infRead() { $('#inf-n').textContent = inf.pulls; $('#inf-a').textContent = inf.a.filter(Boolean).length + ' / 10'; $('#inf-b').textContent = inf.b.filter(Boolean).length + ' / 10'; }
+  infcv.onresize = infDraw;
+  infReset();
+  $('#inf-reset').addEventListener('click', infReset);
+  $('#inf-pull').addEventListener('click', () => {
+    if (infAnim) infAnim();
+    inf.pulls++;
+    const p = SINKP[+$('#inf-soap').value];
+    const apply = () => { inf.a = inf.a.map(s => s || rng.chance(p)); inf.b = inf.b.map(s => s || rng.chance(p)); inf.plunger = 0; inf.bubbles = 0; infDraw(); infRead();
+      const msgs = [];
+      const na = inf.a.filter(Boolean).length, nb = inf.b.filter(Boolean).length;
+      if (na === 10 && nb === 10) msgs.push('<span class="pill ok">All disks sunk.</span> Pour them into the cups.');
+      else if (inf.pulls >= 3 && +$('#inf-soap').value === 0) msgs.push('<span class="pill warn">Still floating.</span> Without soap the solution cannot wet the leaf. Add a drop of soap.');
+      if (inf.pulls > 3) msgs.push(`<span class="pill bad">${inf.pulls} vacuums</span> More than three can damage the disks, so they may rise more slowly and less evenly.`);
+      fbList($('#inf-fb'), msgs);
+    };
+    if (Lab.reducedMotion()) { apply(); return; }
+    let t = 0, done = false;
+    const lp = Lab.loop(dt => { t += dt; inf.plunger = t < 0.6 ? t / 0.6 : t < 1.1 ? 1 : Math.max(0, 1 - (t - 1.1) / 0.25); inf.bubbles = t < 1.1 ? Math.min(1, t / 1.1) : 0; infDraw(); if (t > 1.35) { done = true; apply(); return false; } });
+    infAnim = () => { if (!done) { lp.stop(); done = true; apply(); } infAnim = null; };
+    lp.start();
+  });
+
+  /* =====================================================================
+     PROCEDURE B — floating disk assay (two cups)
+     ===================================================================== */
+  const cupcv = Lab.canvas('#cup-viz', 0.55);
+  const cupLen = slider('cup-len', 'cup-len-out', v => v + ' min');
+  let cupA, cupB, cupT = 0, cupDark = false, cupLoop = null, cupPrep = { a: null, b: null, damage: 0 };
+  function cupInit() {
+    const damage = cupPrep.damage;
+    cupA = makeDisks(BASE, 10, damage, cupPrep.a); cupB = makeDisks(Object.assign({}, BASE, { bicarb: 0 }), 10, damage, cupPrep.b);
+    cupT = 0; cupDark = false; $('#cup-dark').setAttribute('aria-pressed', 'false'); $('#cup-dark').textContent = 'Cover cups with a box (dark)'; cupRead(); cupDraw();
+  }
+  function cupDraw() { drawCups(cupcv, [{ label: 'With CO₂', sub: '0.2% NaHCO₃', disks: cupA, tint: '--s3' }, { label: 'Without CO₂', sub: 'water only', disks: cupB, tint: '--s3', tintA: 0.08 }], { lamp: true, dark: cupDark }); }
+  function cupRead() { $('#cup-t').textContent = fmt(cupT, 1) + ' min'; $('#cup-a').textContent = cupA.filter(d => d.up).length; $('#cup-b').textContent = cupB.filter(d => d.up).length; $('#cup-l').textContent = cupDark ? 'Off (box)' : 'On'; }
+  cupcv.onresize = cupDraw;
+  const cupchart = Lab.chart('#cup-chart', { xLabel: 'Time (min)', yLabel: 'Number of disks floating', yMin: 0, yMax: 10, series: [] });
+  const cupTable = Lab.table('#cup-table', {
+    save: 'cups',
+    columns: [{ key: 'm', label: 'Minute', num: true, digits: 0 }, { key: 'a', label: 'Floating · with CO₂', num: true, digits: 0 }, { key: 'b', label: 'Floating · without CO₂', num: true, digits: 0 }, { key: 'light', label: 'Light' }],
+    onChange: rows => {
+      cupchart.update({ series: [{ name: 'With CO₂ (0.2% NaHCO₃)', points: rows.map(r => ({ x: r.m, y: r.a })) }, { name: 'Without CO₂ (water)', points: rows.map(r => ({ x: r.m, y: r.b })), dash: true }],
+        hLines: [{ y: 5, label: '50% floating' }], annotations: (() => { const e = et50(rows.map(r => r.a), 10); return e != null ? [{ x: e, label: 'ET50' }] : []; })() });
+    }
+  });
+  cupInit();
+  $('#inf-pour').addEventListener('click', () => {
+    if (infAnim) infAnim();
+    cupPrep = { a: inf.a.slice(), b: inf.b.slice(), damage: Math.max(0, inf.pulls - 3) };
+    if (cupLoop) cupLoop.stop();
+    cupInit(); cupTable.clear();
+    const fl = inf.a.filter(s => !s).length + inf.b.filter(s => !s).length;
+    fbList($('#inf-fb'), [fl ? `<span class="pill warn">${fl} disk${fl > 1 ? 's' : ''} still floating</span> They will count as floating from minute 0 and skew your ET<sub>50</sub>. Consider starting over.` : '<span class="pill ok">Poured.</span> Go to the next step and start the timer.']);
+  });
+  $('#cup-dark').addEventListener('click', () => { cupDark = !cupDark; $('#cup-dark').setAttribute('aria-pressed', String(cupDark)); $('#cup-dark').textContent = cupDark ? 'Remove the box (light)' : 'Cover cups with a box (dark)'; cupRead(); cupDraw(); });
+  $('#cup-run').addEventListener('click', () => {
+    if (cupLoop) cupLoop.stop();
+    const dark0 = cupDark; cupInit(); cupDark = dark0; $('#cup-dark').setAttribute('aria-pressed', String(cupDark));
+    cupTable.clear();
+    const len = +cupLen.value, rows = [{ m: 0, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' }];
+    cupTable.setRows(rows);
+    let nextMin = 1;
+    const advance = dm => {
+      const step = 0.05; let left = dm;
+      while (left > 1e-9 && cupT < len) {
+        const s = Math.min(step, left, nextMin - cupT); stepDisks(cupA, s, cupDark); stepDisks(cupB, s, cupDark); cupT += s; left -= s;
+        if (cupT >= nextMin - 1e-9) { cupTable.addRow({ m: nextMin, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' }); nextMin++; }
+      }
+    };
+    if (Lab.reducedMotion()) { advance(len); easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw(); return; }
+    cupLoop = Lab.loop(dt => { advance(dt / +$('#cup-speed').value); easeDisks(cupA, dt * 6); easeDisks(cupB, dt * 6); cupRead(); cupDraw(); if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); return false; } });
+    cupLoop.start();
+  });
+  $('#et-check').addEventListener('click', () => {
+    const rows = cupTable.getRows(), e = et50(rows.map(r => r.a), 10);
+    if (e == null) { fbList($('#et-fb'), ['Your bicarbonate cup has not reached 5 floating disks yet. Run the timer longer.']); return; }
+    const u = parseFloat($('#et-in').value), v = parseFloat($('#ret-in').value), out = [];
+    out.push(near(u, e, 0, 0.15) ? `<span class="pill ok">ET<sub>50</sub> correct</span> (${fmt(e, 2)} min from your counts)` : '<span class="pill warn">ET<sub>50</sub></span> Find the minute just before 5 disks floated and the minute it reached 5 or more, then interpolate.');
+    if (isFinite(u) && u > 0) out.push(near(v, 1 / u, 0.02, 0.002) ? '<span class="pill ok">1/ET<sub>50</sub> correct</span>' : `<span class="pill warn">1/ET<sub>50</sub></span> Divide 1 by your ET<sub>50</sub>: 1 ÷ ${fmt(u, 2)}.`);
+    fbList($('#et-fb'), out);
+  });
+  const pp = $('#proc-prompts');
+  Lab.prompt(pp, { key: 'p-ctrl', label: 'What happened in the "Without CO<sub>2</sub>" cup? Explain why it is the control and what it shows about the role of bicarbonate.', rows: 3 });
+  Lab.prompt(pp, { key: 'p-dark', label: 'If you covered the cups, describe what happened to the floating disks and explain it in terms of cellular respiration. Was the sinking slope steeper or shallower than the floating slope? Why?', rows: 4 });
+  Lab.prompt(pp, { key: 'p-net', label: 'Explain why the floating disk assay measures <em>net</em> photosynthesis rather than gross photosynthesis. How could you use the dark experiment to estimate gross photosynthesis?', rows: 4 });
+
+  /* =====================================================================
+     DESIGN
+     ===================================================================== */
+  const IV = {
+    dist: { label: 'Lamp distance (cm)', num: true, def: '10, 15, 20, 30, 45', hint: '5 to 80 cm. Light ∝ 1/d².', check: v => v >= 5 && v <= 80, set: (c, v) => { c.dist = v; }, x: 'Light at cups (µmol photons m⁻² s⁻¹)', xval: v => par(Object.assign({}, BASE, { dist: v })) },
+    color: { label: 'Light color', num: false, opts: COLORS, def: ['white', 'red', 'green', 'blue'], set: (c, v) => { c.color = v; } },
+    bicarb: { label: 'NaHCO₃ (%)', num: true, def: '0, 0.05, 0.1, 0.2, 0.4', hint: '0 to 1%.', check: v => v >= 0 && v <= 1, set: (c, v) => { c.bicarb = v; }, x: 'Sodium bicarbonate (%)' },
+    temp: { label: 'Temperature (°C)', num: true, def: '10, 20, 30, 40, 50', hint: '4 to 60 °C (never heat higher).', check: v => v >= 4 && v <= 60, set: (c, v) => { c.temp = v; }, x: 'Temperature of solution (°C)' },
+    leaf: { label: 'Type of plant', num: false, opts: LEAVES, def: ['spinach', 'ivysun', 'ivyshade', 'corn'], set: (c, v) => { c.leaf = v; } },
+    age: { label: 'Leaf age', num: false, opts: AGES, def: ['young', 'mature', 'old'], set: (c, v) => { c.age = v; } }
+  };
+  const dIv = $('#d-iv'), dLv = $('#d-levels'), dReps = slider('d-reps', 'd-reps-out', v => v + (v > 1 ? ' cups' : ' cup')), dcv = Lab.canvas('#d-viz', 0.62);
+  function buildChecks() {
+    const o = IV[dIv.value], box = $('#d-checks'); box.innerHTML = '';
+    if (o.num) return;
+    Object.entries(o.opts).forEach(([k, v]) => box.append(Lab.h('label', { class: 'check' }, Lab.h('input', { type: 'checkbox', value: k, id: 'd-c-' + k, checked: o.def.includes(k) }), v.name)));
+    box.querySelectorAll('input').forEach(i => i.addEventListener('change', dPreview));
+  }
+  function dLevels() {
+    const o = IV[dIv.value];
+    if (!o.num) return [...$('#d-checks').querySelectorAll('input:checked')].map(i => i.value);
+    return [...new Set(dLv.value.split(/[,;\s]+/).map(parseFloat).filter(v => isFinite(v) && o.check(v)))].sort((a, b) => a - b).slice(0, 7);
+  }
+  const lvName = (iv, v) => IV[iv].num ? String(v) : IV[iv].opts[v].name;
+  function condFor(iv, v) { const c = Object.assign({}, BASE, { filter: $('#d-filter').checked }); IV[iv].set(c, v); return c; }
+  function dConst() {
+    const iv = dIv.value, parts = [];
+    if (iv !== 'leaf') parts.push('Spinach'); if (iv !== 'age') parts.push('mature leaves'); if (iv !== 'dist') parts.push('lamp 15 cm');
+    if (iv !== 'color') parts.push('white light'); if (iv !== 'bicarb') parts.push('0.2% NaHCO₃'); if (iv !== 'temp') parts.push('25 °C bath');
+    parts.push('10 disks per cup, 1 drop soap, 3 cm depth');
+    $('#d-const').textContent = parts.join(' · ');
+  }
+  let dCups = [], dAnim = null;
+  function dPreview() {
+    if (dAnim) { const f = dAnim; dAnim = null; f(); }
+    const iv = dIv.value, o = IV[iv], lv = dLevels(), reps = +dReps.value;
+    $('#d-num').hidden = !o.num; $('#d-cat').hidden = o.num; $('#d-hint').textContent = o.hint || ''; dConst();
+    dCups = []; lv.forEach(v => { for (let r = 0; r < reps; r++) dCups.push({ iv, v, label: shortLv(iv, v), sub: 'cup ' + (r + 1), disks: makeDisks(condFor(iv, v), 10, 0) }); });
+    $('#d-n').textContent = dCups.length; $('#d-t').textContent = '0 min';
+    const wt = lv.map(v => waterTemp(condFor(iv, v))); $('#d-wt').textContent = wt.length ? (Math.min(...wt) === Math.max(...wt) ? fmt(wt[0], 1) : fmt(Math.min(...wt), 0) + '–' + fmt(Math.max(...wt), 0)) + ' °C' : '—';
+    dDraw();
+  }
+  function shortLv(iv, v) { if (iv === 'dist') return v + ' cm'; if (iv === 'bicarb') return v + '%'; if (iv === 'temp') return v + ' °C'; const n = IV[iv].opts[v].name; return n.replace(/ \(.*\)/, '').replace('English ivy', 'Ivy'); }
+  function dDraw() {
+    const iv = dIv.value, cols = Math.min(dCups.length || 1, dcv.w < 500 ? 4 : 6);
+    drawCups(dcv, dCups.map(c => Object.assign(c, { tint: iv === 'color' ? COLORS[c.v].tok : iv === 'temp' ? (c.v >= 30 ? '--bad' : c.v <= 15 ? '--s3' : '--s4') : '--s3', tintA: iv === 'color' ? 0.22 : iv === 'bicarb' ? 0.06 + 0.3 * Math.min(1, c.v / 0.4) : 0.15 })), { cols, lamp: false });
+  }
+  dIv.addEventListener('change', () => { const o = IV[dIv.value]; if (o.num) dLv.value = o.def; buildChecks(); dPreview(); });
+  dLv.addEventListener('change', dPreview); $('#d-reps').addEventListener('change', dPreview); $('#d-filter').addEventListener('change', dPreview);
+  dcv.onresize = dDraw;
+  const saved = Lab.store.get('d-setup');
+  if (saved && IV[saved.iv]) { dIv.value = saved.iv; if (saved.levels) dLv.value = saved.levels; }
+  buildChecks(); if (saved && saved.checks && !IV[dIv.value].num) $('#d-checks').querySelectorAll('input').forEach(i => { i.checked = saved.checks.includes(i.value); });
+  dPreview();
+
+  const dchart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Rate, 1/ET50 (min⁻¹)', series: [], height: 340 });
+  const dchart2 = Lab.chart('#d-chart2', { xLabel: 'Level', yLabel: 'Median ET50 (min)', series: [], height: 340 });
+  const dsum = Lab.table('#d-sum', { columns: [{ key: 'lv', label: 'Level' }, { key: 'n', label: 'Cups', num: true, digits: 0 }, { key: 'med', label: 'Median ET50', unit: 'min', num: true, digits: 1 }, { key: 'mean', label: 'Mean 1/ET50', unit: 'min⁻¹', num: true, digits: 3 }, { key: 'se', label: 'SE', num: true, digits: 3 }, { key: 'ci', label: '±2 SE', num: true, digits: 3 }], rows: [] });
+  function dAnalyze(rows) {
+    const meta = Lab.store.get('d-setup') || { iv: dIv.value }, iv = IV[meta.iv] ? meta.iv : 'dist', o = IV[iv];
+    const keys = [...new Set(rows.map(r => r.v))];
+    const sum = keys.map(k => {
+      const rr2 = rows.filter(r => r.v === k), rate = rr2.map(r => r.rate), ets = rr2.map(r => r.et == null ? Infinity : r.et);
+      const med = S.median(ets);
+      return { lv: rr2[0].lvl, _k: k, n: rr2.length, med: isFinite(med) ? med : NaN, mean: S.mean(rate), se: rate.length > 1 ? S.se(rate) : NaN, ci: rate.length > 1 ? 2 * S.se(rate) : NaN };
+    });
+    dsum.setRows(sum);
+    if (o.num) {
+      const xf = o.xval || (v => v), xl = o.x;
+      dchart.update({ type: 'xy', xLabel: xl, yLabel: 'Rate, 1/ET50 (min⁻¹)', categories: undefined, yMin: 0, series: [{ name: 'Mean 1/ET50 ± 2 SE', points: sum.map(s => ({ x: xf(s._k), y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }, { name: 'Each cup', points: rows.map(r => ({ x: xf(r.v), y: r.rate })), line: false }] });
+      dchart2.update({ type: 'xy', xLabel: xl, yLabel: 'Median ET50 (min)', categories: undefined, yMin: 0, series: [{ name: 'Median ET50', points: sum.filter(s => isFinite(s.med)).map(s => ({ x: xf(s._k), y: s.med })) }] });
+    } else {
+      const cats = sum.map(s => s.lv);
+      dchart.update({ type: 'bar', xLabel: o.label, yLabel: 'Rate, 1/ET50 (min⁻¹)', categories: cats, yMin: 0, series: [{ name: 'Mean 1/ET50', points: sum.map(s => ({ x: s.lv, y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }] });
+      dchart2.update({ type: 'bar', xLabel: o.label, yLabel: 'Median ET50 (min)', categories: cats, yMin: 0, series: [{ name: 'Median ET50', points: sum.map(s => ({ x: s.lv, y: isFinite(s.med) ? s.med : 0 })) }] });
+    }
+  }
+  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze });
+  $('#d-run').addEventListener('click', () => {
+    dPreview();
+    if (!dCups.length) { $('#d-hint').textContent = 'Choose at least one valid level. ' + (IV[dIv.value].hint || ''); return; }
+    const iv = dIv.value;
+    Lab.store.set('d-setup', { iv, levels: dLv.value, checks: IV[iv].num ? null : dLevels() });
+    const MAX = 45;
+    dCups.forEach(c => { c.counts = [c.disks.filter(d => d.up).length]; c.t = 0; });
+    let t = 0;
+    const advance = dm => {
+      let left = dm;
+      while (left > 1e-9 && t < MAX) {
+        const nextMin = Math.floor(t + 1e-9) + 1, s = Math.min(0.1, left, nextMin - t);
+        dCups.forEach(c => stepDisks(c.disks, s, false)); t += s; left -= s;
+        if (t >= nextMin - 1e-9) dCups.forEach(c => c.counts.push(c.disks.filter(d => d.up).length));
+      }
+    };
+    const finish = () => {
+      advance(MAX - t); dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = MAX + ' min';
+      const per = new Map();
+      draw.setRows(dCups.map(c => { const k = String(c.v); per.set(k, (per.get(k) || 0) + 1); const e = et50(c.counts, 10); return { v: c.v, lvl: lvName(iv, c.v), cup: per.get(k), et: e, etTxt: e == null ? '> 45' : fmt(e, 1), rate: e == null || e === 0 ? 0 : 1 / e }; }));
+      dAnim = null;
+    };
+    if (Lab.reducedMotion()) { finish(); return; }
+    const lp = Lab.loop(dt => { advance(dt * 8); dCups.forEach(c => easeDisks(c.disks, dt * 8)); dDraw(); $('#d-t').textContent = fmt(t, 0) + ' min'; if (t >= MAX - 1e-9 || dCups.every(c => c.disks.every(d => d.up))) { lp.stop(); finish(); return false; } });
+    dAnim = () => { lp.stop(); if (dCups[0] && dCups[0].counts) finish(); };
+    lp.start();
+  });
+  const plan = $('#design-plan');
+  Lab.prompt(plan, { key: 'd-q', label: 'Your testable question', rows: 3, placeholder: 'How does … affect the net rate of photosynthesis in …?' });
+  Lab.prompt(plan, { key: 'd-h', label: 'Hypothesis and prediction, with the biological reasoning (and a null hypothesis)', rows: 3 });
+  Lab.prompt(plan, { key: 'd-v', label: 'Independent variable and levels, dependent variable, and variables held constant', rows: 3 });
+  Lab.prompt(plan, { key: 'd-c', label: 'Control and replicates: what is your control, and why that many cups?', rows: 3 });
+  Lab.prompt('#design-after', { key: 'd-r', label: 'Describe your results. Compare the two graphs: why does the ET<sub>50</sub> graph slope the opposite way from the 1/ET<sub>50</sub> graph? Do the ±2 SE error bars of neighboring levels overlap, and what does that suggest?', rows: 5 });
+  Lab.prompt('#design-after', { key: 'd-lim', label: 'If you varied light, CO<sub>2</sub>, or temperature: where does your curve level off or peak? What becomes the limiting factor there?', rows: 4 });
+
+  /* ANALYZE & EVALUATE */
+  const an = $('#analysis');
+  Lab.prompt(an, { key: 'a1', label: '1. Graph ET<sub>50</sub> and 1/ET<sub>50</sub> against your independent variable (done above). Explain the inverse relationship between ET<sub>50</sub> and the rate of photosynthesis.', rows: 3 });
+  Lab.prompt(an, { key: 'a2', label: '2. Why did the procedure use the median (ET<sub>50</sub>) rather than the mean time to float? How did you show the variability in your data?', rows: 3 });
+  Lab.prompt(an, { key: 'a3', label: '3. How do the light reactions and the Calvin cycle each connect to what you measured? Which part of photosynthesis did your independent variable most directly affect?', rows: 4 });
+  Lab.prompt(an, { key: 'a4', label: '4. Respiration happens in leaf cells the whole time. How does that change what the floating disks tell you? Could a disk ever fail to float even though it is photosynthesizing?', rows: 4 });
+  an.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
+  an.append(Lab.h('p', { class: 'small muted' }, 'Answer your own design question.'));
+  const cer = Lab.h('div', { class: 'cer' }); an.append(cer);
+  [['cer-c', 'Claim', 'C'], ['cer-e', 'Evidence (median ET50s, mean 1/ET50 ± 2 SE)', 'E'], ['cer-r', 'Reasoning (connect to light capture, CO₂ fixation, enzymes, or respiration)', 'R']].forEach(([k, l, L]) => { Lab.prompt(cer, { key: k, label: l, rows: 4 }).querySelector('label').dataset.letter = L; });
+  const ev = $('#evaluate');
+  Lab.prompt(ev, { key: 'e1', label: 'Could the way you perform the procedure (disk size, solution depth, soap amount, how you cut disks, swirling) change the outcome? If the outcome changes, does that mean the net rate of photosynthesis changed? Explain.', rows: 4 });
+  Lab.prompt(ev, { key: 'e2', label: 'How would you expect the light response curve of a shade-grown leaf to compare with that of a sun-grown leaf? Design a two-variable experiment to test it.', rows: 4 });
+  Lab.prompt(ev, { key: 'e3', label: 'A lamp very close to the cups can heat the water. How would that confound a light-intensity experiment, and how would you prevent it?', rows: 3 });
+  Lab.prompt(ev, { key: 'e4', label: 'C₄ plants such as corn concentrate CO₂ around rubisco. Predict how their response to low bicarbonate or high temperature would differ from spinach, and explain how you would test it.', rows: 4 });
+  Lab.prompt(ev, { key: 'e5', label: 'List one misconception about photosynthesis you had before this lab and how your evidence changed your thinking.', rows: 3 });
+})();
+</script>
+</body>
+</html>

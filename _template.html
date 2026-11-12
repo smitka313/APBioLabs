@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 0 · Template Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* Page-specific styles go here. Use only tokens from style.css (var(--accent), var(--s1) …). */
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 2 · Energetics</span></nav>
+    <div class="eyebrow">Investigation 0</div>
+    <h1>Template Lab</h1>
+    <p class="driving-q">What question drives this investigation?</p>
+    <div class="tags"><span class="tag">Unit 2: Cell Structure and Function</span><span class="tag">ENE-2.H</span><span class="tag">Science Practice 4.A</span><span class="tag">≈ 3 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">…</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div><ul><li>…</li></ul></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>…</h2></header>
+    <div class="step-body prose">
+      <p>…</p>
+      <div class="equation">ψ = ψ<sub>P</sub> + ψ<sub>S</sub></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body"><div id="prelab"></div></div>
+  </section>
+
+  <!-- Simulation sections use wrap--wide -->
+  <section class="step wrap wrap--wide gutter" data-step="Experiment 1">
+    <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>…</h2></header>
+    <div class="step-body">
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="temp">Temperature <output id="temp-out" class="val"></output></label><input id="temp" type="range" min="5" max="45" value="25"></div>
+          <button class="btn btn--primary" id="run" type="button">Run trial</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="viz" aria-label="Animation of …"></canvas>
+          <div class="readouts"><div class="readout"><span class="k">Rate</span><span class="v" id="rate">—</span></div></div>
+        </div>
+      </div>
+      <div id="data-table"></div>
+      <div id="chart"></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>…</h2></header>
+    <div class="step-body" id="analysis"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+  Lab.init({ id: 'lab00' });
+  Lab.quiz('#prelab', [
+    { type: 'mc', q: 'Example?', choices: ['A', 'B'], answer: 0, explain: 'Because…' },
+    { type: 'num', q: 'Compute ψ<sub>S</sub> for 0.1 M NaCl at 25 °C.', answer: -4.95, tol: 0.1, unit: 'bars', explain: 'ψS = −iCRT = −(2)(0.1)(0.0831)(298) = −4.95 bars' }
+  ], { id: 'prelab' });
+  const rng = Lab.rng();
+  const table = Lab.table('#data-table', {
+    save: 'exp1',
+    columns: [{ key: 'trial', label: 'Trial' }, { key: 't', label: 'Temperature', unit: '°C', num: true, digits: 0 }, { key: 'rate', label: 'Rate', unit: 'mL/min', num: true, digits: 3 }],
+    onChange: rows => chart.update({ series: [{ name: 'Rate', points: rows.map(r => ({ x: r.t, y: r.rate })), fit: 'linear', line: false }] })
+  });
+  const chart = Lab.chart('#chart', { xLabel: 'Temperature (°C)', yLabel: 'Rate (mL/min)', series: [] });
+  const temp = Lab.$('#temp'), out = Lab.$('#temp-out');
+  const sync = () => out.textContent = temp.value + ' °C'; temp.addEventListener('input', sync); sync();
+  Lab.$('#run').addEventListener('click', () => {
+    const t = +temp.value, rate = Math.max(0, rng.normal(0.02 * t, 0.03));
+    Lab.$('#rate').textContent = Lab.fmt(rate, 3);
+    table.addRow({ trial: table.getRows().length + 1, t, rate });
+  });
+  Lab.prompt('#analysis', { key: 'claim', label: 'Claim: …' });
+</script>
+</body>
+</html>

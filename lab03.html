@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 3 · Comparing DNA Sequences with BLAST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .stage > *, .stack > * { min-width: 0; }
+  .stack { align-content: start; }
+  .tree-svg { width: 100%; height: auto; display: block; }
+  .tree-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
+  .tree-svg .br { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .tree-svg .br.fos { stroke: var(--stain); stroke-dasharray: 5 4; }
+  .tree-svg text.fos { fill: var(--stain); font-weight: 700; }
+  .tree-svg .badge circle { fill: var(--accent); }
+  .tree-svg .badge.warn circle { fill: var(--warn); }
+  .tree-svg .badge text { fill: var(--accent-ink); font-size: 10.5px; font-weight: 700; font-family: var(--f-mono); }
+  .tree-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .86rem; margin-top: 6px; }
+  .tree-legend b { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-family: var(--f-mono); font-size: .78em; margin-right: 4px; }
+  .tree-legend .warn b { background: var(--warn); }
+  .matrix td, .matrix th { text-align: center; }
+  .matrix th.rot { font-size: .78rem; min-width: 64px; }
+  .matrix td:first-child, .matrix th:first-child { text-align: left; white-space: nowrap; }
+  .matrix td.cell-bad { background: var(--bad-soft); }
+  .matrix td.cell-ok { background: var(--ok-soft); }
+  .orgcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px; }
+  .orgcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: .92rem; }
+  .orgcard h4 { margin-bottom: 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .msg { font-size: .92rem; padding: 8px 12px; border-radius: var(--r-sm); background: var(--surface-2); }
+  .msg.ok { background: var(--ok-soft); color: var(--ink); }
+  .msg.bad { background: var(--bad-soft); color: var(--ink); }
+  .msg.warn { background: var(--warn-soft); color: var(--ink); }
+  .seqbox { font-family: var(--f-mono); font-size: .78rem; line-height: 1.5; word-break: break-all; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-height: 9.5em; overflow: auto; }
+  pre.aln { font-family: var(--f-mono); font-size: .78rem; line-height: 1.35; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; max-width: 100%; margin: 0; color: var(--ink); }
+  .hits td, .hits th { font-size: .86rem; }
+  .hits tr.sel td { background: var(--accent-soft); }
+  .hits .desc { min-width: 150px; }
+  .bitkey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
+  .bitkey i { display: inline-block; width: 18px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .graphic text { font-family: var(--f-body); font-size: 11px; fill: var(--ink); }
+  .fossil-svg .rock { fill: var(--surface-2); stroke: var(--line); }
+  .fossil-svg .bone { stroke: var(--ink); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .fossil-svg .feather { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+  .fossil-svg .soft { fill: var(--stain-soft); stroke: var(--stain); stroke-dasharray: 3 3; }
+  .fossil-svg text { font-family: var(--f-body); font-size: 12px; fill: var(--muted); }
+  .bg-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
+  .bg-svg .ln { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .bg-svg .tr { fill: var(--stain); font-weight: 700; font-size: 12px; }
+  .bg-svg .tick { stroke: var(--stain); stroke-width: 3; }
+  .checks { display: flex; flex-wrap: wrap; gap: 4px 12px; max-height: 220px; overflow: auto; font-size: .88rem; }
+  .checks label { display: inline-flex; gap: 5px; align-items: center; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 1 · Evolution</span></nav>
+    <div class="eyebrow">Investigation 3</div>
+    <h1>Comparing DNA Sequences to Understand Evolutionary Relationships with BLAST</h1>
+    <p class="driving-q">How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?</p>
+    <div class="tags"><span class="tag">Unit 7: Natural Selection</span><span class="tag">EVO-3.B</span><span class="tag">EVO-3.C</span><span class="tag">SYI-3.A</span><span class="tag">Science Practice 2.D</span><span class="tag">≈ 2–3 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Paleontologists working in Liaoning Province, China, have found a new fossil. Rare soft tissue survived, and DNA from it was used to sequence three genes. Your job is to decide where this species belongs on a cladogram, first from its body structure and then from its DNA.</p>
+      <p>You will:</p>
+      <ol>
+        <li>Fill in a table of physical traits and use it to build a cladogram of six animal groups.</li>
+        <li>Study the fossil and make a first hypothesis about where it fits.</li>
+        <li>Search each fossil gene against a sequence database with an in-page version of <strong>BLAST</strong>. You will read scores, E-values, percent identity and the alignments themselves.</li>
+        <li>Use the DNA evidence to keep or change where you placed the fossil.</li>
+        <li>Design your own sequence comparison and test whether DNA differences build up like a "molecular clock."</li>
+      </ol>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div><ul>
+        <li><strong>EVO-3.B</strong> Describe the types of evidence that can be used to infer an evolutionary relationship.</li>
+        <li><strong>EVO-3.C</strong> Explain how a phylogenetic tree and/or cladogram can be used to infer evolutionary relatedness.</li>
+        <li><strong>SYI-3.A</strong> Explain the connection between variation in the number and types of molecules within cells and an organism's ability to survive and/or reproduce in different environments.</li>
+        <li><strong>Science Practice 2.D</strong> Represent relationships within a biological model.</li>
+      </ul></div>
+      <div class="callout callout--tip"><div class="callout-title">Safety</div><p>This is a computer investigation, so there are no lab hazards. The sequences in this page's database are simulated so that the whole lab works offline. You can try the real NCBI BLAST as an extension at the end.</p></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Cladograms, shared genes, and BLAST</h2></header>
+    <div class="step-body prose">
+      <p>A <strong>cladogram</strong> (a type of phylogenetic tree) shows a hypothesis about how species are related. The tips are species or groups. Each branch point (node) stands for a common ancestor. Two groups that join at a more recent node share a more recent common ancestor than groups that join closer to the root. You can rotate the branches around any node without changing what the tree says. Only the branching pattern matters.</p>
+      <p>Traditional cladograms are built from <strong>shared derived characters</strong>. These are traits that appeared in an ancestor and were passed to all of its descendants. On the cladogram below, each trait is marked where it first evolved. Every group above that mark has the trait. A trait shared by many groups usually evolved earlier than a trait found in only a few.</p>
+      <figure>
+        <svg class="bg-svg" viewBox="0 0 480 250" role="img" aria-label="Cladogram of lamprey, shark, salamander, lizard, tiger and gorilla, with jaws, lungs, dry skin, hair and no tail marked on the main branch where each trait evolved">
+<path class="ln" d="M150 235 L450 20"/>
+<path class="ln" d="M174.0 217.8 L31.6 28"/><text x="31.6" y="18" text-anchor="middle">lamprey</text>
+<path class="ln" d="M228.0 179.1 L114.7 28"/><text x="114.7" y="18" text-anchor="middle">shark</text>
+<path class="ln" d="M282.0 140.4 L197.7 28"/><text x="197.7" y="18" text-anchor="middle">salamander</text>
+<path class="ln" d="M336.0 101.7 L280.7 28"/><text x="280.7" y="18" text-anchor="middle">lizard</text>
+<path class="ln" d="M390.0 63.0 L363.8 28"/><text x="363.8" y="18" text-anchor="middle">tiger</text>
+<text x="444" y="14" text-anchor="middle">gorilla</text>
+<line class="tick" x1="195.0" y1="190.4" x2="207.0" y2="206.4"/><text class="tr" x="211.0" y="212.4">jaws</text>
+<line class="tick" x1="249.0" y1="151.8" x2="261.0" y2="167.8"/><text class="tr" x="265.0" y="173.8">lungs</text>
+<line class="tick" x1="303.0" y1="113.0" x2="315.0" y2="129.1"/><text class="tr" x="319.0" y="135.1">dry skin</text>
+<line class="tick" x1="357.0" y1="74.3" x2="369.0" y2="90.3"/><text class="tr" x="373.0" y="96.3">hair</text>
+<line class="tick" x1="411.0" y1="35.7" x2="423.0" y2="51.7"/><text class="tr" x="427.0" y="57.7">no tail</text>
+</svg>
+        <figcaption class="small muted">After the manual's Figure 2. Read it from the root (bottom left) upward: every animal to the right of a trait mark has that trait. Tips, left to right: lamprey, shark, salamander, lizard, tiger, gorilla.</figcaption>
+      </figure>
+      <p>Today, most cladograms are built mainly from <strong>molecular evidence</strong>. When a population splits into two species, each lineage gathers its own mutations. The longer two lineages have been apart, the more differences build up in their DNA. So the percentage of matching bases between two versions of a gene tells you roughly how recently the species shared an ancestor. For example, humans and chimpanzees share more than 95% of their DNA, and humans and fruit flies share about 60%.</p>
+      <p>Comparing sequences by hand is slow. <strong>BLAST</strong> (Basic Local Alignment Search Tool) does it in seconds. You give it a <em>query</em> sequence. It finds short exact "seed" matches in every database sequence, then extends each seed into a full <em>local alignment</em>, allowing mismatches and gaps. Each alignment gets a score:</p>
+      <div class="equation">Raw score S = (matches × 2) − (mismatches × 3) − (5 + 2 × gap length) for each gap</div>
+      <p>The raw score is converted to a <strong>bit score</strong>, which can be compared between searches. The <strong>E-value</strong> is the number of alignments this good that you would expect to find <em>by chance</em> in a database of that size:</p>
+      <div class="equation">E = m × n × 2<sup>−S′</sup> &nbsp;&nbsp;(m = query length, n = database size, S′ = bit score)</div>
+      <p>The higher the score, the closer the alignment. The lower the E-value, the less likely the match is a coincidence. A hit with E &lt; 1 × 10<sup>−4</sup> is usually treated as a real, related sequence (a <em>homolog</em>). <strong>Percent identity</strong> is the number of matching positions divided by the length of the alignment. <strong>Query cover</strong> is the percent of your query that took part in the alignment.</p>
+<pre class="aln" aria-label="Example alignment">Organism A  ATGATCCAGT
+            | || ||||
+Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
+      <p>DNA is only one line of evidence. Fossils, anatomy, embryology and protein sequences can all support or challenge a tree. A good cladogram is a hypothesis that fits the most evidence.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body">
+      <p class="small muted">Getting Started, Table 1 (plants: 1 = has the trait): Mosses 0 0 0 · Ferns vascular tissue only · Pine trees vascular tissue + seeds · Flowering plants vascular tissue + seeds + flowers.</p>
+      <div class="table-wrap"><table class="data"><thead><tr><th>Species (vs. human)</th><th class="num">GAPDH gene similarity</th><th class="num">GAPDH protein similarity</th></tr></thead>
+      <tbody><tr><td>Chimpanzee (<em>Pan troglodytes</em>)</td><td class="num">99.6%</td><td class="num">100%</td></tr><tr><td>Dog (<em>Canis lupus familiaris</em>)</td><td class="num">91.3%</td><td class="num">95.2%</td></tr><tr><td>Fruit fly (<em>Drosophila melanogaster</em>)</td><td class="num">72.4%</td><td class="num">76.7%</td></tr><tr><td>Roundworm (<em>Caenorhabditis elegans</em>)</td><td class="num">68.2%</td><td class="num">74.3%</td></tr></tbody></table></div>
+      <div id="prelab" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Morphology">
+    <header><div class="eyebrow">Part 1 · Structured inquiry</div><h2>Build a cladogram from physical traits</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Pick a data set. Read the organism cards, then tick every trait each organism has. Check your table, then group organisms that share a derived trait to build the tree. Start with the most widely shared traits.</p></div>
+      <div class="row"><span class="small" id="ds-label">Data set</span><div class="seg" role="group" aria-labelledby="ds-label" id="ds-seg"><button type="button" data-ds="fig4" aria-pressed="true">Fossil cladogram (Figure 4)</button><button type="button" data-ds="plants" aria-pressed="false">Plant groups (Table 1)</button></div></div>
+      <div class="orgcards" id="orgcards"></div>
+      <h3>1 · Trait table</h3>
+      <div id="matrix"></div>
+      <div class="row"><button class="btn" type="button" id="check-matrix">Check my table</button><span id="matrix-msg" class="small" aria-live="polite"></span></div>
+      <h3>2 · Group organisms into clades</h3>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><span class="label" id="chips-label">Select organisms in the group</span><div class="chips" id="chips" role="group" aria-labelledby="chips-label"></div></div>
+          <div class="field"><label for="trait-pick">Shared derived trait that defines the group</label><select id="trait-pick"></select></div>
+          <button class="btn btn--primary" type="button" id="add-clade">Group selected organisms</button>
+          <div class="row"><button class="btn btn--sm" type="button" id="undo-clade">Undo last</button><button class="btn btn--sm btn--ghost" type="button" id="reset-clade">Clear tree</button></div>
+          <p class="small muted">Tip: a trait every organism shares goes at the root. Select all of them and choose that trait.</p>
+        </div>
+        <div class="stage">
+          <div id="build-msg" class="msg" aria-live="polite">Select two or more organisms and a trait, then press "Group selected organisms."</div>
+          <div id="tree-build"></div>
+        </div>
+      </div>
+      <div id="fossil-part">
+        <h3 style="margin-top:18px">3 · Observe the fossil and make a hypothesis</h3>
+        <div class="grid-2">
+          <figure>
+            <svg class="fossil-svg" viewBox="0 0 360 230" role="img" aria-label="Drawing of the fossil slab: a small two-legged skeleton with a long bony tail, toothed jaws, clawed three-fingered hands, and feather impressions along the arms, legs and tail">
+              <rect class="rock" x="4" y="4" width="352" height="222" rx="14"/>
+              <path class="feather" d="M150 112 l-14 -30 M158 110 l-10 -34 M166 108 l-4 -34 M174 108 l2 -32 M140 116 l-22 -24 M120 150 l-20 26 M126 154 l-12 30 M134 156 l-4 30 M220 120 l10 -18 M240 124 l12 -16 M260 128 l14 -14 M280 132 l16 -12 M300 136 l16 -10 M320 140 l14 -8"/>
+              <path class="bone" d="M66 74 q-14 -6 -30 6 q12 10 32 6 z"/>
+              <path class="bone" d="M40 84 l4 4 M46 85 l3 4 M52 85 l3 4 M58 84 l3 4"/>
+              <path class="bone" d="M68 80 q16 6 24 22 q8 16 30 18"/>
+              <ellipse class="bone" cx="150" cy="122" rx="34" ry="14"/>
+              <path class="bone" d="M184 124 q60 4 150 18"/>
+              <path class="bone" d="M196 126 v-4 M210 127 v-4 M224 129 v-4 M238 130 v-4 M252 132 v-4 M266 133 v-4 M280 135 v-4 M294 137 v-4 M308 139 v-4 M322 141 v-4"/>
+              <path class="bone" d="M132 112 l-20 -20 l-14 6 M98 98 l-8 -4 M98 98 l-8 4 M98 98 l-6 10"/>
+              <path class="bone" d="M150 134 l-14 30 l8 26 l-12 10 M144 200 l10 0 M144 200 l6 6"/>
+              <path class="bone" d="M166 134 l4 30 l18 24 l-6 10 M188 188 l10 2"/>
+              <ellipse class="soft" cx="138" cy="126" rx="12" ry="7"/>
+              <text x="16" y="218">5 cm</text><path class="bone" d="M16 206 h46" style="stroke-width:2"/>
+              <path d="M128 130 L80 160" style="stroke:var(--stain);stroke-width:1"/><text x="30" y="172" style="fill:var(--stain)">soft tissue</text>
+            </svg>
+            <figcaption class="small muted">A sketch of the fossil (the manual's Figure 3 shows a photo). It is a small, two-legged animal about 60 cm long, found in about 125-million-year-old rock.</figcaption>
+          </figure>
+          <div class="prose" style="align-content:start">
+            <p><strong>Observations from the specimen:</strong></p>
+            <ul>
+              <li>A backbone runs into a long, bony tail made of many vertebrae.</li>
+              <li>The jaws hold small, sharp, curved teeth.</li>
+              <li>The forelimbs end in three clawed fingers. The thumb is not opposable.</li>
+              <li>Feather impressions line the arms, the legs and both sides of the tail.</li>
+              <li>The hind legs are long, and it stood on two legs.</li>
+              <li>A patch of soft tissue was preserved in the body cavity. This is where the DNA came from.</li>
+            </ul>
+          </div>
+        </div>
+        <div id="obs-prompt"></div>
+        <div class="grid-2" style="margin-top:12px">
+          <div class="field"><label for="fossil-hyp">Step 1 hypothesis: attach the fossil to your cladogram</label><select id="fossil-hyp"></select><span class="hint">Choose the branch the fossil species should join as a sister group.</span></div>
+          <div id="hyp-prompt"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="BLAST the genes">
+    <header><div class="eyebrow">Part 2 · Structured inquiry</div><h2>Search the fossil genes with mini-BLAST</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>The real lab has you upload three saved gene files to NCBI BLAST. Here, the same three queries are built in. Run each gene with the settings below. For every search, read the hit list, open at least two alignments, and record the top hits. When you have run all three genes, look at the summary graph.</p></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="q-gene">Query sequence</label><select id="q-gene"><option value="A">Fossil gene A (300 bp)</option><option value="B">Fossil gene B</option><option value="C">Fossil gene C</option></select></div>
+          <div class="field"><span class="label" id="prog-label">Program selection</span><div class="seg" role="group" aria-labelledby="prog-label" id="prog-seg"><button type="button" data-p="blastn" aria-pressed="true">Somewhat similar (blastn)</button><button type="button" data-p="megablast" aria-pressed="false">Highly similar (megablast)</button></div></div>
+          <div class="field"><label for="q-set">Choose search set</label><select id="q-set"><option value="all">All organisms in database (18)</option><option value="vert">Vertebrates only</option><option value="fig4">Figure 4 groups only (12)</option></select></div>
+          <button class="btn btn--primary" type="button" id="run-blast">BLAST</button>
+          <button class="btn" type="button" id="log-blast">Record top 5 hits in my table</button>
+          <button class="btn btn--sm" type="button" id="tree-blast">Distance tree of results</button>
+        </div>
+        <div class="stage">
+          <div><div class="small muted">Query sequence (5′→3′)</div><div class="seqbox" id="q-seq" aria-label="Query sequence"></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Top hit</span><span class="v" id="r-top">—</span></div><div class="readout"><span class="k">Identity</span><span class="v" id="r-id">—</span></div><div class="readout"><span class="k">E-value</span><span class="v" id="r-e">—</span></div><div class="readout"><span class="k">Hits (E &lt; 10)</span><span class="v" id="r-n">—</span></div></div>
+          <div id="blast-out"></div>
+        </div>
+      </div>
+      <h3 style="margin-top:18px">Your BLAST data</h3>
+      <div id="blast-table"></div>
+      <h3 style="margin-top:14px">Best percent identity in each group on the fossil cladogram</h3>
+      <p class="small muted">Each bar shows the highest percent identity to the fossil query among that group's sequences, from your latest blastn search of each gene. A missing bar means no significant hit (E &gt; 10).</p>
+      <div id="blast-chart"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Place the fossil">
+    <header><div class="eyebrow">Part 3 · Interpret</div><h2>Use the DNA evidence to place the fossil</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Look again at your hypothesis from Part 1. Do the BLAST results support it? Decide where the fossil belongs and attach it to the cladogram you built. If your Part 1 tree is not finished, go back and finish the Figure 4 data set first.</p></div>
+      <div class="grid-2">
+        <div class="stack">
+          <div class="field"><label for="fossil-final">Final placement based on DNA + morphology</label><select id="fossil-final"></select></div>
+          <div id="hyp-recall" class="msg"></div>
+        </div>
+        <div><div id="tree-final"></div></div>
+      </div>
+      <div id="place-prompts"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>BLAST your own question</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Scientists start with a question about a gene or a group of organisms. Choose any organism's version of gene A, B or C as your query, pick which organisms to search, and look for a pattern. Here is one testable idea. If mutations build up at a fairly steady rate, percent identity should drop steadily as the time since two species' common ancestor increases. This idea is called a <em>molecular clock</em>. Divergence times from the fossil record are given for each pair. You can also paste a sequence of your own (A, C, G and T only).</p></div>
+      <div id="design-prompts" class="grid-2"></div>
+      <div class="sim" style="margin-top:14px">
+        <div class="controls">
+          <div class="field"><label for="d-org">Query organism</label><select id="d-org"></select></div>
+          <div class="field"><label for="d-gene">Gene (independent variable: rate of evolution)</label><select id="d-gene"><option value="A">Gene A (slow)</option><option value="B">Gene B (moderate)</option><option value="C">Gene C (fast)</option></select></div>
+          <div class="field"><span class="label" id="dprog-label">Program</span><div class="seg" role="group" aria-labelledby="dprog-label" id="dprog-seg"><button type="button" data-p="blastn" aria-pressed="true">blastn</button><button type="button" data-p="megablast" aria-pressed="false">megablast</button></div></div>
+          <div class="field"><span class="label" id="dset-label">Organisms to search</span><div class="checks" id="d-set" role="group" aria-labelledby="dset-label"></div><div class="row"><button class="btn btn--sm" type="button" id="d-all">All</button><button class="btn btn--sm" type="button" id="d-none">None</button></div></div>
+          <div class="field"><label for="d-paste">Or paste your own query (optional)</label><textarea id="d-paste" rows="3" placeholder="ACGT… (leave empty to use the organism above)"></textarea></div>
+          <button class="btn btn--primary" type="button" id="d-run">BLAST</button>
+          <button class="btn" type="button" id="d-log">Add all hits to clock table</button>
+        </div>
+        <div class="stage">
+          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
+          <div id="d-out"></div>
+        </div>
+      </div>
+      <h3 style="margin-top:18px">Molecular-clock data</h3>
+      <div id="clock-table"></div>
+      <div class="row" style="margin-top:8px"><label class="check" for="clock-max"><input type="checkbox" id="clock-max" checked> Fit line only to pairs that split less than <output id="clock-max-out" class="val">350</output> million years ago</label><input id="clock-max-range" type="range" min="50" max="600" step="10" value="350" aria-label="Maximum divergence time included in fit (million years)"></div>
+      <div id="clock-chart"></div>
+      <div id="design-analysis"></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>What does the evidence say?</h2></header>
+    <div class="step-body" id="analysis"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
+    <div class="step-body">
+      <div id="evaluate"></div>
+      <div class="callout callout--tip"><div class="callout-title">Extension: use the real tools</div>
+        <p>Search NCBI's <a href="https://www.ncbi.nlm.nih.gov/gene" target="_blank" rel="noopener">Gene database</a> for a gene such as "human actin." Open its FASTA sequence and paste it into <a href="https://blast.ncbi.nlm.nih.gov/Blast.cgi" target="_blank" rel="noopener">NCBI BLAST</a> (nucleotide blast). Other genes the manual suggests: ATP synthase, catalase, GAPDH, keratin, myosin, Pax1, ubiquitin and zinc finger proteins. Compare the hit list and "Distance tree of results" with what you saw here.</p></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+/* ===== Mini-BLAST core (shared by Part 2 and the design section) =====
+   MODEL: sequences are simulated, not downloaded. A random ancestral coding sequence (no stop codons)
+   is evolved down a time-calibrated tree of real divergence dates (approx. TimeTree values, Mya).
+   Each branch receives Poisson-distributed substitutions at rate r·t·(site rate); site rates follow
+   codon position (3rd positions fastest) × a log-normal "gamma-like" factor, with ~20% invariant sites;
+   2/3 of substitutions are transitions. Rare codon-length indels occur at rate 0.0015 per My.
+   Gene A evolves slowly, gene B moderately, gene C quickly (like a mitochondrial gene). */
+const PHY = { t: 600, kids: [
+  { t: 500, name: 'arthropods', kids: [
+    { t: 380, kids: [{ id: 'lobster' }, { id: 'shrimp' }] },
+    { t: 340, kids: [{ id: 'fly' }, { id: 'bee' }] } ] },
+  { t: 430, kids: [ { id: 'zebrafish' },
+    { t: 352, kids: [ { id: 'frog' },
+      { t: 319, kids: [
+        { t: 90, kids: [ { t: 20, kids: [{ id: 'mouse' }, { id: 'rat' }] },
+                         { t: 9, kids: [{ id: 'gorilla' }, { t: 6.5, kids: [{ id: 'human' }, { id: 'chimp' }] }] } ] },
+        { t: 280, kids: [ { id: 'anole' },
+          { t: 255, kids: [ { id: 'turtle' },
+            { t: 245, kids: [
+              { t: 90, kids: [{ id: 'alligator' }, { id: 'crocodile' }] },
+              { t: 160, kids: [ { id: 'fossil', age: 125 },
+                { t: 100, kids: [{ id: 'ostrich' }, { t: 90, kids: [{ id: 'chicken' }, { id: 'finch' }] }] } ] } ] } ] } ] } ] } ] } ] } ] };
+const ORGS = {
+  human: ['Homo sapiens', 'human', 'Great apes'], chimp: ['Pan troglodytes', 'chimpanzee', 'Great apes'], gorilla: ['Gorilla gorilla', 'western gorilla', 'Great apes'],
+  mouse: ['Mus musculus', 'house mouse', 'Rodents'], rat: ['Rattus norvegicus', 'Norway rat', 'Rodents'],
+  chicken: ['Gallus gallus', 'chicken', 'Birds'], finch: ['Taeniopygia guttata', 'zebra finch', 'Birds'], ostrich: ['Struthio camelus', 'ostrich', 'Birds'],
+  alligator: ['Alligator mississippiensis', 'American alligator', 'Crocodilians'], crocodile: ['Crocodylus niloticus', 'Nile crocodile', 'Crocodilians'],
+  turtle: ['Chrysemys picta', 'painted turtle', 'Other reptiles'], anole: ['Anolis carolinensis', 'green anole lizard', 'Other reptiles'],
+  frog: ['Xenopus laevis', 'African clawed frog', 'Amphibians'], zebrafish: ['Danio rerio', 'zebrafish', 'Fish'],
+  fly: ['Drosophila melanogaster', 'fruit fly', 'Insects'], bee: ['Apis mellifera', 'honeybee', 'Insects'],
+  lobster: ['Homarus americanus', 'American lobster', 'Crustaceans'], shrimp: ['Penaeus vannamei', 'whiteleg shrimp', 'Crustaceans'],
+  fossil: ['Liaoning fossil specimen', 'mystery fossil', '?']
+};
+const GENES = {
+  A: { name: 'Gene A', desc: 'slowly evolving (conserved enzyme-coding region)', len: 300, rate: 5.5e-4, seed: 11007 },
+  B: { name: 'Gene B', desc: 'moderately evolving (structural protein region)', len: 330, rate: 9e-4, seed: 23007 },
+  C: { name: 'Gene C', desc: 'fast evolving (mitochondrial-type gene)', len: 270, rate: 1.8e-3, seed: 37007 }
+};
+const NT = 'ACGT', TS = { A: 'G', G: 'A', C: 'T', T: 'C' };
+function mkRng(seed) { let s = seed >>> 0; const u = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const nrm = () => Math.sqrt(-2 * Math.log(u() + 1e-12)) * Math.cos(2 * Math.PI * u());
+  const pois = l => { if (l > 30) return Math.max(0, Math.round(l + Math.sqrt(l) * nrm())); let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= u(); } while (p > L); return k - 1; };
+  return { u, nrm, pois }; }
+const STOPS = ['TAA', 'TAG', 'TGA'];
+function randCodon(R) { let c; do { c = ''; for (let k = 0; k < 3; k++) { const x = R.u(); c += x < 0.27 ? 'A' : x < 0.5 ? 'C' : x < 0.74 ? 'G' : 'T'; } } while (STOPS.includes(c)); return c; }
+function buildDB() {
+  const db = {};
+  Object.entries(GENES).forEach(([g, G]) => {
+    const R = mkRng(G.seed * 7919);
+    let anc = 'ATG'; while (anc.length < G.len) anc += randCodon(R);
+    // per-site relative rates (array travels with sites through indels)
+    const rateFor = i => { if (R.u() < 0.12) return 0; const pos = [0.7, 0.35, 1.95][i % 3]; return pos * Math.exp(0.8 * R.nrm() - 0.32); };
+    const root = { seq: anc.split(''), rates: anc.split('').map((_, i) => i < 3 ? 0 : rateFor(i)) };
+    (function walk(node, st, tParent) {
+      const tNode = node.kids ? node.t : (node.age || 0);
+      const T = tParent - tNode;
+      const seq = st.seq.slice(), rates = st.rates.slice();
+      for (let i = 0; i < seq.length; i++) {
+        let n = R.pois(G.rate * T * rates[i]);
+        while (n-- > 0) { seq[i] = R.u() < 0.67 ? TS[seq[i]] : (() => { const opts = NT.split('').filter(b => b !== seq[i] && b !== TS[seq[i]]); return opts[Math.floor(R.u() * 2)]; })(); }
+      }
+      let nIndel = R.pois(0.0015 * T);
+      while (nIndel-- > 0) {
+        const cod = 1 + Math.floor(R.u() * (seq.length / 3 - 2)), at = cod * 3;
+        if (R.u() < 0.5) { seq.splice(at, 3); rates.splice(at, 3); }
+        else { const c = randCodon(R).split(''); seq.splice(at, 0, ...c); rates.splice(at, 0, rateFor(0), rateFor(1), rateFor(2)); }
+      }
+      const out = { seq, rates };
+      if (node.kids) node.kids.forEach(k => walk(k, out, tNode)); else { (db[node.id] = db[node.id] || {})[g] = seq.join(''); }
+    })(PHY, root, PHY.t);
+  });
+  return db;
+}
+/* Divergence time between two organisms = age of their most recent common ancestor in PHY */
+function mrcaAge(a, b) {
+  let best = null;
+  (function walk(n) { if (!n.kids) return [n.id]; const ids = n.kids.flatMap(walk); if (ids.includes(a) && ids.includes(b) && (best == null || n.t < best)) best = n.t; return ids; })(PHY);
+  return best;
+}
+/* Smith–Waterman local alignment with affine gaps (Gotoh). Gap of length k costs open + k·ext. */
+const PROGRAMS = {
+  blastn: { label: 'Somewhat similar sequences (blastn)', match: 2, mis: -3, open: 5, ext: 2, lambda: 0.625, K: 0.41, word: 11, scale: 1 },
+  megablast: { label: 'Highly similar sequences (megablast)', match: 2, mis: -4, open: 0, ext: 5, lambda: 0.64, K: 0.46, word: 28, scale: 2 } // = 1/−2, linear gap 2.5, doubled to stay integer
+};
+function swAlign(q, s, P) {
+  const n = q.length, m = s.length, W = m + 1, NEG = -1e9;
+  const H = new Int32Array((n + 1) * W), E = new Int32Array((n + 1) * W).fill(NEG), F = new Int32Array((n + 1) * W).fill(NEG);
+  let best = 0, bi = 0, bj = 0;
+  for (let i = 1; i <= n; i++) {
+    const qi = q.charCodeAt(i - 1);
+    for (let j = 1; j <= m; j++) {
+      const k = i * W + j;
+      E[k] = Math.max(H[k - 1] - P.open - P.ext, E[k - 1] - P.ext);
+      F[k] = Math.max(H[k - W] - P.open - P.ext, F[k - W] - P.ext);
+      const d = H[k - W - 1] + (qi === s.charCodeAt(j - 1) ? P.match : P.mis);
+      const h = Math.max(0, d, E[k], F[k]); H[k] = h;
+      if (h > best) { best = h; bi = i; bj = j; }
+    }
+  }
+  // traceback
+  let i = bi, j = bj, st = 'H'; const aq = [], as = [];
+  while (i > 0 && j > 0) {
+    const k = i * W + j;
+    if (st === 'H') {
+      if (H[k] === 0) break;
+      if (H[k] === H[k - W - 1] + (q[i - 1] === s[j - 1] ? P.match : P.mis)) { aq.push(q[i - 1]); as.push(s[j - 1]); i--; j--; }
+      else if (H[k] === E[k]) st = 'E'; else st = 'F';
+    } else if (st === 'E') { aq.push('-'); as.push(s[j - 1]); if (E[k] === H[k - 1] - P.open - P.ext) st = 'H'; j--; }
+    else { aq.push(q[i - 1]); as.push('-'); if (F[k] === H[k - W] - P.open - P.ext) st = 'H'; i--; }
+  }
+  aq.reverse(); as.reverse();
+  let nid = 0, gaps = 0; for (let x = 0; x < aq.length; x++) { if (aq[x] === as[x]) nid++; if (aq[x] === '-' || as[x] === '-') gaps++; }
+  return { score: best, qa: aq.join(''), sa: as.join(''), qStart: i + 1, qEnd: bi, sStart: j + 1, sEnd: bj, len: aq.length, nid, gaps };
+}
+const DB_SIZE = 1e11; // pretend search space ≈ GenBank-scale nucleotide collection
+function hasSeed(q, s, w) { if (q.length < w || s.length < w) return false; const set = new Set(); for (let i = 0; i + w <= q.length; i++) set.add(q.substr(i, w)); for (let j = 0; j + w <= s.length; j++) if (set.has(s.substr(j, w))) return true; return false; }
+function blast(query, targets, progKey) {
+  const P = PROGRAMS[progKey], hits = [];
+  targets.forEach(t => {
+    if (!hasSeed(query, t.seq, P.word)) return;
+    const a = swAlign(query, t.seq, P);
+    const raw = a.score / P.scale;
+    const bits = (P.lambda * a.score - Math.log(P.K)) / Math.LN2;
+    const E = query.length * DB_SIZE * Math.pow(2, -bits);
+    if (E > 10) return;
+    hits.push(Object.assign({}, t, a, { raw, bits, E, ident: 100 * a.nid / a.len, cover: 100 * (a.qEnd - a.qStart + 1) / query.length }));
+  });
+  return hits.sort((x, y) => y.bits - x.bits);
+}
+Lab.init({ id: 'lab03' });
+
+const db = buildDB();
+const ORG_IDS = Object.keys(ORGS).filter(k => k !== 'fossil');
+const FIG4_GROUPS = ['Insects', 'Crustaceans', 'Crocodilians', 'Birds', 'Rodents', 'Great apes'];
+const orgLabel = id => id === 'fossil' ? 'Mystery fossil' : `${ORGS[id][1][0].toUpperCase() + ORGS[id][1].slice(1)}`;
+const esc = Lab.esc;
+
+/* ---------------- Pre-lab ---------------- */
+Lab.quiz('#prelab', [
+  { type: 'mc', q: 'In a cladogram built from Table 1 (plants), which group is the <strong>outgroup</strong>, the one that branches off first?', choices: ['Mosses', 'Ferns', 'Pine trees', 'Flowering plants'], answer: 0, explain: 'Mosses lack all three derived traits (score 0 0 0), so they split from the other groups before vascular tissue evolved.' },
+  { type: 'mc', q: 'Using the totals in Table 1 (vascular tissue 3, seeds 2, flowers 1), what is the order in which the traits evolved, earliest first?', choices: ['Flowers → seeds → vascular tissue', 'Vascular tissue → seeds → flowers', 'Seeds → vascular tissue → flowers', 'All three evolved at the same time'], answer: 1, explain: 'The more groups that share a derived trait, the earlier it appeared. Vascular tissue (3 groups) came before seeds (2), and seeds came before flowers (1).' },
+  { type: 'mc', q: 'Why is GAPDH <em>gene</em> similarity always lower than <em>protein</em> similarity for the same pair of species?', choices: ['Proteins mutate more slowly because they are larger molecules', 'The genetic code is redundant, so some DNA changes (often in the third codon position) do not change the amino acid', 'Gene sequences include introns, which are always 50% different', 'Protein sequences are measured less accurately than DNA'], answer: 1, explain: 'Several codons code for the same amino acid. A "silent" substitution changes the DNA but not the protein, so DNA differences build up faster than amino-acid differences.' },
+  { type: 'mc', q: 'Based on GAPDH gene similarity, which organism would branch off <em>first</em> (farthest from humans) on a cladogram of the five species?', choices: ['Chimpanzee', 'Dog', 'Fruit fly', 'Roundworm'], answer: 3, explain: 'The roundworm has the lowest similarity (68.2%), so it shares the oldest common ancestor with humans. The order of branching is roundworm, then fruit fly, then dog, then chimpanzee + human.' },
+  { type: 'num', q: 'Organism A: <code>ATGATCCAGT</code><br>Organism B: <code>ACGACTCAGT</code><br>What is the percent identity between A and B?', answer: 70, tol: 0.5, unit: '%', explain: 'Compare position by position. Positions 2, 5 and 6 differ, so 7 of 10 bases match: 7/10 = 70%.' },
+  { type: 'num', q: 'Organism A: <code>ATGATCCAGT</code><br>Organism C: <code>TTGATCCAGT</code><br>What is the percent identity between A and C?', answer: 90, tol: 0.5, unit: '%', explain: 'Only the first base differs, so 9 of 10 match: 90%. By this short sequence, A is more closely related to C than to B.' },
+  { type: 'multi', q: 'A BLAST search returns these E-values. Which hits would you treat as truly related (homologous) sequences, using the E &lt; 1 × 10<sup>−4</sup> rule?', choices: ['2e-87', '3e-05', '0.002', '6e-12', '4.1'], answer: [0, 1, 3], explain: '2 × 10<sup>−87</sup>, 3 × 10<sup>−5</sup> and 6 × 10<sup>−12</sup> are all smaller than 1 × 10<sup>−4</sup>. A value of 0.002 or 4.1 means a match that good could easily happen by chance.' },
+  { type: 'mc', q: 'In the Figure 2 cladogram (Background), which trait evolved first: dry skin or hair?', choices: ['Dry skin', 'Hair', 'They evolved at the same node', 'The cladogram cannot show this'], answer: 0, explain: 'Dry skin is marked lower on the main branch (closer to the root) than hair. Lizards, tigers and gorillas all have dry skin, but only tigers and gorillas have hair.' }
+], { id: 'prelab' });
+
+/* ---------------- Part 1: trait table + clade builder ---------------- */
+const DATASETS = {
+  fig4: {
+    taxa: [
+      { id: 'ins', name: 'Insects', ex: 'Grasshopper', desc: 'Eats leaves. Hard, jointed exoskeleton and jointed legs. Its chewing mouthparts stick out from the head, fully exposed. Each leg is a single, unbranched chain of segments. No backbone.' },
+      { id: 'cru', name: 'Crustaceans', ex: 'Lobster', desc: 'Scavenges and hunts other animals. Hard, jointed exoskeleton and jointed legs. Many of its limbs split into two branches (inner and outer). Mouthparts are tucked under layers of appendages. No backbone.' },
+      { id: 'cro', name: 'Crocodilians', ex: 'Alligator', desc: 'Predator. Has a backbone. A muscular gizzard grinds swallowed food. A flap at the back of the throat, the palatal valve, seals off the airway so it can open its mouth underwater. Scaly skin, no fur or feathers.' },
+      { id: 'bir', name: 'Birds', ex: 'Pigeon', desc: 'Eats seeds. Has a backbone. A muscular gizzard holds grit to grind seeds. Body covered in feathers. No teeth and no fur.' },
+      { id: 'rod', name: 'Rodents', ex: 'Mouse', desc: 'Eats seeds and grain. Has a backbone. Body covered in fur. Two pairs of chisel-like incisors that never stop growing. Thumb cannot touch the other fingers. No gizzard.' },
+      { id: 'ape', name: 'Great apes', ex: 'Chimpanzee', desc: 'Eats fruit, leaves and insects. Has a backbone. Body covered in fur (hair). Opposable thumbs can touch the other fingers to grip. No gizzard.' }
+    ],
+    traits: [
+      ['Heterotroph (eats other organisms)', ['ins', 'cru', 'cro', 'bir', 'rod', 'ape']],
+      ['Jointed exoskeleton', ['ins', 'cru']],
+      ['Vertebrae (backbone)', ['cro', 'bir', 'rod', 'ape']],
+      ['Muscular gizzard', ['cro', 'bir']],
+      ['Fur', ['rod', 'ape']],
+      ['Exposed mouthparts', ['ins']],
+      ['Two-parted limbs', ['cru']],
+      ['Palatal valve', ['cro']],
+      ['Feathers', ['bir']],
+      ['Two specialized incisors', ['rod']],
+      ['Opposable thumbs', ['ape']]
+    ]
+  },
+  plants: {
+    taxa: [
+      { id: 'mos', name: 'Mosses', ex: 'Haircap moss', desc: 'Small, low-growing plant. Water moves cell to cell, with no tubes of xylem or phloem. Reproduces with spores. No seeds and no flowers.' },
+      { id: 'fer', name: 'Ferns', ex: 'Sword fern', desc: 'Has xylem and phloem that carry water and sugar. Reproduces with spores from dots under the leaves. No seeds and no flowers.' },
+      { id: 'pin', name: 'Pine trees', ex: 'White pine', desc: 'Has xylem and phloem. Makes seeds on the scales of woody cones. No flowers or fruit.' },
+      { id: 'flo', name: 'Flowering plants', ex: 'Apple tree', desc: 'Has xylem and phloem. Makes flowers, and seeds develop inside fruit.' }
+    ],
+    traits: [
+      ['Photosynthetic, multicellular', ['mos', 'fer', 'pin', 'flo']],
+      ['Vascular tissue', ['fer', 'pin', 'flo']],
+      ['Seeds', ['pin', 'flo']],
+      ['Flowers', ['flo']]
+    ]
+  }
+};
+let dsKey = Lab.store.get('ds', 'fig4');
+if (!DATASETS[dsKey]) dsKey = 'fig4';
+const getClades = k => Lab.store.get('clades:' + k, []);
+const setClades = (k, c) => Lab.store.set('clades:' + k, c);
+
+function traitMembers(ds, trait) { const t = DATASETS[ds].traits.find(x => x[0] === trait); return t ? t[1] : []; }
+function sameSet(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+
+function buildTree(taxaIds, clades) {
+  const root = { members: taxaIds.slice(), kids: [], marks: [] };
+  clades.map((c, i) => Object.assign({}, c, { i })).sort((a, b) => b.members.length - a.members.length || a.i - b.i).forEach(c => {
+    let node = root;
+    for (;;) { const k = node.kids.find(k => c.members.every(m => k.members.includes(m))); if (!k) break; node = k; }
+    if (node.members.length === c.members.length) { node.marks.push(c); return; }
+    const nn = { members: c.members.slice(), kids: [], marks: [c] };
+    node.kids = node.kids.filter(k => { if (k.members.every(m => c.members.includes(m))) { nn.kids.push(k); return false; } return true; });
+    node.kids.push(nn);
+  });
+  (function fin(n) {
+    n.kids.forEach(fin);
+    if (n.members.length > 1) { const cov = new Set(n.kids.flatMap(k => k.members)); n.members.forEach(m => { if (!cov.has(m)) n.kids.push({ members: [m], kids: [], marks: [] }); }); }
+    n.kids.sort((a, b) => b.members.length - a.members.length || taxaIds.indexOf(a.members[0]) - taxaIds.indexOf(b.members[0]));
+  })(root);
+  return root;
+}
+const nodeKey = n => n.members.slice().sort().join(',');
+function insertFossil(root, key) {
+  const fos = { members: ['fossil'], kids: [], marks: [], fossil: true };
+  if (!key) return root;
+  if (key === nodeKey(root)) return { members: root.members.concat('fossil'), kids: [root, fos], marks: [], fosParent: true };
+  let done = false;
+  (function walk(n) { n.kids = n.kids.map(k => { if (!done && nodeKey(k) === key) { done = true; return { members: k.members.concat('fossil'), kids: [k, fos], marks: [], fosParent: true }; } walk(k); return k; }); })(root);
+  return root;
+}
+/* Render a rooted tree as an elbow cladogram (SVG). names: id → label. Returns legend entries. */
+function drawTree(el, root, names, opts = {}) {
+  const leaves = []; (function lv(n) { if (!n.kids.length) leaves.push(n); else n.kids.forEach(lv); })(root);
+  const hgt = n => n.kids.length ? 1 + Math.max(...n.kids.map(hgt)) : 0;
+  const H = Math.max(1, hgt(root)), W = 480, rowH = 30, top = 22, labelW = opts.labelW || 150, left = 40, xLeaf = W - labelW;
+  const Hh = top * 2 + rowH * (leaves.length - 1);
+  const X = n => left + (H - hgt(n)) / H * (xLeaf - left);
+  const pos = new Map(); leaves.forEach((l, i) => pos.set(l, top + i * rowH));
+  (function py(n) { if (n.kids.length) { n.kids.forEach(py); pos.set(n, (pos.get(n.kids[0]) + pos.get(n.kids[n.kids.length - 1])) / 2); } })(root);
+  let svg = '', legend = [], num = 0;
+  const badges = (n, x0, x1, y) => {
+    if (!n.marks || !n.marks.length) return;
+    const span = x1 - x0, step = Math.min(18, span / (n.marks.length + 1));
+    n.marks.forEach((m, i) => { num++; const cx = x0 + span / 2 + (i - (n.marks.length - 1) / 2) * step; const warn = opts.check && !opts.check(m); legend.push({ num, m, warn }); svg += `<g class="badge${warn ? ' warn' : ''}"><circle cx="${cx}" cy="${y}" r="8"/><text x="${cx}" y="${y + 3.6}" text-anchor="middle">${num}</text></g>`; });
+  };
+  const rx = X(root), ry = pos.get(root);
+  svg += `<path class="br" d="M8 ${ry} H${rx}"/>`;
+  (function draw(n) {
+    if (!n.kids.length) return;
+    const x = X(n), ys = n.kids.map(k => pos.get(k));
+    svg += `<path class="br" d="M${x} ${Math.min(...ys)} V${Math.max(...ys)}"/>`;
+    n.kids.forEach(k => { svg += `<path class="br${k.fossil ? ' fos' : ''}" d="M${x} ${pos.get(k)} H${X(k)}"/>`; draw(k); });
+  })(root);
+  badges(root, 8, rx, ry);
+  (function bd(n) { n.kids.forEach(k => { badges(k, X(n), X(k), pos.get(k)); bd(k); }); })(root);
+  leaves.forEach(l => { svg += `<text x="${X(l) + 6}" y="${pos.get(l) + 4.5}"${l.fossil ? ' class="fos"' : ''}>${esc(l.fossil ? (opts.fossilLabel || 'Fossil') : names[l.members[0]] || l.members[0])}</text>`; });
+  el.innerHTML = `<svg class="tree-svg" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(opts.aria || 'Cladogram')}">${svg}</svg>` +
+    (legend.length ? `<div class="tree-legend">${legend.map(e => `<span class="${e.warn ? 'warn' : ''}"><b>${e.num}</b>${esc(e.m.trait)}${e.warn ? ' (does not match the trait table)' : ''}</span>`).join('')}</div>` : '');
+  return leaves.map(l => l.fossil ? 'fossil' : l.members[0]);
+}
+
+function renderDataset() {
+  const D = DATASETS[dsKey];
+  Lab.$$('#ds-seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === dsKey)));
+  Lab.$('#orgcards').innerHTML = D.taxa.map(t => `<div class="orgcard"><h4>${esc(t.name)} <span class="muted small">(${esc(t.ex)})</span></h4>${esc(t.desc)}</div>`).join('');
+  const saved = Lab.store.get('matrix:' + dsKey, {});
+  Lab.$('#matrix').innerHTML = `<div class="table-wrap"><table class="data matrix"><thead><tr><th>Organism</th>${D.traits.map((t, j) => `<th class="rot">${esc(t[0])}</th>`).join('')}</tr></thead><tbody>${D.taxa.map(t => `<tr><td>${esc(t.name)}</td>${D.traits.map((tr, j) => `<td id="cell-${t.id}-${j}"><input type="checkbox" id="mx-${t.id}-${j}" data-t="${t.id}" data-j="${j}" aria-label="${esc(t.name)} has ${esc(tr[0])}" ${saved[t.id + j] ? 'checked' : ''}></td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr><td>Total</td>${D.traits.map((t, j) => `<td class="num" id="tot-${j}"></td>`).join('')}</tr></tfoot></table></div>`;
+  const totals = () => D.traits.forEach((t, j) => { Lab.$('#tot-' + j).textContent = Lab.$$(`#matrix input[data-j="${j}"]:checked`).length; });
+  Lab.$$('#matrix input').forEach(inp => inp.addEventListener('change', () => { const s = Lab.store.get('matrix:' + dsKey, {}); s[inp.dataset.t + inp.dataset.j] = inp.checked; Lab.store.set('matrix:' + dsKey, s); totals(); }));
+  totals();
+  Lab.$('#matrix-msg').textContent = '';
+  Lab.$('#chips').innerHTML = D.taxa.map(t => `<button type="button" class="chip" data-id="${t.id}" aria-pressed="false">${esc(t.name)}</button>`).join('');
+  Lab.$$('#chips .chip').forEach(c => c.addEventListener('click', () => c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'))));
+  Lab.$('#trait-pick').innerHTML = D.traits.map(t => `<option>${esc(t[0])}</option>`).join('');
+  Lab.$('#fossil-part').hidden = dsKey !== 'fig4';
+  drawBuild();
+}
+const names4 = Object.fromEntries(DATASETS.fig4.taxa.map(t => [t.id, t.name]));
+function fig4Tree() { return buildTree(DATASETS.fig4.taxa.map(t => t.id), getClades('fig4')); }
+function placementOptions(sel, storeKey) {
+  const root = fig4Tree(), opts = [];
+  (function walk(n, depth) {
+    const label = n === root ? 'At the root: outside every group on the tree' : n.members.length === 1 ? `Sister to ${names4[n.members[0]]}` : `Sister to the clade (${n.members.map(m => names4[m]).join(' + ')})`;
+    opts.push([nodeKey(n), label]); n.kids.forEach(k => walk(k, depth + 1));
+  })(root, 0);
+  const cur = Lab.store.get(storeKey, '');
+  sel.innerHTML = `<option value="">Choose a branch…</option>` + opts.map(([k, l]) => `<option value="${k}" ${k === cur ? 'selected' : ''}>${esc(l)}</option>`).join('');
+  if (cur && !opts.some(o => o[0] === cur)) sel.value = '';
+}
+function drawBuild() {
+  const D = DATASETS[dsKey], ids = D.taxa.map(t => t.id), names = Object.fromEntries(D.taxa.map(t => [t.id, t.name]));
+  let root = buildTree(ids, getClades(dsKey));
+  const hyp = dsKey === 'fig4' ? Lab.store.get('fossil-hyp', '') : '';
+  if (hyp) root = insertFossil(root, hyp);
+  drawTree(Lab.$('#tree-build'), root, names, { check: m => sameSet(m.members, traitMembers(dsKey, m.trait)), fossilLabel: 'Fossil (hypothesis)', aria: 'Your cladogram built from the trait table' });
+  if (dsKey === 'fig4') placementOptions(Lab.$('#fossil-hyp'), 'fossil-hyp');
+  drawFinal();
+}
+function drawFinal() {
+  placementOptions(Lab.$('#fossil-final'), 'fossil-final');
+  const fin = Lab.store.get('fossil-final', ''), hyp = Lab.store.get('fossil-hyp', '');
+  const lab = k => { const o = Array.from(Lab.$('#fossil-final').options).find(o => o.value === k); return o ? o.textContent : null; };
+  Lab.$('#hyp-recall').textContent = hyp && lab(hyp) ? `Your Part 1 (morphology) hypothesis: ${lab(hyp)}.` : 'You have not recorded a Part 1 hypothesis yet.';
+  drawTree(Lab.$('#tree-final'), insertFossil(fig4Tree(), fin), names4, { check: m => sameSet(m.members, traitMembers('fig4', m.trait)), fossilLabel: 'Fossil (final)', aria: 'Fossil cladogram with your final fossil placement' });
+}
+Lab.$$('#ds-seg button').forEach(b => b.addEventListener('click', () => { dsKey = b.dataset.ds; Lab.store.set('ds', dsKey); renderDataset(); }));
+Lab.$('#check-matrix').addEventListener('click', () => {
+  const D = DATASETS[dsKey]; let wrong = 0;
+  D.taxa.forEach(t => D.traits.forEach((tr, j) => { const has = tr[1].includes(t.id), got = Lab.$(`#mx-${t.id}-${j}`).checked, td = Lab.$(`#cell-${t.id}-${j}`); td.classList.toggle('cell-bad', has !== got); td.classList.toggle('cell-ok', has === got && has); if (has !== got) wrong++; }));
+  Lab.$('#matrix-msg').innerHTML = wrong ? `<span class="pill bad">${wrong} cell${wrong > 1 ? 's' : ''} to fix</span> Reread the highlighted organism cards.` : '<span class="pill ok">Table complete</span> Use the totals: the bigger the total, the earlier the trait probably evolved.';
+});
+Lab.$('#add-clade').addEventListener('click', () => {
+  const sel = Lab.$$('#chips .chip[aria-pressed="true"]').map(c => c.dataset.id), trait = Lab.$('#trait-pick').value, msg = Lab.$('#build-msg');
+  const D = DATASETS[dsKey], clades = getClades(dsKey);
+  if (!sel.length) { msg.className = 'msg bad'; msg.textContent = 'Select at least one organism first.'; return; }
+  const clash = clades.find(c => !(c.members.every(m => sel.includes(m)) || sel.every(m => c.members.includes(m)) || !c.members.some(m => sel.includes(m))));
+  if (clash) { msg.className = 'msg bad'; msg.textContent = `That group overlaps the "${clash.trait}" group without fitting inside it (or containing it). A clade must be nested inside another clade or completely separate from it.`; return; }
+  if (clades.some(c => c.trait === trait)) { msg.className = 'msg bad'; msg.textContent = `You already used "${trait}". Each derived trait evolved once, so it marks only one branch.`; return; }
+  clades.push({ members: sel, trait }); setClades(dsKey, clades);
+  const truth = traitMembers(dsKey, trait), names = sel.map(id => D.taxa.find(t => t.id === id).name).join(', ');
+  if (sameSet(sel, truth)) { msg.className = 'msg ok'; msg.textContent = `Added. Only ${names} ${sel.length > 1 ? 'share' : 'has'} "${trait}", so this trait supports the group.`; }
+  else { msg.className = 'msg warn'; msg.textContent = `Added, but check it: according to the trait table "${trait}" is found in ${truth.map(id => D.taxa.find(t => t.id === id).name).join(', ')}. The badge is shown in orange.`; }
+  Lab.$$('#chips .chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
+  drawBuild();
+});
+Lab.$('#undo-clade').addEventListener('click', () => { const c = getClades(dsKey); c.pop(); setClades(dsKey, c); Lab.$('#build-msg').className = 'msg'; Lab.$('#build-msg').textContent = 'Removed the last group.'; drawBuild(); });
+Lab.$('#reset-clade').addEventListener('click', () => { setClades(dsKey, []); Lab.$('#build-msg').className = 'msg'; Lab.$('#build-msg').textContent = 'Tree cleared. All organisms start joined at a single root.'; drawBuild(); });
+Lab.$('#fossil-hyp').addEventListener('change', e => { Lab.store.set('fossil-hyp', e.target.value); drawBuild(); });
+Lab.$('#fossil-final').addEventListener('change', e => { Lab.store.set('fossil-final', e.target.value); drawFinal(); });
+Lab.prompt('#obs-prompt', { key: 'fossil-obs', label: 'Record your observations of the fossil\'s morphology. Which traits from the trait table does it have, and which does it lack?', rows: 3 });
+Lab.prompt('#hyp-prompt', { key: 'fossil-hyp-why', label: 'Explain your hypothesis using shared derived characters.', rows: 3 });
+renderDataset();
+
+/* ---------------- Mini-BLAST output ---------------- */
+const fmtE = E => { if (E < 1e-180) return '0.0'; if (E >= 0.01) return E >= 1 ? E.toFixed(1) : E.toFixed(3); const ex = Math.floor(Math.log10(E)); let man = Math.round(E / Math.pow(10, ex)); return man >= 10 ? `1e-${String(-(ex + 1)).padStart(2, '0')}` : `${man}e-${String(-ex).padStart(2, '0')}`; };
+const bitColor = b => b >= 200 ? '--bad' : b >= 80 ? '--s2' : b >= 50 ? '--s1' : b >= 40 ? '--s3' : '--muted';
+function alignmentText(h, qLen) {
+  const lines = []; let qi = h.qStart, si = h.sStart;
+  lines.push(`>${ORGS[h.id][0]} (${ORGS[h.id][1]}) ${h.gene ? 'gene ' + h.gene + ' homolog, simulated' : ''}`);
+  lines.push(`Score = ${h.bits.toFixed(0)} bits (${h.raw}),  Expect = ${fmtE(h.E)}`);
+  lines.push(`Identities = ${h.nid}/${h.len} (${Math.round(h.ident)}%),  Gaps = ${h.gaps}/${h.len} (${Math.round(100 * h.gaps / h.len)}%)`);
+  lines.push('Strand = Plus/Plus', '');
+  for (let k = 0; k < h.len; k += 60) {
+    const qa = h.qa.slice(k, k + 60), sa = h.sa.slice(k, k + 60);
+    const qn = qa.replace(/-/g, '').length, sn = sa.replace(/-/g, '').length;
+    const mid = qa.split('').map((c, x) => c === sa[x] ? '|' : ' ').join('');
+    lines.push(`Query  ${String(qi).padEnd(4)} ${qa}  ${qi + qn - 1}`);
+    lines.push(`            ${mid}`);
+    lines.push(`Sbjct  ${String(si).padEnd(4)} ${sa}  ${si + sn - 1}`, '');
+    qi += qn; si += sn;
+  }
+  return lines.join('\n');
+}
+function renderBlast(el, res, meta) {
+  const { hits, query } = res;
+  if (!hits.length) { el.innerHTML = `<div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${meta.prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div>`; return; }
+  const W = 640, rowH = 13, top = 34, Hh = top + hits.length * rowH + 8, L = 120, R = W - 12, X = p => L + (p - 1) / query.length * (R - L);
+  let g = `<text x="${L}" y="12">Query</text><rect x="${L}" y="18" width="${R - L}" height="6" rx="2" style="fill:var(--ink)"/>`;
+  [1, Math.round(query.length / 2), query.length].forEach(p => { g += `<text x="${X(p)}" y="31" text-anchor="middle" style="font-size:9.5px;fill:var(--muted)">${p}</text>`; });
+  hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 6}" y="${y + 8}" text-anchor="end">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="9" rx="2" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits</title></rect>`; });
+  const key = [['--muted', '&lt; 40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥ 200']].map(([c, t]) => `<span><i style="background:var(${c})"></i>${t}</span>`).join('');
+  el.innerHTML = `<div class="small"><strong>Graphic summary.</strong> Each bar shows where a database sequence lines up with the query, colored by alignment score (bits).</div><div class="bitkey">${key}</div>
+    <svg class="graphic" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Graphic summary of ${hits.length} BLAST hits">${g}</svg>
+    <div class="small"><strong>Sequences producing significant alignments</strong> (${hits.length}). Select a row to view its alignment.</div>
+    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th>Group</th><th class="num">Max score</th><th class="num">Query cover</th><th class="num">E value</th><th class="num">Per. ident</th><th>Alignment</th></tr></thead><tbody>
+    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td>${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="btn btn--sm" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
+    </tbody></table></div><div class="aln-box"></div><div class="dtree"></div>`;
+  const box = Lab.$('.aln-box', el);
+  const show = i => { Lab.$$('tr', el).forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment">${esc(alignmentText(hits[i], query.length))}</pre>`; };
+  Lab.$$('[data-view]', el).forEach(b => b.addEventListener('click', () => show(+b.dataset.view)));
+  show(0);
+}
+/* Distance tree: UPGMA on Jukes–Cantor distances from pairwise blastn alignments */
+function distanceTree(el, query, hits) {
+  const items = [{ id: 'query', seq: query }].concat(hits.slice(0, 10).map(h => ({ id: h.id, seq: h.seq })));
+  const n = items.length, P = PROGRAMS.blastn, d = [];
+  for (let i = 0; i < n; i++) { d[i] = []; for (let j = 0; j < i; j++) { const a = swAlign(items[i].seq, items[j].seq, P), p = Math.min(0.7, 1 - a.nid / Math.max(a.len, 1)); d[i][j] = -0.75 * Math.log(Math.max(1e-6, 1 - 4 * p / 3)); } }
+  const D = (i, j) => i === j ? 0 : i > j ? d[i][j] : d[j][i];
+  let clusters = items.map((it, i) => ({ node: { members: [it.id], kids: [], marks: [] }, idx: [i] }));
+  while (clusters.length > 1) {
+    let best = [0, 1, Infinity];
+    for (let a = 0; a < clusters.length; a++) for (let b = a + 1; b < clusters.length; b++) {
+      let s = 0; clusters[a].idx.forEach(i => clusters[b].idx.forEach(j => { s += D(i, j); }));
+      const avg = s / (clusters[a].idx.length * clusters[b].idx.length); if (avg < best[2]) best = [a, b, avg];
+    }
+    const A = clusters[best[0]], B = clusters[best[1]];
+    const merged = { node: { members: A.node.members.concat(B.node.members), kids: [A.node, B.node], marks: [] }, idx: A.idx.concat(B.idx) };
+    clusters = clusters.filter((_, k) => k !== best[0] && k !== best[1]).concat(merged);
+  }
+  const names = Object.fromEntries(items.map(it => [it.id, it.id === 'query' ? 'Query (your sequence)' : orgLabel(it.id)]));
+  el.innerHTML = '<div class="small" style="margin-top:10px"><strong>Distance tree of results</strong>: query + top hits, clustered by sequence distance (UPGMA, Jukes–Cantor corrected).</div><div class="dt-svg"></div>';
+  drawTree(Lab.$('.dt-svg', el), clusters[0].node, names, { labelW: 170, aria: 'Distance tree of BLAST results' });
+}
+function targetsFor(gene, ids) { return ids.map(id => ({ id, gene, seq: db[id][gene] })); }
+
+/* ---------------- Part 2 ---------------- */
+let prog = 'blastn', lastRes = null;
+const VERT = ORG_IDS.filter(id => !['Insects', 'Crustaceans'].includes(ORGS[id][2]));
+const FIG4 = ORG_IDS.filter(id => FIG4_GROUPS.includes(ORGS[id][2]));
+const showQuery = () => { const g = Lab.$('#q-gene').value; Lab.$('#q-seq').textContent = db.fossil[g]; };
+['A', 'B', 'C'].forEach(g => { const o = Lab.$(`#q-gene option[value="${g}"]`); o.textContent = `Fossil gene ${g} (${db.fossil[g].length} bp, ${GENES[g].desc.split(' (')[0]})`; });
+Lab.$('#q-gene').addEventListener('change', showQuery); showQuery();
+Lab.$$('#prog-seg button').forEach(b => b.addEventListener('click', () => { prog = b.dataset.p; Lab.$$('#prog-seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+function runPart2() {
+  const g = Lab.$('#q-gene').value, set = Lab.$('#q-set').value;
+  const ids = set === 'vert' ? VERT : set === 'fig4' ? FIG4 : ORG_IDS;
+  const hits = blast(db.fossil[g], targetsFor(g, ids), prog);
+  lastRes = { hits, query: db.fossil[g], gene: g, prog };
+  Lab.$('#r-top').textContent = hits[0] ? orgLabel(hits[0].id) : 'none';
+  Lab.$('#r-id').textContent = hits[0] ? hits[0].ident.toFixed(1) + '%' : '—';
+  Lab.$('#r-e').textContent = hits[0] ? fmtE(hits[0].E) : '—';
+  Lab.$('#r-n').textContent = hits.length;
+  renderBlast(Lab.$('#blast-out'), lastRes, { prog });
+  if (prog === 'blastn') { const best = {}; hits.forEach(h => { const grp = ORGS[h.id][2]; best[grp] = Math.max(best[grp] || 0, h.ident); }); Lab.store.set('best:' + g, best); drawBestChart(); }
+}
+Lab.$('#run-blast').addEventListener('click', runPart2);
+Lab.$('#tree-blast').addEventListener('click', () => { if (!lastRes) runPart2(); if (lastRes.hits.length) distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); });
+const blastTable = Lab.table('#blast-table', {
+  save: 'blastlog',
+  columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
+});
+Lab.$('#log-blast').addEventListener('click', () => {
+  if (!lastRes) runPart2();
+  lastRes.hits.slice(0, 5).forEach((h, i) => blastTable.addRow({ gene: lastRes.gene, prog: lastRes.prog, rank: i + 1, org: ORGS[h.id][1], group: ORGS[h.id][2], bits: Math.round(h.bits), e: fmtE(h.E), ident: h.ident, where: '' }));
+});
+const bestChart = Lab.chart('#blast-chart', { type: 'bar', categories: FIG4_GROUPS, yLabel: 'Best identity to fossil (%)', xLabel: 'Group on Figure 4 cladogram', yMin: 50, yMax: 100, series: [] });
+function drawBestChart() {
+  const series = ['A', 'B', 'C'].map(g => { const b = Lab.store.get('best:' + g, null); return b ? { name: 'Gene ' + g, points: FIG4_GROUPS.map(c => ({ x: c, y: b[c] != null ? b[c] : NaN })) } : null; }).filter(Boolean);
+  bestChart.update({ series });
+}
+drawBestChart();
+runPart2();
+Lab.prompt('#place-prompts', { key: 'place-why', label: 'Justify your final placement. Use at least two pieces of BLAST evidence (score, E-value, percent identity) from different genes, plus one morphological trait.', rows: 4 });
+
+/* ---------------- Design ---------------- */
+let dprog = 'blastn', dRes = null;
+Lab.prompt('#design-prompts', { key: 'd-question', label: 'Your question', rows: 3, placeholder: 'e.g., Does percent identity drop at a steady rate as divergence time increases, and does the rate differ between genes?' });
+Lab.prompt('#design-prompts', { key: 'd-hypothesis', label: 'Your hypothesis and prediction', rows: 3 });
+Lab.prompt('#design-prompts', { key: 'd-variables', label: 'Independent variable, dependent variable, and what you kept the same (controls)', rows: 3 });
+Lab.$('#d-org').innerHTML = ORG_IDS.concat('fossil').map(id => `<option value="${id}" ${id === 'human' ? 'selected' : ''}>${esc(orgLabel(id))}${id !== 'fossil' ? ' (' + esc(ORGS[id][0]) + ')' : ''}</option>`).join('');
+Lab.$('#d-set').innerHTML = ORG_IDS.map(id => `<label for="ds-${id}"><input type="checkbox" id="ds-${id}" value="${id}" checked>${esc(orgLabel(id))}</label>`).join('');
+Lab.$('#d-all').addEventListener('click', () => Lab.$$('#d-set input').forEach(i => { i.checked = true; }));
+Lab.$('#d-none').addEventListener('click', () => Lab.$$('#d-set input').forEach(i => { i.checked = false; }));
+Lab.$$('#dprog-seg button').forEach(b => b.addEventListener('click', () => { dprog = b.dataset.p; Lab.$$('#dprog-seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+function runDesign() {
+  const g = Lab.$('#d-gene').value, org = Lab.$('#d-org').value, paste = Lab.$('#d-paste').value.toUpperCase().replace(/[^A-Z]/g, '');
+  const out = Lab.$('#d-out');
+  if (paste && /[^ACGT]/.test(paste)) { out.innerHTML = '<div class="msg bad">Your pasted sequence contains letters other than A, C, G and T. Remove them and try again.</div>'; return; }
+  if (paste && paste.length < 30) { out.innerHTML = '<div class="msg bad">Paste at least 30 bases so the search has something to align.</div>'; return; }
+  const ids = Lab.$$('#d-set input:checked').map(i => i.value).filter(id => paste || id !== org);
+  if (!ids.length) { out.innerHTML = '<div class="msg bad">Choose at least one organism to search.</div>'; return; }
+  const query = paste || db[org][g];
+  const hits = blast(query, targetsFor(g, ids), dprog);
+  dRes = { hits, query, gene: g, org: paste ? 'pasted' : org, prog: dprog };
+  Lab.$('#d-q').textContent = paste ? `Pasted (${paste.length} bp)` : `${orgLabel(org)} ${g}`;
+  Lab.$('#d-n').textContent = hits.length;
+  renderBlast(out, dRes, { prog: dprog });
+}
+Lab.$('#d-run').addEventListener('click', runDesign);
+runDesign();
+const clockTable = Lab.table('#clock-table', {
+  save: 'clock',
+  columns: [{ key: 'gene', label: 'Gene' }, { key: 'q', label: 'Query' }, { key: 'hit', label: 'Hit' }, { key: 't', label: 'Time since common ancestor', unit: 'Mya', num: true, digits: 1 }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }],
+  onChange: drawClock
+});
+Lab.$('#d-log').addEventListener('click', () => {
+  if (!dRes) runDesign();
+  if (!dRes || dRes.org === 'pasted') { Lab.$('#d-out').insertAdjacentHTML('afterbegin', '<div class="msg warn">Divergence times are only known for organisms in the database, so pasted queries cannot be added to the clock table.</div>'); return; }
+  const rows = clockTable.getRows().slice();
+  dRes.hits.forEach(h => rows.push({ gene: dRes.gene, q: orgLabel(dRes.org), hit: orgLabel(h.id), t: mrcaAge(dRes.org, h.id), ident: h.ident, bits: Math.round(h.bits) }));
+  clockTable.setRows(rows);
+});
+const clockChart = Lab.chart('#clock-chart', { xLabel: 'Time since common ancestor (millions of years)', yLabel: 'Percent identity (%)', xMin: 0, yMax: 100, series: [] });
+function drawClock(rows) {
+  rows = rows || clockTable.getRows();
+  const useMax = Lab.$('#clock-max').checked, maxT = +Lab.$('#clock-max-range').value;
+  Lab.$('#clock-max-out').textContent = maxT;
+  const series = []; let shown = null;
+  ['A', 'B', 'C'].forEach(g => {
+    const pts = rows.filter(r => r.gene === g && isFinite(r.t) && isFinite(r.ident)).map(r => ({ x: r.t, y: r.ident }));
+    if (!pts.length) return;
+    const fitPts = useMax ? pts.filter(p => p.x <= maxT) : pts;
+    const col = { A: 'var(--s1)', B: 'var(--s2)', C: 'var(--s3)' }[g];
+    series.push({ name: `Gene ${g}`, points: pts, line: false, color: col });
+    if (fitPts.length > 1 && new Set(fitPts.map(p => p.x)).size > 1) { series.push({ name: `Gene ${g} fit`, points: fitPts, line: false, dots: false, fit: 'linear', color: col }); const f = Lab.stats.linreg(fitPts.map(p => p.x), fitPts.map(p => p.y)); if (!shown) shown = f; }
+  });
+  clockChart.update({ series });
+  Lab.$('#d-slope').textContent = shown ? `${Lab.fmt(shown.m * 100, 2)} %/100 My` : '—';
+  Lab.$('#d-r2').textContent = shown ? Lab.fmt(shown.r2, 3) : '—';
+}
+Lab.$('#clock-max').addEventListener('change', () => drawClock());
+Lab.$('#clock-max-range').addEventListener('input', () => drawClock());
+drawClock();
+Lab.prompt('#design-analysis', { key: 'd-analysis', label: 'Analyze: what is the slope (percent identity lost per 100 million years) for each gene you tested, and how well does a straight line fit (R²)? Where does the pattern stop being linear, and why might very old splits level off?', rows: 4 });
+Lab.prompt('#design-analysis', { key: 'd-conclusion', label: 'Conclusion: was your hypothesis supported? Name one limitation of your design and one way to improve it.', rows: 3 });
+
+/* ---------------- Analyze & Evaluate ---------------- */
+const an = Lab.$('#analysis');
+an.append(Lab.h('p', { class: 'prose' }, 'Answer for each of the three fossil genes, using your BLAST data table.'));
+Lab.prompt(an, { key: 'a1', label: '1. Which species in the BLAST results has the gene sequence most similar to each fossil gene?', rows: 3 });
+Lab.prompt(an, { key: 'a2', label: '2. Where is that species located on your cladogram?', rows: 2 });
+Lab.prompt(an, { key: 'a3', label: '3. How similar is that gene sequence (percent identity, score and E-value)?', rows: 3 });
+Lab.prompt(an, { key: 'a4', label: '4. Which species has the next most similar sequence? Does the pattern hold across all three genes?', rows: 3 });
+Lab.prompt(an, { key: 'a5', label: '5. The three genes gave different percent identities for the same pair of organisms. Explain why, and say which gene is most useful for telling close relatives apart.', rows: 3 });
+const cer = Lab.h('div', { class: 'cer' }); an.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: where does the fossil belong?'), cer);
+Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
+Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
+const ev = Lab.$('#evaluate');
+Lab.prompt(ev, { key: 'e1', label: 'Compare your cladogram with your classmates\'. Does everyone agree on where the fossil goes? If not, what is the basis of the disagreement?', rows: 3 });
+Lab.prompt(ev, { key: 'e2', label: 'This page\'s database holds only 18 organisms. Real BLAST searches hundreds of thousands of organisms. How does a small database limit your conclusions? (Hint: what if the fossil\'s closest living relatives were not in the database?)', rows: 3 });
+Lab.prompt(ev, { key: 'e3', label: 'What other data could be collected from the fossil specimen to better work out its evolutionary history?', rows: 3 });
+Lab.prompt(ev, { key: 'e4', label: 'Use the ideas of speciation, extinction and natural selection to describe what happened along the branch leading to the fossil.', rows: 3 });
+
+</script>
+</body>
+</html>

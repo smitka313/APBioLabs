@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 6 · Cellular Respiration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .stage > *, .controls > * { min-width: 0; }
+  .diagram { width: 100%; max-width: 620px; height: auto; display: block; margin-inline: auto; }
+  .diagram text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
+  .diagram .lbl-muted { fill: var(--muted); font-size: 12px; }
+  .status { font-size: .9rem; min-height: 1.4em; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); } .status.warn { color: var(--warn); }
+  .summary-table td, .summary-table th { white-space: nowrap; }
+  .inline-num { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .inline-num input { max-width: 150px; font-family: var(--f-mono); }
+  .proc-steps { counter-reset: s; list-style: none; padding: 0; }
+  .proc-steps li { counter-increment: s; padding-left: 2.1em; position: relative; }
+  .proc-steps li::before { content: counter(s); position: absolute; left: 0; top: .1em; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-family: var(--f-mono); font-size: .8rem; display: grid; place-items: center; font-weight: 700; }
+  .q10-tool { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 10px; align-items: end; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 2 · Energetics</span></nav>
+    <div class="eyebrow">Investigation 6</div>
+    <h1>Cellular Respiration</h1>
+    <p class="driving-q">What factors affect the rate of cellular respiration in multicellular organisms?</p>
+    <div class="tags"><span class="tag">Unit 3: Cellular Energetics</span><span class="tag">ENE-1.K</span><span class="tag">ENE-1.L</span><span class="tag">Science Practices 4.A, 6.B</span><span class="tag">≈ 4 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ 1. OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Seeds sitting in a dish do not look busy, but a germinating seed is burning through its stored food as fast as a small insect. In this lab you will measure that activity by tracking how much oxygen gas living things remove from a sealed chamber.</p>
+      <p>You will build (virtually) a <strong>microrespirometer</strong>: a 1 mL syringe sealed to a thin capillary tube, with a drop of KOH to soak up carbon dioxide. As the seeds use O<sub>2</sub>, a tiny plug of colored fluid creeps down the capillary toward the seeds. You will mark its position every 5 minutes, correct your readings with a control respirometer full of glass beads, graph O<sub>2</sub> consumed against time, and get the respiration rate from the slope. You will also try the electronic version (O<sub>2</sub>, CO<sub>2</sub>, or gas pressure sensors), and then design your own experiment on temperature, seed type, germination age, light, or small animals.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>ENE-1.K</strong> Describe the processes that allow organisms to use energy stored in biological macromolecules.</li>
+          <li><strong>ENE-1.L</strong> Explain how cells obtain energy from biological macromolecules in order to power cellular functions.</li>
+        </ul>
+      </div>
+      <div class="callout callout--tip"><div class="callout-title">Science practices</div>
+        <ul>
+          <li><strong>4.A</strong> Construct a graph, plot, or chart (O<sub>2</sub> consumed vs. time; rate vs. a variable).</li>
+          <li><strong>6.B</strong> Support a claim with evidence from biological principles, concepts, processes, and/or data.</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
+        <ul>
+          <li>Potassium hydroxide (KOH, or NaOH in drain cleaner) is caustic. Wear goggles, gloves, and an apron the whole time.</li>
+          <li>Use only one small drop of KOH, held in cotton. When you push the plunger in, point the capillary into a sink: extra KOH can squirt out.</li>
+          <li>Hot glue guns burn. Let the glue cool before you touch the capillary joint.</li>
+          <li>Work only with your teacher supervising.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Turning gas volume into a respiration rate</h2></header>
+    <div class="step-body prose">
+      <p>Every living cell needs a steady supply of free energy to build molecules, move materials, and stay organized. Plants capture energy through photosynthesis, but almost all of their cells, like ours, also have <strong>mitochondria</strong> and run <strong>cellular respiration</strong> to turn stored carbon compounds into ATP. A germinating seed cannot photosynthesize yet, so it lives entirely on the starch or oil packed into its cotyledons or endosperm.</p>
+      <p>When enough oxygen is present, glucose is oxidized completely in a series of enzyme-catalyzed steps:</p>
+      <div class="equation">C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> + 6 O<sub>2</sub> → 6 CO<sub>2</sub> + 6 H<sub>2</sub>O + energy (≈ 686 kcal per mole of glucose)</div>
+      <p>You could measure respiration by tracking any of the three things that change: O<sub>2</sub> used, CO<sub>2</sub> made, or heat released. Heat is hard to catch. Gas volumes are easier, but there is a catch: for glucose, one CO<sub>2</sub> is released for every O<sub>2</sub> consumed, so the total amount of gas in a sealed chamber barely changes. The trick is to remove the CO<sub>2</sub> as soon as it forms. Potassium hydroxide does this by turning the gas into a solid:</p>
+      <div class="equation">CO<sub>2</sub> + 2 KOH → K<sub>2</sub>CO<sub>3</sub> + H<sub>2</sub>O</div>
+      <p>Now the only gas change left is the loss of O<sub>2</sub>, so the gas volume in the chamber shrinks. The shrinking gas pulls the fluid plug in the capillary toward the chamber.</p>
+
+      <svg class="diagram" viewBox="0 0 620 330" role="img" aria-labelledby="dg-title">
+        <title id="dg-title">Diagram of a microrespirometer: a capillary tube with a fluid plug sits above a syringe barrel that holds KOH-soaked cotton, a protective cotton plug, and germinating seeds. The barrel is submerged in a water bath.</title>
+        <rect x="150" y="150" width="320" height="170" rx="6" style="fill:var(--s3);opacity:.14"></rect>
+        <line x1="150" y1="150" x2="470" y2="150" style="stroke:var(--s3)" stroke-width="2"></line>
+        <text x="460" y="314" text-anchor="end" class="lbl-muted">water bath, 20 °C</text>
+        <!-- capillary -->
+        <rect x="304" y="18" width="12" height="150" rx="3" style="fill:var(--surface);stroke:var(--muted)" stroke-width="1.5"></rect>
+        <rect x="305.5" y="70" width="9" height="20" style="fill:var(--stain)"></rect>
+        <path d="M296 112 l0 -26 m-5 6 l5 -6 l5 6" style="stroke:var(--stain);fill:none" stroke-width="2"></path>
+        <!-- barrel -->
+        <rect x="285" y="168" width="50" height="120" rx="4" style="fill:var(--surface);stroke:var(--muted)" stroke-width="1.5"></rect>
+        <rect x="287" y="170" width="46" height="16" style="fill:var(--warn-soft);stroke:var(--warn)"></rect>
+        <rect x="287" y="186" width="46" height="12" style="fill:var(--surface-2);stroke:var(--line)"></rect>
+        <g style="fill:var(--s4)"><ellipse cx="296" cy="208" rx="6" ry="4"></ellipse><ellipse cx="311" cy="211" rx="6" ry="4"></ellipse><ellipse cx="325" cy="207" rx="6" ry="4"></ellipse><ellipse cx="302" cy="222" rx="6" ry="4"></ellipse><ellipse cx="318" cy="224" rx="6" ry="4"></ellipse><ellipse cx="295" cy="236" rx="6" ry="4"></ellipse><ellipse cx="310" cy="238" rx="6" ry="4"></ellipse><ellipse cx="326" cy="236" rx="6" ry="4"></ellipse></g>
+        <rect x="287" y="252" width="46" height="10" style="fill:var(--muted)"></rect>
+        <rect x="305" y="262" width="10" height="50" style="fill:var(--muted)"></rect>
+        <rect x="278" y="268" width="64" height="5" style="fill:var(--ink)"></rect><rect x="278" y="276" width="64" height="5" style="fill:var(--ink)"></rect>
+        <!-- labels -->
+        <line x1="318" y1="80" x2="380" y2="60" style="stroke:var(--muted)"></line><text x="384" y="58">Fluid plug (manometer fluid)</text>
+        <text x="384" y="76" class="lbl-muted">moves toward the chamber as O₂ is used</text>
+        <line x1="316" y1="30" x2="380" y2="24" style="stroke:var(--muted)"></line><text x="384" y="28">Capillary tube, open at top</text>
+        <line x1="333" y1="178" x2="400" y2="176" style="stroke:var(--muted)"></line><text x="404" y="172">Absorbent cotton + 1 drop KOH</text>
+        <text x="404" y="188" class="lbl-muted">CO₂ + 2KOH → K₂CO₃ + H₂O</text>
+        <line x1="333" y1="192" x2="400" y2="204" style="stroke:var(--muted)"></line><text x="404" y="208">Non-absorbent cotton (shields seeds)</text>
+        <line x1="285" y1="222" x2="200" y2="210" style="stroke:var(--muted)"></line><text x="196" y="206" text-anchor="end">Germinating seeds</text>
+        <text x="196" y="222" text-anchor="end" class="lbl-muted">take in O₂, give off CO₂</text>
+        <line x1="278" y1="272" x2="200" y2="262" style="stroke:var(--muted)"></line><text x="196" y="260" text-anchor="end">Washers (sink it)</text>
+        <line x1="300" y1="256" x2="200" y2="290" style="stroke:var(--muted)"></line><text x="196" y="294" text-anchor="end">Plunger at 1.0 mL mark</text>
+      </svg>
+
+      <p>Gas volume also responds to things that have nothing to do with the seeds. The <strong>ideal gas law</strong> ties them together:</p>
+      <div class="equation">PV = nRT &nbsp;&nbsp;→&nbsp;&nbsp; V = nRT / P</div>
+      <p>Respiration lowers <em>n</em> (moles of gas), which lowers V. But if the water bath warms by a fraction of a degree, V goes up; if air pressure in the room rises, V goes down. That is why every experiment needs a <strong>control respirometer</strong> filled with non-living glass beads (or baked seeds) of the same volume. It sits in the same bath, so any movement of its plug comes only from temperature and pressure changes. Subtracting the control's movement from the seeds' movement leaves the part caused by respiration.</p>
+      <p>To turn plug movement into a gas volume, treat the inside of the capillary as a cylinder. Our capillaries have an inner radius of 0.040 cm, so each centimeter of travel is</p>
+      <div class="equation">V = πr²h = π(0.040 cm)²(1 cm) = 0.00503 cm³ = 5.03 µL of O<sub>2</sub></div>
+      <p>Plot O<sub>2</sub> consumed (µL) on the y-axis against time (min) on the x-axis. The <strong>slope</strong> of the best-fit line is the respiration rate in µL O<sub>2</sub>/min. Dividing by the mass of the organisms gives a rate per gram, which lets you compare organisms of different sizes.</p>
+      <p>Respiration is a chain of enzyme reactions, so it speeds up with temperature until the enzymes start to denature. Biologists summarize the temperature effect with the <strong>Q<sub>10</sub></strong>, the factor by which a rate increases for a 10 °C rise. Most respiration has a Q<sub>10</sub> between 2 and 3:</p>
+      <div class="equation">Q<sub>10</sub> = (R<sub>2</sub> / R<sub>1</sub>)<sup>10 / (T<sub>2</sub> − T<sub>1</sub>)</sup></div>
+    </div>
+  </section>
+
+  <!-- ============ 3. PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Getting started</div><h2>Before you start</h2></header>
+    <div class="step-body">
+      <p>These questions come from the manual's Getting Started section. Answer each one, then check it. Read the explanation even when you are right.</p>
+      <div id="prelab"></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. PROCEDURE OPTION 1 ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Microrespirometer">
+    <header><div class="eyebrow">Procedure · Option 1 · Structured inquiry</div><h2>Measure respiration with microrespirometers</h2></header>
+    <div class="step-body">
+      <details class="disclose">
+        <summary>How the real microrespirometers are built and charged</summary>
+        <div class="inner prose">
+          <ol class="proc-steps">
+            <li>Push a 40 µL plastic capillary into the tip of a 1 mL tuberculin syringe (no needle) as far as the plunger tip, and seal the joint with hot glue. Check that the glue did not plug the capillary.</li>
+            <li>Draw soapy red manometer fluid through the capillary and push it out again. The soap film stops the plug from sticking.</li>
+            <li>Pack a small plug of absorbent cotton to the 0 mL end of the barrel, add <em>one small drop</em> of 15% KOH, then add a plug of non-absorbent cotton on top to protect the seeds.</li>
+            <li>Push the plunger in (capillary pointed into a sink) to remove excess KOH, then remove the plunger.</li>
+            <li>Add 0.5 mL of germinating seeds and push the plunger to the 1.0 mL mark. Build a second, identical respirometer with 0.5 mL of glass beads as the control.</li>
+            <li>Slide 3–4 washers onto each barrel, set both in a 20 °C water bath with the barrels under water and the capillaries sticking out, and wait 5 minutes for temperatures to even out.</li>
+            <li>Add one drop of manometer fluid to each capillary tip. It is pulled in and seals the chamber. Mark the bottom edge of each plug: this is time 0. Mark again every 5 minutes for 25 minutes.</li>
+          </ol>
+        </div>
+      </details>
+
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><span class="label">Experimental respirometer</span><span class="small muted">0.5 mL germinating Wisconsin Fast Plant seeds (≈ 0.30 g), soaked 2 days</span></div>
+          <div class="field"><span class="label">Control respirometer</span><span class="small muted">0.5 mL glass beads</span></div>
+          <div class="field"><span class="label">Water bath</span><span class="small muted">20 °C (room temperature)</span></div>
+          <label class="check" for="p-equil"><input type="checkbox" id="p-equil" checked> Wait 5 min to equilibrate before adding the fluid plug</label>
+          <label class="check" for="p-stable"><input type="checkbox" id="p-stable" checked> Insulated, covered water bath</label>
+          <div class="field"><label for="p-speed">Playback</label>
+            <select id="p-speed"><option value="2">Watch it run (≈ 12 s)</option><option value="6">Fast (≈ 4 s)</option><option value="0">Instant</option></select></div>
+          <div class="row">
+            <button class="btn btn--primary" id="p-run" type="button">Start 25-min run</button>
+            <button class="btn btn--sm btn--ghost" id="p-clear" type="button">Clear table</button>
+          </div>
+          <p class="small muted">Positions are marked every 5 min, like the marker lines you would draw on the capillary. The ruler next to each tube starts at the time-0 mark.</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="p-rig" aria-label="Animated water bath with two microrespirometers. The left one holds germinating seeds and the right one glass beads. A red fluid plug in each capillary moves down toward the chamber as gas volume shrinks; marker lines show the 5-minute readings."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Time</span><span class="v" id="p-time">0.0 min</span></div>
+            <div class="readout"><span class="k">Seeds: plug moved</span><span class="v" id="p-e">0.00 cm</span></div>
+            <div class="readout"><span class="k">Beads: plug moved</span><span class="v" id="p-c">0.00 cm</span></div>
+            <div class="readout"><span class="k">Corrected O₂ used</span><span class="v" id="p-o2">0.0 µL</span></div>
+          </div>
+          <p class="status" id="p-msg" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <h3>Table 1. Results using microrespirometers</h3>
+      <p class="small muted">The sim fills in the marked positions (columns C). <strong>You</strong> fill in the two white columns: the change in the seed plug's position during each 5-min interval, and the corrected distance (seed distance − bead distance). Then check your work.</p>
+      <div id="p-table"></div>
+      <div class="row"><button class="btn btn--sm" id="p-check" type="button">Check my calculations</button><span class="status" id="p-check-msg" aria-live="polite"></span></div>
+
+      <h3>Graph: corrected O₂ consumed vs. time</h3>
+      <p class="small muted">O<sub>2</sub> consumed (µL) = corrected distance (cm) × 5.03 µL/cm. The dashed line is the least-squares fit.</p>
+      <div id="p-chart"></div>
+      <div class="callout callout--question">
+        <div class="callout-title">Find the rate</div>
+        <p>Use the graph (two well-separated points on the fit line, or the equation under it) to find the rate of respiration of the germinating seeds at 20 °C.</p>
+        <div class="inline-num"><label for="p-rate-in">Rate =</label><input type="number" step="any" id="p-rate-in" aria-label="Your respiration rate in microliters O2 per minute"><span class="muted">µL O₂/min</span><button class="btn btn--sm" id="p-rate-check" type="button">Check</button></div>
+        <p class="status" id="p-rate-msg" aria-live="polite"></p>
+      </div>
+
+      <h3>Replicate runs</h3>
+      <p class="small muted">One run is one data point. Each completed run adds its corrected rate here. Do at least three runs so you can report a mean and standard error.</p>
+      <div id="p-reps"></div>
+    </div>
+  </section>
+
+  <!-- ============ 5. PROCEDURE OPTION 2 ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Gas sensors">
+    <header><div class="eyebrow">Procedure · Option 2</div><h2>Measure respiration with gas sensors</h2></header>
+    <div class="step-body">
+      <p>Many classrooms use a sensor plugged into a computer interface instead of microrespirometers. Here, 25 germinating peas sit in a 250 mL respiration chamber in a 20 °C water bath, and the sensor logs a reading every 30 seconds for 25 minutes. Try each sensor. Then think about which one needs KOH in the chamber, and why.</p>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="g-sensor">Sensor</label>
+            <select id="g-sensor"><option value="o2">O₂ gas sensor (%)</option><option value="co2">CO₂ gas sensor (ppm)</option><option value="p">Gas pressure sensor (kPa)</option></select></div>
+          <div class="field"><label for="g-contents">Chamber contents</label>
+            <select id="g-contents"><option value="peas">25 germinating peas</option><option value="dry">25 non-germinating (dry) peas</option><option value="boiled">25 germinating peas, boiled 5 min</option><option value="beads">Glass beads (same volume)</option></select></div>
+          <div class="field"><label for="g-temp">Water bath temperature <output id="g-temp-out" class="val" for="g-temp"></output></label><input id="g-temp" type="range" min="10" max="35" step="1" value="20"></div>
+          <label class="check" for="g-koh"><input type="checkbox" id="g-koh"> KOH-soaked cotton in the chamber</label>
+          <div class="row"><button class="btn btn--primary" id="g-run" type="button">Collect data (25 min)</button></div>
+          <p class="small muted">Each completed run is added to the run table below.</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="g-rig" aria-label="Respiration chamber with peas, a gas sensor in the stopper, and a computer interface display showing the current reading."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Time</span><span class="v" id="g-time">0.0 min</span></div>
+            <div class="readout"><span class="k">Reading</span><span class="v" id="g-read">—</span></div>
+            <div class="readout"><span class="k">Slope</span><span class="v" id="g-slope">—</span></div>
+            <div class="readout"><span class="k">≈ O₂ used</span><span class="v" id="g-o2">—</span></div>
+          </div>
+          <div id="g-chart"></div>
+        </div>
+      </div>
+      <div id="g-table"></div>
+    </div>
+  </section>
+
+  <!-- ============ 6. DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own respiration experiment</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Now you have a tool. Pick one question and test it. Some questions from the manual:</p>
+        <ul>
+          <li>Does temperature change the rate of respiration in germinating seeds? Do seeds use more O<sub>2</sub> when it is warmer?</li>
+          <li>Do germinating seeds respire faster than non-germinating seeds? Do seeds just starting to germinate respire faster than seeds that have been germinating for several days?</li>
+          <li>Do oil-storing seeds (Wisconsin Fast Plants) respire at a different rate from starch-storing grass seeds (oats)? Monocots vs. dicots?</li>
+          <li>Can the same respirometer measure respiration in small invertebrates like mealworms, crickets, fruit flies, or earthworms? How do they compare per gram?</li>
+          <li>What happens if you use green seedlings in the light instead of seeds in the dark?</li>
+        </ul>
+      </div>
+      <div class="callout callout--tip"><div class="callout-title">Table 2. Investigation proposal</div><div id="d-proposal" class="grid-2"></div></div>
+
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="d-org">Organism in the experimental respirometer</label>
+            <select id="d-org"></select><span class="hint" id="d-org-hint"></span></div>
+          <div class="field"><label for="d-temp">Water bath temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" type="range" min="5" max="45" step="1" value="20"></div>
+          <div class="field"><label for="d-days">Germination time (seeds only)</label>
+            <select id="d-days"><option value="0.5">12 hours</option><option value="1">1 day</option><option value="2" selected>2 days</option><option value="3">3 days</option><option value="5">5 days</option></select></div>
+          <div class="field"><label for="d-light">Lighting</label>
+            <select id="d-light"><option value="dark">Dark (bath covered)</option><option value="light">Bright light over the bath</option></select></div>
+          <div class="field"><label for="d-int">Reading interval</label>
+            <select id="d-int"><option value="5">Every 5 min</option><option value="2">Every 2 min</option><option value="1">Every 1 min</option></select><span class="hint">Fast respirers can pull the plug to the end of the capillary early. Read more often if that happens.</span></div>
+          <div class="field"><label for="d-reps">Replicate respirometers per run <output id="d-reps-out" class="val" for="d-reps"></output></label><input id="d-reps" type="range" min="1" max="6" step="1" value="3"></div>
+          <div class="row">
+            <button class="btn btn--primary" id="d-run" type="button">Run trial(s)</button>
+            <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button>
+          </div>
+          <p class="small muted">Every trial is paired with its own glass-bead control and corrected automatically. Rates are the slope of corrected O<sub>2</sub> vs. time.</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="d-rig" aria-label="Water bath with the experimental microrespirometer and its glass-bead control, showing plug positions for the most recent trial."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Last rate</span><span class="v" id="d-last">—</span></div>
+            <div class="readout"><span class="k">Per gram</span><span class="v" id="d-lastg">—</span></div>
+            <div class="readout"><span class="k">Trials so far</span><span class="v" id="d-n">0</span></div>
+          </div>
+          <p class="status" id="d-msg" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div id="d-table"></div>
+      <div class="row">
+        <div class="field" style="min-width:220px"><label for="d-group">Graph and summarize by</label>
+          <select id="d-group"><option value="temp">Temperature</option><option value="org">Organism</option><option value="days">Germination time</option><option value="light">Lighting</option></select></div>
+      </div>
+      <div id="d-summary"></div>
+      <div id="d-chart"></div>
+
+      <div class="callout callout--key">
+        <div class="callout-title">Q<sub>10</sub> calculator</div>
+        <p class="small">Enter two mean rates measured 5–15 °C apart (same organism, everything else held constant).</p>
+        <div class="q10-tool">
+          <div class="field"><label for="q-t1">T<sub>1</sub> (°C)</label><input type="number" id="q-t1" value="15" step="any"></div>
+          <div class="field"><label for="q-r1">R<sub>1</sub></label><input type="number" id="q-r1" step="any" placeholder="rate at T₁"></div>
+          <div class="field"><label for="q-t2">T<sub>2</sub> (°C)</label><input type="number" id="q-t2" value="25" step="any"></div>
+          <div class="field"><label for="q-r2">R<sub>2</sub></label><input type="number" id="q-r2" step="any" placeholder="rate at T₂"></div>
+        </div>
+        <div class="readouts"><div class="readout"><span class="k">Q₁₀</span><span class="v" id="q-out">—</span></div></div>
+      </div>
+      <div id="d-results"></div>
+    </div>
+  </section>
+
+  <!-- ============ 7. ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
+    <div class="step-body">
+      <div id="analysis" class="stack"></div>
+      <h3>Claim, evidence, reasoning</h3>
+      <p class="small muted">Answer the question you chose in your own investigation.</p>
+      <div class="cer" id="cer"></div>
+    </div>
+  </section>
+
+  <!-- ============ 8. EVALUATE ============ -->
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluate and reflect</div><h2>How good was your experiment?</h2></header>
+    <div class="step-body"><div id="evaluate" class="stack"></div></div>
+  </section>
+
+  <!-- ============ 9. SUBMIT ============ -->
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+  'use strict';
+  Lab.init({ id: 'lab06' });
+  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, C = n => Lab.color(n);
+  const rng = Lab.rng();
+  const U = (r, a, b) => { if (Array.isArray(a)) [a, b] = a; return a + (b - a) * r.uniform(); };
+
+  /* ================= Pre-lab ================= */
+  Lab.quiz('#prelab', [
+    { type: 'mc', q: 'Why must readings from the seed respirometer be corrected with readings from a respirometer that holds only glass beads?',
+      choices: ['Glass beads absorb a little O<sub>2</sub>, which has to be added back', 'By PV = nRT, gas volume also changes when temperature (T) or pressure (P) changes; the beads respirometer shows only those physical changes, so subtracting it isolates the change in n caused by respiration', 'The beads make the volume of the two chambers different', 'KOH works only when beads are present'],
+      answer: 1, explain: 'Beads do not respire, so n stays constant in the control. Any movement of its plug comes from changes in T or P, which affect both respirometers in the same bath. Subtracting it removes that error from the seed readings.' },
+    { type: 'mc', q: 'With temperature and pressure held constant, what happens to the gas volume in a respirometer holding germinating seeds and KOH? And what would a slow <em>warming</em> of the bath during the run do to the plug?',
+      choices: ['Volume stays the same; warming has no effect', 'Volume decreases as O<sub>2</sub> is used and CO<sub>2</sub> is absorbed; warming makes the gas expand and pushes the plug back away from the chamber, so uncorrected readings underestimate respiration', 'Volume increases because CO<sub>2</sub> is produced; warming makes it increase faster', 'Volume decreases; warming makes it decrease faster'],
+      answer: 1, explain: 'Without KOH, each CO<sub>2</sub> made would replace an O<sub>2</sub> used, and volume would barely change. KOH removes the CO<sub>2</sub>, so n and V drop. Warming raises V (V ∝ T), working against the drop.' },
+    { type: 'mc', q: 'You put 25 germinating peas that were boiled for 5 minutes into a respirometer. Predict their rate of O<sub>2</sub> consumption.',
+      choices: ['About the same as unboiled germinating peas', 'Higher, because heat speeds up reactions', 'Close to zero, the same as glass beads', 'Negative, because boiled peas release O<sub>2</sub>'],
+      answer: 2, explain: 'Boiling denatures the enzymes of glycolysis, the Krebs cycle, and the electron transport chain and kills the cells. The peas become non-living matter, like beads.' },
+    { type: 'mc', q: 'You measure O<sub>2</sub> use per gram for a 25 g reptile and a 25 g mammal, both at 10 °C. Predict the result.',
+      choices: ['The reptile uses more O<sub>2</sub>, because it is cold-blooded', 'They use about the same, because they have the same mass', 'The mammal uses much more O<sub>2</sub>, because as an endotherm it burns fuel to keep its body near 37 °C; the ectothermic reptile cools to about 10 °C and its metabolism slows', 'Neither uses O<sub>2</sub> at 10 °C'],
+      answer: 2, explain: 'Endotherms generate heat through cellular respiration. At 10 °C the mammal must respire fast to stay warm, while the reptile\'s enzymes run at about 10 °C.' },
+    { type: 'mc', q: 'Now repeat the comparison at 22 °C. How do the results change?',
+      choices: ['Both rates double', 'The reptile\'s rate rises (roughly doubling to tripling for a 10–12 °C increase), while the mammal\'s stays about the same or drops a little because it needs less heat to stay warm', 'The mammal\'s rate rises and the reptile\'s falls', 'Nothing changes; temperature affects only plants'],
+      answer: 1, explain: 'An ectotherm\'s metabolism follows the environment (Q<sub>10</sub> ≈ 2–3). An endotherm keeps a constant body temperature, so a warmer room means less heat to make, and its O<sub>2</sub> use falls slightly.' },
+    { type: 'mc', q: 'What would be the main difficulty if you used a living green plant (with leaves, in the light) instead of germinating seeds?',
+      choices: ['Green plants do not have mitochondria', 'Photosynthesis would release O<sub>2</sub> and take up CO<sub>2</sub>, cancelling part of the gas change from respiration, so you would underestimate (or even reverse) the reading', 'The plant would be too heavy for the washers', 'KOH would make the plant photosynthesize faster'],
+      answer: 1, explain: 'Plant cells respire all the time, but in light, chloroplasts produce O<sub>2</sub>. You would have to run the test in the dark, or measure net gas exchange instead.' },
+    { type: 'num', q: 'The capillary has an inner radius of 0.040 cm. During 10 minutes the corrected plug movement is 2.40 cm. What volume of O<sub>2</sub> was consumed? (1 cm³ = 1000 µL)',
+      answer: 12.06, tol: 0.25, unit: 'µL', explain: 'V = πr²h = 3.1416 × (0.040 cm)² × 2.40 cm = 0.01206 cm³ = 12.1 µL. That is a rate of 1.21 µL O<sub>2</sub>/min.' },
+    { type: 'num', q: 'Germinating seeds consume O<sub>2</sub> at 1.1 µL/min at 15 °C and at 2.6 µL/min at 25 °C. What is the Q<sub>10</sub>?',
+      answer: 2.36, tol: 0.05, explain: 'Q<sub>10</sub> = (R<sub>2</sub>/R<sub>1</sub>)<sup>10/(T<sub>2</sub>−T<sub>1</sub>)</sup> = (2.6/1.1)<sup>10/10</sup> = 2.36, typical for enzyme-driven metabolism.' }
+  ], { id: 'prelab' });
+
+  /* ================= Model =================
+     O2 uptake (µL/min) = mass (g) × specific rate at 20 °C (µL·g⁻¹·min⁻¹)
+                          × Q10^((T−20)/10) × heat-damage term 1/(1+e^((T−41)/1.6))
+                          × germination-age term (seeds) × light term × individual variation (lognormal).
+       - Germination age: rises after imbibition and levels off: 0.08 + 0.92·(1−e^(−d/1.1)) / (1−e^(−2/1.1)) (=1 at 2 days).
+       - Light: green seedlings photosynthesize; with KOH removing free CO2 they mainly re-fix their own
+         respired CO2, so net O2 uptake falls to ~30 % of the dark value. Non-green seeds: no effect.
+     Respirometer reading (cm toward the chamber):
+       d(t) = [ V_O2(t) + Vgas·(Tgas(0) − Tgas(t))/T_K + Vgas·(P(t) − P(0))/P_atm ] / (πr²)
+       Bath temperature follows an Ornstein–Uhlenbeck random walk (σ larger for an uninsulated bath);
+       air pressure drifts slowly. Without equilibration the gas starts 3 °C warmer than the bath and
+       cools with τ ≈ 1.5–1.8 min, shrinking the gas. Both respirometers share the bath and air pressure,
+       so subtracting the bead control removes most of the drift. Readings carry ±0.03 cm marking error. */
+  const R_CM = 0.040;
+  const UL_PER_CM = Math.PI * R_CM * R_CM * 1000; // 5.03 µL per cm of capillary
+  const TRAVEL_MAX = 6.8; // cm of capillary available below the starting mark
+  const ORGS = {
+    fastplant: { name: 'Germinating Wisconsin Fast Plant seeds (oil-storing dicot)', short: 'Fast Plant seeds', syringe: 1, load: '0.5 mL of seeds', mass: 0.30, spec: 4.0, q10: 2.3, cv: 0.12, seed: true, look: 'seed', vgas: 600 },
+    oat: { name: 'Germinating oat seeds (starch-storing grass, monocot)', short: 'Oat seeds', syringe: 3, load: '1.0 mL of seeds', mass: 0.55, spec: 2.6, q10: 2.3, cv: 0.12, seed: true, look: 'oat', vgas: 1900 },
+    dry: { name: 'Non-germinating (dry) Fast Plant seeds', short: 'Dry seeds', syringe: 1, load: '0.5 mL of seeds', mass: 0.30, spec: 0.16, q10: 2.0, cv: 0.25, seed: false, look: 'dry', vgas: 620 },
+    boiled: { name: 'Germinating seeds, boiled 5 min', short: 'Boiled seeds', syringe: 1, load: '0.5 mL of seeds', mass: 0.30, spec: 0, q10: 1, cv: 0, seed: false, look: 'boiled', vgas: 600 },
+    green: { name: 'Green seedlings, 7 days old (cotyledons open)', short: 'Green seedlings', syringe: 3, load: '6 seedlings', mass: 0.40, spec: 3.0, q10: 2.3, cv: 0.14, seed: false, look: 'green', green: true, vgas: 2100 },
+    mealworm: { name: 'Mealworm larvae (Tenebrio)', short: 'Mealworms', syringe: 3, load: '2 larvae', mass: 0.24, spec: 4.8, q10: 2.5, cv: 0.2, seed: false, look: 'worm', insect: true, vgas: 2500 },
+    cricket: { name: 'House cricket (adult)', short: 'Cricket', syringe: 10, load: '1 adult', mass: 0.45, spec: 8.0, q10: 2.2, cv: 0.22, seed: false, look: 'cricket', insect: true, vgas: 8500 },
+    fly: { name: 'Fruit flies (Drosophila)', short: 'Fruit flies', syringe: 1, load: '10 flies', mass: 0.010, spec: 45, q10: 2.4, cv: 0.2, seed: false, look: 'fly', insect: true, vgas: 900 },
+    earthworm: { name: 'Small earthworm', short: 'Earthworm', syringe: 10, load: '1 worm', mass: 0.60, spec: 2.2, q10: 2.1, cv: 0.18, seed: false, look: 'earthworm', vgas: 8000 }
+  };
+  const ageFactor = d => 0.08 + 0.92 * (1 - Math.exp(-d / 1.1)) / (1 - Math.exp(-2 / 1.1));
+  const tempFactor = (T, q10) => Math.pow(q10, (T - 20) / 10) / (1 + Math.exp((T - 41) / 1.6));
+  function meanRate(c) { // µL O2 per min, before individual variation
+    const o = ORGS[c.org];
+    let r = o.mass * o.spec * tempFactor(c.temp, o.q10);
+    if (o.seed) r *= ageFactor(c.days);
+    if (c.light === 'light') { if (o.green) r *= 0.30; else if (o.insect) r *= 1.1; }
+    return r;
+  }
+
+  /* Simulate one paired run (experimental + bead control). Returns trajectories and marked readings. */
+  function simulateRun(c, r, opt) {
+    const o = ORGS[c.org], dur = opt.duration || 25, dt = 0.05, n = Math.round(dur / dt);
+    const rate = meanRate(c) * Math.exp(r.normal(0, o.cv) - o.cv * o.cv / 2);
+    const vgE = o.vgas, vgC = o.vgas * U(r, 1.0, 1.06), Tk = 273.15 + c.temp;
+    const sig = opt.stable ? 0.012 : 0.07, pTrend = r.normal(0, opt.stable ? 0.0015 : 0.004);
+    const off = opt.equil ? 0 : 3 * U(r, 0.85, 1.15), tauE = 1.5, tauC = 1.8;
+    let th = r.normal(0, sig), p = 0, gE0 = 0, gC0 = 0, stuckE = null;
+    const ts = [], dE = [], dC = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i * dt;
+      if (i > 0) { th += -th / 4 * dt + sig * Math.sqrt(dt) * r.normal(); p += pTrend * dt + 0.0015 * Math.sqrt(dt) * r.normal(); }
+      const gE = th + off * Math.exp(-t / tauE), gC = th + off * Math.exp(-t / tauC);
+      if (i === 0) { gE0 = gE; gC0 = gC; }
+      let vE = rate * t + vgE * (gE0 - gE) / Tk + vgE * p / 101.3;
+      const vC = vgC * (gC0 - gC) / Tk + vgC * p / 101.3;
+      let e = vE / UL_PER_CM; const k = vC / UL_PER_CM;
+      if (stuckE != null || e >= TRAVEL_MAX) { if (stuckE == null) stuckE = t; e = TRAVEL_MAX; }
+      ts.push(t); dE.push(Math.max(-0.7, e)); dC.push(Math.max(-0.7, Math.min(TRAVEL_MAX, k)));
+    }
+    const interval = opt.interval || 5, marks = [];
+    for (let t = 0; t <= dur + 1e-9; t += interval) {
+      const i = Math.round(t / dt);
+      const ended = stuckE != null && t >= stuckE;
+      const rd = x => Math.round((x + r.normal(0, 0.03)) * 100) / 100;
+      marks.push({ t, e: t === 0 ? 0 : (ended ? null : rd(dE[i])), c: t === 0 ? 0 : rd(dC[i]) });
+    }
+    return { ts, dE, dC, marks, stuckE, trueRate: rate, dt };
+  }
+  function rateFromMarks(marks) {
+    const pts = marks.filter(m => m.e != null && m.c != null);
+    if (pts.length < 3) return { rate: NaN, n: pts.length };
+    const f = S.linreg(pts.map(m => m.t), pts.map(m => (m.e - m.c) * UL_PER_CM));
+    return { rate: f.m, r2: f.r2, n: pts.length };
+  }
+
+  /* ================= Drawing the bath and respirometers ================= */
+  function contentParticles(look, seed) {
+    const r2 = Lab.rng(seed), arr = [];
+    const n = { seed: 22, oat: 14, dry: 22, boiled: 22, green: 5, worm: 2, cricket: 1, fly: 8, earthworm: 1, beads: 18 }[look] || 14;
+    for (let i = 0; i < n; i++) arr.push({ x: r2.uniform(), y: r2.uniform(), a: U(r2, 0, Math.PI), s: U(r2, 0.8, 1.15) });
+    return arr;
+  }
+  function drawContents(ctx, look, parts, x0, y0, w, h, t) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
+    const u = Math.max(4, w / 5.5);
+    parts.forEach((p, i) => {
+      const cx = x0 + 3 + p.x * (w - 6), cy = y0 + 3 + p.y * (h - 6);
+      if (look === 'beads') { ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, u * 0.55 * p.s, 0, 7); ctx.fill(); ctx.stroke(); }
+      else if (look === 'seed' || look === 'dry' || look === 'boiled') {
+        ctx.fillStyle = C(look === 'dry' ? '--warn' : look === 'boiled' ? '--muted' : '--s4');
+        ctx.beginPath(); ctx.ellipse(cx, cy, u * 0.6 * p.s, u * 0.42 * p.s, p.a, 0, 7); ctx.fill();
+        if (look === 'seed' && i % 3 === 0) { ctx.strokeStyle = C('--s6'); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(p.a) * u * 0.9, cy + Math.sin(p.a) * u * 0.9); ctx.stroke(); }
+      } else if (look === 'oat') { ctx.fillStyle = C('--s4'); ctx.beginPath(); ctx.ellipse(cx, cy, u * 0.9 * p.s, u * 0.3 * p.s, p.a, 0, 7); ctx.fill(); }
+      else if (look === 'green') { ctx.strokeStyle = C('--s6'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx, cy + u); ctx.lineTo(cx, cy - u * 0.3); ctx.stroke(); ctx.fillStyle = C('--s6'); ctx.beginPath(); ctx.ellipse(cx - u * 0.35, cy - u * 0.4, u * 0.4, u * 0.2, -0.5, 0, 7); ctx.ellipse(cx + u * 0.35, cy - u * 0.4, u * 0.4, u * 0.2, 0.5, 0, 7); ctx.fill(); }
+      else { // animals: a body that wiggles
+        const wig = Math.sin(t * 3 + i) * 0.25;
+        const len = look === 'fly' ? 0.5 : look === 'cricket' ? 2.2 : look === 'earthworm' ? 3.2 : 1.8;
+        ctx.fillStyle = C(look === 'earthworm' ? '--stain' : look === 'worm' ? '--s4' : '--ink');
+        ctx.beginPath(); ctx.ellipse(w > 0 ? x0 + w / 2 + (p.x - 0.5) * w * 0.4 : cx, cy, u * len * 0.5, u * 0.28 * (look === 'fly' ? 1.2 : 1), p.a + wig, 0, 7); ctx.fill();
+        if (look === 'cricket' || look === 'fly') { ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(x0 + w / 2 + (p.x - 0.5) * w * 0.4, cy); ctx.lineTo(x0 + w / 2 + (p.x - 0.5) * w * 0.4 + k * u * 0.6, cy + u * 0.6); ctx.stroke(); } }
+      }
+    });
+    ctx.restore();
+  }
+
+  /* st: { t, temp, light, items:[{label, look, syringe, pos, marks:[cm...], parts}], note } */
+  function drawRig(cv, st) {
+    const { ctx, w, h } = cv; ctx.clearRect(0, 0, w, h);
+    const fs = Math.max(10, Math.min(13, w / 48)), font = `${fs}px "Source Sans 3", system-ui, sans-serif`;
+    const bx = w * 0.04, bw = w * 0.92, wy = h * 0.52, by = h * 0.97;
+    if (st.light === 'light') { ctx.fillStyle = C('--warn'); ctx.globalAlpha = 0.10; ctx.beginPath(); ctx.moveTo(w * 0.5, 0); ctx.lineTo(bx, by); ctx.lineTo(bx + bw, by); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }
+    ctx.fillStyle = C('--s3'); ctx.globalAlpha = 0.13; ctx.fillRect(bx, wy, bw, by - wy); ctx.globalAlpha = 1;
+    ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(bx, h * 0.44); ctx.lineTo(bx, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw, h * 0.44); ctx.stroke();
+    ctx.strokeStyle = C('--s3'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(bx, wy); ctx.lineTo(bx + bw, wy); ctx.stroke();
+    // thermometer + clock
+    ctx.fillStyle = C('--ink'); ctx.font = `600 ${fs + 1}px "JetBrains Mono", monospace`; ctx.textAlign = 'left';
+    ctx.fillText(`t = ${fmt(st.t, 1)} min`, bx + 4, h * 0.07);
+    ctx.font = font; ctx.fillStyle = C('--muted'); ctx.fillText(`bath ${fmt(st.temp, 1)} °C`, bx + 4, h * 0.07 + fs + 4);
+    if (st.note) { ctx.fillStyle = C('--warn'); ctx.fillText(st.note, bx + 4, h * 0.07 + 2 * (fs + 4)); }
+    const tx = bx + bw - 14; ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1; ctx.strokeRect(tx - 3, h * 0.40, 6, h * 0.5);
+    ctx.fillStyle = C('--bad'); const fillH = h * 0.5 * Math.min(1, Math.max(0.1, (st.temp - 0) / 50)); ctx.fillRect(tx - 2, h * 0.90 - fillH, 4, fillH);
+    ctx.beginPath(); ctx.arc(tx, h * 0.91, 5, 0, 7); ctx.fill();
+    const xs = st.items.length === 2 ? [w * 0.36, w * 0.70] : [w * 0.5];
+    st.items.forEach((it, k) => drawResp(ctx, xs[k], w, h, it, fs, font, st.t));
+  }
+  function drawResp(ctx, x, w, h, it, fs, font, t) {
+    const y0 = h * 0.12, y1 = h * 0.56; // capillary span
+    const startCm = 0.6, totalCm = 8;
+    const Y = cm => y0 + (cm / totalCm) * (y1 - y0);
+    const cw = Math.max(6, w * 0.014);
+    const bwid = Math.max(26, w * (it.syringe >= 10 ? 0.12 : it.syringe >= 3 ? 0.095 : 0.075));
+    const yb0 = y1 + h * 0.02, yb1 = h * 0.86;
+    // label
+    ctx.fillStyle = C('--ink'); ctx.font = `600 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(it.label, x, y0 - fs * 0.6);
+    // ruler (cm from time-0 mark)
+    ctx.strokeStyle = C('--muted'); ctx.fillStyle = C('--muted'); ctx.lineWidth = 1; ctx.font = `${fs - 1}px "JetBrains Mono", monospace`; ctx.textAlign = 'right';
+    const rx = x - cw / 2 - 4;
+    ctx.beginPath(); ctx.moveTo(rx, Y(startCm)); ctx.lineTo(rx, Y(startCm + 7)); ctx.stroke();
+    for (let c = 0; c <= 7.001; c += 0.5) { const yy = Y(startCm + c), big = Math.abs(c - Math.round(c)) < 1e-6; ctx.beginPath(); ctx.moveTo(rx, yy); ctx.lineTo(rx - (big ? 7 : 4), yy); ctx.stroke(); if (big) ctx.fillText(String(Math.round(c)), rx - 9, yy + 3.5); }
+    // capillary
+    ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.3;
+    ctx.fillRect(x - cw / 2, y0, cw, y1 - y0 + h * 0.02); ctx.strokeRect(x - cw / 2, y0, cw, y1 - y0 + h * 0.02);
+    // glue bead
+    ctx.fillStyle = C('--line'); ctx.beginPath(); ctx.ellipse(x, y1 + h * 0.018, cw * 1.3, h * 0.014, 0, 0, 7); ctx.fill();
+    // marker lines
+    ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1.5;
+    (it.marks || []).forEach(m => { if (m == null) return; const yy = Y(startCm + m); ctx.beginPath(); ctx.moveTo(x - cw / 2 - 2, yy); ctx.lineTo(x + cw / 2 + 4, yy); ctx.stroke(); });
+    // fluid plug: bottom edge at startCm + pos
+    const plugLen = 0.55, bot = Y(startCm + it.pos), top = Y(startCm + it.pos - plugLen);
+    ctx.fillStyle = C('--stain'); ctx.fillRect(x - cw / 2 + 1.2, Math.max(y0, top), cw - 2.4, bot - Math.max(y0, top));
+    // barrel
+    ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.5;
+    ctx.fillRect(x - bwid / 2, yb0, bwid, yb1 - yb0); ctx.strokeRect(x - bwid / 2, yb0, bwid, yb1 - yb0);
+    const cot1 = yb0 + (yb1 - yb0) * 0.12, cot2 = cot1 + (yb1 - yb0) * 0.09, plg = yb0 + (yb1 - yb0) * 0.80;
+    ctx.fillStyle = C('--warn-soft'); ctx.fillRect(x - bwid / 2 + 1.5, yb0 + 1.5, bwid - 3, cot1 - yb0 - 1.5);
+    ctx.fillStyle = C('--surface-2'); ctx.fillRect(x - bwid / 2 + 1.5, cot1, bwid - 3, cot2 - cot1);
+    ctx.strokeStyle = C('--line'); ctx.lineWidth = 1; ctx.strokeRect(x - bwid / 2 + 1.5, cot1, bwid - 3, cot2 - cot1);
+    drawContents(ctx, it.look, it.parts, x - bwid / 2 + 2, cot2 + 2, bwid - 4, plg - cot2 - 4, t);
+    // plunger
+    ctx.fillStyle = C('--muted'); ctx.fillRect(x - bwid / 2 + 1.5, plg, bwid - 3, (yb1 - yb0) * 0.06);
+    ctx.fillRect(x - 3, plg + (yb1 - yb0) * 0.06, 6, h * 0.95 - plg - (yb1 - yb0) * 0.06);
+    ctx.fillRect(x - bwid * 0.45, h * 0.94, bwid * 0.9, 4);
+    // washers
+    ctx.fillStyle = C('--ink');
+    for (let k = 0; k < 3; k++) ctx.fillRect(x - bwid / 2 - 5, yb0 + (yb1 - yb0) * (0.55 + k * 0.08), bwid + 10, 3.5);
+    // KOH label
+    if (w > 520) { ctx.fillStyle = C('--warn'); ctx.font = `${fs - 2}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'left'; ctx.fillText('KOH', x + bwid / 2 + 8, yb0 + (cot1 - yb0) * 0.8); }
+  }
+
+  /* Run an animation of a precomputed run on a canvas. */
+  function animate(cv, run, makeState, speed, onMark, onDone) {
+    let t = 0, mi = 0; const dur = run.ts[run.ts.length - 1];
+    const frame = tt => {
+      const i = Math.min(run.ts.length - 1, Math.round(tt / run.dt));
+      while (mi < run.marks.length && run.marks[mi].t <= tt + 1e-9) { onMark && onMark(run.marks[mi], mi); mi++; }
+      drawRig(cv, makeState(tt, i, mi));
+    };
+    if (!speed || Lab.reducedMotion()) { frame(dur); onDone && onDone(); return null; }
+    const loop = Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } });
+    loop.start(); return loop;
+  }
+
+  /* ================= Option 1: structured microrespirometer run ================= */
+  const pCv = Lab.canvas('#p-rig', 0.72);
+  const partsE = contentParticles('seed', 11), partsC = contentParticles('beads', 12);
+  let pRun = null, pLoop = null, pBusy = false;
+  const pTable = Lab.table('#p-table', {
+    save: 'p-table',
+    columns: [
+      { key: 't', label: 'A. Time', unit: 'min', num: true, digits: 0 },
+      { key: 'T', label: 'B. Bath temp', unit: '°C', num: true, digits: 1 },
+      { key: 'e', label: 'C. Seeds total', unit: 'cm', num: true, digits: 2 },
+      { key: 'c', label: 'C. Beads total', unit: 'cm', num: true, digits: 2 },
+      { key: 'de', label: 'D. Seeds Δ interval', unit: 'cm', num: true, editable: true },
+      { key: 'corr', label: 'Corrected (C seeds − C beads)', unit: 'cm', num: true, editable: true }
+    ],
+    onChange: rows => updatePChart(rows)
+  });
+  const pChart = Lab.chart('#p-chart', { xLabel: 'Time (min)', yLabel: 'O₂ consumed (µL)', xMin: 0, xMax: 25, series: [] });
+  function o2Rows(rows) { return rows.filter(r => typeof r.e === 'number' && typeof r.c === 'number').map(r => ({ x: r.t, y: (r.e - r.c) * UL_PER_CM })); }
+  function updatePChart(rows) {
+    const pts = o2Rows(rows);
+    const raw = rows.filter(r => typeof r.e === 'number').map(r => ({ x: r.t, y: r.e * UL_PER_CM }));
+    const ctl = rows.filter(r => typeof r.c === 'number').map(r => ({ x: r.t, y: r.c * UL_PER_CM }));
+    pChart.update({ series: [
+      { name: 'Corrected (seeds − beads)', points: pts, line: false, fit: pts.length > 1 ? 'linear' : false },
+      { name: 'Seeds, uncorrected', points: raw, line: true, dots: false, dash: true },
+      { name: 'Beads control', points: ctl, line: true, dots: false, dash: true }
+    ] });
+  }
+  const pReps = Lab.table('#p-reps', {
+    save: 'p-reps',
+    columns: [{ key: 'run', label: 'Run' }, { key: 'set', label: 'Setup' }, { key: 'rate', label: 'Rate', unit: 'µL O₂/min', num: true, digits: 2 }, { key: 'perg', label: 'Rate per gram', unit: 'µL·g⁻¹·min⁻¹', num: true, digits: 2 }],
+    footer: rows => { const a = rows.map(r => r.rate).filter(isFinite); return ['Mean ± SE', `n = ${a.length}`, a.length > 1 ? `${fmt(S.mean(a), 2)} ± ${fmt(S.se(a), 2)}` : fmt(S.mean(a), 2), a.length ? fmt(S.mean(a) / 0.30, 2) : '']; }
+  });
+  drawP(0, { e: 0, c: 0 }, [], []);
+  (function restore() { const rows = pTable.getRows(); if (rows.length) { const last = rows[rows.length - 1]; drawP(last.t, { e: last.e ?? TRAVEL_MAX, c: last.c ?? 0 }, rows.map(r => r.e), rows.map(r => r.c)); } })();
+  pCv.onresize = () => { const rows = pTable.getRows(); const last = rows[rows.length - 1]; drawP(last ? last.t : 0, { e: last ? (last.e ?? TRAVEL_MAX) : 0, c: last ? last.c : 0 }, rows.map(r => r.e), rows.map(r => r.c)); };
+  function drawP(t, pos, mE, mC) {
+    drawRig(pCv, { t, temp: 20, items: [
+      { label: 'Germinating seeds', look: 'seed', syringe: 1, pos: pos.e, marks: mE, parts: partsE },
+      { label: 'Glass beads (control)', look: 'beads', syringe: 1, pos: pos.c, marks: mC, parts: partsC }
+    ] });
+  }
+  function setReadouts(t, e, c) {
+    $('#p-time').textContent = fmt(t, 1) + ' min';
+    $('#p-e').textContent = fmt(e, 2) + ' cm'; $('#p-c').textContent = fmt(c, 2) + ' cm';
+    $('#p-o2').textContent = fmt((e - c) * UL_PER_CM, 1) + ' µL';
+  }
+  $('#p-run').addEventListener('click', () => {
+    if (pBusy) return;
+    pBusy = true; $('#p-msg').textContent = ''; $('#p-msg').className = 'status';
+    const equil = $('#p-equil').checked, stable = $('#p-stable').checked;
+    pRun = simulateRun({ org: 'fastplant', temp: 20, days: 2, light: 'dark' }, rng, { equil, stable, interval: 5, duration: 25 });
+    pTable.clear();
+    const mE = [], mC = [];
+    pLoop = animate(pCv, pRun, (tt, i) => {
+      setReadouts(tt, pRun.dE[i], pRun.dC[i]);
+      return { t: tt, temp: 20 + 0, note: !equil && tt < 6 ? 'gas still cooling to bath temperature' : '', items: [
+        { label: 'Germinating seeds', look: 'seed', syringe: 1, pos: pRun.dE[i], marks: mE, parts: partsE },
+        { label: 'Glass beads (control)', look: 'beads', syringe: 1, pos: pRun.dC[i], marks: mC, parts: partsC }] };
+    }, +$('#p-speed').value, m => {
+      mE.push(m.e); mC.push(m.c);
+      pTable.addRow({ t: m.t, T: Math.round((20 + rng.normal(0, stable ? 0.05 : 0.2)) * 10) / 10, e: m.e, c: m.c, de: null, corr: null });
+    }, () => {
+      pBusy = false;
+      const fit = rateFromMarks(pRun.marks);
+      const reps = pReps.getRows();
+      pReps.addRow({ run: reps.length + 1, set: (equil ? 'equilibrated' : 'no wait') + ', ' + (stable ? 'insulated' : 'open bath'), rate: fit.rate, perg: fit.rate / 0.30 });
+      const msg = $('#p-msg');
+      if (pRun.stuckE != null) { msg.textContent = `The seed plug reached the barrel at ${fmt(pRun.stuckE, 1)} min. Use only the readings before that.`; msg.className = 'status warn'; }
+      else if (!equil) { msg.textContent = 'You skipped the 5-min equilibration. Compare the uncorrected and control lines in the first few minutes.'; msg.className = 'status warn'; }
+      else { msg.textContent = 'Run complete. Fill in columns D and the corrected distance, then find the rate from the graph.'; msg.className = 'status ok'; }
+    });
+  });
+  $('#p-clear').addEventListener('click', () => { if (pBusy) return; pTable.clear(); drawP(0, { e: 0, c: 0 }, [], []); setReadouts(0, 0, 0); $('#p-check-msg').textContent = ''; $('#p-rate-msg').textContent = ''; });
+  $('#p-check').addEventListener('click', () => {
+    const rows = pTable.getRows(), out = $('#p-check-msg');
+    if (!rows.length) { out.textContent = 'Run the experiment first.'; out.className = 'status bad'; return; }
+    let ok = 0, total = 0; const wrong = [];
+    rows.forEach((r, i) => {
+      if (typeof r.e !== 'number') return;
+      const prev = i === 0 ? 0 : rows[i - 1].e;
+      const expDe = i === 0 ? 0 : (typeof prev === 'number' ? r.e - prev : null);
+      const expCorr = r.e - r.c;
+      if (expDe != null) { total++; if (typeof r.de === 'number' && Math.abs(r.de - expDe) <= 0.015) ok++; else wrong.push(`${r.t} min (D)`); }
+      total++; if (typeof r.corr === 'number' && Math.abs(r.corr - expCorr) <= 0.015) ok++; else wrong.push(`${r.t} min (corrected)`);
+    });
+    out.textContent = ok === total ? `All ${total} entries are correct.` : `${ok} of ${total} entries correct. Recheck: ${wrong.slice(0, 6).join(', ')}${wrong.length > 6 ? '…' : ''}.`;
+    out.className = 'status ' + (ok === total ? 'ok' : 'bad');
+  });
+  $('#p-rate-check').addEventListener('click', () => {
+    const pts = o2Rows(pTable.getRows()), out = $('#p-rate-msg');
+    if (pts.length < 3) { out.textContent = 'You need at least three readings first.'; out.className = 'status bad'; return; }
+    const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y)), v = parseFloat($('#p-rate-in').value);
+    if (!isFinite(v)) { out.textContent = 'Enter a number.'; out.className = 'status bad'; return; }
+    const good = Math.abs(v - f.m) <= Math.max(0.08, Math.abs(f.m) * 0.1);
+    out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Not quite. Rate = rise/run of the fit line: (change in µL O<sub>2</sub>) ÷ (change in minutes). Use points on the line, not the first and last data points.';
+    out.className = 'status ' + (good ? 'ok' : 'bad');
+  });
+
+  /* ================= Option 2: gas sensors =================
+     Model: 25 germinating peas ≈ 8 g; O2 uptake at 20 °C ≈ 45 µL/min (≈ 5.6 µL·g⁻¹·min⁻¹), Q10 = 2.3,
+     dry peas ≈ 4 % of that, boiled peas and beads 0. Chamber gas volume 242 mL. RQ ≈ 1.0 (starch).
+       O2 (%)    = 20.9 − 100·V_O2/Vgas          (+ sensor noise ±0.01 %)
+       CO2 (ppm) = 450 + 10⁶·V_CO2/Vgas           (with KOH: CO2 is scrubbed toward ~0, τ ≈ 3 min)
+       P (kPa)   = 101.3·(1 − V_O2/Vgas)  with KOH; without KOH CO2 replaces O2 and P is ~flat.
+     A small bath-temperature wander adds pressure noise. */
+  const VGAS = 242000;
+  const gCv = Lab.canvas('#g-rig', 0.55);
+  const gChart = Lab.chart('#g-chart', { xLabel: 'Time (min)', yLabel: 'O₂ (%)', xMin: 0, xMax: 25, height: 300, series: [] });
+  const gTable = Lab.table('#g-table', {
+    save: 'g-table',
+    columns: [{ key: 'run', label: 'Run' }, { key: 'contents', label: 'Contents' }, { key: 'T', label: 'Temp', unit: '°C', num: true, digits: 0 }, { key: 'sensor', label: 'Sensor' }, { key: 'koh', label: 'KOH' }, { key: 'slope', label: 'Slope', unit: 'per min', num: true, digits: 4 }, { key: 'o2', label: '≈ O₂ used', unit: 'µL/min', num: true, digits: 1 }]
+  });
+  const SENS = { o2: { unit: '%', label: 'O₂ (%)', d: 3 }, co2: { unit: 'ppm', label: 'CO₂ (ppm)', d: 0 }, p: { unit: 'kPa', label: 'Pressure (kPa)', d: 2 } };
+  let gBusy = false, gPts = [], gNow = { t: 0, v: null };
+  const gTempSync = () => { $('#g-temp-out').textContent = $('#g-temp').value + ' °C'; drawG(); };
+  $('#g-temp').addEventListener('input', gTempSync);
+  ['#g-sensor', '#g-contents', '#g-koh'].forEach(s => $(s).addEventListener('change', () => { if (!gBusy) { gPts = []; gNow = { t: 0, v: null }; refreshGChart(); } drawG(); }));
+  function gRate(contents, T) {
+    const base = { peas: 45, dry: 1.8, boiled: 0, beads: 0 }[contents];
+    return base * tempFactor(T, 2.3);
+  }
+  function drawG() {
+    const { ctx, w, h } = gCv; ctx.clearRect(0, 0, w, h);
+    const fs = Math.max(10, Math.min(13, w / 48));
+    const contents = $('#g-contents').value, koh = $('#g-koh').checked, sensor = $('#g-sensor').value;
+    // bath
+    ctx.fillStyle = C('--s3'); ctx.globalAlpha = 0.13; ctx.fillRect(w * 0.04, h * 0.35, w * 0.5, h * 0.6); ctx.globalAlpha = 1;
+    ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(w * 0.04, h * 0.3); ctx.lineTo(w * 0.04, h * 0.95); ctx.lineTo(w * 0.54, h * 0.95); ctx.lineTo(w * 0.54, h * 0.3); ctx.stroke();
+    // bottle
+    const bx = w * 0.14, bw = w * 0.30, top = h * 0.30, bot = h * 0.90;
+    ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--ink'); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, top, bw, bot - top, 10) : ctx.rect(bx, top, bw, bot - top); ctx.fill(); ctx.stroke();
+    ctx.fillRect(bx + bw * 0.32, top - h * 0.08, bw * 0.36, h * 0.08); ctx.strokeRect(bx + bw * 0.32, top - h * 0.08, bw * 0.36, h * 0.08);
+    // sensor
+    ctx.fillStyle = C('--muted'); ctx.fillRect(bx + bw * 0.40, top - h * 0.26, bw * 0.2, h * 0.30);
+    ctx.fillStyle = C('--ink'); ctx.fillRect(bx + bw * 0.38, top - h * 0.27, bw * 0.24, h * 0.06);
+    ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx + bw * 0.5, top - h * 0.27); ctx.bezierCurveTo(bx + bw * 0.5, h * 0.0, w * 0.62, h * 0.0, w * 0.64, h * 0.2); ctx.stroke();
+    // contents
+    const parts = contentParticles(contents === 'beads' ? 'beads' : 'seed', 31);
+    const r = Math.max(4, bw / 14);
+    parts.slice(0, 25).forEach((p, i) => {
+      const cx = bx + r + 2 + (i % 7) * (bw - 2 * r - 4) / 6 + (Math.floor(i / 7) % 2) * r * 0.5, cy = bot - r - 3 - Math.floor(i / 7) * r * 1.6;
+      ctx.fillStyle = C(contents === 'beads' ? '--surface-2' : contents === 'dry' ? '--warn' : contents === 'boiled' ? '--muted' : '--s6');
+      ctx.strokeStyle = C('--line'); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); ctx.stroke();
+    });
+    if (koh) { ctx.fillStyle = C('--warn-soft'); ctx.strokeStyle = C('--warn'); ctx.fillRect(bx + bw * 0.62, top + h * 0.06, bw * 0.3, h * 0.08); ctx.strokeRect(bx + bw * 0.62, top + h * 0.06, bw * 0.3, h * 0.08); ctx.fillStyle = C('--warn'); ctx.font = `${fs - 1}px "Source Sans 3", sans-serif`; ctx.textAlign = 'center'; ctx.fillText('KOH', bx + bw * 0.77, top + h * 0.115); }
+    // interface display
+    const dx = w * 0.60, dy = h * 0.2, dw = w * 0.36, dh = h * 0.5;
+    ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line'); ctx.lineWidth = 1.5; ctx.fillRect(dx, dy, dw, dh); ctx.strokeRect(dx, dy, dw, dh);
+    ctx.fillStyle = C('--muted'); ctx.font = `${fs}px "Source Sans 3", sans-serif`; ctx.textAlign = 'left';
+    ctx.fillText(SENS[sensor].label.replace(/ \(.*/, '') + ' sensor', dx + 8, dy + fs + 6);
+    ctx.fillStyle = C('--accent'); ctx.font = `600 ${Math.round(fs * 1.7)}px "JetBrains Mono", monospace`;
+    ctx.fillText(gNow.v == null ? '— —' : fmt(gNow.v, SENS[sensor].d), dx + 8, dy + dh * 0.55);
+    ctx.fillStyle = C('--muted'); ctx.font = `${fs}px "JetBrains Mono", monospace`;
+    ctx.fillText(SENS[sensor].unit, dx + 8, dy + dh * 0.55 + fs + 6);
+    ctx.fillText(`t = ${fmt(gNow.t, 1)} min`, dx + 8, dy + dh - 8);
+    ctx.fillStyle = C('--muted'); ctx.font = `${fs - 1}px "Source Sans 3", sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(`${$('#g-temp').value} °C bath`, w * 0.29, h * 0.985);
+  }
+  function refreshGChart() {
+    const s = SENS[$('#g-sensor').value];
+    const ys = gPts.map(p => p.y);
+    const dflt = { '%': [20.3, 21], ppm: [300, 1000], kPa: [100.8, 101.5] }[s.unit];
+    let lo = ys.length ? Math.min(...ys) : dflt[0], hi = ys.length ? Math.max(...ys) : dflt[1];
+    const pad = Math.max((hi - lo) * 0.15, s.unit === '%' ? 0.05 : s.unit === 'ppm' ? 50 : 0.05);
+    gChart.update({ yLabel: s.label, yMin: lo - pad, yMax: hi + pad, series: [{ name: `${$('#g-contents').selectedOptions[0].text}`, points: gPts.slice(), line: true, dots: false, fit: gPts.length > 4 ? 'linear' : false }] });
+  }
+  gCv.onresize = drawG;
+  gTempSync();
+  refreshGChart();
+  $('#g-run').addEventListener('click', () => {
+    if (gBusy) return; gBusy = true;
+    const sensor = $('#g-sensor').value, contents = $('#g-contents').value, T = +$('#g-temp').value, koh = $('#g-koh').checked;
+    const rate = gRate(contents, T) * Math.exp(rng.normal(0, 0.1));
+    const pts = []; let th = 0;
+    for (let k = 0; k <= 50; k++) {
+      const t = k * 0.5, v = rate * t; th += -th / 4 * 0.5 + 0.03 * Math.sqrt(0.5) * rng.normal();
+      let y;
+      if (sensor === 'o2') y = 20.9 - 100 * v / VGAS + rng.normal(0, 0.008);
+      else if (sensor === 'co2') y = koh ? 450 * Math.exp(-t / 3) + v / VGAS * 1e6 * 0.02 + Math.abs(rng.normal(0, 6)) : 450 + v / VGAS * 1e6 + rng.normal(0, 12);
+      else y = 101.3 * (1 - (koh ? v : v * 0.02) / VGAS) + 101.3 * th / 293 + rng.normal(0, 0.004);
+      pts.push({ x: t, y });
+    }
+    gPts = []; let shown = 0;
+    const finish = () => {
+      gBusy = false;
+      const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y));
+      const o2 = sensor === 'o2' ? -f.m / 100 * VGAS : sensor === 'co2' ? (koh ? NaN : f.m * 1e-6 * VGAS) : (koh ? -f.m / 101.3 * VGAS : NaN);
+      $('#g-slope').textContent = `${fmt(f.m, sensor === 'co2' ? 1 : 4)} ${SENS[sensor].unit}/min`;
+      $('#g-o2').textContent = isFinite(o2) ? fmt(o2, 1) + ' µL/min' : 'can\'t tell';
+      const rows = gTable.getRows();
+      gTable.addRow({ run: rows.length + 1, contents: $('#g-contents').selectedOptions[0].text, T, sensor: SENS[sensor].label, koh: koh ? 'yes' : 'no', slope: f.m, o2: isFinite(o2) ? o2 : null });
+    };
+    const step = () => {
+      gPts.push(pts[shown]); gNow = { t: pts[shown].x, v: pts[shown].y };
+      $('#g-time').textContent = fmt(gNow.t, 1) + ' min'; $('#g-read').textContent = fmt(gNow.v, SENS[sensor].d) + ' ' + SENS[sensor].unit;
+      shown++;
+    };
+    if (Lab.reducedMotion()) { while (shown < pts.length) step(); refreshGChart(); drawG(); finish(); return; }
+    let acc = 0;
+    const loop = Lab.loop(dt => {
+      acc += dt;
+      while (acc > 0.12 && shown < pts.length) { acc -= 0.12; step(); }
+      refreshGChart(); drawG();
+      if (shown >= pts.length) { finish(); return false; }
+    });
+    loop.start();
+  });
+
+  /* ================= Design your own ================= */
+  const prop = $('#d-proposal');
+  Lab.prompt(prop, { key: 'd-question', label: 'Essential question you are testing', rows: 2 });
+  Lab.prompt(prop, { key: 'd-hyp', label: 'Hypothesis ("If … then … because …")', rows: 3 });
+  Lab.prompt(prop, { key: 'd-iv', label: 'Variable manipulated (independent variable) and the levels you will test', rows: 2 });
+  Lab.prompt(prop, { key: 'd-const', label: 'Variables held constant, and your control(s)', rows: 3 });
+  Lab.prompt(prop, { key: 'd-method', label: 'Method: number of replicates, how long you will read, and how you will calculate the rate', rows: 3 });
+  Lab.prompt(prop, { key: 'd-assume', label: 'Assumptions you are making, and possible sources of error', rows: 3 });
+
+  const dOrg = $('#d-org');
+  ['fastplant', 'oat', 'dry', 'boiled', 'green', 'mealworm', 'cricket', 'fly', 'earthworm'].forEach(k => dOrg.append(Lab.h('option', { value: k }, ORGS[k].name)));
+  const dCv = Lab.canvas('#d-rig', 0.72);
+  let dLast = null, dBusy = false;
+  const dTable = Lab.table('#d-table', {
+    save: 'd-table',
+    columns: [{ key: 'trial', label: 'Trial' }, { key: 'orgName', label: 'Organism' }, { key: 'temp', label: 'Temp', unit: '°C', num: true, digits: 0 }, { key: 'daysTxt', label: 'Germ. time' }, { key: 'light', label: 'Light' }, { key: 'rate', label: 'Rate', unit: 'µL O₂/min', num: true, digits: 3 }, { key: 'mass', label: 'Mass', unit: 'g', num: true, digits: 2 }, { key: 'perg', label: 'Rate per gram', unit: 'µL·g⁻¹·min⁻¹', num: true, digits: 2 }, { key: 'note', label: 'Note' }],
+    onChange: () => updateDesign()
+  });
+  const dChart = Lab.chart('#d-chart', { xLabel: 'Temperature (°C)', yLabel: 'O₂ uptake (µL·g⁻¹·min⁻¹)', series: [] });
+  function syncD() {
+    $('#d-temp-out').textContent = $('#d-temp').value + ' °C';
+    $('#d-reps-out').textContent = $('#d-reps').value;
+    const o = ORGS[dOrg.value];
+    $('#d-days').disabled = !o.seed;
+    $('#d-org-hint').textContent = `${o.syringe} mL syringe · ${o.load} (≈ ${fmt(o.mass, 2)} g)`;
+    if (!dLast) drawD(null);
+  }
+  ['#d-temp', '#d-reps'].forEach(s => $(s).addEventListener('input', syncD));
+  ['#d-org', '#d-days', '#d-light'].forEach(s => $(s).addEventListener('change', () => { dLast = null; syncD(); }));
+  function dItems(org, run, i, mE, mC) {
+    const o = ORGS[org];
+    return [
+      { label: o.short, look: o.look, syringe: o.syringe, pos: run ? run.dE[i] : 0, marks: mE || [], parts: contentParticles(o.look, 21) },
+      { label: 'Beads (control)', look: 'beads', syringe: o.syringe, pos: run ? run.dC[i] : 0, marks: mC || [], parts: contentParticles('beads', 22) }
+    ];
+  }
+  function drawD(run) {
+    const c = run ? run.cond : { org: dOrg.value, temp: +$('#d-temp').value, light: $('#d-light').value };
+    const i = run ? run.ts.length - 1 : 0;
+    drawRig(dCv, { t: run ? run.ts[i] : 0, temp: c.temp, light: c.light, items: dItems(c.org, run, i, run ? run.marks.map(m => m.e) : [], run ? run.marks.map(m => m.c) : []) });
+  }
+  dCv.onresize = () => drawD(dLast);
+  syncD();
+  $('#d-run').addEventListener('click', () => {
+    if (dBusy) return;
+    const cond = { org: dOrg.value, temp: +$('#d-temp').value, days: +$('#d-days').value, light: $('#d-light').value };
+    const o = ORGS[cond.org], reps = +$('#d-reps').value, interval = +$('#d-int').value;
+    let run = null, notes = [];
+    for (let k = 0; k < reps; k++) {
+      run = simulateRun(cond, rng, { equil: true, stable: true, interval, duration: 25 });
+      run.cond = cond;
+      const f = rateFromMarks(run.marks);
+      const note = !isFinite(f.rate) ? 'plug hit barrel too soon' : run.stuckE != null ? `plug hit barrel at ${fmt(run.stuckE, 0)} min` : '';
+      if (note) notes.push(note);
+      const rows = dTable.getRows();
+      dTable.addRow({ trial: rows.length + 1, org: cond.org, orgName: o.short, temp: cond.temp, days: o.seed ? cond.days : null, daysTxt: o.seed ? (cond.days < 1 ? '12 h' : cond.days + ' d') : 'n/a', light: cond.light, rate: f.rate, mass: o.mass, perg: f.rate / o.mass, note });
+      $('#d-last').textContent = isFinite(f.rate) ? fmt(f.rate, 2) + ' µL/min' : '—';
+      $('#d-lastg').textContent = isFinite(f.rate) ? fmt(f.rate / o.mass, 2) : '—';
+    }
+    dLast = run;
+    const msg = $('#d-msg');
+    if (notes.length) { msg.textContent = `In ${notes.length} trial(s) the plug reached the barrel before 25 min. Rates use only earlier readings; choose a shorter reading interval if fewer than 3 readings were left.`; msg.className = 'status warn'; }
+    else { msg.textContent = `${reps} trial(s) added.`; msg.className = 'status ok'; }
+    dBusy = true;
+    const mE = [], mC = [];
+    animate(dCv, run, (tt, i) => ({ t: tt, temp: cond.temp, light: cond.light, items: dItems(cond.org, run, i, mE, mC) }), 8, m => { mE.push(m.e); mC.push(m.c); }, () => { dBusy = false; });
+  });
+  $('#d-clear').addEventListener('click', () => { dTable.clear(); dLast = null; drawD(null); $('#d-msg').textContent = ''; });
+  $('#d-group').addEventListener('change', updateDesign);
+  function updateDesign() {
+    const rows = dTable.getRows().filter(r => isFinite(r.perg));
+    $('#d-n').textContent = String(dTable.getRows().length);
+    const by = $('#d-group').value;
+    const keyOf = r => by === 'temp' ? r.temp : by === 'org' ? r.orgName : by === 'days' ? r.days : r.light;
+    const groups = new Map();
+    rows.forEach(r => { const k = keyOf(r); if (k == null) return; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r.perg); });
+    let keys = [...groups.keys()];
+    const numeric = by === 'temp' || by === 'days';
+    if (numeric) keys.sort((a, b) => a - b);
+    const sum = keys.map(k => { const a = groups.get(k); return { k, n: a.length, m: S.mean(a), sd: S.sd(a), se2: a.length > 1 ? 2 * S.se(a) : 0 }; });
+    const label = { temp: 'Temperature (°C)', org: 'Organism', days: 'Germination time (days)', light: 'Lighting' }[by];
+    $('#d-summary').innerHTML = sum.length ? `<div class="table-wrap"><table class="data summary-table"><thead><tr><th>${label}</th><th class="num">n</th><th class="num">Mean <span class="unit">(µL·g⁻¹·min⁻¹)</span></th><th class="num">SD</th><th class="num">±2 SE <span class="unit">(95% CI)</span></th></tr></thead><tbody>${sum.map(s => `<tr><td>${Lab.esc(String(s.k))}</td><td class="num">${s.n}</td><td class="num">${fmt(s.m, 2)}</td><td class="num">${fmt(s.sd, 2)}</td><td class="num">${s.n > 1 ? fmt(s.se2, 2) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small muted">Run some trials to see group means here.</p>';
+    if (numeric) {
+      const indiv = rows.filter(r => keyOf(r) != null).map(r => ({ x: keyOf(r), y: r.perg }));
+      dChart.update({ type: 'xy', categories: null, xMin: 0, xMax: by === 'temp' ? 45 : 5, xLabel: label, yLabel: 'O₂ uptake (µL·g⁻¹·min⁻¹)', series: [{ name: 'Mean ± 2 SE', points: sum.map(s => ({ x: s.k, y: s.m, err: s.se2 })), line: true }, { name: 'Individual trials', points: indiv, line: false }] });
+    } else {
+      dChart.update({ type: 'bar', categories: keys.map(String), xLabel: label, yLabel: 'O₂ uptake (µL·g⁻¹·min⁻¹)', series: [{ name: 'Mean ± 2 SE', points: sum.map(s => ({ x: String(s.k), y: s.m, err: s.se2 })) }] });
+    }
+  }
+  updateDesign();
+  const q10 = () => { const t1 = +$('#q-t1').value, t2 = +$('#q-t2').value, r1 = parseFloat($('#q-r1').value), r2 = parseFloat($('#q-r2').value); $('#q-out').textContent = (r1 > 0 && r2 > 0 && t2 !== t1) ? fmt(Math.pow(r2 / r1, 10 / (t2 - t1)), 2) : '—'; };
+  ['#q-t1', '#q-t2', '#q-r1', '#q-r2'].forEach(s => $(s).addEventListener('input', q10));
+  const dRes = $('#d-results');
+  Lab.prompt(dRes, { key: 'd-data-sum', label: 'Describe the pattern in your graph. Report each group mean with its ±2 SE interval and say which intervals overlap.', rows: 4 });
+  Lab.prompt(dRes, { key: 'd-rate-calc', label: 'Show one rate calculation from start to finish (plug distance → µL O<sub>2</sub> → slope → per gram).', rows: 3 });
+
+  /* ================= Analyze & Evaluate ================= */
+  const an = $('#analysis');
+  Lab.prompt(an, { key: 'a1', label: '1. How did you plot your data to find the respiration rate? Which variable went on the x-axis and which on the y-axis, and why?', rows: 3 });
+  Lab.prompt(an, { key: 'a2', label: '2. From your graph, what was the rate of respiration of the germinating seeds at 20 °C? Give units, and explain how the slope gives you those units.', rows: 3 });
+  Lab.prompt(an, { key: 'a3', label: '3. In the run without equilibration (or with an open bath), how did the bead control behave? Use PV = nRT to explain why the correction matters.', rows: 3 });
+  Lab.prompt(an, { key: 'a4', label: '4. Compare the three gas sensors. Why does the CO<sub>2</sub> sensor need a chamber <em>without</em> KOH, while the pressure sensor needs KOH? What did the pressure sensor show without KOH, and why?', rows: 4 });
+  Lab.prompt(an, { key: 'a5', label: '5. What additional questions about cellular respiration could you explore with these same respirometers?', rows: 3 });
+  Lab.prompt(an, { key: 'a6', label: '6. If you tested temperature: what Q<sub>10</sub> did you find? Explain the shape of your rate-vs-temperature curve, including any drop at high temperature, in terms of enzymes.', rows: 3 });
+  const cer = $('#cer');
+  Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
+  Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
+  Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
+  const ev = $('#evaluate');
+  Lab.prompt(ev, { key: 'e1', label: 'Was your hypothesis supported? Use your means and error bars to justify your answer.', rows: 3 });
+  Lab.prompt(ev, { key: 'e2', label: 'What were the main sources of error, in the simulation and in a real wet lab (air leaks, bumping the bath, too much KOH, marking error, the plug reaching the barrel)? How would each change your rate?', rows: 4 });
+  Lab.prompt(ev, { key: 'e3', label: 'Suggest one improvement to the microrespirometer design or to the procedure for measuring O<sub>2</sub> consumption, and one for the gas-sensor method.', rows: 3 });
+  Lab.prompt(ev, { key: 'e4', label: 'Where could you go from here? Propose a follow-up experiment (for example, temperature in insects instead of seeds, or how body mass relates to respiration rate).', rows: 3 });
+  Lab.prompt(ev, { key: 'e5', label: 'Which ideas about cellular respiration or gases were hardest for you before this lab? What clicked?', rows: 3 });
+})();
+</script>
+</body>
+</html>

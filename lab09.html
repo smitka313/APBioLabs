@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 9 · Restriction Enzyme Analysis of DNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .stage > *, .controls > *, .stack > * { min-width: 0; }
+  .stack { align-content: start; }
+  .rack { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tube { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px 8px 16px 16px; padding: 5px 10px; font: inherit; font-size: .84rem; cursor: pointer; text-align: left; }
+  .tube[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .wells { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+  .wells button { font: inherit; font-size: .78rem; padding: 4px 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 4px; cursor: pointer; }
+  .wells button.filled { background: var(--accent-soft); }
+  .gel-canvas { cursor: crosshair; touch-action: manipulation; }
+  .seqpre { font-family: var(--f-mono); font-size: .8rem; line-height: 1.35; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; margin: 0; color: var(--ink); }
+  .seqpre .cut { color: var(--stain); font-weight: 700; }
+  .semilog { width: 100%; height: auto; display: block; }
+  .semilog text { font-family: var(--f-body); font-size: 12px; fill: var(--muted); }
+  .semilog .axl { fill: var(--ink); font-weight: 600; font-size: 13px; }
+  .semilog .gmaj { stroke: var(--line); }
+  .semilog .gmin { stroke: var(--grid); }
+  .semilog .ax { stroke: var(--ink); stroke-width: 1.2; }
+  .bg-svg text { font-family: var(--f-mono); font-size: 13px; fill: var(--ink); }
+  .bg-svg .lbl { font-family: var(--f-body); font-size: 12px; fill: var(--muted); }
+  .bg-svg .cutl { stroke: var(--stain); stroke-width: 2; fill: none; }
+  .mapsvg text { font-family: var(--f-body); font-size: 11px; fill: var(--muted); }
+  .msg { font-size: .92rem; padding: 8px 12px; border-radius: var(--r-sm); background: var(--surface-2); }
+  .msg.ok { background: var(--ok-soft); } .msg.bad { background: var(--bad-soft); } .msg.warn { background: var(--warn-soft); }
+  .casefile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 3 · Information</span></nav>
+    <div class="eyebrow">Investigation 9</div>
+    <h1>Biotechnology: Restriction Enzyme Analysis of DNA</h1>
+    <p class="driving-q">How can we use genetic information to identify and profile individuals?</p>
+    <div class="tags"><span class="tag">Unit 6: Gene Expression and Regulation</span><span class="tag">IST-1.P</span><span class="tag">Science Practice 6.D</span><span class="tag">≈ 2 class periods + gel run</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>The case of the missing teacher</h2></header>
+    <div class="step-body prose">
+      <p class="lede">You arrive at AP Biology, Room 102. Chairs are knocked over, there is broken glass on the floor, there are drops of blood, and Ms. Mason is nowhere to be found. Your classmates Marcus and Laurel bag the evidence. Your job is to use DNA to find out whose blood is on the floor.</p>
+      <div class="casefile"><strong>Evidence log</strong>
+        <ul>
+          <li>Ten small drops on the floor, confirmed as blood by a Kastle-Meyer test</li>
+          <li>A shard from a broken 500-mL Erlenmeyer flask with a reddish stain on the edge</li>
+          <li>A paper cup with lipstick, presumed to be Ms. Mason's (saliva)</li>
+          <li>A wad of bubble gum under an overturned chair (Bobby chews that brand)</li>
+          <li>A tissue Mr. Gladson, the teacher next door, threw in the hall trash</li>
+          <li>Bobby's photosynthesis test with a large red "F"</li>
+          <li>An email from Mr. Gladson asking Ms. Mason to give up her job as department chair</li>
+        </ul></div>
+      <p>You will:</p>
+      <ol>
+        <li>Use restriction enzymes to cut DNA on paper, and predict the fragments from a map of lambda (λ) phage DNA.</li>
+        <li>Cast, load and run a virtual agarose gel with uncut λ DNA and λ DNA cut with <em>Eco</em>RI, <em>Hin</em>dIII and <em>Bam</em>HI.</li>
+        <li>Measure how far each band moved, build a semi-log standard curve from the <em>Hin</em>dIII marker, and estimate the sizes of unknown fragments.</li>
+        <li>Design and run your own gel of the crime-scene evidence. Then use your numbers, not just your eyes, to decide whose blood it is.</li>
+      </ol>
+      <div class="callout callout--question"><div class="callout-title">Learning objective and practice</div><ul>
+        <li><strong>IST-1.P</strong> Explain the use of genetic engineering techniques in analyzing or manipulating DNA.</li>
+        <li><strong>Science Practice 6.D</strong> Explain the relationship between experimental results and larger biological concepts, processes, or theories.</li>
+      </ul></div>
+      <div class="callout callout--safety"><div class="callout-title">Safety at the real bench</div><ul>
+        <li>The gel box holds a salt buffer and uses DC current strong enough to shock you. Turn the power supply OFF and wait 10 seconds before touching any lead.</li>
+        <li>Connect black to black and red to red, <em>then</em> switch the power on. Power goes on last and off first.</li>
+        <li>Wear gloves. Never handle gels with bare hands, and keep methylene blue stain off your skin.</li>
+        <li>Hot agarose can boil over and scald you. Use heat-resistant gloves when you melt it.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Cutting DNA and sorting it by size</h2></header>
+    <div class="step-body prose">
+      <p><strong>Restriction enzymes</strong> (restriction endonucleases) are proteins bacteria use to chop up the DNA of invading viruses. Each one recognizes a specific short sequence, usually a 4- to 8-base-pair <em>palindrome</em>, which means the sequence reads the same 5′→3′ on both strands. The enzyme cuts the sugar–phosphate backbone at that site. <em>Eco</em>RI (from <em>E. coli</em>) recognizes 5′-GAATTC-3′ and cuts between G and A on each strand. Because the two cuts are staggered, each piece ends with a four-base single-stranded overhang, called a <strong>sticky end</strong>. Other enzymes, such as <em>Sma</em>I (CCC↓GGG), cut straight across and leave <strong>blunt ends</strong>. Fragments with matching sticky ends can base-pair and be sealed by DNA ligase. This "cut and paste" step is the basis of recombinant DNA.</p>
+      <figure>
+        <svg class="bg-svg" viewBox="0 0 480 150" role="img" aria-label="EcoRI recognition site GAATTC on both strands, with staggered cuts that leave AATT sticky ends">
+<text x="10" y="34">5′</text><text x="10" y="64">3′</text>
+<text x="50" y="34" text-anchor="middle">G</text><text x="66" y="34" text-anchor="middle">A</text><text x="82" y="34" text-anchor="middle">A</text><text x="98" y="34" text-anchor="middle">T</text><text x="114" y="34" text-anchor="middle">T</text><text x="130" y="34" text-anchor="middle">C</text><text x="50" y="64" text-anchor="middle">C</text><text x="66" y="64" text-anchor="middle">T</text><text x="82" y="64" text-anchor="middle">T</text><text x="98" y="64" text-anchor="middle">A</text><text x="114" y="64" text-anchor="middle">A</text><text x="130" y="64" text-anchor="middle">G</text>
+<text x="150" y="34">3′</text><text x="150" y="64">5′</text>
+<path class="cutl" d="M58 16 V44 H122 V72"/>
+<text class="lbl" x="10" y="96">EcoRI site: the cut (magenta) runs between</text><text class="lbl" x="10" y="112">G and A on each strand, 4 bases apart.</text>
+<text x="200" y="34">5′</text><text x="200" y="64">3′</text><text x="236" y="34" text-anchor="middle">G</text><text x="236" y="64" text-anchor="middle">C</text><text x="252" y="64" text-anchor="middle">T</text><text x="268" y="64" text-anchor="middle">T</text><text x="284" y="64" text-anchor="middle">A</text><text x="300" y="64" text-anchor="middle">A</text>
+<text x="350" y="34" text-anchor="middle">A</text><text x="366" y="34" text-anchor="middle">A</text><text x="382" y="34" text-anchor="middle">T</text><text x="398" y="34" text-anchor="middle">T</text><text x="414" y="34" text-anchor="middle">C</text><text x="414" y="64" text-anchor="middle">G</text><text x="440" y="34">3′</text><text x="440" y="64">5′</text>
+<text class="lbl" x="200" y="96">Two fragments, each with a single-stranded</text><text class="lbl" x="200" y="112">5′-AATT overhang (a "sticky end").</text>
+</svg>
+      </figure>
+      <p>Cutting a DNA molecule with an enzyme gives a set of fragments whose sizes depend on where the sites are. Differences between individuals' DNA can add or remove sites, or change the distance between them. This gives each person a different set of <strong>restriction fragment length polymorphisms (RFLPs)</strong>. That pattern is a DNA "fingerprint." Identical twins have the same pattern.</p>
+      <p><strong>Gel electrophoresis</strong> separates the fragments. DNA's phosphate groups give it a negative charge, so in an electric field it moves from the negative (black) electrode toward the positive (red) electrode. That is why the wells go at the black end. The agarose gel is a mesh of pores. Short fragments slip through quickly, while long ones get tangled and move slowly. Over a useful range, the distance a fragment travels is roughly a straight-line function of the <em>logarithm</em> of its size:</p>
+      <div class="equation">distance ≈ a − b · log<sub>10</sub>(size in bp) &nbsp;&nbsp;⇔&nbsp;&nbsp; log<sub>10</sub>(bp) = m · distance + c</div>
+      <p>To size unknown fragments, run a <strong>DNA marker</strong> (a set of fragments of known size) on the same gel. Here the marker is λ DNA cut with <em>Hin</em>dIII: 23,130, 9,416, 6,557, 4,361, 2,322, 2,027, 564 and 125 bp. Plot distance on the ordinary x-axis and size on the logarithmic y-axis of semi-log paper. The points fall close to a straight line, called the <strong>standard curve</strong>. Read an unknown band's distance across to the line to estimate its size. The very largest fragments squeeze together near the top (above about 20 kb at 0.8% agarose) and fall off the line, so leave them out of the fit. λ DNA has 12-base single-stranded "cos" ends that can stick together. In a <em>Hin</em>dIII digest, the two end fragments (23,130 + 4,361) partly pair up into a 27,491-bp piece that runs in the same band as 23,130.</p>
+      <p>Loading dye contains a dense sugar that makes the sample sink into the well. It also contains a blue-purple dye that runs at about the same speed as a 300-bp DNA fragment, so you can see how far the run has gone. Agarose concentration, voltage and run time all change how well the bands separate.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body"><div id="prelab"></div></div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Restriction enzymes">
+    <header><div class="eyebrow">Getting started · Activities I and II</div><h2>Cut DNA on the computer, then map λ DNA</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Here is the manual's 53-bp template strand and its complement. Choose an enzyme and digest. Before you press the button, predict how many fragments you will get.</p></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="cut-enz">Restriction enzyme</label><select id="cut-enz"><option value="EcoRI">EcoRI (G↓AATTC)</option><option value="HindIII">HindIII (A↓AGCTT)</option><option value="BamHI">BamHI (G↓GATCC)</option><option value="SmaI">SmaI (CCC↓GGG, blunt)</option></select></div>
+          <button class="btn btn--primary" type="button" id="cut-run">Digest</button>
+          <div class="readouts"><div class="readout"><span class="k">Sites</span><span class="v" id="cut-sites">—</span></div><div class="readout"><span class="k">Fragments</span><span class="v" id="cut-frags">—</span></div></div>
+        </div>
+        <div class="stage">
+          <pre class="seqpre" id="cut-out" aria-live="polite"></pre>
+        </div>
+      </div>
+      <div id="act1-prompts"></div>
+      <h3 style="margin-top:12px">Restriction map of λ phage DNA (48,502 bp)</h3>
+      <div class="prose"><p>The real sites of three enzymes in the λ genome are shown below. Choose one or more enzymes to see the fragments they would produce. This is what is in each tube you will load.</p></div>
+      <div class="row" role="group" aria-label="Enzymes for map"><label class="check" for="map-E"><input type="checkbox" id="map-E" checked> EcoRI</label><label class="check" for="map-H"><input type="checkbox" id="map-H"> HindIII</label><label class="check" for="map-B"><input type="checkbox" id="map-B"> BamHI</label></div>
+      <div id="map-svg"></div>
+      <div id="map-list" class="small"></div>
+      <div id="act2-prompts"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Run a gel">
+    <header><div class="eyebrow">Procedure · Learning to use gel electrophoresis</div><h2>Load and run λ DNA digests</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Your gel (0.8% agarose in 1× TAE) is cast, set in the box with the comb at the black (−) end, covered with buffer, and the comb has been removed. Load each sample into its own well: pick a tube, set the volume, then click a well, either on the gel or with the well buttons. Record your loading order. Connect the leads, run the gel until the dye front is about 1 cm from the end, then stain it. The manual's "ideal gel" order is A <em>Bam</em>HI, B <em>Eco</em>RI, C <em>Hin</em>dIII, D uncut.</p></div>
+      <div id="gel1"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Standard curve">
+    <header><div class="eyebrow">Analyzing results · Sizing fragments</div><h2>Measure bands and build a standard curve</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>After staining, click a band, or use "Measure all visible bands in lane." Each click adds the distance from the front of the well to the front edge of the band. Readings carry about ±0.5 mm of ruler error, as at the bench. In the <strong>Known size</strong> column, type the size of each <em>Hin</em>dIII marker band, largest (closest to the well) first: 23,130 (the 23,130/27,491 doublet), 9,416, 6,557, 4,361, 2,322, 2,027 … The page fits log<sub>10</sub>(bp) against distance for each gel, then estimates every band with no known size.</p></div>
+      <div id="meas1"></div>
+    </div>
+  </section>
+
+  <section class="step wrap wrap--wide gutter" data-step="Design: crime scene">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Whose blood is on the floor?</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>The chief investigator (your teacher) gives you DNA from the blood, Ms. Mason (saliva on her cup), Mr. Gladson (his tissue) and Bobby (bubble gum). All four have been cut with the same restriction enzymes, and you also get a <em>Hin</em>dIII marker. Plan your gel: which wells, how much sample, which voltage, how long, and how many repeat gels. Then run it and size every band. A jury will not accept "the bands look the same." You need fragment sizes and a clear match rule.</p></div>
+      <div class="grid-2">
+        <div class="field"><label for="case-no">Case file number (from your teacher)</label><input id="case-no" type="number" min="1" max="9999" value="102" data-save="case-no"><span class="hint">Different case numbers lead to different suspects. Use the number your teacher assigns.</span></div>
+        <div id="design-plan"></div>
+      </div>
+      <div id="design-prompts" class="grid-2"></div>
+      <div id="gel2"></div>
+      <div id="meas2"></div>
+      <h3>Evidence comparison</h3>
+      <div class="prose"><p>For each suspect, the table compares their estimated fragment sizes with the blood's. Set your own match rule: how close must two fragments be to count as the same size? Base it on the spread of your repeat measurements.</p></div>
+      <div class="row"><label for="tol" class="small">Match if sizes differ by no more than</label><input id="tol" type="range" min="2" max="25" value="10" aria-label="Match tolerance (percent)"><output id="tol-out" class="val">10%</output></div>
+      <div id="compare"></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>Make your case</h2></header>
+    <div class="step-body" id="analysis"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluating results · Thinking about your results</div><h2>Errors, ethics, and the bigger picture</h2></header>
+    <div class="step-body"><div id="evaluate"></div>
+      <div class="callout callout--tip"><div class="callout-title">Go further</div><p>Learn how DNA evidence has been used to free wrongly convicted people at <a href="https://innocenceproject.org" target="_blank" rel="noopener">innocenceproject.org</a>. Explore interactive DNA-fingerprinting animations from the <a href="https://dnalc.org" target="_blank" rel="noopener">Dolan DNA Learning Center</a>.</p></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+Lab.init({ id: 'lab09' });
+const esc = Lab.esc;
+/* ===== λ DNA restriction data (real published coordinates, NEB; genome 48,502 bp) ===== */
+const LAMBDA = 48502;
+const SITES = {
+  EcoRI: [21226, 26104, 31747, 39168, 44972],                        // → 21226, 4878, 5643, 7421, 5804, 3530
+  HindIII: [23130, 25157, 27479, 36895, 37459, 37584, 44141],         // → 23130, 2027, 2322, 9416, 564, 125, 6557, 4361
+  BamHI: [5505, 22346, 27972, 34499, 41732]                           // → 5505, 16841, 5626, 6527, 7233, 6770
+};
+const ENZ_SHORT = { EcoRI: 'E', HindIII: 'H', BamHI: 'B' };
+function cutPositions(enzymes) { return [...new Set(enzymes.flatMap(e => SITES[e]))].sort((a, b) => a - b); }
+/* Fragment list with mass fractions. λ's 12-nt cohesive (cos) ends let the two end fragments anneal:
+   ~30% annealed in unheated samples, ~3% after 65 °C heating (e.g. HindIII 23130 + 4361 → 27491). */
+function digestFragments(enzymes, heated) {
+  const a = heated ? 0.03 : 0.3, pos = [0, ...cutPositions(enzymes), LAMBDA], fr = [];
+  if (pos.length === 2) return [{ bp: LAMBDA, m: 1 - a }, { bp: 2 * LAMBDA, m: a }];   // uncut: monomer + cos-joined dimer
+  for (let i = 0; i < pos.length - 1; i++) { const end = i === 0 || i === pos.length - 2; fr.push({ bp: pos[i + 1] - pos[i], m: (pos[i + 1] - pos[i]) / LAMBDA * (end ? 1 - a : 1) }); }
+  const L = pos[1], R = LAMBDA - pos[pos.length - 2]; fr.push({ bp: L + R, m: (L + R) / LAMBDA * a });
+  return fr;
+}
+
+/* ---------------- Pre-lab ---------------- */
+Lab.quiz('#prelab', [
+  { type: 'mc', q: 'The template strand begins 5′-AAAGTCGCTG…-3′. Which is the complementary strand for this stretch, written in the same left-to-right order?', choices: ['3′-TTTCAGCGAC…-5′', '5′-TTTCAGCGAC…-3′', '3′-AAAGTCGCTG…-5′', '3′-UUUCAGCGAC…-5′'], answer: 0, explain: 'A pairs with T and G pairs with C, and the strands are antiparallel. The complement under 5′-AAAGTCGCTG-3′ reads 3′-TTTCAGCGAC-5′. DNA has no U.' },
+  { type: 'num', q: 'The 53-bp molecule <code style="word-break:break-all">5′-AAAGTCGCTG<b>GAATTC</b>ACTGCATC<b>GAATTC</b>CCGGGGCTATATATG<b>GAATTC</b>GA-3′</code> is cut completely with <em>Eco</em>RI. How many fragments result?', answer: 4, tol: 0, unit: 'fragments', explain: 'There are three GAATTC sites, and cutting a linear molecule at 3 sites gives 3 + 1 = 4 pieces.' },
+  { type: 'num', q: 'Linear λ DNA (48,502 bp) has five <em>Eco</em>RI sites. How many fragments does a complete <em>Eco</em>RI digest produce?', answer: 6, tol: 0, unit: 'fragments', explain: 'A linear molecule cut at n sites gives n + 1 fragments: 5 + 1 = 6. (A circular plasmid cut at n sites gives n fragments.)' },
+  { type: 'mc', q: 'Why do DNA fragments move toward the positive (red) electrode?', choices: ['The bases are positively charged', 'The phosphate groups in the backbone carry negative charges', 'Agarose pulls DNA by capillary action', 'The loading dye drags the DNA along'], answer: 1, explain: 'Each nucleotide has a negatively charged phosphate, so DNA is attracted to the anode (+). The wells must be at the black (−) end.' },
+  { type: 'mc', q: 'Which statement best predicts the RFLP patterns of identical twins cut with the same enzymes?', choices: ['Identical, because their DNA sequences are the same', 'Half the bands match', 'Completely different', 'Identical only if the twins are male'], answer: 0, explain: 'Identical twins come from one zygote, so their sites, and therefore their fragment patterns, are the same. Fraternal twins share on average half their variants, like any siblings.' },
+  { type: 'num', q: 'How many mL of 50× TAE concentrate do you need to make 500 mL of 1× TAE buffer?', answer: 10, tol: 0.01, unit: 'mL', explain: 'C₁V₁ = C₂V₂ → 50 × V₁ = 1 × 500 mL → V₁ = 10 mL concentrate + 490 mL water.' },
+  { type: 'num', q: 'A standard curve gives log<sub>10</sub>(bp) = 4.80 − 0.045 × d, with d in mm. Estimate the size of a band that moved 30 mm.', answer: 2818, tolPct: 0.03, unit: 'bp', explain: 'log₁₀(bp) = 4.80 − 0.045 × 30 = 3.45, so bp = 10<sup>3.45</sup> ≈ 2,820 bp.' },
+  { type: 'mc', q: 'Why is fragment size plotted on the logarithmic axis of semi-log paper?', choices: ['Migration distance is roughly proportional to log(size), and sizes span more than 100-fold', 'Log axes make every gel look the same', 'Small fragments are too faint to plot on a normal axis', 'It removes measurement error'], answer: 0, explain: 'Sizes from about 500 to 23,000 bp cover more than two orders of magnitude, and distance falls about linearly with log(bp). On a log axis the marker points line up, so you can read unknowns from a straight line.' }
+], { id: 'prelab' });
+
+/* ---------------- Activity I: digest the 53-bp sequence ---------------- */
+const SEQ = 'AAAGTCGCTGGAATTCACTGCATCGAATTCCCGGGGCTATATATGGAATTCGA';
+const COMP = { A: 'T', T: 'A', G: 'C', C: 'G' };
+const ENZ = { EcoRI: ['GAATTC', 1, 5], HindIII: ['AAGCTT', 1, 5], BamHI: ['GGATCC', 1, 5], SmaI: ['CCCGGG', 3, 3] };
+function digestSeq() {
+  const [site, tc, bc] = ENZ[Lab.$('#cut-enz').value], bottom = SEQ.split('').map(c => COMP[c]).join('');
+  const hits = []; for (let i = SEQ.indexOf(site); i >= 0; i = SEQ.indexOf(site, i + 1)) hits.push(i);
+  Lab.$('#cut-sites').textContent = hits.length; Lab.$('#cut-frags').textContent = hits.length + 1;
+  const tCuts = [0, ...hits.map(i => i + tc), SEQ.length], bCuts = [0, ...hits.map(i => i + bc), SEQ.length];
+  let out = `Uncut duplex (${SEQ.length} bp):\n5′-${SEQ}-3′\n3′-${bottom}-5′\n\n`;
+  if (!hits.length) out += `No ${site} site in this sequence: the DNA stays in one piece.`;
+  else {
+    out += `${hits.length} site${hits.length > 1 ? 's' : ''} → ${hits.length + 1} fragments${tc === bc ? ' with blunt ends' : ' with 4-base sticky ends'}:\n\n`;
+    for (let k = 0; k < tCuts.length - 1; k++) {
+      const s = Math.min(tCuts[k], bCuts[k]);
+      out += `Fragment ${k + 1} (top strand ${tCuts[k + 1] - tCuts[k]} nt)\n`;
+      out += `   ${' '.repeat(tCuts[k] - s)}${SEQ.slice(tCuts[k], tCuts[k + 1])}\n   ${' '.repeat(bCuts[k] - s)}${bottom.slice(bCuts[k], bCuts[k + 1])}\n\n`;
+    }
+  }
+  Lab.$('#cut-out').textContent = out;
+}
+Lab.$('#cut-run').addEventListener('click', digestSeq); digestSeq();
+Lab.prompt('#act1-prompts', { key: 'act1', label: 'Activity I: Draw or describe how EcoRI cuts this fragment. Which fragments could be "pasted" back together by DNA ligase, and why? Which enzyme in the list makes blunt ends?', rows: 3 });
+
+/* ---------------- Activity II: λ map ---------------- */
+function drawMap() {
+  const enz = Object.keys(SITES).filter(e => Lab.$('#map-' + ENZ_SHORT[e]).checked);
+  const W = 640, L = 20, R = 620, X = bp => L + bp / LAMBDA * (R - L), col = { EcoRI: '--s2', HindIII: '--s3', BamHI: '--s4' };
+  let s = `<rect x="${L}" y="34" width="${R - L}" height="10" rx="3" style="fill:var(--surface-2);stroke:var(--line)"/>`;
+  for (let k = 0; k <= 48; k += 8) s += `<text x="${X(k * 1000)}" y="62" text-anchor="middle">${k} kb</text>`;
+  enz.forEach((e, ei) => SITES[e].forEach(p => { s += `<line x1="${X(p)}" x2="${X(p)}" y1="${26 - ei * 0}" y2="52" style="stroke:var(${col[e]});stroke-width:2.5"><title>${e} site at ${p.toLocaleString()} bp</title></line>`; }));
+  s += Object.keys(col).map((e, i) => enz.includes(e) ? `<rect x="${L + i * 120}" y="6" width="12" height="10" style="fill:var(${col[e]})"/><text x="${L + 16 + i * 120}" y="15">${e}</text>` : '').join('');
+  Lab.$('#map-svg').innerHTML = `<svg class="mapsvg" viewBox="0 0 ${W} 70" role="img" aria-label="Restriction map of lambda DNA showing ${enz.join(', ') || 'no'} sites" style="width:100%;height:auto">${s}</svg>`;
+  const pos = [0, ...cutPositions(enz), LAMBDA], fr = []; for (let i = 0; i < pos.length - 1; i++) fr.push(pos[i + 1] - pos[i]);
+  Lab.$('#map-list').innerHTML = enz.length ? `<strong>${enz.join(' + ')}</strong>: ${pos.length - 2} sites → ${fr.length} fragments (left to right on the map): ${fr.map(x => x.toLocaleString()).join(', ')} bp. Sum = ${fr.reduce((a, b) => a + b, 0).toLocaleString()} bp.` : 'No enzyme selected: uncut λ DNA is one 48,502-bp molecule.';
+}
+['E', 'H', 'B'].forEach(k => Lab.$('#map-' + k).addEventListener('change', drawMap)); drawMap();
+Lab.prompt('#act2-prompts', { key: 'act2', label: 'Activity II: Predict whether DNA from two different people cut with the same enzyme will give the same RFLP pattern. Do you need several enzymes to find differences between individuals? What about identical twins, fraternal twins or triplets? Justify your predictions.', rows: 4 });
+
+/* =================== Gel electrophoresis simulator ===================
+   MODEL: relative mobility of a fragment of size bp follows a logistic curve in x = log10(bp):
+     f(x) = 1 / (1 + e^{k(x − x0)}), which is close to linear in log(bp) over ~0.5–10 kb and compresses
+     very large fragments (so 23,130 and 27,491 co-migrate at 0.8%). x0 = 3.42 − 1.4·(%agarose − 0.8);
+     k falls when voltage > 50 V (less separation at high voltage).
+   Distance d = v_dye · t · f(x)/f(log10 300); loading dye runs with ~300-bp DNA.
+   v_dye = 0.475 mm/min × (V/50) × (0.8/%agarose)^0.8 × run factor (gel-to-gel ±3%) × lane "smile".
+   Band width grows with load volume, voltage (heating) and time (diffusion). Band intensity ∝ DNA mass
+   (0.04 µg/µL × volume × bp/48,502); methylene blue detects roughly ≥15 ng. Gel = 70 mm long. */
+const GEL_MM = 70, CONC = 0.04; // µg/µL
+function makeGel(rootSel, measSel, cfg) {
+  const P = cfg.prefix, root = Lab.$(rootSel);
+  root.innerHTML = `
+  <div class="sim">
+    <div class="controls">
+      <div class="field"><span class="label" id="${P}-rack-l">1 · Sample rack (choose a tube)</span><div class="rack" id="${P}-rack" role="group" aria-labelledby="${P}-rack-l"></div></div>
+      <div class="field"><label for="${P}-vol">Load volume <output id="${P}-vol-o" class="val"></output></label><input id="${P}-vol" type="range" min="5" max="30" step="1" value="18"><span class="hint">Wells hold about 25 µL. Overfilling spills into neighboring wells.</span></div>
+      <div class="field"><span class="label" id="${P}-wells-l">2 · Load into well</span><div class="wells" id="${P}-wells" role="group" aria-labelledby="${P}-wells-l"></div></div>
+      <label class="check" for="${P}-heat"><input type="checkbox" id="${P}-heat"> Heat samples to 65 °C for 5 min before loading</label>
+      <div class="field"><label for="${P}-pct">Agarose concentration</label><select id="${P}-pct"><option value="0.6">0.6%</option><option value="0.8" selected>0.8% (standard)</option><option value="1">1.0%</option><option value="1.2">1.2%</option></select></div>
+      <div class="field"><label for="${P}-volt">Voltage <output id="${P}-volt-o" class="val"></output></label><input id="${P}-volt" type="range" min="25" max="150" step="5" value="50"></div>
+      <div class="field"><span class="label" id="${P}-lead-l">3 · Connect the leads</span><div class="seg" role="group" aria-labelledby="${P}-lead-l" id="${P}-lead"><button type="button" data-v="ok" aria-pressed="true">Black→black, red→red</button><button type="button" data-v="rev" aria-pressed="false">Reversed</button></div></div>
+      <div class="row"><button class="btn btn--primary" type="button" id="${P}-run">Power on: run</button><button class="btn" type="button" id="${P}-stain">Stain</button></div>
+      <div class="row"><button class="btn btn--sm" type="button" id="${P}-layout">${esc(cfg.layoutLabel)}</button><button class="btn btn--sm btn--ghost" type="button" id="${P}-new">Pour a new gel</button></div>
+    </div>
+    <div class="stage">
+      <canvas class="viz gel-canvas" id="${P}-cv" aria-label="Agarose gel in an electrophoresis box with wells at the negative end; bands appear after running and staining"></canvas>
+      <div class="readouts"><div class="readout"><span class="k">Gel #</span><span class="v" id="${P}-gelno">1</span></div><div class="readout"><span class="k">Run time</span><span class="v" id="${P}-time">0 min</span></div><div class="readout"><span class="k">Dye front</span><span class="v" id="${P}-dye">0 mm</span></div><div class="readout"><span class="k">Current</span><span class="v" id="${P}-amp">0 mA</span></div></div>
+      <div id="${P}-msg" class="msg" aria-live="polite">Choose a tube, then a well.</div>
+      <div class="row"><label for="${P}-mlane" class="small">Lane</label><select id="${P}-mlane"></select><button class="btn btn--sm" type="button" id="${P}-mall">Measure all visible bands in lane</button><button class="btn btn--sm" type="button" id="${P}-mdye">Measure dye front</button></div>
+      <div class="small muted" id="${P}-legend"></div>
+    </div>
+  </div>`;
+  const $ = s => Lab.$('#' + P + '-' + s);
+  const cv = Lab.canvas($('cv'), 0.82);
+  const rng = Lab.rng();
+  const meas = Lab.table(measSel + ' .mtable', {
+    save: P + '-meas',
+    columns: [{ key: 'gel', label: 'Gel', num: true, digits: 0 }, { key: 'lane', label: 'Lane', num: true, digits: 0 }, { key: 'sample', label: 'Sample' }, { key: 'band', label: 'Band', num: true, digits: 0 }, { key: 'dist', label: 'Distance', unit: 'mm', num: true, digits: 1, editable: true }, { key: 'known', label: 'Known size', unit: 'bp', num: true, digits: 0, editable: true }],
+    onChange: () => analyze()
+  });
+  const prevGel = Math.max(0, ...meas.getRows().map(r => r.gel || 0));
+  const st = { lanes: [], t: 0, running: false, stain: 0, gel: prevGel + 1, sel: cfg.samples[0].key, pipette: null, runF: 1, laneF: [], reversed: false };
+  function newGel() {
+    st.lanes = Array.from({ length: 8 }, () => []); st.t = 0; st.dist = 0; st.frozen = { pct: pct(), V: V() }; st.running = false; st.stain = 0; st.runF = Math.max(0.9, Math.min(1.1, rng.normal(1, 0.03)));
+    st.laneF = st.lanes.map((_, i) => 1 - 0.012 * Math.pow((i - 3.5) / 3.5, 2) + rng.normal(0, 0.004));
+    $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; $('stain').textContent = 'Stain'; drawWells(); updateRead(); draw();
+  }
+  const sample = k => cfg.samples.find(s => s.key === k);
+  $('rack').innerHTML = cfg.samples.map(s => `<button type="button" class="tube" data-k="${s.key}" aria-pressed="${s.key === st.sel}">${esc(s.label)}</button>`).join('');
+  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+  const volSync = () => $('vol-o').textContent = $('vol').value + ' µL'; $('vol').addEventListener('input', volSync); volSync();
+  const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); }; $('volt').addEventListener('input', voltSync); $('volt-o').textContent = $('volt').value + ' V';
+  Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+  $('pct').addEventListener('change', () => { if (st.t > 0) { msg('warn', 'You cannot change the agarose in a gel that has already run. Pour a new gel to test a different percentage.'); } draw(); });
+  function drawWells() {
+    $('wells').innerHTML = st.lanes.map((l, i) => `<button type="button" data-w="${i}" class="${l.length ? 'filled' : ''}" aria-label="Load well ${i + 1}${l.length ? ' (contains ' + esc(l.map(c => sample(c.k).short).join(', ')) + ')' : ''}">${i + 1}</button>`).join('');
+    Lab.$$('button', $('wells')).forEach(b => b.addEventListener('click', () => load(+b.dataset.w)));
+    $('mlane').innerHTML = st.lanes.map((l, i) => `<option value="${i}">${i + 1}${l.length ? ': ' + esc(sample(l[0].k).short) : ' (empty)'}</option>`).join('');
+    $('legend').textContent = 'Loading order: ' + (st.lanes.map((l, i) => l.length ? `${i + 1} = ${l.filter(c => c.main).map(c => sample(c.k).short).join('+') || 'spill only'}` : null).filter(Boolean).join(' · ') || 'nothing loaded yet');
+  }
+  function msg(cls, t) { $('msg').className = 'msg ' + cls; $('msg').textContent = t; }
+  function load(w, quiet) {
+    if (st.t > 0) { msg('bad', 'This gel has already been run. Pour a new gel to load more samples.'); return; }
+    if (st.lanes[w].some(c => c.main)) { msg('warn', `Well ${w + 1} already holds a sample. Use a clean well, and a fresh pipette tip for each sample.`); return; }
+    let vol = +$('vol').value, spill = 0;
+    if (vol > 25) { spill = vol - 25; vol = 25; }
+    st.lanes[w].push({ k: st.sel, v: vol, main: true });
+    if (spill) [w - 1, w + 1].forEach(n => { if (n >= 0 && n < 8) st.lanes[n].push({ k: st.sel, v: spill / 2, main: false }); });
+    st.pipette = { w, t0: performance.now() };
+    if (!quiet) msg(spill ? 'warn' : 'ok', spill ? `Well ${w + 1} overflowed: about ${spill} µL spilled into the neighboring wells and will contaminate those lanes.` : `Loaded ${vol} µL of ${sample(st.sel).label} into well ${w + 1}.`);
+    drawWells(); animatePipette();
+  }
+  function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
+  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
+  function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); }
+  $('new').addEventListener('click', newGelBtn);
+  // physics
+  const pct = () => +$('pct').value, V = () => +$('volt').value;
+  function relMob(bp, frozen) {
+    const p = frozen.pct, x0 = 3.42 - 1.4 * (p - 0.8), k = 2.11 * Math.max(0.6, 1 - 0.003 * Math.max(0, frozen.V - 50));
+    const f = x => 1 / (1 + Math.exp(k * (x - x0)));
+    return f(Math.log10(bp)) / f(Math.log10(300));
+  }
+  st.frozen = { pct: 0.8, V: 50 }; st.dist = 0; // dist travelled by dye (mm), integrates voltage changes
+  function laneBands(i) {
+    const out = [];
+    st.lanes[i].forEach(c => { const s = sample(c.k); digestFragments(s.enz, $('heat').checked).forEach(f => out.push({ bp: f.bp, ng: c.v * CONC * 1000 * (s.conc || 1) * f.m, src: c.k })); });
+    const sign = st.reversed ? -1 : 1;
+    out.forEach(b => { b.d = sign * st.dist * relMob(b.bp, st.frozen) * st.laneF[i]; });
+    return out;
+  }
+  const bandW = vol => 0.9 + 0.025 * vol + 0.006 * Math.max(0, st.frozen.V - 50) + 0.003 * st.t;
+  const alphaOf = ng => Math.pow(Math.max(0, Math.min(1, (ng - 12) / 90)), 0.6);
+  /* visible bands = clusters of co-migrating fragments; front edge reported */
+  function visibleBands(i) {
+    const bs = laneBands(i).filter(b => b.d > 0.5 && b.d < GEL_MM).sort((a, b) => a.d - b.d);
+    const vol = Math.max(5, ...st.lanes[i].map(c => c.v)), w = bandW(vol), cl = [];
+    bs.forEach(b => { const last = cl[cl.length - 1]; if (last && b.d - last.dMax < w * 0.8) { last.items.push(b); last.dMax = b.d; last.ng += b.ng; } else cl.push({ items: [b], dMin: b.d, dMax: b.d, ng: b.ng }); });
+    return cl.filter(c => alphaOf(c.ng) > 0.12).map(c => ({ front: c.dMax + w / 2, ng: c.ng, bps: c.items.map(x => x.bp) }));
+  }
+  function updateRead() {
+    const v = V();
+    $('time').textContent = Math.round(st.t) + ' min'; $('dye').textContent = Lab.fmt(Math.max(0, st.reversed ? 0 : st.dist), 1) + ' mm';
+    $('amp').textContent = st.running ? Math.round(v / 2.0) + ' mA' : '0 mA';
+  }
+  // drawing
+  function draw() {
+    const { ctx, w, h } = cv, c = n => Lab.color(n);
+    ctx.clearRect(0, 0, w, h);
+    const top = 48, bot = h - 36, gx0 = 34, gx1 = w - 12, mmPx = (bot - top - 8) / GEL_MM, wellY = top + 4, Y = d => wellY + 6 + d * mmPx;
+    ctx.fillStyle = c('--surface-2'); ctx.fillRect(gx0 - 8, top - 10, gx1 - gx0 + 16, bot - top + 20);
+    ctx.fillStyle = c('--ink'); ctx.fillRect(gx0, 8, gx1 - gx0, 5); ctx.fillStyle = c('--bad'); ctx.fillRect(gx0, h - 13, gx1 - gx0, 5);
+    ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; ctx.textBaseline = 'middle';
+    ctx.fillStyle = c('--ink'); ctx.fillText(st.reversed ? '+ (red lead on this end!)' : '− cathode (black)', gx0 + 4, 24);
+    ctx.fillStyle = c('--bad'); ctx.fillText(st.reversed ? '− (black lead on this end!)' : '+ anode (red)', gx0 + 4, h - 24);
+    // gel slab
+    const stainBg = st.stain === 1 ? 0.28 : st.stain === 2 ? 0.06 : 0.02;
+    ctx.fillStyle = c('--bg'); ctx.fillRect(gx0, top, gx1 - gx0, bot - top);
+    ctx.globalAlpha = stainBg; ctx.fillStyle = c('--s3'); ctx.fillRect(gx0, top, gx1 - gx0, bot - top); ctx.globalAlpha = 1;
+    ctx.strokeStyle = c('--line'); ctx.strokeRect(gx0, top, gx1 - gx0, bot - top);
+    // ruler
+    ctx.fillStyle = c('--muted'); ctx.font = '10px ' + getComputedStyle(document.body).fontFamily; ctx.textAlign = 'right';
+    for (let mm = 0; mm <= GEL_MM; mm += 5) { const y = Y(mm); ctx.fillRect(gx0 - (mm % 10 ? 4 : 8), y, mm % 10 ? 4 : 8, 1); if (mm % 10 === 0) ctx.fillText(mm / 10 + '', gx0 - 10, y); }
+    ctx.save(); ctx.translate(9, (top + bot) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('cm from well', 0, 0); ctx.restore();
+    ctx.textAlign = 'center';
+    const lw = (gx1 - gx0) / 8;
+    for (let i = 0; i < 8; i++) {
+      const cx = gx0 + lw * (i + 0.5), ww = lw * 0.62;
+      ctx.fillStyle = c('--surface-2'); ctx.fillRect(cx - ww / 2, wellY, ww, 5); ctx.strokeStyle = c('--muted'); ctx.strokeRect(cx - ww / 2, wellY, ww, 5);
+      ctx.fillStyle = c('--muted'); ctx.fillText(String(i + 1), cx, top - 5);
+      const L = st.lanes[i]; if (!L.length) continue;
+      const vol = Math.max(...L.map(x => x.v));
+      // loading dye: in well before run; front during/after run (fades after staining)
+      if (st.t === 0) { ctx.globalAlpha = Math.min(1, 0.25 + vol / 30); ctx.fillStyle = c('--s5'); ctx.fillRect(cx - ww / 2 + 1, wellY + 1, ww - 2, 3); ctx.globalAlpha = 1; }
+      else if (!st.reversed && st.dist * st.laneF[i] < GEL_MM && st.stain < 2) { ctx.globalAlpha = 0.55; ctx.fillStyle = c('--s5'); ctx.fillRect(cx - ww / 2, Y(st.dist * st.laneF[i]) - 2, ww, 4); ctx.globalAlpha = 1; }
+      if (st.t > 0 && !st.reversed) {
+        const bw = bandW(vol) * mmPx, vis = st.stain === 0 ? 0.22 : 1;
+        laneBands(i).forEach(b => { if (b.d <= 0 || b.d >= GEL_MM) return; const a = alphaOf(b.ng) * vis; if (a <= 0.01) return; ctx.globalAlpha = Math.min(1, a); ctx.fillStyle = c('--s3'); ctx.fillRect(cx - ww / 2, Y(b.d) - bw / 2, ww, Math.max(1.5, bw)); });
+        ctx.globalAlpha = 1;
+      }
+    }
+    if (st.running) { ctx.fillStyle = c('--muted'); for (let k = 0; k < 14; k++) { const x = gx0 + ((k * 53 + st.t * 37) % (gx1 - gx0)); ctx.beginPath(); ctx.arc(x, 16 - (st.t * 7 + k * 3) % 6, 1.4, 0, 7); ctx.arc(x + 9, h - 15 - (st.t * 5 + k * 2) % 6, 1.4, 0, 7); ctx.fill(); } }
+    if (st.pipette) { const k = Math.min(1, (performance.now() - st.pipette.t0) / 600), cx = gx0 + lw * (st.pipette.w + 0.5), y = wellY - 30 + 30 * Math.sin(k * Math.PI); ctx.fillStyle = c('--muted'); ctx.beginPath(); ctx.moveTo(cx - 5, y - 30); ctx.lineTo(cx + 5, y - 30); ctx.lineTo(cx + 1, y + 2); ctx.lineTo(cx - 1, y + 2); ctx.fill(); }
+    st.geom = { gx0, gx1, lw, Y, mmPx, wellY };
+  }
+  cv.onresize = draw;
+  // running
+  const loop = Lab.loop(dt => {
+    const minPerSec = 22, dtMin = dt * minPerSec, v = V();
+    st.t += dtMin;
+    st.dist += 0.475 * (v / 50) * Math.pow(0.8 / st.frozen.pct, 0.8) * st.runF * dtMin;
+    st.frozen.V = st.frozen.V * 0.98 + v * 0.02; // separation reflects the voltage used over the run
+    updateRead(); draw();
+    if (st.dist > GEL_MM + 25 || st.t > 400) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
+  });
+  function start() {
+    if (!st.lanes.some(l => l.length)) { msg('bad', 'Load at least one sample before switching on the power.'); return; }
+    if (st.stain) { msg('bad', 'This gel has been stained. Pour a new gel to run again.'); return; }
+    if (st.t === 0) { st.frozen = { pct: pct(), V: V() }; }
+    st.running = true; $('run').textContent = 'Power off: stop';
+    msg(st.reversed ? 'bad' : 'ok', st.reversed ? 'Bubbles form, but the purple dye is moving UP, out of the wells and into the buffer. Check your leads!' : 'Current is flowing: bubbles rise at both electrodes and the purple dye is moving toward the red (+) end.');
+    if (Lab.reducedMotion()) { st.t += 120 * 50 / V(); st.dist = 0.475 * (V() / 50) * Math.pow(0.8 / st.frozen.pct, 0.8) * st.runF * st.t; st.frozen.V = V(); stop(); return; }
+    loop.start();
+  }
+  function stop(note) {
+    loop.stop(); st.running = false; $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run'; updateRead(); draw();
+    const d = st.dist;
+    msg(note ? 'warn' : st.reversed ? 'bad' : d < 45 ? 'warn' : d > 66 ? 'warn' : 'ok', note || (st.reversed ? 'The DNA left the wells in the wrong direction and is lost in the buffer. Pour a new gel and connect black to black, red to red.' : d < 45 ? `Dye front at ${Lab.fmt(d, 1)} mm. Bands are still crowded near the wells. You can run longer.` : d > 66 ? `Dye front at ${Lab.fmt(d, 1)} mm: past the 1-cm mark, so small fragments may have run off.` : `Dye front at ${Lab.fmt(d, 1)} mm, about 1 cm from the end. Power off. Now stain the gel.`));
+  }
+  $('run').addEventListener('click', () => { if (st.running) stop(); else start(); });
+  $('stain').addEventListener('click', () => {
+    if (st.running) { msg('bad', 'Turn off the power and disconnect the leads before you remove the gel.'); return; }
+    if (st.t === 0) { msg('warn', 'Run the gel before staining it.'); return; }
+    st.stain = st.stain === 0 ? 1 : 2; $('stain').textContent = st.stain === 1 ? 'Destain (water)' : 'Destained';
+    msg('ok', st.stain === 1 ? 'Stained in methylene blue for 20 min. Bands are visible but the background is dark. Destain in distilled water to improve contrast.' : 'Destained overnight in a little distilled water: blue bands on a clear background. Click a band or use "Measure" to record distances.'); draw();
+  });
+  // measuring
+  function addMeasure(i, band, idx) {
+    const s = sample((st.lanes[i].find(c => c.main) || st.lanes[i][0]).k);
+    const d = Math.max(0.1, band.front + rng.normal(0, 0.4));
+    meas.addRow({ gel: st.gel, lane: i + 1, sample: s.short, band: idx + 1, dist: Math.round(d * 10) / 10, known: null, bps: band.bps });
+  }
+  function ready() { if (st.t === 0 || st.reversed) { msg('warn', 'There are no bands to measure on this gel yet.'); return false; } if (st.running) { msg('warn', 'Turn the power off before measuring.'); return false; } if (!st.stain) { msg('warn', 'Stain the gel first. DNA bands are too faint to measure accurately without the final stain.'); return false; } return true; }
+  $('mall').addEventListener('click', () => { if (!ready()) return; const i = +$('mlane').value, vb = visibleBands(i); if (!vb.length) { msg('warn', `No visible bands in lane ${i + 1}.`); return; } vb.forEach((b, k) => addMeasure(i, b, k)); msg('ok', `Recorded ${vb.length} band${vb.length > 1 ? 's' : ''} from lane ${i + 1}.`); });
+  $('mdye').addEventListener('click', () => { if (st.t === 0) { msg('warn', 'Run the gel first.'); return; } msg('ok', `Dye front: ${Lab.fmt(st.dist + rng.normal(0, 0.4), 1)} mm from the wells (record it in your notebook).`); });
+  $('cv').addEventListener('click', e => {
+    const r = $('cv').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, g = st.geom;
+    const i = Math.floor((x - g.gx0) / g.lw); if (i < 0 || i > 7) return;
+    if (st.t === 0) { load(i); return; }
+    if (!ready()) return;
+    const d = (y - g.wellY - 6) / g.mmPx, vb = visibleBands(i);
+    let best = -1, bd = 3.5; vb.forEach((b, k) => { const dd = Math.abs(b.front - 0.5 - d); if (dd < bd) { bd = dd; best = k; } });
+    if (best < 0) { msg('warn', `No band there in lane ${i + 1}. Click directly on a blue band.`); return; }
+    addMeasure(i, vb[best], best); msg('ok', `Measured lane ${i + 1}, band ${best + 1}.`);
+  });
+
+  /* ---------- analysis: per-gel standard curve + estimates ---------- */
+  const mroot = Lab.$(measSel);
+  const fitsEl = Lab.$('.fits', mroot), curveEl = Lab.$('.curve', mroot), estEl = Lab.$('.est', mroot);
+  const excl = Lab.$('.excl input', mroot), gsel = Lab.$('.gsel', mroot);
+  function fits() {
+    const rows = meas.getRows(), byGel = {};
+    rows.forEach(r => { if (isFinite(r.dist) && r.dist != null && r.known > 0 && !(excl.checked && r.known > 20000)) (byGel[r.gel] = byGel[r.gel] || []).push(r); });
+    const F = {}; Object.entries(byGel).forEach(([g, rs]) => { if (rs.length >= 2 && new Set(rs.map(r => r.dist)).size > 1) F[g] = Lab.stats.linreg(rs.map(r => r.dist), rs.map(r => Math.log10(r.known))); });
+    return F;
+  }
+  function estimates() {
+    const F = fits();
+    return meas.getRows().filter(r => !(r.known > 0) && r.dist != null && isFinite(r.dist)).map(r => ({ r, est: F[r.gel] ? Math.pow(10, F[r.gel].predict(r.dist)) : NaN }));
+  }
+  function analyze() {
+    const F = fits(), rows = meas.getRows(), gels = [...new Set(rows.map(r => r.gel))].sort((a, b) => a - b);
+    const cur = gsel.value && gels.includes(+gsel.value) ? +gsel.value : gels[gels.length - 1];
+    gsel.innerHTML = gels.length ? gels.map(g => `<option value="${g}" ${g === cur ? 'selected' : ''}>Gel ${g}</option>`).join('') : '<option value="">No data yet</option>';
+    fitsEl.innerHTML = gels.length ? gels.map(g => F[g] ? `<div class="readout"><span class="k">Gel ${g} curve</span><span class="v" style="font-size:.9rem">log₁₀bp = ${Lab.fmt(F[g].m, 4)}d + ${Lab.fmt(F[g].b, 3)} · R² ${Lab.fmt(F[g].r2, 3)}</span></div>` : `<div class="readout"><span class="k">Gel ${g}</span><span class="v" style="font-size:.9rem">enter ≥ 2 known sizes</span></div>`).join('') : '';
+    // semi-log plot
+    const W = 640, H = 380, m = { l: 70, r: 16, t: 14, b: 50 }, iw = W - m.l - m.r, ih = H - m.t - m.b, lo = 2, hi = 5;
+    const X = d => m.l + d / GEL_MM * iw, Yl = bp => m.t + ih - (Math.log10(bp) - lo) / (hi - lo) * ih;
+    let s = '';
+    for (let e = lo; e < hi; e++) for (let k = 1; k <= 9; k++) { const v = k * Math.pow(10, e); s += `<line class="${k === 1 ? 'gmaj' : 'gmin'}" x1="${m.l}" x2="${m.l + iw}" y1="${Yl(v)}" y2="${Yl(v)}"/>`; if (k === 1 || k === 2 || k === 5) s += `<text x="${m.l - 6}" y="${Yl(v) + 4}" text-anchor="end">${v.toLocaleString()}</text>`; }
+    s += `<line class="gmaj" x1="${m.l}" x2="${m.l + iw}" y1="${Yl(1e5)}" y2="${Yl(1e5)}"/><text x="${m.l - 6}" y="${Yl(1e5) + 4}" text-anchor="end">100,000</text>`;
+    for (let d = 0; d <= GEL_MM; d += 10) s += `<line class="gmin" x1="${X(d)}" x2="${X(d)}" y1="${m.t}" y2="${m.t + ih}"/><text x="${X(d)}" y="${m.t + ih + 16}" text-anchor="middle">${d}</text>`;
+    s += `<line class="ax" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/><line class="ax" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/>`;
+    s += `<text class="axl" x="${m.l + iw / 2}" y="${H - 8}" text-anchor="middle">Distance migrated (mm)</text><text class="axl" transform="translate(16 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle">Fragment size (bp, log scale)</text>`;
+    const f = F[cur];
+    if (f) { const d0 = 0, d1 = GEL_MM; const yb = d => Math.pow(10, f.predict(d)); s += `<line x1="${X(d0)}" y1="${Yl(Math.min(1e5, Math.max(100, yb(d0))))}" x2="${X(d1)}" y2="${Yl(Math.max(100, Math.min(1e5, yb(d1))))}" style="stroke:var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>`; }
+    rows.filter(r => r.gel === cur && r.known > 0 && r.dist != null).forEach(r => { const ex = excl.checked && r.known > 20000; s += `<circle cx="${X(r.dist)}" cy="${Yl(r.known)}" r="5" style="fill:${ex ? 'var(--surface)' : 'var(--accent)'};stroke:var(--accent)" stroke-width="2"><title>Marker ${r.known} bp at ${r.dist} mm${ex ? ' (excluded)' : ''}</title></circle>`; });
+    estimates().filter(e => e.r.gel === cur && isFinite(e.est)).forEach(e => { s += `<rect x="${X(e.r.dist) - 4}" y="${Yl(Math.max(100, Math.min(1e5, e.est))) - 4}" width="8" height="8" transform="rotate(45 ${X(e.r.dist)} ${Yl(Math.max(100, Math.min(1e5, e.est)))})" style="fill:var(--stain)"><title>${esc(e.r.sample)} band ${e.r.band}: ≈ ${Math.round(e.est)} bp</title></rect>`; });
+    curveEl.innerHTML = `<svg class="semilog" viewBox="0 0 ${W} ${H}" role="img" aria-label="Semi-log standard curve for gel ${cur || ''}: distance versus fragment size">${s}</svg><div class="legend"><span><i style="background:var(--accent)"></i>Marker bands (open = excluded)</span><span><i style="background:var(--stain)"></i>Unknown bands read from the line</span></div>`;
+    // estimates summary: mean ± 2SE over repeat gels/readings
+    const groups = {};
+    estimates().filter(e => isFinite(e.est)).forEach(e => { const k = e.r.sample + '|' + e.r.band; (groups[k] = groups[k] || { sample: e.r.sample, band: e.r.band, v: [] }).v.push(e.est); });
+    const list = Object.values(groups).sort((a, b) => a.sample.localeCompare(b.sample) || a.band - b.band);
+    estEl.innerHTML = list.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Sample</th><th class="num">Band</th><th class="num">n</th><th class="num">Mean estimate <span class="unit">(bp)</span></th><th class="num">± 2 SE <span class="unit">(bp)</span></th><th class="num">Range <span class="unit">(bp)</span></th></tr></thead><tbody>${list.map(g => { const mn = Lab.stats.mean(g.v), se2 = g.v.length > 1 ? 2 * Lab.stats.se(g.v) : NaN; return `<tr><td>${esc(g.sample)}</td><td class="num">${g.band}</td><td class="num">${g.v.length}</td><td class="num">${Math.round(mn).toLocaleString()}</td><td class="num">${isFinite(se2) ? Math.round(se2).toLocaleString() : '—'}</td><td class="num">${Math.round(Math.min(...g.v)).toLocaleString()}–${Math.round(Math.max(...g.v)).toLocaleString()}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="small muted">Size estimates appear here once a gel has a standard curve (two or more marker bands with known sizes) and some unknown bands.</p>';
+    cfg.onAnalyze && cfg.onAnalyze(list);
+  }
+  excl.addEventListener('change', analyze); gsel.addEventListener('change', analyze);
+  Lab.$('.clear', mroot).addEventListener('click', () => { meas.clear(); });
+  newGel(); analyze();
+  return { st, analyze, newGel };
+}
+function measBlock(sel, key) {
+  Lab.$(sel).innerHTML = `<div class="mtable"></div>
+    <div class="row" style="margin-top:8px"><label class="check excl"><input type="checkbox" checked aria-label="Exclude bands larger than 20,000 bp from the fit"> Leave the 23,130/27,491 doublet (&gt; 20,000 bp) out of the fit</label><label class="small" for="${key}-gsel">Show</label><select class="gsel" id="${key}-gsel"></select><button type="button" class="btn btn--sm btn--ghost clear">Clear measurements</button></div>
+    <div class="readouts fits"></div>
+    <div class="curve"></div>
+    <h3>Size estimates</h3>
+    <div class="est"></div>`;
+}
+
+/* ---------------- Part 1 gel ---------------- */
+const S_MARK = { key: 'H', label: 'λ + HindIII (marker)', short: 'HindIII', enz: ['HindIII'] };
+measBlock('#meas1', 'm1');
+makeGel('#gel1', '#meas1', {
+  prefix: 'g1', layoutLabel: 'Load the manual\'s layout (A–D + marker)',
+  samples: [S_MARK, { key: 'E', label: 'λ + EcoRI', short: 'EcoRI', enz: ['EcoRI'] }, { key: 'B', label: 'λ + BamHI', short: 'BamHI', enz: ['BamHI'] }, { key: 'U', label: 'λ uncut', short: 'Uncut', enz: [] }, { key: 'EH', label: 'λ + EcoRI + HindIII', short: 'EcoRI+HindIII', enz: ['EcoRI', 'HindIII'] }],
+  layout: [null, 'B', 'E', 'H', 'U', null, 'H', null]
+});
+const m1p = Lab.h('div'); Lab.$('#meas1').append(m1p);
+Lab.prompt(m1p, { key: 'p1-obs', label: 'What observations (qualitative) and measurements (quantitative) can you make from your stained gel? Why does uncut λ DNA give a single band so close to the well?', rows: 3 });
+Lab.prompt(m1p, { key: 'p1-log', label: 'Why must the data be plotted with size on a log scale? Why do you leave out the 23,130/27,491 doublet?', rows: 3 });
+Lab.prompt(m1p, { key: 'p1-est', label: 'Use your standard curve to give the approximate sizes of the EcoRI and BamHI fragments. Explain how you use the curve to size an unknown band. How many fragments did you expect from the λ map, and how many could you see? Explain any difference.', rows: 4 });
+
+/* ---------------- Design: crime scene ----------------
+   Each case number deterministically assigns a digest "profile" to each person and picks whose DNA is in the blood. */
+const PROFILES = { 'EcoRI': ['EcoRI'], 'BamHI': ['BamHI'], 'EcoRI+BamHI': ['EcoRI', 'BamHI'], 'BamHI+HindIII': ['BamHI', 'HindIII'], 'EcoRI+HindIII': ['EcoRI', 'HindIII'] };
+function crimeCase(n) { const R = Lab.rng(Math.abs(Math.round(n)) * 7 + 3), sh = R.shuffle(Object.keys(PROFILES)), people = ['Ms. Mason', 'Mr. Gladson', 'Bobby']; const prof = {}; people.forEach((p, i) => { prof[p] = sh[i]; }); return { prof, culprit: people[R.int(0, 2)] }; }
+let gel2 = null;
+function buildCase() {
+  const n = +Lab.$('#case-no').value || 102, C = crimeCase(n);
+  const samples = [S_MARK, { key: 'BL', label: 'Blood (floor)', short: 'Blood', enz: PROFILES[C.prof[C.culprit]] }, { key: 'MM', label: 'Ms. Mason (cup)', short: 'Mason', enz: PROFILES[C.prof['Ms. Mason']] }, { key: 'MG', label: 'Mr. Gladson (tissue)', short: 'Gladson', enz: PROFILES[C.prof['Mr. Gladson']] }, { key: 'BO', label: 'Bobby (gum)', short: 'Bobby', enz: PROFILES[C.prof['Bobby']] }];
+  measBlock('#meas2', 'm2');
+  gel2 = makeGel('#gel2', '#meas2', { prefix: 'g2', layoutLabel: 'Quick-load: marker, blood, Mason, Gladson, Bobby', samples, layout: ['H', 'BL', 'MM', 'MG', 'BO', null, 'H', null], onAnalyze: compare });
+}
+let lastList = [];
+function compare(list) {
+  if (list) lastList = list;
+  const tol = +Lab.$('#tol').value / 100; Lab.$('#tol-out').textContent = Math.round(tol * 100) + '%';
+  const by = {}; lastList.forEach(g => { (by[g.sample] = by[g.sample] || []).push(Lab.stats.mean(g.v)); });
+  const blood = (by.Blood || []).slice().sort((a, b) => b - a);
+  if (!blood.length) { Lab.$('#compare').innerHTML = '<p class="small muted">Measure and size the Blood lane and the suspects\' lanes, with a marker on the same gel, to fill this table.</p>'; return; }
+  const rows = ['Mason', 'Gladson', 'Bobby'].map(p => {
+    const b = (by[p] || []).slice().sort((a, b2) => b2 - a); if (!b.length) return `<tr><td>${p}</td><td colspan="5" class="muted">not sized yet</td></tr>`;
+    const used = new Set(); let matched = 0, diffs = [];
+    blood.forEach(x => { let bi = -1, bd = Infinity; b.forEach((y, j) => { if (used.has(j)) return; const d = Math.abs(y - x) / x; if (d < bd) { bd = d; bi = j; } }); if (bi >= 0 && bd <= tol) { used.add(bi); matched++; diffs.push(bd * 100); } });
+    const extra = b.length - used.size, all = matched === blood.length && extra === 0;
+    return `<tr><td>${p}</td><td class="num">${b.length}</td><td class="num">${matched} of ${blood.length}</td><td class="num">${extra}</td><td class="num">${diffs.length ? Lab.fmt(Lab.stats.mean(diffs), 1) + '%' : '—'}</td><td><span class="pill ${all ? 'ok' : 'bad'}">${all ? 'Consistent with blood' : 'Excluded'}</span></td></tr>`;
+  });
+  Lab.$('#compare').innerHTML = `<div class="table-wrap"><table class="data"><thead><tr><th>Suspect</th><th class="num">Bands sized</th><th class="num">Blood bands matched</th><th class="num">Extra bands</th><th class="num">Mean size difference</th><th>Verdict at this rule</th></tr></thead><tbody>${rows.join('')}</tbody></table></div><p class="small muted">Blood bands sized: ${blood.map(x => Math.round(x).toLocaleString()).join(', ')} bp.</p>`;
+}
+Lab.$('#tol').addEventListener('input', () => compare());
+Lab.$('#case-no').addEventListener('change', () => { buildCase(); });
+Lab.prompt('#design-plan', { key: 'd-plan', label: 'Your plan: well order, load volume, agarose %, voltage, run time, and how many repeat gels. Explain each choice.', rows: 4 });
+Lab.prompt('#design-prompts', { key: 'd-question', label: 'Question and hypothesis', rows: 3 });
+Lab.prompt('#design-prompts', { key: 'd-controls', label: 'Controls and constants: what must be the same in every lane, and why does the marker go on every gel?', rows: 3 });
+buildCase();
+
+/* ---------------- Analyze & Evaluate ---------------- */
+const an = Lab.$('#analysis');
+Lab.prompt(an, { key: 'a1', label: '1. Report the estimated sizes (mean ± 2 SE) of the blood\'s fragments and each suspect\'s fragments. Which profile matches the blood, and how did you decide what counts as a match?', rows: 4 });
+Lab.prompt(an, { key: 'a2', label: '2. Why is visual comparison (qualitative data) not enough for a court case? How do your quantitative data make the case stronger?', rows: 3 });
+const cer = Lab.h('div', { class: 'cer' }); an.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: whose blood is it?'), cer);
+Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
+Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
+Lab.prompt(an, { key: 'a3', label: 'Write the ending of the story: "whodunit," based on motive, means, opportunity, and DNA evidence. Remember that the blood only shows whose blood it is, not what happened.', rows: 5 });
+const ev = Lab.$('#evaluate');
+Lab.prompt(ev, { key: 'e1', label: '1. What challenges did you have in performing your investigation?', rows: 3 });
+Lab.prompt(ev, { key: 'e2', label: '2. What are possible sources of error in electrophoresis (loading, voltage, run time, measuring, the doublet, faint bands)? How could you reduce each one?', rows: 4 });
+Lab.prompt(ev, { key: 'e3', label: '3. Who should have access to your genetic profile: health insurers, colleges, employers? Who owns your DNA and its information?', rows: 3 });
+Lab.prompt(ev, { key: 'e4', label: '4. A DNA test says you have a two-in-three chance of getting cancer in the next 20 years. Who should know? Would you want to know?', rows: 3 });
+Lab.prompt(ev, { key: 'e5', label: '5. The Innocence Project uses DNA testing to re-examine old convictions. What social and ethical issues does this raise? What arguments can you make against using DNA evidence in court?', rows: 3 });
+Lab.prompt(ev, { key: 'e6', label: '6. If a gene from a native plant in another country is engineered into a U.S. crop, should that country share the profits? Who owns the information in DNA?', rows: 3 });
+</script>
+</body>
+</html>

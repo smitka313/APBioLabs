@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 6 Teacher Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > * { min-width: 0; }
+  dl.answers { display: grid; gap: 12px; margin: 0; }
+  dl.answers dt { font-weight: 700; }
+  dl.answers dd { margin: 0; max-width: 72ch; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 2 · Energetics</span><a href="lab06.html">Student lab</a></nav>
+    <div class="eyebrow">Investigation 6 · Teacher notes</div>
+    <h1>Cellular Respiration</h1>
+    <p class="driving-q">What factors affect the rate of cellular respiration in multicellular organisms?</p>
+    <div class="tags"><span class="tag">Unit 3: Cellular Energetics</span><span class="tag">ENE-1.K</span><span class="tag">ENE-1.L</span><span class="tag">Science Practices 4.A, 6.B</span><span class="tag">≈ 4 × 45 min</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Sections"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <section class="step wrap gutter" data-step="At a glance">
+    <header><div class="eyebrow">At a glance</div><h2>Timing, alignment, and flow</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Timing:</strong> about four 45-minute periods: one to build microrespirometers (skip it with gas sensors), one for the structured procedure, two for student-designed investigations. Pre-lab and proposals can be homework. With the simulation alone, the structured part and a design study fit in two periods.</li>
+        <li><strong>Enduring understanding:</strong> ENE-1, living systems need a constant input of energy. Learning objectives ENE-1.K and ENE-1.L.</li>
+        <li><strong>Science practices:</strong> 4.A (construct graphs) and 6.B (support claims with evidence).</li>
+        <li><strong>Prerequisites:</strong> mitochondria structure and function; enzymes and temperature; free-energy capture and storage; aerobic respiration vs. fermentation; gas diffusion; PV = nRT.</li>
+        <li><strong>Page flow:</strong> Overview → Background → Pre-lab (8 auto-checked items) → Microrespirometer (Option 1) → Gas sensors (Option 2) → Design → Analyze (6 prompts + CER) → Evaluate → Submit (copy all responses).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Preparation">
+    <header><div class="eyebrow">Preparation</div><h2>Real materials (summary)</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Germinating and non-germinating Wisconsin Fast Plant seeds or several species (including grasses); small invertebrates (crickets, mealworms, earthworms); glass beads or dry, baked seeds for controls.</li>
+        <li>1 mL tuberculin syringes without needles, 40 µL plastic capillaries or microhematocrit tubes, hot glue gun, absorbent and non-absorbent cotton, thin-stem pipettes, 3–4 flat ¼-inch washers per respirometer.</li>
+        <li>15% KOH (or NaOH drain cleaner), manometer fluid (soapy water + red food coloring), constant-temperature water baths, thermometers, cm rulers, glass-marking pens.</li>
+        <li>Optional: O<sub>2</sub>, CO<sub>2</sub>, or gas pressure sensors with an interface and a 250 mL respiration chamber.</li>
+        <li>Match syringe size to organisms: 1 mL for radish/broccoli seeds and <em>Drosophila</em>; 3 mL for rye, oats, mealworms, ladybugs; 5 mL for flower/vegetable seeds, small worms, ants; 10 mL for peas, beans, crickets, large worms, cockroaches. The simulation uses these sizes.</li>
+      </ul>
+      <div class="callout callout--safety"><div class="callout-title">Safety</div><p>Goggles, aprons, and gloves are required because KOH is caustic. Keep KOH in the cotton and use one small drop. Point capillaries into a sink when pushing plungers in. Supervise hot glue use.</p></div>
+      <div class="callout callout--tip"><div class="callout-title">Bench tips</div>
+        <ul>
+          <li>Respirometers must be airtight and must not be touched once they equilibrate. Do not let students put hands in the bath.</li>
+          <li>Students will want to skip the bead control. The simulation's "skip equilibration" and "open bath" options let them see why they cannot.</li>
+          <li>Having several syringe sizes on hand helps when germinating seeds jam in a 1 mL barrel.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Simulation">
+    <header><div class="eyebrow">How the simulation maps to the bench</div><h2>Model, procedure, and limits</h2></header>
+    <div class="step-body prose">
+      <p><strong>Option 1 (microrespirometer).</strong> Two 1 mL respirometers (0.5 mL germinating Fast Plant seeds ≈ 0.30 g, and 0.5 mL glass beads) sit in a 20 °C bath. The sim marks the bottom edge of each plug every 5 min for 25 min and writes total distance into Table 1. Students fill in column D (change during each interval) and the corrected distance, then check them. The graph converts corrected distance to µL O<sub>2</sub> with V = πr²h (r = 0.040 cm, so 5.03 µL/cm); students enter the slope as the rate, which is checked against the least-squares slope (±10%). Each run adds to a replicate table with mean ± SE.</p>
+      <p><strong>Underlying model.</strong> O<sub>2</sub> uptake = mass × specific rate at 20 °C × Q<sub>10</sub><sup>(T−20)/10</sup> × a heat-damage term above about 40 °C × a germination-age term × a light term × individual variation (lognormal, CV 12–22%). Plug distance = [O<sub>2</sub> used + V<sub>gas</sub>(ΔT<sub>gas</sub>/T) + V<sub>gas</sub>(ΔP/P)] ÷ πr². Bath temperature wanders as a random walk (much more if the bath is uninsulated), air pressure drifts, and skipping equilibration adds a 3 °C cooling transient that shrinks the gas. The plug stops when it reaches the barrel (6.8 cm of travel).</p>
+      <p><strong>Option 2 (sensors).</strong> 25 germinating peas in a 250 mL chamber use about 45 µL O<sub>2</sub>/min at 20 °C. O<sub>2</sub> falls ≈ 0.02 %/min, CO<sub>2</sub> rises ≈ 190 ppm/min, and with KOH pressure falls ≈ 0.02 kPa/min. Without KOH, pressure stays flat (RQ ≈ 1); with KOH, the CO<sub>2</sub> sensor reads the scrubbed chamber dropping toward zero. Both are deliberate teaching cases.</p>
+      <p><strong>Design options.</strong> Organism (Fast Plant seeds, oats, dry seeds, boiled seeds, green seedlings, mealworms, a cricket, fruit flies, an earthworm), bath temperature 5–45 °C, germination time (12 h to 5 days), light vs. dark, reading interval, and 1–6 replicates per click. Results are grouped by the chosen variable with mean, SD, and ±2 SE, plus a Q<sub>10</sub> calculator.</p>
+      <div class="callout callout--key"><div class="callout-title">Limits to discuss</div>
+        <ul>
+          <li>The sim reads the plug perfectly apart from ±0.03 cm marking noise; real readings also suffer from leaks, stuck plugs, and condensation.</li>
+          <li>Specific rates are typical textbook-scale values, not measurements of a particular seed lot. Insect rates also depend strongly on activity, which the sim treats only as random variation.</li>
+          <li>The light effect for green seedlings is simplified (net O<sub>2</sub> uptake falls to about 30% of the dark value because KOH removes free CO<sub>2</sub>).</li>
+          <li>Students never assemble anything or handle KOH. Use the sim to plan and to practice the analysis, not to replace the bench work.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Misconceptions">
+    <header><div class="eyebrow">Common misconceptions</div><h2>What students often get wrong</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>"Plants photosynthesize; animals respire."</strong> Nearly all plant cells have mitochondria and respire all the time. Germinating seeds are the clearest evidence.</li>
+        <li><strong>"The plug moves because CO<sub>2</sub> is produced."</strong> Without KOH, CO<sub>2</sub> replaces the O<sub>2</sub> and the volume hardly changes. The plug moves because O<sub>2</sub> is removed and CO<sub>2</sub> is absorbed.</li>
+        <li><strong>"The control is optional."</strong> The beads track temperature and pressure changes; without them, a 0.1 °C bath change can look like real respiration.</li>
+        <li><strong>"Dry seeds are dead."</strong> Dormant seeds respire very slowly (about 3–5% of germinating seeds in the sim). Boiled seeds are dead.</li>
+        <li><strong>"Rate = the last reading."</strong> Rate is the slope of O<sub>2</sub> vs. time, in µL/min, and to compare organisms it should be per gram.</li>
+        <li><strong>"Hotter is always faster."</strong> Rates rise with Q<sub>10</sub> ≈ 2–3 and then fall above about 40 °C as enzymes denature.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Answers">
+    <header><div class="eyebrow">Suggested answers</div><h2>Pre-lab and analysis</h2></header>
+    <div class="step-body prose">
+      <h3>Getting Started (pre-lab)</h3>
+      <dl class="answers">
+        <dt>1. Why correct with glass beads?</dt><dd>V = nRT/P. Respiration changes n, but changes in T or P also change V. The bead respirometer has constant n, so its plug movement shows only the T and P effects; subtracting it isolates the respiration signal.</dd>
+        <dt>2. Volume changes with T and P; direction at constant T and P.</dt><dd>Gas volume rises with temperature and falls with rising pressure. At constant T and P, volume in the seed respirometer decreases, because O<sub>2</sub> is consumed and the CO<sub>2</sub> released is absorbed by KOH.</dd>
+        <dt>3. Boiled germinating peas.</dt><dd>Near zero, like beads: boiling denatures respiratory enzymes and kills the cells.</dd>
+        <dt>4. 25 g reptile vs. 25 g mammal at 10 °C.</dt><dd>The mammal (endotherm) consumes far more O<sub>2</sub> to generate heat and hold body temperature near 37 °C; the reptile (ectotherm) cools and its metabolism slows.</dd>
+        <dt>5. Same comparison at 22 °C.</dt><dd>The reptile's rate rises (Q<sub>10</sub> ≈ 2–3, so roughly double to triple); the mammal's stays about the same or drops slightly because it needs less heat to stay warm.</dd>
+        <dt>6. Using a living green plant.</dt><dd>Photosynthesis releases O<sub>2</sub> and takes up CO<sub>2</sub>, cancelling part of the signal; run it in the dark or measure net exchange. Larger plants also need bigger chambers.</dd>
+        <dt>7. Capillary calculation.</dt><dd>π(0.040)²(2.40) = 0.01206 cm³ = 12.1 µL (1.21 µL/min).</dd>
+        <dt>8. Q<sub>10</sub>.</dt><dd>(2.6/1.1)<sup>10/10</sup> = 2.36.</dd>
+      </dl>
+      <h3>Expected results</h3>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Condition (sim)</th><th class="num">Rate <span class="unit">(µL O₂/min)</span></th><th class="num">Per gram <span class="unit">(µL·g⁻¹·min⁻¹)</span></th></tr></thead>
+        <tbody>
+          <tr><td>Fast Plant seeds, 2 d, 20 °C (procedure)</td><td class="num">≈ 1.2</td><td class="num">≈ 4.0</td></tr>
+          <tr><td>Same, 10 °C / 30 °C</td><td class="num">≈ 0.5 / 2.7</td><td class="num">≈ 1.7 / 9.1</td></tr>
+          <tr><td>Oat seeds, 2 d, 20 °C</td><td class="num">≈ 1.4</td><td class="num">≈ 2.6</td></tr>
+          <tr><td>Dry seeds / boiled seeds</td><td class="num">≈ 0.05 / 0</td><td class="num">≈ 0.16 / 0</td></tr>
+          <tr><td>Mealworms / cricket / fruit flies, 20 °C</td><td class="num">≈ 1.2 / 3.6 / 0.45</td><td class="num">≈ 4.8 / 8 / 45</td></tr>
+          <tr><td>Green seedlings, dark vs. light</td><td class="num">≈ 1.2 vs. 0.36</td><td class="num">≈ 3.0 vs. 0.9</td></tr>
+        </tbody>
+      </table></div>
+      <p>Germination age: about 0.74 of the 2-day rate at 1 day, about 0.48 at 12 hours, about 1.17 at 5 days. Q<sub>10</sub> from class data should land between 2 and 2.6; rates peak near 37–38 °C and collapse by 45 °C. Fast respirers outrun the capillary: the cricket at 20 °C and Fast Plant seeds at 30 °C pull the plug to the barrel in about 10–13 min, so students should switch to 1- or 2-min readings (the sim warns them).</p>
+      <h3>Analyzing results</h3>
+      <dl class="answers">
+        <dt>1. How to plot.</dt><dd>Time (min), the independent variable, on x; corrected O<sub>2</sub> consumed (µL), the dependent variable, on y. A best-fit line through the corrected points.</dd>
+        <dt>2. Rate.</dt><dd>The slope, in µL O<sub>2</sub>/min (≈ 1.2 µL/min, ≈ 4 µL·g⁻¹·min⁻¹). Slope units are y units ÷ x units.</dd>
+        <dt>3. Bead control behavior.</dt><dd>Without equilibration, both plugs move quickly toward the chamber for the first few minutes as the warm gas cools (V ∝ T). The uncorrected seed curve is steep at first; the corrected curve stays nearly straight. In an open bath the control wanders by several tenths of a cm.</dd>
+        <dt>4. Sensors and KOH.</dt><dd>The CO<sub>2</sub> sensor measures CO<sub>2</sub> build-up, so KOH would erase the signal. The pressure sensor responds to total gas, and without KOH each CO<sub>2</sub> replaces an O<sub>2</sub>, so pressure barely changes (RQ ≈ 1). With KOH, pressure falls as O<sub>2</sub> is used. The O<sub>2</sub> sensor works either way.</dd>
+        <dt>5–6. Further questions and Q<sub>10</sub>.</dt><dd>Accept reasonable questions (body mass, activity, nutrients, monocot vs. dicot). The curve rises exponentially because reaction rates and enzyme activity increase with kinetic energy, then drops as enzymes denature and membranes are damaged.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Student designs">
+    <header><div class="eyebrow">Student-designed investigations</div><h2>Ideas that work well</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Temperature series</strong> (10, 15, 20, 25, 30 °C, 3+ replicates each) with Q<sub>10</sub> from neighboring means; extend to 40–45 °C to show denaturation.</li>
+        <li><strong>Germination age</strong> (12 h, 1, 2, 3, 5 days) to address the manual's age-dependence question.</li>
+        <li><strong>Oil vs. starch storage</strong> (Fast Plant seeds vs. oats), compared per gram. Discuss RQ: oil-storing seeds release less CO<sub>2</sub> per O<sub>2</sub>, which matters with CO<sub>2</sub> sensors but not with KOH respirometers.</li>
+        <li><strong>Plants vs. animals</strong> or flying vs. non-flying insects, per gram. Fruit flies show the highest mass-specific rate.</li>
+        <li><strong>Light vs. dark</strong> with green seedlings, linking to the pre-lab question about green plants.</li>
+      </ul>
+      <p>Insist on the proposal (Table 2 on the student page): hypothesis, variables, controls, number of replicates, and sources of error. The summary table gives ±2 SE; non-overlapping intervals are a reasonable criterion for a difference at this level.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Extensions">
+    <header><div class="eyebrow">Extensions</div><h2>Where students can go next</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Relate body mass to respiration rate across several insect species (log–log plot).</li>
+        <li>Repeat a temperature study with ectothermic invertebrates and compare their Q<sub>10</sub> with seeds; compare with the manual's Antarctic tick and midge data (Lee and Baust, 1982).</li>
+        <li>Measure O<sub>2</sub> and CO<sub>2</sub> together with sensors to calculate the respiratory quotient for oil vs. starch seeds.</li>
+        <li>Use released AP free-response questions on respiration and gas laws for summative assessment, and ask students to list the concepts that confused them before the lab.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>Lab.init({ id: 'teacher-lab06' });</script>
+</body>
+</html>

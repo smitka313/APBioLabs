@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 11 · Transpiration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .stage > *, .controls > * { min-width: 0; }
+  .diagram { width: 100%; max-width: 640px; height: auto; display: block; margin-inline: auto; }
+  .diagram text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
+  .diagram .lbl-muted { fill: var(--muted); font-size: 12px; }
+  .status { font-size: .9rem; min-height: 1.4em; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); } .status.warn { color: var(--warn); }
+  .canvas-box { width: 100%; max-width: 470px; margin-inline: auto; }
+  canvas.scope { cursor: crosshair; touch-action: manipulation; }
+  .inline-num { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .inline-num input { max-width: 140px; font-family: var(--f-mono); }
+  .t-out { font-family: var(--f-mono); font-size: .9rem; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions</span></nav>
+    <div class="eyebrow">Investigation 11</div>
+    <h1>Transpiration</h1>
+    <p class="driving-q">What factors, including environmental variables, affect the rate of transpiration in plants?</p>
+    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-3.D</span><span class="tag">IST-5.A</span><span class="tag">SYI-1.H</span><span class="tag">Science Practices 3.C, 5.A</span><span class="tag">≈ 4 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">A single tomato plant can move more than a liter of water from the soil to the air on a hot day, and it keeps less than 5% of that water. Why lose so much? And what decides how fast it goes?</p>
+      <p>In Part 1 you will learn two measuring skills: finding leaf surface area by tracing leaves on a grid, and counting stomata in a clear nail-polish peel under the microscope to find stomata per mm². In Part 2 you will measure how fast whole plants or cuttings lose water, with a potometer, the whole-plant mass method, or a gas pressure sensor, and compare a control with a fan, a lamp, or a humid misted bag. Then you will design your own experiment on an environmental factor and test it with replicates and statistics.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>ENE-3.D</strong> Explain how the behavioral and/or physiological response of an organism is related to changes in its internal or external environment.</li>
+          <li><strong>IST-5.A</strong> Explain how the behavioral responses of organisms affect their overall fitness and may contribute to the success of the population.</li>
+          <li><strong>SYI-1.H</strong> Explain how the density of a population affects and is determined by resource availability in the environment.</li>
+        </ul>
+      </div>
+      <div class="callout callout--tip"><div class="callout-title">Science practices</div>
+        <ul>
+          <li><strong>3.C</strong> Identify experimental procedures that are aligned to the question.</li>
+          <li><strong>5.A</strong> Perform mathematical calculations (areas, densities, rates per unit area, means and standard errors).</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
+        <ul>
+          <li>Nail polish is toxic if swallowed or inhaled and irritates eyes. Use it in a ventilated room and keep it away from your face.</li>
+          <li>Cut stems with a razor blade or scalpel slowly, away from your fingers, at a 45° angle. Cutting under water keeps air out of the xylem.</li>
+          <li>Wear goggles while running experiments. Heat lamps get hot: keep them away from paper, plastic bags, and water.</li>
+          <li>If you fill tubing with a syringe, make sure the needle has been removed.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>How water gets pulled up a plant</h2></header>
+    <div class="step-body prose">
+      <p>Plants absorb water and dissolved ions from the soil through root hairs by osmosis, diffusion, and active transport. Once water reaches the root xylem, it travels up through stems to the leaves. Most of it then evaporates out of the leaves: this loss of water vapor from the plant surface is <strong>transpiration</strong>. A plant uses only a small fraction of the water it takes up for growth and photosynthesis; the rest is transpired.</p>
+      <p>Water always moves from higher <strong>water potential</strong> (ψ, more free energy) to lower water potential. Soil water is near 0 MPa, leaf cells are more negative, and dry air is extremely negative (around −100 MPa at 50% humidity). That gradient is what drives the whole system.</p>
+      <div class="equation">ψ = ψ<sub>P</sub> + ψ<sub>S</sub> &nbsp;&nbsp; ψ<sub>soil</sub> &gt; ψ<sub>root</sub> &gt; ψ<sub>stem</sub> &gt; ψ<sub>leaf</sub> &gt; ψ<sub>air</sub></div>
+      <p>The <strong>TACT</strong> mechanism (Transpiration, Adhesion, Cohesion, Tension) explains how water climbs even a 100-foot tree with no pump. Water evaporates from the wet walls of mesophyll cells into air spaces inside the leaf (<em>transpiration</em>). This pulls on the water film behind it, creating <em>tension</em> (negative pressure). Hydrogen bonds hold water molecules to each other (<em>cohesion</em>), so the pull is passed down an unbroken column all the way to the roots, while water sticks to the narrow xylem walls (<em>adhesion</em>), which helps keep the column from breaking. An air bubble breaks the column, which is why you must keep air out of a potometer and cut stems under water.</p>
+
+      <svg class="diagram" viewBox="0 0 640 300" role="img" aria-labelledby="leaf-title">
+        <title id="leaf-title">Cross-section of a leaf: water vapor diffuses from air spaces in the spongy mesophyll out through an open stoma flanked by two guard cells, while CO₂ diffuses in. A thin boundary layer of still, humid air sits on the leaf surface.</title>
+        <rect x="20" y="40" width="600" height="22" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)"></rect>
+        <text x="30" y="56" class="lbl-muted">upper epidermis + cuticle</text>
+        <g style="fill:var(--s6);opacity:.55">
+          <rect x="40" y="66" width="34" height="62" rx="12"></rect><rect x="80" y="66" width="34" height="62" rx="12"></rect><rect x="120" y="66" width="34" height="62" rx="12"></rect><rect x="160" y="66" width="34" height="62" rx="12"></rect><rect x="200" y="66" width="34" height="62" rx="12"></rect><rect x="240" y="66" width="34" height="62" rx="12"></rect><rect x="280" y="66" width="34" height="62" rx="12"></rect><rect x="320" y="66" width="34" height="62" rx="12"></rect><rect x="360" y="66" width="34" height="62" rx="12"></rect><rect x="400" y="66" width="34" height="62" rx="12"></rect><rect x="440" y="66" width="34" height="62" rx="12"></rect><rect x="480" y="66" width="34" height="62" rx="12"></rect><rect x="520" y="66" width="34" height="62" rx="12"></rect><rect x="560" y="66" width="34" height="62" rx="12"></rect>
+          <circle cx="60" cy="150" r="16"></circle><circle cx="120" cy="165" r="18"></circle><circle cx="190" cy="148" r="15"></circle><circle cx="260" cy="168" r="17"></circle><circle cx="400" cy="150" r="16"></circle><circle cx="470" cy="168" r="18"></circle><circle cx="540" cy="150" r="16"></circle><circle cx="590" cy="170" r="13"></circle>
+        </g>
+        <text x="420" y="104" class="lbl-muted">palisade mesophyll</text>
+        <text x="96" y="200" class="lbl-muted">spongy mesophyll (wet cell walls)</text>
+        <rect x="20" y="196" width="280" height="20" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)"></rect>
+        <rect x="350" y="196" width="270" height="20" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)"></rect>
+        <ellipse cx="312" cy="206" rx="13" ry="10" style="fill:var(--s6);stroke:var(--ink)"></ellipse>
+        <ellipse cx="338" cy="206" rx="13" ry="10" style="fill:var(--s6);stroke:var(--ink)"></ellipse>
+        <rect x="20" y="218" width="600" height="26" style="fill:var(--s3);opacity:.12"></rect>
+        <text x="600" y="236" text-anchor="end" class="lbl-muted">boundary layer: still, humid air</text>
+        <path d="M325 170 C325 190 325 210 325 270" style="stroke:var(--s3);fill:none" stroke-width="2.5" marker-end="url(#ar1)"></path>
+        <path d="M352 285 C352 250 352 230 340 200" style="stroke:var(--stain);fill:none" stroke-width="2" marker-end="url(#ar2)"></path>
+        <defs>
+          <marker id="ar1" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--s3)"></path></marker>
+          <marker id="ar2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--stain)"></path></marker>
+        </defs>
+        <text x="300" y="290" text-anchor="end">H₂O vapor out</text>
+        <text x="362" y="290">CO₂ in</text>
+        <line x1="338" y1="196" x2="420" y2="182" style="stroke:var(--muted)"></line><text x="424" y="182">guard cells around a stoma</text>
+        <text x="20" y="28">Leaf cross-section (not to scale)</text>
+      </svg>
+
+      <p>Water vapor leaves mainly through <strong>stomata</strong>, pores flanked by two <strong>guard cells</strong>. Stomata must open to let in CO<sub>2</sub> for photosynthesis (and let out O<sub>2</sub>), so every plant faces a trade-off between gaining carbon and losing water. Guard cells open the pore when they take up K<sup>+</sup> and water and swell; they close it in the dark or when the hormone abscisic acid signals drought.</p>
+      <p>A simple physical model ties the environmental factors together. The rate of transpiration per unit leaf area (E) is a conductance times a driving force:</p>
+      <div class="equation">E = g × VPD / P &nbsp;&nbsp;&nbsp; 1/g = 1/g<sub>stomata</sub> + 1/g<sub>boundary layer</sub></div>
+      <p>The driving force is the <strong>vapor pressure deficit</strong> (VPD): how much drier the air is than the saturated air inside the leaf. Warm, dry air means a big VPD; a humid, misted bag shrinks it toward zero. Water vapor must also cross two "resistances" in series: the stomata (set by how many there are and how wide they open, which depends on light and on the plant's water status) and the thin <strong>boundary layer</strong> of still, humid air hugging the leaf. Wind strips the boundary layer away, so a fan raises transpiration. Because E is a rate per unit area, you must measure leaf surface area to compare plants of different sizes.</p>
+    </div>
+  </section>
+
+  <!-- ============ PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Getting started</div><h2>Before you start</h2></header>
+    <div class="step-body">
+      <p>These questions follow the manual's Getting Started section and the calculations you will use in Part 1.</p>
+      <div id="prelab"></div>
+      <div id="prelab-draw" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ PART 1A: LEAF AREA ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Leaf area">
+    <header><div class="eyebrow">Part 1 · Step 1 · Structured inquiry</div><h2>Measure leaf surface area by tracing</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Trace a leaf on graph paper ruled so that <strong>4 small squares = 1 cm²</strong> (each square is 0.5 cm × 0.5 cm). Count every square completely inside the outline, then count the squares the edge passes through. Counting each partial square as half a square:</p>
+        <div class="equation">area (cm²) = (full squares + ½ × partial squares) ÷ 4 &nbsp;&nbsp;&nbsp; area (mm²) = area (cm²) × 100</div>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="la-species">Leaf from</label>
+            <select id="la-species"><option value="bean">Kidney bean (Phaseolus)</option><option value="coleus">Coleus</option><option value="impatiens">Impatiens</option><option value="tomato">Tomato (one leaflet)</option></select></div>
+          <button class="btn btn--sm" id="la-new" type="button">Trace a different leaf</button>
+          <div class="field"><label for="la-full">Full squares you counted</label><input type="number" id="la-full" min="0" step="1"></div>
+          <div class="field"><label for="la-part">Partial squares you counted</label><input type="number" id="la-part" min="0" step="1"></div>
+          <button class="btn btn--primary" id="la-calc" type="button">Calculate and record</button>
+          <label class="check" for="la-show"><input type="checkbox" id="la-show"> Shade full and partial squares (check your count)</label>
+        </div>
+        <div class="stage">
+          <div class="canvas-box"><canvas class="viz" id="la-cv" aria-label="A traced leaf outline on graph paper with 0.5 centimeter squares."></canvas></div>
+          <div class="readouts">
+            <div class="readout"><span class="k">Your area</span><span class="v" id="la-yours">—</span></div>
+            <div class="readout"><span class="k">In mm²</span><span class="v" id="la-mm">—</span></div>
+            <div class="readout"><span class="k">Planimeter value</span><span class="v" id="la-true">hidden</span></div>
+          </div>
+          <p class="status" id="la-msg" aria-live="polite"></p>
+        </div>
+      </div>
+      <div id="la-table"></div>
+      <div id="la-q" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ PART 1B: STOMATA ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Stomata">
+    <header><div class="eyebrow">Part 1 · Step 2 · Structured inquiry</div><h2>Count stomata in a nail-polish peel</h2></header>
+    <div class="step-body">
+      <details class="disclose">
+        <summary>How to make the peel (real lab)</summary>
+        <div class="inner prose">
+          <ol>
+            <li>Paint a patch of clear nail polish at least 1 cm² on the leaf surface you are studying. Let it dry completely.</li>
+            <li>Press clear cellophane tape onto the dried polish and peel it off gently by a corner. This is your leaf impression.</li>
+            <li>Tape the impression to a clean slide, trim the extra tape, and label the species and the leaf side (upper or lower).</li>
+            <li>Scan at low power, then count all stomata in one field at 400X. Count at least three more separate fields. Low contrast? Close the condenser diaphragm a little; no stain is needed.</li>
+            <li>Trade slides with two other teams and count theirs the same way.</li>
+          </ol>
+        </div>
+      </details>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="st-species">Leaf impression</label><select id="st-species"></select></div>
+          <div class="field"><span class="label" id="st-surf-lbl">Leaf surface</span>
+            <div class="seg" role="group" aria-labelledby="st-surf-lbl"><button type="button" id="st-lower" aria-pressed="true">Lower</button><button type="button" id="st-upper" aria-pressed="false">Upper</button></div></div>
+          <div class="field"><span class="label" id="st-mag-lbl">Magnification</span>
+            <div class="seg" role="group" aria-labelledby="st-mag-lbl"><button type="button" id="st-m100" aria-pressed="false">100X</button><button type="button" id="st-m400" aria-pressed="true">400X</button></div>
+            <span class="hint" id="st-fov">Field of view diameter: 0.45 mm</span></div>
+          <button class="btn btn--sm" id="st-move" type="button">Move to a new field</button>
+          <p class="small muted">Click or tap each stoma (a pair of bean-shaped guard cells) to tally it. Click again to un-mark. Then record the field.</p>
+          <div class="row"><button class="btn btn--primary" id="st-record" type="button">Record this field</button><button class="btn btn--sm btn--ghost" id="st-clear" type="button">Clear table</button></div>
+        </div>
+        <div class="stage">
+          <div class="canvas-box"><canvas class="viz scope" id="st-cv" aria-label="Microscope field of view of a clear nail-polish peel showing jigsaw-shaped epidermal cells and stomata. Click a stoma to mark it."></canvas></div>
+          <div class="readouts">
+            <div class="readout"><span class="k">Your tally</span><span class="v" id="st-tally">0</span></div>
+            <div class="readout"><span class="k">Field area</span><span class="v" id="st-area">0.159 mm²</span></div>
+            <div class="readout"><span class="k">Fields recorded</span><span class="v" id="st-n">0</span></div>
+          </div>
+          <p class="status" id="st-msg" aria-live="polite"></p>
+        </div>
+      </div>
+      <div id="st-table"></div>
+      <div class="callout callout--question">
+        <div class="callout-title">Calculate stomatal density</div>
+        <p>For the slide shown above, take the mean number of stomata per field from your 400X counts and divide by the field area (A = πr², with r = 0.225 mm).</p>
+        <div class="inline-num"><label for="st-dens">Stomata per mm² =</label><input type="number" step="any" id="st-dens"><button class="btn btn--sm" id="st-dens-check" type="button">Check</button></div>
+        <p class="status" id="st-dens-msg" aria-live="polite"></p>
+      </div>
+      <h3>Table 1. Average stomata per mm² of leaf surface (from the manual)</h3>
+      <div class="table-wrap"><table class="data" id="st-ref"></table></div>
+      <div id="st-ref-chart"></div>
+      <div id="st-q" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ PART 2: TRANSPIRATION RATE ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Water loss">
+    <header><div class="eyebrow">Part 2 · Guided inquiry</div><h2>Measure the rate of transpiration</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Choose a method, then run the class's agreed <strong>control</strong> and at least one environmental treatment, with several plants each. For every plant, divide the rate by its leaf area (from the grid-tracing method) so that big and small plants can be compared. Then subtract the control mean to get the adjusted rate.</p>
+        <ul>
+          <li><strong>Potometer:</strong> a fresh cutting (cut under water at 45°) sealed into water-filled tubing connected to a 1.0 mL pipette. As the plant transpires, it pulls water out of the pipette. Read the pipette every 3 min for 30 min after a 10-min equilibration.</li>
+          <li><strong>Whole-plant method:</strong> a well-watered potted plant with its pot and soil sealed in a plastic bag so only leaves lose water. Weigh it once a day for 4 days.</li>
+          <li><strong>Gas pressure sensor:</strong> the tubing connects to a pressure sensor instead of a pipette. As water is pulled into the plant, pressure in the sealed tube falls (kPa).</li>
+        </ul>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="tr-method">Method</label>
+            <select id="tr-method"><option value="pot">Potometer (1.0 mL pipette)</option><option value="whole">Whole plant in bag (mass)</option><option value="press">Gas pressure sensor</option></select></div>
+          <div class="field"><label for="tr-species">Plant</label><select id="tr-species"></select></div>
+          <div class="field"><label for="tr-cond">Condition</label>
+            <select id="tr-cond"><option value="control">Control: room light, still air, 22 °C, 45% RH</option><option value="fan">Fan (≈ 3 m/s breeze)</option><option value="lamp">Heat lamp (bright light, leaf +4 °C)</option><option value="mist">Misted and covered with a plastic bag (≈ 92% RH)</option><option value="dark">Dark box (no light)</option></select></div>
+          <div class="field"><label for="tr-n">Plants (replicates) <output id="tr-n-out" class="val" for="tr-n"></output></label><input id="tr-n" type="range" min="1" max="5" step="1" value="3"></div>
+          <div class="row"><button class="btn btn--primary" id="tr-run" type="button">Run</button><button class="btn btn--sm btn--ghost" id="tr-clear" type="button">Clear data</button></div>
+          <p class="small muted">Each plant is a different individual, so expect natural variation. The animation shows the last plant in the batch.</p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="tr-cv" aria-label="Animated apparatus: a plant cutting in a potometer, a bagged potted plant on a balance, or a cutting connected to a pressure sensor, with a fan, lamp, misting bag, or dark box as chosen."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k" id="tr-k-time">Time</span><span class="v" id="tr-time">0 min</span></div>
+            <div class="readout"><span class="k" id="tr-k-read">Reading</span><span class="v" id="tr-read">—</span></div>
+            <div class="readout"><span class="k">Leaf area</span><span class="v" id="tr-area">—</span></div>
+            <div class="readout"><span class="k">Rate (slope)</span><span class="v" id="tr-rate">—</span></div>
+          </div>
+          <div id="tr-chart"></div>
+        </div>
+      </div>
+      <h3>Table 2. Individual / group data</h3>
+      <p class="small muted">Rate = slope of the readings vs. time. <strong>You</strong> fill in the last column: rate ÷ leaf area. Numbers are small, so report them ×10<sup>−4</sup> (potometer), ×10<sup>−3</sup> (pressure), or ×10<sup>−2</sup> (whole plant), as the unit says. Example: 0.0118 mL/min ÷ 98 cm² = 1.20 × 10<sup>−4</sup>, so type 1.20.</p>
+      <div id="tr-table"></div>
+      <div class="row"><button class="btn btn--sm" id="tr-check" type="button">Check my rate/area values</button><span class="status" id="tr-check-msg" aria-live="polite"></span></div>
+      <h3>Table 3. Class data: adjusted rates</h3>
+      <p class="small muted">Means use the computed rate/area for each plant. Adjusted rate = treatment mean − control mean (same method and plant species). Error bars on the graph are ±2 SE.</p>
+      <div id="tr-summary"></div>
+      <div id="tr-bar"></div>
+    </div>
+  </section>
+
+  <!-- ============ DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own transpiration experiment</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Pick a question. Some from the manual: Which environmental variable affects transpiration the most? Do all plants transpire at the same rate? Is a plant's habitat (moist vs. dry) related to its transpiration rate? Do all parts of a plant transpire? What happens if leaves are fewer or smaller, or if one leaf surface is sealed?</p>
+      </div>
+      <div class="callout callout--tip"><div class="callout-title">Your plan</div><div id="d-plan" class="grid-2"></div></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="d-method">Method</label>
+            <select id="d-method"><option value="pot">Potometer</option><option value="whole">Whole plant in bag</option><option value="press">Gas pressure sensor</option></select></div>
+          <div class="field"><label for="d-species">Plant</label><select id="d-species"></select></div>
+          <div class="field"><label for="d-wind">Wind speed <output id="d-wind-out" class="val" for="d-wind"></output></label><input id="d-wind" type="range" min="0" max="5" step="0.5" value="0"></div>
+          <div class="field"><label for="d-light">Light (PAR) <output id="d-light-out" class="val" for="d-light"></output></label><input id="d-light" type="range" min="0" max="1200" step="50" value="150"></div>
+          <div class="field"><label for="d-rh">Relative humidity <output id="d-rh-out" class="val" for="d-rh"></output></label><input id="d-rh" type="range" min="20" max="95" step="5" value="45"></div>
+          <div class="field"><label for="d-temp">Air temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" type="range" min="12" max="36" step="2" value="22"></div>
+          <div class="field"><label for="d-salt">NaCl in the water / soil <output id="d-salt-out" class="val" for="d-salt"></output></label><input id="d-salt" type="range" min="0" max="0.3" step="0.05" value="0"></div>
+          <div class="field"><label for="d-jelly">Petroleum jelly on leaves</label>
+            <select id="d-jelly"><option value="none">None</option><option value="upper">Upper surfaces</option><option value="lower">Lower surfaces</option><option value="both">Both surfaces</option></select></div>
+          <div class="field"><label for="d-leaves">Leaves left on the plant <output id="d-leaves-out" class="val" for="d-leaves"></output></label><input id="d-leaves" type="range" min="25" max="100" step="25" value="100"></div>
+          <div class="field"><label for="d-n">Replicates <output id="d-n-out" class="val" for="d-n"></output></label><input id="d-n" type="range" min="2" max="8" step="1" value="4"></div>
+          <div class="row"><button class="btn btn--primary" id="d-run" type="button">Run replicates</button><button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button></div>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="d-cv" aria-label="The apparatus for your current design settings."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">VPD at leaf</span><span class="v" id="d-vpd">—</span></div>
+            <div class="readout"><span class="k">Last group mean</span><span class="v" id="d-last">—</span></div>
+            <div class="readout"><span class="k">Plants tested</span><span class="v" id="d-count">0</span></div>
+          </div>
+          <p class="status" id="d-msg" aria-live="polite"></p>
+        </div>
+      </div>
+      <div id="d-table"></div>
+      <div class="row">
+        <div class="field" style="min-width:220px"><label for="d-by">Group and graph by</label>
+          <select id="d-by"><option value="wind">Wind speed</option><option value="light">Light</option><option value="rh">Relative humidity</option><option value="temp">Air temperature</option><option value="salt">NaCl</option><option value="jelly">Petroleum jelly</option><option value="leaves">Leaves left</option><option value="species">Plant species</option></select></div>
+      </div>
+      <div id="d-summary"></div>
+      <div id="d-chart"></div>
+      <div class="callout callout--key">
+        <div class="callout-title">Compare two groups (Welch's t-test)</div>
+        <div class="row">
+          <div class="field" style="min-width:150px"><label for="t-a">Group A</label><select id="t-a"></select></div>
+          <div class="field" style="min-width:150px"><label for="t-b">Group B</label><select id="t-b"></select></div>
+        </div>
+        <p class="t-out" id="t-out" aria-live="polite">Collect at least two replicates in two groups.</p>
+        <p class="small muted">If p &lt; 0.05, a difference this large would rarely happen by chance alone if the treatment had no effect. Also look at the ±2 SE error bars: when they do not overlap, the difference is likely real.</p>
+      </div>
+      <div id="d-results" class="stack"></div>
+    </div>
+  </section>
+
+  <!-- ============ ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
+    <div class="step-body">
+      <div id="analysis" class="stack"></div>
+      <h3>Claim, evidence, reasoning</h3>
+      <div class="cer" id="cer"></div>
+    </div>
+  </section>
+
+  <!-- ============ EVALUATE ============ -->
+  <section class="step wrap gutter" data-step="Evaluate">
+    <header><div class="eyebrow">Evaluating results</div><h2>Reflect and look ahead</h2></header>
+    <div class="step-body"><div id="evaluate" class="stack"></div></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+  'use strict';
+  Lab.init({ id: 'lab11' });
+  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, C = n => Lab.color(n), h = Lab.h;
+  const rng = Lab.rng();
+  const U = (r, a, b) => { if (Array.isArray(a)) [a, b] = a; return a + (b - a) * r.uniform(); };
+  const seg = (ids, onPick) => ids.forEach(id => $(id).addEventListener('click', () => { ids.forEach(j => $(j).setAttribute('aria-pressed', j === id ? 'true' : 'false')); onPick(id); }));
+
+  /* ================= Pre-lab ================= */
+  Lab.quiz('#prelab', [
+    { type: 'mc', q: 'A plant cell has a <em>lower</em> water potential than the solution around it. What happens?',
+      choices: ['The cell loses water to the solution', 'The cell gains water, because water moves from higher to lower water potential', 'No water moves until the cell is turgid', 'Water moves only if solutes can cross the membrane'],
+      answer: 1, explain: 'Water flows down its water-potential gradient, from the solution (higher ψ) into the cell (lower ψ), until pressure potential builds up and ψ inside equals ψ outside.' },
+    { type: 'mc', q: 'Salt spread on icy roads in winter often kills roadside grass by spring. Why?',
+      choices: ['Salt is toxic to chlorophyll only', 'Dissolved salt lowers the solute potential and the water potential of the soil water below that of the root cells, so roots cannot take up water and may even lose it', 'Salt raises the soil temperature too much', 'Salt blocks stomata on the leaves'],
+      answer: 1, explain: 'ψ<sub>S</sub> = −iCRT becomes very negative in salty soil water. If ψ<sub>soil</sub> &lt; ψ<sub>root</sub>, water leaves the roots and the grass dries out even in wet soil.' },
+    { type: 'mc', q: 'Which pairing of vascular tissue structure and function is correct?',
+      choices: ['Xylem: living sieve-tube cells with companion cells, moving sugars', 'Xylem: dead, hollow, lignified tracheids and vessel elements joined end to end, forming tubes that carry water under tension; phloem: living sieve-tube elements with companion cells that move sugars', 'Phloem: dead cells with thick walls that resist tension', 'Both tissues are made of identical cells'],
+      answer: 1, explain: 'Xylem cells are empty and reinforced with lignin so they do not collapse under the negative pressure of transpiration. Phloem stays alive because loading sugar requires active transport.' },
+    { type: 'mc', q: 'You want to transplant a tree. When should you move it, and why?',
+      choices: ['Summer, because warm soil helps roots grow', 'Winter (when leafless), because transpiration is very low, so the damaged root system does not have to keep up with water loss from leaves', 'Any time; transpiration is not affected', 'Summer, because sunlight increases water uptake'],
+      answer: 1, explain: 'Moving a tree tears off many fine roots. With no leaves and cool temperatures, little water is lost, so the tree is unlikely to dry out before new roots grow.' },
+    { type: 'num', q: 'At 400X the diameter of the field of view is 0.45 mm. What is the area of the field in mm²? (A = πr²)',
+      answer: 0.159, tol: 0.003, unit: 'mm²', explain: 'r = 0.45 ÷ 2 = 0.225 mm. A = 3.1416 × 0.225² = 0.159 mm².' },
+    { type: 'num', q: 'You count 31, 26, 29, and 26 stomata in four 400X fields (area 0.159 mm² each). What is the stomatal density in stomata per mm²?',
+      answer: 176, tol: 3, unit: 'stomata/mm²', explain: 'Mean = (31 + 26 + 29 + 26) ÷ 4 = 28 per field. Density = 28 ÷ 0.159 mm² = 176 per mm², the manual\'s value for the lower epidermis of kidney bean.' },
+    { type: 'num', q: 'A leaf tracing covers 92 full squares and 30 partial squares on paper where 4 squares = 1 cm². Counting partial squares as half, what is the leaf area in <strong>mm²</strong>?',
+      answer: 2675, tol: 30, unit: 'mm²', explain: '(92 + 30/2) ÷ 4 = 107 ÷ 4 = 26.75 cm². 1 cm² = 100 mm², so 2675 mm².' },
+    { type: 'mc', q: 'Over Earth\'s history, atmospheric CO<sub>2</sub> has changed. If CO<sub>2</sub> levels were much higher, how would you expect stomatal density to evolve?',
+      choices: ['Higher density, to take in even more CO<sub>2</sub>', 'Lower density: plants can get enough CO<sub>2</sub> through fewer stomata, and fewer stomata means less water lost, so selection favors fewer', 'No change, because stomata are only for water', 'Stomata would disappear entirely'],
+      answer: 1, explain: 'This is exactly what fossil leaves show: stomatal density is lower in periods of high CO<sub>2</sub>. Stomata balance carbon gain against water loss.' }
+  ], { id: 'prelab' });
+  Lab.prompt('#prelab-draw', { key: 'pre-diagram', label: 'Questions 1 and 2 ask for annotated diagrams. Describe your diagrams here (label ψ inside and outside, and the direction of water flow).', rows: 4 });
+  Lab.prompt('#prelab-draw', { key: 'pre-xylem', label: 'Question 3 (supplemental): if you sectioned a stem, describe how xylem and phloem cells looked and how their structure fits their function.', rows: 3 });
+
+  /* ================= Part 1A: leaf area tracing =================
+     Leaf outline = midrib of length L with half-width w(s) = W·k·s^a·(1−s)^b (s = 0 base → 1 tip),
+     plus small serrations for coleus/tomato. Each 0.5 cm grid square is sampled at 6×6 points:
+     all inside → full; some inside → partial. "Planimeter value" = exact polygon area (shoelace). */
+  const LEAVES = {
+    bean: { L: [8, 10.5], W: [6, 7.5], a: 0.55, b: 0.95, serr: 0 },
+    coleus: { L: [6.5, 9], W: [4.5, 6], a: 0.6, b: 1.1, serr: 0.18 },
+    impatiens: { L: [6, 8.5], W: [3, 4], a: 0.8, b: 0.9, serr: 0.06 },
+    tomato: { L: [4.5, 6.5], W: [2.6, 3.6], a: 0.7, b: 1.0, serr: 0.12 }
+  };
+  const GRID_W = 24, GRID_H = 18, SQ = 0.5; // squares, cm per square
+  let leaf = null;
+  function makeLeaf(sp, seed) {
+    const r = Lab.rng(seed), p = LEAVES[sp];
+    const L = U(r, p.L), W = U(r, p.W), ang = U(r, -0.35, 0.35);
+    const N = 70, right = [], left = [];
+    const prof = s => Math.pow(s, p.a) * Math.pow(1 - s, p.b);
+    let mx = 0; for (let i = 0; i <= 100; i++) mx = Math.max(mx, prof(i / 100));
+    for (let i = 0; i <= N; i++) {
+      const s = i / N; let hw = (W / 2) * prof(s) / mx;
+      if (p.serr && s > 0.08 && s < 0.95) hw *= 1 + p.serr * 0.5 * (Math.abs(((i * 1.0) % 4) - 2) / 2 - 0.5);
+      right.push([s * L, hw]); left.push([s * L, -hw]);
+    }
+    const pts = right.concat(left.reverse().slice(1, -1));
+    const cx = GRID_W * SQ / 2, cy = GRID_H * SQ / 2;
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    const poly = pts.map(([x, y]) => { const xx = x - L / 2; return [cx + xx * ca - y * sa, cy + xx * sa + y * ca]; });
+    let A = 0; for (let i = 0; i < poly.length; i++) { const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % poly.length]; A += x1 * y2 - x2 * y1; }
+    const inside = (x, y) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+    const cells = []; let full = 0, part = 0;
+    for (let gy = 0; gy < GRID_H; gy++) for (let gx = 0; gx < GRID_W; gx++) {
+      let k = 0; for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) if (inside((gx + (a + 0.5) / 6) * SQ, (gy + (b + 0.5) / 6) * SQ)) k++;
+      if (k === 36) { full++; cells.push([gx, gy, 2]); } else if (k > 0) { part++; cells.push([gx, gy, 1]); }
+    }
+    return { sp, poly, area: Math.abs(A) / 2, full, part, cells, L, stem: poly[0] };
+  }
+  const laCv = Lab.canvas('#la-cv', GRID_H / GRID_W);
+  function drawLeaf() {
+    const { ctx, w, h: H } = laCv; ctx.clearRect(0, 0, w, H);
+    const s = w / GRID_W; // px per square
+    ctx.fillStyle = C('--surface'); ctx.fillRect(0, 0, w, H);
+    if ($('#la-show').checked) leaf.cells.forEach(([gx, gy, k]) => { ctx.fillStyle = C(k === 2 ? '--accent' : '--stain'); ctx.globalAlpha = k === 2 ? 0.22 : 0.25; ctx.fillRect(gx * s, gy * s, s, s); });
+    ctx.globalAlpha = 1;
+    for (let i = 0; i <= GRID_W; i++) { ctx.strokeStyle = C(i % 2 ? '--grid' : '--line'); ctx.lineWidth = i % 2 ? 0.8 : 1.2; ctx.beginPath(); ctx.moveTo(i * s, 0); ctx.lineTo(i * s, H); ctx.stroke(); }
+    for (let j = 0; j <= GRID_H; j++) { ctx.strokeStyle = C(j % 2 ? '--grid' : '--line'); ctx.lineWidth = j % 2 ? 0.8 : 1.2; ctx.beginPath(); ctx.moveTo(0, j * s); ctx.lineTo(w, j * s); ctx.stroke(); }
+    const k = s / SQ; // px per cm
+    ctx.beginPath(); leaf.poly.forEach(([x, y], i) => i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)); ctx.closePath();
+    ctx.strokeStyle = C('--s6'); ctx.lineWidth = 2.2; ctx.stroke();
+    // midrib from base to tip
+    const tip = leaf.poly[70];
+    ctx.strokeStyle = C('--s6'); ctx.lineWidth = 1; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(leaf.poly[0][0] * k, leaf.poly[0][1] * k); ctx.lineTo(tip[0] * k, tip[1] * k); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.fillStyle = C('--muted'); ctx.font = `${Math.max(10, s * 0.6)}px "Source Sans 3", sans-serif`; ctx.textAlign = 'left';
+    ctx.fillText('each small square = 0.25 cm²  ·  4 squares = 1 cm²', 4, H - 5);
+  }
+  function newLeaf() { leaf = makeLeaf($('#la-species').value, Math.floor(rng.uniform() * 1e9)); $('#la-true').textContent = 'hidden'; $('#la-msg').textContent = ''; drawLeaf(); }
+  laCv.onresize = drawLeaf;
+  $('#la-species').addEventListener('change', newLeaf);
+  $('#la-new').addEventListener('click', newLeaf);
+  $('#la-show').addEventListener('change', () => { drawLeaf(); if ($('#la-show').checked) $('#la-msg').textContent = `Shaded: ${leaf.full} full squares (green) and ${leaf.part} partial squares (magenta).`; });
+  newLeaf();
+  const laTable = Lab.table('#la-table', {
+    save: 'la-table',
+    columns: [{ key: 'n', label: 'Leaf' }, { key: 'sp', label: 'Species' }, { key: 'full', label: 'Full', num: true, digits: 0 }, { key: 'part', label: 'Partial', num: true, digits: 0 }, { key: 'cm2', label: 'Area', unit: 'cm²', num: true, digits: 2 }, { key: 'mm2', label: 'Area', unit: 'mm²', num: true, digits: 0 }, { key: 'ref', label: 'Planimeter', unit: 'cm²', num: true, digits: 2 }, { key: 'err', label: 'Error', unit: '%', num: true, digits: 1 }],
+    footer: rows => ['Mean', '', '', '', fmt(S.mean(rows.map(r => r.cm2)), 2), fmt(S.mean(rows.map(r => r.mm2)), 0), '', '']
+  });
+  $('#la-calc').addEventListener('click', () => {
+    const f = parseInt($('#la-full').value, 10), p = parseInt($('#la-part').value, 10), msg = $('#la-msg');
+    if (!(f >= 0) || !(p >= 0)) { msg.textContent = 'Enter both counts first (whole numbers).'; msg.className = 'status bad'; return; }
+    const a = (f + p / 2) / 4, err = (a - leaf.area) / leaf.area * 100;
+    $('#la-yours').textContent = fmt(a, 2) + ' cm²'; $('#la-mm').textContent = fmt(a * 100, 0) + ' mm²'; $('#la-true').textContent = fmt(leaf.area, 2) + ' cm²';
+    const countOk = Math.abs(f - leaf.full) <= 2 && Math.abs(p - leaf.part) <= 3;
+    msg.textContent = countOk ? `Good count. Your estimate is within ${fmt(Math.abs(err), 1)}% of the planimeter value.` : `Your estimate is off by ${fmt(err, 1)}%. Tick "Shade full and partial squares" to see where your count differs (${leaf.full} full, ${leaf.part} partial).`;
+    msg.className = 'status ' + (countOk ? 'ok' : 'warn');
+    const rows = laTable.getRows();
+    laTable.addRow({ n: rows.length + 1, sp: $('#la-species').selectedOptions[0].text.split(' (')[0], full: f, part: p, cm2: a, mm2: a * 100, ref: leaf.area, err });
+  });
+  const laq = $('#la-q');
+  Lab.prompt(laq, { key: 's1a', label: 'a–b. How can you find total leaf area in cm² and mm²? How could you estimate the leaf area of a whole plant without tracing every leaf?', rows: 3 });
+  Lab.prompt(laq, { key: 's1f', label: 'f. Most leaves have two sides. Should you double your area to get the surface area of one leaf? Why or why not? (Hint: where are the stomata in Table 1?)', rows: 3 });
+  Lab.prompt(laq, { key: 's1cde', label: 'c–e. Predict how stomata per mm², leaf area, and the number or size of leaves relate to the rate of transpiration.', rows: 3 });
+
+  /* ================= Part 1B: stomatal peel =================
+     Stomata per field ~ Poisson(D × A × m), D = species density from the manual's Table 1 (per mm²),
+     A = field area (π·0.225² = 0.159 mm² at 400X; π·0.9² = 2.54 mm² at 100X), m = patch-to-patch
+     variation (lognormal, CV ≈ 15%). Stomata are placed with a minimum spacing (they are never
+     adjacent in real leaves); grasses (corn, oats) have stomata in rows and elongated cells.
+     Pavement cells are drawn as a wavy Voronoi tessellation (jigsaw-shaped epidermal cells). */
+  const STOM = [
+    { k: 'bean', name: 'Kidney bean', up: 40, lo: 176 }, { k: 'sunflower', name: 'Sunflower', up: 85, lo: 156 },
+    { k: 'coleus', name: 'Coleus', up: 0, lo: 141 }, { k: 'walnut', name: 'Black walnut', up: 0, lo: 160 },
+    { k: 'nasturtium', name: 'Nasturtium', up: 0, lo: 130 }, { k: 'tomato', name: 'Tomato', up: 12, lo: 130 },
+    { k: 'corn', name: 'Corn', up: 70, lo: 88, mono: true }, { k: 'oats', name: 'Oats', up: 25, lo: 23, mono: true },
+    { k: 'lily', name: 'Water lily', up: 460, lo: 0 }, { k: 'anacharis', name: 'Anacharis', up: 0, lo: 0 }
+  ];
+  STOM.forEach(s => $('#st-species').append(h('option', { value: s.k }, s.name)));
+  const ref = $('#st-ref');
+  ref.innerHTML = `<thead><tr><th>Plant</th><th class="num">Upper epidermis</th><th class="num">Lower epidermis</th></tr></thead><tbody>${STOM.map(s => `<tr><td>${s.name}</td><td class="num">${s.up}</td><td class="num">${s.lo}</td></tr>`).join('')}</tbody>`;
+  Lab.chart('#st-ref-chart', { type: 'bar', yLabel: 'Stomata per mm²', xLabel: 'Plant', categories: STOM.map(s => s.name.replace('Kidney bean', 'Bean').replace('Black walnut', 'Walnut').replace('Nasturtium', 'Nastur.')), height: 300,
+    series: [{ name: 'Upper epidermis', points: STOM.map(s => ({ x: s.name, y: s.up })) }, { name: 'Lower epidermis', points: STOM.map(s => ({ x: s.name, y: s.lo })) }] });
+  const stCv = Lab.canvas('#st-cv', 1);
+  let st = { sp: 'bean', surf: 'lo', mag: 400, seed: 1, field: null, img: null };
+  const FOV = { 100: 1.8, 400: 0.45 };
+  function hexRgb(c) {
+    c = c.trim(); if (c[0] === '#') { if (c.length === 4) c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3]; return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
+    const m = c.match(/\d+(\.\d+)?/g); return m ? m.slice(0, 3).map(Number) : [128, 128, 128];
+  }
+  function genField() {
+    const r = Lab.rng(st.seed), sp = STOM.find(s => s.k === st.sp), D = st.surf === 'lo' ? sp.lo : sp.up;
+    const R = FOV[st.mag] / 2, A = Math.PI * R * R, ext = R * 1.02;
+    const m = Math.exp(r.normal(0, 0.15) - 0.011);
+    const n = D > 0 ? r.poisson(D * A * m) : 0;
+    const dmin = D > 0 ? 0.55 / Math.sqrt(D) : 1;
+    const stomata = [];
+    if (sp.mono) {
+      const rowGap = Math.max(0.045, 1 / Math.sqrt(D) * 0.75); const rows = [];
+      for (let y = -R + U(r, 0, rowGap); y < R; y += rowGap) rows.push(y);
+      let tries = 0;
+      while (stomata.length < n && tries < n * 60) { tries++; const y = r.pick(rows) + r.normal(0, 0.003), x = U(r, -R, R); if (x * x + y * y > R * R) continue; if (stomata.some(s => Math.abs(s.x - x) < dmin * 1.4 && Math.abs(s.y - y) < rowGap * 0.5)) continue; stomata.push({ x, y, a: 0 }); }
+    } else {
+      let tries = 0;
+      while (stomata.length < n && tries < n * 80) { tries++; const x = U(r, -R, R), y = U(r, -R, R); if (x * x + y * y > R * R) continue; if (stomata.some(s => (s.x - x) ** 2 + (s.y - y) ** 2 < dmin * dmin)) continue; stomata.push({ x, y, a: U(r, 0, Math.PI) }); }
+    }
+    const cellD = sp.mono ? 600 : (sp.k === 'lily' ? 900 : 380); // pavement cells per mm²
+    const nc = Math.round(cellD * 4 * ext * ext);
+    const seeds = stomata.map(s => [s.x, s.y]);
+    for (let i = 0; i < nc; i++) seeds.push([U(r, -ext, ext), U(r, -ext, ext)]);
+    return { R, A, stomata, seeds, mono: !!sp.mono, D, phase: U(r, 0, 6) };
+  }
+  function renderField() {
+    const f = st.field, { w } = stCv, Spx = Math.max(100, Math.round(w)), R = f.R, scale = Spx / (2 * R);
+    const off = document.createElement('canvas'); off.width = Spx; off.height = Spx;
+    const octx = off.getContext('2d'), img = octx.createImageData(Spx, Spx), d = img.data;
+    const bg = hexRgb(C('--surface')), ln = hexRgb(C('--muted')), out = hexRgb(C('--surface-2'));
+    const cell = f.mono ? 0.035 : 0.05, nb = Math.ceil((2 * R * 1.02) / cell) + 2, buckets = Array.from({ length: nb * nb }, () => []);
+    const bi = (x, y) => Math.min(nb - 1, Math.max(0, Math.floor((x + R * 1.02) / cell)));
+    f.seeds.forEach((s, i) => buckets[bi(s[1], 0) * nb + bi(s[0], 0)].push(i));
+    const ax = f.mono ? 0.35 : 1, wav = f.mono ? 0.002 : 0.006, kw = f.mono ? 260 : 170;
+    const lab = new Int32Array(Spx * Spx);
+    for (let py = 0; py < Spx; py++) for (let px = 0; px < Spx; px++) {
+      let x = px / scale - R, y = py / scale - R;
+      x += wav * Math.sin(y * kw + f.phase); y += wav * Math.sin(x * kw * 1.3 + f.phase * 2);
+      const bx = bi(x, 0), by = bi(y, 0); let best = -1, bd = 1e9;
+      for (let j = Math.max(0, by - 2); j <= Math.min(nb - 1, by + 2); j++) for (let i = Math.max(0, bx - 2); i <= Math.min(nb - 1, bx + 2); i++) {
+        const arr = buckets[j * nb + i]; for (let q = 0; q < arr.length; q++) { const s = f.seeds[arr[q]], dx = (s[0] - x) * ax, dy = s[1] - y, dd = dx * dx + dy * dy; if (dd < bd) { bd = dd; best = arr[q]; } }
+      }
+      lab[py * Spx + px] = best;
+    }
+    for (let py = 0; py < Spx; py++) for (let px = 0; px < Spx; px++) {
+      const o = (py * Spx + px) * 4, x = px - Spx / 2 + 0.5, y = py - Spx / 2 + 0.5, rr = Math.sqrt(x * x + y * y);
+      let c = bg, a = 255;
+      if (rr > Spx / 2 - 1) c = out;
+      else { const l = lab[py * Spx + px]; if ((px < Spx - 1 && lab[py * Spx + px + 1] !== l) || (py < Spx - 1 && lab[(py + 1) * Spx + px] !== l)) c = ln; }
+      d[o] = c[0]; d[o + 1] = c[1]; d[o + 2] = c[2]; d[o + 3] = a;
+    }
+    octx.putImageData(img, 0, 0);
+    st.img = off;
+  }
+  function drawScope() {
+    const { ctx, w, h: H } = stCv; ctx.clearRect(0, 0, w, H);
+    if (!st.img || st.img.width !== Math.max(100, Math.round(w))) renderField();
+    ctx.drawImage(st.img, 0, 0, w, H);
+    const f = st.field, scale = w / (2 * f.R), L = 0.028 * scale;
+    f.stomata.forEach(s => {
+      const cx = w / 2 + s.x * scale, cy = H / 2 + s.y * scale;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(s.a);
+      ctx.fillStyle = C('--s6'); ctx.globalAlpha = 0.35; ctx.strokeStyle = C('--ink');
+      ctx.beginPath(); ctx.ellipse(0, -L * 0.17, L / 2, L * 0.2, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(0.7, L / 18); ctx.stroke();
+      ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.ellipse(0, L * 0.17, L / 2, L * 0.2, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 0.8; ctx.stroke();
+      ctx.globalAlpha = 0.9; ctx.fillStyle = C('--ink'); ctx.beginPath(); ctx.ellipse(0, 0, L * 0.3, Math.max(0.6, L * 0.045), 0, 0, 7); ctx.fill();
+      ctx.restore();
+      if (s.marked) { ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(cx, cy, Math.max(6, L * 0.75), 0, 7); ctx.stroke(); }
+    });
+    ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(w / 2, H / 2, w / 2 - 1.5, 0, 7); ctx.stroke();
+    ctx.fillStyle = C('--muted'); ctx.font = `${Math.max(10, w / 36)}px "JetBrains Mono", monospace`; ctx.textAlign = 'left';
+    ctx.fillText(`${st.mag}X`, 6, 16); ctx.textAlign = 'right'; ctx.fillText(`⌀ ${FOV[st.mag]} mm`, w - 6, 16);
+    // scale bar
+    const bar = st.mag === 400 ? 0.1 : 0.5, bpx = bar * scale; ctx.strokeStyle = C('--ink'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(w - 10 - bpx, H - 12); ctx.lineTo(w - 10, H - 12); ctx.stroke();
+    ctx.fillStyle = C('--ink'); ctx.textAlign = 'right'; ctx.fillText(`${bar * 1000} µm`, w - 10, H - 18);
+  }
+  const tally = () => st.field.stomata.filter(s => s.marked).length;
+  function newField(regen = true) {
+    if (regen) st.seed = Math.floor(rng.uniform() * 1e9);
+    st.field = genField(); st.img = null; drawScope();
+    $('#st-tally').textContent = '0'; $('#st-area').textContent = fmt(st.field.A, 3) + ' mm²';
+    $('#st-fov').textContent = `Field of view diameter: ${FOV[st.mag]} mm`;
+    const msg = $('#st-msg');
+    if (st.mag === 100 && st.field.stomata.length > 60) { msg.textContent = 'Too many stomata to count reliably at 100X. Use low power to find a good area, then switch to 400X to count.'; msg.className = 'status warn'; }
+    else if (st.field.D === 0) { msg.textContent = 'Look carefully: does this surface have any stomata at all?'; msg.className = 'status'; }
+    else { msg.textContent = ''; }
+  }
+  stCv.onresize = () => { st.img = null; drawScope(); };
+  stCv.canvas.addEventListener('click', e => {
+    const rect = stCv.canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top, w = stCv.w, scale = w / (2 * st.field.R);
+    const L = 0.028 * scale; let best = null, bd = Math.max(10, L * 0.8);
+    st.field.stomata.forEach(s => { const d = Math.hypot(w / 2 + s.x * scale - x, stCv.h / 2 + s.y * scale - y); if (d < bd) { bd = d; best = s; } });
+    if (best) { best.marked = !best.marked; $('#st-tally').textContent = String(tally()); drawScope(); }
+  });
+  $('#st-species').addEventListener('change', () => { st.sp = $('#st-species').value; newField(); });
+  seg(['#st-lower', '#st-upper'], id => { st.surf = id === '#st-lower' ? 'lo' : 'up'; newField(); });
+  seg(['#st-m100', '#st-m400'], id => { st.mag = id === '#st-m100' ? 100 : 400; newField(); });
+  $('#st-move').addEventListener('click', () => newField());
+  const stTable = Lab.table('#st-table', {
+    save: 'st-table',
+    columns: [{ key: 'n', label: 'Field' }, { key: 'sp', label: 'Slide' }, { key: 'surf', label: 'Surface' }, { key: 'mag', label: 'Mag.' }, { key: 'count', label: 'Your count', num: true, digits: 0 }, { key: 'actual', label: 'Actual', num: true, digits: 0 }, { key: 'dens', label: 'This field', unit: 'per mm²', num: true, digits: 0 }],
+    onChange: rows => { $('#st-n').textContent = String(rows.length); }
+  });
+  $('#st-record').addEventListener('click', () => {
+    const rows = stTable.getRows(), sp = STOM.find(s => s.k === st.sp), cnt = tally();
+    stTable.addRow({ n: rows.length + 1, sp: sp.name, surf: st.surf === 'lo' ? 'lower' : 'upper', mag: st.mag + 'X', count: cnt, actual: st.field.stomata.length, dens: cnt / st.field.A });
+    const msg = $('#st-msg');
+    msg.textContent = cnt === st.field.stomata.length ? 'Recorded. Your tally matches. Move to a new field and count again.' : `Recorded. You marked ${cnt}; the field holds ${st.field.stomata.length}. Missed stomata near the edge? Count those more than half inside the circle.`;
+    msg.className = 'status ' + (cnt === st.field.stomata.length ? 'ok' : 'warn');
+    newField();
+  });
+  $('#st-clear').addEventListener('click', () => stTable.clear());
+  $('#st-dens-check').addEventListener('click', () => {
+    const sp = STOM.find(s => s.k === st.sp), surf = st.surf === 'lo' ? 'lower' : 'upper';
+    const rows = stTable.getRows().filter(r => r.sp === sp.name && r.surf === surf && r.mag === '400X');
+    const out = $('#st-dens-msg'), v = parseFloat($('#st-dens').value);
+    if (rows.length < 3) { out.textContent = `Record at least 3 fields at 400X for ${sp.name}, ${surf} surface (you have ${rows.length}).`; out.className = 'status bad'; return; }
+    const m = S.mean(rows.map(r => r.count)), dens = m / (Math.PI * 0.225 * 0.225);
+    const ok = isFinite(v) && Math.abs(v - dens) <= Math.max(2, dens * 0.03);
+    out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². The manual's average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
+    out.className = 'status ' + (ok ? 'ok' : 'bad');
+  });
+  newField();
+  const stq = $('#st-q');
+  Lab.prompt(stq, { key: 's2-draw', label: 'Step 2g. Describe what you saw at 400X: the shape of epidermal cells, the guard cells, and the pores. How did grasses (corn, oats) look different?', rows: 3 });
+  Lab.prompt(stq, { key: 's2-compare', label: 'Compare the upper and lower surfaces of the slides you examined (yours and two others). Report each mean density.', rows: 3 });
+  Lab.prompt(stq, { key: 's1h', label: 'Step 1h. Using Table 1, is there a relationship between the habitat (in terms of moisture) a plant is adapted to and its stomatal density? Cite specific data (look at the water lily, Anacharis, and oats).', rows: 4 });
+  Lab.prompt(stq, { key: 's1g', label: 'Step 1g. Explain how a higher or lower concentration of atmospheric CO<sub>2</sub> in Earth\'s past would affect the evolution of stomatal density.', rows: 3 });
+
+  /* ================= Transpiration model =================
+     E (mol H2O m⁻² s⁻¹) = g_total × VPD / P,  1/g_total = 1/g_s + 1/g_b
+       VPD = e_s(T_leaf) − RH·e_s(T_air),  e_s(T) = 0.6108·exp(17.27T/(T+237.3)) kPa (Tetens)
+       g_s = g_max(species) × (0.1 + 0.9·PAR/(PAR+150)) × 1/(1+VPD/2.5) × salt term 1/(1+[NaCl]/0.08)
+             × open-surface fraction (petroleum jelly blocks the stomata on that surface)
+             × soil-water term (whole-plant method only; soil dries over the days)
+       g_b = 0.19·√(u/0.05) mol m⁻² s⁻¹ (u = wind speed, m/s; still room air ≈ 0.05 m/s)
+       Lamp: PAR 800 and leaf ≈ 4 °C above air (air near plant +1 °C).
+     Water flux per cm² per min = E × 18 g/mol × 60 s ÷ 10⁴ cm²/m² (1 g = 1 mL).
+     Individual plants vary: g_max lognormal CV ≈ 18%; leaf area ±15%. Instruments add reading error
+     (pipette ±0.005 mL, balance ±0.1 g, pressure sensor ±0.01 kPa). Pressure sensor: 8 mL of air in
+     the sealed line, so ΔP ≈ 101.3 kPa × (water taken up ÷ 8 mL). */
+  const SPP = {
+    impatiens: { name: 'Impatiens (moisture-loving)', short: 'Impatiens', gmax: 0.40, area: 110, plantArea: 420, lo: 0.75 },
+    coleus: { name: 'Coleus', short: 'Coleus', gmax: 0.30, area: 120, plantArea: 450, lo: 1.0 },
+    bean: { name: 'Bean seedling (Phaseolus)', short: 'Bean', gmax: 0.45, area: 95, plantArea: 360, lo: 0.81 },
+    tomato: { name: 'Tomato seedling', short: 'Tomato', gmax: 0.40, area: 100, plantArea: 380, lo: 0.92 },
+    oleander: { name: 'Oleander (drought tolerant)', short: 'Oleander', gmax: 0.10, area: 130, plantArea: 480, lo: 1.0 },
+    fern: { name: 'Fern', short: 'Fern', gmax: 0.15, area: 140, plantArea: 520, lo: 1.0 }
+  };
+  const es = T => 0.6108 * Math.exp(17.27 * T / (T + 237.3));
+  const COND = {
+    control: { label: 'Control', wind: 0.05, par: 150, rh: 45, temp: 22, leafDT: 0 },
+    fan: { label: 'Fan', wind: 3, par: 150, rh: 45, temp: 22, leafDT: -0.5 },
+    lamp: { label: 'Lamp', wind: 0.05, par: 800, rh: 45, temp: 23, leafDT: 4 },
+    mist: { label: 'Mist + bag', wind: 0.05, par: 150, rh: 92, temp: 22, leafDT: 0 },
+    dark: { label: 'Dark', wind: 0.05, par: 0, rh: 45, temp: 22, leafDT: 0 }
+  };
+  function envFrom(c) { return Object.assign({ salt: 0, jelly: 'none', leaves: 100 }, c); }
+  function flux(sp, env, gmaxMul, soil = 1) { // mL water per cm² leaf per min
+    const p = SPP[sp];
+    const Tl = env.temp + (env.leafDT || 0) * (env.par > 400 ? 1 : 0) + (env.par > 400 && env.leafDT == null ? 3 * env.par / 1000 : 0);
+    const vpd = Math.max(0.01, es(Tl) - env.rh / 100 * es(env.temp));
+    const open = { none: 1, upper: p.lo, lower: 1 - p.lo, both: 0.02 }[env.jelly];
+    const gs = p.gmax * gmaxMul * (0.1 + 0.9 * env.par / (env.par + 150)) / (1 + vpd / 2.5) / (1 + env.salt / 0.08) * open * soil + 0.004; // + cuticular
+    const gb = 0.19 * Math.sqrt(Math.max(0.05, env.wind) / 0.05);
+    const g = 1 / (1 / gs + 1 / gb);
+    return { f: g * vpd / 101.3 * 18 * 60 / 1e4, vpd, Tl };
+  }
+  const METH = {
+    pot: { unit: 'mL/min', tUnit: 'min', read: 'Pipette reading (mL)', dur: 30, every: 3, rpaUnit: '×10⁻⁴ mL·min⁻¹·cm⁻²', mult: 1e4 },
+    press: { unit: 'kPa/min', tUnit: 'min', read: 'Pressure (kPa)', dur: 20, every: 1, rpaUnit: '×10⁻³ kPa·min⁻¹·cm⁻²', mult: 1e3 },
+    whole: { unit: 'g/day', tUnit: 'day', read: 'Plant + pot mass (g)', dur: 4, every: 1, rpaUnit: '×10⁻² g·day⁻¹·cm⁻²', mult: 1e2 }
+  };
+  /* One plant, one run. Returns readings and the slope (rate) in method units. */
+  function runPlant(method, sp, env, r) {
+    const p = SPP[sp], gm = Math.exp(r.normal(0, 0.18) - 0.016);
+    const leafFrac = (env.leaves || 100) / 100;
+    const area = (method === 'whole' ? p.plantArea : p.area) * Math.exp(r.normal(0, 0.15)) * leafFrac;
+    const M = METH[method], pts = [];
+    if (method === 'whole') {
+      // hourly integration over 4 days; 14 h "day" at the condition's light, 10 h night (dark); soil water dries
+      let W = 220, mass = 380 + U(r, -30, 30), lost = 0; pts.push({ x: 0, y: Math.round((mass + r.normal(0, 0.1)) * 10) / 10 });
+      for (let hr = 1; hr <= 96; hr++) {
+        const day = (hr % 24) < 14, e = Object.assign({}, env, day ? {} : { par: 0, leafDT: 0 });
+        const soil = Math.min(1, W / 70);
+        const ml = flux(sp, e, gm, soil).f * area * 60; W = Math.max(0, W - ml); lost += ml;
+        if (hr % 24 === 0) pts.push({ x: hr / 24, y: Math.round((mass - lost + r.normal(0, 0.1)) * 10) / 10 });
+      }
+    } else {
+      const fl = flux(sp, env, gm).f * area; // mL/min
+      for (let t = 0; t <= M.dur + 1e-9; t += M.every) {
+        const v = fl * t * (1 + r.normal(0, 0.02));
+        if (method === 'pot') pts.push({ x: t, y: Math.max(0, Math.round((v + (t ? r.normal(0, 0.005) : 0)) * 1000) / 1000) });
+        else pts.push({ x: t, y: Math.round((101.3 - 101.3 * v / 8 + r.normal(0, 0.01)) * 100) / 100 });
+      }
+    }
+    const fit = S.linreg(pts.map(q => q.x), pts.map(q => q.y));
+    const rate = method === 'pot' ? fit.m : -fit.m; // report as positive water loss
+    return { pts, rate, area, rpa: rate / area };
+  }
+
+  /* ================= Apparatus drawing ================= */
+  function drawPlantShape(ctx, x, yBase, height, nLeaves, sc, wilt) {
+    ctx.strokeStyle = C('--s6'); ctx.lineWidth = Math.max(2, 3 * sc);
+    ctx.beginPath(); ctx.moveTo(x, yBase); ctx.quadraticCurveTo(x - 4 * sc, yBase - height * 0.5, x + wilt * 10 * sc, yBase - height); ctx.stroke();
+    for (let i = 0; i < nLeaves; i++) {
+      const f = 0.3 + 0.7 * (i + 1) / nLeaves, side = i % 2 ? 1 : -1, ly = yBase - height * f, lx = x + wilt * 10 * sc * f;
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(side * (0.9 - 0.2 * f) + wilt * 0.6 * side);
+      ctx.fillStyle = C('--s6'); ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.ellipse(side * 16 * sc, 0, 17 * sc, 7.5 * sc, 0, 0, 7); ctx.fill(); ctx.globalAlpha = 1; ctx.restore();
+    }
+  }
+  function drawEnv(ctx, w, H, env, t, plantBox) {
+    const [px, py, pw, ph] = plantBox;
+    if (env.par > 400) { ctx.fillStyle = C('--warn'); ctx.globalAlpha = 0.14; ctx.beginPath(); ctx.moveTo(px + pw / 2 - 18, 22); ctx.lineTo(px - 10, py + ph); ctx.lineTo(px + pw + 10, py + ph); ctx.lineTo(px + pw / 2 + 18, 22); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = C('--ink'); ctx.beginPath(); ctx.moveTo(px + pw / 2 - 24, 24); ctx.lineTo(px + pw / 2 + 24, 24); ctx.lineTo(px + pw / 2 + 12, 8); ctx.lineTo(px + pw / 2 - 12, 8); ctx.fill(); ctx.fillStyle = C('--warn'); ctx.beginPath(); ctx.arc(px + pw / 2, 26, 6, 0, Math.PI); ctx.fill(); }
+    if (env.wind >= 0.5) {
+      const fx = px - 34, fy = py + ph * 0.45, R = 20; ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(fx, fy, R, 0, 7); ctx.stroke();
+      ctx.fillStyle = C('--s3'); for (let k = 0; k < 3; k++) { const a = t * 12 * Math.min(1.5, env.wind / 2) + k * 2.094; ctx.beginPath(); ctx.ellipse(fx + Math.cos(a) * 9, fy + Math.sin(a) * 9, 9, 4, a, 0, 7); ctx.fill(); }
+      ctx.fillStyle = C('--muted'); ctx.fillRect(fx - 2, fy + R, 4, 26);
+      ctx.strokeStyle = C('--s3'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1.5; for (let k = 0; k < 3; k++) { const yy = fy - 14 + k * 14, s = ((t * 80 + k * 30) % 60); ctx.beginPath(); ctx.moveTo(fx + R + 6 + s, yy); ctx.lineTo(fx + R + 26 + s, yy); ctx.stroke(); } ctx.globalAlpha = 1;
+    }
+    if (env.rh >= 85) { ctx.strokeStyle = C('--s3'); ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px + pw / 2, py + ph * 0.5, pw * 0.75, ph * 0.62, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = C('--s3'); for (let k = 0; k < 14; k++) { const a = k * 0.45 + 0.2; ctx.beginPath(); ctx.arc(px + pw / 2 + Math.cos(a * 3.1) * pw * 0.6, py + ph * 0.5 + Math.sin(a * 2.3) * ph * 0.5, 2, 0, 7); ctx.fill(); } }
+    if (env.par === 0) { ctx.strokeStyle = C('--ink'); ctx.lineWidth = 2; ctx.strokeRect(px - pw * 0.3, py - 6, pw * 1.6, ph + 6); ctx.fillStyle = C('--ink'); ctx.globalAlpha = 0.12; ctx.fillRect(px - pw * 0.3, py - 6, pw * 1.6, ph + 6); ctx.globalAlpha = 1; ctx.fillStyle = C('--muted'); ctx.font = '12px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('dark box', px + pw / 2, py - 12); }
+  }
+  /* state: { method, env, t, reading, frac (0–1 of max travel), label } */
+  function drawApparatus(cv, s) {
+    const { ctx, w, h: H } = cv; ctx.clearRect(0, 0, w, H);
+    const sc = Math.min(1.2, Math.max(0.7, w / 600)), fs = Math.max(10, Math.min(13, w / 48));
+    ctx.font = `${fs}px "Source Sans 3", sans-serif`;
+    const cx = w * 0.42;
+    if (s.method === 'whole') {
+      const by = H * 0.86, pot = [cx - 32 * sc, by - 70 * sc, 64 * sc, 60 * sc];
+      // balance
+      ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line'); ctx.lineWidth = 1.5; ctx.fillRect(cx - 90 * sc, by, 180 * sc, 22 * sc); ctx.strokeRect(cx - 90 * sc, by, 180 * sc, 22 * sc);
+      ctx.fillStyle = C('--muted'); ctx.fillRect(cx - 60 * sc, by - 8 * sc, 120 * sc, 8 * sc);
+      ctx.fillStyle = C('--ink'); ctx.fillRect(cx + 20 * sc, by + 3 * sc, 64 * sc, 16 * sc);
+      ctx.fillStyle = C('--accent-soft'); ctx.font = `600 ${Math.round(11 * sc)}px "JetBrains Mono", monospace`; ctx.textAlign = 'right'; ctx.fillText(s.reading == null ? '— g' : fmt(s.reading, 1) + ' g', cx + 80 * sc, by + 15 * sc);
+      // bagged pot
+      ctx.fillStyle = C('--s4'); ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(pot[0], pot[1]); ctx.lineTo(pot[0] + pot[2], pot[1]); ctx.lineTo(pot[0] + pot[2] - 8 * sc, pot[1] + pot[3]); ctx.lineTo(pot[0] + 8 * sc, pot[1] + pot[3]); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = C('--s3'); ctx.setLineDash([4, 3]); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(pot[0] - 6 * sc, pot[1] - 2); ctx.quadraticCurveTo(cx, pot[1] - 14 * sc, pot[0] + pot[2] + 6 * sc, pot[1] - 2); ctx.lineTo(pot[0] + pot[2], pot[1] + pot[3] + 6 * sc); ctx.lineTo(pot[0], pot[1] + pot[3] + 6 * sc); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = C('--ink'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - 8 * sc, pot[1] - 9 * sc); ctx.lineTo(cx + 8 * sc, pot[1] - 9 * sc); ctx.stroke();
+      const plantH = 130 * sc, wilt = Math.max(0, s.frac - 0.6) * 1.6;
+      drawPlantShape(ctx, cx, pot[1] - 8 * sc, plantH, Math.round(10 * (s.leaves || 100) / 100), sc, wilt);
+      drawEnv(ctx, w, H, s.env, s.t, [cx - 50 * sc, pot[1] - plantH - 10, 100 * sc, plantH + 10]);
+      // day/night
+      const day = s.isDay !== false; ctx.fillStyle = C(day ? '--warn' : '--muted'); ctx.beginPath(); ctx.arc(w - 26, 26, 10, 0, 7); ctx.fill();
+      if (!day) { ctx.fillStyle = C('--bg'); ctx.beginPath(); ctx.arc(w - 21, 22, 9, 0, 7); ctx.fill(); }
+      ctx.fillStyle = C('--ink'); ctx.font = `600 ${fs + 1}px "JetBrains Mono", monospace`; ctx.textAlign = 'left'; ctx.fillText(`day ${fmt(s.t, 1)}`, 8, 20);
+    } else {
+      const top = H * 0.12, tubeY = H * 0.86, stemX = cx - 70 * sc, pipX = cx + 90 * sc;
+      // ring stand
+      ctx.fillStyle = C('--muted'); ctx.fillRect(pipX + 40 * sc, top - 10, 4, tubeY - top + 30); ctx.fillRect(pipX - 10 * sc, tubeY + 18, 90 * sc, 6);
+      // tubing U
+      ctx.strokeStyle = C('--line'); ctx.lineWidth = 12 * sc; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(stemX, H * 0.48); ctx.lineTo(stemX, tubeY - 20); ctx.quadraticCurveTo(stemX, tubeY, stemX + 20, tubeY); ctx.lineTo(pipX - 20, tubeY); ctx.quadraticCurveTo(pipX, tubeY, pipX, tubeY - 20); ctx.lineTo(pipX, H * 0.6); ctx.stroke();
+      ctx.strokeStyle = C('--s3'); ctx.globalAlpha = 0.45; ctx.lineWidth = 8 * sc; ctx.stroke(); ctx.globalAlpha = 1; ctx.lineCap = 'butt';
+      // seal
+      ctx.fillStyle = C('--ink'); ctx.fillRect(stemX - 9 * sc, H * 0.47, 18 * sc, 8 * sc);
+      if (s.method === 'pot') {
+        const py0 = top + 10, py1 = H * 0.6; // pipette 0 → 1.0 mL
+        ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.2; ctx.fillRect(pipX - 5 * sc, py0, 10 * sc, py1 - py0); ctx.strokeRect(pipX - 5 * sc, py0, 10 * sc, py1 - py0);
+        const lvl = py0 + Math.min(1, s.reading || 0) * (py1 - py0);
+        ctx.fillStyle = C('--s3'); ctx.globalAlpha = 0.55; ctx.fillRect(pipX - 4 * sc, lvl, 8 * sc, py1 - lvl); ctx.globalAlpha = 1;
+        ctx.strokeStyle = C('--s3'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pipX - 5 * sc, lvl); ctx.quadraticCurveTo(pipX, lvl + 3, pipX + 5 * sc, lvl); ctx.stroke();
+        ctx.fillStyle = C('--muted'); ctx.textAlign = 'right'; ctx.font = `${fs - 1}px "JetBrains Mono", monospace`;
+        for (let v = 0; v <= 1.0001; v += 0.1) { const yy = py0 + v * (py1 - py0); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pipX - 5 * sc, yy); ctx.lineTo(pipX - (Math.round(v * 10) % 5 ? 9 : 13) * sc, yy); ctx.stroke(); if (Math.round(v * 10) % 2 === 0) ctx.fillText(fmt(v, 1), pipX - 15 * sc, yy + 4); }
+        ctx.textAlign = 'left'; ctx.fillStyle = C('--muted'); ctx.font = `${fs - 1}px "Source Sans 3", sans-serif`; ctx.fillText('mL', pipX + 8 * sc, py0 + 4);
+      } else {
+        ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line'); ctx.lineWidth = 1.5; const bx = pipX - 36 * sc, bw = 80 * sc, byy = H * 0.42;
+        ctx.fillRect(bx, byy, bw, 44 * sc); ctx.strokeRect(bx, byy, bw, 44 * sc);
+        ctx.fillStyle = C('--accent'); ctx.font = `600 ${Math.round(13 * sc)}px "JetBrains Mono", monospace`; ctx.textAlign = 'center';
+        ctx.fillText(s.reading == null ? '—' : fmt(s.reading, 2), bx + bw / 2, byy + 22 * sc);
+        ctx.fillStyle = C('--muted'); ctx.font = `${fs - 1}px "Source Sans 3", sans-serif`; ctx.fillText('kPa', bx + bw / 2, byy + 37 * sc);
+        ctx.strokeStyle = C('--muted'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(pipX, byy + 44 * sc); ctx.lineTo(pipX, H * 0.6); ctx.stroke();
+      }
+      const plantH = H * 0.42;
+      drawPlantShape(ctx, stemX, H * 0.47, plantH, Math.round(7 * (s.leaves || 100) / 100), sc, 0);
+      drawEnv(ctx, w, H, s.env, s.t, [stemX - 45 * sc, H * 0.47 - plantH, 90 * sc, plantH]);
+      ctx.fillStyle = C('--ink'); ctx.font = `600 ${fs + 1}px "JetBrains Mono", monospace`; ctx.textAlign = 'left'; ctx.fillText(`t = ${fmt(s.t, 0)} min`, 8, 20);
+    }
+    if (s.label) { ctx.fillStyle = C('--muted'); ctx.font = `${fs}px "Source Sans 3", sans-serif`; ctx.textAlign = 'left'; ctx.fillText(s.label, 8, 20 + fs + 6); }
+  }
+  function animateRun(cv, method, env, res, extra, onTick, onDone) {
+    const M = METH[method], pts = res.pts, dur = M.dur;
+    const readingAt = tt => { let i = 0; while (i + 1 < pts.length && pts[i + 1].x <= tt + 1e-9) i++; return pts[i].y; };
+    const total = method === 'pot' ? pts[pts.length - 1].y : Math.abs(pts[pts.length - 1].y - pts[0].y);
+    const frame = tt => {
+      const rd = readingAt(tt);
+      const frac = method === 'whole' ? Math.min(1, (pts[0].y - rd) / 220) : 0;
+      drawApparatus(cv, Object.assign({ method, env, t: tt, reading: method === 'pot' ? (rd) : rd, frac, isDay: (tt % 1) < 14 / 24 }, extra));
+      onTick && onTick(tt, rd);
+    };
+    void total;
+    if (Lab.reducedMotion()) { frame(dur); onDone && onDone(); return; }
+    let t = 0; const speed = dur / 4.5;
+    Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } }).start();
+  }
+
+  /* ================= Part 2 structured runs ================= */
+  ['#tr-species', '#d-species'].forEach(sel => Object.keys(SPP).forEach(k => $(sel).append(h('option', { value: k }, SPP[k].name))));
+  const trCv = Lab.canvas('#tr-cv', 0.62);
+  const trChart = Lab.chart('#tr-chart', { xLabel: 'Time (min)', yLabel: 'Water taken up (mL)', height: 280, series: [] });
+  let trBusy = false, trSeries = [];
+  function trUpdate(series) {
+    const ys = []; series.forEach(se => se.points.forEach(q => ys.push(q.y)));
+    let lo = ys.length ? Math.min(...ys) : 0, hi = ys.length ? Math.max(...ys) : 1;
+    const pad = Math.max((hi - lo) * 0.12, 0.01);
+    const m = $('#tr-method').value;
+    trChart.update({ series, yMin: m === 'pot' ? 0 : lo - pad, yMax: hi + pad });
+  }
+  const trTable = Lab.table('#tr-table', {
+    save: 'tr-table',
+    columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'condTxt', label: 'Condition' }, { key: 'rate', label: 'Rate', num: true, digits: 4 }, { key: 'unit', label: 'Unit' }, { key: 'area', label: 'Leaf area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpaIn', label: 'Rate/area (you)', num: true, editable: true }, { key: 'rpaUnit', label: 'Rate/area unit' }],
+    onChange: () => trSummary()
+  });
+  const trBar = Lab.chart('#tr-bar', { type: 'bar', xLabel: 'Condition', yLabel: 'Rate per area (scaled units)', height: 300, series: [] });
+  const syncTr = () => { $('#tr-n-out').textContent = $('#tr-n').value; if (!trBusy) drawTrIdle(); };
+  function drawTrIdle() { const m = $('#tr-method').value; drawApparatus(trCv, { method: m, env: envFrom(COND[$('#tr-cond').value]), t: 0, reading: m === 'pot' ? 0 : m === 'press' ? 101.3 : null, frac: 0, label: '' }); setTrLabels(m); }
+  function setTrLabels(m) { $('#tr-k-time').textContent = m === 'whole' ? 'Day' : 'Time'; $('#tr-k-read').textContent = METH[m].read; trChart.update({ xLabel: m === 'whole' ? 'Time (days)' : 'Time (min)', yLabel: m === 'pot' ? 'Pipette reading = water taken up (mL)' : m === 'press' ? 'Pressure (kPa)' : 'Mass (g)' }); }
+  $('#tr-n').addEventListener('input', syncTr);
+  ['#tr-method', '#tr-cond', '#tr-species'].forEach(s => $(s).addEventListener('change', () => { if ($(s) === $('#tr-method')) { trSeries = []; trUpdate([]); } syncTr(); }));
+  trCv.onresize = () => { if (!trBusy) drawTrIdle(); };
+  syncTr();
+  $('#tr-run').addEventListener('click', () => {
+    if (trBusy) return;
+    const method = $('#tr-method').value, sp = $('#tr-species').value, ck = $('#tr-cond').value, env = envFrom(COND[ck]), n = +$('#tr-n').value, M = METH[method];
+    let last = null;
+    for (let i = 0; i < n; i++) {
+      const res = runPlant(method, sp, env, rng); last = res;
+      const rows = trTable.getRows();
+      trTable.addRow({ n: rows.length + 1, method, methodTxt: { pot: 'Potometer', press: 'Pressure', whole: 'Whole plant' }[method], sp, spTxt: SPP[sp].short, cond: ck, condTxt: COND[ck].label, rate: res.rate, unit: M.unit, area: Math.round(res.area), rpa: res.rate / Math.round(res.area) * M.mult, rpaIn: null, rpaUnit: M.rpaUnit });
+    }
+    $('#tr-area').textContent = Math.round(last.area) + ' cm²';
+    trBusy = true;
+    const live = [];
+    trSeries = trSeries.slice(-4);
+    const name = `${COND[ck].label} (${SPP[sp].short})`;
+    animateRun(trCv, method, env, last, {}, (tt, rd) => {
+      $('#tr-time').textContent = method === 'whole' ? fmt(tt, 1) + ' d' : fmt(tt, 0) + ' min';
+      $('#tr-read').textContent = fmt(rd, method === 'pot' ? 3 : method === 'press' ? 2 : 1) + (method === 'pot' ? ' mL' : method === 'press' ? ' kPa' : ' g');
+      const shown = last.pts.filter(p => p.x <= tt + 1e-9);
+      if (shown.length !== live.length) { live.length = 0; live.push(...shown); trUpdate(trSeries.concat([{ name, points: live.slice(), line: true, fit: live.length > 2 ? 'linear' : false }])); }
+    }, () => {
+      trBusy = false; trSeries.push({ name, points: last.pts, line: true, dash: true, dots: false });
+      $('#tr-rate').textContent = fmt(last.rate, method === 'whole' ? 1 : 4) + ' ' + M.unit;
+    });
+  });
+  $('#tr-clear').addEventListener('click', () => { trTable.clear(); trSeries = []; trUpdate([]); $('#tr-check-msg').textContent = ''; });
+  $('#tr-check').addEventListener('click', () => {
+    const rows = trTable.getRows(), out = $('#tr-check-msg');
+    if (!rows.length) { out.textContent = 'Run some plants first.'; out.className = 'status bad'; return; }
+    const filled = rows.filter(r => typeof r.rpaIn === 'number');
+    const ok = filled.filter(r => Math.abs(r.rpaIn - r.rpa) <= Math.max(0.02, Math.abs(r.rpa) * 0.03));
+    const bad = filled.filter(r => !ok.includes(r)).map(r => r.n);
+    out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} blank` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: rate ÷ leaf area, then shift the decimal to match the unit.` : '.');
+    out.className = 'status ' + (ok.length === rows.length ? 'ok' : 'bad');
+  });
+  function trSummary() {
+    const rows = trTable.getRows(); const groups = new Map();
+    rows.forEach(r => { const k = `${r.method}|${r.sp}|${r.cond}`; if (!groups.has(k)) groups.set(k, { method: r.method, sp: r.sp, cond: r.cond, v: [], unit: r.rpaUnit, mt: r.methodTxt, st: r.spTxt, ct: r.condTxt }); groups.get(k).v.push(r.rpa); });
+    const gs = [...groups.values()];
+    gs.forEach(g => { const c = groups.get(`${g.method}|${g.sp}|control`); g.m = S.mean(g.v); g.se2 = g.v.length > 1 ? 2 * S.se(g.v) : 0; g.adj = c ? g.m - S.mean(c.v) : NaN; g.ctl = c; });
+    $('#tr-summary').innerHTML = gs.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Method</th><th>Plant</th><th>Condition</th><th class="num">n</th><th class="num">Mean rate/area</th><th class="num">±2 SE</th><th class="num">Adjusted (− control)</th><th class="num">t-test vs control</th><th>Unit</th></tr></thead><tbody>${gs.map(g => { const tt = g.ctl && g.cond !== 'control' ? welch(g.v, g.ctl.v) : null; return `<tr><td>${g.mt}</td><td>${g.st}</td><td>${g.ct}</td><td class="num">${g.v.length}</td><td class="num">${fmt(g.m, 3)}</td><td class="num">${g.v.length > 1 ? fmt(g.se2, 3) : '—'}</td><td class="num">${g.cond === 'control' ? '0 (control)' : isFinite(g.adj) ? fmt(g.adj, 3) : 'run a control'}</td><td class="num">${tt ? (tt.p < 0.001 ? 'p &lt; 0.001' : `p = ${fmt(tt.p, 3)}`) : '—'}</td><td>${Lab.esc(g.unit)}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="small muted">Run plants to fill the class table.</p>';
+    const meth = rows.length ? rows[rows.length - 1].method : 'pot', sp = rows.length ? rows[rows.length - 1].sp : null;
+    const sel = gs.filter(g => g.method === meth && g.sp === sp);
+    const order = ['control', 'fan', 'lamp', 'mist', 'dark'];
+    sel.sort((a, b) => order.indexOf(a.cond) - order.indexOf(b.cond));
+    trBar.update({ categories: sel.map(g => g.ct), yLabel: `Rate per area (${METH[meth].rpaUnit})`, xLabel: sp ? `Condition (${SPP[sp].short}, ${sel[0] ? sel[0].mt : ''})` : 'Condition', series: [{ name: 'Mean ± 2 SE', points: sel.map(g => ({ x: g.ct, y: g.m, err: g.se2 })) }] });
+  }
+  trSummary();
+
+  /* ================= Statistics: Welch's t-test ================= */
+  function lgamma(x) { const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5]; let y = x, t = x + 5.5; t -= (x + 0.5) * Math.log(t); let s = 1.000000000190015; for (const k of c) s += k / ++y; return -t + Math.log(2.5066282746310005 * s / x); }
+  function tPdf(t, v) { return Math.exp(lgamma((v + 1) / 2) - lgamma(v / 2)) / Math.sqrt(v * Math.PI) * Math.pow(1 + t * t / v, -(v + 1) / 2); }
+  function tTwoTail(t, v) { const a = Math.abs(t), n = 2000, hh = a / n; let s = tPdf(0, v) + tPdf(a, v); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * tPdf(i * hh, v); return Math.max(0, Math.min(1, 1 - 2 * s * hh / 3)); }
+  function welch(a, b) {
+    if (a.length < 2 || b.length < 2) return null;
+    const va = S.sd(a) ** 2 / a.length, vb = S.sd(b) ** 2 / b.length, t = (S.mean(a) - S.mean(b)) / Math.sqrt(va + vb);
+    const df = (va + vb) ** 2 / (va * va / (a.length - 1) + vb * vb / (b.length - 1));
+    return { t, df, p: tTwoTail(t, df) };
+  }
+
+  /* ================= Design your own ================= */
+  const plan = $('#d-plan');
+  Lab.prompt(plan, { key: 'd-q', label: 'Essential question', rows: 2 });
+  Lab.prompt(plan, { key: 'd-hyp', label: 'Hypothesis and prediction: which factor will have the greatest effect, and why?', rows: 3 });
+  Lab.prompt(plan, { key: 'd-vars', label: 'Independent variable and levels; dependent variable and how you will measure it', rows: 3 });
+  Lab.prompt(plan, { key: 'd-ctrl', label: 'Control group and variables held constant', rows: 3 });
+  Lab.prompt(plan, { key: 'd-assume', label: 'Assumptions you are making. Can they be verified easily?', rows: 2 });
+  Lab.prompt(plan, { key: 'd-meas', label: 'Will your measurements answer the question? How many replicates will you use?', rows: 2 });
+  const dCv = Lab.canvas('#d-cv', 0.62);
+  const dChart = Lab.chart('#d-chart', { xLabel: 'Wind speed (m/s)', yLabel: 'Rate per area', series: [] });
+  const dTable = Lab.table('#d-table', {
+    save: 'd-table',
+    columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'wind', label: 'Wind', unit: 'm/s', num: true, digits: 1 }, { key: 'light', label: 'Light', unit: 'PAR', num: true, digits: 0 }, { key: 'rh', label: 'RH', unit: '%', num: true, digits: 0 }, { key: 'temp', label: 'Temp', unit: '°C', num: true, digits: 0 }, { key: 'salt', label: 'NaCl', unit: 'M', num: true, digits: 2 }, { key: 'jelly', label: 'Jelly' }, { key: 'leaves', label: 'Leaves', unit: '%', num: true, digits: 0 }, { key: 'area', label: 'Area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpa', label: 'Rate/area', num: true, digits: 3 }, { key: 'rpaUnit', label: 'Unit' }],
+    onChange: () => dUpdate()
+  });
+  const dEnv = () => ({ wind: +$('#d-wind').value, par: +$('#d-light').value, rh: +$('#d-rh').value, temp: +$('#d-temp').value, salt: +$('#d-salt').value, jelly: $('#d-jelly').value, leaves: +$('#d-leaves').value, leafDT: +$('#d-light').value > 400 ? 3 * (+$('#d-light').value) / 1000 : 0 });
+  function syncD() {
+    const e = dEnv();
+    $('#d-wind-out').textContent = e.wind + ' m/s'; $('#d-light-out').textContent = e.par + ' µmol·m⁻²·s⁻¹'; $('#d-rh-out').textContent = e.rh + ' %';
+    $('#d-temp-out').textContent = e.temp + ' °C'; $('#d-salt-out').textContent = fmt(e.salt, 2) + ' M'; $('#d-leaves-out').textContent = e.leaves + ' %'; $('#d-n-out').textContent = $('#d-n').value;
+    const fl = flux($('#d-species').value, e, 1);
+    $('#d-vpd').textContent = fmt(fl.vpd, 2) + ' kPa';
+    drawApparatus(dCv, { method: $('#d-method').value, env: e, t: 0, reading: $('#d-method').value === 'pot' ? 0 : $('#d-method').value === 'press' ? 101.3 : null, frac: 0, leaves: e.leaves });
+  }
+  ['#d-wind', '#d-light', '#d-rh', '#d-temp', '#d-salt', '#d-leaves', '#d-n'].forEach(s => $(s).addEventListener('input', syncD));
+  ['#d-method', '#d-species', '#d-jelly'].forEach(s => $(s).addEventListener('change', syncD));
+  dCv.onresize = syncD;
+  syncD();
+  let dBusy = false;
+  $('#d-run').addEventListener('click', () => {
+    if (dBusy) return;
+    const method = $('#d-method').value, sp = $('#d-species').value, e = dEnv(), n = +$('#d-n').value, M = METH[method];
+    const prev = dTable.getRows(), mixed = prev.length && prev[0].method !== method;
+    let last = null; const vals = [];
+    for (let i = 0; i < n; i++) {
+      const res = runPlant(method, sp, e, rng); last = res; vals.push(res.rpa * M.mult);
+      const rows = dTable.getRows();
+      dTable.addRow({ n: rows.length + 1, method, methodTxt: { pot: 'Potometer', press: 'Pressure', whole: 'Whole plant' }[method], sp, spTxt: SPP[sp].short, wind: e.wind, light: e.par, rh: e.rh, temp: e.temp, salt: e.salt, jelly: e.jelly, leaves: e.leaves, area: res.area, rpa: res.rpa * M.mult, rpaUnit: M.rpaUnit });
+    }
+    $('#d-last').textContent = fmt(S.mean(vals), 3);
+    const msg = $('#d-msg');
+    msg.textContent = mixed ? 'Careful: your table now mixes methods with different units. Compare only rows measured the same way (or clear the data).' : `${n} plants added.`;
+    msg.className = 'status ' + (mixed ? 'warn' : 'ok');
+    dBusy = true;
+    animateRun(dCv, method, e, last, { leaves: e.leaves }, null, () => { dBusy = false; });
+  });
+  $('#d-clear').addEventListener('click', () => { dTable.clear(); $('#d-msg').textContent = ''; });
+  $('#d-by').addEventListener('change', dUpdate);
+  ['#t-a', '#t-b'].forEach(s => $(s).addEventListener('change', dTtest));
+  let dGroups = [];
+  function dUpdate() {
+    const rows = dTable.getRows(); $('#d-count').textContent = String(rows.length);
+    const by = $('#d-by').value, key = r => by === 'species' ? r.spTxt : r[by];
+    const numeric = !['jelly', 'species'].includes(by);
+    const m = new Map(); rows.forEach(r => { const k = key(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r.rpa); });
+    let keys = [...m.keys()]; if (numeric) keys.sort((a, b) => a - b);
+    dGroups = keys.map(k => { const v = m.get(k); return { k, v, n: v.length, mean: S.mean(v), sd: S.sd(v), se2: v.length > 1 ? 2 * S.se(v) : 0 }; });
+    const lbl = { wind: 'Wind speed (m/s)', light: 'Light (µmol·m⁻²·s⁻¹)', rh: 'Relative humidity (%)', temp: 'Air temperature (°C)', salt: 'NaCl (M)', jelly: 'Petroleum jelly', leaves: 'Leaves left (%)', species: 'Plant species' }[by];
+    const unit = rows.length ? rows[rows.length - 1].rpaUnit : 'scaled units';
+    $('#d-summary').innerHTML = dGroups.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>${lbl}</th><th class="num">n</th><th class="num">Mean rate/area</th><th class="num">SD</th><th class="num">±2 SE</th></tr></thead><tbody>${dGroups.map(g => `<tr><td>${Lab.esc(String(g.k))}</td><td class="num">${g.n}</td><td class="num">${fmt(g.mean, 3)}</td><td class="num">${fmt(g.sd, 3)}</td><td class="num">${g.n > 1 ? fmt(g.se2, 3) : '—'}</td></tr>`).join('')}</tbody></table></div><p class="small muted">Rate/area unit: ${Lab.esc(unit)}. Rows from every trial are grouped by the variable you choose, so change only one variable at a time.</p>` : '<p class="small muted">Run replicates to see group statistics.</p>';
+    if (numeric && dGroups.length) {
+      const fitPts = rows.map(r => ({ x: key(r), y: r.rpa }));
+      dChart.update({ type: 'xy', categories: null, xLabel: lbl, yLabel: `Rate/area (${unit})`, series: [{ name: 'Mean ± 2 SE', points: dGroups.map(g => ({ x: g.k, y: g.mean, err: g.se2 })), line: true }, { name: 'Individual plants (linear fit)', points: fitPts, line: false, fit: dGroups.length > 1 ? 'linear' : false }] });
+    } else {
+      dChart.update({ type: 'bar', categories: dGroups.map(g => String(g.k)), xLabel: lbl, yLabel: `Rate/area (${unit})`, series: [{ name: 'Mean ± 2 SE', points: dGroups.map(g => ({ x: String(g.k), y: g.mean, err: g.se2 })) }] });
+    }
+    ['#t-a', '#t-b'].forEach((s, i) => { const el = $(s), cur = el.value; el.innerHTML = ''; dGroups.forEach((g, j) => el.append(h('option', { value: String(j) }, `${g.k} (n = ${g.n})`))); el.value = cur && +cur < dGroups.length ? cur : String(Math.min(i, Math.max(0, dGroups.length - 1))); });
+    dTtest();
+  }
+  function dTtest() {
+    const a = dGroups[+$('#t-a').value], b = dGroups[+$('#t-b').value], out = $('#t-out');
+    if (!a || !b || a === b) { out.textContent = 'Choose two different groups, each with at least two replicates.'; return; }
+    const r = welch(a.v, b.v);
+    if (!r) { out.textContent = 'Each group needs at least two replicates.'; return; }
+    out.textContent = `Mean A = ${fmt(a.mean, 3)}, mean B = ${fmt(b.mean, 3)}, difference = ${fmt(a.mean - b.mean, 3)}.  t = ${fmt(r.t, 2)}, df = ${fmt(r.df, 1)}, ${r.p < 0.001 ? 'p < 0.001' : 'p = ' + fmt(r.p, 3)} → ${r.p < 0.05 ? 'significant at α = 0.05' : 'not significant at α = 0.05'}.`;
+  }
+  dUpdate();
+  const dr = $('#d-results');
+  Lab.prompt(dr, { key: 'd-res', label: 'Report your results: group means ± 2 SE, the t-test (or the slope of the fit line), and what they show.', rows: 4 });
+  Lab.prompt(dr, { key: 'd-more', label: 'Write down any new questions that came up during your study.', rows: 2 });
+
+  /* ================= Analyze & Evaluate ================= */
+  const an = $('#analysis');
+  [
+    ['a1', '1. How was the rate of transpiration affected by your experimental variable compared with the control? Use numbers.'],
+    ['a2', '2. How could you communicate your results to other groups effectively (table, graph, poster)? Comparing class results, explain how changes in environmental conditions affect transpiration.'],
+    ['a3', '3. Based on the class data (Table 3), which environmental variable caused the greatest water loss? Explain why, using vapor pressure deficit, the boundary layer, or stomatal opening.'],
+    ['a4', '4. Why did you need to calculate leaf surface area to determine transpiration rates?'],
+    ['a5', '5. What structural or physiological adaptations let plants control water loss (for example, stomata placement, cuticle, sunken stomata, leaf hairs, guard-cell closing with abscisic acid)? How does each affect transpiration?'],
+    ['a6', '6. Predict how the number of stomata relates to transpiration rate. What experiment could test this relationship?'],
+    ['a7', '7. Describe an annotated diagram explaining how TACT moves water and nutrients up a 100-foot tree. Predict how a big rise in air temperature would affect the tree\'s transpiration, in terms of TACT and guard cells.']
+  ].forEach(([k, l]) => Lab.prompt(an, { key: k, label: l, rows: 4 }));
+  const cer = $('#cer');
+  Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
+  Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
+  Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
+  const ev = $('#evaluate');
+  [
+    ['e1', '1. Was your hypothesis about the environmental variable supported by your data? Why or why not?'],
+    ['e2', '2. What challenges did you have? Did you make any incorrect assumptions about how environmental variables affect transpiration?'],
+    ['e3', '3. Which calculations (area, stomatal density, rate per area, adjusted rate, t-test) were hardest? What helped?'],
+    ['e4', 'Where next: How do guard cells open and close stomata? Research the roles of K<sup>+</sup> and abscisic acid and connect them to your data.'],
+    ['e5', 'Where next: Design an experiment comparing a drought-tolerant plant with one that needs lots of water. What do you predict, and why?'],
+    ['e6', 'If you revised your experiment, what would you change and why?']
+  ].forEach(([k, l]) => Lab.prompt(ev, { key: k, label: l, rows: 3 }));
+})();
+</script>
+</body>
+</html>

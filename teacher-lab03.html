@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 3 Teacher Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > * { min-width: 0; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 1 · Evolution</span><a href="lab03.html">Student lab</a></nav>
+    <div class="eyebrow">Investigation 3 · Teacher notes</div>
+    <h1>Comparing DNA Sequences with BLAST</h1>
+    <p class="driving-q">How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?</p>
+    <div class="tags"><span class="tag">Unit 7: Natural Selection</span><span class="tag">EVO-3.B</span><span class="tag">EVO-3.C</span><span class="tag">SYI-3.A</span><span class="tag">Science Practice 2.D</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Page sections"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <section class="step wrap gutter" data-step="At a glance">
+    <header><div class="eyebrow">At a glance</div><h2>Planning summary</h2></header>
+    <div class="step-body prose">
+      <div class="table-wrap"><table class="data"><tbody>
+        <tr><th>Timing</th><td>Pre-lab: one 45-minute period or homework. Parts 1–3: one period. Student design: one period. Summative discussion: about 45 minutes.</td></tr>
+        <tr><th>Unit / Big Ideas</th><td>Unit 7 (Natural Selection: phylogeny). Connects to Big Idea 1 (Evolution) and Big Idea 3 (Information).</td></tr>
+        <tr><th>Enduring understandings</th><td>SYI-3: Naturally occurring diversity among and between components within biological systems affects interactions with the environment. EVO-3: Life continues to evolve within a changing environment.</td></tr>
+        <tr><th>Objectives</th><td>SYI-3.A, EVO-3.B, EVO-3.C</td></tr>
+        <tr><th>Science practice</th><td>2.D Represent relationships within a biological model.</td></tr>
+        <tr><th>Prior knowledge</th><td>DNA structure, and how nucleotide order codes for amino acids (codons, redundancy of the code).</td></tr>
+        <tr><th>Safety</th><td>None. This is a computer investigation.</td></tr>
+      </tbody></table></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Preparation">
+    <header><div class="eyebrow">Preparation</div><h2>Materials and setup</h2></header>
+    <div class="step-body prose">
+      <p><strong>Bench version:</strong> one internet-connected computer per student or group. Before class, spend about an hour downloading the three fossil gene files from the AP Central lab resource page and practicing the upload. In NCBI BLAST, choose "Saved Strategies," then "Upload Search Strategy," then "View," then "BLAST." Demonstrate the first gene on a projector with the whole class, then let groups do the other two.</p>
+      <p><strong>This page:</strong> it runs entirely in the browser with no login and no network after loading. Student work saves in the browser on that device. Students submit by pressing "Copy all my responses" in the last section and pasting the text into your LMS.</p>
+      <p>Point out that BLAST holds far more information than students need. They are not expected to understand every column. The manual's "sticky note in the library" analogy works well: find every book containing a three-word phrase, including near-misses, then rank them from most to least similar.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Simulation map">
+    <header><div class="eyebrow">How the simulation maps to the real procedure</div><h2>What is real, what is modeled</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Part 1 (morphology):</strong> students fill in a trait matrix for the six groups on the manual's Figure 4: insects, crustaceans, crocodilians, birds, rodents and great apes. The page checks the matrix. Students then build nested clades by choosing organisms and the derived trait that defines each group. Groups that overlap without nesting are rejected. A group whose members do not match the trait table is accepted but flagged in orange, so students can still test their own ideas. The manual's plant data (Table 1) is available as a warm-up data set. Two traits were added to resolve the tree: a jointed exoskeleton for the arthropods and a muscular gizzard for crocodilians + birds. The rest come from Figure 4.</li>
+        <li><strong>The fossil:</strong> the photo (Figure 3) is replaced by a sketch and a list of observations that fit a small feathered theropod dinosaur from the roughly 125-million-year-old rocks of Liaoning. The sketch shows teeth, a long bony tail, clawed hands, and feathers.</li>
+        <li><strong>Part 2 (mini-BLAST):</strong> the three gene files become built-in queries, "Fossil gene A/B/C." The database holds 18 organisms per gene. <em>The sequences are simulated</em>. A random ancestral coding sequence was evolved down a time-calibrated tree using approximate published divergence dates (for example human–chimp 6.5 Mya, mammal–reptile 319 Mya, protostome–deuterostome 600 Mya). The model uses Poisson substitutions, a 2:1 transition bias, faster third codon positions, among-site rate variation, about 12% invariant sites, and rare codon-length indels. The fossil lineage splits from the bird stem 160 Mya and stops at 125 Mya, so its DNA is "older" than the living sequences. Gene A evolves slowly, gene B moderately and gene C quickly.</li>
+        <li><strong>Alignment and statistics:</strong> real Smith–Waterman local alignment with affine gaps. blastn uses match +2, mismatch −3, gap 5 + 2 per base. "Highly similar (megablast)" uses match +1, mismatch −2 and a 28-base seed. Bit scores and E-values use the Karlin–Altschul formula (λ = 0.625, K = 0.41 for blastn), with the search space set to GenBank scale (10<sup>11</sup> bases), so E-values look realistic. Hits need an exact seed of 11 (blastn) or 28 (megablast) bases, as real BLAST does. The output mimics NCBI's layout: graphic summary with score-colored bars, ranked hit list (max score, query cover, E-value, percent identity), pairwise alignments in Query/Sbjct format, and a "Distance tree of results" (UPGMA on Jukes–Cantor distances).</li>
+        <li><strong>Limits:</strong> no real accession numbers or literature links. There are only 18 organisms, so students cannot find close relatives that are missing from the database. This makes a good discussion point for the Evaluate questions. Real BLAST ranks by E-value. Here, ranking by bit score gives the same order.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Misconceptions">
+    <header><div class="eyebrow">Common misconceptions</div><h2>Watch for these</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Reading tips left to right as a ladder of progress.</strong> Students may think humans are "more evolved" because they appear at the end of the tree. Branches can rotate around any node without changing the meaning (Baum et al., "The Tree-Thinking Challenge," 2005).</li>
+        <li><strong>Counting nodes or reading tip proximity instead of the most recent common ancestor.</strong> Adjacent tips are not necessarily close relatives.</li>
+        <li><strong>"Birds descended from crocodiles"</strong> or "humans descended from chimps." Living species share ancestors. They are not ancestors of each other.</li>
+        <li><strong>Treating a higher percent identity in a slow gene as "more related."</strong> Compare organisms within the same gene. Different genes evolve at different rates.</li>
+        <li><strong>Assuming a high-scoring hit means the species are the same.</strong> The fossil's best match is the closest relative <em>in the database</em>, not the fossil species itself.</li>
+        <li><strong>Assuming E-value is a probability.</strong> It is the expected number of chance hits, and it can be greater than 1.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Answer key">
+    <header><div class="eyebrow">Suggested answers</div><h2>Pre-lab and expected results</h2></header>
+    <div class="step-body prose">
+      <h3>Getting Started</h3>
+      <ol>
+        <li>Plant cladogram: mosses branch first. Vascular tissue marks the ferns + pines + flowering plants clade, seeds mark pines + flowering plants, and flowers mark flowering plants. Order of origin: vascular tissue, then seeds, then flowers.</li>
+        <li>(a) The code is redundant. Many substitutions, especially at third codon positions, are silent, so the protein stays the same while the DNA changes. (b) GAPDH tree: roundworm branches first, then fruit fly, then dog, then chimpanzee and human as sister species.</li>
+        <li>Percent identity: A vs B = 70%. A vs C = 90%.</li>
+        <li>Figure 2: dry skin evolved before hair. Lizards have lungs, jaws and dry skin. Salamanders, lizards, tigers and gorillas have lungs.</li>
+      </ol>
+      <h3>Part 1 expected tree (Figure 4)</h3>
+      <p>Heterotroph at the root. Then (insects + crustaceans: jointed exoskeleton; insects: exposed mouthparts; crustaceans: two-parted limbs) and vertebrates (vertebrae). Within vertebrates: crocodilians + birds (gizzard; palatal valve for crocodilians; feathers for birds) and rodents + great apes (fur; two specialized incisors for rodents; opposable thumbs for apes). A morphology-based fossil hypothesis is usually "sister to birds" or "sister to crocodilians + birds" (vertebrae, feathers, teeth, long tail). Accept any placement that is justified with shared derived characters.</p>
+      <h3>Part 2 expected BLAST results (blastn, all organisms)</h3>
+      <div class="table-wrap"><table class="data"><thead><tr><th>Gene</th><th>Top hits (percent identity, E-value)</th><th>Next group</th><th>Most distant hits</th></tr></thead><tbody>
+        <tr><td>A (300 bp, slow)</td><td>Ostrich 93.7% (1e-124), zebra finch 93.0%, chicken 92.3%</td><td>Alligator / Nile crocodile 88.0% (1e-101)</td><td>Insects and crustaceans about 71% (E about 1e-31). Still significant because gene A is conserved.</td></tr>
+        <tr><td>B (336 bp, moderate)</td><td>Ostrich 89.0% (9e-120), chicken 87.2%, zebra finch 86.0%</td><td>Alligator 83.6%, crocodile 83.0%</td><td>Only 15 hits. Honeybee 68.9% (2e-15). Some arthropods drop out.</td></tr>
+        <tr><td>C (270 bp, fast)</td><td>Chicken 83.5% (7e-73), ostrich 83.3%, zebra finch 79.6%</td><td>Crocodile 74.3%, alligator 73.7%</td><td>11 hits. No insects or crustaceans. Megablast finds nothing.</td></tr>
+      </tbody></table></div>
+      <p>The results are deterministic, so every student sees the same numbers. For all three genes, birds are the best match and crocodilians are second. The evidence places the fossil on the bird lineage, most precisely as "sister to Birds," inside the crocodilian + bird clade. This matches the manual's note that evidence points to a close relationship with birds and/or reptiles. The distance tree of results groups the query with the birds.</p>
+      <h3>Analysis questions</h3>
+      <ol>
+        <li>Most similar: a bird (ostrich or chicken, depending on the gene).</li>
+        <li>On the birds branch of Figure 4.</li>
+        <li>About 83–94% identity, depending on the gene, with E-values from 1e-73 to 1e-124. These are highly significant.</li>
+        <li>Next most similar: the other birds, then crocodilians. The pattern holds in all three genes. Painted turtles and anoles ("other reptiles," not on Figure 4) come next.</li>
+        <li>Genes differ in rate because of functional constraint. Slowly evolving genes are best for deep splits. Fast genes such as gene C separate close relatives but lose signal for very old splits.</li>
+      </ol>
+      <h3>Design: molecular clock</h3>
+      <p>For a human query across all organisms, percent identity falls roughly linearly for splits up to about 350 Mya. Typical slopes are about −6% per 100 My for gene A, −9% for gene B and −10% for gene C, with R² of about 0.94–0.97. Beyond about 400 Mya the curve flattens: repeated substitutions at the same site (saturation) and random matching (about 25% for unrelated DNA, higher in local alignments) put a floor under percent identity. Strong students will notice that the fossil's identity to living birds is higher than its 160 Mya divergence suggests. This is because the fossil lineage stopped evolving 125 Mya.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Student designs">
+    <header><div class="eyebrow">Ideas for student-designed investigations</div><h2>Questions students can test here</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Does percent identity decline linearly with divergence time? Does the slope depend on the gene?</li>
+        <li>Which program (blastn or megablast) finds more distant relatives, and why does the seed length matter?</li>
+        <li>Is the human–chimp–gorilla branching order resolved by every gene? (A slow gene may show ties.)</li>
+        <li>Do turtles group with crocodilians + birds or with lizards? This is a real phylogenetic debate that molecular data helped settle.</li>
+        <li>Paste a modified query, for example with point mutations or a deleted codon, and see how score, gaps and E-value respond. This connects to disease alleles, as the manual suggests (normal vs mutant protein).</li>
+      </ul>
+      <p>On real NCBI tools, the manual suggests: actin (NM_001100), ATP synthase, catalase, GAPDH, keratin, myosin, Pax1, ubiquitin, zinc finger proteins, DNA polymerase, and disease genes such as those behind spinocerebellar ataxia or storage diseases.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Extensions">
+    <header><div class="eyebrow">Extensions</div><h2>Going further</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Run the Entrez Gene → FASTA → BLAST example procedure from the manual on <a href="https://blast.ncbi.nlm.nih.gov/Blast.cgi" target="_blank" rel="noopener">NCBI BLAST</a>, and compare its distance tree with the in-page one.</li>
+        <li>Count the genomes now available in BLAST ("List All Genomic Databases") and discuss sampling bias.</li>
+        <li>UC Museum of Paleontology activities: "The Evolution of Flight in Birds," "What did T. rex taste like?," and "Journey into Phylogenetic Systematics."</li>
+        <li>Summative prompt: describe the fossil cladogram using the terms speciation, extinction and natural selection.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+  Lab.init({ id: 'teacher-lab03' });
+</script>
+</body>
+</html>

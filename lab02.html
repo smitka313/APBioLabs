@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 2 · Mathematical Modeling: Hardy-Weinberg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step > *, .step-body > *, .sim > *, .stage > * { min-width: 0; }
+  code, .formula-bar, table.sheet, .q-stem { font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+  .status { font-size: .9rem; min-height: 1.4em; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); } .status.warn { color: var(--warn); }
+  figcaption, .cap { font-size: .84rem; color: var(--muted); }
+  figure { margin: 0; display: grid; gap: 6px; }
+  .diagram { width: 100%; max-width: 620px; height: auto; display: block; }
+  .diagram text { fill: var(--ink); font-family: var(--f-body); font-size: 14px; }
+  .diagram text.m { fill: var(--muted); font-size: 12.5px; font-style: italic; }
+  .diagram .box { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+  .diagram .arr { stroke: var(--muted); stroke-width: 2; fill: none; }
+  .diagram .ah { fill: var(--muted); }
+  .diagram .force { fill: var(--stain); font-weight: 600; font-size: 13px; }
+  .pun rect.aa { fill: var(--s1); fill-opacity: .55; } .pun rect.ab { fill: var(--s4); fill-opacity: .45; } .pun rect.bb { fill: var(--s2); fill-opacity: .5; }
+  .pun rect { stroke: var(--surface); stroke-width: 2; }
+  .pun text { fill: var(--ink); font-family: var(--f-mono); font-size: 13px; }
+  .pun text.h { font-family: var(--f-body); font-weight: 600; fill: var(--muted); }
+  .formula-bar { display: flex; gap: 0; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; font-family: var(--f-mono); font-size: .85rem; background: var(--surface); }
+  .formula-bar .ref { padding: 6px 10px; background: var(--surface-2); border-right: 1px solid var(--line); min-width: 52px; text-align: center; font-weight: 600; }
+  .formula-bar .fx { padding: 6px 10px; overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; }
+  table.sheet { border-collapse: collapse; font-family: var(--f-mono); font-size: .8rem; width: 100%; }
+  table.sheet th { background: var(--surface-2); color: var(--muted); font-weight: 600; padding: 3px 8px; border: 1px solid var(--line); text-align: center; }
+  table.sheet td { border: 1px solid var(--line); padding: 3px 8px; text-align: center; min-width: 46px; cursor: cell; white-space: nowrap; }
+  table.sheet td.pool { background: var(--s3); background: color-mix(in srgb, var(--s3) 22%, var(--surface)); }
+  table.sheet td.lbl { text-align: left; color: var(--muted); font-family: var(--f-body); }
+  table.sheet td.A { color: var(--s1); font-weight: 600; } table.sheet td.B { color: var(--s2); font-weight: 600; }
+  table.sheet td.sum { background: var(--surface-2); font-weight: 600; }
+  table.sheet td.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
+  table.sheet td.gap { color: var(--muted); font-style: italic; font-family: var(--f-body); }
+  .sheet-wrap { overflow: auto; max-height: 460px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+  .toggles { display: grid; gap: 10px; }
+  .toggle-box { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; background: var(--surface); display: grid; gap: 8px; }
+  .toggle-box .sub { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 8px; }
+  .toggle-box .sub[hidden] { display: none !important; }
+  .toggle-box .sub input { padding: 4px 6px; font-family: var(--f-mono); font-size: .85rem; }
+  .toggle-box .sub label { font-size: .78rem; color: var(--muted); }
+  .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px; align-items: end; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 1 · Evolution</span></nav>
+    <div class="eyebrow">Investigation 2</div>
+    <h1>Mathematical Modeling: Hardy-Weinberg</h1>
+    <p class="driving-q">How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?</p>
+    <div class="tags"><span class="tag">Unit 7: Natural Selection</span><span class="tag">EVO-1.K</span><span class="tag">EVO-1.L</span><span class="tag">Science Practice 5.A</span><span class="tag">≈ 3 class periods</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ 1. OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Why does the allele for cystic fibrosis stay in human populations even though people with two copies are seriously ill? Why is polydactyly (extra fingers) rare even though its allele is dominant? To answer questions like these, population biologists build mathematical models of gene pools.</p>
+      <p>In this lab you will build a spreadsheet model of a population, step by step, the way the manual does it: draw gametes at random from a gene pool, join them into zygotes, count genotypes and calculate new allele frequencies. Then you will run many populations for many generations, switch on selection, mutation, migration and genetic drift, and design your own modeling experiment.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>EVO-1.K</strong> Describe the conditions under which allele and genotype frequencies will change in populations.</li>
+          <li><strong>EVO-1.L</strong> Explain the impacts on the population if any of the conditions of Hardy-Weinberg are not met.</li>
+          <li><strong>Science Practice 5.A</strong> Perform mathematical calculations: p + q = 1, p² + 2pq + q² = 1, and chi-square.</li>
+          <li>Build, test and critique a model, and use it to test a hypothesis.</li>
+        </ul>
+      </div>
+      <div class="callout callout--tip"><div class="callout-title">Working with models</div>
+        <p>There are no chemical hazards here, but modelers have their own habits: record every assumption, test the model with values where you know the answer, and save versions as you go. Your tables and answers on this page save in your browser automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Gene pools and the Hardy-Weinberg null model</h2></header>
+    <div class="step-body prose">
+      <p>Evolution happens in populations, not individuals. One way to track it is to follow the <strong>allele frequencies</strong> at one gene from generation to generation. Imagine a diploid organism with one gene that has two alleles, which we will call <strong>A</strong> and <strong>B</strong> (the spreadsheet handles letters more easily than A and a). Let</p>
+      <div class="equation">p = frequency of A &nbsp;&nbsp; q = frequency of B &nbsp;&nbsp; p + q = 1</div>
+      <p>Every gamete carries either A or B. If gametes meet at random, the chance that an egg and a sperm are both A is p × p = p². Both B: q². One of each can happen two ways (A egg with B sperm, or B egg with A sperm), so heterozygotes make up 2pq. That gives the Hardy-Weinberg equation:</p>
+      <div class="equation">(p + q)² = p² + 2pq + q² = 1 &nbsp;&nbsp; (AA + AB + BB)</div>
+      <figure>
+        <div class="field" style="max-width:320px"><label for="pun-p">Try a value of p <output class="val" id="pun-p-out"></output></label><input type="range" id="pun-p" min="0.05" max="0.95" step="0.05" value="0.6"></div>
+        <svg class="diagram pun" id="pun" viewBox="0 0 360 330" role="img" aria-label="Punnett square scaled by allele frequency, showing the areas p squared, 2pq and q squared."></svg>
+        <figcaption>A Punnett square for a whole gene pool. Each side is scaled to p and q, so each box's area is a genotype frequency (the manual's Figure 10 uses p = 0.6).</figcaption>
+      </figure>
+      <h3>An idealized life cycle</h3>
+      <p>To build a model you simplify. The manual's model follows one life cycle: adults release gametes into one shared pool, gametes pair at random to form zygotes, zygotes grow into juveniles and then adults. Each arrow is a place where something could change allele frequencies.</p>
+      <figure>
+        <svg class="diagram" viewBox="0 0 620 300" role="img" aria-label="Life cycle: adults make gametes (the gene pool), random mating forms zygotes, zygotes become juveniles, juveniles become adults. Mutation acts on gametes, selection on zygotes and juveniles, migration on adults.">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+          <rect class="box" x="40" y="40" width="170" height="56" rx="12"/><text x="125" y="74" text-anchor="middle">Adults</text>
+          <rect class="box" x="410" y="40" width="170" height="56" rx="12"/><text x="495" y="66" text-anchor="middle">Gametes</text><text x="495" y="84" text-anchor="middle" class="m">(gene pool)</text>
+          <rect class="box" x="410" y="204" width="170" height="56" rx="12"/><text x="495" y="238" text-anchor="middle">Zygotes</text>
+          <rect class="box" x="40" y="204" width="170" height="56" rx="12"/><text x="125" y="238" text-anchor="middle">Juveniles</text>
+          <path class="arr" d="M212 68 H 406" marker-end="url(#ah)"/><text x="309" y="58" text-anchor="middle" class="m">meiosis</text>
+          <path class="arr" d="M495 98 V 200" marker-end="url(#ah)"/><text x="505" y="155" class="m">random mating</text>
+          <path class="arr" d="M408 232 H 214" marker-end="url(#ah)"/><text x="311" y="222" text-anchor="middle" class="m">growth</text>
+          <path class="arr" d="M125 202 V 100" marker-end="url(#ah)"/><text x="115" y="155" text-anchor="end" class="m">maturation</text>
+          <text x="495" y="24" text-anchor="middle" class="force">Mutation</text>
+          <text x="311" y="285" text-anchor="middle" class="force">Selection</text>
+          <text x="20" y="165" class="force" transform="rotate(-90 20 165)" text-anchor="middle">Migration</text>
+          <text x="309" y="160" text-anchor="middle" class="force">Drift (small N)</text>
+        </svg>
+        <figcaption>Life stages of the model population (after the manual's Figure 1). Magenta labels mark where each evolutionary force enters.</figcaption>
+      </figure>
+      <p>The starting assumptions are strict: the gene pool is infinite, every gamete has the same chance of being used, all zygotes survive to be adults, nobody enters or leaves, and there is no mutation. Under those conditions p and q stay the same forever. That is the <strong>Hardy-Weinberg equilibrium</strong>. It is a <strong>null model</strong>: a description of "nothing is happening." When real allele frequencies change, or genotypes do not match p², 2pq and q², the model tells you that some force (selection, mutation, migration, nonrandom mating or drift) is at work.</p>
+      <p>A spreadsheet can mimic random gamete choice with the RAND() function, which returns a random decimal between 0 and 1. If RAND() ≤ p, the gamete is A; otherwise it is B. Because each draw is random, a small population will wander away from the expected numbers just by chance. That wandering is <strong>genetic drift</strong>, and it is the first thing your model will show you.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body"><div id="prelab"></div></div>
+  </section>
+
+  <!-- ============ 4. CARD MODEL ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Card model">
+    <header><div class="eyebrow">Getting started · physical model</div><h2>The class card simulation</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Before building a computer model, many classes act out a gene pool with cards. Every student starts as a heterozygote (AB) holding four cards: two A and two B, standing for the chromosomes they could pass on. Each round, students pair up at random. Each partner shuffles and hands over one card face-down, which makes one offspring; the pair does this twice. The two students then take on their two offspring's genotypes and the class repeats. Try the four cases below. Notice how a class-sized population behaves.</p>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="card-case">Case</label>
+            <select id="card-case">
+              <option value="1">I · Ideal Hardy-Weinberg population</option>
+              <option value="2">II · Selection: BB offspring do not survive</option>
+              <option value="3">III · Heterozygote advantage: BB never survive, AA survive half the time</option>
+              <option value="4">IV · Genetic drift: isolated groups of 4–6</option>
+            </select></div>
+          <div class="field"><label for="card-n">Class size <output id="card-n-out" class="val"></output></label><input id="card-n" type="range" min="10" max="40" step="2" value="24"></div>
+          <button class="btn btn--primary" id="card-step" type="button">Mate one generation</button>
+          <button class="btn" id="card-run5" type="button">Run 5 generations</button>
+          <button class="btn btn--ghost btn--sm" id="card-reset" type="button">Reset class (everyone AB)</button>
+          <p class="status" id="card-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="card-canvas" aria-label="Each student shown as a card with their two alleles. A is green, B is magenta."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Generation</span><span class="v" id="card-gen">0</span></div>
+            <div class="readout"><span class="k">AA · AB · BB</span><span class="v" id="card-geno">—</span></div>
+            <div class="readout"><span class="k">p (A)</span><span class="v" id="card-p">—</span></div>
+            <div class="readout"><span class="k">q (B)</span><span class="v" id="card-q">—</span></div>
+          </div>
+          <div id="card-chart"></div>
+        </div>
+      </div>
+      <div id="card-table"></div>
+      <div id="card-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 5. BUILD THE SPREADSHEET ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Build the model">
+    <header><div class="eyebrow">Procedure · Building a simple mathematical model</div><h2>Build the spreadsheet: one generation</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>The modeling steps from Otto and Day: (1) formulate the question, (2) determine the basic ingredients, (3) describe the system qualitatively, (4) describe it quantitatively, (5) analyze the equations, (6) perform checks and balances, (7) relate the results back to the question. Steps 1–3 are in the Background. Here is step 4, built exactly like the manual's spreadsheet. Click any cell to see its formula.</p>
+        <ul>
+          <li><strong>D2</strong> holds p. <strong>D3</strong> is <code>=1-D2</code>.</li>
+          <li><strong>E5</strong> and <strong>F5</strong> each draw one gamete: <code>=IF(RAND()&lt;=D$2,"A","B")</code>. The $ keeps the formula pointing at D2 when copied down.</li>
+          <li><strong>G5</strong> joins them into a zygote: <code>=CONCATENATE(E5,F5)</code>.</li>
+          <li><strong>H5</strong>, <strong>I5</strong>, <strong>J5</strong> put a 1 in the column that matches the zygote's genotype; I5 uses a nested IF to catch both AB and BA.</li>
+          <li>Copy row 5 down for as many zygotes as you want, total each column with SUM, and calculate the new p.</li>
+        </ul>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="ss-p">D2: frequency of A (p)</label><input id="ss-p" type="number" min="0" max="1" step="0.05" value="0.5"></div>
+          <div class="field"><label for="ss-n">Number of zygotes (rows)</label><input id="ss-n" type="number" min="1" max="2000" step="1" value="16"><span class="hint">The manual starts with 16 rows. Try 16, 100 and 1000.</span></div>
+          <button class="btn btn--primary" id="ss-recalc" type="button">Recalculate (F9)</button>
+          <button class="btn" id="ss-record" type="button">Record this run in the table</button>
+          <p class="status" id="ss-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <div class="formula-bar" aria-live="polite"><span class="ref" id="fx-ref">E5</span><span class="fx" id="fx-f">=IF(RAND()&lt;=D$2,"A","B")</span></div>
+          <div class="sheet-wrap" id="sheet" role="region" aria-label="Spreadsheet model" tabindex="0"></div>
+          <div class="readouts">
+            <div class="readout"><span class="k">New p</span><span class="v" id="ss-newp">—</span></div>
+            <div class="readout"><span class="k">New q</span><span class="v" id="ss-newq">—</span></div>
+            <div class="readout"><span class="k">χ² vs HW (df = 1)</span><span class="v" id="ss-chi">—</span></div>
+            <div class="readout"><span class="k">Fits HW? (crit 3.84)</span><span class="v" id="ss-fit">—</span></div>
+          </div>
+          <div id="ss-chart"></div>
+          <p class="small muted">Chi-square check: expected counts are p̂²N, 2p̂q̂N and q̂²N, using the allele frequency p̂ calculated from these zygotes. Three genotype classes minus one, minus one more for estimating p̂ from the data, leaves df = 1. Grey bars show what the gene pool value in D2 predicts.</p>
+        </div>
+      </div>
+      <div id="ss-table"></div>
+      <div id="ss-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 6. MANY GENERATIONS ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Many generations">
+    <header><div class="eyebrow">Testing your mathematical model</div><h2>Many generations, many populations</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Now copy the model forward: each generation's new p seeds the next generation's gene pool (the manual's Figure 9). Running several populations side by side shows which results are predictable and which are luck. Start with drift only and compare small and large populations. Then turn on the other forces one at a time.</p>
+        <p class="small muted">Model order each generation: gametes drawn from the gene pool (with mutation A→B at rate μ and B→A at rate ν) → N zygotes by random union → each zygote survives with probability w for its genotype (selection) → migrants from a source population with allele frequency p<sub>m</sub> make up a fraction m of the adults → the adults' alleles form the next gene pool. With drift switched off, the model uses the exact expected values (an infinite population).</p>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="mg-n">Zygotes per generation (N) <output id="mg-n-out" class="val"></output></label><input id="mg-n" type="range" min="0" max="8" step="1" value="3"></div>
+          <div class="field"><label for="mg-p">Starting p <output id="mg-p-out" class="val"></output></label><input id="mg-p" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+          <div class="field"><label for="mg-g">Generations <output id="mg-g-out" class="val"></output></label><input id="mg-g" type="range" min="10" max="200" step="10" value="50"></div>
+          <div class="field"><label for="mg-k">Populations run at once <output id="mg-k-out" class="val"></output></label><input id="mg-k" type="range" min="1" max="20" step="1" value="10"></div>
+          <div class="toggles">
+            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-drift" checked> Genetic drift (finite N)</label></div>
+            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-sel"> Selection (relative fitness)</label>
+              <div class="sub" id="sub-sel" hidden>
+                <div class="field"><label for="w-aa">w AA</label><input id="w-aa" type="number" min="0" max="1" step="0.05" value="1"></div>
+                <div class="field"><label for="w-ab">w AB</label><input id="w-ab" type="number" min="0" max="1" step="0.05" value="1"></div>
+                <div class="field"><label for="w-bb">w BB</label><input id="w-bb" type="number" min="0" max="1" step="0.05" value="0.8"></div>
+              </div></div>
+            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mut"> Mutation</label>
+              <div class="sub" id="sub-mut" hidden>
+                <div class="field"><label for="mu">μ (A→B)</label><input id="mu" type="number" min="0" max="0.1" step="0.001" value="0.01"></div>
+                <div class="field"><label for="nu">ν (B→A)</label><input id="nu" type="number" min="0" max="0.1" step="0.001" value="0"></div>
+              </div></div>
+            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mig"> Migration</label>
+              <div class="sub" id="sub-mig" hidden>
+                <div class="field"><label for="mig-m">m (fraction)</label><input id="mig-m" type="number" min="0" max="0.5" step="0.01" value="0.05"></div>
+                <div class="field"><label for="mig-p">p of migrants</label><input id="mig-p" type="number" min="0" max="1" step="0.05" value="0.9"></div>
+              </div></div>
+          </div>
+          <button class="btn btn--primary" id="mg-run" type="button">Run model</button>
+          <button class="btn" id="mg-record" type="button">Record result</button>
+          <p class="status" id="mg-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="mg-canvas" aria-label="Gene pool of population 1 shown as beads, and a graph of p against generation for every population."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Mean final p</span><span class="v" id="mg-mean">—</span></div>
+            <div class="readout"><span class="k">SD of final p</span><span class="v" id="mg-sd">—</span></div>
+            <div class="readout"><span class="k">A fixed (p = 1)</span><span class="v" id="mg-fix">—</span></div>
+            <div class="readout"><span class="k">A lost (p = 0)</span><span class="v" id="mg-lost">—</span></div>
+            <div class="readout"><span class="k">Expected p (infinite N)</span><span class="v" id="mg-exp">—</span></div>
+          </div>
+        </div>
+      </div>
+      <h3>Population 1, generation by generation</h3>
+      <p class="muted small">Adult genotype counts after selection and migration, with a chi-square test against Hardy-Weinberg proportions for that generation (df = 1, critical value 3.84). Long runs show every few generations.</p>
+      <div id="mg-table"></div>
+      <h3>Recorded runs</h3>
+      <div id="mg-runs"></div>
+      <div id="mg-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 7. DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Test your own hypothesis with the model</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>Pick one factor that can change allele frequencies and ask a question about it. Examples: <em>How small must a population be before drift regularly removes an allele within 50 generations?</em> <em>How fast does selection remove a recessive harmful allele compared with a dominant one?</em> <em>How much migration does it take to swamp selection?</em> The experiment runner below changes one parameter across the levels you choose, runs replicate populations at each level, and graphs the result with ±2 SE error bars. All other parameters come from the model in the previous step, so set those first.</p></div>
+      <div id="dz-q"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="dz-iv">Independent variable</label>
+            <select id="dz-iv"><option value="N">Population size N</option><option value="p0">Starting p</option><option value="wbb">Fitness of BB (w BB)</option><option value="wab">Fitness of AB (w AB)</option><option value="mu">Mutation rate μ (A→B)</option><option value="m">Migration rate m</option></select></div>
+          <div class="field"><label for="dz-levels">Levels (separate with commas)</label><input id="dz-levels" type="text" value="10, 50, 200, 1000"></div>
+          <div class="field"><label for="dz-reps">Replicate populations per level <output id="dz-reps-out" class="val"></output></label><input id="dz-reps" type="range" min="5" max="50" step="5" value="20"></div>
+          <div class="field"><label for="dz-dv">Response (dependent variable)</label>
+            <select id="dz-dv"><option value="p">Final p (mean ± 2 SE)</option><option value="lost">% of populations that lost or fixed A</option><option value="het">Final heterozygosity 2pq (mean ± 2 SE)</option></select></div>
+          <button class="btn btn--primary" id="dz-run" type="button">Run experiment</button>
+          <button class="btn btn--ghost btn--sm" id="dz-clear" type="button">Clear results</button>
+          <p class="status" id="dz-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <div id="dz-chart"></div>
+          <p class="small muted" id="dz-note"></p>
+        </div>
+      </div>
+      <div id="dz-table"></div>
+      <div id="dz-a"></div>
+    </div>
+  </section>
+
+  <!-- ============ 8. ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing results</div><h2>What does the model tell you?</h2></header>
+    <div class="step-body">
+      <h3>Chi-square test for Hardy-Weinberg proportions</h3>
+      <p class="muted small">Enter genotype counts from your model, a card simulation, or real data (for example, a class taste test where the intermediate phenotype marks heterozygotes).</p>
+      <div class="calc">
+        <div class="field"><label for="cs-aa">AA observed</label><input id="cs-aa" type="number" min="0" step="1" value="38"></div>
+        <div class="field"><label for="cs-ab">AB observed</label><input id="cs-ab" type="number" min="0" step="1" value="36"></div>
+        <div class="field"><label for="cs-bb">BB observed</label><input id="cs-bb" type="number" min="0" step="1" value="26"></div>
+        <button class="btn btn--primary" id="cs-run" type="button">Calculate χ²</button>
+      </div>
+      <div id="cs-out"></div>
+      <p class="status" id="cs-status" aria-live="polite"></p>
+      <h3>Questions</h3>
+      <div id="analysis"></div>
+      <h3>Claim, evidence, reasoning</h3>
+      <div class="cer" id="cer"></div>
+    </div>
+  </section>
+
+  <!-- ============ 9. REFLECT ============ -->
+  <section class="step wrap gutter" data-step="Reflect">
+    <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>The best test of a model is the real world. Few human traits show a clear intermediate phenotype, but the ability to taste bitter compounds such as PTC (the "supertaster" trait) comes close: heterozygotes often taste moderately, so you can count all three genotypes in a class and test Hardy-Weinberg with chi-square.</p>
+        <p>Optional: build the same model yourself in a real spreadsheet such as <a href="https://sheets.google.com" target="_blank" rel="noopener">Google Sheets</a>, using the formulas in the Build step. The manual also suggests more powerful free models, such as Jon Herron's <a href="http://faculty.washington.edu/herronjc/SoftwareFolder/AlleleA1.html" target="_blank" rel="noopener">AlleleA1</a>.</p>
+      </div>
+      <div id="reflect"></div>
+    </div>
+  </section>
+
+  <!-- ============ 10. SUBMIT ============ -->
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
+  Lab.init({ id: 'lab02' });
+  const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
+  const clamp01 = x => Math.min(1, Math.max(0, isFinite(x) ? x : 0));
+  const rng = Lab.rng();
+  const font = () => getComputedStyle(document.body).fontFamily;
+  const mono = () => getComputedStyle(document.body).getPropertyValue('--f-mono') || 'monospace';
+
+  /* ---------------- Pre-lab ---------------- */
+  Lab.quiz('#prelab', [
+    { type: 'num', q: 'In a gene pool with p = 0.6, what fraction of zygotes do you expect to be heterozygous (AB)?', answer: 0.48, tol: 0.005, explain: '2pq = 2 × 0.6 × 0.4 = 0.48. Check: p² = 0.36, q² = 0.16, and 0.36 + 0.48 + 0.16 = 1.' },
+    { type: 'num', q: 'About 1 in 2,500 babies of northern European descent is born with cystic fibrosis (genotype BB, recessive). Assuming Hardy-Weinberg, what is q?', answer: 0.02, tol: 0.0005, explain: 'q² = 1/2500 = 0.0004, so q = √0.0004 = 0.02.' },
+    { type: 'num', q: 'Using q = 0.02 from the previous question, what fraction of that population are carriers (AB)?', answer: 0.0392, tol: 0.0006, explain: 'p = 0.98, so 2pq = 2 × 0.98 × 0.02 ≈ 0.039, about 1 person in 26. Most copies of the CF allele are hidden in healthy carriers.' },
+    { type: 'mc', q: 'Why does a harmful recessive allele such as the cystic fibrosis allele stay in the human population?', choices: ['Most copies are in heterozygous carriers, where selection cannot "see" them', 'Mutation creates exactly as many copies as selection removes each generation', 'Recessive alleles are protected from selection by dominance', 'Hardy-Weinberg says allele frequencies can never change'], answer: 0, explain: 'When q is small, almost all B alleles sit in AB carriers (2pq is far larger than q²). Selection acts only on BB individuals, so it removes the allele very slowly.' },
+    { type: 'mc', q: 'Polydactyly is caused by a dominant allele, yet it is rare. What does this tell you?', choices: ['Dominant alleles always become common over time', 'Dominance describes how alleles interact in a heterozygote, not how common an allele is', 'The population cannot be in Hardy-Weinberg equilibrium', 'Polydactyly must be caused by a recessive allele after all'], answer: 1, explain: 'Allele frequency depends on the population\'s history (mutation, selection, drift, migration), not on dominance. A dominant allele can have a very small p.' },
+    { type: 'mc', q: 'In the spreadsheet, a cell contains <code>=IF(RAND()&lt;=D$2,"A","B")</code> and D2 = 0.7. What does the cell do?', choices: ['Always shows A, because 0.7 is more than half', 'Shows A about 70% of the time and B about 30% of the time', 'Shows A in 7 of every 10 rows, in order', 'Shows the value 0.7 rounded to a letter'], answer: 1, explain: 'RAND() is a new random number from 0 to 1 at each recalculation. It is ≤ 0.7 with probability 0.7, so the cell draws an A gamete with probability p.' },
+    { type: 'multi', q: 'Which conditions must hold for allele frequencies to stay constant (Hardy-Weinberg equilibrium)? Choose all that apply.', choices: ['Very large population', 'Random mating', 'No natural selection', 'No mutation', 'No migration (gene flow)', 'The dominant allele is the more common one'], answer: [0, 1, 2, 3, 4], explain: 'Breaking any of the first five conditions can change allele or genotype frequencies. Dominance plays no role in the equilibrium.' },
+    { type: 'mc', q: 'A class of 24 students runs the card simulation with no selection. After five generations p has moved from 0.50 to 0.35. The most likely explanation is…', choices: ['Selection against A', 'Genetic drift: random sampling error in a small population', 'Mutation from A to B', 'The Hardy-Weinberg equation is wrong'], answer: 1, explain: 'With only 48 alleles per generation, chance alone moves p noticeably. This is why the manual warns that classroom-sized simulations are dominated by drift.' }
+  ], { id: 'prelab' });
+
+  /* ---------------- Punnett square diagram ---------------- */
+  const pun = $('#pun'), punP = $('#pun-p');
+  function drawPun() {
+    const p = +punP.value, q = 1 - p, x0 = 50, y0 = 40, L = 270, a = L * p;
+    $('#pun-p-out').textContent = `p = ${fmt(p, 2)}, q = ${fmt(q, 2)}`;
+    const cell = (x, y, w, h, cls, t1, t2) => `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}"/>${w > 34 && h > 30 ? `<text x="${x + w / 2}" y="${y + h / 2 - 2}" text-anchor="middle">${t1}</text><text x="${x + w / 2}" y="${y + h / 2 + 15}" text-anchor="middle">${t2}</text>` : ''}`;
+    pun.innerHTML = `<text class="h" x="${x0 + a / 2}" y="${y0 - 12}" text-anchor="middle">A: p = ${fmt(p, 2)}</text><text class="h" x="${x0 + a + (L - a) / 2}" y="${y0 - 12}" text-anchor="middle">B: q = ${fmt(q, 2)}</text>
+      <text class="h" x="${x0 - 8}" y="${y0 + a / 2}" text-anchor="end" transform="rotate(-90 ${x0 - 8} ${y0 + a / 2})" dy="0">A: p</text>
+      <text class="h" x="${x0 - 8}" y="${y0 + a + (L - a) / 2}" text-anchor="end" transform="rotate(-90 ${x0 - 8} ${y0 + a + (L - a) / 2})">B: q</text>` +
+      cell(x0, y0, a, a, 'aa', 'AA = p²', fmt(p * p, 3)) + cell(x0 + a, y0, L - a, a, 'ab', 'AB = pq', fmt(p * q, 3)) +
+      cell(x0, y0 + a, a, L - a, 'ab', 'BA = pq', fmt(p * q, 3)) + cell(x0 + a, y0 + a, L - a, L - a, 'bb', 'BB = q²', fmt(q * q, 3));
+  }
+  punP.addEventListener('input', drawPun); drawPun();
+
+  /* ================= CARD SIMULATION =================
+     Each student is a diploid individual. Random pairing; each parent contributes one random allele (one card from
+     a shuffled hand of two copies of each of its alleles) to each of two offspring; parents become their offspring.
+     Case II: BB offspring die, and the pair tries again. Case III: BB always die; AA die with probability 0.5.
+     Case IV: mating only within isolated groups of 4–6 students. */
+  const cardCanvas = Lab.canvas('#card-canvas', window.innerWidth < 600 ? 0.8 : 0.5);
+  let cardPop = [], cardGen = 0, cardHist = [], cardGroups = [];
+  const cardN = $('#card-n');
+  const cardTable = Lab.table('#card-table', {
+    save: 'cards',
+    columns: [{ key: 'cs', label: 'Case' }, { key: 'gen', label: 'Generation', num: true, digits: 0 }, { key: 'aa', label: 'AA', num: true, digits: 0 }, { key: 'ab', label: 'AB', num: true, digits: 0 }, { key: 'bb', label: 'BB', num: true, digits: 0 }, { key: 'p', label: 'p', num: true, digits: 3 }, { key: 'q', label: 'q', num: true, digits: 3 }]
+  });
+  const cardChart = Lab.chart('#card-chart', { xLabel: 'Generation', yLabel: 'Frequency of A (p)', yMin: 0, yMax: 1, xMin: 0, series: [], hLines: [{ y: 0.5, label: 'starting p' }], height: 260 });
+  const countG = pop => { let aa = 0, ab = 0, bb = 0; pop.forEach(g => { const s = g[0] + g[1]; s === 2 ? aa++ : s === 1 ? ab++ : bb++; }); return { aa, ab, bb, p: pop.length ? (2 * aa + ab) / (2 * pop.length) : NaN }; };
+  function cardReset() {
+    const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGen = 0; cardHist = [];
+    const cs = +$('#card-case').value;
+    cardGroups = [];
+    if (cs === 4) { const sizes = []; let left = n; while (left > 0) { let s = left <= 6 ? left : rng.int(4, 6); if (left - s > 0 && left - s < 4) s = left - 4 >= 4 ? left - 4 : left; sizes.push(s); left -= s; } let i = 0; sizes.forEach(s => { cardGroups.push(Array.from({ length: s }, (_, k) => i + k)); i += s; }); }
+    else cardGroups = [cardPop.map((_, i) => i)];
+    recordCardGen(); renderCards(); status('#card-status', 'Everyone starts as AB, so p = q = 0.5.', '');
+  }
+  function recordCardGen() {
+    const c = countG(cardPop), groups = cardGroups.map(g => countG(g.map(i => cardPop[i])).p);
+    cardHist.push({ gen: cardGen, p: c.p, groups });
+    cardTable.addRow({ cs: ['I', 'II', 'III', 'IV'][+$('#card-case').value - 1], gen: cardGen, aa: c.aa, ab: c.ab, bb: c.bb, p: c.p, q: 1 - c.p });
+  }
+  function cardGeneration() {
+    const cs = +$('#card-case').value, next = cardPop.slice();
+    const survives = g => { const s = g[0] + g[1]; if ((cs === 2 || cs === 3) && s === 0) return false; if (cs === 3 && s === 2) return rng.chance(0.5); return true; };
+    cardGroups.forEach(group => {
+      const order = rng.shuffle(group);
+      for (let k = 0; k + 1 < order.length; k += 2) {
+        const a = cardPop[order[k]], b = cardPop[order[k + 1]];
+        for (const who of [order[k], order[k + 1]]) {
+          let child, tries = 0;
+          do { child = [rng.pick(a), rng.pick(b)]; tries++; } while (!survives(child) && tries < 50);
+          next[who] = child;
+        }
+      }
+      if (order.length % 2) { const odd = order[order.length - 1], mate = cardPop[order[0]]; let child, t = 0; do { child = [rng.pick(cardPop[odd]), rng.pick(mate)]; t++; } while (!survives(child) && t < 50); next[odd] = child; }
+    });
+    cardPop = next; cardGen++; recordCardGen();
+  }
+  function renderCards() {
+    const c = cardCanvas.ctx, W = cardCanvas.w, H = cardCanvas.h, n = cardPop.length;
+    c.clearRect(0, 0, W, H); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, W, H);
+    let best = { s: 0, cols: 1 }; for (let cols = 1; cols <= n; cols++) { const rows = Math.ceil(n / cols), s = Math.min(W / cols, H / rows); if (s > best.s) best = { s, cols }; }
+    const cols = best.cols, cw = W / cols, ch = H / Math.ceil(n / cols), sz = Math.min(cw, ch) * 0.86;
+    const cA = Lab.color('--s1'), cB = Lab.color('--s2'), sc = [Lab.color('--s3'), Lab.color('--s4'), Lab.color('--s5'), Lab.color('--s6')];
+    const groupOf = new Array(n).fill(0); cardGroups.forEach((g, gi) => g.forEach(i => groupOf[i] = gi));
+    // draw in group order so groups sit together
+    const order = cardGroups.flat();
+    order.forEach((idx, slot) => {
+      const g = cardPop[idx], x = cw * (slot % cols) + (cw - sz) / 2, y = ch * Math.floor(slot / cols) + (ch - sz * 0.8) / 2;
+      c.fillStyle = Lab.color('--surface'); c.strokeStyle = cardGroups.length > 1 ? sc[groupOf[idx] % 4] : Lab.color('--line'); c.lineWidth = cardGroups.length > 1 ? 2.5 : 1.2;
+      c.beginPath(); c.roundRect ? c.roundRect(x, y, sz, sz * 0.8, 6) : c.rect(x, y, sz, sz * 0.8); c.fill(); c.stroke();
+      c.font = `700 ${Math.round(sz * 0.36)}px ${mono()}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      const sorted = g[0] >= g[1] ? g : [g[1], g[0]];
+      sorted.forEach((al, k) => { c.fillStyle = al ? cA : cB; c.fillText(al ? 'A' : 'B', x + sz * (0.3 + 0.4 * k), y + sz * 0.42); });
+    });
+    const cc = countG(cardPop);
+    $('#card-gen').textContent = cardGen; $('#card-geno').textContent = `${cc.aa} · ${cc.ab} · ${cc.bb}`; $('#card-p').textContent = fmt(cc.p, 3); $('#card-q').textContent = fmt(1 - cc.p, 3);
+    const series = [{ name: 'Whole class', points: cardHist.map(h => ({ x: h.gen, y: h.p })) }];
+    if (cardGroups.length > 1) cardGroups.forEach((_, gi) => series.push({ name: gi === 0 ? 'Isolated groups' : undefined, color: 'var(--muted)', dash: true, dots: false, points: cardHist.map(h => ({ x: h.gen, y: h.groups[gi] })) }));
+    cardChart.update({ series, xMax: Math.max(5, cardGen) });
+  }
+  $('#card-n').addEventListener('input', () => { $('#card-n-out').textContent = cardN.value + ' students'; });
+  $('#card-n').addEventListener('change', cardReset);
+  $('#card-n-out').textContent = cardN.value + ' students';
+  $('#card-case').addEventListener('change', cardReset);
+  $('#card-reset').addEventListener('click', cardReset);
+  $('#card-step').addEventListener('click', () => { if (cardGen >= 30) { status('#card-status', 'Thirty generations is enough. Reset the class to start again.', 'warn'); return; } cardGeneration(); renderCards(); status('#card-status', `Generation ${cardGen}: p = ${fmt(countG(cardPop).p, 3)}.`, ''); });
+  $('#card-run5').addEventListener('click', () => { for (let i = 0; i < 5 && cardGen < 30; i++) cardGeneration(); renderCards(); status('#card-status', `Generation ${cardGen}: p = ${fmt(countG(cardPop).p, 3)}.`, ''); });
+  cardCanvas.onresize = renderCards;
+  // start without adding duplicate rows when the saved table already has data
+  if (!cardTable.getRows().length) cardReset(); else (function initCards() { const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGroups = [cardPop.map((_, i) => i)]; cardHist = [{ gen: 0, p: 0.5, groups: [0.5] }]; renderCards(); })();
+  Lab.prompt('#card-prompts', { key: 'card-compare', label: 'Compare Case I with Cases II–IV. In which case did p change the most, and why? In Case I, did p stay at exactly 0.5? Explain why or why not.', rows: 4 });
+
+  /* ================= SPREADSHEET MODEL (one generation) ================= */
+  let ssRows = [];
+  const ssTable = Lab.table('#ss-table', {
+    save: 'ss-runs',
+    columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'n', label: 'Zygotes N', num: true, digits: 0 }, { key: 'p0', label: 'p (D2)', num: true, digits: 2 }, { key: 'aa', label: 'AA', num: true, digits: 0 }, { key: 'ab', label: 'AB', num: true, digits: 0 }, { key: 'bb', label: 'BB', num: true, digits: 0 }, { key: 'p1', label: 'New p', num: true, digits: 3 }, { key: 'dp', label: 'Δp', num: true, digits: 3 }, { key: 'chi', label: 'χ²', num: true, digits: 2 }]
+  });
+  const ssChart = Lab.chart('#ss-chart', { type: 'bar', xLabel: 'Zygote genotype', yLabel: 'Number of zygotes', categories: ['AA', 'AB', 'BB'], series: [], height: 250 });
+  let ssLast = null;
+  function hwChi(aa, ab, bb) {
+    const n = aa + ab + bb; if (!n) return null; const p = (2 * aa + ab) / (2 * n), q = 1 - p;
+    const exp = [p * p * n, 2 * p * q * n, q * q * n];
+    if (exp.some(e => e <= 0)) return { p, exp, chi2: 0, terms: [0, 0, 0], degenerate: true };
+    const terms = [aa, ab, bb].map((o, i) => (o - exp[i]) ** 2 / exp[i]);
+    return { p, exp, terms, chi2: S.sum(terms) };
+  }
+  function ssRecalc() {
+    const p = clamp01(parseFloat($('#ss-p').value)); let n = Math.round(parseFloat($('#ss-n').value)); if (!(n >= 1)) n = 16; n = Math.min(2000, n);
+    $('#ss-p').value = p; $('#ss-n').value = n;
+    ssRows = []; for (let i = 0; i < n; i++) { const e = rng.uniform() <= p ? 'A' : 'B', f = rng.uniform() <= p ? 'A' : 'B'; ssRows.push([e, f]); }
+    let aa = 0, ab = 0, bb = 0; ssRows.forEach(([e, f]) => { const z = e + f; z === 'AA' ? aa++ : z === 'BB' ? bb++ : ab++; });
+    const newp = (2 * aa + ab) / (2 * n), hw = hwChi(aa, ab, bb);
+    ssLast = { n, p, aa, ab, bb, newp, chi: hw.degenerate ? NaN : hw.chi2 };
+    renderSheet();
+    $('#ss-newp').textContent = fmt(newp, 3); $('#ss-newq').textContent = fmt(1 - newp, 3);
+    $('#ss-chi').textContent = hw.degenerate ? 'n/a' : fmt(hw.chi2, 2);
+    $('#ss-fit').textContent = hw.degenerate ? 'one allele only' : hw.chi2 <= 3.84 ? 'yes' : 'no';
+    ssChart.update({ series: [{ name: 'Observed', points: [{ x: 'AA', y: aa }, { x: 'AB', y: ab }, { x: 'BB', y: bb }] }, { name: 'Expected from D2 (p²N, 2pqN, q²N)', color: 'var(--muted)', points: [{ x: 'AA', y: p * p * n }, { x: 'AB', y: 2 * p * (1 - p) * n }, { x: 'BB', y: (1 - p) ** 2 * n }] }] });
+  }
+  const FORM = {
+    C2: 'p (frequency of A)', C3: 'q (frequency of B)', D2: null, D3: '=1-D2',
+    E: r => `=IF(RAND()<=D$2,"A","B")`, F: r => `=IF(RAND()<=D$2,"A","B")`, G: r => `=CONCATENATE(E${r},F${r})`,
+    H: r => `=IF(G${r}="AA",1,0)`, I: r => `=IF(G${r}="AB",1,(IF(G${r}="BA",1,0)))`, J: r => `=IF(G${r}="BB",1,0)`
+  };
+  function renderSheet() {
+    const n = ssRows.length, show = Math.min(n, 40), last = 4 + n;
+    const cols = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    const td = (ref, val, cls, f) => `<td data-ref="${ref}" data-f="${Lab.esc(f == null ? String(val) : f)}" class="${cls || ''}">${Lab.esc(val)}</td>`;
+    let h = `<table class="sheet"><thead><tr><th></th>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+    const p = ssLast.p;
+    h += `<tr><th>1</th>${cols.map(c => td(c + '1', '', '')).join('')}</tr>`;
+    h += `<tr><th>2</th>${td('C2', 'p (A)', 'lbl pool', 'p (A)')}${td('D2', fmt(p, 2), 'pool', fmt(p, 2))}${['E', 'F', 'G', 'H', 'I', 'J'].map(c => td(c + '2', '', '')).join('')}</tr>`;
+    h += `<tr><th>3</th>${td('C3', 'q (B)', 'lbl pool', 'q (B)')}${td('D3', fmt(1 - p, 2), 'pool', '=1-D2')}${['E', 'F', 'G', 'H', 'I', 'J'].map(c => td(c + '3', '', '')).join('')}</tr>`;
+    h += `<tr><th>4</th>${td('C4', '', '')}${td('D4', '', '')}${td('E4', 'gametes', 'lbl', 'gametes')}${td('F4', '', '')}${td('G4', 'zygote', 'lbl', 'zygote')}${td('H4', 'AA', 'lbl', 'AA')}${td('I4', 'AB', 'lbl', 'AB')}${td('J4', 'BB', 'lbl', 'BB')}</tr>`;
+    for (let i = 0; i < show; i++) {
+      const r = 5 + i, [e, f] = ssRows[i], z = e + f;
+      h += `<tr><th>${r}</th>${td('C' + r, '', '')}${td('D' + r, '', '')}${td('E' + r, e, e, FORM.E(r))}${td('F' + r, f, f, FORM.F(r))}${td('G' + r, z, '', FORM.G(r))}${td('H' + r, z === 'AA' ? 1 : 0, '', FORM.H(r))}${td('I' + r, z === 'AB' || z === 'BA' ? 1 : 0, '', FORM.I(r))}${td('J' + r, z === 'BB' ? 1 : 0, '', FORM.J(r))}</tr>`;
+    }
+    if (n > show) h += `<tr><th>⋮</th><td colspan="8" class="gap">rows ${5 + show}–${last} hidden (${n - show} more zygotes, same formulas)</td></tr>`;
+    const r1 = last + 1, r2 = last + 2, r3 = last + 3;
+    h += `<tr><th>${r1}</th>${td('C' + r1, '', '')}${td('D' + r1, '', '')}${td('E' + r1, '', '')}${td('F' + r1, '', '')}${td('G' + r1, 'Totals', 'lbl sum', 'Totals')}${td('H' + r1, ssLast.aa, 'sum', `=SUM(H5:H${last})`)}${td('I' + r1, ssLast.ab, 'sum', `=SUM(I5:I${last})`)}${td('J' + r1, ssLast.bb, 'sum', `=SUM(J5:J${last})`)}</tr>`;
+    h += `<tr><th>${r2}</th>${td('C' + r2, '', '')}${td('D' + r2, '', '')}${td('E' + r2, '', '')}${td('F' + r2, '', '')}${td('G' + r2, 'Frequency', 'lbl sum', 'Frequency')}${td('H' + r2, fmt(ssLast.aa / n, 3), 'sum', `=H${r1}/${n}`)}${td('I' + r2, fmt(ssLast.ab / n, 3), 'sum', `=I${r1}/${n}`)}${td('J' + r2, fmt(ssLast.bb / n, 3), 'sum', `=J${r1}/${n}`)}</tr>`;
+    h += `<tr><th>${r3}</th>${td('C' + r3, '', '')}${td('D' + r3, '', '')}${td('E' + r3, '', '')}${td('F' + r3, '', '')}${td('G' + r3, 'new p, q', 'lbl sum', 'new p, q')}${td('H' + r3, fmt(ssLast.newp, 3), 'sum pool', `=(2*H${r1}+I${r1})/(2*${n})`)}${td('I' + r3, fmt(1 - ssLast.newp, 3), 'sum pool', `=1-H${r3}`)}${td('J' + r3, '', '')}</tr>`;
+    h += '</tbody></table>';
+    $('#sheet').innerHTML = h;
+  }
+  $('#sheet').addEventListener('click', e => {
+    const c = e.target.closest('td[data-ref]'); if (!c) return;
+    Lab.$$('#sheet td.sel').forEach(x => x.classList.remove('sel')); c.classList.add('sel');
+    $('#fx-ref').textContent = c.dataset.ref; $('#fx-f').textContent = c.dataset.f || '';
+  });
+  $('#ss-recalc').addEventListener('click', () => { ssRecalc(); status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
+  ['#ss-p', '#ss-n'].forEach(id => $(id).addEventListener('change', ssRecalc));
+  $('#ss-record').addEventListener('click', () => {
+    if (!ssLast) return; const L = ssLast;
+    ssTable.addRow({ run: ssTable.getRows().length + 1, n: L.n, p0: L.p, aa: L.aa, ab: L.ab, bb: L.bb, p1: L.newp, dp: L.newp - L.p, chi: L.chi });
+    status('#ss-status', 'Run recorded. Record several runs at each population size to compare how much p changes.', 'ok');
+  });
+  ssRecalc();
+  [
+    ['ss-rand', 'Recalculate 10–20 times with p = 0.5, then with p = 0.8 or 0.9. Do the gamete cells come up A and B in the ratio you expect? Describe how you checked that the model works.'],
+    ['ss-english', 'Translate the formula in I5, <code>=IF(G5="AB",1,(IF(G5="BA",1,0)))</code>, into plain English. Why does it need to check for both AB and BA?'],
+    ['ss-size', 'Record several runs with 16, 100 and 1000 zygotes. How does the size of Δp (change in p in one generation) depend on population size? Use your table as evidence.'],
+    ['ss-norandom', 'This model relies on RAND() to pick gametes. What would happen if there were no randomness (an infinitely large population)? What genotype numbers would you expect in the next generation?']
+  ].forEach(([key, label]) => Lab.prompt('#ss-prompts', { key, label, rows: 3 }));
+
+  /* ================= MULTI-GENERATION, MULTI-POPULATION MODEL =================
+     Finite population (drift on), each generation:
+       gene-pool frequency after mutation: pg = p(1−μ) + (1−p)ν
+       N zygotes: each gets two gametes, each A with probability pg (exactly the spreadsheet's RAND() rule)
+       viability selection: each zygote survives with probability w_AA, w_AB or w_BB
+       migration: migrants with HW genotypes from p_m are added so that they are a fraction m of the adults
+       next p = allele frequency among adults.
+     Drift off (infinite N): the same steps with expected values:
+       p_s = (pg²·w_AA + pg·qg·w_AB) / w̄,  w̄ = pg²·w_AA + 2pg·qg·w_AB + qg²·w_BB,  p' = (1−m)·p_s + m·p_m */
+  const N_STEPS = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+  const mgEl = { n: $('#mg-n'), p: $('#mg-p'), g: $('#mg-g'), k: $('#mg-k') };
+  const mgSync = () => { $('#mg-n-out').textContent = N_STEPS[+mgEl.n.value]; $('#mg-p-out').textContent = fmt(+mgEl.p.value, 2); $('#mg-g-out').textContent = mgEl.g.value; $('#mg-k-out').textContent = mgEl.k.value; };
+  Object.values(mgEl).forEach(el => el.addEventListener('input', mgSync)); mgSync();
+  [['#t-sel', '#sub-sel'], ['#t-mut', '#sub-mut'], ['#t-mig', '#sub-mig']].forEach(([t, s]) => { const f = () => { $(s).hidden = !$(t).checked; }; $(t).addEventListener('change', f); f(); });
+  function getParams(over) {
+    const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
+    const P = {
+      N: N_STEPS[+mgEl.n.value], p0: +mgEl.p.value, G: +mgEl.g.value, K: +mgEl.k.value, drift: $('#t-drift').checked,
+      w: $('#t-sel').checked ? [clamp01(num('#w-aa', 1)), clamp01(num('#w-ab', 1)), clamp01(num('#w-bb', 1))] : [1, 1, 1],
+      mu: $('#t-mut').checked ? clamp01(num('#mu', 0)) : 0, nu: $('#t-mut').checked ? clamp01(num('#nu', 0)) : 0,
+      m: $('#t-mig').checked ? Math.min(0.95, clamp01(num('#mig-m', 0))) : 0, pm: $('#t-mig').checked ? clamp01(num('#mig-p', 0)) : 0
+    };
+    return Object.assign(P, over || {});
+  }
+  function detStep(p, P) {
+    const pg = p * (1 - P.mu) + (1 - p) * P.nu, qg = 1 - pg;
+    const f = [pg * pg * P.w[0], 2 * pg * qg * P.w[1], qg * qg * P.w[2]], wbar = f[0] + f[1] + f[2];
+    const ps = wbar > 0 ? (f[0] + f[1] / 2) / wbar : pg;
+    const pn = (1 - P.m) * ps + P.m * P.pm;
+    const fs = wbar > 0 ? f.map(x => x / wbar) : [pg * pg, 2 * pg * qg, qg * qg];
+    const geno = [(1 - P.m) * fs[0] + P.m * P.pm * P.pm, (1 - P.m) * fs[1] + P.m * 2 * P.pm * (1 - P.pm), (1 - P.m) * fs[2] + P.m * (1 - P.pm) ** 2];
+    return { p: pn, geno };
+  }
+  function finStep(p, P, r) {
+    const pg = p * (1 - P.mu) + (1 - p) * P.nu;
+    let aa = 0, ab = 0, bb = 0;
+    for (let i = 0; i < P.N; i++) { const s = (r.uniform() <= pg) + (r.uniform() <= pg); s === 2 ? aa++ : s === 1 ? ab++ : bb++; }
+    if (P.w[0] < 1) aa = r.binomial(aa, P.w[0]); if (P.w[1] < 1) ab = r.binomial(ab, P.w[1]); if (P.w[2] < 1) bb = r.binomial(bb, P.w[2]);
+    const surv = aa + ab + bb;
+    if (P.m > 0 && surv > 0) { const M = Math.round(P.m * surv / (1 - P.m)); for (let i = 0; i < M; i++) { const s = (r.uniform() < P.pm) + (r.uniform() < P.pm); s === 2 ? aa++ : s === 1 ? ab++ : bb++; } }
+    const tot = aa + ab + bb;
+    return { p: tot ? (2 * aa + ab) / (2 * tot) : p, geno: [aa, ab, bb], extinct: tot === 0 };
+  }
+  function simulate(P, r) {
+    const pops = [], K = P.drift ? P.K : 1;
+    for (let k = 0; k < K; k++) {
+      let p = P.p0; const traj = [p], gen = [null];
+      for (let g = 1; g <= P.G; g++) { const s = P.drift ? finStep(p, P, r) : detStep(p, P); p = s.p; traj.push(p); gen.push(s.geno); }
+      pops.push({ traj, gen });
+    }
+    let pe = P.p0; const exp = [pe]; for (let g = 1; g <= P.G; g++) { pe = detStep(pe, P).p; exp.push(pe); }
+    return { pops, exp, P };
+  }
+
+  const mgCanvas = Lab.canvas('#mg-canvas', window.innerWidth < 600 ? 0.9 : 0.6);
+  let mgRes = null, mgShown = 0; const mgLoop = Lab.loop(dt => {
+    if (!mgRes) return false;
+    mgShown = Math.min(mgRes.P.G, mgShown + dt * Math.max(15, mgRes.P.G / 2.5));
+    drawMG();
+    if (mgShown >= mgRes.P.G) { finishMG(); return false; }
+  });
+  function drawMG() {
+    const c = mgCanvas.ctx, W = mgCanvas.w, H = mgCanvas.h; c.clearRect(0, 0, W, H); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, W, H);
+    const jarW = Math.max(70, Math.min(150, W * 0.24)), x0 = jarW + 46, x1 = W - 12, y0 = 14, y1 = H - 40;
+    const ink = Lab.color('--ink'), mut = Lab.color('--muted'), grid = Lab.color('--grid'), cA = Lab.color('--s1'), cB = Lab.color('--s2');
+    // jar of population 1
+    const cur = mgRes ? Math.floor(mgShown) : 0, pNow = mgRes ? mgRes.pops[0].traj[cur] : +mgEl.p.value;
+    const jx = 10, jy = y0 + 18, jw = jarW - 20, jh = y1 - jy;
+    c.strokeStyle = mut; c.lineWidth = 2; c.beginPath(); c.moveTo(jx, jy); c.lineTo(jx, jy + jh); c.lineTo(jx + jw, jy + jh); c.lineTo(jx + jw, jy); c.stroke();
+    const beads = 100, bc = 8, br = Math.min(jw / bc, jh / Math.ceil(beads / bc)) / 2 * 0.86, nA = Math.round(pNow * beads);
+    const br2 = Lab.rng(17); const order = br2.shuffle(Array.from({ length: beads }, (_, i) => i));
+    for (let i = 0; i < beads; i++) { const slot = order[i], col = slot % bc, row = Math.floor(slot / bc); const bx = jx + (jw / bc) * (col + 0.5), by = jy + jh - (row + 0.5) * (br * 2 / 0.86); c.fillStyle = i < nA ? cA : cB; c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = ink; c.font = `600 12px ${font()}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+    c.fillText(`Pop 1 gene pool`, jx + jw / 2, y0 + 8); c.font = `600 12px ${mono()}`; c.fillText(`p = ${fmt(pNow, 2)}`, jx + jw / 2, y1 + 18);
+    c.font = `11px ${font()}`; c.fillStyle = cA; c.textAlign = 'left'; c.fillText('● A', jx, y1 + 34); c.fillStyle = cB; c.textAlign = 'right'; c.fillText('B ●', jx + jw, y1 + 34);
+    // axes
+    const G = mgRes ? mgRes.P.G : +mgEl.g.value, X = g => x0 + (g / G) * (x1 - x0), Y = p => y1 - p * (y1 - y0);
+    c.strokeStyle = grid; c.lineWidth = 1; c.fillStyle = mut; c.font = `11px ${font()}`;
+    for (let v = 0; v <= 1.0001; v += 0.25) { c.beginPath(); c.moveTo(x0, Y(v)); c.lineTo(x1, Y(v)); c.stroke(); c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText(fmt(v, 2), x0 - 6, Y(v)); }
+    const step = G <= 50 ? 10 : G <= 100 ? 20 : 50;
+    for (let g = 0; g <= G; g += step) { c.beginPath(); c.moveTo(X(g), y0); c.lineTo(X(g), y1); c.stroke(); c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(g, X(g), y1 + 5); }
+    c.strokeStyle = mut; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0, y1); c.lineTo(x1, y1); c.stroke();
+    c.fillStyle = ink; c.font = `600 12px ${font()}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText('Generation', (x0 + x1) / 2, H - 6);
+    c.save(); c.translate(x0 - 34, (y0 + y1) / 2); c.rotate(-Math.PI / 2); c.fillText('p (frequency of A)', 0, 0); c.restore();
+    if (!mgRes) { c.fillStyle = mut; c.font = `13px ${font()}`; c.fillText('Press Run model', (x0 + x1) / 2, (y0 + y1) / 2); return; }
+    const cols = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6'].map(Lab.color);
+    mgRes.pops.forEach((pop, k) => {
+      c.strokeStyle = cols[k % 6]; c.globalAlpha = mgRes.pops.length > 1 ? 0.85 : 1; c.lineWidth = k === 0 ? 2.4 : 1.6; c.beginPath();
+      for (let g = 0; g <= cur; g++) { const x = X(g), y = Y(pop.traj[g]); g ? c.lineTo(x, y) : c.moveTo(x, y); }
+      c.stroke();
+    });
+    c.globalAlpha = 1; c.strokeStyle = ink; c.lineWidth = 1.6; c.setLineDash([6, 5]); c.beginPath();
+    for (let g = 0; g <= cur; g++) { const x = X(g), y = Y(mgRes.exp[g]); g ? c.lineTo(x, y) : c.moveTo(x, y); }
+    c.stroke(); c.setLineDash([]);
+    c.fillStyle = mut; c.font = `11px ${font()}`; c.textAlign = 'right'; c.textBaseline = 'top'; c.fillText('dashed = expected (infinite N)', x1, y0 + 2);
+  }
+  const mgTable = Lab.table('#mg-table', { columns: [{ key: 'g', label: 'Gen', num: true, digits: 0 }, { key: 'p', label: 'p', num: true, digits: 3 }, { key: 'q', label: 'q', num: true, digits: 3 }, { key: 'aa', label: 'AA', num: true, digits: 0 }, { key: 'ab', label: 'AB', num: true, digits: 0 }, { key: 'bb', label: 'BB', num: true, digits: 0 }, { key: 'chi', label: 'χ² vs HW', num: true, digits: 2 }, { key: 'fit', label: 'HW proportions?' }] });
+  const mgRuns = Lab.table('#mg-runs', { save: 'mg-runs', columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'set', label: 'Settings' }, { key: 'mean', label: 'Mean final p', num: true, digits: 3 }, { key: 'sd', label: 'SD', num: true, digits: 3 }, { key: 'fix', label: 'Fixed', num: true, digits: 0 }, { key: 'lost', label: 'Lost', num: true, digits: 0 }, { key: 'exp', label: 'Expected p', num: true, digits: 3 }] });
+  function settingsText(P) {
+    const parts = [P.drift ? `N=${P.N}` : 'N=∞', `p₀=${fmt(P.p0, 2)}`, `${P.G} gens`];
+    if (P.w.some(x => x < 1)) parts.push(`w=${P.w.map(x => fmt(x, 2)).join('/')}`);
+    if (P.mu || P.nu) parts.push(`μ=${P.mu}, ν=${P.nu}`);
+    if (P.m) parts.push(`m=${P.m}, pm=${P.pm}`);
+    return parts.join(', ');
+  }
+  function finishMG() {
+    const R = mgRes, fin = R.pops.map(p => p.traj[R.P.G]);
+    $('#mg-mean').textContent = fmt(S.mean(fin), 3); $('#mg-sd').textContent = fin.length > 1 ? fmt(S.sd(fin), 3) : '—';
+    $('#mg-fix').textContent = `${fin.filter(x => x >= 1 - 1e-9).length} of ${fin.length}`; $('#mg-lost').textContent = `${fin.filter(x => x <= 1e-9).length} of ${fin.length}`;
+    $('#mg-exp').textContent = fmt(R.exp[R.P.G], 3);
+    const G = R.P.G, every = G <= 25 ? 1 : Math.ceil(G / 25), rows = [];
+    for (let g = 0; g <= G; g++) {
+      if (g % every && g !== G) continue;
+      const p = R.pops[0].traj[g]; let aa = null, ab = null, bb = null, chi = null, fit = 'start';
+      const ge = R.pops[0].gen[g];
+      if (ge) {
+        if (R.P.drift) { [aa, ab, bb] = ge; } else { [aa, ab, bb] = ge.map(x => Math.round(x * 1000)); }
+        const h = hwChi(aa, ab, bb);
+        if (h && !h.degenerate) { chi = h.chi2; fit = chi <= 3.84 ? 'fits' : 'deviates'; } else fit = 'one allele only';
+      }
+      rows.push({ g, p, q: 1 - p, aa, ab, bb, chi, fit });
+    }
+    mgTable.setRows(rows);
+    status('#mg-status', `Done: ${R.pops.length} population${R.pops.length > 1 ? 's' : ''}, ${G} generations.` + (R.P.drift ? '' : ' Drift is off, so every population follows the same expected path (table counts are per 1000 adults).'), 'ok');
+  }
+  $('#mg-run').addEventListener('click', () => {
+    const P = getParams();
+    mgRes = simulate(P, rng); mgShown = 0;
+    if (Lab.reducedMotion()) { mgShown = P.G; drawMG(); finishMG(); } else { status('#mg-status', 'Running…', ''); mgLoop.start(); }
+  });
+  $('#mg-record').addEventListener('click', () => {
+    if (!mgRes) { status('#mg-status', 'Run the model first.', 'bad'); return; }
+    const fin = mgRes.pops.map(p => p.traj[mgRes.P.G]);
+    mgRuns.addRow({ run: mgRuns.getRows().length + 1, set: settingsText(mgRes.P), mean: S.mean(fin), sd: fin.length > 1 ? S.sd(fin) : null, fix: fin.filter(x => x >= 1 - 1e-9).length, lost: fin.filter(x => x <= 1e-9).length, exp: mgRes.exp[mgRes.P.G] });
+    status('#mg-status', 'Run recorded.', 'ok');
+  });
+  mgCanvas.onresize = drawMG;
+  mgRes = simulate(getParams(), rng); mgShown = mgRes.P.G; drawMG(); finishMG(); status('#mg-status', 'Showing a starting run: 10 populations of 100 with drift only. Change the settings and press Run model.', '');
+  [
+    ['mg-size', 'Compare runs with N = 10, 100 and 1000 (drift only). How does population size affect the spread of p among populations and the number that lose or fix an allele?'],
+    ['mg-predict', 'In the absence of random events (drift off), do allele frequencies change from generation to generation? How does that compare with a small population that has random gamete selection? Is the result predictable?'],
+    ['mg-forces', 'Turn on selection against BB (for example w BB = 0.8, then 0). How fast does q fall when it is large, and when it is small? Use the generation-by-generation table to explain why a recessive allele is hard to eliminate.'],
+    ['mg-chi', 'With selection on, do the adults still show Hardy-Weinberg genotype proportions? Which life stage in the model would still match p², 2pq, q², and why?']
+  ].forEach(([key, label]) => Lab.prompt('#mg-prompts', { key, label, rows: 3 }));
+
+  /* ================= DESIGN: EXPERIMENT RUNNER ================= */
+  Lab.prompt('#dz-q', { key: 'dz-question', label: 'Your question', rows: 2 });
+  Lab.prompt('#dz-q', { key: 'dz-hypothesis', label: 'Hypothesis and prediction. What will you vary, what will you hold constant, how many replicates will you run, and what will you measure?', rows: 3 });
+  const dzReps = $('#dz-reps'); const dzSync = () => $('#dz-reps-out').textContent = dzReps.value; dzReps.addEventListener('input', dzSync); dzSync();
+  const DZ_DEF = { N: '10, 50, 200, 1000', p0: '0.1, 0.3, 0.5, 0.7, 0.9', wbb: '1, 0.9, 0.7, 0.5, 0', wab: '0.8, 0.9, 1', mu: '0, 0.001, 0.01, 0.05', m: '0, 0.01, 0.05, 0.2' };
+  const DZ_LABEL = { N: 'Population size N', p0: 'Starting p', wbb: 'Fitness of BB', wab: 'Fitness of AB', mu: 'Mutation rate μ (A→B)', m: 'Migration rate m' };
+  $('#dz-iv').addEventListener('change', () => { $('#dz-levels').value = DZ_DEF[$('#dz-iv').value]; });
+  const dzChart = Lab.chart('#dz-chart', { xLabel: 'Independent variable', yLabel: 'Response', series: [], height: 300 });
+  const dzTable = Lab.table('#dz-table', { save: 'dz', columns: [{ key: 'exp', label: 'Experiment', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
+  let dzExp = dzTable.getRows().reduce((m, r) => Math.max(m, r.exp || 0), 0);
+  $('#dz-run').addEventListener('click', () => {
+    const iv = $('#dz-iv').value, dv = $('#dz-dv').value, reps = +dzReps.value;
+    let levels = $('#dz-levels').value.split(/[,;\s]+/).map(parseFloat).filter(isFinite);
+    if (iv === 'N') levels = levels.map(x => Math.round(Math.min(5000, Math.max(2, x))));
+    else if (iv === 'm') levels = levels.map(x => Math.min(0.95, Math.max(0, x)));
+    else levels = levels.map(clamp01);
+    levels = [...new Set(levels)].slice(0, 8);
+    if (levels.length < 2) { status('#dz-status', 'Enter at least two levels, separated by commas.', 'bad'); return; }
+    const base = getParams({ K: reps });
+    if (iv !== 'N' && !base.drift) base.K = 1;
+    if (iv === 'N' && !base.drift) { status('#dz-status', 'Population size only matters when genetic drift is switched on (in the model step).', 'warn'); }
+    dzExp++;
+    const pts = [], rows = [];
+    levels.forEach(L => {
+      const P = Object.assign({}, base, { w: base.w.slice() });
+      if (iv === 'N') P.N = L; else if (iv === 'p0') P.p0 = L; else if (iv === 'wbb') P.w[2] = L; else if (iv === 'wab') P.w[1] = L; else if (iv === 'mu') P.mu = L; else if (iv === 'm') { P.m = L; if (!$('#t-mig').checked) P.pm = parseFloat($('#mig-p').value) || 0.9; }
+      const R = simulate(P, rng), fin = R.pops.map(p => p.traj[P.G]);
+      let vals;
+      if (dv === 'p') vals = fin; else if (dv === 'het') vals = fin.map(p => 2 * p * (1 - p)); else vals = fin.map(p => (p <= 1e-9 || p >= 1 - 1e-9) ? 100 : 0);
+      const m = S.mean(vals), e = vals.length > 1 ? 2 * S.se(vals) : 0;
+      pts.push({ x: L, y: m, err: dv === 'lost' ? 0 : e });
+      rows.push({ exp: dzExp, iv: DZ_LABEL[iv], level: L, reps: vals.length, dv: { p: 'final p', het: 'final 2pq', lost: '% lost or fixed' }[dv], val: m, se2: dv === 'lost' ? null : e, base: settingsText(P) });
+    });
+    dzTable.setRows(dzTable.getRows().concat(rows));
+    const yl = { p: 'Final p (mean ± 2 SE)', het: 'Final heterozygosity 2pq (± 2 SE)', lost: '% of populations that lost or fixed A' }[dv];
+    dzChart.update({ xLabel: DZ_LABEL[iv], yLabel: yl, yMin: 0, yMax: dv === 'lost' ? 100 : dv === 'het' ? 0.5 : 1, xMin: iv === 'N' ? 0 : undefined, series: [{ name: `Experiment ${dzExp}`, points: pts }] });
+    $('#dz-note').textContent = `Each point: ${base.drift ? reps : 1} population${base.drift && reps > 1 ? 's' : ''} run for ${base.G} generations. ${base.drift ? '' : 'Drift is off, so there is no variation between replicates.'}`;
+    status('#dz-status', `Experiment ${dzExp} finished (${levels.length} levels).`, 'ok');
+  });
+  $('#dz-clear').addEventListener('click', () => { dzTable.clear(); dzExp = 0; dzChart.update({ series: [] }); status('#dz-status', 'Results cleared.', ''); });
+  [
+    ['dz-results', 'Describe your graph. How did the response change across the levels of your independent variable? Do the ±2 SE error bars overlap?'],
+    ['dz-conclude', 'Do your results support your hypothesis? Explain the biological reason for the pattern you found.'],
+    ['dz-limits', 'What assumption of your model is least realistic for the question you asked? How might changing it alter your conclusion?']
+  ].forEach(([key, label]) => Lab.prompt('#dz-a', { key, label, rows: 3 }));
+
+  /* ================= ANALYZE ================= */
+  const csTable = Lab.table('#cs-out', { columns: [{ key: 'g', label: 'Genotype' }, { key: 'o', label: 'Observed (o)', num: true, digits: 0 }, { key: 'e', label: 'Expected (e)', num: true, digits: 2 }, { key: 't', label: '(o − e)² / e', num: true, digits: 3 }], footer: rows => ['Total', S.sum(rows.map(r => r.o)), fmt(S.sum(rows.map(r => r.e)), 2), fmt(S.sum(rows.map(r => r.t)), 3)] });
+  function runChi() {
+    const v = ['#cs-aa', '#cs-ab', '#cs-bb'].map(id => Math.max(0, Math.round(parseFloat($(id).value) || 0)));
+    const h = hwChi(...v);
+    if (!h || h.degenerate) { csTable.setRows([]); status('#cs-status', 'Enter counts that include both alleles.', 'bad'); return; }
+    csTable.setRows(['AA (p²N)', 'AB (2pqN)', 'BB (q²N)'].map((g, i) => ({ g, o: v[i], e: h.exp[i], t: h.terms[i] })));
+    const ok = h.chi2 <= 3.84;
+    status('#cs-status', `p = ${fmt(h.p, 3)}, q = ${fmt(1 - h.p, 3)}. χ² = ${fmt(h.chi2, 2)} with df = 1 (critical value 3.84 at p = 0.05). ${ok ? 'Fail to reject the null hypothesis: the genotypes fit Hardy-Weinberg proportions.' : 'Reject the null hypothesis: the genotypes do not fit Hardy-Weinberg proportions, so something other than chance is likely acting.'}`, ok ? 'ok' : 'warn');
+  }
+  $('#cs-run').addEventListener('click', runChi); runChi();
+  [
+    ['a-infinite', 'In the absence of random events (an infinitely large population), are the allele frequencies of the original population expected to change from generation to generation? Cite a run.'],
+    ['a-small', 'How does that compare with a small population that has random gamete selection? What happens to allele frequencies in such a population, and is the outcome predictable?'],
+    ['a-null', 'Explain why Hardy-Weinberg is called a null model. How would a population geneticist use it with real data?'],
+    ['a-factors', 'What factors can cause allele frequencies to change in a population? For each one you modeled, describe how you represented it and what it did to p.'],
+    ['a-cf', 'Use your model to answer the opening questions: why does the cystic fibrosis allele persist, and why is the dominant polydactyly allele rare?']
+  ].forEach(([key, label]) => Lab.prompt('#analysis', { key, label, rows: 3 }));
+  const cer = $('#cer');
+  [['C', 'cer-claim', 'Claim: How does population size (or the factor you tested) affect evolutionary change in allele frequencies?'], ['E', 'cer-evidence', 'Evidence: Which runs, numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Use random sampling of gametes and the Hardy-Weinberg conditions to explain why the evidence supports the claim.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
+
+  /* ================= REFLECT ================= */
+  [
+    ['r-strengths', 'What are the strengths and limitations of your model? Name at least two simplifying assumptions and say whether each matters for the question you studied.'],
+    ['r-class', 'The manual says classroom simulations with candies, beans or cards often mislead students about Hardy-Weinberg. Using your card and spreadsheet results, explain why.'],
+    ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
+    ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
+  ].forEach(([key, label]) => Lab.prompt('#reflect', { key, label, rows: 3 }));
+})();
+</script>
+</body>
+</html>

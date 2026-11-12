@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 10 Teacher Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .step > * { min-width: 0; }
+  .prose ol, .prose ul { display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions (Energetics)</span><a href="lab10.html">Student lab</a></nav>
+    <div class="eyebrow">Investigation 10 · Teacher notes</div>
+    <h1>Energy Dynamics</h1>
+    <p class="driving-q">What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?</p>
+    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-1.M, ENE-1.N, ENE-1.O, SYI-3.A</span><span class="tag">Science Practices 6.C, 6.D</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Sections"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <section class="step wrap gutter" data-step="At a glance">
+    <header><div class="eyebrow">At a glance</div><h2>What students do and how long it takes</h2></header>
+    <div class="step-body prose">
+      <div class="readouts">
+        <div class="readout"><span class="k">Bench version</span><span class="v">2–3 weeks</span></div>
+        <div class="readout"><span class="k">Class time (bench)</span><span class="v">2–3 × 1 h</span></div>
+        <div class="readout"><span class="k">Simulation version</span><span class="v">2–3 periods</span></div>
+        <div class="readout"><span class="k">Grouping</span><span class="v">teams of 3–4</span></div>
+      </div>
+      <p>Students build a two-species model ecosystem (Wisconsin Fast Plants and cabbage white larvae) and keep an energy "budget." Part 1 estimates plant NPP from dry biomass at day 7 and day 14 and adds a dark-respiration measurement to estimate GPP. Part 2 measures consumption, growth, and frass for larvae feeding on a Brussels sprout and computes consumed, assimilated, egested, and respired energy. Part 3 is a student-designed investigation, presented as a mini-poster.</p>
+      <ul>
+        <li><strong>Learning objectives:</strong> ENE-1.M (strategies to acquire and use energy), ENE-1.N (effects of changes in energy availability), ENE-1.O (autotrophs and heterotrophs move energy through ecosystems), SYI-3.A (molecular variation and survival).</li>
+        <li><strong>Science practices:</strong> 6.C (justify claims with evidence and theory), 6.D (connect results to larger biological concepts).</li>
+        <li><strong>Placement:</strong> during ecology (Big Idea 4); also works with cellular energetics (Big Idea 2). Student questions often connect to natural selection (plant defense, food choice).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Preparation">
+    <header><div class="eyebrow">Preparation</div><h2>Real materials (summary)</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Fast Plant seeds (50–100), soil mix, wicking cord, bottle growing systems, fertilizer (10-10-10 soluble), a light bank or growth chamber, bee sticks for pollination.</li>
+        <li>About 20 cabbage white butterfly eggs, a Brassica Barn (deli-container) per team, paper-towel frass pads, Brussels sprouts (plus broccoli or cabbage for food-choice studies), honey water for adults.</li>
+        <li>Electronic balance reading to 0.001 g (or weigh groups of plants or larvae together and divide), aluminum-foil weigh boats, a drying oven or food dehydrator (about 100 °C for 48 h), digital cameras.</li>
+        <li>10% bleach for cleaning chambers between generations.</li>
+      </ul>
+      <div class="callout callout--tip"><div class="callout-title">Start early</div><p>Have students raise one generation of each organism before the experiment. It produces the extra plants and larvae the procedure needs and builds the familiarity that generates good questions.</p></div>
+      <div class="callout callout--safety"><div class="callout-title">Safety and housekeeping</div>
+        <ul><li>Pre-approve all proposals. Do not allow designs that stress live animals (for example, high temperatures). The simulation caps larval rearing temperature at 28 °C for this reason.</li>
+        <li><em>Pieris rapae</em> is a USDA-listed pest: never release larvae or adults. Euthanize by freezing at the end.</li>
+        <li>Clean chambers with dilute bleach and dry them completely; keep water away from lights.</li></ul></div>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Simulation map">
+    <header><div class="eyebrow">How the simulation maps to the bench</div><h2>Models, calibration, and limits</h2></header>
+    <div class="step-body prose">
+      <h3>Part 1: Fast Plants</h3>
+      <ul>
+        <li>Mean dry mass per plant follows D(t) = 0.045 t<sup>1.147</sup> g, calibrated to the manual's sample tables (0.42 g at day 7, 0.93 g at day 14). Each plant has its own lognormal "vigor," so harvests of 10 have realistic spread (SE ≈ 0.02–0.05 g).</li>
+        <li>Dry fraction rises with age (≈ 21.8% at day 7, 24.6% at day 14) matching the manual's 21.4% and 24.2%. Washing loses up to 4% of root mass; blotting adds ±0.02 g wet-mass noise.</li>
+        <li>Dark respiration is 4 mg CO<sub>2</sub> per g dry mass per hour. With the conversions on the page (0.00364 mg per ppm in 2.0 L; 2.97 kcal per g CO<sub>2</sub>, i.e., 30/44 × 4.35), students get respiration ≈ 0.25–0.28 kcal/day for a 14-day plant and NPP/GPP ≈ 50–60%.</li>
+        <li><strong>Limit:</strong> the manual's sample masses are large for real Fast Plants (real 14-day plants are far lighter). The simulation keeps the manual's numbers so results match the published tables; discuss the scale with students if they compare to real data. Respiration measured in the dark is assumed to equal respiration in the light.</li>
+      </ul>
+      <h3>Part 2: Larvae</h3>
+      <ul>
+        <li>Per larva over 3 days: start ≈ 0.030 g, growth ≈ 6× (≈ 0.15 g gain), efficiency of conversion of ingested food ≈ 10% (dry basis), digestibility ≈ 75% → ≈ 1.6 g wet sprout eaten and ≈ 0.06 g dry frass. Group totals reproduce the manual's Table 3 (≈ 19 g sprout lost, 1.5 g gained, 0.5–0.6 g frass for 10 larvae).</li>
+        <li>A cut sprout loses ≈ 10% of its mass to evaporation in 3 days. The manual's 19 g "consumed" implicitly includes this water loss; the simulation adds a control sprout so students can correct it (≈ 16 g truly eaten).</li>
+        <li>The true larval dry fraction in the model is 0.16. The student manual tells students to assume 40%, while the teacher's sample table uses 0.15. Students can measure it ("freeze and dry 5 extra larvae") and see how the choice changes the respiration estimate. With 0.40 they get P/C ≈ 30%; with 0.16 they get P/C ≈ 12%, much closer to field values for caterpillars.</li>
+        <li>The plant ratio defaults to 0.15 (a measured Brussels sprout). If students use their Fast Plant ratio (≈ 0.22–0.25), consumed energy rises by about 50%: a good discussion of whether one plant's percent biomass can stand in for another's.</li>
+      </ul>
+      <h3>Part 3: Design options</h3>
+      <ul>
+        <li>Plants: light (saturating response, half-saturation 150 µmol m⁻² s⁻¹), temperature (Q<sub>10</sub> ≈ 2 below 24 °C, heat stress above), crowding (per-plant biomass ∝ 1/(1 + 0.35(n − 1))), fertilizer (0, ½, 1, 2×; 2× mildly reduces growth). Each replicate is one plant harvested at day 14.</li>
+        <li>Larvae: food type (dry fraction and quality differ; lettuce, a non-brassica, is mostly refused because it lacks glucosinolate feeding cues), temperature (16–28 °C, Q<sub>10</sub> ≈ 2), and density (food runs short above about 18 larvae per sprout). Each replicate is one barn.</li>
+        <li>The page reports mean, SD, SE, and ±2 SE intervals and flags pairs of levels whose intervals do not overlap. Remind students that overlap is a rough screen, not a formal test.</li>
+      </ul>
+      <p class="muted">What the simulation cannot do: it does not reproduce the daily care, life-cycle observations, mold, or disease that generate authentic questions on the bench, and it does not measure light energy input.</p>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Misconceptions">
+    <header><div class="eyebrow">Common misconceptions</div><h2>What to listen for</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>"Fresh weight is biomass."</strong> Most of a plant or sprout is water. Energy is in the dry organic matter.</li>
+        <li><strong>"Energy is recycled like matter."</strong> Matter cycles; energy flows one way and leaves as heat at every transfer.</li>
+        <li><strong>"Frass is respiration."</strong> Frass is egested (undigested) energy that goes to decomposers; respiration is energy released as heat and CO<sub>2</sub>.</li>
+        <li><strong>"The 10% rule is a law."</strong> Transfer efficiency varies widely (roughly 5–20%) with organism, food quality, and temperature. Students' numbers will not be exactly 10%.</li>
+        <li><strong>"NPP is how much light the plant absorbs."</strong> NPP is what remains after the plant's own respiration; GPP is the total captured.</li>
+        <li><strong>"Sprout mass lost = sprout eaten."</strong> Evaporation also removes mass (but not energy).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Answers">
+    <header><div class="eyebrow">Suggested answers and expected results</div><h2>Answer key</h2></header>
+    <div class="step-body prose">
+      <h3>Pre-lab</h3>
+      <ol>
+        <li>Most living mass is water, which holds no chemical energy and varies; dry mass is the biomass.</li>
+        <li>4.2 ÷ 19.6 × 100 = 21.4%.</li>
+        <li>4.2 × 4.35 = 18.27 kcal.</li>
+        <li>18.27 ÷ 10 ÷ 7 = 0.26 kcal per plant per day.</li>
+        <li>Plants used part of the captured energy in their own respiration; the biomass weighed is what remained (NPP = GPP − R).</li>
+        <li>0.15 × 0.40 × 5.5 = 0.33 kcal.</li>
+        <li>0.05 × 4.76 = 0.238 kcal.</li>
+        <li>Respiration, by difference: 1.24 − 0.33 − 0.24 ≈ 0.67 kcal.</li>
+      </ol>
+      <h3>Part 1 typical results</h3>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Age</th><th class="num">Mean wet/plant (g)</th><th class="num">Mean dry/plant (g)</th><th class="num">% biomass</th><th class="num">Energy/plant (kcal)</th><th class="num">NPP since seeding (kcal/day)</th></tr></thead>
+        <tbody><tr><td>Day 7</td><td class="num">≈ 1.9–2.1</td><td class="num">≈ 0.40–0.46</td><td class="num">≈ 21–22</td><td class="num">≈ 1.8–2.0</td><td class="num">≈ 0.26–0.28</td></tr>
+        <tr><td>Day 14</td><td class="num">≈ 3.6–3.9</td><td class="num">≈ 0.85–0.98</td><td class="num">≈ 24–25</td><td class="num">≈ 3.8–4.2</td><td class="num">≈ 0.28–0.30</td></tr></tbody>
+      </table></div>
+      <p>NPP between harvests ≈ (0.93 − 0.42) ÷ 7 × 4.35 ≈ 0.32 kcal/day. Dark-chamber rise for 5 plants at day 14 ≈ 800–900 ppm in 10 min → ≈ 85–95 mg CO<sub>2</sub> per plant per day → R ≈ 0.25–0.28 kcal/day → GPP ≈ 0.55–0.60 kcal/day; NPP/GPP ≈ 55%.</p>
+      <h3>Part 2 typical results (10 larvae, ratios 0.15 plant / 0.40 larva)</h3>
+      <p>Sprout 26–33 g → 9–14 g (raw loss ≈ 17–20 g; corrected ≈ 14–17 g). Larvae ≈ 0.30 → 1.7–1.8 g. Frass ≈ 0.55–0.65 g. Per larva (corrected): C ≈ 0.95–1.1 kcal, F ≈ 0.28–0.31, P ≈ 0.30–0.33, R ≈ 0.35–0.45 kcal; A/C ≈ 70%, P/A ≈ 45%, P/C ≈ 30%. With the measured larval ratio (≈ 0.16), P drops to ≈ 0.13 kcal and R rises to ≈ 0.55 kcal (P/C ≈ 12%).</p>
+      <h3>Analysis prompts</h3>
+      <ul>
+        <li><strong>Measured vs estimated:</strong> measured: plant dry mass, larval wet mass, sprout wet mass, frass dry mass, dark CO<sub>2</sub>. Calculated by difference: larval respiration. Assumed/estimated: energy per gram values, larval dry fraction, sprout dry fraction, light energy input, respiration in light, energy in uric acid within frass, heat from decomposition.</li>
+        <li><strong>10% rule:</strong> students' P/C values (≈ 12–30% depending on assumptions) exceed 10% because larvae are fast-growing juveniles on high-quality food and the larval dry fraction assumption inflates production. Whole-trophic-level efficiencies are lower because not all plant biomass is eaten and adults/other stages respire without growing.</li>
+        <li><strong>CER exemplar:</strong> Claim: energy capture is limited by light and plant respiration, and most energy eaten by larvae is not stored. Evidence: NPP ≈ 0.3 kcal/day vs R ≈ 0.27 kcal/day; larvae stored ≈ 0.13–0.33 of ≈ 1.0 kcal eaten, egested ≈ 0.3 kcal. Reasoning: the second law—each transformation releases heat; respiration powers growth and activity; indigestible material (cellulose) is egested.</li>
+      </ul>
+      <h3>Expected design trends</h3>
+      <ul>
+        <li>Light: biomass rises steeply from 50 to 200 µmol m⁻² s⁻¹ and levels off; % biomass slightly lower in dim light.</li>
+        <li>Temperature (plants): increases to ≈ 24 °C, declines sharply by 32 °C.</li>
+        <li>Crowding: per-plant biomass falls with plants per cell (≈ 1 : 0.74 : 0.59 : 0.49); total per cell rises.</li>
+        <li>Fertilizer: none ≈ 45% of standard; 2× slightly below standard.</li>
+        <li>Food: broccoli ≈ sprout &gt; Fast Plant leaves &gt; cabbage ≫ lettuce for growth; larvae eat more wet mass of watery foods.</li>
+        <li>Larval density: gain per larva drops once the sprout runs short (≈ 20–30 larvae).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Student designs">
+    <header><div class="eyebrow">Ideas for student-designed investigations</div><h2>Questions that work well</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li>Do all plants (or plant parts) have the same percent biomass? Compare Fast Plants, sprouts, broccoli, cabbage.</li>
+        <li>How much energy does it cost a larva to process different plant sources?</li>
+        <li>How does energy allocation to roots, shoots, and seeds change over the life cycle? How much goes to reproduction?</li>
+        <li>Limits to productivity: light, soil volume, CO<sub>2</sub>, crowding, leaf area.</li>
+        <li>Herbivory and plant response: early vs late herbivory, trichome defense, induced defenses and their cost.</li>
+        <li>Build a spreadsheet model of plant growth or larval growth from the Part 1 and 2 values and test its predictions.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Extensions">
+    <header><div class="eyebrow">Extensions and assessment</div><h2>Going further</h2></header>
+    <div class="step-body prose">
+      <ul>
+        <li><strong>Mini-poster session:</strong> half the class presents while half reviews with a rubric, then switch. Students revise posters based on peer feedback before grading.</li>
+        <li><strong>Bomb calorimetry discussion:</strong> where 4.35, 5.5, and 4.76 kcal/g come from, and why fats raise larval energy density.</li>
+        <li><strong>Reading:</strong> Agren and Schemske (1993) on the cost of trichome defense in <em>Brassica rapa</em>; Williams and Hill (1986) introducing rapid-cycling Brassica.</li>
+        <li><strong>Field connection:</strong> compare student efficiencies with published assimilation and production efficiencies for insects, endotherms, and ectotherms.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>Lab.init({ id: 'teacher-lab10' });</script>
+</body>
+</html>

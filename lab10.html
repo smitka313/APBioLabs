@@ -1,0 +1,969 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 10 · Energy Dynamics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step-body > *, .step > * { min-width: 0; }
+  .diagram svg { width: 100%; height: auto; display: block; }
+  .diagram text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
+  .diagram .sub { fill: var(--muted); font-size: 11.5px; }
+  .calc { display: grid; gap: 8px; }
+  .calc-row { display: grid; grid-template-columns: minmax(0, 1fr) 130px auto; gap: 8px 10px; align-items: center; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+  .calc-row label { font-size: .92rem; }
+  .calc-row input { font-family: var(--f-mono); text-align: right; }
+  .calc-row .unitpill { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .82rem; color: var(--muted); min-width: 0; }
+  @media (max-width: 520px) { .calc-row { grid-template-columns: minmax(0, 1fr) 110px; } .calc-row .unitpill { grid-column: 1 / -1; } }
+  .sankey { width: 100%; min-height: 200px; }
+  .sankey svg { display: block; width: 100%; height: auto; }
+  .sankey .band { opacity: .30; }
+  .sankey .flow { fill: none; stroke-linecap: round; stroke-dasharray: 2 14; animation: flow 1.3s linear infinite; opacity: .85; }
+  .sankey .node { rx: 3; }
+  .sankey text { font-family: var(--f-body); font-size: 12.5px; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+  .sankey text.v { font-family: var(--f-mono); font-size: 11.5px; fill: var(--muted); }
+  @keyframes flow { to { stroke-dashoffset: -32; } }
+  @media (prefers-reduced-motion: reduce) { .sankey .flow { animation: none; } }
+  .progress { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .note { font-size: .88rem; color: var(--muted); }
+  .checklist { display: grid; gap: 4px; font-size: .9rem; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions (Energetics)</span></nav>
+    <div class="eyebrow">Investigation 10</div>
+    <h1>Energy Dynamics</h1>
+    <p class="driving-q">What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?</p>
+    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-1.M</span><span class="tag">ENE-1.N</span><span class="tag">ENE-1.O</span><span class="tag">SYI-3.A</span><span class="tag">Science Practices 6.C, 6.D</span><span class="tag">≈ 2–3 weeks of short sessions</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ 1. OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>Running an energy budget for a tiny ecosystem</h2></header>
+    <div class="step-body prose">
+      <p class="lede">You will build a two-species model ecosystem: Wisconsin Fast Plants (<em>Brassica rapa</em>) as the producer and cabbage white butterfly larvae (<em>Pieris rapae</em>) as the consumer. By tracking biomass and converting it to kilocalories, you will account for energy the way an accountant tracks money: what comes in, what is stored, and what is spent.</p>
+      <p>In the real lab these steps take two to three weeks. Here the plants grow in a few clicks, but you still have to make the measurements, do the calculations, and decide what your numbers mean.</p>
+      <div class="callout callout--question"><div class="callout-title">What you will do</div>
+        <ul>
+          <li><strong>Part 1:</strong> Harvest Fast Plants at two ages, dry them, and use dry mass (biomass) to estimate net primary productivity (NPP). Then measure plant respiration to estimate gross primary productivity (GPP).</li>
+          <li><strong>Part 2:</strong> Feed 4th-instar larvae a Brussels sprout for 3 days. Measure what they eat, how much they grow, and how much frass (waste) they produce, then audit where the energy went.</li>
+          <li><strong>Part 3:</strong> Design your own investigation of light, temperature, crowding, fertilizer, or food type.</li>
+        </ul>
+      </div>
+      <div class="callout callout--key"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>ENE-1.M</strong> Describe the strategies organisms use to acquire and use energy.</li>
+          <li><strong>ENE-1.N</strong> Explain how changes in energy availability affect populations and ecosystems.</li>
+          <li><strong>ENE-1.O</strong> Explain how the activities of autotrophs and heterotrophs enable the flow of energy within an ecosystem.</li>
+          <li><strong>SYI-3.A</strong> Connect variation in the molecules within organisms to their ability to survive and reproduce in different environments.</li>
+          <li><strong>Science practices 6.C, 6.D</strong> Justify claims with evidence and connect results to larger biological concepts.</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety and care of organisms</div>
+        <ul>
+          <li>The USDA lists cabbage white butterflies as a pest. Never release larvae or adults outdoors. When the work is done, larvae and butterflies are euthanized by freezing; plants and soil can be thrown away.</li>
+          <li>Never put research organisms under extreme stress, such as high temperatures. That is why the design options below limit larval temperatures to a humane range.</li>
+          <li>Keep growing chambers clean (wipe with dilute bleach, then dry) to avoid disease outbreaks, and keep water away from the light fixtures.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Biomass is how we count energy</h2></header>
+    <div class="step-body prose">
+      <p>Almost every food web runs on sunlight. During photosynthesis, producers capture light energy and store it in the chemical bonds of sugars and other organic molecules. Those molecules become the plant's body: its <strong>biomass</strong>. The total rate at which producers capture energy is <strong>gross primary productivity (GPP)</strong>. Plants spend part of that energy right away on their own cellular respiration (R). What is left over and stored as new tissue is <strong>net primary productivity (NPP)</strong>.</p>
+      <div class="equation">NPP = GPP − R<sub>plant</sub></div>
+      <p>We cannot count kilocalories directly, but organic molecules have mass, so we can measure biomass and convert. The catch is water. A living Fast Plant is mostly water, and water stores no usable chemical energy. That is why ecologists dry organisms in an oven (about 100 °C for 48 hours) and weigh the <strong>dry mass</strong>. The dry-to-wet ratio (the "percent biomass") lets you estimate the biomass of living things you do not want to kill, such as a Brussels sprout you are about to feed to larvae.</p>
+      <div class="equation">energy (kcal) = wet mass (g) × (dry ÷ wet) × energy per gram of dry mass</div>
+      <p>Different molecules hold different amounts of energy: about 4 kcal per gram for carbohydrates and proteins, about 9 kcal per gram for fats. In this lab you will use measured averages from bomb calorimetry: <strong>4.35 kcal/g</strong> for dry plant biomass, <strong>5.5 kcal/g</strong> for dry larval biomass (larvae store more fat), and <strong>4.76 kcal/g</strong> for dry frass.</p>
+      <p>When a larva eats, the energy it consumes (C) splits three ways. Some passes through the gut undigested and leaves as frass, which is <strong>egested</strong> energy (F). The rest is <strong>assimilated</strong> (A) into the body. Of the assimilated energy, some builds new tissue (<strong>production</strong>, P) and the rest is used in cellular respiration and lost as heat (R). Because energy is neither created nor destroyed, the budget must balance:</p>
+      <div class="equation">C = P + R + F &nbsp;&nbsp;→&nbsp;&nbsp; R = C − P − F</div>
+      <p>Respiration is hard to measure directly in a caterpillar, so you will estimate it as the energy left over after the other terms are measured. Every conversion loses energy as heat, which is the second law of thermodynamics at work. That is why only a small fraction of the energy at one trophic level shows up as biomass in the next.</p>
+      <figure class="diagram" aria-label="Diagram of energy flow from sunlight through a plant to a caterpillar">
+        <svg viewBox="0 0 720 250" role="img" aria-labelledby="bgfig-t">
+          <title id="bgfig-t">Energy flow: light to plant (GPP), plant respiration and NPP; NPP eaten by larva splits into frass, growth and respiration</title>
+          <defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>
+          <rect x="10" y="95" width="100" height="56" rx="8" style="fill:var(--warn-soft);stroke:var(--warn)"/>
+          <text x="60" y="120" text-anchor="middle">Light</text><text x="60" y="138" text-anchor="middle" class="sub">sun / grow lights</text>
+          <rect x="160" y="80" width="150" height="86" rx="8" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+          <text x="235" y="108" text-anchor="middle">Fast Plant</text><text x="235" y="126" text-anchor="middle" class="sub">GPP captured</text><text x="235" y="144" text-anchor="middle" class="sub">NPP stored as biomass</text>
+          <rect x="400" y="80" width="150" height="86" rx="8" style="fill:var(--stain-soft);stroke:var(--stain)"/>
+          <text x="475" y="108" text-anchor="middle">Larva</text><text x="475" y="126" text-anchor="middle" class="sub">eats (C), assimilates (A)</text><text x="475" y="144" text-anchor="middle" class="sub">grows (P)</text>
+          <rect x="600" y="95" width="110" height="56" rx="8" style="fill:var(--surface-2);stroke:var(--line)"/>
+          <text x="655" y="120" text-anchor="middle">Frass (F)</text><text x="655" y="138" text-anchor="middle" class="sub">to decomposers</text>
+          <g style="stroke:var(--muted)" stroke-width="2" fill="none">
+            <path d="M110 123 H156" marker-end="url(#arw)"/><path d="M310 123 H396" marker-end="url(#arw)"/><path d="M550 123 H596" marker-end="url(#arw)"/>
+            <path d="M235 80 C235 40 235 40 235 22" marker-end="url(#arw)" stroke-dasharray="5 4"/><path d="M475 80 C475 40 475 40 475 22" marker-end="url(#arw)" stroke-dasharray="5 4"/>
+          </g>
+          <text x="245" y="20" class="sub">heat (R<tspan font-size="9" dy="3">plant</tspan><tspan dy="-3">)</tspan></text>
+          <text x="485" y="20" class="sub">heat (R<tspan font-size="9" dy="3">larva</tspan><tspan dy="-3">)</tspan></text>
+          <text x="353" y="113" text-anchor="middle" class="sub">eaten</text>
+          <text x="360" y="215" text-anchor="middle" class="sub">Arrow widths in your own data diagrams (Parts 1 and 2) will be drawn to scale.</text>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ 3. PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Getting started: the energy accountant's toolkit</h2></header>
+    <div class="step-body">
+      <p class="muted">These items follow the manual's Getting Started tasks and the conversions you will use. Use a calculator.</p>
+      <div id="prelab"></div>
+      <div id="prelab-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. PART 1: NPP ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Part 1: NPP">
+    <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>Estimating net primary productivity of Fast Plants</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Your team has a flat of 40 Fast Plants growing under a light bank at 24 °C. Following the manual, harvest about 10 plants early in the life cycle (day 7) and 10 more later (day 14). For each harvest: pull the plants with all their roots, wash and blot them, weigh each one wet, then dry them at 100 °C for 48 hours and weigh them again.</p>
+      </div>
+      <div id="p1-predict"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="readouts"><div class="readout"><span class="k">Plant age</span><span class="v" id="p1-day">—</span></div><div class="readout"><span class="k">Plants left</span><span class="v" id="p1-left">—</span></div></div>
+          <div class="row"><button class="btn" id="p1-plus1" type="button">+1 day</button><button class="btn" id="p1-plus7" type="button">+7 days</button></div>
+          <div class="field"><label for="p1-n">Plants per harvest</label><select id="p1-n"><option value="5">5</option><option value="8">8</option><option value="10" selected>10</option></select></div>
+          <button class="btn btn--primary" id="p1-harvest" type="button">Harvest, wash, blot &amp; weigh wet</button>
+          <button class="btn" id="p1-dry" type="button">Dry 48 h at 100 °C &amp; weigh</button>
+          <div class="progress" aria-hidden="true"><i id="p1-prog"></i></div>
+          <p class="note" id="p1-status">Advance to day 7, then harvest.</p>
+          <button class="btn btn--ghost btn--sm" id="p1-reset" type="button">Plant a new flat (clears Part 1 data)</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="p1-canvas" aria-label="Growth chamber with a flat of Fast Plants under a light bank; harvested cells are empty"></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Last harvest: mean wet</span><span class="v" id="p1-rw">—</span></div>
+            <div class="readout"><span class="k">Last harvest: mean dry</span><span class="v" id="p1-rd">—</span></div>
+            <div class="readout"><span class="k">Balance precision</span><span class="v">0.001 g</span></div>
+          </div>
+        </div>
+      </div>
+      <h3>Harvest data (each plant)</h3>
+      <div id="p1-raw"></div>
+      <h3>Summary: your Table 1 and Table 2</h3>
+      <p class="note">The page computes the means and standard error. <strong>You</strong> compute the last three columns: percent biomass = dry ÷ wet × 100; energy per plant = mean dry mass × 4.35 kcal/g; NPP per day = energy per plant ÷ age in days (energy stored since the seed was planted).</p>
+      <div id="p1-sum"></div>
+      <div class="checklist" id="p1-check" aria-live="polite"></div>
+      <div id="p1-chart"></div>
+      <h3>From NPP to GPP</h3>
+      <div class="prose"><p>NPP between your two harvests is the biomass the average plant <em>added</em> per day, converted to kcal. To estimate GPP you also need the energy the plants spent on respiration. Seal 5 living plants in a dark 2.0 L chamber with a CO<sub>2</sub> sensor for 10 minutes (no photosynthesis in the dark, so the CO<sub>2</sub> rise is respiration only). Do this on the same day as a harvest so you know the plants' mean dry mass.</p>
+      <div class="equation">1 ppm CO<sub>2</sub> in 2.0 L of air ≈ 0.00364 mg CO<sub>2</sub> &nbsp;·&nbsp; 1 g CO<sub>2</sub> respired ≈ 0.68 g biomass ≈ 2.97 kcal</div></div>
+      <div class="sim">
+        <div class="controls">
+          <button class="btn btn--primary" id="p1-resp" type="button">Seal 5 plants in the dark chamber (10 min)</button>
+          <p class="note">The chamber uses plants of the current age in your flat; they are returned afterward unharmed.</p>
+          <div class="readouts"><div class="readout"><span class="k">Plant age</span><span class="v" id="r-age">—</span></div><div class="readout"><span class="k">Start CO₂</span><span class="v" id="r-start">—</span></div><div class="readout"><span class="k">End CO₂</span><span class="v" id="r-end">—</span></div><div class="readout"><span class="k">Rise</span><span class="v" id="r-rise">—</span></div></div>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="r-canvas" aria-label="Sealed dark chamber with five plants and a CO2 sensor trace rising over ten minutes"></canvas>
+        </div>
+      </div>
+      <div class="calc" id="p1-calc"></div>
+      <h3>Your plant energy diagram (Step 6)</h3>
+      <p class="note">Drawn to scale from your harvests and respiration measurement (kcal per plant per day). Light energy was not measured.</p>
+      <div class="sankey" id="sankey-plant" role="img" aria-label="Energy flow diagram for one Fast Plant per day"></div>
+      <div id="p1-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 5. PART 2: LARVAE ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Part 2: Larvae">
+    <header><div class="eyebrow">Procedure 2 · Structured inquiry</div><h2>Energy flow from producer to consumer</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Weigh one large fresh Brussels sprout, cut it in half, and place both halves in a clean Brassica Barn. Weigh a group of 8–12 fourth-instar larvae, add them, and let them feed for 3 days. Each day, the frass (droppings) falls onto a paper-towel pad; you collect it, dry it, and weigh it. After 3 days, weigh the larvae again and weigh what is left of the sprout.</p>
+        <p>A cut sprout also loses water to evaporation, which has nothing to do with eating. A second sprout in an identical barn with <em>no</em> larvae (a control) lets you correct for that.</p>
+      </div>
+      <div id="p2-predict"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="p2-n">Larvae in the barn <output id="p2-n-out" class="val"></output></label><input id="p2-n" type="range" min="8" max="12" step="1" value="10"></div>
+          <button class="btn btn--primary" id="p2-run" type="button">Day 0: weigh, then feed 3 days</button>
+          <div class="progress" aria-hidden="true"><i id="p2-prog"></i></div>
+          <p class="note" id="p2-status">Each run is one barn. Run at least 3 barns so you can calculate standard error.</p>
+          <hr style="border:0;border-top:1px solid var(--line);width:100%">
+          <div class="field"><label for="ratio-plant">Plant dry ÷ wet ratio you will use</label><input id="ratio-plant" type="number" step="0.001" min="0.01" max="1" value="0.15" data-save="ratio-plant" data-label="Plant dry/wet ratio used"></div>
+          <button class="btn btn--sm" id="p2-sprout" type="button">Dry a spare sprout to measure it</button>
+          <div class="field"><label for="ratio-larva">Larva dry ÷ wet ratio you will use</label><input id="ratio-larva" type="number" step="0.001" min="0.01" max="1" value="0.40" data-save="ratio-larva" data-label="Larva dry/wet ratio used"></div>
+          <button class="btn btn--sm" id="p2-larva" type="button">Freeze &amp; dry 5 extra larvae to measure it</button>
+          <p class="note" id="p2-ratio-note">The student manual suggests assuming larvae are 40% dry mass and using your Fast Plant percentage for sprouts. Both are assumptions you can test.</p>
+          <label class="check"><input type="checkbox" id="p2-correct" checked> Correct sprout loss for evaporation (control)</label>
+          <button class="btn btn--ghost btn--sm" id="p2-reset" type="button">Clear all barns</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="p2-canvas" aria-label="Brassica Barn: larvae feeding on two Brussels sprout halves above a paper towel frass pad, plus a control sprout with no larvae"></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Day</span><span class="v" id="p2-day">0</span></div>
+            <div class="readout"><span class="k">Sprout mass</span><span class="v" id="p2-sm">—</span></div>
+            <div class="readout"><span class="k">Larvae (group)</span><span class="v" id="p2-lm">—</span></div>
+            <div class="readout"><span class="k">Frass (dry)</span><span class="v" id="p2-fm">—</span></div>
+          </div>
+        </div>
+      </div>
+      <h3>Barn measurements</h3>
+      <div id="p2-raw"></div>
+      <h3>Your energy audit for Barn 1 (Table 3)</h3>
+      <p class="note">Work per larva over the 3 days. Use the ratios you chose above. Each answer is checked against your own earlier entries, so one slip does not ruin the rest.</p>
+      <div class="calc" id="p2-calc"></div>
+      <h3>All barns: where did the energy go?</h3>
+      <p class="note">The page applies the same calculations to every barn (your chosen ratios; evaporation correction set by the checkbox). Bars show mean ± 2 SE (≈ 95% confidence interval).</p>
+      <div class="readouts" id="p2-eff"></div>
+      <div id="p2-chart"></div>
+      <h3>Animated energy budget (mean per larva, 3 days)</h3>
+      <div class="sankey" id="sankey-larva" role="img" aria-label="Energy flow diagram for one larva over three days"></div>
+      <p class="note" id="sankey-larva-note"></p>
+      <div id="p2-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 6. DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Ask your own energy question</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Pick a question that came up while you worked. The manual offers starting points such as: <em>Do all plants have the same percentage of biomass? How much energy does it cost an animal to process different plant sources? What limits productivity?</em> Choose one organism, one independent variable, and hold everything else constant.</p>
+      </div>
+      <div class="grid-2" id="design-plan"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="d-sys">Organism</label><select id="d-sys"><option value="plant">Fast Plants (producer)</option><option value="larva">Cabbage white larvae (consumer)</option></select></div>
+          <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
+          <fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label" style="font-size:.86rem;font-weight:600">Levels to test</legend><div class="levels" id="d-levels"></div></fieldset>
+          <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="3" max="12" value="6"></div>
+          <div class="field"><label for="d-dv">Dependent variable to graph</label><select id="d-dv"></select></div>
+          <p class="note" id="d-const"></p>
+          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="d-canvas" aria-label="Your experimental setup: one tray or barn per level"></canvas>
+          <div class="readouts" id="d-readouts"></div>
+        </div>
+      </div>
+      <h3>Replicate data</h3>
+      <div id="d-raw"></div>
+      <h3>Summary statistics</h3>
+      <div id="d-sum"></div>
+      <div id="d-chart"></div>
+      <p class="note" id="d-stat"></p>
+    </div>
+  </section>
+
+  <!-- ============ 7. ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Close the energy audit</h2></header>
+    <div class="step-body" id="analysis"></div>
+  </section>
+
+  <!-- ============ 8. EVALUATE ============ -->
+  <section class="step wrap gutter" data-step="Reflect">
+    <header><div class="eyebrow">Evaluate and reflect</div><h2>How good is your accounting?</h2></header>
+    <div class="step-body" id="reflect"></div>
+  </section>
+
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body">
+      <p class="muted">Prepare a mini-poster from your Part 3 results: question, hypothesis, methods, a graph with error bars, your energy diagram, and a claim supported by evidence.</p>
+      <div data-responses></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+  'use strict';
+  Lab.init({ id: 'lab10' });
+  const { $, h, fmt, stats } = Lab;
+  const rng = Lab.rng();
+  let PC = {}; const C = n => PC[n] || (PC[n] = Lab.color(n)); const freshColors = () => { PC = {}; };
+  const KP = 4.35, KL = 5.5, KF = 4.76;          // kcal per g dry: plant, larva, frass (manual)
+  const MG_PER_PPM = 0.00364, KCAL_PER_G_CO2 = 2.97;
+
+  /* ===================== PRE-LAB ===================== */
+  Lab.quiz('#prelab', [
+    { type: 'mc', q: 'Why does the procedure use the <em>dry</em> mass of plants, not their living (wet) mass, to estimate biomass and energy?',
+      choices: ['Dry plants are easier to weigh precisely', 'Most of a living plant’s mass is water, which stores no chemical energy, and water content changes with watering and time of day', 'Drying adds energy to the plant tissue', 'Wet mass always equals dry mass after 48 hours'],
+      answer: 1, explain: 'Water can be 75–85% of a living plant’s mass and it fluctuates. Only the organic molecules left after drying hold usable chemical energy, so dry mass is the biomass.' },
+    { type: 'num', q: 'Ten 7-day-old Fast Plants had a total wet mass of 19.6 g and a total dry mass of 4.2 g. What percent of the living plant mass is biomass?', answer: 21.4, tol: 0.2, unit: '%',
+      explain: '4.2 ÷ 19.6 × 100 = 21.4%. The other 78.6% was water.' },
+    { type: 'num', q: 'Using 4.35 kcal per gram of dry plant biomass, how much energy is stored in those 4.2 g of dry biomass?', answer: 18.27, tol: 0.05, unit: 'kcal',
+      explain: '4.2 g × 4.35 kcal/g = 18.27 kcal for the 10 plants.' },
+    { type: 'num', q: 'Those 18.27 kcal were stored by 10 plants over 7 days. What is the NPP <em>per plant per day</em>?', answer: 0.261, tol: 0.006, unit: 'kcal/day',
+      explain: '18.27 kcal ÷ 10 plants ÷ 7 days = 0.26 kcal per plant per day.' },
+    { type: 'mc', q: 'Why is the value you just calculated <em>net</em> primary productivity rather than <em>gross</em> primary productivity?',
+      choices: ['Because it was measured in a greenhouse', 'Because the plants already used some captured energy for their own cellular respiration; only what remained as biomass was weighed', 'Because dry mass includes the water lost', 'Because larvae ate some of the energy'],
+      answer: 1, explain: 'GPP is all the energy captured by photosynthesis. Plants burn part of it in respiration (released as heat and CO₂). The biomass you weigh is what is left: NPP = GPP − R.' },
+    { type: 'num', q: 'A larva gained 0.15 g of wet mass. Assume larvae are 40% dry mass and dry larval biomass holds 5.5 kcal/g. How much energy went into the larva’s growth?', answer: 0.33, tol: 0.01, unit: 'kcal',
+      explain: '0.15 g × 0.40 × 5.5 kcal/g = 0.33 kcal.' },
+    { type: 'num', q: 'The same larva produced 0.05 g of dry frass. Frass holds 4.76 kcal/g. How much energy did it egest?', answer: 0.238, tol: 0.005, unit: 'kcal',
+      explain: '0.05 g × 4.76 kcal/g = 0.238 kcal (about 0.24 kcal).' },
+    { type: 'mc', q: 'The larva consumed 1.24 kcal of plant energy. Using your answers above, which pathway is <em>estimated by difference</em> rather than measured, and about how big is it?',
+      choices: ['Frass, 1.24 − 0.33 = 0.91 kcal', 'Respiration, 1.24 − 0.33 − 0.24 ≈ 0.67 kcal', 'Growth, 1.24 − 0.24 = 1.00 kcal', 'Nothing is estimated; every pathway is weighed'],
+      answer: 1, explain: 'Consumed = growth + frass + respiration, so R = C − P − F = 1.24 − 0.33 − 0.24 ≈ 0.67 kcal. Respiration (heat and CO₂) is never weighed, so it carries all the error from the other measurements.' }
+  ], { id: 'prelab' });
+  Lab.prompt('#prelab-prompts', { key: 'pre-budget', label: 'Getting Started 1: How is accounting for energy in a community like keeping a household budget? List what counts as "income," "savings," and "expenses" for a plant and for a larva.', rows: 4 });
+  Lab.prompt('#prelab-prompts', { key: 'pre-care', label: 'Getting Started 2: Write a care schedule for your team (watering, lights, feeding, frass removal, cleaning) and explain how you will dispose of organisms responsibly.', rows: 4 });
+
+  /* ===================== shared helpers ===================== */
+  // A self-checking calculation row: student types a value; pill compares with expected (from their data / their earlier entries).
+  function calcBlock(el, items) {
+    el = typeof el === 'string' ? $(el) : el;
+    const rows = items.map(it => {
+      const id = 'calc-' + it.key;
+      const inp = h('input', { id, type: 'number', step: 'any', 'data-save': it.key, 'data-label': it.label.replace(/<[^>]+>/g, '') + (it.unit ? ' (' + it.unit + ')' : '') });
+      const pill = h('span', { class: 'pill' }, '—');
+      const row = h('div', { class: 'calc-row' }, h('label', { for: id, html: it.label }), inp, h('span', { class: 'unitpill' }, h('span', { html: it.unit || '' }), pill));
+      el.append(row);
+      inp.addEventListener('input', () => setTimeout(recheck, 0));
+      return { it, inp, pill };
+    });
+    Lab.bindAutosave(el);
+    function val(key) { const r = rows.find(x => x.it.key === key); return r && r.inp.value !== '' ? parseFloat(r.inp.value) : NaN; }
+    function recheck() {
+      rows.forEach(({ it, inp, pill }) => {
+        let exp = it.expect(val);
+        const v = inp.value === '' ? NaN : parseFloat(inp.value);
+        if (exp == null || (!Array.isArray(exp) && !isFinite(exp))) { pill.className = 'pill'; pill.textContent = it.need || 'Needs data'; return; }
+        if (!isFinite(v)) { pill.className = 'pill'; pill.textContent = 'Enter a value'; return; }
+        const exps = [].concat(exp);
+        const ok = exps.some(e => Math.abs(v - e) <= Math.max(Math.abs(e) * (it.tolPct || 0.03), it.tolAbs || 1e-4));
+        pill.className = 'pill ' + (ok ? 'ok' : 'bad'); pill.textContent = ok ? '✓ checks out' : 'recheck';
+      });
+    }
+    recheck();
+    return { recheck, val };
+  }
+  const meanSE = a => ({ m: stats.mean(a), se: a.length > 1 ? stats.se(a) : 0 });
+  function setProg(el, f) { $(el).style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; }
+
+  // Tree-shaped Sankey diagram (SVG). node: {name, value, color, dashed, children:[...]}
+  function sankey(el, root, opts = {}) {
+    el = typeof el === 'string' ? $(el) : el;
+    const W = Math.max(320, el.clientWidth || 640);
+    const depth = n => 1 + Math.max(0, ...(n.children || []).map(depth));
+    const cols = depth(root), H = opts.height || 250, pad = 18, labelW = W < 560 ? 0 : Math.min(150, W * 0.3);
+    const usableH = H - pad * 2 - 14, scale = usableH * 0.78 / Math.max(1e-9, root.value);
+    const colX = i => 10 + i * ((W - labelW - 20) / Math.max(1, cols - 1));
+    let svg = '', labels = '';
+    function place(n, col, y0, hgt) {
+      n._x = colX(col); n._y = y0; n._h = Math.max(2, hgt);
+      const kids = (n.children || []).filter(k => k.value > 0);
+      if (!kids.length) return;
+      const gap = 14, total = kids.reduce((s, k) => s + k.value * scale, 0) + gap * (kids.length - 1);
+      let y = Math.max(pad + 14, Math.min(H - pad - total, y0 + hgt / 2 - total / 2));
+      let srcY = y0;
+      kids.forEach(k => {
+        const kh = Math.max(2, k.value * scale);
+        k._srcY = srcY; srcY += kh * (hgt / Math.max(2, kids.reduce((s, kk) => s + Math.max(2, kk.value * scale), 0)));
+        place(k, col + 1, y, kh); y += kh + gap;
+      });
+    }
+    place(root, 0, pad + 14 + (usableH - root.value * scale) / 2, root.value * scale);
+    function draw(n) {
+      const col = n.color || 'var(--s1)';
+      (n.children || []).filter(k => k.value > 0).forEach(k => {
+        const x0 = n._x + 10, x1 = k._x, sy = k._srcY, ty = k._y, kh = k._h, mx = (x0 + x1) / 2;
+        const kc = k.color || col;
+        svg += `<path class="band" d="M${x0},${sy} C${mx},${sy} ${mx},${ty} ${x1},${ty} L${x1},${ty + kh} C${mx},${ty + kh} ${mx},${sy + kh} ${x0},${sy + kh} Z" style="fill:${kc}"/>`;
+        const cy0 = sy + kh / 2, cy1 = ty + kh / 2;
+        svg += `<path class="flow" d="M${x0},${cy0} C${mx},${cy0} ${mx},${cy1} ${x1},${cy1}" style="stroke:${kc};stroke-width:${Math.max(2, Math.min(8, kh / 3))}px"/>`;
+        draw(k);
+      });
+      svg += `<rect class="node" x="${n._x}" y="${n._y}" width="10" height="${n._h}" style="fill:${col}${n.dashed ? ';fill-opacity:.35;stroke:' + col + ';stroke-dasharray:3 3' : ''}"/>`;
+      const isLeaf = !(n.children || []).some(k => k.value > 0);
+      const vtxt = n.text != null ? Lab.esc(n.text) : fmt(n.value, 3) + ' kcal';
+      if (isLeaf) { const lx = n._x + 16, ly = n._y + n._h / 2; labels += `<text x="${lx}" y="${ly - 2}">${Lab.esc(n.name)}</text><text class="v" x="${lx}" y="${ly + 13}">${vtxt}</text>`; }
+      else labels += `<text x="${n._x}" y="${n._y - 6}">${Lab.esc(n.name)} <tspan class="v">${vtxt}</tspan></text>`;
+    }
+    draw(root);
+    if (W < 560) {
+      const items = []; (function walk(n) { items.push(n); (n.children || []).filter(k => k.value > 0).forEach(walk); })(root);
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${svg}</svg><div class="legend">${items.map(n => `<span><i style="background:${n.color || 'var(--s1)'}"></i>${Lab.esc(n.name)}: ${n.text != null ? Lab.esc(n.text) : fmt(n.value, 3) + ' kcal'}</span>`).join('')}</div>`;
+    } else el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${svg}${labels}</svg>`;
+  }
+  function watchResize(el, fn) { el = $(el); if ('ResizeObserver' in window) { let w = 0; new ResizeObserver(() => { if (Math.abs(el.clientWidth - w) > 4) { w = el.clientWidth; fn(); } }).observe(el); } }
+
+  /* ===================== PART 1: FAST PLANT MODEL =====================
+     Model (calibrated to the manual's Tables 1–2):
+     mean dry biomass per plant D(t) = 0.045 · G · t^1.147 g  (0.42 g at day 7, 0.93 g at day 14), levelling off after day 28.
+     G = growth multiplier from conditions (light, temperature, crowding, fertilizer); G = 1 for standard conditions.
+     Each plant has its own lognormal vigor k (sd 0.22 on log scale).
+     Dry fraction f(t) = 0.19 + 0.004 t (21.8% at day 7, 24.6% at day 14) ± 0.012 per plant; low light lowers it.
+     Wet mass = dry / f, plus blotting error (sd 0.02 g); washing loses 0–4% of roots (same factor for wet and dry).
+     Dark respiration: 4 mg CO2 per g dry mass per hour at 24 °C. */
+  function plantDry(t, G) { const tt = Math.min(t, 28); return 0.045 * G * Math.pow(Math.max(tt, 0.3), 1.147) * (t > 28 ? 1 + 0.01 * (t - 28) : 1); }
+  function dryFrac(t, lightFactor = 1) { return 0.19 + 0.004 * Math.min(t, 28) - 0.03 * (1 - Math.min(1, lightFactor)); }
+
+  const P1KEY = 'p1state';
+  function newFlat() {
+    const plants = [];
+    for (let i = 0; i < 40; i++) plants.push({ k: Math.exp(rng.normal(0, 0.22)), fn: rng.normal(0, 0.012), harvested: false });
+    return { day: 4, plants, harvests: 0, pending: null, resp: null };
+  }
+  let s1 = Lab.store.get(P1KEY) || newFlat();
+  const save1 = () => Lab.store.set(P1KEY, s1);
+
+  const rawT = Lab.table('#p1-raw', {
+    save: 'p1raw',
+    columns: [{ key: 'hv', label: 'Harvest' }, { key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'plant', label: 'Plant' }, { key: 'wet', label: 'Wet mass', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Dry mass', unit: 'g', num: true, digits: 3 }]
+  });
+  const sumT = Lab.table('#p1-sum', {
+    save: 'p1sum',
+    columns: [{ key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'wet', label: 'Mean wet/plant', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Mean dry/plant', unit: 'g', num: true, digits: 3 }, { key: 'se', label: 'SE dry', unit: 'g', num: true, digits: 3 },
+      { key: 'pct', label: '% biomass', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'NPP/plant/day', unit: 'kcal/day', num: true, editable: true }],
+    onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); }
+  });
+  function checkSummary(rows) {
+    const out = $('#p1-check'); out.innerHTML = '';
+    rows.forEach(r => {
+      const pct = 100 * r.dry / r.wet, en = r.dry * KP, npp = en / r.age;
+      const ck = (v, e, tol) => v == null || !isFinite(v) ? '<span class="pill">blank</span>' : (Math.abs(v - e) <= Math.abs(e) * tol + 1e-3 ? '<span class="pill ok">✓</span>' : '<span class="pill bad">recheck</span>');
+      out.append(h('div', { html: `Day ${r.age}: % biomass ${ck(r.pct, pct, 0.02)} · energy ${ck(r.energy, en, 0.03)} · NPP ${ck(r.npp, npp, 0.04)}` }));
+    });
+  }
+  const p1Chart = Lab.chart('#p1-chart', { xLabel: 'Plant age (days)', yLabel: 'Mass per plant (g)', xMin: 0, series: [] });
+  function drawP1Chart(rows) {
+    const pts = rows.slice().sort((a, b) => a.age - b.age);
+    p1Chart.update({ series: [
+      { name: 'Dry mass (biomass), mean ± 2 SE', points: pts.map(r => ({ x: r.age, y: r.dry, err: 2 * r.se })) },
+      { name: 'Wet mass, mean', points: pts.map(r => ({ x: r.age, y: r.wet })), dash: true }
+    ] });
+  }
+
+  // ---------- Part 1 canvas ----------
+  const cv1 = Lab.canvas('#p1-canvas', 0.5);
+  let anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] };
+  function drawPlant(ctx, x, y, D, age, sc, alpha) {
+    if (D <= 0) return;
+    ctx.save(); ctx.globalAlpha = alpha;
+    const hgt = sc * (6 + 46 * Math.sqrt(D / 1.4)), leaf = sc * (3 + 11 * Math.sqrt(D / 1.4));
+    ctx.strokeStyle = C('--s6'); ctx.lineWidth = Math.max(1, sc * 1.6);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - hgt); ctx.stroke();
+    ctx.fillStyle = C('--s6');
+    const nLeaves = Math.min(6, 2 + Math.floor(age / 4));
+    for (let i = 0; i < nLeaves; i++) {
+      const ly = y - hgt * (0.25 + 0.65 * i / Math.max(1, nLeaves - 1)) * 0.95, side = i % 2 ? 1 : -1, ls = leaf * (1 - 0.35 * i / nLeaves);
+      ctx.beginPath(); ctx.ellipse(x + side * ls * 0.9, ly, ls, ls * 0.5, side * -0.4, 0, Math.PI * 2); ctx.fill();
+    }
+    if (age >= 13) { ctx.fillStyle = C('--s4'); const nf = Math.min(5, Math.floor((age - 12) / 2) + 1); for (let i = 0; i < nf; i++) { ctx.beginPath(); ctx.arc(x + (i - (nf - 1) / 2) * sc * 3.4, y - hgt - sc * 2.5 - (i % 2) * sc * 2, sc * 2.1, 0, Math.PI * 2); ctx.fill(); } }
+    ctx.restore();
+  }
+  function draw1() { freshColors();
+    const { ctx, w, h: H } = cv1; ctx.clearRect(0, 0, w, H);
+    const day = anim1.from + (anim1.to - anim1.from) * anim1.t;
+    // light bank
+    ctx.fillStyle = C('--muted'); ctx.fillRect(w * 0.06, 8, w * 0.88, 12);
+    ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = C('--s4');
+    ctx.beginPath(); ctx.moveTo(w * 0.08, 20); ctx.lineTo(w * 0.92, 20); ctx.lineTo(w * 0.98, H * 0.86); ctx.lineTo(w * 0.02, H * 0.86); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.fillStyle = C('--s4'); for (let i = 0; i < 6; i++) ctx.fillRect(w * (0.1 + i * 0.14), 18, w * 0.1, 3);
+    // flat: 4 rows × 10, back rows higher & smaller
+    for (let r = 0; r < 4; r++) {
+      const sc = (0.62 + 0.13 * r) * (w / 640), yb = H * (0.42 + 0.14 * r), x0 = w * (0.1 - 0.015 * r), cw = (w * (0.8 + 0.03 * r)) / 10;
+      ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line');
+      ctx.fillRect(x0, yb, cw * 10, 10 * sc + 4); ctx.strokeRect(x0, yb, cw * 10, 10 * sc + 4);
+      for (let c = 0; c < 10; c++) {
+        const i = r * 10 + c, p = s1.plants[i], x = x0 + cw * (c + 0.5);
+        ctx.fillStyle = C('--warn'); ctx.globalAlpha = 0.45; ctx.fillRect(x - cw * 0.38, yb + 1, cw * 0.76, 5 * sc); ctx.globalAlpha = 1;
+        const fade = anim1.fading.find(f => f.i === i);
+        if (!p.harvested || fade) drawPlant(ctx, x, yb + 1, plantDry(day, 1) * p.k, day, sc, fade ? 1 - fade.t : 1);
+      }
+    }
+    ctx.fillStyle = C('--muted'); ctx.font = `${Math.max(11, w / 55)}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.fillText(`Day ${Math.round(day)} · 24 °C · light bank 200 µmol m⁻² s⁻¹, 24 h`, w * 0.04, H - 8);
+  }
+  const loop1 = Lab.loop(dt => {
+    let busy = false;
+    if (anim1.t < 1) { anim1.t = Math.min(1, anim1.t + dt / 0.7); busy = true; }
+    anim1.fading.forEach(f => { f.t = Math.min(1, f.t + dt / 0.5); if (f.t < 1) busy = true; });
+    anim1.fading = anim1.fading.filter(f => f.t < 1);
+    draw1(); if (!busy) loop1.stop();
+  });
+  cv1.onresize = draw1;
+  function setDay(d) { d = Math.max(0, Math.min(28, d)); anim1 = { from: s1.day, to: d, t: Lab.reducedMotion() ? 1 : 0, fading: anim1.fading }; s1.day = d; save1(); ui1(); loop1.start(); }
+  function ui1() {
+    $('#p1-day').textContent = s1.day + ' d';
+    const left = s1.plants.filter(p => !p.harvested).length;
+    $('#p1-left').textContent = left;
+    $('#p1-plus1').disabled = $('#p1-plus7').disabled = s1.day >= 28;
+    $('#p1-status').textContent = s1.pending ? `Harvest ${s1.pending.hv} is weighed wet. Dry it to get biomass.` : (s1.day < 7 ? 'Advance to day 7, then harvest.' : left < +$('#p1-n').value ? 'Not enough plants left for another harvest.' : 'Harvest now, or let the plants keep growing.');
+  }
+  $('#p1-plus1').addEventListener('click', () => setDay(s1.day + 1));
+  $('#p1-plus7').addEventListener('click', () => setDay(s1.day + 7));
+  $('#p1-n').addEventListener('change', ui1);
+  $('#p1-harvest').addEventListener('click', () => {
+    if (s1.pending) { $('#p1-status').textContent = 'Dry and weigh the current harvest before pulling more plants.'; return; }
+    if (s1.day < 3) { $('#p1-status').textContent = 'The seedlings are too small to harvest. Let them grow.'; return; }
+    if (s1.plants.filter(p => !p.harvested).length < +$('#p1-n').value) { $('#p1-status').textContent = 'Not enough plants left for another harvest.'; return; }
+    const n = +$('#p1-n').value, avail = s1.plants.map((p, i) => i).filter(i => !s1.plants[i].harvested);
+    const pick = rng.shuffle(avail).slice(0, n).sort((a, b) => a - b);
+    s1.harvests += 1; const hv = s1.harvests, rows = [];
+    pick.forEach((i, j) => {
+      const p = s1.plants[i]; p.harvested = true;
+      const D = plantDry(s1.day, 1) * p.k * (1 - rng.uniform() * 0.04);
+      const f = Math.max(0.12, dryFrac(s1.day) + p.fn);
+      const wet = Math.max(D * 1.5, D / f + rng.normal(0, 0.02));
+      rows.push({ hv: 'H' + hv, age: s1.day, plant: 'P' + (i + 1), wet: +wet.toFixed(3), dry: null, _D: +Math.max(0.001, D + rng.normal(0, 0.001)).toFixed(3) });
+      anim1.fading.push({ i, t: Lab.reducedMotion() ? 1 : -j * 0.15 });
+    });
+    s1.pending = { hv, age: s1.day, rows };
+    rawT.setRows(rawT.getRows().concat(rows.map(r => ({ hv: r.hv, age: r.age, plant: r.plant, wet: r.wet, dry: null }))));
+    $('#p1-rw').textContent = fmt(stats.mean(rows.map(r => r.wet)), 3) + ' g'; $('#p1-rd').textContent = 'drying…';
+    save1(); ui1(); loop1.start();
+  });
+  let drying = false;
+  $('#p1-dry').addEventListener('click', () => {
+    if (!s1.pending || drying) { if (!drying) $('#p1-status').textContent = 'Nothing to dry yet: harvest plants first.'; return; }
+    drying = true; let f = 0;
+    const finish = () => {
+      const pend = s1.pending; s1.pending = null; drying = false;
+      const all = rawT.getRows().map(r => { const m = pend.rows.find(x => x.hv === r.hv && x.plant === r.plant); return m ? Object.assign({}, r, { dry: m._D }) : r; });
+      rawT.setRows(all);
+      const dr = pend.rows.map(r => r._D), wr = pend.rows.map(r => r.wet);
+      sumT.addRow({ age: pend.age, n: dr.length, wet: stats.mean(wr), dry: stats.mean(dr), se: stats.se(dr), pct: null, energy: null, npp: null });
+      $('#p1-rd').textContent = fmt(stats.mean(dr), 3) + ' g'; setProg('#p1-prog', 0);
+      save1(); ui1(); updatePlantCalc();
+    };
+    if (Lab.reducedMotion()) return finish();
+    const t = setInterval(() => { f += 0.1; setProg('#p1-prog', f); $('#p1-status').textContent = `Oven at 100 °C… ${Math.round(f * 48)} h`; if (f >= 1) { clearInterval(t); finish(); } }, 70);
+  });
+  $('#p1-reset').addEventListener('click', () => { s1 = newFlat(); save1(); rawT.clear(); sumT.clear(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] }; $('#p1-rw').textContent = $('#p1-rd').textContent = '—'; ui1(); draw1(); updatePlantCalc(); });
+  ui1(); draw1();
+  if (s1.pending) { $('#p1-rd').textContent = 'drying…'; }
+
+  // ---------- Dark respiration chamber ----------
+  const cvR = Lab.canvas('#r-canvas', 0.42);
+  let respTrace = null, respT = 1;
+  function drawR() { freshColors();
+    const { ctx, w, h: H } = cvR; ctx.clearRect(0, 0, w, H);
+    const bx = w * 0.04, by = H * 0.12, bw = w * 0.36, bh = H * 0.76;
+    ctx.fillStyle = C('--ink'); ctx.globalAlpha = 0.85; ctx.fillRect(bx, by, bw, bh); ctx.globalAlpha = 1;
+    ctx.strokeStyle = C('--line'); ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    const age = s1.resp ? s1.resp.age : s1.day;
+    for (let i = 0; i < 5; i++) drawPlant(ctx, bx + bw * (0.14 + i * 0.18), by + bh - 6, plantDry(age, 1), age, w / 900, 0.55);
+    ctx.fillStyle = C('--surface'); ctx.font = `${Math.max(11, w / 50)}px sans-serif`; ctx.fillText('dark, sealed 2.0 L', bx + 8, by + 18);
+    ctx.fillStyle = C('--stain'); ctx.fillRect(bx + bw - 26, by + 8, 18, 12);
+    // trace
+    const gx = w * 0.48, gy = H * 0.1, gw = w * 0.48, gh = H * 0.72;
+    ctx.strokeStyle = C('--line'); ctx.lineWidth = 1; ctx.strokeRect(gx, gy, gw, gh);
+    ctx.fillStyle = C('--muted'); ctx.fillText('CO₂ (ppm) vs time (0–10 min)', gx, gy + gh + 16);
+    if (respTrace) {
+      const lo = respTrace[0], hi = respTrace[respTrace.length - 1] + 40, n = Math.max(1, Math.floor(respTrace.length * respT));
+      ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2; ctx.beginPath();
+      for (let i = 0; i < n; i++) { const x = gx + gw * i / (respTrace.length - 1), y = gy + gh - (respTrace[i] - lo + 20) / (hi - lo + 20) * gh; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke(); ctx.fillStyle = C('--ink'); ctx.fillText(Math.round(respTrace[n - 1]) + ' ppm', gx + 6, gy + 16);
+    }
+  }
+  cvR.onresize = drawR;
+  const loopR = Lab.loop(dt => { respT = Math.min(1, respT + dt / 2.5); drawR(); if (respT >= 1) loopR.stop(); });
+  function respUI() {
+    const r = s1.resp;
+    $('#r-age').textContent = r ? r.age + ' d' : '—'; $('#r-start').textContent = r ? Math.round(r.start) + ' ppm' : '—';
+    $('#r-end').textContent = r ? Math.round(r.end) + ' ppm' : '—'; $('#r-rise').textContent = r ? Math.round(r.end - r.start) + ' ppm' : '—';
+  }
+  $('#p1-resp').addEventListener('click', () => {
+    const alive = s1.plants.filter(p => !p.harvested); if (alive.length < 5) { $('#r-rise').textContent = 'need 5 plants'; return; }
+    const five = rng.shuffle(alive).slice(0, 5), dm = five.reduce((s, p) => s + plantDry(s1.day, 1) * p.k, 0);
+    const mg = dm * 4 * (10 / 60) * rng.normal(1, 0.04), rise = mg / MG_PER_PPM, start = rng.normal(418, 6);
+    respTrace = Array.from({ length: 41 }, (_, i) => start + rise * i / 40 + rng.normal(0, 3)); respTrace[40] = start + rise;
+    s1.resp = { age: s1.day, start, end: start + rise, trace: respTrace }; save1(); respUI();
+    respT = Lab.reducedMotion() ? 1 : 0; loopR.start(); updatePlantCalc();
+  });
+  if (s1.resp) { respTrace = s1.resp.trace; }
+  respUI(); drawR();
+
+  // ---------- Part 1 calculations & plant Sankey ----------
+  function harvestPair() { const r = sumT.getRows().slice().sort((a, b) => a.age - b.age); return r.length >= 2 ? [r[0], r[r.length - 1]] : null; }
+  function measuredNPP() { const p = harvestPair(); if (p && p[1].age > p[0].age) return (p[1].dry - p[0].dry) / (p[1].age - p[0].age) * KP; const r = sumT.getRows(); return r.length ? r[r.length - 1].dry * KP / r[r.length - 1].age : NaN; }
+  function respPerPlant() { const r = s1.resp; if (!r) return NaN; return (r.end - r.start) * MG_PER_PPM / 5 * 144; } // mg CO2 per plant per day
+  const p1calc = calcBlock('#p1-calc', [
+    { key: 'c1-gpd', label: 'Biomass added per plant per day between your first and last harvests', unit: 'g/day', expect: () => { const p = harvestPair(); return p ? (p[1].dry - p[0].dry) / (p[1].age - p[0].age) : null; }, need: 'needs 2 harvests', tolPct: 0.04 },
+    { key: 'c1-npp', label: 'NPP between harvests (× 4.35 kcal/g)', unit: 'kcal/day per plant', expect: v => isFinite(v('c1-gpd')) ? v('c1-gpd') * KP : null, tolPct: 0.03 },
+    { key: 'c1-co2', label: 'CO<sub>2</sub> respired per plant per day (rise × 0.00364 ÷ 5 plants × 144 ten-minute periods)', unit: 'mg/day', expect: () => isFinite(respPerPlant()) ? respPerPlant() : null, need: 'measure respiration', tolPct: 0.04 },
+    { key: 'c1-r', label: 'Plant respiration energy (mg ÷ 1000 × 2.97)', unit: 'kcal/day per plant', expect: v => isFinite(v('c1-co2')) ? v('c1-co2') / 1000 * KCAL_PER_G_CO2 : null, tolPct: 0.03 },
+    { key: 'c1-gpp', label: 'Estimated GPP = NPP + R', unit: 'kcal/day per plant', expect: v => isFinite(v('c1-npp')) && isFinite(v('c1-r')) ? v('c1-npp') + v('c1-r') : null, tolPct: 0.02 },
+    { key: 'c1-ratio', label: 'NPP ÷ GPP × 100 (share of captured energy stored)', unit: '%', expect: v => isFinite(v('c1-gpp')) && v('c1-gpp') > 0 ? 100 * v('c1-npp') / v('c1-gpp') : null, tolPct: 0.03 }
+  ]);
+  function updatePlantCalc() {
+    p1calc.recheck();
+    const npp = measuredNPP(), R = respPerPlant() / 1000 * KCAL_PER_G_CO2;
+    const el = $('#sankey-plant');
+    if (!isFinite(npp)) { el.innerHTML = '<p class="note">Harvest and dry plants to draw your diagram.</p>'; return; }
+    const r = isFinite(R) ? R : 0;
+    sankey(el, { name: 'GPP (captured)', value: npp + r, color: 'var(--s4)', children: [
+      { name: 'NPP: stored biomass', value: Math.max(0, npp), color: 'var(--s1)' },
+      { name: isFinite(R) ? 'Respiration (heat)' : 'Respiration: not yet measured', value: r, color: 'var(--s2)' }] }, { height: 210 });
+  }
+  watchResize('#sankey-plant', updatePlantCalc);
+  updatePlantCalc();
+
+  Lab.prompt('#p1-predict', { key: 'p1-diagram', label: 'Step 1 (predict): Before measuring, describe your annotated energy diagram for a plant. Where does energy enter? What are all the ways it can leave? Do you expect more energy to go in or out over 14 days?', rows: 3 });
+  Lab.prompt('#p1-prompts', { key: 'p1-q-dry', label: 'Step 5: Why is dry mass a better measure of productivity and biomass than living mass? What percentage of your living plants was biomass, and did it change with age?', rows: 3 });
+  Lab.prompt('#p1-prompts', { key: 'p1-q-net', label: 'Step 4: Explain why your harvest numbers measure net, not gross, primary productivity. How confident are you in your GPP estimate? (Hint: does a plant respire at the same rate in the light as in the dark?)', rows: 3 });
+  Lab.prompt('#p1-prompts', { key: 'p1-q-unc', label: 'Step 6: Describe the uncertainty in your data. Use your SE values: how far apart are your day-7 and day-14 means compared with 2 SE? What limits your conclusions?', rows: 3 });
+
+  /* ===================== PART 2: LARVAE MODEL =====================
+     Per larva over 3 days at 24 °C on Brussels sprout (calibrated to the manual's Table 3):
+     start mass m0 ~ N(0.030, 0.005) g; end mass = m0 × N(6.0, 0.7)  → gain ≈ 0.15 g wet.
+     True larval dry fraction 0.16 (the 40% in the manual is an assumption you can test).
+     Efficiency of conversion of ingested food (dry basis) ECI ≈ 0.10 → dry intake ≈ 0.24 g ≈ 1.6 g wet sprout (dry fraction 0.15).
+     Approximate digestibility AD ≈ 0.75 → frass ≈ 0.06 g dry per larva.
+     Evaporation: a cut sprout loses ~10% (sd 1.5%) of its wet mass in 3 days; the control sprout measures this. */
+  const FOODS = {
+    sprout: { name: 'Brussels sprout', dry: 0.15, q: 1.0, ad: 0.75, accept: 1 },
+    broccoli: { name: 'Broccoli', dry: 0.11, q: 1.1, ad: 0.78, accept: 1 },
+    cabbage: { name: 'Cabbage leaf', dry: 0.08, q: 0.9, ad: 0.72, accept: 1 },
+    fastplant: { name: 'Fast Plant leaves', dry: 0.10, q: 1.05, ad: 0.76, accept: 1 },
+    lettuce: { name: 'Lettuce (not a brassica)', dry: 0.05, q: 0.6, ad: 0.6, accept: 0.08 }
+  };
+  const LARVA_DRY = 0.16;
+  function runBarn({ n = 10, T = 24, food = 'sprout', foodMass = null } = {}) {
+    const F = FOODS[food], q10 = Math.pow(2, (T - 24) / 10);
+    const start = foodMass || rng.normal(29, 2.2), ctrlStart = rng.normal(29, 2.2), evap = Math.max(0.05, rng.normal(0.10, 0.015)) * Math.pow(1.5, (T - 24) / 10);
+    const dryF = Math.max(0.03, rng.normal(F.dry, 0.008));
+    const eci = Math.max(0.03, (0.10 * F.q - 0.003 * (T - 24)) * rng.normal(1, 0.06));
+    const larvae = Array.from({ length: n }, () => Math.max(0.015, rng.normal(0.030, 0.005)));
+    // demand: dry intake per larva (g) scales with size, temperature and food quality, capped by gut volume for watery food
+    let demand = larvae.map(m => 0.24 * (m / 0.03) * q10 * F.q * rng.normal(1, 0.1));
+    const wetCap = 2.6 * q10;
+    demand = demand.map(d => Math.min(d, wetCap * dryF) * F.accept);
+    const avail = start * (1 - evap * 0.5) * 0.85 * dryF;           // dry food reachable (tough core left)
+    const totalDem = demand.reduce((s, x) => s + x, 0), lim = Math.min(1, avail / totalDem);
+    const intake = demand.map(d => d * lim);
+    const ad = Math.min(0.9, rng.normal(F.ad, 0.03));
+    const ends = larvae.map((m, i) => m + Math.max(-0.005, eci * intake[i] - 0.004 * (1 - F.accept)) / LARVA_DRY);
+    const eatenWet = intake.reduce((s, x) => s + x, 0) / dryF;
+    const end = Math.max(0.5, start - eatenWet - evap * (start - eatenWet / 2));
+    const frass = intake.reduce((s, x) => s + x, 0) * (1 - ad);
+    const r2 = x => +x.toFixed(2), r3 = x => +x.toFixed(3);
+    return { n, start: r2(start + rng.normal(0, 0.01)), end: r2(end + rng.normal(0, 0.01)), cs: r2(ctrlStart), ce: r2(ctrlStart * (1 - evap)),
+      l0: r3(larvae.reduce((s, x) => s + x, 0) + rng.normal(0, 0.001)), l3: r3(ends.reduce((s, x) => s + x, 0) + rng.normal(0, 0.001)), frass: r3(Math.max(0.001, frass + rng.normal(0, 0.002))), _dryF: dryF, _food: food };
+  }
+  function audit(b, ratioP, ratioL, correct) {
+    const evapFrac = b.cs > 0 ? (b.cs - b.ce) / b.cs : 0;
+    const raw = b.start - b.end, corr = raw - evapFrac * b.start;
+    const consumedWet = correct ? Math.max(0, corr) : raw;
+    const Cn = consumedWet * ratioP * KP / b.n, P = (b.l3 - b.l0) / b.n * ratioL * KL, Fe = b.frass / b.n * KF;
+    return { consumedWet, C: Cn, P, F: Fe, A: Cn - Fe, R: Cn - P - Fe, offered: b.start * ratioP * KP / b.n, gainPer: (b.l3 - b.l0) / b.n, wetPer: consumedWet / b.n };
+  }
+
+  const barnT = Lab.table('#p2-raw', {
+    save: 'p2barns',
+    columns: [{ key: 'barn', label: 'Barn' }, { key: 'n', label: 'Larvae', num: true, digits: 0 }, { key: 'start', label: 'Sprout day 0', unit: 'g', num: true, digits: 2 }, { key: 'end', label: 'Sprout day 3', unit: 'g', num: true, digits: 2 },
+      { key: 'cs', label: 'Control day 0', unit: 'g', num: true, digits: 2 }, { key: 'ce', label: 'Control day 3', unit: 'g', num: true, digits: 2 },
+      { key: 'l0', label: 'Larvae day 0', unit: 'g', num: true, digits: 3 }, { key: 'l3', label: 'Larvae day 3', unit: 'g', num: true, digits: 3 }, { key: 'frass', label: 'Frass, dry', unit: 'g', num: true, digits: 3 }],
+    onChange: () => updateP2()
+  });
+  const ratioP = () => { const v = parseFloat($('#ratio-plant').value); return v > 0 && v <= 1 ? v : NaN; };
+  const ratioL = () => { const v = parseFloat($('#ratio-larva').value); return v > 0 && v <= 1 ? v : NaN; };
+  const b1 = () => barnT.getRows()[0];
+  const p2calc = calcBlock('#p2-calc', [
+    { key: 'c2-cons', label: 'Wet mass of sprout consumed by the whole group (raw, or corrected for evaporation)', unit: 'g', expect: () => { const b = b1(); if (!b) return null; const raw = b.start - b.end, ev = (b.cs - b.ce) / b.cs; return [raw, raw - ev * b.start]; }, need: 'run a barn', tolPct: 0.02 },
+    { key: 'c2-pe', label: 'Plant energy consumed per larva = consumed × plant ratio × 4.35 ÷ number of larvae', unit: 'kcal', expect: v => b1() && isFinite(v('c2-cons')) && isFinite(ratioP()) ? v('c2-cons') * ratioP() * KP / b1().n : null, tolPct: 0.03 },
+    { key: 'c2-gain', label: 'Wet mass gained per larva', unit: 'g', expect: () => b1() ? (b1().l3 - b1().l0) / b1().n : null, need: 'run a barn', tolPct: 0.03 },
+    { key: 'c2-prod', label: 'Energy stored in growth per larva = gain × larva ratio × 5.5', unit: 'kcal', expect: v => isFinite(v('c2-gain')) && isFinite(ratioL()) ? v('c2-gain') * ratioL() * KL : null, tolPct: 0.03 },
+    { key: 'c2-frass', label: 'Dry frass per larva', unit: 'g', expect: () => b1() ? b1().frass / b1().n : null, need: 'run a barn', tolPct: 0.03 },
+    { key: 'c2-fe', label: 'Frass (egested) energy per larva = frass × 4.76', unit: 'kcal', expect: v => isFinite(v('c2-frass')) ? v('c2-frass') * KF : null, tolPct: 0.03 },
+    { key: 'c2-assim', label: 'Assimilated energy = consumed − frass', unit: 'kcal', expect: v => isFinite(v('c2-pe')) && isFinite(v('c2-fe')) ? v('c2-pe') - v('c2-fe') : null, tolPct: 0.03, tolAbs: 0.005 },
+    { key: 'c2-resp', label: 'Respiration estimate = consumed − growth − frass', unit: 'kcal', expect: v => isFinite(v('c2-pe')) && isFinite(v('c2-prod')) && isFinite(v('c2-fe')) ? v('c2-pe') - v('c2-prod') - v('c2-fe') : null, tolPct: 0.04, tolAbs: 0.005 },
+    { key: 'c2-eff', label: 'Gross production efficiency = growth ÷ consumed × 100', unit: '%', expect: v => isFinite(v('c2-pe')) && v('c2-pe') > 0 && isFinite(v('c2-prod')) ? 100 * v('c2-prod') / v('c2-pe') : null, tolPct: 0.03 }
+  ]);
+  const p2Chart = Lab.chart('#p2-chart', { type: 'bar', yLabel: 'Energy per larva over 3 days (kcal)', xLabel: 'Energy pathway', categories: ['Consumed (C)', 'Frass (F)', 'Growth (P)', 'Respiration (R)'], series: [] });
+  function updateP2() {
+    p2calc.recheck();
+    const rows = barnT.getRows(), rp = ratioP(), rl = ratioL(), corr = $('#p2-correct').checked;
+    const eff = $('#p2-eff'); eff.innerHTML = '';
+    if (!rows.length || !isFinite(rp) || !isFinite(rl)) { p2Chart.update({ series: [] }); $('#sankey-larva').innerHTML = '<p class="note">Run a barn to draw the energy budget.</p>'; $('#sankey-larva-note').textContent = ''; return; }
+    const A = rows.map(b => audit(b, rp, rl, corr));
+    const g = k => meanSE(A.map(a => a[k]));
+    const cats = [['Consumed (C)', 'C'], ['Frass (F)', 'F'], ['Growth (P)', 'P'], ['Respiration (R)', 'R']];
+    p2Chart.update({ series: [{ name: `Mean ± 2 SE (n = ${rows.length} barns)`, points: cats.map(([c, k]) => { const s = g(k); return { x: c, y: s.m, err: rows.length > 1 ? 2 * s.se : 0 }; }) }] });
+    const m = k => g(k).m;
+    const tiles = [['Consumed per larva', fmt(m('C'), 3) + ' kcal'], ['Assimilation eff. (A/C)', fmt(100 * m('A') / m('C'), 0) + '%'], ['Production eff. (P/A)', fmt(100 * m('P') / m('A'), 0) + '%'], ['Gross eff. (P/C)', fmt(100 * m('P') / m('C'), 0) + '%']];
+    tiles.forEach(([k, v]) => eff.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v))));
+    const off = m('offered'), Cm = m('C'), Fm = m('F'), Pm = m('P'), Rm = m('R');
+    sankey('#sankey-larva', { name: 'Sprout offered (per larva)', value: Math.max(off, Cm), color: 'var(--s6)', children: [
+      { name: 'Eaten (C)', value: Cm, color: 'var(--s1)', children: [
+        { name: 'Assimilated (A)', value: Math.max(0, Cm - Fm), color: 'var(--s3)', children: [
+          { name: 'Growth (P)', value: Math.max(0, Pm), color: 'var(--s5)' },
+          { name: 'Respiration, heat (R)', value: Math.max(0, Rm), color: 'var(--s2)' }] },
+        { name: 'Frass, egested (F)', value: Fm, color: 'var(--s4)' }] },
+      { name: 'Left uneaten', value: Math.max(0, off - Cm), color: 'var(--muted)' }] }, { height: 270 });
+    $('#sankey-larva-note').textContent = Rm < 0 ? 'Your budget does not balance: growth + frass is larger than what was eaten, so respiration comes out negative. Check your dry/wet ratios. Which assumption is most likely wrong?' : `Respiration (${fmt(Rm, 3)} kcal) was not measured; it is whatever energy is left after growth and frass are subtracted from consumption.`;
+  }
+  watchResize('#sankey-larva', updateP2);
+  ['#ratio-plant', '#ratio-larva', '#p2-correct'].forEach(s => $(s).addEventListener('input', updateP2));
+  $('#p2-correct').addEventListener('change', updateP2);
+  const nOut = () => $('#p2-n-out').textContent = $('#p2-n').value; $('#p2-n').addEventListener('input', () => { nOut(); if (!p2run) { barnState = idleBarn(); draw2(); } }); nOut();
+  $('#p2-sprout').addEventListener('click', () => { const w = rng.normal(27, 2), d = w * rng.normal(0.15, 0.006); $('#p2-ratio-note').innerHTML = `Spare sprout: wet ${fmt(w, 2)} g → dry ${fmt(d, 2)} g (ratio <strong>${fmt(d / w, 3)}</strong>). Your Fast Plants were about 0.21–0.25.`; });
+  $('#p2-larva').addEventListener('click', () => { const w = rng.normal(0.9, 0.08), d = w * rng.normal(LARVA_DRY, 0.008); $('#p2-ratio-note').innerHTML = `5 extra larvae: wet ${fmt(w, 3)} g → dry ${fmt(d, 3)} g (ratio <strong>${fmt(d / w, 3)}</strong>). Compare with the 0.40 assumption.`; });
+  $('#p2-reset').addEventListener('click', () => { barnT.clear(); });
+
+  // ---------- Part 2 canvas: Brassica Barn ----------
+  const cv2 = Lab.canvas('#p2-canvas', 0.52);
+  function idleBarn() { const n = +$('#p2-n').value; return { t: 0, n, eaten: 0, frass: 0, grow: 1, evap: 0, larvae: Array.from({ length: n }, (_, i) => ({ a: i / n * Math.PI * 2, r: 0.9 + 0.25 * rng.uniform(), sp: 0.25 + 0.2 * rng.uniform(), dir: rng.chance(0.5) ? 1 : -1 })), frassDots: Array.from({ length: 160 }, () => [rng.uniform(), rng.uniform()]) }; }
+  let barnState = idleBarn(), p2run = null;
+  function drawCaterpillar(ctx, x, y, ang, len) {
+    const seg = 6, r = len / 5;
+    for (let i = seg - 1; i >= 0; i--) {
+      const px = x - Math.cos(ang) * i * r * 0.9, py = y - Math.sin(ang) * i * r * 0.9 + Math.sin(i + performance.now() / 200) * 0.6;
+      ctx.fillStyle = i === 0 ? C('--s6') : C('--s1'); ctx.beginPath(); ctx.arc(px, py, r * (i === 0 ? 0.85 : 0.75), 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawSprout(ctx, x, y, R, eatenFrac, seed) {
+    // a sprout half seen from above: concentric leaf layers with bites removed
+    for (let L = 0; L < 4; L++) {
+      const rr = R * (1 - L * 0.22); ctx.fillStyle = L % 2 ? C('--s6') : C('--s1'); ctx.globalAlpha = 0.65 + 0.1 * L;
+      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // bites (drawn in background colour)
+    const nb = Math.round(eatenFrac * 26); ctx.fillStyle = C('--surface');
+    for (let i = 0; i < nb; i++) { const a = (i * 2.399 + seed) % (Math.PI * 2), d = R * (0.95 - 0.5 * ((i * 0.37) % 1) * eatenFrac); ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, R * (0.16 + 0.1 * eatenFrac), 0, Math.PI * 2); ctx.fill(); }
+  }
+  function draw2() { freshColors();
+    const { ctx, w, h: H } = cv2; ctx.clearRect(0, 0, w, H); const st = barnState;
+    const bx = w * 0.03, by = H * 0.06, bw = w * 0.66, bh = H * 0.86;
+    ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 14) : ctx.rect(bx, by, bw, bh); ctx.fill(); ctx.stroke();
+    // frass pad
+    ctx.fillStyle = C('--surface-2'); ctx.fillRect(bx + 10, by + bh * 0.72, bw - 20, bh * 0.24);
+    ctx.fillStyle = C('--muted'); ctx.font = `${Math.max(10, w / 62)}px sans-serif`; ctx.fillText('paper-towel frass pad', bx + 16, by + bh * 0.94);
+    const nd = Math.floor(st.frass * 160); ctx.fillStyle = C('--ink');
+    for (let i = 0; i < nd; i++) { const [u, v] = st.frassDots[i]; ctx.beginPath(); ctx.arc(bx + 18 + u * (bw - 36), by + bh * 0.75 + v * bh * 0.14, 1.6, 0, Math.PI * 2); ctx.fill(); }
+    const R = Math.min(bw, bh) * 0.17 * Math.sqrt(1 - st.evap * 0.6);
+    const s1x = bx + bw * 0.3, s2x = bx + bw * 0.68, sy = by + bh * 0.38;
+    drawSprout(ctx, s1x, sy, R, st.eaten, 0.3); drawSprout(ctx, s2x, sy, R, st.eaten, 1.7);
+    st.larvae.forEach((L, i) => {
+      const cx = i % 2 ? s2x : s1x, rr = R * L.r, x = cx + Math.cos(L.a) * rr, y = sy + Math.sin(L.a) * rr;
+      drawCaterpillar(ctx, x, y, L.a + L.dir * Math.PI / 2, (w / 640) * 16 * Math.pow(st.grow, 0.45));
+    });
+    ctx.fillStyle = C('--muted'); ctx.fillText(`Brassica Barn · ${st.n} larvae · day ${fmt(st.t * 3, 1)}`, bx + 12, by + 18);
+    // control dish
+    const cx = w * 0.84, cy = H * 0.38, cr = Math.min(w, H) * 0.12;
+    ctx.strokeStyle = C('--muted'); ctx.fillStyle = C('--surface'); ctx.beginPath(); ctx.arc(cx, cy, cr * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    drawSprout(ctx, cx, cy, cr * 0.75 * Math.sqrt(1 - st.evap * 0.6), 0, 0);
+    ctx.fillStyle = C('--muted'); ctx.textAlign = 'center'; ctx.fillText('control sprout', cx, cy + cr * 1.5 + 16); ctx.fillText('(no larvae)', cx, cy + cr * 1.5 + 30); ctx.textAlign = 'left';
+  }
+  cv2.onresize = draw2;
+  const loop2 = Lab.loop(dt => {
+    const st = barnState;
+    st.larvae.forEach(L => { L.a += L.dir * L.sp * dt; });
+    if (p2run) {
+      st.t = Math.min(1, st.t + dt / 5); st.eaten = st.t * p2run.eatFrac; st.frass = st.t * Math.min(1, p2run.b.frass / 0.9); st.grow = 1 + st.t * (p2run.b.l3 / p2run.b.l0 - 1); st.evap = st.t * 0.1;
+      $('#p2-day').textContent = fmt(st.t * 3, 1); setProg('#p2-prog', st.t);
+      $('#p2-sm').textContent = fmt(p2run.b.start + (p2run.b.end - p2run.b.start) * st.t, 1) + ' g';
+      if (st.t >= 1) finishBarn();
+    }
+    draw2();
+  });
+  function finishBarn() {
+    const b = p2run.b; p2run = null;
+    $('#p2-sm').textContent = fmt(b.end, 2) + ' g'; $('#p2-lm').textContent = fmt(b.l3, 3) + ' g'; $('#p2-fm').textContent = fmt(b.frass, 3) + ' g';
+    barnT.addRow(Object.assign({ barn: 'B' + (barnT.getRows().length + 1) }, { n: b.n, start: b.start, end: b.end, cs: b.cs, ce: b.ce, l0: b.l0, l3: b.l3, frass: b.frass }));
+    $('#p2-status').textContent = `Barn ${barnT.getRows().length} done. Larvae moved to a fresh barn to finish their life cycle.`;
+  }
+  $('#p2-run').addEventListener('click', () => {
+    if (p2run) { $('#p2-status').textContent = 'This barn is still feeding. Wait for day 3.'; return; }
+    const n = +$('#p2-n').value, b = runBarn({ n });
+    barnState = idleBarn(); p2run = { b, eatFrac: Math.min(0.9, (b.start - b.end) / b.start) };
+    $('#p2-sm').textContent = fmt(b.start, 2) + ' g'; $('#p2-lm').textContent = fmt(b.l0, 3) + ' g'; $('#p2-fm').textContent = '0.000 g';
+    $('#p2-status').textContent = `Day 0: sprout ${fmt(b.start, 2)} g, ${n} larvae ${fmt(b.l0, 3)} g. Feeding…`;
+    if (Lab.reducedMotion()) { barnState.t = 1; finishBarn(); draw2(); }
+  });
+  if (!Lab.reducedMotion()) loop2.start();
+  draw2(); updateP2();
+
+  Lab.prompt('#p2-predict', { key: 'p2-diagram', label: 'Step 1 (predict): Sketch in words your energy diagram for a larva. Of the plant energy a larva eats, roughly what fraction do you predict ends up as larval body mass? Why?', rows: 3 });
+  Lab.prompt('#p2-prompts', { key: 'p2-q-ratio', label: 'Which dry/wet ratios did you use for the sprout and the larvae, and why? Change one of them and describe how the respiration estimate responds. Which assumption matters most?', rows: 3 });
+  Lab.prompt('#p2-prompts', { key: 'p2-q-evap', label: 'Turn the evaporation correction off and on. How much does the "consumed" energy change? Why is a control sprout necessary for an honest energy audit?', rows: 3 });
+
+  /* ===================== PART 3: DESIGN =====================
+     Plant growth multiplier G = G_light · G_temp · G_crowd · G_fert (standard conditions → 1):
+       G_light = [I/(I+150)] / [200/350]   (saturating light response; I in µmol m⁻² s⁻¹)
+       G_temp  = 2^((T−24)/10) below 24 °C (Q10 ≈ 2); exp(−((T−24)/6)^2) above (heat stress)
+       G_crowd = 1/(1 + 0.35 (n−1)) per plant for n plants per cell (competition for light, water, nutrients)
+       G_fert  = 0.45, 0.80, 1.00, 0.93 for 0, ½, 1, 2× fertilizer (2× causes mild salt stress)
+     Larvae use runBarn() with temperature (Q10 ≈ 2, ECI falls 0.003 per °C), food type and crowding (fixed ~29 g of food). */
+  const IVS = {
+    plant: {
+      light: { label: 'Light intensity', unit: 'µmol m⁻² s⁻¹', levels: [50, 100, 200, 300, 400], def: [50, 100, 200, 400], std: 200 },
+      temp: { label: 'Air temperature', unit: '°C', levels: [14, 18, 24, 28, 32], def: [18, 24, 28, 32], std: 24 },
+      crowd: { label: 'Plants per cell (crowding)', unit: 'plants', levels: [1, 2, 3, 4], def: [1, 2, 3, 4], std: 1 },
+      fert: { label: 'Fertilizer dose', unit: '× standard', levels: [0, 0.5, 1, 2], def: [0, 0.5, 1, 2], std: 1 }
+    },
+    larva: {
+      food: { label: 'Food type', unit: '', levels: ['sprout', 'broccoli', 'cabbage', 'fastplant', 'lettuce'], def: ['sprout', 'broccoli', 'cabbage', 'lettuce'], std: 'sprout', cat: true },
+      ltemp: { label: 'Rearing temperature', unit: '°C', levels: [16, 20, 24, 28], def: [16, 20, 24, 28], std: 24 },
+      dens: { label: 'Larvae per barn (crowding)', unit: 'larvae', levels: [5, 10, 15, 20, 30], def: [5, 10, 20, 30], std: 10 }
+    }
+  };
+  const DVS = {
+    plant: [['dry', 'Dry biomass per plant at day 14 (g)'], ['pct', 'Percent biomass (%)'], ['npp', 'NPP per plant (kcal/day)']],
+    larva: [['gain', 'Wet mass gained per larva (g)'], ['eatWet', 'Wet food eaten per larva (g)'], ['eff', 'Gross production efficiency P/C (%)'], ['cons', 'Energy consumed per larva (kcal)']]
+  };
+  function plantG(iv, x) {
+    const c = { light: 200, temp: 24, crowd: 1, fert: 1 }; c[iv] = x;
+    const gl = (c.light / (c.light + 150)) / (200 / 350);
+    const gt = c.temp <= 24 ? Math.pow(2, (c.temp - 24) / 10) : Math.exp(-Math.pow((c.temp - 24) / 6, 2));
+    const gc = 1 / (1 + 0.35 * (c.crowd - 1));
+    const gf = { 0: 0.45, 0.5: 0.8, 1: 1, 2: 0.93 }[c.fert];
+    return { G: gl * gt * gc * gf, gl };
+  }
+  function levelName(sys, iv, x) { return IVS[sys][iv].cat ? FOODS[x].name : x + (IVS[sys][iv].unit ? ' ' + IVS[sys][iv].unit : ''); }
+  const dRaw = Lab.table('#d-raw', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, { key: 'a', label: 'Response 1' }, { key: 'b', label: 'Response 2' }, { key: 'c', label: 'Response 3' }] });
+  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 3 }, { key: 'sd', label: 'SD', num: true, digits: 3 }, { key: 'se', label: 'SE', num: true, digits: 3 }, { key: 'ci', label: '95% CI (± 2 SE)' }] });
+  const dChart = Lab.chart('#d-chart', { xLabel: '', yLabel: '', series: [] });
+  let dResults = Lab.store.get('d-results') || null;
+  function fillIV() {
+    const sys = $('#d-sys').value, sel = $('#d-iv'); sel.innerHTML = '';
+    Object.entries(IVS[sys]).forEach(([k, v]) => sel.append(h('option', { value: k }, v.label)));
+    const dv = $('#d-dv'); dv.innerHTML = ''; DVS[sys].forEach(([k, l]) => dv.append(h('option', { value: k }, l)));
+    fillLevels();
+  }
+  function fillLevels() {
+    const sys = $('#d-sys').value, iv = $('#d-iv').value, spec = IVS[sys][iv], box = $('#d-levels'); box.innerHTML = '';
+    spec.levels.forEach((x, i) => { const id = 'lv-' + i; box.append(h('label', { class: 'check', for: id }, h('input', { type: 'checkbox', id, value: String(x), checked: spec.def.includes(x) }), levelName(sys, iv, x))); });
+    const consts = sys === 'plant' ? 'Held constant: 24 h light at 200 µmol m⁻² s⁻¹, 24 °C, 1 plant per cell, standard fertilizer, harvest at day 14 (except the variable you change).'
+      : 'Held constant: ~29 g of food per barn, 10 fourth-instar larvae, 24 °C, Brussels sprout, 3 days, evaporation control (except the variable you change). Larval ratio = your Part 2 value.';
+    $('#d-const').textContent = consts; drawD();
+  }
+  $('#d-sys').addEventListener('change', fillIV); $('#d-iv').addEventListener('change', fillLevels);
+  const repOut = () => $('#d-reps-out').textContent = $('#d-reps').value; $('#d-reps').addEventListener('input', repOut); repOut();
+  $('#d-dv').addEventListener('change', () => renderDesign());
+  const cvD = Lab.canvas('#d-canvas', 0.42);
+  function drawD() { freshColors();
+    const { ctx, w, h: H } = cvD; ctx.clearRect(0, 0, w, H);
+    const sys = $('#d-sys').value, iv = $('#d-iv').value, lv = [...document.querySelectorAll('#d-levels input:checked')].map(i => i.value);
+    const n = Math.max(1, lv.length), cw = w / n;
+    ctx.font = `${Math.max(10, w / 60)}px sans-serif`; ctx.textAlign = 'center';
+    lv.forEach((x, i) => {
+      const cx = cw * (i + 0.5), base = H * 0.78;
+      const res = dResults && dResults.sys === sys && dResults.iv === iv ? dResults.levels.find(L => String(L.x) === x) : null;
+      if (sys === 'plant') {
+        const val = IVS.plant[iv].cat ? x : +x, g = plantG(iv, val);
+        ctx.fillStyle = C('--s4'); ctx.globalAlpha = iv === 'light' ? Math.min(0.9, 0.1 + val / 450) : 0.35; ctx.fillRect(cx - cw * 0.4, 6, cw * 0.8, 6); ctx.globalAlpha = 1;
+        ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line'); ctx.fillRect(cx - cw * 0.38, base, cw * 0.76, 14); ctx.strokeRect(cx - cw * 0.38, base, cw * 0.76, 14);
+        const np = iv === 'crowd' ? val : 1;
+        for (let k = 0; k < np; k++) drawPlant(ctx, cx + (k - (np - 1) / 2) * Math.min(14, cw * 0.15), base, plantDry(14, g.G), 14, Math.min(2, cw / 85), 1);
+      } else {
+        ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.5; ctx.fillRect(cx - cw * 0.4, H * 0.18, cw * 0.8, H * 0.6); ctx.strokeRect(cx - cw * 0.4, H * 0.18, cw * 0.8, H * 0.6);
+        const food = iv === 'food' ? x : 'sprout'; ctx.fillStyle = food === 'lettuce' ? C('--s6') : C('--s1'); ctx.globalAlpha = food === 'lettuce' ? 0.45 : 0.8;
+        ctx.beginPath(); ctx.arc(cx, H * 0.45, Math.min(cw * 0.22, H * 0.16), 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        const nl = iv === 'dens' ? +x : 10; ctx.fillStyle = C('--s6');
+        for (let k = 0; k < Math.min(nl, 30); k++) { const a = k / Math.min(nl, 30) * Math.PI * 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * Math.min(cw * 0.3, H * 0.22), H * 0.45 + Math.sin(a) * H * 0.22, 2.5, 0, Math.PI * 2); ctx.fill(); }
+      }
+      ctx.fillStyle = C('--ink'); ctx.fillText(sys === 'larva' && iv === 'food' ? FOODS[x].name.split(' ')[0] : x, cx, H * 0.93);
+      if (res) { ctx.fillStyle = C('--accent'); ctx.fillText('mean ' + fmt(res.mean, 3), cx, H * 0.14 + (sys === 'plant' ? 12 : 0)); }
+    });
+    ctx.textAlign = 'left';
+  }
+  cvD.onresize = drawD;
+  document.getElementById('d-levels').addEventListener('change', drawD);
+  $('#d-run').addEventListener('click', () => {
+    const sys = $('#d-sys').value, iv = $('#d-iv').value, spec = IVS[sys][iv], reps = +$('#d-reps').value;
+    const lv = [...document.querySelectorAll('#d-levels input:checked')].map(i => spec.cat ? i.value : +i.value);
+    if (lv.length < 2) { $('#d-stat').textContent = 'Choose at least two levels (one should be the standard condition as a control).'; return; }
+    const out = { sys, iv, levels: [] };
+    lv.forEach(x => {
+      const reps_ = [];
+      for (let r = 0; r < reps; r++) {
+        if (sys === 'plant') {
+          const g = plantG(iv, x), k = Math.exp(rng.normal(0, 0.22)), D = plantDry(14, g.G) * k, f = Math.max(0.12, dryFrac(14, g.gl) + rng.normal(0, 0.012));
+          const wet = D / f + rng.normal(0, 0.02);
+          reps_.push({ dry: D, pct: 100 * D / wet, npp: D * KP / 14 });
+        } else {
+          const opt = { n: iv === 'dens' ? x : 10, T: iv === 'ltemp' ? x : 24, food: iv === 'food' ? x : 'sprout', foodMass: rng.normal(29, 1.5) };
+          const b = runBarn(opt), a = audit(b, b._dryF, isFinite(ratioL()) ? ratioL() : 0.4, true);
+          reps_.push({ gain: a.gainPer, eatWet: a.wetPer, eff: a.C > 0 ? 100 * a.P / a.C : 0, cons: a.C });
+        }
+      }
+      out.levels.push({ x, reps: reps_ });
+    });
+    dResults = out; Lab.store.set('d-results', dResults);
+    const rows = [];
+    out.levels.forEach(L => L.reps.forEach((r, i) => rows.push(sys === 'plant'
+      ? { level: levelName(sys, iv, L.x), rep: i + 1, a: 'dry ' + fmt(r.dry, 3) + ' g', b: fmt(r.pct, 1) + '% biomass', c: 'NPP ' + fmt(r.npp, 3) + ' kcal/d' }
+      : { level: levelName(sys, iv, L.x), rep: i + 1, a: 'gain ' + fmt(r.gain, 3) + ' g', b: 'ate ' + fmt(r.eatWet, 2) + ' g wet', c: 'P/C ' + fmt(r.eff, 1) + '%' })));
+    dRaw.setRows(rows); renderDesign();
+  });
+  $('#d-clear').addEventListener('click', () => { dResults = null; Lab.store.set('d-results', null); dRaw.clear(); dSum.clear(); dChart.update({ series: [] }); $('#d-stat').textContent = ''; $('#d-readouts').innerHTML = ''; drawD(); });
+  function renderDesign() {
+    if (!dResults) return;
+    const { sys, iv } = dResults, spec = IVS[sys][iv];
+    if ($('#d-sys').value !== sys) { $('#d-sys').value = sys; fillIV(); }
+    if ($('#d-iv').value !== iv) { $('#d-iv').value = iv; fillLevels(); }
+    const dv = $('#d-dv').value || DVS[sys][0][0], dvLabel = DVS[sys].find(d => d[0] === dv)[1];
+    dResults.levels.forEach(L => { const v = L.reps.map(r => r[dv]); L.mean = stats.mean(v); L.sd = stats.sd(v); L.se = stats.se(v); });
+    dSum.setRows(dResults.levels.map(L => ({ level: levelName(sys, iv, L.x), n: L.reps.length, mean: L.mean, sd: L.sd, se: L.se, ci: fmt(L.mean - 2 * L.se, 3) + ' to ' + fmt(L.mean + 2 * L.se, 3) })));
+    if (spec.cat) {
+      dChart.update({ type: 'bar', categories: dResults.levels.map(L => FOODS[L.x].name.split(' (')[0]), xLabel: spec.label, yLabel: dvLabel, xMin: undefined,
+        series: [{ name: 'Mean ± 2 SE', points: dResults.levels.map(L => ({ x: FOODS[L.x].name.split(' (')[0], y: L.mean, err: 2 * L.se })) }] });
+    } else {
+      dChart.update({ type: 'xy', categories: undefined, xLabel: spec.label + ' (' + spec.unit + ')', yLabel: dvLabel, xMin: 0,
+        series: [{ name: 'Mean ± 2 SE', points: dResults.levels.map(L => ({ x: L.x, y: L.mean, err: 2 * L.se })) }] });
+    }
+    // pairwise comparison: which means have non-overlapping 95% CIs?
+    const Ls = dResults.levels, pairs = [];
+    for (let i = 0; i < Ls.length; i++) for (let j = i + 1; j < Ls.length; j++) { const a = Ls[i], b = Ls[j]; if (a.mean + 2 * a.se < b.mean - 2 * b.se || b.mean + 2 * b.se < a.mean - 2 * a.se) pairs.push(levelName(sys, iv, a.x) + ' vs ' + levelName(sys, iv, b.x)); }
+    $('#d-stat').textContent = pairs.length ? `95% CIs do not overlap (likely a real difference) for: ${pairs.join('; ')}.` : 'All 95% confidence intervals overlap: the differences may be due to chance. Consider more replicates.';
+    const ro = $('#d-readouts'); ro.innerHTML = '';
+    const best = Ls.reduce((a, b) => b.mean > a.mean ? b : a);
+    ro.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Highest mean'), h('span', { class: 'v' }, levelName(sys, iv, best.x))), h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Replicates per level'), h('span', { class: 'v' }, String(Ls[0].reps.length))));
+    drawD();
+  }
+  fillIV();
+  if (dResults) renderDesign(); else drawD();
+  const plan = $('#design-plan');
+  [['d-question', 'Your question (one variable, measurable outcome):'], ['d-hyp', 'Hypothesis and prediction (If … then … because …):'], ['d-vars', 'Independent variable, dependent variable, and the variables you will hold constant:'], ['d-control', 'What is your control group, and why is replication needed?']]
+    .forEach(([k, l]) => { const d = h('div'); plan.append(d); Lab.prompt(d, { key: k, label: l, rows: 3 }); });
+
+  /* ===================== ANALYZE & REFLECT ===================== */
+  const an = $('#analysis');
+  Lab.prompt(an, { key: 'a-conv', label: 'Steps 1–4: Summarize your conversions. Show one complete worked example that goes from a wet mass in grams to an energy in kcal for (a) a plant and (b) a larva. Make sure units are comparable (per larva, per day, per plant).', rows: 4 });
+  Lab.prompt(an, { key: 'a-combine', label: 'Step 5: Combine your plant diagram and your larva diagram into one energy audit, from light to larval growth. Which pathways did you measure, which did you calculate by difference, and which could you only estimate (for example, light energy)?', rows: 5 });
+  Lab.prompt(an, { key: 'a-graph', label: 'Step 6: Describe your graphs (plant biomass vs age; larval energy pathways; your design experiment). What do the error bars tell you about which differences are meaningful?', rows: 4 });
+  Lab.prompt(an, { key: 'a-eff', label: 'What percentage of the plant energy eaten by a larva became larval biomass? Compare it with the "about 10%" rule for energy transfer between trophic levels and explain any difference.', rows: 3 });
+  const cer = h('div', { class: 'cer' }); an.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
+  const pc = Lab.prompt(cer, { key: 'cer-c', label: 'Claim: Answer the driving question for your model ecosystem.', rows: 4 }); pc.querySelector('label').dataset.letter = 'C';
+  const pe = Lab.prompt(cer, { key: 'cer-e', label: 'Evidence: Cite specific numbers (with SE or CI) from Parts 1–3.', rows: 4 }); pe.querySelector('label').dataset.letter = 'E';
+  const pr = Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning: Connect the evidence to the laws of thermodynamics and to how organisms acquire and use energy.', rows: 4 }); pr.querySelector('label').dataset.letter = 'R';
+
+  const rf = $('#reflect');
+  Lab.prompt(rf, { key: 'r-track', label: 'How do you keep track of energy as it moves through a biological system? Name two ways the techniques used here could be improved (for example, measuring larval dry fraction or the sprout’s own dry fraction instead of assuming them).', rows: 4 });
+  Lab.prompt(rf, { key: 'r-factors', label: 'What kinds of things affect plant productivity, larval growth, or the interaction between them? Use your Part 3 results and one idea you did not test.', rows: 3 });
+  Lab.prompt(rf, { key: 'r-role', label: 'What is the role of energy in ecosystems? Explain why food chains rarely have more than four or five links.', rows: 3 });
+  Lab.prompt(rf, { key: 'r-next', label: 'Where could you go from here? Propose a follow-up (for example, a mathematical model of plant growth, herbivory and plant defense, or energy allocation to reproduction) and the first measurement you would make.', rows: 3 });
+})();
+</script>
+</body>
+</html>

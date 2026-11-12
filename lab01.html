@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lab 1 · Artificial Selection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .step > *, .step-body > *, .sim > *, .stage > * { min-width: 0; }
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+  .pair > figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+  figcaption, .cap { font-size: .84rem; color: var(--muted); }
+  canvas.viz { cursor: pointer; touch-action: manipulation; }
+  .status { font-size: .9rem; min-height: 1.4em; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); } .status.warn { color: var(--warn); }
+  .btn-col { display: grid; gap: 8px; }
+  .btn-col .btn { justify-content: center; }
+  .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; align-items: end; }
+  .diagram { width: 100%; max-width: 640px; height: auto; display: block; }
+  .diagram .c-base { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  .diagram .c-sel { fill: var(--stain-soft); stroke: var(--stain); stroke-width: 2; }
+  .diagram .c-off { fill: none; stroke: var(--s3); stroke-width: 2.5; stroke-dasharray: 7 5; }
+  .diagram .ax { stroke: var(--muted); stroke-width: 1.2; }
+  .diagram .mk { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 3 3; }
+  .diagram text { fill: var(--ink); font-family: var(--f-body); font-size: 13px; }
+  .diagram text.m { fill: var(--muted); font-size: 12px; }
+  .diagram .arr { stroke: var(--ink); stroke-width: 1.6; fill: none; }
+  .tt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
+  .tt-grid fieldset { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; margin: 0; min-width: 0; }
+  .tt-grid legend { font-weight: 600; font-size: .9rem; padding: 0 4px; }
+</style>
+</head>
+<body>
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 1 · Evolution</span></nav>
+    <div class="eyebrow">Investigation 1</div>
+    <h1>Artificial Selection</h1>
+    <p class="driving-q">Can extreme selection change expression of a quantitative trait in a population in one generation?</p>
+    <div class="tags"><span class="tag">Unit 7: Natural Selection</span><span class="tag">EVO-1.F</span><span class="tag">EVO-1.G</span><span class="tag">Science Practice 4.B</span><span class="tag">≈ 7 weeks of short sessions (wet lab) · 2 periods (online)</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+
+<main>
+  <div class="wrap gutter">
+    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  </div>
+
+  <!-- ============ 1. OVERVIEW ============ -->
+  <section class="step wrap gutter" data-step="Overview">
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <div class="step-body prose">
+      <p class="lede">Darwin built his case for natural selection partly on what breeders already knew: if you let only certain individuals reproduce, the next generation looks different. In this lab your class raises a population of about 150 Wisconsin Fast Plants (<em>Brassica rapa</em>), measures a trait that varies, lets only the most extreme 10% breed, and checks whether their offspring are different.</p>
+      <p>In the real lab this takes about seven weeks of short daily visits to a light box. Here you will do the same steps in a virtual growth chamber: count leaf hairs (trichomes) under a magnifier, build a histogram, choose parents, cross-pollinate them with a bee stick, and grow and score generation 2. Then you will design your own selection experiment.</p>
+      <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
+        <ul>
+          <li><strong>EVO-1.F</strong> Explain how humans can affect diversity within a population.</li>
+          <li><strong>EVO-1.G</strong> Explain the relationship between changes in the environment and evolutionary changes in the population.</li>
+          <li><strong>Science Practice 4.B</strong> Describe data from a table or graph (histograms, means, standard deviation, error bars).</li>
+          <li>Use descriptive statistics to decide whether a population's genetic makeup changed, and design a follow-up investigation about one trait.</li>
+        </ul>
+      </div>
+      <div class="callout callout--safety"><div class="callout-title">Safety (wet lab)</div>
+        <p>Plants grow under electric light banks with water reservoirs. Keep water and fertilizer solution away from wires, plugs and ballasts, and refill reservoirs carefully. Wash hands after handling soil and fertilizer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. BACKGROUND ============ -->
+  <section class="step wrap gutter" data-step="Background">
+    <header><div class="eyebrow">Background</div><h2>Variation, heredity and differential reproduction</h2></header>
+    <div class="step-body prose">
+      <p><strong>Natural selection</strong> is differential reproduction: some individuals leave more surviving offspring than others because of the traits they have. If those traits are inherited, the next generation has a different genetic makeup. That change in a population's gene pool over generations is <strong>evolution</strong>. In nature the environment does the "choosing." In <strong>artificial selection</strong>, people decide which individuals breed. Corn, dogs and broccoli (a close relative of your Fast Plants) were all shaped this way.</p>
+      <p>Selection only works when two things are true. First, individuals must <strong>vary</strong> in the trait. Second, at least part of that variation must be <strong>heritable</strong>, meaning it comes from differences in genes rather than only from differences in light, water or chance.</p>
+      <h3>Quantitative traits</h3>
+      <p>Mendel's pea traits come in clear categories, such as purple or white. Many traits instead vary on a continuum: height, number of flowers, number of hairs. These <strong>quantitative traits</strong> are usually <strong>polygenic</strong>: many genes each add a small amount, and the environment adds more variation on top. The result is a spread of values that you describe with a histogram, a mean, a median and a standard deviation.</p>
+      <p>Fast Plants have small hairs called <strong>trichomes</strong> on their leaves and stems. Some plants have none and some have more than 50 along the edge of one leaf. Trichomes may discourage insects such as cabbage white butterfly caterpillars from eating or laying eggs, but making them costs the plant energy.</p>
+      <h3>Predicting the response to selection</h3>
+      <p>Phenotypic variance (V<sub>P</sub>) has a genetic part (V<sub>G</sub>) and an environmental part (V<sub>E</sub>). <strong>Heritability</strong>, h², is the fraction that is genetic. Breeders use it to predict how far the next generation will move:</p>
+      <div class="equation">V<sub>P</sub> = V<sub>G</sub> + V<sub>E</sub> &nbsp;&nbsp; h² = V<sub>G</sub> / V<sub>P</sub></div>
+      <div class="equation">S = (mean of selected parents) − (mean of whole population) &nbsp;&nbsp; R = h² × S</div>
+      <p>S is the <strong>selection differential</strong> (how extreme your chosen parents are) and R is the <strong>response</strong> (how much the offspring mean shifts). If h² were 1, offspring would be as extreme as their parents. If h² were 0, offspring would look like the original population no matter which parents you chose. Real traits fall in between, so offspring usually "regress" part of the way back toward the original mean.</p>
+      <figure style="margin:0">
+        <svg class="diagram" viewBox="0 0 640 250" role="img" aria-label="Diagram: the generation 1 distribution, the selected top tail shaded, and the generation 2 distribution shifted right by R, which is smaller than S.">
+          <line class="ax" x1="40" y1="200" x2="620" y2="200"/>
+          <path class="c-base" d="M40 200 C 120 200, 160 60, 240 60 C 320 60, 360 200, 460 200 Z"/>
+          <path class="c-sel" d="M352 200 C 352 160, 360 158, 376 172 C 400 190, 430 199, 460 200 Z"/>
+          <path class="c-off" d="M110 200 C 190 200, 230 70, 310 70 C 390 70, 430 200, 530 200"/>
+          <line class="mk" x1="240" y1="40" x2="240" y2="200"/>
+          <line class="mk" x1="310" y1="52" x2="310" y2="200"/>
+          <line class="mk" x1="384" y1="120" x2="384" y2="200"/>
+          <path class="arr" d="M240 30 H 380 M372 25 L380 30 L372 35"/>
+          <text x="300" y="22" text-anchor="middle">S (selection differential)</text>
+          <path class="arr" d="M240 112 H 306 M298 107 L306 112 L298 117"/>
+          <text x="248" y="106" class="m">R</text>
+          <text x="150" y="226" class="m">Generation 1 (all plants)</text>
+          <text x="392" y="140">Selected parents</text>
+          <text x="470" y="226" class="m">Generation 2 (dashed)</text>
+          <text x="330" y="246" text-anchor="middle" class="m">Trichome number →</text>
+        </svg>
+        <figcaption>Selecting the hairiest tail shifts the next generation by R = h²S. With h² ≈ 0.5, generation 2 moves about halfway toward the parents' mean.</figcaption>
+      </figure>
+      <p>One round of strong selection can shift the mean noticeably, but it rarely changes the population all the way. Your job is to measure the shift, decide whether it is bigger than chance, and explain it.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. PRE-LAB ============ -->
+  <section class="step wrap gutter" data-step="Pre-lab">
+    <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
+    <div class="step-body">
+      <p class="muted">The manual asks you not to over-prepare: you will build understanding from your own data. These questions make sure you have the tools you need.</p>
+      <div id="prelab"></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. GROW & SCORE ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Grow &amp; score">
+    <header><div class="eyebrow">Procedure Steps 1–5 · Structured inquiry</div><h2>Grow generation 1 and score trichomes</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Your class planted 150 seeds, six to a bottle, in 25 soda-bottle wick systems under a light bank. The plants are now 7–12 days old and the class has picked <strong>trichome number</strong> as the trait to select. To make counts repeatable, everyone uses the same sampling rule: <strong>count the hairs along the right-hand margin of the first true leaf</strong>.</p>
+        <ol>
+          <li>Tap a seedling in the growth chamber to put its first true leaf under the magnifier.</li>
+          <li>Tap each hair along the <em>right</em> margin to mark it (tap again to unmark). Hairs on the left margin are not counted.</li>
+          <li>Press <strong>Record my count</strong>. Your count is compared with a careful recount, the way a lab partner would double-check. Hand-count at least 5 plants.</li>
+          <li>Then press <strong>Auto-count the rest</strong> to score the remaining plants (as if your classmates scored their bottles) and build the class histogram.</li>
+        </ol>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="pop-view">Population shown</label><select id="pop-view"></select></div>
+          <div class="field"><span class="label">Plant under magnifier</span><span class="val" id="plant-info">—</span></div>
+          <div class="readouts"><div class="readout"><span class="k">Hairs marked</span><span class="v" id="mark-count">0</span></div></div>
+          <div class="btn-col">
+            <button class="btn btn--primary" id="record" type="button">Record my count</button>
+            <div class="row"><button class="btn btn--sm" id="clear-marks" type="button">Clear marks</button><button class="btn btn--sm" id="next-plant" type="button">Next unscored plant</button></div>
+            <button class="btn" id="autocount" type="button">Auto-count the rest</button>
+          </div>
+          <div class="field"><span class="label" id="bin-label">Histogram bin width</span>
+            <div class="seg" role="group" aria-labelledby="bin-label" id="bin-seg"><button type="button" data-bin="2" aria-pressed="false">2 hairs</button><button type="button" data-bin="5" aria-pressed="true">5 hairs</button><button type="button" data-bin="10" aria-pressed="false">10 hairs</button></div>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="new-pop" type="button">Plant a new class population</button>
+          <p class="status" id="score-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <div class="pair">
+            <figure><canvas class="viz" id="tray" aria-label="Growth chamber seen from above: 25 bottles of six Fast Plant seedlings. Tap a seedling to examine it."></canvas><figcaption>Growth chamber, top view. Scored plants show their count; the plant under the magnifier is outlined.</figcaption></figure>
+            <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
+          </div>
+          <div class="readouts">
+            <div class="readout"><span class="k">Plants scored</span><span class="v" id="r-n">0</span></div>
+            <div class="readout"><span class="k">Mean</span><span class="v" id="r-mean">—</span></div>
+            <div class="readout"><span class="k">Median</span><span class="v" id="r-med">—</span></div>
+            <div class="readout"><span class="k">Range</span><span class="v" id="r-range">—</span></div>
+            <div class="readout"><span class="k">SD</span><span class="v" id="r-sd">—</span></div>
+          </div>
+          <div id="hist1"></div>
+        </div>
+      </div>
+      <h3>Your hand counts</h3>
+      <p class="muted small">Fidelity check: how close are your counts to the recount? Large differences tell you the counting method needs work.</p>
+      <div id="hand-table"></div>
+      <div id="score-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 5. SELECT & POLLINATE ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Select &amp; pollinate">
+    <header><div class="eyebrow">Procedure Steps 6–10</div><h2>Choose the parents and cross-pollinate them</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Directional selection pushes a trait one way. As a class, pick the hairiest (or least hairy) 10% of the whole population. In the real lab you mark those plants and snip the tops off every other plant in your bottles, then move the selected bottles to a separate light box so no stray pollen reaches them.</p>
+        <p>Fast Plants are <strong>self-incompatible</strong>: a flower cannot be fertilized by its own plant's pollen. On days 14–16 you collect pollen on a bee stick (a dried honeybee glued to a toothpick) and brush it across every flower of every selected plant, then repeat for three days with the <em>same</em> stick. The unselected plants are pollinated with a different stick so the two groups never mix.</p>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><span class="label" id="dir-label">Direction of selection</span>
+            <div class="seg" role="group" aria-labelledby="dir-label" id="dir-seg"><button type="button" data-dir="1" aria-pressed="true">Most hairs</button><button type="button" data-dir="-1" aria-pressed="false">Fewest hairs</button></div>
+          </div>
+          <div class="field"><label for="sel-pct">Fraction selected <output id="sel-pct-out" class="val"></output></label><input id="sel-pct" type="range" min="5" max="20" step="1" value="10"></div>
+          <button class="btn btn--primary" id="select-btn" type="button">Mark selected plants</button>
+          <button class="btn" id="pollinate" type="button">Pollinate with bee stick (days 14–16)</button>
+          <label class="check"><input type="checkbox" id="grow-ctrl" checked> Also grow a control line from the unselected plants</label>
+          <button class="btn btn--primary" id="grow" type="button">Harvest seed and plant generation 2</button>
+          <p class="status" id="sel-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="bee" aria-label="Isolated light box with the selected plants in flower and a bee stick moving pollen between them."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Parents selected</span><span class="v" id="s-n">—</span></div>
+            <div class="readout"><span class="k">Parents' mean</span><span class="v" id="s-mean">—</span></div>
+            <div class="readout"><span class="k">Parents' SD</span><span class="v" id="s-sd">—</span></div>
+            <div class="readout"><span class="k">Flowers pollinated</span><span class="v" id="s-flowers">0</span></div>
+          </div>
+          <div id="hist-sel"></div>
+        </div>
+      </div>
+      <div id="sel-prompts"></div>
+    </div>
+  </section>
+
+  <!-- ============ 6. GENERATION 2 ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Generation 2">
+    <header><div class="eyebrow">Procedure Steps 11–14</div><h2>Score generation 2 and compare</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Seeds from the selected parents were planted under identical conditions: same light bank, new soil and wicks, same fertilizer. At 7–12 days old, score the plants the same way you scored generation 1. You can hand-count some generation 2 plants in the scoring tool above (choose the population from the menu), then score the rest here.</p>
+      </div>
+      <div class="sim">
+        <div class="controls">
+          <button class="btn btn--primary" id="score2" type="button">Score generation 2 (all plants)</button>
+          <div class="callout callout--tip"><div class="callout-title">Keep going</div><p class="small">One round is the manual's experiment. Run more rounds to see whether the response continues, slows or stops.</p></div>
+          <button class="btn" id="round" type="button">Select again and grow the next generation</button>
+          <p class="small muted">Further rounds use the direction and fraction set in the step above. The control line breeds from a random sample of the same number of plants.</p>
+          <p class="status" id="g2-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <div class="readouts">
+            <div class="readout"><span class="k">Gen 1 mean</span><span class="v" id="c-m1">—</span></div>
+            <div class="readout"><span class="k">Gen 2 mean (selected)</span><span class="v" id="c-m2">—</span></div>
+            <div class="readout"><span class="k">Gen 2 mean (control)</span><span class="v" id="c-mc">—</span></div>
+            <div class="readout"><span class="k">Welch t (Gen 2 vs Gen 1)</span><span class="v" id="c-t">—</span></div>
+          </div>
+          <div id="cmp-hist"></div>
+          <div id="cmp-means"></div>
+        </div>
+      </div>
+      <h3>Calculate the response yourself</h3>
+      <p class="muted small">Use the means in the table below. S = parents' mean − generation 1 mean. R = generation 2 (selected line) mean − generation 1 mean. Realized heritability h² = R ÷ S.</p>
+      <div class="calc">
+        <div class="field"><label for="in-S">Selection differential S (hairs)</label><input id="in-S" type="number" step="any" data-save="calc-S" data-label="Selection differential S"></div>
+        <div class="field"><label for="in-R">Response R (hairs)</label><input id="in-R" type="number" step="any" data-save="calc-R" data-label="Response R"></div>
+        <div class="field"><label for="in-h2">Realized heritability h²</label><input id="in-h2" type="number" step="any" data-save="calc-h2" data-label="Realized heritability"></div>
+        <button class="btn" id="check-calc" type="button">Check my numbers</button>
+      </div>
+      <p class="status" id="calc-status" aria-live="polite"></p>
+      <h3>All populations</h3>
+      <div id="gen-table"></div>
+      <div id="lines"></div>
+    </div>
+  </section>
+
+  <!-- ============ 7. DESIGN ============ -->
+  <section class="step wrap wrap--wide gutter" data-step="Design">
+    <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own selection experiment</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p>Now ask your own question. You might select in the other direction, select a different quantitative trait (plant height or the amount of purple anthocyanin in the stem), change how strong selection is, or ask how much of the variation comes from the environment. Uneven growing conditions or early herbivore damage (caterpillars chewing the cotyledons) change what plants look like without changing their genes.</p>
+      </div>
+      <div id="design-q"></div>
+      <div class="sim">
+        <div class="controls">
+          <div class="field"><label for="d-trait">Trait to select</label><select id="d-trait"><option value="trich">Trichomes on leaf margin (hairs)</option><option value="height">Plant height at day 12 (cm)</option><option value="antho">Stem anthocyanin (purple score 0–10)</option></select></div>
+          <div class="field"><span class="label" id="d-dir-label">Direction</span><div class="seg" role="group" aria-labelledby="d-dir-label" id="d-dir"><button type="button" data-dir="1" aria-pressed="true">Increase</button><button type="button" data-dir="-1" aria-pressed="false">Decrease</button></div></div>
+          <div class="field"><label for="d-pct">Fraction selected each generation <output id="d-pct-out" class="val"></output></label><input id="d-pct" type="range" min="5" max="50" step="5" value="10"></div>
+          <div class="field"><label for="d-n">Plants per generation <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="50" max="300" step="10" value="150"></div>
+          <div class="field"><label for="d-gens">Generations of selection <output id="d-gens-out" class="val"></output></label><input id="d-gens" type="range" min="1" max="10" step="1" value="4"></div>
+          <div class="field"><label for="d-reps">Replicate selected lines <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="3" step="1" value="2"></div>
+          <div class="field"><label for="d-env">Growing conditions</label><select id="d-env"><option value="1">Uniform (same bottles, light, water)</option><option value="2">Uneven (some bottles dry out, uneven light)</option></select></div>
+          <label class="check"><input type="checkbox" id="d-herb"> Early herbivore damage on every plant</label>
+          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results table</button>
+          <p class="status" id="d-status" aria-live="polite"></p>
+        </div>
+        <div class="stage">
+          <canvas class="viz" id="d-canvas" aria-label="Representative plants from each generation of the first selected line, drawn to show height, hairs and stem color."></canvas>
+          <div class="readouts">
+            <div class="readout"><span class="k">Start mean</span><span class="v" id="d-r0">—</span></div>
+            <div class="readout"><span class="k">Final mean (selected)</span><span class="v" id="d-r1">—</span></div>
+            <div class="readout"><span class="k">Final mean (control)</span><span class="v" id="d-r2">—</span></div>
+            <div class="readout"><span class="k">Welch t, final gen</span><span class="v" id="d-rt">—</span></div>
+          </div>
+          <div id="d-chart"></div>
+          <div id="d-hist"></div>
+        </div>
+      </div>
+      <div id="d-table"></div>
+      <div id="design-a"></div>
+    </div>
+  </section>
+
+  <!-- ============ 8. ANALYZE ============ -->
+  <section class="step wrap gutter" data-step="Analyze">
+    <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Did evolution happen?</h2></header>
+    <div class="step-body">
+      <h3>Two-sample t-test</h3>
+      <p class="muted small">Compare two populations' means. Fill in from your simulation or type in your own class data. If |t| is larger than the critical value, the difference is unlikely to be chance alone (p &lt; 0.05).</p>
+      <div class="tt-grid">
+        <fieldset><legend>Population A</legend>
+          <div class="field"><label for="ta-m">Mean</label><input id="ta-m" type="number" step="any" value="12.0"></div>
+          <div class="field"><label for="ta-s">Standard deviation</label><input id="ta-s" type="number" step="any" value="9.0"></div>
+          <div class="field"><label for="ta-n">n</label><input id="ta-n" type="number" step="1" value="150"></div>
+        </fieldset>
+        <fieldset><legend>Population B</legend>
+          <div class="field"><label for="tb-m">Mean</label><input id="tb-m" type="number" step="any" value="20.0"></div>
+          <div class="field"><label for="tb-s">Standard deviation</label><input id="tb-s" type="number" step="any" value="10.0"></div>
+          <div class="field"><label for="tb-n">n</label><input id="tb-n" type="number" step="1" value="150"></div>
+        </fieldset>
+      </div>
+      <div class="row"><button class="btn btn--primary" id="tt-run" type="button">Calculate t</button><button class="btn" id="tt-fill" type="button">Fill with Gen 1 vs Gen 2 (selected)</button></div>
+      <div class="readouts">
+        <div class="readout"><span class="k">Difference</span><span class="v" id="tt-d">—</span></div>
+        <div class="readout"><span class="k">t</span><span class="v" id="tt-t">—</span></div>
+        <div class="readout"><span class="k">df (Welch)</span><span class="v" id="tt-df">—</span></div>
+        <div class="readout"><span class="k">Critical t (0.05)</span><span class="v" id="tt-c">—</span></div>
+      </div>
+      <p class="status" id="tt-status" aria-live="polite"></p>
+      <h3>Questions</h3>
+      <div id="analysis"></div>
+      <h3>Claim, evidence, reasoning</h3>
+      <div class="cer" id="cer"></div>
+    </div>
+  </section>
+
+  <!-- ============ 9. REFLECT ============ -->
+  <section class="step wrap gutter" data-step="Reflect">
+    <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
+    <div class="step-body">
+      <div class="prose"><p>A common question is why these plants make hairs at all, when building them costs energy. Is there an environment where hairy plants do better? That is the start of a testable hypothesis.</p></div>
+      <div id="reflect"></div>
+    </div>
+  </section>
+
+  <!-- ============ 10. SUBMIT ============ -->
+  <section class="step wrap gutter" data-step="Submit">
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <div class="step-body"><p class="muted small">Your tables and answers save in this browser. The virtual plants themselves are regrown when you reload the page, so finish a simulation run before you leave.</p><div data-responses></div></div>
+  </section>
+</main>
+
+<footer class="site-footer"><div class="wrap gutter">
+  <p>Interactive version adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and are not a substitute for wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
+  Lab.init({ id: 'lab01' });
+
+  /* ---------------- Pre-lab ---------------- */
+  Lab.quiz('#prelab', [
+    { type: 'multi', q: 'Artificial selection can change a population only if the trait… (choose all that apply)', choices: ['varies among individuals', 'is at least partly heritable', 'is controlled by a single gene', 'is helpful to the plant in nature'], answer: [0, 1], explain: 'Selection needs variation to choose from, and the variation must be passed to offspring. Polygenic traits respond well, and breeders often select traits that are useless (or even harmful) in the wild.' },
+    { type: 'mc', q: 'Which Fast Plant trait is best suited to this selection experiment?', choices: ['Whether the stem has any purple pigment (yes/no)', 'Number of trichomes along the edge of the first true leaf', 'Whether the plant flowers', 'The number of cotyledons (always two)'], answer: 1, explain: 'The manual asks for a trait you can score on a continuum (a number or a length), not a yes/no trait. Trichome counts vary from 0 to more than 50.' },
+    { type: 'num', q: 'Your class grew 150 plants. How many plants are in the top 10% that will be the parents of generation 2?', answer: 15, tol: 0, unit: 'plants', explain: '10% of 150 = 0.10 × 150 = 15 plants, enough to produce plenty of seed.' },
+    { type: 'num', q: 'Generation 1 has a mean of 12 hairs. The selected parents average 32 hairs. If heritability (h²) is 0.5, what mean do you predict for generation 2?', answer: 22, tol: 0.5, unit: 'hairs', explain: 'S = 32 − 12 = 20 hairs. R = h² × S = 0.5 × 20 = 10 hairs. Predicted mean = 12 + 10 = 22 hairs.' },
+    { type: 'mc', q: 'A bottle\'s counts are 0, 0, 1, 2, 3, 5 and 41 hairs. Which measure of center best describes a typical plant here?', choices: ['Mean (7.4 hairs)', 'Median (2 hairs)', 'Range (41 hairs)', 'Standard deviation'], answer: 1, explain: 'One very hairy plant pulls the mean up to 7.4, though most plants have 0–5 hairs. The median (2) resists extreme values, which is why skewed distributions like trichome counts are often summarized with the median.' },
+    { type: 'mc', q: 'Why must the selected plants be cross-pollinated with a bee stick and kept in a separate light box?', choices: ['Fast Plants self-pollinate, so isolation speeds seed set', 'Fast Plants are self-incompatible, and pollen from unselected plants would dilute the selection', 'Bees cannot see the flowers under grow lights', 'Isolation keeps the plants from catching viruses'], answer: 1, explain: 'A Fast Plant cannot fertilize itself, so pollen must be moved between plants. If pollen from the other 90% reached the selected plants, some offspring would have an unselected father and the response would shrink.' },
+    { type: 'num', q: 'Generation 2 has SD = 9.0 hairs and n = 144 plants. What is the standard error of the mean (SE = SD ÷ √n)?', answer: 0.75, tol: 0.01, unit: 'hairs', explain: 'SE = 9.0 ÷ √144 = 9.0 ÷ 12 = 0.75 hairs. Error bars of ±2 SE (±1.5 hairs) show an approximate 95% confidence interval for the mean.' }
+  ], { id: 'prelab' });
+
+  /* ================= GENETIC MODEL =================
+     Each trait is polygenic and additive: L unlinked loci, each with a "+" allele (frequency p0 in the founding seed stock).
+     Genotype at a locus = 0, 1 or 2 copies of "+". Genetic value G = base + a·(number of + alleles).
+     Phenotype P = G + E, with E ~ Normal(0, σE) (scaled up under uneven growing conditions).
+     Trichomes: 24 loci, p0 = 0.30, a = 2.2 hairs → V_G = 2·24·0.3·0.7·2.2² ≈ 48.8; σE = 7 → V_E = 49, so h² ≈ 0.5.
+     Counts are floored at 0 (many plants have few or no hairs), which skews the distribution right.
+     Height: h² ≈ 0.3. Anthocyanin score: h² ≈ 0.6. Herbivore damage is a plastic (non-heritable) response.
+     Transmission is Mendelian: each parent passes one allele per locus at random (independent assortment).
+     Fast Plants are self-incompatible, so the two parents of every seed are different plants. */
+  const TRAITS = {
+    trich: { label: 'Trichomes', unit: 'hairs', loci: 24, p0: 0.30, a: 2.2, base: -20, sdE: 7.0, digits: 0, min: 0, max: 999, herb: x => x * 1.4 + 3, bin: 5 },
+    height: { label: 'Height', unit: 'cm', loci: 16, p0: 0.5, a: 0.3, base: 5.2, sdE: 1.3, digits: 1, min: 1, max: 40, herb: x => x * 0.88, bin: 0.5 },
+    antho: { label: 'Anthocyanin', unit: 'score', loci: 12, p0: 0.4, a: 0.45, base: 0, sdE: 0.88, digits: 0, min: 0, max: 10, herb: x => x + 1.5, bin: 1 }
+  };
+  function newGenome(rng) { const g = {}; for (const k in TRAITS) { const T = TRAITS[k], a = new Uint8Array(T.loci); for (let i = 0; i < T.loci; i++) a[i] = (rng.uniform() < T.p0) + (rng.uniform() < T.p0); g[k] = a; } return g; }
+  const gamete = (x, rng) => x === 1 ? (rng.uniform() < 0.5 ? 1 : 0) : x / 2;
+  function childGenome(m, f, rng) { const g = {}; for (const k in TRAITS) { const a = new Uint8Array(m[k].length); for (let i = 0; i < a.length; i++) a[i] = gamete(m[k][i], rng) + gamete(f[k][i], rng); g[k] = a; } return g; }
+  function gValue(g, k) { const T = TRAITS[k]; let s = 0; for (const x of g[k]) s += x; return T.base + T.a * s; }
+  function express(g, env, rng) {
+    const ph = {};
+    for (const k in TRAITS) {
+      const T = TRAITS[k]; let x = gValue(g, k) + rng.normal(0, T.sdE * (env.sd || 1));
+      if (env.herb) x = T.herb(x);
+      x = Math.min(T.max, Math.max(T.min, x)); const f = Math.pow(10, T.digits); ph[k] = Math.round(x * f) / f;
+    }
+    return ph;
+  }
+  const makePlant = (g, env, rng, id) => ({ id, g, ph: express(g, env, rng), scored: false, hand: null });
+  const founders = (n, env, rng) => Array.from({ length: n }, (_, i) => makePlant(newGenome(rng), env, rng, i + 1));
+  function breed(parents, n, env, rng) {
+    if (parents.length < 2) return null;
+    return Array.from({ length: n }, (_, i) => {
+      const mi = Math.floor(rng.uniform() * parents.length); let fi = Math.floor(rng.uniform() * (parents.length - 1)); if (fi >= mi) fi++;
+      return makePlant(childGenome(parents[mi].g, parents[fi].g, rng), env, rng, i + 1);
+    });
+  }
+  function pickExtreme(plants, k, frac, dir, rng, val) {
+    const n = Math.max(2, Math.round(plants.length * frac));
+    const v = val || (p => p.ph[k]);
+    const keyed = plants.map(p => ({ p, v: v(p), r: rng.uniform() }));
+    keyed.sort((a, b) => (dir > 0 ? b.v - a.v : a.v - b.v) || (a.r - b.r)); // ties broken at random
+    return keyed.slice(0, n).map(o => o.p);
+  }
+  const pickRandom = (plants, n, rng) => rng.shuffle(plants).slice(0, n);
+
+  /* ---------------- statistics helpers ---------------- */
+  function describe(v) { if (!v.length) return { n: 0 }; return { n: v.length, mean: S.mean(v), median: S.median(v), min: Math.min(...v), max: Math.max(...v), sd: S.sd(v), se: S.se(v) }; }
+  const TC = [12.71, 4.30, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.20, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.10, 2.09, 2.09, 2.08, 2.07, 2.07, 2.06, 2.06, 2.06, 2.05, 2.05, 2.05, 2.04];
+  const tcrit = df => !isFinite(df) || df < 1 ? NaN : df <= 30 ? TC[Math.floor(df) - 1] : 1.96 + 2.4 / df;
+  function welch(m1, s1, n1, m2, s2, n2) {
+    const a = s1 * s1 / n1, b = s2 * s2 / n2, se = Math.sqrt(a + b);
+    const t = (m2 - m1) / se, df = (a + b) ** 2 / (a * a / (n1 - 1) + b * b / (n2 - 1));
+    return { t, df, crit: tcrit(df), sig: Math.abs(t) > tcrit(df) };
+  }
+  const welchArr = (x, y) => welch(S.mean(x), S.sd(x), x.length, S.mean(y), S.sd(y), y.length);
+  function histogram(series, binW, cap) {
+    const all = series.flatMap(s => s.vals);
+    if (!all.length) return { cats: [], series: [] };
+    let lo = Math.floor(Math.min(...all) / binW) * binW, hi = Math.max(...all);
+    if (cap != null) hi = Math.min(hi, cap);
+    let nb = Math.floor((hi - lo) / binW) + 1;
+    const maxB = Math.min(26, Math.floor(64 / Math.max(1, series.length))); // keep bars wide enough to read
+    while (nb > maxB) { binW *= 2; lo = Math.floor(Math.min(...all) / binW) * binW; nb = Math.floor((hi - lo) / binW) + 1; }
+    const dec = binW < 1 ? 1 : 0, step = binW < 1 ? 0.1 : 1;
+    const capped = cap != null && Math.max(...all) >= cap;
+    const cats = []; for (let i = 0; i < nb; i++) { const a = lo + i * binW; cats.push(capped && i === nb - 1 ? `≥${fmt(a, dec)}` : binW === step || nb > 12 ? fmt(a, dec) : `${fmt(a, dec)}–${fmt(a + binW - step, dec)}`); }
+    return {
+      cats, series: series.map(s => {
+        const c = new Array(nb).fill(0);
+        s.vals.forEach(v => { let i = Math.floor((v - lo) / binW + 1e-9); if (i >= nb) i = nb - 1; if (i < 0) i = 0; c[i]++; });
+        return { name: s.name, points: cats.map((x, i) => ({ x, y: c[i] })) };
+      })
+    };
+  }
+
+  /* ================= STRUCTURED PART STATE ================= */
+  let seed = Lab.store.get('seed'); if (seed == null) { seed = Math.floor(Math.random() * 1e9); Lab.store.set('seed', seed); }
+  let rng, pops, g1, selLine, ctrlLine, selected, pollinated, view, cur, marks;
+  const ENV = { sd: 1, herb: false };
+  let binW = 5, dir = 1;
+
+  function reset() {
+    rng = Lab.rng(seed);
+    g1 = { key: 'g1', label: 'Generation 1 (class population)', short: 'Gen 1', gen: 1, line: 'base', plants: founders(150, ENV, rng) };
+    pops = [g1]; selLine = [g1]; ctrlLine = [g1]; selected = null; pollinated = false; selHist = [];
+    view = g1; cur = g1.plants[0]; marks = new Set();
+    beeState = null;
+  }
+  let selHist = []; // {gen, S, parentsMean}
+
+  /* ---------------- population menu ---------------- */
+  const popSel = $('#pop-view');
+  function refreshPopMenu() {
+    popSel.innerHTML = pops.map(p => `<option value="${p.key}">${Lab.esc(p.label)}</option>`).join('');
+    popSel.value = view.key;
+  }
+  popSel.addEventListener('change', () => { view = pops.find(p => p.key === popSel.value) || g1; cur = view.plants.find(p => !p.scored) || view.plants[0]; marks = new Set(); drawAll(); updateScoring(); });
+
+  /* ---------------- tray canvas ---------------- */
+  const tray = Lab.canvas('#tray', 0.82);
+  function trayPos() {
+    const cols = 5, rows = Math.ceil(view.plants.length / 30), pad = 6;
+    const cw = (tray.w - pad * 2) / cols, ch = (tray.h - pad * 2) / rows, R = Math.min(cw, ch) * 0.46;
+    return view.plants.map((p, i) => {
+      const b = Math.floor(i / 6), j = i % 6, bx = pad + cw * (b % cols + 0.5), by = pad + ch * (Math.floor(b / cols) + 0.5);
+      const ang = j / 6 * 2 * Math.PI - Math.PI / 2;
+      return { x: bx + Math.cos(ang) * R * 0.56, y: by + Math.sin(ang) * R * 0.56, bx, by, R, b };
+    });
+  }
+  function drawSeedlingTop(ctx, x, y, r, col) {
+    ctx.fillStyle = col;
+    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * r * 0.45, y + r * 0.15, r * 0.48, r * 0.36, s * 0.3, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.ellipse(x, y - r * 0.38, r * 0.34, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  function drawTray() {
+    const c = tray.ctx, P = trayPos();
+    c.clearRect(0, 0, tray.w, tray.h);
+    c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, tray.w, tray.h);
+    const seen = new Set();
+    P.forEach(q => { if (seen.has(q.b)) return; seen.add(q.b); c.beginPath(); c.arc(q.bx, q.by, q.R, 0, Math.PI * 2); c.fillStyle = Lab.color('--surface-2'); c.fill(); c.strokeStyle = Lab.color('--line'); c.lineWidth = 1.5; c.stroke(); });
+    const green = Lab.color('--s6'), mut = Lab.color('--muted'), ink = Lab.color('--ink'), stain = Lab.color('--stain'), acc = Lab.color('--accent');
+    const isG1 = view === g1, sel = isG1 && selected ? new Set(selected) : null;
+    view.plants.forEach((p, i) => {
+      const q = P[i], r = q.R * 0.3;
+      const cut = sel && !sel.has(p);
+      if (cut) {
+        c.strokeStyle = mut; c.lineWidth = 1.5; c.beginPath(); c.moveTo(q.x - r * 0.6, q.y - r * 0.6); c.lineTo(q.x + r * 0.6, q.y + r * 0.6); c.moveTo(q.x + r * 0.6, q.y - r * 0.6); c.lineTo(q.x - r * 0.6, q.y + r * 0.6); c.stroke();
+      } else drawSeedlingTop(c, q.x, q.y, r, green);
+      if (p.scored && !cut && q.R > 30) {
+        c.font = `600 ${Math.max(9, Math.round(r * 0.95))}px ${getComputedStyle(document.body).getPropertyValue('--f-mono') || 'monospace'}`;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        const txt = String(p.hand != null ? p.hand : p.ph.trich);
+        c.lineWidth = 3; c.strokeStyle = Lab.color('--surface'); c.strokeText(txt, q.x, q.y + r * 0.05); c.fillStyle = ink; c.fillText(txt, q.x, q.y + r * 0.05);
+      } else if (p.scored && !cut) { c.fillStyle = acc; c.beginPath(); c.arc(q.x, q.y, r * 0.3, 0, Math.PI * 2); c.fill(); }
+      if (sel && sel.has(p)) { c.strokeStyle = stain; c.lineWidth = 2.5; c.beginPath(); c.arc(q.x, q.y, r * 1.25, 0, Math.PI * 2); c.stroke(); }
+      if (p === cur) { c.strokeStyle = ink; c.lineWidth = 2; c.setLineDash([3, 2]); c.beginPath(); c.arc(q.x, q.y, r * 1.55, 0, Math.PI * 2); c.stroke(); c.setLineDash([]); }
+    });
+  }
+  tray.canvas.addEventListener('click', e => {
+    const rect = tray.canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const P = trayPos(); let best = -1, bd = Infinity;
+    P.forEach((q, i) => { const d = Math.hypot(q.x - x, q.y - y); if (d < bd) { bd = d; best = i; } });
+    if (best >= 0 && bd < P[best].R * 0.45) { cur = view.plants[best]; marks = new Set(); drawAll(); }
+  });
+  tray.onresize = () => drawTray();
+
+  /* ---------------- leaf (magnifier) canvas ---------------- */
+  const leaf = Lab.canvas('#leaf', 0.92);
+  function leafGeom() { const h = leaf.h, w = leaf.w; return { cx: w * 0.5, y0: h * 0.84, L: h * 0.74, W: Math.min(w * 0.33, h * 0.36) }; }
+  function edge(s, side, G) {
+    const wid = G.W * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, s))), 0.8) * (1 - 0.3 * s) * (s < 0.08 ? 0.4 + 7.5 * s : 1);
+    const serr = 1 + 0.035 * Math.sin(s * Math.PI * 13);
+    return { x: G.cx + side * wid * serr, y: G.y0 - G.L * s };
+  }
+  function hairsFor(p, G) {
+    const r = Lab.rng((p.id * 7919 + (view.gen || 1) * 104729 + (view.line === 'ctrl' ? 31 : 0) + seed) >>> 0);
+    const n = p.ph.trich, k = leaf.w / 380, out = [];
+    const mk = (s, side) => {
+      const a = edge(s - 0.004, side, G), b = edge(s + 0.004, side, G), base = edge(s, side, G);
+      let tx = b.x - a.x, ty = b.y - a.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+      let nx = -ty * side * -1, ny = tx * side * -1; if (nx * side < 0) { nx = -nx; ny = -ny; }
+      const len = (9 + r.uniform() * 7) * k, j = (r.uniform() - 0.5) * 0.5;
+      const dx = nx * 0.75 + tx * 0.45 + j, dy = ny * 0.75 + ty * 0.45; const dl = Math.hypot(dx, dy);
+      return { x1: base.x, y1: base.y, x2: base.x + dx / dl * len, y2: base.y + dy / dl * len };
+    };
+    for (let i = 0; i < n; i++) out.push(mk(0.07 + 0.86 * (i + 0.15 + 0.7 * r.uniform()) / n, 1));
+    const nl = Math.max(0, Math.round(n * (0.7 + 0.5 * r.uniform())));
+    const left = []; for (let i = 0; i < nl; i++) left.push(mk(0.07 + 0.86 * (i + 0.15 + 0.7 * r.uniform()) / nl, -1));
+    return { right: out, left };
+  }
+  function drawLeaf() {
+    const c = leaf.ctx, G = leafGeom(); c.clearRect(0, 0, leaf.w, leaf.h);
+    c.fillStyle = Lab.color('--surface-2'); c.fillRect(0, 0, leaf.w, leaf.h);
+    // magnifier ring
+    c.save(); c.beginPath(); c.arc(leaf.w / 2, leaf.h / 2, Math.min(leaf.w, leaf.h) * 0.49, 0, Math.PI * 2); c.fillStyle = Lab.color('--bg'); c.fill(); c.lineWidth = 6; c.strokeStyle = Lab.color('--line'); c.stroke(); c.clip();
+    const green = Lab.color('--s6'), ink = Lab.color('--ink'), stain = Lab.color('--stain');
+    // petiole
+    c.strokeStyle = green; c.lineWidth = Math.max(3, leaf.w * 0.012); c.beginPath(); c.moveTo(G.cx, G.y0); c.lineTo(G.cx, leaf.h); c.stroke();
+    // blade
+    c.beginPath(); for (let s = 0; s <= 1.0001; s += 0.01) { const e = edge(s, 1, G); s === 0 ? c.moveTo(e.x, e.y) : c.lineTo(e.x, e.y); }
+    for (let s = 1; s >= -0.0001; s -= 0.01) { const e = edge(s, -1, G); c.lineTo(e.x, e.y); }
+    c.closePath(); c.globalAlpha = 0.32; c.fillStyle = green; c.fill(); c.globalAlpha = 1; c.lineWidth = 2; c.strokeStyle = green; c.stroke();
+    // veins
+    c.lineWidth = 1.4; c.globalAlpha = 0.6; c.beginPath(); c.moveTo(G.cx, G.y0); c.lineTo(G.cx, G.y0 - G.L * 0.97);
+    for (let s = 0.18; s < 0.9; s += 0.16) for (const side of [-1, 1]) { const e = edge(s + 0.1, side, G); c.moveTo(G.cx, G.y0 - G.L * s); c.quadraticCurveTo(G.cx + side * (e.x - G.cx) * 0.4, G.y0 - G.L * (s + 0.07), e.x - side * 4, e.y + 2); }
+    c.stroke(); c.globalAlpha = 1;
+    if (!cur) { c.restore(); return; }
+    const H = hairsFor(cur, G);
+    c.lineCap = 'round';
+    c.strokeStyle = ink; c.globalAlpha = 0.45; c.lineWidth = 1.2; c.beginPath(); H.left.forEach(h => { c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); }); c.stroke();
+    c.globalAlpha = 0.9; c.lineWidth = 1.5; c.beginPath(); H.right.forEach((h, i) => { if (!marks.has(i)) { c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); } }); c.stroke(); c.globalAlpha = 1;
+    c.strokeStyle = stain; c.fillStyle = stain; c.lineWidth = 2.6;
+    H.right.forEach((h, i) => { if (marks.has(i)) { c.beginPath(); c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); c.stroke(); c.beginPath(); c.arc(h.x2, h.y2, 2.6, 0, Math.PI * 2); c.fill(); } });
+    // guide
+    const gx = G.cx + G.W * 1.12; c.setLineDash([4, 4]); c.strokeStyle = Lab.color('--accent'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(gx, G.y0 - G.L * 0.06); c.lineTo(gx, G.y0 - G.L * 0.93); c.stroke(); c.setLineDash([]);
+    c.restore();
+    c.fillStyle = Lab.color('--muted'); c.font = `600 12px ${getComputedStyle(document.body).fontFamily}`; c.textAlign = 'right'; c.textBaseline = 'top';
+    c.fillText('count this edge →', leaf.w - 8, 8);
+  }
+  leaf.canvas.addEventListener('click', e => {
+    if (!cur) return;
+    const rect = leaf.canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const H = hairsFor(cur, leafGeom()).right; let best = -1, bd = Infinity;
+    H.forEach((h, i) => { const d = segDist(x, y, h); if (d < bd) { bd = d; best = i; } });
+    const tol = Math.max(10, leaf.w * 0.025);
+    if (best >= 0 && bd <= tol) { marks.has(best) ? marks.delete(best) : marks.add(best); drawLeaf(); $('#mark-count').textContent = marks.size; }
+  });
+  function segDist(px, py, h) { const vx = h.x2 - h.x1, vy = h.y2 - h.y1, l2 = vx * vx + vy * vy; let t = l2 ? ((px - h.x1) * vx + (py - h.y1) * vy) / l2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - (h.x1 + t * vx), py - (h.y1 + t * vy)); }
+  leaf.onresize = () => drawLeaf();
+
+  function plantLabel(p) { const i = view.plants.indexOf(p); return `${view.short} · bottle ${Math.floor(i / 6) + 1}, plant ${i % 6 + 1}`; }
+  function drawAll() { drawTray(); drawLeaf(); $('#plant-info').textContent = cur ? plantLabel(cur) + (cur.scored ? ' (scored)' : '') : '—'; $('#mark-count').textContent = marks.size; }
+
+  /* ---------------- hand-count table ---------------- */
+  const handTable = Lab.table('#hand-table', {
+    save: 'hand',
+    columns: [{ key: 'plant', label: 'Plant' }, { key: 'mine', label: 'My count', unit: 'hairs', num: true, digits: 0 }, { key: 'ref', label: 'Recount', unit: 'hairs', num: true, digits: 0 }, { key: 'diff', label: 'Difference', unit: 'hairs', num: true, digits: 0 }],
+    footer: rows => { const d = rows.map(r => Math.abs(r.diff)); return ['Mean |difference|', '', '', fmt(S.mean(d), 2)]; }
+  });
+
+  /* ---------------- scoring readouts & histogram ---------------- */
+  const hist1 = Lab.chart('#hist1', { type: 'bar', xLabel: 'Trichomes on right margin of first true leaf (hairs)', yLabel: 'Number of plants', series: [], height: 300 });
+  const valOf = p => p.hand != null ? p.hand : p.ph.trich;
+  const scoredVals = pop => pop.plants.filter(p => p.scored).map(valOf);
+  function updateScoring() {
+    const v = scoredVals(view), d = describe(v);
+    $('#r-n').textContent = `${d.n} / ${view.plants.length}`;
+    $('#r-mean').textContent = fmt(d.mean, 1); $('#r-med').textContent = fmt(d.median, 1);
+    $('#r-range').textContent = d.n ? `${d.min}–${d.max}` : '—'; $('#r-sd').textContent = fmt(d.sd, 1);
+    const hs = [{ name: view.short, vals: v }];
+    if (view === g1 && selected) hs.push({ name: 'Selected parents', vals: selected.map(valOf) });
+    const H = histogram(hs, binW, 50);
+    hist1.update({ categories: H.cats, series: H.series });
+  }
+  $('#bin-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; binW = +b.dataset.bin; Lab.$$('#bin-seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); updateScoring(); renderCompare(); });
+
+  const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
+  $('#record').addEventListener('click', () => {
+    if (!cur) return;
+    const mine = marks.size, ref = cur.ph.trich;
+    handTable.addRow({ plant: plantLabel(cur), mine, ref, diff: mine - ref });
+    cur.scored = true; cur.hand = mine;
+    const diff = mine - ref;
+    status('#score-status', diff === 0 ? `Recorded ${mine} hairs. Matches the recount.` : `Recorded ${mine} hairs. The recount found ${ref} (${diff > 0 ? '+' : ''}${diff}).`, diff === 0 ? 'ok' : 'warn');
+    cur = view.plants.find(p => !p.scored) || cur; marks = new Set();
+    drawAll(); updateScoring();
+  });
+  $('#clear-marks').addEventListener('click', () => { marks = new Set(); drawAll(); });
+  $('#next-plant').addEventListener('click', () => { const i = view.plants.indexOf(cur); const n = view.plants.length; for (let k = 1; k <= n; k++) { const p = view.plants[(i + k) % n]; if (!p.scored) { cur = p; break; } } marks = new Set(); drawAll(); });
+  function autoScore(pop) { pop.plants.forEach(p => { if (!p.scored) { p.scored = true; } }); }
+  $('#autocount').addEventListener('click', () => {
+    const handN = view.plants.filter(p => p.hand != null).length;
+    autoScore(view); drawAll(); updateScoring(); renderCompare();
+    status('#score-status', handN < 5 ? `All ${view.plants.length} plants scored. Tip: hand-count at least 5 plants first so you know how reliable counting is.` : `All ${view.plants.length} plants scored (${handN} by you).`, handN < 5 ? 'warn' : 'ok');
+  });
+  $('#new-pop').addEventListener('click', () => { seed = Math.floor(Math.random() * 1e9); Lab.store.set('seed', seed); reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare(); status('#score-status', 'A new class population was planted. Earlier hand counts stay in the table.', ''); });
+
+  /* ================= SELECTION & POLLINATION ================= */
+  const selPct = $('#sel-pct'), selOut = $('#sel-pct-out');
+  const syncPct = () => selOut.textContent = selPct.value + '%'; selPct.addEventListener('input', syncPct); syncPct();
+  $('#dir-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dir = +b.dataset.dir; Lab.$$('#dir-seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  const histSel = Lab.chart('#hist-sel', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Number of plants', series: [], height: 260 });
+  function renderSelection() {
+    if (!selected) { ['#s-n', '#s-mean', '#s-sd'].forEach(id => $(id).textContent = '—'); $('#s-flowers').textContent = '0'; histSel.update({ categories: [], series: [] }); drawBee(); return; }
+    const v = selected.map(valOf), d = describe(v);
+    $('#s-n').textContent = d.n; $('#s-mean').textContent = fmt(d.mean, 1); $('#s-sd').textContent = fmt(d.sd, 1);
+    const H = histogram([{ name: 'Generation 1', vals: scoredVals(g1) }, { name: 'Selected parents', vals: v }], binW, 50);
+    histSel.update({ categories: H.cats, series: H.series });
+    drawBee();
+  }
+  $('#select-btn').addEventListener('click', () => {
+    if (g1.plants.some(p => !p.scored)) { status('#sel-status', 'Score every plant in generation 1 first (use Auto-count the rest in the step above).', 'bad'); return; }
+    if (selLine.length > 1) { status('#sel-status', 'Generation 2 is already planted. Use "Select again" in the next step, or plant a new class population to start over.', 'warn'); return; }
+    selected = pickExtreme(g1.plants, 'trich', +selPct.value / 100, dir, rng, valOf);
+    pollinated = false; beeState = null;
+    status('#sel-status', `${selected.length} plants marked (${dir > 0 ? 'hairiest' : 'least hairy'} ${selPct.value}%). The other ${150 - selected.length} had their tops cut off. Ties were broken at random.`, 'ok');
+    view = g1; refreshPopMenu(); drawAll(); updateScoring(); renderSelection();
+  });
+
+  /* bee stick canvas */
+  const bee = Lab.canvas('#bee', window.innerWidth < 600 ? 0.7 : 0.42);
+  let beeState = null; const beeLoop = Lab.loop(dt => stepBee(dt));
+  function beeLayout() {
+    const n = selected ? selected.length : 0, cols = Math.min(n, bee.w < 500 ? 8 : 15) || 1, rows = Math.ceil(n / cols) || 1;
+    const cw = bee.w / cols, ch = (bee.h - 24) / rows, out = [];
+    for (let i = 0; i < n; i++) {
+      const cx = cw * (i % cols + 0.5), base = 24 + ch * (Math.floor(i / cols) + 1) - 4, top = base - ch * 0.78;
+      const fl = [0, 1, 2].map(k => ({ x: cx + (k - 1) * Math.min(cw * 0.26, 12), y: top + (k === 1 ? 0 : ch * 0.12) }));
+      out.push({ cx, base, top, fl });
+    }
+    return out;
+  }
+  function drawBee() {
+    const c = bee.ctx; c.clearRect(0, 0, bee.w, bee.h); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, bee.w, bee.h);
+    c.fillStyle = Lab.color('--surface-2'); c.fillRect(0, 0, bee.w, 16);
+    c.fillStyle = Lab.color('--muted'); c.font = `600 11px ${getComputedStyle(document.body).fontFamily}`; c.textAlign = 'left'; c.textBaseline = 'middle';
+    if (!selected) { c.fillText('Isolated light box (empty until you select parents)', 8, 8); return; }
+    c.fillText(`Isolated light box · ${selected.length} selected plants` + (beeState ? ` · day ${Math.min(3, beeState.day + 1)} of 3` : pollinated ? ' · pollinated, pods forming' : ''), 8, 8);
+    const L = beeLayout(), green = Lab.color('--s6'), yel = Lab.color('--s4'), stain = Lab.color('--stain');
+    L.forEach((q, i) => {
+      c.strokeStyle = green; c.lineWidth = 2; c.beginPath(); c.moveTo(q.cx, q.base); c.lineTo(q.cx, q.top + 4); q.fl.forEach(f => { c.moveTo(q.cx, q.top + 10); c.lineTo(f.x, f.y); }); c.stroke();
+      c.fillStyle = green; c.beginPath(); c.ellipse(q.cx - 6, q.base - (q.base - q.top) * 0.35, 6, 3, -0.5, 0, Math.PI * 2); c.ellipse(q.cx + 6, q.base - (q.base - q.top) * 0.5, 6, 3, 0.5, 0, Math.PI * 2); c.fill();
+      q.fl.forEach((f, k) => {
+        const done = pollinated || (beeState && beeState.visited.has(i * 3 + k));
+        c.fillStyle = yel; for (let a = 0; a < 4; a++) { c.beginPath(); c.arc(f.x + Math.cos(a * Math.PI / 2 + 0.78) * 3.2, f.y + Math.sin(a * Math.PI / 2 + 0.78) * 3.2, 2.6, 0, Math.PI * 2); c.fill(); }
+        if (done) { c.fillStyle = stain; c.beginPath(); c.arc(f.x, f.y, 1.8, 0, Math.PI * 2); c.fill(); }
+        if (pollinated) { c.strokeStyle = green; c.lineWidth = 2; c.beginPath(); c.moveTo(f.x + 3, f.y + 4); c.lineTo(f.x + 5, f.y + 13); c.stroke(); }
+      });
+    });
+    if (beeState) {
+      const { x, y } = beeState.pos;
+      c.strokeStyle = Lab.color('--warn'); c.lineWidth = 2; c.beginPath(); c.moveTo(x + 4, y + 4); c.lineTo(x + 26, y + 30); c.stroke();
+      c.fillStyle = yel; c.beginPath(); c.ellipse(x, y, 6, 4.5, 0.7, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = Lab.color('--ink'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - 2, y - 3); c.lineTo(x - 4, y + 2); c.moveTo(x + 1, y - 2); c.lineTo(x - 1, y + 4); c.stroke();
+    }
+  }
+  function stepBee(dt) {
+    if (!beeState) return false;
+    const L = beeLayout(), seq = beeState.seq;
+    beeState.t += dt * (Lab.reducedMotion() ? 1e5 : seq.length / 5); // whole 3-day sequence plays in about 5 s
+    while (beeState.t >= 1 && beeState.k < seq.length) { beeState.t -= 1; const s = seq[beeState.k]; beeState.visited.add(s.i * 3 + s.f); beeState.k++; beeState.day = Math.floor(beeState.k / (selected.length * 3)); }
+    if (beeState.k >= seq.length) { beeState = null; pollinated = true; $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
+    const a = seq[Math.max(0, beeState.k - 1)], b = seq[beeState.k];
+    const fa = L[a.i].fl[a.f], fb = L[b.i].fl[b.f];
+    beeState.pos = { x: fa.x + (fb.x - fa.x) * beeState.t, y: fa.y - 6 + (fb.y - fa.y) * beeState.t - Math.sin(beeState.t * Math.PI) * 10 };
+    $('#s-flowers').textContent = beeState.visited.size + ' / ' + selected.length * 3;
+    drawBee();
+  }
+  $('#pollinate').addEventListener('click', () => {
+    if (!selected) { status('#sel-status', 'Mark the selected plants first.', 'bad'); return; }
+    if (beeState) return;
+    const seq = []; for (let d = 0; d < 3; d++) { const order = rng.shuffle(selected.map((_, i) => i)); order.forEach(i => [0, 1, 2].forEach(f => seq.push({ i, f }))); }
+    beeState = { seq, k: 0, t: 0, day: 0, visited: new Set(), pos: { x: 0, y: 0 } };
+    status('#sel-status', 'Brushing pollen from flower to flower…', '');
+    beeLoop.start();
+  });
+  bee.onresize = () => drawBee();
+
+  $('#grow').addEventListener('click', () => {
+    if (!selected) { status('#sel-status', 'Mark the selected plants first.', 'bad'); return; }
+    if (!pollinated) { status('#sel-status', 'No seed yet: pollinate the selected plants with the bee stick first.', 'bad'); return; }
+    if (selLine.length > 1) { status('#sel-status', 'Generation 2 is already growing. Score it in the next step.', 'warn'); return; }
+    const kids = breed(selected, 150, ENV, rng);
+    const g2 = { key: 'g2s', label: 'Generation 2 · selected line', short: 'Gen 2 sel', gen: 2, line: 'sel', plants: kids };
+    selLine.push(g2); pops.push(g2);
+    selHist.push({ gen: 1, S: S.mean(selected.map(valOf)) - S.mean(scoredVals(g1)), pm: S.mean(selected.map(valOf)), n: selected.length });
+    if ($('#grow-ctrl').checked) {
+      const rest = g1.plants.filter(p => !selected.includes(p));
+      const c2 = { key: 'g2c', label: 'Generation 2 · control line', short: 'Gen 2 ctrl', gen: 2, line: 'ctrl', plants: breed(rest, 150, ENV, rng) };
+      ctrlLine.push(c2); pops.push(c2);
+    }
+    refreshPopMenu();
+    status('#sel-status', 'Seeds planted. Generation 2 is 7–12 days old and ready to score in the next step.', 'ok');
+    status('#g2-status', 'Generation 2 is ready. Score it, or hand-count a few plants in the scoring tool first.', '');
+    renderCompare();
+  });
+
+  /* ================= GENERATION 2 & COMPARISON ================= */
+  const cmpHist = Lab.chart('#cmp-hist', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Number of plants', series: [], height: 300 });
+  const cmpMeans = Lab.chart('#cmp-means', { type: 'bar', xLabel: 'Population (error bars: ±2 SE)', yLabel: 'Mean trichomes (hairs)', series: [], height: 280 });
+  const linesChart = Lab.chart('#lines', { xLabel: 'Generation', yLabel: 'Mean trichomes ± 2 SE (hairs)', series: [], height: 300 });
+  const genTable = Lab.table('#gen-table', {
+    columns: [{ key: 'pop', label: 'Population' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'median', label: 'Median', num: true, digits: 1 }, { key: 'range', label: 'Range' }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }]
+  });
+  const fullyScored = p => p.plants.every(x => x.scored);
+  function statRow(name, v) { const d = describe(v); return { pop: name, n: d.n, mean: d.mean, median: d.median, range: d.n ? `${d.min}–${d.max}` : '—', sd: d.sd, se: d.se }; }
+  function renderCompare() {
+    const rows = [];
+    if (fullyScored(g1)) rows.push(statRow('Gen 1 · all plants', scoredVals(g1)));
+    selHist.forEach((h, i) => {
+      const src = selLine[i];
+      const par = i === 0 ? selected : src.parents;
+      if (par) rows.push(statRow(`Gen ${h.gen} · selected parents`, par.map(valOf)));
+    });
+    pops.filter(p => p !== g1 && fullyScored(p)).sort((a, b) => a.gen - b.gen || (a.line > b.line ? -1 : 1)).forEach(p => rows.push(statRow(p.label.replace('Generation', 'Gen'), scoredVals(p))));
+    genTable.setRows(rows);
+    const g2 = selLine[1], c2 = ctrlLine[1];
+    const ok2 = g2 && fullyScored(g2);
+    $('#c-m1').textContent = fullyScored(g1) ? fmt(S.mean(scoredVals(g1)), 1) : '—';
+    $('#c-m2').textContent = ok2 ? fmt(S.mean(scoredVals(g2)), 1) : '—';
+    $('#c-mc').textContent = c2 && fullyScored(c2) ? fmt(S.mean(scoredVals(c2)), 1) : '—';
+    if (ok2) { const w = welchArr(scoredVals(g1), scoredVals(g2)); $('#c-t').textContent = `${fmt(w.t, 2)} ${w.sig ? '(p<0.05)' : '(n.s.)'}`; } else $('#c-t').textContent = '—';
+    // histogram: gen 1 vs latest selected & control
+    const hs = []; if (fullyScored(g1)) hs.push({ name: 'Gen 1', vals: scoredVals(g1) });
+    if (ok2) hs.push({ name: 'Gen 2 · selected', vals: scoredVals(g2) });
+    if (c2 && fullyScored(c2)) hs.push({ name: 'Gen 2 · control', vals: scoredVals(c2) });
+    const last = selLine[selLine.length - 1];
+    if (selLine.length > 2 && fullyScored(last)) hs.push({ name: `Gen ${last.gen} · selected`, vals: scoredVals(last) });
+    const H = histogram(hs, binW, 50); cmpHist.update({ categories: H.cats, series: H.series });
+    // means bar
+    const pts = [], cats = [];
+    const addBar = (name, v) => { if (!v || v.length < 2) return; cats.push(name); pts.push({ x: name, y: S.mean(v), err: 2 * S.se(v) }); };
+    if (fullyScored(g1)) addBar('Gen 1 all', scoredVals(g1));
+    if (selected) addBar('Gen 1 parents', selected.map(valOf));
+    if (ok2) addBar('Gen 2 selected', scoredVals(g2));
+    if (c2 && fullyScored(c2)) addBar('Gen 2 control', scoredVals(c2));
+    cmpMeans.update({ categories: cats, series: [{ name: 'Mean', points: pts }] });
+    // lines over generations
+    const ser = l => l.filter(fullyScored).map(p => { const v = scoredVals(p); return { x: p.gen, y: S.mean(v), err: 2 * S.se(v) }; });
+    linesChart.update({ series: [{ name: 'Selected line', points: ser(selLine) }, { name: 'Control line', points: ser(ctrlLine), dash: true }], xMin: 1 });
+  }
+  $('#score2').addEventListener('click', () => {
+    if (selLine.length < 2) { status('#g2-status', 'There is no generation 2 yet. Select, pollinate and plant in the step above.', 'bad'); return; }
+    pops.filter(p => p !== g1).forEach(autoScore); drawAll(); updateScoring(); renderCompare();
+    const w = welchArr(scoredVals(g1), scoredVals(selLine[1]));
+    status('#g2-status', `Generation 2 scored. The selected line ${w.t > 0 ? 'rose' : 'fell'} by ${fmt(Math.abs(S.mean(scoredVals(selLine[1])) - S.mean(scoredVals(g1))), 1)} hairs on average.`, 'ok');
+  });
+  $('#round').addEventListener('click', () => {
+    if (selLine.length < 2) { status('#g2-status', 'Grow generation 2 first.', 'bad'); return; }
+    if (selLine.length >= 12) { status('#g2-status', 'That is plenty of generations for one class. Plant a new population to start over.', 'warn'); return; }
+    pops.forEach(autoScore);
+    const last = selLine[selLine.length - 1], frac = +selPct.value / 100;
+    const par = pickExtreme(last.plants, 'trich', frac, dir, rng, valOf); last.parents = par;
+    selHist.push({ gen: last.gen, S: S.mean(par.map(valOf)) - S.mean(scoredVals(last)), pm: S.mean(par.map(valOf)), n: par.length });
+    const g = last.gen + 1;
+    const nx = { key: 'g' + g + 's', label: `Generation ${g} · selected line`, short: `Gen ${g} sel`, gen: g, line: 'sel', plants: breed(par, 150, ENV, rng) };
+    autoScore(nx); selLine.push(nx); pops.push(nx);
+    const cl = ctrlLine[ctrlLine.length - 1];
+    if (cl.gen === g - 1 && cl !== g1) {
+      const cn = { key: 'g' + g + 'c', label: `Generation ${g} · control line`, short: `Gen ${g} ctrl`, gen: g, line: 'ctrl', plants: breed(pickRandom(cl.plants, par.length, rng), 150, ENV, rng) };
+      autoScore(cn); ctrlLine.push(cn); pops.push(cn);
+    }
+    refreshPopMenu(); drawAll(); renderCompare();
+    status('#g2-status', `Generation ${g} grown from ${par.length} parents (S = ${fmt(selHist[selHist.length - 1].S, 1)} hairs). New mean: ${fmt(S.mean(scoredVals(nx)), 1)} hairs.`, 'ok');
+  });
+  $('#check-calc').addEventListener('click', () => {
+    if (!(selected && selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#calc-status', 'Score generation 2 first so there are numbers to check against.', 'bad'); return; }
+    const m1 = S.mean(scoredVals(g1)), Sv = S.mean(selected.map(valOf)) - m1, Rv = S.mean(scoredVals(selLine[1])) - m1, h2 = Rv / Sv;
+    const iS = parseFloat($('#in-S').value), iR = parseFloat($('#in-R').value), ih = parseFloat($('#in-h2').value);
+    const okS = Math.abs(iS - Sv) <= 0.15, okR = Math.abs(iR - Rv) <= 0.15, okh = Math.abs(ih - h2) <= 0.03;
+    const msg = [okS ? 'S ✓' : `S: check (expected about ${fmt(Sv, 2)})`, okR ? 'R ✓' : `R: check (expected about ${fmt(Rv, 2)})`, okh ? 'h² ✓' : `h²: check (expected about ${fmt(h2, 2)})`].join(' · ');
+    status('#calc-status', msg, okS && okR && okh ? 'ok' : 'warn');
+  });
+
+  Lab.prompt('#score-prompts', { key: 'g1-describe', label: 'Step 5: Describe the generation 1 distribution. What shape is it? Which measure of center (mean or median) fits it better, and why? How did changing the bin width change the picture?', rows: 4 });
+  Lab.prompt('#score-prompts', { key: 'g1-method', label: 'How reliable were your hand counts compared with the recount? Propose one change to the counting procedure that would make class counts more consistent.', rows: 3 });
+  Lab.prompt('#sel-prompts', { key: 'sel-describe', label: 'Step 7: Compare the selected parents with the whole generation 1 population (mean, SD, range). What do you predict generation 2 will look like, and why?', rows: 4 });
+
+  /* ================= DESIGN YOUR OWN ================= */
+  Lab.prompt('#design-q', { key: 'd-question', label: 'Your question (for example: "Does selecting for fewer hairs work as well as selecting for more hairs?" or "How much does uneven growing slow the response?")', rows: 2 });
+  Lab.prompt('#design-q', { key: 'd-hypothesis', label: 'Hypothesis and prediction. Name your independent variable, the levels you will test, what you will hold constant, and what you will measure.', rows: 3 });
+  const dEls = { pct: $('#d-pct'), n: $('#d-n'), gens: $('#d-gens'), reps: $('#d-reps') };
+  const dSync = () => { $('#d-pct-out').textContent = dEls.pct.value + '%'; $('#d-n-out').textContent = dEls.n.value + ' plants'; $('#d-gens-out').textContent = dEls.gens.value; $('#d-reps-out').textContent = dEls.reps.value; };
+  Object.values(dEls).forEach(el => el.addEventListener('input', dSync)); dSync();
+  let dDir = 1;
+  $('#d-dir').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dDir = +b.dataset.dir; Lab.$$('#d-dir button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  const dChart = Lab.chart('#d-chart', { xLabel: 'Generation', yLabel: 'Mean ± 2 SE', series: [], height: 300 });
+  const dHist = Lab.chart('#d-hist', { type: 'bar', xLabel: 'Trait value', yLabel: 'Number of plants', series: [], height: 260 });
+  const dTable = Lab.table('#d-table', {
+    save: 'design',
+    columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'setup', label: 'Settings' }, { key: 'line', label: 'Line' }, { key: 'gen', label: 'Gen', num: true, digits: 0 }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }]
+  });
+  const dCanvas = Lab.canvas('#d-canvas', window.innerWidth < 600 ? 0.75 : 0.5);
+  let dLast = null;
+  function drawDesign() {
+    const c = dCanvas.ctx, W = dCanvas.w, H = dCanvas.h; c.clearRect(0, 0, W, H); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, W, H);
+    const font = getComputedStyle(document.body).fontFamily;
+    if (!dLast) { c.fillStyle = Lab.color('--muted'); c.font = `600 13px ${font}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Set up your experiment and press Run.', W / 2, H / 2); return; }
+    const gens = dLast.line; const idx = gens.length <= 6 ? gens.map((_, i) => i) : [0, 1, 2, gens.length - 3, gens.length - 2, gens.length - 1];
+    const colW = W / idx.length, per = Math.max(3, Math.min(6, Math.floor(colW / 16))), groundY = H - 22;
+    const green = Lab.color('--s6'), purple = Lab.color('--s5'), ink = Lab.color('--ink'), mut = Lab.color('--muted');
+    c.strokeStyle = Lab.color('--line'); c.beginPath(); c.moveTo(0, groundY); c.lineTo(W, groundY); c.stroke();
+    idx.forEach((gi, col) => {
+      const plants = gens[gi].slice(0, per), x0 = col * colW;
+      c.fillStyle = mut; c.font = `600 11px ${font}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText(`Gen ${gi + 1}`, x0 + colW / 2, H - 6);
+      plants.forEach((p, k) => {
+        const x = x0 + colW * (k + 0.5) / per, hgt = Math.min(groundY - 14, (p.ph.height / 22) * (groundY - 10));
+        c.strokeStyle = green; c.lineWidth = 2; c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY - hgt); c.stroke();
+        c.globalAlpha = Math.min(1, p.ph.antho / 8); c.strokeStyle = purple; c.lineWidth = 2.4; c.beginPath(); c.moveTo(x, groundY); c.lineTo(x, groundY - hgt * 0.6); c.stroke(); c.globalAlpha = 1;
+        const lw = Math.max(5, Math.min(9, colW / per * 0.4));
+        c.fillStyle = green; c.beginPath(); c.ellipse(x - lw * 0.9, groundY - hgt * 0.55, lw, lw * 0.45, -0.4, 0, Math.PI * 2); c.ellipse(x + lw * 0.9, groundY - hgt * 0.75, lw, lw * 0.45, 0.4, 0, Math.PI * 2); c.fill();
+        const hairs = Math.min(12, Math.round(p.ph.trich / 4)); c.strokeStyle = ink; c.lineWidth = 0.8; c.beginPath();
+        for (let i = 0; i < hairs; i++) { const yy = groundY - hgt * (0.1 + 0.85 * i / Math.max(1, hairs)); const s = i % 2 ? 1 : -1; c.moveTo(x, yy); c.lineTo(x + s * 3, yy - 2); }
+        c.stroke();
+      });
+    });
+  }
+  dCanvas.onresize = drawDesign; drawDesign();
+  let runNo = (dTable.getRows().reduce((m, r) => Math.max(m, r.run || 0), 0));
+  $('#d-run').addEventListener('click', () => {
+    const k = $('#d-trait').value, T = TRAITS[k], frac = +dEls.pct.value / 100, N = +dEls.n.value, G = +dEls.gens.value, reps = +dEls.reps.value;
+    const env = { sd: +$('#d-env').value, herb: $('#d-herb').checked };
+    const r = Lab.rng();
+    const base = founders(N, env, r);
+    const statsOf = pl => { const v = pl.map(p => p.ph[k]); return { n: v.length, mean: S.mean(v), sd: S.sd(v), se: S.se(v), vals: v }; };
+    const lines = [];
+    for (let rep = 0; rep < reps; rep++) {
+      let pop = base; const hist = [pop];
+      for (let g = 0; g < G; g++) { pop = breed(pickExtreme(pop, k, frac, dDir, r), N, env, r); hist.push(pop); }
+      lines.push({ name: reps > 1 ? `Selected line ${rep + 1}` : 'Selected line', hist });
+    }
+    let cpop = base; const chist = [cpop]; const npar = Math.max(2, Math.round(N * frac));
+    for (let g = 0; g < G; g++) { cpop = breed(pickRandom(cpop, npar, r), N, env, r); chist.push(cpop); }
+    lines.push({ name: 'Control (random parents)', hist: chist, ctrl: true });
+    runNo++;
+    const setup = `${T.label} ${dDir > 0 ? '↑' : '↓'} ${dEls.pct.value}%, N=${N}, ${env.sd > 1 ? 'uneven' : 'uniform'}${env.herb ? ', herbivory' : ''}`;
+    const newRows = [];
+    lines.forEach(L => L.hist.forEach((pl, g) => { const s = statsOf(pl); newRows.push({ run: runNo, setup, line: L.name, gen: g + 1, n: s.n, mean: s.mean, sd: s.sd, se: s.se }); }));
+    dTable.setRows(dTable.getRows().concat(newRows));
+    dChart.update({ yLabel: `Mean ${T.label.toLowerCase()} ± 2 SE (${T.unit})`, xMin: 1, series: lines.map(L => ({ name: L.name, dash: !!L.ctrl, points: L.hist.map((pl, g) => { const s = statsOf(pl); return { x: g + 1, y: s.mean, err: 2 * s.se }; }) })) });
+    const first = statsOf(base), lastSel = statsOf(lines[0].hist[G]), lastCtrl = statsOf(chist[G]);
+    const Hh = histogram([{ name: 'Gen 1', vals: first.vals }, { name: `Gen ${G + 1} · selected line 1`, vals: lastSel.vals }, { name: `Gen ${G + 1} · control`, vals: lastCtrl.vals }], T.bin * (k === 'trich' ? 1 : 1), k === 'trich' ? 60 : null);
+    dHist.update({ categories: Hh.cats, series: Hh.series, xLabel: `${T.label} (${T.unit})` });
+    $('#d-r0').textContent = fmt(first.mean, T.digits + 1); $('#d-r1').textContent = fmt(lastSel.mean, T.digits + 1); $('#d-r2').textContent = fmt(lastCtrl.mean, T.digits + 1);
+    const w = welch(lastCtrl.mean, lastCtrl.sd, lastCtrl.n, lastSel.mean, lastSel.sd, lastSel.n);
+    $('#d-rt').textContent = `${fmt(w.t, 2)} ${w.sig ? '(p<0.05)' : '(n.s.)'}`;
+    dLast = { line: lines[0].hist }; drawDesign();
+    status('#d-status', `Run ${runNo} finished: ${G} generation${G > 1 ? 's' : ''} of selection, ${reps} replicate line${reps > 1 ? 's' : ''} plus a control.`, 'ok');
+  });
+  $('#d-clear').addEventListener('click', () => { dTable.clear(); runNo = 0; status('#d-status', 'Results table cleared.', ''); });
+  Lab.prompt('#design-a', { key: 'd-results', label: 'Results: describe your graph. Did the replicate lines respond the same way? How did the selected lines compare with the control?', rows: 4 });
+  Lab.prompt('#design-a', { key: 'd-stats', label: 'Which statistic did you use to decide whether the lines differ (2 SE error bars, t-test)? Report the numbers.', rows: 3 });
+  Lab.prompt('#design-a', { key: 'd-env', label: 'How much of the variation you studied could come from the environment? Use a run with uneven conditions or herbivore damage as evidence. Does an environmental effect accumulate across generations the way selection does?', rows: 4 });
+
+  /* ================= ANALYZE ================= */
+  function runT() {
+    const v = id => parseFloat($(id).value);
+    const w = welch(v('#ta-m'), v('#ta-s'), v('#ta-n'), v('#tb-m'), v('#tb-s'), v('#tb-n'));
+    $('#tt-d').textContent = fmt(v('#tb-m') - v('#ta-m'), 2); $('#tt-t').textContent = fmt(w.t, 2); $('#tt-df').textContent = fmt(w.df, 1); $('#tt-c').textContent = fmt(w.crit, 2);
+    if (!isFinite(w.t)) status('#tt-status', 'Enter a mean, SD (greater than 0) and n (2 or more) for both populations.', 'bad');
+    else status('#tt-status', w.sig ? `|t| = ${fmt(Math.abs(w.t), 2)} > ${fmt(w.crit, 2)}: the means are significantly different (p < 0.05).` : `|t| = ${fmt(Math.abs(w.t), 2)} ≤ ${fmt(w.crit, 2)}: the difference could be due to chance (not significant at p = 0.05).`, w.sig ? 'ok' : 'warn');
+  }
+  $('#tt-run').addEventListener('click', runT);
+  $('#tt-fill').addEventListener('click', () => {
+    if (!(selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#tt-status', 'Score generation 2 in the simulation first.', 'bad'); return; }
+    const a = scoredVals(g1), b = scoredVals(selLine[1]);
+    $('#ta-m').value = fmt(S.mean(a), 2); $('#ta-s').value = fmt(S.sd(a), 2); $('#ta-n').value = a.length;
+    $('#tb-m').value = fmt(S.mean(b), 2); $('#tb-s').value = fmt(S.sd(b), 2); $('#tb-n').value = b.length; runT();
+  });
+  [
+    ['a-different', 'Are the two generations (before and after selection) actually different? Describe both histograms and their descriptive statistics.'],
+    ['a-signif', 'Are the means significantly different? Which test or error bars did you use, and what was the result?'],
+    ['a-median', 'At this point in the investigation, should you report the median or the mean as the measure of central tendency? Explain using the shape of your distributions.'],
+    ['a-errorbars', 'You made a bar graph of mean hairs per generation. What error bars are appropriate, and what do they show?'],
+    ['a-parents', 'Compare generation 2 with the parent subpopulation of generation 1 (the selected 10%). How do they compare, and how is this comparison different from comparing generation 2 with all of generation 1? Use the idea of heritability.'],
+    ['a-control', 'What does the control line (offspring of unselected plants) tell you that the selected line alone cannot?']
+  ].forEach(([key, label]) => Lab.prompt('#analysis', { key, label, rows: 3 }));
+  const cer = $('#cer');
+  [['C', 'cer-claim', 'Claim: Did evolution occur in your Fast Plant population?'], ['E', 'cer-evidence', 'Evidence: Which numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Explain the connection between variation, heritability, selection and the change you measured.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
+
+  /* ================= REFLECT ================= */
+  [
+    ['r-why', 'Why might Brassica rapa produce trichomes even though they cost energy? Describe an environment in which hairy plants might leave more offspring.'],
+    ['r-herbivore', 'In a related plant, early herbivore damage led to more trichomes on later leaves. Design a wet-lab investigation (for example with cabbage white butterfly larvae) to test whether trichomes protect Fast Plants or whether damage induces them. Name your variables, controls and sample size.'],
+    ['r-natural', 'How is this artificial selection experiment similar to natural selection that causes antibiotic or pesticide resistance? How is it different?'],
+    ['r-model', 'The simulation treats trichome number as the sum of many genes plus random environmental noise. Name one way real Fast Plants could behave differently from the model.']
+  ].forEach(([key, label]) => Lab.prompt('#reflect', { key, label, rows: 4 }));
+
+  /* ---------------- start ---------------- */
+  reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
+})();
+</script>
+</body>
+</html>

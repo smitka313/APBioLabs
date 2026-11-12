@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>AP Bio Lab Bench</title>
+<meta name="description" content="Interactive online versions of the 13 AP Biology investigative labs, with simulations, data tables, graphs and statistics.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 44px 36px; }
+  .hero h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 800; letter-spacing: -0.03em; max-width: 16ch; }
+  .hero p.lede { margin-top: 14px; max-width: 60ch; color: var(--muted); font-size: 1.12rem; }
+  .hero .how { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+  .hero .how div { border-top: 2px solid var(--accent); padding-top: 10px; display: grid; gap: 4px; }
+  .hero .how strong { font-family: var(--f-display); font-size: 1.02rem; }
+  .hero .how span { font-size: .92rem; color: var(--muted); }
+  .bi { padding-block: 34px 6px; display: grid; gap: 14px; }
+  .bi-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+  .bi-head .eyebrow { color: var(--stain); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+  .card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 8px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, transform .15s; }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card .num { font-family: var(--f-mono); font-size: .78rem; color: var(--accent); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .card h3 { font-size: 1.22rem; }
+  .card .dq { color: var(--muted); font-style: italic; font-size: .96rem; }
+  .card .meta { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
+  .card .sim-line { font-size: .88rem; color: var(--ink); }
+  .teacher-strip { margin-top: 30px; padding-block: 24px; background: var(--surface-2); }
+  .teacher-strip .wrap { display: grid; gap: 10px; }
+  .teacher-strip .links { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .92rem; }
+  .icon { width: 44px; height: 44px; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap wrap--wide gutter">
+    <div class="eyebrow">AP Biology · 13 investigations</div>
+    <h1>AP Bio Lab Bench</h1>
+    <p class="lede">Interactive versions of every lab in the AP Biology investigative lab manual. Each lab gives you the background, a pre-lab check, simulations that work like the real procedure, your own experiment to design, and tools to graph and analyze what you find.</p>
+    <div class="how">
+      <div><strong>Run the procedure</strong><span>Simulations produce realistic data with real variability, including replicates.</span></div>
+      <div><strong>Design your own test</strong><span>Choose a variable, set levels and replicates, and collect your own data.</span></div>
+      <div><strong>Analyze like a scientist</strong><span>Graphs with error bars, standard error, chi-square and regression are built in.</span></div>
+      <div><strong>Hand it in</strong><span>Work saves in your browser. Copy every answer in one click to paste into your class LMS.</span></div>
+    </div>
+  </div>
+</header>
+
+<main id="labs"></main>
+
+<section class="teacher-strip">
+  <div class="wrap wrap--wide gutter">
+    <div class="eyebrow">For teachers</div>
+    <p class="muted small" style="max-width:70ch">Each lab has a teacher notes page with timing, how the simulation maps to the bench procedure, common misconceptions, and suggested answers. Student lab pages don't link to them, but the pages aren't password-protected. If answer security matters, keep your own copy of the keys.</p>
+    <div class="links" id="teacher-links"></div>
+  </div>
+</section>
+
+<footer class="site-footer"><div class="wrap wrap--wide gutter">
+  <p>Adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and do not replace wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+</div></footer>
+
+<script>
+const BIG_IDEAS = [
+  { n: 1, name: 'Evolution', units: 'Units 5–7', labs: [
+    { id: 1, title: 'Artificial Selection', q: 'Can extreme selection change expression of a quantitative trait in a population in one generation?', sim: 'Count trichomes on Fast Plants, select parents, and grow the next generation.', topics: ['EVO-1', 'Histograms', 'Descriptive stats'] },
+    { id: 2, title: 'Mathematical Modeling: Hardy-Weinberg', q: 'How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?', sim: 'Spreadsheet-style model with selection, mutation, migration and drift.', topics: ['EVO-1', 'Modeling', 'Chi-square'] },
+    { id: 3, title: 'Comparing DNA Sequences with BLAST', q: 'How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?', sim: 'Build a cladogram, then align a mystery gene against a sequence database.', topics: ['EVO-3', 'Cladograms', 'Alignment'] },
+  ]},
+  { n: 2, name: 'Energetics', units: 'Units 2–3', labs: [
+    { id: 4, title: 'Diffusion and Osmosis', q: 'What causes my plants to wilt if I forget to water them?', sim: 'Agar cubes, dialysis-tube model cells, potato cores, and plasmolysis.', topics: ['ENE-2', 'Water potential', 'SA:V'] },
+    { id: 5, title: 'Photosynthesis', q: 'What factors affect the rate of photosynthesis in living leaves?', sim: 'Floating leaf disk assay under changing light, CO₂ and temperature.', topics: ['ENE-1', 'ET₅₀', 'Rate'] },
+    { id: 6, title: 'Cellular Respiration', q: 'What factors affect the rate of cellular respiration in multicellular organisms?', sim: 'Microrespirometers with germinating seeds, beads, and temperature.', topics: ['ENE-1', 'Q₁₀', 'Slope'] },
+  ]},
+  { n: 3, name: 'Information Storage and Transmission', units: 'Units 4–6', labs: [
+    { id: 7, title: 'Cell Division: Mitosis and Meiosis', q: 'How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?', sim: 'Onion root tip counts, chi-square, meiosis models, and Sordaria crossing over.', topics: ['IST-1', 'Mitotic index', 'Map units'] },
+    { id: 8, title: 'Bacterial Transformation', q: 'How can we use genetic engineering techniques to manipulate heritable information?', sim: 'pGLO transformation, heat shock, four plates, and transformation efficiency.', topics: ['IST-1', 'Gene regulation', 'Efficiency'] },
+    { id: 9, title: 'Restriction Enzyme Analysis of DNA', q: 'How can we use genetic information to identify and profile individuals?', sim: 'Digest lambda DNA, run a gel, and size fragments from a standard curve.', topics: ['IST-1', 'Electrophoresis', 'Semi-log plots'] },
+  ]},
+  { n: 4, name: 'Systems Interactions', units: 'Units 2, 6, 8', labs: [
+    { id: 10, title: 'Energy Dynamics', q: 'What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?', sim: 'Fast Plant biomass and butterfly larvae energy budgets with a live energy-flow diagram.', topics: ['ENE-1', 'Biomass', 'kcal'] },
+    { id: 11, title: 'Transpiration', q: 'What factors, including environmental variables, affect the rate of transpiration in plants?', sim: 'Stomata peels under the microscope and whole-plant water loss.', topics: ['ENE-3', 'Stomatal density', 'Leaf area'] },
+    { id: 12, title: 'Fruit Fly Behavior', q: 'What environmental factors trigger a fruit fly response?', sim: 'A two-chamber choice test with live fly movement and chi-square.', topics: ['ENE-3', 'Taxis vs kinesis', 'Chi-square'] },
+    { id: 13, title: 'Enzyme Activity', q: 'How do abiotic or biotic factors influence the rates of enzymatic reactions?', sim: 'Turnip peroxidase and guaiacol color changes across pH, temperature and concentration.', topics: ['ENE-1', 'Initial rate', 'Optima'] },
+  ]},
+];
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+document.getElementById('labs').innerHTML = BIG_IDEAS.map(b => `
+  <section class="bi wrap wrap--wide gutter" aria-labelledby="bi${b.n}">
+    <div class="bi-head"><span class="eyebrow">Big Idea ${b.n}</span><h2 id="bi${b.n}">${b.name}</h2><span class="muted small">${b.units}</span></div>
+    <div class="cards">${b.labs.map(l => `
+      <a class="card" href="lab${pad(l.id)}.html">
+        <span class="num">Investigation ${l.id}</span>
+        <h3>${esc(l.title)}</h3>
+        <span class="dq">${esc(l.q)}</span>
+        <span class="sim-line">${l.sim}</span>
+        <span class="meta">${l.topics.map(t => `<span class="tag">${t}</span>`).join('')}</span>
+      </a>`).join('')}
+    </div>
+  </section>`).join('');
+document.getElementById('teacher-links').innerHTML = BIG_IDEAS.flatMap(b => b.labs).map(l => `<a href="teacher-lab${pad(l.id)}.html">Lab ${l.id} notes</a>`).join('');
+</script>
+</body>
+</html>
