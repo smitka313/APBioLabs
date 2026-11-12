@@ -810,7 +810,7 @@ function makeGel(rootSel, measSel, cfg) {
     if (st.pipette) {   // micropipette dips into the well and expels the sample
       const k = Math.min(1, (performance.now() - st.pipette.t0) / 600), cx = G.gx0 + G.lw * (st.pipette.w + 0.5);
       const tipY = G.wellY + G.wellH * 0.6 - (1 - Math.sin(k * Math.PI)) * mm * 10;
-      drawPipette(ctx, cx, tipY, G.wide ? 0.62 : 0.46, 0.5, +$('vol').value, Math.max(0, Math.min(1, 1.6 - 2 * k)));
+      drawPipette(ctx, cx, tipY, G.wide ? 0.56 : 0.42, 0.62, +$('vol').value, Math.max(0, Math.min(1, 1.6 - 2 * k)));
     }
   }
   cv.onresize = draw;
