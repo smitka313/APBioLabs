@@ -491,6 +491,52 @@
   }
   let selHist = []; // {gen, S, parentsMean}
 
+  /* ---- Saved dataset: an action log, replayed on load ----
+     The simulated plants are generated from the saved seed, but which plants were scored (and each hand count), the
+     selected parents, pollination and every later generation are decisions the student made. They are saved as an
+     ordered list of actions (store key 'sim' = {seed, ops}) and replayed on load, so the whole dataset, histograms and
+     step checklists come back exactly. The log is tied to its seed; a new class population clears it. */
+  let ops = [];
+  function persistOps() { Lab.store.set('sim', { seed, ops }); }
+  function pollSeq() { const seq = []; for (let d = 0; d < 3; d++) { const order = rng.shuffle(selected.map((_, i) => i)); order.forEach(i => [0, 1, 2].forEach(f => seq.push({ i, f }))); } return seq; }
+  function applyOp(op) {
+    const k = op[0];
+    if (k === 'hand') { const pop = pops.find(q => q.key === op[1]), p = pop && pop.plants[op[2]]; if (p) { p.scored = true; p.hand = op[3]; } }
+    else if (k === 'auto') { const pop = pops.find(q => q.key === op[1]); if (pop) autoScore(pop); }
+    else if (k === 'select') { selected = pickExtreme(g1.plants, 'trich', op[1] / 100, op[2], rng, valOf); pollinated = false; beeState = null; }
+    else if (k === 'poll') { if (selected) { pollSeq(); pollinated = true; } }
+    else if (k === 'grow') {
+      const kids = breed(selected, 150, ENV, rng);
+      const g2 = { key: 'g2s', label: 'Generation 2 · selected line', short: 'Gen 2 sel', gen: 2, line: 'sel', plants: kids };
+      selLine.push(g2); pops.push(g2);
+      selHist.push({ gen: 1, S: S.mean(selected.map(valOf)) - S.mean(scoredVals(g1)), pm: S.mean(selected.map(valOf)), n: selected.length });
+      if (op[1]) { const rest = g1.plants.filter(p => !selected.includes(p)); const c2 = { key: 'g2c', label: 'Generation 2 · control line', short: 'Gen 2 ctrl', gen: 2, line: 'ctrl', plants: breed(rest, 150, ENV, rng) }; ctrlLine.push(c2); pops.push(c2); }
+    }
+    else if (k === 'score2') { pops.filter(p => p !== g1).forEach(autoScore); }
+    else if (k === 'round') {
+      pops.forEach(autoScore);
+      const last = selLine[selLine.length - 1], frac = op[1] / 100;
+      const par = pickExtreme(last.plants, 'trich', frac, op[2], rng, valOf); last.parents = par;
+      selHist.push({ gen: last.gen, S: S.mean(par.map(valOf)) - S.mean(scoredVals(last)), pm: S.mean(par.map(valOf)), n: par.length });
+      const g = last.gen + 1;
+      const nx = { key: 'g' + g + 's', label: `Generation ${g} · selected line`, short: `Gen ${g} sel`, gen: g, line: 'sel', plants: breed(par, 150, ENV, rng) };
+      autoScore(nx); selLine.push(nx); pops.push(nx);
+      const cl = ctrlLine[ctrlLine.length - 1];
+      if (cl.gen === g - 1 && cl !== g1) {
+        const cn = { key: 'g' + g + 'c', label: `Generation ${g} · control line`, short: `Gen ${g} ctrl`, gen: g, line: 'ctrl', plants: breed(pickRandom(cl.plants, par.length, rng), 150, ENV, rng) };
+        autoScore(cn); ctrlLine.push(cn); pops.push(cn);
+      }
+    }
+  }
+  function commit(op) { applyOp(op); ops.push(op); persistOps(); }
+  function replayOps() {
+    const sv = Lab.store.get('sim'); ops = [];
+    if (!sv || sv.seed !== seed || !Array.isArray(sv.ops)) return 0;
+    try { sv.ops.forEach(op => { applyOp(op); ops.push(op); }); } catch (e) { reset(); ops = []; persistOps(); return 0; }
+    cur = g1.plants.find(p => !p.scored) || g1.plants[0];
+    return ops.length;
+  }
+
   /* ---------------- population menu ---------------- */
   const popSel = $('#pop-view');
   function refreshPopMenu() {
@@ -938,7 +984,7 @@
     if (!cur) return;
     const mine = marks.size, ref = cur.ph.trich;
     handTable.addRow({ plant: plantLabel(cur), mine, ref, diff: mine - ref });
-    cur.scored = true; cur.hand = mine;
+    commit(['hand', view.key, view.plants.indexOf(cur), mine]);
     const diff = mine - ref;
     status('#score-status', diff === 0 ? `Recorded ${mine} hairs. Matches the recount.` : `Recorded ${mine} hairs. The recount found ${ref} (${diff > 0 ? '+' : ''}${diff}).`, diff === 0 ? 'ok' : 'warn');
     cur = view.plants.find(p => !p.scored) || cur; marks = new Set();
@@ -949,10 +995,10 @@
   function autoScore(pop) { pop.plants.forEach(p => { if (!p.scored) { p.scored = true; } }); }
   $('#autocount').addEventListener('click', () => {
     const handN = view.plants.filter(p => p.hand != null).length;
-    autoScore(view); drawAll(); updateScoring(); renderCompare();
+    commit(['auto', view.key]); drawAll(); updateScoring(); renderCompare();
     status('#score-status', handN < 5 ? `All ${view.plants.length} plants scored. Tip: hand-count at least 5 plants first so you know how reliable counting is.` : `All ${view.plants.length} plants scored (${handN} by you).`, handN < 5 ? 'warn' : 'ok');
   });
-  $('#new-pop').addEventListener('click', () => { seed = Math.floor(Math.random() * 1e9); Lab.store.set('seed', seed); reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare(); status('#score-status', 'A new class population was planted. Earlier hand counts stay in the table.', ''); });
+  $('#new-pop').addEventListener('click', () => { seed = Math.floor(Math.random() * 1e9); Lab.store.set('seed', seed); reset(); ops = []; persistOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare(); status('#score-status', 'A new class population was planted. Earlier hand counts stay in the table.', ''); });
 
   /* ================= SELECTION & POLLINATION ================= */
   const selPct = $('#sel-pct'), selOut = $('#sel-pct-out');
@@ -970,8 +1016,8 @@
   $('#select-btn').addEventListener('click', () => {
     if (g1.plants.some(p => !p.scored)) { status('#sel-status', 'Score every plant in generation 1 first (use Auto-count the rest in the step above).', 'bad'); return; }
     if (selLine.length > 1) { status('#sel-status', 'Generation 2 is already planted. Use "Select again" in the next step, or plant a new class population to start over.', 'warn'); return; }
-    selected = pickExtreme(g1.plants, 'trich', +selPct.value / 100, dir, rng, valOf);
-    pollinated = false; beeState = null;
+    if (beeState) { status('#sel-status', 'Wait for the bee stick to finish pollinating the current parents first.', 'warn'); return; }
+    commit(['select', +selPct.value, dir]);
     status('#sel-status', `${selected.length} plants marked (${dir > 0 ? 'hairiest' : 'least hairy'} ${selPct.value}%). The other ${150 - selected.length} had their tops cut off. Ties were broken at random.`, 'ok');
     view = g1; refreshPopMenu(); drawAll(); updateScoring(); renderSelection();
   });
@@ -1138,7 +1184,7 @@
     const L = beeLayout(), seq = beeState.seq;
     beeState.t += dt * (Lab.reducedMotion() ? 1e5 : seq.length / 5); // whole 3-day sequence plays in about 5 s
     while (beeState.t >= 1 && beeState.k < seq.length) { beeState.t -= 1; const s = seq[beeState.k]; beeState.visited.add(s.i * 3 + s.f); beeState.k++; beeState.day = Math.floor(beeState.k / (selected.length * 3)); }
-    if (beeState.k >= seq.length) { beeState = null; pollinated = true; Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
+    if (beeState.k >= seq.length) { beeState = null; pollinated = true; ops.push(['poll']); persistOps(); Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
     const a = seq[Math.max(0, beeState.k - 1)], b = seq[beeState.k];
     const fa = L[a.i].fl[a.f], fb = L[b.i].fl[b.f];
     beeState.pos = { x: fa.x + (fb.x - fa.x) * beeState.t, y: fa.y - 6 + (fb.y - fa.y) * beeState.t - Math.sin(beeState.t * Math.PI) * 10 };
@@ -1148,7 +1194,7 @@
   $('#pollinate').addEventListener('click', () => {
     if (!selected) { status('#sel-status', 'Mark the selected plants first.', 'bad'); return; }
     if (beeState) return;
-    const seq = []; for (let d = 0; d < 3; d++) { const order = rng.shuffle(selected.map((_, i) => i)); order.forEach(i => [0, 1, 2].forEach(f => seq.push({ i, f }))); }
+    const seq = pollSeq();
     beeState = { seq, k: 0, t: 0, day: 0, visited: new Set(), pos: { x: 0, y: 0 } };
     status('#sel-status', 'Brushing pollen from flower to flower…', '');
     beeLoop.start();
@@ -1159,15 +1205,7 @@
     if (!selected) { status('#sel-status', 'Mark the selected plants first.', 'bad'); return; }
     if (!pollinated) { status('#sel-status', 'No seed yet: pollinate the selected plants with the bee stick first.', 'bad'); return; }
     if (selLine.length > 1) { status('#sel-status', 'Generation 2 is already growing. Score it in the next step.', 'warn'); return; }
-    const kids = breed(selected, 150, ENV, rng);
-    const g2 = { key: 'g2s', label: 'Generation 2 · selected line', short: 'Gen 2 sel', gen: 2, line: 'sel', plants: kids };
-    selLine.push(g2); pops.push(g2);
-    selHist.push({ gen: 1, S: S.mean(selected.map(valOf)) - S.mean(scoredVals(g1)), pm: S.mean(selected.map(valOf)), n: selected.length });
-    if ($('#grow-ctrl').checked) {
-      const rest = g1.plants.filter(p => !selected.includes(p));
-      const c2 = { key: 'g2c', label: 'Generation 2 · control line', short: 'Gen 2 ctrl', gen: 2, line: 'ctrl', plants: breed(rest, 150, ENV, rng) };
-      ctrlLine.push(c2); pops.push(c2);
-    }
+    commit(['grow', $('#grow-ctrl').checked]);
     refreshPopMenu();
     status('#sel-status', 'Seeds planted. Generation 2 is 7–12 days old and ready to score in the next step.', 'ok');
     status('#g2-status', 'Generation 2 is ready. Score it, or hand-count a few plants in the scoring tool first.', '');
@@ -1220,25 +1258,15 @@
   }
   $('#score2').addEventListener('click', () => {
     if (selLine.length < 2) { status('#g2-status', 'There is no generation 2 yet. Select, pollinate and plant in the step above.', 'bad'); return; }
-    pops.filter(p => p !== g1).forEach(autoScore); drawAll(); updateScoring(); renderCompare();
+    commit(['score2']); drawAll(); updateScoring(); renderCompare();
     const w = welchArr(scoredVals(g1), scoredVals(selLine[1]));
     status('#g2-status', `Generation 2 scored. The selected line ${w.t > 0 ? 'rose' : 'fell'} by ${fmt(Math.abs(S.mean(scoredVals(selLine[1])) - S.mean(scoredVals(g1))), 1)} hairs on average.`, 'ok');
   });
   $('#round').addEventListener('click', () => {
     if (selLine.length < 2) { status('#g2-status', 'Grow generation 2 first.', 'bad'); return; }
     if (selLine.length >= 12) { status('#g2-status', 'That is plenty of generations for one class. Plant a new population to start over.', 'warn'); return; }
-    pops.forEach(autoScore);
-    const last = selLine[selLine.length - 1], frac = +selPct.value / 100;
-    const par = pickExtreme(last.plants, 'trich', frac, dir, rng, valOf); last.parents = par;
-    selHist.push({ gen: last.gen, S: S.mean(par.map(valOf)) - S.mean(scoredVals(last)), pm: S.mean(par.map(valOf)), n: par.length });
-    const g = last.gen + 1;
-    const nx = { key: 'g' + g + 's', label: `Generation ${g} · selected line`, short: `Gen ${g} sel`, gen: g, line: 'sel', plants: breed(par, 150, ENV, rng) };
-    autoScore(nx); selLine.push(nx); pops.push(nx);
-    const cl = ctrlLine[ctrlLine.length - 1];
-    if (cl.gen === g - 1 && cl !== g1) {
-      const cn = { key: 'g' + g + 'c', label: `Generation ${g} · control line`, short: `Gen ${g} ctrl`, gen: g, line: 'ctrl', plants: breed(pickRandom(cl.plants, par.length, rng), 150, ENV, rng) };
-      autoScore(cn); ctrlLine.push(cn); pops.push(cn);
-    }
+    commit(['round', +selPct.value, dir]);
+    const last = selLine[selLine.length - 2], par = last.parents, g = selLine[selLine.length - 1].gen, nx = selLine[selLine.length - 1];
     refreshPopMenu(); drawAll(); renderCompare();
     status('#g2-status', `Generation ${g} grown from ${par.length} parents (S = ${fmt(selHist[selHist.length - 1].S, 1)} hairs). New mean: ${fmt(S.mean(scoredVals(nx)), 1)} hairs.`, 'ok');
   });
@@ -1415,7 +1443,8 @@
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 4 }));
 
   /* ---------------- start ---------------- */
-  reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
+  reset(); const restored = replayOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
+  if (restored) status('#score-status', 'Your earlier scoring was restored.', 'ok');
 
   /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
