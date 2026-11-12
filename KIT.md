@@ -30,6 +30,19 @@ Header crumbs: `All labs` → `index.html`; the unit/Big Idea label; `Teacher no
 - `Lab.canvas(canvasEl, aspect)` → `{ctx,w,h,resize, onresize}` crisp HiDPI canvas. `Lab.color('--accent')` reads a theme token at draw time (call inside draw so dark mode works). `Lab.loop(fn(dt))` → `{start,stop}` rAF loop. `Lab.reducedMotion()`.
 - `Lab.store.get/set(key)` — per-browser save, namespaced to the lab. `Lab.fmt(x, digits)`. `Lab.h(tag, attrs, ...kids)`, `Lab.$`, `Lab.$$`.
 
+Classroom features (automatic on every `labNN.html`; teacher pages get none of the student tools):
+- **Identity + per-student data.** A site-wide name + class period (`localStorage['aplab:student']`) replaces the
+  per-lab "Your name" field (still read as a fallback). On lab pages `Math.random` and unseeded `Lab.rng()` are
+  seeded from hash(name | period | lab id | dataset number), so use them (not fixed seeds) for data that should
+  differ per student. `Lab.identity.get()/set()/newDataset()`, `Lab.identity.seed` → `{seed, datasetId, datasetNumber}`.
+- **Report + save/resume** in the `[data-responses]` toolbar: `Lab.report.docx()` (docx@9.0.2 loaded lazily from
+  jsDelivr), `Lab.report.open({print})` (print view for Save as PDF), `Lab.progressFile.payload/parse/apply/makeCode/readCode`.
+- **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N` still works) and a
+  "Copy link" button. A section is done when its prompt textareas are filled, quiz questions checked and saved
+  tables have a row. `Lab.progress.update()`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
+- **Worksheet.** `Lab.worksheet.print()` / `.enter()` / `.exit()` builds a printable sheet from `Lab.quiz`,
+  `Lab.prompt` and `Lab.table` (blank rows: `worksheetRows` option, else preset `rows`, else 8).
+
 CSS classes in `style.css`: `.wrap`, `.wrap--wide` (use for sections holding a `.sim`), `.gutter`, `.step`,
 `.step-body`, `.prose`, `.lede`, `.callout` + `--question|--safety|--tip|--key` with `.callout-title`,
 `.equation`, `.grid-2`, `.grid-3`, `.row`, `.stack`, `.sim` > `.controls` + `.stage`, `.viz` (canvas/svg

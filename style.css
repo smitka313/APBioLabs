@@ -318,6 +318,7 @@ body.report-mode::before { display: none; }
 .link-status:empty { display: none; }
 .link-fallback { font-family: var(--f-mono); font-size: .75rem !important; max-width: 260px; padding: 3px 6px !important; }
 @media (max-width: 520px) { .link-btn .lb-text { display: none; } }
+.step-nav a { position: relative; } /* keeps the .sr-only "(done)" text inside the scrolling list */
 .step-nav .has-progress { display: flex; align-items: center; gap: 10px; }
 .step-nav .has-progress > ol { flex: 1 1 auto; min-width: 0; }
 .nav-progress { flex: none; font-size: .8rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
