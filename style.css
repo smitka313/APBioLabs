@@ -212,6 +212,8 @@ table.data tfoot td { background: var(--surface-2); font-weight: 600; }
 .feedback { font-size: .92rem; border-radius: var(--r-sm); padding: 8px 12px; }
 .feedback.ok { background: var(--ok-soft); color: var(--ink); border-left: 3px solid var(--ok); }
 .feedback.bad { background: var(--bad-soft); color: var(--ink); border-left: 3px solid var(--bad); }
+.field-msg { margin: 4px 0 0; flex: 1 0 100%; max-width: 60ch; } /* Lab.validate message under an input */
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
 .score { font-family: var(--f-mono); font-size: .9rem; color: var(--muted); }
 
 /* Written responses */

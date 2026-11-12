@@ -423,6 +423,78 @@
     updateScore();
   };
 
+  /* ---------------- Input validation helper ----------------
+     Lab.validate.number(inputEl, {min, max, integer, required = true, label}) → number | null
+       Reads the field. Empty, non-numeric, non-integer (when integer:true) or out-of-range input shows a plain
+       message under the field and returns null, so the caller can simply do `if (v == null) return;`.
+       A valid value clears any earlier message. required:false returns null for an empty field without a message.
+       The value is never clamped: out-of-range input is rejected, not changed.
+     Lab.validate.show(inputEl, msg)  put a custom message under the field (.feedback.bad, role="alert") and set aria-invalid
+     Lab.validate.clear(inputEl)      remove the message and aria-invalid
+     The message goes right under the field (under its row when the field sits in a flex or grid row) and clears
+     itself as soon as the field holds a valid value again. */
+  const vNum = n => String(+(+n).toPrecision(10));
+  function fieldLabel0(el) {
+    const l = el.getAttribute('aria-label') || (el.labels && el.labels[0] ? el.labels[0].textContent : '');
+    return String(l || '').replace(/\s+/g, ' ').trim();
+  }
+  function checkNumber(el, o) {
+    const label = (o.label || fieldLabel0(el) || 'This value').replace(/[.:]$/, '');
+    const Cap = label.length > 2 ? label.charAt(0).toUpperCase() + label.slice(1) : label; // keep symbols such as p or pH as written
+    const raw = String(el.value == null ? '' : el.value).trim();
+    if (el.validity && el.validity.badInput) return { msg: `${Cap} must be a number.` };
+    if (raw === '') return o.required === false ? { value: null, skip: true } : { msg: `Enter a value for ${label.length > 2 ? label.charAt(0).toLowerCase() + label.slice(1) : label}.` };
+    const v = Number(raw);
+    if (!isFinite(v)) return { msg: `${Cap} must be a number.` };
+    if (o.integer && !Number.isInteger(v)) return { msg: `${Cap} must be a whole number.` };
+    const hasMin = o.min != null && isFinite(o.min), hasMax = o.max != null && isFinite(o.max);
+    if ((hasMin && v < o.min) || (hasMax && v > o.max)) {
+      if (hasMin && hasMax) return { msg: `${Cap} must be between ${vNum(o.min)} and ${vNum(o.max)}.` };
+      return { msg: hasMin ? `${Cap} must be at least ${vNum(o.min)}.` : `${Cap} must be at most ${vNum(o.max)}.` };
+    }
+    return { value: v };
+  }
+  let vCount = 0;
+  const validate = {
+    show(el, msg) {
+      if (typeof el === 'string') el = $(el);
+      if (!el) return;
+      validate.clear(el);
+      let host = el, par = el.parentElement;
+      if (par && /flex|grid/.test(getComputedStyle(par).display) && !par.classList.contains('field')) host = par;
+      const id = (el.id || 'v' + (++vCount)) + '-err';
+      const box = h('p', { class: 'feedback bad field-msg', role: 'alert', id }, String(msg));
+      host.insertAdjacentElement('afterend', box);
+      el._vmsg = box; el._vdesc = el.getAttribute('aria-describedby');
+      el.setAttribute('aria-invalid', 'true');
+      el.setAttribute('aria-describedby', ((el._vdesc || '') + ' ' + id).trim());
+      if (!el._vbound) {
+        el._vbound = true;
+        el.addEventListener('input', () => {
+          if (!el._vmsg) return;
+          if (el._vopts) { const r = checkNumber(el, el._vopts); if (!r.msg) validate.clear(el); } else validate.clear(el);
+        });
+      }
+    },
+    clear(el, keepState) {
+      if (typeof el === 'string') el = $(el);
+      if (!el) return;
+      if (el._vmsg) { el._vmsg.remove(); el._vmsg = null; }
+      el.removeAttribute('aria-invalid');
+      if (el._vdesc != null || el.hasAttribute('aria-describedby')) { if (el._vdesc) el.setAttribute('aria-describedby', el._vdesc); else el.removeAttribute('aria-describedby'); el._vdesc = null; }
+      if (!keepState) el._vopts = null;
+    },
+    number(el, o = {}) {
+      if (typeof el === 'string') el = $(el);
+      if (!el) return null;
+      const r = checkNumber(el, o);
+      if (r.msg) { validate.show(el, r.msg); el._vopts = o; return null; }
+      validate.clear(el);
+      return r.value;
+    },
+  };
+  Lab.validate = validate;
+
   /* ---------------- Autosave for [data-save] fields ---------------- */
   const saveFns = []; // flushed before a reload so nothing typed is lost
   function bindAutosave(root = document) {

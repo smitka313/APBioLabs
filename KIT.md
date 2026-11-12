@@ -212,6 +212,27 @@ Compact items, ‹ › scroll arrows and edge fades when 10–12 parts do not fi
 "n of m parts done" and the All parts toggle pinned at the right. Keep `data-step` names short (≤ 14
 characters, e.g. "Root tips", not "Effects of environment on mitosis").
 
+### 8. Input validation: `Lab.validate`
+Use it for every calculator or numeric entry, so the messages look and behave the same on every lab.
+```js
+const n = Lab.validate.number($('#ttest-n'), { min: 2, integer: true, label: 'Number of measurements' });
+if (n == null) return;                       // a message is already showing under the field; do not compute
+const p = Lab.validate.number($('#p-in'), { min: 0, max: 1, label: 'p' });   // "p must be between 0 and 1."
+if (p == null) return;
+Lab.validate.show($('#csv'), 'Enter at least 2 measurements for each group.');   // custom rule
+Lab.validate.clear($('#csv'));
+```
+- `Lab.validate.number(inputEl, {min, max, integer, required = true, label})` returns the number, or `null` after
+  showing the message. Rejects empty ("Enter a value for p."), non-numeric, non-whole (`integer:true`) and
+  out-of-range input ("… must be between 0 and 1." / "at least 2" / "at most 100"). It never clamps. `label`
+  defaults to the field's `aria-label` or `<label>`. With `required:false` an empty field returns `null` with no message.
+- `Lab.validate.show(inputEl, msg)` / `.clear(inputEl)` do the display part for any rule you check yourself. The
+  message is a `<p class="feedback bad field-msg" role="alert">` right under the field (under its row if the
+  field sits in a flex/grid row); the field gets `aria-invalid="true"` and `aria-describedby` to the message,
+  and both go away when `clear` runs or, for `number()`, as soon as the field holds a valid value again.
+- Do not compute or draw a result while a message is showing. Never silently clamp; if you must change a value,
+  say so ("p can't be more than 1, so it was set to 1").
+
 ### `Lab.onShow` example
 ```js
 // Something that measures itself (not a Lab.canvas, Lab.chart or Scope view, which are handled for you):
