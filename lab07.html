@@ -63,7 +63,14 @@
   .decision.keep { background: var(--warn-soft); border-left: 3px solid var(--warn); }
   .exp-in { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
   .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
-  #d-field-wrap { max-width: 320px; }
+  svg.fit-h { margin-inline: auto; }
+  .sim-panel table.data td:not(.num) { white-space: normal; }
+  .sim-panel table.data input { min-width: 52px; }
+  .sim-panel table.data th { min-width: 0; }
+  .sim-panel table.data th, .sim-panel table.data td { padding: 4px 4px; }
+  .sim-panel table.data th, .sim-panel table.data td.num { font-size: .76rem; }
+  .sim--fit .tools .seg button { min-width: 34px; padding-inline: 8px; }
+  .sim--fit .sortrow, .sim--fit .gamete-list { grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); }
   @media (max-width: 520px) { .sortrow { grid-template-columns: repeat(2, 1fr); } }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -86,9 +93,10 @@
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">Every one of your trillions of cells came from a single zygote, and every egg or sperm you make carries exactly half of your chromosomes. In this lab you will model how chromosomes move in mitosis and meiosis, count dividing cells in onion root tips to test whether a fungal lectin speeds up mitosis, compare the chromosomes of normal and cancer cells, and use the fungus <i>Sordaria fimicola</i> to measure how often crossing over happens.</p>
       <p>The investigation has five parts:</p>
       <ol>
@@ -98,6 +106,8 @@
         <li><strong>Modeling meiosis</strong> with crossing over, independent assortment, and nondisjunction.</li>
         <li><strong>Crossing over in <i>Sordaria</i></strong>: score asci and calculate the gene-to-centromere map distance.</li>
       </ol>
+      </div>
+      <div class="split-side">
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
         <ul>
           <li><strong>IST-1.B</strong> Describe the events that occur in the cell cycle.</li>
@@ -110,24 +120,37 @@
       <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
         <p>Root-tip squashes use 1 M hydrochloric acid, Carnoy's fixative (glacial acetic acid and ethanol), and carbol-fuchsin stain, which contains phenol. Wear goggles and disposable gloves for Parts 2 and 5. Use a razor blade with care, and press cover slips with a pencil eraser through a lab wipe, never your thumb. Purified lectin can irritate skin and airways. Dispose of chemicals as your teacher directs.</p>
       </div>
+      </div>
     </div>
   </section>
 
+
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>The cell cycle, its controls, and two kinds of division</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul>
+            <li>The cell cycle is G<sub>1</sub>, S (DNA replication), G<sub>2</sub> and M (mitosis plus cytokinesis). Interphase is G<sub>1</sub> + S + G<sub>2</sub> and takes most of the time.</li>
+            <li>Mitosis passes one full copy of every chromosome to each daughter, so the two cells are identical and keep 2<i>n</i>.</li>
+            <li>Cyclins, CDKs and three checkpoints control the cycle; cancer cells have lost this control.</li>
+            <li>Meiosis has two divisions after one S phase and makes four different haploid cells, through crossing over and independent assortment.</li>
+            <li>Mitotic index = dividing cells ÷ cells counted. Map distance = % crossover asci ÷ 2.</li>
+          </ul>
+        </div>
       <p>Bacteria and archaea divide by <strong>binary fission</strong>, and so do mitochondria and chloroplasts, which is one line of evidence that these organelles descended from free-living prokaryotes. Eukaryotic cells have a harder job: they must copy many linear chromosomes, sort the copies precisely, and split a large cytoplasm full of organelles. The sequence of events that does this is the <strong>cell cycle</strong>.</p>
       <figure class="cycle-fig">
         <svg id="cycle-svg" viewBox="0 0 420 340" role="img" aria-label="Cell cycle diagram: G1, S, G2 and M phases arranged in a circle, with the G1, G2 and M-spindle checkpoints marked and G0 branching off G1."></svg>
       </figure>
       <p><strong>Interphase</strong> takes up most of the cycle. In <strong>G<sub>1</sub></strong> the cell grows and makes organelles. In <strong>S</strong> phase every chromosome is replicated, so each chromosome now consists of two identical <strong>sister chromatids</strong> held together at the centromere. In <strong>G<sub>2</sub></strong> the cell checks the new DNA and prepares to divide. A G<sub>2</sub> cell has twice the DNA of a G<sub>1</sub> cell but no new genetic information, because the sisters are copies. Cells that stop dividing leave the cycle and sit in <strong>G<sub>0</sub></strong>.</p>
       <p>In <strong>mitosis</strong> the condensed chromosomes line up at the metaphase plate, the sister chromatids are pulled to opposite poles by spindle microtubules attached at their kinetochores, and two nuclei form. <strong>Cytokinesis</strong> then splits the cytoplasm (a furrow in animal cells, a cell plate in plant cells). Condensing first matters: long, tangled interphase DNA would snag and break if it were dragged across the cell, like trying to separate cooked spaghetti, whereas compact chromosomes move like pieces of macaroni.</p>
-      <h3>Cyclins, CDKs, and checkpoints</h3>
+        <details class="disclose"><summary>Cyclins, CDKs, and checkpoints</summary><div class="inner">
       <p>Progress through the cycle is driven by <strong>cyclin-dependent kinases (CDKs)</strong>, enzymes that are active only when bound to a <strong>cyclin</strong>. Cyclin levels rise and fall each cycle. When enough mitotic cyclin accumulates, it binds CDK to form <strong>MPF</strong> (mitosis-promoting factor), which phosphorylates proteins that launch mitosis; cyclin is then destroyed and MPF activity crashes so the cell can finish dividing.</p>
       <div id="mpf-chart" aria-label="Graph of cyclin concentration rising through interphase and MPF activity peaking at each mitosis."></div>
       <p>Three <strong>checkpoints</strong> stop the cycle if something is wrong. The <strong>G<sub>1</sub> checkpoint</strong> asks whether the cell is big enough and has growth signals such as platelet-derived growth factor (PDGF). The <strong>G<sub>2</sub> checkpoint</strong> asks whether DNA replication is complete and undamaged. The <strong>M-spindle checkpoint</strong> holds anaphase until every kinetochore is attached to spindle microtubules. Tumor-suppressor proteins such as <strong>p53</strong> and <strong>Rb</strong> enforce these stops; when they are mutated, damaged cells keep dividing, which is a hallmark of cancer.</p>
-      <h3>Mitosis versus meiosis</h3>
+        </div></details>
+        <details class="disclose"><summary>Mitosis versus meiosis</summary><div class="inner">
       <p><strong>Meiosis</strong> is a reduction division. After one round of DNA replication the cell divides twice, turning one diploid (2<i>n</i>) cell into four haploid (<i>n</i>) cells. In prophase I homologous chromosomes pair and non-sister chromatids exchange segments by <strong>crossing over</strong>. In metaphase I each homologous pair lines up independently of the others (<strong>independent assortment</strong>), and in anaphase I the homologs, not the sisters, separate. Meiosis II then separates sister chromatids. If homologs or sisters fail to separate (<strong>nondisjunction</strong>), gametes end up with an extra or a missing chromosome.</p>
       <div class="table-wrap"><table class="data">
         <thead><tr><th></th><th>Mitosis</th><th>Meiosis</th></tr></thead>
@@ -140,32 +163,48 @@
           <tr><td>Role</td><td>Growth, repair, asexual reproduction</td><td>Gametes or spores for sexual life cycles</td></tr>
         </tbody>
       </table></div>
-      <h3>Two numbers you'll calculate</h3>
+        </div></details>
+        <details class="disclose"><summary>Two numbers you'll calculate</summary><div class="inner">
       <div class="equation">mitotic index = (cells in prophase + metaphase + anaphase + telophase) ÷ total cells counted</div>
       <div class="equation">gene–centromere distance (map units) = (% asci showing crossover) ÷ 2</div>
       <p>The mitotic index estimates the fraction of a tissue's cells that are dividing at the moment it was fixed. One map unit equals 1% recombinant products. In a <i>Sordaria</i> ascus with a crossover, only half of the spores carry recombinant chromatids, which is why the percentage is divided by 2.</p>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Sister chromatids</dt><dd>The two identical copies of a chromosome made in S phase, joined at the centromere.</dd>
+          <dt>Checkpoint</dt><dd>A control point that halts the cycle if DNA is damaged or chromosomes are not attached.</dd>
+          <dt>Cyclin and CDK</dt><dd>Cyclin switches on its kinase (CDK); the pair is MPF, which drives mitosis.</dd>
+          <dt>Mitotic index</dt><dd>The fraction of cells in prophase, metaphase, anaphase or telophase when fixed.</dd>
+          <dt>Homologous chromosomes</dt><dd>A maternal and a paternal chromosome carrying the same genes; they pair in meiosis I.</dd>
+          <dt>Crossing over</dt><dd>Exchange of segments between non-sister chromatids of a tetrad in prophase I.</dd>
+          <dt>Map unit</dt><dd>1% recombinant products; here, % crossover asci ÷ 2.</dd>
+        </dl>
+      </aside>
     </div>
   </section>
 
+
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p class="txt">These questions come from the manual's Getting Started discussion and the calculations you will do later. Check each answer; the explanation appears after you check.</p>
-      <div id="prelab"></div>
-      <div id="prelab-prompts" class="stack"></div>
+      <div id="prelab" class="quiz--cols"></div>
+      <div id="prelab-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 4. PART 1: MITOSIS MODEL ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Mitosis model">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Mitosis model">
     <header><div class="eyebrow">Part 1 · Modeling mitosis</div><h2>Move the chromosomes yourself</h2></header>
     <div class="step-body">
-      <p class="txt">This cell has 2<i>n</i> = 4: a long and a short pair of homologous chromosomes. Blue beads came from the mother, orange from the father, and the dark block in each strand is the centromere. Step through the cycle. In metaphase you drag chromosomes onto the plate; in anaphase you drag each chromatid to a pole. Try sending both sisters to the same pole once to see what happens.</p>
-      <div class="sim">
-        <div class="controls">
-          <div class="status" id="mit-stage" aria-live="polite">Stage: G<sub>1</sub></div>
-          <p class="small" id="mit-msg"></p>
+      <div class="sim sim--fit" id="mit-sim">
+        <div class="sim-side">
+          <div id="mit-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="btnrow">
             <button class="btn btn--primary" id="mit-next" type="button">Replicate DNA (S phase)</button>
           </div>
@@ -175,8 +214,14 @@
             <button class="btn btn--sm btn--ghost" id="mit-reset" type="button">Reset cell</button>
           </div>
           <div class="legend-row"><span><i class="sw" style="background:var(--s3)"></i>maternal</span><span><i class="sw" style="background:var(--s4)"></i>paternal</span></div>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+      <p class="txt">This cell has 2<i>n</i> = 4: a long and a short pair of homologous chromosomes. Blue beads came from the mother, orange from the father, and the dark block in each strand is the centromere. Step through the cycle. In metaphase you drag chromosomes onto the plate; in anaphase you drag each chromatid to a pole. Try sending both sisters to the same pole once to see what happens.</p>
+          </div></details>
         </div>
         <div class="stage">
+          <div class="status" id="mit-stage" aria-live="polite">Stage: G<sub>1</sub></div>
+          <p class="small" id="mit-msg"></p>
           <svg class="model" id="mit-svg" viewBox="0 0 640 400" role="img" aria-label="Pop-bead model of a cell with four chromosomes. Chromosomes can be dragged during metaphase and anaphase."><g id="mit-layer"></g></svg>
           <div class="readouts">
             <div class="readout"><span class="k">Chromosomes (centromeres)</span><span class="v" id="mit-ro-chr">4</span></div>
@@ -187,7 +232,7 @@
       </div>
 
       <h3>Record what the model shows</h3>
-      <p class="txt">Fill in the table for this 2<i>n</i> = 4 cell. Count a chromosome by its centromeres. DNA amount is in units of <i>c</i>, where 1<i>c</i> is the DNA in one haploid set.</p>
+      <p class="txt">Fill in the table for this 2<i>n</i> = 4 cell (open the <strong>Data</strong> tab beside the scene). Count a chromosome by its centromeres. DNA amount is in units of <i>c</i>, where 1<i>c</i> is the DNA in one haploid set.</p>
       <div id="mit-table"></div>
       <div class="row"><button class="btn btn--sm" id="mit-check-table" type="button">Check my table</button><span class="pill" id="mit-table-pill">not checked</span></div>
 
@@ -197,26 +242,41 @@
       <div class="row" style="margin-top:10px"><button class="btn btn--sm btn--primary" id="sort-check" type="button">Check order</button><button class="btn btn--sm" id="sort-shuffle" type="button">Shuffle</button><span class="small" id="sort-msg" aria-live="polite"></span></div>
 
       <h3>Think about it</h3>
-      <div id="p1-prompts" class="stack"></div>
+      <div id="p1-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 5. PART 2: ROOT TIPS ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Root tips">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Root tips">
     <header><div class="eyebrow">Part 2 · Effects of environment on mitosis</div><h2>Does a fungal lectin speed up mitosis in root tips?</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Soybean crops did poorly during three wet years, and their roots were stunted. A lectin-like protein, possibly secreted by a soil fungus, was found around the roots. Lectins are proteins that bind specific carbohydrates, and some act as <strong>mitogens</strong> that push cells into mitosis; tissue that divides too fast can be weak. You will test the idea with onion bulbs, which grow roots more easily than soybeans. One jar of bulbs grew in sand wet with water (control); the other grew in sand wet with lectin solution (PHA-M, 10 mg in 200 mL).</p>
       </div>
-      <div id="p2-design-prompts" class="stack"></div>
+      <div id="p2-design-prompts" class="prompts-2"></div>
 
-      <div class="sim" style="margin-top:14px">
-        <div class="controls">
-          <h3>1 · Prepare the squash</h3>
+      <div class="sim sim--fit" id="rt-sim">
+        <div class="sim-side">
+          <div id="rt-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><span class="label" id="rt-treat-lbl">Root tips from</span>
             <div class="seg" role="group" aria-labelledby="rt-treat-lbl"><button type="button" id="rt-t-control" data-treat="control" aria-pressed="true">Control jar</button><button type="button" id="rt-t-lectin" data-treat="lectin" aria-pressed="false">Lectin jar</button></div></div>
           <div class="field"><span class="label" id="rt-tip-lbl">Root tip</span>
             <div class="seg" role="group" aria-labelledby="rt-tip-lbl"><button type="button" id="rt-tip-1" data-tip="1" aria-pressed="true">Tip 1</button><button type="button" id="rt-tip-2" data-tip="2" aria-pressed="false">Tip 2</button><button type="button" id="rt-tip-3" data-tip="3" aria-pressed="false">Tip 3</button></div></div>
+            <button class="btn btn--primary" id="rt-prep" type="button">Make slide and view at 400×</button>
+          <div class="field tools"><span class="label" id="rt-tool-lbl">Click a cell to mark it as</span>
+            <div class="seg" role="group" aria-labelledby="rt-tool-lbl" id="rt-tools">
+              <button type="button" id="rt-tool-I" data-tool="I" aria-pressed="true" title="Interphase">I</button><button type="button" id="rt-tool-P" data-tool="P" aria-pressed="false" title="Prophase">P</button><button type="button" id="rt-tool-M" data-tool="M" aria-pressed="false" title="Metaphase">M</button><button type="button" id="rt-tool-A" data-tool="A" aria-pressed="false" title="Anaphase">A</button><button type="button" id="rt-tool-T" data-tool="T" aria-pressed="false" title="Telophase">T</button><button type="button" id="rt-tool-X" data-tool="X" aria-pressed="false" title="Erase mark">✕</button>
+            </div>
+            </div>
+            <div class="btnrow">
+              <button class="btn btn--sm" id="rt-checkids" type="button" aria-pressed="false">Check my IDs</button>
+            </div>
+            <button class="btn btn--primary" id="rt-record" type="button">Record counts for this tip</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <button class="btn btn--sm btn--ghost" id="rt-auto" type="button">Auto-score rest (demo)</button>
+              <p class="label small"><strong>Squash procedure steps</strong></p>
           <div class="prep-list" role="group" aria-label="Squash procedure steps">
             <label class="check"><input type="checkbox" id="prep-hcl" checked> 1 M HCl, 4 min (soften)</label>
             <label class="check"><input type="checkbox" id="prep-fix" checked> Carnoy's fixative, 4 min</label>
@@ -224,18 +284,9 @@
             <label class="check"><input type="checkbox" id="prep-stain" checked> Carbol-fuchsin, 2 min; blot; add water</label>
             <label class="check"><input type="checkbox" id="prep-squash" checked> Tease apart, cover slip, press with eraser</label>
           </div>
-          <button class="btn btn--primary" id="rt-prep" type="button">Make slide and view at 400×</button>
-          <h3>2 · Classify cells</h3>
-          <div class="field tools"><span class="label" id="rt-tool-lbl">Click a cell to mark it as</span>
-            <div class="seg" role="group" aria-labelledby="rt-tool-lbl" id="rt-tools">
-              <button type="button" id="rt-tool-I" data-tool="I" aria-pressed="true" title="Interphase">I</button><button type="button" id="rt-tool-P" data-tool="P" aria-pressed="false" title="Prophase">P</button><button type="button" id="rt-tool-M" data-tool="M" aria-pressed="false" title="Metaphase">M</button><button type="button" id="rt-tool-A" data-tool="A" aria-pressed="false" title="Anaphase">A</button><button type="button" id="rt-tool-T" data-tool="T" aria-pressed="false" title="Telophase">T</button><button type="button" id="rt-tool-X" data-tool="X" aria-pressed="false" title="Erase mark">✕</button>
-            </div>
-            <span class="hint">I interphase · P prophase · M metaphase · A anaphase · T telophase. Count only whole cells inside the field.</span></div>
-          <div class="btnrow">
-            <button class="btn btn--sm" id="rt-checkids" type="button" aria-pressed="false">Check my IDs</button>
-            <button class="btn btn--sm btn--ghost" id="rt-auto" type="button">Auto-score rest (demo)</button>
+            <span class="hint">I interphase · P prophase · M metaphase · A anaphase · T telophase. Count only whole cells inside the field.</span>
+            </div></details>
           </div>
-          <button class="btn btn--primary" id="rt-record" type="button">Record counts for this tip</button>
         </div>
         <div class="stage">
           <canvas class="viz mic" id="rt-canvas" aria-label="Microscope field at 400 times showing stained onion root-tip cells. Click a cell to classify it."></canvas>
@@ -254,21 +305,20 @@
       </div>
 
       <h3>Table 1 · Onion root-tip cell phase data</h3>
-      <div class="grid-2">
-        <div><h4>Control group</h4><div id="rt-table-c"></div></div>
-        <div><h4>Lectin-treated group</h4><div id="rt-table-t"></div></div>
-      </div>
+      <p class="small muted">Your recorded tips fill the <strong>Data</strong> tab beside the scene (control group and lectin-treated group).</p>
+      <div id="rt-table-c"></div>
+      <div id="rt-table-t"></div>
       <div class="row" style="margin-top:8px"><button class="btn btn--sm btn--ghost" id="rt-clear-mine" type="button">Clear my tips</button></div>
 
       <h3>Class data</h3>
       <p class="txt">One group's three tips are not enough to beat the noise. Pool your counts with the rest of the class (seven other lab groups, simulated).</p>
       <div class="btnrow"><button class="btn btn--primary" id="rt-class" type="button">Add class data</button><button class="btn btn--sm" id="rt-sample" type="button">Use the manual's sample totals instead</button><button class="btn btn--sm btn--ghost" id="rt-class-clear" type="button">Clear class data</button></div>
-      <div id="rt-class-table" style="margin-top:10px"></div>
+      <div id="rt-class-table"></div>
       <div class="readouts" style="margin-top:10px">
         <div class="readout"><span class="k">Control MI, mean ± SD</span><span class="v" id="rt-mean-c">—</span></div>
         <div class="readout"><span class="k">Lectin MI, mean ± SD</span><span class="v" id="rt-mean-t">—</span></div>
       </div>
-      <div id="rt-chart" style="margin-top:10px"></div>
+      <div id="rt-chart"></div>
 
       <h3>Chi-square test</h3>
       <div class="chi-wrap">
@@ -285,55 +335,75 @@
   </section>
 
   <!-- ============ 6. PART 3: KARYOTYPES ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Cancer karyotypes">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Cancer karyotypes">
     <header><div class="eyebrow">Part 3 · Loss of cell cycle control in cancer</div><h2>Do cancer cells have different chromosomes?</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Cancer can begin when tumor-suppressor genes such as <strong>p53</strong> or <strong>Rb</strong> are mutated and checkpoints stop working. Before you look, write a hypothesis about how the chromosomes of a cancer cell might differ from a normal cell's and how that might connect to how cancer cells behave.</p>
       </div>
-      <div id="p3-pre" class="stack"></div>
-      <div class="sim" style="margin-top:14px">
-        <div class="controls">
+      <div id="p3-pre" class="prompts-2"></div>
+      <div class="sim sim--fit" id="k-sim">
+        <div class="sim-side">
+          <div id="k-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><span class="label" id="k-cell-lbl">Cells</span>
             <div class="seg" role="group" aria-labelledby="k-cell-lbl"><button type="button" id="k-normal" data-k="normal" aria-pressed="true">Normal</button><button type="button" id="k-hela" data-k="hela" aria-pressed="false">HeLa</button><button type="button" id="k-cml" data-k="cml" aria-pressed="false">CML</button></div></div>
           <div class="field"><span class="label" id="k-view-lbl">View</span>
             <div class="seg" role="group" aria-labelledby="k-view-lbl"><button type="button" id="k-view-spread" data-v="spread" aria-pressed="true">Metaphase spread</button><button type="button" id="k-view-kary" data-v="kary" aria-pressed="false">Karyotype</button></div></div>
-          <p class="small" id="k-desc"></p>
-          <div class="readouts"><div class="readout"><span class="k">Chromosomes you've clicked</span><span class="v" id="k-count">0</span></div></div>
+            <label class="check"><input type="checkbox" id="k-abn"> Outline structurally abnormal chromosomes</label>
+            <div class="btnrow"><button class="btn btn--sm" id="k-reset-count" type="button">Clear my tally</button></div>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
           <p class="small">Click each chromosome once to tally it (click again to untick). Arranging into a karyotype keeps your marks.</p>
-          <div class="btnrow"><button class="btn btn--sm" id="k-reset-count" type="button">Clear my tally</button></div>
-          <label class="check"><input type="checkbox" id="k-abn"> Outline structurally abnormal chromosomes</label>
+          </div></details>
         </div>
         <div class="stage">
           <svg class="kary spread" id="k-svg" viewBox="0 0 760 470" role="img" aria-label="Chromosomes of the selected cell, shown as a metaphase spread or arranged into a karyotype."></svg>
+          <p class="small" id="k-desc"></p>
+          <div class="readouts"><div class="readout"><span class="k">Chromosomes you've clicked</span><span class="v" id="k-count">0</span></div></div>
         </div>
       </div>
       <h3>Record your counts and observations</h3>
+      <p class="small muted">Enter a count for each cell type in the <strong>Data</strong> tab beside the scene, add what you notice, then check your counts.</p>
       <div id="k-table"></div>
       <div class="row" style="margin-top:8px"><button class="btn btn--sm" id="k-check" type="button">Check my counts</button><span class="small" id="k-check-msg" aria-live="polite"></span></div>
       <h3>Case 1 · HeLa cells</h3>
       <p class="txt">HeLa cells came from the cervical tumor of Henrietta Lacks in 1951 and were grown without her knowledge or consent. They were the first human cells to divide indefinitely in culture and still are used in labs worldwide. Her tumor cells carry DNA from human papillomavirus 18 (HPV-18), whose E6 and E7 proteins disable p53 and Rb.</p>
-      <div id="p3-case1" class="stack"></div>
+      <div id="p3-case1" class="prompts-2"></div>
       <h3>Case 2 · Philadelphia chromosome</h3>
       <p class="txt">Chronic myelogenous leukemia (CML) cells often contain a Philadelphia chromosome. Switch to <strong>CML</strong>, arrange the karyotype, and compare pairs 9 and 22 closely with the normal cell.</p>
-      <div id="p3-case2" class="stack"></div>
+      <div id="p3-case2" class="prompts-2"></div>
     </div>
   </section>
 
+
   <!-- ============ 7. PART 4: MEIOSIS MODEL ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Meiosis model">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Meiosis model">
     <header><div class="eyebrow">Part 4 · Modeling meiosis</div><h2>Crossing over, independent assortment, and nondisjunction</h2></header>
     <div class="step-body">
-      <p class="txt">The same 2<i>n</i> = 4 cell now undergoes meiosis. The long chromosome carries gene <strong>A</strong> (mother's allele A in blue, father's allele a in orange) on the ringed bead four beads below the centromere; the short chromosome carries gene <strong>B/b</strong>. Choose whether a crossover happens and where, flip tetrads at metaphase I, and add nondisjunction if you like. Then step through to the four gametes.</p>
-      <div class="sim">
-        <div class="controls">
+      <div class="sim sim--fit" id="mei-sim">
+        <div class="sim-side">
+          <div id="mei-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <label class="check"><input type="checkbox" id="mei-xo" checked> Crossover in the long pair (prophase I)</label>
           <div class="field"><label for="mei-xopos">Chiasma position <output id="mei-xopos-out" class="val"></output></label><input id="mei-xopos" type="range" min="1" max="5" step="1" value="2"><span class="hint">Beads below the centromere; gene A sits at bead 4.</span></div>
           <div class="field"><label for="mei-ndj">Nondisjunction</label>
             <select id="mei-ndj"><option value="none">None</option><option value="I">Long pair fails to separate in meiosis I</option><option value="II">Long chromatids fail to separate in meiosis II (left cell)</option></select></div>
+            <div class="btnrow">
+              <button class="btn btn--sm" id="mei-back" type="button">◀ Back</button><button class="btn btn--primary" id="mei-next" type="button">Next stage ▶</button>
+            </div>
+            <button class="btn btn--sm" id="mei-record" type="button">Record these gametes</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <p class="small muted">At metaphase I, click a tetrad in the picture, or use these buttons, to flip which homolog faces each pole.</p>
           <div class="btnrow"><button class="btn btn--sm" id="mei-flipL" type="button">Flip long tetrad</button><button class="btn btn--sm" id="mei-flipS" type="button">Flip short tetrad</button></div>
-          <div class="btnrow"><button class="btn btn--sm" id="mei-back" type="button">◀ Back</button><button class="btn btn--primary" id="mei-next" type="button">Next stage ▶</button><button class="btn btn--sm btn--ghost" id="mei-reset" type="button">Start over</button></div>
-          <button class="btn btn--sm" id="mei-record" type="button">Record these gametes</button>
+              <button class="btn btn--sm btn--ghost" id="mei-reset" type="button">Start over</button>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+      <p class="txt">The same 2<i>n</i> = 4 cell now undergoes meiosis. The long chromosome carries gene <strong>A</strong> (mother's allele A in blue, father's allele a in orange) on the ringed bead four beads below the centromere; the short chromosome carries gene <strong>B/b</strong>. Choose whether a crossover happens and where, flip tetrads at metaphase I, and add nondisjunction if you like. Then step through to the four gametes.</p>
+          </div></details>
         </div>
         <div class="stage">
           <div class="status" aria-live="polite"><strong id="mei-stage-name">Interphase (G1)</strong> · <span id="mei-desc"></span></div>
@@ -341,18 +411,19 @@
           <div class="gamete-list" id="mei-gametes"></div>
         </div>
       </div>
-      <div id="mei-table" style="margin-top:12px"></div>
+      <div id="mei-table"></div>
       <h3>Many meioses at once</h3>
-      <p class="txt">One meiosis is a single draw. Run 200 meioses with random tetrad orientation and a chiasma in the long pair 60% of the time, and look at the four gamete types.</p>
+      <p class="txt">One meiosis is a single draw. Run 200 meioses with random tetrad orientation and a chiasma in the long pair 60% of the time, and look at the four gamete types in the <strong>Graph</strong> tab.</p>
       <div class="row"><button class="btn btn--primary" id="mei-run" type="button">Run 200 meioses</button><span class="small" id="mei-run-out" aria-live="polite"></span></div>
-      <div id="mei-chart" style="margin-top:8px"></div>
+      <div id="mei-chart"></div>
       <div id="p4-quiz" style="margin-top:12px"></div>
-      <div id="p4-prompts" class="stack" style="margin-top:12px"></div>
+      <div id="p4-prompts" class="prompts-2" style="margin-top:12px"></div>
     </div>
   </section>
 
+
   <!-- ============ 8. PART 5: SORDARIA ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Sordaria">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Sordaria">
     <header><div class="eyebrow">Part 5 · Meiosis and crossing over in Sordaria</div><h2>How far is the tan gene from its centromere?</h2></header>
     <div class="step-body">
       <div class="prose">
@@ -366,18 +437,24 @@
           <label class="check"><input type="checkbox" id="xo-demo" > Crossover between gene and centromere</label>
           <button class="btn btn--sm" id="xo-flip" type="button" style="justify-self:start">Flip a meiosis II spindle</button>
           <p class="small" id="xo-msg" aria-live="polite"></p>
-          <div id="p5-pre" class="stack"></div>
+          <div id="p5-pre" class="prompts-2"></div>
         </div>
       </div>
 
-      <div class="sim" style="margin-top:14px">
-        <div class="controls">
-          <p class="small">Scrape perithecia from where the strains meet, squash under a cover slip, and look at 400×. Score only <strong>mature</strong> asci whose eight spores you can see clearly. Pale asci are immature.</p>
+      <div class="sim sim--fit" id="s-sim">
+        <div class="sim-side">
+          <div id="s-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field tools"><span class="label" id="s-tool-lbl">Click an ascus to score it as</span>
             <div class="seg" role="group" aria-labelledby="s-tool-lbl" id="s-tools"><button type="button" id="s-tool-P" data-stool="P" aria-pressed="true">4:4 (no crossover)</button><button type="button" id="s-tool-R" data-stool="R" aria-pressed="false">Crossover</button><button type="button" id="s-tool-E" data-stool="E" aria-pressed="false" title="Erase">✕</button></div></div>
           <div class="btnrow"><button class="btn btn--sm" id="s-check" type="button" aria-pressed="false">Check my scoring</button><button class="btn btn--sm btn--ghost" id="s-auto" type="button">Auto-score rest (demo)</button></div>
           <button class="btn btn--primary" id="s-record" type="button">Record this field</button>
           <button class="btn" id="s-new" type="button">New squash / next field</button>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p class="small">Scrape perithecia from where the strains meet, squash under a cover slip, and look at 400×. Score only <strong>mature</strong> asci whose eight spores you can see clearly. Pale asci are immature.</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz mic" id="s-canvas" aria-label="Microscope field showing a squashed Sordaria perithecium with a rosette of asci containing black and tan spores. Click an ascus to score it."></canvas>
@@ -392,6 +469,7 @@
       </div>
 
       <h3>Table 3 · Analysis of results</h3>
+      <p class="small muted">Your recorded fields are in the <strong>Data</strong> tab beside the scene, and the class results are in the <strong>Graph</strong> tab.</p>
       <div id="s-table"></div>
       <p class="txt" style="margin-top:8px">Count at least 50 asci. Then calculate from your totals:</p>
       <div class="calc-grid">
@@ -402,47 +480,55 @@
       <p class="small" id="s-calc-msg" aria-live="polite"></p>
       <h3>Class data</h3>
       <div class="btnrow"><button class="btn btn--primary" id="s-class" type="button">Add class data</button><button class="btn btn--sm btn--ghost" id="s-class-clear" type="button">Clear class data</button></div>
-      <div id="s-class-table" style="margin-top:10px"></div>
-      <div id="s-chart" style="margin-top:10px"></div>
+      <div id="s-class-table"></div>
+      <div id="s-chart"></div>
     </div>
   </section>
 
+
   <!-- ============ 9. DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>What else in the soil changes the rate of mitosis?</h2></header>
     <div class="step-body">
       <p class="txt">Choose one biotic or abiotic factor that might raise or lower the mitotic index in root tips. Plan your levels, replicates, and controls before you run anything. Each tip is scored automatically here so you can focus on design and analysis.</p>
-      <div id="d-plan" class="stack"></div>
-      <div class="sim" style="margin-top:14px">
-        <div class="controls">
+      <div id="d-plan" class="prompts-2"></div>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
           <div class="field"><span class="label" id="d-lv-lbl">Levels to test</span><div class="levels" id="d-levels" role="group" aria-labelledby="d-lv-lbl"></div><span class="hint" id="d-ref-hint"></span></div>
           <div class="field"><label for="d-reps">Root tips per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="3" max="10" value="5"></div>
+            <button class="btn btn--primary" id="d-run" type="button">Grow, fix, and score roots</button>
+            <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear results</button>
+            <details class="more"><summary>More options</summary><div class="inner">
           <div class="field"><label for="d-cells">Cells scored per tip <output id="d-cells-out" class="val"></output></label><input id="d-cells" type="range" min="50" max="400" step="25" value="150"></div>
-          <button class="btn btn--primary" id="d-run" type="button">Grow, fix, and score roots</button>
-          <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear results</button>
+            </div></details>
+          </div>
         </div>
         <div class="stage">
-          <div id="d-chart"></div>
           <div id="d-field-wrap"><canvas class="viz" id="d-field" aria-label="Example microscope field from the most recent level tested."></canvas><p class="small" id="d-field-cap"></p></div>
         </div>
       </div>
-      <div id="d-table" style="margin-top:10px"></div>
-      <div id="d-analysis" class="stack" style="margin-top:12px"></div>
+      <div id="d-chart"></div>
+      <div id="d-table"></div>
+      <div id="d-analysis" class="prompts-2" style="margin-top:12px"></div>
     </div>
   </section>
 
+
   <!-- ============ 10. ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
     <div class="step-body">
       <h3>Root tips (postlab review)</h3>
-      <div id="an-p2" class="stack"></div>
+      <div id="an-p2" class="prompts-2"></div>
       <h3>Claim, evidence, reasoning</h3>
       <p class="txt">Does the fungal lectin increase the proportion of root-tip cells in mitosis?</p>
       <div class="cer" id="an-cer"></div>
       <h3><i>Sordaria</i> (evaluating results)</h3>
-      <div id="an-p5" class="stack"></div>
+      <div id="an-p5" class="prompts-2"></div>
       <h3>Chi-square calculator</h3>
       <p class="txt">Use this for any goodness-of-fit test, such as your own design data or the 200-meiosis run.</p>
       <div id="cs-rows" class="stack"></div>
@@ -452,13 +538,13 @@
   </section>
 
   <!-- ============ 11. REFLECT ============ -->
-  <section class="step wrap gutter" data-step="Reflect">
+  <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
-    <div class="step-body" id="reflect"></div>
+    <div class="step-body prompts-2" id="reflect"></div>
   </section>
 
   <!-- ============ 12. SUBMIT ============ -->
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -987,6 +1073,7 @@ function drawRootMarks(ctx, f, marks, checking) {
 }
 const ROOT = (function () {
   let treat = 'control', tip = 1, tool = 'I', checking = false, field = null, marks = new Map(), salt = rng.int(1, 1e6);
+  Lab.fitHeight('#rt-canvas', 0.75, '380px');
   const view = Scope.view('#rt-canvas', {
     aspect: 0.75, world: RW, focusLabel: 'Fine focus', hud: { mag: '400×', bar: { units: 46, label: '30 µm' } },
     overlay: ctx => field && drawRootMarks(ctx, field, marks, checking),
@@ -1056,7 +1143,7 @@ const classTab = Lab.table('#rt-class-table', {
   footer: rows => { const sm = k => ST.sum(rows.map(r => r[k] || 0)); const ci = sm('ci'), cm = sm('cm'), ti = sm('ti'), tm = sm('tm'); return ['Class total', ci, cm, ci + cm ? fmt(100 * cm / (ci + cm), 1) : '—', ti, tm, ti + tm ? fmt(100 * tm / (ti + tm), 1) : '—']; },
   onChange: rows => classStats(rows)
 });
-const rtChart = Lab.chart('#rt-chart', { type: 'bar', yLabel: 'Mitotic index (%), mean ± 2 SE', xLabel: 'Treatment', categories: ['Control', 'Lectin'], series: [{ name: 'Mean mitotic index', points: [] }], height: 300 });
+const rtChart = Lab.chart('#rt-chart', { type: 'bar', yLabel: 'Mean mitotic index (%)', xLabel: 'Treatment', categories: ['Control', 'Lectin'], series: [{ name: 'Mean mitotic index', points: [] }], height: 300 });
 function myGroupRow() {
   const c = tabC.getRows(), t = tabT.getRows(); if (!c.length && !t.length) return null;
   const sm = (rows, k) => ST.sum(rows.map(r => r[k]));
@@ -1404,6 +1491,7 @@ const MEI = (function () {
   });
   themeHooks.push(() => render(cur));
   go(false);
+  return { recTab };
 })();
 Lab.quiz('#p4-quiz', [
   { type: 'num', q: 'Humans have <i>n</i> = 23. Counting independent assortment only (no crossing over), how many genetically different gametes can one person make? (2<sup><i>n</i></sup>)', answer: 8388608, tol: 1, unit: 'kinds of gametes', explain: '2<sup>23</sup> = 8,388,608. Crossing over and random fertilization multiply the variety far beyond this.' },
@@ -1561,6 +1649,7 @@ function sordRenderer(f) {
 }
 const SORD = (function () {
   let field, marks = new Map(), tool = 'P', checking = false, fieldNo = 0, salt = rng.int(1, 1e6);
+  Lab.fitHeight('#s-canvas', 0.75);
   const view = Scope.view('#s-canvas', {
     aspect: 0.75, world: SW, focusLabel: 'Fine focus', hud: { mag: () => '400× · field ' + fieldNo, bar: { units: 50, label: '50 µm' } },
     overlay: ctx => field && drawMarks(ctx),
@@ -1639,7 +1728,7 @@ const sClassTab = Lab.table('#s-class-table', { columns: [{ key: 'g', label: 'Gr
     const pts = rows.map((r, i) => ({ x: i + 1, y: r.mu })), t = ST.sum(rows.map(r => r.t)), cm = t ? 50 * ST.sum(rows.map(r => r.r)) / t : NaN;
     sChart.update({ series: [{ name: 'Group map distance', points: pts, line: false }], hLines: [{ y: 26, label: 'Published: 26 map units' }].concat(isFinite(cm) ? [{ y: cm, label: 'Class: ' + fmt(cm, 1) }] : []) });
   } });
-const sChart = Lab.chart('#s-chart', { xLabel: 'Lab group (1 = yours)', yLabel: 'Gene–centromere distance (map units)', xMin: 0, xMax: 9, yMin: 0, yMax: 40, series: [], hLines: [{ y: 26, label: 'Published: 26 map units' }], height: 300 });
+const sChart = Lab.chart('#s-chart', { xLabel: 'Lab group (1 = yours)', yLabel: 'Map distance (map units)', xMin: 0, xMax: 9, yMin: 0, yMax: 40, series: [], hLines: [{ y: 26, label: 'Published: 26 map units' }], height: 300 });
 function sClassUpdate() {
   const rows = sTab.getRows(), p = ST.sum(rows.map(r => r.p)), r = ST.sum(rows.map(r => r.r)), sim = Lab.store.get('s-sim', []);
   const mine = p + r ? [{ g: 'Your group', p, r, t: p + r, pct: 100 * r / (p + r), mu: 50 * r / (p + r) }] : [];
@@ -1666,7 +1755,7 @@ const IVS = {
   temp: { label: 'Growth temperature', unit: '°C', levels: [5, 10, 15, 20, 25, 30, 35], on: [10, 20, 25, 35], ref: 20, mi: T => 0.155 * Math.exp(-(((T - 24) / 10) ** 2)) },
   nem: { label: 'Root-knot nematodes (biotic)', unit: 'juveniles per jar', levels: [0, 100, 500, 1000], on: [0, 100, 500, 1000], ref: 0, mi: n => 0.145 + 0.08 * n / (n + 300) }
 };
-(function design() {
+const DES = (function design() {
   const sel = $('#d-iv'); Object.entries(IVS).forEach(([k, v]) => sel.append(Lab.h('option', { value: k }, v.label)));
   const reps = $('#d-reps'), cells = $('#d-cells');
   const syncR = () => { $('#d-reps-out').textContent = reps.value + ' tips'; $('#d-cells-out').textContent = cells.value + ' cells'; };
@@ -1676,6 +1765,7 @@ const IVS = {
   const tab = Lab.table('#d-table', { save: 'design', columns: [{ key: 'lv', label: 'Level', num: true, digits: 1 }, { key: 'n', label: 'Tips', num: true, digits: 0 }, { key: 'I', label: 'Interphase', num: true, digits: 0 }, { key: 'M', label: 'Mitotic', num: true, digits: 0 }, { key: 'mean', label: 'Mean MI', unit: '%', num: true, digits: 1 }, { key: 'sd', label: 'SD', unit: '%', num: true, digits: 1 }, { key: 'se', label: 'SE', unit: '%', num: true, digits: 2 }, { key: 'chi', label: 'χ² vs control', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
     onChange: rows => { const iv = IVS[(rows[0] && rows[0].iv) || sel.value]; chart.update({ xLabel: `${iv.label} (${iv.unit})`, series: [{ name: 'Mean mitotic index ± 2 SE', points: rows.map(r => ({ x: r.lv, y: r.mean, err: 2 * r.se })) }] }); } });
   const chart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Mitotic index (%)', yMin: 0, series: [], height: 300 });
+  Lab.fitHeight('#d-field', 0.75);
   const fo = Scope.view('#d-field', { aspect: 0.75, world: RW, hud: { mag: '400×', bar: { units: 46, label: '30 µm' } } });
   let last = null;
   const showField = () => fo.setSpecimen({ render: rootRenderer(last), layers: rootLayers(last), seed: last.seed });
@@ -1700,9 +1790,117 @@ const IVS = {
   $('#d-clear').addEventListener('click', () => tab.clear());
   last = { seed: 4242, ink: 1, cells: genRootField(4242, 0.145, { hcl: true, fix: true, cut: true, stain: true, squash: true }) }; showField();
   $('#d-field-cap').textContent = 'Example control field (MI ≈ 15%).';
+  return { tab };
 })();
 [['d-q', 'Your question: what factor will you test, and why might it change the rate of mitosis in roots?'], ['d-h', 'Hypothesis and null hypothesis (state both).'], ['d-ctrl', 'Controlled variables and your control group. How many tips per level, and why?']].forEach(([k, l]) => Lab.prompt('#d-plan', { key: k, label: l, rows: 3 }));
 [['d-res', 'Describe your results using the graph and table. Which levels differ significantly from the control (χ², df = 1, critical value 3.84)? Do the 95% confidence intervals (±2 SE) overlap?'], ['d-concl', 'Conclusion: was your hypothesis supported? What are the limits of using the mitotic index as a measure of the rate of cell division?']].forEach(([k, l]) => Lab.prompt('#d-analysis', { key: k, label: l, rows: 4 }));
+
+/* =====================================================================
+   LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons, toasts
+   ===================================================================== */
+Lab.fitHeight('#mit-svg', 0.625); Lab.fitHeight('#mei-svg', 0.525); Lab.fitHeight('#k-svg', 0.618);
+const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+const mitIdx = () => ['G1', 'G2', 'Prophase', 'Metaphase', 'Anaphase', 'Telophase'].findIndex(k => $('#mit-stage').textContent.includes(k));
+const meiIdx = () => ['Interphase (G1)', 'S phase / G2', 'Prophase I', 'Metaphase I', 'Anaphase I', 'Telophase I', 'Metaphase II', 'Anaphase II', 'Telophase II'].indexOf($('#mei-stage-name').textContent);
+const touched = {};
+const touch = (name, sels) => sels.forEach(s => $$(s).forEach(e => ['click', 'input', 'change'].forEach(ev => e.addEventListener(ev, () => { touched[name] = true; }))));
+touch('k', ['#k-view-kary']); touch('d', ['#d-iv', '#d-levels', '#d-reps']);
+
+Lab.results('#mit-sim', { data: [{ el: '#mit-table', title: 'Chromosomes and DNA at each stage' }] });
+Lab.results('#rt-sim', {
+  graph: [{ el: '#rt-chart', title: 'Mitotic index, class mean ± 2 SE' }],
+  data: [{ el: '#rt-table-c', title: 'Table 1 · Control group' }, { el: '#rt-table-t', title: 'Table 1 · Lectin-treated group' }, { el: '#rt-class-table', title: 'Class data' }]
+});
+Lab.results('#k-sim', { data: [{ el: '#k-table', title: 'Your counts and observations' }] });
+Lab.results('#mei-sim', { graph: [{ el: '#mei-chart', title: 'Gametes from 200 meioses' }], data: [{ el: '#mei-table', title: 'Your recorded gametes' }] });
+Lab.results('#s-sim', {
+  graph: [{ el: '#s-chart', title: 'Map distance by lab group' }],
+  data: [{ el: '#s-table', title: 'Table 3 · Your fields' }, { el: '#s-class-table', title: 'Class data' }]
+});
+Lab.results('#d-sim', { graph: [{ el: '#d-chart', title: 'Mitotic index ± 2 SE' }], data: [{ el: '#d-table', title: 'Every level tested' }] });
+
+/* ---- Part 1: mitosis model ---- */
+const mitFilled = () => { const i = $$('#mit-table input'); return i.length > 0 && i.every(x => x.value !== ''); };
+Lab.steps('#mit-steps', [
+  { id: 's', text: 'Replicate DNA (S phase)', target: '#mit-next', done: () => mitIdx() >= 1, hint: 'Press the main button. Each chromosome becomes two sister chromatids.' },
+  { id: 'meta', text: 'Condense and form the spindle', target: '#mit-next', done: () => mitIdx() >= 3, hint: 'Press the main button until you reach metaphase.' },
+  { id: 'align', text: 'Line up on the metaphase plate', target: '#mit-align', done: () => mitIdx() >= 4, hint: 'Drag each chromosome onto the dashed plate (spread them out), or press <strong>Align on plate</strong>.' },
+  { id: 'pull', text: 'Pull the chromatids apart', target: '#mit-pull', done: () => mitIdx() >= 5, hint: 'Drag each chromatid to a pole, or press <strong>Pull chromatids</strong>.' },
+  { id: 'table', text: 'Fill in the table (below)', target: '#mit-check-table', done: mitFilled, hint: 'Open the <strong>Data</strong> tab, fill every box, then press <strong>Check my table</strong>.' },
+  { id: 'sort', text: 'Put the real cells in order', target: '#sort-check', done: () => $$('#sort-row .sortcard.ok').length === 6, hint: 'Scroll down: swap the cards into order, then press <strong>Check order</strong>.' }
+], { doneText: 'Mitosis model done. Next, test the lectin in <a href="#root-tips">Root tips</a>.' });
+$('#mit-check-table').addEventListener('click', () => { const p = $('#mit-table-pill'); Lab.toast('Table checked: ' + p.textContent, { type: p.classList.contains('ok') ? 'ok' : 'warn', announce: false, key: 'mit-check' }); });
+$('#sort-check').addEventListener('click', () => { const n = $$('#sort-row .sortcard.ok').length; Lab.toast(n === 6 ? 'All 6 cells are in order' : n + ' of 6 cells are in the right place', { type: n === 6 ? 'ok' : 'warn', announce: false, key: 'sort-check' }); });
+
+/* ---- Part 2: root tips ---- */
+const rtMarked = () => ['I', 'P', 'M', 'A', 'T'].reduce((a, k) => a + (+$('#rt-n-' + k).textContent || 0), 0);
+const rtHasObs = () => { const r = classTab.getRows(); return r.some(x => x.ci + x.cm > 0) && r.some(x => x.ti + x.tm > 0); };
+const rtMine = () => tabC.getRows().length + tabT.getRows().length;
+Lab.steps('#rt-steps', [
+  { id: 'mark', text: 'Mark every whole cell', target: '#rt-tool-I', done: () => (rtMarked() > 0 && $('#rt-n-left').textContent === '0') || rtMine() > 0, hint: 'Pick I, P, M, A or T, then click each whole cell. Switch jar or tip above for a new slide.' },
+  { id: 'rec', text: 'Record counts for this tip', target: '#rt-record', done: () => rtMine() > 0, hint: 'Press <strong>Record counts</strong>, then switch jar or tip and repeat (3 tips per jar).' },
+  { id: 'class', text: 'Add class data (below)', target: '#rt-class', done: () => Lab.store.get('rt-sim', []).length > 0, hint: 'Scroll down and press <strong>Add class data</strong> to pool the class.' },
+  { id: 'chi', text: 'Run the χ² test (below)', target: '#chi-run', done: () => !!$('#chi-out .decision'), hint: 'Scroll down: enter the expected values, then <strong>Calculate χ²</strong>.' }
+], { doneText: 'Root tips done. Next, look at cancer cells in <a href="#cancer-karyotypes">Cancer karyotypes</a>.' });
+Lab.gate('#rt-record', () => rtMarked() > 0 ? '' : 'Mark some cells first');
+Lab.gate('#chi-run', () => rtHasObs() ? '' : 'Record tips from both jars or add class data first');
+Lab.gate('#chi-checkexp', () => rtHasObs() ? '' : 'Record tips from both jars or add class data first');
+$('#rt-class').addEventListener('click', () => Lab.toast('Added class data from 7 simulated groups', { type: 'ok', announce: false, key: 'rt-class' }));
+$('#rt-sample').addEventListener('click', () => Lab.toast("Loaded the manual's sample totals", { type: 'info', announce: false, key: 'rt-class' }));
+$('#chi-run').addEventListener('click', () => { const d = $('#chi-out .decision'); if (d) Lab.toast(d.classList.contains('rej') ? 'χ² calculated: reject the null hypothesis' : 'χ² calculated: fail to reject the null hypothesis', { type: 'info', announce: false, key: 'chi' }); });
+
+/* ---- Part 3: karyotypes ---- */
+const kKeys = ['normal', 'hela', 'cml'];
+const kCounted = () => kTab.getRows().every(r => r.n != null);
+const kRight = () => kTab.getRows().every((r, i) => r.n != null && Math.abs(r.n - KARYO.TRUE[kKeys[i]]) <= (kKeys[i] === 'hela' ? 1 : 0));
+Lab.steps('#k-steps', [
+  { id: 'hyp', text: 'Write your hypothesis (above)', target: '#p-p3-hyp', done: () => filled('p3-hyp'), hint: 'Scroll up and write a hypothesis before you look at the chromosomes.' },
+  { id: 'click', text: 'Click each chromosome to count', target: '#k-normal', sticky: true, done: () => +$('#k-count').textContent > 0 || kTab.getRows().some(r => r.n != null), hint: 'Click every chromosome once. Switch cell type with the buttons above.' },
+  { id: 'kary', text: 'Arrange it as a karyotype', target: '#k-view-kary', optional: true, done: () => !!touched.k, hint: 'Choose <strong>Karyotype</strong> to pair the chromosomes by size.' },
+  { id: 'enter', text: 'Enter counts for all 3 cells', target: '#k-check', done: kCounted, hint: 'Open the <strong>Data</strong> tab and type a count for normal, HeLa and CML cells.' },
+  { id: 'check', text: 'Check my counts', target: '#k-check', done: kRight, hint: 'Press <strong>Check my counts</strong> and recount any that say recount.' },
+  { id: 'cases', text: 'Answer the two cases (below)', target: '#p-p3-hela', done: () => filled('p3-hela') && filled('p3-ph'), hint: 'Scroll down and answer the HeLa and Philadelphia chromosome questions.' }
+], { doneText: 'Karyotypes done. Next, model meiosis in <a href="#meiosis-model">Meiosis model</a>.' });
+Lab.gate('#k-check', () => kTab.getRows().some(r => r.n != null) ? '' : 'Enter a count first');
+$('#k-check').addEventListener('click', () => { const ok = $$('#k-check-msg .pill.ok').length; Lab.toast(ok === 3 ? 'Checked: all 3 counts match' : `Checked: ${ok} of 3 counts match`, { type: ok === 3 ? 'ok' : 'warn', announce: false, key: 'k-check' }); });
+
+/* ---- Part 4: meiosis ---- */
+const recRows = () => MEI.recTab.getRows();
+Lab.steps('#mei-steps', [
+  { id: 'm1', text: 'Step to Metaphase I', target: '#mei-next', done: () => meiIdx() >= 3 || recRows().length > 0, hint: 'Press <strong>Next stage</strong>.' },
+  { id: 'end', text: 'Step on to Telophase II', target: '#mei-next', done: () => meiIdx() === 8 || recRows().length > 0, hint: 'Keep pressing <strong>Next stage</strong> until four gametes appear.' },
+  { id: 'rec', text: 'Record these gametes', target: '#mei-record', done: () => recRows().length > 0, hint: 'Press <strong>Record these gametes</strong> to add a row to the Data tab.' },
+  { id: 'two', text: 'Record a second run', target: '#mei-ndj', optional: true, done: () => recRows().length >= 2, hint: 'Change the crossover, chiasma or nondisjunction, then run and record again.' },
+  { id: 'many', text: 'Run 200 meioses (below)', target: '#mei-run', done: () => $('#mei-run-out').textContent.trim() !== '', hint: 'Scroll down and press <strong>Run 200 meioses</strong>; the Graph tab shows the gametes.' }
+], { doneText: 'Meiosis model done. Next, score real asci in <a href="#sordaria">Sordaria</a>.' });
+$('#mei-run').addEventListener('click', () => Lab.toast('Ran 200 meioses (800 gametes)', { type: 'ok', announce: false, key: 'mei-run' }));
+
+/* ---- Part 5: Sordaria ---- */
+const sTotal = () => ST.sum(sTab.getRows().map(r => r.tot));
+const sScored = () => (+$('#s-n-P').textContent || 0) + (+$('#s-n-R').textContent || 0);
+Lab.steps('#s-steps', [
+  { id: 'score', text: 'Score the mature asci', target: '#s-tool-P', done: () => sScored() > 0 || sTab.getRows().length > 0, hint: 'Choose 4:4 or Crossover and click each mature ascus. Pale asci are immature.' },
+  { id: 'rec', text: 'Record this field', target: '#s-record', done: () => sTab.getRows().length > 0, hint: 'Press <strong>Record this field</strong>. Then take a new squash.' },
+  { id: 'fifty', text: 'Record 50 or more asci', target: '#s-new', done: () => sTotal() >= 50, hint: 'Press <strong>New squash / next field</strong>, score it, and record again.' },
+  { id: 'calc', text: 'Calculate % and map units', target: '#s-pct', done: () => !!($('#s-pct').value && $('#s-mu').value), hint: 'Scroll down: % crossover = crossover ÷ total × 100; map units = % ÷ 2.' },
+  { id: 'class', text: 'Add class data (below)', target: '#s-class', done: () => Lab.store.get('s-sim', []).length > 0, hint: 'Press <strong>Add class data</strong> and compare with the published 26 map units.' }
+], { doneText: 'Sordaria done. Next, design your own test in <a href="#design">Design</a>.' });
+Lab.gate('#s-record', () => sScored() > 0 ? '' : 'Score some asci first');
+Lab.gate('#s-calc-check', () => sTab.getRows().length ? '' : 'Record a field first');
+$('#s-class').addEventListener('click', () => Lab.toast('Added class data from 7 simulated groups', { type: 'ok', announce: false, key: 's-class' }));
+$('#s-calc-check').addEventListener('click', () => { const ok = $$('#s-calc-msg .pill.ok').length; Lab.toast(ok === 2 ? 'Checked: both calculations are correct' : `Checked: ${ok} of 2 calculations correct`, { type: ok === 2 ? 'ok' : 'warn', announce: false, key: 's-calc' }); });
+
+/* ---- Design ---- */
+const dLv = () => $$('#d-levels input:checked').length;
+Lab.steps('#d-steps', [
+  { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-q', done: () => filled('d-q') && filled('d-h'), hint: 'Fill in the plan above.' },
+  { id: 'iv', text: 'Choose a factor and its levels', target: '#d-iv', sticky: true, done: () => !!touched.d || DES.tab.getRows().length > 0, hint: 'Pick the factor, then tick at least two levels, including the control.' },
+  { id: 'reps', text: 'Use 3 or more tips per level', target: '#d-reps', done: () => +$('#d-reps').value >= 3, hint: 'Set 3 or more root tips per level.' },
+  { id: 'run', text: 'Grow, fix, and score roots', target: '#d-run', done: () => DES.tab.getRows().length > 0, hint: 'Press <strong>Grow, fix, and score roots</strong>, then read the Graph and Data tabs.' },
+  { id: 'res', text: 'Describe your results (below)', target: '#p-d-res', done: () => filled('d-res') && filled('d-concl'), hint: 'Scroll down: describe the pattern and state a conclusion.' }
+], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+Lab.gate('#d-run', () => dLv() >= 2 ? '' : 'Tick at least two levels, including the control');
+$('#d-run').addEventListener('click', () => { if (dLv() >= 2) Lab.toast(`Scored ${dLv()} levels × ${$('#d-reps').value} root tips`, { type: 'ok', announce: false, key: 'd-run' }); });
 
 /* =====================================================================
    ANALYZE + REFLECT
