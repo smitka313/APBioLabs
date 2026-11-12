@@ -569,15 +569,22 @@
     cardGroups = [];
     if (cs === 4) { const sizes = []; let left = n; while (left > 0) { let s = left <= 6 ? left : rng.int(4, 6); if (left - s > 0 && left - s < 4) s = left - 4 >= 4 ? left - 4 : left; sizes.push(s); left -= s; } let i = 0; sizes.forEach(s => { cardGroups.push(Array.from({ length: s }, (_, k) => i + k)); i += s; }); }
     else cardGroups = [cardPop.map((_, i) => i)];
-    recordCardGen(); renderCards(); status('#card-status', 'Everyone starts as AB, so p = q = 0.5.', '');
+    cardBaseLogged = false; recordCardGen(false); renderCards(); status('#card-status', 'Everyone starts as AB, so p = q = 0.5.', '');
   }
-  function recordCardGen() {
+  /* The generation-0 starting row is setup, not student work: it is written to the data table only when the student
+     mates the first generation, so a fresh page (or a Reset / case change) leaves the saved table empty and the
+     part's progress at 0. */
+  let cardBaseLogged = false;
+  function recordCardGen(toTable = true) {
     const c = countG(cardPop), groups = cardGroups.map(g => countG(g.map(i => cardPop[i])).p);
     cardHist.push({ gen: cardGen, p: c.p, groups });
+    if (!toTable) return;
     cardTable.addRow({ cs: ['I', 'II', 'III', 'IV'][+$('#card-case').value - 1], gen: cardGen, aa: c.aa, ab: c.ab, bb: c.bb, p: c.p, q: 1 - c.p });
   }
   function cardGeneration() {
     const cs = +$('#card-case').value, next = cardPop.slice();
+    if (cardGen === 0 && !cardBaseLogged) { const c0 = countG(cardPop); cardTable.addRow({ cs: ['I', 'II', 'III', 'IV'][cs - 1], gen: 0, aa: c0.aa, ab: c0.ab, bb: c0.bb, p: c0.p, q: 1 - c0.p }); }
+    cardBaseLogged = true;
     const survives = g => { const s = g[0] + g[1]; if ((cs === 2 || cs === 3) && s === 0) return false; if (cs === 3 && s === 2) return rng.chance(0.5); return true; };
     cardGroups.forEach(group => {
       const order = rng.shuffle(group);
@@ -631,6 +638,8 @@
   $('#card-run5').addEventListener('click', () => { for (let i = 0; i < 5 && cardGen < 30; i++) cardGeneration(); renderCards(); status('#card-status', `Generation ${cardGen}: p = ${fmt(countG(cardPop).p, 3)}.`, ''); });
   cardCanvas.onresize = renderCards;
   // start without adding duplicate rows when the saved table already has data
+  // older versions wrote the generation-0 starting row on page load; a table holding only that row has no student work
+  if (cardTable.getRows().length && cardTable.getRows().every(r => r.gen === 0)) cardTable.setRows([]);
   if (!cardTable.getRows().length) cardReset(); else (function initCards() { const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGroups = [cardPop.map((_, i) => i)]; cardHist = [{ gen: 0, p: 0.5, groups: [0.5] }]; renderCards(); })();
   Lab.prompt('#card-prompts', { key: 'card-compare', label: 'Compare Case I with Cases II–IV. In which case did p change the most, and why? In Case I, did p stay at exactly 0.5? Explain why or why not.', rows: 4 });
 
