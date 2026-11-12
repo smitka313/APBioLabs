@@ -12,18 +12,20 @@
 <link rel="stylesheet" href="style.css">
 <style>
   :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 44px 36px; }
-  .hero h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); font-weight: 800; letter-spacing: -0.03em; max-width: 16ch; }
-  .hero p.lede { margin-top: 14px; max-width: 60ch; color: var(--muted); font-size: 1.12rem; }
-  .hero .how { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
-  .hero .how div { border-top: 2px solid var(--accent); padding-top: 10px; display: grid; gap: 4px; }
-  .hero .how strong { font-family: var(--f-display); font-size: 1.02rem; }
-  .hero .how span { font-size: .92rem; color: var(--muted); }
+  .hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 30px 26px; }
+  .hero-grid { display: grid; gap: 18px 40px; align-items: end; }
+  @media (min-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); } }
+  .hero h1 { font-size: clamp(2.1rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; max-width: 16ch; margin-top: 4px; }
+  .hero p.lede { margin-top: 10px; max-width: 54ch; color: var(--muted); font-size: 1.08rem; }
+  .hero .home-status { margin-top: 0; }
   .bi { padding-block: 34px 6px; display: grid; gap: 14px; }
   .bi-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
   .bi-head .eyebrow { color: var(--stain); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
-  .card { display: grid; grid-template-rows: auto auto 1fr auto auto; gap: 8px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; transition: border-color .15s, transform .15s; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 16px; }
+  .card { display: grid; grid-template-rows: auto auto auto 1fr auto auto auto; gap: 8px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 18px 16px; overflow: hidden; transition: border-color .15s, transform .15s; }
+  .card .thumb { display: block; width: calc(100% + 36px); max-width: none; height: auto; aspect-ratio: 16 / 10; object-fit: cover; margin: 0 -18px 6px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .card:hover { transform: none; } }
   .card:hover { border-color: var(--accent); transform: translateY(-2px); }
   .card .num { font-family: var(--f-mono); font-size: .78rem; color: var(--accent); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
   .card h3 { font-size: 1.22rem; }
@@ -36,16 +38,14 @@
 <body>
 <header class="hero">
   <div class="wrap wrap--wide gutter">
-    <div class="eyebrow">AP Biology · 13 investigations</div>
-    <h1>AP Bio Lab Bench</h1>
-    <p class="lede">Interactive versions of every lab in the AP Biology investigative lab manual. Each lab gives you the background, a pre-lab check, simulations that work like the real procedure, your own experiment to design, and tools to graph and analyze what you find.</p>
-    <div class="how">
-      <div><strong>Run the procedure</strong><span>Simulations produce realistic data with real variability, including replicates.</span></div>
-      <div><strong>Design your own test</strong><span>Choose a variable, set levels and replicates, and collect your own data.</span></div>
-      <div><strong>Analyze like a scientist</strong><span>Graphs with error bars, standard error, chi-square and regression are built in.</span></div>
-      <div><strong>Hand it in</strong><span>Work saves in your browser. Download a Word or PDF lab report to upload to Schoology.</span></div>
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">AP Biology · 13 investigations</div>
+        <h1>AP Bio Lab Bench</h1>
+        <p class="lede">Run each AP Biology lab as a realistic simulation, design your own experiment, graph your data, and hand in a lab report. Your work saves in this browser.</p>
+      </div>
+      <div class="home-status"><div id="home-identity"></div><p class="resume" id="resume" hidden></p></div>
     </div>
-    <div class="home-status"><div id="home-identity"></div><p class="resume" id="resume" hidden></p></div>
   </div>
 </header>
 
@@ -61,25 +61,25 @@
 <script>
 const BIG_IDEAS = [
   { n: 1, name: 'Evolution', units: 'Units 5–7', labs: [
-    { id: 1, title: 'Artificial Selection', q: 'Can extreme selection change expression of a quantitative trait in a population in one generation?', sim: 'Count trichomes on Fast Plants, select parents, and grow the next generation.', topics: ['EVO-1', 'Histograms', 'Descriptive stats'] },
-    { id: 2, title: 'Mathematical Modeling: Hardy-Weinberg', q: 'How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?', sim: 'Spreadsheet-style model with selection, mutation, migration and drift.', topics: ['EVO-1', 'Modeling', 'Chi-square'] },
-    { id: 3, title: 'Comparing DNA Sequences with BLAST', q: 'How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?', sim: 'Build a cladogram, then align a mystery gene against a sequence database.', topics: ['EVO-3', 'Cladograms', 'Alignment'] },
+    { id: 1, alt: 'Simulation scene: a growth chamber of Fast Plant seedlings seen from above', title: 'Artificial Selection', q: 'Can extreme selection change expression of a quantitative trait in a population in one generation?', sim: 'Count trichomes on Fast Plants, select parents, and grow the next generation.', topics: ['EVO-1', 'Histograms', 'Descriptive stats'] },
+    { id: 2, alt: 'Simulation scene: a gene-pool jar of allele beads beside a graph of allele frequency over generations', title: 'Mathematical Modeling: Hardy-Weinberg', q: 'How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?', sim: 'Spreadsheet-style model with selection, mutation, migration and drift.', topics: ['EVO-1', 'Modeling', 'Chi-square'] },
+    { id: 3, alt: 'Simulation scene: a fossil slab of a small feathered animal', title: 'Comparing DNA Sequences with BLAST', q: 'How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?', sim: 'Build a cladogram, then align a mystery gene against a sequence database.', topics: ['EVO-3', 'Cladograms', 'Alignment'] },
   ]},
   { n: 2, name: 'Energetics', units: 'Units 2–3', labs: [
-    { id: 4, title: 'Diffusion and Osmosis', q: 'What causes my plants to wilt if I forget to water them?', sim: 'Agar cubes, dialysis-tube model cells, potato cores, and plasmolysis.', topics: ['ENE-2', 'Water potential', 'SA:V'] },
-    { id: 5, title: 'Photosynthesis', q: 'What factors affect the rate of photosynthesis in living leaves?', sim: 'Floating leaf disk assay under changing light, CO₂ and temperature.', topics: ['ENE-1', 'ET₅₀', 'Rate'] },
-    { id: 6, title: 'Cellular Respiration', q: 'What factors affect the rate of cellular respiration in multicellular organisms?', sim: 'Microrespirometers with germinating seeds, beads, and temperature.', topics: ['ENE-1', 'Q₁₀', 'Slope'] },
+    { id: 4, alt: 'Simulation scene: dialysis-tubing bags in cups of solution', title: 'Diffusion and Osmosis', q: 'What causes my plants to wilt if I forget to water them?', sim: 'Agar cubes, dialysis-tube model cells, potato cores, and plasmolysis.', topics: ['ENE-2', 'Water potential', 'SA:V'] },
+    { id: 5, alt: 'Simulation scene: two cups of leaf disks under a lamp, with disks floating in the bicarbonate cup', title: 'Photosynthesis', q: 'What factors affect the rate of photosynthesis in living leaves?', sim: 'Floating leaf disk assay under changing light, CO₂ and temperature.', topics: ['ENE-1', 'ET₅₀', 'Rate'] },
+    { id: 6, alt: 'Simulation scene: two microrespirometers in a water bath', title: 'Cellular Respiration', q: 'What factors affect the rate of cellular respiration in multicellular organisms?', sim: 'Microrespirometers with germinating seeds, beads, and temperature.', topics: ['ENE-1', 'Q₁₀', 'Slope'] },
   ]},
   { n: 3, name: 'Information Storage and Transmission', units: 'Units 4–6', labs: [
-    { id: 7, title: 'Cell Division: Mitosis and Meiosis', q: 'How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?', sim: 'Onion root tip counts, chi-square, meiosis models, and Sordaria crossing over.', topics: ['IST-1', 'Mitotic index', 'Map units'] },
-    { id: 8, title: 'Bacterial Transformation', q: 'How can we use genetic engineering techniques to manipulate heritable information?', sim: 'pGLO transformation, heat shock, four plates, and transformation efficiency.', topics: ['IST-1', 'Gene regulation', 'Efficiency'] },
-    { id: 9, title: 'Restriction Enzyme Analysis of DNA', q: 'How can we use genetic information to identify and profile individuals?', sim: 'Digest lambda DNA, run a gel, and size fragments from a standard curve.', topics: ['IST-1', 'Electrophoresis', 'Semi-log plots'] },
+    { id: 7, alt: 'Simulation scene: stained onion root-tip cells under the microscope', title: 'Cell Division: Mitosis and Meiosis', q: 'How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?', sim: 'Onion root tip counts, chi-square, meiosis models, and Sordaria crossing over.', topics: ['IST-1', 'Mitotic index', 'Map units'] },
+    { id: 8, alt: 'Simulation scene: a lab bench with a tube rack, an ice bucket and a 42 °C water bath', title: 'Bacterial Transformation', q: 'How can we use genetic engineering techniques to manipulate heritable information?', sim: 'pGLO transformation, heat shock, four plates, and transformation efficiency.', topics: ['IST-1', 'Gene regulation', 'Efficiency'] },
+    { id: 9, alt: 'Simulation scene: a stained agarose gel with DNA bands beside a power supply', title: 'Restriction Enzyme Analysis of DNA', q: 'How can we use genetic information to identify and profile individuals?', sim: 'Digest lambda DNA, run a gel, and size fragments from a standard curve.', topics: ['IST-1', 'Electrophoresis', 'Semi-log plots'] },
   ]},
   { n: 4, name: 'Systems Interactions', units: 'Units 2, 6, 8', labs: [
-    { id: 10, title: 'Energy Dynamics', q: 'What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?', sim: 'Fast Plant biomass and butterfly larvae energy budgets with a live energy-flow diagram.', topics: ['ENE-1', 'Biomass', 'kcal'] },
-    { id: 11, title: 'Transpiration', q: 'What factors, including environmental variables, affect the rate of transpiration in plants?', sim: 'Stomata peels under the microscope and whole-plant water loss.', topics: ['ENE-3', 'Stomatal density', 'Leaf area'] },
-    { id: 12, title: 'Fruit Fly Behavior', q: 'What environmental factors trigger a fruit fly response?', sim: 'A two-chamber choice test with live fly movement and chi-square.', topics: ['ENE-3', 'Taxis vs kinesis', 'Chi-square'] },
-    { id: 13, title: 'Enzyme Activity', q: 'How do abiotic or biotic factors influence the rates of enzymatic reactions?', sim: 'Turnip peroxidase and guaiacol color changes across pH, temperature and concentration.', topics: ['ENE-1', 'Initial rate', 'Optima'] },
+    { id: 10, alt: 'Simulation scene: shelves of Fast Plants under a light bank', title: 'Energy Dynamics', q: 'What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?', sim: 'Fast Plant biomass and butterfly larvae energy budgets with a live energy-flow diagram.', topics: ['ENE-1', 'Biomass', 'kcal'] },
+    { id: 11, alt: 'Simulation scene: a plant cutting in a water-filled potometer', title: 'Transpiration', q: 'What factors, including environmental variables, affect the rate of transpiration in plants?', sim: 'Stomata peels under the microscope and whole-plant water loss.', topics: ['ENE-3', 'Stomatal density', 'Leaf area'] },
+    { id: 12, alt: 'Simulation scene: fruit flies climbing in an upright vial', title: 'Fruit Fly Behavior', q: 'What environmental factors trigger a fruit fly response?', sim: 'A two-chamber choice test with live fly movement and chi-square.', topics: ['ENE-3', 'Taxis vs kinesis', 'Chi-square'] },
+    { id: 13, alt: 'Simulation scene: a rack of pH tubes turning brown as the enzyme works', title: 'Enzyme Activity', q: 'How do abiotic or biotic factors influence the rates of enzymatic reactions?', sim: 'Turnip peroxidase and guaiacol color changes across pH, temperature and concentration.', topics: ['ENE-1', 'Initial rate', 'Optima'] },
   ]},
 ];
 const pad = n => String(n).padStart(2, '0');
@@ -89,6 +89,7 @@ document.getElementById('labs').innerHTML = BIG_IDEAS.map(b => `
     <div class="bi-head"><span class="eyebrow">Big Idea ${b.n}</span><h2 id="bi${b.n}">${b.name}</h2><span class="muted small">${b.units}</span></div>
     <div class="cards">${b.labs.map(l => `
       <a class="card" href="lab${pad(l.id)}.html">
+        <img class="thumb" src="img/lab${pad(l.id)}.webp" width="480" height="300" alt="${esc(l.alt)}" loading="lazy" decoding="async">
         <span class="num">Investigation ${l.id}</span>
         <h3>${esc(l.title)}</h3>
         <span class="dq">${esc(l.q)}</span>
