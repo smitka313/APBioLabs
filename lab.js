@@ -195,13 +195,27 @@
   const workListeners = []; let workTimer = null;
   function workChanged() { clearTimeout(workTimer); workTimer = setTimeout(() => workListeners.forEach(f => { try { f(); } catch (e) { console.warn(e); } }), 120); }
   const REG = { charts: [], tables: [], quizzes: [], prompts: [] }; // used by reports, worksheets and progress
+  const CANVASES = []; // every Lab.canvas, so a part that becomes visible can be resized and redrawn at once
+  /* Lab.chart draws in a 640-unit-wide viewBox. A responsive chart (opts.responsive, or any chart inside a
+     results panel) draws at its real CSS width instead, so axis text stays 12px in narrow columns. */
   Lab.chart = function (el, opts) {
     if (typeof el === 'string') el = $(el);
     el.classList.add('chart');
     let cur = Object.assign({}, opts);
-    REG.charts.push({ el, get opts() { return cur; } });
-    function render() {
-      const o = cur, W = 640, H = o.height || 360, m = { t: 16, r: 18, b: 54, l: 64 };
+    let ro = null, lastW = 0;
+    const responsive = () => !!(cur.responsive || el.closest('.sim-panel'));
+    function chooseW() {
+      if (!responsive()) return 640;
+      const cw = el.clientWidth;
+      if (!cw) return lastW || 640;
+      if (!ro && 'ResizeObserver' in window) { ro = new ResizeObserver(() => { const w = el.clientWidth; if (w && Math.abs(w - lastW) > 8) render(); }); ro.observe(el); }
+      return Math.max(300, Math.min(760, Math.round(cw)));
+    }
+    const entry = { el, get opts() { return cur; }, render: () => render(), html: W => build(W || 640) };
+    REG.charts.push(entry);
+    function render() { lastW = chooseW(); el.innerHTML = build(lastW); }
+    function build(W) {
+      const o = cur, H = Math.round((o.height || 360) * Math.max(0.62, Math.min(1, W / 640))), m = { t: 16, r: 18, b: 54, l: 64 };
       const iw = W - m.l - m.r, ih = H - m.t - m.b;
       const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true }, s));
       let svg = '';
@@ -228,7 +242,7 @@
         let xs = [], ys = [];
         series.forEach(s => s.points.forEach(p => { if (isFinite(p.x) && isFinite(p.y)) { xs.push(p.x); ys.push(p.y - (p.err || 0), p.y + (p.err || 0)); } }));
         (o.hLines || []).forEach(l => ys.push(l.y));
-        const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), 6);
+        const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), W < 480 ? 4 : 6);
         const yr = niceRange(o.yMin != null ? o.yMin : Math.min(0, ...(ys.length ? ys : [0])), o.yMax != null ? o.yMax : Math.max(...(ys.length ? ys : [1])), 5);
         const X = v => m.l + (v - xr.lo) / (xr.hi - xr.lo) * iw, Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
         for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>`;
@@ -257,7 +271,7 @@
       const named = series.filter(s => s.name);
       const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
       const fits = series.filter(s => s._fit).map(s => `${esc(s.name || 'fit')}: y = ${Lab.fmt(s._fit.m, 4)}x ${s._fit.b < 0 ? '−' : '+'} ${Lab.fmt(Math.abs(s._fit.b), 4)}  (R² = ${Lab.fmt(s._fit.r2, 3)})`);
-      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
+      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
     }
     render();
     return { update(next) { cur = Object.assign({}, cur, next); render(); }, el };
@@ -287,11 +301,27 @@
       }));
     }
     function changed(rerender = true) { if (opts.save) store.set(opts.save, rows); if (rerender) render(); else if (opts.footer) render(); opts.onChange && opts.onChange(rows); workChanged(); }
+    /* "Recorded trial N" toast for saved (student data) tables. Rows that arrive in a stream (one per simulated
+       minute) are coalesced into one toast. opts.toast: false | 'text' | (rows, added) => 'text'. */
+    let pend = 0, toastT = null, lastSay = 0;
+    const toastKey = 'table:' + (opts.save || REG.tables.length);
+    function noteRows(n) {
+      if (!opts.save || opts.toast === false || n <= 0 || !autoToasts.ready) return;
+      pend += n; clearTimeout(toastT);
+      toastT = setTimeout(() => {
+        const k = pend; pend = 0;
+        const msg = typeof opts.toast === 'function' ? opts.toast(rows, k) : typeof opts.toast === 'string' ? opts.toast
+          : (k === 1 ? `Recorded trial ${rows.length} in your data table` : `Recorded ${k} rows in your data table`);
+        if (!msg) return;
+        const quiet = Date.now() - lastSay < 4000; lastSay = Date.now();
+        Lab.toast(msg, { type: 'ok', key: toastKey, announce: !quiet });
+      }, 600);
+    }
     render();
     if (rows.length && opts.onChange) setTimeout(() => opts.onChange(rows), 0);
     return {
-      setRows(r) { rows = r.map(x => Object.assign({}, x)); changed(); },
-      addRow(r) { rows.push(Object.assign({}, r)); changed(); },
+      setRows(r) { rows = r.map(x => Object.assign({}, x)); changed(); noteRows(rows.length); },
+      addRow(r) { rows.push(Object.assign({}, r)); changed(); noteRows(1); },
       getRows() { return rows; },
       clear() { rows = []; changed(); },
     };
@@ -356,6 +386,7 @@
         fb.innerHTML = (ok ? '<strong>Correct.</strong> ' : '<strong>Not quite.</strong> ') + (ok || opts.revealOnWrong !== false ? (qq.explain || '') : (qq.hint || 'Try again.'));
         const st = store.get('quiz:' + id, {}); st[qi] = { value: a, correct: ok }; store.set('quiz:' + id, st);
         updateScore(); workChanged();
+        if (show) { const sc = scoreEl.textContent; Lab.toast(`Question ${qi + 1} checked: ${ok ? 'correct' : 'not quite, read the explanation'} · ${sc}`, { type: ok ? 'ok' : 'warn', key: 'quiz:' + id, announce: false }); }
       }
       box.append(h('div', { class: 'row' }, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => grade(true) }, 'Check answer')), fb);
       el.append(box);
@@ -373,14 +404,21 @@
       const key = 'field:' + f.dataset.save;
       const v = store.get(key);
       if (v != null) { if (f.type === 'checkbox') f.checked = v; else f.value = v; }
-      let t; const status = f.closest('.prompt') && $('.saved', f.closest('.prompt'));
-      const save = () => { store.set(key, f.type === 'checkbox' ? f.checked : f.value); if (status) status.textContent = 'Saved on this device'; };
+      let t, typed = false; const status = f.closest('.prompt') && $('.saved', f.closest('.prompt'));
+      const answer = f.tagName === 'TEXTAREA' || !!f.dataset.label;
+      const save = () => { store.set(key, f.type === 'checkbox' ? f.checked : f.value); if (status) status.textContent = 'Saved on this device'; if (typed && answer) savedToast(); typed = false; };
       saveFns.push(() => { clearTimeout(t); save(); });
-      f.addEventListener('input', () => { clearTimeout(t); t = setTimeout(save, 400); workChanged(); });
+      f.addEventListener('input', () => { typed = true; clearTimeout(t); t = setTimeout(save, 400); workChanged(); });
       f.addEventListener('change', save);
     });
   }
   Lab.bindAutosave = bindAutosave;
+  /* One "saved" toast after typing pauses, at most every 45 s (never one per keystroke). */
+  let savedT = null, savedAt = 0;
+  function savedToast() {
+    clearTimeout(savedT);
+    savedT = setTimeout(() => { if (Date.now() - savedAt < 45000) return; savedAt = Date.now(); Lab.toast('Your answers are saved on this device', { type: 'ok', key: 'saved' }); }, 1500);
+  }
 
   /* Build a written-response prompt. Lab.prompt(container, {key, label, rows, placeholder}) */
   Lab.prompt = function (el, o) {
@@ -445,6 +483,7 @@
           reloadForSeed(); return;
         }
         idHosts.forEach(b => renderIdentity(b));
+        if (ok) Lab.toast('Saved: signed in as ' + name, { type: 'ok' });
         if (!ok) { const l = $('.id-line', box); if (l) l.append(h('span', { class: 'id-note' }, ' This browser is not saving data here, so your name is used on this page only.')); }
         focusIn(box, '.id-change');
       });
@@ -532,7 +571,7 @@
       h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; } }, 'Keep it'));
     const copyBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
       const text = collectText();
-      try { await navigator.clipboard.writeText(text); msg.textContent = 'Copied. Paste it into your document or LMS.'; fallback.hidden = true; }
+      try { await navigator.clipboard.writeText(text); msg.textContent = 'Copied. Paste it into your document or LMS.'; fallback.hidden = true; Lab.toast('Copied all your responses', { type: 'ok', announce: false }); }
       catch (e) { fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select(); msg.textContent = 'Copy is blocked here. Your text is selected below: press Ctrl+C (or ⌘C).'; }
     } }, 'Copy all my responses');
     const clearBtn = h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { confirmRow.hidden = false; } }, 'Start over');
@@ -633,7 +672,11 @@
         if (n.closest('.id-box')) return;
         if (n.matches('.quiz')) { const q = quizByEl.get(n); if (q) items.push(quizItem(q)); return; }
         if (n.closest('.quiz')) return;
-        if (n.matches('.chart')) { const c = chartByEl.get(n); if (c && $('svg', n) && chartHasData(c.opts)) items.push({ kind: 'chart', el: n, opts: c.opts }); return; }
+        if (n.matches('.chart')) {
+          const c = chartByEl.get(n);
+          if (c && $('svg', n) && chartHasData(c.opts)) { const full = h('div', { class: 'chart', html: c.html(640) }); items.push({ kind: 'chart', el: full, opts: c.opts }); } // full-size copy, whatever width it is shown at
+          return;
+        }
         if (n.matches('table.data')) { const t = tableItem(n); if (t) items.push(t); return; }
         if (n.id === 'student-name' || !(n.tagName === 'TEXTAREA' || n.dataset.label)) return;
         items.push({ kind: 'answer', q: fieldLabel(n), a: fieldValue(n) });
@@ -876,7 +919,7 @@
     const fileIn = h('input', { type: 'file', accept: '.json,application/json', hidden: true, 'aria-hidden': 'true', tabindex: '-1' });
     const codeOut = h('textarea', { class: 'code-box', readonly: true, rows: 3, hidden: true, 'aria-label': 'Your resume code' });
     const copyCode = h('button', { class: 'btn btn--sm', type: 'button', hidden: true, onclick: async () => {
-      try { await navigator.clipboard.writeText(codeOut.value); say('Resume code copied. Paste it somewhere you can reach from the other computer (for example, an email to yourself).'); }
+      try { await navigator.clipboard.writeText(codeOut.value); say('Resume code copied. Paste it somewhere you can reach from the other computer (for example, an email to yourself).'); Lab.toast('Resume code copied', { type: 'ok', announce: false }); }
       catch (e) { codeOut.focus(); codeOut.select(); say('Copy is blocked here. The code is selected: press Ctrl+C.'); }
     } }, 'Copy code');
     const codeIn = h('textarea', { id: 'resume-code-in', class: 'code-box', rows: 3, spellcheck: 'false', placeholder: 'LB1z.…' });
@@ -905,6 +948,7 @@
             const p = progressPayload();
             downloadBlob(new Blob([JSON.stringify(p)], { type: 'application/json' }), reportFileBase() + '_progress.json');
             say(`Saved ${reportFileBase()}_progress.json to your Downloads folder.`); if (LIKELY_PREVIEW) note.hidden = false;
+            Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false });
           } }, 'Save progress file'),
           h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, 'Load progress file'), fileIn),
         h('div', { class: 'row' },
@@ -933,6 +977,7 @@
         const name = reportFileBase() + '.docx';
         downloadBlob(blob, name);
         say(`Downloaded ${name}. Upload it to Schoology.` + nameWarn());
+        Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
       } catch (e) {
         if (e && e.message === 'docx-load') { say('Could not load the Word file tool. Check your internet connection, or use Save as PDF.', true); note.hidden = false; }
@@ -976,7 +1021,15 @@
       if (!wasDark) { try { img = h('img', { src: origCanvases[i].toDataURL('image/png'), alt: origCanvases[i].getAttribute('aria-label') || '', class: 'ws-img' }); } catch (e) { img = null; } }
       if (img) cv.replaceWith(img); else cv.remove();
     });
-    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools', clone).forEach(e => e.remove());
+    $$('.tab-panel', clone).forEach(p => { p.hidden = false; if (p.dataset.tab) p.prepend(h('p', { class: 'ws-sum' }, p.dataset.tab)); }); // every tab prints
+    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools, .pager, [role="tablist"]', clone).forEach(e => e.remove());
+    // Collapsed disclosures print in full: <details> becomes a plain block with its summary as a heading.
+    $$('details', clone).forEach(d => {
+      const box = h('div', { class: 'ws-details' });
+      Array.from(d.childNodes).forEach(n => { if (n.nodeType === 1 && n.tagName === 'SUMMARY') box.append(h('p', { class: 'ws-sum', html: n.innerHTML })); else box.append(n); });
+      d.replaceWith(box);
+    });
+    $$('[role="tabpanel"]', clone).forEach(p => { p.removeAttribute('role'); p.removeAttribute('aria-labelledby'); });
     $$('[id]', clone).forEach(e => e.removeAttribute('id'));
     return clone.innerHTML;
   }
@@ -1025,6 +1078,7 @@
   function enterWorksheet() {
     if (wsState) return wsState.root;
     closeReport(); flushSaves();
+    pagesSuspend(); // every part laid out, so canvases copy at full size
     const wasDark = isDarkNow();
     const restore = forceLight();
     const note = previewNote(true);
@@ -1050,7 +1104,7 @@
   function exitWorksheet() {
     if (!wsState) return;
     const s = wsState; wsState = null;
-    s.root.remove(); s.style.remove(); s.restore();
+    s.root.remove(); s.style.remove(); s.restore(); pagesResume();
     document.body.classList.remove('worksheet-mode');
     document.removeEventListener('keydown', wsKey);
     window.scrollTo(0, s.scrollY);
@@ -1094,10 +1148,29 @@
     return el;
   }
   let userScrolled = false;
-  function scrollToHash() { const el = hashTarget(); if (el && el.matches('section.step')) el.scrollIntoView({ block: 'start' }); }
+  /* Legacy #step-N links: show the slug in the address bar instead. */
+  function tidyLegacyHash(el) {
+    if (el && el.matches('section.step') && /^#step-\d+$/.test(location.hash) && history.replaceState) { try { history.replaceState(history.state, '', '#' + el.id); } catch (e) { /* file:// in some browsers */ } }
+  }
+  function scrollToHash() {
+    const el = hashTarget(); if (!el) return;
+    const sec = partOf(el);
+    if (pages.on && !pages.suspended && sec) { showPart(sec); tidyLegacyHash(el); el.scrollIntoView({ block: el === sec ? 'start' : 'center' }); return; }
+    if (el.matches('section.step')) el.scrollIntoView({ block: 'start' });
+  }
   function setupDeepLinks() {
     ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => window.addEventListener(ev, () => { userScrolled = true; }, { passive: true }));
-    window.addEventListener('hashchange', () => { scrollToHash(); });
+    window.addEventListener('hashchange', () => {
+      const el = hashTarget();
+      const sec = el && partOf(el);
+      if (pages.on && !pages.suspended && sec) { // nav links, Back/Next, in-page links and browser Back all arrive here
+        goPart(sec, { focus: el === sec, scroll: el === sec });
+        tidyLegacyHash(el);
+        if (el !== sec) el.scrollIntoView({ block: 'center' });
+        return;
+      }
+      scrollToHash();
+    });
     if (!location.hash) return;
     // Page scripts build content after Lab.init, and charts and fonts shift layout, so settle the scroll a few times.
     const again = () => { if (!userScrolled) scrollToHash(); };
@@ -1115,7 +1188,7 @@
       btn.addEventListener('click', async () => {
         const url = location.href.split('#')[0] + '#' + s.id;
         const old = $('.link-fallback', tools); if (old) old.remove();
-        try { await navigator.clipboard.writeText(url); status.textContent = 'Link copied'; }
+        try { await navigator.clipboard.writeText(url); status.textContent = 'Link copied'; Lab.toast('Link to “' + (name || 'this part') + '” copied', { type: 'ok', announce: false }); }
         catch (e) {
           const inp = h('input', { type: 'text', class: 'link-fallback', readonly: true, value: url, 'aria-label': 'Link to this part' });
           tools.append(inp); inp.focus(); inp.select(); status.textContent = 'Press Ctrl+C to copy';
@@ -1153,34 +1226,195 @@
     if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, t: Date.now() }); }
     return { done: complete, total: parts };
   }
+  /* ---------------- Paged mode: one part at a time ----------------
+     Lab pages show one section.step at a time (body.paged; the current one has .is-current), with Back/Next
+     links at the bottom of each part. Hash links (#float-assay, legacy #step-5) open that part. "All parts"
+     (remembered per browser in aplab:ui:allParts) shows the whole lab on one page; printing, the worksheet
+     and the report always read every part. Lab.pages: {on, current(), go(idOrEl), showAll(bool), list()}.
+     Lab.onShow(partOrChild, fn) runs fn(section) whenever that part becomes visible. */
+  const ALL_KEY = 'ui:allParts';
+  const pages = { on: false, suspended: 0, steps: [], cur: null };
+  const showFns = new Map();
+  let navLinks = [], navOl = null, lastId = null;
+  function partOf(el) { if (!el || !el.matches) return null; return el.matches('section.step') ? el : el.closest('section.step'); }
+  const navHeight = () => { const n = $('.step-nav'); return n ? n.getBoundingClientRect().height : 0; };
+  const isShown = sec => !pages.on || pages.suspended > 0 || sec === pages.cur;
+  function setActive(id) {
+    navLinks.forEach(a => {
+      const on = a.getAttribute('href') === '#' + id; a.setAttribute('aria-current', on ? 'true' : 'false');
+      if (on && navOl) { const r = a.getBoundingClientRect(), nr = navOl.getBoundingClientRect(); if (r.left < nr.left + 24 || r.right > nr.right - 24) navOl.scrollLeft += (r.left + r.right) / 2 - (nr.left + nr.right) / 2; }
+    });
+    if (IS_LAB && id !== lastId) { lastId = id; const s = document.getElementById(id); gstore.set('last', { lab: PAGE.id, step: id, name: s ? s.dataset.step || '' : '', title: document.title, t: Date.now() }); }
+  }
+  /* Size and redraw what lives in a part that just became visible. */
+  function syncPart(sec) {
+    CANVASES.forEach(c => { if (sec.contains(c.canvas)) { try { c.check(); } catch (e) { console.warn(e); } } });
+    REG.charts.forEach(c => { if (sec.contains(c.el)) { try { c.render(); } catch (e) { console.warn(e); } } });
+  }
+  function partShown(sec) {
+    syncPart(sec);
+    requestAnimationFrame(() => {
+      $$('canvas', sec).forEach(cv => { if (cv.scopeView) { try { cv.scopeView.redraw(); } catch (e) { /* ignore */ } } });
+      window.dispatchEvent(new Event('resize'));
+    });
+    (showFns.get(sec) || []).slice().forEach(f => { try { f(sec); } catch (e) { console.error(e); } });
+    sec.dispatchEvent(new CustomEvent('lab:show', { bubbles: true }));
+    refreshGuides();
+  }
+  function showPart(sec) {
+    if (!sec) return;
+    if (pages.on && pages.cur !== sec) {
+      pages.cur = sec;
+      pages.steps.forEach(s => s.classList.toggle('is-current', s === sec));
+      partShown(sec);
+    }
+    setActive(sec.id);
+  }
+  function goPart(sec, o = {}) {
+    if (typeof sec === 'string') sec = document.getElementById(sec.replace(/^#/, ''));
+    sec = partOf(sec); if (!sec) return;
+    showPart(sec);
+    if (o.hash && location.hash.slice(1) !== sec.id) { try { history.pushState(null, '', '#' + sec.id); } catch (e) { location.hash = sec.id; return; } }
+    if (o.scroll !== false) window.scrollTo(0, Math.max(0, sec.getBoundingClientRect().top + window.scrollY - navHeight()));
+    if (o.focus) {
+      const hd = $(':scope > header h2', sec) || $(':scope > header', sec);
+      if (hd) { if (!hd.hasAttribute('tabindex')) hd.tabIndex = -1; hd.focus({ preventScroll: true }); }
+    }
+  }
+  function setAllParts(all, o = {}) {
+    if (!IS_LAB || !pages.steps.length) return;
+    if (o.save !== false) gstore.set(ALL_KEY, !!all);
+    const keep = pages.cur || document.getElementById(lastId) || pages.steps[0];
+    pages.on = !all;
+    document.body.classList.toggle('paged', pages.on && !pages.suspended);
+    $$('.parts-toggle').forEach(b => b.setAttribute('aria-pressed', String(!!all)));
+    if (all) {
+      pages.steps.forEach(s => { if (s !== pages.cur) partShown(s); });
+      pages.cur = null;
+      if (keep && o.scroll !== false) keep.scrollIntoView({ block: 'start' });
+    } else {
+      pages.cur = null;
+      const sec = (lastId && document.getElementById(lastId)) || keep;
+      if (sec) { try { history.replaceState(null, '', '#' + sec.id); } catch (e) { /* ignore */ } }
+      goPart(sec, { scroll: o.scroll !== false });
+    }
+    if (o.toast !== false) Lab.toast(all ? 'Showing all parts on one page' : 'Showing one part at a time', { type: 'info' });
+  }
+  /* Printing and the worksheet need every part laid out. */
+  function pagesSuspend() {
+    pages.suspended++;
+    if (pages.suspended === 1 && pages.on) { document.body.classList.remove('paged'); pages.steps.forEach(s => { if (s !== pages.cur) syncPart(s); }); }
+  }
+  function pagesResume() {
+    if (pages.suspended > 0) pages.suspended--;
+    if (!pages.suspended && pages.on) document.body.classList.add('paged');
+  }
+  Lab.pages = {
+    get on() { return pages.on; },
+    current: () => pages.on ? pages.cur : (lastId && document.getElementById(lastId)),
+    go: (target, o = {}) => goPart(target, Object.assign({ hash: true, focus: true }, o)),
+    showAll: (all = true) => setAllParts(all),
+    list: () => pages.steps.slice(),
+    suspend: pagesSuspend, resume: pagesResume,
+  };
+  Lab.onShow = function (part, fn) {
+    const sec = partOf(typeof part === 'string' ? $(part) : part);
+    if (!sec || typeof fn !== 'function') return () => {};
+    if (!showFns.has(sec)) showFns.set(sec, []);
+    showFns.get(sec).push(fn);
+    if (isShown(sec)) setTimeout(() => { if (isShown(sec)) fn(sec); }, 0);
+    return () => { const a = showFns.get(sec) || [], i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); };
+  };
+  const partName = (s, i) => (s.dataset.step || '').trim() || 'Part ' + (i + 1);
+  function buildPagers(steps) {
+    steps.forEach((s, i) => {
+      if ($(':scope > .pager', s)) return;
+      const prev = steps[i - 1], next = steps[i + 1];
+      s.append(h('nav', { class: 'pager', 'aria-label': 'Move between parts' },
+        prev ? h('a', { class: 'btn pager-prev', href: '#' + prev.id, rel: 'prev' }, h('span', { 'aria-hidden': 'true' }, '←'), h('span', null, 'Back', h('span', { class: 'pager-name' }, ': ' + partName(prev, i - 1)))) : h('span', { class: 'pager-gap' }),
+        h('span', { class: 'pager-mid' }, h('span', { class: 'pager-pos' }, `Part ${i + 1} of ${steps.length}`),
+          h('button', { class: 'linkbtn pager-all', type: 'button', onclick: () => setAllParts(true) }, 'Show all parts on one page')),
+        next ? h('a', { class: 'btn btn--primary pager-next', href: '#' + next.id, rel: 'next' }, h('span', null, 'Next', h('span', { class: 'pager-name' }, ': ' + partName(next, i + 1))), h('span', { 'aria-hidden': 'true' }, '→'))
+          : h('a', { class: 'btn pager-next', href: 'index.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
+    });
+    // Page scripts run after Lab.init; keep each pager last in its part.
+    window.addEventListener('load', () => steps.forEach(s => { const p = $(':scope > .pager', s); if (p && p !== s.lastElementChild) s.append(p); }));
+  }
+  /* Arrows for a step nav that is wider than the screen (they only scroll; links stay in the Tab order). */
+  function setupNavScroll(ol) {
+    const wrap = ol.parentElement;
+    const mk = (cls, dir, label) => h('button', { class: 'nav-arrow ' + cls, type: 'button', tabindex: '-1', 'aria-hidden': 'true', title: label, onclick: () => ol.scrollBy({ left: dir * Math.max(160, ol.clientWidth * 0.6), behavior: Lab.reducedMotion() ? 'auto' : 'smooth' }) }, dir < 0 ? '‹' : '›');
+    const prev = mk('nav-prev', -1, 'Scroll parts left'), next = mk('nav-next', 1, 'Scroll parts right');
+    ol.before(prev); ol.after(next);
+    const upd = () => {
+      const over = ol.scrollWidth > ol.clientWidth + 2;
+      wrap.classList.toggle('nav-overflow', over);
+      prev.disabled = !over || ol.scrollLeft <= 2; next.disabled = !over || ol.scrollLeft + ol.clientWidth >= ol.scrollWidth - 2;
+      wrap.classList.toggle('at-start', prev.disabled); wrap.classList.toggle('at-end', next.disabled);
+    };
+    ol.addEventListener('scroll', upd, { passive: true });
+    if ('ResizeObserver' in window) new ResizeObserver(upd).observe(ol); else window.addEventListener('resize', upd);
+    window.addEventListener('load', upd); setTimeout(upd, 0);
+  }
+  function setupPaged(steps) {
+    pages.steps = steps;
+    buildPagers(steps);
+    pages.on = !gstore.get(ALL_KEY);
+    const first = hashTarget(), sec = partOf(first) || steps[0];
+    if (pages.on) { pages.cur = null; showPart(sec); document.body.classList.add('paged'); tidyLegacyHash(first); }
+    // Same-part clicks do not change the hash, so handle them here.
+    document.addEventListener('click', e => {
+      const a = e.target.closest && e.target.closest('a[href^="#"]');
+      if (!a || !pages.on || pages.suspended || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const href = a.getAttribute('href');
+      if (href.length > 1 && href === location.hash) {
+        const el = document.getElementById(decodeURIComponent(href.slice(1)));
+        if (el && el.matches('section.step')) { e.preventDefault(); goPart(el, { focus: true }); }
+      }
+    });
+    // Printing (Ctrl+P) shows every part, with disclosures open.
+    let printing = null;
+    window.addEventListener('beforeprint', () => {
+      if (printing || document.body.classList.contains('worksheet-mode') || document.body.classList.contains('report-mode')) return;
+      printing = $$('details.disclose:not([open])'); printing.forEach(d => { d.open = true; });
+      pagesSuspend();
+    });
+    window.addEventListener('afterprint', () => { if (!printing) return; printing.forEach(d => { d.open = false; }); printing = null; pagesResume(); });
+    // Find (Ctrl+F) only searches what is on screen: offer the one-page view once.
+    let findHint = false;
+    window.addEventListener('keydown', e => {
+      if (findHint || !pages.on || !(e.ctrlKey || e.metaKey) || (e.key || '').toLowerCase() !== 'f') return;
+      findHint = true;
+      Lab.toast('Find only searches the part on screen.', { type: 'info', timeout: 9000, action: { label: 'Show all parts', onClick: () => setAllParts(true) } });
+    });
+  }
   function buildNav() {
     const nav = $('.step-nav ol');
     const steps = $$('section.step');
     assignStepIds(steps);
+    if (IS_LAB && steps.length > 1) setupPaged(steps);
     setupDeepLinks();
     if (!nav) return;
+    navOl = nav;
     steps.forEach((s, i) => {
-      nav.append(h('li', null, h('a', { href: '#' + s.id }, h('span', { class: 'n' }, String(i + 1)), s.dataset.step || ('Step ' + (i + 1)), IS_LAB ? h('span', { class: 'sr-only done-sr' }) : null)));
+      nav.append(h('li', null, h('a', { href: '#' + s.id }, h('span', { class: 'n' }, String(i + 1)), h('span', { class: 'nl' }, s.dataset.step || ('Step ' + (i + 1))), IS_LAB ? h('span', { class: 'sr-only done-sr' }) : null)));
     });
-    const links = $$('a', nav);
-    let lastId = null;
-    const setActive = id => {
-      links.forEach(a => {
-        const on = a.getAttribute('href') === '#' + id; a.setAttribute('aria-current', on ? 'true' : 'false');
-        if (on) { const r = a.getBoundingClientRect(), nr = nav.getBoundingClientRect(); if (r.left < nr.left || r.right > nr.right) nav.scrollLeft += r.left - nr.left - 16; }
-      });
-      if (IS_LAB && id !== lastId) { lastId = id; const s = document.getElementById(id); gstore.set('last', { lab: PAGE.id, step: id, name: s ? s.dataset.step || '' : '', title: document.title, t: Date.now() }); }
-    };
+    navLinks = $$('a', nav);
     if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver(es => { es.filter(e => e.isIntersecting).forEach(e => setActive(e.target.id)); }, { rootMargin: '-30% 0px -60% 0px' });
+      const io = new IntersectionObserver(es => { if (pages.on && !pages.suspended) return; es.filter(e => e.isIntersecting).forEach(e => setActive(e.target.id)); }, { rootMargin: '-30% 0px -60% 0px' });
       steps.forEach(s => io.observe(s));
     }
     const first = hashTarget();
-    if (steps[0]) setActive(first && first.matches('section.step') ? first.id : steps[0].id);
+    if (pages.on && pages.cur) setActive(pages.cur.id);
+    else if (steps[0]) setActive(first && first.matches('section.step') ? first.id : steps[0].id);
     if (IS_LAB) {
       const wrap = nav.parentElement;
       navProgressEl = h('p', { class: 'nav-progress', hidden: true });
-      wrap.classList.add('has-progress'); wrap.append(navProgressEl);
+      wrap.classList.add('has-progress');
+      setupNavScroll(nav);
+      const tog = h('button', { class: 'btn btn--sm parts-toggle', type: 'button', 'aria-pressed': String(!pages.on), 'aria-label': 'Show all parts on one page', title: 'Show all parts on one page',
+        onclick: () => setAllParts(pages.on) }, h('span', { class: 'pt-icon', 'aria-hidden': 'true' }), h('span', { class: 'pt-text' }, 'All parts'));
+      wrap.append(h('div', { class: 'nav-end' }, navProgressEl, steps.length > 1 ? tog : null));
       addCopyLinks(steps);
       workListeners.push(updateProgress);
       setTimeout(updateProgress, 0);
@@ -1225,6 +1459,245 @@
     }
   };
 
+  /* ---------------- Toasts ----------------
+     Lab.toast(msg, {type:'ok'|'info'|'warn'|'bad', timeout, key, announce, action:{label, onClick}}) → {dismiss(), el}
+     Brief confirmations in a polite live region at the bottom right (bottom centre on phones), clear of the
+     safe areas. key: a newer toast with the same key replaces the older one. announce:false shows it without
+     announcing it (use when the page already has its own aria-live status for the same event). */
+  const autoToasts = { ready: false }; // automatic toasts (tables) wait until the page has finished restoring saved work
+  window.addEventListener('load', () => setTimeout(() => { autoToasts.ready = true; }, 600));
+  let toastHost = null;
+  function toastRegion() {
+    if (toastHost && toastHost.isConnected) return toastHost;
+    toastHost = h('div', { class: 'toasts', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'false' });
+    document.body.append(toastHost);
+    return toastHost;
+  }
+  const TOAST_ICON = { ok: '✓', info: 'i', warn: '!', bad: '✕' };
+  Lab.toast = function (msg, o = {}) {
+    if (!document.body) return { dismiss() {}, el: null };
+    const host = toastRegion(), type = TOAST_ICON[o.type] ? o.type : 'ok';
+    $$('.toast', host).filter(x => (o.key && x._key === o.key) || x._msg === msg).forEach(x => x.remove());
+    const t = h('div', { class: 'toast toast--' + type }, h('span', { class: 'toast-icon', 'aria-hidden': 'true' }, TOAST_ICON[type]), h('span', { class: 'toast-msg' }, msg));
+    t._msg = msg; t._key = o.key || null;
+    if (o.announce === false) t.setAttribute('aria-hidden', 'true');
+    let timer = null;
+    const dismiss = () => { clearTimeout(timer); if (!t.isConnected || t.classList.contains('is-leaving')) return; t.classList.add('is-leaving'); setTimeout(() => t.remove(), Lab.reducedMotion() ? 0 : 200); };
+    if (o.action) t.append(h('button', { class: 'toast-action', type: 'button', onclick: () => { dismiss(); if (o.action.onClick) o.action.onClick(); } }, o.action.label));
+    t.append(h('button', { class: 'toast-close', type: 'button', tabindex: '-1', 'aria-hidden': 'true', title: 'Dismiss', onclick: dismiss }, '×'));
+    host.append(t);
+    const all = $$('.toast', host); if (all.length > 3) all.slice(0, all.length - 3).forEach(x => x.remove());
+    const ms = o.timeout || (o.action ? 8000 : type === 'bad' ? 6000 : 3200);
+    const arm = () => { clearTimeout(timer); timer = setTimeout(dismiss, ms); };
+    t.addEventListener('mouseenter', () => clearTimeout(timer)); t.addEventListener('mouseleave', arm);
+    t.addEventListener('focusin', () => clearTimeout(timer)); t.addEventListener('focusout', arm);
+    arm();
+    return { dismiss, el: t };
+  };
+
+  /* ---------------- Guidance inside simulations ----------------
+     Lab.steps(el, [{id, text, done: () => bool, target, hint, optional, sticky}], {title, doneText, pulse}) → {refresh(), current, el}
+       Numbered checklist that ticks itself off. The first unfinished (non-optional) step is current: it is
+       highlighted, a one-line "Next:" hint shows under the list, and its target control (selector, element,
+       or function returning one) gets a gentle pulsing outline. Clicking a step's text moves focus to its target.
+       sticky:true keeps a step ticked once done. Steps re-check after every input/change/click on the page,
+       after table/quiz/answer changes, every 0.6 s, and on Lab.steps.refresh().
+     Lab.gate(button, () => reason | '') disables a button while reason is non-empty and shows the reason
+       ("Pour the disks first") in small text right after it (linked with aria-describedby). */
+  const GUIDES = [];
+  let guideRaf = 0, guideBound = false;
+  function refreshGuides() {
+    if (!GUIDES.length || guideRaf) return;
+    guideRaf = requestAnimationFrame(() => { guideRaf = 0; GUIDES.forEach(g => { try { g.refresh(); } catch (e) { console.warn(e); } }); });
+  }
+  function bindGuides() {
+    if (guideBound) return; guideBound = true;
+    ['input', 'change', 'click', 'keyup'].forEach(ev => document.addEventListener(ev, () => setTimeout(refreshGuides, 0), true));
+    workListeners.push(refreshGuides);
+    setInterval(() => { if (!document.hidden) refreshGuides(); }, 600);
+  }
+  const resolveEl = t => typeof t === 'function' ? t() : typeof t === 'string' ? $(t) : t;
+  function focusTarget(t) {
+    const sec = partOf(t);
+    if (sec && pages.on && !pages.suspended && sec !== pages.cur) goPart(sec, { hash: true, scroll: false });
+    t.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
+    const f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input, select, textarea, button, a[href], [tabindex]', t);
+    if (f) f.focus({ preventScroll: true });
+  }
+  Lab.steps = function (el, list, o = {}) {
+    if (typeof el === 'string') el = $(el);
+    const uid = (el.id || 'steps' + GUIDES.length);
+    el.classList.add('steps-box');
+    const title = h('p', { class: 'steps-title', id: uid + '-title' }, o.title || 'Steps');
+    const ol = h('ol', { class: 'steps', 'aria-labelledby': uid + '-title' });
+    const items = list.map((s, i) => {
+      const text = h('span', { class: 'si-text', html: s.text });
+      const label = s.target ? h('button', { type: 'button', class: 'si-go', title: 'Go to this control', onclick: () => { const t = resolveEl(s.target); if (t) focusTarget(t); } }, text) : text;
+      const state = h('span', { class: 'sr-only si-state' });
+      const li = h('li', { class: 'si' + (s.optional ? ' is-optional' : ''), 'data-step-id': s.id || null },
+        h('span', { class: 'si-n', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'si-body' }, label, state, s.optional ? h('span', { class: 'si-opt' }, ' optional') : null));
+      ol.append(li);
+      return { s, li, state, d: false, stuck: false };
+    });
+    const next = h('p', { class: 'steps-next', 'aria-live': 'polite' });
+    el.append(title, ol, next);
+    let pulsed = null, cur = -2, lastNext = null;
+    function refresh() {
+      let c = -1;
+      items.forEach((it, i) => {
+        let d = false; try { d = !!(it.s.done && it.s.done()); } catch (e) { d = false; }
+        if (d && it.s.sticky) it.stuck = true;
+        it.d = d || it.stuck;
+        it.li.classList.toggle('is-done', it.d);
+        if (c < 0 && !it.d && !it.s.optional) c = i;
+      });
+      items.forEach((it, i) => {
+        const on = i === c;
+        it.li.classList.toggle('is-current', on);
+        if (on) it.li.setAttribute('aria-current', 'step'); else it.li.removeAttribute('aria-current');
+        const st = it.d ? ' (done)' : on ? ' (next step)' : '';
+        if (it.state.textContent !== st) it.state.textContent = st;
+      });
+      const ci = items[c];
+      const nt = ci ? (ci.s.hint || ci.s.text) : (o.doneText || 'All steps done.');
+      if (nt !== lastNext) { lastNext = nt; next.innerHTML = ''; next.append(h('span', { class: 'sn-k' }, ci ? 'Next: ' : '✓ '), h('span', { html: nt })); next.classList.toggle('is-complete', !ci); }
+      let tgt = ci && ci.s.target ? resolveEl(ci.s.target) : null;
+      if (o.pulse === false) tgt = null;
+      if (pulsed !== tgt) { if (pulsed) pulsed.classList.remove('lab-pulse'); if (tgt) tgt.classList.add('lab-pulse'); pulsed = tgt; }
+      if (c !== cur) { cur = c; if (o.onChange) { try { o.onChange(c, ci ? ci.s : null); } catch (e) { console.warn(e); } } }
+    }
+    const api = { el, refresh, get current() { return cur; }, get items() { return items.map(it => ({ id: it.s.id, done: it.d })); } };
+    GUIDES.push(api); bindGuides(); refresh();
+    return api;
+  };
+  Lab.steps.refresh = refreshGuides;
+  Lab.gate = function (btn, fn) {
+    if (typeof btn === 'string') btn = $(btn);
+    if (!btn) return null;
+    const id = (btn.id || 'gate' + GUIDES.length) + '-why';
+    const why = h('span', { class: 'gate-why', id, hidden: true });
+    btn.insertAdjacentElement('afterend', why);
+    btn.setAttribute('aria-describedby', ((btn.getAttribute('aria-describedby') || '') + ' ' + id).trim());
+    let last = null;
+    const g = { el: btn, refresh() {
+      let r = ''; try { r = fn() || ''; } catch (e) { r = ''; }
+      if (r === last) return; last = r;
+      btn.disabled = !!r; btn.classList.toggle('is-gated', !!r); why.textContent = r; why.hidden = !r;
+    } };
+    GUIDES.push(g); bindGuides(); g.refresh();
+    return g;
+  };
+
+  /* ---------------- Tabs ----------------
+     Lab.tabs(container, {label, start}) turns  <div class="tabs"><section data-tab="Label">…</section>…</div>
+     into an ARIA tab list (arrow keys, Home/End) with one visible panel. → {select(i)} */
+  let tabCount = 0;
+  function wireTabs(list, tabs, onSelect, label) {
+    list.setAttribute('role', 'tablist'); if (label) list.setAttribute('aria-label', label);
+    tabs.forEach((t, i) => {
+      t.btn.setAttribute('role', 'tab'); t.btn.type = 'button';
+      t.btn.setAttribute('aria-controls', t.panel.id);
+      t.panel.setAttribute('aria-labelledby', t.btn.id);
+      t.btn.addEventListener('click', () => onSelect(i, true));
+      t.btn.addEventListener('keydown', e => {
+        const vis = tabs.filter(x => !x.btn.hidden), at = vis.indexOf(t);
+        let to = null;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = vis[(at + 1) % vis.length];
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = vis[(at - 1 + vis.length) % vis.length];
+        else if (e.key === 'Home') to = vis[0]; else if (e.key === 'End') to = vis[vis.length - 1];
+        if (!to) return;
+        e.preventDefault(); onSelect(tabs.indexOf(to), true); to.btn.focus();
+      });
+    });
+  }
+  function markTabs(tabs, i) { tabs.forEach((t, j) => { t.btn.setAttribute('aria-selected', String(i === j)); t.btn.tabIndex = i === j ? 0 : -1; }); }
+  Lab.tabs = function (el, o = {}) {
+    if (typeof el === 'string') el = $(el);
+    const n = ++tabCount, panels = $$(':scope > [data-tab]', el);
+    const list = h('div', { class: 'tabs-list' });
+    const tabs = panels.map((p, i) => {
+      p.id = p.id || `tabs${n}-p${i}`; p.classList.add('tab-panel'); p.setAttribute('role', 'tabpanel'); p.tabIndex = 0;
+      const b = h('button', { class: 'tab', id: `tabs${n}-t${i}` }, p.dataset.tab); list.append(b);
+      return { btn: b, panel: p };
+    });
+    el.classList.add('tabs'); el.prepend(list);
+    const select = i => { markTabs(tabs, i); tabs.forEach((t, j) => { t.panel.hidden = i !== j; }); const sec = partOf(el); if (sec) syncPart(sec); };
+    wireTabs(list, tabs, select, o.label);
+    select(o.start || 0);
+    return { select, el };
+  };
+
+  /* ---------------- Results beside the simulation ----------------
+     Lab.results(sim, {data:[…], graph:[…], start:'graph'|'data', label})  items: '#id' | element | {el:'#id', title:'…'}
+     Moves existing Lab.table / Lab.chart containers (ids unchanged) into a results panel next to the scene:
+       ≥1280px wide: scene stays in view; a right-hand column switches Graph ⇄ Data.
+       narrower:     a Scene / Data / Graph switch above the scene; Data and Graph cover the scene in the same box.
+     A "new" badge appears on a tab when its table or chart changes while it is not showing. → {select(kind), el} */
+  const WIDE_RESULTS = '(min-width: 1280px)';
+  Lab.results = function (sim, o = {}) {
+    if (typeof sim === 'string') sim = $(sim);
+    const stage = $(':scope > .stage', sim);
+    if (!stage) return null;
+    const n = ++tabCount, idp = sim.id || 'sim' + n;
+    const main = h('div', { class: 'sim-main has-results' });
+    stage.before(main);
+    const list = h('div', { class: 'sim-tabs' });
+    const watched = [];
+    const panel = (kind, items) => {
+      const p = h('div', { class: 'sim-panel sim-panel--' + kind, id: idp + '-' + kind, role: 'tabpanel', tabindex: '0' });
+      (items || []).forEach(it => {
+        const el = resolveEl(it && it.el ? it.el : it); if (!el) return;
+        if (it && it.title) p.append(h('p', { class: 'panel-title' }, it.title));
+        p.append(el); watched.push({ el, kind });
+      });
+      return p;
+    };
+    if (!stage.id) stage.id = idp + '-scene';
+    const kinds = [{ k: 'scene', label: o.sceneLabel || 'Scene', panel: stage }];
+    if (o.data && o.data.length) kinds.push({ k: 'data', label: 'Data', panel: panel('data', o.data) });
+    if (o.graph && o.graph.length) kinds.push({ k: 'graph', label: 'Graph', panel: panel('graph', o.graph) });
+    const tabs = kinds.map(K => {
+      const badge = h('span', { class: 'tab-badge', hidden: true }, 'new');
+      const btn = h('button', { class: 'sim-tab', 'data-tab': K.k, id: idp + '-tab-' + K.k }, h('span', null, K.label), badge);
+      list.append(btn);
+      return { k: K.k, btn, panel: K.panel, badge };
+    });
+    main.append(list, stage, ...kinds.slice(1).map(K => K.panel));
+    const mq = window.matchMedia ? window.matchMedia(WIDE_RESULTS) : { matches: false };
+    const firstResult = (o.start && o.start !== 'scene') ? o.start : (kinds.find(K => K.k === 'graph') ? 'graph' : (kinds[1] || kinds[0]).k);
+    let wideSel = firstResult, narrowSel = 'scene';
+    const curKind = () => mq.matches ? wideSel : narrowSel;
+    function apply() {
+      const wide = mq.matches, cur = curKind();
+      main.classList.toggle('is-wide', wide);
+      list.setAttribute('aria-label', o.label || (wide ? 'Results' : 'Scene and results'));
+      markTabs(tabs, tabs.findIndex(t => t.k === cur));
+      tabs.forEach(t => {
+        t.btn.hidden = wide && t.k === 'scene';
+        if (t.k !== 'scene') t.panel.hidden = t.k !== cur;
+        if (t.k === cur) t.badge.hidden = true;
+      });
+      main.classList.toggle('shows-result', !wide && cur !== 'scene'); // narrow: the panel covers the scene, which keeps its size
+      if (wide || cur === 'scene') { stage.setAttribute('role', wide ? 'region' : 'tabpanel'); stage.setAttribute('aria-label', 'Scene'); }
+      const p = tabs.find(t => t.k === cur);
+      if (p && p.k !== 'scene') REG.charts.forEach(c => { if (p.panel.contains(c.el)) c.render(); });
+    }
+    wireTabs(list, tabs, i => { const k = tabs[i].k; if (mq.matches) { if (k !== 'scene') wideSel = k; } else { narrowSel = k; if (k !== 'scene') wideSel = k; } apply(); }, o.label || 'Results');
+    stage.setAttribute('aria-labelledby', tabs[0].btn.id);
+    if (mq.addEventListener) mq.addEventListener('change', apply); else if (mq.addListener) mq.addListener(apply);
+    apply();
+    if ('MutationObserver' in window) {
+      const mo = new MutationObserver(recs => {
+        if (!autoToasts.ready) return;
+        const cur = curKind();
+        recs.forEach(r => { const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
+      });
+      watched.forEach(w => mo.observe(w.el, { childList: true }));
+    }
+    sim.classList.add('has-results');
+    return { el: main, select(k) { const i = tabs.findIndex(t => t.k === k); if (i >= 0) { if (mq.matches) { if (k !== 'scene') wideSel = k; } else narrowSel = k; apply(); } }, get current() { return curKind(); } };
+  };
+
   /* ---------------- Init ---------------- */
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
@@ -1243,20 +1716,47 @@
   };
   Lab.reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* Canvas helper: crisp canvas sized to CSS width. Returns {ctx, w, h, resize()} */
-  Lab.canvas = function (canvas, aspect = 0.56) {
+  /* Canvas helper: crisp canvas sized to CSS width. Returns {ctx, w, h, resize(), check()}
+     Lab.canvas(el, aspect, {fit: true | '<CSS length>'}) also caps the drawn height by the viewport
+     (see Lab.fitHeight): the canvas is drawn smaller, never cropped. */
+  Lab.canvas = function (canvas, aspect = 0.56, opts = {}) {
     if (typeof canvas === 'string') canvas = $(canvas);
+    if (opts && opts.fit) Lab.fitHeight(canvas, aspect, opts.fit === true ? null : opts.fit);
     const ctx = canvas.getContext('2d');
     const o = { canvas, ctx, w: 0, h: 0 };
     o.resize = () => {
-      const w = Math.max(200, canvas.clientWidth || canvas.parentElement.clientWidth); const hh = Math.round(w * aspect);
+      const w = Math.max(200, canvas.clientWidth || canvas.parentElement.clientWidth || hiddenWidth(canvas)); const hh = Math.round(w * aspect);
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(hh * dpr); canvas.style.height = hh + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); o.w = w; o.h = hh;
     };
+    /* Resize + redraw now if the CSS width changed (used when a hidden part is shown). */
+    o.check = () => { const pw = canvas.clientWidth; if (pw && Math.abs(pw - o.w) > 1) { o.resize(); if (o.onresize) o.onresize(); return true; } return false; };
     o.resize();
-    if ('ResizeObserver' in window) new ResizeObserver(() => { const pw = canvas.clientWidth; if (Math.abs(pw - o.w) > 1) { o.resize(); o.onresize && o.onresize(); } }).observe(canvas);
+    // A hidden part reports width 0: skip it and size the canvas when it is shown again.
+    if ('ResizeObserver' in window) new ResizeObserver(() => { o.check(); }).observe(canvas);
+    CANVASES.push(o);
     return o;
+  };
+  /* Cap an element's displayed height by the viewport while keeping its aspect (height ÷ width):
+     its max-width becomes (viewport height − reserve) ÷ aspect, and it is centered. Works for any
+     canvas whose drawing size follows its CSS width (Lab.canvas, Scope.view, Scope.still):
+     call it before creating the view. reserve defaults to var(--fit-reserve) (set by .sim--fit). */
+  /* A canvas created inside a hidden part has no width yet: draw it at a plausible size (the nearest
+     visible ancestor's width) until the part is shown and the real size is known. */
+  function hiddenWidth(el) {
+    let a = el.parentElement;
+    while (a && !a.clientWidth) a = a.parentElement;
+    return a ? Math.round(Math.min(900, a.clientWidth * (a.clientWidth > 900 ? 0.65 : 0.9))) : 640;
+  }
+  Lab.fitHeight = function (el, aspect, reserve) {
+    if (typeof el === 'string') el = $(el);
+    if (!el) return null;
+    const r = reserve || 'var(--fit-reserve, 300px)';
+    el.classList.add('fit-h');
+    el.style.maxWidth = `max(280px, calc((100vh - ${r}) / ${aspect}))`;
+    el.style.maxWidth = `max(280px, calc((100svh - ${r}) / ${aspect}))`; // ignored where svh is unsupported
+    return el;
   };
   /* Read a CSS color token for canvas drawing: Lab.color('--accent') (call at draw time so theme changes apply) */
   Lab.color = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
