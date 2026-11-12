@@ -508,6 +508,39 @@ Lab.init({ id: 'lab04' });
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, tok = Lab.color;
   const rng = Lab.rng();
+  /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
+  const V = (() => {
+    let n = 0;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    function box(inp) {
+      if (inp._vfb) return inp._vfb;
+      const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
+      const host = inp.closest('.inline-num');
+      if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
+      inp._vfb = fb; inp.addEventListener('input', () => V.ok(inp)); return fb;
+    }
+    const V = {
+      bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
+      ok(inp) { if (inp._vfb) inp._vfb.hidden = true; inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby'); return true; },
+      /* read a number from an input; returns null (after showing a message) when empty, not a number or out of range */
+      num(inp, o = {}) {
+        const name = o.name || 'this value', raw = inp.value.trim();
+        const v = +raw;
+        if ((inp.validity && inp.validity.badInput) || (raw !== '' && !isFinite(v))) return V.bad(inp, `${cap(name)} must be a number, like 12 or 0.5.`);
+        if (raw === '') return V.bad(inp, o.empty || `Enter ${name} first.`);
+        if (o.int && v !== Math.round(v)) return V.bad(inp, `${cap(name)} must be a whole number.`);
+        if (o.gt != null && !(v > o.gt)) return V.bad(inp, o.gtMsg || `${cap(name)} must be greater than ${o.gt}.`);
+        if (o.min != null && v < o.min) return V.bad(inp, o.minMsg || `${cap(name)} can't be less than ${o.min}.`);
+        if (o.max != null && v > o.max) return V.bad(inp, o.maxMsg || `${cap(name)} can't be more than ${o.max}.`);
+        V.ok(inp); return v;
+      },
+      /* show a message in an existing feedback element */
+      say(el, msg) { el.hidden = false; el.className = 'feedback bad'; el.setAttribute('role', 'alert'); el.textContent = msg; },
+      /* mark/unmark editable table cells */
+      cell(root, r, k, msg) { const i = root.querySelector(`input[data-r="${r}"][data-k="${k}"]`); if (i) { if (msg) { i.setAttribute('aria-invalid', 'true'); i.title = msg; } else { i.removeAttribute('aria-invalid'); i.removeAttribute('title'); } } }
+    };
+    return V;
+  })();
   const R = 0.0831, TK = 295; // room temperature 22 °C
   const FONT = '"Source Sans 3", "Segoe UI", sans-serif';
 
@@ -1117,14 +1150,20 @@ Lab.init({ id: 'lab04' });
   });
   $('#p1-check').addEventListener('click', () => {
     const rows = p1table.getRows(); if (!rows.length) { fbList($('#p1-fb'), ['Run a trial first.']); return; }
+    const cols = [['sa', 'surface area'], ['v', 'volume'], ['ratio', 'SA:V'], ['pct', '% diffused']];
     const out = rows.map((r, i) => {
+      const lab = `Row ${i + 1} (${Lab.esc(r.blk)}): `, miss = [], neg = [];
+      cols.forEach(([k, nm]) => { V.cell($('#p1-table'), i, k, ''); const v = r[k]; if (v == null || !isFinite(v)) { miss.push(nm); V.cell($('#p1-table'), i, k, 'Enter a number'); } else if (v < 0 || (k !== 'ratio' && v === 0) || (k === 'pct' && v > 100)) { neg.push(k === 'pct' && v > 100 ? '% diffused can\u2019t be more than 100' : nm + ' must be greater than 0 (it can\u2019t be negative)'); V.cell($('#p1-table'), i, k, 'Not possible'); } });
+      if (miss.length) return lab + `<span class="feedback bad" role="alert">Fill in ${miss.join(', ')} before checking.</span>`;
+      if (neg.length) return lab + `<span class="feedback bad" role="alert">${neg.join('; ')}.</span>`;
       const bad = [];
       if (!near(r.sa, r._sa, 0.01, 0.01)) bad.push('surface area'); if (!near(r.v, r._v, 0.01, 0.01)) bad.push('volume');
       if (!near(r.ratio, r._ratio, 0.02, 0.02)) bad.push('SA:V'); if (!near(r.pct, r._pct, 0.02, 1)) bad.push('% diffused');
-      return `Row ${i + 1} (${Lab.esc(r.blk)}): ` + (bad.length ? `<span class="pill warn">recheck ${bad.join(', ')}</span>` : '<span class="pill ok">all correct</span>');
+      return lab + (bad.length ? `<span class="pill warn">recheck ${bad.join(', ')}</span>` : '<span class="pill ok">all correct</span>');
     });
     fbList($('#p1-fb'), out);
   });
+  ['#p1-table', '#p2-table'].forEach(sel => $(sel).addEventListener('input', e => { if (e.target.matches('input')) V.cell($(sel), e.target.dataset.r, e.target.dataset.k, ''); }));
   $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; });
   Lab.prompt('#p1-prompts', { key: 'p1-q1', label: 'Compare the front speed (depth ÷ time) in your blocks. Did the acid move faster into small blocks than large ones? Then which SA:V let the acid reach the greatest <em>percentage</em> of the block, and why?', rows: 4 });
   Lab.prompt('#p1-prompts', { key: 'p1-q2', label: 'How might a cell’s shape (not just its size) influence how quickly materials reach every part of it? Use your rod, slab, or plate results as evidence.', rows: 4 });
@@ -1225,8 +1264,10 @@ Lab.init({ id: 'lab04' });
   });
   $('#p2-check').addEventListener('click', () => {
     const rows = p2table.getRows(); if (!rows.length) { fbList($('#p2-fb'), ['Run a set of bags first.']); return; }
-    let ok = 0; const wrong = [];
-    rows.forEach((r, i) => { if (near(r.pct, r._pct, 0.02, 0.15)) ok++; else wrong.push(i + 1); });
+    let ok = 0; const wrong = [], blank = [], imp = [];
+    rows.forEach((r, i) => { V.cell($('#p2-table'), i, 'pct', ''); if (r.pct == null || !isFinite(r.pct)) { blank.push(i + 1); V.cell($('#p2-table'), i, 'pct', 'Enter a number'); } else if (r.pct < -100) { imp.push(i + 1); V.cell($('#p2-table'), i, 'pct', 'Not possible'); } else if (near(r.pct, r._pct, 0.02, 0.15)) ok++; else wrong.push(i + 1); });
+    const row = a => `row${a.length > 1 ? 's' : ''} ${a.join(', ')}`;
+    if (blank.length || imp.length) { fbList($('#p2-fb'), [(blank.length ? `<span class="feedback bad" role="alert">Fill in the % change for ${row(blank)} before checking.</span> ` : '') + (imp.length ? `<span class="feedback bad" role="alert">% change in ${row(imp)} can\u2019t be below \u2212100% (a bag can\u2019t lose more than all its mass).</span>` : '') + (ok + wrong.length ? ` <span class="pill ${wrong.length ? 'warn' : 'ok'}">${ok} of ${ok + wrong.length} other rows correct</span>` : '')]); return; }
     fbList($('#p2-fb'), [`<span class="pill ${wrong.length ? 'warn' : 'ok'}">${ok} of ${rows.length} correct</span>` + (wrong.length ? ` Recheck row${wrong.length > 1 ? 's' : ''} ${wrong.join(', ')}. Did you divide by the <em>initial</em> mass and multiply by 100?` : '')]);
   });
   $('#p2-clear').addEventListener('click', () => { p2table.clear(); $('#p2-fb').innerHTML = ''; });
@@ -1555,9 +1596,15 @@ Lab.init({ id: 'lab04' });
     const tname = TISSUE[$('#p3b-ctissue').value].name;
     const rows = p3bTable.getRows().filter(r => r.tissue === tname && r.conc != null && isFinite(r.conc));
     const xs = new Set(rows.map(r => r.conc));
+    [$('#p3b-c'), $('#p3b-psis'), $('#p3b-psi')].forEach(V.ok);
     if (xs.size < 3) { fbList($('#p3b-fb'), [`You need data for ${tname} at three or more identified concentrations first.`]); return; }
     const f = S.linreg(rows.map(r => r.conc), rows.map(r => r.pct)), xi = f.xIntercept;
-    const c = parseFloat($('#p3b-c').value), ps = parseFloat($('#p3b-psis').value), p = parseFloat($('#p3b-psi').value), out = [];
+    const ci = $('#p3b-c'), psi_ = $('#p3b-psis'), pi = $('#p3b-psi');
+    const c = V.num(ci, { name: 'the isotonic sucrose concentration', min: 0, minMsg: 'Concentration can\u2019t be negative.', max: 2, maxMsg: 'Concentration above 2 M is outside the range of this lab. Recheck where the fit line crosses zero.' });
+    const ps = V.num(psi_, { name: '\u03C8S', empty: 'Enter \u03C8S of that solution (in bars) first.', max: 0, maxMsg: '\u03C8S can\u2019t be positive: solutes only lower water potential, so it is zero or negative.' });
+    const p = V.num(pi, { name: '\u03C8 of the tissue', empty: 'Enter \u03C8 of the tissue (in bars) first.' });
+    if (c == null || ps == null || p == null) { fbList($('#p3b-fb'), ['<span class="feedback bad" role="alert">Fill in all three boxes with numbers, then check. Nothing was graded.</span>']); return; }
+    const out = [];
     out.push(near(c, xi, 0, 0.04) ? `<span class="pill ok">Isotonic point OK</span> Your fit crosses zero at ${fmt(xi, 2)} M.` : `<span class="pill warn">Isotonic point</span> Recalculate −b ÷ m from the ${Lab.esc(tname)} fit line.`);
     if (isFinite(c)) out.push(near(ps, -c * R * TK, 0.03, 0.05) ? '<span class="pill ok">ψ<sub>S</sub> OK</span> −iCRT with your concentration.' : '<span class="pill warn">ψ<sub>S</sub></span> Use −(1)(C)(0.0831)(295). It should be negative.');
     if (isFinite(ps)) out.push(near(p, ps, 0.01, 0.05) ? '<span class="pill ok">ψ<sub>tissue</sub> OK</span>' : '<span class="pill warn">ψ<sub>tissue</sub></span> At the isotonic point, ψ<sub>tissue</sub> equals ψ of the open-cup solution, where ψ<sub>P</sub> = 0.');
@@ -1597,11 +1644,24 @@ Lab.init({ id: 'lab04' });
       run: C => { const s = simBag(C > 0 ? 'sucrose' : 'water', C, 'water', 0, 30); const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return 100 * (m1 - m0) / m0; }, check: v => v >= 0 && v <= 1.5 }
   };
   const dIv = $('#d-iv'), dLv = $('#d-levels'), dReps = slider('d-reps', 'd-reps-out', v => v + (v > 1 ? ' replicates' : ' replicate'));
-  function dLevels() {
+  const RANGE = { side: [0.3, 3, 'cm', 'Cube side lengths'], temp: [0, 50, '\u00B0C', 'Temperatures'], acid: [0.01, 0.5, 'M', 'HCl concentrations'], sucrose: [0, 1.5, 'M', 'Sucrose concentrations'] };
+  /* Parse the typed levels; anything that is not a number, or is outside the range the model covers, is reported (never silently dropped). */
+  function dParse() {
     const o = IV[dIv.value];
-    if (o.cat) return o.cats.map(c => c.k);
-    return [...new Set(dLv.value.split(/[,;\s]+/).map(parseFloat).filter(v => isFinite(v) && o.check(v)))].sort((a, b) => a - b).slice(0, 8);
+    if (o.cat) return { levels: o.cats.map(c => c.k), msg: '' };
+    const toks = dLv.value.split(/[,;\s]+/).filter(Boolean), r = RANGE[dIv.value] || [], good = [], notNum = [], out = [];
+    toks.forEach(t => { const v = Number(t); if (!isFinite(v)) notNum.push(t); else if (!o.check(v)) out.push(t); else good.push(v); });
+    const levels = [...new Set(good)].sort((a, b) => a - b);
+    let msg = '';
+    if (!toks.length) msg = 'Enter at least one level, separated by commas (for example ' + o.levels + ').';
+    else if (notNum.length) msg = `"${notNum.join('", "')}" ${notNum.length > 1 ? 'are' : 'is'} not a number. Enter numbers separated by commas, like ${o.levels}.`;
+    else if (out.length) msg = `${r[3] || 'Levels'} must be between ${r[0]} and ${r[1]} ${r[2]}. Change ${out.join(', ')}.`;
+    else if (levels.length > 8) msg = 'You can test at most 8 levels at a time. Remove some.';
+    else if (levels.length < 2) msg = 'Enter at least 2 different levels so you can compare them.';
+    return { levels, msg };
   }
+  function dLevels() { return dParse().levels; }
+  function dCheckLevels() { const p = dParse(); if (p.msg) V.bad(dLv, p.msg); else V.ok(dLv); return !p.msg; }
   function dPreview() {
     const o = IV[dIv.value], lv = dLevels();
     $('#d-const').textContent = o.constant; $('#d-levels-hint').textContent = o.hint; $('#d-dv').textContent = o.dv;
@@ -1611,8 +1671,8 @@ Lab.init({ id: 'lab04' });
     else if (o.cat) drawBlocks(dcv, o.cats.map(c => ({ d: c.d, label: c.k.split(' ')[0], sub: c.k.split(' ')[1] + ' cm', dcm: depthMM(10) / 10 })), 'Expected look after 10 min in 0.1 M HCl');
     else drawBlocks(dcv, lv.map(v => { const s = o.shape(v); return { d: s.d, label: s.label, sub: dimText(s.d) + ' cm', dcm: (s.dmm != null ? s.dmm : depthMM(10)) / 10 }; }), 'Expected look after 10 min');
   }
-  dIv.addEventListener('change', () => { const o = IV[dIv.value]; if (o.levels) dLv.value = o.levels; dPreview(); });
-  dLv.addEventListener('change', dPreview);
+  dIv.addEventListener('change', () => { const o = IV[dIv.value]; if (o.levels) dLv.value = o.levels; V.ok(dLv); dchart.update({ xLabel: o.x, yLabel: o.y }); dPreview(); });
+  dLv.addEventListener('change', () => { dCheckLevels(); dPreview(); });
   dcv.onresize = dPreview;
   const savedIv = Lab.store.get('d-iv'); if (savedIv && IV[savedIv.iv]) { dIv.value = savedIv.iv; if (savedIv.levels) dLv.value = savedIv.levels; }
   dPreview();
@@ -1636,7 +1696,9 @@ Lab.init({ id: 'lab04' });
   $('#d-run').addEventListener('click', () => {
     if (dAnim) dAnim.finish();
     const o = IV[dIv.value], lv = dLevels(), reps = +dReps.value;
-    if (!lv.length) { $('#d-levels-hint').textContent = 'Enter at least one valid level. ' + o.hint; return; }
+    if (!dCheckLevels()) { dLv.focus(); return; }
+    if (!(reps >= 2)) { const dt = dReps.closest('details'); if (dt) dt.open = true; V.bad(dReps, 'Use at least 2 replicates per level. One measurement can\u2019t give a standard error (SE) or error bars.'); return; }
+    V.ok(dReps);
     Lab.store.set('d-iv', { iv: dIv.value, levels: dLv.value });
     const rows = [];
     lv.forEach(v => { for (let r = 1; r <= reps; r++) { const y = o.cat ? o.run(o.cats.find(c => c.k === v).d) : o.run(v); rows.push({ lv: v, lvl: o.cat ? v : String(v), rep: r, y }); } });
@@ -1688,7 +1750,7 @@ Lab.init({ id: 'lab04' });
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
   const allFilled = ks => ks.every(filled);
   const isNum = v => v != null && v !== '' && isFinite(+v);
-  const okPills = sel => $(sel).querySelectorAll('.pill.ok').length, warnPills = sel => $(sel).querySelectorAll('.pill.warn').length;
+  const okPills = sel => $(sel).querySelectorAll('.pill.ok').length, warnPills = sel => $(sel).querySelectorAll('.pill.warn, .feedback.bad').length;
   const identDone = () => CUPS.every((c, i) => assigned(i) != null);
   let p3aRinsed = false, dTouched = false;
   $('#p3a-rinse').addEventListener('click', () => { p3aRinsed = true; });
@@ -1746,13 +1808,14 @@ Lab.init({ id: 'lab04' });
   /* toasts for key moments (the feedback lines are live regions, so these are not announced twice) */
   const checkToast = (btnSel, fbSel, rowsFn, key, what) => $(btnSel).addEventListener('click', () => {
     if (!rowsFn()) return;
-    const bad = warnPills(fbSel);
+    const bad = warnPills(fbSel), inval = $(fbSel).querySelectorAll('.feedback.bad').length;
+    if (inval) { Lab.toast('Not checked: fill in or fix the highlighted entries first', { type: 'warn', announce: false, key }); return; }
     Lab.toast(bad ? `Checked: recheck ${what}` : `Checked: your ${what} are correct`, { type: bad ? 'warn' : 'ok', announce: false, key });
   });
   checkToast('#p1-check', '#p1-fb', () => p1table.getRows().length, 'p1chk', 'calculations');
   checkToast('#p2-check', '#p2-fb', () => p2table.getRows().length, 'p2chk', '% changes');
   $('#p3b-idcheck').addEventListener('click', () => { const n = CUPS.filter((c, i) => assigned(i) === secret[i]).length; Lab.toast(n === 6 ? 'All six cups identified correctly' : `${n} of 6 cups correct so far`, { type: n === 6 ? 'ok' : 'warn', announce: false, key: 'idchk' }); });
-  $('#p3b-check').addEventListener('click', () => { const bad = warnPills('#p3b-fb'), ok = okPills('#p3b-fb'); if (ok + bad) Lab.toast(bad ? 'Checked: see the hints under your calculation' : 'Checked: your water potential calculation is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'p3bchk' }); });
+  $('#p3b-check').addEventListener('click', () => { const bad = warnPills('#p3b-fb'), ok = okPills('#p3b-fb'); if ($('#p3b-fb').querySelector('.feedback.bad')) { Lab.toast('Not checked: fill in all three boxes with numbers first', { type: 'warn', announce: false, key: 'p3bchk' }); return; } if (ok + bad) Lab.toast(bad ? 'Checked: see the hints under your calculation' : 'Checked: your water potential calculation is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'p3bchk' }); });
   $('#p3a-run').addEventListener('click', () => Lab.toast(`Added ${p3Bath.name}: watch the cells for two minutes`, { type: 'info', announce: false, key: 'p3a' }));
 })();
 </script>
