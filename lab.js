@@ -1344,7 +1344,7 @@
       if (sr) sr.textContent = ok ? ' (done)' : '';
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
-    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `${complete} of ${parts}<span class="np-long"> parts</span> done`; }
+    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `<span class="np-long">${complete} of ${parts} parts done</span><span class="np-short">${complete} of ${parts} done</span>`; }
     const sum = JSON.stringify([complete, parts]);
     if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, t: Date.now() }); }
     return { done: complete, total: parts };
