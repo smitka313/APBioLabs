@@ -517,7 +517,7 @@ Lab.init({ id: 'lab04' });
       const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
       const host = inp.closest('.inline-num');
       if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
-      inp._vfb = fb; inp.addEventListener('input', () => V.ok(inp)); return fb;
+      inp._vfb = fb; inp.addEventListener('input', () => { if (!inp._live) V.ok(inp); }); return fb;
     }
     const V = {
       bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
