@@ -467,7 +467,7 @@
         h('p', { class: 'id-title', id: uid + '-title' }, idn ? 'Change who is working' : (IS_LAB ? 'Who is working on this lab?' : 'Who is working?')),
         h('p', { class: 'small muted' }, 'Your name goes on your lab reports, and your simulated data will be unique to you. You only need to do this once on this computer.'),
         h('div', { class: 'id-fields' },
-          h('div', { class: 'field id-f-name' }, h('label', { for: uid + '-name' }, 'Enter your name as it appears in Schoology'), nameIn),
+          h('div', { class: 'field id-f-name' }, h('label', { for: uid + '-name' }, 'Enter your name as your teacher knows it'), nameIn),
           h('div', { class: 'field id-f-period' }, h('label', { for: uid + '-period' }, 'Class period'), perSel),
           h('div', { class: 'id-actions' }, h('button', { class: 'btn btn--primary', type: 'submit' }, 'Save'),
             idn || box._compact ? h('button', { class: 'btn btn--ghost', type: 'button', onclick: () => { renderIdentity(box); focusIn(box, '.id-change'); } }, 'Cancel') : null)),
@@ -475,7 +475,7 @@
       form.addEventListener('submit', ev => {
         ev.preventDefault();
         const name = normName(nameIn.value), period = perSel.value;
-        if (name.length < 2) { err.textContent = 'Type your name as it appears in Schoology.'; nameIn.focus(); return; }
+        if (name.length < 2) { err.textContent = 'Type your name as your teacher knows it.'; nameIn.focus(); return; }
         if (!period) { err.textContent = 'Choose your class period.'; perSel.focus(); return; }
         const ok = setIdentity({ name, period });
         if (ok && IS_LAB && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
@@ -829,7 +829,7 @@
         h('div', { class: 'row' },
           h('button', { class: 'btn btn--primary', type: 'button', onclick: doPrint }, 'Print or save as PDF'),
           h('button', { class: 'btn', type: 'button', onclick: closeReport }, 'Close report')),
-        h('p', { class: 'small' }, 'In the print window, set the printer (Destination) to “Save as PDF” or “Microsoft Print to PDF”, then upload the PDF to Schoology.'),
+        h('p', { class: 'small' }, 'In the print window, set the printer (Destination) to “Save as PDF” or “Microsoft Print to PDF”, then hand in the PDF the way your teacher asks.'),
         note, status),
       h('article', { class: 'rv-paper', html: reportHtml(rep) }));
     document.body.append(view);
@@ -976,7 +976,7 @@
         const blob = await Lab.report.docx();
         const name = reportFileBase() + '.docx';
         downloadBlob(blob, name);
-        say(`Downloaded ${name}. Upload it to Schoology.` + nameWarn());
+        say(`Downloaded ${name}. Hand it in the way your teacher asks.` + nameWarn());
         Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
       } catch (e) {
@@ -986,7 +986,7 @@
     } }, 'Download .docx');
     const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Save as PDF');
     const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Hand in on Schoology: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
+      h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
     return [bar, status, note];
   }
