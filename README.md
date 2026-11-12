@@ -11,7 +11,7 @@ Each lab page includes:
 - **Analysis tools**: data tables, graphs with error bars, standard error, chi-square and linear regression.
 - **Written responses (CER)**: answers save in the student's browser, and **Copy all my responses** puts everything on the clipboard to paste into a document or LMS.
 
-Each lab also has a teacher notes page (`teacher-labNN.html`) with timing, how the simulation maps to the wet lab, misconceptions, and suggested answers.
+Teacher notes and answer keys are kept out of this public site; the teacher has a private copy.
 
 | # | Investigation | Page |
 |---|---|---|
@@ -36,7 +36,7 @@ This is a static site with no build step. To host it on GitHub Pages, go to **Se
 ## Files
 
 - `index.html`: home page listing all labs
-- `labNN.html` / `teacher-labNN.html`: student lab and teacher notes for each investigation
+- `labNN.html`: student lab for each investigation
 - `style.css`: shared styles (light and dark themes)
 - `lab.js`: shared toolkit (charts, tables, quizzes, statistics, autosave)
 - `KIT.md` and `_template.html`: guide and starting template for adding or editing labs

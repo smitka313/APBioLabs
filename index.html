@@ -30,9 +30,6 @@
   .card .dq { color: var(--muted); font-style: italic; font-size: .96rem; }
   .card .meta { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
   .card .sim-line { font-size: .88rem; color: var(--ink); }
-  .teacher-strip { margin-top: 30px; padding-block: 24px; background: var(--surface-2); }
-  .teacher-strip .wrap { display: grid; gap: 10px; }
-  .teacher-strip .links { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .92rem; }
   .icon { width: 44px; height: 44px; }
 </style>
 </head>
@@ -54,13 +51,6 @@
 
 <main id="labs"></main>
 
-<section class="teacher-strip">
-  <div class="wrap wrap--wide gutter">
-    <div class="eyebrow">For teachers</div>
-    <p class="muted small" style="max-width:70ch">Each lab has a teacher notes page with timing, how the simulation maps to the bench procedure, common misconceptions, and suggested answers. Student lab pages don't link to them, but the pages aren't password-protected. If answer security matters, keep your own copy of the keys.</p>
-    <div class="links" id="teacher-links"></div>
-  </div>
-</section>
 
 <footer class="site-footer"><div class="wrap wrap--wide gutter">
   <p>Adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and do not replace wet-lab work where it is available.</p>
@@ -108,7 +98,6 @@ document.getElementById('labs').innerHTML = BIG_IDEAS.map(b => `
       </a>`).join('')}
     </div>
   </section>`).join('');
-document.getElementById('teacher-links').innerHTML = BIG_IDEAS.flatMap(b => b.labs).map(l => `<a href="teacher-lab${pad(l.id)}.html">Lab ${l.id} notes</a>`).join('');
 Lab.home({ identity: '#home-identity', resume: '#resume' });
 </script>
 </body>
