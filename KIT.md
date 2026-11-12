@@ -38,8 +38,16 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Report + save/resume** in the `[data-responses]` toolbar: `Lab.report.docx()` (docx@9.0.2 loaded lazily from
   jsDelivr), `Lab.report.open({print})` (print view for Save as PDF), `Lab.progressFile.payload/parse/apply/makeCode/readCode`.
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
-  "Copy link" button. A section is done when its prompt textareas are filled, quiz questions checked and saved
-  tables have a row. `Lab.progress.update()`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
+  "Copy link" button. **One progress scheme:** a "part" counts only if it holds student work (prompt textareas, quiz
+  questions, saved `Lab.table`s, required `Lab.steps` items); Overview, Background and Submit do not. A part is done when
+  all of that work is done. The same number is used by the nav ("3 of 6 parts done"), the home cards and the
+  teachers.html table ("10 parts (6 with work)"; regenerate with `node tools/gen-parts.js` after changing a lab's parts;
+  `tests/t05b-teachers.js` checks it). **Setup rows are not work:** a row a page adds while loading (a starting row, preset
+  rows) is tagged `_setup:true` and saved that way; `addRow(row, {setup:false})` / `setRows(rows, {setup:false})` force
+  "student work" and `{setup:true}` forces setup (for rows added later, e.g. inside `Lab.onShow`). A required step counts
+  once the student has completed it (remembered in `stepdone`, so reloads keep it); a step already satisfied when the page
+  loads, or satisfied before the student touches anything, is left out. Give steps a stable `id`.
+  `Lab.progress.update()` → `{done, total, sections}`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
 - **Time estimates and arrow keys.** `data-minutes="15"` on a `section.step` renders a "≈ 15 min" chip (read as "About 15 minutes") beside the part eyebrow and adds "≈ N min total" to the header tags; round to 5. In paged mode ← / → change part unless focus is in a text field, select, slider, tab or other arrow-key control, the tour is open, or a modifier is held.
 - **First-visit tour.** After sign-in, the first lab page a browser opens shows a 5-step dismissible tour
   (`localStorage['aplab:tour']`, site-wide; `Lab.tour.start({force:true})`, `.reset()`; "Help" link in the sign-in line).

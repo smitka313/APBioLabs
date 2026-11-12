@@ -308,8 +308,11 @@
      → { setRows(rows), getRows(), addRow(row) } */
   Lab.table = function (el, opts) {
     if (typeof el === 'string') el = $(el);
-    let rows = (opts.save && store.get(opts.save)) || (opts.rows || []).map(r => Object.assign({}, r));
-    const reg = { el, opts, getRows: () => rows, setup: 0 }; // setup: rows the page itself adds while loading (not student work)
+    /* Setup rows: rows the page itself adds while loading (a starting row, preset rows) are tagged _setup:true,
+       and the tag is saved with the row, so they still do not count as student work after a reload. */
+    let rows = (opts.save && store.get(opts.save)) || (opts.rows || []).map(r => Object.assign({ _setup: true }, r));
+    const reg = { el, opts, getRows: () => rows };
+    const workRows = () => rows.filter(r => !r._setup);
     REG.tables.push(reg);
     function render() {
       const cols = opts.columns;
@@ -323,11 +326,11 @@
       el.innerHTML = `<div class="table-wrap"><table class="data"><thead><tr>${head}</tr></thead><tbody>${body || `<tr><td colspan="${cols.length}" class="muted">No data yet. Run a trial to fill this table.</td></tr>`}</tbody>${foot}</table></div>`;
       $$('input[data-r]', el).forEach(inp => inp.addEventListener('input', () => { // typed cell values are saved at once, not only on blur
         const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
-        if (r && c && opts.save) { r[inp.dataset.k] = c.num ? (inp.value === '' || !isFinite(parseFloat(inp.value)) ? null : parseFloat(inp.value)) : inp.value; store.set(opts.save, rows); }
+        if (r && c && opts.save) { r[inp.dataset.k] = c.num ? (inp.value === '' || !isFinite(parseFloat(inp.value)) ? null : parseFloat(inp.value)) : inp.value; delete r._setup; store.set(opts.save, rows); }
       }));
       $$('input[data-r]', el).forEach(inp => inp.addEventListener('change', () => {
         const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
-        r[inp.dataset.k] = c.num ? (inp.value === '' ? null : parseFloat(inp.value)) : inp.value;
+        r[inp.dataset.k] = c.num ? (inp.value === '' ? null : parseFloat(inp.value)) : inp.value; delete r._setup; // editing a row makes it the student's
         changed(false);
       }));
     }
@@ -351,8 +354,10 @@
     render();
     if (rows.length && opts.onChange) setTimeout(() => opts.onChange(rows), 0);
     return {
-      setRows(r) { rows = r.map(x => Object.assign({}, x)); if (!autoToasts.ready) reg.setup = rows.length; changed(); noteRows(rows.length); },
-      addRow(r) { rows.push(Object.assign({}, r)); if (!autoToasts.ready) reg.setup++; changed(); noteRows(1); },
+      /* o.setup: true marks the new rows as page setup (not student work); false marks them as work. Default: setup while the page is still loading. */
+      setRows(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; rows = r.map(x => { const c = Object.assign({}, x); if (su && c._setup == null) c._setup = true; else if (!su && o && o.setup === false) delete c._setup; return c; }); changed(); noteRows(rows.length); },
+      addRow(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; const c = Object.assign({}, r); if (su) c._setup = true; else delete c._setup; rows.push(c); changed(); noteRows(1); },
+      workRows,
       getRows() { return rows; },
       clear() { rows = []; changed(); },
     };
@@ -1328,14 +1333,44 @@
     let total = 0, done = 0;
     $$('textarea[data-save]', sec).forEach(t => { if (t.closest('.id-box')) return; total++; if (t.value.trim()) done++; });
     REG.quizzes.forEach(q => { if (!sec.contains(q.el)) return; const st = q.state() || {}; q.questions.forEach((_, i) => { total++; if (st[i]) done++; }); });
-    REG.tables.forEach(t => { if (!t.opts.save || !sec.contains(t.el)) return; total++; if (t.getRows().length) done++; });
+    REG.tables.forEach(t => { if (!t.opts.save || !sec.contains(t.el)) return; total++; if (t.getRows().some(r => !r._setup)) done++; });
+    STEPBOXES.forEach(box => { if (!sec.contains(box.el)) return; box.items.forEach((it, i) => { const st = stepStatus(box, it, i); if (st === 'skip') return; total++; if (st === 'done') done++; }); });
     return { total, done };
+  }
+  /* Simulation steps (Lab.steps) count as work. A required step is "open" until the student completes it; its
+     completion is remembered (aplab:<lab>:stepdone), so a reload keeps it. A step that is already satisfied the
+     first time we look (a default), or that flips before the student has touched anything (page setup or restored
+     state), is not student work and is left out of the count. */
+  const STEPBOXES = [];
+  let acted = false, stepDone = null;
+  ['pointerdown', 'keydown', 'input', 'change', 'click'].forEach(ev => document.addEventListener(ev, () => { if (document.readyState === 'complete') acted = true; }, true));
+  const stepKey = (box, it, i) => box.uid + ':' + (it.s.id || i);
+  function stepSaved() { if (!stepDone) stepDone = store.get('stepdone') || {}; return stepDone; }
+  function stepStatus(box, it, i) {
+    if (it.s.optional) return 'skip';
+    if (stepSaved()[stepKey(box, it, i)]) return 'done';
+    if (!it.seenOpen || it.init) return it.d ? 'skip' : 'open';
+    return it.d && it.ackd ? 'done' : (it.d ? 'skip' : 'open');
+  }
+  let progTimer = 0;
+  const progressSoon = () => { clearTimeout(progTimer); progTimer = setTimeout(() => { try { updateProgress(); } catch (e) { /* ignore */ } }, 30); };
+  function stepTick(box) { // called after a Lab.steps refresh: record newly completed steps
+    let changedAny = false;
+    box.items.forEach((it, i) => {
+      if (it.s.optional) return;
+      if (!it.d) { it.seenOpen = true; it.ackd = false; it.init = false; }
+      else if (it.seenOpen && !acted) it.init = true;   // flipped before the student did anything: setup or restored state
+      else if (it.seenOpen && acted && !it.ackd && !it.init) { it.ackd = true; stepSaved()[stepKey(box, it, i)] = 1; changedAny = true; }
+      if (it.pd !== it.d) { it.pd = it.d; changedAny = true; }
+    });
+    if (changedAny) { if (acted) store.set('stepdone', stepSaved()); progressSoon(); }
   }
   let navProgressEl = null, lastSummary = '';
   function updateProgress() {
     const nav = $('.step-nav ol'); if (!nav) return null;
     let parts = 0, complete = 0;
-    $$('section.step').forEach(s => {
+    const steps = $$('section.step');
+    steps.forEach(s => {
       const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
       const r = sectionWork(s), sr = $('.done-sr', link);
       if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
@@ -1346,8 +1381,8 @@
     });
     if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `<span class="np-long">${complete} of ${parts} parts done</span><span class="np-short">${complete} of ${parts} done</span>`; }
     const sum = JSON.stringify([complete, parts]);
-    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, t: Date.now() }); }
-    return { done: complete, total: parts };
+    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, sections: steps.length, t: Date.now() }); }
+    return { done: complete, total: parts, sections: steps.length };
   }
   /* ---------------- Paged mode: one part at a time ----------------
      Lab pages show one section.step at a time (body.paged; the current one has .is-current), with Back/Next
@@ -1725,8 +1760,9 @@
       if (pulsed !== tgt) { if (pulsed) { pulsed.classList.remove('lab-pulse'); PULSED.delete(pulsed); } if (tgt) { tgt.classList.add('lab-pulse'); PULSED.add(tgt); } pulsed = tgt; }
       if (c !== cur) { cur = c; if (o.onChange) { try { o.onChange(c, ci ? ci.s : null); } catch (e) { console.warn(e); } } }
     }
-    const api = { el, refresh, get current() { return cur; }, get items() { return items.map(it => ({ id: it.s.id, done: it.d })); } };
-    GUIDES.push(api); bindGuides(); refresh();
+    const box = { el, uid, items }; STEPBOXES.push(box);
+    const api = { el, refresh() { refresh(); stepTick(box); }, get current() { return cur; }, get items() { return items.map(it => ({ id: it.s.id, done: it.d })); } };
+    GUIDES.push(api); bindGuides(); api.refresh();
     return api;
   };
   Lab.steps.refresh = refreshGuides;
@@ -1907,7 +1943,7 @@
     REG.tables.forEach(t => {
       if (!t.opts.save) return;
       const r = t.getRows(), preset = (t.opts.rows || []).map(x => JSON.stringify(x));
-      rows += Math.max(0, r.filter(x => preset.indexOf(JSON.stringify(x)) < 0).length - (t.setup || 0)); // rows the page starts with are not work
+      rows += r.filter(x => !x._setup && preset.indexOf(JSON.stringify(x)) < 0).length; // rows the page starts with are not work
       parts.push('t:' + t.opts.save + JSON.stringify(r));
     });
     REG.quizzes.forEach(q => {
