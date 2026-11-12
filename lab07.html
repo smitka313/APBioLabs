@@ -239,6 +239,7 @@
       <p class="txt">Fill in the table for this 2<i>n</i> = 4 cell (open the <strong>Data</strong> tab beside the scene). Count a chromosome by its centromeres. DNA amount is in units of <i>c</i>, where 1<i>c</i> is the DNA in one haploid set.</p>
       <div id="mit-table"></div>
       <div class="row"><button class="btn btn--sm" id="mit-check-table" type="button">Check my table</button><span class="pill" id="mit-table-pill">not checked</span></div>
+      <div class="feedback bad" id="mit-table-fb" role="alert" hidden></div>
 
       <h3>Put real cells in order</h3>
       <p class="txt">These are stained onion root-tip cells at 400×. Click one card and then another to swap them, until they run in order from interphase to cytokinesis. Then check.</p>
@@ -567,6 +568,41 @@
 'use strict';
 Lab.init({ id: 'lab07' });
 const $ = Lab.$, $$ = Lab.$$, ST = Lab.stats, fmt = Lab.fmt;
+  /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
+  const V = (() => {
+    let n = 0;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    function box(inp) {
+      if (inp._vfb) return inp._vfb;
+      const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
+      const host = inp.closest('.inline-num');
+      if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
+      inp._vfb = fb; inp.addEventListener('input', () => { if (!inp._live) V.ok(inp); }); return fb;
+    }
+    const V = {
+      bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
+      ok(inp) { if (inp._vfb) inp._vfb.hidden = true; inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby'); return true; },
+      /* read a number from an input; returns null (after showing a message) when empty, not a number or out of range */
+      num(inp, o = {}) {
+        const name = o.name || 'this value', raw = inp.value.trim();
+        const v = +raw;
+        if ((inp.validity && inp.validity.badInput) || (raw !== '' && !isFinite(v))) return V.bad(inp, `${cap(name)} must be a number, like 12 or 0.5.`);
+        if (raw === '') return V.bad(inp, o.empty || `Enter ${name} first.`);
+        if (o.int && v !== Math.round(v)) return V.bad(inp, `${cap(name)} must be a whole number.`);
+        if (o.gt != null && !(v > o.gt)) return V.bad(inp, o.gtMsg || `${cap(name)} must be greater than ${o.gt}.`);
+        if (o.min != null && v < o.min) return V.bad(inp, o.minMsg || `${cap(name)} can't be less than ${o.min}.`);
+        if (o.max != null && v > o.max) return V.bad(inp, o.maxMsg || `${cap(name)} can't be more than ${o.max}.`);
+        V.ok(inp); return v;
+      },
+      /* show a message in an existing feedback element */
+      say(el, msg) { el.hidden = false; el.className = 'feedback bad'; el.setAttribute('role', 'alert'); el.textContent = msg; },
+      /* status line: plain text normally, red alert when it is an error */
+      note(el, msg, bad) { el.textContent = msg; el.className = bad ? 'feedback bad' : 'small'; if (bad) el.setAttribute('role', 'alert'); else el.removeAttribute('role'); },
+      /* mark/unmark editable table cells */
+      cell(root, r, k, msg) { const i = root.querySelector(`input[data-r="${r}"][data-k="${k}"]`); if (i) { if (msg) { i.setAttribute('aria-invalid', 'true'); i.title = msg; } else { i.removeAttribute('aria-invalid'); i.removeAttribute('title'); } } }
+    };
+    return V;
+  })();
 const rng = Lab.rng();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const reduced = Lab.reducedMotion();
@@ -950,9 +986,17 @@ const MIT = (function () {
 const MIT_ANS = [[4, 4, 2], [4, 8, 4], [4, 8, 4], [8, 8, 4], [4, 4, 2]];
 Lab.table('#mit-table', { save: 'mit-dna', columns: [{ key: 'stage', label: 'Stage' }, { key: 'chr', label: 'Chromosomes', num: true, digits: 0, editable: true }, { key: 'mol', label: 'DNA molecules', num: true, digits: 0, editable: true }, { key: 'amt', label: 'DNA amount', unit: 'c', num: true, digits: 0, editable: true }],
   rows: ['G1 (before S phase)', 'G2 (after S phase)', 'Metaphase', 'Anaphase (whole cell)', 'Each daughter after cytokinesis'].map(stage => ({ stage, chr: null, mol: null, amt: null })) });
+$('#mit-table').addEventListener('input', e => { if (e.target.matches('input')) e.target.removeAttribute('aria-invalid'); });
 $('#mit-check-table').addEventListener('click', () => {
-  let right = 0, tot = 0; const keys = ['chr', 'mol', 'amt'];
-  $$('#mit-table input').forEach(inp => { const r = +inp.dataset.r, ki = keys.indexOf(inp.dataset.k); if (ki < 0) return; tot++; const ok = inp.value !== '' && +inp.value === MIT_ANS[r][ki]; inp.classList.toggle('is-right', ok); inp.classList.toggle('is-wrong', !ok); if (ok) right++; });
+  let right = 0, tot = 0, blank = 0, badNum = 0; const keys = ['chr', 'mol', 'amt'], fbx = $('#mit-table-fb'), pill = $('#mit-table-pill');
+  $$('#mit-table input[data-k]').forEach(inp => { const v = inp.value.trim(); inp.removeAttribute('aria-invalid'); inp.classList.remove('is-right', 'is-wrong');
+    if (v === '' || inp.validity.badInput) { blank++; inp.setAttribute('aria-invalid', 'true'); } else if (!(+v >= 0) || +v !== Math.round(+v)) { badNum++; inp.setAttribute('aria-invalid', 'true'); } });
+  if (blank || badNum) {
+    fbx.hidden = false; fbx.textContent = (blank ? `${blank} box${blank > 1 ? 'es are' : ' is'} still empty or not a number. ` : '') + (badNum ? 'Chromosome and DNA counts are whole numbers, 0 or more. ' : '') + 'Fill in every box in the table, then check. Nothing was graded.';
+    pill.textContent = 'not checked'; pill.className = 'pill'; return;
+  }
+  fbx.hidden = true;
+  $$('#mit-table input[data-k]').forEach(inp => { const r = +inp.dataset.r, ki = keys.indexOf(inp.dataset.k); if (ki < 0) return; tot++; const ok = inp.value !== '' && +inp.value === MIT_ANS[r][ki]; inp.classList.toggle('is-right', ok); inp.classList.toggle('is-wrong', !ok); if (ok) right++; });
   const p = $('#mit-table-pill'); p.textContent = `${right} of ${tot} correct`; p.className = 'pill ' + (right === tot ? 'ok' : right > tot / 2 ? 'warn' : 'bad');
 });
 
@@ -1083,9 +1127,9 @@ const ROOT = (function () {
     overlay: ctx => field && drawRootMarks(ctx, field, marks, checking),
     onClick: (px, py) => {
       const i = hitCell(field.cells, px, py); if (i < 0) return;
-      if (field.cells[i].edge) { $('#rt-acc').textContent = 'That cell is torn open at the ragged edge of the squash. Count only whole, unbroken cells.'; return; }
+      if (field.cells[i].edge) { V.note($('#rt-acc'), 'That cell is torn open at the ragged edge of the squash. Count only whole, unbroken cells.', true); return; }
       if (tool === 'X') marks.delete(i); else marks.set(i, tool);
-      $('#rt-acc').textContent = ''; draw(); counts();
+      V.note($('#rt-acc'), ''); draw(); counts();
     }
   });
   const prep = () => ({ hcl: $('#prep-hcl').checked, fix: $('#prep-fix').checked, cut: $('#prep-cut').checked, stain: $('#prep-stain').checked, squash: $('#prep-squash').checked });
@@ -1103,7 +1147,7 @@ const ROOT = (function () {
     if (!q.stain) notes.push('Unstained chromatin is nearly invisible.');
     if (!q.squash) notes.push('Without a firm squash the cells overlap and are out of focus.');
     $('#rt-quality').innerHTML = (notes.length ? '<span class="pill warn">Poor slide</span> ' + notes.join(' ') : '<span class="pill ok">Good squash</span> Cells are spread in a single layer.') + ` Slide: ${treat === 'control' ? 'control' : 'lectin'} jar, tip ${tip}.`;
-    $('#rt-acc').textContent = '';
+    V.note($('#rt-acc'), '');
     draw(); counts();
   }
   function draw() { view.redraw(); }
@@ -1121,16 +1165,16 @@ const ROOT = (function () {
   $('#rt-checkids').addEventListener('click', () => {
     checking = !checking; $('#rt-checkids').setAttribute('aria-pressed', String(checking));
     let ok = 0; marks.forEach((v, i) => { if (v === field.cells[i].phase) ok++; });
-    $('#rt-acc').textContent = checking ? (marks.size ? `${ok} of ${marks.size} identifications match the key (green = match, red = check again).` : 'Mark some cells first.') : '';
+    V.note($('#rt-acc'), checking ? (marks.size ? `${ok} of ${marks.size} identifications match the key (green = match, red = check again).` : 'Mark some cells first, then check your IDs.') : '', checking && !marks.size);
     draw();
   });
   $('#rt-auto').addEventListener('click', () => { field.cells.forEach((c, i) => { if (!c.edge && !marks.has(i)) marks.set(i, c.phase); }); draw(); counts(); });
   $('#rt-record').addEventListener('click', () => {
-    if (!marks.size) { $('#rt-acc').textContent = 'Classify the cells in the field before recording.'; return; }
+    if (!marks.size) { V.note($('#rt-acc'), 'Classify the cells in the field before recording. Nothing was recorded.', true); return; }
     const n = counts(), mit = n.P + n.M + n.A + n.T, total = mit + n.I, left = field.cells.filter(c => !c.edge).length - marks.size;
     const tb = treat === 'control' ? tabC : tabT, rows = tb.getRows().filter(r => r.tip !== tip);
     rows.push({ tip, I: n.I, P: n.P, M: n.M, A: n.A, T: n.T, mit, total, mi: 100 * mit / total }); rows.sort((a, b) => a.tip - b.tip); tb.setRows(rows);
-    $('#rt-acc').textContent = `Recorded tip ${tip} (${treat}).` + (left > 0 ? ` ${left} whole cells were left unmarked and are not counted.` : '');
+    V.note($('#rt-acc'), `Recorded tip ${tip} (${treat}).` + (left > 0 ? ` ${left} whole cells were left unmarked and are not counted.` : ''));
   });
   themeHooks.push(draw);
   make();
@@ -1199,11 +1243,20 @@ const CHI = (function () {
   }
   $$('[data-m]').forEach(b => b.addEventListener('click', () => { method = b.dataset.m; render(); }));
   $('#chi-checkexp').addEventListener('click', () => {
-    if (!obs) return; expected().forEach((e, i) => { const v = parseFloat($('#chi-e-' + i).value), ok = isFinite(v) && Math.abs(v - e[2]) <= Math.max(0.6, e[2] * 0.01); $('#chi-e-' + i + '-fb').innerHTML = isFinite(v) ? (ok ? '<span class="pill ok">correct</span>' : '<span class="pill bad">recheck</span>') : ''; });
+    if (!obs) { $('#chi-out').innerHTML = '<div class="feedback bad" role="alert">There are no recorded tips yet. Record tips from both jars (or add class data) first.</div>'; return; }
+    expected().forEach((e, i) => {
+      const inp = $('#chi-e-' + i), fb = $('#chi-e-' + i + '-fb'); fb.innerHTML = '';
+      const v = V.num(inp, { name: 'your expected value', empty: 'Enter your expected value first.', min: 0, minMsg: 'An expected count can\u2019t be negative.' });
+      if (v == null) return;
+      const ok = Math.abs(v - e[2]) <= Math.max(0.6, e[2] * 0.01);
+      fb.innerHTML = ok ? '<span class="pill ok">correct</span>' : '<span class="pill bad">recheck</span>';
+    });
   });
   $('#chi-run').addEventListener('click', () => {
     if (!obs) { $('#chi-out').innerHTML = '<p class="small">No data yet.</p>'; return; }
-    const ex = expected(), r = ST.chiSquare(ex.map(e => e[1]), ex.map(e => e[2]));
+    const ex = expected(), zero = ex.filter(e => !(e[2] > 0) || !isFinite(e[2]));
+    if (zero.length) { $('#chi-out').innerHTML = `<div class="feedback bad" role="alert">\u03C7\u00B2 can\u2019t be calculated: the expected count for ${zero.map(e => e[0].toLowerCase()).join(' and ')} is 0, and \u03C7\u00B2 divides by the expected count. Record more tips so every phase has at least one cell, then try again.</div>`; return; }
+    const r = ST.chiSquare(ex.map(e => e[1]), ex.map(e => e[2]));
     const df = 1, crit = ST.chiCrit(1), crit01 = ST.chiCrit(1, 0.01), rej = r.chi2 >= crit;
     const rows = ex.map((e, i) => [e[0], e[1], fmt(e[2], 1), fmt(e[1] - e[2], 1), fmt((e[1] - e[2]) ** 2, 1), fmt(r.terms[i], 2)]);
     rows.push(['<strong>χ² = Σ (o − e)²/e</strong>', '', '', '', '', `<strong>${fmt(r.chi2, 2)}</strong>`]);
@@ -1363,7 +1416,7 @@ const kTab = Lab.table('#k-table', { save: 'kary', columns: [{ key: 'cell', labe
   rows: [{ cell: 'Normal (46,XX)', n: null, obs: '' }, { cell: 'HeLa (cervical cancer)', n: null, obs: '' }, { cell: 'CML (leukemia)', n: null, obs: '' }] });
 $('#k-check').addEventListener('click', () => {
   const keys = ['normal', 'hela', 'cml'], names = ['Normal', 'HeLa', 'CML'];
-  $('#k-check-msg').innerHTML = kTab.getRows().map((r, i) => { const ok = r.n != null && Math.abs(r.n - KARYO.TRUE[keys[i]]) <= (keys[i] === 'hela' ? 1 : 0); return `${names[i]}: <span class="pill ${r.n == null ? '' : ok ? 'ok' : 'bad'}">${r.n == null ? 'no count' : ok ? 'matches' : 'recount'}</span>`; }).join(' ');
+  $('#k-check-msg').innerHTML = kTab.getRows().map((r, i) => { const inv = r.n != null && (!(r.n > 0) || r.n !== Math.round(r.n)), ok = r.n != null && !inv && Math.abs(r.n - KARYO.TRUE[keys[i]]) <= (keys[i] === 'hela' ? 1 : 0); return `${names[i]}: <span class="pill ${r.n == null ? '' : inv ? 'warn' : ok ? 'ok' : 'bad'}">${r.n == null ? 'no count yet: enter one' : inv ? 'enter a whole number above 0' : ok ? 'matches' : 'recount'}</span>`; }).join(' ');
 });
 Lab.prompt('#p3-pre', { key: 'p3-hyp', label: 'Hypothesis: how might the chromosomes of a cancer cell differ from those of a normal cell, and how could that relate to the cancer cell\'s behavior?', rows: 3 });
 Lab.prompt('#p3-pre', { key: 'p3-diff', label: 'How are normal cells and cancer cells different from each other? What goes wrong in the cell cycle of a cancer cell?', rows: 3 });
@@ -1708,9 +1761,9 @@ const SORD = (function () {
   $('#s-check').addEventListener('click', () => { checking = !checking; $('#s-check').setAttribute('aria-pressed', String(checking)); let ok = 0; marks.forEach((v, i) => { if ((v === 'R') === field.asci[i].pat.xo) ok++; }); $('#s-msg').textContent = checking ? (marks.size ? `${ok} of ${marks.size} scores match the key (green = match, red = look again).` : 'Score some asci first.') : ''; draw(); });
   $('#s-auto').addEventListener('click', () => { field.asci.forEach((c, i) => { if (c.mature && !c.edge && !marks.has(i)) marks.set(i, c.pat.xo ? 'R' : 'P'); }); draw(); counts(); });
   $('#s-record').addEventListener('click', () => {
-    const { p, r } = counts(); if (!p && !r) { $('#s-msg').textContent = 'Score the asci in this field before recording.'; return; }
+    const { p, r } = counts(); if (!p && !r) { V.note($('#s-msg'), 'Score the asci in this field before recording. Nothing was recorded.', true); return; }
     const rows = sTab.getRows(); rows.push({ field: rows.length + 1, p, r, tot: p + r }); sTab.setRows(rows);
-    $('#s-msg').textContent = `Field recorded (${p + r} asci). ` + (ST.sum(sTab.getRows().map(x => x.tot)) < 50 ? 'Make a new squash or move to the next field and keep counting until you reach 50.' : 'You have at least 50 asci.');
+    V.note($('#s-msg'), `Field recorded (${p + r} asci). ` + (ST.sum(sTab.getRows().map(x => x.tot)) < 50 ? 'Make a new squash or move to the next field and keep counting until you reach 50.' : 'You have at least 50 asci.'));
   });
   themeHooks.push(draw);
   newField();
@@ -1721,10 +1774,14 @@ const sTab = Lab.table('#s-table', { save: 'sord', columns: [{ key: 'field', lab
 $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot));
 $('#s-calc-check').addEventListener('click', () => {
   const rows = sTab.getRows(), P = ST.sum(rows.map(r => r.p)), R = ST.sum(rows.map(r => r.r)), T = P + R;
-  if (!T) { $('#s-calc-msg').textContent = 'Record at least one field first.'; return; }
-  const pct = 100 * R / T, mu = pct / 2, a = parseFloat($('#s-pct').value), b = parseFloat($('#s-mu').value);
+  const msg = $('#s-calc-msg'); msg.className = 'small'; msg.removeAttribute('role');
+  if (!T) { V.note(msg, 'Record at least one field first, so there are asci to calculate from.', true); return; }
+  const a = V.num($('#s-pct'), { name: 'the % of asci showing crossover', min: 0, minMsg: 'A percentage can\u2019t be negative.', max: 100, maxMsg: 'A percentage can\u2019t be more than 100.' });
+  const b = V.num($('#s-mu'), { name: 'the map distance', empty: 'Enter the gene-to-centromere distance (map units) first.', min: 0, minMsg: 'A distance in map units can\u2019t be negative.', max: 50, maxMsg: 'Gene-to-centromere distance can\u2019t be more than 50 map units (that is 100% crossover \u00F7 2).' });
+  if (a == null || b == null) { V.note(msg, 'Fix the highlighted box' + (a == null && b == null ? 'es' : '') + ' and check again. Nothing was graded.', true); return; }
+  const pct = 100 * R / T, mu = pct / 2;
   const okA = Math.abs(a - pct) <= 0.15, okB = Math.abs(b - mu) <= 0.15 || (isFinite(a) && Math.abs(b - a / 2) <= 0.1 && okA);
-  $('#s-calc-msg').innerHTML = `% crossover: <span class="pill ${okA ? 'ok' : 'bad'}">${isFinite(a) ? (okA ? 'correct' : 'recheck') : 'missing'}</span> Map distance: <span class="pill ${okB ? 'ok' : 'bad'}">${isFinite(b) ? (okB ? 'correct' : 'recheck') : 'missing'}</span>` + (T < 50 ? ' <span class="pill warn">fewer than 50 asci</span>' : '');
+  msg.innerHTML = `% crossover: <span class="pill ${okA ? 'ok' : 'bad'}">${okA ? 'correct' : 'recheck'}</span> Map distance: <span class="pill ${okB ? 'ok' : 'bad'}">${okB ? 'correct' : 'recheck'}</span>` + (T < 50 ? ' <span class="pill warn">fewer than 50 asci</span>' : '');
 });
 const sClassTab = Lab.table('#s-class-table', { columns: [{ key: 'g', label: 'Group' }, { key: 'p', label: '4:4', num: true, digits: 0 }, { key: 'r', label: 'Crossover', num: true, digits: 0 }, { key: 't', label: 'Total', num: true, digits: 0 }, { key: 'pct', label: '% crossover', num: true, digits: 1 }, { key: 'mu', label: 'Map units', num: true, digits: 1 }],
   footer: rows => { const p = ST.sum(rows.map(r => r.p)), r = ST.sum(rows.map(r => r.r)), t = p + r; return ['Class', p, r, t, t ? fmt(100 * r / t, 1) : '—', t ? fmt(50 * r / t, 1) : '—']; },
@@ -1833,7 +1890,7 @@ Lab.steps('#mit-steps', [
   { id: 'table', text: 'Fill in the table (below)', target: '#mit-check-table', done: mitFilled, hint: 'Open the <strong>Data</strong> tab, fill every box, then press <strong>Check my table</strong>.' },
   { id: 'sort', text: 'Put the real cells in order', target: '#sort-check', done: () => $$('#sort-row .sortcard.ok').length === 6, hint: 'Scroll down: swap the cards into order, then press <strong>Check order</strong>.' }
 ], { doneText: 'Mitosis model done. Next, test the lectin in <a href="#root-tips">Root tips</a>.' });
-$('#mit-check-table').addEventListener('click', () => { const p = $('#mit-table-pill'); Lab.toast('Table checked: ' + p.textContent, { type: p.classList.contains('ok') ? 'ok' : 'warn', announce: false, key: 'mit-check' }); });
+$('#mit-check-table').addEventListener('click', () => { const p = $('#mit-table-pill'); if (p.textContent === 'not checked') { Lab.toast('Not checked: fill in every box in the table first', { type: 'warn', announce: false, key: 'mit-check' }); return; } Lab.toast('Table checked: ' + p.textContent, { type: p.classList.contains('ok') ? 'ok' : 'warn', announce: false, key: 'mit-check' }); });
 $('#sort-check').addEventListener('click', () => { const n = $$('#sort-row .sortcard.ok').length; Lab.toast(n === 6 ? 'All 6 cells are in order' : n + ' of 6 cells are in the right place', { type: n === 6 ? 'ok' : 'warn', announce: false, key: 'sort-check' }); });
 
 /* ---- Part 2: root tips ---- */
@@ -1892,7 +1949,7 @@ Lab.steps('#s-steps', [
 Lab.gate('#s-record', () => sScored() > 0 ? '' : 'Score some asci first');
 Lab.gate('#s-calc-check', () => sTab.getRows().length ? '' : 'Record a field first');
 $('#s-class').addEventListener('click', () => Lab.toast('Added class data from 7 simulated groups', { type: 'ok', announce: false, key: 's-class' }));
-$('#s-calc-check').addEventListener('click', () => { const ok = $$('#s-calc-msg .pill.ok').length; Lab.toast(ok === 2 ? 'Checked: both calculations are correct' : `Checked: ${ok} of 2 calculations correct`, { type: ok === 2 ? 'ok' : 'warn', announce: false, key: 's-calc' }); });
+$('#s-calc-check').addEventListener('click', () => { if ($('#s-calc-msg').classList.contains('bad')) { Lab.toast('Not checked: fix the highlighted boxes first', { type: 'warn', announce: false, key: 's-calc' }); return; } const ok = $$('#s-calc-msg .pill.ok').length; Lab.toast(ok === 2 ? 'Checked: both calculations are correct' : `Checked: ${ok} of 2 calculations correct`, { type: ok === 2 ? 'ok' : 'warn', announce: false, key: 's-calc' }); });
 
 /* ---- Design ---- */
 const dLv = () => $$('#d-levels input:checked').length;
@@ -1919,9 +1976,17 @@ const cer = $('#an-cer');
   add('Lectin interphase', 161, 213.0); add('Lectin mitosis', 88, 36.0);
   $('#cs-add').addEventListener('click', () => { if (n < 8) add(); });
   $('#cs-run').addEventListener('click', () => {
-    const O = [], E = [], L = [];
-    for (let i = 0; i < n; i++) { const o = parseFloat($('#cs-o-' + i).value), e = parseFloat($('#cs-e-' + i).value); if (isFinite(o) && isFinite(e) && e > 0) { O.push(o); E.push(e); L.push($('#cs-l-' + i).value || 'Category ' + (i + 1)); } }
-    if (O.length < 2) { $('#cs-out').innerHTML = '<p class="small">Enter at least two categories with expected values above 0.</p>'; return; }
+    const O = [], E = [], L = []; let bad = 0; const out = $('#cs-out');
+    for (let i = 0; i < n; i++) {
+      const oi = $('#cs-o-' + i), ei = $('#cs-e-' + i), blank = oi.value.trim() === '' && ei.value.trim() === '' && !oi.validity.badInput && !ei.validity.badInput;
+      if (blank) { V.ok(oi); V.ok(ei); continue; }
+      const o = V.num(oi, { name: 'the observed count', empty: 'Enter the observed count for this category.', min: 0, minMsg: 'An observed count can\u2019t be negative.' });
+      const e = V.num(ei, { name: 'the expected value', empty: 'Enter the expected value for this category.', gt: 0, gtMsg: 'The expected value must be greater than 0. \u03C7\u00B2 divides by it, so 0 (or a negative) can\u2019t be used.' });
+      if (o == null || e == null) { bad++; continue; }
+      O.push(o); E.push(e); L.push($('#cs-l-' + i).value || 'Category ' + (i + 1));
+    }
+    if (bad) { out.innerHTML = `<div class="feedback bad" role="alert" style="margin-top:8px">Fix the highlighted box${bad > 1 ? 'es' : ''} first. \u03C7\u00B2 wasn\u2019t calculated.</div>`; return; }
+    if (O.length < 2) { out.innerHTML = '<div class="feedback bad" role="alert" style="margin-top:8px">Enter at least two categories, each with an observed count and an expected value above 0.</div>'; return; }
     const r = ST.chiSquare(O, E);
     $('#cs-out').innerHTML = `<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Category</th><th class="num">o</th><th class="num">e</th><th class="num">(o − e)²/e</th></tr></thead><tbody>${O.map((o, i) => `<tr><td>${Lab.esc(L[i])}</td><td class="num">${fmt(o, 1)}</td><td class="num">${fmt(E[i], 1)}</td><td class="num">${fmt(r.terms[i], 3)}</td></tr>`).join('')}</tbody></table></div><div class="decision ${r.reject ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${r.df}, critical value (p = 0.05) = ${r.crit}. ${r.reject ? 'Reject the null hypothesis.' : 'Fail to reject the null hypothesis.'}</div>`;
   });
