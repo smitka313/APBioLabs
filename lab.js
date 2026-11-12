@@ -233,7 +233,7 @@
           series.forEach((s, si) => {
             const p = s.points.find(pp => pp.x === c) || s.points[ci]; if (!p || !isFinite(p.y)) return;
             const x = gx - (bw * series.length) / 2 + bw * si, y0 = Y(Math.max(0, yr.lo)), y1 = Y(p.y);
-            svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${bw - 4}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${s.color}"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
+            svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${Math.max(0.5, bw - 4)}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${s.color}"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
             if (p.err) { const cx = x + bw / 2; svg += `<g style="stroke:var(--ink)" stroke-width="1.4"><line x1="${cx}" x2="${cx}" y1="${Y(p.y - p.err)}" y2="${Y(p.y + p.err)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y - p.err)}" y2="${Y(p.y - p.err)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y + p.err)}" y2="${Y(p.y + p.err)}"/></g>`; }
           });
         });

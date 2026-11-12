@@ -32,6 +32,7 @@
   .diagram .arr { stroke: var(--ink); stroke-width: 1.6; fill: none; }
   .tt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
   .tt-grid fieldset { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; margin: 0; min-width: 0; }
+  .sim--fit > .sim-main.is-wide { align-self: stretch; } /* results column uses the full height of the sim box */
   .tt-grid legend { font-weight: 600; font-size: .9rem; padding: 0 4px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -54,10 +55,11 @@
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
-      <p class="lede">Darwin built his case for natural selection partly on what breeders already knew: if you let only certain individuals reproduce, the next generation looks different. In this lab your class raises a population of about 150 Wisconsin Fast Plants (<em>Brassica rapa</em>), measures a trait that varies, lets only the most extreme 10% breed, and checks whether their offspring are different.</p>
+    <div class="step-body split">
+      <div class="split-main prose">
+        <p class="lede">Darwin built his case for natural selection partly on what breeders already knew: if you let only certain individuals reproduce, the next generation looks different. In this lab your class raises a population of about 150 Wisconsin Fast Plants (<em>Brassica rapa</em>), measures a trait that varies, lets only the most extreme 10% breed, and checks whether their offspring are different.</p>
       <p>In the real lab this takes about seven weeks of short daily visits to a light box. Here you will do the same steps in a virtual growth chamber: count leaf hairs (trichomes) under a magnifier, build a histogram, choose parents, cross-pollinate them with a bee stick, and grow and score generation 2. Then you will design your own selection experiment.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
         <ul>
@@ -67,22 +69,29 @@
           <li>Use descriptive statistics to decide whether a population's genetic makeup changed, and design a follow-up investigation about one trait.</li>
         </ul>
       </div>
-      <div class="callout callout--safety"><div class="callout-title">Safety (wet lab)</div>
+      </div>
+      <div class="split-side">
+        <div class="callout callout--safety"><div class="callout-title">Safety (wet lab)</div>
         <p>Plants grow under electric light banks with water reservoirs. Keep water and fertilizer solution away from wires, plugs and ballasts, and refill reservoirs carefully. Wash hands after handling soil and fertilizer.</p>
+      </div>
       </div>
     </div>
   </section>
 
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Variation, heredity and differential reproduction</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul><li>Natural selection needs two things: variation in a trait, and heritable variation (differences that come from genes).</li><li>Quantitative traits such as hair number are polygenic and vary continuously, so you describe them with histograms, means and SD.</li><li>Heritability h² is the genetic share of the variation: h² = V<sub>G</sub> / V<sub>P</sub>.</li><li>Selection differential S (how extreme the parents are) predicts the response R = h² × S, so offspring regress part of the way back.</li><li>A control line bred from random parents shows what happens without selection.</li></ul></div>
       <p><strong>Natural selection</strong> is differential reproduction: some individuals leave more surviving offspring than others because of the traits they have. If those traits are inherited, the next generation has a different genetic makeup. That change in a population's gene pool over generations is <strong>evolution</strong>. In nature the environment does the "choosing." In <strong>artificial selection</strong>, people decide which individuals breed. Corn, dogs and broccoli (a close relative of your Fast Plants) were all shaped this way.</p>
       <p>Selection only works when two things are true. First, individuals must <strong>vary</strong> in the trait. Second, at least part of that variation must be <strong>heritable</strong>, meaning it comes from differences in genes rather than only from differences in light, water or chance.</p>
-      <h3>Quantitative traits</h3>
+        <details class="disclose"><summary>Quantitative traits</summary><div class="inner">
       <p>Mendel's pea traits come in clear categories, such as purple or white. Many traits instead vary on a continuum: height, number of flowers, number of hairs. These <strong>quantitative traits</strong> are usually <strong>polygenic</strong>: many genes each add a small amount, and the environment adds more variation on top. The result is a spread of values that you describe with a histogram, a mean, a median and a standard deviation.</p>
       <p>Fast Plants have small hairs called <strong>trichomes</strong> on their leaves and stems. Some plants have none and some have more than 50 along the edge of one leaf. Trichomes may discourage insects such as cabbage white butterfly caterpillars from eating or laying eggs, but making them costs the plant energy.</p>
-      <h3>Predicting the response to selection</h3>
+        </div></details>
+        <details class="disclose"><summary>Predicting the response to selection</summary><div class="inner">
       <p>Phenotypic variance (V<sub>P</sub>) has a genetic part (V<sub>G</sub>) and an environmental part (V<sub>E</sub>). <strong>Heritability</strong>, h², is the fraction that is genetic. Breeders use it to predict how far the next generation will move:</p>
       <div class="equation">V<sub>P</sub> = V<sub>G</sub> + V<sub>E</sub> &nbsp;&nbsp; h² = V<sub>G</sub> / V<sub>P</sub></div>
       <div class="equation">S = (mean of selected parents) − (mean of whole population) &nbsp;&nbsp; R = h² × S</div>
@@ -108,46 +117,59 @@
         <figcaption>Selecting the hairiest tail shifts the next generation by R = h²S. With h² ≈ 0.5, generation 2 moves about halfway toward the parents' mean.</figcaption>
       </figure>
       <p>One round of strong selection can shift the mean noticeably, but it rarely changes the population all the way. Your job is to measure the shift, decide whether it is bigger than chance, and explain it.</p>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl><dt>Artificial selection</dt><dd>Breeders choose which individuals reproduce, so the next generation shifts toward the chosen trait.</dd><dt>Quantitative trait</dt><dd>A trait that varies along a continuum, such as number of hairs or height.</dd><dt>Trichome</dt><dd>A small leaf hair; here, the number along one leaf margin is the measured trait.</dd><dt>Heritability (h²)</dt><dd>The fraction of phenotypic variance that is due to genetic differences.</dd><dt>Selection differential (S)</dt><dd>Mean of the selected parents minus mean of the whole population.</dd><dt>Response (R)</dt><dd>Offspring mean minus the original population mean; R = h² × S.</dd></dl>
+      </aside>
     </div>
   </section>
 
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p class="muted">The manual asks you not to over-prepare: you will build understanding from your own data. These questions make sure you have the tools you need.</p>
-      <div id="prelab"></div>
+      <div id="prelab" class="quiz--cols"></div>
     </div>
   </section>
 
   <!-- ============ 4. GROW & SCORE ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Grow &amp; score">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Grow &amp; score">
     <header><div class="eyebrow">Procedure Steps 1–5 · Structured inquiry</div><h2>Grow generation 1 and score trichomes</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Your class planted 150 seeds, six to a bottle, in 25 soda-bottle wick systems under a light bank. The plants are now 7–12 days old and the class has picked <strong>trichome number</strong> as the trait to select. To make counts repeatable, everyone uses the same sampling rule: <strong>count the hairs along the right-hand margin of the first true leaf</strong>.</p>
+      
+      <div class="sim sim--fit" id="gs-sim">
+        <div class="sim-side">
+          <div id="gs-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><span class="label">Plant under magnifier</span><span class="val" id="plant-info">—</span></div>
+            <div class="btn-col">
+              <button class="btn btn--primary" id="record" type="button">Record my count</button>
+              <div class="row"><button class="btn btn--sm" id="clear-marks" type="button">Clear marks</button><button class="btn btn--sm" id="next-plant" type="button">Next unscored plant</button></div>
+              <button class="btn" id="autocount" type="button">Auto-count the rest</button>
+            </div>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="pop-view">Population shown</label><select id="pop-view"></select></div>
+              <div class="field"><span class="label" id="bin-label">Histogram bin width</span>
+                <div class="seg" role="group" aria-labelledby="bin-label" id="bin-seg"><button type="button" data-bin="2" aria-pressed="false">2 hairs</button><button type="button" data-bin="5" aria-pressed="true">5 hairs</button><button type="button" data-bin="10" aria-pressed="false">10 hairs</button></div>
+              </div>
+              <button class="btn btn--ghost btn--sm" id="new-pop" type="button">Plant a new class population</button>
+            </div></details>
+            <p class="status" id="score-status" aria-live="polite"></p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Your class planted 150 seeds, six to a bottle, in 25 soda-bottle wick systems under a light bank. The plants are now 7–12 days old and the class has picked <strong>trichome number</strong> as the trait to select. To make counts repeatable, everyone uses the same sampling rule: <strong>count the hairs along the right-hand margin of the first true leaf</strong>.</p>
         <ol>
           <li>Tap a seedling in the growth chamber to put its first true leaf under the magnifier.</li>
           <li>Tap each hair along the <em>right</em> margin to mark it (tap again to unmark). Hairs on the left margin are not counted.</li>
           <li>Press <strong>Record my count</strong>. Your count is compared with a careful recount, the way a lab partner would double-check. Hand-count at least 5 plants.</li>
           <li>Then press <strong>Auto-count the rest</strong> to score the remaining plants (as if your classmates scored their bottles) and build the class histogram.</li>
         </ol>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="pop-view">Population shown</label><select id="pop-view"></select></div>
-          <div class="field"><span class="label">Plant under magnifier</span><span class="val" id="plant-info">—</span></div>
-          <div class="readouts"><div class="readout"><span class="k">Hairs marked</span><span class="v" id="mark-count">0</span></div></div>
-          <div class="btn-col">
-            <button class="btn btn--primary" id="record" type="button">Record my count</button>
-            <div class="row"><button class="btn btn--sm" id="clear-marks" type="button">Clear marks</button><button class="btn btn--sm" id="next-plant" type="button">Next unscored plant</button></div>
-            <button class="btn" id="autocount" type="button">Auto-count the rest</button>
-          </div>
-          <div class="field"><span class="label" id="bin-label">Histogram bin width</span>
-            <div class="seg" role="group" aria-labelledby="bin-label" id="bin-seg"><button type="button" data-bin="2" aria-pressed="false">2 hairs</button><button type="button" data-bin="5" aria-pressed="true">5 hairs</button><button type="button" data-bin="10" aria-pressed="false">10 hairs</button></div>
-          </div>
-          <button class="btn btn--ghost btn--sm" id="new-pop" type="button">Plant a new class population</button>
-          <p class="status" id="score-status" aria-live="polite"></p>
+          <p><strong>Your hand counts.</strong> Fidelity check: how close are your counts to the recount? Large differences tell you the counting method needs work.</p>
+        </div></details>
         </div>
         <div class="stage">
           <div class="pair">
@@ -155,6 +177,7 @@
             <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
           </div>
           <div class="readouts">
+            <div class="readout"><span class="k">Hairs marked</span><span class="v" id="mark-count">0</span></div>
             <div class="readout"><span class="k">Plants scored</span><span class="v" id="r-n">0</span></div>
             <div class="readout"><span class="k">Mean</span><span class="v" id="r-mean">—</span></div>
             <div class="readout"><span class="k">Median</span><span class="v" id="r-med">—</span></div>
@@ -164,32 +187,37 @@
           <div id="hist1"></div>
         </div>
       </div>
-      <h3>Your hand counts</h3>
-      <p class="muted small">Fidelity check: how close are your counts to the recount? Large differences tell you the counting method needs work.</p>
       <div id="hand-table"></div>
-      <div id="score-prompts"></div>
+      <div id="score-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 5. SELECT & POLLINATE ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Select &amp; pollinate">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Select &amp; pollinate">
     <header><div class="eyebrow">Procedure Steps 6–10</div><h2>Choose the parents and cross-pollinate them</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Directional selection pushes a trait one way. As a class, pick the hairiest (or least hairy) 10% of the whole population. In the real lab you mark those plants and snip the tops off every other plant in your bottles, then move the selected bottles to a separate light box so no stray pollen reaches them.</p>
-        <p>Fast Plants are <strong>self-incompatible</strong>: a flower cannot be fertilized by its own plant's pollen. On days 14–16 you collect pollen on a bee stick (a dried honeybee glued to a toothpick) and brush it across every flower of every selected plant, then repeat for three days with the <em>same</em> stick. The unselected plants are pollinated with a different stick so the two groups never mix.</p>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><span class="label" id="dir-label">Direction of selection</span>
-            <div class="seg" role="group" aria-labelledby="dir-label" id="dir-seg"><button type="button" data-dir="1" aria-pressed="true">Most hairs</button><button type="button" data-dir="-1" aria-pressed="false">Fewest hairs</button></div>
+      
+      <div class="sim sim--fit" id="sel-sim">
+        <div class="sim-side">
+          <div id="sel-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><span class="label" id="dir-label">Direction of selection</span>
+              <div class="seg" role="group" aria-labelledby="dir-label" id="dir-seg"><button type="button" data-dir="1" aria-pressed="true">Most hairs</button><button type="button" data-dir="-1" aria-pressed="false">Fewest hairs</button></div>
+            </div>
+            <div class="field"><label for="sel-pct">Fraction selected <output id="sel-pct-out" class="val"></output></label><input id="sel-pct" type="range" min="5" max="20" step="1" value="10"></div>
+            <button class="btn btn--primary" id="select-btn" type="button">Mark selected plants</button>
+            <button class="btn" id="pollinate" type="button">Pollinate with bee stick (days 14–16)</button>
+            <button class="btn btn--primary" id="grow" type="button">Harvest seed and plant generation 2</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <label class="check"><input type="checkbox" id="grow-ctrl" checked> Also grow a control line from the unselected plants</label>
+            </div></details>
+            <p class="status" id="sel-status" aria-live="polite"></p>
           </div>
-          <div class="field"><label for="sel-pct">Fraction selected <output id="sel-pct-out" class="val"></output></label><input id="sel-pct" type="range" min="5" max="20" step="1" value="10"></div>
-          <button class="btn btn--primary" id="select-btn" type="button">Mark selected plants</button>
-          <button class="btn" id="pollinate" type="button">Pollinate with bee stick (days 14–16)</button>
-          <label class="check"><input type="checkbox" id="grow-ctrl" checked> Also grow a control line from the unselected plants</label>
-          <button class="btn btn--primary" id="grow" type="button">Harvest seed and plant generation 2</button>
-          <p class="status" id="sel-status" aria-live="polite"></p>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Directional selection pushes a trait one way. As a class, pick the hairiest (or least hairy) 10% of the whole population. In the real lab you mark those plants and snip the tops off every other plant in your bottles, then move the selected bottles to a separate light box so no stray pollen reaches them.</p>
+        <p>Fast Plants are <strong>self-incompatible</strong>: a flower cannot be fertilized by its own plant's pollen. On days 14–16 you collect pollen on a bee stick (a dried honeybee glued to a toothpick) and brush it across every flower of every selected plant, then repeat for three days with the <em>same</em> stick. The unselected plants are pollinated with a different stick so the two groups never mix.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="bee" aria-label="Isolated light box with the selected plants in flower and a bee stick moving pollen between them."></canvas>
@@ -202,24 +230,28 @@
           <div id="hist-sel"></div>
         </div>
       </div>
-      <div id="sel-prompts"></div>
+      <div id="sel-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 6. GENERATION 2 ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Generation 2">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Generation 2">
     <header><div class="eyebrow">Procedure Steps 11–14</div><h2>Score generation 2 and compare</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Seeds from the selected parents were planted under identical conditions: same light bank, new soil and wicks, same fertilizer. At 7–12 days old, score the plants the same way you scored generation 1. You can hand-count some generation 2 plants in the scoring tool above (choose the population from the menu), then score the rest here.</p>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <button class="btn btn--primary" id="score2" type="button">Score generation 2 (all plants)</button>
-          <div class="callout callout--tip"><div class="callout-title">Keep going</div><p class="small">One round is the manual's experiment. Run more rounds to see whether the response continues, slows or stops.</p></div>
-          <button class="btn" id="round" type="button">Select again and grow the next generation</button>
-          <p class="small muted">Further rounds use the direction and fraction set in the step above. The control line breeds from a random sample of the same number of plants.</p>
-          <p class="status" id="g2-status" aria-live="polite"></p>
+      
+      <div class="sim sim--fit" id="g2-sim">
+        <div class="sim-side">
+          <div id="g2-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <button class="btn btn--primary" id="score2" type="button">Score generation 2 (all plants)</button>
+            <button class="btn" id="round" type="button">Select again and grow the next generation</button>
+            <p class="status" id="g2-status" aria-live="polite"></p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Seeds from the selected parents were planted under identical conditions: same light bank, new soil and wicks, same fertilizer. At 7–12 days old, score the plants the same way you scored generation 1. You can hand-count some generation 2 plants in the scoring tool above (choose the population from the menu), then score the rest here.</p>
+          <p>Further rounds use the direction and fraction set in the step above. The control line breeds from a random sample of the same number of plants. One round is the manual's experiment; run more rounds to see whether the response continues, slows or stops.</p>
+        </div></details>
         </div>
         <div class="stage">
           <div class="readouts">
@@ -241,33 +273,39 @@
         <button class="btn" id="check-calc" type="button">Check my numbers</button>
       </div>
       <p class="status" id="calc-status" aria-live="polite"></p>
-      <h3>All populations</h3>
       <div id="gen-table"></div>
       <div id="lines"></div>
     </div>
   </section>
 
   <!-- ============ 7. DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own selection experiment</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Now ask your own question. You might select in the other direction, select a different quantitative trait (plant height or the amount of purple anthocyanin in the stem), change how strong selection is, or ask how much of the variation comes from the environment. Uneven growing conditions or early herbivore damage (caterpillars chewing the cotyledons) change what plants look like without changing their genes.</p>
-      </div>
-      <div id="design-q"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="d-trait">Trait to select</label><select id="d-trait"><option value="trich">Trichomes on leaf margin (hairs)</option><option value="height">Plant height at day 12 (cm)</option><option value="antho">Stem anthocyanin (purple score 0–10)</option></select></div>
-          <div class="field"><span class="label" id="d-dir-label">Direction</span><div class="seg" role="group" aria-labelledby="d-dir-label" id="d-dir"><button type="button" data-dir="1" aria-pressed="true">Increase</button><button type="button" data-dir="-1" aria-pressed="false">Decrease</button></div></div>
-          <div class="field"><label for="d-pct">Fraction selected each generation <output id="d-pct-out" class="val"></output></label><input id="d-pct" type="range" min="5" max="50" step="5" value="10"></div>
-          <div class="field"><label for="d-n">Plants per generation <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="50" max="300" step="10" value="150"></div>
-          <div class="field"><label for="d-gens">Generations of selection <output id="d-gens-out" class="val"></output></label><input id="d-gens" type="range" min="1" max="10" step="1" value="4"></div>
-          <div class="field"><label for="d-reps">Replicate selected lines <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="3" step="1" value="2"></div>
-          <div class="field"><label for="d-env">Growing conditions</label><select id="d-env"><option value="1">Uniform (same bottles, light, water)</option><option value="2">Uneven (some bottles dry out, uneven light)</option></select></div>
-          <label class="check"><input type="checkbox" id="d-herb"> Early herbivore damage on every plant</label>
-          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
-          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results table</button>
-          <p class="status" id="d-status" aria-live="polite"></p>
+      
+      <div id="design-q" class="prompts-2"></div>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="d-trait">Trait to select</label><select id="d-trait"><option value="trich">Trichomes on leaf margin (hairs)</option><option value="height">Plant height at day 12 (cm)</option><option value="antho">Stem anthocyanin (purple score 0–10)</option></select></div>
+            <div class="field"><span class="label" id="d-dir-label">Direction</span><div class="seg" role="group" aria-labelledby="d-dir-label" id="d-dir"><button type="button" data-dir="1" aria-pressed="true">Increase</button><button type="button" data-dir="-1" aria-pressed="false">Decrease</button></div></div>
+            <div class="field"><label for="d-gens">Generations of selection <output id="d-gens-out" class="val"></output></label><input id="d-gens" type="range" min="1" max="10" step="1" value="4"></div>
+            <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="d-pct">Fraction selected each generation <output id="d-pct-out" class="val"></output></label><input id="d-pct" type="range" min="5" max="50" step="5" value="10"></div>
+              <div class="field"><label for="d-n">Plants per generation <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="50" max="300" step="10" value="150"></div>
+              <div class="field"><label for="d-reps">Replicate selected lines <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="3" step="1" value="2"></div>
+              <div class="field"><label for="d-env">Growing conditions</label><select id="d-env"><option value="1">Uniform (same bottles, light, water)</option><option value="2">Uneven (some bottles dry out, uneven light)</option></select></div>
+              <label class="check"><input type="checkbox" id="d-herb"> Early herbivore damage on every plant</label>
+              <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results table</button>
+            </div></details>
+            <p class="status" id="d-status" aria-live="polite"></p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Now ask your own question. You might select in the other direction, select a different quantitative trait (plant height or the amount of purple anthocyanin in the stem), change how strong selection is, or ask how much of the variation comes from the environment. Uneven growing conditions or early herbivore damage (caterpillars chewing the cotyledons) change what plants look like without changing their genes.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="d-canvas" aria-label="Representative plants from each generation of the first selected line, drawn to show height, hairs and stem color."></canvas>
@@ -282,12 +320,12 @@
         </div>
       </div>
       <div id="d-table"></div>
-      <div id="design-a"></div>
+      <div id="design-a" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 8. ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Did evolution happen?</h2></header>
     <div class="step-body">
       <h3>Two-sample t-test</h3>
@@ -313,23 +351,23 @@
       </div>
       <p class="status" id="tt-status" aria-live="polite"></p>
       <h3>Questions</h3>
-      <div id="analysis"></div>
+      <div id="analysis" class="prompts-2"></div>
       <h3>Claim, evidence, reasoning</h3>
       <div class="cer" id="cer"></div>
     </div>
   </section>
 
   <!-- ============ 9. REFLECT ============ -->
-  <section class="step wrap gutter" data-step="Reflect">
+  <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
     <div class="step-body">
       <div class="prose"><p>A common question is why these plants make hairs at all, when building them costs energy. Is there an environment where hairy plants do better? That is the start of a testable hypothesis.</p></div>
-      <div id="reflect"></div>
+      <div id="reflect" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 10. SUBMIT ============ -->
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><p class="muted small">Your tables and answers save in this browser. The virtual plants themselves are regrown when you reload the page, so finish a simulation run before you leave.</p><div data-responses></div></div>
   </section>
@@ -579,7 +617,7 @@
   }
 
   /* ---------------- tray canvas: growth chamber, top view ---------------- */
-  const tray = Lab.canvas('#tray', 0.82);
+  const tray = Lab.canvas('#tray', 0.82, { fit: true });
   const lampH = () => Math.round(clamp(tray.h * 0.075, 14, 30));
   function trayPos() {
     const cols = 5, rows = Math.ceil(view.plants.length / 30), pad = 6, top = lampH();
@@ -701,7 +739,7 @@
   tray.onresize = () => drawTray();
 
   /* ---------------- leaf (magnifier) canvas ---------------- */
-  const leaf = Lab.canvas('#leaf', 0.92);
+  const leaf = Lab.canvas('#leaf', 0.92, { fit: true });
   function leafGeom() { const h = leaf.h, w = leaf.w; return { cx: w * 0.5, y0: h * 0.84, L: h * 0.74, W: Math.min(w * 0.33, h * 0.36) }; }
   function edge(s, side, G) {
     const wid = G.W * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, s))), 0.8) * (1 - 0.3 * s) * (s < 0.08 ? 0.4 + 7.5 * s : 1);
@@ -935,7 +973,7 @@
   });
 
   /* bee stick canvas */
-  const bee = Lab.canvas('#bee', window.innerWidth < 600 ? 0.7 : 0.42);
+  const bee = Lab.canvas('#bee', window.innerWidth < 600 ? 0.7 : 0.42, { fit: true });
   let beeState = null; const beeLoop = Lab.loop(dt => stepBee(dt));
   /* Side view of the isolated light box: shelves of wick-watered bottles under fluorescent tubes. Each plant is
      in flower (small four-petal yellow flowers on a raceme). Layout (also used for the bee's flight path):
@@ -1096,7 +1134,7 @@
     const L = beeLayout(), seq = beeState.seq;
     beeState.t += dt * (Lab.reducedMotion() ? 1e5 : seq.length / 5); // whole 3-day sequence plays in about 5 s
     while (beeState.t >= 1 && beeState.k < seq.length) { beeState.t -= 1; const s = seq[beeState.k]; beeState.visited.add(s.i * 3 + s.f); beeState.k++; beeState.day = Math.floor(beeState.k / (selected.length * 3)); }
-    if (beeState.k >= seq.length) { beeState = null; pollinated = true; $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
+    if (beeState.k >= seq.length) { beeState = null; pollinated = true; Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
     const a = seq[Math.max(0, beeState.k - 1)], b = seq[beeState.k];
     const fa = L[a.i].fl[a.f], fb = L[b.i].fl[b.f];
     beeState.pos = { x: fa.x + (fb.x - fa.x) * beeState.t, y: fa.y - 6 + (fb.y - fa.y) * beeState.t - Math.sin(beeState.t * Math.PI) * 10 };
@@ -1224,10 +1262,10 @@
   const dChart = Lab.chart('#d-chart', { xLabel: 'Generation', yLabel: 'Mean ± 2 SE', series: [], height: 300 });
   const dHist = Lab.chart('#d-hist', { type: 'bar', xLabel: 'Trait value', yLabel: 'Number of plants', series: [], height: 260 });
   const dTable = Lab.table('#d-table', {
-    save: 'design',
+    save: 'design', toast: false,
     columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'setup', label: 'Settings' }, { key: 'line', label: 'Line' }, { key: 'gen', label: 'Gen', num: true, digits: 0 }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }]
   });
-  const dCanvas = Lab.canvas('#d-canvas', window.innerWidth < 600 ? 0.75 : 0.5);
+  const dCanvas = Lab.canvas('#d-canvas', window.innerWidth < 600 ? 0.75 : 0.5, { fit: true });
   let dLast = null;
   /* Representative 12-day-old plants from each generation of the first selected line, photographed in their
      bottles against a grey card beside a cm ruler: height, stem anthocyanin and hairs are drawn from each
@@ -1330,6 +1368,7 @@
     const w = welch(lastCtrl.mean, lastCtrl.sd, lastCtrl.n, lastSel.mean, lastSel.sd, lastSel.n);
     $('#d-rt').textContent = `${fmt(w.t, 2)} ${w.sig ? '(p<0.05)' : '(n.s.)'}`;
     dLast = { line: lines[0].hist }; drawDesign();
+    Lab.toast(`Run ${runNo} finished: ${lines.length} lines recorded in the Data tab`, { type: 'ok', announce: false });
     status('#d-status', `Run ${runNo} finished: ${G} generation${G > 1 ? 's' : ''} of selection, ${reps} replicate line${reps > 1 ? 's' : ''} plus a control.`, 'ok');
   });
   $('#d-clear').addEventListener('click', () => { dTable.clear(); runNo = 0; status('#d-status', 'Results table cleared.', ''); });
@@ -1373,6 +1412,55 @@
 
   /* ---------------- start ---------------- */
   reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
+
+  /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
+  const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+  const g1Scored = () => g1.plants.every(p => p.scored);
+  const g2Scored = () => !!(selLine[1] && fullyScored(selLine[1]));
+  let dTouched = false;
+  ['#d-trait', '#d-pct', '#d-n', '#d-gens', '#d-reps', '#d-env', '#d-herb'].forEach(s => { $(s).addEventListener('input', () => { dTouched = true; }); $(s).addEventListener('change', () => { dTouched = true; }); });
+  $('#d-dir').addEventListener('click', () => { dTouched = true; });
+  Lab.results('#gs-sim', { graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
+  Lab.results('#sel-sim', { graph: [{ el: '#hist-sel', title: 'Parents vs generation 1' }], data: [] });
+  Lab.results('#g2-sim', { graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
+  Lab.results('#d-sim', { graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
+
+  Lab.steps('#gs-steps', [
+    { id: 'hand', text: 'Hand-count 5 plants', target: '#record', done: () => handTable.getRows().length >= 5, hint: 'Tap a seedling, tap each hair on the <em>right</em> margin, then press <strong>Record my count</strong>.' },
+    { id: 'auto', text: 'Auto-count the rest', target: '#autocount', done: g1Scored, hint: 'Press <strong>Auto-count the rest</strong> to score all 150 plants.' },
+    { id: 'bin', text: 'Try another bin width', target: '#bin-seg button', optional: true, done: () => binW !== 5, hint: 'Open More options and compare 2, 5 and 10 hairs.' },
+    { id: 'desc', text: 'Describe the distribution', target: '#p-g1-describe', done: () => filled('g1-describe'), hint: 'Scroll down and answer the two questions.' }
+  ], { doneText: 'Generation 1 is scored. Go on to <a href="#select-and-pollinate">Select &amp; pollinate</a>.' });
+  Lab.steps('#sel-steps', [
+    { id: 'mark', text: 'Choose and mark the parents', target: '#select-btn', done: () => !!selected, hint: 'Pick a direction and fraction, then press <strong>Mark selected plants</strong>. Score generation 1 first (<a href="#grow-and-score">Grow &amp; score</a>).' },
+    { id: 'pol', text: 'Pollinate with the bee stick', target: '#pollinate', done: () => pollinated, hint: 'Press <strong>Pollinate</strong> and wait for the bee stick to finish.' },
+    { id: 'grow', text: 'Plant generation 2', target: '#grow', done: () => selLine.length > 1, hint: 'Press <strong>Harvest seed and plant generation 2</strong>.' },
+    { id: 'desc', text: 'Compare parents (below)', target: '#p-sel-describe', done: () => filled('sel-describe'), hint: 'Scroll down and compare the parents with generation 1.' }
+  ], { doneText: 'Generation 2 is planted. Go on to <a href="#generation-2">Generation 2</a>.' });
+  Lab.gate('#select-btn', () => g1Scored() ? '' : 'Score generation 1 first (Grow & score part)');
+  Lab.steps('#g2-steps', [
+    { id: 'plant', text: 'Plant generation 2 first', target: '#score2', done: () => selLine.length > 1, hint: 'Go back to <a href="#select-and-pollinate">Select &amp; pollinate</a> and plant generation 2.' },
+    { id: 'score', text: 'Score generation 2', target: '#score2', done: g2Scored, hint: 'Press <strong>Score generation 2</strong>, then read the Graph and Data.' },
+    { id: 'calc', text: 'Enter S, R and h² (below)', target: '#in-S', done: () => ['#in-S', '#in-R', '#in-h2'].every(s => $(s).value !== ''), hint: 'Scroll down: S = parents mean − Gen 1 mean; R = Gen 2 mean − Gen 1 mean; h² = R ÷ S.' },
+    { id: 'check', text: 'Check my numbers', target: '#check-calc', done: () => $('#calc-status').classList.contains('ok'), hint: 'Press <strong>Check my numbers</strong>.' },
+    { id: 'round', text: 'Run more rounds', target: '#round', optional: true, done: () => selLine.length > 2, hint: 'Press <strong>Select again</strong> to watch the response continue or slow.' }
+  ], { doneText: 'Response measured. Go on to <a href="#design">Design</a>.' });
+  Lab.gate('#score2', () => selLine.length > 1 ? '' : 'Plant generation 2 first (Select & pollinate part)');
+  Lab.gate('#round', () => selLine.length > 1 ? '' : 'Plant generation 2 first (Select & pollinate part)');
+  Lab.steps('#d-steps', [
+    { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => filled('d-question') && filled('d-hypothesis'), hint: 'Write your question and hypothesis in the boxes above.' },
+    { id: 'iv', text: 'Choose a trait and direction', target: '#d-trait', sticky: true, done: () => dTouched || dTable.getRows().length > 0, hint: 'Pick the trait, direction and number of generations.' },
+    { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
+    { id: 'res', text: 'Describe your results (below)', target: '#p-d-results', done: () => filled('d-results') && filled('d-stats'), hint: 'Scroll down and describe your results and statistics.' }
+  ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+
+  /* toasts for key moments (the status lines are already live regions, so these are not announced twice) */
+  let seenSel = null, seenG2 = false, seenRounds = 1;
+  $('#select-btn').addEventListener('click', () => { if (selected && selected !== seenSel) { seenSel = selected; Lab.toast(`${selected.length} parent plants marked`, { type: 'ok', announce: false }); } });
+  $('#grow').addEventListener('click', () => { if (selLine.length > 1 && !seenG2) { seenG2 = true; Lab.toast('Generation 2 planted', { type: 'ok', announce: false, action: { label: 'Go to Generation 2', onClick: () => Lab.pages.go('generation-2') } }); } });
+  $('#autocount').addEventListener('click', () => { if (g1Scored()) Lab.toast('All 150 plants scored', { type: 'ok', announce: false, key: 'scored' }); });
+  $('#score2').addEventListener('click', () => { if (g2Scored()) Lab.toast('Generation 2 scored', { type: 'ok', announce: false, key: 'scored2' }); });
+  $('#round').addEventListener('click', () => { if (selLine.length > seenRounds) { seenRounds = selLine.length; Lab.toast(`Generation ${selLine[selLine.length - 1].gen} grown`, { type: 'ok', announce: false, key: 'round' }); } });
 })();
 </script>
 </body>
