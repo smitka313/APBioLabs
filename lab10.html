@@ -23,7 +23,7 @@
   @media (max-width: 520px) { .calc-row { grid-template-columns: minmax(0, 1fr) 110px; } .calc-row .unitpill { grid-column: 1 / -1; } }
   .sankey { width: 100%; min-height: 200px; }
   .sankey svg { display: block; width: 100%; height: auto; }
-  .sankey .band { opacity: .30; }
+  .sankey .band { opacity: .42; }
   .sankey .flow { fill: none; stroke-linecap: round; stroke-dasharray: 2 14; animation: flow 1.3s linear infinite; opacity: .85; }
   .sankey .node { rx: 3; }
   .sankey text { font-family: var(--f-body); font-size: 12.5px; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
@@ -101,23 +101,50 @@
       <figure class="diagram" aria-label="Diagram of energy flow from sunlight through a plant to a caterpillar">
         <svg viewBox="0 0 720 250" role="img" aria-labelledby="bgfig-t">
           <title id="bgfig-t">Energy flow: light to plant (GPP), plant respiration and NPP; NPP eaten by larva splits into frass, growth and respiration</title>
-          <defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker></defs>
-          <rect x="10" y="95" width="100" height="56" rx="8" style="fill:var(--warn-soft);stroke:var(--warn)"/>
-          <text x="60" y="120" text-anchor="middle">Light</text><text x="60" y="138" text-anchor="middle" class="sub">sun / grow lights</text>
-          <rect x="160" y="80" width="150" height="86" rx="8" style="fill:var(--accent-soft);stroke:var(--accent)"/>
-          <text x="235" y="108" text-anchor="middle">Fast Plant</text><text x="235" y="126" text-anchor="middle" class="sub">GPP captured</text><text x="235" y="144" text-anchor="middle" class="sub">NPP stored as biomass</text>
-          <rect x="400" y="80" width="150" height="86" rx="8" style="fill:var(--stain-soft);stroke:var(--stain)"/>
-          <text x="475" y="108" text-anchor="middle">Larva</text><text x="475" y="126" text-anchor="middle" class="sub">eats (C), assimilates (A)</text><text x="475" y="144" text-anchor="middle" class="sub">grows (P)</text>
-          <rect x="600" y="95" width="110" height="56" rx="8" style="fill:var(--surface-2);stroke:var(--line)"/>
-          <text x="655" y="120" text-anchor="middle">Frass (F)</text><text x="655" y="138" text-anchor="middle" class="sub">to decomposers</text>
-          <g style="stroke:var(--muted)" stroke-width="2" fill="none">
-            <path d="M110 123 H156" marker-end="url(#arw)"/><path d="M310 123 H396" marker-end="url(#arw)"/><path d="M550 123 H596" marker-end="url(#arw)"/>
-            <path d="M235 80 C235 40 235 40 235 22" marker-end="url(#arw)" stroke-dasharray="5 4"/><path d="M475 80 C475 40 475 40 475 22" marker-end="url(#arw)" stroke-dasharray="5 4"/>
+          <defs>
+            <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted)"/></marker>
+            <marker id="arwh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--warn)"/></marker>
+            <filter id="bgsh" x="-10%" y="-10%" width="125%" height="135%"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4"/><feOffset dx="1.5" dy="2.5"/><feComponentTransfer><feFuncA type="linear" slope=".18"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <radialGradient id="bg-sun" cx=".4" cy=".38" r=".7"><stop offset="0" stop-color="rgb(255,244,170)"/><stop offset=".6" stop-color="rgb(252,200,60)"/><stop offset="1" stop-color="rgb(232,150,30)"/></radialGradient>
+            <linearGradient id="bg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="rgb(124,178,72)"/><stop offset="1" stop-color="rgb(52,104,40)"/></linearGradient>
+            <radialGradient id="bg-cat" cx=".38" cy=".32" r=".7"><stop offset="0" stop-color="rgb(152,194,100)"/><stop offset=".6" stop-color="rgb(104,154,60)"/><stop offset="1" stop-color="rgb(58,102,38)"/></radialGradient>
+            <linearGradient id="bg-flow" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--warn)"/><stop offset=".4" style="stop-color:var(--accent)"/><stop offset=".75" style="stop-color:var(--stain)"/><stop offset="1" style="stop-color:var(--muted)"/></linearGradient>
+          </defs>
+          <!-- energy flow band, narrowing at each transfer -->
+          <path d="M60 112 L160 112 L160 134 L60 134 Z M310 114 L400 116 L400 130 L310 132 Z M550 118 L600 119 L600 127 L550 128 Z" style="fill:url(#bg-flow);opacity:.35"/>
+          <g filter="url(#bgsh)">
+            <rect x="10" y="70" width="100" height="106" rx="12" style="fill:var(--warn-soft);stroke:var(--warn)"/>
+            <rect x="160" y="70" width="150" height="106" rx="12" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+            <rect x="400" y="70" width="150" height="106" rx="12" style="fill:var(--stain-soft);stroke:var(--stain)"/>
+            <rect x="600" y="70" width="110" height="106" rx="12" style="fill:var(--surface-2);stroke:var(--line)"/>
           </g>
-          <text x="245" y="20" class="sub">heat (R<tspan font-size="9" dy="3">plant</tspan><tspan dy="-3">)</tspan></text>
-          <text x="485" y="20" class="sub">heat (R<tspan font-size="9" dy="3">larva</tspan><tspan dy="-3">)</tspan></text>
-          <text x="353" y="113" text-anchor="middle" class="sub">eaten</text>
-          <text x="360" y="215" text-anchor="middle" class="sub">Arrow widths in your own data diagrams (Parts 1 and 2) will be drawn to scale.</text>
+          <!-- icons: physical colors -->
+          <g transform="translate(60 98)"><g stroke="rgb(240,170,40)" stroke-width="2.4" stroke-linecap="round"><path d="M0-20V-15M0 15V20M-20 0H-15M15 0H20M-14-14L-10.5-10.5M10.5 10.5L14 14M-14 14L-10.5 10.5M10.5-10.5L14-14"/></g><circle r="11" fill="url(#bg-sun)"/></g>
+          <g transform="translate(235 116)">
+            <rect x="-14" y="-4" width="28" height="9" rx="2" fill="rgb(36,37,40)"/><ellipse cx="0" cy="-4" rx="13" ry="2.4" fill="rgb(78,58,42)"/>
+            <path d="M0-4 C1-14 -1-24 0-36" stroke="rgb(116,96,80)" stroke-width="2" fill="none"/>
+            <path d="M0-14 C-6-20 -15-19 -18-13 C-12-10 -5-10 0-14Z M0-22 C6-28 15-27 17-21 C11-18 5-18 0-22Z" fill="url(#bg-leaf)"/>
+            <g fill="rgb(250,212,44)"><circle cx="-2.5" cy="-38" r="2.4"/><circle cx="2.5" cy="-38" r="2.4"/><circle cx="0" cy="-40.5" r="2.4"/><circle cx="0" cy="-35.5" r="2.4"/></g><circle cx="0" cy="-38" r="1.3" fill="rgb(206,160,30)"/>
+          </g>
+          <g transform="translate(477 96)"><g fill="url(#bg-cat)"><circle cx="-20" cy="4" r="4.2"/><circle cx="-14" cy="2" r="5"/><circle cx="-7" cy="0" r="5.4"/><circle cx="0" cy="-1" r="5.6"/><circle cx="7" cy="-1" r="5.6"/><circle cx="14" cy="0" r="5.4"/><circle cx="21" cy="1.5" r="4.8"/></g>
+            <path d="M-15 0 Q0-6 19-3" stroke="rgba(236,224,120,.8)" stroke-width="1.2" fill="none"/><circle cx="23" cy="2.5" r="1.2" fill="rgba(30,40,20,.6)"/></g>
+          <g transform="translate(655 98)"><rect x="-22" y="4" width="44" height="6" rx="1.5" fill="rgb(244,243,236)" stroke="rgba(0,0,0,.15)"/>
+            <g fill="rgb(30,40,26)"><ellipse cx="-12" cy="1.5" rx="3.2" ry="2.1"/><ellipse cx="-4" cy="2" rx="3" ry="2" transform="rotate(30 -4 2)"/><ellipse cx="5" cy="1" rx="3.3" ry="2.1" transform="rotate(-20 5 1)"/><ellipse cx="13" cy="2" rx="3" ry="2"/><ellipse cx="1" cy="-3" rx="3" ry="2" transform="rotate(60 1 -3)"/></g></g>
+          <text x="60" y="140" text-anchor="middle">Light</text><text x="60" y="158" text-anchor="middle" class="sub">sun / grow lights</text>
+          <text x="235" y="140" text-anchor="middle">Fast Plant</text><text x="235" y="156" text-anchor="middle" class="sub">GPP captured</text><text x="235" y="171" text-anchor="middle" class="sub">NPP stored as biomass</text>
+          <text x="475" y="140" text-anchor="middle">Larva</text><text x="475" y="156" text-anchor="middle" class="sub">eats (C), assimilates (A)</text><text x="475" y="171" text-anchor="middle" class="sub">grows (P)</text>
+          <text x="655" y="140" text-anchor="middle">Frass (F)</text><text x="655" y="158" text-anchor="middle" class="sub">to decomposers</text>
+          <g fill="none" stroke-linecap="round">
+            <path d="M112 123 H154" style="stroke:var(--muted)" stroke-width="5" marker-end="url(#arw)"/>
+            <path d="M312 123 H394" style="stroke:var(--muted)" stroke-width="3.5" marker-end="url(#arw)"/>
+            <path d="M552 123 H594" style="stroke:var(--muted)" stroke-width="2.5" marker-end="url(#arw)"/>
+            <path d="M235 68 c-6-6 6-12 0-18 s6-12 0-18 s4-8 0-10" style="stroke:var(--warn)" stroke-width="2.4" marker-end="url(#arwh)"/>
+            <path d="M475 68 c-6-6 6-12 0-18 s6-12 0-18 s4-8 0-10" style="stroke:var(--warn)" stroke-width="2.4" marker-end="url(#arwh)"/>
+          </g>
+          <text x="247" y="22" class="sub">heat (R<tspan font-size="9" dy="3">plant</tspan><tspan dy="-3">)</tspan></text>
+          <text x="487" y="22" class="sub">heat (R<tspan font-size="9" dy="3">larva</tspan><tspan dy="-3">)</tspan></text>
+          <text x="353" y="112" text-anchor="middle" class="sub">eaten</text>
+          <text x="360" y="222" text-anchor="middle" class="sub">Arrow widths in your own data diagrams (Parts 1 and 2) will be drawn to scale.</text>
         </svg>
       </figure>
     </div>
@@ -154,6 +181,7 @@
         </div>
         <div class="stage">
           <canvas class="viz" id="p1-canvas" aria-label="Growth chamber with a flat of Fast Plants under a light bank; harvested cells are empty"></canvas>
+          <canvas class="viz" id="p1-bench" aria-label="Lab bench with a drying oven at 100 °C, a 0.001 g digital balance with a weigh boat, and the current harvest laid out on a paper towel, wet or dried"></canvas>
           <div class="readouts">
             <div class="readout"><span class="k">Last harvest: mean wet</span><span class="v" id="p1-rw">—</span></div>
             <div class="readout"><span class="k">Last harvest: mean dry</span><span class="v" id="p1-rd">—</span></div>
@@ -374,7 +402,7 @@
     const cols = depth(root), H = opts.height || 250, pad = 18, labelW = W < 560 ? 0 : Math.min(150, W * 0.3);
     const usableH = H - pad * 2 - 14, scale = usableH * 0.78 / Math.max(1e-9, root.value);
     const colX = i => 10 + i * ((W - labelW - 20) / Math.max(1, cols - 1));
-    let svg = '', labels = '';
+    let svg = '', labels = '', gseq = 0; const uid = 'sk-' + (el.id || 'x');
     function place(n, col, y0, hgt) {
       n._x = colX(col); n._y = y0; n._h = Math.max(2, hgt);
       const kids = (n.children || []).filter(k => k.value > 0);
@@ -394,12 +422,14 @@
       (n.children || []).filter(k => k.value > 0).forEach(k => {
         const x0 = n._x + 10, x1 = k._x, sy = k._srcY, ty = k._y, kh = k._h, mx = (x0 + x1) / 2;
         const kc = k.color || col;
-        svg += `<path class="band" d="M${x0},${sy} C${mx},${sy} ${mx},${ty} ${x1},${ty} L${x1},${ty + kh} C${mx},${ty + kh} ${mx},${sy + kh} ${x0},${sy + kh} Z" style="fill:${kc}"/>`;
+        const gid = uid + '-' + (gseq++);   // band shades from the source node's color into the destination's
+        svg += `<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${x0}" y1="0" x2="${x1}" y2="0"><stop offset="0" style="stop-color:${col}"/><stop offset="1" style="stop-color:${kc}"/></linearGradient>`;
+        svg += `<path class="band" d="M${x0},${sy} C${mx},${sy} ${mx},${ty} ${x1},${ty} L${x1},${ty + kh} C${mx},${ty + kh} ${mx},${sy + kh} ${x0},${sy + kh} Z" style="fill:url(#${gid})"/>`;
         const cy0 = sy + kh / 2, cy1 = ty + kh / 2;
         svg += `<path class="flow" d="M${x0},${cy0} C${mx},${cy0} ${mx},${cy1} ${x1},${cy1}" style="stroke:${kc};stroke-width:${Math.max(2, Math.min(8, kh / 3))}px"/>`;
         draw(k);
       });
-      svg += `<rect class="node" x="${n._x}" y="${n._y}" width="10" height="${n._h}" style="fill:${col}${n.dashed ? ';fill-opacity:.35;stroke:' + col + ';stroke-dasharray:3 3' : ''}"/>`;
+      svg += `<rect class="node" x="${n._x}" y="${n._y}" width="10" height="${n._h}" rx="3" style="fill:${col}${n.dashed ? ';fill-opacity:.35;stroke:' + col + ';stroke-dasharray:3 3' : ''}"/><rect x="${n._x + 2}" y="${n._y + 1}" width="2" height="${Math.max(0, n._h - 2)}" rx="1" style="fill:var(--surface);opacity:.35"/>`;
       const isLeaf = !(n.children || []).some(k => k.value > 0);
       const vtxt = n.text != null ? Lab.esc(n.text) : fmt(n.value, 3) + ' kcal';
       if (isLeaf) { const lx = n._x + 16, ly = n._y + n._h / 2; labels += `<text x="${lx}" y="${ly - 2}">${Lab.esc(n.name)}</text><text class="v" x="${lx}" y="${ly + 13}">${vtxt}</text>`; }
@@ -460,46 +490,205 @@
     ] });
   }
 
-  // ---------- Part 1 canvas ----------
-  const cv1 = Lab.canvas('#p1-canvas', 0.5);
-  let anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] };
-  function drawPlant(ctx, x, y, D, age, sc, alpha) {
-    if (D <= 0) return;
-    ctx.save(); ctx.globalAlpha = alpha;
-    const hgt = sc * (6 + 46 * Math.sqrt(D / 1.4)), leaf = sc * (3 + 11 * Math.sqrt(D / 1.4));
-    ctx.strokeStyle = C('--s6'); ctx.lineWidth = Math.max(1, sc * 1.6);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - hgt); ctx.stroke();
-    ctx.fillStyle = C('--s6');
-    const nLeaves = Math.min(6, 2 + Math.floor(age / 4));
-    for (let i = 0; i < nLeaves; i++) {
-      const ly = y - hgt * (0.25 + 0.65 * i / Math.max(1, nLeaves - 1)) * 0.95, side = i % 2 ? 1 : -1, ls = leaf * (1 - 0.35 * i / nLeaves);
-      ctx.beginPath(); ctx.ellipse(x + side * ls * 0.9, ly, ls, ls * 0.5, side * -0.4, 0, Math.PI * 2); ctx.fill();
+  /* ===================== REALISTIC RENDERING (page-local) =====================
+     Plants, larvae, sprouts, frass, glassware, instruments and the bench are physical objects, so they use fixed
+     colors and look the same in light and dark theme, like a photo. Light comes from the upper left. Static parts of
+     each scene are pre-rendered once per canvas size into offscreen layers; animation frames only composite those
+     layers and redraw what moves (plants growing, larvae crawling, readouts). No ctx.filter (unreliable on Safari). */
+  const TAU = Math.PI * 2, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const SANS = "'Source Sans 3', system-ui, sans-serif", MONO = "'JetBrains Mono', ui-monospace, monospace", MARKER = 'rgb(30,40,96)';
+  const mixc = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t)), rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+  function layer(w, hh, fn) { const d = Math.min(2, window.devicePixelRatio || 1), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(hh * d)); const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); fn(x, w, hh); return c; }
+  function rrect(ctx, x, y, w, hh, r) { r = Math.max(0, Math.min(r, w / 2, hh / 2)); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + hh, r); ctx.arcTo(x + w, y + hh, x, y + hh, r); ctx.arcTo(x, y + hh, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function lin(ctx, x0, y0, x1, y1, stops) { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+  function blob(ctx, cx, cy, rx, ry, a) { ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill(); ctx.restore(); }
+  function smooth(ctx, pts) { const n = pts.length, m = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], m0 = m(pts[n - 1], pts[0]); ctx.beginPath(); ctx.moveTo(m0[0], m0[1]); for (let i = 0; i < n; i++) { const q = m(pts[i], pts[(i + 1) % n]); ctx.quadraticCurveTo(pts[i][0], pts[i][1], q[0], q[1]); } ctx.closePath(); }
+  // Seven-segment digits with faint unlit segments, as on a real LCD/LED readout.
+  const SEGS = { 0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g', ' ': '' };
+  function seg7w(str, hh) { let w = 0; for (const ch of str) w += ch === '.' ? 0 : ch === ':' ? hh * 0.24 : hh * 0.68; return w; }
+  function seg7(ctx, str, x, y, hh, on, off, glow) {
+    const w = hh * 0.5, t = hh * 0.12, g = t * 0.2; let cx = 0;
+    const H = (x1, x2, yy) => { ctx.moveTo(x1 + g, yy); ctx.lineTo(x1 + g + t / 2, yy - t / 2); ctx.lineTo(x2 - g - t / 2, yy - t / 2); ctx.lineTo(x2 - g, yy); ctx.lineTo(x2 - g - t / 2, yy + t / 2); ctx.lineTo(x1 + g + t / 2, yy + t / 2); ctx.closePath(); };
+    const V = (xx, y1, y2) => { ctx.moveTo(xx, y1 + g); ctx.lineTo(xx + t / 2, y1 + g + t / 2); ctx.lineTo(xx + t / 2, y2 - g - t / 2); ctx.lineTo(xx, y2 - g); ctx.lineTo(xx - t / 2, y2 - g - t / 2); ctx.lineTo(xx - t / 2, y1 + g + t / 2); ctx.closePath(); };
+    const geo = { a: () => H(t / 2, w - t / 2, t / 2), g: () => H(t / 2, w - t / 2, hh / 2), d: () => H(t / 2, w - t / 2, hh - t / 2), f: () => V(t / 2, t / 2, hh / 2), b: () => V(w - t / 2, t / 2, hh / 2), e: () => V(t / 2, hh / 2, hh - t / 2), c: () => V(w - t / 2, hh / 2, hh - t / 2) };
+    ctx.save(); ctx.translate(x, y); ctx.transform(1, 0, -0.07, 1, hh * 0.07, 0);
+    if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = hh * 0.25; }
+    for (const ch of str) {
+      if (ch === '.') { ctx.fillStyle = on; ctx.fillRect(cx - hh * 0.15, hh - t, t, t); continue; }
+      if (ch === ':') { ctx.fillStyle = on; ctx.fillRect(cx + hh * 0.02, hh * 0.27, t, t); ctx.fillRect(cx + hh * 0.02, hh * 0.63, t, t); cx += hh * 0.24; continue; }
+      ctx.save(); ctx.translate(cx, 0);
+      if (off) { ctx.save(); ctx.shadowColor = 'transparent'; ctx.fillStyle = off; ctx.beginPath(); 'abcdefg'.split('').forEach(s => geo[s]()); ctx.fill(); ctx.restore(); }
+      ctx.fillStyle = on; ctx.beginPath(); (SEGS[ch] || '').split('').forEach(s => geo[s]()); ctx.fill(); ctx.restore();
+      cx += hh * 0.68;
     }
-    if (age >= 13) { ctx.fillStyle = C('--s4'); const nf = Math.min(5, Math.floor((age - 12) / 2) + 1); for (let i = 0; i < nf; i++) { ctx.beginPath(); ctx.arc(x + (i - (nf - 1) / 2) * sc * 3.4, y - hgt - sc * 2.5 - (i % 2) * sc * 2, sc * 2.1, 0, Math.PI * 2); ctx.fill(); } }
     ctx.restore();
   }
-  function draw1() { freshColors();
-    const { ctx, w, h: H } = cv1; ctx.clearRect(0, 0, w, H);
-    const day = anim1.from + (anim1.to - anim1.from) * anim1.t;
-    // light bank
-    ctx.fillStyle = C('--muted'); ctx.fillRect(w * 0.06, 8, w * 0.88, 12);
-    ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = C('--s4');
-    ctx.beginPath(); ctx.moveTo(w * 0.08, 20); ctx.lineTo(w * 0.92, 20); ctx.lineTo(w * 0.98, H * 0.86); ctx.lineTo(w * 0.02, H * 0.86); ctx.closePath(); ctx.fill(); ctx.restore();
-    ctx.fillStyle = C('--s4'); for (let i = 0; i < 6; i++) ctx.fillRect(w * (0.1 + i * 0.14), 18, w * 0.1, 3);
-    // flat: 4 rows × 10, back rows higher & smaller
-    for (let r = 0; r < 4; r++) {
-      const sc = (0.62 + 0.13 * r) * (w / 640), yb = H * (0.42 + 0.14 * r), x0 = w * (0.1 - 0.015 * r), cw = (w * (0.8 + 0.03 * r)) / 10;
-      ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line');
-      ctx.fillRect(x0, yb, cw * 10, 10 * sc + 4); ctx.strokeRect(x0, yb, cw * 10, 10 * sc + 4);
-      for (let c = 0; c < 10; c++) {
-        const i = r * 10 + c, p = s1.plants[i], x = x0 + cw * (c + 0.5);
-        ctx.fillStyle = C('--warn'); ctx.globalAlpha = 0.45; ctx.fillRect(x - cw * 0.38, yb + 1, cw * 0.76, 5 * sc); ctx.globalAlpha = 1;
-        const fade = anim1.fading.find(f => f.i === i);
-        if (!p.harvested || fade) drawPlant(ctx, x, yb + 1, plantDry(day, 1) * p.k, day, sc, fade ? 1 - fade.t : 1);
+  function wallAndBench(ctx, w, H, by, seed) {
+    const R = Lab.rng(seed);
+    ctx.fillStyle = lin(ctx, 0, 0, 0, by, [[0, 'rgb(206,208,203)'], [1, 'rgb(180,183,179)']]); ctx.fillRect(0, 0, w, by);
+    ctx.strokeStyle = 'rgba(110,112,108,0.16)'; ctx.lineWidth = 1;                 // painted cinder-block wall
+    const bh = Math.max(22, H * 0.16), bw = bh * 2.2;
+    for (let y = by, row = 0; y > -bh; y -= bh, row++) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); for (let x = (row % 2) * bw / 2; x < w; x += bw) { ctx.beginPath(); ctx.moveTo(x, y - bh); ctx.lineTo(x, y); ctx.stroke(); } }
+    for (let i = 0, n = Math.round(w * by / 40); i < n; i++) { ctx.fillStyle = `rgba(${R.chance(0.5) ? '255,255,255' : '90,90,85'},${0.04 + R.uniform() * 0.06})`; ctx.fillRect(R.uniform() * w, R.uniform() * by, 1.2, 1.2); }
+    const lg = ctx.createRadialGradient(w * 0.12, -H * 0.3, 0, w * 0.12, -H * 0.3, w * 0.95); lg.addColorStop(0, 'rgba(255,252,242,0.4)'); lg.addColorStop(1, 'rgba(255,252,242,0)'); ctx.fillStyle = lg; ctx.fillRect(0, 0, w, by);
+    benchTop(ctx, 0, by, w, H - by, R);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0, by, w, 2); ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(0, by + 2, w, 1);
+  }
+  function benchTop(ctx, x, y, w, hh, R) {   // black epoxy, faint speckle, sheen from the ceiling light
+    ctx.fillStyle = lin(ctx, 0, y, 0, y + hh, [[0, 'rgb(50,53,56)'], [1, 'rgb(24,26,28)']]); ctx.fillRect(x, y, w, hh);
+    for (let i = 0, n = Math.round(w * hh / 45); i < n; i++) { ctx.fillStyle = R.chance(0.55) ? `rgba(255,255,255,${0.03 + R.uniform() * 0.07})` : `rgba(0,0,0,${0.12 + R.uniform() * 0.2})`; ctx.fillRect(x + R.uniform() * w, y + R.uniform() * hh, 1, 1); }
+    const sg = ctx.createRadialGradient(x + w * 0.3, y + hh * 0.2, 0, x + w * 0.3, y, w * 0.75); sg.addColorStop(0, 'rgba(255,255,255,0.11)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sg; ctx.fillRect(x, y, w, hh);
+  }
+  function wrapText(ctx, text, maxW) { const words = String(text).split(' '), lines = []; let cur = ''; words.forEach(wd => { const t = cur ? cur + ' ' + wd : wd; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = wd; } else cur = t; }); if (cur) lines.push(cur); return lines.slice(0, 3); }
+  // Masking-tape label written in lab marker.
+  function tape(ctx, cx, cy, maxW, text, fs, R) {
+    ctx.font = `600 ${fs}px ${SANS}`; const lines = wrapText(ctx, text, maxW - fs * 0.6), lh = fs * 1.1;
+    const tw = Math.min(maxW, Math.max(...lines.map(l => ctx.measureText(l).width)) + fs * 1.1), th = lines.length * lh + fs * 0.45;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(R.normal(0, 0.03));
+    ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1;
+    ctx.fillStyle = 'rgb(234,224,193)'; ctx.beginPath(); ctx.moveTo(-tw / 2, -th / 2); ctx.lineTo(tw / 2, -th / 2);
+    for (let i = 1; i <= 5; i++) ctx.lineTo(tw / 2 + (i % 2 ? -1.6 : 0.4), -th / 2 + th * i / 5);
+    ctx.lineTo(-tw / 2, th / 2); for (let i = 4; i >= 0; i--) ctx.lineTo(-tw / 2 + (i % 2 ? 1.6 : -0.4), -th / 2 + th * i / 5);
+    ctx.closePath(); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = 'rgba(150,130,90,0.14)'; ctx.lineWidth = 0.6; for (let i = 0; i < 6; i++) { const yy = -th / 2 + R.uniform() * th; ctx.beginPath(); ctx.moveTo(-tw / 2, yy); ctx.lineTo(tw / 2, yy + R.normal(0, 0.6)); ctx.stroke(); }
+    ctx.fillStyle = MARKER; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    lines.forEach((l, i) => ctx.fillText(l, 0, (i - (lines.length - 1) / 2) * lh + 0.5));
+    ctx.restore(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+  // Small white paper tag for a data value drawn inside a scene (fixed colors so it reads on the bench in either theme).
+  function tag(ctx, cx, cy, text, fs) {
+    ctx.font = `600 ${fs}px ${MONO}`; const tw = ctx.measureText(text).width + fs, th = fs * 1.6;
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; rrect(ctx, cx - tw / 2, cy - th / 2, tw, th, 3); ctx.fillStyle = 'rgb(252,252,247)'; ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgb(24,60,120)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, cx, cy + 0.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
+  /* ---------- Wisconsin Fast Plant (Brassica rapa) ----------
+     Purple-tinged hypocotyl, notched kidney-shaped cotyledons, toothed true leaves on petioles, then a cluster of buds
+     and four-petalled yellow flowers from about day 13. `dry` (0–1) browns and shrivels the tissue; `roots` adds the
+     washed root system for plants laid out on a towel or weigh boat. Each plant has its own seeded shape. */
+  const PL = { stemBase: [116, 58, 96], stemMid: [106, 98, 70], stemTop: [110, 158, 64], cot: [128, 180, 74], cotD: [72, 122, 44], leaf: [76, 134, 54], leafD: [40, 90, 34], bud: [168, 190, 78], petal: [250, 212, 44], root: [228, 216, 188], dry: [134, 110, 62], dryD: [88, 68, 38] };
+  function cotyledon(ctx, x, y, s, side, col, colD, wd, R) {
+    const px = x + side * s * 0.75, py = y - s * 0.3 + R.normal(0, s * 0.1);
+    ctx.strokeStyle = colD; ctx.lineWidth = Math.max(0.6, s * 0.14); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(px, py); ctx.stroke();
+    ctx.save(); ctx.translate(px, py); ctx.rotate(side * (-0.25 + R.normal(0, 0.12))); ctx.scale(side, wd);
+    ctx.beginPath(); ctx.moveTo(-0.15 * s, 0); ctx.bezierCurveTo(0.05 * s, -0.95 * s, 1.15 * s, -1.0 * s, 1.25 * s, -0.25 * s); ctx.lineTo(1.05 * s, -0.08 * s); ctx.bezierCurveTo(1.3 * s, 0.55 * s, 0.25 * s, 0.75 * s, -0.15 * s, 0); ctx.closePath();
+    ctx.fillStyle = lin(ctx, 0, -s, s * 0.6, s * 0.6, [[0, col], [1, colD]]); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = Math.max(0.4, s * 0.06); ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(0.6 * s, -0.2 * s, 1.0 * s, -0.12 * s); ctx.stroke();
+    ctx.restore();
+  }
+  function trueLeaf(ctx, x, y, s, side, col, colD, wd, R) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(side > 0 ? -0.55 + R.normal(0, 0.18) : Math.PI + 0.55 + R.normal(0, 0.18));
+    const pl = s * 0.32; ctx.strokeStyle = colD; ctx.lineWidth = Math.max(0.6, s * 0.07); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(pl, 0); ctx.stroke();
+    ctx.translate(pl, 0); if (side < 0) ctx.scale(1, -1); ctx.scale(1, wd);
+    const L = s, W = s * 0.4, N = 14, hw = i => W * Math.sin(Math.PI * Math.pow(i / N, 0.75)) * (1 + (i % 2 ? 0.08 : -0.05));
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    for (let i = 1; i <= N; i++) ctx.lineTo(L * i / N, -hw(i));
+    for (let i = N - 1; i >= 1; i--) ctx.lineTo(L * i / N, hw(i));
+    ctx.closePath(); ctx.fillStyle = lin(ctx, 0, -W, L * 0.3, W, [[0, col], [1, colD]]); ctx.fill();
+    ctx.strokeStyle = 'rgba(205,232,175,0.45)'; ctx.lineWidth = Math.max(0.4, s * 0.035); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * 0.92, 0);
+    for (let k = 1; k <= 3; k++) { const t = k / 4.2; ctx.moveTo(L * t, 0); ctx.lineTo(L * (t + 0.14), -W * 0.6); ctx.moveTo(L * t, 0); ctx.lineTo(L * (t + 0.14), W * 0.6); }
+    ctx.stroke(); ctx.restore();
+  }
+  function fastPlant(ctx, x, y, D, age, sc, alpha, seed, o = {}) {
+    if (!(D > 0) || alpha <= 0) return;
+    const R = Lab.rng(seed * 7919 + 13), dry = o.dry || 0, wd = 1 - 0.4 * dry;
+    const C = c => rgb(dry ? mixc(c, PL.dry, dry * 0.85) : c), CD = c => rgb(dry ? mixc(c, PL.dryD, dry * 0.85) : c);
+    ctx.save(); ctx.globalAlpha = clamp(alpha, 0, 1); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const hgt = sc * (6 + 46 * Math.sqrt(D / 1.4)) * (1 - 0.06 * dry), lean = R.normal(0, 0.07), bend = R.normal(0, 0.1);
+    const pt = f => [x + Math.sin(lean) * hgt * f + bend * hgt * f * f * 0.35, y - hgt * f];
+    if (o.roots) {
+      const rl = sc * (6 + 22 * Math.sqrt(D / 1.4)); ctx.strokeStyle = C(PL.root);
+      for (let k = 0; k < 6; k++) { let px = x, py = y; const f = k ? 0.55 + R.uniform() * 0.4 : 1, a0 = R.normal(0, 0.5); ctx.lineWidth = Math.max(0.45, sc * (k ? 0.4 : 0.75)); ctx.beginPath(); ctx.moveTo(px, py); for (let j = 1; j <= 6; j++) { px += Math.sin(a0 + R.normal(0, 0.35)) * rl * f / 6; py += rl * f / 6; ctx.lineTo(px, py); } ctx.stroke(); }
+    }
+    const sw = Math.max(0.9, sc * (0.8 + 0.9 * Math.min(1, age / 14)));
+    ctx.strokeStyle = lin(ctx, x, y, x, y - hgt, [[0, C(PL.stemBase)], [0.35, C(PL.stemMid)], [1, C(PL.stemTop)]]); ctx.lineWidth = sw;
+    ctx.beginPath(); ctx.moveTo(x, y); for (let f = 0.1; f <= 1.001; f += 0.1) { const p = pt(f); ctx.lineTo(p[0], p[1]); } ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = Math.max(0.4, sw * 0.3); ctx.beginPath(); ctx.moveTo(x - sw * 0.2, y); for (let f = 0.1; f <= 1.001; f += 0.1) { const p = pt(f); ctx.lineTo(p[0] - sw * 0.2, p[1]); } ctx.stroke();
+    const cf = Math.min(0.95, sc * (5 + 6 * Math.min(1, age / 6)) / hgt), cp = pt(cf), cs = sc * (2.3 + 3 * Math.min(1, age / 7));
+    const cotCol = age > 15 ? mixc(PL.cot, [196, 188, 84], Math.min(0.6, (age - 15) / 10)) : PL.cot;
+    [-1, 1].forEach(sd => cotyledon(ctx, cp[0], cp[1], cs, sd, C(cotCol), CD(PL.cotD), wd, R));
+    const nL = clamp(Math.floor((age - 5) / 2), 0, 6), lsz = sc * (3.5 + 10 * Math.sqrt(D / 1.4));
+    for (let i = 0; i < nL; i++) { const p = pt(cf + (1 - cf) * (0.08 + 0.8 * i / Math.max(1, nL))); trueLeaf(ctx, p[0], p[1], lsz * (1 - 0.32 * i / Math.max(1, nL)) * R.normal(1, 0.07), i % 2 ? 1 : -1, C(PL.leaf), CD(PL.leafD), wd, R); }
+    if (age >= 11) {
+      const tp = pt(1), nb = Math.min(6, 2 + Math.floor((age - 11) / 1.5)), nf = age >= 13 ? Math.min(5, Math.floor((age - 12) / 2) + 1) : 0, fz = sc * 2.2;
+      for (let i = 0; i < nb; i++) { ctx.fillStyle = C(PL.bud); ctx.beginPath(); ctx.arc(tp[0] + R.normal(0, fz * 0.6), tp[1] - Math.abs(R.normal(0, fz * 0.7)), fz * 0.42, 0, TAU); ctx.fill(); }
+      for (let i = 0; i < nf; i++) {
+        const fx = tp[0] + (i - (nf - 1) / 2) * fz * 1.6 + R.normal(0, fz * 0.3), fy = tp[1] - fz * 0.8 - (i % 2) * fz * 0.9;
+        ctx.strokeStyle = C(PL.stemTop); ctx.lineWidth = Math.max(0.5, sc * 0.5); ctx.beginPath(); ctx.moveTo(tp[0], tp[1]); ctx.lineTo(fx, fy); ctx.stroke();
+        ctx.fillStyle = rgb(dry ? mixc(PL.petal, [168, 138, 70], dry) : PL.petal);
+        for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.4 + i; ctx.beginPath(); ctx.ellipse(fx + Math.cos(a) * fz * 0.55, fy + Math.sin(a) * fz * 0.55, fz * 0.55, fz * 0.36, a, 0, TAU); ctx.fill(); }
+        ctx.fillStyle = 'rgb(206,160,30)'; ctx.beginPath(); ctx.arc(fx, fy, fz * 0.25, 0, TAU); ctx.fill();
       }
     }
-    ctx.fillStyle = C('--muted'); ctx.font = `${Math.max(11, w / 55)}px ${getComputedStyle(document.body).fontFamily}`;
-    ctx.fillText(`Day ${Math.round(day)} · 24 °C · light bank 200 µmol m⁻² s⁻¹, 24 h`, w * 0.04, H - 8);
+    ctx.restore();
+  }
+  // A harvested plant lying on its side (stem pointing right, washed roots to the left).
+  function lyingPlant(ctx, x, y, D, age, sc, seed, dry, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 2 + (rot || 0)); ctx.scale(0.85, 1); fastPlant(ctx, 0, 0, D, age, sc, 1, seed, { roots: true, dry }); ctx.restore(); }
+
+  // ---------- Part 1 canvas: growth chamber ----------
+  const cv1 = Lab.canvas('#p1-canvas', 0.5);
+  let anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] };
+  const rowGeom = (w, H, r) => ({ sc: (0.62 + 0.13 * r) * (w / 640), yb: H * (0.42 + 0.14 * r), x0: w * (0.1 - 0.015 * r), cw: (w * (0.8 + 0.03 * r)) / 10 });
+  function chamberBG(w, H) {
+    return layer(w, H, ctx => {
+      const R = Lab.rng(4);
+      ctx.fillStyle = lin(ctx, 0, 0, 0, H, [[0, 'rgb(247,248,243)'], [0.45, 'rgb(226,229,222)'], [1, 'rgb(184,188,182)']]); ctx.fillRect(0, 0, w, H);   // white reflective chamber walls
+      ctx.fillStyle = 'rgba(110,116,110,0.16)';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(w * 0.05, H * 0.1); ctx.lineTo(w * 0.05, H * 0.88); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(w, 0); ctx.lineTo(w * 0.95, H * 0.1); ctx.lineTo(w * 0.95, H * 0.88); ctx.lineTo(w, H); ctx.closePath(); ctx.fill();
+      // capillary watering mat on a white reservoir tray
+      ctx.fillStyle = lin(ctx, 0, H * 0.36, 0, H * 0.9, [[0, 'rgb(226,229,226)'], [1, 'rgb(246,247,244)']]);
+      ctx.beginPath(); ctx.moveTo(w * 0.07, H * 0.37); ctx.lineTo(w * 0.93, H * 0.37); ctx.lineTo(w * 0.975, H * 0.9); ctx.lineTo(w * 0.025, H * 0.9); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgb(118,128,140)'; ctx.beginPath(); ctx.moveTo(w * 0.085, H * 0.385); ctx.lineTo(w * 0.915, H * 0.385); ctx.lineTo(w * 0.955, H * 0.88); ctx.lineTo(w * 0.045, H * 0.88); ctx.closePath(); ctx.fill();
+      for (let i = 0; i < w * 3; i++) { ctx.fillStyle = `rgba(${R.chance(0.5) ? '200,210,220' : '60,66,76'},${0.15 + R.uniform() * 0.2})`; ctx.fillRect(w * 0.05 + R.uniform() * w * 0.9, H * 0.39 + R.uniform() * H * 0.49, 1, 1); }
+      ctx.fillStyle = 'rgba(40,60,90,0.18)'; ctx.fillRect(w * 0.05, H * 0.8, w * 0.9, H * 0.08);   // damp front edge
+      // light bank: housing, two fluorescent tubes, reflector glow and light falling on the plants
+      const hy = H * 0.085;
+      const cone = ctx.createLinearGradient(0, hy, 0, H * 0.85); cone.addColorStop(0, 'rgba(255,252,228,0.55)'); cone.addColorStop(1, 'rgba(255,252,228,0)');
+      ctx.fillStyle = cone; ctx.beginPath(); ctx.moveTo(w * 0.06, hy); ctx.lineTo(w * 0.94, hy); ctx.lineTo(w * 0.99, H * 0.85); ctx.lineTo(w * 0.01, H * 0.85); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = lin(ctx, 0, 0, 0, hy, [[0, 'rgb(132,136,140)'], [0.6, 'rgb(96,100,104)'], [1, 'rgb(64,67,70)']]); ctx.fillRect(w * 0.03, 0, w * 0.94, hy);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(w * 0.03, 0, w * 0.94, 1);
+      [0.42, 0.78].forEach(f => { const ty = hy * f, th = Math.max(3, hy * 0.26); ctx.save(); ctx.shadowColor = 'rgba(255,250,215,0.95)'; ctx.shadowBlur = 12; rrect(ctx, w * 0.07, ty - th / 2, w * 0.86, th, th / 2); ctx.fillStyle = 'rgb(255,254,244)'; ctx.fill(); ctx.restore(); ctx.fillStyle = 'rgb(160,164,168)'; ctx.fillRect(w * 0.06, ty - th * 0.7, w * 0.012, th * 1.4); ctx.fillRect(w * 0.928, ty - th * 0.7, w * 0.012, th * 1.4); });
+      // chamber front frame with the controller display (text is drawn each frame)
+      ctx.fillStyle = lin(ctx, 0, H * 0.88, 0, H, [[0, 'rgb(74,78,82)'], [1, 'rgb(40,42,46)']]); ctx.fillRect(0, H * 0.88, w, H * 0.12);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(0, H * 0.88, w, 1);
+      rrect(ctx, w * 0.03, H * 0.9, w * 0.94, H * 0.08, 3); ctx.fillStyle = 'rgb(14,26,18)'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.stroke();
+    });
+  }
+  function rowLayer(w, H, r) {
+    const g = rowGeom(w, H, r);
+    return layer(w, H, ctx => {
+      const R = Lab.rng(40 + r), fh = 10 * g.sc + 4, x0 = g.x0, x1 = g.x0 + g.cw * 10, ry = Math.max(1.5, g.sc * 2.4);
+      blob(ctx, (x0 + x1) / 2, g.yb + fh, (x1 - x0) * 0.56, fh * 0.45, 0.4);
+      for (let c = 0; c < 10; c++) {   // potting mix with perlite and vermiculite in each cell
+        const cx = x0 + g.cw * (c + 0.5); ctx.fillStyle = 'rgb(20,18,16)'; ctx.beginPath(); ctx.ellipse(cx, g.yb + 1, g.cw * 0.47, ry * 1.25, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = lin(ctx, 0, g.yb - ry, 0, g.yb + ry, [[0, 'rgb(82,62,46)'], [1, 'rgb(52,38,28)']]); ctx.beginPath(); ctx.ellipse(cx, g.yb + 1.5, g.cw * 0.42, ry, 0, 0, TAU); ctx.fill();
+        for (let k = 0; k < 6; k++) { ctx.fillStyle = k < 3 ? 'rgba(240,238,228,0.85)' : 'rgba(206,166,86,0.75)'; ctx.beginPath(); ctx.arc(cx + R.normal(0, g.cw * 0.18), g.yb + 1.5 + R.normal(0, ry * 0.35), 0.4 + R.uniform() * 0.6 * g.sc, 0, TAU); ctx.fill(); }
+      }
+      ctx.fillStyle = lin(ctx, 0, g.yb, 0, g.yb + fh, [[0, 'rgb(64,66,68)'], [0.12, 'rgb(32,33,35)'], [1, 'rgb(12,13,14)']]); ctx.fillRect(x0, g.yb + 1.5, x1 - x0, fh - 1.5);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fillRect(x0, g.yb + 1.5, x1 - x0, 1);
+      for (let c = 1; c < 10; c++) { const x = x0 + g.cw * c; if (c % 2 === 0) { ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(x - 0.8, g.yb + 1.5, 1.6, fh - 1.5); } else { ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(x, g.yb + 3, 1, fh - 4); } }
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x0, g.yb + fh * 0.45, x1 - x0, 1);
+    });
+  }
+  let ch1 = null;
+  function draw1() {
+    const { ctx, w, h: H } = cv1, key = w + 'x' + H;
+    if (!ch1 || ch1.key !== key) ch1 = { key, bg: chamberBG(w, H), rows: [0, 1, 2, 3].map(r => rowLayer(w, H, r)) };
+    ctx.clearRect(0, 0, w, H); ctx.drawImage(ch1.bg, 0, 0, w, H);
+    const day = anim1.from + (anim1.to - anim1.from) * anim1.t;
+    for (let r = 0; r < 4; r++) {
+      ctx.drawImage(ch1.rows[r], 0, 0, w, H); const g = rowGeom(w, H, r);
+      for (let c = 0; c < 10; c++) {
+        const i = r * 10 + c, p = s1.plants[i], x = g.x0 + g.cw * (c + 0.5), fade = anim1.fading.find(f => f.i === i);
+        if (p.harvested && !fade) { ctx.fillStyle = 'rgba(24,16,10,0.8)'; ctx.beginPath(); ctx.ellipse(x, g.yb + 1.2, g.cw * 0.13, Math.max(1, g.sc * 1.1), 0, 0, TAU); ctx.fill(); continue; }
+        fastPlant(ctx, x, g.yb + 1, plantDry(day, 1) * p.k, day, g.sc, fade ? 1 - fade.t : 1, i + 1 + Math.round(p.k * 997));
+      }
+    }
+    const fs = clamp(w / 60, 9, 13); ctx.font = `600 ${fs}px ${MONO}`;
+    let txt = `Day ${Math.round(day)} · 24 °C · light bank 200 µmol m⁻² s⁻¹, 24 h`; if (ctx.measureText(txt).width > w * 0.9) txt = `Day ${Math.round(day)} · 24 °C · 200 µmol m⁻² s⁻¹ · 24 h`;
+    if (ctx.measureText(txt).width > w * 0.9) txt = `Day ${Math.round(day)} · 24 °C · 200 µmol m⁻² s⁻¹`;
+    ctx.save(); ctx.fillStyle = 'rgb(140,236,160)'; ctx.shadowColor = 'rgba(110,255,150,0.6)'; ctx.shadowBlur = 4; ctx.fillText(txt, w * 0.05, H * 0.94 + fs * 0.36); ctx.restore();
   }
   const loop1 = Lab.loop(dt => {
     let busy = false;
@@ -536,6 +725,7 @@
       anim1.fading.push({ i, t: Lab.reducedMotion() ? 1 : -j * 0.15 });
     });
     s1.pending = { hv, age: s1.day, rows };
+    benchSet({ phase: 'wet', rows: rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r.wet })), prog: 0 });
     rawT.setRows(rawT.getRows().concat(rows.map(r => ({ hv: r.hv, age: r.age, plant: r.plant, wet: r.wet, dry: null }))));
     $('#p1-rw').textContent = fmt(stats.mean(rows.map(r => r.wet)), 3) + ' g'; $('#p1-rd').textContent = 'drying…';
     save1(); ui1(); loop1.start();
@@ -544,6 +734,7 @@
   $('#p1-dry').addEventListener('click', () => {
     if (!s1.pending || drying) { if (!drying) $('#p1-status').textContent = 'Nothing to dry yet: harvest plants first.'; return; }
     drying = true; let f = 0;
+    bench = { phase: 'drying', rows: s1.pending.rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r._D })), prog: 0, t: 99 }; loopB.stop(); drawB();
     const finish = () => {
       const pend = s1.pending; s1.pending = null; drying = false;
       const all = rawT.getRows().map(r => { const m = pend.rows.find(x => x.hv === r.hv && x.plant === r.plant); return m ? Object.assign({}, r, { dry: m._D }) : r; });
@@ -551,37 +742,203 @@
       const dr = pend.rows.map(r => r._D), wr = pend.rows.map(r => r.wet);
       sumT.addRow({ age: pend.age, n: dr.length, wet: stats.mean(wr), dry: stats.mean(dr), se: stats.se(dr), pct: null, energy: null, npp: null });
       $('#p1-rd').textContent = fmt(stats.mean(dr), 3) + ' g'; setProg('#p1-prog', 0);
+      benchSet({ phase: 'dry', rows: pend.rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r._D })), prog: 1 });
       save1(); ui1(); updatePlantCalc();
     };
     if (Lab.reducedMotion()) return finish();
-    const t = setInterval(() => { f += 0.1; setProg('#p1-prog', f); $('#p1-status').textContent = `Oven at 100 °C… ${Math.round(f * 48)} h`; if (f >= 1) { clearInterval(t); finish(); } }, 70);
+    const t = setInterval(() => { f += 0.1; setProg('#p1-prog', f); bench.prog = Math.min(1, f); drawB(); $('#p1-status').textContent = `Oven at 100 °C… ${Math.round(f * 48)} h`; if (f >= 1) { clearInterval(t); finish(); } }, 70);
   });
-  $('#p1-reset').addEventListener('click', () => { s1 = newFlat(); save1(); rawT.clear(); sumT.clear(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] }; $('#p1-rw').textContent = $('#p1-rd').textContent = '—'; ui1(); draw1(); updatePlantCalc(); });
+  $('#p1-reset').addEventListener('click', () => { s1 = newFlat(); save1(); rawT.clear(); sumT.clear(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] }; $('#p1-rw').textContent = $('#p1-rd').textContent = '—'; ui1(); draw1(); updatePlantCalc(); benchSet({ phase: 'empty', rows: [], prog: 0 }); });
   ui1(); draw1();
   if (s1.pending) { $('#p1-rd').textContent = 'drying…'; }
+
+  // ---------- Part 1 bench: drying oven, digital balance with weigh boat, harvested plants on a paper towel ----------
+  // Shows the current harvest: wet plants laid out and weighed one at a time, then the same plants in the 100 °C oven,
+  // then dried, brittle and brown on the towel and weigh boat. The LCD shows each plant's recorded mass.
+  const cvB = Lab.canvas('#p1-bench', 0.42);
+  let bench = { phase: 'empty', rows: [], t: 99, prog: 0 }, benchL = null;
+  function benchFromData() {
+    if (s1.pending) return { phase: 'wet', rows: s1.pending.rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r.wet })), t: 99, prog: 0 };
+    const rows = rawT.getRows(); if (!rows.length) return { phase: 'empty', rows: [], t: 99, prog: 0 };
+    const hv = rows[rows.length - 1].hv, last = rows.filter(r => r.hv === hv && r.dry != null);
+    return last.length ? { phase: 'dry', rows: last.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r.dry, m: r.dry })), t: 99, prog: 1 } : { phase: 'empty', rows: [], t: 99, prog: 0 };
+  }
+  function benchGeom(w, H) {
+    const o = { x: w * 0.02, y: H * 0.05, w: w * 0.34, h: H * 0.83 };
+    o.door = { x: o.x + o.w * 0.05, y: o.y + o.h * 0.07, w: o.w * 0.66, h: o.h * 0.86 };
+    o.win = { x: o.door.x + o.door.w * 0.13, y: o.door.y + o.door.h * 0.12, w: o.door.w * 0.74, h: o.door.h * 0.5 };
+    o.panel = { x: o.x + o.w * 0.76, y: o.y + o.h * 0.07, w: o.w * 0.2, h: o.h * 0.86 };
+    o.led = { x: o.panel.x + o.panel.w * 0.1, y: o.panel.y + o.panel.h * 0.07, w: o.panel.w * 0.8, h: o.panel.h * 0.15 };
+    o.led2 = { x: o.led.x, y: o.panel.y + o.panel.h * 0.36, w: o.led.w, h: o.panel.h * 0.11 };
+    o.lamp = { x: o.panel.x + o.panel.w / 2, y: o.panel.y + o.panel.h * 0.62 };
+    const b = { x: w * 0.395, y: H * 0.64, w: w * 0.295, h: H * 0.27 };
+    b.shield = { x: b.x + b.w * 0.07, y: H * 0.1, w: b.w * 0.86, h: b.y - H * 0.1 };
+    b.pan = { x: b.x + b.w / 2, y: b.y - b.shield.h * 0.12, rx: b.shield.w * 0.34, ry: Math.max(3, b.shield.h * 0.06) };
+    b.panelR = { x: b.x + b.w * 0.05, y: b.y + b.h * 0.34, w: b.w * 0.9, h: b.h * 0.52 };
+    b.lcd = { x: b.panelR.x + b.panelR.w * 0.05, y: b.panelR.y + b.panelR.h * 0.14, w: b.panelR.w * 0.62, h: b.panelR.h * 0.72 };
+    const t = { x0: w * 0.725, x1: w * 0.975, y0: H * 0.57, y1: H * 0.96 };
+    return { o, b, t };
+  }
+  function towelTile() { return layer(18, 18, ctx => { ctx.fillStyle = 'rgb(245,245,240)'; ctx.fillRect(0, 0, 18, 18); const d = (x, y) => { ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(x - 0.5, y - 0.5, 1.4, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(160,160,150,0.16)'; ctx.beginPath(); ctx.arc(x + 0.5, y + 0.5, 1.2, 0, TAU); ctx.fill(); }; d(4.5, 4.5); d(13.5, 13.5); const R = Lab.rng(2); for (let i = 0; i < 30; i++) { ctx.fillStyle = `rgba(160,160,150,${0.08 + R.uniform() * 0.1})`; ctx.fillRect(R.uniform() * 18, R.uniform() * 18, 1, 1); } }); }
+  function benchLayer(w, H) {
+    const G = benchGeom(w, H), { o, b, t } = G;
+    return { G, bg: layer(w, H, ctx => {
+      wallAndBench(ctx, w, H, H * 0.52, 8);
+      // drying oven: powder-coated cabinet, door with window gasket and handle, control column
+      blob(ctx, o.x + o.w * 0.55, o.y + o.h, o.w * 0.6, o.h * 0.06, 0.6);
+      rrect(ctx, o.x, o.y, o.w, o.h, 4); ctx.fillStyle = lin(ctx, o.x, o.y, o.x + o.w, o.y + o.h, [[0, 'rgb(238,236,228)'], [1, 'rgb(190,188,180)']]); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillRect(o.x + 4, o.y + 1, o.w - 8, 1);
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(o.x + o.w * (0.12 + i * 0.1), o.y + o.h * 0.025, o.w * 0.06, 1.5); }
+      const d = o.door; rrect(ctx, d.x, d.y, d.w, d.h, 3); ctx.fillStyle = lin(ctx, d.x, d.y, d.x + d.w, d.y + d.h, [[0, 'rgb(244,242,236)'], [1, 'rgb(204,202,194)']]); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.stroke();
+      rrect(ctx, o.win.x - 3, o.win.y - 3, o.win.w + 6, o.win.h + 6, 4); ctx.fillStyle = 'rgb(30,30,32)'; ctx.fill();
+      ctx.fillStyle = lin(ctx, 0, d.y + d.h * 0.3, 0, d.y + d.h * 0.7, [[0, 'rgb(220,222,224)'], [0.5, 'rgb(250,250,252)'], [1, 'rgb(150,152,156)']]); rrect(ctx, d.x + d.w * 0.92, d.y + d.h * 0.3, Math.max(3, d.w * 0.045), d.h * 0.4, 2); ctx.fill();
+      const fs = clamp(o.h * 0.045, 6, 10); ctx.fillStyle = 'rgb(90,90,86)'; ctx.font = `700 ${fs}px ${SANS}`; ctx.fillText('DRYING OVEN', d.x + d.w * 0.13, d.y + d.h * 0.86);
+      const p = o.panel; rrect(ctx, p.x, p.y, p.w, p.h, 3); ctx.fillStyle = lin(ctx, 0, p.y, 0, p.y + p.h, [[0, 'rgb(76,80,86)'], [1, 'rgb(44,46,50)']]); ctx.fill();
+      [o.led, o.led2].forEach(L => { rrect(ctx, L.x, L.y, L.w, L.h, 2); ctx.fillStyle = 'rgb(14,6,6)'; ctx.fill(); });
+      if (fs >= 6) { ctx.fillStyle = 'rgb(210,210,204)'; ctx.font = `600 ${fs * 0.85}px ${SANS}`; ctx.textAlign = 'center'; ctx.fillText('°C', p.x + p.w / 2, o.led.y + o.led.h + fs); ctx.fillText('h', p.x + p.w / 2, o.led2.y + o.led2.h + fs); ctx.textAlign = 'left'; }
+      for (let i = 0; i < 2; i++) { ctx.fillStyle = 'rgb(150,152,156)'; ctx.beginPath(); ctx.arc(p.x + p.w / 2, p.y + p.h * (0.76 + i * 0.12), p.w * 0.18, 0, TAU); ctx.fill(); }
+      // digital balance (0.001 g) with glass draft shield
+      blob(ctx, b.x + b.w / 2, b.y + b.h, b.w * 0.6, b.h * 0.12, 0.6);
+      const s = b.shield; ctx.fillStyle = 'rgba(220,236,242,0.12)'; ctx.fillRect(s.x, s.y, s.w, s.h);
+      rrect(ctx, b.x, b.y, b.w, b.h, 5); ctx.fillStyle = lin(ctx, 0, b.y, 0, b.y + b.h, [[0, 'rgb(242,242,238)'], [1, 'rgb(196,196,190)']]); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(b.x + 5, b.y + 1, b.w - 10, 1);
+      const P = b.panelR; rrect(ctx, P.x, P.y, P.w, P.h, 3); ctx.fillStyle = lin(ctx, 0, P.y, 0, P.y + P.h, [[0, 'rgb(70,74,80)'], [1, 'rgb(44,46,50)']]); ctx.fill();
+      rrect(ctx, b.lcd.x, b.lcd.y, b.lcd.w, b.lcd.h, 2); ctx.fillStyle = lin(ctx, 0, b.lcd.y, 0, b.lcd.y + b.lcd.h, [[0, 'rgb(158,170,150)'], [0.3, 'rgb(182,194,172)'], [1, 'rgb(174,186,164)']]); ctx.fill();
+      const kfs = clamp(P.h * 0.2, 5.5, 9); ['TARE', 'ON/OFF'].forEach((k, i) => { const kx = P.x + P.w * 0.72, ky = P.y + P.h * (0.12 + i * 0.45), kw = P.w * 0.23, kh = P.h * 0.32; rrect(ctx, kx, ky, kw, kh, 2); ctx.fillStyle = i ? 'rgb(150,152,156)' : 'rgb(56,110,176)'; ctx.fill(); ctx.fillStyle = 'rgb(250,250,250)'; ctx.font = `700 ${kfs}px ${SANS}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, kx + kw / 2, ky + kh / 2 + 0.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; });
+      ctx.fillStyle = 'rgb(110,110,104)'; ctx.font = `600 ${kfs}px ${SANS}`; ctx.fillText('d = 0.001 g', b.x + b.w * 0.06, b.y + b.h * 0.25);
+      // stainless pan inside the shield
+      ctx.fillStyle = 'rgb(120,122,126)'; ctx.fillRect(b.pan.x - 2, b.pan.y, 4, b.y - b.pan.y);
+      ctx.fillStyle = lin(ctx, b.pan.x - b.pan.rx, 0, b.pan.x + b.pan.rx, 0, [[0, 'rgb(150,154,158)'], [0.35, 'rgb(236,238,240)'], [1, 'rgb(128,132,136)']]); ctx.beginPath(); ctx.ellipse(b.pan.x, b.pan.y, b.pan.rx, b.pan.ry, 0, 0, TAU); ctx.fill();
+      // paper towel lying on the bench
+      const tw = t; ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
+      ctx.beginPath(); ctx.moveTo(tw.x0 + (tw.x1 - tw.x0) * 0.04, tw.y0); ctx.lineTo(tw.x1 - (tw.x1 - tw.x0) * 0.02, tw.y0 + 2); ctx.lineTo(tw.x1, tw.y1); ctx.lineTo(tw.x0, tw.y1 - 2); ctx.closePath();
+      ctx.fillStyle = ctx.createPattern(towelTile(), 'repeat'); ctx.fill(); ctx.restore();
+    }), front: layer(w, H, ctx => {
+      const s = b.shield;   // draft-shield glass and frame, in front of the pan and weigh boat
+      ctx.fillStyle = lin(ctx, s.x, 0, s.x + s.w, 0, [[0, 'rgba(255,255,255,0.10)'], [0.2, 'rgba(255,255,255,0.03)'], [0.26, 'rgba(255,255,255,0.22)'], [0.32, 'rgba(255,255,255,0.03)'], [1, 'rgba(200,220,230,0.08)']]); ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = 'rgba(70,74,80,0.9)'; ctx.lineWidth = 2; ctx.strokeRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = 'rgba(70,74,80,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(s.x + s.w / 2, s.y); ctx.lineTo(s.x + s.w / 2, s.y + s.h); ctx.stroke();
+      ctx.fillStyle = 'rgb(70,74,80)'; ctx.fillRect(s.x - 2, s.y - 4, s.w + 4, 5);
+    }) };
+  }
+  function weighBoat(ctx, x, y, hw, hh) {   // white polystyrene weigh boat in perspective
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+    ctx.beginPath(); ctx.moveTo(x - hw, y); ctx.lineTo(x - hw * 0.85, y - hh); ctx.lineTo(x + hw * 0.85, y - hh); ctx.lineTo(x + hw, y); ctx.lineTo(x + hw * 0.9, y + hh * 0.6); ctx.lineTo(x - hw * 0.9, y + hh * 0.6); ctx.closePath();
+    ctx.fillStyle = 'rgb(246,246,242)'; ctx.fill(); ctx.restore();
+    ctx.fillStyle = lin(ctx, 0, y - hh, 0, y + hh * 0.6, [[0, 'rgb(214,214,208)'], [1, 'rgb(236,236,232)']]); ctx.beginPath(); ctx.moveTo(x - hw * 0.72, y - hh * 0.55); ctx.lineTo(x + hw * 0.72, y - hh * 0.55); ctx.lineTo(x + hw * 0.66, y + hh * 0.25); ctx.lineTo(x - hw * 0.66, y + hh * 0.25); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(150,150,140,0.5)'; ctx.lineWidth = 0.7; ctx.stroke();
+  }
+  function drawB() {
+    const { ctx, w, h: H } = cvB, key = w + 'x' + H;
+    if (!benchL || benchL.key !== key) { benchL = benchLayer(w, H); benchL.key = key; }
+    const { o, b, t } = benchL.G, st = bench, n = st.rows.length, maxD = 1.4, R = Lab.rng(3);
+    ctx.clearRect(0, 0, w, H); ctx.drawImage(benchL.bg, 0, 0, w, H);
+    const cur = n ? Math.min(n - 1, Math.floor(st.t / 0.45)) : -1, dryF = st.phase === 'dry' ? 1 : st.phase === 'drying' ? st.prog : 0;
+    // oven interior through the window
+    const W = o.win; ctx.save(); rrect(ctx, W.x, W.y, W.w, W.h, 2); ctx.clip();
+    ctx.fillStyle = 'rgb(34,30,28)'; ctx.fillRect(W.x, W.y, W.w, W.h);
+    const heat = st.phase === 'drying' ? 1 : 0.35, glow = ctx.createRadialGradient(W.x + W.w / 2, W.y + W.h * 0.3, 0, W.x + W.w / 2, W.y + W.h / 2, W.w * 0.8);
+    glow.addColorStop(0, `rgba(255,150,60,${0.45 * heat})`); glow.addColorStop(1, 'rgba(255,120,40,0)'); ctx.fillStyle = glow; ctx.fillRect(W.x, W.y, W.w, W.h);
+    ctx.strokeStyle = 'rgba(190,190,190,0.45)'; ctx.lineWidth = 0.8; const shelfY = W.y + W.h * 0.72;
+    ctx.beginPath(); ctx.moveTo(W.x, shelfY); ctx.lineTo(W.x + W.w, shelfY); for (let i = 1; i < 8; i++) { ctx.moveTo(W.x + W.w * i / 8, shelfY - 2); ctx.lineTo(W.x + W.w * i / 8, shelfY + 2); } ctx.stroke();
+    if (st.phase === 'drying') {
+      ctx.fillStyle = lin(ctx, 0, shelfY - 6, 0, shelfY, [[0, 'rgb(200,202,206)'], [1, 'rgb(130,132,136)']]); ctx.fillRect(W.x + W.w * 0.08, shelfY - 4, W.w * 0.84, 4);
+      const scO = W.w * 0.28 / 52; st.rows.slice(0, 8).forEach((r, i) => lyingPlant(ctx, W.x + W.w * (0.15 + (i % 2) * 0.42), shelfY - 6 - Math.floor(i / 2) * W.h * 0.12, r.D, r.age, scO, r.id, st.prog, -0.05));
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(W.x, W.y); ctx.lineTo(W.x + W.w * 0.4, W.y); ctx.lineTo(W.x + W.w * 0.15, W.y + W.h); ctx.lineTo(W.x, W.y + W.h); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    const ledOn = 'rgb(255,70,46)', ledOff = 'rgba(255,70,46,0.08)', ledGlow = 'rgba(255,40,20,0.8)';
+    { const L = o.led, hh = Math.min(L.h * 0.68, L.w / 2.3); seg7(ctx, '100', L.x + (L.w - seg7w('100', hh)) / 2, L.y + (L.h - hh) / 2, hh, ledOn, ledOff, ledGlow); }
+    { const L = o.led2, s = st.phase === 'drying' ? String(Math.round(st.prog * 48)).padStart(2, ' ') : '--', hh = Math.min(L.h * 0.68, L.w / 1.6); seg7(ctx, s, L.x + (L.w - seg7w(s, hh)) / 2, L.y + (L.h - hh) / 2, hh, st.phase === 'drying' ? ledOn : 'rgba(255,70,46,0.3)', ledOff, st.phase === 'drying' ? ledGlow : null); }
+    { const r = Math.max(2, o.panel.w * 0.12); ctx.save(); if (heat > 0.5) { ctx.shadowColor = 'rgba(255,170,40,0.9)'; ctx.shadowBlur = 6; } ctx.fillStyle = heat > 0.5 ? 'rgb(255,186,60)' : 'rgb(120,92,40)'; ctx.beginPath(); ctx.arc(o.lamp.x, o.lamp.y, r, 0, TAU); ctx.fill(); ctx.restore(); }
+    // plants laid out on the towel (all but the one on the balance)
+    const showTowel = st.phase === 'wet' || st.phase === 'dry', cols = 2, rows = Math.max(1, Math.ceil(n / cols)), colW = (t.x1 - t.x0) / cols, rowH = (t.y1 - t.y0) / Math.max(rows, 3);
+    const scT = colW * 0.85 / 52;
+    if (showTowel) st.rows.forEach((r, i) => { if (i === cur) return; const c = i % cols, rr = Math.floor(i / cols); const x = t.x0 + colW * (c + 0.27), y = t.y0 + rowH * (rr + 0.55) + (t.y1 - t.y0 - rowH * rows) * 0.1; lyingPlant(ctx, x, y, r.D, r.age, scT, r.id, dryF, R.normal(0, 0.06)); });
+    // weigh boat on the pan, with the plant being weighed
+    weighBoat(ctx, b.pan.x, b.pan.y - b.pan.ry * 0.6, b.pan.rx * 0.92, b.pan.ry * 1.6);
+    if (showTowel && cur >= 0) { const r = st.rows[cur]; lyingPlant(ctx, b.pan.x - b.pan.rx * 0.55, b.pan.y - b.pan.ry * 0.9, r.D, r.age, b.pan.rx * 1.15 / 52, r.id, dryF, -0.04); }
+    ctx.drawImage(benchL.front, 0, 0, w, H);
+    // balance LCD: stabilises after each plant is placed
+    let val = 0; if (showTowel && cur >= 0) { const r = st.rows[cur], since = st.t - cur * 0.45; val = r.m + (since < 0.18 && st.t < 90 ? (Math.random() - 0.5) * 0.02 : 0); }
+    const L = b.lcd, str = val.toFixed(3), hh = Math.min(L.h * 0.62, L.w / 4.4);
+    seg7(ctx, str, L.x + L.w * 0.86 - seg7w(str, hh), L.y + (L.h - hh) / 2, hh, 'rgb(22,26,22)', 'rgba(22,26,22,0.06)');
+    ctx.fillStyle = 'rgb(22,26,22)'; ctx.font = `700 ${Math.max(6, hh * 0.45)}px ${SANS}`; ctx.fillText('g', L.x + L.w * 0.89, L.y + L.h / 2 + hh * 0.42);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.beginPath(); ctx.moveTo(L.x, L.y); ctx.lineTo(L.x + L.w * 0.4, L.y); ctx.lineTo(L.x + L.w * 0.2, L.y + L.h); ctx.lineTo(L.x, L.y + L.h); ctx.closePath(); ctx.fill();
+    if (showTowel && cur >= 0) { const fs = clamp(w / 70, 7, 11); ctx.fillStyle = 'rgb(40,40,36)'; ctx.font = `600 ${fs}px ${SANS}`; ctx.fillText(`P${st.rows[cur].id} · ${st.phase === 'wet' ? 'wet' : 'dry'}`, b.x + b.w * 0.55, b.y + b.h * 0.25); }
+  }
+  const loopB = Lab.loop(dt => { bench.t += dt; drawB(); if (bench.t > bench.rows.length * 0.45 + 0.5) return false; });
+  function benchSet(st) { bench = st; bench.t = Lab.reducedMotion() ? 99 : 0; drawB(); if (!Lab.reducedMotion() && st.rows.length) loopB.start(); }
+  cvB.onresize = drawB;
+  bench = benchFromData(); drawB();
 
   // ---------- Dark respiration chamber ----------
   const cvR = Lab.canvas('#r-canvas', 0.42);
   let respTrace = null, respT = 1;
-  function drawR() { freshColors();
-    const { ctx, w, h: H } = cvR; ctx.clearRect(0, 0, w, H);
-    const bx = w * 0.04, by = H * 0.12, bw = w * 0.36, bh = H * 0.76;
-    ctx.fillStyle = C('--ink'); ctx.globalAlpha = 0.85; ctx.fillRect(bx, by, bw, bh); ctx.globalAlpha = 1;
-    ctx.strokeStyle = C('--line'); ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
-    const age = s1.resp ? s1.resp.age : s1.day;
-    for (let i = 0; i < 5; i++) drawPlant(ctx, bx + bw * (0.14 + i * 0.18), by + bh - 6, plantDry(age, 1), age, w / 900, 0.55);
-    ctx.fillStyle = C('--surface'); ctx.font = `${Math.max(11, w / 50)}px sans-serif`; ctx.fillText('dark, sealed 2.0 L', bx + 8, by + 18);
-    ctx.fillStyle = C('--stain'); ctx.fillRect(bx + bw - 26, by + 8, 18, 12);
-    // trace
-    const gx = w * 0.48, gy = H * 0.1, gw = w * 0.48, gh = H * 0.72;
-    ctx.strokeStyle = C('--line'); ctx.lineWidth = 1; ctx.strokeRect(gx, gy, gw, gh);
-    ctx.fillStyle = C('--muted'); ctx.fillText('CO₂ (ppm) vs time (0–10 min)', gx, gy + gh + 16);
+  // Sealed, dark acrylic respiration chamber with a CO2 gas sensor through the lid, cabled to a handheld data logger
+  // whose screen plots the CO2 trace. The chamber scene is pre-rendered per size and plant age; frames redraw the trace.
+  let rL = null;
+  function respGeom(w, H) {
+    const c = { x: w * 0.05, y: H * 0.24, w: w * 0.36, h: H * 0.62 }, L = { x: w * 0.48, y: H * 0.05, w: w * 0.49, h: H * 0.88 };
+    L.scr = { x: L.x + L.w * 0.05, y: L.y + L.h * 0.06, w: L.w * 0.9, h: L.h * 0.74 };
+    L.g = { x: L.scr.x + L.scr.w * 0.15, y: L.scr.y + L.scr.h * 0.2, w: L.scr.w * 0.8, h: L.scr.h * 0.58 };
+    return { c, L };
+  }
+  function respLayer(w, H, age) {
+    const G = respGeom(w, H), { c, L } = G, R = Lab.rng(31);
+    return { G, bg: layer(w, H, ctx => {
+      wallAndBench(ctx, w, H, H * 0.62, 21);
+      blob(ctx, c.x + c.w * 0.55, c.y + c.h, c.w * 0.6, c.h * 0.07, 0.6);
+      ctx.fillStyle = lin(ctx, 0, c.y, 0, c.y + c.h, [[0, 'rgb(30,34,42)'], [1, 'rgb(14,16,20)']]); ctx.fillRect(c.x, c.y, c.w, c.h);   // interior, lights off
+      const fl = c.y + c.h - c.h * 0.03; ctx.fillStyle = 'rgb(10,10,12)'; ctx.fillRect(c.x + c.w * 0.06, fl - c.h * 0.11, c.w * 0.88, c.h * 0.11);
+      const sc = c.h * 0.0115; for (let i = 0; i < 5; i++) fastPlant(ctx, c.x + c.w * (0.14 + i * 0.18), fl - c.h * 0.11, plantDry(age, 1), age, sc, 1, 300 + i);
+      ctx.fillStyle = 'rgba(8,12,24,0.58)'; ctx.fillRect(c.x, c.y, c.w, c.h);   // darkness
+      // acrylic walls: refraction at the edges, reflections of the room light
+      ctx.fillStyle = lin(ctx, c.x, 0, c.x + c.w, 0, [[0, 'rgba(200,220,230,0.28)'], [0.05, 'rgba(255,255,255,0.04)'], [0.95, 'rgba(255,255,255,0.04)'], [1, 'rgba(200,220,230,0.22)']]); ctx.fillRect(c.x, c.y, c.w, c.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.beginPath(); ctx.moveTo(c.x + c.w * 0.1, c.y); ctx.lineTo(c.x + c.w * 0.3, c.y); ctx.lineTo(c.x + c.w * 0.05, c.y + c.h); ctx.lineTo(c.x, c.y + c.h); ctx.lineTo(c.x, c.y + c.h * 0.3); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(210,228,236,0.6)'; ctx.lineWidth = 1.5; ctx.strokeRect(c.x, c.y, c.w, c.h);
+      // lid with rubber gasket and side clamps
+      const lh = Math.max(5, c.h * 0.07); ctx.fillStyle = lin(ctx, 0, c.y - lh, 0, c.y, [[0, 'rgb(196,206,212)'], [1, 'rgb(140,152,160)']]); ctx.fillRect(c.x - 3, c.y - lh, c.w + 6, lh);
+      ctx.fillStyle = 'rgb(20,20,22)'; ctx.fillRect(c.x - 1, c.y - 1, c.w + 2, 2.5);
+      [c.x - 6, c.x + c.w + 1].forEach(x => { ctx.fillStyle = lin(ctx, x, 0, x + 5, 0, [[0, 'rgb(210,212,214)'], [1, 'rgb(120,122,126)']]); ctx.fillRect(x, c.y - lh - 2, 5, lh + 10); });
+      // CO2 gas sensor through the lid; cable to the logger
+      const sx = c.x + c.w * 0.68, sw = Math.max(7, c.w * 0.11), sTop = c.y - c.h * 0.36, sBot = c.y + c.h * 0.16;
+      ctx.strokeStyle = 'rgb(28,28,30)'; ctx.lineWidth = Math.max(2, sw * 0.22); ctx.beginPath(); ctx.moveTo(sx, sTop); ctx.bezierCurveTo(sx, H * 0.0, L.x - w * 0.05, H * 0.02, L.x + 2, L.y + L.h * 0.12); ctx.stroke();
+      ctx.fillStyle = lin(ctx, sx - sw / 2, 0, sx + sw / 2, 0, [[0, 'rgb(150,154,158)'], [0.3, 'rgb(236,238,240)'], [1, 'rgb(120,124,128)']]); rrect(ctx, sx - sw / 2, sTop, sw, sBot - sTop, sw * 0.3); ctx.fill();
+      ctx.fillStyle = 'rgb(30,30,32)'; ctx.fillRect(sx - sw / 2, sTop, sw, (sBot - sTop) * 0.14); ctx.fillRect(sx - sw / 2, c.y - lh - (sBot - sTop) * 0.08, sw, (sBot - sTop) * 0.08);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; for (let i = 0; i < 4; i++) ctx.fillRect(sx - sw * 0.3, sBot - (sBot - sTop) * (0.08 + i * 0.05), sw * 0.6, 1.2);
+      tape(ctx, c.x + c.w * 0.32, c.y + c.h * 0.16, c.w * 0.6, 'DARK · sealed 2.0 L', clamp(w / 64, 7.5, 11), R);
+      // data logger
+      blob(ctx, L.x + L.w / 2, L.y + L.h, L.w * 0.55, L.h * 0.05, 0.6);
+      rrect(ctx, L.x, L.y, L.w, L.h, L.h * 0.07); ctx.fillStyle = lin(ctx, L.x, L.y, L.x + L.w * 0.4, L.y + L.h, [[0, 'rgb(78,82,90)'], [1, 'rgb(34,36,40)']]); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+      const S = L.scr; rrect(ctx, S.x - 2, S.y - 2, S.w + 4, S.h + 4, 4); ctx.fillStyle = 'rgb(12,12,14)'; ctx.fill();
+      ctx.fillStyle = lin(ctx, 0, S.y, 0, S.y + S.h, [[0, 'rgb(232,238,226)'], [1, 'rgb(212,220,206)']]); ctx.fillRect(S.x, S.y, S.w, S.h);
+      const g = L.g; ctx.strokeStyle = 'rgba(60,80,70,0.18)'; ctx.lineWidth = 0.8;
+      for (let i = 0; i <= 5; i++) { const x = g.x + g.w * i / 5; ctx.beginPath(); ctx.moveTo(x, g.y); ctx.lineTo(x, g.y + g.h); ctx.stroke(); }
+      for (let i = 0; i <= 4; i++) { const y = g.y + g.h * i / 4; ctx.beginPath(); ctx.moveTo(g.x, y); ctx.lineTo(g.x + g.w, y); ctx.stroke(); }
+      ctx.strokeStyle = 'rgb(40,50,44)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(g.x, g.y); ctx.lineTo(g.x, g.y + g.h); ctx.lineTo(g.x + g.w, g.y + g.h); ctx.stroke();
+      const fs = clamp(S.h / 12, 7, 12); ctx.fillStyle = 'rgb(40,50,44)'; ctx.font = `600 ${fs}px ${SANS}`;
+      ctx.fillText('CO₂ (ppm)', S.x + S.w * 0.03, S.y + fs * 1.3);
+      ctx.fillText('0', g.x - fs * 0.2, g.y + g.h + fs * 1.15); ctx.textAlign = 'right'; ctx.fillText('10 min', g.x + g.w, g.y + g.h + fs * 1.15); ctx.textAlign = 'center';
+      ctx.fillText('CO₂ (ppm) vs time (0–10 min)', S.x + S.w / 2, S.y + S.h - fs * 0.35); ctx.textAlign = 'left';
+      for (let i = 0; i < 4; i++) { const bx = L.x + L.w * (0.1 + i * 0.21), by = L.y + L.h * 0.86; rrect(ctx, bx, by, L.w * 0.16, L.h * 0.07, 3); ctx.fillStyle = i === 0 ? 'rgb(60,150,90)' : 'rgb(110,114,120)'; ctx.fill(); }
+    }) };
+  }
+  function drawR() {
+    const { ctx, w, h: H } = cvR, age = s1.resp ? s1.resp.age : s1.day, key = w + 'x' + H + '@' + age;
+    if (!rL || rL.key !== key) { rL = respLayer(w, H, age); rL.key = key; }
+    ctx.clearRect(0, 0, w, H); ctx.drawImage(rL.bg, 0, 0, w, H);
+    const { L } = rL.G, g = L.g, S = L.scr, fs = clamp(S.h / 12, 7, 12);
     if (respTrace) {
       const lo = respTrace[0], hi = respTrace[respTrace.length - 1] + 40, n = Math.max(1, Math.floor(respTrace.length * respT));
-      ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2; ctx.beginPath();
-      for (let i = 0; i < n; i++) { const x = gx + gw * i / (respTrace.length - 1), y = gy + gh - (respTrace[i] - lo + 20) / (hi - lo + 20) * gh; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-      ctx.stroke(); ctx.fillStyle = C('--ink'); ctx.fillText(Math.round(respTrace[n - 1]) + ' ppm', gx + 6, gy + 16);
+      ctx.strokeStyle = 'rgb(24,48,140)'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath();
+      for (let i = 0; i < n; i++) { const x = g.x + g.w * i / (respTrace.length - 1), y = g.y + g.h - (respTrace[i] - lo + 20) / (hi - lo + 20) * g.h; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgb(20,28,24)'; ctx.font = `700 ${fs * 1.25}px ${MONO}`; ctx.textAlign = 'right'; ctx.fillText(Math.round(respTrace[n - 1]) + ' ppm', S.x + S.w * 0.97, S.y + fs * 1.45); ctx.textAlign = 'left';
+      ctx.font = `${fs * 0.85}px ${MONO}`; ctx.fillStyle = 'rgb(60,70,64)'; ctx.textAlign = 'right'; ctx.fillText(String(Math.round(lo - 20)), g.x - 3, g.y + g.h); ctx.fillText(String(Math.round(hi)), g.x - 3, g.y + fs * 0.7); ctx.textAlign = 'left';
     }
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(S.x + S.w * 0.35, S.y); ctx.lineTo(S.x + S.w * 0.15, S.y + S.h); ctx.lineTo(S.x, S.y + S.h); ctx.closePath(); ctx.fill();
   }
   cvR.onresize = drawR;
   const loopR = Lab.loop(dt => { respT = Math.min(1, respT + dt / 2.5); drawR(); if (respT >= 1) loopR.stop(); });
@@ -728,56 +1085,154 @@
   $('#p2-larva').addEventListener('click', () => { const w = rng.normal(0.9, 0.08), d = w * rng.normal(LARVA_DRY, 0.008); $('#p2-ratio-note').innerHTML = `5 extra larvae: wet ${fmt(w, 3)} g → dry ${fmt(d, 3)} g (ratio <strong>${fmt(d / w, 3)}</strong>). Compare with the 0.40 assumption.`; });
   $('#p2-reset').addEventListener('click', () => { barnT.clear(); });
 
-  // ---------- Part 2 canvas: Brassica Barn ----------
+  // ---------- Part 2 canvas: Brassica Barn, seen from above ----------
+  // Clear plastic container with a ventilated lid, a paper-towel frass pad, two Brussels sprout halves (cut face up,
+  // nested leaf layers around a pale core) that get chewed, velvety green larvae that crawl by peristaltic waves,
+  // and dark frass pellets that build up on the towel. A second container holds the no-larvae control sprout.
   const cv2 = Lab.canvas('#p2-canvas', 0.52);
-  function idleBarn() { const n = +$('#p2-n').value; return { t: 0, n, eaten: 0, frass: 0, grow: 1, evap: 0, larvae: Array.from({ length: n }, (_, i) => ({ a: i / n * Math.PI * 2, r: 0.9 + 0.25 * rng.uniform(), sp: 0.25 + 0.2 * rng.uniform(), dir: rng.chance(0.5) ? 1 : -1 })), frassDots: Array.from({ length: 160 }, () => [rng.uniform(), rng.uniform()]) }; }
+  function idleBarn() { const n = +$('#p2-n').value; return { t: 0, n, eaten: 0, frass: 0, grow: 1, evap: 0, larvae: Array.from({ length: n }, (_, i) => ({ a: i / n * Math.PI * 2 + rng.normal(0, 0.2), r: [1.0, 0.58, 1.32, 0.82, 1.5, 1.08][Math.floor(i / 2) % 6] + 0.06 * rng.normal(0, 1), sp: 0.25 + 0.2 * rng.uniform(), dir: rng.chance(0.5) ? 1 : -1, ph: rng.uniform() * TAU })), frassDots: Array.from({ length: 160 }, () => [rng.uniform(), rng.uniform()]) }; }
   let barnState = idleBarn(), p2run = null;
-  function drawCaterpillar(ctx, x, y, ang, len) {
-    const seg = 6, r = len / 5;
-    for (let i = seg - 1; i >= 0; i--) {
-      const px = x - Math.cos(ang) * i * r * 0.9, py = y - Math.sin(ang) * i * r * 0.9 + Math.sin(i + performance.now() / 200) * 0.6;
-      ctx.fillStyle = i === 0 ? C('--s6') : C('--s1'); ctx.beginPath(); ctx.arc(px, py, r * (i === 0 ? 0.85 : 0.75), 0, Math.PI * 2); ctx.fill();
-    }
+  function barnGeom(w, H) {
+    const bx = w * 0.025, by = H * 0.05, bw = w * 0.645, bh = H * 0.9, R = Math.min(bw * 0.11, bh * 0.165), cx0 = w * 0.7, cw = w * 0.275;
+    return { bx, by, bw, bh, R, sp: [{ x: bx + bw * 0.3, y: by + bh * 0.5, rot: -0.35, seed: 3 }, { x: bx + bw * 0.7, y: by + bh * 0.47, rot: 0.5, seed: 9 }],
+      ctrl: { x: cx0, y: by, w: cw, h: bh }, csp: [{ x: cx0 + cw / 2, y: by + bh * 0.31, rot: 0.2, seed: 21 }, { x: cx0 + cw / 2, y: by + bh * 0.72, rot: -2.7, seed: 27 }] };
   }
-  function drawSprout(ctx, x, y, R, eatenFrac, seed) {
-    // a sprout half seen from above: concentric leaf layers with bites removed
-    for (let L = 0; L < 4; L++) {
-      const rr = R * (1 - L * 0.22); ctx.fillStyle = L % 2 ? C('--s6') : C('--s1'); ctx.globalAlpha = 0.65 + 0.1 * L;
-      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    // bites (drawn in background colour)
-    const nb = Math.round(eatenFrac * 26); ctx.fillStyle = C('--surface');
-    for (let i = 0; i < nb; i++) { const a = (i * 2.399 + seed) % (Math.PI * 2), d = R * (0.95 - 0.5 * ((i * 0.37) % 1) * eatenFrac); ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, R * (0.16 + 0.1 * eatenFrac), 0, Math.PI * 2); ctx.fill(); }
+  let towelPat = null;
+  function topBox(ctx, x, y, w, h) {   // clear plastic box from above: shadow, translucent walls, towel floor
+    const r = Math.min(w, h) * 0.08, d = Math.max(5, Math.min(w, h) * 0.04);
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 12; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 6; rrect(ctx, x, y, w, h, r); ctx.fillStyle = 'rgb(40,43,46)'; ctx.fill(); ctx.restore();
+    rrect(ctx, x, y, w, h, r); ctx.fillStyle = lin(ctx, x, y, x + w, y + h, [[0, 'rgb(128,140,146)'], [1, 'rgb(74,82,88)']]); ctx.fill();
+    rrect(ctx, x + d, y + d, w - 2 * d, h - 2 * d, r * 0.6); ctx.fillStyle = towelPat || (towelPat = ctx.createPattern(towelTile(), 'repeat')); ctx.fill();
+    ctx.save(); rrect(ctx, x + d, y + d, w - 2 * d, h - 2 * d, r * 0.6); ctx.clip();
+    ctx.fillStyle = lin(ctx, x, y, x + w, y + h, [[0, 'rgba(255,255,255,0.05)'], [0.6, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.12)']]); ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 5; rrect(ctx, x + d, y + d, w - 2 * d, h - 2 * d, r * 0.6); ctx.stroke(); ctx.restore();
   }
-  function draw2() { freshColors();
-    const { ctx, w, h: H } = cv2; ctx.clearRect(0, 0, w, H); const st = barnState;
-    const bx = w * 0.03, by = H * 0.06, bw = w * 0.66, bh = H * 0.86;
-    ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(bx, by, bw, bh, 14) : ctx.rect(bx, by, bw, bh); ctx.fill(); ctx.stroke();
-    // frass pad
-    ctx.fillStyle = C('--surface-2'); ctx.fillRect(bx + 10, by + bh * 0.72, bw - 20, bh * 0.24);
-    ctx.fillStyle = C('--muted'); ctx.font = `${Math.max(10, w / 62)}px sans-serif`; ctx.fillText('paper-towel frass pad', bx + 16, by + bh * 0.94);
-    const nd = Math.floor(st.frass * 160); ctx.fillStyle = C('--ink');
-    for (let i = 0; i < nd; i++) { const [u, v] = st.frassDots[i]; ctx.beginPath(); ctx.arc(bx + 18 + u * (bw - 36), by + bh * 0.75 + v * bh * 0.14, 1.6, 0, Math.PI * 2); ctx.fill(); }
-    const R = Math.min(bw, bh) * 0.17 * Math.sqrt(1 - st.evap * 0.6);
-    const s1x = bx + bw * 0.3, s2x = bx + bw * 0.68, sy = by + bh * 0.38;
-    drawSprout(ctx, s1x, sy, R, st.eaten, 0.3); drawSprout(ctx, s2x, sy, R, st.eaten, 1.7);
-    st.larvae.forEach((L, i) => {
-      const cx = i % 2 ? s2x : s1x, rr = R * L.r, x = cx + Math.cos(L.a) * rr, y = sy + Math.sin(L.a) * rr;
-      drawCaterpillar(ctx, x, y, L.a + L.dir * Math.PI / 2, (w / 640) * 16 * Math.pow(st.grow, 0.45));
+  function lidOver(ctx, x, y, w, h, R) {   // clear lid: sheen, punched ventilation holes, rim
+    const r = Math.min(w, h) * 0.08; ctx.save(); rrect(ctx, x, y, w, h, r); ctx.clip();
+    ctx.fillStyle = lin(ctx, x, y, x + w, y + h, [[0, 'rgba(255,255,255,0.12)'], [0.3, 'rgba(255,255,255,0.02)'], [0.38, 'rgba(255,255,255,0.13)'], [0.46, 'rgba(255,255,255,0.02)'], [1, 'rgba(200,220,230,0.06)']]); ctx.fillRect(x, y, w, h);
+    const sp = Math.max(13, Math.min(w, h) * 0.1), hr = Math.max(1.3, sp * 0.11);
+    for (let yy = y + sp * 0.6, row = 0; yy < y + h - sp * 0.35; yy += sp, row++) for (let xx = x + sp * (0.6 + (row % 2) * 0.5); xx < x + w - sp * 0.35; xx += sp) {
+      const hx = xx + R.normal(0, sp * 0.05), hy = yy + R.normal(0, sp * 0.05), rr = hr * R.normal(1, 0.08);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.beginPath(); ctx.arc(hx, hy, rr, 0, TAU); ctx.fill();
+      ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.arc(hx, hy, rr, Math.PI * 0.75, Math.PI * 1.75); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(hx, hy, rr, -Math.PI * 0.25, Math.PI * 0.75); ctx.stroke();
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(236,246,250,0.75)'; ctx.lineWidth = 2; rrect(ctx, x + 1, y + 1, w - 2, h - 2, r); ctx.stroke();
+    ctx.strokeStyle = 'rgba(70,90,100,0.45)'; ctx.lineWidth = 1; rrect(ctx, x + 4, y + 4, w - 8, h - 8, r * 0.8); ctx.stroke();
+  }
+  // Halved Brussels sprout, cut face up: dark outer leaf, then nested pale leaves with green margins, cream core,
+  // cut stem at the base. `nb` chewed bites: notches punched through the rim and shallow windows in the cut face.
+  function sproutCanvas(R, seed, nb, wilt) {
+    const S = Math.ceil(R * 2.9);
+    return layer(S, S, ctx => {
+      const G = Lab.rng(seed), rx = R, ry = R * 1.12, base = ry * 0.92; ctx.translate(S / 2, S / 2);
+      const shape = (s, j) => { const cy = base - ry * s * 0.96, pts = []; for (let i = 0; i < 26; i++) { const a = i / 26 * TAU, wob = 1 + 0.03 * Math.sin(a * 3 + j) + 0.02 * Math.sin(a * 5 + j * 2.3); pts.push([Math.cos(a) * rx * s * wob, cy + Math.sin(a) * ry * s * wob * (Math.sin(a) > 0 ? 0.93 : 1)]); } return pts; };
+      ctx.save(); ctx.rotate(G.normal(0, 0.25)); smooth(ctx, shape(1.12, 9));   // loose wrapper leaf underneath
+      ctx.fillStyle = lin(ctx, -rx, -ry, rx, ry, [[0, 'rgb(96,146,64)'], [1, 'rgb(46,88,36)']]); ctx.fill();
+      ctx.strokeStyle = 'rgba(200,226,160,0.45)'; ctx.lineWidth = Math.max(0.6, R * 0.025); ctx.beginPath(); for (let k = 0; k < 7; k++) { const a = -Math.PI / 2 + (k - 3) * 0.42; ctx.moveTo(0, base); ctx.quadraticCurveTo(Math.cos(a) * rx * 0.5, base + Math.sin(a) * ry * 0.6, Math.cos(a) * rx * 1.08, base * 0.2 + Math.sin(a) * ry * 1.05); } ctx.stroke(); ctx.restore();
+      const K = 8;
+      for (let k = 0; k < K; k++) {
+        const s = 1 - k * 0.108, t = k / (K - 1); smooth(ctx, shape(s, k * 1.7));
+        ctx.fillStyle = k === 0 ? lin(ctx, -rx, -ry, rx, ry, [[0, 'rgb(112,164,70)'], [1, 'rgb(62,110,44)']]) : rgb(mixc([206, 220, 140], [242, 240, 196], t)); ctx.fill();
+        if (k) { ctx.strokeStyle = rgb(mixc([92, 146, 58], [196, 210, 120], t)); ctx.lineWidth = Math.max(0.7, R * 0.032); ctx.stroke(); }
+      }
+      ctx.fillStyle = lin(ctx, 0, base - ry * 0.75, 0, base, [[0, 'rgb(240,238,206)'], [1, 'rgb(222,222,176)']]); ctx.beginPath(); ctx.ellipse(0, base - ry * 0.32, rx * 0.15, ry * 0.36, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgb(214,208,160)'; ctx.beginPath(); ctx.ellipse(0, base - ry * 0.02, rx * 0.26, ry * 0.09, 0, 0, TAU); ctx.fill();
+      const sh = ctx.createRadialGradient(-rx * 0.35, -ry * 0.35, 0, -rx * 0.35, -ry * 0.35, rx * 0.9); sh.addColorStop(0, 'rgba(255,255,255,0.22)'); sh.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sh; ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU); ctx.fill();
+      for (let j = 0; j < 30; j++) {
+        const edge = G.chance(0.7), a = G.uniform() * TAU, sz = R * (edge ? 0.13 + G.uniform() * 0.12 : 0.07 + G.uniform() * 0.08), el = edge ? 1 : 1.4 + G.uniform() * 0.8, ea = G.uniform() * Math.PI;
+        const d = edge ? 1 : 0.3 + G.uniform() * 0.45, bx = Math.cos(a) * rx * d, by = Math.sin(a) * ry * d, pts = [];
+        for (let i = 0; i < 11; i++) { const aa = i / 11 * TAU, rr = sz * (0.55 + G.uniform() * 0.7), lx = Math.cos(aa) * rr * el, ly = Math.sin(aa) * rr; pts.push([bx + lx * Math.cos(ea) - ly * Math.sin(ea), by + lx * Math.sin(ea) + ly * Math.cos(ea)]); }
+        if (j >= nb) continue;
+        ctx.save(); ctx.globalCompositeOperation = 'source-atop';
+        if (edge) { ctx.save(); ctx.translate(bx, by); ctx.scale(1.12, 1.12); ctx.translate(-bx, -by); smooth(ctx, pts); ctx.fillStyle = 'rgba(176,170,96,0.85)'; ctx.fill(); ctx.restore(); ctx.globalCompositeOperation = 'destination-out'; smooth(ctx, pts); ctx.fill(); }
+        else { smooth(ctx, pts); ctx.fillStyle = 'rgb(150,172,90)'; ctx.fill(); ctx.clip(); ctx.translate(sz * 0.22, sz * 0.22); smooth(ctx, pts); ctx.strokeStyle = 'rgba(60,84,34,0.45)'; ctx.lineWidth = sz * 0.5; ctx.stroke(); }
+        ctx.restore();
+      }
+      if (wilt > 0) { ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(170,156,82,${Math.min(0.3, wilt * 2.5)})`; ctx.fillRect(-S, -S, S * 2, S * 2); ctx.globalCompositeOperation = 'source-over'; }
     });
-    ctx.fillStyle = C('--muted'); ctx.fillText(`Brassica Barn · ${st.n} larvae · day ${fmt(st.t * 3, 1)}`, bx + 12, by + 18);
-    // control dish
-    const cx = w * 0.84, cy = H * 0.38, cr = Math.min(w, H) * 0.12;
-    ctx.strokeStyle = C('--muted'); ctx.fillStyle = C('--surface'); ctx.beginPath(); ctx.arc(cx, cy, cr * 1.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    drawSprout(ctx, cx, cy, cr * 0.75 * Math.sqrt(1 - st.evap * 0.6), 0, 0);
-    ctx.fillStyle = C('--muted'); ctx.textAlign = 'center'; ctx.fillText('control sprout', cx, cy + cr * 1.5 + 16); ctx.fillText('(no larvae)', cx, cy + cr * 1.5 + 30); ctx.textAlign = 'left';
+  }
+  let catSpr = null;
+  function catSprites() {   // pre-rendered shaded body segment and head (velvety: matte with fine speckle, lit from upper left)
+    if (catSpr) return catSpr; const S = 40;
+    const mk = (cIn, cMid, cOut) => layer(S, S, ctx => { const g = ctx.createRadialGradient(S * 0.38, S * 0.34, S * 0.03, S * 0.5, S * 0.5, S * 0.5); g.addColorStop(0, cIn); g.addColorStop(0.55, cMid); g.addColorStop(0.88, cOut); g.addColorStop(1, 'rgba(40,70,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2, 0, TAU); ctx.fill();
+      const R = Lab.rng(5); for (let i = 0; i < 140; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * S * 0.44; ctx.fillStyle = R.chance(0.5) ? 'rgba(30,60,20,0.25)' : 'rgba(200,230,160,0.2)'; ctx.fillRect(S / 2 + Math.cos(a) * d, S / 2 + Math.sin(a) * d, 1, 1); } });
+    return (catSpr = { body: mk('rgb(150,192,98)', 'rgb(104,154,60)', 'rgb(58,102,38)'), head: mk('rgb(124,166,80)', 'rgb(82,124,48)', 'rgb(44,82,30)') });
+  }
+  // Cabbage white larva: pts[0] is the head. comp[i] (0–1) is how compressed segment i is in the peristaltic wave.
+  function caterpillar(ctx, pts, wid, comp) {
+    const sp = catSprites(), N = pts.length, rad = i => wid * (i === 0 ? 0.86 : i > N - 4 ? 1 - (i - (N - 4)) * 0.13 : 1) * (1 + 0.12 * (comp ? comp[i] : 0));
+    ctx.fillStyle = 'rgba(20,24,16,0.18)'; ctx.beginPath(); for (let i = 0; i < N; i++) { const r = rad(i), x = pts[i][0] + wid * 0.35, y = pts[i][1] + wid * 0.5; ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, TAU); } ctx.fill();
+    for (let i = N - 1; i >= 0; i--) { const r = rad(i) * 1.12; ctx.drawImage(i ? sp.body : sp.head, pts[i][0] - r, pts[i][1] - r, r * 2, r * 2); }
+    const nrm = i => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return [-dy / l, dx / l]; };
+    ctx.strokeStyle = 'rgba(234,224,120,0.55)'; ctx.lineWidth = Math.max(0.6, wid * 0.16); ctx.lineCap = 'round'; ctx.beginPath(); for (let i = 1; i < N - 1; i++) i === 1 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+    ctx.strokeStyle = 'rgba(222,236,200,0.5)'; ctx.lineWidth = 0.5; ctx.beginPath();
+    for (let i = 0; i < N; i++) { const [nx, ny] = nrm(i), r = rad(i); for (const s of [-1, 1]) for (const o of [-0.25, 0.25]) { const bx = pts[i][0] + nx * s * r * 0.85 + ny * o * r, by = pts[i][1] + ny * s * r * 0.85 - nx * o * r; ctx.moveTo(bx, by); ctx.lineTo(bx + nx * s * r * 0.45, by + ny * s * r * 0.45); } }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(244,220,90,0.65)'; ctx.beginPath(); for (let i = 1; i < N - 2; i++) { const [nx, ny] = nrm(i), r = rad(i); ctx.moveTo(pts[i][0] + nx * r * 0.62 + wid * 0.09, pts[i][1] + ny * r * 0.62); ctx.arc(pts[i][0] + nx * r * 0.62, pts[i][1] + ny * r * 0.62, wid * 0.09, 0, TAU); } ctx.fill();
+    const fx = pts[0][0] - pts[1][0], fy = pts[0][1] - pts[1][1], fl = Math.hypot(fx, fy) || 1; ctx.fillStyle = 'rgba(30,40,20,0.6)'; ctx.beginPath(); ctx.arc(pts[0][0] + fx / fl * rad(0) * 0.6, pts[0][1] + fy / fl * rad(0) * 0.6, wid * 0.18, 0, TAU); ctx.fill();
+  }
+  // Spine of a larva crawling along an ellipse (a, b radii, rotated) around a food item, with the peristaltic wave.
+  function larvaOnRing(L, cx, cy, a, b, rot, len) {
+    const N = 11, base = len / (N - 1), comp = [], pts = [], Rm = (a + b) / 2, cr = Math.cos(rot), sr = Math.sin(rot);
+    let th = L.a;
+    for (let i = 0; i < N; i++) {
+      comp.push(Math.pow(Math.max(0, Math.sin(L.ph + i * 0.55)), 2));
+      const lx = Math.cos(th) * a, ly = Math.sin(th) * b; pts.push([cx + lx * cr - ly * sr, cy + lx * sr + ly * cr]);
+      th -= L.dir * base * (1 - 0.32 * comp[i]) / Rm;
+    }
+    return { pts, comp };
+  }
+  function pellet(ctx, x, y, s, k) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(k * 1.7);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(s * 0.25, s * 0.3, s, s * 0.62, 0, 0, TAU); ctx.fill();
+    const g = ctx.createLinearGradient(0, -s * 0.6, 0, s * 0.6); g.addColorStop(0, k % 3 ? 'rgb(58,74,44)' : 'rgb(48,62,36)'); g.addColorStop(1, 'rgb(14,20,12)'); ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(0, 0, s, s * 0.6, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 0.5; ctx.beginPath(); for (let i = -1; i <= 1; i++) { ctx.moveTo(i * s * 0.4, -s * 0.55); ctx.lineTo(i * s * 0.4, s * 0.55); } ctx.stroke();
+    ctx.fillStyle = 'rgba(200,220,180,0.3)'; ctx.beginPath(); ctx.ellipse(-s * 0.3, -s * 0.25, s * 0.3, s * 0.12, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  let barnL = null;
+  function barnLayers(w, H) {
+    const G = barnGeom(w, H), R = Lab.rng(12);
+    return { G, sprouts: {}, frass: layer(w, H, () => {}), nFrass: 0,
+      bg: layer(w, H, ctx => { benchTop(ctx, 0, 0, w, H, Lab.rng(6)); topBox(ctx, G.bx, G.by, G.bw, G.bh); topBox(ctx, G.ctrl.x, G.ctrl.y, G.ctrl.w, G.ctrl.h); }),
+      lid: layer(w, H, ctx => { lidOver(ctx, G.bx, G.by, G.bw, G.bh, R); lidOver(ctx, G.ctrl.x, G.ctrl.y, G.ctrl.w, G.ctrl.h, R);
+        const fs = clamp(w / 64, 7.5, 11.5); tape(ctx, G.bx + G.bw * 0.5, G.by + G.bh - fs * 1.4, G.bw * 0.6, 'paper-towel frass pad', fs, Lab.rng(8)); tape(ctx, G.ctrl.x + G.ctrl.w / 2, G.ctrl.y + G.ctrl.h - fs * 1.9, G.ctrl.w * 0.86, 'CONTROL sprout · no larvae', fs, Lab.rng(9)); }) };
+  }
+  function frassPos(i, G) {
+    const [u, v] = barnState.frassDots[i], sp = G.sp[i % 2];
+    let x, y; if (i % 6 === 5) { x = G.bx + G.bw * (0.1 + u * 0.8); y = G.by + G.bh * (0.12 + v * 0.7); } else { const a = v * TAU, rr = G.R * (1.05 + u * 1.0); x = sp.x + Math.cos(a) * rr; y = sp.y + Math.sin(a) * rr * 1.1; }
+    return [clamp(x, G.bx + 12, G.bx + G.bw - 12), clamp(y, G.by + 12, G.by + G.bh - G.R * 0.5)];
+  }
+  function sproutImg(key, R, seed, nb, wilt) { const k = R.toFixed(1) + '|' + nb + '|' + wilt.toFixed(2); const c = barnL.sprouts[key]; if (c && c.k === k) return c.cv; const cv = sproutCanvas(R, seed, nb, wilt); barnL.sprouts[key] = { k, cv }; return cv; }
+  function drawSproutAt(ctx, sp, R, nb, evap, key) {
+    const scl = Math.sqrt(1 - evap * 0.6), img = sproutImg(key, R, sp.seed, nb, Math.round(evap * 40) / 40), S = img.width / Math.min(2, window.devicePixelRatio || 1) * scl;
+    blob(ctx, sp.x + R * 0.25, sp.y + R * 0.3, R * 1.25 * scl, R * 1.3 * scl, 0.35);
+    ctx.save(); ctx.translate(sp.x, sp.y); ctx.rotate(sp.rot); ctx.drawImage(img, -S / 2, -S / 2, S, S); ctx.restore();
+  }
+  function draw2() {
+    const { ctx, w, h: H } = cv2, st = barnState, key = w + 'x' + H;
+    if (!barnL || barnL.key !== key) { barnL = barnLayers(w, H); barnL.key = key; }
+    const G = barnL.G, R = G.R;
+    ctx.clearRect(0, 0, w, H); ctx.drawImage(barnL.bg, 0, 0, w, H);
+    const nd = Math.floor(st.frass * 160);   // frass accumulates incrementally on its own layer
+    if (nd < barnL.nFrass) { barnL.frass = layer(w, H, () => {}); barnL.nFrass = 0; }
+    if (nd > barnL.nFrass) { const fx = barnL.frass.getContext('2d'); for (let i = barnL.nFrass; i < nd; i++) { const [x, y] = frassPos(i, G); pellet(fx, x, y, R * (0.04 + 0.015 * ((i * 7) % 3)), i); } barnL.nFrass = nd; }
+    ctx.drawImage(barnL.frass, 0, 0, w, H);
+    const nb = Math.round(st.eaten * 30);
+    G.sp.forEach((sp, i) => drawSproutAt(ctx, sp, R, nb, st.evap, 's' + i));
+    G.csp.forEach((sp, i) => drawSproutAt(ctx, sp, R, 0, st.evap, 'c' + i));
+    const len = R * 0.8 * Math.cbrt(Math.max(1, st.grow)), scl = Math.sqrt(1 - st.evap * 0.6);
+    st.larvae.forEach((L, i) => { const sp = G.sp[i % 2], { pts, comp } = larvaOnRing(L, sp.x, sp.y, R * L.r * scl, R * 1.1 * L.r * scl, sp.rot, len); caterpillar(ctx, pts, len * 0.09, comp); });
+    ctx.drawImage(barnL.lid, 0, 0, w, H);
+    const fs = clamp(w / 64, 7.5, 11.5); tape(ctx, G.bx + G.bw * 0.33, G.by + fs * 1.6, G.bw * 0.62, `Brassica Barn · ${st.n} larvae · day ${fmt(st.t * 3, 1)}`, fs, Lab.rng(7));
   }
   cv2.onresize = draw2;
   const loop2 = Lab.loop(dt => {
     const st = barnState;
-    st.larvae.forEach(L => { L.a += L.dir * L.sp * dt; });
+    st.larvae.forEach(L => { L.ph += dt * 4.4; L.a += L.dir * L.sp * dt * (0.25 + 1.5 * Math.pow(Math.max(0, Math.sin(L.ph)), 2)) * 0.8; });
     if (p2run) {
       st.t = Math.min(1, st.t + dt / 5); st.eaten = st.t * p2run.eatFrac; st.frass = st.t * Math.min(1, p2run.b.frass / 0.9); st.grow = 1 + st.t * (p2run.b.l3 / p2run.b.l0 - 1); st.evap = st.t * 0.1;
       $('#p2-day').textContent = fmt(st.t * 3, 1); setProg('#p2-prog', st.t);
@@ -860,32 +1315,66 @@
   $('#d-sys').addEventListener('change', fillIV); $('#d-iv').addEventListener('change', fillLevels);
   const repOut = () => $('#d-reps-out').textContent = $('#d-reps').value; $('#d-reps').addEventListener('input', repOut); repOut();
   $('#d-dv').addEventListener('change', () => renderDesign());
+  // Food items seen from above for the mini barns (fixed natural colors).
+  const foodCache = {};
+  function foodItem(ctx, type, x, y, r) {
+    const R = Lab.rng(type.length * 31);
+    blob(ctx, x + r * 0.2, y + r * 0.25, r * 1.2, r * 1.15, 0.35);
+    if (type === 'sprout') { const k = r.toFixed(1); const img = foodCache[k] || (foodCache[k] = sproutCanvas(r, 5, 0, 0)), S = img.width / Math.min(2, window.devicePixelRatio || 1); ctx.drawImage(img, x - S / 2, y - S / 2, S, S); return; }
+    if (type === 'broccoli') {   // floret: pale stalk, crowded dark-green bud clusters
+      ctx.fillStyle = 'rgb(176,200,120)'; rrect(ctx, x - r * 0.18, y, r * 0.36, r * 0.95, r * 0.12); ctx.fill();
+      for (let i = 0; i < 26; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * r * 0.78, cx = x + Math.cos(a) * d, cy = y - r * 0.15 + Math.sin(a) * d * 0.85, cr = r * (0.18 + R.uniform() * 0.1); const g = ctx.createRadialGradient(cx - cr * 0.3, cy - cr * 0.3, 0, cx, cy, cr); g.addColorStop(0, 'rgb(96,144,70)'); g.addColorStop(1, 'rgb(34,72,36)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, cr, 0, TAU); ctx.fill(); }
+      return;
+    }
+    const leafShape = (frill, sx, sy) => { const pts = []; for (let i = 0; i < 40; i++) { const a = i / 40 * TAU, f = 1 + frill * Math.sin(a * 11) * 0.5 + R.normal(0, frill * 0.25); pts.push([x + Math.cos(a) * r * sx * f, y + Math.sin(a) * r * sy * f]); } smooth(ctx, pts); };
+    if (type === 'cabbage' || type === 'lettuce') {
+      const lettuce = type === 'lettuce'; leafShape(lettuce ? 0.14 : 0.04, 1.1, 0.9);
+      ctx.fillStyle = lin(ctx, x - r, y - r, x + r, y + r, lettuce ? [[0, 'rgb(188,226,112)'], [1, 'rgb(118,176,64)']] : [[0, 'rgb(196,220,170)'], [1, 'rgb(134,170,120)']]); ctx.fill();
+      ctx.strokeStyle = lettuce ? 'rgba(236,248,200,0.8)' : 'rgba(244,248,232,0.9)'; ctx.lineWidth = Math.max(1, r * 0.1); ctx.beginPath(); ctx.moveTo(x - r * 0.95, y + r * 0.1); ctx.lineTo(x + r * 0.8, y - r * 0.1); ctx.stroke();
+      ctx.lineWidth = Math.max(0.5, r * 0.035); ctx.beginPath(); for (let k = 0; k < 5; k++) { const t = -0.7 + k * 0.33; ctx.moveTo(x + r * t, y + r * 0.04 - r * t * 0.1); ctx.lineTo(x + r * (t + 0.3), y - r * 0.7); ctx.moveTo(x + r * t, y + r * 0.04 - r * t * 0.1); ctx.lineTo(x + r * (t + 0.3), y + r * 0.7); } ctx.stroke();
+      return;
+    }
+    for (let k = 0; k < 5; k++) trueLeaf(ctx, x, y, r * 0.95, k % 2 ? 1 : -1, rgb(PL.leaf), rgb(PL.leafD), 1, R);   // Fast Plant leaves
+  }
   const cvD = Lab.canvas('#d-canvas', 0.42);
-  function drawD() { freshColors();
+  function drawD() {
     const { ctx, w, h: H } = cvD; ctx.clearRect(0, 0, w, H);
     const sys = $('#d-sys').value, iv = $('#d-iv').value, lv = [...document.querySelectorAll('#d-levels input:checked')].map(i => i.value);
-    const n = Math.max(1, lv.length), cw = w / n;
-    ctx.font = `${Math.max(10, w / 60)}px sans-serif`; ctx.textAlign = 'center';
+    const n = Math.max(1, lv.length), cw = w / n, R = Lab.rng(4), fs = clamp(w / 62, 8, 12);
+    if (sys === 'plant') wallAndBench(ctx, w, H, H * 0.66, 14); else benchTop(ctx, 0, 0, w, H, Lab.rng(6));
     lv.forEach((x, i) => {
       const cx = cw * (i + 0.5), base = H * 0.78;
       const res = dResults && dResults.sys === sys && dResults.iv === iv ? dResults.levels.find(L => String(L.x) === x) : null;
       if (sys === 'plant') {
-        const val = IVS.plant[iv].cat ? x : +x, g = plantG(iv, val);
-        ctx.fillStyle = C('--s4'); ctx.globalAlpha = iv === 'light' ? Math.min(0.9, 0.1 + val / 450) : 0.35; ctx.fillRect(cx - cw * 0.4, 6, cw * 0.8, 6); ctx.globalAlpha = 1;
-        ctx.fillStyle = C('--surface-2'); ctx.strokeStyle = C('--line'); ctx.fillRect(cx - cw * 0.38, base, cw * 0.76, 14); ctx.strokeRect(cx - cw * 0.38, base, cw * 0.76, 14);
+        const val = IVS.plant[iv].cat ? x : +x, g = plantG(iv, val), li = iv === 'light' ? val / 400 : 0.5;
+        // grow light over this tray: brightness follows the light level
+        const lw = cw * 0.78; ctx.fillStyle = lin(ctx, 0, 0, 0, H * 0.05, [[0, 'rgb(120,124,128)'], [1, 'rgb(70,74,78)']]); ctx.fillRect(cx - lw / 2, 0, lw, H * 0.05);
+        const cone = ctx.createLinearGradient(0, H * 0.05, 0, base); cone.addColorStop(0, `rgba(255,250,220,${0.12 + 0.5 * li})`); cone.addColorStop(1, 'rgba(255,250,220,0)');
+        ctx.fillStyle = cone; ctx.beginPath(); ctx.moveTo(cx - lw / 2, H * 0.05); ctx.lineTo(cx + lw / 2, H * 0.05); ctx.lineTo(cx + lw * 0.6, base); ctx.lineTo(cx - lw * 0.6, base); ctx.closePath(); ctx.fill();
+        ctx.save(); ctx.shadowColor = `rgba(255,248,210,${0.4 + 0.6 * li})`; ctx.shadowBlur = 4 + 10 * li; ctx.fillStyle = `rgb(${Math.round(200 + 55 * li)},${Math.round(200 + 54 * li)},${Math.round(190 + 50 * li)})`; rrect(ctx, cx - lw * 0.46, H * 0.035, lw * 0.92, Math.max(2, H * 0.014), 2); ctx.fill(); ctx.restore();
+        // single black growing cell with potting mix
+        const pw = Math.min(cw * 0.7, H * 0.3), ph = H * 0.13;
+        blob(ctx, cx, base + ph, pw * 0.65, ph * 0.25, 0.5);
+        ctx.fillStyle = 'rgb(52,38,28)'; ctx.beginPath(); ctx.ellipse(cx, base + 1, pw * 0.46, Math.max(2, ph * 0.12), 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = lin(ctx, cx - pw / 2, 0, cx + pw / 2, 0, [[0, 'rgb(40,42,44)'], [0.3, 'rgb(28,29,31)'], [1, 'rgb(12,13,14)']]); ctx.beginPath(); ctx.moveTo(cx - pw / 2, base + 1); ctx.lineTo(cx + pw / 2, base + 1); ctx.lineTo(cx + pw * 0.42, base + ph); ctx.lineTo(cx - pw * 0.42, base + ph); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(cx - pw / 2, base + 1, pw, 1);
         const np = iv === 'crowd' ? val : 1;
-        for (let k = 0; k < np; k++) drawPlant(ctx, cx + (k - (np - 1) / 2) * Math.min(14, cw * 0.15), base, plantDry(14, g.G), 14, Math.min(2, cw / 85), 1);
+        for (let k = 0; k < np; k++) fastPlant(ctx, cx + (k - (np - 1) / 2) * Math.min(14, cw * 0.15), base, plantDry(14, g.G), 14, Math.min(2, cw / 85), 1, 500 + i * 7 + k);
+        tape(ctx, cx, H * 0.94, cw * 0.92, levelName(sys, iv, x), fs, R);
+        if (res) tag(ctx, cx, H * 0.15, 'mean ' + fmt(res.mean, 3), fs);
       } else {
-        ctx.fillStyle = C('--surface'); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.5; ctx.fillRect(cx - cw * 0.4, H * 0.18, cw * 0.8, H * 0.6); ctx.strokeRect(cx - cw * 0.4, H * 0.18, cw * 0.8, H * 0.6);
-        const food = iv === 'food' ? x : 'sprout'; ctx.fillStyle = food === 'lettuce' ? C('--s6') : C('--s1'); ctx.globalAlpha = food === 'lettuce' ? 0.45 : 0.8;
-        ctx.beginPath(); ctx.arc(cx, H * 0.45, Math.min(cw * 0.22, H * 0.16), 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-        const nl = iv === 'dens' ? +x : 10; ctx.fillStyle = C('--s6');
-        for (let k = 0; k < Math.min(nl, 30); k++) { const a = k / Math.min(nl, 30) * Math.PI * 2; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * Math.min(cw * 0.3, H * 0.22), H * 0.45 + Math.sin(a) * H * 0.22, 2.5, 0, Math.PI * 2); ctx.fill(); }
+        // mini Brassica Barn from above: towel, food, larvae, ventilated lid
+        const bw = Math.min(cw * 0.86, H * 0.78), bh = H * 0.72, bx = cx - bw / 2, by = H * 0.05;
+        topBox(ctx, bx, by, bw, bh);
+        const food = iv === 'food' ? x : 'sprout', fr = Math.min(bw, bh) * 0.2, fy = by + bh * 0.48;
+        foodItem(ctx, food, cx, fy, fr);
+        const nl = Math.min(iv === 'dens' ? +x : 10, 30), len = fr * 0.85;
+        for (let k = 0; k < nl; k++) { const L = { a: k / nl * TAU + 0.3, dir: k % 2 ? 1 : -1, ph: k * 1.3 }, ring = 1.15 + (k % 3) * 0.28; const { pts, comp } = larvaOnRing(L, cx, fy, fr * ring, fr * ring * 1.1, 0, len); caterpillar(ctx, pts, len * 0.1, comp); }
+        lidOver(ctx, bx, by, bw, bh, R);
+        tape(ctx, cx, H * 0.89, cw * 0.92, iv === 'food' ? FOODS[x].name.split(' ')[0] : levelName(sys, iv, x), fs, R);
+        if (res) tag(ctx, cx, by + bh * 0.14, 'mean ' + fmt(res.mean, 3), fs);
       }
-      ctx.fillStyle = C('--ink'); ctx.fillText(sys === 'larva' && iv === 'food' ? FOODS[x].name.split(' ')[0] : x, cx, H * 0.93);
-      if (res) { ctx.fillStyle = C('--accent'); ctx.fillText('mean ' + fmt(res.mean, 3), cx, H * 0.14 + (sys === 'plant' ? 12 : 0)); }
     });
-    ctx.textAlign = 'left';
   }
   cvD.onresize = drawD;
   document.getElementById('d-levels').addEventListener('change', drawD);
