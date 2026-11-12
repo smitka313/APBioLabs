@@ -423,6 +423,8 @@ body.worksheet-mode::before { display: none; }
 body.paged section.step:not(.is-current) { display: none; }
 body.paged main { padding-block: 6px 40px; }
 body.paged .step { border-bottom: 0; padding-block: 22px 26px; }
+/* A short part still scrolls to the top of the screen, so every part starts in the same place. */
+body.paged section.step.is-current { min-height: calc(100vh - 56px); min-height: calc(100svh - 56px); align-content: start; }
 .step > header h2:focus { outline: none; }
 .step > header h2:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 6px; }
