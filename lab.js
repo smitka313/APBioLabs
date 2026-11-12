@@ -321,6 +321,10 @@
       }).join('')}</tr>`).join('');
       const foot = opts.footer && rows.length ? `<tfoot><tr>${opts.footer(rows).map((v, i) => `<td class="${cols[i] && cols[i].num ? 'num' : ''}">${v == null ? '' : v}</td>`).join('')}</tr></tfoot>` : '';
       el.innerHTML = `<div class="table-wrap"><table class="data"><thead><tr>${head}</tr></thead><tbody>${body || `<tr><td colspan="${cols.length}" class="muted">No data yet. Run a trial to fill this table.</td></tr>`}</tbody>${foot}</table></div>`;
+      $$('input[data-r]', el).forEach(inp => inp.addEventListener('input', () => { // typed cell values are saved at once, not only on blur
+        const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
+        if (r && c && opts.save) { r[inp.dataset.k] = c.num ? (inp.value === '' || !isFinite(parseFloat(inp.value)) ? null : parseFloat(inp.value)) : inp.value; store.set(opts.save, rows); }
+      }));
       $$('input[data-r]', el).forEach(inp => inp.addEventListener('change', () => {
         const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
         r[inp.dataset.k] = c.num ? (inp.value === '' ? null : parseFloat(inp.value)) : inp.value;
@@ -497,6 +501,10 @@
 
   /* ---------------- Autosave for [data-save] fields ---------------- */
   const saveFns = []; // flushed before a reload so nothing typed is lost
+  /* A debounced autosave must not lose the last 400 ms of typing when the page goes away: flush on pagehide, beforeunload and when hidden. */
+  window.addEventListener("pagehide", () => flushSaves());
+  window.addEventListener("beforeunload", () => flushSaves());
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushSaves(); });
   function bindAutosave(root = document) {
     $$('[data-save]', root).forEach(f => {
       if (f._bound) return; f._bound = true;
