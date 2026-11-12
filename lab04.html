@@ -1057,7 +1057,7 @@ Lab.init({ id: 'lab04' });
     const obs = $('#tube-obs');
     $('#add-hcl').addEventListener('click', () => { $('#tube-acid').style.fill = 'rgb(234,239,241)'; $('#tube-acid-lbl').textContent = '+ HCl'; obs.dataset.hcl = 1; note(); });
     $('#add-naoh').addEventListener('click', () => { $('#tube-base').style.fill = 'rgb(214,34,140)'; $('#tube-base-lbl').textContent = '+ NaOH'; obs.dataset.naoh = 1; note(); });
-    function note() { const s = []; if (obs.dataset.hcl) s.push('Tube 1 (acid): the indicator stays colorless.'); if (obs.dataset.naoh) s.push('Tube 2 (base): the indicator turns bright pink-magenta.'); obs.innerHTML = `<p class="small">${s.join(' ')}</p>`; }
+    function note() { const s = []; if (obs.dataset.hcl) s.push('Tube 1 (acid): the indicator stays colorless.'); if (obs.dataset.naoh) s.push('Tube 2 (base): the indicator turns bright pink-magenta.'); let n = obs.querySelector('.tube-note'); if (!n) { n = document.createElement('p'); n.className = 'small tube-note'; obs.prepend(n); } n.textContent = s.join(' '); }
     Lab.prompt('#tube-obs', { key: 'p1-indicator', label: 'Record your observations. Which solution is the acid and which is the base? What color is phenolphthalein in each? What will happen to pink agar when acid soaks into it?', rows: 3 });
   })();
 
