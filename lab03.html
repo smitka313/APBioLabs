@@ -15,15 +15,21 @@
   .stack { align-content: start; }
   .tree-svg { width: 100%; height: auto; display: block; }
   .tree-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
-  .tree-svg .br { stroke: var(--ink); stroke-width: 2; fill: none; }
-  .tree-svg .br.fos { stroke: var(--stain); stroke-dasharray: 5 4; }
-  .tree-svg text.fos { fill: var(--stain); font-weight: 700; }
-  .tree-svg .badge circle { fill: var(--accent); }
-  .tree-svg .badge.warn circle { fill: var(--warn); }
-  .tree-svg .badge text { fill: var(--accent-ink); font-size: 10.5px; font-weight: 700; font-family: var(--f-mono); }
-  .tree-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .86rem; margin-top: 6px; }
-  .tree-legend b { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-family: var(--f-mono); font-size: .78em; margin-right: 4px; }
-  .tree-legend .warn b { background: var(--warn); }
+  .tree-svg .br { stroke: var(--ink); stroke-width: 1.5; fill: none; stroke-linecap: square; }
+  .tree-svg .br.fos { stroke: var(--stain); stroke-dasharray: 4 3; stroke-linecap: butt; }
+  .tree-svg text.fos { fill: var(--stain); font-weight: 600; font-style: italic; }
+  .tree-svg .tip { fill: var(--ink); }
+  .tree-svg .node { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+  .tree-svg .badge rect { fill: var(--ink); }
+  .tree-svg .badge.warn rect { fill: var(--warn); }
+  .tree-svg .badge text { fill: var(--ink); font-size: 10px; font-weight: 700; font-family: var(--f-mono); }
+  .tree-svg .badge.warn text { fill: var(--warn); }
+  .tree-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .84rem; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); color: var(--muted); }
+  .tree-legend span { color: var(--ink); }
+  .tree-legend b { font-family: var(--f-mono); font-size: .9em; margin-right: 5px; }
+  .tree-legend b::before { content: ''; display: inline-block; width: 2.5px; height: .95em; background: var(--ink); margin-right: 4px; vertical-align: -0.12em; }
+  .tree-legend .warn b, .tree-legend .warn { color: var(--warn); }
+  .tree-legend .warn b::before { background: var(--warn); }
   .matrix td, .matrix th { text-align: center; }
   .matrix th.rot { font-size: .78rem; min-width: 64px; }
   .matrix td:first-child, .matrix th:first-child { text-align: left; white-space: nowrap; }
@@ -42,12 +48,28 @@
   .msg.warn { background: var(--warn-soft); color: var(--ink); }
   .seqbox { font-family: var(--f-mono); font-size: .78rem; line-height: 1.5; word-break: break-all; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-height: 9.5em; overflow: auto; }
   pre.aln { font-family: var(--f-mono); font-size: .78rem; line-height: 1.35; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; max-width: 100%; margin: 0; color: var(--ink); }
-  .hits td, .hits th { font-size: .86rem; }
+  .res { border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
+  .res-head { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 2px 18px; padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: .84rem; }
+  .res-head div { display: flex; gap: 8px; min-width: 0; } .res-head dt { color: var(--muted); min-width: 92px; } .res-head dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .res-sec { padding: 10px 14px; border-bottom: 1px solid var(--line); } .res-sec:last-child { border-bottom: 0; }
+  .res-sec > h4 { font-family: var(--f-body); font-size: .92rem; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); display: inline-block; }
+  .hits { border-collapse: collapse; width: 100%; } .res table.data.hits td, .res table.data.hits th { font-size: .82rem; padding: 3px 8px; line-height: 1.3; border-bottom: 1px solid var(--grid); }
+  .hits th { font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .hits td.num { font-family: var(--f-mono); font-size: .78rem; }
+  .hits tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
   .hits tr.sel td { background: var(--accent-soft); }
   .hits .desc { min-width: 150px; }
-  .bitkey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
-  .bitkey i { display: inline-block; width: 18px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .hits .lnk { font: inherit; font-size: .8rem; color: var(--accent); background: none; border: 0; padding: 2px 0; text-decoration: underline; cursor: pointer; }
+  .bitkey { display: flex; flex-wrap: wrap; align-items: center; gap: 0; font-size: .74rem; margin: 2px 0 6px; }
+  .bitkey .kt { color: var(--muted); margin-right: 8px; }
+  .bitkey span.k { color: var(--accent-ink); padding: 2px 10px; font-family: var(--f-mono); font-weight: 600; }
+  .graphic { width: 100%; height: auto; display: block; }
   .graphic text { font-family: var(--f-body); font-size: 11px; fill: var(--ink); }
+  .graphic .rl { font-family: var(--f-mono); font-size: 9.5px; fill: var(--muted); }
+  .aln-box pre.aln { border: 0; border-left: 3px solid var(--accent); border-radius: 0; background: var(--bg); }
+  .aln .mm { color: var(--bad); font-weight: 600; }
+  .aln .hd { color: var(--ink); font-weight: 600; }
+  .aln .sub { color: var(--muted); }
   .fossil-cv { width: 100%; display: block; }
   .bg-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
   .bg-svg .ln { stroke: var(--ink); stroke-width: 2; fill: none; }
@@ -701,7 +723,7 @@ function drawTree(el, root, names, opts = {}) {
   const badges = (n, x0, x1, y) => {
     if (!n.marks || !n.marks.length) return;
     const span = x1 - x0, step = Math.min(18, span / (n.marks.length + 1));
-    n.marks.forEach((m, i) => { num++; const cx = x0 + span / 2 + (i - (n.marks.length - 1) / 2) * step; const warn = opts.check && !opts.check(m); legend.push({ num, m, warn }); svg += `<g class="badge${warn ? ' warn' : ''}"><circle cx="${cx}" cy="${y}" r="8"/><text x="${cx}" y="${y + 3.6}" text-anchor="middle">${num}</text></g>`; });
+    n.marks.forEach((m, i) => { num++; const cx = x0 + span / 2 + (i - (n.marks.length - 1) / 2) * step; const warn = opts.check && !opts.check(m); legend.push({ num, m, warn }); svg += `<g class="badge${warn ? ' warn' : ''}"><rect x="${cx - 1.4}" y="${y - 6.5}" width="2.8" height="13"/><text x="${cx}" y="${y - 9}" text-anchor="middle">${num}</text></g>`; });
   };
   const rx = X(root), ry = pos.get(root);
   svg += `<path class="br" d="M8 ${ry} H${rx}"/>`;
@@ -710,10 +732,11 @@ function drawTree(el, root, names, opts = {}) {
     const x = X(n), ys = n.kids.map(k => pos.get(k));
     svg += `<path class="br" d="M${x} ${Math.min(...ys)} V${Math.max(...ys)}"/>`;
     n.kids.forEach(k => { svg += `<path class="br${k.fossil ? ' fos' : ''}" d="M${x} ${pos.get(k)} H${X(k)}"/>`; draw(k); });
+    svg += `<circle class="node" cx="${x}" cy="${pos.get(n)}" r="2.4"/>`;
   })(root);
   badges(root, 8, rx, ry);
   (function bd(n) { n.kids.forEach(k => { badges(k, X(n), X(k), pos.get(k)); bd(k); }); })(root);
-  leaves.forEach(l => { svg += `<text x="${X(l) + 6}" y="${pos.get(l) + 4.5}"${l.fossil ? ' class="fos"' : ''}>${esc(l.fossil ? (opts.fossilLabel || 'Fossil') : names[l.members[0]] || l.members[0])}</text>`; });
+  leaves.forEach(l => { svg += `<circle class="tip" cx="${X(l)}" cy="${pos.get(l)}" r="1.8"/><text x="${X(l) + 7}" y="${pos.get(l) + 4.5}"${l.fossil ? ' class="fos"' : ''}>${esc(l.fossil ? '\u2020 ' + (opts.fossilLabel || 'Fossil') : names[l.members[0]] || l.members[0])}</text>`; });
   el.innerHTML = `<svg class="tree-svg" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(opts.aria || 'Cladogram')}">${svg}</svg>` +
     (legend.length ? `<div class="tree-legend">${legend.map(e => `<span class="${e.warn ? 'warn' : ''}"><b>${e.num}</b>${esc(e.m.trait)}${e.warn ? ' (does not match the trait table)' : ''}</span>`).join('')}</div>` : '');
   return leaves.map(l => l.fossil ? 'fossil' : l.members[0]);
@@ -956,39 +979,47 @@ renderDataset();
 /* ---------------- Mini-BLAST output ---------------- */
 const fmtE = E => { if (E < 1e-180) return '0.0'; if (E >= 0.01) return E >= 1 ? E.toFixed(1) : E.toFixed(3); const ex = Math.floor(Math.log10(E)); let man = Math.round(E / Math.pow(10, ex)); return man >= 10 ? `1e-${String(-(ex + 1)).padStart(2, '0')}` : `${man}e-${String(-ex).padStart(2, '0')}`; };
 const bitColor = b => b >= 200 ? '--bad' : b >= 80 ? '--s2' : b >= 50 ? '--s1' : b >= 40 ? '--s3' : '--muted';
-function alignmentText(h, qLen) {
-  const lines = []; let qi = h.qStart, si = h.sStart;
-  lines.push(`>${ORGS[h.id][0]} (${ORGS[h.id][1]}) ${h.gene ? 'gene ' + h.gene + ' homolog, simulated' : ''}`);
-  lines.push(`Score = ${h.bits.toFixed(0)} bits (${h.raw}),  Expect = ${fmtE(h.E)}`);
-  lines.push(`Identities = ${h.nid}/${h.len} (${Math.round(h.ident)}%),  Gaps = ${h.gaps}/${h.len} (${Math.round(100 * h.gaps / h.len)}%)`);
-  lines.push('Strand = Plus/Plus', '');
+function alignmentHTML(h) {
+  const L = [], sid = `sim|${h.id}_gene${h.gene || ''}`;
+  L.push(`<span class="hd">${esc(ORGS[h.id][0])} (${esc(ORGS[h.id][1])}) gene ${esc(h.gene || '')} homolog, simulated</span>`);
+  L.push(`<span class="sub">Sequence ID: ${esc(sid)}   Length: ${h.seq ? h.seq.length : h.len}   Number of Matches: 1</span>`);
+  L.push(`<span class="sub">Range 1: ${h.sStart} to ${h.sStart + h.sa.replace(/-/g, '').length - 1}</span>`, '');
+  L.push(` Score = ${h.bits.toFixed(0)} bits (${h.raw}),  Expect = ${fmtE(h.E)}`);
+  L.push(` Identities = ${h.nid}/${h.len} (${Math.round(h.ident)}%),  Gaps = ${h.gaps}/${h.len} (${Math.round(100 * h.gaps / h.len)}%)`);
+  L.push(' Strand = Plus/Plus', '');
+  let qi = h.qStart, si = h.sStart;
   for (let k = 0; k < h.len; k += 60) {
-    const qa = h.qa.slice(k, k + 60), sa = h.sa.slice(k, k + 60);
-    const qn = qa.replace(/-/g, '').length, sn = sa.replace(/-/g, '').length;
+    const qa = h.qa.slice(k, k + 60), sa = h.sa.slice(k, k + 60), qn = qa.replace(/-/g, '').length, sn = sa.replace(/-/g, '').length;
     const mid = qa.split('').map((c, x) => c === sa[x] ? '|' : ' ').join('');
-    lines.push(`Query  ${String(qi).padEnd(4)} ${qa}  ${qi + qn - 1}`);
-    lines.push(`            ${mid}`);
-    lines.push(`Sbjct  ${String(si).padEnd(4)} ${sa}  ${si + sn - 1}`, '');
+    const mark = (a, b) => a.split('').map((c, x) => c === b[x] ? c : `<span class="mm">${c}</span>`).join('');
+    L.push(`Query  ${String(qi).padEnd(4)} ${mark(qa, sa)}  ${qi + qn - 1}`);
+    L.push(`            ${mid}`);
+    L.push(`Sbjct  ${String(si).padEnd(4)} ${mark(sa, qa)}  ${si + sn - 1}`, '');
     qi += qn; si += sn;
   }
-  return lines.join('\n');
+  return L.join('\n');
 }
 function renderBlast(el, res, meta) {
-  const { hits, query } = res;
-  if (!hits.length) { el.innerHTML = `<div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${meta.prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div>`; return; }
-  const W = 640, rowH = 13, top = 34, Hh = top + hits.length * rowH + 8, L = 120, R = W - 12, X = p => L + (p - 1) / query.length * (R - L);
-  let g = `<text x="${L}" y="12">Query</text><rect x="${L}" y="18" width="${R - L}" height="6" rx="2" style="fill:var(--ink)"/>`;
-  [1, Math.round(query.length / 2), query.length].forEach(p => { g += `<text x="${X(p)}" y="31" text-anchor="middle" style="font-size:9.5px;fill:var(--muted)">${p}</text>`; });
-  hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 6}" y="${y + 8}" text-anchor="end">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="9" rx="2" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits</title></rect>`; });
-  const key = [['--muted', '&lt; 40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥ 200']].map(([c, t]) => `<span><i style="background:var(${c})"></i>${t}</span>`).join('');
-  el.innerHTML = `<div class="small"><strong>Graphic summary.</strong> Each bar shows where a database sequence lines up with the query, colored by alignment score (bits).</div><div class="bitkey">${key}</div>
-    <svg class="graphic" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Graphic summary of ${hits.length} BLAST hits">${g}</svg>
-    <div class="small"><strong>Sequences producing significant alignments</strong> (${hits.length}). Select a row to view its alignment.</div>
+  const { hits, query } = res, prog = meta.prog || res.prog;
+  const head = `<dl class="res-head"><div><dt>Job title</dt><dd>${esc(res.org && res.org !== 'pasted' ? orgLabel(res.org) + ' gene ' + res.gene : res.org === 'pasted' ? 'Pasted sequence' : 'Fossil gene ' + res.gene)}</dd></div><div><dt>Program</dt><dd>${prog === 'megablast' ? 'BLASTN (megablast)' : 'BLASTN'}</dd></div><div><dt>Molecule type</dt><dd>nucleic acid</dd></div><div><dt>Query length</dt><dd>${query.length}</dd></div><div><dt>Database</dt><dd>Lab Bench nucleotide set (simulated)</dd></div><div><dt>Hits</dt><dd>${hits.length} with E &lt; 10</dd></div></dl>`;
+  if (!hits.length) { el.innerHTML = `<div class="res">${head}<div class="res-sec"><div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div></div></div>`; return; }
+  const W = 640, rowH = 11, top = 40, Hh = top + hits.length * rowH + 8, L = 150, R = W - 14, X = p => L + (p - 1) / (query.length - 1) * (R - L);
+  let g = `<text x="${L - 8}" y="20" text-anchor="end" style="font-weight:600">Query</text><rect x="${L}" y="12" width="${R - L}" height="9" style="fill:var(--ink)"/>`;
+  const step = query.length > 200 ? 50 : 25;
+  for (let p = 0; p <= query.length; p += step) { const xx = X(Math.max(1, p)); g += `<line x1="${xx}" x2="${xx}" y1="23" y2="28" style="stroke:var(--muted)"/><text class="rl" x="${xx}" y="37" text-anchor="middle">${Math.max(1, p)}</text>`; }
+  hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 8}" y="${y + 7.5}" text-anchor="end" style="font-size:10px">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="7" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits, E = ${fmtE(h.E)}</title></rect>`; });
+  const key = [['--muted', '&lt;40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥200']].map(([c, t]) => `<span class="k" style="background:var(${c})">${t}</span>`).join('');
+  el.innerHTML = `<div class="res">${head}
+    <div class="res-sec"><h4>Graphic Summary</h4><div class="small muted">Distribution of the top ${hits.length} BLAST hits on the query sequence. Each bar is an aligned region, colored by alignment score.</div>
+    <div class="bitkey"><span class="kt">Color key for alignment scores</span>${key}</div>
+    <svg class="graphic" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Graphic summary of ${hits.length} BLAST hits">${g}</svg></div>
+    <div class="res-sec"><h4>Descriptions</h4><div class="small muted">Sequences producing significant alignments (${hits.length}). Select "View" to show an alignment.</div>
     <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th>Group</th><th class="num">Max score</th><th class="num">Query cover</th><th class="num">E value</th><th class="num">Per. ident</th><th>Alignment</th></tr></thead><tbody>
-    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td>${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="btn btn--sm" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
-    </tbody></table></div><div class="aln-box"></div><div class="dtree"></div>`;
+    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td>${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="lnk" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="res-sec"><h4>Alignments</h4><div class="aln-box"></div><div class="dtree"></div></div></div>`;
   const box = Lab.$('.aln-box', el);
-  const show = i => { Lab.$$('tr', el).forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment">${esc(alignmentText(hits[i], query.length))}</pre>`; };
+  const show = i => { Lab.$$('tr', el).forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment; mismatched bases are highlighted">${alignmentHTML(hits[i])}</pre>`; };
   Lab.$$('[data-view]', el).forEach(b => b.addEventListener('click', () => show(+b.dataset.view)));
   show(0);
 }
