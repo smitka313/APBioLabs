@@ -424,6 +424,41 @@
   'use strict';
   Lab.init({ id: 'lab11' });
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, C = n => Lab.color(n), h = Lab.h;
+  /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
+  const V = (() => {
+    let n = 0;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    function box(inp) {
+      if (inp._vfb) return inp._vfb;
+      const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
+      const host = inp.closest('.inline-num');
+      if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
+      inp._vfb = fb; inp.addEventListener('input', () => { if (!inp._live) V.ok(inp); }); return fb;
+    }
+    const V = {
+      bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
+      ok(inp) { if (inp._vfb) inp._vfb.hidden = true; inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby'); return true; },
+      /* read a number from an input; returns null (after showing a message) when empty, not a number or out of range */
+      num(inp, o = {}) {
+        const name = o.name || 'this value', raw = inp.value.trim();
+        const v = +raw;
+        if ((inp.validity && inp.validity.badInput) || (raw !== '' && !isFinite(v))) return V.bad(inp, `${cap(name)} must be a number, like 12 or 0.5.`);
+        if (raw === '') return V.bad(inp, o.empty || `Enter ${name} first.`);
+        if (o.int && v !== Math.round(v)) return V.bad(inp, `${cap(name)} must be a whole number.`);
+        if (o.gt != null && !(v > o.gt)) return V.bad(inp, o.gtMsg || `${cap(name)} must be greater than ${o.gt}.`);
+        if (o.min != null && v < o.min) return V.bad(inp, o.minMsg || `${cap(name)} can't be less than ${o.min}.`);
+        if (o.max != null && v > o.max) return V.bad(inp, o.maxMsg || `${cap(name)} can't be more than ${o.max}.`);
+        V.ok(inp); return v;
+      },
+      /* show a message in an existing feedback element */
+      say(el, msg) { el.hidden = false; el.className = 'feedback bad'; el.setAttribute('role', 'alert'); el.textContent = msg; },
+      /* status line: plain text normally, red alert when it is an error */
+      note(el, msg, bad) { el.textContent = msg; el.className = bad ? 'feedback bad' : 'small'; if (bad) el.setAttribute('role', 'alert'); else el.removeAttribute('role'); },
+      /* mark/unmark editable table cells */
+      cell(root, r, k, msg) { const i = root.querySelector(`input[data-r="${r}"][data-k="${k}"]`); if (i) { if (msg) { i.setAttribute('aria-invalid', 'true'); i.title = msg; } else { i.removeAttribute('aria-invalid'); i.removeAttribute('title'); } } }
+    };
+    return V;
+  })();
   const rng = Lab.rng();
   const U = (r, a, b) => { if (Array.isArray(a)) [a, b] = a; return a + (b - a) * r.uniform(); };
   const seg = (ids, onPick) => ids.forEach(id => $(id).addEventListener('click', () => { ids.forEach(j => $(j).setAttribute('aria-pressed', j === id ? 'true' : 'false')); onPick(id); }));
@@ -653,8 +688,12 @@
     footer: rows => ['Mean', '', '', '', fmt(S.mean(rows.map(r => r.cm2)), 2), fmt(S.mean(rows.map(r => r.mm2)), 0), '', '']
   });
   $('#la-calc').addEventListener('click', () => {
-    const f = parseInt($('#la-full').value, 10), p = parseInt($('#la-part').value, 10), msg = $('#la-msg');
-    if (!(f >= 0) || !(p >= 0)) { msg.textContent = 'Enter both counts first (whole numbers).'; msg.className = 'status bad'; return; }
+    const msg = $('#la-msg');
+    const f = V.num($('#la-full'), { name: 'the number of full squares', empty: 'Enter the number of full squares first.', int: true, min: 0, minMsg: 'A count of squares can\u2019t be negative.', max: 5000, maxMsg: 'That is more squares than fit on the leaf tracing. Recount.' });
+    const p = V.num($('#la-part'), { name: 'the number of partial squares', empty: 'Enter the number of partial squares first (0 if none).', int: true, min: 0, minMsg: 'A count of squares can\u2019t be negative.', max: 5000, maxMsg: 'That is more squares than fit on the leaf tracing. Recount.' });
+    if (f == null || p == null) { msg.textContent = 'Fix the highlighted box' + (f == null && p == null ? 'es' : '') + '. The area wasn\u2019t calculated and nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
+    if (f + p === 0) { V.bad($('#la-full'), 'Count at least one square. A leaf can\u2019t have an area of 0.'); msg.textContent = 'Nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
+    msg.removeAttribute('role');
     const a = (f + p / 2) / 4, err = (a - leaf.area) / leaf.area * 100;
     $('#la-yours').textContent = fmt(a, 2) + ' cm²'; $('#la-mm').textContent = fmt(a * 100, 0) + ' mm²'; $('#la-true').textContent = fmt(leaf.area, 2) + ' cm²';
     const countOk = Math.abs(f - leaf.full) <= 2 && Math.abs(p - leaf.part) <= 3;
@@ -848,11 +887,12 @@
       const f = st.field; if (!f) return; const sc = FR / f.R, L = 0.028 * sc, rr = Math.max(9, L * 0.8);
       f.stomata.forEach(s => { if (!s.marked) return; const x = toW(f, s.x), y = toW(f, s.y); ctx.lineWidth = 4.2; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke(); ctx.lineWidth = 2.4; ctx.strokeStyle = C('--stain'); ctx.stroke(); });
     },
-    hud: (ctx) => {
+    hud: (ctx, view) => {
+      const z = (view && view.zoom) > 0 ? view.zoom : 1;   // scope.js zoom: the scale bar grows with the image
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.font = '600 16px "JetBrains Mono", ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillText(`${st.mag}X`, 14, 26);
-      ctx.textAlign = 'right'; ctx.fillText(`⌀ ${FOV[st.mag]} mm`, VW - 14, 26);
-      const bar = st.mag === 400 ? 0.1 : 0.5, b = bar * FR / (FOV[st.mag] / 2), x1 = VW - 16, y = VW - 18;
+      ctx.textAlign = 'right'; ctx.fillText(`⌀ ${+(FOV[st.mag] / z).toFixed(2)} mm`, VW - 14, 26);
+      const bar = st.mag === 400 ? 0.1 : 0.5, b = bar * z * FR / (FOV[st.mag] / 2), x1 = VW - 16, y = VW - 18;
       ctx.fillRect(x1 - b, y - 2, b, 4); ctx.fillRect(x1 - b, y - 7, 1.6, 14); ctx.fillRect(x1 - 1.6, y - 7, 1.6, 14);
       ctx.font = '600 14px "JetBrains Mono", ui-monospace, monospace'; ctx.fillText(`${bar * 1000} µm`, x1, y - 11);
       ctx.restore();
@@ -899,10 +939,12 @@
   $('#st-dens-check').addEventListener('click', () => {
     const sp = STOM.find(s => s.k === st.sp), surf = st.surf === 'lo' ? 'lower' : 'upper';
     const rows = stTable.getRows().filter(r => r.sp === sp.name && r.surf === surf && r.mag === '400X');
-    const out = $('#st-dens-msg'), v = parseFloat($('#st-dens').value);
+    const out = $('#st-dens-msg');
     if (rows.length < 3) { out.textContent = `Record at least 3 fields at 400X for ${sp.name}, ${surf} surface (you have ${rows.length}).`; out.className = 'status bad'; return; }
+    const v = V.num($('#st-dens'), { name: 'your stomatal density', empty: 'Type your answer (stomata per mm\u00B2) before pressing Check.', gt: 0, gtMsg: 'Stomatal density must be greater than 0 per mm\u00B2.' });
+    if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     const m = S.mean(rows.map(r => r.count)), dens = m / (Math.PI * 0.225 * 0.225);
-    const ok = isFinite(v) && Math.abs(v - dens) <= Math.max(2, dens * 0.03);
+    const ok = Math.abs(v - dens) <= Math.max(2, dens * 0.03);
     out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². The manual's average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
     out.className = 'status ' + (ok ? 'ok' : 'bad');
   });
@@ -1342,10 +1384,11 @@
   $('#tr-check').addEventListener('click', () => {
     const rows = trTable.getRows(), out = $('#tr-check-msg');
     if (!rows.length) { out.textContent = 'Run some plants first.'; out.className = 'status bad'; return; }
-    const filled = rows.filter(r => typeof r.rpaIn === 'number');
+    const filled = rows.filter(r => typeof r.rpaIn === 'number' && isFinite(r.rpaIn));
+    if (!filled.length) { out.textContent = 'Nothing to check yet: fill in the last column (rate \u00F7 leaf area) for at least one plant, then press Check.'; out.className = 'status bad'; Lab.toast('Not checked: fill in the rate \u00F7 leaf area column first', { type: 'warn', announce: false, key: 'trchk' }); return; }
     const ok = filled.filter(r => Math.abs(r.rpaIn - r.rpa) <= Math.max(0.02, Math.abs(r.rpa) * 0.03));
     const bad = filled.filter(r => !ok.includes(r)).map(r => r.n);
-    out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} blank` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: rate ÷ leaf area, then shift the decimal to match the unit.` : '.');
+    out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} still blank (not checked)` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: rate ÷ leaf area, then shift the decimal to match the unit.` : '.');
     out.className = 'status ' + (ok.length === rows.length ? 'ok' : 'bad');
   });
   function trSummary() {
@@ -1353,7 +1396,7 @@
     rows.forEach(r => { const k = `${r.method}|${r.sp}|${r.cond}`; if (!groups.has(k)) groups.set(k, { method: r.method, sp: r.sp, cond: r.cond, v: [], unit: r.rpaUnit, mt: r.methodTxt, st: r.spTxt, ct: r.condTxt }); groups.get(k).v.push(r.rpa); });
     const gs = [...groups.values()];
     gs.forEach(g => { const c = groups.get(`${g.method}|${g.sp}|control`); g.m = S.mean(g.v); g.se2 = g.v.length > 1 ? 2 * S.se(g.v) : 0; g.adj = c ? g.m - S.mean(c.v) : NaN; g.ctl = c; });
-    $('#tr-summary').innerHTML = gs.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Method</th><th>Plant</th><th>Condition</th><th class="num">n</th><th class="num">Mean rate/area</th><th class="num">±2 SE</th><th class="num">Adjusted (− control)</th><th class="num">t-test vs control</th><th>Unit</th></tr></thead><tbody>${gs.map(g => { const tt = g.ctl && g.cond !== 'control' ? welch(g.v, g.ctl.v) : null; return `<tr><td>${g.mt}</td><td>${g.st}</td><td>${g.ct}</td><td class="num">${g.v.length}</td><td class="num">${fmt(g.m, 3)}</td><td class="num">${g.v.length > 1 ? fmt(g.se2, 3) : '—'}</td><td class="num">${g.cond === 'control' ? '0 (control)' : isFinite(g.adj) ? fmt(g.adj, 3) : 'run a control'}</td><td class="num">${tt ? (tt.p < 0.001 ? 'p &lt; 0.001' : `p = ${fmt(tt.p, 3)}`) : '—'}</td><td>${Lab.esc(g.unit)}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="small muted">Run plants to fill the class table.</p>';
+    $('#tr-summary').innerHTML = gs.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Method</th><th>Plant</th><th>Condition</th><th class="num">n</th><th class="num">Mean rate/area</th><th class="num">±2 SE</th><th class="num">Adjusted (− control)</th><th class="num">t-test vs control</th><th>Unit</th></tr></thead><tbody>${gs.map(g => { const tt = g.ctl && g.cond !== 'control' ? welch(g.v, g.ctl.v) : null; return `<tr><td>${g.mt}</td><td>${g.st}</td><td>${g.ct}</td><td class="num">${g.v.length}</td><td class="num">${fmt(g.m, 3)}</td><td class="num">${g.v.length > 1 ? fmt(g.se2, 3) : '—'}</td><td class="num">${g.cond === 'control' ? '0 (control)' : isFinite(g.adj) ? fmt(g.adj, 3) : 'run a control'}</td><td class="num">${tt ? (tt.p < 0.001 ? 'p &lt; 0.001' : `p = ${fmt(tt.p, 3)}`) : '—'}</td><td>${Lab.esc(g.unit)}</td></tr>`; }).join('')}</tbody></table></div>${gs.some(g => g.v.length < 2) ? '<p class="small muted">A group with one plant has no SE and no t-test. Run at least 2 plants.</p>' : ''}` : '<p class="small muted">Run plants to fill the class table.</p>';
     const meth = rows.length ? rows[rows.length - 1].method : 'pot', sp = rows.length ? rows[rows.length - 1].sp : null;
     const sel = gs.filter(g => g.method === meth && g.sp === sp);
     const order = ['control', 'fan', 'lamp', 'mist', 'dark'];
@@ -1368,6 +1411,7 @@
   function tTwoTail(t, v) { const a = Math.abs(t), n = 2000, hh = a / n; let s = tPdf(0, v) + tPdf(a, v); for (let i = 1; i < n; i++) s += (i % 2 ? 4 : 2) * tPdf(i * hh, v); return Math.max(0, Math.min(1, 1 - 2 * s * hh / 3)); }
   function welch(a, b) {
     if (a.length < 2 || b.length < 2) return null;
+    if (!(S.sd(a) > 0 || S.sd(b) > 0)) return null;   // identical values everywhere: t is undefined
     const va = S.sd(a) ** 2 / a.length, vb = S.sd(b) ** 2 / b.length, t = (S.mean(a) - S.mean(b)) / Math.sqrt(va + vb);
     const df = (va + vb) ** 2 / (va * va / (a.length - 1) + vb * vb / (b.length - 1));
     return { t, df, p: tTwoTail(t, df) };
@@ -1446,7 +1490,7 @@
     const a = dGroups[+$('#t-a').value], b = dGroups[+$('#t-b').value], out = $('#t-out');
     if (!a || !b || a === b) { out.textContent = 'Choose two different groups, each with at least two replicates.'; return; }
     const r = welch(a.v, b.v);
-    if (!r) { out.textContent = 'Each group needs at least two replicates.'; return; }
+    if (!r) { out.textContent = a.v.length < 2 || b.v.length < 2 ? 'Each group needs at least two replicates.' : 'Every value in both groups is identical, so t can\u2019t be calculated (there is no variation to compare). Run more replicates.'; return; }
     out.textContent = `Mean A = ${fmt(a.mean, 3)}, mean B = ${fmt(b.mean, 3)}, difference = ${fmt(a.mean - b.mean, 3)}.  t = ${fmt(r.t, 2)}, df = ${fmt(r.df, 1)}, ${r.p < 0.001 ? 'p < 0.001' : 'p = ' + fmt(r.p, 3)} → ${r.p < 0.05 ? 'significant at α = 0.05' : 'not significant at α = 0.05'}.`;
   }
   dUpdate();
@@ -1521,8 +1565,8 @@
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
   $('#tr-run').addEventListener('click', () => { Lab.toast('Ran ' + $('#tr-n').value + ' plants. Open Data to fill in rate ÷ leaf area.', { type: 'ok', announce: false, key: 'trrun' }); });
   $('#d-run').addEventListener('click', () => { Lab.toast('Added ' + $('#d-n').value + ' replicate plants', { type: 'ok', announce: false, key: 'drun' }); });
-  $('#st-dens-check').addEventListener('click', () => { const ok = /ok/.test($('#st-dens-msg').className); Lab.toast(ok ? 'Stomatal density is correct' : 'Not quite: see the message under the box', { type: ok ? 'ok' : 'warn', announce: false, key: 'dens' }); });
-  $('#tr-check').addEventListener('click', () => { const ok = /ok/.test($('#tr-check-msg').className); Lab.toast(ok ? 'All rate/area values check out' : 'Some rate/area values need rechecking', { type: ok ? 'ok' : 'warn', announce: false, key: 'trchk' }); });
+  $('#st-dens-check').addEventListener('click', () => { if ($('#st-dens').getAttribute('aria-invalid') === 'true') { Lab.toast('Not checked: enter a valid number first', { type: 'warn', announce: false, key: 'dens' }); return; } const ok = /ok/.test($('#st-dens-msg').className); Lab.toast(ok ? 'Stomatal density is correct' : 'Not quite: see the message under the box', { type: ok ? 'ok' : 'warn', announce: false, key: 'dens' }); });
+  $('#tr-check').addEventListener('click', () => { if (/Nothing to check/.test($('#tr-check-msg').textContent)) return; const ok = /ok/.test($('#tr-check-msg').className); Lab.toast(ok ? 'All rate/area values check out' : 'Some rate/area values need rechecking', { type: ok ? 'ok' : 'warn', announce: false, key: 'trchk' }); });
 })();
 </script>
 </body>

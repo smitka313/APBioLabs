@@ -393,6 +393,39 @@
   Lab.init({ id: 'lab06' });
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, C = n => Lab.color(n);
   const rng = Lab.rng();
+  /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
+  const V = (() => {
+    let n = 0;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    function box(inp) {
+      if (inp._vfb) return inp._vfb;
+      const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
+      const host = inp.closest('.inline-num');
+      if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
+      inp._vfb = fb; inp.addEventListener('input', () => { if (!inp._live) V.ok(inp); }); return fb;
+    }
+    const V = {
+      bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
+      ok(inp) { if (inp._vfb) inp._vfb.hidden = true; inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby'); return true; },
+      /* read a number from an input; returns null (after showing a message) when empty, not a number or out of range */
+      num(inp, o = {}) {
+        const name = o.name || 'this value', raw = inp.value.trim();
+        const v = +raw;
+        if ((inp.validity && inp.validity.badInput) || (raw !== '' && !isFinite(v))) return V.bad(inp, `${cap(name)} must be a number, like 12 or 0.5.`);
+        if (raw === '') return V.bad(inp, o.empty || `Enter ${name} first.`);
+        if (o.int && v !== Math.round(v)) return V.bad(inp, `${cap(name)} must be a whole number.`);
+        if (o.gt != null && !(v > o.gt)) return V.bad(inp, o.gtMsg || `${cap(name)} must be greater than ${o.gt}.`);
+        if (o.min != null && v < o.min) return V.bad(inp, o.minMsg || `${cap(name)} can't be less than ${o.min}.`);
+        if (o.max != null && v > o.max) return V.bad(inp, o.maxMsg || `${cap(name)} can't be more than ${o.max}.`);
+        V.ok(inp); return v;
+      },
+      /* show a message in an existing feedback element */
+      say(el, msg) { el.hidden = false; el.className = 'feedback bad'; el.setAttribute('role', 'alert'); el.textContent = msg; },
+      /* mark/unmark editable table cells */
+      cell(root, r, k, msg) { const i = root.querySelector(`input[data-r="${r}"][data-k="${k}"]`); if (i) { if (msg) { i.setAttribute('aria-invalid', 'true'); i.title = msg; } else { i.removeAttribute('aria-invalid'); i.removeAttribute('title'); } } }
+    };
+    return V;
+  })();
   const U = (r, a, b) => { if (Array.isArray(a)) [a, b] = a; return a + (b - a) * r.uniform(); };
 
   /* ================= Pre-lab ================= */
@@ -1036,15 +1069,19 @@
   $('#p-check').addEventListener('click', () => {
     const rows = pTable.getRows(), out = $('#p-check-msg');
     if (!rows.length) { out.textContent = 'Run the experiment first.'; out.className = 'status bad'; return; }
-    let ok = 0, total = 0; const wrong = [];
+    let ok = 0, total = 0; const wrong = [], blank = [];
     rows.forEach((r, i) => {
       if (typeof r.e !== 'number') return;
+      if (!(typeof r.de === 'number' && isFinite(r.de))) blank.push(`${r.t} min (D)`);
+      if (!(typeof r.corr === 'number' && isFinite(r.corr))) blank.push(`${r.t} min (corrected)`);
       const prev = i === 0 ? 0 : rows[i - 1].e;
       const expDe = i === 0 ? 0 : (typeof prev === 'number' ? r.e - prev : null);
       const expCorr = r.e - r.c;
       if (expDe != null) { total++; if (typeof r.de === 'number' && Math.abs(r.de - expDe) <= 0.015) ok++; else wrong.push(`${r.t} min (D)`); }
       total++; if (typeof r.corr === 'number' && Math.abs(r.corr - expCorr) <= 0.015) ok++; else wrong.push(`${r.t} min (corrected)`);
     });
+    if (blank.length) { out.setAttribute('role', 'alert'); out.textContent = `Not checked yet: ${blank.length} cell${blank.length > 1 ? 's are' : ' is'} still blank or not a number (${blank.slice(0, 4).join(', ')}${blank.length > 4 ? ', \u2026' : ''}). Fill in every D and Corrected cell, then check again.`; out.className = 'status bad'; Lab.toast('Not checked: fill in every blank cell first', { type: 'warn', announce: false }); return; }
+    out.removeAttribute('role');
     out.textContent = ok === total ? `All ${total} entries are correct.` : `${ok} of ${total} entries correct. Recheck: ${wrong.slice(0, 6).join(', ')}${wrong.length > 6 ? '…' : ''}.`;
     out.className = 'status ' + (ok === total ? 'ok' : 'bad');
     Lab.toast(ok === total ? `Checked: all ${total} entries are correct` : `Checked: ${ok} of ${total} entries correct`, { type: ok === total ? 'ok' : 'warn', announce: false });
@@ -1052,8 +1089,8 @@
   $('#p-rate-check').addEventListener('click', () => {
     const pts = o2Rows(pTable.getRows()), out = $('#p-rate-msg');
     if (pts.length < 3) { out.textContent = 'You need at least three readings first.'; out.className = 'status bad'; return; }
-    const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y)), v = parseFloat($('#p-rate-in').value);
-    if (!isFinite(v)) { out.textContent = 'Enter a number.'; out.className = 'status bad'; return; }
+    const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y)), v = V.num($('#p-rate-in'), { name: 'your rate', empty: 'Type your rate (a number, in \u00B5L O\u2082/min) before pressing Check.', min: 0, minMsg: 'The rate of O\u2082 uptake can\u2019t be negative. Use the slope of the line going up.' });
+    if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     const good = Math.abs(v - f.m) <= Math.max(0.08, Math.abs(f.m) * 0.1);
     out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Not quite. Rate = rise/run of the fit line: (change in µL O<sub>2</sub>) ÷ (change in minutes). Use points on the line, not the first and last data points.';
     out.className = 'status ' + (good ? 'ok' : 'bad');
@@ -1351,7 +1388,7 @@
     if (numeric) keys.sort((a, b) => a - b);
     const sum = keys.map(k => { const a = groups.get(k); return { k, n: a.length, m: S.mean(a), sd: S.sd(a), se2: a.length > 1 ? 2 * S.se(a) : 0 }; });
     const label = { temp: 'Temperature (°C)', org: 'Organism', days: 'Germination time (days)', light: 'Lighting' }[by];
-    $('#d-summary').innerHTML = sum.length ? `<div class="table-wrap"><table class="data summary-table"><thead><tr><th>${label}</th><th class="num">n</th><th class="num">Mean <span class="unit">(µL·g⁻¹·min⁻¹)</span></th><th class="num">SD</th><th class="num">±2 SE <span class="unit">(95% CI)</span></th></tr></thead><tbody>${sum.map(s => `<tr><td>${Lab.esc(String(s.k))}</td><td class="num">${s.n}</td><td class="num">${fmt(s.m, 2)}</td><td class="num">${fmt(s.sd, 2)}</td><td class="num">${s.n > 1 ? fmt(s.se2, 2) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small muted">Run some trials to see group means here.</p>';
+    $('#d-summary').innerHTML = sum.length ? `<div class="table-wrap"><table class="data summary-table"><thead><tr><th>${label}</th><th class="num">n</th><th class="num">Mean <span class="unit">(µL·g⁻¹·min⁻¹)</span></th><th class="num">SD</th><th class="num">±2 SE <span class="unit">(95% CI)</span></th></tr></thead><tbody>${sum.map(s => `<tr><td>${Lab.esc(String(s.k))}</td><td class="num">${s.n}</td><td class="num">${fmt(s.m, 2)}</td><td class="num">${fmt(s.sd, 2)}</td><td class="num">${s.n > 1 ? fmt(s.se2, 2) : '—'}</td></tr>`).join('')}</tbody></table></div>${sum.some(s => s.n < 2) ? '<p class="small muted">A group with only one trial has no SD or SE. Run at least 2 replicates per group to get error bars.</p>' : ''}` : '<p class="small muted">Run some trials to see group means here.</p>';
     if (numeric) {
       const indiv = rows.filter(r => keyOf(r) != null).map(r => ({ x: keyOf(r), y: r.perg }));
       dChart.update({ type: 'xy', categories: null, xMin: 0, xMax: by === 'temp' ? 45 : 5, xLabel: label, yLabel: 'O₂ uptake (µL·g⁻¹·min⁻¹)', series: [{ name: 'Mean ± 2 SE', points: sum.map(s => ({ x: s.k, y: s.m, err: s.se2 })), line: true }, { name: 'Individual trials', points: indiv, line: false }] });
@@ -1360,8 +1397,16 @@
     }
   }
   updateDesign();
-  const q10 = () => { const t1 = +$('#q-t1').value, t2 = +$('#q-t2').value, r1 = parseFloat($('#q-r1').value), r2 = parseFloat($('#q-r2').value); $('#q-out').textContent = (r1 > 0 && r2 > 0 && t2 !== t1) ? fmt(Math.pow(r2 / r1, 10 / (t2 - t1)), 2) : '—'; };
-  ['#q-t1', '#q-t2', '#q-r1', '#q-r2'].forEach(s => $(s).addEventListener('input', q10));
+  const q10 = () => {
+    const ti = ['#q-t1', '#q-t2'].map(s => $(s)), ri = ['#q-r1', '#q-r2'].map(s => $(s)), out = $('#q-out'); out.textContent = '\u2014';
+    const anyRate = ri.some(i => i.value.trim() !== '');
+    const t = ti.map((i, k) => V.num(i, { name: 'T' + (k + 1), empty: `Enter the temperature T${k + 1}.`, min: 5, max: 45, minMsg: 'The simulation only covers 5 to 45 \u00B0C.', maxMsg: 'The simulation only covers 5 to 45 \u00B0C.' }));
+    const r = ri.map((i, k) => { if (i.value.trim() === '' && !anyRate) { V.ok(i); return null; } return V.num(i, { name: 'R' + (k + 1), empty: `Enter the rate R${k + 1}.`, gt: 0, gtMsg: `R${k + 1} must be greater than 0. A Q\u2081\u2080 can\u2019t be found from a zero or negative rate.` }); });
+    if (t[0] != null && t[1] != null && t[0] === t[1]) { V.bad(ti[1], 'T\u2081 and T\u2082 must be different temperatures.'); return; }
+    if (t.includes(null) || r.includes(null)) return;
+    out.textContent = fmt(Math.pow(r[1] / r[0], 10 / (t[1] - t[0])), 2);
+  };
+  ['#q-t1', '#q-t2', '#q-r1', '#q-r2'].forEach(s => { $(s)._live = true; $(s).addEventListener('input', q10); });
   const dRes = $('#d-results');
   Lab.prompt(dRes, { key: 'd-data-sum', label: 'Describe the pattern in your graph. Report each group mean with its ±2 SE interval and say which intervals overlap.', rows: 4 });
   Lab.prompt(dRes, { key: 'd-rate-calc', label: 'Show one rate calculation from start to finish (plug distance → µL O<sub>2</sub> → slope → per gram).', rows: 3 });

@@ -285,7 +285,7 @@
           <div class="controls">
             <p class="controls-title">Controls</p>
           <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
-          <div class="field"><span class="label">Levels to test</span><div class="levels" id="d-levels"></div></div>
+          <div class="field"><span class="label">Levels to test</span><div class="levels" id="d-levels"></div><div class="feedback bad" id="d-lv-fb" role="alert" hidden></div></div>
           <div class="field"><label for="d-reps">Replicate transformations per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="6" value="3"></div>
             <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
             <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
@@ -358,6 +358,41 @@
 <script>
 Lab.init({ id: 'lab08' });
 const { $, $$ } = Lab;
+  /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
+  const V = (() => {
+    let n = 0;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    function box(inp) {
+      if (inp._vfb) return inp._vfb;
+      const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
+      const host = inp.closest('.inline-num');
+      if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
+      inp._vfb = fb; inp.addEventListener('input', () => { if (!inp._live) V.ok(inp); }); return fb;
+    }
+    const V = {
+      bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
+      ok(inp) { if (inp._vfb) inp._vfb.hidden = true; inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby'); return true; },
+      /* read a number from an input; returns null (after showing a message) when empty, not a number or out of range */
+      num(inp, o = {}) {
+        const name = o.name || 'this value', raw = inp.value.trim();
+        const v = +raw;
+        if ((inp.validity && inp.validity.badInput) || (raw !== '' && !isFinite(v))) return V.bad(inp, `${cap(name)} must be a number, like 12 or 0.5.`);
+        if (raw === '') return V.bad(inp, o.empty || `Enter ${name} first.`);
+        if (o.int && v !== Math.round(v)) return V.bad(inp, `${cap(name)} must be a whole number.`);
+        if (o.gt != null && !(v > o.gt)) return V.bad(inp, o.gtMsg || `${cap(name)} must be greater than ${o.gt}.`);
+        if (o.min != null && v < o.min) return V.bad(inp, o.minMsg || `${cap(name)} can't be less than ${o.min}.`);
+        if (o.max != null && v > o.max) return V.bad(inp, o.maxMsg || `${cap(name)} can't be more than ${o.max}.`);
+        V.ok(inp); return v;
+      },
+      /* show a message in an existing feedback element */
+      say(el, msg) { el.hidden = false; el.className = 'feedback bad'; el.setAttribute('role', 'alert'); el.textContent = msg; },
+      /* status line: plain text normally, red alert when it is an error */
+      note(el, msg, bad) { el.textContent = msg; el.className = bad ? 'feedback bad' : 'small'; if (bad) el.setAttribute('role', 'alert'); else el.removeAttribute('role'); },
+      /* mark/unmark editable table cells */
+      cell(root, r, k, msg) { const i = root.querySelector(`input[data-r="${r}"][data-k="${k}"]`); if (i) { if (msg) { i.setAttribute('aria-invalid', 'true'); i.title = msg; } else { i.removeAttribute('aria-invalid'); i.removeAttribute('title'); } } }
+    };
+    return V;
+  })();
 
 /* ---------- Pre-lab ---------- */
 Lab.quiz('#prelab', [
@@ -1212,29 +1247,37 @@ function parseSci(s) {
 }
 function checkCalc() {
   const fb = $('#calc-fb');
-  if (!plates || !plates['p-amp'] || !plates['p-amp'].incubated) { fb.innerHTML = '<span class="bad">Finish and incubate a transformation first.</span>'; return null; }
-  const count = parseFloat($('#c-count').value);
+  if (!plates || !plates['p-amp'] || !plates['p-amp'].incubated) { fb.innerHTML = '<div class="feedback bad" role="alert">Finish and incubate a transformation first, so there is a plate to count.</div>'; return null; }
+  const FIELDS = ['#c-count', '#c-mass', '#c-frac', '#c-spread', '#c-eff', '#c-sci'];
+  const count = V.num($('#c-count'), { name: 'your colony count', empty: 'Enter your colony count first (a whole number, 0 or more).', int: true, min: 0, minMsg: 'A colony count can\u2019t be negative.' });
+  const vm = V.num($('#c-mass'), { name: 'the total DNA (a)', empty: 'Enter the total plasmid DNA (a) in \u00B5g first.', min: 0, minMsg: 'An amount of DNA can\u2019t be negative.' });
+  const vf = V.num($('#c-frac'), { name: 'the fraction (b)', empty: 'Enter the fraction of the tube spread (b) first.', min: 0, minMsg: 'A fraction can\u2019t be negative.', max: 1, maxMsg: 'The fraction of the tube spread can\u2019t be more than 1 (you spread only part of it). Is this a percentage?' });
+  const vs = V.num($('#c-spread'), { name: 'the DNA spread (c)', empty: 'Enter the plasmid DNA spread on the plate (c) in \u00B5g first.', min: 0, minMsg: 'An amount of DNA can\u2019t be negative.' });
+  const ve = V.num($('#c-eff'), { name: 'the efficiency', empty: 'Enter the transformation efficiency first.', min: 0, minMsg: 'Efficiency can\u2019t be negative.' });
+  const sciEl = $('#c-sci'), sciRaw = sciEl.value.trim(); let sci = null;
+  if (!sciRaw) V.bad(sciEl, 'Enter the efficiency in scientific notation first, like 3.1 \u00D7 10^3.');
+  else if (!isFinite(parseSci(sciRaw)) || parseSci(sciRaw) <= 0) V.bad(sciEl, 'That isn\u2019t scientific notation. Write a number, then \u00D7 10^ and the power, like 3.1 \u00D7 10^3.');
+  else { V.ok(sciEl); sci = parseSci(sciRaw); }
   const mass = CONC * S.vol, frac = S.plateUL / (500 + S.vol), spread = mass * frac;
   const near = (v, t) => isFinite(v) && Math.abs(v - t) <= Math.abs(t) * 0.03 + 1e-9;
-  const lines = [];
-  if (!isFinite(count)) lines.push(['bad', 'Enter your colony count first.']);
+  const lines = [], skipped = [];
+  if (count == null) skipped.push('colony count');
   else if (Math.abs(count - plates['p-amp'].count) > Math.max(2, 0.1 * plates['p-amp'].count)) lines.push(['bad', `Your count (${count}) is quite different from the number of colonies on the plate. Recount, and decide whether you are counting satellites.`]);
   else lines.push(['ok', 'Your colony count is reasonable.']);
-  lines.push(near(parseFloat($('#c-mass').value), mass) ? ['ok', 'a. Total DNA: correct.'] : ['bad', 'a. Total DNA: multiply concentration (µg/µL) by the volume of plasmid you added.']);
-  lines.push(near(parseFloat($('#c-frac').value), frac) ? ['ok', 'b. Fraction spread: correct.'] : ['bad', 'b. Fraction: volume spread ÷ total volume in the tube. Did you add all the volumes?']);
-  lines.push(near(parseFloat($('#c-spread').value), spread) ? ['ok', 'c. DNA spread: correct.'] : ['bad', 'c. DNA spread = total DNA × fraction spread.']);
+  if (vm == null) skipped.push('a'); else lines.push(near(vm, mass) ? ['ok', 'a. Total DNA: correct.'] : ['bad', 'a. Total DNA: multiply concentration (µg/µL) by the volume of plasmid you added.']);
+  if (vf == null) skipped.push('b'); else lines.push(near(vf, frac) ? ['ok', 'b. Fraction spread: correct.'] : ['bad', 'b. Fraction: volume spread ÷ total volume in the tube. Did you add all the volumes?']);
+  if (vs == null) skipped.push('c'); else lines.push(near(vs, spread) ? ['ok', 'c. DNA spread: correct.'] : ['bad', 'c. DNA spread = total DNA × fraction spread.']);
   let eff = NaN;
   if (S.vol === 0) lines.push(['bad', 'No plasmid was added, so efficiency cannot be calculated (division by zero).']);
-  else if (isFinite(count)) {
+  else if (count != null) {
     eff = count / spread;
-    lines.push(near(parseFloat($('#c-eff').value), eff) ? ['ok', 'Efficiency: correct.'] : ['bad', 'Efficiency = your colony count ÷ µg of DNA spread.']);
-    const sci = parseSci($('#c-sci').value);
-    lines.push(isFinite(sci) && Math.abs(sci - eff) <= eff * 0.06 ? ['ok', 'Scientific notation: correct.'] : ['bad', 'Write the efficiency as a number from 1 to 10 times a power of ten, e.g. 3.1 × 10^3.']);
+    if (ve == null) skipped.push('efficiency'); else lines.push(near(ve, eff) ? ['ok', 'Efficiency: correct.'] : ['bad', 'Efficiency = your colony count ÷ µg of DNA spread.']);
+    if (sci == null) skipped.push('scientific notation'); else lines.push(Math.abs(sci - eff) <= eff * 0.06 ? ['ok', 'Scientific notation: correct.'] : ['bad', 'Write the efficiency as a number from 1 to 10 times a power of ten, e.g. 3.1 × 10^3.']);
   }
-  fb.innerHTML = lines.map(([c, t]) => `<span class="${c}">${c === 'ok' ? '✓' : '✗'} ${t}</span>`).join('');
+  fb.innerHTML = (skipped.length ? `<div class="feedback bad" role="alert">Not graded yet: ${skipped.join(', ')}. Fill in or fix ${skipped.length > 1 ? 'those boxes' : 'that box'} (see the messages under the boxes).</div>` : '') + lines.map(([c, t]) => `<span class="${c}">${c === 'ok' ? '✓' : '✗'} ${t}</span>`).join('');
   return { count, spread, eff };
 }
-$('#calc-check').addEventListener('click', checkCalc);
+$('#calc-check').addEventListener('click', () => checkCalc());
 const sciStr = v => { if (!isFinite(v) || v <= 0) return '—'; const e = Math.floor(Math.log10(v)); return `${(v / 10 ** e).toFixed(1)} × 10^${e}`; };
 const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number', yLabel: 'Efficiency (transformants/µg)', series: [], hLines: [{ y: 800, label: '8.0 × 10²' }, { y: 7000, label: '7.0 × 10³' }], xMin: 0 });
 const runsTable = Lab.table('#runs-table', {
@@ -1243,8 +1286,7 @@ const runsTable = Lab.table('#runs-table', {
   onChange: rows => runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) })
 });
 $('#calc-add').addEventListener('click', () => {
-  const r = checkCalc(); if (!r) return;
-  if (!isFinite(r.count)) return;
+  const r = checkCalc(); if (!r || r.count == null) return;
   const araN = plates['p-ara'].cols.filter(c => !c.sat).length;
   runsTable.addRow({ run: runsTable.getRows().length + 1, cond: summary(S), amp: r.count, ara: araN, dna: r.spread, eff: isFinite(r.eff) ? r.eff : null, sci: sciStr(r.eff) });
 });
@@ -1262,6 +1304,7 @@ const IVS = {
   cells: { label: 'Amount of cells picked', key: 'cells', levels: ['one', 'few', 'smear'], on: ['one', 'few', 'smear'], names: LABEL_CELLS },
   sol: { label: 'Transformation solution', key: 'sol', levels: ['cold', 'warm', 'water'], on: ['cold', 'warm', 'water'], names: LABEL_SOL }
 };
+$('#d-levels').addEventListener('change', () => { $('#d-lv-fb').hidden = true; });
 const div = $('#d-iv');
 div.innerHTML = Object.entries(IVS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
 function buildLevels() {
@@ -1287,8 +1330,12 @@ const dTable = Lab.table('#d-table', {
 $('#d-run').addEventListener('click', () => {
   const ivKey = div.value, iv = IVS[ivKey];
   const levels = $$('#d-levels input:checked').map(i => iv.num ? +i.value : i.value);
-  if (!levels.length) return;
+  const lvfb = $('#d-lv-fb');
+  if (levels.length < 2) { lvfb.hidden = false; lvfb.textContent = levels.length ? 'Tick at least two levels so you have something to compare. Nothing was run.' : 'Tick at least two levels to test (include the control). Nothing was run.'; return; }
+  lvfb.hidden = true;
   const n = +reps.value;
+  if (!(n >= 2)) { V.bad(reps, 'Use at least 2 replicate transformations per level. With 1 there is no SE or error bar.'); return; }
+  V.ok(reps);
   const rows = levels.map(l => {
     const Sx = Object.assign({}, DEFAULTS, { [iv.key]: l });
     if (iv.key === 'hsTime' && l === 0) Sx.hsT = 22;
