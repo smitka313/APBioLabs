@@ -40,6 +40,16 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N` still works) and a
   "Copy link" button. A section is done when its prompt textareas are filled, quiz questions checked and saved
   tables have a row. `Lab.progress.update()`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
+- **First-visit tour.** After sign-in, the first lab page a browser opens shows a 5-step dismissible tour
+  (`localStorage['aplab:tour']`, site-wide; `Lab.tour.start({force:true})`, `.reset()`; "Help" link in the sign-in line).
+  It anchors to `.step-nav`, `.steps-box`, `.sim-tabs`, `.id-box`, `.report-bar`; a step whose element is hidden is
+  explained without a highlight. In Playwright tests set `aplab:tour` first or the dialog covers the page.
+- **Backup reminders + storage warnings.** `Lab.backup.state()` → `{answers, rows, meaningful, dirty, unsaved, lastSaved}`;
+  saving a progress file or copying a resume code calls `Lab.backup.markSaved()`. After 3+ answers or a recorded row
+  with no backup, a once-per-session dismissible bar offers "Save progress file" (never while a `Lab.loop` runs).
+  A `beforeunload` guard is attached only while work is unsaved. Rows a page adds itself while loading are not work.
+  Any failed localStorage write shows a persistent warning; `navigator.storage.persist()` is requested once work exists.
+- **Public teacher page.** `teachers.html` (kind `info`) has no sign-in, report tools, tour or backup prompts.
 - **Worksheet.** `Lab.worksheet.print()` / `.enter()` / `.exit()` builds a printable sheet from `Lab.quiz`,
   `Lab.prompt` and `Lab.table` (blank rows: `worksheetRows` option, else preset `rows`, else 8).
 

@@ -596,8 +596,28 @@ details.disclose > .inner > p { max-width: 68ch; }
   .lab-pulse { outline: 0; animation: none; }
 }
 
-/* ---------- First-visit tour ---------- */
+/* ---------- Storage warning, backup reminder, first-visit tour ---------- */
+.storage-warn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px max(16px, env(safe-area-inset-left, 0px)); background: var(--warn-soft); color: var(--ink); border-bottom: 2px solid var(--warn); font-size: .94rem; line-height: 1.4; }
+.storage-warn .sw-msg { flex: 1 1 260px; min-width: 0; font-weight: 600; }
+.sw-icon, .bb-icon { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .8rem; font-weight: 800; }
+.sw-icon { background: var(--warn); color: var(--bg); }
+.bb-icon { background: var(--accent-soft); color: var(--accent); font-family: var(--f-mono); }
+
+.backup-bar { position: fixed; z-index: 55; left: max(16px, calc(env(safe-area-inset-left, 0px) + 12px)); bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px)); width: min(470px, calc(100vw - 32px)); display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); padding: 10px 8px 10px 12px; font-size: .9rem; line-height: 1.35; box-shadow: 0 8px 28px color-mix(in srgb, var(--ink) 18%, transparent); animation: toast-in .18s ease-out; }
+.backup-bar:empty { display: none; }
+.bb-msg { flex: 1 1 220px; min-width: 0; }
+.bb-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.bb-close { width: 28px; height: 28px; border: 0; background: none; color: var(--muted); font-size: 1.2rem; line-height: 1; cursor: pointer; border-radius: 50%; }
+.bb-close:hover { background: var(--surface-2); color: var(--ink); }
+@media (max-width: 600px) {
+  .backup-bar { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: auto; }
+  body.has-backup-bar .toasts { bottom: calc(max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px)) + var(--backup-bar-h, 0px) + 8px); }
+}
+.backup-status { color: var(--muted); }
+.backup-status:empty { display: none; }
+.backup-status.is-unsaved { color: var(--warn); font-weight: 600; }
 .id-line .id-help { font-weight: 600; }
+
 .tour { position: fixed; inset: 0; z-index: 80; }
 .tour-scrim { position: absolute; inset: 0; }
 .tour.is-nospot .tour-scrim { background: color-mix(in srgb, var(--bg) 78%, transparent); }
