@@ -455,44 +455,239 @@
   }
   popSel.addEventListener('change', () => { view = pops.find(p => p.key === popSel.value) || g1; cur = view.plants.find(p => !p.scored) || view.plants[0]; marks = new Set(); drawAll(); updateScoring(); });
 
-  /* ---------------- tray canvas ---------------- */
+  /* ================= REALISTIC SCENE RENDERING =================
+     Plants, potting mix, bottles, the light bank, the hand lens and the bee stick are physical objects, so they
+     use fixed colours and look the same in light and dark themes. Count badges, selection rings, guides and
+     labels are UI and use theme tokens. Light comes from the upper left. Static layers are pre-rendered into
+     offscreen canvases (on resize or when the population/selection changes); redraws only composite them. */
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+  const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const DPR = () => window.devicePixelRatio || 1;
+  function off(w, h) { const d = DPR(), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d)); const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); return { c, x, w, h }; }
+  const blit = (ctx, o) => ctx.drawImage(o.c, 0, 0, o.w, o.h);
+  const bodyFont = () => getComputedStyle(document.body).fontFamily;
+  const monoFont = () => getComputedStyle(document.body).getPropertyValue('--f-mono') || 'monospace';
+  const themeHooks = [];
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => themeHooks.forEach(f => f())); } catch (e) { /* older browsers */ }
+  /* Lighter / darker of the two theme extremes: halos for UI marks drawn over physical scenes. */
+  function uiPair() {
+    const L = s => { const v = Lab.color(s), m = v.match(/[\da-f]{2}/gi); if (v[0] !== '#' || !m) return 0.5; const [r, g, b] = m.slice(0, 3).map(h => parseInt(h, 16)); return (0.3 * r + 0.59 * g + 0.11 * b) / 255; };
+    const bg = Lab.color('--bg'), ink = Lab.color('--ink'), lt = L('--bg') > L('--ink');
+    return { light: lt ? bg : ink, dark: lt ? ink : bg };
+  }
+  const uiLight = () => uiPair().light;
+  /* Scatter small specks (potting mix, paper fibre, dust). */
+  function specks(c, R, n, x, y, w, h, cols, r0, r1, a0, a1, clip) {
+    for (let i = 0; i < n; i++) {
+      const px = x + R.uniform() * w, py = y + R.uniform() * h;
+      if (clip && !clip(px, py)) continue;
+      c.fillStyle = rgba(cols[Math.floor(R.uniform() * cols.length)], a0 + R.uniform() * (a1 - a0));
+      const rr = r0 + R.uniform() * (r1 - r0);
+      c.beginPath(); c.ellipse(px, py, rr, rr * (0.5 + R.uniform() * 0.5), R.uniform() * TAU, 0, TAU); c.fill();
+    }
+  }
+  /* Physical colours of Brassica rapa (Wisconsin Fast Plants). */
+  const PL = { hi: [156, 198, 92], mid: [96, 150, 58], lo: [50, 96, 34], edge: [38, 74, 28], vein: [186, 216, 138], tl: [74, 128, 46], tlHi: [128, 176, 74],
+    stem: [126, 164, 78], purple: [112, 40, 92], petal: [255, 218, 40], petalLo: [222, 160, 12], cut: [216, 228, 176], pollen: [244, 176, 28], dry: [176, 168, 92] };
+  const stemCol = (antho, t) => mixc(PL.stem, PL.purple, clamp(antho / 10, 0, 1) * (0.2 + 0.8 * t));
+  /* Unit vector toward the light (upper left) expressed in a frame rotated by rot. */
+  const lightIn = rot => [Math.cos(-rot) * -0.7071 - Math.sin(-rot) * -0.7071, Math.sin(-rot) * -0.7071 + Math.cos(-rot) * -0.7071];
+  /* Kidney-shaped cotyledon with a notched tip, along +x from the petiole join at the origin. */
+  function cotPath(c, l, w) {
+    c.beginPath(); c.moveTo(0, 0);
+    c.bezierCurveTo(l * 0.05, -w * 0.46, l * 0.52, -w * 0.64, l * 0.9, -w * 0.42);
+    c.quadraticCurveTo(l * 1.07, -w * 0.27, l * 0.83, 0);
+    c.quadraticCurveTo(l * 1.07, w * 0.27, l * 0.9, w * 0.42);
+    c.bezierCurveTo(l * 0.52, w * 0.64, l * 0.05, w * 0.46, 0, 0); c.closePath();
+  }
+  /* True leaf: ovate blade with forward-pointing serrations, along +x from the base at the origin. */
+  function leafPath(c, l, w, teeth) {
+    const hw = s => w * 0.5 * Math.pow(Math.sin(Math.PI * (0.05 + s * 0.9)), 0.7) * (1 - 0.18 * s), pts = [], N = teeth * 3;
+    for (let i = 0; i <= N; i++) { const s = i / N, t = (s * teeth) % 1, tooth = s > 0.1 && s < 0.96 ? (t < 0.72 ? t / 0.72 : (1 - t) / 0.28) * 0.1 : 0; pts.push([s * l, hw(s) * (1 + tooth)]); }
+    c.beginPath(); c.moveTo(0, 0); pts.forEach(p => c.lineTo(p[0], -p[1])); c.lineTo(l * 1.02, 0); for (let i = pts.length - 1; i >= 0; i--) c.lineTo(pts[i][0], pts[i][1]); c.closePath();
+  }
+  /* Shade a leaf path already set on c (local frame, rot = world rotation of that frame). */
+  function shadeLeaf(c, l, w, rot, base, hi, lo, edgeA) {
+    const L = lightIn(rot), g = c.createLinearGradient(l * 0.5 + L[0] * l * 0.55, L[1] * l * 0.55, l * 0.5 - L[0] * l * 0.55, -L[1] * l * 0.55);
+    g.addColorStop(0, rgba(hi)); g.addColorStop(0.55, rgba(base)); g.addColorStop(1, rgba(lo)); c.fillStyle = g; c.fill();
+    c.lineWidth = Math.max(0.5, l * 0.035); c.strokeStyle = rgba(PL.edge, edgeA); c.stroke();
+  }
+  function leafVeins(c, l, w, a, side) {
+    c.strokeStyle = rgba(PL.vein, a); c.lineWidth = Math.max(0.5, l * 0.045); c.beginPath(); c.moveTo(0, 0); c.lineTo(l * 0.86, 0); c.stroke();
+    c.lineWidth = Math.max(0.35, l * 0.022); c.beginPath();
+    for (let k = 1; k <= side; k++) { const s = k / (side + 1) * 0.85; for (const sg of [-1, 1]) { c.moveTo(l * s, 0); c.quadraticCurveTo(l * (s + 0.1), sg * w * 0.22, l * (s + 0.2), sg * w * 0.32); } }
+    c.stroke();
+  }
+  /* Per-plant appearance, fixed for each plant (seeded by its id and population). */
+  function plantLook(p, pop) {
+    const R = Lab.rng(((p.id * 2654435761) ^ ((pop.gen || 1) * 40503) ^ (pop.line === 'ctrl' ? 977 : 0) ^ seed) >>> 0);
+    return { rot: R.uniform() * TAU, sc: 0.86 + R.uniform() * 0.28, tint: R.uniform(), tl: 0.35 + R.uniform() * 0.4, cA: (R.uniform() - 0.5) * 0.35, lean: R.uniform() * TAU, R };
+  }
+  /* Seedling seen from directly above: shadow, purple-tinged hypocotyl, two kidney cotyledons, first true leaves. */
+  function seedlingTop(c, x, y, r, p, L) {
+    const rot = L.rot, l = r * 1.02 * L.sc, w = l * 1.25;
+    const base = mixc(PL.mid, [118, 150, 52], L.tint * 0.6), hi = mixc(PL.hi, [178, 200, 96], L.tint * 0.5);
+    const pet = r * 0.14 * L.sc;
+    // contact shadow on the potting mix (light from upper left → shadow falls lower right)
+    c.save(); c.translate(x + r * 0.16, y + r * 0.2); c.fillStyle = 'rgba(8,5,2,0.42)';
+    for (const a of [rot, rot + Math.PI + L.cA]) { c.save(); c.rotate(a); c.translate(pet, 0); cotPath(c, l, w); c.fill(); c.restore(); }
+    c.restore();
+    // hypocotyl seen end-on, leaning slightly
+    const hc = stemCol(p.ph.antho, 0.9);
+    c.fillStyle = rgba(hc); c.beginPath(); c.ellipse(x + Math.cos(L.lean) * r * 0.06, y + Math.sin(L.lean) * r * 0.06, r * 0.13, r * 0.11, L.lean, 0, TAU); c.fill();
+    for (const a of [rot, rot + Math.PI + L.cA]) {
+      c.save(); c.translate(x, y); c.rotate(a);
+      c.strokeStyle = rgba(mixc(PL.stem, hc, 0.5)); c.lineWidth = Math.max(0.8, r * 0.09); c.beginPath(); c.moveTo(0, 0); c.lineTo(pet, 0); c.stroke();
+      c.translate(pet, 0); cotPath(c, l, w); shadeLeaf(c, l, w, a, base, hi, PL.lo, 0.6);
+      c.strokeStyle = rgba(PL.vein, 0.35); c.lineWidth = Math.max(0.4, l * 0.05); c.beginPath(); c.moveTo(l * 0.04, 0); c.lineTo(l * 0.72, 0); c.stroke();
+      c.restore();
+    }
+    // first true leaves emerging at right angles (darker, serrated)
+    const tl = l * L.tl * 1.25;
+    if (tl > 1.5) for (const a of [rot + Math.PI / 2 + 0.2, rot - Math.PI / 2 + 0.15]) {
+      const ll = tl * (a === rot - Math.PI / 2 + 0.15 ? 0.78 : 1);
+      c.save(); c.translate(x, y); c.rotate(a); c.translate(r * 0.04, 0);
+      c.fillStyle = 'rgba(8,5,2,0.25)'; c.save(); c.translate(r * 0.08, r * 0.1); leafPath(c, ll, ll * 0.62, 5); c.fill(); c.restore();
+      leafPath(c, ll, ll * 0.62, 5); shadeLeaf(c, ll, ll * 0.62, a, PL.tl, PL.tlHi, PL.lo, 0.7);
+      leafVeins(c, ll, ll * 0.62, 0.35, 2);
+      c.restore();
+    }
+    c.fillStyle = rgba([70, 110, 40]); c.beginPath(); c.arc(x, y, Math.max(0.6, r * 0.06), 0, TAU); c.fill();
+  }
+  /* Cut plant: a snipped hypocotyl stub with its pale cut face, and the severed top lying wilted on the mix. */
+  function cutPlantTop(c, x, y, r, p, L) {
+    const a = L.lean, l = r * 0.9 * L.sc, w = l * 1.2, ox = x + Math.cos(a) * r * 0.55, oy = y + Math.sin(a) * r * 0.55;
+    c.save(); c.translate(ox + r * 0.08, oy + r * 0.1); c.rotate(L.rot); c.fillStyle = 'rgba(8,5,2,0.3)'; cotPath(c, l, w); c.fill(); c.rotate(Math.PI - 0.5); cotPath(c, l * 0.9, w * 0.85); c.fill(); c.restore();
+    c.save(); c.translate(ox, oy); c.rotate(L.rot);
+    // severed hypocotyl piece with its cut end
+    c.strokeStyle = rgba(stemCol(p.ph.antho, 0.7)); c.lineWidth = Math.max(1, r * 0.13); c.lineCap = 'butt'; c.beginPath(); c.moveTo(-r * 0.05, 0); c.lineTo(-r * 0.42, r * 0.12); c.stroke();
+    c.fillStyle = rgba(PL.cut); c.beginPath(); c.ellipse(-r * 0.43, r * 0.12, r * 0.04, r * 0.065, 0.3, 0, TAU); c.fill();
+    cotPath(c, l, w); shadeLeaf(c, l, w, L.rot, [150, 156, 70], [188, 186, 104], [104, 110, 46], 0.45);
+    c.rotate(Math.PI - 0.5); cotPath(c, l * 0.9, w * 0.85); shadeLeaf(c, l * 0.9, w * 0.85, L.rot + Math.PI - 0.5, [140, 150, 64], [180, 180, 98], [96, 104, 44], 0.45);
+    c.restore();
+    // stub: stem ring and moist pale cut face catching the light
+    const sr = Math.max(1.6, r * 0.15);
+    c.fillStyle = 'rgba(8,5,2,0.4)'; c.beginPath(); c.ellipse(x + sr * 0.5, y + sr * 0.6, sr * 1.05, sr * 0.95, 0, 0, TAU); c.fill();
+    c.fillStyle = rgba(stemCol(p.ph.antho, 1)); c.beginPath(); c.arc(x, y, sr, 0, TAU); c.fill();
+    const g = c.createRadialGradient(x - sr * 0.3, y - sr * 0.3, 0, x, y, sr * 0.78); g.addColorStop(0, 'rgb(246,250,224)'); g.addColorStop(0.6, rgba(PL.cut)); g.addColorStop(1, 'rgb(170,190,120)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, sr * 0.74, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(120,150,80,0.6)'; c.lineWidth = Math.max(0.4, sr * 0.12); c.beginPath(); c.arc(x, y, sr * 0.42, 0, TAU); c.stroke();
+  }
+
+  /* ---------------- tray canvas: growth chamber, top view ---------------- */
   const tray = Lab.canvas('#tray', 0.82);
+  const lampH = () => Math.round(clamp(tray.h * 0.075, 14, 30));
   function trayPos() {
-    const cols = 5, rows = Math.ceil(view.plants.length / 30), pad = 6;
-    const cw = (tray.w - pad * 2) / cols, ch = (tray.h - pad * 2) / rows, R = Math.min(cw, ch) * 0.46;
+    const cols = 5, rows = Math.ceil(view.plants.length / 30), pad = 6, top = lampH();
+    const cw = (tray.w - pad * 2) / cols, ch = (tray.h - top - pad * 2) / rows, R = Math.min(cw, ch) * 0.46;
     return view.plants.map((p, i) => {
-      const b = Math.floor(i / 6), j = i % 6, bx = pad + cw * (b % cols + 0.5), by = pad + ch * (Math.floor(b / cols) + 0.5);
-      const ang = j / 6 * 2 * Math.PI - Math.PI / 2;
+      const b = Math.floor(i / 6), j = i % 6, jr = Lab.rng(b * 7919 + 13);
+      const bx = pad + cw * (b % cols + 0.5) + (jr.uniform() - 0.5) * cw * 0.05, by = top + pad + ch * (Math.floor(b / cols) + 0.5) + (jr.uniform() - 0.5) * ch * 0.05;
+      const ang = j / 6 * 2 * Math.PI - Math.PI / 2 + (jr.uniform() - 0.5) * 0.3;
       return { x: bx + Math.cos(ang) * R * 0.56, y: by + Math.sin(ang) * R * 0.56, bx, by, R, b };
     });
   }
-  function drawSeedlingTop(ctx, x, y, r, col) {
-    ctx.fillStyle = col;
-    for (const s of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + s * r * 0.45, y + r * 0.15, r * 0.48, r * 0.36, s * 0.3, 0, Math.PI * 2); ctx.fill(); }
-    ctx.beginPath(); ctx.ellipse(x, y - r * 0.38, r * 0.34, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+  /* Fluorescent light bank (two T8 tubes in a reflector) along the top edge of a scene. */
+  function lightBank(c, x, y, w, h) {
+    const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#9ea3a8'); g.addColorStop(0.35, '#e4e7ea'); g.addColorStop(0.8, '#8d9297'); g.addColorStop(1, '#5d6266');
+    c.fillStyle = g; c.fillRect(x, y, w, h);
+    const th = Math.max(3, h * 0.28);
+    [0.3, 0.68].forEach(f => {
+      const ty = y + h * f - th / 2, tg = c.createLinearGradient(0, ty, 0, ty + th);
+      tg.addColorStop(0, '#f4f8ff'); tg.addColorStop(0.45, '#ffffff'); tg.addColorStop(1, '#d9e3ee');
+      c.fillStyle = tg; c.beginPath(); c.roundRect ? c.roundRect(x + 8, ty, w - 16, th, th / 2) : c.rect(x + 8, ty, w - 16, th); c.fill();
+      c.fillStyle = '#6b7075'; c.fillRect(x + 4, ty - 1, 6, th + 2); c.fillRect(x + w - 10, ty - 1, 6, th + 2);
+    });
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(x, y + h - 1, w, 1);
+    const glow = c.createLinearGradient(0, y + h, 0, y + h + h * 2.2); glow.addColorStop(0, 'rgba(255,255,250,0.55)'); glow.addColorStop(1, 'rgba(255,255,250,0)');
+    c.fillStyle = glow; c.fillRect(x, y + h, w, h * 2.2);
+  }
+  /* Cut-off 2-litre bottle (wick reservoir) seen from above, filled with potting mix, with a numbered tape label. */
+  function bottleTop(c, bx, by, R, num, seedNo) {
+    const d = DPR(), Rs = R * 0.9, Rn = Lab.rng(seedNo);
+    const sh = c.createRadialGradient(bx + R * 0.12, by + R * 0.16, R * 0.7, bx + R * 0.12, by + R * 0.16, R * 1.12);
+    sh.addColorStop(0, 'rgba(30,34,30,0.45)'); sh.addColorStop(1, 'rgba(30,34,30,0)'); c.fillStyle = sh; c.beginPath(); c.arc(bx + R * 0.12, by + R * 0.16, R * 1.12, 0, TAU); c.fill();
+    // clear plastic wall seen edge-on
+    const pg = c.createRadialGradient(bx - R * 0.3, by - R * 0.3, R * 0.2, bx, by, R);
+    pg.addColorStop(0, 'rgba(236,244,246,0.9)'); pg.addColorStop(0.85, 'rgba(196,212,214,0.9)'); pg.addColorStop(1, 'rgba(140,156,160,0.95)');
+    c.fillStyle = pg; c.beginPath(); c.arc(bx, by, R, 0, TAU); c.fill();
+    // potting mix
+    const sg = c.createRadialGradient(bx - Rs * 0.25, by - Rs * 0.25, 0, bx, by, Rs);
+    sg.addColorStop(0, '#6a4b33'); sg.addColorStop(0.7, '#4f3726'); sg.addColorStop(1, '#3a281b');
+    c.fillStyle = sg; c.beginPath(); c.arc(bx, by, Rs, 0, TAU); c.fill();
+    c.save(); c.beginPath(); c.arc(bx, by, Rs, 0, TAU); c.clip();
+    const inS = (x, y) => (x - bx) ** 2 + (y - by) ** 2 < Rs * Rs;
+    specks(c, Rn, Math.round(R * R * 0.5), bx - Rs, by - Rs, Rs * 2, Rs * 2, [[30, 20, 12], [92, 66, 44], [118, 86, 56]], 0.3, Math.max(0.6, R * 0.03), 0.4, 0.9, inS);
+    specks(c, Rn, Math.round(R * R * 0.05), bx - Rs, by - Rs, Rs * 2, Rs * 2, [[236, 234, 226], [214, 210, 200]], 0.35, Math.max(0.7, R * 0.035), 0.75, 1, inS);   // perlite
+    specks(c, Rn, Math.round(R * R * 0.04), bx - Rs, by - Rs, Rs * 2, Rs * 2, [[196, 152, 84], [168, 128, 70]], 0.3, Math.max(0.6, R * 0.03), 0.6, 0.95, inS);    // vermiculite flakes
+    // the rim shades the mix just inside its upper-left edge
+    c.shadowColor = 'rgba(0,0,0,0.7)'; c.shadowBlur = R * 0.14 * d; c.shadowOffsetX = R * 0.06 * d; c.shadowOffsetY = R * 0.08 * d;
+    c.fillStyle = '#000'; c.beginPath(); c.arc(bx, by, Rs * 1.6, 0, TAU); c.arc(bx, by, Rs, 0, TAU, true); c.fill();
+    c.restore();
+    // cut plastic edge: bright where it faces the light, darker lower right
+    c.lineWidth = Math.max(0.8, R * 0.03); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.beginPath(); c.arc(bx, by, R * 0.97, Math.PI * 0.95, Math.PI * 1.65); c.stroke();
+    c.strokeStyle = 'rgba(60,70,72,0.55)'; c.beginPath(); c.arc(bx, by, R * 0.99, Math.PI * 0.05, Math.PI * 0.75); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = Math.max(0.6, R * 0.015); c.beginPath(); c.arc(bx, by, Rs * 1.01, Math.PI * 1.05, Math.PI * 1.45); c.stroke();
+    // masking-tape label on the rim
+    if (R > 18) {
+      c.save(); c.translate(bx + R * 0.62, by + R * 0.74); c.rotate(-0.62 + (Rn.uniform() - 0.5) * 0.2);
+      const tw = Math.max(14, R * 0.42), thh = Math.max(7, R * 0.2);
+      c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(-tw / 2 + 1, -thh / 2 + 1.2, tw, thh);
+      c.fillStyle = '#efe4c4'; c.fillRect(-tw / 2, -thh / 2, tw, thh);
+      c.fillStyle = 'rgba(160,140,90,0.35)'; for (let k = 0; k < 3; k++) c.fillRect(-tw / 2 + Rn.uniform() * tw, -thh / 2, 0.6, thh);
+      c.fillStyle = '#1c2a6b'; c.font = `italic 600 ${Math.round(thh * 0.82)}px ${bodyFont()}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(num), 0, thh * 0.04);
+      c.restore();
+    }
+  }
+  /* Chamber floor, light bank and bottles: depends only on size and number of bottles. */
+  let trayBg = null, trayPl = null;
+  function trayBackground(P) {
+    const key = tray.w + 'x' + tray.h + ':' + P.length + ':' + DPR();
+    if (trayBg && trayBg.key === key) return trayBg.o;
+    const o = off(tray.w, tray.h), c = o.x, R = Lab.rng(4242), top = lampH();
+    const fg = c.createLinearGradient(0, top, 0, tray.h); fg.addColorStop(0, '#f3f4ef'); fg.addColorStop(1, '#d4d7cf');
+    c.fillStyle = fg; c.fillRect(0, 0, tray.w, tray.h);
+    // reflective floor liner: faint creases and grain
+    c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 1; for (let i = 0; i < 9; i++) { const x0 = R.uniform() * tray.w; c.beginPath(); c.moveTo(x0, top); c.lineTo(x0 + (R.uniform() - 0.5) * 60, tray.h); c.stroke(); }
+    specks(c, R, Math.round(tray.w * tray.h / 90), 0, top, tray.w, tray.h - top, [[150, 156, 146], [255, 255, 255]], 0.3, 0.8, 0.15, 0.4);
+    const seen = new Set();
+    P.forEach(q => { if (seen.has(q.b)) return; seen.add(q.b); bottleTop(c, q.bx, q.by, q.R, q.b + 1, q.b * 131 + 7); });
+    // light falloff away from the tubes
+    const lg = c.createLinearGradient(0, top, 0, tray.h); lg.addColorStop(0, 'rgba(255,255,240,0.10)'); lg.addColorStop(1, 'rgba(20,24,20,0.14)');
+    c.fillStyle = lg; c.fillRect(0, top, tray.w, tray.h - top);
+    lightBank(c, 0, 0, tray.w, top);
+    trayBg = { key, o }; return o;
+  }
+  /* All seedlings for the current population and selection state, pre-rendered once. */
+  function trayPlants(P) {
+    const sel = view === g1 && selected ? selected : null;
+    const key = tray.w + 'x' + tray.h + ':' + DPR();
+    if (trayPl && trayPl.key === key && trayPl.view === view && trayPl.sel === sel) return trayPl.o;
+    const o = off(tray.w, tray.h), c = o.x, set = sel ? new Set(sel) : null;
+    view.plants.forEach((p, i) => { const q = P[i], r = q.R * 0.32, L = plantLook(p, view); if (set && !set.has(p)) cutPlantTop(c, q.x, q.y, r, p, L); else seedlingTop(c, q.x, q.y, r, p, L); });
+    trayPl = { key, view, sel, o }; return o;
   }
   function drawTray() {
     const c = tray.ctx, P = trayPos();
     c.clearRect(0, 0, tray.w, tray.h);
-    c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, tray.w, tray.h);
-    const seen = new Set();
-    P.forEach(q => { if (seen.has(q.b)) return; seen.add(q.b); c.beginPath(); c.arc(q.bx, q.by, q.R, 0, Math.PI * 2); c.fillStyle = Lab.color('--surface-2'); c.fill(); c.strokeStyle = Lab.color('--line'); c.lineWidth = 1.5; c.stroke(); });
-    const green = Lab.color('--s6'), mut = Lab.color('--muted'), ink = Lab.color('--ink'), stain = Lab.color('--stain'), acc = Lab.color('--accent');
+    blit(c, trayBackground(P)); blit(c, trayPlants(P));
+    const ink = Lab.color('--ink'), stain = Lab.color('--stain'), acc = Lab.color('--accent'), { light, dark } = uiPair();
     const isG1 = view === g1, sel = isG1 && selected ? new Set(selected) : null;
     view.plants.forEach((p, i) => {
       const q = P[i], r = q.R * 0.3;
       const cut = sel && !sel.has(p);
-      if (cut) {
-        c.strokeStyle = mut; c.lineWidth = 1.5; c.beginPath(); c.moveTo(q.x - r * 0.6, q.y - r * 0.6); c.lineTo(q.x + r * 0.6, q.y + r * 0.6); c.moveTo(q.x + r * 0.6, q.y - r * 0.6); c.lineTo(q.x - r * 0.6, q.y + r * 0.6); c.stroke();
-      } else drawSeedlingTop(c, q.x, q.y, r, green);
       if (p.scored && !cut && q.R > 30) {
-        c.font = `600 ${Math.max(9, Math.round(r * 0.95))}px ${getComputedStyle(document.body).getPropertyValue('--f-mono') || 'monospace'}`;
+        const fs = Math.max(9, Math.round(r * 0.85));
+        c.font = `600 ${fs}px ${monoFont()}`;
         c.textAlign = 'center'; c.textBaseline = 'middle';
-        const txt = String(p.hand != null ? p.hand : p.ph.trich);
-        c.lineWidth = 3; c.strokeStyle = Lab.color('--surface'); c.strokeText(txt, q.x, q.y + r * 0.05); c.fillStyle = ink; c.fillText(txt, q.x, q.y + r * 0.05);
-      } else if (p.scored && !cut) { c.fillStyle = acc; c.beginPath(); c.arc(q.x, q.y, r * 0.3, 0, Math.PI * 2); c.fill(); }
-      if (sel && sel.has(p)) { c.strokeStyle = stain; c.lineWidth = 2.5; c.beginPath(); c.arc(q.x, q.y, r * 1.25, 0, Math.PI * 2); c.stroke(); }
-      if (p === cur) { c.strokeStyle = ink; c.lineWidth = 2; c.setLineDash([3, 2]); c.beginPath(); c.arc(q.x, q.y, r * 1.55, 0, Math.PI * 2); c.stroke(); c.setLineDash([]); }
+        const txt = String(p.hand != null ? p.hand : p.ph.trich), tw = c.measureText(txt).width + 6;
+        c.globalAlpha = 0.9; c.fillStyle = Lab.color('--surface'); c.beginPath(); c.roundRect ? c.roundRect(q.x - tw / 2, q.y - fs * 0.62, tw, fs * 1.24, fs * 0.4) : c.rect(q.x - tw / 2, q.y - fs * 0.62, tw, fs * 1.24); c.fill(); c.globalAlpha = 1;
+        c.fillStyle = ink; c.fillText(txt, q.x, q.y + 0.5);
+      } else if (p.scored && !cut) { c.fillStyle = light; c.beginPath(); c.arc(q.x, q.y, r * 0.42, 0, Math.PI * 2); c.fill(); c.fillStyle = acc; c.beginPath(); c.arc(q.x, q.y, r * 0.3, 0, Math.PI * 2); c.fill(); }
+      if (sel && sel.has(p)) { c.strokeStyle = light; c.lineWidth = 4.5; c.beginPath(); c.arc(q.x, q.y, r * 1.25, 0, Math.PI * 2); c.stroke(); c.strokeStyle = stain; c.lineWidth = 2.5; c.stroke(); }
+      if (p === cur) { c.strokeStyle = light; c.lineWidth = 4; c.beginPath(); c.arc(q.x, q.y, r * 1.55, 0, Math.PI * 2); c.stroke(); c.strokeStyle = dark; c.lineWidth = 2; c.setLineDash([3, 2]); c.stroke(); c.setLineDash([]); }
     });
   }
   tray.canvas.addEventListener('click', e => {
@@ -508,7 +703,7 @@
   function leafGeom() { const h = leaf.h, w = leaf.w; return { cx: w * 0.5, y0: h * 0.84, L: h * 0.74, W: Math.min(w * 0.33, h * 0.36) }; }
   function edge(s, side, G) {
     const wid = G.W * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, s))), 0.8) * (1 - 0.3 * s) * (s < 0.08 ? 0.4 + 7.5 * s : 1);
-    const serr = 1 + 0.035 * Math.sin(s * Math.PI * 13);
+    const t = (s * 11 + (side > 0 ? 0 : 0.37)) % 1, serr = s > 0.06 && s < 0.97 ? 1 + 0.045 * (t < 0.72 ? t / 0.72 : (1 - t) / 0.28) - 0.02 : 1; // forward-pointing teeth
     return { x: G.cx + side * wid * serr, y: G.y0 - G.L * s };
   }
   function hairsFor(p, G) {
@@ -527,34 +722,135 @@
     const left = []; for (let i = 0; i < nl; i++) left.push(mk(0.07 + 0.86 * (i + 0.15 + 0.7 * r.uniform()) / nl, -1));
     return { right: out, left };
   }
-  function drawLeaf() {
-    const c = leaf.ctx, G = leafGeom(); c.clearRect(0, 0, leaf.w, leaf.h);
-    c.fillStyle = Lab.color('--surface-2'); c.fillRect(0, 0, leaf.w, leaf.h);
-    // magnifier ring
-    c.save(); c.beginPath(); c.arc(leaf.w / 2, leaf.h / 2, Math.min(leaf.w, leaf.h) * 0.49, 0, Math.PI * 2); c.fillStyle = Lab.color('--bg'); c.fill(); c.lineWidth = 6; c.strokeStyle = Lab.color('--line'); c.stroke(); c.clip();
-    const green = Lab.color('--s6'), ink = Lab.color('--ink'), stain = Lab.color('--stain');
-    // petiole
-    c.strokeStyle = green; c.lineWidth = Math.max(3, leaf.w * 0.012); c.beginPath(); c.moveTo(G.cx, G.y0); c.lineTo(G.cx, leaf.h); c.stroke();
-    // blade
-    c.beginPath(); for (let s = 0; s <= 1.0001; s += 0.01) { const e = edge(s, 1, G); s === 0 ? c.moveTo(e.x, e.y) : c.lineTo(e.x, e.y); }
-    for (let s = 1; s >= -0.0001; s -= 0.01) { const e = edge(s, -1, G); c.lineTo(e.x, e.y); }
-    c.closePath(); c.globalAlpha = 0.32; c.fillStyle = green; c.fill(); c.globalAlpha = 1; c.lineWidth = 2; c.strokeStyle = green; c.stroke();
-    // veins
-    c.lineWidth = 1.4; c.globalAlpha = 0.6; c.beginPath(); c.moveTo(G.cx, G.y0); c.lineTo(G.cx, G.y0 - G.L * 0.97);
-    for (let s = 0.18; s < 0.9; s += 0.16) for (const side of [-1, 1]) { const e = edge(s + 0.1, side, G); c.moveTo(G.cx, G.y0 - G.L * s); c.quadraticCurveTo(G.cx + side * (e.x - G.cx) * 0.4, G.y0 - G.L * (s + 0.07), e.x - side * 4, e.y + 2); }
-    c.stroke(); c.globalAlpha = 1;
-    if (!cur) { c.restore(); return; }
-    const H = hairsFor(cur, G);
-    c.lineCap = 'round';
-    c.strokeStyle = ink; c.globalAlpha = 0.45; c.lineWidth = 1.2; c.beginPath(); H.left.forEach(h => { c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); }); c.stroke();
-    c.globalAlpha = 0.9; c.lineWidth = 1.5; c.beginPath(); H.right.forEach((h, i) => { if (!marks.has(i)) { c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); } }); c.stroke(); c.globalAlpha = 1;
-    c.strokeStyle = stain; c.fillStyle = stain; c.lineWidth = 2.6;
-    H.right.forEach((h, i) => { if (marks.has(i)) { c.beginPath(); c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); c.stroke(); c.beginPath(); c.arc(h.x2, h.y2, 2.6, 0, Math.PI * 2); c.fill(); } });
-    // guide
-    const gx = G.cx + G.W * 1.12; c.setLineDash([4, 4]); c.strokeStyle = Lab.color('--accent'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(gx, G.y0 - G.L * 0.06); c.lineTo(gx, G.y0 - G.L * 0.93); c.stroke(); c.setLineDash([]);
+  /* Hand lens over a matte black card: the lens (r = 0.47 of the short side) magnifies the leaf; outside it the
+     card is seen unmagnified. Pre-rendered layers: card + lens interior, the leaf blade, and the lens front
+     (rim, chromatic fringe, glare). Each redraw composites them with the plant's petiole and trichomes. */
+  let leafLayers = null;
+  const lensGeom = () => ({ x: leaf.w / 2, y: leaf.h / 2, r: Math.min(leaf.w, leaf.h) * 0.46 });
+  function bladePath(c, G) {
+    c.beginPath(); for (let s = 0; s <= 1.0001; s += 0.005) { const e = edge(s, 1, G); s === 0 ? c.moveTo(e.x, e.y) : c.lineTo(e.x, e.y); }
+    for (let s = 1; s >= -0.0001; s -= 0.005) { const e = edge(s, -1, G); c.lineTo(e.x, e.y); } c.closePath();
+  }
+  function buildLeafLayers() {
+    const key = leaf.w + 'x' + leaf.h + ':' + DPR();
+    if (leafLayers && leafLayers.key === key) return leafLayers;
+    const W = leaf.w, H = leaf.h, G = leafGeom(), Lg = lensGeom(), d = DPR(), R = Lab.rng(777);
+    // 1. black card, unmagnified outside the lens and magnified (larger fibres, brighter) inside it
+    const bg = off(W, H), c = bg.x;
+    const cg = c.createLinearGradient(0, 0, W, H); cg.addColorStop(0, '#2f3133'); cg.addColorStop(1, '#151617');
+    c.fillStyle = cg; c.fillRect(0, 0, W, H);
+    specks(c, R, Math.round(W * H / 30), 0, 0, W, H, [[70, 72, 74], [10, 10, 11]], 0.25, 0.6, 0.25, 0.6);
+    // lens handle and its shadow (lower right)
+    c.save(); c.translate(Lg.x, Lg.y); c.rotate(0.72);
+    c.fillStyle = 'rgba(0,0,0,0.45)'; c.fillRect(Lg.r * 0.96 + 4, -Lg.r * 0.11 + 6, Lg.r * 0.9, Lg.r * 0.22);
+    const hg = c.createLinearGradient(0, -Lg.r * 0.1, 0, Lg.r * 0.1); hg.addColorStop(0, '#5a5d61'); hg.addColorStop(0.3, '#2a2c2f'); hg.addColorStop(1, '#0d0e0f');
+    c.fillStyle = hg; c.beginPath(); c.roundRect ? c.roundRect(Lg.r * 0.96, -Lg.r * 0.1, Lg.r * 0.9, Lg.r * 0.2, Lg.r * 0.06) : c.rect(Lg.r * 0.96, -Lg.r * 0.1, Lg.r * 0.9, Lg.r * 0.2); c.fill();
     c.restore();
-    c.fillStyle = Lab.color('--muted'); c.font = `600 12px ${getComputedStyle(document.body).fontFamily}`; c.textAlign = 'right'; c.textBaseline = 'top';
-    c.fillText('count this edge →', leaf.w - 8, 8);
+    // lens shadow on the card
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.arc(Lg.x + 5, Lg.y + 7, Lg.r * 1.05, 0, TAU); c.fill();
+    c.save(); c.beginPath(); c.arc(Lg.x, Lg.y, Lg.r, 0, TAU); c.clip();
+    const ig = c.createRadialGradient(Lg.x - Lg.r * 0.3, Lg.y - Lg.r * 0.35, 0, Lg.x, Lg.y, Lg.r); ig.addColorStop(0, '#3a3c3e'); ig.addColorStop(0.7, '#242527'); ig.addColorStop(1, '#141516');
+    c.fillStyle = ig; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 70; i++) { // magnified card fibres
+      const x = Lg.x + (R.uniform() - 0.5) * Lg.r * 2, y = Lg.y + (R.uniform() - 0.5) * Lg.r * 2, a = R.uniform() * TAU, l = 6 + R.uniform() * 18;
+      c.strokeStyle = R.chance(0.6) ? 'rgba(90,92,95,0.18)' : 'rgba(0,0,0,0.25)'; c.lineWidth = 0.5 + R.uniform() * 0.7; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(a + 0.5) * l * 0.5, y + Math.sin(a + 0.5) * l * 0.5, x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();
+    }
+    c.restore();
+    // 2. leaf blade: mesophyll gradient, mottling, areolate vein net, arching secondary veins, raised midrib
+    const bl = off(W, H), b = bl.x;
+    b.save(); b.fillStyle = 'rgba(0,0,0,0.55)'; b.translate(4, 6); bladePath(b, G); b.fill(); b.restore();
+    bladePath(b, G); b.save(); b.clip();
+    const lg = b.createLinearGradient(G.cx - G.W, G.y0 - G.L, G.cx + G.W, G.y0); lg.addColorStop(0, '#7fb556'); lg.addColorStop(0.5, '#5a9a3c'); lg.addColorStop(1, '#3a7428');
+    b.fillStyle = lg; b.fillRect(0, 0, W, H);
+    for (let i = 0; i < 60; i++) { const x = G.cx + (R.uniform() - 0.5) * G.W * 2, y = G.y0 - R.uniform() * G.L, rr = 4 + R.uniform() * 14; const m = b.createRadialGradient(x, y, 0, x, y, rr); m.addColorStop(0, R.chance(0.5) ? 'rgba(150,200,100,0.18)' : 'rgba(30,70,20,0.18)'); m.addColorStop(1, 'rgba(0,0,0,0)'); b.fillStyle = m; b.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+    // tertiary vein net: faint areoles between the larger veins
+    b.strokeStyle = 'rgba(190,226,150,0.11)'; b.lineWidth = 0.6; b.beginPath();
+    const cell = Math.max(7, W * 0.022);
+    for (let y = G.y0 - G.L; y < G.y0; y += cell) for (let x = G.cx - G.W * 1.1; x < G.cx + G.W * 1.1; x += cell) {
+      const jx = x + (R.uniform() - 0.5) * cell * 0.5, jy = y + (R.uniform() - 0.5) * cell * 0.5;
+      b.moveTo(jx, jy); b.lineTo(jx + cell * (0.8 + R.uniform() * 0.4), jy + (R.uniform() - 0.5) * cell * 0.4);
+      b.moveTo(jx, jy); b.lineTo(jx + (R.uniform() - 0.5) * cell * 0.4, jy + cell * (0.8 + R.uniform() * 0.4));
+    }
+    b.stroke();
+    // secondary veins: leave the midrib at an angle, arch toward the tip and fade before the margin
+    for (const pass of [0, 1]) {
+      b.strokeStyle = pass ? 'rgba(200,232,160,0.55)' : 'rgba(20,50,15,0.25)'; b.lineWidth = pass ? 1.3 : 2; b.beginPath();
+      for (let s = 0.1; s < 0.8; s += 0.125) for (const side of [-1, 1]) {
+        const s0 = s + (side > 0 ? 0 : 0.045), e = edge(Math.min(0.97, s0 + 0.17), side, G), ox = pass ? 0 : 0.8, oy = pass ? 0 : 1.2;
+        b.moveTo(G.cx + ox, G.y0 - G.L * s0 + oy);
+        b.bezierCurveTo(G.cx + (e.x - G.cx) * 0.35 + ox, G.y0 - G.L * (s0 + 0.035) + oy, G.cx + (e.x - G.cx) * 0.75 + ox, e.y + G.L * 0.05 + oy, e.x - side * G.W * 0.1 + ox, e.y + G.L * 0.005 + oy);
+      }
+      b.stroke();
+    }
+    // midrib: pale, raised, lit on its left flank
+    b.lineCap = 'round';
+    b.strokeStyle = 'rgba(30,60,20,0.4)'; b.lineWidth = Math.max(3, W * 0.012); b.beginPath(); b.moveTo(G.cx + 1.5, G.y0); b.quadraticCurveTo(G.cx + 2, G.y0 - G.L * 0.5, G.cx + 1.5, G.y0 - G.L * 0.95); b.stroke();
+    b.strokeStyle = '#c3e09c'; b.lineWidth = Math.max(2.2, W * 0.009); b.beginPath(); b.moveTo(G.cx, G.y0); b.quadraticCurveTo(G.cx + 0.5, G.y0 - G.L * 0.5, G.cx, G.y0 - G.L * 0.95); b.stroke();
+    b.strokeStyle = 'rgba(255,255,240,0.5)'; b.lineWidth = 0.8; b.beginPath(); b.moveTo(G.cx - 1, G.y0); b.lineTo(G.cx - 1, G.y0 - G.L * 0.9); b.stroke();
+    // light from the upper left: sheen on the left half, shade on the right
+    const sh = b.createLinearGradient(G.cx - G.W, 0, G.cx + G.W, 0); sh.addColorStop(0, 'rgba(255,255,230,0.12)'); sh.addColorStop(0.5, 'rgba(255,255,230,0)'); sh.addColorStop(1, 'rgba(0,20,0,0.18)');
+    b.fillStyle = sh; b.fillRect(0, 0, W, H);
+    b.restore();
+    bladePath(b, G); b.lineWidth = 1.2; b.strokeStyle = 'rgba(30,64,22,0.9)'; b.stroke();
+    // 3. lens front: rim, chromatic fringe at the edge of the field, glare
+    const fr = off(W, H), f = fr.x;
+    f.save(); f.beginPath(); f.arc(Lg.x, Lg.y, Lg.r, 0, TAU); f.clip();
+    const vg = f.createRadialGradient(Lg.x, Lg.y, Lg.r * 0.72, Lg.x, Lg.y, Lg.r); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+    f.fillStyle = vg; f.fillRect(0, 0, W, H);
+    // lateral colour: a soft orange-red fringe outside and blue-violet inside, strongest toward the lower right
+    const fringe = (col, rr, dx, w0) => { const g = f.createRadialGradient(Lg.x + dx, Lg.y + dx, rr - w0, Lg.x + dx, Lg.y + dx, rr + w0); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, col); g.addColorStop(1, 'rgba(0,0,0,0)'); f.fillStyle = g; f.fillRect(0, 0, W, H); };
+    fringe('rgba(255,90,40,0.16)', Lg.r - 2.5, 1.2, 4); fringe('rgba(80,120,255,0.13)', Lg.r - 7, 0.6, 5);
+    const gl = f.createRadialGradient(Lg.x - Lg.r * 0.55, Lg.y - Lg.r * 0.55, 0, Lg.x - Lg.r * 0.55, Lg.y - Lg.r * 0.55, Lg.r * 0.55);
+    gl.addColorStop(0, 'rgba(255,255,255,0.16)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); f.fillStyle = gl; f.fillRect(0, 0, W, H);
+    f.strokeStyle = 'rgba(255,255,255,0.35)'; f.lineWidth = 2; f.beginPath(); f.arc(Lg.x, Lg.y, Lg.r * 0.9, Math.PI * 1.08, Math.PI * 1.32); f.stroke();
+    f.restore();
+    const rw = Math.max(5, Lg.r * 0.05), rg = f.createLinearGradient(Lg.x - Lg.r, Lg.y - Lg.r, Lg.x + Lg.r, Lg.y + Lg.r);
+    rg.addColorStop(0, '#8b8f94'); rg.addColorStop(0.25, '#3b3e42'); rg.addColorStop(0.6, '#1b1c1e'); rg.addColorStop(1, '#050505');
+    f.lineWidth = rw; f.strokeStyle = rg; f.beginPath(); f.arc(Lg.x, Lg.y, Lg.r + rw / 2, 0, TAU); f.stroke();
+    f.lineWidth = 1; f.strokeStyle = 'rgba(255,255,255,0.45)'; f.beginPath(); f.arc(Lg.x, Lg.y, Lg.r + rw - 0.8, Math.PI * 1.05, Math.PI * 1.6); f.stroke();
+    leafLayers = { key, bg, bl, fr }; return leafLayers;
+  }
+  /* One trichome: a fine, translucent, tapering hair (unicellular, unbranched), lit from the upper left. */
+  function trichome(c, h, k, a, soft) {
+    const dx = h.x2 - h.x1, dy = h.y2 - h.y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, w0 = (soft ? 1.3 : 0.8) * k;
+    const mx = h.x1 + dx * 0.55 + nx * L * 0.06, my = h.y1 + dy * 0.55 + ny * L * 0.06; // slight curve
+    c.beginPath(); c.moveTo(h.x1 + nx * w0, h.y1 + ny * w0); c.quadraticCurveTo(mx + nx * w0 * 0.4, my + ny * w0 * 0.4, h.x2, h.y2); c.quadraticCurveTo(mx - nx * w0 * 0.4, my - ny * w0 * 0.4, h.x1 - nx * w0, h.y1 - ny * w0); c.closePath();
+    const g = c.createLinearGradient(h.x1, h.y1, h.x2, h.y2); g.addColorStop(0, `rgba(222,240,206,${0.95 * a})`); g.addColorStop(0.5, `rgba(244,250,240,${0.85 * a})`); g.addColorStop(1, `rgba(255,255,255,${0.45 * a})`);
+    c.fillStyle = g; c.fill();
+    if (!soft) { c.strokeStyle = `rgba(255,255,255,${0.85 * a})`; c.lineWidth = 0.5 * k; c.beginPath(); c.moveTo(h.x1 - nx * w0 * 0.3, h.y1 - ny * w0 * 0.3); c.quadraticCurveTo(mx - nx * w0 * 0.2, my - ny * w0 * 0.2, h.x1 + dx * 0.85, h.y1 + dy * 0.85); c.stroke(); }
+    c.fillStyle = `rgba(230,246,214,${0.5 * a})`; c.beginPath(); c.arc(h.x1, h.y1, w0 * 0.9, 0, TAU); c.fill(); // socket at the base
+  }
+  function drawLeaf() {
+    const c = leaf.ctx, G = leafGeom(), Lg = lensGeom(), Ls = buildLeafLayers(); c.clearRect(0, 0, leaf.w, leaf.h);
+    blit(c, Ls.bg);
+    c.save(); c.beginPath(); c.arc(Lg.x, Lg.y, Lg.r, 0, TAU); c.clip();
+    // petiole (anthocyanin tint follows the plant's stem colour)
+    const pc = cur ? stemCol(cur.ph.antho, 0.8) : PL.stem, pw = Math.max(5, leaf.w * 0.026);
+    const pg = c.createLinearGradient(G.cx - pw, 0, G.cx + pw, 0); pg.addColorStop(0, rgba(mixc(pc, [255, 255, 255], 0.25))); pg.addColorStop(0.5, rgba(pc)); pg.addColorStop(1, rgba(mixc(pc, [0, 0, 0], 0.4)));
+    c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(G.cx - pw / 2 + 4, G.y0, pw, leaf.h);
+    c.fillStyle = pg; c.fillRect(G.cx - pw / 2, G.y0 - 4, pw, leaf.h);
+    blit(c, Ls.bl);
+    const k = leaf.w / 380;
+    if (cur) {
+      const H = hairsFor(cur, G), stain = Lab.color('--stain'), { light } = uiPair();
+      H.left.forEach(h => trichome(c, h, k, 0.55, true));   // far margin: slightly out of the lens's focal plane
+      H.right.forEach((h, i) => { if (!marks.has(i)) trichome(c, h, k, 1, false); });
+      c.lineCap = 'round';
+      H.right.forEach((h, i) => {
+        if (!marks.has(i)) return;
+        c.strokeStyle = light; c.lineWidth = 4.6; c.beginPath(); c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); c.stroke(); c.fillStyle = light; c.beginPath(); c.arc(h.x2, h.y2, 4, 0, TAU); c.fill();
+        c.strokeStyle = stain; c.fillStyle = stain; c.lineWidth = 2.6; c.beginPath(); c.moveTo(h.x1, h.y1); c.lineTo(h.x2, h.y2); c.stroke(); c.beginPath(); c.arc(h.x2, h.y2, 2.6, 0, TAU); c.fill();
+      });
+      // guide (UI): dashed line beside the counted margin
+      const gx = G.cx + G.W * 1.12; c.setLineDash([4, 4]); c.globalAlpha = 0.7; c.strokeStyle = light; c.lineWidth = 1.2; c.beginPath(); c.moveTo(gx, G.y0 - G.L * 0.06); c.lineTo(gx, G.y0 - G.L * 0.93); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+    }
+    c.restore();
+    blit(c, Ls.fr);
+    // label (UI)
+    c.font = `600 12px ${bodyFont()}`; c.textAlign = 'right'; c.textBaseline = 'middle';
+    const t = 'count this edge →', tw = c.measureText(t).width + 14;
+    c.globalAlpha = 0.92; c.fillStyle = Lab.color('--surface'); c.beginPath(); c.roundRect ? c.roundRect(leaf.w - 6 - tw, 6, tw, 22, 11) : c.rect(leaf.w - 6 - tw, 6, tw, 22); c.fill(); c.globalAlpha = 1;
+    c.fillStyle = Lab.color('--ink'); c.fillText(t, leaf.w - 13, 17.5);
   }
   leaf.canvas.addEventListener('click', e => {
     if (!cur) return;
