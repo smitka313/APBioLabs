@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>For teachers · AP Bio Digital Lab Bench</title>
+<meta name="description" content="How the AP Bio Digital Lab Bench works for AP Biology teachers: what each lab contains, how students save and hand in work, per-student data, links to single parts, printing and privacy.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .t-hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 22px 28px; }
+  .t-hero .crumbs { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: .92rem; color: var(--muted); margin-bottom: 14px; }
+  .t-hero .crumbs a { color: var(--muted); }
+  .t-hero h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; }
+  .t-hero .lede { margin-top: 10px; max-width: 62ch; color: var(--muted); font-size: 1.1rem; }
+  .t-layout { display: grid; gap: 28px 44px; padding-block: 28px 56px; align-items: start; }
+  @media (min-width: 980px) { .t-layout { grid-template-columns: 230px minmax(0, 1fr); } }
+  .toc { display: grid; gap: 6px; align-content: start; font-size: .94rem; }
+  @media (min-width: 980px) { .toc { position: sticky; top: 20px; } }
+  .toc > .callout-title { font-family: var(--f-mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--muted); padding-left: 10px; margin-bottom: 2px; }
+  .toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+  .toc a { display: block; padding: 4px 10px; border-radius: var(--r-sm); text-decoration: none; color: var(--muted); font-weight: 600; }
+  .toc a:hover { background: var(--surface-2); color: var(--ink); }
+  .t-main { display: grid; gap: 0; min-width: 0; }
+  .tsec { display: grid; gap: 12px; padding-block: 26px; border-bottom: 1px solid var(--line); scroll-margin-top: 16px; min-width: 0; }
+  .tsec:first-child { padding-top: 0; }
+  .tsec:last-child { border-bottom: 0; }
+  .tsec p, .tsec li { max-width: 70ch; }
+  .tsec h3 { margin-top: 6px; }
+  .tsec ul, .tsec ol.plain { display: grid; gap: .45em; }
+  .kv { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+  .kv > div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
+  .kv strong { font-family: var(--f-display); font-size: 1.02rem; }
+  .kv span { font-size: .93rem; color: var(--muted); }
+  .eg { font-family: var(--f-mono); font-size: .88rem; background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 12px; overflow-wrap: anywhere; display: block; }
+  .eg a { color: var(--ink); }
+  .labs-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  .labs-table th, .labs-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .labs-table thead th { background: var(--surface-2); font-size: .8rem; font-weight: 650; }
+  .labs-table tbody th { font-weight: 650; min-width: 15ch; }
+  .labs-table tbody th a { text-decoration: none; color: var(--ink); }
+  .labs-table tbody th a:hover { color: var(--accent); text-decoration: underline; }
+  .labs-table td.num { text-align: right; font-family: var(--f-mono); font-size: .85rem; width: 5ch; }
+  .labs-table td.parts { display: flex; flex-wrap: wrap; gap: 4px 6px; border-bottom: 1px solid var(--line); }
+  .labs-table td.parts a { display: inline-block; padding: 1px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: .84rem; white-space: nowrap; }
+  .labs-table td.parts a:hover { border-color: var(--accent); color: var(--accent); }
+  .labs-table tbody tr:last-child > * { border-bottom: 0; }
+  @media (max-width: 720px) {
+    .labs-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .labs-table, .labs-table tbody, .labs-table tr { display: block; }
+    .labs-table tr { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .labs-table th, .labs-table td { display: block; padding: 2px 0; border: 0 !important; }
+    .labs-table td.parts { display: flex; padding-top: 6px; }
+    .labs-table td.num { display: none; }
+  }
+  .t-foot-link { margin-top: 6px; }
+</style>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<header class="t-hero">
+  <div class="wrap wrap--wide gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>For teachers</span></nav>
+    <div class="eyebrow">AP Biology · Teacher guide</div>
+    <h1>For teachers</h1>
+    <p class="lede">What the Lab Bench is, how your students will use it, how they hand work in, and what stays on their computer. It takes about five minutes to read.</p>
+  </div>
+</header>
+
+<main>
+<div class="wrap wrap--wide gutter t-layout">
+  <nav class="toc" aria-label="On this page">
+    <div class="callout-title">On this page</div>
+    <ol>
+      <li><a href="#what">What this site is</a></li>
+      <li><a href="#students">How students use it</a></li>
+      <li><a href="#handing-in">Handing in work</a></li>
+      <li><a href="#moving">Moving between computers</a></li>
+      <li><a href="#datasets">Per-student data</a></li>
+      <li><a href="#links">Linking to one part</a></li>
+      <li><a href="#printing">Printing worksheets</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="#notes-keys">Teacher notes and answer keys</a></li>
+      <li><a href="#tips">Tips</a></li>
+      <li><a href="#lab-table">All 13 labs and parts</a></li>
+    </ol>
+  </nav>
+
+  <div class="t-main">
+    <section class="tsec" id="what" aria-labelledby="h-what">
+      <h2 id="h-what">What this site is</h2>
+      <p>The Lab Bench is 13 interactive versions of the AP Biology investigations, one page per lab. Each page is adapted from the College Board <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> teacher manual (updated 2019). It is not affiliated with or endorsed by the College Board. The simulations are modeled on typical classroom results. They are meant to sit beside wet-lab work, or to stand in for it when you cannot run the real thing.</p>
+      <p>Every lab page has the same parts, so students learn the layout once:</p>
+      <div class="kv">
+        <div><strong>Overview</strong><span>The driving question, objectives and science practices, and a safety note where the real lab has hazards.</span></div>
+        <div><strong>Background</strong><span>Key ideas, key terms and the science in short sections students can open as they need them.</span></div>
+        <div><strong>Pre-lab</strong><span>Auto-checked questions, each with an explanation, including the calculations students will need.</span></div>
+        <div><strong>Simulations</strong><span>One part for each procedure in the manual. Students choose settings, run trials and record data in a table and graph.</span></div>
+        <div><strong>Design</strong><span>Students write a question and hypothesis, choose a variable, levels and replicates, run it and analyze it with the right statistic.</span></div>
+        <div><strong>Analyze and Evaluate</strong><span>Written prompts, including a claim-evidence-reasoning block, for students to answer in their own words.</span></div>
+        <div><strong>Submit</strong><span>Report buttons, a progress file for backup, and a printable worksheet.</span></div>
+      </div>
+      <p class="muted small">Pre-lab questions are graded for the student right away. Written answers are not graded by the site; they go into the report for you to read.</p>
+    </section>
+
+    <section class="tsec" id="students" aria-labelledby="h-students">
+      <h2 id="h-students">How students use it</h2>
+      <ul>
+        <li><strong>Sign in once.</strong> The first time, a student types their name as you know it and chooses a class period. That one sign-in works on every lab on that computer.</li>
+        <li><strong>One part at a time.</strong> A lab shows a single part on screen. Students move with the part tabs along the top or the <strong>Back</strong> and <strong>Next</strong> buttons at the bottom of each part. A check mark appears on a part when its questions, boxes and tables are filled. <strong>All parts</strong> shows the whole lab on one page.</li>
+        <li><strong>A checklist in every simulation.</strong> The Steps list ticks itself off as the student works, and a short <strong>Next:</strong> line says what to do now. Buttons that need an earlier step explain what is missing instead of failing silently.</li>
+        <li><strong>Results beside the scene.</strong> On a laptop the Data and Graph tabs sit next to the simulation, so students watch the graph build while a run plays. On a phone or narrow window they switch between Scene, Data and Graph.</li>
+        <li><strong>Saved in that browser only.</strong> Answers, tables and quiz results save automatically on the computer being used. They are not sent anywhere, so a different computer or a cleared browser starts blank unless the student moves their work (see below).</li>
+        <li><strong>A short tour.</strong> The first time a student opens a lab after signing in, a five-step tour points out the part tabs, the Steps list, the results tabs, the sign-in line and the Submit tools. It appears once per browser. Students can skip it, and the <strong>Help</strong> link in the sign-in line shows it again.</li>
+      </ul>
+    </section>
+
+    <section class="tsec" id="handing-in" aria-labelledby="h-hand">
+      <h2 id="h-hand">Handing in work</h2>
+      <p>The last part of every lab, <strong>Submit</strong>, builds a lab report from everything the student has done: name, class period, date, Dataset ID, every answer, every data table and every graph. Students hand it in one of two ways:</p>
+      <ul>
+        <li><strong>Download .docx.</strong> A Word file the student can open, check and upload.</li>
+        <li><strong>Save as PDF.</strong> A clean report view opens and the student chooses &ldquo;Save as PDF&rdquo; as the printer. This works on any computer, with no extra software.</li>
+      </ul>
+      <p>Either file can be uploaded to any LMS, or handed in the way you already ask for lab work. There is also <strong>Copy all my responses</strong>, which puts the answers on the clipboard as plain text for pasting into a form or a document.</p>
+      <p>Nothing is submitted through this site. Students always hand in a file, so you keep the same grading workflow you use today.</p>
+    </section>
+
+    <section class="tsec" id="moving" aria-labelledby="h-moving">
+      <h2 id="h-moving">Moving between computers</h2>
+      <p>Because work lives in one browser, students who switch computers (a classroom laptop on Monday, a home computer on Tuesday) need a way to carry it along. The Submit part has a panel called <strong>Move your work to another computer</strong>:</p>
+      <ul>
+        <li><strong>Progress file.</strong> <em>Save progress file</em> downloads a small .json file. On the other computer, the student opens the same lab and chooses <em>Load progress file</em>. A progress file is for one lab; it will not load into a different lab.</li>
+        <li><strong>Resume code.</strong> <em>Get a resume code</em> makes a short block of text starting with LB1. The student can email it to themselves and paste it into <em>Load resume code</em> on the other computer. This is handy on a locked-down laptop where files are awkward.</li>
+      </ul>
+      <p>Loading asks before it replaces anything. The site also reminds students to save a progress file once they have done real work and have not backed it up, and warns them before they close the page with unsaved work.</p>
+    </section>
+
+    <section class="tsec" id="datasets" aria-labelledby="h-data">
+      <h2 id="h-data">Per-student data and Dataset IDs</h2>
+      <p>The simulations do not give every student the same numbers. Each student&rsquo;s data is generated from their name, class period, the lab and a dataset number, so a student gets the same numbers every time they reopen the lab, and a different student gets different ones. Two students who sit side by side and run the same settings will still see different results, which is what real replicates look like.</p>
+      <p>Each report prints a <strong>Dataset ID</strong> such as <code>K7M-4QX</code>, shown in the sign-in line and on the report. How it helps:</p>
+      <ul>
+        <li>It is tied to the student&rsquo;s name, period and lab. A report handed in under another student&rsquo;s name will carry the wrong ID for that student.</li>
+        <li>If two reports have identical data tables, the two students did not each run their own simulation. A progress file copied from a classmate loads that classmate&rsquo;s name and Dataset ID along with the data, so it does not pass as the student&rsquo;s own.</li>
+        <li>You can ask a student to read out their Dataset ID in class and compare it with the report.</li>
+      </ul>
+      <p><strong>New dataset.</strong> Next to the Dataset ID, <em>New dataset</em> gives that student fresh numbers for that lab from then on, after a confirmation. It is useful when a student wants to repeat a simulation, or after a mistake. Data already recorded in their tables stays; only new runs change. The ID on the report changes to match.</p>
+    </section>
+
+    <section class="tsec" id="links" aria-labelledby="h-links">
+      <h2 id="h-links">Linking to one part</h2>
+      <p>Every part has its own web address. Each part heading has a <strong>Copy link</strong> button that copies it, and you can also write one yourself: take the lab page and add <code>#</code> and the part name, lower-case, with dashes between words. For example, this opens Lab 5 straight to the float assay:</p>
+      <span class="eg"><a href="lab05.html#float-assay">lab05.html#float-assay</a></span>
+      <p>Put these links in an assignment so students land on exactly the part you want that day. Other examples: <a href="lab05.html#pre-lab"><code>lab05.html#pre-lab</code></a>, <a href="lab09.html#run-a-gel"><code>lab09.html#run-a-gel</code></a>, <a href="lab13.html#submit"><code>lab13.html#submit</code></a>. The table at the end of this page lists the parts of all 13 labs as links.</p>
+      <p class="muted small">Add the full web address of the site in front of the file name when you paste a link into an LMS or an email.</p>
+    </section>
+
+    <section class="tsec" id="printing" aria-labelledby="h-print">
+      <h2 id="h-print">Printing worksheets</h2>
+      <p>If you want paper, every lab has a <strong>Print worksheet</strong> button (in the Submit part, and at the top of each lab page). It builds a clean, black-and-white sheet from the lab: the background text, the pre-lab questions with answer bubbles, blank ruled data tables, and ruled lines under each written prompt. The worksheet has no answers and no student data. Students can also use the browser&rsquo;s own Print command on a lab page; printing always includes every part.</p>
+    </section>
+
+    <section class="tsec" id="privacy" aria-labelledby="h-privacy">
+      <h2 id="h-privacy">Privacy</h2>
+      <ul>
+        <li><strong>Nothing students type leaves their browser.</strong> Names, class periods, answers and data tables are kept in the browser on that computer. There are no accounts and no student records on a server.</li>
+        <li><strong>Anonymous page views only.</strong> The site counts how many times each page is opened using GoatCounter, which sets no cookies and records no names or answers.</li>
+        <li><strong>Reports are made on the student&rsquo;s computer.</strong> The .docx and PDF are built in the browser. (The .docx tool is fetched from a public code library the first time it is needed, so that download needs an internet connection; Save as PDF does not.)</li>
+      </ul>
+    </section>
+
+    <section class="tsec" id="notes-keys" aria-labelledby="h-keys">
+      <h2 id="h-keys">Teacher notes and answer keys</h2>
+      <p>This site is open to students, so it does not contain teacher notes or answer keys. Pre-lab questions show an explanation after the student answers, and that is all. Teacher notes, suggested answers and expected results for each lab are kept private. If you teach AP Biology and would like them, please contact the site&rsquo;s maintainer.</p>
+    </section>
+
+    <section class="tsec" id="tips" aria-labelledby="h-tips">
+      <h2 id="h-tips">Tips</h2>
+      <ul>
+        <li><strong>Test on a student laptop first.</strong> Open a lab on the same kind of computer and browser your students use. Check that sign-in, a simulation run, Download .docx and Save as PDF all work on your school network and with your browser settings.</li>
+        <li><strong>Clearing browser data erases work.</strong> Remind students that clearing history, cookies or &ldquo;site data&rdquo;, or working in a private window, removes their saved work. If they might do that, or if laptops are wiped between classes, they should save a progress file before they leave. The site shows a warning if it sees that the browser is not saving.</li>
+        <li><strong>Shared computers.</strong> The site keeps one saved copy of each lab per browser, not one per student. Students who share a computer and a browser profile also share that saved work, so a second student would see the first student&rsquo;s answers. Give each student their own computer or browser profile, or have them save a progress file and use <em>Start over</em> at the end of the period.</li>
+        <li><strong>Ask for the file you want.</strong> Tell students whether you want the .docx or the PDF, and whether to include their Dataset ID (it is already on the report).</li>
+      </ul>
+    </section>
+
+    <section class="tsec" id="lab-table" aria-labelledby="h-table">
+      <h2 id="h-table">All 13 labs and their parts</h2>
+      <p>Each part name links straight to that part. The count is the number of parts in the lab, including Overview and Submit.</p>
+      <div class="table-wrap">
+      <table class="labs-table">
+        <thead><tr><th scope="col">Investigation</th><th scope="col">Parts (links open that part)</th><th scope="col" class="num">Parts</th></tr></thead>
+        <tbody>
+        <tr><th scope="row"><a href="lab01.html">1. Artificial Selection</a></th><td class="parts"><a href="lab01.html#overview">Overview</a> <a href="lab01.html#background">Background</a> <a href="lab01.html#pre-lab">Pre-lab</a> <a href="lab01.html#grow-and-score">Grow &amp; score</a> <a href="lab01.html#select-and-pollinate">Select &amp; pollinate</a> <a href="lab01.html#generation-2">Generation 2</a> <a href="lab01.html#design">Design</a> <a href="lab01.html#analyze">Analyze</a> <a href="lab01.html#reflect">Reflect</a> <a href="lab01.html#submit">Submit</a></td><td class="num">10</td></tr>
+        <tr><th scope="row"><a href="lab02.html">2. Mathematical Modeling: Hardy-Weinberg</a></th><td class="parts"><a href="lab02.html#overview">Overview</a> <a href="lab02.html#background">Background</a> <a href="lab02.html#pre-lab">Pre-lab</a> <a href="lab02.html#card-model">Card model</a> <a href="lab02.html#build-the-model">Build the model</a> <a href="lab02.html#many-generations">Many generations</a> <a href="lab02.html#design">Design</a> <a href="lab02.html#analyze">Analyze</a> <a href="lab02.html#reflect">Reflect</a> <a href="lab02.html#submit">Submit</a></td><td class="num">10</td></tr>
+        <tr><th scope="row"><a href="lab03.html">3. Comparing DNA Sequences with BLAST</a></th><td class="parts"><a href="lab03.html#overview">Overview</a> <a href="lab03.html#background">Background</a> <a href="lab03.html#pre-lab">Pre-lab</a> <a href="lab03.html#morphology">Morphology</a> <a href="lab03.html#blast-the-genes">BLAST the genes</a> <a href="lab03.html#place-the-fossil">Place the fossil</a> <a href="lab03.html#design">Design</a> <a href="lab03.html#analyze">Analyze</a> <a href="lab03.html#evaluate">Evaluate</a> <a href="lab03.html#submit">Submit</a></td><td class="num">10</td></tr>
+        <tr><th scope="row"><a href="lab04.html">4. Diffusion and Osmosis</a></th><td class="parts"><a href="lab04.html#overview">Overview</a> <a href="lab04.html#background">Background</a> <a href="lab04.html#pre-lab">Pre-lab</a> <a href="lab04.html#sa-v">SA:V</a> <a href="lab04.html#model-cells">Model cells</a> <a href="lab04.html#plasmolysis">Plasmolysis</a> <a href="lab04.html#water-potential">Water potential</a> <a href="lab04.html#design">Design</a> <a href="lab04.html#analyze">Analyze</a> <a href="lab04.html#evaluate">Evaluate</a> <a href="lab04.html#submit">Submit</a></td><td class="num">11</td></tr>
+        <tr><th scope="row"><a href="lab05.html">5. Photosynthesis</a></th><td class="parts"><a href="lab05.html#overview">Overview</a> <a href="lab05.html#background">Background</a> <a href="lab05.html#pre-lab">Pre-lab</a> <a href="lab05.html#sink-disks">Sink disks</a> <a href="lab05.html#float-assay">Float assay</a> <a href="lab05.html#design">Design</a> <a href="lab05.html#analyze">Analyze</a> <a href="lab05.html#evaluate">Evaluate</a> <a href="lab05.html#submit">Submit</a></td><td class="num">9</td></tr>
+        <tr><th scope="row"><a href="lab06.html">6. Cellular Respiration</a></th><td class="parts"><a href="lab06.html#overview">Overview</a> <a href="lab06.html#background">Background</a> <a href="lab06.html#pre-lab">Pre-lab</a> <a href="lab06.html#microrespirometer">Microrespirometer</a> <a href="lab06.html#gas-sensors">Gas sensors</a> <a href="lab06.html#design">Design</a> <a href="lab06.html#analyze">Analyze</a> <a href="lab06.html#evaluate">Evaluate</a> <a href="lab06.html#submit">Submit</a></td><td class="num">9</td></tr>
+        <tr><th scope="row"><a href="lab07.html">7. Cell Division: Mitosis and Meiosis</a></th><td class="parts"><a href="lab07.html#overview">Overview</a> <a href="lab07.html#background">Background</a> <a href="lab07.html#pre-lab">Pre-lab</a> <a href="lab07.html#mitosis-model">Mitosis model</a> <a href="lab07.html#root-tips">Root tips</a> <a href="lab07.html#cancer-karyotypes">Cancer karyotypes</a> <a href="lab07.html#meiosis-model">Meiosis model</a> <a href="lab07.html#sordaria">Sordaria</a> <a href="lab07.html#design">Design</a> <a href="lab07.html#analyze">Analyze</a> <a href="lab07.html#reflect">Reflect</a> <a href="lab07.html#submit">Submit</a></td><td class="num">12</td></tr>
+        <tr><th scope="row"><a href="lab08.html">8. Bacterial Transformation</a></th><td class="parts"><a href="lab08.html#overview">Overview</a> <a href="lab08.html#background">Background</a> <a href="lab08.html#pre-lab">Pre-lab</a> <a href="lab08.html#transform">Transform</a> <a href="lab08.html#design">Design</a> <a href="lab08.html#analyze">Analyze</a> <a href="lab08.html#evaluate">Evaluate</a> <a href="lab08.html#submit">Submit</a></td><td class="num">8</td></tr>
+        <tr><th scope="row"><a href="lab09.html">9. Restriction Enzyme Analysis of DNA</a></th><td class="parts"><a href="lab09.html#overview">Overview</a> <a href="lab09.html#background">Background</a> <a href="lab09.html#pre-lab">Pre-lab</a> <a href="lab09.html#restriction-enzymes">Restriction enzymes</a> <a href="lab09.html#run-a-gel">Run a gel</a> <a href="lab09.html#standard-curve">Standard curve</a> <a href="lab09.html#design-crime-scene">Design: crime scene</a> <a href="lab09.html#analyze">Analyze</a> <a href="lab09.html#evaluate">Evaluate</a> <a href="lab09.html#submit">Submit</a></td><td class="num">10</td></tr>
+        <tr><th scope="row"><a href="lab10.html">10. Energy Dynamics</a></th><td class="parts"><a href="lab10.html#overview">Overview</a> <a href="lab10.html#background">Background</a> <a href="lab10.html#pre-lab">Pre-lab</a> <a href="lab10.html#part-1-npp">Part 1: NPP</a> <a href="lab10.html#part-2-larvae">Part 2: Larvae</a> <a href="lab10.html#design">Design</a> <a href="lab10.html#analyze">Analyze</a> <a href="lab10.html#reflect">Reflect</a> <a href="lab10.html#submit">Submit</a></td><td class="num">9</td></tr>
+        <tr><th scope="row"><a href="lab11.html">11. Transpiration</a></th><td class="parts"><a href="lab11.html#overview">Overview</a> <a href="lab11.html#background">Background</a> <a href="lab11.html#pre-lab">Pre-lab</a> <a href="lab11.html#leaf-area">Leaf area</a> <a href="lab11.html#stomata">Stomata</a> <a href="lab11.html#water-loss">Water loss</a> <a href="lab11.html#design">Design</a> <a href="lab11.html#analyze">Analyze</a> <a href="lab11.html#evaluate">Evaluate</a> <a href="lab11.html#submit">Submit</a></td><td class="num">10</td></tr>
+        <tr><th scope="row"><a href="lab12.html">12. Fruit Fly Behavior</a></th><td class="parts"><a href="lab12.html#overview">Overview</a> <a href="lab12.html#background">Background</a> <a href="lab12.html#pre-lab">Pre-lab</a> <a href="lab12.html#geotaxis-vial">Geotaxis vial</a> <a href="lab12.html#choice-chamber">Choice chamber</a> <a href="lab12.html#design">Design</a> <a href="lab12.html#analyze">Analyze</a> <a href="lab12.html#evaluate">Evaluate</a> <a href="lab12.html#submit">Submit</a></td><td class="num">9</td></tr>
+        <tr><th scope="row"><a href="lab13.html">13. Enzyme Activity</a></th><td class="parts"><a href="lab13.html#overview">Overview</a> <a href="lab13.html#background">Background</a> <a href="lab13.html#pre-lab">Pre-lab</a> <a href="lab13.html#procedure-1">Procedure 1</a> <a href="lab13.html#procedure-2-ph">Procedure 2: pH</a> <a href="lab13.html#design">Design</a> <a href="lab13.html#analyze">Analyze</a> <a href="lab13.html#reflect">Reflect</a> <a href="lab13.html#submit">Submit</a></td><td class="num">9</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="t-foot-link"><a href="index.html">&larr; Back to all labs</a></p>
+    </section>
+  </div>
+</div>
+</main>
+
+<footer class="site-footer"><div class="wrap wrap--wide gutter">
+  <p>Adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and do not replace wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+  <p>This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere.</p>
+</div></footer>
+
+<script src="lab.js"></script>
+</body>
+</html>
