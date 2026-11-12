@@ -75,6 +75,10 @@
   .bg-svg .ln { stroke: var(--ink); stroke-width: 2; fill: none; }
   .bg-svg .tr { fill: var(--stain); font-weight: 700; font-size: 12px; }
   .bg-svg .tick { stroke: var(--stain); stroke-width: 3; }
+  .sim--fit > .sim-main.is-wide { align-self: stretch; } /* results column uses the full height of the sim box */
+  #blast-sim .sim-main.is-wide { grid-template-columns: minmax(0, 1fr) minmax(420px, 48%); } /* room for the six group names on the bar chart */
+  .sim--fit #blast-out, .sim--fit #d-out { max-height: 340px; overflow: auto; }
+  .sim--fit .checks { max-height: 160px; }
   .checks { display: flex; flex-wrap: wrap; gap: 4px 12px; max-height: 220px; overflow: auto; font-size: .88rem; }
   .checks label { display: inline-flex; gap: 5px; align-items: center; }
 </style>
@@ -97,10 +101,11 @@
     <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
   </div>
 
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
-      <p class="lede">Paleontologists working in Liaoning Province, China, have found a new fossil. Rare soft tissue survived, and DNA from it was used to sequence three genes. Your job is to decide where this species belongs on a cladogram, first from its body structure and then from its DNA.</p>
+    <div class="step-body split">
+      <div class="split-main prose">
+        <p class="lede">Paleontologists working in Liaoning Province, China, have found a new fossil. Rare soft tissue survived, and DNA from it was used to sequence three genes. Your job is to decide where this species belongs on a cladogram, first from its body structure and then from its DNA.</p>
       <p>You will:</p>
       <ol>
         <li>Fill in a table of physical traits and use it to build a cladogram of six animal groups.</li>
@@ -115,13 +120,20 @@
         <li><strong>SYI-3.A</strong> Explain the connection between variation in the number and types of molecules within cells and an organism's ability to survive and/or reproduce in different environments.</li>
         <li><strong>Science Practice 2.D</strong> Represent relationships within a biological model.</li>
       </ul></div>
-      <div class="callout callout--tip"><div class="callout-title">Safety</div><p>This is a computer investigation, so there are no lab hazards. The sequences in this page's database are simulated so that the whole lab works offline. You can try the real NCBI BLAST as an extension at the end.</p></div>
+      </div>
+      <div class="split-side">
+        <div class="callout callout--tip"><div class="callout-title">Safety</div><p>This is a computer investigation, so there are no lab hazards. The sequences in this page's database are simulated so that the whole lab works offline. You can try the real NCBI BLAST as an extension at the end.</p></div>
+      </div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Cladograms, shared genes, and BLAST</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul><li>A cladogram is a hypothesis about relatedness: groups that join at a more recent node share a more recent common ancestor.</li><li>Cladograms are built from shared derived characters, traits that appeared in an ancestor and were passed to all its descendants.</li><li>Most modern trees use molecular evidence: the longer two lineages have been apart, the more their DNA differs.</li><li>BLAST finds local alignments and reports a bit score, an E-value (chance matches expected) and percent identity.</li><li>A low E-value (below about 1 × 10<sup>−4</sup>) means a hit is probably a real homolog, not a coincidence.</li></ul></div>
+
       <p>A <strong>cladogram</strong> (a type of phylogenetic tree) shows a hypothesis about how species are related. The tips are species or groups. Each branch point (node) stands for a common ancestor. Two groups that join at a more recent node share a more recent common ancestor than groups that join closer to the root. You can rotate the branches around any node without changing what the tree says. Only the branching pattern matters.</p>
       <p>Traditional cladograms are built from <strong>shared derived characters</strong>. These are traits that appeared in an ancestor and were passed to all of its descendants. On the cladogram below, each trait is marked where it first evolved. Every group above that mark has the trait. A trait shared by many groups usually evolved earlier than a trait found in only a few.</p>
       <figure>
@@ -141,7 +153,10 @@
 </svg>
         <figcaption class="small muted">After the manual's Figure 2. Read it from the root (bottom left) upward: every animal to the right of a trait mark has that trait. Tips, left to right: lamprey, shark, salamander, lizard, tiger, gorilla.</figcaption>
       </figure>
+        <details class="disclose"><summary>Molecular evidence and the molecular clock</summary><div class="inner">
       <p>Today, most cladograms are built mainly from <strong>molecular evidence</strong>. When a population splits into two species, each lineage gathers its own mutations. The longer two lineages have been apart, the more differences build up in their DNA. So the percentage of matching bases between two versions of a gene tells you roughly how recently the species shared an ancestor. For example, humans and chimpanzees share more than 95% of their DNA, and humans and fruit flies share about 60%.</p>
+        </div></details>
+        <details class="disclose"><summary>BLAST: scores, E-values and percent identity</summary><div class="inner">
       <p>Comparing sequences by hand is slow. <strong>BLAST</strong> (Basic Local Alignment Search Tool) does it in seconds. You give it a <em>query</em> sequence. It finds short exact "seed" matches in every database sequence, then extends each seed into a full <em>local alignment</em>, allowing mismatches and gaps. Each alignment gets a score:</p>
       <div class="equation">Raw score S = (matches × 2) − (mismatches × 3) − (5 + 2 × gap length) for each gap</div>
       <p>The raw score is converted to a <strong>bit score</strong>, which can be compared between searches. The <strong>E-value</strong> is the number of alignments this good that you would expect to find <em>by chance</em> in a database of that size:</p>
@@ -151,20 +166,26 @@
             | || ||||
 Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
       <p>DNA is only one line of evidence. Fossils, anatomy, embryology and protein sequences can all support or challenge a tree. A good cladogram is a hypothesis that fits the most evidence.</p>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl><dt>Cladogram</dt><dd>A branching diagram that shows a hypothesis of evolutionary relationships.</dd><dt>Shared derived character</dt><dd>A trait that arose in a common ancestor and is shared by all of its descendants.</dd><dt>Homolog</dt><dd>A gene or trait inherited from a common ancestor.</dd><dt>Bit score</dt><dd>A normalized alignment score that can be compared between searches; higher is closer.</dd><dt>E-value</dt><dd>The number of alignments this good expected by chance in a database of that size; lower is better.</dd><dt>Percent identity</dt><dd>The percentage of aligned positions where the two sequences match.</dd></dl>
+      </aside>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p class="small muted">Getting Started, Table 1 (plants: 1 = has the trait): Mosses 0 0 0 · Ferns vascular tissue only · Pine trees vascular tissue + seeds · Flowering plants vascular tissue + seeds + flowers.</p>
       <div class="table-wrap"><table class="data"><thead><tr><th>Species (vs. human)</th><th class="num">GAPDH gene similarity</th><th class="num">GAPDH protein similarity</th></tr></thead>
       <tbody><tr><td>Chimpanzee (<em>Pan troglodytes</em>)</td><td class="num">99.6%</td><td class="num">100%</td></tr><tr><td>Dog (<em>Canis lupus familiaris</em>)</td><td class="num">91.3%</td><td class="num">95.2%</td></tr><tr><td>Fruit fly (<em>Drosophila melanogaster</em>)</td><td class="num">72.4%</td><td class="num">76.7%</td></tr><tr><td>Roundworm (<em>Caenorhabditis elegans</em>)</td><td class="num">68.2%</td><td class="num">74.3%</td></tr></tbody></table></div>
-      <div id="prelab" style="margin-top:14px"></div>
+      <div id="prelab" class="quiz--cols" style="margin-top:14px"></div>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Morphology">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Morphology">
     <header><div class="eyebrow">Part 1 · Structured inquiry</div><h2>Build a cladogram from physical traits</h2></header>
     <div class="step-body">
       <div class="prose"><p>Pick a data set. Read the organism cards, then tick every trait each organism has. Check your table, then group organisms that share a derived trait to build the tree. Start with the most widely shared traits.</p></div>
@@ -174,13 +195,17 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
       <div id="matrix"></div>
       <div class="row"><button class="btn" type="button" id="check-matrix">Check my table</button><span id="matrix-msg" class="small" aria-live="polite"></span></div>
       <h3>2 · Group organisms into clades</h3>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><span class="label" id="chips-label">Select organisms in the group</span><div class="chips" id="chips" role="group" aria-labelledby="chips-label"></div></div>
-          <div class="field"><label for="trait-pick">Shared derived trait that defines the group</label><select id="trait-pick"></select></div>
-          <button class="btn btn--primary" type="button" id="add-clade">Group selected organisms</button>
-          <div class="row"><button class="btn btn--sm" type="button" id="undo-clade">Undo last</button><button class="btn btn--sm btn--ghost" type="button" id="reset-clade">Clear tree</button></div>
-          <p class="small muted">Tip: a trait every organism shares goes at the root. Select all of them and choose that trait.</p>
+      <div class="sim sim--fit" id="clade-sim">
+        <div class="sim-side">
+          <div id="clade-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><span class="label" id="chips-label">Select organisms in the group</span><div class="chips" id="chips" role="group" aria-labelledby="chips-label"></div></div>
+            <div class="field"><label for="trait-pick">Shared derived trait that defines the group</label><select id="trait-pick"></select></div>
+            <button class="btn btn--primary" type="button" id="add-clade">Group selected organisms</button>
+            <div class="row"><button class="btn btn--sm" type="button" id="undo-clade">Undo last</button><button class="btn btn--sm btn--ghost" type="button" id="reset-clade">Clear tree</button></div>
+            <details class="more"><summary>Tip</summary><div class="inner"><p class="small muted">Tip: a trait every organism shares goes at the root. Select all of them and choose that trait.</p></div></details>
+          </div>
         </div>
         <div class="stage">
           <div id="build-msg" class="msg" aria-live="polite">Select two or more organisms and a trait, then press "Group selected organisms."</div>
@@ -215,18 +240,28 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="BLAST the genes">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="BLAST the genes">
     <header><div class="eyebrow">Part 2 · Structured inquiry</div><h2>Search the fossil genes with mini-BLAST</h2></header>
     <div class="step-body">
-      <div class="prose"><p>The real lab has you upload three saved gene files to NCBI BLAST. Here, the same three queries are built in. Run each gene with the settings below. For every search, read the hit list, open at least two alignments, and record the top hits. When you have run all three genes, look at the summary graph.</p></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="q-gene">Query sequence</label><select id="q-gene"><option value="A">Fossil gene A (300 bp)</option><option value="B">Fossil gene B</option><option value="C">Fossil gene C</option></select></div>
-          <div class="field"><span class="label" id="prog-label">Program selection</span><div class="seg" role="group" aria-labelledby="prog-label" id="prog-seg"><button type="button" data-p="blastn" aria-pressed="true">Somewhat similar (blastn)</button><button type="button" data-p="megablast" aria-pressed="false">Highly similar (megablast)</button></div></div>
-          <div class="field"><label for="q-set">Choose search set</label><select id="q-set"><option value="all">All organisms in database (18)</option><option value="vert">Vertebrates only</option><option value="fig4">Figure 4 groups only (12)</option></select></div>
-          <button class="btn btn--primary" type="button" id="run-blast">BLAST</button>
-          <button class="btn" type="button" id="log-blast">Record top 5 hits in my table</button>
-          <button class="btn btn--sm" type="button" id="tree-blast">Distance tree of results</button>
+      
+      <div class="sim sim--fit" id="blast-sim">
+        <div class="sim-side">
+          <div id="blast-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="q-gene">Query sequence</label><select id="q-gene"><option value="A">Fossil gene A (300 bp)</option><option value="B">Fossil gene B</option><option value="C">Fossil gene C</option></select></div>
+            <div class="field"><label for="q-set">Choose search set</label><select id="q-set"><option value="all">All organisms in database (18)</option><option value="vert">Vertebrates only</option><option value="fig4">Figure 4 groups only (12)</option></select></div>
+            <button class="btn btn--primary" type="button" id="run-blast">BLAST</button>
+            <button class="btn" type="button" id="log-blast">Record top 5 hits in my table</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><span class="label" id="prog-label">Program selection</span><div class="seg" role="group" aria-labelledby="prog-label" id="prog-seg"><button type="button" data-p="blastn" aria-pressed="true">Somewhat similar (blastn)</button><button type="button" data-p="megablast" aria-pressed="false">Highly similar (megablast)</button></div></div>
+              <button class="btn btn--sm" type="button" id="tree-blast">Distance tree of results</button>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>The real lab has you upload three saved gene files to NCBI BLAST. Here, the same three queries are built in. Run each gene with the settings below. For every search, read the hit list, open at least two alignments, and record the top hits. When you have run all three genes, look at the summary graph.</p>
+          <p><strong>Best percent identity in each group.</strong> Each bar in the Graph tab shows the highest percent identity to the fossil query among that group's sequences, from your latest blastn search of each gene. A missing bar means no significant hit (E &gt; 10).</p>
+        </div></details>
         </div>
         <div class="stage">
           <div><div class="small muted">Query sequence (5′→3′)</div><div class="seqbox" id="q-seq" aria-label="Query sequence"></div></div>
@@ -234,10 +269,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
           <div id="blast-out"></div>
         </div>
       </div>
-      <h3 style="margin-top:18px">Your BLAST data</h3>
       <div id="blast-table"></div>
-      <h3 style="margin-top:14px">Best percent identity in each group on the fossil cladogram</h3>
-      <p class="small muted">Each bar shows the highest percent identity to the fossil query among that group's sequences, from your latest blastn search of each gene. A missing bar means no significant hit (E &gt; 10).</p>
       <div id="blast-chart"></div>
     </div>
   </section>
@@ -257,49 +289,57 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>BLAST your own question</h2></header>
     <div class="step-body">
-      <div class="prose"><p>Scientists start with a question about a gene or a group of organisms. Choose any organism's version of gene A, B or C as your query, pick which organisms to search, and look for a pattern. Here is one testable idea. If mutations build up at a fairly steady rate, percent identity should drop steadily as the time since two species' common ancestor increases. This idea is called a <em>molecular clock</em>. Divergence times from the fossil record are given for each pair. You can also paste a sequence of your own (A, C, G and T only).</p></div>
-      <div id="design-prompts" class="grid-2"></div>
-      <div class="sim" style="margin-top:14px">
-        <div class="controls">
-          <div class="field"><label for="d-org">Query organism</label><select id="d-org"></select></div>
-          <div class="field"><label for="d-gene">Gene (independent variable: rate of evolution)</label><select id="d-gene"><option value="A">Gene A (slow)</option><option value="B">Gene B (moderate)</option><option value="C">Gene C (fast)</option></select></div>
-          <div class="field"><span class="label" id="dprog-label">Program</span><div class="seg" role="group" aria-labelledby="dprog-label" id="dprog-seg"><button type="button" data-p="blastn" aria-pressed="true">blastn</button><button type="button" data-p="megablast" aria-pressed="false">megablast</button></div></div>
-          <div class="field"><span class="label" id="dset-label">Organisms to search</span><div class="checks" id="d-set" role="group" aria-labelledby="dset-label"></div><div class="row"><button class="btn btn--sm" type="button" id="d-all">All</button><button class="btn btn--sm" type="button" id="d-none">None</button></div></div>
-          <div class="field"><label for="d-paste">Or paste your own query (optional)</label><textarea id="d-paste" rows="3" placeholder="ACGT… (leave empty to use the organism above)"></textarea></div>
-          <button class="btn btn--primary" type="button" id="d-run">BLAST</button>
-          <button class="btn" type="button" id="d-log">Add all hits to clock table</button>
+      
+      <div id="design-prompts" class="prompts-2"></div>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="d-org">Query organism</label><select id="d-org"></select></div>
+            <div class="field"><label for="d-gene">Gene (independent variable: rate of evolution)</label><select id="d-gene"><option value="A">Gene A (slow)</option><option value="B">Gene B (moderate)</option><option value="C">Gene C (fast)</option></select></div>
+            <button class="btn btn--primary" type="button" id="d-run">BLAST</button>
+            <button class="btn" type="button" id="d-log">Add all hits to clock table</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><span class="label" id="dprog-label">Program</span><div class="seg" role="group" aria-labelledby="dprog-label" id="dprog-seg"><button type="button" data-p="blastn" aria-pressed="true">blastn</button><button type="button" data-p="megablast" aria-pressed="false">megablast</button></div></div>
+              <div class="field"><span class="label" id="dset-label">Organisms to search</span><div class="checks" id="d-set" role="group" aria-labelledby="dset-label"></div><div class="row"><button class="btn btn--sm" type="button" id="d-all">All</button><button class="btn btn--sm" type="button" id="d-none">None</button></div></div>
+              <div class="field"><label for="d-paste">Or paste your own query (optional)</label><textarea id="d-paste" rows="3" placeholder="ACGT… (leave empty to use the organism above)"></textarea></div>
+              <div class="row" style="margin-top:8px"><label class="check" for="clock-max"><input type="checkbox" id="clock-max" checked> Fit line only to pairs that split less than <output id="clock-max-out" class="val">350</output> million years ago</label><input id="clock-max-range" type="range" min="50" max="600" step="10" value="350" aria-label="Maximum divergence time included in fit (million years)"></div>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Scientists start with a question about a gene or a group of organisms. Choose any organism's version of gene A, B or C as your query, pick which organisms to search, and look for a pattern. Here is one testable idea. If mutations build up at a fairly steady rate, percent identity should drop steadily as the time since two species' common ancestor increases. This idea is called a <em>molecular clock</em>. Divergence times from the fossil record are given for each pair. You can also paste a sequence of your own (A, C, G and T only).</p>
+        </div></details>
         </div>
         <div class="stage">
           <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
           <div id="d-out"></div>
         </div>
       </div>
-      <h3 style="margin-top:18px">Molecular-clock data</h3>
       <div id="clock-table"></div>
-      <div class="row" style="margin-top:8px"><label class="check" for="clock-max"><input type="checkbox" id="clock-max" checked> Fit line only to pairs that split less than <output id="clock-max-out" class="val">350</output> million years ago</label><input id="clock-max-range" type="range" min="50" max="600" step="10" value="350" aria-label="Maximum divergence time included in fit (million years)"></div>
       <div id="clock-chart"></div>
       <div id="design-analysis"></div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>What does the evidence say?</h2></header>
     <div class="step-body" id="analysis"></div>
   </section>
 
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
     <div class="step-body">
-      <div id="evaluate"></div>
+      <div id="evaluate" class="prompts-2"></div>
       <div class="callout callout--tip"><div class="callout-title">Extension: use the real tools</div>
         <p>Search NCBI's <a href="https://www.ncbi.nlm.nih.gov/gene" target="_blank" rel="noopener">Gene database</a> for a gene such as "human actin." Open its FASTA sequence and paste it into <a href="https://blast.ncbi.nlm.nih.gov/Blast.cgi" target="_blank" rel="noopener">NCBI BLAST</a> (nucleotide blast). Other genes the manual suggests: ATP synthase, catalase, GAPDH, keratin, myosin, Pax1, ubiquitin and zinc finger proteins. Compare the hit list and "Distance tree of results" with what you saw here.</p></div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -1150,14 +1190,15 @@ Lab.prompt('#design-analysis', { key: 'd-analysis', label: 'Analyze: what is the
 Lab.prompt('#design-analysis', { key: 'd-conclusion', label: 'Conclusion: was your hypothesis supported? Name one limitation of your design and one way to improve it.', rows: 3 });
 
 /* ---------------- Analyze & Evaluate ---------------- */
-const an = Lab.$('#analysis');
-an.append(Lab.h('p', { class: 'prose' }, 'Answer for each of the three fossil genes, using your BLAST data table.'));
+const anTop = Lab.$('#analysis');
+anTop.append(Lab.h('p', { class: 'prose' }, 'Answer for each of the three fossil genes, using your BLAST data table.'));
+const an = Lab.h('div', { class: 'prompts-2' }); anTop.append(an);
 Lab.prompt(an, { key: 'a1', label: '1. Which species in the BLAST results has the gene sequence most similar to each fossil gene?', rows: 3 });
 Lab.prompt(an, { key: 'a2', label: '2. Where is that species located on your cladogram?', rows: 2 });
 Lab.prompt(an, { key: 'a3', label: '3. How similar is that gene sequence (percent identity, score and E-value)?', rows: 3 });
 Lab.prompt(an, { key: 'a4', label: '4. Which species has the next most similar sequence? Does the pattern hold across all three genes?', rows: 3 });
 Lab.prompt(an, { key: 'a5', label: '5. The three genes gave different percent identities for the same pair of organisms. Explain why, and say which gene is most useful for telling close relatives apart.', rows: 3 });
-const cer = Lab.h('div', { class: 'cer' }); an.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: where does the fossil belong?'), cer);
+const cer = Lab.h('div', { class: 'cer' }); anTop.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: where does the fossil belong?'), cer);
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
 const ev = Lab.$('#evaluate');
@@ -1165,6 +1206,45 @@ Lab.prompt(ev, { key: 'e1', label: 'Compare your cladogram with your classmates\
 Lab.prompt(ev, { key: 'e2', label: 'This page\'s database holds only 18 organisms. Real BLAST searches hundreds of thousands of organisms. How does a small database limit your conclusions? (Hint: what if the fossil\'s closest living relatives were not in the database?)', rows: 3 });
 Lab.prompt(ev, { key: 'e3', label: 'What other data could be collected from the fossil specimen to better work out its evolutionary history?', rows: 3 });
 Lab.prompt(ev, { key: 'e4', label: 'Use the ideas of speciation, extinction and natural selection to describe what happened along the branch leading to the fossil.', rows: 3 });
+
+/* ================= LAPTOP LAYOUT: results beside each simulation, step checklists ================= */
+const filled = k => { const t = Lab.$('#p-' + k); return !!(t && t.value.trim()); };
+const allFilled = ks => ks.every(filled);
+let dTouched = false, treeTried = false, dRan = false;
+Lab.$('#d-run').addEventListener('click', () => { dRan = true; });
+['#d-org', '#d-gene', '#d-paste'].forEach(s => { Lab.$(s).addEventListener('input', () => { dTouched = true; }); Lab.$(s).addEventListener('change', () => { dTouched = true; }); });
+Lab.$$('#dprog-seg button, #d-set input').forEach(el => el.addEventListener('click', () => { dTouched = true; }));
+Lab.$('#tree-blast').addEventListener('click', () => { treeTried = true; });
+Lab.results('#blast-sim', { graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-table', title: 'Your BLAST data' }] });
+Lab.results('#d-sim', { graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
+const matrixDone = () => { const D = DATASETS[dsKey], s = Lab.store.get('matrix:' + dsKey, {}); return D.taxa.every(t => D.traits.every((tr, j) => !!s[t.id + j] === tr[1].includes(t.id))) && Object.values(s).some(Boolean); };
+const blastGenes = () => new Set(blastTable.getRows().map(r => r.gene));
+Lab.steps('#clade-steps', [
+  { id: 'table', text: 'Tick the trait table', target: '#matrix input', done: () => Object.values(Lab.store.get('matrix:' + dsKey, {})).some(Boolean), hint: 'Scroll up: read the organism cards and tick every trait each organism has.' },
+  { id: 'check', text: 'Check my table', target: '#check-matrix', done: matrixDone, hint: 'Press <strong>Check my table</strong> and fix any highlighted cells.' },
+  { id: 'group', text: 'Group organisms into clades', target: '#add-clade', done: () => getClades(dsKey).length >= DATASETS[dsKey].traits.length - 1, hint: 'Select the organisms that share a trait, pick the trait, press <strong>Group selected organisms</strong>. Start with the most widely shared trait.' },
+  { id: 'hyp', text: 'Place the fossil (hypothesis)', target: '#fossil-hyp', sticky: true, done: () => !!Lab.store.get('fossil-hyp', ''), hint: 'Below the tree: choose the branch the fossil joins, using the Figure 4 data set.' },
+  { id: 'why', text: 'Explain it (below)', target: '#p-fossil-obs', done: () => allFilled(['fossil-obs', 'fossil-hyp-why']), hint: 'Describe the fossil and explain your hypothesis in the two boxes below.' }
+], { doneText: 'Part 1 done. Go on to <a href="#blast-the-genes">BLAST the genes</a>.' });
+Lab.steps('#blast-steps', [
+  { id: 'a', text: 'BLAST gene A, record top 5', target: '#log-blast', done: () => blastGenes().has('A'), hint: 'Choose gene A, press <strong>BLAST</strong>, open two alignments, then press <strong>Record top 5 hits</strong>.' },
+  { id: 'b', text: 'BLAST gene B, record top 5', target: '#q-gene', done: () => blastGenes().has('B'), hint: 'Choose gene B, press <strong>BLAST</strong>, then record the top 5 hits.' },
+  { id: 'c', text: 'BLAST gene C, record top 5', target: '#q-gene', done: () => blastGenes().has('C'), hint: 'Choose gene C, press <strong>BLAST</strong>, then record the top 5 hits.' },
+  { id: 'tree', text: 'Try a distance tree', target: '#tree-blast', optional: true, done: () => treeTried, hint: 'Open More options and press <strong>Distance tree of results</strong>.' }
+], { doneText: 'All three genes searched. Go on to <a href="#place-the-fossil">Place the fossil</a>.' });
+Lab.steps('#d-steps', [
+  { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => allFilled(['d-question', 'd-hypothesis', 'd-variables']), hint: 'Write your question, hypothesis and variables in the boxes above.' },
+  { id: 'pick', text: 'Choose a query and gene', target: '#d-org', sticky: true, done: () => dTouched || clockTable.getRows().length > 0, hint: 'Pick a query organism, a gene and (in More options) which organisms to search.' },
+  { id: 'run', text: 'BLAST your query', target: '#d-run', done: () => dRan || clockTable.getRows().length > 0, hint: 'Press <strong>BLAST</strong> and read the hit list.' },
+  { id: 'log', text: 'Add hits to the clock table', target: '#d-log', done: () => clockTable.getRows().length > 0, hint: 'Press <strong>Add all hits to clock table</strong>. Repeat for genes A, B and C.' },
+  { id: 'ana', text: 'Analyze the slope (below)', target: '#p-d-analysis', done: () => allFilled(['d-analysis', 'd-conclusion']), hint: 'Read the slope and R² in the Graph, then answer the two questions below.' }
+], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+
+/* toasts for key moments (BLAST results are written into the page, so these are not announced) */
+Lab.$('#run-blast').addEventListener('click', () => { if (lastRes) Lab.toast(`BLAST gene ${lastRes.gene}: ${lastRes.hits.length} hit${lastRes.hits.length === 1 ? '' : 's'}`, { type: 'info', announce: false, key: 'blast' }); });
+Lab.$('#d-run').addEventListener('click', () => { if (dRes) Lab.toast(`BLAST finished: ${dRes.hits.length} hit${dRes.hits.length === 1 ? '' : 's'}`, { type: 'info', announce: false, key: 'dblast' }); });
+Lab.$('#add-clade').addEventListener('click', () => { const m = Lab.$('#build-msg'); if (/^Added/.test(m.textContent)) Lab.toast(m.classList.contains('ok') ? 'Group added: the trait supports it' : 'Group added, but check it against the trait table', { type: m.classList.contains('ok') ? 'ok' : 'warn', announce: false, key: 'clade' }); });
+Lab.$('#fossil-final').addEventListener('change', e => { if (e.target.value) Lab.toast('Final placement saved', { type: 'ok', announce: false, key: 'final' }); });
 
 </script>
 </body>
