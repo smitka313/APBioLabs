@@ -35,6 +35,15 @@
   .msg { font-size: .92rem; padding: 8px 12px; border-radius: var(--r-sm); background: var(--surface-2); }
   .msg.ok { background: var(--ok-soft); } .msg.bad { background: var(--bad-soft); } .msg.warn { background: var(--warn-soft); }
   .casefile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+  .sim--fit .rack .tube { padding: 4px 8px; font-size: .78rem; }
+  .sim--fit .wells button { padding: 3px 0; }
+  .sim--fit .msg { padding: 6px 10px; font-size: .86rem; }
+  .sim--fit .row > .gate-why { flex: 1 0 100%; order: 9; margin-top: 0; }
+  .sim--fit .stage .row { align-items: center; }
+  .sim--fit .stage .row select { width: auto; flex: 0 1 112px; min-width: 100px; }
+  .sim--fit .stage .row .btn--sm { padding: 5px 9px; font-size: .8rem; }
+  .sim--fit .stage .row { gap: 6px 8px; }
+  .sim-panel .semilog { max-width: 100%; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -55,9 +64,10 @@
     <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
   </div>
 
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>The case of the missing teacher</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">You arrive at AP Biology, Room 102. Chairs are knocked over, there is broken glass on the floor, there are drops of blood, and Ms. Mason is nowhere to be found. Your classmates Marcus and Laurel bag the evidence. Your job is to use DNA to find out whose blood is on the floor.</p>
       <div class="casefile"><strong>Evidence log</strong>
         <ul>
@@ -76,6 +86,8 @@
         <li>Measure how far each band moved, build a semi-log standard curve from the <em>Hin</em>dIII marker, and estimate the sizes of unknown fragments.</li>
         <li>Design and run your own gel of the crime-scene evidence. Then use your numbers, not just your eyes, to decide whose blood it is.</li>
       </ol>
+      </div>
+      <div class="split-side">
       <div class="callout callout--question"><div class="callout-title">Learning objective and practice</div><ul>
         <li><strong>IST-1.P</strong> Explain the use of genetic engineering techniques in analyzing or manipulating DNA.</li>
         <li><strong>Science Practice 6.D</strong> Explain the relationship between experimental results and larger biological concepts, processes, or theories.</li>
@@ -86,12 +98,23 @@
         <li>Wear gloves. Never handle gels with bare hands, and keep methylene blue stain off your skin.</li>
         <li>Hot agarose can boil over and scald you. Use heat-resistant gloves when you melt it.</li>
       </ul></div>
+      </div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Cutting DNA and sorting it by size</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul>
+            <li>A restriction enzyme cuts DNA at a specific short palindromic site, so the same DNA always gives the same fragments.</li>
+            <li>Differences between people add, remove or move sites, so fragment lengths differ (RFLPs).</li>
+            <li>In a gel, negatively charged DNA moves toward the + electrode; smaller fragments travel farther.</li>
+            <li>Distance migrated is roughly linear in log<sub>10</sub>(size), so a marker of known sizes gives a standard curve for sizing unknown bands.</li>
+            <li>A match needs sizes and a stated rule, not just bands that look alike.</li>
+          </ul>
+        </div>
       <p><strong>Restriction enzymes</strong> (restriction endonucleases) are proteins bacteria use to chop up the DNA of invading viruses. Each one recognizes a specific short sequence, usually a 4- to 8-base-pair <em>palindrome</em>, which means the sequence reads the same 5′→3′ on both strands. The enzyme cuts the sugar–phosphate backbone at that site. <em>Eco</em>RI (from <em>E. coli</em>) recognizes 5′-GAATTC-3′ and cuts between G and A on each strand. Because the two cuts are staggered, each piece ends with a four-base single-stranded overhang, called a <strong>sticky end</strong>. Other enzymes, such as <em>Sma</em>I (CCC↓GGG), cut straight across and leave <strong>blunt ends</strong>. Fragments with matching sticky ends can base-pair and be sealed by DNA ligase. This "cut and paste" step is the basis of recombinant DNA.</p>
       <figure>
         <svg class="bg-svg" viewBox="0 0 480 150" role="img" aria-label="EcoRI recognition site GAATTC on both strands, with staggered cuts that leave AATT sticky ends">
@@ -105,30 +128,56 @@
 <text class="lbl" x="200" y="96">Two fragments, each with a single-stranded</text><text class="lbl" x="200" y="112">5′-AATT overhang (a "sticky end").</text>
 </svg>
       </figure>
+        <details class="disclose"><summary>RFLPs: why people differ</summary><div class="inner">
       <p>Cutting a DNA molecule with an enzyme gives a set of fragments whose sizes depend on where the sites are. Differences between individuals' DNA can add or remove sites, or change the distance between them. This gives each person a different set of <strong>restriction fragment length polymorphisms (RFLPs)</strong>. That pattern is a DNA "fingerprint." Identical twins have the same pattern.</p>
+        </div></details>
+        <details class="disclose"><summary>How gel electrophoresis separates DNA</summary><div class="inner">
       <p><strong>Gel electrophoresis</strong> separates the fragments. DNA's phosphate groups give it a negative charge, so in an electric field it moves from the negative (black) electrode toward the positive (red) electrode. That is why the wells go at the black end. The agarose gel is a mesh of pores. Short fragments slip through quickly, while long ones get tangled and move slowly. Over a useful range, the distance a fragment travels is roughly a straight-line function of the <em>logarithm</em> of its size:</p>
       <div class="equation">distance ≈ a − b · log<sub>10</sub>(size in bp) &nbsp;&nbsp;⇔&nbsp;&nbsp; log<sub>10</sub>(bp) = m · distance + c</div>
+        </div></details>
+        <details class="disclose"><summary>Sizing fragments with a marker</summary><div class="inner">
       <p>To size unknown fragments, run a <strong>DNA marker</strong> (a set of fragments of known size) on the same gel. Here the marker is λ DNA cut with <em>Hin</em>dIII: 23,130, 9,416, 6,557, 4,361, 2,322, 2,027, 564 and 125 bp. Plot distance on the ordinary x-axis and size on the logarithmic y-axis of semi-log paper. The points fall close to a straight line, called the <strong>standard curve</strong>. Read an unknown band's distance across to the line to estimate its size. The very largest fragments squeeze together near the top (above about 20 kb at 0.8% agarose) and fall off the line, so leave them out of the fit. λ DNA has 12-base single-stranded "cos" ends that can stick together. In a <em>Hin</em>dIII digest, the two end fragments (23,130 + 4,361) partly pair up into a 27,491-bp piece that runs in the same band as 23,130.</p>
+        </div></details>
+        <details class="disclose"><summary>Loading dye, agarose, voltage and time</summary><div class="inner">
       <p>Loading dye contains a dense sugar that makes the sample sink into the well. It also contains a blue-purple dye that runs at about the same speed as a 300-bp DNA fragment, so you can see how far the run has gone. Agarose concentration, voltage and run time all change how well the bands separate.</p>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Restriction enzyme</dt><dd>A protein that cuts DNA at its own recognition sequence.</dd>
+          <dt>Palindrome</dt><dd>A sequence that reads the same 5′→3′ on both strands (GAATTC).</dd>
+          <dt>Sticky end</dt><dd>A single-stranded overhang left by a staggered cut, such as AATT.</dd>
+          <dt>RFLP</dt><dd>A difference in fragment lengths between individuals, caused by DNA sequence variation.</dd>
+          <dt>Gel electrophoresis</dt><dd>Separating DNA fragments by size as they move through agarose in an electric field.</dd>
+          <dt>DNA marker</dt><dd>Fragments of known size run on the same gel; here λ DNA cut with <em>Hin</em>dIII.</dd>
+          <dt>Standard curve</dt><dd>A semi-log plot of marker size against distance, used to size unknown bands.</dd>
+        </dl>
+      </aside>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Pre-lab">
+
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
-    <div class="step-body"><div id="prelab"></div></div>
+    <div class="step-body"><div id="prelab" class="quiz--cols"></div></div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Restriction enzymes">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Restriction enzymes">
     <header><div class="eyebrow">Getting started · Activities I and II</div><h2>Cut DNA on the computer, then map λ DNA</h2></header>
     <div class="step-body">
       <div class="prose"><p>Here is the manual's 53-bp template strand and its complement. Choose an enzyme and digest. Before you press the button, predict how many fragments you will get.</p></div>
-      <div class="sim">
-        <div class="controls">
+      <div class="sim sim--fit" id="cut-sim">
+        <div class="sim-side">
+          <div id="cut-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><label for="cut-enz">Restriction enzyme</label><select id="cut-enz"><option value="EcoRI">EcoRI (G↓AATTC)</option><option value="HindIII">HindIII (A↓AGCTT)</option><option value="BamHI">BamHI (G↓GATCC)</option><option value="SmaI">SmaI (CCC↓GGG, blunt)</option></select></div>
           <button class="btn btn--primary" type="button" id="cut-run">Digest</button>
-          <div class="readouts"><div class="readout"><span class="k">Sites</span><span class="v" id="cut-sites">—</span></div><div class="readout"><span class="k">Fragments</span><span class="v" id="cut-frags">—</span></div></div>
+          </div>
         </div>
         <div class="stage">
+          <div class="readouts"><div class="readout"><span class="k">Sites</span><span class="v" id="cut-sites">—</span></div><div class="readout"><span class="k">Fragments</span><span class="v" id="cut-frags">—</span></div></div>
           <pre class="seqpre" id="cut-out" aria-live="polite"></pre>
         </div>
       </div>
@@ -142,7 +191,7 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Run a gel">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Run a gel">
     <header><div class="eyebrow">Procedure · Learning to use gel electrophoresis</div><h2>Load and run λ DNA digests</h2></header>
     <div class="step-body">
       <div class="prose"><p>Your gel (0.8% agarose in 1× TAE) is cast, set in the box with the comb at the black (−) end, covered with buffer, and the comb has been removed. Load each sample into its own well: pick a tube, set the volume, then click a well, either on the gel or with the well buttons. Record your loading order. Connect the leads, run the gel until the dye front is about 1 cm from the end, then stain it. The manual's "ideal gel" order is A <em>Bam</em>HI, B <em>Eco</em>RI, C <em>Hin</em>dIII, D uncut.</p></div>
@@ -158,7 +207,7 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Design: crime scene">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design: crime scene">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Whose blood is on the floor?</h2></header>
     <div class="step-body">
       <div class="prose"><p>The chief investigator (your teacher) gives you DNA from the blood, Ms. Mason (saliva on her cup), Mr. Gladson (his tissue) and Bobby (bubble gum). All four have been cut with the same restriction enzymes, and you also get a <em>Hin</em>dIII marker. Plan your gel: which wells, how much sample, which voltage, how long, and how many repeat gels. Then run it and size every band. A jury will not accept "the bands look the same." You need fragment sizes and a clear match rule.</p></div>
@@ -176,19 +225,19 @@
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>Make your case</h2></header>
     <div class="step-body" id="analysis"></div>
   </section>
 
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results · Thinking about your results</div><h2>Errors, ethics, and the bigger picture</h2></header>
-    <div class="step-body"><div id="evaluate"></div>
+    <div class="step-body"><div id="evaluate" class="prompts-2"></div>
       <div class="callout callout--tip"><div class="callout-title">Go further</div><p>Learn how DNA evidence has been used to free wrongly convicted people at <a href="https://innocenceproject.org" target="_blank" rel="noopener">innocenceproject.org</a>. Explore interactive DNA-fingerprinting animations from the <a href="https://dnalc.org" target="_blank" rel="noopener">Dolan DNA Learning Center</a>.</p></div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -257,6 +306,18 @@ function digestSeq() {
   Lab.$('#cut-out').textContent = out;
 }
 Lab.$('#cut-run').addEventListener('click', digestSeq); digestSeq();
+const cutTouched = { run: false, sma: false, map: false };
+Lab.$('#cut-run').addEventListener('click', () => { cutTouched.run = true; if (Lab.$('#cut-enz').value === 'SmaI') cutTouched.sma = true; Lab.toast(`${Lab.$('#cut-enz').value}: ${Lab.$('#cut-sites').textContent} site(s), ${Lab.$('#cut-frags').textContent} fragments`, { type: 'info', announce: false, key: 'cut' }); });
+['E', 'H', 'B'].forEach(k => Lab.$('#map-' + k).addEventListener('change', () => { cutTouched.map = true; }));
+{
+  Lab.steps('#cut-steps', [
+    { id: 'digest', text: 'Digest the 53-bp DNA', target: '#cut-run', done: () => cutTouched.run || filled('act1'), hint: 'Predict the number of fragments, then press <strong>Digest</strong>.' },
+    { id: 'blunt', text: 'Try SmaI (blunt ends)', target: '#cut-enz', optional: true, done: () => cutTouched.sma, hint: 'Choose SmaI, digest, and compare the ends with EcoRI.' },
+    { id: 'act1', text: 'Answer Activity I (below)', target: '#p-act1', done: () => filled('act1'), hint: 'Scroll down and answer the Activity I question.' },
+    { id: 'map', text: 'Explore the λ map (below)', target: '#map-H', optional: true, done: () => cutTouched.map || filled('act2'), hint: 'Tick HindIII and BamHI to see their fragments on the map.' },
+    { id: 'act2', text: 'Answer Activity II (below)', target: '#p-act2', done: () => filled('act2'), hint: 'Scroll down and answer the Activity II question.' }
+  ], { doneText: 'Restriction enzymes done. Next, run a gel in <a href="#run-a-gel">Run a gel</a>.' });
+}
 Lab.prompt('#act1-prompts', { key: 'act1', label: 'Activity I: Draw or describe how EcoRI cuts this fragment. Which fragments could be "pasted" back together by DNA ligase, and why? Which enzyme in the list makes blunt ends?', rows: 3 });
 
 /* ---------------- Activity II: λ map ---------------- */
@@ -354,9 +415,9 @@ function seg7(x, X, Y, dw, dh, ch, on, off) {
 function lcdNumber(x, X, Y, dw, dh, str, on, off) { [...str].forEach((ch, i) => seg7(x, X + i * dw * 1.55, Y, dw, dh, ch, on, off)); }
 
 /* ---- layout: wide = gel box with a side bench (rack, power supply, tips, pipette); narrow = stacked ---- */
-const gelAspect = w => (w >= 560 ? 0.8 : 1.36);
+const gelAspect = w => (w >= 480 ? 0.8 : 1.36);
 function gelLayout(w, h, dpr) {
-  const wide = w >= 560, G = { w, h, dpr, wide };
+  const wide = w >= 480, G = { w, h, dpr, wide };
   if (wide) { G.rul = { x0: 6, x1: 32 }; G.box = { x0: 40, y0: 10, x1: Math.round(w * 0.66), y1: h - 10 }; }
   else { G.rul = { x0: 4, x1: 27 }; G.box = { x0: 32, y0: 8, x1: w - 22, y1: Math.round(h * 0.69) }; }
   const B = G.box, endH = Math.max(32, (B.y1 - B.y0) * 0.1);
@@ -651,17 +712,23 @@ function drawBubbles(x, G, bub, tSec, reversed) {
 function makeGel(rootSel, measSel, cfg) {
   const P = cfg.prefix, root = Lab.$(rootSel);
   root.innerHTML = `
-  <div class="sim">
-    <div class="controls">
+  <div class="sim sim--fit" id="${P}-sim">
+    <div class="sim-side">
+      <div id="${P}-steps"></div>
+      <div class="controls">
+        <p class="controls-title">Controls</p>
       <div class="field"><span class="label" id="${P}-rack-l">1 · Sample rack (choose a tube)</span><div class="rack" id="${P}-rack" role="group" aria-labelledby="${P}-rack-l"></div></div>
-      <div class="field"><label for="${P}-vol">Load volume <output id="${P}-vol-o" class="val"></output></label><input id="${P}-vol" type="range" min="5" max="30" step="1" value="18"><span class="hint">Wells hold about 25 µL. Overfilling spills into neighboring wells.</span></div>
       <div class="field"><span class="label" id="${P}-wells-l">2 · Load into well</span><div class="wells" id="${P}-wells" role="group" aria-labelledby="${P}-wells-l"></div></div>
+        <div class="row"><button class="btn btn--primary" type="button" id="${P}-run">Power on: run</button><button class="btn" type="button" id="${P}-stain">Stain</button></div>
+        <details class="more"><summary>More options</summary><div class="inner">
+      <div class="field"><label for="${P}-vol">Load volume <output id="${P}-vol-o" class="val"></output></label><input id="${P}-vol" type="range" min="5" max="30" step="1" value="18"><span class="hint">Wells hold about 25 µL. Overfilling spills into neighboring wells.</span></div>
       <label class="check" for="${P}-heat"><input type="checkbox" id="${P}-heat"> Heat samples to 65 °C for 5 min before loading</label>
       <div class="field"><label for="${P}-pct">Agarose concentration</label><select id="${P}-pct"><option value="0.6">0.6%</option><option value="0.8" selected>0.8% (standard)</option><option value="1">1.0%</option><option value="1.2">1.2%</option></select></div>
       <div class="field"><label for="${P}-volt">Voltage <output id="${P}-volt-o" class="val"></output></label><input id="${P}-volt" type="range" min="25" max="150" step="5" value="50"></div>
       <div class="field"><span class="label" id="${P}-lead-l">3 · Connect the leads</span><div class="seg" role="group" aria-labelledby="${P}-lead-l" id="${P}-lead"><button type="button" data-v="ok" aria-pressed="true">Black→black, red→red</button><button type="button" data-v="rev" aria-pressed="false">Reversed</button></div></div>
-      <div class="row"><button class="btn btn--primary" type="button" id="${P}-run">Power on: run</button><button class="btn" type="button" id="${P}-stain">Stain</button></div>
-      <div class="row"><button class="btn btn--sm" type="button" id="${P}-layout">${esc(cfg.layoutLabel)}</button><button class="btn btn--sm btn--ghost" type="button" id="${P}-new">Pour a new gel</button></div>
+          <div class="row"><button class="btn btn--sm" type="button" id="${P}-layout">${esc(cfg.layoutLabel)}</button><button class="btn btn--sm btn--ghost" type="button" id="${P}-new">Pour a new gel</button></div>
+        </div></details>
+      </div>
     </div>
     <div class="stage">
       <canvas class="viz gel-canvas" id="${P}-cv" aria-label="Agarose gel in an electrophoresis box with wells at the negative end; bands appear after running and staining"></canvas>
@@ -672,6 +739,7 @@ function makeGel(rootSel, measSel, cfg) {
     </div>
   </div>`;
   const $ = s => Lab.$('#' + P + '-' + s);
+  Lab.fitHeight($('cv'), 0.8, '312px');
   const cv = fitCanvas($('cv'), gelAspect);
   const rng = Lab.rng();
   const meas = Lab.table(measSel + ' .mtable', {
@@ -909,7 +977,7 @@ function makeGel(rootSel, measSel, cfg) {
   excl.addEventListener('change', analyze); gsel.addEventListener('change', analyze);
   Lab.$('.clear', mroot).addEventListener('click', () => { meas.clear(); });
   newGel(); analyze();
-  return { st, analyze, newGel };
+  return { st, analyze, newGel, meas };
 }
 function measBlock(sel, key) {
   Lab.$(sel).innerHTML = `<div class="mtable"></div>
@@ -920,14 +988,51 @@ function measBlock(sel, key) {
     <div class="est"></div>`;
 }
 
+/* =====================================================================
+   LAPTOP LAYOUT: step checklists, gated buttons, results beside the crime-scene gel, toasts
+   ===================================================================== */
+const filled = k => { const t = Lab.$('#p-' + k); return !!(t && t.value.trim()); };
+/* Guidance for one gel simulator (P = 'g1' or 'g2'): steps read the gel state and the saved measurement table. */
+function gelGuidance(P, gel, first, last, doneText) {
+  const st = gel.st, saved = () => gel.meas.getRows().length > 0;
+  const loaded = () => st.lanes.filter(l => l.length).length;
+  const steps = [];
+  if (first) steps.push(first);
+  steps.push(
+    { id: 'load', text: 'Load the samples into wells', target: `#${P}-wells button`, done: () => loaded() > 0 || st.t > 0 || saved(), hint: 'Pick a tube, then press a well number.' },
+    { id: 'run', text: 'Run until the dye is 2/3 down', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= 66) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye is about 1 cm from the end.' },
+    { id: 'meas', text: 'Stain, then measure the bands', target: `#${P}-stain`, done: saved, hint: 'Press <strong>Stain</strong>, then <strong>Measure all visible bands</strong> for each lane.' }
+  );
+  if (last) steps.push(last);
+  Lab.steps(`#${P}-steps`, steps, { doneText });
+  Lab.gate(`#${P}-run`, () => (loaded() > 0 || st.t > 0) ? '' : 'Load at least one sample first');
+  Lab.gate(`#${P}-mall`, () => st.t === 0 ? 'Run the gel first' : st.running ? 'Turn the power off first' : !st.stain ? 'Stain the gel first' : '');
+  Lab.$(`#${P}-run`).addEventListener('click', () => { if (!st.running && st.t > 0 && st.dist >= 45) Lab.toast('Power off. Now stain the gel to see the bands.', { type: 'info', announce: false, key: P + '-run' }); });
+  Lab.$(`#${P}-stain`).addEventListener('click', () => { if (st.stain) Lab.toast(st.stain === 1 ? 'Gel stained: bands are visible' : 'Gel destained: bands are clearer', { type: 'ok', announce: false, key: P + '-stain' }); });
+  Lab.$(`#${P}-new`).addEventListener('click', () => Lab.toast('New gel poured and ready to load', { type: 'info', announce: false, key: P + '-new' }));
+}
+function layoutGel2() {
+  Lab.results('#g2-sim', {
+    graph: [{ el: '#meas2 .curve', title: 'Standard curve (semi-log)' }],
+    data: [{ el: '#meas2 .mtable', title: 'Band measurements' }]
+  });
+  gelGuidance('g2', gel2,
+    { id: 'plan', text: 'Plan your gel (above)', target: '#p-d-plan', done: () => filled('d-plan'), hint: 'Write your gel plan in the box above.' },
+    { id: 'compare', text: 'Compare the profiles (below)', target: '#tol', done: () => !!Lab.$('#compare .pill'), hint: 'Set your match rule and read each suspect\'s verdict in the table below.' },
+    'Gel analysed. Write your case in <a href="#analyze">Analyze</a>.');
+}
+
 /* ---------------- Part 1 gel ---------------- */
 const S_MARK = { key: 'H', label: 'λ + HindIII (marker)', short: 'HindIII', enz: ['HindIII'] };
 measBlock('#meas1', 'm1');
-makeGel('#gel1', '#meas1', {
+const gel1 = makeGel('#gel1', '#meas1', {
   prefix: 'g1', layoutLabel: 'Load the manual\'s layout (A–D + marker)',
   samples: [S_MARK, { key: 'E', label: 'λ + EcoRI', short: 'EcoRI', enz: ['EcoRI'] }, { key: 'B', label: 'λ + BamHI', short: 'BamHI', enz: ['BamHI'] }, { key: 'U', label: 'λ uncut', short: 'Uncut', enz: [] }, { key: 'EH', label: 'λ + EcoRI + HindIII', short: 'EcoRI+HindIII', enz: ['EcoRI', 'HindIII'] }],
   layout: [null, 'B', 'E', 'H', 'U', null, 'H', null]
 });
+gelGuidance('g1', gel1, null,
+  { id: 'curve', text: 'Add marker sizes (next part)', target: '#meas1 .mtable input[data-k="known"]', done: () => gel1.meas.getRows().some(r => r.known > 0), hint: 'Open <a href="#standard-curve">Standard curve</a> and type the HindIII marker sizes, largest first.' },
+  'Gel run and measured. Build the standard curve in <a href="#standard-curve">Standard curve</a>.');
 const m1p = Lab.h('div'); Lab.$('#meas1').append(m1p);
 Lab.prompt(m1p, { key: 'p1-obs', label: 'What observations (qualitative) and measurements (quantitative) can you make from your stained gel? Why does uncut λ DNA give a single band so close to the well?', rows: 3 });
 Lab.prompt(m1p, { key: 'p1-log', label: 'Why must the data be plotted with size on a log scale? Why do you leave out the 23,130/27,491 doublet?', rows: 3 });
@@ -943,6 +1048,7 @@ function buildCase() {
   const samples = [S_MARK, { key: 'BL', label: 'Blood (floor)', short: 'Blood', enz: PROFILES[C.prof[C.culprit]] }, { key: 'MM', label: 'Ms. Mason (cup)', short: 'Mason', enz: PROFILES[C.prof['Ms. Mason']] }, { key: 'MG', label: 'Mr. Gladson (tissue)', short: 'Gladson', enz: PROFILES[C.prof['Mr. Gladson']] }, { key: 'BO', label: 'Bobby (gum)', short: 'Bobby', enz: PROFILES[C.prof['Bobby']] }];
   measBlock('#meas2', 'm2');
   gel2 = makeGel('#gel2', '#meas2', { prefix: 'g2', layoutLabel: 'Quick-load: marker, blood, Mason, Gladson, Bobby', samples, layout: ['H', 'BL', 'MM', 'MG', 'BO', null, 'H', null], onAnalyze: compare });
+  layoutGel2();
 }
 let lastList = [];
 function compare(list) {
@@ -969,8 +1075,9 @@ buildCase();
 
 /* ---------------- Analyze & Evaluate ---------------- */
 const an = Lab.$('#analysis');
-Lab.prompt(an, { key: 'a1', label: '1. Report the estimated sizes (mean ± 2 SE) of the blood\'s fragments and each suspect\'s fragments. Which profile matches the blood, and how did you decide what counts as a match?', rows: 4 });
-Lab.prompt(an, { key: 'a2', label: '2. Why is visual comparison (qualitative data) not enough for a court case? How do your quantitative data make the case stronger?', rows: 3 });
+const an2 = Lab.h('div', { class: 'prompts-2' }); an.append(an2);
+Lab.prompt(an2, { key: 'a1', label: '1. Report the estimated sizes (mean ± 2 SE) of the blood\'s fragments and each suspect\'s fragments. Which profile matches the blood, and how did you decide what counts as a match?', rows: 4 });
+Lab.prompt(an2, { key: 'a2', label: '2. Why is visual comparison (qualitative data) not enough for a court case? How do your quantitative data make the case stronger?', rows: 3 });
 const cer = Lab.h('div', { class: 'cer' }); an.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: whose blood is it?'), cer);
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
