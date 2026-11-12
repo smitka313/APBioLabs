@@ -178,7 +178,7 @@
         <div class="stage">
           <div class="pair">
             <figure><canvas class="viz" id="tray" aria-label="Growth chamber seen from above: 25 bottles of six Fast Plant seedlings. Tap a seedling to examine it."></canvas><figcaption>Growth chamber, top view. Scored plants show their count; the plant under the magnifier is outlined.</figcaption></figure>
-            <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
+            <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><div class="row" id="leaf-zoom" role="group" aria-label="Magnifier zoom" style="margin:6px 0 0;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn btn--sm" id="zoom-out" type="button" aria-label="Zoom out" style="min-width:44px;min-height:44px">−</button><button class="btn btn--sm" id="zoom-in" type="button" aria-label="Zoom in" style="min-width:44px;min-height:44px">+</button><button class="btn btn--ghost btn--sm" id="zoom-reset" type="button" style="min-height:44px">Reset view</button><span class="muted small" id="zoom-out-label" aria-live="polite">Zoom 1×. Zoom in, then drag the leaf to move it.</span></div><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
           </div>
           <div class="readouts">
             <div class="readout"><span class="k">Hairs marked</span><span class="v" id="mark-count">0</span></div>
@@ -914,6 +914,7 @@
     const c = leaf.ctx, G = leafGeom(), Lg = lensGeom(), Ls = buildLeafLayers(); c.clearRect(0, 0, leaf.w, leaf.h);
     blit(c, Ls.bg);
     c.save(); c.beginPath(); c.arc(Lg.x, Lg.y, Lg.r, 0, TAU); c.clip();
+    { const T = zoomXf(); c.translate(T.ax, T.ay); c.scale(zoom, zoom); c.translate(-T.px + pan.x, -T.py + pan.y); }
     // petiole (anthocyanin tint follows the plant's stem colour)
     const pc = cur ? stemCol(cur.ph.antho, 0.8) : PL.stem, pw = Math.max(5, leaf.w * 0.026);
     const pg = c.createLinearGradient(G.cx - pw, 0, G.cx + pw, 0); pg.addColorStop(0, rgba(mixc(pc, [255, 255, 255], 0.25))); pg.addColorStop(0.5, rgba(pc)); pg.addColorStop(1, rgba(mixc(pc, [0, 0, 0], 0.4)));
@@ -942,14 +943,50 @@
     c.globalAlpha = 0.92; c.fillStyle = Lab.color('--surface'); c.beginPath(); c.roundRect ? c.roundRect(leaf.w - 6 - tw, 6, tw, 22, 11) : c.rect(leaf.w - 6 - tw, 6, tw, 22); c.fill(); c.globalAlpha = 1;
     c.fillStyle = Lab.color('--ink'); c.fillText(t, leaf.w - 13, 17.5);
   }
-  leaf.canvas.addEventListener('click', e => {
+  /* Magnifier zoom/pan (page-local). Zoom is applied inside the lens only; the transform maps leaf (model) coordinates to
+     canvas pixels:  screen = a + zoom * (model + pan - p), where p is the middle of the right margin and a slides from p
+     (zoom 1, identity) to the lens centre (full zoom). Taps are converted back with the inverse, so hit-testing stays exact. */
+  let zoom = 1, pan = { x: 0, y: 0 };
+  const ZOOMS = [1, 1.5, 2, 3];
+  function zoomXf() {
+    const G = leafGeom(), Lg = lensGeom(), px = G.cx + G.W, py = G.y0 - G.L * 0.5, s = Math.min(1, (zoom - 1) / 2);
+    return { px, py, ax: px + (Lg.x - px) * s, ay: py + (Lg.y - py) * s };
+  }
+  const toModel = (sx, sy) => { const T = zoomXf(); return { x: T.px + (sx - T.ax) / zoom - pan.x, y: T.py + (sy - T.ay) / zoom - pan.y }; };
+  function setZoom(z) {
+    zoom = z; if (zoom === 1) pan = { x: 0, y: 0 };
+    leaf.canvas.style.touchAction = zoom > 1 ? 'none' : ''; // dragging pans only while zoomed; at 1× the page still scrolls
+    $('#zoom-out-label').textContent = `Zoom ${zoom}×.` + (zoom > 1 ? ' Drag the leaf to move it.' : ' Zoom in, then drag the leaf to move it.');
+    $('#zoom-in').disabled = zoom >= ZOOMS[ZOOMS.length - 1]; $('#zoom-out').disabled = zoom <= 1; drawLeaf();
+  }
+  const stepZoom = d => { const i = ZOOMS.indexOf(zoom); setZoom(ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, i + d))]); };
+  $('#zoom-in').addEventListener('click', () => stepZoom(1));
+  $('#zoom-out').addEventListener('click', () => stepZoom(-1));
+  $('#zoom-reset').addEventListener('click', () => { pan = { x: 0, y: 0 }; setZoom(1); });
+  $('#zoom-out').disabled = true;
+  function tapLeaf(sx, sy, touch) {
     if (!cur) return;
-    const rect = leaf.canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const H = hairsFor(cur, leafGeom()).right; let best = -1, bd = Infinity;
-    H.forEach((h, i) => { const d = segDist(x, y, h); if (d < bd) { bd = d; best = i; } });
-    const tol = Math.max(10, leaf.w * 0.025);
+    const m = toModel(sx, sy), H = hairsFor(cur, leafGeom()).right; let best = -1, bd = Infinity;
+    H.forEach((h, i) => { const d = segDist(m.x, m.y, h); if (d < bd) { bd = d; best = i; } });
+    // hit radius is in screen pixels (bigger for a finger), converted to leaf units; the nearest hair within it wins
+    const tol = (touch ? Math.max(16, leaf.w * 0.05) : Math.max(10, leaf.w * 0.025)) / zoom;
     if (best >= 0 && bd <= tol) { marks.has(best) ? marks.delete(best) : marks.add(best); drawLeaf(); $('#mark-count').textContent = marks.size; }
-  });
+  }
+  { // pointer handling: a short press is a tap; a drag while zoomed pans the leaf
+    let down = null, dragged = false;
+    const cv = leaf.canvas;
+    cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, sx: e.clientX - r.left, sy: e.clientY - r.top, touch: e.pointerType !== 'mouse' }; dragged = false; });
+    cv.addEventListener('pointermove', e => {
+      if (!down || zoom === 1) return;
+      if (!dragged && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 8) return;
+      dragged = true; try { cv.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+      const G = leafGeom();
+      pan.x = Math.max(-G.W * 2, Math.min(G.W * 2, pan.x + (e.clientX - down.lx) / zoom)); pan.y = Math.max(-G.L * 0.6, Math.min(G.L * 0.6, pan.y + (e.clientY - down.ly) / zoom));
+      down.lx = e.clientX; down.ly = e.clientY; drawLeaf();
+    });
+    const end = e => { if (down && !dragged && e.type === 'pointerup') tapLeaf(down.sx, down.sy, down.touch); down = null; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  }
   function segDist(px, py, h) { const vx = h.x2 - h.x1, vy = h.y2 - h.y1, l2 = vx * vx + vy * vy; let t = l2 ? ((px - h.x1) * vx + (py - h.y1) * vy) / l2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - (h.x1 + t * vx), py - (h.y1 + t * vy)); }
   leaf.onresize = () => drawLeaf();
 
