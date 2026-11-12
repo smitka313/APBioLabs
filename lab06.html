@@ -45,9 +45,10 @@
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">Seeds sitting in a dish do not look busy, but a germinating seed is burning through its stored food as fast as a small insect. In this lab you will measure that activity by tracking how much oxygen gas living things remove from a sealed chamber.</p>
       <p>You will build (virtually) a <strong>microrespirometer</strong>: a 1 mL syringe sealed to a thin capillary tube, with a drop of KOH to soak up carbon dioxide. As the seeds use O<sub>2</sub>, a tiny plug of colored fluid creeps down the capillary toward the seeds. You will mark its position every 5 minutes, correct your readings with a control respirometer full of glass beads, graph O<sub>2</sub> consumed against time, and get the respiration rate from the slope. You will also try the electronic version (O<sub>2</sub>, CO<sub>2</sub>, or gas pressure sensors), and then design your own experiment on temperature, seed type, germination age, light, or small animals.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
@@ -56,6 +57,8 @@
           <li><strong>ENE-1.L</strong> Explain how cells obtain energy from biological macromolecules in order to power cellular functions.</li>
         </ul>
       </div>
+      </div>
+      <div class="split-side">
       <div class="callout callout--tip"><div class="callout-title">Science practices</div>
         <ul>
           <li><strong>4.A</strong> Construct a graph, plot, or chart (O<sub>2</sub> consumed vs. time; rate vs. a variable).</li>
@@ -70,20 +73,34 @@
           <li>Work only with your teacher supervising.</li>
         </ul>
       </div>
+      </div>
     </div>
   </section>
 
+
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Turning gas volume into a respiration rate</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul>
+            <li>Respiration uses O<sub>2</sub> to oxidize glucose and releases CO<sub>2</sub>, so you can follow it by the O<sub>2</sub> that disappears from a sealed chamber.</li>
+            <li>CO<sub>2</sub> is made as fast as O<sub>2</sub> is used, so KOH removes the CO<sub>2</sub>. Then the gas volume falls only because O<sub>2</sub> is consumed.</li>
+            <li>Gas volume also changes with temperature and pressure (PV = nRT), so a control respirometer of glass beads corrects for them.</li>
+            <li>Plug travel (cm) × 5.03 µL/cm gives O<sub>2</sub> used (µL). The slope of O<sub>2</sub> vs. time is the respiration rate.</li>
+            <li>Q<sub>10</sub> compares rates 10 °C apart; most respiration has a Q<sub>10</sub> of 2 to 3 until enzymes denature.</li>
+          </ul>
+        </div>
       <p>Every living cell needs a steady supply of free energy to build molecules, move materials, and stay organized. Plants capture energy through photosynthesis, but almost all of their cells, like ours, also have <strong>mitochondria</strong> and run <strong>cellular respiration</strong> to turn stored carbon compounds into ATP. A germinating seed cannot photosynthesize yet, so it lives entirely on the starch or oil packed into its cotyledons or endosperm.</p>
       <p>When enough oxygen is present, glucose is oxidized completely in a series of enzyme-catalyzed steps:</p>
       <div class="equation">C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> + 6 O<sub>2</sub> → 6 CO<sub>2</sub> + 6 H<sub>2</sub>O + energy (≈ 686 kcal per mole of glucose)</div>
+        <details class="disclose"><summary>Choosing what to measure, and why KOH</summary><div class="inner">
       <p>You could measure respiration by tracking any of the three things that change: O<sub>2</sub> used, CO<sub>2</sub> made, or heat released. Heat is hard to catch. Gas volumes are easier, but there is a catch: for glucose, one CO<sub>2</sub> is released for every O<sub>2</sub> consumed, so the total amount of gas in a sealed chamber barely changes. The trick is to remove the CO<sub>2</sub> as soon as it forms. Potassium hydroxide does this by turning the gas into a solid:</p>
       <div class="equation">CO<sub>2</sub> + 2 KOH → K<sub>2</sub>CO<sub>3</sub> + H<sub>2</sub>O</div>
       <p>Now the only gas change left is the loss of O<sub>2</sub>, so the gas volume in the chamber shrinks. The shrinking gas pulls the fluid plug in the capillary toward the chamber.</p>
-
+        </div></details>
+        <details class="disclose"><summary>The microrespirometer</summary><div class="inner">
       <svg class="diagram" viewBox="0 0 620 330" role="img" aria-labelledby="dg-title">
         <title id="dg-title">Diagram of a microrespirometer: a capillary tube with a fluid plug sits above a syringe barrel that holds KOH-soaked cotton, a protective cotton plug, and germinating seeds. The barrel is submerged in a water bath.</title>
         <rect x="150" y="150" width="320" height="170" rx="6" style="fill:var(--s3);opacity:.14"></rect>
@@ -113,34 +130,70 @@
         <line x1="278" y1="272" x2="200" y2="262" style="stroke:var(--muted)"></line><text x="196" y="260" text-anchor="end">Washers (sink it)</text>
         <line x1="300" y1="256" x2="200" y2="290" style="stroke:var(--muted)"></line><text x="196" y="294" text-anchor="end">Plunger at 1.0 mL mark</text>
       </svg>
-
+        </div></details>
+        <details class="disclose"><summary>The gas law and the control respirometer</summary><div class="inner">
       <p>Gas volume also responds to things that have nothing to do with the seeds. The <strong>ideal gas law</strong> ties them together:</p>
       <div class="equation">PV = nRT &nbsp;&nbsp;→&nbsp;&nbsp; V = nRT / P</div>
       <p>Respiration lowers <em>n</em> (moles of gas), which lowers V. But if the water bath warms by a fraction of a degree, V goes up; if air pressure in the room rises, V goes down. That is why every experiment needs a <strong>control respirometer</strong> filled with non-living glass beads (or baked seeds) of the same volume. It sits in the same bath, so any movement of its plug comes only from temperature and pressure changes. Subtracting the control's movement from the seeds' movement leaves the part caused by respiration.</p>
+        </div></details>
+        <details class="disclose"><summary>From plug movement to a rate</summary><div class="inner">
       <p>To turn plug movement into a gas volume, treat the inside of the capillary as a cylinder. Our capillaries have an inner radius of 0.040 cm, so each centimeter of travel is</p>
       <div class="equation">V = πr²h = π(0.040 cm)²(1 cm) = 0.00503 cm³ = 5.03 µL of O<sub>2</sub></div>
       <p>Plot O<sub>2</sub> consumed (µL) on the y-axis against time (min) on the x-axis. The <strong>slope</strong> of the best-fit line is the respiration rate in µL O<sub>2</sub>/min. Dividing by the mass of the organisms gives a rate per gram, which lets you compare organisms of different sizes.</p>
+        </div></details>
+        <details class="disclose"><summary>Temperature and Q<sub>10</sub></summary><div class="inner">
       <p>Respiration is a chain of enzyme reactions, so it speeds up with temperature until the enzymes start to denature. Biologists summarize the temperature effect with the <strong>Q<sub>10</sub></strong>, the factor by which a rate increases for a 10 °C rise. Most respiration has a Q<sub>10</sub> between 2 and 3:</p>
       <div class="equation">Q<sub>10</sub> = (R<sub>2</sub> / R<sub>1</sub>)<sup>10 / (T<sub>2</sub> − T<sub>1</sub>)</sup></div>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Cellular respiration</dt><dd>Oxidizing glucose with O<sub>2</sub> to release usable energy, CO<sub>2</sub> and water.</dd>
+          <dt>Microrespirometer</dt><dd>A syringe and capillary tube that turns O<sub>2</sub> use into plug movement.</dd>
+          <dt>KOH</dt><dd>Absorbs the CO<sub>2</sub> that respiration makes, so only the O<sub>2</sub> loss changes the volume.</dd>
+          <dt>Control respirometer</dt><dd>A chamber of glass beads that shows volume changes caused by temperature or pressure.</dd>
+          <dt>Q<sub>10</sub></dt><dd>The factor by which a rate rises for a 10 °C increase in temperature.</dd>
+        </dl>
+      </aside>
     </div>
   </section>
 
+
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Getting started</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p>These questions come from the manual's Getting Started section. Answer each one, then check it. Read the explanation even when you are right.</p>
-      <div id="prelab"></div>
+      <div id="prelab" class="quiz--cols"></div>
     </div>
   </section>
 
   <!-- ============ 4. PROCEDURE OPTION 1 ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Microrespirometer">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Microrespirometer">
     <header><div class="eyebrow">Procedure · Option 1 · Structured inquiry</div><h2>Measure respiration with microrespirometers</h2></header>
     <div class="step-body">
-      <details class="disclose">
-        <summary>How the real microrespirometers are built and charged</summary>
-        <div class="inner prose">
+      <div class="sim sim--fit" id="p-sim">
+        <div class="sim-side">
+          <div id="p-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+          <label class="check" for="p-equil"><input type="checkbox" id="p-equil" checked> Wait 5 min to equilibrate before adding the fluid plug</label>
+          <label class="check" for="p-stable"><input type="checkbox" id="p-stable" checked> Insulated, covered water bath</label>
+            <div class="row">
+              <button class="btn btn--primary" id="p-run" type="button">Start 25-min run</button>
+              <button class="btn btn--sm btn--ghost" id="p-clear" type="button">Clear table</button>
+            </div>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="p-speed">Playback</label>
+                <select id="p-speed"><option value="2">Watch it run (≈ 12 s)</option><option value="6">Fast (≈ 4 s)</option><option value="0">Instant</option></select></div>
+          <div class="field"><span class="label">Experimental respirometer</span><span class="small muted">0.5 mL germinating Wisconsin Fast Plant seeds (≈ 0.30 g), soaked 2 days</span></div>
+          <div class="field"><span class="label">Control respirometer</span><span class="small muted">0.5 mL glass beads</span></div>
+          <div class="field"><span class="label">Water bath</span><span class="small muted">20 °C (room temperature)</span></div>
+              <p class="small muted">Positions are marked every 5 min, like the marker lines you would draw on the capillary. The ruler next to each tube starts at the time-0 mark.</p>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure: building the respirometers</summary><div class="inner">
           <ol class="proc-steps">
             <li>Push a 40 µL plastic capillary into the tip of a 1 mL tuberculin syringe (no needle) as far as the plunger tip, and seal the joint with hot glue. Check that the glue did not plug the capillary.</li>
             <li>Draw soapy red manometer fluid through the capillary and push it out again. The soap film stops the plug from sticking.</li>
@@ -150,23 +203,7 @@
             <li>Slide 3–4 washers onto each barrel, set both in a 20 °C water bath with the barrels under water and the capillaries sticking out, and wait 5 minutes for temperatures to even out.</li>
             <li>Add one drop of manometer fluid to each capillary tip. It is pulled in and seals the chamber. Mark the bottom edge of each plug: this is time 0. Mark again every 5 minutes for 25 minutes.</li>
           </ol>
-        </div>
-      </details>
-
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><span class="label">Experimental respirometer</span><span class="small muted">0.5 mL germinating Wisconsin Fast Plant seeds (≈ 0.30 g), soaked 2 days</span></div>
-          <div class="field"><span class="label">Control respirometer</span><span class="small muted">0.5 mL glass beads</span></div>
-          <div class="field"><span class="label">Water bath</span><span class="small muted">20 °C (room temperature)</span></div>
-          <label class="check" for="p-equil"><input type="checkbox" id="p-equil" checked> Wait 5 min to equilibrate before adding the fluid plug</label>
-          <label class="check" for="p-stable"><input type="checkbox" id="p-stable" checked> Insulated, covered water bath</label>
-          <div class="field"><label for="p-speed">Playback</label>
-            <select id="p-speed"><option value="2">Watch it run (≈ 12 s)</option><option value="6">Fast (≈ 4 s)</option><option value="0">Instant</option></select></div>
-          <div class="row">
-            <button class="btn btn--primary" id="p-run" type="button">Start 25-min run</button>
-            <button class="btn btn--sm btn--ghost" id="p-clear" type="button">Clear table</button>
-          </div>
-          <p class="small muted">Positions are marked every 5 min, like the marker lines you would draw on the capillary. The ruler next to each tube starts at the time-0 mark.</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p-rig" aria-label="Animated water bath with two microrespirometers. The left one holds germinating seeds and the right one glass beads. A red fluid plug in each capillary moves down toward the chamber as gas volume shrinks; marker lines show the 5-minute readings."></canvas>
@@ -181,12 +218,12 @@
       </div>
 
       <h3>Table 1. Results using microrespirometers</h3>
-      <p class="small muted">The sim fills in the marked positions (columns C). <strong>You</strong> fill in the two white columns: the change in the seed plug's position during each 5-min interval, and the corrected distance (seed distance − bead distance). Then check your work.</p>
+      <p class="small muted">The sim fills in the marked positions (columns C). <strong>You</strong> fill in the two white columns: the change in the seed plug's position during each 5-min interval, and the corrected distance (seed distance − bead distance). Open the <strong>Data</strong> tab beside the scene to do it, then check your work.</p>
       <div id="p-table"></div>
       <div class="row"><button class="btn btn--sm" id="p-check" type="button">Check my calculations</button><span class="status" id="p-check-msg" aria-live="polite"></span></div>
 
       <h3>Graph: corrected O₂ consumed vs. time</h3>
-      <p class="small muted">O<sub>2</sub> consumed (µL) = corrected distance (cm) × 5.03 µL/cm. The dashed line is the least-squares fit.</p>
+      <p class="small muted">O<sub>2</sub> consumed (µL) = corrected distance (cm) × 5.03 µL/cm. The dashed line is the least-squares fit. The graph builds in the <strong>Graph</strong> tab beside the scene.</p>
       <div id="p-chart"></div>
       <div class="callout callout--question">
         <div class="callout-title">Find the rate</div>
@@ -196,26 +233,33 @@
       </div>
 
       <h3>Replicate runs</h3>
-      <p class="small muted">One run is one data point. Each completed run adds its corrected rate here. Do at least three runs so you can report a mean and standard error.</p>
+      <p class="small muted">One run is one data point. Each completed run adds its corrected rate to the replicate table (Data tab). Do at least three runs so you can report a mean and standard error.</p>
       <div id="p-reps"></div>
     </div>
   </section>
 
+
   <!-- ============ 5. PROCEDURE OPTION 2 ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Gas sensors">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Gas sensors">
     <header><div class="eyebrow">Procedure · Option 2</div><h2>Measure respiration with gas sensors</h2></header>
     <div class="step-body">
       <p>Many classrooms use a sensor plugged into a computer interface instead of microrespirometers. Here, 25 germinating peas sit in a 250 mL respiration chamber in a 20 °C water bath, and the sensor logs a reading every 30 seconds for 25 minutes. Try each sensor. Then think about which one needs KOH in the chamber, and why.</p>
-      <div class="sim">
-        <div class="controls">
+      <div class="sim sim--fit" id="g-sim">
+        <div class="sim-side">
+          <div id="g-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><label for="g-sensor">Sensor</label>
             <select id="g-sensor"><option value="o2">O₂ gas sensor (%)</option><option value="co2">CO₂ gas sensor (ppm)</option><option value="p">Gas pressure sensor (kPa)</option></select></div>
           <div class="field"><label for="g-contents">Chamber contents</label>
             <select id="g-contents"><option value="peas">25 germinating peas</option><option value="dry">25 non-germinating (dry) peas</option><option value="boiled">25 germinating peas, boiled 5 min</option><option value="beads">Glass beads (same volume)</option></select></div>
-          <div class="field"><label for="g-temp">Water bath temperature <output id="g-temp-out" class="val" for="g-temp"></output></label><input id="g-temp" type="range" min="10" max="35" step="1" value="20"></div>
           <label class="check" for="g-koh"><input type="checkbox" id="g-koh"> KOH-soaked cotton in the chamber</label>
-          <div class="row"><button class="btn btn--primary" id="g-run" type="button">Collect data (25 min)</button></div>
-          <p class="small muted">Each completed run is added to the run table below.</p>
+            <div class="row"><button class="btn btn--primary" id="g-run" type="button">Collect data (25 min)</button></div>
+            <details class="more"><summary>More options</summary><div class="inner">
+          <div class="field"><label for="g-temp">Water bath temperature <output id="g-temp-out" class="val" for="g-temp"></output></label><input id="g-temp" type="range" min="10" max="35" step="1" value="20"></div>
+              <p class="small muted">Each completed run is added to the run table (Data tab).</p>
+            </div></details>
+          </div>
         </div>
         <div class="stage">
           <canvas class="viz" id="g-rig" aria-label="Respiration chamber with peas, a gas sensor in the stopper, and a computer interface display showing the current reading."></canvas>
@@ -225,46 +269,57 @@
             <div class="readout"><span class="k">Slope</span><span class="v" id="g-slope">—</span></div>
             <div class="readout"><span class="k">≈ O₂ used</span><span class="v" id="g-o2">—</span></div>
           </div>
-          <div id="g-chart"></div>
         </div>
       </div>
+      <div id="g-chart"></div>
       <div id="g-table"></div>
     </div>
   </section>
 
+
   <!-- ============ 6. DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own respiration experiment</h2></header>
     <div class="step-body">
       <div class="prose">
-        <p>Now you have a tool. Pick one question and test it. Some questions from the manual:</p>
-        <ul>
+        <p>Now you have a tool. Pick one question and test it.</p>
+        <details class="disclose"><summary>Question ideas from the manual</summary><div class="inner">
+          <ul>
           <li>Does temperature change the rate of respiration in germinating seeds? Do seeds use more O<sub>2</sub> when it is warmer?</li>
           <li>Do germinating seeds respire faster than non-germinating seeds? Do seeds just starting to germinate respire faster than seeds that have been germinating for several days?</li>
           <li>Do oil-storing seeds (Wisconsin Fast Plants) respire at a different rate from starch-storing grass seeds (oats)? Monocots vs. dicots?</li>
           <li>Can the same respirometer measure respiration in small invertebrates like mealworms, crickets, fruit flies, or earthworms? How do they compare per gram?</li>
           <li>What happens if you use green seedlings in the light instead of seeds in the dark?</li>
-        </ul>
+          </ul>
+        </div></details>
       </div>
       <div class="callout callout--tip"><div class="callout-title">Table 2. Investigation proposal</div><div id="d-proposal" class="grid-2"></div></div>
 
-      <div class="sim">
-        <div class="controls">
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><label for="d-org">Organism in the experimental respirometer</label>
             <select id="d-org"></select><span class="hint" id="d-org-hint"></span></div>
           <div class="field"><label for="d-temp">Water bath temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" type="range" min="5" max="45" step="1" value="20"></div>
+          <div class="field"><label for="d-reps">Replicate respirometers per run <output id="d-reps-out" class="val" for="d-reps"></output></label><input id="d-reps" type="range" min="1" max="6" step="1" value="3"></div>
+            <div class="field"><label for="d-group">Graph and summarize by</label>
+              <select id="d-group"><option value="temp">Temperature</option><option value="org">Organism</option><option value="days">Germination time</option><option value="light">Lighting</option></select></div>
+            <div class="row">
+              <button class="btn btn--primary" id="d-run" type="button">Run trial(s)</button>
+              <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button>
+            </div>
+            <details class="more"><summary>More options</summary><div class="inner">
           <div class="field"><label for="d-days">Germination time (seeds only)</label>
             <select id="d-days"><option value="0.5">12 hours</option><option value="1">1 day</option><option value="2" selected>2 days</option><option value="3">3 days</option><option value="5">5 days</option></select></div>
           <div class="field"><label for="d-light">Lighting</label>
             <select id="d-light"><option value="dark">Dark (bath covered)</option><option value="light">Bright light over the bath</option></select></div>
           <div class="field"><label for="d-int">Reading interval</label>
             <select id="d-int"><option value="5">Every 5 min</option><option value="2">Every 2 min</option><option value="1">Every 1 min</option></select><span class="hint">Fast respirers can pull the plug to the end of the capillary early. Read more often if that happens.</span></div>
-          <div class="field"><label for="d-reps">Replicate respirometers per run <output id="d-reps-out" class="val" for="d-reps"></output></label><input id="d-reps" type="range" min="1" max="6" step="1" value="3"></div>
-          <div class="row">
-            <button class="btn btn--primary" id="d-run" type="button">Run trial(s)</button>
-            <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button>
+              <p class="small muted">Every trial is paired with its own glass-bead control and corrected automatically. Rates are the slope of corrected O<sub>2</sub> vs. time.</p>
+            </div></details>
           </div>
-          <p class="small muted">Every trial is paired with its own glass-bead control and corrected automatically. Rates are the slope of corrected O<sub>2</sub> vs. time.</p>
         </div>
         <div class="stage">
           <canvas class="viz" id="d-rig" aria-label="Water bath with the experimental microrespirometer and its glass-bead control, showing plug positions for the most recent trial."></canvas>
@@ -278,10 +333,6 @@
       </div>
 
       <div id="d-table"></div>
-      <div class="row">
-        <div class="field" style="min-width:220px"><label for="d-group">Graph and summarize by</label>
-          <select id="d-group"><option value="temp">Temperature</option><option value="org">Organism</option><option value="days">Germination time</option><option value="light">Lighting</option></select></div>
-      </div>
       <div id="d-summary"></div>
       <div id="d-chart"></div>
 
@@ -300,11 +351,12 @@
     </div>
   </section>
 
+
   <!-- ============ 7. ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
     <div class="step-body">
-      <div id="analysis" class="stack"></div>
+      <div id="analysis" class="prompts-2"></div>
       <h3>Claim, evidence, reasoning</h3>
       <p class="small muted">Answer the question you chose in your own investigation.</p>
       <div class="cer" id="cer"></div>
@@ -312,13 +364,13 @@
   </section>
 
   <!-- ============ 8. EVALUATE ============ -->
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluate and reflect</div><h2>How good was your experiment?</h2></header>
-    <div class="step-body"><div id="evaluate" class="stack"></div></div>
+    <div class="step-body"><div id="evaluate" class="prompts-2"></div></div>
   </section>
 
   <!-- ============ 9. SUBMIT ============ -->
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -903,11 +955,11 @@
   }
 
   /* ================= Option 1: structured microrespirometer run ================= */
-  const pCv = Lab.canvas('#p-rig', 0.72);
+  const pCv = Lab.canvas('#p-rig', 0.72, { fit: true });
   const partsE = contentParticles('seed', 11), partsC = contentParticles('beads', 12);
   let pRun = null, pLoop = null, pBusy = false;
   const pTable = Lab.table('#p-table', {
-    save: 'p-table',
+    save: 'p-table', toast: false,
     columns: [
       { key: 't', label: 'A. Time', unit: 'min', num: true, digits: 0 },
       { key: 'T', label: 'B. Bath temp', unit: '°C', num: true, digits: 1 },
@@ -931,7 +983,7 @@
     ] });
   }
   const pReps = Lab.table('#p-reps', {
-    save: 'p-reps',
+    save: 'p-reps', toast: false,
     columns: [{ key: 'run', label: 'Run' }, { key: 'set', label: 'Setup' }, { key: 'rate', label: 'Rate', unit: 'µL O₂/min', num: true, digits: 2 }, { key: 'perg', label: 'Rate per gram', unit: 'µL·g⁻¹·min⁻¹', num: true, digits: 2 }],
     footer: rows => { const a = rows.map(r => r.rate).filter(isFinite); return ['Mean ± SE', `n = ${a.length}`, a.length > 1 ? `${fmt(S.mean(a), 2)} ± ${fmt(S.se(a), 2)}` : fmt(S.mean(a), 2), a.length ? fmt(S.mean(a) / 0.30, 2) : '']; }
   });
@@ -973,6 +1025,7 @@
       if (pRun.stuckE != null) { msg.textContent = `The seed plug reached the barrel at ${fmt(pRun.stuckE, 1)} min. Use only the readings before that.`; msg.className = 'status warn'; }
       else if (!equil) { msg.textContent = 'You skipped the 5-min equilibration. Compare the uncorrected and control lines in the first few minutes.'; msg.className = 'status warn'; }
       else { msg.textContent = 'Run complete. Fill in columns D and the corrected distance, then find the rate from the graph.'; msg.className = 'status ok'; }
+      Lab.toast(`Recorded ${pTable.getRows().length} readings (0–25 min) and the run rate: ${fmt(fit.rate, 2)} µL O₂/min`, { type: pRun.stuckE != null || !equil ? 'warn' : 'ok', announce: false });
     });
   });
   $('#p-clear').addEventListener('click', () => { if (pBusy) return; pTable.clear(); drawP(0, { e: 0, c: 0 }, [], []); setReadouts(0, 0, 0); $('#p-check-msg').textContent = ''; $('#p-rate-msg').textContent = ''; });
@@ -990,6 +1043,7 @@
     });
     out.textContent = ok === total ? `All ${total} entries are correct.` : `${ok} of ${total} entries correct. Recheck: ${wrong.slice(0, 6).join(', ')}${wrong.length > 6 ? '…' : ''}.`;
     out.className = 'status ' + (ok === total ? 'ok' : 'bad');
+    Lab.toast(ok === total ? `Checked: all ${total} entries are correct` : `Checked: ${ok} of ${total} entries correct`, { type: ok === total ? 'ok' : 'warn', announce: false });
   });
   $('#p-rate-check').addEventListener('click', () => {
     const pts = o2Rows(pTable.getRows()), out = $('#p-rate-msg');
@@ -999,6 +1053,7 @@
     const good = Math.abs(v - f.m) <= Math.max(0.08, Math.abs(f.m) * 0.1);
     out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Not quite. Rate = rise/run of the fit line: (change in µL O<sub>2</sub>) ÷ (change in minutes). Use points on the line, not the first and last data points.';
     out.className = 'status ' + (good ? 'ok' : 'bad');
+    Lab.toast(good ? 'Checked: your rate matches the best-fit slope' : 'Checked: see the hint under the rate', { type: good ? 'ok' : 'warn', announce: false });
   });
 
   /* ================= Option 2: gas sensors =================
@@ -1009,7 +1064,7 @@
        P (kPa)   = 101.3·(1 − V_O2/Vgas)  with KOH; without KOH CO2 replaces O2 and P is ~flat.
      A small bath-temperature wander adds pressure noise. */
   const VGAS = 242000;
-  const gCv = Lab.canvas('#g-rig', 0.55);
+  const gCv = Lab.canvas('#g-rig', 0.55, { fit: true });
   const gChart = Lab.chart('#g-chart', { xLabel: 'Time (min)', yLabel: 'O₂ (%)', xMin: 0, xMax: 25, height: 300, series: [] });
   const gTable = Lab.table('#g-table', {
     save: 'g-table',
@@ -1221,7 +1276,7 @@
 
   const dOrg = $('#d-org');
   ['fastplant', 'oat', 'dry', 'boiled', 'green', 'mealworm', 'cricket', 'fly', 'earthworm'].forEach(k => dOrg.append(Lab.h('option', { value: k }, ORGS[k].name)));
-  const dCv = Lab.canvas('#d-rig', 0.72);
+  const dCv = Lab.canvas('#d-rig', 0.72, { fit: true });
   let dLast = null, dBusy = false;
   const dTable = Lab.table('#d-table', {
     save: 'd-table',
@@ -1273,6 +1328,7 @@
     const msg = $('#d-msg');
     if (notes.length) { msg.textContent = `In ${notes.length} trial(s) the plug reached the barrel before 25 min. Rates use only earlier readings; choose a shorter reading interval if fewer than 3 readings were left.`; msg.className = 'status warn'; }
     else { msg.textContent = `${reps} trial(s) added.`; msg.className = 'status ok'; }
+    if (notes.length) Lab.toast(`Added ${reps} trial(s); the plug reached the barrel early in ${notes.length}`, { type: 'warn', announce: false, key: 'd-run' });
     dBusy = true;
     const mE = [], mC = [];
     animate(dCv, run, (tt, i) => ({ t: tt, temp: cond.temp, light: cond.light, items: dItems(cond.org, run, i, mE, mC) }), 8, m => { mE.push(m.e); mC.push(m.c); }, () => { dBusy = false; });
@@ -1305,6 +1361,59 @@
   const dRes = $('#d-results');
   Lab.prompt(dRes, { key: 'd-data-sum', label: 'Describe the pattern in your graph. Report each group mean with its ±2 SE interval and say which intervals overlap.', rows: 4 });
   Lab.prompt(dRes, { key: 'd-rate-calc', label: 'Show one rate calculation from start to finish (plug distance → µL O<sub>2</sub> → slope → per gram).', rows: 3 });
+
+  /* =====================================================================
+     LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons
+     ===================================================================== */
+  const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+  const pRows = () => pTable.getRows(), gRows = () => gTable.getRows(), dRows = () => dTable.getRows();
+  const pFilled = () => { const r = pRows().filter(x => typeof x.e === 'number'); return r.length > 0 && r.every(x => typeof x.de === 'number' && typeof x.corr === 'number'); };
+  const pCorrect = () => {
+    const rows = pRows(); if (!rows.length) return false;
+    return rows.every((r, i) => {
+      if (typeof r.e !== 'number') return true;
+      const prev = i === 0 ? 0 : rows[i - 1].e;
+      const expDe = i === 0 ? 0 : (typeof prev === 'number' ? r.e - prev : null);
+      return (expDe == null || (typeof r.de === 'number' && Math.abs(r.de - expDe) <= 0.015)) && typeof r.corr === 'number' && Math.abs(r.corr - (r.e - r.c)) <= 0.015;
+    });
+  };
+  Lab.results('#p-sim', {
+    graph: [{ el: '#p-chart', title: 'Corrected O₂ consumed vs. time' }],
+    data: [{ el: '#p-table', title: 'Table 1. Results using microrespirometers' }, { el: '#p-reps', title: 'Replicate runs' }]
+  });
+  Lab.results('#g-sim', { graph: [{ el: '#g-chart', title: 'Sensor reading vs. time' }], data: [{ el: '#g-table', title: 'Gas-sensor runs' }] });
+  Lab.results('#d-sim', {
+    graph: [{ el: '#d-chart', title: 'Rate per gram, mean ± 2 SE' }],
+    data: [{ el: '#d-summary', title: 'Summary by group' }, { el: '#d-table', title: 'Every trial' }]
+  });
+  Lab.steps('#p-steps', [
+    { id: 'setup', text: 'Keep equilibration + bath on', target: '#p-equil', done: () => $('#p-equil').checked && $('#p-stable').checked, hint: 'Leave both boxes ticked for a clean first run. Untick one later to see what goes wrong.' },
+    { id: 'run', text: 'Start the 25-min run', target: '#p-run', done: () => pRows().length > 0, hint: 'Press <strong>Start 25-min run</strong>. A reading is marked every 5 min.' },
+    { id: 'fill', text: 'Fill in D and corrected', target: '#p-check', done: pFilled, hint: 'Open the <strong>Data</strong> tab and type the white columns: Δ per interval and seeds minus beads.' },
+    { id: 'check', text: 'Check your calculations', target: '#p-check', done: pCorrect, hint: 'Press <strong>Check my calculations</strong> (below the scene) and fix any entries it lists.' },
+    { id: 'rate', text: 'Find the rate from the graph', target: '#p-rate-in', done: () => $('#p-rate-msg').classList.contains('ok'), hint: 'Read the slope of the fit line in the <strong>Graph</strong> tab, then enter it in the Find the rate box below.' },
+    { id: 'reps', text: 'Repeat for 3 runs (mean ± SE)', target: '#p-run', optional: true, done: () => pReps.getRows().length >= 3, hint: 'Each run adds a rate to the replicate table (Data tab).' }
+  ], { doneText: 'Microrespirometer done. Next, try the sensors in <a href="#gas-sensors">Gas sensors</a>.' });
+  Lab.gate('#p-check', () => pRows().length ? '' : 'Run the experiment first');
+  Lab.gate('#p-rate-check', () => pRows().length >= 3 ? '' : 'Run the experiment first');
+  const gHas = f => gRows().some(f);
+  Lab.steps('#g-steps', [
+    { id: 'run', text: 'Collect data with a sensor', target: '#g-run', done: () => gRows().length > 0, hint: 'Press <strong>Collect data</strong>. The graph builds beside the scene.' },
+    { id: 'sensors', text: 'Try all three sensors', target: '#g-sensor', done: () => new Set(gRows().map(r => r.sensor)).size >= 3, hint: 'Pick a different sensor and collect again.' },
+    { id: 'ctrl', text: 'Run peas and a bead control', target: '#g-contents', optional: true, done: () => gHas(r => /germinating peas$/.test(r.contents)) && gHas(r => /beads/i.test(r.contents)), hint: 'Choose glass beads as the chamber contents and collect again.' },
+    { id: 'koh', text: 'Compare KOH on and off', target: '#g-koh', optional: true, done: () => gHas(r => r.koh === 'yes') && gHas(r => r.koh === 'no'), hint: 'Tick or untick the KOH box and collect again. Which sensors change?' }
+  ], { doneText: 'Sensors tried. Next, design your own test in <a href="#design">Design</a>.' });
+  let dTouched = false;
+  ['#d-org', '#d-temp', '#d-days', '#d-light', '#d-int', '#d-reps'].forEach(s => { $(s).addEventListener('change', () => { dTouched = true; Lab.steps.refresh(); }); $(s).addEventListener('input', () => { dTouched = true; }); });
+  const dLevels = () => { const by = $('#d-group').value; return new Set(dRows().map(r => by === 'temp' ? r.temp : by === 'org' ? r.orgName : by === 'days' ? r.days : r.light).filter(v => v != null)).size; };
+  Lab.steps('#d-steps', [
+    { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => filled('d-question') && filled('d-hyp'), hint: 'Fill in the proposal table above.' },
+    { id: 'iv', text: 'Choose organism and conditions', target: '#d-org', sticky: true, done: () => dTouched || dRows().length > 0, hint: 'Pick the organism, temperature and other conditions for your first trial.' },
+    { id: 'reps', text: 'Use 3 or more replicates', target: '#d-reps', done: () => +$('#d-reps').value >= 3, hint: 'Set 3 or more replicate respirometers per run.' },
+    { id: 'run', text: 'Run trial(s)', target: '#d-run', done: () => dRows().length > 0, hint: 'Press <strong>Run trial(s)</strong>, then read the Graph and Data tabs.' },
+    { id: 'levels', text: 'Test 3 or more levels', target: '#d-temp', optional: true, done: () => dLevels() >= 3, hint: 'Change your variable and run again. Group the graph by that variable.' },
+    { id: 'results', text: 'Describe your results (below)', target: '#p-d-data-sum', done: () => filled('d-data-sum') && filled('d-rate-calc'), hint: 'Scroll down: describe the pattern and show one rate calculation.' }
+  ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
 
   /* ================= Analyze & Evaluate ================= */
   const an = $('#analysis');
