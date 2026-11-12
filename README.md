@@ -1,4 +1,4 @@
-# AP Bio Lab Bench
+# AP Bio Digital Lab Bench
 
 Interactive online versions of the 13 investigations in *AP Biology Investigative Labs: An Inquiry-Based Approach* (Teacher Manual, updated Fall 2019). Every lab runs in the browser with no install or login.
 

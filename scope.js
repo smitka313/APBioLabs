@@ -1,5 +1,5 @@
 /*
- * scope.js — procedural bright-field microscope optics for AP Bio Lab Bench pages.   Global: Scope
+ * scope.js — procedural bright-field microscope optics for AP Bio Digital Lab Bench pages.   Global: Scope
  * ------------------------------------------------------------------------------------------------
  * No photos, no external images, no network. Works on its own; load it after lab.js.
  *

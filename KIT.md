@@ -1,4 +1,4 @@
-# AP Bio Lab Bench — build guide for lab pages
+# AP Bio Digital Lab Bench — build guide for lab pages
 
 You are building interactive, student-facing web versions of investigations from the College Board
 *AP Biology Investigative Labs: An Inquiry-Based Approach* (Teacher Manual, Fall 2019).

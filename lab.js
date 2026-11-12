@@ -1,4 +1,4 @@
-/* AP Bio Lab Bench — shared toolkit. Exposes window.Lab.
+/* AP Bio Digital Lab Bench — shared toolkit. Exposes window.Lab.
    No dependencies. Every API is documented in KIT.md. */
 (function () {
   'use strict';
@@ -16,7 +16,7 @@
     if (FILE === '' || /^index\.html?$/.test(FILE)) return { kind: 'home', id: 'home' };
     if ((m = t.match(/^Lab (\d+) Teacher Notes/i))) return { kind: 'teacher', id: 'teacher-lab' + m[1].padStart(2, '0') };
     if ((m = t.match(/^Lab (\d+) ·/))) return { kind: 'lab', id: 'lab' + m[1].padStart(2, '0') };
-    if (/^AP Bio Lab Bench/.test(t)) return { kind: 'home', id: 'home' };
+    if (/^AP Bio (Digital )?Lab Bench/.test(t)) return { kind: 'home', id: 'home' };
     return { kind: 'other', id: FILE.replace(/\.html?$/, '') || 'page' };
   })();
   if (PAGE.kind === 'lab' || PAGE.kind === 'teacher') LAB_ID = PAGE.id;
