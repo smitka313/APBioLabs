@@ -394,6 +394,26 @@
   const KP = 4.35, KL = 5.5, KF = 4.76;          // kcal per g dry: plant, larva, frass (manual)
   const MG_PER_PPM = 0.00364, KCAL_PER_G_CO2 = 2.97;
 
+  /* Input validation: plain-language message right under the field + aria-invalid; cleared when fixed. */
+  function vmsg(input, msg) {
+    const id = input.id + '-err'; let el = document.getElementById(id);
+    if (!el) { el = h('div', { class: 'feedback bad', id, role: 'alert', hidden: true }); const host = input.closest('.field, .calc-row') || input; host.insertAdjacentElement('afterend', el); }
+    el.hidden = !msg; el.textContent = msg || '';
+    if (msg) { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', id); } else { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); }
+    return !msg;
+  }
+  /* Check one numeric entry. Returns true when it may be used (an empty box is fine: it just isn't checked yet). */
+  function checkNum(input, name, o = {}) {
+    const raw = input.value.trim();
+    if (raw === '') return vmsg(input, o.required ? `Enter ${name}.` : '');
+    const x = Number(raw);
+    if (!isFinite(x)) return vmsg(input, `${name} must be a number.`);
+    if (o.min != null && x < o.min) return vmsg(input, `${name} can't be less than ${o.min}.`);
+    if (o.minExcl != null && x <= o.minExcl) return vmsg(input, `${name} must be greater than ${o.minExcl}.`);
+    if (o.max != null && x > o.max) return vmsg(input, `${name} can't be more than ${o.max}.`);
+    return vmsg(input, '');
+  }
+
   /* ===================== PRE-LAB ===================== */
   Lab.quiz('#prelab', [
     { type: 'mc', q: 'Why does the procedure use the <em>dry</em> mass of plants, not their living (wet) mass, to estimate biomass and energy?',
@@ -437,7 +457,9 @@
     function recheck() {
       rows.forEach(({ it, inp, pill }) => {
         let exp = it.expect(val);
-        const v = inp.value === '' ? NaN : parseFloat(inp.value);
+        const okIn = checkNum(inp, 'This value', { min: 0, max: 1e6 });
+        const v = inp.value === '' || !okIn ? NaN : parseFloat(inp.value);
+        if (!okIn) { pill.className = 'pill bad'; pill.textContent = 'Fix the entry'; return; }
         if (exp == null || (!Array.isArray(exp) && !isFinite(exp))) { pill.className = 'pill'; pill.textContent = it.need || 'Needs data'; return; }
         if (!isFinite(v)) { pill.className = 'pill'; pill.textContent = 'Enter a value'; return; }
         const exps = [].concat(exp);
@@ -532,18 +554,32 @@
   });
   function checkSummary(rows) {
     const out = $('#p1-check'); out.innerHTML = '';
+    const msgs = [];
+    document.querySelectorAll('#p1-sum input').forEach(i => i.removeAttribute('aria-invalid'));
+    rows.forEach((r, ri) => {
+      [['pct', '% biomass', 100], ['energy', 'Energy per plant', 1e4], ['npp', 'NPP per plant per day', 1e4]].forEach(([k, nm, mx]) => {
+        const v = r[k]; if (v == null || v === '') return;
+        let m = '';
+        if (!isFinite(v)) m = `${nm} must be a number.`; else if (v < 0) m = `${nm} cannot be negative.`; else if (v > mx) m = `${nm} cannot be more than ${mx}${k === 'pct' ? '%, because dry mass cannot exceed wet mass' : ''}.`;
+        if (m) { msgs.push(`Day ${r.age}: ${m} It was not checked.`); const i = document.querySelector(`#p1-sum input[data-r="${ri}"][data-k="${k}"]`); if (i) i.setAttribute('aria-invalid', 'true'); }
+      });
+    });
+    msgs.forEach(m => out.append(h('div', { class: 'feedback bad', role: 'alert' }, m)));
     rows.forEach(r => {
       const pct = 100 * r.dry / r.wet, en = r.dry * KP, npp = en / r.age;
-      const ck = (v, e, tol) => v == null || !isFinite(v) ? '<span class="pill">blank</span>' : (Math.abs(v - e) <= Math.abs(e) * tol + 1e-3 ? '<span class="pill ok">✓</span>' : '<span class="pill bad">recheck</span>');
+      const ck = (v, e, tol) => v == null || !isFinite(v) || v < 0 ? '<span class="pill">blank</span>' : (Math.abs(v - e) <= Math.abs(e) * tol + 1e-3 ? '<span class="pill ok">✓</span>' : '<span class="pill bad">recheck</span>');
       out.append(h('div', { html: `Day ${r.age}: % biomass ${ck(r.pct, pct, 0.02)} · energy ${ck(r.energy, en, 0.03)} · NPP ${ck(r.npp, npp, 0.04)}` }));
     });
   }
   const p1Chart = Lab.chart('#p1-chart', { xLabel: 'Plant age (days)', yLabel: 'Mass per plant (g)', xMin: 0, series: [] });
   function drawP1Chart(rows) {
-    const pts = rows.slice().sort((a, b) => a.age - b.age);
+    const pts = rows.slice().sort((a, b) => a.age - b.age).filter(r => isFinite(r.age) && isFinite(r.dry));
+    // A harvest that has not been dried yet still has a wet mass: plot it right away so the graph is not empty after Harvest.
+    const wetPts = pts.map(r => ({ x: r.age, y: r.wet }));
+    if (s1 && s1.pending && !pts.some(r => r.age === s1.pending.age)) wetPts.push({ x: s1.pending.age, y: stats.mean(s1.pending.rows.map(r => r.wet)) });
     p1Chart.update({ series: [
-      { name: 'Dry mass (biomass), mean ± 2 SE', points: pts.map(r => ({ x: r.age, y: r.dry, err: 2 * r.se })) },
-      { name: 'Wet mass, mean', points: pts.map(r => ({ x: r.age, y: r.wet })), dash: true }
+      { name: 'Dry mass (biomass), mean ± 2 SE', points: pts.map(r => ({ x: r.age, y: r.dry, err: isFinite(r.se) ? 2 * r.se : 0 })) },
+      { name: 'Wet mass, mean (a harvest not yet dried shows here)', points: wetPts, dash: true }
     ] });
   }
 
@@ -785,7 +821,7 @@
     benchSet({ phase: 'wet', rows: rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r.wet })), prog: 0 });
     rawT.setRows(rawT.getRows().concat(rows.map(r => ({ hv: r.hv, age: r.age, plant: r.plant, wet: r.wet, dry: null }))));
     $('#p1-rw').textContent = fmt(stats.mean(rows.map(r => r.wet)), 3) + ' g'; $('#p1-rd').textContent = 'drying…';
-    save1(); ui1(); loop1.start();
+    save1(); ui1(); loop1.start(); drawP1Chart(sumT.getRows());
   });
   let drying = false;
   $('#p1-dry').addEventListener('click', () => {
@@ -807,7 +843,7 @@
   });
   $('#p1-reset').addEventListener('click', () => { s1 = newFlat(); save1(); rawT.clear(); sumT.clear(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] }; $('#p1-rw').textContent = $('#p1-rd').textContent = '—'; ui1(); draw1(); updatePlantCalc(); benchSet({ phase: 'empty', rows: [], prog: 0 }); });
   ui1(); draw1();
-  if (s1.pending) { $('#p1-rd').textContent = 'drying…'; }
+  if (s1.pending) { $('#p1-rd').textContent = 'drying…'; drawP1Chart(sumT.getRows()); }
 
   // ---------- Part 1 bench: drying oven, digital balance with weigh boat, harvested plants on a paper towel ----------
   // Shows the current harvest: wet plants laid out and weighed one at a time, then the same plants in the 100 °C oven,
@@ -1136,6 +1172,8 @@
   }
   watchResize('#sankey-larva', updateP2);
   ['#ratio-plant', '#ratio-larva', '#p2-correct'].forEach(s => $(s).addEventListener('input', updateP2));
+  const ratioCheck = () => { checkNum($('#ratio-plant'), 'The plant dry ÷ wet ratio', { required: true, minExcl: 0, max: 1 }); checkNum($('#ratio-larva'), 'The larva dry ÷ wet ratio', { required: true, minExcl: 0, max: 1 }); };
+  ['#ratio-plant', '#ratio-larva'].forEach(s => { $(s).addEventListener('input', ratioCheck); $(s).addEventListener('change', ratioCheck); }); ratioCheck();
   $('#p2-correct').addEventListener('change', updateP2);
   const nOut = () => $('#p2-n-out').textContent = $('#p2-n').value; $('#p2-n').addEventListener('input', () => { nOut(); if (!p2run) { barnState = idleBarn(); draw2(); } }); nOut();
   $('#p2-sprout').addEventListener('click', () => { const w = rng.normal(27, 2), d = w * rng.normal(0.15, 0.006); $('#p2-ratio-note').innerHTML = `Spare sprout: wet ${fmt(w, 2)} g → dry ${fmt(d, 2)} g (ratio <strong>${fmt(d / w, 3)}</strong>). Your Fast Plants were about 0.21–0.25.`; });

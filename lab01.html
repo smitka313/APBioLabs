@@ -178,7 +178,7 @@
         <div class="stage">
           <div class="pair">
             <figure><canvas class="viz" id="tray" aria-label="Growth chamber seen from above: 25 bottles of six Fast Plant seedlings. Tap a seedling to examine it."></canvas><figcaption>Growth chamber, top view. Scored plants show their count; the plant under the magnifier is outlined.</figcaption></figure>
-            <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
+            <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><div class="row" id="leaf-zoom" role="group" aria-label="Magnifier zoom" style="margin:6px 0 0;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn btn--sm" id="zoom-out" type="button" aria-label="Zoom out" style="min-width:44px;min-height:44px">−</button><button class="btn btn--sm" id="zoom-in" type="button" aria-label="Zoom in" style="min-width:44px;min-height:44px">+</button><button class="btn btn--ghost btn--sm" id="zoom-reset" type="button" style="min-height:44px">Reset view</button><span class="muted small" id="zoom-out-label" aria-live="polite">Zoom 1×. Zoom in, then drag the leaf to move it.</span></div><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
           </div>
           <div class="readouts">
             <div class="readout"><span class="k">Hairs marked</span><span class="v" id="mark-count">0</span></div>
@@ -490,6 +490,52 @@
     beeState = null;
   }
   let selHist = []; // {gen, S, parentsMean}
+
+  /* ---- Saved dataset: an action log, replayed on load ----
+     The simulated plants are generated from the saved seed, but which plants were scored (and each hand count), the
+     selected parents, pollination and every later generation are decisions the student made. They are saved as an
+     ordered list of actions (store key 'sim' = {seed, ops}) and replayed on load, so the whole dataset, histograms and
+     step checklists come back exactly. The log is tied to its seed; a new class population clears it. */
+  let ops = [];
+  function persistOps() { Lab.store.set('sim', { seed, ops }); }
+  function pollSeq() { const seq = []; for (let d = 0; d < 3; d++) { const order = rng.shuffle(selected.map((_, i) => i)); order.forEach(i => [0, 1, 2].forEach(f => seq.push({ i, f }))); } return seq; }
+  function applyOp(op) {
+    const k = op[0];
+    if (k === 'hand') { const pop = pops.find(q => q.key === op[1]), p = pop && pop.plants[op[2]]; if (p) { p.scored = true; p.hand = op[3]; } }
+    else if (k === 'auto') { const pop = pops.find(q => q.key === op[1]); if (pop) autoScore(pop); }
+    else if (k === 'select') { selected = pickExtreme(g1.plants, 'trich', op[1] / 100, op[2], rng, valOf); pollinated = false; beeState = null; }
+    else if (k === 'poll') { if (selected) { pollSeq(); pollinated = true; } }
+    else if (k === 'grow') {
+      const kids = breed(selected, 150, ENV, rng);
+      const g2 = { key: 'g2s', label: 'Generation 2 · selected line', short: 'Gen 2 sel', gen: 2, line: 'sel', plants: kids };
+      selLine.push(g2); pops.push(g2);
+      selHist.push({ gen: 1, S: S.mean(selected.map(valOf)) - S.mean(scoredVals(g1)), pm: S.mean(selected.map(valOf)), n: selected.length });
+      if (op[1]) { const rest = g1.plants.filter(p => !selected.includes(p)); const c2 = { key: 'g2c', label: 'Generation 2 · control line', short: 'Gen 2 ctrl', gen: 2, line: 'ctrl', plants: breed(rest, 150, ENV, rng) }; ctrlLine.push(c2); pops.push(c2); }
+    }
+    else if (k === 'score2') { pops.filter(p => p !== g1).forEach(autoScore); }
+    else if (k === 'round') {
+      pops.forEach(autoScore);
+      const last = selLine[selLine.length - 1], frac = op[1] / 100;
+      const par = pickExtreme(last.plants, 'trich', frac, op[2], rng, valOf); last.parents = par;
+      selHist.push({ gen: last.gen, S: S.mean(par.map(valOf)) - S.mean(scoredVals(last)), pm: S.mean(par.map(valOf)), n: par.length });
+      const g = last.gen + 1;
+      const nx = { key: 'g' + g + 's', label: `Generation ${g} · selected line`, short: `Gen ${g} sel`, gen: g, line: 'sel', plants: breed(par, 150, ENV, rng) };
+      autoScore(nx); selLine.push(nx); pops.push(nx);
+      const cl = ctrlLine[ctrlLine.length - 1];
+      if (cl.gen === g - 1 && cl !== g1) {
+        const cn = { key: 'g' + g + 'c', label: `Generation ${g} · control line`, short: `Gen ${g} ctrl`, gen: g, line: 'ctrl', plants: breed(pickRandom(cl.plants, par.length, rng), 150, ENV, rng) };
+        autoScore(cn); ctrlLine.push(cn); pops.push(cn);
+      }
+    }
+  }
+  function commit(op) { applyOp(op); ops.push(op); persistOps(); }
+  function replayOps() {
+    const sv = Lab.store.get('sim'); ops = [];
+    if (!sv || sv.seed !== seed || !Array.isArray(sv.ops)) return 0;
+    try { sv.ops.forEach(op => { applyOp(op); ops.push(op); }); } catch (e) { reset(); ops = []; persistOps(); return 0; }
+    cur = g1.plants.find(p => !p.scored) || g1.plants[0];
+    return ops.length;
+  }
 
   /* ---------------- population menu ---------------- */
   const popSel = $('#pop-view');
@@ -868,6 +914,7 @@
     const c = leaf.ctx, G = leafGeom(), Lg = lensGeom(), Ls = buildLeafLayers(); c.clearRect(0, 0, leaf.w, leaf.h);
     blit(c, Ls.bg);
     c.save(); c.beginPath(); c.arc(Lg.x, Lg.y, Lg.r, 0, TAU); c.clip();
+    { const T = zoomXf(); c.translate(T.ax, T.ay); c.scale(zoom, zoom); c.translate(-T.px + pan.x, -T.py + pan.y); }
     // petiole (anthocyanin tint follows the plant's stem colour)
     const pc = cur ? stemCol(cur.ph.antho, 0.8) : PL.stem, pw = Math.max(5, leaf.w * 0.026);
     const pg = c.createLinearGradient(G.cx - pw, 0, G.cx + pw, 0); pg.addColorStop(0, rgba(mixc(pc, [255, 255, 255], 0.25))); pg.addColorStop(0.5, rgba(pc)); pg.addColorStop(1, rgba(mixc(pc, [0, 0, 0], 0.4)));
@@ -896,14 +943,50 @@
     c.globalAlpha = 0.92; c.fillStyle = Lab.color('--surface'); c.beginPath(); c.roundRect ? c.roundRect(leaf.w - 6 - tw, 6, tw, 22, 11) : c.rect(leaf.w - 6 - tw, 6, tw, 22); c.fill(); c.globalAlpha = 1;
     c.fillStyle = Lab.color('--ink'); c.fillText(t, leaf.w - 13, 17.5);
   }
-  leaf.canvas.addEventListener('click', e => {
+  /* Magnifier zoom/pan (page-local). Zoom is applied inside the lens only; the transform maps leaf (model) coordinates to
+     canvas pixels:  screen = a + zoom * (model + pan - p), where p is the middle of the right margin and a slides from p
+     (zoom 1, identity) to the lens centre (full zoom). Taps are converted back with the inverse, so hit-testing stays exact. */
+  let zoom = 1, pan = { x: 0, y: 0 };
+  const ZOOMS = [1, 1.5, 2, 3];
+  function zoomXf() {
+    const G = leafGeom(), Lg = lensGeom(), px = G.cx + G.W, py = G.y0 - G.L * 0.5, s = Math.min(1, (zoom - 1) / 2);
+    return { px, py, ax: px + (Lg.x - px) * s, ay: py + (Lg.y - py) * s };
+  }
+  const toModel = (sx, sy) => { const T = zoomXf(); return { x: T.px + (sx - T.ax) / zoom - pan.x, y: T.py + (sy - T.ay) / zoom - pan.y }; };
+  function setZoom(z) {
+    zoom = z; if (zoom === 1) pan = { x: 0, y: 0 };
+    leaf.canvas.style.touchAction = zoom > 1 ? 'none' : ''; // dragging pans only while zoomed; at 1× the page still scrolls
+    $('#zoom-out-label').textContent = `Zoom ${zoom}×.` + (zoom > 1 ? ' Drag the leaf to move it.' : ' Zoom in, then drag the leaf to move it.');
+    $('#zoom-in').disabled = zoom >= ZOOMS[ZOOMS.length - 1]; $('#zoom-out').disabled = zoom <= 1; drawLeaf();
+  }
+  const stepZoom = d => { const i = ZOOMS.indexOf(zoom); setZoom(ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, i + d))]); };
+  $('#zoom-in').addEventListener('click', () => stepZoom(1));
+  $('#zoom-out').addEventListener('click', () => stepZoom(-1));
+  $('#zoom-reset').addEventListener('click', () => { pan = { x: 0, y: 0 }; setZoom(1); });
+  $('#zoom-out').disabled = true;
+  function tapLeaf(sx, sy, touch) {
     if (!cur) return;
-    const rect = leaf.canvas.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const H = hairsFor(cur, leafGeom()).right; let best = -1, bd = Infinity;
-    H.forEach((h, i) => { const d = segDist(x, y, h); if (d < bd) { bd = d; best = i; } });
-    const tol = Math.max(10, leaf.w * 0.025);
+    const m = toModel(sx, sy), H = hairsFor(cur, leafGeom()).right; let best = -1, bd = Infinity;
+    H.forEach((h, i) => { const d = segDist(m.x, m.y, h); if (d < bd) { bd = d; best = i; } });
+    // hit radius is in screen pixels (bigger for a finger), converted to leaf units; the nearest hair within it wins
+    const tol = (touch ? Math.max(16, leaf.w * 0.05) : Math.max(10, leaf.w * 0.025)) / zoom;
     if (best >= 0 && bd <= tol) { marks.has(best) ? marks.delete(best) : marks.add(best); drawLeaf(); $('#mark-count').textContent = marks.size; }
-  });
+  }
+  { // pointer handling: a short press is a tap; a drag while zoomed pans the leaf
+    let down = null, dragged = false;
+    const cv = leaf.canvas;
+    cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, sx: e.clientX - r.left, sy: e.clientY - r.top, touch: e.pointerType !== 'mouse' }; dragged = false; });
+    cv.addEventListener('pointermove', e => {
+      if (!down || zoom === 1) return;
+      if (!dragged && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 8) return;
+      dragged = true; try { cv.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+      const G = leafGeom();
+      pan.x = Math.max(-G.W * 2, Math.min(G.W * 2, pan.x + (e.clientX - down.lx) / zoom)); pan.y = Math.max(-G.L * 0.6, Math.min(G.L * 0.6, pan.y + (e.clientY - down.ly) / zoom));
+      down.lx = e.clientX; down.ly = e.clientY; drawLeaf();
+    });
+    const end = e => { if (down && !dragged && e.type === 'pointerup') tapLeaf(down.sx, down.sy, down.touch); down = null; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  }
   function segDist(px, py, h) { const vx = h.x2 - h.x1, vy = h.y2 - h.y1, l2 = vx * vx + vy * vy; let t = l2 ? ((px - h.x1) * vx + (py - h.y1) * vy) / l2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - (h.x1 + t * vx), py - (h.y1 + t * vy)); }
   leaf.onresize = () => drawLeaf();
 
@@ -933,12 +1016,35 @@
   }
   $('#bin-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; binW = +b.dataset.bin; Lab.$$('#bin-seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); updateScoring(); renderCompare(); });
 
+  /* ---- number-field validation: plain-language message under the field, aria-invalid, no result on bad input ---- */
+  function fieldError(input, msg) {
+    const box = input.closest('.field') || input.parentNode;
+    let m = box.querySelector(':scope > .feedback.bad');
+    if (!msg) { if (m) m.remove(); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); return; }
+    if (!m) { m = document.createElement('p'); m.className = 'feedback bad'; m.setAttribute('role', 'alert'); m.id = input.id + '-err'; m.style.margin = '6px 0 0'; box.appendChild(m); }
+    m.textContent = msg; input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', m.id);
+  }
+  /* rules: [{el, name, min, max, int, gt}] → true when every field is a valid number (every problem is shown at once) */
+  function checkFields(rules) {
+    let bad = 0;
+    rules.forEach(r => {
+      const raw = r.el.value.trim(), v = Number(raw); let msg = '';
+      if (raw === '') msg = `Enter ${r.name}.`;
+      else if (!isFinite(v) || r.el.validity.badInput) msg = `${r.name[0].toUpperCase() + r.name.slice(1)} must be a number.`;
+      else if (r.int && !Number.isInteger(v)) msg = `${r.name[0].toUpperCase() + r.name.slice(1)} must be a whole number.`;
+      else if (r.min != null && v < r.min) msg = r.minMsg || `${r.name[0].toUpperCase() + r.name.slice(1)} can't be less than ${r.min}.`;
+      else if (r.gt != null && v <= r.gt) msg = r.gtMsg || `${r.name[0].toUpperCase() + r.name.slice(1)} must be greater than ${r.gt}.`;
+      else if (r.max != null && v > r.max) msg = `${r.name[0].toUpperCase() + r.name.slice(1)} can't be more than ${r.max}.`;
+      fieldError(r.el, msg); if (msg) bad++;
+    });
+    return !bad;
+  }
   const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
   $('#record').addEventListener('click', () => {
     if (!cur) return;
     const mine = marks.size, ref = cur.ph.trich;
     handTable.addRow({ plant: plantLabel(cur), mine, ref, diff: mine - ref });
-    cur.scored = true; cur.hand = mine;
+    commit(['hand', view.key, view.plants.indexOf(cur), mine]);
     const diff = mine - ref;
     status('#score-status', diff === 0 ? `Recorded ${mine} hairs. Matches the recount.` : `Recorded ${mine} hairs. The recount found ${ref} (${diff > 0 ? '+' : ''}${diff}).`, diff === 0 ? 'ok' : 'warn');
     cur = view.plants.find(p => !p.scored) || cur; marks = new Set();
@@ -949,10 +1055,10 @@
   function autoScore(pop) { pop.plants.forEach(p => { if (!p.scored) { p.scored = true; } }); }
   $('#autocount').addEventListener('click', () => {
     const handN = view.plants.filter(p => p.hand != null).length;
-    autoScore(view); drawAll(); updateScoring(); renderCompare();
+    commit(['auto', view.key]); drawAll(); updateScoring(); renderCompare();
     status('#score-status', handN < 5 ? `All ${view.plants.length} plants scored. Tip: hand-count at least 5 plants first so you know how reliable counting is.` : `All ${view.plants.length} plants scored (${handN} by you).`, handN < 5 ? 'warn' : 'ok');
   });
-  $('#new-pop').addEventListener('click', () => { seed = Math.floor(Math.random() * 1e9); Lab.store.set('seed', seed); reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare(); status('#score-status', 'A new class population was planted. Earlier hand counts stay in the table.', ''); });
+  $('#new-pop').addEventListener('click', () => { seed = Math.floor(Math.random() * 1e9); Lab.store.set('seed', seed); reset(); ops = []; persistOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare(); status('#score-status', 'A new class population was planted. Earlier hand counts stay in the table.', ''); });
 
   /* ================= SELECTION & POLLINATION ================= */
   const selPct = $('#sel-pct'), selOut = $('#sel-pct-out');
@@ -970,8 +1076,8 @@
   $('#select-btn').addEventListener('click', () => {
     if (g1.plants.some(p => !p.scored)) { status('#sel-status', 'Score every plant in generation 1 first (use Auto-count the rest in the step above).', 'bad'); return; }
     if (selLine.length > 1) { status('#sel-status', 'Generation 2 is already planted. Use "Select again" in the next step, or plant a new class population to start over.', 'warn'); return; }
-    selected = pickExtreme(g1.plants, 'trich', +selPct.value / 100, dir, rng, valOf);
-    pollinated = false; beeState = null;
+    if (beeState) { status('#sel-status', 'Wait for the bee stick to finish pollinating the current parents first.', 'warn'); return; }
+    commit(['select', +selPct.value, dir]);
     status('#sel-status', `${selected.length} plants marked (${dir > 0 ? 'hairiest' : 'least hairy'} ${selPct.value}%). The other ${150 - selected.length} had their tops cut off. Ties were broken at random.`, 'ok');
     view = g1; refreshPopMenu(); drawAll(); updateScoring(); renderSelection();
   });
@@ -1138,7 +1244,7 @@
     const L = beeLayout(), seq = beeState.seq;
     beeState.t += dt * (Lab.reducedMotion() ? 1e5 : seq.length / 5); // whole 3-day sequence plays in about 5 s
     while (beeState.t >= 1 && beeState.k < seq.length) { beeState.t -= 1; const s = seq[beeState.k]; beeState.visited.add(s.i * 3 + s.f); beeState.k++; beeState.day = Math.floor(beeState.k / (selected.length * 3)); }
-    if (beeState.k >= seq.length) { beeState = null; pollinated = true; Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
+    if (beeState.k >= seq.length) { beeState = null; pollinated = true; ops.push(['poll']); persistOps(); Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
     const a = seq[Math.max(0, beeState.k - 1)], b = seq[beeState.k];
     const fa = L[a.i].fl[a.f], fb = L[b.i].fl[b.f];
     beeState.pos = { x: fa.x + (fb.x - fa.x) * beeState.t, y: fa.y - 6 + (fb.y - fa.y) * beeState.t - Math.sin(beeState.t * Math.PI) * 10 };
@@ -1148,7 +1254,7 @@
   $('#pollinate').addEventListener('click', () => {
     if (!selected) { status('#sel-status', 'Mark the selected plants first.', 'bad'); return; }
     if (beeState) return;
-    const seq = []; for (let d = 0; d < 3; d++) { const order = rng.shuffle(selected.map((_, i) => i)); order.forEach(i => [0, 1, 2].forEach(f => seq.push({ i, f }))); }
+    const seq = pollSeq();
     beeState = { seq, k: 0, t: 0, day: 0, visited: new Set(), pos: { x: 0, y: 0 } };
     status('#sel-status', 'Brushing pollen from flower to flower…', '');
     beeLoop.start();
@@ -1159,15 +1265,7 @@
     if (!selected) { status('#sel-status', 'Mark the selected plants first.', 'bad'); return; }
     if (!pollinated) { status('#sel-status', 'No seed yet: pollinate the selected plants with the bee stick first.', 'bad'); return; }
     if (selLine.length > 1) { status('#sel-status', 'Generation 2 is already growing. Score it in the next step.', 'warn'); return; }
-    const kids = breed(selected, 150, ENV, rng);
-    const g2 = { key: 'g2s', label: 'Generation 2 · selected line', short: 'Gen 2 sel', gen: 2, line: 'sel', plants: kids };
-    selLine.push(g2); pops.push(g2);
-    selHist.push({ gen: 1, S: S.mean(selected.map(valOf)) - S.mean(scoredVals(g1)), pm: S.mean(selected.map(valOf)), n: selected.length });
-    if ($('#grow-ctrl').checked) {
-      const rest = g1.plants.filter(p => !selected.includes(p));
-      const c2 = { key: 'g2c', label: 'Generation 2 · control line', short: 'Gen 2 ctrl', gen: 2, line: 'ctrl', plants: breed(rest, 150, ENV, rng) };
-      ctrlLine.push(c2); pops.push(c2);
-    }
+    commit(['grow', $('#grow-ctrl').checked]);
     refreshPopMenu();
     status('#sel-status', 'Seeds planted. Generation 2 is 7–12 days old and ready to score in the next step.', 'ok');
     status('#g2-status', 'Generation 2 is ready. Score it, or hand-count a few plants in the scoring tool first.', '');
@@ -1220,31 +1318,22 @@
   }
   $('#score2').addEventListener('click', () => {
     if (selLine.length < 2) { status('#g2-status', 'There is no generation 2 yet. Select, pollinate and plant in the step above.', 'bad'); return; }
-    pops.filter(p => p !== g1).forEach(autoScore); drawAll(); updateScoring(); renderCompare();
+    commit(['score2']); drawAll(); updateScoring(); renderCompare();
     const w = welchArr(scoredVals(g1), scoredVals(selLine[1]));
     status('#g2-status', `Generation 2 scored. The selected line ${w.t > 0 ? 'rose' : 'fell'} by ${fmt(Math.abs(S.mean(scoredVals(selLine[1])) - S.mean(scoredVals(g1))), 1)} hairs on average.`, 'ok');
   });
   $('#round').addEventListener('click', () => {
     if (selLine.length < 2) { status('#g2-status', 'Grow generation 2 first.', 'bad'); return; }
     if (selLine.length >= 12) { status('#g2-status', 'That is plenty of generations for one class. Plant a new population to start over.', 'warn'); return; }
-    pops.forEach(autoScore);
-    const last = selLine[selLine.length - 1], frac = +selPct.value / 100;
-    const par = pickExtreme(last.plants, 'trich', frac, dir, rng, valOf); last.parents = par;
-    selHist.push({ gen: last.gen, S: S.mean(par.map(valOf)) - S.mean(scoredVals(last)), pm: S.mean(par.map(valOf)), n: par.length });
-    const g = last.gen + 1;
-    const nx = { key: 'g' + g + 's', label: `Generation ${g} · selected line`, short: `Gen ${g} sel`, gen: g, line: 'sel', plants: breed(par, 150, ENV, rng) };
-    autoScore(nx); selLine.push(nx); pops.push(nx);
-    const cl = ctrlLine[ctrlLine.length - 1];
-    if (cl.gen === g - 1 && cl !== g1) {
-      const cn = { key: 'g' + g + 'c', label: `Generation ${g} · control line`, short: `Gen ${g} ctrl`, gen: g, line: 'ctrl', plants: breed(pickRandom(cl.plants, par.length, rng), 150, ENV, rng) };
-      autoScore(cn); ctrlLine.push(cn); pops.push(cn);
-    }
+    commit(['round', +selPct.value, dir]);
+    const last = selLine[selLine.length - 2], par = last.parents, g = selLine[selLine.length - 1].gen, nx = selLine[selLine.length - 1];
     refreshPopMenu(); drawAll(); renderCompare();
     status('#g2-status', `Generation ${g} grown from ${par.length} parents (S = ${fmt(selHist[selHist.length - 1].S, 1)} hairs). New mean: ${fmt(S.mean(scoredVals(nx)), 1)} hairs.`, 'ok');
   });
   $('#check-calc').addEventListener('click', () => {
     if (!(selected && selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#calc-status', 'Score generation 2 first so there are numbers to check against.', 'bad'); return; }
     const m1 = S.mean(scoredVals(g1)), Sv = S.mean(selected.map(valOf)) - m1, Rv = S.mean(scoredVals(selLine[1])) - m1, h2 = Rv / Sv;
+    if (!checkFields([{ el: $('#in-S'), name: 'your value for S (selection differential)' }, { el: $('#in-R'), name: 'your value for R (response)' }, { el: $('#in-h2'), name: 'your value for h² (heritability)' }])) { status('#calc-status', 'Fix the highlighted entries, then press Check again.', 'bad'); return; }
     const iS = parseFloat($('#in-S').value), iR = parseFloat($('#in-R').value), ih = parseFloat($('#in-h2').value);
     const okS = Math.abs(iS - Sv) <= 0.15, okR = Math.abs(iR - Rv) <= 0.15, okh = Math.abs(ih - h2) <= 0.03;
     const msg = [okS ? 'S ✓' : `S: check (expected about ${fmt(Sv, 2)})`, okR ? 'R ✓' : `R: check (expected about ${fmt(Rv, 2)})`, okh ? 'h² ✓' : `h²: check (expected about ${fmt(h2, 2)})`].join(' · ');
@@ -1382,13 +1471,25 @@
 
   /* ================= ANALYZE ================= */
   function runT() {
-    const v = id => parseFloat($(id).value);
+    const el = id => $(id), v = id => parseFloat($(id).value);
+    const clearOut = () => ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(id => $(id).textContent = '—');
+    const ok = checkFields([
+      { el: el('#ta-m'), name: 'the mean for Population A' }, { el: el('#ta-s'), name: 'the standard deviation for Population A', min: 0, minMsg: 'A standard deviation can\'t be negative.' }, { el: el('#ta-n'), name: 'the sample size (n) for Population A', int: true, min: 2, minMsg: 'Enter at least 2 measurements for Population A (n must be 2 or more).' },
+      { el: el('#tb-m'), name: 'the mean for Population B' }, { el: el('#tb-s'), name: 'the standard deviation for Population B', min: 0, minMsg: 'A standard deviation can\'t be negative.' }, { el: el('#tb-n'), name: 'the sample size (n) for Population B', int: true, min: 2, minMsg: 'Enter at least 2 measurements for Population B (n must be 2 or more).' }
+    ]);
+    if (ok && v('#ta-s') === 0 && v('#tb-s') === 0) {
+      fieldError(el('#ta-s'), 'Both groups have a standard deviation of 0, so every value is identical and a t-test can\'t be calculated. Check your SDs.');
+      fieldError(el('#tb-s'), 'Both groups have a standard deviation of 0, so a t-test can\'t be calculated.');
+      clearOut(); status('#tt-status', 'No t calculated: fix the highlighted entries.', 'bad'); return;
+    }
+    if (!ok) { clearOut(); status('#tt-status', 'No t calculated: fix the highlighted entries.', 'bad'); return; }
     const w = welch(v('#ta-m'), v('#ta-s'), v('#ta-n'), v('#tb-m'), v('#tb-s'), v('#tb-n'));
     $('#tt-d').textContent = fmt(v('#tb-m') - v('#ta-m'), 2); $('#tt-t').textContent = fmt(w.t, 2); $('#tt-df').textContent = fmt(w.df, 1); $('#tt-c').textContent = fmt(w.crit, 2);
-    if (!isFinite(w.t)) status('#tt-status', 'Enter a mean, SD (greater than 0) and n (2 or more) for both populations.', 'bad');
+    if (!isFinite(w.t)) { clearOut(); status('#tt-status', 'The t statistic could not be calculated from these numbers. Check each entry.', 'bad'); }
     else status('#tt-status', w.sig ? `|t| = ${fmt(Math.abs(w.t), 2)} > ${fmt(w.crit, 2)}: the means are significantly different (p < 0.05).` : `|t| = ${fmt(Math.abs(w.t), 2)} ≤ ${fmt(w.crit, 2)}: the difference could be due to chance (not significant at p = 0.05).`, w.sig ? 'ok' : 'warn');
   }
   $('#tt-run').addEventListener('click', runT);
+  ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n', '#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   $('#tt-fill').addEventListener('click', () => {
     if (!(selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#tt-status', 'Score generation 2 in the simulation first.', 'bad'); return; }
     const a = scoredVals(g1), b = scoredVals(selLine[1]);
@@ -1415,7 +1516,8 @@
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 4 }));
 
   /* ---------------- start ---------------- */
-  reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
+  reset(); const restored = replayOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
+  if (restored) status('#score-status', 'Your earlier scoring was restored.', 'ok');
 
   /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };

@@ -979,10 +979,13 @@ function makePhi(cfg) {
   const kR = cfg.orient === 'h' ? (cfg.flipped ? -K_ROOM : K_ROOM) : 0; // room bias tied to the screen side
   return u => kA * chemA(u) + kB * chemB(u) + (kLA + kG + kR) * linA(u);
 }
+/* Flies are introduced through the middle of the chamber, so a trial starts evenly split: exactly half of the
+   flies (rounded down for an odd number) just left of centre and the rest just right, all within the middle 30%.
+   No stimulus or room bias acts at t = 0; preferences only appear as the flies move. */
 function makeFlies(n) {
-  return Array.from({ length: n }, () => {
+  return Array.from({ length: n }, (_, i) => {
     const q = rng.uniform(); let acc = 0, r = 1; for (const [rv, w] of RESP) { acc += w; if (q < acc) { r = rv; break; } }
-    const x = 0.35 + 0.3 * rng.uniform();
+    const left = i < Math.floor(n / 2) || (n % 2 && i === n - 1 && rng.chance(0.5)), x = left ? 0.35 + 0.149 * rng.uniform() : 0.501 + 0.149 * rng.uniform();
     return { x, y: (rng.uniform() * 2 - 1) * 0.8 * RHO * halfW(x), th: rng.uniform() * Math.PI * 2, r, state: 'walk', t: rng.uniform() * 5 };
   });
 }
@@ -1010,6 +1013,26 @@ function stepFlies(fl, phi, dt, ft) {
 }
 const countA = fl => fl.filter(f => f.x < 0.5).length;
 function runHeadless(cfg, n, seconds) { const phi = makePhi(cfg), ft = FLY[cfg.type], fl = makeFlies(n); for (let t = 0; t < seconds; t += 0.1) stepFlies(fl, phi, 0.1, ft); return countA(fl); }
+
+/* Input validation: plain-language message under the field + aria-invalid; cleared when fixed. */
+function vmsg(input, msg) {
+  const id = input.id + '-err'; let el = document.getElementById(id);
+  if (!el) { el = Lab.h('div', { class: 'feedback bad', id, role: 'alert', hidden: true }); (input.closest('.field') || input).insertAdjacentElement('afterend', el); }
+  el.hidden = !msg; el.textContent = msg || '';
+  if (msg) { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', id); } else { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); }
+  return !msg;
+}
+/* A fly count: empty -> 'Enter ...'; otherwise a whole number from 0 up to max. Returns the number, or null when invalid. */
+function readCount(input, name, max) {
+  const raw = input.value.trim();
+  if (raw === '') { vmsg(input, `Enter the number of flies ${name}.`); return null; }
+  const x = Number(raw);
+  if (!isFinite(x)) { vmsg(input, `The count ${name} must be a number.`); return null; }
+  if (x < 0) { vmsg(input, `The count ${name} cannot be negative.`); return null; }
+  if (!Number.isInteger(x)) { vmsg(input, `The count ${name} must be a whole number of flies.`); return null; }
+  if (max != null && x > max) { vmsg(input, `The count ${name} cannot be more than the ${max} flies in the chamber.`); return null; }
+  vmsg(input, ''); return x;
+}
 
 /* ---------- Choice chamber UI ---------- */
 const subOpts = cur => SUBS.map(([id, name]) => `<option value="${id}" ${id === cur ? 'selected' : ''}>${name}</option>`).join('');
@@ -1217,7 +1240,14 @@ function recordInterval(a, b) {
 }
 $('#cnt-rec').addEventListener('click', () => {
   if (!trial || !paused) return;
-  const a = $('#cnt-a').value === '' ? null : +$('#cnt-a').value, b = $('#cnt-b').value === '' ? null : +$('#cnt-b').value;
+  const ea = $('#cnt-a').value.trim() === '', eb = $('#cnt-b').value.trim() === '';
+  let a = null, b = null;
+  if (!(ea && eb)) {   // both blank = use the simulation's own count; otherwise both must be valid
+    const n = flies.length; a = readCount($('#cnt-a'), 'on the A side', n); b = readCount($('#cnt-b'), 'on the B side', n);
+    if (a == null || b == null) return;
+    if (a + b === 0) { vmsg($('#cnt-a'), 'A and B cannot both be 0. Count the flies on each side, or leave both boxes empty to use the simulation\'s count.'); return; }
+    if (a + b > n) { vmsg($('#cnt-b'), `A (${a}) and B (${b}) add up to ${a + b}, but there are only ${n} flies in the chamber.`); return; }
+  } else { vmsg($('#cnt-a'), ''); vmsg($('#cnt-b'), ''); }
   paused = false; $('#count-panel').hidden = true;
   recordInterval(a, b);
   if (trial) chLoop.start(); else drawChamber();
@@ -1276,12 +1306,16 @@ $('#d-clear').addEventListener('click', () => dTable.clear());
 
 /* ---------- Analyze ---------- */
 function runChi() {
-  const a = parseFloat($('#x-a').value), b = parseFloat($('#x-b').value);
-  if (!isFinite(a) || !isFinite(b) || a < 0 || b < 0 || a + b === 0) { $('#x-out').textContent = 'Enter two non-negative counts.'; return; }
+  const a = readCount($('#x-a'), 'at end A'), b = readCount($('#x-b'), 'at end B');
+  if (a == null || b == null) { $('#x-out').textContent = 'Fix the highlighted count to see χ².'; return; }
+  if (a + b === 0) { vmsg($('#x-a'), 'A and B cannot both be 0: with no flies counted the expected count at each end is 0, so χ² cannot be calculated.'); $('#x-out').textContent = 'Enter at least one fly.'; return; }
+  vmsg($('#x-a'), '');
+  const small = a + b < 10;
   const e = (a + b) / 2, x = chi(a, b);
-  $('#x-out').innerHTML = `Expected at each end: ${Lab.fmt(e, 1)}<br>A: (${a} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[0], 3)}<br>B: (${b} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[1], 3)}<br>χ² = ${Lab.fmt(x.chi2, 3)}, df = 1, critical value (p = 0.05) = 3.84<br><strong>${x.reject ? 'χ² > 3.84: reject the null hypothesis. The flies show a preference.' : 'χ² ≤ 3.84: fail to reject the null hypothesis. No significant preference.'}</strong>`;
+  $('#x-out').innerHTML = `Expected at each end: ${Lab.fmt(e, 1)}<br>A: (${a} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[0], 3)}<br>B: (${b} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[1], 3)}<br>χ² = ${Lab.fmt(x.chi2, 3)}, df = 1, critical value (p = 0.05) = 3.84<br><strong>${x.reject ? 'χ² > 3.84: reject the null hypothesis. The flies show a preference.' : 'χ² ≤ 3.84: fail to reject the null hypothesis. No significant preference.'}</strong>${small ? '<br><em>Fewer than 10 flies: the expected count at each end is below 5, so this χ² is not reliable. Count more flies if you can.</em>' : ''}`;
 }
 $('#x-run').addEventListener('click', runChi);
+['#x-a', '#x-b'].forEach(i => $(i).addEventListener('input', runChi));
 $('#x-last').addEventListener('click', () => { const r = trialsTable.getRows(); if (!r.length) { $('#x-out').textContent = 'Finish a choice-chamber trial first.'; return; } const l = r[r.length - 1]; $('#x-a').value = l.A; $('#x-b').value = l.B; runChi(); });
 runChi();
 [['an1', 'Describe the patterns in where the flies went. Which substances produced the strongest positive chemotaxis? The strongest negative chemotaxis? Support your answer with % at each end and χ² values.'],
