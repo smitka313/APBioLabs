@@ -158,6 +158,7 @@
             <p class="controls-title">Controls</p>
             <div class="field"><label for="inf-soap">Soap in each cup</label><select id="inf-soap"><option value="0">No soap</option><option value="1" selected>1 drop dilute soap</option><option value="2">2 drops</option><option value="3">3 drops</option></select><span class="hint">The soap wets the waxy cuticle so solution can enter.</span></div>
             <button class="btn btn--primary" id="inf-pull" type="button">Pull vacuum 10 s, then release</button>
+            <progress id="inf-prog" max="100" value="0" hidden aria-label="Vacuum progress"></progress>
             <button class="btn" id="inf-pour" type="button">Pour disks into the cups</button>
             <button class="btn btn--ghost btn--sm" id="inf-reset" type="button">Start over with fresh disks</button>
             <div class="fb" id="inf-fb" aria-live="polite"></div>
@@ -212,10 +213,11 @@
           </div>
         </div>
       </div>
+      <p class="fb" id="cup-note" aria-live="polite" hidden></p>
       <div id="cup-table"></div>
       <div id="cup-chart"></div>
       <h3>Calculate ET<sub>50</sub> and the rate</h3>
-      <p class="small">Find the two minutes on either side of 5 floating disks in the "With CO<sub>2</sub>" column (open the <strong>Data</strong> tab above). Interpolate: ET<sub>50</sub> = t<sub>before</sub> + (5 − n<sub>before</sub>) ÷ (n<sub>after</sub> − n<sub>before</sub>). Then take the reciprocal.</p>
+      <p class="small">Find the two minutes on either side of half the disks floating (5 of 10) in the "With CO<sub>2</sub>" column (open the <strong>Data</strong> tab above). Interpolate: ET<sub>50</sub> = t<sub>before</sub> + (half − n<sub>before</sub>) ÷ (n<sub>after</sub> − n<sub>before</sub>). Then take the reciprocal.</p>
       <div class="calc">
         <div class="field"><label for="et-in">Your ET<sub>50</sub> (min)</label><input id="et-in" type="number" step="any" data-save="et-in" data-label="ET50 for the bicarbonate cup (min)"></div>
         <div class="field"><label for="ret-in">Your 1/ET<sub>50</sub> (min⁻¹)</label><input id="ret-in" type="number" step="any" data-save="ret-in" data-label="1/ET50 (per min)"></div>
@@ -308,6 +310,14 @@ Lab.init({ id: 'lab05' });
   const FONT = '"Source Sans 3", "Segoe UI", sans-serif';
   const near = (a, b, rel, abs) => a != null && isFinite(a) && Math.abs(a - b) <= Math.max(Math.abs(b) * (rel || 0), abs || 0) + 1e-9;
   function slider(id, outId, f) { const el = $('#' + id), out = $('#' + outId); const s = () => { out.textContent = f(+el.value); }; el.addEventListener('input', s); s(); return el; }
+  /* Input validation: show a plain-language message right under the field, mark it invalid, or clear it. */
+  function vmsg(input, msg) {
+    const id = input.id + '-err'; let el = document.getElementById(id);
+    if (!el) { el = Lab.h('div', { class: 'feedback bad', id, role: 'alert', hidden: true }); (input.closest('.field') || input).insertAdjacentElement('afterend', el); }
+    el.hidden = !msg; el.textContent = msg || '';
+    if (msg) { input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', id); } else { input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); }
+    return !msg;
+  }
   function fbList(el, items) { el.innerHTML = items.map(t => `<div>${t}</div>`).join(''); }
   function rr(ctx, x, y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 
@@ -352,13 +362,13 @@ Lab.init({ id: 'lab05' });
     const R = L.R * A.R * 2 ** ((T - 25) / 10);
     return { gross, R, net: gross - R, T };
   }
-  function makeDisks(c, n, damage, sunk) {
+  function makeDisks(c, n, damage) {
     const r = rates(c), list = [];
     for (let i = 0; i < n; i++) {
       let m = Math.exp(rng.normal(0, 0.25 + 0.08 * damage)) * Math.pow(0.85, damage);
       if (rng.chance(0.03)) m *= 0.35;
       const g = r.gross * m, Ri = r.R * Math.exp(rng.normal(0, 0.15));
-      list.push({ g, R: Ri, B: Math.max(0.7, rng.normal(1, 0.1)), O: sunk && !sunk[i] ? 1.3 : 0, up: sunk ? !sunk[i] : false, y: sunk && !sunk[i] ? 1 : 0, x: 0.12 + 0.76 * rng.uniform(), tilt: rng.uniform() * 0.6 - 0.3 });
+      list.push({ g, R: Ri, B: Math.max(0.7, rng.normal(1, 0.1)), O: 0, up: false, y: 0, x: 0.12 + 0.76 * rng.uniform(), tilt: rng.uniform() * 0.6 - 0.3 });
     }
     return list;
   }
@@ -798,23 +808,49 @@ Lab.init({ id: 'lab05' });
   function infRead() { $('#inf-n').textContent = inf.pulls; $('#inf-a').textContent = inf.a.filter(Boolean).length + ' / 10'; $('#inf-b').textContent = inf.b.filter(Boolean).length + ' / 10'; }
   infcv.onresize = infDraw;
   infReset();
-  $('#inf-reset').addEventListener('click', infReset);
-  $('#inf-pull').addEventListener('click', () => {
-    if (infAnim) infAnim();
+  let infBusy = false;
+  const infNudge = () => $('#inf-pull').dispatchEvent(new Event('change', { bubbles: true }));
+  function infStop() { if (infAnim) infAnim(true); }
+  $('#inf-reset').addEventListener('click', () => { infStop(); infReset(); });
+  const pullBtn = $('#inf-pull'), pullLabel = pullBtn.textContent, prog = $('#inf-prog');
+  /* A vacuum takes 10 s: hold the plunger back (bubbles stream out of the disks), then release and
+     the solution floods in so the disks sink one by one. Counters update as each disk sinks. */
+  pullBtn.addEventListener('click', () => {
+    if (infBusy) return;
     inf.pulls++;
-    const p = SINKP[+$('#inf-soap').value];
-    const apply = () => { inf.a = inf.a.map(s => s || rng.chance(p)); inf.b = inf.b.map(s => s || rng.chance(p)); inf.plunger = 0; inf.bubbles = 0; infDraw(); infRead();
-      const msgs = [];
-      const na = inf.a.filter(Boolean).length, nb = inf.b.filter(Boolean).length;
-      if (na === 10 && nb === 10) { msgs.push('<span class="pill ok">All disks sunk.</span> Pour them into the cups.'); Lab.toast(`All 20 disks sunk after ${inf.pulls} vacuum${inf.pulls > 1 ? 's' : ''}`, { type: 'ok', announce: false }); }
-      else if (inf.pulls >= 3 && +$('#inf-soap').value === 0) msgs.push('<span class="pill warn">Still floating.</span> Without soap the solution cannot wet the leaf. Add a drop of soap.');
-      if (inf.pulls > 3) msgs.push(`<span class="pill bad">${inf.pulls} vacuums</span> More than three can damage the disks, so they may rise more slowly and less evenly.`);
+    const p = SINKP[+$('#inf-soap').value], cur = inf, HOLD = 10, REL = 1.2;
+    const will = [];   // [cup, index, time to sink]
+    ['a', 'b'].forEach(k => cur[k].forEach((s, i) => { if (!s && rng.chance(p)) will.push([k, i, HOLD + 0.1 + rng.uniform() * REL]); }));
+    const finish = () => {
+      will.forEach(([k, i]) => { cur[k][i] = true; });
+      cur.plunger = 0; cur.bubbles = 0; infBusy = false; infAnim = null;
+      pullBtn.textContent = pullLabel; prog.hidden = true; infNudge();
+      infDraw(); infRead();
+      const msgs = [], na = cur.a.filter(Boolean).length, nb = cur.b.filter(Boolean).length;
+      if (na === 10 && nb === 10) { msgs.push('<span class="pill ok">All disks sunk.</span> Pour them into the cups.'); Lab.toast(`All 20 disks sunk after ${cur.pulls} vacuum${cur.pulls > 1 ? 's' : ''}`, { type: 'ok', announce: false }); }
+      else {
+        msgs.push(`<span class="pill warn">${20 - na - nb} disk${20 - na - nb > 1 ? 's' : ''} still floating.</span> Pull again, or pour now and the floaters will be left out.`);
+        if (cur.pulls >= 3 && +$('#inf-soap').value === 0) msgs.push('Without soap the solution cannot wet the leaf. Add a drop of soap.');
+      }
+      if (cur.pulls > 3) msgs.push(`<span class="pill bad">${cur.pulls} vacuums</span> More than three can damage the disks, so they may rise more slowly and less evenly.`);
       fbList($('#inf-fb'), msgs);
     };
-    if (Lab.reducedMotion()) { apply(); return; }
-    let t = 0, done = false;
-    const lp = Lab.loop(dt => { t += dt; inf.plunger = t < 0.6 ? t / 0.6 : t < 1.1 ? 1 : Math.max(0, 1 - (t - 1.1) / 0.25); inf.bubbles = t < 1.1 ? Math.min(1, t / 1.1) : 0; infDraw(); if (t > 1.35) { done = true; apply(); return false; } });
-    infAnim = () => { if (!done) { lp.stop(); done = true; apply(); } infAnim = null; };
+    if (Lab.reducedMotion()) { finish(); return; }
+    infBusy = true; pullBtn.disabled = true; pullBtn.textContent = 'Pulling vacuum… ' + HOLD + ' s'; prog.hidden = false; prog.value = 0; prog.max = HOLD + REL + 0.2;
+    fbList($('#inf-fb'), ['<span class="pill">Pulling vacuum</span> Hold the plunger back and swirl. Gas is leaving the disks.']);
+    let t = 0;
+    const lp = Lab.loop(dt => {
+      t += dt;
+      cur.plunger = t < 0.6 ? t / 0.6 : t < HOLD + 0.3 ? 1 : Math.max(0, 1 - (t - HOLD - 0.3) / 0.3);
+      cur.bubbles = t < HOLD + 0.3 ? (t / 1.6) % 1 + 0.001 : 0;
+      will.forEach(([k, i, ts]) => { if (t >= ts) cur[k][i] = true; });
+      const left = Math.max(0, Math.ceil(HOLD - t));
+      pullBtn.textContent = t < HOLD ? 'Pulling vacuum… ' + left + ' s' : 'Releasing… disks sinking';
+      prog.value = t;
+      infDraw(); infRead();
+      if (t >= HOLD + REL + 0.2) { lp.stop(); finish(); return false; }
+    });
+    infAnim = abort => { lp.stop(); if (abort) { infBusy = false; infAnim = null; pullBtn.textContent = pullLabel; prog.hidden = true; infNudge(); } else finish(); };
     lp.start();
   });
 
@@ -823,14 +859,21 @@ Lab.init({ id: 'lab05' });
      ===================================================================== */
   const cupcv = Lab.canvas('#cup-viz', 0.55, { fit: true });
   const cupLen = slider('cup-len', 'cup-len-out', v => v + ' min');
-  let cupA, cupB, cupT = 0, cupDark = false, cupLoop = null, cupPrep = { a: null, b: null, damage: 0 };
+  /* Only disks that sank go into the cups (in the real lab, floaters are discarded), so each cup can
+     hold fewer than 10. cupPrep.na / nb are the disk counts; they are saved so ET50 stays right after a reload. */
+  let cupA, cupB, cupT = 0, cupDark = false, cupLoop = null, cupPrep = Object.assign({ na: 10, nb: 10, damage: 0 }, Lab.store.get('cup-prep') || {});
+  function cupNote() {
+    const el = $('#cup-note'), out = [];
+    [['na', 'With CO₂'], ['nb', 'Without CO₂']].forEach(([k, n]) => { const left = 10 - cupPrep[k]; if (left > 0) out.push(`${left} disk${left > 1 ? 's' : ''} in the "${n}" cup didn't sink and ${left > 1 ? 'were' : 'was'} left out, so that cup has ${cupPrep[k]} disk${cupPrep[k] === 1 ? '' : 's'}.`); });
+    el.hidden = !out.length; el.innerHTML = out.length ? '<span class="pill warn">Fewer than 10 disks</span> ' + out.join(' ') + ' ET<sub>50</sub> uses half of the disks that were in the cup.' : '';
+  }
   function cupInit() {
     const damage = cupPrep.damage;
-    cupA = makeDisks(BASE, 10, damage, cupPrep.a); cupB = makeDisks(Object.assign({}, BASE, { bicarb: 0 }), 10, damage, cupPrep.b);
+    cupA = makeDisks(BASE, cupPrep.na, damage); cupB = makeDisks(Object.assign({}, BASE, { bicarb: 0 }), cupPrep.nb, damage); cupNote();
     cupT = 0; cupDark = false; $('#cup-dark').setAttribute('aria-pressed', 'false'); $('#cup-dark').textContent = 'Cover cups with a box (dark)'; cupRead(); cupDraw();
   }
   function cupDraw() { drawCups(cupcv, [{ label: 'With CO₂', sub: '0.2% NaHCO₃', disks: cupA, liq: BICARB }, { label: 'Without CO₂', sub: 'water only', disks: cupB, liq: WATER }], { lamp: true, dark: cupDark, time: cupT }); }
-  function cupRead() { $('#cup-t').textContent = fmt(cupT, 1) + ' min'; $('#cup-a').textContent = cupA.filter(d => d.up).length; $('#cup-b').textContent = cupB.filter(d => d.up).length; $('#cup-l').textContent = cupDark ? 'Off (box)' : 'On'; }
+  function cupRead() { $('#cup-t').textContent = fmt(cupT, 1) + ' min'; $('#cup-a').textContent = cupA.filter(d => d.up).length + ' / ' + cupA.length; $('#cup-b').textContent = cupB.filter(d => d.up).length + ' / ' + cupB.length; $('#cup-l').textContent = cupDark ? 'Off (box)' : 'On'; }
   cupcv.onresize = cupDraw;
   const cupchart = Lab.chart('#cup-chart', { xLabel: 'Time (min)', yLabel: 'Number of disks floating', yMin: 0, yMax: 10, series: [] });
   const cupTable = Lab.table('#cup-table', {
@@ -838,19 +881,19 @@ Lab.init({ id: 'lab05' });
     columns: [{ key: 'm', label: 'Minute', num: true, digits: 0 }, { key: 'a', label: 'Floating · with CO₂', num: true, digits: 0 }, { key: 'b', label: 'Floating · without CO₂', num: true, digits: 0 }, { key: 'light', label: 'Light' }],
     onChange: rows => {
       cupchart.update({ series: [{ name: 'With CO₂ (0.2% NaHCO₃)', points: rows.map(r => ({ x: r.m, y: r.a })) }, { name: 'Without CO₂ (water)', points: rows.map(r => ({ x: r.m, y: r.b })), dash: true }],
-        hLines: [{ y: 5, label: '50% floating' }], annotations: (() => { const e = et50(rows.map(r => r.a), 10); return e != null ? [{ x: e, label: 'ET50' }] : []; })() });
+        hLines: [{ y: cupPrep.na / 2, label: '50% floating' }], annotations: (() => { const e = et50(rows.map(r => r.a), cupPrep.na); return e != null ? [{ x: e, label: 'ET50' }] : []; })() });
     }
   });
   cupInit();
   $('#inf-pour').addEventListener('click', () => {
-    if (infAnim) infAnim();
+    if (infAnim) infAnim();   // let a running vacuum finish first
     poured = true;
-    cupPrep = { a: inf.a.slice(), b: inf.b.slice(), damage: Math.max(0, inf.pulls - 3) };
+    cupPrep = { na: inf.a.filter(Boolean).length, nb: inf.b.filter(Boolean).length, damage: Math.max(0, inf.pulls - 3) }; Lab.store.set('cup-prep', cupPrep);
     if (cupLoop) cupLoop.stop();
     cupInit(); cupTable.clear();
-    const fl = inf.a.filter(s => !s).length + inf.b.filter(s => !s).length;
-    fbList($('#inf-fb'), [fl ? `<span class="pill warn">${fl} disk${fl > 1 ? 's' : ''} still floating</span> They will count as floating from minute 0 and skew your ET<sub>50</sub>. Consider starting over.` : '<span class="pill ok">Poured.</span> Go to the next step and start the timer.']);
-    Lab.toast(fl ? `Poured, but ${fl} disk${fl > 1 ? 's are' : ' is'} still floating` : 'Poured the disks into the cups', { type: fl ? 'warn' : 'ok', announce: false, action: { label: 'Go to Float assay', onClick: () => Lab.pages.go('float-assay') } });
+    const la = 10 - cupPrep.na, lb = 10 - cupPrep.nb, fl = la + lb;
+    fbList($('#inf-fb'), [fl ? `<span class="pill warn">${fl} disk${fl > 1 ? 's' : ''} didn't sink and ${fl > 1 ? 'were' : 'was'} left out.</span> You have ${cupPrep.na} disk${cupPrep.na === 1 ? '' : 's'} in the "With CO₂" cup and ${cupPrep.nb} in the "Without CO₂" cup. Only sunk disks go in the cups, as in the real lab. Pull again before pouring if you want more disks.` : '<span class="pill ok">Poured.</span> Go to the next step and start the timer.']);
+    Lab.toast(fl ? `Poured ${cupPrep.na + cupPrep.nb} sunk disks; ${fl} floating disk${fl > 1 ? 's were' : ' was'} left out` : 'Poured the disks into the cups', { type: fl ? 'warn' : 'ok', announce: false, action: { label: 'Go to Float assay', onClick: () => Lab.pages.go('float-assay') } });
   });
   $('#cup-dark').addEventListener('click', () => { cupDark = !cupDark; $('#cup-dark').setAttribute('aria-pressed', String(cupDark)); $('#cup-dark').textContent = cupDark ? 'Remove the box (light)' : 'Cover cups with a box (dark)'; cupRead(); cupDraw(); });
   $('#cup-run').addEventListener('click', () => {
@@ -867,17 +910,22 @@ Lab.init({ id: 'lab05' });
         if (cupT >= nextMin - 1e-9) { cupTable.addRow({ m: nextMin, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' }); nextMin++; }
       }
     };
-    const done = () => { const r = cupTable.getRows(), a = r[r.length - 1]; Lab.toast(`Recorded minutes 0–${a.m}: ${a.a} of 10 disks floating with CO₂`, { type: 'ok' }); };
+    const done = () => { const r = cupTable.getRows(), a = r[r.length - 1]; Lab.toast(`Recorded minutes 0–${a.m}: ${a.a} of ${cupPrep.na} disks floating with CO₂`, { type: 'ok' }); };
     if (Lab.reducedMotion()) { advance(len); easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw(); done(); return; }
     cupLoop = Lab.loop(dt => { advance(dt / +$('#cup-speed').value); easeDisks(cupA, dt * 6); easeDisks(cupB, dt * 6); cupRead(); cupDraw(); if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); done(); return false; } });
     cupLoop.start();
   });
+  ['#et-in', '#ret-in'].forEach(id => $(id).addEventListener('input', () => vmsg($(id), '')));
   $('#et-check').addEventListener('click', () => {
-    const rows = cupTable.getRows(), e = et50(rows.map(r => r.a), 10);
-    if (e == null) { fbList($('#et-fb'), ['Your bicarbonate cup has not reached 5 floating disks yet. Run the timer longer.']); return; }
-    const u = parseFloat($('#et-in').value), v = parseFloat($('#ret-in').value), out = [];
-    out.push(near(u, e, 0, 0.15) ? `<span class="pill ok">ET<sub>50</sub> correct</span> (${fmt(e, 2)} min from your counts)` : '<span class="pill warn">ET<sub>50</sub></span> Find the minute just before 5 disks floated and the minute it reached 5 or more, then interpolate.');
-    if (isFinite(u) && u > 0) out.push(near(v, 1 / u, 0.02, 0.002) ? '<span class="pill ok">1/ET<sub>50</sub> correct</span>' : `<span class="pill warn">1/ET<sub>50</sub></span> Divide 1 by your ET<sub>50</sub>: 1 ÷ ${fmt(u, 2)}.`);
+    const etIn = $('#et-in'), rIn = $('#ret-in'), n = cupPrep.na;
+    const chk = (el, name) => { const raw = el.value.trim(); if (raw === '') return vmsg(el, `Enter your ${name}.`); const x = Number(raw); if (!isFinite(x)) return vmsg(el, `${name} must be a number.`); if (x <= 0) return vmsg(el, `${name} must be greater than 0.`); if (el === etIn && x > 45) return vmsg(el, 'ET50 can\'t be more than 45 minutes in this lab (the longest run).'); return vmsg(el, ''); };
+    const ok1 = chk(etIn, 'ET50 in minutes'), ok2 = chk(rIn, '1/ET50 in min⁻¹');
+    if (!ok1 || !ok2) { $('#et-fb').innerHTML = ''; return; }
+    const rows = cupTable.getRows(), e = et50(rows.map(r => r.a), n);
+    if (e == null) { fbList($('#et-fb'), [`Your bicarbonate cup has not reached half its disks (${n / 2}) floating yet. Run the timer longer.`]); return; }
+    const u = parseFloat(etIn.value), v = parseFloat(rIn.value), out = [];
+    out.push(near(u, e, 0, 0.15) ? `<span class="pill ok">ET<sub>50</sub> correct</span> (${fmt(e, 2)} min from your counts)` : '<span class="pill warn">ET<sub>50</sub></span> Find the minute just before half the disks floated and the minute it reached half or more, then interpolate.');
+    out.push(near(v, 1 / u, 0.02, 0.002) ? '<span class="pill ok">1/ET<sub>50</sub> correct</span>' : `<span class="pill warn">1/ET<sub>50</sub></span> Divide 1 by your ET<sub>50</sub>: 1 ÷ ${fmt(u, 2)}.`);
     fbList($('#et-fb'), out);
     const ok = out.filter(t => t.includes('pill ok')).length;
     Lab.toast(ok === out.length ? 'Checked: your ET₅₀ and 1/ET₅₀ are right' : 'Checked: see the hints under your answers', { type: ok === out.length ? 'ok' : 'warn', announce: false });
@@ -1019,15 +1067,16 @@ Lab.init({ id: 'lab05' });
     { id: 'pour', text: 'Pour the disks into the cups', target: '#inf-pour', done: () => poured, hint: 'Pour the sunk disks into the two cups.' }
   ], { doneText: 'The disks are in the cups. Go to <a href="#float-assay">Float assay</a> and start the timer.' });
   Lab.gate('#inf-pour', () => inf.pulls ? '' : 'Pull a vacuum first');
+  Lab.gate('#inf-pull', () => infBusy ? 'Vacuum in progress. Wait for it to finish.' : '');
   Lab.steps('#cup-steps', [
     { id: 'ready', text: 'Sink and pour the disks', target: '#inf-pour', done: () => poured || cupRows().length > 0, hint: 'Go back to <a href="#sink-disks">Sink disks</a>, sink the disks and pour them.' },
     { id: 'start', text: 'Start the timer', target: '#cup-run', done: () => cupRows().length > 1, hint: 'Press <strong>Start timer</strong>. The table records each minute.' },
-    { id: 'half', text: 'Count until 5+ disks float', target: '#cup-len', done: () => cupRows().some(r => r.a >= 5), hint: 'Not 5 floating yet? Set a longer run and start again.' },
+    { id: 'half', text: 'Count until half the disks float', target: '#cup-len', done: () => cupRows().some(r => r.a >= cupPrep.na / 2), hint: 'Not half floating yet? Set a longer run and start again.' },
     { id: 'dark', text: 'Cover the cups (dark)', target: '#cup-dark', optional: true, done: () => cupRows().some(r => r.light === 'off') },
     { id: 'et', text: 'Find ET₅₀ and 1/ET₅₀ (below)', hint: 'Scroll down: calculate ET₅₀ from your Data, then 1/ET₅₀.', target: '#et-in', done: () => !!($('#et-in').value && $('#ret-in').value) },
     { id: 'qs', text: 'Answer the 3 questions (below)', hint: 'Scroll down and answer the three questions.', target: '#p-p-ctrl', done: () => ['p-ctrl', 'p-dark', 'p-net'].every(filled) }
   ], { doneText: 'Assay done. Next, design your own test in <a href="#design">Design</a>.' });
-  Lab.gate('#cup-run', () => poured || cupRows().length ? '' : 'Pour the disks first (Sink disks part)');
+  Lab.gate('#cup-run', () => !(poured || cupRows().length) ? 'Pour the disks first (Sink disks part)' : (cupPrep.na < 1 || cupPrep.nb < 1) ? 'A cup has no sunk disks. Go back and sink more disks.' : '');
   Lab.steps('#d-steps', [
     { id: 'plan', text: 'Write question + hypothesis', hint: 'Write your question and hypothesis in the boxes above.', target: '#p-d-q', done: () => filled('d-q') && filled('d-h') },
     { id: 'iv', text: 'Choose a variable and levels', hint: 'Pick the independent variable, then type or tick its levels.', target: '#d-iv', sticky: true, done: () => dTouched || draw.getRows().length > 0 },
