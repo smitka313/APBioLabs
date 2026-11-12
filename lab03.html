@@ -15,15 +15,21 @@
   .stack { align-content: start; }
   .tree-svg { width: 100%; height: auto; display: block; }
   .tree-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
-  .tree-svg .br { stroke: var(--ink); stroke-width: 2; fill: none; }
-  .tree-svg .br.fos { stroke: var(--stain); stroke-dasharray: 5 4; }
-  .tree-svg text.fos { fill: var(--stain); font-weight: 700; }
-  .tree-svg .badge circle { fill: var(--accent); }
-  .tree-svg .badge.warn circle { fill: var(--warn); }
-  .tree-svg .badge text { fill: var(--accent-ink); font-size: 10.5px; font-weight: 700; font-family: var(--f-mono); }
-  .tree-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .86rem; margin-top: 6px; }
-  .tree-legend b { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-family: var(--f-mono); font-size: .78em; margin-right: 4px; }
-  .tree-legend .warn b { background: var(--warn); }
+  .tree-svg .br { stroke: var(--ink); stroke-width: 1.5; fill: none; stroke-linecap: square; }
+  .tree-svg .br.fos { stroke: var(--stain); stroke-dasharray: 4 3; stroke-linecap: butt; }
+  .tree-svg text.fos { fill: var(--stain); font-weight: 600; font-style: italic; }
+  .tree-svg .tip { fill: var(--ink); }
+  .tree-svg .node { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+  .tree-svg .badge rect { fill: var(--ink); }
+  .tree-svg .badge.warn rect { fill: var(--warn); }
+  .tree-svg .badge text { fill: var(--ink); font-size: 10px; font-weight: 700; font-family: var(--f-mono); }
+  .tree-svg .badge.warn text { fill: var(--warn); }
+  .tree-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .84rem; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); color: var(--muted); }
+  .tree-legend span { color: var(--ink); }
+  .tree-legend b { font-family: var(--f-mono); font-size: .9em; margin-right: 5px; }
+  .tree-legend b::before { content: ''; display: inline-block; width: 2.5px; height: .95em; background: var(--ink); margin-right: 4px; vertical-align: -0.12em; }
+  .tree-legend .warn b, .tree-legend .warn { color: var(--warn); }
+  .tree-legend .warn b::before { background: var(--warn); }
   .matrix td, .matrix th { text-align: center; }
   .matrix th.rot { font-size: .78rem; min-width: 64px; }
   .matrix td:first-child, .matrix th:first-child { text-align: left; white-space: nowrap; }
@@ -32,6 +38,7 @@
   .orgcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 10px; }
   .orgcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: .92rem; }
   .orgcard h4 { margin-bottom: 4px; }
+  .plate-svg { width: 100%; height: auto; display: block; border-radius: 4px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.18); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
   .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
@@ -41,12 +48,28 @@
   .msg.warn { background: var(--warn-soft); color: var(--ink); }
   .seqbox { font-family: var(--f-mono); font-size: .78rem; line-height: 1.5; word-break: break-all; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; max-height: 9.5em; overflow: auto; }
   pre.aln { font-family: var(--f-mono); font-size: .78rem; line-height: 1.35; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; max-width: 100%; margin: 0; color: var(--ink); }
-  .hits td, .hits th { font-size: .86rem; }
+  .res { border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); overflow: hidden; }
+  .res-head { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 2px 18px; padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: .84rem; }
+  .res-head div { display: flex; gap: 8px; min-width: 0; } .res-head dt { color: var(--muted); min-width: 92px; } .res-head dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .res-sec { padding: 10px 14px; border-bottom: 1px solid var(--line); } .res-sec:last-child { border-bottom: 0; }
+  .res-sec > h4 { font-family: var(--f-body); font-size: .92rem; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); display: inline-block; }
+  .hits { border-collapse: collapse; width: 100%; } .res table.data.hits td, .res table.data.hits th { font-size: .82rem; padding: 3px 8px; line-height: 1.3; border-bottom: 1px solid var(--grid); }
+  .hits th { font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .hits td.num { font-family: var(--f-mono); font-size: .78rem; }
+  .hits tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
   .hits tr.sel td { background: var(--accent-soft); }
   .hits .desc { min-width: 150px; }
-  .bitkey { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
-  .bitkey i { display: inline-block; width: 18px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+  .hits .lnk { font: inherit; font-size: .8rem; color: var(--accent); background: none; border: 0; padding: 2px 0; text-decoration: underline; cursor: pointer; }
+  .bitkey { display: flex; flex-wrap: wrap; align-items: center; gap: 0; font-size: .74rem; margin: 2px 0 6px; }
+  .bitkey .kt { color: var(--muted); margin-right: 8px; }
+  .bitkey span.k { color: var(--accent-ink); padding: 2px 10px; font-family: var(--f-mono); font-weight: 600; }
+  .graphic { width: 100%; height: auto; display: block; }
   .graphic text { font-family: var(--f-body); font-size: 11px; fill: var(--ink); }
+  .graphic .rl { font-family: var(--f-mono); font-size: 9.5px; fill: var(--muted); }
+  .aln-box pre.aln { border: 0; border-left: 3px solid var(--accent); border-radius: 0; background: var(--bg); }
+  .aln .mm { color: var(--bad); font-weight: 600; }
+  .aln .hd { color: var(--ink); font-weight: 600; }
+  .aln .sub { color: var(--muted); }
   .fossil-cv { width: 100%; display: block; }
   .bg-svg text { font-family: var(--f-body); font-size: 13px; fill: var(--ink); }
   .bg-svg .ln { stroke: var(--ink); stroke-width: 2; fill: none; }
@@ -437,6 +460,182 @@ Lab.quiz('#prelab', [
   { type: 'mc', q: 'In the Figure 2 cladogram (Background), which trait evolved first: dry skin or hair?', choices: ['Dry skin', 'Hair', 'They evolved at the same node', 'The cladogram cannot show this'], answer: 0, explain: 'Dry skin is marked lower on the main branch (closer to the root) than hair. Lizards, tigers and gorillas all have dry skin, but only tigers and gorillas have hair.' }
 ], { id: 'prelab' });
 
+/* ---------------- Naturalist plates for the organism cards ----------------
+   Pen-and-ink with watercolour wash on cream paper (inline SVG, generated once per card). Specimen art uses
+   fixed colours so a plate looks the same in light and dark themes; the card around it keeps theme tokens. */
+const PLATE = (() => {
+  const INK = '#3a2a1c', f = n => (+n).toFixed(1);
+  const lg = (id, a, b, x2 = 0.3, y2 = 1) => `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+  const rg = (id, a, b, cx = 0.38, cy = 0.35) => `<radialGradient id="${id}" cx="${cx}" cy="${cy}" r="0.75"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient>`;
+  // a watercolour shape: soft wash, darker pooled edge, then the ink line
+  const wash = (d, fill, ink = 1, extra = '') => `<path d="${d}" fill="${fill}" opacity="0.92"${extra}/><path d="${d}" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="2.2"/><path d="${d}" fill="none" stroke="${INK}" stroke-width="${ink}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const ink = (d, w = 0.8, op = 1) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const dot = (x, y, r, c = INK) => `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${c}"/>`;
+  function hatch(x0, y0, x1, y1, n, dx, dy, op = 0.35) { let s = ''; for (let i = 0; i < n; i++) { const t = i / Math.max(1, n - 1), x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; s += `M${f(x)} ${f(y)}l${f(dx)} ${f(dy)}`; } return ink(s, 0.5, op); }
+  function quad(p0, c, p1, t) { const u = 1 - t; return [u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]]; }
+  function leafPath(x, y, ang, L, W, serr = 0) {   // lanceolate/ovate leaf from its base point
+    const c = Math.cos(ang), s = Math.sin(ang), n = [-s, c], P = (u, v) => `${f(x + c * u + n[0] * v)} ${f(y + s * u + n[1] * v)}`;
+    if (!serr) return `M${P(0, 0)} Q${P(L * 0.35, W)} ${P(L, 0)} Q${P(L * 0.35, -W)} ${P(0, 0)}Z`;
+    let d = `M${P(0, 0)}`; const k = 9; for (let i = 1; i <= k; i++) { const t = i / k, w = W * Math.sin(Math.PI * Math.min(1, t * 1.08)) * (1 - t * 0.15); d += ` L${P(L * (t - 0.5 / k), w + serr)} L${P(L * t, w * 0.92)}`; }
+    for (let i = k - 1; i >= 0; i--) { const t = i / k, w = W * Math.sin(Math.PI * Math.min(1, t * 1.08)) * (1 - t * 0.15); d += ` L${P(L * (t + 0.5 / k), -w - serr)} L${P(L * t, -w * 0.92)}`; }
+    return d + 'Z';
+  }
+  const ART = {
+    ins(R, id) {   // grasshopper, facing left
+      const defs = lg(id + 'b', '#a4b25c', '#5f6e2c') + lg(id + 'w', '#c3bf86', '#8f8a52', 0, 1) + lg(id + 'f', '#b3c06a', '#6c7a33');
+      let s = ink('M50 50 Q36 30 16 20 M53 49 Q44 28 30 14', 0.7);
+      s += ink('M138 58 L106 92 L94 95 M106 92 l-2 5', 1.6);   // far hind tibia
+      s += wash('M84 50 Q122 47 160 57 Q167 61 160 66 Q122 72 86 67 Z', `url(#${id}b)`);
+      for (let x = 96; x < 158; x += 9) s += ink(`M${x} ${f(49 + (x - 84) * 0.12)} q2 9 0 ${f(17 - (x - 84) * 0.1)}`, 0.5, 0.6);
+      s += wash('M80 47 Q124 38 170 53 Q172 57 166 59 Q124 53 84 55 Z', `url(#${id}w)`);
+      s += ink('M86 50 Q126 44 166 55 M90 53 Q128 48 160 56 M100 47 l6 6 M114 45 l6 7 M128 45 l6 8 M142 47 l6 7', 0.4, 0.6);
+      s += wash('M58 46 Q70 41 84 45 L87 66 Q74 71 63 68 Z', `url(#${id}b)`);
+      s += hatch(66, 60, 84, 60, 7, 0, 6);
+      s += wash('M48 47 Q38 51 41 64 Q45 75 58 73 L66 67 Q68 52 60 45 Z', `url(#${id}b)`);
+      s += `<ellipse cx="52" cy="54" rx="4.2" ry="5.4" fill="#4a3b20" stroke="${INK}" stroke-width="0.6"/>` + dot(51, 52.5, 1, '#e9e2c8');
+      s += ink('M44 69 l-3 5 M48 72 l-2 5', 0.8);
+      s += wash('M90 62 Q110 43 137 49 Q144 53 137 58 Q114 60 95 71 Z', `url(#${id}f)`);
+      for (let i = 0; i < 8; i++) { const x = 100 + i * 4.5; s += ink(`M${x} ${f(58 - i * 0.9)} l4 -4 M${x} ${f(58 - i * 0.9)} l4 3`, 0.4, 0.55); }
+      s += ink('M139 55 L110 90 L98 93', 2); for (let i = 1; i < 7; i++) s += ink(`M${f(139 - i * 4.1)} ${f(55 + i * 5)} l2 1.6`, 0.5);
+      s += ink('M98 93 l-6 1 M92 94 l-2 2', 0.9);
+      s += ink('M62 69 L56 82 L46 88 M74 68 L77 84 L70 93', 1.2);
+      return [defs, s];
+    },
+    cru(R, id) {   // lobster, dorsal view, head left
+      const defs = lg(id + 'c', '#6b7046', '#343a24') + lg(id + 'k', '#7a6a3c', '#3b3420') + rg(id + 'r', '#8b8a58', '#3b4128');
+      let s = ink('M52 57 Q30 40 6 16 M52 63 Q28 82 4 106', 0.7) + ink('M54 58 Q44 52 36 50 M54 62 Q44 68 36 70', 0.6);
+      const legs = [70, 78, 86, 94]; legs.forEach(x => { s += ink(`M${x} 50 l-4 -10 l-4 -4 M${x} 72 l-4 10 l-4 4`, 1.1); });
+      s += wash('M64 52 L54 40 L48 34', 'none') + ink('M64 52 L54 40 L48 34', 3.4);
+      s += wash('M48 34 Q24 14 12 26 Q10 34 18 38 L24 34 Q32 40 46 40 Z', `url(#${id}k)`); s += ink('M18 38 Q28 30 40 34', 0.6);
+      for (let i = 0; i < 6; i++) s += dot(22 + i * 4, 28 + (i % 2), 0.7, '#e1d7b0');
+      s += ink('M64 70 L54 82 L48 88', 3.2);
+      s += wash('M48 88 Q22 104 14 94 Q14 86 22 84 L28 88 Q34 82 46 82 Z', `url(#${id}k)`); s += ink('M22 84 Q30 90 40 86', 0.6);
+      s += wash('M56 50 Q62 43 100 45 Q108 60 100 75 Q62 77 56 70 Q50 60 56 50 Z', `url(#${id}r)`);
+      s += ink('M56 60 L44 60 M60 55 Q80 60 98 55 M60 66 Q80 62 98 66', 0.6, 0.7) + hatch(64, 71, 96, 71, 9, 1, 3);
+      s += dot(54, 55, 1.6, '#1c1a12') + dot(54, 65, 1.6, '#1c1a12');
+      let x = 100; [11, 10.5, 10, 9.5, 9, 8].forEach((w, i) => { const h = 13 - i * 0.9; s += wash(`M${f(x)} ${f(60 - h)} h${f(w)} q2 ${f(h)} 0 ${f(2 * h)} h${f(-w)} q2 ${f(-h)} 0 ${f(-2 * h)}Z`, `url(#${id}c)`, 0.8); x += w; });
+      s += wash(`M${f(x)} 60 L${f(x + 18)} 46 Q${f(x + 24)} 60 ${f(x + 18)} 74 Z`, `url(#${id}c)`, 0.8) + ink(`M${f(x)} 60 L${f(x + 22)} 60 M${f(x)} 60 L${f(x + 20)} 52 M${f(x)} 60 L${f(x + 20)} 68`, 0.5, 0.7);
+      s += ink('M12 26 l-2 -2 M14 94 l-3 2', 1, 1) + `<path d="M8 22 Q10 26 14 26 M10 96 Q12 92 16 94" stroke="#a5532e" stroke-width="1.4" fill="none"/>`;
+      return [defs, s];
+    },
+    cro(R, id) {   // American alligator, side view
+      const defs = lg(id + 'a', '#6a7146', '#2c3220', 0, 1) + lg(id + 'v', '#d8cc9a', '#b6a873', 0, 1);
+      let s = wash('M118 74 L124 88 L114 93 M124 88 l4 4', 'none') + ink('M118 74 L124 88 L114 93 M124 88 l5 3 M124 88 l1 6', 2.2);
+      s += wash('M10 63 Q14 56 40 55 L60 52 Q82 45 112 47 Q148 51 196 64 Q152 67 122 71 Q92 77 62 73 L40 70 Q20 70 10 66 Z', `url(#${id}a)`);
+      s += wash('M40 69 L62 72 Q92 76 122 70 Q150 66 196 64 Q150 70 122 75 Q92 81 62 77 L40 73 Q24 72 12 67 Z', `url(#${id}v)`, 0.6);
+      s += ink('M12 64 Q26 65 44 63', 0.7);
+      let t = ''; for (let x = 16; x < 44; x += 3.2) t += `M${f(x)} 63.6 l1.2 2.2 l1.2 -2.2`; s += `<path d="${t}" fill="#f2ecd6" stroke="${INK}" stroke-width="0.35"/>`;
+      s += `<ellipse cx="45" cy="53" rx="4" ry="2.6" fill="#8d8a4e" stroke="${INK}" stroke-width="0.6"/>` + dot(45.5, 53, 1.2, '#16140c') + dot(13, 58.5, 0.9);
+      for (let x = 62; x < 192; x += 5.2) { const y = 49 + (x - 62) * 0.105 - (x < 112 ? (112 - x) * 0.03 : 0); s += `<path d="M${f(x)} ${f(y + 1.5)} l2.2 ${x > 120 ? -3.6 : -2.4} l2.4 ${x > 120 ? 3.6 : 2.4}" fill="#3a4128" stroke="${INK}" stroke-width="0.5"/>`; }
+      for (let r = 0; r < 3; r++) for (let x = 66 + r * 2; x < 180; x += 7) s += ink(`M${f(x)} ${f(56 + r * 5 + (x - 66) * 0.08)} q3 -1 6 0`, 0.4, 0.5);
+      s += ink('M64 72 L58 86 L48 90 M48 90 l-3 -2 M48 90 l-4 1 M48 90 l-2 3', 2.2) + ink('M112 74 L120 88 L110 93 M110 93 l-4 -1 M110 93 l-3 3', 2.4);
+      return [defs, s];
+    },
+    bir(R, id) {   // rock pigeon, side view, facing left
+      const defs = lg(id + 'g', '#b8bec8', '#7a828f', 0.2, 1) + lg(id + 'n', '#5f9a7a', '#7c5a8e', 1, 0.4) + lg(id + 'w', '#c3c8d0', '#8a919c');
+      let s = ink('M98 86 L96 100 M108 86 L110 100', 1.6) + `<path d="M96 100 l-6 2 M96 100 l-3 3 M96 100 l2 3 M110 100 l-5 2 M110 100 l-1 3 M110 100 l4 2" stroke="#b5483f" stroke-width="1.4" stroke-linecap="round" fill="none"/>`;
+      s += wash('M136 64 L178 74 Q180 80 172 84 L130 78 Z', `url(#${id}g)`) + `<path d="M170 75 L178 74 Q180 80 172 84 L166 82 Z" fill="#2c2c33" opacity="0.85"/>`;
+      s += wash('M64 46 Q74 54 76 60 Q96 50 124 58 Q146 66 138 76 Q120 90 94 88 Q70 86 62 70 Q58 58 64 46 Z', `url(#${id}g)`);
+      s += wash('M50 34 Q60 28 68 36 Q72 44 70 54 Q66 66 62 70 Q56 60 54 50 Q46 46 50 34 Z', `url(#${id}n)`, 0.8);
+      s += wash('M48 31 Q58 26 66 34 Q68 42 60 46 Q50 46 47 40 Z', `url(#${id}g)`);
+      s += `<path d="M47 37 L39 40 L47 41 Z" fill="#3a3530" stroke="${INK}" stroke-width="0.5"/><ellipse cx="47.5" cy="36.4" rx="1.8" ry="1.2" fill="#f1ede6"/>`;
+      s += dot(54, 35.5, 2, '#d98a2a') + dot(54, 35.5, 1.1, '#111') + dot(53.6, 35.1, 0.35, '#fff');
+      s += wash('M78 60 Q108 52 148 70 Q126 82 94 80 Q80 74 78 60 Z', `url(#${id}w)`);
+      s += `<path d="M98 66 Q114 64 128 72" stroke="#26262c" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M104 72 Q118 71 132 76" stroke="#26262c" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+      for (let i = 0; i < 5; i++) s += ink(`M${126 + i * 4} ${73 + i} q8 1 14 4`, 0.45, 0.6);
+      s += hatch(78, 82, 118, 86, 10, 1, 3, 0.25);
+      return [defs, s];
+    },
+    rod(R, id) {   // house mouse, side view
+      const defs = rg(id + 'm', '#b3a38c', '#6c5f4f') + lg(id + 'p', '#f0c0b8', '#d8908a');
+      let s = `<path d="M134 80 Q160 102 196 72" stroke="#c9958c" stroke-width="2" fill="none" stroke-linecap="round"/>` + ink('M134 80 Q160 102 196 72', 0.5, 0.6);
+      s += wash('M64 62 Q78 50 104 52 Q132 54 138 72 Q140 88 118 90 Q92 92 72 86 Q60 80 64 62 Z', `url(#${id}m)`);
+      s += wash('M66 60 Q52 58 40 70 Q50 79 66 82 Q74 76 74 68 Z', `url(#${id}m)`);
+      s += wash('M62 47 Q74 44 76 56 Q72 64 64 60 Q58 54 62 47 Z', `url(#${id}p)`, 0.7) + ink('M64 50 Q70 50 70 57', 0.4, 0.6);
+      s += dot(40.5, 70, 1.6, '#c66b6b') + dot(55, 65, 2.3, '#16110c') + dot(54.3, 64.2, 0.6, '#fff');
+      s += ink('M44 70 l-12 -6 M44 71 l-13 0 M44 72 l-11 6', 0.35, 0.8);
+      for (let i = 0; i < 26; i++) { const x = 70 + R.uniform() * 62, y = 56 + R.uniform() * 30; s += ink(`M${f(x)} ${f(y)} l3.2 ${f(R.normal(0.4, 0.4))}`, 0.35, 0.45); }
+      s += `<path d="M70 86 l-4 6 l-4 1 M78 88 l-2 6 l-3 1 M118 88 l2 6 l-4 1 M126 86 l4 6 l-3 2" stroke="#d08d86" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+      s += hatch(80, 88, 120, 89, 9, 1, -3, 0.28);
+      return [defs, s];
+    },
+    ape(R, id) {   // chimpanzee, knuckle-walking, facing left
+      const defs = rg(id + 'h', '#4c3f36', '#1d1612') + lg(id + 'f', '#d6b495', '#a07c5e', 0.4, 1);
+      let s = wash('M126 78 L132 104 L142 105 M84 80 L80 104 L70 105', 'none') + ink('M128 76 L134 102 L146 104 M86 78 L84 103 L74 104', 5);
+      s += wash('M60 44 Q92 28 130 40 Q150 50 148 66 Q142 82 124 82 Q100 86 82 80 L72 74 Q60 62 60 44 Z', `url(#${id}h)`);
+      s += wash('M64 56 Q58 76 60 104 L68 104 Q70 82 78 66 Z', `url(#${id}h)`) + ink('M60 104 l-4 0 M62 104 l-2 -3 M66 104 l0 -3', 0.8);
+      s += wash('M138 66 Q142 84 138 104 L146 104 Q150 86 148 66 Z', `url(#${id}h)`);
+      s += wash('M44 34 Q58 24 68 38 Q72 50 64 58 Q54 64 44 60 Q34 56 34 48 Q36 40 44 34 Z', `url(#${id}h)`);
+      s += wash('M42 42 Q52 40 56 46 Q58 54 50 58 Q40 60 34 54 Q32 47 42 42 Z', `url(#${id}f)`, 0.7);
+      s += `<ellipse cx="62" cy="44" rx="3.5" ry="4.5" fill="#c9a07c" stroke="${INK}" stroke-width="0.5"/>` + ink('M40 44 Q46 41 52 44', 1.2) + dot(43, 46, 1.1, '#111') + dot(49, 46, 1.1, '#111') + ink('M36 55 Q42 57 46 55', 0.6);
+      for (let i = 0; i < 70; i++) { const x = 64 + R.uniform() * 82, y = 36 + R.uniform() * 44; s += `<path d="M${f(x)} ${f(y)} l${f(2.5 + R.uniform() * 2)} ${f(1.5 + R.uniform() * 2)}" stroke="#7d6b5e" stroke-width="0.4" stroke-opacity="0.55"/>`; }
+      return [defs, s];
+    },
+    mos(R, id) {   // haircap moss clump with sporophytes
+      const defs = lg(id + 's', '#8b6a44', '#5b4128', 0, 1);
+      let s = wash('M14 108 Q40 92 100 94 Q160 92 188 108 Z', `url(#${id}s)`, 0.7);
+      const G = ['#5e8a34', '#4c7a2a', '#6f9b3c', '#3f6a24'];
+      for (let i = 0; i < 26; i++) {
+        const x = 34 + i * 5 + R.normal(0, 2), h = 30 + R.uniform() * 24 - Math.abs(i - 13) * 1.1, lean = R.normal(0, 4), top = [x + lean, 100 - h];
+        let leaves = ''; for (let k = 0; k < 9; k++) { const t = k / 8, p = [x + lean * t, 100 - h * t]; [-1, 1].forEach(sd => { leaves += leafPath(p[0], p[1], -Math.PI / 2 + sd * (0.9 - t * 0.4) + R.normal(0, 0.1), 7 - t * 2.5, 1.1); }); }
+        s += `<path d="M${f(x)} 100 L${f(top[0])} ${f(top[1])}" stroke="#4a3a20" stroke-width="0.8"/><path d="${leaves}" fill="${G[i % 4]}" stroke="#2f4a1c" stroke-width="0.35"/>`;
+        if (i % 6 === 3) { const cx = top[0] + R.normal(0, 3), cy = top[1] - 34; s += `<path d="M${f(top[0])} ${f(top[1])} Q${f(top[0] + 2)} ${f(top[1] - 18)} ${f(cx)} ${f(cy)}" stroke="#8a4f22" stroke-width="0.9" fill="none"/>` + wash(`M${f(cx - 2.2)} ${f(cy)} q0 -8 2.2 -9 q2.2 1 2.2 9 Z`, '#9b7a3e', 0.5) + `<path d="M${f(cx - 2.4)} ${f(cy - 7)} q2.4 -6 2.4 -9 q1 3 2.4 9" fill="#d7bf86" stroke="${INK}" stroke-width="0.4"/>`; }
+      }
+      return [defs, s];
+    },
+    fer(R, id) {   // sword fern: arching fronds; one turned to show sori
+      const defs = '';
+      let s = '';
+      const fronds = [[100, 110, 22, 10, 110], [100, 110, 60, 18, 104], [100, 110, 100, 6, 112], [100, 110, 142, 16, 106], [100, 110, 180, 12, 104]];
+      fronds.forEach(([bx, by, tx, ty, cy], fi) => {
+        const p0 = [bx + (fi - 2) * 2, by], c = [(bx + tx) / 2 + (tx - bx) * 0.1, cy - 80], p1 = [tx, ty + 30];
+        let pin = '', sori = '';
+        for (let k = 1; k < 22; k++) {
+          const t = k / 22, q = quad(p0, c, p1, t), q2 = quad(p0, c, p1, t + 0.01), ang = Math.atan2(q2[1] - q[1], q2[0] - q[0]), L = 13 * Math.sin(Math.PI * Math.min(1, 0.25 + t * 0.85)) + 2;
+          [-1, 1].forEach(sd => { pin += leafPath(q[0], q[1], ang + sd * 1.15, L, 2.4, 0.5); if (fi === 3 && t > 0.3 && t < 0.8) for (let m = 1; m < 4; m++) { const a2 = ang + sd * 1.15, d = L * m / 4.3; sori += `<circle cx="${f(q[0] + Math.cos(a2) * d + Math.cos(a2 + sd * 1.57) * 1)}" cy="${f(q[1] + Math.sin(a2) * d + Math.sin(a2 + sd * 1.57) * 1)}" r="0.75"/>`; } });
+        }
+        s += `<path d="M${f(p0[0])} ${f(p0[1])} Q${f(c[0])} ${f(c[1])} ${f(p1[0])} ${f(p1[1])}" stroke="#4d5a2a" stroke-width="1.1" fill="none"/>`;
+        s += `<path d="${pin}" fill="${fi === 3 ? '#6e8f45' : fi % 2 ? '#4f7a36' : '#3f6a2c'}" stroke="#25401a" stroke-width="0.35" fill-opacity="0.92"/>`;
+        if (sori) s += `<g fill="#8a4e22">${sori}</g>`;
+      });
+      s += `<path d="M90 112 Q100 104 110 112 Z" fill="#6b5236"/>`;
+      return [defs, s];
+    },
+    pin(R, id) {   // white pine twig: needles in bundles of five, long hanging cone
+      const defs = lg(id + 'c', '#b58a52', '#6e4a26', 1, 0.2);
+      let s = '';
+      const tw0 = [8, 34], tw1 = [194, 52], tc = [100, 30];
+      for (let k = 0; k < 14; k++) { const t = 0.06 + k / 14, q = quad(tw0, tc, tw1, t); for (let n = 0; n < 5; n++) { const a = (k % 2 ? -1 : 1) * (0.5 + n * 0.16) + R.normal(0, 0.06) + (k % 2 ? -0.4 : 0.6), L = 34 + R.uniform() * 6, ex = q[0] + Math.cos(a) * L * 0.9 + 6, ey = q[1] + Math.sin(a) * L * 0.75; s += `<path d="M${f(q[0])} ${f(q[1])} Q${f((q[0] + ex) / 2 + 2)} ${f((q[1] + ey) / 2 - 2)} ${f(ex)} ${f(ey)}" stroke="${n % 2 ? '#4f7f6c' : '#6b9a83'}" stroke-width="0.7" fill="none"/>`; } }
+      s += wash(`M${tw0[0]} ${tw0[1] - 1.6} Q${tc[0]} ${tc[1] - 1.6} ${tw1[0]} ${tw1[1] - 1.2} L${tw1[0]} ${tw1[1] + 1.2} Q${tc[0]} ${tc[1] + 1.8} ${tw0[0]} ${tw0[1] + 1.6} Z`, '#7a5a3a', 0.6);
+      s += ink('M118 42 Q124 46 124 52', 1.4);
+      let cone = ''; for (let r = 0; r < 12; r++) { const y = 52 + r * 4.7, w = 7 + Math.sin(Math.PI * Math.min(1, (r + 2) / 12)) * 5; for (let c = -1; c <= 1; c++) { const cx = 124 + c * w * 0.55 + (r % 2) * 2 - 1; cone += `<path d="M${f(cx - w * 0.36)} ${f(y)} Q${f(cx)} ${f(y + 7)} ${f(cx + w * 0.36)} ${f(y)} Z" fill="url(#${id}c)" stroke="${INK}" stroke-width="0.5"/><circle cx="${f(cx)}" cy="${f(y + 4.6)}" r="0.7" fill="#f3ecd8" opacity="0.8"/>`; } }
+      s += `<path d="M114 52 Q110 82 124 112 Q138 82 134 52 Z" fill="#5a3a1e" opacity="0.5"/>` + cone;
+      return [defs, s];
+    },
+    flo(R, id) {   // apple twig: leaves, blossom, fruit
+      const defs = rg(id + 'a', '#e4553f', '#8e1f1a') + lg(id + 'l', '#86b05a', '#4a7a2c');
+      let s = wash('M0 42 Q80 26 200 34 L200 37 Q80 30 0 46 Z', '#6e4e33', 0.6);
+      [[30, 40, -0.9], [58, 34, 0.7], [92, 32, -1.2], [150, 33, 0.9], [176, 35, -0.6], [118, 32, 1.4]].forEach(([x, y, a]) => { const d = leafPath(x, y, a, 34, 10, 0.8); s += wash(d, `url(#${id}l)`, 0.6); const c = Math.cos(a), sn = Math.sin(a); s += ink(`M${x} ${y} L${f(x + c * 33)} ${f(y + sn * 33)}`, 0.5, 0.7); for (let k = 1; k < 5; k++) { const bx = x + c * 7 * k, by = y + sn * 7 * k; s += ink(`M${f(bx)} ${f(by)} l${f(c * 5 - sn * 6)} ${f(sn * 5 + c * 6)} M${f(bx)} ${f(by)} l${f(c * 5 + sn * 6)} ${f(sn * 5 - c * 6)}`, 0.3, 0.6); } });
+      [[66, 18], [78, 14]].forEach(([cx, cy]) => { for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2 - 0.3; s += `<ellipse cx="${f(cx + Math.cos(a) * 5)}" cy="${f(cy + Math.sin(a) * 5)}" rx="5" ry="3.6" transform="rotate(${f(a * 57.3)} ${f(cx + Math.cos(a) * 5)} ${f(cy + Math.sin(a) * 5)})" fill="#fbeef0" stroke="#b77a86" stroke-width="0.5"/>`; } s += dot(cx, cy, 1.8, '#d8b23a'); for (let k = 0; k < 6; k++) s += dot(cx + Math.cos(k) * 2.4, cy + Math.sin(k) * 2.4, 0.5, '#7a5a1a'); });
+      s += ink('M72 26 L68 21 M72 26 L77 17', 0.6);
+      s += ink('M132 34 Q134 46 132 56', 1.2);
+      s += wash('M132 58 Q114 54 112 74 Q114 98 132 98 Q150 98 152 74 Q150 54 132 58 Z', `url(#${id}a)`, 0.8);
+      s += `<path d="M120 66 Q122 60 128 60" stroke="#fff" stroke-opacity="0.65" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M140 86 Q146 80 146 72" stroke="#e8c04a" stroke-opacity="0.25" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+      return [defs, s];
+    }
+  };
+  const LATIN = { ins: 'Melanoplus differentialis', cru: 'Homarus americanus', cro: 'Alligator mississippiensis', bir: 'Columba livia', rod: 'Mus musculus', ape: 'Pan troglodytes', mos: 'Polytrichum commune', fer: 'Polystichum munitum', pin: 'Pinus strobus', flo: 'Malus domestica' };
+  return function plate(t) {
+    if (!ART[t.id]) return '';
+    const id = 'pl-' + t.id, R = Lab.rng(t.id.charCodeAt(0) * 131 + t.id.charCodeAt(1)), [defs, body] = ART[t.id](R, id);
+    let speck = ''; for (let i = 0; i < 40; i++) speck += `<circle cx="${f(R.uniform() * 200)}" cy="${f(R.uniform() * 120)}" r="${f(0.25 + R.uniform() * 0.5)}" fill="#a08a64" opacity="${f(0.15 + R.uniform() * 0.25)}"/>`;
+    return `<svg class="plate-svg" viewBox="0 0 200 120" role="img" aria-label="${esc('Naturalist illustration of a ' + t.ex.toLowerCase() + ' (' + LATIN[t.id] + ')')}">` +
+      `<defs><radialGradient id="${id}-pp" cx="0.45" cy="0.4" r="0.8"><stop offset="0" stop-color="#faf5e8"/><stop offset="1" stop-color="#e9dfc6"/></radialGradient>${defs}</defs>` +
+      `<rect width="200" height="120" fill="url(#${id}-pp)"/>${speck}<g transform="translate(0 -2)">${body}</g>` +
+      `<text x="195" y="116" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="7.2" fill="#5a4632">${LATIN[t.id]}</text></svg>`;
+  };
+})();
+
 /* ---------------- Part 1: trait table + clade builder ---------------- */
 const DATASETS = {
   fig4: {
@@ -524,7 +723,7 @@ function drawTree(el, root, names, opts = {}) {
   const badges = (n, x0, x1, y) => {
     if (!n.marks || !n.marks.length) return;
     const span = x1 - x0, step = Math.min(18, span / (n.marks.length + 1));
-    n.marks.forEach((m, i) => { num++; const cx = x0 + span / 2 + (i - (n.marks.length - 1) / 2) * step; const warn = opts.check && !opts.check(m); legend.push({ num, m, warn }); svg += `<g class="badge${warn ? ' warn' : ''}"><circle cx="${cx}" cy="${y}" r="8"/><text x="${cx}" y="${y + 3.6}" text-anchor="middle">${num}</text></g>`; });
+    n.marks.forEach((m, i) => { num++; const cx = x0 + span / 2 + (i - (n.marks.length - 1) / 2) * step; const warn = opts.check && !opts.check(m); legend.push({ num, m, warn }); svg += `<g class="badge${warn ? ' warn' : ''}"><rect x="${cx - 1.4}" y="${y - 6.5}" width="2.8" height="13"/><text x="${cx}" y="${y - 9}" text-anchor="middle">${num}</text></g>`; });
   };
   const rx = X(root), ry = pos.get(root);
   svg += `<path class="br" d="M8 ${ry} H${rx}"/>`;
@@ -533,10 +732,11 @@ function drawTree(el, root, names, opts = {}) {
     const x = X(n), ys = n.kids.map(k => pos.get(k));
     svg += `<path class="br" d="M${x} ${Math.min(...ys)} V${Math.max(...ys)}"/>`;
     n.kids.forEach(k => { svg += `<path class="br${k.fossil ? ' fos' : ''}" d="M${x} ${pos.get(k)} H${X(k)}"/>`; draw(k); });
+    svg += `<circle class="node" cx="${x}" cy="${pos.get(n)}" r="2.4"/>`;
   })(root);
   badges(root, 8, rx, ry);
   (function bd(n) { n.kids.forEach(k => { badges(k, X(n), X(k), pos.get(k)); bd(k); }); })(root);
-  leaves.forEach(l => { svg += `<text x="${X(l) + 6}" y="${pos.get(l) + 4.5}"${l.fossil ? ' class="fos"' : ''}>${esc(l.fossil ? (opts.fossilLabel || 'Fossil') : names[l.members[0]] || l.members[0])}</text>`; });
+  leaves.forEach(l => { svg += `<circle class="tip" cx="${X(l)}" cy="${pos.get(l)}" r="1.8"/><text x="${X(l) + 7}" y="${pos.get(l) + 4.5}"${l.fossil ? ' class="fos"' : ''}>${esc(l.fossil ? '\u2020 ' + (opts.fossilLabel || 'Fossil') : names[l.members[0]] || l.members[0])}</text>`; });
   el.innerHTML = `<svg class="tree-svg" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${esc(opts.aria || 'Cladogram')}">${svg}</svg>` +
     (legend.length ? `<div class="tree-legend">${legend.map(e => `<span class="${e.warn ? 'warn' : ''}"><b>${e.num}</b>${esc(e.m.trait)}${e.warn ? ' (does not match the trait table)' : ''}</span>`).join('')}</div>` : '');
   return leaves.map(l => l.fossil ? 'fossil' : l.members[0]);
@@ -545,7 +745,7 @@ function drawTree(el, root, names, opts = {}) {
 function renderDataset() {
   const D = DATASETS[dsKey];
   Lab.$$('#ds-seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === dsKey)));
-  Lab.$('#orgcards').innerHTML = D.taxa.map(t => `<div class="orgcard"><h4>${esc(t.name)} <span class="muted small">(${esc(t.ex)})</span></h4>${esc(t.desc)}</div>`).join('');
+  Lab.$('#orgcards').innerHTML = D.taxa.map(t => `<div class="orgcard">${PLATE(t)}<h4>${esc(t.name)} <span class="muted small">(${esc(t.ex)})</span></h4>${esc(t.desc)}</div>`).join('');
   const saved = Lab.store.get('matrix:' + dsKey, {});
   Lab.$('#matrix').innerHTML = `<div class="table-wrap"><table class="data matrix"><thead><tr><th>Organism</th>${D.traits.map((t, j) => `<th class="rot">${esc(t[0])}</th>`).join('')}</tr></thead><tbody>${D.taxa.map(t => `<tr><td>${esc(t.name)}</td>${D.traits.map((tr, j) => `<td id="cell-${t.id}-${j}"><input type="checkbox" id="mx-${t.id}-${j}" data-t="${t.id}" data-j="${j}" aria-label="${esc(t.name)} has ${esc(tr[0])}" ${saved[t.id + j] ? 'checked' : ''}></td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr><td>Total</td>${D.traits.map((t, j) => `<td class="num" id="tot-${j}"></td>`).join('')}</tr></tfoot></table></div>`;
   const totals = () => D.traits.forEach((t, j) => { Lab.$('#tot-' + j).textContent = Lab.$$(`#matrix input[data-j="${j}"]:checked`).length; });
@@ -779,39 +979,47 @@ renderDataset();
 /* ---------------- Mini-BLAST output ---------------- */
 const fmtE = E => { if (E < 1e-180) return '0.0'; if (E >= 0.01) return E >= 1 ? E.toFixed(1) : E.toFixed(3); const ex = Math.floor(Math.log10(E)); let man = Math.round(E / Math.pow(10, ex)); return man >= 10 ? `1e-${String(-(ex + 1)).padStart(2, '0')}` : `${man}e-${String(-ex).padStart(2, '0')}`; };
 const bitColor = b => b >= 200 ? '--bad' : b >= 80 ? '--s2' : b >= 50 ? '--s1' : b >= 40 ? '--s3' : '--muted';
-function alignmentText(h, qLen) {
-  const lines = []; let qi = h.qStart, si = h.sStart;
-  lines.push(`>${ORGS[h.id][0]} (${ORGS[h.id][1]}) ${h.gene ? 'gene ' + h.gene + ' homolog, simulated' : ''}`);
-  lines.push(`Score = ${h.bits.toFixed(0)} bits (${h.raw}),  Expect = ${fmtE(h.E)}`);
-  lines.push(`Identities = ${h.nid}/${h.len} (${Math.round(h.ident)}%),  Gaps = ${h.gaps}/${h.len} (${Math.round(100 * h.gaps / h.len)}%)`);
-  lines.push('Strand = Plus/Plus', '');
+function alignmentHTML(h) {
+  const L = [], sid = `sim|${h.id}_gene${h.gene || ''}`;
+  L.push(`<span class="hd">${esc(ORGS[h.id][0])} (${esc(ORGS[h.id][1])}) gene ${esc(h.gene || '')} homolog, simulated</span>`);
+  L.push(`<span class="sub">Sequence ID: ${esc(sid)}   Length: ${h.seq ? h.seq.length : h.len}   Number of Matches: 1</span>`);
+  L.push(`<span class="sub">Range 1: ${h.sStart} to ${h.sStart + h.sa.replace(/-/g, '').length - 1}</span>`, '');
+  L.push(` Score = ${h.bits.toFixed(0)} bits (${h.raw}),  Expect = ${fmtE(h.E)}`);
+  L.push(` Identities = ${h.nid}/${h.len} (${Math.round(h.ident)}%),  Gaps = ${h.gaps}/${h.len} (${Math.round(100 * h.gaps / h.len)}%)`);
+  L.push(' Strand = Plus/Plus', '');
+  let qi = h.qStart, si = h.sStart;
   for (let k = 0; k < h.len; k += 60) {
-    const qa = h.qa.slice(k, k + 60), sa = h.sa.slice(k, k + 60);
-    const qn = qa.replace(/-/g, '').length, sn = sa.replace(/-/g, '').length;
+    const qa = h.qa.slice(k, k + 60), sa = h.sa.slice(k, k + 60), qn = qa.replace(/-/g, '').length, sn = sa.replace(/-/g, '').length;
     const mid = qa.split('').map((c, x) => c === sa[x] ? '|' : ' ').join('');
-    lines.push(`Query  ${String(qi).padEnd(4)} ${qa}  ${qi + qn - 1}`);
-    lines.push(`            ${mid}`);
-    lines.push(`Sbjct  ${String(si).padEnd(4)} ${sa}  ${si + sn - 1}`, '');
+    const mark = (a, b) => a.split('').map((c, x) => c === b[x] ? c : `<span class="mm">${c}</span>`).join('');
+    L.push(`Query  ${String(qi).padEnd(4)} ${mark(qa, sa)}  ${qi + qn - 1}`);
+    L.push(`            ${mid}`);
+    L.push(`Sbjct  ${String(si).padEnd(4)} ${mark(sa, qa)}  ${si + sn - 1}`, '');
     qi += qn; si += sn;
   }
-  return lines.join('\n');
+  return L.join('\n');
 }
 function renderBlast(el, res, meta) {
-  const { hits, query } = res;
-  if (!hits.length) { el.innerHTML = `<div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${meta.prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div>`; return; }
-  const W = 640, rowH = 13, top = 34, Hh = top + hits.length * rowH + 8, L = 120, R = W - 12, X = p => L + (p - 1) / query.length * (R - L);
-  let g = `<text x="${L}" y="12">Query</text><rect x="${L}" y="18" width="${R - L}" height="6" rx="2" style="fill:var(--ink)"/>`;
-  [1, Math.round(query.length / 2), query.length].forEach(p => { g += `<text x="${X(p)}" y="31" text-anchor="middle" style="font-size:9.5px;fill:var(--muted)">${p}</text>`; });
-  hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 6}" y="${y + 8}" text-anchor="end">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="9" rx="2" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits</title></rect>`; });
-  const key = [['--muted', '&lt; 40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥ 200']].map(([c, t]) => `<span><i style="background:var(${c})"></i>${t}</span>`).join('');
-  el.innerHTML = `<div class="small"><strong>Graphic summary.</strong> Each bar shows where a database sequence lines up with the query, colored by alignment score (bits).</div><div class="bitkey">${key}</div>
-    <svg class="graphic" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Graphic summary of ${hits.length} BLAST hits">${g}</svg>
-    <div class="small"><strong>Sequences producing significant alignments</strong> (${hits.length}). Select a row to view its alignment.</div>
+  const { hits, query } = res, prog = meta.prog || res.prog;
+  const head = `<dl class="res-head"><div><dt>Job title</dt><dd>${esc(res.org && res.org !== 'pasted' ? orgLabel(res.org) + ' gene ' + res.gene : res.org === 'pasted' ? 'Pasted sequence' : 'Fossil gene ' + res.gene)}</dd></div><div><dt>Program</dt><dd>${prog === 'megablast' ? 'BLASTN (megablast)' : 'BLASTN'}</dd></div><div><dt>Molecule type</dt><dd>nucleic acid</dd></div><div><dt>Query length</dt><dd>${query.length}</dd></div><div><dt>Database</dt><dd>Lab Bench nucleotide set (simulated)</dd></div><div><dt>Hits</dt><dd>${hits.length} with E &lt; 10</dd></div></dl>`;
+  if (!hits.length) { el.innerHTML = `<div class="res">${head}<div class="res-sec"><div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div></div></div>`; return; }
+  const W = 640, rowH = 11, top = 40, Hh = top + hits.length * rowH + 8, L = 150, R = W - 14, X = p => L + (p - 1) / (query.length - 1) * (R - L);
+  let g = `<text x="${L - 8}" y="20" text-anchor="end" style="font-weight:600">Query</text><rect x="${L}" y="12" width="${R - L}" height="9" style="fill:var(--ink)"/>`;
+  const step = query.length > 200 ? 50 : 25;
+  for (let p = 0; p <= query.length; p += step) { const xx = X(Math.max(1, p)); g += `<line x1="${xx}" x2="${xx}" y1="23" y2="28" style="stroke:var(--muted)"/><text class="rl" x="${xx}" y="37" text-anchor="middle">${Math.max(1, p)}</text>`; }
+  hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 8}" y="${y + 7.5}" text-anchor="end" style="font-size:10px">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="7" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits, E = ${fmtE(h.E)}</title></rect>`; });
+  const key = [['--muted', '&lt;40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥200']].map(([c, t]) => `<span class="k" style="background:var(${c})">${t}</span>`).join('');
+  el.innerHTML = `<div class="res">${head}
+    <div class="res-sec"><h4>Graphic Summary</h4><div class="small muted">Distribution of the top ${hits.length} BLAST hits on the query sequence. Each bar is an aligned region, colored by alignment score.</div>
+    <div class="bitkey"><span class="kt">Color key for alignment scores</span>${key}</div>
+    <svg class="graphic" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Graphic summary of ${hits.length} BLAST hits">${g}</svg></div>
+    <div class="res-sec"><h4>Descriptions</h4><div class="small muted">Sequences producing significant alignments (${hits.length}). Select "View" to show an alignment.</div>
     <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th>Group</th><th class="num">Max score</th><th class="num">Query cover</th><th class="num">E value</th><th class="num">Per. ident</th><th>Alignment</th></tr></thead><tbody>
-    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td>${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="btn btn--sm" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
-    </tbody></table></div><div class="aln-box"></div><div class="dtree"></div>`;
+    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td>${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="lnk" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="res-sec"><h4>Alignments</h4><div class="aln-box"></div><div class="dtree"></div></div></div>`;
   const box = Lab.$('.aln-box', el);
-  const show = i => { Lab.$$('tr', el).forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment">${esc(alignmentText(hits[i], query.length))}</pre>`; };
+  const show = i => { Lab.$$('tr', el).forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment; mismatched bases are highlighted">${alignmentHTML(hits[i])}</pre>`; };
   Lab.$$('[data-view]', el).forEach(b => b.addEventListener('click', () => show(+b.dataset.view)));
   show(0);
 }
