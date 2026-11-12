@@ -484,6 +484,7 @@
           reloadForSeed(); return;
         }
         idHosts.forEach(b => renderIdentity(b));
+        if (IS_LAB && Lab._tourSoon) Lab._tourSoon();
         if (ok) Lab.toast('Saved: signed in as ' + name, { type: 'ok' });
         if (!ok) { const l = $('.id-line', box); if (l) l.append(h('span', { class: 'id-note' }, ' This browser is not saving data here, so your name is used on this page only.')); }
         focusIn(box, '.id-change');
@@ -504,6 +505,7 @@
         h('button', { class: 'btn btn--sm btn--primary', type: 'button', onclick: () => Lab.identity.newDataset() }, 'Use a new dataset'),
         h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; nb.setAttribute('aria-expanded', 'false'); nb.focus(); } }, 'Cancel'));
     }
+    if (IS_LAB) line.append(' · ', h('button', { class: 'linkbtn id-help', type: 'button', title: 'Show the quick tour of this page again', 'aria-label': 'Help: show the quick tour again', onclick: e => { if (Lab.tour) Lab.tour.start({ opener: e.currentTarget, force: true }); } }, 'Help'));
     box.append(line); if (confirmRow) box.append(confirmRow);
   }
   Lab.identity = {
@@ -1699,6 +1701,155 @@
     return { el: main, select(k) { const i = tabs.findIndex(t => t.k === k); if (i >= 0) { if (mq.matches) { if (k !== 'scene') wideSel = k; } else narrowSel = k; apply(); } }, get current() { return curKind(); } };
   };
 
+  /* ---------------- First-visit tour ----------------
+     A short dismissible walkthrough shown once per browser (localStorage 'aplab:tour') after the student has signed in.
+     Lab.tour.start({force:true}) / .reset(); the "Help" link in the sign-in line shows it again. Steps anchor to elements
+     that exist on every lab; a step whose element is missing or hidden (paged mode shows one part at a time) is
+     explained without a highlight. */
+  const isBusyMode = () => document.body.classList.contains('report-mode') || document.body.classList.contains('worksheet-mode');
+  let memTourSeen = false;
+  /* ---- first-visit tour ---- */
+  const TOUR_KEY = 'tour';
+  let tourEl = null, tourOpener = null, tourIdx = 0, tourList = [], tourRaf = 0;
+  const shown = el => { if (!el || !el.isConnected) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  const firstShown = sel => $$(sel).find(shown) || null;
+  const tourDefs = () => [
+    { id: 'nav', find: () => firstShown('.step-nav'), title: 'Move through the lab one part at a time',
+      body: 'Use the part tabs up here, or the Back and Next buttons at the bottom of each part. A check mark means the part is done. “All parts” shows the whole lab on one page.' },
+    { id: 'steps', find: () => firstShown('.steps-box'), title: 'Follow the Steps checklist',
+      body: 'Each simulation part starts with a Steps list. A step ticks itself off when you finish it, and the “Next:” line under it tells you what to do now.',
+      plain: 'Each simulation part starts with a Steps list. A step ticks itself off when you finish it, and a “Next:” line tells you what to do now. You will see it as soon as you open a simulation part.' },
+    { id: 'results', find: () => firstShown('.sim-tabs'), title: 'Your results build next to the simulation',
+      body: 'Switch between Data and Graph to watch your table fill and your graph grow as you run trials.',
+      plain: 'Next to each simulation, a Data / Graph switch shows your table filling and your graph growing as you run trials. A small “new” badge marks a tab that changed.' },
+    { id: 'who', find: () => firstShown('.id-box'), title: 'Your name and Dataset ID',
+      body: 'Your name and class period go on your report. The Dataset ID tells your teacher which set of simulated numbers is yours. “New dataset” starts fresh numbers, and “Help” shows this tour again.',
+      plain: 'Your name and class period go on your report, and your Dataset ID identifies your own simulated numbers.' },
+    { id: 'submit', find: () => firstShown('.report-bar'), title: 'Hand in your work and back it up',
+      body: 'Download a .docx or save a PDF, then hand it in the way your teacher asks. Your work is saved only in this browser, so also save a progress file below.',
+      plain: 'The last part, Submit, has the report buttons (Download .docx, Save as PDF) and “Move your work to another computer”. Your work is saved only in this browser, so save a progress file there before you leave.' },
+  ];
+  const markTourSeen = () => { memTourSeen = true; gstore.set(TOUR_KEY, { seen: true, v: 1, t: Date.now() }); };
+  const tourSeen = () => memTourSeen || !!gstore.get(TOUR_KEY);
+  function tourFocusables() { return tourEl ? $$('button:not([disabled])', $('.tour-card', tourEl)) : []; }
+  function closeTour() {
+    if (!tourEl) return;
+    document.removeEventListener('keydown', tourKey, true);
+    window.removeEventListener('resize', tourLayoutSoon); window.removeEventListener('scroll', tourLayoutSoon, true);
+    tourEl.remove(); tourEl = null; document.body.classList.remove('tour-open');
+    const o = tourOpener; tourOpener = null;
+    if (o && o !== document.body && o.isConnected && typeof o.focus === 'function') { try { o.focus(); } catch (e) { /* gone */ } }
+  }
+  function tourKey(e) {
+    if (!tourEl) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeTour(); return; }
+    if (e.key === 'Tab') {
+      const f = tourFocusables(), card = $('.tour-card', tourEl);
+      if (!f.length) { e.preventDefault(); card.focus(); return; }
+      const first = f[0], last = f[f.length - 1], a = document.activeElement;
+      if (!card.contains(a)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+      else if (e.shiftKey && (a === first || a === card)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+    }
+  }
+  function tourLayoutSoon() { if (!tourRaf) tourRaf = requestAnimationFrame(() => { tourRaf = 0; tourLayout(); }); }
+  function tourLayout() {
+    if (!tourEl) return;
+    const d = tourList[tourIdx], card = $('.tour-card', tourEl), spot = $('.tour-spot', tourEl);
+    const t = d.find && d.find();
+    const vw = window.innerWidth, vh = window.innerHeight, pad = 6, m = 12;
+    const small = vw < 640;
+    tourEl.classList.toggle('is-nospot', !t);
+    card.classList.toggle('is-sheet', small);
+    card.style.top = card.style.left = '';
+    if (!t) {
+      spot.style.width = spot.style.height = '0px';
+      if (!small) { card.style.left = Math.max(m, (vw - card.offsetWidth) / 2) + 'px'; card.style.top = Math.max(m, (vh - card.offsetHeight) / 2) + 'px'; }
+      return;
+    }
+    const r = t.getBoundingClientRect();
+    spot.style.left = (r.left - pad) + 'px'; spot.style.top = (r.top - pad) + 'px';
+    spot.style.width = (r.width + 2 * pad) + 'px'; spot.style.height = (r.height + 2 * pad) + 'px';
+    if (small) return; // the card is a bottom sheet
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    const clampX = x => Math.min(Math.max(m, x), vw - cw - m), clampY = y => Math.min(Math.max(m, y), vh - ch - m);
+    let top, left;
+    if (r.bottom + pad + m + ch <= vh - m) { top = r.bottom + pad + m; left = clampX(r.left); }
+    else if (r.top - pad - m - ch >= m) { top = r.top - pad - m - ch; left = clampX(r.left); }
+    else if (r.right + pad + m + cw <= vw - m) { left = r.right + pad + m; top = clampY(r.top); }
+    else if (r.left - pad - m - cw >= m) { left = r.left - pad - m - cw; top = clampY(r.top); }
+    else { left = vw - cw - m; top = vh - ch - m; }
+    card.style.left = left + 'px'; card.style.top = top + 'px';
+  }
+  /* Bring the highlighted element into view (below the sticky nav, above the bottom sheet on phones). */
+  function tourReveal(t) {
+    if (!t || t.closest('.step-nav')) return;
+    const r = t.getBoundingClientRect(), nav = navHeight(), vh = window.innerHeight, bottomGap = window.innerWidth < 640 ? 260 : 40;
+    if (r.top >= nav + 8 && r.bottom <= vh - bottomGap) return;
+    const y = window.scrollY + r.top - nav - 24;
+    window.scrollTo({ top: Math.max(0, y), behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
+  }
+  function renderTourStep(prevFocus) {
+    const d = tourList[tourIdx], n = tourList.length, t = d.find && d.find();
+    $('.tour-count', tourEl).textContent = `Step ${tourIdx + 1} of ${n}`;
+    $('.tour-title', tourEl).textContent = d.title;
+    $('.tour-text', tourEl).textContent = t || !d.plain ? d.body : d.plain;
+    const dots = $('.tour-dots', tourEl); dots.innerHTML = '';
+    tourList.forEach((_, i) => dots.append(h('span', { class: 'tour-dot' + (i === tourIdx ? ' is-on' : '') })));
+    const back = $('.tour-back', tourEl), next = $('.tour-next', tourEl);
+    back.disabled = tourIdx === 0;
+    next.textContent = tourIdx === n - 1 ? 'Done' : 'Next';
+    if (prevFocus && prevFocus.disabled) next.focus();
+    tourReveal(t);
+    tourLayout();
+    setTimeout(tourLayout, 60);
+  }
+  function startTour(o = {}) {
+    if (!IS_LAB || tourEl || !document.body) return false;
+    // Keep a step if its element is on screen or if it can be explained without one.
+    tourList = tourDefs().filter(d => (d.find && d.find()) || d.plain || d.id === 'nav');
+    if (!tourList.length) return false;
+    tourOpener = o.opener || document.activeElement; tourIdx = 0;
+    markTourSeen();
+    tourEl = h('div', { class: 'tour', id: 'lab-tour' },
+      h('div', { class: 'tour-scrim', 'aria-hidden': 'true' }),
+      h('div', { class: 'tour-spot', 'aria-hidden': 'true' }),
+      h('div', { class: 'tour-card', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'tour-title', 'aria-describedby': 'tour-text', tabindex: '-1' },
+        h('div', { class: 'tour-top' }, h('span', { class: 'tour-count' }),
+          h('button', { class: 'linkbtn tour-skip', type: 'button', onclick: closeTour }, 'Skip tour')),
+        h('h2', { class: 'tour-title', id: 'tour-title' }),
+        h('p', { class: 'tour-text', id: 'tour-text', 'aria-live': 'polite' }),
+        h('div', { class: 'tour-foot' }, h('span', { class: 'tour-dots', 'aria-hidden': 'true' }),
+          h('div', { class: 'tour-actions' },
+            h('button', { class: 'btn btn--sm tour-back', type: 'button', onclick: e => { if (tourIdx > 0) { tourIdx--; renderTourStep(e.currentTarget); } } }, 'Back'),
+            h('button', { class: 'btn btn--sm btn--primary tour-next', type: 'button', onclick: () => { if (tourIdx < tourList.length - 1) { tourIdx++; renderTourStep(); } else closeTour(); } }, 'Next')))));
+    document.body.append(tourEl); document.body.classList.add('tour-open');
+    document.addEventListener('keydown', tourKey, true);
+    window.addEventListener('resize', tourLayoutSoon); window.addEventListener('scroll', tourLayoutSoon, true);
+    renderTourStep();
+    $('.tour-card', tourEl).focus({ preventScroll: true });
+    return true;
+  }
+  function maybeAutoTour() {
+    if (!IS_LAB || tourEl || tourSeen() || !storedIdentity() || isBusyMode() || !document.body) return;
+    startTour({ auto: true });
+  }
+  Lab._tourSoon = function () { setTimeout(maybeAutoTour, 700); };
+  Lab.tour = {
+    start: o => startTour(o || {}),
+    close: closeTour,
+    seen: tourSeen,
+    reset() { memTourSeen = false; try { localStorage.removeItem('aplab:' + TOUR_KEY); } catch (e) { /* ignore */ } },
+    get open() { return !!tourEl; },
+  };
+
+  /* Called from Lab.init (lab pages). */
+  function startOnboarding() {
+    if (!IS_LAB) return;
+    const go = () => setTimeout(maybeAutoTour, 900);
+    if (document.readyState === 'complete') go(); else window.addEventListener('load', go, { once: true });
+  }
+
   /* ---------------- Init ---------------- */
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
@@ -1706,6 +1857,7 @@
     buildNav();
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
+    startOnboarding();
   };
 
   /* Animation loop helper that respects reduced motion & visibility.

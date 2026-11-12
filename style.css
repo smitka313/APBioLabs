@@ -595,3 +595,26 @@ details.disclose > .inner > p { max-width: 68ch; }
   .sim-main.shows-result > .stage { visibility: visible; }
   .lab-pulse { outline: 0; animation: none; }
 }
+
+/* ---------- First-visit tour ---------- */
+.id-line .id-help { font-weight: 600; }
+.tour { position: fixed; inset: 0; z-index: 80; }
+.tour-scrim { position: absolute; inset: 0; }
+.tour.is-nospot .tour-scrim { background: color-mix(in srgb, var(--bg) 78%, transparent); }
+.tour-spot { position: fixed; border-radius: 10px; outline: 3px solid var(--accent); outline-offset: 0; pointer-events: none; box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg) 78%, transparent); transition: left .2s, top .2s, width .2s, height .2s; }
+.tour.is-nospot .tour-spot { outline: 0; box-shadow: none; }
+.tour-card { position: fixed; width: min(380px, calc(100vw - 24px)); display: grid; gap: 8px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-top: 4px solid var(--accent); border-radius: var(--r); padding: 12px 16px 14px; box-shadow: 0 12px 40px color-mix(in srgb, var(--ink) 24%, transparent); }
+.tour-card:focus { outline: none; }
+.tour-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tour-card.is-sheet { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px)); top: auto; width: auto; }
+.tour-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.tour-count { font-family: var(--f-mono); font-size: .76rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; }
+.tour-title { font-size: 1.15rem; }
+.tour-text { font-size: .95rem; color: var(--ink); }
+.tour-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.tour-dots { display: flex; gap: 6px; }
+.tour-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.tour-dot.is-on { background: var(--accent); }
+.tour-actions { display: flex; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .tour-spot, .backup-bar { transition: none !important; animation: none !important; } }
+@media print { .tour, .backup-bar, .storage-warn { display: none !important; } }
