@@ -484,7 +484,7 @@
   <!-- ============ 10. EVALUATE ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
-    <div class="step-body prompts-2" id="evaluate"></div>
+    <div class="step-body prompts-2" id="evaluate-prompts"></div>
   </section>
 
   <!-- ============ 11. SUBMIT ============ -->
@@ -1675,7 +1675,7 @@ Lab.init({ id: 'lab04' });
   letter(Lab.prompt(cer, { key: 'cer-e', label: 'Evidence (cite numbers from Procedures 2 and 3)', rows: 4 }), 'E');
   letter(Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning (use water potential, turgor, and plasmolysis)', rows: 4 }), 'R');
 
-  const ev = $('#evaluate');
+  const ev = $('#evaluate-prompts');
   Lab.prompt(ev, { key: 'e1', label: 'Why is it important for an IV solution to contain salts? What would happen to red blood cells if a patient were given pure water by IV? How would you choose the best solute concentration before giving the fluid?', rows: 4 });
   Lab.prompt(ev, { key: 'e2', label: 'How is dialysis tubing functionally different from a living cell membrane? Give at least two differences and how each affected your results.', rows: 4 });
   Lab.prompt(ev, { key: 'e3', label: 'Identify two sources of error in the real bench version of these procedures (for example blotting, cutting, or timing) and how you would reduce them.', rows: 3 });

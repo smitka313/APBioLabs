@@ -366,7 +366,7 @@
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
     <div class="step-body">
       <div class="prose"><p>A common question is why these plants make hairs at all, when building them costs energy. Is there an environment where hairy plants do better? That is the start of a testable hypothesis.</p></div>
-      <div id="reflect" class="prompts-2"></div>
+      <div id="reflect-prompts" class="prompts-2"></div>
     </div>
   </section>
 
@@ -1412,7 +1412,7 @@
     ['r-herbivore', 'In a related plant, early herbivore damage led to more trichomes on later leaves. Design a wet-lab investigation (for example with cabbage white butterfly larvae) to test whether trichomes protect Fast Plants or whether damage induces them. Name your variables, controls and sample size.'],
     ['r-natural', 'How is this artificial selection experiment similar to natural selection that causes antibiotic or pesticide resistance? How is it different?'],
     ['r-model', 'The simulation treats trichome number as the sum of many genes plus random environmental noise. Name one way real Fast Plants could behave differently from the model.']
-  ].forEach(([key, label]) => Lab.prompt('#reflect', { key, label, rows: 4 }));
+  ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 4 }));
 
   /* ---------------- start ---------------- */
   reset(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();

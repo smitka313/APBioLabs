@@ -544,7 +544,7 @@
   <!-- ============ 11. REFLECT ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
-    <div class="step-body prompts-2" id="reflect"></div>
+    <div class="step-body prompts-2" id="reflect-prompts"></div>
   </section>
 
   <!-- ============ 12. SUBMIT ============ -->
@@ -1926,7 +1926,7 @@ const cer = $('#an-cer');
     $('#cs-out').innerHTML = `<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Category</th><th class="num">o</th><th class="num">e</th><th class="num">(o − e)²/e</th></tr></thead><tbody>${O.map((o, i) => `<tr><td>${Lab.esc(L[i])}</td><td class="num">${fmt(o, 1)}</td><td class="num">${fmt(E[i], 1)}</td><td class="num">${fmt(r.terms[i], 3)}</td></tr>`).join('')}</tbody></table></div><div class="decision ${r.reject ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${r.df}, critical value (p = 0.05) = ${r.crit}. ${r.reject ? 'Reject the null hypothesis.' : 'Fail to reject the null hypothesis.'}</div>`;
   });
 })();
-const rf = $('#reflect');
+const rf = $('#reflect-prompts');
 [['wh-1', 'Could the same environmental factors you tested affect how much crossing over occurs in Sordaria (for example humidity or pH)? How would you set up that experiment?'], ['wh-2', 'How do crossing over, independent assortment, segregation, nondisjunction, and random fertilization each affect genetic diversity and evolution?'], ['wh-3', 'Research how a growth factor such as PDGF moves a cell past the G₁ checkpoint. How does this connect to cell communication?'], ['wh-4', 'Choose one tumor suppressor (p53, Rb, BRCA1, or BRCA2) or one virus (HPV). What does it normally do in the cell cycle, and what cancers are linked to its loss?'], ['wh-5', 'Revisit the learning objectives. Which part of mitosis or meiosis could you now teach to another class, and which still confuses you?']].forEach(([k, l]) => Lab.prompt(rf, { key: k, label: l, rows: 3 }));
 })();
 </script>

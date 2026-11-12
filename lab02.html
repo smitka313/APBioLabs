@@ -422,7 +422,7 @@
         <p>The best test of a model is the real world. Few human traits show a clear intermediate phenotype, but the ability to taste bitter compounds such as PTC (the "supertaster" trait) comes close: heterozygotes often taste moderately, so you can count all three genotypes in a class and test Hardy-Weinberg with chi-square.</p>
         <p>Optional: build the same model yourself in a real spreadsheet such as <a href="https://sheets.google.com" target="_blank" rel="noopener">Google Sheets</a>, using the formulas in the Build step. The manual also suggests more powerful free models, such as Jon Herron's <a href="http://faculty.washington.edu/herronjc/SoftwareFolder/AlleleA1.html" target="_blank" rel="noopener">AlleleA1</a>.</p>
       </div>
-      <div id="reflect" class="prompts-2"></div>
+      <div id="reflect-prompts" class="prompts-2"></div>
     </div>
   </section>
 
@@ -1000,7 +1000,7 @@
     ['r-class', 'The manual says classroom simulations with candies, beans or cards often mislead students about Hardy-Weinberg. Using your card and spreadsheet results, explain why.'],
     ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
-  ].forEach(([key, label]) => Lab.prompt('#reflect', { key, label, rows: 3 }));
+  ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 3 }));
 
   /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };

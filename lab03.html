@@ -337,7 +337,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
     <div class="step-body">
-      <div id="evaluate" class="prompts-2"></div>
+      <div id="evaluate-prompts" class="prompts-2"></div>
       <div class="callout callout--tip"><div class="callout-title">Extension: use the real tools</div>
         <p>Search NCBI's <a href="https://www.ncbi.nlm.nih.gov/gene" target="_blank" rel="noopener">Gene database</a> for a gene such as "human actin." Open its FASTA sequence and paste it into <a href="https://blast.ncbi.nlm.nih.gov/Blast.cgi" target="_blank" rel="noopener">NCBI BLAST</a> (nucleotide blast). Other genes the manual suggests: ATP synthase, catalase, GAPDH, keratin, myosin, Pax1, ubiquitin and zinc finger proteins. Compare the hit list and "Distance tree of results" with what you saw here.</p></div>
     </div>
@@ -1205,7 +1205,7 @@ Lab.prompt(an, { key: 'a5', label: '5. The three genes gave different percent id
 const cer = Lab.h('div', { class: 'cer' }); anTop.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: where does the fossil belong?'), cer);
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
-const ev = Lab.$('#evaluate');
+const ev = Lab.$('#evaluate-prompts');
 Lab.prompt(ev, { key: 'e1', label: 'Compare your cladogram with your classmates\'. Does everyone agree on where the fossil goes? If not, what is the basis of the disagreement?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: 'This page\'s database holds only 18 organisms. Real BLAST searches hundreds of thousands of organisms. How does a small database limit your conclusions? (Hint: what if the fossil\'s closest living relatives were not in the database?)', rows: 3 });
 Lab.prompt(ev, { key: 'e3', label: 'What other data could be collected from the fossil specimen to better work out its evolutionary history?', rows: 3 });

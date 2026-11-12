@@ -1158,10 +1158,14 @@
       used.add(id); s.id = id;
     });
   }
+  /* Older links used #evaluate-2 / #reflect-2 (an inner prompt container once held the plain id). */
+  const LEGACY_SLUGS = { 'evaluate-2': 'evaluate', 'reflect-2': 'reflect' };
+  const byIdOrAlias = id => document.getElementById(id) || (LEGACY_SLUGS[id] ? document.getElementById(LEGACY_SLUGS[id]) : null);
+  const isLegacyHash = h => /^#step-\d+$/.test(h) || Object.prototype.hasOwnProperty.call(LEGACY_SLUGS, h.slice(1));
   function hashTarget() {
     let raw = ''; try { raw = decodeURIComponent(location.hash.slice(1)); } catch (e) { raw = location.hash.slice(1); }
     if (!raw) return null;
-    let el = document.getElementById(raw);
+    let el = byIdOrAlias(raw);
     const m = /^step-(\d+)$/.exec(raw);
     if (!el && m) el = $$('section.step')[+m[1] - 1] || null;
     return el;
@@ -1169,7 +1173,7 @@
   let userScrolled = false;
   /* Legacy #step-N links: show the slug in the address bar instead. */
   function tidyLegacyHash(el) {
-    if (el && el.matches('section.step') && /^#step-\d+$/.test(location.hash) && history.replaceState) { try { history.replaceState(history.state, '', '#' + el.id); } catch (e) { /* file:// in some browsers */ } }
+    if (el && el.matches('section.step') && isLegacyHash(location.hash) && history.replaceState) { try { history.replaceState(history.state, '', '#' + el.id); } catch (e) { /* file:// in some browsers */ } }
   }
   function scrollToHash() {
     const el = hashTarget(); if (!el) return;
@@ -1290,7 +1294,7 @@
     setActive(sec.id);
   }
   function goPart(sec, o = {}) {
-    if (typeof sec === 'string') sec = document.getElementById(sec.replace(/^#/, ''));
+    if (typeof sec === 'string') sec = byIdOrAlias(sec.replace(/^#/, ''));
     sec = partOf(sec); if (!sec) return;
     showPart(sec);
     if (o.hash && location.hash.slice(1) !== sec.id) { try { history.pushState(null, '', '#' + sec.id); } catch (e) { location.hash = sec.id; return; } }
@@ -1387,7 +1391,7 @@
       if (!a || !pages.on || pages.suspended || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
       const href = a.getAttribute('href');
       if (href.length > 1 && href === location.hash) {
-        const el = document.getElementById(decodeURIComponent(href.slice(1)));
+        const el = byIdOrAlias(decodeURIComponent(href.slice(1)));
         if (el && el.matches('section.step')) { e.preventDefault(); goPart(el, { focus: true }); }
       }
     });

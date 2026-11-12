@@ -37,7 +37,7 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
   differ per student. `Lab.identity.get()/set()/newDataset()`, `Lab.identity.seed` → `{seed, datasetId, datasetNumber}`.
 - **Report + save/resume** in the `[data-responses]` toolbar: `Lab.report.docx()` (docx@9.0.2 loaded lazily from
   jsDelivr), `Lab.report.open({print})` (print view for Save as PDF), `Lab.progressFile.payload/parse/apply/makeCode/readCode`.
-- **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N` still works) and a
+- **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
   "Copy link" button. A section is done when its prompt textareas are filled, quiz questions checked and saved
   tables have a row. `Lab.progress.update()`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
 - **First-visit tour.** After sign-in, the first lab page a browser opens shows a 5-step dismissible tour

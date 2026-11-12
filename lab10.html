@@ -365,7 +365,7 @@
   <!-- ============ 8. EVALUATE ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and reflect</div><h2>How good is your accounting?</h2></header>
-    <div class="step-body" id="reflect"></div>
+    <div class="step-body" id="reflect-prompts"></div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit">
@@ -1504,7 +1504,7 @@
   const pe = Lab.prompt(cer, { key: 'cer-e', label: 'Evidence: Cite specific numbers (with SE or CI) from Parts 1–3.', rows: 4 }); pe.querySelector('label').dataset.letter = 'E';
   const pr = Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning: Connect the evidence to the laws of thermodynamics and to how organisms acquire and use energy.', rows: 4 }); pr.querySelector('label').dataset.letter = 'R';
 
-  const rf = h('div', { class: 'prompts-2' }); $('#reflect').append(rf);
+  const rf = h('div', { class: 'prompts-2' }); $('#reflect-prompts').append(rf);
   Lab.prompt(rf, { key: 'r-track', label: 'How do you keep track of energy as it moves through a biological system? Name two ways the techniques used here could be improved (for example, measuring larval dry fraction or the sprout’s own dry fraction instead of assuming them).', rows: 4 });
   Lab.prompt(rf, { key: 'r-factors', label: 'What kinds of things affect plant productivity, larval growth, or the interaction between them? Use your Part 3 results and one idea you did not test.', rows: 3 });
   Lab.prompt(rf, { key: 'r-role', label: 'What is the role of energy in ecosystems? Explain why food chains rarely have more than four or five links.', rows: 3 });

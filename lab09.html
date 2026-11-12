@@ -236,7 +236,7 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results · Thinking about your results</div><h2>Errors, ethics, and the bigger picture</h2></header>
-    <div class="step-body"><div id="evaluate" class="prompts-2"></div>
+    <div class="step-body"><div id="evaluate-prompts" class="prompts-2"></div>
       <div class="callout callout--tip"><div class="callout-title">Go further</div><p>Learn how DNA evidence has been used to free wrongly convicted people at <a href="https://innocenceproject.org" target="_blank" rel="noopener">innocenceproject.org</a>. Explore interactive DNA-fingerprinting animations from the <a href="https://dnalc.org" target="_blank" rel="noopener">Dolan DNA Learning Center</a>.</p></div>
     </div>
   </section>
@@ -1086,7 +1086,7 @@ const cer = Lab.h('div', { class: 'cer' }); an.append(Lab.h('h3', { style: 'marg
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
 Lab.prompt(an, { key: 'a3', label: 'Write the ending of the story: "whodunit," based on motive, means, opportunity, and DNA evidence. Remember that the blood only shows whose blood it is, not what happened.', rows: 5 });
-const ev = Lab.$('#evaluate');
+const ev = Lab.$('#evaluate-prompts');
 Lab.prompt(ev, { key: 'e1', label: '1. What challenges did you have in performing your investigation?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: '2. What are possible sources of error in electrophoresis (loading, voltage, run time, measuring, the doublet, faint bands)? How could you reduce each one?', rows: 4 });
 Lab.prompt(ev, { key: 'e3', label: '3. Who should have access to your genetic profile: health insurers, colleges, employers? Who owns your DNA and its information?', rows: 3 });

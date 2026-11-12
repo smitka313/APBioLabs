@@ -309,7 +309,7 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and reflect</div><h2>Going beyond the turnip</h2></header>
-    <div class="step-body" id="reflect"></div>
+    <div class="step-body" id="reflect-prompts"></div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit">
@@ -880,7 +880,7 @@
   const cer = h('div', { class: 'cer' }); an.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
   [['cer-c', 'C', 'Claim: Answer the driving question for one factor you tested.'], ['cer-e', 'E', 'Evidence: Cite initial rates with error bars (± 2 SE) from your data.'], ['cer-r', 'R', 'Reasoning: Connect the evidence to enzyme structure, the active site, and collision theory.']]
     .forEach(([k, L, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 4 }); p.querySelector('label').dataset.letter = L; });
-  const rf = $('#reflect');
+  const rf = $('#reflect-prompts');
   Lab.prompt(rf, { key: 'r-error', label: 'List the largest sources of error in this assay (timing, pipetting, mixing, judging color, temperature drift). For each, suggest how to reduce it.', rows: 3 });
   Lab.prompt(rf, { key: 'r-veg', label: 'Peroxidase from a turnip root growing in cool soil might differ from peroxidase in a leaf or a fruit. Predict how optimum temperature or pH might differ, and describe the observations you would make before extracting the enzyme.', rows: 3 });
   Lab.prompt(rf, { key: 'r-homeo', label: 'Make a strong argument for the role of enzymes in maintaining homeostasis at the cellular level. Why does a cell need peroxidase at all?', rows: 3 });

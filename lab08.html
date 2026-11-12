@@ -339,7 +339,7 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
-    <div class="step-body prompts-2" id="evaluate"></div>
+    <div class="step-body prompts-2" id="evaluate-prompts"></div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit">
@@ -1364,7 +1364,7 @@ const cer = $('#cer');
  ['ev5', 'Would a cell take in a plasmid carrying genes it already has? If so, would that affect your efficiency calculation?'],
  ['ev6', 'Satellites: what did your streak test show about whether satellite colonies carry pGLO? Explain the result using beta-lactamase.'],
  ['ev7', 'Where can you go from here? Respond to the idea "Just because science can do something doesn\'t mean that it should," using an example such as GM foods or engineered bacteria.']
-].forEach(([key, label]) => Lab.prompt('#evaluate', { key, label, rows: 3 }));
+].forEach(([key, label]) => Lab.prompt('#evaluate-prompts', { key, label, rows: 3 }));
 
 reset();
 drawSat();

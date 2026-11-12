@@ -284,7 +284,7 @@
   <!-- ============ EVALUATE ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
-    <div class="step-body prompts-2" id="evaluate"></div>
+    <div class="step-body prompts-2" id="evaluate-prompts"></div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit">
@@ -1048,7 +1048,7 @@ Lab.init({ id: 'lab05' });
   anCer.append(Lab.h('p', { class: 'small muted' }, 'Answer your own design question.'));
   const cer = Lab.h('div', { class: 'cer' }); anCer.append(cer);
   [['cer-c', 'Claim', 'C'], ['cer-e', 'Evidence (median ET50s, mean 1/ET50 ± 2 SE)', 'E'], ['cer-r', 'Reasoning (connect to light capture, CO₂ fixation, enzymes, or respiration)', 'R']].forEach(([k, l, L]) => { Lab.prompt(cer, { key: k, label: l, rows: 4 }).querySelector('label').dataset.letter = L; });
-  const ev = $('#evaluate');
+  const ev = $('#evaluate-prompts');
   Lab.prompt(ev, { key: 'e1', label: 'Could the way you perform the procedure (disk size, solution depth, soap amount, how you cut disks, swirling) change the outcome? If the outcome changes, does that mean the net rate of photosynthesis changed? Explain.', rows: 4 });
   Lab.prompt(ev, { key: 'e2', label: 'How would you expect the light response curve of a shade-grown leaf to compare with that of a sun-grown leaf? Design a two-variable experiment to test it.', rows: 4 });
   Lab.prompt(ev, { key: 'e3', label: 'A lamp very close to the cups can heat the water. How would that confound a light-intensity experiment, and how would you prevent it?', rows: 3 });

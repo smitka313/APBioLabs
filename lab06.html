@@ -370,7 +370,7 @@
   <!-- ============ 8. EVALUATE ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluate and reflect</div><h2>How good was your experiment?</h2></header>
-    <div class="step-body"><div id="evaluate" class="prompts-2"></div></div>
+    <div class="step-body"><div id="evaluate-prompts" class="prompts-2"></div></div>
   </section>
 
   <!-- ============ 9. SUBMIT ============ -->
@@ -1431,7 +1431,7 @@
   Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
   Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
-  const ev = $('#evaluate');
+  const ev = $('#evaluate-prompts');
   Lab.prompt(ev, { key: 'e1', label: 'Was your hypothesis supported? Use your means and error bars to justify your answer.', rows: 3 });
   Lab.prompt(ev, { key: 'e2', label: 'What were the main sources of error, in the simulation and in a real wet lab (air leaks, bumping the bath, too much KOH, marking error, the plug reaching the barrel)? How would each change your rate?', rows: 4 });
   Lab.prompt(ev, { key: 'e3', label: 'Suggest one improvement to the microrespirometer design or to the procedure for measuring O<sub>2</sub> consumption, and one for the gas-sensor method.', rows: 3 });

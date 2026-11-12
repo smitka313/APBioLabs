@@ -396,7 +396,7 @@
   <!-- ============ EVALUATE ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and look ahead</h2></header>
-    <div class="step-body"><div id="evaluate" class="stack prompts-2"></div></div>
+    <div class="step-body"><div id="evaluate-prompts" class="stack prompts-2"></div></div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit">
@@ -1463,7 +1463,7 @@
   Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
   Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
-  const ev = $('#evaluate');
+  const ev = $('#evaluate-prompts');
   [
     ['e1', '1. Was your hypothesis about the environmental variable supported by your data? Why or why not?'],
     ['e2', '2. What challenges did you have? Did you make any incorrect assumptions about how environmental variables affect transpiration?'],

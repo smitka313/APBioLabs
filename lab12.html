@@ -348,7 +348,7 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
-    <div class="step-body"><div id="evaluate" class="prompts-2"></div></div>
+    <div class="step-body"><div id="evaluate-prompts" class="prompts-2"></div></div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit">
@@ -1292,7 +1292,7 @@ runChi();
  ['ev3', 'How do you explain the behavior of fruit flies in someone\'s kitchen or in nature based on your data? Do your data explain all fruit fly movements? Should they really be called "fruit" flies?'],
  ['ev4', 'What factors had to be controlled in your experiment, and which ones were hardest to control in a real choice chamber?'],
  ['ev5', 'Where can you go from here? Name an organism you expect to behave like fruit flies and one you expect to behave differently (for example ladybugs, houseflies, or mealworms), and describe a choice-chamber test for it.']
-].forEach(([key, label]) => Lab.prompt('#evaluate', { key, label, rows: 3 }));
+].forEach(([key, label]) => Lab.prompt('#evaluate-prompts', { key, label, rows: 3 }));
 
 /* ---------- Laptop layout: results, steps, gates, toasts ---------- */
 const filledP = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
