@@ -467,6 +467,64 @@ function readOpts() {
   if (g('o-incub')) choices.incub = +g('o-incub').value;
 }
 
+/* =====================================================================
+   PHYSICAL SCENE RENDERING
+   The bench, tubes, reagents, agar plates and UV lamp are real objects, so they use fixed physical
+   colours and look identical in light and dark themes. Light comes from the upper left.
+   Expensive static layers (wall, epoxy bench, foam rack, ice cup, water bath, reagents) are rendered
+   once per canvas size into offscreen canvases; animation frames only composite them and redraw the
+   moving tubes, pipette and instrument readouts.
+   ===================================================================== */
+const TAU = Math.PI * 2;
+const HAND = '"Segoe Print", "Bradley Hand", "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive';
+const SANS = '"Source Sans 3", system-ui, sans-serif';
+const MONO = '"JetBrains Mono", ui-monospace, monospace';
+function offscreen(w, h) {
+  const d = window.devicePixelRatio || 1, c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d));
+  const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); return [c, x];
+}
+function hashStr(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+let epoxyT = null, grainT = null;
+function epoxyTile() {   // black epoxy-resin bench top: fine grey and black speckle
+  if (epoxyT) return epoxyT;
+  const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d'), R = Lab.rng(808);
+  for (let i = 0; i < 300; i++) { x.fillStyle = R.chance(0.62) ? `rgba(128,132,140,${(0.18 + R.uniform() * 0.32).toFixed(2)})` : `rgba(0,0,0,${(0.3 + R.uniform() * 0.4).toFixed(2)})`; x.beginPath(); x.arc(R.uniform() * 96, R.uniform() * 96, 0.3 + R.uniform() * 0.7, 0, TAU); x.fill(); }
+  return (epoxyT = c);
+}
+function grainTile() {   // neutral noise for agar, foam and paper texture
+  if (grainT) return grainT;
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), im = x.createImageData(128, 128), R = Lab.rng(4242);
+  for (let i = 0; i < im.data.length; i += 4) { const v = R.uniform(); const k = v > 0.5 ? 255 : 0; im.data[i] = im.data[i + 1] = im.data[i + 2] = k; im.data[i + 3] = Math.abs(v - 0.5) * 70; }
+  x.putImageData(im, 0, 0); return (grainT = c);
+}
+function texture(ctx, tile, alphaV, fillFn) { ctx.save(); ctx.globalAlpha = alphaV; ctx.fillStyle = ctx.createPattern(tile, 'repeat'); fillFn(); ctx.restore(); }
+function softShadow(ctx, x, y, rx, ry, a = 0.5) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(1, ry / rx);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(0.55, `rgba(0,0,0,${a * 0.45})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill(); ctx.restore();
+}
+function roundRect(ctx, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function hGrad(ctx, x0, x1, stops) { const g = ctx.createLinearGradient(x0, 0, x1, 0); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function vGrad(ctx, y0, y1, stops) { const g = ctx.createLinearGradient(0, y0, 0, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+
+/* Seven-segment LED/LCD digits (instrument displays). */
+const SEG = { '0': 'abcdef', '1': 'bc', '2': 'abdeg', '3': 'abcdg', '4': 'bcfg', '5': 'acdfg', '6': 'acdefg', '7': 'abc', '8': 'abcdefg', '9': 'abcdfg', '-': 'g', ' ': '' };
+function segDigit(ctx, x, y, dw, dh, ch, on, off) {
+  const t = Math.max(1.2, dw * 0.2), sk = dw * 0.12, P = (x0, y0) => [x + x0 + sk * (1 - y0 / dh), y + y0];
+  const S = { a: [[t * 0.6, 0], [dw - t * 0.6, 0], [dw - t * 1.1, t], [t * 1.1, t]], d: [[t * 1.1, dh - t], [dw - t * 1.1, dh - t], [dw - t * 0.6, dh], [t * 0.6, dh]],
+    g: [[t * 0.8, dh / 2], [t * 1.3, dh / 2 - t / 2], [dw - t * 1.3, dh / 2 - t / 2], [dw - t * 0.8, dh / 2], [dw - t * 1.3, dh / 2 + t / 2], [t * 1.3, dh / 2 + t / 2]],
+    f: [[0, t * 0.6], [t, t * 1.1], [t, dh / 2 - t * 0.6], [0, dh / 2 - t * 0.2]], b: [[dw, t * 0.6], [dw, dh / 2 - t * 0.2], [dw - t, dh / 2 - t * 0.6], [dw - t, t * 1.1]],
+    e: [[0, dh / 2 + t * 0.2], [t, dh / 2 + t * 0.6], [t, dh - t * 1.1], [0, dh - t * 0.6]], c: [[dw, dh / 2 + t * 0.2], [dw, dh - t * 0.6], [dw - t, dh - t * 1.1], [dw - t, dh / 2 + t * 0.6]] };
+  const lit = SEG[ch] || '';
+  for (const k of 'abcdefg') { ctx.fillStyle = lit.includes(k) ? on : off; ctx.beginPath(); S[k].forEach(([a, b], i) => { const [px, py] = P(a, b); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); ctx.closePath(); ctx.fill(); }
+}
+function segText(ctx, x, y, dh, str, on, off) {   // str like "42.0"; returns width
+  const dw = dh * 0.52, gap = dh * 0.16; let cx = x;
+  for (const ch of str) { if (ch === '.') { ctx.fillStyle = on; ctx.beginPath(); ctx.arc(cx - gap * 0.4, y + dh - dh * 0.05, Math.max(1, dh * 0.07), 0, TAU); ctx.fill(); continue; } segDigit(ctx, cx, y, dw, dh, ch, on, off); cx += dw + gap; }
+  return cx - x;
+}
+
 /* ---------- Bench animation ---------- */
 const bench = Lab.canvas('#bench', window.innerWidth < 600 ? 0.66 : 0.5);
 const POS = { rack: [[0.10, 0.84], [0.17, 0.84]], ice: [[0.33, 0.78], [0.41, 0.78]], bath: [[0.59, 0.76], [0.67, 0.76]] };
@@ -501,76 +559,344 @@ function updateRO(status) {
   if (status) $('#ro-status').textContent = status;
 }
 
-function drawBench() {
-  const { ctx, w, h } = bench; ctx.clearRect(0, 0, w, h);
-  const ink = C('--ink'), muted = C('--muted'), line = C('--line');
-  ctx.fillStyle = C('--surface-2'); ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = mix('--line', darkTok(), 0.15); ctx.fillRect(0, h * 0.86, w, h * 0.14);
+/* Scene geometry, as fractions of canvas width (x) and height (y). */
+const BG = { horizon: 0.40, edge: 0.905,
+  rack: { x0: 0.045, x1: 0.225, top: 0.74, holeY: 0.768, front: 0.782, bot: 0.878 },
+  cup: { cx: 0.37, rimY: 0.605, rx: 0.106, ry: 0.03, botY: 0.888, brx: 0.082 },
+  bath: { x0: 0.515, x1: 0.757, back: 0.497, rim: 0.588, water: 0.548, bot: 0.888 },
+  thermo: { x: 0.737, top: 0.17, bulb: 0.565 } };
+let benchCache = null;
+function benchLayers() {
+  const { w, h } = bench, key = `${w}x${h}@${window.devicePixelRatio || 1}`;
+  if (benchCache && benchCache.key === key) return benchCache;
+  const [bg, b] = offscreen(w, h), [front, f] = offscreen(w, h);
+  paintRoom(b, w, h); paintLoops(b, w, h); paintStarterPlate(b, w, h);
+  paintRackBack(b, w, h); paintCupBack(b, w, h); paintBathBack(b, w, h); paintReagents(b, w, h);
+  paintRackFront(f, w, h); paintCupFront(f, w, h); paintBathFront(f, w, h); paintBenchLabels(f, w, h);
+  return (benchCache = { key, bg, front });
+}
+function paintRoom(ctx, w, h) {
+  const hz = BG.horizon * h, ey = BG.edge * h;
+  // painted cinder-block wall, lit from the upper left
+  ctx.fillStyle = vGrad(ctx, 0, hz, [[0, '#e4e1d8'], [1, '#cfcbc0']]); ctx.fillRect(0, 0, w, hz);
+  const bh = Math.max(16, h * 0.1), bw = bh * 2.05;
+  ctx.lineWidth = 1;
+  for (let r = 0, y = hz; y > -bh; r++, y -= bh) {
+    ctx.strokeStyle = 'rgba(110,102,90,0.2)'; ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.moveTo(0, y + 1.5); ctx.lineTo(w, y + 1.5); ctx.stroke();
+    for (let x = (r % 2) * bw / 2; x < w; x += bw) { ctx.strokeStyle = 'rgba(110,102,90,0.18)'; ctx.beginPath(); ctx.moveTo(x + 0.5, y); ctx.lineTo(x + 0.5, y - bh); ctx.stroke(); }
+  }
+  texture(ctx, grainTile(), 0.25, () => ctx.fillRect(0, 0, w, hz));
+  let g = ctx.createRadialGradient(w * 0.18, -h * 0.1, 0, w * 0.18, -h * 0.1, w * 0.85); g.addColorStop(0, 'rgba(255,253,244,0.45)'); g.addColorStop(1, 'rgba(255,253,244,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, hz);
+  ctx.fillStyle = hGrad(ctx, 0, w, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.12)']]); ctx.fillRect(0, 0, w, hz);
+  // backsplash shadow where wall meets bench
+  ctx.fillStyle = vGrad(ctx, hz - h * 0.06, hz, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.28)']]); ctx.fillRect(0, hz - h * 0.06, w, h * 0.06);
+  // black epoxy bench top
+  ctx.fillStyle = vGrad(ctx, hz, ey, [[0, '#17191c'], [0.5, '#222428'], [1, '#2a2d32']]); ctx.fillRect(0, hz, w, ey - hz);
+  texture(ctx, epoxyTile(), 1, () => ctx.fillRect(0, hz, w, ey - hz));
+  g = ctx.createRadialGradient(w * 0.32, hz + (ey - hz) * 0.45, 0, w * 0.32, hz + (ey - hz) * 0.45, w * 0.5); g.addColorStop(0, 'rgba(255,255,255,0.075)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, hz, w, ey - hz);
+  // rounded front edge of the bench
+  ctx.fillStyle = vGrad(ctx, ey, h, [[0, '#3a3d43'], [0.12, '#1a1b1e'], [1, '#0e0f11']]); ctx.fillRect(0, ey, w, h - ey);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(0, ey, w, 1);
+}
+function paintLoops(ctx, w, h) {   // sterile plastic inoculating loops on their opened paper/film pouch
+  const R = Lab.rng(31), s = Math.max(0.7, w / 900);
+  ctx.save(); ctx.translate(w * 0.135, h * 0.505); ctx.rotate(-0.08);
+  const pw = w * 0.19, ph = h * 0.075;
+  softShadow(ctx, 3, 4, pw * 0.55, ph * 0.9, 0.35);
+  ctx.fillStyle = '#ece8dc'; roundRect(ctx, -pw / 2, -ph / 2, pw, ph, 2); ctx.fill();          // paper backing
+  texture(ctx, grainTile(), 0.25, () => ctx.fillRect(-pw / 2, -ph / 2, pw, ph));
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(-pw / 2, -ph / 2, pw * 0.62, ph);       // peeled clear film
+  ctx.strokeStyle = 'rgba(160,150,130,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-pw / 2 + pw * 0.62, -ph / 2); ctx.lineTo(-pw / 2 + pw * 0.66, ph / 2); ctx.stroke();
+  ctx.fillStyle = '#2a6fc9'; ctx.font = `600 ${Math.max(6, ph * 0.22)}px ${SANS}`; ctx.textAlign = 'right'; ctx.fillText('STERILE', pw / 2 - 3, ph / 2 - 3);
+  const cols = [['#2c74d6', '#1a4f9c'], ['#2c74d6', '#1a4f9c'], ['#e9c43a', '#a7861a']];
+  cols.forEach(([c1, c2], i) => {
+    const y = -ph * 0.28 + i * ph * 0.27 + R.normal(0, 0.6), a = R.normal(0, 0.03), L = pw * (0.86 - i * 0.04), x0 = -pw * 0.46 + i * 3;
+    ctx.save(); ctx.translate(x0, y); ctx.rotate(a);
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2.6 * s; ctx.beginPath(); ctx.moveTo(1.5, 2); ctx.lineTo(L + 1.5, 2); ctx.stroke();
+    ctx.strokeStyle = vGrad(ctx, -1.5 * s, 1.5 * s, [[0, c1], [1, c2]]); ctx.lineWidth = 2.4 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L - 4.5 * s, 0); ctx.stroke();
+    ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(L, 0, 3.2 * s, 0, TAU); ctx.stroke();                 // the loop ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.7 * s; ctx.beginPath(); ctx.moveTo(L * 0.05, -0.7 * s); ctx.lineTo(L * 0.8, -0.7 * s); ctx.stroke();
+    ctx.restore();
+  });
+  ctx.restore();
+}
+function paintStarterPlate(ctx, w, h) {   // LB starter plate with white colonies at the back of the bench
+  const cx = w * 0.885, cy = h * 0.475, rx = w * 0.072, ry = Math.min(rx * 0.42, h * 0.04), wall = Math.max(3, h * 0.018);
+  softShadow(ctx, cx + rx * 0.08, cy + wall + ry * 0.3, rx * 1.15, ry * 1.25, 0.6);
+  ctx.fillStyle = vGrad(ctx, cy, cy + ry + wall, [[0, 'rgba(210,215,218,0.55)'], [1, 'rgba(120,128,132,0.45)']]);
+  ctx.beginPath(); ctx.ellipse(cx, cy + wall, rx, ry, 0, 0, Math.PI); ctx.lineTo(cx - rx, cy); ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, true); ctx.closePath(); ctx.fill();
+  const g = ctx.createRadialGradient(cx - rx * 0.3, cy - ry * 0.3, 0, cx, cy, rx); g.addColorStop(0, '#d9a24c'); g.addColorStop(0.7, '#b67c2c'); g.addColorStop(1, '#8a5a1c');
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx * 0.95, 0, TAU); ctx.fill(); ctx.clip();
+  const R = Lab.rng(77);
+  for (let i = 0; i < 46; i++) { const a = R.uniform() * TAU, r = rx * 0.82 * Math.sqrt(R.uniform()), cr = Math.max(0.8, rx * (0.012 + R.uniform() * 0.022)); const x = r * Math.cos(a), y = r * Math.sin(a);
+    const cg = ctx.createRadialGradient(x - cr * 0.3, y - cr * 0.4, 0, x, y, cr); cg.addColorStop(0, '#fffaf0'); cg.addColorStop(1, '#d8c79d'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(x, y, cr, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = 'rgba(245,236,214,0.55)'; ctx.lineWidth = rx * 0.05; ctx.strokeStyle = 'rgba(245,236,214,0.35)'; ctx.beginPath(); ctx.moveTo(-rx * 0.6, -rx * 0.2); ctx.quadraticCurveTo(-rx * 0.2, -rx * 0.6, rx * 0.4, -rx * 0.45); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(235,240,244,0.7)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(cx, cy, rx * 0.97, ry * 0.93, 0, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();
+  if (w >= 520) ctx.fillStyle = '#d6d0c2', ctx.font = `600 ${Math.max(9, Math.min(12, w / 62))}px ${SANS}`, ctx.textAlign = 'center', ctx.fillText('Starter plate', cx, cy - ry - Math.max(4, h * 0.012));
+}
+function rackGeom(w, h) { const r = BG.rack; return { x0: r.x0 * w, x1: r.x1 * w, top: r.top * h, holeY: r.holeY * h, front: r.front * h, bot: r.bot * h, holes: [0.065, 0.10, 0.135, 0.17, 0.205].map(v => v * w) }; }
+function paintRackBack(ctx, w, h) {   // yellow foam microtube float rack: top face with two rows of holes
+  const g = rackGeom(w, h), hr = Math.max(5, w * 0.0155);
+  softShadow(ctx, (g.x0 + g.x1) / 2 + w * 0.01, g.bot, (g.x1 - g.x0) * 0.62, h * 0.03, 0.65);
+  ctx.fillStyle = vGrad(ctx, g.top, g.front, [[0, '#e9cf55'], [1, '#f3dc6c']]);
+  roundRect(ctx, g.x0, g.top, g.x1 - g.x0, g.front - g.top + 4, 3); ctx.fill();
+  texture(ctx, grainTile(), 0.35, () => ctx.fillRect(g.x0, g.top, g.x1 - g.x0, g.front - g.top));
+  [g.top + (g.holeY - g.top) * 0.42, g.holeY].forEach((y, row) => g.holes.forEach(x => {
+    const xx = x + (row ? 0 : w * 0.006), rx = hr * (row ? 1 : 0.92), ry = Math.max(2, (g.front - g.top) * (row ? 0.26 : 0.2));
+    ctx.fillStyle = '#5a4810'; ctx.beginPath(); ctx.ellipse(xx, y, rx, ry, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(xx, y - ry * 0.25, rx * 0.9, ry * 0.7, 0, 0, TAU); ctx.fill();
+  }));
+}
+function paintRackFront(ctx, w, h) {
+  const g = rackGeom(w, h), hr = Math.max(5, w * 0.0155), ry = Math.max(2, (g.front - g.top) * 0.26);
+  // strip of the top face in front of the front-row holes (hides the tube where it enters the foam)
+  ctx.fillStyle = '#f2da69';
+  ctx.beginPath(); ctx.moveTo(g.x0, g.holeY); g.holes.forEach(x => { ctx.lineTo(x - hr, g.holeY); ctx.ellipse(x, g.holeY, hr, ry, 0, Math.PI, 0, true); }); ctx.lineTo(g.x1, g.holeY); ctx.lineTo(g.x1, g.front); ctx.lineTo(g.x0, g.front); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(110,80,10,0.45)'; ctx.lineWidth = 1; g.holes.forEach(x => { ctx.beginPath(); ctx.ellipse(x, g.holeY, hr, ry, 0, 0, Math.PI); ctx.stroke(); });
+  // front face of the foam block
+  ctx.fillStyle = hGrad(ctx, g.x0, g.x1, [[0, '#e3c440'], [0.6, '#d2b02c'], [1, '#b8961d']]);
+  roundRect(ctx, g.x0, g.front, g.x1 - g.x0, g.bot - g.front, 3); ctx.fill();
+  texture(ctx, grainTile(), 0.4, () => ctx.fillRect(g.x0, g.front, g.x1 - g.x0, g.bot - g.front));
+  ctx.fillStyle = 'rgba(255,250,210,0.55)'; ctx.fillRect(g.x0 + 2, g.front, g.x1 - g.x0 - 4, 1.2);
+  ctx.fillStyle = vGrad(ctx, g.bot - (g.bot - g.front) * 0.35, g.bot, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(60,40,0,0.3)']]); ctx.fillRect(g.x0, g.bot - (g.bot - g.front) * 0.35, g.x1 - g.x0, (g.bot - g.front) * 0.35);
+  // foam cells: tiny pits
+  const R = Lab.rng(5); ctx.fillStyle = 'rgba(120,90,10,0.25)';
+  for (let i = 0; i < 70; i++) { ctx.beginPath(); ctx.arc(g.x0 + R.uniform() * (g.x1 - g.x0), g.front + 2 + R.uniform() * (g.bot - g.front - 4), 0.4 + R.uniform() * 0.8, 0, TAU); ctx.fill(); }
+}
+function cupGeom(w, h) { const c = BG.cup; return { cx: c.cx * w, rimY: c.rimY * h, rx: c.rx * w, ry: c.ry * h, botY: c.botY * h, brx: c.brx * w }; }
+function iceChunk(ctx, R, x, y, s) {   // one translucent crushed-ice fragment
+  const n = 5 + R.int(0, 2), pts = []; const a0 = R.uniform() * TAU;
+  for (let i = 0; i < n; i++) { const a = a0 + i / n * TAU + R.normal(0, 0.25), r = s * (0.6 + R.uniform() * 0.5); pts.push([x + r * Math.cos(a), y + r * Math.sin(a) * 0.8]); }
+  ctx.beginPath(); pts.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath();
+  const g = ctx.createLinearGradient(x - s, y - s, x + s, y + s); g.addColorStop(0, 'rgba(252,254,255,0.95)'); g.addColorStop(0.5, 'rgba(214,230,240,0.85)'); g.addColorStop(1, 'rgba(160,185,200,0.85)');
+  ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(120,150,170,0.45)'; ctx.lineWidth = 0.6; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.ellipse(x - s * 0.25, y - s * 0.25, s * 0.22, s * 0.1, -0.6, 0, TAU); ctx.fill();
+}
+function paintCupBack(ctx, w, h) {   // white foam cup heaped with crushed ice
+  const c = cupGeom(w, h), R = Lab.rng(12), s = Math.max(3, w * 0.0085);
+  softShadow(ctx, c.cx + w * 0.012, c.botY, c.brx * 1.35, h * 0.03, 0.65);
+  ctx.fillStyle = '#c8ccd0'; ctx.beginPath(); ctx.ellipse(c.cx, c.rimY, c.rx, c.ry, 0, 0, TAU); ctx.fill();
+  // mound of ice above the rim
+  ctx.save(); ctx.beginPath(); ctx.ellipse(c.cx, c.rimY, c.rx * 0.97, c.ry * 0.95, 0, 0, TAU); ctx.rect(c.cx - c.rx, c.rimY - h * 0.08, c.rx * 2, h * 0.08); ctx.clip();
+  ctx.fillStyle = '#b9cad4'; ctx.beginPath(); ctx.ellipse(c.cx, c.rimY, c.rx * 0.97, c.ry * 0.95, 0, 0, TAU); ctx.fill();
+  for (let i = 0; i < 90; i++) { const u = R.uniform() * 2 - 1, x = c.cx + u * c.rx * 0.92, top = c.rimY - h * 0.045 * (1 - u * u) - c.ry * 0.5, y = top + R.uniform() * (c.rimY + c.ry * 0.4 - top); iceChunk(ctx, R, x, y, s * (0.7 + R.uniform() * 0.6)); }
+  ctx.restore();
+}
+function paintCupFront(ctx, w, h) {
+  const c = cupGeom(w, h), R = Lab.rng(99), s = Math.max(3, w * 0.0085);
+  // front ice fragments that sit in front of the tubes
+  for (let i = 0; i < 46; i++) { const u = R.uniform() * 2 - 1, x = c.cx + u * c.rx * 0.95, y = c.rimY + c.ry * (0.15 + R.uniform() * 0.7) - h * 0.012 * (1 - u * u); iceChunk(ctx, R, x, y, s * (0.7 + R.uniform() * 0.5)); }
+  // tapered foam cup wall
+  ctx.beginPath(); ctx.moveTo(c.cx - c.rx, c.rimY); ctx.lineTo(c.cx - c.brx, c.botY - c.ry * 0.6);
+  ctx.ellipse(c.cx, c.botY - c.ry * 0.6, c.brx, c.ry * 0.75, 0, Math.PI, 0, true); ctx.lineTo(c.cx + c.rx, c.rimY);
+  ctx.ellipse(c.cx, c.rimY, c.rx, c.ry, 0, 0, Math.PI, false); ctx.closePath();
+  ctx.fillStyle = hGrad(ctx, c.cx - c.rx, c.cx + c.rx, [[0, '#dcdfe0'], [0.18, '#fbfbf8'], [0.45, '#f1f0eb'], [0.85, '#c9cac6'], [1, '#aeb0ad']]); ctx.fill();
+  ctx.save(); ctx.clip(); texture(ctx, grainTile(), 0.3, () => ctx.fillRect(c.cx - c.rx, c.rimY, c.rx * 2, c.botY - c.rimY));
+  const RR = Lab.rng(3); ctx.strokeStyle = 'rgba(150,150,145,0.18)'; ctx.lineWidth = 0.6;
+  for (let i = 0; i < 80; i++) { ctx.beginPath(); ctx.arc(c.cx + (RR.uniform() * 2 - 1) * c.rx, c.rimY + RR.uniform() * (c.botY - c.rimY), 1 + RR.uniform() * 1.4, 0, TAU); ctx.stroke(); } // expanded-bead texture
+  ctx.restore();
+  // rolled lip
+  ctx.strokeStyle = '#f6f6f2'; ctx.lineWidth = Math.max(2.5, h * 0.012); ctx.beginPath(); ctx.ellipse(c.cx, c.rimY, c.rx, c.ry, 0, 0, Math.PI); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(c.cx, c.rimY + h * 0.007, c.rx * 0.995, c.ry, 0, 0.1, Math.PI - 0.1); ctx.stroke();
+  // condensation beads on the cold cup
+  const RD = Lab.rng(8); for (let i = 0; i < 26; i++) { const t = RD.uniform(), x = c.cx + (RD.uniform() * 1.6 - 0.8) * (c.rx - (c.rx - c.brx) * t), y = c.rimY + h * 0.03 + t * (c.botY - c.rimY - h * 0.06), r = 0.7 + RD.uniform() * 1.3; ctx.fillStyle = 'rgba(120,130,140,0.3)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.35, 0, TAU); ctx.fill(); }
+}
+function bathGeom(w, h) { const b = BG.bath; return { x0: b.x0 * w, x1: b.x1 * w, back: b.back * h, rim: b.rim * h, water: b.water * h, bot: b.bot * h }; }
+function paintBathBack(ctx, w, h) {   // stainless-steel digital water bath, open top
+  const b = bathGeom(w, h), lip = Math.max(3, w * 0.007);
+  softShadow(ctx, (b.x0 + b.x1) / 2 + w * 0.012, b.bot, (b.x1 - b.x0) * 0.62, h * 0.032, 0.7);
+  ctx.fillStyle = vGrad(ctx, b.back, b.rim, [[0, '#9aa0a5'], [1, '#c8cdd1']]); ctx.fillRect(b.x0, b.back, b.x1 - b.x0, b.rim - b.back);
+  ctx.fillStyle = vGrad(ctx, b.back + lip, b.water, [[0, '#5f666c'], [1, '#7b8389']]); ctx.fillRect(b.x0 + lip, b.back + lip, b.x1 - b.x0 - 2 * lip, b.water - b.back);
+  // water surface: blue-grey, darker with depth, with reflections of the room light
+  ctx.fillStyle = vGrad(ctx, b.back + lip * 1.6, b.rim, [[0, '#9fbcc4'], [0.5, '#7fa2ad'], [1, '#5e8592']]);
+  ctx.fillRect(b.x0 + lip, b.back + lip * 1.6 + 1, b.x1 - b.x0 - 2 * lip, b.rim - b.back - lip * 1.6);
+  const R = Lab.rng(21); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 9; i++) { const y = b.back + lip * 2 + R.uniform() * (b.rim - b.back - lip * 3), x = b.x0 + lip + R.uniform() * (b.x1 - b.x0) * 0.7; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 6, y - 1.5, x + 12 + R.uniform() * 14, y); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(b.x0 + lip, b.back + lip * 1.6 + 1, b.x1 - b.x0 - 2 * lip, 1.2);
+  // brushed-steel rim
+  ctx.strokeStyle = '#e1e5e8'; ctx.lineWidth = lip; ctx.strokeRect(b.x0 + lip / 2, b.back + lip / 2, b.x1 - b.x0 - lip, b.rim - b.back);
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(b.x0 + lip, b.back + lip, b.x1 - b.x0 - 2 * lip, b.rim - b.back - lip);
+  // thermometer: glass rod clipped to the back rim, bulb in the water
+  const T = BG.thermo, tx = T.x * w, tw = Math.max(4, w * 0.0085), ty = T.top * h, tb = T.bulb * h;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; roundRect(ctx, tx + 3, ty + 4, tw, tb - ty, tw / 2); ctx.fill();
+  ctx.fillStyle = hGrad(ctx, tx, tx + tw, [[0, 'rgba(200,214,220,0.7)'], [0.3, 'rgba(255,255,255,0.95)'], [0.6, 'rgba(232,240,243,0.75)'], [1, 'rgba(150,165,172,0.8)']]);
+  roundRect(ctx, tx, ty, tw, tb - ty, tw / 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,100,105,0.6)'; ctx.lineWidth = 0.8; ctx.stroke();
+  ctx.fillStyle = '#f6f3ea'; ctx.fillRect(tx + tw * 0.55, ty + tw, tw * 0.35, tb - ty - tw * 2.4);   // enamel scale backing
+  const sc = thermoScale(w, h); ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 0.6;
+  for (let d = 0; d <= 60; d += 2) { const y = sc.y(d), L = d % 10 === 0 ? tw * 0.55 : d % 5 === 0 ? tw * 0.4 : tw * 0.25; ctx.beginPath(); ctx.moveTo(tx + tw * 0.92, y); ctx.lineTo(tx + tw * 0.92 - L, y); ctx.stroke(); }
+  // steel spring clip
+  ctx.fillStyle = vGrad(ctx, b.back - h * 0.03, b.back + h * 0.01, [[0, '#d9dde0'], [1, '#80878c']]); ctx.fillRect(tx - tw * 0.4, b.back - h * 0.03, tw * 1.8, h * 0.04);
+}
+function thermoScale(w, h) { const T = BG.thermo, top = T.top * h + Math.max(4, w * 0.0085) * 1.6, bot = T.bulb * h - Math.max(4, w * 0.0085) * 2.2; return { top, bot, y: d => bot - (bot - top) * d / 60 }; }
+function paintBathFront(ctx, w, h) {
+  const b = bathGeom(w, h), lip = Math.max(3, w * 0.007);
+  // water in front of the submerged part of the tubes (tinted by depth)
+  ctx.fillStyle = vGrad(ctx, b.water, b.rim, [[0, 'rgba(110,150,162,0.55)'], [1, 'rgba(70,110,124,0.85)']]); ctx.fillRect(b.x0 + lip, b.water, b.x1 - b.x0 - 2 * lip, b.rim - b.water);
+  ctx.fillStyle = 'rgba(230,245,250,0.55)'; ctx.fillRect(b.x0 + lip, b.water, b.x1 - b.x0 - 2 * lip, 1);
+  // front rim and brushed stainless front panel
+  ctx.fillStyle = '#e4e8ea'; ctx.fillRect(b.x0, b.rim - lip / 2, b.x1 - b.x0, lip);
+  ctx.fillStyle = hGrad(ctx, b.x0, b.x1, [[0, '#d5d9dc'], [0.25, '#eef1f2'], [0.55, '#c3c8cc'], [1, '#9aa1a6']]); ctx.fillRect(b.x0, b.rim + lip / 2, b.x1 - b.x0, b.bot - b.rim - lip / 2);
+  const R = Lab.rng(44); ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.6;
+  for (let i = 0; i < 60; i++) { const y = b.rim + lip + R.uniform() * (b.bot - b.rim - lip); ctx.beginPath(); ctx.moveTo(b.x0, y); ctx.lineTo(b.x1, y); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fillRect(b.x0, b.bot - 2, b.x1 - b.x0, 2);
+  // control panel recess
+  const p = bathPanel(w, h);
+  ctx.fillStyle = '#2b2e31'; roundRect(ctx, p.x - 3, p.y - 3, p.w + 6, p.h + 6, 3); ctx.fill();
+  ctx.fillStyle = '#120806'; roundRect(ctx, p.x, p.y, p.w, p.h, 2); ctx.fill();
+  const bw = Math.max(5, w * 0.011);
+  ['#3a3f44', '#3a3f44'].forEach((c, i) => { const x = p.x + p.w + bw * (1.2 + i * 1.6), y = p.y + p.h / 2; ctx.fillStyle = '#1d2023'; ctx.beginPath(); ctx.arc(x, y, bw * 0.62, 0, TAU); ctx.fill(); ctx.fillStyle = vGrad(ctx, y - bw / 2, y + bw / 2, [[0, '#6d747a'], [1, c]]); ctx.beginPath(); ctx.arc(x, y, bw * 0.5, 0, TAU); ctx.fill(); });
+  ctx.fillStyle = '#4b5156'; ctx.font = `700 ${Math.max(7, Math.min(10, w / 85))}px ${SANS}`; ctx.textAlign = 'left'; ctx.fillText('WATER BATH', b.x0 + lip * 2, b.bot - Math.max(5, h * 0.02));
+}
+function bathPanel(w, h) { const b = bathGeom(w, h); const ph = Math.max(14, (b.bot - b.rim) * 0.34), pw = ph * 2.2; return { x: b.x0 + (b.x1 - b.x0) * 0.1, y: b.rim + (b.bot - b.rim) * 0.2, w: pw, h: ph }; }
+function drawBathDisplay(ctx, w, h, T) {
+  // red LED set-point display on the bath controller
+  const p = bathPanel(w, h), dh = p.h * 0.62;
+  ctx.save(); ctx.shadowColor = 'rgba(255,60,40,0.8)'; ctx.shadowBlur = 4;
+  segText(ctx, p.x + p.w * 0.08, p.y + (p.h - dh) / 2, dh, T.toFixed(1).padStart(4, ' '), '#ff4a33', 'rgba(255,60,40,0.08)');
+  ctx.restore();
+  ctx.fillStyle = '#ff6a50'; ctx.font = `600 ${Math.max(6, dh * 0.42)}px ${SANS}`; ctx.textAlign = 'right'; ctx.fillText('°C', p.x + p.w - 2, p.y + dh * 0.55);
+}
+function drawThermoColumn(ctx, w, h, T) {
+  // thermometer: red alcohol column up to the bath temperature
+  const tx = BG.thermo.x * w, tw = Math.max(4, w * 0.0085), sc = thermoScale(w, h), y = sc.y(T);
+  ctx.fillStyle = '#c4161c'; ctx.beginPath(); ctx.arc(tx + tw * 0.38, BG.thermo.bulb * h - tw * 0.85, tw * 0.33, 0, TAU); ctx.fill();
+  ctx.fillRect(tx + tw * 0.3, y, tw * 0.17, BG.thermo.bulb * h - tw * 0.85 - y);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(tx + tw * 0.18, sc.top, tw * 0.08, sc.bot - sc.top);
+}
+function bottle(ctx, x, yb, bw, bh, o) {   // glass or plastic reagent bottle with liquid, meniscus and paper label
+  const neckW = bw * (o.neck || 0.46), shoulder = yb - bh * 0.74, neckY = yb - bh * 0.88, capH = bh * (o.capH || 0.12), r = bw * 0.12;
+  softShadow(ctx, x + bw * 0.12, yb, bw * 0.75, bw * 0.16, 0.7);
+  const body = () => { ctx.beginPath(); ctx.moveTo(x - neckW / 2, neckY); ctx.quadraticCurveTo(x - bw / 2, neckY + bh * 0.02, x - bw / 2, shoulder); ctx.lineTo(x - bw / 2, yb - r); ctx.quadraticCurveTo(x - bw / 2, yb, x - bw / 2 + r, yb); ctx.lineTo(x + bw / 2 - r, yb); ctx.quadraticCurveTo(x + bw / 2, yb, x + bw / 2, yb - r); ctx.lineTo(x + bw / 2, shoulder); ctx.quadraticCurveTo(x + bw / 2, neckY + bh * 0.02, x + neckW / 2, neckY); ctx.lineTo(x + neckW / 2, yb - bh + capH * 0.9); ctx.lineTo(x - neckW / 2, yb - bh + capH * 0.9); ctx.closePath(); };
+  body(); ctx.fillStyle = o.glass ? 'rgba(200,225,230,0.22)' : 'rgba(235,238,240,0.3)'; ctx.fill();
+  ctx.save(); body(); ctx.clip();
+  const ly = yb - (yb - shoulder) * o.level;
+  ctx.fillStyle = hGrad(ctx, x - bw / 2, x + bw / 2, [[0, o.liq[1]], [0.3, o.liq[0]], [0.75, o.liq[0]], [1, o.liq[1]]]); ctx.fillRect(x - bw, ly, bw * 2, yb - ly);
+  ctx.strokeStyle = o.liq[2]; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x - bw / 2, ly - 1.5); ctx.quadraticCurveTo(x, ly + 1.5, x + bw / 2, ly - 1.5); ctx.stroke();   // curved meniscus
+  ctx.fillStyle = hGrad(ctx, x - bw / 2, x + bw / 2, [[0, 'rgba(0,0,0,0.3)'], [0.12, 'rgba(0,0,0,0)'], [0.88, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.38)']]); ctx.fillRect(x - bw, yb - bh, bw * 2, bh);   // refraction at the walls
+  ctx.restore();
+  body(); ctx.strokeStyle = o.glass ? 'rgba(170,195,200,0.85)' : 'rgba(190,195,198,0.8)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'; roundRect(ctx, x - bw * 0.36, shoulder - bh * 0.02, bw * 0.07, (yb - shoulder) * 0.82, bw * 0.035); ctx.fill();
+  // label
+  const lw = bw * 0.8, lh = (yb - shoulder) * 0.42, lx = x - lw / 2, lyy = shoulder + (yb - shoulder) * 0.22;
+  ctx.fillStyle = '#f7f4ea'; ctx.fillRect(lx, lyy, lw, lh); texture(ctx, grainTile(), 0.2, () => ctx.fillRect(lx, lyy, lw, lh));
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(lx + lw - 2, lyy, 2, lh);
+  ctx.fillStyle = '#1d2230'; ctx.textAlign = 'center';
+  const fsz = Math.max(7, Math.min(lw * 0.24, lh * 0.36)); ctx.font = `700 ${fsz}px ${SANS}`; ctx.fillText(o.label, x, lyy + lh * 0.48, lw - 2);
+  if (o.sub) { ctx.font = `600 ${fsz * 0.72}px ${SANS}`; ctx.fillStyle = '#4b5060'; ctx.fillText(o.sub, x, lyy + lh * 0.85, lw - 2); }
+  // screw cap with ribs
+  const cw = neckW * 1.22, cy0 = yb - bh;
+  ctx.fillStyle = hGrad(ctx, x - cw / 2, x + cw / 2, o.cap); roundRect(ctx, x - cw / 2, cy0, cw, capH, 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.7; for (let i = 1; i < 7; i++) { const xx = x - cw / 2 + cw * i / 7; ctx.beginPath(); ctx.moveTo(xx, cy0 + 1.5); ctx.lineTo(xx, cy0 + capH - 1); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(x - cw / 2 + 1, cy0 + 1, cw - 2, 1.2);
+}
+function paintReagents(ctx, w, h) {
+  const yb = 0.845 * h;
+  bottle(ctx, w * 0.787, yb, w * 0.052, h * 0.25, { label: 'CaCl₂', sub: '50 mM', level: 0.75, liq: ['rgba(214,232,240,0.35)', 'rgba(150,180,195,0.5)', 'rgba(255,255,255,0.8)'], cap: [[0, '#cfd2d4'], [0.35, '#fbfbfa'], [1, '#a9adb0']] });
+  bottle(ctx, w * 0.857, yb, w * 0.056, h * 0.27, { glass: true, label: 'LB broth', sub: 'sterile', level: 0.62, liq: ['rgba(226,178,78,0.85)', 'rgba(170,112,30,0.92)', 'rgba(255,226,150,0.9)'], cap: [[0, '#1d4fa0'], [0.35, '#3d7be0'], [1, '#143a78']] });
+  bottle(ctx, w * 0.925, yb, w * 0.032, h * 0.15, { label: 'pGLO', sub: '0.005', neck: 0.6, capH: 0.16, level: 0.5, liq: ['rgba(220,232,236,0.4)', 'rgba(160,180,190,0.5)', 'rgba(255,255,255,0.8)'], cap: [[0, '#8a1f3c'], [0.35, '#d0466a'], [1, '#6e1830']] });
+}
+function paintBenchLabels(ctx, w, h) {
   const fs = Math.max(10, Math.min(13, w / 55));
-  ctx.font = `600 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center';
-  // rack
-  ctx.fillStyle = mix('--s4', '--surface', 0.55); ctx.fillRect(w * 0.05, h * 0.70, w * 0.17, h * 0.16);
-  ctx.fillStyle = ink; ctx.fillText('Tube rack', w * 0.135, h * 0.97);
-  // ice bucket
-  ctx.fillStyle = mix('--s3', lightTok(), 0.6); roundRect(ctx, w * 0.27, h * 0.56, w * 0.20, h * 0.30, 8); ctx.fill();
-  ctx.fillStyle = mix('--s3', lightTok(), 0.85);
-  for (let i = 0; i < 14; i++) { const x = w * (0.28 + (i % 7) * 0.027), y = h * (0.58 + Math.floor(i / 7) * 0.05); ctx.fillRect(x, y, w * 0.022, h * 0.04); }
-  ctx.fillStyle = ink; ctx.fillText('Ice · 0 °C', w * 0.37, h * 0.97);
-  // water bath
-  ctx.fillStyle = mix('--line', '--surface', 0.3); roundRect(ctx, w * 0.53, h * 0.50, w * 0.20, h * 0.36, 8); ctx.fill();
-  ctx.fillStyle = alpha('--s3', 0.35); ctx.fillRect(w * 0.545, h * 0.58, w * 0.17, h * 0.26);
-  ctx.fillStyle = C('--surface'); roundRect(ctx, w * 0.565, h * 0.39, w * 0.13, h * 0.09, 4); ctx.fill(); ctx.strokeStyle = line; ctx.stroke();
-  ctx.fillStyle = C('--bad'); ctx.font = `600 ${fs}px "JetBrains Mono", monospace`;
-  const shownT = stepIdx === 5 ? choices.hsT : 42; ctx.fillText(`${shownT} °C`, w * 0.63, h * 0.45);
-  ctx.font = `600 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.fillStyle = ink; ctx.fillText('Water bath', w * 0.63, h * 0.97);
-  // reagents
-  const rx = w * 0.78;
-  bottle(ctx, rx, h * 0.84, w * 0.05, h * 0.26, alpha('--s3', 0.2), 'CaCl₂');
-  bottle(ctx, rx + w * 0.07, h * 0.84, w * 0.05, h * 0.26, mix('--s4', '--surface', 0.45), 'LB');
-  bottle(ctx, rx + w * 0.135, h * 0.84, w * 0.035, h * 0.14, alpha('--s1', 0.25), 'pGLO');
-  ctx.fillStyle = ink; ctx.fillText('Reagents', w * 0.88, h * 0.97);
-  // starter plate
-  ctx.fillStyle = mix('--warn', darkTok(), 0.5); ctx.beginPath(); ctx.ellipse(w * 0.87, h * 0.22, w * 0.07, h * 0.06, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = mix(lightTok(), '--warn', 0.12); for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(w * (0.83 + (i % 3) * 0.03), h * (0.20 + Math.floor(i / 3) * 0.02), 2.2, 0, 7); ctx.fill(); }
-  ctx.fillStyle = muted; ctx.font = `${fs - 1}px "Source Sans 3", system-ui, sans-serif`; ctx.fillText('Starter plate', w * 0.87, h * 0.34);
-  // tubes
-  tubes.forEach(t => drawTube(ctx, t, w, h, fs));
-  // pipette
-  if (pipette) {
-    const t = tubes[pipette.ti], x = t.x * w, top = t.y * h - h * 0.42;
-    ctx.strokeStyle = muted; ctx.lineWidth = 2; ctx.fillStyle = alpha('--muted', 0.25);
-    ctx.beginPath(); ctx.moveTo(x - 4, top - h * 0.12); ctx.lineTo(x + 4, top - h * 0.12); ctx.lineTo(x + 1.5, top); ctx.lineTo(x - 1.5, top); ctx.closePath(); ctx.fill(); ctx.stroke();
-    const col = pipette.what === 'cells' ? mix(lightTok(), '--warn', 0.2) : pipette.what === 'plasmid' ? C('--s1') : pipette.what === 'lb' ? mix('--s4', '--surface', 0.3) : C('--s3');
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, top + pipette.k * h * 0.2, 3.5, 0, 7); ctx.fill();
-  }
-  if (overlay) {
-    ctx.font = `600 ${fs + 1}px "JetBrains Mono", monospace`; const tw = ctx.measureText(overlay).width + 20;
-    ctx.fillStyle = alpha('--surface', 0.92); roundRect(ctx, 10, 10, Math.min(w - 20, tw), fs + 16, 6); ctx.fill();
-    ctx.fillStyle = C('--accent'); ctx.textAlign = 'left'; ctx.fillText(overlay, 20, 10 + fs + 4, w - 40);
-  }
+  ctx.font = `600 ${fs}px ${SANS}`; ctx.textAlign = 'center'; ctx.fillStyle = '#d9d4c8';
+  const y = BG.edge * h + (h - BG.edge * h) * 0.68;
+  [['Tube rack', 0.135], ['Ice · 0 °C', 0.37], ['Water bath', 0.636], ['Reagents', 0.857]].forEach(([t, x]) => ctx.fillText(t, x * w, y));
 }
-function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
-function bottle(ctx, x, yb, bw, bh, fill, label) {
-  ctx.fillStyle = fill; ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.2;
-  roundRect(ctx, x - bw / 2, yb - bh, bw, bh, 4); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = C('--muted'); ctx.fillRect(x - bw * 0.3, yb - bh - 6, bw * 0.6, 6);
-  ctx.fillStyle = C('--ink'); ctx.font = `600 ${Math.max(9, bw * 0.28)}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillText(label, x, yb - bh / 2);
+
+/* 1.5 mL microcentrifuge tube: clear polypropylene, frosted writing patch with marker, snap cap on a hinge. */
+const TUBE_CAP = { '+pGLO': ['#7a2a8c', '#b55ccc', 'rgba(150,70,170,0.35)'], '−pGLO': ['#1f5a9e', '#4f8fd8', 'rgba(60,120,200,0.35)'] };
+function tubeLiquid(t) {
+  if (!t.cells) return ['rgba(214,234,244,0.45)', 'rgba(150,185,205,0.6)', 'rgba(255,255,255,0.85)'];
+  if (t.lb) return ['rgba(236,214,160,0.92)', 'rgba(196,160,92,0.95)', 'rgba(255,244,214,0.95)'];
+  return ['rgba(240,236,222,0.93)', 'rgba(196,190,170,0.95)', 'rgba(255,255,250,0.95)'];
 }
-function drawTube(ctx, t, w, h, fs) {
+function drawTube(ctx, t, w, h, fs, settled) {
   const x = t.x * w, yb = t.y * h, tw = Math.max(11, w * 0.032), th = h * 0.36;
-  const path = () => { ctx.beginPath(); ctx.moveTo(x - tw / 2, yb - th); ctx.lineTo(x + tw / 2, yb - th); ctx.lineTo(x + tw / 2, yb - tw * 1.1); ctx.lineTo(x, yb); ctx.lineTo(x - tw / 2, yb - tw * 1.1); ctx.closePath(); };
-  path(); ctx.fillStyle = alpha(lightTok(), 0.55); ctx.fill();
+  const yt = yb - th, yc = yb - th * 0.36, tip = tw * 0.14;
+  const path = () => { ctx.beginPath(); ctx.moveTo(x - tw / 2, yt); ctx.lineTo(x - tw / 2, yc); ctx.bezierCurveTo(x - tw / 2, yc + th * 0.12, x - tip * 1.2, yb - tip * 2.4, x - tip, yb - tip); ctx.quadraticCurveTo(x, yb + tip * 0.5, x + tip, yb - tip); ctx.bezierCurveTo(x + tip * 1.2, yb - tip * 2.4, x + tw / 2, yc + th * 0.12, x + tw / 2, yc); ctx.lineTo(x + tw / 2, yt); ctx.closePath(); };
+  path(); ctx.fillStyle = hGrad(ctx, x - tw / 2, x + tw / 2, [[0, 'rgba(190,200,206,0.55)'], [0.22, 'rgba(255,255,255,0.32)'], [0.55, 'rgba(236,240,242,0.16)'], [1, 'rgba(170,180,186,0.5)']]); ctx.fill();
   if (t.vol) {
     ctx.save(); path(); ctx.clip();
-    const lh = (t.vol / 620) * th * 0.95;
-    ctx.fillStyle = t.cells ? mix(lightTok(), '--warn', 0.25) : alpha('--s3', 0.35);
-    ctx.fillRect(x - tw, yb - lh, tw * 2, lh);
-    if (t.plasmid) { ctx.fillStyle = alpha('--s1', 0.35); ctx.fillRect(x - tw, yb - lh, tw * 2, lh); }
+    const lh = Math.min(th * 0.9, (t.vol / 620) * th * 0.95), ly = yb - lh, L = tubeLiquid(t);
+    ctx.fillStyle = hGrad(ctx, x - tw / 2, x + tw / 2, [[0, L[1]], [0.3, L[0]], [0.7, L[0]], [1, L[1]]]); ctx.fillRect(x - tw, ly, tw * 2, lh + tip);
+    if (t.cells) { ctx.fillStyle = vGrad(ctx, ly, yb, [[0, 'rgba(255,255,255,0)'], [1, 'rgba(150,140,110,0.3)']]); ctx.fillRect(x - tw, ly, tw * 2, lh); }
+    ctx.strokeStyle = L[2]; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(x - tw / 2, ly - tw * 0.16); ctx.quadraticCurveTo(x, ly + tw * 0.12, x + tw / 2, ly - tw * 0.16); ctx.stroke();   // concave meniscus
     ctx.restore();
   }
-  path(); ctx.strokeStyle = C('--muted'); ctx.lineWidth = 1.3; ctx.stroke();
-  ctx.fillStyle = C(t.cap); ctx.fillRect(x - tw / 2 - 2, yb - th - 7, tw + 4, 7);
-  ctx.fillStyle = C('--ink'); ctx.font = `700 ${fs - 1}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillText(w < 520 ? t.name[0] : t.name, x, yb - th - 11);
+  if (settled && t.at === 'ice') { ctx.save(); path(); ctx.clip(); ctx.fillStyle = vGrad(ctx, yc - th * 0.3, yb, [[0, 'rgba(255,255,255,0)'], [1, 'rgba(240,248,255,0.55)']]); ctx.fillRect(x - tw, yc - th * 0.3, tw * 2, th); ctx.restore(); }
+  // refraction edges, specular streak, outline
+  ctx.save(); path(); ctx.clip(); ctx.fillStyle = hGrad(ctx, x - tw / 2, x + tw / 2, [[0, 'rgba(60,70,76,0.35)'], [0.1, 'rgba(60,70,76,0)'], [0.9, 'rgba(60,70,76,0)'], [1, 'rgba(60,70,76,0.42)']]); ctx.fillRect(x - tw, yt, tw * 2, th + tip); ctx.restore();
+  path(); ctx.strokeStyle = 'rgba(110,122,128,0.75)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)'; roundRect(ctx, x - tw * 0.33, yt + tw * 0.4, tw * 0.1, yc - yt - tw * 0.2, tw * 0.05); ctx.fill();
+  // frosted marking patch with the student's marker label
+  const py = yt + th * 0.1, ph = th * 0.26;
+  ctx.fillStyle = 'rgba(248,248,246,0.55)'; ctx.fillRect(x - tw * 0.12, py, tw * 0.5, ph);
+  ctx.save(); ctx.translate(x + tw * 0.13, py + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = 'rgba(25,28,60,0.9)'; ctx.textAlign = 'center';
+  ctx.font = `700 ${Math.max(7, Math.min(ph * 0.3, tw * 0.48))}px ${HAND}`; ctx.fillText(t.name, 0, tw * 0.15, ph * 0.95); ctx.restore();
+  // rim collar, hinge and snap cap
+  const cap = TUBE_CAP[t.name] || TUBE_CAP['+pGLO'];
+  ctx.fillStyle = 'rgba(225,230,233,0.85)'; ctx.fillRect(x - tw * 0.6, yt - tw * 0.06, tw * 1.2, tw * 0.22);
+  ctx.strokeStyle = cap[2]; ctx.lineWidth = Math.max(1.5, tw * 0.12); ctx.beginPath(); ctx.moveTo(x + tw * 0.58, yt + tw * 0.08); ctx.quadraticCurveTo(x + tw * 0.92, yt - tw * 0.2, x + tw * 0.55, yt - tw * 0.38); ctx.stroke();
+  ctx.fillStyle = hGrad(ctx, x - tw * 0.56, x + tw * 0.56, [[0, cap[0]], [0.3, cap[1]], [1, cap[0]]]); roundRect(ctx, x - tw * 0.56, yt - tw * 0.46, tw * 1.12, tw * 0.42, tw * 0.1); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(x - tw * 0.4, yt - tw * 0.42, tw * 0.25, tw * 0.08);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x - tw * 0.56, yt - tw * 0.08, tw * 1.12, tw * 0.05);
+  ctx.fillStyle = '#23262b'; ctx.font = `700 ${fs - 1}px ${SANS}`; ctx.textAlign = 'center'; ctx.fillText(w < 520 ? t.name[0] : t.name, x, yt - tw * 0.46 - 4);
+}
+function drawPipette(ctx, w, h) {
+  const t = tubes[pipette.ti], x = t.x * w, th = h * 0.36, tipY = t.y * h - h * 0.42, len = h * 0.22, s = Math.max(0.8, w / 800);
+  const cellStep = STEPS[stepIdx - 1] && STEPS[stepIdx - 1].key === 'cells';
+  if (cellStep) {   // sterile plastic loop spinning in the cell suspension
+    const depth = Math.sin(Math.PI * pipette.k) * th * 0.62, ry = tipY + h * 0.06 + depth, wob = Math.sin(pipette.k * 30) * 1.5 * s;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.moveTo(x + 2 + h * 0.07, ry - h * 0.4); ctx.lineTo(x + 2 + wob, ry - 3 * s); ctx.stroke();
+    ctx.strokeStyle = '#2c74d6'; ctx.lineWidth = 2.6 * s; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + h * 0.07, ry - h * 0.4); ctx.lineTo(x + wob, ry - 3.5 * s); ctx.stroke();
+    ctx.lineWidth = 1.3 * s; ctx.beginPath(); ctx.ellipse(x + wob, ry, 3.4 * s, 2.4 * s, 0, 0, TAU); ctx.stroke();
+    if (pipette.k < 0.55) { ctx.fillStyle = 'rgba(245,238,214,0.95)'; ctx.beginPath(); ctx.ellipse(x + wob, ry, 2.6 * s, 1.6 * s, 0, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 0.8 * s; ctx.beginPath(); ctx.moveTo(x + h * 0.07 - 0.8, ry - h * 0.4); ctx.lineTo(x + wob - 0.8, ry - h * 0.05); ctx.stroke();
+    return;
+  }
+  // disposable graduated transfer pipette
+  const top = tipY - len, sw = 4.2 * s, liq = { cells: 'rgba(240,234,214,0.95)', plasmid: 'rgba(214,232,240,0.7)', lb: 'rgba(226,178,78,0.92)', sol: 'rgba(214,232,240,0.7)' }[pipette.what] || 'rgba(214,232,240,0.7)';
+  const stem = () => { ctx.beginPath(); ctx.moveTo(x - sw / 2, top); ctx.lineTo(x + sw / 2, top); ctx.lineTo(x + sw * 0.32, tipY - len * 0.18); ctx.lineTo(x + 1, tipY); ctx.lineTo(x - 1, tipY); ctx.lineTo(x - sw * 0.32, tipY - len * 0.18); ctx.closePath(); };
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(x + 4, top - len * 0.16 + 4, sw * 1.6, len * 0.2, 0, 0, TAU); ctx.fill();
+  stem(); ctx.fillStyle = 'rgba(246,246,242,0.55)'; ctx.fill();
+  ctx.save(); stem(); ctx.clip(); ctx.fillStyle = liq; const fillTop = tipY - len * (0.45 - 0.4 * pipette.k); ctx.fillRect(x - sw, fillTop, sw * 2, tipY - fillTop); ctx.restore();
+  stem(); ctx.strokeStyle = 'rgba(130,135,138,0.85)'; ctx.lineWidth = 0.8; ctx.stroke();
+  ctx.strokeStyle = 'rgba(60,60,60,0.55)'; ctx.lineWidth = 0.6; for (let i = 1; i <= 5; i++) { const y = top + len * 0.1 * i; ctx.beginPath(); ctx.moveTo(x - sw / 2, y); ctx.lineTo(x - sw / 2 + (i % 5 === 0 ? sw * 0.7 : sw * 0.4), y); ctx.stroke(); }
+  const by = top - len * 0.16, bulbSq = 1 - 0.18 * Math.sin(Math.PI * pipette.k);
+  ctx.fillStyle = hGrad(ctx, x - sw * 1.6, x + sw * 1.6, [[0, 'rgba(205,208,206,0.9)'], [0.3, 'rgba(252,252,250,0.95)'], [1, 'rgba(180,184,182,0.9)']]);
+  ctx.beginPath(); ctx.ellipse(x, by, sw * 1.6 * (2 - bulbSq), len * 0.17 * bulbSq, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(130,135,138,0.8)'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.ellipse(x - sw * 0.6, by - len * 0.06, sw * 0.35, len * 0.06, 0, 0, TAU); ctx.fill();
+  // the drop leaving the tip
+  const dy = tipY + 2 + pipette.k * h * 0.2;
+  ctx.fillStyle = liq; ctx.beginPath(); ctx.moveTo(x, dy - 4.5 * s); ctx.quadraticCurveTo(x + 3.2 * s, dy, x, dy + 2.6 * s); ctx.quadraticCurveTo(x - 3.2 * s, dy, x, dy - 4.5 * s); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,130,135,0.6)'; ctx.lineWidth = 0.6; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(x - 0.9 * s, dy - 0.6 * s, 0.9 * s, 0, TAU); ctx.fill();
+}
+function drawTimer(ctx, w, h, fs) {   // white digital lab timer with LCD showing the step and elapsed time
+  ctx.font = `600 ${fs}px ${MONO}`; const tw = Math.min(w - 24, ctx.measureText(overlay).width + 22), th = fs + 18;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; roundRect(ctx, 13, 14, tw + 8, th + 8, 8); ctx.fill();
+  ctx.fillStyle = vGrad(ctx, 8, 16 + th, [[0, '#fbfaf6'], [1, '#dcdad3']]); roundRect(ctx, 8, 8, tw + 8, th + 8, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = vGrad(ctx, 12, 12 + th, [[0, '#a9b598'], [1, '#c2cdb0']]); roundRect(ctx, 12, 12, tw, th, 3); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(12, 12, tw, 2);
+  ctx.fillStyle = '#1b2414'; ctx.textAlign = 'left'; ctx.fillText(overlay, 22, 12 + th / 2 + fs * 0.36, tw - 20);
+}
+function drawBench() {
+  const { ctx, w, h } = bench, L = benchLayers();
+  ctx.clearRect(0, 0, w, h); ctx.drawImage(L.bg, 0, 0, w, h);
+  const fs = Math.max(10, Math.min(13, w / 55)), T = stepIdx === 5 ? choices.hsT : 42;
+  const settled = (t, i) => Math.hypot(t.x - POS[t.at][i][0], t.y - POS[t.at][i][1]) < 0.025;
+  drawThermoColumn(ctx, w, h, T);
+  tubes.forEach((t, i) => { if (settled(t, i)) drawTube(ctx, t, w, h, fs, true); });
+  ctx.drawImage(L.front, 0, 0, w, h);
+  drawBathDisplay(ctx, w, h, T);
+  tubes.forEach((t, i) => { if (!settled(t, i)) drawTube(ctx, t, w, h, fs, false); });
+  if (pipette) drawPipette(ctx, w, h);
+  if (overlay) drawTimer(ctx, w, h, fs);
 }
 bench.onresize = drawBench;
 
@@ -602,7 +928,7 @@ function doStep(skip) {
       if (!skip) P.push(move('ice', 0.6), wait('Back on ice', 120, 1.2), fn(() => updateRO('2 min on ice')));
       else P.push(move('rack'), fn(() => updateRO('Tubes left at room temperature'))); break;
     case 'recov': S.recov = choices.recov;
-      P.push(move('rack'), drop(0, 'lb', () => { tubes[0].vol += 250; updateRO(); }), drop(1, 'lb', () => { tubes[1].vol += 250; updateRO(); }));
+      P.push(move('rack'), drop(0, 'lb', () => { tubes[0].vol += 250; tubes[0].lb = 1; updateRO(); }), drop(1, 'lb', () => { tubes[1].vol += 250; tubes[1].lb = 1; updateRO(); }));
       if (S.recov) P.push(wait('Recovering at room temperature', S.recov * 60, 1.6));
       P.push(fn(() => updateRO(`LB added, ${S.recov} min recovery`))); break;
     case 'plate': S.plateUL = choices.plateUL;
@@ -630,50 +956,126 @@ $('#do-step').addEventListener('click', () => doStep(false));
 $('#skip-step').addEventListener('click', () => doStep(true));
 $('#restart').addEventListener('click', () => { if (!busy) reset(); });
 
-/* ---------- Plates ---------- */
+/* ---------- Plates ----------
+   Top-down view of real petri dishes: clear polystyrene base and lid, translucent amber LB agar
+   (meniscus at the wall, fine texture), condensation droplets on the lid, the student's marker label,
+   and creamy domed colonies lit from the upper left. Under UV (dark room, violet lamp cast) the agar
+   goes dark, ordinary colonies look dull lavender and GFP-expressing colonies fluoresce bright green. */
 const platesCv = Lab.canvas('#plates', 0.66);
-function drawPlate(ctx, cx, cy, R, p, med, mk) {
-  const dark = darkTok(), light = lightTok();
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, R * 1.04, 0, Math.PI * 2); ctx.fillStyle = alpha('--muted', 0.35); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.fillStyle = uv ? mix('--s5', dark, 0.78) : mix('--warn', dark, 0.55); ctx.fill();
-  ctx.clip();
-  if (p && p.wet && !p.incubated) { ctx.fillStyle = alpha(light, 0.12); ctx.beginPath(); ctx.ellipse(cx - R * 0.25, cy - R * 0.25, R * 0.5, R * 0.3, -0.6, 0, 7); ctx.fill(); }
-  if (p && p.incubated) {
-    if (p.lawn) {
-      ctx.fillStyle = uv ? alpha(light, 0.18) : alpha(light, 0.55); ctx.beginPath(); ctx.arc(cx, cy, R * 0.93, 0, 7); ctx.fill();
-      ctx.fillStyle = uv ? alpha(light, 0.2) : mix(light, '--warn', 0.2);
-      p.tex.forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, Math.max(0.8, r * R), 0, 7); ctx.fill(); });
-    }
-    p.cols.forEach(c => {
-      const x = cx + c.x * R, y = cy + c.y * R, r = Math.max(1.2, c.r * R);
-      if (uv && c.glow) { ctx.shadowColor = C('--s1'); ctx.shadowBlur = r * 2.5; ctx.fillStyle = mix('--s1', light, 0.25); }
-      else { ctx.shadowBlur = 0; ctx.fillStyle = uv ? alpha(light, 0.32) : mix(light, '--warn', 0.12); }
-      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
-    });
-    ctx.shadowBlur = 0;
+function tableTop(ctx, w, h, uvOn) {   // surface under the plates: epoxy bench in room light, dark room under UV
+  if (!uvOn) {
+    ctx.fillStyle = '#202226'; ctx.fillRect(0, 0, w, h);
+    texture(ctx, epoxyTile(), 1, () => ctx.fillRect(0, 0, w, h));
+    const g = ctx.createRadialGradient(w * 0.22, h * 0.05, 0, w * 0.22, h * 0.05, Math.max(w, h) * 0.95); g.addColorStop(0, 'rgba(255,250,236,0.13)'); g.addColorStop(1, 'rgba(255,250,236,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    return;
   }
-  if (mk) mk.forEach(([x, y], i) => { ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, Math.max(5, R * 0.035), 0, 7); ctx.stroke(); });
-  ctx.restore();
-  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.strokeStyle = C('--line'); ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#0c0912'; ctx.fillRect(0, 0, w, h);
+  texture(ctx, epoxyTile(), 0.35, () => ctx.fillRect(0, 0, w, h));
+  const g = ctx.createRadialGradient(w * 0.5, -h * 0.15, 0, w * 0.5, -h * 0.15, Math.max(w, h) * 1.05); g.addColorStop(0, 'rgba(150,80,255,0.42)'); g.addColorStop(0.45, 'rgba(110,50,210,0.16)'); g.addColorStop(1, 'rgba(80,30,160,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  // the long-wave UV lamp just above the frame: its glowing violet tube spills light over the top edge
+  ctx.fillStyle = vGrad(ctx, 0, Math.max(6, h * 0.025), [[0, 'rgba(214,170,255,0.95)'], [0.4, 'rgba(150,90,255,0.6)'], [1, 'rgba(120,60,230,0)']]); ctx.fillRect(w * 0.08, 0, w * 0.84, Math.max(6, h * 0.025));
 }
+function colonyRoom(ctx, x, y, r, sat) {
+  if (r < 1.6) { ctx.fillStyle = sat ? 'rgba(236,226,200,0.8)' : '#efe4c8'; ctx.beginPath(); ctx.arc(x, y, Math.max(0.8, r), 0, TAU); ctx.fill(); return; }
+  ctx.fillStyle = 'rgba(70,35,0,0.35)'; ctx.beginPath(); ctx.ellipse(x + r * 0.16, y + r * 0.2, r * 1.04, r * 1.0, 0, 0, TAU); ctx.fill();   // shadow on the agar
+  const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.38, r * 0.05, x, y, r);
+  if (sat) { g.addColorStop(0, 'rgba(250,244,228,0.92)'); g.addColorStop(1, 'rgba(214,200,166,0.8)'); }
+  else { g.addColorStop(0, '#fffbf1'); g.addColorStop(0.35, '#f3e8cd'); g.addColorStop(0.82, '#dccb9f'); g.addColorStop(1, '#c7b282'); }
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(140,110,60,0.45)'; ctx.lineWidth = Math.max(0.5, r * 0.08); ctx.stroke();   // slightly darker entire margin
+  if (!sat) { ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(x - r * 0.36, y - r * 0.4, r * 0.26, r * 0.16, -0.7, 0, TAU); ctx.fill(); }
+}
+function colonyUV(ctx, x, y, r, glow) {
+  r = Math.max(1.2, r);
+  if (!glow) {
+    const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.35, 0, x, y, r); g.addColorStop(0, 'rgba(214,204,240,0.55)'); g.addColorStop(1, 'rgba(150,135,195,0.35)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); return;
+  }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const halo = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 3.4); halo.addColorStop(0, 'rgba(70,255,110,0.55)'); halo.addColorStop(0.4, 'rgba(40,220,90,0.18)'); halo.addColorStop(1, 'rgba(20,180,60,0)');
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(x, y, r * 3.4, 0, TAU); ctx.fill(); ctx.restore();
+  const g = ctx.createRadialGradient(x - r * 0.25, y - r * 0.3, 0, x, y, r); g.addColorStop(0, '#f2ffe6'); g.addColorStop(0.35, '#9dff86'); g.addColorStop(0.85, '#3fe063'); g.addColorStop(1, '#22b24a');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+}
+function drawPlate(ctx, cx, cy, R, p, med, mk, label) {
+  const seed = hashStr(label || med), Rg = Lab.rng(seed);
+  // soft contact shadow, down and to the right
+  softShadow(ctx, cx + R * 0.07, cy + R * 0.09, R * 1.16, R * 1.12, uv ? 0.55 : 0.75);
+  // clear polystyrene dish base: thin wall that refracts the light
+  ctx.fillStyle = uv ? 'rgba(120,90,200,0.18)' : 'rgba(205,212,216,0.22)'; ctx.beginPath(); ctx.arc(cx, cy, R * 1.045, 0, TAU); ctx.fill();
+  // agar
+  const ag = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.32, R * 0.05, cx, cy, R);
+  if (uv) { ag.addColorStop(0, '#3b2558'); ag.addColorStop(0.7, '#281a3e'); ag.addColorStop(1, '#170f26'); }
+  else { ag.addColorStop(0, '#d9ad66'); ag.addColorStop(0.55, '#c19048'); ag.addColorStop(0.9, '#9c6c2c'); ag.addColorStop(1, '#76501d'); }
+  ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
+  texture(ctx, grainTile(), uv ? 0.12 : 0.22, () => ctx.fillRect(cx - R, cy - R, R * 2, R * 2));
+  // slight thickness variation in the poured agar
+  for (let i = 0; i < 3; i++) { const a = Rg.uniform() * TAU, d = R * 0.5 * Rg.uniform(), x = cx + d * Math.cos(a), y = cy + d * Math.sin(a), rr = R * (0.35 + Rg.uniform() * 0.3); const g = ctx.createRadialGradient(x, y, 0, x, y, rr); g.addColorStop(0, uv ? 'rgba(90,60,140,0.12)' : 'rgba(255,215,140,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(cx - R, cy - R, R * 2, R * 2); }
+  if (p && p.wet && !p.incubated) {   // freshly spread suspension: glossy wet film with a sheen
+    const g = ctx.createRadialGradient(cx - R * 0.15, cy - R * 0.1, 0, cx, cy, R * 0.85); g.addColorStop(0, 'rgba(255,240,205,0.16)'); g.addColorStop(1, 'rgba(255,240,205,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 0.85, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,248,225,0.45)'; ctx.lineWidth = R * 0.03; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(cx - R * 0.05, cy - R * 0.05, R * 0.55, Math.PI * 1.05, Math.PI * 1.45); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,248,225,0.18)'; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(cx, cy, R * (0.25 + i * 0.16), Rg.uniform() * TAU, Rg.uniform() * TAU + 1.6); ctx.stroke(); }   // spreading tracks
+  }
+  if (p && p.incubated) {
+    if (p.lawn) {   // confluent lawn: creamy, slightly glossy film with a bumpy margin and spreading streaks
+      ctx.fillStyle = uv ? 'rgba(160,150,205,0.32)' : 'rgba(236,224,192,0.72)';
+      ctx.beginPath(); for (let i = 0; i <= 72; i++) { const a = i / 72 * TAU, rr = R * (0.925 + 0.012 * Math.sin(a * 7 + seed) + 0.008 * Math.sin(a * 23)); i ? ctx.lineTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a)) : ctx.moveTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a)); } ctx.closePath(); ctx.fill();
+      if (!uv) {
+        const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, 0, cx, cy, R); g.addColorStop(0, 'rgba(255,252,240,0.4)'); g.addColorStop(1, 'rgba(180,150,90,0.25)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 0.9, 0, TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(250,242,220,0.16)'; ctx.lineWidth = Math.max(1, R * 0.035); for (let i = 0; i < 5; i++) { const a = Rg.uniform() * TAU; ctx.beginPath(); ctx.arc(cx + R * 0.3 * Math.cos(a), cy + R * 0.3 * Math.sin(a), R * (0.25 + Rg.uniform() * 0.4), a + 1, a + 1 + 0.8 + Rg.uniform()); ctx.stroke(); }
+      }
+      ctx.fillStyle = uv ? 'rgba(190,180,230,0.25)' : 'rgba(252,246,228,0.6)';
+      p.tex.forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, Math.max(0.8, r * R), 0, TAU); ctx.fill(); });
+    }
+    const cols = p.cols.slice().sort((a, b) => b.r - a.r);
+    cols.forEach(c => { const x = cx + c.x * R, y = cy + c.y * R, r = Math.max(1.2, c.r * R); if (uv) colonyUV(ctx, x, y, r, c.glow); else colonyRoom(ctx, x, y, r, c.sat); });
+  }
+  // marker label written on the bottom of the dish, read through the agar
+  if (label) {
+    ctx.save(); ctx.translate(cx, cy + R * 0.88); ctx.rotate(-0.04 + (Rg.uniform() - 0.5) * 0.06);
+    ctx.font = `700 ${Math.max(8, Math.min(16, R * 0.12))}px ${HAND}`; ctx.textAlign = 'center'; ctx.fillStyle = uv ? 'rgba(20,10,30,0.75)' : 'rgba(18,16,40,0.82)';
+    ctx.fillText(label, 0, 0, R * 1.2); ctx.restore();
+  }
+  // meniscus where the agar climbs the wall
+  ctx.strokeStyle = uv ? 'rgba(170,130,255,0.35)' : 'rgba(255,214,140,0.5)'; ctx.lineWidth = Math.max(1, R * 0.018); ctx.beginPath(); ctx.arc(cx, cy, R * 0.99, 0, TAU); ctx.stroke();
+  ctx.restore();
+  // lid: rim, condensation and specular highlight
+  ctx.strokeStyle = uv ? 'rgba(170,140,255,0.55)' : 'rgba(225,232,236,0.6)'; ctx.lineWidth = Math.max(1, R * 0.016); ctx.beginPath(); ctx.arc(cx, cy, R * 1.065, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = uv ? 'rgba(90,60,160,0.5)' : 'rgba(80,90,95,0.45)'; ctx.lineWidth = Math.max(0.8, R * 0.008); ctx.beginPath(); ctx.arc(cx, cy, R * 1.035, 0, TAU); ctx.stroke();
+  const nd = 26 + Math.floor(Rg.uniform() * 30);
+  for (let i = 0; i < nd; i++) {
+    // condensation stays in a band at the lid rim, away from the colonies, and is drawn as clear water beads
+    const a = Math.PI * (0.05 + Rg.uniform() * 1.1) + (Rg.chance(0.3) ? Math.PI : 0), d = R * (0.9 + Rg.uniform() * 0.13), x = cx + d * Math.cos(a), y = cy + d * Math.sin(a), r = Math.max(0.6, R * (0.005 + Rg.uniform() * Rg.uniform() * 0.022));
+    ctx.fillStyle = uv ? 'rgba(160,120,255,0.08)' : 'rgba(255,255,255,0.05)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = uv ? 'rgba(180,150,255,0.25)' : 'rgba(255,255,255,0.22)'; ctx.lineWidth = Math.max(0.4, r * 0.22); ctx.beginPath(); ctx.arc(x, y, r, Math.PI * 0.15, Math.PI * 0.95); ctx.stroke();
+    ctx.fillStyle = uv ? 'rgba(230,210,255,0.4)' : 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(x - r * 0.35, y - r * 0.35, Math.max(0.3, r * 0.22), 0, TAU); ctx.fill();
+  }
+  const hl = ctx.createLinearGradient(cx - R, cy - R, cx, cy); hl.addColorStop(0, uv ? 'rgba(200,160,255,0.4)' : 'rgba(255,255,255,0.42)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.strokeStyle = hl; ctx.lineWidth = Math.max(2, R * 0.05); ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(cx, cy, R * 1.0, Math.PI * 1.02, Math.PI * 1.48); ctx.stroke();
+  ctx.fillStyle = uv ? 'rgba(200,160,255,0.06)' : 'rgba(255,255,255,0.06)'; ctx.beginPath(); ctx.ellipse(cx - R * 0.42, cy - R * 0.46, R * 0.32, R * 0.12, -0.75, 0, TAU); ctx.fill();
+  // counting marks (UI overlay, theme token with a light halo so they read on agar)
+  if (mk && mk.length) mk.forEach(([x, y]) => { const r = Math.max(5, R * 0.035); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, r, 0, TAU); ctx.stroke(); ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2; ctx.stroke(); });
+}
+const PLATE_LABEL = { 'm-lb': '− LB', 'm-amp': '− LB/amp', 'm-ara': '− LB/amp/ara', 'p-lb': '+ LB', 'p-amp': '+ LB/amp', 'p-ara': '+ LB/amp/ara' };
 function drawPlates() {
   const { ctx, w, h } = platesCv; ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = uv ? mix(darkTok(), '--s5', 0.12) : C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  tableTop(ctx, w, h, uv);
   const fs = Math.max(10, Math.min(14, w / 48));
   const left = Math.min(70, w * 0.13), cw = (w - left - 8) / 3, rh = (h - fs * 2.2) / 2;
   const R = Math.min(cw, rh) * 0.42;
-  ctx.font = `700 ${fs}px "Source Sans 3", system-ui, sans-serif`; ctx.textAlign = 'center';
-  ctx.fillStyle = uv ? C(lightTok()) : C('--ink');
+  ctx.font = `700 ${fs}px ${SANS}`; ctx.textAlign = 'center';
+  ctx.fillStyle = uv ? '#d6c6ff' : '#ece6d8';
   ['LB', 'LB/amp', 'LB/amp/ara'].forEach((t, i) => ctx.fillText(t, left + cw * (i + 0.5), fs * 1.3));
   ctx.textAlign = 'left';
   ['−pGLO', '+pGLO'].forEach((t, r) => ctx.fillText(t, 4, fs * 2.2 + rh * (r + 0.5) + fs / 3));
   PLATES.forEach((p, i) => {
     const col = i % 3, row = Math.floor(i / 3);
-    drawPlate(ctx, left + cw * (col + 0.5), fs * 2.2 + rh * (row + 0.5), R, plates && plates[p.id], p.med);
+    drawPlate(ctx, left + cw * (col + 0.5), fs * 2.2 + rh * (row + 0.5), R, plates && plates[p.id], p.med, null, R > 50 ? PLATE_LABEL[p.id] : '');
   });
-  if (uv) { ctx.fillStyle = C(lightTok()); ctx.font = `${fs - 1}px "Source Sans 3", system-ui`; ctx.textAlign = 'right'; ctx.fillText('UV light', w - 6, h - 6); }
+  if (uv) { ctx.fillStyle = '#d6c6ff'; ctx.font = `${fs - 1}px ${SANS}`; ctx.textAlign = 'right'; ctx.fillText('UV light', w - 6, h - 6); }
 }
 platesCv.onresize = drawPlates;
 function renderPlateReadouts() {
@@ -701,9 +1103,9 @@ zsel.innerHTML = PLATES.map(p => `<option value="${p.id}" ${p.id === 'p-amp' ? '
 function setupZoom() { drawZoom(); }
 function drawZoom() {
   const { ctx, w, h } = zoom; ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = uv ? mix(darkTok(), '--s5', 0.12) : C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  tableTop(ctx, w, h, uv);
   const id = zsel.value, p = plates && plates[id];
-  drawPlate(ctx, w / 2, h / 2, w * 0.46, p, PLATES.find(q => q.id === id).med, marks[id] || []);
+  drawPlate(ctx, w / 2, h / 2, w * 0.46, p, PLATES.find(q => q.id === id).med, marks[id] || [], PLATE_LABEL[id]);
   const n = (marks[id] || []).length; $('#mark-count').textContent = n;
   $('#zoom-note').textContent = !p || !p.incubated ? 'Incubate your plates first.' : p.lawn ? 'This plate has a lawn: too many colonies to count (TMTC).' : 'Mark every colony, including tiny ones. Do you think satellites should count as transformants?';
 }
@@ -831,11 +1233,12 @@ function streak(n) { const c = []; for (let i = 0; i < n; i++) { const t = i / n
 function drawSat() {
   const { ctx, w, h } = satCv; ctx.clearRect(0, 0, w, h);
   const su = $('#s-uv').checked, keep = uv; uv = su;
-  ctx.fillStyle = su ? mix(darkTok(), '--s5', 0.12) : C('--surface-2'); ctx.fillRect(0, 0, w, h);
+  tableTop(ctx, w, h, su);
   const R = Math.min(w * 0.21, h * 0.4), fs = Math.max(10, Math.min(13, w / 45));
-  drawPlate(ctx, w * 0.25, h * 0.47, R, satSrc, 'amp');
-  drawPlate(ctx, w * 0.75, h * 0.47, R, satRes, satRes ? satRes.med : $('#s-med').value);
-  ctx.fillStyle = su ? C(lightTok()) : C('--ink'); ctx.font = `600 ${fs}px "Source Sans 3", system-ui`; ctx.textAlign = 'center';
+  const MED = { lb: 'LB', amp: 'LB/amp', ara: 'LB/amp/ara' }, newMed = satRes ? satRes.med : $('#s-med').value;
+  drawPlate(ctx, w * 0.25, h * 0.47, R, satSrc, 'amp', null, R > 50 ? '+ LB/amp 48h' : '');
+  drawPlate(ctx, w * 0.75, h * 0.47, R, satRes, newMed, null, R > 50 ? 'streak ' + MED[newMed] : '');
+  ctx.fillStyle = su ? '#d6c6ff' : '#ece6d8'; ctx.font = `600 ${fs}px ${SANS}`; ctx.textAlign = 'center';
   ctx.fillText('Source: +pGLO LB/amp, 48 h', w * 0.25, h - 6);
   ctx.fillText(satRes ? `New ${({ lb: 'LB', amp: 'LB/amp', ara: 'LB/amp/ara' })[satRes.med]} plate, 24 h` : 'New plate', w * 0.75, h - 6);
   uv = keep;
