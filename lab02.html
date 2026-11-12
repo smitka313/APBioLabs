@@ -24,23 +24,57 @@
   .diagram .arr { stroke: var(--muted); stroke-width: 2; fill: none; }
   .diagram .ah { fill: var(--muted); }
   .diagram .force { fill: var(--stain); font-weight: 600; font-size: 13px; }
-  .pun rect.aa { fill: var(--s1); fill-opacity: .55; } .pun rect.ab { fill: var(--s4); fill-opacity: .45; } .pun rect.bb { fill: var(--s2); fill-opacity: .5; }
-  .pun rect { stroke: var(--surface); stroke-width: 2; }
+  .pun rect.aa { fill: var(--s1); fill-opacity: .5; } .pun rect.ab { fill: var(--s4); fill-opacity: .42; } .pun rect.bb { fill: var(--s2); fill-opacity: .48; }
+  .pun rect.cell { stroke: var(--surface); stroke-width: 2.5; }
+  .pun .shadow { fill: rgba(0,0,0,.16); }
+  .pun .frame { fill: none; stroke: var(--line); stroke-width: 1.5; }
+  .pun .base { fill: var(--surface); }
+  .pun .dim { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+  .pun circle.ca { fill: var(--s1); } .pun circle.cb { fill: var(--s2); }
+  .pun text.chip { fill: var(--surface); font-family: var(--f-body); font-weight: 700; font-size: 12px; }
   .pun text { fill: var(--ink); font-family: var(--f-mono); font-size: 13px; }
+  .pun text.g { font-family: var(--f-body); font-weight: 700; font-size: 14px; }
   .pun text.h { font-family: var(--f-body); font-weight: 600; fill: var(--muted); }
-  .formula-bar { display: flex; gap: 0; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; font-family: var(--f-mono); font-size: .85rem; background: var(--surface); }
-  .formula-bar .ref { padding: 6px 10px; background: var(--surface-2); border-right: 1px solid var(--line); min-width: 52px; text-align: center; font-weight: 600; }
-  .formula-bar .fx { padding: 6px 10px; overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; }
-  table.sheet { border-collapse: collapse; font-family: var(--f-mono); font-size: .8rem; width: 100%; }
-  table.sheet th { background: var(--surface-2); color: var(--muted); font-weight: 600; padding: 3px 8px; border: 1px solid var(--line); text-align: center; }
-  table.sheet td { border: 1px solid var(--line); padding: 3px 8px; text-align: center; min-width: 46px; cursor: cell; white-space: nowrap; }
-  table.sheet td.pool { background: var(--s3); background: color-mix(in srgb, var(--s3) 22%, var(--surface)); }
-  table.sheet td.lbl { text-align: left; color: var(--muted); font-family: var(--f-body); }
-  table.sheet td.A { color: var(--s1); font-weight: 600; } table.sheet td.B { color: var(--s2); font-weight: 600; }
-  table.sheet td.sum { background: var(--surface-2); font-weight: 600; }
-  table.sheet td.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
-  table.sheet td.gap { color: var(--muted); font-style: italic; font-family: var(--f-body); }
-  .sheet-wrap { overflow: auto; max-height: 460px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+  .lc .shadow { fill: rgba(0,0,0,.14); }
+  .lc .box { fill: url(#lc-grad); }
+  .lc .stop1 { stop-color: var(--surface); } .lc .stop2 { stop-color: var(--accent-soft); }
+  .lc .ico { stroke: var(--accent); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .lc .ico-f { fill: var(--accent); }
+  .lc .badge { fill: var(--stain-soft); stroke: var(--stain); stroke-width: 1; }
+  /* Spreadsheet: drawn as a generic modern spreadsheet application window. A screen is a physical object here,
+     so it keeps fixed light "app" colours in both themes (like the bench scenes); only the frame shadow is themed. */
+  .ss-app { border: 1px solid #c9cdd2; border-radius: var(--r); overflow: hidden; background: #ffffff; color: #1f2328; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 6px 18px -8px rgba(0,0,0,.25); display: grid; min-width: 0; }
+  .ss-tools { display: flex; align-items: center; gap: 2px; padding: 5px 8px; background: linear-gradient(#fbfbfc, #f1f2f4); border-bottom: 1px solid #dadde1; overflow: hidden; white-space: nowrap; font: 600 .78rem var(--f-body); color: #4a5058; }
+  .ss-tools span { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 5px; border-radius: 4px; }
+  .ss-tools span.b { font-weight: 800; } .ss-tools span.i { font-style: italic; font-family: Georgia, serif; } .ss-tools span.u { text-decoration: underline; }
+  .ss-tools .sep { width: 1px; min-width: 1px; height: 18px; padding: 0; margin: 0 4px; background: #d3d6da; border-radius: 0; }
+  .ss-tools .font { min-width: 74px; justify-content: start; border: 1px solid #d3d6da; background: #fff; font-weight: 400; }
+  .formula-bar { display: flex; align-items: stretch; gap: 0; border: 0; border-bottom: 1px solid #dadde1; border-radius: 0; overflow: hidden; font-family: var(--f-mono); font-size: .85rem; background: #ffffff; color: #1f2328; }
+  .formula-bar .ref { padding: 5px 10px; background: #ffffff; border-right: 1px solid #dadde1; min-width: 60px; text-align: left; font-weight: 600; font-family: var(--f-body); }
+  .formula-bar .fxi { display: grid; place-items: center; padding: 0 10px; border-right: 1px solid #dadde1; color: #6b7178; font: italic 600 .9rem Georgia, "Times New Roman", serif; }
+  .formula-bar .fx { padding: 5px 10px; overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0; }
+  .sheet-wrap { overflow: auto; max-height: 460px; border: 0; border-radius: 0; background: #ffffff; }
+  table.sheet { border-collapse: separate; border-spacing: 0; font-family: var(--f-body); font-size: .82rem; width: 100%; color: #1f2328; background: #ffffff; }
+  table.sheet th { position: sticky; background: #f3f4f6; color: #5c636b; font-weight: 600; font-size: .74rem; padding: 3px 8px; border: 0; border-right: 1px solid #d6d9dd; border-bottom: 1px solid #d6d9dd; text-align: center; }
+  table.sheet thead th { top: 0; z-index: 2; }
+  table.sheet tbody th { left: 0; z-index: 1; min-width: 34px; }
+  table.sheet thead th:first-child { left: 0; z-index: 3; background: #eceef1; }
+  table.sheet th.hl { background: #dce6f7; color: #1d4f9c; }
+  table.sheet thead th.hl { box-shadow: inset 0 -2px 0 #2b6fd6; }
+  table.sheet tbody th.hl { box-shadow: inset -2px 0 0 #2b6fd6; }
+  table.sheet td { position: relative; border: 0; border-right: 1px solid #e3e5e8; border-bottom: 1px solid #e3e5e8; padding: 3px 8px; text-align: right; min-width: 50px; cursor: cell; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.sheet td.A, table.sheet td.B, table.sheet td[data-ref^="G"] { text-align: center; }
+  table.sheet td.pool { background: #eaf1fd; }
+  table.sheet td.lbl { text-align: left; color: #4a5058; font-family: var(--f-body); font-weight: 600; }
+  table.sheet td.A { color: #11704f; font-weight: 700; } table.sheet td.B { color: #a3245f; font-weight: 700; }
+  table.sheet td.sum { background: #f7f8f9; font-weight: 700; border-top: 1px solid #c7cbd0; }
+  table.sheet td.sel { outline: 2px solid #2b6fd6; outline-offset: -2px; background-color: #f5f9ff; }
+  table.sheet td.sel::after { content: ""; position: absolute; right: -4px; bottom: -4px; width: 6px; height: 6px; background: #2b6fd6; border: 1px solid #ffffff; z-index: 1; }
+  table.sheet td.gap { color: #6b7178; font-style: italic; font-family: var(--f-body); text-align: left; }
+  .ss-tabs { display: flex; align-items: end; gap: 2px; padding: 0 8px; background: #f1f2f4; border-top: 1px solid #dadde1; font: 600 .78rem var(--f-body); color: #5c636b; white-space: nowrap; overflow: hidden; }
+  .ss-tabs span { padding: 5px 14px; border-radius: 0 0 6px 6px; }
+  .ss-tabs span.on { background: #ffffff; color: #1d4f9c; box-shadow: inset 0 2px 0 #2b6fd6; margin-top: -1px; }
+  .ss-tabs .add { padding: 5px 8px; font-size: .95rem; line-height: 1; }
   .toggles { display: grid; gap: 10px; }
   .toggle-box { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; background: var(--surface); display: grid; gap: 8px; }
   .toggle-box .sub { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 8px; }
@@ -103,20 +137,32 @@
       <h3>An idealized life cycle</h3>
       <p>To build a model you simplify. The manual's model follows one life cycle: adults release gametes into one shared pool, gametes pair at random to form zygotes, zygotes grow into juveniles and then adults. Each arrow is a place where something could change allele frequencies.</p>
       <figure>
-        <svg class="diagram" viewBox="0 0 620 300" role="img" aria-label="Life cycle: adults make gametes (the gene pool), random mating forms zygotes, zygotes become juveniles, juveniles become adults. Mutation acts on gametes, selection on zygotes and juveniles, migration on adults.">
-          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
-          <rect class="box" x="40" y="40" width="170" height="56" rx="12"/><text x="125" y="74" text-anchor="middle">Adults</text>
-          <rect class="box" x="410" y="40" width="170" height="56" rx="12"/><text x="495" y="66" text-anchor="middle">Gametes</text><text x="495" y="84" text-anchor="middle" class="m">(gene pool)</text>
-          <rect class="box" x="410" y="204" width="170" height="56" rx="12"/><text x="495" y="238" text-anchor="middle">Zygotes</text>
-          <rect class="box" x="40" y="204" width="170" height="56" rx="12"/><text x="125" y="238" text-anchor="middle">Juveniles</text>
+        <svg class="diagram lc" viewBox="0 0 620 300" role="img" aria-label="Life cycle: adults make gametes (the gene pool), random mating forms zygotes, zygotes become juveniles, juveniles become adults. Mutation acts on gametes, selection on zygotes and juveniles, migration on adults.">
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker>
+            <linearGradient id="lc-grad" x1="0" y1="0" x2="0" y2="1"><stop class="stop1" offset="0"/><stop class="stop2" offset="1"/></linearGradient></defs>
+          <g aria-hidden="true">
+            <rect class="shadow" x="43" y="45" width="170" height="56" rx="12"/><rect class="shadow" x="413" y="45" width="170" height="56" rx="12"/><rect class="shadow" x="413" y="209" width="170" height="56" rx="12"/><rect class="shadow" x="43" y="209" width="170" height="56" rx="12"/>
+          </g>
+          <rect class="box" x="40" y="40" width="170" height="56" rx="12"/><rect class="box" x="410" y="40" width="170" height="56" rx="12"/><rect class="box" x="410" y="204" width="170" height="56" rx="12"/><rect class="box" x="40" y="204" width="170" height="56" rx="12"/>
+          <rect x="40" y="40" width="170" height="56" rx="12" fill="none" stroke="var(--accent)" stroke-width="2"/><rect x="410" y="40" width="170" height="56" rx="12" fill="none" stroke="var(--accent)" stroke-width="2"/><rect x="410" y="204" width="170" height="56" rx="12" fill="none" stroke="var(--accent)" stroke-width="2"/><rect x="40" y="204" width="170" height="56" rx="12" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <g aria-hidden="true">
+            <!-- adult plant --><path class="ico" d="M66 86 V60 M66 72 q-10 -2 -12 -10 q9 0 12 8 M66 66 q9 -3 12 -11 q-10 0 -12 9"/><path class="ico" d="M58 86 h16"/>
+            <!-- gametes --><circle class="ico" cx="432" cy="60" r="5"/><circle class="ico" cx="446" cy="72" r="5"/><circle class="ico" cx="431" cy="80" r="4"/><circle class="ico-f" cx="432" cy="60" r="1.6"/><circle class="ico-f" cx="446" cy="72" r="1.6"/><circle class="ico-f" cx="431" cy="80" r="1.4"/>
+            <!-- zygote --><circle class="ico" cx="438" cy="232" r="11"/><circle class="ico-f" cx="434" cy="232" r="2.2"/><circle class="ico-f" cx="442" cy="232" r="2.2"/>
+            <!-- juvenile seedling --><path class="ico" d="M66 250 V232 M66 236 q-9 -1 -11 -8 q8 -1 11 6 M66 236 q9 -1 11 -8 q-8 -1 -11 6"/><path class="ico" d="M58 250 h16"/>
+          </g>
+          <text x="135" y="74" text-anchor="middle">Adults</text>
+          <text x="505" y="66" text-anchor="middle">Gametes</text><text x="505" y="84" text-anchor="middle" class="m">(gene pool)</text>
+          <text x="505" y="238" text-anchor="middle">Zygotes</text>
+          <text x="135" y="238" text-anchor="middle">Juveniles</text>
           <path class="arr" d="M212 68 H 406" marker-end="url(#ah)"/><text x="309" y="58" text-anchor="middle" class="m">meiosis</text>
           <path class="arr" d="M495 98 V 200" marker-end="url(#ah)"/><text x="505" y="155" class="m">random mating</text>
           <path class="arr" d="M408 232 H 214" marker-end="url(#ah)"/><text x="311" y="222" text-anchor="middle" class="m">growth</text>
           <path class="arr" d="M125 202 V 100" marker-end="url(#ah)"/><text x="115" y="155" text-anchor="end" class="m">maturation</text>
-          <text x="495" y="24" text-anchor="middle" class="force">Mutation</text>
-          <text x="311" y="285" text-anchor="middle" class="force">Selection</text>
-          <text x="20" y="165" class="force" transform="rotate(-90 20 165)" text-anchor="middle">Migration</text>
-          <text x="309" y="160" text-anchor="middle" class="force">Drift (small N)</text>
+          <rect class="badge" x="458" y="9" width="74" height="21" rx="10.5"/><text x="495" y="24" text-anchor="middle" class="force">Mutation</text>
+          <rect class="badge" x="273" y="270" width="76" height="21" rx="10.5"/><text x="311" y="285" text-anchor="middle" class="force">Selection</text>
+          <rect class="badge" x="5" y="128" width="21" height="76" rx="10.5"/><text x="20" y="165" class="force" transform="rotate(-90 20 165)" text-anchor="middle">Migration</text>
+          <rect class="badge" x="249" y="145" width="120" height="21" rx="10.5"/><text x="309" y="160" text-anchor="middle" class="force">Drift (small N)</text>
         </svg>
         <figcaption>Life stages of the model population (after the manual's Figure 1). Magenta labels mark where each evolutionary force enters.</figcaption>
       </figure>
@@ -154,7 +200,7 @@
           <p class="status" id="card-status" aria-live="polite"></p>
         </div>
         <div class="stage">
-          <canvas class="viz" id="card-canvas" aria-label="Each student shown as a card with their two alleles. A is green, B is magenta."></canvas>
+          <canvas class="viz" id="card-canvas" aria-label="Each student shown as an index card on a desk with their two alleles written in marker. A is green, B is magenta."></canvas>
           <div class="readouts">
             <div class="readout"><span class="k">Generation</span><span class="v" id="card-gen">0</span></div>
             <div class="readout"><span class="k">AA · AB · BB</span><span class="v" id="card-geno">—</span></div>
@@ -192,8 +238,12 @@
           <p class="status" id="ss-status" aria-live="polite"></p>
         </div>
         <div class="stage">
-          <div class="formula-bar" aria-live="polite"><span class="ref" id="fx-ref">E5</span><span class="fx" id="fx-f">=IF(RAND()&lt;=D$2,"A","B")</span></div>
-          <div class="sheet-wrap" id="sheet" role="region" aria-label="Spreadsheet model" tabindex="0"></div>
+          <div class="ss-app">
+            <div class="ss-tools" aria-hidden="true"><span>↶</span><span>↷</span><span class="sep"></span><span class="font">Sans · 10</span><span class="sep"></span><span class="b">B</span><span class="i">I</span><span class="u">U</span><span class="sep"></span><span>%</span><span>.0</span><span>.00</span><span class="sep"></span><span>Σ</span><span>⇅</span></div>
+            <div class="formula-bar" aria-live="polite"><span class="ref" id="fx-ref">E5</span><span class="fxi" aria-hidden="true">fx</span><span class="fx" id="fx-f">=IF(RAND()&lt;=D$2,"A","B")</span></div>
+            <div class="sheet-wrap" id="sheet" role="region" aria-label="Spreadsheet model" tabindex="0"></div>
+            <div class="ss-tabs" aria-hidden="true"><span class="add">+</span><span class="on">Generation 1</span><span>Sheet 2</span></div>
+          </div>
           <div class="readouts">
             <div class="readout"><span class="k">New p</span><span class="v" id="ss-newp">—</span></div>
             <div class="readout"><span class="k">New q</span><span class="v" id="ss-newq">—</span></div>
@@ -247,7 +297,7 @@
           <p class="status" id="mg-status" aria-live="polite"></p>
         </div>
         <div class="stage">
-          <canvas class="viz" id="mg-canvas" aria-label="Gene pool of population 1 shown as beads, and a graph of p against generation for every population."></canvas>
+          <canvas class="viz" id="mg-canvas" aria-label="Gene pool of population 1 shown as a glass jar of green (A) and magenta (B) beads, and a graph of p against generation for every population."></canvas>
           <div class="readouts">
             <div class="readout"><span class="k">Mean final p</span><span class="v" id="mg-mean">—</span></div>
             <div class="readout"><span class="k">SD of final p</span><span class="v" id="mg-sd">—</span></div>
@@ -366,16 +416,88 @@
   /* ---------------- Punnett square diagram ---------------- */
   const pun = $('#pun'), punP = $('#pun-p');
   function drawPun() {
-    const p = +punP.value, q = 1 - p, x0 = 50, y0 = 40, L = 270, a = L * p;
+    const p = +punP.value, q = 1 - p, x0 = 56, y0 = 52, L = 262, a = L * p, r = 10;
     $('#pun-p-out').textContent = `p = ${fmt(p, 2)}, q = ${fmt(q, 2)}`;
-    const cell = (x, y, w, h, cls, t1, t2) => `<rect class="${cls}" x="${x}" y="${y}" width="${w}" height="${h}"/>${w > 34 && h > 30 ? `<text x="${x + w / 2}" y="${y + h / 2 - 2}" text-anchor="middle">${t1}</text><text x="${x + w / 2}" y="${y + h / 2 + 15}" text-anchor="middle">${t2}</text>` : ''}`;
-    pun.innerHTML = `<text class="h" x="${x0 + a / 2}" y="${y0 - 12}" text-anchor="middle">A: p = ${fmt(p, 2)}</text><text class="h" x="${x0 + a + (L - a) / 2}" y="${y0 - 12}" text-anchor="middle">B: q = ${fmt(q, 2)}</text>
-      <text class="h" x="${x0 - 8}" y="${y0 + a / 2}" text-anchor="end" transform="rotate(-90 ${x0 - 8} ${y0 + a / 2})" dy="0">A: p</text>
-      <text class="h" x="${x0 - 8}" y="${y0 + a + (L - a) / 2}" text-anchor="end" transform="rotate(-90 ${x0 - 8} ${y0 + a + (L - a) / 2})">B: q</text>` +
+    const cell = (x, y, w, h, cls, g, f) => `<rect class="cell ${cls}" x="${x}" y="${y}" width="${w}" height="${h}"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#pun-sheen)"/>` +
+      (w > 40 && h > 34 ? `<text class="g" x="${x + w / 2}" y="${y + h / 2 - 3}" text-anchor="middle">${g}</text><text x="${x + w / 2}" y="${y + h / 2 + 15}" text-anchor="middle">${f}</text>` : '');
+    const chip = (cx, cy, al) => `<circle class="${al === 'A' ? 'ca' : 'cb'}" cx="${cx}" cy="${cy}" r="9"/><circle cx="${cx - 3}" cy="${cy - 3}" r="3" fill="#fff" opacity=".45"/><text class="chip" x="${cx}" y="${cy + 4}" text-anchor="middle">${al}</text>`;
+    // dimension brackets along the top and left edges show that the sides are p and q long
+    const hb = (xa, xb) => `<path class="dim" d="M${xa + 2} ${y0 - 6} v-5 H${xb - 2} v5"/>`, vb = (ya, yb) => `<path class="dim" d="M${x0 - 6} ${ya + 2} h-5 V${yb - 2} h5"/>`;
+    pun.innerHTML = `<defs><linearGradient id="pun-sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".06"/></linearGradient>
+      <clipPath id="pun-clip"><rect x="${x0}" y="${y0}" width="${L}" height="${L}" rx="${r}"/></clipPath></defs>
+      <rect class="shadow" x="${x0 + 3}" y="${y0 + 5}" width="${L}" height="${L}" rx="${r}"/>
+      ${hb(x0, x0 + a)}${hb(x0 + a, x0 + L)}${vb(y0, y0 + a)}${vb(y0 + a, y0 + L)}
+      ${a > 70 ? chip(x0 + a / 2 - 40, y0 - 27, 'A') : ''}<text class="h" x="${x0 + a / 2 + (a > 70 ? 8 : 0)}" y="${y0 - 22}" text-anchor="middle">${a > 70 ? '' : 'A: '}p = ${fmt(p, 2)}</text>
+      ${L - a > 70 ? chip(x0 + a + (L - a) / 2 - 40, y0 - 27, 'B') : ''}<text class="h" x="${x0 + a + (L - a) / 2 + (L - a > 70 ? 8 : 0)}" y="${y0 - 22}" text-anchor="middle">${L - a > 70 ? '' : 'B: '}q = ${fmt(q, 2)}</text>
+      <text class="h" x="${x0 - 18}" y="${y0 + a / 2}" text-anchor="middle" transform="rotate(-90 ${x0 - 18} ${y0 + a / 2})">A: p</text>
+      <text class="h" x="${x0 - 18}" y="${y0 + a + (L - a) / 2}" text-anchor="middle" transform="rotate(-90 ${x0 - 18} ${y0 + a + (L - a) / 2})">B: q</text>
+      <g clip-path="url(#pun-clip)"><rect class="base" x="${x0}" y="${y0}" width="${L}" height="${L}"/>` +
       cell(x0, y0, a, a, 'aa', 'AA = p²', fmt(p * p, 3)) + cell(x0 + a, y0, L - a, a, 'ab', 'AB = pq', fmt(p * q, 3)) +
-      cell(x0, y0 + a, a, L - a, 'ab', 'BA = pq', fmt(p * q, 3)) + cell(x0 + a, y0 + a, L - a, L - a, 'bb', 'BB = q²', fmt(q * q, 3));
+      cell(x0, y0 + a, a, L - a, 'ab', 'BA = pq', fmt(p * q, 3)) + cell(x0 + a, y0 + a, L - a, L - a, 'bb', 'BB = q²', fmt(q * q, 3)) +
+      `</g><rect class="frame" x="${x0}" y="${y0}" width="${L}" height="${L}" rx="${r}"/>`;
   }
   punP.addEventListener('input', drawPun); drawPun();
+
+  /* ---------- realistic rendering helpers (physical objects use fixed colours in both themes) ---------- */
+  const TAU = Math.PI * 2;
+  function off(w, h) { const d = window.devicePixelRatio || 1, cv = document.createElement('canvas'); cv.width = Math.max(1, Math.round(w * d)); cv.height = Math.max(1, Math.round(h * d)); const x = cv.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); return { c: cv, x, w, h }; }
+  const blit = (ctx, o) => ctx.drawImage(o.c, 0, 0, o.w, o.h);
+  const themeHooks = [];
+  try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => themeHooks.forEach(f => f())); } catch (e) { /* older browsers */ }
+  /* Marker colours on the cards and bead colours in the jar match the chart series (A green, B magenta). */
+  const INK = { A: '#13704d', B: '#b0245f' };
+  /* Classroom desk: maple-look laminate with long grain streaks and a soft light pool from the upper left. */
+  let deskCache = null;
+  function desk(W, H) {
+    const key = W + 'x' + H + ':' + (window.devicePixelRatio || 1);
+    if (deskCache && deskCache.key === key) return deskCache.o;
+    const o = off(W, H), c = o.x, R = Lab.rng(808);
+    c.fillStyle = '#c9a276'; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < H / 2.2; i++) {          // grain streaks
+      const y0 = R.uniform() * H, a = 0.04 + R.uniform() * 0.1, amp = 2 + R.uniform() * 6, f = 0.004 + R.uniform() * 0.01, ph = R.uniform() * TAU;
+      c.strokeStyle = R.chance(0.5) ? `rgba(120,78,40,${a})` : `rgba(236,204,160,${a})`; c.lineWidth = 0.6 + R.uniform() * 2.2; c.beginPath();
+      for (let x = -10; x <= W + 10; x += 12) { const y = y0 + Math.sin(x * f + ph) * amp + Math.sin(x * f * 3.1 + ph) * amp * 0.25; x < 0 ? c.moveTo(x, y) : c.lineTo(x, y); }
+      c.stroke();
+    }
+    for (let i = 0; i < W * H / 50; i++) { c.fillStyle = `rgba(90,58,30,${0.05 + R.uniform() * 0.1})`; c.fillRect(R.uniform() * W, R.uniform() * H, 1 + R.uniform() * 3, 0.6); }
+    const g = c.createRadialGradient(W * 0.25, H * 0.15, 0, W * 0.4, H * 0.4, Math.max(W, H)); g.addColorStop(0, 'rgba(255,248,232,0.28)'); g.addColorStop(1, 'rgba(40,24,10,0.25)');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    // a pencil groove and a few scuffs
+    c.strokeStyle = 'rgba(255,255,255,0.12)'; c.lineWidth = 1; for (let i = 0; i < 6; i++) { const x = R.uniform() * W, y = R.uniform() * H; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 10 + R.uniform() * 30, y + (R.uniform() - 0.5) * 6); c.stroke(); }
+    deskCache = { key, o }; return o;
+  }
+  /* A handwritten capital in marker: each stroke wobbles slightly and ink pools at its ends. */
+  function handLetter(c, ch, x, y, s, col, R) {
+    const j = () => (R.uniform() - 0.5) * s * 0.06, P = (u, v) => [x + (u - 0.5) * s * 0.78 + j(), y + (v - 0.5) * s + j()];
+    c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = Math.max(1.6, s * 0.12);
+    c.translate(x, y); c.rotate((R.uniform() - 0.5) * 0.14); c.translate(-x, -y);
+    const ends = [];
+    if (ch === 'A') {
+      const a = P(0.06, 1), b = P(0.5, 0.02), d = P(0.95, 1); c.beginPath(); c.moveTo(...a); c.quadraticCurveTo(...P(0.27, 0.52), ...b); c.quadraticCurveTo(...P(0.74, 0.5), ...d); c.stroke();
+      const e = P(0.24, 0.64), f = P(0.8, 0.61); c.beginPath(); c.moveTo(...e); c.quadraticCurveTo(...P(0.5, 0.66), ...f); c.stroke(); ends.push(a, d, e, f);
+    } else {
+      const a = P(0.14, 0.02), b = P(0.14, 1); c.beginPath(); c.moveTo(...a); c.lineTo(...b); c.stroke();
+      c.beginPath(); c.moveTo(...P(0.12, 0.03)); c.bezierCurveTo(...P(0.92, -0.06), ...P(0.9, 0.5), ...P(0.18, 0.48)); c.stroke();
+      c.beginPath(); c.moveTo(...P(0.16, 0.48)); c.bezierCurveTo(...P(1.04, 0.42), ...P(1.0, 1.08), ...P(0.12, 0.99)); c.stroke(); ends.push(a, b);
+    }
+    c.globalAlpha = 0.5; ends.forEach(([px, py]) => { c.beginPath(); c.arc(px, py, c.lineWidth * 0.55, 0, TAU); c.fill(); });
+    c.restore();
+  }
+  /* Ruled 3 × 5 index card with a red header line, lying slightly askew with a soft contact shadow. */
+  function indexCard(c, cx, cy, w, h, rot, R) {
+    c.save(); c.translate(cx, cy); c.rotate(rot);
+    c.fillStyle = 'rgba(40,22,8,0.28)'; c.beginPath(); c.roundRect ? c.roundRect(-w / 2 + 2.5, -h / 2 + 3.5, w, h, 2) : c.rect(-w / 2 + 2.5, -h / 2 + 3.5, w, h); c.fill();
+    c.fillStyle = 'rgba(40,22,8,0.12)'; c.beginPath(); c.roundRect ? c.roundRect(-w / 2 + 1, -h / 2 + 6, w + 3, h, 3) : c.rect(-w / 2 + 1, -h / 2 + 6, w + 3, h); c.fill();
+    const g = c.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); g.addColorStop(0, '#fffefa'); g.addColorStop(1, '#f1ede2');
+    c.fillStyle = g; c.beginPath(); c.roundRect ? c.roundRect(-w / 2, -h / 2, w, h, 1.5) : c.rect(-w / 2, -h / 2, w, h); c.fill();
+    c.strokeStyle = 'rgba(214,72,72,0.55)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-w / 2, -h / 2 + h * 0.2); c.lineTo(w / 2, -h / 2 + h * 0.2); c.stroke();
+    c.strokeStyle = 'rgba(90,140,200,0.32)'; c.lineWidth = 0.6; c.beginPath();
+    for (let y = -h / 2 + h * 0.34; y < h / 2 - 2; y += h * 0.14) { c.moveTo(-w / 2, y); c.lineTo(w / 2, y); } c.stroke();
+    for (let i = 0; i < 6; i++) { c.fillStyle = 'rgba(120,110,90,0.12)'; c.fillRect((R.uniform() - 0.5) * w, (R.uniform() - 0.5) * h, 0.8, 0.8); }
+    c.strokeStyle = 'rgba(150,140,120,0.35)'; c.lineWidth = 0.5; c.strokeRect(-w / 2 + 0.25, -h / 2 + 0.25, w - 0.5, h - 0.5);
+    c.restore();
+  }
+  const STICKER = ['#f3c623', '#3f8fdc', '#ee7a35', '#58b04c', '#b56fd8', '#e0526b', '#2fb3a8'];
 
   /* ================= CARD SIMULATION =================
      Each student is a diploid individual. Random pairing; each parent contributes one random allele (one card from
@@ -423,20 +545,26 @@
   }
   function renderCards() {
     const c = cardCanvas.ctx, W = cardCanvas.w, H = cardCanvas.h, n = cardPop.length;
-    c.clearRect(0, 0, W, H); c.fillStyle = Lab.color('--bg'); c.fillRect(0, 0, W, H);
+    c.clearRect(0, 0, W, H); blit(c, desk(W, H));
     let best = { s: 0, cols: 1 }; for (let cols = 1; cols <= n; cols++) { const rows = Math.ceil(n / cols), s = Math.min(W / cols, H / rows); if (s > best.s) best = { s, cols }; }
     const cols = best.cols, cw = W / cols, ch = H / Math.ceil(n / cols), sz = Math.min(cw, ch) * 0.86;
-    const cA = Lab.color('--s1'), cB = Lab.color('--s2'), sc = [Lab.color('--s3'), Lab.color('--s4'), Lab.color('--s5'), Lab.color('--s6')];
     const groupOf = new Array(n).fill(0); cardGroups.forEach((g, gi) => g.forEach(i => groupOf[i] = gi));
-    // draw in group order so groups sit together
+    // draw in group order so groups sit together; each student's card is a ruled index card written in marker
     const order = cardGroups.flat();
     order.forEach((idx, slot) => {
-      const g = cardPop[idx], x = cw * (slot % cols) + (cw - sz) / 2, y = ch * Math.floor(slot / cols) + (ch - sz * 0.8) / 2;
-      c.fillStyle = Lab.color('--surface'); c.strokeStyle = cardGroups.length > 1 ? sc[groupOf[idx] % 4] : Lab.color('--line'); c.lineWidth = cardGroups.length > 1 ? 2.5 : 1.2;
-      c.beginPath(); c.roundRect ? c.roundRect(x, y, sz, sz * 0.8, 6) : c.rect(x, y, sz, sz * 0.8); c.fill(); c.stroke();
-      c.font = `700 ${Math.round(sz * 0.36)}px ${mono()}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      const sorted = g[0] >= g[1] ? g : [g[1], g[0]];
-      sorted.forEach((al, k) => { c.fillStyle = al ? cA : cB; c.fillText(al ? 'A' : 'B', x + sz * (0.3 + 0.4 * k), y + sz * 0.42); });
+      const g = cardPop[idx], R = Lab.rng(slot * 7919 + 17), w = sz, h = sz * 0.8;
+      const x = cw * (slot % cols) + cw / 2 + (R.uniform() - 0.5) * (cw - w) * 0.6, y = ch * Math.floor(slot / cols) + ch / 2 + (R.uniform() - 0.5) * (ch - h) * 0.4, rot = (R.uniform() - 0.5) * 0.1;
+      indexCard(c, x, y, w, h, rot, R);
+      c.save(); c.translate(x, y); c.rotate(rot);
+      if (cardGroups.length > 1) { // coloured sticker dot marks each isolated group
+        const col = STICKER[groupOf[idx] % STICKER.length], r = Math.max(3, w * 0.07), sx = w / 2 - r * 1.8, sy = -h / 2 + r * 1.6;
+        c.fillStyle = 'rgba(0,0,0,0.2)'; c.beginPath(); c.arc(sx + 0.6, sy + 0.9, r, 0, TAU); c.fill();
+        const sg = c.createRadialGradient(sx - r * 0.3, sy - r * 0.35, 0, sx, sy, r); sg.addColorStop(0, '#ffffff'); sg.addColorStop(0.25, col); sg.addColorStop(1, col);
+        c.fillStyle = sg; c.beginPath(); c.arc(sx, sy, r, 0, TAU); c.fill();
+      }
+      const sorted = g[0] >= g[1] ? g : [g[1], g[0]], L = Lab.rng(slot * 104729 + cardGen * 31 + 5), ls = h * 0.44;
+      sorted.forEach((al, k) => handLetter(c, al ? 'A' : 'B', w * (-0.2 + 0.4 * k), h * 0.1, ls, al ? INK.A : INK.B, L));
+      c.restore();
     });
     const cc = countG(cardPop);
     $('#card-gen').textContent = cardGen; $('#card-geno').textContent = `${cc.aa} · ${cc.ab} · ${cc.bb}`; $('#card-p').textContent = fmt(cc.p, 3); $('#card-q').textContent = fmt(1 - cc.p, 3);
@@ -510,11 +638,22 @@
     h += `<tr><th>${r3}</th>${td('C' + r3, '', '')}${td('D' + r3, '', '')}${td('E' + r3, '', '')}${td('F' + r3, '', '')}${td('G' + r3, 'new p, q', 'lbl sum', 'new p, q')}${td('H' + r3, fmt(ssLast.newp, 3), 'sum pool', `=(2*H${r1}+I${r1})/(2*${n})`)}${td('I' + r3, fmt(1 - ssLast.newp, 3), 'sum pool', `=1-H${r3}`)}${td('J' + r3, '', '')}</tr>`;
     h += '</tbody></table>';
     $('#sheet').innerHTML = h;
+    const keep = $('#sheet td[data-ref="' + ssSelRef + '"]') || $('#sheet td[data-ref="E5"]');
+    if (keep) selectCell(keep);
+  }
+  /* Selected-cell look: border with fill handle, and the matching column and row headers highlighted. */
+  let ssSelRef = 'E5';
+  function selectCell(c) {
+    Lab.$$('#sheet td.sel, #sheet th.hl').forEach(x => x.classList.remove('sel', 'hl')); c.classList.add('sel');
+    const col = c.cellIndex, tr = c.parentElement, head = $('#sheet thead tr');
+    if (head && head.cells[col]) head.cells[col].classList.add('hl');
+    if (tr.cells[0]) tr.cells[0].classList.add('hl');
+    ssSelRef = c.dataset.ref;
+    $('#fx-ref').textContent = c.dataset.ref; $('#fx-f').textContent = c.dataset.f || '';
   }
   $('#sheet').addEventListener('click', e => {
     const c = e.target.closest('td[data-ref]'); if (!c) return;
-    Lab.$$('#sheet td.sel').forEach(x => x.classList.remove('sel')); c.classList.add('sel');
-    $('#fx-ref').textContent = c.dataset.ref; $('#fx-f').textContent = c.dataset.f || '';
+    selectCell(c);
   });
   $('#ss-recalc').addEventListener('click', () => { ssRecalc(); status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
   ['#ss-p', '#ss-n'].forEach(id => $(id).addEventListener('change', ssRecalc));
@@ -585,6 +724,68 @@
     return { pops, exp, P };
   }
 
+  /* Gene pool of population 1 as a glass bead jar (100 beads; A = green glass, B = magenta glass).
+     Physical object: fixed colours. Pre-rendered once per size: the jar's back (shadow, back wall), the bead
+     sprites and the jar's front (rim, edge refraction, highlights). Each frame only stamps beads. Beads near the
+     side walls are drawn narrower, as the curved glass compresses them (refraction). */
+  let jarCache = null;
+  function beadSprite(r, hi, mid, lo) {
+    const o = off(r * 2 + 4, r * 2 + 4), c = o.x, cx = r + 2, cy = r + 2;
+    const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.05, cx, cy, r);
+    g.addColorStop(0, hi); g.addColorStop(0.3, mid); g.addColorStop(0.8, mid); g.addColorStop(1, lo);
+    c.fillStyle = g; c.beginPath(); c.arc(cx, cy, r, 0, TAU); c.fill();
+    const t = c.createRadialGradient(cx + r * 0.3, cy + r * 0.45, 0, cx + r * 0.3, cy + r * 0.45, r * 0.55);   // light focused through the glass bead
+    t.addColorStop(0, 'rgba(255,255,255,0.35)'); t.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = t; c.fillRect(0, 0, o.w, o.h);
+    c.fillStyle = 'rgba(255,255,255,0.9)'; c.beginPath(); c.ellipse(cx - r * 0.38, cy - r * 0.42, r * 0.26, r * 0.17, -0.6, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(30,30,30,0.5)'; c.beginPath(); c.arc(cx, cy, r * 0.13, 0, TAU); c.fill();   // bead hole
+    return o;
+  }
+  function jarLayers(jx, jy, jw, jh) {
+    const key = [jx, jy, jw, jh, window.devicePixelRatio || 1].map(v => Math.round(v * 10)).join(':');
+    if (jarCache && jarCache.key === key) return jarCache;
+    const W = mgCanvas.w, H = mgCanvas.h, back = off(W, H), front = off(W, H), b = back.x, f = front.x;
+    const ix = jx + jw * 0.06, iw = jw * 0.88, iy = jy + jh * 0.1, ih = jh * 0.86, floor = iy + ih;
+    // contact shadow and the glass base
+    b.save(); b.translate(jx + jw * 0.56, jy + jh); b.scale(1, 0.12); const sh = b.createRadialGradient(0, 0, 0, 0, 0, jw * 0.6); sh.addColorStop(0, 'rgba(0,0,0,0.4)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+    b.fillStyle = sh; b.beginPath(); b.arc(0, 0, jw * 0.6, 0, TAU); b.fill(); b.restore();
+    b.fillStyle = 'rgba(214,226,230,0.28)'; b.beginPath(); b.roundRect ? b.roundRect(jx, jy + jh * 0.06, jw, jh * 0.94, [jw * 0.1, jw * 0.1, jw * 0.16, jw * 0.16]) : b.rect(jx, jy, jw, jh); b.fill();
+    // the bead sprites
+    const n = 100, area = iw * ih * 0.82, r = Math.max(2.2, Math.min(Math.sqrt(area / n / 3.5), iw / 14));
+    const A = beadSprite(r, '#d8fbe8', '#22a26e', '#0b4a31'), Bs = beadSprite(r, '#ffe0ee', '#d93f86', '#6a0f37');
+    // positions: hexagonal packing from the floor up, with jitter
+    const R = Lab.rng(17), pos = [], dx = r * 2.02, dy = r * 1.76;
+    for (let row = 0; pos.length < n; row++) {
+      const off2 = row % 2 ? dx / 2 : 0, y = floor - r - row * dy;
+      for (let x = ix + r + off2; x <= ix + iw - r + 0.01 && pos.length < n; x += dx) pos.push({ x: x + (R.uniform() - 0.5) * r * 0.25, y: y + (R.uniform() - 0.5) * r * 0.2 });
+    }
+    // refraction toward the side walls: compress horizontally and dim slightly
+    const cx = ix + iw / 2; pos.forEach(p => { const u = (p.x - cx) / (iw / 2); p.x = cx + (u + 0.12 * Math.sin(u * Math.PI)) / 1.0 * (iw / 2 - r) * 0.98; p.sx = 0.72 + 0.28 * Math.cos(u * Math.PI / 2.2); });
+    // jar front: edge refraction darkening, vertical highlights, thick base, neck and rim
+    const eg = f.createLinearGradient(jx, 0, jx + jw, 0);
+    eg.addColorStop(0, 'rgba(40,60,66,0.55)'); eg.addColorStop(0.07, 'rgba(255,255,255,0.08)'); eg.addColorStop(0.5, 'rgba(255,255,255,0)'); eg.addColorStop(0.9, 'rgba(255,255,255,0.05)'); eg.addColorStop(1, 'rgba(30,46,52,0.6)');
+    f.fillStyle = eg; f.beginPath(); f.roundRect ? f.roundRect(jx, jy + jh * 0.06, jw, jh * 0.94, [jw * 0.1, jw * 0.1, jw * 0.16, jw * 0.16]) : f.rect(jx, jy, jw, jh); f.fill();
+    f.strokeStyle = 'rgba(120,140,146,0.8)'; f.lineWidth = 1.2; f.stroke();
+    f.fillStyle = 'rgba(255,255,255,0.55)'; f.fillRect(jx + jw * 0.12, jy + jh * 0.14, Math.max(2, jw * 0.05), jh * 0.72);
+    f.fillStyle = 'rgba(255,255,255,0.22)'; f.fillRect(jx + jw * 0.2, jy + jh * 0.16, Math.max(1, jw * 0.02), jh * 0.6);
+    f.fillStyle = 'rgba(255,255,255,0.3)'; f.fillRect(jx + jw * 0.84, jy + jh * 0.2, Math.max(1, jw * 0.025), jh * 0.55);
+    const bg = f.createLinearGradient(0, floor, 0, jy + jh); bg.addColorStop(0, 'rgba(190,214,218,0.5)'); bg.addColorStop(1, 'rgba(120,150,156,0.7)');
+    f.fillStyle = bg; f.beginPath(); f.roundRect ? f.roundRect(jx + 1, floor, jw - 2, jy + jh - floor, [0, 0, jw * 0.15, jw * 0.15]) : f.rect(jx + 1, floor, jw - 2, jy + jh - floor); f.fill();
+    // threaded neck and rim lip
+    const nk = f.createLinearGradient(jx, 0, jx + jw, 0); nk.addColorStop(0, '#8fa3a8'); nk.addColorStop(0.25, '#f3f8f9'); nk.addColorStop(0.6, '#b8c8cc'); nk.addColorStop(1, '#6d8187');
+    f.globalAlpha = 0.85; f.fillStyle = nk; f.fillRect(jx + jw * 0.04, jy, jw * 0.92, jh * 0.07); f.globalAlpha = 1;
+    f.strokeStyle = 'rgba(80,100,106,0.6)'; f.lineWidth = 0.8; for (let k = 1; k <= 2; k++) { f.beginPath(); f.moveTo(jx + jw * 0.04, jy + jh * 0.023 * k); f.lineTo(jx + jw * 0.96, jy + jh * 0.023 * k + 1); f.stroke(); }
+    f.strokeStyle = 'rgba(255,255,255,0.8)'; f.lineWidth = 1; f.beginPath(); f.moveTo(jx + jw * 0.06, jy + 0.5); f.lineTo(jx + jw * 0.94, jy + 0.5); f.stroke();
+    jarCache = { key, back, front, A, B: Bs, pos, r };
+    return jarCache;
+  }
+  function drawJar(c, jx, jy, jw, jh, pNow) {
+    const J = jarLayers(jx, jy, jw, jh), nA = Math.round(pNow * 100), order = Lab.rng(17).shuffle(Array.from({ length: 100 }, (_, i) => i));
+    blit(c, J.back);
+    const col = new Array(100); for (let i = 0; i < 100; i++) col[order[i]] = i < nA;
+    for (let i = 0; i < 100; i++) { const p = J.pos[i], s = col[i] ? J.A : J.B, w = s.w * p.sx; c.drawImage(s.c, p.x - w / 2, p.y - s.h / 2, w, s.h); }
+    blit(c, J.front);
+    return J;
+  }
   const mgCanvas = Lab.canvas('#mg-canvas', window.innerWidth < 600 ? 0.9 : 0.6);
   let mgRes = null, mgShown = 0; const mgLoop = Lab.loop(dt => {
     if (!mgRes) return false;
@@ -598,14 +799,14 @@
     const ink = Lab.color('--ink'), mut = Lab.color('--muted'), grid = Lab.color('--grid'), cA = Lab.color('--s1'), cB = Lab.color('--s2');
     // jar of population 1
     const cur = mgRes ? Math.floor(mgShown) : 0, pNow = mgRes ? mgRes.pops[0].traj[cur] : +mgEl.p.value;
-    const jx = 10, jy = y0 + 18, jw = jarW - 20, jh = y1 - jy;
-    c.strokeStyle = mut; c.lineWidth = 2; c.beginPath(); c.moveTo(jx, jy); c.lineTo(jx, jy + jh); c.lineTo(jx + jw, jy + jh); c.lineTo(jx + jw, jy); c.stroke();
-    const beads = 100, bc = 8, br = Math.min(jw / bc, jh / Math.ceil(beads / bc)) / 2 * 0.86, nA = Math.round(pNow * beads);
-    const br2 = Lab.rng(17); const order = br2.shuffle(Array.from({ length: beads }, (_, i) => i));
-    for (let i = 0; i < beads; i++) { const slot = order[i], col = slot % bc, row = Math.floor(slot / bc); const bx = jx + (jw / bc) * (col + 0.5), by = jy + jh - (row + 0.5) * (br * 2 / 0.86); c.fillStyle = i < nA ? cA : cB; c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fill(); }
+    const jx = 12, jy = y0 + 18, jw = jarW - 24, jh = y1 - jy;
+    const J = drawJar(c, jx, jy, jw, jh, pNow);
     c.fillStyle = ink; c.font = `600 12px ${font()}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
     c.fillText(`Pop 1 gene pool`, jx + jw / 2, y0 + 8); c.font = `600 12px ${mono()}`; c.fillText(`p = ${fmt(pNow, 2)}`, jx + jw / 2, y1 + 18);
-    c.font = `11px ${font()}`; c.fillStyle = cA; c.textAlign = 'left'; c.fillText('● A', jx, y1 + 34); c.fillStyle = cB; c.textAlign = 'right'; c.fillText('B ●', jx + jw, y1 + 34);
+    // key: one bead of each colour
+    const ks = 11 / J.A.w;
+    c.drawImage(J.A.c, jx, y1 + 25, J.A.w * ks, J.A.h * ks); c.drawImage(J.B.c, jx + jw - J.B.w * ks, y1 + 25, J.B.w * ks, J.B.h * ks); c.textBaseline = 'middle';
+    c.font = `11px ${font()}`; c.fillStyle = ink; c.textAlign = 'left'; c.fillText('A', jx + J.A.w * ks + 3, y1 + 30.5); c.textAlign = 'right'; c.fillText('B', jx + jw - J.B.w * ks - 3, y1 + 30.5);
     // axes
     const G = mgRes ? mgRes.P.G : +mgEl.g.value, X = g => x0 + (g / G) * (x1 - x0), Y = p => y1 - p * (y1 - y0);
     c.strokeStyle = grid; c.lineWidth = 1; c.fillStyle = mut; c.font = `11px ${font()}`;
