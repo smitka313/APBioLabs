@@ -26,6 +26,9 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" as="image" href="img/lab01.webp" type="image/webp">
+<link rel="preload" as="image" href="img/lab02.webp" type="image/webp">
+<link rel="preload" as="image" href="img/lab03.webp" type="image/webp">
 <style>
   :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
   .hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 30px 26px; }
@@ -104,13 +107,15 @@ const BIG_IDEAS = [
   ]},
 ];
 const pad = n => String(n).padStart(2, '0');
+/* Cards on the first screens load eagerly (no lazy-load grey boxes); only the rest, further down, are lazy. width and height reserve their space. */
+const EAGER = 6;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 document.getElementById('labs').innerHTML = BIG_IDEAS.map(b => `
   <section class="bi wrap wrap--wide gutter" aria-labelledby="bi${b.n}">
     <div class="bi-head"><span class="eyebrow">Big Idea ${b.n}</span><h2 id="bi${b.n}">${b.name}</h2><span class="muted small">${b.units}</span></div>
     <div class="cards">${b.labs.map(l => `
       <a class="card" href="lab${pad(l.id)}.html">
-        <img class="thumb" src="img/lab${pad(l.id)}.webp" width="480" height="300" alt="${esc(l.alt)}" loading="lazy" decoding="async">
+        <img class="thumb" src="img/lab${pad(l.id)}.webp" width="480" height="300" alt="${esc(l.alt)}" ${l.id <= EAGER ? `decoding="sync"${l.id <= 3 ? ' fetchpriority="high"' : ''}` : 'loading="lazy" decoding="async"'}>
         <span class="num">Investigation ${l.id}</span>
         <h3>${esc(l.title)}</h3>
         <span class="dq">${esc(l.q)}</span>
