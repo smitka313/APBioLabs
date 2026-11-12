@@ -1661,12 +1661,25 @@
     setInterval(() => { if (!document.hidden) refreshGuides(); }, 600);
   }
   const resolveEl = t => typeof t === 'function' ? t() : typeof t === 'string' ? $(t) : t;
+  const PULSED = new Set(); // controls a Lab.steps list is currently pulsing
+  /* Open whatever hides the control: closed <details>, a Data/Graph/tab panel that is not showing. */
+  function revealTarget(t) {
+    for (let a = t.parentElement; a; a = a.parentElement) {
+      if (a.tagName === 'DETAILS' && !a.open) a.open = true;
+      if (a.hidden && a.getAttribute('role') === 'tabpanel') { const b = document.getElementById(a.getAttribute('aria-labelledby') || ''); if (b) b.click(); }
+    }
+  }
+  /* "Show me" arrival: open its part, scroll to it, pulse it for a few seconds and give it keyboard focus. */
   function focusTarget(t) {
     const sec = partOf(t);
     if (sec && pages.on && !pages.suspended && sec !== pages.cur) goPart(sec, { hash: true, scroll: false });
+    revealTarget(t);
     t.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
-    const f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input, select, textarea, button, a[href], [tabindex]', t);
-    if (f) f.focus({ preventScroll: true });
+    t.classList.add('lab-pulse'); clearTimeout(t._flashT);
+    t._flashT = setTimeout(() => { if (!PULSED.has(t)) t.classList.remove('lab-pulse'); }, 3600);
+    let f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]', t);
+    if (!f || f.disabled) { f = (f && f.disabled ? f.parentElement : t) || t; if (!f.hasAttribute('tabindex')) f.tabIndex = -1; } // a gated (disabled) button cannot take focus: focus its wrapper
+    f.focus({ preventScroll: true });
   }
   Lab.steps = function (el, list, o = {}) {
     if (typeof el === 'string') el = $(el);
@@ -1676,10 +1689,12 @@
     const ol = h('ol', { class: 'steps', 'aria-labelledby': uid + '-title' });
     const items = list.map((s, i) => {
       const text = h('span', { class: 'si-text', html: s.text });
-      const label = s.target ? h('button', { type: 'button', class: 'si-go', title: 'Go to this control', onclick: () => { const t = resolveEl(s.target); if (t) focusTarget(t); } }, text) : text;
+      const plain = s.text.replace(/<[^>]+>/g, '');
+      const show = s.target ? h('button', { type: 'button', class: 'si-show', title: 'Scroll to this control and highlight it. It does not do the step for you.', 'aria-label': 'Show me where: ' + plain, onclick: () => { const t = resolveEl(s.target); if (t) focusTarget(t); } }, 'Show me ↓') : null;
+      const label = text;
       const state = h('span', { class: 'sr-only si-state' });
       const li = h('li', { class: 'si' + (s.optional ? ' is-optional' : ''), 'data-step-id': s.id || null },
-        h('span', { class: 'si-n', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'si-body' }, label, state, s.optional ? h('span', { class: 'si-opt' }, ' optional') : null));
+        h('span', { class: 'si-n', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'si-body' }, label, state, s.optional ? h('span', { class: 'si-opt' }, ' optional') : null, show ? ' ' : null, show));
       ol.append(li);
       return { s, li, state, d: false, stuck: false };
     });
@@ -1707,7 +1722,7 @@
       if (nt !== lastNext) { lastNext = nt; next.innerHTML = ''; next.append(h('span', { class: 'sn-k' }, ci ? 'Next: ' : '✓ '), h('span', { html: nt })); next.classList.toggle('is-complete', !ci); }
       let tgt = ci && ci.s.target ? resolveEl(ci.s.target) : null;
       if (o.pulse === false) tgt = null;
-      if (pulsed !== tgt) { if (pulsed) pulsed.classList.remove('lab-pulse'); if (tgt) tgt.classList.add('lab-pulse'); pulsed = tgt; }
+      if (pulsed !== tgt) { if (pulsed) { pulsed.classList.remove('lab-pulse'); PULSED.delete(pulsed); } if (tgt) { tgt.classList.add('lab-pulse'); PULSED.add(tgt); } pulsed = tgt; }
       if (c !== cur) { cur = c; if (o.onChange) { try { o.onChange(c, ci ? ci.s : null); } catch (e) { console.warn(e); } } }
     }
     const api = { el, refresh, get current() { return cur; }, get items() { return items.map(it => ({ id: it.s.id, done: it.d })); } };
@@ -1715,18 +1730,19 @@
     return api;
   };
   Lab.steps.refresh = refreshGuides;
-  Lab.gate = function (btn, fn) {
+  Lab.gate = function (btn, fn, o = {}) {
     if (typeof btn === 'string') btn = $(btn);
     if (!btn) return null;
     const id = (btn.id || 'gate' + GUIDES.length) + '-why';
     const why = h('span', { class: 'gate-why', id, hidden: true });
-    btn.insertAdjacentElement('afterend', why);
+    const showBtn = o.show ? h('button', { type: 'button', class: 'si-show', hidden: true, onclick: () => { const t = resolveEl(o.show); if (t) focusTarget(t); } }, 'Show me ↓') : null;
+    btn.insertAdjacentElement('afterend', why); if (showBtn) why.insertAdjacentElement('afterend', showBtn);
     btn.setAttribute('aria-describedby', ((btn.getAttribute('aria-describedby') || '') + ' ' + id).trim());
     let last = null;
     const g = { el: btn, refresh() {
       let r = ''; try { r = fn() || ''; } catch (e) { r = ''; }
       if (r === last) return; last = r;
-      btn.disabled = !!r; btn.classList.toggle('is-gated', !!r); why.textContent = r; why.hidden = !r;
+      btn.disabled = !!r; btn.classList.toggle('is-gated', !!r); why.textContent = r; why.hidden = !r; if (showBtn) showBtn.hidden = !r;
     } };
     GUIDES.push(g); bindGuides(); g.refresh();
     return g;

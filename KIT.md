@@ -164,10 +164,13 @@ Lab.gate('#cup-run', () => poured || rows().length ? '' : 'Pour the disks first 
 ```
 - Numbered checklist; the first unfinished non-optional step is current (highlighted, `aria-current="step"`),
   a one-line **Next:** hint (`hint`, else `text`) sits under it, and the step's `target` control gets a
-  gentle pulsing outline (static under reduced motion). Clicking a step's text focuses its control (and
+  gentle pulsing outline (static under reduced motion). Each step with a `target` has a small "Show me ↓" button
+  (it only scrolls, so it is labelled that way; the step text is plain): it opens the control's part, closed
+  "More options", and Data/Graph tab if needed, pulses the control for a few seconds and focuses it (and
   opens its part if it is elsewhere). `sticky:true` keeps a step ticked once done.
 - `done()` is re-checked after every input/change/click, after table/quiz/answer changes, every 0.6 s, and
   on `Lab.steps.refresh()`. Base it on saved state too (tables, prompts) so a reload shows real progress.
+- `Lab.gate(button, fn, {show: target})` (optional `show`) adds a "Show me ↓" button next to the reason.
 - `Lab.gate(button, fn)` disables the button while `fn()` returns a reason and shows the reason under it
   (`#<id>-why`, linked by `aria-describedby`). Do not gate buttons that page code also disables itself,
   and let saved data pass the gate (students who reload must not be locked out).

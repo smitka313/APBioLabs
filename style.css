@@ -540,8 +540,9 @@ details.disclose--sm > .inner { padding: 0 12px 12px; font-size: .9rem; }
 .si.is-current { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
 .si.is-current .si-n { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .si-body { min-width: 0; }
-.si-go { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; text-align: left; cursor: pointer; border-radius: 3px; }
-.si-go:hover .si-text { text-decoration: underline; text-underline-offset: 2px; }
+.si-show { font: inherit; font-size: .76rem; font-weight: 600; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; margin: 2px 0 0 2px; cursor: pointer; white-space: nowrap; vertical-align: baseline; }
+.si-show:hover { border-color: var(--accent); background: var(--accent-soft); }
+.si-show[hidden] { display: none; }
 .si-opt { font-size: .74rem; font-style: italic; font-weight: 400; color: var(--muted); }
 .steps-next { font-size: .85rem; line-height: 1.35; background: var(--accent-soft); color: var(--ink); border-radius: var(--r-sm); padding: 6px 10px; }
 .steps-next .sn-k { font-weight: 700; color: var(--accent); }
