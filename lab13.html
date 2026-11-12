@@ -223,6 +223,7 @@
       </div>
       <div id="p1-table"></div>
       <p class="note" id="p1-match" aria-live="polite"></p>
+      <p class="feedback bad" id="p1-bad" role="alert" hidden></p>
       <div id="p1-chart"></div>
       <div class="readouts" id="p1-rates"></div>
       <div class="grid-2">
@@ -264,6 +265,7 @@
       </div>
       <div id="p2-table"></div>
       <p class="note" id="p2-match"></p>
+      <p class="feedback bad" id="p2-bad" role="alert" hidden></p>
       <div id="p2-chart"></div>
       <div id="p2-prompts" class="prompts-2"></div>
     </div>
@@ -334,6 +336,41 @@
   'use strict';
   Lab.init({ id: 'lab13' });
   const { $, $$, h, fmt, stats } = Lab;
+  /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
+  const V = (() => {
+    let n = 0;
+    const cap = s => s[0].toUpperCase() + s.slice(1);
+    function box(inp) {
+      if (inp._vfb) return inp._vfb;
+      const fb = document.createElement('div'); fb.className = 'feedback bad'; fb.setAttribute('role', 'alert'); fb.hidden = true; fb.id = (inp.id || 'vf' + (++n)) + '-err';
+      const host = inp.closest('.inline-num');
+      if (host) host.insertAdjacentElement('afterend', fb); else (inp.closest('.field') || inp.parentNode).appendChild(fb);
+      inp._vfb = fb; inp.addEventListener('input', () => { if (!inp._live) V.ok(inp); }); return fb;
+    }
+    const V = {
+      bad(inp, msg) { const fb = box(inp); fb.textContent = msg; fb.hidden = false; inp.setAttribute('aria-invalid', 'true'); inp.setAttribute('aria-describedby', fb.id); return null; },
+      ok(inp) { if (inp._vfb) inp._vfb.hidden = true; inp.removeAttribute('aria-invalid'); inp.removeAttribute('aria-describedby'); return true; },
+      /* read a number from an input; returns null (after showing a message) when empty, not a number or out of range */
+      num(inp, o = {}) {
+        const name = o.name || 'this value', raw = inp.value.trim();
+        const v = +raw;
+        if ((inp.validity && inp.validity.badInput) || (raw !== '' && !isFinite(v))) return V.bad(inp, `${cap(name)} must be a number, like 12 or 0.5.`);
+        if (raw === '') return V.bad(inp, o.empty || `Enter ${name} first.`);
+        if (o.int && v !== Math.round(v)) return V.bad(inp, `${cap(name)} must be a whole number.`);
+        if (o.gt != null && !(v > o.gt)) return V.bad(inp, o.gtMsg || `${cap(name)} must be greater than ${o.gt}.`);
+        if (o.min != null && v < o.min) return V.bad(inp, o.minMsg || `${cap(name)} can't be less than ${o.min}.`);
+        if (o.max != null && v > o.max) return V.bad(inp, o.maxMsg || `${cap(name)} can't be more than ${o.max}.`);
+        V.ok(inp); return v;
+      },
+      /* show a message in an existing feedback element */
+      say(el, msg) { el.hidden = false; el.className = 'feedback bad'; el.setAttribute('role', 'alert'); el.textContent = msg; },
+      /* status line: plain text normally, red alert when it is an error */
+      note(el, msg, bad) { el.textContent = msg; el.className = bad ? 'feedback bad' : 'small'; if (bad) el.setAttribute('role', 'alert'); else el.removeAttribute('role'); },
+      /* mark/unmark editable table cells */
+      cell(root, r, k, msg) { const i = root.querySelector(`input[data-r="${r}"][data-k="${k}"]`); if (i) { if (msg) { i.setAttribute('aria-invalid', 'true'); i.title = msg; } else { i.removeAttribute('aria-invalid'); i.removeAttribute('title'); } } }
+    };
+    return V;
+  })();
   const rng = Lab.rng();
   let PC = {}; const C = n => PC[n] || (PC[n] = Lab.color(n)); const fresh = () => { PC = {}; };
 
@@ -703,10 +740,19 @@
     onChange: () => syncP1()
   });
   const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance at 470 nm', xMin: 0, xMax: 5, yMin: 0, series: [] });
-  function seriesByTime(rows, key) { const out = []; for (let t = 0; t <= 5; t++) { const v = rows.filter(r => r.t === t && r[key] != null && isFinite(r[key])).map(r => r[key]); if (v.length) out.push({ x: t, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); } return out; }
+  /* palette numbers run 1-10; anything else is flagged on the cell, reported, and left out of the graph and match count */
+  const palOk = v => v != null && isFinite(v) && v >= 1 && v <= 10;
+  function palCheck(tableSel, badSel, rows, keys) {
+    const root = $(tableSel); let bad = 0;
+    rows.forEach((r, i) => keys.forEach(k => { const v = r[k], isBad = v != null && isFinite(v) && !palOk(v); if (isBad) bad++; V.cell(root, i, k, isBad ? 'Palette numbers run from 1 to 10' : ''); }));
+    const el = $(badSel); el.hidden = !bad;
+    if (bad) el.textContent = `${bad} palette number${bad > 1 ? 's are' : ' is'} outside 1 to 10, so ${bad > 1 ? 'they were' : 'it was'} left out of the graph and the match count. Palette numbers run from 1 (palest) to 10 (darkest).`;
+  }
+  function seriesByTime(rows, key) { const out = []; for (let t = 0; t <= 5; t++) { const v = rows.filter(r => r.t === t && r[key] != null && isFinite(r[key]) && (key === 'aE' || key === 'aC' || palOk(r[key]))).map(r => r[key]); if (v.length) out.push({ x: t, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); } return out; }
   function slope(pts) { const p = pts.filter(q => q.x <= 2); return p.length >= 2 ? stats.linreg(p.map(q => q.x), p.map(q => q.y)).m : NaN; }
   function syncP1() {
     const rows = t1.getRows(), spec = mode1() === 'spec';
+    palCheck('#p1-table', '#p1-bad', rows, ['cE', 'cC']);
     const kE = spec ? 'aE' : 'cE', kC = spec ? 'aC' : 'cC';
     const sE = seriesByTime(rows, kE), sC = seriesByTime(rows, kC);
     ch1.update({ yLabel: spec ? 'Absorbance at 470 nm (mean ± 2 SE)' : 'Color palette number (mean ± 2 SE)', yMin: 0, yMax: spec ? undefined : 10,
@@ -715,7 +761,7 @@
     const u = spec ? 'A/min' : 'units/min';
     [['Initial rate, enzyme (0–2 min)', slope(sE)], ['Initial rate, control (0–2 min)', slope(sC)]].forEach(([k, v]) => r.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, isFinite(v) ? fmt(v, 3) + ' ' + u : '—'))));
     // palette-matching feedback
-    let n = 0, ok = 0; rows.forEach(row => [['cE', '_AE'], ['cC', '_AC']].forEach(([c, a]) => { if (row[c] != null && isFinite(row[c])) { n++; if (Math.abs(row[c] - palNum(row[a])) <= 1) ok++; } }));
+    let n = 0, ok = 0; rows.forEach(row => [['cE', '_AE'], ['cC', '_AC']].forEach(([c, a]) => { if (palOk(row[c])) { n++; if (Math.abs(row[c] - palNum(row[a])) <= 1) ok++; } }));
     $('#p1-match').textContent = n ? `${ok} of ${n} of your palette matches are within ±1 of the palette value equivalent to the tube’s true color.` + (ok < n ? ' Look again at the ones that are far off.' : '') : 'Enter a palette number for each reading (even if you also used the spectrophotometer).';
   }
   function snapsUI(trial) {
@@ -778,9 +824,10 @@
   const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'ΔA', xMin: 2, xMax: 11, yMin: 0, series: [] });
   function syncP2() {
     const rows = t2.getRows(), spec = mode2() === 'spec', key = spec ? 'dA' : 'c';
-    const pts = []; PHS.forEach(p => { const v = rows.filter(r => r.pH === p && r[key] != null && isFinite(r[key])).map(r => r[key]); if (v.length) pts.push({ x: p, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); });
+    palCheck('#p2-table', '#p2-bad', rows, ['c']);
+    const pts = []; PHS.forEach(p => { const v = rows.filter(r => r.pH === p && r[key] != null && isFinite(r[key]) && (spec || palOk(r[key]))).map(r => r[key]); if (v.length) pts.push({ x: p, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); });
     ch2.update({ yLabel: spec ? 'Change in absorbance, ΔA (mean ± 2 SE)' : 'Color palette number (mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
-    let n = 0, ok = 0; rows.forEach(r => { if (r.c != null && isFinite(r.c)) { n++; if (Math.abs(r.c - palNum(r._A)) <= 1) ok++; } });
+    let n = 0, ok = 0; rows.forEach(r => { if (palOk(r.c)) { n++; if (Math.abs(r.c - palNum(r._A)) <= 1) ok++; } });
     $('#p2-match').textContent = n ? `${ok} of ${n} palette matches are within ±1 of the true color.` : 'Record a palette number for each tube at your reading time.';
   }
   $('#p2-run').addEventListener('click', () => {
@@ -813,14 +860,30 @@
     ph: { label: 'pH', unit: '', def: '3, 4, 4.5, 5, 5.5, 6, 7, 8', hint: 'Buffers from pH 2 to 11 replace the water in the enzyme tube.', min: 2, max: 11, opt: x => ({ pH: x }) }
   };
   const ivSel = $('#d-iv');
-  function ivChanged() { const d = DIV[ivSel.value]; $('#d-levels').value = d.def; $('#d-hint').textContent = d.hint; $('#d-pre-wrap').hidden = ivSel.value !== 'temp'; drawD(0); }
+  function ivChanged() { const d = DIV[ivSel.value]; $('#d-levels').value = d.def; V.ok($('#d-levels')); $('#d-hint').textContent = d.hint; $('#d-pre-wrap').hidden = ivSel.value !== 'temp'; drawD(0); }
   ivSel.addEventListener('change', ivChanged);
   const o = (id, f) => { const s = () => $(id + '-out').textContent = f($(id).value); $(id).addEventListener('input', s); s(); };
   o('#d-pre', v => v + ' min'); o('#d-reps', v => v);
   const cvD = Lab.canvas('#d-canvas', 0.48, { fit: true });
   const dOpts = iv => ({ kind: 'd', caption: DIV[iv].label + ' · replicate 1 shown', bath: iv === 'temp', iv });
   let dTubes = [], dT = 0, dBusy = false;
-  function levelsParsed() { const d = DIV[ivSel.value]; return [...new Set($('#d-levels').value.split(/[,;\s]+/).map(Number).filter(x => isFinite(x) && x >= d.min && x <= d.max))].slice(0, 8); }
+  /* Parse the typed levels. Anything that is not a number or is outside the range the model covers is reported, never silently dropped. */
+  function levelsCheck() {
+    const d = DIV[ivSel.value], toks = $('#d-levels').value.split(/[,;\s]+/).filter(Boolean), good = [], notNum = [], out = [];
+    toks.forEach(t => { const v = Number(t); if (!isFinite(v)) notNum.push(t); else if (v < d.min || v > d.max) out.push(t); else good.push(v); });
+    const levels = [...new Set(good)], u = d.unit ? ' ' + d.unit : '';
+    let msg = '';
+    if (!toks.length) msg = 'Enter at least two levels, separated by commas (for example ' + d.def.split(',').slice(0, 3).join(',').trim() + ').';
+    else if (notNum.length) msg = `"${notNum.join('", "')}" ${notNum.length > 1 ? 'are' : 'is'} not a number. Enter numbers separated by commas.`;
+    else if (out.length) msg = `${d.label} levels must be between ${d.min} and ${d.max}${u}. Change ${out.join(', ')}.`;
+    else if (levels.length > 8) msg = 'You can test at most 8 levels at a time. Remove some.';
+    else if (levels.length < 2) msg = 'Enter at least 2 different levels so you can compare them.';
+    return { levels: levels.slice(0, 8), msg };
+  }
+  function levelsParsed() { return levelsCheck().levels; }
+  const lvInput = $('#d-levels'); lvInput._live = true;
+  function levelsShow() { const m = levelsCheck().msg; if (m) V.bad(lvInput, m); else V.ok(lvInput); return !m; }
+  lvInput.addEventListener('input', levelsShow);
     function drawD(t) {
     if (!dTubes.length) { const iv = ivSel.value, d = DIV[iv]; drawRack(cvD, levelsParsed().map(x => ({ label: x + (d.unit ? ' ' + d.unit : ''), T: iv === 'temp' ? x : null })), 0, { kind: 'd', caption: d.label, bath: iv === 'temp', iv }); return; }
     drawRack(cvD, dTubes, t, dOpts(dTubes.iv));
@@ -850,7 +913,7 @@
   $('#d-run').addEventListener('click', () => {
     if (dBusy) { $('#d-status').textContent = 'Experiment running…'; return; }
     const iv = ivSel.value, d = DIV[iv], lv = levelsParsed(), reps = +$('#d-reps').value, pre = iv === 'temp' ? +$('#d-pre').value : 0;
-    if (lv.length < 2) { $('#d-status').textContent = 'Enter at least two valid levels.'; return; }
+    if (!levelsShow()) { $('#d-levels').focus(); return; }
     dBusy = true;
     const res = { iv, levels: lv.map(x => ({ x, reps: [] })) };
     for (let r = 0; r < reps; r++) { const batch = rng.normal(1, 0.05); res.levels.forEach(L => { const opt = Object.assign({ batch, pre }, d.opt(L.x)); const tr = react(opt); const read = [0, 1, 2, 3, 4, 5].map(t => t === 0 ? readSpec(0) : readSpec(at(tr, t))); L.reps.push({ tr, read, rate: stats.linreg([0, 1, 2], read.slice(0, 3)).m }); }); }
@@ -928,7 +991,7 @@
     { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
     { id: 'vars', text: 'Describe variables + controls', target: '#p-d-v', done: () => filledP('d-v') && filledP('d-c'), hint: 'Fill in the variables and controls boxes above.' }
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
-  Lab.gate('#d-run', () => levelsParsed().length >= 2 ? '' : 'Enter at least two valid levels');
+  Lab.gate('#d-run', () => levelsCheck().msg ? 'Fix the levels first (see the message under the box)' : '');
   $('#d-run').addEventListener('click', () => { const t = setInterval(() => { if (!dBusy) { clearInterval(t); if (dRes) Lab.toast(`Ran ${dRes.levels.length} levels × ${dRes.levels[0].reps.length} replicates`, { type: 'ok', announce: false, key: 'drun' }); } }, 300); setTimeout(() => clearInterval(t), 15000); });
 })();
 </script>
