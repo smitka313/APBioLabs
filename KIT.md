@@ -201,6 +201,60 @@ Compact items, ‹ › scroll arrows and edge fades when 10–12 parts do not fi
 "n of m parts done" and the All parts toggle pinned at the right. Keep `data-step` names short (≤ 14
 characters, e.g. "Root tips", not "Effects of environment on mitosis").
 
+### `Lab.onShow` example
+```js
+// Something that measures itself (not a Lab.canvas, Lab.chart or Scope view, which are handled for you):
+Lab.onShow('#gel-wrap', sec => layoutGel($('#gel-wrap').clientWidth));
+```
+
+### Pitfalls (seen while building Lab 5)
+- **Canvases drawn while hidden.** A canvas created in a hidden part is first drawn at a guessed width;
+  drawing code must not throw at small sizes (e.g. negative `ellipse` radii: clamp with `Math.max(0, …)`)
+  and must redraw from `onresize`. Never read `clientWidth` once at load and keep it.
+- **Moving nodes, not rebuilding them.** `Lab.results` moves the existing containers. Do not recreate a
+  table/chart in a new element, do not change its `id`, `save` key or columns: the report, worksheet,
+  progress checks and saved data all depend on them. Leave an empty `<details>` behind? Remove it.
+- **Gates that lock students out.** A gate based only on in-memory state (`poured`) blocks a student who
+  reloads. Always also accept saved evidence (`table.getRows().length`).
+- **Toast spam.** Rows added once per animation frame/minute: `toast:false` on the table and one toast
+  at the end. Never toast on every keystroke (autosave already debounces).
+- **`done()` that throws or is slow.** It runs every 0.6 s: read state, don't compute simulations in it.
+- **Step text too long.** Two-line steps push the left column past 768 px. ≤ 30 characters; put detail
+  in `hint`.
+- **Links to other parts.** Use `href="#slug"` (paged mode opens the part) or `Lab.pages.go('slug')`;
+  never `scrollIntoView` an element in a hidden part.
+- **Pulse targets.** Point `target` at the actual control (button/select/input), not a wrapper, so
+  clicking the step focuses something useful.
+- **Slugs.** Section ids come from `data-step`; renaming a `data-step` breaks old deep links, saved
+  "resume" links and the progress summary. Don't rename parts while converting.
+- **Playwright tests:** after clicking Next, wait (~250 ms) before locating `section.step.is-current`
+  again; the part changes on `hashchange`.
+
+### Acceptance tests for a converted lab
+Run with `python3 -m http.server` in the repo and Playwright (Chromium):
+1. `shot.js` on the lab at 1366 light and 400 dark: `errs: []`, `horizontalOverflow: 0`.
+2. At 1366×768 open each sim part from the nav and measure:
+   ```js
+   const r = document.querySelector('section.step.is-current .sim--fit').getBoundingClientRect();
+   const side = document.querySelector('section.step.is-current .sim-side');
+   // pass: r.bottom <= 768 && r.height <= 712 && side.scrollHeight <= side.clientHeight
+   //       and every visible button/select/input in .sim-side has bottom <= 768
+   ```
+   Repeat at 1280×720 (r.bottom ≤ 720).
+3. IDs unchanged: `grep -o 'id="[^"]*"'` on the old and new file; the new set must be a superset.
+   Saved-state keys unchanged: the same `save:` / `data-save` / `Lab.prompt` `key`s and quiz ids.
+   Graders unchanged: every quiz/`Check` button gives the same verdict for the same input.
+4. Page through every part with Next and Back: exactly one part visible, hash updated, heading focused.
+   Open `#<slug>`, `#step-N` and an inner element id directly.
+5. Run every procedure from the steps checklist only: each step ticks, gated buttons show their reason
+   then enable, the results panel updates, a "new" badge appears on the hidden tab, toasts appear.
+6. Download the .docx (serve the docx UMD from the npm package; the CDN is blocked in the sandbox),
+   open `Lab.report.open()` and `Lab.worksheet.enter()`: every part with student work appears, plus
+   Overview/Background prose (disclosures expanded) on the worksheet.
+7. Reload: tables, answers and the steps' ticks come back; no "new" badges or table toasts on reload.
+8. 1100 px wide: Scene / Data / Graph switch works with arrow keys. Dark mode looks right.
+Lab 5's full version of these checks (92 assertions) is `lab05.test.js` in the UI builder's scratchpad (`/tmp/claude-0/-home-user-apbiolabs/7e2baecf-cce5-5f50-9108-1aa82922f719/scratchpad/ui/`); copy it and swap the selectors.
+
 ### Converting a lab (phase 2 checklist)
 1. Overview, Background, Pre-lab, Analyze, Evaluate, Submit sections → `wrap wrap--wide`; sim sections →
    `wrap wrap--wide wrap--sim`.
