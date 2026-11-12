@@ -81,6 +81,12 @@
   .toggle-box .sub[hidden] { display: none !important; }
   .toggle-box .sub input { padding: 4px 6px; font-family: var(--f-mono); font-size: .85rem; }
   .toggle-box .sub label { font-size: .78rem; color: var(--muted); }
+  .sim--fit > .sim-main.is-wide { align-self: stretch; } /* results column uses the full height of the sim box */
+  .sim--fit .sheet-wrap { max-height: 250px; }
+  .sim--fit .toggles { gap: 6px; }
+  .sim--fit .toggle-box { padding: 4px 8px; gap: 6px; }
+  .sim--fit .row--2 > .btn { flex: 1 1 0; }
+  #mg-sim .controls { gap: 7px; } #mg-sim .toggles { gap: 4px; } #mg-sim .toggle-box { padding: 3px 8px; } #mg-sim .status { font-size: .82rem; min-height: 0; }
   .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px; align-items: end; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -103,10 +109,11 @@
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
-      <p class="lede">Why does the allele for cystic fibrosis stay in human populations even though people with two copies are seriously ill? Why is polydactyly (extra fingers) rare even though its allele is dominant? To answer questions like these, population biologists build mathematical models of gene pools.</p>
+    <div class="step-body split">
+      <div class="split-main prose">
+        <p class="lede">Why does the allele for cystic fibrosis stay in human populations even though people with two copies are seriously ill? Why is polydactyly (extra fingers) rare even though its allele is dominant? To answer questions like these, population biologists build mathematical models of gene pools.</p>
       <p>In this lab you will build a spreadsheet model of a population, step by step, the way the manual does it: draw gametes at random from a gene pool, join them into zygotes, count genotypes and calculate new allele frequencies. Then you will run many populations for many generations, switch on selection, mutation, migration and genetic drift, and design your own modeling experiment.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
         <ul>
@@ -116,16 +123,22 @@
           <li>Build, test and critique a model, and use it to test a hypothesis.</li>
         </ul>
       </div>
-      <div class="callout callout--tip"><div class="callout-title">Working with models</div>
+      </div>
+      <div class="split-side">
+        <div class="callout callout--tip"><div class="callout-title">Working with models</div>
         <p>There are no chemical hazards here, but modelers have their own habits: record every assumption, test the model with values where you know the answer, and save versions as you go. Your tables and answers on this page save in your browser automatically.</p>
+      </div>
       </div>
     </div>
   </section>
 
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Gene pools and the Hardy-Weinberg null model</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul><li>Evolution can be tracked as changes in allele frequencies: p + q = 1 for one gene with two alleles.</li><li>Random mating in a Hardy-Weinberg population gives genotype frequencies p², 2pq and q².</li><li>Hardy-Weinberg is a null model: with no drift, selection, mutation or migration, p and q never change.</li><li>In a small population, random gamete choice (drift) makes allele frequencies wander by chance.</li><li>Each force enters at a different life-cycle stage: mutation on gametes, selection on zygotes and juveniles, migration on adults.</li></ul></div>
       <p>Evolution happens in populations, not individuals. One way to track it is to follow the <strong>allele frequencies</strong> at one gene from generation to generation. Imagine a diploid organism with one gene that has two alleles, which we will call <strong>A</strong> and <strong>B</strong> (the spreadsheet handles letters more easily than A and a). Let</p>
       <div class="equation">p = frequency of A &nbsp;&nbsp; q = frequency of B &nbsp;&nbsp; p + q = 1</div>
       <p>Every gamete carries either A or B. If gametes meet at random, the chance that an egg and a sperm are both A is p × p = p². Both B: q². One of each can happen two ways (A egg with B sperm, or B egg with A sperm), so heterozygotes make up 2pq. That gives the Hardy-Weinberg equation:</p>
@@ -135,7 +148,7 @@
         <svg class="diagram pun" id="pun" viewBox="0 0 360 330" role="img" aria-label="Punnett square scaled by allele frequency, showing the areas p squared, 2pq and q squared."></svg>
         <figcaption>A Punnett square for a whole gene pool. Each side is scaled to p and q, so each box's area is a genotype frequency (the manual's Figure 10 uses p = 0.6).</figcaption>
       </figure>
-      <h3>An idealized life cycle</h3>
+        <details class="disclose"><summary>An idealized life cycle</summary><div class="inner">
       <p>To build a model you simplify. The manual's model follows one life cycle: adults release gametes into one shared pool, gametes pair at random to form zygotes, zygotes grow into juveniles and then adults. Each arrow is a place where something could change allele frequencies.</p>
       <figure>
         <svg class="diagram lc" viewBox="0 0 620 300" role="img" aria-label="Life cycle: adults make gametes (the gene pool), random mating forms zygotes, zygotes become juveniles, juveniles become adults. Mutation acts on gametes, selection on zygotes and juveniles, migration on adults.">
@@ -169,36 +182,49 @@
       </figure>
       <p>The starting assumptions are strict: the gene pool is infinite, every gamete has the same chance of being used, all zygotes survive to be adults, nobody enters or leaves, and there is no mutation. Under those conditions p and q stay the same forever. That is the <strong>Hardy-Weinberg equilibrium</strong>. It is a <strong>null model</strong>: a description of "nothing is happening." When real allele frequencies change, or genotypes do not match p², 2pq and q², the model tells you that some force (selection, mutation, migration, nonrandom mating or drift) is at work.</p>
       <p>A spreadsheet can mimic random gamete choice with the RAND() function, which returns a random decimal between 0 and 1. If RAND() ≤ p, the gamete is A; otherwise it is B. Because each draw is random, a small population will wander away from the expected numbers just by chance. That wandering is <strong>genetic drift</strong>, and it is the first thing your model will show you.</p>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl><dt>Allele frequency</dt><dd>The proportion of all copies of a gene in the gene pool that are one particular allele (p or q).</dd><dt>Gene pool</dt><dd>All the gametes (or alleles) available to form the next generation.</dd><dt>Hardy-Weinberg equilibrium</dt><dd>The state in which allele and genotype frequencies stay constant: p² + 2pq + q² = 1.</dd><dt>Genetic drift</dt><dd>Change in allele frequencies caused by chance, strongest in small populations.</dd><dt>Null model</dt><dd>A simple model of what happens when nothing is acting, used as a baseline for comparison.</dd><dt>Chi-square (χ²)</dt><dd>A statistic comparing observed counts with those expected under a model; df = 1 here, critical value 3.84.</dd></dl>
+      </aside>
     </div>
   </section>
 
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
-    <div class="step-body"><div id="prelab"></div></div>
+    <div class="step-body"><div id="prelab" class="quiz--cols"></div></div>
   </section>
 
   <!-- ============ 4. CARD MODEL ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Card model">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Card model">
     <header><div class="eyebrow">Getting started · physical model</div><h2>The class card simulation</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Before building a computer model, many classes act out a gene pool with cards. Every student starts as a heterozygote (AB) holding four cards: two A and two B, standing for the chromosomes they could pass on. Each round, students pair up at random. Each partner shuffles and hands over one card face-down, which makes one offspring; the pair does this twice. The two students then take on their two offspring's genotypes and the class repeats. Try the four cases below. Notice how a class-sized population behaves.</p>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="card-case">Case</label>
-            <select id="card-case">
-              <option value="1">I · Ideal Hardy-Weinberg population</option>
-              <option value="2">II · Selection: BB offspring do not survive</option>
-              <option value="3">III · Heterozygote advantage: BB never survive, AA survive half the time</option>
-              <option value="4">IV · Genetic drift: isolated groups of 4–6</option>
-            </select></div>
-          <div class="field"><label for="card-n">Class size <output id="card-n-out" class="val"></output></label><input id="card-n" type="range" min="10" max="40" step="2" value="24"></div>
-          <button class="btn btn--primary" id="card-step" type="button">Mate one generation</button>
-          <button class="btn" id="card-run5" type="button">Run 5 generations</button>
-          <button class="btn btn--ghost btn--sm" id="card-reset" type="button">Reset class (everyone AB)</button>
-          <p class="status" id="card-status" aria-live="polite"></p>
+      
+      <div class="sim sim--fit" id="card-sim">
+        <div class="sim-side">
+          <div id="card-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="card-case">Case</label>
+              <select id="card-case">
+                <option value="1">I · Ideal Hardy-Weinberg population</option>
+                <option value="2">II · Selection: BB offspring do not survive</option>
+                <option value="3">III · Heterozygote advantage: BB never survive, AA survive half the time</option>
+                <option value="4">IV · Genetic drift: isolated groups of 4–6</option>
+              </select></div>
+            <button class="btn btn--primary" id="card-step" type="button">Mate one generation</button>
+            <button class="btn" id="card-run5" type="button">Run 5 generations</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="card-n">Class size <output id="card-n-out" class="val"></output></label><input id="card-n" type="range" min="10" max="40" step="2" value="24"></div>
+              <button class="btn btn--ghost btn--sm" id="card-reset" type="button">Reset class (everyone AB)</button>
+            </div></details>
+            <p class="status" id="card-status" aria-live="polite"></p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Before building a computer model, many classes act out a gene pool with cards. Every student starts as a heterozygote (AB) holding four cards: two A and two B, standing for the chromosomes they could pass on. Each round, students pair up at random. Each partner shuffles and hands over one card face-down, which makes one offspring; the pair does this twice. The two students then take on their two offspring's genotypes and the class repeats. Try the four cases below. Notice how a class-sized population behaves.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="card-canvas" aria-label="Each student shown as an index card on a desk with their two alleles written in marker. A is green, B is magenta."></canvas>
@@ -212,16 +238,28 @@
         </div>
       </div>
       <div id="card-table"></div>
-      <div id="card-prompts"></div>
+      <div id="card-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 5. BUILD THE SPREADSHEET ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Build the model">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Build the model">
     <header><div class="eyebrow">Procedure · Building a simple mathematical model</div><h2>Build the spreadsheet: one generation</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>The modeling steps from Otto and Day: (1) formulate the question, (2) determine the basic ingredients, (3) describe the system qualitatively, (4) describe it quantitatively, (5) analyze the equations, (6) perform checks and balances, (7) relate the results back to the question. Steps 1–3 are in the Background. Here is step 4, built exactly like the manual's spreadsheet. Click any cell to see its formula.</p>
+      
+      <div class="sim sim--fit" id="ss-sim">
+        <div class="sim-side">
+          <div id="ss-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="ss-p">D2: frequency of A (p)</label><input id="ss-p" type="number" min="0" max="1" step="0.05" value="0.5"></div>
+            <div class="field"><label for="ss-n">Number of zygotes (rows)</label><input id="ss-n" type="number" min="1" max="2000" step="1" value="16"><span class="hint">The manual starts with 16 rows. Try 16, 100 and 1000.</span></div>
+            <button class="btn btn--primary" id="ss-recalc" type="button">Recalculate (F9)</button>
+            <button class="btn" id="ss-record" type="button">Record this run in the table</button>
+            <p class="status" id="ss-status" aria-live="polite"></p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>The modeling steps from Otto and Day: (1) formulate the question, (2) determine the basic ingredients, (3) describe the system qualitatively, (4) describe it quantitatively, (5) analyze the equations, (6) perform checks and balances, (7) relate the results back to the question. Steps 1–3 are in the Background. Here is step 4, built exactly like the manual's spreadsheet. Click any cell to see its formula.</p>
         <ul>
           <li><strong>D2</strong> holds p. <strong>D3</strong> is <code>=1-D2</code>.</li>
           <li><strong>E5</strong> and <strong>F5</strong> each draw one gamete: <code>=IF(RAND()&lt;=D$2,"A","B")</code>. The $ keeps the formula pointing at D2 when copied down.</li>
@@ -229,14 +267,8 @@
           <li><strong>H5</strong>, <strong>I5</strong>, <strong>J5</strong> put a 1 in the column that matches the zygote's genotype; I5 uses a nested IF to catch both AB and BA.</li>
           <li>Copy row 5 down for as many zygotes as you want, total each column with SUM, and calculate the new p.</li>
         </ul>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="ss-p">D2: frequency of A (p)</label><input id="ss-p" type="number" min="0" max="1" step="0.05" value="0.5"></div>
-          <div class="field"><label for="ss-n">Number of zygotes (rows)</label><input id="ss-n" type="number" min="1" max="2000" step="1" value="16"><span class="hint">The manual starts with 16 rows. Try 16, 100 and 1000.</span></div>
-          <button class="btn btn--primary" id="ss-recalc" type="button">Recalculate (F9)</button>
-          <button class="btn" id="ss-record" type="button">Record this run in the table</button>
-          <p class="status" id="ss-status" aria-live="polite"></p>
+          <p class="small muted">Chi-square check: expected counts are p̂²N, 2p̂q̂N and q̂²N, using the allele frequency p̂ calculated from these zygotes. Three genotype classes minus one, minus one more for estimating p̂ from the data, leaves df = 1. Grey bars show what the gene pool value in D2 predicts.</p>
+        </div></details>
         </div>
         <div class="stage">
           <div class="ss-app">
@@ -252,50 +284,56 @@
             <div class="readout"><span class="k">Fits HW? (crit 3.84)</span><span class="v" id="ss-fit">—</span></div>
           </div>
           <div id="ss-chart"></div>
-          <p class="small muted">Chi-square check: expected counts are p̂²N, 2p̂q̂N and q̂²N, using the allele frequency p̂ calculated from these zygotes. Three genotype classes minus one, minus one more for estimating p̂ from the data, leaves df = 1. Grey bars show what the gene pool value in D2 predicts.</p>
         </div>
       </div>
       <div id="ss-table"></div>
-      <div id="ss-prompts"></div>
+      <div id="ss-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 6. MANY GENERATIONS ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Many generations">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Many generations">
     <header><div class="eyebrow">Testing your mathematical model</div><h2>Many generations, many populations</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Now copy the model forward: each generation's new p seeds the next generation's gene pool (the manual's Figure 9). Running several populations side by side shows which results are predictable and which are luck. Start with drift only and compare small and large populations. Then turn on the other forces one at a time.</p>
-        <p class="small muted">Model order each generation: gametes drawn from the gene pool (with mutation A→B at rate μ and B→A at rate ν) → N zygotes by random union → each zygote survives with probability w for its genotype (selection) → migrants from a source population with allele frequency p<sub>m</sub> make up a fraction m of the adults → the adults' alleles form the next gene pool. With drift switched off, the model uses the exact expected values (an infinite population).</p>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="mg-n">Zygotes per generation (N) <output id="mg-n-out" class="val"></output></label><input id="mg-n" type="range" min="0" max="8" step="1" value="3"></div>
-          <div class="field"><label for="mg-p">Starting p <output id="mg-p-out" class="val"></output></label><input id="mg-p" type="range" min="0" max="1" step="0.01" value="0.5"></div>
-          <div class="field"><label for="mg-g">Generations <output id="mg-g-out" class="val"></output></label><input id="mg-g" type="range" min="10" max="200" step="10" value="50"></div>
-          <div class="field"><label for="mg-k">Populations run at once <output id="mg-k-out" class="val"></output></label><input id="mg-k" type="range" min="1" max="20" step="1" value="10"></div>
-          <div class="toggles">
-            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-drift" checked> Genetic drift (finite N)</label></div>
-            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-sel"> Selection (relative fitness)</label>
-              <div class="sub" id="sub-sel" hidden>
-                <div class="field"><label for="w-aa">w AA</label><input id="w-aa" type="number" min="0" max="1" step="0.05" value="1"></div>
-                <div class="field"><label for="w-ab">w AB</label><input id="w-ab" type="number" min="0" max="1" step="0.05" value="1"></div>
-                <div class="field"><label for="w-bb">w BB</label><input id="w-bb" type="number" min="0" max="1" step="0.05" value="0.8"></div>
-              </div></div>
-            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mut"> Mutation</label>
-              <div class="sub" id="sub-mut" hidden>
-                <div class="field"><label for="mu">μ (A→B)</label><input id="mu" type="number" min="0" max="0.1" step="0.001" value="0.01"></div>
-                <div class="field"><label for="nu">ν (B→A)</label><input id="nu" type="number" min="0" max="0.1" step="0.001" value="0"></div>
-              </div></div>
-            <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mig"> Migration</label>
-              <div class="sub" id="sub-mig" hidden>
-                <div class="field"><label for="mig-m">m (fraction)</label><input id="mig-m" type="number" min="0" max="0.5" step="0.01" value="0.05"></div>
-                <div class="field"><label for="mig-p">p of migrants</label><input id="mig-p" type="number" min="0" max="1" step="0.05" value="0.9"></div>
-              </div></div>
+      
+      <div class="sim sim--fit" id="mg-sim">
+        <div class="sim-side">
+          <div id="mg-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="mg-n">Zygotes per generation (N) <output id="mg-n-out" class="val"></output></label><input id="mg-n" type="range" min="0" max="8" step="1" value="3"></div>
+            <div class="field"><label for="mg-p">Starting p <output id="mg-p-out" class="val"></output></label><input id="mg-p" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+            <div class="toggles">
+              <div class="toggle-box"><label class="check"><input type="checkbox" id="t-drift" checked> Genetic drift (finite N)</label></div>
+              <div class="toggle-box"><label class="check"><input type="checkbox" id="t-sel"> Selection (relative fitness)</label>
+                <div class="sub" id="sub-sel" hidden>
+                  <div class="field"><label for="w-aa">w AA</label><input id="w-aa" type="number" min="0" max="1" step="0.05" value="1"></div>
+                  <div class="field"><label for="w-ab">w AB</label><input id="w-ab" type="number" min="0" max="1" step="0.05" value="1"></div>
+                  <div class="field"><label for="w-bb">w BB</label><input id="w-bb" type="number" min="0" max="1" step="0.05" value="0.8"></div>
+                </div></div>
+              <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mut"> Mutation</label>
+                <div class="sub" id="sub-mut" hidden>
+                  <div class="field"><label for="mu">μ (A→B)</label><input id="mu" type="number" min="0" max="0.1" step="0.001" value="0.01"></div>
+                  <div class="field"><label for="nu">ν (B→A)</label><input id="nu" type="number" min="0" max="0.1" step="0.001" value="0"></div>
+                </div></div>
+              <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mig"> Migration</label>
+                <div class="sub" id="sub-mig" hidden>
+                  <div class="field"><label for="mig-m">m (fraction)</label><input id="mig-m" type="number" min="0" max="0.5" step="0.01" value="0.05"></div>
+                  <div class="field"><label for="mig-p">p of migrants</label><input id="mig-p" type="number" min="0" max="1" step="0.05" value="0.9"></div>
+                </div></div>
+            </div>
+            <div class="row row--2"><button class="btn btn--primary" id="mg-run" type="button">Run model</button><button class="btn" id="mg-record" type="button">Record result</button></div>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="mg-g">Generations <output id="mg-g-out" class="val"></output></label><input id="mg-g" type="range" min="10" max="200" step="10" value="50"></div>
+              <div class="field"><label for="mg-k">Populations run at once <output id="mg-k-out" class="val"></output></label><input id="mg-k" type="range" min="1" max="20" step="1" value="10"></div>
+            </div></details>
+            <p class="status" id="mg-status" aria-live="polite"></p>
           </div>
-          <button class="btn btn--primary" id="mg-run" type="button">Run model</button>
-          <button class="btn" id="mg-record" type="button">Record result</button>
-          <p class="status" id="mg-status" aria-live="polite"></p>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Now copy the model forward: each generation's new p seeds the next generation's gene pool (the manual's Figure 9). Running several populations side by side shows which results are predictable and which are luck. Start with drift only and compare small and large populations. Then turn on the other forces one at a time.</p>
+        <p class="small muted">Model order each generation: gametes drawn from the gene pool (with mutation A→B at rate μ and B→A at rate ν) → N zygotes by random union → each zygote survives with probability w for its genotype (selection) → migrants from a source population with allele frequency p<sub>m</sub> make up a fraction m of the adults → the adults' alleles form the next gene pool. With drift switched off, the model uses the exact expected values (an infinite population).</p>
+          <p><strong>Population 1, generation by generation.</strong> Adult genotype counts after selection and migration, with a chi-square test against Hardy-Weinberg proportions for that generation (df = 1, critical value 3.84). Long runs show every few generations.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="mg-canvas" aria-label="Gene pool of population 1 shown as a glass jar of green (A) and magenta (B) beads, and a graph of p against generation for every population."></canvas>
@@ -308,32 +346,38 @@
           </div>
         </div>
       </div>
-      <h3>Population 1, generation by generation</h3>
-      <p class="muted small">Adult genotype counts after selection and migration, with a chi-square test against Hardy-Weinberg proportions for that generation (df = 1, critical value 3.84). Long runs show every few generations.</p>
       <div id="mg-table"></div>
-      <h3>Recorded runs</h3>
       <div id="mg-runs"></div>
-      <div id="mg-prompts"></div>
+      <div id="mg-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 7. DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Test your own hypothesis with the model</h2></header>
     <div class="step-body">
-      <div class="prose"><p>Pick one factor that can change allele frequencies and ask a question about it. Examples: <em>How small must a population be before drift regularly removes an allele within 50 generations?</em> <em>How fast does selection remove a recessive harmful allele compared with a dominant one?</em> <em>How much migration does it take to swamp selection?</em> The experiment runner below changes one parameter across the levels you choose, runs replicate populations at each level, and graphs the result with ±2 SE error bars. All other parameters come from the model in the previous step, so set those first.</p></div>
-      <div id="dz-q"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="dz-iv">Independent variable</label>
-            <select id="dz-iv"><option value="N">Population size N</option><option value="p0">Starting p</option><option value="wbb">Fitness of BB (w BB)</option><option value="wab">Fitness of AB (w AB)</option><option value="mu">Mutation rate μ (A→B)</option><option value="m">Migration rate m</option></select></div>
-          <div class="field"><label for="dz-levels">Levels (separate with commas)</label><input id="dz-levels" type="text" value="10, 50, 200, 1000"></div>
-          <div class="field"><label for="dz-reps">Replicate populations per level <output id="dz-reps-out" class="val"></output></label><input id="dz-reps" type="range" min="5" max="50" step="5" value="20"></div>
-          <div class="field"><label for="dz-dv">Response (dependent variable)</label>
-            <select id="dz-dv"><option value="p">Final p (mean ± 2 SE)</option><option value="lost">% of populations that lost or fixed A</option><option value="het">Final heterozygosity 2pq (mean ± 2 SE)</option></select></div>
-          <button class="btn btn--primary" id="dz-run" type="button">Run experiment</button>
-          <button class="btn btn--ghost btn--sm" id="dz-clear" type="button">Clear results</button>
-          <p class="status" id="dz-status" aria-live="polite"></p>
+      
+      <div id="dz-q" class="prompts-2"></div>
+      <div class="sim sim--fit" id="dz-sim">
+        <div class="sim-side">
+          <div id="dz-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="dz-iv">Independent variable</label>
+              <select id="dz-iv"><option value="N">Population size N</option><option value="p0">Starting p</option><option value="wbb">Fitness of BB (w BB)</option><option value="wab">Fitness of AB (w AB)</option><option value="mu">Mutation rate μ (A→B)</option><option value="m">Migration rate m</option></select></div>
+            <div class="field"><label for="dz-levels">Levels (separate with commas)</label><input id="dz-levels" type="text" value="10, 50, 200, 1000"></div>
+            <div class="field"><label for="dz-dv">Response (dependent variable)</label>
+              <select id="dz-dv"><option value="p">Final p (mean ± 2 SE)</option><option value="lost">% of populations that lost or fixed A</option><option value="het">Final heterozygosity 2pq (mean ± 2 SE)</option></select></div>
+            <button class="btn btn--primary" id="dz-run" type="button">Run experiment</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="dz-reps">Replicate populations per level <output id="dz-reps-out" class="val"></output></label><input id="dz-reps" type="range" min="5" max="50" step="5" value="20"></div>
+              <button class="btn btn--ghost btn--sm" id="dz-clear" type="button">Clear results</button>
+            </div></details>
+            <p class="status" id="dz-status" aria-live="polite"></p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Pick one factor that can change allele frequencies and ask a question about it. Examples: <em>How small must a population be before drift regularly removes an allele within 50 generations?</em> <em>How fast does selection remove a recessive harmful allele compared with a dominant one?</em> <em>How much migration does it take to swamp selection?</em> The experiment runner below changes one parameter across the levels you choose, runs replicate populations at each level, and graphs the result with ±2 SE error bars. All other parameters come from the model in the previous step, so set those first.</p>
+        </div></details>
         </div>
         <div class="stage">
           <div id="dz-chart"></div>
@@ -341,12 +385,12 @@
         </div>
       </div>
       <div id="dz-table"></div>
-      <div id="dz-a"></div>
+      <div id="dz-a" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 8. ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>What does the model tell you?</h2></header>
     <div class="step-body">
       <h3>Chi-square test for Hardy-Weinberg proportions</h3>
@@ -360,26 +404,26 @@
       <div id="cs-out"></div>
       <p class="status" id="cs-status" aria-live="polite"></p>
       <h3>Questions</h3>
-      <div id="analysis"></div>
+      <div id="analysis" class="prompts-2"></div>
       <h3>Claim, evidence, reasoning</h3>
       <div class="cer" id="cer"></div>
     </div>
   </section>
 
   <!-- ============ 9. REFLECT ============ -->
-  <section class="step wrap gutter" data-step="Reflect">
+  <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>The best test of a model is the real world. Few human traits show a clear intermediate phenotype, but the ability to taste bitter compounds such as PTC (the "supertaster" trait) comes close: heterozygotes often taste moderately, so you can count all three genotypes in a class and test Hardy-Weinberg with chi-square.</p>
         <p>Optional: build the same model yourself in a real spreadsheet such as <a href="https://sheets.google.com" target="_blank" rel="noopener">Google Sheets</a>, using the formulas in the Build step. The manual also suggests more powerful free models, such as Jon Herron's <a href="http://faculty.washington.edu/herronjc/SoftwareFolder/AlleleA1.html" target="_blank" rel="noopener">AlleleA1</a>.</p>
       </div>
-      <div id="reflect"></div>
+      <div id="reflect" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 10. SUBMIT ============ -->
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -506,7 +550,7 @@
      a shuffled hand of two copies of each of its alleles) to each of two offspring; parents become their offspring.
      Case II: BB offspring die, and the pair tries again. Case III: BB always die; AA die with probability 0.5.
      Case IV: mating only within isolated groups of 4–6 students. */
-  const cardCanvas = Lab.canvas('#card-canvas', window.innerWidth < 600 ? 0.8 : 0.5);
+  const cardCanvas = Lab.canvas('#card-canvas', window.innerWidth < 600 ? 0.8 : 0.5, { fit: true });
   let cardPop = [], cardGen = 0, cardHist = [], cardGroups = [];
   const cardN = $('#card-n');
   const cardTable = Lab.table('#card-table', {
@@ -788,7 +832,7 @@
     blit(c, J.front);
     return J;
   }
-  const mgCanvas = Lab.canvas('#mg-canvas', window.innerWidth < 600 ? 0.9 : 0.6);
+  const mgCanvas = Lab.canvas('#mg-canvas', window.innerWidth < 600 ? 0.9 : 0.6, { fit: true });
   let mgRes = null, mgShown = 0; const mgLoop = Lab.loop(dt => {
     if (!mgRes) return false;
     mgShown = Math.min(mgRes.P.G, mgShown + dt * Math.max(15, mgRes.P.G / 2.5));
@@ -887,7 +931,7 @@
   const DZ_LABEL = { N: 'Population size N', p0: 'Starting p', wbb: 'Fitness of BB', wab: 'Fitness of AB', mu: 'Mutation rate μ (A→B)', m: 'Migration rate m' };
   $('#dz-iv').addEventListener('change', () => { $('#dz-levels').value = DZ_DEF[$('#dz-iv').value]; });
   const dzChart = Lab.chart('#dz-chart', { xLabel: 'Independent variable', yLabel: 'Response', series: [], height: 300 });
-  const dzTable = Lab.table('#dz-table', { save: 'dz', columns: [{ key: 'exp', label: 'Experiment', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
+  const dzTable = Lab.table('#dz-table', { save: 'dz', toast: false, columns: [{ key: 'exp', label: 'Experiment', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
   let dzExp = dzTable.getRows().reduce((m, r) => Math.max(m, r.exp || 0), 0);
   $('#dz-run').addEventListener('click', () => {
     const iv = $('#dz-iv').value, dv = $('#dz-dv').value, reps = +dzReps.value;
@@ -953,6 +997,50 @@
     ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
   ].forEach(([key, label]) => Lab.prompt('#reflect', { key, label, rows: 3 }));
+
+  /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
+  const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+  const allFilled = ks => ks.every(filled);
+  let ssClicks = 0, mgRan = 0, dzTouched = false;
+  $('#ss-recalc').addEventListener('click', () => { ssClicks++; });
+  $('#mg-run').addEventListener('click', () => { mgRan++; });
+  ['#dz-iv', '#dz-levels', '#dz-dv', '#dz-reps'].forEach(s => { $(s).addEventListener('input', () => { dzTouched = true; }); $(s).addEventListener('change', () => { dzTouched = true; }); });
+  Lab.results('#card-sim', { graph: [{ el: '#card-chart', title: 'p by generation' }], data: [{ el: '#card-table', title: 'Genotype counts each generation' }] });
+  Lab.results('#ss-sim', { graph: [{ el: '#ss-chart', title: 'Zygote genotypes' }], data: [{ el: '#ss-table', title: 'Recorded runs' }] });
+  Lab.results('#mg-sim', { graph: [], data: [{ el: '#mg-table', title: 'Population 1, generation by generation' }, { el: '#mg-runs', title: 'Recorded runs' }] });
+  Lab.results('#dz-sim', { graph: [], data: [{ el: '#dz-table', title: 'Results of every experiment' }] });
+
+  const cardRows = () => cardTable.getRows();
+  Lab.steps('#card-steps', [
+    { id: 'mate', text: 'Mate one generation', target: '#card-step', done: () => cardGen >= 1 || cardRows().length > 1, hint: 'Press <strong>Mate one generation</strong> and watch p in the Graph.' },
+    { id: 'run5', text: 'Run 5 more generations', target: '#card-run5', done: () => cardGen >= 6 || cardRows().length > 6, hint: 'Press <strong>Run 5 generations</strong>. Does p stay at 0.5?' },
+    { id: 'cases', text: 'Try Case II, III or IV', target: '#card-case', done: () => cardRows().some(r => r.cs !== 'I'), hint: 'Choose another case, then mate several generations.' },
+    { id: 'qs', text: 'Compare the cases (below)', target: '#p-card-compare', done: () => filled('card-compare'), hint: 'Scroll down and answer the question.' }
+  ], { doneText: 'Card model done. Go on to <a href="#build-the-model">Build the model</a>.' });
+  Lab.steps('#ss-steps', [
+    { id: 'recalc', text: 'Recalculate a few times', target: '#ss-recalc', done: () => ssClicks >= 3 || ssTable.getRows().length > 0, hint: 'Press <strong>Recalculate</strong> 3 or more times. The gametes are redrawn at random.' },
+    { id: 'rec', text: 'Record 3 runs (16 zygotes)', target: '#ss-record', done: () => ssTable.getRows().length >= 3, hint: 'Press <strong>Record this run</strong> after each recalculation.' },
+    { id: 'size', text: 'Record runs with N = 100, 1000', target: '#ss-n', done: () => ssTable.getRows().some(r => r.n >= 100) && ssTable.getRows().some(r => r.n >= 1000), hint: 'Change the number of zygotes to 100, then 1000, and record runs.' },
+    { id: 'qs', text: 'Answer the 4 questions (below)', target: '#p-ss-rand', done: () => allFilled(['ss-rand', 'ss-english', 'ss-size', 'ss-norandom']), hint: 'Scroll down and answer the four questions.' }
+  ], { doneText: 'Spreadsheet done. Go on to <a href="#many-generations">Many generations</a>.' });
+  Lab.steps('#mg-steps', [
+    { id: 'drift', text: 'Run with drift only', target: '#mg-run', done: () => mgRan > 0 || mgRuns.getRows().length > 0, hint: 'Press <strong>Run model</strong>.' },
+    { id: 'small', text: 'Compare N = 10, 100, 1000', target: '#mg-n', done: () => mgRuns.getRows().length >= 3, hint: 'Change N, run, and press <strong>Record result</strong> for each size.' },
+    { id: 'force', text: 'Turn on another force', target: '#t-sel', sticky: true, done: () => $('#t-sel').checked || $('#t-mut').checked || $('#t-mig').checked, hint: 'Tick selection, mutation or migration, then run again.' },
+    { id: 'qs', text: 'Answer the questions (below)', target: '#p-mg-size', done: () => allFilled(['mg-size', 'mg-predict', 'mg-forces', 'mg-chi']), hint: 'Scroll down and answer the four questions.' }
+  ], { doneText: 'Model runs done. Go on to <a href="#design">Design</a>.' });
+  const dzLevels = () => $('#dz-levels').value.split(/[,;\s]+/).map(parseFloat).filter(isFinite);
+  Lab.steps('#dz-steps', [
+    { id: 'plan', text: 'Write question + hypothesis', target: '#p-dz-question', done: () => filled('dz-question') && filled('dz-hypothesis'), hint: 'Write your question and hypothesis in the boxes above.' },
+    { id: 'iv', text: 'Choose a variable and levels', target: '#dz-iv', sticky: true, done: () => dzTouched || dzTable.getRows().length > 0, hint: 'Pick the independent variable, then type its levels.' },
+    { id: 'run', text: 'Run the experiment', target: '#dz-run', done: () => dzTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the chart and Data.' },
+    { id: 'res', text: 'Describe your results (below)', target: '#p-dz-results', done: () => allFilled(['dz-results', 'dz-conclude']), hint: 'Scroll down and describe your results.' }
+  ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+  Lab.gate('#dz-run', () => dzLevels().length >= 2 ? '' : 'Enter at least two levels');
+
+  /* toasts for key moments (status lines are live regions, so these are not announced twice) */
+  $('#mg-run').addEventListener('click', () => { if (Lab.reducedMotion()) Lab.toast('Model run finished', { type: 'ok', announce: false, key: 'mgrun' }); });
+  $('#dz-run').addEventListener('click', () => { if (dzTable.getRows().length) Lab.toast(`Experiment ${dzExp} recorded in the Data tab`, { type: 'ok', announce: false, key: 'dzrun' }); });
 })();
 </script>
 </body>
