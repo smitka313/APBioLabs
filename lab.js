@@ -15,6 +15,7 @@
     if ((m = FILE.match(/^(lab\d\d)\.html?$/))) return { kind: 'lab', id: m[1] };
     if (FILE === '' || /^index\.html?$/.test(FILE)) return { kind: 'home', id: 'home' };
     if (/^teachers\.html?$/.test(FILE) || /^For teachers/i.test(t)) return { kind: 'info', id: 'teachers' }; // public information page: no sign-in, no report tools, no tour, no backup prompts
+    if (/^404\.html?$/.test(FILE) || /^Page not found/i.test(t)) return { kind: 'info', id: 'not-found' }; // 404.html is served from any path, so the title is the reliable signal
     if ((m = t.match(/^Lab (\d+) Teacher Notes/i))) return { kind: 'teacher', id: 'teacher-lab' + m[1].padStart(2, '0') };
     if ((m = t.match(/^Lab (\d+) ·/))) return { kind: 'lab', id: 'lab' + m[1].padStart(2, '0') };
     if (/^AP Bio (Digital )?Lab Bench/.test(t)) return { kind: 'home', id: 'home' };
