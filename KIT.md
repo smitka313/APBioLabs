@@ -27,7 +27,7 @@ Header crumbs: `All labs` → `index.html`; the unit/Big Idea label; `Teacher no
 - `Lab.chart(el, {type:'xy'|'bar', xLabel, yLabel, xMin,xMax,yMin,yMax, height, series:[{name,points:[{x,y,err}],line,dots,fit:'linear',dash}], categories, hLines:[{y,label}], annotations:[{x,label}]})` → `{update(partial)}`. Error bars via `err` (use 2×SE for AP-style 95% CI). Colors come from CSS tokens automatically.
 - `Lab.stats` — `mean, sd, se, ci95, median, sum, chiSquare(obs,exp) → {chi2,df,crit,reject,terms}, chiCrit(df,p), linreg(xs,ys) → {m,b,r2,xIntercept,predict}`.
 - `Lab.rng(seed?)` — `uniform, normal(m,sd), int(a,b), pick, chance(p), shuffle, poisson, binomial`.
-- `Lab.canvas(canvasEl, aspect)` → `{ctx,w,h,resize, onresize}` crisp HiDPI canvas. `Lab.color('--accent')` reads a theme token at draw time (call inside draw so dark mode works). `Lab.loop(fn(dt))` → `{start,stop}` rAF loop. `Lab.reducedMotion()`.
+- `Lab.canvas(canvasEl, aspect, {fit})` → `{ctx,w,h,resize, onresize, check}` crisp HiDPI canvas (`fit:true` caps its height by the viewport; see "UI patterns"). `Lab.color('--accent')` reads a theme token at draw time (call inside draw so dark mode works). `Lab.loop(fn(dt))` → `{start,stop}` rAF loop. `Lab.reducedMotion()`.
 - `Lab.store.get/set(key)` — per-browser save, namespaced to the lab. `Lab.fmt(x, digits)`. `Lab.h(tag, attrs, ...kids)`, `Lab.$`, `Lab.$$`.
 
 Classroom features (automatic on every `labNN.html`; teacher pages get none of the student tools):
@@ -53,6 +53,178 @@ put `data-letter="C"` etc. on each prompt's `<label>`), `.pill` (`.ok|.warn|.bad
 Colors: only `var(--token)` values; never literal hex in your page CSS or canvas drawing (use `Lab.color`).
 Tokens: --bg --surface --surface-2 --ink --muted --line --accent --accent-ink --accent-soft --stain
 --stain-soft --ok --warn --bad (+ -soft) --s1…--s6 (series) --grid.
+
+## UI patterns (laptop layout) — `lab05.html` is the reference implementation
+Target: Windows laptops at 1366×768 (also 1280×720, 1440×900, 1920×1080, and 400 px phones). A part must
+be usable without hunting: the simulation scene, its controls and its results fit on one screen.
+Everything below is in `lab.js` / `style.css`; a lab opts in through markup classes and a few calls.
+
+### 1. Paged mode (automatic on every `labNN.html`)
+Lab pages show **one `section.step` at a time** (`body.paged`, current part has `.is-current`) with
+Back / Next links at the bottom of each part ("Next: Float assay →"). Nothing to do in your markup.
+- Hash links open the part: `#float-assay`, legacy `#step-5` (rewritten to the slug), or any element id
+  inside a part (`#p-a1` opens Analyze and scrolls to that box). A part change scrolls to the part's top,
+  focuses its `<h2>`, updates the hash (browser Back works) and records "resume where you left off".
+- **All parts** toggle (step nav, and "Show all parts on one page" in each pager) shows the whole lab;
+  remembered per browser in `aplab:ui:allParts`. Ctrl+F offers it once; Ctrl+P, the worksheet and the
+  report always read every part. Progress checks, the report, worksheet and progress file read hidden
+  parts too.
+- Hidden parts have no width. When a part is shown, every `Lab.canvas` in it is resized and its
+  `onresize` redraw runs, charts re-render, `Scope.view` canvases redraw, and a `resize` event fires.
+  So **always set `cv.onresize = draw`** (or use a ResizeObserver) and never cache a canvas width at load.
+- `Lab.onShow(partOrAnyElementInIt, fn)` runs `fn(section)` each time that part becomes visible (and once
+  right away if it is visible). Use it for anything else that measures itself. Returns an unsubscribe.
+- `Lab.pages` → `{on, current(), go(idOrEl), showAll(bool), list()}` e.g. `Lab.pages.go('float-assay')`.
+- Never call `scrollIntoView` on something in another part without `Lab.pages.go(...)` first.
+
+### 2. Laptop-fit simulation: `.sim.sim--fit`
+Before (procedure paragraphs above a sim whose scene + controls are taller than the screen):
+```html
+<section class="step wrap wrap--wide gutter" data-step="Float assay">
+  <header>…</header>
+  <div class="step-body">
+    <div class="prose"><p>Put both cups under the lamp…</p><p>Before you start…</p></div>
+    <div class="sim">
+      <div class="controls">…every control…</div>
+      <div class="stage"><canvas class="viz" id="cup-viz" …></canvas><div class="readouts">…</div></div>
+    </div>
+    <div id="cup-table"></div><div id="cup-chart"></div>
+```
+After (section gets `wrap--sim`; steps checklist + controls in the left column; the long wording moves
+into a "Full procedure" disclosure; rarely used controls into "More options"):
+```html
+<section class="step wrap wrap--wide wrap--sim gutter" data-step="Float assay">
+  <header>…</header>
+  <div class="step-body">
+    <div class="sim sim--fit" id="cup-sim">
+      <div class="sim-side">
+        <div id="cup-steps"></div>                      <!-- Lab.steps renders here -->
+        <div class="controls">
+          <p class="controls-title">Controls</p>
+          …the 2–4 controls used every run (slider, Start button)…
+          <details class="more"><summary>More options</summary><div class="inner">…speed, fixed conditions…</div></details>
+        </div>
+        <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>…the original procedure paragraphs, unchanged…</p>
+        </div></details>
+      </div>
+      <div class="stage"><canvas class="viz" id="cup-viz" …></canvas><div class="readouts">…</div></div>
+    </div>
+    <div id="cup-table"></div><div id="cup-chart"></div>  <!-- Lab.results moves these beside the scene -->
+    …calculations and prompts stay below the sim…
+```
+```js
+const cupcv = Lab.canvas('#cup-viz', 0.55, { fit: true });   // height capped by the viewport, never cropped
+```
+- `fit:true` sets the canvas `max-width` to `(viewport height − var(--fit-reserve)) ÷ aspect`; the drawing
+  just gets smaller. For `Scope.view`/`Scope.still`, call `Lab.fitHeight(canvasEl, aspect)` before
+  creating the view (Scope reads its CSS width). `Lab.fitHeight(el, aspect, '320px')` takes a custom reserve.
+- Budget at 1366×768: the whole `.sim--fit` box ≤ 600 px tall. The left column is usually the tallest
+  thing: keep step texts to ~30 characters (one line), at most ~6 steps, and ≤ 4 visible controls.
+- Keep every control `id`, label and listener; only move the markup.
+
+### 3. Results beside the simulation: `Lab.results`
+```js
+Lab.results('#cup-sim', { graph: ['#cup-chart'], data: ['#cup-table'] });
+Lab.results('#d-sim', {
+  graph: [{ el: '#d-chart', title: 'Rate: mean 1/ET₅₀ ± 2 SE' }, { el: '#d-chart2', title: 'Median ET₅₀' }],
+  data:  [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw', title: 'ET₅₀ for every cup' }] });
+```
+Moves existing `Lab.chart` / `Lab.table` containers (ids unchanged) into a results panel:
+- **≥1280 px:** the scene stays visible and a right-hand column (36%) switches **Graph ⇄ Data**. Students
+  watch the graph build while the run plays; this is the layout at 1366×768.
+- **<1280 px:** a **Scene / Data / Graph** switch above the scene; Data and Graph cover the scene in the
+  same box (the canvas keeps its size), so nothing below moves.
+- A "new" badge appears on a tab whose table/chart changed while it was not showing (not for restored data).
+- Charts inside a panel draw at their real width so axis text stays 12 px (any chart can opt in with
+  `Lab.chart(el, {responsive:true, …})`); the report always uses a full-size 640-wide copy.
+- ARIA tabs: arrow keys / Home / End, `aria-selected`, `role=tabpanel`. Returns `{select('graph'|'data'|'scene')}`.
+
+### 4. Guidance inside sims: `Lab.steps` and `Lab.gate`
+```js
+Lab.steps('#cup-steps', [
+  { id: 'ready', text: 'Sink and pour the disks', target: '#inf-pour', done: () => poured || rows().length > 0,
+    hint: 'Go back to <a href="#sink-disks">Sink disks</a>, sink the disks and pour them.' },
+  { id: 'start', text: 'Start the timer', target: '#cup-run', done: () => rows().length > 1 },
+  { id: 'dark', text: 'Cover the cups (dark)', target: '#cup-dark', optional: true, done: () => … },
+  { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-p-ctrl', done: () => … },
+], { doneText: 'Assay done. Next, design your own test in <a href="#design">Design</a>.' });
+Lab.gate('#cup-run', () => poured || rows().length ? '' : 'Pour the disks first (Sink disks part)');
+```
+- Numbered checklist; the first unfinished non-optional step is current (highlighted, `aria-current="step"`),
+  a one-line **Next:** hint (`hint`, else `text`) sits under it, and the step's `target` control gets a
+  gentle pulsing outline (static under reduced motion). Clicking a step's text focuses its control (and
+  opens its part if it is elsewhere). `sticky:true` keeps a step ticked once done.
+- `done()` is re-checked after every input/change/click, after table/quiz/answer changes, every 0.6 s, and
+  on `Lab.steps.refresh()`. Base it on saved state too (tables, prompts) so a reload shows real progress.
+- `Lab.gate(button, fn)` disables the button while `fn()` returns a reason and shows the reason under it
+  (`#<id>-why`, linked by `aria-describedby`). Do not gate buttons that page code also disables itself,
+  and let saved data pass the gate (students who reload must not be locked out).
+
+### 5. Reading parts: Key ideas, Key terms, collapsible subsections, wide layout
+Before: a single 68ch column of paragraphs and diagrams next to empty space.
+After (section becomes `wrap--wide`; nothing deleted — subsections move into `details.disclose`):
+```html
+<div class="step-body split">
+  <div class="split-main prose">
+    <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+      <ul><li>3–5 one-sentence bullets drawn from the text below</li></ul></div>
+    <p>…the opening paragraph and equation stay visible…</p>
+    <details class="disclose"><summary>Why the disks sink and rise</summary><div class="inner">
+      …the subsection's paragraphs and diagram, unchanged…</div></details>
+  </div>
+  <aside class="split-side glossary" aria-labelledby="bg-terms">
+    <div class="callout-title" id="bg-terms">Key terms</div>
+    <dl><dt>Net photosynthesis</dt><dd>Gross photosynthesis minus the O₂ used by respiration.</dd>…</dl>
+  </aside>
+</div>
+```
+- `.split` = main + 300 px side column at ≥1100 px (Overview: objectives left, safety/practices right).
+- Closed `details` still match Ctrl+F (Chrome), open for printing, and print in full on the worksheet.
+- `Lab.tabs(el)` turns `<div><section data-tab="Label">…</section>…</div>` into ARIA tabs if a part
+  really needs tabs (all tabs still print on the worksheet). Prefer `details`.
+- Pre-lab: `<div id="prelab" class="quiz--cols">` = two quiz columns at ≥1100 px.
+  Prompt groups: put prompts in a `.prompts-2` container (two columns at ≥1100 px).
+
+### 6. Toasts: `Lab.toast(msg, {type, timeout, key, announce, action})`
+`type`: `ok` (default) | `info` | `warn` | `bad`. Polite live region, bottom right (bottom, full width on
+phones), clear of safe areas. `key` replaces an earlier toast with the same key; `announce:false` shows it
+without announcing (use when an `aria-live` status already says the same); `action:{label, onClick}` adds
+one button. Automatic toasts: saved answers (after typing pauses, at most every 45 s), quiz checks,
+"Recorded trial N" for `Lab.table` with `save` (`addRow`/`setRows`), copy responses, .docx download,
+progress file, resume code, copy link, name saved. Table options: `toast: false | 'text' | (rows, added) => 'text'`.
+For rows that stream in during an animation (one per simulated minute) set `toast:false` and call
+`Lab.toast('Recorded minutes 0–20…')` when the run ends.
+
+### 7. Step nav
+Compact items, ‹ › scroll arrows and edge fades when 10–12 parts do not fit, the current part kept in view,
+"n of m parts done" and the All parts toggle pinned at the right. Keep `data-step` names short (≤ 14
+characters, e.g. "Root tips", not "Effects of environment on mitosis").
+
+### Converting a lab (phase 2 checklist)
+1. Overview, Background, Pre-lab, Analyze, Evaluate, Submit sections → `wrap wrap--wide`; sim sections →
+   `wrap wrap--wide wrap--sim`.
+2. Overview → `.split` (lede + objectives left; practices + safety right).
+3. Background → Key ideas (3–5 bullets from the existing text), opening paragraph visible, every `<h3>`
+   subsection into `details.disclose` (summary = the old h3 text), Key terms `aside.glossary` (4–7 terms).
+   Delete nothing.
+4. Pre-lab container gets `quiz--cols`; prompt groups get `.prompts-2` (create a wrapper div in JS when
+   prompts are appended to the step body directly).
+5. Each `.sim` → `.sim.sim--fit` with `.sim-side` (steps div, `.controls` with `controls-title`, rare
+   controls in `details.more`, original procedure paragraphs in `details.disclose--sm` "Full procedure").
+   Keep all ids. Give the sim an id.
+6. Every `Lab.canvas(...)` in a sim → add `{ fit: true }`; Scope views → `Lab.fitHeight(cv, aspect)` first.
+   Check every canvas has an `onresize` redraw (or `Lab.onShow`).
+7. `Lab.results(sim, {graph, data})` for the tables/charts that belong to that sim (after they are created).
+8. `Lab.steps` per sim (≤ 6 one-line steps, a `target` for each, `hint` where the next action is not
+   obvious, `done()` that also reads saved tables/prompts) and `Lab.gate` for buttons whose prerequisite
+   is not met; the gate must pass when saved data exists.
+9. Streaming tables: `toast:false` + one `Lab.toast` at the end of the run; add toasts for key moments
+   (e.g. "All disks sunk"), with `announce:false` where a live feedback line already exists.
+10. Test at 1366×768: open each sim part from the nav; the `.sim--fit` box must end above 768 px and need
+    no inner scrolling (also 1280×720). Then 1100 px (Scene/Data/Graph switch), 400 px phone, dark mode,
+    zero console errors, no sideways scroll, the .docx/worksheet still list every part, and reload keeps
+    the steps ticked from saved data. `lab05.html` shows every pattern.
 
 ## Required structure of `labNN.html` (sections in this order; adapt names to the lab)
 1. **Overview** — the lab's driving question, what students will do, learning objectives & science
