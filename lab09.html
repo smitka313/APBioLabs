@@ -282,6 +282,370 @@ Lab.prompt('#act2-prompts', { key: 'act2', label: 'Activity II: Predict whether 
    Band width grows with load volume, voltage (heating) and time (diffusion). Band intensity ∝ DNA mass
    (0.04 µg/µL × volume × bp/48,502); methylene blue detects roughly ≥15 ng. Gel = 70 mm long. */
 const GEL_MM = 70, CONC = 0.04; // µg/µL
+/* =================== Bench art for the gel simulator ===================
+   Everything inside the canvas is a physical object (bench, acrylic gel box, buffer, agarose, power supply,
+   leads, tubes, micropipette, light box, ruler), so it uses FIXED colours that look the same in light and
+   dark themes. Static layers are rendered once into offscreen canvases (rebuilt only when the size, scene or
+   a control that changes them changes); animation frames only composite dye fronts, bands, bubbles and the
+   pipette on top. No ctx.filter (Safari). */
+const TAU = Math.PI * 2, FONT = '"Source Sans 3", "Segoe UI", sans-serif';
+const mkC = (w, h) => { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
+function rrect(x, X, Y, w, h, r) { r = Math.max(0, Math.min(r, w / 2, h / 2)); x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
+function lin(x, x0, y0, x1, y1, stops) { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function shadowed(x, col, blur, ox, oy, fn) { x.save(); x.shadowColor = col; x.shadowBlur = blur; x.shadowOffsetX = ox; x.shadowOffsetY = oy; fn(); x.restore(); }
+/* Page-local HiDPI canvas whose aspect ratio depends on its width (wide: box + side bench; narrow: stacked). */
+function fitCanvas(canvas, aspectOf) {
+  const ctx = canvas.getContext('2d'), o = { canvas, ctx, w: 0, h: 0, dpr: 1 };
+  o.resize = () => {
+    const w = Math.max(200, canvas.clientWidth || canvas.parentElement.clientWidth), hh = Math.round(w * aspectOf(w)), dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(hh * dpr); canvas.style.height = hh + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); o.w = w; o.h = hh; o.dpr = dpr;
+  };
+  o.resize();
+  if ('ResizeObserver' in window) new ResizeObserver(() => { if (Math.abs(canvas.clientWidth - o.w) > 1) { o.resize(); o.onresize && o.onresize(); } }).observe(canvas);
+  return o;
+}
+const ART = {};
+function artTile(key, n, paint) { if (!ART[key]) { const c = mkC(n, n); paint(c.getContext('2d'), n, Lab.rng(n * 13 + key.length * 7)); ART[key] = c; } return ART[key]; }
+const benchTile = () => artTile('bench', 192, (x, n, R) => {   // black epoxy-resin bench top with mineral speckle
+  x.fillStyle = '#24272b'; x.fillRect(0, 0, n, n);
+  for (let i = 0; i < 2800; i++) { const l = R.uniform() < 0.55, s = 0.5 + R.uniform() * 1.3; x.fillStyle = l ? `rgba(98,104,112,${(0.08 + R.uniform() * 0.3).toFixed(3)})` : `rgba(5,6,8,${(0.15 + R.uniform() * 0.4).toFixed(3)})`; x.fillRect(R.uniform() * n, R.uniform() * n, s, s); }
+});
+const gelTile = () => artTile('gel', 160, (x, n, R) => {   // agarose: fine grain and tiny trapped specks
+  for (let i = 0; i < 900; i++) { x.fillStyle = R.uniform() < 0.5 ? `rgba(255,255,255,${(R.uniform() * 0.12).toFixed(3)})` : `rgba(0,18,36,${(R.uniform() * 0.1).toFixed(3)})`; x.fillRect(R.uniform() * n, R.uniform() * n, 0.7 + R.uniform(), 0.7 + R.uniform()); }
+});
+const panelTile = () => artTile('panel', 96, (x, n, R) => {   // frosted diffuser of the white light box
+  for (let i = 0; i < 1500; i++) { x.fillStyle = `rgba(${R.uniform() < 0.5 ? '255,255,255' : '120,130,140'},${(R.uniform() * 0.07).toFixed(3)})`; x.fillRect(R.uniform() * n, R.uniform() * n, 1, 1); }
+});
+/* Band sprite: soft Gaussian across the band, feathered ("fuzzy") ends where the band meets the lane edges,
+   slight speckle. Drawn in vertical slices so each band can smile. */
+function bandSprite(rgb) {
+  const key = 'band' + rgb; if (ART[key]) return ART[key];
+  const W = 120, H = 40, c = mkC(W, H), x = c.getContext('2d'), img = x.createImageData(W, H), R = Lab.rng(rgb.length * 31), [r, g, b] = rgb.split(',').map(Number), cols = [];
+  for (let i = 0; i < W; i++) { const u = i / (W - 1), e = Math.max(0, Math.min(1, u / 0.13, (1 - u) / 0.13)); cols.push(e * e * (3 - 2 * e)); }
+  for (let j = 0; j < H; j++) {
+    const v = (j - (H - 1) / 2) / (H * 0.19), gy = Math.exp(-v * v / 2) * (v > 0 ? 1 : 0.92 + 0.08 * Math.exp(v));
+    for (let i = 0; i < W; i++) { const k = (j * W + i) * 4; img.data[k] = r; img.data[k + 1] = g; img.data[k + 2] = b; img.data[k + 3] = Math.round(255 * Math.min(1, gy * cols[i] * (0.95 + 0.05 * R.uniform()))); }
+  }
+  x.putImageData(img, 0, 0); ART[key] = c; return c;
+}
+function drawBand(x, spr, cx, ww, y, bh, smile, a) {
+  if (a <= 0.004) return; const n = 8, H = bh * 2.2, d = x.getTransform ? x.getTransform().a : 1, px = v => Math.round(v * d) / d, x0 = cx - ww / 2;
+  x.globalAlpha = Math.min(1, a);
+  for (let j = 0; j < n; j++) { const u = ((j + 0.5) / n) * 2 - 1, a0 = px(x0 + ww * j / n), a1 = px(x0 + ww * (j + 1) / n); if (a1 <= a0) continue; x.drawImage(spr, spr.width * (a0 - x0) / ww, 0, spr.width * (a1 - a0) / ww, spr.height, a0, y - smile * u * u - H / 2, a1 - a0, H); }
+  x.globalAlpha = 1;
+}
+/* Seven-segment LCD digit (italic), unlit segments faintly visible like a real reflective LCD. */
+const SEG7 = { 0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g', ' ': '' };
+function seg7(x, X, Y, dw, dh, ch, on, off) {
+  const t = Math.max(1.3, dw * 0.2), g = t * 0.32, hh = dh / 2;
+  const S = { a: [0, 0, dw, 0], d: [0, dh, dw, dh], g: [0, hh, dw, hh], f: [0, 0, 0, hh], b: [dw, 0, dw, hh], e: [0, hh, 0, dh], c: [dw, hh, dw, dh] };
+  x.save(); x.translate(X, Y); x.transform(1, 0, -0.1, 1, dh * 0.1, 0);
+  for (const s of 'abcdefg') {
+    const [x0, y0, x1, y1] = S[s], hz = y0 === y1; x.beginPath();
+    if (hz) { x.moveTo(x0 + g, y0); x.lineTo(x0 + g + t / 2, y0 - t / 2); x.lineTo(x1 - g - t / 2, y0 - t / 2); x.lineTo(x1 - g, y0); x.lineTo(x1 - g - t / 2, y0 + t / 2); x.lineTo(x0 + g + t / 2, y0 + t / 2); }
+    else { x.moveTo(x0, y0 + g); x.lineTo(x0 + t / 2, y0 + g + t / 2); x.lineTo(x0 + t / 2, y1 - g - t / 2); x.lineTo(x0, y1 - g); x.lineTo(x0 - t / 2, y1 - g - t / 2); x.lineTo(x0 - t / 2, y0 + g + t / 2); }
+    x.closePath(); x.fillStyle = (SEG7[ch] || '').includes(s) ? on : off; x.fill();
+  }
+  x.restore();
+}
+function lcdNumber(x, X, Y, dw, dh, str, on, off) { [...str].forEach((ch, i) => seg7(x, X + i * dw * 1.55, Y, dw, dh, ch, on, off)); }
+
+/* ---- layout: wide = gel box with a side bench (rack, power supply, tips, pipette); narrow = stacked ---- */
+const gelAspect = w => (w >= 560 ? 0.8 : 1.36);
+function gelLayout(w, h, dpr) {
+  const wide = w >= 560, G = { w, h, dpr, wide };
+  if (wide) { G.rul = { x0: 6, x1: 32 }; G.box = { x0: 40, y0: 10, x1: Math.round(w * 0.66), y1: h - 10 }; }
+  else { G.rul = { x0: 4, x1: 27 }; G.box = { x0: 32, y0: 8, x1: w - 22, y1: Math.round(h * 0.69) }; }
+  const B = G.box, endH = Math.max(32, (B.y1 - B.y0) * 0.1);
+  G.gx0 = B.x0 + 17; G.gx1 = B.x1 - 17; G.top = B.y0 + endH; G.bot = B.y1 - endH;
+  G.ey0 = B.y0 + endH * 0.42; G.ey1 = B.y1 - endH * 0.42;
+  G.mmPx = (G.bot - G.top) / (GEL_MM + 6.2);
+  G.wellY = G.top + 2.6 * G.mmPx; G.wellH = Math.max(3, 1.2 * G.mmPx); G.y0 = G.wellY + G.wellH;
+  G.Y = d => G.y0 + d * G.mmPx; G.lw = (G.gx1 - G.gx0) / 8;
+  G.J0 = { x: B.x1 - 13, y: G.ey0 }; G.J1 = { x: B.x1 - 13, y: G.ey1 };      // banana jacks: black (−) and red (+)
+  if (wide) {
+    const x0 = B.x1 + 16, x1 = w - 10, pw = x1 - x0, cl = 26;
+    G.rack = { x0: x0 + cl, x1, y0: 16, y1: 16 + Math.min(124, h * 0.21) };
+    const sh = Math.min(170, pw * 0.74);
+    G.sup = { x0: x0 + cl - 4, x1, y0: G.rack.y1 + 22, y1: G.rack.y1 + 22 + sh, jacks: 'bottom' };
+    G.tips = { x0: x0 + cl + 4, x1: x0 + cl + 4 + Math.min(110, pw * 0.5), y0: G.sup.y1 + 26, y1: Math.min(h - 14, G.sup.y1 + 26 + Math.min(86, pw * 0.4)) };
+    G.pip = { x: x1 - 18, y: h - 30 };
+  } else {
+    const y0 = B.y1 + 14, y1 = h - 8;
+    G.rack = { x0: 8, x1: Math.round(w * 0.47), y0, y1: y1 - 4 };
+    G.sup = { x0: Math.round(w * 0.51), x1: w - 8, y0: y0 + 6, y1, jacks: 'right' };
+  }
+  const S = G.sup, sw = S.x1 - S.x0, sh = S.y1 - S.y0;
+  if (S.jacks === 'bottom') { S.jb = { x: S.x0 + 22, y: S.y1 - sh * 0.17 }; S.jr = { x: S.x0 + 50, y: S.y1 - sh * 0.17 }; }
+  else { S.jb = { x: S.x1 - 17, y: S.y0 + sh * 0.3 }; S.jr = { x: S.x1 - 17, y: S.y0 + sh * 0.6 }; }
+  if (S.jacks === 'right') {
+    S.lcd = { x: S.x0 + 10, y: S.y0 + 11, w: sw * 0.5, h: Math.max(26, sh * 0.36) };
+    const a0 = S.lcd.x + S.lcd.w + 6, a1 = S.x1 - 30;
+    S.knob = { x: (a0 + a1) / 2, y: S.lcd.y + S.lcd.h / 2, r: Math.max(7, Math.min(sh * 0.14, (a1 - a0) / 2 - 3)) };
+  } else {
+    S.lcd = { x: S.x0 + 11, y: S.y0 + 13, w: sw * 0.58, h: Math.max(30, sh * 0.34) };
+    S.knob = { x: S.x1 - sw * 0.19, y: S.lcd.y + S.lcd.h / 2, r: Math.max(9, Math.min(sh * 0.15, sw * 0.11)) };
+  }
+  S.sw = { x: S.jacks === 'right' ? S.x0 + 30 : S.x1 - 38, y: S.y1 - sh * 0.17 };
+  return G;
+}
+
+/* ---- static scene pieces ---- */
+function drawBench(x, G) {
+  x.fillStyle = x.createPattern(benchTile(), 'repeat'); x.fillRect(0, 0, G.w, G.h);
+  const lg = x.createRadialGradient(G.w * 0.15, G.h * 0.05, 0, G.w * 0.15, G.h * 0.05, Math.hypot(G.w, G.h) * 0.95);
+  lg.addColorStop(0, 'rgba(255,255,255,0.11)'); lg.addColorStop(0.45, 'rgba(255,255,255,0.02)'); lg.addColorStop(1, 'rgba(0,0,0,0.34)');
+  x.fillStyle = lg; x.fillRect(0, 0, G.w, G.h);
+}
+function drawGelBox(x, G, seed) {
+  const B = G.box, bw = B.x1 - B.x0, bh = B.y1 - B.y0, R = Lab.rng(seed);
+  // contact shadow of the acrylic box (pattern-filled so the shadow is the only visible change)
+  shadowed(x, 'rgba(0,0,0,0.6)', 16, 6, 9, () => { x.fillStyle = x.createPattern(benchTile(), 'repeat'); rrect(x, B.x0, B.y0, bw, bh, 9); x.fill(); });
+  // buffer over the floor: deeper (bluer) in the two electrode reservoirs
+  rrect(x, B.x0, B.y0, bw, bh, 9); x.fillStyle = 'rgba(132,178,206,0.17)'; x.fill();
+  const res = (y0, y1) => { x.fillStyle = lin(x, 0, y0, 0, y1, [[0, 'rgba(70,128,168,0.22)'], [1, 'rgba(90,150,188,0.14)']]); x.fillRect(B.x0 + 6, y0, bw - 12, y1 - y0); };
+  res(B.y0 + 6, G.top - 9); res(G.bot + 9, B.y1 - 6);
+  // gel tray platform with end gates removed, rails along the sides
+  x.fillStyle = 'rgba(210,228,238,0.10)'; x.fillRect(G.gx0 - 8, G.top - 8, G.gx1 - G.gx0 + 16, G.bot - G.top + 16);
+  x.strokeStyle = 'rgba(235,245,250,0.32)'; x.lineWidth = 1; x.strokeRect(G.gx0 - 8.5, G.top - 8.5, G.gx1 - G.gx0 + 17, G.bot - G.top + 17);
+  [[G.gx0 - 8, G.gx0 - 3], [G.gx1 + 3, G.gx1 + 8]].forEach(([a, b]) => { x.fillStyle = lin(x, a, 0, b, 0, [[0, 'rgba(255,255,255,0.18)'], [1, 'rgba(0,0,0,0.12)']]); x.fillRect(a, G.top - 8, b - a, G.bot - G.top + 16); });
+  // agarose slab: milky, translucent blue-grey, slightly thicker-looking at the edges
+  x.save(); x.beginPath(); x.rect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top); x.clip();
+  x.fillStyle = 'rgba(200,218,230,0.34)'; x.fillRect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top);
+  x.fillStyle = x.createPattern(gelTile(), 'repeat'); x.fillRect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top);
+  const eg = lin(x, G.gx0, 0, G.gx1, 0, [[0, 'rgba(220,235,245,0.20)'], [0.06, 'rgba(220,235,245,0)'], [0.94, 'rgba(0,10,20,0)'], [1, 'rgba(0,10,20,0.16)']]); x.fillStyle = eg; x.fillRect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top);
+  x.restore();
+  x.strokeStyle = 'rgba(240,248,252,0.55)'; x.lineWidth = 1; x.beginPath(); x.moveTo(G.gx0 + 0.5, G.bot); x.lineTo(G.gx0 + 0.5, G.top + 0.5); x.lineTo(G.gx1, G.top + 0.5); x.stroke();
+  x.strokeStyle = 'rgba(10,20,30,0.45)'; x.beginPath(); x.moveTo(G.gx1 - 0.5, G.top); x.lineTo(G.gx1 - 0.5, G.bot - 0.5); x.lineTo(G.gx0, G.bot - 0.5); x.stroke();
+  // wells left by the comb: dark slots with a bright refracting lower lip
+  for (let i = 0; i < 8; i++) {
+    const cx = G.gx0 + G.lw * (i + 0.5), ww = G.lw * 0.62, wx = cx - ww / 2 + R.normal(0, 0.25);
+    x.fillStyle = 'rgba(16,30,40,0.55)'; x.fillRect(wx, G.wellY, ww, G.wellH);
+    x.fillStyle = 'rgba(0,0,0,0.35)'; x.fillRect(wx, G.wellY, ww, 1.2);
+    x.fillStyle = 'rgba(235,246,252,0.55)'; x.fillRect(wx + 0.5, G.wellY + G.wellH - 0.9, ww - 1, 0.9);
+    x.fillStyle = 'rgba(232,238,242,0.85)'; x.font = `600 ${G.wide ? 11 : 9}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+    x.fillText(String(i + 1), cx, G.top - 5);
+  }
+  // platinum electrode wires along the floor of each reservoir, held by small acrylic blocks
+  [G.ey0, G.ey1].forEach(ey => {
+    x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(B.x0 + 14, ey + 1.2); x.lineTo(B.x1 - 20, ey + 1.2); x.stroke();
+    x.strokeStyle = '#c9ced4'; x.lineWidth = 1.3; x.beginPath(); x.moveTo(B.x0 + 14, ey); x.lineTo(B.x1 - 20, ey); x.stroke();
+    x.strokeStyle = 'rgba(255,255,255,0.8)'; x.lineWidth = 0.5; x.beginPath(); x.moveTo(B.x0 + 14, ey - 0.4); x.lineTo(B.x1 - 20, ey - 0.4); x.stroke();
+    [B.x0 + 12, (B.x0 + B.x1) / 2, B.x1 - 22].forEach(bx => { x.fillStyle = 'rgba(220,235,245,0.22)'; x.fillRect(bx - 4, ey - 4, 8, 8); x.strokeStyle = 'rgba(255,255,255,0.35)'; x.strokeRect(bx - 3.5, ey - 3.5, 7, 7); });
+  });
+  // acrylic walls: thickness, edge highlights from the upper-left light, darker lower-right edges
+  const t = 6; x.lineWidth = t; x.strokeStyle = 'rgba(214,232,242,0.16)'; rrect(x, B.x0 + t / 2, B.y0 + t / 2, bw - t, bh - t, 7); x.stroke();
+  x.lineWidth = 1; x.strokeStyle = 'rgba(255,255,255,0.55)'; rrect(x, B.x0 + 0.5, B.y0 + 0.5, bw - 1, bh - 1, 9); x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,0.22)'; rrect(x, B.x0 + t, B.y0 + t, bw - 2 * t, bh - 2 * t, 5); x.stroke();
+  x.strokeStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.moveTo(B.x1 - 0.5, B.y0 + 10); x.lineTo(B.x1 - 0.5, B.y1 - 9); x.lineTo(B.x0 + 10, B.y1 - 0.5); x.stroke();
+  // specular glare streak on the acrylic
+  x.save(); rrect(x, B.x0, B.y0, bw, bh, 9); x.clip(); x.translate(B.x0 + bw * 0.12, B.y0); x.rotate(0.5);
+  x.fillStyle = lin(x, 0, 0, 34, 0, [[0, 'rgba(255,255,255,0)'], [0.5, 'rgba(255,255,255,0.07)'], [1, 'rgba(255,255,255,0)']]); x.fillRect(0, -bh, 34, bh * 3);
+  x.fillStyle = lin(x, 50, 0, 62, 0, [[0, 'rgba(255,255,255,0)'], [0.5, 'rgba(255,255,255,0.05)'], [1, 'rgba(255,255,255,0)']]); x.fillRect(50, -bh, 12, bh * 3);
+  x.restore();
+  // banana jacks moulded into the end walls, with polarity marks
+  [[G.J0, '#1c1d20', '#55585e', '−'], [G.J1, '#b3221c', '#e8564d', '+']].forEach(([J, c, hi, sym]) => {
+    shadowed(x, 'rgba(0,0,0,0.6)', 4, 1.5, 2, () => { x.fillStyle = c; x.beginPath(); x.arc(J.x, J.y, 7.5, 0, TAU); x.fill(); });
+    const rg = x.createRadialGradient(J.x - 2.5, J.y - 2.5, 0.5, J.x, J.y, 7.5); rg.addColorStop(0, hi); rg.addColorStop(1, c); x.fillStyle = rg; x.beginPath(); x.arc(J.x, J.y, 7.5, 0, TAU); x.fill();
+    x.fillStyle = '#0b0b0c'; x.beginPath(); x.arc(J.x, J.y, 2.6, 0, TAU); x.fill();
+    x.fillStyle = sym === '−' ? 'rgba(235,240,244,0.9)' : '#ff8c84'; x.font = `700 13px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(sym, J.x - 15, J.y + 0.5);
+  });
+}
+function drawLightBox(x, G, seed, stain) {
+  const B = G.box, bw = B.x1 - B.x0, bh = B.y1 - B.y0, R = Lab.rng(seed);
+  shadowed(x, 'rgba(0,0,0,0.65)', 18, 6, 10, () => { x.fillStyle = '#2d3035'; rrect(x, B.x0 - 4, B.y0, bw + 8, bh, 10); x.fill(); });
+  x.fillStyle = lin(x, 0, B.y0, 0, B.y1, [[0, '#4a4e55'], [1, '#2c2f34']]); rrect(x, B.x0 - 4, B.y0, bw + 8, bh, 10); x.fill();
+  x.strokeStyle = 'rgba(255,255,255,0.22)'; x.lineWidth = 1; rrect(x, B.x0 - 3.5, B.y0 + 0.5, bw + 7, bh - 1, 9.5); x.stroke();
+  // diffuser: bright white with the glow of the lamps behind it
+  const px0 = B.x0 + 4, py0 = B.y0 + 8, pw = bw - 8, ph = bh - 16;
+  x.save(); rrect(x, px0, py0, pw, ph, 4); x.clip();
+  x.fillStyle = '#eef3f6'; x.fillRect(px0, py0, pw, ph);
+  for (let k = 0; k < 3; k++) { const lx = px0 + pw * (0.2 + 0.3 * k); x.fillStyle = lin(x, lx - pw * 0.16, 0, lx + pw * 0.16, 0, [[0, 'rgba(255,255,255,0)'], [0.5, 'rgba(255,255,255,0.85)'], [1, 'rgba(255,255,255,0)']]); x.fillRect(lx - pw * 0.16, py0, pw * 0.32, ph); }
+  const vg = x.createRadialGradient(px0 + pw / 2, py0 + ph / 2, Math.min(pw, ph) * 0.3, px0 + pw / 2, py0 + ph / 2, Math.hypot(pw, ph) * 0.62); vg.addColorStop(0, 'rgba(180,195,205,0)'); vg.addColorStop(1, 'rgba(150,165,178,0.42)'); x.fillStyle = vg; x.fillRect(px0, py0, pw, ph);
+  x.fillStyle = x.createPattern(panelTile(), 'repeat'); x.fillRect(px0, py0, pw, ph);
+  x.restore();
+  x.strokeStyle = 'rgba(0,0,0,0.35)'; rrect(x, px0 + 0.5, py0 + 0.5, pw - 1, ph - 1, 4); x.stroke();
+  // the stained gel slab lifted out of its tray: slightly irregular edges, orientation corner cut off
+  const j = () => R.normal(0, 0.5), cut = Math.min(10, G.lw * 0.25);
+  const poly = [[G.gx0 + cut, G.top + j()], [G.gx1 + j(), G.top + j()], [G.gx1 + j(), G.bot + j()], [G.gx0 + j(), G.bot + j()], [G.gx0 + j(), G.top + cut]];
+  const path = () => { x.beginPath(); poly.forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b))); x.closePath(); };
+  shadowed(x, 'rgba(40,60,80,0.35)', 5, 1.5, 2, () => { path(); x.fillStyle = stain === 1 ? 'rgb(46,88,160)' : 'rgb(218,232,240)'; x.fill(); });
+  path(); x.fillStyle = stain === 1 ? 'rgb(44,86,156)' : 'rgb(214,229,238)'; x.fill();
+  x.save(); path(); x.clip(); x.globalAlpha = stain === 1 ? 0.9 : 0.75; x.fillStyle = x.createPattern(gelTile(), 'repeat'); x.fillRect(G.gx0 - 2, G.top - 2, G.gx1 - G.gx0 + 4, G.bot - G.top + 4); x.globalAlpha = 1;
+  if (stain === 1) { x.fillStyle = lin(x, 0, G.top, 0, G.bot, [[0, 'rgba(20,50,120,0.18)'], [1, 'rgba(20,50,120,0.05)']]); x.fillRect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top); }
+  x.restore();
+  path(); x.strokeStyle = stain === 1 ? 'rgba(10,30,80,0.6)' : 'rgba(80,110,135,0.55)'; x.lineWidth = 1; x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,0.7)'; x.beginPath(); x.moveTo(poly[3][0] + 1, poly[3][1] - 1); x.lineTo(poly[4][0] + 1, poly[4][1]); x.lineTo(poly[0][0], poly[0][1] + 1); x.lineTo(poly[1][0] - 1, poly[1][1] + 1); x.stroke();
+  for (let i = 0; i < 8; i++) {
+    const cx = G.gx0 + G.lw * (i + 0.5), ww = G.lw * 0.62;
+    x.fillStyle = stain === 1 ? 'rgba(120,170,225,0.55)' : 'rgba(250,253,255,0.85)'; x.fillRect(cx - ww / 2, G.wellY, ww, G.wellH);
+    x.strokeStyle = stain === 1 ? 'rgba(10,30,80,0.7)' : 'rgba(60,90,120,0.6)'; x.lineWidth = 0.8; x.strokeRect(cx - ww / 2 + 0.4, G.wellY + 0.4, ww - 0.8, G.wellH - 0.8);
+    x.fillStyle = '#3a3f47'; x.font = `600 ${G.wide ? 11 : 9}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.fillText(String(i + 1), cx, G.top - 6);
+  }
+}
+function drawSupply(x, G, V, on) {
+  const S = G.sup, sw = S.x1 - S.x0, sh = S.y1 - S.y0;
+  shadowed(x, 'rgba(0,0,0,0.6)', 14, 5, 8, () => { x.fillStyle = '#b8bcc1'; rrect(x, S.x0, S.y0, sw, sh, 8); x.fill(); });
+  x.fillStyle = lin(x, 0, S.y0, 0, S.y1, [[0, '#dfe2e5'], [0.5, '#c4c8cd'], [1, '#a3a8ae']]); rrect(x, S.x0, S.y0, sw, sh, 8); x.fill();
+  x.strokeStyle = 'rgba(255,255,255,0.7)'; x.lineWidth = 1; rrect(x, S.x0 + 0.5, S.y0 + 0.5, sw - 1, sh - 1, 7.5); x.stroke();
+  // dark front panel
+  x.fillStyle = lin(x, 0, S.y0, 0, S.y1, [[0, '#353a41'], [1, '#262a30']]); rrect(x, S.x0 + 5, S.y0 + 5, sw - 10, sh - 10, 5); x.fill();
+  x.strokeStyle = 'rgba(0,0,0,0.6)'; rrect(x, S.x0 + 5.5, S.y0 + 5.5, sw - 11, sh - 11, 5); x.stroke();
+  // LCD bezel and glass
+  const L = S.lcd; x.fillStyle = '#121417'; rrect(x, L.x - 3, L.y - 3, L.w + 6, L.h + 6, 3); x.fill();
+  x.fillStyle = on ? lin(x, 0, L.y, 0, L.y + L.h, [[0, '#c4d6a2'], [1, '#a9bf86']]) : lin(x, 0, L.y, 0, L.y + L.h, [[0, '#8c9a80'], [1, '#76846b']]); x.fillRect(L.x, L.y, L.w, L.h);
+  x.fillStyle = 'rgba(255,255,255,0.18)'; x.beginPath(); x.moveTo(L.x, L.y); x.lineTo(L.x + L.w * 0.55, L.y); x.lineTo(L.x + L.w * 0.35, L.y + L.h); x.lineTo(L.x, L.y + L.h); x.fill();
+  // labels printed on the panel
+  const fs = Math.max(7, Math.min(9, sw * 0.045)); x.fillStyle = 'rgba(225,230,236,0.85)'; x.font = `700 ${fs}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.fillText(sw >= 190 ? 'VOLTAGE' : 'VOLTS', S.knob.x, S.knob.y + S.knob.r + fs + 3);
+  x.fillText('OUTPUT', (S.jb.x + S.jr.x) / 2 + (S.jacks === 'right' ? -13 : 0), S.jacks === 'right' ? S.y1 - 7 : S.jb.y - 11);
+  x.fillText('POWER', S.sw.x, S.sw.y - 11);
+  if (sw >= 190) x.fillText('DC POWER SUPPLY', S.x0 + 11 + L.w / 2, L.y + L.h + fs + 5);
+  // rotary voltage knob: knurled skirt + cap, pointer angle follows the set voltage (25–150 V)
+  const K = S.knob; shadowed(x, 'rgba(0,0,0,0.7)', 5, 1.5, 2.5, () => { x.fillStyle = '#17191c'; x.beginPath(); x.arc(K.x, K.y, K.r, 0, TAU); x.fill(); });
+  for (let k = 0; k < 36; k++) { const a = k / 36 * TAU; x.strokeStyle = k % 2 ? '#2c3035' : '#0d0e10'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(K.x + Math.cos(a) * K.r * 0.82, K.y + Math.sin(a) * K.r * 0.82); x.lineTo(K.x + Math.cos(a) * K.r, K.y + Math.sin(a) * K.r); x.stroke(); }
+  const kg = x.createRadialGradient(K.x - K.r * 0.3, K.y - K.r * 0.35, 1, K.x, K.y, K.r * 0.8); kg.addColorStop(0, '#5d636b'); kg.addColorStop(1, '#1d2024'); x.fillStyle = kg; x.beginPath(); x.arc(K.x, K.y, K.r * 0.78, 0, TAU); x.fill();
+  const a = (-225 + 270 * (V - 25) / 125) * Math.PI / 180; x.strokeStyle = '#f2f3f4'; x.lineWidth = 2; x.lineCap = 'round'; x.beginPath(); x.moveTo(K.x + Math.cos(a) * K.r * 0.25, K.y + Math.sin(a) * K.r * 0.25); x.lineTo(K.x + Math.cos(a) * K.r * 0.7, K.y + Math.sin(a) * K.r * 0.7); x.stroke(); x.lineCap = 'butt';
+  for (let k = 0; k <= 10; k++) { const b = (-225 + 27 * k) * Math.PI / 180; x.strokeStyle = 'rgba(225,230,236,0.6)'; x.lineWidth = 1; x.beginPath(); x.moveTo(K.x + Math.cos(b) * (K.r + 2), K.y + Math.sin(b) * (K.r + 2)); x.lineTo(K.x + Math.cos(b) * (K.r + 4.5), K.y + Math.sin(b) * (K.r + 4.5)); x.stroke(); }
+  // output jacks (shrouded banana sockets)
+  [[S.jb, '#1b1c1f', '#4d5157'], [S.jr, '#b3221c', '#ec5a50']].forEach(([J, c, hi]) => { x.fillStyle = '#0c0d0f'; x.beginPath(); x.arc(J.x, J.y, 8, 0, TAU); x.fill(); const g = x.createRadialGradient(J.x - 2, J.y - 2, 0.5, J.x, J.y, 6.5); g.addColorStop(0, hi); g.addColorStop(1, c); x.fillStyle = g; x.beginPath(); x.arc(J.x, J.y, 6.5, 0, TAU); x.fill(); x.fillStyle = '#060607'; x.beginPath(); x.arc(J.x, J.y, 2.2, 0, TAU); x.fill(); });
+  // rocker switch
+  const W = S.sw; x.fillStyle = '#0e0f11'; rrect(x, W.x - 10, W.y - 7, 20, 14, 2); x.fill();
+  x.fillStyle = lin(x, 0, W.y - 6, 0, W.y + 6, on ? [[0, '#2a2d31'], [1, '#4a4f56']] : [[0, '#4a4f56'], [1, '#2a2d31']]); rrect(x, W.x - 8.5, W.y - 5.5, 17, 11, 1.5); x.fill();
+  x.fillStyle = 'rgba(230,234,238,0.8)'; x.font = `700 7px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('I', W.x - 4, W.y + 0.5); x.fillText('O', W.x + 4, W.y + 0.5);
+}
+/* LCD read-out and RUN lamp are drawn every frame (they change while the gel runs). */
+function drawSupplyLive(x, G, V, mA, lit, run) {
+  const L = G.sup.lcd, onC = '#18200f', offC = 'rgba(40,55,25,0.08)';
+  if (lit) {
+    const dw = Math.min(L.h * 0.3, L.w * 0.56 / 4.65), dh = dw * 2, sdw = Math.min(dw * 0.5, L.w * 0.25 / 4.65), sdh = sdw * 2, ty = L.y + (L.h - dh) * 0.38;
+    const sx = L.x + L.w - 4 - sdw * 4.3;
+    lcdNumber(x, L.x + 6, ty, dw, dh, String(Math.round(V)).padStart(3, ' '), onC, offC);
+    lcdNumber(x, sx, ty, sdw, sdh, String(Math.round(mA)).padStart(3, ' '), onC, offC);
+    x.fillStyle = onC; x.font = `700 ${Math.max(7, Math.min(10, L.h * 0.2))}px ${FONT}`; x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+    x.fillText('V', L.x + 6 + dw * 4.55, ty + dh); x.fillText('mA', sx + sdw * 0.6, ty + dh);
+  }
+  const lx = G.sup.sw.x + (G.sup.jacks === 'right' ? 20 : -22), ly = G.sup.sw.y;
+  if (run) { const g = x.createRadialGradient(lx, ly, 0, lx, ly, 10); g.addColorStop(0, 'rgba(120,255,140,0.75)'); g.addColorStop(1, 'rgba(120,255,140,0)'); x.fillStyle = g; x.beginPath(); x.arc(lx, ly, 10, 0, TAU); x.fill(); }
+  x.fillStyle = run ? '#7dff8e' : '#1f3a24'; x.beginPath(); x.arc(lx, ly, 3, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,255,0.5)'; x.beginPath(); x.arc(lx - 1, ly - 1, 1, 0, TAU); x.fill();
+}
+/* Test lead: shadowed cable with a highlight, moulded plug at each end. */
+function drawLead(x, pts, col, hi, plugEnd) {
+  const path = () => { x.beginPath(); x.moveTo(pts[0].x, pts[0].y); x.bezierCurveTo(pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y); };
+  x.lineCap = 'round'; x.save(); x.translate(2.5, 4); path(); x.strokeStyle = 'rgba(0,0,0,0.38)'; x.lineWidth = 6; x.stroke(); x.restore();
+  path(); x.strokeStyle = col; x.lineWidth = 4.6; x.stroke();
+  x.save(); x.translate(-0.8, -0.9); path(); x.strokeStyle = hi; x.lineWidth = 1.1; x.stroke(); x.restore();
+  [pts[0], pts[3]].forEach((P, k) => { if (k === 1 && plugEnd === false) return; shadowed(x, 'rgba(0,0,0,0.6)', 4, 1.5, 2.5, () => { x.fillStyle = col; x.beginPath(); x.arc(P.x, P.y, 6.4, 0, TAU); x.fill(); }); const g = x.createRadialGradient(P.x - 2, P.y - 2, 0.5, P.x, P.y, 6.4); g.addColorStop(0, hi); g.addColorStop(1, col); x.fillStyle = g; x.beginPath(); x.arc(P.x, P.y, 6.4, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 0.8; x.beginPath(); x.arc(P.x, P.y, 4, 0, TAU); x.stroke(); });
+  x.lineCap = 'butt';
+}
+function drawLeads(x, G, reversed, connected) {
+  const S = G.sup, wide = G.wide, B = G.box;
+  const route = (from, to) => wide
+    ? [from, { x: from.x + 52, y: from.y + (to.y - from.y) * 0.15 }, { x: to.x - 34, y: to.y + (from.y < to.y ? 70 : 64) }, to]
+    : [from, { x: G.w - 6, y: from.y + 30 }, { x: G.w - 4, y: to.y - 70 }, to];
+  const BLK = ['#1b1c1f', 'rgba(255,255,255,0.28)'], RED = ['#b3221c', 'rgba(255,190,180,0.55)'];
+  if (!connected) {   // gel moved to the light box: leads unplugged, lying on the bench
+    const lx = wide ? B.x1 + 10 : G.w - 12;
+    drawLead(x, route({ x: lx, y: wide ? B.y0 + 60 : B.y1 - 70 }, S.jb), ...BLK);
+    drawLead(x, route({ x: lx, y: wide ? B.y1 - 60 : B.y1 - 30 }, S.jr), ...RED);
+    return;
+  }
+  drawLead(x, route(reversed ? G.J1 : G.J0, S.jb), ...BLK);
+  drawLead(x, route(reversed ? G.J0 : G.J1, S.jr), ...RED);
+}
+/* 1.5-mL microcentrifuge tubes in a floating rack (side view). Liquid = digest + loading dye. */
+function drawRack(x, G, samples, sel) {
+  const K = G.rack, n = samples.length, sp = (K.x1 - K.x0) / n, tw = Math.min(19, sp * 0.6), th = Math.min((K.y1 - K.y0) * 0.78, tw * 2.9), base = K.y1 - 4, plateY = base - th * 0.42;
+  const tube = (cx, by, s, open) => {
+    const top = by - th, cy = by - th * 0.36;
+    // body
+    x.beginPath(); x.moveTo(cx - tw / 2, top); x.lineTo(cx - tw / 2 + 0.6, cy); x.quadraticCurveTo(cx - tw * 0.18, by - 1, cx, by); x.quadraticCurveTo(cx + tw * 0.18, by - 1, cx + tw / 2 - 0.6, cy); x.lineTo(cx + tw / 2, top); x.closePath();
+    x.fillStyle = lin(x, cx - tw / 2, 0, cx + tw / 2, 0, [[0, 'rgba(200,212,222,0.55)'], [0.25, 'rgba(255,255,255,0.35)'], [0.6, 'rgba(220,230,238,0.18)'], [1, 'rgba(150,165,178,0.5)']]); x.fill();
+    x.strokeStyle = 'rgba(240,246,250,0.75)'; x.lineWidth = 0.8; x.stroke();
+    // liquid in the cone with a curved meniscus
+    const ly = by - th * 0.27; x.save(); x.clip();
+    x.fillStyle = lin(x, cx - tw / 2, 0, cx + tw / 2, 0, [[0, '#2e2a74'], [0.35, '#5a4fb4'], [1, '#231f5e']]); x.beginPath(); x.moveTo(cx - tw / 2, ly); x.quadraticCurveTo(cx, ly + 2.2, cx + tw / 2, ly); x.lineTo(cx + tw / 2, by); x.lineTo(cx - tw / 2, by); x.fill();
+    x.fillStyle = 'rgba(255,255,255,0.35)'; x.fillRect(cx - tw * 0.28, ly + 1.5, 1.4, th * 0.12); x.restore();
+    // writing area + marker label
+    x.fillStyle = 'rgba(245,245,240,0.7)'; x.fillRect(cx - tw / 2 + 2, top + th * 0.2, tw - 4, th * 0.2);
+    x.fillStyle = '#1f2a6b'; x.font = `700 ${Math.max(7, Math.min(10, tw * 0.5))}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s.key, cx, top + th * 0.3 + 0.5);
+    // rim and snap cap (hinged on the right)
+    x.fillStyle = 'rgba(225,235,242,0.85)'; x.fillRect(cx - tw / 2 - 1.5, top - 1.5, tw + 3, 3);
+    if (open) { x.save(); x.translate(cx + tw / 2 + 1, top - 1); x.rotate(-1.15); x.fillStyle = 'rgba(214,226,236,0.9)'; rrect(x, 0, -3.5, tw + 2, 4, 1.5); x.fill(); x.fillStyle = 'rgba(200,214,226,0.9)'; x.fillRect(tw * 0.25, -1, tw * 0.5, 3.5); x.restore(); }
+    else { x.fillStyle = lin(x, cx - tw / 2, 0, cx + tw / 2, 0, [[0, '#cdd8e1'], [0.3, '#f6f9fb'], [1, '#aebcc8']]); rrect(x, cx - tw / 2 - 1.5, top - 6, tw + 3, 5, 1.5); x.fill(); x.fillStyle = 'rgba(200,214,226,0.85)'; x.fillRect(cx + tw / 2 + 1, top - 4, 3, 6); }
+  };
+  // tubes behind the plate, then the plate, then the selected (lifted) tube in front
+  samples.forEach((s, i) => { if (s.key !== sel) tube(K.x0 + sp * (i + 0.5), base, s, false); });
+  shadowed(x, 'rgba(0,0,0,0.55)', 8, 3, 5, () => { x.fillStyle = '#2f80c2'; rrect(x, K.x0 + 1, plateY, K.x1 - K.x0 - 2, th * 0.17, 3); x.fill(); });
+  x.fillStyle = lin(x, 0, plateY, 0, plateY + th * 0.17, [[0, '#6fb2e6'], [0.25, '#3a8fd0'], [1, '#1f5f99']]); rrect(x, K.x0 + 1, plateY, K.x1 - K.x0 - 2, th * 0.17, 3); x.fill();
+  samples.forEach((s, i) => { const cx = K.x0 + sp * (i + 0.5); x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(cx, plateY + 1.5, tw / 2 + 1, 1.6, 0, 0, TAU); x.fill(); });
+  samples.forEach((s, i) => { if (s.key === sel) { const cx = K.x0 + sp * (i + 0.5); tube(cx, base - th * 0.3, s, true); x.strokeStyle = 'rgba(255,214,102,0.9)'; x.lineWidth = 1.5; x.setLineDash([3, 2]); rrect(x, cx - sp / 2 + 2, base - th * 1.4, sp - 4, th * 1.14, 4); x.stroke(); x.setLineDash([]); } });
+}
+/* Adjustable-volume micropipette (P-200 style, yellow button). Origin = end of the tip; body extends "up" (−y). */
+function drawPipette(x, X, Y, s, ang, vol, liquid) {
+  x.save(); x.translate(X, Y); x.rotate(ang); x.scale(s, s);
+  const cyl = (y0, y1, h0, h1, stops) => { x.beginPath(); x.moveTo(-h0, y0); x.lineTo(-h1, y1); x.lineTo(h1, y1); x.lineTo(h0, y0); x.closePath(); x.fillStyle = lin(x, -Math.max(h0, h1), 0, Math.max(h0, h1), 0, stops); x.fill(); };
+  const plastic = c => [[0, c[0]], [0.3, c[1]], [0.55, c[2]], [1, c[3]]];
+  // disposable tip: clear polypropylene, liquid sample inside
+  x.beginPath(); x.moveTo(-0.7, 0); x.lineTo(-3.8, -40); x.lineTo(3.8, -40); x.lineTo(0.7, 0); x.closePath();
+  x.fillStyle = lin(x, -4, 0, 4, 0, [[0, 'rgba(190,205,215,0.55)'], [0.35, 'rgba(255,255,255,0.65)'], [1, 'rgba(150,165,178,0.55)']]); x.fill(); x.strokeStyle = 'rgba(255,255,255,0.7)'; x.lineWidth = 0.5; x.stroke();
+  if (liquid > 0) { const ly = -2 - 22 * liquid, hw = 0.7 + 3.1 * (-ly / 40); x.beginPath(); x.moveTo(-0.7, -0.5); x.lineTo(-hw, ly); x.quadraticCurveTo(0, ly + 1.2, hw, ly); x.lineTo(0.7, -0.5); x.closePath(); x.fillStyle = '#3d3591'; x.fill(); }
+  x.fillStyle = 'rgba(255,255,255,0.35)'; x.fillRect(-4.2, -42, 8.4, 2.5);
+  cyl(-40, -82, 3.2, 5.2, plastic(['#9aa1a8', '#f1f3f5', '#cfd4d9', '#878e96']));        // nose cone
+  cyl(-82, -93, 6.6, 6.6, plastic(['#596069', '#a9b0b8', '#7c838c', '#474d55']));        // tip-ejector collar
+  cyl(-93, -100, 6.6, 10.5, plastic(['#b9bfc5', '#ffffff', '#dfe3e7', '#a4abb2']));
+  cyl(-100, -170, 10.5, 10.5, plastic(['#b9bfc5', '#ffffff', '#e2e6ea', '#9aa1a8']));     // handle
+  for (let yy = -104; yy > -126; yy -= 3) { x.fillStyle = 'rgba(0,0,0,0.08)'; x.fillRect(-10.5, yy, 21, 1.2); }
+  x.fillStyle = '#25282c'; rrect(x, -5.5, -152, 11, 18, 1.5); x.fill();                       // volume counter window
+  x.fillStyle = '#f4f3ee'; x.fillRect(-4, -150.5, 8, 15); x.fillStyle = '#111'; x.font = `700 5px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const v = String(Math.round(vol)).padStart(3, '0'); x.fillText(v[0], 0, -147.5); x.fillText(v[1], 0, -143); x.fillText(v[2], 0, -138.5);   // P-200 counter reads µL directly
+  x.beginPath(); x.moveTo(-10.5, -158); x.quadraticCurveTo(-20, -164, -16, -176); x.lineTo(-9, -172); x.closePath(); x.fillStyle = '#c3c9cf'; x.fill();   // finger hook
+  cyl(-170, -176, 10.5, 7, plastic(['#7d848c', '#c9ced3', '#a3aab1', '#6c737b']));
+  cyl(-176, -186, 2.6, 2.6, plastic(['#7b828a', '#e6e9ec', '#b0b6bc', '#6c737b']));           // plunger rod
+  x.fillStyle = lin(x, -6.5, 0, 6.5, 0, [[0, '#a8861a'], [0.35, '#f4d257'], [1, '#9b7a12']]); rrect(x, -6.5, -195, 13, 9, 2.5); x.fill();   // push button
+  x.fillStyle = '#6c737b'; rrect(x, 8, -182, 6, 9, 1.5); x.fill(); x.fillRect(8, -174, 3, 4);      // ejector button
+  x.restore();
+}
+function drawTipBox(x, G) {
+  const T = G.tips; if (!T || T.y1 - T.y0 < 40) return;
+  const w = T.x1 - T.x0, h = T.y1 - T.y0, R = Lab.rng(5);
+  shadowed(x, 'rgba(0,0,0,0.6)', 10, 4, 6, () => { x.fillStyle = '#1d5d9e'; rrect(x, T.x0, T.y0, w, h, 4); x.fill(); });
+  x.fillStyle = lin(x, T.x0, T.y0, T.x1, T.y1, [[0, '#3f86cc'], [1, '#1c5590']]); rrect(x, T.x0, T.y0, w, h, 4); x.fill();
+  x.fillStyle = 'rgba(255,255,255,0.12)'; rrect(x, T.x0 + 4, T.y0 + 4, w - 8, h - 8, 2); x.fill();
+  const cols = 10, rows = Math.max(4, Math.round(cols * (h - 12) / (w - 12))), dx = (w - 12) / cols, dy = (h - 12) / rows, r = Math.min(dx, dy) * 0.36;
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const cx = T.x0 + 6 + dx * (i + 0.5), cy = T.y0 + 6 + dy * (j + 0.5), used = j < 2 && i < 3 + j * 2 + (R.uniform() < 0.3 ? 1 : 0);
+    x.fillStyle = 'rgba(5,20,40,0.75)'; x.beginPath(); x.arc(cx, cy, r, 0, TAU); x.fill();
+    if (!used) { x.strokeStyle = 'rgba(235,242,248,0.85)'; x.lineWidth = 1; x.beginPath(); x.arc(cx, cy, r * 0.85, 0, TAU); x.stroke(); x.fillStyle = 'rgba(255,255,255,0.25)'; x.beginPath(); x.arc(cx - r * 0.25, cy - r * 0.25, r * 0.35, 0, TAU); x.fill(); }
+  }
+}
+/* Translucent white plastic ruler laid beside the gel; 0 mm at the front edge of the wells. */
+function drawRuler(x, G) {
+  const { x0, x1 } = G.rul, ya = Math.min(G.Y(-3.2), G.y0 - 22), yb = G.Y(GEL_MM + 2.2);
+  shadowed(x, 'rgba(0,0,0,0.55)', 6, 2, 3, () => { x.fillStyle = 'rgba(244,243,236,0.95)'; rrect(x, x0, ya, x1 - x0, yb - ya, 2.5); x.fill(); });
+  x.fillStyle = lin(x, x0, 0, x1, 0, [[0, 'rgba(230,228,218,0.9)'], [0.4, 'rgba(250,250,246,0.95)'], [1, 'rgba(222,220,210,0.95)']]); rrect(x, x0, ya, x1 - x0, yb - ya, 2.5); x.fill();
+  x.strokeStyle = 'rgba(255,255,255,0.9)'; x.lineWidth = 0.8; x.beginPath(); x.moveTo(x0 + 0.5, yb); x.lineTo(x0 + 0.5, ya + 0.5); x.lineTo(x1, ya + 0.5); x.stroke();
+  x.fillStyle = '#1b1b1b'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `600 ${G.wide ? 10 : 9}px ${FONT}`;
+  const step = G.mmPx >= 2.6 ? 1 : 2;
+  for (let mm = 0; mm <= GEL_MM; mm += step) {
+    const y = Math.round(G.Y(mm)) + 0.5, L = mm % 10 === 0 ? 10 : mm % 5 === 0 ? 7 : 4;
+    x.fillRect(x1 - L, y - 0.4, L, mm % 10 === 0 ? 1.1 : 0.8);
+    if (mm % 10 === 0) x.fillText(String(mm / 10), x0 + (x1 - x0 - 10) / 2 + 1, y);
+  }
+  x.font = `600 8px ${FONT}`; x.fillText('cm', x0 + (x1 - x0 - 10) / 2 + 1, ya + 7);
+}
+/* Bubbles fizzing off the electrode wires: H₂ at the cathode (−) twice as many as O₂ at the anode (+). */
+function makeBubbles(seed) { const R = Lab.rng(seed), mk = n => Array.from({ length: n }, () => ({ u: R.uniform(), ph: R.uniform(), sp: 0.6 + R.uniform() * 1.4, r: 0.7 + R.uniform() * 1.3, dy: R.normal(0, 1) })); return { cat: mk(80), an: mk(40) }; }
+function drawBubbles(x, G, bub, tSec, reversed) {
+  const B = G.box, x0 = B.x0 + 14, x1 = B.x1 - 20;
+  [[bub.cat, reversed ? G.ey1 : G.ey0], [bub.an, reversed ? G.ey0 : G.ey1]].forEach(([list, ey]) => list.forEach(b => {
+    const f = (tSec * b.sp + b.ph) % 1, r = b.r * (0.4 + f * 0.9), bx = x0 + b.u * (x1 - x0) + Math.sin((tSec + b.ph) * 6) * 0.6, by = ey + b.dy - f * 3.5;
+    x.fillStyle = `rgba(235,245,250,${(0.35 + 0.4 * (1 - f)).toFixed(2)})`; x.beginPath(); x.arc(bx, by, r, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(20,40,55,0.45)'; x.lineWidth = 0.5; x.stroke();
+    x.fillStyle = 'rgba(255,255,255,0.9)'; x.fillRect(bx - r * 0.45, by - r * 0.5, Math.max(0.6, r * 0.4), Math.max(0.6, r * 0.4));
+  }));
+}
 function makeGel(rootSel, measSel, cfg) {
   const P = cfg.prefix, root = Lab.$(rootSel);
   root.innerHTML = `
@@ -306,7 +670,7 @@ function makeGel(rootSel, measSel, cfg) {
     </div>
   </div>`;
   const $ = s => Lab.$('#' + P + '-' + s);
-  const cv = Lab.canvas($('cv'), 0.82);
+  const cv = fitCanvas($('cv'), gelAspect);
   const rng = Lab.rng();
   const meas = Lab.table(measSel + ' .mtable', {
     save: P + '-meas',
@@ -322,10 +686,10 @@ function makeGel(rootSel, measSel, cfg) {
   }
   const sample = k => cfg.samples.find(s => s.key === k);
   $('rack').innerHTML = cfg.samples.map(s => `<button type="button" class="tube" data-k="${s.key}" aria-pressed="${s.key === st.sel}">${esc(s.label)}</button>`).join('');
-  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
-  const volSync = () => $('vol-o').textContent = $('vol').value + ' µL'; $('vol').addEventListener('input', volSync); volSync();
-  const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); }; $('volt').addEventListener('input', voltSync); $('volt-o').textContent = $('volt').value + ' V';
-  Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); }));
+  const volSync = () => { $('vol-o').textContent = $('vol').value + ' µL'; if (st.geom) draw(); }; $('vol').addEventListener('input', volSync); volSync();
+  const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); if (!st.running) draw(); }; $('volt').addEventListener('input', voltSync); $('volt-o').textContent = $('volt').value + ' V';
+  Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); }));
   $('pct').addEventListener('change', () => { if (st.t > 0) { msg('warn', 'You cannot change the agarose in a gel that has already run. Pour a new gel to test a different percentage.'); } draw(); });
   function drawWells() {
     $('wells').innerHTML = st.lanes.map((l, i) => `<button type="button" data-w="${i}" class="${l.length ? 'filled' : ''}" aria-label="Load well ${i + 1}${l.length ? ' (contains ' + esc(l.map(c => sample(c.k).short).join(', ')) + ')' : ''}">${i + 1}</button>`).join('');
@@ -378,45 +742,76 @@ function makeGel(rootSel, measSel, cfg) {
     $('time').textContent = Math.round(st.t) + ' min'; $('dye').textContent = Lab.fmt(Math.max(0, st.reversed ? 0 : st.dist), 1) + ' mm';
     $('amp').textContent = st.running ? Math.round(v / 2.0) + ' mA' : '0 mA';
   }
-  // drawing
-  function draw() {
-    const { ctx, w, h } = cv, c = n => Lab.color(n);
-    ctx.clearRect(0, 0, w, h);
-    const top = 48, bot = h - 36, gx0 = 34, gx1 = w - 12, mmPx = (bot - top - 8) / GEL_MM, wellY = top + 4, Y = d => wellY + 6 + d * mmPx;
-    ctx.fillStyle = c('--surface-2'); ctx.fillRect(gx0 - 8, top - 10, gx1 - gx0 + 16, bot - top + 20);
-    ctx.fillStyle = c('--ink'); ctx.fillRect(gx0, 8, gx1 - gx0, 5); ctx.fillStyle = c('--bad'); ctx.fillRect(gx0, h - 13, gx1 - gx0, 5);
-    ctx.font = '600 11px ' + getComputedStyle(document.body).fontFamily; ctx.textBaseline = 'middle';
-    ctx.fillStyle = c('--ink'); ctx.fillText(st.reversed ? '+ (red lead on this end!)' : '− cathode (black)', gx0 + 4, 24);
-    ctx.fillStyle = c('--bad'); ctx.fillText(st.reversed ? '− (black lead on this end!)' : '+ anode (red)', gx0 + 4, h - 24);
-    // gel slab
-    const stainBg = st.stain === 1 ? 0.28 : st.stain === 2 ? 0.06 : 0.02;
-    ctx.fillStyle = c('--bg'); ctx.fillRect(gx0, top, gx1 - gx0, bot - top);
-    ctx.globalAlpha = stainBg; ctx.fillStyle = c('--s3'); ctx.fillRect(gx0, top, gx1 - gx0, bot - top); ctx.globalAlpha = 1;
-    ctx.strokeStyle = c('--line'); ctx.strokeRect(gx0, top, gx1 - gx0, bot - top);
-    // ruler
-    ctx.fillStyle = c('--muted'); ctx.font = '10px ' + getComputedStyle(document.body).fontFamily; ctx.textAlign = 'right';
-    for (let mm = 0; mm <= GEL_MM; mm += 5) { const y = Y(mm); ctx.fillRect(gx0 - (mm % 10 ? 4 : 8), y, mm % 10 ? 4 : 8, 1); if (mm % 10 === 0) ctx.fillText(mm / 10 + '', gx0 - 10, y); }
-    ctx.save(); ctx.translate(9, (top + bot) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('cm from well', 0, 0); ctx.restore();
-    ctx.textAlign = 'center';
-    const lw = (gx1 - gx0) / 8;
-    for (let i = 0; i < 8; i++) {
-      const cx = gx0 + lw * (i + 0.5), ww = lw * 0.62;
-      ctx.fillStyle = c('--surface-2'); ctx.fillRect(cx - ww / 2, wellY, ww, 5); ctx.strokeStyle = c('--muted'); ctx.strokeRect(cx - ww / 2, wellY, ww, 5);
-      ctx.fillStyle = c('--muted'); ctx.fillText(String(i + 1), cx, top - 5);
-      const L = st.lanes[i]; if (!L.length) continue;
-      const vol = Math.max(...L.map(x => x.v));
-      // loading dye: in well before run; front during/after run (fades after staining)
-      if (st.t === 0) { ctx.globalAlpha = Math.min(1, 0.25 + vol / 30); ctx.fillStyle = c('--s5'); ctx.fillRect(cx - ww / 2 + 1, wellY + 1, ww - 2, 3); ctx.globalAlpha = 1; }
-      else if (!st.reversed && st.dist * st.laneF[i] < GEL_MM && st.stain < 2) { ctx.globalAlpha = 0.55; ctx.fillStyle = c('--s5'); ctx.fillRect(cx - ww / 2, Y(st.dist * st.laneF[i]) - 2, ww, 4); ctx.globalAlpha = 1; }
-      if (st.t > 0 && !st.reversed) {
-        const bw = bandW(vol) * mmPx, vis = st.stain === 0 ? 0.22 : 1;
-        laneBands(i).forEach(b => { if (b.d <= 0 || b.d >= GEL_MM) return; const a = alphaOf(b.ng) * vis; if (a <= 0.01) return; ctx.globalAlpha = Math.min(1, a); ctx.fillStyle = c('--s3'); ctx.fillRect(cx - ww / 2, Y(b.d) - bw / 2, ww, Math.max(1.5, bw)); });
-        ctx.globalAlpha = 1;
-      }
+  // drawing: static bench layers are cached; each frame composites dyes, bands, bubbles and the pipette
+  const bub = makeBubbles(Math.floor(Math.random() * 1e6));
+  function buildStatic(G, scene) {
+    const mk = () => { const c = mkC(G.w * G.dpr, G.h * G.dpr), x = c.getContext('2d'); x.setTransform(G.dpr, 0, 0, G.dpr, 0, 0); return [c, x]; };
+    const [bg, x] = mk();
+    drawBench(x, G); drawTipBox(x, G); drawRack(x, G, cfg.samples, st.sel); drawSupply(x, G, V(), scene === 'box');
+    if (scene === 'box') drawGelBox(x, G, st.gel * 17 + 3); else drawLightBox(x, G, st.gel * 17 + 3, st.stain);
+    drawLeads(x, G, st.reversed, scene === 'box');
+    if (G.wide && G.tips && !st.pipette) drawPipette(x, G.tips.x0 + 8, G.h - 16, 0.55, 1.22, +$('vol').value, 0);
+    const [fg, f] = mk(); drawRuler(f, G);
+    if (scene === 'box' && st.reversed) {
+      const t = 'Leads reversed: red is on the − (well) end!', fs = G.wide ? 11 : 10; f.font = `700 ${fs}px ${FONT}`; const tw = Math.min(f.measureText(t).width + 14, G.box.x1 - G.box.x0 - 30), tx = G.box.x0 + 16, ty = G.box.y0 + 3;
+      shadowed(f, 'rgba(0,0,0,0.5)', 4, 1, 2, () => { f.fillStyle = '#fff1b8'; rrect(f, tx, ty, tw, fs + 8, 3); f.fill(); });
+      f.fillStyle = '#7a2300'; f.textAlign = 'left'; f.textBaseline = 'middle'; f.fillText(t, tx + 7, ty + (fs + 8) / 2 + 0.5, tw - 12);
     }
-    if (st.running) { ctx.fillStyle = c('--muted'); for (let k = 0; k < 14; k++) { const x = gx0 + ((k * 53 + st.t * 37) % (gx1 - gx0)); ctx.beginPath(); ctx.arc(x, 16 - (st.t * 7 + k * 3) % 6, 1.4, 0, 7); ctx.arc(x + 9, h - 15 - (st.t * 5 + k * 2) % 6, 1.4, 0, 7); ctx.fill(); } }
-    if (st.pipette) { const k = Math.min(1, (performance.now() - st.pipette.t0) / 600), cx = gx0 + lw * (st.pipette.w + 0.5), y = wellY - 30 + 30 * Math.sin(k * Math.PI); ctx.fillStyle = c('--muted'); ctx.beginPath(); ctx.moveTo(cx - 5, y - 30); ctx.lineTo(cx + 5, y - 30); ctx.lineTo(cx + 1, y + 2); ctx.lineTo(cx - 1, y + 2); ctx.fill(); }
-    st.geom = { gx0, gx1, lw, Y, mmPx, wellY };
+    return { bg, fg };
+  }
+  function draw() {
+    const { ctx, w, h, dpr } = cv, G = gelLayout(w, h, dpr), scene = st.stain ? 'light' : 'box', mm = G.mmPx;
+    st.geom = G;
+    const key = [w, h, dpr, scene, st.stain, st.sel, $('vol').value, st.reversed, V(), st.gel, !!st.pipette].join('|');
+    if (st.cacheKey !== key) { st.cache = buildStatic(G, scene); st.cacheKey = key; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(st.cache.bg, 0, 0, w, h);
+    drawSupplyLive(ctx, G, V(), st.running ? Math.round(V() / 2.0) : 0, scene === 'box', st.running);
+    ctx.save(); ctx.beginPath();
+    if (scene === 'box') ctx.rect(G.box.x0 + 6, G.box.y0 + 6, G.box.x1 - G.box.x0 - 12, G.box.y1 - G.box.y0 - 12); else ctx.rect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top);
+    ctx.clip();
+    const fade = 1 - 0.3 * Math.min(1, st.t / 200);
+    for (let i = 0; i < 8; i++) {
+      const L = st.lanes[i]; if (!L.length) continue;
+      const cx = G.gx0 + G.lw * (i + 0.5), ww = G.lw * 0.62, vol = Math.max(...L.map(c => c.v)), main = L.some(c => c.main);
+      if (st.t === 0) {   // dense, dye-coloured sample sitting in the well (meniscus highlight on top)
+        const f = Math.max(0.35, Math.min(1, vol / 25)), y = G.wellY + G.wellH * (1 - f);
+        ctx.fillStyle = `rgba(56,42,132,${main ? (0.55 + 0.4 * f).toFixed(2) : '0.32'})`; ctx.fillRect(cx - ww / 2 + 0.8, y, ww - 1.6, G.wellH * f);
+        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx - ww / 2 + 1.6, y + 0.3, ww - 3.2, 0.7);
+        if (main && vol >= 25) { ctx.fillStyle = 'rgba(56,42,132,0.4)'; ctx.beginPath(); ctx.ellipse(cx, G.wellY - 0.5, ww / 2 + 3, 2.2, 0, 0, TAU); ctx.fill(); }
+        continue;
+      }
+      if (st.reversed) {   // DNA and dye left the wells the wrong way and drift into the cathode buffer
+        if (scene !== 'box') continue;
+        const up = Math.min(st.dist * mm * 0.5, G.wellY - G.box.y0 - 14), r = 4 + Math.min(18, st.dist * 0.6), a = Math.max(0.12, 0.6 - st.dist / 90);
+        const g = ctx.createRadialGradient(cx, G.wellY - up, 0, cx, G.wellY - up, r + ww / 2); g.addColorStop(0, `rgba(70,50,150,${a.toFixed(2)})`); g.addColorStop(1, 'rgba(70,50,150,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, G.wellY - up, r + ww / 2, r * 0.8 + 3, 0, 0, TAU); ctx.fill(); continue;
+      }
+      const lf = st.laneF[i], vb = 1 + 0.01 * Math.max(0, st.frozen.V - 50), bw = bandW(vol) * mm;
+      const smileAt = d => mm * (0.12 + 0.3 * Math.min(1, d / 45)) * vb;
+      if (st.stain < 2) {   // loading-dye fronts: bromophenol blue (~300 bp) and xylene cyanol (~4 kb at 0.8%)
+        const k = (scene === 'box' ? 0.85 : 0.35) * fade * (main ? 1 : 0.4);
+        const d1 = st.dist * lf, d2 = st.dist * relMob(4000, st.frozen) * lf;
+        if (d2 < GEL_MM) drawBand(ctx, bandSprite('30,128,140'), cx, ww, G.Y(d2), bw * 1.5, smileAt(d2), k * 0.85);
+        if (d1 < GEL_MM) drawBand(ctx, bandSprite('82,48,160'), cx, ww, G.Y(d1), bw * 1.6, smileAt(d1), k);
+      }
+      // DNA bands: invisible ghosts until stained; methylene blue, darker for more DNA mass
+      const spr = st.stain ? bandSprite('18,40,118') : bandSprite('225,232,240'), kk = st.stain === 0 ? 0.06 : st.stain === 1 ? 0.62 : 1.1;
+      laneBands(i).forEach(b => {
+        if (b.d <= 0 || b.d >= GEL_MM) return; const a = alphaOf(b.ng); if (a <= 0.01) return;
+        const y = G.Y(b.d), th = bw * (0.85 + 0.35 * a);
+        if (st.stain && b.ng > 320) { const len = Math.min(3.5, b.ng / 250) * mm, g = ctx.createLinearGradient(0, y - len, 0, y); g.addColorStop(0, 'rgba(18,40,118,0)'); g.addColorStop(1, `rgba(18,40,118,${(0.22 * kk * a).toFixed(3)})`); ctx.fillStyle = g; ctx.fillRect(cx - ww * 0.42, y - len, ww * 0.84, len); }
+        drawBand(ctx, spr, cx, ww, y, th, smileAt(b.d), a * kk);
+      });
+    }
+    if (st.running && scene === 'box') drawBubbles(ctx, G, bub, performance.now() / 1000, st.reversed);
+    ctx.restore();
+    ctx.drawImage(st.cache.fg, 0, 0, w, h);
+    if (st.pipette) {   // micropipette dips into the well and expels the sample
+      const k = Math.min(1, (performance.now() - st.pipette.t0) / 600), cx = G.gx0 + G.lw * (st.pipette.w + 0.5);
+      const tipY = G.wellY + G.wellH * 0.6 - (1 - Math.sin(k * Math.PI)) * mm * 10;
+      drawPipette(ctx, cx, tipY, G.wide ? 0.62 : 0.46, 0.5, +$('vol').value, Math.max(0, Math.min(1, 1.6 - 2 * k)));
+    }
   }
   cv.onresize = draw;
   // running
@@ -463,7 +858,7 @@ function makeGel(rootSel, measSel, cfg) {
     const i = Math.floor((x - g.gx0) / g.lw); if (i < 0 || i > 7) return;
     if (st.t === 0) { load(i); return; }
     if (!ready()) return;
-    const d = (y - g.wellY - 6) / g.mmPx, vb = visibleBands(i);
+    const d = (y - g.y0) / g.mmPx, vb = visibleBands(i);
     let best = -1, bd = 3.5; vb.forEach((b, k) => { const dd = Math.abs(b.front - 0.5 - d); if (dd < bd) { bd = dd; best = k; } });
     if (best < 0) { msg('warn', `No band there in lane ${i + 1}. Click directly on a blue band.`); return; }
     addMeasure(i, vb[best], best); msg('ok', `Measured lane ${i + 1}, band ${best + 1}.`);
