@@ -446,6 +446,30 @@
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
   Lab.init({ id: 'lab02' });
   const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
+  /* ---- number-field validation: plain-language message under the field, aria-invalid, never a silent clamp ----
+     rule = {el, name, min, max, int}. Bad input is reported and the calculation is not run. */
+  function fieldError(input, msg) {
+    const box = input.closest('.field') || input.parentNode;
+    let m = box.querySelector(':scope > .feedback.bad');
+    if (!msg) { if (m) m.remove(); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); return; }
+    if (!m) { m = document.createElement('p'); m.className = 'feedback bad'; m.setAttribute('role', 'alert'); m.id = input.id + '-err'; m.style.margin = '6px 0 0'; box.appendChild(m); }
+    m.textContent = msg; input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', m.id);
+  }
+  function numProblem(raw, r, bad) {
+    const t = String(raw).trim(), v = Number(t), cap = r.name[0].toUpperCase() + r.name.slice(1);
+    if (t === '') return `Enter a value for ${r.name}.`;
+    if (bad || !isFinite(v)) return `${cap} must be a number${r.int ? ' (a whole number)' : ''}${r.min != null && r.max != null ? `, between ${r.min} and ${r.max}` : ''}.`;
+    if (r.int && !Number.isInteger(v)) return `${cap} must be a whole number (you entered ${t}).`;
+    if (r.min != null && r.max != null && (v < r.min || v > r.max)) return `${cap} must be between ${r.min} and ${r.max} (you entered ${t}).`;
+    if (r.min != null && v < r.min) return `${cap} can't be less than ${r.min} (you entered ${t}).`;
+    if (r.max != null && v > r.max) return `${cap} can't be more than ${r.max} (you entered ${t}).`;
+    return '';
+  }
+  function checkFields(rules) {
+    let bad = 0;
+    rules.forEach(r => { const msg = numProblem(r.el.value, r, r.el.validity && r.el.validity.badInput); fieldError(r.el, msg); if (msg) bad++; });
+    return !bad;
+  }
   const clamp01 = x => Math.min(1, Math.max(0, isFinite(x) ? x : 0));
   const rng = Lab.rng();
   const font = () => getComputedStyle(document.body).fontFamily;
@@ -658,9 +682,10 @@
     const terms = [aa, ab, bb].map((o, i) => (o - exp[i]) ** 2 / exp[i]);
     return { p, exp, terms, chi2: S.sum(terms) };
   }
+  const SS_RULES = () => [{ el: $('#ss-p'), name: 'p (frequency of A)', min: 0, max: 1 }, { el: $('#ss-n'), name: 'the number of zygotes', min: 1, max: 2000, int: true }];
   function ssRecalc() {
-    const p = clamp01(parseFloat($('#ss-p').value)); let n = Math.round(parseFloat($('#ss-n').value)); if (!(n >= 1)) n = 16; n = Math.min(2000, n);
-    $('#ss-p').value = p; $('#ss-n').value = n;
+    if (!checkFields(SS_RULES())) return false; // report the problem; keep the previous run on screen
+    const p = parseFloat($('#ss-p').value), n = parseInt($('#ss-n').value, 10);
     ssRows = []; for (let i = 0; i < n; i++) { const e = rng.uniform() <= p ? 'A' : 'B', f = rng.uniform() <= p ? 'A' : 'B'; ssRows.push([e, f]); }
     let aa = 0, ab = 0, bb = 0; ssRows.forEach(([e, f]) => { const z = e + f; z === 'AA' ? aa++ : z === 'BB' ? bb++ : ab++; });
     const newp = (2 * aa + ab) / (2 * n), hw = hwChi(aa, ab, bb);
@@ -670,6 +695,7 @@
     $('#ss-chi').textContent = hw.degenerate ? 'n/a' : fmt(hw.chi2, 2);
     $('#ss-fit').textContent = hw.degenerate ? 'one allele only' : hw.chi2 <= 3.84 ? 'yes' : 'no';
     ssChart.update({ series: [{ name: 'Observed', points: [{ x: 'AA', y: aa }, { x: 'AB', y: ab }, { x: 'BB', y: bb }] }, { name: 'Expected from D2 (p²N, 2pqN, q²N)', color: 'var(--muted)', points: [{ x: 'AA', y: p * p * n }, { x: 'AB', y: 2 * p * (1 - p) * n }, { x: 'BB', y: (1 - p) ** 2 * n }] }] });
+    return true;
   }
   const FORM = {
     C2: 'p (frequency of A)', C3: 'q (frequency of B)', D2: null, D3: '=1-D2',
@@ -714,10 +740,10 @@
     const c = e.target.closest('td[data-ref]'); if (!c) return;
     selectCell(c);
   });
-  $('#ss-recalc').addEventListener('click', () => { ssRecalc(); status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
-  ['#ss-p', '#ss-n'].forEach(id => $(id).addEventListener('change', ssRecalc));
+  $('#ss-recalc').addEventListener('click', () => { if (!ssRecalc()) { status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); return; } status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
+  ['#ss-p', '#ss-n'].forEach(id => { $(id).addEventListener('change', () => { if (ssRecalc()) status('#ss-status', '', ''); else status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); }); $(id).addEventListener('input', () => checkFields(SS_RULES().filter(r => r.el === $(id)))); });
   $('#ss-record').addEventListener('click', () => {
-    if (!ssLast) return; const L = ssLast;
+    if (!ssLast) return; if (!checkFields(SS_RULES())) { status('#ss-status', 'Not recorded: the entries above are invalid, so the table still shows your last good run. Fix them and recalculate.', 'bad'); return; } const L = ssLast;
     ssTable.addRow({ run: ssTable.getRows().length + 1, n: L.n, p0: L.p, aa: L.aa, ab: L.ab, bb: L.bb, p1: L.newp, dp: L.newp - L.p, chi: L.chi });
     status('#ss-status', 'Run recorded. Record several runs at each population size to compare how much p changes.', 'ok');
   });
@@ -743,7 +769,21 @@
   const mgSync = () => { $('#mg-n-out').textContent = N_STEPS[+mgEl.n.value]; $('#mg-p-out').textContent = fmt(+mgEl.p.value, 2); $('#mg-g-out').textContent = mgEl.g.value; $('#mg-k-out').textContent = mgEl.k.value; };
   Object.values(mgEl).forEach(el => el.addEventListener('input', mgSync)); mgSync();
   [['#t-sel', '#sub-sel'], ['#t-mut', '#sub-mut'], ['#t-mig', '#sub-mig']].forEach(([t, s]) => { const f = () => { $(s).hidden = !$(t).checked; }; $(t).addEventListener('change', f); f(); });
+  /* Force settings (only checked while their box is ticked). Returns null, with a message under each bad field, if any is invalid. */
+  const FORCE_RULES = [
+    ['#t-sel', [['#w-aa', 'the fitness w AA', 0, 1], ['#w-ab', 'the fitness w AB', 0, 1], ['#w-bb', 'the fitness w BB', 0, 1]]],
+    ['#t-mut', [['#mu', 'the mutation rate μ', 0, 0.1], ['#nu', 'the mutation rate ν', 0, 0.1]]],
+    ['#t-mig', [['#mig-m', 'the migration rate m', 0, 0.5], ['#mig-p', 'p of the migrants', 0, 1]]]
+  ];
+  const forceRules = (only) => FORCE_RULES.filter(([t]) => !only || only === t).map(([t, fs]) => [t, fs.map(([id, name, min, max]) => ({ el: $(id), name, min, max }))]);
+  function checkForces() {
+    let ok = true;
+    forceRules().forEach(([t, rules]) => { if ($(t).checked) { if (!checkFields(rules)) ok = false; } else rules.forEach(r => fieldError(r.el, '')); });
+    return ok;
+  }
+  FORCE_RULES.forEach(([t, fs]) => { $(t).addEventListener('change', checkForces); fs.forEach(([id, name, min, max]) => $(id).addEventListener('input', () => { if ($(t).checked) checkFields([{ el: $(id), name, min, max }]); })); });
   function getParams(over) {
+    if (!checkForces()) return null;
     const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
     const P = {
       N: N_STEPS[+mgEl.n.value], p0: +mgEl.p.value, G: +mgEl.g.value, K: +mgEl.k.value, drift: $('#t-drift').checked,
@@ -918,6 +958,7 @@
   }
   $('#mg-run').addEventListener('click', () => {
     const P = getParams();
+    if (!P) { status('#mg-status', 'The model was not run: fix the highlighted entries (selection, mutation or migration settings), then press Run model again.', 'bad'); return; }
     mgRes = simulate(P, rng); mgShown = 0;
     if (Lab.reducedMotion()) { mgShown = P.G; drawMG(); finishMG(); } else { status('#mg-status', 'Running…', ''); mgLoop.start(); }
   });
@@ -942,19 +983,37 @@
   const dzReps = $('#dz-reps'); const dzSync = () => $('#dz-reps-out').textContent = dzReps.value; dzReps.addEventListener('input', dzSync); dzSync();
   const DZ_DEF = { N: '10, 50, 200, 1000', p0: '0.1, 0.3, 0.5, 0.7, 0.9', wbb: '1, 0.9, 0.7, 0.5, 0', wab: '0.8, 0.9, 1', mu: '0, 0.001, 0.01, 0.05', m: '0, 0.01, 0.05, 0.2' };
   const DZ_LABEL = { N: 'Population size N', p0: 'Starting p', wbb: 'Fitness of BB', wab: 'Fitness of AB', mu: 'Mutation rate μ (A→B)', m: 'Migration rate m' };
-  $('#dz-iv').addEventListener('change', () => { $('#dz-levels').value = DZ_DEF[$('#dz-iv').value]; });
+  $('#dz-iv').addEventListener('change', () => { $('#dz-levels').value = DZ_DEF[$('#dz-iv').value]; fieldError($('#dz-levels'), ''); });
   const dzChart = Lab.chart('#dz-chart', { xLabel: 'Independent variable', yLabel: 'Response', series: [], height: 300 });
   const dzTable = Lab.table('#dz-table', { save: 'dz', toast: false, columns: [{ key: 'exp', label: 'Experiment', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
   let dzExp = dzTable.getRows().reduce((m, r) => Math.max(m, r.exp || 0), 0);
+  /* Levels: every entry must be a number inside the variable's allowed range (no silent clamping or dropping). Returns the
+     list, or null after putting a message under the field. */
+  const DZ_RANGE = { N: [2, 5000, true, 'population size N'], p0: [0, 1, false, 'starting p'], wbb: [0, 1, false, 'the fitness of BB'], wab: [0, 1, false, 'the fitness of AB'], mu: [0, 0.1, false, 'the mutation rate μ'], m: [0, 0.5, false, 'the migration rate m'] };
+  function dzParseLevels(iv) {
+    const el = $('#dz-levels'), [min, max, int, what] = DZ_RANGE[iv];
+    const toks = el.value.split(/[,;\s]+/).filter(Boolean);
+    const fail = msg => { fieldError(el, msg); return null; };
+    if (toks.length < 2) return fail('Enter at least two levels, separated by commas (for example 10, 50, 200).');
+    const nums = [];
+    for (const t of toks) {
+      const v = Number(t);
+      if (!isFinite(v)) return fail(`"${t}" isn't a number. Levels must be numbers separated by commas.`);
+      if (int && !Number.isInteger(v)) return fail(`Level ${t} must be a whole number for ${what}.`);
+      if (v < min || v > max) return fail(`Level ${t} is outside the allowed range for ${what}: levels must be between ${min} and ${max}.`);
+      nums.push(v);
+    }
+    if (new Set(nums).size !== nums.length) return fail('Each level must be different. Remove the repeated value.');
+    if (nums.length > 8) return fail(`Use at most 8 levels (you entered ${nums.length}).`);
+    fieldError(el, ''); return nums;
+  }
+  $('#dz-levels').addEventListener('input', () => { fieldError($('#dz-levels'), ''); });
   $('#dz-run').addEventListener('click', () => {
     const iv = $('#dz-iv').value, dv = $('#dz-dv').value, reps = +dzReps.value;
-    let levels = $('#dz-levels').value.split(/[,;\s]+/).map(parseFloat).filter(isFinite);
-    if (iv === 'N') levels = levels.map(x => Math.round(Math.min(5000, Math.max(2, x))));
-    else if (iv === 'm') levels = levels.map(x => Math.min(0.95, Math.max(0, x)));
-    else levels = levels.map(clamp01);
-    levels = [...new Set(levels)].slice(0, 8);
-    if (levels.length < 2) { status('#dz-status', 'Enter at least two levels, separated by commas.', 'bad'); return; }
+    const levels = dzParseLevels(iv);
+    if (!levels) { status('#dz-status', 'The experiment was not run: fix the levels above.', 'bad'); return; }
     const base = getParams({ K: reps });
+    if (!base) { status('#dz-status', 'The experiment was not run: fix the highlighted entries in the model step (selection, mutation or migration settings).', 'bad'); return; }
     if (iv !== 'N' && !base.drift) base.K = 1;
     if (iv === 'N' && !base.drift) { status('#dz-status', 'Population size only matters when genetic drift is switched on (in the model step).', 'warn'); }
     dzExp++;
@@ -985,14 +1044,17 @@
   /* ================= ANALYZE ================= */
   const csTable = Lab.table('#cs-out', { columns: [{ key: 'g', label: 'Genotype' }, { key: 'o', label: 'Observed (o)', num: true, digits: 0 }, { key: 'e', label: 'Expected (e)', num: true, digits: 2 }, { key: 't', label: '(o − e)² / e', num: true, digits: 3 }], footer: rows => ['Total', S.sum(rows.map(r => r.o)), fmt(S.sum(rows.map(r => r.e)), 2), fmt(S.sum(rows.map(r => r.t)), 3)] });
   function runChi() {
-    const v = ['#cs-aa', '#cs-ab', '#cs-bb'].map(id => Math.max(0, Math.round(parseFloat($(id).value) || 0)));
+    const CS = [['#cs-aa', 'the AA count'], ['#cs-ab', 'the AB count'], ['#cs-bb', 'the BB count']].map(([id, name]) => ({ el: $(id), name, min: 0, int: true }));
+    if (!checkFields(CS)) { csTable.setRows([]); status('#cs-status', 'No χ² calculated: counts must be whole numbers of 0 or more. Fix the highlighted entries.', 'bad'); return; }
+    const v = CS.map(r => Number(r.el.value));
     const h = hwChi(...v);
-    if (!h || h.degenerate) { csTable.setRows([]); status('#cs-status', 'Enter counts that include both alleles.', 'bad'); return; }
+    if (!h || h.degenerate) { csTable.setRows([]); status('#cs-status', v.some(x => x > 0) ? 'No χ² calculated: only one allele is present (the expected count for a genotype would be 0, so the test can\'t be done). Enter counts that include both A and B.' : 'No χ² calculated: enter at least one observed count above 0.', 'bad'); return; }
     csTable.setRows(['AA (p²N)', 'AB (2pqN)', 'BB (q²N)'].map((g, i) => ({ g, o: v[i], e: h.exp[i], t: h.terms[i] })));
     const ok = h.chi2 <= 3.84;
     status('#cs-status', `p = ${fmt(h.p, 3)}, q = ${fmt(1 - h.p, 3)}. χ² = ${fmt(h.chi2, 2)} with df = 1 (critical value 3.84 at p = 0.05). ${ok ? 'Fail to reject the null hypothesis: the genotypes fit Hardy-Weinberg proportions.' : 'Reject the null hypothesis: the genotypes do not fit Hardy-Weinberg proportions, so something other than chance is likely acting.'}`, ok ? 'ok' : 'warn');
   }
   $('#cs-run').addEventListener('click', runChi); runChi();
+  ['#cs-aa', '#cs-ab', '#cs-bb'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   [
     ['a-infinite', 'In the absence of random events (an infinitely large population), are the allele frequencies of the original population expected to change from generation to generation? Cite a run.'],
     ['a-small', 'How does that compare with a small population that has random gamete selection? What happens to allele frequencies in such a population, and is the outcome predictable?'],
@@ -1016,7 +1078,8 @@
   const allFilled = ks => ks.every(filled);
   let ssClicks = 0, mgRan = 0, dzTouched = false;
   $('#ss-recalc').addEventListener('click', () => { ssClicks++; });
-  $('#mg-run').addEventListener('click', () => { mgRan++; });
+  const forcesInvalid = () => !!document.querySelector('#sub-sel [aria-invalid="true"], #sub-mut [aria-invalid="true"], #sub-mig [aria-invalid="true"]');
+  $('#mg-run').addEventListener('click', () => { if (!forcesInvalid()) mgRan++; });
   ['#dz-iv', '#dz-levels', '#dz-dv', '#dz-reps'].forEach(s => { $(s).addEventListener('input', () => { dzTouched = true; }); $(s).addEventListener('change', () => { dzTouched = true; }); });
   Lab.results('#card-sim', { graph: [{ el: '#card-chart', title: 'p by generation' }], data: [{ el: '#card-table', title: 'Genotype counts each generation' }] });
   Lab.results('#ss-sim', { graph: [{ el: '#ss-chart', title: 'Zygote genotypes' }], data: [{ el: '#ss-table', title: 'Recorded runs' }] });
@@ -1052,7 +1115,7 @@
   Lab.gate('#dz-run', () => dzLevels().length >= 2 ? '' : 'Enter at least two levels');
 
   /* toasts for key moments (status lines are live regions, so these are not announced twice) */
-  $('#mg-run').addEventListener('click', () => { if (Lab.reducedMotion()) Lab.toast('Model run finished', { type: 'ok', announce: false, key: 'mgrun' }); });
+  $('#mg-run').addEventListener('click', () => { if (!forcesInvalid() && Lab.reducedMotion()) Lab.toast('Model run finished', { type: 'ok', announce: false, key: 'mgrun' }); });
   $('#dz-run').addEventListener('click', () => { if (dzTable.getRows().length) Lab.toast(`Experiment ${dzExp} recorded in the Data tab`, { type: 'ok', announce: false, key: 'dzrun' }); });
 })();
 </script>
