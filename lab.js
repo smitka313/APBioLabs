@@ -941,8 +941,132 @@
     } }, 'Download .docx');
     const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Save as PDF');
     const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Hand in on Schoology: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn);
+      h('span', { class: 'grow' }, 'Hand in on Schoology: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
+      h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
     return [bar, status, note];
+  }
+
+  /* ---------------- Printable worksheet ----------------
+     Lab.worksheet.print() switches to worksheet mode (body.worksheet-mode), prints, and exits afterwards.
+     Lab.worksheet.enter() / .exit() switch the mode without printing.
+     Built from the registered Lab.quiz / Lab.prompt / Lab.table structures: multiple choice with ○ bubbles,
+     numeric answers on a line with units, blank ruled data tables (Lab.table option worksheetRows, else the
+     table's preset rows, else 8), and ruled lines for every written prompt. */
+  let wsState = null;
+  const isDarkNow = () => { const t = document.documentElement.getAttribute('data-theme'); return t === 'dark' || (t !== 'light' && !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)); };
+  function wsQuiz(q) {
+    return `<ol class="ws-quiz">${q.questions.map(qq => `<li class="ws-q"><div class="ws-stem">${qq.q}</div>${qq.type === 'num'
+      ? `<p class="ws-num">Answer: <span class="ws-blank"></span>${qq.unit ? ' <span class="ws-unit">' + qq.unit + '</span>' : ''}</p>`
+      : `${qq.type === 'multi' ? '<p class="ws-hint">Select all that apply.</p>' : ''}<ul class="ws-choices">${(qq.choices || []).map(c => `<li><span class="ws-bubble" aria-hidden="true">${qq.type === 'multi' ? '☐' : '○'}</span><span>${c}</span></li>`).join('')}</ul>`}</li>`).join('')}</ol>`;
+  }
+  function wsTable(t) {
+    const cols = t.opts.columns || [], preset = t.opts.rows || [];
+    const n = Math.max(1, t.opts.worksheetRows || preset.length || 8);
+    const cellVal = (r, c) => { if (!r || c.editable) return ''; const v = r[c.key]; if (v == null) return ''; return c.num && typeof v === 'number' ? Lab.fmt(v, c.digits != null ? c.digits : 2) : esc(v); };
+    let body = '';
+    for (let i = 0; i < n; i++) body += `<tr>${cols.map(c => `<td>${cellVal(preset[i], c)}</td>`).join('')}</tr>`;
+    return `<table class="ws-table"><thead><tr>${cols.map(c => `<th>${esc(c.label)}${c.unit ? ` <span class="ws-unit">(${esc(c.unit)})</span>` : ''}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
+  }
+  const wsLines = n => '<div class="ws-line"></div>'.repeat(n);
+  function wsCopyProse(body, wasDark) {
+    const clone = body.cloneNode(true);
+    const origCanvases = $$('canvas', body), cloneCanvases = $$('canvas', clone);
+    cloneCanvases.forEach((cv, i) => {
+      let img = null;
+      if (!wasDark) { try { img = h('img', { src: origCanvases[i].toDataURL('image/png'), alt: origCanvases[i].getAttribute('aria-label') || '', class: 'ws-img' }); } catch (e) { img = null; } }
+      if (img) cv.replaceWith(img); else cv.remove();
+    });
+    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools', clone).forEach(e => e.remove());
+    $$('[id]', clone).forEach(e => e.removeAttribute('id'));
+    return clone.innerHTML;
+  }
+  function buildWorksheet(wasDark) {
+    const hd = $('.lab-header');
+    const title = hd && $('h1', hd) ? $('h1', hd).textContent.trim() : document.title;
+    const eyebrow = hd && $('.eyebrow', hd) ? $('.eyebrow', hd).textContent.trim() : '';
+    const dq = hd && $('.driving-q', hd) ? $('.driving-q', hd).textContent.trim() : '';
+    const out = [`<header class="ws-head"><p class="ws-eyebrow">${esc(eyebrow)}${eyebrow ? ' · ' : ''}Worksheet</p><h1>${esc(title)}</h1>${dq ? `<p class="ws-dq">${esc(dq)}</p>` : ''}
+      <div class="ws-idline"><span class="ws-id ws-id-name">Name</span><span class="ws-id ws-id-period">Period</span><span class="ws-id ws-id-date">Date</span></div></header>`];
+    const quizByEl = new Map(REG.quizzes.map(q => [q.el, q])), promptByEl = new Map(REG.prompts.map(p => [p.el, p])), tableByEl = new Map(REG.tables.map(t => [t.el, t]));
+    $$('section.step').forEach(sec => {
+      const name = (sec.dataset.step || '').trim();
+      const ehd = $(':scope > header', sec);
+      const eb = ehd && $('.eyebrow', ehd) ? $('.eyebrow', ehd).textContent.trim() : '';
+      const h2 = ehd && $('h2', ehd) ? $('h2', ehd).textContent.trim() : name;
+      const head = `<div class="ws-shead"><h2>${esc(h2)}</h2>${eb && eb !== h2 ? `<p class="ws-eyebrow">${esc(eb)}</p>` : ''}</div>`;
+      if (/^(overview|background)$/i.test(name)) {
+        const body = $(':scope > .step-body', sec) || sec;
+        out.push(`<section class="ws-sec ws-copy">${head}<div class="ws-prose">${wsCopyProse(body, wasDark)}</div></section>`);
+        return;
+      }
+      const cands = [];
+      REG.quizzes.forEach(q => { if (sec.contains(q.el)) cands.push(q.el); });
+      REG.prompts.forEach(p => { if (sec.contains(p.el)) cands.push(p.el); });
+      REG.tables.forEach(t => { if (sec.contains(t.el)) cands.push(t.el); });
+      $$('[data-save], table.data', sec).forEach(e => {
+        if (e.id === 'student-name' || e.closest('.prompt, .quiz, .id-box') || REG.tables.some(t => t.el.contains(e))) return;
+        if (e.matches('[data-save]') && !(e.tagName === 'TEXTAREA' || e.dataset.label)) return;
+        cands.push(e);
+      });
+      cands.sort((a, b) => a === b ? 0 : (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+      const parts = [];
+      cands.forEach(e => {
+        if (quizByEl.has(e)) parts.push(wsQuiz(quizByEl.get(e)));
+        else if (promptByEl.has(e)) { const p = promptByEl.get(e); parts.push(`<div class="ws-prompt"><p class="ws-plabel">${p.label}</p>${wsLines(Math.max(3, (p.rows || 4) + 1))}</div>`); }
+        else if (tableByEl.has(e)) parts.push(wsTable(tableByEl.get(e)));
+        else if (e.matches('table.data')) { const c = e.cloneNode(true); c.className = 'ws-table'; $$('input, select', c).forEach(i => i.replaceWith('')); parts.push(c.outerHTML); }
+        else if (e.tagName === 'TEXTAREA') parts.push(`<div class="ws-prompt"><p class="ws-plabel">${esc(fieldLabel(e))}</p>${wsLines(4)}</div>`);
+        else parts.push(`<p class="ws-short"><span>${esc(fieldLabel(e))}:</span> <span class="ws-blank"></span></p>`);
+      });
+      if (parts.length) out.push(`<section class="ws-sec">${head}${parts.join('')}</section>`);
+    });
+    return out.join('');
+  }
+  function enterWorksheet() {
+    if (wsState) return wsState.root;
+    closeReport(); flushSaves();
+    const wasDark = isDarkNow();
+    const restore = forceLight();
+    const note = previewNote(true);
+    const hd = $('.lab-header h1');
+    const titleText = (document.title || (hd ? hd.textContent : 'Lab')).replace(/["\\]/g, '');
+    const style = h('style', { id: 'ws-page-style', text: `@page { size: letter; margin: .7in .6in .6in; @top-left { content: "${titleText}"; font: 9pt Arial, sans-serif; color: #444; } @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 9pt Arial, sans-serif; color: #444; } }` });
+    const root = h('div', { id: 'lab-worksheet', class: 'worksheet', role: 'region', 'aria-label': 'Printable worksheet' },
+      h('div', { class: 'ws-tools' },
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn--primary', type: 'button', onclick: () => tryPrint(() => { note.hidden = false; }) }, 'Print worksheet'),
+          h('button', { class: 'btn', type: 'button', onclick: exitWorksheet }, 'Back to the lab')),
+        note),
+      h('article', { class: 'ws-paper', html: buildWorksheet(wasDark) }));
+    document.head.append(style);
+    document.body.append(root);
+    document.body.classList.add('worksheet-mode');
+    wsState = { restore, root, style, scrollY: window.scrollY, opener: document.activeElement };
+    document.addEventListener('keydown', wsKey);
+    window.scrollTo(0, 0);
+    return root;
+  }
+  function wsKey(e) { if (e.key === 'Escape') exitWorksheet(); }
+  function exitWorksheet() {
+    if (!wsState) return;
+    const s = wsState; wsState = null;
+    s.root.remove(); s.style.remove(); s.restore();
+    document.body.classList.remove('worksheet-mode');
+    document.removeEventListener('keydown', wsKey);
+    window.scrollTo(0, s.scrollY);
+    if (s.opener && s.opener.focus) { try { s.opener.focus({ preventScroll: true }); } catch (e) { /* gone */ } }
+  }
+  function printWorksheet() {
+    enterWorksheet();
+    const after = () => { window.removeEventListener('afterprint', after); exitWorksheet(); };
+    window.addEventListener('afterprint', after);
+    // If printing is blocked (preview), stay in the worksheet view and show the note.
+    setTimeout(() => tryPrint(() => { window.removeEventListener('afterprint', after); const n = wsState && $('.preview-note', wsState.root); if (n) n.hidden = false; }), 60);
+  }
+  Lab.worksheet = { enter: enterWorksheet, exit: exitWorksheet, print: printWorksheet, html: () => buildWorksheet(isDarkNow()) };
+  function addHeaderPrintButton() {
+    const crumbs = $('.lab-header .crumbs'); if (!crumbs || $('.ws-print-btn', crumbs)) return;
+    crumbs.append(h('button', { class: 'btn btn--sm ws-print-btn', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
   }
 
   /* ---------------- Step navigation, deep links, progress ----------------
@@ -1104,7 +1228,7 @@
   /* ---------------- Init ---------------- */
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
-    if (IS_LAB) mountLabIdentity();
+    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); }
     buildNav();
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
