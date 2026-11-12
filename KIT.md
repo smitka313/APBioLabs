@@ -38,8 +38,16 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Report + save/resume** in the `[data-responses]` toolbar: `Lab.report.docx()` (docx@9.0.2 loaded lazily from
   jsDelivr), `Lab.report.open({print})` (print view for Save as PDF), `Lab.progressFile.payload/parse/apply/makeCode/readCode`.
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
-  "Copy link" button. A section is done when its prompt textareas are filled, quiz questions checked and saved
-  tables have a row. `Lab.progress.update()`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
+  "Copy link" button. **One progress scheme:** a "part" counts only if it holds student work (prompt textareas, quiz
+  questions, saved `Lab.table`s, required `Lab.steps` items); Overview, Background and Submit do not. A part is done when
+  all of that work is done. The same number is used by the nav ("3 of 6 parts done"), the home cards and the
+  teachers.html table ("10 parts (6 with work)"; regenerate with `node tools/gen-parts.js` after changing a lab's parts;
+  `tests/t05b-teachers.js` checks it). **Setup rows are not work:** a row a page adds while loading (a starting row, preset
+  rows) is tagged `_setup:true` and saved that way; `addRow(row, {setup:false})` / `setRows(rows, {setup:false})` force
+  "student work" and `{setup:true}` forces setup (for rows added later, e.g. inside `Lab.onShow`). A required step counts
+  once the student has completed it (remembered in `stepdone`, so reloads keep it); a step already satisfied when the page
+  loads, or satisfied before the student touches anything, is left out. Give steps a stable `id`.
+  `Lab.progress.update()` → `{done, total, sections}`, `Lab.progress.forLab('lab07')`; `Lab.home({identity, resume})` on index.
 - **Time estimates and arrow keys.** `data-minutes="15"` on a `section.step` renders a "≈ 15 min" chip (read as "About 15 minutes") beside the part eyebrow and adds "≈ N min total" to the header tags; round to 5. In paged mode ← / → change part unless focus is in a text field, select, slider, tab or other arrow-key control, the tour is open, or a modifier is held.
 - **First-visit tour.** After sign-in, the first lab page a browser opens shows a 5-step dismissible tour
   (`localStorage['aplab:tour']`, site-wide; `Lab.tour.start({force:true})`, `.reset()`; "Help" link in the sign-in line).
@@ -164,10 +172,13 @@ Lab.gate('#cup-run', () => poured || rows().length ? '' : 'Pour the disks first 
 ```
 - Numbered checklist; the first unfinished non-optional step is current (highlighted, `aria-current="step"`),
   a one-line **Next:** hint (`hint`, else `text`) sits under it, and the step's `target` control gets a
-  gentle pulsing outline (static under reduced motion). Clicking a step's text focuses its control (and
+  gentle pulsing outline (static under reduced motion). Each step with a `target` has a small "Show me ↓" button
+  (it only scrolls, so it is labelled that way; the step text is plain): it opens the control's part, closed
+  "More options", and Data/Graph tab if needed, pulses the control for a few seconds and focuses it (and
   opens its part if it is elsewhere). `sticky:true` keeps a step ticked once done.
 - `done()` is re-checked after every input/change/click, after table/quiz/answer changes, every 0.6 s, and
   on `Lab.steps.refresh()`. Base it on saved state too (tables, prompts) so a reload shows real progress.
+- `Lab.gate(button, fn, {show: target})` (optional `show`) adds a "Show me ↓" button next to the reason.
 - `Lab.gate(button, fn)` disables the button while `fn()` returns a reason and shows the reason under it
   (`#<id>-why`, linked by `aria-describedby`). Do not gate buttons that page code also disables itself,
   and let saved data pass the gate (students who reload must not be locked out).
@@ -211,6 +222,33 @@ For rows that stream in during an animation (one per simulated minute) set `toas
 Compact items, ‹ › scroll arrows and edge fades when 10–12 parts do not fit, the current part kept in view,
 "n of m parts done" and the All parts toggle pinned at the right. Keep `data-step` names short (≤ 14
 characters, e.g. "Root tips", not "Effects of environment on mitosis").
+
+### 8. Input validation: `Lab.validate`
+Use it for every calculator or numeric entry, so the messages look and behave the same on every lab.
+```js
+const n = Lab.validate.number($('#ttest-n'), { min: 2, integer: true, label: 'Number of measurements' });
+if (n == null) return;                       // a message is already showing under the field; do not compute
+const p = Lab.validate.number($('#p-in'), { min: 0, max: 1, label: 'p' });   // "p must be between 0 and 1."
+if (p == null) return;
+Lab.validate.show($('#csv'), 'Enter at least 2 measurements for each group.');   // custom rule
+Lab.validate.clear($('#csv'));
+```
+- `Lab.validate.number(inputEl, {min, max, integer, required = true, label})` returns the number, or `null` after
+  showing the message. Rejects empty ("Enter a value for p."), non-numeric, non-whole (`integer:true`) and
+  out-of-range input ("… must be between 0 and 1." / "at least 2" / "at most 100"). It never clamps. `label`
+  defaults to the field's `aria-label` or `<label>`. With `required:false` an empty field returns `null` with no message.
+- `Lab.validate.show(inputEl, msg)` / `.clear(inputEl)` do the display part for any rule you check yourself. The
+  message is a `<p class="feedback bad field-msg" role="alert">` right under the field (under its row if the
+  field sits in a flex/grid row); the field gets `aria-invalid="true"` and `aria-describedby` to the message,
+  and both go away when `clear` runs or, for `number()`, as soon as the field holds a valid value again.
+- Do not compute or draw a result while a message is showing. Never silently clamp; if you must change a value,
+  say so ("p can't be more than 1, so it was set to 1").
+
+### 9. Microscope zoom (`Scope.view`)
+Every `Scope.view` has a zoom of 1× to 3× (−/+ buttons, Ctrl/⌘ + wheel, pinch on touch, keys + − 0) that works with
+panning. Lab pages get it automatically; keep using `onClick(x, y)` and `view.toWorld()` (both are zoom-aware)
+and draw marks in `overlay()` (world units). If a page draws its own `hud` function, multiply its scale-bar length
+by `view.zoom` (second argument: `hud: (ctx, view) => …`). Pass `{ zoom: false }` to opt out.
 
 ### `Lab.onShow` example
 ```js

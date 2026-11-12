@@ -194,7 +194,8 @@
     const step = niceStep(hi - lo, ticks);
     return { lo: Math.floor(lo / step + 1e-9) * step, hi: Math.ceil(hi / step - 1e-9) * step, step };
   }
-  const tickFmt = (v, step) => { const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Lab.fmt(v, Math.min(d, 4)); };
+  const tickFmt = (v, step) => { const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Lab.fmt(v, Math.min(d, 6)); };
+  const errOf = p => { const e = p && p.err != null ? Math.abs(+p.err) : 0; return isFinite(e) ? e : 0; }; // a missing or NaN error bar (e.g. SE of one plant) must not wreck the axis scale
 
   let clipCount = 0;
   /* Callbacks run (debounced) whenever student work changes: progress marks use this. */
@@ -213,25 +214,29 @@
     function chooseW() {
       if (!responsive()) return 640;
       const cw = el.clientWidth;
-      if (!cw) return lastW || 640;
+      // Observe even while hidden (width 0): when the panel is shown the chart redraws at its real width.
       if (!ro && 'ResizeObserver' in window) { ro = new ResizeObserver(() => { const w = el.clientWidth; if (w && Math.abs(w - lastW) > 8) render(); }); ro.observe(el); }
+      if (!cw) return lastW || 640;
       return Math.max(300, Math.min(760, Math.round(cw)));
     }
     const entry = { el, get opts() { return cur; }, render: () => render(), html: W => build(W || 640) };
     REG.charts.push(entry);
-    function render() { lastW = chooseW(); el.innerHTML = build(lastW); }
+    function render() { lastW = chooseW(); el.innerHTML = build(lastW); el.classList.toggle('is-empty', !chartHasData(cur)); }
     function build(W) {
       const o = cur, H = Math.round((o.height || 360) * Math.max(0.62, Math.min(1, W / 640))), m = { t: 16, r: 18, b: 54, l: 64 };
       const iw = W - m.l - m.r, ih = H - m.t - m.b;
       const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true }, s));
       let svg = '';
+      const empty = !chartHasData(o);                                  // nothing to plot yet: draw the axes and a note, not a fake 0–1 scale
+      const knownX = o.xMin != null && o.xMax != null, knownY = o.yMin != null && o.yMax != null;
+      const showX = !empty || knownX, showY = !empty || knownY;          // tick numbers only when they mean something
       if (o.type === 'bar') {
         const cats = o.categories || (series[0] ? series[0].points.map(p => p.x) : []);
         let yMax = -Infinity, yMin = 0;
-        series.forEach(s => s.points.forEach(p => { yMax = Math.max(yMax, p.y + (p.err || 0)); yMin = Math.min(yMin, p.y - (p.err || 0)); }));
+        series.forEach(s => s.points.forEach(p => { if (!isFinite(p.y)) return; yMax = Math.max(yMax, p.y + errOf(p)); yMin = Math.min(yMin, p.y - errOf(p)); }));
         const yr = niceRange(o.yMin != null ? o.yMin : yMin, o.yMax != null ? o.yMax : (isFinite(yMax) ? yMax : 1));
         const Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
-        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>`;
+        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
         const gw = iw / Math.max(1, cats.length), bw = Math.min(56, (gw * 0.72) / Math.max(1, series.length));
         cats.forEach((c, ci) => {
           const gx = m.l + gw * ci + gw / 2;
@@ -240,29 +245,30 @@
             const p = s.points.find(pp => pp.x === c) || s.points[ci]; if (!p || !isFinite(p.y)) return;
             const x = gx - (bw * series.length) / 2 + bw * si, y0 = Y(Math.max(0, yr.lo)), y1 = Y(p.y);
             svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${Math.max(0.5, bw - 4)}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${s.color}"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
-            if (p.err) { const cx = x + bw / 2; svg += `<g style="stroke:var(--ink)" stroke-width="1.4"><line x1="${cx}" x2="${cx}" y1="${Y(p.y - p.err)}" y2="${Y(p.y + p.err)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y - p.err)}" y2="${Y(p.y - p.err)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y + p.err)}" y2="${Y(p.y + p.err)}"/></g>`; }
+            const pe = errOf(p);
+            if (pe) { const cx = x + bw / 2; svg += `<g style="stroke:var(--ink)" stroke-width="1.4"><line x1="${cx}" x2="${cx}" y1="${Y(p.y - pe)}" y2="${Y(p.y + pe)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y - pe)}" y2="${Y(p.y - pe)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y + pe)}" y2="${Y(p.y + pe)}"/></g>`; }
           });
         });
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${Y(Math.max(0, yr.lo))}" y2="${Y(Math.max(0, yr.lo))}"/>`;
       } else {
         let xs = [], ys = [];
-        series.forEach(s => s.points.forEach(p => { if (isFinite(p.x) && isFinite(p.y)) { xs.push(p.x); ys.push(p.y - (p.err || 0), p.y + (p.err || 0)); } }));
-        (o.hLines || []).forEach(l => ys.push(l.y));
+        series.forEach(s => s.points.forEach(p => { if (isFinite(p.x) && isFinite(p.y)) { xs.push(p.x); ys.push(p.y - errOf(p), p.y + errOf(p)); } }));
+        if (!empty) (o.hLines || []).forEach(l => { if (isFinite(l.y)) ys.push(l.y); });
         const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), W < 480 ? 4 : 6);
         const yr = niceRange(o.yMin != null ? o.yMin : Math.min(0, ...(ys.length ? ys : [0])), o.yMax != null ? o.yMax : Math.max(...(ys.length ? ys : [1])), 5);
         const X = v => m.l + (v - xr.lo) / (xr.hi - xr.lo) * iw, Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
-        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>`;
-        for (let v = xr.lo; v <= xr.hi + 1e-9; v += xr.step) svg += `<line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${m.t + ih}"/><text x="${X(v)}" y="${m.t + ih + 18}" text-anchor="middle">${tickFmt(v, xr.step)}</text>`;
+        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
+        for (let v = xr.lo; v <= xr.hi + 1e-9; v += xr.step) svg += `<line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${m.t + ih}"/>${showX ? `<text x="${X(v)}" y="${m.t + ih + 18}" text-anchor="middle">${tickFmt(v, xr.step)}</text>` : ''}`;
         if (yr.lo < 0 && yr.hi > 0) svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${Y(0)}" y2="${Y(0)}"/>`;
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/><line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/>`;
-        (o.hLines || []).forEach(l => { svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
-        (o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>` : ''}`; });
+        (empty ? [] : o.hLines || []).forEach(l => { if (!isFinite(l.y)) return; svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
+        (empty ? [] : o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>` : ''}`; });
         const clipId = 'lc' + (++clipCount); // not Math.random: keeps the seeded stream for simulations
         svg += `<defs><clipPath id="${clipId}"><rect x="${m.l}" y="${m.t - 6}" width="${iw + 6}" height="${ih + 12}"/></clipPath></defs><g clip-path="url(#${clipId})">`;
         series.forEach(s => {
           const pts = s.points.filter(p => isFinite(p.x) && isFinite(p.y)).slice().sort((a, b) => a.x - b.x);
           if (s.line && pts.length > 1) svg += `<polyline fill="none" style="stroke:${s.color}" stroke-width="2.2" ${s.dash ? 'stroke-dasharray="6 5"' : ''} stroke-linejoin="round" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>`;
-          pts.forEach(p => { if (p.err) svg += `<g style="stroke:${s.color}" stroke-width="1.3"><line x1="${X(p.x)}" x2="${X(p.x)}" y1="${Y(p.y - p.err)}" y2="${Y(p.y + p.err)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y - p.err)}" y2="${Y(p.y - p.err)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y + p.err)}" y2="${Y(p.y + p.err)}"/></g>`; });
+          pts.forEach(p => { const pe = errOf(p); if (pe) svg += `<g style="stroke:${s.color}" stroke-width="1.3"><line x1="${X(p.x)}" x2="${X(p.x)}" y1="${Y(p.y - pe)}" y2="${Y(p.y + pe)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y - pe)}" y2="${Y(p.y - pe)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y + pe)}" y2="${Y(p.y + pe)}"/></g>`; });
           if (s.dots && pts.length <= 120) pts.forEach(p => { svg += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.8" style="fill:${s.color};stroke:var(--surface)" stroke-width="1.5"><title>${esc(s.name || '')} (${Lab.fmt(p.x, 3)}, ${Lab.fmt(p.y, 3)})</title></circle>`; });
           if (s.fit === 'linear' && pts.length > 1) {
             const f = stats.linreg(pts.map(p => p.x), pts.map(p => p.y));
@@ -271,6 +277,14 @@
           }
         });
         svg += '</g>';
+      }
+      if (empty) { // designed empty state: a centred note over the (labelled) axes
+        const words = String(o.emptyText || 'Run a trial to see your results here').split(' '), per = 7.8, lines = [];
+        const maxCh = Math.max(12, Math.floor((iw - 28) / per)); let cur = '';
+        words.forEach(wd => { if (cur && (cur + ' ' + wd).length > maxCh) { lines.push(cur); cur = wd; } else cur = cur ? cur + ' ' + wd : wd; });
+        if (cur) lines.push(cur);
+        const bw = Math.min(iw - 8, Math.max(...lines.map(l => l.length)) * per + 32), bh = lines.length * 20 + 18, cx = m.l + iw / 2, cy = m.t + ih / 2;
+        svg += `<g class="chart-empty"><rect x="${cx - bw / 2}" y="${cy - bh / 2}" width="${bw}" height="${bh}" rx="10"/>${lines.map((l, i) => `<text x="${cx}" y="${cy - bh / 2 + 9 + 20 * i + 15}" text-anchor="middle">${esc(l)}</text>`).join('')}</g>`;
       }
       svg += `<text class="axis-label" x="${m.l + iw / 2}" y="${H - 10}" text-anchor="middle">${esc(o.xLabel || '')}</text>`;
       { // a long y label shrinks (then truncates) to stay inside the plot height instead of running into the title above
@@ -283,7 +297,7 @@
       const named = series.filter(s => s.name);
       const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
       const fits = series.filter(s => s._fit).map(s => `${esc(s.name || 'fit')}: y = ${Lab.fmt(s._fit.m, 4)}x ${s._fit.b < 0 ? '−' : '+'} ${Lab.fmt(Math.abs(s._fit.b), 4)}  (R² = ${Lab.fmt(s._fit.r2, 3)})`);
-      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
+      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || '') + (empty ? ': no data yet' : ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
     }
     render();
     return { update(next) { cur = Object.assign({}, cur, next); render(); }, el };
@@ -294,8 +308,11 @@
      → { setRows(rows), getRows(), addRow(row) } */
   Lab.table = function (el, opts) {
     if (typeof el === 'string') el = $(el);
-    let rows = (opts.save && store.get(opts.save)) || (opts.rows || []).map(r => Object.assign({}, r));
-    const reg = { el, opts, getRows: () => rows, setup: 0 }; // setup: rows the page itself adds while loading (not student work)
+    /* Setup rows: rows the page itself adds while loading (a starting row, preset rows) are tagged _setup:true,
+       and the tag is saved with the row, so they still do not count as student work after a reload. */
+    let rows = (opts.save && store.get(opts.save)) || (opts.rows || []).map(r => Object.assign({ _setup: true }, r));
+    const reg = { el, opts, getRows: () => rows };
+    const workRows = () => rows.filter(r => !r._setup);
     REG.tables.push(reg);
     function render() {
       const cols = opts.columns;
@@ -307,9 +324,13 @@
       }).join('')}</tr>`).join('');
       const foot = opts.footer && rows.length ? `<tfoot><tr>${opts.footer(rows).map((v, i) => `<td class="${cols[i] && cols[i].num ? 'num' : ''}">${v == null ? '' : v}</td>`).join('')}</tr></tfoot>` : '';
       el.innerHTML = `<div class="table-wrap"><table class="data"><thead><tr>${head}</tr></thead><tbody>${body || `<tr><td colspan="${cols.length}" class="muted">No data yet. Run a trial to fill this table.</td></tr>`}</tbody>${foot}</table></div>`;
+      $$('input[data-r]', el).forEach(inp => inp.addEventListener('input', () => { // typed cell values are saved at once, not only on blur
+        const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
+        if (r && c && opts.save) { r[inp.dataset.k] = c.num ? (inp.value === '' || !isFinite(parseFloat(inp.value)) ? null : parseFloat(inp.value)) : inp.value; delete r._setup; store.set(opts.save, rows); }
+      }));
       $$('input[data-r]', el).forEach(inp => inp.addEventListener('change', () => {
         const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
-        r[inp.dataset.k] = c.num ? (inp.value === '' ? null : parseFloat(inp.value)) : inp.value;
+        r[inp.dataset.k] = c.num ? (inp.value === '' ? null : parseFloat(inp.value)) : inp.value; delete r._setup; // editing a row makes it the student's
         changed(false);
       }));
     }
@@ -333,8 +354,10 @@
     render();
     if (rows.length && opts.onChange) setTimeout(() => opts.onChange(rows), 0);
     return {
-      setRows(r) { rows = r.map(x => Object.assign({}, x)); if (!autoToasts.ready) reg.setup = rows.length; changed(); noteRows(rows.length); },
-      addRow(r) { rows.push(Object.assign({}, r)); if (!autoToasts.ready) reg.setup++; changed(); noteRows(1); },
+      /* o.setup: true marks the new rows as page setup (not student work); false marks them as work. Default: setup while the page is still loading. */
+      setRows(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; rows = r.map(x => { const c = Object.assign({}, x); if (su && c._setup == null) c._setup = true; else if (!su && o && o.setup === false) delete c._setup; return c; }); changed(); noteRows(rows.length); },
+      addRow(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; const c = Object.assign({}, r); if (su) c._setup = true; else delete c._setup; rows.push(c); changed(); noteRows(1); },
+      workRows,
       getRows() { return rows; },
       clear() { rows = []; changed(); },
     };
@@ -409,8 +432,84 @@
     updateScore();
   };
 
+  /* ---------------- Input validation helper ----------------
+     Lab.validate.number(inputEl, {min, max, integer, required = true, label}) → number | null
+       Reads the field. Empty, non-numeric, non-integer (when integer:true) or out-of-range input shows a plain
+       message under the field and returns null, so the caller can simply do `if (v == null) return;`.
+       A valid value clears any earlier message. required:false returns null for an empty field without a message.
+       The value is never clamped: out-of-range input is rejected, not changed.
+     Lab.validate.show(inputEl, msg)  put a custom message under the field (.feedback.bad, role="alert") and set aria-invalid
+     Lab.validate.clear(inputEl)      remove the message and aria-invalid
+     The message goes right under the field (under its row when the field sits in a flex or grid row) and clears
+     itself as soon as the field holds a valid value again. */
+  const vNum = n => String(+(+n).toPrecision(10));
+  function fieldLabel0(el) {
+    const l = el.getAttribute('aria-label') || (el.labels && el.labels[0] ? el.labels[0].textContent : '');
+    return String(l || '').replace(/\s+/g, ' ').trim();
+  }
+  function checkNumber(el, o) {
+    const label = (o.label || fieldLabel0(el) || 'This value').replace(/[.:]$/, '');
+    const Cap = label.length > 2 ? label.charAt(0).toUpperCase() + label.slice(1) : label; // keep symbols such as p or pH as written
+    const raw = String(el.value == null ? '' : el.value).trim();
+    if (el.validity && el.validity.badInput) return { msg: `${Cap} must be a number.` };
+    if (raw === '') return o.required === false ? { value: null, skip: true } : { msg: `Enter a value for ${label.length > 2 ? label.charAt(0).toLowerCase() + label.slice(1) : label}.` };
+    const v = Number(raw);
+    if (!isFinite(v)) return { msg: `${Cap} must be a number.` };
+    if (o.integer && !Number.isInteger(v)) return { msg: `${Cap} must be a whole number.` };
+    const hasMin = o.min != null && isFinite(o.min), hasMax = o.max != null && isFinite(o.max);
+    if ((hasMin && v < o.min) || (hasMax && v > o.max)) {
+      if (hasMin && hasMax) return { msg: `${Cap} must be between ${vNum(o.min)} and ${vNum(o.max)}.` };
+      return { msg: hasMin ? `${Cap} must be at least ${vNum(o.min)}.` : `${Cap} must be at most ${vNum(o.max)}.` };
+    }
+    return { value: v };
+  }
+  let vCount = 0;
+  const validate = {
+    show(el, msg) {
+      if (typeof el === 'string') el = $(el);
+      if (!el) return;
+      validate.clear(el);
+      let host = el, par = el.parentElement;
+      if (par && /flex|grid/.test(getComputedStyle(par).display) && !par.classList.contains('field')) host = par;
+      const id = (el.id || 'v' + (++vCount)) + '-err';
+      const box = h('p', { class: 'feedback bad field-msg', role: 'alert', id }, String(msg));
+      host.insertAdjacentElement('afterend', box);
+      el._vmsg = box; el._vdesc = el.getAttribute('aria-describedby');
+      el.setAttribute('aria-invalid', 'true');
+      el.setAttribute('aria-describedby', ((el._vdesc || '') + ' ' + id).trim());
+      if (!el._vbound) {
+        el._vbound = true;
+        el.addEventListener('input', () => {
+          if (!el._vmsg) return;
+          if (el._vopts) { const r = checkNumber(el, el._vopts); if (!r.msg) validate.clear(el); } else validate.clear(el);
+        });
+      }
+    },
+    clear(el, keepState) {
+      if (typeof el === 'string') el = $(el);
+      if (!el) return;
+      if (el._vmsg) { el._vmsg.remove(); el._vmsg = null; }
+      el.removeAttribute('aria-invalid');
+      if (el._vdesc != null || el.hasAttribute('aria-describedby')) { if (el._vdesc) el.setAttribute('aria-describedby', el._vdesc); else el.removeAttribute('aria-describedby'); el._vdesc = null; }
+      if (!keepState) el._vopts = null;
+    },
+    number(el, o = {}) {
+      if (typeof el === 'string') el = $(el);
+      if (!el) return null;
+      const r = checkNumber(el, o);
+      if (r.msg) { validate.show(el, r.msg); el._vopts = o; return null; }
+      validate.clear(el);
+      return r.value;
+    },
+  };
+  Lab.validate = validate;
+
   /* ---------------- Autosave for [data-save] fields ---------------- */
   const saveFns = []; // flushed before a reload so nothing typed is lost
+  /* A debounced autosave must not lose the last 400 ms of typing when the page goes away: flush on pagehide, beforeunload and when hidden. */
+  window.addEventListener("pagehide", () => flushSaves());
+  window.addEventListener("beforeunload", () => flushSaves());
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushSaves(); });
   function bindAutosave(root = document) {
     $$('[data-save]', root).forEach(f => {
       if (f._bound) return; f._bound = true;
@@ -1234,14 +1333,44 @@
     let total = 0, done = 0;
     $$('textarea[data-save]', sec).forEach(t => { if (t.closest('.id-box')) return; total++; if (t.value.trim()) done++; });
     REG.quizzes.forEach(q => { if (!sec.contains(q.el)) return; const st = q.state() || {}; q.questions.forEach((_, i) => { total++; if (st[i]) done++; }); });
-    REG.tables.forEach(t => { if (!t.opts.save || !sec.contains(t.el)) return; total++; if (t.getRows().length) done++; });
+    REG.tables.forEach(t => { if (!t.opts.save || !sec.contains(t.el)) return; total++; if (t.getRows().some(r => !r._setup)) done++; });
+    STEPBOXES.forEach(box => { if (!sec.contains(box.el)) return; box.items.forEach((it, i) => { const st = stepStatus(box, it, i); if (st === 'skip') return; total++; if (st === 'done') done++; }); });
     return { total, done };
+  }
+  /* Simulation steps (Lab.steps) count as work. A required step is "open" until the student completes it; its
+     completion is remembered (aplab:<lab>:stepdone), so a reload keeps it. A step that is already satisfied the
+     first time we look (a default), or that flips before the student has touched anything (page setup or restored
+     state), is not student work and is left out of the count. */
+  const STEPBOXES = [];
+  let acted = false, stepDone = null;
+  ['pointerdown', 'keydown', 'input', 'change', 'click'].forEach(ev => document.addEventListener(ev, () => { if (document.readyState === 'complete') acted = true; }, true));
+  const stepKey = (box, it, i) => box.uid + ':' + (it.s.id || i);
+  function stepSaved() { if (!stepDone) stepDone = store.get('stepdone') || {}; return stepDone; }
+  function stepStatus(box, it, i) {
+    if (it.s.optional) return 'skip';
+    if (stepSaved()[stepKey(box, it, i)]) return 'done';
+    if (!it.seenOpen || it.init) return it.d ? 'skip' : 'open';
+    return it.d && it.ackd ? 'done' : (it.d ? 'skip' : 'open');
+  }
+  let progTimer = 0;
+  const progressSoon = () => { clearTimeout(progTimer); progTimer = setTimeout(() => { try { updateProgress(); } catch (e) { /* ignore */ } }, 30); };
+  function stepTick(box) { // called after a Lab.steps refresh: record newly completed steps
+    let changedAny = false;
+    box.items.forEach((it, i) => {
+      if (it.s.optional) return;
+      if (!it.d) { it.seenOpen = true; it.ackd = false; it.init = false; }
+      else if (it.seenOpen && !acted) it.init = true;   // flipped before the student did anything: setup or restored state
+      else if (it.seenOpen && acted && !it.ackd && !it.init) { it.ackd = true; stepSaved()[stepKey(box, it, i)] = 1; changedAny = true; }
+      if (it.pd !== it.d) { it.pd = it.d; changedAny = true; }
+    });
+    if (changedAny) { if (acted) store.set('stepdone', stepSaved()); progressSoon(); }
   }
   let navProgressEl = null, lastSummary = '';
   function updateProgress() {
     const nav = $('.step-nav ol'); if (!nav) return null;
     let parts = 0, complete = 0;
-    $$('section.step').forEach(s => {
+    const steps = $$('section.step');
+    steps.forEach(s => {
       const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
       const r = sectionWork(s), sr = $('.done-sr', link);
       if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
@@ -1250,10 +1379,10 @@
       if (sr) sr.textContent = ok ? ' (done)' : '';
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
-    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `${complete} of ${parts}<span class="np-long"> parts</span> done`; }
+    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `<span class="np-long">${complete} of ${parts} parts done</span><span class="np-short">${complete} of ${parts} done</span>`; }
     const sum = JSON.stringify([complete, parts]);
-    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, t: Date.now() }); }
-    return { done: complete, total: parts };
+    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, sections: steps.length, t: Date.now() }); }
+    return { done: complete, total: parts, sections: steps.length };
   }
   /* ---------------- Paged mode: one part at a time ----------------
      Lab pages show one section.step at a time (body.paged; the current one has .is-current), with Back/Next
@@ -1567,12 +1696,25 @@
     setInterval(() => { if (!document.hidden) refreshGuides(); }, 600);
   }
   const resolveEl = t => typeof t === 'function' ? t() : typeof t === 'string' ? $(t) : t;
+  const PULSED = new Set(); // controls a Lab.steps list is currently pulsing
+  /* Open whatever hides the control: closed <details>, a Data/Graph/tab panel that is not showing. */
+  function revealTarget(t) {
+    for (let a = t.parentElement; a; a = a.parentElement) {
+      if (a.tagName === 'DETAILS' && !a.open) a.open = true;
+      if (a.hidden && a.getAttribute('role') === 'tabpanel') { const b = document.getElementById(a.getAttribute('aria-labelledby') || ''); if (b) b.click(); }
+    }
+  }
+  /* "Show me" arrival: open its part, scroll to it, pulse it for a few seconds and give it keyboard focus. */
   function focusTarget(t) {
     const sec = partOf(t);
     if (sec && pages.on && !pages.suspended && sec !== pages.cur) goPart(sec, { hash: true, scroll: false });
+    revealTarget(t);
     t.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
-    const f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input, select, textarea, button, a[href], [tabindex]', t);
-    if (f) f.focus({ preventScroll: true });
+    t.classList.add('lab-pulse'); clearTimeout(t._flashT);
+    t._flashT = setTimeout(() => { if (!PULSED.has(t)) t.classList.remove('lab-pulse'); }, 3600);
+    let f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]', t);
+    if (!f || f.disabled) { f = (f && f.disabled ? f.parentElement : t) || t; if (!f.hasAttribute('tabindex')) f.tabIndex = -1; } // a gated (disabled) button cannot take focus: focus its wrapper
+    f.focus({ preventScroll: true });
   }
   Lab.steps = function (el, list, o = {}) {
     if (typeof el === 'string') el = $(el);
@@ -1582,10 +1724,12 @@
     const ol = h('ol', { class: 'steps', 'aria-labelledby': uid + '-title' });
     const items = list.map((s, i) => {
       const text = h('span', { class: 'si-text', html: s.text });
-      const label = s.target ? h('button', { type: 'button', class: 'si-go', title: 'Go to this control', onclick: () => { const t = resolveEl(s.target); if (t) focusTarget(t); } }, text) : text;
+      const plain = s.text.replace(/<[^>]+>/g, '');
+      const show = s.target ? h('button', { type: 'button', class: 'si-show', title: 'Scroll to this control and highlight it. It does not do the step for you.', 'aria-label': 'Show me where: ' + plain, onclick: () => { const t = resolveEl(s.target); if (t) focusTarget(t); } }, 'Show me ↓') : null;
+      const label = text;
       const state = h('span', { class: 'sr-only si-state' });
       const li = h('li', { class: 'si' + (s.optional ? ' is-optional' : ''), 'data-step-id': s.id || null },
-        h('span', { class: 'si-n', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'si-body' }, label, state, s.optional ? h('span', { class: 'si-opt' }, ' optional') : null));
+        h('span', { class: 'si-n', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'si-body' }, label, state, s.optional ? h('span', { class: 'si-opt' }, ' optional') : null, show ? ' ' : null, show));
       ol.append(li);
       return { s, li, state, d: false, stuck: false };
     });
@@ -1613,26 +1757,28 @@
       if (nt !== lastNext) { lastNext = nt; next.innerHTML = ''; next.append(h('span', { class: 'sn-k' }, ci ? 'Next: ' : '✓ '), h('span', { html: nt })); next.classList.toggle('is-complete', !ci); }
       let tgt = ci && ci.s.target ? resolveEl(ci.s.target) : null;
       if (o.pulse === false) tgt = null;
-      if (pulsed !== tgt) { if (pulsed) pulsed.classList.remove('lab-pulse'); if (tgt) tgt.classList.add('lab-pulse'); pulsed = tgt; }
+      if (pulsed !== tgt) { if (pulsed) { pulsed.classList.remove('lab-pulse'); PULSED.delete(pulsed); } if (tgt) { tgt.classList.add('lab-pulse'); PULSED.add(tgt); } pulsed = tgt; }
       if (c !== cur) { cur = c; if (o.onChange) { try { o.onChange(c, ci ? ci.s : null); } catch (e) { console.warn(e); } } }
     }
-    const api = { el, refresh, get current() { return cur; }, get items() { return items.map(it => ({ id: it.s.id, done: it.d })); } };
-    GUIDES.push(api); bindGuides(); refresh();
+    const box = { el, uid, items }; STEPBOXES.push(box);
+    const api = { el, refresh() { refresh(); stepTick(box); }, get current() { return cur; }, get items() { return items.map(it => ({ id: it.s.id, done: it.d })); } };
+    GUIDES.push(api); bindGuides(); api.refresh();
     return api;
   };
   Lab.steps.refresh = refreshGuides;
-  Lab.gate = function (btn, fn) {
+  Lab.gate = function (btn, fn, o = {}) {
     if (typeof btn === 'string') btn = $(btn);
     if (!btn) return null;
     const id = (btn.id || 'gate' + GUIDES.length) + '-why';
     const why = h('span', { class: 'gate-why', id, hidden: true });
-    btn.insertAdjacentElement('afterend', why);
+    const showBtn = o.show ? h('button', { type: 'button', class: 'si-show', hidden: true, onclick: () => { const t = resolveEl(o.show); if (t) focusTarget(t); } }, 'Show me ↓') : null;
+    btn.insertAdjacentElement('afterend', why); if (showBtn) why.insertAdjacentElement('afterend', showBtn);
     btn.setAttribute('aria-describedby', ((btn.getAttribute('aria-describedby') || '') + ' ' + id).trim());
     let last = null;
     const g = { el: btn, refresh() {
       let r = ''; try { r = fn() || ''; } catch (e) { r = ''; }
       if (r === last) return; last = r;
-      btn.disabled = !!r; btn.classList.toggle('is-gated', !!r); why.textContent = r; why.hidden = !r;
+      btn.disabled = !!r; btn.classList.toggle('is-gated', !!r); why.textContent = r; why.hidden = !r; if (showBtn) showBtn.hidden = !r;
     } };
     GUIDES.push(g); bindGuides(); g.refresh();
     return g;
@@ -1797,7 +1943,7 @@
     REG.tables.forEach(t => {
       if (!t.opts.save) return;
       const r = t.getRows(), preset = (t.opts.rows || []).map(x => JSON.stringify(x));
-      rows += Math.max(0, r.filter(x => preset.indexOf(JSON.stringify(x)) < 0).length - (t.setup || 0)); // rows the page starts with are not work
+      rows += r.filter(x => !x._setup && preset.indexOf(JSON.stringify(x)) < 0).length; // rows the page starts with are not work
       parts.push('t:' + t.opts.save + JSON.stringify(r));
     });
     REG.quizzes.forEach(q => {

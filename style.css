@@ -187,6 +187,10 @@ table.data tfoot td { background: var(--surface-2); font-weight: 600; }
 .chart .axis-label { fill: var(--ink); font-weight: 600; font-size: 13px; }
 .chart .gridline { stroke: var(--grid); stroke-width: 1; }
 .chart .axis { stroke: var(--muted); stroke-width: 1; }
+/* Empty chart: labelled axes with a centred note (no fake 0–1 scale) */
+.chart.is-empty .gridline { stroke-dasharray: 3 5; opacity: .7; }
+.chart .chart-empty rect { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.chart .chart-empty text { fill: var(--muted); font-size: 14px; font-weight: 600; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .85rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
@@ -208,6 +212,8 @@ table.data tfoot td { background: var(--surface-2); font-weight: 600; }
 .feedback { font-size: .92rem; border-radius: var(--r-sm); padding: 8px 12px; }
 .feedback.ok { background: var(--ok-soft); color: var(--ink); border-left: 3px solid var(--ok); }
 .feedback.bad { background: var(--bad-soft); color: var(--ink); border-left: 3px solid var(--bad); }
+.field-msg { margin: 4px 0 0; flex: 1 0 100%; max-width: 60ch; } /* Lab.validate message under an input */
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
 .score { font-family: var(--f-mono); font-size: .9rem; color: var(--muted); }
 
 /* Written responses */
@@ -326,6 +332,8 @@ body.report-mode::before { display: none; }
 .step-nav .has-progress > ol { flex: 1 1 auto; min-width: 0; }
 .nav-progress { flex: none; font-size: .8rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
 @media (max-width: 520px) { .nav-progress .np-long { display: none; } }
+.nav-progress .np-short { display: none; }
+@media (max-width: 520px) { .nav-progress .np-short { display: inline; } }
 .step-nav a.is-done .n { background: var(--ok); color: var(--surface); font-size: 0; }
 .step-nav a.is-done .n::before { content: "✓"; font-size: .78rem; font-family: var(--f-body); font-weight: 700; }
 .step-nav a[aria-current="true"].is-done .n { background: var(--ok); color: var(--surface); }
@@ -405,7 +413,18 @@ body.worksheet-mode::before { display: none; }
 .step-nav ol::-webkit-scrollbar { display: none; }
 .step-nav a { padding: 5px 8px; gap: 6px; font-size: .88rem; }
 .step-nav a .n { width: 19px; height: 19px; font-size: .72rem; }
-.step-nav .nl { max-width: 13em; overflow: hidden; text-overflow: ellipsis; }
+.step-nav .nl { white-space: nowrap; } /* full labels always: never an ellipsis */
+/* Wide screens: every part is visible; a long lab simply wraps to a second row (no scrolling, no hidden Submit). */
+@media (min-width: 820px) {
+  .step-nav ol { flex-wrap: wrap; overflow: visible; row-gap: 0; }
+  .step-nav .nav-arrow { display: none !important; }
+  .step-nav ol { -webkit-mask-image: none !important; mask-image: none !important; }
+}
+/* Phones: the strip scrolls with full labels; the current part is a filled pill with a bar under it and is kept in view. */
+@media (max-width: 819px) {
+  .step-nav a[aria-current="true"] { box-shadow: inset 0 -3px 0 var(--accent); color: var(--ink); }
+  .step-nav a { padding: 6px 9px; }
+}
 .step-nav .has-progress { gap: 6px; }
 .nav-arrow { display: none; flex: none; width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 1.15rem/1 var(--f-body); cursor: pointer; place-items: center; }
 .nav-arrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
@@ -534,8 +553,9 @@ details.disclose--sm > .inner { padding: 0 12px 12px; font-size: .9rem; }
 .si.is-current { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
 .si.is-current .si-n { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .si-body { min-width: 0; }
-.si-go { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; text-align: left; cursor: pointer; border-radius: 3px; }
-.si-go:hover .si-text { text-decoration: underline; text-underline-offset: 2px; }
+.si-show { font: inherit; font-size: .76rem; font-weight: 600; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; margin: 2px 0 0 2px; cursor: pointer; white-space: nowrap; vertical-align: baseline; }
+.si-show:hover { border-color: var(--accent); background: var(--accent-soft); }
+.si-show[hidden] { display: none; }
 .si-opt { font-size: .74rem; font-style: italic; font-weight: 400; color: var(--muted); }
 .steps-next { font-size: .85rem; line-height: 1.35; background: var(--accent-soft); color: var(--ink); border-radius: var(--r-sm); padding: 6px 10px; }
 .steps-next .sn-k { font-weight: 700; color: var(--accent); }
