@@ -24,6 +24,8 @@
   --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r: 10px;
   --r-sm: 6px;
+  /* Paper colors for the report and worksheet views: always black on white, in every theme */
+  --paper: #ffffff; --paper-ink: #111111; --paper-muted: #555555; --paper-line: #777777; --paper-shade: #eeeeee;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -256,3 +258,46 @@ details.disclose > .inner { padding: 0 14px 14px; display: grid; gap: 10px; }
 .id-line .ds-id { font-family: var(--f-mono); color: var(--ink); background: var(--surface-2); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
 .id-note { color: var(--warn); }
 .id-confirm { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: .9rem; background: var(--warn-soft); border-radius: var(--r-sm); padding: 8px 12px; }
+
+/* ---------- Report + save/resume tools (responses toolbar) ---------- */
+[data-responses] { display: grid; gap: 10px; }
+.tool-status { font-size: .9rem; color: var(--muted); }
+.tool-status:empty { display: none; }
+.tool-status.is-bad { color: var(--bad); }
+.preview-note { font-size: .88rem; color: var(--ink); background: var(--warn-soft); border-left: 3px solid var(--warn); border-radius: var(--r-sm); padding: 8px 12px; }
+.code-box { font-family: var(--f-mono); font-size: .78rem; min-height: 72px; word-break: break-all; }
+.move-work .row { gap: 8px; }
+
+/* ---------- Report view (Save as PDF) ---------- */
+body.report-mode > *:not(#lab-report) { display: none !important; }
+body.report-mode::before { display: none; }
+.report-view { min-height: 100vh; background: var(--surface-2); padding: 16px; display: grid; gap: 16px; justify-items: center; align-content: start; }
+.rv-tools { width: 100%; max-width: 8.5in; display: grid; gap: 8px; }
+.rv-status:empty { display: none; }
+.rv-paper { width: 100%; max-width: 8.5in; min-width: 0; overflow-x: auto; background: var(--paper); color: var(--paper-ink); padding: .6in .7in; border: 1px solid var(--line); border-radius: 4px; font-size: 11pt; line-height: 1.4; display: grid; gap: 14px; align-content: start; }
+.rv-paper h1 { font-size: 20pt; letter-spacing: -0.01em; }
+.rv-paper p { max-width: none; }
+.rv-eyebrow { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .08em; color: var(--paper-muted); font-weight: 700; }
+.rv-info { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 8px 0 0; }
+.rv-info div { display: flex; gap: 6px; }
+.rv-info dt { font-weight: 700; }
+.rv-info dd { margin: 0; }
+.rv-sec { display: grid; gap: 10px; }
+.rv-sec h2 { font-size: 14pt; border-bottom: 1.5px solid var(--paper-ink); padding-bottom: 3px; margin-top: 10px; break-after: avoid; }
+.rv-sub { font-weight: 400; }
+.rv-q { font-weight: 700; }
+.rv-none { font-style: italic; color: var(--paper-muted); }
+.rv-qa, .rv-quiz li, .rv-fig { break-inside: avoid; }
+.rv-quiz ol { display: grid; gap: 6px; }
+.rv-table { border-collapse: collapse; width: 100%; font-size: 9.5pt; font-variant-numeric: tabular-nums; }
+.rv-table th, .rv-table td { border: 1px solid var(--paper-line); padding: 3px 6px; text-align: left; vertical-align: top; }
+.rv-table th, .rv-table tfoot td { background: var(--paper-shade); font-weight: 700; }
+.rv-table tr { break-inside: avoid; }
+.rv-fig { margin: 0; }
+.rv-fig img { width: 100%; max-width: 6.5in; height: auto; display: block; }
+@page { size: letter; margin: .6in; }
+@media print {
+  body.report-mode, body.report-mode .report-view { background: #fff; padding: 0; display: block; min-height: 0; }
+  body.report-mode .rv-tools { display: none !important; }
+  body.report-mode .rv-paper { max-width: none; padding: 0; border: 0; border-radius: 0; color: #000; background: #fff; overflow: visible; }
+}

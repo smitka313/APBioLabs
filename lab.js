@@ -533,7 +533,413 @@
     } }, 'Copy all my responses');
     const clearBtn = h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { confirmRow.hidden = false; } }, 'Start over');
     el.append(h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn), confirmRow, fallback);
+    if (PAGE.kind !== 'teacher') el.append(...reportTools(), moveWorkPanel());
   };
+
+  /* ---------------- Hosting environment ----------------
+     A private preview copy runs framed and blocks downloads, print() and fetch to other hosts.
+     We detect failures where we can and otherwise show PREVIEW_NOTE when the page is framed off GitHub Pages. */
+  const FRAMED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  const LIKELY_PREVIEW = FRAMED && !/\.github\.io$/i.test(location.hostname || '');
+  const PREVIEW_NOTE = 'Downloads and printing work on the class website, not in this preview.';
+  Lab.env = { framed: FRAMED, likelyPreview: LIKELY_PREVIEW };
+  function previewNote(hidden = !LIKELY_PREVIEW) { return h('p', { class: 'preview-note', hidden }, PREVIEW_NOTE); }
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = h('a', { href: url, download: name, style: 'display:none' });
+    document.body.append(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+  }
+  /* window.print() with detection: a blocked print (sandboxed preview) never fires beforeprint. */
+  function tryPrint(onBlocked) {
+    let fired = false; const f = () => { fired = true; };
+    window.addEventListener('beforeprint', f);
+    try { window.print(); } catch (e) { /* blocked */ }
+    setTimeout(() => { window.removeEventListener('beforeprint', f); if (!fired && onBlocked) onBlocked(); }, 400);
+  }
+  /* Run fn with the browser's own Math.random so library code does not use up the student's seeded stream. */
+  async function withNativeRandom(fn) {
+    const seeded = Math.random; Math.random = nativeRandom;
+    try { return await fn(); } finally { Math.random = seeded; }
+  }
+  /* Temporarily force light-theme tokens (print/report views). Returns a restore function. */
+  function forceLight() {
+    const root = document.documentElement, prev = root.getAttribute('data-theme');
+    root.setAttribute('data-theme', 'light');
+    return () => { if (prev == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', prev); };
+  }
+  function lightTokenResolver() {
+    const restore = forceLight(), cs = getComputedStyle(document.documentElement), cache = {};
+    const names = ['--bg', '--surface', '--surface-2', '--ink', '--muted', '--line', '--grid', '--accent', '--stain', '--ok', '--warn', '--bad', '--s1', '--s2', '--s3', '--s4', '--s5', '--s6'];
+    names.forEach(n => { cache[n] = cs.getPropertyValue(n).trim(); });
+    restore();
+    return name => cache[name] || '#555555';
+  }
+
+  /* ---------------- Lab report (collect → .docx or print view) ---------------- */
+  const stripHtml = s => { const d = document.createElement('div'); d.innerHTML = String(s == null ? '' : s); return d.textContent.replace(/\s+/g, ' ').trim(); };
+  const fieldLabel = f => (f.dataset.label || (f.labels && f.labels[0] ? f.labels[0].textContent : '') || f.dataset.save || '').replace(/\s+/g, ' ').trim();
+  function fieldValue(f) {
+    if (f.type === 'checkbox') return f.checked ? 'Yes' : 'No';
+    if (f.tagName === 'SELECT') { const o = f.selectedOptions && f.selectedOptions[0]; return o ? o.textContent.trim() : ''; }
+    return (f.value || '').trim();
+  }
+  const labTag = () => { const m = /^lab(\d\d)$/.exec(PAGE.id); return m ? 'Lab' + m[1] : 'Lab'; };
+  function reportFileBase() {
+    const who = reportIdentity().name;
+    let first = '', last = '';
+    if (who.includes(',')) { [last, first] = who.split(',').map(s => s.trim()); }
+    else { const parts = who.split(' ').filter(Boolean); if (parts.length > 1) { last = parts.pop(); first = parts.join(' '); } else last = parts[0] || ''; }
+    const clean = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+    return [labTag(), clean(last), clean(first)].filter(Boolean).join('_') || labTag();
+  }
+  function quizItem(q) {
+    const st = q.state() || {};
+    let right = 0;
+    const qs = q.questions.map((qq, i) => {
+      const s = st[i];
+      let ans = '';
+      if (s && s.value != null && s.value !== '') {
+        if (qq.type === 'num') ans = String(s.value) + (qq.unit ? ' ' + stripHtml(qq.unit) : '');
+        else ans = [].concat(s.value).map(v => stripHtml(qq.choices[+v])).join('; ');
+      }
+      if (s && s.correct) right++;
+      return { q: stripHtml(qq.q), answer: ans, status: !s ? 'Not answered' : (s.correct ? 'Correct' : 'Incorrect') };
+    });
+    return { kind: 'quiz', id: q.id, right, total: q.questions.length, questions: qs };
+  }
+  function tableItem(t) {
+    const cellText = c => { const i = $('input, select', c); return (i ? i.value : c.textContent).replace(/\s+/g, ' ').trim(); };
+    const head = $$('thead th', t).map(cellText);
+    const rows = $$('tbody tr', t).filter(tr => !(tr.cells.length === 1 && tr.cells[0].colSpan > 1)).map(tr => $$('th,td', tr).map(cellText));
+    const foot = $$('tfoot tr', t).map(tr => $$('th,td', tr).map(cellText));
+    if (!rows.length) return null;
+    return { kind: 'table', head, rows, foot };
+  }
+  const chartHasData = o => (o.series || []).some(s => (s.points || []).some(p => p && isFinite(p.y)));
+  function collectReport() {
+    const who = reportIdentity();
+    const hd = $('.lab-header');
+    const title = hd && $('h1', hd) ? hd.querySelector('h1').textContent.trim() : document.title;
+    const quizByEl = new Map(REG.quizzes.map(q => [q.el, q])), chartByEl = new Map(REG.charts.map(c => [c.el, c]));
+    const sections = [];
+    $$('section.step').forEach(sec => {
+      const items = [];
+      $$('[data-save], .quiz, table.data, .chart', sec).forEach(n => {
+        if (n.closest('.id-box')) return;
+        if (n.matches('.quiz')) { const q = quizByEl.get(n); if (q) items.push(quizItem(q)); return; }
+        if (n.closest('.quiz')) return;
+        if (n.matches('.chart')) { const c = chartByEl.get(n); if (c && $('svg', n) && chartHasData(c.opts)) items.push({ kind: 'chart', el: n, opts: c.opts }); return; }
+        if (n.matches('table.data')) { const t = tableItem(n); if (t) items.push(t); return; }
+        if (n.id === 'student-name' || !(n.tagName === 'TEXTAREA' || n.dataset.label)) return;
+        items.push({ kind: 'answer', q: fieldLabel(n), a: fieldValue(n) });
+      });
+      const h2 = $(':scope > header h2', sec);
+      if (items.length) sections.push({ name: sec.dataset.step || '', heading: h2 ? h2.textContent.trim() : '', items });
+    });
+    return {
+      title, docTitle: document.title, lab: PAGE.id, labNo: labTag().replace('Lab', ''),
+      name: who.name, period: who.period, datasetId: who.datasetId,
+      date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
+      sections,
+    };
+  }
+  /* Chart SVG → PNG in light colors (CSS variables resolved), legend and fit notes drawn in. */
+  async function chartPng(el, tok) {
+    const svg = $('svg', el); if (!svg) return null;
+    const vb = svg.viewBox && svg.viewBox.baseVal; const W = (vb && vb.width) || 640, H = (vb && vb.height) || 360;
+    const xs = new XMLSerializer();
+    let body = Array.from(svg.childNodes).map(n => xs.serializeToString(n)).join('');
+    const legend = $$('.legend span', el).map(s => ({ color: (s.querySelector('i') || {}).style ? s.querySelector('i').style.background : '', text: s.textContent.trim() }));
+    const notes = $$('.chart-note', el).flatMap(n => n.innerHTML.split(/<br\s*\/?>/i).map(stripHtml)).filter(Boolean);
+    let y = H + 4, extra = '';
+    if (legend.length) {
+      let x = 64; y += 16;
+      legend.forEach(l => {
+        const w = 22 + l.text.length * 6.6 + 14;
+        if (x + w > W - 10 && x > 64) { x = 64; y += 20; }
+        extra += `<rect x="${x}" y="${y - 10}" width="12" height="12" rx="3" style="fill:${l.color}"/><text x="${x + 18}" y="${y}">${esc(l.text)}</text>`;
+        x += w;
+      });
+      y += 8;
+    }
+    notes.forEach(t => { y += 17; extra += `<text x="64" y="${y}" class="note">${esc(t)}</text>`; });
+    const HH = Math.ceil(y + 8);
+    const style = `<style>text{font-family:'Segoe UI',Arial,Helvetica,sans-serif;font-size:12px;fill:var(--muted)}.axis-label{fill:var(--ink);font-weight:600;font-size:13px}.gridline{stroke:var(--grid);stroke-width:1}.axis{stroke:var(--muted);stroke-width:1}.note{font-family:Consolas,'Courier New',monospace;font-size:11px}</style>`;
+    let str = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${HH}" viewBox="0 0 ${W} ${HH}"><rect x="0" y="0" width="${W}" height="${HH}" fill="#ffffff"/>${style}${body}${extra}</svg>`;
+    str = str.replace(/var\((--[\w-]+)\)/g, (m, k) => tok(k));
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('chart render failed')); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str); });
+    const scale = 2, cv = document.createElement('canvas'); cv.width = W * scale; cv.height = HH * scale;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cv.width, cv.height); ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    return { dataUrl: cv.toDataURL('image/png'), width: W, height: HH, alt: 'Graph: ' + (svg.getAttribute('aria-label') || '') };
+  }
+  async function renderCharts(rep) {
+    const tok = lightTokenResolver();
+    for (const s of rep.sections) for (const it of s.items) if (it.kind === 'chart' && !it.png) {
+      try { it.png = await chartPng(it.el, tok); } catch (e) { it.png = null; }
+    }
+    return rep;
+  }
+  const dataUrlBytes = u => { const bin = atob(u.split(',')[1]); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
+
+  /* docx (https://docx.js.org) UMD build, pinned, loaded only when a student asks for a Word file. */
+  const DOCX_URLS = ['https://cdn.jsdelivr.net/npm/docx@9.0.2/build/index.umd.js', 'https://unpkg.com/docx@9.0.2/build/index.umd.js'];
+  let docxPromise = null;
+  function loadScript(src) {
+    return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.async = true; s.onload = res; s.onerror = () => { s.remove(); rej(new Error('load failed ' + src)); }; document.head.append(s); });
+  }
+  function loadDocx() {
+    if (window.docx && window.docx.Packer) return Promise.resolve(window.docx);
+    if (!docxPromise) docxPromise = (async () => {
+      for (const u of DOCX_URLS) { try { await loadScript(u); if (window.docx && window.docx.Packer) return window.docx; } catch (e) { /* try next */ } }
+      docxPromise = null; throw new Error('docx-load');
+    })();
+    return docxPromise;
+  }
+  async function buildDocx(rep) {
+    const D = await loadDocx();
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, ShadingType, BorderStyle } = D;
+    const P = (text, o = {}) => new Paragraph(Object.assign({ children: [new TextRun(Object.assign({ text: String(text) }, o.run || {}))] }, o.para || {}));
+    const kids = [];
+    kids.push(new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(rep.docTitle || rep.title)] }));
+    const info = [['Name', rep.name || '(not entered)'], ['Class period', rep.period || '—'], ['Date', rep.date], ['Dataset ID', rep.datasetId]];
+    info.forEach(([k, v]) => kids.push(new Paragraph({ children: [new TextRun({ text: k + ': ', bold: true }), new TextRun(String(v))] })));
+    const border = { style: BorderStyle.SINGLE, size: 4, color: '999999' };
+    const borders = { top: border, bottom: border, left: border, right: border };
+    const cell = (t, head) => new TableCell({ borders, shading: head ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E8EEEA' } : undefined, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new Paragraph({ children: [new TextRun({ text: String(t == null ? '' : t), bold: !!head, size: 18 })] })] });
+    for (const s of rep.sections) {
+      kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun(s.name + (s.heading && s.heading !== s.name ? ': ' + s.heading : ''))] }));
+      for (const it of s.items) {
+        if (it.kind === 'answer') {
+          kids.push(P(it.q, { run: { bold: true }, para: { spacing: { before: 160 } } }));
+          const lines = it.a ? it.a.split(/\r?\n/) : [];
+          if (!lines.length) kids.push(P('(no response)', { run: { italics: true, color: '666666' } }));
+          else lines.forEach(l => kids.push(P(l)));
+        } else if (it.kind === 'quiz') {
+          kids.push(P(`Pre-lab quiz: ${it.right} of ${it.total} correct`, { run: { bold: true }, para: { spacing: { before: 160 } } }));
+          it.questions.forEach((q, i) => {
+            kids.push(P(`${i + 1}. ${q.q}`, { para: { spacing: { before: 100 } } }));
+            kids.push(new Paragraph({ indent: { left: 360 }, children: [new TextRun({ text: 'Answer: ', bold: true }), new TextRun(q.answer || '—'), new TextRun({ text: '  (' + q.status + ')', italics: true })] }));
+          });
+        } else if (it.kind === 'table') {
+          const rows = [new TableRow({ tableHeader: true, children: it.head.map(t => cell(t, true)) })]
+            .concat(it.rows.map(r => new TableRow({ cantSplit: true, children: it.head.map((_, i) => cell(r[i])) })))
+            .concat(it.foot.map(r => new TableRow({ children: it.head.map((_, i) => cell(r[i], true)) })));
+          kids.push(new Paragraph({ spacing: { before: 120 }, children: [] }));
+          kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows }));
+        } else if (it.kind === 'chart' && it.png) {
+          const w = 600, hgt = Math.round(w * it.png.height / it.png.width);
+          kids.push(new Paragraph({ spacing: { before: 160 }, children: [new ImageRun({ type: 'png', data: dataUrlBytes(it.png.dataUrl), transformation: { width: w, height: hgt }, altText: { name: 'Graph', title: 'Graph', description: it.png.alt || 'Graph' } })] }));
+        }
+      }
+    }
+    const doc = new Document({
+      creator: rep.name || 'Student', title: rep.docTitle || rep.title,
+      styles: { default: { document: { run: { font: 'Calibri', size: 22 } } } },
+      sections: [{ properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } }, children: kids }],
+    });
+    return Packer.toBlob(doc);
+  }
+
+  /* Print-styled report view (body.report-mode) for Save as PDF. */
+  let reportOpener = null, restoreTheme = null;
+  function reportHtml(rep) {
+    const out = [];
+    out.push(`<header class="rv-head"><p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
+      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div></dl></header>`);
+    if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
+    rep.sections.forEach((s, si) => {
+      out.push(`<section class="rv-sec"><h2>${esc(s.name)}${s.heading && s.heading !== s.name ? `<span class="rv-sub">: ${esc(s.heading)}</span>` : ''}</h2>`);
+      s.items.forEach((it, ii) => {
+        if (it.kind === 'answer') out.push(`<div class="rv-qa"><p class="rv-q">${esc(it.q)}</p>${it.a ? it.a.split(/\r?\n/).map(l => `<p>${esc(l) || '&nbsp;'}</p>`).join('') : '<p class="rv-none">(no response)</p>'}</div>`);
+        else if (it.kind === 'quiz') out.push(`<div class="rv-quiz"><p class="rv-q">Pre-lab quiz: ${it.right} of ${it.total} correct</p><ol>${it.questions.map(q => `<li><p>${esc(q.q)}</p><p><strong>Answer:</strong> ${esc(q.answer || '—')} <em>(${q.status})</em></p></li>`).join('')}</ol></div>`);
+        else if (it.kind === 'table') out.push(`<table class="rv-table"><thead><tr>${it.head.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${it.rows.map(r => `<tr>${it.head.map((_, i) => `<td>${esc(r[i] == null ? '' : r[i])}</td>`).join('')}</tr>`).join('')}</tbody>${it.foot.length ? `<tfoot>${it.foot.map(r => `<tr>${it.head.map((_, i) => `<td>${esc(r[i] == null ? '' : r[i])}</td>`).join('')}</tr>`).join('')}</tfoot>` : ''}</table>`);
+        else if (it.kind === 'chart' && it.png) out.push(`<figure class="rv-fig"><img src="${it.png.dataUrl}" alt="${esc(it.png.alt)}" width="${it.png.width}" height="${it.png.height}"></figure>`);
+      });
+      out.push('</section>');
+    });
+    return out.join('');
+  }
+  function closeReport() {
+    const v = $('#lab-report'); if (v) v.remove();
+    document.body.classList.remove('report-mode');
+    if (restoreTheme) { restoreTheme(); restoreTheme = null; }
+    document.removeEventListener('keydown', reportKey);
+    if (reportOpener) { try { reportOpener.focus(); } catch (e) { /* gone */ } reportOpener = null; }
+  }
+  function reportKey(e) { if (e.key === 'Escape') closeReport(); }
+  async function openReport(o = {}) {
+    closeReport(); flushSaves();
+    reportOpener = o.opener || document.activeElement;
+    const rep = await renderCharts(collectReport());
+    restoreTheme = forceLight();
+    const note = previewNote(true);
+    const status = h('p', { class: 'rv-status', 'aria-live': 'polite' });
+    const doPrint = () => tryPrint(() => { note.hidden = false; });
+    const view = h('div', { id: 'lab-report', class: 'report-view', role: 'region', 'aria-labelledby': 'rv-title' },
+      h('div', { class: 'rv-tools' },
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn--primary', type: 'button', onclick: doPrint }, 'Print or save as PDF'),
+          h('button', { class: 'btn', type: 'button', onclick: closeReport }, 'Close report')),
+        h('p', { class: 'small' }, 'In the print window, set the printer (Destination) to “Save as PDF” or “Microsoft Print to PDF”, then upload the PDF to Schoology.'),
+        note, status),
+      h('article', { class: 'rv-paper', html: reportHtml(rep) }));
+    document.body.append(view);
+    document.body.classList.add('report-mode');
+    document.addEventListener('keydown', reportKey);
+    window.scrollTo(0, 0);
+    const t = $('#rv-title'); if (t) { t.tabIndex = -1; t.focus(); }
+    if (o.print) setTimeout(doPrint, 60);
+    return rep;
+  }
+  Lab.report = {
+    collect: collectReport,
+    filename: () => reportFileBase(),
+    open: openReport, close: closeReport,
+    async docx() { const rep = await renderCharts(collectReport()); return withNativeRandom(() => buildDocx(rep)); },
+    docxUrls: DOCX_URLS,
+  };
+
+  /* ---------------- Save / resume (progress file + resume code) ----------------
+     Payload: {app:'aplab', v:1, lab, title, savedAt, student:{name,period}|null, dataset, data:{key: value}}
+     data holds every localStorage value this lab saves (aplab:<lab>:*). */
+  function progressPayload() {
+    flushSaves();
+    const data = {}, pre = `aplab:${LAB_ID}:`;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(pre)) { try { data[k.slice(pre.length)] = JSON.parse(localStorage.getItem(k)); } catch (e) { /* skip bad value */ } }
+      }
+    } catch (e) { /* storage blocked */ }
+    const idn = effectiveIdentity();
+    return { app: 'aplab', v: 1, lab: LAB_ID, title: document.title, savedAt: new Date().toISOString(), student: idn ? { name: idn.name, period: idn.period } : null, dataset: SEED.datasetNumber, data };
+  }
+  function parseProgress(text) {
+    let o;
+    try { o = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { throw new Error('That is not a progress file. Choose the .json file you saved from this lab.'); }
+    if (!o || typeof o !== 'object' || o.app !== 'aplab' || !o.data || typeof o.data !== 'object' || Array.isArray(o.data)) throw new Error('That does not look like a Lab Bench progress file.');
+    if (typeof o.v !== 'number' || o.v > 1) throw new Error('That progress file was made by a newer version of this site. Reload the page and try again.');
+    if (typeof o.lab !== 'string') throw new Error('That progress file is missing its lab number.');
+    if (o.lab !== LAB_ID) { const m = /^lab(\d\d)$/.exec(o.lab); throw new Error(m ? `That progress file is for Lab ${+m[1]}. Open Lab ${+m[1]} and load it there.` : 'That progress file is for a different page.'); }
+    if (o.student && (typeof o.student.name !== 'string' || !normName(o.student.name))) o.student = null;
+    return o;
+  }
+  function applyProgress(o) {
+    try {
+      store.clearLab();
+      Object.entries(o.data).forEach(([k, v]) => localStorage.setItem(`aplab:${LAB_ID}:${k}`, JSON.stringify(v)));
+    } catch (e) { throw new Error('This browser is not letting the site save data, so the progress could not be loaded here.'); }
+    if (o.student) {
+      setIdentity(o.student);
+      if (o.dataset > 1) gstore.set(`dataset:${PAGE.id}:${studentKey(o.student)}`, Math.floor(o.dataset));
+    }
+    location.reload();
+  }
+  const b64u = {
+    enc(bytes) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; },
+  };
+  async function makeResumeCode(obj) {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj || progressPayload()));
+    if (typeof CompressionStream === 'function') {
+      try { const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer(); return 'LB1z.' + b64u.enc(new Uint8Array(buf)); } catch (e) { /* fall back */ }
+    }
+    return 'LB1b.' + b64u.enc(bytes);
+  }
+  async function readResumeCode(code) {
+    code = String(code || '').replace(/\s+/g, '');
+    if (!code) throw new Error('Paste your resume code first.');
+    const m = /^LB1([zb])\.([A-Za-z0-9_-]+)$/.exec(code);
+    if (!m) throw new Error('That is not a resume code. A resume code starts with LB1. Copy the whole code and try again.');
+    let bytes;
+    try { bytes = b64u.dec(m[2]); } catch (e) { throw new Error('That resume code is damaged. Copy the whole code and try again.'); }
+    if (m[1] === 'z') {
+      if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot open compressed resume codes. Use a progress file instead.');
+      try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()); }
+      catch (e) { throw new Error('That resume code is incomplete or damaged. Copy the whole code and try again.'); }
+    }
+    let text; try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch (e) { throw new Error('That resume code is damaged. Copy the whole code and try again.'); }
+    return parseProgress(text);
+  }
+  Lab.progressFile = { payload: progressPayload, parse: parseProgress, apply: applyProgress, makeCode: makeResumeCode, readCode: readResumeCode };
+
+  function moveWorkPanel() {
+    const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
+    const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
+    const note = previewNote(true);
+    const fileIn = h('input', { type: 'file', accept: '.json,application/json', hidden: true, 'aria-hidden': 'true', tabindex: '-1' });
+    const codeOut = h('textarea', { class: 'code-box', readonly: true, rows: 3, hidden: true, 'aria-label': 'Your resume code' });
+    const copyCode = h('button', { class: 'btn btn--sm', type: 'button', hidden: true, onclick: async () => {
+      try { await navigator.clipboard.writeText(codeOut.value); say('Resume code copied. Paste it somewhere you can reach from the other computer (for example, an email to yourself).'); }
+      catch (e) { codeOut.focus(); codeOut.select(); say('Copy is blocked here. The code is selected: press Ctrl+C.'); }
+    } }, 'Copy code');
+    const codeIn = h('textarea', { id: 'resume-code-in', class: 'code-box', rows: 3, spellcheck: 'false', placeholder: 'LB1z.…' });
+    const confirmRow = h('div', { class: 'id-confirm', hidden: true, role: 'group', 'aria-label': 'Confirm loading saved work' });
+    function askApply(o) {
+      const when = o.savedAt ? new Date(o.savedAt).toLocaleString() : 'an unknown date';
+      confirmRow.innerHTML = '';
+      confirmRow.append(
+        h('span', null, `Replace your work on this lab with the progress saved ${o.student ? 'by ' + o.student.name + ' ' : ''}on ${when}? Your current answers and data on this computer will be overwritten.`),
+        h('button', { class: 'btn btn--sm btn--primary', type: 'button', onclick: () => { try { applyProgress(o); say('Loaded. Reloading…'); } catch (e) { say(e.message, true); } } }, 'Replace my work'),
+        h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; say('Nothing was changed.'); } }, 'Cancel'));
+      confirmRow.hidden = false; focusIn(confirmRow, 'button');
+    }
+    fileIn.addEventListener('change', async () => {
+      const f = fileIn.files && fileIn.files[0]; fileIn.value = '';
+      if (!f) return;
+      if (f.size > 5e6) { say('That file is too large to be a progress file.', true); return; }
+      try { askApply(parseProgress(await f.text())); say(''); } catch (e) { say(e.message, true); }
+    });
+    return h('details', { class: 'disclose move-work' },
+      h('summary', null, 'Move your work to another computer'),
+      h('div', { class: 'inner' },
+        h('p', { class: 'small muted' }, 'Your work saves only in this browser. To keep working on a different computer, save a progress file (or copy a resume code), then load it on the other computer.'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn', type: 'button', onclick: () => {
+            const p = progressPayload();
+            downloadBlob(new Blob([JSON.stringify(p)], { type: 'application/json' }), reportFileBase() + '_progress.json');
+            say(`Saved ${reportFileBase()}_progress.json to your Downloads folder.`); if (LIKELY_PREVIEW) note.hidden = false;
+          } }, 'Save progress file'),
+          h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, 'Load progress file'), fileIn),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn--sm', type: 'button', onclick: async () => {
+            try { codeOut.value = await makeResumeCode(); codeOut.hidden = false; copyCode.hidden = false; say(`Your resume code is ready (${codeOut.value.length.toLocaleString()} characters).`); }
+            catch (e) { say('Could not make a resume code here. Use a progress file instead.', true); }
+          } }, 'Get a resume code'), copyCode),
+        codeOut,
+        h('div', { class: 'field' }, h('label', { for: 'resume-code-in' }, 'Or paste a resume code'), codeIn),
+        h('div', { class: 'row' }, h('button', { class: 'btn btn--sm', type: 'button', onclick: async () => {
+          try { askApply(await readResumeCode(codeIn.value)); say(''); } catch (e) { say(e.message, true); }
+        } }, 'Load resume code')),
+        confirmRow, status, note));
+  }
+
+  /* Report tools added to the responses toolbar on student lab pages. */
+  function reportTools() {
+    const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
+    const note = previewNote();
+    const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
+    const nameWarn = () => reportIdentity().name ? '' : ' Add your name at the top of the page so it appears on your report.';
+    const docxBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
+      docxBtn.disabled = true; say('Building your Word file…');
+      try {
+        const blob = await Lab.report.docx();
+        const name = reportFileBase() + '.docx';
+        downloadBlob(blob, name);
+        say(`Downloaded ${name}. Upload it to Schoology.` + nameWarn());
+        if (LIKELY_PREVIEW) note.hidden = false;
+      } catch (e) {
+        if (e && e.message === 'docx-load') { say('Could not load the Word file tool. Check your internet connection, or use Save as PDF.', true); note.hidden = false; }
+        else { console.error(e); say('Something went wrong building the Word file. Use Save as PDF instead.', true); }
+      } finally { docxBtn.disabled = false; }
+    } }, 'Download .docx');
+    const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Save as PDF');
+    const bar = h('div', { class: 'responses-bar report-bar' },
+      h('span', { class: 'grow' }, 'Hand in on Schoology: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn);
+    return [bar, status, note];
+  }
 
   /* ---------------- Step navigation ---------------- */
   function buildNav() {
