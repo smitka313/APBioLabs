@@ -124,11 +124,11 @@
       <p class="prose">Look at the abdomen. <strong>Females</strong> are larger, with a longer, pointed abdomen that has separate dark stripes all the way to a light tip. <strong>Males</strong> are smaller, with a rounded abdomen whose last segments are fused into one solid dark patch, and they have tiny dark <strong>sex combs</strong> on their front legs. Use the reference, then identify the flies.</p>
       <div class="sim">
         <div class="controls">
-          <canvas class="viz" id="sex-ref" aria-label="Reference drawing: female fruit fly on the left with a long, pointed, striped abdomen; male on the right with a smaller, rounded abdomen with a solid black tip and sex combs on the front legs."></canvas>
+          <canvas class="viz" id="sex-ref" aria-label="Reference view under the stereo microscope: female fruit fly on the left with a long, pointed, striped abdomen; male on the right with a smaller, rounded abdomen with a solid dark tip, a dark genital arch at the tip, and black sex combs on the front legs."></canvas>
           <div class="readouts"><div class="readout"><span class="k">Correct</span><span class="v" id="sex-score">0 of 0</span></div></div>
         </div>
         <div class="stage">
-          <canvas class="viz" id="sex-cv" aria-label="A single fruit fly seen from above. Decide whether it is female or male."></canvas>
+          <canvas class="viz" id="sex-cv" aria-label="Stereo microscope view: one anesthetized fruit fly lying on a dark stage, lit from above. Focus, then decide whether it is female or male."></canvas>
           <div class="row">
             <button class="btn btn--primary" id="sex-f" type="button">Female ♀</button>
             <button class="btn btn--primary" id="sex-m" type="button">Male ♂</button>
@@ -291,6 +291,7 @@
 </div></footer>
 
 <script src="lab.js"></script>
+<script src="scope.js"></script>
 <script>
 Lab.init({ id: 'lab12' });
 const { $, $$ } = Lab;
@@ -322,71 +323,278 @@ $$('.lc-stage').forEach(g => {
   g.addEventListener('click', pick); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
 });
 
-/* ---------- Fly drawing (dorsal view) ---------- */
-function drawFly(ctx, x, y, s, ang, sex, o = {}) {
-  const light = lightTok(), dark = darkTok();
-  const body = mix('--warn', light, 0.45), stripe = mix(dark, '--warn', 0.15);
-  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s);
-  const fem = sex === 'f', aL = fem ? 1.25 : 0.95, aW = fem ? 0.62 : 0.55, aY = 0.32;
-  ctx.strokeStyle = stripe; ctx.lineWidth = 0.035; ctx.lineCap = 'round';
-  [[-1, -0.05], [-1, 0.12], [-1, 0.28], [1, -0.05], [1, 0.12], [1, 0.28]].forEach(([sd, ly], i) => {
-    ctx.beginPath(); ctx.moveTo(sd * 0.15, ly); const k = i % 3;
-    ctx.lineTo(sd * 0.55, ly + (k - 1) * 0.25); ctx.lineTo(sd * 0.75, ly + (k - 1) * 0.55 + 0.1); ctx.stroke();
-    if (!fem && k === 0 && o.combs !== false) { ctx.fillStyle = stripe; ctx.beginPath(); ctx.ellipse(sd * 0.56, ly - 0.24, 0.06, 0.035, 0, 0, 7); ctx.fill(); }
-  });
-  // abdomen
-  ctx.save();
-  ctx.beginPath();
-  if (fem) { ctx.moveTo(0, aY + aL); ctx.bezierCurveTo(aW * 0.9, aY + aL * 0.75, aW, aY + 0.1, 0, aY); ctx.bezierCurveTo(-aW, aY + 0.1, -aW * 0.9, aY + aL * 0.75, 0, aY + aL); }
-  else ctx.ellipse(0, aY + aL / 2, aW / 2 + 0.02, aL / 2, 0, 0, 7);
-  ctx.fillStyle = body; ctx.fill(); ctx.clip();
-  ctx.fillStyle = stripe;
-  if (fem) { for (let i = 0; i < 6; i++) ctx.fillRect(-1, aY + 0.14 + i * 0.17, 2, 0.075); }
-  else { for (let i = 0; i < 3; i++) ctx.fillRect(-1, aY + 0.12 + i * 0.16, 2, 0.07); ctx.fillRect(-1, aY + aL * 0.62, 2, 1); }
+/* =====================================================================
+   REALISTIC DROSOPHILA (dorsal view), plus egg, larva and pupa.
+   Specimens, vials, bottles and the bench are physical objects: fixed colours, the same in light and
+   dark themes. Local fly units are roughly millimetres: head toward −y, thorax centred on the origin.
+   detail: 0 = tiny sprite (chamber/vial), 1 = medium, 2 = full stereo-microscope detail.
+   ===================================================================== */
+const TAU = Math.PI * 2;
+const SANS = '"Source Sans 3", system-ui, sans-serif';
+const HAND = '"Segoe Print", "Bradley Hand", "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive';
+const FC = { eye: ['#f06a4f', '#c62e1e', '#7d150c'], frons: '#c88745', body: ['#d8b47c', '#b58b55', '#7a552d'], band: 'rgba(74,44,20,0.86)', leg: ['#b48a58', '#6b4a28'], br: '#1a0f08' };
+function vrng(seed) { return Lab.rng(seed >>> 0); }
+function vGrad(ctx, y0, y1, stops) { const g = ctx.createLinearGradient(0, y0, 0, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function hGrad(ctx, x0, x1, stops) { const g = ctx.createLinearGradient(x0, 0, x1, 0); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function roundRect(ctx, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+let grainT = null, epoxyT = null;
+function grainTile() {
+  if (grainT) return grainT;
+  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), im = x.createImageData(128, 128), R = vrng(4242);
+  for (let i = 0; i < im.data.length; i += 4) { const v = R.uniform(), k = v > 0.5 ? 255 : 0; im.data[i] = im.data[i + 1] = im.data[i + 2] = k; im.data[i + 3] = Math.abs(v - 0.5) * 70; }
+  x.putImageData(im, 0, 0); return (grainT = c);
+}
+function epoxyTile() {
+  if (epoxyT) return epoxyT;
+  const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d'), R = vrng(808);
+  for (let i = 0; i < 300; i++) { x.fillStyle = R.chance(0.62) ? `rgba(128,132,140,${(0.18 + R.uniform() * 0.32).toFixed(2)})` : `rgba(0,0,0,${(0.3 + R.uniform() * 0.4).toFixed(2)})`; x.beginPath(); x.arc(R.uniform() * 96, R.uniform() * 96, 0.3 + R.uniform() * 0.7, 0, TAU); x.fill(); }
+  return (epoxyT = c);
+}
+function texture(ctx, tile, a, fillFn) { ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = ctx.createPattern(tile, 'repeat'); fillFn(); ctx.restore(); }
+function softShadow(ctx, x, y, rx, ry, a = 0.5) { ctx.save(); ctx.translate(x, y); ctx.scale(1, ry / rx); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(0.55, `rgba(0,0,0,${a * 0.45})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill(); ctx.restore(); }
+function offscreen(w, h) { const d = window.devicePixelRatio || 1, c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d)); const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); return [c, x]; }
+
+function bristle(ctx, x, y, ang, len, wdt) {   // tapered dark seta
+  const ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy * wdt / 2, ny = ux * wdt / 2;
+  ctx.beginPath(); ctx.moveTo(x + nx, y + ny); ctx.lineTo(x + ux * len, y + uy * len); ctx.lineTo(x - nx, y - ny); ctx.closePath(); ctx.fill();
+}
+/* Legs: femur, tibia, 5-segment tarsus. Tripod gait: L1, R2, L3 swing together. */
+const LEGS = [{ y: -0.3, seg: [0.4, 0.42, 0.4], a: [-0.75, -1.2, -1.35] }, { y: -0.05, seg: [0.46, 0.46, 0.42], a: [0.0, 0.3, 0.42] }, { y: 0.2, seg: [0.56, 0.58, 0.5], a: [0.55, 0.98, 1.1] }];
+function drawLegs(ctx, o, R) {
+  const k = o.detail;
+  LEGS.forEach((L, li) => [-1, 1].forEach(sd => {
+    const grpA = (li === 1) === (sd === 1), sw = o.legPhase == null ? 0 : 0.24 * Math.sin(o.legPhase + (grpA ? 0 : Math.PI));
+    const jit = o.limp ? (R.uniform() - 0.5) * 0.5 : 0;
+    let x = sd * 0.24, y = L.y; const pts = [[x, y]];
+    L.a.forEach((a, i) => { const th = a + sw + jit * (i + 1) * 0.5 + (o.limp && i === 2 ? 0.4 * sd : 0), len = L.seg[i]; x += sd * Math.cos(th) * len; y += Math.sin(th) * len; pts.push([x, y]); });
+    const W = [0.085, 0.06, 0.038];
+    for (let i = 0; i < 3; i++) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+      ctx.strokeStyle = FC.leg[1]; ctx.lineWidth = Math.max(W[i] * 1.25, o.minW); ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      if (k > 0) { ctx.strokeStyle = FC.leg[0]; ctx.lineWidth = W[i] * 0.6; ctx.beginPath(); ctx.moveTo(x0 - 0.01, y0 - 0.01); ctx.lineTo(x1 - 0.01, y1 - 0.01); ctx.stroke(); }
+      if (k > 1) { ctx.fillStyle = FC.br; const n = 5, dx = x1 - x0, dy = y1 - y0, a = Math.atan2(dy, dx); for (let j = 1; j < n; j++) bristle(ctx, x0 + dx * j / n, y0 + dy * j / n, a + sd * 0.5, 0.07, 0.012); }
+    }
+    if (k > 1) { const [x3, y3] = pts[3], [x2, y2] = pts[2], a = Math.atan2(y3 - y2, x3 - x2); ctx.strokeStyle = FC.br; ctx.lineWidth = 0.008; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x3, y3); ctx.lineTo(x3 + Math.cos(a + s * 0.5) * 0.05, y3 + Math.sin(a + s * 0.5) * 0.05); ctx.stroke(); } }   // tarsal claws
+    if (li === 0 && o.sex === 'm' && o.combs !== false) {   // sex comb: row of black teeth on the first tarsal segment of each foreleg
+      const [x2, y2] = pts[2], [x3, y3] = pts[3], dx = x3 - x2, dy = y3 - y2, Ln = Math.hypot(dx, dy), ux = dx / Ln, uy = dy / Ln;
+      if (o.out && sd < 0) o.out.comb = [x2 + ux * 0.16, y2 + uy * 0.16];
+      if (k > 1) { ctx.strokeStyle = '#0b0603'; ctx.lineWidth = 0.016; ctx.lineCap = 'round'; for (let j = 0; j < 10; j++) { const t = 0.06 + j * 0.022, bx = x2 + ux * t, by = y2 + uy * t; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + (-uy * sd) * 0.075 + ux * 0.02, by + (ux * sd) * 0.075 + uy * 0.02); ctx.stroke(); } }
+      else if (k > 0) { ctx.fillStyle = '#0b0603'; ctx.beginPath(); ctx.ellipse(x2 + ux * 0.1, y2 + uy * 0.1, 0.06, 0.035, Math.atan2(uy, ux), 0, TAU); ctx.fill(); }
+    }
+  }));
+}
+function abdPath(fem) {
+  const p = new Path2D();
+  if (fem) { p.moveTo(0, 0.36); p.bezierCurveTo(0.3, 0.36, 0.39, 0.62, 0.38, 0.92); p.bezierCurveTo(0.36, 1.22, 0.2, 1.52, 0, 1.7); p.bezierCurveTo(-0.2, 1.52, -0.36, 1.22, -0.38, 0.92); p.bezierCurveTo(-0.39, 0.62, -0.3, 0.36, 0, 0.36); }
+  else { p.moveTo(0, 0.36); p.bezierCurveTo(0.28, 0.36, 0.34, 0.6, 0.34, 0.86); p.bezierCurveTo(0.34, 1.14, 0.22, 1.36, 0, 1.38); p.bezierCurveTo(-0.22, 1.36, -0.34, 1.14, -0.34, 0.86); p.bezierCurveTo(-0.34, 0.6, -0.28, 0.36, 0, 0.36); }
+  p.closePath(); return p;
+}
+function drawAbdomen(ctx, o, R) {
+  const fem = o.sex === 'f', P = abdPath(fem), k = o.detail;
+  ctx.fillStyle = FC.body[0]; ctx.fill(P);
+  ctx.save(); ctx.clip(P);
+  if (fem) {
+    const yb = [0.4, 0.58, 0.76, 0.94, 1.12, 1.29, 1.45, 1.58];
+    for (let i = 1; i < yb.length - 1; i++) { const y0 = yb[i], y1 = yb[i + 1], bw = (y1 - y0) * (i > 4 ? 0.34 : 0.44); ctx.fillStyle = FC.band; ctx.beginPath(); ctx.moveTo(-0.5, y1 - bw); ctx.quadraticCurveTo(0, y1 - bw * 1.35, 0.5, y1 - bw); ctx.lineTo(0.5, y1); ctx.quadraticCurveTo(0, y1 - bw * 0.25, -0.5, y1); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = 'rgba(120,80,40,0.55)'; ctx.beginPath(); ctx.moveTo(-0.05, 1.56); ctx.lineTo(0, 1.72); ctx.lineTo(0.05, 1.56); ctx.closePath(); ctx.fill();   // ovipositor plates at the pointed tip
+  } else {
+    const yb = [0.4, 0.57, 0.74, 0.91];
+    for (let i = 1; i < yb.length - 1; i++) { const y0 = yb[i], y1 = yb[i + 1], bw = (y1 - y0) * 0.5; ctx.fillStyle = FC.band; ctx.beginPath(); ctx.moveTo(-0.5, y1 - bw); ctx.quadraticCurveTo(0, y1 - bw * 1.35, 0.5, y1 - bw); ctx.lineTo(0.5, y1); ctx.quadraticCurveTo(0, y1 - bw * 0.25, -0.5, y1); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = 'rgba(30,17,8,0.96)'; ctx.beginPath(); ctx.moveTo(-0.5, 0.97); ctx.quadraticCurveTo(0, 0.9, 0.5, 0.97); ctx.lineTo(0.5, 1.6); ctx.lineTo(-0.5, 1.6); ctx.closePath(); ctx.fill();   // fused dark tip (A5–A6)
+  }
+  // volume: lit from the upper left
+  const g = ctx.createRadialGradient(-0.12, 0.65, 0.02, 0, fem ? 1.0 : 0.85, fem ? 0.85 : 0.65); g.addColorStop(0, 'rgba(255,240,210,0.35)'); g.addColorStop(0.6, 'rgba(255,240,210,0)'); g.addColorStop(1, 'rgba(30,18,8,0.45)');
+  ctx.fillStyle = g; ctx.fillRect(-0.5, 0.3, 1, 1.5);
+  if (k > 1) { ctx.fillStyle = 'rgba(20,12,6,0.75)'; for (let i = 0; i < 70; i++) { const y = 0.45 + R.uniform() * (fem ? 1.15 : 0.85), x = (R.uniform() * 2 - 1) * 0.3; bristle(ctx, x, y, Math.PI / 2 + x * 0.8, 0.06, 0.012); } }
   ctx.restore();
-  // thorax and head
-  ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(0, 0.08, 0.27, 0.32, 0, 0, 7); ctx.fill();
-  ctx.strokeStyle = stripe; ctx.lineWidth = 0.02; for (const bx of [-0.12, 0.12]) { ctx.beginPath(); ctx.moveTo(bx, -0.05); ctx.lineTo(bx * 1.3, 0.3); ctx.stroke(); }
-  ctx.beginPath(); ctx.ellipse(0, -0.36, 0.24, 0.17, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = C('--bad'); for (const ex of [-1, 1]) { ctx.beginPath(); ctx.ellipse(ex * 0.17, -0.37, 0.1, 0.14, ex * 0.3, 0, 7); ctx.fill(); }
-  // wings
-  ctx.fillStyle = alpha(light, 0.38); ctx.strokeStyle = alpha('--muted', 0.7); ctx.lineWidth = 0.02;
-  const spread = o.spread != null ? o.spread : 0.32;
-  for (const sd of [-1, 1]) { ctx.save(); ctx.translate(sd * 0.12, 0.12); ctx.rotate(sd * spread); ctx.beginPath(); ctx.ellipse(0, 0.6, 0.2, 0.62, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  if (!fem) {   // genital arch: dark horseshoe of the male genitalia at the abdomen tip
+    ctx.strokeStyle = '#1d1008'; ctx.lineWidth = k > 1 ? 0.05 : 0.07; ctx.beginPath(); ctx.arc(0, 1.3, 0.11, 0.15, Math.PI - 0.15); ctx.stroke();
+    if (k > 1) { ctx.fillStyle = '#3a2210'; ctx.beginPath(); ctx.ellipse(0, 1.35, 0.06, 0.04, 0, 0, TAU); ctx.fill(); ctx.fillStyle = FC.br; for (let i = 0; i < 9; i++) { const a = 0.3 + i * 0.3; bristle(ctx, Math.cos(a) * 0.12, 1.3 + Math.sin(a) * 0.12, a, 0.06, 0.01); } }
+  }
+}
+function drawThorax(ctx, o, R) {
+  const k = o.detail;
+  ctx.fillStyle = FC.body[1]; ctx.beginPath(); ctx.ellipse(0, -0.04, 0.33, 0.48, 0, 0, TAU); ctx.fill();
+  const g = ctx.createRadialGradient(-0.1, -0.2, 0.02, 0, -0.04, 0.5); g.addColorStop(0, 'rgba(255,236,196,0.55)'); g.addColorStop(0.55, 'rgba(210,170,110,0.1)'); g.addColorStop(1, 'rgba(60,36,14,0.55)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -0.04, 0.33, 0.48, 0, 0, TAU); ctx.fill();
+  if (k > 0) { ctx.fillStyle = 'rgba(110,72,36,0.22)'; for (const x of [-0.12, 0.12]) { ctx.beginPath(); ctx.ellipse(x, -0.08, 0.05, 0.32, 0, 0, TAU); ctx.fill(); } }
+  // scutellum
+  ctx.fillStyle = FC.body[0]; ctx.beginPath(); ctx.ellipse(0, 0.36, 0.17, 0.1, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(80,50,20,0.5)'; ctx.lineWidth = 0.012; ctx.beginPath(); ctx.ellipse(0, 0.36, 0.17, 0.1, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+  if (k > 1) {   // microchaetae rows, then the long macrochaetae
+    ctx.fillStyle = 'rgba(22,12,6,0.85)';
+    for (let x = -0.24; x <= 0.241; x += 0.048) for (let y = -0.42; y < 0.25; y += 0.055) { if ((x / 0.33) ** 2 + ((y + 0.04) / 0.48) ** 2 > 0.82) continue; bristle(ctx, x + R.normal(0, 0.006), y + R.normal(0, 0.008), Math.PI / 2 + x * 0.6, 0.055, 0.012); }
+    ctx.fillStyle = FC.br;
+    [[-0.14, -0.16, 0.34], [0.14, -0.16, 0.34], [-0.15, 0.1, 0.36], [0.15, 0.1, 0.36], [-0.3, -0.36, 0.26], [0.3, -0.36, 0.26], [-0.31, 0.02, 0.28], [0.31, 0.02, 0.28]].forEach(([x, y, L]) => bristle(ctx, x, y, Math.PI / 2 - x * 0.9, L, 0.026));
+    [[-0.09, 0.4, 0.42, 0.25], [0.09, 0.4, 0.42, -0.25], [-0.15, 0.33, 0.32, 0.6], [0.15, 0.33, 0.32, -0.6]].forEach(([x, y, L, t]) => bristle(ctx, x, y, Math.PI / 2 + t, L, 0.026));
+  }
+}
+function drawHead(ctx, o) {
+  const k = o.detail;
+  ctx.fillStyle = FC.frons; ctx.beginPath(); ctx.ellipse(0, -0.7, 0.32, 0.21, 0, 0, TAU); ctx.fill();
+  for (const sd of [-1, 1]) {
+    ctx.save(); ctx.translate(sd * 0.2, -0.71); ctx.rotate(sd * 0.3);
+    const g = ctx.createRadialGradient(-0.04, -0.05, 0.01, 0, 0, 0.2); g.addColorStop(0, FC.eye[0]); g.addColorStop(0.55, FC.eye[1]); g.addColorStop(1, FC.eye[2]);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 0.145, 0.19, 0, 0, TAU); ctx.fill();
+    if (k > 1) {   // ommatidia
+      ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 0.145, 0.19, 0, 0, TAU); ctx.clip();
+      ctx.fillStyle = 'rgba(70,6,2,0.35)'; for (let y = -0.19, r = 0; y < 0.2; y += 0.018, r++) for (let x = -0.15 + (r % 2) * 0.009; x < 0.15; x += 0.018) { ctx.beginPath(); ctx.arc(x, y, 0.0045, 0, TAU); ctx.fill(); }
+      ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.ellipse(-0.045, -0.07, 0.04, 0.025, -0.5, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  if (k > 0) {
+    ctx.fillStyle = '#4a2a14'; [[0, -0.76], [-0.035, -0.7], [0.035, -0.7]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 0.017, 0, TAU); ctx.fill(); });   // ocelli
+    ctx.fillStyle = '#a8743c'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 0.07, -0.89, 0.045, 0.06, 0, 0, TAU); ctx.fill(); }   // antennae
+  }
+  if (k > 1) {
+    ctx.strokeStyle = 'rgba(40,24,10,0.8)'; ctx.lineWidth = 0.008;
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 0.09, -0.92); ctx.quadraticCurveTo(sd * 0.16, -1.08, sd * 0.12, -1.18); ctx.stroke(); for (let i = 1; i < 6; i++) { const t = i / 6, x = sd * (0.09 + 0.05 * t), y = -0.92 - 0.24 * t; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + sd * 0.04, y - 0.02); ctx.stroke(); } }   // feathery aristae
+    ctx.fillStyle = FC.br; [[-0.1, -0.82, -2.2], [0.1, -0.82, -0.9], [-0.06, -0.75, -2.0], [0.06, -0.75, -1.1], [-0.02, -0.66, 1.9], [0.02, -0.66, 1.2]].forEach(([x, y, a]) => bristle(ctx, x, y, a, 0.18, 0.02));
+  }
+}
+function wingPath(sd, L) {
+  const p = new Path2D(); p.moveTo(0, 0);
+  p.bezierCurveTo(sd * 0.1, 0.1, sd * 0.28, 0.35, sd * 0.34, L * 0.6); p.bezierCurveTo(sd * 0.38, L * 0.85, sd * 0.24, L * 1.0, sd * 0.1, L); p.bezierCurveTo(-sd * 0.06, L * 0.98, -sd * 0.18, L * 0.8, -sd * 0.16, L * 0.55);
+  p.bezierCurveTo(-sd * 0.14, L * 0.3, -sd * 0.06, 0.12, 0, 0); p.closePath(); return p;
+}
+function drawWing(ctx, o, sd, ang, alphaMul = 1) {
+  const L = o.sex === 'f' ? 2.0 : 1.82, k = o.detail;
+  ctx.save(); ctx.translate(sd * 0.2, -0.12); ctx.rotate(-sd * ang);
+  if (o.wingScale) ctx.scale(1, o.wingScale);
+  const P = wingPath(sd, L);
+  ctx.globalAlpha = alphaMul;
+  ctx.fillStyle = 'rgba(214,222,230,0.24)'; ctx.fill(P);
+  const ir = ctx.createLinearGradient(0, 0, sd * 0.3, L); ir.addColorStop(0, 'rgba(255,170,220,0.09)'); ir.addColorStop(0.5, 'rgba(160,255,210,0.08)'); ir.addColorStop(1, 'rgba(170,190,255,0.09)'); ctx.fillStyle = ir; ctx.fill(P);
+  ctx.strokeStyle = 'rgba(80,66,52,0.55)'; ctx.lineWidth = Math.max(0.012, o.minW * 0.6); ctx.stroke(P);
+  ctx.strokeStyle = 'rgba(84,62,38,0.8)'; ctx.lineWidth = Math.max(0.014, o.minW * 0.55);
+  const vein = (pts) => { ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i += 2) ctx.quadraticCurveTo(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]); ctx.stroke(); };
+  if (k > 0 || o.minW < 0.03) {
+    vein([[sd * 0.04, 0.05], [sd * 0.2, 0.3], [sd * 0.3, L * 0.32]]);                              // L1 / costa
+    vein([[sd * 0.04, 0.08], [sd * 0.24, L * 0.4], [sd * 0.33, L * 0.72]]);                        // L2
+    vein([[sd * 0.02, 0.1], [sd * 0.18, L * 0.55], [sd * 0.19, L * 0.98]]);                        // L3
+    vein([[0, 0.12], [sd * 0.05, L * 0.55], [-sd * 0.01, L * 0.97]]);                              // L4
+    vein([[-sd * 0.02, 0.12], [-sd * 0.08, L * 0.45], [-sd * 0.14, L * 0.72]]);                    // L5
+    ctx.beginPath(); ctx.moveTo(sd * 0.165, L * 0.42); ctx.lineTo(sd * 0.075, L * 0.43); ctx.stroke();   // anterior crossvein
+    ctx.beginPath(); ctx.moveTo(sd * 0.04, L * 0.62); ctx.lineTo(-sd * 0.1, L * 0.6); ctx.stroke();     // posterior crossvein
+  }
+  if (k > 1) { ctx.fillStyle = 'rgba(40,30,20,0.35)'; const R = vrng(sd > 0 ? 3 : 4); for (let i = 0; i < 200; i++) { const t = R.uniform(); const x = sd * (0.33 * Math.sin(Math.PI * t) * 0.95 + (R.uniform() - 0.5) * 0.02), y = t * L; bristle(ctx, x, y, Math.PI / 2, 0.025, 0.006); } }   // costal hairs
+  ctx.restore();
+}
+function drawFly(ctx, o) {
+  o = Object.assign({ sex: 'f', detail: 1, spread: 0.12, legPhase: null, minW: 0.02, seed: 1 }, o);
+  const R = vrng(o.seed);
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (o.shadow) { const g = ctx.createRadialGradient(0, 0.5, 0.1, 0, 0.5, 1.4); g.addColorStop(0, `rgba(0,0,0,${o.shadow})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0.5, 0.75, 1.35, 0, 0, TAU); ctx.fill(); }
+  if (!o.tucked) drawLegs(ctx, o, R);
+  drawAbdomen(ctx, o, R);
+  drawThorax(ctx, o, R);
+  drawHead(ctx, o);
+  if (o.blurWings) { for (let i = 0; i < 6; i++) { const a = 0.15 + i * 0.28; drawWing(ctx, o, -1, a, 0.35); drawWing(ctx, o, 1, a, 0.35); } }
+  else { drawWing(ctx, o, -1, o.spread); drawWing(ctx, o, 1, o.spread); }
   ctx.restore();
 }
 
-/* ---------- Sexing practice ---------- */
-const sexRef = Lab.canvas('#sex-ref', 0.95), sexCv = Lab.canvas('#sex-cv', 0.62);
-function drawRef() {
-  const { ctx, w, h } = sexRef; ctx.clearRect(0, 0, w, h); ctx.fillStyle = C('--surface'); ctx.fillRect(0, 0, w, h);
-  const s = Math.min(w * 0.19, h * 0.3);
-  drawFly(ctx, w * 0.27, h * 0.3, s * 1.08, 0, 'f', { spread: 0.45 });
-  drawFly(ctx, w * 0.73, h * 0.3, s * 0.92, 0, 'm', { spread: 0.45 });
-  ctx.fillStyle = C('--ink'); ctx.textAlign = 'center'; ctx.font = font(Math.max(11, w / 22), 700);
-  ctx.fillText('Female', w * 0.27, h * 0.88); ctx.fillText('Male', w * 0.73, h * 0.88);
-  ctx.font = font(Math.max(9, w / 30), 400); ctx.fillStyle = C('--muted');
-  ctx.fillText('pointed, striped tip', w * 0.27, h * 0.96); ctx.fillText('rounded, solid dark tip', w * 0.73, h * 0.96);
+/* Sprite cache: pre-rendered small flies in a few poses, composited with rotation each frame. */
+const SPRITES = new Map();
+const POSES = ['rest', 'w0', 'w1', 'w2', 'w3', 'flick', 'fly'];
+function flySprite(lenPx, sex, pose) {
+  const d = window.devicePixelRatio || 1, Lq = Math.max(6, Math.round(lenPx * 2) / 2), key = `${Lq}|${sex}|${pose}|${d}`;
+  let s = SPRITES.get(key); if (s) return s;
+  const k = Lq * d / 2.6, size = Math.ceil(4.8 * k), c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'); x.translate(size / 2, size * 0.42); x.scale(k, k);
+  const wi = pose[0] === 'w' ? +pose[1] : null;
+  drawFly(x, { sex, detail: Lq > 40 ? 1 : 0, minW: 1.1 / k, legPhase: wi != null ? wi * Math.PI / 2 : pose === 'flick' ? 0.5 : null, spread: pose === 'flick' ? 0.62 : 0.1, blurWings: pose === 'fly', tucked: pose === 'fly', shadow: pose === 'fly' ? 0 : 0.3, seed: 7 });
+  s = { c, size: size / d, ox: size / 2 / d, oy: size * 0.42 / d, k: k / d };
+  SPRITES.set(key, s); if (SPRITES.size > 400) SPRITES.delete(SPRITES.keys().next().value);
+  return s;
 }
+/* Per-fly visual state (does not touch the model or its random numbers): leg phase from distance walked,
+   occasional wing flicks while walking or resting, blurred wings in flight. */
+const VR = Lab.rng(2024);
+function flyPose(v, x, y, flying, resting, now) {
+  if (v.lx == null) { v.lx = x; v.ly = y; v.ph = VR.uniform() * 4; v.fl = 0; v.t = now; }
+  const dt = Math.min(0.2, (now - v.t) / 1000); v.t = now;
+  const dist = Math.hypot(x - v.lx, y - v.ly); v.lx = x; v.ly = y;
+  if (flying) return 'fly';
+  v.ph += dist * 0.55;
+  if (v.fl > 0) v.fl -= dt; else if (!Lab.reducedMotion() && VR.uniform() < dt * 0.22) v.fl = 0.18 + VR.uniform() * 0.15;
+  if (v.fl > 0) return 'flick';
+  if (resting || dist < 0.05) return 'rest';
+  return 'w' + (Math.floor(v.ph) % 4);
+}
+function blitFly(ctx, x, y, ang, lenPx, sex, pose) {
+  const s = flySprite(lenPx, sex, pose);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang + Math.PI / 2); ctx.drawImage(s.c, -s.ox, -s.oy - 0.35 * s.k, s.size, s.size); ctx.restore();
+}
+
+/* ---------- Sexing practice: stereo microscope (reflected light on a dark stage) ----------
+   A page-local wrapper around scope.js: Scope renders each specimen once and multiplies it onto its lamp,
+   so painting the whole slide as a dark matte stage plus the fly in its own reflected-light colours
+   gives a dissecting-scope look (ring-light falloff, eyepiece frame, grain, focus knob). */
+function stageBg(ctx, W, H, seed) {
+  const R = vrng(seed);
+  ctx.fillStyle = '#26272a'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W * 0.45, H * 0.42, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.65); g.addColorStop(0, 'rgba(120,118,112,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < W * H / 260; i++) { ctx.fillStyle = R.chance(0.5) ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.18)'; ctx.fillRect(R.uniform() * W, R.uniform() * H, 1 + R.uniform() * 2, 1 + R.uniform() * 2); }   // matte texture
+  for (let i = 0; i < 9; i++) { ctx.fillStyle = `rgba(${R.chance(0.5) ? '210,200,180' : '90,80,70'},${0.25 + R.uniform() * 0.3})`; ctx.beginPath(); ctx.ellipse(R.uniform() * W, R.uniform() * H, 1 + R.uniform() * 3, 0.6 + R.uniform() * 1.5, R.uniform() * 3, 0, TAU); ctx.fill(); }   // lint and food crumbs
+}
+function placeFly(ctx, x, y, s, ang, sex, spread, seed, out) { ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s); drawFly(ctx, { sex, detail: 2, spread, limp: true, seed, minW: 0.01, shadow: 0.55, out }); ctx.restore(); }
 let sexCur = null, sexAns = false, sexRight = 0, sexTot = 0;
-function newSexFly() { sexCur = { sex: rng.chance(0.5) ? 'f' : 'm', ang: rng.uniform() * Math.PI * 2, size: 0.9 + rng.uniform() * 0.2, spread: 0.2 + rng.uniform() * 0.4 }; sexAns = false; $('#sex-fb').textContent = ''; $('#sex-fb').className = 'fb'; drawSex(); }
-function drawSex() {
-  const { ctx, w, h } = sexCv; ctx.clearRect(0, 0, w, h); ctx.fillStyle = C('--surface-2'); ctx.fillRect(0, 0, w, h);
-  if (!sexCur) return;
-  const s = Math.min(w, h) * 0.2 * sexCur.size * (sexCur.sex === 'f' ? 1.06 : 0.94);
-  drawFly(ctx, w / 2, h / 2 - s * 0.35 * Math.cos(sexCur.ang), s, sexCur.ang, sexCur.sex, { spread: sexCur.spread });
+const SEXW = { w: 720, h: 540 };
+const sexView = Scope.view('#sex-cv', {
+  aspect: 0.75, world: SEXW, maxRes: 1.6, focusLabel: 'Focus',
+  hud: { mag: '20×', bar: { units: 96, label: '1 mm' } },
+  layers: [{ z: 0 }, { z: 0.14 }],
+  render(ctx, li) {
+    if (!sexCur) return;
+    if (li === 0) { stageBg(ctx, SEXW.w, SEXW.h, sexCur.seed); placeFly(ctx, SEXW.w / 2 + sexCur.dx, SEXW.h / 2 + sexCur.dy, 96 * sexCur.size * (sexCur.sex === 'f' ? 1.06 : 0.92), sexCur.ang, sexCur.sex, sexCur.spread, sexCur.seed); return; }
+    // fine paintbrush used to turn the fly, slightly below the focal plane
+    ctx.save(); ctx.translate(SEXW.w * 0.86, SEXW.h * 0.9); ctx.rotate(-2.4 + sexCur.brush);
+    const R = vrng(sexCur.seed + 3); ctx.strokeStyle = 'rgba(70,46,26,0.9)';
+    for (let i = 0; i < 40; i++) { ctx.lineWidth = 0.8 + R.uniform(); ctx.beginPath(); ctx.moveTo((R.uniform() - 0.5) * 16, 0); ctx.quadraticCurveTo((R.uniform() - 0.5) * 22, 50, (R.uniform() - 0.5) * 8, 95 + R.uniform() * 20); ctx.stroke(); }
+    ctx.fillStyle = '#9a9ea3'; ctx.fillRect(-11, -70, 22, 72); ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(-7, -70, 4, 72);
+    ctx.restore();
+  }
+});
+function newSexFly() {
+  sexCur = { sex: rng.chance(0.5) ? 'f' : 'm', ang: rng.uniform() * Math.PI * 2, size: 0.9 + rng.uniform() * 0.2, spread: 0.2 + rng.uniform() * 0.4, seed: Math.floor(rng.uniform() * 1e9), dx: (rng.uniform() - 0.5) * 60, dy: (rng.uniform() - 0.5) * 40, brush: (rng.uniform() - 0.5) * 0.6 };
+  sexAns = false; $('#sex-fb').textContent = ''; $('#sex-fb').className = 'fb';
+  sexView.setSpecimen({ seed: sexCur.seed });
 }
+/* Reference card: female and male photographed side by side under the same scope, with callouts. */
+const REF = { w: 300, h: 285 };
+const sexRef = Scope.still($('#sex-ref'), {
+  aspect: 0.95, viewW: REF.w, viewH: REF.h, blur: 0, vignette: true,
+  render(ctx) {
+    stageBg(ctx, REF.w, REF.h, 11);
+    placeFly(ctx, REF.w * 0.27, REF.h * 0.36, 44, 0, 'f', 0.5, 5);
+    const out = {}; placeFly(ctx, REF.w * 0.74, REF.h * 0.38, 40, 0, 'm', 0.5, 9, out);
+    ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,248,230,0.9)'; ctx.fillStyle = '#fff8e8'; ctx.lineWidth = 0.9; ctx.textAlign = 'center';
+    const call = (x0, y0, x1, y1, t, al) => { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); ctx.beginPath(); ctx.arc(x0, y0, 1.6, 0, TAU); ctx.fill(); ctx.textAlign = al; ctx.fillText(t, x1 + (al === 'left' ? 2 : al === 'right' ? -2 : 0), y1 + 3.5); };
+    ctx.font = `600 10px ${SANS}`;
+    call(REF.w * 0.27, REF.h * 0.36 + 44 * 1.62, REF.w * 0.1, REF.h * 0.78, 'pointed, striped tip', 'left');
+    call(REF.w * 0.74, REF.h * 0.38 + 40 * 1.3, REF.w * 0.9, REF.h * 0.75, 'genital arch', 'right');
+    call(REF.w * 0.74 + 40 * 0.25, REF.h * 0.38 + 40 * 1.05, REF.w * 0.98, REF.h * 0.62, 'solid dark tip', 'right');
+    const cx = REF.w * 0.74 + 40 * out.comb[0], cy = REF.h * 0.38 + 40 * out.comb[1]; ctx.strokeStyle = 'rgba(255,248,230,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, TAU); ctx.stroke();
+    call(cx - 6, cy - 2, REF.w * 0.5, REF.h * 0.06, 'sex comb', 'center');
+    ctx.font = `700 14px ${SANS}`; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
+    ctx.fillText('Female', REF.w * 0.27, REF.h * 0.93); ctx.fillText('Male', REF.w * 0.74, REF.h * 0.93);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillRect(REF.w - 62, REF.h - 30, 44, 2.5); ctx.font = `600 9px ${SANS}`; ctx.fillText('1 mm', REF.w - 40, REF.h - 34);
+  }
+});
+function drawRef() { sexRef.redraw(); }
 function answerSex(g) {
   if (!sexCur || sexAns) return; sexAns = true; sexTot++;
   const ok = g === sexCur.sex; if (ok) sexRight++;
   $('#sex-score').textContent = `${sexRight} of ${sexTot}`;
   const fb = $('#sex-fb'); fb.className = 'fb ' + (ok ? 'ok' : 'bad');
-  fb.textContent = (ok ? 'Correct. ' : 'Not quite. ') + (sexCur.sex === 'f' ? 'This is a female: long, pointed abdomen with separate stripes to a light tip, and no sex combs.' : 'This is a male: smaller, rounded abdomen with a solid dark tip, and dark sex combs on the front legs.');
+  fb.textContent = (ok ? 'Correct. ' : 'Not quite. ') + (sexCur.sex === 'f' ? 'This is a female: long, pointed abdomen with separate stripes to a light tip, and no sex combs.' : 'This is a male: smaller, rounded abdomen with a solid dark tip and a dark genital arch, and dark sex combs on the front legs.');
 }
 $('#sex-f').addEventListener('click', () => answerSex('f'));
 $('#sex-m').addEventListener('click', () => answerSex('m'));
 $('#sex-next').addEventListener('click', newSexFly);
-sexRef.onresize = drawRef; sexCv.onresize = drawSex;
 
 Lab.quiz('#prelab', [
   { type: 'mc', q: 'Which sequence shows the fruit fly life cycle in order?', choices: ['Egg → pupa → larva → adult', 'Egg → larva (3 instars) → pupa → adult', 'Larva → egg → pupa → adult', 'Egg → nymph → adult'], answer: 1, explain: 'Drosophila undergo complete metamorphosis: egg, three larval instars, pupa, adult. At 25 °C this takes about 9–10 days.' },
