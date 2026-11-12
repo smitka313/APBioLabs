@@ -5,6 +5,82 @@
   const Lab = {};
   let LAB_ID = 'lab';
 
+  /* ---------------- Page context ----------------
+     Detected from the filename (lab07.html → lab07, teacher-lab07.html → teacher page, index.html → home),
+     with the <title> as a fallback for hosts that rename files. */
+  const FILE = (function () { try { return decodeURIComponent((location.pathname || '').split('/').pop() || '').toLowerCase(); } catch (e) { return ''; } })();
+  const PAGE = (function () {
+    let m; const t = document.title || '';
+    if ((m = FILE.match(/^(teacher-lab\d\d)\.html?$/))) return { kind: 'teacher', id: m[1] };
+    if ((m = FILE.match(/^(lab\d\d)\.html?$/))) return { kind: 'lab', id: m[1] };
+    if (FILE === '' || /^index\.html?$/.test(FILE)) return { kind: 'home', id: 'home' };
+    if ((m = t.match(/^Lab (\d+) Teacher Notes/i))) return { kind: 'teacher', id: 'teacher-lab' + m[1].padStart(2, '0') };
+    if ((m = t.match(/^Lab (\d+) ·/))) return { kind: 'lab', id: 'lab' + m[1].padStart(2, '0') };
+    if (/^AP Bio Lab Bench/.test(t)) return { kind: 'home', id: 'home' };
+    return { kind: 'other', id: FILE.replace(/\.html?$/, '') || 'page' };
+  })();
+  if (PAGE.kind === 'lab' || PAGE.kind === 'teacher') LAB_ID = PAGE.id;
+  const IS_LAB = PAGE.kind === 'lab';
+  Lab.page = PAGE;
+
+  /* Site-wide storage (not namespaced to one lab): identity, dataset numbers, progress summaries. */
+  const gstore = {
+    get(key, fallback = null) { try { const v = localStorage.getItem('aplab:' + key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
+    set(key, val) { try { localStorage.setItem('aplab:' + key, JSON.stringify(val)); return true; } catch (e) { return false; } },
+  };
+  Lab.globalStore = gstore;
+
+  /* ---------------- Student identity + per-student seeded randomness ----------------
+     One identity for the whole site: localStorage 'aplab:student' = {name, period}.
+     On a student lab page, Math.random and unseeded Lab.rng() are seeded from
+     hash(name | period | lab id | dataset number), so each student gets unique, repeatable data. */
+  function hash32(str) { // cyrb53, folded to 32 bits
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h1 ^ h2) >>> 0;
+  }
+  function mulberry32(a) {
+    return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const CODE_ABC = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // no 0/O, 1/I/L
+  function datasetCode(n) { let s = ''; for (let i = 0; i < 6; i++) { s += CODE_ABC[n % 31]; n = Math.floor(n / 31); } return s.slice(0, 3) + '-' + s.slice(3); }
+  const nativeRandom = Math.random.bind(Math);
+  const normName = s => String(s == null ? '' : s).normalize('NFKC').trim().replace(/\s+/g, ' ');
+  const PERIODS = ['1', '2', '3', '4', '5', '6', '7', '8', 'Other'];
+  let memIdentity = null; // used only when localStorage is blocked
+  function storedIdentity() {
+    if (memIdentity) return memIdentity;
+    const v = gstore.get('student');
+    return v && normName(v.name) ? { name: normName(v.name), period: String(v.period || '') } : null;
+  }
+  function legacyName() { // the old per-lab "Your name" field
+    try { const v = localStorage.getItem(`aplab:${PAGE.id}:field:student-name`); return v ? normName(JSON.parse(v)) : ''; } catch (e) { return ''; }
+  }
+  /* Identity used for seeding and reports: the site-wide one, else the old per-lab name. */
+  function effectiveIdentity() { const s = storedIdentity(); if (s) return s; const l = IS_LAB ? legacyName() : ''; return l ? { name: l, period: '', legacy: true } : null; }
+  const studentKey = idn => normName(idn.name).toLowerCase() + '|' + (idn.period || '');
+  const dsKey = idn => `dataset:${PAGE.id}:${studentKey(idn)}`;
+  const datasetNo = idn => (idn && +gstore.get(dsKey(idn))) || 1;
+  const SEED = (function () {
+    const idn = effectiveIdentity();
+    let basis;
+    if (idn) basis = studentKey(idn);
+    else {
+      let a = gstore.get('anon');
+      if (!a) { a = Math.floor(nativeRandom() * 4294967296).toString(36); gstore.set('anon', a); }
+      basis = 'anon:' + a;
+    }
+    const ds = datasetNo(idn);
+    const str = [basis, PAGE.id, ds].join('|');
+    return { seed: hash32(str), str, basis, datasetNumber: ds, datasetId: datasetCode(hash32(str + '#dataset-id')), student: !!idn };
+  })();
+  let rngCount = 0;
+  if (IS_LAB) Math.random = mulberry32(SEED.seed);
+  /* Seed for an unseeded Lab.rng(): the n-th call on a page always gets the same seed for the same student. */
+  const autoSeed = () => IS_LAB ? hash32(SEED.str + ':rng:' + (rngCount++)) : Math.floor(nativeRandom() * 2 ** 31);
+
   /* ---------------- DOM helpers ---------------- */
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -38,7 +114,7 @@
 
   /* ---------------- Random numbers (seedable) ---------------- */
   Lab.rng = function (seed) {
-    let s = (seed == null ? Math.floor(Math.random() * 2 ** 31) : seed) >>> 0;
+    let s = (seed == null ? autoSeed() : seed) >>> 0;
     function uniform() { // mulberry32
       s = (s + 0x6D2B79F5) >>> 0; let t = s;
       t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -114,10 +190,16 @@
   }
   const tickFmt = (v, step) => { const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Lab.fmt(v, Math.min(d, 4)); };
 
+  let clipCount = 0;
+  /* Callbacks run (debounced) whenever student work changes: progress marks use this. */
+  const workListeners = []; let workTimer = null;
+  function workChanged() { clearTimeout(workTimer); workTimer = setTimeout(() => workListeners.forEach(f => { try { f(); } catch (e) { console.warn(e); } }), 120); }
+  const REG = { charts: [], tables: [], quizzes: [], prompts: [] }; // used by reports, worksheets and progress
   Lab.chart = function (el, opts) {
     if (typeof el === 'string') el = $(el);
     el.classList.add('chart');
     let cur = Object.assign({}, opts);
+    REG.charts.push({ el, get opts() { return cur; } });
     function render() {
       const o = cur, W = 640, H = o.height || 360, m = { t: 16, r: 18, b: 54, l: 64 };
       const iw = W - m.l - m.r, ih = H - m.t - m.b;
@@ -155,7 +237,7 @@
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/><line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/>`;
         (o.hLines || []).forEach(l => { svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
         (o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>` : ''}`; });
-        const clipId = 'c' + Math.random().toString(36).slice(2, 8);
+        const clipId = 'lc' + (++clipCount); // not Math.random: keeps the seeded stream for simulations
         svg += `<defs><clipPath id="${clipId}"><rect x="${m.l}" y="${m.t - 6}" width="${iw + 6}" height="${ih + 12}"/></clipPath></defs><g clip-path="url(#${clipId})">`;
         series.forEach(s => {
           const pts = s.points.filter(p => isFinite(p.x) && isFinite(p.y)).slice().sort((a, b) => a.x - b.x);
@@ -187,6 +269,7 @@
   Lab.table = function (el, opts) {
     if (typeof el === 'string') el = $(el);
     let rows = (opts.save && store.get(opts.save)) || (opts.rows || []).map(r => Object.assign({}, r));
+    REG.tables.push({ el, opts, getRows: () => rows });
     function render() {
       const cols = opts.columns;
       const head = cols.map(c => `<th class="${c.num ? 'num' : ''}">${esc(c.label)}${c.unit ? ` <span class="unit">(${esc(c.unit)})</span>` : ''}</th>`).join('');
@@ -203,7 +286,7 @@
         changed(false);
       }));
     }
-    function changed(rerender = true) { if (opts.save) store.set(opts.save, rows); if (rerender) render(); else if (opts.footer) render(); opts.onChange && opts.onChange(rows); }
+    function changed(rerender = true) { if (opts.save) store.set(opts.save, rows); if (rerender) render(); else if (opts.footer) render(); opts.onChange && opts.onChange(rows); workChanged(); }
     render();
     if (rows.length && opts.onChange) setTimeout(() => opts.onChange(rows), 0);
     return {
@@ -225,6 +308,7 @@
     const saved = store.get('quiz:' + id, {});
     el.classList.add('quiz');
     el.innerHTML = '';
+    REG.quizzes.push({ el, id, questions, state: () => store.get('quiz:' + id, {}) });
     const scoreEl = h('div', { class: 'score', 'aria-live': 'polite' });
     function updateScore() {
       const st = store.get('quiz:' + id, {});
@@ -271,7 +355,7 @@
         fb.hidden = false; fb.className = 'feedback ' + (ok ? 'ok' : 'bad');
         fb.innerHTML = (ok ? '<strong>Correct.</strong> ' : '<strong>Not quite.</strong> ') + (ok || opts.revealOnWrong !== false ? (qq.explain || '') : (qq.hint || 'Try again.'));
         const st = store.get('quiz:' + id, {}); st[qi] = { value: a, correct: ok }; store.set('quiz:' + id, st);
-        updateScore();
+        updateScore(); workChanged();
       }
       box.append(h('div', { class: 'row' }, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => grade(true) }, 'Check answer')), fb);
       el.append(box);
@@ -282,6 +366,7 @@
   };
 
   /* ---------------- Autosave for [data-save] fields ---------------- */
+  const saveFns = []; // flushed before a reload so nothing typed is lost
   function bindAutosave(root = document) {
     $$('[data-save]', root).forEach(f => {
       if (f._bound) return; f._bound = true;
@@ -290,7 +375,8 @@
       if (v != null) { if (f.type === 'checkbox') f.checked = v; else f.value = v; }
       let t; const status = f.closest('.prompt') && $('.saved', f.closest('.prompt'));
       const save = () => { store.set(key, f.type === 'checkbox' ? f.checked : f.value); if (status) status.textContent = 'Saved on this device'; };
-      f.addEventListener('input', () => { clearTimeout(t); t = setTimeout(save, 400); });
+      saveFns.push(() => { clearTimeout(t); save(); });
+      f.addEventListener('input', () => { clearTimeout(t); t = setTimeout(save, 400); workChanged(); });
       f.addEventListener('change', save);
     });
   }
@@ -304,15 +390,118 @@
       h('label', { for: id, html: o.label }),
       h('textarea', { id, 'data-save': o.key, 'data-label': o.label.replace(/<[^>]+>/g, ''), rows: o.rows || 4, placeholder: o.placeholder || '' }),
       h('div', { class: 'saved' }));
+    REG.prompts.push({ el: wrap, key: o.key, label: o.label, rows: o.rows || 4 });
     el.append(wrap); bindAutosave(wrap); return wrap;
   };
+
+  /* ---------------- Identity UI ----------------
+     Lab.identity.get() → {name, period} | null   (site-wide; the old per-lab name is a fallback)
+     Lab.identity.set({name, period})               save it (no reload)
+     Lab.identity.mount(el)                         sign-in panel, or "Signed in as … · change" line
+     Lab.identity.newDataset()                      next dataset number for this student + lab, then reload
+     Lab.identity.seed                              {seed, datasetId, datasetNumber, student} for this page */
+  function flushSaves() { saveFns.forEach(f => { try { f(); } catch (e) { /* ignore */ } }); }
+  function setIdentity(idn) {
+    const clean = { name: normName(idn.name), period: String(idn.period || '') };
+    const ok = gstore.set('student', clean);
+    memIdentity = ok ? null : clean;
+    return ok;
+  }
+  function reloadForSeed() { flushSaves(); location.reload(); }
+  function focusIn(root, sel) { const el = root.querySelector(sel); if (el) el.focus(); }
+  const idHosts = [];
+  const periodText = p => p ? (p === 'Other' ? 'Other period' : 'Period ' + p) : '';
+  function renderIdentity(box, mode) {
+    const idn = storedIdentity();
+    box.innerHTML = '';
+    if (!idn || mode === 'form') {
+      const pre = idn || effectiveIdentity() || { name: '', period: '' };
+      const uid = 'ident' + idHosts.indexOf(box);
+      const nameIn = h('input', { id: uid + '-name', type: 'text', autocomplete: 'name', value: pre.name || '', spellcheck: 'false', 'aria-describedby': uid + '-err' });
+      const perSel = h('select', { id: uid + '-period', 'aria-describedby': uid + '-err' }, h('option', { value: '' }, 'Choose…'),
+        PERIODS.map(p => h('option', { value: p, selected: String(pre.period) === p }, p === 'Other' ? 'Other' : 'Period ' + p)));
+      const err = h('p', { class: 'id-err', id: uid + '-err', 'aria-live': 'polite' });
+      const form = h('form', { class: 'id-panel', 'aria-labelledby': uid + '-title', novalidate: true },
+        h('p', { class: 'id-title', id: uid + '-title' }, idn ? 'Change who is working' : (IS_LAB ? 'Who is working on this lab?' : 'Who is working?')),
+        h('p', { class: 'small muted' }, 'Your name goes on your lab reports, and your simulated data will be unique to you. You only need to do this once on this computer.'),
+        h('div', { class: 'id-fields' },
+          h('div', { class: 'field id-f-name' }, h('label', { for: uid + '-name' }, 'Enter your name as it appears in Schoology'), nameIn),
+          h('div', { class: 'field id-f-period' }, h('label', { for: uid + '-period' }, 'Class period'), perSel),
+          h('div', { class: 'id-actions' }, h('button', { class: 'btn btn--primary', type: 'submit' }, 'Save'),
+            idn ? h('button', { class: 'btn btn--ghost', type: 'button', onclick: () => { renderIdentity(box); focusIn(box, '.id-change'); } }, 'Cancel') : null)),
+        err);
+      form.addEventListener('submit', ev => {
+        ev.preventDefault();
+        const name = normName(nameIn.value), period = perSel.value;
+        if (name.length < 2) { err.textContent = 'Type your name as it appears in Schoology.'; nameIn.focus(); return; }
+        if (!period) { err.textContent = 'Choose your class period.'; perSel.focus(); return; }
+        const ok = setIdentity({ name, period });
+        if (ok && IS_LAB && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
+          err.textContent = 'Saved. Setting up your own data…';
+          reloadForSeed(); return;
+        }
+        idHosts.forEach(b => renderIdentity(b));
+        if (!ok) { const l = $('.id-line', box); if (l) l.append(h('span', { class: 'id-note' }, ' This browser is not saving data here, so your name is used on this page only.')); }
+        focusIn(box, '.id-change');
+      });
+      box.append(form);
+      return;
+    }
+    const line = h('p', { class: 'id-line' },
+      h('span', null, 'Signed in as ', h('strong', null, idn.name), idn.period ? ' · ' + periodText(idn.period) : ''));
+    if (IS_LAB) line.append(h('span', null, ' · Dataset ID ', h('code', { class: 'ds-id', title: 'Dataset number ' + SEED.datasetNumber }, SEED.datasetId)));
+    line.append(' · ', h('button', { class: 'linkbtn id-change', type: 'button', 'aria-label': 'Change name or class period', onclick: () => { renderIdentity(box, 'form'); focusIn(box, 'input'); } }, 'change'));
+    let confirmRow = null;
+    if (IS_LAB) {
+      const nb = h('button', { class: 'linkbtn id-newds', type: 'button', 'aria-expanded': 'false', onclick: () => { confirmRow.hidden = !confirmRow.hidden; nb.setAttribute('aria-expanded', String(!confirmRow.hidden)); if (!confirmRow.hidden) focusIn(confirmRow, 'button'); } }, 'New dataset');
+      line.append(' · ', nb);
+      confirmRow = h('div', { class: 'id-confirm', hidden: true, role: 'group', 'aria-label': 'Confirm new dataset' },
+        h('span', null, 'Start a new dataset? Simulations will give different numbers from now on. Data already in your tables stays.'),
+        h('button', { class: 'btn btn--sm btn--primary', type: 'button', onclick: () => Lab.identity.newDataset() }, 'Use a new dataset'),
+        h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; nb.setAttribute('aria-expanded', 'false'); nb.focus(); } }, 'Cancel'));
+    }
+    box.append(line); if (confirmRow) box.append(confirmRow);
+  }
+  Lab.identity = {
+    get: () => { const e = effectiveIdentity(); return e ? { name: e.name, period: e.period } : null; },
+    set(idn) { const ok = setIdentity(idn); idHosts.forEach(b => renderIdentity(b)); return ok; },
+    mount(el) {
+      if (typeof el === 'string') el = $(el);
+      if (!el || PAGE.kind === 'teacher') return null;
+      const box = h('div', { class: 'id-box' }); idHosts.push(box); el.append(box); renderIdentity(box); return box;
+    },
+    newDataset() {
+      const idn = effectiveIdentity(); if (!idn || !IS_LAB) return false;
+      if (!gstore.set(dsKey(idn), SEED.datasetNumber + 1)) return false;
+      reloadForSeed(); return true;
+    },
+    seed: { seed: SEED.seed, datasetId: SEED.datasetId, datasetNumber: SEED.datasetNumber, student: SEED.student },
+    datasetId: SEED.datasetId,
+  };
+  /* On a lab page, the identity panel replaces the old per-lab "Your name" field (kept in the DOM, hidden). */
+  function mountLabIdentity() {
+    if (!IS_LAB || $('.id-box')) return;
+    const old = $('#student-name');
+    let host;
+    if (old) { const f = old.closest('.field') || old; f.hidden = true; host = f.parentElement; }
+    else { const main = $('main'); if (!main) return; host = h('div', { class: 'wrap gutter' }); main.prepend(host); }
+    host.classList.add('id-host');
+    Lab.identity.mount(host);
+  }
+  function reportIdentity() {
+    const e = effectiveIdentity();
+    return { name: e ? e.name : '', period: e ? e.period : '', datasetId: SEED.datasetId };
+  }
 
   /* ---------------- Responses toolbar: copy all work ---------------- */
   function collectText() {
     const title = document.title;
     const lines = [title, '='.repeat(title.length), ''];
-    const nameField = $('#student-name');
-    if (nameField && nameField.value) lines.push('Name: ' + nameField.value, '');
+    const who = reportIdentity();
+    if (who.name) lines.push('Name: ' + who.name);
+    if (who.period) lines.push('Class period: ' + who.period);
+    if (IS_LAB) lines.push('Dataset ID: ' + who.datasetId);
+    lines.push('');
     $$('.step').forEach(sec => {
       const fields = $$('[data-save]', sec).filter(f => f.id !== 'student-name' && (f.tagName === 'TEXTAREA' || f.dataset.label));
       const tables = $$('table.data', sec);
@@ -369,6 +558,7 @@
   /* ---------------- Init ---------------- */
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
+    if (IS_LAB) mountLabIdentity();
     buildNav();
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
