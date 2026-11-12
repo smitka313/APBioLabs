@@ -319,40 +319,343 @@ Lab.init({ id: 'lab05' });
     for (let m = 0; m < counts.length; m++) if (counts[m] >= half) { if (m === 0) return 0; const a = counts[m - 1], b = counts[m]; return m - 1 + (half - a) / (b - a); }
     return null;
   }
-  // Draws cups with disks. cups: [{label, sub, disks, tint, tintA}], opts: {lamp, lampCol, dark, cols}
-  function drawCups(cv, cups, o) {
-    const { ctx, w, h } = cv; ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
-    const lampH = o.lamp ? Math.min(54, h * 0.2) : 0;
-    const cols = o.cols || cups.length, rows = Math.ceil(cups.length / cols);
-    const cellW = w / cols, cellH = (h - lampH) / rows;
-    if (o.lamp) {
-      const lw = Math.min(w * 0.5, 220);
-      ctx.fillStyle = tok('--muted'); rr(ctx, w / 2 - lw / 2, 6, lw, 14, 6); ctx.fill();
-      if (!o.dark) {
-        ctx.globalAlpha = 0.18; ctx.fillStyle = tok(o.lampCol || '--s4');
-        ctx.beginPath(); ctx.moveTo(w / 2 - lw / 2, 20); ctx.lineTo(w / 2 + lw / 2, 20); ctx.lineTo(w - 4, h - 20); ctx.lineTo(4, h - 20); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
-        ctx.fillStyle = tok(o.lampCol || '--s4'); rr(ctx, w / 2 - lw / 2 + 8, 18, lw - 16, 6, 3); ctx.fill();
+  /* =====================================================================
+     BENCH RENDERING. Leaf disks, syringes, cups, liquids, the lamp, the timer and the
+     bench itself are physical objects, so they use fixed colours that look the same in light and
+     dark themes (labels drawn on the bench are part of the scene too). Light comes from the upper
+     left. Static layers (wall, bench, tile, textures) are rendered once per canvas size into
+     offscreen canvases; animation frames only composite them and redraw what changes.
+     ===================================================================== */
+  const TAU = Math.PI * 2, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const PHY = { text: '#efeae0', textDim: 'rgba(239,234,224,0.7)', ink: '#2c2925', inkDim: 'rgba(44,41,37,0.68)', marker: '#1d2747' };
+  const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(+a, 0, 1).toFixed(3)})`;
+  function off(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+  const layerCache = new Map();
+  // Offscreen layer cached per key and canvas size; build(ctx, w, h) draws in CSS pixels.
+  function layer(key, w, h, build) {
+    const dpr = window.devicePixelRatio || 1, k = key + '|' + w + 'x' + h + '@' + dpr;
+    let c = layerCache.get(k);
+    if (!c) {
+      c = off(w * dpr, h * dpr); const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); build(x, w, h);
+      layerCache.set(k, c); if (layerCache.size > 48) layerCache.delete(layerCache.keys().next().value);
+    }
+    return c;
+  }
+  function tile(size, seed, fn) { const c = off(size, size), r = Lab.rng(seed); fn(c.getContext('2d'), r, size); return c; }
+  const tiles = {};
+  // Black epoxy-resin bench top with fine grey speckle.
+  function epoxyTile() {
+    return tiles.epoxy || (tiles.epoxy = tile(96, 41, (x, r, s) => {
+      x.fillStyle = '#1c1e21'; x.fillRect(0, 0, s, s);
+      for (let i = 0; i < 900; i++) { const v = 18 + r.uniform() * 42; x.fillStyle = `rgba(${v | 0},${(v + 2) | 0},${(v + 5) | 0},${(0.25 + r.uniform() * 0.4).toFixed(2)})`; x.fillRect(r.uniform() * s, r.uniform() * s, 0.6 + r.uniform(), 0.6 + r.uniform()); }
+      for (let i = 0; i < 36; i++) { x.fillStyle = `rgba(160,165,170,${(0.08 + r.uniform() * 0.14).toFixed(2)})`; x.beginPath(); x.arc(r.uniform() * s, r.uniform() * s, 0.3 + r.uniform() * 0.6, 0, TAU); x.fill(); }
+    }));
+  }
+  function pattern(ctx, t) { return ctx.createPattern(t, 'repeat'); }
+  function shadow(ctx, cx, cy, rx, ry, a) {
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(0.55, `rgba(0,0,0,${a * 0.45})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill(); ctx.restore();
+  }
+  // Smooth closed/open curve through points.
+  function smoothPath(p, pts, closed) {
+    const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    if (closed) { const m0 = mid(pts[n - 1], pts[0]); p.moveTo(m0[0], m0[1]); for (let i = 0; i < n; i++) { const m = mid(pts[i], pts[(i + 1) % n]); p.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } p.closePath(); return p; }
+    p.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < n - 1; i++) { const m = mid(pts[i], pts[i + 1]); p.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } p.lineTo(pts[n - 1][0], pts[n - 1][1]); return p;
+  }
+  // Classroom wall (painted cinder block) above a black epoxy bench, seen from the front.
+  function sideScene(w, h, benchY) {
+    return layer('side' + Math.round(benchY), w, h, x => {
+      const g = x.createLinearGradient(0, 0, 0, benchY); g.addColorStop(0, '#d6d1c4'); g.addColorStop(1, '#e9e5da');
+      x.fillStyle = g; x.fillRect(0, 0, w, benchY);
+      const bh = 30, R = Lab.rng(3);
+      x.strokeStyle = 'rgba(110,100,85,0.13)'; x.lineWidth = 1;
+      for (let y = benchY - bh, k = 0; y > -bh; y -= bh, k++) {
+        x.beginPath(); x.moveTo(0, y + 0.5); x.lineTo(w, y + 0.5); x.stroke();
+        for (let xx = (k % 2) * bh - bh; xx < w; xx += bh * 2) { x.beginPath(); x.moveTo(xx + 0.5, y); x.lineTo(xx + 0.5, Math.min(benchY, y + bh)); x.stroke(); }
+      }
+      for (let i = 0; i < 500; i++) { x.fillStyle = `rgba(${R.chance(0.5) ? '255,255,255' : '90,80,65'},${(0.05 + R.uniform() * 0.07).toFixed(2)})`; x.fillRect(R.uniform() * w, R.uniform() * benchY, 1, 1); }
+      const l = x.createRadialGradient(w * 0.15, -h * 0.25, 0, w * 0.15, -h * 0.25, Math.max(w, h) * 1.05);
+      l.addColorStop(0, 'rgba(255,252,242,0.55)'); l.addColorStop(0.6, 'rgba(255,252,242,0.08)'); l.addColorStop(1, 'rgba(60,50,40,0.12)'); x.fillStyle = l; x.fillRect(0, 0, w, benchY);
+      x.fillStyle = pattern(x, epoxyTile()); x.fillRect(0, benchY, w, h - benchY);
+      const b = x.createLinearGradient(0, benchY, 0, h); b.addColorStop(0, 'rgba(255,255,255,0.13)'); b.addColorStop(0.3, 'rgba(255,255,255,0.03)'); b.addColorStop(1, 'rgba(0,0,0,0.25)');
+      x.fillStyle = b; x.fillRect(0, benchY, w, h - benchY);
+      const s = x.createLinearGradient(0, benchY - 10, 0, benchY + 1); s.addColorStop(0, 'rgba(0,0,0,0)'); s.addColorStop(1, 'rgba(0,0,0,0.22)'); x.fillStyle = s; x.fillRect(0, benchY - 10, w, 11);
+      const rf = x.createLinearGradient(w * 0.05, 0, w * 0.4, 0); rf.addColorStop(0, 'rgba(255,255,255,0)'); rf.addColorStop(0.5, 'rgba(255,255,255,0.045)'); rf.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = rf; x.fillRect(0, benchY + 1, w, h - benchY);
+    });
+  }
+  // Bench seen from directly above (agar station).
+  function topBench(x, w, h) {
+    x.fillStyle = pattern(x, epoxyTile()); x.fillRect(0, 0, w, h);
+    const l = x.createRadialGradient(w * 0.25, h * 0.1, 0, w * 0.3, h * 0.2, Math.max(w, h) * 0.95);
+    l.addColorStop(0, 'rgba(255,250,240,0.12)'); l.addColorStop(1, 'rgba(0,0,0,0.3)'); x.fillStyle = l; x.fillRect(0, 0, w, h);
+  }
+  // Strip of masking tape with a marker label.
+  function tape(ctx, cx, cy, tw, th, text, rot) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot || 0);
+    ctx.beginPath(); ctx.moveTo(-tw / 2, -th / 2);
+    for (let i = 0; i <= 4; i++) ctx.lineTo(tw / 2 + (i % 2 ? 1.2 : -0.6), -th / 2 + th * i / 4);
+    for (let i = 4; i >= 0; i--) ctx.lineTo(-tw / 2 + (i % 2 ? -1.2 : 0.6), -th / 2 + th * i / 4);
+    ctx.closePath(); ctx.fillStyle = 'rgba(238,228,198,0.95)'; ctx.fill(); ctx.strokeStyle = 'rgba(150,135,100,0.35)'; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.fillStyle = PHY.marker; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `700 ${Math.round(th * 0.68)}px ${FONT}`; ctx.fillText(text, 0, th * 0.04);
+    ctx.textBaseline = 'alphabetic'; ctx.restore();
+  }
+
+  /* Glass beaker or clear plastic cup seen from the front. o: {kind:'beaker'|'cup', fill, liq:{c,a,cloud}, inner(ctx, g)}.
+     Order: shadow → back wall → liquid → contents → front liquid veil → meniscus → front glass. */
+  function vessel(ctx, cx, bot, bw, bh, o) {
+    const cup = o.kind === 'cup', ry = bw * (cup ? 0.1 : 0.085), top = bot - bh, tb = cup ? 0.74 : 1;
+    const xAt = (y, s) => cx + s * (bw / 2) * (tb + (1 - tb) * (bot - y) / bh);
+    const body = () => { ctx.beginPath(); ctx.moveTo(xAt(top, -1), top); ctx.lineTo(xAt(bot - ry, -1), bot - ry); ctx.ellipse(cx, bot - ry, xAt(bot, 1) - cx, ry, 0, Math.PI, 0, true); ctx.lineTo(xAt(top, 1), top); ctx.closePath(); };
+    shadow(ctx, cx + bw * 0.06, bot - ry * 0.2, bw * 0.62, ry * 1.5, 0.5);
+    // back inner wall: a hint of the wall darkened through two layers of glass
+    body(); const bg = ctx.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
+    bg.addColorStop(0, 'rgba(60,70,75,0.22)'); bg.addColorStop(0.12, 'rgba(255,255,255,0.10)'); bg.addColorStop(0.7, 'rgba(255,255,255,0.05)'); bg.addColorStop(1, 'rgba(60,70,75,0.26)');
+    ctx.fillStyle = bg; ctx.fill();
+    const ly = bot - bh * (o.fill || 0.7), L = o.liq, lx0 = xAt(ly, -1) + 1.2, lx1 = xAt(ly, 1) - 1.2;
+    const liqPath = () => { ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(xAt(bot - ry, -1) + 1.2, bot - ry); ctx.ellipse(cx, bot - ry, xAt(bot, 1) - cx - 1.2, ry - 1, 0, Math.PI, 0, true); ctx.lineTo(lx1, ly); ctx.closePath(); };
+    if (L) {
+      liqPath(); const lg = ctx.createLinearGradient(lx0, 0, lx1, 0), c = L.c, a = L.a;
+      lg.addColorStop(0, rgba(c, a * 2.1)); lg.addColorStop(0.16, rgba(c, a * 1.15)); lg.addColorStop(0.5, rgba(c, a * 0.8)); lg.addColorStop(0.84, rgba(c, a * 1.15)); lg.addColorStop(1, rgba(c, a * 2.3));
+      ctx.fillStyle = lg; ctx.fill();
+      const dg = ctx.createLinearGradient(0, ly, 0, bot); dg.addColorStop(0, rgba(c, 0)); dg.addColorStop(1, rgba(c.map(v => v * 0.7), a * 0.9)); ctx.fillStyle = dg; ctx.fill();
+      if (L.cloud) { ctx.fillStyle = `rgba(250,246,232,${L.cloud})`; ctx.fill(); }
+    }
+    const g = { cx, top, bot, ly, ry, bw, bh, xAt, lx0, lx1 };
+    if (o.inner) o.inner(ctx, g);
+    if (L) {
+      liqPath(); ctx.fillStyle = rgba(L.c, L.a * 0.35); ctx.fill();
+      // surface seen slightly from above, with the meniscus climbing the walls
+      const sr = ry * 0.85, sw = (lx1 - lx0) / 2;
+      ctx.beginPath(); ctx.ellipse(cx, ly, sw, sr, 0, 0, TAU); ctx.fillStyle = rgba(L.c.map(v => Math.min(255, v + 30)), Math.min(0.5, L.a * 1.6 + 0.1)); ctx.fill();
+      const sg = ctx.createLinearGradient(cx - sw, 0, cx + sw, 0); sg.addColorStop(0, 'rgba(255,255,255,0.35)'); sg.addColorStop(0.45, 'rgba(255,255,255,0.08)'); sg.addColorStop(1, 'rgba(255,255,255,0.2)');
+      ctx.fillStyle = sg; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, ly, sw, sr, 0, 0, Math.PI); ctx.strokeStyle = 'rgba(40,48,52,0.5)'; ctx.lineWidth = 1.1; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, ly, sw, sr, 0, Math.PI, TAU); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.strokeStyle = 'rgba(40,48,52,0.35)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(lx0, ly - 2.4); ctx.quadraticCurveTo(lx0 + 1, ly, lx0 + 4, ly + sr * 0.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx1, ly - 2.4); ctx.quadraticCurveTo(lx1 - 1, ly, lx1 - 4, ly + sr * 0.4); ctx.stroke();
+    }
+    // front glass: refraction darkening at the edges, window highlight, outline
+    body(); const fg = ctx.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
+    fg.addColorStop(0, 'rgba(30,38,42,0.42)'); fg.addColorStop(0.06, 'rgba(30,38,42,0.06)'); fg.addColorStop(0.14, 'rgba(255,255,255,0.0)'); fg.addColorStop(0.17, 'rgba(255,255,255,0.55)'); fg.addColorStop(0.22, 'rgba(255,255,255,0.12)'); fg.addColorStop(0.27, 'rgba(255,255,255,0)');
+    fg.addColorStop(0.86, 'rgba(255,255,255,0)'); fg.addColorStop(0.9, 'rgba(255,255,255,0.28)'); fg.addColorStop(0.93, 'rgba(30,38,42,0.05)'); fg.addColorStop(1, 'rgba(30,38,42,0.48)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.strokeStyle = cup ? 'rgba(90,100,105,0.45)' : 'rgba(70,82,88,0.6)'; ctx.lineWidth = cup ? 0.8 : 1; ctx.stroke();
+    if (cup) { // moulded flutes on a plastic cup
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.8;
+      for (let k = 1; k < 10; k++) { const s = -1 + 2 * k / 10; ctx.beginPath(); ctx.moveTo(cx + s * (xAt(top + 6, 1) - cx), top + 6); ctx.lineTo(cx + s * (xAt(bot - ry * 1.6, 1) - cx), bot - ry * 1.6); ctx.stroke(); }
+    } else { // printed white enamel graduations (250 mL beaker)
+      const scale = (bh - ry) / 260, gx = cx + bw * 0.12;
+      ctx.lineWidth = 1;
+      for (let mL = 25; mL <= 250; mL += 25) {
+        const y = bot - ry - mL * scale, major = mL % 50 === 0, len = major ? bw * 0.16 : bw * 0.09;
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.moveTo(gx + 0.5, y + 0.8); ctx.lineTo(gx + len + 0.5, y + 0.8); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx + len, y); ctx.stroke();
+        if (major && bw > 62 && mL < 250) { ctx.font = `600 ${Math.max(7, Math.round(bw * 0.085))}px ${FONT}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillText(mL, gx + len + 2.5, y + 3.6); ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillText(mL, gx + len + 2, y + 3); }
       }
     }
-    if (o.dark) { ctx.globalAlpha = 0.35; ctx.fillStyle = tok('--ink'); ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
-    cups.forEach((c, i) => {
-      const col = i % cols, row = Math.floor(i / cols), x0 = col * cellW, y0 = lampH + row * cellH;
-      const lab = cellH > 90 ? 30 : 16, cupW = Math.min(cellW * 0.8, 170), top = y0 + 6, bot = y0 + cellH - lab, cx = x0 + cellW / 2;
-      const tw = cupW / 2, bw = cupW * 0.38, ly = top + (bot - top) * 0.12;
-      const xAt = (y, s) => cx + s * (tw + (bw - tw) * (y - top) / (bot - top));
-      ctx.beginPath(); ctx.moveTo(xAt(ly, -1), ly); ctx.lineTo(xAt(bot, -1), bot); ctx.lineTo(xAt(bot, 1), bot); ctx.lineTo(xAt(ly, 1), ly); ctx.closePath();
-      ctx.globalAlpha = c.tintA || 0.16; ctx.fillStyle = tok(c.tint || '--s3'); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.beginPath(); ctx.moveTo(cx - tw, top); ctx.lineTo(cx - bw, bot); ctx.lineTo(cx + bw, bot); ctx.lineTo(cx + tw, top); ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.4; ctx.stroke();
-      const dr = Math.max(3, Math.min(cupW * 0.07, 11));
-      c.disks.forEach(d => {
-        const yy = (bot - dr * 0.8) + (ly + dr * 0.6 - (bot - dr * 0.8)) * d.y;
-        const half = xAt(yy, 1) - cx - dr * 1.2, xx = cx + (d.x * 2 - 1) * Math.max(0, half);
-        ctx.fillStyle = tok('--s6'); ctx.beginPath(); ctx.ellipse(xx, yy, dr, dr * (0.32 + 0.1 * Math.abs(d.tilt)), d.tilt * 0.4, 0, 7); ctx.fill();
-        if (d.O > 0.3 && !d.up && dr > 4) { ctx.fillStyle = tok('--surface'); ctx.beginPath(); ctx.arc(xx + dr * 0.3, yy - dr * 0.45, Math.min(2.5, dr * 0.25) * Math.min(1, d.O), 0, 7); ctx.fill(); }
+    // base: thick glass foot
+    ctx.beginPath(); ctx.ellipse(cx, bot - ry, xAt(bot, 1) - cx - 1, ry * 0.85, 0, 0, Math.PI); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1.4; ctx.stroke();
+    // rim (rolled lip on a cup; beaded lip and pouring spout on a beaker)
+    const rw = xAt(top, 1) - cx;
+    ctx.beginPath(); ctx.ellipse(cx, top, rw, ry, 0, 0, TAU); ctx.strokeStyle = 'rgba(70,82,88,0.55)'; ctx.lineWidth = cup ? 2.4 : 1.8; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, top, rw, ry, 0, Math.PI * 0.95, Math.PI * 1.75); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, top, rw, ry, 0, Math.PI * 0.05, Math.PI * 0.6); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 0.9; ctx.stroke();
+    if (!cup) { ctx.beginPath(); ctx.moveTo(cx - rw - 0.5, top + 3); ctx.quadraticCurveTo(cx - rw - 4, top - 1, cx - rw - 5, top - 3); ctx.strokeStyle = 'rgba(70,82,88,0.6)'; ctx.lineWidth = 1.2; ctx.stroke(); }
+    return g;
+  }
+
+  /* Seven-segment LCD digits (balance). Unlit segments show faintly, as on a real reflective LCD. */
+  const SEG = { 0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g', ' ': '' };
+  function sevenSeg(ctx, str, x, y, hh, on, ghost) {
+    const dw = hh * 0.52, gap = hh * 0.2, t = hh * 0.13, sk = 0.1;
+    let cx = x;
+    const P = (px, py) => [cx + px + (hh - py) * sk, y + py];
+    const seg = (x1, y1, x2, y2) => {
+      const hor = y1 === y2, e = t / 2, pts = hor ? [P(x1, y1), P(x1 + e, y1 - e), P(x2 - e, y1 - e), P(x2, y1), P(x2 - e, y1 + e), P(x1 + e, y1 + e)] : [P(x1, y1), P(x1 + e, y1 + e), P(x1 + e, y2 - e), P(x1, y2), P(x1 - e, y2 - e), P(x1 - e, y1 + e)];
+      ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill();
+    };
+    const g = 0.7, D = { a: [() => seg(t / 2 + g, t / 2, dw - t / 2 - g, t / 2)], b: [() => seg(dw - t / 2, t / 2 + g, dw - t / 2, hh / 2 - g)], c: [() => seg(dw - t / 2, hh / 2 + g, dw - t / 2, hh - t / 2 - g)], d: [() => seg(t / 2 + g, hh - t / 2, dw - t / 2 - g, hh - t / 2)], e: [() => seg(t / 2, hh / 2 + g, t / 2, hh - t / 2 - g)], f: [() => seg(t / 2, t / 2 + g, t / 2, hh / 2 - g)], g: [() => seg(t / 2 + g, hh / 2, dw - t / 2 - g, hh / 2)] };
+    for (const ch of String(str)) {
+      if (ch === '.') { ctx.fillStyle = on; ctx.beginPath(); ctx.arc(cx - gap * 0.5 + 0 * sk, y + hh - t / 2, t * 0.55, 0, TAU); ctx.fill(); continue; }
+      const lit = SEG[ch] || '';
+      for (const s of 'abcdefg') { ctx.fillStyle = lit.includes(s) ? on : ghost; D[s][0](); }
+      cx += dw + gap;
+    }
+    return cx;
+  }
+
+
+  /* Spinach leaf disks: two pre-rendered sprites (top view, 64 px) with real venation. "wet" = infiltrated,
+     air spaces flooded, so the disk looks dark and water-soaked; "air" = gas-filled spongy mesophyll,
+     paler and slightly silvery. A disk's look blends between them with its stored O2. */
+  const diskSprites = {};
+  function diskSprite(kind) {
+    if (diskSprites[kind]) return diskSprites[kind];
+    const S = 64, c = off(S, S), x = c.getContext('2d'), R = Lab.rng(kind === 'wet' ? 3 : 4), wet = kind === 'wet';
+    x.save(); x.beginPath(); x.arc(32, 32, 30, 0, TAU); x.clip();
+    let g = x.createRadialGradient(24, 22, 2, 32, 32, 31);
+    if (wet) { g.addColorStop(0, '#3f7f2c'); g.addColorStop(0.7, '#2b6420'); g.addColorStop(1, '#1f4d18'); }
+    else { g.addColorStop(0, '#8cc062'); g.addColorStop(0.7, '#6aa446'); g.addColorStop(1, '#4f8a35'); }
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+    // mesophyll mottling
+    for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${wet ? '20,50,15' : '230,245,210'},${(0.05 + R.uniform() * 0.08).toFixed(2)})`; x.beginPath(); x.arc(R.uniform() * S, R.uniform() * S, 0.6 + R.uniform() * 1.6, 0, TAU); x.fill(); }
+    // venation: midrib, secondary veins, a faint tertiary net
+    const vein = wet ? 'rgba(150,196,110,0.75)' : 'rgba(214,236,180,0.85)';
+    x.strokeStyle = vein; x.lineCap = 'round';
+    x.lineWidth = 2.6; x.beginPath(); x.moveTo(-2, 40); x.quadraticCurveTo(30, 30, 66, 22); x.stroke();
+    x.lineWidth = 1.1;
+    for (let k = 0; k < 6; k++) { const t = 0.08 + k * 0.17, px = -2 + 68 * t, py = 40 - 18 * t + (t > 0.5 ? 0 : 0); for (const sgn of [-1, 1]) { x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + 8, py + sgn * 9, px + 12 + R.normal(0, 2), py + sgn * (20 + R.normal(0, 3))); x.stroke(); } }
+    x.lineWidth = 0.5; x.strokeStyle = wet ? 'rgba(130,180,100,0.35)' : 'rgba(220,240,190,0.45)';
+    for (let k = 0; k < 40; k++) { const px = R.uniform() * S, py = R.uniform() * S, a = R.uniform() * TAU; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * 6, py + Math.sin(a) * 6); x.stroke(); }
+    // waxy sheen, then the punched edge (slightly crushed, lighter rim)
+    g = x.createRadialGradient(20, 16, 0, 20, 16, 26); g.addColorStop(0, 'rgba(255,255,255,0.28)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, S, S);
+    x.restore();
+    x.beginPath(); x.arc(32, 32, 29.5, 0, TAU); x.strokeStyle = wet ? 'rgba(18,44,14,0.85)' : 'rgba(40,80,28,0.8)'; x.lineWidth = 1.6; x.stroke();
+    x.beginPath(); x.arc(32, 32, 27.8, 0, TAU); x.strokeStyle = 'rgba(190,220,150,0.35)'; x.lineWidth = 1; x.stroke();
+    return (diskSprites[kind] = c);
+  }
+  /* One disk seen from the side at (x, y): r = radius, tilt (rad), lift 0–1 = how full of gas, rising 0–1. */
+  function leafDisk(ctx, x, y, r, tilt, lift, spin, bubbles, seed) {
+    const ry = r * (0.26 + 0.42 * Math.abs(Math.sin(tilt * 1.6)));
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt * 0.35);
+    ctx.fillStyle = 'rgba(16,40,12,0.8)'; ctx.beginPath(); ctx.ellipse(0, 0.9, r, ry, 0, 0, TAU); ctx.fill();   // edge thickness
+    ctx.save(); ctx.scale(1, ry / r); ctx.rotate(spin);
+    ctx.drawImage(diskSprite('wet'), -r, -r, 2 * r, 2 * r);
+    if (lift > 0.02) { ctx.globalAlpha = clamp(lift, 0, 1) * 0.85; ctx.drawImage(diskSprite('air'), -r, -r, 2 * r, 2 * r); }
+    ctx.restore();
+    if (bubbles > 0) { // O2 bubbles clinging to the underside and edge
+      const R = Lab.rng(seed), n = Math.min(7, Math.round(bubbles * 7));
+      for (let k = 0; k < n; k++) {
+        const a = Math.PI * (0.1 + 0.8 * R.uniform()), br = Math.max(0.7, r * (0.06 + R.uniform() * 0.07)), bx = Math.cos(a) * r * 0.92, by = Math.sin(a) * ry + br * 0.6;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fillStyle = 'rgba(240,250,255,0.75)'; ctx.fill(); ctx.strokeStyle = 'rgba(60,80,90,0.55)'; ctx.lineWidth = 0.5; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bx - br * 0.35, by - br * 0.35, br * 0.3, 0, TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  const diskTilt = d => (d.tilt || 0) * 0.5 + (d.y > 0.03 && d.y < 0.97 ? 0.9 * Math.sin(Math.PI * d.y) * (d.x > 0.5 ? 1 : -1) : 0);
+  // Soap: a few tiny bubbles left at the rim of the meniscus.
+  function suds(ctx, g, seed, n) {
+    const R = Lab.rng(seed);
+    for (let k = 0; k < n; k++) {
+      const side = R.chance(0.5) ? -1 : 1, x = g.cx + side * ((g.lx1 - g.lx0) / 2 - 1.5 - R.uniform() * 9), y = g.ly + R.normal(0, 0.8) - 0.5, r = 0.8 + R.uniform() * 1.8;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(); ctx.strokeStyle = 'rgba(120,140,150,0.55)'; ctx.lineWidth = 0.5; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(x - r * 0.45, y - r * 0.5, Math.max(0.6, r * 0.35), Math.max(0.6, r * 0.35));
+    }
+  }
+  const BICARB = { c: [206, 226, 232], a: 0.075 }, WATER = { c: [204, 224, 236], a: 0.05 };
+  // Disks in a cup: positions follow the model's d.x (0–1 across) and d.y (0 bottom … 1 floating).
+  function cupWithDisks(ctx, cx, bot, bw, bh, c, i) {
+    vessel(ctx, cx, bot, bw, bh, { kind: 'cup', fill: c.fill || 0.42, liq: c.liq || BICARB, inner: (x, g) => {
+      const dr = clamp(bw * 0.085, 2.4, 12), y0 = g.bot - g.ry * 0.9 - dr * 0.35, y1 = g.ly + 0.6;
+      c.disks.forEach((d, k) => {
+        const yy = y0 + (y1 - y0) * d.y, half = Math.max(0, (g.xAt(yy, 1) - cx) - dr * 1.15), xx = cx + (d.x * 2 - 1) * half;
+        const lift = clamp(d.O / (d.B || 1), 0, 1);
+        leafDisk(x, xx, yy, dr, diskTilt(d), lift, d.x * 13 + k, d.O > 0.25 ? clamp((d.O - 0.25) / 0.9, 0, 1) : 0, 900 + i * 31 + k);
       });
-      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${cellW < 90 ? 10 : 12}px ${FONT}`; ctx.fillText(c.label, cx, bot + 13);
-      if (lab > 20 && c.sub) { ctx.fillStyle = tok('--muted'); ctx.font = `11px ${FONT}`; ctx.fillText(c.sub, cx, bot + 26); }
+      suds(x, g, 40 + i, bw > 50 ? 9 : 4);
+    } });
+  }
+  /* Digital lab timer (count-up, MM:SS) with a reflective LCD. */
+  function labTimer(ctx, x, bot, w, minutes) {
+    const h = w * 0.66, y = bot - h;
+    shadow(ctx, x + w * 0.55, bot, w * 0.6, w * 0.08, 0.55);
+    rr(ctx, x, y, w, h, w * 0.1); let g = ctx.createLinearGradient(0, y, 0, bot); g.addColorStop(0, '#fbfbf8'); g.addColorStop(1, '#cfcdc6'); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.8; ctx.stroke();
+    const lx = x + w * 0.08, ly = y + h * 0.14, lw = w * 0.84, lh = h * 0.5;
+    rr(ctx, lx - 2, ly - 2, lw + 4, lh + 4, 3); ctx.fillStyle = '#2e3033'; ctx.fill();
+    rr(ctx, lx, ly, lw, lh, 2); g = ctx.createLinearGradient(0, ly, 0, ly + lh); g.addColorStop(0, '#bcc6ae'); g.addColorStop(1, '#a3af96'); ctx.fillStyle = g; ctx.fill();
+    const sec = Math.max(0, Math.round(minutes * 60)), mm = String(Math.min(99, Math.floor(sec / 60))).padStart(2, '0'), ss = String(sec % 60).padStart(2, '0');
+    const dh = lh * 0.66, adv = dh * 0.72, on = '#1b2018', ghost = 'rgba(27,32,24,0.07)', tx = lx + (lw - (4 * adv + dh * 0.3)) / 2, ty = ly + lh * 0.18;
+    const x2 = sevenSeg(ctx, mm, tx, ty, dh, on, ghost);
+    ctx.fillStyle = on; ctx.beginPath(); ctx.arc(x2 - dh * 0.02, ty + dh * 0.32, dh * 0.065, 0, TAU); ctx.arc(x2 - dh * 0.06, ty + dh * 0.7, dh * 0.065, 0, TAU); ctx.fill();
+    sevenSeg(ctx, ss, x2 + dh * 0.12, ty, dh, on, ghost);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(lx + 1, ly + 1, lw - 2, lh * 0.3);
+    [['START', 0.3, '#2f6f3a'], ['STOP', 0.7, '#9b2c25']].forEach(([t, f, col]) => {
+      const bx = x + w * f, by = y + h * 0.8, bw2 = w * 0.3, bh2 = h * 0.13;
+      rr(ctx, bx - bw2 / 2, by - bh2 / 2, bw2, bh2, bh2 / 2); ctx.fillStyle = col; ctx.fill();
+      if (w > 70) { ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.max(6, Math.round(bh2 * 0.62))}px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(t, bx, by + bh2 * 0.24); }
+    });
+  }
+  /* Desk lamp: weighted base, post, jointed arm and a metal shade with a warm bulb. */
+  function deskLamp(ctx, w, h, sx, sTop, sw, sh, baseX, benchBot, on) {
+    ctx.strokeStyle = '#2d3135'; ctx.lineCap = 'round';
+    shadow(ctx, baseX + 6, benchBot, sw * 0.4, 7, 0.6);
+    ctx.beginPath(); ctx.ellipse(baseX, benchBot - 5, sw * 0.32, 7, 0, 0, TAU); let g = ctx.createLinearGradient(0, benchBot - 12, 0, benchBot); g.addColorStop(0, '#5a6066'); g.addColorStop(1, '#1d2023'); ctx.fillStyle = g; ctx.fill();
+    const jx = baseX - sw * 0.05, jy = sTop - sh * 0.4;
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(baseX, benchBot - 9); ctx.lineTo(baseX + 4, jy + (benchBot - jy) * 0.45); ctx.lineTo(jx, jy); ctx.lineTo(sx + sw * 0.3, sTop + 2); ctx.stroke();
+    ctx.lineWidth = 1.4; ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.moveTo(baseX - 1.5, benchBot - 9); ctx.lineTo(baseX + 2.5, jy + (benchBot - jy) * 0.45); ctx.lineTo(jx - 1.5, jy - 1); ctx.stroke();
+    [[baseX + 4, jy + (benchBot - jy) * 0.45], [jx, jy]].forEach(([px, py]) => { ctx.beginPath(); ctx.arc(px, py, 4.5, 0, TAU); ctx.fillStyle = '#1f2326'; ctx.fill(); ctx.strokeStyle = '#6b7279'; ctx.lineWidth = 1; ctx.stroke(); });
+    // shade (front view of a cone): dark green enamel outside, white reflector inside
+    const top = sTop, b = sTop + sh;
+    ctx.beginPath(); ctx.moveTo(sx - sw * 0.16, top); ctx.lineTo(sx + sw * 0.16, top); ctx.lineTo(sx + sw / 2, b); ctx.lineTo(sx - sw / 2, b); ctx.closePath();
+    g = ctx.createLinearGradient(sx - sw / 2, 0, sx + sw / 2, 0); g.addColorStop(0, '#1d3a2c'); g.addColorStop(0.3, '#4f7a62'); g.addColorStop(0.45, '#2c5440'); g.addColorStop(1, '#14281f'); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(sx, b, sw / 2, sh * 0.16, 0, 0, TAU); ctx.fillStyle = on ? '#fff6dc' : '#6d6a60'; ctx.fill(); ctx.strokeStyle = '#0e1a14'; ctx.lineWidth = 1.2; ctx.stroke();
+    if (on) {
+      g = ctx.createRadialGradient(sx, b, 0, sx, b, sw * 0.5); g.addColorStop(0, 'rgba(255,255,240,1)'); g.addColorStop(0.35, 'rgba(255,236,170,0.9)'); g.addColorStop(1, 'rgba(255,220,140,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(sx, b, sw * 0.5, sh * 0.16, 0, 0, TAU); ctx.fill();
+    }
+    ctx.beginPath(); ctx.ellipse(sx, top, sw * 0.16, 3, 0, 0, TAU); ctx.fillStyle = '#0e1a14'; ctx.fill();
+  }
+  // Warm light falling from the shade onto the cups and the bench.
+  function lightCone(ctx, sx, y0, sw, y1, spread, a) {
+    const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, `rgba(255,236,180,${a})`); g.addColorStop(1, 'rgba(255,236,180,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(sx - sw / 2, y0); ctx.lineTo(sx + sw / 2, y0); ctx.lineTo(sx + spread / 2, y1); ctx.lineTo(sx - spread / 2, y1); ctx.closePath(); ctx.fill();
+  }
+  const GEL = { red: [214, 36, 40], orange: [236, 124, 26], yellow: [236, 206, 40], green: [34, 160, 70], blue: [36, 86, 214], violet: [128, 56, 196] };
+  // Draws cups with disks. cups: [{label, sub, disks, liq, gel}], opts: {lamp, dark, cols, time, filter}
+  function drawCups(cv, cups, o) {
+    const { ctx, w, h } = cv;
+    if (o.lamp) {   // Procedure: two cups under a desk lamp, timer on the bench
+      const bot = h - 40, benchY = bot - 16;
+      ctx.drawImage(sideScene(w, h, benchY), 0, 0, w, h);
+      const sw = Math.min(w * 0.36, 230), sh = sw * 0.36, sx = w * 0.5, sTop = 8, on = !o.dark;
+      const bw = Math.min(w * 0.22, 150), bh = Math.min(bot - (sTop + sh) - 26, bw * 1.15), gap = Math.max(bw * 1.25, w * 0.25);
+      if (on) {
+        lightCone(ctx, sx, sTop + sh, sw * 0.95, bot + 6, gap + bw * 1.6, 0.34);
+        const g = ctx.createRadialGradient(sx, bot, 0, sx, bot, gap); g.addColorStop(0, 'rgba(255,232,170,0.35)'); g.addColorStop(1, 'rgba(255,232,170,0)'); ctx.fillStyle = g; ctx.fillRect(0, benchY, w, h - benchY);
+      }
+      deskLamp(ctx, w, h, sx, sTop, sw, sh, Math.min(w - 26, sx + gap / 2 + bw * 0.95), bot, on);
+      cups.forEach((c, i) => {
+        const cx = sx + (i ? 1 : -1) * gap / 2;
+        cupWithDisks(ctx, cx, bot, bw, bh, c, i);
+        tape(ctx, cx, bot - bh + bh * 0.16, Math.min(bw * 0.7, 96), Math.max(10, Math.min(14, bw * 0.12)), i ? 'Without CO₂' : 'With CO₂', i ? 0.03 : -0.03);
+        ctx.textAlign = 'center'; ctx.fillStyle = PHY.text; ctx.font = `600 ${w < 420 ? 11 : 12}px ${FONT}`; ctx.fillText(c.label, cx, bot + 17);
+        if (c.sub) { ctx.fillStyle = PHY.textDim; ctx.font = `11px ${FONT}`; ctx.fillText(c.sub, cx, bot + 31); }
+      });
+      labTimer(ctx, 8, bot + 2, clamp(w * 0.15, 56, 108), o.time || 0);
+      if (o.dark) { // cardboard box over the cups: only the light leaking under its edge
+        ctx.fillStyle = 'rgba(8,10,16,0.62)'; ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(176,132,80,0.85)'; ctx.lineWidth = 2; ctx.setLineDash([7, 5]);
+        ctx.strokeRect(sx - gap / 2 - bw * 0.75, bot - bh - 18, gap + bw * 1.5, bh + 20); ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(214,170,110,0.95)'; ctx.font = `600 11px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('box over cups', sx, bot - bh - 24);
+      }
+      return;
+    }
+    // Design: rows of cups on bench shelves under a bank of lamps (with a water heat filter if used)
+    const cols = o.cols || cups.length, rows = Math.max(1, Math.ceil(cups.length / cols)), strip = Math.min(48, h * 0.16);
+    ctx.drawImage(sideScene(w, h, h + 1), 0, 0, w, h);
+    const cellW = w / cols, cellH = (h - strip) / rows, lab = cellH > 90 ? 30 : 16;
+    // lamp bank
+    for (let k = 0; k < cols; k++) { const lx = cellW * (k + 0.5), lw = Math.min(cellW * 0.6, 90); ctx.beginPath(); ctx.moveTo(lx - lw * 0.2, 2); ctx.lineTo(lx + lw * 0.2, 2); ctx.lineTo(lx + lw / 2, strip * 0.42); ctx.lineTo(lx - lw / 2, strip * 0.42); ctx.closePath(); const g = ctx.createLinearGradient(lx - lw / 2, 0, lx + lw / 2, 0); g.addColorStop(0, '#1d3a2c'); g.addColorStop(0.35, '#4f7a62'); g.addColorStop(1, '#14281f'); ctx.fillStyle = g; ctx.fill(); ctx.beginPath(); ctx.ellipse(lx, strip * 0.42, lw / 2, 2.5, 0, 0, TAU); ctx.fillStyle = '#fff6dc'; ctx.fill(); }
+    if (o.filter) {   // glass dish of water as a heat sink
+      const fy = strip * 0.55, fh = strip * 0.32; rr(ctx, 4, fy, w - 8, fh, 3);
+      let g = ctx.createLinearGradient(0, fy, 0, fy + fh); g.addColorStop(0, 'rgba(225,238,244,0.6)'); g.addColorStop(0.35, 'rgba(150,196,220,0.55)'); g.addColorStop(1, 'rgba(120,170,200,0.65)'); ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = 'rgba(70,90,100,0.7)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.moveTo(6, fy + fh * 0.35); ctx.lineTo(w - 6, fy + fh * 0.35); ctx.stroke();
+      if (w > 380) { ctx.fillStyle = PHY.inkDim; ctx.font = `600 10px ${FONT}`; ctx.textAlign = 'right'; ctx.fillText('water heat filter', w - 10, fy + fh - 2); }
+    }
+    cups.forEach((c, i) => {
+      const col = i % cols, row = Math.floor(i / cols), x0 = col * cellW, y0 = strip + row * cellH, cx = x0 + cellW / 2, bot = y0 + cellH - lab;
+      const bw = Math.min(cellW * 0.74, (cellH - lab - 6) * 0.95, 140), bh = Math.min(cellH - lab - 8, bw * 1.0);
+      if (col === 0) { ctx.fillStyle = pattern(ctx, epoxyTile()); ctx.fillRect(0, bot - 4, w, lab + 4); const g = ctx.createLinearGradient(0, bot - 4, 0, bot + lab); g.addColorStop(0, 'rgba(255,255,255,0.14)'); g.addColorStop(1, 'rgba(0,0,0,0.25)'); ctx.fillStyle = g; ctx.fillRect(0, bot - 4, w, lab + 4); }
+      if (c.gel) { const g = c.gel; ctx.fillStyle = rgba(g, 0.18); ctx.beginPath(); ctx.moveTo(cx - bw * 0.62, bot - bh - 3); ctx.lineTo(cx + bw * 0.62, bot - bh - 3); ctx.lineTo(cx + bw * 0.55, bot); ctx.lineTo(cx - bw * 0.55, bot); ctx.closePath(); ctx.fill(); }
+      cupWithDisks(ctx, cx, bot, bw, bh, Object.assign({ fill: 0.6 }, c), i);
+      if (c.gel) { const g = c.gel; ctx.beginPath(); ctx.moveTo(cx - bw * 0.62, bot - bh - 6); ctx.lineTo(cx + bw * 0.62, bot - bh - 8); ctx.lineTo(cx + bw * 0.6, bot - bh - 2); ctx.lineTo(cx - bw * 0.6, bot - bh); ctx.closePath(); ctx.fillStyle = rgba(g, 0.7); ctx.fill(); ctx.strokeStyle = rgba(g.map(v => v * 0.6), 0.9); ctx.lineWidth = 0.8; ctx.stroke(); }
+      ctx.fillStyle = PHY.text; ctx.textAlign = 'center'; ctx.font = `600 ${cellW < 90 ? 10 : 12}px ${FONT}`; ctx.fillText(c.label, cx, bot + 12);
+      if (lab > 20 && c.sub) { ctx.fillStyle = PHY.textDim; ctx.font = `11px ${FONT}`; ctx.fillText(c.sub, cx, bot + 25); }
     });
   }
   const easeDisks = (disks, k) => disks.forEach(d => { d.y += ((d.up ? 1 : 0) - d.y) * Math.min(1, k); });
@@ -380,28 +683,60 @@ Lab.init({ id: 'lab05' });
   const infcv = Lab.canvas('#inf-viz', 0.62);
   let inf = null, infAnim = null;
   function infReset() { inf = { pulls: 0, a: Array(10).fill(false), b: Array(10).fill(false), plunger: 0, bubbles: 0, xa: Array.from({ length: 10 }, () => rng.uniform()), xb: Array.from({ length: 10 }, () => rng.uniform()) }; infDraw(); infRead(); $('#inf-fb').innerHTML = ''; }
+  /* Vacuum infiltration: a 10 mL plastic syringe held tip down with a finger over the tip. Pulling the
+     plunger opens a vacuum above the solution; gas fizzes out of the disks; on release the solution
+     floods their air spaces and they sink to the tip. */
+  function syringe(ctx, cx, top, bot, bw, sunk, xs, pl, bub, liq, seed) {
+    const bTop = top + 26, bEnd = bot - 20, rest = bTop + (bEnd - bTop) * 0.34, stop = rest - pl * (bEnd - bTop) * 0.24, lq = rest + 9, sH = 10;
+    const x0 = cx - bw / 2, x1 = cx + bw / 2, R = Lab.rng(seed);
+    // plunger rod (cross-section rib) and thumb press, behind the barrel top
+    const rodTop = stop - (bEnd - bTop) * 0.62;
+    let g = ctx.createLinearGradient(cx - bw * 0.3, 0, cx + bw * 0.3, 0); g.addColorStop(0, 'rgba(225,228,226,0.95)'); g.addColorStop(0.5, 'rgba(250,250,248,0.95)'); g.addColorStop(1, 'rgba(200,204,202,0.95)');
+    ctx.fillStyle = g; ctx.fillRect(cx - bw * 0.3, rodTop, bw * 0.6, stop - rodTop); ctx.fillStyle = 'rgba(160,166,164,0.8)'; ctx.fillRect(cx - 1.2, rodTop, 2.4, stop - rodTop);
+    rr(ctx, cx - bw * 0.5, rodTop - 6, bw, 6, 3); ctx.fillStyle = '#e9ebe8'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.7; ctx.stroke();
+    // barrel interior: liquid, vacuum gap
+    ctx.save(); ctx.beginPath(); ctx.rect(x0 + 1.5, bTop, bw - 3, bEnd - bTop); ctx.clip();
+    g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, rgba(liq.c, liq.a * 3)); g.addColorStop(0.5, rgba(liq.c, liq.a * 1.3)); g.addColorStop(1, rgba(liq.c, liq.a * 3.2));
+    ctx.fillStyle = g; ctx.fillRect(x0, lq, bw, bEnd - lq);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x0, lq - 1, bw, 1.4); ctx.fillStyle = 'rgba(40,50,55,0.35)'; ctx.fillRect(x0, lq + 0.5, bw, 0.8);
+    if (pl > 0.02) for (let k = 0; k < 22 * pl; k++) { const yy = lq + 3 + R.uniform() * (bEnd - lq - 6), r = 0.6 + R.uniform() * 1.3; ctx.beginPath(); ctx.arc(x0 + 3 + R.uniform() * (bw - 6), yy - pl * 6 * R.uniform(), r, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fill(); }
+    const dr = Math.min(bw * 0.2, 11);
+    sunk.forEach((s, i) => {
+      const yy = s ? bEnd - 5 - (i % 4) * dr * 0.55 : lq + 3 + (i % 3) * dr * 0.5, xx = x0 + dr + 3 + xs[i] * (bw - 2 * dr - 6);
+      leafDisk(ctx, xx, yy, dr, s ? (xs[i] - 0.5) * 0.5 : (xs[i] - 0.5) * 0.3, s ? 0 : 1, xs[i] * 11 + i, !s && bub > 0 ? bub : 0, seed + i);
+      if (!s && bub > 0) for (let k = 0; k < 3; k++) { const by = yy - 4 - ((bub * 3 + k / 3) % 1) * (yy - lq + 8); if (by > lq) { ctx.beginPath(); ctx.arc(xx + (k - 1) * 3, by, 1.2 + k * 0.4, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fill(); ctx.strokeStyle = 'rgba(60,80,90,0.5)'; ctx.lineWidth = 0.5; ctx.stroke(); } }
+    });
+    ctx.restore();
+    // black rubber stopper with ribs
+    rr(ctx, x0 + 1.5, stop, bw - 3, sH, 2.5); g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#111'); g.addColorStop(0.3, '#4a4a4c'); g.addColorStop(0.5, '#1d1d1f'); g.addColorStop(1, '#0b0b0c'); ctx.fillStyle = g; ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x0 + 2, stop + 3, bw - 4, 1); ctx.fillRect(x0 + 2, stop + 6.5, bw - 4, 1);
+    // barrel wall: clear polypropylene, refraction at the edges, highlight
+    g = ctx.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, 'rgba(40,48,52,0.4)'); g.addColorStop(0.08, 'rgba(255,255,255,0.05)'); g.addColorStop(0.2, 'rgba(255,255,255,0.6)'); g.addColorStop(0.27, 'rgba(255,255,255,0.05)'); g.addColorStop(0.88, 'rgba(255,255,255,0.15)'); g.addColorStop(1, 'rgba(40,48,52,0.45)');
+    ctx.fillStyle = g; ctx.fillRect(x0, bTop, bw, bEnd - bTop); ctx.strokeStyle = 'rgba(70,80,86,0.65)'; ctx.lineWidth = 1; ctx.strokeRect(x0, bTop, bw, bEnd - bTop);
+    // finger flange
+    rr(ctx, cx - bw * 0.95, bTop - 4, bw * 1.9, 5, 2.5); g = ctx.createLinearGradient(0, bTop - 4, 0, bTop + 1); g.addColorStop(0, '#f4f5f3'); g.addColorStop(1, '#b9bdbb'); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.stroke();
+    // printed graduations (mL), zero at the tip end
+    ctx.strokeStyle = 'rgba(20,24,28,0.8)'; ctx.fillStyle = 'rgba(20,24,28,0.85)'; ctx.font = `600 ${Math.max(7, Math.round(bw * 0.15))}px ${FONT}`; ctx.textAlign = 'left';
+    const per = (bEnd - bTop - 8) / 10;
+    for (let k = 0; k <= 20; k++) { const yy = bEnd - k * per / 2, major = k % 2 === 0; ctx.lineWidth = major ? 0.9 : 0.6; ctx.beginPath(); ctx.moveTo(x0 + 1, yy); ctx.lineTo(x0 + (major ? bw * 0.3 : bw * 0.18), yy); ctx.stroke(); if (major && k % 4 === 0 && k && bw > 40) ctx.fillText(k / 2, x0 + bw * 0.33, yy + 3); }
+    // tip (luer nozzle) capped by a fingertip during the vacuum
+    ctx.beginPath(); ctx.moveTo(x0 + 2, bEnd); ctx.quadraticCurveTo(cx - bw * 0.2, bEnd + 4, cx - 3, bEnd + 8); ctx.lineTo(cx - 2.2, bot - 4); ctx.lineTo(cx + 2.2, bot - 4); ctx.lineTo(cx + 3, bEnd + 8); ctx.quadraticCurveTo(cx + bw * 0.2, bEnd + 4, x1 - 2, bEnd); ctx.closePath();
+    ctx.fillStyle = 'rgba(225,232,234,0.65)'; ctx.fill(); ctx.strokeStyle = 'rgba(70,80,86,0.65)'; ctx.stroke();
+    if (pl > 0.02) {
+      ctx.save(); ctx.beginPath(); ctx.ellipse(cx + 3, bot + 2, 13, 8, -0.15, 0, TAU);
+      g = ctx.createRadialGradient(cx - 2, bot - 2, 1, cx + 3, bot + 2, 14); g.addColorStop(0, '#f0c6aa'); g.addColorStop(0.7, '#d9a27f'); g.addColorStop(1, '#b97f5d'); ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx - 1, bot - 1, 4.5, 2.4, -0.15, 0, TAU); ctx.fillStyle = 'rgba(255,236,226,0.7)'; ctx.fill(); ctx.restore();
+    }
+  }
   function infDraw() {
-    const { ctx, w, h } = infcv; ctx.clearRect(0, 0, w, h); ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
-    [['With CO₂ (NaHCO₃ + soap)', inf.a, inf.xa, w * 0.27], ['Without CO₂ (water + soap)', inf.b, inf.xb, w * 0.73]].forEach(([lbl, sunk, xs, cx]) => {
-      const bw = Math.min(w * 0.18, 70), top = 34, bot = h - 34, tipH = 14, pl = inf.plunger;
-      const barrelTop = top + 20, liqTop = barrelTop + 26 + pl * 30;
-      ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.6;
-      rr(ctx, cx - bw / 2, barrelTop, bw, bot - barrelTop - tipH, 6); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx - 5, bot - tipH); ctx.lineTo(cx - 3, bot); ctx.lineTo(cx + 3, bot); ctx.lineTo(cx + 5, bot - tipH); ctx.stroke();
-      ctx.fillStyle = tok('--ink'); ctx.beginPath(); ctx.arc(cx, bot + 4, 6, 0, 7); ctx.globalAlpha = pl > 0.05 ? 0.6 : 0; ctx.fill(); ctx.globalAlpha = 1; // finger over tip
-      // plunger (from top): stopper position
-      const stopY = barrelTop + 6 - pl * 0;
-      ctx.fillStyle = tok('--surface-2'); ctx.fillRect(cx - 3, top - 18 - pl * 20, 6, stopY - top + 18 + pl * 20);
-      ctx.fillStyle = tok('--muted'); ctx.fillRect(cx - bw / 2 + 2, stopY - pl * 20, bw - 4, 8); ctx.fillRect(cx - 18, top - 22 - pl * 20, 36, 5);
-      ctx.globalAlpha = 0.22; ctx.fillStyle = tok('--s3'); ctx.fillRect(cx - bw / 2 + 2, liqTop, bw - 4, bot - tipH - liqTop - 2); ctx.globalAlpha = 1;
-      const dr = Math.min(bw * 0.2, 11);
-      sunk.forEach((s, i) => {
-        const yy = s ? bot - tipH - 6 - (i % 4) * dr * 0.6 : liqTop + 5 + (i % 3) * dr * 0.6;
-        const xx = cx - bw / 2 + dr + 2 + xs[i] * (bw - 2 * dr - 4);
-        ctx.fillStyle = tok('--s6'); ctx.beginPath(); ctx.ellipse(xx, yy, dr, dr * 0.35, 0, 0, 7); ctx.fill();
-        if (inf.bubbles > 0 && !s) { ctx.fillStyle = tok('--surface'); ctx.strokeStyle = tok('--s3'); ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(xx + 3, yy - 6 - inf.bubbles * 10, 2.5, 0, 7); ctx.fill(); ctx.stroke(); }
-      });
-      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${w < 420 ? 11 : 12}px ${FONT}`; ctx.fillText(lbl, cx, h - 8);
+    const { ctx, w, h } = infcv, bot = h - 34, benchY = bot + 6;
+    ctx.drawImage(sideScene(w, h, benchY), 0, 0, w, h);
+    [['With CO₂ (NaHCO₃ + soap)', inf.a, inf.xa, w * 0.27, BICARB, 11], ['Without CO₂ (water + soap)', inf.b, inf.xb, w * 0.73, WATER, 23]].forEach(([lbl, sunk, xs, cx, liq, seed]) => {
+      const bw = Math.min(w * 0.17, 66);
+      shadow(ctx, cx + 8, benchY + 8, bw * 1.2, 5, 0.35);
+      syringe(ctx, cx, 14, bot, bw, sunk, xs, inf.plunger, inf.bubbles, liq, seed);
+      ctx.fillStyle = PHY.text; ctx.textAlign = 'center'; ctx.font = `600 ${w < 420 ? 11 : 12}px ${FONT}`; ctx.fillText(lbl, cx, h - 8);
     });
   }
   function infRead() { $('#inf-n').textContent = inf.pulls; $('#inf-a').textContent = inf.a.filter(Boolean).length + ' / 10'; $('#inf-b').textContent = inf.b.filter(Boolean).length + ' / 10'; }
@@ -438,7 +773,7 @@ Lab.init({ id: 'lab05' });
     cupA = makeDisks(BASE, 10, damage, cupPrep.a); cupB = makeDisks(Object.assign({}, BASE, { bicarb: 0 }), 10, damage, cupPrep.b);
     cupT = 0; cupDark = false; $('#cup-dark').setAttribute('aria-pressed', 'false'); $('#cup-dark').textContent = 'Cover cups with a box (dark)'; cupRead(); cupDraw();
   }
-  function cupDraw() { drawCups(cupcv, [{ label: 'With CO₂', sub: '0.2% NaHCO₃', disks: cupA, tint: '--s3' }, { label: 'Without CO₂', sub: 'water only', disks: cupB, tint: '--s3', tintA: 0.08 }], { lamp: true, dark: cupDark }); }
+  function cupDraw() { drawCups(cupcv, [{ label: 'With CO₂', sub: '0.2% NaHCO₃', disks: cupA, liq: BICARB }, { label: 'Without CO₂', sub: 'water only', disks: cupB, liq: WATER }], { lamp: true, dark: cupDark, time: cupT }); }
   function cupRead() { $('#cup-t').textContent = fmt(cupT, 1) + ' min'; $('#cup-a').textContent = cupA.filter(d => d.up).length; $('#cup-b').textContent = cupB.filter(d => d.up).length; $('#cup-l').textContent = cupDark ? 'Off (box)' : 'On'; }
   cupcv.onresize = cupDraw;
   const cupchart = Lab.chart('#cup-chart', { xLabel: 'Time (min)', yLabel: 'Number of disks floating', yMin: 0, yMax: 10, series: [] });
@@ -536,7 +871,7 @@ Lab.init({ id: 'lab05' });
   function shortLv(iv, v) { if (iv === 'dist') return v + ' cm'; if (iv === 'bicarb') return v + '%'; if (iv === 'temp') return v + ' °C'; const n = IV[iv].opts[v].name; return n.replace(/ \(.*\)/, '').replace('English ivy', 'Ivy'); }
   function dDraw() {
     const iv = dIv.value, cols = Math.min(dCups.length || 1, dcv.w < 500 ? 4 : 6);
-    drawCups(dcv, dCups.map(c => Object.assign(c, { tint: iv === 'color' ? COLORS[c.v].tok : iv === 'temp' ? (c.v >= 30 ? '--bad' : c.v <= 15 ? '--s3' : '--s4') : '--s3', tintA: iv === 'color' ? 0.22 : iv === 'bicarb' ? 0.06 + 0.3 * Math.min(1, c.v / 0.4) : 0.15 })), { cols, lamp: false });
+    drawCups(dcv, dCups.map(c => Object.assign(c, { gel: iv === 'color' ? GEL[c.v] || null : null, liq: iv === 'bicarb' && c.v === 0 ? WATER : BICARB })), { cols, lamp: false, filter: $('#d-filter').checked });
   }
   dIv.addEventListener('change', () => { const o = IV[dIv.value]; if (o.num) dLv.value = o.def; buildChecks(); dPreview(); });
   dLv.addEventListener('change', dPreview); $('#d-reps').addEventListener('change', dPreview); $('#d-filter').addEventListener('change', dPreview);
