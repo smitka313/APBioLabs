@@ -11,6 +11,10 @@
 <link rel="stylesheet" href="style.css">
 <style>
   :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .sim--fit > .sim-main.is-wide { align-self: stretch; } /* results column uses the full height of the sim box */
+  .sim--fit .pairs { gap: 4px 6px; }
+  .sim--fit .pairs select { padding: 4px 2px 4px 5px; font-size: .78rem; }
+  .sim--fit .assign { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 8px; }
   .pairs { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: 6px 8px; align-items: center; font-size: .86rem; }
   .pairs select { padding: 5px 6px; font-size: .84rem; }
   .pairs .hd { font-size: .72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -51,10 +55,11 @@
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
-      <p class="lede">A wilted houseplant perks up within an hour of watering. Water moves into its cells, the cells press against their walls, and the stems stiffen again. In this lab you will work out why water moves, which way it goes, and how the size and shape of a cell limit how fast anything can get in or out.</p>
+    <div class="step-body split">
+      <div class="split-main prose">
+        <p class="lede">A wilted houseplant perks up within an hour of watering. Water moves into its cells, the cells press against their walls, and the stems stiffen again. In this lab you will work out why water moves, which way it goes, and how the size and shape of a cell limit how fast anything can get in or out.</p>
       <p>The investigation has three procedures:</p>
       <ol>
         <li><strong>Surface area and cell size.</strong> Soak agar "cells" that contain the pH indicator phenolphthalein in acid and watch the pink color disappear from the outside in. Measure how deep the acid gets and calculate what fraction of each block it reached.</li>
@@ -69,22 +74,28 @@
           <li><strong>ENE-2.H</strong> Explain how concentration gradients affect the movement of molecules across membranes.</li>
         </ul>
       </div>
-      <div class="callout callout--tip"><div class="callout-title">Science practices</div>
+      </div>
+      <div class="split-side">
+        <div class="callout callout--tip"><div class="callout-title">Science practices</div>
         <ul><li><strong>5.A</strong> Perform mathematical calculations (surface area, volume, percent change, water potential).</li><li><strong>4.A</strong> Construct a graph, plot, or chart (percent change in mass against concentration).</li></ul>
       </div>
-      <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
+        <div class="callout callout--safety"><div class="callout-title">Safety in the real lab</div>
         <p>The 0.1 M HCl and 0.1 M NaOH solutions cause chemical burns. Wear goggles, gloves, and an apron, and keep the agar blocks and acid in a spill-proof tray. Your teacher prepares the concentrated solutions in a fume hood. Report every spill right away.</p>
+      </div>
       </div>
     </div>
   </section>
 
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Membranes, gradients, and water potential</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul><li>The plasma membrane is selectively permeable: small nonpolar molecules cross easily, while ions and large polar molecules need transport proteins.</li><li>Diffusion is net movement down a concentration gradient and needs no energy from the cell.</li><li>As a cell grows, its surface area-to-volume ratio falls (cube: SA:V = 6/s), so exchange gets harder: that is why cells stay small.</li><li>Osmosis is the diffusion of water. Water moves toward the lower water potential.</li><li>Water potential ψ = ψ<sub>P</sub> + ψ<sub>S</sub>, with ψ<sub>S</sub> = −iCRT. At equilibrium ψ inside a cell equals ψ outside.</li></ul></div>
       <p>A cell has to take in nutrients and get rid of wastes across its plasma membrane, a phospholipid bilayer with embedded proteins. The membrane is <strong>selectively permeable</strong>. Small nonpolar molecules slip through the lipid tails. Water crosses slowly through the bilayer and much faster through channel proteins called <strong>aquaporins</strong>. Ions and larger polar molecules such as sugars need channel or carrier proteins.</p>
       <p><strong>Diffusion</strong> is the net movement of a substance from where it is more concentrated to where it is less concentrated. It needs no energy from the cell; it happens because molecules are always moving randomly. Diffusion is faster when the temperature is higher (more kinetic energy), when the molecules are smaller, when the concentration gradient is steeper, and when the distance is shorter. At equilibrium molecules keep moving, but movement in each direction is equal, so there is no <em>net</em> change.</p>
-      <h3>Why cells are small</h3>
+        <details class="disclose"><summary>Why cells are small</summary><div class="inner">
       <p>Everything a cell exchanges has to pass through its surface, but the demand for exchange comes from its volume. As a cube grows, surface area grows with the square of the side length while volume grows with the cube, so the <strong>surface area-to-volume ratio (SA:V)</strong> falls. A large cell has too little membrane for its contents, and molecules diffusing inward take a long time to reach the center. Microvilli in the small intestine, root hairs, and the flattened shape of red blood cells all raise SA:V.</p>
       <svg class="diagram" viewBox="0 0 520 170" role="img" aria-label="Three cubes with side lengths 1, 2 and 3 centimeters. Their surface area-to-volume ratios are 6, 3 and 2 per centimeter.">
         <g style="stroke:var(--ink)" stroke-width="1.2" stroke-linejoin="round">
@@ -100,9 +111,11 @@
         <text x="390" y="166" text-anchor="middle" font-size="12" class="lbl-muted">SA 54 · V 27 · SA:V 2</text>
       </svg>
       <div class="equation">cube: SA = 6s² &nbsp;·&nbsp; V = s³ &nbsp;·&nbsp; SA:V = 6/s &nbsp;&nbsp;|&nbsp;&nbsp; box: SA = 2(LW + LH + WH) &nbsp;·&nbsp; V = LWH</div>
-      <h3>Osmosis and tonicity</h3>
+        </div></details>
+        <details class="disclose"><summary>Osmosis and tonicity</summary><div class="inner">
       <p><strong>Osmosis</strong> is the diffusion of water across a selectively permeable membrane. Dissolved solutes hold water molecules in hydration shells, so a solution with more solute has less "free" water. Water therefore moves toward the side with more solute. Compared with another solution, a <strong>hypertonic</strong> solution has more solute, a <strong>hypotonic</strong> one has less, and <strong>isotonic</strong> solutions have equal water potential, so there is no net water movement. These words always compare two solutions; a solution is not hypertonic by itself.</p>
-      <h3>Water potential</h3>
+        </div></details>
+        <details class="disclose"><summary>Water potential</summary><div class="inner">
       <p>Plant cells have a rigid wall, so solute concentration alone does not predict water movement. Botanists use <strong>water potential (ψ, psi)</strong>, measured in bars, which combines the effect of solutes and of pressure. Water always moves from higher ψ to lower ψ.</p>
       <div class="equation">ψ = ψ<sub>P</sub> + ψ<sub>S</sub> &nbsp;&nbsp;&nbsp; ψ<sub>S</sub> = −iCRT</div>
       <ul>
@@ -126,20 +139,26 @@
         <text x="384" y="96" font-size="12" class="lbl-muted">wall</text>
         <text x="384" y="128" font-size="12" class="lbl-muted">membrane</text>
       </svg>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl><dt>Selectively permeable</dt><dd>A membrane that lets some substances cross much more easily than others.</dd><dt>Diffusion</dt><dd>Net movement of a substance from higher to lower concentration.</dd><dt>SA:V ratio</dt><dd>Surface area divided by volume; larger ratios mean faster exchange per unit of volume.</dd><dt>Osmosis</dt><dd>The diffusion of water across a selectively permeable membrane.</dd><dt>Water potential (ψ)</dt><dd>Potential energy of water, in bars: pressure potential plus solute potential. Pure open water is 0.</dd><dt>Turgor pressure</dt><dd>Positive pressure potential of a plant cell pushing against its wall.</dd><dt>Plasmolysis</dt><dd>Shrinking of the protoplast away from the cell wall in a hypertonic solution.</dd></dl>
+      </aside>
     </div>
   </section>
 
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p class="muted">Use R = 0.0831 L·bar/(mol·K) and T = 273 + °C. Enter negative numbers with a minus sign.</p>
-      <div id="prelab"></div>
+      <div id="prelab" class="quiz--cols"></div>
     </div>
   </section>
 
   <!-- ============ 4. PROCEDURE 1 ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="SA:V">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="SA:V">
     <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>Surface area and cell size</h2></header>
     <div class="step-body">
       <div class="prose">
@@ -184,15 +203,26 @@
       </div>
 
       <h3>Steps 2–3 · Cut blocks and soak them in acid</h3>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="p1-a">Block A</label><select id="p1-a"></select></div>
-          <div class="field"><label for="p1-b">Block B</label><select id="p1-b"></select></div>
-          <div class="field"><label for="p1-c">Block C</label><select id="p1-c"></select></div>
-          <div class="field"><label for="p1-acid">Soaking solution</label><select id="p1-acid"><option value="hcl">0.1 M HCl</option><option value="vinegar">White vinegar (≈0.8 M acetic acid)</option></select></div>
-          <div class="field"><label for="p1-t">Soak time <output id="p1-t-out" class="val"></output></label><input id="p1-t" type="range" min="2" max="20" step="1" value="10"></div>
-          <button class="btn btn--primary" id="p1-run" type="button">Soak, cut, and measure</button>
+      <div class="sim sim--fit" id="p1-sim">
+        <div class="sim-side">
+          <div id="p1-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="p1-a">Block A</label><select id="p1-a"></select></div>
+            <div class="field"><label for="p1-b">Block B</label><select id="p1-b"></select></div>
+            <div class="field"><label for="p1-c">Block C</label><select id="p1-c"></select></div>
+            <div class="field"><label for="p1-t">Soak time <output id="p1-t-out" class="val"></output></label><input id="p1-t" type="range" min="2" max="20" step="1" value="10"></div>
+            <button class="btn btn--primary" id="p1-run" type="button">Soak, cut, and measure</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="p1-acid">Soaking solution</label><select id="p1-acid"><option value="hcl">0.1 M HCl</option><option value="vinegar">White vinegar (≈0.8 M acetic acid)</option></select></div>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
           <p class="small muted">After soaking, each block is sliced through the middle and the colorless band is measured with a ruler (to the nearest 0.5 mm).</p>
+          <div class="callout callout--tip"><div class="callout-title">Your job: do the math</div>
+        <p>For each block, fill in surface area, volume, SA:V, and the percent of the volume the acid reached. The block that is still pink has dimensions (L − 2d) × (W − 2d) × (H − 2d), where d is the depth in <strong>cm</strong>. So the percent diffused is 100 × (1 − pink volume ÷ total volume). Then check your work.</p>
+      </div>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p1-viz" aria-label="Cross-sections of three agar blocks in an acid tray. Pink shows agar the acid has not reached yet; the colorless border grows as acid diffuses inward."></canvas>
@@ -203,33 +233,37 @@
           </div>
         </div>
       </div>
-      <div class="callout callout--tip"><div class="callout-title">Your job: do the math</div>
-        <p>For each block, fill in surface area, volume, SA:V, and the percent of the volume the acid reached. The block that is still pink has dimensions (L − 2d) × (W − 2d) × (H − 2d), where d is the depth in <strong>cm</strong>. So the percent diffused is 100 × (1 − pink volume ÷ total volume). Then check your work.</p>
-      </div>
       <div id="p1-table"></div>
-      <div class="row"><button class="btn" type="button" id="p1-check">Check my calculations</button><button class="btn btn--ghost btn--sm" type="button" id="p1-clear">Clear table</button></div>
-      <div class="fb" id="p1-fb" aria-live="polite"></div>
+      <div id="p1-checkwrap" class="stack">
+        <div class="row"><button class="btn" type="button" id="p1-check">Check my calculations</button><button class="btn btn--ghost btn--sm" type="button" id="p1-clear">Clear table</button></div>
+        <div class="fb" id="p1-fb" aria-live="polite"></div>
+      </div>
       <div id="p1-chart"></div>
-      <div id="p1-prompts"></div>
+      <div id="p1-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 5. PROCEDURE 2 ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Model cells">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Model cells">
     <header><div class="eyebrow">Procedure 2 · Structured inquiry</div><h2>Modeling diffusion and osmosis</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>You are in the hospital and need fluids through an IV. Why does the bag contain salts instead of pure water, and how would someone find the right concentration? To start answering, you will build model cells from dialysis tubing. Its pores let water and small solutes (ions, glucose, and more slowly, sucrose) through but block large molecules such as proteins and starch.</p>
-        <p><strong>Procedure.</strong> Knot one end of each 20 cm tube, add 10 mL of the inside solution, and knot the other end, leaving room for water to enter. Blot and weigh each bag, place it in a cup of the second solution for 30 minutes, then blot and weigh it again. Bag 5, with water inside and out, is your control. Predict the direction of water movement for each pair before you run it.</p>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="pairs" id="p2-pairs">
+      
+      <div class="sim sim--fit" id="p2-sim">
+        <div class="sim-side">
+          <div id="p2-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="pairs" id="p2-pairs">
             <span class="hd">Bag</span><span class="hd">Inside bag</span><span class="hd">In cup</span>
           </div>
-          <button class="btn btn--primary" id="p2-run" type="button">Weigh, soak 30 min, re-weigh</button>
+            <button class="btn btn--primary" id="p2-run" type="button">Weigh, soak 30 min, re-weigh</button>
+            <div class="key" id="p2-key"></div>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>You are in the hospital and need fluids through an IV. Why does the bag contain salts instead of pure water, and how would someone find the right concentration? To start answering, you will build model cells from dialysis tubing. Its pores let water and small solutes (ions, glucose, and more slowly, sucrose) through but block large molecules such as proteins and starch.</p>
+        <p><strong>Procedure.</strong> Knot one end of each 20 cm tube, add 10 mL of the inside solution, and knot the other end, leaving room for water to enter. Blot and weigh each bag, place it in a cup of the second solution for 30 minutes, then blot and weigh it again. Bag 5, with water inside and out, is your control. Predict the direction of water movement for each pair before you run it.</p>
           <p class="small muted">Run the set again to collect replicates. The balance reads to 0.01 g.</p>
-          <div class="key" id="p2-key"></div>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p2-viz" aria-label="Five cups, each holding a dialysis-tubing bag. Bags swell when water moves in and shrink when water moves out. Moving dots show the direction of net water flow."></canvas>
@@ -242,28 +276,37 @@
       </div>
       <p class="small">Fill in <strong>% change in mass</strong> = (final − initial) ÷ initial × 100 for each bag, then check your work. The graph shows the mean for each pair, with error bars of ±2 SE once you have replicates.</p>
       <div id="p2-table"></div>
-      <div class="row"><button class="btn" type="button" id="p2-check">Check my % changes</button><button class="btn btn--ghost btn--sm" type="button" id="p2-clear">Clear table</button></div>
-      <div class="fb" id="p2-fb" aria-live="polite"></div>
+      <div id="p2-checkwrap" class="stack">
+        <div class="row"><button class="btn" type="button" id="p2-check">Check my % changes</button><button class="btn btn--ghost btn--sm" type="button" id="p2-clear">Clear table</button></div>
+        <div class="fb" id="p2-fb" aria-live="polite"></div>
+      </div>
       <div id="p2-chart"></div>
-      <div id="p2-prompts"></div>
+      <div id="p2-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 6. PROCEDURE 3A ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Plasmolysis">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Plasmolysis">
     <header><div class="eyebrow">Procedure 3 · Part A</div><h2>Observing osmosis in living cells</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Mount a single <em>Elodea</em> leaf (or a strip of red onion epidermis) in a drop of water and view it at 400×. Find the cell wall and the cell membrane. Can you tell them apart? Then add one of the solutions from Procedure 2 at the edge of the cover slip and draw it under with a paper towel on the opposite side. Watch what happens to the protoplast, the membrane-bound contents of the cell.</p>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="p3a-spec">Specimen</label><select id="p3a-spec"><option value="elodea">Elodea leaf</option><option value="onion">Red onion epidermis</option></select></div>
-          <div class="field"><label for="p3a-sol">Solution to add</label><select id="p3a-sol"></select></div>
-          <button class="btn btn--primary" id="p3a-run" type="button">Add solution under cover slip</button>
-          <button class="btn" id="p3a-rinse" type="button">Rinse with distilled water</button>
-          <button class="btn" id="p3a-rec" type="button">Record this view</button>
+      
+      <div class="sim sim--fit" id="p3a-sim">
+        <div class="sim-side">
+          <div id="p3a-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="p3a-sol">Solution to add</label><select id="p3a-sol"></select></div>
+            <button class="btn btn--primary" id="p3a-run" type="button">Add solution under cover slip</button>
+            <button class="btn" id="p3a-rinse" type="button">Rinse with distilled water</button>
+            <button class="btn" id="p3a-rec" type="button">Record this view</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="p3a-spec">Specimen</label><select id="p3a-spec"><option value="elodea">Elodea leaf</option><option value="onion">Red onion epidermis</option></select></div>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Mount a single <em>Elodea</em> leaf (or a strip of red onion epidermis) in a drop of water and view it at 400×. Find the cell wall and the cell membrane. Can you tell them apart? Then add one of the solutions from Procedure 2 at the edge of the cover slip and draw it under with a paper towel on the opposite side. Watch what happens to the protoplast, the membrane-bound contents of the cell.</p>
           <p class="small muted">Count the cells inside the outlined field whose membrane has pulled away from the wall, and type that number in the table.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p3a-viz" aria-label="Microscope field at 400 times magnification showing a sheet of plant cells. In hypertonic solutions the protoplasts shrink away from the cell walls."></canvas>
@@ -275,28 +318,38 @@
         </div>
       </div>
       <div id="p3a-table"></div>
-      <div class="row"><button class="btn btn--ghost btn--sm" type="button" id="p3a-clear">Clear table</button></div>
+      <div id="p3a-clearwrap">
+        <div class="row"><button class="btn btn--ghost btn--sm" type="button" id="p3a-clear">Clear table</button></div>
+      </div>
       <div id="p3a-chart"></div>
-      <div id="p3a-prompts"></div>
+      <div id="p3a-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 7. PROCEDURE 3B ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Water potential">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Water potential">
     <header><div class="eyebrow">Procedure 3 · Part B</div><h2>Finding the water potential of plant tissue</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Your teacher made six sucrose solutions (0, 0.2, 0.4, 0.6, 0.8, and 1.0 M) and dyed each a different color, but did not label which is which. First you need to work out the concentrations. Then soak cores of plant tissue in each one overnight and use the change in mass to find the concentration that is <strong>isotonic</strong> to the tissue. From that you can calculate the tissue's water potential.</p>
       </div>
       <h3>Step 1 · Identify the color-coded solutions</h3>
-      <div class="sim">
-        <div class="controls">
+      <div class="sim sim--fit" id="id-sim">
+        <div class="sim-side">
+          <div id="id-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <button class="btn btn--primary" id="p3b-id" type="button">Test cups with water-filled bags</button>
+            <div class="assign" id="p3b-assign"></div>
+            <button class="btn" type="button" id="p3b-idcheck">Check my identification</button>
+            <div class="fb" id="p3b-idfb" aria-live="polite"></div>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <details class="disclose"><summary>Stuck? Reveal the labels</summary><div class="inner"><p class="small">Only use this if your teacher allows it.</p><button class="btn btn--sm" type="button" id="p3b-reveal">Fill in the correct concentrations</button></div></details>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
           <p class="small">One way to rank the solutions: put a water-filled dialysis bag in each cup for 30 minutes. Water leaves the bag faster when the cup has more sucrose.</p>
-          <button class="btn btn--primary" id="p3b-id" type="button">Test cups with water-filled bags</button>
-          <div class="assign" id="p3b-assign"></div>
-          <button class="btn" type="button" id="p3b-idcheck">Check my identification</button>
-          <div class="fb" id="p3b-idfb" aria-live="polite"></div>
-          <details class="disclose"><summary>Stuck? Reveal the labels</summary><div class="inner"><p class="small">Only use this if your teacher allows it.</p><button class="btn btn--sm" type="button" id="p3b-reveal">Fill in the correct concentrations</button></div></details>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p3b-idviz" aria-label="Six color-coded cups of sucrose solution, each with a water-filled dialysis bag. Bags shrink more in more concentrated solutions."></canvas>
@@ -305,12 +358,19 @@
       </div>
 
       <h3>Step 2 · Soak plant cores overnight</h3>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="p3b-tissue">Plant tissue</label><select id="p3b-tissue"><option value="potato">White potato</option><option value="sweet">Sweet potato</option><option value="yam">Yam</option><option value="dry">White potato left out dry for 3 days</option></select></div>
+      <div class="sim sim--fit" id="soak-sim">
+        <div class="sim-side">
+          <div id="soak-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="p3b-tissue">Plant tissue</label><select id="p3b-tissue"><option value="potato">White potato</option><option value="sweet">Sweet potato</option><option value="yam">Yam</option><option value="dry">White potato left out dry for 3 days</option></select></div>
+            <button class="btn btn--primary" id="p3b-run" type="button">Weigh, soak overnight, re-weigh</button>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
           <p class="small muted">Four cores from a cork borer go in each cup. The four are weighed together before and after soaking overnight at 22 °C.</p>
-          <button class="btn btn--primary" id="p3b-run" type="button">Weigh, soak overnight, re-weigh</button>
           <p class="small muted">Run each tissue at least twice to get replicate cups.</p>
+          <p class="small muted">The dashed lines are least-squares fits. Each fit equation is printed under the graph. The isotonic concentration is where the line crosses 0% change, the x-intercept = −b ÷ m.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p3b-viz" aria-label="Six color-coded cups each holding four plant cores. Cores swell in dilute solutions and shrink in concentrated ones."></canvas>
@@ -321,9 +381,10 @@
         </div>
       </div>
       <div id="p3b-table"></div>
-      <div class="row"><button class="btn btn--ghost btn--sm" type="button" id="p3b-clear">Clear table</button></div>
+      <div id="p3b-clearwrap">
+        <div class="row"><button class="btn btn--ghost btn--sm" type="button" id="p3b-clear">Clear table</button></div>
+      </div>
       <div id="p3b-chart"></div>
-      <p class="small muted">The dashed lines are least-squares fits. Each fit equation is printed under the graph. The isotonic concentration is where the line crosses 0% change, the x-intercept = −b ÷ m.</p>
 
       <h3>Step 3 · Calculate the tissue's water potential</h3>
       <div class="callout callout--key"><div class="callout-title">At the isotonic point</div>
@@ -339,12 +400,16 @@
       <div class="fb" id="p3b-fb" aria-live="polite"></div>
 
       <h3>Water potential calculator</h3>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="wp-i">Solute (sets i)</label><select id="wp-i"><option value="1">Sucrose or glucose (i = 1)</option><option value="2">NaCl (i = 2)</option><option value="3">CaCl₂ (i = 3)</option></select></div>
-          <div class="field"><label for="wp-c">Concentration C <output id="wp-c-out" class="val"></output></label><input id="wp-c" type="range" min="0" max="1.5" step="0.01" value="0.3"></div>
-          <div class="field"><label for="wp-t">Temperature <output id="wp-t-out" class="val"></output></label><input id="wp-t" type="range" min="0" max="40" step="1" value="22"></div>
-          <div class="field"><label for="wp-p">Pressure potential ψ<sub>P</sub> <output id="wp-p-out" class="val"></output></label><input id="wp-p" type="range" min="-5" max="15" step="0.1" value="0"></div>
+      <div class="sim sim--fit" id="wp-sim">
+        <div class="sim-side">
+          
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="wp-i">Solute (sets i)</label><select id="wp-i"><option value="1">Sucrose or glucose (i = 1)</option><option value="2">NaCl (i = 2)</option><option value="3">CaCl₂ (i = 3)</option></select></div>
+            <div class="field"><label for="wp-c">Concentration C <output id="wp-c-out" class="val"></output></label><input id="wp-c" type="range" min="0" max="1.5" step="0.01" value="0.3"></div>
+            <div class="field"><label for="wp-t">Temperature <output id="wp-t-out" class="val"></output></label><input id="wp-t" type="range" min="0" max="40" step="1" value="22"></div>
+            <div class="field"><label for="wp-p">Pressure potential ψ<sub>P</sub> <output id="wp-p-out" class="val"></output></label><input id="wp-p" type="range" min="-5" max="15" step="0.1" value="0"></div>
+          </div>
         </div>
         <div class="stage">
           <div class="equation" id="wp-eq">ψS = −iCRT</div>
@@ -356,21 +421,22 @@
           <p class="small muted" id="wp-note"></p>
         </div>
       </div>
-      <div id="p3b-prompts"></div>
+      <div id="p3b-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 8. DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Design your own experiment</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Each procedure raised questions you have not answered yet. Does shape matter as much as size? How does temperature change the speed of diffusion? How does the gradient's size affect the rate of osmosis? Pick one independent variable, plan your levels and replicates, and write down your design <em>before</em> you run anything.</p>
-      </div>
-      <div class="grid-2" id="design-plan"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="d-iv">Independent variable</label>
+      
+      <div class="prompts-2" id="design-plan"></div>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="d-iv">Independent variable</label>
             <select id="d-iv">
               <option value="side">Agar cube side length (cm)</option>
               <option value="shape">Agar block shape at equal volume (8 cm³)</option>
@@ -378,10 +444,16 @@
               <option value="acid">HCl concentration (M)</option>
               <option value="sucrose">Sucrose concentration inside a dialysis bag (M)</option>
             </select></div>
-          <div class="field" id="d-levels-field"><label for="d-levels">Levels (comma-separated)</label><input id="d-levels" type="text" value="0.5, 1, 2, 3"><span class="hint" id="d-levels-hint"></span></div>
-          <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="6" step="1" value="3"></div>
-          <div class="callout callout--tip"><div class="callout-title">Held constant</div><p class="small" id="d-const"></p></div>
-          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+            <div class="field" id="d-levels-field"><label for="d-levels">Levels (comma-separated)</label><input id="d-levels" type="text" value="0.5, 1, 2, 3"><span class="hint" id="d-levels-hint"></span></div>
+            <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="6" step="1" value="3"></div>
+              <div class="callout callout--tip"><div class="callout-title">Held constant</div><p class="small" id="d-const"></p></div>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+          <p>Each procedure raised questions you have not answered yet. Does shape matter as much as size? How does temperature change the speed of diffusion? How does the gradient's size affect the rate of osmosis? Pick one independent variable, plan your levels and replicates, and write down your design <em>before</em> you run anything.</p>
+        </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="d-viz" aria-label="Preview of the experimental setup, one example of each level of the independent variable."></canvas>
@@ -394,25 +466,25 @@
       </div>
       <div id="d-sum"></div>
       <div id="d-chart"></div>
-      <details class="disclose"><summary>All individual trials</summary><div class="inner"><div id="d-raw"></div></div></details>
-      <div id="design-after"></div>
+      <div id="d-raw-holder"><div id="d-raw"></div></div>
+      <div id="design-after" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 9. ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
     <div class="step-body" id="analysis"></div>
   </section>
 
   <!-- ============ 10. EVALUATE ============ -->
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluate and extend</div><h2>Where can you go from here?</h2></header>
-    <div class="step-body" id="evaluate"></div>
+    <div class="step-body prompts-2" id="evaluate"></div>
   </section>
 
   <!-- ============ 11. SUBMIT ============ -->
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -992,7 +1064,7 @@ Lab.init({ id: 'lab04' });
   const p1sel = ['a', 'b', 'c'].map(k => $('#p1-' + k));
   p1sel.forEach((sel, i) => { SHAPES.forEach(s => sel.append(Lab.h('option', { value: s.id }, s.name))); sel.value = ['c1', 'c2', 'c3'][i]; });
   const p1t = slider('p1-t', 'p1-t-out', v => v + ' min');
-  const p1cv = Lab.canvas('#p1-viz', 0.5);
+  const p1cv = Lab.canvas('#p1-viz', 0.5, { fit: true });
   let p1Blocks = [], p1Anim = null;
   function p1Preview() {
     p1Blocks = p1sel.map((sel, i) => Object.assign({}, shapeById(sel.value), { label: 'Block ' + 'ABC'[i], dcm: 0 }));
@@ -1102,7 +1174,7 @@ Lab.init({ id: 'lab04' });
     return [a, b];
   });
   $('#p2-key').innerHTML = Object.values(SOL).map(s => `<span>${s.short} = ${s.name}</span>`).join('');
-  const p2cv = Lab.canvas('#p2-viz', 0.44);
+  const p2cv = Lab.canvas('#p2-viz', 0.44, { fit: true });
   let p2State = [], p2Anim = null, p2Bal = { mass: null, tag: '', load: false };
   function p2Preview() {
     p2State = p2sel.map(([a, b], i) => ({ inL: LIQ[a.value], outL: LIQ[b.value], ratio: 1, flux: 0, label: 'Bag ' + (i + 1), sub: `${SOL[a.value].short} in ${SOL[b.value].short}`, tape: String(i + 1) }));
@@ -1338,6 +1410,7 @@ Lab.init({ id: 'lab04' });
   }
   let p3Geo = null, p3Extra = [], p3RenderAt = 0;
   const p3Hud = { mag: '400×', bar: GEO.elodea.bar };
+  Lab.fitHeight($('#p3a-viz'), 0.75);
   const p3view = Scope.view('#p3a-viz', { aspect: 0.75, world: P3W, layers: [{ z: 0 }, { z: -0.03 }], focusLabel: 'Fine focus', hud: p3Hud, overlay: ctx => p3Overlay(ctx) });
   function drawScope(fresh) {
     p3view.setSpecimen({ render: p3Renderer, world: P3W, layers: [{ z: 0 }, { z: -0.03 }], seed: p3Spec === 'elodea' ? 7 : 11, refocus: !!fresh, recenter: !!fresh });
@@ -1398,7 +1471,7 @@ Lab.init({ id: 'lab04' });
   const assigned = i => { const v = $('#p3b-as' + i).value; return v === '' ? null : +v; };
   const colorIdx = name => CUPS.findIndex(c => c.c === name);
 
-  const idcv = Lab.canvas('#p3b-idviz', 0.42);
+  const idcv = Lab.canvas('#p3b-idviz', 0.42, { fit: true });
   let idState = CUPS.map(c => ({ inL: LIQ.water, outL: dyeLiq(c.c), ratio: 1, flux: 0, label: c.c, sub: '' })), idAnim = null;
   drawBags(idcv, idState, 0, { cup: true }); idcv.onresize = () => drawBags(idcv, idState, 0, { cup: true });
   const idTable = Lab.table('#p3b-idtable', { columns: [{ key: 'cup', label: 'Cup' }, { key: 'm0', label: 'Initial', unit: 'g', num: true }, { key: 'm1', label: 'After 30 min', unit: 'g', num: true }, { key: 'pct', label: '% change', unit: '%', num: true, digits: 1 }], rows: [] });
@@ -1411,7 +1484,7 @@ Lab.init({ id: 'lab04' });
       sims.forEach((s, i) => { idState[i].ratio = s.masses[k] / s.masses[0]; idState[i].flux = s.flux[Math.max(1, k)]; idState[i].sub = fmt(100 * (s.masses[k] / s.masses[0] - 1), 1) + '%'; });
       phase += 0.02; drawBags(idcv, idState, phase, { cup: true });
     }, () => {
-      idTable.setRows(sims.map((s, i) => { const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return { cup: CUPS[i].c, m0, m1, pct: 100 * (m1 - m0) / m0 }; }));
+      Lab.toast('Water-filled bag test finished: see the Data tab', { type: 'ok', announce: false, key: 'idtest' }); idTable.setRows(sims.map((s, i) => { const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return { cup: CUPS[i].c, m0, m1, pct: 100 * (m1 - m0) / m0 }; }));
     });
   });
   function refreshConc() { p3bTable.setRows(p3bTable.getRows().map(r => Object.assign(r, { conc: assigned(colorIdx(r.cup)) }))); }
@@ -1423,7 +1496,7 @@ Lab.init({ id: 'lab04' });
   });
   $('#p3b-reveal').addEventListener('click', () => { CUPS.forEach((c, i) => { const s = $('#p3b-as' + i); s.value = String(secret[i]); s.dispatchEvent(new Event('change')); }); });
 
-  const p3bcv = Lab.canvas('#p3b-viz', 0.42);
+  const p3bcv = Lab.canvas('#p3b-viz', 0.42, { fit: true });
   let coreState = CUPS.map(c => ({ col: c.t, ratio: 1, label: c.c })), p3bAnim = null;
   function drawCores() {
     const { ctx, w, h } = p3bcv, n = coreState.length, slot = (w - 8) / n, bot = h - 40, benchY = bot - Math.min(16, h * 0.07);
@@ -1505,7 +1578,7 @@ Lab.init({ id: 'lab04' });
   /* =====================================================================
      DESIGN YOUR OWN — reuses the models above
      ===================================================================== */
-  const dcv = Lab.canvas('#d-viz', 0.5);
+  const dcv = Lab.canvas('#d-viz', 0.5, { fit: true });
   const IV = {
     side: { x: 'Cube side length (cm)', y: '% of volume reached by acid', dv: '% volume diffused', levels: '0.5, 1, 2, 3', cat: false, hint: 'Side lengths from 0.3 to 3 cm (the agar is poured 3 cm deep).', constant: '0.1 M HCl, 10 min soak, 22 °C, cube shape.',
       run: L => pctDiffused(L, L, L, depthMM(10, {}, true) / 10), check: v => v >= 0.3 && v <= 3, shape: L => ({ d: [L, L, L], label: fmt(L, L % 1 ? 1 : 0) + ' cm' }) },
@@ -1583,16 +1656,17 @@ Lab.init({ id: 'lab04' });
   /* =====================================================================
      ANALYZE & EVALUATE
      ===================================================================== */
-  const an = $('#analysis');
+  const anTop = $('#analysis');
+  const an = Lab.h('div', { class: 'prompts-2' }); anTop.append(an);
   Lab.prompt(an, { key: 'a1', label: '1. Why are most cells small, and why do they have cell membranes with many convolutions? Use your Procedure 1 data.', rows: 4 });
   Lab.prompt(an, { key: 'a2', label: '2. Which organelles inside the cell have membranes with many convolutions? Why?', rows: 3 });
   Lab.prompt(an, { key: 'a3', label: '3. Does osmosis occur when a cell is in an isotonic solution? Explain your reasoning.', rows: 3 });
   Lab.prompt(an, { key: 'a4', label: '4. What factors determine the rate and direction of osmosis? When will the net rate of osmosis in a model cell equal zero? Will it ever truly be zero?', rows: 4 });
   Lab.prompt(an, { key: 'a5', label: '5. What would you predict if you used a starch solution in the dialysis bag instead of the protein? Draw or describe the flow of water for one of your model cells.', rows: 4 });
   Lab.prompt(an, { key: 'a6', label: '6. Based on what you learned, how could you determine the solute concentration inside a living cell?', rows: 3 });
-  an.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
-  an.append(Lab.h('p', { class: 'small muted' }, 'Answer the driving question: what causes a plant to wilt when it is not watered?'));
-  const cer = Lab.h('div', { class: 'cer' }); an.append(cer);
+  anTop.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
+  anTop.append(Lab.h('p', { class: 'small muted' }, 'Answer the driving question: what causes a plant to wilt when it is not watered?'));
+  const cer = Lab.h('div', { class: 'cer' }); anTop.append(cer);
   letter(Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 4 }), 'C');
   letter(Lab.prompt(cer, { key: 'cer-e', label: 'Evidence (cite numbers from Procedures 2 and 3)', rows: 4 }), 'E');
   letter(Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning (use water potential, turgor, and plasmolysis)', rows: 4 }), 'R');
@@ -1603,6 +1677,79 @@ Lab.init({ id: 'lab04' });
   Lab.prompt(ev, { key: 'e3', label: 'Identify two sources of error in the real bench version of these procedures (for example blotting, cutting, or timing) and how you would reduce them.', rows: 3 });
   Lab.prompt(ev, { key: 'e4', label: 'Foods like jams and salted meats keep for a long time. Use osmosis and water potential to explain how high concentrations of sugar or salt preserve food.', rows: 3 });
   Lab.prompt(ev, { key: 'e5', label: 'Do fungal cells have turgor pressure? State a hypothesis and outline an experiment (materials, independent and dependent variables, control) to test it.', rows: 5 });
+
+  /* =====================================================================
+     LAPTOP LAYOUT: results beside each simulation, step checklists, toasts
+     ===================================================================== */
+  const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+  const allFilled = ks => ks.every(filled);
+  const isNum = v => v != null && v !== '' && isFinite(+v);
+  const okPills = sel => $(sel).querySelectorAll('.pill.ok').length, warnPills = sel => $(sel).querySelectorAll('.pill.warn').length;
+  const identDone = () => CUPS.every((c, i) => assigned(i) != null);
+  let p3aRinsed = false, dTouched = false;
+  $('#p3a-rinse').addEventListener('click', () => { p3aRinsed = true; });
+  ['#d-iv', '#d-levels', '#d-reps'].forEach(s => { $(s).addEventListener('input', () => { dTouched = true; }); $(s).addEventListener('change', () => { dTouched = true; }); });
+  Lab.results('#p1-sim', { graph: [{ el: '#p1-chart', title: '% of volume reached by acid' }], data: [{ el: '#p1-table', title: 'Your data and calculations' }, '#p1-checkwrap'] });
+  Lab.results('#p2-sim', { graph: [{ el: '#p2-chart', title: 'Mean % change in mass ± 2 SE' }], data: [{ el: '#p2-table', title: 'Your data and calculations' }, '#p2-checkwrap'] });
+  Lab.results('#p3a-sim', { graph: [{ el: '#p3a-chart', title: '% of cells plasmolyzed' }], data: [{ el: '#p3a-table', title: 'Your cell counts' }, '#p3a-clearwrap'] });
+  Lab.results('#id-sim', { graph: [], data: [{ el: '#p3b-idtable', title: 'Water-filled bag test' }] });
+  Lab.results('#soak-sim', { graph: [{ el: '#p3b-chart', title: '% change in mass of the cores' }], data: [{ el: '#p3b-table', title: 'Overnight soak data' }, '#p3b-clearwrap'] });
+  Lab.results('#d-sim', { graph: [{ el: '#d-chart', title: 'Results with ±2 SE' }], data: [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw-holder', title: 'Every trial' }] });
+
+  Lab.steps('#p1-steps', [
+    { id: 'ind', text: 'Test the indicator (above)', target: '#add-hcl', done: () => filled('p1-indicator') || (!!$('#tube-obs').dataset.hcl && !!$('#tube-obs').dataset.naoh), hint: 'Scroll up: add HCl and NaOH to the two tubes and record what you see.' },
+    { id: 'run', text: 'Soak, cut, and measure', target: '#p1-run', done: () => p1table.getRows().length > 0, hint: 'Pick three blocks and a soak time, then press <strong>Soak, cut, and measure</strong>.' },
+    { id: 'calc', text: 'Fill in SA, V, SA:V and %', target: '#p1-table input', done: () => { const r = p1table.getRows(); return r.length > 0 && r.every(x => isNum(x.sa) && isNum(x.v) && isNum(x.ratio) && isNum(x.pct)); }, hint: 'Open the <strong>Data</strong> tab and type the four calculated columns for each block.' },
+    { id: 'check', text: 'Check my calculations', target: '#p1-check', done: () => p1table.getRows().length > 0 && okPills('#p1-fb') > 0 && !warnPills('#p1-fb'), hint: 'Press <strong>Check my calculations</strong> (in the Data tab) and fix any rows it flags.' },
+    { id: 'qs', text: 'Answer the 2 questions (below)', target: '#p-p1-q1', done: () => allFilled(['p1-q1', 'p1-q2']), hint: 'Scroll down and answer the two questions.' }
+  ], { doneText: 'Procedure 1 done. Go on to <a href="#model-cells">Model cells</a>.' });
+  Lab.steps('#p2-steps', [
+    { id: 'run', text: 'Weigh, soak 30 min, re-weigh', target: '#p2-run', done: () => p2table.getRows().length > 0, hint: 'Press <strong>Weigh, soak 30 min, re-weigh</strong> to run all five bags.' },
+    { id: 'rep', text: 'Run the set again (replicates)', target: '#p2-run', done: () => p2table.getRows().length >= 10, hint: 'Run the set at least twice so the graph has error bars.' },
+    { id: 'pct', text: 'Fill in % change for each bag', target: '#p2-table input', done: () => { const r = p2table.getRows(); return r.length > 0 && r.every(x => isNum(x.pct)); }, hint: 'Open the <strong>Data</strong> tab: % change = (final − initial) ÷ initial × 100.' },
+    { id: 'check', text: 'Check my % changes', target: '#p2-check', done: () => p2table.getRows().length > 0 && okPills('#p2-fb') > 0 && !warnPills('#p2-fb'), hint: 'Press <strong>Check my % changes</strong> in the Data tab.' },
+    { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-p2-q1', done: () => allFilled(['p2-q1', 'p2-q2', 'p2-q3']), hint: 'Scroll down and answer the three questions.' }
+  ], { doneText: 'Procedure 2 done. Go on to <a href="#plasmolysis">Plasmolysis</a>.' });
+  Lab.steps('#p3a-steps', [
+    { id: 'add', text: 'Add a solution', target: '#p3a-run', done: () => p3Added || p3table.getRows().length > 0, hint: 'Choose a solution and press <strong>Add solution under cover slip</strong>. Watch the cells for two minutes.' },
+    { id: 'rec', text: 'Record this view', target: '#p3a-rec', done: () => p3table.getRows().length > 0, hint: 'Press <strong>Record this view</strong>, then count the plasmolyzed cells.' },
+    { id: 'count', text: 'Type the plasmolyzed count', target: '#p3a-table input', done: () => p3table.getRows().some(r => isNum(r.plz)), hint: 'Open the <strong>Data</strong> tab and type how many cells are plasmolyzed.' },
+    { id: 'three', text: 'Try 3 different solutions', target: '#p3a-sol', done: () => new Set(p3table.getRows().map(r => String(r.sol).replace(/ \(.*$/, ''))).size >= 3, hint: 'Pick another solution, add it, and record that view too.' },
+    { id: 'rinse', text: 'Rinse with distilled water', target: '#p3a-rinse', optional: true, done: () => p3aRinsed, hint: 'Press <strong>Rinse</strong> to see whether plasmolysis reverses.' },
+    { id: 'qs', text: 'Answer the 2 questions (below)', target: '#p-p3a-q1', done: () => allFilled(['p3a-q1', 'p3a-q2']), hint: 'Scroll down and answer the two questions.' }
+  ], { doneText: 'Part A done. Go on to <a href="#water-potential">Water potential</a>.' });
+  Lab.steps('#id-steps', [
+    { id: 'test', text: 'Test cups with water bags', target: '#p3b-id', done: () => idTable.getRows().length > 0 || identDone(), hint: 'Press <strong>Test cups with water-filled bags</strong>. More water lost means more sucrose.' },
+    { id: 'assign', text: 'Assign a concentration to each cup', target: '#p3b-as0', done: identDone, hint: 'Rank the cups by % change and choose 0 to 1.0 M for each color.' },
+    { id: 'check', text: 'Check my identification', target: '#p3b-idcheck', done: () => CUPS.every((c, i) => assigned(i) === secret[i]), hint: 'Press <strong>Check my identification</strong>.' }
+  ], { doneText: 'Cups identified. Soak the plant cores in the next box.' });
+  Lab.steps('#soak-steps', [
+    { id: 'id', text: 'Identify the cups (above)', target: '#p3b-as0', done: () => identDone() || p3bTable.getRows().some(r => r.conc != null), hint: 'Scroll up and assign a concentration to each colored cup.' },
+    { id: 'run', text: 'Weigh, soak overnight, re-weigh', target: '#p3b-run', done: () => p3bTable.getRows().length > 0, hint: 'Press <strong>Weigh, soak overnight, re-weigh</strong>.' },
+    { id: 'rep', text: 'Run each tissue twice', target: '#p3b-run', done: () => p3bTable.getRows().length >= 12, hint: 'Run it again for replicate cups.' },
+    { id: 'tis', text: 'Try a second tissue', target: '#p3b-tissue', optional: true, done: () => new Set(p3bTable.getRows().map(r => r.tissue)).size > 1, hint: 'Choose another tissue and run it.' },
+    { id: 'psi', text: 'Calculate ψ of the tissue (below)', target: '#p3b-c', done: () => ['#p3b-c', '#p3b-psis', '#p3b-psi'].every(s => isNum($(s).value)), hint: 'Scroll down: find the isotonic point from the fit line, then ψ<sub>S</sub> = −iCRT.' },
+    { id: 'chk', text: 'Check my calculation', target: '#p3b-check', done: () => okPills('#p3b-fb') >= 3, hint: 'Press <strong>Check my calculation</strong>.' }
+  ], { doneText: 'Part B done. Go on to <a href="#design">Design</a>.' });
+  Lab.steps('#d-steps', [
+    { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => allFilled(['d-question', 'd-hyp', 'd-vars', 'd-control']), hint: 'Write your plan in the four boxes above.' },
+    { id: 'iv', text: 'Choose a variable and levels', target: '#d-iv', sticky: true, done: () => dTouched || draw.getRows().length > 0, hint: 'Pick the independent variable and type its levels.' },
+    { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => draw.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
+    { id: 'res', text: 'Describe your results (below)', target: '#p-d-results', done: () => allFilled(['d-results', 'd-support']), hint: 'Scroll down and describe your results.' }
+  ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+  Lab.gate('#d-run', () => dLevels().length ? '' : 'Enter at least one valid level');
+
+  /* toasts for key moments (the feedback lines are live regions, so these are not announced twice) */
+  const checkToast = (btnSel, fbSel, rowsFn, key, what) => $(btnSel).addEventListener('click', () => {
+    if (!rowsFn()) return;
+    const bad = warnPills(fbSel);
+    Lab.toast(bad ? `Checked: recheck ${what}` : `Checked: your ${what} are correct`, { type: bad ? 'warn' : 'ok', announce: false, key });
+  });
+  checkToast('#p1-check', '#p1-fb', () => p1table.getRows().length, 'p1chk', 'calculations');
+  checkToast('#p2-check', '#p2-fb', () => p2table.getRows().length, 'p2chk', '% changes');
+  $('#p3b-idcheck').addEventListener('click', () => { const n = CUPS.filter((c, i) => assigned(i) === secret[i]).length; Lab.toast(n === 6 ? 'All six cups identified correctly' : `${n} of 6 cups correct so far`, { type: n === 6 ? 'ok' : 'warn', announce: false, key: 'idchk' }); });
+  $('#p3b-check').addEventListener('click', () => { const bad = warnPills('#p3b-fb'), ok = okPills('#p3b-fb'); if (ok + bad) Lab.toast(bad ? 'Checked: see the hints under your calculation' : 'Checked: your water potential calculation is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'p3bchk' }); });
+  $('#p3a-run').addEventListener('click', () => Lab.toast(`Added ${p3Bath.name}: watch the cells for two minutes`, { type: 'info', announce: false, key: 'p3a' }));
 })();
 </script>
 </body>
