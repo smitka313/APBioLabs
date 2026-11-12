@@ -571,6 +571,18 @@ details.disclose > .inner > p { max-width: 68ch; }
   .lab-header .tags { margin-top: 10px; }
 }
 
+/* 720-px-tall laptops (1280×720): tighten the part header and the sim side column so the sim still fits */
+@media (min-width: 761px) and (max-height: 760px) {
+  body.paged .step { padding-top: 12px; gap: 12px; }
+  .step > header { gap: 2px; }
+  .step > header h2 { font-size: 1.45rem; }
+  .sim--fit > .sim-side { padding: 10px 14px; gap: 8px; }
+  .sim--fit .controls { gap: 8px; }
+  .si { padding-block: 2px; }
+  .steps-next { padding-block: 4px; }
+  .sim--fit .controls-title { padding-top: 6px; }
+}
+
 /* Worksheet copies of disclosures and tabs */
 .ws-details > * + * { margin-top: 8px; }
 .ws-sum { font-weight: 700; margin-top: 10px; }
