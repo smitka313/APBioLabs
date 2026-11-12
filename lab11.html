@@ -887,11 +887,12 @@
       const f = st.field; if (!f) return; const sc = FR / f.R, L = 0.028 * sc, rr = Math.max(9, L * 0.8);
       f.stomata.forEach(s => { if (!s.marked) return; const x = toW(f, s.x), y = toW(f, s.y); ctx.lineWidth = 4.2; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke(); ctx.lineWidth = 2.4; ctx.strokeStyle = C('--stain'); ctx.stroke(); });
     },
-    hud: (ctx) => {
+    hud: (ctx, view) => {
+      const z = (view && view.zoom) > 0 ? view.zoom : 1;   // scope.js zoom: the scale bar grows with the image
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1; ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.font = '600 16px "JetBrains Mono", ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillText(`${st.mag}X`, 14, 26);
-      ctx.textAlign = 'right'; ctx.fillText(`⌀ ${FOV[st.mag]} mm`, VW - 14, 26);
-      const bar = st.mag === 400 ? 0.1 : 0.5, b = bar * FR / (FOV[st.mag] / 2), x1 = VW - 16, y = VW - 18;
+      ctx.textAlign = 'right'; ctx.fillText(`⌀ ${+(FOV[st.mag] / z).toFixed(2)} mm`, VW - 14, 26);
+      const bar = st.mag === 400 ? 0.1 : 0.5, b = bar * z * FR / (FOV[st.mag] / 2), x1 = VW - 16, y = VW - 18;
       ctx.fillRect(x1 - b, y - 2, b, 4); ctx.fillRect(x1 - b, y - 7, 1.6, 14); ctx.fillRect(x1 - 1.6, y - 7, 1.6, 14);
       ctx.font = '600 14px "JetBrains Mono", ui-monospace, monospace'; ctx.fillText(`${bar * 1000} µm`, x1, y - 11);
       ctx.restore();
