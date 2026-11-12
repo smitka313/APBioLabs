@@ -187,6 +187,10 @@ table.data tfoot td { background: var(--surface-2); font-weight: 600; }
 .chart .axis-label { fill: var(--ink); font-weight: 600; font-size: 13px; }
 .chart .gridline { stroke: var(--grid); stroke-width: 1; }
 .chart .axis { stroke: var(--muted); stroke-width: 1; }
+/* Empty chart: labelled axes with a centred note (no fake 0–1 scale) */
+.chart.is-empty .gridline { stroke-dasharray: 3 5; opacity: .7; }
+.chart .chart-empty rect { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
+.chart .chart-empty text { fill: var(--muted); font-size: 14px; font-weight: 600; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .85rem; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
