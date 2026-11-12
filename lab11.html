@@ -24,13 +24,19 @@
   .canvas-box { width: 100%; max-width: 470px; margin-inline: auto; }
   .sim--fit .canvas-box { max-width: none; }
   .sim--fit > .sim-main { align-self: stretch; }   /* results panels use the full height of the sim box */
-  .sim--fit > .sim-main.is-wide { grid-template-columns: minmax(0, 1fr) minmax(360px, 42%); }   /* wider results column for wide tables */
+  .sim--fit > .sim-main.is-wide { grid-template-columns: minmax(0, 1fr) minmax(360px, 48%); }   /* wider results column for wide tables */
   .sim--fit .row.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
   .sim--fit .row.two .seg button { padding-inline: 8px; }
   #st-cv-center { display: none; }
   .inline-num { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .inline-num input { max-width: 140px; font-family: var(--f-mono); }
   .t-out { font-family: var(--f-mono); font-size: .9rem; }
+  /* Compact results tables: fit the side panel at 1366 px without sideways scroll */
+  #tr-table table.data th, #tr-table table.data td, #tr-summary table.data th, #tr-summary table.data td { padding: 4px 3px; font-size: .75rem; }
+  #tr-table table.data th, #tr-summary table.data th { min-width: 0; }
+  #tr-table table.data td:nth-child(2), #tr-table table.data td:nth-child(4) { white-space: normal; }
+  #tr-table table.data td:last-child, #tr-summary table.data td { white-space: normal; overflow-wrap: anywhere; }
+  #tr-table table.data input { min-width: 0; width: 3.9em; padding-inline: 4px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -1300,10 +1306,10 @@
     columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'condTxt', label: 'Condition' }, { key: 'rate', label: 'Rate', num: true, digits: 4 }, { key: 'unit', label: 'Unit' }, { key: 'area', label: 'Leaf area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpaIn', label: 'Rate/area (you)', num: true, editable: true }, { key: 'rpaUnit', label: 'Rate/area unit' }],
     onChange: () => trSummary()
   });
-  const trBar = Lab.chart('#tr-bar', { type: 'bar', xLabel: 'Condition', yLabel: 'Rate per area (scaled units)', height: 300, series: [] });
+  const trBar = Lab.chart('#tr-bar', { type: 'bar', xLabel: 'Condition', yLabel: 'Rate per area (scaled units)', height: 360, series: [] });
   const syncTr = () => { $('#tr-n-out').textContent = $('#tr-n').value; if (!trBusy) drawTrIdle(); };
   function drawTrIdle() { const m = $('#tr-method').value; drawApparatus(trCv, { method: m, sp: $('#tr-species').value, env: envFrom(COND[$('#tr-cond').value]), t: 0, reading: m === 'pot' ? 0 : m === 'press' ? 101.3 : null, frac: 0, label: '' }); setTrLabels(m); }
-  function setTrLabels(m) { $('#tr-k-time').textContent = m === 'whole' ? 'Day' : 'Time'; $('#tr-k-read').textContent = METH[m].read; trChart.update({ xLabel: m === 'whole' ? 'Time (days)' : 'Time (min)', yLabel: m === 'pot' ? 'Pipette reading = water taken up (mL)' : m === 'press' ? 'Pressure (kPa)' : 'Mass (g)' }); }
+  function setTrLabels(m) { $('#tr-k-time').textContent = m === 'whole' ? 'Day' : 'Time'; $('#tr-k-read').textContent = METH[m].read; trChart.update({ xLabel: m === 'whole' ? 'Time (days)' : 'Time (min)', yLabel: m === 'pot' ? 'Water taken up (mL)' : m === 'press' ? 'Pressure (kPa)' : 'Mass (g)' }); }
   $('#tr-n').addEventListener('input', syncTr);
   ['#tr-method', '#tr-cond', '#tr-species'].forEach(s => $(s).addEventListener('change', () => { if ($(s) === $('#tr-method')) { trSeries = []; trUpdate([]); } syncTr(); }));
   trCv.onresize = () => { if (!trBusy) drawTrIdle(); };
@@ -1352,7 +1358,7 @@
     const sel = gs.filter(g => g.method === meth && g.sp === sp);
     const order = ['control', 'fan', 'lamp', 'mist', 'dark'];
     sel.sort((a, b) => order.indexOf(a.cond) - order.indexOf(b.cond));
-    trBar.update({ categories: sel.map(g => g.ct), yLabel: `Rate per area (${METH[meth].rpaUnit})`, xLabel: sp ? `Condition (${SPP[sp].short}, ${sel[0] ? sel[0].mt : ''})` : 'Condition', series: [{ name: 'Mean ± 2 SE', points: sel.map(g => ({ x: g.ct, y: g.m, err: g.se2 })) }] });
+    trBar.update({ categories: sel.map(g => g.ct), yLabel: `Rate/area (${METH[meth].rpaUnit})`, xLabel: sp ? `Condition (${SPP[sp].short}, ${sel[0] ? sel[0].mt : ''})` : 'Condition', series: [{ name: 'Mean ± 2 SE', points: sel.map(g => ({ x: g.ct, y: g.m, err: g.se2 })) }] });
   }
   trSummary();
 

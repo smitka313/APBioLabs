@@ -47,6 +47,10 @@
   .progress > i { display: block; height: 100%; width: 0; background: var(--accent); }
   .recipe { font-size: .88rem; display: grid; gap: 4px; }
   .recipe b { font-weight: 600; }
+  /* Compact results table: fits the side panel at 1366 px without sideways scroll */
+  #p2-table table.data th, #p2-table table.data td { padding: 5px 6px; }
+  #p2-table table.data th { min-width: 0; }
+  #p2-table table.data input { min-width: 0; width: 4.2em; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -768,7 +772,7 @@
   drawRack(cv2, p2Tubes, 0, p2Opts);
   const t2 = Lab.table('#p2-table', {
     save: 'p2',
-    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 'pH', label: 'pH', num: true, digits: 0 }, { key: 'tr', label: 'Read at', unit: 'min', num: true, digits: 0 }, { key: 'a0', label: 'A₄₇₀ at 0', num: true, digits: 3 }, { key: 'a1', label: 'A₄₇₀ at read', num: true, digits: 3 }, { key: 'dA', label: 'ΔA', num: true, digits: 3 }, { key: 'c', label: 'Color at read', unit: '1–10', num: true, editable: true }],
+    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 'pH', label: 'pH', num: true, digits: 0 }, { key: 'tr', label: 'Read at', unit: 'min', num: true, digits: 0 }, { key: 'a0', label: 'A₄₇₀ start', num: true, digits: 3 }, { key: 'a1', label: 'A₄₇₀ read', num: true, digits: 3 }, { key: 'dA', label: 'ΔA', num: true, digits: 3 }, { key: 'c', label: 'Color', unit: '1–10', num: true, editable: true }],
     onChange: () => syncP2()
   });
   const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'ΔA', xMin: 2, xMax: 11, yMin: 0, series: [] });

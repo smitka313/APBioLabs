@@ -43,6 +43,10 @@
   @media (max-width: 899px) { .sex-pair { grid-template-columns: minmax(0, 1fr); } }
   .sex-cell { min-width: 0; }
   .sim--fit > .sim-main { align-self: stretch; }   /* results panels use the full height of the sim box */
+  /* Compact results table: fits the side panel without sideways scroll */
+  #vial-table table.data th, #vial-table table.data td { padding: 5px 4px; }
+  #vial-table table.data th { min-width: 0; }
+  #vial-table table.data input { min-width: 0; width: 3.4em; padding-inline: 3px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -908,7 +912,7 @@ function vialDraw() {
   const top = vialF.filter(f => f.y < 0.5).length;
   $('#vial-top').textContent = top; $('#vial-bot').textContent = vialF.length - top; $('#vial-t').textContent = Math.floor(vialT) + ' s';
 }
-const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Flies' }, { key: 't0', label: 'Top half at 0 s', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top half at 15 s', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top half at 30 s', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total flies', num: true, digits: 0 }] });
+const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Flies' }, { key: 't0', label: 'Top 0 s', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top 15 s', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top 30 s', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total', num: true, digits: 0 }] });
 const vialLoop = Lab.loop(dt => {
   const step = dt * 2; let left = step;
   while (left > 0) { const d = Math.min(0.05, left); vialStep(d); left -= d; }

@@ -273,7 +273,13 @@
         svg += '</g>';
       }
       svg += `<text class="axis-label" x="${m.l + iw / 2}" y="${H - 10}" text-anchor="middle">${esc(o.xLabel || '')}</text>`;
-      svg += `<text class="axis-label" transform="translate(16 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle">${esc(o.yLabel || '')}</text>`;
+      { // a long y label shrinks (then truncates) to stay inside the plot height instead of running into the title above
+        let yl = String(o.yLabel || ''), fs = 13; const room = Math.max(40, ih - 6), per = 0.6; // ≈ px per character per px of font (generous: unit text has wide symbols)
+        if (yl.length * per * fs > room) fs = Math.max(10, Math.floor(10 * room / (yl.length * per)) / 10);
+        const fit = Math.floor(room / (per * fs));
+        if (yl.length > fit) yl = yl.slice(0, Math.max(1, fit - 1)).trimEnd() + '…';
+        svg += `<text class="axis-label" transform="translate(16 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle"${fs < 13 ? ` style="font-size:${fs}px"` : ''}>${esc(yl)}</text>`;
+      }
       const named = series.filter(s => s.name);
       const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
       const fits = series.filter(s => s._fit).map(s => `${esc(s.name || 'fit')}: y = ${Lab.fmt(s._fit.m, 4)}x ${s._fit.b < 0 ? '−' : '+'} ${Lab.fmt(Math.abs(s._fit.b), 4)}  (R² = ${Lab.fmt(s._fit.r2, 3)})`);

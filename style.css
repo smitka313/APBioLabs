@@ -504,6 +504,7 @@ details.disclose--sm > .inner { padding: 0 12px 12px; font-size: .9rem; }
 .sim-main.is-wide > .stage { grid-column: 1; grid-row: 1 / span 2; }
 .sim-main.is-wide > .sim-tabs { grid-column: 2; grid-row: 1; border-left: 1px solid var(--line); }
 .sim-main.is-wide > .sim-panel { grid-column: 2; grid-row: 2; border-left: 1px solid var(--line); }
+.sim-panel > * { min-width: 0; }   /* wide tables scroll inside their own wrapper instead of stretching the panel */
 .sim-panel .chart { max-width: none; }
 .sim-panel .legend { font-size: .8rem; }
 .sim-panel table.data { font-size: .82rem; }
@@ -511,6 +512,7 @@ details.disclose--sm > .inner { padding: 0 12px 12px; font-size: .9rem; }
 .sim-panel table.data th { white-space: normal; vertical-align: bottom; min-width: 4.5em; }
 .panel-title { font-family: var(--f-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--muted); }
 .panel-title:not(:first-child) { margin-top: 6px; }
+.sim-panel .panel-title + .chart { margin-top: 6px; }
 
 /* Generic tabs (Lab.tabs) */
 .tabs { display: grid; gap: 12px; }
