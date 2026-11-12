@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>AP Bio Digital Lab Bench</title>
+  <defs><clipPath id="f"><path d="M24 10h16v17l12 22q3 7-4 7H16q-7 0-4-7l12-22z"/></clipPath></defs>
+  <rect width="64" height="64" rx="14" fill="#0d6e55"/>
+  <path d="M24 10h16v17l12 22q3 7-4 7H16q-7 0-4-7l12-22z" fill="#f4faf7"/>
+  <g clip-path="url(#f)"><path d="M8 40q12-6 24 0t24 0v20H8z" fill="#5fd3a8"/></g>
+  <path d="M24 10h16v17l12 22q3 7-4 7H16q-7 0-4-7l12-22z" fill="none" stroke="#f4faf7" stroke-width="3" stroke-linejoin="round"/>
+  <rect x="21" y="8" width="22" height="5" rx="2.5" fill="#f4faf7"/>
+  <circle cx="30" cy="47" r="2.6" fill="#f4faf7"/><circle cx="38" cy="50" r="1.8" fill="#f4faf7"/>
+</svg>
