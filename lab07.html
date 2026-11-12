@@ -46,6 +46,9 @@
   .kary.show-abn .abn-ring { opacity: 1; }
   .kary .glabel { transition: opacity .5s; }
   .kary.spread .glabel { opacity: 0; }
+  .kary .sp-bg, .kary .ky-bg { transition: opacity .9s; }
+  .kary:not(.spread) .sp-bg, .kary.spread .ky-bg { opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { .kary .chr, .kary .sp-bg, .kary .ky-bg, .kary .glabel { transition: none; } }
   .legend-row { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .86rem; color: var(--muted); }
   .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--line); }
   figure { margin: 0; }
@@ -466,6 +469,7 @@
 </div></footer>
 
 <script src="lab.js"></script>
+<script src="scope.js"></script>
 <script>
 (function () {
 'use strict';
@@ -476,7 +480,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const reduced = Lab.reducedMotion();
 const TAU = Math.PI * 2;
 
-/* ---------- Colour helpers: every colour is derived from theme tokens at draw time ---------- */
+/* ---------- UI colour helpers: marks, keys and labels drawn over specimens use theme tokens ---------- */
 function rgbOf(name) {
   const c = Lab.color(name);
   if (c[0] === '#') { let x = c.slice(1); if (x.length === 3) x = [...x].map(ch => ch + ch).join(''); return [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16)); }
@@ -485,132 +489,178 @@ function rgbOf(name) {
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const css = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 const lum = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255;
-/* Microscope palette. Bright-field views use the lightest theme neutral as the lamp and a deep
-   magenta (carbol-fuchsin) derived from --stain, so slides look like slides in both themes. */
-function scope() {
+/* Token palette for overlays (answer-key outlines, score badges). Read at draw time so dark mode works. */
+function uiPal() {
   const bg = rgbOf('--bg'), ink = rgbOf('--ink');
   const light = lum(bg) > lum(ink) ? bg : ink, dark = lum(bg) > lum(ink) ? ink : bg;
   const deepen = c => lum(c) > 0.45 ? mix(c, dark, 0.45) : c;
-  const st = rgbOf('--stain'), warn = rgbOf('--warn');
-  const stain = mix(st, dark, lum(st) > 0.5 ? 0.42 : 0.1);
-  const tanBase = lum(warn) > 0.5 ? warn : mix(warn, light, 0.38);
-  return {
-    light, dark, stain, field: mix(light, stain, 0.06),
-    black: mix(dark, warn, 0.14), tan: mix(tanBase, light, 0.12), hyaline: mix(light, rgbOf('--accent'), 0.14),
-    acc: deepen(rgbOf('--accent')), ok: deepen(rgbOf('--ok')), bad: deepen(rgbOf('--bad')), warn
-  };
+  return { light, dark, acc: deepen(rgbOf('--accent')), ok: deepen(rgbOf('--ok')), bad: deepen(rgbOf('--bad')) };
 }
 const themeHooks = [];
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => themeHooks.forEach(f => f())); } catch (e) { /* old browsers */ }
 
-/* ---------- Shared canvas drawing ---------- */
-function roundPoly(ctx, pts, r) {
-  const n = pts.length; ctx.moveTo((pts[0][0] + pts[n - 1][0]) / 2, (pts[0][1] + pts[n - 1][1]) / 2);
-  for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; ctx.arcTo(p[0], p[1], q[0], q[1], r); }
-  ctx.closePath();
-}
 function capsule(ctx, x, y, w, hh) { const r = hh / 2; ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2); ctx.lineTo(x + r, y + hh); ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); ctx.closePath(); }
-/* Microscope field in 640 × 480 base units: dark eyepiece surround, lamp-lit circle, edge vignette. */
-const FC = { x: 320, y: 240, r: 226 };
-function scopeFrame(ctx, P, content) {
-  ctx.fillStyle = css(P.dark); ctx.fillRect(0, 0, 640, 480);
-  ctx.save(); ctx.beginPath(); ctx.arc(FC.x, FC.y, FC.r, 0, TAU); ctx.clip();
-  const g = ctx.createRadialGradient(FC.x - 40, FC.y - 50, 20, FC.x, FC.y, FC.r);
-  g.addColorStop(0, css(mix(P.field, P.light, 0.6))); g.addColorStop(0.7, css(P.field)); g.addColorStop(1, css(mix(P.field, P.dark, 0.16)));
-  ctx.fillStyle = g; ctx.fillRect(0, 0, 640, 480);
-  content();
-  const v = ctx.createRadialGradient(FC.x, FC.y, FC.r * 0.78, FC.x, FC.y, FC.r);
-  v.addColorStop(0, css(P.dark, 0)); v.addColorStop(1, css(P.dark, 0.5));
-  ctx.fillStyle = v; ctx.fillRect(0, 0, 640, 480); ctx.restore();
-}
-function scopeLabels(ctx, P, mag, barPx, barLabel) {
-  ctx.fillStyle = css(P.light, 0.92); ctx.font = '600 18px "JetBrains Mono", monospace'; ctx.textAlign = 'left'; ctx.fillText(mag, 18, 32);
-  ctx.fillRect(612 - barPx, 452, barPx, 5); ctx.textAlign = 'right'; ctx.fillText(barLabel, 612, 442); ctx.textAlign = 'left';
-}
-function debris(ctx, P, seed, n) {
-  const R = Lab.rng(seed);
-  for (let i = 0; i < n; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * FC.r; ctx.fillStyle = css(P.stain, 0.12 + R.uniform() * 0.25); ctx.beginPath(); ctx.arc(FC.x + Math.cos(a) * d, FC.y + Math.sin(a) * d, 0.6 + R.uniform() * 2.2, 0, TAU); ctx.fill(); }
+/* Smooth closed or open curve through points (quadratic through midpoints). */
+function smoothPath(p, pts, closed) {
+  const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  if (closed) { const m0 = mid(pts[n - 1], pts[0]); p.moveTo(m0[0], m0[1]); for (let i = 0; i < n; i++) { const m = mid(pts[i], pts[(i + 1) % n]); p.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } p.closePath(); return p; }
+  p.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < n - 1; i++) { const m = mid(pts[i], pts[i + 1]); p.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } p.lineTo(pts[n - 1][0], pts[n - 1][1]); return p;
 }
 
-/* ---------- Onion root-tip cell (carbol-fuchsin squash) ----------
-   Cell local frame: x runs along the cell file (the spindle axis), so the metaphase plate is vertical. */
-function nucleus(ctx, R, x, y, r, k, P) {
-  const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-  g.addColorStop(0, css(P.stain, 0.26 * k)); g.addColorStop(0.82, css(P.stain, 0.4 * k)); g.addColorStop(1, css(P.stain, 0.62 * k));
-  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.9, R.uniform() * 3, 0, TAU); ctx.fill();
-  ctx.fillStyle = css(P.stain, 0.34 * k);
-  for (let i = 0; i < 36; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * r * 0.85; ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.9, 0.5 + R.uniform() * 1.0, 0, TAU); ctx.fill(); }
-  const nn = R.int(1, 2); ctx.fillStyle = css(P.stain, 0.85 * k);
-  for (let i = 0; i < nn; i++) { ctx.beginPath(); ctx.arc(x + R.normal(0, r * 0.22), y + R.normal(0, r * 0.22), r * (0.15 + R.uniform() * 0.07), 0, TAU); ctx.fill(); }
+/* =====================================================================
+   SPECIMENS. A stained slide is a physical image, so specimen colours are literal values here
+   (carbol-fuchsin magenta, fungal olive-browns) and look the same in light and dark themes.
+   scope.js renders each slide once per focal layer on white glass and MULTIPLIES it onto the lamp,
+   so these are transmitted-light (absorbing) colours: white = clear, overlaps darken.
+   ===================================================================== */
+const CF = { chrom: [88, 10, 70], dark: [62, 6, 52], nuc: [190, 100, 160], cyto: [234, 194, 214], gran: [170, 96, 140], wall: [140, 86, 118] };
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${clamp(a, 0, 1).toFixed(3)})`;
+let granTile = null;
+function granules() {   // cytoplasmic granule texture tile (1 px = 1 base unit)
+  if (granTile) return granTile;
+  const c = document.createElement('canvas'); c.width = c.height = 90; const x = c.getContext('2d'), R = Lab.rng(99);
+  for (let i = 0; i < 560; i++) { x.fillStyle = rgba(CF.gran, 0.16 + R.uniform() * 0.5); x.beginPath(); x.arc(R.uniform() * 90, R.uniform() * 90, 0.3 + R.uniform() * 0.75, 0, TAU); x.fill(); }
+  return (granTile = c);
 }
-function drawOnionCell(ctx, c, P, ink) {
-  const R = Lab.rng(c.seed), k = (c.k || 1) * ink, w = c.w, hh = c.h, S = Math.min(w, hh);
+/* Thin, slightly wavy cell wall around a brick-shaped cell (local frame, centred). */
+function wallPath(R, w, hh) {
+  const c = [[-w / 2, -hh / 2], [w / 2, -hh / 2], [w / 2, hh / 2], [-w / 2, hh / 2]].map(([x, y]) => [x + R.normal(0, 1.1), y + R.normal(0, 1.1)]), pts = [];
+  for (let i = 0; i < 4; i++) {
+    const a = c[i], b = c[(i + 1) % 4], L = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L;
+    [0.07, 0.36, 0.64, 0.93].forEach(t => { const d = t > 0.1 && t < 0.9 ? R.normal(0, 0.75) : R.normal(0, 0.2); pts.push([a[0] + (b[0] - a[0]) * t + nx * d, a[1] + (b[1] - a[1]) * t + ny * d]); });
+  }
+  return smoothPath(new Path2D(), pts, true);
+}
+/* A chromatin thread or chromosome arm with a soft halo (fuzzy edge). */
+function fuzzyStroke(ctx, p, wdt, a, k) {
+  ctx.strokeStyle = rgba(CF.chrom, 0.16 * k); ctx.lineWidth = wdt + 1.8; ctx.stroke(p);
+  ctx.strokeStyle = rgba(CF.chrom, a * k); ctx.lineWidth = wdt; ctx.stroke(p);
+}
+function seg(x0, y0, x1, y1) { const p = new Path2D(); p.moveTo(x0, y0); p.lineTo(x1, y1); return p; }
+/* Interphase nucleus: magenta-purple with mottled chromatin, darker envelope and 1–3 nucleoli. */
+function nucleusI(ctx, R, x, y, r, k, dense) {
+  const e = 0.84 + R.uniform() * 0.16;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(R.uniform() * TAU);
+  const p = new Path2D(); p.ellipse(0, 0, r, r * e, 0, 0, TAU);
+  const g = ctx.createRadialGradient(-r * 0.25, -r * 0.25, r * 0.1, 0, 0, r);
+  g.addColorStop(0, rgba(CF.nuc, 0.36 + 0.34 * k)); g.addColorStop(0.82, rgba(CF.nuc, 0.48 + 0.38 * k)); g.addColorStop(1, rgba(CF.chrom, 0.3 + 0.35 * k));
+  ctx.fillStyle = g; ctx.fill(p);
+  ctx.save(); ctx.clip(p);
+  const n = Math.round(r * r * 0.55), dk = dense ? 1.5 : 1;
+  for (let i = 0; i < n; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * r; ctx.fillStyle = rgba(CF.chrom, (0.07 + R.uniform() * 0.26) * k * dk); ctx.beginPath(); ctx.arc(Math.cos(a) * d, Math.sin(a) * d * e, 0.45 + R.uniform() * 1.25, 0, TAU); ctx.fill(); }
+  for (let i = 0, m = R.int(4, 7); i < m; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * r * 0.8; ctx.fillStyle = rgba(CF.chrom, 0.22 * k * dk); ctx.beginPath(); ctx.arc(Math.cos(a) * d, Math.sin(a) * d * e, 1.2 + R.uniform() * 1.1, 0, TAU); ctx.fill(); }
+  ctx.restore();
+  ctx.strokeStyle = rgba(CF.chrom, 0.22 + 0.3 * k); ctx.lineWidth = 0.8; ctx.stroke(p);
+  const nn = R.uniform() < 0.5 ? 1 : R.uniform() < 0.7 ? 2 : 3;
+  for (let i = 0; i < nn; i++) {
+    const nr = r * (0.14 + R.uniform() * 0.08) / (i ? 1.3 : 1), nx = R.normal(0, r * 0.24), ny = R.normal(0, r * 0.2);
+    const gg = ctx.createRadialGradient(nx - nr * 0.3, ny - nr * 0.3, nr * 0.1, nx, ny, nr * 1.15);
+    gg.addColorStop(0, rgba(CF.dark, 0.5 * k + 0.08)); gg.addColorStop(0.7, rgba(CF.dark, 0.82 * k + 0.08)); gg.addColorStop(1, rgba(CF.dark, 0));
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(nx, ny, nr * 1.15, 0, TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+/* Onion root-tip cell, carbol-fuchsin squash. Local frame: x runs along the cell file (spindle axis),
+   so the metaphase plate is vertical. `tear` (outward unit vector, local frame) breaks the cell open. */
+function drawOnionCell(ctx, c, ink, tear) {
+  const R = Lab.rng(c.seed), k = (c.k || 1) * ink, w = c.w, hh = c.h, S = Math.min(w, hh), wk = 0.45 + 0.55 * Math.min(1, k);
   ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a);
-  const pts = [[-w / 2, -hh / 2], [w / 2, -hh / 2], [w / 2, hh / 2], [-w / 2, hh / 2]].map(([x, y]) => [x + R.normal(0, 1.3), y + R.normal(0, 1.3)]);
-  ctx.beginPath(); roundPoly(ctx, pts, 6);
-  ctx.fillStyle = css(P.stain, 0.06 * k + 0.02); ctx.fill();
-  ctx.lineWidth = 1.7; ctx.strokeStyle = css(P.stain, 0.28 * k + 0.06); ctx.stroke();
-  ctx.fillStyle = css(P.stain, 0.1 * k);
-  for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.arc((R.uniform() - 0.5) * w * 0.8, (R.uniform() - 0.5) * hh * 0.8, 0.5 + R.uniform() * 0.9, 0, TAU); ctx.fill(); }
+  const wall = wallPath(R, w, hh);
+  let tn = null;
+  if (tear) {   // torn open on the side facing out of the tissue
+    tn = { x: tear[0], y: tear[1], d: S * (R.uniform() * 0.38 - 0.12) }; const tx = -tn.y, ty = tn.x, L = w + hh, cut = new Path2D();
+    cut.moveTo(-tn.x * L + tx * L, -tn.y * L + ty * L);
+    for (let i = 0; i <= 22; i++) { const s = L - (2 * L * i) / 22, d = tn.d + R.normal(0, S * 0.09) + (i % 3 ? 0 : R.normal(0, S * 0.08)); cut.lineTo(tx * s + tn.x * d, ty * s + tn.y * d); }
+    cut.lineTo(-tn.x * L - tx * L, -tn.y * L - ty * L); cut.closePath();
+    ctx.save(); ctx.clip(cut);
+  }
+  ctx.fillStyle = rgba(CF.cyto, 0.12 + 0.5 * k); ctx.fill(wall);
+  ctx.save(); ctx.clip(wall);
+  ctx.save(); ctx.translate(R.uniform() * 90, R.uniform() * 90); ctx.globalAlpha = clamp(0.12 + 0.6 * k, 0, 1); ctx.fillStyle = ctx.createPattern(granules(), 'repeat'); ctx.fillRect(-w - 100, -hh - 100, 2 * w + 200, 2 * hh + 200); ctx.restore();
+  ctx.fillStyle = 'rgba(255,250,252,0.5)';
+  for (let i = 0, m = R.int(2, 5); i < m; i++) { ctx.beginPath(); ctx.arc((R.uniform() - 0.5) * w * 0.75, (R.uniform() - 0.5) * hh * 0.75, S * (0.04 + R.uniform() * 0.06), 0, TAU); ctx.fill(); }
+  ctx.lineWidth = 5; ctx.strokeStyle = rgba(CF.gran, 0.08 + 0.1 * k); ctx.stroke(wall);
+  ctx.restore();
   const ox = R.normal(0, S * 0.03), oy = R.normal(0, S * 0.03);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const chrom = a => css(P.stain, a * k);
+  if (c.phase !== 'I' && c.phase !== 'P' && c.phase !== 'C') {   // clear spindle zone around a mitotic figure
+    ctx.fillStyle = 'rgba(255,247,251,0.42)'; ctx.beginPath(); ctx.ellipse(ox, oy, w * 0.4, S * 0.36, 0, 0, TAU); ctx.fill();
+  }
+  ctx.save(); ctx.translate(ox, oy); if (c.phase !== 'I') ctx.rotate(R.normal(0, 0.1));
   switch (c.phase) {
-    case 'I': nucleus(ctx, R, ox, oy, S * (0.24 + R.uniform() * 0.05), k, P); break;
+    case 'I': nucleusI(ctx, R, 0, 0, S * (0.23 + R.uniform() * 0.06), k); break;
     case 'P': {
-      const r = S * 0.3;
-      ctx.fillStyle = chrom(0.12); ctx.beginPath(); ctx.arc(ox, oy, r, 0, TAU); ctx.fill();
-      ctx.strokeStyle = chrom(0.22); ctx.lineWidth = 1; ctx.stroke();
-      ctx.strokeStyle = chrom(0.85);
-      for (let i = 0; i < 10; i++) {
-        let px = ox + R.normal(0, r * 0.4), py = oy + R.normal(0, r * 0.4);
-        ctx.lineWidth = S * (0.035 + R.uniform() * 0.025); ctx.beginPath(); ctx.moveTo(px, py);
-        for (let j = 0; j < 3; j++) {
-          const cx = clamp(px + R.normal(0, r * 0.45), ox - r * 0.85, ox + r * 0.85), cy = clamp(py + R.normal(0, r * 0.45), oy - r * 0.85, oy + r * 0.85);
-          px = clamp(px + R.normal(0, r * 0.4), ox - r * 0.8, ox + r * 0.8); py = clamp(py + R.normal(0, r * 0.4), oy - r * 0.8, oy + r * 0.8);
-          ctx.quadraticCurveTo(cx, cy, px, py);
-        }
-        ctx.stroke();
+      const r = S * (0.29 + R.uniform() * 0.04), cond = R.uniform();
+      const np = new Path2D(); np.ellipse(0, 0, r, r * (0.9 + R.uniform() * 0.1), R.uniform() * 3, 0, TAU);
+      ctx.fillStyle = rgba(CF.nuc, 0.16 + 0.22 * k); ctx.fill(np);
+      ctx.strokeStyle = rgba(CF.chrom, 0.24 * k); ctx.lineWidth = 0.8; if (cond > 0.55) ctx.setLineDash([4, 3]); ctx.stroke(np); ctx.setLineDash([]);
+      if (cond < 0.45) { ctx.fillStyle = rgba(CF.dark, 0.3 * k); ctx.beginPath(); ctx.arc(R.normal(0, r * 0.2), R.normal(0, r * 0.2), r * 0.12, 0, TAU); ctx.fill(); }
+      const nt = 13 + R.int(0, 5), wd = 0.8 + cond * 0.95, stp = r * (0.2 + 0.1 * (1 - cond));
+      for (let i = 0; i < nt; i++) {
+        let a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * r * 0.7, x = Math.cos(a) * d, y = Math.sin(a) * d, dir = R.uniform() * TAU; const pts = [[x, y]];
+        for (let j = 0, m = R.int(4, 7); j < m; j++) { dir += R.normal(0, 0.95); x += Math.cos(dir) * stp; y += Math.sin(dir) * stp; const dd = Math.hypot(x, y); if (dd > r * 0.86) { x *= r * 0.86 / dd; y *= r * 0.86 / dd; dir += Math.PI * 0.7; } pts.push([x, y]); }
+        fuzzyStroke(ctx, smoothPath(new Path2D(), pts, false), wd, 0.7 + 0.25 * cond, k);
       }
       break;
     }
     case 'M': {
-      ctx.strokeStyle = chrom(0.05); ctx.lineWidth = 1;
-      for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(-w * 0.42, oy); ctx.lineTo(ox, oy + i * S * 0.1); ctx.lineTo(w * 0.42, oy); ctx.stroke(); }
-      ctx.strokeStyle = chrom(0.92);
-      for (let i = 0; i < 12; i++) {
-        const y = oy - S * 0.32 + i * (S * 0.64 / 11) + R.normal(0, 1.2), x = ox + R.normal(0, 1.3), an = R.normal(0, 0.45), L = S * (0.12 + R.uniform() * 0.1);
-        ctx.lineWidth = S * 0.06; ctx.beginPath(); ctx.moveTo(x - Math.cos(an) * L / 2, y - Math.sin(an) * L / 2); ctx.lineTo(x + Math.cos(an) * L / 2, y + Math.sin(an) * L / 2); ctx.stroke();
+      if (R.chance(0.14)) {   // polar (end-on) view: ring of chromosomes around a clear centre
+        const r0 = S * (0.07 + R.uniform() * 0.03), n = 12 + R.int(0, 3);
+        for (let i = 0; i < n; i++) { const t = i / n * TAU + R.normal(0, 0.14), L = S * (0.09 + R.uniform() * 0.07), r1 = r0 + R.normal(0, 1); fuzzyStroke(ctx, seg(Math.cos(t) * r1, Math.sin(t) * r1, Math.cos(t + R.normal(0, 0.3)) * (r1 + L), Math.sin(t + R.normal(0, 0.3)) * (r1 + L)), S * 0.06, 0.9, k); }
+      } else {   // side view: dense dark plate with arms poking toward the poles
+        const hp = S * (0.29 + R.uniform() * 0.05), bw = S * (0.06 + R.uniform() * 0.02);
+        ctx.fillStyle = rgba(CF.chrom, 0.2 * k); ctx.beginPath(); ctx.ellipse(0, 0, bw * 1.6, hp * 1.05, 0, 0, TAU); ctx.fill();
+        for (let i = 0; i < 15; i++) { const y = -hp + (i + 0.5) * (2 * hp / 15) + R.normal(0, 0.8), x = R.normal(0, bw * 0.35), t = Math.PI / 2 + R.normal(0, 0.5), L = S * (0.08 + R.uniform() * 0.08); fuzzyStroke(ctx, seg(x - Math.cos(t) * L / 2, y - Math.sin(t) * L / 2, x + Math.cos(t) * L / 2, y + Math.sin(t) * L / 2), S * 0.062, 0.92, k); }
+        for (let i = 0, m = R.int(6, 9); i < m; i++) { const y = R.normal(0, hp * 0.5), sd = R.chance(0.5) ? 1 : -1, t = R.normal(0, 0.45), L = S * (0.05 + R.uniform() * 0.07); fuzzyStroke(ctx, seg(0, y, sd * Math.cos(t) * L, y + Math.sin(t) * L), S * 0.045, 0.85, k); }
       }
       break;
     }
     case 'A': {
-      const d = S * (0.17 + R.uniform() * 0.13); ctx.strokeStyle = chrom(0.9); ctx.lineWidth = S * 0.048;
+      const d = S * (0.17 + R.uniform() * 0.13), spanY = S * 0.3;
+      ctx.strokeStyle = rgba(CF.chrom, 0.07 * k); ctx.lineWidth = 0.7;
+      for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(-d, i * spanY / 3.2); ctx.lineTo(d, i * spanY / 3.2); ctx.stroke(); }
       [-1, 1].forEach(sd => {
-        for (let i = 0; i < 9; i++) {
-          const y = oy - S * 0.28 + i * (S * 0.56 / 8) + R.normal(0, 1), vx = ox + sd * (d + R.normal(0, 1.2)), arm = S * (0.1 + R.uniform() * 0.06);
-          ctx.beginPath(); ctx.moveTo(vx - sd * arm, y - S * 0.045); ctx.lineTo(vx, y); ctx.lineTo(vx - sd * arm, y + S * 0.045); ctx.stroke();
+        const n = R.int(6, 8);
+        for (let i = 0; i < n; i++) {
+          const yy = -spanY + (i + 0.5) * (2 * spanY / n) + R.normal(0, 0.9), q = (yy / spanY), vx = sd * (d + S * 0.05 * (1 - q * q) + (i % 2 ? S * 0.035 : 0) + R.normal(0, 0.8));
+          const h = 0.24 + R.uniform() * 0.2, a1 = S * (0.1 + R.uniform() * 0.08), a2 = S * (0.1 + R.uniform() * 0.08), p = new Path2D();
+          p.moveTo(vx - sd * a1 * Math.cos(h), yy - a1 * Math.sin(h)); p.lineTo(vx, yy); p.lineTo(vx - sd * a2 * Math.cos(h), yy + a2 * Math.sin(h));
+          fuzzyStroke(ctx, p, S * 0.05, 0.9, k);
         }
       });
       break;
     }
     case 'T': {
       [-1, 1].forEach(sd => {
-        const x = ox + sd * w * 0.3;
-        ctx.fillStyle = chrom(0.78); ctx.beginPath(); ctx.ellipse(x, oy, S * 0.1, S * 0.28, R.normal(0, 0.08), 0, TAU); ctx.fill();
-        ctx.fillStyle = chrom(0.95);
-        for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.arc(x + R.normal(0, S * 0.04), oy + R.normal(0, S * 0.12), 0.8 + R.uniform(), 0, TAU); ctx.fill(); }
+        const x = sd * w * 0.3, rx = S * (0.1 + R.uniform() * 0.03), ry = S * (0.25 + R.uniform() * 0.05), p = new Path2D(); p.ellipse(x, R.normal(0, 1), rx, ry, R.normal(0, 0.08), 0, TAU);
+        ctx.fillStyle = rgba(CF.chrom, 0.18 * k); ctx.beginPath(); ctx.ellipse(x, 0, rx + 1.5, ry + 1.5, 0, 0, TAU); ctx.fill();
+        const g = ctx.createRadialGradient(x - sd * rx * 0.3, 0, 1, x, 0, ry); g.addColorStop(0, rgba(CF.chrom, 0.72 * k)); g.addColorStop(1, rgba(CF.dark, 0.95 * k));
+        ctx.fillStyle = g; ctx.fill(p);
+        ctx.save(); ctx.clip(p); for (let i = 0; i < 40; i++) { ctx.fillStyle = rgba(CF.dark, (0.2 + R.uniform() * 0.4) * k); ctx.beginPath(); ctx.arc(x + R.normal(0, rx * 0.5), R.normal(0, ry * 0.5), 0.5 + R.uniform() * 1.1, 0, TAU); ctx.fill(); } ctx.restore();
       });
-      ctx.strokeStyle = chrom(0.38); ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(ox, -hh * 0.32); ctx.lineTo(ox, hh * 0.32); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = rgba(CF.wall, 0.16 + 0.1 * k); ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(R.normal(0, 0.5), -hh * 0.38); ctx.lineTo(R.normal(0, 0.5), hh * 0.38); ctx.stroke();
+      ctx.fillStyle = rgba(CF.gran, 0.3 + 0.25 * k);
+      for (let y = -hh * 0.38; y < hh * 0.38; y += 1.9) { ctx.beginPath(); ctx.arc(R.normal(0, 0.6), y, 0.5 + R.uniform() * 0.5, 0, TAU); ctx.fill(); }
+      ctx.strokeStyle = rgba(CF.gran, 0.08 * k); ctx.lineWidth = 0.6;
+      for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(-S * 0.12, i * hh * 0.1); ctx.lineTo(S * 0.12, i * hh * 0.1); ctx.stroke(); }
       break;
     }
     case 'C': {
-      ctx.strokeStyle = css(P.stain, 0.34 * k + 0.06); ctx.lineWidth = 1.8;
-      ctx.beginPath(); ctx.moveTo(R.normal(0, 1), -hh / 2); ctx.lineTo(R.normal(0, 1), hh / 2); ctx.stroke();
-      nucleus(ctx, R, -w * 0.25, oy, S * 0.17, k, P); nucleus(ctx, R, w * 0.25, oy, S * 0.17, k, P);
+      const p = new Path2D(); p.moveTo(R.normal(0, 0.6), -hh / 2); p.quadraticCurveTo(R.normal(0, 1.2), 0, R.normal(0, 0.6), hh / 2);
+      ctx.strokeStyle = rgba(CF.wall, 0.55 * wk); ctx.lineWidth = 1.2; ctx.stroke(p);
+      nucleusI(ctx, R, -w * 0.25, 0, S * 0.16, k * 1.1, true); nucleusI(ctx, R, w * 0.25, 0, S * 0.16, k * 1.1, true);
       break;
     }
+  }
+  ctx.restore();
+  ctx.strokeStyle = rgba(CF.wall, 0.07 * wk); ctx.lineWidth = 2.8; ctx.stroke(wall);
+  ctx.strokeStyle = rgba(CF.wall, 0.42 * wk); ctx.lineWidth = 1.05; ctx.stroke(wall);
+  if (tn) {   // spilled cytoplasm and wall shards beyond the tear
+    ctx.restore();
+    const tx = -tn.y, ty = tn.x;
+    for (let i = 0; i < 30; i++) { const d = tn.d + 2 + R.uniform() * S * 0.55, s = R.normal(0, S * 0.3); ctx.fillStyle = rgba(CF.gran, (0.15 + R.uniform() * 0.3) * (0.3 + k)); ctx.beginPath(); ctx.arc(tn.x * d + tx * s, tn.y * d + ty * s, 0.4 + R.uniform() * 0.9, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = rgba(CF.wall, 0.38 * wk); ctx.lineWidth = 0.9;
+    for (let i = 0, m = R.int(1, 3); i < m; i++) { const d = tn.d + 4 + R.uniform() * S * 0.4, s = R.normal(0, S * 0.35), a = R.uniform() * TAU, L = 4 + R.uniform() * 9, bx = tn.x * d + tx * s, by = tn.y * d + ty * s; ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + Math.cos(a) * L * 0.5 + R.normal(0, 1.5), by + Math.sin(a) * L * 0.5 + R.normal(0, 1.5), bx + Math.cos(a) * L, by + Math.sin(a) * L); ctx.stroke(); }
   }
   ctx.restore();
 }
@@ -665,19 +715,43 @@ Lab.quiz('#prelab', [
 /* =====================================================================
    PART 1: POP-BEAD MITOSIS MODEL (SVG, drag with pointer events)
    ===================================================================== */
+/* Physical model kit on a black epoxy lab bench: glossy plastic pop beads (blue = maternal,
+   orange = paternal), magnetic centromere connectors, yarn cell membranes, chalk lines.
+   Bench and beads are real objects, so they use fixed colours in both themes. */
 const SP = 12, BR = 5.4;
-function beads(x, y, n, c, colorAt, sp, wavy, ringAt, br = BR) {
-  let s = '';
-  for (let i = 0; i < n; i++) {
-    const yy = y + (i - c) * sp, xx = x + (wavy ? Math.sin(i * 1.7 + x * 0.07) * br * 0.6 : 0);
-    if (i === c) { s += `<rect x="${xx - br}" y="${yy - br * 0.75}" width="${br * 2}" height="${br * 1.5}" rx="2" style="fill:var(--ink)" opacity=".72"/>`; continue; }
-    s += `<circle cx="${xx}" cy="${yy}" r="${br}" style="fill:${colorAt(i)};stroke:var(--ink)" stroke-opacity="${i === ringAt ? 0.9 : 0.3}" stroke-width="${i === ringAt ? 2.6 : 1}"/><circle cx="${xx - br * 0.31}" cy="${yy - br * 0.33}" r="${br * 0.3}" style="fill:var(--surface)" opacity=".55"/>`;
-  }
-  return s;
+const KIT = { yarn: '#e9e2d0', yarn2: '#cdbf9f', chalk: '#efece3', string: '#d9cfb6', text: '#f1ede3', ok: '#8fe0a2', bad: '#ff9f90', pink: '#ff6fb0', neck: { m: '#1c4699', p: '#b05a0a' } };
+function benchSVG(pre, W, H) {
+  const R = Lab.rng(pre.length * 7 + W); let spk = '';
+  for (let i = 0; i < 70; i++) spk += `<circle cx="${(R.uniform() * 48).toFixed(1)}" cy="${(R.uniform() * 48).toFixed(1)}" r="${(0.25 + R.uniform() * 0.55).toFixed(2)}" fill="${R.chance(0.6) ? '#3a3e44' : '#0c0d0f'}" opacity="${(0.4 + R.uniform() * 0.5).toFixed(2)}"/>`;
+  const bead = (id, a, b, c, d) => `<radialGradient id="${pre}-b${id}" cx=".4" cy=".36" r=".7" fx=".3" fy=".26"><stop offset="0" stop-color="${a}"/><stop offset=".32" stop-color="${b}"/><stop offset=".82" stop-color="${c}"/><stop offset="1" stop-color="${d}"/></radialGradient>`;
+  return `<defs>${bead('m', '#c3d6ff', '#4f86ea', '#1b3f92', '#0f2763')}${bead('p', '#ffe1b0', '#f49433', '#b2560a', '#7a3a05')}
+<radialGradient id="${pre}-sh"><stop offset="0" stop-color="#000" stop-opacity=".6"/><stop offset=".6" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<linearGradient id="${pre}-mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8d94"/><stop offset=".22" stop-color="#e3e6ea"/><stop offset=".45" stop-color="#55585e"/><stop offset="1" stop-color="#1a1b1e"/></linearGradient>
+<radialGradient id="${pre}-lamp" cx=".45" cy=".38" r=".75"><stop offset="0" stop-color="#3a3e45"/><stop offset=".6" stop-color="#25282d"/><stop offset="1" stop-color="#16181b"/></radialGradient>
+<pattern id="${pre}-spk" width="48" height="48" patternUnits="userSpaceOnUse">${spk}</pattern></defs>
+<g aria-hidden="true"><rect width="${W}" height="${H}" fill="url(#${pre}-lamp)"/><rect width="${W}" height="${H}" fill="url(#${pre}-spk)"/></g>`;
+}
+/* Yarn loop / chalk line helpers (SVG strings). */
+function yarn(shape, attrs, wdt, col) {
+  return `<${shape} ${attrs} fill="none" stroke="#000" stroke-opacity=".45" stroke-width="${wdt + 2}" transform="translate(1.5 2.5)"/><${shape} ${attrs} fill="none" stroke="${col}" stroke-width="${wdt}"/><${shape} ${attrs} fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="${wdt * 0.4}" stroke-dasharray="1.6 2.6"/>`;
+}
+function beads(x, y, n, c, colorAt, sp, wavy, ringAt, br = BR, pre = 'mit') {
+  const P = []; for (let i = 0; i < n; i++) P.push([x + (wavy ? Math.sin(i * 1.7 + x * 0.07) * br * 0.6 : 0), y + (i - c) * sp]);
+  let sh = '', neck = '', body = '';
+  P.forEach(([xx, yy], i) => {
+    sh += `<ellipse cx="${(xx + 1.8).toFixed(1)}" cy="${(yy + 2.8).toFixed(1)}" rx="${(br * 1.15).toFixed(1)}" ry="${br.toFixed(1)}" fill="url(#${pre}-sh)"/>`;
+    if (i < n - 1) { const [x2, y2] = P[i + 1], col = i === c ? colorAt(i + 1) : colorAt(i); neck += `<line x1="${xx.toFixed(1)}" y1="${yy.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${KIT.neck[col]}" stroke-width="${(br * 0.62).toFixed(1)}" stroke-linecap="round"/>`; }
+    if (i === c) { body += `<rect x="${(xx - br * 1.08).toFixed(1)}" y="${(yy - br * 0.72).toFixed(1)}" width="${(br * 2.16).toFixed(1)}" height="${(br * 1.44).toFixed(1)}" rx="${(br * 0.4).toFixed(1)}" fill="url(#${pre}-mg)" stroke="#0b0b0d" stroke-width=".7"/><rect x="${(xx - br * 0.86).toFixed(1)}" y="${(yy - br * 0.1).toFixed(1)}" width="${(br * 1.72).toFixed(1)}" height="${(br * 0.2).toFixed(1)}" fill="#000" opacity=".35"/>`; return; }
+    const col = colorAt(i);
+    body += `<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="${br}" fill="url(#${pre}-b${col})"/><ellipse cx="${(xx - br * 0.33).toFixed(1)}" cy="${(yy - br * 0.4).toFixed(1)}" rx="${(br * 0.3).toFixed(1)}" ry="${(br * 0.2).toFixed(1)}" fill="#fff" opacity=".8"/><circle cx="${(xx + br * 0.42).toFixed(1)}" cy="${(yy + br * 0.45).toFixed(1)}" r="${(br * 0.16).toFixed(1)}" fill="#fff" opacity=".22"/>`;
+    if (i === ringAt) body += `<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="${(br + 1.4).toFixed(1)}" fill="none" stroke="#ffe27a" stroke-width="1.8"/>`;
+  });
+  return sh + neck + body;
 }
 const MIT = (function () {
   const svg = $('#mit-svg'), layer = $('#mit-layer');
-  const DEF = [{ id: 'L-mat', n: 7, c: 3, col: 'var(--s3)', home: [250, 180] }, { id: 'L-pat', n: 7, c: 3, col: 'var(--s4)', home: [372, 210] }, { id: 'S-mat', n: 5, c: 2, col: 'var(--s3)', home: [312, 270] }, { id: 'S-pat', n: 5, c: 2, col: 'var(--s4)', home: [318, 130] }];
+  svg.insertAdjacentHTML('afterbegin', benchSVG('mit', 640, 400));
+  const DEF = [{ id: 'L-mat', n: 7, c: 3, col: 'm', home: [250, 180] }, { id: 'L-pat', n: 7, c: 3, col: 'p', home: [372, 210] }, { id: 'S-mat', n: 5, c: 2, col: 'm', home: [312, 270] }, { id: 'S-pat', n: 5, c: 2, col: 'p', home: [318, 130] }];
   const NAMES = ['Interphase · G<sub>1</sub>', 'Interphase · G<sub>2</sub> (after S)', 'Prophase', 'Metaphase', 'Anaphase', 'Telophase and cytokinesis'];
   const MSG = [
     'Each chromosome is a single DNA molecule. Replicate the DNA to enter S phase.',
@@ -701,14 +775,16 @@ const MIT = (function () {
   }
   function render() {
     const s = st.stage; let g = '';
+    const centrioles = (x, y) => `<g transform="translate(${x} ${y})"><rect x="-6" y="-2" width="12" height="4" rx="1.5" fill="#e6d7a8" stroke="#000" stroke-opacity=".4"/><rect x="-2" y="-6" width="4" height="12" rx="1.5" fill="#d9c890" stroke="#000" stroke-opacity=".4"/></g>`;
+    const fiber = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${KIT.string}" stroke-width="1.1" opacity=".5"/>`;
     if (s < 5) {
-      g += `<ellipse cx="320" cy="200" rx="300" ry="185" style="fill:var(--surface);stroke:var(--muted)" stroke-width="2"/>`;
-      if (s <= 1) g += `<circle cx="318" cy="205" r="128" style="fill:var(--surface-2);stroke:var(--muted)" stroke-width="1.5"/>`;
-      if (s === 2) g += `<circle cx="318" cy="205" r="128" fill="none" style="stroke:var(--muted)" stroke-width="1.5" stroke-dasharray="6 7" opacity=".7"/>`;
-      if (s >= 2) [[48, 200], [592, 200]].forEach(([x, y]) => { for (let a = 0; a < 8; a++) g += `<line x1="${x}" y1="${y}" x2="${x + Math.cos(a * Math.PI / 4) * 12}" y2="${y + Math.sin(a * Math.PI / 4) * 12}" style="stroke:var(--accent)" stroke-width="2"/>`; });
+      g += yarn('ellipse', 'cx="320" cy="200" rx="300" ry="185"', 3.2, KIT.yarn);
+      if (s <= 1) g += yarn('circle', 'cx="318" cy="205" r="128"', 2, KIT.yarn2);
+      if (s === 2) g += `<circle cx="318" cy="205" r="128" fill="none" stroke="${KIT.yarn2}" stroke-width="2" stroke-dasharray="16 12" opacity=".75"/>`;
+      if (s >= 2) g += centrioles(48, 200) + centrioles(592, 200);
       if (s >= 3) {
-        g += `<line x1="320" y1="28" x2="320" y2="372" style="stroke:var(--stain)" stroke-width="2" stroke-dasharray="8 6"/><text x="328" y="42" style="fill:var(--stain);font-size:13px">metaphase plate</text>`;
-        st.ch.forEach(d => { if (s === 3) { if (Math.abs(d.x - 320) < 1) g += `<line x1="48" y1="200" x2="${d.x - 7}" y2="${d.y}" style="stroke:var(--accent)" opacity=".45"/><line x1="592" y1="200" x2="${d.x + 7}" y2="${d.y}" style="stroke:var(--accent)" opacity=".45"/>`; } else d.t.forEach(t => { const px = t.x < 320 ? 48 : 592; g += `<line x1="${px}" y1="200" x2="${t.x}" y2="${t.y}" style="stroke:var(--accent)" opacity=".45"/>`; }); });
+        g += `<line x1="320" y1="28" x2="320" y2="372" stroke="${KIT.chalk}" stroke-width="2.2" stroke-dasharray="8 6" opacity=".75"/><text x="328" y="42" style="fill:${KIT.text};font-size:13px">metaphase plate</text>`;
+        st.ch.forEach(d => { if (s === 3) { if (Math.abs(d.x - 320) < 1) g += fiber(48, 200, d.x - 7, d.y) + fiber(592, 200, d.x + 7, d.y); } else d.t.forEach(t => { g += fiber(t.x < 320 ? 48 : 592, 200, t.x, t.y); }); });
       }
       st.ch.forEach((d, i) => {
         const wavy = s <= 1, sp = s <= 1 ? SP + 1 : SP;
@@ -719,11 +795,11 @@ const MIT = (function () {
     } else {
       const sd = sides();
       [[165, sd.L], [475, sd.R]].forEach(([cx, list]) => {
-        g += `<ellipse cx="${cx}" cy="200" rx="148" ry="178" style="fill:var(--surface);stroke:var(--muted)" stroke-width="2"/><circle cx="${cx}" cy="205" r="92" style="fill:var(--surface-2);stroke:var(--muted)" stroke-width="1.5"/>`;
+        g += yarn('ellipse', `cx="${cx}" cy="200" rx="148" ry="178"`, 3.2, KIT.yarn) + yarn('circle', `cx="${cx}" cy="205" r="92"`, 2, KIT.yarn2);
         list.forEach((o, j) => { const x = cx + (j - (list.length - 1) / 2) * 24; g += beads(x, 200, o.d.n, o.d.c, () => o.d.col, SP + 1, true); });
-        g += `<text x="${cx}" y="392" text-anchor="middle" style="fill:var(--ink);font-size:15px;font-weight:600">${list.length} chromosomes</text>`;
+        g += `<text x="${cx}" y="392" text-anchor="middle" style="fill:${KIT.text};font-size:15px;font-weight:600">${list.length} chromosomes</text>`;
       });
-      g += `<line x1="320" y1="40" x2="320" y2="360" style="stroke:var(--accent)" stroke-width="4" opacity=".6"/>`;
+      g += `<line x1="320" y1="40" x2="320" y2="360" stroke="${KIT.chalk}" stroke-width="4" opacity=".7"/>`;
     }
     layer.innerHTML = g;
     $('#mit-stage').innerHTML = 'Stage: <strong>' + NAMES[s] + '</strong>';
@@ -788,16 +864,14 @@ $('#mit-check-table').addEventListener('click', () => {
   const PH = [['I', 'Interphase'], ['P', 'Prophase'], ['M', 'Metaphase'], ['A', 'Anaphase'], ['T', 'Telophase'], ['C', 'Cytokinesis']];
   const seeds = { I: 11, P: 907, M: 33, A: 4321, T: 77, C: 512 };
   let order = rng.shuffle(PH.map(p => p[0])), sel = null;
-  const row = $('#sort-row'); const cvs = {};
+  const row = $('#sort-row');
+  /* Each card is a cropped 400x micrograph of one cell among interphase neighbours (same renderer as Part 2). */
   function drawThumb(cv, ph) {
-    const o = cvs[ph] || (cvs[ph] = Lab.canvas(cv, 1)); const P = scope(), ctx = o.ctx, s = o.w / 70;
-    ctx.save(); ctx.clearRect(0, 0, o.w, o.h); ctx.scale(s, s);
-    const g = ctx.createRadialGradient(30, 28, 4, 35, 35, 52); g.addColorStop(0, css(mix(P.field, P.light, 0.6))); g.addColorStop(1, css(mix(P.field, P.dark, 0.1)));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 70, 70);
     const big = ph === 'A' || ph === 'T' || ph === 'C';
-    [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [0, 1]].forEach(([i, j], n) => drawOnionCell(ctx, { x: 35 + i * (big ? 60 : 50), y: 35 + j * 47, w: 46, h: 44, a: 0, phase: 'I', seed: 50 + n, k: 0.75 }, P, 1));
-    drawOnionCell(ctx, { x: 35, y: 35, w: big ? 62 : 48, h: 46, a: 0.05, phase: ph, seed: seeds[ph], k: 1.05 }, P, 1);
-    ctx.restore();
+    Scope.still(cv, { aspect: 1, viewW: 70, viewH: 70, blur: 0.28, render: ctx => {
+      [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [0, 1]].forEach(([i, j], n) => drawOnionCell(ctx, { x: 35 + i * (big ? 60 : 50), y: 35 + j * 47, w: 46, h: 44, a: 0.03 * j, phase: 'I', seed: 50 + n, k: 0.75 }, 1));
+      drawOnionCell(ctx, { x: 35, y: 35, w: big ? 62 : 48, h: 46, a: 0.05, phase: ph, seed: seeds[ph], k: 1.05 }, 1);
+    } });
   }
   function render() {
     row.innerHTML = '';
@@ -805,7 +879,7 @@ $('#mit-check-table').addEventListener('click', () => {
       const b = Lab.h('button', { type: 'button', class: 'sortcard', id: 'sort-card-' + i, role: 'listitem', 'aria-pressed': sel === i ? 'true' : 'false', 'aria-label': `Cell image in position ${i + 1}. Click to select, then click another card to swap.` });
       const cv = Lab.h('canvas', { 'aria-hidden': 'true' }); b.append(cv, Lab.h('span', { class: 'pos' }, 'Position ' + (i + 1)));
       b.addEventListener('click', () => { if (sel == null) { sel = i; } else { [order[sel], order[i]] = [order[i], order[sel]]; sel = null; $('#sort-msg').textContent = ''; } render(); });
-      row.append(b); delete cvs[ph]; drawThumb(cv, ph);
+      row.append(b); drawThumb(cv, ph);
     });
   }
   $('#sort-shuffle').addEventListener('click', () => { order = rng.shuffle(order); sel = null; $('#sort-msg').textContent = ''; render(); });
@@ -813,7 +887,7 @@ $('#mit-check-table').addEventListener('click', () => {
     let n = 0; order.forEach((ph, i) => { const ok = ph === PH[i][0]; if (ok) n++; const c = $('#sort-card-' + i); c.classList.toggle('ok', ok); c.classList.toggle('bad', !ok); });
     $('#sort-msg').innerHTML = n === 6 ? '<span class="pill ok">All 6 in order</span> Interphase → prophase → metaphase → anaphase → telophase → cytokinesis.' : `<span class="pill warn">${n} of 6 in the right place</span> Look at where the chromatin is: diffuse, threads, a plate, two moving groups, two tight masses, two new cells.`;
   });
-  render(); themeHooks.push(() => order.forEach((ph, i) => { const cv = $('#sort-card-' + i + ' canvas'); if (cv) drawThumb(cv, ph); }));
+  render();
 })();
 [['p1-info', 'If a cell contains a set of duplicated chromosomes, does it contain any more genetic information than the cell before the chromosomes were duplicated? Explain.'],
  ['p1-condense', 'What is the significance of the fact that chromosomes condense before they are moved?'],
@@ -829,19 +903,32 @@ $('#mit-check-table').addEventListener('click', () => {
    ===================================================================== */
 const MI_MU = { control: 0.145, lectin: 0.353 };
 function pickPhase(R, mi) { if (!R.chance(mi)) return 'I'; const u = R.uniform(); return u < 0.45 ? 'P' : u < 0.65 ? 'M' : u < 0.77 ? 'A' : 'T'; }
+/* The squash is a torn sheet of tissue larger than the field of view: students pan to see all of it.
+   Cells are generated in files along the root axis inside an irregular tissue outline; cells in the
+   outer rim (rho > 0.8) are torn and broken, so they are flagged `edge` and cannot be scored (the same
+   rule the field edge used to apply). Phases still come from pickPhase, so the MI model is unchanged. */
+const RW = { w: 900, h: 700 };
+function tissue(seed) {
+  const R = Lab.rng((seed ^ 0x9e3779b9) >>> 0), ang = R.normal(0, 0.35), rx = 300 + R.uniform() * 30, ry = 188 + R.uniform() * 24;
+  const hm = [1, 2, 3, 5, 8].map((f, i) => ({ f, a: (0.06 / (i + 1)) * (0.5 + R.uniform()), p: R.uniform() * TAU })), ca = Math.cos(ang), sa = Math.sin(ang);
+  const m = th => 1 + hm.reduce((s, h) => s + h.a * Math.sin(h.f * th + h.p), 0);
+  const rho = (x, y) => { const dx = x - RW.w / 2, dy = y - RW.h / 2, u = dx * ca + dy * sa, v = -dx * sa + dy * ca; return Math.hypot(u / rx, v / ry) / m(Math.atan2(u ? v / ry : v, u / rx)); };
+  const outline = s => { const p = new Path2D(); for (let i = 0; i <= 90; i++) { const th = i / 90 * TAU, r = m(th) * s, u = Math.cos(th) * rx * r, v = Math.sin(th) * ry * r, x = RW.w / 2 + u * ca - v * sa, y = RW.h / 2 + u * sa + v * ca; i ? p.lineTo(x, y) : p.moveTo(x, y); } p.closePath(); return p; };
+  return { ang, rho, outline };
+}
 function genRootField(seed, mi, q) {
-  const R = Lab.rng(seed), cells = [], ang = R.normal(0, 0.35), ux = Math.cos(ang), uy = Math.sin(ang), vx = -uy, vy = ux;
+  const T = tissue(seed), R = Lab.rng(seed), cells = [], ang = T.ang, ux = Math.cos(ang), uy = Math.sin(ang), vx = -uy, vy = ux;
   const H0 = 46, sep = q.hcl && q.squash, gap = sep ? 4 : 0.6, jit = sep ? 1 : 0.25;
-  for (let j = -7; j <= 7; j++) {
-    let t = -340 + R.uniform() * 40; const off = j * (H0 + gap) + R.normal(0, 2);
-    while (t < 340) {
+  for (let j = -6; j <= 6; j++) {
+    let t = -400 + R.uniform() * 40; const off = j * (H0 + gap) + R.normal(0, 2);
+    while (t < 400) {
       const ph = pickPhase(R, mi), base = q.cut ? 44 : 104;
       const w = base * (0.84 + R.uniform() * 0.32) * (ph === 'A' || ph === 'T' ? 1.28 : 1), hh = H0 * (0.9 + R.uniform() * 0.16);
       const al = t + w / 2, ac = off + R.normal(0, 2.4 * jit);
-      const x = FC.x + ux * al + vx * ac + R.normal(0, 2 * jit), y = FC.y + uy * al + vy * ac + R.normal(0, 2 * jit);
+      const x = RW.w / 2 + ux * al + vx * ac + R.normal(0, 2 * jit), y = RW.h / 2 + uy * al + vy * ac + R.normal(0, 2 * jit);
       const c = { x, y, w, h: hh, a: ang + R.normal(0, 0.07 * jit), phase: ph, seed: R.int(1, 1e9), k: 0.8 + R.uniform() * 0.4 };
-      c.edge = Math.hypot(x - FC.x, y - FC.y) > FC.r * 0.86;
-      if (Math.hypot(x - FC.x, y - FC.y) < FC.r + 60) cells.push(c);
+      const rho = T.rho(x, y); c.edge = rho > 0.8;
+      if (rho < 1) cells.push(c);
       t += w + gap * (0.5 + R.uniform());
     }
   }
@@ -851,32 +938,65 @@ function hitCell(cells, px, py) {
   for (let i = cells.length - 1; i >= 0; i--) { const c = cells[i], dx = px - c.x, dy = py - c.y, u = dx * Math.cos(c.a) + dy * Math.sin(c.a), v = -dx * Math.sin(c.a) + dy * Math.cos(c.a); if (Math.abs(u) < c.w / 2 && Math.abs(v) < c.h / 2) return i; }
   return -1;
 }
-function drawRootField(o, f, marks, checking) {
-  const ctx = o.ctx, s = o.w / 640, P = scope();
-  ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0); ctx.clearRect(0, 0, o.w, o.h); ctx.scale(s, s);
-  scopeFrame(ctx, P, () => {
-    if (f.under) { ctx.save(); ctx.globalAlpha = 0.42; try { ctx.filter = 'blur(1.6px)'; } catch (e) {} f.under.forEach(c => drawOnionCell(ctx, c, P, f.ink)); ctx.restore(); }
-    f.cells.forEach(c => drawOnionCell(ctx, c, P, f.ink));
-    debris(ctx, P, f.seed + 3, 40);
-    if (marks) marks.forEach((lab, i) => {
-      const c = f.cells[i];
-      if (checking) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.strokeStyle = css(lab === c.phase ? P.ok : P.bad); ctx.lineWidth = 3; ctx.strokeRect(-c.w / 2 + 2, -c.h / 2 + 2, c.w - 4, c.h - 4); ctx.restore(); }
-      ctx.fillStyle = css(P.acc, 0.88); ctx.beginPath(); ctx.arc(c.x, c.y - c.h * 0.28, 9, 0, TAU); ctx.fill();
-      ctx.fillStyle = css(P.light); ctx.font = '700 12px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(lab, c.x, c.y - c.h * 0.28 + 4.2);
-    });
+/* Focal layers: 0 = main cell layer; 1 = cells lying a little deeper + slide debris and bubbles;
+   2 = (poor squash only) a second, overlapping sheet of cells well out of the focal plane. */
+const rootLayers = f => f.under ? [{ z: 0 }, { z: 0.045 }, { z: 0.2 }] : [{ z: 0 }, { z: 0.045 }];
+const cellDepth = c => (c.seed % 100) < 22 ? 1 : 0;
+function tearDir(T, c) { const dx = c.x - RW.w / 2, dy = c.y - RW.h / 2, L = Math.hypot(dx, dy) || 1, ca = Math.cos(c.a), sa = Math.sin(c.a); return [(dx * ca + dy * sa) / L, (-dx * sa + dy * ca) / L]; }
+function slideDebris(ctx, R, W, H, n) {
+  for (let i = 0; i < n; i++) { ctx.fillStyle = `rgba(${60 + R.int(0, 40)},${40 + R.int(0, 30)},${50 + R.int(0, 30)},${(0.2 + R.uniform() * 0.45).toFixed(2)})`; ctx.beginPath(); ctx.arc(R.uniform() * W, R.uniform() * H, 0.4 + R.uniform() * 1.3, 0, TAU); ctx.fill(); }
+  for (let i = 0; i < n / 8; i++) {   // stain precipitate clusters
+    const x = R.uniform() * W, y = R.uniform() * H; ctx.fillStyle = rgba(CF.chrom, 0.35 + R.uniform() * 0.3);
+    for (let j = 0, m = R.int(2, 7); j < m; j++) { ctx.beginPath(); ctx.arc(x + R.normal(0, 2.5), y + R.normal(0, 2.5), 0.5 + R.uniform() * 1.1, 0, TAU); ctx.fill(); }
+  }
+  ctx.lineWidth = 0.7;
+  for (let i = 0; i < n / 12; i++) {   // lint fibres and refractile crystals
+    const x = R.uniform() * W, y = R.uniform() * H, a = R.uniform() * TAU, L = 12 + R.uniform() * 40;
+    if (R.chance(0.5)) { ctx.strokeStyle = 'rgba(110,100,95,0.22)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(a) * L / 2 + R.normal(0, 8), y + Math.sin(a) * L / 2 + R.normal(0, 8), x + Math.cos(a) * L, y + Math.sin(a) * L); ctx.stroke(); }
+    else { const r = 1.5 + R.uniform() * 2.5; ctx.strokeStyle = 'rgba(60,55,50,0.45)'; ctx.fillStyle = 'rgba(250,250,245,0.6)'; ctx.beginPath(); for (let j = 0; j < 5; j++) { const t = a + j / 5 * TAU + R.normal(0, 0.2), rr = r * (0.7 + R.uniform() * 0.5); j ? ctx.lineTo(x + Math.cos(t) * rr, y + Math.sin(t) * rr) : ctx.moveTo(x + Math.cos(t) * rr, y + Math.sin(t) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  }
+}
+function rootRenderer(f) {
+  const T = tissue(f.seed);
+  return (ctx, li) => {
+    if (li === 0) { ctx.fillStyle = rgba(CF.cyto, 0.08 + 0.1 * f.ink); ctx.fill(T.outline(1.03)); }
+    if (li < 2) f.cells.forEach(c => { if (cellDepth(c) === li) drawOnionCell(ctx, c, f.ink, c.edge ? tearDir(T, c) : null); });
+    if (li === 1) {
+      const R = Lab.rng(f.seed + 3); slideDebris(ctx, R, RW.w, RW.h, 150);
+      if (R.chance(0.6)) for (let t = 0; t < 40; t++) { const x = 60 + R.uniform() * (RW.w - 120), y = 60 + R.uniform() * (RW.h - 120), r = 16 + R.uniform() * 30; if (T.rho(x, y) > 1.12) { Scope.bubble(ctx, x, y, r); break; } }
+    }
+    if (li === 2) { const T2 = tissue(f.seed + 99); f.under.forEach(c => drawOnionCell(ctx, c, f.ink * 0.9, c.edge ? tearDir(T2, c) : null)); }
+  };
+}
+/* Score badges and answer-key outlines: UI, so theme tokens; drawn in world units every frame. */
+function drawRootMarks(ctx, f, marks, checking) {
+  if (!marks || !marks.size) return; const P = uiPal();
+  marks.forEach((lab, i) => {
+    const c = f.cells[i];
+    if (checking) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.strokeStyle = css(lab === c.phase ? P.ok : P.bad); ctx.lineWidth = 3; ctx.strokeRect(-c.w / 2 + 2, -c.h / 2 + 2, c.w - 4, c.h - 4); ctx.restore(); }
+    ctx.fillStyle = css(P.acc, 0.88); ctx.beginPath(); ctx.arc(c.x, c.y - c.h * 0.28, 9, 0, TAU); ctx.fill();
+    ctx.fillStyle = css(P.light); ctx.font = '700 12px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(lab, c.x, c.y - c.h * 0.28 + 4.2);
   });
-  scopeLabels(ctx, P, '400×', 46, '30 µm');
-  ctx.restore();
 }
 const ROOT = (function () {
-  const o = Lab.canvas('#rt-canvas', 0.75);
   let treat = 'control', tip = 1, tool = 'I', checking = false, field = null, marks = new Map(), salt = rng.int(1, 1e6);
+  const view = Scope.view('#rt-canvas', {
+    aspect: 0.75, world: RW, focusLabel: 'Fine focus', hud: { mag: '400×', bar: { units: 46, label: '30 µm' } },
+    overlay: ctx => field && drawRootMarks(ctx, field, marks, checking),
+    onClick: (px, py) => {
+      const i = hitCell(field.cells, px, py); if (i < 0) return;
+      if (field.cells[i].edge) { $('#rt-acc').textContent = 'That cell is torn open at the ragged edge of the squash. Count only whole, unbroken cells.'; return; }
+      if (tool === 'X') marks.delete(i); else marks.set(i, tool);
+      $('#rt-acc').textContent = ''; draw(); counts();
+    }
+  });
   const prep = () => ({ hcl: $('#prep-hcl').checked, fix: $('#prep-fix').checked, cut: $('#prep-cut').checked, stain: $('#prep-stain').checked, squash: $('#prep-squash').checked });
   function make() {
     const q = prep(), seed = (salt += 7919) + tip * 31 + (treat === 'lectin' ? 1000 : 0), R = Lab.rng(seed);
     let mi = clamp(R.normal(MI_MU[treat], 0.025), 0.04, 0.6); if (!q.cut) mi *= 0.12;
     field = { seed, mi, q, cells: genRootField(seed, mi, q), ink: (q.stain ? 1 : 0.2) * (q.fix ? 1 : 0.78) };
     if (!q.hcl || !q.squash) field.under = genRootField(seed + 99, mi, q).map(c => ({ ...c, x: c.x + 14, y: c.y + 11 }));
+    view.setSpecimen({ render: rootRenderer(field), layers: rootLayers(field), seed });
     marks = new Map(); checking = false; $('#rt-checkids').setAttribute('aria-pressed', 'false');
     const notes = [];
     if (!q.hcl) notes.push('Without HCl the middle lamellae were not softened, so cells stayed stuck together in thick layers.');
@@ -888,7 +1008,7 @@ const ROOT = (function () {
     $('#rt-acc').textContent = '';
     draw(); counts();
   }
-  function draw() { drawRootField(o, field, marks, checking); }
+  function draw() { view.redraw(); }
   function counts() {
     const n = { I: 0, P: 0, M: 0, A: 0, T: 0 }; marks.forEach(v => n[v]++);
     Object.keys(n).forEach(k => $('#rt-n-' + k).textContent = n[k]);
@@ -896,14 +1016,6 @@ const ROOT = (function () {
     const tot = marks.size, mit = tot - n.I; $('#rt-mi').textContent = tot ? fmt(100 * mit / tot, 1) + '%' : '—';
     return n;
   }
-  o.onresize = draw;
-  o.canvas.addEventListener('click', e => {
-    const r = o.canvas.getBoundingClientRect(), s = o.w / 640, px = (e.clientX - r.left) / s, py = (e.clientY - r.top) / s;
-    const i = hitCell(field.cells, px, py); if (i < 0) return;
-    if (field.cells[i].edge) { $('#rt-acc').textContent = 'That cell is cut off by the edge of the field. Count only whole cells.'; return; }
-    if (tool === 'X') marks.delete(i); else marks.set(i, tool);
-    $('#rt-acc').textContent = ''; draw(); counts();
-  });
   $$('[data-treat]').forEach(b => b.addEventListener('click', () => { treat = b.dataset.treat; $$('[data-treat]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); make(); }));
   $$('[data-tip]').forEach(b => b.addEventListener('click', () => { tip = +b.dataset.tip; $$('[data-tip]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); make(); }));
   $$('[data-tool]').forEach(b => b.addEventListener('click', () => { tool = b.dataset.tool; $$('[data-tool]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); }));
@@ -1040,8 +1152,43 @@ const KARYO = (function () {
   const K = 0.36, W = 760, H = 470, svg = $('#k-svg');
   let cur = 'normal', view = 'spread', counted = {}, chroms = [];
   function groupKey(d) { return d.name[0] === 'M' ? 'M' : d.name; }
+  /* Rendering: G-banded (Giemsa) look with fixed physical colours, like a karyogram printout or a
+     microscope photo; only the count markers and abnormal-chromosome rings use theme tokens. */
+  const GB = { pale: [206, 199, 212], mid: [124, 113, 136], dark: [36, 29, 46] };
+  const gcol = t => { const c = t < 0.5 ? mix(GB.pale, GB.mid, t * 2) : mix(GB.mid, GB.dark, (t - 0.5) * 2); return `rgb(${c})`; };
+  let noiseURL = null;
+  function noise() {   // mottled photographic background, generated once
+    if (noiseURL) return noiseURL;
+    const c = document.createElement('canvas'); c.width = 190; c.height = 118; const x = c.getContext('2d'), im = x.createImageData(190, 118), R = Lab.rng(5);
+    for (let i = 0; i < im.data.length; i += 4) { const v = 128 + (R.uniform() + R.uniform() - 1) * 60; im.data[i] = v; im.data[i + 1] = v - 3; im.data[i + 2] = v + 4; im.data[i + 3] = 255; }
+    x.putImageData(im, 0, 0); try { noiseURL = c.toDataURL(); } catch (e) { noiseURL = ''; } return noiseURL;
+  }
+  function bandGrad(id, d, L) {
+    const R = Lab.rng([...d.name].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7) + Math.round(d.len)), soft = 0.75 / L, st = [];
+    const push = (f, t) => st.push([clamp(f, 0, 1), t]);
+    const bands = d.bands.filter(([a, b]) => Math.abs((a + b) / 2 - d.cen) >= 0.015).slice().sort((p, q) => p[0] - q[0]);
+    let cur = 0; push(0, 0.02);
+    bands.forEach(([a, b]) => { if (a < cur) return; const gi = 0.1 + R.uniform() * 0.42, di = 0.78 + R.uniform() * 0.22; push(cur + soft, gi); push(a - soft, gi); push(a + soft, di); push(b - soft, di); cur = b; });
+    const gi = R.uniform() * 0.3; push(cur + soft, gi); push(1 - 2 * soft, gi); push(1, 0.04);
+    let last = 0; return `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="${-L / 2}" x2="0" y2="${L / 2}">${st.map(([f, t]) => { last = Math.max(last, f); return `<stop offset="${last.toFixed(4)}" stop-color="${gcol(t)}"/>`; }).join('')}</linearGradient>`;
+  }
+  function chromSVG(c, gid, R) {
+    const L = c.d.len * K, pL = L * c.d.cen, top = -L / 2, cy = top + pL, cw = 4.9, g0 = 0.25, size = Math.min(1, L / 60);
+    const bp = clamp(R.normal(0, 2.5), -5, 5) * size, bq = clamp(R.normal(0, 3.5), -7, 7) * size, sp = 0.2 + R.uniform() * 0.5;
+    const arm = (y0, y1, bend, sgn) => {
+      if (y1 - y0 < 0.6) return '';
+      let s = '';
+      [-1, 1].forEach(side => {
+        const x = side > 0 ? g0 : -g0 - cw, rot = side * sgn * sp, rx = Math.min(cw / 2, (y1 - y0) / 2);
+        const r = `x="${x.toFixed(2)}" y="${y0.toFixed(2)}" width="${cw}" height="${(y1 - y0).toFixed(2)}" rx="${rx.toFixed(2)}"`;
+        s += `<g transform="rotate(${rot.toFixed(2)} 0 ${cy.toFixed(2)})"><rect ${r} fill="none" stroke="#3d3446" stroke-opacity=".3" stroke-width="1.7"/><rect ${r} fill="url(#${gid})" stroke="#4a4054" stroke-opacity=".35" stroke-width=".35"/></g>`;
+      });
+      return `<g transform="rotate(${bend.toFixed(2)} 0 ${cy.toFixed(2)})">${s}</g>`;
+    };
+    return arm(top, cy - 1.1, bp, 1) + arm(cy + 1.1, top + L, bq, -1) + `<rect x="${-cw * 0.62}" y="${(cy - 1.6).toFixed(2)}" width="${cw * 1.24}" height="3.2" rx="1.6" fill="${gcol(0.62)}" opacity=".9"/>`;
+  }
   function build() {
-    const P = scope(), list = SETS[cur].list();
+    const P = uiPal(), list = SETS[cur].list();
     chroms = list.map((d, i) => ({ d, i }));
     const R = Lab.rng(cur.length * 131 + 7), placed = [];
     // spread: random non-overlapping-ish positions inside an ellipse, random angles
@@ -1065,21 +1212,34 @@ const KARYO = (function () {
       let x = (W - total) / 2; const line = y + maxP;
       groups.forEach((g, gi) => {
         g.forEach((c, j) => { const L = c.d.len * K; c.kx = x + 7.5 + j * 15; c.ky = line + L / 2 - c.d.cen * L; });
-        labels.push([x + widths[gi] / 2, line + maxQ + 13, groupKey(g[0].d) === 'M' ? 'markers' : g[0].d.name]);
+        labels.push([x + widths[gi] / 2, line + maxQ + 13, groupKey(g[0].d) === 'M' ? 'markers' : g[0].d.name, widths[gi]]);
         x += widths[gi] + gap;
       });
       y = line + maxQ + 24;
     });
-    const fillC = css(mix(P.light, P.dark, 0.13)), strokeC = css(mix(P.light, P.dark, 0.55)), bandC = css(mix(P.dark, P.light, 0.22)), lab = css(mix(P.dark, P.light, 0.3));
-    let s = `<rect x="0" y="0" width="${W}" height="${H}" rx="10" style="fill:${css(P.light)}"/>`;
-    s += labels.map(([x, yy, t]) => `<text class="glabel" x="${x}" y="${yy}" text-anchor="middle" style="fill:${lab};font-size:11px;font-family:var(--f-mono)">${t}</text>`).join('');
+    // one banding gradient per distinct chromosome definition
+    const gids = new Map(); let defs = '';
+    chroms.forEach(c => { if (!gids.has(c.d)) { const id = 'kb-' + gids.size; gids.set(c.d, id); defs += bandGrad(id, c.d, c.d.len * K); } });
+    defs += `<radialGradient id="k-photo" cx=".5" cy=".48" r=".7"><stop offset="0" stop-color="#f3f1ed"/><stop offset=".7" stop-color="#e7e4df"/><stop offset="1" stop-color="#c9c5bf"/></radialGradient><filter id="k-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.4"/></filter><radialGradient id="k-nuc" cx=".42" cy=".4" r=".62"><stop offset="0" stop-color="#a99fb2"/><stop offset=".8" stop-color="#857a90"/><stop offset="1" stop-color="#6e6279" stop-opacity=".8"/></radialGradient>`;
+    let s = `<defs>${defs}</defs>`;
+    // photo background for the spread (interphase nuclei nearby, debris), printout background for the karyogram
+    const RN = Lab.rng(cur.length * 17 + 3); let sp = `<rect width="${W}" height="${H}" fill="url(#k-photo)"/>`;
+    const nz = noise(); if (nz) sp += `<image href="${nz}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" opacity=".14"/>`;
+    sp += '<g filter="url(#k-soft)">';
+    [[62, 404, 54], [712, 66, 46], [690, 440, 36]].forEach(([nx, ny, nr]) => {
+      sp += `<ellipse cx="${nx}" cy="${ny}" rx="${nr}" ry="${nr * 0.88}" fill="url(#k-nuc)"/>`;
+      for (let i = 0; i < 70; i++) { const a = RN.uniform() * TAU, d = Math.sqrt(RN.uniform()) * nr * 0.9; sp += `<circle cx="${(nx + Math.cos(a) * d).toFixed(1)}" cy="${(ny + Math.sin(a) * d * 0.88).toFixed(1)}" r="${(0.8 + RN.uniform() * 2.2).toFixed(1)}" fill="#3a3044" opacity="${(0.12 + RN.uniform() * 0.25).toFixed(2)}"/>`; }
+      for (let i = 0; i < 2; i++) sp += `<circle cx="${(nx + RN.normal(0, nr * 0.25)).toFixed(1)}" cy="${(ny + RN.normal(0, nr * 0.25)).toFixed(1)}" r="${(nr * 0.12).toFixed(1)}" fill="#2e2537" opacity=".55"/>`;
+    });
+    sp += '</g>';
+    for (let i = 0; i < 50; i++) sp += `<circle cx="${(RN.uniform() * W).toFixed(1)}" cy="${(RN.uniform() * H).toFixed(1)}" r="${(0.5 + RN.uniform() * 1.4).toFixed(1)}" fill="#4a4250" opacity="${(0.2 + RN.uniform() * 0.4).toFixed(2)}"/>`;
+    sp += `<rect width="${W}" height="${H}" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="18"/>`;
+    s += `<g class="sp-bg" aria-hidden="true">${sp}</g><g class="ky-bg" aria-hidden="true"><rect width="${W}" height="${H}" fill="#f5f3ee"/></g>`;
+    s += labels.map(([x, yy, t, wd]) => `<g class="glabel"><line x1="${x - wd / 2 + 1}" y1="${yy - 11}" x2="${x + wd / 2 - 1}" y2="${yy - 11}" stroke="#55505a" stroke-width=".8"/><text x="${x}" y="${yy + 1}" text-anchor="middle" style="fill:#3b3740;font-size:11px;font-family:var(--f-mono)">${t}</text></g>`).join('');
     chroms.forEach(c => {
       const L = c.d.len * K, pL = L * c.d.cen, top = -L / 2;
       let g = `<rect class="abn-ring" x="-9" y="${top - 4}" width="18" height="${L + 8}" rx="6" fill="none" style="stroke:${css(P.bad)}" stroke-width="2.4" ${c.d.abn ? '' : 'visibility="hidden"'}/>`;
-      g += `<rect x="-5.5" y="${top}" width="11" height="${Math.max(2, pL - 0.8)}" rx="4.5" style="fill:${fillC};stroke:${strokeC}" stroke-width=".8"/>`;
-      g += `<rect x="-5.5" y="${top + pL + 0.8}" width="11" height="${Math.max(2, L - pL - 0.8)}" rx="4.5" style="fill:${fillC};stroke:${strokeC}" stroke-width=".8"/>`;
-      c.d.bands.forEach(([a, b]) => { const y0 = top + a * L, y1 = top + b * L; if (Math.abs((a + b) / 2 - c.d.cen) < 0.015) return; g += `<rect x="-5" y="${y0}" width="10" height="${Math.max(0.8, y1 - y0)}" style="fill:${bandC}" opacity=".85"/>`; });
-      g += `<line x1="0" y1="${top + 2}" x2="0" y2="${top + L - 2}" style="stroke:${css(P.light)}" stroke-width=".7" opacity=".7"/>`;
+      g += chromSVG(c, gids.get(c.d), Lab.rng(c.i * 97 + cur.length * 13 + 1));
       g += `<rect x="-9" y="${top - 3}" width="18" height="${L + 6}" fill="transparent"/>`;
       g += `<circle class="mk" cx="0" cy="${top + pL}" r="4.5" style="fill:${css(P.acc)};stroke:${css(P.light)}" stroke-width="1.2"/>`;
       s += `<g class="chr${counted[c.i] ? ' counted' : ''}" data-i="${c.i}" style="transform:${tf(c)}">${g}</g>`;
@@ -1117,6 +1277,7 @@ Lab.prompt('#p3-pre', { key: 'p3-diff', label: 'How are normal cells and cancer 
    ===================================================================== */
 const MEI = (function () {
   const svg = $('#mei-svg'), MSP = 16, MBR = 7;
+  svg.innerHTML = benchSVG('mei', 800, 420) + '<g id="mei-layer"></g>'; const layer = $('#mei-layer');
   const DEF = { L: { n: 9, c: 3, gene: 7, al: ['A', 'a'] }, S: { n: 5, c: 2, gene: 4, al: ['B', 'b'] } };
   const CT = []; ['L', 'S'].forEach(chr => ['m', 'p'].forEach(par => [1, 2].forEach(k => CT.push({ id: chr + par + k, chr, par, k }))));
   const NAMES = ['Interphase (G1)', 'S phase / G2', 'Prophase I', 'Metaphase I', 'Anaphase I', 'Telophase I', 'Metaphase II', 'Anaphase II', 'Telophase II'];
@@ -1168,25 +1329,28 @@ const MEI = (function () {
   }
   function render(pos) {
     const s = st, stg = s.stage; let g = '';
-    const cell = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" style="fill:var(--surface);stroke:var(--muted)" stroke-width="2"/>`;
-    if (stg <= 4) { g += cell(400, 210, 388, 200); if (stg <= 1) g += `<circle cx="400" cy="210" r="150" style="fill:var(--surface-2);stroke:var(--muted)" stroke-width="1.5"/>`; if (stg === 2) g += `<circle cx="400" cy="210" r="150" fill="none" style="stroke:var(--muted)" stroke-dasharray="6 7"/>`; }
-    else if (stg <= 7) { g += cell(200, 210, 192, 198) + cell(600, 210, 192, 198); if (stg === 5) g += `<circle cx="200" cy="200" r="105" style="fill:var(--surface-2);stroke:var(--muted)"/><circle cx="600" cy="200" r="105" style="fill:var(--surface-2);stroke:var(--muted)"/>`; }
+    const cell = (cx, cy, rx, ry) => yarn('ellipse', `cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"`, 3, KIT.yarn);
+    const nuc = (cx, cy, r) => yarn('circle', `cx="${cx}" cy="${cy}" r="${r}"`, 1.8, KIT.yarn2);
+    const fib = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${KIT.string}" stroke-width="1" opacity=".42"/>`;
+    const plate = (x, y1, y2, op) => `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${KIT.chalk}" stroke-width="2.2" stroke-dasharray="8 6" opacity="${op}"/>`;
+    if (stg <= 4) { g += cell(400, 210, 388, 200); if (stg <= 1) g += nuc(400, 210, 150); if (stg === 2) g += `<circle cx="400" cy="210" r="150" fill="none" stroke="${KIT.yarn2}" stroke-width="1.8" stroke-dasharray="16 12" opacity=".75"/>`; }
+    else if (stg <= 7) { g += cell(200, 210, 192, 198) + cell(600, 210, 192, 198); if (stg === 5) g += nuc(200, 200, 105) + nuc(600, 200, 105); }
     else [0, 1, 2, 3].forEach(i => { g += cell(100 + i * 200, 200, 94, 170); });
-    if (stg === 3 || stg === 4) { g += `<line x1="400" y1="20" x2="400" y2="400" style="stroke:var(--stain)" stroke-width="2" stroke-dasharray="8 6" opacity="${stg === 3 ? 1 : 0.35}"/>`; CT.forEach(t => { const p = pos[t.id], px = p.x < 400 ? 24 : 776; g += `<line x1="${px}" y1="210" x2="${p.x}" y2="${p.y}" style="stroke:var(--accent)" opacity=".3"/>`; }); }
-    if (stg === 6 || stg === 7) [200, 600].forEach(cx => { g += `<line x1="${cx}" y1="30" x2="${cx}" y2="390" style="stroke:var(--stain)" stroke-width="2" stroke-dasharray="8 6" opacity="${stg === 6 ? 1 : 0.35}"/>`; CT.forEach(t => { const p = pos[t.id]; if (Math.abs(p.x - cx) > 190) return; const px = p.x < cx ? cx - 175 : cx + 175; g += `<line x1="${px}" y1="210" x2="${p.x}" y2="${p.y}" style="stroke:var(--accent)" opacity=".3"/>`; }); });
+    if (stg === 3 || stg === 4) { g += plate(400, 20, 400, stg === 3 ? 0.8 : 0.3); CT.forEach(t => { const p = pos[t.id], px = p.x < 400 ? 24 : 776; g += fib(px, 210, p.x, p.y); }); }
+    if (stg === 6 || stg === 7) [200, 600].forEach(cx => { g += plate(cx, 30, 390, stg === 6 ? 0.8 : 0.3); CT.forEach(t => { const p = pos[t.id]; if (Math.abs(p.x - cx) > 190) return; const px = p.x < cx ? cx - 175 : cx + 175; g += fib(px, 210, p.x, p.y); }); });
     const wavy = stg <= 1 || stg === 5 || stg === 8;
     ['L', 'S'].forEach(chr => {
       let grp = '';
       CT.filter(t => t.chr === chr).forEach(t => {
         const p = pos[t.id]; if (p.o <= 0.01) return;
-        grp += `<g opacity="${p.o}">${beads(p.x, p.y, DEF[chr].n, DEF[chr].c, i => beadPar(s, t, i) === 'm' ? 'var(--s3)' : 'var(--s4)', MSP, wavy, DEF[chr].gene, MBR)}</g>`;
+        grp += `<g opacity="${p.o}">${beads(p.x, p.y, DEF[chr].n, DEF[chr].c, i => beadPar(s, t, i), MSP, wavy, DEF[chr].gene, MBR, 'mei')}</g>`;
       });
-      if (stg === 3) { const xs = CT.filter(t => t.chr === chr).map(t => pos[t.id]); const minY = Math.min(...xs.map(p => p.y)) - DEF[chr].c * MSP - 10; grp = `<g class="tap" data-tetrad="${chr}" role="button" aria-label="Flip ${chr === 'L' ? 'long' : 'short'} tetrad"><rect x="358" y="${minY}" width="84" height="${height(chr) + 14}" rx="8" fill="transparent" style="stroke:var(--accent)" stroke-dasharray="3 4" opacity=".7"/>${grp}</g>`; }
+      if (stg === 3) { const xs = CT.filter(t => t.chr === chr).map(t => pos[t.id]); const minY = Math.min(...xs.map(p => p.y)) - DEF[chr].c * MSP - 10; grp = `<g class="tap" data-tetrad="${chr}" role="button" aria-label="Flip ${chr === 'L' ? 'long' : 'short'} tetrad"><rect x="358" y="${minY}" width="84" height="${height(chr) + 14}" rx="8" fill="transparent" stroke="#fff" stroke-dasharray="3 4" opacity=".55"/>${grp}</g>`; }
       g += grp;
     });
-    if ((stg === 2 || stg === 3) && s.xo) { const ord = order(s, 'L'), a = pos[tid('L', ord[1][0], ord[1][1]).id], b = pos[tid('L', ord[2][0], ord[2][1]).id], x = (a.x + b.x) / 2, y = a.y + (s.xoPos - 0.5) * MSP; g += `<path d="M${x - 8},${y - 8} L${x + 8},${y + 8} M${x + 8},${y - 8} L${x - 8},${y + 8}" style="stroke:var(--stain)" stroke-width="3" stroke-linecap="round"/>`; }
-    if (stg === 8) gametes(s).forEach((gm, gi) => { const gx = 100 + gi * 200, ok = gm.n === 2; g += `<text x="${gx}" y="318" text-anchor="middle" style="fill:var(--ink);font-size:20px;font-weight:700">${gm.geno || '—'}</text><text x="${gx}" y="340" text-anchor="middle" style="fill:var(${ok ? '--ok' : '--bad'});font-size:15px;font-weight:600">${ok ? 'n = 2' : gm.n > 2 ? 'n + 1 = ' + gm.n : 'n − 1 = ' + gm.n}</text>`; });
-    svg.innerHTML = g;
+    if ((stg === 2 || stg === 3) && s.xo) { const ord = order(s, 'L'), a = pos[tid('L', ord[1][0], ord[1][1]).id], b = pos[tid('L', ord[2][0], ord[2][1]).id], x = (a.x + b.x) / 2, y = a.y + (s.xoPos - 0.5) * MSP; g += `<path d="M${x - 8},${y - 8} L${x + 8},${y + 8} M${x + 8},${y - 8} L${x - 8},${y + 8}" stroke="${KIT.pink}" stroke-width="3" stroke-linecap="round"/>`; }
+    if (stg === 8) gametes(s).forEach((gm, gi) => { const gx = 100 + gi * 200, ok = gm.n === 2; g += `<text x="${gx}" y="318" text-anchor="middle" style="fill:${KIT.text};font-size:20px;font-weight:700">${gm.geno || '—'}</text><text x="${gx}" y="340" text-anchor="middle" style="fill:${ok ? KIT.ok : KIT.bad};font-size:15px;font-weight:600">${ok ? 'n = 2' : gm.n > 2 ? 'n + 1 = ' + gm.n : 'n − 1 = ' + gm.n}</text>`; });
+    layer.innerHTML = g;
   }
   function info() {
     const s = st; $('#mei-stage-name').textContent = NAMES[s.stage]; $('#mei-desc').textContent = DESC[s.stage];
@@ -1280,88 +1444,165 @@ const P_XO = 0.52;
 })();
 [['p5-diff', 'How do you explain the differences between recombinant asci and parental (4:4) asci? What meiotic event accounts for the difference?'], ['p5-predict', 'Using the model chromosomes from Part 4, predict the possible arrangements of spores in an ascus.']].forEach(([k, l]) => Lab.prompt('#p5-pre', { key: k, label: l, rows: 3 }));
 function sporePattern(R) { if (R.chance(P_XO)) return { xo: true, s: R.pick(['++tt++tt', 'tt++tt++', '++tttt++', 'tt++++tt']) }; return { xo: false, s: R.chance(0.5) ? '++++tttt' : 'tttt++++' }; }
+/* Squashed perithecium: the slide (SW) is larger than the field. The rosette of asci sits near the
+   middle; a few loose asci lie farther out and need panning to find. Some loose asci burst in the
+   squash (spores spilled): they are flagged `edge` and cannot be scored, like asci cut off before. */
+const SW = { w: 1000, h: 760 };
+const SPC = { black: [[64, 70, 44], [32, 36, 22], [13, 15, 8]], tan: [[240, 206, 140], [214, 160, 78], [168, 110, 40]] };
+function sporeAt(ctx, x, y, rx, ry, rot, kind, R) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  const e = new Path2D(); e.ellipse(0, 0, rx, ry, 0, 0, TAU);
+  if (kind === '+') {
+    ctx.fillStyle = 'rgba(20,24,14,0.3)'; ctx.beginPath(); ctx.ellipse(0, 0, rx + 0.7, ry + 0.7, 0, 0, TAU); ctx.fill();
+    const g = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 0.3, 0, 0, Math.max(rx, ry)); SPC.black.forEach((c, i) => g.addColorStop([0, 0.5, 1][i], `rgb(${c})`));
+    ctx.fillStyle = g; ctx.fill(e);
+    const hx = -rx * 0.34, hy = -ry * 0.38, hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, ry * 0.42); hg.addColorStop(0, 'rgba(255,255,236,0.8)'); hg.addColorStop(1, 'rgba(255,255,236,0)');
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, ry * 0.42, 0, TAU); ctx.fill();
+  } else if (kind === 't') {
+    const g = ctx.createRadialGradient(-rx * 0.25, -ry * 0.3, 0.3, 0, 0, Math.max(rx, ry)); SPC.tan.forEach((c, i) => g.addColorStop([0, 0.6, 1][i], `rgba(${c},0.93)`));
+    ctx.fillStyle = g; ctx.fill(e); ctx.strokeStyle = 'rgba(104,64,20,0.85)'; ctx.lineWidth = 0.7; ctx.stroke(e);
+    ctx.strokeStyle = 'rgba(150,100,40,0.45)'; ctx.lineWidth = 0.45; ctx.beginPath(); ctx.arc(rx * 0.25, ry * 0.15, ry * 0.22, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(-rx * 0.3, ry * 0.2, ry * 0.15, 0, TAU); ctx.stroke();
+    const hx = -rx * 0.32, hy = -ry * 0.36, hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, ry * 0.4); hg.addColorStop(0, 'rgba(255,252,236,0.75)'); hg.addColorStop(1, 'rgba(255,252,236,0)');
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, ry * 0.4, 0, TAU); ctx.fill();
+  } else {   // immature, hyaline
+    ctx.fillStyle = 'rgba(214,222,204,0.38)'; ctx.fill(e); ctx.strokeStyle = 'rgba(120,132,112,0.4)'; ctx.lineWidth = 0.45; ctx.stroke(e);
+    for (let i = 0; i < 7; i++) { ctx.fillStyle = 'rgba(110,122,100,0.35)'; ctx.beginPath(); ctx.arc(R.normal(0, rx * 0.35), R.normal(0, ry * 0.35), 0.35 + R.uniform() * 0.5, 0, TAU); ctx.fill(); }
+  }
+  ctx.restore();
+}
+/* Ascus: a long, transparent, refractive sac, narrower at the base, gently curved. */
+function ascusGeom(c) {
+  const R = Lab.rng(c.seed), bend = clamp(R.normal(0, 1.6), -3.2, 3.2), L = c.L, cy = x => bend * (1 - (2 * x / L) ** 2);
+  return { R, cy, slope: x => -8 * bend * x / (L * L) };
+}
+function ascusPath(c, cy, pad) {
+  const L = c.L, top = [], bot = [];
+  for (let i = 0; i <= 40; i++) { const t = (1 - Math.cos(Math.PI * i / 40)) / 2, x = -L / 2 + t * L, e = Math.abs(2 * t - 1), hw = (c.w / 2 + pad) * Math.pow(Math.max(0, 1 - Math.pow(e, 5)), 0.2) * (0.74 + 0.26 * Math.min(1, t * 2.2)); top.push([x, cy(x) - hw]); bot.push([x, cy(x) + hw]); }
+  return smoothPath(new Path2D(), top.concat(bot.reverse()), true);
+}
+function drawAscus(ctx, c) {
+  const { R, cy, slope } = ascusGeom(c), sp = (c.L - 10) / 8;
+  ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a);
+  const body = ascusPath(c, cy, 0);
+  ctx.fillStyle = c.mature ? 'rgba(232,236,224,0.32)' : 'rgba(222,228,212,0.5)'; ctx.fill(body);
+  const burst = c.edge ? 2 + (c.seed % 3) : 0;
+  if (!c.mature) {
+    ctx.save(); ctx.clip(body);
+    for (let i = 0; i < 120; i++) { ctx.fillStyle = `rgba(118,128,104,${(0.12 + R.uniform() * 0.3).toFixed(2)})`; ctx.beginPath(); ctx.arc((R.uniform() - 0.5) * c.L, R.normal(0, c.w * 0.22), 0.3 + R.uniform() * 0.7, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  for (let i = 0; i < 8 - burst; i++) { const x = -c.L / 2 + 5 + sp * (i + 0.5) + R.normal(0, 0.4); sporeAt(ctx, x, cy(x) + R.normal(0, 0.4), sp * 0.47, c.w * 0.36, Math.atan(slope(x)) + R.normal(0, 0.05), c.mature ? c.pat.s[i] : 'h', R); }
+  if (burst) {   // ruptured apex: wall open, last spores spilled beyond it
+    ctx.save(); ctx.beginPath(); ctx.rect(-c.L, -c.w * 2, c.L * 1.5 - sp * burst + 4, c.w * 4); ctx.clip();
+    ctx.strokeStyle = 'rgba(84,92,78,0.6)'; ctx.lineWidth = 0.8; ctx.stroke(body); ctx.restore();
+    for (let i = 8 - burst; i < 8; i++) sporeAt(ctx, c.L / 2 + 6 + (i - 8 + burst) * sp * 1.3 + R.normal(0, 3), R.normal(0, 7), sp * 0.47, c.w * 0.36, R.uniform() * TAU, c.pat.s[i], R);
+  } else {
+    ctx.strokeStyle = 'rgba(84,92,78,0.6)'; ctx.lineWidth = 0.8; ctx.stroke(body);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 0.7; ctx.stroke(ascusPath(c, cy, -1.3));
+  }
+  ctx.restore();
+}
+/* Crushed perithecium: dark olive-brown flask (body + ostiole neck) with a cellular wall texture. */
+function perithecium(ctx, pc, R) {
+  const neck = R.uniform() * TAU, pts = [], hm = [2, 3, 5].map(f => ({ f, a: 0.04 + R.uniform() * 0.05, p: R.uniform() * TAU }));
+  for (let i = 0; i < 48; i++) { const th = i / 48 * TAU, nk = Math.pow(Math.max(0, Math.cos(th - neck)), 10); let rr = pc.r * 1.1 * (1 + hm.reduce((s, h) => s + h.a * Math.sin(h.f * th + h.p), 0) + R.normal(0, 0.025)) + pc.r * 0.6 * nk; pts.push([pc.x + Math.cos(th) * rr, pc.y + Math.sin(th) * rr]); }
+  const shape = smoothPath(new Path2D(), pts, true);
+  ctx.save(); ctx.translate(pc.x, pc.y); ctx.scale(1.08, 1.08); ctx.translate(-pc.x, -pc.y); ctx.fillStyle = 'rgba(110,90,46,0.45)'; ctx.fill(shape); ctx.restore();
+  const g = ctx.createRadialGradient(pc.x - pc.r * 0.25, pc.y - pc.r * 0.25, 3, pc.x, pc.y, pc.r * 1.35);
+  g.addColorStop(0, 'rgb(66,54,26)'); g.addColorStop(0.55, 'rgb(40,32,15)'); g.addColorStop(0.8, 'rgb(48,39,18)'); g.addColorStop(1, 'rgb(104,84,42)');
+  ctx.fillStyle = g; ctx.fill(shape);
+  ctx.save(); ctx.clip(shape);
+  // textura angularis: a jittered lattice with shared vertices, so wall cells interlock
+  const cs = 5.4, n = Math.ceil(pc.r * 1.75 / cs), V = [];
+  for (let i = 0; i <= 2 * n; i++) { V[i] = []; for (let j = 0; j <= 2 * n; j++) V[i][j] = [pc.x + (i - n) * cs + (j % 2) * cs * 0.5 + R.normal(0, cs * 0.3), pc.y + (j - n) * cs * 0.88 + R.normal(0, cs * 0.3)]; }
+  for (let i = 0; i < 2 * n; i++) for (let j = 0; j < 2 * n; j++) {
+    const q = [V[i][j], V[i + 1][j], V[i + 1][j + 1], V[i][j + 1]], mx = (q[0][0] + q[2][0]) / 2, my = (q[0][1] + q[2][1]) / 2, d = Math.hypot(mx - pc.x, my - pc.y) / (pc.r * 1.3);
+    if (d > 1.25) continue;
+    ctx.beginPath(); q.forEach((v, m) => m ? ctx.lineTo(v[0], v[1]) : ctx.moveTo(v[0], v[1])); ctx.closePath();
+    ctx.fillStyle = `rgba(${R.chance(0.5) ? '12,9,4' : '120,98,50'},${(R.uniform() * 0.16).toFixed(3)})`; ctx.fill();
+    ctx.strokeStyle = `rgba(150,124,70,${(0.1 + 0.4 * clamp(d, 0, 1) ** 2).toFixed(3)})`; ctx.lineWidth = 0.55; ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(160,136,84,0.35)'; ctx.lineWidth = 0.9;
+  for (let i = 0; i < 3; i++) { let a = R.uniform() * TAU, x = pc.x + Math.cos(a) * pc.r * 0.3, y = pc.y + Math.sin(a) * pc.r * 0.3; ctx.beginPath(); ctx.moveTo(x, y); for (let j = 0; j < 7; j++) { a += R.normal(0, 0.5); x += Math.cos(a) * 7; y += Math.sin(a) * 7; ctx.lineTo(x, y); } ctx.stroke(); }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(30,24,10,0.55)'; ctx.lineWidth = 0.9; ctx.stroke(shape);
+}
+function hypha(ctx, R, x, y, len, depth) {
+  let a = R.uniform() * TAU; const pts = [[x, y]];
+  for (let i = 0; i < len / 12; i++) { a += R.normal(0, 0.16); x += Math.cos(a) * 12; y += Math.sin(a) * 12; pts.push([x, y]); }
+  const p = smoothPath(new Path2D(), pts, false), wd = 3.4 + R.uniform() * 1.4;
+  ctx.strokeStyle = 'rgba(112,120,96,0.34)'; ctx.lineWidth = wd + 1.3; ctx.stroke(p);
+  ctx.strokeStyle = 'rgba(238,241,230,0.92)'; ctx.lineWidth = wd - 0.4; ctx.stroke(p);
+  ctx.strokeStyle = 'rgba(112,120,96,0.3)'; ctx.lineWidth = 0.6;
+  for (let i = 2; i < pts.length - 1; i += 3 + R.int(0, 2)) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], L = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / L * wd / 2, ny = (x1 - x0) / L * wd / 2; ctx.beginPath(); ctx.moveTo(x0 - nx, y0 - ny); ctx.lineTo(x0 + nx, y0 + ny); ctx.stroke(); }
+  if (depth < 1 && pts.length > 6) { const b = pts[R.int(2, pts.length - 3)]; hypha(ctx, R, b[0], b[1], len * 0.5, depth + 1); }
+}
+const sordLayers = [{ z: 0 }, { z: -0.055 }];
+function sordRenderer(f) {
+  return (ctx, li) => {
+    const R = Lab.rng(f.seed + 5 + li);
+    if (li === 1) {
+      for (let i = 0; i < 11; i++) hypha(ctx, R, R.uniform() * SW.w, R.uniform() * SW.h, 140 + R.uniform() * 260, 0);
+      f.spores.forEach(sp => sporeAt(ctx, sp.x, sp.y, 7, 5.2, sp.a, sp.tan ? 't' : '+', R));
+      slideDebris(ctx, R, SW.w, SW.h, 110);
+      if (R.chance(0.6)) for (let t = 0; t < 40; t++) { const x = 60 + R.uniform() * (SW.w - 120), y = 60 + R.uniform() * (SW.h - 120), r = 18 + R.uniform() * 30; if (Math.hypot(x - f.pc.x, y - f.pc.y) > 260 && f.asci.every(c => Math.hypot(c.x - x, c.y - y) > c.L / 2 + r + 8)) { Scope.bubble(ctx, x, y, r); break; } }
+      return;
+    }
+    f.asci.forEach(c => drawAscus(ctx, c));
+    perithecium(ctx, f.pc, R);
+  };
+}
 const SORD = (function () {
-  const o = Lab.canvas('#s-canvas', 0.75);
   let field, marks = new Map(), tool = 'P', checking = false, fieldNo = 0, salt = rng.int(1, 1e6);
+  const view = Scope.view('#s-canvas', {
+    aspect: 0.75, world: SW, focusLabel: 'Fine focus', hud: { mag: () => '400× · field ' + fieldNo, bar: { units: 50, label: '50 µm' } },
+    overlay: ctx => field && drawMarks(ctx),
+    onClick: (px, py) => {
+      let best = -1, bv = 1e9;
+      field.asci.forEach((c, i) => { const dx = px - c.x, dy = py - c.y, u = dx * Math.cos(c.a) + dy * Math.sin(c.a), v = -dx * Math.sin(c.a) + dy * Math.cos(c.a); if (Math.abs(u) < c.L / 2 + 2 && Math.abs(v) < c.w / 2 + 4 && Math.abs(v) < bv) { bv = Math.abs(v); best = i; } });
+      if (best < 0) return; const c = field.asci[best];
+      if (!c.mature) { $('#s-msg').textContent = 'That ascus is immature: its spores have not darkened yet, so it cannot be scored.'; return; }
+      if (c.edge) { $('#s-msg').textContent = 'That ascus burst in the squash and some spores spilled out, so its order cannot be read. Score only intact asci.'; return; }
+      if (tool === 'E') marks.delete(best); else marks.set(best, tool);
+      $('#s-msg').textContent = ''; draw(); counts();
+    }
+  });
   function gen(seed) {
-    const R = Lab.rng(seed), asci = [];
-    const pc = { x: FC.x + R.normal(0, 30), y: FC.y + R.normal(0, 22), r: 44 + R.uniform() * 8 };
+    const R = Lab.rng(seed), asci = [], CX = SW.w / 2, CY = SW.h / 2;
+    const pc = { x: CX + R.normal(0, 30), y: CY + R.normal(0, 22), r: 44 + R.uniform() * 8 };
     const n = R.int(20, 23), a0 = R.uniform() * TAU;
-    const mk = (x, y, a, L) => { const mature = R.chance(0.86); const c = { x, y, a, L, w: 14.5, mature, pat: sporePattern(R), seed: R.int(1, 1e9) }; const ends = [-1, 1].map(sd => Math.hypot(x + Math.cos(a) * L / 2 * sd - FC.x, y + Math.sin(a) * L / 2 * sd - FC.y)); c.edge = Math.max(...ends) > FC.r - 6; return c; };
-    for (let i = 0; i < n; i++) { const a = a0 + i * TAU / n + R.normal(0, 0.05), L = 112 + R.uniform() * 30, d = pc.r * 0.82 + L / 2 + R.normal(0, 3); asci.push(mk(pc.x + Math.cos(a) * d, pc.y + Math.sin(a) * d, a, L)); }
+    const mk = (x, y, a, L, loose) => { const mature = R.chance(0.86); const c = { x, y, a, L, w: 14.5, mature, pat: sporePattern(R), seed: R.int(1, 1e9) }; c.edge = loose && mature && R.chance(0.3); return c; };
+    for (let i = 0; i < n; i++) { const a = a0 + i * TAU / n + R.normal(0, 0.05), L = 112 + R.uniform() * 30, d = pc.r * 0.82 + L / 2 + R.normal(0, 3); asci.push(mk(pc.x + Math.cos(a) * d, pc.y + Math.sin(a) * d, a, L, false)); }
     const loose = R.int(3, 6);
     for (let i = 0; i < loose; i++) {
-      for (let t = 0; t < 40; t++) {
-        const a = R.uniform() * TAU, rr = 120 + R.uniform() * 80, x = FC.x + Math.cos(a) * rr, y = FC.y + Math.sin(a) * rr, an = R.uniform() * TAU, L = 110 + R.uniform() * 28;
-        const c = mk(x, y, an, L); if (c.edge) continue;
-        const clash = asci.some(b => Math.hypot(b.x - x, b.y - y) < 60);
-        if (!clash) { asci.push(c); break; }
+      for (let t = 0; t < 60; t++) {
+        const a = R.uniform() * TAU, rr = 250 + R.uniform() * 140, x = CX + Math.cos(a) * rr * 1.2, y = CY + Math.sin(a) * rr * 0.85, an = R.uniform() * TAU, L = 110 + R.uniform() * 28;
+        if (x < L / 2 + 30 || x > SW.w - L / 2 - 30 || y < L / 2 + 30 || y > SW.h - L / 2 - 30) continue;
+        if (asci.some(b => Math.hypot(b.x - x, b.y - y) < 80)) continue;
+        asci.push(mk(x, y, an, L, true)); break;
       }
     }
-    const spores = []; for (let i = 0; i < 9; i++) spores.push({ x: FC.x + R.normal(0, 140), y: FC.y + R.normal(0, 110), a: R.uniform() * TAU, tan: R.chance(0.5) });
+    const spores = []; for (let i = 0; i < 26; i++) spores.push({ x: 20 + R.uniform() * (SW.w - 40), y: 20 + R.uniform() * (SW.h - 40), a: R.uniform() * TAU, tan: R.chance(0.5) });
     return { seed, pc, asci, spores };
   }
-  function drawSpore(ctx, P, x, y, rx, ry, kind) {
-    let g;
-    if (kind === 'h') { ctx.fillStyle = css(P.hyaline, 0.85); ctx.strokeStyle = css(P.dark, 0.18); }
-    else if (kind === '+') { g = ctx.createRadialGradient(x - rx * 0.3, y - ry * 0.35, 0.5, x, y, Math.max(rx, ry)); g.addColorStop(0, css(mix(P.black, P.light, 0.35))); g.addColorStop(0.55, css(P.black)); g.addColorStop(1, css(P.black)); ctx.fillStyle = g; ctx.strokeStyle = css(P.black); }
-    else { g = ctx.createRadialGradient(x - rx * 0.3, y - ry * 0.35, 0.5, x, y, Math.max(rx, ry)); g.addColorStop(0, css(mix(P.tan, P.light, 0.45))); g.addColorStop(1, css(P.tan)); ctx.fillStyle = g; ctx.strokeStyle = css(mix(P.tan, P.dark, 0.4)); }
-    ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill(); ctx.stroke();
-  }
-  function drawAscus(ctx, P, c) {
-    ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a);
-    ctx.beginPath(); capsule(ctx, -c.L / 2, -c.w / 2, c.L, c.w); ctx.fillStyle = css(P.light, 0.45); ctx.fill(); ctx.strokeStyle = css(P.dark, 0.3); ctx.lineWidth = 1; ctx.stroke();
-    const sp = (c.L - 10) / 8, R = Lab.rng(c.seed);
-    for (let i = 0; i < 8; i++) { const x = -c.L / 2 + 5 + sp * (i + 0.5) + R.normal(0, 0.4); drawSpore(ctx, P, x, R.normal(0, 0.5), sp * 0.47, c.w * 0.37, c.mature ? c.pat.s[i] : 'h'); }
-    ctx.restore();
-  }
-  function draw() {
-    const ctx = o.ctx, s = o.w / 640, P = scope();
-    ctx.save(); ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0); ctx.clearRect(0, 0, o.w, o.h); ctx.scale(s, s);
-    scopeFrame(ctx, P, () => {
-      const f = field, R = Lab.rng(f.seed + 5);
-      // fungal hyphae fragments
-      ctx.strokeStyle = css(P.dark, 0.16); ctx.lineWidth = 2.2;
-      for (let i = 0; i < 9; i++) { let x = FC.x + R.normal(0, 150), y = FC.y + R.normal(0, 120); ctx.beginPath(); ctx.moveTo(x, y); for (let j = 0; j < 4; j++) { x += R.normal(0, 40); y += R.normal(0, 40); ctx.lineTo(x, y); } ctx.stroke(); }
-      f.spores.forEach(sp => { ctx.save(); ctx.translate(sp.x, sp.y); ctx.rotate(sp.a); drawSpore(ctx, P, 0, 0, 7, 5.2, sp.tan ? 't' : '+'); ctx.restore(); });
-      f.asci.forEach(c => drawAscus(ctx, P, c));
-      // perithecium: dark, irregular, textured flask wall
-      const pc = f.pc; ctx.beginPath();
-      for (let i = 0; i <= 20; i++) { const a = i / 20 * TAU, rr = pc.r * (0.92 + R.uniform() * 0.2); i ? ctx.lineTo(pc.x + Math.cos(a) * rr, pc.y + Math.sin(a) * rr) : ctx.moveTo(pc.x + Math.cos(a) * rr, pc.y + Math.sin(a) * rr); }
-      const g = ctx.createRadialGradient(pc.x - pc.r * 0.3, pc.y - pc.r * 0.3, 4, pc.x, pc.y, pc.r * 1.1); g.addColorStop(0, css(mix(P.black, P.tan, 0.35))); g.addColorStop(1, css(P.black));
-      ctx.fillStyle = g; ctx.fill();
-      ctx.strokeStyle = css(P.tan, 0.25); ctx.lineWidth = 1;
-      for (let i = 0; i < 26; i++) { const a = R.uniform() * TAU, d = Math.sqrt(R.uniform()) * pc.r * 0.85; ctx.beginPath(); ctx.arc(pc.x + Math.cos(a) * d, pc.y + Math.sin(a) * d, 3 + R.uniform() * 4, 0, TAU); ctx.stroke(); }
-      debris(ctx, P, f.seed + 9, 25);
-      f.asci.forEach((c, i) => {
-        const m = marks.get(i); if (!m) return;
-        if (checking) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.beginPath(); capsule(ctx, -c.L / 2 - 2, -c.w / 2 - 2, c.L + 4, c.w + 4); ctx.strokeStyle = css((m === 'R') === c.pat.xo ? P.ok : P.bad); ctx.lineWidth = 3; ctx.stroke(); ctx.restore(); }
-        const tx = c.x + Math.cos(c.a) * (c.L / 2 + 10), ty = c.y + Math.sin(c.a) * (c.L / 2 + 10);
-        ctx.fillStyle = css(m === 'R' ? P.bad : P.acc, 0.9); ctx.beginPath(); ctx.arc(tx, ty, 9, 0, TAU); ctx.fill();
-        ctx.fillStyle = css(P.light); ctx.font = '700 11px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(m === 'R' ? 'X' : '4', tx, ty + 4);
-      });
+  function drawMarks(ctx) {
+    if (!marks.size) return; const P = uiPal();
+    field.asci.forEach((c, i) => {
+      const m = marks.get(i); if (!m) return;
+      if (checking) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a); ctx.beginPath(); capsule(ctx, -c.L / 2 - 2, -c.w / 2 - 4, c.L + 4, c.w + 8); ctx.strokeStyle = css((m === 'R') === c.pat.xo ? P.ok : P.bad); ctx.lineWidth = 3; ctx.stroke(); ctx.restore(); }
+      const tx = c.x + Math.cos(c.a) * (c.L / 2 + 10), ty = c.y + Math.sin(c.a) * (c.L / 2 + 10);
+      ctx.fillStyle = css(m === 'R' ? P.bad : P.acc, 0.9); ctx.beginPath(); ctx.arc(tx, ty, 9, 0, TAU); ctx.fill();
+      ctx.fillStyle = css(P.light); ctx.font = '700 11px "Source Sans 3", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(m === 'R' ? 'X' : '4', tx, ty + 4);
     });
-    scopeLabels(ctx, P, '400× · field ' + fieldNo, 50, '50 µm');
-    ctx.restore();
   }
+  function draw() { view.redraw(); }
   function counts() {
     let p = 0, r = 0; marks.forEach(v => { if (v === 'P') p++; else r++; });
     const scorable = field.asci.filter(c => c.mature && !c.edge).length;
     $('#s-n-P').textContent = p; $('#s-n-R').textContent = r; $('#s-n-left').textContent = scorable - marks.size;
     return { p, r };
   }
-  function newField() { fieldNo++; field = gen((salt += 104729)); marks = new Map(); checking = false; $('#s-check').setAttribute('aria-pressed', 'false'); $('#s-msg').textContent = ''; draw(); counts(); }
-  o.onresize = draw;
-  o.canvas.addEventListener('click', e => {
-    const r = o.canvas.getBoundingClientRect(), s = o.w / 640, px = (e.clientX - r.left) / s, py = (e.clientY - r.top) / s;
-    let best = -1, bv = 1e9;
-    field.asci.forEach((c, i) => { const dx = px - c.x, dy = py - c.y, u = dx * Math.cos(c.a) + dy * Math.sin(c.a), v = -dx * Math.sin(c.a) + dy * Math.cos(c.a); if (Math.abs(u) < c.L / 2 + 2 && Math.abs(v) < c.w / 2 + 4 && Math.abs(v) < bv) { bv = Math.abs(v); best = i; } });
-    if (best < 0) return; const c = field.asci[best];
-    if (!c.mature) { $('#s-msg').textContent = 'That ascus is immature: its spores have not darkened yet, so it cannot be scored.'; return; }
-    if (c.edge) { $('#s-msg').textContent = 'That ascus runs off the edge of the field. Score only asci you can see completely.'; return; }
-    if (tool === 'E') marks.delete(best); else marks.set(best, tool);
-    $('#s-msg').textContent = ''; draw(); counts();
-  });
+  function newField() { fieldNo++; field = gen((salt += 104729)); view.setSpecimen({ render: sordRenderer(field), layers: sordLayers, seed: field.seed }); marks = new Map(); checking = false; $('#s-check').setAttribute('aria-pressed', 'false'); $('#s-msg').textContent = ''; draw(); counts(); }
   $$('[data-stool]').forEach(b => b.addEventListener('click', () => { tool = b.dataset.stool; $$('[data-stool]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); }));
   $('#s-new').addEventListener('click', newField);
   $('#s-check').addEventListener('click', () => { checking = !checking; $('#s-check').setAttribute('aria-pressed', String(checking)); let ok = 0; marks.forEach((v, i) => { if ((v === 'R') === field.asci[i].pat.xo) ok++; }); $('#s-msg').textContent = checking ? (marks.size ? `${ok} of ${marks.size} scores match the key (green = match, red = look again).` : 'Score some asci first.') : ''; draw(); });
@@ -1428,9 +1669,9 @@ const IVS = {
   const tab = Lab.table('#d-table', { save: 'design', columns: [{ key: 'lv', label: 'Level', num: true, digits: 1 }, { key: 'n', label: 'Tips', num: true, digits: 0 }, { key: 'I', label: 'Interphase', num: true, digits: 0 }, { key: 'M', label: 'Mitotic', num: true, digits: 0 }, { key: 'mean', label: 'Mean MI', unit: '%', num: true, digits: 1 }, { key: 'sd', label: 'SD', unit: '%', num: true, digits: 1 }, { key: 'se', label: 'SE', unit: '%', num: true, digits: 2 }, { key: 'chi', label: 'χ² vs control', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
     onChange: rows => { const iv = IVS[(rows[0] && rows[0].iv) || sel.value]; chart.update({ xLabel: `${iv.label} (${iv.unit})`, series: [{ name: 'Mean mitotic index ± 2 SE', points: rows.map(r => ({ x: r.lv, y: r.mean, err: 2 * r.se })) }] }); } });
   const chart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Mitotic index (%)', yMin: 0, series: [], height: 300 });
-  const fo = Lab.canvas('#d-field', 0.75);
-  let last = null; fo.onresize = () => last && drawRootField(fo, last, null, false);
-  themeHooks.push(() => last && drawRootField(fo, last, null, false));
+  const fo = Scope.view('#d-field', { aspect: 0.75, world: RW, hud: { mag: '400×', bar: { units: 46, label: '30 µm' } } });
+  let last = null;
+  const showField = () => fo.setSpecimen({ render: rootRenderer(last), layers: rootLayers(last), seed: last.seed });
   $('#d-run').addEventListener('click', () => {
     const iv = IVS[sel.value], lv = $$('#d-levels input:checked').map(i => +i.value), nr = +reps.value, nc = +cells.value;
     if (lv.length < 2) { $('#d-field-cap').textContent = 'Choose at least two levels, including the control.'; return; }
@@ -1446,11 +1687,11 @@ const IVS = {
     tab.setRows(rows);
     const lastL = raw[raw.length - 1], lt = lastL.tips[lastL.tips.length - 1];
     last = { seed: rng.int(1, 1e9), cells: null, ink: 1 }; last.cells = genRootField(last.seed, lt.mi, { hcl: true, fix: true, cut: true, stain: true, squash: true });
-    drawRootField(fo, last, null, false);
+    showField();
     $('#d-field-cap').textContent = `One field from a tip at ${lastL.L} ${iv.unit === 'pH units' ? '(pH)' : iv.unit} (tip MI ≈ ${fmt(100 * lt.mi, 0)}%).`;
   });
   $('#d-clear').addEventListener('click', () => tab.clear());
-  last = { seed: 4242, ink: 1, cells: genRootField(4242, 0.145, { hcl: true, fix: true, cut: true, stain: true, squash: true }) }; drawRootField(fo, last, null, false);
+  last = { seed: 4242, ink: 1, cells: genRootField(4242, 0.145, { hcl: true, fix: true, cut: true, stain: true, squash: true }) }; showField();
   $('#d-field-cap').textContent = 'Example control field (MI ≈ 15%).';
 })();
 [['d-q', 'Your question: what factor will you test, and why might it change the rate of mitosis in roots?'], ['d-h', 'Hypothesis and null hypothesis (state both).'], ['d-ctrl', 'Controlled variables and your control group. How many tips per level, and why?']].forEach(([k, l]) => Lab.prompt('#d-plan', { key: k, label: l, rows: 3 }));
