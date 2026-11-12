@@ -39,6 +39,16 @@
   .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .calc-fb { font-size: .9rem; display: grid; gap: 4px; }
   .calc-fb .ok { color: var(--ok); } .calc-fb .bad { color: var(--bad); }
+  .t-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .t-col { display: grid; gap: 10px; align-content: start; min-width: 0; }
+  @media (max-width: 899px) { .t-cols { grid-template-columns: minmax(0, 1fr); } }
+  .sim--fit .step-card { padding: 8px 10px; gap: 4px; }
+  .sim--fit .step-card .msg { min-height: 0; }
+  .sim--fit .step-card h3 { font-size: .98rem; }
+  .sim--fit .step-card p { font-size: .86rem; }
+  .sim--fit .pred-grid { gap: 8px; }
+  .sim--fit .pred-grid .field label { font-size: .74rem; }
+  .sim--fit .pred-grid select { font-size: .78rem; padding: 4px 4px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -59,9 +69,10 @@
     <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
   </div>
 
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">You will move a jellyfish gene into <em>E. coli</em>. Using the pGLO plasmid, you'll make bacteria competent with calcium chloride, heat-shock them, let them recover, and spread them on three kinds of agar plates. After incubation you'll find out which cells picked up the plasmid, which ones glow green, and how efficient your transformation was.</p>
       <p>In the virtual bench below you carry out each step of the real protocol. You can follow it exactly, or change a step (skip the ice, shorten the heat shock, add more plasmid) and see how the outcome changes. You'll predict every plate before you see it, count colonies, and calculate transformation efficiency the same way the manual does. Then you'll design your own experiment on what makes transformation work.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
@@ -72,6 +83,8 @@
           <li>Calculate transformation efficiency and report it in scientific notation.</li>
         </ul>
       </div>
+      </div>
+      <div class="split-side">
       <div class="callout callout--safety"><div class="callout-title">Safety at the real bench</div>
         <ul>
           <li>Use sterile technique. Do not touch the loop ring, pipette tips, or agar surface, and never set them on the bench.</li>
@@ -81,14 +94,26 @@
           <li>Keep your nose and mouth away from the tip when pipetting cell suspensions.</li>
         </ul>
       </div>
+      </div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Moving genes into bacteria</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+        <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+          <ul>
+            <li>Transformation is a cell taking up naked DNA. pGLO is a plasmid that carries <em>bla</em> (ampicillin resistance), GFP and the regulator <em>araC</em>.</li>
+            <li>Only transformed cells grow on LB/amp, so colonies there count transformation events.</li>
+            <li>GFP is switched on only when arabinose is present, so transformed colonies on LB/amp/ara glow green under UV.</li>
+            <li>CaCl<sub>2</sub>, a cold chill and a quick heat shock help plasmids enter; a recovery in LB lets <em>bla</em> be made before plating.</li>
+            <li>Efficiency = colonies ÷ µg of plasmid DNA spread on the plate, reported in scientific notation.</li>
+          </ul>
+        </div>
       <p>Information in DNA directs a cell through RNA and protein. Change a cell's DNA and you can change what it makes and how it behaves. Biotechnologists use this to make bacteria that produce human insulin, vaccine proteins, and industrial enzymes. The same tools raise real questions, such as whether genetically modified crops like Bt corn are safe to eat.</p>
       <p>Bacteria gain new genes in three natural ways: <strong>conjugation</strong> (direct cell-to-cell transfer), <strong>transduction</strong> (a virus carries DNA in), and <strong>transformation</strong> (a cell takes up "naked" DNA from its surroundings). Frederick Griffith first saw transformation in 1928, when harmless pneumonia bacteria became deadly after mixing with heat-killed deadly ones.</p>
+        <details class="disclose"><summary>The pGLO plasmid and the GFP switch</summary><div class="inner">
       <p>Most lab transformations use <strong>plasmids</strong>: small, circular DNA molecules that copy themselves separately from the bacterial chromosome. A plasmid needs an origin of replication (<em>ori</em>) and usually carries a few useful genes. The plasmid you'll use, <strong>pGLO</strong>, carries three genes that matter for this lab:</p>
       <ul>
         <li><strong><em>bla</em></strong> codes for beta-lactamase, an enzyme the cell secretes that breaks down ampicillin. Cells with pGLO survive on ampicillin; cells without it die.</li>
@@ -129,49 +154,81 @@
         </svg>
         <figcaption>The pGLO plasmid (left) and how arabinose switches on the GFP gene (right). Arrows show the direction of transcription.</figcaption>
       </figure>
+        </div></details>
+        <details class="disclose"><summary>Why the procedure works</summary><div class="inner">
       <p><strong>Why the procedure works.</strong> DNA and the cell's outer membrane are both negatively charged, so they repel each other. Calcium ions (Ca<sup>2+</sup>) in the cold transformation solution neutralize those charges and let plasmids stick to the cell surface. Chilling makes the membrane rigid. A sudden <strong>heat shock</strong> (0 °C → 42 °C → 0 °C) creates a temperature imbalance across the membrane that helps pull plasmids inside. The cells then <strong>recover</strong> in LB broth so they can repair their membranes and start making beta-lactamase before they meet ampicillin.</p>
+        </div></details>
+        <details class="disclose"><summary>How you know it worked</summary><div class="inner">
       <p><strong>How you know it worked.</strong> Each colony on an agar plate grows from one cell. Only transformed cells can grow on LB/amp, so counting colonies there counts transformation events. On LB/amp/ara plates, transformed colonies also glow. Plates without ampicillin are controls that show the cells were alive.</p>
+        </div></details>
+        <details class="disclose"><summary>Transformation efficiency</summary><div class="inner">
       <p><strong>Transformation efficiency</strong> tells you how many cells were transformed per microgram of plasmid that reached the plate:</p>
       <div class="equation">Transformation efficiency = colonies on the LB/amp plate ÷ µg of plasmid DNA spread on that plate</div>
       <div class="equation">DNA used (µg) = concentration (µg/µL) × volume (µL)<br>Fraction spread = volume spread (µL) ÷ total volume in tube (µL)<br>DNA spread (µg) = DNA used × fraction spread</div>
       <p>Efficiencies are large numbers, so report them in scientific notation, for example 3.1 × 10<sup>3</sup> transformants/µg.</p>
+        </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Transformation</dt><dd>A cell takes up naked DNA from its surroundings and may express it.</dd>
+          <dt>Plasmid</dt><dd>A small circular DNA molecule that copies itself apart from the chromosome.</dd>
+          <dt>Competent cells</dt><dd>Cells made able to take up DNA, here with cold CaCl<sub>2</sub> and heat shock.</dd>
+          <dt>Selection</dt><dd>Ampicillin kills cells without <em>bla</em>, so only transformed cells form colonies.</dd>
+          <dt>Inducible operon</dt><dd>A gene that is off until a signal, here arabinose, turns it on (GFP).</dd>
+          <dt>Transformation efficiency</dt><dd>Transformants per µg of plasmid DNA spread on the plate.</dd>
+        </dl>
+      </aside>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Pre-lab">
+
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
-    <div class="step-body"><div id="prelab"></div></div>
+    <div class="step-body"><div id="prelab" class="quiz--cols"></div></div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Transform">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Transform">
     <header><div class="eyebrow">Procedure · Structured inquiry</div><h2>Transform <em>E. coli</em> with pGLO</h2></header>
     <div class="step-body">
-      <p class="prose">Work through the protocol one step at a time. Each step shows the manual's setting by default. Change a setting or press <strong>Skip step</strong> if you want to test what that step does. Before incubation you must predict what each plate will look like.</p>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><span class="label">Protocol</span><ol id="proto-list" class="proto"></ol></div>
+      <div class="sim sim--fit" id="t-sim">
+        <div class="sim-side">
+          <div id="t-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="step-card" id="step-card" aria-live="polite"></div>
-          <div class="row">
-            <button class="btn btn--primary" id="do-step" type="button">Do this step</button>
-            <button class="btn" id="skip-step" type="button">Skip step</button>
+            <div class="row">
+              <button class="btn btn--primary" id="do-step" type="button">Do this step</button>
+              <button class="btn" id="skip-step" type="button">Skip step</button>
+            </div>
+            <button class="btn btn--ghost btn--sm" id="restart" type="button">Start a new transformation</button>
           </div>
-          <button class="btn btn--ghost btn--sm" id="restart" type="button">Start a new transformation</button>
+          <details class="disclose disclose--sm"><summary>Full procedure and protocol checklist</summary><div class="inner">
+      <p>Work through the protocol one step at a time. Each step shows the manual's setting by default. Change a setting or press <strong>Skip step</strong> if you want to test what that step does. Before incubation you must predict what each plate will look like.</p>
+          <div class="field"><span class="label">Protocol</span><ol id="proto-list" class="proto"></ol></div>
+          </div></details>
         </div>
         <div class="stage">
+          <div class="t-cols">
+            <div class="t-col">
           <canvas class="viz" id="bench" aria-label="Lab bench with a tube rack, an ice bucket, a 42 degree water bath, and the reagents. The +pGLO and −pGLO tubes move between stations as you do each step."></canvas>
           <div class="readouts">
             <div class="readout"><span class="k">+pGLO tube</span><span class="v" id="ro-plus">—</span></div>
             <div class="readout"><span class="k">−pGLO tube</span><span class="v" id="ro-minus">—</span></div>
             <div class="readout"><span class="k">Status</span><span class="v" id="ro-status">Ready</span></div>
           </div>
+              <div>
+                <h3 style="margin-bottom:8px">Your predictions</h3>
+                <div class="pred-grid" id="pred-grid"></div>
+              </div>
+            </div>
+            <div class="t-col">
           <div class="row"><span class="small muted">Lighting:</span>
             <div class="seg" role="group" aria-label="Lighting for viewing plates"><button type="button" id="uv-off" aria-pressed="true">Room light</button><button type="button" id="uv-on" aria-pressed="false">UV light</button></div>
           </div>
           <canvas class="viz" id="plates" aria-label="Six agar plates: LB, LB/amp, and LB/amp/ara for the −pGLO tube (top row) and the +pGLO tube (bottom row)."></canvas>
           <div class="readouts" id="plate-readouts"></div>
-          <div>
-            <h3 style="margin-bottom:8px">Your predictions</h3>
-            <div class="pred-grid" id="pred-grid"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -211,36 +268,46 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>What helps or hurts transformation?</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Do bacteria take up more plasmid under some conditions than others? Pick one variable from the transformation process, hold everything else at the manual's settings, and measure how efficiency changes. Run several replicate transformations at each level so you can judge variability with error bars (mean ± 2 SE).</p>
       </div>
-      <div id="design-prompts"></div>
-      <div class="sim" style="margin-top:16px">
-        <div class="controls">
+      <div id="design-prompts" class="prompts-2"></div>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
           <div class="field"><span class="label">Levels to test</span><div class="levels" id="d-levels"></div></div>
           <div class="field"><label for="d-reps">Replicate transformations per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="1" max="6" value="3"></div>
+            <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+            <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+            <details class="more"><summary>More options</summary><div class="inner">
           <p class="small muted" id="d-controls">Held constant: everything else at the manual's settings.</p>
-          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
-          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+            </div></details>
+          </div>
         </div>
         <div class="stage">
-          <div id="d-table"></div>
           <div id="d-chart"></div>
+          <div id="d-table"></div>
         </div>
       </div>
 
       <h3 style="margin:28px 0 8px">Are satellite colonies transformed?</h3>
       <div class="prose"><p>After 48 hours you may see tiny <strong>satellite colonies</strong> clustered around big colonies on ampicillin plates. The manual asks you to design a test: do satellites carry pGLO? Pick a colony, streak it onto a fresh plate, incubate, and look under room light and UV.</p></div>
-      <div class="sim">
-        <div class="controls">
+      <div class="sim sim--fit" id="s-sim">
+        <div class="sim-side">
+          <div id="s-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
           <div class="field"><label for="s-src">Colony to pick</label><select id="s-src"><option value="big">Large colony (center of cluster)</option><option value="sat">Satellite colony (small, at edge)</option></select></div>
           <div class="field"><label for="s-med">Streak onto</label><select id="s-med"><option value="lb">LB</option><option value="amp">LB/amp</option><option value="ara" selected>LB/amp/ara</option></select></div>
           <label class="check"><input type="checkbox" id="s-uv"> View under UV light</label>
           <button class="btn btn--primary" id="s-run" type="button">Streak and incubate 24 h</button>
+          </div>
         </div>
         <div class="stage">
           <canvas class="viz" id="sat-canvas" aria-label="Left: source LB/amp plate with a large colony surrounded by satellites. Right: the new plate you streaked."></canvas>
@@ -251,26 +318,27 @@
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Analyze">
+
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>What happened on your plates?</h2></header>
     <div class="step-body">
       <h3>Before you looked</h3>
-      <div id="an-pre"></div>
+      <div id="an-pre" class="prompts-2"></div>
       <h3 style="margin-top:20px">After incubation</h3>
-      <div id="an-post"></div>
+      <div id="an-post" class="prompts-2"></div>
       <h3 style="margin-top:20px">What does your efficiency mean?</h3>
-      <div id="an-eff"></div>
+      <div id="an-eff" class="prompts-2"></div>
       <h3 style="margin-top:20px">Claim, evidence, reasoning</h3>
       <div class="cer" id="cer"></div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
-    <div class="step-body" id="evaluate"></div>
+    <div class="step-body prompts-2" id="evaluate"></div>
   </section>
 
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -528,7 +596,7 @@ function segText(ctx, x, y, dh, str, on, off) {   // str like "42.0"; returns wi
 }
 
 /* ---------- Bench animation ---------- */
-const bench = Lab.canvas('#bench', window.innerWidth < 600 ? 0.66 : 0.5);
+const bench = Lab.canvas('#bench', window.innerWidth < 600 ? 0.66 : 0.5, { fit: true });
 const POS = { rack: [[0.10, 0.84], [0.17, 0.84]], ice: [[0.33, 0.78], [0.41, 0.78]], bath: [[0.59, 0.76], [0.67, 0.76]] };
 function placeTubes() { tubes.forEach((t, i) => { t.x = POS[t.at][i][0]; t.y = POS[t.at][i][1]; }); }
 let queue = [], phase = null, busy = false, overlay = '', pipette = null;
@@ -938,6 +1006,7 @@ function doStep(skip) {
         tubes.forEach(t => t.vol -= 3 * S.plateUL);
         PLATES.forEach(p => { if (!plates) plates = {}; plates[p.id] = { wet: true }; });
         drawPlates(); updateRO(`${S.plateUL} µL spread on each of 6 plates`);
+        Lab.toast('Cells spread on all six plates. Now predict each plate.', { type: 'info', announce: false, key: 'plated' });
       })); break;
     case 'incub': {
       const missing = PLATES.filter(p => !$('#pr-' + p.id).value);
@@ -946,6 +1015,7 @@ function doStep(skip) {
       P.push(fn(() => { overlay = ''; }), wait('Incubating at 37 °C', S.incub * 3600, 1.6), fn(() => {
         plates = incubatePlates(S); runCount++;
         drawPlates(); renderPlateReadouts(); gradePreds(); setupZoom(); fillVolumes();
+        { const ok = PLATES.filter(p => $('#pr-' + p.id).value === plates[p.id].cls).length; Lab.toast(`${ok} of 6 predictions matched your plates`, { type: ok === 6 ? 'ok' : 'info', announce: false, key: 'preds' }); }
         updateRO(`Incubated ${S.incub} h at 37 °C`);
         $$('#pred-grid select').forEach(e => e.disabled = true);
       })); break;
@@ -963,7 +1033,7 @@ $('#restart').addEventListener('click', () => { if (!busy) reset(); });
    (meniscus at the wall, fine texture), condensation droplets on the lid, the student's marker label,
    and creamy domed colonies lit from the upper left. Under UV (dark room, violet lamp cast) the agar
    goes dark, ordinary colonies look dull lavender and GFP-expressing colonies fluoresce bright green. */
-const platesCv = Lab.canvas('#plates', 0.66);
+const platesCv = Lab.canvas('#plates', 0.66, { fit: true });
 function tableTop(ctx, w, h, uvOn) {   // surface under the plates: epoxy bench in room light, dark room under UV
   if (!uvOn) {
     ctx.fillStyle = '#202226'; ctx.fillRect(0, 0, w, h);
@@ -1099,7 +1169,7 @@ $('#uv-on').addEventListener('click', () => setUV(true));
 $('#uv-off').addEventListener('click', () => setUV(false));
 
 /* ---------- Counting ---------- */
-const zoom = Lab.canvas('#zoom', 1);
+const zoom = Lab.canvas('#zoom', 1, { fit: true });
 const zsel = $('#zoom-plate');
 zsel.innerHTML = PLATES.map(p => `<option value="${p.id}" ${p.id === 'p-amp' ? 'selected' : ''}>${p.name}</option>`).join('');
 function setupZoom() { drawZoom(); }
@@ -1228,7 +1298,7 @@ $('#d-run').addEventListener('click', () => {
 $('#d-clear').addEventListener('click', () => dTable.clear());
 
 /* ---------- Satellite test ---------- */
-const satCv = Lab.canvas('#sat-canvas', 0.5);
+const satCv = Lab.canvas('#sat-canvas', 0.5, { fit: true });
 let satSrc = null, satRes = null;
 (function initSat() { satSrc = { incubated: true, cols: [{ x: 0, y: 0, r: 0.16, glow: false }] }; const a0 = rng.uniform() * 6; for (let k = 0; k < 7; k++) { const a = a0 + k * 0.9, d = 0.32 + 0.12 * rng.uniform(); satSrc.cols.push({ x: d * Math.cos(a), y: d * Math.sin(a), r: 0.045, glow: false, sat: true }); } })();
 function streak(n) { const c = []; for (let i = 0; i < n; i++) { const t = i / n, x = -0.7 + 1.4 * t, y = 0.35 * Math.sin(t * 9) + (rng.uniform() - .5) * 0.1; if (x * x + y * y < 0.8) c.push({ x, y, r: 0.03 + 0.02 * rng.uniform(), glow: false }); } return c; }
@@ -1294,6 +1364,48 @@ const cer = $('#cer');
 
 reset();
 drawSat();
+
+/* =====================================================================
+   LAPTOP LAYOUT: step checklists, gated buttons, results beside the satellite test, toasts
+   ===================================================================== */
+const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+const incubated = () => !!(plates && plates['p-amp'] && plates['p-amp'].incubated);
+const touched = {};
+const touch = (name, sels) => sels.forEach(s => $$(s).forEach(e => ['click', 'input', 'change'].forEach(ev => e.addEventListener(ev, () => { touched[name] = true; }))));
+touch('uv', ['#uv-on']); touch('d', ['#d-iv', '#d-levels', '#d-reps']); touch('s', ['#s-src', '#s-med']); touch('suv', ['#s-uv']);
+Lab.results('#s-sim', { data: [{ el: '#s-table', title: 'Streak test results' }] });
+
+Lab.steps('#t-steps', [
+  { id: 'proto', text: 'Work through steps 1 to 9', target: '#do-step', done: () => stepIdx >= 9 || runsTable.getRows().length > 0, hint: 'Press <strong>Do this step</strong>; change or skip a step to test it.' },
+  { id: 'pred', text: 'Predict all six plates', target: '#pred-grid select', done: () => $$('#pred-grid select').every(s => s.value !== '') || incubated() || runsTable.getRows().length > 0, hint: 'Choose what you expect on each plate in <strong>Your predictions</strong>.' },
+  { id: 'incub', text: 'Incubate the plates', target: '#do-step', done: () => stepIdx >= STEPS.length || runsTable.getRows().length > 0, hint: 'Press <strong>Incubate plates</strong>, then view them in room and UV light.' },
+  { id: 'count', text: 'Count the colonies (below)', target: '#zoom-plate', done: () => Object.values(marks || {}).some(a => a.length > 0) || runsTable.getRows().length > 0, hint: 'Scroll down: pick the +pGLO LB/amp plate and click each colony.' },
+  { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => runsTable.getRows().length > 0, hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
+], { doneText: 'Transformation done. Next, test a variable in <a href="#design">Design</a>.' });
+Lab.gate('#use-count', () => incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#calc-check', () => incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#calc-add', () => incubated() ? '' : 'Incubate your plates first');
+$('#uv-on').addEventListener('click', () => { if (incubated()) Lab.toast('UV light on: GFP colonies glow green', { type: 'info', announce: false, key: 'uv' }); });
+$('#use-count').addEventListener('click', () => Lab.toast(`Copied your count (${(marks[zsel.value] || []).length}) into the calculation`, { type: 'info', announce: false, key: 'use-count' }));
+$('#calc-check').addEventListener('click', () => { const ok = $$('#calc-fb .ok').length, bad = $$('#calc-fb .bad').length; if (ok + bad) Lab.toast(bad ? `Checked: ${ok} of ${ok + bad} lines correct` : 'Checked: every line is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'calc' }); });
+$('#do-step').addEventListener('click', () => { if (stepIdx >= STEPS.length && incubated()) Lab.toast(`Incubated ${S.incub} h at 37 °C: compare the plates with your predictions`, { type: 'ok', announce: false, key: 'incub' }); });
+
+const dLv = () => $$('#d-levels input:checked').length;
+Lab.steps('#d-steps', [
+  { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => filled('d-question') && filled('d-hyp'), hint: 'Fill in your question and hypothesis above.' },
+  { id: 'iv', text: 'Choose a variable and levels', target: '#d-iv', sticky: true, done: () => !!touched.d || dTable.getRows().length > 0, hint: 'Pick the independent variable and tick its levels.' },
+  { id: 'reps', text: 'Use 3 or more replicates', target: '#d-reps', done: () => +$('#d-reps').value >= 3, hint: 'Set 3 or more transformations per level.' },
+  { id: 'run', text: 'Run experiment', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the chart and table.' },
+  { id: 'sat', text: 'Streak a satellite colony (below)', target: '#s-run', optional: true, done: () => sTable.getRows().length > 0, hint: 'Scroll down and run the satellite test.' }
+], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+Lab.gate('#d-run', () => dLv() >= 1 ? '' : 'Tick at least one level');
+
+Lab.steps('#s-steps', [
+  { id: 'pick', text: 'Pick a colony and a plate', target: '#s-src', sticky: true, done: () => !!touched.s || sTable.getRows().length > 0, hint: 'Choose a large or satellite colony and the plate to streak.' },
+  { id: 'run', text: 'Streak and incubate 24 h', target: '#s-run', done: () => sTable.getRows().length > 0, hint: 'Press <strong>Streak and incubate</strong>. The result goes into the Data tab.' },
+  { id: 'both', text: 'Test both colony types', target: '#s-src', done: () => { const r = sTable.getRows(); return r.some(x => x.src === 'Large colony') && r.some(x => x.src === 'Satellite'); }, hint: 'Switch the colony you pick and streak again.' },
+  { id: 'uv', text: 'View the streak under UV', target: '#s-uv', optional: true, done: () => !!touched.suv, hint: 'Tick <strong>View under UV light</strong> to look for GFP glow.' }
+], { doneText: 'Satellite test done. Use the result in the Evaluate questions.' });
 </script>
 </body>
 </html>
