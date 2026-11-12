@@ -18,6 +18,11 @@
   .status { font-size: .9rem; min-height: 1.4em; }
   .status.ok { color: var(--ok); } .status.bad { color: var(--bad); } .status.warn { color: var(--warn); }
   .canvas-box { width: 100%; max-width: 470px; margin-inline: auto; }
+  .sim--fit .canvas-box { max-width: none; }
+  .sim--fit > .sim-main { align-self: stretch; }   /* results panels use the full height of the sim box */
+  .sim--fit > .sim-main.is-wide { grid-template-columns: minmax(0, 1fr) minmax(360px, 42%); }   /* wider results column for wide tables */
+  .sim--fit .row.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+  .sim--fit .row.two .seg button { padding-inline: 8px; }
   #st-cv-center { display: none; }
   .inline-num { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .inline-num input { max-width: 140px; font-family: var(--f-mono); }
@@ -43,9 +48,10 @@
   </div>
 
   <!-- ============ OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">A single tomato plant can move more than a liter of water from the soil to the air on a hot day, and it keeps less than 5% of that water. Why lose so much? And what decides how fast it goes?</p>
       <p>In Part 1 you will learn two measuring skills: finding leaf surface area by tracing leaves on a grid, and counting stomata in a clear nail-polish peel under the microscope to find stomata per mm². In Part 2 you will measure how fast whole plants or cuttings lose water, with a potometer, the whole-plant mass method, or a gas pressure sensor, and compare a control with a fan, a lamp, or a humid misted bag. Then you will design your own experiment on an environmental factor and test it with replicates and statistics.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
@@ -55,6 +61,8 @@
           <li><strong>SYI-1.H</strong> Explain how the density of a population affects and is determined by resource availability in the environment.</li>
         </ul>
       </div>
+      </div>
+      <div class="split-side">
       <div class="callout callout--tip"><div class="callout-title">Science practices</div>
         <ul>
           <li><strong>3.C</strong> Identify experimental procedures that are aligned to the question.</li>
@@ -69,18 +77,31 @@
           <li>If you fill tubing with a syringe, make sure the needle has been removed.</li>
         </ul>
       </div>
+      </div>
     </div>
   </section>
 
   <!-- ============ BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>How water gets pulled up a plant</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+      <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+        <ul>
+          <li>Transpiration is the evaporation of water from leaves, mostly through stomata. A plant keeps only a small fraction of the water it takes up.</li>
+          <li>Water moves from higher to lower water potential (ψ), and the dry air around a leaf has a very low ψ.</li>
+          <li>TACT (transpiration, adhesion, cohesion, tension) pulls water up the xylem with no pump.</li>
+          <li>Stomata trade water loss against CO<sub>2</sub> uptake; guard cells open and close the pore.</li>
+          <li>E = g × VPD / P: warm, dry, windy, bright conditions raise the rate; humid air lowers it.</li>
+        </ul></div>
       <p>Plants absorb water and dissolved ions from the soil through root hairs by osmosis, diffusion, and active transport. Once water reaches the root xylem, it travels up through stems to the leaves. Most of it then evaporates out of the leaves: this loss of water vapor from the plant surface is <strong>transpiration</strong>. A plant uses only a small fraction of the water it takes up for growth and photosynthesis; the rest is transpired.</p>
       <p>Water always moves from higher <strong>water potential</strong> (ψ, more free energy) to lower water potential. Soil water is near 0 MPa, leaf cells are more negative, and dry air is extremely negative (around −100 MPa at 50% humidity). That gradient is what drives the whole system.</p>
       <div class="equation">ψ = ψ<sub>P</sub> + ψ<sub>S</sub> &nbsp;&nbsp; ψ<sub>soil</sub> &gt; ψ<sub>root</sub> &gt; ψ<sub>stem</sub> &gt; ψ<sub>leaf</sub> &gt; ψ<sub>air</sub></div>
+      <details class="disclose"><summary>TACT: how water climbs a tree</summary><div class="inner">
       <p>The <strong>TACT</strong> mechanism (Transpiration, Adhesion, Cohesion, Tension) explains how water climbs even a 100-foot tree with no pump. Water evaporates from the wet walls of mesophyll cells into air spaces inside the leaf (<em>transpiration</em>). This pulls on the water film behind it, creating <em>tension</em> (negative pressure). Hydrogen bonds hold water molecules to each other (<em>cohesion</em>), so the pull is passed down an unbroken column all the way to the roots, while water sticks to the narrow xylem walls (<em>adhesion</em>), which helps keep the column from breaking. An air bubble breaks the column, which is why you must keep air out of a potometer and cut stems under water.</p>
 
+      </div></details>
+      <details class="disclose"><summary>Stomata and the leaf cross-section</summary><div class="inner">
       <svg class="diagram" viewBox="0 0 640 300" role="img" aria-labelledby="leaf-title">
         <title id="leaf-title">Cross-section of a leaf: water vapor diffuses from air spaces in the spongy mesophyll out through an open stoma flanked by two guard cells, while CO₂ diffuses in. A thin boundary layer of still, humid air sits on the leaf surface.</title>
         <rect x="20" y="40" width="600" height="22" rx="4" style="fill:var(--accent-soft);stroke:var(--accent)"></rect>
@@ -111,39 +132,62 @@
       </svg>
 
       <p>Water vapor leaves mainly through <strong>stomata</strong>, pores flanked by two <strong>guard cells</strong>. Stomata must open to let in CO<sub>2</sub> for photosynthesis (and let out O<sub>2</sub>), so every plant faces a trade-off between gaining carbon and losing water. Guard cells open the pore when they take up K<sup>+</sup> and water and swell; they close it in the dark or when the hormone abscisic acid signals drought.</p>
+      </div></details>
+      <details class="disclose"><summary>A model for the transpiration rate: E = g × VPD / P</summary><div class="inner">
       <p>A simple physical model ties the environmental factors together. The rate of transpiration per unit leaf area (E) is a conductance times a driving force:</p>
       <div class="equation">E = g × VPD / P &nbsp;&nbsp;&nbsp; 1/g = 1/g<sub>stomata</sub> + 1/g<sub>boundary layer</sub></div>
       <p>The driving force is the <strong>vapor pressure deficit</strong> (VPD): how much drier the air is than the saturated air inside the leaf. Warm, dry air means a big VPD; a humid, misted bag shrinks it toward zero. Water vapor must also cross two "resistances" in series: the stomata (set by how many there are and how wide they open, which depends on light and on the plant's water status) and the thin <strong>boundary layer</strong> of still, humid air hugging the leaf. Wind strips the boundary layer away, so a fan raises transpiration. Because E is a rate per unit area, you must measure leaf surface area to compare plants of different sizes.</p>
+      </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Transpiration</dt><dd>Loss of water vapor from the surfaces of a plant, mostly through stomata.</dd>
+          <dt>Water potential (ψ)</dt><dd>Free energy of water; water flows from higher to lower ψ.</dd>
+          <dt>TACT</dt><dd>Transpiration, adhesion, cohesion, tension: the mechanism that lifts water up the xylem.</dd>
+          <dt>Stoma / guard cells</dt><dd>A pore and the two cells that open and close it.</dd>
+          <dt>VPD</dt><dd>Vapor pressure deficit: how much drier the air is than the saturated air inside the leaf.</dd>
+          <dt>Boundary layer</dt><dd>A thin layer of still, humid air on the leaf surface; wind strips it away.</dd>
+        </dl>
+      </aside>
     </div>
   </section>
 
   <!-- ============ PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Getting started</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p>These questions follow the manual's Getting Started section and the calculations you will use in Part 1.</p>
-      <div id="prelab"></div>
+      <div id="prelab" class="quiz--cols"></div>
       <div id="prelab-draw" class="stack"></div>
     </div>
   </section>
 
   <!-- ============ PART 1A: LEAF AREA ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Leaf area">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Leaf area">
     <header><div class="eyebrow">Part 1 · Step 1 · Structured inquiry</div><h2>Measure leaf surface area by tracing</h2></header>
     <div class="step-body">
-      <div class="prose">
+      <div class="sim sim--fit" id="la-sim">
+        <div class="sim-side">
+          <div id="la-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="la-species">Leaf from</label>
+            <select id="la-species"><option value="bean">Kidney bean (Phaseolus)</option><option value="coleus">Coleus</option><option value="impatiens">Impatiens</option><option value="tomato">Tomato (one leaflet)</option></select></div>
+            <button class="btn btn--sm" id="la-new" type="button">Trace a different leaf</button>
+            <div class="row two">
+              <div class="field"><label for="la-full">Full squares</label><input type="number" id="la-full" min="0" step="1"></div>
+              <div class="field"><label for="la-part">Partial squares</label><input type="number" id="la-part" min="0" step="1"></div>
+            </div>
+            <button class="btn btn--primary" id="la-calc" type="button">Calculate and record</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <label class="check" for="la-show"><input type="checkbox" id="la-show"> Shade full and partial squares (check your count)</label>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
         <p>Trace a leaf on graph paper ruled so that <strong>4 small squares = 1 cm²</strong> (each square is 0.5 cm × 0.5 cm). Count every square completely inside the outline, then count the squares the edge passes through. Counting each partial square as half a square:</p>
         <div class="equation">area (cm²) = (full squares + ½ × partial squares) ÷ 4 &nbsp;&nbsp;&nbsp; area (mm²) = area (cm²) × 100</div>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="la-species">Leaf from</label>
-            <select id="la-species"><option value="bean">Kidney bean (Phaseolus)</option><option value="coleus">Coleus</option><option value="impatiens">Impatiens</option><option value="tomato">Tomato (one leaflet)</option></select></div>
-          <button class="btn btn--sm" id="la-new" type="button">Trace a different leaf</button>
-          <div class="field"><label for="la-full">Full squares you counted</label><input type="number" id="la-full" min="0" step="1"></div>
-          <div class="field"><label for="la-part">Partial squares you counted</label><input type="number" id="la-part" min="0" step="1"></div>
-          <button class="btn btn--primary" id="la-calc" type="button">Calculate and record</button>
-          <label class="check" for="la-show"><input type="checkbox" id="la-show"> Shade full and partial squares (check your count)</label>
+          </div></details>
         </div>
         <div class="stage">
           <div class="canvas-box"><canvas class="viz" id="la-cv" aria-label="A traced leaf outline on graph paper with 0.5 centimeter squares."></canvas></div>
@@ -155,18 +199,39 @@
           <p class="status" id="la-msg" aria-live="polite"></p>
         </div>
       </div>
-      <div id="la-table"></div>
-      <div id="la-q" class="stack"></div>
+      <div id="la-table"></div>      <div id="la-table"></div>
+      <div id="la-q" class="stack prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ PART 1B: STOMATA ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Stomata">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Stomata">
     <header><div class="eyebrow">Part 1 · Step 2 · Structured inquiry</div><h2>Count stomata in a nail-polish peel</h2></header>
     <div class="step-body">
-      <details class="disclose">
+      <div class="sim sim--fit" id="st-sim">
+        <div class="sim-side">
+          <div id="st-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="st-species">Leaf impression</label><select id="st-species"></select></div>
+            <div class="row two">
+              <div class="field"><span class="label" id="st-surf-lbl">Leaf surface</span>
+            <div class="seg" role="group" aria-labelledby="st-surf-lbl"><button type="button" id="st-lower" aria-pressed="true">Lower</button><button type="button" id="st-upper" aria-pressed="false">Upper</button></div></div>
+              <div class="field"><span class="label" id="st-mag-lbl">Magnification</span>
+            <div class="seg" role="group" aria-labelledby="st-mag-lbl"><button type="button" id="st-m100" aria-pressed="false">100X</button><button type="button" id="st-m400" aria-pressed="true">400X</button></div>
+            <span class="hint" id="st-fov">Field of view diameter: 0.45 mm</span></div>
+            </div>
+            <div class="row"><button class="btn btn--sm" id="st-move" type="button">Move to a new field</button></div>
+            <button class="btn btn--primary" id="st-record" type="button">Record this field</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <button class="btn btn--sm btn--ghost" id="st-clear" type="button">Clear table</button>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+            <p class="small muted">Click or tap each stoma (a pair of bean-shaped guard cells) to tally it. Click again to un-mark. Then record the field.</p>
+      <details class="disclose disclose--sm">
         <summary>How to make the peel (real lab)</summary>
-        <div class="inner prose">
+        <div class="inner">
           <ol>
             <li>Paint a patch of clear nail polish at least 1 cm² on the leaf surface you are studying. Let it dry completely.</li>
             <li>Press clear cellophane tape onto the dried polish and peel it off gently by a corner. This is your leaf impression.</li>
@@ -176,17 +241,8 @@
           </ol>
         </div>
       </details>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="st-species">Leaf impression</label><select id="st-species"></select></div>
-          <div class="field"><span class="label" id="st-surf-lbl">Leaf surface</span>
-            <div class="seg" role="group" aria-labelledby="st-surf-lbl"><button type="button" id="st-lower" aria-pressed="true">Lower</button><button type="button" id="st-upper" aria-pressed="false">Upper</button></div></div>
-          <div class="field"><span class="label" id="st-mag-lbl">Magnification</span>
-            <div class="seg" role="group" aria-labelledby="st-mag-lbl"><button type="button" id="st-m100" aria-pressed="false">100X</button><button type="button" id="st-m400" aria-pressed="true">400X</button></div>
-            <span class="hint" id="st-fov">Field of view diameter: 0.45 mm</span></div>
-          <button class="btn btn--sm" id="st-move" type="button">Move to a new field</button>
-          <p class="small muted">Click or tap each stoma (a pair of bean-shaped guard cells) to tally it. Click again to un-mark. Then record the field.</p>
-          <div class="row"><button class="btn btn--primary" id="st-record" type="button">Record this field</button><button class="btn btn--sm btn--ghost" id="st-clear" type="button">Clear table</button></div>
+
+          </div></details>
         </div>
         <div class="stage">
           <div class="canvas-box"><canvas class="viz scope" id="st-cv" aria-label="Microscope field of view of a clear nail-polish peel showing jigsaw-shaped epidermal cells and stomata. Click a stoma to mark it."></canvas></div>
@@ -198,7 +254,7 @@
           <p class="status" id="st-msg" aria-live="polite"></p>
         </div>
       </div>
-      <div id="st-table"></div>
+      <div id="st-table"></div>      <div id="st-table"></div>
       <div class="callout callout--question">
         <div class="callout-title">Calculate stomatal density</div>
         <p>For the slide shown above, take the mean number of stomata per field from your 400X counts and divide by the field area (A = πr², with r = 0.225 mm).</p>
@@ -208,32 +264,39 @@
       <h3>Table 1. Average stomata per mm² of leaf surface (from the manual)</h3>
       <div class="table-wrap"><table class="data" id="st-ref"></table></div>
       <div id="st-ref-chart"></div>
-      <div id="st-q" class="stack"></div>
+      <div id="st-q" class="stack prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ PART 2: TRANSPIRATION RATE ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Water loss">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Water loss">
     <header><div class="eyebrow">Part 2 · Guided inquiry</div><h2>Measure the rate of transpiration</h2></header>
     <div class="step-body">
-      <div class="prose">
+      <div class="sim sim--fit" id="tr-sim">
+        <div class="sim-side">
+          <div id="tr-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="tr-method">Method</label>
+            <select id="tr-method"><option value="pot">Potometer (1.0 mL pipette)</option><option value="whole">Whole plant in bag (mass)</option><option value="press">Gas pressure sensor</option></select></div>
+            <div class="field"><label for="tr-species">Plant</label><select id="tr-species"></select></div>
+            <div class="field"><label for="tr-cond">Condition</label>
+            <select id="tr-cond"><option value="control">Control: room light, still air, 22 °C, 45% RH</option><option value="fan">Fan (≈ 3 m/s breeze)</option><option value="lamp">Heat lamp (bright light, leaf +4 °C)</option><option value="mist">Misted and covered with a plastic bag (≈ 92% RH)</option><option value="dark">Dark box (no light)</option></select></div>
+            <button class="btn btn--primary" id="tr-run" type="button">Run</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="tr-n">Plants (replicates) <output id="tr-n-out" class="val" for="tr-n"></output></label><input id="tr-n" type="range" min="1" max="5" step="1" value="3"></div>
+              <button class="btn btn--sm btn--ghost" id="tr-clear" type="button">Clear data</button>
+              <p class="small muted">Each plant is a different individual, so expect natural variation. The animation shows the last plant in the batch.</p>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
         <p>Choose a method, then run the class's agreed <strong>control</strong> and at least one environmental treatment, with several plants each. For every plant, divide the rate by its leaf area (from the grid-tracing method) so that big and small plants can be compared. Then subtract the control mean to get the adjusted rate.</p>
         <ul>
           <li><strong>Potometer:</strong> a fresh cutting (cut under water at 45°) sealed into water-filled tubing connected to a 1.0 mL pipette. As the plant transpires, it pulls water out of the pipette. Read the pipette every 3 min for 30 min after a 10-min equilibration.</li>
           <li><strong>Whole-plant method:</strong> a well-watered potted plant with its pot and soil sealed in a plastic bag so only leaves lose water. Weigh it once a day for 4 days.</li>
           <li><strong>Gas pressure sensor:</strong> the tubing connects to a pressure sensor instead of a pipette. As water is pulled into the plant, pressure in the sealed tube falls (kPa).</li>
         </ul>
-      </div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="tr-method">Method</label>
-            <select id="tr-method"><option value="pot">Potometer (1.0 mL pipette)</option><option value="whole">Whole plant in bag (mass)</option><option value="press">Gas pressure sensor</option></select></div>
-          <div class="field"><label for="tr-species">Plant</label><select id="tr-species"></select></div>
-          <div class="field"><label for="tr-cond">Condition</label>
-            <select id="tr-cond"><option value="control">Control: room light, still air, 22 °C, 45% RH</option><option value="fan">Fan (≈ 3 m/s breeze)</option><option value="lamp">Heat lamp (bright light, leaf +4 °C)</option><option value="mist">Misted and covered with a plastic bag (≈ 92% RH)</option><option value="dark">Dark box (no light)</option></select></div>
-          <div class="field"><label for="tr-n">Plants (replicates) <output id="tr-n-out" class="val" for="tr-n"></output></label><input id="tr-n" type="range" min="1" max="5" step="1" value="3"></div>
-          <div class="row"><button class="btn btn--primary" id="tr-run" type="button">Run</button><button class="btn btn--sm btn--ghost" id="tr-clear" type="button">Clear data</button></div>
-          <p class="small muted">Each plant is a different individual, so expect natural variation. The animation shows the last plant in the batch.</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="tr-cv" aria-label="Animated apparatus: a plant cutting in a potometer, a bagged potted plant on a balance, or a cutting connected to a pressure sensor, with a fan, lamp, misting bag, or dark box as chosen."></canvas>
@@ -243,43 +306,48 @@
             <div class="readout"><span class="k">Leaf area</span><span class="v" id="tr-area">—</span></div>
             <div class="readout"><span class="k">Rate (slope)</span><span class="v" id="tr-rate">—</span></div>
           </div>
-          <div id="tr-chart"></div>
         </div>
       </div>
-      <h3>Table 2. Individual / group data</h3>
-      <p class="small muted">Rate = slope of the readings vs. time. <strong>You</strong> fill in the last column: rate ÷ leaf area. Numbers are small, so report them ×10<sup>−4</sup> (potometer), ×10<sup>−3</sup> (pressure), or ×10<sup>−2</sup> (whole plant), as the unit says. Example: 0.0118 mL/min ÷ 98 cm² = 1.20 × 10<sup>−4</sup>, so type 1.20.</p>
+      <div id="tr-chart"></div>
+      <p class="small muted" id="tr-note2">Rate = slope of the readings vs. time. <strong>You</strong> fill in the last column: rate ÷ leaf area. Numbers are small, so report them ×10<sup>−4</sup> (potometer), ×10<sup>−3</sup> (pressure), or ×10<sup>−2</sup> (whole plant), as the unit says. Example: 0.0118 mL/min ÷ 98 cm² = 1.20 × 10<sup>−4</sup>, so type 1.20.</p>
       <div id="tr-table"></div>
-      <div class="row"><button class="btn btn--sm" id="tr-check" type="button">Check my rate/area values</button><span class="status" id="tr-check-msg" aria-live="polite"></span></div>
-      <h3>Table 3. Class data: adjusted rates</h3>
-      <p class="small muted">Means use the computed rate/area for each plant. Adjusted rate = treatment mean − control mean (same method and plant species). Error bars on the graph are ±2 SE.</p>
+      <div class="row" id="tr-checkrow"><button class="btn btn--sm" id="tr-check" type="button">Check my rate/area values</button><span class="status" id="tr-check-msg" aria-live="polite"></span></div>
+      <p class="small muted" id="tr-note3">Means use the computed rate/area for each plant. Adjusted rate = treatment mean − control mean (same method and plant species). Error bars on the graph are ±2 SE.</p>
       <div id="tr-summary"></div>
       <div id="tr-bar"></div>
     </div>
   </section>
 
   <!-- ============ DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own transpiration experiment</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Pick a question. Some from the manual: Which environmental variable affects transpiration the most? Do all plants transpire at the same rate? Is a plant's habitat (moist vs. dry) related to its transpiration rate? Do all parts of a plant transpire? What happens if leaves are fewer or smaller, or if one leaf surface is sealed?</p>
       </div>
       <div class="callout callout--tip"><div class="callout-title">Your plan</div><div id="d-plan" class="grid-2"></div></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="d-method">Method</label>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="d-wind">Wind speed <output id="d-wind-out" class="val" for="d-wind"></output></label><input id="d-wind" type="range" min="0" max="5" step="0.5" value="0"></div>
+            <div class="field"><label for="d-light">Light (PAR) <output id="d-light-out" class="val" for="d-light"></output></label><input id="d-light" type="range" min="0" max="1200" step="50" value="150"></div>
+            <div class="field"><label for="d-rh">Relative humidity <output id="d-rh-out" class="val" for="d-rh"></output></label><input id="d-rh" type="range" min="20" max="95" step="5" value="45"></div>
+            <div class="field"><label for="d-temp">Air temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" type="range" min="12" max="36" step="2" value="22"></div>
+            <button class="btn btn--primary" id="d-run" type="button">Run replicates</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="d-method">Method</label>
             <select id="d-method"><option value="pot">Potometer</option><option value="whole">Whole plant in bag</option><option value="press">Gas pressure sensor</option></select></div>
-          <div class="field"><label for="d-species">Plant</label><select id="d-species"></select></div>
-          <div class="field"><label for="d-wind">Wind speed <output id="d-wind-out" class="val" for="d-wind"></output></label><input id="d-wind" type="range" min="0" max="5" step="0.5" value="0"></div>
-          <div class="field"><label for="d-light">Light (PAR) <output id="d-light-out" class="val" for="d-light"></output></label><input id="d-light" type="range" min="0" max="1200" step="50" value="150"></div>
-          <div class="field"><label for="d-rh">Relative humidity <output id="d-rh-out" class="val" for="d-rh"></output></label><input id="d-rh" type="range" min="20" max="95" step="5" value="45"></div>
-          <div class="field"><label for="d-temp">Air temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" type="range" min="12" max="36" step="2" value="22"></div>
-          <div class="field"><label for="d-salt">NaCl in the water / soil <output id="d-salt-out" class="val" for="d-salt"></output></label><input id="d-salt" type="range" min="0" max="0.3" step="0.05" value="0"></div>
-          <div class="field"><label for="d-jelly">Petroleum jelly on leaves</label>
+              <div class="field"><label for="d-species">Plant</label><select id="d-species"></select></div>
+              <div class="field"><label for="d-salt">NaCl in the water / soil <output id="d-salt-out" class="val" for="d-salt"></output></label><input id="d-salt" type="range" min="0" max="0.3" step="0.05" value="0"></div>
+              <div class="field"><label for="d-jelly">Petroleum jelly on leaves</label>
             <select id="d-jelly"><option value="none">None</option><option value="upper">Upper surfaces</option><option value="lower">Lower surfaces</option><option value="both">Both surfaces</option></select></div>
-          <div class="field"><label for="d-leaves">Leaves left on the plant <output id="d-leaves-out" class="val" for="d-leaves"></output></label><input id="d-leaves" type="range" min="25" max="100" step="25" value="100"></div>
-          <div class="field"><label for="d-n">Replicates <output id="d-n-out" class="val" for="d-n"></output></label><input id="d-n" type="range" min="2" max="8" step="1" value="4"></div>
-          <div class="row"><button class="btn btn--primary" id="d-run" type="button">Run replicates</button><button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button></div>
+              <div class="field"><label for="d-leaves">Leaves left on the plant <output id="d-leaves-out" class="val" for="d-leaves"></output></label><input id="d-leaves" type="range" min="25" max="100" step="25" value="100"></div>
+              <div class="field"><label for="d-n">Replicates <output id="d-n-out" class="val" for="d-n"></output></label><input id="d-n" type="range" min="2" max="8" step="1" value="4"></div>
+              <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button>
+            </div></details>
+          </div>
         </div>
         <div class="stage">
           <canvas class="viz" id="d-cv" aria-label="The apparatus for your current design settings."></canvas>
@@ -292,8 +360,8 @@
         </div>
       </div>
       <div id="d-table"></div>
-      <div class="row">
-        <div class="field" style="min-width:220px"><label for="d-by">Group and graph by</label>
+      <div class="row" id="d-byrow">
+          <div class="field" style="min-width:220px"><label for="d-by">Group and graph by</label>
           <select id="d-by"><option value="wind">Wind speed</option><option value="light">Light</option><option value="rh">Relative humidity</option><option value="temp">Air temperature</option><option value="salt">NaCl</option><option value="jelly">Petroleum jelly</option><option value="leaves">Leaves left</option><option value="species">Plant species</option></select></div>
       </div>
       <div id="d-summary"></div>
@@ -307,27 +375,27 @@
         <p class="t-out" id="t-out" aria-live="polite">Collect at least two replicates in two groups.</p>
         <p class="small muted">If p &lt; 0.05, a difference this large would rarely happen by chance alone if the treatment had no effect. Also look at the ±2 SE error bars: when they do not overlap, the difference is likely real.</p>
       </div>
-      <div id="d-results" class="stack"></div>
+      <div id="d-results" class="stack prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>Make sense of your data</h2></header>
     <div class="step-body">
-      <div id="analysis" class="stack"></div>
+      <div id="analysis" class="stack prompts-2"></div>
       <h3>Claim, evidence, reasoning</h3>
       <div class="cer" id="cer"></div>
     </div>
   </section>
 
   <!-- ============ EVALUATE ============ -->
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and look ahead</h2></header>
-    <div class="step-body"><div id="evaluate" class="stack"></div></div>
+    <div class="step-body"><div id="evaluate" class="stack prompts-2"></div></div>
   </section>
 
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -526,7 +594,7 @@
     }
     return { sp, poly, area: Math.abs(A) / 2, full, part, cells, L, stem: poly[0] };
   }
-  const laCv = Lab.canvas('#la-cv', GRID_H / GRID_W);
+  const laCv = Lab.canvas('#la-cv', GRID_H / GRID_W, { fit: true });
   /* Graph paper is a physical object: printed blue-green rules on off-white paper, a pencil tracing,
      and highlighter shading for the self-check. Fixed colours, identical in light and dark themes. */
   function paintGraph(x, w, H, s) {
@@ -763,6 +831,7 @@
       }
     };
   }
+  Lab.fitHeight('#st-cv', 1, '400px');   // square field of view, capped by the viewport
   const stView = Scope.view('#st-cv', {
     aspect: 1, viewW: VW, viewH: VW, field: { x: VW / 2, y: VW / 2, r: FR }, layers: [{ z: 0 }, { z: 0.07 }], focusLabel: 'Fine focus',
     overlay: ctx => {
@@ -1212,7 +1281,7 @@
 
   /* ================= Part 2 structured runs ================= */
   ['#tr-species', '#d-species'].forEach(sel => Object.keys(SPP).forEach(k => $(sel).append(h('option', { value: k }, SPP[k].name))));
-  const trCv = Lab.canvas('#tr-cv', 0.62);
+  const trCv = Lab.canvas('#tr-cv', 0.62, { fit: true });
   const trChart = Lab.chart('#tr-chart', { xLabel: 'Time (min)', yLabel: 'Water taken up (mL)', height: 280, series: [] });
   let trBusy = false, trSeries = [];
   function trUpdate(series) {
@@ -1302,7 +1371,7 @@
   Lab.prompt(plan, { key: 'd-ctrl', label: 'Control group and variables held constant', rows: 3 });
   Lab.prompt(plan, { key: 'd-assume', label: 'Assumptions you are making. Can they be verified easily?', rows: 2 });
   Lab.prompt(plan, { key: 'd-meas', label: 'Will your measurements answer the question? How many replicates will you use?', rows: 2 });
-  const dCv = Lab.canvas('#d-cv', 0.62);
+  const dCv = Lab.canvas('#d-cv', 0.62, { fit: true });
   const dChart = Lab.chart('#d-chart', { xLabel: 'Wind speed (m/s)', yLabel: 'Rate per area', series: [] });
   const dTable = Lab.table('#d-table', {
     save: 'd-table',
@@ -1399,6 +1468,51 @@
     ['e5', 'Where next: Design an experiment comparing a drought-tolerant plant with one that needs lots of water. What do you predict, and why?'],
     ['e6', 'If you revised your experiment, what would you change and why?']
   ].forEach(([k, l]) => Lab.prompt(ev, { key: k, label: l, rows: 3 }));
+  /* ===================== LAPTOP LAYOUT: results, steps, gates, toasts ===================== */
+  const filledP = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+  const isNum = v => typeof v === 'number' && isFinite(v);
+  Lab.results('#tr-sim', {
+    graph: [{ el: '#tr-chart', title: 'Readings vs time' }, { el: '#tr-bar', title: 'Adjusted rates: mean ± 2 SE' }],
+    data: [{ el: '#tr-note2', title: 'Table 2. Individual / group data' }, '#tr-table', '#tr-checkrow', { el: '#tr-note3', title: 'Table 3. Class data: adjusted rates' }, '#tr-summary']
+  });
+  Lab.results('#d-sim', {
+    graph: [{ el: '#d-chart', title: 'Rate per area by group' }],
+    data: [{ el: '#d-table', title: 'Replicate data' }, { el: '#d-byrow', title: 'Group summary' }, '#d-summary']
+  });
+  const filledNum = id => { const e = $(id); return !!e && e.value !== ''; };
+  Lab.steps('#la-steps', [
+    { id: 'count', text: 'Count full and partial squares', target: '#la-full', done: () => laTable.getRows().length > 0 || (filledNum('#la-full') && filledNum('#la-part')), hint: 'Count squares inside the outline (full) and squares the edge crosses (partial).' },
+    { id: 'calc', text: 'Calculate and record', target: '#la-calc', done: () => laTable.getRows().length > 0, hint: 'Press <strong>Calculate and record</strong>.' },
+    { id: 'three', text: 'Trace and record 3 leaves', target: '#la-new', done: () => laTable.getRows().length >= 3, hint: 'Press <strong>Trace a different leaf</strong>, count again and record.' },
+    { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-s1a', done: () => ['s1a', 's1f', 's1cde'].every(filledP), hint: 'Scroll down and answer the three questions.' }
+  ], { doneText: 'Leaf area done. Next, <a href="#stomata">count stomata</a>.' });
+  Lab.gate('#la-calc', () => filledNum('#la-full') && filledNum('#la-part') ? '' : 'Enter both counts first');
+  Lab.steps('#st-steps', [
+    { id: 'mark', text: 'Focus, then mark every stoma', target: '#st-cv', done: () => stTable.getRows().length > 0 || tally() > 0, hint: 'Turn the fine focus until the guard cells are sharp, then click each stoma.' },
+    { id: 'rec', text: 'Record this field', target: '#st-record', done: () => stTable.getRows().length > 0, hint: 'Press <strong>Record this field</strong>; a new field opens.' },
+    { id: 'three', text: 'Record 3+ fields at 400X', target: '#st-move', done: () => stTable.getRows().filter(r => r.mag === '400X').length >= 3, hint: 'Use 400X for counting. Record at least three fields of the same slide and surface.' },
+    { id: 'dens', text: 'Calculate stomatal density', target: '#st-dens', sticky: true, done: () => /ok/.test($('#st-dens-msg').className), hint: 'Scroll down: mean per field ÷ 0.159 mm², then press <strong>Check</strong>.' },
+    { id: 'qs', text: 'Answer the 4 questions (below)', target: '#p-s2-draw', done: () => ['s2-draw', 's2-compare', 's1h', 's1g'].every(filledP), hint: 'Scroll down and answer the four questions.' }
+  ], { doneText: 'Stomata done. Next, measure <a href="#water-loss">water loss</a>.' });
+  Lab.steps('#tr-steps', [
+    { id: 'ctl', text: 'Run the control plants', target: '#tr-run', done: () => trTable.getRows().some(r => r.cond === 'control'), hint: 'Leave Condition on <strong>Control</strong> and press <strong>Run</strong>.' },
+    { id: 'trt', text: 'Run a treatment (fan, lamp...)', target: '#tr-cond', done: () => trTable.getRows().some(r => r.cond !== 'control'), hint: 'Choose another condition, then press <strong>Run</strong>.' },
+    { id: 'rpa', text: 'Fill in rate ÷ leaf area', target: '#tr-table input', done: () => { const r = trTable.getRows(); return r.length > 0 && r.every(x => isNum(x.rpaIn)); }, hint: 'Open the <strong>Data</strong> tab and type rate ÷ leaf area for every plant.' },
+    { id: 'chk', text: 'Check my values', target: '#tr-check', sticky: true, done: () => /ok/.test($('#tr-check-msg').className), hint: 'Press <strong>Check my rate/area values</strong> under Table 2.' }
+  ], { doneText: 'Water loss done. Next, <a href="#design">design your own experiment</a>.' });
+  let dTouched = false;
+  ['#d-wind', '#d-light', '#d-rh', '#d-temp', '#d-salt', '#d-leaves', '#d-method', '#d-species', '#d-jelly', '#d-n'].forEach(s => $(s).addEventListener('input', () => { dTouched = true; }));
+  Lab.steps('#d-steps', [
+    { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-q', done: () => filledP('d-q') && filledP('d-hyp'), hint: 'Write your question and hypothesis in the plan above.' },
+    { id: 'set', text: 'Change one factor', target: '#d-wind', sticky: true, done: () => dTouched || dTable.getRows().length > 0, hint: 'Move one slider (or pick another plant, method or jelly option in More options).' },
+    { id: 'run', text: 'Run replicates', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run replicates</strong>. Do a control run (default settings) too.' },
+    { id: 'cmp', text: 'Compare 2 groups (t-test)', target: '#t-a', done: () => dGroups.length >= 2, hint: 'Run a second group, then pick Group A and B in the t-test box below.' },
+    { id: 'res', text: 'Report your results (below)', target: '#p-d-res', done: () => filledP('d-res'), hint: 'Scroll down and report your results.' }
+  ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+  $('#tr-run').addEventListener('click', () => { Lab.toast('Ran ' + $('#tr-n').value + ' plants. Open Data to fill in rate ÷ leaf area.', { type: 'ok', announce: false, key: 'trrun' }); });
+  $('#d-run').addEventListener('click', () => { Lab.toast('Added ' + $('#d-n').value + ' replicate plants', { type: 'ok', announce: false, key: 'drun' }); });
+  $('#st-dens-check').addEventListener('click', () => { const ok = /ok/.test($('#st-dens-msg').className); Lab.toast(ok ? 'Stomatal density is correct' : 'Not quite: see the message under the box', { type: ok ? 'ok' : 'warn', announce: false, key: 'dens' }); });
+  $('#tr-check').addEventListener('click', () => { const ok = /ok/.test($('#tr-check-msg').className); Lab.toast(ok ? 'All rate/area values check out' : 'Some rate/area values need rechecking', { type: ok ? 'ok' : 'warn', announce: false, key: 'trchk' }); });
 })();
 </script>
 </body>

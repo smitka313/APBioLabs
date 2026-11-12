@@ -32,6 +32,10 @@
   @media (prefers-reduced-motion: reduce) { .sankey .flow { animation: none; } }
   .progress { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
   .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .sim--fit .levels { display: grid; gap: 0; }
+  .sim--fit > .sim-main { align-self: stretch; }   /* results panels use the full height of the sim box */
+  .sim--fit > .sim-main.is-wide { grid-template-columns: minmax(0, 1fr) minmax(360px, 42%); }   /* wider results column for wide tables */
+  .sim--fit .levels .check { font-size: .86rem; padding: 2px 0; }
   .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .note { font-size: .88rem; color: var(--muted); }
   .checklist { display: grid; gap: 4px; font-size: .9rem; }
@@ -56,9 +60,10 @@
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>Running an energy budget for a tiny ecosystem</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">You will build a two-species model ecosystem: Wisconsin Fast Plants (<em>Brassica rapa</em>) as the producer and cabbage white butterfly larvae (<em>Pieris rapae</em>) as the consumer. By tracking biomass and converting it to kilocalories, you will account for energy the way an accountant tracks money: what comes in, what is stored, and what is spent.</p>
       <p>In the real lab these steps take two to three weeks. Here the plants grow in a few clicks, but you still have to make the measurements, do the calculations, and decide what your numbers mean.</p>
       <div class="callout callout--question"><div class="callout-title">What you will do</div>
@@ -68,6 +73,8 @@
           <li><strong>Part 3:</strong> Design your own investigation of light, temperature, crowding, fertilizer, or food type.</li>
         </ul>
       </div>
+      </div>
+      <div class="split-side">
       <div class="callout callout--key"><div class="callout-title">Learning objectives</div>
         <ul>
           <li><strong>ENE-1.M</strong> Describe the strategies organisms use to acquire and use energy.</li>
@@ -84,21 +91,36 @@
           <li>Keep growing chambers clean (wipe with dilute bleach, then dry) to avoid disease outbreaks, and keep water away from the light fixtures.</li>
         </ul>
       </div>
+      </div>
     </div>
   </section>
 
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>Biomass is how we count energy</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
+      <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+        <ul>
+          <li>Producers capture energy as gross primary productivity (GPP); what is left after plant respiration is net primary productivity (NPP).</li>
+          <li>Dry mass is biomass: water holds no usable energy, so you dry organisms and convert grams to kcal.</li>
+          <li>A larva's intake splits three ways: C = P + R + F (growth, respiration, frass).</li>
+          <li>Respiration is found by difference, so it carries the error from every other measurement.</li>
+          <li>Each transfer loses energy as heat, so little reaches the next trophic level.</li>
+        </ul></div>
       <p>Almost every food web runs on sunlight. During photosynthesis, producers capture light energy and store it in the chemical bonds of sugars and other organic molecules. Those molecules become the plant's body: its <strong>biomass</strong>. The total rate at which producers capture energy is <strong>gross primary productivity (GPP)</strong>. Plants spend part of that energy right away on their own cellular respiration (R). What is left over and stored as new tissue is <strong>net primary productivity (NPP)</strong>.</p>
       <div class="equation">NPP = GPP − R<sub>plant</sub></div>
+      <details class="disclose"><summary>From mass to energy: why dry mass</summary><div class="inner">
       <p>We cannot count kilocalories directly, but organic molecules have mass, so we can measure biomass and convert. The catch is water. A living Fast Plant is mostly water, and water stores no usable chemical energy. That is why ecologists dry organisms in an oven (about 100 °C for 48 hours) and weigh the <strong>dry mass</strong>. The dry-to-wet ratio (the "percent biomass") lets you estimate the biomass of living things you do not want to kill, such as a Brussels sprout you are about to feed to larvae.</p>
       <div class="equation">energy (kcal) = wet mass (g) × (dry ÷ wet) × energy per gram of dry mass</div>
       <p>Different molecules hold different amounts of energy: about 4 kcal per gram for carbohydrates and proteins, about 9 kcal per gram for fats. In this lab you will use measured averages from bomb calorimetry: <strong>4.35 kcal/g</strong> for dry plant biomass, <strong>5.5 kcal/g</strong> for dry larval biomass (larvae store more fat), and <strong>4.76 kcal/g</strong> for dry frass.</p>
+      </div></details>
+      <details class="disclose"><summary>Where a larva's energy goes: C = P + R + F</summary><div class="inner">
       <p>When a larva eats, the energy it consumes (C) splits three ways. Some passes through the gut undigested and leaves as frass, which is <strong>egested</strong> energy (F). The rest is <strong>assimilated</strong> (A) into the body. Of the assimilated energy, some builds new tissue (<strong>production</strong>, P) and the rest is used in cellular respiration and lost as heat (R). Because energy is neither created nor destroyed, the budget must balance:</p>
       <div class="equation">C = P + R + F &nbsp;&nbsp;→&nbsp;&nbsp; R = C − P − F</div>
       <p>Respiration is hard to measure directly in a caterpillar, so you will estimate it as the energy left over after the other terms are measured. Every conversion loses energy as heat, which is the second law of thermodynamics at work. That is why only a small fraction of the energy at one trophic level shows up as biomass in the next.</p>
+      </div></details>
+      <details class="disclose"><summary>Energy flow diagram</summary><div class="inner">
       <figure class="diagram" aria-label="Diagram of energy flow from sunlight through a plant to a caterpillar">
         <svg viewBox="0 0 720 250" role="img" aria-labelledby="bgfig-t">
           <title id="bgfig-t">Energy flow: light to plant (GPP), plant respiration and NPP; NPP eaten by larva splits into frass, growth and respiration</title>
@@ -148,99 +170,125 @@
           <text x="360" y="222" text-anchor="middle" class="sub">Arrow widths in your own data diagrams (Parts 1 and 2) will be drawn to scale.</text>
         </svg>
       </figure>
+      </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Biomass</dt><dd>The dry mass of organic molecules in an organism's body.</dd>
+          <dt>GPP</dt><dd>Gross primary productivity: all the energy producers capture by photosynthesis.</dd>
+          <dt>NPP</dt><dd>Net primary productivity: GPP minus plant respiration, the energy stored as new tissue.</dd>
+          <dt>Frass (F)</dt><dd>Larval droppings: energy that was eaten but egested, not assimilated.</dd>
+          <dt>Assimilation (A)</dt><dd>Consumed energy minus frass: the part that enters the body.</dd>
+          <dt>Production (P)</dt><dd>Assimilated energy stored as new larval tissue.</dd>
+        </dl>
+      </aside>
     </div>
   </section>
 
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Getting started: the energy accountant's toolkit</h2></header>
     <div class="step-body">
       <p class="muted">These items follow the manual's Getting Started tasks and the conversions you will use. Use a calculator.</p>
-      <div id="prelab"></div>
-      <div id="prelab-prompts"></div>
+      <div id="prelab" class="quiz--cols"></div>
+      <div id="prelab-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 4. PART 1: NPP ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Part 1: NPP">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Part 1: NPP">
     <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>Estimating net primary productivity of Fast Plants</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Your team has a flat of 40 Fast Plants growing under a light bank at 24 °C. Following the manual, harvest about 10 plants early in the life cycle (day 7) and 10 more later (day 14). For each harvest: pull the plants with all their roots, wash and blot them, weigh each one wet, then dry them at 100 °C for 48 hours and weigh them again.</p>
-      </div>
       <div id="p1-predict"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="readouts"><div class="readout"><span class="k">Plant age</span><span class="v" id="p1-day">—</span></div><div class="readout"><span class="k">Plants left</span><span class="v" id="p1-left">—</span></div></div>
-          <div class="row"><button class="btn" id="p1-plus1" type="button">+1 day</button><button class="btn" id="p1-plus7" type="button">+7 days</button></div>
-          <div class="field"><label for="p1-n">Plants per harvest</label><select id="p1-n"><option value="5">5</option><option value="8">8</option><option value="10" selected>10</option></select></div>
-          <button class="btn btn--primary" id="p1-harvest" type="button">Harvest, wash, blot &amp; weigh wet</button>
-          <button class="btn" id="p1-dry" type="button">Dry 48 h at 100 °C &amp; weigh</button>
-          <div class="progress" aria-hidden="true"><i id="p1-prog"></i></div>
-          <p class="note" id="p1-status">Advance to day 7, then harvest.</p>
-          <button class="btn btn--ghost btn--sm" id="p1-reset" type="button">Plant a new flat (clears Part 1 data)</button>
+      <div class="sim sim--fit" id="p1-sim">
+        <div class="sim-side">
+          <div id="p1-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="row"><button class="btn" id="p1-plus1" type="button">+1 day</button><button class="btn" id="p1-plus7" type="button">+7 days</button></div>
+            <button class="btn btn--primary" id="p1-harvest" type="button">Harvest, wash, blot &amp; weigh wet</button>
+            <button class="btn" id="p1-dry" type="button">Dry 48 h at 100 °C &amp; weigh</button>
+            <div class="progress" aria-hidden="true"><i id="p1-prog"></i></div>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="p1-n">Plants per harvest</label><select id="p1-n"><option value="5">5</option><option value="8">8</option><option value="10" selected>10</option></select></div>
+              <button class="btn btn--ghost btn--sm" id="p1-reset" type="button">Plant a new flat (clears Part 1 data)</button>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+        <p>Your team has a flat of 40 Fast Plants growing under a light bank at 24 °C. Following the manual, harvest about 10 plants early in the life cycle (day 7) and 10 more later (day 14). For each harvest: pull the plants with all their roots, wash and blot them, weigh each one wet, then dry them at 100 °C for 48 hours and weigh them again.</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p1-canvas" aria-label="Growth chamber with a flat of Fast Plants under a light bank; harvested cells are empty"></canvas>
           <canvas class="viz" id="p1-bench" aria-label="Lab bench with a drying oven at 100 °C, a 0.001 g digital balance with a weigh boat, and the current harvest laid out on a paper towel, wet or dried"></canvas>
           <div class="readouts">
+            <div class="readout"><span class="k">Plant age</span><span class="v" id="p1-day">—</span></div><div class="readout"><span class="k">Plants left</span><span class="v" id="p1-left">—</span></div>
             <div class="readout"><span class="k">Last harvest: mean wet</span><span class="v" id="p1-rw">—</span></div>
             <div class="readout"><span class="k">Last harvest: mean dry</span><span class="v" id="p1-rd">—</span></div>
             <div class="readout"><span class="k">Balance precision</span><span class="v">0.001 g</span></div>
           </div>
+          <p class="note" id="p1-status">Advance to day 7, then harvest.</p>
         </div>
       </div>
-      <h3>Harvest data (each plant)</h3>
       <div id="p1-raw"></div>
-      <h3>Summary: your Table 1 and Table 2</h3>
-      <p class="note">The page computes the means and standard error. <strong>You</strong> compute the last three columns: percent biomass = dry ÷ wet × 100; energy per plant = mean dry mass × 4.35 kcal/g; NPP per day = energy per plant ÷ age in days (energy stored since the seed was planted).</p>
+      <p class="note" id="p1-sum-note">The page computes the means and standard error. <strong>You</strong> compute the last three columns: percent biomass = dry ÷ wet × 100; energy per plant = mean dry mass × 4.35 kcal/g; NPP per day = energy per plant ÷ age in days (energy stored since the seed was planted).</p>
       <div id="p1-sum"></div>
       <div class="checklist" id="p1-check" aria-live="polite"></div>
       <div id="p1-chart"></div>
       <h3>From NPP to GPP</h3>
       <div class="prose"><p>NPP between your two harvests is the biomass the average plant <em>added</em> per day, converted to kcal. To estimate GPP you also need the energy the plants spent on respiration. Seal 5 living plants in a dark 2.0 L chamber with a CO<sub>2</sub> sensor for 10 minutes (no photosynthesis in the dark, so the CO<sub>2</sub> rise is respiration only). Do this on the same day as a harvest so you know the plants' mean dry mass.</p>
       <div class="equation">1 ppm CO<sub>2</sub> in 2.0 L of air ≈ 0.00364 mg CO<sub>2</sub> &nbsp;·&nbsp; 1 g CO<sub>2</sub> respired ≈ 0.68 g biomass ≈ 2.97 kcal</div></div>
-      <div class="sim">
-        <div class="controls">
-          <button class="btn btn--primary" id="p1-resp" type="button">Seal 5 plants in the dark chamber (10 min)</button>
-          <p class="note">The chamber uses plants of the current age in your flat; they are returned afterward unharmed.</p>
-          <div class="readouts"><div class="readout"><span class="k">Plant age</span><span class="v" id="r-age">—</span></div><div class="readout"><span class="k">Start CO₂</span><span class="v" id="r-start">—</span></div><div class="readout"><span class="k">End CO₂</span><span class="v" id="r-end">—</span></div><div class="readout"><span class="k">Rise</span><span class="v" id="r-rise">—</span></div></div>
+      <div class="sim sim--fit" id="r-sim">
+        <div class="sim-side">
+          <div id="r-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <button class="btn btn--primary" id="p1-resp" type="button">Seal 5 plants in the dark chamber (10 min)</button>
+            <p class="note">The chamber uses plants of the current age in your flat; they are returned afterward unharmed.</p>
+          </div>
         </div>
         <div class="stage">
           <canvas class="viz" id="r-canvas" aria-label="Sealed dark chamber with five plants and a CO2 sensor trace rising over ten minutes"></canvas>
+          <div class="readouts"><div class="readout"><span class="k">Plant age</span><span class="v" id="r-age">—</span></div><div class="readout"><span class="k">Start CO₂</span><span class="v" id="r-start">—</span></div><div class="readout"><span class="k">End CO₂</span><span class="v" id="r-end">—</span></div><div class="readout"><span class="k">Rise</span><span class="v" id="r-rise">—</span></div></div>
         </div>
       </div>
       <div class="calc" id="p1-calc"></div>
       <h3>Your plant energy diagram (Step 6)</h3>
       <p class="note">Drawn to scale from your harvests and respiration measurement (kcal per plant per day). Light energy was not measured.</p>
       <div class="sankey" id="sankey-plant" role="img" aria-label="Energy flow diagram for one Fast Plant per day"></div>
-      <div id="p1-prompts"></div>
+      <div id="p1-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 5. PART 2: LARVAE ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Part 2: Larvae">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Part 2: Larvae">
     <header><div class="eyebrow">Procedure 2 · Structured inquiry</div><h2>Energy flow from producer to consumer</h2></header>
     <div class="step-body">
-      <div class="prose">
-        <p>Weigh one large fresh Brussels sprout, cut it in half, and place both halves in a clean Brassica Barn. Weigh a group of 8–12 fourth-instar larvae, add them, and let them feed for 3 days. Each day, the frass (droppings) falls onto a paper-towel pad; you collect it, dry it, and weigh it. After 3 days, weigh the larvae again and weigh what is left of the sprout.</p>
-        <p>A cut sprout also loses water to evaporation, which has nothing to do with eating. A second sprout in an identical barn with <em>no</em> larvae (a control) lets you correct for that.</p>
-      </div>
       <div id="p2-predict"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="p2-n">Larvae in the barn <output id="p2-n-out" class="val"></output></label><input id="p2-n" type="range" min="8" max="12" step="1" value="10"></div>
-          <button class="btn btn--primary" id="p2-run" type="button">Day 0: weigh, then feed 3 days</button>
-          <div class="progress" aria-hidden="true"><i id="p2-prog"></i></div>
-          <p class="note" id="p2-status">Each run is one barn. Run at least 3 barns so you can calculate standard error.</p>
-          <hr style="border:0;border-top:1px solid var(--line);width:100%">
-          <div class="field"><label for="ratio-plant">Plant dry ÷ wet ratio you will use</label><input id="ratio-plant" type="number" step="0.001" min="0.01" max="1" value="0.15" data-save="ratio-plant" data-label="Plant dry/wet ratio used"></div>
+      <div class="sim sim--fit" id="p2-sim">
+        <div class="sim-side">
+          <div id="p2-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="p2-n">Larvae in the barn <output id="p2-n-out" class="val"></output></label><input id="p2-n" type="range" min="8" max="12" step="1" value="10"></div>
+            <button class="btn btn--primary" id="p2-run" type="button">Day 0: weigh, then feed 3 days</button>
+            <div class="progress" aria-hidden="true"><i id="p2-prog"></i></div>
+            <p class="note" id="p2-status">Each run is one barn. Run at least 3 barns so you can calculate standard error.</p>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="ratio-plant">Plant dry ÷ wet ratio you will use</label><input id="ratio-plant" type="number" step="0.001" min="0.01" max="1" value="0.15" data-save="ratio-plant" data-label="Plant dry/wet ratio used"></div>
           <button class="btn btn--sm" id="p2-sprout" type="button">Dry a spare sprout to measure it</button>
           <div class="field"><label for="ratio-larva">Larva dry ÷ wet ratio you will use</label><input id="ratio-larva" type="number" step="0.001" min="0.01" max="1" value="0.40" data-save="ratio-larva" data-label="Larva dry/wet ratio used"></div>
           <button class="btn btn--sm" id="p2-larva" type="button">Freeze &amp; dry 5 extra larvae to measure it</button>
           <p class="note" id="p2-ratio-note">The student manual suggests assuming larvae are 40% dry mass and using your Fast Plant percentage for sprouts. Both are assumptions you can test.</p>
-          <label class="check"><input type="checkbox" id="p2-correct" checked> Correct sprout loss for evaporation (control)</label>
-          <button class="btn btn--ghost btn--sm" id="p2-reset" type="button">Clear all barns</button>
+              <label class="check"><input type="checkbox" id="p2-correct" checked> Correct sprout loss for evaporation (control)</label>
+              <button class="btn btn--ghost btn--sm" id="p2-reset" type="button">Clear all barns</button>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+        <p>Weigh one large fresh Brussels sprout, cut it in half, and place both halves in a clean Brassica Barn. Weigh a group of 8–12 fourth-instar larvae, add them, and let them feed for 3 days. Each day, the frass (droppings) falls onto a paper-towel pad; you collect it, dry it, and weigh it. After 3 days, weigh the larvae again and weigh what is left of the sprout.</p>
+        <p>A cut sprout also loses water to evaporation, which has nothing to do with eating. A second sprout in an identical barn with <em>no</em> larvae (a control) lets you correct for that.</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="p2-canvas" aria-label="Brassica Barn: larvae feeding on two Brussels sprout halves above a paper towel frass pad, plus a control sprout with no larvae"></canvas>
@@ -252,49 +300,52 @@
           </div>
         </div>
       </div>
-      <h3>Barn measurements</h3>
       <div id="p2-raw"></div>
+      <div id="p2-chart"></div>
       <h3>Your energy audit for Barn 1 (Table 3)</h3>
       <p class="note">Work per larva over the 3 days. Use the ratios you chose above. Each answer is checked against your own earlier entries, so one slip does not ruin the rest.</p>
       <div class="calc" id="p2-calc"></div>
       <h3>All barns: where did the energy go?</h3>
       <p class="note">The page applies the same calculations to every barn (your chosen ratios; evaporation correction set by the checkbox). Bars show mean ± 2 SE (≈ 95% confidence interval).</p>
       <div class="readouts" id="p2-eff"></div>
-      <div id="p2-chart"></div>
       <h3>Animated energy budget (mean per larva, 3 days)</h3>
       <div class="sankey" id="sankey-larva" role="img" aria-label="Energy flow diagram for one larva over three days"></div>
       <p class="note" id="sankey-larva-note"></p>
-      <div id="p2-prompts"></div>
+      <div id="p2-prompts" class="prompts-2"></div>
     </div>
   </section>
 
   <!-- ============ 6. DESIGN ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Ask your own energy question</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Pick a question that came up while you worked. The manual offers starting points such as: <em>Do all plants have the same percentage of biomass? How much energy does it cost an animal to process different plant sources? What limits productivity?</em> Choose one organism, one independent variable, and hold everything else constant.</p>
       </div>
       <div class="grid-2" id="design-plan"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="d-sys">Organism</label><select id="d-sys"><option value="plant">Fast Plants (producer)</option><option value="larva">Cabbage white larvae (consumer)</option></select></div>
-          <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
-          <fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label" style="font-size:.86rem;font-weight:600">Levels to test</legend><div class="levels" id="d-levels"></div></fieldset>
-          <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="3" max="12" value="6"></div>
-          <div class="field"><label for="d-dv">Dependent variable to graph</label><select id="d-dv"></select></div>
-          <p class="note" id="d-const"></p>
-          <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
-          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="d-sys">Organism</label><select id="d-sys"><option value="plant">Fast Plants (producer)</option><option value="larva">Cabbage white larvae (consumer)</option></select></div>
+            <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv"></select></div>
+            <fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label" style="font-size:.86rem;font-weight:600">Levels to test</legend><div class="levels" id="d-levels"></div></fieldset>
+            <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="3" max="12" value="6"></div>
+              <div class="field"><label for="d-dv">Dependent variable to graph</label><select id="d-dv"></select></div>
+              <p class="note" id="d-const"></p>
+              <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+            </div></details>
+          </div>
         </div>
         <div class="stage">
           <canvas class="viz" id="d-canvas" aria-label="Your experimental setup: one tray or barn per level"></canvas>
           <div class="readouts" id="d-readouts"></div>
         </div>
       </div>
-      <h3>Replicate data</h3>
       <div id="d-raw"></div>
-      <h3>Summary statistics</h3>
       <div id="d-sum"></div>
       <div id="d-chart"></div>
       <p class="note" id="d-stat"></p>
@@ -302,18 +353,18 @@
   </section>
 
   <!-- ============ 7. ANALYZE ============ -->
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Close the energy audit</h2></header>
     <div class="step-body" id="analysis"></div>
   </section>
 
   <!-- ============ 8. EVALUATE ============ -->
-  <section class="step wrap gutter" data-step="Reflect">
+  <section class="step wrap wrap--wide gutter" data-step="Reflect">
     <header><div class="eyebrow">Evaluate and reflect</div><h2>How good is your accounting?</h2></header>
     <div class="step-body" id="reflect"></div>
   </section>
 
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body">
       <p class="muted">Prepare a mini-poster from your Part 3 results: question, hypothesis, methods, a graph with error bars, your energy diagram, and a claim supported by evidence.</p>
@@ -466,7 +517,7 @@
   const save1 = () => Lab.store.set(P1KEY, s1);
 
   const rawT = Lab.table('#p1-raw', {
-    save: 'p1raw',
+    save: 'p1raw', toast: false,
     columns: [{ key: 'hv', label: 'Harvest' }, { key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'plant', label: 'Plant' }, { key: 'wet', label: 'Wet mass', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Dry mass', unit: 'g', num: true, digits: 3 }]
   });
   const sumT = Lab.table('#p1-sum', {
@@ -628,7 +679,7 @@
   function lyingPlant(ctx, x, y, D, age, sc, seed, dry, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 2 + (rot || 0)); ctx.scale(0.85, 1); fastPlant(ctx, 0, 0, D, age, sc, 1, seed, { roots: true, dry }); ctx.restore(); }
 
   // ---------- Part 1 canvas: growth chamber ----------
-  const cv1 = Lab.canvas('#p1-canvas', 0.5);
+  const cv1 = Lab.canvas('#p1-canvas', 0.5, { fit: '540px' });
   let anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] };
   const rowGeom = (w, H, r) => ({ sc: (0.62 + 0.13 * r) * (w / 640), yb: H * (0.42 + 0.14 * r), x0: w * (0.1 - 0.015 * r), cw: (w * (0.8 + 0.03 * r)) / 10 });
   function chamberBG(w, H) {
@@ -757,7 +808,7 @@
   // ---------- Part 1 bench: drying oven, digital balance with weigh boat, harvested plants on a paper towel ----------
   // Shows the current harvest: wet plants laid out and weighed one at a time, then the same plants in the 100 °C oven,
   // then dried, brittle and brown on the towel and weigh boat. The LCD shows each plant's recorded mass.
-  const cvB = Lab.canvas('#p1-bench', 0.42);
+  const cvB = Lab.canvas('#p1-bench', 0.42, { fit: '548px' });
   let bench = { phase: 'empty', rows: [], t: 99, prog: 0 }, benchL = null;
   function benchFromData() {
     if (s1.pending) return { phase: 'wet', rows: s1.pending.rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r.wet })), t: 99, prog: 0 };
@@ -875,7 +926,7 @@
   bench = benchFromData(); drawB();
 
   // ---------- Dark respiration chamber ----------
-  const cvR = Lab.canvas('#r-canvas', 0.42);
+  const cvR = Lab.canvas('#r-canvas', 0.42, { fit: '380px' });
   let respTrace = null, respT = 1;
   // Sealed, dark acrylic respiration chamber with a CO2 gas sensor through the lid, cabled to a handheld data logger
   // whose screen plots the CO2 trace. The chamber scene is pre-rendered per size and plant age; frames redraw the trace.
@@ -1091,7 +1142,7 @@
   // Clear plastic container with a ventilated lid, a paper-towel frass pad, two Brussels sprout halves (cut face up,
   // nested leaf layers around a pale core) that get chewed, velvety green larvae that crawl by peristaltic waves,
   // and dark frass pellets that build up on the towel. A second container holds the no-larvae control sprout.
-  const cv2 = Lab.canvas('#p2-canvas', 0.52);
+  const cv2 = Lab.canvas('#p2-canvas', 0.52, { fit: true });
   function idleBarn() { const n = +$('#p2-n').value; return { t: 0, n, eaten: 0, frass: 0, grow: 1, evap: 0, larvae: Array.from({ length: n }, (_, i) => ({ a: i / n * Math.PI * 2 + rng.normal(0, 0.2), r: [1.0, 0.58, 1.32, 0.82, 1.5, 1.08][Math.floor(i / 2) % 6] + 0.06 * rng.normal(0, 1), sp: 0.25 + 0.2 * rng.uniform(), dir: rng.chance(0.5) ? 1 : -1, ph: rng.uniform() * TAU })), frassDots: Array.from({ length: 160 }, () => [rng.uniform(), rng.uniform()]) }; }
   let barnState = idleBarn(), p2run = null;
   function barnGeom(w, H) {
@@ -1338,7 +1389,7 @@
     }
     for (let k = 0; k < 5; k++) trueLeaf(ctx, x, y, r * 0.95, k % 2 ? 1 : -1, rgb(PL.leaf), rgb(PL.leafD), 1, R);   // Fast Plant leaves
   }
-  const cvD = Lab.canvas('#d-canvas', 0.42);
+  const cvD = Lab.canvas('#d-canvas', 0.42, { fit: true });
   function drawD() {
     const { ctx, w, h: H } = cvD; ctx.clearRect(0, 0, w, H);
     const sys = $('#d-sys').value, iv = $('#d-iv').value, lv = [...document.querySelectorAll('#d-levels input:checked')].map(i => i.value);
@@ -1439,21 +1490,74 @@
     .forEach(([k, l]) => { const d = h('div'); plan.append(d); Lab.prompt(d, { key: k, label: l, rows: 3 }); });
 
   /* ===================== ANALYZE & REFLECT ===================== */
-  const an = $('#analysis');
+  const an0 = $('#analysis'), an = h('div', { class: 'prompts-2' }); an0.append(an);
   Lab.prompt(an, { key: 'a-conv', label: 'Steps 1–4: Summarize your conversions. Show one complete worked example that goes from a wet mass in grams to an energy in kcal for (a) a plant and (b) a larva. Make sure units are comparable (per larva, per day, per plant).', rows: 4 });
   Lab.prompt(an, { key: 'a-combine', label: 'Step 5: Combine your plant diagram and your larva diagram into one energy audit, from light to larval growth. Which pathways did you measure, which did you calculate by difference, and which could you only estimate (for example, light energy)?', rows: 5 });
   Lab.prompt(an, { key: 'a-graph', label: 'Step 6: Describe your graphs (plant biomass vs age; larval energy pathways; your design experiment). What do the error bars tell you about which differences are meaningful?', rows: 4 });
   Lab.prompt(an, { key: 'a-eff', label: 'What percentage of the plant energy eaten by a larva became larval biomass? Compare it with the "about 10%" rule for energy transfer between trophic levels and explain any difference.', rows: 3 });
-  const cer = h('div', { class: 'cer' }); an.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
+  const cer = h('div', { class: 'cer' }); an0.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
   const pc = Lab.prompt(cer, { key: 'cer-c', label: 'Claim: Answer the driving question for your model ecosystem.', rows: 4 }); pc.querySelector('label').dataset.letter = 'C';
   const pe = Lab.prompt(cer, { key: 'cer-e', label: 'Evidence: Cite specific numbers (with SE or CI) from Parts 1–3.', rows: 4 }); pe.querySelector('label').dataset.letter = 'E';
   const pr = Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning: Connect the evidence to the laws of thermodynamics and to how organisms acquire and use energy.', rows: 4 }); pr.querySelector('label').dataset.letter = 'R';
 
-  const rf = $('#reflect');
+  const rf = h('div', { class: 'prompts-2' }); $('#reflect').append(rf);
   Lab.prompt(rf, { key: 'r-track', label: 'How do you keep track of energy as it moves through a biological system? Name two ways the techniques used here could be improved (for example, measuring larval dry fraction or the sprout’s own dry fraction instead of assuming them).', rows: 4 });
   Lab.prompt(rf, { key: 'r-factors', label: 'What kinds of things affect plant productivity, larval growth, or the interaction between them? Use your Part 3 results and one idea you did not test.', rows: 3 });
   Lab.prompt(rf, { key: 'r-role', label: 'What is the role of energy in ecosystems? Explain why food chains rarely have more than four or five links.', rows: 3 });
   Lab.prompt(rf, { key: 'r-next', label: 'Where could you go from here? Propose a follow-up (for example, a mathematical model of plant growth, herbivory and plant defense, or energy allocation to reproduction) and the first measurement you would make.', rows: 3 });
+  /* ===================== LAPTOP LAYOUT: results, steps, gates, toasts ===================== */
+  const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+  const numOK = v => v != null && v !== '' && isFinite(v);
+  const calcFilled = keys => keys.every(k => { const e = $('#calc-' + k); return e && e.value !== ''; });
+  const sumRows = () => sumT.getRows();
+  Lab.results('#p1-sim', {
+    graph: [{ el: '#p1-chart', title: 'Plant mass vs age' }],
+    data: [{ el: '#p1-raw', title: 'Harvest data (each plant)' }, { el: '#p1-sum-note', title: 'Summary: your Table 1 and Table 2' }, '#p1-sum', '#p1-check']
+  });
+  Lab.results('#p2-sim', {
+    graph: [{ el: '#p2-chart', title: 'Energy per larva: mean ± 2 SE' }],
+    data: [{ el: '#p2-raw', title: 'Barn measurements' }]
+  });
+  Lab.results('#d-sim', {
+    graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by level' }, '#d-stat'],
+    data: [{ el: '#d-sum', title: 'Summary statistics' }, { el: '#d-raw', title: 'Replicate data' }]
+  });
+  const C1 = ['c1-gpd', 'c1-npp', 'c1-co2', 'c1-r', 'c1-gpp', 'c1-ratio'];
+  const C2 = ['c2-cons', 'c2-pe', 'c2-gain', 'c2-prod', 'c2-frass', 'c2-fe', 'c2-assim', 'c2-resp', 'c2-eff'];
+  Lab.steps('#p1-steps', [
+    { id: 'd7', text: 'Grow plants to day 7 or more', target: '#p1-plus7', done: () => s1.day >= 7 || rawT.getRows().length > 0, hint: 'Press <strong>+7 days</strong> so the plants are at least a week old.' },
+    { id: 'h1', text: 'Harvest, blot and weigh wet', target: '#p1-harvest', done: () => rawT.getRows().length > 0, hint: 'Press <strong>Harvest</strong>. Each plant’s wet mass goes into the Data tab.' },
+    { id: 'dry1', text: 'Dry 48 h and weigh', target: '#p1-dry', done: () => sumRows().length > 0, hint: 'Press <strong>Dry 48 h</strong> to get the dry mass (biomass).' },
+    { id: 'h2', text: 'Repeat at day 14 or later', target: '#p1-plus7', done: () => sumRows().length > 1, hint: 'Advance to about day 14, then harvest and dry a second set.' },
+    { id: 'tbl', text: 'Fill in the summary table', target: '#p1-sum input', done: () => sumRows().length > 0 && sumRows().every(r => numOK(r.pct) && numOK(r.energy) && numOK(r.npp)), hint: 'Open the <strong>Data</strong> tab and calculate % biomass, energy and NPP.' }
+  ], { doneText: 'Both harvests are done. Next, measure respiration to estimate GPP (below).' });
+  Lab.gate('#p1-harvest', () => s1.pending ? 'Dry the current harvest first' : s1.day < 3 ? 'Let the seedlings grow first (+1 or +7 days)' : '');
+  Lab.gate('#p1-dry', () => drying ? 'Drying in the oven…' : s1.pending ? '' : 'Harvest plants first');
+  Lab.steps('#r-steps', [
+    { id: 'resp', text: 'Measure dark respiration', target: '#p1-resp', done: () => !!s1.resp, hint: 'Press <strong>Seal 5 plants</strong>. Do it on the same day as a harvest.' },
+    { id: 'calc', text: 'Do the 6 calculations (below)', target: '#calc-c1-gpd', done: () => calcFilled(C1), hint: 'Scroll down and work out NPP, respiration and GPP.' },
+    { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-p1-q-dry', done: () => ['p1-q-dry', 'p1-q-net', 'p1-q-unc'].every(filled), hint: 'Scroll down and answer the three questions.' }
+  ], { doneText: 'Part 1 done. Go on to <a href="#part-2-larvae">Part 2: Larvae</a>.' });
+  $('#p1-harvest').addEventListener('click', () => { if (s1.pending) Lab.toast(`Harvest ${s1.pending.hv}: ${s1.pending.rows.length} plants weighed wet (day ${s1.pending.age})`, { type: 'ok', announce: false, key: 'harvest' }); });
+  $('#p1-resp').addEventListener('click', () => { if (s1.resp) Lab.toast(`Respiration measured: CO₂ rose ${Math.round(s1.resp.end - s1.resp.start)} ppm in 10 min`, { type: 'ok', announce: false, key: 'resp' }); });
+  Lab.steps('#p2-steps', [
+    { id: 'pred', text: 'Predict the larva diagram', target: '#p-p2-diagram', optional: true, done: () => filled('p2-diagram'), hint: 'Write your prediction in the box above the scene.' },
+    { id: 'b1', text: 'Feed barn 1 for 3 days', target: '#p2-run', done: () => barnT.getRows().length > 0, hint: 'Press <strong>Day 0: weigh, then feed</strong>.' },
+    { id: 'b3', text: 'Run at least 3 barns', target: '#p2-run', done: () => barnT.getRows().length >= 3, hint: 'Run more barns so you can calculate standard error.' },
+    { id: 'aud', text: 'Audit barn 1 (below)', target: '#calc-c2-cons', done: () => calcFilled(C2), hint: 'Scroll down and work through the energy audit using the Data tab.' },
+    { id: 'qs', text: 'Answer the 2 questions (below)', target: '#p-p2-q-ratio', done: () => ['p2-q-ratio', 'p2-q-evap'].every(filled), hint: 'Scroll down and answer the two questions.' }
+  ], { doneText: 'Part 2 done. Next, design your own test in <a href="#design">Design</a>.' });
+  let dTouched = false;
+  ['#d-sys', '#d-iv'].forEach(s => $(s).addEventListener('change', () => { dTouched = true; }));
+  const dChecked = () => document.querySelectorAll('#d-levels input:checked').length;
+  Lab.steps('#d-steps', [
+    { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => filled('d-question') && filled('d-hyp'), hint: 'Write your question and hypothesis in the boxes above.' },
+    { id: 'iv', text: 'Choose variable + 2 or more levels', target: '#d-iv', sticky: true, done: () => dTouched || dRaw.getRows().length > 0, hint: 'Pick an organism and one independent variable, then tick at least two levels (one the standard condition).' },
+    { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dRaw.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
+    { id: 'vars', text: 'Describe variables + control', target: '#p-d-vars', done: () => filled('d-vars') && filled('d-control'), hint: 'Fill in the variables and control boxes above.' }
+  ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+  Lab.gate('#d-run', () => dChecked() >= 2 ? '' : 'Tick at least two levels');
+  $('#d-run').addEventListener('click', () => { if (dChecked() >= 2 && dResults) Lab.toast(`Ran ${dResults.levels.length} levels × ${dResults.levels[0].reps.length} replicates`, { type: 'ok', announce: false, key: 'drun' }); });
 })();
 </script>
 </body>
