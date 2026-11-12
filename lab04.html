@@ -147,9 +147,31 @@
       <h3>Step 1 · Test the indicator</h3>
       <div class="tube-demo">
         <svg class="diagram" viewBox="0 0 220 190" role="img" aria-label="Two test tubes containing phenolphthalein. Click the buttons to add acid or base." id="tubes-svg">
-          <g style="stroke:var(--muted);fill:none" stroke-width="2"><path d="M40 20 V150 a20 20 0 0 0 40 0 V20"/><path d="M140 20 V150 a20 20 0 0 0 40 0 V20"/></g>
-          <path id="tube-acid" class="tube-liquid" d="M42 90 V150 a18 18 0 0 0 36 0 V90 Z" style="fill:var(--surface-2)"/>
-          <path id="tube-base" class="tube-liquid" d="M142 90 V150 a18 18 0 0 0 36 0 V90 Z" style="fill:var(--surface-2)"/>
+          <defs>
+            <linearGradient id="tg-card" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbfaf6"/><stop offset="1" stop-color="#dcd8cf"/></linearGradient>
+            <linearGradient id="tg-glass" x1="0" x2="1"><stop offset="0" stop-color="#28323a" stop-opacity=".45"/><stop offset=".1" stop-color="#fff" stop-opacity=".05"/><stop offset=".2" stop-color="#fff" stop-opacity=".85"/><stop offset=".3" stop-color="#fff" stop-opacity=".08"/><stop offset=".82" stop-color="#fff" stop-opacity="0"/><stop offset=".9" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#28323a" stop-opacity=".5"/></linearGradient>
+            <linearGradient id="tg-liq" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".35" stop-color="#fff" stop-opacity=".18"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>
+            <linearGradient id="tg-rack" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef0f1"/><stop offset="1" stop-color="#a9b0b5"/></linearGradient>
+            <radialGradient id="tg-sh"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+          </defs>
+          <rect x="4" y="2" width="212" height="172" rx="6" fill="url(#tg-card)"/>
+          <ellipse cx="110" cy="171" rx="100" ry="6" fill="url(#tg-sh)"/>
+          <rect x="14" y="160" width="192" height="10" rx="2" fill="url(#tg-rack)" stroke="#6c7378" stroke-width=".6"/>
+          <g>
+            <path d="M40 14 V150 a20 20 0 0 0 40 0 V14" fill="#e9eef0" fill-opacity=".25"/>
+            <path d="M140 14 V150 a20 20 0 0 0 40 0 V14" fill="#e9eef0" fill-opacity=".25"/>
+          </g>
+          <path id="tube-acid" class="tube-liquid" d="M42 96 V150 a18 18 0 0 0 36 0 V96 Z" fill-opacity=".72" style="fill:rgb(234,239,241)"/>
+          <path id="tube-base" class="tube-liquid" d="M142 96 V150 a18 18 0 0 0 36 0 V96 Z" fill-opacity=".72" style="fill:rgb(234,239,241)"/>
+          <g fill="url(#tg-liq)"><path d="M42 96 V150 a18 18 0 0 0 36 0 V96 Z"/><path d="M142 96 V150 a18 18 0 0 0 36 0 V96 Z"/></g>
+          <g fill="#fff" fill-opacity=".45" stroke="#3b464d" stroke-opacity=".45" stroke-width=".8"><ellipse cx="60" cy="96" rx="18" ry="2.6"/><ellipse cx="160" cy="96" rx="18" ry="2.6"/></g>
+          <g fill="url(#tg-glass)" stroke="#4a565d" stroke-opacity=".7" stroke-width="1.2"><path d="M40 14 V150 a20 20 0 0 0 40 0 V14"/><path d="M140 14 V150 a20 20 0 0 0 40 0 V14"/></g>
+          <g fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="1.6"><ellipse cx="60" cy="14" rx="21" ry="3"/><ellipse cx="160" cy="14" rx="21" ry="3"/></g>
+          <g fill="none" stroke="#4a565d" stroke-opacity=".55" stroke-width=".7"><ellipse cx="60" cy="14" rx="21.6" ry="3.6"/><ellipse cx="160" cy="14" rx="21.6" ry="3.6"/></g>
+          <rect x="10" y="52" width="200" height="12" rx="2" fill="url(#tg-rack)" stroke="#6c7378" stroke-width=".6"/>
+          <rect x="10" y="52" width="200" height="2" fill="#fff" fill-opacity=".7"/>
+          <g fill="#3a4045" fill-opacity=".5"><rect x="38" y="56" width="44" height="4" rx="2"/><rect x="138" y="56" width="44" height="4" rx="2"/></g>
+          <g fill="url(#tg-rack)" stroke="#6c7378" stroke-width=".6"><rect x="10" y="64" width="6" height="96"/><rect x="204" y="64" width="6" height="96"/></g>
           <text x="60" y="186" text-anchor="middle" font-size="12" id="tube-acid-lbl">Tube 1</text>
           <text x="160" y="186" text-anchor="middle" font-size="12" id="tube-base-lbl">Tube 2</text>
         </svg>
@@ -401,6 +423,7 @@
 </div></footer>
 
 <script src="lab.js"></script>
+<script src="scope.js"></script>
 <script>
 Lab.init({ id: 'lab04' });
 (function () {
@@ -434,6 +457,353 @@ Lab.init({ id: 'lab04' });
     const g = new Map();
     rows.forEach(r => { const k = keyF(r), v = valF(r); if (k == null || v == null || !isFinite(v)) return; if (!g.has(k)) g.set(k, []); g.get(k).push(v); });
     return g;
+  }
+
+
+  /* =====================================================================
+     BENCH RENDERING. Agar, dialysis tubing, glassware, liquids, plant tissue, the balance and the
+     bench itself are physical objects, so they use fixed colours that look the same in light and
+     dark themes (labels drawn on the bench are part of the scene too). Light comes from the upper
+     left. Static layers (wall, bench, tile, textures) are rendered once per canvas size into
+     offscreen canvases; animation frames only composite them and redraw what changes.
+     ===================================================================== */
+  const TAU = Math.PI * 2, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const PHY = { text: '#efeae0', textDim: 'rgba(239,234,224,0.7)', ink: '#2c2925', inkDim: 'rgba(44,41,37,0.68)', marker: '#1d2747' };
+  const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${clamp(+a, 0, 1).toFixed(3)})`;
+  function off(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+  const layerCache = new Map();
+  // Offscreen layer cached per key and canvas size; build(ctx, w, h) draws in CSS pixels.
+  function layer(key, w, h, build) {
+    const dpr = window.devicePixelRatio || 1, k = key + '|' + w + 'x' + h + '@' + dpr;
+    let c = layerCache.get(k);
+    if (!c) {
+      c = off(w * dpr, h * dpr); const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); build(x, w, h);
+      layerCache.set(k, c); if (layerCache.size > 48) layerCache.delete(layerCache.keys().next().value);
+    }
+    return c;
+  }
+  function tile(size, seed, fn) { const c = off(size, size), r = Lab.rng(seed); fn(c.getContext('2d'), r, size); return c; }
+  const tiles = {};
+  // Black epoxy-resin bench top with fine grey speckle.
+  function epoxyTile() {
+    return tiles.epoxy || (tiles.epoxy = tile(96, 41, (x, r, s) => {
+      x.fillStyle = '#1c1e21'; x.fillRect(0, 0, s, s);
+      for (let i = 0; i < 900; i++) { const v = 18 + r.uniform() * 42; x.fillStyle = `rgba(${v | 0},${(v + 2) | 0},${(v + 5) | 0},${(0.25 + r.uniform() * 0.4).toFixed(2)})`; x.fillRect(r.uniform() * s, r.uniform() * s, 0.6 + r.uniform(), 0.6 + r.uniform()); }
+      for (let i = 0; i < 36; i++) { x.fillStyle = `rgba(160,165,170,${(0.08 + r.uniform() * 0.14).toFixed(2)})`; x.beginPath(); x.arc(r.uniform() * s, r.uniform() * s, 0.3 + r.uniform() * 0.6, 0, TAU); x.fill(); }
+    }));
+  }
+  // Agar: tiny trapped air bubbles and undissolved specks.
+  function agarTile() {
+    return tiles.agar || (tiles.agar = tile(72, 5, (x, r, s) => {
+      for (let i = 0; i < 70; i++) { const px = r.uniform() * s, py = r.uniform() * s, rr2 = 0.3 + r.uniform() * 0.9; x.fillStyle = `rgba(255,255,255,${(0.25 + r.uniform() * 0.35).toFixed(2)})`; x.beginPath(); x.arc(px, py, rr2, 0, TAU); x.fill(); x.fillStyle = 'rgba(80,20,50,0.18)'; x.beginPath(); x.arc(px + rr2 * 0.4, py + rr2 * 0.5, rr2 * 0.5, 0, TAU); x.fill(); }
+      for (let i = 0; i < 120; i++) { x.fillStyle = `rgba(90,40,60,${(0.05 + r.uniform() * 0.1).toFixed(2)})`; x.fillRect(r.uniform() * s, r.uniform() * s, 0.7, 0.7); }
+    }));
+  }
+  // Moist potato flesh: starch grains and vascular ring flecks.
+  function starchTile() {
+    return tiles.starch || (tiles.starch = tile(64, 9, (x, r, s) => {
+      for (let i = 0; i < 260; i++) { x.fillStyle = r.chance(0.55) ? `rgba(255,255,250,${(0.25 + r.uniform() * 0.35).toFixed(2)})` : `rgba(120,95,55,${(0.06 + r.uniform() * 0.12).toFixed(2)})`; x.beginPath(); x.arc(r.uniform() * s, r.uniform() * s, 0.35 + r.uniform() * 0.8, 0, TAU); x.fill(); }
+    }));
+  }
+  function pattern(ctx, t) { return ctx.createPattern(t, 'repeat'); }
+  function shadow(ctx, cx, cy, rx, ry, a) {
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(0.55, `rgba(0,0,0,${a * 0.45})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill(); ctx.restore();
+  }
+  // Smooth closed/open curve through points.
+  function smoothPath(p, pts, closed) {
+    const n = pts.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    if (closed) { const m0 = mid(pts[n - 1], pts[0]); p.moveTo(m0[0], m0[1]); for (let i = 0; i < n; i++) { const m = mid(pts[i], pts[(i + 1) % n]); p.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } p.closePath(); return p; }
+    p.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < n - 1; i++) { const m = mid(pts[i], pts[i + 1]); p.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); } p.lineTo(pts[n - 1][0], pts[n - 1][1]); return p;
+  }
+  // Classroom wall (painted cinder block) above a black epoxy bench, seen from the front.
+  function sideScene(w, h, benchY) {
+    return layer('side' + Math.round(benchY), w, h, x => {
+      const g = x.createLinearGradient(0, 0, 0, benchY); g.addColorStop(0, '#d6d1c4'); g.addColorStop(1, '#e9e5da');
+      x.fillStyle = g; x.fillRect(0, 0, w, benchY);
+      const bh = 30, R = Lab.rng(3);
+      x.strokeStyle = 'rgba(110,100,85,0.13)'; x.lineWidth = 1;
+      for (let y = benchY - bh, k = 0; y > -bh; y -= bh, k++) {
+        x.beginPath(); x.moveTo(0, y + 0.5); x.lineTo(w, y + 0.5); x.stroke();
+        for (let xx = (k % 2) * bh - bh; xx < w; xx += bh * 2) { x.beginPath(); x.moveTo(xx + 0.5, y); x.lineTo(xx + 0.5, Math.min(benchY, y + bh)); x.stroke(); }
+      }
+      for (let i = 0; i < 500; i++) { x.fillStyle = `rgba(${R.chance(0.5) ? '255,255,255' : '90,80,65'},${(0.05 + R.uniform() * 0.07).toFixed(2)})`; x.fillRect(R.uniform() * w, R.uniform() * benchY, 1, 1); }
+      const l = x.createRadialGradient(w * 0.15, -h * 0.25, 0, w * 0.15, -h * 0.25, Math.max(w, h) * 1.05);
+      l.addColorStop(0, 'rgba(255,252,242,0.55)'); l.addColorStop(0.6, 'rgba(255,252,242,0.08)'); l.addColorStop(1, 'rgba(60,50,40,0.12)'); x.fillStyle = l; x.fillRect(0, 0, w, benchY);
+      x.fillStyle = pattern(x, epoxyTile()); x.fillRect(0, benchY, w, h - benchY);
+      const b = x.createLinearGradient(0, benchY, 0, h); b.addColorStop(0, 'rgba(255,255,255,0.13)'); b.addColorStop(0.3, 'rgba(255,255,255,0.03)'); b.addColorStop(1, 'rgba(0,0,0,0.25)');
+      x.fillStyle = b; x.fillRect(0, benchY, w, h - benchY);
+      const s = x.createLinearGradient(0, benchY - 10, 0, benchY + 1); s.addColorStop(0, 'rgba(0,0,0,0)'); s.addColorStop(1, 'rgba(0,0,0,0.22)'); x.fillStyle = s; x.fillRect(0, benchY - 10, w, 11);
+      const rf = x.createLinearGradient(w * 0.05, 0, w * 0.4, 0); rf.addColorStop(0, 'rgba(255,255,255,0)'); rf.addColorStop(0.5, 'rgba(255,255,255,0.045)'); rf.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = rf; x.fillRect(0, benchY + 1, w, h - benchY);
+    });
+  }
+  // Bench seen from directly above (agar station).
+  function topBench(x, w, h) {
+    x.fillStyle = pattern(x, epoxyTile()); x.fillRect(0, 0, w, h);
+    const l = x.createRadialGradient(w * 0.25, h * 0.1, 0, w * 0.3, h * 0.2, Math.max(w, h) * 0.95);
+    l.addColorStop(0, 'rgba(255,250,240,0.12)'); l.addColorStop(1, 'rgba(0,0,0,0.3)'); x.fillStyle = l; x.fillRect(0, 0, w, h);
+  }
+  // Strip of masking tape with a marker label.
+  function tape(ctx, cx, cy, tw, th, text, rot) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot || 0);
+    ctx.beginPath(); ctx.moveTo(-tw / 2, -th / 2);
+    for (let i = 0; i <= 4; i++) ctx.lineTo(tw / 2 + (i % 2 ? 1.2 : -0.6), -th / 2 + th * i / 4);
+    for (let i = 4; i >= 0; i--) ctx.lineTo(-tw / 2 + (i % 2 ? -1.2 : 0.6), -th / 2 + th * i / 4);
+    ctx.closePath(); ctx.fillStyle = 'rgba(238,228,198,0.95)'; ctx.fill(); ctx.strokeStyle = 'rgba(150,135,100,0.35)'; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.fillStyle = PHY.marker; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `700 ${Math.round(th * 0.68)}px ${FONT}`; ctx.fillText(text, 0, th * 0.04);
+    ctx.textBaseline = 'alphabetic'; ctx.restore();
+  }
+
+  /* Glass beaker or clear plastic cup seen from the front. o: {kind:'beaker'|'cup', fill, liq:{c,a,cloud}, inner(ctx, g)}.
+     Order: shadow → back wall → liquid → contents → front liquid veil → meniscus → front glass. */
+  function vessel(ctx, cx, bot, bw, bh, o) {
+    const cup = o.kind === 'cup', ry = bw * (cup ? 0.1 : 0.085), top = bot - bh, tb = cup ? 0.74 : 1;
+    const xAt = (y, s) => cx + s * (bw / 2) * (tb + (1 - tb) * (bot - y) / bh);
+    const body = () => { ctx.beginPath(); ctx.moveTo(xAt(top, -1), top); ctx.lineTo(xAt(bot - ry, -1), bot - ry); ctx.ellipse(cx, bot - ry, xAt(bot, 1) - cx, ry, 0, Math.PI, 0, true); ctx.lineTo(xAt(top, 1), top); ctx.closePath(); };
+    shadow(ctx, cx + bw * 0.06, bot - ry * 0.2, bw * 0.62, ry * 1.5, 0.5);
+    // back inner wall: a hint of the wall darkened through two layers of glass
+    body(); const bg = ctx.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
+    bg.addColorStop(0, 'rgba(60,70,75,0.22)'); bg.addColorStop(0.12, 'rgba(255,255,255,0.10)'); bg.addColorStop(0.7, 'rgba(255,255,255,0.05)'); bg.addColorStop(1, 'rgba(60,70,75,0.26)');
+    ctx.fillStyle = bg; ctx.fill();
+    const ly = bot - bh * (o.fill || 0.7), L = o.liq, lx0 = xAt(ly, -1) + 1.2, lx1 = xAt(ly, 1) - 1.2;
+    const liqPath = () => { ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(xAt(bot - ry, -1) + 1.2, bot - ry); ctx.ellipse(cx, bot - ry, xAt(bot, 1) - cx - 1.2, ry - 1, 0, Math.PI, 0, true); ctx.lineTo(lx1, ly); ctx.closePath(); };
+    if (L) {
+      liqPath(); const lg = ctx.createLinearGradient(lx0, 0, lx1, 0), c = L.c, a = L.a;
+      lg.addColorStop(0, rgba(c, a * 2.1)); lg.addColorStop(0.16, rgba(c, a * 1.15)); lg.addColorStop(0.5, rgba(c, a * 0.8)); lg.addColorStop(0.84, rgba(c, a * 1.15)); lg.addColorStop(1, rgba(c, a * 2.3));
+      ctx.fillStyle = lg; ctx.fill();
+      const dg = ctx.createLinearGradient(0, ly, 0, bot); dg.addColorStop(0, rgba(c, 0)); dg.addColorStop(1, rgba(c.map(v => v * 0.7), a * 0.9)); ctx.fillStyle = dg; ctx.fill();
+      if (L.cloud) { ctx.fillStyle = `rgba(250,246,232,${L.cloud})`; ctx.fill(); }
+    }
+    const g = { cx, top, bot, ly, ry, bw, bh, xAt, lx0, lx1 };
+    if (o.inner) o.inner(ctx, g);
+    if (L) {
+      liqPath(); ctx.fillStyle = rgba(L.c, L.a * 0.35); ctx.fill();
+      // surface seen slightly from above, with the meniscus climbing the walls
+      const sr = ry * 0.85, sw = (lx1 - lx0) / 2;
+      ctx.beginPath(); ctx.ellipse(cx, ly, sw, sr, 0, 0, TAU); ctx.fillStyle = rgba(L.c.map(v => Math.min(255, v + 30)), Math.min(0.5, L.a * 1.6 + 0.1)); ctx.fill();
+      const sg = ctx.createLinearGradient(cx - sw, 0, cx + sw, 0); sg.addColorStop(0, 'rgba(255,255,255,0.35)'); sg.addColorStop(0.45, 'rgba(255,255,255,0.08)'); sg.addColorStop(1, 'rgba(255,255,255,0.2)');
+      ctx.fillStyle = sg; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, ly, sw, sr, 0, 0, Math.PI); ctx.strokeStyle = 'rgba(40,48,52,0.5)'; ctx.lineWidth = 1.1; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx, ly, sw, sr, 0, Math.PI, TAU); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.strokeStyle = 'rgba(40,48,52,0.35)'; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(lx0, ly - 2.4); ctx.quadraticCurveTo(lx0 + 1, ly, lx0 + 4, ly + sr * 0.4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(lx1, ly - 2.4); ctx.quadraticCurveTo(lx1 - 1, ly, lx1 - 4, ly + sr * 0.4); ctx.stroke();
+    }
+    // front glass: refraction darkening at the edges, window highlight, outline
+    body(); const fg = ctx.createLinearGradient(cx - bw / 2, 0, cx + bw / 2, 0);
+    fg.addColorStop(0, 'rgba(30,38,42,0.42)'); fg.addColorStop(0.06, 'rgba(30,38,42,0.06)'); fg.addColorStop(0.14, 'rgba(255,255,255,0.0)'); fg.addColorStop(0.17, 'rgba(255,255,255,0.55)'); fg.addColorStop(0.22, 'rgba(255,255,255,0.12)'); fg.addColorStop(0.27, 'rgba(255,255,255,0)');
+    fg.addColorStop(0.86, 'rgba(255,255,255,0)'); fg.addColorStop(0.9, 'rgba(255,255,255,0.28)'); fg.addColorStop(0.93, 'rgba(30,38,42,0.05)'); fg.addColorStop(1, 'rgba(30,38,42,0.48)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.strokeStyle = cup ? 'rgba(90,100,105,0.45)' : 'rgba(70,82,88,0.6)'; ctx.lineWidth = cup ? 0.8 : 1; ctx.stroke();
+    if (cup) { // moulded flutes on a plastic cup
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.8;
+      for (let k = 1; k < 10; k++) { const s = -1 + 2 * k / 10; ctx.beginPath(); ctx.moveTo(cx + s * (xAt(top + 6, 1) - cx), top + 6); ctx.lineTo(cx + s * (xAt(bot - ry * 1.6, 1) - cx), bot - ry * 1.6); ctx.stroke(); }
+    } else { // printed white enamel graduations (250 mL beaker)
+      const scale = (bh - ry) / 260, gx = cx + bw * 0.12;
+      ctx.lineWidth = 1;
+      for (let mL = 25; mL <= 250; mL += 25) {
+        const y = bot - ry - mL * scale, major = mL % 50 === 0, len = major ? bw * 0.16 : bw * 0.09;
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.moveTo(gx + 0.5, y + 0.8); ctx.lineTo(gx + len + 0.5, y + 0.8); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx + len, y); ctx.stroke();
+        if (major && bw > 62 && mL < 250) { ctx.font = `600 ${Math.max(7, Math.round(bw * 0.085))}px ${FONT}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillText(mL, gx + len + 2.5, y + 3.6); ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillText(mL, gx + len + 2, y + 3); }
+      }
+    }
+    // base: thick glass foot
+    ctx.beginPath(); ctx.ellipse(cx, bot - ry, xAt(bot, 1) - cx - 1, ry * 0.85, 0, 0, Math.PI); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1.4; ctx.stroke();
+    // rim (rolled lip on a cup; beaded lip and pouring spout on a beaker)
+    const rw = xAt(top, 1) - cx;
+    ctx.beginPath(); ctx.ellipse(cx, top, rw, ry, 0, 0, TAU); ctx.strokeStyle = 'rgba(70,82,88,0.55)'; ctx.lineWidth = cup ? 2.4 : 1.8; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, top, rw, ry, 0, Math.PI * 0.95, Math.PI * 1.75); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx, top, rw, ry, 0, Math.PI * 0.05, Math.PI * 0.6); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 0.9; ctx.stroke();
+    if (!cup) { ctx.beginPath(); ctx.moveTo(cx - rw - 0.5, top + 3); ctx.quadraticCurveTo(cx - rw - 4, top - 1, cx - rw - 5, top - 3); ctx.strokeStyle = 'rgba(70,82,88,0.6)'; ctx.lineWidth = 1.2; ctx.stroke(); }
+    return g;
+  }
+
+  /* Seven-segment LCD digits (balance). Unlit segments show faintly, as on a real reflective LCD. */
+  const SEG = { 0: 'abcdef', 1: 'bc', 2: 'abged', 3: 'abgcd', 4: 'fgbc', 5: 'afgcd', 6: 'afgedc', 7: 'abc', 8: 'abcdefg', 9: 'abcdfg', '-': 'g', ' ': '' };
+  function sevenSeg(ctx, str, x, y, hh, on, ghost) {
+    const dw = hh * 0.52, gap = hh * 0.2, t = hh * 0.13, sk = 0.1;
+    let cx = x;
+    const P = (px, py) => [cx + px + (hh - py) * sk, y + py];
+    const seg = (x1, y1, x2, y2) => {
+      const hor = y1 === y2, e = t / 2, pts = hor ? [P(x1, y1), P(x1 + e, y1 - e), P(x2 - e, y1 - e), P(x2, y1), P(x2 - e, y1 + e), P(x1 + e, y1 + e)] : [P(x1, y1), P(x1 + e, y1 + e), P(x1 + e, y2 - e), P(x1, y2), P(x1 - e, y2 - e), P(x1 - e, y1 + e)];
+      ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill();
+    };
+    const g = 0.7, D = { a: [() => seg(t / 2 + g, t / 2, dw - t / 2 - g, t / 2)], b: [() => seg(dw - t / 2, t / 2 + g, dw - t / 2, hh / 2 - g)], c: [() => seg(dw - t / 2, hh / 2 + g, dw - t / 2, hh - t / 2 - g)], d: [() => seg(t / 2 + g, hh - t / 2, dw - t / 2 - g, hh - t / 2)], e: [() => seg(t / 2, hh / 2 + g, t / 2, hh - t / 2 - g)], f: [() => seg(t / 2, t / 2 + g, t / 2, hh / 2 - g)], g: [() => seg(t / 2 + g, hh / 2, dw - t / 2 - g, hh / 2)] };
+    for (const ch of String(str)) {
+      if (ch === '.') { ctx.fillStyle = on; ctx.beginPath(); ctx.arc(cx - gap * 0.5 + 0 * sk, y + hh - t / 2, t * 0.55, 0, TAU); ctx.fill(); continue; }
+      const lit = SEG[ch] || '';
+      for (const s of 'abcdefg') { ctx.fillStyle = lit.includes(s) ? on : ghost; D[s][0](); }
+      cx += dw + gap;
+    }
+    return cx;
+  }
+  /* Digital top-loading balance (0.01 g) with a weigh boat and a reflective LCD. */
+  function balance(ctx, x, bot, bw, o) {
+    const bh = bw * 0.46, top = bot - bh, fy = top + bh * 0.36;
+    shadow(ctx, x + bw * 0.55, bot, bw * 0.6, bw * 0.06, 0.6);
+    // housing: top deck in perspective, sloped front with the display
+    ctx.beginPath(); ctx.moveTo(x + bw * 0.08, top); ctx.lineTo(x + bw * 0.92, top); ctx.lineTo(x + bw, fy); ctx.lineTo(x, fy); ctx.closePath();
+    let g = ctx.createLinearGradient(0, top, 0, fy); g.addColorStop(0, '#d9d8d3'); g.addColorStop(1, '#f2f1ec'); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.8; ctx.stroke();
+    rr(ctx, x, fy, bw, bot - fy - 2, 4); g = ctx.createLinearGradient(0, fy, 0, bot); g.addColorStop(0, '#e6e5df'); g.addColorStop(0.6, '#cfcdc6'); g.addColorStop(1, '#a9a7a0'); ctx.fillStyle = g; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fillRect(x + 3, fy + 1, bw - 6, 1);
+    ctx.fillStyle = '#2b2b2b'; ctx.fillRect(x + bw * 0.1, bot - 3, bw * 0.12, 3); ctx.fillRect(x + bw * 0.78, bot - 3, bw * 0.12, 3);
+    // stainless pan with draft ring
+    const pcx = x + bw / 2, pcy = top + (fy - top) * 0.45, prx = bw * 0.33, pry = prx * 0.2;
+    ctx.fillStyle = '#7d7f80'; ctx.fillRect(pcx - 3, pcy, 6, (fy - top) * 0.4);
+    ctx.beginPath(); ctx.ellipse(pcx, pcy + 2, prx, pry, 0, 0, TAU); ctx.fillStyle = '#6f7275'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(pcx, pcy, prx, pry, 0, 0, TAU); g = ctx.createLinearGradient(pcx - prx, 0, pcx + prx, 0);
+    g.addColorStop(0, '#9da2a6'); g.addColorStop(0.3, '#f4f6f7'); g.addColorStop(0.55, '#b8bcbf'); g.addColorStop(1, '#8a8f93'); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(40,40,40,0.45)'; ctx.lineWidth = 0.7; ctx.stroke();
+    if (o.load) { // white polystyrene weigh boat holding a blotted bag
+      const bwB = prx * 1.25, bhB = pry * 1.6;
+      ctx.beginPath(); ctx.moveTo(pcx - bwB / 2, pcy - bhB); ctx.lineTo(pcx + bwB / 2, pcy - bhB); ctx.lineTo(pcx + bwB * 0.38, pcy + 1); ctx.lineTo(pcx - bwB * 0.38, pcy + 1); ctx.closePath();
+      ctx.fillStyle = '#f7f7f4'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.stroke();
+      ctx.save(); ctx.translate(pcx, pcy - bhB * 0.95); ctx.rotate(-0.08);
+      ctx.beginPath(); ctx.ellipse(0, 0, bwB * 0.38, bhB * 0.45, 0, 0, TAU); g = ctx.createLinearGradient(0, -bhB * 0.45, 0, bhB * 0.45);
+      g.addColorStop(0, 'rgba(240,238,222,0.95)'); g.addColorStop(1, 'rgba(178,172,148,0.95)'); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(110,104,82,0.7)'; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(bwB * 0.42, -1, bhB * 0.25, bhB * 0.2, 0.4, 0, TAU); ctx.fillStyle = 'rgba(190,184,160,0.95)'; ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    // display bezel and LCD
+    const lw = bw * 0.6, lh = (bot - fy) * 0.52, lx = x + bw * 0.08, lyy = fy + (bot - fy) * 0.16;
+    rr(ctx, lx - 2, lyy - 2, lw + 4, lh + 4, 3); ctx.fillStyle = '#2e3033'; ctx.fill();
+    rr(ctx, lx, lyy, lw, lh, 2); g = ctx.createLinearGradient(0, lyy, 0, lyy + lh); g.addColorStop(0, '#b8c3ab'); g.addColorStop(1, '#a3af96'); ctx.fillStyle = g; ctx.fill();
+    const txt = o.mass == null ? '0.00' : o.mass.toFixed(2), dh = lh * 0.64, dW = dh * 0.72;
+    sevenSeg(ctx, txt.padStart(6, ' '), lx + lw - dh * 0.62 - 5 * dW - 1, lyy + lh * 0.22, dh, '#1b2018', 'rgba(27,32,24,0.07)');
+    ctx.fillStyle = '#1b2018'; ctx.font = `700 ${Math.max(6, Math.round(dh * 0.5))}px ${FONT}`; ctx.textAlign = 'right'; ctx.fillText('g', lx + lw - 3, lyy + lh * 0.22 + dh);
+    if (o.tag && lw > 60) { ctx.font = `700 ${Math.max(5, Math.round(lh * 0.2))}px ${FONT}`; ctx.textAlign = 'left'; ctx.fillText(o.tag, lx + 3, lyy + lh * 0.24); }
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(lx + 1, lyy + 1, lw - 2, lh * 0.3);
+    // buttons
+    [['TARE', 0.78], ['ON', 0.92]].forEach(([t, f]) => {
+      const bx = x + bw * f, by = lyy + lh / 2, r = Math.min(bw * 0.045, 6);
+      ctx.beginPath(); ctx.arc(bx, by, r, 0, TAU); g = ctx.createRadialGradient(bx - r * 0.3, by - r * 0.3, 0, bx, by, r); g.addColorStop(0, '#5d6166'); g.addColorStop(1, '#25272a'); ctx.fillStyle = g; ctx.fill();
+      if (bw > 90) { ctx.fillStyle = '#3a3c3f'; ctx.font = `700 ${Math.max(5, Math.round(bw * 0.04))}px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(t, bx, by + r + Math.max(6, bw * 0.05)); }
+    });
+  }
+
+  /* Liquids as physical tints (colour, alpha per unit depth). The Procedure 2 solutions are all clear;
+     ovalbumin is faintly opalescent. The Procedure 3B cups were dyed with food colouring. */
+  const LIQ = {
+    water: { c: [200, 222, 234], a: 0.06 }, sucrose: { c: [226, 222, 192], a: 0.085 }, nacl: { c: [206, 224, 232], a: 0.07 },
+    glucose: { c: [228, 222, 190], a: 0.085 }, ovalbumin: { c: [236, 226, 188], a: 0.12, cloud: 0.2 }
+  };
+  const DYE = { Red: [200, 28, 44], Orange: [236, 118, 22], Yellow: [236, 196, 26], Green: [28, 148, 70], Blue: [24, 84, 206], Purple: [116, 44, 168] };
+  const dyeLiq = name => ({ c: DYE[name], a: 0.2 });
+
+  /* Knotted dialysis-tubing bag (regenerated cellulose): translucent, creased along the flattened edges,
+     wrinkled when slack, smooth and shiny when swollen. ratio = current mass ÷ starting mass. */
+  function dialysisBag(ctx, cx, yTop, yBot, wid, ratio, inL, seed, tilt) {
+    const R = Lab.rng(seed), flac = clamp((1.1 - ratio) / 0.25, 0, 1), L = yBot - yTop, hw = wid / 2, kn = clamp(wid * 0.2, 2.4, 5);
+    ctx.save(); ctx.translate(cx, yBot); ctx.rotate(tilt);
+    const y0 = -L + kn * 1.6, y1 = -kn * 1.3, N = 18, left = [], right = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, y = y0 + (y1 - y0) * t, tp = Math.pow(Math.sin(Math.PI / 2 * Math.min(1, Math.min(t, 1 - t) * 4)), 0.6), wob = (0.25 + flac * 1.3) * Math.max(1, wid * 0.05), e = i && i < N;
+      left.push([-hw * tp + (e ? R.normal(0, wob) : 0), y]); right.push([hw * tp + (e ? R.normal(0, wob) : 0), y]);
+    }
+    const body = smoothPath(new Path2D(), left.concat(right.slice(1, -1).reverse()), true);
+    // tails of flattened tubing beyond each knot
+    const ribbon = (x0, yA, x1, yB, wd) => { const a = Math.atan2(yB - yA, x1 - x0), nx = -Math.sin(a) * wd / 2, ny = Math.cos(a) * wd / 2; ctx.beginPath(); ctx.moveTo(x0 + nx, yA + ny); ctx.lineTo(x1 + nx * 0.9, yB + ny * 0.9); ctx.lineTo(x1 - nx * 0.9, yB - ny * 0.9); ctx.lineTo(x0 - nx, yA - ny); ctx.closePath(); ctx.fillStyle = 'rgba(226,220,194,0.62)'; ctx.fill(); ctx.strokeStyle = 'rgba(120,112,85,0.7)'; ctx.lineWidth = 0.7; ctx.stroke(); };
+    ribbon(0, -L + kn * 0.9, kn * 0.9, -L - kn * 1.4, kn * 1.3);
+    ribbon(0, -kn * 0.6, kn * 3.4, -kn * 0.1, kn * 1.3);
+    // contents, then the cellulose film
+    ctx.fillStyle = rgba(inL.c, Math.min(0.5, inL.a * 2.2 + 0.05)); ctx.fill(body);
+    if (inL.cloud) { ctx.fillStyle = `rgba(250,245,228,${inL.cloud + 0.1})`; ctx.fill(body); }
+    let g = ctx.createLinearGradient(-hw, 0, hw, 0);
+    g.addColorStop(0, 'rgba(140,130,100,0.6)'); g.addColorStop(0.12, 'rgba(214,206,178,0.3)'); g.addColorStop(0.5, 'rgba(232,226,204,0.12)'); g.addColorStop(0.86, 'rgba(214,206,178,0.32)'); g.addColorStop(1, 'rgba(130,120,92,0.66)');
+    ctx.fillStyle = g; ctx.fill(body);
+    g = ctx.createLinearGradient(-hw, 0, hw, 0); const sh = 0.25 + 0.5 * (1 - flac);
+    g.addColorStop(0.18, 'rgba(255,255,255,0)'); g.addColorStop(0.28, `rgba(255,255,255,${sh})`); g.addColorStop(0.38, 'rgba(255,255,255,0)'); g.addColorStop(0.8, 'rgba(255,255,255,0)'); g.addColorStop(0.85, `rgba(255,255,255,${sh * 0.4})`); g.addColorStop(0.9, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fill(body);
+    ctx.save(); ctx.clip(body);
+    // creases where the flat tubing folds, and crosswise wrinkles when the bag is slack
+    ctx.strokeStyle = `rgba(120,110,82,${0.12 + 0.3 * flac})`; ctx.lineWidth = 0.7;
+    [-0.68, 0.7].forEach(f => { ctx.beginPath(); for (let i = 0; i <= 8; i++) { const yy = y0 + (y1 - y0) * i / 8; ctx[i ? 'lineTo' : 'moveTo'](hw * f + R.normal(0, 0.5 + flac), yy); } ctx.stroke(); });
+    const nW = Math.round(2 + 10 * flac);
+    for (let k = 0; k < nW; k++) {
+      const yy = y0 + (y1 - y0) * (0.08 + 0.84 * R.uniform()), a = 0.3 + R.uniform() * 0.6, b = 0.3 + R.uniform() * 0.6, d = R.normal(0, 2.5);
+      ctx.strokeStyle = 'rgba(105,96,70,0.38)'; ctx.beginPath(); ctx.moveTo(-hw * a, yy); ctx.quadraticCurveTo(0, yy + d, hw * b, yy + R.normal(0, 1.5)); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.32)'; ctx.beginPath(); ctx.moveTo(-hw * a, yy + 1.1); ctx.quadraticCurveTo(0, yy + d + 1.1, hw * b, yy + 1.1); ctx.stroke();
+    }
+    // a small air pocket trapped under the top knot
+    const br = Math.min(1.8, hw * 0.25); ctx.beginPath(); ctx.ellipse(hw * 0.05, y0 + kn * 1.4 + br, hw * 0.42, br, 0, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill(); ctx.strokeStyle = 'rgba(90,96,100,0.45)'; ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(115,106,78,0.8)'; ctx.lineWidth = 0.9; ctx.stroke(body);
+    // knots: twisted lumps of tubing
+    const knot = (y, sx) => {
+      ctx.beginPath(); ctx.ellipse(0, y, kn * 0.95 * sx, kn * 0.62, 0.2, 0, TAU);
+      g = ctx.createRadialGradient(-kn * 0.3, y - kn * 0.3, 0, 0, y, kn * 1.1); g.addColorStop(0, 'rgba(236,231,208,0.95)'); g.addColorStop(1, 'rgba(150,140,110,0.95)');
+      ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(100,92,66,0.85)'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.strokeStyle = 'rgba(95,86,60,0.55)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(-kn * 0.6, y - kn * 0.4); ctx.quadraticCurveTo(0, y + kn * 0.3, kn * 0.7, y - kn * 0.2); ctx.stroke();
+    };
+    knot(-L + kn * 1.1, 1); knot(-kn * 0.75, 1.1);
+    ctx.restore();
+  }
+  // Draws vessels with dialysis bags. bags: {inL, outL, ratio, flux, label, sub, top, tape}; opt: {cup, balance:{mass, tag, load}}
+  function drawBags(cv, bags, phase, opt) {
+    const { ctx, w, h } = cv; opt = opt || {};
+    const balW = opt.balance ? clamp(w * 0.18, 70, 150) : 0, n = bags.length, slot = (w - balW - 8) / n;
+    const bot = h - 40, benchY = bot - Math.min(16, h * 0.07), cup = !!opt.cup;
+    ctx.drawImage(sideScene(w, h, benchY), 0, 0, w, h);
+    const bw = Math.min(slot * 0.8, cup ? 100 : 112), bh = Math.min(bot - 34, bw * (cup ? 1.2 : 1.5)), small = slot < 80;
+    bags.forEach((b, i) => {
+      const cx = 4 + slot * (i + 0.5), tilt = [0.07, -0.05, 0.04, -0.08, 0.06, -0.03, 0.05, -0.06][i % 8];
+      vessel(ctx, cx, bot, bw, bh, { kind: cup ? 'cup' : 'beaker', fill: 0.8, liq: b.outL, inner: (c, g) => {
+        const top = g.ly + 4 + bw * 0.03, yb = g.bot - g.ry * 0.7;
+        const bagW = clamp(bw * 0.28 * Math.min(1.8, Math.pow(b.ratio, 2.2)), 7, bw * 0.6), bx = cx + (i % 2 ? 2 : -2);
+        dialysisBag(c, bx, top, yb, bagW, b.ratio, b.inL || LIQ.water, 100 + i * 13, tilt);
+        if (Math.abs(b.flux) > 0.004) { // net water flow across the membrane
+          c.strokeStyle = 'rgba(28,104,206,0.9)'; c.lineWidth = 1.4; c.lineCap = 'round';
+          const dir = b.flux > 0 ? 1 : -1, span = Math.min((g.xAt(top, 1) - cx) - bagW / 2 - 3, 24);
+          for (let k = 0; k < 3; k++) for (const side of [-1, 1]) {
+            const ph = ((phase || 0) * Math.min(3, Math.abs(b.flux) * 40 + 0.6) + k / 3) % 1;
+            const xo = side * (bagW / 2 + 2 + span * (dir > 0 ? 1 - ph : ph)), yy = top + (yb - top) * (0.3 + 0.2 * k), p = -side * dir * 2.6;
+            c.globalAlpha = Math.sin(ph * Math.PI); c.beginPath(); c.moveTo(bx + xo - p, yy - 2.6); c.lineTo(bx + xo, yy); c.lineTo(bx + xo - p, yy + 2.6); c.stroke();
+          }
+          c.globalAlpha = 1;
+        }
+      } });
+      if (b.tape) tape(ctx, cx + bw * 0.05, bot - bh + bh * 0.15, Math.min(bw * 0.62, 56), Math.max(10, Math.min(13, bw * 0.16)), b.tape, i % 2 ? 0.03 : -0.04);
+      ctx.textAlign = 'center';
+      if (b.top) { ctx.fillStyle = PHY.ink; ctx.font = `700 ${small ? 11 : 12}px ${FONT}`; ctx.fillText(b.top, cx, bot - bh - bw * 0.1 - 6); }
+      ctx.fillStyle = PHY.text; ctx.font = `600 ${small ? 11 : 12}px ${FONT}`; ctx.fillText(b.label, cx, bot + 17);
+      ctx.fillStyle = PHY.textDim; ctx.font = `${slot < 70 ? 9 : small ? 10 : 11}px ${FONT}`; ctx.fillText(b.sub, cx, bot + 31);
+    });
+    if (opt.balance) {
+      const bx = w - balW - 2;
+      balance(ctx, bx, bot, balW - 4, opt.balance);
+      ctx.textAlign = 'center'; ctx.fillStyle = PHY.textDim; ctx.font = `${small ? 10 : 11}px ${FONT}`; ctx.fillText('Balance', bx + balW / 2 - 2, bot + 17);
+    }
+  }
+
+  /* Plant cores cut with a cork borer: moist, starchy flesh with a sheen; turgid cores are firm and glossy,
+     cores that lost water go limp, bend and look duller. */
+  const FLESH = { potato: [238, 226, 188], sweet: [236, 148, 70], yam: [234, 222, 214], dry: [226, 206, 158] };
+  function potatoCore(ctx, x, y, len, dia, rot, flesh, ratio, dye, seed) {
+    const R = Lab.rng(seed), flac = clamp((1 - ratio) * 4, 0, 1), sag = flac * dia * 0.9 * (R.chance(0.5) ? 1 : -1);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+    const hl = len / 2, hd = dia / 2, cap = dia * 0.22;
+    const p = new Path2D(); p.moveTo(-hl, -hd); p.quadraticCurveTo(0, -hd + sag, hl, -hd); p.ellipse(hl, 0, cap, hd, 0, -Math.PI / 2, Math.PI / 2); p.quadraticCurveTo(0, hd + sag, -hl, hd); p.ellipse(-hl, 0, cap, hd, 0, Math.PI / 2, Math.PI * 1.5); p.closePath();
+    let g = ctx.createLinearGradient(0, -hd, 0, hd + Math.abs(sag));
+    g.addColorStop(0, rgba(flesh.map(v => Math.min(255, v + 14)), 1)); g.addColorStop(0.45, rgba(flesh, 1)); g.addColorStop(1, rgba(flesh.map(v => v * 0.74), 1));
+    ctx.fillStyle = g; ctx.fill(p);
+    ctx.save(); ctx.clip(p);
+    ctx.globalAlpha = 0.7; ctx.fillStyle = pattern(ctx, starchTile()); ctx.fillRect(-hl - cap, -hd - dia, len + 2 * cap, dia * 3); ctx.globalAlpha = 1;
+    if (dye) { ctx.fillStyle = rgba(dye, 0.12); ctx.fill(p); }
+    if (flac > 0) { ctx.fillStyle = `rgba(150,140,112,${(0.28 * flac).toFixed(3)})`; ctx.fill(p); ctx.strokeStyle = `rgba(110,95,60,${(0.35 * flac).toFixed(3)})`; ctx.lineWidth = 0.6; for (let k = 0; k < 4; k++) { const xx = -hl * 0.7 + k * hl * 0.45 + R.normal(0, 2); ctx.beginPath(); ctx.moveTo(xx, -hd + sag * 0.6); ctx.quadraticCurveTo(xx + 2, 0, xx - 1, hd * 0.7 + sag * 0.6); ctx.stroke(); } }
+    // wet sheen along the top
+    ctx.strokeStyle = `rgba(255,255,255,${(0.6 - 0.35 * flac).toFixed(2)})`; ctx.lineWidth = Math.max(1, dia * 0.13);
+    ctx.beginPath(); ctx.moveTo(-hl * 0.8, -hd * 0.5 + sag * 0.15); ctx.quadraticCurveTo(0, -hd * 0.5 + sag * 0.95, hl * 0.55, -hd * 0.5 + sag * 0.15); ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = rgba(flesh.map(v => v * 0.55), 0.6); ctx.lineWidth = 0.7; ctx.stroke(p);
+    // cut end: paler, wet, with the faint vascular ring
+    ctx.beginPath(); ctx.ellipse(hl, 0, cap, hd, 0, 0, TAU); ctx.fillStyle = rgba(flesh.map(v => Math.min(255, v + 10)), 1); ctx.fill();
+    ctx.strokeStyle = rgba(flesh.map(v => v * 0.7), 0.6); ctx.lineWidth = 0.6; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(hl, 0, cap * 0.62, hd * 0.66, 0, 0, TAU); ctx.strokeStyle = rgba(flesh.map(v => v * 0.82), 0.5); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.ellipse(hl - cap * 0.25, -hd * 0.4, cap * 0.3, hd * 0.2, 0, 0, TAU); ctx.fill();
+    ctx.restore();
   }
 
   /* =====================================================================
@@ -481,36 +851,138 @@ Lab.init({ id: 'lab04' });
   const shapeById = id => SHAPES.find(s => s.id === id) || SHAPES[0];
   const dimText = d => d.map(x => fmt(x, x % 1 ? 1 : 0)).join(' × ');
 
-  // Draws agar blocks as cross-sections (L wide × H tall) cut through the middle of W.
-  function drawBlocks(cv, blocks, title) {
-    const { ctx, w, h } = cv; ctx.clearRect(0, 0, w, h);
-    const top = 26, bot = h - 40;
-    ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
-    ctx.globalAlpha = 0.14; ctx.fillStyle = tok('--s3'); ctx.fillRect(6, top, w - 12, bot - top); ctx.globalAlpha = 1;
-    ctx.strokeStyle = tok('--line'); ctx.lineWidth = 2; ctx.strokeRect(6, top, w - 12, bot - top);
-    ctx.fillStyle = tok('--muted'); ctx.font = `12px ${FONT}`; ctx.textAlign = 'left'; ctx.fillText(title || '', 10, 17);
-    const n = blocks.length, slot = (w - 12) / n;
-    const maxL = Math.max(...blocks.map(b => b.d[0])), maxH = Math.max(...blocks.map(b => b.d[2]));
-    const s = Math.min((slot - 14) / maxL, (bot - top - 22) / maxH);
-    blocks.forEach((b, i) => {
-      const [L, W, H] = b.d, cx = 6 + slot * (i + 0.5), bw = L * s, bh = H * s, x = cx - bw / 2, y = bot - 10 - bh;
-      ctx.fillStyle = tok('--surface'); ctx.fillRect(x, y, bw, bh);
-      const dc = b.dcm || 0;
-      if (W - 2 * dc > 0 && L - 2 * dc > 0 && H - 2 * dc > 0) {
-        const dp = dc * s; ctx.fillStyle = tok('--stain'); ctx.globalAlpha = 0.85; ctx.fillRect(x + dp, y + dp, bw - 2 * dp, bh - 2 * dp); ctx.globalAlpha = 1;
+  /* Agar station seen from above: a beaker of acid with the whole blocks soaking (optional) and a white
+     ceramic tile where each block has been cut in half with a scalpel. The cut face shows the magenta
+     phenolphthalein core inside a glassy, colourless rim that the acid has reached, measured against
+     a steel rule with real millimetre ticks. Cut faces are L wide × H tall, cut through the middle of W. */
+  const MAG = { hi: [236, 84, 166], mid: [205, 32, 128], lo: [158, 14, 92] };
+  function agarFace(ctx, x, y, bw, bh, dp, seed) {
+    const R = Lab.rng(seed), rad = Math.min(2.2, bw * 0.06, bh * 0.06);
+    ctx.save();
+    ctx.shadowColor = 'rgba(40,30,30,0.35)'; ctx.shadowBlur = 5; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 3;
+    rr(ctx, x, y, bw, bh, rad); ctx.fillStyle = 'rgb(222,228,229)'; ctx.fill(); ctx.restore();
+    ctx.save(); rr(ctx, x, y, bw, bh, rad); ctx.clip();
+    // colourless, acid-reached agar: glassy and faintly blue-grey, the tile glowing through
+    let g = ctx.createLinearGradient(x, y, x + bw, y + bh); g.addColorStop(0, 'rgb(246,249,249)'); g.addColorStop(0.55, 'rgb(229,235,236)'); g.addColorStop(1, 'rgb(205,214,216)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, bw, bh);
+    const cw = bw - 2 * dp, ch = bh - 2 * dp;
+    if (cw > 0.3 && ch > 0.3) {
+      const cx = x + dp, cy = y + dp;
+      // the acid front is sharp but not perfectly straight: a 1–2 px pink haze just outside the core
+      ctx.fillStyle = rgba(MAG.mid, 0.22); rr(ctx, cx - 1.6, cy - 1.6, cw + 3.2, ch + 3.2, 2.5); ctx.fill();
+      ctx.fillStyle = rgba(MAG.mid, 0.3); rr(ctx, cx - 0.7, cy - 0.7, cw + 1.4, ch + 1.4, 1.5); ctx.fill();
+      g = ctx.createRadialGradient(cx + cw * 0.35, cy + ch * 0.3, 0, cx + cw / 2, cy + ch / 2, Math.max(cw, ch) * 0.75);
+      g.addColorStop(0, rgba(MAG.hi, 1)); g.addColorStop(0.6, rgba(MAG.mid, 1)); g.addColorStop(1, rgba(MAG.lo, 1));
+      ctx.fillStyle = g; ctx.fillRect(cx, cy, cw, ch);
+    }
+    // texture: tiny trapped bubbles, then faint knife chatter marks from the scalpel
+    const ox = R.uniform() * 40, oy = R.uniform() * 40;
+    ctx.globalAlpha = 0.85; ctx.fillStyle = pattern(ctx, agarTile()); ctx.translate(x - ox, y - oy); ctx.fillRect(ox, oy, bw, bh); ctx.globalAlpha = 1;
+    ctx.restore(); ctx.save(); rr(ctx, x, y, bw, bh, rad); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.6;
+    for (let k = 0, n = 2 + Math.round(bw / 18); k < n; k++) { const yy = y + R.uniform() * bh; ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x + bw, yy + R.normal(0, 2)); ctx.stroke(); }
+    // specular sheen from the moist cut surface (upper left)
+    g = ctx.createLinearGradient(x, y, x + bw * 0.7, y + bh * 0.7); g.addColorStop(0, 'rgba(255,255,255,0.45)'); g.addColorStop(0.35, 'rgba(255,255,255,0.08)'); g.addColorStop(0.5, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, bw, bh);
+    ctx.restore();
+    // refractive edge: dark outer line, bright inner line on the lit sides
+    rr(ctx, x, y, bw, bh, rad); ctx.strokeStyle = 'rgba(95,105,110,0.75)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x + 1.2, y + bh - 1.5); ctx.lineTo(x + 1.2, y + 1.2); ctx.lineTo(x + bw - 1.5, y + 1.2); ctx.stroke();
+  }
+  // Whole block under the acid, seen from above (L × W face). Translucent, so the pink core shows through.
+  function agarSoaking(ctx, x, y, bw, bh, dp, rot) {
+    ctx.save(); ctx.translate(x + bw / 2, y + bh / 2); ctx.rotate(rot); ctx.translate(-bw / 2, -bh / 2);
+    shadow(ctx, bw / 2 + 2, bh / 2 + 3, bw * 0.62, bh * 0.62, 0.45);
+    rr(ctx, 0, 0, bw, bh, 1.5); ctx.fillStyle = 'rgba(214,224,228,0.38)'; ctx.fill();
+    const cw = bw - 2 * dp, ch = bh - 2 * dp;
+    if (cw > 0.3 && ch > 0.3) {
+      ctx.fillStyle = rgba(MAG.mid, 0.3); rr(ctx, dp - 1.5, dp - 1.5, cw + 3, ch + 3, 2); ctx.fill();
+      const g = ctx.createRadialGradient(dp + cw * 0.4, dp + ch * 0.35, 0, dp + cw / 2, dp + ch / 2, Math.max(cw, ch) * 0.7);
+      g.addColorStop(0, rgba(MAG.hi, 0.95)); g.addColorStop(1, rgba(MAG.lo, 0.95)); ctx.fillStyle = g; ctx.fillRect(dp, dp, cw, ch);
+    }
+    rr(ctx, 0, 0, bw, bh, 1.5); ctx.strokeStyle = 'rgba(230,240,244,0.7)'; ctx.lineWidth = 0.9; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.arc(bw * 0.85, bh * 0.2, 1.1, 0, TAU); ctx.arc(bw * 0.15, bh * 0.75, 0.8, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  function drawBlocks(cv, blocks, title, opt) {
+    const { ctx, w, h } = cv; opt = opt || {};
+    const n = blocks.length, beak = !!opt.beaker;
+    const bR = beak ? Math.min(h * 0.4, w * 0.18) : 0, tx = beak ? bR * 2 + 26 : 10, ty = 26, tw = w - tx - 10, th = h - ty - 10;
+    const rulerH = 15, labH = 30, faceTop = ty + 12, faceArea = ty + th - rulerH - labH - 4;
+    const slot = (tw - 12) / n, maxL = Math.max(...blocks.map(b => b.d[0])), maxH = Math.max(...blocks.map(b => b.d[2]));
+    const s = Math.max(4, Math.min((slot - 14) / maxL, (faceArea - faceTop) / maxH)), faceBot = faceArea - Math.max(0, (faceArea - faceTop - maxH * s) * 0.45);
+    const bg = layer(`agar${beak ? 'B' : ''}${s.toFixed(2)}`, w, h, x => {
+      topBench(x, w, h);
+      // white glazed tile with soft shadow and a glossy reflection
+      x.save(); x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = 10; x.shadowOffsetX = 3; x.shadowOffsetY = 5;
+      rr(x, tx, ty, tw, th, 5); x.fillStyle = '#f4f3ef'; x.fill(); x.restore();
+      let g = x.createLinearGradient(tx, ty, tx + tw, ty + th); g.addColorStop(0, '#fdfdfb'); g.addColorStop(0.5, '#f1f0eb'); g.addColorStop(1, '#e2e0d9');
+      rr(x, tx, ty, tw, th, 5); x.fillStyle = g; x.fill(); x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 1; x.stroke();
+      rr(x, tx + 2, ty + 2, tw - 4, th - 4, 4); x.strokeStyle = 'rgba(255,255,255,0.9)'; x.stroke();
+      g = x.createLinearGradient(tx, ty, tx + tw * 0.6, ty + th); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.45, 'rgba(255,255,255,0.5)'); g.addColorStop(0.55, 'rgba(255,255,255,0)'); x.fillStyle = g; rr(x, tx, ty, tw, th, 5); x.fill();
+      // steel rule with mm ticks at the true drawing scale (s px per cm)
+      const rx = tx + 8, rw = tw - 16, ry = ty + th - rulerH - 4;
+      g = x.createLinearGradient(0, ry, 0, ry + rulerH); g.addColorStop(0, '#e9ecee'); g.addColorStop(0.45, '#c4c9cc'); g.addColorStop(1, '#9ba1a5');
+      x.save(); x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 3; x.shadowOffsetY = 1.5; x.fillStyle = g; x.fillRect(rx, ry, rw, rulerH); x.restore();
+      x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 0.6; x.strokeRect(rx + 0.3, ry + 0.3, rw - 0.6, rulerH - 0.6);
+      x.strokeStyle = '#22262a'; x.fillStyle = '#22262a'; x.font = `600 ${rulerH > 13 ? 8 : 7}px ${FONT}`; x.textAlign = 'center';
+      const mm = s / 10, step = mm >= 1.6 ? 1 : 2;
+      for (let k = 0; k * mm <= rw - 4; k += step) {
+        const xx = rx + 3 + k * mm + 0.25, L = k % 10 === 0 ? rulerH * 0.55 : k % 5 === 0 ? rulerH * 0.38 : rulerH * 0.22;
+        x.lineWidth = k % 10 === 0 ? 0.8 : 0.5; x.beginPath(); x.moveTo(xx, ry); x.lineTo(xx, ry + L); x.stroke();
+        if (k % 10 === 0 && (s >= 14 || k % 20 === 0) && k > 0) x.fillText(k / 10, xx, ry + rulerH - 2);
       }
-      ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1; ctx.strokeRect(x, y, bw, bh);
-      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${n > 4 ? 11 : 12}px ${FONT}`;
-      ctx.fillText(b.label, cx, bot + 15);
-      ctx.fillStyle = tok('--muted'); ctx.font = `${n > 4 ? 10 : 11}px ${FONT}`; ctx.fillText(b.sub || dimText(b.d) + ' cm', cx, bot + 29);
+      x.textAlign = 'left'; x.fillText('cm', rx + 4, ry + rulerH - 2);
+      // scalpel resting along the top edge of the tile
+      const sx = tx + tw - Math.min(140, tw * 0.5), sy = ty - 9, sl = Math.min(140, tw * 0.5) - 6;
+      x.save(); x.translate(sx, sy); x.rotate(-0.04);
+      x.save(); x.shadowColor = 'rgba(0,0,0,0.5)'; x.shadowBlur = 4; x.shadowOffsetX = 2; x.shadowOffsetY = 3;
+      g = x.createLinearGradient(0, -3.5, 0, 3.5); g.addColorStop(0, '#f2f4f5'); g.addColorStop(0.45, '#a9afb3'); g.addColorStop(1, '#6d7377');
+      x.fillStyle = g; x.beginPath(); x.moveTo(sl * 0.3, -3.2); x.lineTo(sl, -2.4); x.quadraticCurveTo(sl + 3, 0, sl, 2.4); x.lineTo(sl * 0.3, 3.2); x.closePath(); x.fill(); x.restore();
+      x.strokeStyle = 'rgba(60,64,68,0.55)'; x.lineWidth = 0.5; for (let k = 0; k < 9; k++) { const xx = sl * 0.55 + k * 3.2; x.beginPath(); x.moveTo(xx, -2.4); x.lineTo(xx, 2.4); x.stroke(); }
+      g = x.createLinearGradient(0, -3, 0, 4); g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#cfd6da'); g.addColorStop(1, '#8e979c');
+      x.fillStyle = g; x.beginPath(); x.moveTo(sl * 0.3, -2.6); x.lineTo(sl * 0.06, -1.6); x.quadraticCurveTo(-sl * 0.02, 2.5, sl * 0.02, 3.6); x.lineTo(sl * 0.3, 2.6); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(70,75,80,0.6)'; x.lineWidth = 0.5; x.stroke();
+      x.restore();
+      if (beak) { // beaker of acid seen from above
+        const bx = 10 + bR, by = ty + th / 2 - 6;
+        shadow(x, bx + 4, by + 6, bR * 1.08, bR * 1.08, 0.7);
+        x.beginPath(); x.arc(bx, by, bR, 0, TAU); x.fillStyle = '#2b3236'; x.fill();
+        g = x.createRadialGradient(bx - bR * 0.3, by - bR * 0.3, bR * 0.1, bx, by, bR);
+        g.addColorStop(0, 'rgba(120,140,150,0.35)'); g.addColorStop(0.8, 'rgba(70,85,92,0.25)'); g.addColorStop(1, 'rgba(200,215,220,0.5)'); x.fillStyle = g; x.fill();
+      }
+    });
+    ctx.drawImage(bg, 0, 0, w, h);
+    ctx.fillStyle = PHY.textDim; ctx.font = `600 12px ${FONT}`; ctx.textAlign = 'left'; ctx.fillText(title || '', 10, 16);
+    if (beak) {
+      const bx = 10 + bR, by = ty + th / 2 - 6, sb = Math.min(bR * 1.2 / blocks.reduce((a, b) => a + b.d[0], 0), bR * 0.75 / Math.max(...blocks.map(b => b.d[1])));
+      let px = bx - (blocks.reduce((a, b) => a + b.d[0], 0) * sb + (n - 1) * 5) / 2;
+      blocks.forEach((b, i) => { const L = b.d[0] * sb, W = b.d[1] * sb; agarSoaking(ctx, px, by - W / 2 + (i - 1) * bR * 0.22, L, W, (b.dcm || 0) * sb, [0.25, -0.18, 0.08][i % 3]); px += L + 5; });
+      // acid surface: window reflection, then the glass rim
+      ctx.save(); ctx.beginPath(); ctx.arc(bx, by, bR - 2, 0, TAU); ctx.clip();
+      let g = ctx.createRadialGradient(bx - bR * 0.45, by - bR * 0.5, 0, bx - bR * 0.45, by - bR * 0.5, bR * 0.7); g.addColorStop(0, 'rgba(255,255,255,0.22)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(bx - bR, by - bR, 2 * bR, 2 * bR);
+      ctx.fillStyle = 'rgba(190,215,225,0.08)'; ctx.fillRect(bx - bR, by - bR, 2 * bR, 2 * bR); ctx.restore();
+      ctx.beginPath(); ctx.arc(bx, by, bR, 0, TAU); ctx.strokeStyle = 'rgba(225,235,240,0.75)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, by, bR - 2, Math.PI * 1.0, Math.PI * 1.55); ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx, by, bR + 1.5, 0, TAU); ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx - bR - 1, by, 3.2, Math.PI * 0.5, Math.PI * 1.5); ctx.strokeStyle = 'rgba(225,235,240,0.75)'; ctx.lineWidth = 2; ctx.stroke();
+      tape(ctx, bx, ty + th - 2, Math.min(bR * 1.5, 92), 13, (title || '').includes('vinegar') ? 'Vinegar' : '0.1 M HCl', -0.03);
+    }
+    blocks.forEach((b, i) => {
+      const [L, W, H] = b.d, cx = tx + 6 + slot * (i + 0.5), bw = L * s, bh = H * s, x = cx - bw / 2, y = faceBot - bh;
+      agarFace(ctx, x, y, bw, bh, Math.max(0, Math.min((b.dcm || 0) * s, Math.min(bw, bh) / 2)), 31 + i * 7 + Math.round(L * 10 + H));
+      ctx.fillStyle = PHY.ink; ctx.textAlign = 'center'; ctx.font = `600 ${n > 4 ? 11 : 12}px ${FONT}`; ctx.fillText(b.label, cx, faceBot + 14);
+      const sub = b.sub || dimText(b.d) + ' cm', tight = slot < 95;
+      ctx.fillStyle = PHY.inkDim; ctx.font = `${tight ? 9 : n > 4 ? 10 : 11}px ${FONT}`; ctx.fillText(tight ? sub.replace(/ × /g, '×') : sub, cx, faceBot + 27);
+      void W;
     });
   }
 
   // Indicator test tubes
   (function () {
     const obs = $('#tube-obs');
-    $('#add-hcl').addEventListener('click', () => { $('#tube-acid').style.fill = 'var(--surface-2)'; $('#tube-acid-lbl').textContent = '+ HCl'; obs.dataset.hcl = 1; note(); });
-    $('#add-naoh').addEventListener('click', () => { $('#tube-base').style.fill = 'var(--stain)'; $('#tube-base-lbl').textContent = '+ NaOH'; obs.dataset.naoh = 1; note(); });
+    $('#add-hcl').addEventListener('click', () => { $('#tube-acid').style.fill = 'rgb(234,239,241)'; $('#tube-acid-lbl').textContent = '+ HCl'; obs.dataset.hcl = 1; note(); });
+    $('#add-naoh').addEventListener('click', () => { $('#tube-base').style.fill = 'rgb(214,34,140)'; $('#tube-base-lbl').textContent = '+ NaOH'; obs.dataset.naoh = 1; note(); });
     function note() { const s = []; if (obs.dataset.hcl) s.push('Tube 1 (acid): the indicator stays colorless.'); if (obs.dataset.naoh) s.push('Tube 2 (base): the indicator turns bright pink-magenta.'); obs.innerHTML = `<p class="small">${s.join(' ')}</p>`; }
     Lab.prompt('#tube-obs', { key: 'p1-indicator', label: 'Record your observations. Which solution is the acid and which is the base? What color is phenolphthalein in each? What will happen to pink agar when acid soaks into it?', rows: 3 });
   })();
@@ -522,10 +994,10 @@ Lab.init({ id: 'lab04' });
   let p1Blocks = [], p1Anim = null;
   function p1Preview() {
     p1Blocks = p1sel.map((sel, i) => Object.assign({}, shapeById(sel.value), { label: 'Block ' + 'ABC'[i], dcm: 0 }));
-    drawBlocks(p1cv, p1Blocks, 'Cross-sections · tray of ' + ($('#p1-acid').value === 'hcl' ? '0.1 M HCl' : 'vinegar'));
+    drawBlocks(p1cv, p1Blocks, 'Cross-sections · tray of ' + ($('#p1-acid').value === 'hcl' ? '0.1 M HCl' : 'vinegar'), { beaker: true });
   }
   p1sel.forEach(s => s.addEventListener('change', p1Preview)); $('#p1-acid').addEventListener('change', p1Preview);
-  p1cv.onresize = () => drawBlocks(p1cv, p1Blocks, 'Cross-sections · tray of ' + ($('#p1-acid').value === 'hcl' ? '0.1 M HCl' : 'vinegar'));
+  p1cv.onresize = () => drawBlocks(p1cv, p1Blocks, 'Cross-sections · tray of ' + ($('#p1-acid').value === 'hcl' ? '0.1 M HCl' : 'vinegar'), { beaker: true });
   p1Preview();
 
   const p1chart = Lab.chart('#p1-chart', { xLabel: 'Surface area-to-volume ratio (cm⁻¹)', yLabel: '% of volume reached by acid', yMin: 0, yMax: 100, series: [] });
@@ -553,7 +1025,7 @@ Lab.init({ id: 'lab04' });
     p1Anim = animate(2.4, p => {
       const tau = p * t;
       blocks.forEach(b => { b.dcm = b.k * Math.sqrt(tau) / 10; });
-      drawBlocks(p1cv, blocks, title);
+      drawBlocks(p1cv, blocks, title, { beaker: true });
       $('#p1-time').textContent = fmt(tau, 1) + ' min';
       $('#p1-depth').textContent = fmt(kMean * Math.sqrt(tau), 1) + ' mm';
       $('#p1-rate').textContent = tau > 0 ? fmt(kMean * Math.sqrt(tau) / tau, 2) + ' mm/min' : '—';
@@ -619,37 +1091,6 @@ Lab.init({ id: 'lab04' });
     }
     return { masses, flux };
   }
-  // Draws cups with dialysis bags. bags: {inCol, outCol, ratio, flux, label, sub, top}
-  function drawBags(cv, bags, phase) {
-    const { ctx, w, h } = cv; ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
-    const n = bags.length, slot = w / n, cupW = Math.min(slot * 0.82, 120), top = 26, cupH = h - top - 46, bot = top + cupH;
-    bags.forEach((b, i) => {
-      const cx = slot * (i + 0.5), tw = cupW / 2, bw = cupW * 0.36, ly = top + cupH * 0.14;
-      const xAt = (y, side) => cx + side * (tw + (bw - tw) * (y - top) / cupH);
-      ctx.beginPath(); ctx.moveTo(xAt(ly, -1), ly); ctx.lineTo(xAt(bot, -1), bot); ctx.lineTo(xAt(bot, 1), bot); ctx.lineTo(xAt(ly, 1), ly); ctx.closePath();
-      ctx.globalAlpha = b.outA != null ? b.outA : 0.2; ctx.fillStyle = tok(b.outCol); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.beginPath(); ctx.moveTo(cx - tw, top); ctx.lineTo(cx - bw, bot); ctx.lineTo(cx + bw, bot); ctx.lineTo(cx + tw, top);
-      ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.5; ctx.stroke();
-      const bagH = (bot - ly) - 16, bagW = Math.max(8, Math.min(cupW * 0.34, 34) * Math.min(1.8, Math.pow(b.ratio, 2.2))), bx = cx - bagW / 2, by = ly + 8;
-      rr(ctx, bx, by, bagW, bagH, bagW / 2); ctx.globalAlpha = 0.55; ctx.fillStyle = tok(b.inCol); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.strokeStyle = tok('--ink'); ctx.lineWidth = 1.2; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx, by); ctx.lineTo(cx - 3, by - 14); ctx.moveTo(cx, by); ctx.lineTo(cx + 4, by - 13); ctx.stroke();
-      if (Math.abs(b.flux) > 0.004) {
-        ctx.fillStyle = tok('--s3'); const dir = b.flux > 0 ? 1 : -1, span = Math.min(tw * 0.7, 26);
-        for (let k = 0; k < 3; k++) for (const side of [-1, 1]) {
-          const ph = ((phase || 0) * Math.min(3, Math.abs(b.flux) * 40 + 0.6) + k / 3) % 1;
-          const xo = side * (bagW / 2 + span * (dir > 0 ? 1 - ph : ph));
-          const yy = by + bagH * (0.3 + 0.2 * k);
-          ctx.beginPath(); ctx.arc(cx + xo, yy, 2.4, 0, 7); ctx.fill();
-        }
-      }
-      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${slot < 80 ? 11 : 12}px ${FONT}`; ctx.fillText(b.label, cx, bot + 15);
-      ctx.fillStyle = tok('--muted'); ctx.font = `${slot < 80 ? 10 : 11}px ${FONT}`; ctx.fillText(b.sub, cx, bot + 29);
-      if (b.top) { ctx.fillStyle = tok('--ink'); ctx.font = `600 11px ${FONT}`; ctx.fillText(b.top, cx, 16); }
-    });
-  }
-
   const pairsEl = $('#p2-pairs');
   const DEF = [['sucrose', 'water'], ['nacl', 'water'], ['glucose', 'water'], ['ovalbumin', 'water'], ['water', 'water']];
   const p2sel = DEF.map((d, i) => {
@@ -658,15 +1099,15 @@ Lab.init({ id: 'lab04' });
     pairsEl.append(Lab.h('span', null, String(i + 1)), a, b);
     return [a, b];
   });
-  $('#p2-key').innerHTML = Object.values(SOL).map(s => `<span><i style="background:var(${s.col})"></i>${s.short} = ${s.name}</span>`).join('');
-  const p2cv = Lab.canvas('#p2-viz', 0.55);
-  let p2State = [], p2Anim = null;
+  $('#p2-key').innerHTML = Object.values(SOL).map(s => `<span>${s.short} = ${s.name}</span>`).join('');
+  const p2cv = Lab.canvas('#p2-viz', 0.44);
+  let p2State = [], p2Anim = null, p2Bal = { mass: null, tag: '', load: false };
   function p2Preview() {
-    p2State = p2sel.map(([a, b], i) => ({ inCol: SOL[a.value].col, outCol: SOL[b.value].col, ratio: 1, flux: 0, label: 'Bag ' + (i + 1), sub: `${SOL[a.value].short} in ${SOL[b.value].short}` }));
-    drawBags(p2cv, p2State, 0);
+    p2State = p2sel.map(([a, b], i) => ({ inL: LIQ[a.value], outL: LIQ[b.value], ratio: 1, flux: 0, label: 'Bag ' + (i + 1), sub: `${SOL[a.value].short} in ${SOL[b.value].short}`, tape: String(i + 1) }));
+    drawBags(p2cv, p2State, 0, { balance: p2Bal });
   }
   p2sel.flat().forEach(s => s.addEventListener('change', p2Preview));
-  p2cv.onresize = () => drawBags(p2cv, p2State, 0);
+  p2cv.onresize = () => drawBags(p2cv, p2State, 0, { balance: p2Bal });
   p2Preview();
   const pairName = (a, b) => `${SOL[a].short} in │ ${SOL[b].short} out`;
   const p2chart = Lab.chart('#p2-chart', { type: 'bar', xLabel: 'Inside │ outside solutions', yLabel: 'Mean % change in mass', series: [] });
@@ -689,7 +1130,9 @@ Lab.init({ id: 'lab04' });
     p2Anim = animate(3.2, p => {
       const tm = p * 30, k = Math.min(30, Math.floor(tm)), f = Math.min(1, tm - k), pcts = [];
       sims.forEach((s, i) => { const m = s.masses[k] + (s.masses[Math.min(30, k + 1)] - s.masses[k]) * f; p2State[i].ratio = m / s.masses[0]; p2State[i].flux = s.flux[Math.min(30, k + 1)]; p2State[i].top = (m >= s.masses[0] ? '+' : '') + fmt(100 * (m / s.masses[0] - 1), 1) + '%'; pcts.push(100 * (m / s.masses[0] - 1)); });
-      phase += 0.02; drawBags(p2cv, p2State, phase);
+      const bi = Math.min(4, Math.floor(p * 5)), mb = sims[bi].masses[k] + (sims[bi].masses[Math.min(30, k + 1)] - sims[bi].masses[k]) * f;
+      p2Bal = { mass: mb, tag: 'BAG ' + (bi + 1), load: true };
+      phase += 0.02; drawBags(p2cv, p2State, phase, { balance: p2Bal });
       $('#p2-time').textContent = fmt(tm, 0) + ' min';
       $('#p2-max').textContent = fmt(Math.max(...pcts), 1) + '%'; $('#p2-min').textContent = fmt(Math.min(...pcts), 1) + '%';
     }, () => {
@@ -697,7 +1140,9 @@ Lab.init({ id: 'lab04' });
         const [a, b] = p2sel[i].map(x => x.value);
         const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01);
         p2table.addRow({ run: runNo, bag: i + 1, pair: pairName(a, b), m0, m1, pct: null, _pct: 100 * (m1 - m0) / m0 });
+        p2Bal = { mass: m1, tag: 'BAG ' + (i + 1), load: true };
       });
+      drawBags(p2cv, p2State, 1, { balance: p2Bal });
     });
   });
   $('#p2-check').addEventListener('click', () => {
@@ -726,7 +1171,6 @@ Lab.init({ id: 'lab04' });
   ];
   const psiOf = s => -s.i * s.C * R * TK;
   const p3sel = $('#p3a-sol'); P3SOL.forEach(s => p3sel.append(Lab.h('option', { value: s.id }, s.name))); p3sel.value = 's10';
-  const p3cv = Lab.canvas('#p3a-viz', 0.72);
   let cells = [], p3Spec = 'elodea', p3Bath = P3SOL[0], p3Added = false, p3T = 0, p3Loop = null;
   function makeCells(spec) {
     const r = Lab.rng(spec === 'elodea' ? 7 : 11), list = [];
@@ -737,66 +1181,180 @@ Lab.init({ id: 'lab04' });
     }
     return list;
   }
-  function drawScope() {
-    const { ctx, w, h } = p3cv; ctx.clearRect(0, 0, w, h);
-    // the eyepiece surround is always the darker of ink/bg so it reads as dark in both themes
-    const lum = c => { const m = /^#?([0-9a-f]{6})$/i.exec(c); if (!m) return 0.5; const n = parseInt(m[1], 16); return ((n >> 16) * 0.3 + ((n >> 8) & 255) * 0.59 + (n & 255) * 0.11) / 255; };
-    const darkTok = lum(tok('--ink')) < lum(tok('--bg')) ? '--ink' : '--bg', lightTok = darkTok === '--ink' ? '--bg' : '--ink';
-    ctx.fillStyle = tok(darkTok); ctx.fillRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2, Rf = Math.min(w, h) / 2 - 6;
-    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, Rf, 0, 7); ctx.clip();
-    ctx.fillStyle = tok('--surface'); ctx.fillRect(0, 0, w, h);
-    if (p3Bath.C > 0.01) { ctx.globalAlpha = 0.06 + 0.06 * Math.min(1, p3Bath.C); ctx.fillStyle = tok('--s3'); ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
-    const fw = Rf * 1.5, fh = Rf * 1.16, fx = cx - fw / 2, fy = cy - fh / 2;
-    const cols = cells[0].cols, rows = cells[0].rows, cw = fw / (cols + 0.5), ch = fh / rows;
-    // faint tissue beyond the counting frame
-    ctx.strokeStyle = tok('--accent'); ctx.globalAlpha = 0.18; ctx.lineWidth = 1.5;
-    for (let y = -3; y < rows + 3; y++) for (let x = -3; x < cols + 3; x++) ctx.strokeRect(fx + (x + (((y % 2) + 2) % 2) * 0.5) * cw, fy + y * ch, cw, ch);
-    ctx.globalAlpha = 1;
-    const onion = p3Spec === 'onion';
-    cells.forEach(c => {
-      const x = fx + (c.gx + c.off) * cw, y = fy + c.gy * ch;
-      ctx.fillStyle = tok('--surface'); ctx.fillRect(x, y, cw, ch);
-      if (p3Bath.C > 0.01) { ctx.globalAlpha = 0.06 + 0.06 * Math.min(1, p3Bath.C); ctx.fillStyle = tok('--s3'); ctx.fillRect(x, y, cw, ch); ctx.globalAlpha = 1; }
-      // f = protoplast area fraction; height shrinks less than width, like a real elongated cell
-      const inset = 2.5, f = c.f, hs = Math.min(1, 0.35 + 0.65 * Math.sqrt(f)), ws = Math.min(1, f / hs);
-      const pW = Math.max(6, (cw - 2 * inset) * ws), pH = Math.max(6, (ch - 2 * inset) * hs);
-      const px = x + (cw - pW) / 2, py = y + (ch - pH) / 2, rad = f > 0.97 ? 1.5 : Math.min(pW, pH) / 2 * Math.min(1, (1 - f) * 2.2);
-      rr(ctx, px, py, pW, pH, rad);
-      if (onion) { ctx.globalAlpha = Math.min(0.85, 0.32 / Math.sqrt(f)); ctx.fillStyle = tok('--stain'); ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = tok('--stain'); }
-      else { ctx.globalAlpha = 0.16; ctx.fillStyle = tok('--s6'); ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = tok('--s6'); }
-      ctx.lineWidth = 1; ctx.stroke();
-      if (!onion) {
-        ctx.fillStyle = tok('--ok');
-        c.chl.forEach(k => { // chloroplasts line the membrane
-          const per = 2 * (pW + pH), d = k.u * per; let qx, qy;
-          if (d < pW) { qx = px + d; qy = py; } else if (d < pW + pH) { qx = px + pW; qy = py + d - pW; } else if (d < 2 * pW + pH) { qx = px + pW - (d - pW - pH); qy = py + pH; } else { qx = px; qy = py + pH - (d - 2 * pW - pH); }
-          qx += (px + pW / 2 - qx) * (0.12 + k.o); qy += (py + pH / 2 - qy) * (0.12 + k.o);
-          ctx.beginPath(); ctx.ellipse(qx, qy, Math.max(1.6, cw * 0.035), Math.max(1.2, cw * 0.025), 0, 0, 7); ctx.fill();
-        });
-      } else { ctx.fillStyle = tok('--muted'); ctx.beginPath(); ctx.arc(px + pW * c.nucU, py + pH * 0.5, Math.max(2, ch * 0.09), 0, 7); ctx.fill(); }
-      ctx.strokeStyle = tok('--accent'); ctx.lineWidth = 2.4; ctx.strokeRect(x, y, cw, ch);
-    });
-    ctx.setLineDash([5, 4]); ctx.strokeStyle = tok('--stain'); ctx.lineWidth = 1.5; ctx.strokeRect(fx - 2, fy - 2, fw + 4, fh + 4); ctx.setLineDash([]);
-    ctx.restore();
-    ctx.fillStyle = tok(lightTok); ctx.font = `600 12px ${FONT}`; ctx.textAlign = 'left'; ctx.fillText('400×', 10, 18);
-    ctx.textAlign = 'right'; ctx.fillText(p3Spec === 'elodea' ? 'Elodea' : 'Red onion', w - 10, 18);
+  /* Microscope view (scope.js). The leaf is a sheet of cells larger than the field; the counted cells sit
+     inside an ink outline drawn on the cover slip. Walls are shared between neighbours (one wavy line per
+     wall). Elodea: clear vacuole, chloroplasts pressed against the walls (and a few on the upper face,
+     in a slightly different focal plane). Red onion: anthocyanin-purple vacuole and a pale nucleus.
+     In a hypertonic bath the protoplast pulls away from the wall, rounds up, its pigment concentrates,
+     and thin Hechtian strands stay attached to the wall. Transmitted-light (absorbing) colours, fixed. */
+  const P3W = { w: 680, h: 520 };
+  const GEO = { elodea: { cw: 64, ch: 40, wob: 1.3, jit: 4, bar: { units: 50, label: '50 µm' } }, onion: { cw: 100, ch: 40, wob: 1.7, jit: 7, bar: { units: 50, label: '100 µm' } } };
+  const hash3 = (i, j, k) => { let t = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(k + 7, 362437)) >>> 0; t = Math.imul(t ^ (t >>> 13), 1274126177); t ^= t >>> 16; return (t >>> 0) / 4294967296 * 2 - 1; };
+  function p3Layout(spec) {
+    const G = GEO[spec], cols = spec === 'elodea' ? 5 : 3, rows = 6;
+    const fx = (P3W.w - (cols + 0.5) * G.cw) / 2, fy = (P3W.h - rows * G.ch) / 2;
+    const offOf = j => (((j % 2) + 2) % 2) * 0.5;
+    const hy = (j, x) => fy + j * G.ch + G.wob * (Math.sin(x * 0.031 + j * 1.7) + 0.6 * Math.sin(x * 0.083 + j * 2.9));
+    const vx = (i, j, e) => fx + (i + offOf(j)) * G.cw + G.jit * hash3(i, j, e);
+    const poly = (i, j) => {
+      const xl0 = vx(i, j, 0), xl1 = vx(i, j, 1), xr0 = vx(i + 1, j, 0), xr1 = vx(i + 1, j, 1), pts = [];
+      for (let k = 0; k <= 4; k++) { const x = xl0 + (xr0 - xl0) * k / 4; pts.push([x, hy(j, x)]); }
+      for (let k = 0; k <= 4; k++) { const x = xr1 + (xl1 - xr1) * k / 4; pts.push([x, hy(j + 1, x)]); }
+      return pts;
+    };
+    const jmin = -Math.ceil(fy / G.ch) - 1, jmax = rows + Math.ceil(fy / G.ch), imin = -Math.ceil(fx / G.cw) - 2, imax = cols + Math.ceil(fx / G.cw) + 1;
+    return { G, cols, rows, fx, fy, hy, vx, poly, jmin, jmax, imin, imax };
   }
-  function setTargets() { const po = psiOf(p3Bath); cells.forEach(c => { c.target = po >= c.psi0 ? 1 : 0.15 + 0.85 * c.psi0 / po; }); }
+  function makeExtra(spec, L) {
+    const r = Lab.rng(spec === 'elodea' ? 71 : 113), mean = spec === 'elodea' ? -8.6 : -11, list = [];
+    for (let j = L.jmin; j <= L.jmax; j++) for (let i = L.imin; i <= L.imax; i++) {
+      if (i >= 0 && i < L.cols && j >= 0 && j < L.rows) continue;
+      list.push({ gx: i, gy: j, psi0: mean * Math.exp(r.normal(0, 0.12)), f: 1, target: 1, tau: 10 + r.uniform() * 6 });
+    }
+    return list;
+  }
+  // Per-cell decoration (geometry, organelle positions), seeded by grid position; not part of the data model.
+  function deco(c, L, spec) {
+    if (c._d && c._d.spec === spec) return c._d;
+    const R = Lab.rng(1000 + (c.gx + 50) * 131 + (c.gy + 50) * 977 + (spec === 'onion' ? 7 : 0)), pts = L.poly(c.gx, c.gy);
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), path = new Path2D();
+    pts.forEach((p, k) => k ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1])); path.closePath();
+    const a = (Math.max(...xs) - Math.min(...xs)) / 2, b = (Math.max(...ys) - Math.min(...ys)) / 2;
+    const chl = [];
+    if (spec === 'elodea') for (let k = 0, n = 26 + R.int(0, 8); k < n; k++) chl.push({ u: (k + R.uniform() * 0.9) / n, d: 2.2 + R.uniform() * 1.6, s: 0.85 + R.uniform() * 0.35 });
+    const strands = [R.uniform(), R.uniform(), R.uniform()].map((u, k) => (k / 3 + u * 0.2) % 1);
+    return (c._d = { spec, path, cx: (Math.min(...xs) + Math.max(...xs)) / 2, cy: (Math.min(...ys) + Math.max(...ys)) / 2, a, b, chl, face: R.int(0, 5), strands,
+      shift: R.normal(0, 0.45), k: 0.55 + R.uniform() * 0.6, nucU: 0.15 + R.uniform() * 0.7, ph: R.uniform() * TAU, top: R.chance(0.5) });
+  }
+  // Point on a rounded rectangle (half sizes A, B, corner r) at arc-length fraction u, with outward normal.
+  function rrPoint(A, B, r, u) {
+    const sx = 2 * (A - r), sy = 2 * (B - r), arc = Math.PI * r / 2, P = 2 * sx + 2 * sy + 4 * arc; let d = (((u % 1) + 1) % 1) * P;
+    const corner = (cx, cy, a0) => { const t = a0 + d / Math.max(1e-6, r); return [cx + r * Math.cos(t), cy + r * Math.sin(t), Math.cos(t), Math.sin(t)]; };
+    if (d < sx) return [-A + r + d, -B, 0, -1]; d -= sx;
+    if (d < arc) return corner(A - r, -B + r, -Math.PI / 2); d -= arc;
+    if (d < sy) return [A, -B + r + d, 1, 0]; d -= sy;
+    if (d < arc) return corner(A - r, B - r, 0); d -= arc;
+    if (d < sx) return [A - r - d, B, 0, 1]; d -= sx;
+    if (d < arc) return corner(-A + r, B - r, Math.PI / 2); d -= arc;
+    if (d < sy) return [-A, B - r - d, -1, 0]; d -= sy;
+    return corner(-A + r, -B + r, Math.PI);
+  }
+  function proto(d, f) {
+    const hs = Math.min(1, 0.35 + 0.65 * Math.sqrt(f)), ws = Math.min(1, f / hs), plas = f < 0.985;
+    const A = Math.max(3, (d.a + (plas ? -1.6 : 3)) * ws), B = Math.max(3, (d.b + (plas ? -1.6 : 3)) * hs);
+    const r = plas ? Math.max(2.5, Math.min(A, B) * Math.min(1, (1 - f) * 2.4)) : 2.5;
+    const ox = d.cx + d.shift * (d.a - A) * 0.8, oy = d.cy + (d.top ? -1 : 1) * (d.b - B) * 0.25;
+    const at = (u, inset) => { const p = rrPoint(A, B, r, u), wob = plas ? 1 + 0.035 * (1 - f) * Math.sin(u * TAU * 3 + d.ph) : 1; return [ox + p[0] * wob - p[2] * inset, oy + p[1] * wob - p[3] * inset, p[2], p[3]]; };
+    const path = new Path2D(); for (let k = 0; k < 40; k++) { const p = at(k / 40, 0); k ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1]); } path.closePath();
+    return { A, B, ox, oy, at, path, plas };
+  }
+  let chlSprite = null;
+  function chlImg() {
+    if (chlSprite) return chlSprite;
+    const c = off(32, 32), x = c.getContext('2d'), R = Lab.rng(17), g = x.createRadialGradient(13, 12, 1, 16, 16, 15.5);
+    g.addColorStop(0, 'rgba(150,198,84,0.95)'); g.addColorStop(0.55, 'rgba(86,146,44,0.95)'); g.addColorStop(0.88, 'rgba(48,100,28,0.95)'); g.addColorStop(1, 'rgba(48,100,28,0)');
+    x.fillStyle = g; x.beginPath(); x.arc(16, 16, 15.5, 0, TAU); x.fill();
+    for (let k = 0; k < 14; k++) { x.fillStyle = 'rgba(30,70,18,0.35)'; x.beginPath(); x.arc(16 + R.normal(0, 5), 16 + R.normal(0, 5), 1.4, 0, TAU); x.fill(); }
+    return (chlSprite = c);
+  }
+  /* Chloroplasts lying on the upper face of a cell: six pre-rendered carpets (3 px per µm), drawn scaled
+     into the protoplast's box, so they crowd together as the protoplast shrinks. */
+  const faceSprites = [];
+  function faceImg(k) {
+    if (faceSprites[k]) return faceSprites[k];
+    const W = 64, H = 40, q = 3, c = off(W * q, H * q), x = c.getContext('2d'), R = Lab.rng(300 + k), img = chlImg(), pts = [];
+    x.scale(q, q);
+    for (let t = 0; t < 400 && pts.length < 30; t++) {
+      const px = 4 + R.uniform() * (W - 8), py = 3.5 + R.uniform() * (H - 7);
+      if (pts.every(p => Math.hypot(p[0] - px, p[1] - py) > 5.4)) pts.push([px, py]);
+    }
+    pts.forEach(p => { const s = 5.4 * (0.85 + R.uniform() * 0.3); x.save(); x.translate(p[0], p[1]); x.rotate(R.uniform() * TAU); x.globalAlpha = 0.85; x.drawImage(img, -s / 2, -s * 0.42, s, s * 0.84); x.restore(); });
+    return (faceSprites[k] = c);
+  }
+  function drawCellP3(ctx, c, L, spec) {
+    const d = deco(c, L, spec), p = proto(d, c.f), f = c.f;
+    ctx.save(); ctx.clip(d.path);
+    if (p.plas) { // Hechtian strands: membrane still tethered to the wall at a few points
+      ctx.strokeStyle = spec === 'elodea' ? 'rgba(80,110,60,0.3)' : 'rgba(120,60,110,0.3)'; ctx.lineWidth = 0.5;
+      d.strands.forEach(u => { const q = p.at(u, 0); ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.lineTo(q[0] + q[2] * 30, q[1] + q[3] * 30); ctx.stroke(); });
+    }
+    if (spec === 'elodea') {
+      ctx.fillStyle = `rgba(180,216,140,${(0.2 + 0.3 * (1 - f)).toFixed(3)})`; ctx.fill(p.path);
+      ctx.strokeStyle = 'rgba(150,196,110,0.25)'; ctx.lineWidth = 3; ctx.stroke(p.path);   // thin layer of cytoplasm
+      if (p.plas) { ctx.strokeStyle = 'rgba(64,100,44,0.6)'; ctx.lineWidth = 0.8; ctx.stroke(p.path); }
+      const img = chlImg();
+      d.chl.forEach(k => {
+        const q = p.at(k.u, k.d), s = 5.4 * k.s;
+        ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(Math.atan2(q[3], q[2]) + Math.PI / 2); ctx.drawImage(img, -s / 2, -s * 0.36, s, s * 0.72); ctx.restore();
+      });
+    } else {
+      const k = d.k, a = clamp(k * 0.34 / Math.sqrt(f), 0.15, 0.88);
+      ctx.fillStyle = `rgba(158,46,128,${a.toFixed(3)})`; ctx.fill(p.path);
+      const g = ctx.createLinearGradient(p.ox, p.oy - p.B, p.ox, p.oy + p.B); g.addColorStop(0, 'rgba(255,255,255,0.12)'); g.addColorStop(1, 'rgba(80,10,60,0.12)'); ctx.fillStyle = g; ctx.fill(p.path);
+      if (p.plas) { ctx.strokeStyle = `rgba(100,20,80,${(0.35 + 0.3 * (1 - f)).toFixed(3)})`; ctx.lineWidth = 0.9; ctx.stroke(p.path); }
+      const q = p.at(d.top ? 0.1 + d.nucU * 0.3 : 0.6 + d.nucU * 0.3, 5.5);   // nucleus in the cytoplasm at the membrane
+      ctx.beginPath(); ctx.ellipse(q[0], q[1], 6.2, 4.6, 0, 0, TAU); ctx.fillStyle = 'rgba(244,236,242,0.6)'; ctx.fill(); ctx.strokeStyle = 'rgba(96,74,92,0.5)'; ctx.lineWidth = 0.7; ctx.stroke();
+      ctx.fillStyle = 'rgba(96,66,92,0.45)'; ctx.beginPath(); ctx.arc(q[0] + 1.2, q[1] - 0.6, 1.3, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawWallsP3(ctx, L, spec) {
+    const el = spec === 'elodea';
+    const all = (style, lw) => {
+      ctx.strokeStyle = style; ctx.lineWidth = lw; ctx.beginPath();
+      for (let j = L.jmin; j <= L.jmax + 1; j++) for (let x = -12, k = 0; x <= P3W.w + 12; x += 12, k++) { const y = L.hy(j, x); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      for (let j = L.jmin; j <= L.jmax; j++) for (let i = L.imin; i <= L.imax + 1; i++) { const x0 = L.vx(i, j, 0), x1 = L.vx(i, j, 1); ctx.moveTo(x0, L.hy(j, x0)); ctx.lineTo(x1, L.hy(j + 1, x1)); }
+      ctx.stroke();
+    };
+    all(el ? 'rgba(86,108,70,0.55)' : 'rgba(104,90,80,0.55)', el ? 2.4 : 1.8);
+    all('rgba(255,255,255,0.4)', 0.55);
+  }
+  function p3Renderer(ctx, li) {
+    const L = p3Geo, spec = p3Spec, all = cells.concat(p3Extra);
+    if (li === 0) { all.forEach(c => drawCellP3(ctx, c, L, spec)); drawWallsP3(ctx, L, spec); return; }
+    if (spec === 'elodea') all.forEach(c => {   // chloroplasts on the upper face of each cell
+      const d = deco(c, L, spec), p = proto(d, c.f), sA = p.A * (p.plas ? 0.92 : 0.94), sB = p.B * (p.plas ? 0.9 : 0.92);
+      ctx.save(); ctx.clip(d.path); ctx.drawImage(faceImg(d.face), p.ox - sA, p.oy - sB, 2 * sA, 2 * sB); ctx.restore();
+    });
+    const R = Lab.rng(spec === 'elodea' ? 5 : 6);
+    for (let i = 0; i < 60; i++) { ctx.fillStyle = `rgba(${70 + R.int(0, 40)},${60 + R.int(0, 30)},${50 + R.int(0, 30)},${(0.2 + R.uniform() * 0.4).toFixed(2)})`; ctx.beginPath(); ctx.arc(R.uniform() * P3W.w, R.uniform() * P3W.h, 0.4 + R.uniform() * 1.2, 0, TAU); ctx.fill(); }
+    Scope.bubble(ctx, spec === 'elodea' ? 70 : 620, spec === 'elodea' ? 450 : 70, 30 + R.uniform() * 12);
+  }
+  // Ink outline on the cover slip around the counted cells, following their outer walls.
+  function p3Overlay(ctx) {
+    const L = p3Geo; if (!L) return;
+    const p = new Path2D(), C = L.cols, Rw = L.rows;
+    p.moveTo(L.vx(0, 0, 0), L.hy(0, L.vx(0, 0, 0)));
+    for (let k = 1; k <= 6; k++) { const x = L.vx(0, 0, 0) + (L.vx(C, 0, 0) - L.vx(0, 0, 0)) * k / 6; p.lineTo(x, L.hy(0, x)); }
+    for (let j = 0; j < Rw; j++) { const xb = L.vx(C, j, 1); p.lineTo(xb, L.hy(j + 1, xb)); if (j < Rw - 1) { const xn = L.vx(C, j + 1, 0); p.lineTo(xn, L.hy(j + 1, xn)); } }
+    const xr = L.vx(C, Rw - 1, 1), xl = L.vx(0, Rw - 1, 1);
+    for (let k = 1; k <= 6; k++) { const x = xr + (xl - xr) * k / 6; p.lineTo(x, L.hy(Rw, x)); }
+    for (let j = Rw - 1; j >= 0; j--) { const xt = L.vx(0, j, 0); p.lineTo(xt, L.hy(j, xt)); if (j > 0) { const xp = L.vx(0, j - 1, 1); p.lineTo(xp, L.hy(j, xp)); } }
+    p.closePath();
+    ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 3.2; ctx.stroke(p);
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = 'rgba(22,24,40,0.85)'; ctx.lineWidth = 1.4; ctx.stroke(p); ctx.setLineDash([]);
+  }
+  let p3Geo = null, p3Extra = [], p3RenderAt = 0;
+  const p3Hud = { mag: '400×', bar: GEO.elodea.bar };
+  const p3view = Scope.view('#p3a-viz', { aspect: 0.75, world: P3W, layers: [{ z: 0 }, { z: -0.03 }], focusLabel: 'Fine focus', hud: p3Hud, overlay: ctx => p3Overlay(ctx) });
+  function drawScope(fresh) {
+    p3view.setSpecimen({ render: p3Renderer, world: P3W, layers: [{ z: 0 }, { z: -0.03 }], seed: p3Spec === 'elodea' ? 7 : 11, refocus: !!fresh, recenter: !!fresh });
+    p3RenderAt = performance.now();
+  }
+  function setTargets() { const po = psiOf(p3Bath); cells.concat(p3Extra).forEach(c => { c.target = po >= c.psi0 ? 1 : 0.15 + 0.85 * c.psi0 / po; }); }
   function p3Start() {
     if (p3Loop) p3Loop.stop();
     p3T = 0; setTargets();
     $('#p3a-now').textContent = p3Bath.name; $('#p3a-psi').textContent = fmt(psiOf(p3Bath), 1) + ' bars';
-    const stepSim = ds => { cells.forEach(c => { c.f += (c.target - c.f) * (1 - Math.exp(-ds / c.tau)); }); p3T += ds; $('#p3a-time').textContent = fmt(p3T, 0) + ' s'; };
+    const stepSim = ds => { cells.concat(p3Extra).forEach(c => { c.f += (c.target - c.f) * (1 - Math.exp(-ds / c.tau)); }); p3T += ds; $('#p3a-time').textContent = fmt(p3T, 0) + ' s'; };
     if (Lab.reducedMotion()) { stepSim(120); drawScope(); return; }
-    p3Loop = Lab.loop(dt => { stepSim(dt * 15); drawScope(); if (p3T >= 120) { return false; } });
+    p3Loop = Lab.loop(dt => { stepSim(dt * 15); const end = p3T >= 120; if (end || performance.now() - p3RenderAt > 90) drawScope(); if (end) return false; });
     p3Loop.start();
   }
-  function p3Reset() { if (p3Loop) p3Loop.stop(); p3Spec = $('#p3a-spec').value; cells = makeCells(p3Spec); p3Bath = P3SOL[0]; p3Added = false; $('#p3a-now').textContent = 'Distilled water'; $('#p3a-psi').textContent = '0.0 bars'; $('#p3a-time').textContent = '—'; drawScope(); }
+  function p3Reset() { if (p3Loop) p3Loop.stop(); p3Spec = $('#p3a-spec').value; cells = makeCells(p3Spec); p3Geo = p3Layout(p3Spec); p3Extra = makeExtra(p3Spec, p3Geo); p3Hud.bar = GEO[p3Spec].bar; p3Bath = P3SOL[0]; p3Added = false; $('#p3a-now').textContent = 'Distilled water'; $('#p3a-psi').textContent = '0.0 bars'; $('#p3a-time').textContent = '—'; drawScope(true); }
   $('#p3a-spec').addEventListener('change', p3Reset);
   $('#p3a-run').addEventListener('click', () => { p3Bath = P3SOL.find(s => s.id === p3sel.value); p3Added = true; p3Start(); });
   $('#p3a-rinse').addEventListener('click', () => { p3Bath = P3SOL[0]; p3Added = true; p3Start(); });
-  p3cv.onresize = drawScope;
   p3Reset();
   const p3chart = Lab.chart('#p3a-chart', { xLabel: 'Water potential of bathing solution (bars)', yLabel: '% of cells plasmolyzed', yMin: 0, yMax: 100, series: [] });
   const p3table = Lab.table('#p3a-table', {
@@ -838,9 +1396,9 @@ Lab.init({ id: 'lab04' });
   const assigned = i => { const v = $('#p3b-as' + i).value; return v === '' ? null : +v; };
   const colorIdx = name => CUPS.findIndex(c => c.c === name);
 
-  const idcv = Lab.canvas('#p3b-idviz', 0.5);
-  let idState = CUPS.map(c => ({ inCol: '--s3', outCol: c.t, outA: 0.3, ratio: 1, flux: 0, label: c.c, sub: '' })), idAnim = null;
-  drawBags(idcv, idState, 0); idcv.onresize = () => drawBags(idcv, idState, 0);
+  const idcv = Lab.canvas('#p3b-idviz', 0.42);
+  let idState = CUPS.map(c => ({ inL: LIQ.water, outL: dyeLiq(c.c), ratio: 1, flux: 0, label: c.c, sub: '' })), idAnim = null;
+  drawBags(idcv, idState, 0, { cup: true }); idcv.onresize = () => drawBags(idcv, idState, 0, { cup: true });
   const idTable = Lab.table('#p3b-idtable', { columns: [{ key: 'cup', label: 'Cup' }, { key: 'm0', label: 'Initial', unit: 'g', num: true }, { key: 'm1', label: 'After 30 min', unit: 'g', num: true }, { key: 'pct', label: '% change', unit: '%', num: true, digits: 1 }], rows: [] });
   $('#p3b-id').addEventListener('click', () => {
     if (idAnim) idAnim.finish();
@@ -849,7 +1407,7 @@ Lab.init({ id: 'lab04' });
     idAnim = animate(3, p => {
       const k = Math.min(30, Math.round(p * 30));
       sims.forEach((s, i) => { idState[i].ratio = s.masses[k] / s.masses[0]; idState[i].flux = s.flux[Math.max(1, k)]; idState[i].sub = fmt(100 * (s.masses[k] / s.masses[0] - 1), 1) + '%'; });
-      phase += 0.02; drawBags(idcv, idState, phase);
+      phase += 0.02; drawBags(idcv, idState, phase, { cup: true });
     }, () => {
       idTable.setRows(sims.map((s, i) => { const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return { cup: CUPS[i].c, m0, m1, pct: 100 * (m1 - m0) / m0 }; }));
     });
@@ -863,22 +1421,23 @@ Lab.init({ id: 'lab04' });
   });
   $('#p3b-reveal').addEventListener('click', () => { CUPS.forEach((c, i) => { const s = $('#p3b-as' + i); s.value = String(secret[i]); s.dispatchEvent(new Event('change')); }); });
 
-  const p3bcv = Lab.canvas('#p3b-viz', 0.5);
+  const p3bcv = Lab.canvas('#p3b-viz', 0.42);
   let coreState = CUPS.map(c => ({ col: c.t, ratio: 1, label: c.c })), p3bAnim = null;
   function drawCores() {
-    const { ctx, w, h } = p3bcv; ctx.clearRect(0, 0, w, h); ctx.fillStyle = tok('--bg'); ctx.fillRect(0, 0, w, h);
-    const n = coreState.length, slot = w / n, cupW = Math.min(slot * 0.82, 110), top = 22, bot = h - 40, cupH = bot - top;
+    const { ctx, w, h } = p3bcv, n = coreState.length, slot = (w - 8) / n, bot = h - 40, benchY = bot - Math.min(16, h * 0.07);
+    ctx.drawImage(sideScene(w, h, benchY), 0, 0, w, h);
+    const bw = Math.min(slot * 0.82, 100), bh = Math.min(bot - 34, bw * 1.2), small = slot < 80, flesh = FLESH[$('#p3b-tissue').value] || FLESH.potato;
     coreState.forEach((c, i) => {
-      const cx = slot * (i + 0.5), tw = cupW / 2, bw = cupW * 0.36, ly = top + cupH * 0.2;
-      const xAt = (y, s) => cx + s * (tw + (bw - tw) * (y - top) / cupH);
-      ctx.beginPath(); ctx.moveTo(xAt(ly, -1), ly); ctx.lineTo(xAt(bot, -1), bot); ctx.lineTo(xAt(bot, 1), bot); ctx.lineTo(xAt(ly, 1), ly); ctx.closePath();
-      ctx.globalAlpha = 0.32; ctx.fillStyle = tok(c.col); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.beginPath(); ctx.moveTo(cx - tw, top); ctx.lineTo(cx - bw, bot); ctx.lineTo(cx + bw, bot); ctx.lineTo(cx + tw, top); ctx.strokeStyle = tok('--muted'); ctx.lineWidth = 1.5; ctx.stroke();
-      const sc = Math.cbrt(c.ratio), cl = Math.min(cupW * 0.5, 40) * sc, cd = Math.max(4, Math.min(cupW * 0.13, 10) * sc);
-      for (let k = 0; k < 4; k++) { const yy = bot - 8 - (k + 1) * (cd + 3); rr(ctx, cx - cl / 2 + (k % 2 ? 3 : -3), yy, cl, cd, cd / 2); ctx.fillStyle = tok('--surface-2'); ctx.fill(); ctx.strokeStyle = tok('--warn'); ctx.lineWidth = 1; ctx.stroke(); }
-      ctx.fillStyle = tok('--ink'); ctx.textAlign = 'center'; ctx.font = `600 ${slot < 80 ? 11 : 12}px ${FONT}`; ctx.fillText(c.label, cx, bot + 15);
-      const a = assigned(i); ctx.fillStyle = tok('--muted'); ctx.font = `${slot < 80 ? 10 : 11}px ${FONT}`; ctx.fillText(a == null ? '? M' : fmt(a, 1) + ' M', cx, bot + 29);
-      if (c.top) { ctx.fillStyle = tok('--ink'); ctx.font = `600 11px ${FONT}`; ctx.fillText(c.top, cx, 14); }
+      const cx = 4 + slot * (i + 0.5), dye = DYE[c.label], a = assigned(i);
+      vessel(ctx, cx, bot, bw, bh, { kind: 'cup', fill: 0.7, liq: dyeLiq(c.label), inner: (x, g) => {
+        const sc = Math.cbrt(c.ratio), cl = Math.min(bw * 0.6, 54) * sc, cd = Math.max(4, Math.min(bw * 0.15, 13) * sc), base = g.bot - g.ry * 0.9;
+        for (let k = 0; k < 4; k++) potatoCore(x, cx + [-3, 4, -1, 3][k], base - cd * (0.55 + k * 0.8), cl, cd, [0.1, -0.08, 0.14, -0.12][k], flesh, c.ratio, dye, 500 + i * 17 + k);
+      } });
+      tape(ctx, cx + bw * 0.04, bot - bh + bh * 0.14, Math.min(bw * 0.62, 54), Math.max(10, Math.min(13, bw * 0.16)), a == null ? '? M' : fmt(a, 1) + ' M', i % 2 ? 0.03 : -0.04);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = PHY.text; ctx.font = `600 ${small ? 11 : 12}px ${FONT}`; ctx.fillText(c.label, cx, bot + 17);
+      ctx.fillStyle = PHY.textDim; ctx.font = `${small ? 10 : 11}px ${FONT}`; ctx.fillText(a == null ? '? M' : fmt(a, 1) + ' M', cx, bot + 31);
+      if (c.top) { ctx.fillStyle = PHY.ink; ctx.font = `700 ${small ? 11 : 12}px ${FONT}`; ctx.fillText(c.top, cx, bot - bh - bw * 0.1 - 6); }
     });
   }
   drawCores(); p3bcv.onresize = drawCores;
@@ -898,7 +1457,7 @@ Lab.init({ id: 'lab04' });
     }
   });
   if (p3bTable.getRows().length) setTimeout(refreshConc, 0);
-  $('#p3b-tissue').addEventListener('change', () => { $('#p3b-tnow').textContent = TISSUE[$('#p3b-tissue').value].name; });
+  $('#p3b-tissue').addEventListener('change', () => { $('#p3b-tnow').textContent = TISSUE[$('#p3b-tissue').value].name; drawCores(); });
   $('#p3b-run').addEventListener('click', () => {
     if (p3bAnim) p3bAnim.finish();
     const tk = $('#p3b-tissue').value, t = TISSUE[tk], off = rng.normal(0, 0.03);
@@ -969,7 +1528,7 @@ Lab.init({ id: 'lab04' });
     $('#d-const').textContent = o.constant; $('#d-levels-hint').textContent = o.hint; $('#d-dv').textContent = o.dv;
     $('#d-levels-field').hidden = !!o.cat;
     if (!lv.length) { const { ctx, w, h } = dcv; ctx.clearRect(0, 0, w, h); return; }
-    if (dIv.value === 'sucrose') drawBags(dcv, lv.map(C => ({ inCol: '--s4', outCol: '--s3', outA: 0.18, ratio: 1, flux: 0, label: fmt(C, 2) + ' M', sub: 'in H₂O' })), 0);
+    if (dIv.value === 'sucrose') drawBags(dcv, lv.map(C => ({ inL: C > 0 ? LIQ.sucrose : LIQ.water, outL: LIQ.water, ratio: 1, flux: 0, label: fmt(C, 2) + ' M', sub: 'in H₂O' })), 0);
     else if (o.cat) drawBlocks(dcv, o.cats.map(c => ({ d: c.d, label: c.k.split(' ')[0], sub: c.k.split(' ')[1] + ' cm', dcm: depthMM(10) / 10 })), 'Expected look after 10 min in 0.1 M HCl');
     else drawBlocks(dcv, lv.map(v => { const s = o.shape(v); return { d: s.d, label: s.label, sub: dimText(s.d) + ' cm', dcm: (s.dmm != null ? s.dmm : depthMM(10)) / 10 }; }), 'Expected look after 10 min');
   }
@@ -1005,7 +1564,7 @@ Lab.init({ id: 'lab04' });
     if (dIv.value === 'sucrose') {
       const sims = lv.map(C => rows.filter(r => r.lv === C).map(r => r.y));
       let phase = 0;
-      dAnim = animate(2.4, p => { phase += 0.02; drawBags(dcv, lv.map((C, i) => { const m = S.mean(sims[i]) * p; return { inCol: '--s4', outCol: '--s3', outA: 0.18, ratio: 1 + m / 100, flux: m >= 0 ? 0.03 * (1 - p) : -0.03 * (1 - p), label: fmt(C, 2) + ' M', sub: 'in H₂O', top: (m >= 0 ? '+' : '') + fmt(m, 1) + '%' }; }), phase); }, () => draw.setRows(rows));
+      dAnim = animate(2.4, p => { phase += 0.02; drawBags(dcv, lv.map((C, i) => { const m = S.mean(sims[i]) * p; return { inL: C > 0 ? LIQ.sucrose : LIQ.water, outL: LIQ.water, ratio: 1 + m / 100, flux: m >= 0 ? 0.03 * (1 - p) : -0.03 * (1 - p), label: fmt(C, 2) + ' M', sub: 'in H₂O', top: (m >= 0 ? '+' : '') + fmt(m, 1) + '%' }; }), phase); }, () => draw.setRows(rows));
     } else {
       const blocks = (o.cat ? o.cats.map(c => ({ d: c.d, label: c.k.split(' ')[0], sub: c.k.split(' ')[1] + ' cm', full: depthMM(10) })) : lv.map(v => { const s = o.shape(v); return { d: s.d, label: s.label, sub: dimText(s.d) + ' cm', full: s.dmm != null ? s.dmm : depthMM(10) }; }));
       dAnim = animate(2.4, p => { blocks.forEach(b => { b.dcm = b.full * Math.sqrt(p) / 10; }); drawBlocks(dcv, blocks, 'Soaking · ' + fmt(p * 10, 1) + ' min'); }, () => draw.setRows(rows));
