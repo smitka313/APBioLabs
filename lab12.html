@@ -33,6 +33,12 @@
   .fb.ok { color: var(--ok); } .fb.bad { color: var(--bad); }
   .chi-out { font-family: var(--f-mono); font-size: .9rem; background: var(--surface-2); border-radius: var(--r-sm); padding: 10px 12px; overflow-x: auto; }
   #ro-time, #ro-a, #ro-b, #ro-pct { font-size: 1rem; }
+  .sim--fit .row.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .sim--fit .count-panel { padding: 10px; gap: 8px; }
+  .sex-pair { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 899px) { .sex-pair { grid-template-columns: minmax(0, 1fr); } }
+  .sex-cell { min-width: 0; }
+  .sim--fit > .sim-main { align-self: stretch; }   /* results panels use the full height of the sim box */
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -53,9 +59,10 @@
     <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
   </div>
 
-  <section class="step wrap gutter" data-step="Overview">
+  <section class="step wrap wrap--wide gutter" data-step="Overview">
     <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
-    <div class="step-body prose">
+    <div class="step-body split">
+      <div class="split-main prose">
       <p class="lede">Fruit flies find food and places to lay eggs by responding to cues in their environment. In this lab you'll put 20–40 flies into a choice chamber made from two plastic bottles, give them a different stimulus at each end, and count where they go. A chi-square test will tell you whether the flies really prefer one end or are just spread out by chance.</p>
       <p>First you'll learn to tell male and female flies apart and review the fly life cycle. Then you'll watch flies respond to gravity in a vial, run a structured set of choice-chamber trials with household substances, and finally design your own investigation of chemotaxis, phototaxis, or geotaxis.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
@@ -66,6 +73,8 @@
           <li><strong>Science Practices 3.C</strong> Identify experimental procedures that are aligned to the question; <strong>5.A</strong> Perform mathematical calculations (chi-square).</li>
         </ul>
       </div>
+      </div>
+      <div class="split-side">
       <div class="callout callout--safety"><div class="callout-title">Safety at the real bench</div>
         <ul>
           <li>Only add substances your teacher has approved, in small amounts (5–10 drops on a cotton ball).</li>
@@ -74,14 +83,25 @@
           <li>Never release flies outdoors. When you finish, tap them through a funnel into the "morgue" (a beaker of salad oil or 70% alcohol).</li>
         </ul>
       </div>
+      </div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Background">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Background">
     <header><div class="eyebrow">Background</div><h2>The dew-loving, black-bellied fly</h2></header>
-    <div class="step-body prose">
+    <div class="step-body">
+      <div class="split">
+      <div class="split-main prose">
+      <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
+        <ul>
+          <li><em>Drosophila</em> is a model organism: small, cheap, fast-breeding, with a fully sequenced genome.</li>
+          <li>A taxis is oriented movement toward or away from a stimulus; a kinesis changes speed or turning but not direction.</li>
+          <li>Adult flies show negative geotaxis (they climb) and move toward bright light.</li>
+          <li>A chi-square test asks how likely your counts would be if flies had no preference.</li>
+          <li>With 1 degree of freedom, χ² above 3.84 means p &lt; 0.05: reject the null hypothesis.</li>
+        </ul></div>
       <p><em>Drosophila melanogaster</em> has been a model organism since Thomas Hunt Morgan began breeding it in 1907. It is small, cheap to raise, has a short generation time, and its genome is fully sequenced. The genus name means "lover of dew," because adults tend to emerge from their pupal cases in the early morning. The species name means "black belly," after the dark abdomen of the males. In the wild it feeds on fruit and on the yeasts and other fungi that grow on fruit as it rots.</p>
-      <h3>Life cycle</h3>
+      <details class="disclose"><summary>Life cycle</summary><div class="inner">
       <p>Fruit flies go through <strong>complete metamorphosis</strong>. At 25 °C the whole cycle takes about 9–10 days. Click a stage to learn more.</p>
       <figure class="fig">
         <svg viewBox="0 0 640 300" role="group" aria-label="Fruit fly life cycle: magnified views of eggs and a larva on fly food, a brown pupa on the vial wall, and an adult fly, arranged in a cycle. Each stage is a button.">
@@ -99,77 +119,136 @@
       </figure>
       <div class="lc-info" id="lc-info" aria-live="polite">Click or tab to a stage above.</div>
 
-      <h3 style="margin-top:20px">Taxis and kinesis</h3>
+
+      </div></details>
+      <details class="disclose"><summary>Taxis and kinesis</summary><div class="inner">
       <p>Animals move in response to stimuli. A <strong>taxis</strong> is <em>oriented</em> movement: the animal turns and moves directly toward (positive taxis) or away from (negative taxis) a stimulus. A <strong>chemotaxis</strong> is a response to a chemical, a <strong>phototaxis</strong> a response to light, and a <strong>geotaxis</strong> a response to gravity. Adult fruit flies show a <em>negative</em> geotaxis: they climb upward. Adults also move toward bright light, while larvae move away from it.</p>
       <p>A <strong>kinesis</strong> is <em>not</em> oriented. The stimulus changes how fast an animal moves or how often it turns, but not its direction. Animals that slow down in good conditions and speed up in bad ones end up collecting in the good areas just by chance. Both mechanisms can put animals in the same place, so you have to watch <em>how</em> they get there.</p>
-      <div class="sim">
-        <div class="controls">
-          <button class="btn btn--primary" id="tk-play" type="button">Play demo</button>
-          <button class="btn btn--sm" id="tk-reset" type="button">Reset</button>
-          <p class="small muted">Left: each animal turns toward the light (taxis). Right: animals move in random directions but move slowly in the humid zone (kinesis).</p>
+
+      </div></details>
+      <details class="disclose"><summary>Is the pattern real? The chi-square test</summary><div class="inner">
+      <p>Even flies that don't care will rarely split exactly 15:15. The <strong>chi-square (χ²) test</strong> asks how likely your counts would be if the <strong>null hypothesis</strong> were true. For a choice chamber the null hypothesis is "flies have no preference," so the expected count at each end is half the flies.</p>
+      <div class="equation">χ² = Σ (o − e)² ⁄ e &nbsp;&nbsp; degrees of freedom = (number of categories) − 1 = 1</div>
+      <p>With 1 degree of freedom, the critical value at p = 0.05 is <strong>3.84</strong>. If χ² is greater than 3.84, a difference this large would happen by chance less than 5% of the time, so you reject the null hypothesis and conclude the flies show a preference. If χ² is smaller, you fail to reject the null hypothesis: your data do not show a preference.</p>
+
+      </div></details>
+      </div>
+      <aside class="split-side glossary" aria-labelledby="bg-terms">
+        <div class="callout-title" id="bg-terms">Key terms</div>
+        <dl>
+          <dt>Taxis</dt><dd>Oriented movement toward (positive) or away from (negative) a stimulus.</dd>
+          <dt>Kinesis</dt><dd>Change in speed or turning rate that is not directed toward or away from the stimulus.</dd>
+          <dt>Chemo-, photo-, geotaxis</dt><dd>Taxis in response to a chemical, light, or gravity.</dd>
+          <dt>Null hypothesis</dt><dd>The flies have no preference, so half are expected at each end.</dd>
+          <dt>Chi-square (χ²)</dt><dd>Σ (o − e)² ⁄ e; compare with the critical value 3.84 at df = 1.</dd>
+          <dt>Complete metamorphosis</dt><dd>Egg, larva, pupa, adult: the fly life cycle.</dd>
+        </dl>
+      </aside>
+      </div>
+      <h3>Try it: taxis versus kinesis</h3>
+      <div class="sim sim--fit" id="tk-sim">
+        <div class="sim-side">
+          <div id="tk-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <button class="btn btn--primary" id="tk-play" type="button">Play demo</button>
+            <button class="btn btn--sm" id="tk-reset" type="button">Reset</button>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+            <p class="small muted">Left: each animal turns toward the light (taxis). Right: animals move in random directions but move slowly in the humid zone (kinesis).</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="tk" aria-label="Side-by-side animation. Left panel: animals steer toward a light on the right edge. Right panel: animals wander randomly but slow down in the humid right half, so they pile up there."></canvas>
           <div class="readouts"><div class="readout"><span class="k">Taxis: in right half</span><span class="v" id="tk-a">—</span></div><div class="readout"><span class="k">Kinesis: in right half</span><span class="v" id="tk-b">—</span></div></div>
         </div>
       </div>
-
-      <h3 style="margin-top:20px">Is the pattern real? The chi-square test</h3>
-      <p>Even flies that don't care will rarely split exactly 15:15. The <strong>chi-square (χ²) test</strong> asks how likely your counts would be if the <strong>null hypothesis</strong> were true. For a choice chamber the null hypothesis is "flies have no preference," so the expected count at each end is half the flies.</p>
-      <div class="equation">χ² = Σ (o − e)² ⁄ e &nbsp;&nbsp; degrees of freedom = (number of categories) − 1 = 1</div>
-      <p>With 1 degree of freedom, the critical value at p = 0.05 is <strong>3.84</strong>. If χ² is greater than 3.84, a difference this large would happen by chance less than 5% of the time, so you reject the null hypothesis and conclude the flies show a preference. If χ² is smaller, you fail to reject the null hypothesis: your data do not show a preference.</p>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Pre-lab">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Pre-lab">
     <header><div class="eyebrow">Pre-lab · Getting started</div><h2>Male or female?</h2></header>
     <div class="step-body">
       <p class="prose">Look at the abdomen. <strong>Females</strong> are larger, with a longer, pointed abdomen that has separate dark stripes all the way to a light tip. <strong>Males</strong> are smaller, with a rounded abdomen whose last segments are fused into one solid dark patch, and they have tiny dark <strong>sex combs</strong> on their front legs. Use the reference, then identify the flies.</p>
-      <div class="sim">
-        <div class="controls">
-          <canvas class="viz" id="sex-ref" aria-label="Reference view under the stereo microscope: female fruit fly on the left with a long, pointed, striped abdomen; male on the right with a smaller, rounded abdomen with a solid dark tip, a dark genital arch at the tip, and black sex combs on the front legs."></canvas>
-          <div class="readouts"><div class="readout"><span class="k">Correct</span><span class="v" id="sex-score">0 of 0</span></div></div>
-        </div>
-        <div class="stage">
-          <canvas class="viz" id="sex-cv" aria-label="Stereo microscope view: one anesthetized fruit fly lying on a dark stage, lit from above. Focus, then decide whether it is female or male."></canvas>
-          <div class="row">
-            <button class="btn btn--primary" id="sex-f" type="button">Female ♀</button>
-            <button class="btn btn--primary" id="sex-m" type="button">Male ♂</button>
+      <div class="sim sim--fit" id="sex-sim">
+        <div class="sim-side">
+          <div id="sex-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="row two"><button class="btn btn--primary" id="sex-f" type="button">Female ♀</button><button class="btn btn--primary" id="sex-m" type="button">Male ♂</button></div>
             <button class="btn" id="sex-next" type="button">Next fly</button>
           </div>
+        </div>
+        <div class="stage">
+          <div class="sex-pair">
+            <div class="sex-cell"><canvas class="viz" id="sex-ref" aria-label="Reference view under the stereo microscope: female fruit fly on the left with a long, pointed, striped abdomen; male on the right with a smaller, rounded abdomen with a solid dark tip, a dark genital arch at the tip, and black sex combs on the front legs."></canvas></div>
+            <div class="sex-cell"><canvas class="viz" id="sex-cv" aria-label="Stereo microscope view: one anesthetized fruit fly lying on a dark stage, lit from above. Focus, then decide whether it is female or male."></canvas></div>
+          </div>
+          <div class="readouts"><div class="readout"><span class="k">Correct</span><span class="v" id="sex-score">0 of 0</span></div></div>
           <div class="fb" id="sex-fb" aria-live="polite"></div>
         </div>
       </div>
-      <div id="prelab"></div>
-      <div id="prelab-prompts"></div>
+      <div id="prelab" class="quiz--cols"></div>
+      <div id="prelab-prompts" class="prompts-2"></div>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Geotaxis vial">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Geotaxis vial">
     <header><div class="eyebrow">Getting started · Observation</div><h2>Which way is up?</h2></header>
     <div class="step-body">
-      <p class="prose">Toss 10–20 flies into an empty vial (no anesthetic). Tap the vial on the table so the flies fall to the bottom, then stand it upright and watch. Record how many flies are in the top half after 15 and 30 seconds. Repeat a few times.</p>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="vial-n">Flies in vial <output id="vial-n-out" class="val"></output></label><input id="vial-n" type="range" min="10" max="20" value="15"></div>
-          <div class="field"><label for="vial-age">Fly age</label><select id="vial-age"><option value="young">Young adults (2–5 days)</option><option value="old">Old adults (4 weeks)</option></select></div>
-          <button class="btn btn--primary" id="vial-run" type="button">Tap down and watch 30 s</button>
-          <p class="small muted">The clock runs at 2× speed.</p>
+      <div class="sim sim--fit" id="vial-sim">
+        <div class="sim-side">
+          <div id="vial-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="vial-n">Flies in vial <output id="vial-n-out" class="val"></output></label><input id="vial-n" type="range" min="10" max="20" value="15"></div>
+            <div class="field"><label for="vial-age">Fly age</label><select id="vial-age"><option value="young">Young adults (2–5 days)</option><option value="old">Old adults (4 weeks)</option></select></div>
+            <button class="btn btn--primary" id="vial-run" type="button">Tap down and watch 30 s</button>
+            <p class="small muted">The clock runs at 2× speed.</p>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
+            <p>Toss 10–20 flies into an empty vial (no anesthetic). Tap the vial on the table so the flies fall to the bottom, then stand it upright and watch. Record how many flies are in the top half after 15 and 30 seconds. Repeat a few times.</p>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="vial" aria-label="An upright vial of fruit flies. After tapping, flies start at the bottom and most climb toward the top."></canvas>
           <div class="readouts"><div class="readout"><span class="k">Time</span><span class="v" id="vial-t">0 s</span></div><div class="readout"><span class="k">Top half</span><span class="v" id="vial-top">—</span></div><div class="readout"><span class="k">Bottom half</span><span class="v" id="vial-bot">—</span></div></div>
-          <div id="vial-table"></div>
         </div>
       </div>
-      <div id="vial-prompts"></div>
+      <div id="vial-table"></div>
+      <div id="vial-prompts" class="prompts-2"></div>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Choice chamber">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Choice chamber">
     <header><div class="eyebrow">Procedure · Structured inquiry</div><h2>The choice chamber</h2></header>
     <div class="step-body">
-      <div class="prose">
+      <div id="predict-prompt"></div>
+      <div class="sim sim--fit" id="ch-sim">
+        <div class="sim-side">
+          <div id="ch-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="c-a">Cap A cotton ball</label><select id="c-a"></select></div>
+            <div class="field"><label for="c-b">Cap B cotton ball</label><select id="c-b"></select></div>
+            <div class="row two"><button class="btn btn--primary" id="c-run" type="button">Run trial</button><button class="btn" id="c-swap" type="button">Swap ends</button></div>
+            <button class="btn btn--ghost btn--sm" id="c-stop" type="button">Stop trial</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <label class="check"><input type="checkbox" id="c-film"> Wrap both cotton balls in Parafilm</label>
+              <div class="field"><span class="label" id="c-orient-l">Chamber position</span>
+            <div class="seg" role="group" aria-labelledby="c-orient-l" id="c-orient"><button type="button" data-v="h" aria-pressed="true">Flat</button><button type="button" data-v="vA" aria-pressed="false">Upright, A up</button><button type="button" data-v="vB" aria-pressed="false">Upright, B up</button></div></div>
+              <div class="field"><label for="c-light">Light</label><select id="c-light"><option value="none">Even room light</option><option value="lampA">Lamp at end A</option><option value="lampB">Lamp at end B</option><option value="foilA">Foil over end A (dark)</option><option value="foilB">Foil over end B (dark)</option></select></div>
+              <div class="field"><label for="c-color">Lamp color</label><select id="c-color"><option value="white">White</option><option value="blue">Blue film</option><option value="green">Green film</option><option value="red">Red film</option></select></div>
+              <div class="field"><label for="c-type">Flies</label><select id="c-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings (cannot fly)</option><option value="w">White eyes</option><option value="adh">Adh-negative (cannot break down alcohol)</option></select></div>
+              <div class="field"><label for="c-n">Number of flies <output id="c-n-out" class="val"></output></label><input id="c-n" type="range" min="20" max="40" value="30"></div>
+              <div class="field"><label for="c-int">Count every</label><select id="c-int"><option value="30">30 s</option><option value="60" selected>1 min</option><option value="120">2 min</option></select></div>
+              <div class="field"><label for="c-dur">Trial length</label><select id="c-dur"><option value="300" selected>5 min</option><option value="600">10 min</option></select></div>
+              <label class="check"><input type="checkbox" id="c-pause" checked> Pause so I can count the flies myself</label>
+              <div class="field"><span class="label" id="c-speed-l">Playback speed</span>
+            <div class="seg" role="group" aria-labelledby="c-speed-l" id="c-speed"><button type="button" data-v="5" aria-pressed="false">5×</button><button type="button" data-v="15" aria-pressed="true">15×</button><button type="button" data-v="40" aria-pressed="false">40×</button></div></div>
+            </div></details>
+          </div>
+          <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
         <p>Two bottles with their bottoms cut off are taped together; end A and end B each have a cap holding a cotton ball with 5–10 drops of a test substance. Follow the manual's steps:</p>
         <ol>
           <li>Start with <strong>distilled water at both ends</strong>, lay the chamber flat, and count after 5 minutes. This control tells you whether something other than your substances (light from a window, a tilt) is moving the flies.</li>
@@ -177,26 +256,7 @@
           <li>Rotate the chamber (<strong>Swap ends</strong>) and repeat to check that position is not the cause.</li>
           <li>Count flies at each end at each time point, then use chi-square to test the final counts.</li>
         </ol>
-      </div>
-      <div id="predict-prompt"></div>
-      <div class="sim">
-        <div class="controls">
-          <div class="field"><label for="c-a">Cap A cotton ball</label><select id="c-a"></select></div>
-          <div class="field"><label for="c-b">Cap B cotton ball</label><select id="c-b"></select></div>
-          <label class="check"><input type="checkbox" id="c-film"> Wrap both cotton balls in Parafilm</label>
-          <div class="field"><span class="label" id="c-orient-l">Chamber position</span>
-            <div class="seg" role="group" aria-labelledby="c-orient-l" id="c-orient"><button type="button" data-v="h" aria-pressed="true">Flat</button><button type="button" data-v="vA" aria-pressed="false">Upright, A up</button><button type="button" data-v="vB" aria-pressed="false">Upright, B up</button></div></div>
-          <div class="field"><label for="c-light">Light</label><select id="c-light"><option value="none">Even room light</option><option value="lampA">Lamp at end A</option><option value="lampB">Lamp at end B</option><option value="foilA">Foil over end A (dark)</option><option value="foilB">Foil over end B (dark)</option></select></div>
-          <div class="field"><label for="c-color">Lamp color</label><select id="c-color"><option value="white">White</option><option value="blue">Blue film</option><option value="green">Green film</option><option value="red">Red film</option></select></div>
-          <div class="field"><label for="c-type">Flies</label><select id="c-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings (cannot fly)</option><option value="w">White eyes</option><option value="adh">Adh-negative (cannot break down alcohol)</option></select></div>
-          <div class="field"><label for="c-n">Number of flies <output id="c-n-out" class="val"></output></label><input id="c-n" type="range" min="20" max="40" value="30"></div>
-          <div class="field"><label for="c-int">Count every</label><select id="c-int"><option value="30">30 s</option><option value="60" selected>1 min</option><option value="120">2 min</option></select></div>
-          <div class="field"><label for="c-dur">Trial length</label><select id="c-dur"><option value="300" selected>5 min</option><option value="600">10 min</option></select></div>
-          <label class="check"><input type="checkbox" id="c-pause" checked> Pause so I can count the flies myself</label>
-          <div class="field"><span class="label" id="c-speed-l">Playback speed</span>
-            <div class="seg" role="group" aria-labelledby="c-speed-l" id="c-speed"><button type="button" data-v="5" aria-pressed="false">5×</button><button type="button" data-v="15" aria-pressed="true">15×</button><button type="button" data-v="40" aria-pressed="false">40×</button></div></div>
-          <div class="row"><button class="btn btn--primary" id="c-run" type="button">Run trial</button><button class="btn" id="c-swap" type="button">Swap ends</button></div>
-          <button class="btn btn--ghost btn--sm" id="c-stop" type="button">Stop trial</button>
+          </div></details>
         </div>
         <div class="stage">
           <canvas class="viz" id="ch-h" aria-label="Choice chamber lying flat: two bottles taped together with cap A and cap B. Small dark dots are fruit flies."></canvas>
@@ -216,39 +276,44 @@
             <label class="check"><input type="checkbox" id="quad"> Show quadrant lines to help count</label>
             <div class="row"><button class="btn btn--primary" id="cnt-rec" type="button">Record and continue</button><span class="small muted">Flies on the midline: count them where most of the body is.</span></div>
           </div>
-          <h3>This trial</h3>
-          <div id="int-table"></div>
-          <div id="int-chart"></div>
         </div>
       </div>
+      <div id="int-table"></div>
+      <div id="int-chart"></div>
       <h3 style="margin-top:24px">All trials</h3>
-      <p class="small muted">Each finished trial is tested with chi-square against a 50:50 null hypothesis (df = 1, critical value 3.84). Your own final counts are used when you entered them.</p>
+      <p class="small muted" id="trials-note">Each finished trial is tested with chi-square against a 50:50 null hypothesis (df = 1, critical value 3.84). Your own final counts are used when you entered them.</p>
       <div id="trials-table"></div>
       <div id="pref-chart"></div>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Design">
+  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own fruit fly experiment</h2></header>
     <div class="step-body">
       <div class="prose">
         <p>Now that you've seen how flies respond to single substances, ask your own question. Some starting points from the manual: Do preferred substances share an ingredient? Does a phototactic response override a chemotactic one? Does fly age change geotaxis? Do mutant flies choose differently? Does the flies' choice depend on smell or on sight (try Parafilm)?</p>
         <p>Choose the stimuli, set up the chamber, and decide how many trials to run. Swapping ends between trials controls for position effects. Each run below adds one condition to your results so you can compare conditions.</p>
       </div>
-      <div id="design-prompts"></div>
-      <div class="sim" style="margin-top:16px">
-        <div class="controls">
-          <div class="field"><label for="d-a">End A</label><select id="d-a"></select></div>
-          <div class="field"><label for="d-b">End B</label><select id="d-b"></select></div>
-          <label class="check"><input type="checkbox" id="d-film"> Parafilm over cotton balls</label>
-          <div class="field"><label for="d-orient">Chamber position</label><select id="d-orient"><option value="h">Flat</option><option value="vA">Upright, A up</option><option value="vB">Upright, B up</option></select></div>
-          <div class="field"><label for="d-light">Light</label><select id="d-light"><option value="none">Even room light</option><option value="lampA">White lamp at A</option><option value="lampB">White lamp at B</option><option value="lampA-red">Red-filtered lamp at A</option><option value="lampA-blue">Blue-filtered lamp at A</option><option value="foilA">Foil over A</option></select></div>
-          <div class="field"><label for="d-type">Flies</label><select id="d-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings</option><option value="w">White eyes</option><option value="adh">Adh-negative</option></select></div>
-          <div class="field"><label for="d-n">Flies per trial <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="20" max="40" value="30"></div>
-          <div class="field"><label for="d-trials">Number of trials <output id="d-trials-out" class="val"></output></label><input id="d-trials" type="range" min="1" max="10" value="4"></div>
-          <label class="check"><input type="checkbox" id="d-swap" checked> Swap ends between trials</label>
-          <button class="btn btn--primary" id="d-run" type="button">Run trials (5 min each)</button>
-          <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+      <div id="design-prompts" class="prompts-2"></div>
+      <div class="sim sim--fit" id="d-sim">
+        <div class="sim-side">
+          <div id="d-steps"></div>
+          <div class="controls">
+            <p class="controls-title">Controls</p>
+            <div class="field"><label for="d-a">End A</label><select id="d-a"></select></div>
+            <div class="field"><label for="d-b">End B</label><select id="d-b"></select></div>
+            <div class="field"><label for="d-light">Light</label><select id="d-light"><option value="none">Even room light</option><option value="lampA">White lamp at A</option><option value="lampB">White lamp at B</option><option value="lampA-red">Red-filtered lamp at A</option><option value="lampA-blue">Blue-filtered lamp at A</option><option value="foilA">Foil over A</option></select></div>
+            <div class="field"><label for="d-trials">Number of trials <output id="d-trials-out" class="val"></output></label><input id="d-trials" type="range" min="1" max="10" value="4"></div>
+            <button class="btn btn--primary" id="d-run" type="button">Run trials (5 min each)</button>
+            <details class="more"><summary>More options</summary><div class="inner">
+              <label class="check"><input type="checkbox" id="d-film"> Parafilm over cotton balls</label>
+              <div class="field"><label for="d-orient">Chamber position</label><select id="d-orient"><option value="h">Flat</option><option value="vA">Upright, A up</option><option value="vB">Upright, B up</option></select></div>
+              <div class="field"><label for="d-type">Flies</label><select id="d-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings</option><option value="w">White eyes</option><option value="adh">Adh-negative</option></select></div>
+              <div class="field"><label for="d-n">Flies per trial <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="20" max="40" value="30"></div>
+              <label class="check"><input type="checkbox" id="d-swap" checked> Swap ends between trials</label>
+              <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
+            </div></details>
+          </div>
         </div>
         <div class="stage">
           <div class="readouts"><div class="readout"><span class="k">Last run</span><span class="v" id="d-last" style="font-size:.95rem">—</span></div></div>
@@ -259,7 +324,7 @@
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Analyze">
+  <section class="step wrap wrap--wide gutter" data-step="Analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>Patterns in fly behavior</h2></header>
     <div class="step-body">
       <h3>Chi-square calculator</h3>
@@ -271,18 +336,18 @@
       <div class="row" style="margin-top:10px"><button class="btn btn--primary" id="x-run" type="button">Calculate χ²</button><button class="btn btn--sm" id="x-last" type="button">Use my last trial</button></div>
       <div class="chi-out" id="x-out" aria-live="polite">—</div>
       <h3 style="margin-top:20px">Questions</h3>
-      <div id="an-prompts"></div>
+      <div id="an-prompts" class="prompts-2"></div>
       <h3 style="margin-top:20px">Claim, evidence, reasoning</h3>
       <div class="cer" id="cer"></div>
     </div>
   </section>
 
-  <section class="step wrap gutter" data-step="Evaluate">
+  <section class="step wrap wrap--wide gutter" data-step="Evaluate">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
-    <div class="step-body" id="evaluate"></div>
+    <div class="step-body"><div id="evaluate" class="prompts-2"></div></div>
   </section>
 
-  <section class="step wrap gutter" data-step="Submit">
+  <section class="step wrap wrap--wide gutter" data-step="Submit">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>
@@ -547,6 +612,7 @@ function stageBg(ctx, W, H, seed) {
 function placeFly(ctx, x, y, s, ang, sex, spread, seed, out) { ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s); drawFly(ctx, { sex, detail: 2, spread, limp: true, seed, minW: 0.01, shadow: 0.55, out }); ctx.restore(); }
 let sexCur = null, sexAns = false, sexRight = 0, sexTot = 0;
 const SEXW = { w: 720, h: 540 };
+Lab.fitHeight('#sex-cv', 0.75, '450px');
 const sexView = Scope.view('#sex-cv', {
   aspect: 0.75, world: SEXW, maxRes: 1.6, focusLabel: 'Focus',
   hud: { mag: '20×', bar: { units: 96, label: '1 mm' } },
@@ -686,7 +752,7 @@ Lab.quiz('#prelab', [
 Lab.prompt('#prelab-prompts', { key: 'pre-where', label: 'Where and when have you seen fruit flies outside the lab? What do those places have in common?', rows: 3 });
 
 /* ---------- Taxis vs kinesis demo ---------- */
-const tk = Lab.canvas('#tk', 0.42);
+const tk = Lab.canvas('#tk', 0.42, { fit: true });
 let tkP = null;
 function tkInit() { tkP = [0, 1].map(() => Array.from({ length: 30 }, () => ({ x: rng.uniform() * 0.5, y: rng.uniform(), th: rng.uniform() * 6.28 }))); tkDraw(); }
 function tkStep(dt) {
@@ -757,7 +823,7 @@ tk.onresize = tkDraw;
 /* ---------- Geotaxis vial ----------
    Each fly climbs at an individual speed (negative geotaxis); 10% wander randomly.
    Old flies (4 weeks) climb about half as fast (age-related decline, as in RING assays). */
-const vialCv = Lab.canvas('#vial', 0.55);
+const vialCv = Lab.canvas('#vial', 0.55, { fit: true });
 let vialF = [], vialT = 0, vialRec = {};
 const vialN = $('#vial-n'); const syncVN = () => $('#vial-n-out').textContent = vialN.value; vialN.addEventListener('input', syncVN); syncVN();
 function vialSetup(atBottom) {
@@ -941,7 +1007,7 @@ function runHeadless(cfg, n, seconds) { const phi = makePhi(cfg), ft = FLY[cfg.t
 const subOpts = cur => SUBS.map(([id, name]) => `<option value="${id}" ${id === cur ? 'selected' : ''}>${name}</option>`).join('');
 $('#c-a').innerHTML = subOpts('water'); $('#c-b').innerHTML = subOpts('water');
 $('#d-a').innerHTML = subOpts('vinegar'); $('#d-b').innerHTML = subOpts('water');
-const cvH = Lab.canvas('#ch-h', window.innerWidth < 600 ? 0.55 : 0.4), cvV = Lab.canvas('#ch-v', 1.05);
+const cvH = Lab.canvas('#ch-h', window.innerWidth < 600 ? 0.55 : 0.4, { fit: true }), cvV = Lab.canvas('#ch-v', 1.05, { fit: '470px' });
 let orient = 'h', flipped = false, speedX = 15, flies = [], simT = 0, trial = null, paused = false, nextCount = 0;
 function segBind(id, cb) { $$('#' + id + ' button').forEach(b => b.addEventListener('click', () => { $$('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', x === b)); cb(b.dataset.v); })); }
 segBind('c-orient', v => { if (trial) return setOrientBtn(); orient = v; showCanvas(); drawChamber(); });
@@ -1087,7 +1153,7 @@ cvH.onresize = drawChamber; cvV.onresize = drawChamber;
 
 const intChart = Lab.chart('#int-chart', { xLabel: 'Time (min)', yLabel: '% of flies at A side', yMin: 0, yMax: 100, xMin: 0, series: [], hLines: [{ y: 50, label: 'no preference' }] });
 const intTable = Lab.table('#int-table', {
-  save: 'intervals',
+  save: 'intervals', toast: false,
   columns: [{ key: 't', label: 'Time', unit: 'min', num: true, digits: 1 }, { key: 'a', label: 'Your count A', num: true, digits: 0, editable: true }, { key: 'b', label: 'Your count B', num: true, digits: 0, editable: true }, { key: 'aa', label: 'Actual A', num: true, digits: 0 }, { key: 'ab', label: 'Actual B', num: true, digits: 0 }],
   onChange: rows => intChart.update({ series: [{ name: '% at A', points: rows.map(r => { const A = r.a != null ? r.a : r.aa, B = r.b != null ? r.b : r.ab; return { x: r.t, y: A != null && B != null && A + B > 0 ? 100 * A / (A + B) : NaN }; }) }] })
 });
@@ -1223,6 +1289,52 @@ runChi();
  ['ev4', 'What factors had to be controlled in your experiment, and which ones were hardest to control in a real choice chamber?'],
  ['ev5', 'Where can you go from here? Name an organism you expect to behave like fruit flies and one you expect to behave differently (for example ladybugs, houseflies, or mealworms), and describe a choice-chamber test for it.']
 ].forEach(([key, label]) => Lab.prompt('#evaluate', { key, label, rows: 3 }));
+
+/* ---------- Laptop layout: results, steps, gates, toasts ---------- */
+const filledP = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
+let tkPlayed = false;
+$('#tk-play').addEventListener('click', () => { tkPlayed = true; });
+Lab.results('#vial-sim', { data: [{ el: '#vial-table', title: 'Flies in the top half' }] });
+Lab.results('#ch-sim', {
+  graph: [{ el: '#int-chart', title: 'This trial: % of flies at A' }],
+  data: [{ el: '#int-table', title: 'This trial' }]
+});
+Lab.steps('#tk-steps', [
+  { id: 'play', text: 'Play the demo and compare', target: '#tk-play', done: () => tkPlayed, hint: 'Press <strong>Play demo</strong> and compare the two panels.' }
+], { doneText: 'Both patterns end with more animals on the right. Taxis steers them there; kinesis traps them there.' });
+Lab.steps('#sex-steps', [
+  { id: 'one', text: 'Name the fly: Female or Male', target: '#sex-f', done: () => sexTot >= 1, hint: 'Use the reference card, focus the scope, then press <strong>Female</strong> or <strong>Male</strong>.' },
+  { id: 'five', text: 'Identify 5 flies', target: '#sex-next', done: () => sexTot >= 5, hint: 'Press <strong>Next fly</strong> and identify five in all.' },
+  { id: 'good', text: 'Get at least 4 of 5 right', target: '#sex-next', done: () => sexTot >= 5 && sexRight >= 4, hint: 'Look again at the abdomen stripes and the sex combs.' },
+  { id: 'qs', text: 'Answer the pre-lab (below)', target: '#p-pre-where', done: () => filledP('pre-where'), hint: 'Scroll down: the pre-lab quiz and the question about where you see fruit flies.' }
+], { doneText: 'Pre-lab done. Next, watch geotaxis in the <a href="#geotaxis-vial">Geotaxis vial</a>.' });
+const vRows = () => vialTable.getRows();
+Lab.steps('#vial-steps', [
+  { id: 'run', text: 'Tap down and watch 30 s', target: '#vial-run', done: () => vRows().length > 0, hint: 'Press <strong>Tap down and watch 30 s</strong>.' },
+  { id: 'three', text: 'Repeat for 3 trials', target: '#vial-run', done: () => vRows().length >= 3, hint: 'Run at least three trials; try young and old flies.' },
+  { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-v-q1', done: () => ['v-q1', 'v-q2', 'v-q3'].every(filledP), hint: 'Scroll down and answer the three questions.' }
+], { doneText: 'Vial done. Next, the <a href="#choice-chamber">Choice chamber</a>.' });
+const tRows = () => trialsTable.getRows();
+Lab.steps('#ch-steps', [
+  { id: 'pred', text: 'Predict the preferences', target: '#p-predict', optional: true, done: () => filledP('predict'), hint: 'Write your predictions in the box above the scene.' },
+  { id: 'ctl', text: 'Run the water vs water control', target: '#c-run', done: () => tRows().length > 0, hint: 'Choose distilled water at both ends and press <strong>Run trial</strong>.' },
+  { id: 'subs', text: 'Test 4 substances vs water', target: '#c-a', done: () => tRows().length >= 5, hint: 'Pick a substance for cap A, water for cap B, and run a trial. Do this for four substances.' },
+  { id: 'swap', text: 'Swap ends and repeat', target: '#c-swap', optional: true, done: () => tRows().some(r => /ends swapped|upright, B up/.test(r.setup)), hint: 'Press <strong>Swap ends</strong>, then run a trial to check for a position effect.' },
+  { id: 'chi', text: 'Read χ² for each trial', target: '#ch-sim-tab-data', optional: true, done: () => tRows().length > 0, hint: 'Open the <strong>Data</strong> tab to see χ² and p &lt; 0.05 for every trial.' }
+], { doneText: 'Trials recorded. Test the final counts in <a href="#analyze">Analyze</a>, or design your own in <a href="#design">Design</a>.' });
+let dTouched = false;
+['#d-a', '#d-b', '#d-light', '#d-film', '#d-orient', '#d-type'].forEach(s => $(s).addEventListener('change', () => { dTouched = true; }));
+Lab.steps('#d-steps', [
+  { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => filledP('d-question') && filledP('d-hyp'), hint: 'Write your question and hypothesis in the boxes above.' },
+  { id: 'set', text: 'Choose stimuli at ends A and B', target: '#d-a', sticky: true, done: () => dTouched || dTable.getRows().length > 0, hint: 'Pick what goes at each end, and the light if you want to test it.' },
+  { id: 'run', text: 'Run trials', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run trials</strong>. Add a control condition too.' },
+  { id: 'ctl', text: 'Run a second condition', target: '#d-run', done: () => dTable.getRows().length > 1, hint: 'Change one thing, run again, and compare the bars.' },
+  { id: 'ctrl', text: 'Describe your controls', target: '#p-d-ctrl', done: () => filledP('d-ctrl'), hint: 'Describe the variable, controls and constants above.' }
+], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+Lab.gate('#x-last', () => trialsTable.getRows().length ? '' : 'Finish a choice-chamber trial first');
+let vSeen = vRows().length;
+setInterval(() => { const r = vRows(); if (r.length > vSeen) { const l = r[r.length - 1]; vSeen = r.length; Lab.toast(`Trial ${l.trial}: ${l.t30} of ${l.n} flies in the top half after 30 s`, { type: 'ok', announce: false, key: 'vial' }); } else if (r.length < vSeen) vSeen = r.length; }, 400);
+$('#d-run').addEventListener('click', () => { const r = dTable.getRows(); if (r.length) Lab.toast('Added condition ' + r.length + ' to your results', { type: 'ok', announce: false, key: 'drun' }); });
 
 /* ---------- Initial draw ---------- */
 tkInit(); drawRef(); newSexFly(); vialSetup(false); vialDraw(); showCanvas(); drawChamber();
