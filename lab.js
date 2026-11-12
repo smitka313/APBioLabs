@@ -14,6 +14,7 @@
     if ((m = FILE.match(/^(teacher-lab\d\d)\.html?$/))) return { kind: 'teacher', id: m[1] };
     if ((m = FILE.match(/^(lab\d\d)\.html?$/))) return { kind: 'lab', id: m[1] };
     if (FILE === '' || /^index\.html?$/.test(FILE)) return { kind: 'home', id: 'home' };
+    if (/^teachers\.html?$/.test(FILE) || /^For teachers/i.test(t)) return { kind: 'info', id: 'teachers' }; // public information page: no sign-in, no report tools, no tour, no backup prompts
     if ((m = t.match(/^Lab (\d+) Teacher Notes/i))) return { kind: 'teacher', id: 'teacher-lab' + m[1].padStart(2, '0') };
     if ((m = t.match(/^Lab (\d+) ·/))) return { kind: 'lab', id: 'lab' + m[1].padStart(2, '0') };
     if (/^AP Bio (Digital )?Lab Bench/.test(t)) return { kind: 'home', id: 'home' };
@@ -510,7 +511,7 @@
     set(idn) { const ok = setIdentity(idn); idHosts.forEach(b => renderIdentity(b)); return ok; },
     mount(el, opts = {}) {
       if (typeof el === 'string') el = $(el);
-      if (!el || PAGE.kind === 'teacher') return null;
+      if (!el || PAGE.kind === 'teacher' || PAGE.kind === 'info') return null;
       const box = h('div', { class: 'id-box' }); box._compact = !!opts.compact; idHosts.push(box); el.append(box); renderIdentity(box); return box;
     },
     newDataset() {
@@ -576,7 +577,7 @@
     } }, 'Copy all my responses');
     const clearBtn = h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { confirmRow.hidden = false; } }, 'Start over');
     el.append(h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn), confirmRow, fallback);
-    if (PAGE.kind !== 'teacher') el.append(...reportTools(), moveWorkPanel());
+    if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') el.append(...reportTools(), moveWorkPanel());
   };
 
   /* ---------------- Hosting environment ----------------
