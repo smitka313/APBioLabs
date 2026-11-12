@@ -63,6 +63,16 @@
   .hits tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
   .hits tr.sel td { background: var(--accent-soft); }
   .hits .desc { min-width: 150px; }
+  /* The # and organism columns stay in view while the table scrolls sideways inside its panel; narrow panels drop the two least important columns. */
+  .hits th:first-child, .hits td:first-child { position: sticky; left: 0; z-index: 1; width: 2.4rem; min-width: 2.4rem; background: var(--surface); }
+  .hits th:nth-child(2), .hits td:nth-child(2) { position: sticky; left: 2.4rem; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--grid); }
+  .res table.data.hits tbody tr:nth-child(even) td:nth-child(-n+2) { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+  .res table.data.hits tbody tr.sel td:nth-child(-n+2) { background: var(--accent-soft); }
+  #blast-hits { container-type: inline-size; }
+  #blast-hits .res-sec { margin: 0; }
+  #blast-hits .res table.data.hits td.desc { white-space: normal; }
+  @container (max-width: 560px) { #blast-hits .hits .opt { display: none; } #blast-hits .hits .desc { min-width: 7.5rem; } #blast-hits .res table.data.hits th, #blast-hits .res table.data.hits td { padding: 3px 5px; } #blast-hits .hits th { white-space: normal; min-width: 0; } #blast-hits .hits .res-sec, #blast-hits .res-sec { padding: 8px 8px; } }
+  .res-empty { margin: 4px 0; }
   .hits .lnk { font: inherit; font-size: .8rem; color: var(--accent); background: none; border: 0; padding: 2px 0; text-decoration: underline; cursor: pointer; }
   .bitkey { display: flex; flex-wrap: wrap; align-items: center; gap: 0; font-size: .74rem; margin: 2px 0 6px; }
   .bitkey .kt { color: var(--muted); margin-right: 8px; }
@@ -257,6 +267,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
             <div class="field"><label for="q-set">Choose search set</label><select id="q-set"><option value="all">All organisms in database (18)</option><option value="vert">Vertebrates only</option><option value="fig4">Figure 4 groups only (12)</option></select></div>
             <button class="btn btn--primary" type="button" id="run-blast">BLAST</button>
             <button class="btn" type="button" id="log-blast">Record top 5 hits in my table</button>
+            <p class="status" id="blast-status" aria-live="polite"></p>
             <details class="more"><summary>More options</summary><div class="inner">
               <div class="field"><span class="label" id="prog-label">Program selection</span><div class="seg" role="group" aria-labelledby="prog-label" id="prog-seg"><button type="button" data-p="blastn" aria-pressed="true">Somewhat similar (blastn)</button><button type="button" data-p="megablast" aria-pressed="false">Highly similar (megablast)</button></div></div>
               <button class="btn btn--sm" type="button" id="tree-blast">Distance tree of results</button>
@@ -270,9 +281,10 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         <div class="stage">
           <div><div class="small muted">Query sequence (5′→3′)</div><div class="seqbox" id="q-seq" aria-label="Query sequence"></div></div>
           <div class="readouts"><div class="readout"><span class="k">Top hit</span><span class="v" id="r-top">—</span></div><div class="readout"><span class="k">Identity</span><span class="v" id="r-id">—</span></div><div class="readout"><span class="k">E-value</span><span class="v" id="r-e">—</span></div><div class="readout"><span class="k">Hits (E &lt; 10)</span><span class="v" id="r-n">—</span></div></div>
-          <div id="blast-out"></div>
+          <div id="blast-out"><div class="res-empty msg" id="blast-empty"><strong>No results yet.</strong> Choose a gene and press BLAST.</div></div>
         </div>
       </div>
+      <div id="blast-hits"></div>
       <div id="blast-table"></div>
       <div id="blast-chart"></div>
     </div>
@@ -307,6 +319,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
             <div class="field"><label for="d-gene">Gene (independent variable: rate of evolution)</label><select id="d-gene"><option value="A">Gene A (slow)</option><option value="B">Gene B (moderate)</option><option value="C">Gene C (fast)</option></select></div>
             <button class="btn btn--primary" type="button" id="d-run">BLAST</button>
             <button class="btn" type="button" id="d-log">Add all hits to clock table</button>
+            <p class="status" id="d-status" aria-live="polite"></p>
             <details class="more"><summary>More options</summary><div class="inner">
               <div class="field"><span class="label" id="dprog-label">Program</span><div class="seg" role="group" aria-labelledby="dprog-label" id="dprog-seg"><button type="button" data-p="blastn" aria-pressed="true">blastn</button><button type="button" data-p="megablast" aria-pressed="false">megablast</button></div></div>
               <div class="field"><span class="label" id="dset-label">Organisms to search</span><div class="checks" id="d-set" role="group" aria-labelledby="dset-label"></div><div class="row"><button class="btn btn--sm" type="button" id="d-all">All</button><button class="btn btn--sm" type="button" id="d-none">None</button></div></div>
@@ -320,7 +333,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         </div>
         <div class="stage">
           <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
-          <div id="d-out"></div>
+          <div id="d-out"><div class="res-empty msg" id="d-empty"><strong>No results yet.</strong> Choose a query organism and gene, then press BLAST.</div></div>
         </div>
       </div>
       <div id="clock-table"></div>
@@ -1048,25 +1061,30 @@ function alignmentHTML(h) {
 function renderBlast(el, res, meta) {
   const { hits, query } = res, prog = meta.prog || res.prog;
   const head = `<dl class="res-head"><div><dt>Job title</dt><dd>${esc(res.org && res.org !== 'pasted' ? orgLabel(res.org) + ' gene ' + res.gene : res.org === 'pasted' ? 'Pasted sequence' : 'Fossil gene ' + res.gene)}</dd></div><div><dt>Program</dt><dd>${prog === 'megablast' ? 'BLASTN (megablast)' : 'BLASTN'}</dd></div><div><dt>Molecule type</dt><dd>nucleic acid</dd></div><div><dt>Query length</dt><dd>${query.length}</dd></div><div><dt>Database</dt><dd>Lab Bench nucleotide set (simulated)</dd></div><div><dt>Hits</dt><dd>${hits.length} with E &lt; 10</dd></div></dl>`;
-  if (!hits.length) { el.innerHTML = `<div class="res">${head}<div class="res-sec"><div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div></div></div>`; return; }
+  const hitsEl = meta.hitsEl || null;
+  if (hitsEl) hitsEl.innerHTML = '';
+  if (!hits.length) { if (hitsEl) hitsEl.innerHTML = '<div class="msg warn"><strong>No significant hits.</strong> Nothing in the search set scored an E-value below 10.</div>'; el.innerHTML = `<div class="res">${head}<div class="res-sec"><div class="msg warn"><strong>No significant similarity found.</strong> No sequence in the search set scored an E-value below 10${prog === 'megablast' ? '. Megablast needs a 28-base exact match to start an alignment, so try "Somewhat similar (blastn)."' : '.'}</div></div></div>`; return; }
   const W = 640, rowH = 11, top = 40, Hh = top + hits.length * rowH + 8, L = 150, R = W - 14, X = p => L + (p - 1) / (query.length - 1) * (R - L);
   let g = `<text x="${L - 8}" y="20" text-anchor="end" style="font-weight:600">Query</text><rect x="${L}" y="12" width="${R - L}" height="9" style="fill:var(--ink)"/>`;
   const step = query.length > 200 ? 50 : 25;
   for (let p = 0; p <= query.length; p += step) { const xx = X(Math.max(1, p)); g += `<line x1="${xx}" x2="${xx}" y1="23" y2="28" style="stroke:var(--muted)"/><text class="rl" x="${xx}" y="37" text-anchor="middle">${Math.max(1, p)}</text>`; }
   hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 8}" y="${y + 7.5}" text-anchor="end" style="font-size:10px">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="7" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits, E = ${fmtE(h.E)}</title></rect>`; });
   const key = [['--muted', '&lt;40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥200']].map(([c, t]) => `<span class="k" style="background:var(${c})">${t}</span>`).join('');
+  const descHTML = `    <div class="res-sec"><h4>Descriptions</h4><div class="small muted">Sequences producing significant alignments (${hits.length}). Select "View" to show an alignment.</div>
+    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th class="opt">Group</th><th class="num">Max score</th><th class="num opt">Query cover</th><th class="num">E value</th><th class="num">Per. ident</th><th>Alignment</th></tr></thead><tbody>
+    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td class="opt">${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num opt">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="lnk" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
   el.innerHTML = `<div class="res">${head}
     <div class="res-sec"><h4>Graphic Summary</h4><div class="small muted">Distribution of the top ${hits.length} BLAST hits on the query sequence. Each bar is an aligned region, colored by alignment score.</div>
     <div class="bitkey"><span class="kt">Color key for alignment scores</span>${key}</div>
     <svg class="graphic" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Graphic summary of ${hits.length} BLAST hits">${g}</svg></div>
-    <div class="res-sec"><h4>Descriptions</h4><div class="small muted">Sequences producing significant alignments (${hits.length}). Select "View" to show an alignment.</div>
-    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th>Group</th><th class="num">Max score</th><th class="num">Query cover</th><th class="num">E value</th><th class="num">Per. ident</th><th>Alignment</th></tr></thead><tbody>
-    ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td>${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="lnk" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
-    </tbody></table></div></div>
+${hitsEl ? '' : descHTML}
     <div class="res-sec"><h4>Alignments</h4><div class="aln-box"></div><div class="dtree"></div></div></div>`;
+  if (hitsEl) hitsEl.innerHTML = `<div class="res">${descHTML}</div>`;
+  const scope = [el, hitsEl].filter(Boolean), qa = sel => scope.flatMap(n => Lab.$$(sel, n));
   const box = Lab.$('.aln-box', el);
-  const show = i => { Lab.$$('tr', el).forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment; mismatched bases are highlighted">${alignmentHTML(hits[i])}</pre>`; };
-  Lab.$$('[data-view]', el).forEach(b => b.addEventListener('click', () => show(+b.dataset.view)));
+  const show = i => { qa('tr').forEach(r => r.classList.toggle('sel', r.dataset.i === String(i))); box.innerHTML = `<pre class="aln" tabindex="0" aria-label="Pairwise alignment; mismatched bases are highlighted">${alignmentHTML(hits[i])}</pre>`; };
+  qa('[data-view]').forEach(b => b.addEventListener('click', () => { show(+b.dataset.view); if (meta.onView) meta.onView(); }));
   show(0);
 }
 /* Distance tree: UPGMA on Jukes–Cantor distances from pairwise blastn alignments */
@@ -1109,26 +1127,31 @@ function runPart2() {
   Lab.$('#r-id').textContent = hits[0] ? hits[0].ident.toFixed(1) + '%' : '—';
   Lab.$('#r-e').textContent = hits[0] ? fmtE(hits[0].E) : '—';
   Lab.$('#r-n').textContent = hits.length;
-  renderBlast(Lab.$('#blast-out'), lastRes, { prog });
-  if (prog === 'blastn') { const best = {}; hits.forEach(h => { const grp = ORGS[h.id][2]; best[grp] = Math.max(best[grp] || 0, h.ident); }); Lab.store.set('best:' + g, best); drawBestChart(); }
+  renderBlast(Lab.$('#blast-out'), lastRes, { prog, hitsEl: Lab.$('#blast-hits'), onView: () => { if (blastPanels && !blastPanels.el.classList.contains('is-wide')) blastPanels.select('scene'); } });
+  Lab.$('#blast-status').textContent = ''; Lab.$('#blast-status').className = 'status';
+  // the first time results appear, open the results panel on the Data tab (the hit table); the Graph is one tab away
+  if (!blastShown && blastPanels) { blastShown = true; blastPanels.select('data'); }
+  // 'bestrun:' (not the old 'best:' key) so a graph auto-drawn by earlier versions on page load is not mistaken for a search the student ran
+  if (prog === 'blastn') { const best = {}; hits.forEach(h => { const grp = ORGS[h.id][2]; best[grp] = Math.max(best[grp] || 0, h.ident); }); Lab.store.set('bestrun:' + g, best); drawBestChart(); }
 }
+let blastPanels = null, blastShown = false;
+Lab.$('#blast-hits').innerHTML = '<div class="msg res-empty"><strong>No results yet.</strong> Choose a gene and press BLAST. The hits from your search will be listed here.</div>';
 Lab.$('#run-blast').addEventListener('click', runPart2);
-Lab.$('#tree-blast').addEventListener('click', () => { if (!lastRes) runPart2(); if (lastRes.hits.length) distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); });
+Lab.$('#tree-blast').addEventListener('click', () => { if (lastRes && lastRes.hits.length) distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); });
 const blastTable = Lab.table('#blast-table', {
   save: 'blastlog',
   columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
 });
 Lab.$('#log-blast').addEventListener('click', () => {
-  if (!lastRes) runPart2();
+  if (!lastRes) { Lab.$('#blast-status').textContent = 'Press BLAST first, then record the top hits.'; Lab.$('#blast-status').className = 'status bad'; return; }
   lastRes.hits.slice(0, 5).forEach((h, i) => blastTable.addRow({ gene: lastRes.gene, prog: lastRes.prog, rank: i + 1, org: ORGS[h.id][1], group: ORGS[h.id][2], bits: Math.round(h.bits), e: fmtE(h.E), ident: h.ident, where: '' }));
 });
 const bestChart = Lab.chart('#blast-chart', { type: 'bar', categories: FIG4_GROUPS, yLabel: 'Best identity to fossil (%)', xLabel: 'Group on Figure 4 cladogram', yMin: 50, yMax: 100, series: [] });
 function drawBestChart() {
-  const series = ['A', 'B', 'C'].map(g => { const b = Lab.store.get('best:' + g, null); return b ? { name: 'Gene ' + g, points: FIG4_GROUPS.map(c => ({ x: c, y: b[c] != null ? b[c] : NaN })) } : null; }).filter(Boolean);
+  const series = ['A', 'B', 'C'].map(g => { const b = Lab.store.get('bestrun:' + g, null); return b ? { name: 'Gene ' + g, points: FIG4_GROUPS.map(c => ({ x: c, y: b[c] != null ? b[c] : NaN })) } : null; }).filter(Boolean);
   bestChart.update({ series });
 }
 drawBestChart();
-runPart2();
 Lab.prompt('#place-prompts', { key: 'place-why', label: 'Justify your final placement. Use at least two pieces of BLAST evidence (score, E-value, percent identity) from different genes, plus one morphological trait.', rows: 4 });
 
 /* ---------------- Design ---------------- */
@@ -1141,29 +1164,45 @@ Lab.$('#d-set').innerHTML = ORG_IDS.map(id => `<label for="ds-${id}"><input type
 Lab.$('#d-all').addEventListener('click', () => Lab.$$('#d-set input').forEach(i => { i.checked = true; }));
 Lab.$('#d-none').addEventListener('click', () => Lab.$$('#d-set input').forEach(i => { i.checked = false; }));
 Lab.$$('#dprog-seg button').forEach(b => b.addEventListener('click', () => { dprog = b.dataset.p; Lab.$$('#dprog-seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); }));
+/* A message under a field (role=alert) with aria-invalid on the control; pass '' to clear it. */
+function fieldError(input, msg, host) {
+  const box = host || input.closest('.field') || input.parentNode;
+  let m = box.querySelector(':scope > .feedback.bad');
+  if (!msg) { if (m) m.remove(); input.removeAttribute('aria-invalid'); input.removeAttribute('aria-describedby'); return; }
+  if (!m) { m = document.createElement('p'); m.className = 'feedback bad'; m.setAttribute('role', 'alert'); m.id = (input.id || 'fld') + '-err'; m.style.margin = '6px 0 0'; box.appendChild(m); }
+  m.textContent = msg; input.setAttribute('aria-invalid', 'true'); input.setAttribute('aria-describedby', m.id);
+}
+const dFail = (input, msg, host) => { fieldError(input, msg, host); const dt = input.closest('details'); if (dt) dt.open = true; const st = Lab.$('#d-status'); st.textContent = 'BLAST was not run: fix the highlighted entry.'; st.className = 'status bad'; };
 function runDesign() {
-  const g = Lab.$('#d-gene').value, org = Lab.$('#d-org').value, paste = Lab.$('#d-paste').value.toUpperCase().replace(/[^A-Z]/g, '');
+  const g = Lab.$('#d-gene').value, org = Lab.$('#d-org').value, pasteEl = Lab.$('#d-paste'), setEl = Lab.$('#d-set');
   const out = Lab.$('#d-out');
-  if (paste && /[^ACGT]/.test(paste)) { out.innerHTML = '<div class="msg bad">Your pasted sequence contains letters other than A, C, G and T. Remove them and try again.</div>'; return; }
-  if (paste && paste.length < 30) { out.innerHTML = '<div class="msg bad">Paste at least 30 bases so the search has something to align.</div>'; return; }
+  fieldError(pasteEl, ''); fieldError(setEl, '', setEl.parentNode); Lab.$('#d-status').textContent = '';
+  // a pasted FASTA record: ignore the ">name" header line, then spaces, digits and line breaks
+  const raw = pasteEl.value.split(/\r?\n/).filter(l => !/^\s*>/.test(l)).join('').toUpperCase().replace(/[\s\d]/g, '');
+  const paste = raw;
+  if (paste && /U/.test(paste) && !/[^ACGU]/.test(paste)) { dFail(pasteEl, 'That looks like an RNA sequence (it contains U). This search needs DNA: use T instead of U.'); return false; }
+  if (paste && /[^ACGT]/.test(paste)) { const bad = [...new Set(paste.match(/[^ACGT]/g))].slice(0, 6).join(', '); dFail(pasteEl, `Your pasted sequence contains characters other than A, C, G and T (${bad}). Remove them and try again.`); return false; }
+  if (paste && paste.length < 30) { dFail(pasteEl, `Paste at least 30 bases so the search has something to align (you pasted ${paste.length}).`); return false; }
   const ids = Lab.$$('#d-set input:checked').map(i => i.value).filter(id => paste || id !== org);
-  if (!ids.length) { out.innerHTML = '<div class="msg bad">Choose at least one organism to search.</div>'; return; }
+  if (!ids.length) { dFail(setEl.querySelector('input') || setEl, Lab.$$('#d-set input:checked').length ? 'The only organism ticked is your query organism. Tick at least one other organism to search.' : 'No organisms are ticked. Tick at least one organism to search (or press All).', setEl.parentNode); return false; }
   const query = paste || db[org][g];
   const hits = blast(query, targetsFor(g, ids), dprog);
   dRes = { hits, query, gene: g, org: paste ? 'pasted' : org, prog: dprog };
   Lab.$('#d-q').textContent = paste ? `Pasted (${paste.length} bp)` : `${orgLabel(org)} ${g}`;
   Lab.$('#d-n').textContent = hits.length;
   renderBlast(out, dRes, { prog: dprog });
+  return true;
 }
 Lab.$('#d-run').addEventListener('click', runDesign);
-runDesign();
+Lab.$('#d-paste').addEventListener('input', () => fieldError(Lab.$('#d-paste'), ''));
+Lab.$$('#d-set input, #d-all, #d-none').forEach(el => el.addEventListener('click', () => { const se = Lab.$('#d-set'); fieldError(se.querySelector('input'), '', se.parentNode); }));
 const clockTable = Lab.table('#clock-table', {
   save: 'clock',
   columns: [{ key: 'gene', label: 'Gene' }, { key: 'q', label: 'Query' }, { key: 'hit', label: 'Hit' }, { key: 't', label: 'Time since common ancestor', unit: 'Mya', num: true, digits: 1 }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }],
   onChange: drawClock
 });
 Lab.$('#d-log').addEventListener('click', () => {
-  if (!dRes) runDesign();
+  if (!dRes) { Lab.$('#d-status').textContent = 'Press BLAST first, then add the hits to the clock table.'; Lab.$('#d-status').className = 'status bad'; return; }
   if (!dRes || dRes.org === 'pasted') { Lab.$('#d-out').insertAdjacentHTML('afterbegin', '<div class="msg warn">Divergence times are only known for organisms in the database, so pasted queries cannot be added to the clock table.</div>'); return; }
   const rows = clockTable.getRows().slice();
   dRes.hits.forEach(h => rows.push({ gene: dRes.gene, q: orgLabel(dRes.org), hit: orgLabel(h.id), t: mrcaAge(dRes.org, h.id), ident: h.ident, bits: Math.round(h.bits) }));
@@ -1219,7 +1258,9 @@ Lab.$('#d-run').addEventListener('click', () => { dRan = true; });
 ['#d-org', '#d-gene', '#d-paste'].forEach(s => { Lab.$(s).addEventListener('input', () => { dTouched = true; }); Lab.$(s).addEventListener('change', () => { dTouched = true; }); });
 Lab.$$('#dprog-seg button, #d-set input').forEach(el => el.addEventListener('click', () => { dTouched = true; }));
 Lab.$('#tree-blast').addEventListener('click', () => { treeTried = true; });
-Lab.results('#blast-sim', { graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-table', title: 'Your BLAST data' }] });
+blastPanels = Lab.results('#blast-sim', { start: 'data', graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-hits', title: 'Hits from this search' }, { el: '#blast-table', title: 'Your recorded hits (top 5 per search)' }] });
+Lab.gate('#log-blast', () => lastRes ? '' : 'Press BLAST first');
+Lab.gate('#tree-blast', () => lastRes ? '' : 'Press BLAST first');
 Lab.results('#d-sim', { graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
 const matrixDone = () => { const D = DATASETS[dsKey], s = Lab.store.get('matrix:' + dsKey, {}); return D.taxa.every(t => D.traits.every((tr, j) => !!s[t.id + j] === tr[1].includes(t.id))) && Object.values(s).some(Boolean); };
 const blastGenes = () => new Set(blastTable.getRows().map(r => r.gene));
