@@ -249,6 +249,8 @@
           </div>
           <canvas class="viz" id="plates" aria-label="Six agar plates: LB, LB/amp, and LB/amp/ara for the −pGLO tube (top row) and the +pGLO tube (bottom row)."></canvas>
           <div class="readouts" id="plate-readouts"></div>
+          <div id="plate-timelapse"></div>
+          <p class="small muted" id="tl-note" role="status" hidden></p>
             </div>
           </div>
         </div>
@@ -359,7 +361,7 @@
   <section class="step wrap wrap--wide gutter" data-step="Evaluate" data-minutes="10">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
     <div class="step-body">
-      <div class="pred-recall" id="ev-recall" aria-live="polite"></div>
+      <div id="ev-recall"></div>
       <div class="prompts-2" id="evaluate-prompts"></div>
     </div>
   </section>
@@ -747,13 +749,17 @@ const loop = Lab.loop(dt => {
   }
   drawBench();
   if (!phase && !queue.length) { busy = false; overlay = ''; pipette = null; pending = null; $('#step-prog').hidden = true; $('#step-why').hidden = true; drawBench(); renderSteps(); saveSim(); return false; }
-});
+}, { tick: 1 });
 function run(phases) {
   busy = true; queue.push(...phases); $('#do-step').disabled = true; $('#skip-step').disabled = true;
   $('#do-step').textContent = 'Working…'; $('#step-why').hidden = false; loop.start();
 }
 /* Catch up with real time after a reload: finish every phase that should already be over, resume the one in progress. */
+let ffwd = false;   // true while a reload replays finished phases: no sounds, no recording
 function fastForward(sec) {
+  ffwd = true; try { ffwd1(sec); } finally { ffwd = false; }
+}
+function ffwd1(sec) {
   let off = sec;
   while (queue.length) {
     const ph = queue[0], d = ph.dur * speed();
@@ -779,7 +785,7 @@ function wait(label, simSec, dur = 4) {
   }, end() { overlay = ''; $('#step-prog').hidden = true; } };
 }
 function clock(s) { s = Math.round(s); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`; }
-function drop(ti, what, apply, dur = 0.7) { return { dur, tick(k) { pipette = { ti, k, what }; }, end() { pipette = null; apply(); } }; }
+function drop(ti, what, apply, dur = 0.7) { return { dur, tick(k) { pipette = { ti, k, what }; }, end() { pipette = null; if (!ffwd) Lab.sound.play('click'); apply(); } }; }
 function fn(f) { return { dur: 0, end: f }; }
 let roStatus = 'Ready';
 function updateRO(status) {
@@ -1172,8 +1178,11 @@ function doStep(skip, resumeSec) {
       const missing = PLATES.filter(p => !$('#pr-' + p.id).value);
       if (missing.length) { msg(`Make a prediction for every plate first (${missing.length} left).`); return; }
       S.incub = choices.incub;
-      P.push(fn(() => { overlay = ''; }), wait('Incubating at 37 °C', S.incub * 3600, S.incub >= 48 ? 7 : 5), fn(() => {
-        plates = incubatePlates(S); runCount++;
+      const live = resumeSec == null, incW = wait('Incubating at 37 °C', S.incub * 3600, S.incub >= 48 ? 7 : 5);
+      let coming = null, lastG = -1;
+      const incTick = incW.tick; incW.tick = k => { incTick(k); const g = Math.round(k * 30); if (growPlates && g !== lastG) { lastG = g; growK = k; drawPlates(); } };
+      P.push(fn(() => { overlay = ''; coming = incubatePlates(S); growPlates = coming; growK = 0; drawPlates(); if (live) { tlInc.start(); Lab.sound.play('click'); } else tlNote('This run finished while the page was closed, so it has no replay.'); }), incW, fn(() => {
+        plates = coming || incubatePlates(S); growPlates = null; runCount++; if (live) { tlInc.stop(); Lab.sound.play('beep'); }
         drawPlates(); renderPlateReadouts(); gradePreds(); setupZoom(); fillVolumes();
         { const ok = PLATES.filter(p => $('#pr-' + p.id).value === plates[p.id].cls).length; Lab.toast(`${ok} of 6 predictions matched your plates`, { type: ok === 6 ? 'ok' : 'info', announce: false, key: 'preds' }); }
         updateRO(`Incubated ${S.incub} h at 37 °C`);
@@ -1259,7 +1268,9 @@ function drawPlate(ctx, cx, cy, R, p, med, mk, label) {
     ctx.strokeStyle = 'rgba(255,248,225,0.18)'; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(cx, cy, R * (0.25 + i * 0.16), Rg.uniform() * TAU, Rg.uniform() * TAU + 1.6); ctx.stroke(); }   // spreading tracks
   }
   if (p && p.incubated) {
+    const gk = p.gk == null ? 1 : p.gk;
     if (p.lawn) {   // confluent lawn: creamy, slightly glossy film with a bumpy margin and spreading streaks
+      ctx.save(); ctx.globalAlpha = gk;
       ctx.fillStyle = uv ? 'rgba(160,150,205,0.32)' : 'rgba(236,224,192,0.72)';
       ctx.beginPath(); for (let i = 0; i <= 72; i++) { const a = i / 72 * TAU, rr = R * (0.925 + 0.012 * Math.sin(a * 7 + seed) + 0.008 * Math.sin(a * 23)); i ? ctx.lineTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a)) : ctx.moveTo(cx + rr * Math.cos(a), cy + rr * Math.sin(a)); } ctx.closePath(); ctx.fill();
       if (!uv) {
@@ -1268,9 +1279,10 @@ function drawPlate(ctx, cx, cy, R, p, med, mk, label) {
       }
       ctx.fillStyle = uv ? 'rgba(190,180,230,0.25)' : 'rgba(252,246,228,0.6)';
       p.tex.forEach(([x, y, r]) => { ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, Math.max(0.8, r * R), 0, TAU); ctx.fill(); });
+      ctx.restore();
     }
     const cols = p.cols.slice().sort((a, b) => b.r - a.r);
-    cols.forEach(c => { const x = cx + c.x * R, y = cy + c.y * R, r = Math.max(1.2, c.r * R); if (uv) colonyUV(ctx, x, y, r, c.glow); else colonyRoom(ctx, x, y, r, c.sat); });
+    cols.forEach(c => { if (gk < 0.12) return; const x = cx + c.x * R, y = cy + c.y * R, r = Math.max(1.2 * gk, c.r * R * gk); if (uv) colonyUV(ctx, x, y, r, c.glow); else colonyRoom(ctx, x, y, r, c.sat); });
   }
   // marker label written on the bottom of the dish, read through the agar
   if (label) {
@@ -1299,6 +1311,7 @@ function drawPlate(ctx, cx, cy, R, p, med, mk, label) {
   if (mk && mk.length) mk.forEach(([x, y]) => { const r = Math.max(5, R * 0.035); ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(cx + x * R, cy + y * R, r, 0, TAU); ctx.stroke(); ctx.strokeStyle = C('--stain'); ctx.lineWidth = 2; ctx.stroke(); });
 }
 const PLATE_LABEL = { 'm-lb': '− LB', 'm-amp': '− LB/amp', 'm-ara': '− LB/amp/ara', 'p-lb': '+ LB', 'p-amp': '+ LB/amp', 'p-ara': '+ LB/amp/ara' };
+let growPlates = null, growK = 1;   // while incubating: the coming plates, drawn as colonies growing (gk = 0..1)
 function drawPlates() {
   const { ctx, w, h } = platesCv; ctx.clearRect(0, 0, w, h);
   tableTop(ctx, w, h, uv);
@@ -1312,21 +1325,32 @@ function drawPlates() {
   ['−pGLO', '+pGLO'].forEach((t, r) => ctx.fillText(t, 4, fs * 2.2 + rh * (r + 0.5) + fs / 3));
   PLATES.forEach((p, i) => {
     const col = i % 3, row = Math.floor(i / 3);
-    drawPlate(ctx, left + cw * (col + 0.5), fs * 2.2 + rh * (row + 0.5), R, plates && plates[p.id], p.med, null, R > 50 ? PLATE_LABEL[p.id] : '');
+    const pp = growPlates ? Object.assign({}, growPlates[p.id], { gk: growK }) : plates && plates[p.id];
+    drawPlate(ctx, left + cw * (col + 0.5), fs * 2.2 + rh * (row + 0.5), R, pp, p.med, null, R > 50 ? PLATE_LABEL[p.id] : '');
   });
   if (uv) { ctx.fillStyle = '#d6c6ff'; ctx.font = `${fs - 1}px ${SANS}`; ctx.textAlign = 'right'; ctx.fillText('UV light', w - 6, h - 6); }
 }
 platesCv.onresize = drawPlates;
+/* Timelapse of the incubation (live runs only: a run finished by the clock after a reload has no frames to record). */
+const tlInc = Lab.timelapse(platesCv, { fps: 6, maxFrames: 120, width: 420, label: 'Incubating plates', key: 'incubation' });
+tlInc.mount('#plate-timelapse');
+function tlNote(m) { const n = $('#tl-note'); n.textContent = m; n.hidden = !m; }
+tlInc.onchange = () => { if (tlInc.recording) tlNote(''); };
 function renderPlateReadouts() {
   const el = $('#plate-readouts');
   if (!plates || !plates['p-amp'] || !plates['p-amp'].incubated) { el.innerHTML = `<div class="readout"><span class="k">Plates</span><span class="v" style="font-size:.95rem">${plates ? 'Spread, not yet incubated' : 'Not yet plated'}</span></div>`; return; }
   const desc = { none: 'No growth', lawn: 'Lawn', white: 'Colonies', glow: 'Colonies' };
   el.innerHTML = PLATES.map(p => { const gl = plates[p.id].cols.filter(c => c.glow).length; return `<div class="readout"><span class="k">${p.name}</span><span class="v" style="font-size:.95rem">${desc[plates[p.id].cls]}${plates[p.id].cls === 'none' || plates[p.id].cls === 'lawn' ? '' : `<span class="glow-count" data-plate="${p.id}">Glowing colonies: ${gl}</span>`}</span></div>`; }).join('');
 }
+/* predictCompare reads each prediction from a saved field, so write the text of each plate's choice there. */
+function savePlatePredText() {
+  const rec = Lab.store.get('plate-pred-record'); if (!rec) return;
+  PLATES.forEach((p, i) => { if (rec[i]) Lab.store.set('field:plate-pred-' + p.id, rec[i].pred); });
+}
 function gradePreds() {
   /* Save what the student predicted for each plate next to what grew, so Reflect can quote it. */
   Lab.store.set('plate-pred-record', PLATES.map(p => ({ plate: p.name, pred: ($('#pr-' + p.id).selectedOptions[0] || {}).text || '', actual: (PRED_OPTS.find(o => o[0] === plates[p.id].cls) || [])[1] || '' })));
-  if (typeof renderPlateRecall === 'function') renderPlateRecall();
+  savePlatePredText();
   PLATES.forEach(p => {
     const v = $('#pr-' + p.id).value, act = plates[p.id].cls, pill = $('#pp-' + p.id);
     pill.hidden = false;
@@ -1360,11 +1384,11 @@ $('#zoom').addEventListener('click', e => {
   if (x * x + y * y > 1) return;
   const m = marks[id] = marks[id] || [];
   const hit = m.findIndex(([mx, my]) => (mx - x) ** 2 + (my - y) ** 2 < 0.035 ** 2);
-  if (hit >= 0) m.splice(hit, 1); else m.push([x, y]);
+  if (hit >= 0) m.splice(hit, 1); else { m.push([x, y]); Lab.sound.play('click'); }
   drawZoom(); saveSim();
 });
 $('#clear-marks').addEventListener('click', () => { marks[zsel.value] = []; drawZoom(); saveSim(); });
-$('#use-count').addEventListener('click', () => { $('#c-count').value = (marks[zsel.value] || []).length; if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); });
+$('#use-count').addEventListener('click', () => { Lab.sound.play('click'); $('#c-count').value = (marks[zsel.value] || []).length; if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); });
 
 /* ---------- Calculations ---------- */
 function fillVolumes() {
@@ -1563,14 +1587,16 @@ cer.insertAdjacentHTML('afterend', '<details class="disclose disclose--sm cer-hi
 [['C', 'cer-c', 'Claim: Did your +pGLO cells take up and express the plasmid genes?'], ['E', 'cer-e', 'Evidence: Which plates, colony counts, and UV observations support your claim?'], ['R', 'cer-r', 'Reasoning: Connect your evidence to the genes on pGLO (bla, GFP, araC) and to selection.']].forEach(([L, key, label]) => {
   const p = Lab.prompt(cer, { key, label, rows: 3 }); $('label', p).dataset.letter = L;
 });
-/* Quote the student's saved plate predictions (saved when they incubate) next to what grew. */
-function renderPlateRecall() {
-  const rec = Lab.store.get('plate-pred-record'), box = $('#ev-recall');
-  if (!rec || !rec.length) { box.innerHTML = '<blockquote><span class="pred-recall-k">Your plate predictions</span><p class="muted">You have not incubated plates yet, so there are no predictions to compare. Do the Transform part first.</p></blockquote>'; return; }
-  box.innerHTML = '<blockquote><span class="pred-recall-k">Your plate predictions and what grew</span><ul>' + rec.map(r => `<li><strong>${r.plate}</strong>: you predicted “${r.pred}”; result: ${r.actual}</li>`).join('') + '</ul></blockquote>';
-}
-renderPlateRecall(); Lab.onShow('#ev-recall', renderPlateRecall);
-Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your plate predictions (quoted above) with what grew. Which predictions were right, which were wrong, and what did the differences teach you about transformation, selection, or the <em>ara</em> promoter?', rows: 4 });
+/* Each saved plate prediction beside what grew on that plate. */
+savePlatePredText();
+PLATES.forEach((p, i) => Lab.predictCompare('#ev-recall', {
+  predictKey: 'plate-pred-' + p.id, title: 'Plate ' + p.name + ': your prediction vs. what grew',
+  part: 'Transform', partId: 'transform',
+  getResult: () => { const rec = Lab.store.get('plate-pred-record'); return rec && rec[i] ? rec[i] : null; },
+  summarize: r => { const pl = plates && plates[p.id]; return `${r.plate}: ${r.actual.toLowerCase()}` + (pl && pl.incubated && !pl.lawn && pl.count ? ` (${pl.count} colonies)` : '') + '.'; },
+  delta: r => r.pred === r.actual ? 'Your prediction matched this plate.' : `You predicted “${r.pred}”, but the plate showed: ${r.actual.toLowerCase()}.`
+}));
+Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your plate predictions (shown above) with what grew. Which predictions were right, which were wrong, and what did the differences teach you about transformation, selection, or the <em>ara</em> promoter?', rows: 4 });
 [['ev1', 'What challenges did you run into? Did you make any incorrect assumptions?'],
  ['ev2', 'What are possible sources of error in the transformation procedure? How would you reduce them if you repeated it?'],
  ['ev3', 'Were the efficiency calculations straightforward? Which step was hardest?'],
