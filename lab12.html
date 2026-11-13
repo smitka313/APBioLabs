@@ -239,6 +239,7 @@
         </div>
         <div class="stage">
           <canvas class="viz" id="vial" aria-label="An upright vial of fruit flies. After tapping, flies start at the bottom and most climb toward the top."></canvas>
+          <div id="vial-timelapse"></div><p class="small muted" id="vial-tl-note" role="status" hidden></p>
           <div class="readouts"><div class="readout"><span class="k">Time (s)</span><span class="v" id="vial-t">0</span></div><div class="readout"><span class="k">Top half (flies)</span><span class="v" id="vial-top">—</span></div><div class="readout"><span class="k">Bottom half (flies)</span><span class="v" id="vial-bot">—</span></div></div>
         </div>
       </div>
@@ -295,6 +296,7 @@
             <div class="readout"><span class="k">Flies at B side (flies)</span><span class="v" id="ro-b">—</span></div>
             <div class="readout"><span class="k">Flies at A (%)</span><span class="v" id="ro-pct">—</span></div>
           </div>
+          <div id="ch-timelapse"></div><p class="small muted" id="ch-tl-note" role="status" hidden></p>
           <div class="count-panel" id="count-panel" hidden>
             <strong id="count-title">Count the flies</strong>
             <div class="row">
@@ -1042,20 +1044,25 @@ function vialDraw() {
 const vialSaveEnd = () => Lab.store.set('vial-last', vialF.map(f => ({ x: f.x, y: f.y, v: f.v, th: f.th, rest: f.rest })));
 let vialRestored = false;
 const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Fly age' }, { key: 't0', label: 'Top half at 0 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top half at 15 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top half at 30 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total flies', unit: 'flies', num: true, digits: 0 }] });
+const vialRecTl = Lab.timelapse(vialCv, { fps: 6, maxFrames: 120, width: 360, label: 'Geotaxis vial (30 s, 2× speed)', key: 'vial' });
+vialRecTl.mount('#vial-timelapse');
+const tlNoteV = m => { const n = $('#vial-tl-note'); n.textContent = m; n.hidden = !m; };
 const vialLoop = Lab.loop(dt => {
   const step = dt * 2; let left = step;
   while (left > 0) { const d = Math.min(0.05, left); vialStep(d); left -= d; }
   const prev = vialT; vialT += step;
   const top = () => vialF.filter(f => f.y < 0.5).length;
   if (prev < 15 && vialT >= 15) vialRec.t15 = top();
-  if (vialT >= 30) { vialT = 30; vialRec.t30 = top(); vialDraw(); vialTable.addRow(vialRec); vialSaveEnd(); Lab.store.set('vial-run', null); $('#vial-run').disabled = false; return false; }
+  if (vialT >= 30) { vialT = 30; vialRec.t30 = top(); vialDraw(); if (vialRecTl.recording) { vialRecTl.stop(); Lab.sound.play('beep'); } vialTable.addRow(vialRec); vialSaveEnd(); Lab.store.set('vial-run', null); $('#vial-run').disabled = false; return false; }
   vialDraw();
-});
+}, { tick: 1 });
 $('#vial-run').addEventListener('click', () => {
+  Lab.sound.play('click'); tlNoteV('');
   vialSetup(true); vialT = 0; $('#vial-run').disabled = true;
   vialRec = { trial: vialTable.getRows().length + 1, age: $('#vial-age').value === 'old' ? 'Old (4 wk)' : 'Young', t0: vialF.filter(f => f.y < 0.5).length, n: vialF.length };
   Lab.store.set('vial-run', { rec: vialRec, t0: Date.now() });
   if (Lab.reducedMotion()) { for (let t = 0; t < 30; t += 0.05) { vialStep(0.05); if (Math.abs(t - 15) < 0.025) vialRec.t15 = vialF.filter(f => f.y < 0.5).length; } vialT = 30; vialRec.t30 = vialF.filter(f => f.y < 0.5).length; vialDraw(); vialTable.addRow(vialRec); vialSaveEnd(); $('#vial-run').disabled = false; return; }
+  vialRecTl.start();
   vialLoop.start();
 });
 vialCv.onresize = vialDraw;
@@ -1067,7 +1074,7 @@ vialCv.onresize = vialDraw;
     let t = 0; while (t < goal) { const d = Math.min(0.05, goal - t); vialStep(d); const prev = t; t += d; if (prev < 15 && t >= 15) vialRec.t15 = topN(); }
     vialT = goal;
     if (goal >= 30) { vialT = 30; vialRec.t30 = topN(); vialTable.addRow(vialRec); vialSaveEnd(); Lab.store.set('vial-run', null); vialDraw(); }
-    else { $('#vial-run').disabled = true; vialLoop.start(); }
+    else { $('#vial-run').disabled = true; tlNoteV('This trial was already going when the page reloaded, so it has no replay.'); vialLoop.start(); }
   } else if (sv) Lab.store.set('vial-run', null);
   if (vialT > 0) vialRestored = true;
   else { const lr = vialTable.getRows(), lf = Lab.store.get('vial-last'); if (lr.length && Array.isArray(lf) && lf.length === lr[lr.length - 1].n) { vialF = lf.map(f => Object.assign({}, f)); vialT = 30; vialRestored = true; } } }
@@ -1374,16 +1381,19 @@ function chAdvance(adv) {
     if (simT >= nextCount - 1e-6) { simT = nextCount; if (hitInterval()) break; }
   }
 }
+const chRec = Lab.timelapse(() => (orient === 'h' ? cvH : cvV), { fps: 4, maxFrames: 160, width: 420, label: 'Choice-chamber trial', key: 'chamber' });
+chRec.mount('#ch-timelapse');
+const tlNoteC = m => { const n = $('#ch-tl-note'); n.textContent = m; n.hidden = !m; };
 const chLoop = Lab.loop(dt => {
   if (!trial || paused) { drawChamber(); return false; }
   chAdvance(dt * speedX);
   drawChamber();
   if (performance.now() - chSaved > 1200) chSave(true);
   if (!trial || paused) return false;
-});
+}, { tick: 1 });
 function hitInterval() {
   const a = countA(flies), b = flies.length - a;
-  trial.pending = { t: +(simT / 60).toFixed(2), aa: a, ab: b };
+  trial.pending = { t: +(simT / 60).toFixed(2), aa: a, ab: b }; Lab.sound.play('beep');
   if ($('#c-pause').checked) {
     paused = true; $('#count-panel').hidden = false; $('#count-title').textContent = `Time ${clock(simT)}: count the flies on each side of the dashed midline`;
     $('#cnt-a').value = ''; $('#cnt-b').value = ''; $('#cnt-a').focus({ preventScroll: true });
@@ -1421,6 +1431,7 @@ function finishTrial() {
   const x = chi(A, B);
   trialsTable.addRow({ n: trialsTable.getRows().length + 1, choice: `${shortName(trial.cfg.a)} vs ${shortName(trial.cfg.b)}`, setup: setupLabel(trial.cfg), A, B, chi2: x.chi2, sig: x.reject ? 'Yes: preference' : 'No' });
   trial = null; paused = false; $('#c-run').disabled = false; $('#count-panel').hidden = true;
+  if (chRec.recording) chRec.stop();
   chSave(false);
 }
 $('#c-run').addEventListener('click', () => {
@@ -1429,11 +1440,12 @@ $('#c-run').addEventListener('click', () => {
   flies = makeFlies(+cn.value); simT = 0;
   trial = { cfg, phi: makePhi(cfg), ft: FLY[cfg.type], int: +$('#c-int').value, dur: +$('#c-dur').value, rows: [] };
   nextCount = trial.int; paused = false; intTable.clear();
-  $('#c-run').disabled = true;
+  $('#c-run').disabled = true; Lab.sound.play('click'); tlNoteC('');
+  if (!Lab.reducedMotion()) chRec.start();
   chSave(true);
   chLoop.start();
 });
-$('#c-stop').addEventListener('click', () => { if (!trial) return; trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false); });
+$('#c-stop').addEventListener('click', () => { if (!trial) return; if (chRec.recording) chRec.stop(); trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false); });
 $('#c-swap').addEventListener('click', () => {
   if (trial) return;
   if (orient === 'h') flipped = !flipped;
@@ -1449,7 +1461,7 @@ flies = makeFlies(+cn.value);
     setOrientBtn(); showCanvas();
     if (sv.active && sv.cfg && FLY[sv.cfg.type]) {
       trial = { cfg: sv.cfg, phi: makePhi(sv.cfg), ft: FLY[sv.cfg.type], int: sv.int, dur: sv.dur, rows: sv.rows || [], pending: sv.pending };
-      nextCount = sv.nextCount; paused = false; $('#c-run').disabled = true;
+      nextCount = sv.nextCount; paused = false; $('#c-run').disabled = true; tlNoteC('This trial was already going when the page reloaded, so it has no replay.');
       if (sv.paused && trial.pending) { paused = true; $('#count-panel').hidden = false; $('#count-title').textContent = `Time ${clock(simT)}: count the flies on each side of the dashed midline`; }
       else { chAdvance(Math.max(0, (Date.now() - sv.at) / 1000) * speedX); if (trial && !paused) { chSave(true); chLoop.start(); } }
       if (trial) chSave(true);
@@ -1468,6 +1480,7 @@ const dTable = Lab.table('#d-table', {
   onChange: rows => dChart.update({ categories: rows.map((r, i) => `${i + 1}`), series: [{ name: 'Mean % at A (± 2 SE)', points: rows.map((r, i) => ({ x: `${i + 1}`, y: r.pct, err: r.err || 0 })) }] })
 });
 $('#d-run').addEventListener('click', () => {
+  Lab.sound.play('click');
   const lightV = $('#d-light').value, [light, color] = lightV.includes('-') ? lightV.split('-') : [lightV, 'white'];
   const base = { a: $('#d-a').value, b: $('#d-b').value, film: $('#d-film').checked, orient: $('#d-orient').value, light, color, type: $('#d-type').value };
   const nT = +dtr.value, n = +dn.value, swap = $('#d-swap').checked, res = [];
@@ -1505,24 +1518,27 @@ workedExample({ anchor: $('#x-a').closest('.grid-2'), button: $('#x-example'), t
 ].forEach(([key, label]) => Lab.prompt('#an-prompts', { key, label, rows: 3 }));
 [['C', 'cer-c', 'Claim: What environmental factor(s) trigger a fruit fly response, and in which direction?'], ['E', 'cer-e', 'Evidence: Which counts, percentages, and chi-square results support your claim?'], ['R', 'cer-r', 'Reasoning: Why would this behavior increase a fruit fly\'s fitness? Connect it to finding food and egg-laying sites.']].forEach(([L, key, label]) => { const p = Lab.prompt('#cer', { key, label, rows: 3 }); $('label', p).dataset.letter = L; });
 $('#cer').insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
-/* Predict first: quote the student's own saved prediction(s) back in Reflect. */
-function predRecall(host, items) {
-  const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
-  host.prepend(box);
-  const render = () => {
-    box.innerHTML = '';
-    items.forEach(([key, name]) => {
-      const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
-      box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
-        v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
-    });
-  };
-  render();
-  document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
-  Lab.onShow(host, render);
-}
-predRecall($('#evaluate-prompts').parentElement, [['predict-vial', 'geotaxis vial'], ['predict', 'choice chamber'], ['d-hyp', 'your own experiment']]);
-Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your three predictions (quoted above) with your results: the vial, the choice chamber, and your own experiment. Cite the percentage of flies at one end or a χ² value for each. Which predictions held up, and what explains the ones that did not?', rows: 5 });
+/* Predict vs. actual: each saved prediction beside the matching result. */
+const evCompare = Lab.h('div', { id: 'ev-compare' }); $('#evaluate-prompts').parentElement.prepend(evCompare);
+Lab.predictCompare(evCompare, {
+  predictKey: 'predict-vial', title: 'Geotaxis vial: your prediction vs. your trial', part: 'Geotaxis vial', partId: 'geotaxis-vial',
+  getResult: () => { const rs = vialTable.getRows().filter(r => r && r.n > 0 && numOk(r.t30) && numOk(r.t0)); return rs.length ? rs : null; },
+  summarize: rs => { const l = rs[rs.length - 1]; return `Vial trial ${l.trial} (${l.age} flies): ${l.t0} of ${l.n} flies were in the top half at 0 s and ${l.t30} of ${l.n} (${Lab.fmt(100 * l.t30 / l.n, 0)}%) at 30 s.`; },
+  delta: rs => { const l = rs[rs.length - 1], gain = l.t30 - l.t0; return gain > 0 ? `${gain} more flies were in the top half after 30 s, so they climbed against gravity (negative geotaxis).` : gain < 0 ? `${-gain} fewer flies were in the top half after 30 s: they did not climb.` : 'The number of flies in the top half did not change.'; }
+});
+Lab.predictCompare(evCompare, {
+  predictKey: 'predict', title: 'Choice chamber: your prediction vs. your trials', part: 'Choice chamber', partId: 'choice-chamber',
+  getResult: () => { const rs = trialsTable.getRows().filter(r => r && r.A + r.B > 0 && numOk(r.chi2)); return rs.length ? rs : null; },
+  summarize: rs => rs.slice(-4).map(r => `${r.choice} (${r.setup}): ${r.A} at A, ${r.B} at B (${Lab.fmt(100 * r.A / (r.A + r.B), 0)}% at A, χ² = ${Lab.fmt(r.chi2, 2)})`).join('; ') + '.',
+  delta: rs => { const sg = rs.filter(r => r.chi2 > 3.84); return sg.length ? `${sg.length} of ${rs.length} trial${rs.length > 1 ? 's' : ''} showed a significant preference (χ² > 3.84): ${sg.map(r => r.choice).join(', ')}.` : `None of your ${rs.length} trial${rs.length > 1 ? 's' : ''} reached χ² > 3.84, so you cannot reject "no preference" for any of them.`; }
+});
+Lab.predictCompare(evCompare, {
+  predictKey: 'd-hyp', title: 'Your own experiment: your hypothesis vs. your results', chartEl: '#d-chart', part: 'Design', partId: 'design',
+  getResult: () => { const rs = dTable.getRows().filter(r => r && numOk(r.pct)); return rs.length ? rs : null; },
+  summarize: rs => rs.slice(-4).map(r => `${r.cond}: ${r.A} at A, ${r.B} at B (mean ${Lab.fmt(r.pct, 0)}% at A, χ² = ${Lab.fmt(r.chi2, 2)})`).join('; ') + '.',
+  delta: rs => { const sg = rs.filter(r => r.sig === 'Yes'); return sg.length ? `${sg.length} of ${rs.length} condition${rs.length > 1 ? 's' : ''} showed a significant preference (χ² > 3.84).` : `No condition reached χ² > 3.84 in your ${rs.length} run${rs.length > 1 ? 's' : ''}.`; }
+});
+Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your three predictions (shown above) with your results: the vial, the choice chamber, and your own experiment. Cite the percentage of flies at one end or a χ² value for each. Which predictions held up, and what explains the ones that did not?', rows: 5 });
 [['ev1', 'Is there anything shared by all of the factors the flies were attracted to?'],
  ['ev2', 'Is there anything shared by all of the factors the flies avoided?'],
  ['ev3', 'How do you explain the behavior of fruit flies in someone\'s kitchen or in nature based on your data? Do your data explain all fruit fly movements? Should they really be called "fruit" flies?'],
