@@ -375,11 +375,15 @@
     const raw = range / Math.max(1, ticks), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
     return (r >= 5 ? 10 : r >= 2 ? 5 : r >= 1 ? 2 : 1) * mag;
   }
-  function niceRange(lo, hi, ticks = 5) {
-    if (!isFinite(lo) || !isFinite(hi)) { lo = 0; hi = 1; }
+  /* exact = both ends were given by the page: keep them as they are, pick a nice step that fits inside, and start the ticks at the first
+     nice multiple at or above the lower end (t0), so a 2-12 pH axis stays 2-12 even in a narrow panel. */
+  function niceRange(lo, hi, ticks = 5, exact = false) {
+    if (!isFinite(lo) || !isFinite(hi)) { lo = 0; hi = 1; exact = false; }
     if (lo === hi) { hi = lo + 1; lo = lo - (lo === 0 ? 0 : 1); }
-    const step = niceStep(hi - lo, ticks);
-    return { lo: Math.floor(lo / step + 1e-9) * step, hi: Math.ceil(hi / step - 1e-9) * step, step };
+    const step = niceStep(hi - lo, exact ? ticks + 2 : ticks);
+    if (exact && hi > lo) return { lo, hi, step, t0: Math.ceil(lo / step - 1e-9) * step };
+    const r = { lo: Math.floor(lo / step + 1e-9) * step, hi: Math.ceil(hi / step - 1e-9) * step, step };
+    r.t0 = r.lo; return r;
   }
   const tickFmt = (v, step) => { const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Lab.fmt(v, Math.min(d, 6)); };
   const errOf = p => { const e = p && p.err != null ? Math.abs(+p.err) : 0; return isFinite(e) ? e : 0; }; // a missing or NaN error bar (e.g. SE of one plant) must not wreck the axis scale
@@ -457,9 +461,9 @@
         const cats = o.categories || (series[0] ? series[0].points.map(p => p.x) : []);
         let yMax = -Infinity, yMin = 0;
         series.forEach(s => s.points.forEach(p => { if (!isFinite(p.y)) return; yMax = Math.max(yMax, p.y + errOf(p)); yMin = Math.min(yMin, p.y - errOf(p)); }));
-        const yr = niceRange(o.yMin != null ? o.yMin : yMin, o.yMax != null ? o.yMax : (isFinite(yMax) ? yMax : 1));
+        const yr = niceRange(o.yMin != null ? o.yMin : yMin, o.yMax != null ? o.yMax : (isFinite(yMax) ? yMax : 1), 5, o.yMin != null && o.yMax != null);
         const Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
-        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
+        for (let v = yr.t0; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
         const gw = iw / Math.max(1, cats.length), bw = Math.min(56, (gw * 0.72) / Math.max(1, series.length));
         cats.forEach((c, ci) => {
           const gx = m.l + gw * ci + gw / 2;
@@ -479,11 +483,11 @@
         let xs = [], ys = [];
         series.forEach(s => s.points.forEach(p => { if (isFinite(p.x) && isFinite(p.y)) { xs.push(p.x); ys.push(p.y - errOf(p), p.y + errOf(p)); } }));
         if (!empty) (o.hLines || []).forEach(l => { if (isFinite(l.y)) ys.push(l.y); });
-        const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), W < 480 ? 4 : 6);
-        const yr = niceRange(o.yMin != null ? o.yMin : Math.min(0, ...(ys.length ? ys : [0])), o.yMax != null ? o.yMax : Math.max(...(ys.length ? ys : [1])), 5);
+        const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), W < 480 ? 4 : 6, o.xMin != null && o.xMax != null);
+        const yr = niceRange(o.yMin != null ? o.yMin : Math.min(0, ...(ys.length ? ys : [0])), o.yMax != null ? o.yMax : Math.max(...(ys.length ? ys : [1])), 5, o.yMin != null && o.yMax != null);
         const X = v => m.l + (v - xr.lo) / (xr.hi - xr.lo) * iw, Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
-        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
-        for (let v = xr.lo; v <= xr.hi + 1e-9; v += xr.step) svg += `<line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${m.t + ih}"/>${showX ? `<text x="${X(v)}" y="${m.t + ih + 18}" text-anchor="middle">${tickFmt(v, xr.step)}</text>` : ''}`;
+        for (let v = yr.t0; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
+        for (let v = xr.t0; v <= xr.hi + 1e-9; v += xr.step) svg += `<line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${m.t + ih}"/>${showX ? `<text x="${X(v)}" y="${m.t + ih + 18}" text-anchor="middle">${tickFmt(v, xr.step)}</text>` : ''}`;
         if (yr.lo < 0 && yr.hi > 0) svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${Y(0)}" y2="${Y(0)}"/>`;
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/><line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/>`;
         (empty ? [] : o.hLines || []).forEach(l => { if (!isFinite(l.y)) return; svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
