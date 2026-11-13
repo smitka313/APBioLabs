@@ -270,7 +270,7 @@
             <div class="readout"><span class="k">Gen 1 mean (hairs)</span><span class="v" id="c-m1">—</span></div>
             <div class="readout"><span class="k">Gen 2 mean, selected (hairs)</span><span class="v" id="c-m2">—</span></div>
             <div class="readout"><span class="k">Gen 2 mean, control (hairs)</span><span class="v" id="c-mc">—</span></div>
-            <div class="readout"><span class="k">Welch t, Gen 2 vs Gen 1 (no units)</span><span class="v" id="c-t">—</span></div>
+            <div class="readout"><span class="k">Welch t, Gen 2 vs Gen 1</span><span class="v" id="c-t">—</span></div>
           </div>
           <div id="cmp-hist"></div>
           <div id="cmp-means"></div>
@@ -279,9 +279,9 @@
       <h3>Calculate the response yourself</h3>
       <p class="muted small">Use the means in the table below. S = parents' mean − generation 1 mean. R = generation 2 (selected line) mean − generation 1 mean. Realized heritability h² = R ÷ S.</p>
       <div class="calc">
-        <div class="field"><label for="in-S">Selection differential S (hairs)</label><input id="in-S" type="number" step="any" data-save="calc-S" data-label="Selection differential S"></div>
-        <div class="field"><label for="in-R">Response R (hairs)</label><input id="in-R" type="number" step="any" data-save="calc-R" data-label="Response R"></div>
-        <div class="field"><label for="in-h2">Realized heritability h² (no units)</label><input id="in-h2" type="number" step="any" data-save="calc-h2" data-label="Realized heritability"></div>
+        <div class="field"><label for="in-S">Selection differential S (hairs)</label><input id="in-S" type="number" step="any" placeholder="e.g. 8.5" data-save="calc-S" data-label="Selection differential S"></div>
+        <div class="field"><label for="in-R">Response R (hairs)</label><input id="in-R" type="number" step="any" placeholder="e.g. 3.2" data-save="calc-R" data-label="Response R"></div>
+        <div class="field"><label for="in-h2">Realized heritability h²</label><input id="in-h2" type="number" step="any" placeholder="e.g. 0.38" data-save="calc-h2" data-label="Realized heritability"></div>
         <button class="btn" id="check-calc" type="button">Check my numbers</button>
       </div>
       <p class="status" id="calc-status" aria-live="polite"></p>
@@ -325,7 +325,7 @@
             <div class="readout"><span class="k">Start mean (trait units)</span><span class="v" id="d-r0">—</span></div>
             <div class="readout"><span class="k">Final mean, selected (trait units)</span><span class="v" id="d-r1">—</span></div>
             <div class="readout"><span class="k">Final mean, control (trait units)</span><span class="v" id="d-r2">—</span></div>
-            <div class="readout"><span class="k">Welch t, final gen (no units)</span><span class="v" id="d-rt">—</span></div>
+            <div class="readout"><span class="k">Welch t, final gen</span><span class="v" id="d-rt">—</span></div>
           </div>
           <div id="d-chart"></div>
           <div id="d-hist"></div>
@@ -341,25 +341,26 @@
     <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Did evolution happen?</h2></header>
     <div class="step-body">
       <h3>Two-sample t-test</h3>
-      <p class="muted small">Compare two populations' means. Fill in from your simulation or type in your own class data. If |t| is larger than the critical value, the difference is unlikely to be chance alone (p &lt; 0.05).</p>
+      <p class="muted small">Compare two populations' means. Type your own numbers, press <strong>Use my data</strong> to fill them from your simulation, or press <strong>Show a worked example</strong> for clearly labelled sample numbers (never saved as your work). If |t| is larger than the critical value, the difference is unlikely to be chance alone (p &lt; 0.05).</p>
+      <p class="callout callout--tip" id="tt-banner" hidden style="margin:8px 0"><strong>EXAMPLE — not your data.</strong> These are sample numbers. <button class="btn btn--sm" id="tt-clear-ex" type="button">Clear example</button></p>
       <div class="tt-grid">
         <fieldset><legend>Population A</legend>
-          <div class="field"><label for="ta-m">Mean (hairs)</label><input id="ta-m" type="number" step="any" value="12.0"></div>
-          <div class="field"><label for="ta-s">Standard deviation (hairs)</label><input id="ta-s" type="number" step="any" value="9.0"></div>
-          <div class="field"><label for="ta-n">n (plants)</label><input id="ta-n" type="number" step="1" value="150"></div>
+          <div class="field"><label for="ta-m">Mean (hairs)</label><input id="ta-m" type="number" step="any" placeholder="e.g. 12.0"></div>
+          <div class="field"><label for="ta-s">Standard deviation (hairs)</label><input id="ta-s" type="number" step="any" placeholder="e.g. 9.0"></div>
+          <div class="field"><label for="ta-n">n (plants)</label><input id="ta-n" type="number" step="1" placeholder="e.g. 150"></div>
         </fieldset>
         <fieldset><legend>Population B</legend>
-          <div class="field"><label for="tb-m">Mean (hairs)</label><input id="tb-m" type="number" step="any" value="20.0"></div>
-          <div class="field"><label for="tb-s">Standard deviation (hairs)</label><input id="tb-s" type="number" step="any" value="10.0"></div>
-          <div class="field"><label for="tb-n">n (plants)</label><input id="tb-n" type="number" step="1" value="150"></div>
+          <div class="field"><label for="tb-m">Mean (hairs)</label><input id="tb-m" type="number" step="any" placeholder="e.g. 20.0"></div>
+          <div class="field"><label for="tb-s">Standard deviation (hairs)</label><input id="tb-s" type="number" step="any" placeholder="e.g. 10.0"></div>
+          <div class="field"><label for="tb-n">n (plants)</label><input id="tb-n" type="number" step="1" placeholder="e.g. 150"></div>
         </fieldset>
       </div>
-      <div class="row"><button class="btn btn--primary" id="tt-run" type="button">Calculate t</button><button class="btn" id="tt-fill" type="button">Fill with Gen 1 vs Gen 2 (selected)</button></div>
+      <div class="row"><button class="btn btn--primary" id="tt-run" type="button">Calculate t</button><button class="btn" id="tt-fill" type="button">Use my data: Gen 1 vs Gen 2 (selected)</button><button class="btn btn--ghost" id="tt-example" type="button">Show a worked example</button></div>
       <div class="readouts">
         <div class="readout"><span class="k">Difference (same units as the means)</span><span class="v" id="tt-d">—</span></div>
-        <div class="readout"><span class="k">t (no units)</span><span class="v" id="tt-t">—</span></div>
-        <div class="readout"><span class="k">df, Welch (no units)</span><span class="v" id="tt-df">—</span></div>
-        <div class="readout"><span class="k">Critical t, 0.05 (no units)</span><span class="v" id="tt-c">—</span></div>
+        <div class="readout"><span class="k">t</span><span class="v" id="tt-t">—</span></div>
+        <div class="readout"><span class="k">df, Welch</span><span class="v" id="tt-df">—</span></div>
+        <div class="readout"><span class="k">Critical t, 0.05</span><span class="v" id="tt-c">—</span></div>
       </div>
       <p class="status" id="tt-status" aria-live="polite"></p>
       <h3>Questions</h3>
@@ -1462,7 +1463,7 @@ const Predict = (function () {
     refreshPopMenu(); drawAll(); renderCompare();
     status('#g2-status', `Generation ${g} grown from ${par.length} parents (S = ${fmt(selHist[selHist.length - 1].S, 1)} hairs). New mean: ${fmt(S.mean(scoredVals(nx)), 1)} hairs.`, 'ok');
   });
-  $('#check-calc').addEventListener('click', () => {
+  function checkCalc(restore) {
     if (!(selected && selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#calc-status', 'Score generation 2 first so there are numbers to check against.', 'bad'); return; }
     const m1 = S.mean(scoredVals(g1)), Sv = S.mean(selected.map(valOf)) - m1, Rv = S.mean(scoredVals(selLine[1])) - m1, h2 = Rv / Sv;
     if (!checkFields([{ el: $('#in-S'), name: 'your value for S (selection differential)' }, { el: $('#in-R'), name: 'your value for R (response)' }, { el: $('#in-h2'), name: 'your value for h² (heritability)' }])) { status('#calc-status', 'Fix the highlighted entries, then press Check again.', 'bad'); return; }
@@ -1470,7 +1471,9 @@ const Predict = (function () {
     const okS = Math.abs(iS - Sv) <= 0.15, okR = Math.abs(iR - Rv) <= 0.15, okh = Math.abs(ih - h2) <= 0.03;
     const msg = [okS ? 'S ✓' : `S: check (expected about ${fmt(Sv, 2)})`, okR ? 'R ✓' : `R: check (expected about ${fmt(Rv, 2)})`, okh ? 'h² ✓' : `h²: check (expected about ${fmt(h2, 2)})`].join(' · ');
     status('#calc-status', msg, okS && okR && okh ? 'ok' : 'warn');
-  });
+    if (!restore) Lab.store.set('calc-checked', true);
+  }
+  $('#check-calc').addEventListener('click', () => checkCalc(false));
 
   Lab.prompt('#score-prompts', { key: 'g1-describe', label: 'Step 5: Describe the generation 1 distribution. What shape is it? Which measure of center (mean or median) fits it better, and why? How did changing the bin width change the picture?', rows: 4 });
   Lab.prompt('#score-prompts', { key: 'g1-method', label: 'How reliable were your hand counts compared with the recount? Propose one change to the counting procedure that would make class counts more consistent.', rows: 3 });
@@ -1565,44 +1568,67 @@ const Predict = (function () {
   dCanvas.onresize = drawDesign; drawDesign();
   themeHooks.push(drawAll, drawBee, drawDesign);
   let runNo = (dTable.getRows().reduce((m, r) => Math.max(m, r.run || 0), 0));
-  $('#d-run').addEventListener('click', () => {
-    const k = $('#d-trait').value, T = TRAITS[k], frac = +dEls.pct.value / 100, N = +dEls.n.value, G = +dEls.gens.value, reps = +dEls.reps.value;
-    const env = { sd: +$('#d-env').value, herb: $('#d-herb').checked };
-    const r = Lab.rng();
+  /* One run = parameters + a seed. The simulation is deterministic given both, so the last run is saved compactly
+     (store key 'dlast') and replayed on load: readouts, charts and the plants picture all come back. */
+  function dParams() { return { k: $('#d-trait').value, frac: +dEls.pct.value, N: +dEls.n.value, G: +dEls.gens.value, reps: +dEls.reps.value, sd: +$('#d-env').value, herb: $('#d-herb').checked, dir: dDir }; }
+  function simulateDesign(P, seedN) {
+    const k = P.k, frac = P.frac / 100, N = P.N, G = P.G, reps = P.reps, env = { sd: P.sd, herb: P.herb };
+    const r = Lab.rng(seedN);
     const base = founders(N, env, r);
-    const statsOf = pl => { const v = pl.map(p => p.ph[k]); return { n: v.length, mean: S.mean(v), sd: S.sd(v), se: S.se(v), vals: v }; };
     const lines = [];
     for (let rep = 0; rep < reps; rep++) {
       let pop = base; const hist = [pop];
-      for (let g = 0; g < G; g++) { pop = breed(pickExtreme(pop, k, frac, dDir, r), N, env, r); hist.push(pop); }
+      for (let g = 0; g < G; g++) { pop = breed(pickExtreme(pop, k, frac, P.dir, r), N, env, r); hist.push(pop); }
       lines.push({ name: reps > 1 ? `Selected line ${rep + 1}` : 'Selected line', hist });
     }
     let cpop = base; const chist = [cpop]; const npar = Math.max(2, Math.round(N * frac));
     for (let g = 0; g < G; g++) { cpop = breed(pickRandom(cpop, npar, r), N, env, r); chist.push(cpop); }
     lines.push({ name: 'Control (random parents)', hist: chist, ctrl: true });
-    runNo++;
-    const setup = `${T.label} ${dDir > 0 ? '↑' : '↓'} ${dEls.pct.value}%, N=${N}, ${env.sd > 1 ? 'uneven' : 'uniform'}${env.herb ? ', herbivory' : ''}`;
-    const newRows = [];
-    lines.forEach(L => L.hist.forEach((pl, g) => { const s = statsOf(pl); newRows.push({ run: runNo, setup, line: L.name, gen: g + 1, n: s.n, mean: s.mean, sd: s.sd, se: s.se }); }));
-    dTable.setRows(dTable.getRows().concat(newRows));
+    return { base, lines, chist, env };
+  }
+  function renderDesign(P, R, runN, msg) {
+    const k = P.k, T = TRAITS[k], G = P.G, { base, lines, chist } = R;
+    const statsOf = pl => { const v = pl.map(p => p.ph[k]); return { n: v.length, mean: S.mean(v), sd: S.sd(v), se: S.se(v), vals: v }; };
     dChart.update({ yLabel: `Mean ${T.label.toLowerCase()} ± 2 SE (${T.unit})`, xMin: 1, series: lines.map(L => ({ name: L.name, dash: !!L.ctrl, points: L.hist.map((pl, g) => { const s = statsOf(pl); return { x: g + 1, y: s.mean, err: 2 * s.se }; }) })) });
     const first = statsOf(base), lastSel = statsOf(lines[0].hist[G]), lastCtrl = statsOf(chist[G]);
-    const Hh = histogram([{ name: 'Gen 1', vals: first.vals }, { name: `Gen ${G + 1} · selected line 1`, vals: lastSel.vals }, { name: `Gen ${G + 1} · control`, vals: lastCtrl.vals }], T.bin * (k === 'trich' ? 1 : 1), k === 'trich' ? 60 : null);
+    const Hh = histogram([{ name: 'Gen 1', vals: first.vals }, { name: `Gen ${G + 1} · selected line 1`, vals: lastSel.vals }, { name: `Gen ${G + 1} · control`, vals: lastCtrl.vals }], T.bin, k === 'trich' ? 60 : null);
     dHist.update({ categories: Hh.cats, series: Hh.series, xLabel: `${T.label} (${T.unit})` });
     $('#d-r0').textContent = fmt(first.mean, T.digits + 1); $('#d-r1').textContent = fmt(lastSel.mean, T.digits + 1); $('#d-r2').textContent = fmt(lastCtrl.mean, T.digits + 1);
     const w = welch(lastCtrl.mean, lastCtrl.sd, lastCtrl.n, lastSel.mean, lastSel.sd, lastSel.n);
     $('#d-rt').textContent = `${fmt(w.t, 2)} ${w.sig ? '(p<0.05)' : '(n.s.)'}`;
     dLast = { line: lines[0].hist }; drawDesign();
-    Lab.toast(`Run ${runNo} finished: ${lines.length} lines recorded in the Data tab`, { type: 'ok', announce: false });
-    status('#d-status', `Run ${runNo} finished: ${G} generation${G > 1 ? 's' : ''} of selection, ${reps} replicate line${reps > 1 ? 's' : ''} plus a control.`, 'ok');
+    status('#d-status', msg || `Run ${runN} finished: ${G} generation${G > 1 ? 's' : ''} of selection, ${P.reps} replicate line${P.reps > 1 ? 's' : ''} plus a control.`, 'ok');
+    return { statsOf };
+  }
+  $('#d-run').addEventListener('click', () => {
+    const P = dParams(), T = TRAITS[P.k], seedN = Math.floor(Math.random() * 1e9);
+    const R = simulateDesign(P, seedN), env = R.env;
+    runNo++;
+    const setup = `${T.label} ${dDir > 0 ? '↑' : '↓'} ${dEls.pct.value}%, N=${P.N}, ${env.sd > 1 ? 'uneven' : 'uniform'}${env.herb ? ', herbivory' : ''}`;
+    const newRows = [];
+    const { statsOf } = renderDesign(P, R, runNo);
+    R.lines.forEach(L => L.hist.forEach((pl, g) => { const s = statsOf(pl); newRows.push({ run: runNo, setup, line: L.name, gen: g + 1, n: s.n, mean: s.mean, sd: s.sd, se: s.se }); }));
+    dTable.setRows(dTable.getRows().concat(newRows));
+    Lab.store.set('dlast', { P, seed: seedN, runNo });
+    Lab.toast(`Run ${runNo} finished: ${R.lines.length} lines recorded in the Data tab`, { type: 'ok', announce: false });
   });
-  $('#d-clear').addEventListener('click', () => { dTable.clear(); runNo = 0; status('#d-status', 'Results table cleared.', ''); });
+  /* Restore the last run after a reload (only while the results table still holds that run). */
+  function restoreDesign() {
+    const sv = Lab.store.get('dlast'); if (!sv || !sv.P || !TRAITS[sv.P.k]) return;
+    if (!dTable.getRows().some(r => r.run === sv.runNo)) return;
+    const P = sv.P;
+    $('#d-trait').value = P.k; dEls.pct.value = P.frac; dEls.n.value = P.N; dEls.gens.value = P.G; dEls.reps.value = P.reps; $('#d-env').value = String(P.sd); $('#d-herb').checked = !!P.herb;
+    dDir = P.dir; Lab.$$('#d-dir button').forEach(x => x.setAttribute('aria-pressed', +x.dataset.dir === dDir)); dSync();
+    try { renderDesign(P, simulateDesign(P, sv.seed), sv.runNo, `Run ${sv.runNo} restored: ${P.G} generation${P.G > 1 ? 's' : ''} of selection, ${P.reps} replicate line${P.reps > 1 ? 's' : ''} plus a control.`); } catch (e) { /* leave empty */ }
+  }
+  $('#d-clear').addEventListener('click', () => { dTable.clear(); runNo = 0; Lab.store.set('dlast', null); status('#d-status', 'Results table cleared.', ''); });
   Lab.prompt('#design-a', { key: 'd-results', label: 'Results: describe your graph. Did the replicate lines respond the same way? How did the selected lines compare with the control?', rows: 4 });
   Lab.prompt('#design-a', { key: 'd-stats', label: 'Which statistic did you use to decide whether the lines differ (2 SE error bars, t-test)? Report the numbers.', rows: 3 });
   Lab.prompt('#design-a', { key: 'd-env', label: 'How much of the variation you studied could come from the environment? Use a run with uneven conditions or herbivore damage as evidence. Does an environmental effect accumulate across generations the way selection does?', rows: 4 });
 
   /* ================= ANALYZE ================= */
-  function runT() {
+  function runT(mode) {
+    mode = typeof mode === 'string' ? mode : 'run'; // 'run' | 'example' | 'restore'
     const el = id => $(id), v = id => parseFloat($(id).value);
     const clearOut = () => ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(id => $(id).textContent = '—');
     const ok = checkFields([
@@ -1619,19 +1645,28 @@ const Predict = (function () {
     $('#tt-d').textContent = fmt(v('#tb-m') - v('#ta-m'), 2); $('#tt-t').textContent = fmt(w.t, 2); $('#tt-df').textContent = fmt(w.df, 1); $('#tt-c').textContent = fmt(w.crit, 2);
     if (!isFinite(w.t)) { clearOut(); status('#tt-status', 'The t statistic could not be calculated from these numbers. Check each entry.', 'bad'); }
     else status('#tt-status', w.sig ? `|t| = ${fmt(Math.abs(w.t), 2)} > ${fmt(w.crit, 2)}: the means are significantly different (p < 0.05).` : `|t| = ${fmt(Math.abs(w.t), 2)} ≤ ${fmt(w.crit, 2)}: the difference could be due to chance (not significant at p = 0.05).`, w.sig ? 'ok' : 'warn');
-    if (isFinite(w.t)) Own.key('welch-t', { label: 'Welch t (Population B vs A)', value: +fmt(w.t, 2), unit: '', part: 'Analyze' });
+    if (isFinite(w.t) && mode !== 'example') Lab.store.set('tt', { v: ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].map(id => $(id).value) });
+    if (isFinite(w.t) && mode === 'example') status('#tt-status', 'Example numbers (not your data). ' + $('#tt-status').textContent, w.sig ? 'ok' : 'warn');
+    if (isFinite(w.t) && mode === 'run') Own.key('welch-t', { label: 'Welch t (Population B vs A)', value: +fmt(w.t, 2), unit: '', part: 'Analyze' });
   }
-  /* Starting t-test numbers differ per student (seeded, realistic bounds), so copied entries will not match another student's. */
-  { const R = Lab.rng((Lab.identity.seed.seed ^ 0x7a11) >>> 0), U = (a, b) => a + R.uniform() * (b - a), put = (id, v) => { const el = $(id); if (el && !el.dataset.userset) el.value = v; };
-    put('#ta-m', U(10, 14).toFixed(1)); put('#ta-s', U(8, 10.5).toFixed(1)); put('#ta-n', R.int(140, 160));
-    put('#tb-m', U(18, 23).toFixed(1)); put('#tb-s', U(9, 11.5).toFixed(1)); put('#tb-n', R.int(140, 160)); }
-  $('#tt-run').addEventListener('click', runT);
+  $('#tt-run').addEventListener('click', () => runT('run'));
+  $('#tt-example').addEventListener('click', () => {
+    [['#ta-m', '12.0'], ['#ta-s', '9.0'], ['#ta-n', '150'], ['#tb-m', '20.0'], ['#tb-s', '10.0'], ['#tb-n', '150']].forEach(([id, v]) => { $(id).value = v; });
+    $('#tt-banner').hidden = false; runT('example');
+  });
+  function clearExample() {
+    ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach(id => { $(id).value = ''; fieldError($(id), ''); });
+    ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(id => $(id).textContent = '—'); status('#tt-status', '', ''); $('#tt-banner').hidden = true;
+  }
+  $('#tt-clear-ex').addEventListener('click', clearExample);
+  ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach(id => $(id).addEventListener('input', () => { $('#tt-banner').hidden = true; }));
   ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n', '#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   $('#tt-fill').addEventListener('click', () => {
     if (!(selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#tt-status', 'Score generation 2 in the simulation first.', 'bad'); return; }
     const a = scoredVals(g1), b = scoredVals(selLine[1]);
+    $('#tt-banner').hidden = true;
     $('#ta-m').value = fmt(S.mean(a), 2); $('#ta-s').value = fmt(S.sd(a), 2); $('#ta-n').value = a.length;
-    $('#tb-m').value = fmt(S.mean(b), 2); $('#tb-s').value = fmt(S.sd(b), 2); $('#tb-n').value = b.length; runT();
+    $('#tb-m').value = fmt(S.mean(b), 2); $('#tb-s').value = fmt(S.sd(b), 2); $('#tb-n').value = b.length; runT('run');
   });
   [
     ['a-different', 'Are the two generations (before and after selection) actually different? Describe both histograms and their descriptive statistics.'],
@@ -1670,6 +1705,9 @@ const Predict = (function () {
   /* ---------------- start ---------------- */
   reset(); const restored = replayOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
   if (restored) status('#score-status', 'Your earlier scoring was restored.', 'ok');
+  restoreDesign();
+  { const sv = Lab.store.get('tt'); if (sv && Array.isArray(sv.v) && sv.v.length === 6) { ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach((id, i) => { $(id).value = sv.v[i]; }); runT('restore'); } }
+  if (Lab.store.get('calc-checked') && $('#in-S').value && $('#in-R').value && $('#in-h2').value) checkCalc(true);
 
   /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
@@ -1678,10 +1716,10 @@ const Predict = (function () {
   let dTouched = false;
   ['#d-trait', '#d-pct', '#d-n', '#d-gens', '#d-reps', '#d-env', '#d-herb'].forEach(s => { $(s).addEventListener('input', () => { dTouched = true; }); $(s).addEventListener('change', () => { dTouched = true; }); });
   $('#d-dir').addEventListener('click', () => { dTouched = true; });
-  Lab.results('#gs-sim', { graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
+  Lab.results('#gs-sim', { start: 'data', graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
   Lab.results('#sel-sim', { graph: [{ el: '#hist-sel', title: 'Parents vs generation 1' }], data: [] });
-  Lab.results('#g2-sim', { graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
-  Lab.results('#d-sim', { graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
+  Lab.results('#g2-sim', { start: 'data', graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
+  Lab.results('#d-sim', { start: 'data', graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
 
   Lab.steps('#gs-steps', [
     { id: 'hand', text: 'Hand-count 5 plants', target: '#record', done: () => handTable.getRows().length >= 5, hint: 'Tap a seedling, tap each hair on the <em>right</em> margin, then press <strong>Record my count</strong>.' },

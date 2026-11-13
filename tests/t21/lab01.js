@@ -4,13 +4,9 @@ module.exports = async ({ b, ok, ctxAs, open, keyres, ownText, frqChecks, frqRel
   const c1 = await ctxAs(b, 'Ada Lovelace', '3');
   const p = await open(c1, 'lab01.html');
   const a1 = await tt(p);
-  const c2 = await ctxAs(b, 'Grace Hopper', '3');
-  const p2 = await open(c2, 'lab01.html');
-  const a2 = await tt(p2);
-  ok(a1 !== a2, 'two students get different starting t-test numbers (' + a1 + ' vs ' + a2 + ')');
+  ok(a1 === ',,,,,', 'the t-test calculator starts empty (no pre-filled sample numbers): ' + a1);
   await p.reload(); await p.waitForTimeout(900);
-  ok((await tt(p)) === a1, 'same student gets the same starting t-test numbers after reload');
-  await p2.close();
+  ok((await tt(p)) === a1, 'still empty after reload when the student has not calculated anything');
 
   // personal prompts wait for data
   await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
@@ -47,5 +43,5 @@ module.exports = async ({ b, ok, ctxAs, open, keyres, ownText, frqChecks, frqRel
   ok(/realized h² = -?\d\.\d\d/.test(await ownText(p, 'own-response')), 'personal prompt still quotes values after reload');
   ok((await keyres(p, L, 'welch-t')).value === t.value, 'key results survive reload');
   await frqReload(p, L);
-  await c1.close(); await c2.close();
+  await c1.close();
 };
