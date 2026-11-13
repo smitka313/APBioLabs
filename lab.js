@@ -304,6 +304,27 @@
   const CANVASES = []; // every Lab.canvas, so a part that becomes visible can be resized and redrawn at once
   /* Lab.chart draws in a 640-unit-wide viewBox. A responsive chart (opts.responsive, or any chart inside a
      results panel) draws at its real CSS width instead, so axis text stays 12px in narrow columns. */
+  /* Wrap an axis label into lines that fit `room` px (≈0.6 em per character, generous): one line at full size, else two or
+     three lines at full size, else smaller text (down to 10.5px) on two or three lines. A word longer than a line is split.
+     Never an ellipsis: a long label gets more lines, not fewer letters. → {lines, fs} */
+  function wrapLabel(str, room, fs = 13, minFs = 10.5, per = 0.6) {
+    const words = String(str == null ? '' : str).split(/\s+/).filter(Boolean);
+    if (!words.length) return { lines: [''], fs };
+    const fill = cap => {
+      const lines = []; let cur = '';
+      words.forEach(wd => {
+        while (wd.length > cap) { if (cur) { lines.push(cur); cur = ''; } lines.push(wd.slice(0, cap)); wd = wd.slice(cap); }
+        if (cur && (cur + ' ' + wd).length > cap) { lines.push(cur); cur = wd; } else cur = cur ? cur + ' ' + wd : wd;
+      });
+      if (cur) lines.push(cur);
+      return lines;
+    };
+    const at = f => fill(Math.max(4, Math.floor(room / (per * f))));
+    for (const n of [1, 2, 3]) {   // fewest lines first: full size, then (for 2 and 3 lines) slightly smaller text
+      for (let f = fs; f >= (n === 1 ? fs : minFs) - 1e-6; f -= 0.5) { const l = at(f); if (l.length <= n) return { lines: l, fs: f }; }
+    }
+    return { lines: fill(Math.max(4, Math.floor(room / (per * minFs)))), fs: minFs };
+  }
   Lab.chart = function (el, opts) {
     if (typeof el === 'string') el = $(el);
     el.classList.add('chart');
@@ -323,6 +344,18 @@
     function render() { lastW = chooseW(); el.innerHTML = build(lastW); el.classList.toggle('is-empty', !chartHasData(cur)); }
     function build(W) {
       const o = cur, H = Math.round((o.height || 360) * Math.max(0.62, Math.min(1, W / 640))), m = { t: 16, r: 18, b: 54, l: 64 };
+      /* Axis labels wrap instead of being cut: the x label and the y label take extra lines, and the margins grow to hold them. */
+      const xl = wrapLabel(o.xLabel, W - 100), LH = 15;
+      m.b += LH * (xl.lines.length - 1);
+      let catWrap = null;
+      if (o.type === 'bar') { // long category names wrap under their bars too
+        const cats0 = o.categories || ((o.series || [])[0] ? o.series[0].points.map(p => p.x) : []);
+        const gw0 = (W - 64 - 18 - 30) / Math.max(1, cats0.length);
+        catWrap = cats0.map(c => wrapLabel(c, Math.max(30, gw0 - 8), 12, 10.5));
+        m.b += LH * (Math.max(1, ...catWrap.map(w => w.lines.length)) - 1);
+      }
+      const yl = wrapLabel(o.yLabel, Math.max(40, H - m.t - m.b - 6));
+      m.l += LH * (yl.lines.length - 1);
       const iw = W - m.l - m.r, ih = H - m.t - m.b;
       const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true }, s));
       let svg = '';
@@ -339,7 +372,8 @@
         const gw = iw / Math.max(1, cats.length), bw = Math.min(56, (gw * 0.72) / Math.max(1, series.length));
         cats.forEach((c, ci) => {
           const gx = m.l + gw * ci + gw / 2;
-          svg += `<text x="${gx}" y="${m.t + ih + 18}" text-anchor="middle">${esc(c)}</text>`;
+          const cw = (catWrap && catWrap[ci]) || { lines: [String(c)], fs: 12 };
+          svg += `<text x="${gx}" y="${m.t + ih + 18}" text-anchor="middle"${cw.fs < 12 ? ` style="font-size:${cw.fs}px"` : ''}>${cw.lines.map((ln, li) => `<tspan x="${gx}" dy="${li ? 14 : 0}">${esc(ln)}</tspan>`).join('')}</text>`;
           series.forEach((s, si) => {
             const p = s.points.find(pp => pp.x === c) || s.points[ci]; if (!p || !isFinite(p.y)) return;
             const x = gx - (bw * series.length) / 2 + bw * si, y0 = Y(Math.max(0, yr.lo)), y1 = Y(p.y);
@@ -361,7 +395,7 @@
         if (yr.lo < 0 && yr.hi > 0) svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${Y(0)}" y2="${Y(0)}"/>`;
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/><line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/>`;
         (empty ? [] : o.hLines || []).forEach(l => { if (!isFinite(l.y)) return; svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
-        (empty ? [] : o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>` : ''}`; });
+        (empty ? [] : o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? (X(a.x) > m.l + iw * 0.6 ? `<text x="${X(a.x) - 5}" y="${m.t + 12}" text-anchor="end" style="fill:var(--stain)">${esc(a.label)}</text>` : `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>`) : ''}`; });
         const clipId = 'lc' + (++clipCount); // not Math.random: keeps the seeded stream for simulations
         svg += `<defs><clipPath id="${clipId}"><rect x="${m.l}" y="${m.t - 6}" width="${iw + 6}" height="${ih + 12}"/></clipPath></defs><g clip-path="url(#${clipId})">`;
         series.forEach(s => {
@@ -385,13 +419,10 @@
         const bw = Math.min(iw - 8, Math.max(...lines.map(l => l.length)) * per + 32), bh = lines.length * 20 + 18, cx = m.l + iw / 2, cy = m.t + ih / 2;
         svg += `<g class="chart-empty"><rect x="${cx - bw / 2}" y="${cy - bh / 2}" width="${bw}" height="${bh}" rx="10"/>${lines.map((l, i) => `<text x="${cx}" y="${cy - bh / 2 + 9 + 20 * i + 15}" text-anchor="middle">${esc(l)}</text>`).join('')}</g>`;
       }
-      svg += `<text class="axis-label" x="${m.l + iw / 2}" y="${H - 10}" text-anchor="middle">${esc(o.xLabel || '')}</text>`;
-      { // a long y label shrinks (then truncates) to stay inside the plot height instead of running into the title above
-        let yl = String(o.yLabel || ''), fs = 13; const room = Math.max(40, ih - 6), per = 0.6; // ≈ px per character per px of font (generous: unit text has wide symbols)
-        if (yl.length * per * fs > room) fs = Math.max(10, Math.floor(10 * room / (yl.length * per)) / 10);
-        const fit = Math.floor(room / (per * fs));
-        if (yl.length > fit) yl = yl.slice(0, Math.max(1, fit - 1)).trimEnd() + '…';
-        svg += `<text class="axis-label" transform="translate(16 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle"${fs < 13 ? ` style="font-size:${fs}px"` : ''}>${esc(yl)}</text>`;
+      { // axis labels, wrapped (see wrapLabel); the y label reads bottom to top, its first line outermost
+        const xs = xl.fs < 13 ? ` style="font-size:${xl.fs}px"` : '', ys = yl.fs < 13 ? ` style="font-size:${yl.fs}px"` : '';
+        xl.lines.forEach((ln, i) => { svg += `<text class="axis-label" x="${m.l + iw / 2}" y="${H - 10 - LH * (xl.lines.length - 1 - i)}" text-anchor="middle"${xs}>${esc(ln)}</text>`; });
+        yl.lines.forEach((ln, i) => { svg += `<text class="axis-label" transform="translate(${14 + LH * i} ${m.t + ih / 2}) rotate(-90)" text-anchor="middle"${ys}>${esc(ln)}</text>`; });
       }
       const named = series.filter(s => s.name);
       const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
