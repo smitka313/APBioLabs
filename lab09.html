@@ -282,6 +282,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1297,14 +1299,15 @@ function makeGel(rootSel, measSel, cfg) {
 function reportFrags(P, list) {
   const L = list.map(g => ({ sample: g.sample, band: g.band, n: g.v.length, mean: Lab.stats.mean(g.v), lo: Math.min(...g.v), hi: Math.max(...g.v), se2: g.v.length > 1 ? 2 * Lab.stats.se(g.v) : null }));
   if (JSON.stringify(Lab.store.get('frags-' + P)) !== JSON.stringify(L)) Lab.store.set('frags-' + P, L);
-  if (!L.length) return;
+  if (!L.length) { dropKeyRes(P === 'g1' ? 'frag-sizes' : 'blood-frags'); return; }
   const fmtL = rows => rows.map(g => Math.round(g.mean).toLocaleString('en-US')).join(', ');
   if (P === 'g1') {
     const g1 = L.filter(g => g.sample === L[0].sample);
     keyRes('frag-sizes', { label: 'Estimated fragment sizes: ' + L[0].sample + ' (practice gel)', value: fmtL(g1), unit: 'bp', part: 'Standard curve' });
   } else {
     const bl = L.filter(g => g.sample === 'Blood').sort((a, b) => a.band - b.band);
-    if (bl.length) keyRes('blood-frags', { label: 'Estimated fragment sizes: blood at the scene', value: fmtL(bl), unit: 'bp', part: 'Design: crime scene' });
+    if (bl.length) keyRes('blood-frags', { label: 'Estimated fragment sizes: blood at the scene', value: fmtL(bl), unit: 'bp', part: 'Design: crime scene' })
+    else dropKeyRes('blood-frags');
   }
 }
 function measBlock(sel, key) {
@@ -1386,7 +1389,7 @@ function compare(list) {
   const tol = +Lab.$('#tol').value / 100; Lab.$('#tol-out').textContent = Math.round(tol * 100) + '%';
   const by = {}; lastList.forEach(g => { (by[g.sample] = by[g.sample] || []).push(Lab.stats.mean(g.v)); });
   const blood = (by.Blood || []).slice().sort((a, b) => b - a);
-  if (!blood.length) { Lab.$('#compare').innerHTML = '<p class="small muted">Measure and size the Blood lane and the suspects\' lanes, with a marker on the same gel, to fill this table.</p>'; return; }
+  if (!blood.length) { Lab.$('#compare').innerHTML = '<p class="small muted">Measure and size the Blood lane and the suspects\' lanes, with a marker on the same gel, to fill this table.</p>'; dropKeyRes('suspects-match'); if (Lab.store.get('compare-last')) Lab.store.set('compare-last', null); return; }
   const cmp = [];
   const rows = ['Mason', 'Gladson', 'Bobby'].map(p => {
     const b = (by[p] || []).slice().sort((a, b2) => b2 - a); if (!b.length) return `<tr><td>${p}</td><td colspan="5" class="muted">not sized yet</td></tr>`;

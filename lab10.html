@@ -415,6 +415,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1298,7 +1300,7 @@ function workedExample(o) {
     p2calc.recheck();
     const rows = barnT.getRows(), rp = ratioP(), rl = ratioL(), corr = $('#p2-correct').checked;
     const eff = $('#p2-eff'); eff.innerHTML = '';
-    if (!rows.length || !isFinite(rp) || !isFinite(rl)) { p2Chart.update({ series: [] }); $('#sankey-larva').innerHTML = '<p class="note">Run a barn to draw the energy budget.</p>'; $('#sankey-larva-note').textContent = ''; return; }
+    if (!rows.length || !isFinite(rp) || !isFinite(rl)) { p2Chart.update({ series: [] }); $('#sankey-larva').innerHTML = '<p class="note">Run a barn to draw the energy budget.</p>'; $('#sankey-larva-note').textContent = ''; dropKeyRes('transfer-eff', 'assim-eff', 'respiration'); return; }
     const A = rows.map(b => audit(b, rp, rl, corr));
     const g = k => meanSE(A.map(a => a[k]));
     const cats = [['Consumed (C)', 'C'], ['Frass (F)', 'F'], ['Growth (P)', 'P'], ['Respiration (R)', 'R']];
@@ -1815,13 +1817,14 @@ cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-h
     return { a, b, npp: (b.dry - a.dry) / (b.age - a.age) * KP };
   }
   function reportP1(rows) {
-    const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
+    const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) { dropKeyRes('npp', 'avg-daily-gain'); return; }
     const last = rs[rs.length - 1], nb = nppBetween(rows);
+    if (!nb) dropKeyRes('npp');
     if (nb) keyRes('npp', { label: 'NPP per plant per day, between your day ' + nb.a.age + ' and day ' + nb.b.age + ' harvests', value: Math.round(nb.npp * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
     keyRes('avg-daily-gain', { label: 'Average daily gain since planting (day ' + last.age + ' harvest)', value: Math.round(gainOf(last) * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
   }
   function reportP2(C, F, P, R) {
-    if (!(C > 0)) return;
+    if (!(C > 0)) { dropKeyRes('transfer-eff', 'assim-eff', 'respiration'); return; }
     keyRes('transfer-eff', { label: 'Energy transfer efficiency: growth ÷ eaten (P/C)', value: Math.round(1000 * P / C) / 10, unit: '%', part: 'Part 2: Larvae' });
     keyRes('assim-eff', { label: 'Assimilation efficiency (A/C)', value: Math.round(1000 * (C - F) / C) / 10, unit: '%', part: 'Part 2: Larvae' });
     keyRes('respiration', { label: 'Respiration per larva (by difference)', value: Math.round(R * 1000) / 1000, unit: 'kcal', part: 'Part 2: Larvae' });

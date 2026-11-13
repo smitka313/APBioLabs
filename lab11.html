@@ -451,6 +451,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1025,14 +1027,14 @@ function frq(host, o) {
     else { msg.textContent = ''; }
     saveSt();
   }
-  $('#st-species').addEventListener('change', () => { st.sp = $('#st-species').value; newField(); });
-  seg(['#st-lower', '#st-upper'], id => { st.surf = id === '#st-lower' ? 'lo' : 'up'; newField(); });
+  $('#st-species').addEventListener('change', () => { st.sp = $('#st-species').value; newField(); setTimeout(() => stDensCheck(true), 0); });
+  seg(['#st-lower', '#st-upper'], id => { st.surf = id === '#st-lower' ? 'lo' : 'up'; newField(); setTimeout(() => stDensCheck(true), 0); });
   seg(['#st-m100', '#st-m400'], id => { st.mag = id === '#st-m100' ? 100 : 400; newField(); });
   $('#st-move').addEventListener('click', () => newField());
   const stTable = Lab.table('#st-table', {
     save: 'st-table',
     columns: [{ key: 'n', label: 'Field' }, { key: 'sp', label: 'Slide' }, { key: 'surf', label: 'Surface' }, { key: 'mag', label: 'Mag.' }, { key: 'count', label: 'Your count', unit: 'stomata', num: true, digits: 0 }, { key: 'actual', label: 'Actual count', unit: 'stomata', num: true, digits: 0 }, { key: 'dens', label: 'Density in this field', unit: 'stomata/mm²', num: true, digits: 0 }],
-    onChange: rows => { $('#st-n').textContent = String(rows.length); }
+    onChange: rows => { $('#st-n').textContent = String(rows.length); setTimeout(() => stDensCheck(true), 0); }
   });
   $('#st-record').addEventListener('click', () => {
     Lab.sound.play('click');
@@ -1044,18 +1046,25 @@ function frq(host, o) {
     newField();
   });
   $('#st-clear').addEventListener('click', () => stTable.clear());
-  $('#st-dens-check').addEventListener('click', () => {
+  /* The density message is derived from the recorded fields and the chosen plant and surface, so it is recomputed when they change (silent) and cleared if it no longer applies. */
+  function stDensCheck(silent) {
     const sp = STOM.find(s => s.k === st.sp), surf = st.surf === 'lo' ? 'lower' : 'upper';
+    if (!sp) return;
     const rows = stTable.getRows().filter(r => r.sp === sp.name && r.surf === surf && r.mag === '400X');
     const out = $('#st-dens-msg');
+    if (silent && !out.textContent) return;
+    if (silent) { const raw = $('#st-dens').value.trim(), nv = Number(raw); if (rows.length < 3 || raw === '' || !isFinite(nv) || nv <= 0) { out.textContent = ''; out.className = 'status'; Lab.store.set('st-dens-msg', { h: '', c: 'status' }); return; } }
     if (rows.length < 3) { out.textContent = `Record at least 3 fields at 400X for ${sp.name}, ${surf} surface (you have ${rows.length}).`; out.className = 'status bad'; return; }
-    const v = V.num($('#st-dens'), { name: 'your stomatal density', empty: 'Type your answer (stomata per mm\u00B2) before pressing Check.', gt: 0, gtMsg: 'Stomatal density must be greater than 0 per mm\u00B2.' });
+    const v = silent ? Number($('#st-dens').value) : V.num($('#st-dens'), { name: 'your stomatal density', empty: 'Type your answer (stomata per mm\u00B2) before pressing Check.', gt: 0, gtMsg: 'Stomatal density must be greater than 0 per mm\u00B2.' });
     if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     const m = S.mean(rows.map(r => r.count)), dens = m / (Math.PI * 0.225 * 0.225);
     const ok = Math.abs(v - dens) <= Math.max(2, dens * 0.03);
     out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². A typical average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
     out.className = 'status ' + (ok ? 'ok' : 'bad');
-  });
+    if (silent) Lab.store.set('st-dens-msg', { h: out.innerHTML, c: out.className });
+  }
+  $('#st-dens-check').addEventListener('click', () => stDensCheck(false));
+  $('#st-dens').addEventListener('input', () => { const o = $('#st-dens-msg'); if (o.textContent) { o.textContent = ''; o.className = 'status'; Lab.store.set('st-dens-msg', { h: '', c: 'status' }); } });   // the answer changed: the verdict on the old answer no longer applies
   { const sv = Lab.store.get('st-state');
     if (sv && STOM.some(q => q.k === sv.sp) && (sv.mag === 100 || sv.mag === 400) && (sv.surf === 'lo' || sv.surf === 'up')) {
       st.sp = sv.sp; st.surf = sv.surf; st.mag = sv.mag; st.seed = sv.seed;
@@ -1775,6 +1784,8 @@ function frq(host, o) {
 
   /* ---------- Key results, personal-data prompts, AP free-response ---------- */
   function reportRates(sel, meth) {
+    const keep = new Set(sel.map(g => g.cond));   // a condition that is no longer in the table (cleared, or another method/plant chosen) must not stay in the export
+    Object.keys(COND).forEach(c => { if (!keep.has(c)) dropKeyRes('tr-rate-' + c); });
     sel.forEach(g => keyRes('tr-rate-' + g.cond, { label: 'Transpiration rate per area: ' + g.ct + ' (' + g.st + ', ' + g.mt.toLowerCase() + ')', value: Math.round(g.m * 100) / 100, unit: METH[meth].rpaUnit, part: 'Water loss' }));
   }
   const an11 = partBody('Analyze');

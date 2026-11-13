@@ -370,6 +370,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1116,7 +1118,7 @@ function frq(host, o) {
   { const sv = Lab.store.get('d-run');
     if (sv && sv.res && sv.res.levels && DIV[sv.iv]) { ivSel.value = sv.iv; $('#d-levels').value = sv.res.levels.map(L => L.x).join(', '); $('#d-hint').textContent = DIV[sv.iv].hint; $('#d-pre-wrap').hidden = sv.iv !== 'temp'; playD(sv.res, sv.iv, Math.max(0, (Date.now() - sv.t0) / 1000 * 60 / 60)); }
     else if (sv) Lab.store.set('d-run', null); }
-  $('#d-clear').addEventListener('click', () => { if (dBusy) return; dRes = null; Lab.store.set('d-res', null); Lab.store.set('d-read', null); dTable.clear(); dSum.clear(); dC1.update({ series: [] }); dC2.update({ series: [] }); $('#d-stat').textContent = ''; $('#d-read').innerHTML = ''; dTubes = []; drawD(0); });
+  $('#d-clear').addEventListener('click', () => { if (dBusy) return; dRes = null; Lab.store.set('d-res', null); Lab.store.set('d-read', null); dTable.clear(); dSum.clear(); dC1.update({ series: [] }); dC2.update({ series: [] }); reportD(); $('#d-stat').textContent = ''; $('#d-read').innerHTML = ''; dTubes = []; drawD(0); });
   ivChanged();
   if (dRes) { ivSel.value = dRes.iv; $('#d-levels').value = dRes.levels.map(L => L.x).join(', '); $('#d-hint').textContent = DIV[dRes.iv].hint; $('#d-pre-wrap').hidden = dRes.iv !== 'temp'; drawD(0); renderD();
     { const d = DIV[dRes.iv], rd = $('#d-read'); rd.innerHTML = ''; dRes.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Mean initial rate at ' + L.x + (d.unit ? ' ' + d.unit : '') + ' (A₄₇₀/min)'), h('span', { class: 'v' }, fmt(L.mean, 3))))); $('#d-status').textContent = 'Done. Initial rate = slope of absorbance from 0 to 2 min.'; } }
@@ -1239,9 +1241,9 @@ function frq(host, o) {
   function reportP1() {
     /* Absorbance when the student used the spectrophotometer; otherwise the color-chart number (A = 0.075 × (n − 1)). */
     const A = r => numOk(r.aE) ? r.aE : numOk(r.cE) ? 0.075 * (r.cE - 1) : NaN;
-    const rows = (Lab.store.get('p1') || []).filter(r => r && numOk(r.t) && numOk(A(r))); if (!rows.length) return;
+    const rows = (Lab.store.get('p1') || []).filter(r => r && numOk(r.t) && numOk(A(r))); if (!rows.length) { dropKeyRes('initial-rate'); return; }
     const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), pts = rows.filter(r => r.trial === tr && r.t <= 2).sort((a, b) => a.t - b.t);
-    if (pts.length < 2) return;
+    if (pts.length < 2) { dropKeyRes('initial-rate'); return; }
     const f = stats.linreg(pts.map(r => r.t), pts.map(A)), viaChart = !pts.some(r => numOk(r.aE));
     keyRes('initial-rate', { label: 'Initial rate, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(f.m * 10000) / 10000, unit: 'A₄₇₀/min', part: 'Procedure 1' });
   }
@@ -1251,11 +1253,11 @@ function frq(host, o) {
     return { spec, g: Object.entries(by).map(([p, v]) => ({ pH: +p, m: stats.mean(v), n: v.length })).sort((a, b) => b.m - a.m) };
   };
   function reportP2() {
-    const { spec, g } = ph2(); if (g.length < 2) return;
+    const { spec, g } = ph2(); if (g.length < 2) { dropKeyRes('optimum-ph'); return; }
     keyRes('optimum-ph', { label: 'Optimum pH (highest mean ' + (spec ? 'ΔA' : 'color') + ' of the buffers you tested)', value: g[0].pH, unit: 'pH', part: 'Procedure 2: pH' });
   }
   function reportD() {
-    const r = Lab.store.get('d-res'); if (!r || !r.levels || !r.levels.length) return;
+    const r = Lab.store.get('d-res'); if (!r || !r.levels || !r.levels.length) { dropKeyRes('design-fastest'); return; }
     const d = DIV[r.iv], best = r.levels.reduce((a, b) => b.mean > a.mean ? b : a);
     keyRes('design-fastest', { label: 'Fastest initial rate in your experiment (' + d.label + ' = ' + best.x + (d.unit ? ' ' + d.unit : '') + ')', value: Math.round(best.mean * 10000) / 10000, unit: 'A₄₇₀/min', part: 'Design' });
   }

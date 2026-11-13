@@ -399,6 +399,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1610,14 +1612,15 @@ tkInit(); drawRef(); newSexFly(); if (!vialRestored) vialSetup(false); vialDraw(
 
 /* ---------- Key results, personal-data prompts, AP free-response ---------- */
 function reportTrials(rows) {
-  const rs = (rows || []).filter(r => r && r.A + r.B > 0 && numOk(r.chi2)); if (!rs.length) return;
+  const rs = (rows || []).filter(r => r && r.A + r.B > 0 && numOk(r.chi2)); if (!rs.length) { dropKeyRes('chi2', 'pct-a', 'strongest'); return; }
+  if (rs.length < 2) dropKeyRes('strongest');
   const l = rs[rs.length - 1];
   keyRes('chi2', { label: 'χ² for your latest trial (' + l.choice + '; df = 1, critical value 3.84)', value: Math.round(l.chi2 * 100) / 100, unit: 'χ²', part: 'Choice chamber' });
   keyRes('pct-a', { label: 'Flies at end A, latest trial (' + l.choice + ')', value: Math.round(1000 * l.A / (l.A + l.B)) / 10, unit: '% at A', part: 'Choice chamber' });
   if (rs.length > 1) { const m = rs.reduce((a, b) => b.chi2 > a.chi2 ? b : a); keyRes('strongest', { label: 'Strongest response across trials (' + m.choice + ')', value: Math.round(m.chi2 * 100) / 100, unit: 'χ²', part: 'Choice chamber' }); }
 }
 function reportVial() {
-  const rs = (Lab.store.get('vial') || []).filter(r => r && r.n > 0 && numOk(r.t30)); if (!rs.length) return;
+  const rs = (Lab.store.get('vial') || []).filter(r => r && r.n > 0 && numOk(r.t30)); if (!rs.length) { dropKeyRes('vial-top'); return; }
   const l = rs[rs.length - 1];
   keyRes('vial-top', { label: 'Flies in top half at 30 s (vial trial ' + l.trial + ')', value: Math.round(1000 * l.t30 / l.n) / 10, unit: '% of flies', part: 'Geotaxis vial' });
 }

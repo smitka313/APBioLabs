@@ -387,6 +387,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1460,7 +1462,7 @@ const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number', yLabel: 'Tran
 const runsTable = Lab.table('#runs-table', {
   save: 'runs',
   columns: [{ key: 'run', label: 'Run number' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread on plate', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Transformation efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
-  onChange: rows => runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) })
+  onChange: rows => { runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) }); setTimeout(reportRuns, 0); }
 });
 $('#calc-add').addEventListener('click', () => {
   const r = checkCalc(); if (!r || r.count == null) return;
@@ -1693,10 +1695,13 @@ Lab.steps('#s-steps', [
 ], { doneText: 'Satellite test done. Use the result in the Evaluate questions.' });
 
 /* ---------- Key results, personal-data prompts, AP free-response ---------- */
-const myRuns = () => (Lab.store.get('runs') || []).filter(r => r && numOk(r.eff));
+function myRuns() { return (Lab.store.get('runs') || []).filter(r => r && numOk(r.eff)); }
 function reportRuns() {
-  const rs = myRuns(); if (!rs.length) return;
+  const rs = myRuns();
+  if (!rs.length) { dropKeyRes('transformation-efficiency', 'colonies-amp', 'colonies-ara', 'best-efficiency'); return; }
+  if (rs.length < 2) dropKeyRes('best-efficiency');
   const last = rs[rs.length - 1];
+  if (!numOk(last.ara)) dropKeyRes('colonies-ara');
   keyRes('transformation-efficiency', { label: 'Transformation efficiency (latest run)', value: Math.round(last.eff), unit: 'transformants/µg', part: 'Transform' });
   keyRes('colonies-amp', { label: '+pGLO LB/amp colonies (latest run)', value: last.amp, unit: 'colonies', part: 'Transform' });
   if (numOk(last.ara)) keyRes('colonies-ara', { label: '+pGLO LB/amp/ara colonies (latest run)', value: last.ara, unit: 'colonies', part: 'Transform' });
