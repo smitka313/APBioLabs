@@ -47,6 +47,11 @@
   #vial-table table.data th, #vial-table table.data td { padding: 5px 4px; }
   #vial-table table.data th { min-width: 0; }
   #vial-table table.data input { min-width: 0; width: 3.4em; padding-inline: 3px; }
+  .pred-recall blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .pred-recall .pred-recall-k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .pred-recall p { margin: 4px 0 0; white-space: pre-wrap; }
+  .predict-box { margin: 0 0 14px; }
+  .predict-box .prompt { margin: 0; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -168,7 +173,7 @@
         </div>
         <div class="stage">
           <canvas class="viz" id="tk" aria-label="Side-by-side animation. Left panel: animals steer toward a light on the right edge. Right panel: animals wander randomly but slow down in the humid right half, so they pile up there."></canvas>
-          <div class="readouts"><div class="readout"><span class="k">Taxis: in right half</span><span class="v" id="tk-a">—</span></div><div class="readout"><span class="k">Kinesis: in right half</span><span class="v" id="tk-b">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Taxis: in right half (animals)</span><span class="v" id="tk-a">—</span></div><div class="readout"><span class="k">Kinesis: in right half (animals)</span><span class="v" id="tk-b">—</span></div></div>
         </div>
       </div>
     </div>
@@ -192,7 +197,7 @@
             <div class="sex-cell"><canvas class="viz" id="sex-ref" aria-label="Reference view under the stereo microscope: female fruit fly on the left with a long, pointed, striped abdomen; male on the right with a smaller, rounded abdomen with a solid dark tip, a dark genital arch at the tip, and black sex combs on the front legs."></canvas></div>
             <div class="sex-cell"><canvas class="viz" id="sex-cv" aria-label="Stereo microscope view: one anesthetized fruit fly lying on a dark stage, lit from above. Focus, then decide whether it is female or male."></canvas></div>
           </div>
-          <div class="readouts"><div class="readout"><span class="k">Correct</span><span class="v" id="sex-score">0 of 0</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Correct (flies)</span><span class="v" id="sex-score">0 of 0</span></div></div>
           <div class="fb" id="sex-fb" aria-live="polite"></div>
         </div>
       </div>
@@ -204,12 +209,13 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Geotaxis vial" data-minutes="15">
     <header><div class="eyebrow">Getting started · Observation</div><h2>Which way is up?</h2></header>
     <div class="step-body">
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you tap the vial: which way will the flies move, and how many of the flies will be in the top half after 30 s? Give a reason (1 to 2 sentences).</p><div id="pred-vial"></div></div>
       <div class="sim sim--fit" id="vial-sim">
         <div class="sim-side">
           <div id="vial-steps"></div>
           <div class="controls">
             <p class="controls-title">Controls</p>
-            <div class="field"><label for="vial-n">Flies in vial <output id="vial-n-out" class="val"></output></label><input id="vial-n" type="range" min="10" max="20" value="15"></div>
+            <div class="field"><label for="vial-n">Flies in vial (flies) <output id="vial-n-out" class="val"></output></label><input id="vial-n" type="range" min="10" max="20" value="15"></div>
             <div class="field"><label for="vial-age">Fly age</label><select id="vial-age"><option value="young">Young adults (2–5 days)</option><option value="old">Old adults (4 weeks)</option></select></div>
             <button class="btn btn--primary" id="vial-run" type="button">Tap down and watch 30 s</button>
             <p class="small muted">The clock runs at 2× speed.</p>
@@ -220,7 +226,7 @@
         </div>
         <div class="stage">
           <canvas class="viz" id="vial" aria-label="An upright vial of fruit flies. After tapping, flies start at the bottom and most climb toward the top."></canvas>
-          <div class="readouts"><div class="readout"><span class="k">Time</span><span class="v" id="vial-t">0 s</span></div><div class="readout"><span class="k">Top half</span><span class="v" id="vial-top">—</span></div><div class="readout"><span class="k">Bottom half</span><span class="v" id="vial-bot">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Time (s)</span><span class="v" id="vial-t">0</span></div><div class="readout"><span class="k">Top half (flies)</span><span class="v" id="vial-top">—</span></div><div class="readout"><span class="k">Bottom half (flies)</span><span class="v" id="vial-bot">—</span></div></div>
         </div>
       </div>
       <div id="vial-table"></div>
@@ -231,7 +237,8 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Choice chamber" data-minutes="25">
     <header><div class="eyebrow">Procedure · Structured inquiry</div><h2>The choice chamber</h2></header>
     <div class="step-body">
-      <div id="predict-prompt"></div>
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you run any trial: which substances do you expect the flies to prefer or avoid compared with distilled water, and why?</p><div id="predict-prompt"></div></div>
+      
       <div class="sim sim--fit" id="ch-sim">
         <div class="sim-side">
           <div id="ch-steps"></div>
@@ -248,7 +255,7 @@
               <div class="field"><label for="c-light">Light</label><select id="c-light"><option value="none">Even room light</option><option value="lampA">Lamp at end A</option><option value="lampB">Lamp at end B</option><option value="foilA">Foil over end A (dark)</option><option value="foilB">Foil over end B (dark)</option></select></div>
               <div class="field"><label for="c-color">Lamp color</label><select id="c-color"><option value="white">White</option><option value="blue">Blue film</option><option value="green">Green film</option><option value="red">Red film</option></select></div>
               <div class="field"><label for="c-type">Flies</label><select id="c-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings (cannot fly)</option><option value="w">White eyes</option><option value="adh">Adh-negative (cannot break down alcohol)</option></select></div>
-              <div class="field"><label for="c-n">Number of flies <output id="c-n-out" class="val"></output></label><input id="c-n" type="range" min="20" max="40" value="30"></div>
+              <div class="field"><label for="c-n">Number of flies (flies) <output id="c-n-out" class="val"></output></label><input id="c-n" type="range" min="20" max="40" value="30"></div>
               <div class="field"><label for="c-int">Count every</label><select id="c-int"><option value="30">30 s</option><option value="60" selected>1 min</option><option value="120">2 min</option></select></div>
               <div class="field"><label for="c-dur">Trial length</label><select id="c-dur"><option value="300" selected>5 min</option><option value="600">10 min</option></select></div>
               <label class="check"><input type="checkbox" id="c-pause" checked> Pause so I can count the flies myself</label>
@@ -270,16 +277,16 @@
           <canvas class="viz" id="ch-h" aria-label="Choice chamber lying flat: two bottles taped together with cap A and cap B. Small dark dots are fruit flies."></canvas>
           <canvas class="viz" id="ch-v" hidden aria-label="Choice chamber standing upright with one cap at the top."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Time</span><span class="v" id="ro-time">0:00</span></div>
-            <div class="readout"><span class="k">Flies at A side</span><span class="v" id="ro-a">—</span></div>
-            <div class="readout"><span class="k">Flies at B side</span><span class="v" id="ro-b">—</span></div>
-            <div class="readout"><span class="k">% at A</span><span class="v" id="ro-pct">—</span></div>
+            <div class="readout"><span class="k">Time (min:s)</span><span class="v" id="ro-time">0:00</span></div>
+            <div class="readout"><span class="k">Flies at A side (flies)</span><span class="v" id="ro-a">—</span></div>
+            <div class="readout"><span class="k">Flies at B side (flies)</span><span class="v" id="ro-b">—</span></div>
+            <div class="readout"><span class="k">Flies at A (%)</span><span class="v" id="ro-pct">—</span></div>
           </div>
           <div class="count-panel" id="count-panel" hidden>
             <strong id="count-title">Count the flies</strong>
             <div class="row">
-              <div class="field"><label for="cnt-a">Flies on A side</label><input id="cnt-a" type="number" min="0" step="1"></div>
-              <div class="field"><label for="cnt-b">Flies on B side</label><input id="cnt-b" type="number" min="0" step="1"></div>
+              <div class="field"><label for="cnt-a">Flies on A side (flies)</label><input id="cnt-a" type="number" min="0" step="1"></div>
+              <div class="field"><label for="cnt-b">Flies on B side (flies)</label><input id="cnt-b" type="number" min="0" step="1"></div>
             </div>
             <label class="check"><input type="checkbox" id="quad"> Show quadrant lines to help count</label>
             <div class="row"><button class="btn btn--primary" id="cnt-rec" type="button">Record and continue</button><span class="small muted">Flies on the midline: count them where most of the body is.</span></div>
@@ -311,13 +318,13 @@
             <div class="field"><label for="d-a">End A</label><select id="d-a"></select></div>
             <div class="field"><label for="d-b">End B</label><select id="d-b"></select></div>
             <div class="field"><label for="d-light">Light</label><select id="d-light"><option value="none">Even room light</option><option value="lampA">White lamp at A</option><option value="lampB">White lamp at B</option><option value="lampA-red">Red-filtered lamp at A</option><option value="lampA-blue">Blue-filtered lamp at A</option><option value="foilA">Foil over A</option></select></div>
-            <div class="field"><label for="d-trials">Number of trials <output id="d-trials-out" class="val"></output></label><input id="d-trials" type="range" min="1" max="10" value="4"></div>
+            <div class="field"><label for="d-trials">Number of trials (trials) <output id="d-trials-out" class="val"></output></label><input id="d-trials" type="range" min="1" max="10" value="4"></div>
             <button class="btn btn--primary" id="d-run" type="button">Run trials (5 min each)</button>
             <details class="more"><summary>More options</summary><div class="inner">
               <label class="check"><input type="checkbox" id="d-film"> Parafilm over cotton balls</label>
               <div class="field"><label for="d-orient">Chamber position</label><select id="d-orient"><option value="h">Flat</option><option value="vA">Upright, A up</option><option value="vB">Upright, B up</option></select></div>
               <div class="field"><label for="d-type">Flies</label><select id="d-type"><option value="wt">Wild type, 2–5 days old</option><option value="old">Wild type, 4 weeks old</option><option value="vg">Vestigial wings</option><option value="w">White eyes</option><option value="adh">Adh-negative</option></select></div>
-              <div class="field"><label for="d-n">Flies per trial <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="20" max="40" value="30"></div>
+              <div class="field"><label for="d-n">Flies per trial (flies) <output id="d-n-out" class="val"></output></label><input id="d-n" type="range" min="20" max="40" value="30"></div>
               <label class="check"><input type="checkbox" id="d-swap" checked> Swap ends between trials</label>
               <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
             </div></details>
@@ -338,8 +345,8 @@
       <h3>Chi-square calculator</h3>
       <p class="small muted">Enter observed counts at each end. Expected counts come from your null hypothesis of no preference (half the flies at each end).</p>
       <div class="grid-2">
-        <div class="field"><label for="x-a">Observed at end A</label><input id="x-a" type="number" min="0" step="1" value="21"></div>
-        <div class="field"><label for="x-b">Observed at end B</label><input id="x-b" type="number" min="0" step="1" value="9"></div>
+        <div class="field"><label for="x-a">Observed at end A (flies)</label><input id="x-a" type="number" min="0" step="1" value="21"></div>
+        <div class="field"><label for="x-b">Observed at end B (flies)</label><input id="x-b" type="number" min="0" step="1" value="9"></div>
       </div>
       <div class="row" style="margin-top:10px"><button class="btn btn--primary" id="x-run" type="button">Calculate χ²</button><button class="btn btn--sm" id="x-last" type="button">Use my last trial</button></div>
       <div class="chi-out" id="x-out" aria-live="polite">—</div>
@@ -757,6 +764,7 @@ Lab.quiz('#prelab', [
   { type: 'mc', q: 'With 1 degree of freedom, the critical value at p = 0.05 is 3.84. What do you conclude from χ² = 4.8?', choices: ['Fail to reject the null; no preference', 'Reject the null; the difference is unlikely to be due to chance, so the flies show a preference for A', 'The flies were certainly attracted to A with 100% certainty', 'The test needs 2 degrees of freedom'], answer: 1, explain: '4.8 > 3.84, so p < 0.05. Reject the null hypothesis. Chi-square never proves a hypothesis; it says the data are unlikely under the null.' },
   { type: 'mc', q: 'Is the sex of the flies important for your choice-chamber experiment?', choices: ['It cannot matter, since males and females have the same genes', 'It might: females looking for egg-laying sites could respond differently from males, so it is a variable you could test or control', 'Only males respond to stimuli', 'Only if you are using vestigial flies'], answer: 1, explain: 'Sex is a possible variable. You can test it (for example with white-eyed males and red-eyed females) or keep the mix constant across trials.' }
 ], { id: 'prelab' });
+Lab.prompt('#pred-vial', { key: 'predict-vial', label: 'Your prediction (with a reason)', rows: 2 });
 Lab.prompt('#prelab-prompts', { key: 'pre-where', label: 'Where and when have you seen fruit flies outside the lab? What do those places have in common?', rows: 3 });
 
 /* ---------- Taxis vs kinesis demo ---------- */
@@ -910,9 +918,9 @@ function vialDraw() {
   const ym = (G.zt + G.zb) / 2;
   ctx.setLineDash([5, 4]); ctx.strokeStyle = C('--stain'); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(G.x0 - 10, ym); ctx.lineTo(G.x0 + G.vw + 10, ym); ctx.stroke(); ctx.setLineDash([]);
   const top = vialF.filter(f => f.y < 0.5).length;
-  $('#vial-top').textContent = top; $('#vial-bot').textContent = vialF.length - top; $('#vial-t').textContent = Math.floor(vialT) + ' s';
+  $('#vial-top').textContent = top; $('#vial-bot').textContent = vialF.length - top; $('#vial-t').textContent = Math.floor(vialT);
 }
-const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Flies' }, { key: 't0', label: 'Top 0 s', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top 15 s', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top 30 s', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total', num: true, digits: 0 }] });
+const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Fly age' }, { key: 't0', label: 'Top half at 0 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top half at 15 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top half at 30 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total flies', unit: 'flies', num: true, digits: 0 }] });
 const vialLoop = Lab.loop(dt => {
   const step = dt * 2; let left = step;
   while (left > 0) { const d = Math.min(0.05, left); vialStep(d); left -= d; }
@@ -1177,18 +1185,18 @@ function drawChamber() {
   const a = countA(flies), hide = paused && $('#c-pause').checked;
   $('#ro-time').textContent = clock(simT);
   $('#ro-a').textContent = hide ? 'count!' : a; $('#ro-b').textContent = hide ? 'count!' : flies.length - a;
-  $('#ro-pct').textContent = hide || !flies.length ? '—' : Math.round(100 * a / flies.length) + '%';
+  $('#ro-pct').textContent = hide || !flies.length ? '—' : Math.round(100 * a / flies.length);
 }
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 cvH.onresize = drawChamber; cvV.onresize = drawChamber;
 
-const intChart = Lab.chart('#int-chart', { xLabel: 'Time (min)', yLabel: '% of flies at A side', yMin: 0, yMax: 100, xMin: 0, series: [], hLines: [{ y: 50, label: 'no preference' }] });
+const intChart = Lab.chart('#int-chart', { xLabel: 'Time (min)', yLabel: 'Flies at A side (%)', yMin: 0, yMax: 100, xMin: 0, series: [], hLines: [{ y: 50, label: 'no preference' }] });
 const intTable = Lab.table('#int-table', {
   save: 'intervals', toast: false,
-  columns: [{ key: 't', label: 'Time', unit: 'min', num: true, digits: 1 }, { key: 'a', label: 'Your count A', num: true, digits: 0, editable: true }, { key: 'b', label: 'Your count B', num: true, digits: 0, editable: true }, { key: 'aa', label: 'Actual A', num: true, digits: 0 }, { key: 'ab', label: 'Actual B', num: true, digits: 0 }],
+  columns: [{ key: 't', label: 'Time', unit: 'min', num: true, digits: 1 }, { key: 'a', label: 'Your count A', unit: 'flies', num: true, digits: 0, editable: true }, { key: 'b', label: 'Your count B', unit: 'flies', num: true, digits: 0, editable: true }, { key: 'aa', label: 'Actual A', unit: 'flies', num: true, digits: 0 }, { key: 'ab', label: 'Actual B', unit: 'flies', num: true, digits: 0 }],
   onChange: rows => intChart.update({ series: [{ name: '% at A', points: rows.map(r => { const A = r.a != null ? r.a : r.aa, B = r.b != null ? r.b : r.ab; return { x: r.t, y: A != null && B != null && A + B > 0 ? 100 * A / (A + B) : NaN }; }) }] })
 });
-const prefChart = Lab.chart('#pref-chart', { type: 'bar', xLabel: 'Choice (A vs B)', yLabel: 'Mean % of flies at A', yMin: 0, yMax: 100, series: [], categories: [] });
+const prefChart = Lab.chart('#pref-chart', { type: 'bar', xLabel: 'Choice (A vs B)', yLabel: 'Mean flies at A (%)', yMin: 0, yMax: 100, series: [], categories: [] });
 function chi(a, b) { return Lab.stats.chiSquare([a, b], [(a + b) / 2, (a + b) / 2]); }
 function drawPref(rows) {
   const groups = {};
@@ -1198,7 +1206,7 @@ function drawPref(rows) {
 }
 const trialsTable = Lab.table('#trials-table', {
   save: 'trials',
-  columns: [{ key: 'n', label: 'Trial' }, { key: 'choice', label: 'A vs B' }, { key: 'setup', label: 'Setup' }, { key: 'A', label: 'Final A', num: true, digits: 0 }, { key: 'B', label: 'Final B', num: true, digits: 0 }, { key: 'chi2', label: 'χ²', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  columns: [{ key: 'n', label: 'Trial' }, { key: 'choice', label: 'A vs B' }, { key: 'setup', label: 'Setup' }, { key: 'A', label: 'Final A', unit: 'flies', num: true, digits: 0 }, { key: 'B', label: 'Final B', unit: 'flies', num: true, digits: 0 }, { key: 'chi2', label: 'χ²', unit: 'no units', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
   onChange: drawPref
 });
 function setupLabel(cfg) {
@@ -1286,10 +1294,10 @@ Lab.prompt('#predict-prompt', { key: 'predict', label: 'Step 6: List the substan
 ['question:Your question', 'hyp:Hypothesis (and the null hypothesis you will test with chi-square)', 'ctrl:Independent variable, controls, and what you will hold constant'].forEach(s => { const [k, l] = s.split(':'); Lab.prompt('#design-prompts', { key: 'd-' + k, label: l, rows: 3 }); });
 const dn = $('#d-n'), dtr = $('#d-trials');
 const syncD = () => { $('#d-n-out').textContent = dn.value; $('#d-trials-out').textContent = dtr.value; }; dn.addEventListener('input', syncD); dtr.addEventListener('input', syncD); syncD();
-const dChart = Lab.chart('#d-chart', { type: 'bar', xLabel: 'Condition', yLabel: 'Mean % of flies at A', yMin: 0, yMax: 100, series: [], categories: [] });
+const dChart = Lab.chart('#d-chart', { type: 'bar', xLabel: 'Condition number (see Data table)', yLabel: 'Mean flies at A (%)', yMin: 0, yMax: 100, series: [], categories: [] });
 const dTable = Lab.table('#d-table', {
   save: 'design',
-  columns: [{ key: 'cond', label: 'Condition' }, { key: 'trials', label: 'Trials (A:B each)' }, { key: 'A', label: 'Total A', num: true, digits: 0 }, { key: 'B', label: 'Total B', num: true, digits: 0 }, { key: 'pct', label: 'Mean % at A', num: true, digits: 1 }, { key: 'err', label: '2 SE', num: true, digits: 1 }, { key: 'chi2', label: 'Pooled χ²', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  columns: [{ key: 'cond', label: 'Condition' }, { key: 'trials', label: 'Trials (A:B each)' }, { key: 'A', label: 'Total A', unit: 'flies', num: true, digits: 0 }, { key: 'B', label: 'Total B', unit: 'flies', num: true, digits: 0 }, { key: 'pct', label: 'Mean flies at A', unit: '%', num: true, digits: 1 }, { key: 'err', label: '2 SE of flies at A', unit: '%', num: true, digits: 1 }, { key: 'chi2', label: 'Pooled χ²', unit: 'no units', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
   onChange: rows => dChart.update({ categories: rows.map((r, i) => `${i + 1}`), series: [{ name: 'Mean % at A (± 2 SE)', points: rows.map((r, i) => ({ x: `${i + 1}`, y: r.pct, err: r.err || 0 })) }] })
 });
 $('#d-run').addEventListener('click', () => {
@@ -1325,6 +1333,25 @@ runChi();
  ['an5', 'How will you share your results and conclusions with classmates? Describe the graph you would use.']
 ].forEach(([key, label]) => Lab.prompt('#an-prompts', { key, label, rows: 3 }));
 [['C', 'cer-c', 'Claim: What environmental factor(s) trigger a fruit fly response, and in which direction?'], ['E', 'cer-e', 'Evidence: Which counts, percentages, and chi-square results support your claim?'], ['R', 'cer-r', 'Reasoning: Why would this behavior increase a fruit fly\'s fitness? Connect it to finding food and egg-laying sites.']].forEach(([L, key, label]) => { const p = Lab.prompt('#cer', { key, label, rows: 3 }); $('label', p).dataset.letter = L; });
+$('#cer').insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
+/* Predict first: quote the student's own saved prediction(s) back in Reflect. */
+function predRecall(host, items) {
+  const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
+  host.prepend(box);
+  const render = () => {
+    box.innerHTML = '';
+    items.forEach(([key, name]) => {
+      const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
+      box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
+        v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
+    });
+  };
+  render();
+  document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
+  Lab.onShow(host, render);
+}
+predRecall($('#evaluate-prompts').parentElement, [['predict-vial', 'geotaxis vial'], ['predict', 'choice chamber'], ['d-hyp', 'your own experiment']]);
+Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your three predictions (quoted above) with your results: the vial, the choice chamber, and your own experiment. Cite the percentage of flies at one end or a χ² value for each. Which predictions held up, and what explains the ones that did not?', rows: 5 });
 [['ev1', 'Is there anything shared by all of the factors the flies were attracted to?'],
  ['ev2', 'Is there anything shared by all of the factors the flies avoided?'],
  ['ev3', 'How do you explain the behavior of fruit flies in someone\'s kitchen or in nature based on your data? Do your data explain all fruit fly movements? Should they really be called "fruit" flies?'],
@@ -1352,13 +1379,14 @@ Lab.steps('#sex-steps', [
 ], { doneText: 'Pre-lab done. Next, watch geotaxis in the <a href="#geotaxis-vial">Geotaxis vial</a>.' });
 const vRows = () => vialTable.getRows();
 Lab.steps('#vial-steps', [
+  { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-vial', done: () => filledP('predict-vial'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the vial.' },
   { id: 'run', text: 'Tap down and watch 30 s', target: '#vial-run', done: () => vRows().length > 0, hint: 'Press <strong>Tap down and watch 30 s</strong>.' },
   { id: 'three', text: 'Repeat for 3 trials', target: '#vial-run', done: () => vRows().length >= 3, hint: 'Run at least three trials; try young and old flies.' },
   { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-v-q1', done: () => ['v-q1', 'v-q2', 'v-q3'].every(filledP), hint: 'Scroll down and answer the three questions.' }
 ], { doneText: 'Vial done. Next, the <a href="#choice-chamber">Choice chamber</a>.' });
 const tRows = () => trialsTable.getRows();
 Lab.steps('#ch-steps', [
-  { id: 'pred', text: 'Predict the preferences', target: '#p-predict', optional: true, done: () => filledP('predict'), hint: 'Write your predictions in the box above the scene.' },
+  { id: 'pred', text: 'Predict the preferences', target: '#p-predict', done: () => filledP('predict'), hint: 'Write your predictions in the box above the scene.' },
   { id: 'ctl', text: 'Run the water vs water control', target: '#c-run', done: () => tRows().length > 0, hint: 'Choose distilled water at both ends and press <strong>Run trial</strong>.' },
   { id: 'subs', text: 'Test 4 substances vs water', target: '#c-a', done: () => tRows().length >= 5, hint: 'Pick a substance for cap A, water for cap B, and run a trial. Do this for four substances.' },
   { id: 'swap', text: 'Swap ends and repeat', target: '#c-swap', optional: true, done: () => tRows().some(r => /ends swapped|upright, B up/.test(r.setup)), hint: 'Press <strong>Swap ends</strong>, then run a trial to check for a position effect.' },
@@ -1373,6 +1401,9 @@ Lab.steps('#d-steps', [
   { id: 'ctl', text: 'Run a second condition', target: '#d-run', done: () => dTable.getRows().length > 1, hint: 'Change one thing, run again, and compare the bars.' },
   { id: 'ctrl', text: 'Describe your controls', target: '#p-d-ctrl', done: () => filledP('d-ctrl'), hint: 'Describe the variable, controls and constants above.' }
 ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+Lab.gate('#vial-run', () => filledP('predict-vial') || vRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-vial' });
+Lab.gate('#c-run', () => filledP('predict') || tRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict' });
+Lab.gate('#d-run', () => filledP('d-hyp') || dTable.getRows().length > 0 ? '' : 'Write your prediction first (hypothesis above)', { show: '#p-d-hyp' });
 Lab.gate('#x-last', () => trialsTable.getRows().length ? '' : 'Finish a choice-chamber trial first');
 let vSeen = vRows().length;
 setInterval(() => { const r = vRows(); if (r.length > vSeen) { const l = r[r.length - 1]; vSeen = r.length; Lab.toast(`Trial ${l.trial}: ${l.t30} of ${l.n} flies in the top half after 30 s`, { type: 'ok', announce: false, key: 'vial' }); } else if (r.length < vSeen) vSeen = r.length; }, 400);
