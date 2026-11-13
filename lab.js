@@ -111,12 +111,57 @@
     get(key, fallback = null) {
       try { const v = localStorage.getItem(`aplab:${LAB_ID}:${key}`); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
     },
-    set(key, val) { try { localStorage.setItem(`aplab:${LAB_ID}:${key}`, JSON.stringify(val)); } catch (e) { storageFailed(); } },
+    set(key, val) { try { localStorage.setItem(`aplab:${LAB_ID}:${key}`, JSON.stringify(val)); saveNote(true); } catch (e) { storageFailed(); saveNote(false); } },
     clearLab() {
       try { Object.keys(localStorage).filter(k => k.startsWith(`aplab:${LAB_ID}:`)).forEach(k => localStorage.removeItem(k)); } catch (e) {}
     }
   };
   Lab.store = store;
+
+  /* ---------------- "Saved ✓" status line ----------------
+     Every Lab.store.set (prompts, tables, quizzes, steps, sim saves) reports here. Each .save-status element
+     (one per part, one by the Submit tools) shows "Saved ✓ just now" / "Saved ✓ 2 min ago", or
+     "Not saved — see warning" when a write fails. The visible text is aria-hidden; a visually hidden polite live
+     region speaks only when the state changes (first save, failure, recovery), never more than every 4 s. */
+  const SAVE = { at: 0, ok: null, spoken: null, spokenAt: 0 };
+  function saveAgo() {
+    const s = Math.max(0, (Date.now() - SAVE.at) / 1000);
+    if (s < 45) return 'just now';
+    const m = Math.round(s / 60); if (m < 60) return (m < 1 ? 1 : m) + ' min ago';
+    const hr = Math.floor(m / 60); return hr + (hr === 1 ? ' hour ago' : ' hours ago');
+  }
+  function saveText() {
+    if (SAVE.ok === false) return 'Not saved — see warning';
+    if (SAVE.ok === true) return 'Saved ✓ ' + saveAgo();
+    return 'Saves automatically on this device';
+  }
+  function renderSave(speak) {
+    const nodes = Array.prototype.slice.call(document.querySelectorAll('.save-status'));
+    if (!nodes.length) return;
+    const t = saveText();
+    nodes.forEach(n => { n.dataset.state = SAVE.ok === false ? 'bad' : SAVE.ok ? 'ok' : 'idle'; const v = n.firstChild; if (v && v.textContent !== t) v.textContent = t; });
+    if (!speak) return;
+    const key = String(SAVE.ok), now = Date.now();
+    if (SAVE.spoken === key || now - SAVE.spokenAt < 4000) return;
+    SAVE.spoken = key; SAVE.spokenAt = now;
+    const msg = SAVE.ok === false ? 'Not saved. See the warning at the top of the page.' : 'Your work is saved on this device.';
+    const vis = nodes.filter(n => n.offsetParent !== null);
+    nodes.forEach(n => { n.lastChild.textContent = ''; });
+    const target = vis[0];
+    if (target) setTimeout(() => { target.lastChild.textContent = msg; }, 50);
+  }
+  function saveNote(ok) {
+    if (PAGE.kind !== 'lab') return;
+    const changed = SAVE.ok !== ok;
+    SAVE.ok = ok; if (ok) SAVE.at = Date.now();
+    clearTimeout(saveNote._t); saveNote._t = setTimeout(() => renderSave(true), changed ? 0 : 1500);
+  }
+  /* A fresh status element for a part or the Submit tools. */
+  function saveStatusEl() {
+    return h('p', { class: 'save-status', 'data-state': 'idle' }, h('span', { 'aria-hidden': 'true' }, saveText()), h('span', { class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' }));
+  }
+  if (PAGE.kind === 'lab') setInterval(() => renderSave(false), 15000);
+  Lab.saveStatus = { text: saveText, render: () => renderSave(false) };
 
   /* ---------------- Random numbers (seedable) ---------------- */
   Lab.rng = function (seed) {
@@ -1112,7 +1157,8 @@
     const bar = h('div', { class: 'responses-bar report-bar' },
       h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
-    return [bar, status, note];
+    const ss = saveStatusEl(); ss.classList.add('save-status--bar');
+    return [bar, ss, status, note];
   }
 
   /* ---------------- Printable worksheet ----------------
@@ -1146,7 +1192,7 @@
       if (img) cv.replaceWith(img); else cv.remove();
     });
     $$('.tab-panel', clone).forEach(p => { p.hidden = false; if (p.dataset.tab) p.prepend(h('p', { class: 'ws-sum' }, p.dataset.tab)); }); // every tab prints
-    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools, .pager, [role="tablist"]', clone).forEach(e => e.remove());
+    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools, .pager, .save-status, [role="tablist"]', clone).forEach(e => e.remove());
     // Collapsed disclosures print in full: <details> becomes a plain block with its summary as a heading.
     $$('details', clone).forEach(d => {
       const box = h('div', { class: 'ws-details' });
@@ -1490,7 +1536,7 @@
       const prev = steps[i - 1], next = steps[i + 1];
       s.append(h('nav', { class: 'pager', 'aria-label': 'Move between parts' },
         prev ? h('a', { class: 'btn pager-prev', href: '#' + prev.id, rel: 'prev' }, h('span', { 'aria-hidden': 'true' }, '←'), h('span', null, 'Back', h('span', { class: 'pager-name' }, ': ' + partName(prev, i - 1)))) : h('span', { class: 'pager-gap' }),
-        h('span', { class: 'pager-mid' }, h('span', { class: 'pager-pos' }, `Part ${i + 1} of ${steps.length}`),
+        h('span', { class: 'pager-mid' }, saveStatusEl(), h('span', { class: 'pager-pos' }, `Part ${i + 1} of ${steps.length}`),
           h('button', { class: 'linkbtn pager-all', type: 'button', onclick: () => setAllParts(true) }, 'Show all parts on one page'),
           h('span', { class: 'pager-tip' }, 'Tip: use ← → to move between parts')),
         next ? h('a', { class: 'btn btn--primary pager-next', href: '#' + next.id, rel: 'next' }, h('span', null, 'Next', h('span', { class: 'pager-name' }, ': ' + partName(next, i + 1))), h('span', { 'aria-hidden': 'true' }, '→'))
@@ -2167,7 +2213,7 @@
   /* Called from Lab.init (lab pages) and Lab.home (index). */
   function startOnboarding() {
     if (!probeStorage()) storageFailed();
-    if (storageBad) Lab._storageWarn();
+    if (storageBad) { Lab._storageWarn(); saveNote(false); }
     if (!IS_LAB) return;
     workListeners.push(() => { lastWork = Date.now(); setTimeout(checkBackup, QUIET_MS + 100); syncGuard(); });
     setInterval(() => { if (!document.hidden) checkBackup(); }, 2000);
