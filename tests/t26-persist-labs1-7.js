@@ -189,6 +189,53 @@ T.lab05 = async (b) => {
   await ctx.close();
 };
 
+
+T.lab06 = async (b) => {
+  const ctx = await ctxFor(b); const p = await open(ctx, 'lab06.html');
+  const pr = async (k) => { await p.evaluate(k => { const t = document.getElementById('p-' + k); if (t) { t.value = 'I predict a clear pattern because of respiration.'; t.dispatchEvent(new Event('input', { bubbles: true })); } }, k); };
+  for (const k of ['predict-microresp', 'predict-gas', 'predict-design']) await pr(k);
+  for (const id of ['p-chart', 'g-chart', 'd-chart']) ok(await p.evaluate(id => document.getElementById(id).classList.contains('is-empty'), id), 'lab06: ' + id + ' starts in the shared empty state');
+  ok(!/20\.[0-9]|21\.[0-9]/.test(await p.evaluate(() => [...document.querySelectorAll('#g-chart svg text')].map(t => t.textContent).join(' '))), 'lab06: gas chart shows no placeholder y-axis numbers');
+  ok(await p.inputValue('#q-t1') === '' && await p.inputValue('#q-t2') === '', 'lab06: Q10 calculator starts empty');
+  await go(p, 'microrespirometer'); await p.click('#p-run'); await p.waitForTimeout(3500);
+  const r1 = await p.locator('#p-table tbody tr').count(), tt1 = parseFloat(await txt(p, '#p-time'));
+  await reload(p); await go(p, 'microrespirometer'); await p.waitForTimeout(300);
+  const r2 = await p.locator('#p-table tbody tr').count(), tt2 = parseFloat(await txt(p, '#p-time'));
+  ok(r2 >= r1 && tt2 >= tt1 - 0.5 && tt2 > 0, 'lab06: microrespirometer carries on after reload (rows ' + r1 + ' -> ' + r2 + ', t ' + tt1 + ' -> ' + tt2 + ')');
+  await p.waitForFunction(() => document.querySelectorAll('#p-reps tbody tr').length >= 1 && !/No data/.test(document.getElementById('p-reps').innerText), null, { timeout: 40000 });
+  ok(/25\.0/.test(await txt(p, '#p-time')) && (await p.locator('#p-table tbody tr').count()) === 6, 'lab06: run finished with 6 readings');
+  await p.click('#p-run'); await p.waitForTimeout(500);
+  await p.evaluate(() => { const k = 'aplab:lab06:p-run', v = JSON.parse(localStorage.getItem(k)); v.t0 -= 120000; localStorage.setItem(k, JSON.stringify(v)); });
+  const repsBefore = await p.locator('#p-reps tbody tr').count();
+  await reload(p); await go(p, 'microrespirometer');
+  ok(/25\.0/.test(await txt(p, '#p-time')) && (await p.locator('#p-table tbody tr').count()) === 6, 'lab06: a run that finished while closed shows its end state (' + await txt(p, '#p-time') + ')');
+  ok(!(await p.evaluate(() => document.getElementById('p-chart').classList.contains('is-empty'))), 'lab06: run chart drawn');
+  const repsAfter = await p.locator('#p-reps tbody tr').count(); ok(repsAfter >= repsBefore, 'lab06: replicate table kept (' + repsBefore + ' -> ' + repsAfter + ')');
+  await go(p, 'gas-sensors'); await p.click('#g-run'); await p.waitForTimeout(2000);
+  const g1 = parseFloat(await txt(p, '#g-time'));
+  await reload(p); await go(p, 'gas-sensors'); await p.waitForTimeout(300);
+  const g2 = parseFloat(await txt(p, '#g-time')); ok(g2 >= g1 && g2 > 0, 'lab06: gas-sensor run carries on after reload (' + g1 + ' -> ' + g2 + ')');
+  await p.waitForFunction(() => document.querySelectorAll('#g-table tbody tr').length >= 1 && !/No data/.test(document.getElementById('g-table').innerText), null, { timeout: 30000 });
+  const gs = await txt(p, '#g-slope'), gt = await txt(p, '#g-time'); ok(/25\.0/.test(gt), 'lab06: gas run finished ' + gt + ' ' + gs);
+  await reload(p); await go(p, 'gas-sensors');
+  ok((await txt(p, '#g-slope')) === gs && (await txt(p, '#g-time')) === gt && !(await p.evaluate(() => document.getElementById('g-chart').classList.contains('is-empty'))), 'lab06: finished gas run restored (slope ' + await txt(p, '#g-slope') + ')');
+  await go(p, 'design'); await p.click('#d-run'); await p.waitForTimeout(500);
+  const dl = await txt(p, '#d-last'), dlg = await txt(p, '#d-lastg'), dn = await txt(p, '#d-n');
+  await reload(p); await go(p, 'design');
+  ok((await txt(p, '#d-last')) === dl && (await txt(p, '#d-lastg')) === dlg && (await txt(p, '#d-n')) === dn && dl !== '—', 'lab06: design readouts restored (' + dl + ', ' + dn + ' trials)');
+  ok(!(await p.evaluate(() => document.getElementById('d-chart').classList.contains('is-empty'))), 'lab06: design chart drawn');
+  await p.click('#q-example'); await p.waitForTimeout(200);
+  ok(await p.locator('#q-banner').isVisible() && /EXAMPLE/.test(await txt(p, '#q-banner')) && /\d/.test(await txt(p, '#q-out')), 'lab06: worked example shows banner and Q10');
+  await reload(p); await go(p, 'design');
+  ok(await p.inputValue('#q-t1') === '' && await p.locator('#q-banner').isHidden(), 'lab06: example not saved');
+  await p.click('#q-mine'); await p.waitForTimeout(200); const qm = await txt(p, '#q-msg'); ok(/Run the same organism|Filled from/.test(qm), 'lab06: Use my data responds: ' + qm.slice(0, 60));
+  await p.fill('#q-t1', '15'); await p.fill('#q-r1', '2'); await p.fill('#q-t2', '25'); await p.fill('#q-r2', '5'); await p.waitForTimeout(200);
+  const qo = await txt(p, '#q-out'); await reload(p); await go(p, 'design'); ok((await txt(p, '#q-out')) === qo && qo !== '—', 'lab06: Q10 result restored from saved inputs (' + qo + ')');
+  ok((await badges(p)) === 0, 'lab06: no "new" badges after reload');
+  ok(p.errors.length === 0, 'lab06: no page errors ' + p.errors.join('|'));
+  await ctx.close();
+};
+
 if (require.main === module) (async () => {
   const want = process.argv.slice(2), b = await launch();
   for (const k of Object.keys(T)) { if (want.length && !want.includes(k)) continue; console.log('\n== ' + k); await T[k](b); }
