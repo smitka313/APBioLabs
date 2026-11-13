@@ -51,6 +51,11 @@
   #p2-table table.data th, #p2-table table.data td { padding: 5px 6px; }
   #p2-table table.data th { min-width: 0; }
   #p2-table table.data input { min-width: 0; width: 4.2em; }
+  .pred-recall blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .pred-recall .pred-recall-k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .pred-recall p { margin: 4px 0 0; white-space: pre-wrap; }
+  .predict-box { margin: 0 0 14px; }
+  .predict-box .prompt { margin: 0; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -180,6 +185,7 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Procedure 1" data-minutes="20">
     <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>Developing the assay and determining a baseline</h2></header>
     <div class="step-body">
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you combine the tubes: what will you see in the enzyme tube and in the no-enzyme control over 5 minutes (color, or absorbance at 470 nm), and why? Give a reason (1 to 2 sentences).</p><div id="pred-assay"></div></div>
       <div class="sim sim--fit" id="p1-sim">
         <div class="sim-side">
           <div id="p1-steps"></div>
@@ -206,10 +212,10 @@
         <div class="stage">
           <canvas class="viz" id="p1-canvas" aria-label="Test tube rack with the enzyme reaction tube and the no-enzyme control tube in front of a white card, with a timer"></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Time</span><span class="v" id="p1-time">0:00</span></div>
-            <div class="readout"><span class="k">A₄₇₀ enzyme</span><span class="v" id="p1-ae">—</span></div>
-            <div class="readout"><span class="k">A₄₇₀ control</span><span class="v" id="p1-ac">—</span></div>
-            <div class="readout"><span class="k">Trial</span><span class="v" id="p1-trial">—</span></div>
+            <div class="readout"><span class="k">Time (min:s)</span><span class="v" id="p1-time">0:00</span></div>
+            <div class="readout"><span class="k">Absorbance at 470 nm, enzyme (no units)</span><span class="v" id="p1-ae">—</span></div>
+            <div class="readout"><span class="k">Absorbance at 470 nm, control (no units)</span><span class="v" id="p1-ac">—</span></div>
+            <div class="readout"><span class="k">Trial number (no units)</span><span class="v" id="p1-trial">—</span></div>
           </div>
           <div>
             <div class="note" style="margin-bottom:6px">Photos from the latest trial (match these to the palette below)</div>
@@ -237,7 +243,8 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Procedure 2: pH" data-minutes="25">
     <header><div class="eyebrow">Procedure 2 · Structured inquiry</div><h2>The effect of pH on peroxidase activity</h2></header>
     <div class="step-body">
-      <div id="p2-predict"></div>
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you run the buffers: how will pH change the reaction rate? Name the pH you expect to work best and justify it using what pH does to amino acid side chains.</p><div id="p2-predict"></div></div>
+      
       <div class="sim sim--fit" id="p2-sim">
         <div class="sim-side">
           <div id="p2-steps"></div>
@@ -284,8 +291,8 @@
             <div class="field"><label for="d-iv">Independent variable</label><select id="d-iv">
             <option value="temp">Temperature (water bath)</option><option value="sub">Substrate (mL of 0.1% H₂O₂)</option><option value="enz">Enzyme (mL of turnip extract)</option><option value="inh">Inhibitor (hydroxylamine, mM)</option><option value="heat">Heat-treat enzyme 5 min, then cool to 25 °C</option><option value="ph">pH (fine buffer series)</option></select></div>
             <div class="field"><label for="d-levels">Levels (comma-separated)</label><input id="d-levels" type="text"><span class="hint" id="d-hint"></span></div>
-            <div class="field" id="d-pre-wrap"><label for="d-pre">Pre-incubation in bath <output id="d-pre-out" class="val"></output></label><input id="d-pre" type="range" min="0" max="15" step="1" value="5"></div>
-            <div class="field"><label for="d-reps">Replicates per level <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="2" max="6" value="3"></div>
+            <div class="field" id="d-pre-wrap"><label for="d-pre">Pre-incubation in bath (min) <output id="d-pre-out" class="val"></output></label><input id="d-pre" type="range" min="0" max="15" step="1" value="5"></div>
+            <div class="field"><label for="d-reps">Replicates per level (tubes) <output id="d-reps-out" class="val"></output></label><input id="d-reps" type="range" min="2" max="6" value="3"></div>
             <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
             <div class="progress" aria-hidden="true"><i id="d-prog"></i></div>
             <p class="note" id="d-status"></p>
@@ -735,11 +742,11 @@
   drawRack(cv1, p1Tubes, 0, p1Opts);
   const t1 = Lab.table('#p1-table', {
     save: 'p1',
-    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 't', label: 'Time', unit: 'min', num: true, digits: 0 }, { key: 'aE', label: 'Enzyme A₄₇₀', num: true, digits: 3 }, { key: 'aC', label: 'Control A₄₇₀', num: true, digits: 3 },
-      { key: 'cE', label: 'Enzyme color', unit: '1–10', num: true, editable: true }, { key: 'cC', label: 'Control color', unit: '1–10', num: true, editable: true }],
+    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 't', label: 'Time', unit: 'min', num: true, digits: 0 }, { key: 'aE', label: 'Enzyme absorbance at 470 nm', unit: 'no units', num: true, digits: 3 }, { key: 'aC', label: 'Control absorbance at 470 nm', unit: 'no units', num: true, digits: 3 },
+      { key: 'cE', label: 'Enzyme color', unit: 'palette number, 1–10', num: true, editable: true }, { key: 'cC', label: 'Control color', unit: 'palette number, 1–10', num: true, editable: true }],
     onChange: () => syncP1()
   });
-  const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance at 470 nm', xMin: 0, xMax: 5, yMin: 0, series: [] });
+  const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance at 470 nm (no units)', xMin: 0, xMax: 5, yMin: 0, series: [] });
   /* palette numbers run 1-10; anything else is flagged on the cell, reported, and left out of the graph and match count */
   const palOk = v => v != null && isFinite(v) && v >= 1 && v <= 10;
   function palCheck(tableSel, badSel, rows, keys) {
@@ -755,11 +762,11 @@
     palCheck('#p1-table', '#p1-bad', rows, ['cE', 'cC']);
     const kE = spec ? 'aE' : 'cE', kC = spec ? 'aC' : 'cC';
     const sE = seriesByTime(rows, kE), sC = seriesByTime(rows, kC);
-    ch1.update({ yLabel: spec ? 'Absorbance at 470 nm (mean ± 2 SE)' : 'Color palette number (mean ± 2 SE)', yMin: 0, yMax: spec ? undefined : 10,
+    ch1.update({ yLabel: spec ? 'Absorbance at 470 nm (no units; mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMin: 0, yMax: spec ? undefined : 10,
       series: [{ name: 'Enzyme + substrate', points: sE }, { name: 'No-enzyme control', points: sC }] });
     const r = $('#p1-rates'); r.innerHTML = '';
-    const u = spec ? 'A/min' : 'units/min';
-    [['Initial rate, enzyme (0–2 min)', slope(sE)], ['Initial rate, control (0–2 min)', slope(sC)]].forEach(([k, v]) => r.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, isFinite(v) ? fmt(v, 3) + ' ' + u : '—'))));
+    const u = spec ? 'A₄₇₀/min' : 'palette units/min';
+    [['Initial rate, enzyme (0–2 min)', slope(sE)], ['Initial rate, control (0–2 min)', slope(sC)]].forEach(([k, v]) => r.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k + ' (' + u + ')'), h('span', { class: 'v' }, isFinite(v) ? fmt(v, 3) : '—'))));
     // palette-matching feedback
     let n = 0, ok = 0; rows.forEach(row => [['cE', '_AE'], ['cC', '_AC']].forEach(([c, a]) => { if (palOk(row[c])) { n++; if (Math.abs(row[c] - palNum(row[a])) <= 1) ok++; } }));
     $('#p1-match').textContent = n ? `${ok} of ${n} of your palette matches are within ±1 of the palette value equivalent to the tube’s true color.` + (ok < n ? ' Look again at the ones that are far off.' : '') : 'Enter a palette number for each reading (even if you also used the spectrophotometer).';
@@ -801,6 +808,7 @@
   });
   $('#p1-clear').addEventListener('click', () => { if (!p1Busy) { t1.clear(); snapsUI(null); } });
   syncP1();
+  Lab.prompt('#pred-assay', { key: 'predict-assay', label: 'Your prediction (with a reason)', rows: 2 });
   Lab.prompt('#p1-prompts', { key: 'p1-time', label: 'You measured color at several times. Which time will you use as the baseline reading for later assays, and why? (Think about when the enzyme and control tubes are clearly different but the reaction is still in its nearly straight, early phase.)', rows: 3 });
   Lab.prompt('#p1-prompts', { key: 'p1-const', label: 'When you use this assay to test factors that change enzyme activity, which components will you change and which will you keep constant? What does the no-enzyme control rule out?', rows: 3 });
 
@@ -818,15 +826,15 @@
   drawRack(cv2, p2Tubes, 0, p2Opts);
   const t2 = Lab.table('#p2-table', {
     save: 'p2',
-    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 'pH', label: 'pH', num: true, digits: 0 }, { key: 'tr', label: 'Read at', unit: 'min', num: true, digits: 0 }, { key: 'a0', label: 'A₄₇₀ start', num: true, digits: 3 }, { key: 'a1', label: 'A₄₇₀ read', num: true, digits: 3 }, { key: 'dA', label: 'ΔA', num: true, digits: 3 }, { key: 'c', label: 'Color', unit: '1–10', num: true, editable: true }],
+    columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 'pH', label: 'pH', unit: 'no units', num: true, digits: 0 }, { key: 'tr', label: 'Read at', unit: 'min', num: true, digits: 0 }, { key: 'a0', label: 'Absorbance at 470 nm, start', unit: 'no units', num: true, digits: 3 }, { key: 'a1', label: 'Absorbance at 470 nm, read', unit: 'no units', num: true, digits: 3 }, { key: 'dA', label: 'Change in absorbance, ΔA', unit: 'no units', num: true, digits: 3 }, { key: 'c', label: 'Color', unit: 'palette number, 1–10', num: true, editable: true }],
     onChange: () => syncP2()
   });
-  const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'ΔA', xMin: 2, xMax: 11, yMin: 0, series: [] });
+  const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH (no units)', yLabel: 'Change in absorbance, ΔA (no units)', xMin: 2, xMax: 11, yMin: 0, series: [] });
   function syncP2() {
     const rows = t2.getRows(), spec = mode2() === 'spec', key = spec ? 'dA' : 'c';
     palCheck('#p2-table', '#p2-bad', rows, ['c']);
     const pts = []; PHS.forEach(p => { const v = rows.filter(r => r.pH === p && r[key] != null && isFinite(r[key]) && (spec || palOk(r[key]))).map(r => r[key]); if (v.length) pts.push({ x: p, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); });
-    ch2.update({ yLabel: spec ? 'Change in absorbance, ΔA (mean ± 2 SE)' : 'Color palette number (mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
+    ch2.update({ yLabel: spec ? 'Change in absorbance, ΔA (no units; mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
     let n = 0, ok = 0; rows.forEach(r => { if (palOk(r.c)) { n++; if (Math.abs(r.c - palNum(r._A)) <= 1) ok++; } });
     $('#p2-match').textContent = n ? `${ok} of ${n} palette matches are within ±1 of the true color.` : 'Record a palette number for each tube at your reading time.';
   }
@@ -841,7 +849,7 @@
       const rows = p2Tubes.map(tu => { const A = at(tu.trace, tb), a0 = spec ? readSpec(0) : null, a1 = spec ? readSpec(A) : null; return { trial, pH: tu.pH, tr: tb, a0, a1, dA: spec ? +(a1 - a0).toFixed(3) : null, c: null, _A: A }; });
       t2.setRows(t2.getRows().concat(rows));
       const rd = $('#p2-read'); rd.innerHTML = '';
-      if (spec) rows.forEach(r => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'pH ' + r.pH + ' ΔA'), h('span', { class: 'v' }, fmt(r.dA, 3)))));
+      if (spec) rows.forEach(r => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'pH ' + r.pH + ' ΔA (no units)'), h('span', { class: 'v' }, fmt(r.dA, 3)))));
       $('#p2-status').textContent = `Trial ${trial} done. Record a palette number for each tube.`;
     });
   });
@@ -890,16 +898,16 @@
   }
   cvD.onresize = () => drawD(dT);
   $('#d-levels').addEventListener('change', () => drawD(0));
-  const dTable = Lab.table('#d-table', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, ...[1, 2, 3, 4, 5].map(i => ({ key: 'a' + i, label: `A at ${i} min`, num: true, digits: 3 })), { key: 'rate', label: 'Initial rate', unit: 'A/min', num: true, digits: 4 }] });
-  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean rate', unit: 'A/min', num: true, digits: 4 }, { key: 'se', label: 'SE', num: true, digits: 4 }, { key: 'ci', label: '95% CI (± 2 SE)' }] });
-  const dC1 = Lab.chart('#d-chart1', { xLabel: 'Time (min)', yLabel: 'Mean absorbance', xMin: 0, xMax: 5, yMin: 0, height: 320, series: [] });
-  const dC2 = Lab.chart('#d-chart2', { xLabel: 'Level', yLabel: 'Initial rate (A/min)', yMin: 0, height: 320, series: [] });
+  const dTable = Lab.table('#d-table', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, ...[1, 2, 3, 4, 5].map(i => ({ key: 'a' + i, label: `Absorbance at ${i} min`, unit: 'no units', num: true, digits: 3 })), { key: 'rate', label: 'Initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }] });
+  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'Replicates (n)', unit: 'tubes', num: true, digits: 0 }, { key: 'mean', label: 'Mean initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }, { key: 'se', label: 'SE of initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }, { key: 'ci', label: '95% CI (mean ± 2 SE)', unit: 'A₄₇₀/min' }] });
+  const dC1 = Lab.chart('#d-chart1', { xLabel: 'Time (min)', yLabel: 'Mean absorbance at 470 nm (no units)', xMin: 0, xMax: 5, yMin: 0, height: 320, series: [] });
+  const dC2 = Lab.chart('#d-chart2', { xLabel: 'Level of your independent variable', yLabel: 'Initial rate (A₄₇₀/min)', yMin: 0, height: 320, series: [] });
   let dRes = Lab.store.get('d-res');
   function renderD() {
     if (!dRes) return;
     const d = DIV[dRes.iv];
     dC1.update({ series: dRes.levels.slice(0, 6).map(L => ({ name: L.x + (d.unit ? ' ' + d.unit : ''), points: [0, 1, 2, 3, 4, 5].map(t => ({ x: t, y: stats.mean(L.reps.map(r => r.read[t])) })), dots: true })) });
-    dC2.update({ xLabel: d.label + (d.unit ? ' (' + d.unit + ')' : ''), xMin: Math.min(0, ...dRes.levels.map(L => L.x)), series: [{ name: 'Mean initial rate ± 2 SE', points: dRes.levels.map(L => ({ x: L.x, y: L.mean, err: 2 * L.se })) }] });
+    dC2.update({ xLabel: d.label + ' (' + (d.unit || 'no units') + ')', xMin: Math.min(0, ...dRes.levels.map(L => L.x)), series: [{ name: 'Mean initial rate ± 2 SE', points: dRes.levels.map(L => ({ x: L.x, y: L.mean, err: 2 * L.se })) }] });
     let msg = '';
     if (dRes.iv === 'sub') {
       const pts = dRes.levels.filter(L => L.x > 0 && L.mean > 0.002);
@@ -927,7 +935,7 @@
       dRes = { iv, levels: res.levels.map(L => ({ x: L.x, mean: L.mean, se: L.se, reps: L.reps.map(r => ({ read: r.read, rate: r.rate })) })) };
       Lab.store.set('d-res', dRes); renderD();
       const rd = $('#d-read'); rd.innerHTML = '';
-      res.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, L.x + (d.unit ? ' ' + d.unit : '')), h('span', { class: 'v' }, fmt(L.mean, 3)))));
+      res.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Mean initial rate at ' + L.x + (d.unit ? ' ' + d.unit : '') + ' (A₄₇₀/min)'), h('span', { class: 'v' }, fmt(L.mean, 3)))));
       $('#d-status').textContent = 'Done. Initial rate = slope of absorbance from 0 to 2 min.';
     });
   });
@@ -947,7 +955,27 @@
   const cer = h('div', { class: 'cer' }); an.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
   [['cer-c', 'C', 'Claim: Answer the driving question for one factor you tested.'], ['cer-e', 'E', 'Evidence: Cite initial rates with error bars (± 2 SE) from your data.'], ['cer-r', 'R', 'Reasoning: Connect the evidence to enzyme structure, the active site, and collision theory.']]
     .forEach(([k, L, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 4 }); p.querySelector('label').dataset.letter = L; });
+  cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
   const rf = $('#reflect-prompts');
+  /* Predict first: quote the student's own saved prediction(s) back in Reflect. */
+  function predRecall(host, items) {
+    const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
+    host.prepend(box);
+    const render = () => {
+      box.innerHTML = '';
+      items.forEach(([key, name]) => {
+        const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
+        box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
+          v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
+      });
+    };
+    render();
+    document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
+    Lab.onShow(host, render);
+  }
+  
+  predRecall(rf, [['predict-assay', 'the baseline assay'], ['p2-pred', 'the effect of pH'], ['d-h', 'your own experiment']]);
+  Lab.prompt(rf, { key: 'r-pred', label: 'Compare your three predictions (quoted above) with your data: the enzyme versus control tubes, the pH optimum, and your own experiment. Cite one measured value with units for each. Which predictions held up, and what does each mismatch tell you about enzyme structure?', rows: 5 });
   Lab.prompt(rf, { key: 'r-error', label: 'List the largest sources of error in this assay (timing, pipetting, mixing, judging color, temperature drift). For each, suggest how to reduce it.', rows: 3 });
   Lab.prompt(rf, { key: 'r-veg', label: 'Peroxidase from a turnip root growing in cool soil might differ from peroxidase in a leaf or a fruit. Predict how optimum temperature or pH might differ, and describe the observations you would make before extracting the enzyme.', rows: 3 });
   Lab.prompt(rf, { key: 'r-homeo', label: 'Make a strong argument for the role of enzymes in maintaining homeostasis at the cellular level. Why does a cell need peroxidase at all?', rows: 3 });
@@ -970,19 +998,21 @@
   const p1Rows = () => t1.getRows(), p2Rows = () => t2.getRows();
   const trials = rows => new Set(rows.map(r => r.trial)).size;
   Lab.steps('#p1-steps', [
+    { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-assay', done: () => filledP('predict-assay'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the tubes.' },
     { id: 'run', text: 'Combine tubes & start timer', target: '#p1-run', done: () => p1Rows().length > 0, hint: 'Press <strong>Combine tubes &amp; start timer</strong>. The table fills in at 0–5 min.' },
     { id: 'rec', text: 'Record colors (Data tab)', target: '#p1-table input', done: () => p1Rows().length > 0 && p1Rows().every(r => (isNum(r.cE) && isNum(r.cC)) || isNum(r.aE)), hint: 'Open the <strong>Data</strong> tab and match each photo to the palette (not needed with the spectrophotometer).' },
     { id: 'two', text: 'Run a second trial', target: '#p1-run', optional: true, done: () => trials(p1Rows()) >= 2, hint: 'A repeat trial shows how much the readings vary.' },
     { id: 'qs', text: 'Pick baseline + answer 2 Qs', target: '#base-time', done: () => filledP('p1-time') && filledP('p1-const'), hint: 'Scroll down: choose your baseline time and answer the two questions.' }
   ], { doneText: 'Procedure 1 done. Next, the <a href="#procedure-2-ph">pH procedure</a>.' });
   Lab.steps('#p2-steps', [
-    { id: 'pred', text: 'Predict the effect of pH', target: '#p-p2-pred', optional: true, done: () => filledP('p2-pred'), hint: 'Write your prediction in the box above the scene.' },
+    { id: 'pred', text: 'Predict the effect of pH', target: '#p-p2-pred', done: () => filledP('p2-pred'), hint: 'Write your prediction in the box above the scene.' },
     { id: 'run', text: 'Combine all pairs & start', target: '#p2-run', done: () => p2Rows().length > 0, hint: 'Press <strong>Combine all pairs &amp; start</strong>.' },
     { id: 'three', text: 'Run at least 3 trials', target: '#p2-run', done: () => trials(p2Rows()) >= 3, hint: 'Run at least three trials so you can average them.' },
     { id: 'rec', text: 'Record colors (Data tab)', target: '#p2-table input', done: () => p2Rows().length > 0 && p2Rows().every(r => isNum(r.c) || isNum(r.dA)), hint: 'Open the <strong>Data</strong> tab and enter a palette number for each tube.' },
     { id: 'qs', text: 'Describe the graph (below)', target: '#p-p2-concl', done: () => filledP('p2-concl'), hint: 'Scroll down and describe your graph and the pH optimum.' }
   ], { doneText: 'pH done. Next, <a href="#design">design your own investigation</a>.' });
-  Lab.gate('#p2-run', () => PHS.some(p => $('#ph-' + p).checked) ? '' : 'Tick at least one buffer');
+  Lab.gate('#p1-run', () => filledP('predict-assay') || p1Rows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-assay' });
+  Lab.gate('#p2-run', () => !filledP('p2-pred') && !p2Rows().length ? 'Write your prediction first' : PHS.some(p => $('#ph-' + p).checked) ? '' : 'Tick at least one buffer', { show: '#p-p2-pred' });
   let dTouched = false;
   ['#d-iv', '#d-levels', '#d-pre', '#d-reps'].forEach(s => $(s).addEventListener('input', () => { dTouched = true; }));
   Lab.steps('#d-steps', [
@@ -991,7 +1021,7 @@
     { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
     { id: 'vars', text: 'Describe variables + controls', target: '#p-d-v', done: () => filledP('d-v') && filledP('d-c'), hint: 'Fill in the variables and controls boxes above.' }
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
-  Lab.gate('#d-run', () => levelsCheck().msg ? 'Fix the levels first (see the message under the box)' : '');
+  Lab.gate('#d-run', () => !filledP('d-h') && !dTable.getRows().length ? 'Write your prediction first (hypothesis above)' : levelsCheck().msg ? 'Fix the levels first (see the message under the box)' : '', { show: '#p-d-h' });
   $('#d-run').addEventListener('click', () => { const t = setInterval(() => { if (!dBusy) { clearInterval(t); if (dRes) Lab.toast(`Ran ${dRes.levels.length} levels × ${dRes.levels[0].reps.length} replicates`, { type: 'ok', announce: false, key: 'drun' }); } }, 300); setTimeout(() => clearInterval(t), 15000); });
 })();
 </script>
