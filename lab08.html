@@ -775,6 +775,7 @@ function move(to, dur = 0.9) {
     tick(k) { const e = ease(k); tubes.forEach((t, i) => { const [tx, ty] = POS[to][i]; const lift = Math.sin(Math.PI * e) * 0.18; t.x = from[i][0] + (tx - from[i][0]) * e; t.y = from[i][1] + (ty - from[i][1]) * e - lift; }); } };
 }
 /* A timed wait: the scene animates, the button counts down ("Heat shock… 32 s"), a progress bar fills, and the clock is real time. */
+const STEP_WHY = 'This step is running. The button comes back when it finishes.';
 function wait(label, simSec, dur = 4) {
   dur = Math.max(3, dur);
   const short = label.split(' at ')[0];
@@ -783,7 +784,11 @@ function wait(label, simSec, dur = 4) {
     const left = Math.max(0, Math.ceil(dur * speed() * (1 - k)));
     $('#do-step').textContent = `${short}… ${left} s`;
     const pr = $('#step-prog'); pr.hidden = false; pr.value = Math.round(k * 100);
-  }, end() { overlay = ''; $('#step-prog').hidden = true; } };
+    // the same countdown, where the student looks: the Status tile and the line under the button
+    const lab = clock(Math.max(0, simSec * (1 - k)));
+    $('#ro-status').textContent = `${short}: ${lab} left`;
+    $('#step-why').textContent = `${short}: ${clock(simSec * k)} of ${clock(simSec)} of lab time done (${lab} left). On your screen that is about ${left} s. The button comes back when it finishes.`;
+  }, end() { overlay = ''; $('#step-prog').hidden = true; $('#step-why').textContent = STEP_WHY; $('#ro-status').textContent = roStatus; } };
 }
 function clock(s) { s = Math.round(s); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`; }
 function drop(ti, what, apply, dur = 0.7) { return { dur, tick(k) { pipette = { ti, k, what }; }, end() { pipette = null; if (!ffwd) Lab.sound.play('click'); apply(); } }; }
@@ -1172,7 +1177,7 @@ function doStep(skip, resumeSec) {
       P.push(drop(1, 'cells', () => {}, 0.5), drop(0, 'cells', () => {}, 0.5), fn(() => {
         tubes.forEach(t => t.vol -= 3 * S.plateUL);
         PLATES.forEach(p => { if (!plates) plates = {}; plates[p.id] = { wet: true }; });
-        drawPlates(); updateRO(`${S.plateUL} µL spread on each of 6 plates`);
+        drawPlates(); renderPlateReadouts(); updateRO(`${S.plateUL} µL spread on each of 6 plates`);
         Lab.toast('Cells spread on all six plates. Now predict each plate.', { type: 'info', announce: false, key: 'plated' });
       })); break;
     case 'incub': {
