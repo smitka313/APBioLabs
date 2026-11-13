@@ -789,7 +789,7 @@
       const p = gstore.get('progress:' + id);
       if (!started) return;
       const hasP = p && p.total;
-      out.push({ id, no: labNo(id), done: hasP ? p.done : 0, total: hasP ? p.total : 0, text: hasP ? `${p.done} of ${p.total} parts` : 'started' });
+      out.push({ id, no: labNo(id), done: hasP ? p.done : 0, total: hasP ? p.total : 0, text: hasP ? (progressText(p) === 'Not started' ? 'started' : progressText(p).replace(/^Started · /, 'started · ')) : 'started' });
     });
     return out;
   }
@@ -1834,23 +1834,50 @@
     if (changedAny) { if (acted) store.set('stepdone', stepSaved()); progressSoon(); }
   }
   let navProgressEl = null, lastSummary = '';
+  /* Two-level progress. Level 1 is the part count (a part is done when ALL its work is done; unchanged). Level 2 names the
+     part that is under way (some, not all, of its items done) with its item count, e.g. "3 of 6 parts · Float assay 6/11 items".
+     Before any part is complete it reads "Started · Float assay 6/11 items", never "0 of N". s = {done, total, items:{done,total},
+     partial:{name, done, total}, started}. opts.suffix adds " done" after "parts" (nav, resume card). */
+  function progressText(s, opts = {}) {
+    if (!s || !s.total) return s && s.started ? 'Started' : 'Not started';
+    const part = s.partial && s.partial.total ? `${s.partial.name} ${s.partial.done}/${s.partial.total} items` : '';
+    if (s.done >= s.total) return `All ${s.total} parts done`;
+    if (!s.done) {
+      const worked = s.items ? s.items.done > 0 : !!s.started;
+      return !worked ? 'Not started' : part ? `Started · ${part}` : 'Started';
+    }
+    return `${s.done} of ${s.total} parts${opts.suffix ? ' done' : ''}${part ? ' · ' + part : ''}`;
+  }
+  Lab.progressText = progressText;
   function updateProgress() {
     const nav = $('.step-nav ol'); if (!nav) return null;
-    let parts = 0, complete = 0;
+    let parts = 0, complete = 0, itemsDone = 0, itemsTotal = 0;
+    const partials = [];
     const steps = $$('section.step');
     steps.forEach(s => {
       const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
       const r = sectionWork(s), sr = $('.done-sr', link);
       if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
       parts++; const ok = r.done === r.total; if (ok) complete++;
+      itemsDone += r.done; itemsTotal += r.total;
+      if (r.done > 0 && !ok) partials.push({ id: s.id, name: (s.dataset.step || '').trim() || 'This part', done: r.done, total: r.total });
       link.classList.add('has-work'); link.classList.toggle('is-done', ok);
       if (sr) sr.textContent = ok ? ' (done)' : '';
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
-    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `<span class="np-long">${complete} of ${parts} parts done</span><span class="np-short">${complete} of ${parts} done</span>`; }
-    const sum = JSON.stringify([complete, parts]);
-    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, sections: steps.length, t: Date.now() }); }
-    return { done: complete, total: parts, sections: steps.length };
+    const curId = pages.cur && pages.cur.id;
+    const partial = partials.find(x => x.id === curId) || partials[0] || null;
+    const sumObj = { done: complete, total: parts, sections: steps.length, items: { done: itemsDone, total: itemsTotal }, partial };
+    if (navProgressEl) {
+      const started = !complete && itemsDone > 0;
+      const pt = partial ? `${partial.name} ${partial.done}/${partial.total} items` : '';
+      navProgressEl.hidden = !parts;
+      navProgressEl.innerHTML = `<span class="np-long">${started ? 'Started' : `${complete} of ${parts} parts done`}</span><span class="np-short">${started ? 'Started' : `${complete} of ${parts} done`}</span>` + (pt ? `<span class="np-part"> · ${esc(pt)}</span>` : '');
+      navProgressEl.title = progressText(sumObj, { suffix: true });
+    }
+    const sum = JSON.stringify([complete, parts, itemsDone, partial && [partial.id, partial.done, partial.total]]);
+    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, Object.assign({ t: Date.now() }, sumObj)); }
+    return { done: complete, total: parts, sections: steps.length, items: sumObj.items, partial };
   }
   /* ---------------- Paged mode: one part at a time ----------------
      Lab pages show one section.step at a time (body.paged; the current one has .is-current), with Back/Next
@@ -2091,11 +2118,12 @@
     $$('[data-lab-progress]').forEach(el => {
       const p = Lab.progress.forLab(el.dataset.labProgress);
       el.innerHTML = '';
-      if (!p || (p.total && !p.done && !p.started)) { el.append(h('span', { class: 'prog-text' }, 'Not started')); return; }
-      if (!p.total) { el.append(h('span', { class: 'prog-text' }, 'Started')); return; }
-      const pct = Math.round(100 * p.done / p.total);
-      el.append(h('span', { class: 'prog-text' }, p.done === p.total ? `All ${p.total} parts done` : `${p.done} of ${p.total} parts`),
-        h('span', { class: 'prog-bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pct}%` })));
+      const txt = progressText(p);
+      el.append(h('span', { class: 'prog-text' }, txt));
+      if (!p || !p.total || txt === 'Not started') return;
+      /* The bar shows part completion, plus the item progress of the part under way. */
+      const frac = p.done / p.total + (p.partial && p.partial.total ? (p.partial.done / p.partial.total) / p.total : 0);
+      el.append(h('span', { class: 'prog-bar', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.round(100 * Math.min(1, frac))}%` })));
     });
     if (o.resume) {
       const el = typeof o.resume === 'string' ? $(o.resume) : o.resume;
@@ -2121,7 +2149,7 @@
             last.name ? h('p', { class: 'pickup-part' }, useBm ? 'You paused at: ' : 'Part: ', h('strong', null, last.name + (useBm && bm.stepNo ? ', step ' + bm.stepNo : ''))) : null,
             hr && hr.hint ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, 'Next: '), hr.hint)
               : hr && hr.done ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, '✓ '), hr.done) : null,
-            pr && pr.total ? h('p', { class: 'pickup-prog small muted' }, `${pr.done} of ${pr.total} parts done`) : null),
+            pr && pr.total && progressText(pr) !== 'Not started' ? h('p', { class: 'pickup-prog small muted' }, progressText(pr, { suffix: true })) : null),
           h('a', { class: 'btn btn--primary btn--lg resume-link', href }, 'Resume', h('span', { class: 'sr-only' }, ' ' + labName + (last.name ? ', ' + last.name : '')), h('span', { 'aria-hidden': 'true' }, ' →')));
         el.hidden = false;
       }

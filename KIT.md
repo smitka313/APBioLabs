@@ -44,7 +44,11 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
   "Copy link" button. **One progress scheme:** a "part" counts only if it holds student work (prompt textareas, quiz
   questions, saved `Lab.table`s, required `Lab.steps` items); Overview, Background and Submit do not. A part is done when
-  all of that work is done. The same number is used by the nav ("3 of 6 parts done"), the home cards and the
+  all of that work is done. **Two levels:** beside the part count, the nav (`.np-part`, wide screens) and the home card name
+  the part under way (some, not all, of its items done; the current part if it qualifies) with its item count:
+  "3 of 6 parts · Float assay 6/11 items", or "Started · Float assay 6/11 items" before any part is complete, never "0 of N"
+  once work has begun ("Not started" before that). `aplab:progress:<lab>` = `{done, total, sections, items:{done,total}, partial:{id,name,done,total}, t}`;
+  `Lab.progressText(summary)` builds the text. The completion rule is unchanged. The same number is used by the nav ("3 of 6 parts done"), the home cards and the
   teachers.html table ("10 parts (6 with work)"; regenerate with `node tools/gen-parts.js` after changing a lab's parts;
   `tests/t05b-teachers.js` checks it). **Setup rows are not work:** a row a page adds while loading (a starting row, preset
   rows) is tagged `_setup:true` and saved that way; `addRow(row, {setup:false})` / `setRows(rows, {setup:false})` force
