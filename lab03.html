@@ -95,6 +95,14 @@
   .sim--fit .checks { max-height: 160px; }
   .checks { display: flex; flex-wrap: wrap; gap: 4px 12px; max-height: 220px; overflow: auto; font-size: .88rem; }
   .checks label { display: inline-flex; gap: 5px; align-items: center; }
+  .predict-box { margin: 0 0 14px; border-left: 4px solid var(--accent); }
+  .predict-state { font-size: .8rem; font-weight: 600; margin-left: 6px; padding: 1px 8px; border-radius: 99px; }
+  .predict-state.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .predict-state.is-req { background: var(--warn-soft); color: var(--warn); }
+  .predict-box .prompt textarea { min-height: 3.2rem; }
+  .predict-q { margin: 4px 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid var(--accent); font-style: italic; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .predict-where { margin: 6px 0 0; }
+  .cer-hint { margin: 0 0 10px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -193,7 +201,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
       <p class="small muted">Getting Started, Table 1 (plants: 1 = has the trait): Mosses 0 0 0 · Ferns vascular tissue only · Pine trees vascular tissue + seeds · Flowering plants vascular tissue + seeds + flowers.</p>
-      <div class="table-wrap"><table class="data"><thead><tr><th>Species (vs. human)</th><th class="num">GAPDH gene similarity</th><th class="num">GAPDH protein similarity</th></tr></thead>
+      <div class="table-wrap"><table class="data"><thead><tr><th>Species (vs. human)</th><th class="num">GAPDH gene similarity (%)</th><th class="num">GAPDH protein similarity (%)</th></tr></thead>
       <tbody><tr><td>Chimpanzee (<em>Pan troglodytes</em>)</td><td class="num">99.6%</td><td class="num">100%</td></tr><tr><td>Dog (<em>Canis lupus familiaris</em>)</td><td class="num">91.3%</td><td class="num">95.2%</td></tr><tr><td>Fruit fly (<em>Drosophila melanogaster</em>)</td><td class="num">72.4%</td><td class="num">76.7%</td></tr><tr><td>Roundworm (<em>Caenorhabditis elegans</em>)</td><td class="num">68.2%</td><td class="num">74.3%</td></tr></tbody></table></div>
       <div id="prelab" class="quiz--cols" style="margin-top:14px"></div>
     </div>
@@ -280,7 +288,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         </div>
         <div class="stage">
           <div><div class="small muted">Query sequence (5′→3′)</div><div class="seqbox" id="q-seq" aria-label="Query sequence"></div></div>
-          <div class="readouts"><div class="readout"><span class="k">Top hit</span><span class="v" id="r-top">—</span></div><div class="readout"><span class="k">Identity</span><span class="v" id="r-id">—</span></div><div class="readout"><span class="k">E-value</span><span class="v" id="r-e">—</span></div><div class="readout"><span class="k">Hits (E &lt; 10)</span><span class="v" id="r-n">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Top hit</span><span class="v" id="r-top">—</span></div><div class="readout"><span class="k">Identity (%)</span><span class="v" id="r-id">—</span></div><div class="readout"><span class="k">E-value (no units)</span><span class="v" id="r-e">—</span></div><div class="readout"><span class="k">Hits, E &lt; 10 (count)</span><span class="v" id="r-n">—</span></div></div>
           <div id="blast-out"><div class="res-empty msg" id="blast-empty"><strong>No results yet.</strong> Choose a gene and press BLAST.</div></div>
         </div>
       </div>
@@ -332,7 +340,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         </div></details>
         </div>
         <div class="stage">
-          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits (count)</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope (% per 100 My)</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R² (no units)</span><span class="v" id="d-r2">—</span></div></div>
           <div id="d-out"><div class="res-empty msg" id="d-empty"><strong>No results yet.</strong> Choose a query organism and gene, then press BLAST.</div></div>
         </div>
       </div>
@@ -500,6 +508,52 @@ function blast(query, targets, progKey) {
   return hits.sort((x, y) => y.bits - x.bits);
 }
 Lab.init({ id: 'lab03' });
+/* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
+const Predict = (function () {
+  const $ = Lab.$, ids = [];
+  const val = k => { const t = document.getElementById('p-' + k); return ((t && t.value) || '').trim(); };
+  const has = k => val(k).length >= 6;
+  const refreshAll = () => ids.forEach(f => f());
+  document.addEventListener('input', refreshAll, true);
+  /* Add a required prediction before a simulation. o: {key, label, placeholder, rows, title} */
+  function add(sim, o) {
+    sim = typeof sim === 'string' ? $(sim) : sim;
+    const state = Lab.h('span', { class: 'predict-state' });
+    const inner = Lab.h('div', { class: 'inner' });
+    const det = Lab.h('details', { class: 'disclose predict-box', id: 'predict-box-' + o.key }, Lab.h('summary', null, 'Predict first: ' + (o.title || 'what do you expect to see?') + ' ', state), inner);
+    sim.parentNode.insertBefore(det, sim);
+    Lab.prompt(inner, { key: o.key, label: o.label, rows: o.rows || 2, placeholder: o.placeholder || '' });
+    const upd = () => { const ok = has(o.key); state.textContent = ok ? '✓ saved' : 'required'; state.className = 'predict-state ' + (ok ? 'is-ok' : 'is-req'); };
+    ids.push(upd); upd(); det.open = !has(o.key);
+    return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
+  }
+  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  function compare(container, o) {
+    container = typeof container === 'string' ? $(container) : container;
+    const list = Lab.h('div', { class: 'predict-list' });
+    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
+    container.append(box);
+    const render = () => {
+      list.textContent = '';
+      o.items.forEach(([k, where]) => {
+        const v = val(k);
+        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
+        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
+      });
+    };
+    ids.push(render); render();
+    Lab.onShow(box, render);
+    return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
+  function cer(cerEl, starters, hintHtml) {
+    cerEl = typeof cerEl === 'string' ? $(cerEl) : cerEl;
+    ['claim', 'evidence', 'reasoning'].forEach((k, i) => { const t = cerEl.querySelectorAll('textarea')[i]; if (t && starters[k]) t.placeholder = starters[k]; });
+    const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
+    cerEl.parentNode.insertBefore(d, cerEl);
+  }
+  return { add, compare, cer, has, val };
+})();
 
 const db = buildDB();
 const ORG_IDS = Object.keys(ORGS).filter(k => k !== 'fossil');
@@ -1071,7 +1125,7 @@ function renderBlast(el, res, meta) {
   hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 8}" y="${y + 7.5}" text-anchor="end" style="font-size:10px">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="7" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits, E = ${fmtE(h.E)}</title></rect>`; });
   const key = [['--muted', '&lt;40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥200']].map(([c, t]) => `<span class="k" style="background:var(${c})">${t}</span>`).join('');
   const descHTML = `    <div class="res-sec"><h4>Descriptions</h4><div class="small muted">Sequences producing significant alignments (${hits.length}). Select "View" to show an alignment.</div>
-    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th class="opt">Group</th><th class="num">Max score</th><th class="num opt">Query cover</th><th class="num">E value</th><th class="num">Per. ident</th><th>Alignment</th></tr></thead><tbody>
+    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th class="opt">Group</th><th class="num">Max score (bits)</th><th class="num opt">Query cover (%)</th><th class="num">E value (no units)</th><th class="num">Per. ident (%)</th><th>Alignment</th></tr></thead><tbody>
     ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td class="opt">${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num opt">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="lnk" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
     </tbody></table></div></div>`;
   el.innerHTML = `<div class="res">${head}
@@ -1140,7 +1194,7 @@ Lab.$('#run-blast').addEventListener('click', runPart2);
 Lab.$('#tree-blast').addEventListener('click', () => { if (lastRes && lastRes.hits.length) distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); });
 const blastTable = Lab.table('#blast-table', {
   save: 'blastlog',
-  columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
+  columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', unit: 'no.', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value', unit: 'no units' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
 });
 Lab.$('#log-blast').addEventListener('click', () => {
   if (!lastRes) { Lab.$('#blast-status').textContent = 'Press BLAST first, then record the top hits.'; Lab.$('#blast-status').className = 'status bad'; return; }
@@ -1244,7 +1298,9 @@ Lab.prompt(an, { key: 'a5', label: '5. The three genes gave different percent id
 const cer = Lab.h('div', { class: 'cer' }); anTop.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: where does the fossil belong?'), cer);
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
+Predict.cer(cer, { claim: 'The data show that the fossil is most closely related to ___.', evidence: 'The top BLAST hit was ___ with ___% identity (E value ___), compared with ___% for ___.', reasoning: 'This happens because more similar DNA means ___ (a more recent common ancestor), so ___.' }, '<p><strong>Claim:</strong> The data show that the fossil belongs ___ (on the cladogram), as a sister group to ___.</p><p><strong>Evidence:</strong> For gene ___, the top hit was ___ with ___% identity (E value ___), compared with ___% identity for ___.</p><p><strong>Reasoning:</strong> This happens because ___ (more similar sequences mean a more recent common ancestor), so ___.</p>');
 const ev = Lab.$('#evaluate-prompts');
+Predict.compare(ev, { key: 'reflect-predict', items: [['predict-blast', 'Before BLASTing the fossil genes you predicted:'], ['predict-design', 'Before your molecular-clock design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one percent identity (%) from your data. What does any mismatch tell you?', rows: 4 });
 Lab.prompt(ev, { key: 'e1', label: 'Compare your cladogram with your classmates\'. Does everyone agree on where the fossil goes? If not, what is the basis of the disagreement?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: 'This page\'s database holds only 18 organisms. Real BLAST searches hundreds of thousands of organisms. How does a small database limit your conclusions? (Hint: what if the fossil\'s closest living relatives were not in the database?)', rows: 3 });
 Lab.prompt(ev, { key: 'e3', label: 'What other data could be collected from the fossil specimen to better work out its evolutionary history?', rows: 3 });
@@ -1259,6 +1315,8 @@ Lab.$('#d-run').addEventListener('click', () => { dRan = true; });
 Lab.$$('#dprog-seg button, #d-set input').forEach(el => el.addEventListener('click', () => { dTouched = true; }));
 Lab.$('#tree-blast').addEventListener('click', () => { treeTried = true; });
 blastPanels = Lab.results('#blast-sim', { start: 'data', graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-hits', title: 'Hits from this search' }, { el: '#blast-table', title: 'Your recorded hits (top 5 per search)' }] });
+Lab.gate('#run-blast', () => predB.has() || blastGenes().size ? '' : predB.reason(), { show: '#p-predict-blast' });
+Lab.gate('#d-run', () => predD.has() || clockTable.getRows().length ? '' : predD.reason(), { show: '#p-predict-design' });
 Lab.gate('#log-blast', () => lastRes ? '' : 'Press BLAST first');
 Lab.gate('#tree-blast', () => lastRes ? '' : 'Press BLAST first');
 Lab.results('#d-sim', { graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
@@ -1271,13 +1329,17 @@ Lab.steps('#clade-steps', [
   { id: 'hyp', text: 'Place the fossil (hypothesis)', target: '#fossil-hyp', sticky: true, done: () => !!Lab.store.get('fossil-hyp', ''), hint: 'Below the tree: choose the branch the fossil joins, using the Figure 4 data set.' },
   { id: 'why', text: 'Explain it (below)', target: '#p-fossil-obs', done: () => allFilled(['fossil-obs', 'fossil-hyp-why']), hint: 'Describe the fossil and explain your hypothesis in the two boxes below.' }
 ], { doneText: 'Part 1 done. Go on to <a href="#blast-the-genes">BLAST the genes</a>.' });
+const predB = Predict.add('#blast-sim', { key: 'predict-blast', title: 'which organism will match the fossil gene?', label: 'Before you press BLAST, predict which organism\'s gene will be the closest match to the fossil gene, roughly what percent identity (%) you expect, and why.', placeholder: 'I predict the top hit will be ___ with about ___% identity because ___.' });
 Lab.steps('#blast-steps', [
+  { id: 'predict', text: 'Write your prediction', target: '#p-predict-blast', done: predB.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
   { id: 'a', text: 'BLAST gene A, record top 5', target: '#log-blast', done: () => blastGenes().has('A'), hint: 'Choose gene A, press <strong>BLAST</strong>, open two alignments, then press <strong>Record top 5 hits</strong>.' },
   { id: 'b', text: 'BLAST gene B, record top 5', target: '#q-gene', done: () => blastGenes().has('B'), hint: 'Choose gene B, press <strong>BLAST</strong>, then record the top 5 hits.' },
   { id: 'c', text: 'BLAST gene C, record top 5', target: '#q-gene', done: () => blastGenes().has('C'), hint: 'Choose gene C, press <strong>BLAST</strong>, then record the top 5 hits.' },
   { id: 'tree', text: 'Try a distance tree', target: '#tree-blast', optional: true, done: () => treeTried, hint: 'Open More options and press <strong>Distance tree of results</strong>.' }
 ], { doneText: 'All three genes searched. Go on to <a href="#place-the-fossil">Place the fossil</a>.' });
+const predD = Predict.add('#d-sim', { key: 'predict-design', title: 'how will gene speed change identity?', label: 'Before you BLAST, predict how the percent identity (%) will change with time since the common ancestor, and how the slow, moderate and fast genes will differ.', placeholder: 'I predict the fast gene will lose identity ___ than the slow gene because ___.' });
 Lab.steps('#d-steps', [
+  { id: 'predict', text: 'Write your prediction', target: '#p-predict-design', done: predD.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
   { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => allFilled(['d-question', 'd-hypothesis', 'd-variables']), hint: 'Write your question, hypothesis and variables in the boxes above.' },
   { id: 'pick', text: 'Choose a query and gene', target: '#d-org', sticky: true, done: () => dTouched || clockTable.getRows().length > 0, hint: 'Pick a query organism, a gene and (in More options) which organisms to search.' },
   { id: 'run', text: 'BLAST your query', target: '#d-run', done: () => dRan || clockTable.getRows().length > 0, hint: 'Press <strong>BLAST</strong> and read the hit list.' },
