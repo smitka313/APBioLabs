@@ -116,6 +116,28 @@
   /* Seed for an unseeded Lab.rng(): the n-th call on a page always gets the same seed for the same student. */
   const autoSeed = () => IS_LAB ? hash32(SEED.str + ':rng:' + (rngCount++)) : Math.floor(nativeRandom() * 2 ** 31);
 
+  /* ResizeObserver, made flushable. A page that redraws a canvas from its own ResizeObserver cannot do that while the browser is
+     printing (observer callbacks wait for the next rendering step), so a part that was just shown can print as an empty canvas.
+     Lab.print.prepare() calls flushResize(): every observer's callback runs now with the current size of what it watches. */
+  const RO_ALL = new Set();
+  if (typeof window.ResizeObserver === 'function' && !window.ResizeObserver.__aplab) {
+    const NativeRO = window.ResizeObserver;
+    const PatchedRO = class extends NativeRO {
+      constructor(cb) { super(cb); this._aplab = { cb, els: new Set() }; RO_ALL.add(this); }
+      observe(el, o) { this._aplab.els.add(el); return super.observe(el, o); }
+      unobserve(el) { this._aplab.els.delete(el); return super.unobserve(el); }
+      disconnect() { this._aplab.els.clear(); RO_ALL.delete(this); return super.disconnect(); }
+    };
+    PatchedRO.__aplab = true;
+    window.ResizeObserver = PatchedRO;
+  }
+  function flushResize() {
+    RO_ALL.forEach(ro => {
+      const ents = Array.from(ro._aplab.els).filter(e => e.isConnected).map(e => { const w = e.clientWidth, hh = e.clientHeight; return { target: e, contentRect: { x: 0, y: 0, top: 0, left: 0, width: w, height: hh, right: w, bottom: hh }, borderBoxSize: [{ inlineSize: w, blockSize: hh }], contentBoxSize: [{ inlineSize: w, blockSize: hh }] }; });
+      if (ents.length) { try { ro._aplab.cb(ents, ro); } catch (e) { /* a page observer failed: ignore */ } }
+    });
+  }
+
   /* ---------------- DOM helpers ---------------- */
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -283,6 +305,32 @@
              series:[{ name, color, points:[{x,y,err}], line:true, dots:true, fit:false|'linear', dash:false }],
              categories:[...] (bar), annotations:[{x, label}] , hLines:[{y,label}] } */
   const SERIES = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s6)'];
+  /* Series are told apart by more than color (about 1 in 12 men cannot separate the green, red and orange of a rainbow palette):
+     each series also gets its own marker shape and line pattern (xy), or fill pattern (bar), and the legend draws the same swatch. */
+  const MARKERS = ['circle', 'square', 'triangle', 'diamond', 'cross', 'plus'];
+  const DASHES = ['', '8 4', '2 4', '9 3 2 3', '', '4 3'];
+  function markerSvg(shape, x, y, r, style, title) {
+    const t = title ? `<title>${title}</title>` : '', st = `style="${style}" stroke-width="1.5"`;
+    if (shape === 'square') return `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" ${st}>${t}</rect>`;
+    if (shape === 'triangle') return `<polygon points="${x},${y - r * 1.25} ${x + r * 1.2},${y + r * 0.9} ${x - r * 1.2},${y + r * 0.9}" ${st}>${t}</polygon>`;
+    if (shape === 'diamond') return `<polygon points="${x},${y - r * 1.3} ${x + r * 1.3},${y} ${x},${y + r * 1.3} ${x - r * 1.3},${y}" ${st}>${t}</polygon>`;
+    if (shape === 'cross') return `<path d="M${x - r} ${y - r}L${x + r} ${y + r}M${x - r} ${y + r}L${x + r} ${y - r}" fill="none" style="stroke:${style.match(/fill:([^;]+)/)[1]}" stroke-width="2.6" stroke-linecap="round">${t}</path>`;
+    if (shape === 'plus') return `<path d="M${x - r * 1.15} ${y}L${x + r * 1.15} ${y}M${x} ${y - r * 1.15}L${x} ${y + r * 1.15}" fill="none" style="stroke:${style.match(/fill:([^;]+)/)[1]}" stroke-width="2.6" stroke-linecap="round">${t}</path>`;
+    return `<circle cx="${x}" cy="${y}" r="${r}" ${st}>${t}</circle>`;
+  }
+  /* Pattern for bar series i (0 = solid): the series color with light stripes, dots or hatching drawn over it. */
+  function barPattern(id, color, i) {
+    const k = i % 6; if (!k) return '';
+    const ln = d => `<path d="${d}" stroke="var(--surface)" stroke-width="2.4" opacity=".75" fill="none"/>`;
+    const body = k === 1 ? ln('M-2 2L2 -2M0 8L8 0M6 10L10 6') : k === 2 ? '<circle cx="4" cy="4" r="1.7" fill="var(--surface)" opacity=".85"/>'
+      : k === 3 ? ln('M-2 2L2 -2M0 8L8 0M6 10L10 6') + ln('M-2 6L2 10M0 0L8 8M6 -2L10 2') : k === 4 ? ln('M0 2H8M0 6H8') : ln('M2 0V8M6 0V8');
+    return `<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" style="fill:${color}"/>${body}</pattern>`;
+  }
+  function legendSwatch(sr, i, type, uid) {
+    if (type === 'bar') { const pat = barPattern(`${uid}-${i}`, sr.color, i); return `<svg class="lg-sw" width="20" height="14" viewBox="0 0 20 14" aria-hidden="true">${pat ? `<defs>${pat}</defs>` : ''}<rect x="1" y="1" width="18" height="12" rx="2" style="fill:${pat ? `url(#${uid}-${i})` : sr.color}"/></svg>`; }
+    const dash = sr.dash ? '6 4' : DASHES[i % 6];
+    return `<svg class="lg-sw" width="28" height="14" viewBox="0 0 28 14" aria-hidden="true">${sr.line ? `<line x1="1" x2="27" y1="7" y2="7" style="stroke:${sr.color}" stroke-width="2.4"${dash ? ` stroke-dasharray="${dash}"` : ''}/>` : ''}${sr.dots ? markerSvg(MARKERS[i % 6], 14, 7, 3.8, `fill:${sr.color};stroke:var(--surface)`) : ''}</svg>`;
+  }
   function niceStep(range, ticks) {
     const raw = range / Math.max(1, ticks), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
     return (r >= 5 ? 10 : r >= 2 ? 5 : r >= 1 ? 2 : 1) * mag;
@@ -357,7 +405,9 @@
       const yl = wrapLabel(o.yLabel, Math.max(40, H - m.t - m.b - 6));
       m.l += LH * (yl.lines.length - 1);
       const iw = W - m.l - m.r, ih = H - m.t - m.b;
-      const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true }, s));
+      const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true, idx: i }, s));
+      const uid = 'bp' + (++clipCount), multi = series.filter(x => x.points && x.points.length).length > 1;
+      let patDefs = '';
       let svg = '';
       const empty = !chartHasData(o);                                  // nothing to plot yet: draw the axes and a note, not a fake 0–1 scale
       const knownX = o.xMin != null && o.xMax != null, knownY = o.yMin != null && o.yMax != null;
@@ -377,7 +427,8 @@
           series.forEach((s, si) => {
             const p = s.points.find(pp => pp.x === c) || s.points[ci]; if (!p || !isFinite(p.y)) return;
             const x = gx - (bw * series.length) / 2 + bw * si, y0 = Y(Math.max(0, yr.lo)), y1 = Y(p.y);
-            svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${Math.max(0.5, bw - 4)}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${s.color}"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
+            const pat = series.length > 1 ? barPattern(`${uid}-${si}`, s.color, si) : ''; if (pat && !patDefs.includes(`id="${uid}-${si}"`)) patDefs += pat;
+            svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${Math.max(0.5, bw - 4)}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${pat ? `url(#${uid}-${si})` : s.color};stroke:${s.color}" stroke-width="1.2"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
             const pe = errOf(p);
             if (pe) { const cx = x + bw / 2; svg += `<g style="stroke:var(--ink)" stroke-width="1.4"><line x1="${cx}" x2="${cx}" y1="${Y(p.y - pe)}" y2="${Y(p.y + pe)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y - pe)}" y2="${Y(p.y - pe)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y + pe)}" y2="${Y(p.y + pe)}"/></g>`; }
           });
@@ -400,9 +451,9 @@
         svg += `<defs><clipPath id="${clipId}"><rect x="${m.l}" y="${m.t - 6}" width="${iw + 6}" height="${ih + 12}"/></clipPath></defs><g clip-path="url(#${clipId})">`;
         series.forEach(s => {
           const pts = s.points.filter(p => isFinite(p.x) && isFinite(p.y)).slice().sort((a, b) => a.x - b.x);
-          if (s.line && pts.length > 1) svg += `<polyline fill="none" style="stroke:${s.color}" stroke-width="2.2" ${s.dash ? 'stroke-dasharray="6 5"' : ''} stroke-linejoin="round" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>`;
+          if (s.line && pts.length > 1) svg += `<polyline fill="none" style="stroke:${s.color}" stroke-width="2.2" ${s.dash ? 'stroke-dasharray="6 5"' : (multi && DASHES[s.idx % 6] ? `stroke-dasharray="${DASHES[s.idx % 6]}"` : '')} stroke-linejoin="round" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>`;
           pts.forEach(p => { const pe = errOf(p); if (pe) svg += `<g style="stroke:${s.color}" stroke-width="1.3"><line x1="${X(p.x)}" x2="${X(p.x)}" y1="${Y(p.y - pe)}" y2="${Y(p.y + pe)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y - pe)}" y2="${Y(p.y - pe)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y + pe)}" y2="${Y(p.y + pe)}"/></g>`; });
-          if (s.dots && pts.length <= 120) pts.forEach(p => { svg += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.8" style="fill:${s.color};stroke:var(--surface)" stroke-width="1.5"><title>${esc(s.name || '')} (${Lab.fmt(p.x, 3)}, ${Lab.fmt(p.y, 3)})</title></circle>`; });
+          if (s.dots && pts.length <= 120) pts.forEach(p => { svg += markerSvg(multi ? MARKERS[s.idx % 6] : 'circle', X(p.x), Y(p.y), 3.8, `fill:${s.color};stroke:var(--surface)`, `${esc(s.name || '')} (${Lab.fmt(p.x, 3)}, ${Lab.fmt(p.y, 3)})`); });
           if (s.fit === 'linear' && pts.length > 1) {
             const f = stats.linreg(pts.map(p => p.x), pts.map(p => p.y));
             if (isFinite(f.m) && isFinite(f.b)) svg += `<line x1="${X(xr.lo)}" x2="${X(xr.hi)}" y1="${Y(f.predict(xr.lo))}" y2="${Y(f.predict(xr.hi))}" style="stroke:${s.color}" stroke-width="1.5" stroke-dasharray="6 4" opacity=".8"/>`;
@@ -425,8 +476,9 @@
         yl.lines.forEach((ln, i) => { svg += `<text class="axis-label" transform="translate(${14 + LH * i} ${m.t + ih / 2}) rotate(-90)" text-anchor="middle"${ys}>${esc(ln)}</text>`; });
       }
       const named = series.filter(s => s.name);
-      const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
+      const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span>${legendSwatch(s, s.idx, o.type === 'bar' ? 'bar' : 'xy', uid)}${esc(s.name)}</span>`).join('')}</div>` : '';
       const fits = series.filter(s => s._fit).map(s => `${esc(s.name || 'fit')}: y = ${Lab.fmt(s._fit.m, 4)}x ${s._fit.b < 0 ? '−' : '+'} ${Lab.fmt(Math.abs(s._fit.b), 4)}  (R² = ${Lab.fmt(s._fit.r2, 3)})`);
+      if (patDefs) svg = `<defs>${patDefs}</defs>` + svg;
       return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || '') + (empty ? ': no data yet' : ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
     }
     render();
@@ -1075,6 +1127,39 @@
     root.setAttribute('data-theme', 'light');
     return () => { if (prev == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', prev); };
   }
+  /* ---- Printing: light colors and static pictures of every canvas ----
+     A canvas is drawn with the colors of the theme that was on screen (dark mode gives pale lines on a dark scene) and a part that is
+     hidden has no real size, so printing the page as it is can give dark or blank pictures. Lab.print.prepare() (run on beforeprint,
+     and while building the worksheet) switches to the light tokens, redraws every canvas, chart and microscope view, and puts a static
+     <img> snapshot (canvas.toDataURL) next to each visible canvas, hiding the canvas. Lab.print.restore() (afterprint) undoes all of it.
+     A canvas that cannot be read (a tainted canvas) is left as it is. */
+  const PRINT = { snaps: [], restoreTheme: null, on: false };
+  function redrawEverything() {
+    try { CANVASES.forEach(c => c.check()); themeRedraw(); flushResize(); } catch (e) { /* ignore */ }
+  }
+  function printPrepare() {
+    if (PRINT.on) return PRINT.snaps.length;
+    PRINT.on = true;
+    if (isDarkNow()) { PRINT.restoreTheme = forceLight(); }
+    redrawEverything();
+    $$('canvas').forEach(cv => {
+      if (cv.closest('.print-snap') || !cv.getClientRects().length || !cv.clientWidth || !cv.clientHeight) return;
+      let url; try { url = cv.toDataURL('image/png'); } catch (e) { return; }
+      const img = h('img', { class: (cv.className ? cv.className + ' ' : '') + 'print-snap', src: url, alt: cv.getAttribute('aria-label') || '', width: cv.clientWidth, height: cv.clientHeight });
+      img.style.cssText = cv.style.cssText;
+      PRINT.snaps.push({ cv, img, display: cv.style.display });
+      cv.after(img); cv.style.display = 'none';
+    });
+    return PRINT.snaps.length;
+  }
+  function printRestore() {
+    if (!PRINT.on) return;
+    PRINT.on = false;
+    PRINT.snaps.forEach(x => { x.img.remove(); x.cv.style.display = x.display; });
+    PRINT.snaps = [];
+    if (PRINT.restoreTheme) { PRINT.restoreTheme(); PRINT.restoreTheme = null; redrawEverything(); }
+  }
+  Lab.print = { prepare: printPrepare, restore: printRestore, get snapshots() { return PRINT.snaps.map(x => x.img); } };
   function lightTokenResolver() {
     const restore = forceLight(), cs = getComputedStyle(document.documentElement), cache = {};
     const names = ['--bg', '--surface', '--surface-2', '--ink', '--muted', '--line', '--grid', '--accent', '--stain', '--ok', '--warn', '--bad', '--s1', '--s2', '--s3', '--s4', '--s5', '--s6'];
@@ -1639,8 +1724,8 @@
     const clone = body.cloneNode(true);
     const origCanvases = $$('canvas', body), cloneCanvases = $$('canvas', clone);
     cloneCanvases.forEach((cv, i) => {
-      let img = null;
-      if (!wasDark) { try { img = h('img', { src: origCanvases[i].toDataURL('image/png'), alt: origCanvases[i].getAttribute('aria-label') || '', class: 'ws-img' }); } catch (e) { img = null; } }
+      let img = null; // enterWorksheet has already switched to the light tokens and redrawn, so this is a light picture even from dark mode
+      try { img = h('img', { src: origCanvases[i].toDataURL('image/png'), alt: origCanvases[i].getAttribute('aria-label') || '', class: 'ws-img' }); } catch (e) { img = null; }
       if (img) cv.replaceWith(img); else cv.remove();
     });
     $$('.tab-panel', clone).forEach(p => { p.hidden = false; if (p.dataset.tab) p.prepend(h('p', { class: 'ws-sum' }, p.dataset.tab)); }); // every tab prints
@@ -1703,6 +1788,7 @@
     pagesSuspend(); // every part laid out, so canvases copy at full size
     const wasDark = isDarkNow();
     const restore = forceLight();
+    if (wasDark) redrawEverything();   // canvases drawn in dark colors are redrawn in light ones before they are copied
     const note = previewNote(true);
     const hd = $('.lab-header h1');
     const titleText = cleanTitle(document.title || (hd ? hd.textContent : 'Lab'));
@@ -1718,7 +1804,7 @@
     document.head.append(style);
     document.body.append(root);
     document.body.classList.add('worksheet-mode');
-    wsState = { restore, root, style, scrollY: window.scrollY, opener: document.activeElement };
+    wsState = { restore, root, style, dark: wasDark, scrollY: window.scrollY, opener: document.activeElement };
     document.addEventListener('keydown', wsKey);
     window.scrollTo(0, 0);
     return root;
@@ -1727,7 +1813,7 @@
   function exitWorksheet() {
     if (!wsState) return;
     const s = wsState; wsState = null;
-    s.root.remove(); s.style.remove(); s.restore(); pagesResume();
+    s.root.remove(); s.style.remove(); s.restore(); if (s.dark) redrawEverything(); pagesResume();
     document.body.classList.remove('worksheet-mode', 'pr-fallback');
     document.removeEventListener('keydown', wsKey);
     window.scrollTo(0, s.scrollY);
@@ -2083,8 +2169,9 @@
       if (printing || document.body.classList.contains('worksheet-mode') || document.body.classList.contains('report-mode')) return;
       printing = $$('details.disclose:not([open])'); printing.forEach(d => { d.open = true; });
       pagesSuspend();
+      printPrepare();   // light colors, every canvas redrawn and replaced by a static image
     });
-    window.addEventListener('afterprint', () => { if (!printing) return; printing.forEach(d => { d.open = false; }); printing = null; pagesResume(); });
+    window.addEventListener('afterprint', () => { if (!printing) return; printRestore(); printing.forEach(d => { d.open = false; }); printing = null; pagesResume(); });
     // Find (Ctrl+F) only searches what is on screen: offer the one-page view once.
     let findHint = false;
     window.addEventListener('keydown', e => {

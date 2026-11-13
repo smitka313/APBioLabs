@@ -17,7 +17,7 @@
   --warn: #9a5b00; --warn-soft: #fbedd5;
   --bad: #b3261e;  --bad-soft: #f9e0de;
   /* chart series */
-  --s1: #0d6e55; --s2: #a8326b; --s3: #2f5fb3; --s4: #c27c0e; --s5: #6b4fa8; --s6: #4d7d0f;
+  --s1: #0d6e55; --s2: #d55e00; --s3: #0072b2; --s4: #b3261e; --s5: #00798c; --s6: #222222;
   --grid: #e1e8e4;
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -33,7 +33,7 @@
     --line: #2f3d37; --accent: #4cc39b; --accent-ink: #06231a; --accent-soft: #173a2f;
     --stain: #e781b1; --stain-soft: #3d1f2e;
     --ok: #6fd08f; --ok-soft: #173723; --warn: #f0b85a; --warn-soft: #3a2b12; --bad: #f2867f; --bad-soft: #401c1a;
-    --s1: #4cc39b; --s2: #e781b1; --s3: #7ea6f0; --s4: #f0b85a; --s5: #b59cf0; --s6: #a5d26a;
+    --s1: #4cc39b; --s2: #ff9a4d; --s3: #6aaaf5; --s4: #ff6f61; --s5: #eef2f0; --s6: #ffb3d9;
     --grid: #26332d; color-scheme: dark;
   }
 }
@@ -42,7 +42,7 @@
   --line: #2f3d37; --accent: #4cc39b; --accent-ink: #06231a; --accent-soft: #173a2f;
   --stain: #e781b1; --stain-soft: #3d1f2e;
   --ok: #6fd08f; --ok-soft: #173723; --warn: #f0b85a; --warn-soft: #3a2b12; --bad: #f2867f; --bad-soft: #401c1a;
-  --s1: #4cc39b; --s2: #e781b1; --s3: #7ea6f0; --s4: #f0b85a; --s5: #b59cf0; --s6: #a5d26a;
+  --s1: #4cc39b; --s2: #ff9a4d; --s3: #6aaaf5; --s4: #ff6f61; --s5: #eef2f0; --s6: #ffb3d9;
   --grid: #26332d; color-scheme: dark;
 }
 
@@ -192,7 +192,7 @@ table.data tfoot td { background: var(--surface-2); font-weight: 600; }
 .chart .chart-empty rect { fill: var(--surface); stroke: var(--line); stroke-width: 1; }
 .chart .chart-empty text { fill: var(--muted); font-size: 14px; font-weight: 600; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .85rem; color: var(--muted); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 .chart-note { font-size: .82rem; color: var(--muted); font-family: var(--f-mono); }
 
@@ -809,3 +809,34 @@ body.has-dm { overflow: hidden; }
 
 .nudge-bar { border-left-color: var(--warn); }
 .nudge-bar .bb-icon { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- Printing (Ctrl+P, Print worksheet, Save as PDF): always light, whatever the theme ----------
+   The light tokens again, with enough specificity to beat the dark-mode rules and the data-theme switch; no dark backgrounds,
+   a white page. lab.js (Lab.print) swaps each visible canvas for a static light <img> while the print dialog is open. */
+@media print {
+  :root:root:root {
+    --bg: #ffffff; --surface: #ffffff; --surface-2: #eef2f0; --ink: #111111; --muted: #444444; --line: #bbbbbb;
+    --accent: #0d6e55; --accent-ink: #ffffff; --accent-soft: #e3f2ec; --stain: #a8326b; --stain-soft: #f6e1eb;
+    --ok: #1f7a3d; --ok-soft: #e6f4ea; --warn: #8a5000; --warn-soft: #fbf0dd; --bad: #b3261e; --bad-soft: #fbe6e4;
+    --s1: #0d6e55; --s2: #d55e00; --s3: #0072b2; --s4: #b3261e; --s5: #00798c; --s6: #222222; --grid: #dde5e0;
+    color-scheme: light;
+  }
+  html, body { background: #fff !important; color: #111; }
+  canvas.print-snap, img.print-snap { max-width: 100%; }
+  /* Page breaks: headings stay with what follows; figures, tables, prompts and readouts never split. */
+  h1, h2, h3, h4, .callout-title, .eyebrow, .steps-title, .controls-title { break-after: avoid; }
+  section.step > header { break-after: avoid; }
+  figure, .viz, .chart, img.print-snap, .readouts, .readout, .callout, .prompt, .quiz .q, .cer > *, .table-wrap, table tr, .legend, .chart-note, .steps-box, .sim-side .controls { break-inside: avoid; }
+  thead { display: table-header-group; }
+  section.step { break-inside: auto; }
+  .sticky, .step-nav { position: static !important; }
+}
+
+/* ---------- Not by color alone (color-blind safe) ----------
+   Success, error and warning states carry an icon as well as a color, and chart legends draw the series' marker or pattern. */
+.feedback.ok::before, .pill.ok::before, .q .choice.is-right::after { content: "✓"; font-weight: 800; }
+.feedback.bad::before, .pill.bad::before, .q .choice.is-wrong::after { content: "✕"; font-weight: 800; }
+.pill.warn::before { content: "!"; font-weight: 800; }
+.feedback.ok::before, .feedback.bad::before { margin-right: .45em; }
+.q .choice.is-right::after, .q .choice.is-wrong::after { margin-left: auto; padding-left: 10px; }
+.legend .lg-sw { flex: none; display: block; }
