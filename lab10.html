@@ -254,7 +254,7 @@
         </div>
       </div>
       <div id="p1-raw"></div>
-      <p class="note" id="p1-sum-note">The page computes the means and standard error. <strong>You</strong> compute the last three columns: percent biomass = dry ÷ wet × 100; energy per plant = mean dry mass × 4.35 kcal/g; NPP per day = energy per plant ÷ age in days (energy stored since the seed was planted).</p>
+      <p class="note" id="p1-sum-note">The page computes the means and standard error. <strong>You</strong> compute the last three columns: percent biomass = dry ÷ wet × 100; energy per plant = mean dry mass × 4.35 kcal/g; average daily gain = energy per plant ÷ age in days (the energy stored per day, on average, since the seed was planted). This is <em>not</em> NPP: NPP is the gain <em>between</em> your two harvests, which you calculate below.</p>
       <div id="p1-sum"></div>
       <div class="checklist" id="p1-check" aria-live="polite"></div>
       <div id="p1-chart"></div>
@@ -277,7 +277,7 @@
       </div>
       <div class="calc" id="p1-calc"></div>
       <h3>Your plant energy diagram (Step 6)</h3>
-      <p class="note">Drawn to scale from your harvests and respiration measurement (kcal per plant per day). Light energy was not measured.</p>
+      <p class="note">Drawn to scale from your two harvests (NPP) and your respiration measurement (kcal per plant per day). GPP shows "measure respiration first" until you have measured R. Light energy was not measured.</p>
       <div class="sankey" id="sankey-plant" role="img" aria-label="Energy flow diagram for one Fast Plant per day"></div>
       <div id="p1-prompts" class="prompts-2"></div>
     </div>
@@ -298,9 +298,9 @@
             <div class="progress" aria-hidden="true"><i id="p2-prog"></i></div>
             <p class="note" id="p2-status">Each run is one barn. Run at least 3 barns so you can calculate standard error.</p>
             <details class="more"><summary>More options</summary><div class="inner">
-              <div class="field"><label for="ratio-plant">Plant dry ÷ wet ratio you will use</label><input id="ratio-plant" type="number" step="0.001" min="0.01" max="1" value="0.15" data-save="ratio-plant" data-label="Plant dry/wet ratio used"></div>
+              <div class="field"><label for="ratio-plant">Plant dry ÷ wet ratio you will use</label><input id="ratio-plant" type="number" step="0.001" min="0.01" max="1" placeholder="e.g. 0.15" data-save="ratio-plant" data-label="Plant dry/wet ratio used"></div>
           <button class="btn btn--sm" id="p2-sprout" type="button">Dry a spare sprout to measure it</button>
-          <div class="field"><label for="ratio-larva">Larva dry ÷ wet ratio you will use</label><input id="ratio-larva" type="number" step="0.001" min="0.01" max="1" value="0.40" data-save="ratio-larva" data-label="Larva dry/wet ratio used"></div>
+          <div class="field"><label for="ratio-larva">Larva dry ÷ wet ratio you will use</label><input id="ratio-larva" type="number" step="0.001" min="0.01" max="1" placeholder="e.g. 0.40" data-save="ratio-larva" data-label="Larva dry/wet ratio used"></div>
           <button class="btn btn--sm" id="p2-larva" type="button">Freeze &amp; dry 5 extra larvae to measure it</button>
           <p class="note" id="p2-ratio-note">The student manual suggests assuming larvae are 40% dry mass and using your Fast Plant percentage for sprouts. Both are assumptions you can test.</p>
               <label class="check"><input type="checkbox" id="p2-correct" checked> Correct sprout loss for evaporation (control)</label>
@@ -518,8 +518,8 @@ function frq(host, o) {
       explain: '4.2 ÷ 19.6 × 100 = 21.4%. The other 78.6% was water.' },
     { type: 'num', q: 'Using 4.35 kcal per gram of dry plant biomass, how much energy is stored in those 4.2 g of dry biomass?', answer: 18.27, tol: 0.05, unit: 'kcal',
       explain: '4.2 g × 4.35 kcal/g = 18.27 kcal for the 10 plants.' },
-    { type: 'num', q: 'Those 18.27 kcal were stored by 10 plants over 7 days. What is the NPP <em>per plant per day</em>?', answer: 0.261, tol: 0.006, unit: 'kcal/day',
-      explain: '18.27 kcal ÷ 10 plants ÷ 7 days = 0.26 kcal per plant per day.' },
+    { type: 'num', q: 'Ten more plants harvested 7 days later (day 14) had a total dry mass of 9.3 g, which is 40.46 kcal. Using the two harvests, what is the NPP <em>per plant per day</em> between day 7 and day 14?', answer: 0.317, tol: 0.006, unit: 'kcal/day',
+      explain: '(40.46 − 18.27) kcal ÷ 10 plants ÷ 7 days = 0.317 kcal per plant per day. NPP is the energy <em>added</em> between harvests.' },
     { type: 'mc', q: 'Why is the value you just calculated <em>net</em> primary productivity rather than <em>gross</em> primary productivity?',
       choices: ['Because it was measured in a greenhouse', 'Because the plants already used some captured energy for their own cellular respiration; only what remained as biomass was weighed', 'Because dry mass includes the water lost', 'Because larvae ate some of the energy'],
       answer: 1, explain: 'GPP is all the energy captured by photosynthesis. Plants burn part of it in respiration (released as heat and CO₂). The biomass you weigh is what is left: NPP = GPP − R.' },
@@ -535,6 +535,30 @@ function frq(host, o) {
   Lab.prompt('#prelab-prompts', { key: 'pre-care', label: 'Getting Started 2: Write a care schedule for your team (watering, lights, feeding, frass removal, cleaning) and explain how you will dispose of organisms responsibly.', rows: 4 });
 
   /* ===================== shared helpers ===================== */
+/* Worked-example mode for a calculator: "Show a worked example" fills clearly labelled sample numbers under an
+   "EXAMPLE — not your data" banner; "Clear example" puts the student's own entries back. The sample numbers are
+   never saved (the student's own values are restored before the page hides or unloads, which is when autosave flushes). */
+function workedExample(o) {
+  let on = false, own = [];
+  const clear = Lab.h('button', { class: 'btn btn--sm', type: 'button' }, 'Clear example');
+  const banner = Lab.h('div', { class: 'callout callout--tip example-banner', role: 'status', hidden: true }, Lab.h('strong', {}, 'EXAMPLE — not your data. '), o.text || 'These are sample numbers for practice.', ' ', clear);
+  o.anchor.insertAdjacentElement('beforebegin', banner);
+  const setVals = vals => o.fields.forEach(([el], i) => { el.value = vals[i]; });
+  const show = () => setVals(o.fields.map(f => f[1])), hide = () => setVals(own);
+  function set(v) {
+    if (v === on) return; on = v;
+    if (v) { own = o.fields.map(([el]) => el.value); show(); } else hide();
+    o.fields.forEach(([el]) => { el.readOnly = v; });
+    banner.hidden = !v; o.button.hidden = v; o.onChange && o.onChange(v);
+  }
+  o.button.addEventListener('click', () => set(true)); clear.addEventListener('click', () => set(false));
+  const away = () => { if (on) hide(); };
+  window.addEventListener('pagehide', away, true); window.addEventListener('beforeunload', away, true);
+  window.addEventListener('pageshow', () => { if (on) show(); }, true);
+  document.addEventListener('visibilitychange', () => { if (on) (document.visibilityState === 'hidden' ? hide : show)(); }, true);
+  return { get on() { return on; }, set };
+}
+
   // A self-checking calculation row: student types a value; pill compares with expected (from their data / their earlier entries).
   function calcBlock(el, items) {
     el = typeof el === 'string' ? $(el) : el;
@@ -548,9 +572,11 @@ function frq(host, o) {
       return { it, inp, pill };
     });
     Lab.bindAutosave(el);
+    let exampleMode = false;
     function val(key) { const r = rows.find(x => x.it.key === key); return r && r.inp.value !== '' ? parseFloat(r.inp.value) : NaN; }
     function recheck() {
       rows.forEach(({ it, inp, pill }) => {
+        if (exampleMode) { pill.className = 'pill'; pill.textContent = 'example'; return; }
         let exp = it.expect(val);
         const okIn = checkNum(inp, 'This value', { min: 0, max: 1e6 });
         const v = inp.value === '' || !okIn ? NaN : parseFloat(inp.value);
@@ -563,7 +589,7 @@ function frq(host, o) {
       });
     }
     recheck();
-    return { recheck, val };
+    return { recheck, val, inputs: rows.map(r => [r.it.key, r.inp]), setExample(on) { exampleMode = on; recheck(); } };
   }
   const meanSE = a => ({ m: stats.mean(a), se: a.length > 1 ? stats.se(a) : 0 });
   function setProg(el, f) { $(el).style.width = Math.round(Math.max(0, Math.min(1, f)) * 100) + '%'; }
@@ -644,7 +670,7 @@ function frq(host, o) {
   const sumT = Lab.table('#p1-sum', {
     save: 'p1sum',
     columns: [{ key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'n', label: 'Plants weighed (n)', unit: 'plants', num: true, digits: 0 }, { key: 'wet', label: 'Mean wet/plant', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Mean dry/plant', unit: 'g', num: true, digits: 3 }, { key: 'se', label: 'SE dry', unit: 'g', num: true, digits: 3 },
-      { key: 'pct', label: 'Biomass (dry ÷ wet × 100)', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'NPP/plant/day', unit: 'kcal/day', num: true, editable: true }],
+      { key: 'pct', label: 'Biomass (dry ÷ wet × 100)', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'Average daily gain since planting', unit: 'kcal/day', num: true, editable: true }],
     onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); reportP1(rows); }
   });
   function checkSummary(rows) {
@@ -652,7 +678,7 @@ function frq(host, o) {
     const msgs = [];
     document.querySelectorAll('#p1-sum input').forEach(i => i.removeAttribute('aria-invalid'));
     rows.forEach((r, ri) => {
-      [['pct', '% biomass', 100], ['energy', 'Energy per plant', 1e4], ['npp', 'NPP per plant per day', 1e4]].forEach(([k, nm, mx]) => {
+      [['pct', '% biomass', 100], ['energy', 'Energy per plant', 1e4], ['npp', 'Average daily gain', 1e4]].forEach(([k, nm, mx]) => {
         const v = r[k]; if (v == null || v === '') return;
         let m = '';
         if (!isFinite(v)) m = `${nm} must be a number.`; else if (v < 0) m = `${nm} cannot be negative.`; else if (v > mx) m = `${nm} cannot be more than ${mx}${k === 'pct' ? '%, because dry mass cannot exceed wet mass' : ''}.`;
@@ -663,18 +689,17 @@ function frq(host, o) {
     rows.forEach(r => {
       const pct = 100 * r.dry / r.wet, en = r.dry * KP, npp = en / r.age;
       const ck = (v, e, tol) => v == null || !isFinite(v) || v < 0 ? '<span class="pill">blank</span>' : (Math.abs(v - e) <= Math.abs(e) * tol + 1e-3 ? '<span class="pill ok">✓</span>' : '<span class="pill bad">recheck</span>');
-      out.append(h('div', { html: `Day ${r.age}: % biomass ${ck(r.pct, pct, 0.02)} · energy ${ck(r.energy, en, 0.03)} · NPP ${ck(r.npp, npp, 0.04)}` }));
+      out.append(h('div', { html: `Day ${r.age}: % biomass ${ck(r.pct, pct, 0.02)} · energy ${ck(r.energy, en, 0.03)} · average daily gain ${ck(r.npp, npp, 0.04)}` }));
     });
   }
   const p1Chart = Lab.chart('#p1-chart', { xLabel: 'Plant age (days)', yLabel: 'Mass per plant (g)', xMin: 0, series: [] });
   function drawP1Chart(rows) {
     const pts = rows.slice().sort((a, b) => a.age - b.age).filter(r => isFinite(r.age) && isFinite(r.dry));
-    // A harvest that has not been dried yet still has a wet mass: plot it right away so the graph is not empty after Harvest.
+    // Points appear only once a harvest has been dried and weighed (nothing is plotted while the tile says "drying…").
     const wetPts = pts.map(r => ({ x: r.age, y: r.wet }));
-    if (s1 && s1.pending && !pts.some(r => r.age === s1.pending.age)) wetPts.push({ x: s1.pending.age, y: stats.mean(s1.pending.rows.map(r => r.wet)) });
     p1Chart.update({ series: [
       { name: 'Dry mass (biomass), mean ± 2 SE', points: pts.map(r => ({ x: r.age, y: r.dry, err: isFinite(r.se) ? 2 * r.se : 0 })) },
-      { name: 'Wet mass, mean (a harvest not yet dried shows here)', points: wetPts, dash: true }
+      { name: 'Wet mass, mean', points: wetPts, dash: true }
     ] });
   }
 
@@ -938,7 +963,8 @@ function frq(host, o) {
   });
   $('#p1-reset').addEventListener('click', () => { s1 = newFlat(); save1(); rawT.clear(); sumT.clear(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] }; $('#p1-rw').textContent = $('#p1-rd').textContent = '—'; ui1(); draw1(); updatePlantCalc(); benchSet({ phase: 'empty', rows: [], prog: 0 }); });
   ui1(); draw1();
-  if (s1.pending) { $('#p1-rd').textContent = 'drying…'; drawP1Chart(sumT.getRows()); }
+  if (s1.pending) { $('#p1-rw').textContent = fmt(stats.mean(s1.pending.rows.map(r => r.wet)), 3); $('#p1-rd').textContent = 'drying…'; drawP1Chart(sumT.getRows()); }
+  else { const sr = sumT.getRows(); if (sr.length) { const l = sr[sr.length - 1]; $('#p1-rw').textContent = fmt(l.wet, 3); $('#p1-rd').textContent = fmt(l.dry, 3); } }
 
   // ---------- Part 1 bench: drying oven, digital balance with weigh boat, harvested plants on a paper towel ----------
   // Shows the current harvest: wet plants laid out and weighed one at a time, then the same plants in the 100 °C oven,
@@ -1148,7 +1174,8 @@ function frq(host, o) {
 
   // ---------- Part 1 calculations & plant Sankey ----------
   function harvestPair() { const r = sumT.getRows().slice().sort((a, b) => a.age - b.age); return r.length >= 2 ? [r[0], r[r.length - 1]] : null; }
-  function measuredNPP() { const p = harvestPair(); if (p && p[1].age > p[0].age) return (p[1].dry - p[0].dry) / (p[1].age - p[0].age) * KP; const r = sumT.getRows(); return r.length ? r[r.length - 1].dry * KP / r[r.length - 1].age : NaN; }
+  /* NPP = the dry mass the average plant added per day between the first and last harvest, in kcal (the manual's approach). */
+  function measuredNPP() { const p = harvestPair(); return p && p[1].age > p[0].age ? (p[1].dry - p[0].dry) / (p[1].age - p[0].age) * KP : NaN; }
   function respPerPlant() { const r = s1.resp; if (!r) return NaN; return (r.end - r.start) * MG_PER_PPM / 5 * 144; } // mg CO2 per plant per day
   const p1calc = calcBlock('#p1-calc', [
     { key: 'c1-gpd', label: 'Biomass added per plant per day between your first and last harvests', unit: 'g/day', expect: () => { const p = harvestPair(); return p ? (p[1].dry - p[0].dry) / (p[1].age - p[0].age) : null; }, need: 'needs 2 harvests', tolPct: 0.04 },
@@ -1158,15 +1185,24 @@ function frq(host, o) {
     { key: 'c1-gpp', label: 'Estimated GPP = NPP + R', unit: 'kcal/day per plant', expect: v => isFinite(v('c1-npp')) && isFinite(v('c1-r')) ? v('c1-npp') + v('c1-r') : null, tolPct: 0.02 },
     { key: 'c1-ratio', label: 'NPP ÷ GPP × 100 (share of captured energy stored)', unit: '%', expect: v => isFinite(v('c1-gpp')) && v('c1-gpp') > 0 ? 100 * v('c1-npp') / v('c1-gpp') : null, tolPct: 0.03 }
   ]);
+  { const ex = { 'c1-gpd': 0.0729, 'c1-npp': 0.317, 'c1-co2': 25, 'c1-r': 0.0743, 'c1-gpp': 0.391, 'c1-ratio': 81 };
+    const b = Lab.h('button', { class: 'btn btn--sm', type: 'button', id: 'p1-calc-example' }, 'Show a worked example');
+    $('#p1-calc').insertAdjacentElement('beforebegin', b);
+    workedExample({ anchor: $('#p1-calc'), button: b, text: 'Sample plants: 0.42 g dry at day 7 and 0.93 g at day 14, and a 25 mg/day respiration estimate. Your own entries come back when you clear it.',
+      fields: p1calc.inputs.map(([k, i]) => [i, ex[k]]), onChange: on => p1calc.setExample(on) }); }
   function updatePlantCalc() {
     p1calc.recheck();
     const npp = measuredNPP(), R = respPerPlant() / 1000 * KCAL_PER_G_CO2;
     const el = $('#sankey-plant');
-    if (!isFinite(npp)) { el.innerHTML = '<p class="note">Harvest and dry plants to draw your diagram.</p>'; return; }
-    const r = isFinite(R) ? R : 0;
-    sankey(el, { name: 'GPP (captured)', value: npp + r, color: 'var(--s4)', children: [
-      { name: 'NPP: stored biomass', value: Math.max(0, npp), color: 'var(--s1)' },
-      { name: isFinite(R) ? 'Respiration (heat)' : 'Respiration: not yet measured', value: r, color: 'var(--s2)' }] }, { height: 210 });
+    if (!isFinite(npp)) { el.innerHTML = '<p class="note">Harvest and dry plants at two different ages to draw your diagram (NPP is the gain between two harvests).</p>'; return; }
+    if (!isFinite(R)) {   // respiration not measured yet: GPP is unknown, not equal to NPP
+      sankey(el, { name: 'GPP: measure respiration first', text: '—', value: Math.max(0, npp), color: 'var(--s4)', dashed: true, children: [
+        { name: 'NPP: stored biomass (between harvests)', value: Math.max(0, npp), color: 'var(--s1)' }] }, { height: 210 });
+      return;
+    }
+    sankey(el, { name: 'GPP (captured)', value: npp + R, color: 'var(--s4)', children: [
+      { name: 'NPP: stored biomass (between harvests)', value: Math.max(0, npp), color: 'var(--s1)' },
+      { name: 'Respiration (heat)', value: R, color: 'var(--s2)' }] }, { height: 210 });
   }
   watchResize('#sankey-plant', updatePlantCalc);
   updatePlantCalc();
@@ -1242,6 +1278,11 @@ function frq(host, o) {
     { key: 'c2-resp', label: 'Respiration estimate = consumed − growth − frass', unit: 'kcal', expect: v => isFinite(v('c2-pe')) && isFinite(v('c2-prod')) && isFinite(v('c2-fe')) ? v('c2-pe') - v('c2-prod') - v('c2-fe') : null, tolPct: 0.04, tolAbs: 0.005 },
     { key: 'c2-eff', label: 'Gross production efficiency = growth ÷ consumed × 100', unit: '%', expect: v => isFinite(v('c2-pe')) && v('c2-pe') > 0 && isFinite(v('c2-prod')) ? 100 * v('c2-prod') / v('c2-pe') : null, tolPct: 0.03 }
   ]);
+  { const ex = { 'c2-cons': 15, 'c2-pe': 0.979, 'c2-gain': 0.15, 'c2-prod': 0.33, 'c2-frass': 0.06, 'c2-fe': 0.286, 'c2-assim': 0.693, 'c2-resp': 0.363, 'c2-eff': 33.7 };
+    const b = Lab.h('button', { class: 'btn btn--sm', type: 'button', id: 'p2-calc-example' }, 'Show a worked example');
+    $('#p2-calc').insertAdjacentElement('beforebegin', b);
+    workedExample({ anchor: $('#p2-calc'), button: b, text: 'Sample barn: 10 larvae, 15 g of sprout eaten, ratios 0.15 (sprout) and 0.40 (larvae). Your own entries come back when you clear it.',
+      fields: p2calc.inputs.map(([k, i]) => [i, ex[k]]).concat([[$('#ratio-plant'), 0.15], [$('#ratio-larva'), 0.4]]), onChange: on => p2calc.setExample(on) }); }
   const p2Chart = Lab.chart('#p2-chart', { type: 'bar', yLabel: 'Energy per larva over 3 days (kcal)', xLabel: 'Energy pathway', categories: ['Consumed (C)', 'Frass (F)', 'Growth (P)', 'Respiration (R)'], series: [] });
   function updateP2() {
     p2calc.recheck();
@@ -1433,7 +1474,7 @@ function frq(host, o) {
     draw2();
   });
   function finishBarn() {
-    const b = p2run.b; p2run = null;
+    const b = p2run.b; p2run = null; Lab.store.set('p2run', null);
     $('#p2-sm').textContent = fmt(b.end, 2); $('#p2-lm').textContent = fmt(b.l3, 3); $('#p2-fm').textContent = fmt(b.frass, 3);
     barnT.addRow(Object.assign({ barn: 'B' + (barnT.getRows().length + 1) }, { n: b.n, start: b.start, end: b.end, cs: b.cs, ce: b.ce, l0: b.l0, l3: b.l3, frass: b.frass }));
     $('#p2-status').textContent = `Barn ${barnT.getRows().length} done. Larvae moved to a fresh barn to finish their life cycle.`;
@@ -1442,10 +1483,25 @@ function frq(host, o) {
     if (p2run) { $('#p2-status').textContent = 'This barn is still feeding. Wait for day 3.'; return; }
     const n = +$('#p2-n').value, b = runBarn({ n });
     barnState = idleBarn(); p2run = { b, eatFrac: Math.min(0.9, (b.start - b.end) / b.start) };
+    Lab.store.set('p2run', { b, n, t0: Date.now() });
     $('#p2-sm').textContent = fmt(b.start, 2); $('#p2-lm').textContent = fmt(b.l0, 3); $('#p2-fm').textContent = '0.000';
     $('#p2-status').textContent = `Day 0: sprout ${fmt(b.start, 2)} g, ${n} larvae ${fmt(b.l0, 3)} g. Feeding…`;
     if (Lab.reducedMotion()) { barnState.t = 1; finishBarn(); draw2(); }
   });
+  /* After a reload: a barn that was feeding has kept feeding by the clock (finished if its 5 s are up, else resumed); otherwise show the last barn's readouts. */
+  { const sv = Lab.store.get('p2run');
+    if (sv && sv.b && !barnT.getRows().some(r => r.start === sv.b.start && r.l3 === sv.b.l3)) {
+      barnState = idleBarn(); p2run = { b: sv.b, eatFrac: Math.min(0.9, (sv.b.start - sv.b.end) / sv.b.start) };
+      const t = (Date.now() - sv.t0) / 5000; barnState.t = Math.min(1, Math.max(0, t));
+      $('#p2-lm').textContent = fmt(sv.b.l0, 3); $('#p2-fm').textContent = '0.000';
+      $('#p2-status').textContent = `Day 0: sprout ${fmt(sv.b.start, 2)} g, ${sv.b.n} larvae ${fmt(sv.b.l0, 3)} g. Feeding…`;
+      if (t >= 1 || Lab.reducedMotion()) { barnState.t = 1; finishBarn(); }
+    } else {
+      if (sv) Lab.store.set('p2run', null);
+      const lr = barnT.getRows(); if (lr.length) { const b = lr[lr.length - 1];
+        $('#p2-day').textContent = '3.0'; $('#p2-sm').textContent = fmt(b.end, 2); $('#p2-lm').textContent = fmt(b.l3, 3); $('#p2-fm').textContent = fmt(b.frass, 3); setProg('#p2-prog', 1);
+        $('#p2-status').textContent = `Barn ${lr.length} done. Larvae moved to a fresh barn to finish their life cycle.`; }
+    } }
   if (!Lab.reducedMotion()) loop2.start();
   draw2(); updateP2();
 
@@ -1474,7 +1530,7 @@ function frq(host, o) {
     }
   };
   const DVS = {
-    plant: [['dry', 'Dry biomass per plant at day 14 (g)'], ['pct', 'Percent biomass (%)'], ['npp', 'NPP per plant (kcal/day)']],
+    plant: [['dry', 'Dry biomass per plant at day 14 (g)'], ['pct', 'Percent biomass (%)'], ['npp', 'Average daily energy gain per plant (kcal/day)']],
     larva: [['gain', 'Wet mass gained per larva (g)'], ['eatWet', 'Wet food eaten per larva (g)'], ['eff', 'Gross production efficiency P/C (%)'], ['cons', 'Energy consumed per larva (kcal)']]
   };
   function plantG(iv, x) {
@@ -1592,7 +1648,7 @@ function frq(host, o) {
     dResults = out; Lab.store.set('d-results', dResults);
     const rows = [];
     out.levels.forEach(L => L.reps.forEach((r, i) => rows.push(sys === 'plant'
-      ? { level: levelName(sys, iv, L.x), rep: i + 1, a: 'dry ' + fmt(r.dry, 3) + ' g', b: fmt(r.pct, 1) + '% biomass', c: 'NPP ' + fmt(r.npp, 3) + ' kcal/d' }
+      ? { level: levelName(sys, iv, L.x), rep: i + 1, a: 'dry ' + fmt(r.dry, 3) + ' g', b: fmt(r.pct, 1) + '% biomass', c: 'gain ' + fmt(r.npp, 3) + ' kcal/d' }
       : { level: levelName(sys, iv, L.x), rep: i + 1, a: 'gain ' + fmt(r.gain, 3) + ' g', b: 'ate ' + fmt(r.eatWet, 2) + ' g wet', c: 'P/C ' + fmt(r.eff, 1) + '%' })));
     dRaw.setRows(rows); renderDesign();
   });
@@ -1668,15 +1724,15 @@ function predRecall(host, items) {
   const numOK = v => v != null && v !== '' && isFinite(v);
   const calcFilled = keys => keys.every(k => { const e = $('#calc-' + k); return e && e.value !== ''; });
   const sumRows = () => sumT.getRows();
-  Lab.results('#p1-sim', {
+  Lab.results('#p1-sim', { start: 'data',
     graph: [{ el: '#p1-chart', title: 'Plant mass vs age' }],
     data: [{ el: '#p1-raw', title: 'Harvest data (each plant)' }, { el: '#p1-sum-note', title: 'Summary: your Table 1 and Table 2' }, '#p1-sum', '#p1-check']
   });
-  Lab.results('#p2-sim', {
+  Lab.results('#p2-sim', { start: 'data',
     graph: [{ el: '#p2-chart', title: 'Energy per larva: mean ± 2 SE' }],
     data: [{ el: '#p2-raw', title: 'Barn measurements' }]
   });
-  Lab.results('#d-sim', {
+  Lab.results('#d-sim', { start: 'data',
     graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by level' }, '#d-stat'],
     data: [{ el: '#d-sum', title: 'Summary statistics' }, { el: '#d-raw', title: 'Replicate data' }]
   });
@@ -1722,11 +1778,19 @@ function predRecall(host, items) {
   $('#d-run').addEventListener('click', () => { if (dChecked() >= 2 && dResults) Lab.toast(`Ran ${dResults.levels.length} levels × ${dResults.levels[0].reps.length} replicates`, { type: 'ok', announce: false, key: 'drun' }); });
 
   /* ---------- Key results, personal-data prompts, AP free-response ---------- */
-  const nppOf = r => (r && r.dry > 0 && r.age > 0) ? r.dry * KP / r.age : NaN;
+  /* Two different quantities, kept apart: gainOf = average daily gain since planting (energy ÷ age); nppBetween = NPP between the first and last harvest. */
+  const gainOf = r => (r && r.dry > 0 && r.age > 0) ? r.dry * KP / r.age : NaN;
+  function nppBetween(rows) {
+    const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age);
+    if (rs.length < 2 || !(rs[rs.length - 1].age > rs[0].age)) return null;
+    const a = rs[0], b = rs[rs.length - 1];
+    return { a, b, npp: (b.dry - a.dry) / (b.age - a.age) * KP };
+  }
   function reportP1(rows) {
-    const rs = (rows || []).filter(r => numOk(nppOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
-    const last = rs[rs.length - 1];
-    keyRes('npp', { label: 'NPP per plant per day (day ' + last.age + ' harvest)', value: Math.round(nppOf(last) * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
+    const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
+    const last = rs[rs.length - 1], nb = nppBetween(rows);
+    if (nb) keyRes('npp', { label: 'NPP per plant per day, between your day ' + nb.a.age + ' and day ' + nb.b.age + ' harvests', value: Math.round(nb.npp * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
+    keyRes('avg-daily-gain', { label: 'Average daily gain since planting (day ' + last.age + ' harvest)', value: Math.round(gainOf(last) * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
   }
   function reportP2(C, F, P, R) {
     if (!(C > 0)) return;
@@ -1741,15 +1805,13 @@ function predRecall(host, items) {
   const my10 = h('div', { class: 'prompts-2' }); an10.append(my10);
   personalPrompt(my10, {
     key: 'my-npp', part: 'Part 1: NPP', need: 'harvesting and weighing plants in Part 1',
-    generic: 'Look at the NPP values in your own Part 1 table: which harvest day is the odd one out, and why?',
-    ask: 'Explain this, using what is happening to the plants between harvests.',
+    generic: 'Compare your own NPP between harvests with the average daily gain since planting for each harvest day. Why are they different numbers?',
+    ask: 'Why are these different? Use what is happening to the plants between harvests (and during the first days after planting).',
     get() {
-      const rs = (Lab.store.get('p1sum') || []).filter(r => numOk(nppOf(r))); if (!rs.length) return null;
-      const v = rs.map(nppOf), mu = stats.mean(v);
-      const o = rs.length > 1 ? rs.reduce((a, b) => Math.abs(nppOf(b) - mu) > Math.abs(nppOf(a) - mu) ? b : a) : rs[0];
-      if (rs.length === 1) return `Your day-${o.age} plants had a mean dry mass of <strong>${fmt(o.dry, 3)} g</strong>, which is <strong>${fmt(nppOf(o), 3)} kcal/plant/day</strong> of NPP.`;
-      if (rs.length === 2) { const [x, y] = rs.slice().sort((p, q) => nppOf(q) - nppOf(p)); return `Your NPP was highest for the day-${x.age} plants (<strong>${fmt(nppOf(x), 3)} kcal/plant/day</strong>) and lowest for the day-${y.age} plants (<strong>${fmt(nppOf(y), 3)}</strong>).`; }
-      return `Your day-${o.age} harvest had the most unusual NPP: <strong>${fmt(nppOf(o), 3)} kcal/plant/day</strong> (mean dry mass ${fmt(o.dry, 3)} g), compared with a mean of ${fmt(mu, 3)} across your ${rs.length} harvests.`;
+      const rows = Lab.store.get('p1sum') || [], rs = rows.filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return null;
+      const nb = nppBetween(rows);
+      if (!nb) { const o = rs[0]; return `Your day-${o.age} plants had a mean dry mass of <strong>${fmt(o.dry, 3)} g</strong>, an average daily gain of <strong>${fmt(gainOf(o), 3)} kcal/plant/day</strong> since planting. NPP needs a second harvest: it is the gain <em>between</em> harvests.`; }
+      return `Between your day-${nb.a.age} and day-${nb.b.age} harvests the NPP was <strong>${fmt(nb.npp, 3)} kcal/plant/day</strong>, but the average daily gain since planting was <strong>${fmt(gainOf(nb.a), 3)}</strong> at day ${nb.a.age} and <strong>${fmt(gainOf(nb.b), 3)}</strong> at day ${nb.b.age}.`;
     }
   });
   personalPrompt(my10, {

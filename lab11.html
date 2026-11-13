@@ -201,15 +201,15 @@
           <div class="controls">
             <p class="controls-title">Controls</p>
             <div class="field"><label for="la-species">Leaf from</label>
-            <select id="la-species"><option value="bean">Kidney bean (Phaseolus)</option><option value="coleus">Coleus</option><option value="impatiens">Impatiens</option><option value="tomato">Tomato (one leaflet)</option></select></div>
+            <select id="la-species" data-save="la-species"><option value="bean">Kidney bean (Phaseolus)</option><option value="coleus">Coleus</option><option value="impatiens">Impatiens</option><option value="tomato">Tomato (one leaflet)</option></select></div>
             <button class="btn btn--sm" id="la-new" type="button">Trace a different leaf</button>
             <div class="row two">
-              <div class="field"><label for="la-full">Full squares (squares)</label><input type="number" id="la-full" min="0" step="1"></div>
-              <div class="field"><label for="la-part">Partial squares (squares)</label><input type="number" id="la-part" min="0" step="1"></div>
+              <div class="field"><label for="la-full">Full squares (squares)</label><input type="number" id="la-full" min="0" step="1" placeholder="e.g. 52" data-save="la-full"></div>
+              <div class="field"><label for="la-part">Partial squares (squares)</label><input type="number" id="la-part" min="0" step="1" placeholder="e.g. 30" data-save="la-part"></div>
             </div>
             <button class="btn btn--primary" id="la-calc" type="button">Calculate and record</button>
             <details class="more"><summary>More options</summary><div class="inner">
-              <label class="check" for="la-show"><input type="checkbox" id="la-show"> Shade full and partial squares (check your count)</label>
+              <label class="check" for="la-show"><input type="checkbox" id="la-show" data-save="la-show"> Shade full and partial squares (check your count)</label>
             </div></details>
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
@@ -287,7 +287,7 @@
       <div class="callout callout--question">
         <div class="callout-title">Calculate stomatal density</div>
         <p>For the slide shown above, take the mean number of stomata per field from your 400X counts and divide by the field area (A = πr², with r = 0.225 mm).</p>
-        <div class="inline-num"><label for="st-dens">Stomata per mm² =</label><input type="number" step="any" id="st-dens"><button class="btn btn--sm" id="st-dens-check" type="button">Check</button></div>
+        <div class="inline-num"><label for="st-dens">Stomata per mm² =</label><input type="number" step="any" id="st-dens" placeholder="e.g. 150" data-save="st-dens"><button class="btn btn--sm" id="st-dens-check" type="button">Check</button></div>
         <p class="status" id="st-dens-msg" aria-live="polite"></p>
       </div>
       <h3>Table 1. Average stomata per mm² of leaf surface (from the manual)</h3>
@@ -308,13 +308,13 @@
           <div class="controls">
             <p class="controls-title">Controls</p>
             <div class="field"><label for="tr-method">Method</label>
-            <select id="tr-method"><option value="pot">Potometer (1.0 mL pipette)</option><option value="whole">Whole plant in bag (mass)</option><option value="press">Gas pressure sensor</option></select></div>
-            <div class="field"><label for="tr-species">Plant</label><select id="tr-species"></select></div>
+            <select id="tr-method" data-save="tr-method"><option value="pot">Potometer (1.0 mL pipette)</option><option value="whole">Whole plant in bag (mass)</option><option value="press">Gas pressure sensor</option></select></div>
+            <div class="field"><label for="tr-species">Plant</label><select id="tr-species" data-save="tr-species"></select></div>
             <div class="field"><label for="tr-cond">Condition</label>
-            <select id="tr-cond"><option value="control">Control: room light, still air, 22 °C, 45% RH</option><option value="fan">Fan (≈ 3 m/s breeze)</option><option value="lamp">Heat lamp (bright light, leaf +4 °C)</option><option value="mist">Misted and covered with a plastic bag (≈ 92% RH)</option><option value="dark">Dark box (no light)</option></select></div>
+            <select id="tr-cond" data-save="tr-cond"><option value="control">Control: room light, still air, 22 °C, 45% RH</option><option value="fan">Fan (≈ 3 m/s breeze)</option><option value="lamp">Heat lamp (bright light, leaf +4 °C)</option><option value="mist">Misted and covered with a plastic bag (≈ 92% RH)</option><option value="dark">Dark box (no light)</option></select></div>
             <button class="btn btn--primary" id="tr-run" type="button">Run</button>
             <details class="more"><summary>More options</summary><div class="inner">
-              <div class="field"><label for="tr-n">Plants (replicates) <output id="tr-n-out" class="val" for="tr-n"></output></label><input id="tr-n" type="range" min="1" max="5" step="1" value="3"></div>
+              <div class="field"><label for="tr-n">Plants (replicates) <output id="tr-n-out" class="val" for="tr-n"></output></label><input id="tr-n" data-save="tr-n" type="range" min="1" max="5" step="1" value="3"></div>
               <button class="btn btn--sm btn--ghost" id="tr-clear" type="button">Clear data</button>
               <p class="small muted">Each plant is a different individual, so expect natural variation. The animation shows the last plant in the batch.</p>
             </div></details>
@@ -361,20 +361,20 @@
           <div id="d-steps"></div>
           <div class="controls">
             <p class="controls-title">Controls</p>
-            <div class="field"><label for="d-wind">Wind speed <output id="d-wind-out" class="val" for="d-wind"></output></label><input id="d-wind" type="range" min="0" max="5" step="0.5" value="0"></div>
-            <div class="field"><label for="d-light">Light (PAR) <output id="d-light-out" class="val" for="d-light"></output></label><input id="d-light" type="range" min="0" max="1200" step="50" value="150"></div>
-            <div class="field"><label for="d-rh">Relative humidity <output id="d-rh-out" class="val" for="d-rh"></output></label><input id="d-rh" type="range" min="20" max="95" step="5" value="45"></div>
-            <div class="field"><label for="d-temp">Air temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" type="range" min="12" max="36" step="2" value="22"></div>
+            <div class="field"><label for="d-wind">Wind speed <output id="d-wind-out" class="val" for="d-wind"></output></label><input id="d-wind" data-save="d-wind" type="range" min="0" max="5" step="0.5" value="0"></div>
+            <div class="field"><label for="d-light">Light (PAR) <output id="d-light-out" class="val" for="d-light"></output></label><input id="d-light" data-save="d-light" type="range" min="0" max="1200" step="50" value="150"></div>
+            <div class="field"><label for="d-rh">Relative humidity <output id="d-rh-out" class="val" for="d-rh"></output></label><input id="d-rh" data-save="d-rh" type="range" min="20" max="95" step="5" value="45"></div>
+            <div class="field"><label for="d-temp">Air temperature <output id="d-temp-out" class="val" for="d-temp"></output></label><input id="d-temp" data-save="d-temp" type="range" min="12" max="36" step="2" value="22"></div>
             <button class="btn btn--primary" id="d-run" type="button">Run replicates</button>
             <details class="more"><summary>More options</summary><div class="inner">
               <div class="field"><label for="d-method">Method</label>
-            <select id="d-method"><option value="pot">Potometer</option><option value="whole">Whole plant in bag</option><option value="press">Gas pressure sensor</option></select></div>
-              <div class="field"><label for="d-species">Plant</label><select id="d-species"></select></div>
-              <div class="field"><label for="d-salt">NaCl in the water / soil <output id="d-salt-out" class="val" for="d-salt"></output></label><input id="d-salt" type="range" min="0" max="0.3" step="0.05" value="0"></div>
+            <select id="d-method" data-save="d-method"><option value="pot">Potometer</option><option value="whole">Whole plant in bag</option><option value="press">Gas pressure sensor</option></select></div>
+              <div class="field"><label for="d-species">Plant</label><select id="d-species" data-save="d-species"></select></div>
+              <div class="field"><label for="d-salt">NaCl in the water / soil <output id="d-salt-out" class="val" for="d-salt"></output></label><input id="d-salt" data-save="d-salt" type="range" min="0" max="0.3" step="0.05" value="0"></div>
               <div class="field"><label for="d-jelly">Petroleum jelly on leaves</label>
-            <select id="d-jelly"><option value="none">None</option><option value="upper">Upper surfaces</option><option value="lower">Lower surfaces</option><option value="both">Both surfaces</option></select></div>
-              <div class="field"><label for="d-leaves">Leaves left on the plant <output id="d-leaves-out" class="val" for="d-leaves"></output></label><input id="d-leaves" type="range" min="25" max="100" step="25" value="100"></div>
-              <div class="field"><label for="d-n">Replicates <output id="d-n-out" class="val" for="d-n"></output></label><input id="d-n" type="range" min="2" max="8" step="1" value="4"></div>
+            <select id="d-jelly" data-save="d-jelly"><option value="none">None</option><option value="upper">Upper surfaces</option><option value="lower">Lower surfaces</option><option value="both">Both surfaces</option></select></div>
+              <div class="field"><label for="d-leaves">Leaves left on the plant <output id="d-leaves-out" class="val" for="d-leaves"></output></label><input id="d-leaves" data-save="d-leaves" type="range" min="25" max="100" step="25" value="100"></div>
+              <div class="field"><label for="d-n">Replicates <output id="d-n-out" class="val" for="d-n"></output></label><input id="d-n" data-save="d-n" type="range" min="2" max="8" step="1" value="4"></div>
               <button class="btn btn--sm btn--ghost" id="d-clear" type="button">Clear data</button>
             </div></details>
           </div>
@@ -392,7 +392,7 @@
       <div id="d-table"></div>
       <div class="row" id="d-byrow">
           <div class="field" style="min-width:220px"><label for="d-by">Group and graph by</label>
-          <select id="d-by"><option value="wind">Wind speed</option><option value="light">Light</option><option value="rh">Relative humidity</option><option value="temp">Air temperature</option><option value="salt">NaCl</option><option value="jelly">Petroleum jelly</option><option value="leaves">Leaves left</option><option value="species">Plant species</option></select></div>
+          <select id="d-by" data-save="d-by"><option value="wind">Wind speed</option><option value="light">Light</option><option value="rh">Relative humidity</option><option value="temp">Air temperature</option><option value="salt">NaCl</option><option value="jelly">Petroleum jelly</option><option value="leaves">Leaves left</option><option value="species">Plant species</option></select></div>
       </div>
       <div id="d-summary"></div>
       <div id="d-chart"></div>
@@ -768,12 +768,15 @@ function frq(host, o) {
     ctx.fillStyle = 'rgba(38,110,130,0.9)'; ctx.font = `${Math.max(10, s * 0.6)}px "Source Sans 3", sans-serif`; ctx.textAlign = 'left';
     ctx.fillText('each small square = 0.25 cm²  ·  4 squares = 1 cm²', 4, H - 5);
   }
-  function newLeaf() { leaf = makeLeaf($('#la-species').value, Math.floor(rng.uniform() * 1e9)); $('#la-true').textContent = 'hidden'; $('#la-msg').textContent = ''; drawLeaf(); }
+  /* The traced leaf (species + seed), the shading toggle and the last calculation are saved, so a reload brings back the same leaf and its result. */
+  let laSeed = 0, laCalc = null;
+  const saveLa = () => Lab.store.set('la-state', { sp: $('#la-species').value, seed: laSeed, calc: laCalc });
+  function newLeaf(seed, quiet) { laSeed = seed != null ? seed : Math.floor(rng.uniform() * 1e9); leaf = makeLeaf($('#la-species').value, laSeed); $('#la-true').textContent = 'hidden'; $('#la-msg').textContent = ''; if (!quiet) { laCalc = null; saveLa(); } drawLeaf(); }
   laCv.onresize = drawLeaf;
-  $('#la-species').addEventListener('change', newLeaf);
-  $('#la-new').addEventListener('click', newLeaf);
+  $('#la-species').addEventListener('change', () => newLeaf());
+  $('#la-new').addEventListener('click', () => newLeaf());
   $('#la-show').addEventListener('change', () => { drawLeaf(); if ($('#la-show').checked) $('#la-msg').textContent = `Shaded: ${leaf.full} full squares (green) and ${leaf.part} partial squares (magenta).`; });
-  newLeaf();
+  { const sv = Lab.store.get('la-state'); if (sv && LEAVES[sv.sp] && sv.seed != null) { $('#la-species').value = sv.sp; laSeed = sv.seed; laCalc = sv.calc || null; newLeaf(sv.seed, true); } else newLeaf(); }
   const laTable = Lab.table('#la-table', {
     save: 'la-table',
     columns: [{ key: 'n', label: 'Leaf' }, { key: 'sp', label: 'Species' }, { key: 'full', label: 'Full squares', unit: 'squares', num: true, digits: 0 }, { key: 'part', label: 'Partial squares', unit: 'squares', num: true, digits: 0 }, { key: 'cm2', label: 'Area', unit: 'cm²', num: true, digits: 2 }, { key: 'mm2', label: 'Area', unit: 'mm²', num: true, digits: 0 }, { key: 'ref', label: 'Planimeter area', unit: 'cm²', num: true, digits: 2 }, { key: 'err', label: 'Error vs planimeter', unit: '%', num: true, digits: 1 }],
@@ -786,14 +789,20 @@ function frq(host, o) {
     if (f == null || p == null) { msg.textContent = 'Fix the highlighted box' + (f == null && p == null ? 'es' : '') + '. The area wasn\u2019t calculated and nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
     if (f + p === 0) { V.bad($('#la-full'), 'Count at least one square. A leaf can\u2019t have an area of 0.'); msg.textContent = 'Nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
     msg.removeAttribute('role');
+    laCalc = { f, p }; saveLa(); laShow(f, p);
+    const rows = laTable.getRows();
+    laTable.addRow({ n: rows.length + 1, sp: $('#la-species').selectedOptions[0].text.split(' (')[0], full: f, part: p, cm2: (f + p / 2) / 4, mm2: (f + p / 2) * 25, ref: leaf.area, err: ((f + p / 2) / 4 - leaf.area) / leaf.area * 100 });
+  });
+  /* The result readouts and feedback for a count (also redrawn after a reload). */
+  function laShow(f, p) {
+    const msg = $('#la-msg');
     const a = (f + p / 2) / 4, err = (a - leaf.area) / leaf.area * 100;
     $('#la-yours').textContent = fmt(a, 2); $('#la-mm').textContent = fmt(a * 100, 0); $('#la-true').textContent = fmt(leaf.area, 2);
     const countOk = Math.abs(f - leaf.full) <= 2 && Math.abs(p - leaf.part) <= 3;
     msg.textContent = countOk ? `Good count. Your estimate is within ${fmt(Math.abs(err), 1)}% of the planimeter value.` : `Your estimate is off by ${fmt(err, 1)}%. Tick "Shade full and partial squares" to see where your count differs (${leaf.full} full, ${leaf.part} partial).`;
     msg.className = 'status ' + (countOk ? 'ok' : 'warn');
-    const rows = laTable.getRows();
-    laTable.addRow({ n: rows.length + 1, sp: $('#la-species').selectedOptions[0].text.split(' (')[0], full: f, part: p, cm2: a, mm2: a * 100, ref: leaf.area, err });
-  });
+  }
+  if (laCalc) laShow(laCalc.f, laCalc.p);
   const laq = $('#la-q');
   Lab.prompt(laq, { key: 's1a', label: 'a–b. How can you find total leaf area in cm² and mm²? How could you estimate the leaf area of a whole plant without tracing every leaf?', rows: 3 });
   Lab.prompt(laq, { key: 's1f', label: 'f. Most leaves have two sides. Should you double your area to get the surface area of one leaf? Why or why not? (Hint: where are the stomata in Table 1?)', rows: 3 });
@@ -992,13 +1001,15 @@ function frq(host, o) {
     onClick: (wx, wy) => {
       const f = st.field; if (!f) return; const sc = FR / f.R, L = 0.028 * sc; let best = null, bd = Math.max(10, L * 0.8);
       f.stomata.forEach(s => { const d = Math.hypot(toW(f, s.x) - wx, toW(f, s.y) - wy); if (d < bd) { bd = d; best = s; } });
-      if (best) { best.marked = !best.marked; $('#st-tally').textContent = String(tally()); stView.redraw(); }
+      if (best) { best.marked = !best.marked; $('#st-tally').textContent = String(tally()); stView.redraw(); saveSt(); }
     }
   });
   stView.hint.textContent = 'Turn the fine focus until the guard cells are sharp, then click or tap each stoma to mark it. With the canvas selected, arrow keys nudge the slide.';
   stView.canvas.peelField = () => st.field;   // for tests (not a DOM attribute), like canvas.scopeView
   function drawScope() { stView.redraw(); }
   const tally = () => st.field.stomata.filter(s => s.marked).length;
+  /* The slide (species, surface, magnification, field seed) and the stomata you have marked are saved. */
+  const saveSt = () => Lab.store.set('st-state', { sp: st.sp, surf: st.surf, mag: st.mag, seed: st.seed, marked: st.field ? st.field.stomata.map((q, i) => q.marked ? i : -1).filter(i => i >= 0) : [] });
   function newField(regen = true) {
     if (regen) st.seed = Math.floor(rng.uniform() * 1e9);
     st.field = genField(); st.field.mag = st.mag;
@@ -1009,6 +1020,7 @@ function frq(host, o) {
     if (st.mag === 100 && st.field.stomata.length > 60) { msg.textContent = 'Too many stomata to count reliably at 100X. Use low power to find a good area, then switch to 400X to count.'; msg.className = 'status warn'; }
     else if (st.field.D === 0) { msg.textContent = 'Look carefully: does this surface have any stomata at all?'; msg.className = 'status'; }
     else { msg.textContent = ''; }
+    saveSt();
   }
   $('#st-species').addEventListener('change', () => { st.sp = $('#st-species').value; newField(); });
   seg(['#st-lower', '#st-upper'], id => { st.surf = id === '#st-lower' ? 'lo' : 'up'; newField(); });
@@ -1040,7 +1052,18 @@ function frq(host, o) {
     out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². The manual's average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
     out.className = 'status ' + (ok ? 'ok' : 'bad');
   });
-  newField();
+  { const sv = Lab.store.get('st-state');
+    if (sv && STOM.some(q => q.k === sv.sp) && (sv.mag === 100 || sv.mag === 400) && (sv.surf === 'lo' || sv.surf === 'up')) {
+      st.sp = sv.sp; st.surf = sv.surf; st.mag = sv.mag; st.seed = sv.seed;
+      $('#st-species').value = st.sp;
+      [['#st-lower', st.surf === 'lo'], ['#st-upper', st.surf === 'up'], ['#st-m100', st.mag === 100], ['#st-m400', st.mag === 400]].forEach(([q, on]) => $(q).setAttribute('aria-pressed', String(on)));
+      newField(false);
+      (sv.marked || []).forEach(i => { if (st.field.stomata[i]) st.field.stomata[i].marked = true; });
+      $('#st-tally').textContent = String(tally()); stView.redraw();
+    } else newField(); }
+  /* feedback under the density check is kept (it is recomputed from your saved entries by pressing Check again) */
+  { const sv = Lab.store.get('st-dens-msg'); if (sv && sv.h) { $('#st-dens-msg').innerHTML = sv.h; $('#st-dens-msg').className = sv.c; } }
+  $('#st-dens-check').addEventListener('click', () => Lab.store.set('st-dens-msg', { h: $('#st-dens-msg').innerHTML, c: $('#st-dens-msg').className }));
   const stq = $('#st-q');
   Lab.prompt(stq, { key: 's2-draw', label: 'Step 2g. Describe what you saw at 400X: the shape of epidermal cells, the guard cells, and the pores. How did grasses (corn, oats) look different?', rows: 3 });
   Lab.prompt(stq, { key: 's2-compare', label: 'Compare the upper and lower surfaces of the slides you examined (yours and two others). Report each mean density.', rows: 3 });
@@ -1412,7 +1435,7 @@ function frq(host, o) {
     }
     if (s.label) tape(ctx, s.label, w / 2, H - 14, fs, 0);
   }
-  function animateRun(cv, method, env, res, extra, onTick, onDone) {
+  function animateRun(cv, method, env, res, extra, onTick, onDone, from = 0) {
     const M = METH[method], pts = res.pts, dur = M.dur;
     const readingAt = tt => { let i = 0; while (i + 1 < pts.length && pts[i + 1].x <= tt + 1e-9) i++; return pts[i].y; };
     const total = method === 'pot' ? pts[pts.length - 1].y : Math.abs(pts[pts.length - 1].y - pts[0].y);
@@ -1424,12 +1447,12 @@ function frq(host, o) {
     };
     void total;
     if (Lab.reducedMotion()) { frame(dur); onDone && onDone(); return; }
-    let t = 0; const speed = dur / 4.5;
+    let t = Math.min(dur, from * dur); const speed = dur / 4.5;
     Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } }).start();
   }
 
   /* ================= Part 2 structured runs ================= */
-  ['#tr-species', '#d-species'].forEach(sel => Object.keys(SPP).forEach(k => $(sel).append(h('option', { value: k }, SPP[k].name))));
+  ['#tr-species', '#d-species'].forEach(sel => { Object.keys(SPP).forEach(k => $(sel).append(h('option', { value: k }, SPP[k].name))); const sv = Lab.store.get('field:' + sel.slice(1)); if (sv != null && SPP[sv]) $(sel).value = sv; });
   const trCv = Lab.canvas('#tr-cv', 0.62, { fit: true });
   const trChart = Lab.chart('#tr-chart', { xLabel: 'Time (min)', yLabel: 'Water taken up (mL)', height: 280, series: [] });
   let trBusy = false, trSeries = [];
@@ -1462,6 +1485,12 @@ function frq(host, o) {
       const rows = trTable.getRows();
       trTable.addRow({ n: rows.length + 1, method, methodTxt: { pot: 'Potometer', press: 'Pressure', whole: 'Whole plant' }[method], sp, spTxt: SPP[sp].short, cond: ck, condTxt: COND[ck].label, rate: res.rate, unit: M.unit, area: Math.round(res.area), rpa: res.rate / Math.round(res.area) * M.mult, rpaIn: null, rpaUnit: M.rpaUnit });
     }
+    Lab.store.set('tr-last', { method, sp, ck, pts: last.pts, rate: last.rate, area: last.area, t0: Date.now() });
+    startTrAnim(method, sp, ck, last, 0);
+  });
+  /* The run animation (4.5 s). After a reload it carries on from the clock, or shows its end state if the time is up. */
+  function startTrAnim(method, sp, ck, last, from) {
+    const env = envFrom(COND[ck]);
     $('#tr-area').textContent = Math.round(last.area);
     trBusy = true;
     const live = [];
@@ -1475,9 +1504,13 @@ function frq(host, o) {
     }, () => {
       trBusy = false; trSeries.push({ name, points: last.pts, line: true, dash: true, dots: false });
       $('#tr-rate').textContent = fmt(last.rate, method === 'whole' ? 1 : 4);
-    });
-  });
-  $('#tr-clear').addEventListener('click', () => { trTable.clear(); trSeries = []; trUpdate([]); $('#tr-check-msg').textContent = ''; });
+    }, from);
+  }
+  $('#tr-clear').addEventListener('click', () => { trTable.clear(); trSeries = []; trUpdate([]); $('#tr-check-msg').textContent = ''; Lab.store.set('tr-last', null); Lab.store.set('tr-check-msg', null); });
+  { const sv = Lab.store.get('tr-last');
+    if (sv && sv.pts && sv.pts.length && METH[sv.method] && COND[sv.ck] && SPP[sv.sp]) { $('#tr-method').value = sv.method; $('#tr-species').value = sv.sp; $('#tr-cond').value = sv.ck; setTrLabels(sv.method); startTrAnim(sv.method, sv.sp, sv.ck, sv, Lab.reducedMotion() ? 1 : Math.min(1, Math.max(0, (Date.now() - sv.t0) / 4500))); } }
+  { const sv = Lab.store.get('tr-check-msg'); if (sv && sv.t) { $('#tr-check-msg').textContent = sv.t; $('#tr-check-msg').className = sv.c; } }
+  $('#tr-check').addEventListener('click', () => setTimeout(() => Lab.store.set('tr-check-msg', { t: $('#tr-check-msg').textContent, c: $('#tr-check-msg').className }), 0));
   $('#tr-check').addEventListener('click', () => {
     const rows = trTable.getRows(), out = $('#tr-check-msg');
     if (!rows.length) { out.textContent = 'Run some plants first.'; out.className = 'status bad'; return; }
@@ -1571,10 +1604,12 @@ function frq(host, o) {
     const msg = $('#d-msg');
     msg.textContent = mixed ? 'Careful: your table now mixes methods with different units. Compare only rows measured the same way (or clear the data).' : `${n} plants added.`;
     msg.className = 'status ' + (mixed ? 'warn' : 'ok');
+    Lab.store.set('d-last', { v: $('#d-last').textContent, k: $('#d-k-last').textContent, m: msg.textContent, c: msg.className });
     dBusy = true;
     animateRun(dCv, method, e, last, { leaves: e.leaves, sp }, null, () => { dBusy = false; });
   });
-  $('#d-clear').addEventListener('click', () => { dTable.clear(); $('#d-msg').textContent = ''; });
+  $('#d-clear').addEventListener('click', () => { dTable.clear(); $('#d-msg').textContent = ''; Lab.store.set('d-last', null); });
+  { const sv = Lab.store.get('d-last'); if (sv && dTable.getRows().length) { $('#d-last').textContent = sv.v; $('#d-k-last').textContent = sv.k; $('#d-msg').textContent = sv.m; $('#d-msg').className = sv.c; } }
   $('#d-by').addEventListener('change', dUpdate);
   ['#t-a', '#t-b'].forEach(s => $(s).addEventListener('change', dTtest));
   let dGroups = [];
@@ -1656,11 +1691,11 @@ function frq(host, o) {
   /* ===================== LAPTOP LAYOUT: results, steps, gates, toasts ===================== */
   const filledP = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
   const isNum = v => typeof v === 'number' && isFinite(v);
-  Lab.results('#tr-sim', {
+  Lab.results('#tr-sim', { start: 'data',
     graph: [{ el: '#tr-chart', title: 'Readings vs time' }, { el: '#tr-bar', title: 'Adjusted rates: mean ± 2 SE' }],
     data: [{ el: '#tr-note2', title: 'Table 2. Individual / group data' }, '#tr-table', '#tr-checkrow', { el: '#tr-note3', title: 'Table 3. Class data: adjusted rates' }, '#tr-summary']
   });
-  Lab.results('#d-sim', {
+  Lab.results('#d-sim', { start: 'data',
     graph: [{ el: '#d-chart', title: 'Rate per area by group' }],
     data: [{ el: '#d-table', title: 'Replicate data' }, { el: '#d-byrow', title: 'Group summary' }, '#d-summary']
   });

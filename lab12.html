@@ -358,10 +358,10 @@
       <h3>Chi-square calculator</h3>
       <p class="small muted">Enter observed counts at each end. Expected counts come from your null hypothesis of no preference (half the flies at each end).</p>
       <div class="grid-2">
-        <div class="field"><label for="x-a">Observed at end A (flies)</label><input id="x-a" type="number" min="0" step="1" value="21"></div>
-        <div class="field"><label for="x-b">Observed at end B (flies)</label><input id="x-b" type="number" min="0" step="1" value="9"></div>
+        <div class="field"><label for="x-a">Observed at end A (flies)</label><input id="x-a" type="number" min="0" step="1" placeholder="e.g. 21" data-save="x-a"></div>
+        <div class="field"><label for="x-b">Observed at end B (flies)</label><input id="x-b" type="number" min="0" step="1" placeholder="e.g. 9" data-save="x-b"></div>
       </div>
-      <div class="row" style="margin-top:10px"><button class="btn btn--primary" id="x-run" type="button">Calculate χ²</button><button class="btn btn--sm" id="x-last" type="button">Use my last trial</button></div>
+      <div class="row" style="margin-top:10px"><button class="btn btn--primary" id="x-run" type="button">Calculate χ²</button><button class="btn btn--sm" id="x-last" type="button">Use my data: last trial</button><button class="btn btn--sm" id="x-example" type="button">Show a worked example</button></div>
       <div class="chi-out" id="x-out" aria-live="polite">—</div>
       <h3 style="margin-top:20px">Questions</h3>
       <div id="an-prompts" class="prompts-2"></div>
@@ -400,6 +400,38 @@ function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) ret
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
 const numOk = x => typeof x === 'number' && isFinite(x);
+/* Worked-example mode for a calculator: "Show a worked example" fills clearly labelled sample numbers under an
+   "EXAMPLE — not your data" banner; "Clear example" puts the student's own entries back. The sample numbers are
+   never saved (the student's own values are restored before the page hides or unloads, which is when autosave flushes). */
+function workedExample(o) {
+  let on = false, own = [];
+  const clear = Lab.h('button', { class: 'btn btn--sm', type: 'button' }, 'Clear example');
+  const banner = Lab.h('div', { class: 'callout callout--tip example-banner', role: 'status', hidden: true }, Lab.h('strong', {}, 'EXAMPLE — not your data. '), o.text || 'These are sample numbers for practice.', ' ', clear);
+  o.anchor.insertAdjacentElement('beforebegin', banner);
+  const setVals = vals => o.fields.forEach(([el], i) => { el.value = vals[i]; });
+  const show = () => setVals(o.fields.map(f => f[1])), hide = () => setVals(own);
+  function set(v) {
+    if (v === on) return; on = v;
+    if (v) { own = o.fields.map(([el]) => el.value); show(); } else hide();
+    o.fields.forEach(([el]) => { el.readOnly = v; });
+    banner.hidden = !v; o.button.hidden = v; o.onChange && o.onChange(v);
+  }
+  o.button.addEventListener('click', () => set(true)); clear.addEventListener('click', () => set(false));
+  const away = () => { if (on) hide(); };
+  window.addEventListener('pagehide', away, true); window.addEventListener('beforeunload', away, true);
+  window.addEventListener('pageshow', () => { if (on) show(); }, true);
+  document.addEventListener('visibilitychange', () => { if (on) (document.visibilityState === 'hidden' ? hide : show)(); }, true);
+  return { get on() { return on; }, set };
+}
+
+/* Controls that a student sets (sliders, selects, tick boxes) are remembered, so the sim comes back as they left it. */
+function persistControls(ids) {
+  const sv = Lab.store.get('ui12') || {};
+  const el = id => document.getElementById(id);
+  ids.forEach(id => { const e = el(id); if (!e || !(id in sv)) return; if (e.type === 'checkbox') e.checked = !!sv[id]; else if (e.tagName !== 'SELECT' || [...e.options].some(o => o.value === String(sv[id]))) e.value = sv[id]; });
+  ids.forEach(id => { const e = el(id); if (!e) return; ['input', 'change'].forEach(ev => e.addEventListener(ev, () => { const cur = Lab.store.get('ui12') || {}; cur[id] = e.type === 'checkbox' ? e.checked : e.value; Lab.store.set('ui12', cur); })); });
+}
+function saveUiExtra(k, v) { const cur = Lab.store.get('ui12') || {}; cur[k] = v; Lab.store.set('ui12', cur); }
 const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
 /* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
@@ -758,10 +790,11 @@ function drawRef() { sexRef.redraw(); }
 function answerSex(g) {
   if (!sexCur || sexAns) return; sexAns = true; sexTot++;
   const ok = g === sexCur.sex; if (ok) sexRight++;
-  $('#sex-score').textContent = `${sexRight} of ${sexTot}`;
+  $('#sex-score').textContent = `${sexRight} of ${sexTot}`; Lab.store.set('sex-score', { r: sexRight, t: sexTot });
   const fb = $('#sex-fb'); fb.className = 'fb ' + (ok ? 'ok' : 'bad');
   fb.textContent = (ok ? 'Correct. ' : 'Not quite. ') + (sexCur.sex === 'f' ? 'This is a female: long, pointed abdomen with separate stripes to a light tip, and no sex combs.' : 'This is a male: smaller, rounded abdomen with a solid dark tip and a dark genital arch, and dark sex combs on the front legs.');
 }
+{ const sv = Lab.store.get('sex-score'); if (sv && sv.t > 0) { sexRight = sv.r | 0; sexTot = sv.t | 0; $('#sex-score').textContent = `${sexRight} of ${sexTot}`; } }
 $('#sex-f').addEventListener('click', () => answerSex('f'));
 $('#sex-m').addEventListener('click', () => answerSex('m'));
 $('#sex-next').addEventListener('click', newSexFly);
@@ -926,6 +959,7 @@ tk.onresize = tkDraw;
    Old flies (4 weeks) climb about half as fast (age-related decline, as in RING assays). */
 const vialCv = Lab.canvas('#vial', 0.55, { fit: true });
 let vialF = [], vialT = 0, vialRec = {};
+persistControls(['vial-n', 'vial-age']);
 const vialN = $('#vial-n'); const syncVN = () => $('#vial-n-out').textContent = vialN.value; vialN.addEventListener('input', syncVN); syncVN();
 function vialSetup(atBottom) {
   vialF = Array.from({ length: +vialN.value }, () => ({ x: rng.uniform() * 2 - 1, y: atBottom ? 0.9 + rng.uniform() * 0.08 : rng.uniform(), v: rng.chance(0.1) ? 0 : 0.035 + rng.uniform() * 0.06, th: rng.uniform() * 6.28, rest: 0 }));
@@ -1005,6 +1039,8 @@ function vialDraw() {
   const top = vialF.filter(f => f.y < 0.5).length;
   $('#vial-top').textContent = top; $('#vial-bot').textContent = vialF.length - top; $('#vial-t').textContent = Math.floor(vialT);
 }
+const vialSaveEnd = () => Lab.store.set('vial-last', vialF.map(f => ({ x: f.x, y: f.y, v: f.v, th: f.th, rest: f.rest })));
+let vialRestored = false;
 const vialTable = Lab.table('#vial-table', { save: 'vial', columns: [{ key: 'trial', label: 'Trial' }, { key: 'age', label: 'Fly age' }, { key: 't0', label: 'Top half at 0 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 't15', label: 'Top half at 15 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 't30', label: 'Top half at 30 s', unit: 'flies', num: true, digits: 0, editable: true }, { key: 'n', label: 'Total flies', unit: 'flies', num: true, digits: 0 }] });
 const vialLoop = Lab.loop(dt => {
   const step = dt * 2; let left = step;
@@ -1012,16 +1048,29 @@ const vialLoop = Lab.loop(dt => {
   const prev = vialT; vialT += step;
   const top = () => vialF.filter(f => f.y < 0.5).length;
   if (prev < 15 && vialT >= 15) vialRec.t15 = top();
-  if (vialT >= 30) { vialT = 30; vialRec.t30 = top(); vialDraw(); vialTable.addRow(vialRec); $('#vial-run').disabled = false; return false; }
+  if (vialT >= 30) { vialT = 30; vialRec.t30 = top(); vialDraw(); vialTable.addRow(vialRec); vialSaveEnd(); Lab.store.set('vial-run', null); $('#vial-run').disabled = false; return false; }
   vialDraw();
 });
 $('#vial-run').addEventListener('click', () => {
   vialSetup(true); vialT = 0; $('#vial-run').disabled = true;
   vialRec = { trial: vialTable.getRows().length + 1, age: $('#vial-age').value === 'old' ? 'Old (4 wk)' : 'Young', t0: vialF.filter(f => f.y < 0.5).length, n: vialF.length };
-  if (Lab.reducedMotion()) { for (let t = 0; t < 30; t += 0.05) { vialStep(0.05); if (Math.abs(t - 15) < 0.025) vialRec.t15 = vialF.filter(f => f.y < 0.5).length; } vialT = 30; vialRec.t30 = vialF.filter(f => f.y < 0.5).length; vialDraw(); vialTable.addRow(vialRec); $('#vial-run').disabled = false; return; }
+  Lab.store.set('vial-run', { rec: vialRec, t0: Date.now() });
+  if (Lab.reducedMotion()) { for (let t = 0; t < 30; t += 0.05) { vialStep(0.05); if (Math.abs(t - 15) < 0.025) vialRec.t15 = vialF.filter(f => f.y < 0.5).length; } vialT = 30; vialRec.t30 = vialF.filter(f => f.y < 0.5).length; vialDraw(); vialTable.addRow(vialRec); vialSaveEnd(); $('#vial-run').disabled = false; return; }
   vialLoop.start();
 });
 vialCv.onresize = vialDraw;
+/* After a reload a 30-s vial trial has kept going by the clock (the vial clock runs at 2x): finish it, or pick it up where it is. */
+{ const sv = Lab.store.get('vial-run'), topN = () => vialF.filter(f => f.y < 0.5).length;
+  if (sv && sv.rec && vialTable.getRows().length < sv.rec.trial) {
+    vialRec = sv.rec; vialN.value = vialRec.n; syncVN(); vialSetup(true);
+    const goal = Math.min(30, Math.max(0, (Date.now() - sv.t0) / 1000 * 2));
+    let t = 0; while (t < goal) { const d = Math.min(0.05, goal - t); vialStep(d); const prev = t; t += d; if (prev < 15 && t >= 15) vialRec.t15 = topN(); }
+    vialT = goal;
+    if (goal >= 30) { vialT = 30; vialRec.t30 = topN(); vialTable.addRow(vialRec); vialSaveEnd(); Lab.store.set('vial-run', null); vialDraw(); }
+    else { $('#vial-run').disabled = true; vialLoop.start(); }
+  } else if (sv) Lab.store.set('vial-run', null);
+  if (vialT > 0) vialRestored = true;
+  else { const lr = vialTable.getRows(), lf = Lab.store.get('vial-last'); if (lr.length && Array.isArray(lf) && lf.length === lr[lr.length - 1].n) { vialF = lf.map(f => Object.assign({}, f)); vialT = 30; vialRestored = true; } } }
 [['v-q1', 'What was the flies\' response? Did most of them move in the same general direction?'], ['v-q2', 'Was this an orientation movement? To what stimulus were the flies most likely responding? Could it have been a chemical change in the vial instead? How could you tell?'], ['v-q3', 'Is this a taxis or a kinesis? Explain using your observations. What new questions do your observations raise?']].forEach(([key, label]) => Lab.prompt('#vial-prompts', { key, label, rows: 3 }));
 
 /* ---------- Choice chamber model ----------
@@ -1134,11 +1183,15 @@ function readCount(input, name, max) {
 const subOpts = cur => SUBS.map(([id, name]) => `<option value="${id}" ${id === cur ? 'selected' : ''}>${name}</option>`).join('');
 $('#c-a').innerHTML = subOpts('water'); $('#c-b').innerHTML = subOpts('water');
 $('#d-a').innerHTML = subOpts('vinegar'); $('#d-b').innerHTML = subOpts('water');
+persistControls(['c-a', 'c-b', 'c-film', 'c-light', 'c-color', 'c-type', 'c-n', 'c-int', 'c-dur', 'c-pause', 'd-a', 'd-b', 'd-light', 'd-film', 'd-orient', 'd-type', 'd-n', 'd-swap', 'd-trials']);
 const cvH = Lab.canvas('#ch-h', window.innerWidth < 600 ? 0.55 : 0.4, { fit: true }), cvV = Lab.canvas('#ch-v', 1.05, { fit: '470px' });
 let orient = 'h', flipped = false, speedX = 15, flies = [], simT = 0, trial = null, paused = false, nextCount = 0;
 function segBind(id, cb) { $$('#' + id + ' button').forEach(b => b.addEventListener('click', () => { $$('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', x === b)); cb(b.dataset.v); })); }
-segBind('c-orient', v => { if (trial) return setOrientBtn(); orient = v; showCanvas(); drawChamber(); });
-segBind('c-speed', v => { speedX = +v; });
+segBind('c-orient', v => { if (trial) return setOrientBtn(); orient = v; showCanvas(); drawChamber(); saveUiExtra('orient', orient); });
+segBind('c-speed', v => { speedX = +v; saveUiExtra('speedX', speedX); });
+{ const sv = Lab.store.get('ui12') || {};
+  if (['h', 'vA', 'vB'].includes(sv.orient)) orient = sv.orient;
+  if ([5, 15, 40].includes(+sv.speedX)) { speedX = +sv.speedX; $$('#c-speed button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === String(speedX))); } }
 function setOrientBtn() { $$('#c-orient button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === orient)); }
 function showCanvas() { $('#ch-h').hidden = orient !== 'h'; $('#ch-v').hidden = orient === 'h'; const c = orient === 'h' ? cvH : cvV; c.resize(); }
 const cn = $('#c-n'); const syncCN = () => $('#c-n-out').textContent = cn.value; cn.addEventListener('input', () => { syncCN(); if (!trial) { flies = makeFlies(+cn.value); drawChamber(); } }); syncCN();
@@ -1294,7 +1347,7 @@ function drawPref(rows) {
 }
 const trialsTable = Lab.table('#trials-table', {
   save: 'trials',
-  columns: [{ key: 'n', label: 'Trial' }, { key: 'choice', label: 'A vs B' }, { key: 'setup', label: 'Setup' }, { key: 'A', label: 'Final A', unit: 'flies', num: true, digits: 0 }, { key: 'B', label: 'Final B', unit: 'flies', num: true, digits: 0 }, { key: 'chi2', label: 'χ²', unit: 'no units', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  columns: [{ key: 'n', label: 'Trial' }, { key: 'choice', label: 'A vs B' }, { key: 'setup', label: 'Setup' }, { key: 'A', label: 'Final A', unit: 'flies', num: true, digits: 0 }, { key: 'B', label: 'Final B', unit: 'flies', num: true, digits: 0 }, { key: 'chi2', label: 'χ²', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
   onChange: rows => { drawPref(rows); reportTrials(rows); }
 });
 function setupLabel(cfg) {
@@ -1307,15 +1360,25 @@ function setupLabel(cfg) {
 }
 const shortName = id => SUB[id].name.replace(/ \(.*\)|, .*$| in brine| tablet in water| \+ sugar water/g, '');
 
-const chLoop = Lab.loop(dt => {
-  if (!trial || paused) { drawChamber(); return false; }
-  let adv = dt * speedX;
-  while (adv > 1e-9) {
+/* The running trial is saved (flies, clock, counts so far) so a reload does not lose it; the clock keeps running by the wall time. */
+let chSaved = 0;
+function chSave(active) {
+  chSaved = performance.now();
+  Lab.store.set('ch-trial', { active: !!(active && trial), cfg: trial ? trial.cfg : null, int: trial ? trial.int : 0, dur: trial ? trial.dur : 0, rows: trial ? trial.rows : [], pending: trial ? trial.pending || null : null,
+    paused: !!paused, simT, nextCount, flipped, orient, speedX, at: Date.now(), flies: flies.map(f => ({ x: f.x, y: f.y, th: f.th, r: f.r, state: f.state, t: f.t })) });
+}
+function chAdvance(adv) {
+  while (adv > 1e-9 && trial) {
     const d = Math.min(0.1, adv, nextCount - simT + 1e-9);
     stepFlies(flies, trial.phi, Math.max(d, 1e-4), trial.ft); simT += Math.max(d, 1e-4); adv -= Math.max(d, 1e-4);
     if (simT >= nextCount - 1e-6) { simT = nextCount; if (hitInterval()) break; }
   }
+}
+const chLoop = Lab.loop(dt => {
+  if (!trial || paused) { drawChamber(); return false; }
+  chAdvance(dt * speedX);
   drawChamber();
+  if (performance.now() - chSaved > 1200) chSave(true);
   if (!trial || paused) return false;
 });
 function hitInterval() {
@@ -1324,6 +1387,7 @@ function hitInterval() {
   if ($('#c-pause').checked) {
     paused = true; $('#count-panel').hidden = false; $('#count-title').textContent = `Time ${clock(simT)}: count the flies on each side of the dashed midline`;
     $('#cnt-a').value = ''; $('#cnt-b').value = ''; $('#cnt-a').focus({ preventScroll: true });
+    chSave(true);
     return true;
   }
   recordInterval(null, null); return !trial;
@@ -1346,7 +1410,7 @@ $('#cnt-rec').addEventListener('click', () => {
   } else { vmsg($('#cnt-a'), ''); vmsg($('#cnt-b'), ''); }
   paused = false; $('#count-panel').hidden = true;
   recordInterval(a, b);
-  if (trial) chLoop.start(); else drawChamber();
+  if (trial) { chSave(true); chLoop.start(); } else drawChamber();
 });
 $('#quad').addEventListener('change', drawChamber);
 function finishTrial() {
@@ -1357,6 +1421,7 @@ function finishTrial() {
   const x = chi(A, B);
   trialsTable.addRow({ n: trialsTable.getRows().length + 1, choice: `${shortName(trial.cfg.a)} vs ${shortName(trial.cfg.b)}`, setup: setupLabel(trial.cfg), A, B, chi2: x.chi2, sig: x.reject ? 'Yes: preference' : 'No' });
   trial = null; paused = false; $('#c-run').disabled = false; $('#count-panel').hidden = true;
+  chSave(false);
 }
 $('#c-run').addEventListener('click', () => {
   if (trial) return;
@@ -1365,9 +1430,10 @@ $('#c-run').addEventListener('click', () => {
   trial = { cfg, phi: makePhi(cfg), ft: FLY[cfg.type], int: +$('#c-int').value, dur: +$('#c-dur').value, rows: [] };
   nextCount = trial.int; paused = false; intTable.clear();
   $('#c-run').disabled = true;
+  chSave(true);
   chLoop.start();
 });
-$('#c-stop').addEventListener('click', () => { if (!trial) return; trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); });
+$('#c-stop').addEventListener('click', () => { if (!trial) return; trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false); });
 $('#c-swap').addEventListener('click', () => {
   if (trial) return;
   if (orient === 'h') flipped = !flipped;
@@ -1376,6 +1442,19 @@ $('#c-swap').addEventListener('click', () => {
   drawChamber();
 });
 flies = makeFlies(+cn.value);
+/* Restore the chamber after a reload: a trial in progress carries on by the clock (or waits at its count), a finished one shows its end state. */
+{ const sv = Lab.store.get('ch-trial');
+  if (sv && Array.isArray(sv.flies) && sv.flies.length) {
+    flies = sv.flies.map(f => Object.assign({}, f)); simT = +sv.simT || 0; flipped = !!sv.flipped; orient = ['h', 'vA', 'vB'].includes(sv.orient) ? sv.orient : orient;
+    setOrientBtn(); showCanvas();
+    if (sv.active && sv.cfg && FLY[sv.cfg.type]) {
+      trial = { cfg: sv.cfg, phi: makePhi(sv.cfg), ft: FLY[sv.cfg.type], int: sv.int, dur: sv.dur, rows: sv.rows || [], pending: sv.pending };
+      nextCount = sv.nextCount; paused = false; $('#c-run').disabled = true;
+      if (sv.paused && trial.pending) { paused = true; $('#count-panel').hidden = false; $('#count-title').textContent = `Time ${clock(simT)}: count the flies on each side of the dashed midline`; }
+      else { chAdvance(Math.max(0, (Date.now() - sv.at) / 1000) * speedX); if (trial && !paused) { chSave(true); chLoop.start(); } }
+      if (trial) chSave(true);
+    }
+  } }
 Lab.prompt('#predict-prompt', { key: 'predict', label: 'Step 6: List the substances you will test and predict which the flies will prefer or avoid. Explain your reasoning.', rows: 3 });
 
 /* ---------- Design ---------- */
@@ -1385,7 +1464,7 @@ const syncD = () => { $('#d-n-out').textContent = dn.value; $('#d-trials-out').t
 const dChart = Lab.chart('#d-chart', { type: 'bar', xLabel: 'Condition number (see Data table)', yLabel: 'Mean flies at A (%)', yMin: 0, yMax: 100, series: [], categories: [] });
 const dTable = Lab.table('#d-table', {
   save: 'design',
-  columns: [{ key: 'cond', label: 'Condition' }, { key: 'trials', label: 'Trials (A:B each)' }, { key: 'A', label: 'Total A', unit: 'flies', num: true, digits: 0 }, { key: 'B', label: 'Total B', unit: 'flies', num: true, digits: 0 }, { key: 'pct', label: 'Mean flies at A', unit: '%', num: true, digits: 1 }, { key: 'err', label: '2 SE of flies at A', unit: '%', num: true, digits: 1 }, { key: 'chi2', label: 'Pooled χ²', unit: 'no units', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  columns: [{ key: 'cond', label: 'Condition' }, { key: 'trials', label: 'Trials (A:B each)' }, { key: 'A', label: 'Total A', unit: 'flies', num: true, digits: 0 }, { key: 'B', label: 'Total B', unit: 'flies', num: true, digits: 0 }, { key: 'pct', label: 'Mean flies at A', unit: '%', num: true, digits: 1 }, { key: 'err', label: '2 SE of flies at A', unit: '%', num: true, digits: 1 }, { key: 'chi2', label: 'Pooled χ²', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
   onChange: rows => dChart.update({ categories: rows.map((r, i) => `${i + 1}`), series: [{ name: 'Mean % at A (± 2 SE)', points: rows.map((r, i) => ({ x: `${i + 1}`, y: r.pct, err: r.err || 0 })) }] })
 });
 $('#d-run').addEventListener('click', () => {
@@ -1397,13 +1476,15 @@ $('#d-run').addEventListener('click', () => {
   const cond = `${shortName(base.a)} vs ${shortName(base.b)}; ${setupLabel(Object.assign({}, base, { flipped: false }))}${swap ? '; ends swapped each trial' : ''}`;
   dTable.addRow({ cond: `${dTable.getRows().length + 1}. ${cond}`, trials: res.map(r => r.join(':')).join(', '), A, B, pct: Lab.stats.mean(pcts), err: nT > 1 ? 2 * Lab.stats.se(pcts) : null, chi2: x.chi2, sig: x.reject ? 'Yes' : 'No' });
   $('#d-last').textContent = `${cond}: ${A} at A, ${B} at B (χ² = ${Lab.fmt(x.chi2, 2)})`;
+  Lab.store.set('d-last', $('#d-last').textContent);
 });
-$('#d-clear').addEventListener('click', () => dTable.clear());
+$('#d-clear').addEventListener('click', () => { dTable.clear(); Lab.store.set('d-last', null); $('#d-last').textContent = '—'; });
+{ const sv = Lab.store.get('d-last'); if (sv && dTable.getRows().length) $('#d-last').textContent = sv; }
 
 /* ---------- Analyze ---------- */
 function runChi() {
   const a = readCount($('#x-a'), 'at end A'), b = readCount($('#x-b'), 'at end B');
-  if (a == null || b == null) { $('#x-out').textContent = 'Fix the highlighted count to see χ².'; return; }
+  if (a == null || b == null) { $('#x-out').textContent = $('#x-a').value.trim() === '' && $('#x-b').value.trim() === '' ? 'Enter the observed counts (or use your last trial) to see χ².' : 'Fix the highlighted count to see χ².'; return; }
   if (a + b === 0) { vmsg($('#x-a'), 'A and B cannot both be 0: with no flies counted the expected count at each end is 0, so χ² cannot be calculated.'); $('#x-out').textContent = 'Enter at least one fly.'; return; }
   vmsg($('#x-a'), '');
   const small = a + b < 10;
@@ -1414,6 +1495,8 @@ $('#x-run').addEventListener('click', runChi);
 ['#x-a', '#x-b'].forEach(i => $(i).addEventListener('input', runChi));
 $('#x-last').addEventListener('click', () => { const r = trialsTable.getRows(); if (!r.length) { $('#x-out').textContent = 'Finish a choice-chamber trial first.'; return; } const l = r[r.length - 1]; $('#x-a').value = l.A; $('#x-b').value = l.B; runChi(); });
 runChi();
+workedExample({ anchor: $('#x-a').closest('.grid-2'), button: $('#x-example'), text: 'Sample counts: 21 flies at end A and 9 at end B (30 flies). Your own counts come back when you clear it.',
+  fields: [[$('#x-a'), 21], [$('#x-b'), 9]], onChange: () => runChi() });
 [['an1', 'Describe the patterns in where the flies went. Which substances produced the strongest positive chemotaxis? The strongest negative chemotaxis? Support your answer with % at each end and χ² values.'],
  ['an2', 'Using data from the whole class (or all your trials), build a preference table ranking the substances from most to least attractive.'],
  ['an3', 'Were your hypotheses about the flies\' preferences supported? Do the attractive substances have anything in common? Look at their ingredients.'],
@@ -1453,6 +1536,7 @@ let tkPlayed = false;
 $('#tk-play').addEventListener('click', () => { tkPlayed = true; });
 Lab.results('#vial-sim', { data: [{ el: '#vial-table', title: 'Flies in the top half' }] });
 Lab.results('#ch-sim', {
+  start: 'data',
   graph: [{ el: '#int-chart', title: 'This trial: % of flies at A' }],
   data: [{ el: '#int-table', title: 'This trial' }]
 });
@@ -1489,8 +1573,8 @@ Lab.steps('#d-steps', [
   { id: 'ctl', text: 'Run a second condition', target: '#d-run', done: () => dTable.getRows().length > 1, hint: 'Change one thing, run again, and compare the bars.' },
   { id: 'ctrl', text: 'Describe your controls', target: '#p-d-ctrl', done: () => filledP('d-ctrl'), hint: 'Describe the variable, controls and constants above.' }
 ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
-Lab.gate('#vial-run', () => filledP('predict-vial') || vRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-vial' });
-Lab.gate('#c-run', () => filledP('predict') || tRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict' });
+Lab.gate('#vial-run', () => vialT > 0 && vialT < 30 ? 'Trial running: wait for 30 s' : filledP('predict-vial') || vRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-vial' });
+Lab.gate('#c-run', () => trial ? 'Trial running: wait, or press Stop trial' : filledP('predict') || tRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict' });
 Lab.gate('#d-run', () => filledP('d-hyp') || dTable.getRows().length > 0 ? '' : 'Write your prediction first (hypothesis above)', { show: '#p-d-hyp' });
 Lab.gate('#x-last', () => trialsTable.getRows().length ? '' : 'Finish a choice-chamber trial first');
 let vSeen = vRows().length;
@@ -1498,7 +1582,7 @@ setInterval(() => { const r = vRows(); if (r.length > vSeen) { const l = r[r.len
 $('#d-run').addEventListener('click', () => { const r = dTable.getRows(); if (r.length) Lab.toast('Added condition ' + r.length + ' to your results', { type: 'ok', announce: false, key: 'drun' }); });
 
 /* ---------- Initial draw ---------- */
-tkInit(); drawRef(); newSexFly(); vialSetup(false); vialDraw(); showCanvas(); drawChamber();
+tkInit(); drawRef(); newSexFly(); if (!vialRestored) vialSetup(false); vialDraw(); showCanvas(); drawChamber();
 
 /* ---------- Key results, personal-data prompts, AP free-response ---------- */
 function reportTrials(rows) {
