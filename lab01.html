@@ -143,7 +143,7 @@
   <section class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="10">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
-      <p class="muted">The manual asks you not to over-prepare: you will build understanding from your own data. These questions make sure you have the tools you need.</p>
+      <p class="muted">You do not need to master everything first: you will build understanding from your own data. These questions make sure you have the tools you need.</p>
       <div id="prelab" class="quiz--cols"></div>
     </div>
   </section>
@@ -263,7 +263,7 @@
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
           <p>Seeds from the selected parents were planted under identical conditions: same light bank, new soil and wicks, same fertilizer. At 7–12 days old, score the plants the same way you scored generation 1. You can hand-count some generation 2 plants in the scoring tool above (choose the population from the menu), then score the rest here.</p>
-          <p>Further rounds use the direction and fraction set in the step above. The control line breeds from a random sample of the same number of plants. One round is the manual's experiment; run more rounds to see whether the response continues, slows or stops.</p>
+          <p>Further rounds use the direction and fraction set in the step above. The control line breeds from a random sample of the same number of plants. One round is the basic experiment; run more rounds to see whether the response continues, slows or stops.</p>
         </div></details>
         </div>
         <div class="stage">
@@ -527,7 +527,7 @@ const Predict = (function () {
   /* ---------------- Pre-lab ---------------- */
   Lab.quiz('#prelab', [
     { type: 'multi', q: 'Artificial selection can change a population only if the trait… (choose all that apply)', choices: ['varies among individuals', 'is at least partly heritable', 'is controlled by a single gene', 'is helpful to the plant in nature'], answer: [0, 1], explain: 'Selection needs variation to choose from, and the variation must be passed to offspring. Polygenic traits respond well, and breeders often select traits that are useless (or even harmful) in the wild.' },
-    { type: 'mc', q: 'Which Fast Plant trait is best suited to this selection experiment?', choices: ['Whether the stem has any purple pigment (yes/no)', 'Number of trichomes along the edge of the first true leaf', 'Whether the plant flowers', 'The number of cotyledons (always two)'], answer: 1, explain: 'The manual asks for a trait you can score on a continuum (a number or a length), not a yes/no trait. Trichome counts vary from 0 to more than 50.' },
+    { type: 'mc', q: 'Which Fast Plant trait is best suited to this selection experiment?', choices: ['Whether the stem has any purple pigment (yes/no)', 'Number of trichomes along the edge of the first true leaf', 'Whether the plant flowers', 'The number of cotyledons (always two)'], answer: 1, explain: 'A good trait for selection is one you can score on a continuum (a number or a length), because a yes/no trait cannot show small shifts in the average. Trichome counts vary from 0 to more than 50.' },
     { type: 'num', q: 'Your class grew 150 plants. How many plants are in the top 10% that will be the parents of generation 2?', answer: 15, tol: 0, unit: 'plants', explain: '10% of 150 = 0.10 × 150 = 15 plants, enough to produce plenty of seed.' },
     { type: 'num', q: 'Generation 1 has a mean of 12 hairs. The selected parents average 32 hairs. If heritability (h²) is 0.5, what mean do you predict for generation 2?', answer: 22, tol: 0.5, unit: 'hairs', explain: 'S = 32 − 12 = 20 hairs. R = h² × S = 0.5 × 20 = 10 hairs. Predicted mean = 12 + 10 = 22 hairs.' },
     { type: 'mc', q: 'A bottle\'s counts are 0, 0, 1, 2, 3, 5 and 41 hairs. Which measure of center best describes a typical plant here?', choices: ['Mean (7.4 hairs)', 'Median (2 hairs)', 'Range (41 hairs)', 'Standard deviation'], answer: 1, explain: 'One very hairy plant pulls the mean up to 7.4, though most plants have 0–5 hairs. The median (2) resists extreme values, which is why skewed distributions like trichome counts are often summarized with the median.' },
