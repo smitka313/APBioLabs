@@ -127,7 +127,7 @@
     <div class="step-body split">
       <div class="split-main prose">
         <p class="lede">Why does the allele for cystic fibrosis stay in human populations even though people with two copies are seriously ill? Why is polydactyly (extra fingers) rare even though its allele is dominant? To answer questions like these, population biologists build mathematical models of gene pools.</p>
-      <p>In this lab you will build a spreadsheet model of a population, step by step, the way the manual does it: draw gametes at random from a gene pool, join them into zygotes, count genotypes and calculate new allele frequencies. Then you will run many populations for many generations, switch on selection, mutation, migration and genetic drift, and design your own modeling experiment.</p>
+      <p>In this lab you will build a spreadsheet model of a population, step by step, the way scientists build models: draw gametes at random from a gene pool, join them into zygotes, count genotypes and calculate new allele frequencies. Then you will run many populations for many generations, switch on selection, mutation, migration and genetic drift, and design your own modeling experiment.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
         <ul>
           <li><strong>EVO-1.K</strong> Describe the conditions under which allele and genotype frequencies will change in populations.</li>
@@ -159,10 +159,10 @@
       <figure>
         <div class="field" style="max-width:320px"><label for="pun-p">Try a value of p <output class="val" id="pun-p-out"></output></label><input type="range" id="pun-p" min="0.05" max="0.95" step="0.05" value="0.6"></div>
         <svg class="diagram pun" id="pun" viewBox="0 0 360 330" role="img" aria-label="Punnett square scaled by allele frequency, showing the areas p squared, 2pq and q squared."></svg>
-        <figcaption>A Punnett square for a whole gene pool. Each side is scaled to p and q, so each box's area is a genotype frequency (the manual's Figure 10 uses p = 0.6).</figcaption>
+        <figcaption>A Punnett square for a whole gene pool. Each side is scaled to p and q, so each box's area is a genotype frequency (this example uses p = 0.6).</figcaption>
       </figure>
         <details class="disclose"><summary>An idealized life cycle</summary><div class="inner">
-      <p>To build a model you simplify. The manual's model follows one life cycle: adults release gametes into one shared pool, gametes pair at random to form zygotes, zygotes grow into juveniles and then adults. Each arrow is a place where something could change allele frequencies.</p>
+      <p>To build a model you simplify. The model follows one life cycle: adults release gametes into one shared pool, gametes pair at random to form zygotes, zygotes grow into juveniles and then adults. Each arrow is a place where something could change allele frequencies.</p>
       <figure>
         <svg class="diagram lc" viewBox="0 0 620 300" role="img" aria-label="Life cycle: adults make gametes (the gene pool), random mating forms zygotes, zygotes become juveniles, juveniles become adults. Mutation acts on gametes, selection on zygotes and juveniles, migration on adults.">
           <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker>
@@ -191,7 +191,7 @@
           <rect class="badge" x="5" y="128" width="21" height="76" rx="10.5"/><text x="20" y="165" class="force" transform="rotate(-90 20 165)" text-anchor="middle">Migration</text>
           <rect class="badge" x="249" y="145" width="120" height="21" rx="10.5"/><text x="309" y="160" text-anchor="middle" class="force">Drift (small N)</text>
         </svg>
-        <figcaption>Life stages of the model population (after the manual's Figure 1). Magenta labels mark where each evolutionary force enters.</figcaption>
+        <figcaption>Life stages of the model population (a simplified life cycle). Magenta labels mark where each evolutionary force enters.</figcaption>
       </figure>
       <p>The starting assumptions are strict: the gene pool is infinite, every gamete has the same chance of being used, all zygotes survive to be adults, nobody enters or leaves, and there is no mutation. Under those conditions p and q stay the same forever. That is the <strong>Hardy-Weinberg equilibrium</strong>. It is a <strong>null model</strong>: a description of "nothing is happening." When real allele frequencies change, or genotypes do not match p², 2pq and q², the model tells you that some force (selection, mutation, migration, nonrandom mating or drift) is at work.</p>
       <p>A spreadsheet can mimic random gamete choice with the RAND() function, which returns a random decimal between 0 and 1. If RAND() ≤ p, the gamete is A; otherwise it is B. Because each draw is random, a small population will wander away from the expected numbers just by chance. That wandering is <strong>genetic drift</strong>, and it is the first thing your model will show you.</p>
@@ -266,13 +266,13 @@
           <div class="controls">
             <p class="controls-title">Controls</p>
             <div class="field"><label for="ss-p">D2: frequency of A (p)</label><input id="ss-p" type="number" min="0" max="1" step="0.05" value="0.5"></div>
-            <div class="field"><label for="ss-n">Number of zygotes (rows)</label><input id="ss-n" type="number" min="1" max="2000" step="1" value="16"><span class="hint">The manual starts with 16 rows. Try 16, 100 and 1000.</span></div>
+            <div class="field"><label for="ss-n">Number of zygotes (rows)</label><input id="ss-n" type="number" min="1" max="2000" step="1" value="16"><span class="hint">A good starting size is 16 rows. Try 16, 100 and 1000.</span></div>
             <button class="btn btn--primary" id="ss-recalc" type="button">Recalculate (F9)</button>
             <button class="btn" id="ss-record" type="button">Record this run in the table</button>
             <p class="status" id="ss-status" aria-live="polite"></p>
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
-          <p>The modeling steps from Otto and Day: (1) formulate the question, (2) determine the basic ingredients, (3) describe the system qualitatively, (4) describe it quantitatively, (5) analyze the equations, (6) perform checks and balances, (7) relate the results back to the question. Steps 1–3 are in the Background. Here is step 4, built exactly like the manual's spreadsheet. Click any cell to see its formula.</p>
+          <p>The modeling steps from Otto and Day: (1) formulate the question, (2) determine the basic ingredients, (3) describe the system qualitatively, (4) describe it quantitatively, (5) analyze the equations, (6) perform checks and balances, (7) relate the results back to the question. Steps 1–3 are in the Background. Here is step 4, built as a spreadsheet. Click any cell to see its formula.</p>
         <ul>
           <li><strong>D2</strong> holds p. <strong>D3</strong> is <code>=1-D2</code>.</li>
           <li><strong>E5</strong> and <strong>F5</strong> each draw one gamete: <code>=IF(RAND()&lt;=D$2,"A","B")</code>. The $ keeps the formula pointing at D2 when copied down.</li>
@@ -343,7 +343,7 @@
             <p class="status" id="mg-status" aria-live="polite"></p>
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
-          <p>Now copy the model forward: each generation's new p seeds the next generation's gene pool (the manual's Figure 9). Running several populations side by side shows which results are predictable and which are luck. Start with drift only and compare small and large populations. Then turn on the other forces one at a time.</p>
+          <p>Now copy the model forward: each generation's new p seeds the next generation's gene pool (each generation feeds the next). Running several populations side by side shows which results are predictable and which are luck. Start with drift only and compare small and large populations. Then turn on the other forces one at a time.</p>
         <p class="small muted">Model order each generation: gametes drawn from the gene pool (with mutation A→B at rate μ and B→A at rate ν) → N zygotes by random union → each zygote survives with probability w for its genotype (selection) → migrants from a source population with allele frequency p<sub>m</sub> make up a fraction m of the adults → the adults' alleles form the next gene pool. With drift switched off, the model uses the exact expected values (an infinite population).</p>
           <p><strong>Population 1, generation by generation.</strong> Adult genotype counts after selection and migration, with a chi-square test against Hardy-Weinberg proportions for that generation (df = 1, critical value 3.84). Long runs show every few generations.</p>
         </div></details>
@@ -432,7 +432,7 @@
     <div class="step-body">
       <div class="prose">
         <p>The best test of a model is the real world. Few human traits show a clear intermediate phenotype, but the ability to taste bitter compounds such as PTC (the "supertaster" trait) comes close: heterozygotes often taste moderately, so you can count all three genotypes in a class and test Hardy-Weinberg with chi-square.</p>
-        <p>Optional: build the same model yourself in a real spreadsheet such as <a href="https://sheets.google.com" target="_blank" rel="noopener">Google Sheets</a>, using the formulas in the Build step. The manual also suggests more powerful free models, such as Jon Herron's <a href="http://faculty.washington.edu/herronjc/SoftwareFolder/AlleleA1.html" target="_blank" rel="noopener">AlleleA1</a>.</p>
+        <p>Optional: build the same model yourself in a real spreadsheet such as <a href="https://sheets.google.com" target="_blank" rel="noopener">Google Sheets</a>, using the formulas in the Build step. More powerful free models exist, such as Jon Herron's <a href="http://faculty.washington.edu/herronjc/SoftwareFolder/AlleleA1.html" target="_blank" rel="noopener">AlleleA1</a>.</p>
       </div>
       <div id="reflect-prompts" class="prompts-2"></div>
     </div>
@@ -620,7 +620,7 @@ const Predict = (function () {
     { type: 'mc', q: 'Polydactyly is caused by a dominant allele, yet it is rare. What does this tell you?', choices: ['Dominant alleles always become common over time', 'Dominance describes how alleles interact in a heterozygote, not how common an allele is', 'The population cannot be in Hardy-Weinberg equilibrium', 'Polydactyly must be caused by a recessive allele after all'], answer: 1, explain: 'Allele frequency depends on the population\'s history (mutation, selection, drift, migration), not on dominance. A dominant allele can have a very small p.' },
     { type: 'mc', q: 'In the spreadsheet, a cell contains <code>=IF(RAND()&lt;=D$2,"A","B")</code> and D2 = 0.7. What does the cell do?', choices: ['Always shows A, because 0.7 is more than half', 'Shows A about 70% of the time and B about 30% of the time', 'Shows A in 7 of every 10 rows, in order', 'Shows the value 0.7 rounded to a letter'], answer: 1, explain: 'RAND() is a new random number from 0 to 1 at each recalculation. It is ≤ 0.7 with probability 0.7, so the cell draws an A gamete with probability p.' },
     { type: 'multi', q: 'Which conditions must hold for allele frequencies to stay constant (Hardy-Weinberg equilibrium)? Choose all that apply.', choices: ['Very large population', 'Random mating', 'No natural selection', 'No mutation', 'No migration (gene flow)', 'The dominant allele is the more common one'], answer: [0, 1, 2, 3, 4], explain: 'Breaking any of the first five conditions can change allele or genotype frequencies. Dominance plays no role in the equilibrium.' },
-    { type: 'mc', q: 'A class of 24 students runs the card simulation with no selection. After five generations p has moved from 0.50 to 0.35. The most likely explanation is…', choices: ['Selection against A', 'Genetic drift: random sampling error in a small population', 'Mutation from A to B', 'The Hardy-Weinberg equation is wrong'], answer: 1, explain: 'With only 48 alleles per generation, chance alone moves p noticeably. This is why the manual warns that classroom-sized simulations are dominated by drift.' }
+    { type: 'mc', q: 'A class of 24 students runs the card simulation with no selection. After five generations p has moved from 0.50 to 0.35. The most likely explanation is…', choices: ['Selection against A', 'Genetic drift: random sampling error in a small population', 'Mutation from A to B', 'The Hardy-Weinberg equation is wrong'], answer: 1, explain: 'With only 48 alleles per generation, chance alone moves p noticeably. Small populations are strongly affected by genetic drift, so classroom-sized simulations show big random swings.' }
   ], { id: 'prelab' });
 
   /* ---------------- Punnett square diagram ---------------- */
@@ -1266,7 +1266,7 @@ const Predict = (function () {
   /* ================= REFLECT ================= */
   [
     ['r-strengths', 'What are the strengths and limitations of your model? Name at least two simplifying assumptions and say whether each matters for the question you studied.'],
-    ['r-class', 'The manual says classroom simulations with candies, beans or cards often mislead students about Hardy-Weinberg. Using your card and spreadsheet results, explain why.'],
+    ['r-class', 'Classroom simulations with candies, beans or cards can mislead students about Hardy-Weinberg. Using your card and spreadsheet results, explain why.'],
     ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 3 }));

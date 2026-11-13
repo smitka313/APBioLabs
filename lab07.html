@@ -203,7 +203,7 @@
   <section class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="10">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body">
-      <p class="txt">These questions come from the manual's Getting Started discussion and the calculations you will do later. Check each answer; the explanation appears after you check.</p>
+      <p class="txt">These questions review key ideas and the calculations you will do later. Check each answer; the explanation appears after you check.</p>
       <div id="prelab" class="quiz--cols"></div>
       <div id="prelab-prompts" class="prompts-2"></div>
     </div>
@@ -326,7 +326,7 @@
 
       <h3>Class data</h3>
       <p class="txt">One group's three tips are not enough to beat the noise. Pool your counts with the rest of the class (seven other lab groups, simulated).</p>
-      <div class="btnrow"><button class="btn btn--primary" id="rt-class" type="button">Add class data</button><button class="btn btn--sm" id="rt-sample" type="button">Use the manual's sample totals instead</button><button class="btn btn--sm btn--ghost" id="rt-class-clear" type="button">Clear class data</button></div>
+      <div class="btnrow"><button class="btn btn--primary" id="rt-class" type="button">Add class data</button><button class="btn btn--sm" id="rt-sample" type="button">Use typical classroom totals instead</button><button class="btn btn--sm btn--ghost" id="rt-class-clear" type="button">Clear class data</button></div>
       <div id="rt-class-table"></div>
       <div class="readouts" style="margin-top:10px">
         <div class="readout"><span class="k">Control MI, mean ± SD (%)</span><span class="v" id="rt-mean-c">—</span></div>
@@ -336,7 +336,7 @@
 
       <h3>Chi-square test</h3>
       <div class="chi-wrap">
-        <p class="txt">Null hypothesis: the lectin has no effect, so treated roots have the same proportion of cells in mitosis as control roots. The manual gives two ways to get expected values; both have df = 1 and a critical value of 3.84 at <i>p</i> = 0.05.</p>
+        <p class="txt">Null hypothesis: the lectin has no effect, so treated roots have the same proportion of cells in mitosis as control roots. There are two ways to get expected values; both have df = 1 and a critical value of 3.84 at <i>p</i> = 0.05.</p>
         <div class="field"><span class="label" id="chi-m-lbl">Method</span>
           <div class="seg" role="group" aria-labelledby="chi-m-lbl"><button type="button" id="chi-m-gof" data-m="gof" aria-pressed="true">Expected from control %</button><button type="button" id="chi-m-ct" data-m="ct" aria-pressed="false">2 × 2 table (Tables 2–4)</button></div></div>
         <div id="chi-obs"></div>
@@ -974,7 +974,7 @@ Lab.quiz('#prelab', [
   { type: 'mc', q: 'A cell has lined up its chromosomes, but one kinetochore is not attached to any spindle microtubule. Which checkpoint stops it from entering anaphase?', choices: ['G<sub>1</sub> checkpoint', 'G<sub>2</sub> checkpoint', 'M-spindle (metaphase) checkpoint', 'No checkpoint; anaphase starts on a timer'], answer: 2, explain: 'The M-spindle checkpoint holds the cell in metaphase until every kinetochore is attached, preventing chromatids from going to the wrong pole.' },
   { type: 'mc', q: 'MPF activity falls sharply at the end of mitosis because…', choices: ['the CDK is degraded', 'cyclin is degraded, leaving CDK inactive', 'DNA replication turns it off', 'growth factors are removed'], answer: 1, explain: 'CDK levels stay fairly constant; cyclin is destroyed at the end of M, and CDK without cyclin is inactive. New cyclin must build up again during the next interphase.' },
   { type: 'mc', q: 'What is the <strong>null</strong> hypothesis for the lectin experiment?', choices: ['Lectin increases the proportion of cells in mitosis.', 'Lectin has no effect on the proportion of root-tip cells in mitosis.', 'Lectin decreases root growth.', 'Control roots will have no cells in mitosis.'], answer: 1, explain: 'The null hypothesis states there is no difference between treated and control groups. The experimental hypothesis (lectin raises the mitotic index) is different; your data either reject the null or fail to reject it.' },
-  { type: 'num', q: 'In the manual\'s sample data, control roots had 25 mitotic cells out of 173. Treated roots had 249 cells in total. If lectin had no effect, how many treated cells would you <strong>expect</strong> to be in mitosis?', answer: 35.98, tol: 0.5, unit: 'cells', explain: 'Control proportion in mitosis = 25 ÷ 173 = 0.1445. Expected treated mitotic cells = 0.1445 × 249 ≈ 36.0. (The treated roots actually had 88.)' },
+  { type: 'num', q: 'In typical classroom sample data, control roots had 25 mitotic cells out of 173. Treated roots had 249 cells in total. If lectin had no effect, how many treated cells would you <strong>expect</strong> to be in mitosis?', answer: 35.98, tol: 0.5, unit: 'cells', explain: 'Control proportion in mitosis = 25 ÷ 173 = 0.1445. Expected treated mitotic cells = 0.1445 × 249 ≈ 36.0. (The treated roots actually had 88.)' },
   { type: 'num', q: 'A student scores 62 <i>Sordaria</i> asci: 30 show a 4:4 pattern and 32 show crossover patterns. What is the gene-to-centromere distance?', answer: 25.8, tol: 0.2, unit: 'map units', explain: '% crossover asci = 32 ÷ 62 × 100 = 51.6%. Divide by 2: 51.6 ÷ 2 = 25.8 map units, close to the published 26.' },
   { type: 'mc', q: 'Why is the percentage of crossover asci divided by 2 to get map units?', choices: ['Each ascus has two nuclei.', 'Only two of the four chromatids in a tetrad take part in a single crossover, so half the spores in a crossover ascus are recombinant.', 'Sordaria is diploid.', 'Mitosis after meiosis doubles the spore number.'], answer: 1, explain: 'A single crossover involves two of the four chromatids. The other two are parental, so only half of the spores in a crossover ascus are recombinant. Map units count recombinant products, not recombinant asci.' }
 ], { id: 'prelab' });
@@ -1383,7 +1383,7 @@ $('#rt-class').addEventListener('click', () => {
   }
   Lab.store.set('rt-sim', sim); classUpdate();
 });
-$('#rt-sample').addEventListener('click', () => { Lab.store.set('rt-sim', [{ g: 'Manual sample (pooled)', ci: 148, cm: 25, cmi: 100 * 25 / 173, ti: 161, tm: 88, tmi: 100 * 88 / 249 }]); tabC.clear(); tabT.clear(); classUpdate(); });
+$('#rt-sample').addEventListener('click', () => { Lab.store.set('rt-sim', [{ g: 'Sample data (pooled)', ci: 148, cm: 25, cmi: 100 * 25 / 173, ti: 161, tm: 88, tmi: 100 * 88 / 249 }]); tabC.clear(); tabT.clear(); classUpdate(); });
 $('#rt-class-clear').addEventListener('click', () => { Lab.store.set('rt-sim', []); classUpdate(); });
 
 /* ---- Chi-square for Part 2 ---- */
@@ -2152,7 +2152,7 @@ Lab.gate('#rt-record', () => rtMarked() > 0 ? '' : 'Mark some cells first');
 Lab.gate('#chi-run', () => rtHasObs() ? '' : 'Record tips from both jars or add class data first');
 Lab.gate('#chi-checkexp', () => rtHasObs() ? '' : 'Record tips from both jars or add class data first');
 $('#rt-class').addEventListener('click', () => Lab.toast('Added class data from 7 simulated groups', { type: 'ok', announce: false, key: 'rt-class' }));
-$('#rt-sample').addEventListener('click', () => Lab.toast("Loaded the manual's sample totals", { type: 'info', announce: false, key: 'rt-class' }));
+$('#rt-sample').addEventListener('click', () => Lab.toast("Loaded typical classroom totals", { type: 'info', announce: false, key: 'rt-class' }));
 $('#chi-run').addEventListener('click', () => { const d = $('#chi-out .decision'); if (d) Lab.toast(d.classList.contains('rej') ? 'χ² calculated: reject the null hypothesis' : 'χ² calculated: fail to reject the null hypothesis', { type: 'info', announce: false, key: 'chi' }); });
 
 /* ---- Part 3: karyotypes ---- */
