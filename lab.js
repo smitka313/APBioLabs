@@ -1717,6 +1717,7 @@
         prev ? h('a', { class: 'btn pager-prev', href: '#' + prev.id, rel: 'prev' }, h('span', { 'aria-hidden': 'true' }, '←'), h('span', null, 'Back', h('span', { class: 'pager-name' }, ': ' + partName(prev, i - 1)))) : h('span', { class: 'pager-gap' }),
         h('span', { class: 'pager-mid' }, saveStatusEl(), h('span', { class: 'pager-pos' }, `Part ${i + 1} of ${steps.length}`),
           h('button', { class: 'linkbtn pager-all', type: 'button', onclick: () => setAllParts(true) }, 'Show all parts on one page'),
+          IS_LAB ? h('button', { class: 'linkbtn pager-pause', type: 'button', 'aria-haspopup': 'dialog', onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, 'Pause & bookmark') : null,
           h('span', { class: 'pager-tip' }, 'Tip: use ← → to move between parts')),
         next ? h('a', { class: 'btn btn--primary pager-next', href: '#' + next.id, rel: 'next' }, h('span', null, 'Next', h('span', { class: 'pager-name' }, ': ' + partName(next, i + 1))), h('span', { 'aria-hidden': 'true' }, '→'))
           : h('a', { class: 'btn pager-next', href: 'index.html' }, h('span', null, 'All labs'), h('span', { 'aria-hidden': 'true' }, '→'))));
@@ -1817,7 +1818,9 @@
       setupNavScroll(nav);
       const tog = h('button', { class: 'btn btn--sm parts-toggle', type: 'button', 'aria-pressed': String(!pages.on), 'aria-label': 'Show all parts on one page', title: 'Show all parts on one page',
         onclick: () => setAllParts(pages.on) }, h('span', { class: 'pt-icon', 'aria-hidden': 'true' }), h('span', { class: 'pt-text' }, 'All parts'));
-      wrap.append(h('div', { class: 'nav-end' }, navProgressEl, steps.length > 1 ? tog : null));
+      const pauseBtn = h('button', { class: 'btn btn--sm pause-btn', type: 'button', 'aria-label': 'Pause and bookmark', title: 'Pause and bookmark: save and remember where you stopped', 'aria-haspopup': 'dialog',
+        onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, h('span', { class: 'pb-icon', 'aria-hidden': 'true' }), h('span', { class: 'pb-text' }, 'Pause'));
+      wrap.append(h('div', { class: 'nav-end' }, navProgressEl, pauseBtn, steps.length > 1 ? tog : null));
       addCopyLinks(steps);
       workListeners.push(updateProgress);
       setTimeout(updateProgress, 0);
@@ -1853,10 +1856,16 @@
     });
     if (o.resume) {
       const el = typeof o.resume === 'string' ? $(o.resume) : o.resume;
-      const last = gstore.get('last');
+      let last = gstore.get('last');
+      /* A "Pause & bookmark" is the student's own note of where they stopped: use it while it is at least as new as the last part visited. */
+      const bm = gstore.get('bookmark');
+      const useBm = !!(bm && /^lab\d\d$/.test(bm.lab) && (!last || (bm.t || 0) >= (last.t || 0) - 1000 || (last.lab === bm.lab && last.step === bm.step)));
+      if (useBm) last = { lab: bm.lab, step: bm.step, name: bm.name, title: bm.title, t: bm.t };
       if (el && last && /^lab\d\d$/.test(last.lab)) {
         const labName = String(last.title || last.lab).replace(/\s+[—–-]\s+AP Bio (Digital )?Lab Bench$/, '');
-        const hints = gstore.get('hint:' + last.lab, {}) || {}, hr = hints[last.step] || null;
+        const hints = gstore.get('hint:' + last.lab, {}) || {};
+        let hr = hints[last.step] || null;
+        if (useBm && (!hr || !(hr.t > bm.t))) hr = { hint: bm.hint, done: bm.done, t: bm.t };
         const pr = Lab.progress.forLab(last.lab);
         const href = `${last.lab}.html${last.step ? '#' + encodeURIComponent(last.step) : ''}`;
         el.innerHTML = '';
@@ -1866,7 +1875,7 @@
           h('div', { class: 'pickup-main' },
             h('p', { class: 'eyebrow' }, 'Pick up where you left off'),
             h('h2', { class: 'pickup-lab', id: hid }, labName),
-            last.name ? h('p', { class: 'pickup-part' }, 'Part: ', h('strong', null, last.name)) : null,
+            last.name ? h('p', { class: 'pickup-part' }, useBm ? 'You paused at: ' : 'Part: ', h('strong', null, last.name + (useBm && bm.stepNo ? ', step ' + bm.stepNo : ''))) : null,
             hr && hr.hint ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, 'Next: '), hr.hint)
               : hr && hr.done ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, '✓ '), hr.done) : null,
             pr && pr.total ? h('p', { class: 'pickup-prog small muted' }, `${pr.done} of ${pr.total} parts done`) : null),
@@ -1887,6 +1896,74 @@
     if (old && old.hint === rec.hint && old.done === rec.done) return;
     all[sec.id] = rec; gstore.set('hint:' + PAGE.id, all);
   }
+
+  /* ---------------- Pause & bookmark ----------------
+     Lab.pause() saves everything, records the current part and its "Next:" hint as the bookmark (aplab:bookmark =
+     {lab, step, name, stepNo, stepText, hint, done, title, t}; the home page's "Pick up where you left off" card reads it)
+     and opens a calm full-screen card with the transfer code, "Save progress file" and "Keep working". */
+  function plainText(x) { const d = document.createElement('div'); d.innerHTML = x; return (d.textContent || '').replace(/\s+/g, ' ').trim(); }
+  function currentPart() { return (pages.on && pages.cur) || (lastId && document.getElementById(lastId)) || $('section.step'); }
+  function makeBookmark() {
+    flushSaves();
+    const sec = currentPart(); if (!sec) return null;
+    const boxes = $$('.steps-box', sec);
+    const box = boxes.find(b => $('li.si.is-current', b)) || boxes[0] || null;
+    const cur = box && $('li.si.is-current', box);
+    const nx = box && $('.steps-next', box);
+    let hint = '', done = '';
+    if (nx) { const txt = plainText(nx.innerHTML).replace(/^(Next:|✓)\s*/, ''); if (nx.classList.contains('is-complete')) done = txt; else hint = txt; }
+    const rec = {
+      lab: PAGE.id, step: sec.id, name: (sec.dataset.step || '').trim() || 'this part',
+      stepNo: cur ? +($('.si-n', cur) || {}).textContent || 0 : 0, stepText: cur ? plainText($('.si-text', cur) ? $('.si-text', cur).innerHTML : '') : '',
+      hint, done, title: document.title, t: Date.now(),
+    };
+    gstore.set('bookmark', rec);
+    gstore.set('last', { lab: PAGE.id, step: sec.id, name: rec.name, title: document.title, t: rec.t });
+    return rec;
+  }
+  let pauseEl = null, pauseOpener = null;
+  function closePause() {
+    if (!pauseEl) return;
+    pauseEl.remove(); pauseEl = null; document.body.classList.remove('has-pause');
+    document.removeEventListener('keydown', pauseKey, true);
+    if (pauseOpener && pauseOpener.isConnected) { try { pauseOpener.focus(); } catch (e) { /* gone */ } }
+    pauseOpener = null;
+  }
+  function pauseKey(e) {
+    if (!pauseEl) return;
+    if (e.key === 'Escape') { e.preventDefault(); closePause(); return; }
+    if (e.key !== 'Tab') return;
+    const f = $$('button, a[href], [tabindex="0"], textarea', pauseEl).filter(x => !x.disabled && !x.hidden && x.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !pauseEl.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  Lab.pause = function (o = {}) {
+    if (!IS_LAB) return null;
+    closePause();
+    const rec = makeBookmark(); if (!rec) return null;
+    pauseOpener = o.opener || document.activeElement;
+    const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
+    const xfer = transferBlock();
+    const title = h('h2', { class: 'pause-title', id: 'pause-title', tabindex: '-1' }, `You stopped at ${rec.name}${rec.stepNo ? ', step ' + rec.stepNo : ''}.`);
+    pauseEl = h('div', { class: 'pause-screen', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'pause-title', 'aria-describedby': 'pause-sub' },
+      h('div', { class: 'pause-card' },
+        h('p', { class: 'eyebrow' }, 'Paused · ' + cleanTitle(rec.title)),
+        title,
+        h('p', { class: 'pause-sub', id: 'pause-sub' }, 'Your work is saved in this browser.'),
+        rec.hint ? h('p', { class: 'pause-next' }, h('span', { class: 'sn-k' }, 'Next: '), rec.hint) : rec.done ? h('p', { class: 'pause-next' }, h('span', { class: 'sn-k' }, '✓ '), rec.done) : null,
+        h('p', { class: 'small muted' }, 'Come back to the home page and press Resume, or reopen this lab on this computer. To carry on somewhere else, take your work with you.'),
+        h('div', { class: 'pause-actions' },
+          h('button', { class: 'btn btn--primary btn--lg', type: 'button', id: 'pause-keep', onclick: closePause }, 'Keep working'),
+          h('button', { class: 'btn', type: 'button', onclick: () => { const name = saveProgressFile(); status.textContent = `Saved ${name} to your Downloads folder.`; Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file')),
+        h('div', { class: 'pause-xfer' }, xfer),
+        status));
+    document.body.append(pauseEl); document.body.classList.add('has-pause');
+    document.addEventListener('keydown', pauseKey, true);
+    title.focus();
+    return rec;
+  };
 
   /* ---------------- Toasts ----------------
      Lab.toast(msg, {type:'ok'|'info'|'warn'|'bad', timeout, key, announce, action:{label, onClick}}) → {dismiss(), el}

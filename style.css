@@ -721,3 +721,21 @@ details.disclose > .inner > p { max-width: 68ch; }
 .resume-banner > span { flex: 1 1 320px; }
 .resume-banner.is-bad { background: var(--bad-soft); border-color: var(--bad); }
 @media print { .resume-banner, .transfer { display: none !important; } }
+
+/* ---------------- Pause & bookmark ---------------- */
+.pause-btn { padding: 4px 9px; font-size: .8rem; white-space: nowrap; gap: 6px; }
+.pb-icon { display: inline-block; width: 10px; height: 12px; border-inline: 3px solid currentColor; }
+@media (max-width: 1100px) { .pause-btn .pb-text { display: none; } .pause-btn { padding: 6px 8px; } }
+.pager-pause { font-size: .82rem; }
+.pause-screen { position: fixed; inset: 0; z-index: 90; overflow-y: auto; background: var(--bg); display: grid; place-items: start center; padding: max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.pause-card { width: min(720px, 100%); margin-block: auto; display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--accent); border-radius: 14px; padding: clamp(20px, 4vw, 36px); box-shadow: 0 18px 60px color-mix(in srgb, var(--ink) 14%, transparent); }
+.pause-title { font-size: clamp(1.6rem, 4.5vw, 2.3rem); font-weight: 800; letter-spacing: -.02em; }
+.pause-title:focus { outline: none; }
+.pause-sub { font-size: 1.15rem; }
+.pause-next { font-size: 1.05rem; padding: 10px 14px; background: var(--accent-soft); border-radius: var(--r-sm); }
+.pause-next .sn-k { font-weight: 700; color: var(--accent); }
+.pause-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.pause-actions .btn--lg { min-height: 52px; padding-inline: 28px; font-size: 1.1rem; font-weight: 700; }
+.pause-xfer .transfer { margin-top: 4px; }
+body.has-pause { overflow: hidden; }
+@media print { .pause-screen { display: none !important; } }
