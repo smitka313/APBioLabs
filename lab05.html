@@ -422,7 +422,7 @@ const Predict = (function () {
     return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
   }
   /* Direction a prediction claims (+1 up, -1 down, 0 unclear) and a sentence saying whether the actual change agrees. */
-  const dirOf = t => { t = String(t || '').toLowerCase(); const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
+  const dirOf = t => { t = String(t || '').toLowerCase().replace(/^\s*(as|when|if|with)\b[^,;.]*[,;]/, '').split(/\b(?:as|when|while|if|with|across|over|because)\b/)[0]; const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
   const verdict = (pred, actual) => { const p = dirOf(pred); return !p || !actual ? '' : p === actual ? ' That matches the direction you predicted.' : ' That is the opposite of the direction you predicted.'; };
   /* "Y rose from a (at x1) to b (at x2)" for the first series of a chart's options. */
   function seriesTrend(opts, what, unit, digits) {
