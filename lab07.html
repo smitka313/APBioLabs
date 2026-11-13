@@ -575,6 +575,84 @@
 (function () {
 'use strict';
 Lab.init({ id: 'lab07' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -1096,7 +1174,12 @@ $('#mit-check-table').addEventListener('click', () => {
    manual's sample data (25/173 and 88/249). Within mitosis, phases occur in proportion to their
    duration: prophase 45%, metaphase 20%, anaphase 12%, telophase 23%.
    ===================================================================== */
-const MI_MU = { control: 0.145, lectin: 0.353 };
+/* Per-student specimens (seeded): this student's bulbs have a control mitotic index of 0.145 +/- 0.012 and a lectin MI of 0.353 +/- 0.02; the
+   Sordaria crossover probability is 0.52 +/- 0.04 (24-28 map units, published 26); the karyotype spreads are laid out differently. Chromosome
+   counts (46 / 82 / 46) are not affected. */
+const KS = Lab.rng((Lab.identity.seed.seed ^ 0x7b7a) >>> 0), KSALT = Lab.identity.seed.seed % 100003;
+const MI_MU = { control: 0.145 + (KS.uniform() - 0.5) * 0.024, lectin: 0.353 + (KS.uniform() - 0.5) * 0.04 };
+const XO_P = 0.52 + (KS.uniform() - 0.5) * 0.08;
 function pickPhase(R, mi) { if (!R.chance(mi)) return 'I'; const u = R.uniform(); return u < 0.45 ? 'P' : u < 0.65 ? 'M' : u < 0.77 ? 'A' : 'T'; }
 /* The squash is a torn sheet of tissue larger than the field of view: students pan to see all of it.
    Cells are generated in files along the root axis inside an irregular tissue outline; cells in the
@@ -1311,6 +1394,7 @@ const CHI = (function () {
     const ex = expected(), zero = ex.filter(e => !(e[2] > 0) || !isFinite(e[2]));
     if (zero.length) { $('#chi-out').innerHTML = `<div class="feedback bad" role="alert">\u03C7\u00B2 can\u2019t be calculated: the expected count for ${zero.map(e => e[0].toLowerCase()).join(' and ')} is 0, and \u03C7\u00B2 divides by the expected count. Record more tips so every phase has at least one cell, then try again.</div>`; return; }
     const r = ST.chiSquare(ex.map(e => e[1]), ex.map(e => e[2]));
+    Own.key('chi2-lectin', { label: 'Chi-square, lectin vs control (df = 1)', value: +fmt(r.chi2, 2), unit: '', part: 'Root tips' });
     const df = 1, crit = ST.chiCrit(1), crit01 = ST.chiCrit(1, 0.01), rej = r.chi2 >= crit;
     const rows = ex.map((e, i) => [e[0], e[1], fmt(e[2], 1), fmt(e[1] - e[2], 1), fmt((e[1] - e[2]) ** 2, 1), fmt(r.terms[i], 2)]);
     rows.push(['<strong>χ² = Σ (o − e)²/e</strong>', '', '', '', '', `<strong>${fmt(r.chi2, 2)}</strong>`]);
@@ -1395,7 +1479,7 @@ const KARYO = (function () {
   function build() {
     const P = uiPal(), list = SETS[cur].list();
     chroms = list.map((d, i) => ({ d, i }));
-    const R = Lab.rng(cur.length * 131 + 7), placed = [];
+    const R = Lab.rng(cur.length * 131 + 7 + KSALT * 8), placed = [];
     // spread: random non-overlapping-ish positions inside an ellipse, random angles
     chroms.forEach(c => {
       const L = c.d.len * K; let best = null;
@@ -1428,7 +1512,7 @@ const KARYO = (function () {
     defs += `<radialGradient id="k-photo" cx=".5" cy=".48" r=".7"><stop offset="0" stop-color="#f3f1ed"/><stop offset=".7" stop-color="#e7e4df"/><stop offset="1" stop-color="#c9c5bf"/></radialGradient><filter id="k-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.4"/></filter><radialGradient id="k-nuc" cx=".42" cy=".4" r=".62"><stop offset="0" stop-color="#a99fb2"/><stop offset=".8" stop-color="#857a90"/><stop offset="1" stop-color="#6e6279" stop-opacity=".8"/></radialGradient>`;
     let s = `<defs>${defs}</defs>`;
     // photo background for the spread (interphase nuclei nearby, debris), printout background for the karyogram
-    const RN = Lab.rng(cur.length * 17 + 3); let sp = `<rect width="${W}" height="${H}" fill="url(#k-photo)"/>`;
+    const RN = Lab.rng(cur.length * 17 + 3 + KSALT * 8); let sp = `<rect width="${W}" height="${H}" fill="url(#k-photo)"/>`;
     const nz = noise(); if (nz) sp += `<image href="${nz}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" opacity=".14"/>`;
     sp += '<g filter="url(#k-soft)">';
     [[62, 404, 54], [712, 66, 46], [690, 440, 36]].forEach(([nx, ny, nr]) => {
@@ -1444,7 +1528,7 @@ const KARYO = (function () {
     chroms.forEach(c => {
       const L = c.d.len * K, pL = L * c.d.cen, top = -L / 2;
       let g = `<rect class="abn-ring" x="-9" y="${top - 4}" width="18" height="${L + 8}" rx="6" fill="none" style="stroke:${css(P.bad)}" stroke-width="2.4" ${c.d.abn ? '' : 'visibility="hidden"'}/>`;
-      g += chromSVG(c, gids.get(c.d), Lab.rng(c.i * 97 + cur.length * 13 + 1));
+      g += chromSVG(c, gids.get(c.d), Lab.rng(c.i * 97 + cur.length * 13 + 1 + KSALT * 8));
       g += `<rect x="-9" y="${top - 3}" width="18" height="${L + 6}" fill="transparent"/>`;
       g += `<circle class="mk" cx="0" cy="${top + pL}" r="4.5" style="fill:${css(P.acc)};stroke:${css(P.light)}" stroke-width="1.2"/>`;
       s += `<g class="chr${counted[c.i] ? ' counted' : ''}" data-i="${c.i}" style="transform:${tf(c)}">${g}</g>`;
@@ -1618,7 +1702,7 @@ Lab.quiz('#p4-quiz', [
    asci show one of four equally likely patterns (2:2:2:2 or 2:4:2, either orientation);
    parental asci show 4:4 in either orientation. About 14% of asci are still immature.
    ===================================================================== */
-const P_XO = 0.52;
+const P_XO = XO_P;
 (function xoDiagram() {
   const svg = $('#xo-svg'); let xo = false, f1 = false, f2 = false;
   function draw() {
@@ -2031,6 +2115,16 @@ $('#d-run').addEventListener('click', () => { if (dLv() >= 2) Lab.toast(`Scored 
    ANALYZE + REFLECT
    ===================================================================== */
 [['an-class', 'What was the importance of collecting the class data?'], ['an-sig', 'Was there a significant difference between the groups? Give your χ² value and the critical value.'], ['an-lectin', 'Did the fungal pathogen lectin increase the number of root-tip cells in mitosis?'], ['an-more', 'What other experiments should you perform to verify your findings?'], ['an-faster', 'Does a larger number of cells in mitosis mean that these cells are dividing faster than cells in roots with fewer cells in mitosis? Explain.'], ['an-rate', 'What other way could you determine how fast mitosis is occurring in root tips?']].forEach(([k, l]) => Lab.prompt('#an-p2', { key: k, label: l, rows: 3 }));
+{ const tipRows = () => [['control', tabC], ['lectin', tabT]].flatMap(([nm, t]) => t.getRows().filter(r => !r._setup && r.total > 0).map(r => Object.assign({ jar: nm }, r)));
+  Own.personal('#an-p2', { key: 'own-tip', rows: 3, need: 'Root tips (record some tips)', href: 'root-tips',
+    ask: 'Explain one reason this tip might differ from your other tips (where you cut, how well you squashed, which cells you counted).',
+    compute: () => { const r = tipRows(); if (r.length < 3) return null; const avg = {}; ['control', 'lectin'].forEach(j => { const g = r.filter(x => x.jar === j); if (g.length) avg[j] = 100 * ST.sum(g.map(x => x.mit)) / ST.sum(g.map(x => x.total)); }); let best = null; r.forEach(x => { if (r.filter(y => y.jar === x.jar).length < 2) return; const d = Math.abs(x.mi - avg[x.jar]); if (!best || d > best.d) best = { d, x }; }); if (!best) return null; const x = best.x; return `Your ${x.jar} tip ${x.tip} had a mitotic index of ${fmt(x.mi, 1)}% (${x.mit} of ${x.total} cells in mitosis), the furthest from your ${x.jar} average of ${fmt(avg[x.jar], 1)}%.`; } });
+  Own.watch(() => { const r = tipRows(); ['control', 'lectin'].forEach(j => { const g = r.filter(x => x.jar === j); if (g.length) Own.key('mi-' + j, { label: 'Mitotic index, ' + j + ' (pooled tips)', value: +fmt(100 * ST.sum(g.map(x => x.mit)) / ST.sum(g.map(x => x.total)), 1), unit: '%', part: 'Root tips' }); }); });
+  const sRows = () => sTab.getRows().filter(r => !r._setup && r.tot > 0);
+  Own.personal('#an-p5', { key: 'own-field', rows: 3, need: 'Sordaria (record some fields)', href: 'sordaria',
+    ask: 'Explain one reason this field might differ from your pooled result, and what you could change to get a more reliable map distance.',
+    compute: () => { const r = sRows(); if (r.length < 2) return null; const T = ST.sum(r.map(x => x.tot)), pooled = 100 * ST.sum(r.map(x => x.r)) / T; const w = r.reduce((a, b) => Math.abs(100 * b.r / b.tot - pooled) > Math.abs(100 * a.r / a.tot - pooled) ? b : a); return `Your field ${w.field} showed ${fmt(100 * w.r / w.tot, 1)}% crossover asci (${w.r} of ${w.tot}), the furthest from your pooled ${fmt(pooled, 1)}%, which gives ${fmt(pooled / 2, 1)} map units (published: 26).`; } });
+  Own.watch(() => { const r = sRows(), T = ST.sum(r.map(x => x.tot)); if (T >= 20) Own.key('map-units', { label: 'Gene-to-centromere distance (Sordaria)', value: +fmt(50 * ST.sum(r.map(x => x.r)) / T, 1), unit: 'map units', part: 'Sordaria' }); }); }
 const cer = $('#an-cer');
 [['C', 'cer-c', 'Claim'], ['E', 'cer-e', 'Evidence (cite mitotic indices, class means ± SD, and χ²)'], ['R', 'cer-r', 'Reasoning (connect lectins, mitogens, and the cell cycle)']].forEach(([L, k, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 5 }); $('label', p).dataset.letter = L; });
 Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'Evidence: cite two mitotic indices (%) or a χ² value.', reasoning: 'Reasoning: link the evidence to the cell cycle.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) the mitotic index of ___ root tips.</p><p><strong>Evidence:</strong> The mitotic index was ___% in the ___ group, compared with ___% in the ___ group (χ² = ___, no units, p ___ 0.05).</p><p><strong>Reasoning:</strong> This happens because ___ (lectin, mitogen, checkpoint, cell cycle) ___.</p>');
@@ -2057,6 +2151,12 @@ Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'E
   });
 })();
 const rf = $('#reflect-prompts');
+{ const fh = Lab.h('div', { class: 'step-frq' }); rf.after(fh);
+  Own.frq(fh, { title: 'Free-response question: lectin and the mitotic index', part: 'Reflect',
+    intro: '<p>Onion root tips are grown in water (control) and in a lectin solution. Root-tip squashes are stained and 200 cells from each treatment are classified as interphase or in mitosis. The mitotic index is the percentage of cells in mitosis. In the control, 29 of 200 cells were in mitosis; in the lectin treatment, 70 of 200 were.</p>',
+    data: () => { const c = Lab.store.get('keyres:mi-control'), l = Lab.store.get('keyres:mi-lectin'); return c && l ? `Your own pooled results: control MI = ${c.value}%, lectin MI = ${l.value}%.` : 'Record root tips from both jars to see your own mitotic indices here.'; },
+    parts: [['a', '<strong>Calculate</strong> the mitotic index of each treatment.'], ['b', '<strong>Identify</strong> the null hypothesis and the control, and state the independent and dependent variables.'], ['c', '<strong>Explain</strong> how a chi-square test would be used on these data, including the degrees of freedom and what a value above the critical value (3.84) means.'], ['d', '<strong>Predict</strong> how a chromosome count would differ between a cell in anaphase of mitosis and a cell in anaphase II of meiosis, and justify your prediction.']],
+    rubric: ['(a) Control 29/200 = 14.5% and lectin 70/200 = 35%.', '(b) Null: lectin has no effect on the proportion of cells in mitosis; control is roots in water; independent variable is lectin; dependent variable is mitotic index.', '(c) Expected counts for lectin come from the control proportions; df = categories - 1 = 1; chi-square above 3.84 means reject the null (p < 0.05), so the difference is unlikely to be chance.', '(d) In mitotic anaphase, sister chromatids separate so each pole receives a full (diploid) set; in anaphase II of meiosis each pole receives a haploid set (n), half as many chromosomes.'] }); }
 Predict.compare(rf, { key: 'reflect-predict', items: [['predict-roottips', 'Before the root tips you predicted:'], ['predict-meiosis', 'Before the meiosis model you predicted:'], ['predict-sordaria', 'Before scoring Sordaria you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Give one number with units from your data. What does any mismatch tell you?', rows: 4 });
 [['wh-1', 'Could the same environmental factors you tested affect how much crossing over occurs in Sordaria (for example humidity or pH)? How would you set up that experiment?'], ['wh-2', 'How do crossing over, independent assortment, segregation, nondisjunction, and random fertilization each affect genetic diversity and evolution?'], ['wh-3', 'Research how a growth factor such as PDGF moves a cell past the G₁ checkpoint. How does this connect to cell communication?'], ['wh-4', 'Choose one tumor suppressor (p53, Rb, BRCA1, or BRCA2) or one virus (HPV). What does it normally do in the cell cycle, and what cancers are linked to its loss?'], ['wh-5', 'Revisit the learning objectives. Which part of mitosis or meiosis could you now teach to another class, and which still confuses you?']].forEach(([k, l]) => Lab.prompt(rf, { key: k, label: l, rows: 3 }));
 })();
