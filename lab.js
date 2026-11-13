@@ -339,7 +339,7 @@
   function legendSwatch(sr, i, type, uid) {
     if (type === 'bar') { const pat = barPattern(`${uid}-${i}`, sr.color, i); return `<svg class="lg-sw" width="20" height="14" viewBox="0 0 20 14" aria-hidden="true">${pat ? `<defs>${pat}</defs>` : ''}<rect x="1" y="1" width="18" height="12" rx="2" style="fill:${pat ? `url(#${uid}-${i})` : sr.color}"/></svg>`; }
     const dash = sr.dash ? '6 4' : DASHES[i % 6];
-    return `<svg class="lg-sw" width="28" height="14" viewBox="0 0 28 14" aria-hidden="true">${sr.line ? `<line x1="1" x2="27" y1="7" y2="7" style="stroke:${sr.color}" stroke-width="2.4"${dash ? ` stroke-dasharray="${dash}"` : ''}/>` : ''}${sr.dots ? markerSvg(MARKERS[i % 6], 14, 7, 3.8, `fill:${sr.color};stroke:var(--surface)`) : ''}</svg>`;
+    return `<svg class="lg-sw" width="28" height="14" viewBox="0 0 28 14" aria-hidden="true">${sr.line ? `<line x1="1" x2="27" y1="7" y2="7" style="stroke:${sr.color}" stroke-width="2.4"${dash ? ` stroke-dasharray="${dash}"` : ''}/>` : ''}${sr.dots ? markerSvg(MARKERS[i % 6], 14, 7, 3.8, `fill:${sr.color};stroke:var(--surface)`).replace(/<circle cx="(\S+)" cy="(\S+)" r="(\S+)"/, '<ellipse cx="$1" cy="$2" rx="$3" ry="$3"') : ''}</svg>`;   // an <ellipse>, so counting a chart's plotted <circle> points never counts the legend
   }
   function niceStep(range, ticks) {
     const raw = range / Math.max(1, ticks), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
