@@ -1176,7 +1176,7 @@ function gelGuidance(P, gel, first, last, doneText) {
   Lab.$(`#${P}-new`).addEventListener('click', () => Lab.toast('New gel poured and ready to load', { type: 'info', announce: false, key: P + '-new' }));
 }
 function layoutGel2() {
-  Lab.results('#g2-sim', {
+  Lab.results('#g2-sim', { start: 'data',
     graph: [{ el: '#meas2 .curve', title: 'Standard curve (semi-log)' }],
     data: [{ el: '#meas2 .mtable', title: 'Band measurements' }]
   });

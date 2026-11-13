@@ -1690,11 +1690,11 @@ function frq(host, o) {
   /* ===================== LAPTOP LAYOUT: results, steps, gates, toasts ===================== */
   const filledP = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
   const isNum = v => typeof v === 'number' && isFinite(v);
-  Lab.results('#tr-sim', {
+  Lab.results('#tr-sim', { start: 'data',
     graph: [{ el: '#tr-chart', title: 'Readings vs time' }, { el: '#tr-bar', title: 'Adjusted rates: mean ± 2 SE' }],
     data: [{ el: '#tr-note2', title: 'Table 2. Individual / group data' }, '#tr-table', '#tr-checkrow', { el: '#tr-note3', title: 'Table 3. Class data: adjusted rates' }, '#tr-summary']
   });
-  Lab.results('#d-sim', {
+  Lab.results('#d-sim', { start: 'data',
     graph: [{ el: '#d-chart', title: 'Rate per area by group' }],
     data: [{ el: '#d-table', title: 'Replicate data' }, { el: '#d-byrow', title: 'Group summary' }, '#d-summary']
   });

@@ -1723,15 +1723,15 @@ function predRecall(host, items) {
   const numOK = v => v != null && v !== '' && isFinite(v);
   const calcFilled = keys => keys.every(k => { const e = $('#calc-' + k); return e && e.value !== ''; });
   const sumRows = () => sumT.getRows();
-  Lab.results('#p1-sim', {
+  Lab.results('#p1-sim', { start: 'data',
     graph: [{ el: '#p1-chart', title: 'Plant mass vs age' }],
     data: [{ el: '#p1-raw', title: 'Harvest data (each plant)' }, { el: '#p1-sum-note', title: 'Summary: your Table 1 and Table 2' }, '#p1-sum', '#p1-check']
   });
-  Lab.results('#p2-sim', {
+  Lab.results('#p2-sim', { start: 'data',
     graph: [{ el: '#p2-chart', title: 'Energy per larva: mean ± 2 SE' }],
     data: [{ el: '#p2-raw', title: 'Barn measurements' }]
   });
-  Lab.results('#d-sim', {
+  Lab.results('#d-sim', { start: 'data',
     graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by level' }, '#d-stat'],
     data: [{ el: '#d-sum', title: 'Summary statistics' }, { el: '#d-raw', title: 'Replicate data' }]
   });
