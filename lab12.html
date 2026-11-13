@@ -277,7 +277,7 @@
             </div></details>
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure</summary><div class="inner">
-        <p>Two bottles with their bottoms cut off are taped together; end A and end B each have a cap holding a cotton ball with 5–10 drops of a test substance. Follow the manual's steps:</p>
+        <p>Two bottles with their bottoms cut off are taped together; end A and end B each have a cap holding a cotton ball with 5–10 drops of a test substance. Follow these steps:</p>
         <ol>
           <li>Start with <strong>distilled water at both ends</strong>, lay the chamber flat, and count after 5 minutes. This control tells you whether something other than your substances (light from a window, a tilt) is moving the flies.</li>
           <li>Predict what the flies will prefer, then test at least four substances, each against distilled water. Change caps between substances.</li>
@@ -319,7 +319,7 @@
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own fruit fly experiment</h2></header>
     <div class="step-body">
       <div class="prose">
-        <p>Now that you've seen how flies respond to single substances, ask your own question. Some starting points from the manual: Do preferred substances share an ingredient? Does a phototactic response override a chemotactic one? Does fly age change geotaxis? Do mutant flies choose differently? Does the flies' choice depend on smell or on sight (try Parafilm)?</p>
+        <p>Now that you've seen how flies respond to single substances, ask your own question. Some starting points: Do preferred substances share an ingredient? Does a phototactic response override a chemotactic one? Does fly age change geotaxis? Do mutant flies choose differently? Does the flies' choice depend on smell or on sight (try Parafilm)?</p>
         <p>Choose the stimuli, set up the chamber, and decide how many trials to run. Swapping ends between trials controls for position effects. Each run below adds one condition to your results so you can compare conditions.</p>
       </div>
       <div id="design-prompts" class="prompts-2"></div>
@@ -877,7 +877,7 @@ Lab.quiz('#prelab', [
   { type: 'mc', q: 'During the pupal stage, most larval tissues disappear. Which process removes them?', choices: ['Mitosis', 'Apoptosis (programmed cell death)', 'Meiosis', 'Fermentation'], answer: 1, explain: 'Apoptosis removes larval cells while imaginal discs grow into adult structures.' },
   { type: 'mc', q: 'Which observation describes a <em>kinesis</em> rather than a taxis?', choices: ['Moths fly straight toward a porch light', 'Woodlice move faster and turn more often in dry air and slow down in humid air, so they collect in damp places', 'Fruit flies climb straight up the wall of a vial', 'Bacteria swim up a sugar gradient by steering toward it'], answer: 1, explain: 'In a kinesis the stimulus changes speed or turning rate, not direction. Animals end up in favorable places without steering toward them.' },
   { type: 'mc', q: 'You tap flies to the bottom of a vial and within 15 seconds most are at the top. This is best described as:', choices: ['Positive phototaxis', 'Positive geotaxis', 'Negative geotaxis', 'Chemokinesis'], answer: 2, explain: 'The flies move against gravity, a negative geotaxis.' },
-  { type: 'mc', q: 'Why does the manual have you start with distilled water on cotton balls at <em>both</em> ends of the choice chamber?', choices: ['Water attracts flies, so it speeds up the experiment', 'It is a control: if flies still gather at one end, something other than the test substance (light, tilt, the chamber) is affecting them', 'To keep the flies from drying out', 'To dilute the test substances'], answer: 1, explain: 'With identical stimuli at both ends, you expect about 50:50. A strong imbalance means there is an uncontrolled variable.' },
+  { type: 'mc', q: 'Why should you start with distilled water on cotton balls at <em>both</em> ends of the choice chamber?', choices: ['Water attracts flies, so it speeds up the experiment', 'It is a control: if flies still gather at one end, something other than the test substance (light, tilt, the chamber) is affecting them', 'To keep the flies from drying out', 'To dilute the test substances'], answer: 1, explain: 'With identical stimuli at both ends, you expect about 50:50. A strong imbalance means there is an uncontrolled variable.' },
   { type: 'num', q: '30 flies are in a chamber with a substance at end A and water at end B. After 5 minutes, 21 are at A and 9 are at B. Calculate χ² for a 50:50 null hypothesis.', answer: 4.8, tol: 0.05, unit: '', explain: 'Expected = 15 at each end. χ² = (21 − 15)²/15 + (9 − 15)²/15 = 2.4 + 2.4 = 4.8.' },
   { type: 'mc', q: 'With 1 degree of freedom, the critical value at p = 0.05 is 3.84. What do you conclude from χ² = 4.8?', choices: ['Fail to reject the null; no preference', 'Reject the null; the difference is unlikely to be due to chance, so the flies show a preference for A', 'The flies were certainly attracted to A with 100% certainty', 'The test needs 2 degrees of freedom'], answer: 1, explain: '4.8 > 3.84, so p < 0.05. Reject the null hypothesis. Chi-square never proves a hypothesis; it says the data are unlikely under the null.' },
   { type: 'mc', q: 'Is the sex of the flies important for your choice-chamber experiment?', choices: ['It cannot matter, since males and females have the same genes', 'It might: females looking for egg-laying sites could respond differently from males, so it is a variable you could test or control', 'Only males respond to stimuli', 'Only if you are using vestigial flies'], answer: 1, explain: 'Sex is a possible variable. You can test it (for example with white-eyed males and red-eyed females) or keep the mix constant across trials.' }
@@ -1100,7 +1100,7 @@ const SUBS = [
   ['mayo', 'Mayonnaise', 0.62, '--surface-2'], ['capers', 'Capers in brine', 0.71, '--s6'], ['jelly', 'Grape jelly', 0.58, '--s5'],
   ['pb', 'Peanut butter', 0.53, '--s4'], ['alka', 'Alka-Seltzer tablet in water (CO₂)', 0.36, '--s3'], ['ammonia', 'Ammonia, dilute', 0.22, '--s3']
 ];
-/* Per-student starting values: this student's flies and odors differ a little from the manual's typical fractions (each target moves by at most ±0.03; water stays 0.50). */
+/* Per-student starting values: this student's flies and odors differ a little from the typical fractions (each target moves by at most ±0.03; water stays 0.50). */
 const jit = (i, target, w = 0.03) => target === 0.5 ? target : Math.max(0.05, Math.min(0.95, Math.round((target + (myU(100 + i, 0, 1) - 0.5) * 2 * w) * 1000) / 1000));
 const SUB = Object.fromEntries(SUBS.map(([id, name, target, col], i) => [id, { id, name, col, target: jit(i, target), k: solveK(jit(i, target), chemA) }]));
 const K_ETH_ADH = solveK(0.38, chemA);
