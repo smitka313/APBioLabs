@@ -105,6 +105,47 @@ T.lab03 = async (b) => {
   await ctx.close();
 };
 
+
+T.lab04 = async (b) => {
+  const ctx = await ctxFor(b); const p = await open(ctx, 'lab04.html');
+  const rows = (sel) => p.locator(sel + ' tbody tr').count();
+  const pr = async (k) => { await p.evaluate(k => { const t = document.getElementById('p-' + k); if (t) { t.value = 'I predict a clear pattern because of diffusion.'; t.dispatchEvent(new Event('input', { bubbles: true })); } }, k); };
+  for (const k of ['predict-sav', 'predict-bags', 'predict-plasmo', 'predict-soak', 'predict-design']) await pr(k);
+  await go(p, 'sa-v'); await p.click('#p1-run'); await p.waitForTimeout(3500);
+  const p1 = [await txt(p, '#p1-time'), await txt(p, '#p1-depth'), await txt(p, '#p1-rate')]; ok(/10\.0/.test(p1[0]), 'lab04: p1 soak finished ' + p1);
+  await go(p, 'model-cells'); await p.click('#p2-run'); await p.waitForTimeout(4500);
+  const p2 = [await txt(p, '#p2-time'), await txt(p, '#p2-max'), await txt(p, '#p2-min')]; ok(/30 min/.test(p2[0]), 'lab04: p2 run finished ' + p2);
+  await go(p, 'plasmolysis'); await p.selectOption('#p3a-sol', 's10'); await p.click('#p3a-run'); await p.waitForTimeout(9500);
+  const p3 = [await txt(p, '#p3a-now'), await txt(p, '#p3a-time')]; ok(parseFloat(p3[1]) > 60, 'lab04: plasmolysis ran ' + p3);
+  await go(p, 'water-potential'); await p.click('#p3b-id'); await p.waitForTimeout(3800);
+  const idn = await rows('#p3b-idtable'); ok(idn === 6, 'lab04: water-bag test table has 6 rows');
+  const idtxt = await p.locator('#p3b-idtable tbody').innerText();
+  await p.click('#p3b-run'); await p.waitForTimeout(3200);
+  const soakN = await rows('#p3b-table'); ok(soakN === 6, 'lab04: soak table has 6 rows');
+  await p.evaluate(() => { const e = document.getElementById('wp-c'); e.value = 0.9; e.dispatchEvent(new Event('input', { bubbles: true })); const t = document.getElementById('wp-i'); t.value = '2'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  const wp = await txt(p, '#wp-psi'); const tm = await txt(p, '#p3b-time');
+  await go(p, 'design'); await p.click('#d-run'); await p.waitForTimeout(3200);
+  const dsl = await txt(p, '#d-slope'); const dn = await rows('#d-raw');
+  // mid-animation: start a second p1 run and reload at once
+  await go(p, 'sa-v'); const before = await rows('#p1-table'); await p.click('#p1-run'); await p.waitForTimeout(300);
+  await reload(p);
+  await go(p, 'sa-v'); const after = await rows('#p1-table'); ok(after === before + 3, 'lab04: a soak interrupted by a reload is finished, not lost (' + before + ' -> ' + after + ')');
+  ok((await txt(p, '#p1-time')).includes('10.0'), 'lab04: p1 readouts at end state after mid-run reload');
+  await go(p, 'model-cells'); ok(JSON.stringify([await txt(p, '#p2-time'), await txt(p, '#p2-max'), await txt(p, '#p2-min')]) === JSON.stringify(p2), 'lab04: p2 readouts restored');
+  await go(p, 'plasmolysis'); ok(parseFloat(await txt(p, '#p3a-time')) >= parseFloat(p3[1]) && (await txt(p, '#p3a-now')) === p3[0], 'lab04: plasmolysis restored (' + await txt(p, '#p3a-now') + ' ' + await txt(p, '#p3a-time') + ')');
+  await go(p, 'water-potential');
+  ok((await p.locator('#p3b-idtable tbody').innerText()) === idtxt, 'lab04: water-bag table restored identically');
+  ok((await txt(p, '#p3b-time')) === tm && await p.inputValue('#wp-c') === '0.9' && (await txt(p, '#wp-psi')) === wp, 'lab04: soak scene and calculator restored (' + await txt(p, '#wp-psi') + ' vs ' + wp + ')');
+  await go(p, 'design'); ok((await txt(p, '#d-slope')) === dsl && dsl !== '—', 'lab04: design analysis restored ' + dsl);
+  // a plasmolysis run restored while still in progress carries on
+  await go(p, 'plasmolysis'); await p.click('#p3a-rinse'); await p.waitForTimeout(2500); await reload(p); await go(p, 'plasmolysis');
+  const t1 = await txt(p, '#p3a-time'); await p.waitForTimeout(1500); const t2 = await txt(p, '#p3a-time');
+  ok(parseFloat(t1) > 0 && parseFloat(t2) >= parseFloat(t1), 'lab04: in-progress plasmolysis resumes from the clock (' + t1 + ' -> ' + t2 + ')');
+  ok((await badges(p)) === 0, 'lab04: no "new" badges after reload');
+  ok(p.errors.length === 0, 'lab04: no page errors ' + p.errors.join('|'));
+  await ctx.close();
+};
+
 if (require.main === module) (async () => {
   const want = process.argv.slice(2), b = await launch();
   for (const k of Object.keys(T)) { if (want.length && !want.includes(k)) continue; console.log('\n== ' + k); await T[k](b); }

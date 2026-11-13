@@ -640,7 +640,8 @@ const Predict = (function () {
 (function () {
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, tok = Lab.color;
-  const rng = Lab.rng();
+  let rng = Lab.rng();   // each simulated run reseeds this from a saved seed, so a run can be replayed after a reload
+  const newSeed = () => Math.floor(Math.random() * 1e9);
   /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
   const V = (() => {
     let n = 0;
@@ -684,9 +685,12 @@ const Predict = (function () {
     ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
   // Runs step(p) for p 0→1 over `secs` seconds; returns {finish()} so a new click can complete the old run instantly.
+  const pendingAnims = new Set();
+  ['pagehide', 'beforeunload'].forEach(ev => window.addEventListener(ev, () => Array.from(pendingAnims).forEach(h => h.finish())));
   function animate(secs, step, done) {
-    let finished = false, el = 0, lp = null;
-    const finish = () => { if (finished) return; finished = true; if (lp) lp.stop(); step(1); done && done(); };
+    let finished = false, el = 0, lp = null; const h = {};
+    const finish = () => { if (finished) return; finished = true; pendingAnims.delete(h); if (lp) lp.stop(); step(1); done && done(); };
+    h.finish = finish; pendingAnims.add(h);
     if (Lab.reducedMotion()) { finish(); return { finish }; }
     lp = Lab.loop(dt => { if (finished) return false; el += dt; const p = Math.min(1, el / secs); if (p >= 1) { finish(); return false; } step(p); });
     lp.start();
@@ -1262,7 +1266,7 @@ const Predict = (function () {
   $('#p1-run').addEventListener('click', () => {
     if (p1Anim) p1Anim.finish();
     p1Preview();
-    const t = +p1t.value, acid = $('#p1-acid').value;
+    const t = +p1t.value, acid = $('#p1-acid').value, sd = newSeed(); rng = Lab.rng(sd);
     const blocks = p1Blocks.map(b => Object.assign(b, { k: depthMM(1, { acid }, true) }));
     const kMean = S.mean(blocks.map(b => b.k));
     const title = 'Cross-sections · tray of ' + (acid === 'hcl' ? '0.1 M HCl' : 'vinegar');
@@ -1279,9 +1283,10 @@ const Predict = (function () {
         p1table.addRow({ blk: b.label.replace('Block ', '') + ' · ' + b.name, dims: dimText(b.d), t, depth: dm, sa: null, v: null, ratio: null, pct: null,
           _sa: g.sa, _v: g.v, _ratio: g.ratio, _pct: pctDiffused(L, W, H, dm / 10) });
       });
+      Lab.store.set('p1-last', { sel: p1sel.map(x => x.value), t, acid, sd });
     });
   });
-  $('#p1-check').addEventListener('click', () => {
+function p1Check() {
     const rows = p1table.getRows(); if (!rows.length) { fbList($('#p1-fb'), ['Run a trial first.']); return; }
     const cols = [['sa', 'surface area'], ['v', 'volume'], ['ratio', 'SA:V'], ['pct', '% diffused']];
     const out = rows.map((r, i) => {
@@ -1295,9 +1300,21 @@ const Predict = (function () {
       return lab + (bad.length ? `<span class="pill warn">recheck ${bad.join(', ')}</span>` : '<span class="pill ok">all correct</span>');
     });
     fbList($('#p1-fb'), out);
-  });
+  }
+  $('#p1-check').addEventListener('click', () => { p1Check(); Lab.store.set('chk-p1Check', true); });
   ['#p1-table', '#p2-table'].forEach(sel => $(sel).addEventListener('input', e => { if (e.target.matches('input')) V.cell($(sel), e.target.dataset.r, e.target.dataset.k, ''); }));
-  $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; });
+  $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; Lab.store.set('chk-p1Check', false); });
+  /* Reload: show the last soak at its end state again (blocks, acid fronts, readouts) and the last check. */
+  { const sv = Lab.store.get('p1-last');
+    if (sv && p1table.getRows().length) {
+      p1sel.forEach((x, i) => { if (sv.sel && sv.sel[i]) x.value = sv.sel[i]; }); p1t.value = sv.t; p1t.dispatchEvent(new Event('input')); $('#p1-acid').value = sv.acid; p1Preview();
+      rng = Lab.rng(sv.sd);
+      const blocks = p1Blocks.map(b => Object.assign(b, { k: depthMM(1, { acid: sv.acid }, true) })), kMean = S.mean(blocks.map(b => b.k));
+      blocks.forEach(b => { b.dcm = b.k * Math.sqrt(sv.t) / 10; });
+      drawBlocks(p1cv, blocks, 'Cross-sections · tray of ' + (sv.acid === 'hcl' ? '0.1 M HCl' : 'vinegar'), { beaker: true });
+      $('#p1-time').textContent = fmt(sv.t, 1) + ' min'; $('#p1-depth').textContent = fmt(kMean * Math.sqrt(sv.t), 1) + ' mm'; $('#p1-rate').textContent = fmt(kMean / Math.sqrt(sv.t), 2) + ' mm/min';
+      if (Lab.store.get('chk-p1Check')) p1Check();
+    } }
   Lab.prompt('#p1-prompts', { key: 'p1-q1', label: 'Compare the front speed (depth ÷ time) in your blocks. Did the acid move faster into small blocks than large ones? Then which SA:V let the acid reach the greatest <em>percentage</em> of the block, and why?', rows: 4 });
   Lab.prompt('#p1-prompts', { key: 'p1-q2', label: 'How might a cell’s shape (not just its size) influence how quickly materials reach every part of it? Use your rod, slab, or plate results as evidence.', rows: 4 });
 
@@ -1374,7 +1391,7 @@ const Predict = (function () {
   $('#p2-run').addEventListener('click', () => {
     if (p2Anim) p2Anim.finish();
     p2Preview();
-    const runNo = (Math.max(0, ...p2table.getRows().map(r => r.run || 0))) + 1;
+    const runNo = (Math.max(0, ...p2table.getRows().map(r => r.run || 0))) + 1, sd = newSeed(); rng = Lab.rng(sd);
     const sims = p2sel.map(([a, b]) => simBag(a.value, SOL[a.value].C, b.value, SOL[b.value].C, 30));
     let phase = 0;
     p2Anim = animate(3.2, p => {
@@ -1393,17 +1410,30 @@ const Predict = (function () {
         p2Bal = { mass: m1, tag: 'BAG ' + (i + 1), load: true };
       });
       drawBags(p2cv, p2State, 1, { balance: p2Bal });
+      Lab.store.set('p2-last', { sd, pairs: p2sel.map(([a, b]) => [a.value, b.value]) });
     });
   });
-  $('#p2-check').addEventListener('click', () => {
+function p2Check() {
     const rows = p2table.getRows(); if (!rows.length) { fbList($('#p2-fb'), ['Run a set of bags first.']); return; }
     let ok = 0; const wrong = [], blank = [], imp = [];
     rows.forEach((r, i) => { V.cell($('#p2-table'), i, 'pct', ''); if (r.pct == null || !isFinite(r.pct)) { blank.push(i + 1); V.cell($('#p2-table'), i, 'pct', 'Enter a number'); } else if (r.pct < -100) { imp.push(i + 1); V.cell($('#p2-table'), i, 'pct', 'Not possible'); } else if (near(r.pct, r._pct, 0.02, 0.15)) ok++; else wrong.push(i + 1); });
     const row = a => `row${a.length > 1 ? 's' : ''} ${a.join(', ')}`;
     if (blank.length || imp.length) { fbList($('#p2-fb'), [(blank.length ? `<span class="feedback bad" role="alert">Fill in the % change for ${row(blank)} before checking.</span> ` : '') + (imp.length ? `<span class="feedback bad" role="alert">% change in ${row(imp)} can\u2019t be below \u2212100% (a bag can\u2019t lose more than all its mass).</span>` : '') + (ok + wrong.length ? ` <span class="pill ${wrong.length ? 'warn' : 'ok'}">${ok} of ${ok + wrong.length} other rows correct</span>` : '')]); return; }
     fbList($('#p2-fb'), [`<span class="pill ${wrong.length ? 'warn' : 'ok'}">${ok} of ${rows.length} correct</span>` + (wrong.length ? ` Recheck row${wrong.length > 1 ? 's' : ''} ${wrong.join(', ')}. Did you divide by the <em>initial</em> mass and multiply by 100?` : '')]);
-  });
-  $('#p2-clear').addEventListener('click', () => { p2table.clear(); $('#p2-fb').innerHTML = ''; });
+  }
+  $('#p2-check').addEventListener('click', () => { p2Check(); Lab.store.set('chk-p2Check', true); });
+  $('#p2-clear').addEventListener('click', () => { p2table.clear(); $('#p2-fb').innerHTML = ''; Lab.store.set('chk-p2Check', false); });
+  { const sv = Lab.store.get('p2-last'), rows = p2table.getRows();
+    if (sv && sv.pairs && rows.length) {
+      sv.pairs.forEach((pr, i) => { if (p2sel[i]) { p2sel[i][0].value = pr[0]; p2sel[i][1].value = pr[1]; } }); p2Preview();
+      rng = Lab.rng(sv.sd);
+      const sims = p2sel.map(([a, b]) => simBag(a.value, SOL[a.value].C, b.value, SOL[b.value].C, 30)), pcts = [];
+      sims.forEach((sm, i) => { const m = sm.masses[30]; p2State[i].ratio = m / sm.masses[0]; p2State[i].flux = sm.flux[30]; p2State[i].top = (m >= sm.masses[0] ? '+' : '') + fmt(100 * (m / sm.masses[0] - 1), 1) + '%'; pcts.push(100 * (m / sm.masses[0] - 1)); });
+      const last = rows[rows.length - 1]; p2Bal = { mass: last.m1, tag: 'BAG ' + last.bag, load: true };
+      drawBags(p2cv, p2State, 1, { balance: p2Bal });
+      $('#p2-time').textContent = '30 min'; $('#p2-max').textContent = fmt(Math.max(...pcts), 1) + '%'; $('#p2-min').textContent = fmt(Math.min(...pcts), 1) + '%';
+      if (Lab.store.get('chk-p2Check')) p2Check();
+    } }
   Lab.prompt('#p2-prompts', { key: 'p2-q1', label: 'Which pair(s) showed no meaningful change in mass? Explain why, including the water–water control and the ovalbumin bag.', rows: 4 });
   Lab.prompt('#p2-prompts', { key: 'p2-q2', label: 'If you compared 1 M solutions, was 1 M NaCl more or less hypertonic than 1 M sucrose and 1 M glucose <em>in your data</em>? Based on −iCRT, which should be most hypertonic? Suggest why the tubing results might differ.', rows: 5 });
   Lab.prompt('#p2-prompts', { key: 'p2-q3', label: 'Does the 5% protein solution have a high molarity? (Ovalbumin has a molar mass of about 45,000 g/mol.) What is your evidence? How could you test whether glucose diffused out of its bag?', rows: 4 });
@@ -1599,20 +1629,37 @@ const Predict = (function () {
     p3RenderAt = performance.now();
   }
   function setTargets() { const po = psiOf(p3Bath); cells.concat(p3Extra).forEach(c => { c.target = po >= c.psi0 ? 1 : 0.15 + 0.85 * c.psi0 / po; }); }
-  function p3Start() {
+  const p3Step = ds => { cells.concat(p3Extra).forEach(c => { c.f += (c.target - c.f) * (1 - Math.exp(-ds / c.tau)); }); p3T += ds; $('#p3a-time').textContent = fmt(p3T, 0) + ' s'; };
+  // fromT: simulated seconds already elapsed (a run restored after a reload carries on from there)
+  function p3Start(fromT) {
     if (p3Loop) p3Loop.stop();
-    p3T = 0; setTargets();
+    if (fromT == null) { p3T = 0; setTargets(); }
     $('#p3a-now').textContent = p3Bath.name; $('#p3a-psi').textContent = fmt(psiOf(p3Bath), 1) + ' bars';
-    const stepSim = ds => { cells.concat(p3Extra).forEach(c => { c.f += (c.target - c.f) * (1 - Math.exp(-ds / c.tau)); }); p3T += ds; $('#p3a-time').textContent = fmt(p3T, 0) + ' s'; };
-    if (Lab.reducedMotion()) { stepSim(120); drawScope(); return; }
-    p3Loop = Lab.loop(dt => { stepSim(dt * 15); const end = p3T >= 120; if (end || performance.now() - p3RenderAt > 90) drawScope(); if (end) return false; });
+    if (Lab.reducedMotion()) { p3Step(120 - p3T); drawScope(); return; }
+    if (p3T >= 120) { drawScope(); return; }
+    p3Loop = Lab.loop(dt => { p3Step(dt * 15); const end = p3T >= 120; if (end || performance.now() - p3RenderAt > 90) drawScope(); if (end) return false; });
     p3Loop.start();
   }
+  /* The viewing runs on the clock: each solution added is saved with its start time (and the specimen), and after a reload
+     the cells are brought to wherever they would be by now, as at a real bench. */
+  let p3Ops = [];
+  const p3Save = () => Lab.store.set('p3a-ops', { spec: p3Spec, ops: p3Ops.slice(-20) });
+  function p3Add(id) { p3Ops.push([id, Date.now()]); p3Save(); }
   function p3Reset() { if (p3Loop) p3Loop.stop(); p3Spec = $('#p3a-spec').value; cells = makeCells(p3Spec); p3Geo = p3Layout(p3Spec); p3Extra = makeExtra(p3Spec, p3Geo); p3Hud.bar = GEO[p3Spec].bar; p3Bath = P3SOL[0]; p3Added = false; $('#p3a-now').textContent = 'Distilled water'; $('#p3a-psi').textContent = '0.0 bars'; $('#p3a-time').textContent = '—'; drawScope(true); }
-  $('#p3a-spec').addEventListener('change', p3Reset);
-  $('#p3a-run').addEventListener('click', () => { p3Bath = P3SOL.find(s => s.id === p3sel.value); p3Added = true; p3Start(); });
-  $('#p3a-rinse').addEventListener('click', () => { p3Bath = P3SOL[0]; p3Added = true; p3Start(); });
+  $('#p3a-spec').addEventListener('change', () => { p3Reset(); p3Ops = []; p3Save(); });
+  $('#p3a-run').addEventListener('click', () => { p3Bath = P3SOL.find(s => s.id === p3sel.value); p3Added = true; p3Add(p3Bath.id); p3Start(); });
+  $('#p3a-rinse').addEventListener('click', () => { p3Bath = P3SOL[0]; p3Added = true; p3Add(p3Bath.id); p3Start(); });
   p3Reset();
+  { const sv = Lab.store.get('p3a-ops');
+    if (sv && Array.isArray(sv.ops) && sv.ops.length && ['elodea', 'onion'].includes(sv.spec)) {
+      $('#p3a-spec').value = sv.spec; p3Reset(); p3Ops = sv.ops.slice(); const now = Date.now();
+      sv.ops.forEach(([sid, t0], i) => {
+        p3Bath = P3SOL.find(x => x.id === sid) || P3SOL[0]; p3Added = true; setTargets(); p3T = 0;
+        const t1 = i + 1 < sv.ops.length ? sv.ops[i + 1][1] : now; p3Step(Math.min(120, Math.max(0, (t1 - t0) / 1000 * 15)));
+      });
+      p3sel.value = p3Bath.id === 'w' ? p3sel.value : p3Bath.id;
+      p3Start(p3T);   // finished runs draw their end state; one still in progress keeps going
+    } }
   const p3chart = Lab.chart('#p3a-chart', { xLabel: 'Water potential of bathing solution (bars)', yLabel: 'Cells plasmolyzed (%)', yMin: 0, yMax: 100, series: [] });
   const p3table = Lab.table('#p3a-table', {
     save: 'p3a',
@@ -1661,6 +1708,7 @@ const Predict = (function () {
   const idTable = Lab.table('#p3b-idtable', { columns: [{ key: 'cup', label: 'Cup' }, { key: 'm0', label: 'Initial', unit: 'g', num: true }, { key: 'm1', label: 'After 30 min', unit: 'g', num: true }, { key: 'pct', label: '% change', unit: '%', num: true, digits: 1 }], rows: [] });
   $('#p3b-id').addEventListener('click', () => {
     if (idAnim) idAnim.finish();
+    const sd = newSeed(); rng = Lab.rng(sd);
     const sims = secret.map(C => simBag('water', 0, C > 0 ? 'sucrose' : 'water', C, 30));
     let phase = 0;
     idAnim = animate(3, p => {
@@ -1669,15 +1717,26 @@ const Predict = (function () {
       phase += 0.02; drawBags(idcv, idState, phase, { cup: true });
     }, () => {
       Lab.toast('Water-filled bag test finished: see the Data tab', { type: 'ok', announce: false, key: 'idtest' }); idTable.setRows(sims.map((s, i) => { const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return { cup: CUPS[i].c, m0, m1, pct: 100 * (m1 - m0) / m0 }; }));
+      Lab.store.set('id-last', { sd });
     });
   });
+  { const sv = Lab.store.get('id-last');
+    if (sv) {
+      rng = Lab.rng(sv.sd);
+      const sims = secret.map(C => simBag('water', 0, C > 0 ? 'sucrose' : 'water', C, 30));
+      sims.forEach((s, i) => { idState[i].ratio = s.masses[30] / s.masses[0]; idState[i].flux = s.flux[30]; idState[i].sub = fmt(100 * (s.masses[30] / s.masses[0] - 1), 1) + '%'; });
+      drawBags(idcv, idState, 0, { cup: true });
+      idTable.setRows(sims.map((s, i) => { const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return { cup: CUPS[i].c, m0, m1, pct: 100 * (m1 - m0) / m0 }; }), { setup: true });
+    } }
   function refreshConc() { p3bTable.setRows(p3bTable.getRows().map(r => Object.assign(r, { conc: assigned(colorIdx(r.cup)) })), { setup: false }); } // setup:false so rows restored on reload stay the student's work
   for (let i = 0; i < CUPS.length; i++) $('#p3b-as' + i).addEventListener('change', refreshConc);
-  $('#p3b-idcheck').addEventListener('click', () => {
+function idCheck() {
     const res = CUPS.map((c, i) => assigned(i) === secret[i]);
     const n = res.filter(Boolean).length, missing = CUPS.filter((c, i) => assigned(i) == null).length;
     fbList($('#p3b-idfb'), [n === 6 ? '<span class="pill ok">All six correct.</span> Your graph now uses true concentrations.' : `<span class="pill warn">${n} of 6 correct</span> ${missing ? missing + ' still unassigned. ' : ''}Rank the cups by how much mass the water-filled bag lost.`]);
-  });
+  }
+  $('#p3b-idcheck').addEventListener('click', () => { idCheck(); Lab.store.set('chk-idCheck', true); });
+  if (Lab.store.get('chk-idCheck')) idCheck();
   $('#p3b-reveal').addEventListener('click', () => { CUPS.forEach((c, i) => { const s = $('#p3b-as' + i); s.value = String(secret[i]); s.dispatchEvent(new Event('change')); }); });
 
   const p3bcv = Lab.canvas('#p3b-viz', 0.42, { fit: true });
@@ -1717,21 +1776,34 @@ const Predict = (function () {
   });
   if (p3bTable.getRows().length) setTimeout(refreshConc, 0);
   $('#p3b-tissue').addEventListener('change', () => { $('#p3b-tnow').textContent = TISSUE[$('#p3b-tissue').value].name; drawCores(); });
+  function soakCompute(tk, sd) {
+    rng = Lab.rng(sd);
+    const t = TISSUE[tk], off = rng.normal(0, 0.03);
+    const res = CUPS.map((c, i) => { const pct = coreChange(t, secret[i], off), m0 = round(4 + rng.uniform() * 1.6, 0.01); const m1 = round(m0 * (1 + pct / 100) + rng.normal(0, 0.01), 0.01); return { m0, m1 }; });
+    return { t, res };
+  }
   $('#p3b-run').addEventListener('click', () => {
     if (p3bAnim) p3bAnim.finish();
-    const tk = $('#p3b-tissue').value, t = TISSUE[tk], off = rng.normal(0, 0.03);
+    const tk = $('#p3b-tissue').value, sd = newSeed(), { t, res } = soakCompute(tk, sd);
     const setNo = Math.max(0, ...p3bTable.getRows().map(r => r.set || 0)) + 1;
-    const res = CUPS.map((c, i) => { const pct = coreChange(t, secret[i], off), m0 = round(4 + rng.uniform() * 1.6, 0.01); const m1 = round(m0 * (1 + pct / 100) + rng.normal(0, 0.01), 0.01); return { m0, m1 }; });
     $('#p3b-tnow').textContent = t.name;
     p3bAnim = animate(2.6, p => {
       res.forEach((r, i) => { const ratio = 1 + (r.m1 / r.m0 - 1) * (1 - Math.exp(-5 * p)) / (1 - Math.exp(-5)); coreState[i].ratio = ratio; coreState[i].top = (ratio >= 1 ? '+' : '') + fmt(100 * (ratio - 1), 0) + '%'; });
       $('#p3b-time').textContent = fmt(p * 18, 0) + ' h'; drawCores();
     }, () => {
       res.forEach((r, i) => p3bTable.addRow({ set: setNo, tissue: t.name, cup: CUPS[i].c, conc: assigned(i), m0: r.m0, m1: r.m1, pct: 100 * (r.m1 - r.m0) / r.m0 }));
+      Lab.store.set('soak-last', { tk, sd });
     });
   });
+  { const sv = Lab.store.get('soak-last');
+    if (sv && TISSUE[sv.tk] && p3bTable.getRows().length) {
+      $('#p3b-tissue').value = sv.tk; $('#p3b-tnow').textContent = TISSUE[sv.tk].name;
+      const { res } = soakCompute(sv.tk, sv.sd);
+      res.forEach((r, i) => { const ratio = r.m1 / r.m0; coreState[i].ratio = ratio; coreState[i].top = (ratio >= 1 ? '+' : '') + fmt(100 * (ratio - 1), 0) + '%'; });
+      $('#p3b-time').textContent = '18 h'; drawCores();
+    } }
   $('#p3b-clear').addEventListener('click', () => p3bTable.clear());
-  $('#p3b-check').addEventListener('click', () => {
+  function p3bCheck() {
     const tname = TISSUE[$('#p3b-ctissue').value].name;
     const rows = p3bTable.getRows().filter(r => r.tissue === tname && r.conc != null && isFinite(r.conc));
     const xs = new Set(rows.map(r => r.conc));
@@ -1748,7 +1820,9 @@ const Predict = (function () {
     if (isFinite(c)) out.push(near(ps, -c * R * TK, 0.03, 0.05) ? '<span class="pill ok">ψ<sub>S</sub> OK</span> −iCRT with your concentration.' : '<span class="pill warn">ψ<sub>S</sub></span> Use −(1)(C)(0.0831)(295). It should be negative.');
     if (isFinite(ps)) out.push(near(p, ps, 0.01, 0.05) ? '<span class="pill ok">ψ<sub>tissue</sub> OK</span>' : '<span class="pill warn">ψ<sub>tissue</sub></span> At the isotonic point, ψ<sub>tissue</sub> equals ψ of the open-cup solution, where ψ<sub>P</sub> = 0.');
     fbList($('#p3b-fb'), out);
-  });
+  }
+  $('#p3b-check').addEventListener('click', () => { p3bCheck(); Lab.store.set('chk-p3bCheck', true); });
+  if (Lab.store.get('chk-p3bCheck')) p3bCheck();
 
   // Water potential calculator
   (function () {
@@ -1759,7 +1833,11 @@ const Predict = (function () {
       $('#wp-s').textContent = fmt(s, 2) + ' bars'; $('#wp-pp').textContent = fmt(P, 1) + ' bars'; $('#wp-psi').textContent = fmt(s + P, 2) + ' bars';
       $('#wp-note').textContent = s + P < 0 ? 'Relative to pure water (ψ = 0), water would move into this solution or cell.' : s + P > 0 ? 'Positive ψ: pressure exceeds the solute effect, so water would be pushed out toward pure water.' : 'ψ = 0: the same water potential as pure water.';
     }
-    [i, c, t, p].forEach(e => e.addEventListener('input', calc)); calc();
+    let loading = true;
+    [i, c, t, p].forEach(e => e.addEventListener('input', () => { calc(); if (!loading) Lab.store.set('wp', { i: i.value, c: c.value, t: t.value, p: p.value }); }));
+    const sv = Lab.store.get('wp');
+    if (sv) { i.value = sv.i; c.value = sv.c; t.value = sv.t; p.value = sv.p; [c, t, p].forEach(e => e.dispatchEvent(new Event('input'))); }
+    loading = false; calc();
   })();
   Lab.prompt('#p3b-prompts', { key: 'p3b-q1', label: 'Explain how you identified the six color-coded solutions. Which sucrose solution had a water potential equal to that of the plant cells, and how do you know?', rows: 4 });
   Lab.prompt('#p3b-prompts', { key: 'p3b-q2', label: 'Was the water potential the same in the different tissues you tested? How does it compare with what you saw in the Elodea or onion cells? What happened to the potato that sat out dry for three days, and why?', rows: 5 });
@@ -1801,7 +1879,9 @@ const Predict = (function () {
   }
   function dLevels() { return dParse().levels; }
   function dCheckLevels() { const p = dParse(); if (p.msg) V.bad(dLv, p.msg); else V.ok(dLv); return !p.msg; }
+  let dShowFinal = false;
   function dPreview() {
+    if (dShowFinal && dFinalScene()) return;
     const o = IV[dIv.value], lv = dLevels();
     $('#d-const').textContent = o.constant; $('#d-levels-hint').textContent = o.hint; $('#d-dv').textContent = o.dv;
     $('#d-levels-field').hidden = !!o.cat;
@@ -1810,10 +1890,10 @@ const Predict = (function () {
     else if (o.cat) drawBlocks(dcv, o.cats.map(c => ({ d: c.d, label: c.k.split(' ')[0], sub: c.k.split(' ')[1] + ' cm', dcm: depthMM(10) / 10 })), 'Expected look after 10 min in 0.1 M HCl');
     else drawBlocks(dcv, lv.map(v => { const s = o.shape(v); return { d: s.d, label: s.label, sub: dimText(s.d) + ' cm', dcm: (s.dmm != null ? s.dmm : depthMM(10)) / 10 }; }), 'Expected look after 10 min');
   }
-  dIv.addEventListener('change', () => { const o = IV[dIv.value]; if (o.levels) dLv.value = o.levels; V.ok(dLv); dchart.update({ xLabel: o.x, yLabel: o.y }); dPreview(); });
-  dLv.addEventListener('change', () => { dCheckLevels(); dPreview(); });
+  dIv.addEventListener('change', () => { dShowFinal = false; const o = IV[dIv.value]; if (o.levels) dLv.value = o.levels; V.ok(dLv); dchart.update({ xLabel: o.x, yLabel: o.y }); dPreview(); });
+  dLv.addEventListener('change', () => { dShowFinal = false; dCheckLevels(); dPreview(); });
   dcv.onresize = dPreview;
-  const savedIv = Lab.store.get('d-iv'); if (savedIv && IV[savedIv.iv]) { dIv.value = savedIv.iv; if (savedIv.levels) dLv.value = savedIv.levels; }
+  const savedIv = Lab.store.get('d-iv'); if (savedIv && IV[savedIv.iv]) { dIv.value = savedIv.iv; if (savedIv.levels) dLv.value = savedIv.levels; if (savedIv.reps) { dReps.value = savedIv.reps; dReps.dispatchEvent(new Event('input')); } }
   dPreview();
   const dchart = Lab.chart('#d-chart', { xLabel: IV[dIv.value].x, yLabel: IV[dIv.value].y, series: [] });
   const dsum = Lab.table('#d-sum', { columns: [{ key: 'lv', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }, { key: 'ci', label: '±2 SE', num: true, digits: 2 }], rows: [] });
@@ -1838,22 +1918,35 @@ const Predict = (function () {
   }
   const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'rep', label: 'Replicate', num: true, digits: 0 }, { key: 'y', label: 'Result', num: true, digits: 2 }], onChange: dAnalyze });
   let dAnim = null;
+  /* End-of-run picture, rebuilt from the saved trials (used after a reload and when the canvas is resized). */
+  function dFinalScene() {
+    const rows = draw.getRows(), o = IV[dIv.value], lv = dLevels(); if (!rows.length || !lv.length) return false;
+    if (dIv.value === 'sucrose') {
+      const g = groupStats(rows, r => r.lv, r => r.y);
+      drawBags(dcv, lv.map(C => { const a = g.get(C) || [], m = a.length ? S.mean(a) : 0; return { inL: C > 0 ? LIQ.sucrose : LIQ.water, outL: LIQ.water, ratio: 1 + m / 100, flux: 0, label: fmt(C, 2) + ' M', sub: 'in H₂O', top: (m >= 0 ? '+' : '') + fmt(m, 1) + '%' }; }), 0);
+    } else {
+      const full = depthMM(10), blocks = o.cat ? o.cats.map(c => ({ d: c.d, label: c.k.split(' ')[0], sub: c.k.split(' ')[1] + ' cm', dcm: full / 10 })) : lv.map(v => { const s = o.shape(v); return { d: s.d, label: s.label, sub: dimText(s.d) + ' cm', dcm: (s.dmm != null ? s.dmm : full) / 10 }; });
+      drawBlocks(dcv, blocks, 'Soaking · 10.0 min');
+    }
+    return true;
+  }
+  if (draw.getRows().length) { dShowFinal = true; dPreview(); }
   $('#d-run').addEventListener('click', () => {
     if (dAnim) dAnim.finish();
     const o = IV[dIv.value], lv = dLevels(), reps = +dReps.value;
     if (!dCheckLevels()) { dLv.focus(); return; }
     if (!(reps >= 2)) { const dt = dReps.closest('details'); if (dt) dt.open = true; V.bad(dReps, 'Use at least 2 replicates per level. One measurement can\u2019t give a standard error (SE) or error bars.'); return; }
     V.ok(dReps);
-    Lab.store.set('d-iv', { iv: dIv.value, levels: dLv.value });
+    Lab.store.set('d-iv', { iv: dIv.value, levels: dLv.value, reps });
     const rows = [];
     lv.forEach(v => { for (let r = 1; r <= reps; r++) { const y = o.cat ? o.run(o.cats.find(c => c.k === v).d) : o.run(v); rows.push({ lv: v, lvl: o.cat ? v : String(v), rep: r, y }); } });
     if (dIv.value === 'sucrose') {
       const sims = lv.map(C => rows.filter(r => r.lv === C).map(r => r.y));
       let phase = 0;
-      dAnim = animate(2.4, p => { phase += 0.02; drawBags(dcv, lv.map((C, i) => { const m = S.mean(sims[i]) * p; return { inL: C > 0 ? LIQ.sucrose : LIQ.water, outL: LIQ.water, ratio: 1 + m / 100, flux: m >= 0 ? 0.03 * (1 - p) : -0.03 * (1 - p), label: fmt(C, 2) + ' M', sub: 'in H₂O', top: (m >= 0 ? '+' : '') + fmt(m, 1) + '%' }; }), phase); }, () => draw.setRows(rows));
+      dAnim = animate(2.4, p => { phase += 0.02; drawBags(dcv, lv.map((C, i) => { const m = S.mean(sims[i]) * p; return { inL: C > 0 ? LIQ.sucrose : LIQ.water, outL: LIQ.water, ratio: 1 + m / 100, flux: m >= 0 ? 0.03 * (1 - p) : -0.03 * (1 - p), label: fmt(C, 2) + ' M', sub: 'in H₂O', top: (m >= 0 ? '+' : '') + fmt(m, 1) + '%' }; }), phase); }, () => { draw.setRows(rows); dShowFinal = true; });
     } else {
       const blocks = (o.cat ? o.cats.map(c => ({ d: c.d, label: c.k.split(' ')[0], sub: c.k.split(' ')[1] + ' cm', full: depthMM(10) })) : lv.map(v => { const s = o.shape(v); return { d: s.d, label: s.label, sub: dimText(s.d) + ' cm', full: s.dmm != null ? s.dmm : depthMM(10) }; }));
-      dAnim = animate(2.4, p => { blocks.forEach(b => { b.dcm = b.full * Math.sqrt(p) / 10; }); drawBlocks(dcv, blocks, 'Soaking · ' + fmt(p * 10, 1) + ' min'); }, () => draw.setRows(rows));
+      dAnim = animate(2.4, p => { blocks.forEach(b => { b.dcm = b.full * Math.sqrt(p) / 10; }); drawBlocks(dcv, blocks, 'Soaking · ' + fmt(p * 10, 1) + ' min'); }, () => { draw.setRows(rows); dShowFinal = true; });
     }
   });
   const plan = $('#design-plan');
@@ -1925,12 +2018,19 @@ const Predict = (function () {
   let p3aRinsed = false, dTouched = false;
   $('#p3a-rinse').addEventListener('click', () => { p3aRinsed = true; });
   ['#d-iv', '#d-levels', '#d-reps'].forEach(s => { $(s).addEventListener('input', () => { dTouched = true; }); $(s).addEventListener('change', () => { dTouched = true; }); });
-  Lab.results('#p1-sim', { graph: [{ el: '#p1-chart', title: '% of volume reached by acid' }], data: [{ el: '#p1-table', title: 'Your data and calculations' }, '#p1-checkwrap'] });
-  Lab.results('#p2-sim', { graph: [{ el: '#p2-chart', title: 'Mean % change in mass ± 2 SE' }], data: [{ el: '#p2-table', title: 'Your data and calculations' }, '#p2-checkwrap'] });
-  Lab.results('#p3a-sim', { graph: [{ el: '#p3a-chart', title: '% of cells plasmolyzed' }], data: [{ el: '#p3a-table', title: 'Your cell counts' }, '#p3a-clearwrap'] });
+  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
+     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
+  function showData(sim, o) {
+    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
+    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
+    return r;
+  }
+  showData('#p1-sim', { graph: [{ el: '#p1-chart', title: '% of volume reached by acid' }], data: [{ el: '#p1-table', title: 'Your data and calculations' }, '#p1-checkwrap'] });
+  showData('#p2-sim', { graph: [{ el: '#p2-chart', title: 'Mean % change in mass ± 2 SE' }], data: [{ el: '#p2-table', title: 'Your data and calculations' }, '#p2-checkwrap'] });
+  showData('#p3a-sim', { graph: [{ el: '#p3a-chart', title: '% of cells plasmolyzed' }], data: [{ el: '#p3a-table', title: 'Your cell counts' }, '#p3a-clearwrap'] });
   Lab.results('#id-sim', { graph: [], data: [{ el: '#p3b-idtable', title: 'Water-filled bag test' }] });
-  Lab.results('#soak-sim', { graph: [{ el: '#p3b-chart', title: '% change in mass of the cores' }], data: [{ el: '#p3b-table', title: 'Overnight soak data' }, '#p3b-clearwrap'] });
-  Lab.results('#d-sim', { graph: [{ el: '#d-chart', title: 'Results with ±2 SE' }], data: [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw-holder', title: 'Every trial' }] });
+  showData('#soak-sim', { graph: [{ el: '#p3b-chart', title: '% change in mass of the cores' }], data: [{ el: '#p3b-table', title: 'Overnight soak data' }, '#p3b-clearwrap'] });
+  showData('#d-sim', { graph: [{ el: '#d-chart', title: 'Results with ±2 SE' }], data: [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw-holder', title: 'Every trial' }] });
 
   const predP1 = Predict.add('#p1-sim', { key: 'predict-sav', title: 'which block gets the most acid?', label: 'Before you soak the blocks, predict which block (smallest, middle or largest) will have the greatest <em>percentage</em> of its volume reached by acid, and why.', placeholder: 'I predict the ___ block will have the highest % because ___.' });
   Lab.steps('#p1-steps', [
