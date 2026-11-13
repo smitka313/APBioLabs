@@ -54,7 +54,7 @@ const why = (p, btn) => p.evaluate(b => { const e = document.querySelector(b), w
     /* Reflect quotes each prediction */
     await p.evaluate(() => { const s = Array.from(document.querySelectorAll('section.step')).find(x => /^(Evaluate|Reflect)$/.test(x.dataset.step)); Lab.pages.go(s); });
     await p.waitForTimeout(400);
-    let rec = await p.evaluate(() => Array.from(document.querySelectorAll('.pred-recall')).map(e => e.textContent).join('\n'));
+    let rec = await p.evaluate(() => Array.from(document.querySelectorAll('.pred-recall, .pvc-quote')).map(e => e.textContent).join('\n'));
     for (const k of cfg.recall) if (texts[k]) T.ok(rec.includes(texts[k]), `${file}: Reflect quotes the prediction ${k}`);
     T.ok(await p.evaluate(() => !!document.querySelector('#p-ev-pred, #p-r-pred')), `${file}: Reflect has a comparison prompt`);
     /* survives a reload */
@@ -63,7 +63,7 @@ const why = (p, btn) => p.evaluate(b => { const e = document.querySelector(b), w
     for (const sim of cfg.sims) T.ok(await p.inputValue('#p-' + sim.pred) === texts[sim.pred], `${file}: ${sim.pred} still saved after reload`);
     await p.evaluate(() => { const s = Array.from(document.querySelectorAll('section.step')).find(x => /^(Evaluate|Reflect)$/.test(x.dataset.step)); Lab.pages.go(s); });
     await p.waitForTimeout(400);
-    rec = await p.evaluate(() => Array.from(document.querySelectorAll('.pred-recall')).map(e => e.textContent).join('\n'));
+    rec = await p.evaluate(() => Array.from(document.querySelectorAll('.pred-recall, .pvc-quote')).map(e => e.textContent).join('\n'));
     for (const k of cfg.recall) if (texts[k]) T.ok(rec.includes(texts[k]), `${file}: Reflect still quotes ${k} after reload`);
     for (const sim of cfg.sims) { await go(p, sim.btn); await p.waitForTimeout(700); const g = await why(p, sim.btn); T.ok(!/Write your prediction first/.test(g.why), `${file} ${sim.btn}: not re-locked after reload`); }
     /* CER hint */
@@ -92,11 +92,11 @@ const why = (p, btn) => p.evaluate(b => { const e = document.querySelector(b), w
     T.ok(await p.evaluate(() => (Lab.store.get('plate-pred-record') || []).length === 6), 'lab08: predictions saved when the plates are incubated');
     await p.evaluate(() => { const s = Array.from(document.querySelectorAll('section.step')).find(x => x.dataset.step === 'Evaluate'); Lab.pages.go(s); });
     await p.waitForTimeout(400);
-    T.ok(/you predicted/.test(await p.textContent('#ev-recall')), 'lab08: Reflect lists the plate predictions and results');
+    T.ok(/You predicted|Your prediction matched/.test(await p.textContent('#ev-recall')), 'lab08: Reflect lists the plate predictions and results');
     T.ok(await p.evaluate(() => !!document.querySelector('#p-ev-pred')), 'lab08: Reflect has a comparison prompt');
     await p.reload(); await p.waitForTimeout(1000);
     await p.evaluate(() => { const s = Array.from(document.querySelectorAll('section.step')).find(x => x.dataset.step === 'Evaluate'); Lab.pages.go(s); });
-    T.ok(/you predicted/.test(await p.textContent('#ev-recall')), 'lab08: plate predictions still quoted after reload');
+    T.ok(/You predicted|Your prediction matched/.test(await p.textContent('#ev-recall')), 'lab08: plate predictions still quoted after reload');
     const hint = await p.evaluate(() => !!document.querySelector('details.cer-hint'));
     T.ok(hint, 'lab08: CER "Need a hint?" disclosure');
     T.ok(p.errors.length === 0, `lab08: no page errors ${p.errors.join(';')}`);
