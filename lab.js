@@ -1675,14 +1675,38 @@
       const el = typeof o.resume === 'string' ? $(o.resume) : o.resume;
       const last = gstore.get('last');
       if (el && last && /^lab\d\d$/.test(last.lab)) {
-        const labName = String(last.title || last.lab);
+        const labName = String(last.title || last.lab).replace(/\s+[—–-]\s+AP Bio (Digital )?Lab Bench$/, '');
+        const hints = gstore.get('hint:' + last.lab, {}) || {}, hr = hints[last.step] || null;
+        const pr = Lab.progress.forLab(last.lab);
+        const href = `${last.lab}.html${last.step ? '#' + encodeURIComponent(last.step) : ''}`;
         el.innerHTML = '';
-        el.append(h('a', { class: 'btn btn--primary resume-link', href: `${last.lab}.html${last.step ? '#' + encodeURIComponent(last.step) : ''}` }, 'Resume where you left off'),
-          h('span', { class: 'small muted' }, labName + (last.name ? ' · ' + last.name : '')));
+        const hid = 'pickup-title';
+        el.setAttribute('aria-labelledby', hid);
+        el.append(
+          h('div', { class: 'pickup-main' },
+            h('p', { class: 'eyebrow' }, 'Pick up where you left off'),
+            h('h2', { class: 'pickup-lab', id: hid }, labName),
+            last.name ? h('p', { class: 'pickup-part' }, 'Part: ', h('strong', null, last.name)) : null,
+            hr && hr.hint ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, 'Next: '), hr.hint)
+              : hr && hr.done ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, '✓ '), hr.done) : null,
+            pr && pr.total ? h('p', { class: 'pickup-prog small muted' }, `${pr.done} of ${pr.total} parts done`) : null),
+          h('a', { class: 'btn btn--primary btn--lg resume-link', href }, 'Resume', h('span', { class: 'sr-only' }, ' ' + labName + (last.name ? ', ' + last.name : '')), h('span', { 'aria-hidden': 'true' }, ' →')));
         el.hidden = false;
       }
     }
   };
+
+  /* The latest "Next:" hint per lab part is remembered (aplab:hint:<lab> = {<part id>: {hint, done, t}}) so the
+     home page can say what to do when a student comes back. Plain text only. */
+  function rememberHint(boxEl, hint, doneText) {
+    if (!IS_LAB) return;
+    const sec = boxEl && boxEl.closest && boxEl.closest('section.step'); if (!sec || !sec.id) return;
+    const plain = x => { const d = document.createElement('div'); d.innerHTML = x; return (d.textContent || '').replace(/\s+/g, ' ').trim(); };
+    const rec = { hint: plain(hint), done: plain(doneText), t: Date.now() };
+    const all = gstore.get('hint:' + PAGE.id, {}) || {}, old = all[sec.id];
+    if (old && old.hint === rec.hint && old.done === rec.done) return;
+    all[sec.id] = rec; gstore.set('hint:' + PAGE.id, all);
+  }
 
   /* ---------------- Toasts ----------------
      Lab.toast(msg, {type:'ok'|'info'|'warn'|'bad', timeout, key, announce, action:{label, onClick}}) → {dismiss(), el}
@@ -1800,7 +1824,7 @@
       });
       const ci = items[c];
       const nt = ci ? (ci.s.hint || ci.s.text) : (o.doneText || 'All steps done.');
-      if (nt !== lastNext) { lastNext = nt; next.innerHTML = ''; next.append(h('span', { class: 'sn-k' }, ci ? 'Next: ' : '✓ '), h('span', { html: nt })); next.classList.toggle('is-complete', !ci); }
+      if (nt !== lastNext) { lastNext = nt; rememberHint(el, ci ? nt : '', ci ? '' : nt); next.innerHTML = ''; next.append(h('span', { class: 'sn-k' }, ci ? 'Next: ' : '✓ '), h('span', { html: nt })); next.classList.toggle('is-complete', !ci); }
       let tgt = ci && ci.s.target ? resolveEl(ci.s.target) : null;
       if (o.pulse === false) tgt = null;
       if (pulsed !== tgt) { if (pulsed) { pulsed.classList.remove('lab-pulse'); PULSED.delete(pulsed); } if (tgt) { tgt.classList.add('lab-pulse'); PULSED.add(tgt); } pulsed = tgt; }

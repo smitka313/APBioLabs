@@ -672,3 +672,15 @@ details.disclose > .inner > p { max-width: 68ch; }
 .save-status[data-state="bad"] { color: var(--bad); font-weight: 600; }
 .save-status--bar { margin-top: 6px; text-align: right; }
 @media print { .save-status { display: none !important; } }
+
+/* ---------- Home: "Pick up where you left off" ---------- */
+.pickup { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; margin-bottom: 22px; padding: 18px 20px; background: var(--accent-soft); border: 1px solid var(--accent); border-left-width: 6px; border-radius: 12px; }
+.pickup[hidden] { display: none; }
+.pickup-main { flex: 1 1 320px; min-width: 0; display: grid; gap: 4px; }
+.pickup-main p { margin: 0; }
+.pickup .pickup-lab { font-size: clamp(1.25rem, 3vw, 1.6rem); margin: 0; }
+.pickup-part { font-size: 1rem; }
+.pickup-next { font-size: 1rem; color: var(--ink); }
+.pickup-next .sn-k { font-weight: 700; color: var(--accent); }
+.pickup .btn--lg { min-height: 56px; padding-inline: 32px; font-size: 1.15rem; font-weight: 700; flex: 0 0 auto; }
+@media (max-width: 520px) { .pickup .btn--lg { width: 100%; justify-content: center; } }
