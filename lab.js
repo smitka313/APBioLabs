@@ -914,7 +914,44 @@
       confirmText: 'Sign out and erase', onConfirm: doSignOut,
     });
   }
-  Lab.data = { signOut: signOutDialog, labsWithWork, wipe };
+  function startOverAllDialog(opener) {
+    const idn = storedIdentity();
+    const labs = labsWithWork();
+    const list = labs.length
+      ? h('ul', { class: 'dm-labs dm-labs--plain', 'aria-label': 'Labs with saved work' }, labs.map(l => h('li', null, h('span', null, h('strong', null, `Lab ${l.no}`), `: ${l.text}`))))
+      : h('p', { class: 'small muted' }, 'No saved lab work was found. You will still get fresh data.');
+    return dataDialog({
+      id: 'startover', opener, eyebrow: 'Start over', title: 'Start over with all labs?',
+      warn: `This erases all of your lab work in every lab on this computer. ${idn ? 'Your name and class stay, and ' : ''}you get fresh simulated data (a new Dataset ID). It can't be undone.`,
+      body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'Work that will be erased:'), list), saveBlock()],
+      gate: { kind: 'text', label: 'To confirm, type ERASE (capital letters)', expect: 'ERASE', hint: 'The button below turns on when you type ERASE.' },
+      confirmText: 'Erase all my lab work', onConfirm: doStartOverAll,
+    });
+  }
+  function startOverLabDialog(opener) {
+    const no = labNo(LAB_ID), p = gstore.get('progress:' + LAB_ID);
+    return dataDialog({
+      id: 'startlab', opener, eyebrow: 'Start over', title: `Start Lab ${no} over?`,
+      warn: `This erases every answer, data table and saved result on Lab ${no}${p && p.total ? ` (${p.done} of ${p.total} parts done)` : ''} from this computer. Your name, your class and your other labs are not touched. It can't be undone.`,
+      body: [saveBlock({ others: false })],
+      gate: { kind: 'check', label: `I've saved anything I need from Lab ${no}.` },
+      confirmText: `Erase Lab ${no} work`, onConfirm: doStartOverLab,
+    });
+  }
+
+  /* Home page: a small "Manage my data" area under the signed-in line. */
+  function homeManage(host) {
+    const mk = (txt, fn, id) => h('button', { class: 'btn btn--sm', type: 'button', id, 'aria-haspopup': 'dialog', onclick: e => fn(e.currentTarget) }, txt);
+    const box = h('details', { class: 'disclose disclose--sm manage-data' },
+      h('summary', null, 'Manage my data'),
+      h('div', { class: 'inner' },
+        h('p', { class: 'small muted' }, 'Your work is saved only in this browser. On a shared computer, sign out when you finish. Start over erases your lab work but keeps your name.'),
+        h('div', { class: 'row' }, mk('Start over with all labs…', startOverAllDialog, 'md-startover'), mk('Sign out…', signOutDialog, 'md-signout'))));
+    host.append(box);
+    homeManageRefresh = () => { box.hidden = !(storedIdentity() || labsWithWork().length); };
+    homeManageRefresh();
+  }
+  Lab.data = { signOut: signOutDialog, startOverAll: startOverAllDialog, startOverLab: startOverLabDialog, labsWithWork, wipe };
 
   /* ---------------- Responses toolbar: copy all work ---------------- */
   function collectText() {
@@ -950,12 +987,8 @@
       try { await navigator.clipboard.writeText(text); msg.textContent = 'Copied. Paste it into your document or LMS.'; fallback.hidden = true; Lab.toast('Copied all your responses', { type: 'ok', announce: false }); }
       catch (e) { fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select(); msg.textContent = 'Copy is blocked here. Your text is selected below: press Ctrl+C (or ⌘C).'; }
     } }, 'Copy all my responses');
-    const confirmRow = h('div', { class: 'row', hidden: true },
-      h('span', { class: 'small' }, 'Erase every answer and data table on this lab?'),
-      h('button', { class: 'btn btn--sm btn--danger', type: 'button', onclick: () => { store.clearLab(); reloadClean(); } }, 'Erase my work'),
-      h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; } }, 'Keep it'));
-    const clearBtn = h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { confirmRow.hidden = false; } }, 'Start over');
-    el.append(h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn), confirmRow, fallback);
+    const clearBtn = h('button', { class: 'btn btn--ghost btn--sm btn-startover', type: 'button', 'aria-haspopup': 'dialog', onclick: () => startOverLabDialog(clearBtn) }, 'Start over');
+    el.append(h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn), fallback);
     if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') el.append(...reportTools(), transferBlock(), moveWorkPanel());
   };
 
@@ -2034,7 +2067,7 @@
   Lab.home = function (o = {}) {
     setTimeout(startOnboarding, 0);
     handleResumeHash();
-    if (o.identity) { const host = typeof o.identity === 'string' ? $(o.identity) : o.identity; Lab.identity.mount(host, { compact: true }); }
+    if (o.identity) { const host = typeof o.identity === 'string' ? $(o.identity) : o.identity; Lab.identity.mount(host, { compact: true }); if (!$('.manage-data')) homeManage(host); }
     $$('[data-lab-progress]').forEach(el => {
       const p = Lab.progress.forLab(el.dataset.labProgress);
       el.innerHTML = '';
