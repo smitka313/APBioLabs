@@ -879,3 +879,9 @@ body.has-dm { overflow: hidden; }
 .confetti-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 3500; }
 .lab-complete { display: inline-flex; align-items: center; gap: 8px; margin: 8px 0 0; padding: 6px 14px; border: 2px solid var(--ok); border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-weight: 700; }
 @media print { .confetti-canvas, .lab-complete, .nav-ring { display: none !important; } }
+
+/* ---------- "Bench-verified" stamp on the PDF report view (lab.js, "Stamp"): floats beside the title block, never over text ---------- */
+.rv-head { display: flow-root; }
+.rv-stamp { float: right; width: 1.1in; height: 1.1in; margin: -4px 0 4px 14px; shape-outside: circle(50%); }
+.rv-head + .rv-sec { clear: both; }
+@media print { .rv-stamp { break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

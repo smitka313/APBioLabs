@@ -1372,10 +1372,12 @@
       creator: rep.name || 'Student', title: rep.docTitle || rep.title,
       styles: { default: { document: { run: { font: 'Calibri', size: 22 } } } },
       sections: [{
-        properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } },
+        properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080, header: 360 } } },
         headers: { default: new Header({ children: [new Paragraph({ tabStops: [{ type: TabStopType.RIGHT, position: 10080 }], border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '999999', space: 4 } }, children: [
           new TextRun({ text: (rep.name || '(name not entered)') + (rep.period ? ' · Class ' + rep.period : ''), size: 18, color: '444444' }),
-          new TextRun({ text: '\t' + rep.labTitle, size: 18, color: '444444' })] })] }) },
+          new TextRun({ text: '\t' + rep.labTitle, size: 18, color: '444444' }),
+          rep.stamp ? new TextRun({ text: '  ', size: 18 }) : null,
+          rep.stamp ? new ImageRun({ type: 'png', data: rep.stamp.bytes, transformation: { width: 80, height: 80 }, altText: { name: 'Bench-verified stamp', title: 'Bench-verified stamp', description: rep.stamp.alt } }) : null].filter(Boolean) })] }) },
         footers: { default: new Footer({ children: [new Paragraph({ tabStops: [{ type: TabStopType.RIGHT, position: 10080 }], children: [
           new TextRun({ text: 'Dataset ID: ' + rep.datasetId, size: 18, color: '444444' }),
           new TextRun({ children: ['\tPage ', PageNumber.CURRENT, ' of ', PageNumber.TOTAL_PAGES], size: 18, color: '444444' })] })] }) },
@@ -1388,7 +1390,7 @@
   let reportOpener = null, restoreTheme = null;
   function reportHtml(rep) {
     const out = [];
-    out.push(`<header class="rv-head"><p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
+    out.push(`<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
       <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div></dl></header>`);
     if (rep.keyResults && rep.keyResults.length) out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>${rep.keyResults.map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table></section>`);
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
@@ -1413,12 +1415,15 @@
     if (reportOpener) { try { reportOpener.focus(); } catch (e) { /* gone */ } reportOpener = null; }
   }
   function reportKey(e) { if (e.key === 'Escape') closeReport(); }
+  /* The "Bench-verified" stamp for this report (see Stamp); a failure just leaves it out. */
+  function reportStamp(rep) { try { return Lab.stamp.png({ datasetId: rep.datasetId }); } catch (e) { return null; } }
   /* A report was downloaded or sent to the print dialog: the one confetti burst (see Celebrations), only if every part is done. */
   function reportSaved() { try { Lab.celebrate.lab(); } catch (e) { /* never block a download */ } }
   async function openReport(o = {}) {
     closeReport(); flushSaves();
     reportOpener = o.opener || document.activeElement;
     const rep = await renderCharts(collectReport());
+    rep.stamp = reportStamp(rep);
     restoreTheme = forceLight();
     const run = { left: (rep.name || '(name not entered)') + (rep.period ? ' · Class ' + rep.period : ''), right: rep.labTitle, bottomLeft: 'Dataset ID: ' + rep.datasetId };
     const rvStyle = printPageStyle('rv-page-style', run, '.7in .6in .6in');
@@ -1446,7 +1451,7 @@
     collect: collectReport,
     filename: () => reportFileBase(),
     open: openReport, close: closeReport,
-    async docx() { const rep = await renderCharts(collectReport()); try { rep.embed = await makeResumeCode(progressPayload(true)); } catch (e) { rep.embed = ''; } return withNativeRandom(() => buildDocx(rep)); },
+    async docx() { const rep = await renderCharts(collectReport()); rep.stamp = reportStamp(rep); try { rep.embed = await makeResumeCode(progressPayload(true)); } catch (e) { rep.embed = ''; } return withNativeRandom(() => buildDocx(rep)); },
     docxUrls: DOCX_URLS,
   };
 
@@ -3324,6 +3329,76 @@
     return true;
   }
   Lab.celebrate = { lab: celebrateLab, complete: () => CEL.complete, done: celebrated, confetti };
+
+  /* ---------------- "Bench-verified" stamp ----------------
+     A small rotated ink-stamp seal (BENCH-VERIFIED, the Dataset ID and the date) drawn on a canvas, rough-edged and unevenly inked,
+     about −8°, in stamp blue or red. It goes in the .docx page header and at the top of the PDF report view, beside (never over) the text.
+       const s = Lab.stamp.png({ datasetId: 'K7M-2QX', date: new Date(), color: 'blue' | 'red' });
+       s → { dataUrl, bytes: Uint8Array, width, height, alt }      Lab.stamp.render(opts) → the canvas itself
+     The same inputs always give the same stamp (the roughness is seeded from the Dataset ID and date). */
+  const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const stampDate = d => { d = d instanceof Date ? d : new Date(d || Date.now()); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+  function stampRender(o = {}) {
+    const S = 480, id = String(o.datasetId || SEED.datasetId || '').toUpperCase(), date = stampDate(o.date);
+    const ink = o.color === 'red' ? '#a8231c' : '#1b4a9a';
+    const rnd = mulberry32(hash32(id + '|' + date + '|stamp'));
+    const clean = document.createElement('canvas'); clean.width = clean.height = S;
+    const c = clean.getContext('2d'), cx = S / 2, cy = S / 2;
+    c.fillStyle = c.strokeStyle = ink; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    c.lineWidth = 11; c.beginPath(); c.arc(cx, cy, 218, 0, 6.2832); c.stroke();
+    c.lineWidth = 3.5; c.beginPath(); c.arc(cx, cy, 199, 0, 6.2832); c.stroke();
+    c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, 120, 0, 6.2832); c.stroke();
+    const arc = (text, r, mid, size, top) => {
+      c.font = `900 ${size}px "Arial Black", Impact, "Helvetica Neue", Arial, sans-serif`;
+      const sp = size * 0.16, ws = Array.from(text).map(ch => c.measureText(ch).width + sp), total = ws.reduce((a, b) => a + b, 0) - sp;
+      let a = top ? mid - total / r / 2 : mid + total / r / 2;
+      Array.from(text).forEach((ch, i) => {
+        const w = ws[i] - sp, th = a + (top ? 1 : -1) * (w / 2) / r;
+        c.save(); c.translate(cx + Math.cos(th) * r, cy + Math.sin(th) * r); c.rotate(top ? th + Math.PI / 2 : th - Math.PI / 2); c.fillText(ch, 0, 0); c.restore();
+        a += (top ? 1 : -1) * ws[i] / r;
+      });
+    };
+    arc('BENCH-VERIFIED', 152, -Math.PI / 2, 47, true);
+    arc('★ AP BIO LAB BENCH ★', 152, Math.PI / 2, 30, false);
+    c.font = '700 24px Consolas, "Courier New", monospace'; c.fillText('DATASET ID', cx, cy - 52);
+    let fs = 60; c.font = `700 ${fs}px Consolas, "Courier New", monospace`;
+    while (c.measureText(id).width > 200 && fs > 30) { fs -= 2; c.font = `700 ${fs}px Consolas, "Courier New", monospace`; }
+    c.fillText(id, cx, cy - 4);
+    c.lineWidth = 3; c.beginPath(); c.moveTo(cx - 84, cy + 32); c.lineTo(cx + 84, cy + 32); c.stroke();
+    c.font = '700 29px Consolas, "Courier New", monospace'; c.fillText(date, cx, cy + 58);
+    // roughen: tilt −8°, jitter the edge, thin the ink unevenly (low-frequency blotches + pressure gradient + speckle)
+    const out = document.createElement('canvas'); out.width = out.height = S;
+    const x = out.getContext('2d');
+    x.translate(cx, cy); x.rotate(-8 * Math.PI / 180); x.translate(-cx, -cy);
+    [[0, 0, 1], [0.9, 0.4, 0.55], [-0.7, -0.6, 0.55]].forEach(([dx, dy, a]) => { x.globalAlpha = a; x.drawImage(clean, dx, dy); });
+    x.globalAlpha = 1; x.setTransform(1, 0, 0, 1, 0, 0);
+    const img = x.getImageData(0, 0, S, S), d = img.data;
+    const G = 24, grid = new Float32Array((G + 2) * (G + 2)); for (let i = 0; i < grid.length; i++) grid[i] = rnd();
+    const vnoise = (px, py, f) => { const u = px / S * f, v = py / S * f, iu = Math.floor(u), iv = Math.floor(v), fu = u - iu, fv = v - iv, w = G + 2;
+      const g = (i, j) => grid[(((j % w) + w) % w) * w + (((i % w) + w) % w)]; const sm = t => t * t * (3 - 2 * t);
+      const a = g(iu, iv), b = g(iu + 1, iv), cc = g(iu, iv + 1), dd = g(iu + 1, iv + 1);
+      return (a + (b - a) * sm(fu)) * (1 - sm(fv)) + (cc + (dd - cc) * sm(fu)) * sm(fv); };
+    const tilt = rnd() * 6.283, tx = Math.cos(tilt), ty = Math.sin(tilt);
+    for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
+      const i = (py * S + px) * 4; if (!d[i + 3]) continue;
+      const low = vnoise(px, py, 5), mid = vnoise(px + 40, py + 17, 14), hi = vnoise(px * 1.7, py * 1.3, 23);
+      const press = 0.5 + ((px - cx) * tx + (py - cy) * ty) / S * 0.5; // heavier on one side, like a stamp pressed unevenly
+      let a = d[i + 3] / 255 * (0.52 + 0.55 * low + 0.35 * press + 0.5 * (mid - 0.5) + 0.7 * (hi - 0.5));
+      a = Math.min(1, Math.max(0, (a - 0.3) * 2.3));
+      d[i + 3] = Math.round(a * 255);
+    }
+    x.putImageData(img, 0, 0);
+    x.globalCompositeOperation = 'destination-out';   // flecks where the ink skipped
+    for (let i = 0; i < 380; i++) { const a = rnd() * 6.283, rr = 60 + rnd() * 175; x.globalAlpha = 0.55 + rnd() * 0.45; x.beginPath(); x.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 0.6 + rnd() * rnd() * 3, 0, 6.283); x.fill(); }
+    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+    return out;
+  }
+  function stampPng(o = {}) {
+    const cv = stampRender(o), dataUrl = cv.toDataURL('image/png');
+    const bin = atob(dataUrl.split(',')[1]), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return { dataUrl, bytes, width: cv.width, height: cv.height, alt: `Bench-verified stamp: Dataset ID ${o.datasetId || SEED.datasetId}, ${stampDate(o.date)}` };
+  }
+  Lab.stamp = { png: stampPng, render: stampRender, date: stampDate };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountThemeSwitch); else mountThemeSwitch();
 
