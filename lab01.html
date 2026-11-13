@@ -1717,10 +1717,17 @@ const Predict = (function () {
   let dTouched = false;
   ['#d-trait', '#d-pct', '#d-n', '#d-gens', '#d-reps', '#d-env', '#d-herb'].forEach(s => { $(s).addEventListener('input', () => { dTouched = true; }); $(s).addEventListener('change', () => { dTouched = true; }); });
   $('#d-dir').addEventListener('click', () => { dTouched = true; });
-  Lab.results('#gs-sim', { start: 'data', graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
+  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
+     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
+  function showData(sim, o) {
+    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
+    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
+    return r;
+  }
+  showData('#gs-sim', { graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
   Lab.results('#sel-sim', { graph: [{ el: '#hist-sel', title: 'Parents vs generation 1' }], data: [] });
-  Lab.results('#g2-sim', { start: 'data', graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
-  Lab.results('#d-sim', { start: 'data', graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
+  showData('#g2-sim', { graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
+  showData('#d-sim', { graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
 
   Lab.steps('#gs-steps', [
     { id: 'hand', text: 'Hand-count 5 plants', target: '#record', done: () => handTable.getRows().length >= 5, hint: 'Tap a seedling, tap each hair on the <em>right</em> margin, then press <strong>Record my count</strong>.' },
