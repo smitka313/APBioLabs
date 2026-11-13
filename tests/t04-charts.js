@@ -72,7 +72,7 @@ const T = require('./_h');
   await r.evaluate(() => Lab.pages.go(document.querySelector('#p-p1-diagram'))); await r.fill('#p-p1-diagram', 'Prediction first'); await r.waitForTimeout(900); await r.click('#p1-plus7'); await r.waitForTimeout(300);
   await r.click('#p1-harvest'); await r.waitForTimeout(1200);
   const afterHarvest = await r.evaluate(() => ({ circles: document.querySelectorAll('#p1-chart circle').length, note: !!document.querySelector('#p1-chart .chart-empty') }));
-  T.ok(afterHarvest.circles >= 1 && !afterHarvest.note, 'Lab 10 after harvest: the chart already plots a point (no empty-state note once there is data)');
+  T.ok(afterHarvest.circles === 0 && !!afterHarvest.note, 'Lab 10 after harvest (still drying): nothing is plotted yet and the shared empty state shows');
   await r.click('#p1-dry'); await r.waitForTimeout(6500);
   const afterDry = await r.evaluate(() => ({ circles: document.querySelectorAll('#p1-chart circle').length, ticks: Array.from(document.querySelectorAll('#p1-chart svg > text:not(.axis-label)')).map(t => t.textContent) }));
   T.ok(afterDry.circles >= 2, 'Lab 10 after drying: points appear ' + afterDry.ticks);
