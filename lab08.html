@@ -92,7 +92,7 @@
     <div class="step-body split">
       <div class="split-main prose">
       <p class="lede">You will move a jellyfish gene into <em>E. coli</em>. Using the pGLO plasmid, you'll make bacteria competent with calcium chloride, heat-shock them, let them recover, and spread them on three kinds of agar plates. After incubation you'll find out which cells picked up the plasmid, which ones glow green, and how efficient your transformation was.</p>
-      <p>In the virtual bench below you carry out each step of the real protocol. You can follow it exactly, or change a step (skip the ice, shorten the heat shock, add more plasmid) and see how the outcome changes. You'll predict every plate before you see it, count colonies, and calculate transformation efficiency the same way the manual does. Then you'll design your own experiment on what makes transformation work.</p>
+      <p>In the virtual bench below you carry out each step of the real protocol. You can follow it exactly, or change a step (skip the ice, shorten the heat shock, add more plasmid) and see how the outcome changes. You'll predict every plate before you see it, count colonies, and calculate transformation efficiency the standard way. Then you'll design your own experiment on what makes transformation work.</p>
       <div class="callout callout--question"><div class="callout-title">Learning objectives</div>
         <ul>
           <li><strong>IST-1.P</strong> Explain the use of genetic engineering techniques in analyzing or manipulating DNA.</li>
@@ -224,7 +224,7 @@
             <button class="btn btn--ghost btn--sm" id="restart" type="button">Start a new transformation</button>
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure and protocol checklist</summary><div class="inner">
-      <p>Work through the protocol one step at a time. Each step shows the manual's setting by default. Change a setting or press <strong>Skip step</strong> if you want to test what that step does. Before incubation you must predict what each plate will look like.</p>
+      <p>Work through the protocol one step at a time. Each step shows the standard protocol setting by default. Change a setting or press <strong>Skip step</strong> if you want to test what that step does. Before incubation you must predict what each plate will look like.</p>
           <div class="field"><span class="label">Protocol</span><ol id="proto-list" class="proto"></ol></div>
           </div></details>
         </div>
@@ -268,7 +268,7 @@
       </div>
 
       <h3 style="margin:24px 0 8px">Calculate transformation efficiency</h3>
-      <p class="prose small">Use the +pGLO LB/amp plate, as the manual does. Look back at the protocol for the plasmid concentration (0.005 µg/µL) and every volume you added to the +pGLO tube.</p>
+      <p class="prose small">Use the +pGLO LB/amp plate, because it shows the cells that took up the plasmid. Look back at the protocol for the plasmid concentration (0.005 µg/µL) and every volume you added to the +pGLO tube.</p>
       <div class="readouts"><div class="readout"><span class="k">Volumes in your +pGLO tube</span><span class="v" id="vol-list" style="font-size:.9rem">—</span></div></div>
       <div class="row" style="margin-top:12px"><button class="btn btn--sm" id="calc-example" type="button">Show a worked example</button></div>
       <div class="callout callout--tip" id="calc-banner" role="status" hidden><strong>EXAMPLE — not your data.</strong> These numbers come from the pre-lab question (40 colonies, 10 µL of plasmid, 100 µL spread). <button class="btn btn--sm" id="calc-example-clear" type="button">Clear example</button></div>
@@ -286,7 +286,7 @@
       <h3 style="margin:24px 0 8px">Results from your transformations</h3>
       <div id="runs-table"></div>
       <div id="runs-chart"></div>
-      <p class="small muted">Dashed lines mark the range the manual gives for this protocol: 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.</p>
+      <p class="small muted">Dashed lines mark the typical range for this protocol: 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.</p>
     </div>
   </section>
 
@@ -294,7 +294,7 @@
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>What helps or hurts transformation?</h2></header>
     <div class="step-body">
       <div class="prose">
-        <p>Do bacteria take up more plasmid under some conditions than others? Pick one variable from the transformation process, hold everything else at the manual's settings, and measure how efficiency changes. Run several replicate transformations at each level so you can judge variability with error bars (mean ± 2 SE).</p>
+        <p>Do bacteria take up more plasmid under some conditions than others? Pick one variable from the transformation process, hold everything else at the standard protocol settings, and measure how efficiency changes. Run several replicate transformations at each level so you can judge variability with error bars (mean ± 2 SE).</p>
       </div>
       <div id="design-prompts" class="prompts-2"></div>
       <div class="sim sim--fit" id="d-sim">
@@ -308,7 +308,7 @@
             <button class="btn btn--primary" id="d-run" type="button">Run experiment</button>
             <button class="btn btn--ghost btn--sm" id="d-clear" type="button">Clear results</button>
             <details class="more"><summary>More options</summary><div class="inner">
-          <p class="small muted" id="d-controls">Held constant: everything else at the manual's settings.</p>
+          <p class="small muted" id="d-controls">Held constant: everything else at the standard protocol settings.</p>
             </div></details>
           </div>
         </div>
@@ -319,7 +319,7 @@
       </div>
 
       <h3 style="margin:28px 0 8px">Are satellite colonies transformed?</h3>
-      <div class="prose"><p>After 48 hours you may see tiny <strong>satellite colonies</strong> clustered around big colonies on ampicillin plates. The manual asks you to design a test: do satellites carry pGLO? Pick a colony, streak it onto a fresh plate, incubate, and look under room light and UV.</p></div>
+      <div class="prose"><p>After 48 hours you may see tiny <strong>satellite colonies</strong> clustered around big colonies on ampicillin plates. A good test question is whether satellites carry pGLO. Pick a colony, streak it onto a fresh plate, incubate, and look under room light and UV.</p></div>
       <div class="sim sim--fit" id="s-sim">
         <div class="sim-side">
           <div id="s-steps"></div>
@@ -496,7 +496,7 @@ Lab.quiz('#prelab', [
   { type: 'mc', q: 'Transformed cells on an LB/amp plate (no arabinose) will look:', choices: ['Green under UV, because they carry the GFP gene', 'White under room light and not glowing under UV, because AraC keeps GFP switched off without arabinose', 'Blue', 'They will not grow'], answer: 1, explain: 'The GFP gene is present, but it is not transcribed unless arabinose binds AraC. Colonies glow only on LB/amp/ara.' },
   { type: 'num', q: 'You add 10 µL of plasmid at 0.005 µg/µL. What total mass of plasmid DNA did you use?', answer: 0.05, tol: 0.0005, unit: 'µg', explain: '0.005 µg/µL × 10 µL = 0.05 µg.' },
   { type: 'num', q: 'The +pGLO tube holds 250 µL CaCl<sub>2</sub> + 10 µL plasmid + 250 µL LB broth. You spread 100 µL on the LB/amp plate. What fraction of the DNA reached the plate? (3 decimal places)', answer: 0.196, tol: 0.002, unit: '', explain: 'Total volume = 250 + 10 + 250 = 510 µL. Fraction = 100 ÷ 510 = 0.196.' },
-  { type: 'num', q: 'Using your last two answers, 40 colonies grew on the LB/amp plate. What is the transformation efficiency?', answer: 4080, tolPct: 0.03, unit: 'transformants/µg', explain: 'DNA spread = 0.05 µg × 0.196 = 0.0098 µg. Efficiency = 40 ÷ 0.0098 ≈ 4.1 × 10<sup>3</sup> transformants/µg, inside the 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> range the manual expects.' }
+  { type: 'num', q: 'Using your last two answers, 40 colonies grew on the LB/amp plate. What is the transformation efficiency?', answer: 4080, tolPct: 0.03, unit: 'transformants/µg', explain: 'DNA spread = 0.05 µg × 0.196 = 0.0098 µg. Efficiency = 40 ÷ 0.0098 ≈ 4.1 × 10<sup>3</sup> transformants/µg, inside the typical range of 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.' }
 ], { id: 'prelab' });
 
 /* ---------- Color helpers (tokens only) ---------- */
@@ -598,30 +598,30 @@ let S, choices = Object.assign({}, DEFAULTS), stepIdx, plates, tubes, marks, don
 const STEPS = [
   { key: 'sol', title: 'Add transformation solution', skip: false,
     desc: 'Label two tubes "+pGLO" and "−pGLO". Pipette 250 µL of ice-cold transformation solution (50 mM CaCl₂, pH 6.1) into each tube.',
-    opts: () => sel('o-sol', 'Solution', [['cold', 'Ice-cold 50 mM CaCl₂ (manual)'], ['warm', 'CaCl₂ at room temperature'], ['water', 'Sterile water (no CaCl₂)']], choices.sol) },
+    opts: () => sel('o-sol', 'Solution', [['cold', 'Ice-cold 50 mM CaCl₂ (standard)'], ['warm', 'CaCl₂ at room temperature'], ['water', 'Sterile water (no CaCl₂)']], choices.sol) },
   { key: 'prechill', title: 'Place both tubes on ice', skip: true,
     desc: 'Push both tubes down into the crushed ice so the solution stays near 0 °C.', opts: () => '' },
   { key: 'cells', title: 'Add E. coli to each tube', skip: false,
     desc: 'With a sterile loop, pick cells from the starter plate, spin the loop in the solution of each tube until the cells disperse, then pipette up and down to resuspend. Return tubes to ice.',
-    opts: () => sel('o-cells', 'Cells picked', [['one', 'A single colony (manual)'], ['few', '2–4 fat colonies, 1–1.5 mm'], ['smear', 'A large smear from the dense area']], choices.cells) },
+    opts: () => sel('o-cells', 'Cells picked', [['one', 'A single colony (standard)'], ['few', '2–4 fat colonies, 1–1.5 mm'], ['smear', 'A large smear from the dense area']], choices.cells) },
   { key: 'vol', title: 'Add pGLO plasmid to +pGLO tube only', skip: true,
     desc: 'Add plasmid solution (0.005 µg/µL) directly into the cell suspension in the +pGLO tube. Tap to mix. Do not add plasmid to the −pGLO tube.',
-    opts: () => sel('o-vol', 'Plasmid volume', [[2, '2 µL'], [5, '5 µL'], [10, '10 µL (manual)'], [20, '20 µL'], [40, '40 µL']], choices.vol) },
+    opts: () => sel('o-vol', 'Plasmid volume', [[2, '2 µL'], [5, '5 µL'], [10, '10 µL (standard)'], [20, '20 µL'], [40, '40 µL']], choices.vol) },
   { key: 'ice', title: 'Incubate on ice', skip: true,
     desc: 'Keep both tubes on ice so the bottoms touch the ice.',
-    opts: () => sel('o-ice', 'Time on ice', [[2, '2 min'], [5, '5 min'], [10, '10 min (manual)'], [15, '15 min']], choices.ice) },
+    opts: () => sel('o-ice', 'Time on ice', [[2, '2 min'], [5, '5 min'], [10, '10 min (standard)'], [15, '15 min']], choices.ice) },
   { key: 'heat', title: 'Heat shock', skip: true,
     desc: 'Move the tubes straight from ice into the water bath, pushed all the way down, then remove them.',
-    opts: () => sel('o-hsT', 'Water bath temperature', [[22, '22 °C (room temperature)'], [37, '37 °C'], [42, '42 °C (manual)'], [47, '47 °C'], [52, '52 °C']], choices.hsT) +
+    opts: () => sel('o-hsT', 'Water bath temperature', [[22, '22 °C (room temperature)'], [37, '37 °C'], [42, '42 °C (standard)'], [47, '47 °C'], [52, '52 °C']], choices.hsT) +
       `<div class="field"><label for="o-hsTime">Time in bath <output id="o-hsTime-out" class="val">${choices.hsTime} s</output></label><input id="o-hsTime" type="range" min="5" max="120" step="5" value="${choices.hsTime}"></div>` },
   { key: 'ret', title: 'Return tubes to ice', skip: true,
     desc: 'Put both tubes back on ice right away for 2 minutes. The change 0 °C → 42 °C → 0 °C should be fast.', opts: () => '' },
   { key: 'recov', title: 'Add LB broth and let cells recover', skip: false,
     desc: 'Move tubes to the rack. Add 250 µL of LB nutrient broth to each tube, tap to mix, and leave at room temperature.',
-    opts: () => sel('o-recov', 'Recovery time', [[0, 'Plate right away (0 min)'], [5, '5 min'], [10, '10 min (manual)'], [20, '20 min']], choices.recov) },
+    opts: () => sel('o-recov', 'Recovery time', [[0, 'Plate right away (0 min)'], [5, '5 min'], [10, '10 min (standard)'], [20, '20 min']], choices.recov) },
   { key: 'plate', title: 'Spread cells on plates', skip: false,
     desc: 'Flick each tube to resuspend. Using a fresh pipette for each transfer, put the suspension on LB, LB/amp, and LB/amp/ara plates, and spread it with a new sterile loop.',
-    opts: () => sel('o-plateUL', 'Volume per plate', [[50, '50 µL'], [100, '100 µL (manual)'], [150, '150 µL']], choices.plateUL) },
+    opts: () => sel('o-plateUL', 'Volume per plate', [[50, '50 µL'], [100, '100 µL (standard)'], [150, '150 µL']], choices.plateUL) },
   { key: 'incub', title: 'Predict, then incubate at 37 °C', skip: false,
     desc: 'Fill in a prediction for all six plates (below the plates). Then stack the plates upside down and incubate.',
     opts: () => sel('o-incub', 'Incubation time', [[24, '24 hours'], [48, '48 hours']], choices.incub) }
@@ -1550,7 +1550,7 @@ $('#s-run').addEventListener('click', saveSat);
  ['an-eff', [
   ['a-e1', 'Report your calculated transformation efficiency in scientific notation, and show each step (DNA used, fraction spread, DNA spread).'],
   ['a-e2', 'What does your efficiency number mean in terms of cells and DNA?'],
-  ['a-e3', 'The manual says this protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.']]]
+  ['a-e3', 'This protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.']]]
 ].forEach(([el, list]) => list.forEach(([key, label]) => Lab.prompt('#' + el, { key, label, rows: 3 })));
 const cer = $('#cer');
 cer.insertAdjacentHTML('afterend', '<details class="disclose disclose--sm cer-hint"><summary>Need a hint?</summary><div class="inner"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
@@ -1677,7 +1677,7 @@ personalPrompt(myBox1, {
   get() {
     const rs = myRuns(); if (!rs.length) return null;
     const hi = rs.reduce((a, b) => b.eff > a.eff ? b : a), lo = rs.reduce((a, b) => b.eff < a.eff ? b : a);
-    if (rs.length === 1) return `Your run ${hi.run} had <strong>${hi.amp}</strong> colonies on +pGLO LB/amp and ${hi.ara} on LB/amp/ara, an efficiency of <strong>${sciStr(hi.eff)}</strong> transformants/µg (the manual expects 8.0 × 10² to 7.0 × 10³).`;
+    if (rs.length === 1) return `Your run ${hi.run} had <strong>${hi.amp}</strong> colonies on +pGLO LB/amp and ${hi.ara} on LB/amp/ara, an efficiency of <strong>${sciStr(hi.eff)}</strong> transformants/µg (typical results are 8.0 × 10² to 7.0 × 10³).`;
     return `Your lowest-efficiency run (run ${lo.run}: ${lo.amp} colonies, <strong>${sciStr(lo.eff)}</strong> transformants/µg) and your highest (run ${hi.run}: ${hi.amp} colonies, <strong>${sciStr(hi.eff)}</strong>) differ by a factor of ${(hi.eff / lo.eff).toFixed(1)}.`;
   }
 });
@@ -1702,7 +1702,7 @@ frq(partBody('Evaluate'), {
     ['d', '<strong>Identify</strong> two variables she must hold constant to compare the two transformations fairly, and say how you would calculate efficiency from her counts.']],
   rubric: ['(a) The −pGLO LB/amp plate is a negative control; it shows ampicillin kills untransformed cells, so no growth is expected.',
     '(b) Arabinose on the LB/amp/ara plate turns on the <em>GFP</em> gene through AraC; without arabinose GFP is not expressed, even though the cells carry the gene.',
-    '(c) Fewer colonies without heat shock, because the temperature jump helps DNA enter the cells (and about 10-fold fewer matches the manual).',
+    '(c) Fewer colonies without heat shock, because the temperature jump helps DNA enter the cells (and typical classroom results show about 10-fold fewer colonies).',
     '(d) Two valid constants (for example: cell amount/colony size, plasmid volume, time on ice, plated volume) and efficiency = colonies ÷ µg of DNA spread on the plate.']
 });
 </script>
