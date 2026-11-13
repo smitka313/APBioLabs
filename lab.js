@@ -1145,6 +1145,7 @@
      A canvas that cannot be read (a tainted canvas) is left as it is. */
   const PRINT = { snaps: [], restoreTheme: null, on: false };
   function redrawEverything() {
+    quietBadges(900);
     try { CANVASES.forEach(c => c.check()); themeRedraw(); flushResize(); flushFrames(); } catch (e) { /* ignore */ }
   }
   function printPrepare() {
@@ -2028,10 +2029,12 @@
   }
   /* Size and redraw what lives in a part that just became visible. */
   function syncPart(sec) {
+    quietBadges(900);   // redrawing a part that was just shown (or after printing) is not a new result
     CANVASES.forEach(c => { if (sec.contains(c.canvas)) { try { c.check(); } catch (e) { console.warn(e); } } });
     REG.charts.forEach(c => { if (sec.contains(c.el)) { try { c.render(); } catch (e) { console.warn(e); } } });
   }
   function partShown(sec) {
+    quietBadges(900);
     syncPart(sec);
     requestAnimationFrame(() => {
       $$('canvas', sec).forEach(cv => { if (cv.scopeView) { try { cv.scopeView.redraw(); } catch (e) { /* ignore */ } } });
@@ -2592,6 +2595,12 @@
        narrower:     a Scene / Data / Graph switch above the scene; Data and Graph cover the scene in the same box.
      A "new" badge appears on a tab when its table or chart changes while it is not showing. → {select(kind), el} */
   const WIDE_RESULTS = '(min-width: 1280px)';
+  /* The "new" badge on a Data / Graph tab means a result arrived after the student acted. Redraws that are not new results (the page
+     restoring saved data on load, a part being shown again, a theme change, printing) must not raise it: lab.js stays quiet around part
+     shows, theme redraws and print preparation, and a page can say so itself: Lab.results.quiet(fn) runs fn and the badges ignore
+     everything it changes (plus the next 900 ms of asynchronous redraws), e.g. Lab.results.quiet(() => table.setRows(saved)). */
+  let badgeQuietUntil = Date.now() + 1500;   // page load
+  function quietBadges(ms) { badgeQuietUntil = Math.max(badgeQuietUntil, Date.now() + (ms || 900)); }
   Lab.results = function (sim, o = {}) {
     if (typeof sim === 'string') sim = $(sim);
     const stage = $(':scope > .stage', sim);
@@ -2646,7 +2655,7 @@
     apply();
     if ('MutationObserver' in window) {
       const mo = new MutationObserver(recs => {
-        if (!autoToasts.ready) return;
+        if (!autoToasts.ready || Date.now() < badgeQuietUntil) return;   // loading, restoring saved data or re-showing a part: not a new result
         const cur = curKind();
         recs.forEach(r => { const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
       });
@@ -2655,6 +2664,7 @@
     sim.classList.add('has-results');
     return { el: main, select(k) { const i = tabs.findIndex(t => t.k === k); if (i >= 0) { if (mq.matches) { if (k !== 'scene') wideSel = k; } else narrowSel = k; apply(); } }, get current() { return curKind(); } };
   };
+  Lab.results.quiet = (fn, ms) => { quietBadges(ms); try { if (typeof fn === 'function') fn(); } finally { quietBadges(ms); } };
 
   /* ---------------- Onboarding: first-visit tour, backup reminders, storage warnings ----------------
      Tour (lab pages): a short dismissible walkthrough shown once per browser (localStorage 'aplab:tour'),
@@ -3115,6 +3125,7 @@
     themeRedraw();
   }
   function themeRedraw() {
+    quietBadges(900);
     window.dispatchEvent(new Event('aplab:theme'));
     CANVASES.forEach(c => { try { if (c.onresize) c.onresize(); } catch (e) { /* ignore */ } });
     REG.charts.forEach(c => { try { c.render(); } catch (e) { /* ignore */ } });

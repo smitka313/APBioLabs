@@ -196,7 +196,7 @@ Moves existing `Lab.chart` / `Lab.table` containers (ids unchanged) into a resul
   watch the graph build while the run plays; this is the layout at 1366×768.
 - **<1280 px:** a **Scene / Data / Graph** switch above the scene; Data and Graph cover the scene in the
   same box (the canvas keeps its size), so nothing below moves.
-- A "new" badge appears on a tab whose table/chart changed while it was not showing (not for restored data).
+- A "new" badge appears on a tab whose table/chart changed while it was not showing (not for restored data). lab.js stays quiet for 0.9 s around part shows, theme redraws and print preparation (and for 1.5 s after load); a page that restores saved data later wraps it in `Lab.results.quiet(() => …)` so the badge only means a genuinely new result.
 - Charts inside a panel draw at their real width so axis text stays 12 px (any chart can opt in with
   `Lab.chart(el, {responsive:true, …})`); the report always uses a full-size 640-wide copy.
 - ARIA tabs: arrow keys / Home / End, `aria-selected`, `role=tabpanel`. Returns `{select('graph'|'data'|'scene')}`.
