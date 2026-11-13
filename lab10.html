@@ -415,6 +415,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -701,7 +703,8 @@ function workedExample(o) {
     const pts = rows.slice().sort((a, b) => a.age - b.age).filter(r => isFinite(r.age) && isFinite(r.dry));
     // Points appear only once a harvest has been dried and weighed (nothing is plotted while the tile says "drying…").
     const wetPts = pts.map(r => ({ x: r.age, y: r.wet }));
-    p1Chart.update({ series: [
+    const pend = s1 && s1.pending;   // a harvest still in the oven: say so on the graph, never plot it
+    p1Chart.update({ annotations: pend ? [{ x: pend.age, label: 'Harvest ' + pend.hv + ' (day ' + pend.age + ') still drying: no point yet' }] : [], series: [
       { name: 'Dry mass (biomass), mean ± 2 SE', points: pts.map(r => ({ x: r.age, y: r.dry, err: isFinite(r.se) ? 2 * r.se : 0 })) },
       { name: 'Wet mass, mean', points: wetPts, dash: true }
     ] });
@@ -1297,7 +1300,7 @@ function workedExample(o) {
     p2calc.recheck();
     const rows = barnT.getRows(), rp = ratioP(), rl = ratioL(), corr = $('#p2-correct').checked;
     const eff = $('#p2-eff'); eff.innerHTML = '';
-    if (!rows.length || !isFinite(rp) || !isFinite(rl)) { p2Chart.update({ series: [] }); $('#sankey-larva').innerHTML = '<p class="note">Run a barn to draw the energy budget.</p>'; $('#sankey-larva-note').textContent = ''; return; }
+    if (!rows.length || !isFinite(rp) || !isFinite(rl)) { p2Chart.update({ series: [] }); $('#sankey-larva').innerHTML = '<p class="note">Run a barn to draw the energy budget.</p>'; $('#sankey-larva-note').textContent = ''; dropKeyRes('transfer-eff', 'assim-eff', 'respiration'); return; }
     const A = rows.map(b => audit(b, rp, rl, corr));
     const g = k => meanSE(A.map(a => a[k]));
     const cats = [['Consumed (C)', 'C'], ['Frass (F)', 'F'], ['Growth (P)', 'P'], ['Respiration (R)', 'R']];
@@ -1717,7 +1720,7 @@ cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-h
   Lab.predictCompare(rfCompare, {
     predictKey: 'p1-diagram', title: 'Plant energy diagram: your prediction vs. your harvests', chartEl: '#p1-chart', part: 'Part 1: NPP', partId: 'part-1-npp',
     getResult: () => { const rs = (Lab.store.get('p1sum') || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); return rs.length ? rs : null; },
-    summarize: rs => 'Mean dry mass per plant: ' + rs.map(r => `${fmt(r.dry, 3)} g on day ${r.age} (${fmt(gainOf(r), 3)} kcal/plant/day since planting)`).join('; ') + '.',
+    summarize: rs => 'Mean dry mass per plant: ' + rs.map(r => `${fmt(r.dry, 3)} g on day ${r.age} (${fmt(gainOf(r), 3)} kcal/plant/day since planting)`).join('; ') + '.' + (s1.pending ? ` Harvest ${s1.pending.hv} (day ${s1.pending.age}) is still in the oven and is not counted yet.` : ''),
     delta: rs => { const nb = nppBetween(rs); return nb ? `Between your day-${nb.a.age} and day-${nb.b.age} harvests, dry mass rose ${fmt(nb.b.dry / nb.a.dry, 1)}-fold (${fmt(nb.a.dry, 3)} g to ${fmt(nb.b.dry, 3)} g), an NPP of ${fmt(nb.npp, 3)} kcal/plant/day. Compare that with the shape you drew.` : `You have one harvest so far (day ${rs[0].age}). A second harvest gives the NPP between harvests.`; }
   });
   Lab.predictCompare(rfCompare, {
@@ -1814,13 +1817,14 @@ cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-h
     return { a, b, npp: (b.dry - a.dry) / (b.age - a.age) * KP };
   }
   function reportP1(rows) {
-    const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
+    const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) { dropKeyRes('npp', 'avg-daily-gain'); return; }
     const last = rs[rs.length - 1], nb = nppBetween(rows);
+    if (!nb) dropKeyRes('npp');
     if (nb) keyRes('npp', { label: 'NPP per plant per day, between your day ' + nb.a.age + ' and day ' + nb.b.age + ' harvests', value: Math.round(nb.npp * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
     keyRes('avg-daily-gain', { label: 'Average daily gain since planting (day ' + last.age + ' harvest)', value: Math.round(gainOf(last) * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
   }
   function reportP2(C, F, P, R) {
-    if (!(C > 0)) return;
+    if (!(C > 0)) { dropKeyRes('transfer-eff', 'assim-eff', 'respiration'); return; }
     keyRes('transfer-eff', { label: 'Energy transfer efficiency: growth ÷ eaten (P/C)', value: Math.round(1000 * P / C) / 10, unit: '%', part: 'Part 2: Larvae' });
     keyRes('assim-eff', { label: 'Assimilation efficiency (A/C)', value: Math.round(1000 * (C - F) / C) / 10, unit: '%', part: 'Part 2: Larvae' });
     keyRes('respiration', { label: 'Respiration per larva (by difference)', value: Math.round(R * 1000) / 1000, unit: 'kcal', part: 'Part 2: Larvae' });
