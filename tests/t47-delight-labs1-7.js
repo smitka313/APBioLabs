@@ -47,6 +47,28 @@ const LABS = {
     await timelapse(p, 'designrun', '#d-timelapse');
     return p;
   },
+  async lab06(b) {
+    const c = await ctx(b), p = await T.open(c, 'lab06.html', 'microrespirometer');
+    await fillPred(p, 'predict-microresp', 'I predict the plug in the seed tube will move toward the chamber and the bead tube will not move because seeds use O2.');
+    await fillPred(p, 'predict-gas', 'I predict O2 will fall and CO2 will rise because the peas respire.');
+    await fillPred(p, 'predict-design', 'I predict the rate will increase as temperature increases because enzymes work faster.');
+    await setv(p, '#p-speed', '6');
+    await p.click('#p-run');
+    await timelapse(p, 'microresp', '#p-timelapse');
+    await show(p, 'gas-sensors');
+    await setv(p, '#g-sensor', 'o2'); await setv(p, '#g-contents', 'peas');
+    await p.click('#g-run');
+    await timelapse(p, 'gasrun', '#g-timelapse');
+    await show(p, 'design');
+    for (const t of [10, 30]) {
+      await setv(p, '#d-temp', t); await p.click('#d-run');
+      await p.waitForFunction(() => !document.querySelector('#d-timelapse .tl-bar button').disabled || true, null, { timeout: 1000 });
+      await p.waitForFunction(k => { const r = Lab.timelapse.all().find(x => x.key === k); return r && !r.recording && r.count > 2; }, 'designrun', { timeout: 30000 });
+      await p.waitForTimeout(1200);
+    }
+    await timelapse(p, 'designrun', '#d-timelapse');
+    return p;
+  },
 };
 
 (async () => {

@@ -227,6 +227,7 @@
             <div class="readout"><span class="k">Corrected O₂ used</span><span class="v" id="p-o2">0.0 µL</span></div>
           </div>
           <p class="status" id="p-msg" aria-live="polite"></p>
+          <div id="p-timelapse" class="tl-mount"></div>
         </div>
       </div>
 
@@ -284,6 +285,7 @@
           </div>
         </div>
       </div>
+      <div id="g-timelapse" class="tl-mount"></div>
       <div id="g-chart"></div>
       <div id="g-table"></div>
     </div>
@@ -342,6 +344,7 @@
             <div class="readout"><span class="k">Trials so far (count)</span><span class="v" id="d-n">0</span></div>
           </div>
           <p class="status" id="d-msg" aria-live="polite"></p>
+          <div id="d-timelapse" class="tl-mount"></div>
         </div>
       </div>
 
@@ -500,23 +503,26 @@ const Predict = (function () {
     ids.push(upd); upd(); det.open = !has(o.key);
     return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
   }
-  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  /* Predict-vs-actual cards (Lab.predictCompare), one per saved prediction.
+     items: [[key, 'where it was made', {title, chartEl, getResult, summarize, delta, part, partId}], ...]. The saved key of the compare prompt is unchanged. */
   function compare(container, o) {
     container = typeof container === 'string' ? $(container) : container;
-    const list = Lab.h('div', { class: 'predict-list' });
-    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
-    container.append(box);
-    const render = () => {
-      list.textContent = '';
-      o.items.forEach(([k, where]) => {
-        const v = val(k);
-        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
-        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
-      });
-    };
-    ids.push(render); render();
-    Lab.onShow(box, render);
+    const wrap = Lab.h('div', { class: 'predict-cards' });
+    container.append(wrap);
+    o.items.forEach(([k, where, cfg]) => Lab.predictCompare(wrap, Object.assign({ predictKey: k }, cfg || {})));
     return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* Direction a prediction claims (+1 up, -1 down, 0 unclear) and a sentence saying whether the actual change agrees. */
+  const dirOf = t => { t = String(t || '').toLowerCase(); const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
+  const verdict = (pred, actual) => { const p = dirOf(pred); return !p || !actual ? '' : p === actual ? ' That matches the direction you predicted.' : ' That is the opposite of the direction you predicted.'; };
+  /* "Y rose from a (at x1) to b (at x2)" for the first series of a chart's options. */
+  function seriesTrend(opts, what, unit, digits) {
+    const s = opts && opts.series && opts.series[0], pts = s && s.points && s.points.filter(p => p && isFinite(p.y));
+    if (!pts || pts.length < 2) return null;
+    if (pts.every(p => typeof p.x === 'number')) pts.sort((a, b) => a.x - b.x);   // levels read from low to high
+    const nx = x => typeof x === 'number' ? Lab.fmt(+x.toPrecision(3), 2).replace(/\.?0+$/, '') : x;
+    const f = pts[0], l = pts[pts.length - 1], d = digits == null ? 2 : digits, u = unit ? ' ' + unit : '', dir = l.y > f.y ? 1 : l.y < f.y ? -1 : 0;
+    return { dir, text: `${what} ${dir > 0 ? 'rose' : dir < 0 ? 'fell' : 'stayed the same'} from ${Lab.fmt(f.y, d)}${u} (at ${nx(f.x)}) to ${Lab.fmt(l.y, d)}${u} (at ${nx(l.x)}).` };
   }
   /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
   function cer(cerEl, starters, hintHtml) {
@@ -525,7 +531,7 @@ const Predict = (function () {
     const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
     cerEl.parentNode.insertBefore(d, cerEl);
   }
-  return { add, compare, cer, has, val };
+  return { add, compare, cer, has, val, dirOf, verdict, seriesTrend };
 })();
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, C = n => Lab.color(n);
   let rng = Lab.rng();   // each simulated run reseeds this from a saved seed, so it can be replayed after a reload
@@ -1129,12 +1135,16 @@ const Predict = (function () {
     };
     if (!speed || Lab.reducedMotion()) { frame(dur); onDone && onDone(); return null; }
     if (t > 0) frame(t);
-    const loop = Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } });
+    const loop = Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } }, { tick: 1 });
     loop.start(); return loop;
   }
 
   /* ================= Option 1: structured microrespirometer run ================= */
+  /* Timelapses record live runs only: a run restored from the clock after a reload is not re-recorded (its earlier recording stays). */
+  const recStart = rec => rec.recording ? rec.stop().then(() => rec.start()) : rec.start();
   const pCv = Lab.canvas('#p-rig', 0.72, { fit: true });
+  const pRec = Lab.timelapse(pCv, { fps: 4, width: 420, label: 'Microrespirometer run', key: 'microresp' });
+  pRec.mount('#p-timelapse');
   const partsE = contentParticles('seed', 11), partsC = contentParticles('beads', 12);
   let pRun = null, pLoop = null, pBusy = false;
   const pTable = Lab.table('#p-table', {
@@ -1194,11 +1204,11 @@ const Predict = (function () {
         { label: 'Germinating seeds', look: 'seed', syringe: 1, pos: pRun.dE[i], marks: mE, parts: partsE },
         { label: 'Glass beads (control)', look: 'beads', syringe: 1, pos: pRun.dC[i], marks: mC, parts: partsC }] };
     }, st.speed, (m, mi) => {
-      mE.push(m.e); mC.push(m.c);
+      mE.push(m.e); mC.push(m.c); if (!startT) Lab.sound.play('beep');
       const Tn = Math.round((20 + rng.normal(0, stable ? 0.05 : 0.2)) * 10) / 10;   // always drawn, so the replay stays in step
       if (mi >= pTable.getRows().length) pTable.addRow({ t: m.t, T: Tn, e: m.e, c: m.c, de: null, corr: null });
     }, () => {
-      pBusy = false;
+      pBusy = false; pRec.stop();
       const fit = rateFromMarks(pRun.marks);
       if (!st.done) { st.done = true; Lab.store.set('p-run', st); const reps = pReps.getRows(); pReps.addRow({ run: reps.length + 1, set: (equil ? 'equilibrated' : 'no wait') + ', ' + (stable ? 'insulated' : 'open bath'), rate: fit.rate, perg: fit.rate / 0.30 }); if (!st.quiet) Lab.toast(`Recorded ${pTable.getRows().length} readings (0–25 min) and the run rate: ${fmt(fit.rate, 2)} µL O₂/min`, { type: pRun.stuckE != null || !equil ? 'warn' : 'ok', announce: false }); }
       const msg = $('#p-msg');
@@ -1212,6 +1222,8 @@ const Predict = (function () {
     pSt = { sd: newSeed(), t0: Date.now(), equil: $('#p-equil').checked, stable: $('#p-stable').checked, speed: +$('#p-speed').value, done: false };
     Lab.store.set('p-run', pSt);
     pTable.clear();
+    Lab.sound.play('click');
+    if (!Lab.reducedMotion()) recStart(pRec);
     runP(pSt, 0);
   });
   $('#p-clear').addEventListener('click', () => { if (pBusy) return; pTable.clear(); Lab.store.set('p-run', null); Lab.store.set('chk-pCheck', false); Lab.store.set('chk-pRate', false); drawP(0, { e: 0, c: 0 }, [], []); setReadouts(0, 0, 0); $('#p-check-msg').textContent = ''; $('#p-rate-msg').textContent = ''; });
@@ -1265,6 +1277,8 @@ const Predict = (function () {
      A small bath-temperature wander adds pressure noise. */
   const VGAS = 242000;
   const gCv = Lab.canvas('#g-rig', 0.55, { fit: true });
+  const gRec = Lab.timelapse(gCv, { fps: 4, width: 420, label: 'Gas sensor run', key: 'gasrun' });
+  gRec.mount('#g-timelapse');
   const gChart = Lab.chart('#g-chart', { xLabel: 'Time (min)', yLabel: 'O₂ (%)', height: 300, series: [] });
   const gTable = Lab.table('#g-table', {
     save: 'g-table',
@@ -1446,7 +1460,7 @@ const Predict = (function () {
     const sensor = st.sensor, koh = st.koh, T = st.T, pts = gPoints(st); let shown = 0;
     gPts = [];
     const finish = () => {
-      gBusy = false;
+      gBusy = false; gRec.stop(); if (!shown0) Lab.sound.play('beep');
       const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y));
       const o2 = sensor === 'o2' ? -f.m / 100 * VGAS : sensor === 'co2' ? (koh ? NaN : f.m * 1e-6 * VGAS) : (koh ? -f.m / 101.3 * VGAS : NaN);
       $('#g-slope').textContent = `${fmt(f.m, sensor === 'co2' ? 1 : 4)} ${SENS[sensor].unit}/min`;
@@ -1466,14 +1480,17 @@ const Predict = (function () {
       while (acc > 0.12 && shown < pts.length) { acc -= 0.12; step(); }
       refreshGChart(); drawG();
       if (shown >= pts.length) { finish(); return false; }
-    });
+    }, { tick: 1 });
     refreshGChart(); drawG();
     loop.start();
   }
   $('#g-run').addEventListener('click', () => {
     if (gBusy) return;
     const st = { sd: newSeed(), t0: Date.now(), sensor: $('#g-sensor').value, contents: $('#g-contents').value, contentsText: $('#g-contents').selectedOptions[0].text, T: +$('#g-temp').value, koh: $('#g-koh').checked, done: false };
-    Lab.store.set('g-run', st); runG(st, 0);
+    Lab.store.set('g-run', st);
+    Lab.sound.play('click');
+    if (!Lab.reducedMotion()) recStart(gRec);
+    runG(st, 0);
   });
   { const st = Lab.store.get('g-run');
     if (st && st.sd != null && (!st.done || gTable.getRows().length)) {
@@ -1493,6 +1510,8 @@ const Predict = (function () {
   const dOrg = $('#d-org');
   ['fastplant', 'oat', 'dry', 'boiled', 'green', 'mealworm', 'cricket', 'fly', 'earthworm'].forEach(k => dOrg.append(Lab.h('option', { value: k }, ORGS[k].name)));
   const dCv = Lab.canvas('#d-rig', 0.72, { fit: true });
+  const dRec = Lab.timelapse(dCv, { fps: 4, width: 420, label: 'Design run', key: 'designrun' });
+  dRec.mount('#d-timelapse');
   let dLast = null, dBusy = false;
   const dTable = Lab.table('#d-table', {
     save: 'd-table',
@@ -1553,9 +1572,11 @@ const Predict = (function () {
     else { msg.textContent = `${reps} trial(s) added.`; msg.className = 'status ok'; }
     if (notes.length) Lab.toast(`Added ${reps} trial(s); the plug reached the barrel early in ${notes.length}`, { type: 'warn', announce: false, key: 'd-run' });
     dBusy = true;
+    Lab.sound.play('click');
+    if (!Lab.reducedMotion()) recStart(dRec);
     const mE = [], mC = [], o = ORGS[cond.org];
     void o;
-    animate(dCv, run, (tt, i) => ({ t: tt, temp: cond.temp, light: cond.light, items: dItems(cond.org, run, i, mE, mC) }), 8, m => { mE.push(m.e); mC.push(m.c); }, () => { dBusy = false; });
+    animate(dCv, run, (tt, i) => ({ t: tt, temp: cond.temp, light: cond.light, items: dItems(cond.org, run, i, mE, mC) }), 8, m => { mE.push(m.e); mC.push(m.c); }, () => { dBusy = false; dRec.stop(); });
   });
   { const sv = Lab.store.get('d-last');
     if (sv && sv.cond && ORGS[sv.cond.org] && dTable.getRows().length) {
@@ -1635,19 +1656,12 @@ const Predict = (function () {
       return (expDe == null || (typeof r.de === 'number' && Math.abs(r.de - expDe) <= 0.015)) && typeof r.corr === 'number' && Math.abs(r.corr - (r.e - r.c)) <= 0.015;
     });
   };
-  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
-     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
-  function showData(sim, o) {
-    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
-    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
-    return r;
-  }
-  showData('#p-sim', {
+  Lab.results('#p-sim', { start: 'data',
     graph: [{ el: '#p-chart', title: 'Corrected O₂ consumed vs. time' }],
     data: [{ el: '#p-table', title: 'Table 1. Results using microrespirometers' }, { el: '#p-reps', title: 'Replicate runs' }]
   });
-  showData('#g-sim', { graph: [{ el: '#g-chart', title: 'Sensor reading vs. time' }], data: [{ el: '#g-table', title: 'Gas-sensor runs' }] });
-  showData('#d-sim', {
+  Lab.results('#g-sim', { start: 'data', graph: [{ el: '#g-chart', title: 'Sensor reading vs. time' }], data: [{ el: '#g-table', title: 'Gas-sensor runs' }] });
+  Lab.results('#d-sim', { start: 'data',
     graph: [{ el: '#d-chart', title: 'Rate per gram, mean ± 2 SE' }],
     data: [{ el: '#d-summary', title: 'Summary by group' }, { el: '#d-table', title: 'Every trial' }]
   });
@@ -1719,7 +1733,29 @@ const Predict = (function () {
   Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
   Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'Evidence: cite two rates with units (µL O₂/min).', reasoning: 'Reasoning: link the rates to ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the variable) ___ (increased / decreased) the respiration rate of ___.</p><p><strong>Evidence:</strong> At ___, the rate was ___ µL O<sub>2</sub>/min, compared with ___ µL O<sub>2</sub>/min at ___.</p><p><strong>Reasoning:</strong> This happens because ___ (cellular respiration, enzymes, O<sub>2</sub> use) ___.</p>');
   const ev = $('#evaluate-prompts');
-  Predict.compare(ev, { key: 'reflect-predict', items: [['predict-microresp', 'Before the microrespirometer run you predicted:'], ['predict-gas', 'Before the gas sensors you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Give one number with units from your data. What does any mismatch tell you?', rows: 4 });
+  Predict.compare(ev, { key: 'reflect-predict', items: [
+    ['predict-microresp', 'Before the microrespirometer run you predicted:', {
+      title: 'Microrespirometer: your prediction vs. what happened', chartEl: '#p-chart', part: 'Microrespirometer', partId: 'microrespirometer',
+      getResult: () => { const rows = pTable.getRows().filter(r => typeof r.e === 'number' && typeof r.c === 'number'), pts = o2Rows(rows); if (pts.length < 3) return null; const f = S.linreg(pts.map(q => q.x), pts.map(q => q.y)); return { last: rows[rows.length - 1], rate: f.m }; },
+      summarize: r => `By ${r.last.t} min the seed plug had moved ${fmt(r.last.e, 2)} cm and the bead-control plug ${fmt(r.last.c, 2)} cm, so the seeds used O₂ at ${fmt(r.rate, 2)} µL O₂/min after correcting for the beads.`,
+      delta: (r, pred) => {
+        const seedsMove = /seed[^.]*\b(mov\w*|toward|shift\w*|consum\w*|us(e|es|ed)|rise\w*|go\w*)/i.test(pred), beadsStay = /(bead|control)[^.]*\b(not|n't|no|stay\w*|same|remain\w*|little|nothing|barely)\b/i.test(pred);
+        const fact = r.last.e > r.last.c * 3 ? 'The seed plug moved far more than the bead plug, so the movement came from the living seeds, not the bath.' : 'The seed and bead plugs moved by similar amounts, so most of the movement was the bath, not the seeds.';
+        return fact + (seedsMove && beadsStay ? (r.last.e > r.last.c * 3 ? ' That matches your prediction for both tubes.' : ' That differs from what you predicted.') : '');
+      } }],
+    ['predict-gas', 'Before the gas sensors you predicted:', {
+      title: 'Gas sensors: your prediction vs. what happened', chartEl: '#g-chart', part: 'Gas sensors', partId: 'gas-sensors',
+      getResult: () => { const rows = gTable.getRows(); return rows.length ? rows[rows.length - 1] : null; },
+      summarize: r => { const k = { 'O₂ (%)': 'o2', 'CO₂ (ppm)': 'co2', 'Pressure (kPa)': 'p' }[r.sensor] || 'o2'; return `In your latest run (${r.contents}${r.koh === 'yes' ? ', with KOH' : ''}) the ${r.sensor} reading changed by ${fmt(r.slope, k === 'co2' ? 1 : 4)} ${SENS[k].unit} per minute.`; },
+      delta: (r, pred) => {
+        const re = { 'O₂ (%)': /(?<!C)(O₂|O2|oxygen)/i, 'CO₂ (ppm)': /(CO₂|CO2|carbon dioxide)/i, 'Pressure (kPa)': /pressure/i }[r.sensor], m = re && pred.split(/[.;,]|\band\b|\bbut\b/i).filter(x => re.test(x)), act = r.slope > 0 ? 1 : r.slope < 0 ? -1 : 0;
+        const fact = `The ${r.sensor} reading ${act > 0 ? 'rose' : act < 0 ? 'fell' : 'stayed flat'} over the run.`;
+        return fact + (m && m.length ? Predict.verdict(m[0], act) : '');
+      } }],
+    ['predict-design', 'Before your design you predicted:', {
+      title: 'Your design: your prediction vs. what happened', chartEl: '#d-chart', part: 'Design', partId: 'design',
+      summarize: o => { const t = Predict.seriesTrend(o, 'The mean respiration rate', 'µL·g⁻¹·min⁻¹', 2); return t ? t.text : 'Your design results are in the Design part.'; },
+      delta: (o, pred) => { const t = Predict.seriesTrend(o, 'The mean respiration rate', 'µL·g⁻¹·min⁻¹', 2); return t ? t.text + Predict.verdict(pred, t.dir) : null; } }]], label: 'Compare your predictions with your results. Which were right, and which were not? Give one number with units from your data. What does any mismatch tell you?', rows: 4 });
   Lab.prompt(ev, { key: 'e1', label: 'Was your hypothesis supported? Use your means and error bars to justify your answer.', rows: 3 });
   Lab.prompt(ev, { key: 'e2', label: 'What were the main sources of error, in the simulation and in a real wet lab (air leaks, bumping the bath, too much KOH, marking error, the plug reaching the barrel)? How would each change your rate?', rows: 4 });
   Lab.prompt(ev, { key: 'e3', label: 'Suggest one improvement to the microrespirometer design or to the procedure for measuring O<sub>2</sub> consumption, and one for the gas-sensor method.', rows: 3 });
