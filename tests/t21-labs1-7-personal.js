@@ -12,7 +12,7 @@ const ownText = (p, k) => p.evaluate(k => { const w = document.querySelector('[d
 
 /* Shared FRQ checks. Page must already be loaded. */
 async function frqChecks(p, lab) {
-  await p.evaluate(() => Lab.pages && Lab.pages.go('reflect'));
+  await p.evaluate(() => Lab.pages.go(document.getElementById('frq')));
   await p.waitForTimeout(300);
   ok(await p.locator('#frq-rubric').isHidden(), lab + ': FRQ rubric hidden before saving');
   await p.click('#frq-save');
@@ -28,7 +28,7 @@ async function frqChecks(p, lab) {
 }
 async function frqReload(p, lab) {
   await p.reload(); await p.waitForTimeout(900);
-  await p.evaluate(() => Lab.pages && Lab.pages.go('reflect')); await p.waitForTimeout(300);
+  await p.evaluate(() => Lab.pages.go(document.getElementById('frq'))); await p.waitForTimeout(300);
   ok(await p.locator('#frq-rubric').isVisible(), lab + ': rubric still visible after reload');
   ok(await p.locator('#frq-r1').isChecked() && !(await p.locator('#frq-r2').isChecked()) && await p.locator('#frq-r3').isChecked(), lab + ': rubric ticks survive reload');
   ok((await p.inputValue('#p-frq-a')).includes('part a'), lab + ': FRQ answer survives reload');
