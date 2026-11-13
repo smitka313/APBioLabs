@@ -1236,7 +1236,11 @@ const Predict = (function () {
   $('#cs-example').addEventListener('click', () => { [19, 53, 28].forEach((v, i) => { $(CSIDS[i]).value = v; }); $('#cs-banner').hidden = false; runChi('example'); });
   $('#cs-clear-ex').addEventListener('click', chiClear);
   $('#cs-mine').addEventListener('click', () => { if (!ssLast) { status('#cs-status', 'Run the spreadsheet model (Build the model part) first.', 'bad'); return; } [ssLast.aa, ssLast.ab, ssLast.bb].forEach((v, i) => { $(CSIDS[i]).value = v; }); $('#cs-banner').hidden = true; runChi('run'); });
-  CSIDS.forEach(id => $(id).addEventListener('input', () => { $('#cs-banner').hidden = true; }));
+  CSIDS.forEach(id => $(id).addEventListener('input', () => {
+    if ($('#cs-banner').hidden) return;
+    $('#cs-banner').hidden = true;   // typing over the example starts a fresh entry: the other sample counts are removed
+    CSIDS.forEach(o => { if (o !== id) $(o).value = ''; }); csTable.setRows([]); status('#cs-status', '', '');
+  }));
   { const sv = Lab.store.get('chi'); if (sv && Array.isArray(sv.v) && sv.v.length === 3) { sv.v.forEach((v, i) => { $(CSIDS[i]).value = v; }); runChi('restore'); } }
   $('#cs-run').addEventListener('click', () => { if (!$('#cs-banner').hidden) return; const v = ['#cs-aa', '#cs-ab', '#cs-bb'].map(id => Number($(id).value)); if (v.some(x => !isFinite(x) || x < 0)) return; const h = hwChi(...v); if (h && !h.degenerate) Own.key('chi2-hw', { label: 'Hardy-Weinberg χ² (df = 1)', value: +fmt(h.chi2, 2), unit: '', part: 'Analyze' }); });
   ['#cs-aa', '#cs-ab', '#cs-bb'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));

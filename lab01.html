@@ -1660,7 +1660,12 @@ const Predict = (function () {
     ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(id => $(id).textContent = '—'); status('#tt-status', '', ''); $('#tt-banner').hidden = true;
   }
   $('#tt-clear-ex').addEventListener('click', clearExample);
-  ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach(id => $(id).addEventListener('input', () => { $('#tt-banner').hidden = true; }));
+  ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach(id => $(id).addEventListener('input', () => {
+    if ($('#tt-banner').hidden) return;
+    $('#tt-banner').hidden = true;   // typing over the example starts a fresh entry: the other sample numbers are removed
+    ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach(o => { if (o !== id) $(o).value = ''; });
+    ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(x => $(x).textContent = '—'); status('#tt-status', '', '');
+  }));
   ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n', '#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   $('#tt-fill').addEventListener('click', () => {
     if (!(selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#tt-status', 'Score generation 2 in the simulation first.', 'bad'); return; }
