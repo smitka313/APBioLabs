@@ -223,6 +223,7 @@
         </div>
       </div>
       <p class="fb" id="cup-note" aria-live="polite" hidden></p>
+      <div id="cup-timelapse" class="tl-mount"></div>
       <div id="cup-table"></div>
       <div id="cup-chart"></div>
       <h3>Calculate ET<sub>50</sub> and the rate</h3>
@@ -278,6 +279,7 @@
           </div>
         </div>
       </div>
+      <div id="d-timelapse" class="tl-mount"></div>
       <div id="d-sum"></div>
       <div id="d-chart"></div>
       <div id="d-chart2"></div>
@@ -410,23 +412,26 @@ const Predict = (function () {
     ids.push(upd); upd(); det.open = !has(o.key);
     return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
   }
-  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  /* Predict-vs-actual cards (Lab.predictCompare), one per saved prediction.
+     items: [[key, 'where it was made', {title, chartEl, getResult, summarize, delta, part, partId}], ...]. The saved key of the compare prompt is unchanged. */
   function compare(container, o) {
     container = typeof container === 'string' ? $(container) : container;
-    const list = Lab.h('div', { class: 'predict-list' });
-    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
-    container.append(box);
-    const render = () => {
-      list.textContent = '';
-      o.items.forEach(([k, where]) => {
-        const v = val(k);
-        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
-        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
-      });
-    };
-    ids.push(render); render();
-    Lab.onShow(box, render);
+    const wrap = Lab.h('div', { class: 'predict-cards' });
+    container.append(wrap);
+    o.items.forEach(([k, where, cfg]) => Lab.predictCompare(wrap, Object.assign({ predictKey: k }, cfg || {})));
     return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* Direction a prediction claims (+1 up, -1 down, 0 unclear) and a sentence saying whether the actual change agrees. */
+  const dirOf = t => { t = String(t || '').toLowerCase(); const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
+  const verdict = (pred, actual) => { const p = dirOf(pred); return !p || !actual ? '' : p === actual ? ' That matches the direction you predicted.' : ' That is the opposite of the direction you predicted.'; };
+  /* "Y rose from a (at x1) to b (at x2)" for the first series of a chart's options. */
+  function seriesTrend(opts, what, unit, digits) {
+    const s = opts && opts.series && opts.series[0], pts = s && s.points && s.points.filter(p => p && isFinite(p.y));
+    if (!pts || pts.length < 2) return null;
+    if (pts.every(p => typeof p.x === 'number')) pts.sort((a, b) => a.x - b.x);   // levels read from low to high
+    const nx = x => typeof x === 'number' ? Lab.fmt(+x.toPrecision(3), 2).replace(/\.?0+$/, '') : x;
+    const f = pts[0], l = pts[pts.length - 1], d = digits == null ? 2 : digits, u = unit ? ' ' + unit : '', dir = l.y > f.y ? 1 : l.y < f.y ? -1 : 0;
+    return { dir, text: `${what} ${dir > 0 ? 'rose' : dir < 0 ? 'fell' : 'stayed the same'} from ${Lab.fmt(f.y, d)}${u} (at ${nx(f.x)}) to ${Lab.fmt(l.y, d)}${u} (at ${nx(l.x)}).` };
   }
   /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
   function cer(cerEl, starters, hintHtml) {
@@ -435,7 +440,7 @@ const Predict = (function () {
     const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
     cerEl.parentNode.insertBefore(d, cerEl);
   }
-  return { add, compare, cer, has, val };
+  return { add, compare, cer, has, val, dirOf, verdict, seriesTrend };
 })();
 (function () {
   'use strict';
@@ -981,7 +986,8 @@ const Predict = (function () {
       t += dt;
       cur.plunger = t < 0.6 ? t / 0.6 : t < HOLD + 0.3 ? 1 : Math.max(0, 1 - (t - HOLD - 0.3) / 0.3);
       cur.bubbles = t < HOLD + 0.3 ? (t / 1.6) % 1 + 0.001 : 0;
-      will.forEach(([k, i, ts]) => { if (t >= ts) cur[k][i] = true; });
+      let sank = 0; will.forEach(([k, i, ts]) => { if (t >= ts && !cur[k][i]) { cur[k][i] = true; sank++; } });
+      if (sank && !quiet) Lab.sound.play('pop');
       const left = Math.max(0, Math.ceil(HOLD - t));
       pullBtn.textContent = t < HOLD ? 'Pulling vacuum… ' + left + ' s' : 'Releasing… disks sinking';
       prog.value = t;
@@ -998,6 +1004,7 @@ const Predict = (function () {
     const will = [];   // [cup, index, time to sink]
     ['a', 'b'].forEach(k => cur[k].forEach((s, i) => { if (!s && rng.chance(p)) will.push([k, i, HOLD + 0.1 + rng.uniform() * REL]); }));
     Lab.store.set('inf-pull', { t0: Date.now(), will, pulls: cur.pulls });
+    Lab.sound.play('hiss');
     runPull(cur, will, 0, false);
   });
   { const sv = Lab.store.get('inf-state'), ip = Lab.store.get('inf-pull');
@@ -1044,11 +1051,16 @@ const Predict = (function () {
     }
   });
   cupInit();
+  /* Timelapse of the float assay (live runs only; a run restored from the clock after a reload is not re-recorded). */
+  const cupRec = Lab.timelapse(cupcv, { fps: 4, width: 420, label: 'Float assay', key: 'floatassay' });
+  cupRec.mount('#cup-timelapse');
+  const recStart = rec => rec.recording ? rec.stop().then(() => rec.start()) : rec.start();
   $('#inf-pour').addEventListener('click', () => {
     if (infAnim) infAnim();   // let a running vacuum finish first
     poured = true; infSave();
     cupPrep = { na: inf.a.filter(Boolean).length, nb: inf.b.filter(Boolean).length, damage: Math.max(0, inf.pulls - 3) }; Lab.store.set('cup-prep', cupPrep);
-    if (cupLoop) cupLoop.stop(); cupInfo = null; Lab.store.set('cup-run', null);
+    if (cupLoop) cupLoop.stop(); cupRec.stop(); cupInfo = null; Lab.store.set('cup-run', null);
+    Lab.sound.play('click');
     cupInit(); cupTable.clear();
     const la = 10 - cupPrep.na, lb = 10 - cupPrep.nb, fl = la + lb;
     fbList($('#inf-fb'), [fl ? `<span class="pill warn">${fl} disk${fl > 1 ? 's' : ''} didn't sink and ${fl > 1 ? 'were' : 'was'} left out.</span> You have ${cupPrep.na} disk${cupPrep.na === 1 ? '' : 's'} in the "With CO₂" cup and ${cupPrep.nb} in the "Without CO₂" cup. Only sunk disks go in the cups, as in the real lab. Pull again before pouring if you want more disks.` : '<span class="pill ok">Poured.</span> Go to the next step and start the timer.']);
@@ -1078,14 +1090,15 @@ const Predict = (function () {
     const len = cupInfo.len;
     cupLoop = Lab.loop(dt => {
       cupTarget += dt / +$('#cup-speed').value;
-      while (cupT < len - 1e-9 && cupTick(Math.min(cupTarget, len), r => cupTable.addRow(r)));
+      while (cupT < len - 1e-9 && cupTick(Math.min(cupTarget, len), r => { const prev = cupTable.getRows().slice(-1)[0]; cupTable.addRow(r); if (prev && (r.a > prev.a || r.b > prev.b)) Lab.sound.play('pop'); }));
       easeDisks(cupA, dt * 6); easeDisks(cupB, dt * 6); cupRead(); cupDraw();
-      if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); cupFinishedToast(); return false; }
-    });
+      if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); cupRec.stop(); cupFinishedToast(); return false; }
+    }, { tick: 1 });
     cupLoop.start();
   }
   $('#cup-run').addEventListener('click', () => {
     if (cupLoop) cupLoop.stop();
+    Lab.sound.play('click');
     const dark0 = cupDark, sd = newSeed(); rng = Lab.rng(sd); cupInit(); cupDark = dark0; cupSyncDark(); cupRead();
     cupTable.clear();
     const len = +cupLen.value;
@@ -1093,6 +1106,7 @@ const Predict = (function () {
     cupNext = 1; cupTi = 0; cupTarget = 0;
     cupTable.setRows([cupRow(0)]);
     if (Lab.reducedMotion()) { while (cupT < len - 1e-9 && cupTick(len, r => cupTable.addRow(r))); easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw(); cupFinishedToast(); return; }
+    recStart(cupRec);
     cupContinue();
   });
   { const ci = Lab.store.get('cup-run');
@@ -1177,6 +1191,8 @@ const Predict = (function () {
   dIv.addEventListener('change', () => { const o = IV[dIv.value]; if (o.num) dLv.value = o.def; buildChecks(); dPreview(); });
   dLv.addEventListener('change', dPreview); $('#d-reps').addEventListener('change', dPreview); $('#d-filter').addEventListener('change', dPreview);
   dcv.onresize = dDraw;
+  const dRec = Lab.timelapse(dcv, { fps: 4, width: 420, label: 'Design run', key: 'designrun' });   // live runs only
+  dRec.mount('#d-timelapse');
   const saved = Lab.store.get('d-setup');
   if (saved && IV[saved.iv]) { dIv.value = saved.iv; if (saved.levels) dLv.value = saved.levels; }
   buildChecks(); if (saved && saved.checks && !IV[dIv.value].num) $('#d-checks').querySelectorAll('input').forEach(i => { i.checked = saved.checks.includes(i.value); });
@@ -1218,7 +1234,7 @@ const Predict = (function () {
   }
   const dAllUp = () => dCups.every(c => c.disks.every(d => d.up));
   function dFinish(setRows) {
-    dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = Math.min(D_MAX, Math.round(dT)) + ' min'; dAnim = null; dLoop = null;
+    dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = Math.min(D_MAX, Math.round(dT)) + ' min'; dAnim = null; dLoop = null; dRec.stop();
     const iv = dIvKey, per = new Map();
     if (setRows) draw.setRows(dCups.map(c => { const k = String(c.v); per.set(k, (per.get(k) || 0) + 1); const e = et50(c.counts, 10); return { v: c.v, lvl: lvName(iv, c.v), cup: per.get(k), et: e, etTxt: e == null ? '> 45' : fmt(e, 1), rate: e == null || e === 0 ? 0 : 1 / e }; }));
     Lab.store.set('d-run', Object.assign(Lab.store.get('d-run') || {}, { done: true }));
@@ -1230,7 +1246,7 @@ const Predict = (function () {
       while (dT < D_MAX - 1e-9 && !dAllUp() && dTick(Math.min(dTarget, D_MAX)));
       dCups.forEach(c => easeDisks(c.disks, dt * D_RATE)); dDraw(); $('#d-t').textContent = fmt(dT, 0) + ' min';
       if (dT >= D_MAX - 1e-9 || dAllUp()) { dLoop.stop(); dFinish(true); return false; }
-    });
+    }, { tick: 1 });
     dAnim = () => { dLoop.stop(); while (dT < D_MAX - 1e-9 && !dAllUp() && dTick(D_MAX)); dFinish(true); };
     dLoop.start();
   }
@@ -1242,7 +1258,9 @@ const Predict = (function () {
     Lab.store.set('d-setup', { iv, levels: dLv.value, checks: IV[iv].num ? null : dLevels() });
     Lab.store.set('d-run', { sd, t0: Date.now(), reps: +dReps.value, filter: $('#d-filter').checked, done: false });
     dBegin(sd);
+    Lab.sound.play('click');
     if (Lab.reducedMotion()) { while (dT < D_MAX - 1e-9 && !dAllUp() && dTick(D_MAX)); dFinish(true); return; }
+    recStart(dRec);
     dGo();
   });
   { const dr = Lab.store.get('d-run'), ds = Lab.store.get('d-setup');
@@ -1267,15 +1285,8 @@ const Predict = (function () {
      ===================================================================== */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
   const cupRows = () => cupTable.getRows();
-  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
-     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
-  function showData(sim, o) {
-    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
-    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
-    return r;
-  }
-  showData('#cup-sim', { graph: ['#cup-chart'], data: ['#cup-table'] });
-  showData('#d-sim', {
+  Lab.results('#cup-sim', { start: 'data', graph: ['#cup-chart'], data: ['#cup-table'] });
+  Lab.results('#d-sim', { start: 'data',
     graph: [{ el: '#d-chart', title: 'Rate: mean 1/ET₅₀ ± 2 SE' }, { el: '#d-chart2', title: 'Median ET₅₀' }],
     data: [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw', title: 'ET₅₀ for every cup' }]
   });
@@ -1334,7 +1345,21 @@ const Predict = (function () {
   [['cer-c', 'Claim', 'C'], ['cer-e', 'Evidence (median ET50s, mean 1/ET50 ± 2 SE)', 'E'], ['cer-r', 'Reasoning (connect to light capture, CO₂ fixation, enzymes, or respiration)', 'R']].forEach(([k, l, L]) => { Lab.prompt(cer, { key: k, label: l, rows: 4 }).querySelector('label').dataset.letter = L; });
   Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'Evidence: cite two values (with units).', reasoning: 'Reasoning: link the evidence to ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the variable) ___ (increased / decreased) the rate of net photosynthesis in ___.</p><p><strong>Evidence:</strong> At ___ (level), the median ET<sub>50</sub> was ___ min and the rate was ___ min⁻¹, compared with ___ min⁻¹ at ___.</p><p><strong>Reasoning:</strong> This happens because ___ (light, CO<sub>2</sub>, enzymes, or respiration) ___.</p>');
   const ev = $('#evaluate-prompts');
-  Predict.compare(ev, { key: 'reflect-predict', items: [['predict-floatassay', 'Before the float assay you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Use a number from your data (with units). What does any mismatch tell you about your thinking?', rows: 4 });
+  Predict.compare(ev, { key: 'reflect-predict', items: [
+    ['predict-floatassay', 'Before the float assay you predicted:', {
+      title: 'Float assay: your prediction vs. what happened', chartEl: '#cup-chart', part: 'Float assay', partId: 'float-assay',
+      getResult: () => { const rows = cupTable.getRows(); return rows.length > 1 ? { rows, last: rows[rows.length - 1], n: cupPrep.na, nb: cupPrep.nb, e: et50(rows.map(r => r.a), cupPrep.na) } : null; },
+      summarize: r => `With CO₂ the cup ${r.e != null ? 'reached half its disks floating (ET₅₀) at ' + Lab.fmt(r.e, 1) + ' min' : 'had not reached half its disks floating'}; by minute ${r.last.m}, ${r.last.a} of ${r.n} disks were floating with CO₂ and ${r.last.b} of ${r.nb} without CO₂.`,
+      delta: (r, pred) => {
+        const withFirst = r.last.a / Math.max(1, r.n) > r.last.b / Math.max(1, r.nb), same = r.last.a / Math.max(1, r.n) === r.last.b / Math.max(1, r.nb);
+        const fact = same ? 'The two cups were level at the end of the run.' : withFirst ? 'The cup with bicarbonate floated more disks than the water-only cup.' : 'The water-only cup floated more disks than the bicarbonate cup.';
+        const saidWater = /(without|water|no (co|bicarb))[^.]*\b(first|faster|more)/i.test(pred), saidBicarb = /(with|bicarb|co2|co₂)[^.]*\b(first|faster|more)/i.test(pred);
+        return fact + (same || saidWater === saidBicarb ? '' : (withFirst ? saidBicarb : saidWater) ? ' That matches your prediction.' : ' That is the opposite of your prediction.');
+      } }],
+    ['predict-design', 'Before your design you predicted:', {
+      title: 'Your design: your prediction vs. what happened', chartEl: '#d-chart', part: 'Design', partId: 'design',
+      summarize: o => { const t = Predict.seriesTrend(o, 'The mean rate (1/ET₅₀)', 'min⁻¹', 3); return t ? t.text : 'Your design results are in the Design part.'; },
+      delta: (o, pred) => { const t = Predict.seriesTrend(o, 'The mean rate', 'min⁻¹', 3); return t ? t.text + Predict.verdict(pred, t.dir) : null; } }]], label: 'Compare your predictions with your results. Which were right, and which were not? Use a number from your data (with units). What does any mismatch tell you about your thinking?', rows: 4 });
   Lab.prompt(ev, { key: 'e1', label: 'Could the way you perform the procedure (disk size, solution depth, soap amount, how you cut disks, swirling) change the outcome? If the outcome changes, does that mean the net rate of photosynthesis changed? Explain.', rows: 4 });
   Lab.prompt(ev, { key: 'e2', label: 'How would you expect the light response curve of a shade-grown leaf to compare with that of a sun-grown leaf? Design a two-variable experiment to test it.', rows: 4 });
   Lab.prompt(ev, { key: 'e3', label: 'A lamp very close to the cups can heat the water. How would that confound a light-intensity experiment, and how would you prevent it?', rows: 3 });
