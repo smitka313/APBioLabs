@@ -108,6 +108,29 @@ const LABS = {
     await p.click('#d-run'); await p.waitForTimeout(500); await p.click('#d-log'); await p.waitForTimeout(800);
     return p;
   },
+  async lab04(b) {
+    const c = await ctx(b), p = await T.open(c, 'lab04.html', 'sa-v');
+    await fillPred(p, 'predict-sav', 'I predict the smallest block will have the highest percent reached by acid because it has more surface for its volume.');
+    await fillPred(p, 'predict-bags', 'I predict the bag with sucrose inside will gain mass and the bag with salt outside will lose mass because water moves to higher solute.');
+    await fillPred(p, 'predict-plasmo', 'I predict the cells in salt will shrink and pull away from the wall because water leaves.');
+    await fillPred(p, 'predict-soak', 'I predict the cores in low sucrose will gain mass and in high sucrose will lose mass because of water potential.');
+    await fillPred(p, 'predict-design', 'I predict the result will increase as the level increases because of diffusion.');
+    await p.click('#p1-run');
+    await timelapse(p, 'agar', '#p1-timelapse');
+    await show(p, 'model-cells'); await p.click('#p2-run'); await p.waitForTimeout(4000);
+    await show(p, 'plasmolysis');
+    await p.evaluate(() => { const s = document.querySelector('#p3a-sel'); if (s && s.options.length > 1) { s.selectedIndex = s.options.length - 1; s.dispatchEvent(new Event('change', { bubbles: true })); } });
+    await p.click('#p3a-run');
+    await timelapse(p, 'plasmolysis', '#p3a-timelapse');
+    await p.click('#p3a-rec'); await p.waitForTimeout(300);
+    await p.evaluate(() => { const i = document.querySelector('#p3a-table input[data-k="plz"]'); i.value = '12'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); });
+    await show(p, 'water-potential');
+    await p.evaluate(() => { for (let i = 0; i < 6; i++) { const s = document.querySelector('#p3b-as' + i); s.selectedIndex = Math.min(s.options.length - 1, i + 1); s.dispatchEvent(new Event('change', { bubbles: true })); } });
+    await p.click('#p3b-run'); await p.waitForTimeout(3500);
+    await show(p, 'design');
+    await p.click('#d-run'); await p.waitForTimeout(3500);
+    return p;
+  },
 };
 
 (async () => {
