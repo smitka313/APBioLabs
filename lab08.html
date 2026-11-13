@@ -53,6 +53,10 @@
   .sim--fit .pred-grid { gap: 8px; }
   .sim--fit .pred-grid .field label { font-size: .74rem; }
   .sim--fit .pred-grid select { font-size: .78rem; padding: 4px 4px; }
+  .pred-recall blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .pred-recall .pred-recall-k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .pred-recall p { margin: 4px 0 0; white-space: pre-wrap; }
+  .pred-recall ul { margin: 4px 0 0; padding-left: 1.1rem; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -245,7 +249,7 @@
         </div>
         <div class="stack">
           <div class="field"><label for="zoom-plate">Plate to count</label><select id="zoom-plate"></select></div>
-          <div class="readouts"><div class="readout"><span class="k">Colonies you marked</span><span class="v" id="mark-count">0</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Colonies you marked (colonies)</span><span class="v" id="mark-count">0</span></div></div>
           <div class="row"><button class="btn btn--sm" id="clear-marks" type="button">Clear marks</button><button class="btn btn--sm" id="use-count" type="button">Use this count below</button></div>
           <p class="small muted" id="zoom-note">Incubate your plates first.</p>
         </div>
@@ -255,9 +259,9 @@
       <p class="prose small">Use the +pGLO LB/amp plate, as the manual does. Look back at the protocol for the plasmid concentration (0.005 µg/µL) and every volume you added to the +pGLO tube.</p>
       <div class="readouts"><div class="readout"><span class="k">Volumes in your +pGLO tube</span><span class="v" id="vol-list" style="font-size:.9rem">—</span></div></div>
       <div class="grid-2" style="margin-top:12px">
-        <div class="field"><label for="c-count">Colonies on +pGLO LB/amp plate</label><input id="c-count" type="number" step="1" min="0"></div>
+        <div class="field"><label for="c-count">Colonies on +pGLO LB/amp plate (colonies)</label><input id="c-count" type="number" step="1" min="0"></div>
         <div class="field"><label for="c-mass">a. Total plasmid DNA used (µg)</label><input id="c-mass" type="number" step="any"></div>
-        <div class="field"><label for="c-frac">b. Fraction of the tube spread on the plate</label><input id="c-frac" type="number" step="any"></div>
+        <div class="field"><label for="c-frac">b. Fraction of the tube spread on the plate (no units)</label><input id="c-frac" type="number" step="any"></div>
         <div class="field"><label for="c-spread">c. Plasmid DNA spread on the plate (µg)</label><input id="c-spread" type="number" step="any"></div>
         <div class="field"><label for="c-eff">Transformation efficiency (transformants/µg)</label><input id="c-eff" type="number" step="any"></div>
         <div class="field"><label for="c-sci">Efficiency in scientific notation (e.g. 3.1 × 10^3)</label><input id="c-sci" type="text"></div>
@@ -339,7 +343,10 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Evaluate" data-minutes="10">
     <header><div class="eyebrow">Evaluating results</div><h2>Reflect and go further</h2></header>
-    <div class="step-body prompts-2" id="evaluate-prompts"></div>
+    <div class="step-body">
+      <div class="pred-recall" id="ev-recall" aria-live="polite"></div>
+      <div class="prompts-2" id="evaluate-prompts"></div>
+    </div>
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5">
@@ -1196,6 +1203,9 @@ function renderPlateReadouts() {
   el.innerHTML = PLATES.map(p => `<div class="readout"><span class="k">${p.name}</span><span class="v" style="font-size:.95rem">${desc[plates[p.id].cls]}</span></div>`).join('');
 }
 function gradePreds() {
+  /* Save what the student predicted for each plate next to what grew, so Reflect can quote it. */
+  Lab.store.set('plate-pred-record', PLATES.map(p => ({ plate: p.name, pred: ($('#pr-' + p.id).selectedOptions[0] || {}).text || '', actual: (PRED_OPTS.find(o => o[0] === plates[p.id].cls) || [])[1] || '' })));
+  if (typeof renderPlateRecall === 'function') renderPlateRecall();
   PLATES.forEach(p => {
     const v = $('#pr-' + p.id).value, act = plates[p.id].cls, pill = $('#pp-' + p.id);
     pill.hidden = false;
@@ -1279,10 +1289,10 @@ function checkCalc() {
 }
 $('#calc-check').addEventListener('click', () => checkCalc());
 const sciStr = v => { if (!isFinite(v) || v <= 0) return '—'; const e = Math.floor(Math.log10(v)); return `${(v / 10 ** e).toFixed(1)} × 10^${e}`; };
-const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number', yLabel: 'Efficiency (transformants/µg)', series: [], hLines: [{ y: 800, label: '8.0 × 10²' }, { y: 7000, label: '7.0 × 10³' }], xMin: 0 });
+const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number (no units)', yLabel: 'Transformation efficiency (transformants/µg)', series: [], hLines: [{ y: 800, label: '8.0 × 10²' }, { y: 7000, label: '7.0 × 10³' }], xMin: 0 });
 const runsTable = Lab.table('#runs-table', {
   save: 'runs',
-  columns: [{ key: 'run', label: 'Run' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Efficiency', unit: 'per µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
+  columns: [{ key: 'run', label: 'Run number', unit: 'no units' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread on plate', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Transformation efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
   onChange: rows => runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) })
 });
 $('#calc-add').addEventListener('click', () => {
@@ -1315,7 +1325,7 @@ div.addEventListener('change', () => { buildLevels(); });
 buildLevels();
 const reps = $('#d-reps'), repsOut = $('#d-reps-out');
 const syncReps = () => repsOut.textContent = reps.value; reps.addEventListener('input', syncReps); syncReps();
-const dChart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Efficiency (transformants/µg)', series: [] });
+const dChart = Lab.chart('#d-chart', { xLabel: 'Level of your independent variable', yLabel: 'Transformation efficiency (transformants/µg)', series: [] });
 function drawDesign(rows) {
   if (!rows.length) { dChart.update({ type: 'xy', series: [], categories: undefined }); return; }
   const iv = IVS[rows[0].iv];
@@ -1324,7 +1334,7 @@ function drawDesign(rows) {
 }
 const dTable = Lab.table('#d-table', {
   save: 'design',
-  columns: [{ key: 'name', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'counts', label: 'Colonies per plate' }, { key: 'mean', label: 'Mean efficiency', unit: 'per µg', num: true, digits: 0 }, { key: 'sd', label: 'SD', num: true, digits: 0 }, { key: 'err2', label: '2 SE', num: true, digits: 0 }],
+  columns: [{ key: 'name', label: 'Level' }, { key: 'n', label: 'Replicates (n)', unit: 'transformations', num: true, digits: 0 }, { key: 'counts', label: 'Colonies per plate', unit: 'colonies' }, { key: 'mean', label: 'Mean transformation efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'sd', label: 'SD of efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'err2', label: '2 SE of efficiency', unit: 'transformants/µg', num: true, digits: 0 }],
   onChange: drawDesign
 });
 $('#d-run').addEventListener('click', () => {
@@ -1401,9 +1411,18 @@ $('#s-med').addEventListener('change', () => { if (!satRes) drawSat(); });
   ['a-e3', 'The manual says this protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.']]]
 ].forEach(([el, list]) => list.forEach(([key, label]) => Lab.prompt('#' + el, { key, label, rows: 3 })));
 const cer = $('#cer');
+cer.insertAdjacentHTML('afterend', '<details class="disclose disclose--sm"><summary>Need a hint?</summary><div class="inner"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
 [['C', 'cer-c', 'Claim: Did your +pGLO cells take up and express the plasmid genes?'], ['E', 'cer-e', 'Evidence: Which plates, colony counts, and UV observations support your claim?'], ['R', 'cer-r', 'Reasoning: Connect your evidence to the genes on pGLO (bla, GFP, araC) and to selection.']].forEach(([L, key, label]) => {
   const p = Lab.prompt(cer, { key, label, rows: 3 }); $('label', p).dataset.letter = L;
 });
+/* Quote the student's saved plate predictions (saved when they incubate) next to what grew. */
+function renderPlateRecall() {
+  const rec = Lab.store.get('plate-pred-record'), box = $('#ev-recall');
+  if (!rec || !rec.length) { box.innerHTML = '<blockquote><span class="pred-recall-k">Your plate predictions</span><p class="muted">You have not incubated plates yet, so there are no predictions to compare. Do the Transform part first.</p></blockquote>'; return; }
+  box.innerHTML = '<blockquote><span class="pred-recall-k">Your plate predictions and what grew</span><ul>' + rec.map(r => `<li><strong>${r.plate}</strong>: you predicted “${r.pred}”; result: ${r.actual}</li>`).join('') + '</ul></blockquote>';
+}
+renderPlateRecall(); Lab.onShow('#ev-recall', renderPlateRecall);
+Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your plate predictions (quoted above) with what grew. Which predictions were right, which were wrong, and what did the differences teach you about transformation, selection, or the <em>ara</em> promoter?', rows: 4 });
 [['ev1', 'What challenges did you run into? Did you make any incorrect assumptions?'],
  ['ev2', 'What are possible sources of error in the transformation procedure? How would you reduce them if you repeated it?'],
  ['ev3', 'Were the efficiency calculations straightforward? Which step was hardest?'],
