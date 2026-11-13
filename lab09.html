@@ -189,7 +189,7 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Restriction enzymes" data-minutes="20">
     <header><div class="eyebrow">Getting started · Activities I and II</div><h2>Cut DNA on the computer, then map λ DNA</h2></header>
     <div class="step-body">
-      <div class="prose"><p>Here is the manual's 53-bp template strand and its complement. Choose an enzyme and digest. Before you press the button, predict how many fragments you will get.</p></div>
+      <div class="prose"><p>Here is a 53-bp template strand and its complement. Choose an enzyme and digest. Before you press the button, predict how many fragments you will get.</p></div>
       <div class="sim sim--fit" id="cut-sim">
         <div class="sim-side">
           <div id="cut-steps"></div>
@@ -217,7 +217,7 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Run a gel" data-minutes="20">
     <header><div class="eyebrow">Procedure · Learning to use gel electrophoresis</div><h2>Load and run λ DNA digests</h2></header>
     <div class="step-body">
-      <div class="prose"><p>Your gel (0.8% agarose in 1× TAE) is cast, set in the box with the comb at the black (−) end, covered with buffer, and the comb has been removed. Load each sample into its own well: pick a tube, then click a well, either on the gel or with the well buttons (the load volume is under <strong>More options</strong> if you want to change it). Record your loading order. Connect the leads, press <strong>Power on</strong>, and run the gel until the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout). Then press <strong>Power off</strong> and stain the gel. The manual's "ideal gel" order is A <span class="enz"><em>Bam</em>HI</span>, B <span class="enz"><em>Eco</em>RI</span>, C <span class="enz"><em>Hin</em>dIII</span>, D uncut.</p></div>
+      <div class="prose"><p>Your gel (0.8% agarose in 1× TAE) is cast, set in the box with the comb at the black (−) end, covered with buffer, and the comb has been removed. Load each sample into its own well: pick a tube, then click a well, either on the gel or with the well buttons (the load volume is under <strong>More options</strong> if you want to change it). Record your loading order. Connect the leads, press <strong>Power on</strong>, and run the gel until the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout). Then press <strong>Power off</strong> and stain the gel. A good order to load, with the uncut control and the digests side by side, is A <span class="enz"><em>Bam</em>HI</span>, B <span class="enz"><em>Eco</em>RI</span>, C <span class="enz"><em>Hin</em>dIII</span>, D uncut.</p></div>
       <div id="gel1"></div>
     </div>
   </section>
@@ -816,6 +816,7 @@ function makeGel(rootSel, measSel, cfg) {
       <div class="field"><span class="label" id="${P}-rack-l">1 · Sample rack (choose a tube)</span><div class="rack" id="${P}-rack" role="group" aria-labelledby="${P}-rack-l"></div></div>
       <div class="field"><span class="label" id="${P}-wells-l">2 · Load into well</span><div class="wells" id="${P}-wells" role="group" aria-labelledby="${P}-wells-l"></div></div>
         <div class="row"><button class="btn btn--primary" type="button" id="${P}-run">Power on: run</button><button class="btn" type="button" id="${P}-stain">Stain</button></div>
+        <div class="row stain-proc" id="${P}-sbox" hidden><progress id="${P}-sprog" max="100" value="0" style="flex:1 1 7rem;min-width:0" aria-label="Staining progress"></progress><span class="small" id="${P}-scount"></span><button class="btn btn--sm btn--ghost" type="button" id="${P}-skip">Skip ahead</button></div>
         <details class="more"><summary>More options</summary><div class="inner">
       <div class="field"><label for="${P}-vol">Load volume <output id="${P}-vol-o" class="val"></output></label><input id="${P}-vol" type="range" min="5" max="30" step="1" value="18"><span class="hint">Wells hold about 25 µL. Overfilling spills into neighboring wells.</span></div>
       <label class="check" for="${P}-heat"><input type="checkbox" id="${P}-heat"> Heat samples to 65 °C for 5 min before loading</label>
@@ -844,11 +845,11 @@ function makeGel(rootSel, measSel, cfg) {
     onChange: () => analyze()
   });
   const prevGel = Math.max(0, ...meas.getRows().map(r => r.gel || 0));
-  const st = { lanes: [], t: 0, running: false, stain: 0, gel: prevGel + 1, sel: cfg.samples[0].key, pipette: null, runF: 1, laneF: [], reversed: false };
+  const st = { shown: 'none', lanes: [], t: 0, running: false, stain: 0, stainAt: 0, destainAt: 0, gel: prevGel + 1, sel: cfg.samples[0].key, pipette: null, runF: 1, laneF: [], reversed: false };
   function newGel() {
-    st.lanes = Array.from({ length: 8 }, () => []); st.t = 0; st.dist = 0; st.frozen = { pct: pct(), V: V() }; st.running = false; st.stain = 0; st.runF = Math.max(0.9, Math.min(1.1, rng.normal(1, 0.03)));
+    st.lanes = Array.from({ length: 8 }, () => []); st.t = 0; st.dist = 0; st.frozen = { pct: pct(), V: V() }; st.running = false; st.stain = 0; st.stainAt = 0; st.destainAt = 0; st.shown = 'none'; st.runF = Math.max(0.9, Math.min(1.1, rng.normal(1, 0.03)));
     st.laneF = st.lanes.map((_, i) => 1 - 0.012 * Math.pow((i - 3.5) / 3.5, 2) + rng.normal(0, 0.004));
-    $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; $('stain').textContent = 'Stain'; drawWells(); updateRead(); draw();
+    $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; syncProc(true); drawWells(); updateRead(); draw();
   }
   const sample = k => cfg.samples.find(s => s.key === k);
   /* Persistence: the loaded wells, run time, dye position, stain stage, leads and controls are saved so a reload restores the gel
@@ -857,7 +858,7 @@ function makeGel(rootSel, measSel, cfg) {
   let lastSave = 0;
   function saveState() {
     lastSave = performance.now();
-    Lab.store.set(SK, { v: 1, gel: st.gel, lanes: st.lanes, t: st.t, dist: st.dist, frozen: st.frozen, stain: st.stain, reversed: st.reversed, runF: st.runF, laneF: st.laneF, sel: st.sel, running: !!st.running, at: Date.now(),
+    Lab.store.set(SK, { v: 1, gel: st.gel, lanes: st.lanes, t: st.t, dist: st.dist, frozen: st.frozen, stain: st.stain, stainAt: st.stainAt, destainAt: st.destainAt, reversed: st.reversed, runF: st.runF, laneF: st.laneF, sel: st.sel, running: !!st.running, at: Date.now(),
       vol: $('vol').value, heat: $('heat').checked, pct: $('pct').value, volt: $('volt').value });
   }
   function restoreState() {
@@ -867,13 +868,13 @@ function makeGel(rootSel, measSel, cfg) {
     if (r.lanes.some(l => !Array.isArray(l) || l.some(c => !keys.includes(c.k) || !isFinite(c.v)))) return false;
     $('vol').value = r.vol; $('heat').checked = !!r.heat; $('pct').value = r.pct; $('volt').value = r.volt;
     $('vol-o').textContent = $('vol').value + ' µL'; $('volt-o').textContent = $('volt').value + ' V';
-    Object.assign(st, { gel: Math.max(st.gel, r.gel || 1), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
+    Object.assign(st, { gel: Math.max(st.gel, r.gel || 1), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, stainAt: +r.stainAt || 0, destainAt: +r.destainAt || 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
     if (keys.includes(r.sel)) st.sel = r.sel;
     Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel)));
     Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === 'rev') === st.reversed)));
     $('gelno').textContent = st.gel;
     $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run';
-    $('stain').textContent = st.stain === 0 ? 'Stain' : st.stain === 1 ? 'Destain (water)' : 'Destained';
+    syncProc(true);
     drawWells(); updateRead(); draw();
     if (r.running) {   // the power stayed on while the page was closed: catch up by the wall clock
       const el = Math.max(0, (Date.now() - (r.at || Date.now())) / 1000); let left = el, over = false;
@@ -881,7 +882,7 @@ function makeGel(rootSel, measSel, cfg) {
       updateRead(); draw();
       if (over) { stop('The power stayed on while the page was closed, and the dye front ran off the gel. Small fragments ran out into the buffer. Pour a new gel to try again.'); }
       else { st.running = true; $('run').textContent = 'Power off: stop'; msg('warn', 'The power stayed on while the page was closed (about ' + Math.round(el) + ' s), so the gel kept running: now ' + Math.round(st.t) + ' min, dye front at ' + Lab.fmt(st.dist, 1) + ' mm. Power off when it is about 60 mm.'); loop.start(); }
-    } else if (st.t > 0) msg('ok', 'Restored your gel: ' + (st.stain ? 'stained, ready to measure.' : 'run for ' + Math.round(st.t) + ' min (dye front at ' + Lab.fmt(st.dist, 1) + ' mm).'));
+    } else if (st.t > 0) msg('ok', 'Restored your gel: ' + (st.stain ? ({ staining: 'staining in progress (' + Math.ceil((1 - stainP()) * STAIN_MS / 1000) + ' s left).', stained: 'stained, ready to destain.', destaining: 'destaining in progress (' + Math.ceil((1 - destainP()) * DESTAIN_MS / 1000) + ' s left).', done: 'destained, ready to measure.' })[phase()] : 'run for ' + Math.round(st.t) + ' min (dye front at ' + Lab.fmt(st.dist, 1) + ' mm).'));
     else if (st.lanes.some(l => l.length)) msg('ok', 'Restored your loaded wells. Connect the leads and power on.');
     return true;
   }
@@ -948,7 +949,7 @@ function makeGel(rootSel, measSel, cfg) {
     const mk = () => { const c = mkC(G.w * G.dpr, G.h * G.dpr), x = c.getContext('2d'); x.setTransform(G.dpr, 0, 0, G.dpr, 0, 0); return [c, x]; };
     const [bg, x] = mk();
     drawBench(x, G); drawTipBox(x, G); drawRack(x, G, cfg.samples, st.sel); drawSupply(x, G, V(), scene === 'box');
-    if (scene === 'box') drawGelBox(x, G, st.gel * 17 + 3); else drawLightBox(x, G, st.gel * 17 + 3, st.stain);
+    if (scene === 'box') drawGelBox(x, G, st.gel * 17 + 3); else drawLightBox(x, G, st.gel * 17 + 3, 2);
     drawLeads(x, G, st.reversed, scene === 'box');
     if (G.wide && G.tips && !st.pipette) drawPipette(x, G.tips.x0 + 8, G.h - 16, 0.55, 1.22, +$('vol').value, 0);
     const [fg, f] = mk(); drawRuler(f, G);
@@ -959,10 +960,74 @@ function makeGel(rootSel, measSel, cfg) {
     }
     return { bg, fg };
   }
+  /* ---- Staining and destaining are timed processes. Each saves its start time (st.stainAt / st.destainAt, ms since 1970) and every
+     frame, button label, checklist step and measuring gate recomputes the stage from the clock, so a reload resumes mid-way.
+     A saved gel with no start time (older saves) counts as finished. ---- */
+  const STAIN_MS = 27000, DESTAIN_MS = 25000;
+  const clamp01 = v => Math.max(0, Math.min(1, v)), ease = u => u * u * (3 - 2 * u);
+  const stainP = () => st.stain >= 1 ? (st.stainAt ? clamp01((Date.now() - st.stainAt) / STAIN_MS) : 1) : 0;
+  const destainP = () => st.stain === 2 ? (st.destainAt ? clamp01((Date.now() - st.destainAt) / DESTAIN_MS) : 1) : 0;
+  const phase = () => !st.stain ? 'none' : st.stain === 1 ? (stainP() < 1 ? 'staining' : 'stained') : (destainP() < 1 ? 'destaining' : 'done');
+  st.phase = phase; st.stainP = stainP; st.destainP = destainP;
+  /* What each layer looks like right now. Bigger, more abundant DNA (tier 0) darkens first; faint bands (tier 2) come up last.
+     Bands start blurry and wide, and sharpen while the background clears. */
+  const TIER_DELAY = [0, 0.18, 0.4];
+  function procLook() {
+    const p = stainP(), dp = destainP(), late = st.stain === 2, L = { wash: 0, edge: 0, smear: 0, dye: 1, tier: [] };
+    if (!st.stain) return L;
+    L.wash = late ? 0.8 * Math.pow(1 - dp, 1.4) : 0.8 * (1 - Math.pow(1 - p, 2));
+    L.edge = late ? 0 : 0.5 * 4 * p * (1 - p);
+    L.smear = late ? 1 - 0.67 * ease(dp) : ease(p);
+    L.dye = late ? 0.5 * (1 - dp) : 1 - 0.5 * p;
+    for (let t = 0; t < 3; t++) {
+      const q = late ? 1 : ease(clamp01((p - TIER_DELAY[t]) / (1 - TIER_DELAY[t])));
+      const amount = late ? 0.56 + 0.44 * ease(dp) : 0.56 * q, sharp = late ? 0.35 + 0.65 * ease(dp) : 0.35 * q;
+      L.tier.push({ sharp: amount * sharp, blur: amount * (1 - sharp) });
+    }
+    return L;
+  }
+  /* The stained band layers are rendered once per gel (and per size change) at their final strength: three abundance tiers, each as a sharp
+     copy and a blurred copy, plus a smear layer and a pair of unevenness textures. Each frame only composites them with changing alpha. */
+  let BLK = '', BLC = null;
+  function soften(c, f) {
+    const sm = mkC(Math.ceil(c.width / f), Math.ceil(c.height / f)), sx = sm.getContext('2d'); sx.imageSmoothingEnabled = true; sx.drawImage(c, 0, 0, sm.width, sm.height);
+    const o = c.getContext('2d'); o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, c.width, c.height); o.imageSmoothingEnabled = true; o.imageSmoothingQuality = 'high'; o.drawImage(sm, 0, 0, c.width, c.height);
+  }
+  function bandLayers(G) {
+    const dpr = G.dpr, gw = G.gx1 - G.gx0, gh = G.bot - G.top, mm = G.mmPx;
+    const key = [G.w, G.h, dpr, st.gel, st.t.toFixed(2), st.dist.toFixed(2), st.frozen.V.toFixed(1), st.frozen.pct, $('heat').checked, st.lanes.map(l => l.map(c => c.k + c.v).join('+')).join('|')].join('~');
+    if (BLK === key) return BLC;
+    const mk = () => { const c = mkC(gw * dpr, gh * dpr), x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, -G.gx0 * dpr, -G.top * dpr); return [c, x]; };
+    const sh = [0, 1, 2].map(mk), bl = [0, 1, 2].map(mk), sm = mk(), spr = bandSprite('18,40,118');
+    for (let i = 0; i < 8; i++) {
+      const L = st.lanes[i]; if (!L.length) continue;
+      const cx = G.gx0 + G.lw * (i + 0.5), ww = G.lw * 0.62, vol = Math.max(...L.map(c => c.v)), vb = 1 + 0.01 * Math.max(0, st.frozen.V - 50), bw = bandW(vol) * mm;
+      const smileAt = d => mm * (0.12 + 0.3 * Math.min(1, d / 45)) * vb;
+      laneBands(i).forEach(b => {
+        if (b.d <= 0 || b.d >= GEL_MM) return; const a = alphaOf(b.ng); if (a <= 0.01) return;
+        const y = G.Y(b.d), th = bw * (0.85 + 0.35 * a), t = a >= 0.75 ? 0 : a >= 0.45 ? 1 : 2;
+        if (b.ng > 320) { const len = Math.min(3.5, b.ng / 250) * mm, g = sm[1].createLinearGradient(0, y - len, 0, y); g.addColorStop(0, 'rgba(18,40,118,0)'); g.addColorStop(1, `rgba(18,40,118,${Math.min(0.9, 0.73 * a).toFixed(3)})`); sm[1].fillStyle = g; sm[1].fillRect(cx - ww * 0.42, y - len, ww * 0.84, len); }
+        drawBand(sh[t][1], spr, cx, ww, y, th, smileAt(b.d), a * 1.1);
+        drawBand(bl[t][1], spr, cx - ww * 0.04, ww * 1.08, y, th * 2.6, smileAt(b.d) * 1.3, a * 1.25);
+      });
+    }
+    bl.forEach(([c]) => { soften(c, 3); soften(c, 2); });
+    // unevenness: a few soft darker patches that follow the stain unevenly, plus stain pooling in from the edges
+    const R = Lab.rng(st.gel * 7 + 11), [blot, bx] = mk(), [edge, ex] = mk();
+    for (let n = 0; n < 16; n++) {
+      const rx = G.gx0 + R.uniform() * gw, ry = G.top + R.uniform() * gh, r = (0.12 + R.uniform() * 0.25) * gw, g = bx.createRadialGradient(rx, ry, 0, rx, ry, r);
+      g.addColorStop(0, `rgba(10,40,120,${(0.25 + R.uniform() * 0.3).toFixed(2)})`); g.addColorStop(1, 'rgba(10,40,120,0)'); bx.fillStyle = g; bx.fillRect(G.gx0, G.top, gw, gh);
+    }
+    const eg = (x0, y0, x1, y1) => { const g = ex.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, 'rgba(10,40,120,0.55)'); g.addColorStop(1, 'rgba(10,40,120,0)'); return g; }, ew = Math.min(gw, gh) * 0.16;
+    ex.fillStyle = eg(G.gx0, 0, G.gx0 + ew, 0); ex.fillRect(G.gx0, G.top, ew, gh); ex.fillStyle = eg(G.gx1, 0, G.gx1 - ew, 0); ex.fillRect(G.gx1 - ew, G.top, ew, gh);
+    ex.fillStyle = eg(0, G.top, 0, G.top + ew); ex.fillRect(G.gx0, G.top, gw, ew); ex.fillStyle = eg(0, G.bot, 0, G.bot - ew); ex.fillRect(G.gx0, G.bot - ew, gw, ew);
+    BLK = key; BLC = { sharp: sh.map(a => a[0]), blur: bl.map(a => a[0]), smear: sm[0], blot, edge };
+    return BLC;
+  }
   function draw() {
     const { ctx, w, h, dpr } = cv, G = gelLayout(w, h, dpr), scene = st.stain ? 'light' : 'box', mm = G.mmPx;
     st.geom = G;
-    const key = [w, h, dpr, scene, st.stain, st.sel, $('vol').value, st.reversed, V(), st.gel, !!st.pipette].join('|');
+    const key = [w, h, dpr, scene, st.sel, $('vol').value, st.reversed, V(), st.gel, !!st.pipette].join('|');
     if (st.cacheKey !== key) { st.cache = buildStatic(G, scene); st.cacheKey = key; }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
     ctx.drawImage(st.cache.bg, 0, 0, w, h);
@@ -971,6 +1036,13 @@ function makeGel(rootSel, measSel, cfg) {
     if (scene === 'box') ctx.rect(G.box.x0 + 6, G.box.y0 + 6, G.box.x1 - G.box.x0 - 12, G.box.y1 - G.box.y0 - 12); else ctx.rect(G.gx0, G.top, G.gx1 - G.gx0, G.bot - G.top);
     ctx.clip();
     const fade = 1 - 0.3 * Math.min(1, st.t / 200);
+    const PR = procLook(), BL = st.stain && st.t > 0 && !st.reversed ? bandLayers(G) : null;
+    if (BL) {   // methylene-blue wash soaking into (and later out of) the gel: uniform tint, soft edges, tiny unevenness
+      const gw = G.gx1 - G.gx0, gh = G.bot - G.top;
+      ctx.globalAlpha = PR.wash; ctx.fillStyle = 'rgb(34,78,158)'; ctx.fillRect(G.gx0, G.top, gw, gh);
+      if (PR.edge > 0.004) { ctx.globalAlpha = PR.edge; ctx.drawImage(BL.edge, G.gx0, G.top, gw, gh); }
+      ctx.globalAlpha = PR.wash * 0.4; ctx.drawImage(BL.blot, G.gx0, G.top, gw, gh); ctx.globalAlpha = 1;
+    }
     for (let i = 0; i < 8; i++) {
       const L = st.lanes[i]; if (!L.length) continue;
       const cx = G.gx0 + G.lw * (i + 0.5), ww = G.lw * 0.62, vol = Math.max(...L.map(c => c.v)), main = L.some(c => c.main);
@@ -989,20 +1061,30 @@ function makeGel(rootSel, measSel, cfg) {
       }
       const lf = st.laneF[i], vb = 1 + 0.01 * Math.max(0, st.frozen.V - 50), bw = bandW(vol) * mm;
       const smileAt = d => mm * (0.12 + 0.3 * Math.min(1, d / 45)) * vb;
-      if (st.stain < 2) {   // loading-dye fronts: bromophenol blue (~300 bp) and xylene cyanol (~4 kb at 0.8%)
-        const k = (scene === 'box' ? 0.85 : 0.35) * fade * (main ? 1 : 0.4);
+      if (!st.stain || PR.dye > 0.01) {   // loading-dye fronts: bromophenol blue (~300 bp) and xylene cyanol (~4 kb at 0.8%)
+        const k = (scene === 'box' ? 0.85 : 0.35 * PR.dye) * fade * (main ? 1 : 0.4);
         const d1 = st.dist * lf, d2 = st.dist * relMob(4000, st.frozen) * lf;
         if (d2 < GEL_MM) drawBand(ctx, bandSprite('30,128,140'), cx, ww, G.Y(d2), bw * 1.5, smileAt(d2), k * 0.85);
         if (d1 < GEL_MM) drawBand(ctx, bandSprite('82,48,160'), cx, ww, G.Y(d1), bw * 1.6, smileAt(d1), k);
       }
-      // DNA bands: invisible ghosts until stained; methylene blue, darker for more DNA mass
-      const spr = st.stain ? bandSprite('18,40,118') : bandSprite('225,232,240'), kk = st.stain === 0 ? 0.06 : st.stain === 1 ? 0.62 : 1.1;
-      laneBands(i).forEach(b => {
-        if (b.d <= 0 || b.d >= GEL_MM) return; const a = alphaOf(b.ng); if (a <= 0.01) return;
-        const y = G.Y(b.d), th = bw * (0.85 + 0.35 * a);
-        if (st.stain && b.ng > 320) { const len = Math.min(3.5, b.ng / 250) * mm, g = ctx.createLinearGradient(0, y - len, 0, y); g.addColorStop(0, 'rgba(18,40,118,0)'); g.addColorStop(1, `rgba(18,40,118,${(0.22 * kk * a).toFixed(3)})`); ctx.fillStyle = g; ctx.fillRect(cx - ww * 0.42, y - len, ww * 0.84, len); }
-        drawBand(ctx, spr, cx, ww, y, th, smileAt(b.d), a * kk);
-      });
+      // DNA bands before staining: invisible ghosts (stained bands come from the pre-rendered layers below)
+      if (!st.stain) {
+        const spr = bandSprite('225,232,240');
+        laneBands(i).forEach(b => {
+          if (b.d <= 0 || b.d >= GEL_MM) return; const a = alphaOf(b.ng); if (a <= 0.01) return;
+          drawBand(ctx, spr, cx, ww, G.Y(b.d), bw * (0.85 + 0.35 * a), smileAt(b.d), a * 0.06);
+        });
+      }
+    }
+    if (BL) {   // composite: smear, then each abundance tier crossfaded from its blurry to its sharp copy
+      const gw = G.gx1 - G.gx0, gh = G.bot - G.top;
+      if (PR.smear > 0.004) { ctx.globalAlpha = PR.smear; ctx.drawImage(BL.smear, G.gx0, G.top, gw, gh); }
+      for (let t = 0; t < 3; t++) {
+        const T = PR.tier[t];
+        if (T.blur > 0.004) { ctx.globalAlpha = T.blur; ctx.drawImage(BL.blur[t], G.gx0, G.top, gw, gh); }
+        if (T.sharp > 0.004) { ctx.globalAlpha = T.sharp; ctx.drawImage(BL.sharp[t], G.gx0, G.top, gw, gh); }
+      }
+      ctx.globalAlpha = 1;
     }
     if (st.running && scene === 'box') drawBubbles(ctx, G, bub, performance.now() / 1000, st.reversed);
     ctx.restore();
@@ -1043,11 +1125,49 @@ function makeGel(rootSel, measSel, cfg) {
     msg(note ? 'warn' : st.reversed ? 'bad' : d < 45 ? 'warn' : d > 66 ? 'warn' : 'ok', note || (st.reversed ? 'The DNA left the wells in the wrong direction and is lost in the buffer. Pour a new gel and connect black to black, red to red.' : d < 45 ? `Dye front at ${Lab.fmt(d, 1)} mm. It is not yet about 1 cm from the end (about 60 mm), so bands are still crowded near the wells. You can run longer.` : d > 66 ? `Dye front at ${Lab.fmt(d, 1)} mm: past the 1-cm-from-the-end mark (about 60 mm), so small fragments may have run off.` : `Dye front at ${Lab.fmt(d, 1)} mm, about 1 cm from the end of the gel. Press Power off, then stain the gel. Now stain the gel.`));
   }
   $('run').addEventListener('click', () => { if (st.running) stop(); else start(); });
+  /* Stain and destain button, countdown + progress bar and "Skip ahead" (same pattern as Lab 5's vacuum treatment). */
+  const LABEL = { none: 'Stain', staining: 'Staining…', stained: 'Destain (water)', destaining: 'Destaining…', done: 'Destained' };
+  let stainLoop = null;
+  const secLeft = () => Math.ceil((1 - (st.stain === 2 ? destainP() : stainP())) * (st.stain === 2 ? DESTAIN_MS : STAIN_MS) / 1000);
+  function syncProc(quiet) {   // recompute everything the student sees from the clock
+    const ph = phase(), busy = ph === 'staining' || ph === 'destaining';
+    if (Lab.reducedMotion() && busy) { if (st.stain === 1) st.stainAt = 0; else st.destainAt = 0; return syncProc(quiet); }
+    $('stain').textContent = LABEL[ph]; $('sbox').hidden = !busy;
+    if (busy) {
+      const pr = ph === 'staining' ? stainP() : destainP(), n = secLeft();
+      $('sprog').value = Math.round(pr * 100); $('sprog').setAttribute('aria-label', (ph === 'staining' ? 'Staining' : 'Destaining') + ' progress');
+      $('scount').textContent = (ph === 'staining' ? 'Staining: ' : 'Destaining: ') + n + ' s left';
+      if (!stainLoop.running) stainLoop.start();
+    }
+    if (st.shown !== ph) {
+      const before = st.shown; st.shown = ph;
+      if (!quiet) {
+        if (ph === 'stained') { msg('ok', 'Stained in methylene blue: the whole gel is blue and the bands are still faint and fuzzy. Press Destain (water) to clear the background and sharpen the bands.'); Lab.toast('Gel stained: now destain it', { type: 'ok', announce: false, key: P + '-stain' }); }
+        else if (ph === 'done') { msg('ok', 'Destained: blue bands on a clear background. Click a band or use "Measure all visible bands in lane" to record distances.'); Lab.toast('Gel destained: ready to measure', { type: 'ok', announce: false, key: P + '-stain' }); }
+        else if (ph === 'staining') msg('ok', 'Staining: methylene blue is soaking into the gel. Bigger, more abundant fragments take up the most stain and show first. Wait, or use Skip ahead.');
+        else if (ph === 'destaining') msg('ok', 'Destaining in distilled water: the background slowly clears and the bands sharpen. Heavily loaded lanes show a smear that resolves into bands.');
+      }
+      if (before !== undefined && !quiet) saveState();
+      Lab.steps.refresh();
+    }
+    return ph;
+  }
+  function fadeIn() { const c = $('cv'); c.style.transition = 'opacity .3s'; c.style.opacity = '0.35'; requestAnimationFrame(() => requestAnimationFrame(() => { c.style.opacity = ''; })); setTimeout(() => { c.style.transition = ''; }, 400); }
+  stainLoop = Lab.loop(() => { draw(); const ph = syncProc(); if (ph !== 'staining' && ph !== 'destaining') { draw(); return false; } });
   $('stain').addEventListener('click', () => {
     if (st.running) { msg('bad', 'Turn off the power and disconnect the leads before you remove the gel.'); return; }
     if (st.t === 0) { msg('warn', 'Run the gel before staining it.'); return; }
-    st.stain = st.stain === 0 ? 1 : 2; $('stain').textContent = st.stain === 1 ? 'Destain (water)' : 'Destained';
-    msg('ok', st.stain === 1 ? 'Stained in methylene blue for 20 min. Bands are visible but the background is dark. Destain in distilled water to improve contrast.' : 'Destained overnight in a little distilled water: blue bands on a clear background. Click a band or use "Measure" to record distances.'); draw(); saveState();
+    const ph = phase(), rm = Lab.reducedMotion();
+    if (ph === 'none') { st.stain = 1; st.stainAt = rm ? 0 : Date.now(); }
+    else if (ph === 'stained') { st.stain = 2; st.destainAt = rm ? 0 : Date.now(); }
+    else return;
+    syncProc(); saveState(); draw(); if (rm) fadeIn();
+  });
+  $('skip').addEventListener('click', () => {
+    const ph = phase();
+    if (ph === 'staining') st.stainAt = Date.now() - STAIN_MS; else if (ph === 'destaining') st.destainAt = Date.now() - DESTAIN_MS; else return;
+    syncProc(); saveState(); draw();
+    if (Lab.reducedMotion()) fadeIn();
   });
   // measuring
   function addMeasure(i, band, idx) {
@@ -1055,7 +1175,13 @@ function makeGel(rootSel, measSel, cfg) {
     const d = Math.max(0.1, band.front + rng.normal(0, 0.4));
     meas.addRow({ gel: st.gel, lane: i + 1, sample: s.short, band: idx + 1, dist: Math.round(d * 10) / 10, known: null, bps: band.bps });
   }
-  function ready() { if (st.t === 0 || st.reversed) { msg('warn', 'There are no bands to measure on this gel yet.'); return false; } if (st.running) { msg('warn', 'Turn the power off before measuring.'); return false; } if (!st.stain) { msg('warn', 'Stain the gel first. DNA bands are too faint to measure accurately without the final stain.'); return false; } return true; }
+  function ready() { if (st.t === 0 || st.reversed) { msg('warn', 'There are no bands to measure on this gel yet.'); return false; } if (st.running) { msg('warn', 'Turn the power off before measuring.'); return false; } const why = blockReason(); if (why) { msg('warn', why === 'Stain the gel first' ? 'Stain the gel first. DNA bands are too faint to measure accurately without the final stain.' : why + '. Bands are blurry until the gel is destained, so measuring waits for the end of the process (Skip ahead is under the Stain button).'); return false; } return true; }
+  /* Why measuring is blocked right now ('' when it is allowed): the gel must be run, powered off, stained AND destained. */
+  function blockReason() {
+    if (st.t === 0) return 'Run the gel first'; if (st.running) return 'Turn the power off first';
+    return ({ none: 'Stain the gel first', staining: 'Wait for staining to finish, then destain', stained: 'Destain the gel first', destaining: 'Wait for destaining to finish', done: '' })[phase()];
+  }
+  st.blockReason = blockReason;
   $('mall').addEventListener('click', () => { if (!ready()) return; const i = +$('mlane').value, vb = visibleBands(i); if (!vb.length) { msg('warn', `No visible bands in lane ${i + 1}.`); return; } vb.forEach((b, k) => addMeasure(i, b, k)); msg('ok', `Recorded ${vb.length} band${vb.length > 1 ? 's' : ''} from lane ${i + 1}.`); });
   $('mdye').addEventListener('click', () => { if (st.t === 0) { msg('warn', 'Run the gel first.'); return; } msg('ok', `Dye front: ${Lab.fmt(st.dist + rng.normal(0, 0.4), 1)} mm from the wells (record it in your notebook).`); });
   $('cv').addEventListener('click', e => {
@@ -1166,15 +1292,16 @@ function gelGuidance(P, gel, first, last, doneText) {
   steps.push(
     { id: 'load', text: 'Load the samples into wells', target: `#${P}-wells button`, done: () => loaded() > 0 || st.t > 0 || saved(), hint: 'Pick a tube, then press a well number.' },
     { id: 'run', text: 'Run until the dye is ~1 cm from the end', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= 66) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout).' },
-    { id: 'meas', text: 'Stain, then measure the bands', target: `#${P}-stain`, done: saved, hint: 'Press <strong>Stain</strong>, then <strong>Measure all visible bands</strong> for each lane.' }
+    { id: 'stain', text: 'Stain, then destain the gel', target: `#${P}-stain`, done: () => st.phase() === 'done' || saved(), hint: 'Press <strong>Stain</strong> and watch the blue soak in (about 30 s), then press <strong>Destain (water)</strong> (about 25 s). In a hurry? Use <strong>Skip ahead</strong>.' },
+    { id: 'meas', text: 'Measure the bands', target: `#${P}-mall`, done: saved, hint: 'Press <strong>Measure all visible bands</strong> for each lane.' }
   );
   if (last) steps.push(last);
   Lab.steps(`#${P}-steps`, steps, { doneText });
   Lab.gate(`#${P}-run`, () => (P === 'g2' && !filled('predict-crime') && !saved() && !(st.t > 0)) ? 'Write your prediction first' : (loaded() > 0 || st.t > 0) ? '' : 'Load at least one sample first');
-  Lab.gate(`#${P}-mall`, () => st.t === 0 ? 'Run the gel first' : st.running ? 'Turn the power off first' : !st.stain ? 'Stain the gel first' : '');
+  Lab.gate(`#${P}-mall`, () => st.blockReason());
+  Lab.gate(`#${P}-stain`, () => { const ph = st.phase(); return ph === 'staining' ? 'Staining in progress. Wait, or use Skip ahead.' : ph === 'destaining' ? 'Destaining in progress. Wait, or use Skip ahead.' : ph === 'done' ? 'This gel is stained and destained. Measure the bands.' : ''; });
   Lab.$(`#${P}-run`).addEventListener('click', () => { if (!st.running && st.t > 0 && st.dist >= 45) Lab.toast('Power off. Now stain the gel to see the bands.', { type: 'info', announce: false, key: P + '-run' }); });
-  Lab.$(`#${P}-stain`).addEventListener('click', () => { if (st.stain) Lab.toast(st.stain === 1 ? 'Gel stained: bands are visible' : 'Gel destained: bands are clearer', { type: 'ok', announce: false, key: P + '-stain' }); });
-  Lab.$(`#${P}-new`).addEventListener('click', () => Lab.toast('New gel poured and ready to load', { type: 'info', announce: false, key: P + '-new' }));
+    Lab.$(`#${P}-new`).addEventListener('click', () => Lab.toast('New gel poured and ready to load', { type: 'info', announce: false, key: P + '-new' }));
 }
 function layoutGel2() {
   Lab.results('#g2-sim', { start: 'data',
@@ -1192,7 +1319,7 @@ function layoutGel2() {
 const S_MARK = { key: 'H', label: 'λ + HindIII (marker)', short: 'HindIII', enz: ['HindIII'] };
 measBlock('#meas1', 'm1');
 const gel1 = makeGel('#gel1', '#meas1', {
-  prefix: 'g1', layoutLabel: 'Load the manual\'s layout (A–D + marker)',
+  prefix: 'g1', layoutLabel: 'Load the standard layout (A–D + marker)',
   samples: [S_MARK, { key: 'E', label: 'λ + EcoRI', short: 'EcoRI', enz: ['EcoRI'] }, { key: 'B', label: 'λ + BamHI', short: 'BamHI', enz: ['BamHI'] }, { key: 'U', label: 'λ uncut', short: 'Uncut', enz: [] }, { key: 'EH', label: 'λ + EcoRI + HindIII', short: 'EcoRI+HindIII', enz: ['EcoRI', 'HindIII'] }],
   layout: [null, 'B', 'E', 'H', 'U', null, 'H', null]
 });
