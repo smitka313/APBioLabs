@@ -593,6 +593,8 @@ function drawGelBox(x, G, seed) {
     x.strokeStyle = 'rgba(255,255,255,0.8)'; x.lineWidth = 0.5; x.beginPath(); x.moveTo(B.x0 + 14, ey - 0.4); x.lineTo(B.x1 - 20, ey - 0.4); x.stroke();
     [B.x0 + 12, (B.x0 + B.x1) / 2, B.x1 - 22].forEach(bx => { x.fillStyle = 'rgba(220,235,245,0.22)'; x.fillRect(bx - 4, ey - 4, 8, 8); x.strokeStyle = 'rgba(255,255,255,0.35)'; x.strokeRect(bx - 3.5, ey - 3.5, 7, 7); });
   });
+  // electrode polarity badges at the left end of each reservoir: − at the well (cathode) end, + at the far (anode) end
+  [[G.ey0, '−'], [G.ey1, '+']].forEach(([ey, sym]) => polTag(x, B.x0 + 24, ey, sym, G.wide ? 8 : 7));
   // acrylic walls: thickness, edge highlights from the upper-left light, darker lower-right edges
   const t = 6; x.lineWidth = t; x.strokeStyle = 'rgba(214,232,242,0.16)'; rrect(x, B.x0 + t / 2, B.y0 + t / 2, bw - t, bh - t, 7); x.stroke();
   x.lineWidth = 1; x.strokeStyle = 'rgba(255,255,255,0.55)'; rrect(x, B.x0 + 0.5, B.y0 + 0.5, bw - 1, bh - 1, 9); x.stroke();
@@ -669,6 +671,11 @@ function drawSupply(x, G, V, on) {
   for (let k = 0; k <= 10; k++) { const b = (-225 + 27 * k) * Math.PI / 180; x.strokeStyle = 'rgba(225,230,236,0.6)'; x.lineWidth = 1; x.beginPath(); x.moveTo(K.x + Math.cos(b) * (K.r + 2), K.y + Math.sin(b) * (K.r + 2)); x.lineTo(K.x + Math.cos(b) * (K.r + 4.5), K.y + Math.sin(b) * (K.r + 4.5)); x.stroke(); }
   // output jacks (shrouded banana sockets)
   [[S.jb, '#1b1c1f', '#4d5157'], [S.jr, '#b3221c', '#ec5a50']].forEach(([J, c, hi]) => { x.fillStyle = '#0c0d0f'; x.beginPath(); x.arc(J.x, J.y, 8, 0, TAU); x.fill(); const g = x.createRadialGradient(J.x - 2, J.y - 2, 0.5, J.x, J.y, 6.5); g.addColorStop(0, hi); g.addColorStop(1, c); x.fillStyle = g; x.beginPath(); x.arc(J.x, J.y, 6.5, 0, TAU); x.fill(); x.fillStyle = '#060607'; x.beginPath(); x.arc(J.x, J.y, 2.2, 0, TAU); x.fill(); });
+  // polarity printed beside each OUTPUT terminal (text glyphs, not only the red / black plastic)
+  { const pf = Math.max(12, Math.min(16, sw * 0.075)); x.font = `700 ${pf}px ${FONT}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    [[S.jb, '−', '#eef1f4'], [S.jr, '+', '#ff9a91']].forEach(([J, sym, c]) => {
+      const lx = S.jacks === 'right' ? J.x - 17 : J.x + (sym === '−' ? -15 : 15), ly = J.y;
+      x.fillStyle = 'rgba(0,0,0,0.55)'; x.fillText(sym, lx + 0.8, ly + 1); x.fillStyle = c; x.fillText(sym, lx, ly); }); }
   // rocker switch
   const W = S.sw; x.fillStyle = '#0e0f11'; rrect(x, W.x - 10, W.y - 7, 20, 14, 2); x.fill();
   x.fillStyle = lin(x, 0, W.y - 6, 0, W.y + 6, on ? [[0, '#2a2d31'], [1, '#4a4f56']] : [[0, '#4a4f56'], [1, '#2a2d31']]); rrect(x, W.x - 8.5, W.y - 5.5, 17, 11, 1.5); x.fill();
@@ -689,21 +696,32 @@ function drawSupplyLive(x, G, V, mA, lit, run) {
   if (run) { const g = x.createRadialGradient(lx, ly, 0, lx, ly, 10); g.addColorStop(0, 'rgba(120,255,140,0.75)'); g.addColorStop(1, 'rgba(120,255,140,0)'); x.fillStyle = g; x.beginPath(); x.arc(lx, ly, 10, 0, TAU); x.fill(); }
   x.fillStyle = run ? '#7dff8e' : '#1f3a24'; x.beginPath(); x.arc(lx, ly, 3, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,255,0.5)'; x.beginPath(); x.arc(lx - 1, ly - 1, 1, 0, TAU); x.fill();
 }
+/* Polarity tag: a pale round badge with a + or − glyph, so polarity never depends on red vs black alone. */
+function polTag(x, px, py, sym, r) {
+  r = r || 7.5; shadowed(x, 'rgba(0,0,0,0.5)', 3, 1, 1.5, () => { x.fillStyle = '#f6f4ec'; x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill(); });
+  x.strokeStyle = '#1b1c1f'; x.lineWidth = 1.2; x.beginPath(); x.arc(px, py, r, 0, TAU); x.stroke();
+  x.strokeStyle = '#1b1c1f'; x.lineWidth = 2; x.lineCap = 'round'; x.beginPath(); x.moveTo(px - r * 0.5, py); x.lineTo(px + r * 0.5, py);
+  if (sym === '+') { x.moveTo(px, py - r * 0.5); x.lineTo(px, py + r * 0.5); } x.stroke(); x.lineCap = 'butt';
+}
 /* Test lead: shadowed cable with a highlight, moulded plug at each end. */
-function drawLead(x, pts, col, hi, plugEnd) {
+function drawLead(x, pts, col, hi, plugEnd, sym) {
   const path = () => { x.beginPath(); x.moveTo(pts[0].x, pts[0].y); x.bezierCurveTo(pts[1].x, pts[1].y, pts[2].x, pts[2].y, pts[3].x, pts[3].y); };
   x.lineCap = 'round'; x.save(); x.translate(2.5, 4); path(); x.strokeStyle = 'rgba(0,0,0,0.38)'; x.lineWidth = 6; x.stroke(); x.restore();
   path(); x.strokeStyle = col; x.lineWidth = 4.6; x.stroke();
   x.save(); x.translate(-0.8, -0.9); path(); x.strokeStyle = hi; x.lineWidth = 1.1; x.stroke(); x.restore();
   [pts[0], pts[3]].forEach((P, k) => { if (k === 1 && plugEnd === false) return; shadowed(x, 'rgba(0,0,0,0.6)', 4, 1.5, 2.5, () => { x.fillStyle = col; x.beginPath(); x.arc(P.x, P.y, 6.4, 0, TAU); x.fill(); }); const g = x.createRadialGradient(P.x - 2, P.y - 2, 0.5, P.x, P.y, 6.4); g.addColorStop(0, hi); g.addColorStop(1, col); x.fillStyle = g; x.beginPath(); x.arc(P.x, P.y, 6.4, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 0.8; x.beginPath(); x.arc(P.x, P.y, 4, 0, TAU); x.stroke(); });
   x.lineCap = 'butt';
+  if (sym) {   // a +/− tag on the cable just behind each plug: the lead's own polarity (red = +, black = −)
+    const at = t => { const u = 1 - t; return { x: u * u * u * pts[0].x + 3 * u * u * t * pts[1].x + 3 * u * t * t * pts[2].x + t * t * t * pts[3].x, y: u * u * u * pts[0].y + 3 * u * u * t * pts[1].y + 3 * u * t * t * pts[2].y + t * t * t * pts[3].y }; };
+    [0.15, 0.68].forEach(t => { const P = at(t); polTag(x, P.x, P.y, sym, 7); });
+  }
 }
 function drawLeads(x, G, reversed, connected) {
   const S = G.sup, wide = G.wide, B = G.box;
   const route = (from, to) => wide
     ? [from, { x: from.x + 52, y: from.y + (to.y - from.y) * 0.15 }, { x: to.x - 34, y: to.y + (from.y < to.y ? 70 : 64) }, to]
     : [from, { x: G.w - 6, y: from.y + 30 }, { x: G.w - 4, y: to.y - 70 }, to];
-  const BLK = ['#1b1c1f', 'rgba(255,255,255,0.28)'], RED = ['#b3221c', 'rgba(255,190,180,0.55)'];
+  const BLK = ['#1b1c1f', 'rgba(255,255,255,0.28)', true, '−'], RED = ['#b3221c', 'rgba(255,190,180,0.55)', true, '+'];
   if (!connected) {   // gel moved to the light box: leads unplugged, lying on the bench
     const lx = wide ? B.x1 + 10 : G.w - 12;
     drawLead(x, route({ x: lx, y: wide ? B.y0 + 60 : B.y1 - 70 }, S.jb), ...BLK);
@@ -954,7 +972,7 @@ function makeGel(rootSel, measSel, cfg) {
     if (G.wide && G.tips && !st.pipette) drawPipette(x, G.tips.x0 + 8, G.h - 16, 0.55, 1.22, +$('vol').value, 0);
     const [fg, f] = mk(); drawRuler(f, G);
     if (scene === 'box' && st.reversed) {
-      const t = 'Leads reversed: red is on the − (well) end!', fs = G.wide ? 11 : 10; f.font = `700 ${fs}px ${FONT}`; const tw = Math.min(f.measureText(t).width + 14, G.box.x1 - G.box.x0 - 30), tx = G.box.x0 + 16, ty = G.box.y0 + 3;
+      const t = G.wide ? 'Leads reversed: + and − are swapped (red is on the − well end)!' : '+ and − are swapped!', fs = G.wide ? 11 : 10; f.font = `700 ${fs}px ${FONT}`; const tw = Math.min(f.measureText(t).width + 14, G.box.x1 - G.box.x0 - 56), tx = G.box.x0 + 42, ty = G.box.y0 + 3;
       shadowed(f, 'rgba(0,0,0,0.5)', 4, 1, 2, () => { f.fillStyle = '#fff1b8'; rrect(f, tx, ty, tw, fs + 8, 3); f.fill(); });
       f.fillStyle = '#7a2300'; f.textAlign = 'left'; f.textBaseline = 'middle'; f.fillText(t, tx + 7, ty + (fs + 8) / 2 + 0.5, tw - 12);
     }
@@ -1115,14 +1133,14 @@ function makeGel(rootSel, measSel, cfg) {
     if (st.stain) { msg('bad', 'This gel has been stained. Pour a new gel to run again.'); return; }
     if (st.t === 0) { st.frozen = { pct: pct(), V: V() }; }
     st.running = true; $('run').textContent = 'Power off: stop';
-    msg(st.reversed ? 'bad' : 'ok', st.reversed ? 'Bubbles form, but the purple dye is moving UP, out of the wells and into the buffer. Check your leads!' : 'Current is flowing: bubbles rise at both electrodes and the purple dye is moving toward the red (+) end.');
+    msg(st.reversed ? 'bad' : 'ok', st.reversed ? '+ and − are swapped (the red lead is on the − well end). Bubbles form, but the purple dye is moving UP, out of the wells and into the buffer. Check your leads!' : 'Current is flowing: bubbles rise at both electrodes and the purple dye is moving toward the red (+) end.');
     if (Lab.reducedMotion()) { st.t += 120 * 50 / V(); st.dist = 0.475 * (V() / 50) * Math.pow(0.8 / st.frozen.pct, 0.8) * st.runF * st.t; st.frozen.V = V(); stop(); return; }
     saveState(); loop.start();
   }
   function stop(note) {
     loop.stop(); st.running = false; saveState(); $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run'; updateRead(); draw();
     const d = st.dist;
-    msg(note ? 'warn' : st.reversed ? 'bad' : d < 45 ? 'warn' : d > 66 ? 'warn' : 'ok', note || (st.reversed ? 'The DNA left the wells in the wrong direction and is lost in the buffer. Pour a new gel and connect black to black, red to red.' : d < 45 ? `Dye front at ${Lab.fmt(d, 1)} mm. It is not yet about 1 cm from the end (about 60 mm), so bands are still crowded near the wells. You can run longer.` : d > 66 ? `Dye front at ${Lab.fmt(d, 1)} mm: past the 1-cm-from-the-end mark (about 60 mm), so small fragments may have run off.` : `Dye front at ${Lab.fmt(d, 1)} mm, about 1 cm from the end of the gel. Press Power off, then stain the gel. Now stain the gel.`));
+    msg(note ? 'warn' : st.reversed ? 'bad' : d < 45 ? 'warn' : d > 66 ? 'warn' : 'ok', note || (st.reversed ? 'The + and − leads were swapped, so the DNA left the wells in the wrong direction and is lost in the buffer. Pour a new gel and connect black (−) to black, red (+) to red.' : d < 45 ? `Dye front at ${Lab.fmt(d, 1)} mm. It is not yet about 1 cm from the end (about 60 mm), so bands are still crowded near the wells. You can run longer.` : d > 66 ? `Dye front at ${Lab.fmt(d, 1)} mm: past the 1-cm-from-the-end mark (about 60 mm), so small fragments may have run off.` : `Dye front at ${Lab.fmt(d, 1)} mm, about 1 cm from the end of the gel. Press Power off, then stain the gel. Now stain the gel.`));
   }
   $('run').addEventListener('click', () => { if (st.running) stop(); else start(); });
   /* Stain and destain button, countdown + progress bar and "Skip ahead" (same pattern as Lab 5's vacuum treatment). */
