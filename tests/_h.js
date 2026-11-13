@@ -34,9 +34,9 @@ function ok(cond, msg) { checks++; if (!cond) { failures++; console.log('  FAIL:
 function done(name) { console.log(`\n${name}: ${checks - failures}/${checks} checks passed`); process.exitCode = failures ? 1 : 0; }
 
 async function launch() { return chromium.launch(); }
-/* New context: signed in, tour dismissed. opts: {width, height, dark, touch, seed: {key: value}} */
+/* New context: signed in, tour dismissed. opts: {width, height, dark, reduced, touch, seed: {key: value}} */
 async function ctxFor(b, o = {}) {
-  const ctx = await b.newContext({ viewport: { width: o.width || 1366, height: o.height || 768 }, colorScheme: o.dark ? 'dark' : 'light', hasTouch: !!o.touch, isMobile: !!o.mobile });
+  const ctx = await b.newContext({ viewport: { width: o.width || 1366, height: o.height || 768 }, colorScheme: o.dark ? 'dark' : 'light', reducedMotion: o.reduced ? 'reduce' : 'no-preference', hasTouch: !!o.touch, isMobile: !!o.mobile });
   await routeLibs(ctx);
   await ctx.addInitScript(() => { try {
     if (!sessionStorage.getItem('__seeded') && !localStorage.getItem('aplab:student')) localStorage.setItem('aplab:student', JSON.stringify({ name: 'Test Student', period: '3' }));

@@ -997,7 +997,7 @@
     if (IS_LAB && opts.current !== false) {
       const docx = h('button', { class: 'btn btn--sm', type: 'button', onclick: async () => {
         docx.disabled = true; say('Building your Word file…');
-        try { const blob = await Lab.report.docx(); const name = reportFileBase() + '.docx'; downloadBlob(blob, name); say(`Downloaded ${name}.`); }
+        try { const blob = await Lab.report.docx(); const name = reportFileBase() + '.docx'; downloadBlob(blob, name); say(`Downloaded ${name}.`); reportSaved(); }
         catch (e) { say(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or save a progress file instead.' : 'Could not build the Word file here. Save a progress file instead.', true); }
         finally { docx.disabled = false; }
       } }, 'Download report (.docx)');
@@ -1413,6 +1413,8 @@
     if (reportOpener) { try { reportOpener.focus(); } catch (e) { /* gone */ } reportOpener = null; }
   }
   function reportKey(e) { if (e.key === 'Escape') closeReport(); }
+  /* A report was downloaded or sent to the print dialog: the one confetti burst (see Celebrations), only if every part is done. */
+  function reportSaved() { try { Lab.celebrate.lab(); } catch (e) { /* never block a download */ } }
   async function openReport(o = {}) {
     closeReport(); flushSaves();
     reportOpener = o.opener || document.activeElement;
@@ -1423,7 +1425,7 @@
     document.head.append(rvStyle);
     const note = previewNote(true);
     const status = h('p', { class: 'rv-status', 'aria-live': 'polite' });
-    const doPrint = () => tryPrint(() => { note.hidden = false; });
+    const doPrint = () => { tryPrint(() => { note.hidden = false; }); setTimeout(reportSaved, 450); }; // window.print() returns when the print dialog closes
     const view = h('div', { id: 'lab-report', class: 'report-view', role: 'region', 'aria-labelledby': 'rv-title' },
       h('div', { class: 'rv-tools' },
         h('div', { class: 'row' },
@@ -1694,6 +1696,7 @@
         const name = reportFileBase() + '.docx';
         downloadBlob(blob, name);
         say(`Downloaded ${name}. Hand it in the way your teacher asks.` + nameWarn());
+        reportSaved();
         Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
       } catch (e) {
@@ -1706,7 +1709,7 @@
       h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
-    return [bar, ss, status, note];
+    return [bar, ss, makeLabBadge(), status, note];
   }
 
   /* ---------------- Printable worksheet ----------------
@@ -1982,19 +1985,20 @@
   function updateProgress() {
     const nav = $('.step-nav ol'); if (!nav) return null;
     let parts = 0, complete = 0, itemsDone = 0, itemsTotal = 0;
-    const partials = [];
+    const partials = [], doneIds = new Set();
     const steps = $$('section.step');
     steps.forEach(s => {
       const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
       const r = sectionWork(s), sr = $('.done-sr', link);
       if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
-      parts++; const ok = r.done === r.total; if (ok) complete++;
+      parts++; const ok = r.done === r.total; if (ok) { complete++; doneIds.add(s.id); }
       itemsDone += r.done; itemsTotal += r.total;
       if (r.done > 0 && !ok) partials.push({ id: s.id, name: (s.dataset.step || '').trim() || 'This part', done: r.done, total: r.total });
       link.classList.add('has-work'); link.classList.toggle('is-done', ok);
       if (sr) sr.textContent = ok ? ' (done)' : '';
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
+    celebrateCheck(doneIds, complete, parts);
     const curId = pages.cur && pages.cur.id;
     const partial = partials.find(x => x.id === curId) || partials[0] || null;
     const sumObj = { done: complete, total: parts, sections: steps.length, items: { done: itemsDone, total: itemsTotal }, partial };
@@ -2223,7 +2227,7 @@
         onclick: () => setAllParts(pages.on) }, h('span', { class: 'pt-icon', 'aria-hidden': 'true' }), h('span', { class: 'pt-text' }, 'All parts'));
       const pauseBtn = h('button', { class: 'btn btn--sm pause-btn', type: 'button', 'aria-label': 'Pause and bookmark', title: 'Pause and bookmark: save and remember where you stopped', 'aria-haspopup': 'dialog',
         onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, h('span', { class: 'pb-icon', 'aria-hidden': 'true' }), h('span', { class: 'pb-text' }, 'Pause'));
-      wrap.append(h('div', { class: 'nav-end' }, navProgressEl, pauseBtn, steps.length > 1 ? tog : null));
+      wrap.append(h('div', { class: 'nav-end' }, makeNavRing(), navProgressEl, pauseBtn, steps.length > 1 ? tog : null));
       addCopyLinks(steps);
       workListeners.push(updateProgress);
       setTimeout(updateProgress, 0);
@@ -2807,7 +2811,7 @@
   Lab.nudge = { after: NUDGE_MS, shown: () => !!sessionGet(NUDGE_KEY) };
   async function nudgeDocx(btn) {
     btn.disabled = true;
-    try { const blob = await Lab.report.docx(), name = reportFileBase() + '.docx'; downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); }
+    try { const blob = await Lab.report.docx(), name = reportFileBase() + '.docx'; downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); reportSaved(); }
     catch (e) { Lab.toast(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
   }
   function nudgeCode(btn) {
@@ -3057,12 +3061,13 @@
   };
 
   /* Animation loop helper that respects reduced motion & visibility.
-     const loop = Lab.loop(dt => {...}); loop.start(); loop.stop(); */
+     const loop = Lab.loop(dt => {...}); loop.start(); loop.stop();
+     Lab.loop(fn, {tick: 1}) also plays the soft 'tick' sound every 1 s while it runs (only when the student turned sound on). */
   const LOOPS = new Set(); // running Lab.loop animations (the backup reminder never appears while one runs)
-  Lab.loop = function (fn) {
-    let raf = null, last = 0;
-    const self = { start() { if (!raf) { last = 0; raf = requestAnimationFrame(tick); LOOPS.add(self); } }, stop() { if (raf) cancelAnimationFrame(raf); raf = null; LOOPS.delete(self); }, get running() { return !!raf; } };
-    const tick = t => { const dt = Math.min(0.05, (t - (last || t)) / 1000); last = t; if (fn(dt) === false) { raf = null; LOOPS.delete(self); return; } raf = requestAnimationFrame(tick); };
+  Lab.loop = function (fn, opts = {}) {
+    let raf = null, last = 0, lastTick = 0;
+    const self = { start() { if (!raf) { last = 0; lastTick = 0; raf = requestAnimationFrame(tick); LOOPS.add(self); } }, stop() { if (raf) cancelAnimationFrame(raf); raf = null; LOOPS.delete(self); }, get running() { return !!raf; } };
+    const tick = t => { const dt = Math.min(0.05, (t - (last || t)) / 1000); last = t; if (opts.tick > 0) { if (!lastTick) lastTick = t; if (t - lastTick >= opts.tick * 1000) { lastTick = t; Lab.sound.play('tick'); } } if (fn(dt) === false) { raf = null; LOOPS.delete(self); return; } raf = requestAnimationFrame(tick); };
     return self;
   };
   Lab.reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -3149,10 +3154,177 @@
     if (crumbs) { if (printBtn) printBtn.before(sw); else crumbs.append(sw); }
     else if (links) { sw.classList.add('theme-switch--inline'); links.append(' · ', sw); }
     else { const bar = h('div', { class: 'theme-bar wrap gutter' }, sw); (document.querySelector('main') || document.body).prepend(bar); }
+    mountSoundToggle(sw);
     themeApply();
   }
   window.addEventListener('storage', e => { if (e.key === THEME_KEY) themeApply(); });
   try { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const f = () => { if (themeGet() === 'auto') themeRedraw(); }; if (mq.addEventListener) mq.addEventListener('change', f); } catch (e) { /* old browser */ }
+  /* ---------------- Sound (off by default) ----------------
+     Lab.sound.play(name) with name one of click | hiss | beep | pop | chime | buzz | tick. Every sound is synthesized in
+     Web Audio (no audio files), soft (master gain 0.126 = −18 dB) and under a second. Nothing plays unless the student turned
+     sound on with the speaker button beside the theme switch (localStorage 'aplab:pref:sound' = 'on'; a preference, so Sign out and
+     Start over keep it), and the AudioContext is only created after a real user gesture. Reduced motion does not change this:
+     sound stays allowed, but only when the toggle is on.
+       Lab.sound.play('beep')   → true if a sound started, false if sound is off / no gesture yet / unsupported
+       Lab.sound.enabled        → boolean            Lab.sound.set(true|false)    Lab.sound.toggle()
+       Lab.sound.names          → the sound set      Lab.sound.render(name) → Promise<{peak, rms, seconds}> (offline, for tests) */
+  const SOUND_KEY = 'aplab:pref:sound';
+  const MASTER_GAIN = 0.126; // −18 dB
+  let memSound = false, audioCtx = null, audioOut = null, gestured = false;
+  const soundGet = () => { try { return localStorage.getItem(SOUND_KEY) === 'on'; } catch (e) { return memSound; } };
+  ['pointerdown', 'keydown', 'touchend', 'click'].forEach(ev => document.addEventListener(ev, e => { if (e.isTrusted) gestured = true; }, { capture: true, passive: true }));
+  const hasGesture = () => gestured || !!(navigator.userActivation && navigator.userActivation.hasBeenActive);
+  function noiseBuffer(ac) { // fixed pseudo-random noise (never touches Math.random: that stream is the student's seeded data)
+    const n = Math.ceil(ac.sampleRate * 1.0), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+    let s = 22695477;
+    for (let i = 0; i < n; i++) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; d[i] = s / 2147483648 - 1; }
+    return b;
+  }
+  /* Each voice: (ac, out, t0, nb) schedules its nodes on `out` starting at t0 and returns its length in seconds. */
+  function env(ac, out, t0, peak, atk, dec) { const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(peak, t0 + atk); g.gain.exponentialRampToValueAtTime(0.0001, t0 + atk + dec); g.connect(out); return g; }
+  function tone(ac, out, t0, type, f0, f1, dur) { const o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(f0, t0); if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + dur); o.connect(out); o.start(t0); o.stop(t0 + dur + 0.05); return o; }
+  function noise(ac, out, t0, nb, kind, f, q, dur) { const s = ac.createBufferSource(); s.buffer = nb; s.loop = true; const bq = ac.createBiquadFilter(); bq.type = kind; bq.frequency.value = f; bq.Q.value = q; s.connect(bq); bq.connect(out); s.start(t0); s.stop(t0 + dur + 0.05); return bq; }
+  const VOICES = {
+    click(ac, out, t, nb) { noise(ac, env(ac, out, t, 0.8, 0.002, 0.03), t, nb, 'bandpass', 2400, 3, 0.04); tone(ac, env(ac, out, t, 0.3, 0.002, 0.045), t, 'sine', 1300, 700, 0.05); return 0.1; },
+    hiss(ac, out, t, nb) { const g = env(ac, out, t, 0.45, 0.12, 0.5); const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000; lp.connect(g); noise(ac, lp, t, nb, 'highpass', 1800, 0.7, 0.7); return 0.75; },
+    beep(ac, out, t) { tone(ac, env(ac, out, t, 0.6, 0.012, 0.2), t, 'sine', 880, 0, 0.22); tone(ac, env(ac, out, t, 0.08, 0.012, 0.15), t, 'sine', 1760, 0, 0.17); return 0.26; },
+    pop(ac, out, t, nb) { tone(ac, env(ac, out, t, 0.85, 0.003, 0.09), t, 'sine', 560, 150, 0.1); noise(ac, env(ac, out, t, 0.25, 0.001, 0.015), t, nb, 'bandpass', 1800, 1, 0.02); return 0.14; },
+    chime(ac, out, t) { [[784, 0, 0.5], [1046.5, 0.09, 0.45], [1568, 0.09, 0.15]].forEach(([f, d, p]) => tone(ac, env(ac, out, t + d, p, 0.008, 0.55), t + d, 'sine', f, 0, 0.6)); return 0.8; },
+    buzz(ac, out, t) { const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650; lp.connect(env(ac, out, t, 0.4, 0.04, 0.3)); tone(ac, lp, t, 'sawtooth', 110, 0, 0.34); tone(ac, lp, t, 'square', 55, 0, 0.34); return 0.4; },
+    tick(ac, out, t, nb) { tone(ac, env(ac, out, t, 0.5, 0.001, 0.02), t, 'sine', 1900, 1700, 0.025); noise(ac, env(ac, out, t, 0.4, 0.001, 0.012), t, nb, 'bandpass', 3600, 2, 0.015); return 0.06; },
+  };
+  const SOUND_NAMES = Object.keys(VOICES);
+  function audioStart() {
+    if (audioCtx) return audioCtx;
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    try {
+      audioCtx = new AC({ latencyHint: 'interactive' });
+      const comp = audioCtx.createDynamicsCompressor(); comp.threshold.value = -24; comp.ratio.value = 6;
+      audioOut = audioCtx.createGain(); audioOut.gain.value = MASTER_GAIN; audioOut.connect(comp); comp.connect(audioCtx.destination);
+      audioCtx._nb = noiseBuffer(audioCtx);
+    } catch (e) { audioCtx = null; }
+    return audioCtx;
+  }
+  const lastPlayed = {};
+  function soundPlay(name) {
+    if (!soundGet() || !VOICES[name] || !hasGesture()) return false;
+    const now = Date.now(); if (now - (lastPlayed[name] || 0) < 35) return false; lastPlayed[name] = now;
+    const ac = audioStart(); if (!ac) return false;
+    try {
+      if (ac.state === 'suspended') ac.resume();
+      VOICES[name](ac, audioOut, ac.currentTime + 0.005, ac._nb);
+      return true;
+    } catch (e) { return false; }
+  }
+  async function soundRender(name) {
+    const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!OAC || !VOICES[name]) return null;
+    const rate = 22050, ac = new OAC(1, rate * 1.2, rate), out = ac.createGain(); out.gain.value = MASTER_GAIN; out.connect(ac.destination);
+    const len = VOICES[name](ac, out, 0.005, noiseBuffer(ac));
+    const buf = await ac.startRendering(), d = buf.getChannelData(0);
+    let peak = 0, sum = 0, last = 0;
+    for (let i = 0; i < d.length; i++) { const a = Math.abs(d[i]); if (a > peak) peak = a; sum += d[i] * d[i]; if (a > 0.002) last = i; }
+    return { peak, rms: Math.sqrt(sum / d.length), seconds: last / rate, length: len };
+  }
+  function soundSet(on) {
+    on = !!on; memSound = on;
+    try { if (on) localStorage.setItem(SOUND_KEY, 'on'); else localStorage.removeItem(SOUND_KEY); } catch (e) { /* blocked: this page only */ }
+    soundSync();
+    if (on) soundPlay('click');
+    window.dispatchEvent(new Event('aplab:sound'));
+  }
+  Lab.sound = { play: soundPlay, get enabled() { return soundGet(); }, set: soundSet, toggle: () => soundSet(!soundGet()), names: SOUND_NAMES, render: soundRender, key: SOUND_KEY, masterGain: MASTER_GAIN };
+  const SPEAKER_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"/><g class="sx-on" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18 6.5a8 8 0 0 1 0 11"/></g><path class="sx-off" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  function soundSync() {
+    const on = soundGet();
+    $$('.sound-toggle').forEach(b => { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Sound effects: on (click to turn off)' : 'Sound effects: off (click to turn on)'; });
+  }
+  function mountSoundToggle(after) {
+    if (!IS_LAB || $('.sound-toggle')) return;
+    const b = h('button', { type: 'button', class: 'sound-toggle', 'aria-label': 'Sound effects', 'aria-pressed': 'false', html: SPEAKER_SVG, onclick: () => Lab.sound.toggle() });
+    after.after(b); soundSync();
+  }
+  window.addEventListener('storage', e => { if (e.key === SOUND_KEY) soundSync(); });
+
+  /* ---------------- Celebrations (used sparingly) ----------------
+     1. A part becoming complete: a quiet check-sweep on its nav item and on the progress ring, and the "chime" if sound is on.
+        Only for completions a student causes (not when saved work is restored on load).
+     2. The lab: ONE confetti burst per lab, only when the student downloads or saves their report (.docx or PDF) after every
+        required part is complete. aplab:<lab>:celebrated remembers it. Confetti happens nowhere else.
+     With reduced motion both are replaced by a calm static "Lab complete ✓" badge next to the report buttons.
+       Lab.celebrate.lab({force})  → true if it fired now (lab.js calls it after a report download; a page rarely needs to)
+       Lab.celebrate.complete()    → every required part is done       Lab.celebrate.done() → it already fired for this lab
+       window event 'aplab:celebrate' {detail:{lab, kind:'confetti'|'badge'}} fires when it does. */
+  const CEL = { prev: null, acted: false, t0: Date.now(), complete: false };
+  ['pointerdown', 'keydown', 'input', 'change', 'click'].forEach(ev => document.addEventListener(ev, () => { CEL.acted = true; }, { capture: true, passive: true }));
+  let labBadgeEl = null, navRingEl = null, ringTimer = null;
+  const RING_C = 2 * Math.PI * 15;
+  function makeNavRing() {
+    navRingEl = h('span', { class: 'nav-ring', 'aria-hidden': 'true', hidden: true, html: `<svg viewBox="0 0 36 36" focusable="false"><circle class="nr-bg" cx="18" cy="18" r="15"/><circle class="nr-fg" cx="18" cy="18" r="15" stroke-dasharray="0 ${RING_C.toFixed(2)}" transform="rotate(-90 18 18)"/><path class="nr-check" d="M11 18.5l5 5 9.5-11"/></svg>` });
+    return navRingEl;
+  }
+  function updateRing(done, total) {
+    if (!navRingEl) return;
+    navRingEl.hidden = !total;
+    const fg = $('.nr-fg', navRingEl); if (fg) fg.setAttribute('stroke-dasharray', `${(total ? RING_C * done / total : 0).toFixed(2)} ${RING_C.toFixed(2)}`);
+    navRingEl.classList.toggle('is-full', !!total && done === total);
+  }
+  function celebratePart(ids) {
+    if (Date.now() - CEL.t0 < 1800 || !CEL.acted) return;
+    if (!Lab.reducedMotion()) {
+      ids.forEach(id => { const a = $$('.step-nav a').find(x => x.getAttribute('href') === '#' + id); if (a) a.classList.add('just-done'); });
+      if (navRingEl) navRingEl.classList.add('just-done');
+      clearTimeout(ringTimer);
+      ringTimer = setTimeout(() => { $$('.just-done').forEach(n => n.classList.remove('just-done')); }, 1400);
+    }
+    Lab.sound.play('chime');
+  }
+  function celebrateCheck(ids, complete, parts) {
+    const prev = CEL.prev; CEL.prev = ids; CEL.complete = parts > 0 && complete === parts;
+    updateRing(complete, parts);
+    if (prev) { const fresh = Array.from(ids).filter(id => !prev.has(id)); if (fresh.length) celebratePart(fresh); }
+    syncLabBadge();
+  }
+  const celebrated = () => !!store.get('celebrated');
+  function makeLabBadge() { labBadgeEl = h('p', { class: 'lab-complete', role: 'status', hidden: true }, 'Lab complete ✓'); return labBadgeEl; }
+  function syncLabBadge() { if (labBadgeEl) labBadgeEl.hidden = !(Lab.reducedMotion() && CEL.complete && celebrated()); }
+  /* A light confetti canvas of our own: 110 paper rectangles, 2.4 s, then removed. The canvas ignores the pointer and never prints. */
+  function confetti() {
+    const cv = h('canvas', { class: 'confetti-canvas', 'aria-hidden': 'true' });
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5), W = window.innerWidth, H = window.innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    document.body.append(cv);
+    const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    const cols = ['--s1', '--s2', '--s3', '--s4', '--s6', '--accent', '--stain'].map(Lab.color);
+    let s = 12345; const r = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; // not Math.random: keep the student's data stream untouched
+    const ps = [];
+    for (let i = 0; i < 110; i++) { const a = -Math.PI / 2 + (r() - 0.5) * 1.9, v = 380 + r() * 520; ps.push({ x: W / 2 + (r() - 0.5) * W * 0.3, y: H * 0.72, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: 6 + r() * 6, h: 3 + r() * 4, rot: r() * 6.3, vr: (r() - 0.5) * 12, c: cols[i % cols.length], ph: r() * 6.3 }); }
+    const T = 2400; let t0 = 0, last = 0;
+    const step = t => {
+      if (!cv.isConnected) return;
+      if (!t0) { t0 = t; last = t; }
+      const dt = Math.min(0.05, (t - last) / 1000); last = t; const el = t - t0;
+      ctx.clearRect(0, 0, W, H);
+      const fade = el > T - 600 ? Math.max(0, (T - el) / 600) : 1;
+      ps.forEach(p => { p.vy += 900 * dt; p.vx *= 1 - 1.3 * dt; p.vy *= 1 - 0.6 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.rot * 1.7 + p.ph)); ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore(); });
+      if (el < T) requestAnimationFrame(step); else cv.remove();
+    };
+    requestAnimationFrame(step);
+    setTimeout(() => cv.remove(), T + 800);
+    return cv;
+  }
+  function celebrateLab(o = {}) {
+    if (!IS_LAB) return false;
+    try { updateProgress(); } catch (e) { /* ignore */ }
+    if (!CEL.complete && !o.force) return false;
+    if (celebrated()) { syncLabBadge(); return false; }
+    store.set('celebrated', { t: Date.now() });
+    const calm = Lab.reducedMotion();
+    if (calm) syncLabBadge(); else confetti();
+    window.dispatchEvent(new CustomEvent('aplab:celebrate', { detail: { lab: LAB_ID, kind: calm ? 'badge' : 'confetti' } }));
+    return true;
+  }
+  Lab.celebrate = { lab: celebrateLab, complete: () => CEL.complete, done: celebrated, confetti };
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountThemeSwitch); else mountThemeSwitch();
 
   window.Lab = Lab;
