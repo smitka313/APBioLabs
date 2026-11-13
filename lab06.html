@@ -420,7 +420,9 @@ const Own = (function () {
   document.head.append(st);
   const plain = h => String(h).replace(/<[^>]+>/g, '');
   /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  let touched = null;   // keys written during the current watcher pass (see watch below)
   function key(id, o) {
+    if (touched) touched.add(id);
     if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
     const old = Lab.store.get('keyres:' + id);
     if (old && old.value === o.value && old.label === o.label) return;
@@ -483,7 +485,13 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* watch(f, ids): f recomputes key results from the live tables. Any id in `ids` that f did not write on this pass no longer
+     has data behind it (the table was cleared or the run restarted), so it is withdrawn rather than left over from the old run. */
+  function watch(f, ids) {
+    const run = () => { touched = new Set(); try { f(); } finally { const t = touched; touched = null; (ids || []).forEach(id => { if (!t.has(id) && Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); } };
+    watchers.push(run); run();
+  }
+  return { personal, frq, key, watch, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1727,7 +1735,7 @@ const Predict = (function () {
   Own.watch(() => {
     const r = pReps.getRows().filter(x => !x._setup && isFinite(x.rate)); if (r.length) { const l = r[r.length - 1]; Own.key('rate-microresp', { label: 'O\u2082 uptake rate, seeds (microrespirometer)', value: +fmt(l.rate, 2), unit: '\u00b5L/min', part: 'Microrespirometer' }); }
     const d = dOK(); if (d.length) { const org = d[d.length - 1].orgName, t = d.filter(x => x.orgName === org && x.temp <= 35 && x.perg > 0); if (new Set(t.map(x => x.temp)).size >= 2) { const f = S.linreg(t.map(x => x.temp), t.map(x => Math.log(x.perg))); const q = Math.exp(10 * f.m); if (isFinite(q)) Own.key('q10', { label: 'Q\u2081\u2080 (' + org + ', trials up to 35 \u00b0C)', value: +fmt(q, 2), unit: '', part: 'Design' }); } }
-  });
+  }, ['rate-microresp', 'q10']);
   const cer = $('#cer');
   Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';

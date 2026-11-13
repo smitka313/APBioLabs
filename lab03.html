@@ -532,7 +532,9 @@ const Own = (function () {
   document.head.append(st);
   const plain = h => String(h).replace(/<[^>]+>/g, '');
   /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  let touched = null;   // keys written during the current watcher pass (see watch below)
   function key(id, o) {
+    if (touched) touched.add(id);
     if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
     const old = Lab.store.get('keyres:' + id);
     if (old && old.value === o.value && old.label === o.label) return;
@@ -595,7 +597,13 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* watch(f, ids): f recomputes key results from the live tables. Any id in `ids` that f did not write on this pass no longer
+     has data behind it (the table was cleared or the run restarted), so it is withdrawn rather than left over from the old run. */
+  function watch(f, ids) {
+    const run = () => { touched = new Set(); try { f(); } finally { const t = touched; touched = null; (ids || []).forEach(id => { if (!t.has(id) && Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); } };
+    watchers.push(run); run();
+  }
+  return { personal, frq, key, watch, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1851,8 +1859,8 @@ Own.personal(an, { key: 'own-identity', rows: 3, need: 'BLAST the genes (record 
 Own.personal(an, { key: 'own-clock', rows: 3, need: 'Design (add hits to the clock table)', href: 'design',
   ask: 'Explain one reason this point may sit away from the trend (think about how substitutions accumulate, and about the gene you used).',
   compute: () => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && !x._setup && x.t > 0); if (r.length < 3) return null; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); const res = r.map(x => ({ x, d: x.ident - L.predict(x.t) })); const w = res.reduce((a, b) => Math.abs(b.d) > Math.abs(a.d) ? b : a); return `Your weirdest clock point is ${w.x.q} vs ${w.x.hit} (gene ${w.x.gene}, ${fmt1(w.x.t)} Mya): identity ${fmt1(w.x.ident)}%, ${fmt1(Math.abs(w.d))} points ${w.d > 0 ? 'above' : 'below'} the trend line.`; } });
-Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); });
-Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); });
+Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); }, ['top-ident-A', 'top-ident-B', 'top-ident-C']);
+Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); }, ['clock-slope']);
 const ev = Lab.$('#evaluate-prompts');
 Predict.compare(ev, { key: 'reflect-predict', items: [
     ['predict-blast', 'Before BLASTing the fossil genes you predicted:', {

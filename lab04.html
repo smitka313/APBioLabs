@@ -529,7 +529,9 @@ const Own = (function () {
   document.head.append(st);
   const plain = h => String(h).replace(/<[^>]+>/g, '');
   /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  let touched = null;   // keys written during the current watcher pass (see watch below)
   function key(id, o) {
+    if (touched) touched.add(id);
     if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
     const old = Lab.store.get('keyres:' + id);
     if (old && old.value === o.value && old.label === o.label) return;
@@ -592,7 +594,13 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* watch(f, ids): f recomputes key results from the live tables. Any id in `ids` that f did not write on this pass no longer
+     has data behind it (the table was cleared or the run restarted), so it is withdrawn rather than left over from the old run. */
+  function watch(f, ids) {
+    const run = () => { touched = new Set(); try { f(); } finally { const t = touched; touched = null; (ids || []).forEach(id => { if (!t.has(id) && Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); } };
+    watchers.push(run); run();
+  }
+  return { personal, frq, key, watch, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -2006,7 +2014,7 @@ function idCheck() {
       const sp = pr[pr.length - 1].spec, q = pr.filter(x => x.spec === sp).map(x => ({ psi: x.psi, p: 100 * x.plz / x.n })).sort((a, b) => b.psi - a.psi);
       for (let i = 0; i < q.length - 1; i++) if (q[i].p < 50 && q[i + 1].p >= 50) { const t = (50 - q[i].p) / (q[i + 1].p - q[i].p); Own.key('incipient-psi', { label: 'Incipient plasmolysis ψ (' + sp + ', 50% of cells)', value: +fmt(q[i].psi + t * (q[i + 1].psi - q[i].psi), 1), unit: 'bars', part: 'Plasmolysis' }); break; }
     }
-  });
+  }, ['isotonic-point', 'psi-tissue', 'incipient-psi']);
   anTop.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
   anTop.append(Lab.h('p', { class: 'small muted' }, 'Answer the driving question: what causes a plant to wilt when it is not watered?'));
   const cer = Lab.h('div', { class: 'cer' }); anTop.append(cer);
