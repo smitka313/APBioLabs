@@ -1,0 +1,42 @@
+module.exports = async ({ b, ok, ctxAs, open, keyres, ownText, frqChecks, frqReload }) => {
+  const L = 'lab05';
+  const run = async (p, speed) => {
+    await p.evaluate(() => ['predict-floatassay', 'predict-design'].forEach(k => { const t = document.getElementById('p-' + k); t.value = 'I predict they float because O2 builds up.'; t.dispatchEvent(new Event('input', { bubbles: true })); t.dispatchEvent(new Event('change', { bubbles: true })); }));
+    await p.evaluate(() => Lab.pages.go('sink-disks')); await p.waitForTimeout(400);
+    await p.evaluate(() => document.getElementById('inf-pull').click()); await p.waitForTimeout(5000);
+    await p.evaluate(() => document.getElementById('inf-pour').click()); await p.waitForTimeout(400);
+    await p.evaluate(() => Lab.pages.go('float-assay')); await p.waitForTimeout(400);
+    await p.evaluate(() => { const s = document.getElementById('cup-speed'); if (s) { s.value = s.max; s.dispatchEvent(new Event('input', { bubbles: true })); } });
+    await p.evaluate(() => document.getElementById('cup-run').click());
+    await p.waitForFunction(() => document.querySelectorAll('#cup-table tbody tr').length >= 20, null, { timeout: 90000 }).catch(() => {});
+    await p.waitForTimeout(1500);
+    return p.evaluate(() => Array.from(document.querySelectorAll('#cup-table tbody tr')).map(tr => tr.cells[1] ? tr.cells[1].textContent : '').join(','));
+  };
+  const c1 = await ctxAs(b, 'Ada Lovelace', '3'), c2 = await ctxAs(b, 'Grace Hopper', '3');
+  const p = await open(c1, 'lab05.html'), p2 = await open(c2, 'lab05.html');
+  await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
+  ok(/Finish Float assay/.test(await ownText(p, 'own-assay')), 'own-assay waits for data');
+  ok(/Finish Design/.test(await ownText(p, 'own-outlier')), 'own-outlier waits for data');
+  const t1 = await run(p, 1), t2 = await run(p2, 1);
+  ok(t1.length > 10 && t1 !== t2, 'two students get different float timelines (' + t1.slice(0, 40) + ' vs ' + t2.slice(0, 40) + ')');
+  await p2.close();
+  // design run: default levels
+  await p.evaluate(() => Lab.pages.go('design')); await p.waitForTimeout(400);
+  await p.evaluate(() => document.getElementById('d-run').click());
+  await p.waitForFunction(() => document.querySelectorAll('#d-raw tbody tr').length >= 3, null, { timeout: 60000 }).catch(() => {});
+  await p.waitForTimeout(1500);
+  await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(2200);
+  const o1 = await ownText(p, 'own-assay'), o2 = await ownText(p, 'own-outlier');
+  ok(/ET.{1,3} = [\d.]+ min/.test(o1) && /water-only cup had \d+ of \d+/.test(o1), 'own-assay quotes real data: ' + o1.slice(0, 150));
+  ok(/ET.{1,3} = [\d.]+ min/.test(o2) && /level/.test(o2), 'own-outlier quotes real data: ' + o2.slice(0, 150));
+  const k1 = await keyres(p, L, 'et50-bicarb'), k2 = await keyres(p, L, 'ret50-bicarb');
+  ok(k1 && k1.value > 2 && k1.value < 40 && k1.unit === 'min', 'et50-bicarb stored in a realistic range ' + JSON.stringify(k1));
+  ok(k2 && Math.abs(k2.value - 1 / k1.value) < 0.01, '1/ET50 stored and consistent ' + JSON.stringify(k2));
+  await frqChecks(p, L);
+  await p.reload(); await p.waitForTimeout(1200);
+  await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(2200);
+  const o1b = await ownText(p, 'own-assay'); ok(/ET.{1,3} = [\d.]+ min/.test(o1b), 'personal prompt quotes values after reload: ' + o1b.slice(0, 80));
+  ok((await keyres(p, L, 'et50-bicarb')).value === k1.value, 'key results survive reload');
+  await frqReload(p, L);
+  await c1.close(); await c2.close();
+};
