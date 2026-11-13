@@ -99,6 +99,15 @@ const LABS = {
     await p.click('#dz-run'); await p.waitForTimeout(1200);
     return p;
   },
+  async lab03(b) {
+    const c = await ctx(b), p = await T.open(c, 'lab03.html', 'blast-the-genes');
+    await fillPred(p, 'predict-blast', 'I predict the top hit will be the chicken with about 90% identity because birds are close to dinosaurs.');
+    await fillPred(p, 'predict-design', 'I predict the percent identity will decrease as time since the common ancestor increases.');
+    await p.click('#run-blast'); await p.waitForTimeout(500); await p.click('#log-blast');
+    await show(p, 'design');
+    await p.click('#d-run'); await p.waitForTimeout(500); await p.click('#d-log'); await p.waitForTimeout(800);
+    return p;
+  },
 };
 
 (async () => {

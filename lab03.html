@@ -615,23 +615,26 @@ const Predict = (function () {
     ids.push(upd); upd(); det.open = !has(o.key);
     return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
   }
-  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  /* Predict-vs-actual cards (Lab.predictCompare), one per saved prediction.
+     items: [[key, 'where it was made', {title, chartEl, getResult, summarize, delta, part, partId}], ...]. The saved key of the compare prompt is unchanged. */
   function compare(container, o) {
     container = typeof container === 'string' ? $(container) : container;
-    const list = Lab.h('div', { class: 'predict-list' });
-    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
-    container.append(box);
-    const render = () => {
-      list.textContent = '';
-      o.items.forEach(([k, where]) => {
-        const v = val(k);
-        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
-        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
-      });
-    };
-    ids.push(render); render();
-    Lab.onShow(box, render);
+    const wrap = Lab.h('div', { class: 'predict-cards' });
+    container.append(wrap);
+    o.items.forEach(([k, where, cfg]) => Lab.predictCompare(wrap, Object.assign({ predictKey: k }, cfg || {})));
     return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* Direction a prediction claims (+1 up, -1 down, 0 unclear) and a sentence saying whether the actual change agrees. */
+  const dirOf = t => { t = String(t || '').toLowerCase().replace(/^\s*(as|when|if|with)\b[^,;.]*[,;]/, '').split(/\b(?:as|when|while|if|with|across|over|because)\b/)[0]; const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
+  const verdict = (pred, actual) => { const p = dirOf(pred); return !p || !actual ? '' : p === actual ? ' That matches the direction you predicted.' : ' That is the opposite of the direction you predicted.'; };
+  /* "Y rose from a (at x1) to b (at x2)" for the first series of a chart's options. */
+  function seriesTrend(opts, what, unit, digits) {
+    const s = opts && opts.series && opts.series[0], pts = s && s.points && s.points.filter(p => p && isFinite(p.y));
+    if (!pts || pts.length < 2) return null;
+    if (pts.every(p => typeof p.x === 'number')) pts.sort((a, b) => a.x - b.x);   // levels read from low to high
+    const nx = x => typeof x === 'number' ? Lab.fmt(+x.toPrecision(3), 2).replace(/\.?0+$/, '') : x;
+    const f = pts[0], l = pts[pts.length - 1], d = digits == null ? 2 : digits, u = unit ? ' ' + unit : '', dir = l.y > f.y ? 1 : l.y < f.y ? -1 : 0;
+    return { dir, text: `${what} ${dir > 0 ? 'rose' : dir < 0 ? 'fell' : 'stayed the same'} from ${Lab.fmt(f.y, d)}${u} (at ${nx(f.x)}) to ${Lab.fmt(l.y, d)}${u} (at ${nx(l.x)}).` };
   }
   /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
   function cer(cerEl, starters, hintHtml) {
@@ -640,7 +643,7 @@ const Predict = (function () {
     const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
     cerEl.parentNode.insertBefore(d, cerEl);
   }
-  return { add, compare, cer, has, val };
+  return { add, compare, cer, has, val, dirOf, verdict, seriesTrend };
 })();
 
 /* Per-student sequence variation: a few random substitutions in every sequence (2-4 per organism and gene, 3-5 in the fossil
@@ -1296,12 +1299,14 @@ function runPart2() {
 let blastPanels = null, blastShown = false;
 Lab.$('#blast-hits').innerHTML = '<div class="msg res-empty"><strong>No results yet.</strong> Choose a gene and press BLAST. The hits from your search will be listed here.</div>';
 Lab.$('#run-blast').addEventListener('click', runPart2);
+Lab.$('#run-blast').addEventListener('click', () => { if (lastRes) Lab.sound.play('beep'); });   // a search ran: the instrument reading
 Lab.$('#tree-blast').addEventListener('click', () => { if (lastRes && lastRes.hits.length) distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); });
 const blastTable = Lab.table('#blast-table', {
   save: 'blastlog',
   columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
 });
 Lab.$('#log-blast').addEventListener('click', () => {
+  Lab.sound.play('click');
   if (!lastRes) { Lab.$('#blast-status').textContent = 'Press BLAST first, then record the top hits.'; Lab.$('#blast-status').className = 'status bad'; return; }
   lastRes.hits.slice(0, 5).forEach((h, i) => blastTable.addRow({ gene: lastRes.gene, prog: lastRes.prog, rank: i + 1, org: ORGS[h.id][1], group: ORGS[h.id][2], bits: Math.round(h.bits), e: fmtE(h.E), ident: h.ident, where: '' }));
 });
@@ -1362,6 +1367,7 @@ const clockTable = Lab.table('#clock-table', {
   onChange: drawClock
 });
 Lab.$('#d-log').addEventListener('click', () => {
+  Lab.sound.play('click');
   if (!dRes) { Lab.$('#d-status').textContent = 'Press BLAST first, then add the hits to the clock table.'; Lab.$('#d-status').className = 'status bad'; return; }
   if (!dRes || dRes.org === 'pasted') { Lab.$('#d-out').insertAdjacentHTML('afterbegin', '<div class="msg warn">Divergence times are only known for organisms in the database, so pasted queries cannot be added to the clock table.</div>'); return; }
   const rows = clockTable.getRows().slice();
@@ -1414,7 +1420,20 @@ Own.personal(an, { key: 'own-clock', rows: 3, need: 'Design (add hits to the clo
 Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); });
 Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); });
 const ev = Lab.$('#evaluate-prompts');
-Predict.compare(ev, { key: 'reflect-predict', items: [['predict-blast', 'Before BLASTing the fossil genes you predicted:'], ['predict-design', 'Before your molecular-clock design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one percent identity (%) from your data. What does any mismatch tell you?', rows: 4 });
+Predict.compare(ev, { key: 'reflect-predict', items: [
+    ['predict-blast', 'Before BLASTing the fossil genes you predicted:', {
+      title: 'BLAST: your prediction vs. what happened', chartEl: '#blast-chart', part: 'BLAST the genes', partId: 'blast-the-genes',
+      getResult: () => { const top = blastTable.getRows().filter(r => r.rank === 1 && isFinite(r.ident)).sort((x, y) => y.ident - x.ident)[0]; return top || null; },
+      summarize: r => `Your best match to the fossil was the ${r.org} (${r.group}) at ${Lab.fmt(r.ident, 1)}% identity with gene ${r.gene}.`,
+      delta: (r, pred) => {
+        const names = ORG_IDS.map(id => ORGS[id]).filter(o => pred.toLowerCase().includes(o[1].toLowerCase()) || pred.toLowerCase().includes(o[2].toLowerCase()));
+        const hit = names.length ? names.some(o => o[1] === r.org || o[2] === r.group) : null, pm = /(\d+(?:\.\d+)?)\s*%/.exec(pred);
+        return (hit == null ? '' : hit ? `You named the right organism or group (${r.org}, ${r.group}). ` : `The top hit was the ${r.org}, not the organism you named. `) + (pm ? `You expected about ${pm[1]}% identity; the best was ${Lab.fmt(r.ident, 1)}%, a difference of ${Lab.fmt(Math.abs(r.ident - +pm[1]), 1)} percentage points.` : '') || null;
+      } }],
+    ['predict-design', 'Before your molecular-clock design you predicted:', {
+      title: 'Molecular clock: your prediction vs. what happened', chartEl: '#clock-chart', part: 'Design', partId: 'design',
+      summarize: o => { const t = Predict.seriesTrend(o, 'Percent identity (first gene tested)', '%', 1); return t ? t.text : 'Your clock data are in the Design part.'; },
+      delta: (o, pred) => { const t = Predict.seriesTrend(o, 'Percent identity', '%', 1); return t ? `Percent identity ${t.dir > 0 ? 'rose' : t.dir < 0 ? 'fell' : 'stayed the same'} as time since the common ancestor increased.` + Predict.verdict(pred, t.dir) : null; } }]], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one percent identity (%) from your data. What does any mismatch tell you?', rows: 4 });
 Lab.prompt(ev, { key: 'e1', label: 'Compare your cladogram with your classmates\'. Does everyone agree on where the fossil goes? If not, what is the basis of the disagreement?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: 'This page\'s database holds only 18 organisms. Real BLAST searches hundreds of thousands of organisms. How does a small database limit your conclusions? (Hint: what if the fossil\'s closest living relatives were not in the database?)', rows: 3 });
 Lab.prompt(ev, { key: 'e3', label: 'What other data could be collected from the fossil specimen to better work out its evolutionary history?', rows: 3 });
@@ -1430,23 +1449,16 @@ Own.frq(fh, { title: 'Free-response question: sequence similarity and relatednes
 const filled = k => { const t = Lab.$('#p-' + k); return !!(t && t.value.trim()); };
 const allFilled = ks => ks.every(filled);
 let dTouched = false, treeTried = false, dRan = false;
-Lab.$('#d-run').addEventListener('click', () => { dRan = true; });
+Lab.$('#d-run').addEventListener('click', () => { dRan = true; if (dRes) Lab.sound.play('beep'); });
 ['#d-org', '#d-gene', '#d-paste'].forEach(s => { Lab.$(s).addEventListener('input', () => { dTouched = true; }); Lab.$(s).addEventListener('change', () => { dTouched = true; }); });
 Lab.$$('#dprog-seg button, #d-set input').forEach(el => el.addEventListener('click', () => { dTouched = true; }));
 Lab.$('#tree-blast').addEventListener('click', () => { treeTried = true; const sv = Lab.store.get('blast-last'); if (sv && lastRes && lastRes.hits.length) { sv.tree = true; Lab.store.set('blast-last', sv); } });
-  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
-     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
-  function showData(sim, o) {
-    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
-    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
-    return r;
-  }
-blastPanels = showData('#blast-sim', { graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-hits', title: 'Hits from this search' }, { el: '#blast-table', title: 'Your recorded hits (top 5 per search)' }] });
+blastPanels = Lab.results('#blast-sim', { start: 'data', graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-hits', title: 'Hits from this search' }, { el: '#blast-table', title: 'Your recorded hits (top 5 per search)' }] });
 Lab.gate('#run-blast', () => predB.has() || blastGenes().size ? '' : predB.reason(), { show: '#p-predict-blast' });
 Lab.gate('#d-run', () => predD.has() || clockTable.getRows().length ? '' : predD.reason(), { show: '#p-predict-design' });
 Lab.gate('#log-blast', () => lastRes ? '' : 'Press BLAST first');
 Lab.gate('#tree-blast', () => lastRes ? '' : 'Press BLAST first');
-showData('#d-sim', { graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
+Lab.results('#d-sim', { start: 'data', graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
 /* Reload: put the last BLAST searches back (searches are deterministic, so only their settings are saved). */
 { const sv = Lab.store.get('blast-last');
   if (sv && ['A', 'B', 'C'].includes(sv.g)) {
