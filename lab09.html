@@ -283,6 +283,7 @@ function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) ret
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const numOk = x => typeof x === 'number' && isFinite(x);
 const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
 /* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
