@@ -49,6 +49,11 @@
   .sim--fit .stage .row .btn--sm { padding: 5px 9px; font-size: .8rem; }
   .sim--fit .stage .row { gap: 6px 8px; }
   .sim-panel .semilog { max-width: 100%; }
+  .pred-recall blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .pred-recall .pred-recall-k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .pred-recall p { margin: 4px 0 0; white-space: pre-wrap; }
+  .predict-box { margin: 0 0 14px; }
+  .predict-box .prompt { margin: 0; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -182,7 +187,7 @@
           </div>
         </div>
         <div class="stage">
-          <div class="readouts"><div class="readout"><span class="k">Sites</span><span class="v" id="cut-sites">—</span></div><div class="readout"><span class="k">Fragments</span><span class="v" id="cut-frags">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Restriction sites (count)</span><span class="v" id="cut-sites">—</span></div><div class="readout"><span class="k">Fragments (count)</span><span class="v" id="cut-frags">—</span></div></div>
           <pre class="seqpre" id="cut-out" aria-live="polite"></pre>
         </div>
       </div>
@@ -207,7 +212,7 @@
   <section class="step wrap wrap--wide gutter" data-step="Standard curve" data-minutes="20">
     <header><div class="eyebrow">Analyzing results · Sizing fragments</div><h2>Measure bands and build a standard curve</h2></header>
     <div class="step-body">
-      <div class="prose"><p>After staining, click a band, or use "Measure all visible bands in lane." Each click adds the distance from the front of the well to the front edge of the band. Readings carry about ±0.5 mm of ruler error, as at the bench. In the <strong>Known size</strong> column, type the size of each <span class="enz"><em>Hin</em>dIII</span> marker band, largest (closest to the well) first: 23,130 (the 23,130/27,491 doublet), 9,416, 6,557, 4,361, 2,322, 2,027 … The page fits log<sub>10</sub>(bp) against distance for each gel, then estimates every band with no known size.</p></div>
+      <div class="prose"><p>After staining, click a band, or use "Measure all visible bands in lane." Each click adds the distance from the front of the well to the front edge of the band. Readings carry about ±0.5 mm of ruler error, as at the bench. In the <strong>Known fragment size</strong> column, type the size of each <span class="enz"><em>Hin</em>dIII</span> marker band, largest (closest to the well) first: 23,130 (the 23,130/27,491 doublet), 9,416, 6,557, 4,361, 2,322, 2,027 … The page fits log<sub>10</sub>(bp) against distance for each gel, then estimates every band with no known size.</p></div>
       <div id="meas1"></div>
     </div>
   </section>
@@ -216,6 +221,7 @@
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Whose blood is on the floor?</h2></header>
     <div class="step-body">
       <div class="prose"><p>The chief investigator (your teacher) gives you DNA from the blood, Ms. Mason (saliva on her cup), Mr. Gladson (his tissue) and Bobby (bubble gum). All four have been cut with the same restriction enzymes, and you also get a <span class="enz"><em>Hin</em>dIII</span> marker. Plan your gel: which wells, how much sample, which voltage, how long, and how many repeat gels. Then run it and size every band. A jury will not accept "the bands look the same." You need fragment sizes and a clear match rule.</p></div>
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you run your evidence gel, say what you expect: what will a suspect who <em>matches</em> the blood look like on the gel compared with one who does not, and how many repeat gels do you think you need to be confident? Give a reason (1 to 2 sentences).</p><div id="predict-crime-box"></div></div>
       <div class="grid-2">
         <div class="field"><label for="case-no">Case file number (from your teacher)</label><input id="case-no" type="number" min="1" max="9999" value="102" data-save="case-no"><span class="hint">Different case numbers lead to different suspects. Use the number your teacher assigns.</span></div>
         <div id="design-plan"></div>
@@ -737,7 +743,7 @@ function makeGel(rootSel, measSel, cfg) {
     </div>
     <div class="stage">
       <canvas class="viz gel-canvas" id="${P}-cv" aria-label="Agarose gel in an electrophoresis box with wells at the negative end; bands appear after running and staining"></canvas>
-      <div class="readouts"><div class="readout"><span class="k">Gel #</span><span class="v" id="${P}-gelno">1</span></div><div class="readout"><span class="k">Run time</span><span class="v" id="${P}-time">0 min</span></div><div class="readout"><span class="k">Dye front</span><span class="v" id="${P}-dye">0 mm</span></div><div class="readout"><span class="k">Current</span><span class="v" id="${P}-amp">0 mA</span></div></div>
+      <div class="readouts"><div class="readout"><span class="k">Gel number (no units)</span><span class="v" id="${P}-gelno">1</span></div><div class="readout"><span class="k">Run time (min)</span><span class="v" id="${P}-time">0 min</span></div><div class="readout"><span class="k">Dye front distance (mm)</span><span class="v" id="${P}-dye">0 mm</span></div><div class="readout"><span class="k">Current (mA)</span><span class="v" id="${P}-amp">0 mA</span></div></div>
       <div id="${P}-msg" class="msg" aria-live="polite">Choose a tube, then a well.</div>
       <div class="row"><label for="${P}-mlane" class="small">Lane</label><select id="${P}-mlane"></select><button class="btn btn--sm" type="button" id="${P}-mall">Measure all visible bands in lane</button><button class="btn btn--sm" type="button" id="${P}-mdye">Measure dye front</button></div>
       <div class="small muted" id="${P}-legend"></div>
@@ -749,7 +755,7 @@ function makeGel(rootSel, measSel, cfg) {
   const rng = Lab.rng();
   const meas = Lab.table(measSel + ' .mtable', {
     save: P + '-meas',
-    columns: [{ key: 'gel', label: 'Gel', num: true, digits: 0 }, { key: 'lane', label: 'Lane', num: true, digits: 0 }, { key: 'sample', label: 'Sample' }, { key: 'band', label: 'Band', num: true, digits: 0 }, { key: 'dist', label: 'Distance', unit: 'mm', num: true, digits: 1, editable: true }, { key: 'known', label: 'Known size', unit: 'bp', num: true, digits: 0, editable: true }],
+    columns: [{ key: 'gel', label: 'Gel', num: true, digits: 0 }, { key: 'lane', label: 'Lane', num: true, digits: 0 }, { key: 'sample', label: 'Sample' }, { key: 'band', label: 'Band', num: true, digits: 0 }, { key: 'dist', label: 'Distance migrated', unit: 'mm', num: true, digits: 1, editable: true }, { key: 'known', label: 'Known fragment size', unit: 'bp', num: true, digits: 0, editable: true }],
     onChange: () => analyze()
   });
   const prevGel = Math.max(0, ...meas.getRows().map(r => r.gel || 0));
@@ -814,8 +820,8 @@ function makeGel(rootSel, measSel, cfg) {
   }
   function updateRead() {
     const v = V();
-    $('time').textContent = Math.round(st.t) + ' min'; $('dye').textContent = Lab.fmt(Math.max(0, st.reversed ? 0 : st.dist), 1) + ' mm';
-    $('amp').textContent = st.running ? Math.round(v / 2.0) + ' mA' : '0 mA';
+    $('time').textContent = Math.round(st.t); $('dye').textContent = Lab.fmt(Math.max(0, st.reversed ? 0 : st.dist), 1);
+    $('amp').textContent = st.running ? Math.round(v / 2.0) : '0';
   }
   // drawing: static bench layers are cached; each frame composites dyes, bands, bubbles and the pipette
   const bub = makeBubbles(Math.floor(Math.random() * 1e6));
@@ -990,7 +996,7 @@ function makeGel(rootSel, measSel, cfg) {
     const groups = {};
     estimates().filter(e => isFinite(e.est)).forEach(e => { const k = e.r.sample + '|' + e.r.band; (groups[k] = groups[k] || { sample: e.r.sample, band: e.r.band, v: [] }).v.push(e.est); });
     const list = Object.values(groups).sort((a, b) => a.sample.localeCompare(b.sample) || a.band - b.band);
-    estEl.innerHTML = list.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Sample</th><th class="num">Band</th><th class="num">n</th><th class="num">Mean estimate <span class="unit">(bp)</span></th><th class="num">± 2 SE <span class="unit">(bp)</span></th><th class="num">Range <span class="unit">(bp)</span></th></tr></thead><tbody>${list.map(g => { const mn = Lab.stats.mean(g.v), se2 = g.v.length > 1 ? 2 * Lab.stats.se(g.v) : NaN; return `<tr><td>${esc(g.sample)}</td><td class="num">${g.band}</td><td class="num">${g.v.length}</td><td class="num">${Math.round(mn).toLocaleString()}</td><td class="num">${isFinite(se2) ? Math.round(se2).toLocaleString() : '—'}</td><td class="num">${Math.round(Math.min(...g.v)).toLocaleString()}–${Math.round(Math.max(...g.v)).toLocaleString()}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="small muted">Size estimates appear here once a gel has a standard curve (two or more marker bands with known sizes) and some unknown bands.</p>';
+    estEl.innerHTML = list.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Sample</th><th class="num">Band</th><th class="num">n <span class="unit">(readings)</span></th><th class="num">Mean estimate <span class="unit">(bp)</span></th><th class="num">± 2 SE <span class="unit">(bp)</span></th><th class="num">Range <span class="unit">(bp)</span></th></tr></thead><tbody>${list.map(g => { const mn = Lab.stats.mean(g.v), se2 = g.v.length > 1 ? 2 * Lab.stats.se(g.v) : NaN; return `<tr><td>${esc(g.sample)}</td><td class="num">${g.band}</td><td class="num">${g.v.length}</td><td class="num">${Math.round(mn).toLocaleString()}</td><td class="num">${isFinite(se2) ? Math.round(se2).toLocaleString() : '—'}</td><td class="num">${Math.round(Math.min(...g.v)).toLocaleString()}–${Math.round(Math.max(...g.v)).toLocaleString()}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="small muted">Size estimates appear here once a gel has a standard curve (two or more marker bands with known sizes) and some unknown bands.</p>';
     cfg.onAnalyze && cfg.onAnalyze(list);
   }
   excl.addEventListener('change', analyze); gsel.addEventListener('change', analyze);
@@ -1016,7 +1022,7 @@ function gelGuidance(P, gel, first, last, doneText) {
   const st = gel.st, saved = () => gel.meas.getRows().length > 0;
   const loaded = () => st.lanes.filter(l => l.length).length;
   const steps = [];
-  if (first) steps.push(first);
+  if (first) steps.push(...[].concat(first));
   steps.push(
     { id: 'load', text: 'Load the samples into wells', target: `#${P}-wells button`, done: () => loaded() > 0 || st.t > 0 || saved(), hint: 'Pick a tube, then press a well number.' },
     { id: 'run', text: 'Run until the dye is ~1 cm from the end', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= 66) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout).' },
@@ -1024,7 +1030,7 @@ function gelGuidance(P, gel, first, last, doneText) {
   );
   if (last) steps.push(last);
   Lab.steps(`#${P}-steps`, steps, { doneText });
-  Lab.gate(`#${P}-run`, () => (loaded() > 0 || st.t > 0) ? '' : 'Load at least one sample first');
+  Lab.gate(`#${P}-run`, () => (P === 'g2' && !filled('predict-crime') && !saved() && !(st.t > 0)) ? 'Write your prediction first' : (loaded() > 0 || st.t > 0) ? '' : 'Load at least one sample first');
   Lab.gate(`#${P}-mall`, () => st.t === 0 ? 'Run the gel first' : st.running ? 'Turn the power off first' : !st.stain ? 'Stain the gel first' : '');
   Lab.$(`#${P}-run`).addEventListener('click', () => { if (!st.running && st.t > 0 && st.dist >= 45) Lab.toast('Power off. Now stain the gel to see the bands.', { type: 'info', announce: false, key: P + '-run' }); });
   Lab.$(`#${P}-stain`).addEventListener('click', () => { if (st.stain) Lab.toast(st.stain === 1 ? 'Gel stained: bands are visible' : 'Gel destained: bands are clearer', { type: 'ok', announce: false, key: P + '-stain' }); });
@@ -1036,7 +1042,8 @@ function layoutGel2() {
     data: [{ el: '#meas2 .mtable', title: 'Band measurements' }]
   });
   gelGuidance('g2', gel2,
-    { id: 'plan', text: 'Plan your gel (above)', target: '#p-d-plan', done: () => filled('d-plan'), hint: 'Write your gel plan in the box above.' },
+    [{ id: 'predict', text: 'Write your prediction (above)', target: '#p-predict-crime', done: () => filled('predict-crime'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the case number.' },
+    { id: 'plan', text: 'Plan your gel (above)', target: '#p-d-plan', done: () => filled('d-plan'), hint: 'Write your gel plan in the box above.' }],
     { id: 'compare', text: 'Compare the profiles (below)', target: '#tol', done: () => !!Lab.$('#compare .pill'), hint: 'Set your match rule and read each suspect\'s verdict in the table below.' },
     'Gel analysed. Write your case in <a href="#analyze">Analyze</a>.');
 }
@@ -1083,7 +1090,7 @@ function compare(list) {
     const extra = b.length - used.size, all = matched === blood.length && extra === 0;
     return `<tr><td>${p}</td><td class="num">${b.length}</td><td class="num">${matched} of ${blood.length}</td><td class="num">${extra}</td><td class="num">${diffs.length ? Lab.fmt(Lab.stats.mean(diffs), 1) + '%' : '—'}</td><td><span class="pill ${all ? 'ok' : 'bad'}">${all ? 'Consistent with blood' : 'Excluded'}</span></td></tr>`;
   });
-  Lab.$('#compare').innerHTML = `<div class="table-wrap"><table class="data"><thead><tr><th>Suspect</th><th class="num">Bands sized</th><th class="num">Blood bands matched</th><th class="num">Extra bands</th><th class="num">Mean size difference</th><th>Verdict at this rule</th></tr></thead><tbody>${rows.join('')}</tbody></table></div><p class="small muted">Blood bands sized: ${blood.map(x => Math.round(x).toLocaleString()).join(', ')} bp.</p>`;
+  Lab.$('#compare').innerHTML = `<div class="table-wrap"><table class="data"><thead><tr><th>Suspect</th><th class="num">Bands sized <span class="unit">(bands)</span></th><th class="num">Blood bands matched <span class="unit">(bands)</span></th><th class="num">Extra bands <span class="unit">(bands)</span></th><th class="num">Mean size difference <span class="unit">(%)</span></th><th>Verdict at this rule</th></tr></thead><tbody>${rows.join('')}</tbody></table></div><p class="small muted">Blood bands sized: ${blood.map(x => Math.round(x).toLocaleString()).join(', ')} bp.</p>`;
 }
 Lab.$('#tol').addEventListener('input', () => compare());
 function caseValid() {
@@ -1100,6 +1107,7 @@ function caseValid() {
 }
 Lab.$('#case-no').addEventListener('change', () => { if (caseValid()) buildCase(); });
 Lab.$('#case-no').addEventListener('input', caseValid);
+Lab.prompt('#predict-crime-box', { key: 'predict-crime', label: 'Your prediction (with a reason)', rows: 3, placeholder: '' });
 Lab.prompt('#design-plan', { key: 'd-plan', label: 'Your plan: well order, load volume, agarose %, voltage, run time, and how many repeat gels. Explain each choice.', rows: 4 });
 Lab.prompt('#design-prompts', { key: 'd-question', label: 'Question and hypothesis', rows: 3 });
 Lab.prompt('#design-prompts', { key: 'd-controls', label: 'Controls and constants: what must be the same in every lane, and why does the marker go on every gel?', rows: 3 });
@@ -1113,8 +1121,27 @@ Lab.prompt(an2, { key: 'a2', label: '2. Why is visual comparison (qualitative da
 const cer = Lab.h('div', { class: 'cer' }); an.append(Lab.h('h3', { style: 'margin-top:14px' }, 'Claim–Evidence–Reasoning: whose blood is it?'), cer);
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
+cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
 Lab.prompt(an, { key: 'a3', label: 'Write the ending of the story: "whodunit," based on motive, means, opportunity, and DNA evidence. Remember that the blood only shows whose blood it is, not what happened.', rows: 5 });
+/* Predict first: quote the student's own saved prediction(s) back in Reflect. */
+function predRecall(host, items) {
+  const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
+  host.prepend(box);
+  const render = () => {
+    box.innerHTML = '';
+    items.forEach(([key, name]) => {
+      const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
+      box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
+        v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
+    });
+  };
+  render();
+  document.addEventListener('input', e => { if (e.target && /^p-predict-/.test(e.target.id || '')) render(); });
+  Lab.onShow(host, render);
+}
 const ev = Lab.$('#evaluate-prompts');
+predRecall(ev.parentElement, [['predict-crime', 'what a matching suspect would look like']]);
+Lab.prompt(ev, { key: 'ev-pred', label: 'Compare your prediction (quoted above) with your gel results. What matched, what surprised you, and what would you change about your prediction now?', rows: 4 });
 Lab.prompt(ev, { key: 'e1', label: '1. What challenges did you have in performing your investigation?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: '2. What are possible sources of error in electrophoresis (loading, voltage, run time, measuring, the doublet, faint bands)? How could you reduce each one?', rows: 4 });
 Lab.prompt(ev, { key: 'e3', label: '3. Who should have access to your genetic profile: health insurers, colleges, employers? Who owns your DNA and its information?', rows: 3 });
