@@ -289,7 +289,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         </div>
         <div class="stage">
           <div><div class="small muted">Query sequence (5′→3′)</div><div class="seqbox" id="q-seq" aria-label="Query sequence"></div></div>
-          <div class="readouts"><div class="readout"><span class="k">Top hit</span><span class="v" id="r-top">—</span></div><div class="readout"><span class="k">Identity (%)</span><span class="v" id="r-id">—</span></div><div class="readout"><span class="k">E-value (no units)</span><span class="v" id="r-e">—</span></div><div class="readout"><span class="k">Hits, E &lt; 10 (count)</span><span class="v" id="r-n">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Top hit</span><span class="v" id="r-top">—</span></div><div class="readout"><span class="k">Identity (%)</span><span class="v" id="r-id">—</span></div><div class="readout"><span class="k">E-value</span><span class="v" id="r-e">—</span></div><div class="readout"><span class="k">Hits, E &lt; 10 (count)</span><span class="v" id="r-n">—</span></div></div>
           <div id="blast-out"><div class="res-empty msg" id="blast-empty"><strong>No results yet.</strong> Choose a gene and press BLAST.</div></div>
         </div>
       </div>
@@ -341,7 +341,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         </div></details>
         </div>
         <div class="stage">
-          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits (count)</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope (% per 100 My)</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R² (no units)</span><span class="v" id="d-r2">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits (count)</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope (% per 100 My)</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
           <div id="d-out"><div class="res-empty msg" id="d-empty"><strong>No results yet.</strong> Choose a query organism and gene, then press BLAST.</div></div>
         </div>
       </div>
@@ -1220,7 +1220,7 @@ function renderBlast(el, res, meta) {
   hits.forEach((h, i) => { const y = top + i * rowH; g += `<text x="${L - 8}" y="${y + 7.5}" text-anchor="end" style="font-size:10px">${esc(orgLabel(h.id))}</text><rect x="${X(h.qStart)}" y="${y + 1}" width="${Math.max(2, X(h.qEnd) - X(h.qStart))}" height="7" style="fill:var(${bitColor(h.bits)})"><title>${esc(orgLabel(h.id))}: ${h.bits.toFixed(0)} bits, E = ${fmtE(h.E)}</title></rect>`; });
   const key = [['--muted', '&lt;40'], ['--s3', '40–50'], ['--s1', '50–80'], ['--s2', '80–200'], ['--bad', '≥200']].map(([c, t]) => `<span class="k" style="background:var(${c})">${t}</span>`).join('');
   const descHTML = `    <div class="res-sec"><h4>Descriptions</h4><div class="small muted">Sequences producing significant alignments (${hits.length}). Select "View" to show an alignment.</div>
-    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th class="opt">Group</th><th class="num">Max score (bits)</th><th class="num opt">Query cover (%)</th><th class="num">E value (no units)</th><th class="num">Per. ident (%)</th><th>Alignment</th></tr></thead><tbody>
+    <div class="table-wrap"><table class="data hits"><thead><tr><th>#</th><th class="desc">Description</th><th class="opt">Group</th><th class="num">Max score (bits)</th><th class="num opt">Query cover (%)</th><th class="num">E value</th><th class="num">Per. ident (%)</th><th>Alignment</th></tr></thead><tbody>
     ${hits.map((h, i) => `<tr data-i="${i}"><td>${i + 1}</td><td class="desc"><em>${esc(ORGS[h.id][0])}</em> (${esc(ORGS[h.id][1])})</td><td class="opt">${esc(ORGS[h.id][2])}</td><td class="num">${h.bits.toFixed(0)}</td><td class="num opt">${Math.round(h.cover)}%</td><td class="num">${fmtE(h.E)}</td><td class="num">${h.ident.toFixed(2)}%</td><td><button type="button" class="lnk" data-view="${i}" aria-label="View alignment with ${esc(ORGS[h.id][1])}">View</button></td></tr>`).join('')}
     </tbody></table></div></div>`;
   el.innerHTML = `<div class="res">${head}
@@ -1289,7 +1289,7 @@ Lab.$('#run-blast').addEventListener('click', runPart2);
 Lab.$('#tree-blast').addEventListener('click', () => { if (lastRes && lastRes.hits.length) distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); });
 const blastTable = Lab.table('#blast-table', {
   save: 'blastlog',
-  columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', unit: 'no.', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value', unit: 'no units' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
+  columns: [{ key: 'gene', label: 'Gene' }, { key: 'prog', label: 'Program' }, { key: 'rank', label: 'Rank', num: true, digits: 0 }, { key: 'org', label: 'Organism' }, { key: 'group', label: 'Group' }, { key: 'bits', label: 'Score', unit: 'bits', num: true, digits: 0 }, { key: 'e', label: 'E value' }, { key: 'ident', label: 'Identity', unit: '%', num: true, digits: 1 }, { key: 'where', label: 'Where is it on your cladogram?', editable: true }]
 });
 Lab.$('#log-blast').addEventListener('click', () => {
   if (!lastRes) { Lab.$('#blast-status').textContent = 'Press BLAST first, then record the top hits.'; Lab.$('#blast-status').className = 'status bad'; return; }

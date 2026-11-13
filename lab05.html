@@ -1150,7 +1150,7 @@ const Predict = (function () {
       dchart2.update({ type: 'bar', xLabel: o.label + ' (category)', yLabel: 'Median ET₅₀ (min)', categories: cats, yMin: 0, series: [{ name: 'Median ET50', points: sum.map(s => ({ x: s.lv, y: isFinite(s.med) ? s.med : 0 })) }] });
     }
   }
-  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', unit: 'no.', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze, toast: rows => `Recorded ET₅₀ for ${rows.length} cups` });
+  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze, toast: rows => `Recorded ET₅₀ for ${rows.length} cups` });
   $('#d-run').addEventListener('click', () => {
     dPreview();
     if (!dCups.length) { $('#d-hint').textContent = 'Choose at least one valid level. ' + (IV[dIv.value].hint || ''); return; }

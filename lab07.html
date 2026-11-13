@@ -960,7 +960,7 @@ function drawOnionCell(ctx, c, ink, tear) {
     cyc.push({ x: +t.toFixed(2), y: +c.toFixed(3) });
     mpf.push({ x: +t.toFixed(2), y: +(f > 0.78 && f < 0.97 ? Math.sin((f - 0.78) / 0.19 * Math.PI) : 0.02).toFixed(3) });
   }
-  Lab.chart('#mpf-chart', { xLabel: 'Time (cell cycles; mitosis at the end of each)', yLabel: 'Relative level (0–1, no units)', height: 260, yMin: 0, yMax: 1.1, series: [{ name: 'Mitotic cyclin', points: cyc, dots: false }, { name: 'MPF activity', points: mpf, dots: false, dash: true }] });
+  Lab.chart('#mpf-chart', { xLabel: 'Time (cell cycles; mitosis at the end of each)', yLabel: 'Relative level (0–1)', height: 260, yMin: 0, yMax: 1.1, series: [{ name: 'Mitotic cyclin', points: cyc, dots: false }, { name: 'MPF activity', points: mpf, dots: false, dash: true }] });
 })();
 
 /* =====================================================================
@@ -1318,7 +1318,7 @@ const ROOT = (function () {
   make();
   return { draw };
 })();
-const tipCols = [{ key: 'tip', label: 'Tip', unit: 'no.', num: true, digits: 0 }, { key: 'I', label: 'Interphase', unit: 'cells', num: true, digits: 0 }, { key: 'P', label: 'P', unit: 'cells', num: true, digits: 0 }, { key: 'M', label: 'M', unit: 'cells', num: true, digits: 0 }, { key: 'A', label: 'A', unit: 'cells', num: true, digits: 0 }, { key: 'T', label: 'T', unit: 'cells', num: true, digits: 0 }, { key: 'mit', label: 'Mitotic', unit: 'cells', num: true, digits: 0 }, { key: 'total', label: 'Total', unit: 'cells', num: true, digits: 0 }, { key: 'mi', label: 'MI', unit: '%', num: true, digits: 1 }];
+const tipCols = [{ key: 'tip', label: 'Tip', num: true, digits: 0 }, { key: 'I', label: 'Interphase', unit: 'cells', num: true, digits: 0 }, { key: 'P', label: 'P', unit: 'cells', num: true, digits: 0 }, { key: 'M', label: 'M', unit: 'cells', num: true, digits: 0 }, { key: 'A', label: 'A', unit: 'cells', num: true, digits: 0 }, { key: 'T', label: 'T', unit: 'cells', num: true, digits: 0 }, { key: 'mit', label: 'Mitotic', unit: 'cells', num: true, digits: 0 }, { key: 'total', label: 'Total', unit: 'cells', num: true, digits: 0 }, { key: 'mi', label: 'MI', unit: '%', num: true, digits: 1 }];
 const tipFoot = rows => { const sm = k => ST.sum(rows.map(r => r[k])); const mit = sm('mit'), tot = sm('total'); return ['Total', sm('I'), sm('P'), sm('M'), sm('A'), sm('T'), mit, tot, tot ? fmt(100 * mit / tot, 1) : '—']; };
 const tabC = Lab.table('#rt-table-c', { save: 'rt-control', columns: tipCols, footer: tipFoot, onChange: () => classUpdate() });
 const tabT = Lab.table('#rt-table-t', { save: 'rt-lectin', columns: tipCols, footer: tipFoot, onChange: () => classUpdate() });
@@ -1667,7 +1667,7 @@ const MEI = (function () {
   $('#mei-xo').addEventListener('change', e => { st.xo = e.target.checked; go(false); });
   $('#mei-xopos').addEventListener('input', e => { st.xoPos = +e.target.value; go(false); });
   $('#mei-ndj').addEventListener('change', e => { st.ndj = e.target.value; go(true); });
-  const recTab = Lab.table('#mei-table', { save: 'mei-runs', columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'orient', label: 'Metaphase I (left side)' }, { key: 'xo', label: 'Crossover' }, { key: 'ndj', label: 'Nondisjunction' }, { key: 'g', label: 'Gamete genotypes' }, { key: 'n', label: 'Chromosome numbers' }] });
+  const recTab = Lab.table('#mei-table', { save: 'mei-runs', columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'orient', label: 'Metaphase I (left side)' }, { key: 'xo', label: 'Crossover' }, { key: 'ndj', label: 'Nondisjunction' }, { key: 'g', label: 'Gamete genotypes' }, { key: 'n', label: 'Chromosome numbers' }] });
   $('#mei-record').addEventListener('click', () => {
     if (st.stage !== 8) { $('#mei-desc').textContent = 'Step through to Telophase II first, then record.'; return; }
     const G = gametes(st);
@@ -1908,7 +1908,7 @@ const SORD = (function () {
   newField();
   return {};
 })();
-const sTab = Lab.table('#s-table', { save: 'sord', columns: [{ key: 'field', label: 'Field', unit: 'no.', num: true, digits: 0 }, { key: 'p', label: 'Asci showing 4:4', unit: 'asci', num: true, digits: 0 }, { key: 'r', label: 'Asci showing crossover', unit: 'asci', num: true, digits: 0 }, { key: 'tot', label: 'Total asci', unit: 'asci', num: true, digits: 0 }],
+const sTab = Lab.table('#s-table', { save: 'sord', columns: [{ key: 'field', label: 'Field', num: true, digits: 0 }, { key: 'p', label: 'Asci showing 4:4', unit: 'asci', num: true, digits: 0 }, { key: 'r', label: 'Asci showing crossover', unit: 'asci', num: true, digits: 0 }, { key: 'tot', label: 'Total asci', unit: 'asci', num: true, digits: 0 }],
   footer: rows => ['Total', ST.sum(rows.map(r => r.p)), ST.sum(rows.map(r => r.r)), ST.sum(rows.map(r => r.tot))], onChange: () => { $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot)); sClassUpdate(); } });
 $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot));
 $('#s-calc-check').addEventListener('click', () => {
@@ -1962,7 +1962,7 @@ const DES = (function design() {
   reps.addEventListener('input', syncR); cells.addEventListener('input', syncR); syncR();
   function levels() { const iv = IVS[sel.value]; $('#d-levels').innerHTML = iv.levels.map((L, i) => `<label class="check"><input type="checkbox" id="d-lv-${i}" value="${L}" ${iv.on.includes(L) ? 'checked' : ''}> ${L}${iv.unit === 'pH units' ? '' : ' ' + iv.unit}</label>`).join(''); $('#d-ref-hint').textContent = `Control (reference) level: ${iv.ref}${iv.unit === 'pH units' ? '' : ' ' + iv.unit}. Chi-square compares each level with it.`; }
   sel.addEventListener('change', levels); levels();
-  const tab = Lab.table('#d-table', { save: 'design', columns: [{ key: 'lv', label: 'Level', num: true, digits: 1 }, { key: 'n', label: 'Tips', unit: 'tips', num: true, digits: 0 }, { key: 'I', label: 'Interphase', unit: 'cells', num: true, digits: 0 }, { key: 'M', label: 'Mitotic', unit: 'cells', num: true, digits: 0 }, { key: 'mean', label: 'Mean MI', unit: '%', num: true, digits: 1 }, { key: 'sd', label: 'SD', unit: '%', num: true, digits: 1 }, { key: 'se', label: 'SE', unit: '%', num: true, digits: 2 }, { key: 'chi', label: 'χ² vs control', unit: 'no units', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
+  const tab = Lab.table('#d-table', { save: 'design', columns: [{ key: 'lv', label: 'Level', num: true, digits: 1 }, { key: 'n', label: 'Tips', unit: 'tips', num: true, digits: 0 }, { key: 'I', label: 'Interphase', unit: 'cells', num: true, digits: 0 }, { key: 'M', label: 'Mitotic', unit: 'cells', num: true, digits: 0 }, { key: 'mean', label: 'Mean MI', unit: '%', num: true, digits: 1 }, { key: 'sd', label: 'SD', unit: '%', num: true, digits: 1 }, { key: 'se', label: 'SE', unit: '%', num: true, digits: 2 }, { key: 'chi', label: 'χ² vs control', num: true, digits: 2 }, { key: 'sig', label: 'p < 0.05?' }],
     onChange: rows => { const iv = IVS[(rows[0] && rows[0].iv) || sel.value]; chart.update({ xLabel: `${iv.label} (${iv.unit})`, series: [{ name: 'Mean mitotic index ± 2 SE', points: rows.map(r => ({ x: r.lv, y: r.mean, err: 2 * r.se })) }] }); } });
   const chart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Mitotic index (%)', yMin: 0, series: [], height: 300 });
   Lab.fitHeight('#d-field', 0.75);
@@ -2128,7 +2128,7 @@ $('#d-run').addEventListener('click', () => { if (dLv() >= 2) Lab.toast(`Scored 
   Own.watch(() => { const r = sRows(), T = ST.sum(r.map(x => x.tot)); if (T >= 20) Own.key('map-units', { label: 'Gene-to-centromere distance (Sordaria)', value: +fmt(50 * ST.sum(r.map(x => x.r)) / T, 1), unit: 'map units', part: 'Sordaria' }); }); }
 const cer = $('#an-cer');
 [['C', 'cer-c', 'Claim'], ['E', 'cer-e', 'Evidence (cite mitotic indices, class means ± SD, and χ²)'], ['R', 'cer-r', 'Reasoning (connect lectins, mitogens, and the cell cycle)']].forEach(([L, k, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 5 }); $('label', p).dataset.letter = L; });
-Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'Evidence: cite two mitotic indices (%) or a χ² value.', reasoning: 'Reasoning: link the evidence to the cell cycle.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) the mitotic index of ___ root tips.</p><p><strong>Evidence:</strong> The mitotic index was ___% in the ___ group, compared with ___% in the ___ group (χ² = ___, no units, p ___ 0.05).</p><p><strong>Reasoning:</strong> This happens because ___ (lectin, mitogen, checkpoint, cell cycle) ___.</p>');
+Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'Evidence: cite two mitotic indices (%) or a χ² value.', reasoning: 'Reasoning: link the evidence to the cell cycle.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) the mitotic index of ___ root tips.</p><p><strong>Evidence:</strong> The mitotic index was ___% in the ___ group, compared with ___% in the ___ group (χ² = ___, p ___ 0.05).</p><p><strong>Reasoning:</strong> This happens because ___ (lectin, mitogen, checkpoint, cell cycle) ___.</p>');
 [['ev-1', '1. Why did you divide the percentage of asci showing crossover by 2?'], ['ev-2', '2. The published gene-to-centromere distance for the tan gene is 26 map units. How did your class data compare?'], ['ev-3', '3. How can you account for any disparities between the class data and the published value?'], ['ev-4', '4. Describe (or sketch and describe) what happened during meiosis to produce the patterns you saw.'], ['ev-5', '5. Do you think the Philadelphia chromosome results from crossing over as seen in Sordaria, or from some other chromosomal abnormality? Explain.'], ['ev-6', '6. Could the cell cycle described for mitosis apply to meiosis as well? Explain.']].forEach(([k, l]) => Lab.prompt('#an-p5', { key: k, label: l, rows: 3 }));
 (function chiCalc() {
   const box = $('#cs-rows'); let n = 0;
@@ -2148,7 +2148,7 @@ Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'E
     if (bad) { out.innerHTML = `<div class="feedback bad" role="alert" style="margin-top:8px">Fix the highlighted box${bad > 1 ? 'es' : ''} first. \u03C7\u00B2 wasn\u2019t calculated.</div>`; return; }
     if (O.length < 2) { out.innerHTML = '<div class="feedback bad" role="alert" style="margin-top:8px">Enter at least two categories, each with an observed count and an expected value above 0.</div>'; return; }
     const r = ST.chiSquare(O, E);
-    $('#cs-out').innerHTML = `<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Category</th><th class="num">o <span class="unit">(count)</span></th><th class="num">e <span class="unit">(count)</span></th><th class="num">(o − e)²/e <span class="unit">(no units)</span></th></tr></thead><tbody>${O.map((o, i) => `<tr><td>${Lab.esc(L[i])}</td><td class="num">${fmt(o, 1)}</td><td class="num">${fmt(E[i], 1)}</td><td class="num">${fmt(r.terms[i], 3)}</td></tr>`).join('')}</tbody></table></div><div class="decision ${r.reject ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong> (no units), df = ${r.df}, critical value (p = 0.05) = ${r.crit}. ${r.reject ? 'Reject the null hypothesis.' : 'Fail to reject the null hypothesis.'}</div>`;
+    $('#cs-out').innerHTML = `<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Category</th><th class="num">o <span class="unit">(count)</span></th><th class="num">e <span class="unit">(count)</span></th><th class="num">(o − e)²/e</th></tr></thead><tbody>${O.map((o, i) => `<tr><td>${Lab.esc(L[i])}</td><td class="num">${fmt(o, 1)}</td><td class="num">${fmt(E[i], 1)}</td><td class="num">${fmt(r.terms[i], 3)}</td></tr>`).join('')}</tbody></table></div><div class="decision ${r.reject ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${r.df}, critical value (p = 0.05) = ${r.crit}. ${r.reject ? 'Reject the null hypothesis.' : 'Fail to reject the null hypothesis.'}</div>`;
   });
 })();
 const rf = $('#reflect-prompts');

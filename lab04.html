@@ -473,7 +473,7 @@
           <div class="readouts">
             <div class="readout"><span class="k">Dependent variable</span><span class="v" id="d-dv" style="font-size:.9rem">—</span></div>
             <div class="readout"><span class="k">Trend (slope, y-units per x-unit)</span><span class="v" id="d-slope">—</span></div>
-            <div class="readout"><span class="k">R² (no units)</span><span class="v" id="d-r2">—</span></div>
+            <div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div>
           </div>
         </div>
       </div>
@@ -1363,7 +1363,7 @@ const Predict = (function () {
   const p2chart = Lab.chart('#p2-chart', { type: 'bar', xLabel: 'Inside │ outside solutions', yLabel: 'Mean mass change (%)', series: [] });
   const p2table = Lab.table('#p2-table', {
     save: 'p2',
-    columns: [{ key: 'run', label: 'Set', unit: 'no.', num: true, digits: 0 }, { key: 'bag', label: 'Bag', unit: 'no.', num: true, digits: 0 }, { key: 'pair', label: 'Inside │ outside' },
+    columns: [{ key: 'run', label: 'Set', num: true, digits: 0 }, { key: 'bag', label: 'Bag', num: true, digits: 0 }, { key: 'pair', label: 'Inside │ outside' },
       { key: 'm0', label: 'Initial mass', unit: 'g', num: true, digits: 2 }, { key: 'm1', label: 'Final mass', unit: 'g', num: true, digits: 2 },
       { key: 'pct', label: '% change', unit: '%', num: true, editable: true }],
     onChange: rows => {
@@ -1707,7 +1707,7 @@ const Predict = (function () {
   const p3bchart = Lab.chart('#p3b-chart', { xLabel: 'Sucrose concentration (M)', yLabel: 'Mass change (%)', xMin: 0, xMax: 1, series: [] });
   const p3bTable = Lab.table('#p3b-table', {
     save: 'p3b',
-    columns: [{ key: 'set', label: 'Set', unit: 'no.', num: true, digits: 0 }, { key: 'tissue', label: 'Tissue' }, { key: 'cup', label: 'Cup color' }, { key: 'conc', label: 'Sucrose (your ID)', unit: 'M', num: true, digits: 1 },
+    columns: [{ key: 'set', label: 'Set', num: true, digits: 0 }, { key: 'tissue', label: 'Tissue' }, { key: 'cup', label: 'Cup color' }, { key: 'conc', label: 'Sucrose (your ID)', unit: 'M', num: true, digits: 1 },
       { key: 'm0', label: 'Initial mass', unit: 'g', num: true, digits: 2 }, { key: 'm1', label: 'Final mass', unit: 'g', num: true, digits: 2 }, { key: 'pct', label: '% change', unit: '%', num: true, digits: 1 }],
     onChange: rows => {
       const g = new Map();
@@ -1836,7 +1836,7 @@ const Predict = (function () {
       if (rows.length > 2 && keys.length > 1) { const f = S.linreg(rows.map(r => r.lv), rows.map(r => r.y)); $('#d-slope').textContent = fmt(f.m, 3); $('#d-r2').textContent = fmt(f.r2, 3); }
     }
   }
-  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'rep', label: 'Replicate', unit: 'no.', num: true, digits: 0 }, { key: 'y', label: 'Result', num: true, digits: 2 }], onChange: dAnalyze });
+  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'rep', label: 'Replicate', num: true, digits: 0 }, { key: 'y', label: 'Result', num: true, digits: 2 }], onChange: dAnalyze });
   let dAnim = null;
   $('#d-run').addEventListener('click', () => {
     if (dAnim) dAnim.finish();

@@ -1409,7 +1409,7 @@ const Predict = (function () {
   /* ================= GENERATION 2 & COMPARISON ================= */
   const cmpHist = Lab.chart('#cmp-hist', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Plants (count)', series: [], height: 300 });
   const cmpMeans = Lab.chart('#cmp-means', { type: 'bar', xLabel: 'Population (error bars: ±2 SE)', yLabel: 'Mean trichomes (hairs)', series: [], height: 280 });
-  const linesChart = Lab.chart('#lines', { xLabel: 'Generation (no.)', yLabel: 'Mean trichomes ± 2 SE (hairs)', series: [], height: 300 });
+  const linesChart = Lab.chart('#lines', { xLabel: 'Generation', yLabel: 'Mean trichomes ± 2 SE (hairs)', series: [], height: 300 });
   const genTable = Lab.table('#gen-table', {
     columns: [{ key: 'pop', label: 'Population' }, { key: 'n', label: 'n', unit: 'plants', num: true, digits: 0 }, { key: 'mean', label: 'Mean', unit: 'hairs', num: true, digits: 2 }, { key: 'median', label: 'Median', unit: 'hairs', num: true, digits: 1 }, { key: 'range', label: 'Range', unit: 'hairs' }, { key: 'sd', label: 'SD', unit: 'hairs', num: true, digits: 2 }, { key: 'se', label: 'SE', unit: 'hairs', num: true, digits: 2 }]
   });
@@ -1488,11 +1488,11 @@ const Predict = (function () {
   Object.values(dEls).forEach(el => el.addEventListener('input', dSync)); dSync();
   let dDir = 1;
   $('#d-dir').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dDir = +b.dataset.dir; Lab.$$('#d-dir button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-  const dChart = Lab.chart('#d-chart', { xLabel: 'Generation (no.)', yLabel: 'Mean ± 2 SE (trait units)', series: [], height: 300 });
+  const dChart = Lab.chart('#d-chart', { xLabel: 'Generation', yLabel: 'Mean ± 2 SE (trait units)', series: [], height: 300 });
   const dHist = Lab.chart('#d-hist', { type: 'bar', xLabel: 'Trait value (trait units)', yLabel: 'Plants (count)', series: [], height: 260 });
   const dTable = Lab.table('#d-table', {
     save: 'design', toast: false,
-    columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'setup', label: 'Settings' }, { key: 'line', label: 'Line' }, { key: 'gen', label: 'Gen', unit: 'no.', num: true, digits: 0 }, { key: 'n', label: 'n', unit: 'plants', num: true, digits: 0 }, { key: 'mean', label: 'Mean', unit: 'trait units', num: true, digits: 2 }, { key: 'sd', label: 'SD', unit: 'trait units', num: true, digits: 2 }, { key: 'se', label: 'SE', unit: 'trait units', num: true, digits: 2 }]
+    columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'setup', label: 'Settings' }, { key: 'line', label: 'Line' }, { key: 'gen', label: 'Gen', num: true, digits: 0 }, { key: 'n', label: 'n', unit: 'plants', num: true, digits: 0 }, { key: 'mean', label: 'Mean', unit: 'trait units', num: true, digits: 2 }, { key: 'sd', label: 'SD', unit: 'trait units', num: true, digits: 2 }, { key: 'se', label: 'SE', unit: 'trait units', num: true, digits: 2 }]
   });
   const dCanvas = Lab.canvas('#d-canvas', window.innerWidth < 600 ? 0.75 : 0.5, { fit: true });
   let dLast = null;
