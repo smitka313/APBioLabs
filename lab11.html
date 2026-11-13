@@ -185,7 +185,7 @@
   <section class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="10">
     <header><div class="eyebrow">Getting started</div><h2>Before you start</h2></header>
     <div class="step-body">
-      <p>These questions follow the manual's Getting Started section and the calculations you will use in Part 1.</p>
+      <p>These questions review key ideas and the calculations you will use in Part 1.</p>
       <div id="prelab" class="quiz--cols"></div>
       <div id="prelab-draw" class="stack"></div>
     </div>
@@ -290,7 +290,7 @@
         <div class="inline-num"><label for="st-dens">Stomata per mm² =</label><input type="number" step="any" id="st-dens" placeholder="e.g. 150" data-save="st-dens"><button class="btn btn--sm" id="st-dens-check" type="button">Check</button></div>
         <p class="status" id="st-dens-msg" aria-live="polite"></p>
       </div>
-      <h3>Table 1. Average stomata per mm² of leaf surface (from the manual)</h3>
+      <h3>Table 1. Average stomata per mm² of leaf surface (typical values)</h3>
       <div class="table-wrap"><table class="data" id="st-ref"></table></div>
       <div id="st-ref-chart"></div>
       <div id="st-q" class="stack prompts-2"></div>
@@ -353,7 +353,7 @@
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Your own transpiration experiment</h2></header>
     <div class="step-body">
       <div class="prose">
-        <p>Pick a question. Some from the manual: Which environmental variable affects transpiration the most? Do all plants transpire at the same rate? Is a plant's habitat (moist vs. dry) related to its transpiration rate? Do all parts of a plant transpire? What happens if leaves are fewer or smaller, or if one leaf surface is sealed?</p>
+        <p>Pick a question. Some ideas: Which environmental variable affects transpiration the most? Do all plants transpire at the same rate? Is a plant's habitat (moist vs. dry) related to its transpiration rate? Do all parts of a plant transpire? What happens if leaves are fewer or smaller, or if one leaf surface is sealed?</p>
       </div>
       <div class="callout callout--tip"><div class="callout-title">Your plan</div><div id="d-plan" class="grid-2"></div></div>
       <div class="sim sim--fit" id="d-sim">
@@ -572,7 +572,7 @@ function frq(host, o) {
     { type: 'num', q: 'At 400X the diameter of the field of view is 0.45 mm. What is the area of the field in mm²? (A = πr²)',
       answer: 0.159, tol: 0.003, unit: 'mm²', explain: 'r = 0.45 ÷ 2 = 0.225 mm. A = 3.1416 × 0.225² = 0.159 mm².' },
     { type: 'num', q: 'You count 31, 26, 29, and 26 stomata in four 400X fields (area 0.159 mm² each). What is the stomatal density in stomata per mm²?',
-      answer: 176, tol: 3, unit: 'stomata/mm²', explain: 'Mean = (31 + 26 + 29 + 26) ÷ 4 = 28 per field. Density = 28 ÷ 0.159 mm² = 176 per mm², the manual\'s value for the lower epidermis of kidney bean.' },
+      answer: 176, tol: 3, unit: 'stomata/mm²', explain: 'Mean = (31 + 26 + 29 + 26) ÷ 4 = 28 per field. Density = 28 ÷ 0.159 mm² = 176 per mm², a typical value for the lower epidermis of kidney bean.' },
     { type: 'num', q: 'A leaf tracing covers 92 full squares and 30 partial squares on paper where 4 squares = 1 cm². Counting partial squares as half, what is the leaf area in <strong>mm²</strong>?',
       answer: 2675, tol: 30, unit: 'mm²', explain: '(92 + 30/2) ÷ 4 = 107 ÷ 4 = 26.75 cm². 1 cm² = 100 mm², so 2675 mm².' },
     { type: 'mc', q: 'Over Earth\'s history, atmospheric CO<sub>2</sub> has changed. If CO<sub>2</sub> levels were much higher, how would you expect stomatal density to evolve?',
@@ -1049,7 +1049,7 @@ function frq(host, o) {
     if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     const m = S.mean(rows.map(r => r.count)), dens = m / (Math.PI * 0.225 * 0.225);
     const ok = Math.abs(v - dens) <= Math.max(2, dens * 0.03);
-    out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². The manual's average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
+    out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². A typical average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
     out.className = 'status ' + (ok ? 'ok' : 'bad');
   });
   { const sv = Lab.store.get('st-state');
