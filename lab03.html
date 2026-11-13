@@ -240,7 +240,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
           </div>
         </div>
         <div class="stage">
-          <div id="build-msg" class="msg" aria-live="polite">Select two or more organisms and a trait, then press "Group selected organisms."</div>
+          <div id="build-msg" class="msg" aria-live="polite">Select two or more organisms and a trait, then press "Group selected organisms." You are done when every group of two or more that shares a trait is on the tree (in any order).</div>
           <div id="tree-build"></div>
         </div>
       </div>
@@ -1922,10 +1922,17 @@ Lab.results('#d-sim', { start: 'data', graph: [{ el: '#clock-chart', title: 'Per
 }
 const matrixDone = () => { const D = DATASETS[dsKey], s = Lab.store.get('matrix:' + dsKey, {}); return D.taxa.every(t => D.traits.every((tr, j) => !!s[t.id + j] === tr[1].includes(t.id))) && Object.values(s).some(Boolean); };
 const blastGenes = () => new Set(blastTable.getRows().map(r => r.gene));
+/* The tree is complete when its groups of 2 or more (but not all) organisms are exactly the groups the trait table supports.
+   The order they were added in does not matter, and single-organism and all-organism traits are optional. */
+const cladeTreeDone = () => {
+  const n = DATASETS[dsKey].taxa.length, inner = lists => new Set(lists.filter(m => m.length > 1 && m.length < n).map(m => m.slice().sort().join()));
+  const want = inner(DATASETS[dsKey].traits.map(t => t[1])), got = inner(getClades(dsKey).map(c => c.members));
+  return want.size === got.size && [...want].every(w => got.has(w));
+};
 Lab.steps('#clade-steps', [
   { id: 'table', text: 'Tick the trait table', target: '#matrix input', done: () => Object.values(Lab.store.get('matrix:' + dsKey, {})).some(Boolean), hint: 'Scroll up: read the organism cards and tick every trait each organism has.' },
   { id: 'check', text: 'Check my table', target: '#check-matrix', done: matrixDone, hint: 'Press <strong>Check my table</strong> and fix any highlighted cells.' },
-  { id: 'group', text: 'Group organisms into clades', target: '#add-clade', done: () => getClades(dsKey).length >= DATASETS[dsKey].traits.length - 1, hint: 'Select the organisms that share a trait, pick the trait, press <strong>Group selected organisms</strong>. Start with the most widely shared trait.' },
+  { id: 'group', text: 'Group organisms into clades', target: '#add-clade', done: cladeTreeDone, hint: 'Select the organisms that share a trait, pick the trait, press <strong>Group selected organisms</strong>. This step is done when every group of two or more organisms that shares a trait is on your tree, with no wrong groups. Any order works, and traits that belong to one organism or to all of them are optional.' },
   { id: 'hyp', text: 'Place the fossil (hypothesis)', target: '#fossil-hyp', sticky: true, done: () => !!Lab.store.get('fossil-hyp', ''), hint: 'Below the tree: choose the branch the fossil joins, using the Figure 4 data set.' },
   { id: 'why', text: 'Explain it (below)', target: '#p-fossil-obs', done: () => allFilled(['fossil-obs', 'fossil-hyp-why']), hint: 'Describe the fossil and explain your hypothesis in the two boxes below.' }
 ], { doneText: 'Part 1 done. Go on to <a href="#blast-the-genes">BLAST the genes</a>.' });
