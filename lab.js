@@ -1765,7 +1765,7 @@
       if (img) cv.replaceWith(img); else cv.remove();
     });
     $$('.tab-panel', clone).forEach(p => { p.hidden = false; if (p.dataset.tab) p.prepend(h('p', { class: 'ws-sum' }, p.dataset.tab)); }); // every tab prints
-    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools, .pager, .save-status, [role="tablist"]', clone).forEach(e => e.remove());
+    $$('button, input, select, textarea, script, .sim, [hidden], .link-tools, .pager, .save-status, [role="tablist"], .pvc', clone).forEach(e => e.remove());
     // Collapsed disclosures print in full: <details> becomes a plain block with its summary as a heading.
     $$('details', clone).forEach(d => {
       const box = h('div', { class: 'ws-details' });
@@ -3637,6 +3637,69 @@
   Lab.timelapse.erase = tlEraseLab;
   Lab.timelapse.eraseAll = tlEraseAll;
   Lab.timelapse.withRun = () => TLS.filter(r => r.count > 1);
+
+  /* ---------------- Predict vs. actual: Lab.predictCompare ----------------
+     A side-by-side card for a Reflect part: the student's saved prediction on the left, a live snapshot of their own chart (or result
+     text) on the right, and a highlighted "What happened" line underneath.
+       Lab.predictCompare('#reflect-compare', {
+         predictKey: 'predict-floatassay',               // the key of the Lab.prompt the prediction was written in
+         chartEl: '#cup-chart',                          // a Lab.chart container to snapshot, and/or
+         getResult: () => etRows.length ? { ctrl, treat } : null,   // anything; null/undefined = no result yet (chartEl alone: the chart's options)
+         summarize: r => `Treated disks floated at ${r.treat} min; the control at ${r.ctrl} min.`,   // → the text under the snapshot
+         delta: (r, prediction) => r.treat < r.ctrl ? 'They floated faster, as you predicted.' : null, // → "What happened"; null = just the summary
+         part: 'Float assay', partId: 'float-assay',     // "Finish Float assay first" (partId makes it a link) when there is no result
+         title: 'Your prediction vs. what happened',     // optional
+       });  → { el, refresh(), destroy() }
+     It re-reads on its own: when the chart redraws, when answers or tables change, when its part is shown and on a theme change. */
+  let pvcCount = 0;   // (not Math.random: that stream is the student's seeded data)
+  Lab.predictCompare = function (container, o = {}) {
+    container = typeof container === 'string' ? $(container) : container;
+    const uid = 'pvc-' + String(o.predictKey || 'x').replace(/[^\w-]/g, '') + '-' + (++pvcCount);
+    const chartEl = () => (typeof o.chartEl === 'string' ? $(o.chartEl) : o.chartEl) || null;
+    const entry = () => { const c = chartEl(); return c ? REG.charts.find(x => x.el === c) : null; };
+    const prediction = () => { const t = document.getElementById('p-' + o.predictKey); const v = t ? t.value : store.get('field:' + o.predictKey); return String(v == null ? '' : v).trim(); };
+    const result = () => {
+      try {
+        if (o.getResult) return o.getResult();
+        const e = entry(); return e && chartHasData(e.opts) ? e.opts : null;
+      } catch (e) { console.warn(e); return null; }
+    };
+    const part = o.part || 'the experiment';
+    const wait = () => o.partId ? h('span', null, 'Finish ', h('a', { href: '#' + o.partId }, part), ' first') : h('span', null, `Finish ${part} first`);
+    const quote = h('blockquote', { class: 'pvc-quote' }), none = h('p', { class: 'pvc-none' }, 'You did not write a prediction here. Next time, predict first.');
+    const snap = h('div', { class: 'pvc-snap' }), sum = h('p', { class: 'pvc-sum' }), waiting = h('p', { class: 'pvc-wait' });
+    const what = h('p', { class: 'pvc-what', role: 'status' });
+    const el = h('section', { class: 'pvc', 'aria-labelledby': uid + '-h' },
+      h('h3', { id: uid + '-h', class: 'pvc-title' }, o.title || 'Your prediction vs. what happened'),
+      h('div', { class: 'pvc-grid' },
+        h('div', { class: 'pvc-col pvc-left' }, h('h4', null, 'You predicted'), quote, none),
+        h('div', { class: 'pvc-col pvc-right' }, h('h4', null, 'What your bench showed'), snap, sum, waiting)),
+      what);
+    let lastKey = '';
+    function refresh() {
+      const pred = prediction(), r = result(), has = r != null && r !== false && !(Array.isArray(r) && !r.length);
+      const e = entry(), chartHtml = has && e && chartHasData(e.opts) ? e.html(560) : '';
+      let text = '', delta = null;
+      if (has) { try { text = String(o.summarize ? o.summarize(r) : ''); } catch (x) { console.warn(x); } try { delta = o.delta ? o.delta(r, pred) : null; } catch (x) { console.warn(x); } }
+      const k = JSON.stringify([pred, has, text, delta, chartHtml.length, chartHtml.slice(0, 400), chartHtml.slice(-200)]);
+      if (k === lastKey) return; lastKey = k;
+      quote.hidden = !pred; none.hidden = !!pred; quote.textContent = pred ? '“' + pred + '”' : '';
+      snap.hidden = !chartHtml; if (chartHtml) { snap.className = 'pvc-snap chart'; snap.innerHTML = chartHtml; snap.setAttribute('role', 'img'); snap.setAttribute('aria-label', 'Snapshot of your graph: ' + ((e && e.opts && e.opts.yLabel) ? tlPlain(String(e.opts.yLabel)) : 'results')); }
+      sum.hidden = !has || !text; sum.textContent = text;
+      waiting.hidden = has; waiting.textContent = ''; if (!has) waiting.append(wait());
+      what.className = 'pvc-what' + (has ? '' : ' is-wait'); what.textContent = '';
+      if (!has) what.append(h('strong', null, 'What happened: '), wait());
+      else what.append(h('strong', null, 'What happened: '), delta != null && delta !== '' ? String(delta) : (text || 'Your result is in. Compare it with your prediction.'));
+    }
+    container.append(el); refresh();
+    workListeners.push(refresh);
+    const c = chartEl(); let mo = null;
+    if (c && 'MutationObserver' in window) { mo = new MutationObserver(() => refresh()); mo.observe(c, { childList: true, subtree: true }); }
+    const th = () => refresh(); window.addEventListener('aplab:theme', th);
+    const un = Lab.onShow(el, refresh);
+    const tick = setInterval(() => { if (el.isConnected && el.offsetParent) refresh(); }, 1500);   // result sources that no event announces (a page's own variables)
+    return { el, refresh, destroy() { clearInterval(tick); if (mo) mo.disconnect(); window.removeEventListener('aplab:theme', th); const i = workListeners.indexOf(refresh); if (i >= 0) workListeners.splice(i, 1); try { un(); } catch (e) { /* ignore */ } el.remove(); } };
+  };
 
   /* ---------------- "Bench-verified" stamp ----------------
      A small rotated ink-stamp seal (BENCH-VERIFIED, the Dataset ID and the date) drawn on a canvas, rough-edged and unevenly inked,

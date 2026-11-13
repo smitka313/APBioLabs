@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 97 · Predict Compare Demo</title>
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<!-- Test fixture and worked example for Lab.predictCompare (tests/t45-predict-compare.js). -->
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">All labs</a><span>Fixture</span></nav>
+    <div class="eyebrow">Investigation 97</div>
+    <h1>Predict Compare Demo</h1>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+<main>
+  <section class="step wrap wrap--wide gutter" data-step="Float assay">
+    <header><div class="eyebrow">Procedure</div><h2>Float assay</h2></header>
+    <div class="step-body"><div id="pred"></div><button class="btn" id="add" type="button">Add a trial</button><div id="tbl"></div><div id="chart"></div></div>
+  </section>
+  <section class="step wrap wrap--wide gutter" data-step="Reflect">
+    <header><div class="eyebrow">Reflect</div><h2>What happened?</h2></header>
+    <div class="step-body"><div id="cmp"></div><div id="cmp2"></div></div>
+  </section>
+</main>
+<script src="../../lab.js"></script>
+<script>
+  Lab.init({ id: 'lab97' });
+  Lab.prompt('#pred', { key: 'predict-float', label: 'Predict: which cup floats first?' });
+  const table = Lab.table('#tbl', { save: 'trials', columns: [{ key: 'min', label: 'Minute', num: true, digits: 0 }, { key: 'ctrl', label: 'Control floating', num: true, digits: 0 }, { key: 'treat', label: 'Treated floating', num: true, digits: 0 }],
+    onChange: rows => chart.update({ series: [{ name: 'Control', points: rows.map(r => ({ x: r.min, y: r.ctrl })), line: true }, { name: 'Treated', points: rows.map(r => ({ x: r.min, y: r.treat })), line: true }] }) });
+  const chart = Lab.chart('#chart', { xLabel: 'Time (min)', yLabel: 'Disks floating', yMin: 0, yMax: 10, series: [] });
+  let n = 0;
+  document.getElementById('add').addEventListener('click', () => { n++; table.addRow({ min: n * 2, ctrl: Math.min(10, n), treat: Math.min(10, n * 2) }, { setup: false }); });
+  Lab.predictCompare('#cmp', {
+    predictKey: 'predict-float', chartEl: '#chart', part: 'Float assay', partId: 'float-assay',
+    summarize: o => { const pts = o.series.map(s => s.points[s.points.length - 1]); return `At minute ${pts[1].x}, ${pts[1].y} treated disks and ${pts[0].y} control disks were floating.`; },
+    delta: (o, pred) => { const t = o.series[1].points.slice(-1)[0].y, c = o.series[0].points.slice(-1)[0].y; return /treat/i.test(pred) ? (t > c ? 'The treated cup floated first, as you predicted.' : 'The control floated first, not what you predicted.') : null; },
+  });
+  Lab.predictCompare('#cmp2', {
+    predictKey: 'predict-float', part: 'Part 1', title: 'Text only', getResult: () => table.getRows().length ? table.getRows().length : null,
+    summarize: n => `You recorded ${n} trial${n === 1 ? '' : 's'}.`,
+  });
+</script>
+</body>
+</html>

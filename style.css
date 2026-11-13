@@ -839,7 +839,7 @@ body.has-dm { overflow: hidden; }
 .pill.warn::before { content: "!"; font-weight: 800; }
 .feedback.ok::before, .feedback.bad::before { margin-right: .45em; }
 .q .choice.is-right::after, .q .choice.is-wrong::after { margin-left: auto; padding-left: 10px; }
-.legend .lg-sw { flex: none; display: block; }
+.legend .lg-sw, .chart .legend .lg-sw { flex: none; display: block; width: 28px; height: 14px; }
 
 .project-link { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--muted); text-decoration: none; padding: 3px 6px; border-radius: 6px; }
 .project-link:hover { color: var(--accent); background: var(--surface-2); }
@@ -901,3 +901,19 @@ body.has-dm { overflow: hidden; }
 .tl-gifstatus:empty { display: none; }
 @media print { .tl-modal, .tl-bar { display: none !important; } }
 .tl-speed-l { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- Predict vs. actual (lab.js, Lab.predictCompare) ---------- */
+.pvc { margin: 18px 0; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); display: grid; gap: 12px; }
+.pvc-title { font-size: 1.1rem; }
+.pvc-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 760px) { .pvc-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); } }
+.pvc-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.pvc-col h4 { font-family: var(--f-mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pvc-quote { margin: 0; padding: 8px 0 8px 12px; border-left: 4px solid var(--accent); font-style: italic; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pvc-none, .pvc-wait { padding: 10px 12px; border: 1px dashed var(--line); border-radius: var(--r-sm); color: var(--muted); }
+.pvc-snap { min-width: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); padding: 4px; }
+.pvc-snap svg:not(.lg-sw) { max-width: 100%; height: auto; }
+.pvc-sum { font-size: .95rem; }
+.pvc-what { padding: 10px 14px; border-radius: var(--r-sm); background: var(--accent-soft); border-left: 5px solid var(--accent); font-weight: 600; }
+.pvc-what.is-wait { background: var(--warn-soft); border-left-color: var(--warn); color: var(--ink); }
+@media print { .pvc { break-inside: avoid; } }
