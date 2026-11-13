@@ -118,6 +118,31 @@
   };
   Lab.store = store;
 
+  /* ---------------- Key results ----------------
+     Lab.keyResult(id, {label, value, unit, part}) records one headline number for this lab
+     (e.g. 'et50', {label:'ET₅₀ (with CO₂)', value:10.4, unit:'min', part:'float-assay'}; FRQ self-score:
+     'frq-score', {label:'FRQ self-score', value:3, unit:'of 4'}). Stored as store 'keyres:<id>' = {label, value, unit, part, t}.
+     Lab.keyResults() → [{id, label, value, unit, part, t}] oldest first. They go into the report, the progress file
+     and the teacher dashboard. */
+  Lab.keyResult = function (id, o) {
+    if (!id || !o || typeof o !== 'object') return null;
+    const rec = { label: o.label, value: o.value, unit: o.unit, part: o.part, t: Date.now() };
+    store.set('keyres:' + id, rec);
+    return rec;
+  };
+  Lab.keyResults = function () {
+    const out = [], pre = `aplab:${LAB_ID}:keyres:`;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(pre)) continue;
+        try { const v = JSON.parse(localStorage.getItem(k)); if (v && typeof v === 'object') out.push(Object.assign({ id: k.slice(pre.length) }, v)); } catch (e) { /* skip bad value */ }
+      }
+    } catch (e) { /* storage blocked */ }
+    return out.sort((a, b) => (a.t || 0) - (b.t || 0) || String(a.id).localeCompare(String(b.id)));
+  };
+  const keyResultText = r => (r.value == null ? '—' : typeof r.value === 'number' ? String(Math.round(r.value * 1e6) / 1e6) : String(r.value)) + (r.unit ? ' ' + r.unit : '');
+
   /* ---------------- "Saved ✓" status line ----------------
      Every Lab.store.set (prompts, tables, quizzes, steps, sim saves) reports here. Each .save-status element
      (one per part, one by the Submit tools) shows "Saved ✓ just now" / "Saved ✓ 2 min ago", or
@@ -864,6 +889,7 @@
       name: who.name, period: who.period, datasetId: who.datasetId,
       date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
       sections,
+      keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), part: r.part || '' })),
     };
   }
   /* Chart SVG → PNG in light colors (CSS variables resolved), legend and fit notes drawn in. */
@@ -930,6 +956,10 @@
     const border = { style: BorderStyle.SINGLE, size: 4, color: '999999' };
     const borders = { top: border, bottom: border, left: border, right: border };
     const cell = (t, head) => new TableCell({ borders, shading: head ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E8EEEA' } : undefined, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new Paragraph({ children: [new TextRun({ text: String(t == null ? '' : t), bold: !!head, size: 18 })] })] });
+    if (rep.keyResults && rep.keyResults.length) {
+      kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun('Key results')] }));
+      kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ tableHeader: true, children: ['Result', 'Value'].map(t => cell(t, true)) })].concat(rep.keyResults.map(r => new TableRow({ cantSplit: true, children: [cell(r.label), cell(r.text)] }))) }));
+    }
     for (const s of rep.sections) {
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun(s.name + (s.heading && s.heading !== s.name ? ': ' + s.heading : ''))] }));
       for (const it of s.items) {
@@ -978,6 +1008,7 @@
     const out = [];
     out.push(`<header class="rv-head"><p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
       <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div></dl></header>`);
+    if (rep.keyResults && rep.keyResults.length) out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>${rep.keyResults.map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table></section>`);
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
     rep.sections.forEach((s, si) => {
       out.push(`<section class="rv-sec"><h2>${esc(s.name)}${s.heading && s.heading !== s.name ? `<span class="rv-sub">: ${esc(s.heading)}</span>` : ''}</h2>`);
@@ -1038,7 +1069,18 @@
   /* ---------------- Save / resume (progress file + resume code) ----------------
      Payload: {app:'aplab', v:1, lab, title, savedAt, student:{name,period}|null, dataset, data:{key: value}}
      data holds every localStorage value this lab saves (aplab:<lab>:*). */
-  function progressPayload() {
+  /* Extra summary for the teacher dashboard (progress file and .docx only; the resume code stays lean so its QR code fits). */
+  function dashboardExtras() {
+    const partList = $$('section.step').map(sec => { const r = sectionWork(sec); return { id: sec.id, name: sec.dataset.step || '', done: r.done, total: r.total }; }).filter(p => p.total > 0);
+    return {
+      datasetId: SEED.datasetId, labTitle: cleanTitle(document.title), exportedAt: new Date().toISOString(),
+      keyResults: Lab.keyResults(),
+      quizzes: REG.quizzes.map(quizItem),
+      parts: { done: partList.filter(p => p.done === p.total).length, total: partList.length },
+      partList,
+    };
+  }
+  function progressPayload(full) {
     flushSaves();
     const data = {}, pre = `aplab:${LAB_ID}:`;
     try {
@@ -1048,7 +1090,9 @@
       }
     } catch (e) { /* storage blocked */ }
     const idn = effectiveIdentity();
-    return { app: 'aplab', v: 1, lab: LAB_ID, title: document.title, savedAt: new Date().toISOString(), student: idn ? { name: idn.name, period: idn.period } : null, dataset: SEED.datasetNumber, data };
+    const p = { app: 'aplab', v: 1, lab: LAB_ID, title: document.title, savedAt: new Date().toISOString(), student: idn ? { name: idn.name, period: idn.period } : null, dataset: SEED.datasetNumber, data };
+    if (full === true && IS_LAB) { try { Object.assign(p, dashboardExtras()); } catch (e) { /* extras are optional */ } }
+    return p;
   }
   function parseProgress(text) {
     let o;
@@ -1103,7 +1147,7 @@
 
   /* Download the progress file and record it as the latest backup. Returns the file name. */
   function saveProgressFile() {
-    const p = progressPayload();
+    const p = progressPayload(true);
     const name = reportFileBase() + '_progress.json';
     downloadBlob(new Blob([JSON.stringify(p)], { type: 'application/json' }), name);
     if (Lab.backup) Lab.backup.markSaved('file');
