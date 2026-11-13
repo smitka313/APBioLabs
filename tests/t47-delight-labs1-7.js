@@ -29,7 +29,9 @@ async function timelapse(p, key, mountSel) {
   T.ok(await bar.locator('.tl-replay').isEnabled() && await bar.locator('.tl-gif').isEnabled(), key + ': Replay and GIF buttons enabled');
   await bar.locator('.tl-replay').click();
   await p.waitForSelector('.tl-card', { timeout: 3000 });
-  T.ok(/Frame \d+ of \d+/.test(await p.locator('.tl-pos').innerText()), key + ': replay opens with frames: ' + (await p.locator('.tl-pos').innerText()));
+  await p.waitForFunction(() => /Frame \d+ of \d+/.test((document.querySelector('.tl-pos') || {}).textContent || ''), null, { timeout: 5000 }).catch(() => {});
+  const pos = await p.locator('.tl-pos').innerText();
+  T.ok(/Frame \d+ of \d+/.test(pos), key + ': replay opens with frames: ' + pos);
   await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 }
 
