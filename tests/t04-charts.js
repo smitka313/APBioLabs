@@ -74,7 +74,7 @@ const T = require('./_h');
   const afterHarvest = await r.evaluate(() => ({ circles: document.querySelectorAll('#p1-chart circle').length, note: !!document.querySelector('#p1-chart .chart-empty') }));
   T.ok(afterHarvest.circles === 0 && !!afterHarvest.note, 'Lab 10 after harvest (still drying): nothing is plotted yet and the shared empty state shows');
   await r.click('#p1-dry'); await r.waitForTimeout(6500);
-  const afterDry = await r.evaluate(() => ({ circles: document.querySelectorAll('#p1-chart circle').length, ticks: Array.from(document.querySelectorAll('#p1-chart svg > text:not(.axis-label)')).map(t => t.textContent) }));
+  const afterDry = await r.evaluate(() => ({ circles: document.querySelectorAll('#p1-chart svg[role=img] g[clip-path] > :is(circle,rect,polygon,path):has(> title)').length, ticks: Array.from(document.querySelectorAll('#p1-chart svg > text:not(.axis-label)')).map(t => t.textContent) }));
   T.ok(afterDry.circles >= 2, 'Lab 10 after drying: points appear ' + afterDry.ticks);
   await r.close();
 
