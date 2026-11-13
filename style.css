@@ -702,3 +702,22 @@ details.disclose > .inner > p { max-width: 68ch; }
   body.pr-fallback .print-run span + span::before { content: " · "; }
   body.pr-fallback .pr-body { padding-top: 8px; }
 }
+
+/* ---------------- Transfer code (QR) and "restore from link" banner ---------------- */
+.transfer { display: grid; gap: 14px; margin-top: 14px; padding: 16px 18px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); }
+.transfer-btn { justify-self: start; min-height: 56px; padding-inline: 28px; font-size: 1.15rem; font-weight: 700; }
+.transfer-out:empty { display: none; }
+.transfer-out { display: grid; gap: 12px; }
+.transfer-grid { display: grid; gap: 16px 28px; align-items: start; }
+@media (min-width: 720px) { .transfer-grid { grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); } }
+.transfer-qr { width: min(100%, 340px); aspect-ratio: 1; background: #fff; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 6px; display: grid; place-items: center; }
+.transfer-qr svg { width: 100%; height: 100%; display: block; }
+.transfer-noqr { color: #14211c; font-weight: 600; text-align: center; padding: 16px; }
+.transfer-side { display: grid; gap: 10px; align-content: start; }
+.transfer-photo { font-family: var(--f-display); font-size: 1.35rem; font-weight: 700; line-height: 1.2; }
+.transfer-label { font-size: .85rem; font-weight: 600; color: var(--muted); margin-bottom: -6px; }
+.transfer-code { font-family: var(--f-mono); font-size: 1.15rem; line-height: 1.5; letter-spacing: .02em; word-break: break-all; max-height: 9.5em; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; user-select: all; }
+.resume-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px max(16px, env(safe-area-inset-left, 0px)); background: var(--accent-soft); border-bottom: 3px solid var(--accent); font-size: .98rem; position: relative; z-index: 70; }
+.resume-banner > span { flex: 1 1 320px; }
+.resume-banner.is-bad { background: var(--bad-soft); border-color: var(--bad); }
+@media print { .resume-banner, .transfer { display: none !important; } }

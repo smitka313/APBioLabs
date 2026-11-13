@@ -25,6 +25,15 @@
   const IS_LAB = PAGE.kind === 'lab';
   Lab.page = PAGE;
 
+  /* A transfer link looks like <lab>.html#resume=<code>. Take the code out of the address bar right away (before any
+     part routing reads the hash), keep it in memory, and offer to restore it once the page is built (see handleResumeHash). */
+  const RESUME_HASH = (function () {
+    const m = /^#resume=([A-Za-z0-9._-]+)$/.exec(location.hash || '');
+    if (!m) return null;
+    try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) { /* some file:// contexts */ }
+    return m[1];
+  })();
+
   /* Storage health: set when any localStorage write throws (private window, blocked site data). See "Onboarding". */
   var storageBad = false;
   function storageFailed() { if (storageBad) return; storageBad = true; setTimeout(function () { if (Lab._storageWarn) Lab._storageWarn(); }, 0); }
@@ -620,7 +629,10 @@
      Lab.identity.mount(el)                         sign-in panel, or "Signed in as … · change" line
      Lab.identity.newDataset()                      next dataset number for this student + lab, then reload
      Lab.identity.seed                              {seed, datasetId, datasetNumber, student} for this page */
-  function flushSaves() { saveFns.forEach(f => { try { f(); } catch (e) { /* ignore */ } }); }
+  /* After a restore or "Erase my work" the page reloads: its old field values must not be flushed back over the new storage. */
+  let noFlush = false;
+  function reloadClean() { noFlush = true; if (Lab._allowLeave) Lab._allowLeave(); location.reload(); }
+  function flushSaves() { if (noFlush) return; saveFns.forEach(f => { try { f(); } catch (e) { /* ignore */ } }); }
   function setIdentity(idn) {
     const clean = { name: normName(idn.name), period: String(idn.period || '') };
     const ok = gstore.set('student', clean);
@@ -751,7 +763,7 @@
     const fallback = h('textarea', { class: 'copy-fallback', hidden: true, readonly: true, 'aria-label': 'Your responses as text' });
     const confirmRow = h('div', { class: 'row', hidden: true },
       h('span', { class: 'small' }, 'Erase every answer and data table on this lab?'),
-      h('button', { class: 'btn btn--sm btn--danger', type: 'button', onclick: () => { store.clearLab(); if (Lab._allowLeave) Lab._allowLeave(); location.reload(); } }, 'Erase my work'),
+      h('button', { class: 'btn btn--sm btn--danger', type: 'button', onclick: () => { store.clearLab(); reloadClean(); } }, 'Erase my work'),
       h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; } }, 'Keep it'));
     const copyBtn = h('button', { class: 'btn btn--primary', type: 'button', onclick: async () => {
       const text = collectText();
@@ -760,7 +772,7 @@
     } }, 'Copy all my responses');
     const clearBtn = h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { confirmRow.hidden = false; } }, 'Start over');
     el.append(h('div', { class: 'responses-bar' }, msg, copyBtn, clearBtn), confirmRow, fallback);
-    if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') el.append(...reportTools(), moveWorkPanel());
+    if (PAGE.kind !== 'teacher' && PAGE.kind !== 'info') el.append(...reportTools(), transferBlock(), moveWorkPanel());
   };
 
   /* ---------------- Hosting environment ----------------
@@ -1094,13 +1106,13 @@
     if (full === true && IS_LAB) { try { Object.assign(p, dashboardExtras()); } catch (e) { /* extras are optional */ } }
     return p;
   }
-  function parseProgress(text) {
+  function parseProgress(text, anyLab) {
     let o;
     try { o = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { throw new Error('That is not a progress file. Choose the .json file you saved from this lab.'); }
     if (!o || typeof o !== 'object' || o.app !== 'aplab' || !o.data || typeof o.data !== 'object' || Array.isArray(o.data)) throw new Error('That does not look like a Lab Bench progress file.');
     if (typeof o.v !== 'number' || o.v > 1) throw new Error('That progress file was made by a newer version of this site. Reload the page and try again.');
     if (typeof o.lab !== 'string') throw new Error('That progress file is missing its lab number.');
-    if (o.lab !== LAB_ID) { const m = /^lab(\d\d)$/.exec(o.lab); throw new Error(m ? `That progress file is for Lab ${+m[1]}. Open Lab ${+m[1]} and load it there.` : 'That progress file is for a different page.'); }
+    if (!anyLab && o.lab !== LAB_ID) { const m = /^lab(\d\d)$/.exec(o.lab); throw new Error(m ? `That progress file is for Lab ${+m[1]}. Open Lab ${+m[1]} and load it there.` : 'That progress file is for a different page.'); }
     if (o.student && (typeof o.student.name !== 'string' || !normName(o.student.name))) o.student = null;
     return o;
   }
@@ -1114,8 +1126,7 @@
       if (o.dataset > 1) gstore.set(`dataset:${PAGE.id}:${studentKey(o.student)}`, Math.floor(o.dataset));
     }
     gstore.set('backup:' + LAB_ID, { t: Date.now(), adopt: true }); // loaded from a backup: nothing is unsaved until the student changes it
-    if (Lab._allowLeave) Lab._allowLeave();
-    location.reload();
+    reloadClean();
   }
   const b64u = {
     enc(bytes) { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
@@ -1128,7 +1139,7 @@
     }
     return 'LB1b.' + b64u.enc(bytes);
   }
-  async function readResumeCode(code) {
+  async function readResumeCode(code, anyLab) {
     code = String(code || '').replace(/\s+/g, '');
     if (!code) throw new Error('Paste your resume code first.');
     const m = /^LB1([zb])\.([A-Za-z0-9_-]+)$/.exec(code);
@@ -1141,7 +1152,7 @@
       catch (e) { throw new Error('That resume code is incomplete or damaged. Copy the whole code and try again.'); }
     }
     let text; try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch (e) { throw new Error('That resume code is damaged. Copy the whole code and try again.'); }
-    return parseProgress(text);
+    return parseProgress(text, anyLab);
   }
   Lab.progressFile = { payload: progressPayload, parse: parseProgress, apply: applyProgress, makeCode: makeResumeCode, readCode: readResumeCode };
 
@@ -1153,6 +1164,101 @@
     if (Lab.backup) Lab.backup.markSaved('file');
     return name;
   }
+  /* ---------------- Transfer code (code + QR) ----------------
+     "Get my transfer code" shows the resume code in large type and a QR code for <lab>.html#resume=<code>, so a student can
+     photograph it and carry on from a phone or another computer. The QR library (qrcode-generator, pinned) loads only then. */
+  const QR_URLS = ['https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'];
+  const CANON_BASE = 'https://smitka313.github.io/APBioLabs/';
+  let qrPromise = null;
+  function loadQr() {
+    if (typeof window.qrcode === 'function') return Promise.resolve(window.qrcode);
+    if (!qrPromise) qrPromise = (async () => {
+      for (const u of QR_URLS) { try { await loadScript(u); if (typeof window.qrcode === 'function') return window.qrcode; } catch (e) { /* try next */ } }
+      qrPromise = null; throw new Error('qr-load');
+    })();
+    return qrPromise;
+  }
+  function transferUrl(code) {
+    const base = /^https?:$/.test(location.protocol) ? location.origin + location.pathname.replace(/[^/]*$/, '') : CANON_BASE;
+    return base + PAGE.id + '.html#resume=' + code;
+  }
+  Lab.transfer = { url: transferUrl, code: () => makeResumeCode() };
+  async function fillTransfer(out) {
+    out.innerHTML = '';
+    flushSaves();
+    const code = await makeResumeCode(), url = transferUrl(code);
+    const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
+    const qrBox = h('div', { class: 'transfer-qr' });
+    const codeEl = h('p', { class: 'transfer-code', tabindex: '0', id: 'transfer-code-text', 'aria-label': 'Your transfer code' }, code);
+    const copy = (text, what) => async () => {
+      try { await navigator.clipboard.writeText(text); if (Lab.backup) Lab.backup.markSaved('code'); status.textContent = `${what} copied. Send it to yourself, for example in an email.`; }
+      catch (e) { const r = document.createRange(); r.selectNodeContents(codeEl); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); status.textContent = 'Copy is blocked here. The code is selected: press Ctrl+C.'; }
+    };
+    out.append(h('div', { class: 'transfer-grid' },
+      qrBox,
+      h('div', { class: 'transfer-side' },
+        h('p', { class: 'transfer-photo' }, 'Take a photo of this with your phone.'),
+        h('p', { class: 'small muted' }, 'Open the photo on your phone and tap the link that appears. Your work opens in your phone’s browser. If your phone has no QR reader, type or paste the code below into “Load resume code” on the other computer.'),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn btn--sm', type: 'button', onclick: copy(code, 'Code') }, 'Copy code'),
+          h('button', { class: 'btn btn--sm', type: 'button', onclick: copy(url, 'Link') }, 'Copy link')))),
+      h('p', { class: 'transfer-label', id: 'transfer-code-label' }, `Your transfer code (${code.length.toLocaleString()} characters)`),
+      codeEl, status);
+    try {
+      const qrcode = await loadQr();
+      try {
+        const qr = qrcode(0, 'L'); qr.addData(url, 'Byte'); qr.make();
+        qrBox.innerHTML = qr.createSvgTag({ scalable: true, margin: 4, alt: 'QR code that opens your saved work' });
+        qrBox.dataset.url = url; qrBox.dataset.modules = String(qr.getModuleCount());
+      } catch (e) {
+        qrBox.append(h('p', { class: 'transfer-noqr' }, 'Too much data for a QR code — save a progress file instead.'));
+      }
+    } catch (e) {
+      qrBox.append(h('p', { class: 'transfer-noqr' }, 'Could not load the QR code tool. Check your internet connection, copy the code below, or save a progress file instead.'));
+    }
+  }
+  /* The "Get my transfer code" button and the place its result appears. */
+  function transferBlock() {
+    const out = h('div', { class: 'transfer-out' });
+    const btn = h('button', { class: 'btn btn--primary btn--lg transfer-btn', type: 'button', 'aria-expanded': 'false', onclick: async () => {
+      btn.disabled = true; out.innerHTML = ''; out.append(h('p', { class: 'muted', role: 'status' }, 'Making your transfer code…'));
+      try { await fillTransfer(out); btn.setAttribute('aria-expanded', 'true'); btn.textContent = 'Update my transfer code'; }
+      catch (e) { out.innerHTML = ''; out.append(h('p', { class: 'tool-status is-bad', role: 'alert' }, 'Could not make a transfer code here. Save a progress file instead.')); }
+      finally { btn.disabled = false; }
+    } }, 'Get my transfer code');
+    return h('div', { class: 'transfer' }, btn, out);
+  }
+  Lab.transfer.block = transferBlock;
+
+  /* ---- Opening a transfer link: <lab>.html#resume=<code> ---- */
+  async function handleResumeHash() {
+    if (!RESUME_HASH) return;
+    const code = RESUME_HASH;
+    const box = h('div', { class: 'resume-banner', role: 'group', 'aria-label': 'Restore saved work from a link', id: 'resume-banner' });
+    const say = (kids, bad) => { box.classList.toggle('is-bad', !!bad); box.innerHTML = ''; box.append(...kids); };
+    const close = () => { box.remove(); };
+    document.body.prepend(box);
+    say([h('span', null, 'Reading the saved work in this link…')]);
+    let o;
+    try { o = await readResumeCode(code, true); }
+    catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); return; }
+    const when = o.savedAt ? new Date(o.savedAt).toLocaleString() : 'an unknown date';
+    const who = o.student && o.student.name ? ' from ' + o.student.name : '';
+    const m = /^lab(\d\d)$/.exec(o.lab || '');
+    if (!IS_LAB || o.lab !== LAB_ID) {
+      const to = m ? `lab${m[1]}.html#resume=${code}` : null;
+      say([h('span', null, m ? `This link carries saved work${who} for Lab ${+m[1]}.` : 'This link carries saved work for a different page.'),
+        to ? h('a', { class: 'btn btn--sm btn--primary', href: to }, `Open Lab ${+m[1]} to restore it`) : null,
+        h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')]);
+      const a = $('a', box); if (a) a.focus();
+      return;
+    }
+    say([h('span', null, `This link carries saved work${who} (saved ${when}). Replace your work on this lab with it? Your current answers and data on this computer will be overwritten.`),
+      h('button', { class: 'btn btn--sm btn--primary', type: 'button', id: 'resume-apply', onclick: () => { try { applyProgress(o); say([h('span', null, 'Loaded. Reloading…')]); } catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); } } }, 'Replace my work'),
+      h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { close(); Lab.toast('Nothing was changed', { type: 'info' }); } }, 'Keep my work')]);
+    focusIn(box, '#resume-apply');
+  }
+
   function moveWorkPanel() {
     const status = h('p', { class: 'tool-status', 'aria-live': 'polite' });
     const say = (t, bad) => { status.textContent = t; status.classList.toggle('is-bad', !!bad); };
@@ -1734,6 +1840,7 @@
   /* Home page (index.html): identity line, per-lab progress on [data-lab-progress] elements, resume link. */
   Lab.home = function (o = {}) {
     setTimeout(startOnboarding, 0);
+    handleResumeHash();
     if (o.identity) { const host = typeof o.identity === 'string' ? $(o.identity) : o.identity; Lab.identity.mount(host, { compact: true }); }
     $$('[data-lab-progress]').forEach(el => {
       const p = Lab.progress.forLab(el.dataset.labProgress);
@@ -2347,6 +2454,7 @@
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
     startOnboarding();
+    handleResumeHash();
   };
 
   /* Animation loop helper that respects reduced motion & visibility.
