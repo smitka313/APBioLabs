@@ -450,6 +450,7 @@ function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) ret
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const numOk = x => typeof x === 'number' && isFinite(x);
 const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
 /* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
@@ -1714,7 +1715,7 @@ function frq(host, o) {
     generic: 'Compare the fastest and slowest conditions in your own transpiration data and explain the difference.',
     ask: 'Explain the difference using stomata, vapor pressure deficit, and the boundary layer.',
     get() {
-      const rows = (Lab.store.get('tr-table') || []).filter(r => r && isFinite(r.rpa)); if (!rows.length) return null;
+      const rows = (Lab.store.get('tr-table') || []).filter(r => r && numOk(r.rpa)); if (!rows.length) return null;
       const last = rows[rows.length - 1], same = rows.filter(r => r.method === last.method && r.sp === last.sp), by = {};
       same.forEach(r => { (by[r.cond] = by[r.cond] || { ct: r.condTxt, v: [], u: r.rpaUnit }).v.push(r.rpa); });
       const g = Object.values(by).map(x => Object.assign(x, { m: S.mean(x.v) })).sort((a, b) => b.m - a.m);
@@ -1728,10 +1729,10 @@ function frq(host, o) {
     generic: 'Look at your own stomata counts and explain what differs between fields.',
     ask: 'Explain what could cause this.',
     get() {
-      const rows = (Lab.store.get('st-table') || []).filter(r => r && isFinite(r.count) && isFinite(r.actual)); if (!rows.length) return null;
+      const rows = (Lab.store.get('st-table') || []).filter(r => r && numOk(r.count) && numOk(r.actual)); if (!rows.length) return null;
       const miss = rows.reduce((a, b) => Math.abs(b.count - b.actual) > Math.abs(a.count - a.actual) ? b : a);
       if (miss.count !== miss.actual) return `In field ${miss.n} (${miss.sp}, ${miss.surf} surface, ${miss.mag}) you counted <strong>${miss.count}</strong> stomata but the field held <strong>${miss.actual}</strong> (${fmt(miss.dens, 0)} stomata/mm² by your count).`;
-      const d = rows.filter(r => isFinite(r.dens)); const hi = d.reduce((a, b) => b.dens > a.dens ? b : a), lo = d.reduce((a, b) => b.dens < a.dens ? b : a);
+      const d = rows.filter(r => numOk(r.dens)); const hi = d.reduce((a, b) => b.dens > a.dens ? b : a), lo = d.reduce((a, b) => b.dens < a.dens ? b : a);
       if (hi === lo) return `Your field ${hi.n} (${hi.sp}, ${hi.surf} surface) had <strong>${hi.count}</strong> stomata, a density of <strong>${fmt(hi.dens, 0)} stomata/mm²</strong>.`;
       return `Your densest field (field ${hi.n}, ${hi.sp}, ${hi.surf}) had <strong>${fmt(hi.dens, 0)} stomata/mm²</strong> and your sparsest (field ${lo.n}, ${lo.sp}, ${lo.surf}) had <strong>${fmt(lo.dens, 0)}</strong>.`;
     }
