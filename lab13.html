@@ -972,6 +972,15 @@ function frq(host, o) {
   const rec2 = Lab.timelapse(cv2, { fps: 4, maxFrames: 120, width: 420, label: 'Procedure 2: six pH buffers', key: 'p2-tubes' });
   rec2.mount('#p2-timelapse');
   const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'Change in absorbance, ΔA', xMin: 2, xMax: 12, yMin: 0, series: [] });
+  /* Lab.chart picks its x-axis step from the drawing width: below 480 px (the Graph column at 1366 px) it asks for 4 ticks, which gives a step of 5
+     and silently widens pH 2-12 to 0-15, ignoring xMin/xMax. Report a width of at least 480 so the axis keeps the 2-12 range (steps of 2);
+     the SVG scales to the column. Used by every chart whose x axis is pH. */
+  function pinWideAxis(chart) {
+    const el = chart.el;
+    try { Object.defineProperty(el, 'clientWidth', { configurable: true, get() { return Math.max(480, Math.round(el.getBoundingClientRect().width)); } }); } catch (e) { return; }
+    chart.update({});
+  }
+  pinWideAxis(ch2);
   function syncP2() {
     const rows = t2.getRows(), spec = mode2() === 'spec', key = spec ? 'dA' : 'c';
     palCheck('#p2-table', '#p2-bad', rows, ['c']);
@@ -1058,6 +1067,7 @@ function frq(host, o) {
   const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'Replicates (n)', unit: 'tubes', num: true, digits: 0 }, { key: 'mean', label: 'Mean initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }, { key: 'se', label: 'SE of initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }, { key: 'ci', label: '95% CI (mean ± 2 SE)', unit: 'A₄₇₀/min' }] });
   const dC1 = Lab.chart('#d-chart1', { xLabel: 'Time (min)', yLabel: 'Mean absorbance at 470 nm', xMin: 0, xMax: 5, yMin: 0, height: 320, series: [] });
   const dC2 = Lab.chart('#d-chart2', { xLabel: 'Level of your independent variable', yLabel: 'Initial rate (A₄₇₀/min)', yMin: 0, height: 320, series: [] });
+  pinWideAxis(dC2);
   let dRes = Lab.store.get('d-res');
   function renderD() {
     if (!dRes) return;
