@@ -90,6 +90,7 @@
     <div class="eyebrow">AP Biology · Teacher guide</div>
     <h1>For teachers</h1>
     <p class="lede">What the Lab Bench is, how your students will use it, how they hand work in, and what stays on their computer. It takes about five minutes to read.</p>
+    <p style="margin-top:16px"><a class="btn btn--primary btn--lg" href="projector.html" id="projector-btn">Projector mode</a> <span class="muted small">Show today&rsquo;s lab on the classroom screen, with a timer.</span></p>
   </div>
 </header>
 
@@ -103,6 +104,7 @@
       <li><a href="#handing-in">Handing in work</a></li>
       <li><a href="#moving">Moving between computers</a></li>
       <li><a href="#datasets">Per-student data</a></li>
+      <li><a href="#projector">Using projector mode</a></li>
       <li><a href="#links">Linking to one part</a></li>
       <li><a href="#printing">Printing worksheets</a></li>
       <li><a href="#privacy">Privacy</a></li>
@@ -114,6 +116,16 @@
   </nav>
 
   <div class="t-main">
+    <section class="tsec" id="projector" aria-labelledby="h-projector">
+      <h2 id="h-projector">Using projector mode</h2>
+      <ol>
+        <li><strong>Open <a href="projector.html">Projector mode</a>.</strong></li>
+        <li><strong>Pick the lab and tick today&rsquo;s parts.</strong> The timer fills in from the parts&rsquo; time estimates, and you can add a due date or a note.</li>
+        <li><strong>Click Start, then press F for full screen.</strong> Space starts or pauses the timer; Esc goes back to setup.</li>
+      </ol>
+      <p><a href="projector.html#lab05"><code>projector.html#lab05</code></a> opens a lab directly (use the lab&rsquo;s number), which makes a handy bookmark. The page remembers your last setup on that computer. Each lab page also has a small &ldquo;Project this lab&rdquo; link in its header.</p>
+    </section>
+
     <section class="tsec" id="what" aria-labelledby="h-what">
       <h2 id="h-what">What this site is</h2>
       <p>The Lab Bench is 13 interactive versions of the AP Biology investigations, one page per lab. Each page is adapted from the College Board <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> teacher manual (updated 2019). It is not affiliated with or endorsed by the College Board. The simulations are modeled on typical classroom results. They are meant to sit beside wet-lab work, or to stand in for it when you cannot run the real thing.</p>
@@ -124,7 +136,7 @@
         <div><strong>Pre-lab</strong><span>Auto-checked questions, each with an explanation, including the calculations students will need.</span></div>
         <div><strong>Simulations</strong><span>One part for each procedure in the manual. Students choose settings, run trials and record data in a table and graph.</span></div>
         <div><strong>Design</strong><span>Students write a question and hypothesis, choose a variable, levels and replicates, run it and analyze it with the right statistic.</span></div>
-        <div><strong>Analyze and Evaluate</strong><span>Written prompts, including a claim-evidence-reasoning block, for students to answer in their own words.</span></div>
+        <div><strong>Analyze and Evaluate</strong><span>Written prompts, including a claim-evidence-reasoning block, for students to answer in their own words. The Reflect or Evaluate part ends with a one-tap <em>Rate my confidence</em> (&ldquo;I could teach this&rdquo;, &ldquo;I mostly get it&rdquo;, &ldquo;I&rsquo;m lost&rdquo;); it goes in the report and on your dashboard and never counts as required work.</span></div>
         <div><strong>Submit</strong><span>Report buttons, a progress file for backup, and a printable worksheet.</span></div>
       </div>
       <p class="muted small">Pre-lab questions are graded for the student right away. Written answers are not graded by the site; they go into the report for you to read.</p>
@@ -134,7 +146,7 @@
       <h2 id="h-students">How students use it</h2>
       <ul>
         <li><strong>Sign in once.</strong> The first time, a student types their name as you know it and chooses a class period. That one sign-in works on every lab on that computer.</li>
-        <li><strong>One part at a time.</strong> A lab shows a single part on screen. Students move with the part tabs along the top or the <strong>Back</strong> and <strong>Next</strong> buttons at the bottom of each part. A check mark appears on a part when its questions, boxes and tables are filled. <strong>All parts</strong> shows the whole lab on one page.</li>
+        <li><strong>One part at a time.</strong> A lab shows a single part on screen. Students move with the part tabs along the top or the <strong>Back</strong> and <strong>Next</strong> buttons at the bottom of each part. A check mark appears on a part when all of its questions, boxes, tables and required steps are done. <strong>All parts</strong> shows the whole lab on one page.</li>
         <li><strong>A checklist in every simulation.</strong> The Steps list ticks itself off as the student works, and a short <strong>Next:</strong> line says what to do now. Buttons that need an earlier step explain what is missing instead of failing silently.</li>
         <li><strong>Results beside the scene.</strong> On a laptop the Data and Graph tabs sit next to the simulation, so students watch the graph build while a run plays. On a phone or narrow window they switch between Scene, Data and Graph.</li>
         <li><strong>Saved in that browser only.</strong> Answers, tables and quiz results save automatically on the computer being used. They are not sent anywhere, so a different computer or a cleared browser starts blank unless the student moves their work (see below).</li>
@@ -162,6 +174,7 @@
         <li><strong>Resume code.</strong> <em>Get a resume code</em> makes a short block of text starting with LB1. The student can email it to themselves and paste it into <em>Load resume code</em> on the other computer. This is handy on a locked-down laptop where files are awkward.</li>
       </ul>
       <p>Loading asks before it replaces anything. The site also reminds students to save a progress file once they have done real work and have not backed it up, and warns them before they close the page with unsaved work.</p>
+      <p>If a student has real work that is not backed up and has had the lab open for 40 minutes, a small banner says &ldquo;Period ending soon? Download your report or get a transfer code,&rdquo; with buttons for each. It appears once per browser session, never in the middle of a simulation animation, and can be dismissed.</p>
     </section>
 
     <section class="tsec" id="datasets" aria-labelledby="h-data">
@@ -193,7 +206,7 @@
     <section class="tsec" id="dashboard" aria-labelledby="h-dash">
       <h2 id="h-dash">Class dashboard</h2>
       <p>Students also have a <strong>Get my transfer code</strong> button (Submit part) that shows their resume code and a QR code they can photograph to carry on from a phone, and a <strong>Pause &amp; bookmark</strong> button that saves, remembers the part and next step, and shows it on the home page.</p>
-      <p>Every .docx report and progress file also carries the student&rsquo;s progress data (name, class, Dataset ID, key results, pre-lab answers, parts done). Drop a whole class&rsquo;s files on the <a href="teacher-dashboard.html"><strong>class dashboard</strong></a> to get a sortable grid per lab, a CSV export, flags for shared Dataset IDs or identical key results, and the pre-lab questions most often missed, worst first, so you know what to re-teach.</p>
+      <p>Every .docx report and progress file also carries the student&rsquo;s progress data (name, class, Dataset ID, key results, pre-lab answers, parts done). Drop a whole class&rsquo;s files on the <a href="teacher-dashboard.html"><strong>class dashboard</strong></a> to get a sortable grid per lab (with each student&rsquo;s <em>Rate my confidence</em> answer and a count of &ldquo;I could teach this&rdquo;, &ldquo;I mostly get it&rdquo; and &ldquo;I&rsquo;m lost&rdquo; for the lab), a CSV export, flags for shared Dataset IDs or identical key results, and the pre-lab questions most often missed, worst first, so you know what to re-teach.</p>
       <p class="muted small">Everything happens in your browser: nothing is uploaded, and the page works offline once loaded. Reports printed to PDF carry no data, so ask for the .docx or the progress file.</p>
     </section>
 
@@ -226,6 +239,7 @@
     <section class="tsec" id="lab-table" aria-labelledby="h-table">
       <h2 id="h-table">All 13 labs, their parts and where students get stuck</h2>
       <p>Each part name links straight to that part. The last column counts the parts in the lab and, in brackets, how many of them hold student work (written prompts, quiz questions, saved data tables or simulation steps). Overview, Background and Submit are reading or report tools, so they are not counted. The same number is used in each lab&rsquo;s own progress count (&ldquo;3 of 6 parts done&rdquo;) and on the home page cards.</p>
+      <p><strong>Two levels of progress.</strong> The completion rule is unchanged: a part counts as done only when <em>all</em> of its work is done. Beside that count, the lab&rsquo;s step bar and the home page card also name the part a student is in the middle of and how many of its items are finished, for example &ldquo;3 of 6 parts &middot; Float assay 6/11 items&rdquo;. A student who has begun but has not finished any part sees &ldquo;Started &middot; Float assay 6/11 items&rdquo;, never &ldquo;0 of 6&rdquo;; a lab with no work yet reads &ldquo;Not started&rdquo;. An item is one prompt box, one quiz question, one saved data table or one required simulation step. Each step in the lab&rsquo;s step bar also shows its own item count on hover.</p>
       <p>The <strong>Where students get stuck</strong> column lists one or two places where students typically stall, taken from what each part&rsquo;s Steps list and disabled buttons ask for. They are prompts for what to look for when you walk around, not answers.</p>
       <div class="table-wrap">
       <table class="labs-table">

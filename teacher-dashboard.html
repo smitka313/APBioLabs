@@ -61,6 +61,16 @@
   table.grid .unit { color: var(--muted); font-family: var(--f-body); font-size: .8rem; }
   table.grid .none { color: var(--muted); }
   .pill.sample { background: var(--stain-soft); color: var(--stain); border: 1px solid var(--stain); margin-left: 6px; font-size: .7rem; }
+  .conf { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; font-weight: 600; }
+  .conf .dots { font-size: .72rem; letter-spacing: 1px; color: var(--accent); }
+  .conf-sum { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; display: grid; gap: 8px; }
+  .conf-sum h3 { font-size: 1rem; }
+  .conf-sum ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .conf-sum li { display: inline-flex; align-items: baseline; gap: 6px; }
+  .conf-sum .n { font-family: var(--f-mono); font-weight: 700; font-size: 1.15rem; }
+  .conf-sum .lost .n { color: var(--bad); }
+  .conf-sum .bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
+  .conf-sum .bar i { display: block; height: 100%; }
   .flag { display: block; font-size: .82rem; color: var(--warn); font-weight: 600; max-width: 34ch; }
   .misses { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
   .misses summary { cursor: pointer; font-weight: 700; font-family: var(--f-display); }
@@ -195,6 +205,13 @@
 
   /* ---------- Normalizing a payload into one grid row ---------- */
   const isNum = v => typeof v === 'number' && isFinite(v);
+  /* "Rate my confidence": 3 = I could teach this, 2 = I mostly get it, 1 = I'm lost (the lab pages save it as key result 'confidence'). */
+  const CONF = { 3: 'I could teach this', 2: 'I mostly get it', 1: 'I’m lost' };
+  const confOf = v => {
+    if (typeof v === 'string') { const t = v.toLowerCase().replace(/[’']/g, "'"); const m = Object.entries(CONF).find(([k, x]) => x.toLowerCase().replace(/[’']/g, "'") === t); v = m ? +m[0] : +v; }
+    return CONF[v] ? +v : null;
+  };
+  const confDots = v => '●'.repeat(v) + '○'.repeat(3 - v);
   function fmtVal(v) { return v == null ? '' : isNum(v) ? String(Math.round(v * 1e4) / 1e4) : String(v); }
   function normalize(p, file, sample) {
     if (!p || typeof p !== 'object' || Array.isArray(p) || p.app !== 'aplab') throw new Skip('Not a Lab Bench file (it does not come from this site).');
@@ -207,7 +224,9 @@
     let krs = Array.isArray(p.keyResults) ? p.keyResults : Object.keys(p.data).filter(k => k.startsWith('keyres:')).map(k => Object.assign({ id: k.slice(7) }, p.data[k]));
     krs = krs.filter(r => r && r.id).map(r => ({ id: String(r.id), label: String(r.label == null ? r.id : r.label), value: r.value, unit: r.unit || '', part: r.part || '', t: r.t || 0 })).sort((a, b) => a.t - b.t);
     const frq = krs.find(r => r.id === 'frq-score') || null;
-    const kr = krs.filter(r => r.id !== 'frq-score');
+    const confRec = krs.find(r => r.id === 'confidence') || null;
+    const conf = confRec ? confOf(confRec.value) : null;           // 1-3, or null when not answered
+    const kr = krs.filter(r => r.id !== 'frq-score' && r.id !== 'confidence');   // confidence has its own column and is never a "copied result" signal
     let pre = null;
     const quiz = Array.isArray(p.quizzes) ? (p.quizzes.find(q => q && q.id === 'prelab') || p.quizzes[0]) : null;
     if (quiz && Array.isArray(quiz.questions)) pre = { right: quiz.right, total: quiz.total, questions: quiz.questions.map(q => ({ q: String(q.q || ''), status: q.status })) };
@@ -218,7 +237,7 @@
       file, sample: !!sample, lab: p.lab, labNo, labTitle: String(p.labTitle || p.title || '').replace(/\s+[—–-]\s+AP Bio (Digital )?Lab Bench\s*$/, '') || ('Lab ' + labNo + ' · ' + (LAB_NAMES[labNo] || '')),
       name: name || '(no name)', named: !!name, period, dataset: p.dataset || 1,
       datasetId: p.datasetId || (name ? computeDatasetId(name, period, p.lab, p.dataset) : ''),
-      parts, kr, frq, pre, when, flags: [],
+      parts, kr, frq, conf, pre, when, flags: [],
     };
   }
   const studentKey = r => r.name.toLowerCase() + '|' + r.period;
@@ -287,6 +306,7 @@
     if (key === 'ds') return r.datasetId || null;
     if (key === 'parts') return r.parts && r.parts.total ? r.parts.done / r.parts.total : null;
     if (key === 'frq') return r.frq && isNum(r.frq.value) ? r.frq.value : null;
+    if (key === 'conf') return r.conf || null;
     if (key === 'pre') return r.pre && r.pre.total ? r.pre.right / r.pre.total : null;
     if (key === 'submitted') return r.when || null;
     if (key === 'flags') return r.flags.length;
@@ -330,7 +350,7 @@
     const hasFrq = rows.some(r => r.frq);
     const cols = [{ key: 'name', label: 'Student' }, { key: 'period', label: 'Class' }, { key: 'ds', label: 'Dataset ID' }, { key: 'parts', label: 'Parts done' }]
       .concat(krCols.map(c => ({ key: 'kr:' + c.id, label: c.label + (c.unit ? ' (' + c.unit + ')' : '') })))
-      .concat([{ key: 'frq', label: 'FRQ self-score' }, { key: 'pre', label: 'Pre-lab' }, { key: 'submitted', label: 'Submitted' }, { key: 'flags', label: 'Flags' }]);
+      .concat([{ key: 'frq', label: 'FRQ self-score' }, { key: 'pre', label: 'Pre-lab' }, { key: 'conf', label: 'Confidence' }, { key: 'submitted', label: 'Submitted' }, { key: 'flags', label: 'Flags' }]);
     const th = c => `<th scope="col" aria-sort="${S.sort.key === c.key ? (S.sort.dir > 0 ? 'ascending' : 'descending') : 'none'}"><button type="button" class="sort" data-sort="${esc(c.key)}">${esc(c.label)}</button></th>`;
     const td = r => {
       const cells = [
@@ -342,16 +362,23 @@
       krCols.forEach(c => { const k = r.kr.find(x => x.id === c.id); cells.push(`<td class="num">${k ? esc(fmtVal(k.value)) : '<span class="none">—</span>'}</td>`); });
       cells.push(`<td class="num">${r.frq ? esc(fmtVal(r.frq.value)) + (r.frq.unit ? ' <span class="unit">' + esc(r.frq.unit) + '</span>' : '') : '<span class="none">—</span>'}</td>`);
       cells.push(`<td class="num">${r.pre && r.pre.total ? `${r.pre.right}/${r.pre.total}` : '<span class="none">—</span>'}</td>`);
+      cells.push(`<td>${r.conf ? `<span class="conf"><span class="dots" aria-hidden="true">${confDots(r.conf)}</span> ${esc(CONF[r.conf])}</span>` : '<span class="none">—</span>'}</td>`);
       cells.push(`<td>${esc(dateText(r.when))}</td>`);
       cells.push(`<td>${r.flags.map(f => `<span class="flag">⚠ ${esc(f)}</span>`).join('')}</td>`);
       return `<tr${r.flags.length ? ' class="is-flagged"' : ''}>${cells.join('')}</tr>`;
     };
     const m = misses(rows);
     const first = rows[0];
+    const cc = { 3: 0, 2: 0, 1: 0, 0: 0 }; rows.forEach(r => { cc[r.conf || 0]++; });
+    const answered = cc[1] + cc[2] + cc[3];
+    const confBlock = answered ? `<section class="conf-sum" aria-label="Confidence summary for ${esc(first.labTitle)}"><h3>Confidence: how students rated themselves</h3>
+      <ul><li><span class="conf"><span class="dots" aria-hidden="true">${confDots(3)}</span> ${CONF[3]}</span> <span class="n">${cc[3]}</span></li><li><span class="conf"><span class="dots" aria-hidden="true">${confDots(2)}</span> ${CONF[2]}</span> <span class="n">${cc[2]}</span></li><li class="lost"><span class="conf"><span class="dots" aria-hidden="true">${confDots(1)}</span> ${CONF[1]}</span> <span class="n">${cc[1]}</span></li><li class="muted">No answer <span class="n">${cc[0]}</span></li></ul>
+      <div class="bar" aria-hidden="true"><i style="width:${100 * cc[3] / rows.length}%;background:var(--ok)"></i><i style="width:${100 * cc[2] / rows.length}%;background:var(--warn)"></i><i style="width:${100 * cc[1] / rows.length}%;background:var(--bad)"></i></div></section>` : '';
     return `<section class="labblock" data-lab="${lab}" aria-labelledby="h-${lab}">
       <h2 id="h-${lab}">${esc(first.labTitle)} <small>${rows.length} student${rows.length === 1 ? '' : 's'}${rows.some(r => r.flags.length) ? ' · ' + rows.filter(r => r.flags.length).length + ' flagged' : ''}</small></h2>
       <div class="grid-wrap" tabindex="0" role="region" aria-label="${esc(first.labTitle)} grid, scrolls sideways"><table class="grid" data-lab="${lab}"><caption class="sr-only">${esc(first.labTitle)}: one row per student. Use the column buttons to sort.</caption>
         <thead><tr>${cols.map(th).join('')}</tr></thead><tbody>${sortRows(rows).map(td).join('')}</tbody></table></div>
+      ${confBlock}
       ${m.length ? `<details class="misses" open><summary>What to re-teach: pre-lab questions students missed</summary><ol>${m.map(e => `<li><span class="pct">${e.pct}%</span><span class="q">${esc(e.q)}</span><span class="bar" aria-hidden="true"><i style="width:${e.pct}%"></i></span><span class="meta">${e.wrong} of ${e.answered} student${e.answered === 1 ? '' : 's'} missed it${e.blank ? ` · ${e.blank} did not answer` : ''}</span></li>`).join('')}</ol></details>` : ''}
     </section>`;
   }
@@ -377,12 +404,12 @@
     rows = rows.slice().sort((a, b) => a.lab.localeCompare(b.lab) || 0);
     const labs = Array.from(new Set(rows.map(r => r.lab))).sort();
     const krCols = []; labs.forEach(l => rows.filter(r => r.lab === l).forEach(r => r.kr.forEach(k => { if (!krCols.some(c => c.lab === l && c.id === k.id)) krCols.push({ lab: l, id: k.id, label: k.label, unit: k.unit }); })));
-    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags']);
+    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Confidence (1-3)', 'Confidence', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags']);
     const out = [head];
     labs.forEach(l => sortRows(rows.filter(r => r.lab === l)).forEach(r => {
       out.push([`Lab ${r.labNo}`, r.name + (r.sample ? ' (Sample)' : ''), r.period, r.datasetId, r.parts ? r.parts.done : '', r.parts ? r.parts.total : '']
         .concat(krCols.map(c => { if (c.lab !== l) return ''; const k = r.kr.find(x => x.id === c.id); return k ? fmtVal(k.value) : ''; }),
-          [r.frq ? fmtVal(r.frq.value) : '', r.pre ? r.pre.right : '', r.pre ? r.pre.total : '', r.when ? new Date(r.when).toISOString().slice(0, 10) : '', r.flags.join('; ')]));
+          [r.frq ? fmtVal(r.frq.value) : '', r.conf || '', r.conf ? CONF[r.conf] : '', r.pre ? r.pre.right : '', r.pre ? r.pre.total : '', r.when ? new Date(r.when).toISOString().slice(0, 10) : '', r.flags.join('; ')]));
     }));
     return '﻿' + out.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
@@ -420,6 +447,7 @@
         const done = Math.max(1, Math.min(L.parts, Math.round(L.parts * (0.45 + 0.6 * rnd()))));
         const krs = L.kr.map(([id, label, unit, mean, sd, dig]) => ({ id, label, unit, part: '', value: +(mean + sd * norm()).toFixed(dig), t: 1 }));
         const quiz = L.prelab.map(([q, pMiss]) => ({ q, answer: '', status: rnd() < .04 ? 'Not answered' : rnd() < pMiss ? 'Incorrect' : 'Correct' }));
+        if (rnd() < .8) krs.push({ id: 'confidence', label: 'Confidence', unit: '', part: '', value: rnd() < .35 ? 3 : rnd() < .6 ? 2 : 1, t: 3 });
         if (L.frq) krs.push({ id: 'frq-score', label: 'FRQ self-score', unit: 'of 4', part: '', value: Math.max(0, Math.min(4, Math.round(2.6 + norm()))), t: 2 });
         made.push({ app: 'aplab', v: 1, lab: L.lab, title: L.title + ' — AP Bio Lab Bench', labTitle: L.title, savedAt: new Date(Date.now() - Math.floor(rnd() * 9) * 864e5 - 36e5).toISOString(), exportedAt: null, student: { name, period }, dataset: 1, data: {}, keyResults: krs,
           quizzes: [{ id: 'prelab', right: quiz.filter(q => q.status === 'Correct').length, total: quiz.length, questions: quiz }], parts: { done, total: L.parts } });

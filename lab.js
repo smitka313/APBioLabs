@@ -80,8 +80,24 @@
   const studentKey = idn => normName(idn.name).toLowerCase() + '|' + (idn.period || '');
   const dsKey = idn => `dataset:${PAGE.id}:${studentKey(idn)}`;
   const datasetNo = idn => (idn && +gstore.get(dsKey(idn))) || 1;
+  /* The seed and Dataset ID are computed once per student and lab, then stored (aplab:<lab>:dataset) and reused until the
+     student chooses "New dataset" (the stored record is dropped and the dataset number goes up), Start over or Sign out.
+     Why IDs used to flip: they were recomputed on every page load from name | period | lab | dataset number. Any change to
+     one of those inputs gave a new ID with no warning: filling in or correcting the class period (the dataset number is
+     stored per name + period, so it fell back to 1), fixing a typo or capital letter in the name, signing in after
+     starting as an anonymous visitor, or a progress file restored under a slightly different name. Nothing in the hash itself
+     changed between deploys. Storing the first result makes the ID independent of all of that. */
+  const DS_STORE = `aplab:${PAGE.id}:dataset`;
+  function readStoredDataset() {
+    try {
+      const v = JSON.parse(localStorage.getItem(DS_STORE));
+      if (v && typeof v === 'object' && Number.isFinite(v.seed) && typeof v.str === 'string' && /^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/.test(v.datasetId) && Number.isFinite(+v.datasetNumber)) return v;
+    } catch (e) { /* missing or damaged: compute a new one */ }
+    return null;
+  }
   const SEED = (function () {
     const idn = effectiveIdentity();
+    if (IS_LAB) { const st = readStoredDataset(); if (st) return { seed: st.seed >>> 0, str: st.str, basis: st.basis || '', datasetNumber: Math.floor(+st.datasetNumber) || 1, datasetId: st.datasetId, student: !!idn, sticky: true }; }
     let basis;
     if (idn) basis = studentKey(idn);
     else {
@@ -91,12 +107,46 @@
     }
     const ds = datasetNo(idn);
     const str = [basis, PAGE.id, ds].join('|');
-    return { seed: hash32(str), str, basis, datasetNumber: ds, datasetId: datasetCode(hash32(str + '#dataset-id')), student: !!idn };
+    const rec = { seed: hash32(str), str, basis, datasetNumber: ds, datasetId: datasetCode(hash32(str + '#dataset-id')), student: !!idn };
+    if (IS_LAB) { try { localStorage.setItem(DS_STORE, JSON.stringify({ seed: rec.seed, str, basis, datasetNumber: ds, datasetId: rec.datasetId, t: Date.now() })); } catch (e) { /* blocked: recomputed each load, as before */ } }
+    return rec;
   })();
   let rngCount = 0;
   if (IS_LAB) Math.random = mulberry32(SEED.seed);
   /* Seed for an unseeded Lab.rng(): the n-th call on a page always gets the same seed for the same student. */
   const autoSeed = () => IS_LAB ? hash32(SEED.str + ':rng:' + (rngCount++)) : Math.floor(nativeRandom() * 2 ** 31);
+
+  /* ResizeObserver, made flushable. A page that redraws a canvas from its own ResizeObserver cannot do that while the browser is
+     printing (observer callbacks wait for the next rendering step), so a part that was just shown can print as an empty canvas.
+     Lab.print.prepare() calls flushResize(): every observer's callback runs now with the current size of what it watches. */
+  const RO_ALL = new Set();
+  if (typeof window.ResizeObserver === 'function' && !window.ResizeObserver.__aplab) {
+    const NativeRO = window.ResizeObserver;
+    const PatchedRO = class extends NativeRO {
+      constructor(cb) { super(cb); this._aplab = { cb, els: new Set() }; RO_ALL.add(this); }
+      observe(el, o) { this._aplab.els.add(el); return super.observe(el, o); }
+      unobserve(el) { this._aplab.els.delete(el); return super.unobserve(el); }
+      disconnect() { this._aplab.els.clear(); RO_ALL.delete(this); return super.disconnect(); }
+    };
+    PatchedRO.__aplab = true;
+    window.ResizeObserver = PatchedRO;
+  }
+  /* The same for requestAnimationFrame: a view that redraws "next frame" (the microscope views) would still be blank when the print
+     dialog opens, so pending frame callbacks can be run at once. */
+  const RAF_PENDING = new Map(), nativeRaf = window.requestAnimationFrame.bind(window), nativeCaf = window.cancelAnimationFrame.bind(window);
+  window.requestAnimationFrame = cb => { const id = nativeRaf(t => { RAF_PENDING.delete(id); cb(t); }); RAF_PENDING.set(id, cb); return id; };
+  window.cancelAnimationFrame = id => { RAF_PENDING.delete(id); nativeCaf(id); };
+  function flushFrames() {
+    for (let pass = 0; pass < 3 && RAF_PENDING.size; pass++) {
+      Array.from(RAF_PENDING.entries()).forEach(([id, cb]) => { RAF_PENDING.delete(id); nativeCaf(id); try { cb(performance.now()); } catch (e) { /* a page frame callback failed: ignore */ } });
+    }
+  }
+  function flushResize() {
+    RO_ALL.forEach(ro => {
+      const ents = Array.from(ro._aplab.els).filter(e => e.isConnected).map(e => { const w = e.clientWidth, hh = e.clientHeight; return { target: e, contentRect: { x: 0, y: 0, top: 0, left: 0, width: w, height: hh, right: w, bottom: hh }, borderBoxSize: [{ inlineSize: w, blockSize: hh }], contentBoxSize: [{ inlineSize: w, blockSize: hh }] }; });
+      if (ents.length) { try { ro._aplab.cb(ents, ro); } catch (e) { /* a page observer failed: ignore */ } }
+    });
+  }
 
   /* ---------------- DOM helpers ---------------- */
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -265,6 +315,32 @@
              series:[{ name, color, points:[{x,y,err}], line:true, dots:true, fit:false|'linear', dash:false }],
              categories:[...] (bar), annotations:[{x, label}] , hLines:[{y,label}] } */
   const SERIES = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s6)'];
+  /* Series are told apart by more than color (about 1 in 12 men cannot separate the green, red and orange of a rainbow palette):
+     each series also gets its own marker shape and line pattern (xy), or fill pattern (bar), and the legend draws the same swatch. */
+  const MARKERS = ['circle', 'square', 'triangle', 'diamond', 'cross', 'plus'];
+  const DASHES = ['', '8 4', '2 4', '9 3 2 3', '', '4 3'];
+  function markerSvg(shape, x, y, r, style, title) {
+    const t = title ? `<title>${title}</title>` : '', st = `style="${style}" stroke-width="1.5"`;
+    if (shape === 'square') return `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" ${st}>${t}</rect>`;
+    if (shape === 'triangle') return `<polygon points="${x},${y - r * 1.25} ${x + r * 1.2},${y + r * 0.9} ${x - r * 1.2},${y + r * 0.9}" ${st}>${t}</polygon>`;
+    if (shape === 'diamond') return `<polygon points="${x},${y - r * 1.3} ${x + r * 1.3},${y} ${x},${y + r * 1.3} ${x - r * 1.3},${y}" ${st}>${t}</polygon>`;
+    if (shape === 'cross') return `<path d="M${x - r} ${y - r}L${x + r} ${y + r}M${x - r} ${y + r}L${x + r} ${y - r}" fill="none" style="stroke:${style.match(/fill:([^;]+)/)[1]}" stroke-width="2.6" stroke-linecap="round">${t}</path>`;
+    if (shape === 'plus') return `<path d="M${x - r * 1.15} ${y}L${x + r * 1.15} ${y}M${x} ${y - r * 1.15}L${x} ${y + r * 1.15}" fill="none" style="stroke:${style.match(/fill:([^;]+)/)[1]}" stroke-width="2.6" stroke-linecap="round">${t}</path>`;
+    return `<circle cx="${x}" cy="${y}" r="${r}" ${st}>${t}</circle>`;
+  }
+  /* Pattern for bar series i (0 = solid): the series color with light stripes, dots or hatching drawn over it. */
+  function barPattern(id, color, i) {
+    const k = i % 6; if (!k) return '';
+    const ln = d => `<path d="${d}" stroke="var(--surface)" stroke-width="2.4" opacity=".75" fill="none"/>`;
+    const body = k === 1 ? ln('M-2 2L2 -2M0 8L8 0M6 10L10 6') : k === 2 ? '<circle cx="4" cy="4" r="1.7" fill="var(--surface)" opacity=".85"/>'
+      : k === 3 ? ln('M-2 2L2 -2M0 8L8 0M6 10L10 6') + ln('M-2 6L2 10M0 0L8 8M6 -2L10 2') : k === 4 ? ln('M0 2H8M0 6H8') : ln('M2 0V8M6 0V8');
+    return `<pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" style="fill:${color}"/>${body}</pattern>`;
+  }
+  function legendSwatch(sr, i, type, uid) {
+    if (type === 'bar') { const pat = barPattern(`${uid}-${i}`, sr.color, i); return `<svg class="lg-sw" width="20" height="14" viewBox="0 0 20 14" aria-hidden="true">${pat ? `<defs>${pat}</defs>` : ''}<rect x="1" y="1" width="18" height="12" rx="2" style="fill:${pat ? `url(#${uid}-${i})` : sr.color}"/></svg>`; }
+    const dash = sr.dash ? '6 4' : DASHES[i % 6];
+    return `<svg class="lg-sw" width="28" height="14" viewBox="0 0 28 14" aria-hidden="true">${sr.line ? `<line x1="1" x2="27" y1="7" y2="7" style="stroke:${sr.color}" stroke-width="2.4"${dash ? ` stroke-dasharray="${dash}"` : ''}/>` : ''}${sr.dots ? markerSvg(MARKERS[i % 6], 14, 7, 3.8, `fill:${sr.color};stroke:var(--surface)`).replace(/<circle cx="(\S+)" cy="(\S+)" r="(\S+)"/, '<ellipse cx="$1" cy="$2" rx="$3" ry="$3"') : ''}</svg>`;   // an <ellipse>, so counting a chart's plotted <circle> points never counts the legend
+  }
   function niceStep(range, ticks) {
     const raw = range / Math.max(1, ticks), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
     return (r >= 5 ? 10 : r >= 2 ? 5 : r >= 1 ? 2 : 1) * mag;
@@ -286,6 +362,27 @@
   const CANVASES = []; // every Lab.canvas, so a part that becomes visible can be resized and redrawn at once
   /* Lab.chart draws in a 640-unit-wide viewBox. A responsive chart (opts.responsive, or any chart inside a
      results panel) draws at its real CSS width instead, so axis text stays 12px in narrow columns. */
+  /* Wrap an axis label into lines that fit `room` px (≈0.6 em per character, generous): one line at full size, else two or
+     three lines at full size, else smaller text (down to 10.5px) on two or three lines. A word longer than a line is split.
+     Never an ellipsis: a long label gets more lines, not fewer letters. → {lines, fs} */
+  function wrapLabel(str, room, fs = 13, minFs = 10.5, per = 0.6) {
+    const words = String(str == null ? '' : str).split(/\s+/).filter(Boolean);
+    if (!words.length) return { lines: [''], fs };
+    const fill = cap => {
+      const lines = []; let cur = '';
+      words.forEach(wd => {
+        while (wd.length > cap) { if (cur) { lines.push(cur); cur = ''; } lines.push(wd.slice(0, cap)); wd = wd.slice(cap); }
+        if (cur && (cur + ' ' + wd).length > cap) { lines.push(cur); cur = wd; } else cur = cur ? cur + ' ' + wd : wd;
+      });
+      if (cur) lines.push(cur);
+      return lines;
+    };
+    const at = f => fill(Math.max(4, Math.floor(room / (per * f))));
+    for (const n of [1, 2, 3]) {   // fewest lines first: full size, then (for 2 and 3 lines) slightly smaller text
+      for (let f = fs; f >= (n === 1 ? fs : minFs) - 1e-6; f -= 0.5) { const l = at(f); if (l.length <= n) return { lines: l, fs: f }; }
+    }
+    return { lines: fill(Math.max(4, Math.floor(room / (per * minFs)))), fs: minFs };
+  }
   Lab.chart = function (el, opts) {
     if (typeof el === 'string') el = $(el);
     el.classList.add('chart');
@@ -305,8 +402,22 @@
     function render() { lastW = chooseW(); el.innerHTML = build(lastW); el.classList.toggle('is-empty', !chartHasData(cur)); }
     function build(W) {
       const o = cur, H = Math.round((o.height || 360) * Math.max(0.62, Math.min(1, W / 640))), m = { t: 16, r: 18, b: 54, l: 64 };
+      /* Axis labels wrap instead of being cut: the x label and the y label take extra lines, and the margins grow to hold them. */
+      const xl = wrapLabel(o.xLabel, W - 100), LH = 15;
+      m.b += LH * (xl.lines.length - 1);
+      let catWrap = null;
+      if (o.type === 'bar') { // long category names wrap under their bars too
+        const cats0 = o.categories || ((o.series || [])[0] ? o.series[0].points.map(p => p.x) : []);
+        const gw0 = (W - 64 - 18 - 30) / Math.max(1, cats0.length);
+        catWrap = cats0.map(c => wrapLabel(c, Math.max(30, gw0 - 8), 12, 10.5));
+        m.b += LH * (Math.max(1, ...catWrap.map(w => w.lines.length)) - 1);
+      }
+      const yl = wrapLabel(o.yLabel, Math.max(40, H - m.t - m.b - 6));
+      m.l += LH * (yl.lines.length - 1);
       const iw = W - m.l - m.r, ih = H - m.t - m.b;
-      const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true }, s));
+      const series = (o.series || []).map((s, i) => Object.assign({ color: SERIES[i % SERIES.length], line: o.type !== 'bar', dots: true, idx: i }, s));
+      const uid = 'bp' + (++clipCount), multi = series.filter(x => x.points && x.points.length).length > 1;
+      let patDefs = '';
       let svg = '';
       const empty = !chartHasData(o);                                  // nothing to plot yet: draw the axes and a note, not a fake 0–1 scale
       const knownX = o.xMin != null && o.xMax != null, knownY = o.yMin != null && o.yMax != null;
@@ -321,11 +432,13 @@
         const gw = iw / Math.max(1, cats.length), bw = Math.min(56, (gw * 0.72) / Math.max(1, series.length));
         cats.forEach((c, ci) => {
           const gx = m.l + gw * ci + gw / 2;
-          svg += `<text x="${gx}" y="${m.t + ih + 18}" text-anchor="middle">${esc(c)}</text>`;
+          const cw = (catWrap && catWrap[ci]) || { lines: [String(c)], fs: 12 };
+          svg += `<text x="${gx}" y="${m.t + ih + 18}" text-anchor="middle"${cw.fs < 12 ? ` style="font-size:${cw.fs}px"` : ''}>${cw.lines.map((ln, li) => `<tspan x="${gx}" dy="${li ? 14 : 0}">${esc(ln)}</tspan>`).join('')}</text>`;
           series.forEach((s, si) => {
             const p = s.points.find(pp => pp.x === c) || s.points[ci]; if (!p || !isFinite(p.y)) return;
             const x = gx - (bw * series.length) / 2 + bw * si, y0 = Y(Math.max(0, yr.lo)), y1 = Y(p.y);
-            svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${Math.max(0.5, bw - 4)}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${s.color}"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
+            const pat = series.length > 1 ? barPattern(`${uid}-${si}`, s.color, si) : ''; if (pat && !patDefs.includes(`id="${uid}-${si}"`)) patDefs += pat;
+            svg += `<rect x="${x + 2}" y="${Math.min(y0, y1)}" width="${Math.max(0.5, bw - 4)}" height="${Math.abs(y0 - y1)}" rx="3" style="fill:${pat ? `url(#${uid}-${si})` : s.color};stroke:${s.color}" stroke-width="1.2"><title>${esc(s.name || '')} ${esc(c)}: ${Lab.fmt(p.y, 3)}</title></rect>`;
             const pe = errOf(p);
             if (pe) { const cx = x + bw / 2; svg += `<g style="stroke:var(--ink)" stroke-width="1.4"><line x1="${cx}" x2="${cx}" y1="${Y(p.y - pe)}" y2="${Y(p.y + pe)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y - pe)}" y2="${Y(p.y - pe)}"/><line x1="${cx - 5}" x2="${cx + 5}" y1="${Y(p.y + pe)}" y2="${Y(p.y + pe)}"/></g>`; }
           });
@@ -343,14 +456,14 @@
         if (yr.lo < 0 && yr.hi > 0) svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${Y(0)}" y2="${Y(0)}"/>`;
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/><line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/>`;
         (empty ? [] : o.hLines || []).forEach(l => { if (!isFinite(l.y)) return; svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
-        (empty ? [] : o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>` : ''}`; });
+        (empty ? [] : o.annotations || []).forEach(a => { svg += `<line x1="${X(a.x)}" x2="${X(a.x)}" y1="${m.t}" y2="${m.t + ih}" style="stroke:var(--stain)" stroke-dasharray="4 4"/>${a.label ? (X(a.x) > m.l + iw * 0.6 ? `<text x="${X(a.x) - 5}" y="${m.t + 12}" text-anchor="end" style="fill:var(--stain)">${esc(a.label)}</text>` : `<text x="${X(a.x) + 5}" y="${m.t + 12}" style="fill:var(--stain)">${esc(a.label)}</text>`) : ''}`; });
         const clipId = 'lc' + (++clipCount); // not Math.random: keeps the seeded stream for simulations
         svg += `<defs><clipPath id="${clipId}"><rect x="${m.l}" y="${m.t - 6}" width="${iw + 6}" height="${ih + 12}"/></clipPath></defs><g clip-path="url(#${clipId})">`;
         series.forEach(s => {
           const pts = s.points.filter(p => isFinite(p.x) && isFinite(p.y)).slice().sort((a, b) => a.x - b.x);
-          if (s.line && pts.length > 1) svg += `<polyline fill="none" style="stroke:${s.color}" stroke-width="2.2" ${s.dash ? 'stroke-dasharray="6 5"' : ''} stroke-linejoin="round" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>`;
+          if (s.line && pts.length > 1) svg += `<polyline fill="none" style="stroke:${s.color}" stroke-width="2.2" ${s.dash ? 'stroke-dasharray="6 5"' : (multi && DASHES[s.idx % 6] ? `stroke-dasharray="${DASHES[s.idx % 6]}"` : '')} stroke-linejoin="round" points="${pts.map(p => `${X(p.x)},${Y(p.y)}`).join(' ')}"/>`;
           pts.forEach(p => { const pe = errOf(p); if (pe) svg += `<g style="stroke:${s.color}" stroke-width="1.3"><line x1="${X(p.x)}" x2="${X(p.x)}" y1="${Y(p.y - pe)}" y2="${Y(p.y + pe)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y - pe)}" y2="${Y(p.y - pe)}"/><line x1="${X(p.x) - 4}" x2="${X(p.x) + 4}" y1="${Y(p.y + pe)}" y2="${Y(p.y + pe)}"/></g>`; });
-          if (s.dots && pts.length <= 120) pts.forEach(p => { svg += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.8" style="fill:${s.color};stroke:var(--surface)" stroke-width="1.5"><title>${esc(s.name || '')} (${Lab.fmt(p.x, 3)}, ${Lab.fmt(p.y, 3)})</title></circle>`; });
+          if (s.dots && pts.length <= 120) pts.forEach(p => { svg += markerSvg(multi ? MARKERS[s.idx % 6] : 'circle', X(p.x), Y(p.y), 3.8, `fill:${s.color};stroke:var(--surface)`, `${esc(s.name || '')} (${Lab.fmt(p.x, 3)}, ${Lab.fmt(p.y, 3)})`); });
           if (s.fit === 'linear' && pts.length > 1) {
             const f = stats.linreg(pts.map(p => p.x), pts.map(p => p.y));
             if (isFinite(f.m) && isFinite(f.b)) svg += `<line x1="${X(xr.lo)}" x2="${X(xr.hi)}" y1="${Y(f.predict(xr.lo))}" y2="${Y(f.predict(xr.hi))}" style="stroke:${s.color}" stroke-width="1.5" stroke-dasharray="6 4" opacity=".8"/>`;
@@ -367,17 +480,15 @@
         const bw = Math.min(iw - 8, Math.max(...lines.map(l => l.length)) * per + 32), bh = lines.length * 20 + 18, cx = m.l + iw / 2, cy = m.t + ih / 2;
         svg += `<g class="chart-empty"><rect x="${cx - bw / 2}" y="${cy - bh / 2}" width="${bw}" height="${bh}" rx="10"/>${lines.map((l, i) => `<text x="${cx}" y="${cy - bh / 2 + 9 + 20 * i + 15}" text-anchor="middle">${esc(l)}</text>`).join('')}</g>`;
       }
-      svg += `<text class="axis-label" x="${m.l + iw / 2}" y="${H - 10}" text-anchor="middle">${esc(o.xLabel || '')}</text>`;
-      { // a long y label shrinks (then truncates) to stay inside the plot height instead of running into the title above
-        let yl = String(o.yLabel || ''), fs = 13; const room = Math.max(40, ih - 6), per = 0.6; // ≈ px per character per px of font (generous: unit text has wide symbols)
-        if (yl.length * per * fs > room) fs = Math.max(10, Math.floor(10 * room / (yl.length * per)) / 10);
-        const fit = Math.floor(room / (per * fs));
-        if (yl.length > fit) yl = yl.slice(0, Math.max(1, fit - 1)).trimEnd() + '…';
-        svg += `<text class="axis-label" transform="translate(16 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle"${fs < 13 ? ` style="font-size:${fs}px"` : ''}>${esc(yl)}</text>`;
+      { // axis labels, wrapped (see wrapLabel); the y label reads bottom to top, its first line outermost
+        const xs = xl.fs < 13 ? ` style="font-size:${xl.fs}px"` : '', ys = yl.fs < 13 ? ` style="font-size:${yl.fs}px"` : '';
+        xl.lines.forEach((ln, i) => { svg += `<text class="axis-label" x="${m.l + iw / 2}" y="${H - 10 - LH * (xl.lines.length - 1 - i)}" text-anchor="middle"${xs}>${esc(ln)}</text>`; });
+        yl.lines.forEach((ln, i) => { svg += `<text class="axis-label" transform="translate(${14 + LH * i} ${m.t + ih / 2}) rotate(-90)" text-anchor="middle"${ys}>${esc(ln)}</text>`; });
       }
       const named = series.filter(s => s.name);
-      const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>` : '';
+      const legend = named.length > 1 || (named.length === 1 && o.type !== 'bar') ? `<div class="legend">${named.map(s => `<span>${legendSwatch(s, s.idx, o.type === 'bar' ? 'bar' : 'xy', uid)}${esc(s.name)}</span>`).join('')}</div>` : '';
       const fits = series.filter(s => s._fit).map(s => `${esc(s.name || 'fit')}: y = ${Lab.fmt(s._fit.m, 4)}x ${s._fit.b < 0 ? '−' : '+'} ${Lab.fmt(Math.abs(s._fit.b), 4)}  (R² = ${Lab.fmt(s._fit.r2, 3)})`);
+      if (patDefs) svg = `<defs>${patDefs}</defs>` + svg;
       return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || '') + (empty ? ': no data yet' : ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
     }
     render();
@@ -674,7 +785,7 @@
         if (name.length < 2) { err.textContent = 'Type your name as your teacher knows it.'; nameIn.focus(); return; }
         if (!period) { err.textContent = 'Choose your class period.'; perSel.focus(); return; }
         const ok = setIdentity({ name, period });
-        if (ok && IS_LAB && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
+        if (ok && IS_LAB && !SEED.sticky && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
           err.textContent = 'Saved. Setting up your own data…';
           reloadForSeed(); return;
         }
@@ -717,6 +828,7 @@
     newDataset() {
       const idn = effectiveIdentity(); if (!idn || !IS_LAB) return false;
       if (!gstore.set(dsKey(idn), SEED.datasetNumber + 1)) return false;
+      try { localStorage.removeItem(DS_STORE); } catch (e) { /* ignore */ }
       reloadForSeed(); return true;
     },
     seed: { seed: SEED.seed, datasetId: SEED.datasetId, datasetNumber: SEED.datasetNumber, student: SEED.student },
@@ -766,11 +878,11 @@
     const keys = lsKeys(), out = [];
     LAB_IDS.forEach(id => {
       const pre = `aplab:${id}:`;
-      const started = keys.some(k => k.startsWith(pre) && !k.endsWith(':field:student-name'));
+      const started = keys.some(k => k.startsWith(pre) && !k.endsWith(':field:student-name') && !k.endsWith(':dataset'));
       const p = gstore.get('progress:' + id);
       if (!started) return;
       const hasP = p && p.total;
-      out.push({ id, no: labNo(id), done: hasP ? p.done : 0, total: hasP ? p.total : 0, text: hasP ? `${p.done} of ${p.total} parts` : 'started' });
+      out.push({ id, no: labNo(id), done: hasP ? p.done : 0, total: hasP ? p.total : 0, text: hasP ? (progressText(p) === 'Not started' ? 'started' : progressText(p).replace(/^Started · /, 'started · ')) : 'started' });
     });
     return out;
   }
@@ -1025,6 +1137,40 @@
     root.setAttribute('data-theme', 'light');
     return () => { if (prev == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', prev); };
   }
+  /* ---- Printing: light colors and static pictures of every canvas ----
+     A canvas is drawn with the colors of the theme that was on screen (dark mode gives pale lines on a dark scene) and a part that is
+     hidden has no real size, so printing the page as it is can give dark or blank pictures. Lab.print.prepare() (run on beforeprint,
+     and while building the worksheet) switches to the light tokens, redraws every canvas, chart and microscope view, and puts a static
+     <img> snapshot (canvas.toDataURL) next to each visible canvas, hiding the canvas. Lab.print.restore() (afterprint) undoes all of it.
+     A canvas that cannot be read (a tainted canvas) is left as it is. */
+  const PRINT = { snaps: [], restoreTheme: null, on: false };
+  function redrawEverything() {
+    quietBadges(900);
+    try { CANVASES.forEach(c => c.check()); themeRedraw(); flushResize(); flushFrames(); } catch (e) { /* ignore */ }
+  }
+  function printPrepare() {
+    if (PRINT.on) return PRINT.snaps.length;
+    PRINT.on = true;
+    if (isDarkNow()) { PRINT.restoreTheme = forceLight(); }
+    redrawEverything();
+    $$('canvas').forEach(cv => {
+      if (cv.closest('.print-snap') || !cv.getClientRects().length || !cv.clientWidth || !cv.clientHeight) return;
+      let url; try { url = cv.toDataURL('image/png'); } catch (e) { return; }
+      const img = h('img', { class: (cv.className ? cv.className + ' ' : '') + 'print-snap', src: url, alt: cv.getAttribute('aria-label') || '', width: cv.clientWidth, height: cv.clientHeight });
+      img.style.cssText = cv.style.cssText;
+      PRINT.snaps.push({ cv, img, display: cv.style.display });
+      cv.after(img); cv.style.display = 'none';
+    });
+    return PRINT.snaps.length;
+  }
+  function printRestore() {
+    if (!PRINT.on) return;
+    PRINT.on = false;
+    PRINT.snaps.forEach(x => { x.img.remove(); x.cv.style.display = x.display; });
+    PRINT.snaps = [];
+    if (PRINT.restoreTheme) { PRINT.restoreTheme(); PRINT.restoreTheme = null; redrawEverything(); }
+  }
+  Lab.print = { prepare: printPrepare, restore: printRestore, get snapshots() { return PRINT.snaps.map(x => x.img); } };
   function lightTokenResolver() {
     const restore = forceLight(), cs = getComputedStyle(document.documentElement), cache = {};
     const names = ['--bg', '--surface', '--surface-2', '--ink', '--muted', '--line', '--grid', '--accent', '--stain', '--ok', '--warn', '--bad', '--s1', '--s2', '--s3', '--s4', '--s5', '--s6'];
@@ -1589,8 +1735,8 @@
     const clone = body.cloneNode(true);
     const origCanvases = $$('canvas', body), cloneCanvases = $$('canvas', clone);
     cloneCanvases.forEach((cv, i) => {
-      let img = null;
-      if (!wasDark) { try { img = h('img', { src: origCanvases[i].toDataURL('image/png'), alt: origCanvases[i].getAttribute('aria-label') || '', class: 'ws-img' }); } catch (e) { img = null; } }
+      let img = null; // enterWorksheet has already switched to the light tokens and redrawn, so this is a light picture even from dark mode
+      try { img = h('img', { src: origCanvases[i].toDataURL('image/png'), alt: origCanvases[i].getAttribute('aria-label') || '', class: 'ws-img' }); } catch (e) { img = null; }
       if (img) cv.replaceWith(img); else cv.remove();
     });
     $$('.tab-panel', clone).forEach(p => { p.hidden = false; if (p.dataset.tab) p.prepend(h('p', { class: 'ws-sum' }, p.dataset.tab)); }); // every tab prints
@@ -1653,6 +1799,7 @@
     pagesSuspend(); // every part laid out, so canvases copy at full size
     const wasDark = isDarkNow();
     const restore = forceLight();
+    if (wasDark) redrawEverything();   // canvases drawn in dark colors are redrawn in light ones before they are copied
     const note = previewNote(true);
     const hd = $('.lab-header h1');
     const titleText = cleanTitle(document.title || (hd ? hd.textContent : 'Lab'));
@@ -1668,7 +1815,7 @@
     document.head.append(style);
     document.body.append(root);
     document.body.classList.add('worksheet-mode');
-    wsState = { restore, root, style, scrollY: window.scrollY, opener: document.activeElement };
+    wsState = { restore, root, style, dark: wasDark, scrollY: window.scrollY, opener: document.activeElement };
     document.addEventListener('keydown', wsKey);
     window.scrollTo(0, 0);
     return root;
@@ -1677,7 +1824,7 @@
   function exitWorksheet() {
     if (!wsState) return;
     const s = wsState; wsState = null;
-    s.root.remove(); s.style.remove(); s.restore(); pagesResume();
+    s.root.remove(); s.style.remove(); s.restore(); if (s.dark) redrawEverything(); pagesResume();
     document.body.classList.remove('worksheet-mode', 'pr-fallback');
     document.removeEventListener('keydown', wsKey);
     window.scrollTo(0, s.scrollY);
@@ -1693,6 +1840,8 @@
   Lab.worksheet = { enter: enterWorksheet, exit: exitWorksheet, print: printWorksheet, html: () => buildWorksheet(isDarkNow()) };
   function addHeaderPrintButton() {
     const crumbs = $('.lab-header .crumbs'); if (!crumbs || $('.ws-print-btn', crumbs)) return;
+    if (!$('.project-link', crumbs)) crumbs.append(h('a', { class: 'project-link', href: 'projector.html#' + PAGE.id, title: 'Open projector mode for this lab (for teachers)' },
+      h('span', { class: 'pl-icon', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' }), 'Project this lab'));
     crumbs.append(h('button', { class: 'btn btn--sm ws-print-btn', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
   }
 
@@ -1815,23 +1964,50 @@
     if (changedAny) { if (acted) store.set('stepdone', stepSaved()); progressSoon(); }
   }
   let navProgressEl = null, lastSummary = '';
+  /* Two-level progress. Level 1 is the part count (a part is done when ALL its work is done; unchanged). Level 2 names the
+     part that is under way (some, not all, of its items done) with its item count, e.g. "3 of 6 parts · Float assay 6/11 items".
+     Before any part is complete it reads "Started · Float assay 6/11 items", never "0 of N". s = {done, total, items:{done,total},
+     partial:{name, done, total}, started}. opts.suffix adds " done" after "parts" (nav, resume card). */
+  function progressText(s, opts = {}) {
+    if (!s || !s.total) return s && s.started ? 'Started' : 'Not started';
+    const part = s.partial && s.partial.total ? `${s.partial.name} ${s.partial.done}/${s.partial.total} items` : '';
+    if (s.done >= s.total) return `All ${s.total} parts done`;
+    if (!s.done) {
+      const worked = s.items ? s.items.done > 0 : !!s.started;
+      return !worked ? 'Not started' : part ? `Started · ${part}` : 'Started';
+    }
+    return `${s.done} of ${s.total} parts${opts.suffix ? ' done' : ''}${part ? ' · ' + part : ''}`;
+  }
+  Lab.progressText = progressText;
   function updateProgress() {
     const nav = $('.step-nav ol'); if (!nav) return null;
-    let parts = 0, complete = 0;
+    let parts = 0, complete = 0, itemsDone = 0, itemsTotal = 0;
+    const partials = [];
     const steps = $$('section.step');
     steps.forEach(s => {
       const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
       const r = sectionWork(s), sr = $('.done-sr', link);
       if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
       parts++; const ok = r.done === r.total; if (ok) complete++;
+      itemsDone += r.done; itemsTotal += r.total;
+      if (r.done > 0 && !ok) partials.push({ id: s.id, name: (s.dataset.step || '').trim() || 'This part', done: r.done, total: r.total });
       link.classList.add('has-work'); link.classList.toggle('is-done', ok);
       if (sr) sr.textContent = ok ? ' (done)' : '';
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
-    if (navProgressEl) { navProgressEl.hidden = !parts; navProgressEl.innerHTML = `<span class="np-long">${complete} of ${parts} parts done</span><span class="np-short">${complete} of ${parts} done</span>`; }
-    const sum = JSON.stringify([complete, parts]);
-    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, { done: complete, total: parts, sections: steps.length, t: Date.now() }); }
-    return { done: complete, total: parts, sections: steps.length };
+    const curId = pages.cur && pages.cur.id;
+    const partial = partials.find(x => x.id === curId) || partials[0] || null;
+    const sumObj = { done: complete, total: parts, sections: steps.length, items: { done: itemsDone, total: itemsTotal }, partial };
+    if (navProgressEl) {
+      const started = !complete && itemsDone > 0;
+      const pt = partial ? `${partial.name} ${partial.done}/${partial.total} items` : '';
+      navProgressEl.hidden = !parts;
+      navProgressEl.innerHTML = `<span class="np-long">${started ? 'Started' : `${complete} of ${parts} parts done`}</span><span class="np-short">${started ? 'Started' : `${complete} of ${parts} done`}</span>` + (pt ? `<span class="np-part"> · ${esc(pt)}</span>` : '');
+      navProgressEl.title = progressText(sumObj, { suffix: true });
+    }
+    const sum = JSON.stringify([complete, parts, itemsDone, partial && [partial.id, partial.done, partial.total]]);
+    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, Object.assign({ t: Date.now() }, sumObj)); }
+    return { done: complete, total: parts, sections: steps.length, items: sumObj.items, partial };
   }
   /* ---------------- Paged mode: one part at a time ----------------
      Lab pages show one section.step at a time (body.paged; the current one has .is-current), with Back/Next
@@ -1855,10 +2031,12 @@
   }
   /* Size and redraw what lives in a part that just became visible. */
   function syncPart(sec) {
+    quietBadges(900);   // redrawing a part that was just shown (or after printing) is not a new result
     CANVASES.forEach(c => { if (sec.contains(c.canvas)) { try { c.check(); } catch (e) { console.warn(e); } } });
     REG.charts.forEach(c => { if (sec.contains(c.el)) { try { c.render(); } catch (e) { console.warn(e); } } });
   }
   function partShown(sec) {
+    quietBadges(900);
     syncPart(sec);
     requestAnimationFrame(() => {
       $$('canvas', sec).forEach(cv => { if (cv.scopeView) { try { cv.scopeView.redraw(); } catch (e) { /* ignore */ } } });
@@ -2006,8 +2184,9 @@
       if (printing || document.body.classList.contains('worksheet-mode') || document.body.classList.contains('report-mode')) return;
       printing = $$('details.disclose:not([open])'); printing.forEach(d => { d.open = true; });
       pagesSuspend();
+      printPrepare();   // light colors, every canvas redrawn and replaced by a static image
     });
-    window.addEventListener('afterprint', () => { if (!printing) return; printing.forEach(d => { d.open = false; }); printing = null; pagesResume(); });
+    window.addEventListener('afterprint', () => { if (!printing) return; printRestore(); printing.forEach(d => { d.open = false; }); printing = null; pagesResume(); });
     // Find (Ctrl+F) only searches what is on screen: offer the one-page view once.
     let findHint = false;
     window.addEventListener('keydown', e => {
@@ -2057,7 +2236,7 @@
     forLab(id) {
       const p = gstore.get('progress:' + id);
       let started = false;
-      try { started = Object.keys(localStorage).some(k => k.startsWith(`aplab:${id}:`) && !k.endsWith(':field:student-name')); } catch (e) { /* blocked */ }
+      try { started = Object.keys(localStorage).some(k => k.startsWith(`aplab:${id}:`) && !k.endsWith(':field:student-name') && !k.endsWith(':dataset')); } catch (e) { /* blocked */ }
       if (p && p.total) return Object.assign({ started }, p);
       return started ? { started: true } : null;
     },
@@ -2072,11 +2251,12 @@
     $$('[data-lab-progress]').forEach(el => {
       const p = Lab.progress.forLab(el.dataset.labProgress);
       el.innerHTML = '';
-      if (!p || (p.total && !p.done && !p.started)) { el.append(h('span', { class: 'prog-text' }, 'Not started')); return; }
-      if (!p.total) { el.append(h('span', { class: 'prog-text' }, 'Started')); return; }
-      const pct = Math.round(100 * p.done / p.total);
-      el.append(h('span', { class: 'prog-text' }, p.done === p.total ? `All ${p.total} parts done` : `${p.done} of ${p.total} parts`),
-        h('span', { class: 'prog-bar', 'aria-hidden': 'true' }, h('i', { style: `width:${pct}%` })));
+      const txt = progressText(p);
+      el.append(h('span', { class: 'prog-text' }, txt));
+      if (!p || !p.total || txt === 'Not started') return;
+      /* The bar shows part completion, plus the item progress of the part under way. */
+      const frac = p.done / p.total + (p.partial && p.partial.total ? (p.partial.done / p.partial.total) / p.total : 0);
+      el.append(h('span', { class: 'prog-bar', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.round(100 * Math.min(1, frac))}%` })));
     });
     if (o.resume) {
       const el = typeof o.resume === 'string' ? $(o.resume) : o.resume;
@@ -2102,7 +2282,7 @@
             last.name ? h('p', { class: 'pickup-part' }, useBm ? 'You paused at: ' : 'Part: ', h('strong', null, last.name + (useBm && bm.stepNo ? ', step ' + bm.stepNo : ''))) : null,
             hr && hr.hint ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, 'Next: '), hr.hint)
               : hr && hr.done ? h('p', { class: 'pickup-next' }, h('span', { class: 'sn-k' }, '✓ '), hr.done) : null,
-            pr && pr.total ? h('p', { class: 'pickup-prog small muted' }, `${pr.done} of ${pr.total} parts done`) : null),
+            pr && pr.total && progressText(pr) !== 'Not started' ? h('p', { class: 'pickup-prog small muted' }, progressText(pr, { suffix: true })) : null),
           h('a', { class: 'btn btn--primary btn--lg resume-link', href }, 'Resume', h('span', { class: 'sr-only' }, ' ' + labName + (last.name ? ', ' + last.name : '')), h('span', { 'aria-hidden': 'true' }, ' →')));
         el.hidden = false;
       }
@@ -2255,12 +2435,48 @@
       if (a.hidden && a.getAttribute('role') === 'tabpanel') { const b = document.getElementById(a.getAttribute('aria-labelledby') || ''); if (b) b.click(); }
     }
   }
-  /* "Show me" arrival: open its part, scroll to it, pulse it for a few seconds and give it keyboard focus. */
+  /* A ring that lands on an element: Lab.highlight(el, {ms = 2500}). A fixed-position overlay (so no clipped ancestor or focus
+     style can hide it) that follows the element while the page scrolls, and runs about 2.5 s once the scroll has settled. Three
+     expanding pulses; with reduced motion it is a steady ring for the same time. Works after the caller has opened the part,
+     closed <details> and tab panels (revealTarget); an element that has no box of its own gets its nearest visible ancestor. */
+  let ringEl = null, ringRaf = 0, ringEnd = 0;
+  function visibleBox(t) {
+    for (let e = t; e && e !== document.body; e = e.parentElement) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.height > 0) return e; }
+    return null;
+  }
+  function stopRing() { cancelAnimationFrame(ringRaf); ringRaf = 0; if (ringEl) { ringEl.remove(); ringEl = null; } }
+  Lab.highlight = function (t, o = {}) {
+    if (typeof t === 'string') t = $(t);
+    if (!t) return null;
+    stopRing();
+    const ms = o.ms || 2500, pad = 6, still = Lab.reducedMotion();
+    const ring = ringEl = h('div', { class: 'lab-ring' + (still ? ' is-still' : ''), 'aria-hidden': 'true' });
+    document.body.append(ring);
+    let last = '', calm = 0, t0 = performance.now(), settled = 0;
+    const tick = now => {
+      if (ringEl !== ring) return;
+      const box = visibleBox(t);
+      if (!box) { ringRaf = requestAnimationFrame(tick); if (now - t0 > 3000) stopRing(); return; }
+      const r = box.getBoundingClientRect();
+      const key = [r.left, r.top, r.width, r.height].map(Math.round).join(',');
+      ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
+      ring.classList.add('is-on');
+      calm = key === last ? calm + 1 : 0; last = key;
+      if (!settled && (calm >= 6 || now - t0 > 1500)) { settled = now; ring.classList.add('go'); }
+      if (settled && now - settled > ms) { stopRing(); return; }
+      ringRaf = requestAnimationFrame(tick);
+    };
+    ringRaf = requestAnimationFrame(tick);
+    return ring;
+  };
+  /* "Show me" arrival: open its part, scroll to it, ring it for a few seconds and give it keyboard focus. */
   function focusTarget(t) {
     const sec = partOf(t);
     if (sec && pages.on && !pages.suspended && sec !== pages.cur) goPart(sec, { hash: true, scroll: false });
     revealTarget(t);
-    t.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
+    const vb = visibleBox(t) || t;
+    vb.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
+    Lab.highlight(t);
     t.classList.add('lab-pulse'); clearTimeout(t._flashT);
     t._flashT = setTimeout(() => { if (!PULSED.has(t)) t.classList.remove('lab-pulse'); }, 3600);
     let f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]', t);
@@ -2381,6 +2597,12 @@
        narrower:     a Scene / Data / Graph switch above the scene; Data and Graph cover the scene in the same box.
      A "new" badge appears on a tab when its table or chart changes while it is not showing. → {select(kind), el} */
   const WIDE_RESULTS = '(min-width: 1280px)';
+  /* The "new" badge on a Data / Graph tab means a result arrived after the student acted. Redraws that are not new results (the page
+     restoring saved data on load, a part being shown again, a theme change, printing) must not raise it: lab.js stays quiet around part
+     shows, theme redraws and print preparation, and a page can say so itself: Lab.results.quiet(fn) runs fn and the badges ignore
+     everything it changes (plus the next 900 ms of asynchronous redraws), e.g. Lab.results.quiet(() => table.setRows(saved)). */
+  let badgeQuietUntil = Date.now() + 1500;   // page load
+  function quietBadges(ms) { badgeQuietUntil = Math.max(badgeQuietUntil, Date.now() + (ms || 900)); }
   Lab.results = function (sim, o = {}) {
     if (typeof sim === 'string') sim = $(sim);
     const stage = $(':scope > .stage', sim);
@@ -2435,7 +2657,7 @@
     apply();
     if ('MutationObserver' in window) {
       const mo = new MutationObserver(recs => {
-        if (!autoToasts.ready) return;
+        if (!autoToasts.ready || Date.now() < badgeQuietUntil) return;   // loading, restoring saved data or re-showing a part: not a new result
         const cur = curKind();
         recs.forEach(r => { const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
       });
@@ -2444,6 +2666,7 @@
     sim.classList.add('has-results');
     return { el: main, select(k) { const i = tabs.findIndex(t => t.k === k); if (i >= 0) { if (mq.matches) { if (k !== 'scene') wideSel = k; } else narrowSel = k; apply(); } }, get current() { return curKind(); } };
   };
+  Lab.results.quiet = (fn, ms) => { quietBadges(ms); try { if (typeof fn === 'function') fn(); } finally { quietBadges(ms); } };
 
   /* ---------------- Onboarding: first-visit tour, backup reminders, storage warnings ----------------
      Tour (lab pages): a short dismissible walkthrough shown once per browser (localStorage 'aplab:tour'),
@@ -2551,20 +2774,53 @@
     if (backupBar) { backupBar.remove(); backupBar = null; }
     document.body.classList.remove('has-backup-bar'); document.documentElement.style.removeProperty('--backup-bar-h');
   }
-  function showBar() {
-    bkShown = true; sessionSet(shownKey(), '1');
-    const region = h('div', { class: 'backup-bar', role: 'status', 'aria-live': 'polite' });
+  /* showBar('nudge') is the end-of-period nudge: the same bar with other words and buttons, shown at most once per browser session. */
+  function showBar(kind) {
+    const nudge = kind === 'nudge';
+    if (nudge) sessionSet(NUDGE_KEY, '1'); else { bkShown = true; sessionSet(shownKey(), '1'); }
+    const region = h('div', { class: 'backup-bar' + (nudge ? ' nudge-bar' : ''), role: 'status', 'aria-live': 'polite' });
     backupBar = region; document.body.append(region);
     setTimeout(() => { // fill after insertion so screen readers announce it politely
       if (!region.isConnected) return;
-      region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
+      const dismiss = h('button', { class: 'bb-close', type: 'button', 'aria-label': 'Dismiss this reminder', title: 'Dismiss', onclick: removeBar }, '×');
+      if (nudge) region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
+        h('p', { class: 'bb-msg' }, NUDGE_MSG),
+        h('div', { class: 'bb-actions' },
+          h('button', { class: 'btn btn--sm btn--primary nudge-docx', type: 'button', onclick: ev => nudgeDocx(ev.currentTarget) }, 'Download .docx'),
+          h('button', { class: 'btn btn--sm nudge-code', type: 'button', onclick: ev => nudgeCode(ev.currentTarget) }, 'Transfer code'),
+          dismiss));
+      else region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
         h('p', { class: 'bb-msg' }, storageBad ? STORAGE_MSG : BACKUP_MSG),
         h('div', { class: 'bb-actions' },
           h('button', { class: 'btn btn--sm btn--primary bb-save', type: 'button', onclick: () => { saveProgressFile(); Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file'),
-          h('button', { class: 'bb-close', type: 'button', 'aria-label': 'Dismiss this reminder', title: 'Dismiss', onclick: removeBar }, '×')));
+          dismiss));
       document.body.classList.add('has-backup-bar');
       document.documentElement.style.setProperty('--backup-bar-h', region.offsetHeight + 'px');
     }, 60);
+  }
+  /* ---- end-of-period nudge ----
+     Meaningful work that is not backed up (Lab.backup.state().unsaved: no progress file or transfer code since) and the lab tab
+     open for 40+ minutes: one gentle, dismissible banner per browser session, with Download .docx and Transfer code buttons.
+     Never while a Lab.loop animation runs, while typing, over a dialog or the tour; it waits and tries again every 2 s. */
+  const NUDGE_MS = 40 * 60 * 1000, NUDGE_KEY = 'aplab:nudge-shown';
+  const NUDGE_MSG = 'Period ending soon? Download your report or get a transfer code.';
+  Lab.nudge = { after: NUDGE_MS, shown: () => !!sessionGet(NUDGE_KEY) };
+  async function nudgeDocx(btn) {
+    btn.disabled = true;
+    try { const blob = await Lab.report.docx(), name = reportFileBase() + '.docx'; downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); }
+    catch (e) { Lab.toast(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
+  }
+  function nudgeCode(btn) {
+    removeBar();
+    Lab.pause({ opener: btn });   // the pause card holds the transfer code and QR; open it ready to use
+    const go = pauseEl && $('.transfer-btn', pauseEl); if (go) go.click();
+  }
+  function maybeNudge(s) {
+    if (backupBar || !s.unsaved || sessionGet(NUDGE_KEY)) return;
+    if (Date.now() - loadedAt < NUDGE_MS) return;
+    if (document.hidden || LOOPS.size || tourEl || dmEl || pauseEl || isBusyMode()) return;
+    if (Date.now() - lastWork < QUIET_MS) return;
+    showBar('nudge');
   }
   function checkBackup() {
     if (!IS_LAB || !document.body) return;
@@ -2572,6 +2828,7 @@
     syncGuard(s); updateBackupStatus(s);
     if (s.meaningful) requestPersist();
     if (backupBar && !s.dirty) removeBar();
+    maybeNudge(s);
     if (backupBar || bkShown || sessionGet(shownKey())) return;
     if (!s.unsaved || document.hidden || LOOPS.size || tourEl || isBusyMode()) return;
     const t = Date.now();
@@ -2749,9 +3006,49 @@
   }
 
   /* ---------------- Init ---------------- */
+  /* ---------------- "Rate my confidence" ----------------
+     A one-tap, three-choice control at the end of every lab's Reflect or Evaluate part (found by data-step or slug, so lab pages
+     need no markup): "I could teach this" (3) / "I mostly get it" (2) / "I'm lost" (1). It is saved (aplab:<lab>:confidence =
+     {v, t}) and reported as Lab.keyResult('confidence', {label: 'Confidence', value: 1-3, unit: '(I could teach this)'}), so it is
+     in the report, the progress file and the teacher dashboard (its own Confidence column and a per-lab count).
+     It is not a prompt, quiz, table or step, so it never counts toward part completion or the backup reminder. */
+  const CONFIDENCE = [{ v: 3, text: 'I could teach this' }, { v: 2, text: 'I mostly get it' }, { v: 1, text: 'I’m lost' }];
+  Lab.confidence = { choices: CONFIDENCE, get: () => { const r = store.get('confidence'); return r && CONFIDENCE.some(c => c.v === r.v) ? r.v : null; } };
+  function mountConfidence() {
+    if (!IS_LAB) return;
+    const sec = $$('section.step').find(x => /^(reflect|evaluate)$/i.test((x.dataset.step || '').trim())) || document.getElementById('reflect') || document.getElementById('evaluate');
+    if (!sec) return;
+    const body = $(':scope > .step-body', sec) || sec;
+    let box = $('.confidence', sec);
+    if (!box) {
+      const name = 'conf-' + LAB_ID, say = h('p', { class: 'conf-say small muted', 'aria-live': 'polite' });
+      box = h('fieldset', { class: 'confidence', id: 'confidence-box' },
+        h('legend', null, 'Rate my confidence'),
+        h('p', { class: 'small muted conf-help' }, 'One tap. This is for you and your teacher, not a grade. You can change it any time.'),
+        h('div', { class: 'conf-opts' }, CONFIDENCE.map(c => h('label', { class: 'conf-opt', 'data-v': String(c.v) },
+          h('input', { type: 'radio', name, value: String(c.v), id: `${name}-${c.v}` }),
+          h('span', { class: 'conf-dots', 'aria-hidden': 'true' }, '●'.repeat(c.v) + '○'.repeat(3 - c.v)),
+          h('span', { class: 'conf-text' }, c.text),
+          h('span', { class: 'conf-tick', 'aria-hidden': 'true' }, '✓')))),
+        say);
+      box.addEventListener('change', e => {
+        const inp = e.target.closest ? e.target.closest('input[type=radio]') : null; if (!inp) return;
+        const v = +inp.value, c = CONFIDENCE.find(x => x.v === v); if (!c) return;
+        store.set('confidence', { v, t: Date.now() });
+        Lab.keyResult('confidence', { label: 'Confidence', value: v, unit: `(${c.text})`, part: sec.id });
+        say.textContent = `Saved: ${c.text}.`;
+        workChanged();
+      });
+      const saved = Lab.confidence.get();
+      if (saved) { const inp = $(`input[value="${saved}"]`, box); if (inp) inp.checked = true; }
+    }
+    if (box.parentElement !== body || body.lastElementChild !== box) body.append(box); // last thing in the part, above the Back / Next links
+  }
+  Lab._mountConfidence = mountConfidence;
+
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
-    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); addTimeChips(); }
+    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); addTimeChips(); mountConfidence(); window.addEventListener('load', () => setTimeout(mountConfidence, 0)); }
     buildNav();
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
@@ -2830,6 +3127,7 @@
     themeRedraw();
   }
   function themeRedraw() {
+    quietBadges(900);
     window.dispatchEvent(new Event('aplab:theme'));
     CANVASES.forEach(c => { try { if (c.onresize) c.onresize(); } catch (e) { /* ignore */ } });
     REG.charts.forEach(c => { try { c.render(); } catch (e) { /* ignore */ } });

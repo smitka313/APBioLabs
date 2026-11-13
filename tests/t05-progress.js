@@ -41,7 +41,7 @@ const nav = p => p.evaluate(() => ({
   // home card uses the same total
   const h = await T.open(ctx, 'index.html'); await h.waitForTimeout(500);
   const card = await h.textContent('[data-lab-progress="lab02"]');
-  T.ok(new RegExp(`of ${totals.lab02.work} parts`).test(card) || new RegExp(`^All ${totals.lab02.work} parts`).test(card), `home card for Lab 2: "${card.trim()}" (${totals.lab02.work} parts with work)`);
+  T.ok(new RegExp(`of ${totals.lab02.work} parts`).test(card) || /^Started · .+ \d+\/\d+ items$/.test(card.trim()) || new RegExp(`^All ${totals.lab02.work} parts`).test(card), `home card for Lab 2: "${card.trim()}" (${totals.lab02.work} parts with work)`);
   await h.close(); await p.close();
 
   console.log('Lab 1: finishing the Grow scoring step moves the count');

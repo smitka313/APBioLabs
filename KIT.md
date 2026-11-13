@@ -24,7 +24,7 @@ Header crumbs: `All labs` → `index.html`; the unit/Big Idea label; `Teacher no
 - `Lab.quiz(el, questions, {id})` — auto-checked questions with explanations. Types: `mc` (answer index), `multi` (answer index array), `num` (answer, `tol` absolute or `tolPct`, `unit`). Stems and choices accept HTML.
 - `Lab.prompt(el, {key, label, rows, placeholder})` — saved free-response box. Keys must be unique within the page.
 - `Lab.table(el, {columns:[{key,label,unit,num,digits,editable}], rows, save:'key', onChange(rows), footer(rows)})` → `{addRow,setRows,getRows,clear}`. `editable:true` lets students type values (use for "record your own measurement" steps).
-- `Lab.chart(el, {type:'xy'|'bar', xLabel, yLabel, xMin,xMax,yMin,yMax, height, series:[{name,points:[{x,y,err}],line,dots,fit:'linear',dash}], categories, hLines:[{y,label}], annotations:[{x,label}]})` → `{update(partial)}`. Error bars via `err` (use 2×SE for AP-style 95% CI). Colors come from CSS tokens automatically.
+- `Lab.chart(el, {type:'xy'|'bar', xLabel, yLabel, xMin,xMax,yMin,yMax, height, series:[{name,points:[{x,y,err}],line,dots,fit:'linear',dash}], categories, hLines:[{y,label}], annotations:[{x,label}]})` → `{update(partial)}`. Error bars via `err` (use 2×SE for AP-style 95% CI). Colors come from CSS tokens automatically. **Long axis labels wrap** (x and y labels, bar category names) onto up to three lines, then shrink to 10.5 px, and the margins grow to hold them; a label is never cut or ended with an ellipsis, so write the full wording (`tests/t33-chart-labels.js`).
 - `Lab.stats` — `mean, sd, se, ci95, median, sum, chiSquare(obs,exp) → {chi2,df,crit,reject,terms}, chiCrit(df,p), linreg(xs,ys) → {m,b,r2,xIntercept,predict}`.
 - `Lab.rng(seed?)` — `uniform, normal(m,sd), int(a,b), pick, chance(p), shuffle, poisson, binomial`.
 - `Lab.canvas(canvasEl, aspect, {fit})` → `{ctx,w,h,resize, onresize, check}` crisp HiDPI canvas (`fit:true` caps its height by the viewport; see "UI patterns"). `Lab.color('--accent')` reads a theme token at draw time (call inside draw so dark mode works). `Lab.loop(fn(dt))` → `{start,stop}` rAF loop. `Lab.reducedMotion()`.
@@ -34,13 +34,21 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Identity + per-student data.** A site-wide name + class period (`localStorage['aplab:student']`) replaces the
   per-lab "Your name" field (still read as a fallback). On lab pages `Math.random` and unseeded `Lab.rng()` are
   seeded from hash(name | period | lab id | dataset number), so use them (not fixed seeds) for data that should
-  differ per student. `Lab.identity.get()/set()/newDataset()`, `Lab.identity.seed` → `{seed, datasetId, datasetNumber}`.
+  differ per student.
+  **The seed and Dataset ID are sticky:** the first time they are computed they are stored in `aplab:<lab>:dataset`
+  (`{seed, str, datasetNumber, datasetId}`) and reused on every later load, even if the name, period or hash inputs change.
+  Only "New dataset" (drops the record, bumps the number), Start over and Sign out change them. A progress file carries the record
+  (it is one of the lab's stored keys), so a restore keeps the same ID. If no record exists the ID is computed as before and stored. `Lab.identity.get()/set()/newDataset()`, `Lab.identity.seed` → `{seed, datasetId, datasetNumber}`.
 - **Report + save/resume** in the `[data-responses]` toolbar: `Lab.report.docx()` (docx@9.0.2 loaded lazily from
   jsDelivr), `Lab.report.open({print})` (print view for Save as PDF), `Lab.progressFile.payload/parse/apply/makeCode/readCode`.
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
   "Copy link" button. **One progress scheme:** a "part" counts only if it holds student work (prompt textareas, quiz
   questions, saved `Lab.table`s, required `Lab.steps` items); Overview, Background and Submit do not. A part is done when
-  all of that work is done. The same number is used by the nav ("3 of 6 parts done"), the home cards and the
+  all of that work is done. **Two levels:** beside the part count, the nav (`.np-part`, wide screens) and the home card name
+  the part under way (some, not all, of its items done; the current part if it qualifies) with its item count:
+  "3 of 6 parts · Float assay 6/11 items", or "Started · Float assay 6/11 items" before any part is complete, never "0 of N"
+  once work has begun ("Not started" before that). `aplab:progress:<lab>` = `{done, total, sections, items:{done,total}, partial:{id,name,done,total}, t}`;
+  `Lab.progressText(summary)` builds the text. The completion rule is unchanged. The same number is used by the nav ("3 of 6 parts done"), the home cards and the
   teachers.html table ("10 parts (6 with work)"; regenerate with `node tools/gen-parts.js` after changing a lab's parts;
   `tests/t05b-teachers.js` checks it). **Setup rows are not work:** a row a page adds while loading (a starting row, preset
   rows) is tagged `_setup:true` and saved that way; `addRow(row, {setup:false})` / `setRows(rows, {setup:false})` force
@@ -62,6 +70,28 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Key results.** `Lab.keyResult(id, {label, value, unit, part})` stores `keyres:<id>` = `{label, value, unit, part, t}`;
   `Lab.keyResults()` lists them. Call it whenever a headline number is computed (FRQ self-score: id `frq-score`, unit `of 4`).
   They appear in the report (Key results table), the progress file and the teacher dashboard.
+- **Printing is always light, with real pictures.** `@media print` in style.css redefines every token to its light value (beating the
+  dark-mode rules) and sets break rules (headings keep with what follows; figures, tables, prompts, readouts never split). On
+  `beforeprint`, `Lab.print.prepare()` shows every part, switches to light tokens, redraws every `Lab.canvas`, chart and `Scope.view`,
+  runs pending `ResizeObserver` callbacks and `requestAnimationFrame` frames at once (lab.js wraps both, so a page that redraws from
+  its own observer still prints a drawn canvas), and puts a static `<img class="print-snap">` (`canvas.toDataURL`) next to each visible canvas;
+  `afterprint` (`Lab.print.restore()`) undoes it. The worksheet does the same from dark mode. A canvas that cannot be read is left alone.
+  Page code: draw from `Lab.color()` at draw time, never cache colors. `tests/t36-print.js` rasterizes the PDFs of all 13 labs.
+- **Not by color alone.** Series colors (`--s1`..`--s6`) were chosen to stay apart under deuteranopia and protanopia (`tests/t39-colorblind.js`).
+  `Lab.chart` adds a marker shape and a dash pattern per series (several series) and a fill pattern for grouped bars 2-4, and draws
+  the same swatch in the legend. `.feedback.ok/.bad`, `.pill.ok/.warn/.bad` and quiz choices marked right or wrong carry a check, cross or "!".
+  On a lab page, never separate two states by hue only: add a label, number, shape or brightness difference.
+- **End-of-period nudge.** If `Lab.backup.state().unsaved` (3+ answers or a recorded row, no progress file or transfer code since)
+  and the lab tab has been open 40+ minutes (`Lab.nudge.after`), a gentle dismissible bar (`.backup-bar.nudge-bar`) says "Period
+  ending soon? Download your report or get a transfer code." with **Download .docx** and **Transfer code** (opens the pause card with the
+  code and QR). At most once per browser session (`sessionStorage['aplab:nudge-shown']`); never while a `Lab.loop` runs, while typing,
+  over a dialog, the tour or the report/worksheet; it waits and tries again every 2 s. Test it with `page.clock` (`tests/t35-nudge.js`).
+- **"Rate my confidence".** lab.js adds a one-tap radio group ("I could teach this" 3 / "I mostly get it" 2 / "I'm lost" 1) as the
+  last thing in each lab's Reflect or Evaluate part (found by `data-step`, or the `reflect` / `evaluate` slug; nothing to put in the
+  page). Saved as `aplab:<lab>:confidence` = `{v, t}` and reported as key result `confidence` (`value` 1-3, `unit` "(I could teach
+  this)"), so it is in the report, progress file and `.docx`. It is not a prompt, quiz, table or step: it never counts toward part
+  completion or the backup reminder. `Lab.confidence.get()` reads it. teacher-dashboard.html gives it its own Confidence column
+  (not a generic key-result column, never a "copied results" signal), a CSV column and a per-lab count of each choice.
 - **Transfer code + Pause & bookmark.** "Get my transfer code" (Submit part, pause card) shows the resume code and a QR code
   for `labNN.html#resume=<code>` (qrcode-generator 1.4.4 from cdnjs, loaded lazily). lab.js strips `#resume=` from the address
   bar on load and offers an inline confirm. `Lab.pause()` saves, stores `aplab:bookmark` and opens the pause card; the home
@@ -166,7 +196,7 @@ Moves existing `Lab.chart` / `Lab.table` containers (ids unchanged) into a resul
   watch the graph build while the run plays; this is the layout at 1366×768.
 - **<1280 px:** a **Scene / Data / Graph** switch above the scene; Data and Graph cover the scene in the
   same box (the canvas keeps its size), so nothing below moves.
-- A "new" badge appears on a tab whose table/chart changed while it was not showing (not for restored data).
+- A "new" badge appears on a tab whose table/chart changed while it was not showing (not for restored data). lab.js stays quiet for 0.9 s around part shows, theme redraws and print preparation (and for 1.5 s after load); a page that restores saved data later wraps it in `Lab.results.quiet(() => …)` so the badge only means a genuinely new result.
 - Charts inside a panel draw at their real width so axis text stays 12 px (any chart can opt in with
   `Lab.chart(el, {responsive:true, …})`); the report always uses a full-size 640-wide copy.
 - ARIA tabs: arrow keys / Home / End, `aria-selected`, `role=tabpanel`. Returns `{select('graph'|'data'|'scene')}`.
@@ -184,7 +214,7 @@ Lab.gate('#cup-run', () => poured || rows().length ? '' : 'Pour the disks first 
 ```
 - Numbered checklist; the first unfinished non-optional step is current (highlighted, `aria-current="step"`),
   a one-line **Next:** hint (`hint`, else `text`) sits under it, and the step's `target` control gets a
-  gentle pulsing outline (static under reduced motion). Each step with a `target` has a small "Show me ↓" button
+  gentle pulsing outline (static under reduced motion). "Show me" also lands a **ring** on the target (`Lab.highlight(el, {ms})`, also usable from lab pages): a fixed-position two-tone frame with a glow and three expanding pulses, about 2.5 s once scrolling has settled (a steady ring under reduced motion, hidden in print). It follows the target while the page scrolls and works for targets in closed `details`, hidden Data/Graph/tab panels and other parts. Each step with a `target` has a small "Show me ↓" button
   (it only scrolls, so it is labelled that way; the step text is plain): it opens the control's part, closed
   "More options", and Data/Graph tab if needed, pulses the control for a few seconds and focuses it (and
   opens its part if it is elsewhere). `sticky:true` keeps a step ticked once done.
@@ -392,3 +422,10 @@ Answer keys belong only here, never on the student page (except pre-lab quiz exp
 ## Test before you finish
 Open both pages in a browser at desktop width and at about 400px wide, in light and dark mode. Check the
 console for errors, make sure the page never scrolls sideways, and exercise every simulation control.
+
+## Projector mode
+`projector.html` shows a lab on the classroom screen with a timer (`projector.html#labNN` opens a lab directly; it remembers the last setup per computer).
+Each lab page gets a quiet "Project this lab" link in its header crumbs row, added from lab.js (`addHeaderPrintButton`), linking to
+`projector.html#labNN`; teacher pages, the home page and the dashboard do not get it. It is entered from teachers.html ("Projector mode"
+button and the "Using projector mode" section) and the index.html footer. **`projector-data.js` is generated: re-run
+`node tools/gen-projector-data.js` whenever a lab's parts, steps or safety callouts change.** `tests/t37-projector.js` fails if the data drifts.
