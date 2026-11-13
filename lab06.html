@@ -399,6 +399,84 @@
 (function () {
   'use strict';
   Lab.init({ id: 'lab06' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -535,6 +613,10 @@ const Predict = (function () {
     fly: { name: 'Fruit flies (Drosophila)', short: 'Fruit flies', syringe: 1, load: '10 flies', mass: 0.010, spec: 45, q10: 2.4, cv: 0.2, seed: false, look: 'fly', insect: true, vgas: 900 },
     earthworm: { name: 'Small earthworm', short: 'Earthworm', syringe: 10, load: '1 worm', mass: 0.60, spec: 2.2, q10: 2.1, cv: 0.18, seed: false, look: 'earthworm', vgas: 8000 }
   };
+  /* Per-student specimens (seeded): a vitality factor of 0.92-1.08 on every organism's specific rate (a livelier or slower batch of seeds and animals)
+     and Q10 shifted by up to +/-0.12 for the metabolically active groups, so each student's rates and Q10 differ within the realistic range. */
+  { const SR = Lab.rng((Lab.identity.seed.seed ^ 0x6e55) >>> 0), vit = 0.92 + 0.16 * SR.uniform(), dq = (SR.uniform() - 0.5) * 0.24;
+    Object.keys(ORGS).sort().forEach(k => { const o = ORGS[k]; o.spec = +(o.spec * vit).toFixed(4); if (o.q10 > 1.5) o.q10 = +(o.q10 + dq).toFixed(3); }); }
   const ageFactor = d => 0.08 + 0.92 * (1 - Math.exp(-d / 1.1)) / (1 - Math.exp(-2 / 1.1));
   const tempFactor = (T, q10) => Math.pow(q10, (T - 20) / 10) / (1 + Math.exp((T - 41) / 1.6));
   function meanRate(c) { // µL O2 per min, before individual variation
@@ -1536,6 +1618,21 @@ const Predict = (function () {
   Lab.prompt(an, { key: 'a4', label: '4. Compare the three gas sensors. Why does the CO<sub>2</sub> sensor need a chamber <em>without</em> KOH, while the pressure sensor needs KOH? What did the pressure sensor show without KOH, and why?', rows: 4 });
   Lab.prompt(an, { key: 'a5', label: '5. What additional questions about cellular respiration could you explore with these same respirometers?', rows: 3 });
   Lab.prompt(an, { key: 'a6', label: '6. If you tested temperature: what Q<sub>10</sub> did you find? Explain the shape of your rate-vs-temperature curve, including any drop at high temperature, in terms of enzymes.', rows: 3 });
+  const dOK = () => dTable.getRows().filter(r => !r._setup && isFinite(r.perg) && isFinite(r.rate));
+  Own.personal(an, { key: 'own-weird', rows: 3, need: 'Design (run some trials)', href: 'design',
+    ask: 'Explain one reason this trial might differ from the others (think about equilibration, temperature, the organism and variation between individuals).',
+    compute: () => { const r = dOK(); if (r.length < 3) return null; const gm = new Map(); r.forEach(x => { const k = x.orgName + '|' + x.temp; (gm.get(k) || gm.set(k, []).get(k)).push(x.perg); }); let best = null;
+      if ([...gm.values()].some(a => a.length > 1)) r.forEach(x => { const a = gm.get(x.orgName + '|' + x.temp); if (a.length > 1) { const d = Math.abs(x.perg - S.mean(a)); if (!best || d > best.d) best = { d, x }; } });
+      else if (new Set(r.map(x => x.temp)).size > 2) { const f = S.linreg(r.map(x => x.temp), r.map(x => x.perg)); r.forEach(x => { const d = Math.abs(x.perg - f.predict(x.temp)); if (!best || d > best.d) best = { d, x }; }); }
+      else return null;
+      const x = best.x; return `Your trial ${x.trial} (${x.orgName} at ${x.temp} °C, rate ${fmt(x.rate, 1)} µL/min = ${fmt(x.perg, 1)} µL·g⁻¹·min⁻¹) is your weirdest data point: it sits furthest from the other trials in its group.`; } });
+  Own.personal(an, { key: 'own-baseline', rows: 3, need: 'Microrespirometer (run it)', href: 'microrespirometer',
+    ask: 'Explain how you found this rate from your graph and why you subtracted the bead control.',
+    compute: () => { const r = pReps.getRows().filter(x => !x._setup && isFinite(x.rate)); if (!r.length) return null; const l = r[r.length - 1]; return `Your run ${l.run} (${l.set}) gave a rate of ${fmt(l.rate, 2)} µL O\u2082/min (${fmt(l.perg, 1)} µL·g\u207b\u00b9·min\u207b\u00b9).`; } });
+  Own.watch(() => {
+    const r = pReps.getRows().filter(x => !x._setup && isFinite(x.rate)); if (r.length) { const l = r[r.length - 1]; Own.key('rate-microresp', { label: 'O\u2082 uptake rate, seeds (microrespirometer)', value: +fmt(l.rate, 2), unit: '\u00b5L/min', part: 'Microrespirometer' }); }
+    const d = dOK(); if (d.length) { const org = d[d.length - 1].orgName, t = d.filter(x => x.orgName === org && x.temp <= 35 && x.perg > 0); if (new Set(t.map(x => x.temp)).size >= 2) { const f = S.linreg(t.map(x => x.temp), t.map(x => Math.log(x.perg))); const q = Math.exp(10 * f.m); if (isFinite(q)) Own.key('q10', { label: 'Q\u2081\u2080 (' + org + ', trials up to 35 \u00b0C)', value: +fmt(q, 2), unit: '', part: 'Design' }); } }
+  });
   const cer = $('#cer');
   Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
@@ -1548,6 +1645,12 @@ const Predict = (function () {
   Lab.prompt(ev, { key: 'e3', label: 'Suggest one improvement to the microrespirometer design or to the procedure for measuring O<sub>2</sub> consumption, and one for the gas-sensor method.', rows: 3 });
   Lab.prompt(ev, { key: 'e4', label: 'Where could you go from here? Propose a follow-up experiment (for example, temperature in insects instead of seeds, or how body mass relates to respiration rate).', rows: 3 });
   Lab.prompt(ev, { key: 'e5', label: 'Which ideas about cellular respiration or gases were hardest for you before this lab? What clicked?', rows: 3 });
+  { const fh = Lab.h('div', { class: 'step-frq' }); ev.after(fh);
+  Own.frq(fh, { title: 'Free-response question: temperature and respiration rate', part: 'Evaluate',
+    intro: '<p>A student uses a microrespirometer to measure O<sub>2</sub> consumption by germinating seeds at 10, 20 and 30 \u00b0C. A second respirometer containing glass beads is kept in the same water bath, and KOH is placed in both to absorb CO<sub>2</sub>. The distance the colored fluid moves toward the chamber is recorded for 25 minutes at each temperature.</p>',
+    data: () => { const q = Lab.store.get('keyres:q10'), r = Lab.store.get('keyres:rate-microresp'); return q || r ? `Your own results: ${r ? 'rate = ' + r.value + ' \u00b5L/min' : ''}${q && r ? '; ' : ''}${q ? 'Q\u2081\u2080 = ' + q.value : ''}.` : 'Finish the runs to see your own rate and Q\u2081\u2080 here.'; },
+    parts: [['a', '<strong>Describe</strong> why the fluid moves toward the chamber and what the KOH does.'], ['b', '<strong>Explain</strong> the purpose of the bead respirometer.'], ['c', '<strong>Predict</strong> the shape of a graph of rate against temperature from 5 to 45 \u00b0C, and explain the drop at the highest temperatures.'], ['d', '<strong>Justify</strong> using Q<sub>10</sub> to compare rates at two temperatures, and state what a Q<sub>10</sub> near 2 suggests.']],
+    rubric: ['(a) O2 is used by respiration and the CO2 released is absorbed by KOH, so gas volume falls and fluid moves toward the chamber.', '(b) The beads are a control for changes in temperature and pressure; subtracting its movement corrects the seeds\' reading.', '(c) Rate rises with temperature (about doubling every 10 \u00b0C), peaks, then falls because enzymes denature at high temperature.', '(d) Q10 is the factor by which the rate rises for a 10 \u00b0C increase, so rates at different temperature gaps can be compared; about 2 shows enzyme-driven chemical reactions.'] }); }
 })();
 </script>
 </body>
