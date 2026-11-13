@@ -46,3 +46,7 @@ This is a static site with no build step. To host it on GitHub Pages, go to **Se
 Simulated data are modeled on typical classroom results. They support wet-lab work and do not replace it. Student work is stored only in each student's own browser (localStorage). To switch computers, students use **Move your work to another computer** in the Submit section (a progress file or a resume code). Each lab's Submit section also downloads a Word (.docx) lab report or opens a print view to save a PDF to upload to any learning management system (LMS), and **Print worksheet** prints a paper version of the lab. Students enter their name and class period once; each student's simulated data is unique and shows a Dataset ID on the report.
 
 AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site. The lab content is adapted and paraphrased from the College Board manual; the manual itself is not included in this repository.
+
+## Credits and license
+
+Created by **Robert Smitka**. © 2026 Robert Smitka. Licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). See [LICENSE.md](LICENSE.md). Teachers may share and adapt it for non-commercial use with credit, under the same license.
