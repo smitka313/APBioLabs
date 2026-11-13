@@ -194,7 +194,7 @@
           <div id="cut-steps"></div>
           <div class="controls">
             <p class="controls-title">Controls</p>
-          <div class="field"><label for="cut-enz">Restriction enzyme</label><select id="cut-enz"><option value="EcoRI">EcoRI (G↓AATTC)</option><option value="HindIII">HindIII (A↓AGCTT)</option><option value="BamHI">BamHI (G↓GATCC)</option><option value="SmaI">SmaI (CCC↓GGG, blunt)</option></select></div>
+          <div class="field"><label for="cut-enz">Restriction enzyme</label><select id="cut-enz" data-save="cut-enz"><option value="EcoRI">EcoRI (G↓AATTC)</option><option value="HindIII">HindIII (A↓AGCTT)</option><option value="BamHI">BamHI (G↓GATCC)</option><option value="SmaI">SmaI (CCC↓GGG, blunt)</option></select></div>
           <button class="btn btn--primary" type="button" id="cut-run">Digest</button>
           </div>
         </div>
@@ -206,7 +206,7 @@
       <div id="act1-prompts"></div>
       <h3 style="margin-top:12px">Restriction map of λ phage DNA (48,502 bp)</h3>
       <div class="prose"><p>The real sites of three enzymes in the λ genome are shown below. Choose one or more enzymes to see the fragments they would produce. This is what is in each tube you will load.</p></div>
-      <div class="row" role="group" aria-label="Enzymes for map"><label class="check" for="map-E"><input type="checkbox" id="map-E" checked> <span class="enz">EcoRI</span></label><label class="check" for="map-H"><input type="checkbox" id="map-H"> <span class="enz">HindIII</span></label><label class="check" for="map-B"><input type="checkbox" id="map-B"> <span class="enz">BamHI</span></label></div>
+      <div class="row" role="group" aria-label="Enzymes for map"><label class="check" for="map-E"><input type="checkbox" id="map-E" data-save="map-E" checked> <span class="enz">EcoRI</span></label><label class="check" for="map-H"><input type="checkbox" id="map-H" data-save="map-H"> <span class="enz">HindIII</span></label><label class="check" for="map-B"><input type="checkbox" id="map-B" data-save="map-B"> <span class="enz">BamHI</span></label></div>
       <div id="map-svg"></div>
       <div id="map-list" class="small"></div>
       <div id="act2-prompts"></div>
@@ -243,7 +243,7 @@
       <div id="meas2"></div>
       <h3>Evidence comparison</h3>
       <div class="prose"><p>For each suspect, the table compares their estimated fragment sizes with the blood's. Set your own match rule: how close must two fragments be to count as the same size? Base it on the spread of your repeat measurements.</p></div>
-      <div class="row"><label for="tol" class="small">Match if sizes differ by no more than</label><input id="tol" type="range" min="2" max="25" value="10" aria-label="Match tolerance (percent)"><output id="tol-out" class="val">10%</output></div>
+      <div class="row"><label for="tol" class="small">Match if sizes differ by no more than</label><input id="tol" data-save="tol" type="range" min="2" max="25" value="10" aria-label="Match tolerance (percent)"><output id="tol-out" class="val">10%</output></div>
       <div id="compare"></div>
     </div>
   </section>
@@ -827,7 +827,7 @@ function makeGel(rootSel, measSel, cfg) {
     </div>
     <div class="stage">
       <canvas class="viz gel-canvas" id="${P}-cv" aria-label="Agarose gel in an electrophoresis box with wells at the negative end; bands appear after running and staining"></canvas>
-      <div class="readouts"><div class="readout"><span class="k">Gel number (no units)</span><span class="v" id="${P}-gelno">1</span></div><div class="readout"><span class="k">Run time (min)</span><span class="v" id="${P}-time">0 min</span></div><div class="readout"><span class="k">Dye front distance (mm)</span><span class="v" id="${P}-dye">0 mm</span></div><div class="readout"><span class="k">Current (mA)</span><span class="v" id="${P}-amp">0 mA</span></div></div>
+      <div class="readouts"><div class="readout"><span class="k">Gel</span><span class="v" id="${P}-gelno">1</span></div><div class="readout"><span class="k">Run time (min)</span><span class="v" id="${P}-time">0 min</span></div><div class="readout"><span class="k">Dye front distance (mm)</span><span class="v" id="${P}-dye">0 mm</span></div><div class="readout"><span class="k">Current (mA)</span><span class="v" id="${P}-amp">0 mA</span></div></div>
       <div id="${P}-msg" class="msg" aria-live="polite">Choose a tube, then a well.</div>
       <div class="row"><label for="${P}-mlane" class="small">Lane</label><select id="${P}-mlane"></select><button class="btn btn--sm" type="button" id="${P}-mall">Measure all visible bands in lane</button><button class="btn btn--sm" type="button" id="${P}-mdye">Measure dye front</button></div>
       <div class="small muted" id="${P}-legend"></div>
@@ -850,12 +850,46 @@ function makeGel(rootSel, measSel, cfg) {
     $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; $('stain').textContent = 'Stain'; drawWells(); updateRead(); draw();
   }
   const sample = k => cfg.samples.find(s => s.key === k);
+  /* Persistence: the loaded wells, run time, dye position, stain stage, leads and controls are saved so a reload restores the gel
+     (a run that was mid-way comes back paused, with "Power on: continue"). */
+  const SK = 'gelstate-' + (cfg.stateId || P);
+  let lastSave = 0;
+  function saveState() {
+    lastSave = performance.now();
+    Lab.store.set(SK, { v: 1, gel: st.gel, lanes: st.lanes, t: st.t, dist: st.dist, frozen: st.frozen, stain: st.stain, reversed: st.reversed, runF: st.runF, laneF: st.laneF, sel: st.sel, running: !!st.running, at: Date.now(),
+      vol: $('vol').value, heat: $('heat').checked, pct: $('pct').value, volt: $('volt').value });
+  }
+  function restoreState() {
+    const r = Lab.store.get(SK);
+    if (!r || r.v !== 1 || !Array.isArray(r.lanes) || r.lanes.length !== 8 || !Array.isArray(r.laneF)) return false;
+    const keys = cfg.samples.map(x => x.key);
+    if (r.lanes.some(l => !Array.isArray(l) || l.some(c => !keys.includes(c.k) || !isFinite(c.v)))) return false;
+    $('vol').value = r.vol; $('heat').checked = !!r.heat; $('pct').value = r.pct; $('volt').value = r.volt;
+    $('vol-o').textContent = $('vol').value + ' µL'; $('volt-o').textContent = $('volt').value + ' V';
+    Object.assign(st, { gel: Math.max(st.gel, r.gel || 1), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
+    if (keys.includes(r.sel)) st.sel = r.sel;
+    Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel)));
+    Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === 'rev') === st.reversed)));
+    $('gelno').textContent = st.gel;
+    $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run';
+    $('stain').textContent = st.stain === 0 ? 'Stain' : st.stain === 1 ? 'Destain (water)' : 'Destained';
+    drawWells(); updateRead(); draw();
+    if (r.running) {   // the power stayed on while the page was closed: catch up by the wall clock
+      const el = Math.max(0, (Date.now() - (r.at || Date.now())) / 1000); let left = el, over = false;
+      while (left > 0 && !over) { const d = Math.min(0.25, left); left -= d; over = advance(d); }
+      updateRead(); draw();
+      if (over) { stop('The power stayed on while the page was closed, and the dye front ran off the gel. Small fragments ran out into the buffer. Pour a new gel to try again.'); }
+      else { st.running = true; $('run').textContent = 'Power off: stop'; msg('warn', 'The power stayed on while the page was closed (about ' + Math.round(el) + ' s), so the gel kept running: now ' + Math.round(st.t) + ' min, dye front at ' + Lab.fmt(st.dist, 1) + ' mm. Power off when it is about 60 mm.'); loop.start(); }
+    } else if (st.t > 0) msg('ok', 'Restored your gel: ' + (st.stain ? 'stained, ready to measure.' : 'run for ' + Math.round(st.t) + ' min (dye front at ' + Lab.fmt(st.dist, 1) + ' mm).'));
+    else if (st.lanes.some(l => l.length)) msg('ok', 'Restored your loaded wells. Connect the leads and power on.');
+    return true;
+  }
   $('rack').innerHTML = cfg.samples.map(s => `<button type="button" class="tube" data-k="${s.key}" aria-pressed="${s.key === st.sel}">${esc(s.label)}</button>`).join('');
-  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); }));
-  const volSync = () => { $('vol-o').textContent = $('vol').value + ' µL'; if (st.geom) draw(); }; $('vol').addEventListener('input', volSync); volSync();
-  const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); if (!st.running) draw(); }; $('volt').addEventListener('input', voltSync); $('volt-o').textContent = $('volt').value + ' V';
-  Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); }));
-  $('pct').addEventListener('change', () => { if (st.t > 0) { msg('warn', 'You cannot change the agarose in a gel that has already run. Pour a new gel to test a different percentage.'); } draw(); });
+  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); saveState(); }));
+  const volSync = () => { $('vol-o').textContent = $('vol').value + ' µL'; if (st.geom) draw(); }; $('vol').addEventListener('input', volSync); $('vol').addEventListener('change', () => saveState()); $('heat').addEventListener('change', () => saveState()); volSync();
+  const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); if (!st.running) draw(); }; $('volt').addEventListener('input', voltSync); $('volt').addEventListener('change', () => saveState()); $('volt-o').textContent = $('volt').value + ' V';
+  Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); saveState(); }));
+  $('pct').addEventListener('change', () => { saveState(); if (st.t > 0) { msg('warn', 'You cannot change the agarose in a gel that has already run. Pour a new gel to test a different percentage.'); } draw(); });
   function drawWells() {
     $('wells').innerHTML = st.lanes.map((l, i) => `<button type="button" data-w="${i}" class="${l.length ? 'filled' : ''}" aria-label="Load well ${i + 1}${l.length ? ' (contains ' + esc(l.map(c => sample(c.k).short).join(', ')) + ')' : ''}">${i + 1}</button>`).join('');
     Lab.$$('button', $('wells')).forEach(b => b.addEventListener('click', () => load(+b.dataset.w)));
@@ -872,11 +906,11 @@ function makeGel(rootSel, measSel, cfg) {
     if (spill) [w - 1, w + 1].forEach(n => { if (n >= 0 && n < 8) st.lanes[n].push({ k: st.sel, v: spill / 2, main: false }); });
     st.pipette = { w, t0: performance.now() };
     if (!quiet) msg(spill ? 'warn' : 'ok', spill ? `Well ${w + 1} overflowed: about ${spill} µL spilled into the neighboring wells and will contaminate those lanes.` : `Loaded ${vol} µL of ${sample(st.sel).label} into well ${w + 1}.`);
-    drawWells(); animatePipette();
+    drawWells(); animatePipette(); saveState();
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
   $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
-  function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); }
+  function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
   const pct = () => +$('pct').value, V = () => +$('volt').value;
@@ -980,13 +1014,18 @@ function makeGel(rootSel, measSel, cfg) {
   }
   cv.onresize = draw;
   // running
-  const loop = Lab.loop(dt => {
+  function advance(dt) {   // one step of the run; true when the dye has run off the gel
     const minPerSec = 22, dtMin = dt * minPerSec, v = V();
     st.t += dtMin;
     st.dist += 0.475 * (v / 50) * Math.pow(0.8 / st.frozen.pct, 0.8) * st.runF * dtMin;
     st.frozen.V = st.frozen.V * 0.98 + v * 0.02; // separation reflects the voltage used over the run
+    return st.dist > GEL_MM + 25 || st.t > 400;
+  }
+  const loop = Lab.loop(dt => {
+    const over = advance(dt);
     updateRead(); draw();
-    if (st.dist > GEL_MM + 25 || st.t > 400) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
+    if (performance.now() - lastSave > 1500) saveState();
+    if (over) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
   });
   function start() {
     if (!st.lanes.some(l => l.length)) { msg('bad', 'Load at least one sample before switching on the power.'); return; }
@@ -995,10 +1034,10 @@ function makeGel(rootSel, measSel, cfg) {
     st.running = true; $('run').textContent = 'Power off: stop';
     msg(st.reversed ? 'bad' : 'ok', st.reversed ? 'Bubbles form, but the purple dye is moving UP, out of the wells and into the buffer. Check your leads!' : 'Current is flowing: bubbles rise at both electrodes and the purple dye is moving toward the red (+) end.');
     if (Lab.reducedMotion()) { st.t += 120 * 50 / V(); st.dist = 0.475 * (V() / 50) * Math.pow(0.8 / st.frozen.pct, 0.8) * st.runF * st.t; st.frozen.V = V(); stop(); return; }
-    loop.start();
+    saveState(); loop.start();
   }
   function stop(note) {
-    loop.stop(); st.running = false; $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run'; updateRead(); draw();
+    loop.stop(); st.running = false; saveState(); $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run'; updateRead(); draw();
     const d = st.dist;
     msg(note ? 'warn' : st.reversed ? 'bad' : d < 45 ? 'warn' : d > 66 ? 'warn' : 'ok', note || (st.reversed ? 'The DNA left the wells in the wrong direction and is lost in the buffer. Pour a new gel and connect black to black, red to red.' : d < 45 ? `Dye front at ${Lab.fmt(d, 1)} mm. It is not yet about 1 cm from the end (about 60 mm), so bands are still crowded near the wells. You can run longer.` : d > 66 ? `Dye front at ${Lab.fmt(d, 1)} mm: past the 1-cm-from-the-end mark (about 60 mm), so small fragments may have run off.` : `Dye front at ${Lab.fmt(d, 1)} mm, about 1 cm from the end of the gel. Press Power off, then stain the gel. Now stain the gel.`));
   }
@@ -1007,7 +1046,7 @@ function makeGel(rootSel, measSel, cfg) {
     if (st.running) { msg('bad', 'Turn off the power and disconnect the leads before you remove the gel.'); return; }
     if (st.t === 0) { msg('warn', 'Run the gel before staining it.'); return; }
     st.stain = st.stain === 0 ? 1 : 2; $('stain').textContent = st.stain === 1 ? 'Destain (water)' : 'Destained';
-    msg('ok', st.stain === 1 ? 'Stained in methylene blue for 20 min. Bands are visible but the background is dark. Destain in distilled water to improve contrast.' : 'Destained overnight in a little distilled water: blue bands on a clear background. Click a band or use "Measure" to record distances.'); draw();
+    msg('ok', st.stain === 1 ? 'Stained in methylene blue for 20 min. Bands are visible but the background is dark. Destain in distilled water to improve contrast.' : 'Destained overnight in a little distilled water: blue bands on a clear background. Click a band or use "Measure" to record distances.'); draw(); saveState();
   });
   // measuring
   function addMeasure(i, band, idx) {
@@ -1086,7 +1125,8 @@ function makeGel(rootSel, measSel, cfg) {
   }
   excl.addEventListener('change', analyze); gsel.addEventListener('change', analyze);
   Lab.$('.clear', mroot).addEventListener('click', () => { meas.clear(); });
-  newGel(); analyze();
+  if (!restoreState()) newGel();
+  analyze();
   return { st, analyze, newGel, meas };
 }
 /* Saved summary of sized fragments (used by Reflect prompts) + key results. */
@@ -1172,7 +1212,7 @@ function buildCase() {
   const n = +Lab.$('#case-no').value || 102, C = crimeCase(n);
   const samples = [S_MARK, { key: 'BL', label: 'Blood (floor)', short: 'Blood', enz: PROFILES[C.prof[C.culprit]] }, { key: 'MM', label: 'Ms. Mason (cup)', short: 'Mason', enz: PROFILES[C.prof['Ms. Mason']] }, { key: 'MG', label: 'Mr. Gladson (tissue)', short: 'Gladson', enz: PROFILES[C.prof['Mr. Gladson']] }, { key: 'BO', label: 'Bobby (gum)', short: 'Bobby', enz: PROFILES[C.prof['Bobby']] }];
   measBlock('#meas2', 'm2');
-  gel2 = makeGel('#gel2', '#meas2', { prefix: 'g2', layoutLabel: 'Quick-load: marker, blood, Mason, Gladson, Bobby', samples, layout: ['H', 'BL', 'MM', 'MG', 'BO', null, 'H', null], onAnalyze: compare });
+  gel2 = makeGel('#gel2', '#meas2', { prefix: 'g2', layoutLabel: 'Quick-load: marker, blood, Mason, Gladson, Bobby', stateId: 'g2-' + n, samples, layout: ['H', 'BL', 'MM', 'MG', 'BO', null, 'H', null], onAnalyze: compare });
   layoutGel2();
 }
 let lastList = [];
