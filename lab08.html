@@ -387,6 +387,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -775,6 +777,7 @@ function move(to, dur = 0.9) {
     tick(k) { const e = ease(k); tubes.forEach((t, i) => { const [tx, ty] = POS[to][i]; const lift = Math.sin(Math.PI * e) * 0.18; t.x = from[i][0] + (tx - from[i][0]) * e; t.y = from[i][1] + (ty - from[i][1]) * e - lift; }); } };
 }
 /* A timed wait: the scene animates, the button counts down ("Heat shock… 32 s"), a progress bar fills, and the clock is real time. */
+const STEP_WHY = 'This step is running. The button comes back when it finishes.';
 function wait(label, simSec, dur = 4) {
   dur = Math.max(3, dur);
   const short = label.split(' at ')[0];
@@ -783,7 +786,11 @@ function wait(label, simSec, dur = 4) {
     const left = Math.max(0, Math.ceil(dur * speed() * (1 - k)));
     $('#do-step').textContent = `${short}… ${left} s`;
     const pr = $('#step-prog'); pr.hidden = false; pr.value = Math.round(k * 100);
-  }, end() { overlay = ''; $('#step-prog').hidden = true; } };
+    // the same countdown, where the student looks: the Status tile and the line under the button
+    const lab = clock(Math.max(0, simSec * (1 - k)));
+    $('#ro-status').textContent = `${short}: ${lab} left`;
+    $('#step-why').textContent = `${short}: ${clock(simSec * k)} of ${clock(simSec)} of lab time done (${lab} left). On your screen that is about ${left} s. The button comes back when it finishes.`;
+  }, end() { overlay = ''; $('#step-prog').hidden = true; $('#step-why').textContent = STEP_WHY; $('#ro-status').textContent = roStatus; } };
 }
 function clock(s) { s = Math.round(s); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`; }
 function drop(ti, what, apply, dur = 0.7) { return { dur, tick(k) { pipette = { ti, k, what }; }, end() { pipette = null; if (!ffwd) Lab.sound.play('click'); apply(); } }; }
@@ -1172,7 +1179,7 @@ function doStep(skip, resumeSec) {
       P.push(drop(1, 'cells', () => {}, 0.5), drop(0, 'cells', () => {}, 0.5), fn(() => {
         tubes.forEach(t => t.vol -= 3 * S.plateUL);
         PLATES.forEach(p => { if (!plates) plates = {}; plates[p.id] = { wet: true }; });
-        drawPlates(); updateRO(`${S.plateUL} µL spread on each of 6 plates`);
+        drawPlates(); renderPlateReadouts(); updateRO(`${S.plateUL} µL spread on each of 6 plates`);
         Lab.toast('Cells spread on all six plates. Now predict each plate.', { type: 'info', announce: false, key: 'plated' });
       })); break;
     case 'incub': {
@@ -1455,7 +1462,7 @@ const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number', yLabel: 'Tran
 const runsTable = Lab.table('#runs-table', {
   save: 'runs',
   columns: [{ key: 'run', label: 'Run number' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread on plate', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Transformation efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
-  onChange: rows => runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) })
+  onChange: rows => { runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) }); setTimeout(reportRuns, 0); }
 });
 $('#calc-add').addEventListener('click', () => {
   const r = checkCalc(); if (!r || r.count == null) return;
@@ -1688,10 +1695,13 @@ Lab.steps('#s-steps', [
 ], { doneText: 'Satellite test done. Use the result in the Evaluate questions.' });
 
 /* ---------- Key results, personal-data prompts, AP free-response ---------- */
-const myRuns = () => (Lab.store.get('runs') || []).filter(r => r && numOk(r.eff));
+function myRuns() { return (Lab.store.get('runs') || []).filter(r => r && numOk(r.eff)); }
 function reportRuns() {
-  const rs = myRuns(); if (!rs.length) return;
+  const rs = myRuns();
+  if (!rs.length) { dropKeyRes('transformation-efficiency', 'colonies-amp', 'colonies-ara', 'best-efficiency'); return; }
+  if (rs.length < 2) dropKeyRes('best-efficiency');
   const last = rs[rs.length - 1];
+  if (!numOk(last.ara)) dropKeyRes('colonies-ara');
   keyRes('transformation-efficiency', { label: 'Transformation efficiency (latest run)', value: Math.round(last.eff), unit: 'transformants/µg', part: 'Transform' });
   keyRes('colonies-amp', { label: '+pGLO LB/amp colonies (latest run)', value: last.amp, unit: 'colonies', part: 'Transform' });
   if (numOk(last.ara)) keyRes('colonies-ara', { label: '+pGLO LB/amp/ara colonies (latest run)', value: last.ara, unit: 'colonies', part: 'Transform' });

@@ -282,6 +282,8 @@ Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id
 /* Report a key result only when it changed (avoids rewriting storage on every redraw). */
 const _krLast = {};
 function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A key result is derived from the table it came from: when that data is cleared or changes, the result is dropped or rewritten, never left behind. */
+function dropKeyRes(...ids) { ids.forEach(id => { delete _krLast[id]; if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); }
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
@@ -1132,15 +1134,19 @@ function makeGel(rootSel, measSel, cfg) {
     st.frozen.V = st.frozen.V * 0.98 + v * 0.02; // separation reflects the voltage used over the run
     return st.dist > GEL_MM + 25 || st.t > 400;
   }
+  const WARN_MM = GEL_MM - 10;   // about 1 cm from the end of the gel
   const loop = Lab.loop(dt => {
-    const over = advance(dt);
+    const before = st.dist, over = advance(dt);
     updateRead(); draw();
     if (performance.now() - lastSave > 1500) saveState();
     if (over) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
+    if (!st.reversed && st.dist >= GEL_MM) { stop(`The dye front reached the end of the gel (${Lab.fmt(st.dist, 1)} mm), so the power was switched off for you. Any further running pushes the small fragments out into the buffer.`); Lab.toast('Power switched off: the dye reached the end of the gel.', { type: 'warn', key: P + '-end' }); return false; }
+    if (!st.reversed && before < WARN_MM && st.dist >= WARN_MM) { msg('warn', `Stop now: the dye front is about 1 cm (${Lab.fmt(st.dist, 1)} mm) from the end of the gel. Switch the power off before the small fragments run out.`); Lab.toast('Stop now: the dye is about 1 cm from the end of the gel.', { type: 'warn', key: P + '-warn' }); }
   }, { tick: 1 });
   function start() {
     if (!st.lanes.some(l => l.length)) { msg('bad', 'Load at least one sample before switching on the power.'); return; }
     if (st.stain) { msg('bad', 'This gel has been stained. Pour a new gel to run again.'); return; }
+    if (st.t > 0 && !st.reversed && st.dist >= GEL_MM) { msg('warn', 'The dye front is already at the end of the gel. Running longer would push the small fragments out, so the power stays off. Stain the gel, or pour a new one.'); return; }
     if (st.t === 0) { st.frozen = { pct: pct(), V: V() }; }
     const fresh = st.t === 0 && !Lab.reducedMotion();
     st.running = true; $('run').textContent = 'Power off: stop'; Lab.sound.play('buzz');
@@ -1293,14 +1299,15 @@ function makeGel(rootSel, measSel, cfg) {
 function reportFrags(P, list) {
   const L = list.map(g => ({ sample: g.sample, band: g.band, n: g.v.length, mean: Lab.stats.mean(g.v), lo: Math.min(...g.v), hi: Math.max(...g.v), se2: g.v.length > 1 ? 2 * Lab.stats.se(g.v) : null }));
   if (JSON.stringify(Lab.store.get('frags-' + P)) !== JSON.stringify(L)) Lab.store.set('frags-' + P, L);
-  if (!L.length) return;
+  if (!L.length) { dropKeyRes(P === 'g1' ? 'frag-sizes' : 'blood-frags'); return; }
   const fmtL = rows => rows.map(g => Math.round(g.mean).toLocaleString('en-US')).join(', ');
   if (P === 'g1') {
     const g1 = L.filter(g => g.sample === L[0].sample);
     keyRes('frag-sizes', { label: 'Estimated fragment sizes: ' + L[0].sample + ' (practice gel)', value: fmtL(g1), unit: 'bp', part: 'Standard curve' });
   } else {
     const bl = L.filter(g => g.sample === 'Blood').sort((a, b) => a.band - b.band);
-    if (bl.length) keyRes('blood-frags', { label: 'Estimated fragment sizes: blood at the scene', value: fmtL(bl), unit: 'bp', part: 'Design: crime scene' });
+    if (bl.length) keyRes('blood-frags', { label: 'Estimated fragment sizes: blood at the scene', value: fmtL(bl), unit: 'bp', part: 'Design: crime scene' })
+    else dropKeyRes('blood-frags');
   }
 }
 function measBlock(sel, key) {
@@ -1324,7 +1331,7 @@ function gelGuidance(P, gel, first, last, doneText) {
   if (first) steps.push(...[].concat(first));
   steps.push(
     { id: 'load', text: 'Load the samples into wells', target: `#${P}-wells button`, done: () => loaded() > 0 || st.t > 0 || saved(), hint: 'Pick a tube, then press a well number.' },
-    { id: 'run', text: 'Run until the dye is ~1 cm from the end', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= 66) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout).' },
+    { id: 'run', text: 'Run until the dye is ~1 cm from the end', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= GEL_MM + 2) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout).' },
     { id: 'stain', text: 'Stain, then destain the gel', target: `#${P}-stain`, done: () => st.phase() === 'done' || saved(), hint: 'Press <strong>Stain</strong> and watch the blue soak in (about 30 s), then press <strong>Destain (water)</strong> (about 25 s). In a hurry? Use <strong>Skip ahead</strong>.' },
     { id: 'meas', text: 'Measure the bands', target: `#${P}-mall`, done: saved, hint: 'Press <strong>Measure all visible bands</strong> for each lane.' }
   );
@@ -1382,7 +1389,7 @@ function compare(list) {
   const tol = +Lab.$('#tol').value / 100; Lab.$('#tol-out').textContent = Math.round(tol * 100) + '%';
   const by = {}; lastList.forEach(g => { (by[g.sample] = by[g.sample] || []).push(Lab.stats.mean(g.v)); });
   const blood = (by.Blood || []).slice().sort((a, b) => b - a);
-  if (!blood.length) { Lab.$('#compare').innerHTML = '<p class="small muted">Measure and size the Blood lane and the suspects\' lanes, with a marker on the same gel, to fill this table.</p>'; return; }
+  if (!blood.length) { Lab.$('#compare').innerHTML = '<p class="small muted">Measure and size the Blood lane and the suspects\' lanes, with a marker on the same gel, to fill this table.</p>'; dropKeyRes('suspects-match'); if (Lab.store.get('compare-last')) Lab.store.set('compare-last', null); return; }
   const cmp = [];
   const rows = ['Mason', 'Gladson', 'Bobby'].map(p => {
     const b = (by[p] || []).slice().sort((a, b2) => b2 - a); if (!b.length) return `<tr><td>${p}</td><td colspan="5" class="muted">not sized yet</td></tr>`;

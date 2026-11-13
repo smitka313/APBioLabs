@@ -420,7 +420,9 @@ const Own = (function () {
   document.head.append(st);
   const plain = h => String(h).replace(/<[^>]+>/g, '');
   /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  let touched = null;   // keys written during the current watcher pass (see watch below)
   function key(id, o) {
+    if (touched) touched.add(id);
     if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
     const old = Lab.store.get('keyres:' + id);
     if (old && old.value === o.value && old.label === o.label) return;
@@ -483,7 +485,13 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* watch(f, ids): f recomputes key results from the live tables. Any id in `ids` that f did not write on this pass no longer
+     has data behind it (the table was cleared or the run restarted), so it is withdrawn rather than left over from the old run. */
+  function watch(f, ids) {
+    const run = () => { touched = new Set(); try { f(); } finally { const t = touched; touched = null; (ids || []).forEach(id => { if (!t.has(id) && Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); } };
+    watchers.push(run); run();
+  }
+  return { personal, frq, key, watch, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1289,7 +1297,10 @@ const Predict = (function () {
   let gBusy = false, gPts = [], gNow = { t: 0, v: null };
   const gTempSync = () => { $('#g-temp-out').textContent = $('#g-temp').value + ' °C'; drawG(); };
   $('#g-temp').addEventListener('input', gTempSync);
-  ['#g-sensor', '#g-contents', '#g-koh'].forEach(s => $(s).addEventListener('change', () => { if (!gBusy) { gPts = []; gNow = { t: 0, v: null }; refreshGChart(); } drawG(); }));
+  /* The four readout tiles describe ONE run. Whenever a new run starts, or the setup changes so the old run no longer applies,
+     they go back to blank instead of keeping the previous run's slope and O2 figure. */
+  const gTilesReset = () => { $('#g-time').textContent = '0.0 min'; $('#g-read').textContent = '—'; $('#g-slope').textContent = '—'; $('#g-o2').textContent = '—'; };
+  ['#g-sensor', '#g-contents', '#g-koh'].forEach(s => $(s).addEventListener('change', () => { if (!gBusy) { gPts = []; gNow = { t: 0, v: null }; gTilesReset(); refreshGChart(); } drawG(); }));
   function gRate(contents, T) {
     const base = { peas: 45, dry: 1.8, boiled: 0, beads: 0 }[contents];
     return base * tempFactor(T, 2.3);
@@ -1460,6 +1471,7 @@ const Predict = (function () {
     gBusy = true;
     const sensor = st.sensor, koh = st.koh, T = st.T, pts = gPoints(st); let shown = 0;
     gPts = [];
+    gTilesReset();
     const finish = () => {
       gBusy = false; gRec.stop(); if (!shown0) Lab.sound.play('beep');
       const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y));
@@ -1727,7 +1739,7 @@ const Predict = (function () {
   Own.watch(() => {
     const r = pReps.getRows().filter(x => !x._setup && isFinite(x.rate)); if (r.length) { const l = r[r.length - 1]; Own.key('rate-microresp', { label: 'O\u2082 uptake rate, seeds (microrespirometer)', value: +fmt(l.rate, 2), unit: '\u00b5L/min', part: 'Microrespirometer' }); }
     const d = dOK(); if (d.length) { const org = d[d.length - 1].orgName, t = d.filter(x => x.orgName === org && x.temp <= 35 && x.perg > 0); if (new Set(t.map(x => x.temp)).size >= 2) { const f = S.linreg(t.map(x => x.temp), t.map(x => Math.log(x.perg))); const q = Math.exp(10 * f.m); if (isFinite(q)) Own.key('q10', { label: 'Q\u2081\u2080 (' + org + ', trials up to 35 \u00b0C)', value: +fmt(q, 2), unit: '', part: 'Design' }); } }
-  });
+  }, ['rate-microresp', 'q10']);
   const cer = $('#cer');
   Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';

@@ -240,7 +240,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
           </div>
         </div>
         <div class="stage">
-          <div id="build-msg" class="msg" aria-live="polite">Select two or more organisms and a trait, then press "Group selected organisms."</div>
+          <div id="build-msg" class="msg" aria-live="polite">Select two or more organisms and a trait, then press "Group selected organisms." You are done when every group of two or more that shares a trait is on the tree (in any order).</div>
           <div id="tree-build"></div>
         </div>
       </div>
@@ -532,7 +532,9 @@ const Own = (function () {
   document.head.append(st);
   const plain = h => String(h).replace(/<[^>]+>/g, '');
   /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  let touched = null;   // keys written during the current watcher pass (see watch below)
   function key(id, o) {
+    if (touched) touched.add(id);
     if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
     const old = Lab.store.get('keyres:' + id);
     if (old && old.value === o.value && old.label === o.label) return;
@@ -595,7 +597,13 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* watch(f, ids): f recomputes key results from the live tables. Any id in `ids` that f did not write on this pass no longer
+     has data behind it (the table was cleared or the run restarted), so it is withdrawn rather than left over from the old run. */
+  function watch(f, ids) {
+    const run = () => { touched = new Set(); try { f(); } finally { const t = touched; touched = null; (ids || []).forEach(id => { if (!t.has(id) && Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); } };
+    watchers.push(run); run();
+  }
+  return { personal, frq, key, watch, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1851,8 +1859,8 @@ Own.personal(an, { key: 'own-identity', rows: 3, need: 'BLAST the genes (record 
 Own.personal(an, { key: 'own-clock', rows: 3, need: 'Design (add hits to the clock table)', href: 'design',
   ask: 'Explain one reason this point may sit away from the trend (think about how substitutions accumulate, and about the gene you used).',
   compute: () => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && !x._setup && x.t > 0); if (r.length < 3) return null; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); const res = r.map(x => ({ x, d: x.ident - L.predict(x.t) })); const w = res.reduce((a, b) => Math.abs(b.d) > Math.abs(a.d) ? b : a); return `Your weirdest clock point is ${w.x.q} vs ${w.x.hit} (gene ${w.x.gene}, ${fmt1(w.x.t)} Mya): identity ${fmt1(w.x.ident)}%, ${fmt1(Math.abs(w.d))} points ${w.d > 0 ? 'above' : 'below'} the trend line.`; } });
-Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); });
-Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); });
+Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); }, ['top-ident-A', 'top-ident-B', 'top-ident-C']);
+Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); }, ['clock-slope']);
 const ev = Lab.$('#evaluate-prompts');
 Predict.compare(ev, { key: 'reflect-predict', items: [
     ['predict-blast', 'Before BLASTing the fossil genes you predicted:', {
@@ -1914,10 +1922,17 @@ Lab.results('#d-sim', { start: 'data', graph: [{ el: '#clock-chart', title: 'Per
 }
 const matrixDone = () => { const D = DATASETS[dsKey], s = Lab.store.get('matrix:' + dsKey, {}); return D.taxa.every(t => D.traits.every((tr, j) => !!s[t.id + j] === tr[1].includes(t.id))) && Object.values(s).some(Boolean); };
 const blastGenes = () => new Set(blastTable.getRows().map(r => r.gene));
+/* The tree is complete when its groups of 2 or more (but not all) organisms are exactly the groups the trait table supports.
+   The order they were added in does not matter, and single-organism and all-organism traits are optional. */
+const cladeTreeDone = () => {
+  const n = DATASETS[dsKey].taxa.length, inner = lists => new Set(lists.filter(m => m.length > 1 && m.length < n).map(m => m.slice().sort().join()));
+  const want = inner(DATASETS[dsKey].traits.map(t => t[1])), got = inner(getClades(dsKey).map(c => c.members));
+  return want.size === got.size && [...want].every(w => got.has(w));
+};
 Lab.steps('#clade-steps', [
   { id: 'table', text: 'Tick the trait table', target: '#matrix input', done: () => Object.values(Lab.store.get('matrix:' + dsKey, {})).some(Boolean), hint: 'Scroll up: read the organism cards and tick every trait each organism has.' },
   { id: 'check', text: 'Check my table', target: '#check-matrix', done: matrixDone, hint: 'Press <strong>Check my table</strong> and fix any highlighted cells.' },
-  { id: 'group', text: 'Group organisms into clades', target: '#add-clade', done: () => getClades(dsKey).length >= DATASETS[dsKey].traits.length - 1, hint: 'Select the organisms that share a trait, pick the trait, press <strong>Group selected organisms</strong>. Start with the most widely shared trait.' },
+  { id: 'group', text: 'Group organisms into clades', target: '#add-clade', done: cladeTreeDone, hint: 'Select the organisms that share a trait, pick the trait, press <strong>Group selected organisms</strong>. This step is done when every group of two or more organisms that shares a trait is on your tree, with no wrong groups. Any order works, and traits that belong to one organism or to all of them are optional.' },
   { id: 'hyp', text: 'Place the fossil (hypothesis)', target: '#fossil-hyp', sticky: true, done: () => !!Lab.store.get('fossil-hyp', ''), hint: 'Below the tree: choose the branch the fossil joins, using the Figure 4 data set.' },
   { id: 'why', text: 'Explain it (below)', target: '#p-fossil-obs', done: () => allFilled(['fossil-obs', 'fossil-hyp-why']), hint: 'Describe the fossil and explain your hypothesis in the two boxes below.' }
 ], { doneText: 'Part 1 done. Go on to <a href="#blast-the-genes">BLAST the genes</a>.' });

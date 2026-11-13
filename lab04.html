@@ -529,7 +529,9 @@ const Own = (function () {
   document.head.append(st);
   const plain = h => String(h).replace(/<[^>]+>/g, '');
   /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  let touched = null;   // keys written during the current watcher pass (see watch below)
   function key(id, o) {
+    if (touched) touched.add(id);
     if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
     const old = Lab.store.get('keyres:' + id);
     if (old && old.value === o.value && old.label === o.label) return;
@@ -592,7 +594,13 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* watch(f, ids): f recomputes key results from the live tables. Any id in `ids` that f did not write on this pass no longer
+     has data behind it (the table was cleared or the run restarted), so it is withdrawn rather than left over from the old run. */
+  function watch(f, ids) {
+    const run = () => { touched = new Set(); try { f(); } finally { const t = touched; touched = null; (ids || []).forEach(id => { if (!t.has(id) && Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }); } };
+    watchers.push(run); run();
+  }
+  return { personal, frq, key, watch, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1299,7 +1307,19 @@ const Predict = (function () {
       Lab.store.set('p1-last', { sel: p1sel.map(x => x.value), t, acid, sd });
     });
   });
-function p1Check() {
+/* "Checked" is only true for the values that were actually checked: each check records a signature of the typed values, and the
+     step counts as done only while the table still matches it (new blank rows or an edited / emptied cell make it stale). */
+  const sigOf = (rows, ks) => JSON.stringify(rows.map(r => ks.map(k => r[k] == null || r[k] === '' ? null : r[k])));
+  const P1K = ['sa', 'v', 'ratio', 'pct'];
+  let p1Sig = null, p2Sig = null, p3bSig = null;
+  /* Feedback that describes values which have since changed (a cell edited or emptied, or a new trial added) is withdrawn, so a
+     stale "all correct" never sits next to blank rows. */
+  setInterval(() => {
+    if (p1Sig != null && p1Sig !== sigOf(p1table.getRows(), P1K)) { $('#p1-fb').innerHTML = ''; p1Sig = null; }
+    if (p2Sig != null && p2Sig !== sigOf(p2table.getRows(), ['pct'])) { $('#p2-fb').innerHTML = ''; p2Sig = null; }
+  }, 500);
+  const p3bVals = () => ['#p3b-c', '#p3b-psis', '#p3b-psi'].map(i => ($(i).value || '').trim()).join('|') + '|' + p3bTable.getRows().length;
+  function p1Check() {
     const rows = p1table.getRows(); if (!rows.length) { fbList($('#p1-fb'), ['Run a trial first.']); return; }
     const cols = [['sa', 'surface area'], ['v', 'volume'], ['ratio', 'SA:V'], ['pct', '% diffused']];
     const out = rows.map((r, i) => {
@@ -1312,7 +1332,7 @@ function p1Check() {
       if (!near(r.ratio, r._ratio, 0.02, 0.02)) bad.push('SA:V'); if (!near(r.pct, r._pct, 0.02, 1)) bad.push('% diffused');
       return lab + (bad.length ? `<span class="pill warn">recheck ${bad.join(', ')}</span>` : '<span class="pill ok">all correct</span>');
     });
-    fbList($('#p1-fb'), out);
+    fbList($('#p1-fb'), out); p1Sig = sigOf(rows, P1K);
   }
   $('#p1-check').addEventListener('click', () => { p1Check(); Lab.store.set('chk-p1Check', true); });
   ['#p1-table', '#p2-table'].forEach(sel => $(sel).addEventListener('input', e => { if (e.target.matches('input')) V.cell($(sel), e.target.dataset.r, e.target.dataset.k, ''); }));
@@ -1429,7 +1449,7 @@ function p1Check() {
     });
   });
 function p2Check() {
-    const rows = p2table.getRows(); if (!rows.length) { fbList($('#p2-fb'), ['Run a set of bags first.']); return; }
+    const rows = p2table.getRows(); p2Sig = sigOf(rows, ['pct']); if (!rows.length) { fbList($('#p2-fb'), ['Run a set of bags first.']); return; }
     let ok = 0; const wrong = [], blank = [], imp = [];
     rows.forEach((r, i) => { V.cell($('#p2-table'), i, 'pct', ''); if (r.pct == null || !isFinite(r.pct)) { blank.push(i + 1); V.cell($('#p2-table'), i, 'pct', 'Enter a number'); } else if (r.pct < -100) { imp.push(i + 1); V.cell($('#p2-table'), i, 'pct', 'Not possible'); } else if (near(r.pct, r._pct, 0.02, 0.15)) ok++; else wrong.push(i + 1); });
     const row = a => `row${a.length > 1 ? 's' : ''} ${a.join(', ')}`;
@@ -1840,7 +1860,7 @@ function idCheck() {
     out.push(near(c, xi, 0, 0.04) ? `<span class="pill ok">Isotonic point OK</span> Your fit crosses zero at ${fmt(xi, 2)} M.` : `<span class="pill warn">Isotonic point</span> Recalculate −b ÷ m from the ${Lab.esc(tname)} fit line.`);
     if (isFinite(c)) out.push(near(ps, -c * R * TK, 0.03, 0.05) ? '<span class="pill ok">ψ<sub>S</sub> OK</span> −iCRT with your concentration.' : '<span class="pill warn">ψ<sub>S</sub></span> Use −(1)(C)(0.0831)(295). It should be negative.');
     if (isFinite(ps)) out.push(near(p, ps, 0.01, 0.05) ? '<span class="pill ok">ψ<sub>tissue</sub> OK</span>' : '<span class="pill warn">ψ<sub>tissue</sub></span> At the isotonic point, ψ<sub>tissue</sub> equals ψ of the open-cup solution, where ψ<sub>P</sub> = 0.');
-    fbList($('#p3b-fb'), out);
+    fbList($('#p3b-fb'), out); p3bSig = p3bVals();
   }
   $('#p3b-check').addEventListener('click', () => { p3bCheck(); Lab.store.set('chk-p3bCheck', true); });
   if (Lab.store.get('chk-p3bCheck')) p3bCheck();
@@ -2006,7 +2026,7 @@ function idCheck() {
       const sp = pr[pr.length - 1].spec, q = pr.filter(x => x.spec === sp).map(x => ({ psi: x.psi, p: 100 * x.plz / x.n })).sort((a, b) => b.psi - a.psi);
       for (let i = 0; i < q.length - 1; i++) if (q[i].p < 50 && q[i + 1].p >= 50) { const t = (50 - q[i].p) / (q[i + 1].p - q[i].p); Own.key('incipient-psi', { label: 'Incipient plasmolysis ψ (' + sp + ', 50% of cells)', value: +fmt(q[i].psi + t * (q[i + 1].psi - q[i].psi), 1), unit: 'bars', part: 'Plasmolysis' }); break; }
     }
-  });
+  }, ['isotonic-point', 'psi-tissue', 'incipient-psi']);
   anTop.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
   anTop.append(Lab.h('p', { class: 'small muted' }, 'Answer the driving question: what causes a plant to wilt when it is not watered?'));
   const cer = Lab.h('div', { class: 'cer' }); anTop.append(cer);
@@ -2078,7 +2098,7 @@ function idCheck() {
     { id: 'predict', text: 'Write your prediction', target: '#p-predict-sav', done: predP1.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'run', text: 'Soak, cut, and measure', target: '#p1-run', done: () => p1table.getRows().length > 0, hint: 'Pick three blocks and a soak time, then press <strong>Soak, cut, and measure</strong>.' },
     { id: 'calc', text: 'Fill in SA, V, SA:V and %', target: '#p1-table input', done: () => { const r = p1table.getRows(); return r.length > 0 && r.every(x => isNum(x.sa) && isNum(x.v) && isNum(x.ratio) && isNum(x.pct)); }, hint: 'Open the <strong>Data</strong> tab and type the four calculated columns for each block.' },
-    { id: 'check', text: 'Check my calculations', target: '#p1-check', done: () => p1table.getRows().length > 0 && okPills('#p1-fb') > 0 && !warnPills('#p1-fb'), hint: 'Press <strong>Check my calculations</strong> (in the Data tab) and fix any rows it flags.' },
+    { id: 'check', text: 'Check my calculations', target: '#p1-check', done: () => { const r = p1table.getRows(); return r.length > 0 && r.every(x => P1K.every(k => isNum(x[k]))) && p1Sig === sigOf(r, P1K) && okPills('#p1-fb') > 0 && !warnPills('#p1-fb'); }, hint: 'Press <strong>Check my calculations</strong> (in the Data tab) and fix any rows it flags.' },
     { id: 'qs', text: 'Answer the 2 questions (below)', target: '#p-p1-q1', done: () => allFilled(['p1-q1', 'p1-q2']), hint: 'Scroll down and answer the two questions.' }
   ], { doneText: 'Procedure 1 done. Go on to <a href="#model-cells">Model cells</a>.' });
   const predP2 = Predict.add('#p2-sim', { key: 'predict-bags', title: 'which bags gain or lose mass?', label: 'Before you run the bags, predict which bags will gain mass, lose mass or stay the same (mass change, %), and why.', placeholder: 'I predict the bag with ___ inside will ___ because water moves ___.' });
@@ -2087,7 +2107,7 @@ function idCheck() {
     { id: 'run', text: 'Weigh, soak 30 min, re-weigh', target: '#p2-run', done: () => p2table.getRows().length > 0, hint: 'Press <strong>Weigh, soak 30 min, re-weigh</strong> to run all five bags.' },
     { id: 'rep', text: 'Run the set again (replicates)', target: '#p2-run', done: () => p2table.getRows().length >= 10, hint: 'Run the set at least twice so the graph has error bars.' },
     { id: 'pct', text: 'Fill in % change for each bag', target: '#p2-table input', done: () => { const r = p2table.getRows(); return r.length > 0 && r.every(x => isNum(x.pct)); }, hint: 'Open the <strong>Data</strong> tab: % change = (final − initial) ÷ initial × 100.' },
-    { id: 'check', text: 'Check my % changes', target: '#p2-check', done: () => p2table.getRows().length > 0 && okPills('#p2-fb') > 0 && !warnPills('#p2-fb'), hint: 'Press <strong>Check my % changes</strong> in the Data tab.' },
+    { id: 'check', text: 'Check my % changes', target: '#p2-check', done: () => { const r = p2table.getRows(); return r.length > 0 && r.every(x => isNum(x.pct)) && p2Sig === sigOf(r, ['pct']) && okPills('#p2-fb') > 0 && !warnPills('#p2-fb'); }, hint: 'Press <strong>Check my % changes</strong> in the Data tab.' },
     { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-p2-q1', done: () => allFilled(['p2-q1', 'p2-q2', 'p2-q3']), hint: 'Scroll down and answer the three questions.' }
   ], { doneText: 'Procedure 2 done. Go on to <a href="#plasmolysis">Plasmolysis</a>.' });
   const predP3 = Predict.add('#p3a-sim', { key: 'predict-plasmo', title: 'what will the cells do?', label: 'Before you add any solution, predict what will happen to the cells (and the membrane) in a salt or sugar solution compared with distilled water, and why.', placeholder: 'I predict the cells in ___ will ___ because ___.' });
@@ -2113,7 +2133,7 @@ function idCheck() {
     { id: 'rep', text: 'Run each tissue twice', target: '#p3b-run', done: () => p3bTable.getRows().length >= 12, hint: 'Run it again for replicate cups.' },
     { id: 'tis', text: 'Try a second tissue', target: '#p3b-tissue', optional: true, done: () => new Set(p3bTable.getRows().map(r => r.tissue)).size > 1, hint: 'Choose another tissue and run it.' },
     { id: 'psi', text: 'Calculate ψ of the tissue (below)', target: '#p3b-c', done: () => ['#p3b-c', '#p3b-psis', '#p3b-psi'].every(s => isNum($(s).value)), hint: 'Scroll down: find the isotonic point from the fit line, then ψ<sub>S</sub> = −iCRT.' },
-    { id: 'chk', text: 'Check my calculation', target: '#p3b-check', done: () => okPills('#p3b-fb') >= 3, hint: 'Press <strong>Check my calculation</strong>.' }
+    { id: 'chk', text: 'Check my calculation', target: '#p3b-check', done: () => p3bSig === p3bVals() && okPills('#p3b-fb') >= 3 && !warnPills('#p3b-fb'), hint: 'Press <strong>Check my calculation</strong>.' }
   ], { doneText: 'Part B done. Go on to <a href="#design">Design</a>.' });
   const predD = Predict.add('#d-sim', { key: 'predict-design', title: 'how will your variable change the result?', label: 'Before you run your experiment, predict how your dependent variable will change across the levels, and explain why using diffusion or water potential.', placeholder: 'I predict ___ will ___ as ___ increases because ___.' });
   Lab.steps('#d-steps', [

@@ -1062,7 +1062,7 @@ const Predict = (function () {
     cupPrep = { na: inf.a.filter(Boolean).length, nb: inf.b.filter(Boolean).length, damage: Math.max(0, inf.pulls - 3) }; Lab.store.set('cup-prep', cupPrep);
     if (cupLoop) cupLoop.stop(); cupRec.stop(); cupInfo = null; Lab.store.set('cup-run', null);
     Lab.sound.play('click');
-    cupInit(); cupTable.clear();
+    cupInit(); cupTable.clear(); staleEt();
     const la = 10 - cupPrep.na, lb = 10 - cupPrep.nb, fl = la + lb;
     fbList($('#inf-fb'), [fl ? `<span class="pill warn">${fl} disk${fl > 1 ? 's' : ''} didn't sink and ${fl > 1 ? 'were' : 'was'} left out.</span> You have ${cupPrep.na} disk${cupPrep.na === 1 ? '' : 's'} in the "With CO₂" cup and ${cupPrep.nb} in the "Without CO₂" cup. Only sunk disks go in the cups, as in the real lab. Pull again before pouring if you want more disks.` : '<span class="pill ok">Poured.</span> Go to the next step and start the timer.']);
     Lab.toast(fl ? `Poured ${cupPrep.na + cupPrep.nb} sunk disks; ${fl} floating disk${fl > 1 ? 's were' : ' was'} left out` : 'Poured the disks into the cups', { type: fl ? 'warn' : 'ok', announce: false, action: { label: 'Go to Float assay', onClick: () => Lab.pages.go('float-assay') } });
@@ -1076,6 +1076,8 @@ const Predict = (function () {
      simulation takes fixed small steps, so after a reload it is replayed to wherever it would be by now (finished, or still
      going and carrying on), and any minutes missing from the table are filled in. */
   let cupInfo = null, cupNext = 1, cupTarget = 0, cupTi = 0;
+  /* A new run (or a re-pour) makes the earlier ET50 check feedback out of date: clear it so the student checks again against the new counts. */
+  function staleEt() { const fb = $('#et-fb'); if (fb) fb.innerHTML = ''; Lab.store.set('chk-et', false); }
   const cupRow = m => ({ m, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' });
   function cupTick(maxT, onRow) {
     const s = Math.min(0.05, cupNext - cupT);
@@ -1101,7 +1103,7 @@ const Predict = (function () {
     if (cupLoop) cupLoop.stop();
     Lab.sound.play('click');
     const dark0 = cupDark, sd = newSeed(); rng = Lab.rng(sd); cupInit(); cupDark = dark0; cupSyncDark(); cupRead();
-    cupTable.clear();
+    cupTable.clear(); staleEt();
     const len = +cupLen.value;
     cupInfo = { sd, t0: Date.now(), len, speed: +$('#cup-speed').value, dark0, toggles: [] }; Lab.store.set('cup-run', cupInfo);
     cupNext = 1; cupTi = 0; cupTarget = 0;
@@ -1334,10 +1336,16 @@ const Predict = (function () {
   Own.personal(an, { key: 'own-outlier', rows: 3, need: 'Design (run your experiment)', href: 'design',
     ask: 'Give one reason this cup\'s ET\u2085\u2080 might differ from the other cups at its level (think about disk-to-disk variation and technique).',
     compute: () => { const r = dRows(); if (r.length < 3) return null; let best = null; [...new Set(r.map(x => x.v))].forEach(k => { const g = r.filter(x => x.v === k), m = S.median(g.map(x => x.et)); g.forEach(x => { const d = Math.abs(x.et - m); if (g.length > 1 && (!best || d > best.d)) best = { d, x, m }; }); }); if (!best) { const mx = r.reduce((a, b) => b.et > a.et ? b : a); return `Your slowest cup was cup ${mx.cup} at level ${mx.lvl}: ET\u2085\u2080 = ${fmt(mx.et, 1)} min.`; } return `Your cup ${best.x.cup} at level ${best.x.lvl} had ET\u2085\u2080 = ${fmt(best.x.et, 1)} min, while the median for that level was ${fmt(best.m, 1)} min.`; } });
+  /* Key results derived from the float-assay table are recomputed from the CURRENT table every time: a value that no longer
+     exists (the run was restarted and has not reached 50% yet) is withdrawn instead of left over from the previous run. */
   Own.watch(() => {
-    const n = cupPrep.na, r = cupTable.getRows().filter(x => !x._setup); if (r.length < 3) return;
-    const e = et50(r.map(x => x.a), n); if (e != null && e > 0) { Own.key('et50-bicarb', { label: 'ET50, bicarbonate cup', value: +fmt(e, 2), unit: 'min', part: 'Float assay' }); Own.key('ret50-bicarb', { label: '1/ET50, bicarbonate cup', value: +fmt(1 / e, 3), unit: 'min\u207b\u00b9', part: 'Float assay' }); }
-    const eb = et50(r.map(x => x.b), cupPrep.nb); if (eb != null && eb > 0) { Own.key('et50-water', { label: 'ET50, water-only cup', value: +fmt(eb, 2), unit: 'min', part: 'Float assay' }); Own.key('ret50-water', { label: '1/ET50, water-only cup', value: +fmt(1 / eb, 3), unit: 'min\u207b\u00b9', part: 'Float assay' }); }
+    const n = cupPrep.na, r = cupTable.getRows().filter(x => !x._setup), enough = r.length >= 3;
+    const sync = (ids, e) => {
+      const ok = enough && e != null && e > 0;
+      ids.forEach(([id, lab, f, unit]) => { if (ok) Own.key(id, { label: lab, value: f(e), unit, part: 'Float assay' }); else if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); });
+    };
+    sync([['et50-bicarb', 'ET50, bicarbonate cup', e => +fmt(e, 2), 'min'], ['ret50-bicarb', '1/ET50, bicarbonate cup', e => +fmt(1 / e, 3), 'min\u207b\u00b9']], enough ? et50(r.map(x => x.a), n) : null);
+    sync([['et50-water', 'ET50, water-only cup', e => +fmt(e, 2), 'min'], ['ret50-water', '1/ET50, water-only cup', e => +fmt(1 / e, 3), 'min\u207b\u00b9']], enough ? et50(r.map(x => x.b), cupPrep.nb) : null);
   });
   const anCer = $('#analysis');
   anCer.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
