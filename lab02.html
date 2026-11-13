@@ -92,6 +92,14 @@
   .sim--fit .row--2 > .btn { flex: 1 1 0; }
   #mg-sim .controls { gap: 7px; } #mg-sim .toggles { gap: 4px; } #mg-sim .toggle-box { padding: 3px 8px; } #mg-sim .status { font-size: .82rem; min-height: 0; }
   .calc { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 10px; align-items: end; }
+  .predict-box { margin: 0 0 14px; border-left: 4px solid var(--accent); }
+  .predict-state { font-size: .8rem; font-weight: 600; margin-left: 6px; padding: 1px 8px; border-radius: 99px; }
+  .predict-state.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .predict-state.is-req { background: var(--warn-soft); color: var(--warn); }
+  .predict-box .prompt textarea { min-height: 3.2rem; }
+  .predict-q { margin: 4px 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid var(--accent); font-style: italic; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .predict-where { margin: 6px 0 0; }
+  .cer-hint { margin: 0 0 10px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -233,10 +241,10 @@
         <div class="stage">
           <canvas class="viz" id="card-canvas" aria-label="Each student shown as an index card on a desk with their two alleles written in marker. A is green, B is magenta."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Generation</span><span class="v" id="card-gen">0</span></div>
-            <div class="readout"><span class="k">AA · AB · BB</span><span class="v" id="card-geno">—</span></div>
-            <div class="readout"><span class="k">p (A)</span><span class="v" id="card-p">—</span></div>
-            <div class="readout"><span class="k">q (B)</span><span class="v" id="card-q">—</span></div>
+            <div class="readout"><span class="k">Generation (no.)</span><span class="v" id="card-gen">0</span></div>
+            <div class="readout"><span class="k">AA · AB · BB (students)</span><span class="v" id="card-geno">—</span></div>
+            <div class="readout"><span class="k">p (A) (frequency)</span><span class="v" id="card-p">—</span></div>
+            <div class="readout"><span class="k">q (B) (frequency)</span><span class="v" id="card-q">—</span></div>
           </div>
           <div id="card-chart"></div>
         </div>
@@ -282,9 +290,9 @@
             <div class="ss-tabs" aria-hidden="true"><span class="add">+</span><span class="on">Generation 1</span><span>Sheet 2</span></div>
           </div>
           <div class="readouts">
-            <div class="readout"><span class="k">New p</span><span class="v" id="ss-newp">—</span></div>
-            <div class="readout"><span class="k">New q</span><span class="v" id="ss-newq">—</span></div>
-            <div class="readout"><span class="k">χ² vs HW (df = 1)</span><span class="v" id="ss-chi">—</span></div>
+            <div class="readout"><span class="k">New p (frequency)</span><span class="v" id="ss-newp">—</span></div>
+            <div class="readout"><span class="k">New q (frequency)</span><span class="v" id="ss-newq">—</span></div>
+            <div class="readout"><span class="k">χ² vs HW, df = 1 (no units)</span><span class="v" id="ss-chi">—</span></div>
             <div class="readout"><span class="k">Fits HW? (crit 3.84)</span><span class="v" id="ss-fit">—</span></div>
           </div>
           <div id="ss-chart"></div>
@@ -311,19 +319,19 @@
               <div class="toggle-box"><label class="check"><input type="checkbox" id="t-drift" checked> Genetic drift (finite N)</label></div>
               <div class="toggle-box"><label class="check"><input type="checkbox" id="t-sel"> Selection (relative fitness)</label>
                 <div class="sub" id="sub-sel" hidden>
-                  <div class="field"><label for="w-aa">w AA</label><input id="w-aa" type="number" min="0" max="1" step="0.05" value="1"></div>
-                  <div class="field"><label for="w-ab">w AB</label><input id="w-ab" type="number" min="0" max="1" step="0.05" value="1"></div>
-                  <div class="field"><label for="w-bb">w BB</label><input id="w-bb" type="number" min="0" max="1" step="0.05" value="0.8"></div>
+                  <div class="field"><label for="w-aa">w AA (relative fitness)</label><input id="w-aa" type="number" min="0" max="1" step="0.05" value="1"></div>
+                  <div class="field"><label for="w-ab">w AB (relative fitness)</label><input id="w-ab" type="number" min="0" max="1" step="0.05" value="1"></div>
+                  <div class="field"><label for="w-bb">w BB (relative fitness)</label><input id="w-bb" type="number" min="0" max="1" step="0.05" value="0.8"></div>
                 </div></div>
               <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mut"> Mutation</label>
                 <div class="sub" id="sub-mut" hidden>
-                  <div class="field"><label for="mu">μ (A→B)</label><input id="mu" type="number" min="0" max="0.1" step="0.001" value="0.01"></div>
-                  <div class="field"><label for="nu">ν (B→A)</label><input id="nu" type="number" min="0" max="0.1" step="0.001" value="0"></div>
+                  <div class="field"><label for="mu">μ, A→B (per generation)</label><input id="mu" type="number" min="0" max="0.1" step="0.001" value="0.01"></div>
+                  <div class="field"><label for="nu">ν, B→A (per generation)</label><input id="nu" type="number" min="0" max="0.1" step="0.001" value="0"></div>
                 </div></div>
               <div class="toggle-box"><label class="check"><input type="checkbox" id="t-mig"> Migration</label>
                 <div class="sub" id="sub-mig" hidden>
-                  <div class="field"><label for="mig-m">m (fraction)</label><input id="mig-m" type="number" min="0" max="0.5" step="0.01" value="0.05"></div>
-                  <div class="field"><label for="mig-p">p of migrants</label><input id="mig-p" type="number" min="0" max="1" step="0.05" value="0.9"></div>
+                  <div class="field"><label for="mig-m">m (fraction per generation)</label><input id="mig-m" type="number" min="0" max="0.5" step="0.01" value="0.05"></div>
+                  <div class="field"><label for="mig-p">p of migrants (frequency)</label><input id="mig-p" type="number" min="0" max="1" step="0.05" value="0.9"></div>
                 </div></div>
             </div>
             <div class="row row--2"><button class="btn btn--primary" id="mg-run" type="button">Run model</button><button class="btn" id="mg-record" type="button">Record result</button></div>
@@ -342,11 +350,11 @@
         <div class="stage">
           <canvas class="viz" id="mg-canvas" aria-label="Gene pool of population 1 shown as a glass jar of green (A) and magenta (B) beads, and a graph of p against generation for every population."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Mean final p</span><span class="v" id="mg-mean">—</span></div>
-            <div class="readout"><span class="k">SD of final p</span><span class="v" id="mg-sd">—</span></div>
-            <div class="readout"><span class="k">A fixed (p = 1)</span><span class="v" id="mg-fix">—</span></div>
-            <div class="readout"><span class="k">A lost (p = 0)</span><span class="v" id="mg-lost">—</span></div>
-            <div class="readout"><span class="k">Expected p (infinite N)</span><span class="v" id="mg-exp">—</span></div>
+            <div class="readout"><span class="k">Mean final p (frequency)</span><span class="v" id="mg-mean">—</span></div>
+            <div class="readout"><span class="k">SD of final p (frequency)</span><span class="v" id="mg-sd">—</span></div>
+            <div class="readout"><span class="k">A fixed, p = 1 (populations)</span><span class="v" id="mg-fix">—</span></div>
+            <div class="readout"><span class="k">A lost, p = 0 (populations)</span><span class="v" id="mg-lost">—</span></div>
+            <div class="readout"><span class="k">Expected p, infinite N (frequency)</span><span class="v" id="mg-exp">—</span></div>
           </div>
         </div>
       </div>
@@ -400,9 +408,9 @@
       <h3>Chi-square test for Hardy-Weinberg proportions</h3>
       <p class="muted small">Enter genotype counts from your model, a card simulation, or real data (for example, a class taste test where the intermediate phenotype marks heterozygotes).</p>
       <div class="calc">
-        <div class="field"><label for="cs-aa">AA observed</label><input id="cs-aa" type="number" min="0" step="1" value="38"></div>
-        <div class="field"><label for="cs-ab">AB observed</label><input id="cs-ab" type="number" min="0" step="1" value="36"></div>
-        <div class="field"><label for="cs-bb">BB observed</label><input id="cs-bb" type="number" min="0" step="1" value="26"></div>
+        <div class="field"><label for="cs-aa">AA observed (count)</label><input id="cs-aa" type="number" min="0" step="1" value="38"></div>
+        <div class="field"><label for="cs-ab">AB observed (count)</label><input id="cs-ab" type="number" min="0" step="1" value="36"></div>
+        <div class="field"><label for="cs-bb">BB observed (count)</label><input id="cs-bb" type="number" min="0" step="1" value="26"></div>
         <button class="btn btn--primary" id="cs-run" type="button">Calculate χ²</button>
       </div>
       <div id="cs-out"></div>
@@ -445,6 +453,52 @@
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
   Lab.init({ id: 'lab02' });
+/* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
+const Predict = (function () {
+  const $ = Lab.$, ids = [];
+  const val = k => { const t = document.getElementById('p-' + k); return ((t && t.value) || '').trim(); };
+  const has = k => val(k).length >= 6;
+  const refreshAll = () => ids.forEach(f => f());
+  document.addEventListener('input', refreshAll, true);
+  /* Add a required prediction before a simulation. o: {key, label, placeholder, rows, title} */
+  function add(sim, o) {
+    sim = typeof sim === 'string' ? $(sim) : sim;
+    const state = Lab.h('span', { class: 'predict-state' });
+    const inner = Lab.h('div', { class: 'inner' });
+    const det = Lab.h('details', { class: 'disclose predict-box', id: 'predict-box-' + o.key }, Lab.h('summary', null, 'Predict first: ' + (o.title || 'what do you expect to see?') + ' ', state), inner);
+    sim.parentNode.insertBefore(det, sim);
+    Lab.prompt(inner, { key: o.key, label: o.label, rows: o.rows || 2, placeholder: o.placeholder || '' });
+    const upd = () => { const ok = has(o.key); state.textContent = ok ? '✓ saved' : 'required'; state.className = 'predict-state ' + (ok ? 'is-ok' : 'is-req'); };
+    ids.push(upd); upd(); det.open = !has(o.key);
+    return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
+  }
+  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  function compare(container, o) {
+    container = typeof container === 'string' ? $(container) : container;
+    const list = Lab.h('div', { class: 'predict-list' });
+    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
+    container.append(box);
+    const render = () => {
+      list.textContent = '';
+      o.items.forEach(([k, where]) => {
+        const v = val(k);
+        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
+        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
+      });
+    };
+    ids.push(render); render();
+    Lab.onShow(box, render);
+    return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
+  function cer(cerEl, starters, hintHtml) {
+    cerEl = typeof cerEl === 'string' ? $(cerEl) : cerEl;
+    ['claim', 'evidence', 'reasoning'].forEach((k, i) => { const t = cerEl.querySelectorAll('textarea')[i]; if (t && starters[k]) t.placeholder = starters[k]; });
+    const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
+    cerEl.parentNode.insertBefore(d, cerEl);
+  }
+  return { add, compare, cer, has, val };
+})();
   const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
   /* ---- number-field validation: plain-language message under the field, aria-invalid, never a silent clamp ----
      rule = {el, name, min, max, int}. Bad input is reported and the calculation is not run. */
@@ -583,9 +637,9 @@
   const cardN = $('#card-n');
   const cardTable = Lab.table('#card-table', {
     save: 'cards',
-    columns: [{ key: 'cs', label: 'Case' }, { key: 'gen', label: 'Generation', num: true, digits: 0 }, { key: 'aa', label: 'AA', num: true, digits: 0 }, { key: 'ab', label: 'AB', num: true, digits: 0 }, { key: 'bb', label: 'BB', num: true, digits: 0 }, { key: 'p', label: 'p', num: true, digits: 3 }, { key: 'q', label: 'q', num: true, digits: 3 }]
+    columns: [{ key: 'cs', label: 'Case' }, { key: 'gen', label: 'Generation', unit: 'no.', num: true, digits: 0 }, { key: 'aa', label: 'AA', unit: 'students', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'students', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'students', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }]
   });
-  const cardChart = Lab.chart('#card-chart', { xLabel: 'Generation', yLabel: 'Frequency of A (p)', yMin: 0, yMax: 1, xMin: 0, series: [], hLines: [{ y: 0.5, label: 'starting p' }], height: 260 });
+  const cardChart = Lab.chart('#card-chart', { xLabel: 'Generation (no.)', yLabel: 'Frequency of A, p (no units)', yMin: 0, yMax: 1, xMin: 0, series: [], hLines: [{ y: 0.5, label: 'starting p' }], height: 260 });
   const countG = pop => { let aa = 0, ab = 0, bb = 0; pop.forEach(g => { const s = g[0] + g[1]; s === 2 ? aa++ : s === 1 ? ab++ : bb++; }); return { aa, ab, bb, p: pop.length ? (2 * aa + ab) / (2 * pop.length) : NaN }; };
   function cardReset() {
     const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGen = 0; cardHist = [];
@@ -671,9 +725,9 @@
   let ssRows = [];
   const ssTable = Lab.table('#ss-table', {
     save: 'ss-runs',
-    columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'n', label: 'Zygotes N', num: true, digits: 0 }, { key: 'p0', label: 'p (D2)', num: true, digits: 2 }, { key: 'aa', label: 'AA', num: true, digits: 0 }, { key: 'ab', label: 'AB', num: true, digits: 0 }, { key: 'bb', label: 'BB', num: true, digits: 0 }, { key: 'p1', label: 'New p', num: true, digits: 3 }, { key: 'dp', label: 'Δp', num: true, digits: 3 }, { key: 'chi', label: 'χ²', num: true, digits: 2 }]
+    columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'n', label: 'Zygotes N', unit: 'zygotes', num: true, digits: 0 }, { key: 'p0', label: 'p (D2)', unit: 'frequency', num: true, digits: 2 }, { key: 'aa', label: 'AA', unit: 'zygotes', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'zygotes', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'zygotes', num: true, digits: 0 }, { key: 'p1', label: 'New p', unit: 'frequency', num: true, digits: 3 }, { key: 'dp', label: 'Δp', unit: 'frequency', num: true, digits: 3 }, { key: 'chi', label: 'χ²', unit: 'no units', num: true, digits: 2 }]
   });
-  const ssChart = Lab.chart('#ss-chart', { type: 'bar', xLabel: 'Zygote genotype', yLabel: 'Number of zygotes', categories: ['AA', 'AB', 'BB'], series: [], height: 250 });
+  const ssChart = Lab.chart('#ss-chart', { type: 'bar', xLabel: 'Zygote genotype', yLabel: 'Zygotes (count)', categories: ['AA', 'AB', 'BB'], series: [], height: 250 });
   let ssLast = null;
   function hwChi(aa, ab, bb) {
     const n = aa + ab + bb; if (!n) return null; const p = (2 * aa + ab) / (2 * n), q = 1 - p;
@@ -927,8 +981,8 @@
     c.stroke(); c.setLineDash([]);
     c.fillStyle = mut; c.font = `11px ${font()}`; c.textAlign = 'right'; c.textBaseline = 'top'; c.fillText('dashed = expected (infinite N)', x1, y0 + 2);
   }
-  const mgTable = Lab.table('#mg-table', { columns: [{ key: 'g', label: 'Gen', num: true, digits: 0 }, { key: 'p', label: 'p', num: true, digits: 3 }, { key: 'q', label: 'q', num: true, digits: 3 }, { key: 'aa', label: 'AA', num: true, digits: 0 }, { key: 'ab', label: 'AB', num: true, digits: 0 }, { key: 'bb', label: 'BB', num: true, digits: 0 }, { key: 'chi', label: 'χ² vs HW', num: true, digits: 2 }, { key: 'fit', label: 'HW proportions?' }] });
-  const mgRuns = Lab.table('#mg-runs', { save: 'mg-runs', columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'set', label: 'Settings' }, { key: 'mean', label: 'Mean final p', num: true, digits: 3 }, { key: 'sd', label: 'SD', num: true, digits: 3 }, { key: 'fix', label: 'Fixed', num: true, digits: 0 }, { key: 'lost', label: 'Lost', num: true, digits: 0 }, { key: 'exp', label: 'Expected p', num: true, digits: 3 }] });
+  const mgTable = Lab.table('#mg-table', { columns: [{ key: 'g', label: 'Gen', unit: 'no.', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }, { key: 'aa', label: 'AA', unit: 'zygotes', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'zygotes', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'zygotes', num: true, digits: 0 }, { key: 'chi', label: 'χ² vs HW', unit: 'no units', num: true, digits: 2 }, { key: 'fit', label: 'HW proportions?' }] });
+  const mgRuns = Lab.table('#mg-runs', { save: 'mg-runs', columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'set', label: 'Settings' }, { key: 'mean', label: 'Mean final p', unit: 'frequency', num: true, digits: 3 }, { key: 'sd', label: 'SD', unit: 'frequency', num: true, digits: 3 }, { key: 'fix', label: 'Fixed', unit: 'populations', num: true, digits: 0 }, { key: 'lost', label: 'Lost', unit: 'populations', num: true, digits: 0 }, { key: 'exp', label: 'Expected p', unit: 'frequency', num: true, digits: 3 }] });
   function settingsText(P) {
     const parts = [P.drift ? `N=${P.N}` : 'N=∞', `p₀=${fmt(P.p0, 2)}`, `${P.G} gens`];
     if (P.w.some(x => x < 1)) parts.push(`w=${P.w.map(x => fmt(x, 2)).join('/')}`);
@@ -982,10 +1036,10 @@
   Lab.prompt('#dz-q', { key: 'dz-hypothesis', label: 'Hypothesis and prediction. What will you vary, what will you hold constant, how many replicates will you run, and what will you measure?', rows: 3 });
   const dzReps = $('#dz-reps'); const dzSync = () => $('#dz-reps-out').textContent = dzReps.value; dzReps.addEventListener('input', dzSync); dzSync();
   const DZ_DEF = { N: '10, 50, 200, 1000', p0: '0.1, 0.3, 0.5, 0.7, 0.9', wbb: '1, 0.9, 0.7, 0.5, 0', wab: '0.8, 0.9, 1', mu: '0, 0.001, 0.01, 0.05', m: '0, 0.01, 0.05, 0.2' };
-  const DZ_LABEL = { N: 'Population size N', p0: 'Starting p', wbb: 'Fitness of BB', wab: 'Fitness of AB', mu: 'Mutation rate μ (A→B)', m: 'Migration rate m' };
+  const DZ_LABEL = { N: 'Population size N (zygotes)', p0: 'Starting p (frequency)', wbb: 'Fitness of BB (relative, no units)', wab: 'Fitness of AB (relative, no units)', mu: 'Mutation rate μ, A→B (per generation)', m: 'Migration rate m (fraction per generation)' };
   $('#dz-iv').addEventListener('change', () => { $('#dz-levels').value = DZ_DEF[$('#dz-iv').value]; fieldError($('#dz-levels'), ''); });
   const dzChart = Lab.chart('#dz-chart', { xLabel: 'Independent variable', yLabel: 'Response', series: [], height: 300 });
-  const dzTable = Lab.table('#dz-table', { save: 'dz', toast: false, columns: [{ key: 'exp', label: 'Experiment', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
+  const dzTable = Lab.table('#dz-table', { save: 'dz', toast: false, columns: [{ key: 'exp', label: 'Experiment', unit: 'no.', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', unit: 'populations', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
   let dzExp = dzTable.getRows().reduce((m, r) => Math.max(m, r.exp || 0), 0);
   /* Levels: every entry must be a number inside the variable's allowed range (no silent clamping or dropping). Returns the
      list, or null after putting a message under the field. */
@@ -1029,7 +1083,7 @@
       rows.push({ exp: dzExp, iv: DZ_LABEL[iv], level: L, reps: vals.length, dv: { p: 'final p', het: 'final 2pq', lost: '% lost or fixed' }[dv], val: m, se2: dv === 'lost' ? null : e, base: settingsText(P) });
     });
     dzTable.setRows(dzTable.getRows().concat(rows));
-    const yl = { p: 'Final p (mean ± 2 SE)', het: 'Final heterozygosity 2pq (± 2 SE)', lost: '% of populations that lost or fixed A' }[dv];
+    const yl = { p: 'Final p (frequency, no units; mean ± 2 SE)', het: 'Final heterozygosity 2pq (no units; ± 2 SE)', lost: 'Populations that lost or fixed A (%)' }[dv];
     dzChart.update({ xLabel: DZ_LABEL[iv], yLabel: yl, yMin: 0, yMax: dv === 'lost' ? 100 : dv === 'het' ? 0.5 : 1, xMin: iv === 'N' ? 0 : undefined, series: [{ name: `Experiment ${dzExp}`, points: pts }] });
     $('#dz-note').textContent = `Each point: ${base.drift ? reps : 1} population${base.drift && reps > 1 ? 's' : ''} run for ${base.G} generations. ${base.drift ? '' : 'Drift is off, so there is no variation between replicates.'}`;
     status('#dz-status', `Experiment ${dzExp} finished (${levels.length} levels).`, 'ok');
@@ -1042,7 +1096,7 @@
   ].forEach(([key, label]) => Lab.prompt('#dz-a', { key, label, rows: 3 }));
 
   /* ================= ANALYZE ================= */
-  const csTable = Lab.table('#cs-out', { columns: [{ key: 'g', label: 'Genotype' }, { key: 'o', label: 'Observed (o)', num: true, digits: 0 }, { key: 'e', label: 'Expected (e)', num: true, digits: 2 }, { key: 't', label: '(o − e)² / e', num: true, digits: 3 }], footer: rows => ['Total', S.sum(rows.map(r => r.o)), fmt(S.sum(rows.map(r => r.e)), 2), fmt(S.sum(rows.map(r => r.t)), 3)] });
+  const csTable = Lab.table('#cs-out', { columns: [{ key: 'g', label: 'Genotype' }, { key: 'o', label: 'Observed (o)', unit: 'count', num: true, digits: 0 }, { key: 'e', label: 'Expected (e)', unit: 'count', num: true, digits: 2 }, { key: 't', label: '(o − e)² / e', unit: 'no units', num: true, digits: 3 }], footer: rows => ['Total', S.sum(rows.map(r => r.o)), fmt(S.sum(rows.map(r => r.e)), 2), fmt(S.sum(rows.map(r => r.t)), 3)] });
   function runChi() {
     const CS = [['#cs-aa', 'the AA count'], ['#cs-ab', 'the AB count'], ['#cs-bb', 'the BB count']].map(([id, name]) => ({ el: $(id), name, min: 0, int: true }));
     if (!checkFields(CS)) { csTable.setRows([]); status('#cs-status', 'No χ² calculated: counts must be whole numbers of 0 or more. Fix the highlighted entries.', 'bad'); return; }
@@ -1064,6 +1118,7 @@
   ].forEach(([key, label]) => Lab.prompt('#analysis', { key, label, rows: 3 }));
   const cer = $('#cer');
   [['C', 'cer-claim', 'Claim: How does population size (or the factor you tested) affect evolutionary change in allele frequencies?'], ['E', 'cer-evidence', 'Evidence: Which runs, numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Use random sampling of gametes and the Hardy-Weinberg conditions to explain why the evidence supports the claim.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
+  Predict.cer(cer, { claim: 'The data show that ___ (smaller / larger populations) ___ (changed / did not change) the frequency of A (p).', evidence: 'In the N = ___ condition, final p was ___ (no units), compared with ___ in the N = ___ condition.', reasoning: 'This happens because ___ (random sampling of gametes / a Hardy-Weinberg condition), which causes ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) ___ (change in allele frequency).</p><p><strong>Evidence:</strong> In the ___ condition, final p was ___ (no units; or ___ % of populations lost A), compared with ___ in the ___ condition.</p><p><strong>Reasoning:</strong> This happens because ___ (random sampling of gametes, selection, mutation or migration) ___.</p>');
 
   /* ================= REFLECT ================= */
   [
@@ -1072,6 +1127,7 @@
     ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 3 }));
+  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-card', 'Before the card model you predicted:'], ['predict-spreadsheet', 'Before the spreadsheet you predicted:'], ['predict-drift', 'Before the many-generation runs you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one value (with units, or say no units) from your data. What does any mismatch tell you?', rows: 4 });
 
   /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
@@ -1087,32 +1143,43 @@
   Lab.results('#dz-sim', { graph: [], data: [{ el: '#dz-table', title: 'Results of every experiment' }] });
 
   const cardRows = () => cardTable.getRows();
+  const predC = Predict.add('#card-sim', { key: 'predict-card', title: 'will p change?', label: 'Before you mate the first generation, predict what will happen to the frequency of allele A (p, no units) over many generations in Case I, and whether it will change for a small class, and why.', placeholder: 'I predict p will ___ because ___.' });
   Lab.steps('#card-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-card', done: predC.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'mate', text: 'Mate one generation', target: '#card-step', done: () => cardGen >= 1 || cardRows().length > 1, hint: 'Press <strong>Mate one generation</strong> and watch p in the Graph.' },
     { id: 'run5', text: 'Run 5 more generations', target: '#card-run5', done: () => cardGen >= 6 || cardRows().length > 6, hint: 'Press <strong>Run 5 generations</strong>. Does p stay at 0.5?' },
     { id: 'cases', text: 'Try Case II, III or IV', target: '#card-case', done: () => cardRows().some(r => r.cs !== 'I'), hint: 'Choose another case, then mate several generations.' },
     { id: 'qs', text: 'Compare the cases (below)', target: '#p-card-compare', done: () => filled('card-compare'), hint: 'Scroll down and answer the question.' }
   ], { doneText: 'Card model done. Go on to <a href="#build-the-model">Build the model</a>.' });
+  const predS = Predict.add('#ss-sim', { key: 'predict-spreadsheet', title: 'how close will new p be?', label: 'Before you recalculate, predict how close the new p will be to the starting p with 16 zygotes compared with 1000 zygotes, and why.', placeholder: 'I predict new p will be ___ with 16 zygotes and ___ with 1000 because ___.' });
   Lab.steps('#ss-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-spreadsheet', done: predS.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'recalc', text: 'Recalculate a few times', target: '#ss-recalc', done: () => ssClicks >= 3 || ssTable.getRows().length > 0, hint: 'Press <strong>Recalculate</strong> 3 or more times. The gametes are redrawn at random.' },
     { id: 'rec', text: 'Record 3 runs (16 zygotes)', target: '#ss-record', done: () => ssTable.getRows().length >= 3, hint: 'Press <strong>Record this run</strong> after each recalculation.' },
     { id: 'size', text: 'Record runs with N = 100, 1000', target: '#ss-n', done: () => ssTable.getRows().some(r => r.n >= 100) && ssTable.getRows().some(r => r.n >= 1000), hint: 'Change the number of zygotes to 100, then 1000, and record runs.' },
     { id: 'qs', text: 'Answer the 4 questions (below)', target: '#p-ss-rand', done: () => allFilled(['ss-rand', 'ss-english', 'ss-size', 'ss-norandom']), hint: 'Scroll down and answer the four questions.' }
   ], { doneText: 'Spreadsheet done. Go on to <a href="#many-generations">Many generations</a>.' });
+  const predM = Predict.add('#mg-sim', { key: 'predict-drift', title: 'what will drift do?', label: 'Before you run the model, predict what will happen to p across populations of different sizes (N, zygotes) over 50 generations, and why.', placeholder: 'I predict small populations will ___ and large populations will ___ because ___.' });
   Lab.steps('#mg-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-drift', done: predM.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'drift', text: 'Run with drift only', target: '#mg-run', done: () => mgRan > 0 || mgRuns.getRows().length > 0, hint: 'Press <strong>Run model</strong>.' },
     { id: 'small', text: 'Compare N = 10, 100, 1000', target: '#mg-n', done: () => mgRuns.getRows().length >= 3, hint: 'Change N, run, and press <strong>Record result</strong> for each size.' },
     { id: 'force', text: 'Turn on another force', target: '#t-sel', sticky: true, done: () => $('#t-sel').checked || $('#t-mut').checked || $('#t-mig').checked, hint: 'Tick selection, mutation or migration, then run again.' },
     { id: 'qs', text: 'Answer the questions (below)', target: '#p-mg-size', done: () => allFilled(['mg-size', 'mg-predict', 'mg-forces', 'mg-chi']), hint: 'Scroll down and answer the four questions.' }
   ], { doneText: 'Model runs done. Go on to <a href="#design">Design</a>.' });
   const dzLevels = () => $('#dz-levels').value.split(/[,;\s]+/).map(parseFloat).filter(isFinite);
+  const predD = Predict.add('#dz-sim', { key: 'predict-design', title: 'how will your variable change the result?', label: 'Before you run your experiment, predict how the response will change across your levels, and explain why using the Hardy-Weinberg conditions.', placeholder: 'I predict ___ will ___ as ___ increases because ___.' });
   Lab.steps('#dz-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-design', done: predD.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'plan', text: 'Write question + hypothesis', target: '#p-dz-question', done: () => filled('dz-question') && filled('dz-hypothesis'), hint: 'Write your question and hypothesis in the boxes above.' },
     { id: 'iv', text: 'Choose a variable and levels', target: '#dz-iv', sticky: true, done: () => dzTouched || dzTable.getRows().length > 0, hint: 'Pick the independent variable, then type its levels.' },
     { id: 'run', text: 'Run the experiment', target: '#dz-run', done: () => dzTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the chart and Data.' },
     { id: 'res', text: 'Describe your results (below)', target: '#p-dz-results', done: () => allFilled(['dz-results', 'dz-conclude']), hint: 'Scroll down and describe your results.' }
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
-  Lab.gate('#dz-run', () => dzLevels().length >= 2 ? '' : 'Enter at least two levels');
+  Lab.gate('#card-step', () => predC.has() || cardRows().length > 1 ? '' : predC.reason(), { show: '#p-predict-card' });
+  Lab.gate('#ss-recalc', () => predS.has() || ssTable.getRows().length ? '' : predS.reason(), { show: '#p-predict-spreadsheet' });
+  Lab.gate('#mg-run', () => predM.has() || mgRuns.getRows().length ? '' : predM.reason(), { show: '#p-predict-drift' });
+  Lab.gate('#dz-run', () => !predD.has() && !dzTable.getRows().length ? predD.reason() : dzLevels().length >= 2 ? '' : 'Enter at least two levels', { show: '#p-predict-design' });
 
   /* toasts for key moments (status lines are live regions, so these are not announced twice) */
   $('#mg-run').addEventListener('click', () => { if (!forcesInvalid() && Lab.reducedMotion()) Lab.toast('Model run finished', { type: 'ok', announce: false, key: 'mgrun' }); });
