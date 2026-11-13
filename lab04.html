@@ -38,6 +38,14 @@
   .tube-liquid { transition: fill .6s ease; }
   h3 { margin-top: 6px; }
   .step > *, .step-body > *, .sim > *, .stage > *, .controls > * { min-width: 0; }
+  .predict-box { margin: 0 0 14px; border-left: 4px solid var(--accent); }
+  .predict-state { font-size: .8rem; font-weight: 600; margin-left: 6px; padding: 1px 8px; border-radius: 99px; }
+  .predict-state.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .predict-state.is-req { background: var(--warn-soft); color: var(--warn); }
+  .predict-box .prompt textarea { min-height: 3.2rem; }
+  .predict-q { margin: 4px 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid var(--accent); font-style: italic; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .predict-where { margin: 6px 0 0; }
+  .cer-hint { margin: 0 0 10px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -463,8 +471,8 @@
           <canvas class="viz" id="d-viz" aria-label="Preview of the experimental setup, one example of each level of the independent variable."></canvas>
           <div class="readouts">
             <div class="readout"><span class="k">Dependent variable</span><span class="v" id="d-dv" style="font-size:.9rem">—</span></div>
-            <div class="readout"><span class="k">Trend (slope)</span><span class="v" id="d-slope">—</span></div>
-            <div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div>
+            <div class="readout"><span class="k">Trend (slope, y-units per x-unit)</span><span class="v" id="d-slope">—</span></div>
+            <div class="readout"><span class="k">R² (no units)</span><span class="v" id="d-r2">—</span></div>
           </div>
         </div>
       </div>
@@ -504,6 +512,52 @@
 <script src="scope.js"></script>
 <script>
 Lab.init({ id: 'lab04' });
+/* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
+const Predict = (function () {
+  const $ = Lab.$, ids = [];
+  const val = k => { const t = document.getElementById('p-' + k); return ((t && t.value) || '').trim(); };
+  const has = k => val(k).length >= 6;
+  const refreshAll = () => ids.forEach(f => f());
+  document.addEventListener('input', refreshAll, true);
+  /* Add a required prediction before a simulation. o: {key, label, placeholder, rows, title} */
+  function add(sim, o) {
+    sim = typeof sim === 'string' ? $(sim) : sim;
+    const state = Lab.h('span', { class: 'predict-state' });
+    const inner = Lab.h('div', { class: 'inner' });
+    const det = Lab.h('details', { class: 'disclose predict-box', id: 'predict-box-' + o.key }, Lab.h('summary', null, 'Predict first: ' + (o.title || 'what do you expect to see?') + ' ', state), inner);
+    sim.parentNode.insertBefore(det, sim);
+    Lab.prompt(inner, { key: o.key, label: o.label, rows: o.rows || 2, placeholder: o.placeholder || '' });
+    const upd = () => { const ok = has(o.key); state.textContent = ok ? '✓ saved' : 'required'; state.className = 'predict-state ' + (ok ? 'is-ok' : 'is-req'); };
+    ids.push(upd); upd(); det.open = !has(o.key);
+    return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
+  }
+  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  function compare(container, o) {
+    container = typeof container === 'string' ? $(container) : container;
+    const list = Lab.h('div', { class: 'predict-list' });
+    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
+    container.append(box);
+    const render = () => {
+      list.textContent = '';
+      o.items.forEach(([k, where]) => {
+        const v = val(k);
+        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
+        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
+      });
+    };
+    ids.push(render); render();
+    Lab.onShow(box, render);
+    return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
+  function cer(cerEl, starters, hintHtml) {
+    cerEl = typeof cerEl === 'string' ? $(cerEl) : cerEl;
+    ['claim', 'evidence', 'reasoning'].forEach((k, i) => { const t = cerEl.querySelectorAll('textarea')[i]; if (t && starters[k]) t.placeholder = starters[k]; });
+    const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
+    cerEl.parentNode.insertBefore(d, cerEl);
+  }
+  return { add, compare, cer, has, val };
+})();
 (function () {
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, tok = Lab.color;
@@ -1111,7 +1165,7 @@ Lab.init({ id: 'lab04' });
   p1cv.onresize = () => drawBlocks(p1cv, p1Blocks, 'Cross-sections · tray of ' + ($('#p1-acid').value === 'hcl' ? '0.1 M HCl' : 'vinegar'), { beaker: true });
   p1Preview();
 
-  const p1chart = Lab.chart('#p1-chart', { xLabel: 'Surface area-to-volume ratio (cm⁻¹)', yLabel: '% of volume reached by acid', yMin: 0, yMax: 100, series: [] });
+  const p1chart = Lab.chart('#p1-chart', { xLabel: 'Surface area-to-volume ratio (cm⁻¹)', yLabel: 'Volume reached by acid (%)', yMin: 0, yMax: 100, series: [] });
   const p1table = Lab.table('#p1-table', {
     save: 'p1',
     columns: [
@@ -1227,10 +1281,10 @@ Lab.init({ id: 'lab04' });
   p2cv.onresize = () => drawBags(p2cv, p2State, 0, { balance: p2Bal });
   p2Preview();
   const pairName = (a, b) => `${SOL[a].short} in │ ${SOL[b].short} out`;
-  const p2chart = Lab.chart('#p2-chart', { type: 'bar', xLabel: 'Inside │ outside solutions', yLabel: 'Mean % change in mass', series: [] });
+  const p2chart = Lab.chart('#p2-chart', { type: 'bar', xLabel: 'Inside │ outside solutions', yLabel: 'Mean mass change (%)', series: [] });
   const p2table = Lab.table('#p2-table', {
     save: 'p2',
-    columns: [{ key: 'run', label: 'Set', num: true, digits: 0 }, { key: 'bag', label: 'Bag', num: true, digits: 0 }, { key: 'pair', label: 'Inside │ outside' },
+    columns: [{ key: 'run', label: 'Set', unit: 'no.', num: true, digits: 0 }, { key: 'bag', label: 'Bag', unit: 'no.', num: true, digits: 0 }, { key: 'pair', label: 'Inside │ outside' },
       { key: 'm0', label: 'Initial mass', unit: 'g', num: true, digits: 2 }, { key: 'm1', label: 'Final mass', unit: 'g', num: true, digits: 2 },
       { key: 'pct', label: '% change', unit: '%', num: true, editable: true }],
     onChange: rows => {
@@ -1476,11 +1530,11 @@ Lab.init({ id: 'lab04' });
   $('#p3a-run').addEventListener('click', () => { p3Bath = P3SOL.find(s => s.id === p3sel.value); p3Added = true; p3Start(); });
   $('#p3a-rinse').addEventListener('click', () => { p3Bath = P3SOL[0]; p3Added = true; p3Start(); });
   p3Reset();
-  const p3chart = Lab.chart('#p3a-chart', { xLabel: 'Water potential of bathing solution (bars)', yLabel: '% of cells plasmolyzed', yMin: 0, yMax: 100, series: [] });
+  const p3chart = Lab.chart('#p3a-chart', { xLabel: 'Water potential of bathing solution (bars)', yLabel: 'Cells plasmolyzed (%)', yMin: 0, yMax: 100, series: [] });
   const p3table = Lab.table('#p3a-table', {
     save: 'p3a',
     columns: [{ key: 'spec', label: 'Specimen' }, { key: 'sol', label: 'Solution' }, { key: 'psi', label: 'ψ solution', unit: 'bars', num: true, digits: 1 },
-      { key: 'n', label: 'Cells in frame', num: true, digits: 0 }, { key: 'plz', label: 'Plasmolyzed (your count)', num: true, editable: true }, { key: 'note', label: 'What you saw', editable: true }],
+      { key: 'n', label: 'Cells in frame', unit: 'cells', num: true, digits: 0 }, { key: 'plz', label: 'Plasmolyzed (your count)', unit: 'cells', num: true, editable: true }, { key: 'note', label: 'What you saw', editable: true }],
     onChange: rows => {
       const g = new Map();
       rows.forEach(r => { if (r.plz == null || !isFinite(r.plz)) return; if (!g.has(r.spec)) g.set(r.spec, []); g.get(r.spec).push({ x: r.psi, y: 100 * r.plz / r.n }); });
@@ -1565,10 +1619,10 @@ Lab.init({ id: 'lab04' });
     const psiT = -(t.Ciso + off) * R * TK, x = -C * R * TK - psiT;
     return (x >= 0 ? t.G * Math.tanh(x / 8) : -t.L * (1 - Math.exp(x / 12))) + rng.normal(0, 1.2);
   }
-  const p3bchart = Lab.chart('#p3b-chart', { xLabel: 'Sucrose concentration (M)', yLabel: '% change in mass', xMin: 0, xMax: 1, series: [] });
+  const p3bchart = Lab.chart('#p3b-chart', { xLabel: 'Sucrose concentration (M)', yLabel: 'Mass change (%)', xMin: 0, xMax: 1, series: [] });
   const p3bTable = Lab.table('#p3b-table', {
     save: 'p3b',
-    columns: [{ key: 'set', label: 'Set', num: true, digits: 0 }, { key: 'tissue', label: 'Tissue' }, { key: 'cup', label: 'Cup color' }, { key: 'conc', label: 'Sucrose (your ID)', unit: 'M', num: true, digits: 1 },
+    columns: [{ key: 'set', label: 'Set', unit: 'no.', num: true, digits: 0 }, { key: 'tissue', label: 'Tissue' }, { key: 'cup', label: 'Cup color' }, { key: 'conc', label: 'Sucrose (your ID)', unit: 'M', num: true, digits: 1 },
       { key: 'm0', label: 'Initial mass', unit: 'g', num: true, digits: 2 }, { key: 'm1', label: 'Final mass', unit: 'g', num: true, digits: 2 }, { key: 'pct', label: '% change', unit: '%', num: true, digits: 1 }],
     onChange: rows => {
       const g = new Map();
@@ -1631,16 +1685,16 @@ Lab.init({ id: 'lab04' });
      ===================================================================== */
   const dcv = Lab.canvas('#d-viz', 0.5, { fit: true });
   const IV = {
-    side: { x: 'Cube side length (cm)', y: '% of volume reached by acid', dv: '% volume diffused', levels: '0.5, 1, 2, 3', cat: false, hint: 'Side lengths from 0.3 to 3 cm (the agar is poured 3 cm deep).', constant: '0.1 M HCl, 10 min soak, 22 °C, cube shape.',
+    side: { x: 'Cube side length (cm)', y: 'Volume reached by acid (%)', dv: '% volume diffused', levels: '0.5, 1, 2, 3', cat: false, hint: 'Side lengths from 0.3 to 3 cm (the agar is poured 3 cm deep).', constant: '0.1 M HCl, 10 min soak, 22 °C, cube shape.',
       run: L => pctDiffused(L, L, L, depthMM(10, {}, true) / 10), check: v => v >= 0.3 && v <= 3, shape: L => ({ d: [L, L, L], label: fmt(L, L % 1 ? 1 : 0) + ' cm' }) },
-    shape: { x: 'Block shape (8 cm³ each)', y: '% of volume reached by acid', dv: '% volume diffused', levels: null, cat: true, hint: 'Four shapes, all 8 cm³.', constant: '0.1 M HCl, 10 min soak, 22 °C, volume 8 cm³.',
+    shape: { x: 'Block shape (8 cm³ each)', y: 'Volume reached by acid (%)', dv: '% volume diffused', levels: null, cat: true, hint: 'Four shapes, all 8 cm³.', constant: '0.1 M HCl, 10 min soak, 22 °C, volume 8 cm³.',
       cats: [{ k: 'Cube 2×2×2', d: [2, 2, 2] }, { k: 'Rod 8×1×1', d: [8, 1, 1] }, { k: 'Slab 4×2×1', d: [4, 2, 1] }, { k: 'Plate 4×4×0.5', d: [4, 4, 0.5] }],
       run: d => pctDiffused(d[0], d[1], d[2], depthMM(10, {}, true) / 10) },
     temp: { x: 'Acid temperature (°C)', y: 'Depth of acid after 10 min (mm)', dv: 'Diffusion depth (mm)', levels: '5, 15, 25, 35', cat: false, hint: 'Between 0 and 50 °C.', constant: '0.1 M HCl, 10 min soak, 2 cm cubes.',
       run: T => round(depthMM(10, { T }, true), 0.5), check: v => v >= 0 && v <= 50, shape: T => ({ d: [2, 2, 2], label: T + ' °C', dmm: depthMM(10, { T }) }) },
     acid: { x: 'HCl concentration (M)', y: 'Depth of acid after 10 min (mm)', dv: 'Diffusion depth (mm)', levels: '0.025, 0.05, 0.1, 0.2', cat: false, hint: 'Between 0.01 and 0.5 M.', constant: '10 min soak, 22 °C, 2 cm cubes.',
       run: C => round(depthMM(10, { C }, true), 0.5), check: v => v >= 0.01 && v <= 0.5, shape: C => ({ d: [2, 2, 2], label: C + ' M', dmm: depthMM(10, { C }) }) },
-    sucrose: { x: 'Sucrose inside bag (M)', y: '% change in bag mass (30 min)', dv: '% change in mass', levels: '0, 0.2, 0.4, 0.6, 0.8, 1.0', cat: false, hint: 'Between 0 and 1.5 M. The cup holds distilled water.', constant: 'Distilled water in the cup, 10 mL per bag, 30 min, 22 °C.',
+    sucrose: { x: 'Sucrose inside bag (M)', y: 'Mass change of bag in 30 min (%)', dv: '% change in mass', levels: '0, 0.2, 0.4, 0.6, 0.8, 1.0', cat: false, hint: 'Between 0 and 1.5 M. The cup holds distilled water.', constant: 'Distilled water in the cup, 10 mL per bag, 30 min, 22 °C.',
       run: C => { const s = simBag(C > 0 ? 'sucrose' : 'water', C, 'water', 0, 30); const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return 100 * (m1 - m0) / m0; }, check: v => v >= 0 && v <= 1.5 }
   };
   const dIv = $('#d-iv'), dLv = $('#d-levels'), dReps = slider('d-reps', 'd-reps-out', v => v + (v > 1 ? ' replicates' : ' replicate'));
@@ -1678,11 +1732,17 @@ Lab.init({ id: 'lab04' });
   dPreview();
   const dchart = Lab.chart('#d-chart', { xLabel: IV[dIv.value].x, yLabel: IV[dIv.value].y, series: [] });
   const dsum = Lab.table('#d-sum', { columns: [{ key: 'lv', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }, { key: 'ci', label: '±2 SE', num: true, digits: 2 }], rows: [] });
+  /* Level / result column headers take the units of the chosen variable. */
+  function dUnits(o) {
+    const yu = /\(mm\)/.test(o.y) ? 'mm' : '%', m = /\(([^)]*)\)\s*$/.exec(o.x), xu = !o.cat && m ? m[1] : '';
+    const add = (sel, i, u) => { const th = document.querySelectorAll(sel + ' thead th')[i]; if (th && u && !th.querySelector('.unit')) th.insertAdjacentHTML('beforeend', ' <span class="unit">(' + u + ')</span>'); };
+    add('#d-sum', 0, xu); add('#d-sum', 1, 'count'); [2, 3, 4, 5].forEach(i => add('#d-sum', i, yu)); add('#d-raw', 0, xu); add('#d-raw', 2, yu);
+  }
   function dAnalyze(rows) {
     const meta = Lab.store.get('d-iv') || { iv: dIv.value }, o = IV[meta.iv] || IV.side;
     const g = groupStats(rows, r => r.lv, r => r.y), keys = [...g.keys()];
     const sum = keys.map(k => { const a = g.get(k); return { lv: o.cat ? k : fmt(k, 3).replace(/\.?0+$/, ''), _x: k, n: a.length, mean: S.mean(a), sd: a.length > 1 ? S.sd(a) : NaN, se: a.length > 1 ? S.se(a) : NaN, ci: a.length > 1 ? 2 * S.se(a) : NaN }; });
-    dsum.setRows(sum);
+    dsum.setRows(sum); dUnits(o);
     if (o.cat) {
       dchart.update({ type: 'bar', xLabel: o.x, yLabel: o.y, categories: keys, series: [{ name: o.dv, points: sum.map(s => ({ x: s._x, y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }], xMin: undefined, xMax: undefined });
       $('#d-slope').textContent = 'n/a (categories)'; $('#d-r2').textContent = '—';
@@ -1691,7 +1751,7 @@ Lab.init({ id: 'lab04' });
       if (rows.length > 2 && keys.length > 1) { const f = S.linreg(rows.map(r => r.lv), rows.map(r => r.y)); $('#d-slope').textContent = fmt(f.m, 3); $('#d-r2').textContent = fmt(f.r2, 3); }
     }
   }
-  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'rep', label: 'Replicate', num: true, digits: 0 }, { key: 'y', label: 'Result', num: true, digits: 2 }], onChange: dAnalyze });
+  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'rep', label: 'Replicate', unit: 'no.', num: true, digits: 0 }, { key: 'y', label: 'Result', num: true, digits: 2 }], onChange: dAnalyze });
   let dAnim = null;
   $('#d-run').addEventListener('click', () => {
     if (dAnim) dAnim.finish();
@@ -1736,8 +1796,10 @@ Lab.init({ id: 'lab04' });
   letter(Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 4 }), 'C');
   letter(Lab.prompt(cer, { key: 'cer-e', label: 'Evidence (cite numbers from Procedures 2 and 3)', rows: 4 }), 'E');
   letter(Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning (use water potential, turgor, and plasmolysis)', rows: 4 }), 'R');
+  Predict.cer(cer, { claim: 'The data show that ___ (the plant wilts / cells lose turgor) when ___.', evidence: 'In the ___ condition, ___ was ___ (units), compared with ___ in the ___ condition.', reasoning: 'This happens because water moves from ___ to ___ (water potential), so ___.' }, '<p><strong>Claim:</strong> The data show that ___ . (Answer the driving question: what causes a plant to wilt?)</p><p><strong>Evidence:</strong> In the ___ condition, ___ was ___ (units), compared with ___ (units) in the ___ condition.</p><p><strong>Reasoning:</strong> This happens because water moves from ___ (higher ψ) to ___ (lower ψ), so ___ (turgor pressure, plasmolysis).</p>');
 
   const ev = $('#evaluate-prompts');
+  Predict.compare(ev, { key: 'reflect-predict', items: [['predict-sav', 'Before the SA:V blocks you predicted:'], ['predict-bags', 'Before the model cells you predicted:'], ['predict-plasmo', 'Before plasmolysis you predicted:'], ['predict-soak', 'Before the potato soak you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one number with units from your data. What does any mismatch tell you about your thinking?', rows: 4 });
   Lab.prompt(ev, { key: 'e1', label: 'Why is it important for an IV solution to contain salts? What would happen to red blood cells if a patient were given pure water by IV? How would you choose the best solute concentration before giving the fluid?', rows: 4 });
   Lab.prompt(ev, { key: 'e2', label: 'How is dialysis tubing functionally different from a living cell membrane? Give at least two differences and how each affected your results.', rows: 4 });
   Lab.prompt(ev, { key: 'e3', label: 'Identify two sources of error in the real bench version of these procedures (for example blotting, cutting, or timing) and how you would reduce them.', rows: 3 });
@@ -1762,21 +1824,27 @@ Lab.init({ id: 'lab04' });
   Lab.results('#soak-sim', { graph: [{ el: '#p3b-chart', title: '% change in mass of the cores' }], data: [{ el: '#p3b-table', title: 'Overnight soak data' }, '#p3b-clearwrap'] });
   Lab.results('#d-sim', { graph: [{ el: '#d-chart', title: 'Results with ±2 SE' }], data: [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw-holder', title: 'Every trial' }] });
 
+  const predP1 = Predict.add('#p1-sim', { key: 'predict-sav', title: 'which block gets the most acid?', label: 'Before you soak the blocks, predict which block (smallest, middle or largest) will have the greatest <em>percentage</em> of its volume reached by acid, and why.', placeholder: 'I predict the ___ block will have the highest % because ___.' });
   Lab.steps('#p1-steps', [
     { id: 'ind', text: 'Test the indicator (above)', target: '#add-hcl', done: () => filled('p1-indicator') || (!!$('#tube-obs').dataset.hcl && !!$('#tube-obs').dataset.naoh), hint: 'Scroll up: add HCl and NaOH to the two tubes and record what you see.' },
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-sav', done: predP1.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'run', text: 'Soak, cut, and measure', target: '#p1-run', done: () => p1table.getRows().length > 0, hint: 'Pick three blocks and a soak time, then press <strong>Soak, cut, and measure</strong>.' },
     { id: 'calc', text: 'Fill in SA, V, SA:V and %', target: '#p1-table input', done: () => { const r = p1table.getRows(); return r.length > 0 && r.every(x => isNum(x.sa) && isNum(x.v) && isNum(x.ratio) && isNum(x.pct)); }, hint: 'Open the <strong>Data</strong> tab and type the four calculated columns for each block.' },
     { id: 'check', text: 'Check my calculations', target: '#p1-check', done: () => p1table.getRows().length > 0 && okPills('#p1-fb') > 0 && !warnPills('#p1-fb'), hint: 'Press <strong>Check my calculations</strong> (in the Data tab) and fix any rows it flags.' },
     { id: 'qs', text: 'Answer the 2 questions (below)', target: '#p-p1-q1', done: () => allFilled(['p1-q1', 'p1-q2']), hint: 'Scroll down and answer the two questions.' }
   ], { doneText: 'Procedure 1 done. Go on to <a href="#model-cells">Model cells</a>.' });
+  const predP2 = Predict.add('#p2-sim', { key: 'predict-bags', title: 'which bags gain or lose mass?', label: 'Before you run the bags, predict which bags will gain mass, lose mass or stay the same (mass change, %), and why.', placeholder: 'I predict the bag with ___ inside will ___ because water moves ___.' });
   Lab.steps('#p2-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-bags', done: predP2.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'run', text: 'Weigh, soak 30 min, re-weigh', target: '#p2-run', done: () => p2table.getRows().length > 0, hint: 'Press <strong>Weigh, soak 30 min, re-weigh</strong> to run all five bags.' },
     { id: 'rep', text: 'Run the set again (replicates)', target: '#p2-run', done: () => p2table.getRows().length >= 10, hint: 'Run the set at least twice so the graph has error bars.' },
     { id: 'pct', text: 'Fill in % change for each bag', target: '#p2-table input', done: () => { const r = p2table.getRows(); return r.length > 0 && r.every(x => isNum(x.pct)); }, hint: 'Open the <strong>Data</strong> tab: % change = (final − initial) ÷ initial × 100.' },
     { id: 'check', text: 'Check my % changes', target: '#p2-check', done: () => p2table.getRows().length > 0 && okPills('#p2-fb') > 0 && !warnPills('#p2-fb'), hint: 'Press <strong>Check my % changes</strong> in the Data tab.' },
     { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-p2-q1', done: () => allFilled(['p2-q1', 'p2-q2', 'p2-q3']), hint: 'Scroll down and answer the three questions.' }
   ], { doneText: 'Procedure 2 done. Go on to <a href="#plasmolysis">Plasmolysis</a>.' });
+  const predP3 = Predict.add('#p3a-sim', { key: 'predict-plasmo', title: 'what will the cells do?', label: 'Before you add any solution, predict what will happen to the cells (and the membrane) in a salt or sugar solution compared with distilled water, and why.', placeholder: 'I predict the cells in ___ will ___ because ___.' });
   Lab.steps('#p3a-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-plasmo', done: predP3.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'add', text: 'Add a solution', target: '#p3a-run', done: () => p3Added || p3table.getRows().length > 0, hint: 'Choose a solution and press <strong>Add solution under cover slip</strong>. Watch the cells for two minutes.' },
     { id: 'rec', text: 'Record this view', target: '#p3a-rec', done: () => p3table.getRows().length > 0, hint: 'Press <strong>Record this view</strong>, then count the plasmolyzed cells.' },
     { id: 'count', text: 'Type the plasmolyzed count', target: '#p3a-table input', done: () => p3table.getRows().some(r => isNum(r.plz)), hint: 'Open the <strong>Data</strong> tab and type how many cells are plasmolyzed.' },
@@ -1789,7 +1857,9 @@ Lab.init({ id: 'lab04' });
     { id: 'assign', text: 'Assign a concentration to each cup', target: '#p3b-as0', done: identDone, hint: 'Rank the cups by % change and choose 0 to 1.0 M for each color.' },
     { id: 'check', text: 'Check my identification', target: '#p3b-idcheck', done: () => CUPS.every((c, i) => assigned(i) === secret[i]), hint: 'Press <strong>Check my identification</strong>.' }
   ], { doneText: 'Cups identified. Soak the plant cores in the next box.' });
+  const predSoak = Predict.add('#soak-sim', { key: 'predict-soak', title: 'how will the potato cores change?', label: 'Before you soak the cores overnight, predict how the mass of potato cores (mass change, %) will change from the lowest to the highest sucrose concentration, and why.', placeholder: 'I predict the cores in low sucrose will ___ and in high sucrose will ___ because ___.' });
   Lab.steps('#soak-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-soak', done: predSoak.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'id', text: 'Identify the cups (above)', target: '#p3b-as0', done: () => identDone() || p3bTable.getRows().some(r => r.conc != null), hint: 'Scroll up and assign a concentration to each colored cup.' },
     { id: 'run', text: 'Weigh, soak overnight, re-weigh', target: '#p3b-run', done: () => p3bTable.getRows().length > 0, hint: 'Press <strong>Weigh, soak overnight, re-weigh</strong>.' },
     { id: 'rep', text: 'Run each tissue twice', target: '#p3b-run', done: () => p3bTable.getRows().length >= 12, hint: 'Run it again for replicate cups.' },
@@ -1797,13 +1867,19 @@ Lab.init({ id: 'lab04' });
     { id: 'psi', text: 'Calculate ψ of the tissue (below)', target: '#p3b-c', done: () => ['#p3b-c', '#p3b-psis', '#p3b-psi'].every(s => isNum($(s).value)), hint: 'Scroll down: find the isotonic point from the fit line, then ψ<sub>S</sub> = −iCRT.' },
     { id: 'chk', text: 'Check my calculation', target: '#p3b-check', done: () => okPills('#p3b-fb') >= 3, hint: 'Press <strong>Check my calculation</strong>.' }
   ], { doneText: 'Part B done. Go on to <a href="#design">Design</a>.' });
+  const predD = Predict.add('#d-sim', { key: 'predict-design', title: 'how will your variable change the result?', label: 'Before you run your experiment, predict how your dependent variable will change across the levels, and explain why using diffusion or water potential.', placeholder: 'I predict ___ will ___ as ___ increases because ___.' });
   Lab.steps('#d-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-design', done: predD.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => allFilled(['d-question', 'd-hyp', 'd-vars', 'd-control']), hint: 'Write your plan in the four boxes above.' },
     { id: 'iv', text: 'Choose a variable and levels', target: '#d-iv', sticky: true, done: () => dTouched || draw.getRows().length > 0, hint: 'Pick the independent variable and type its levels.' },
     { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => draw.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
     { id: 'res', text: 'Describe your results (below)', target: '#p-d-results', done: () => allFilled(['d-results', 'd-support']), hint: 'Scroll down and describe your results.' }
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
-  Lab.gate('#d-run', () => dLevels().length ? '' : 'Enter at least one valid level');
+  Lab.gate('#p1-run', () => predP1.has() || p1table.getRows().length ? '' : predP1.reason(), { show: '#p-predict-sav' });
+  Lab.gate('#p2-run', () => predP2.has() || p2table.getRows().length ? '' : predP2.reason(), { show: '#p-predict-bags' });
+  Lab.gate('#p3a-run', () => predP3.has() || p3table.getRows().length ? '' : predP3.reason(), { show: '#p-predict-plasmo' });
+  Lab.gate('#p3b-run', () => predSoak.has() || p3bTable.getRows().length ? '' : predSoak.reason(), { show: '#p-predict-soak' });
+  Lab.gate('#d-run', () => !predD.has() && !draw.getRows().length ? predD.reason() : dLevels().length ? '' : 'Enter at least one valid level', { show: '#p-predict-design' });
 
   /* toasts for key moments (the feedback lines are live regions, so these are not announced twice) */
   const checkToast = (btnSel, fbSel, rowsFn, key, what) => $(btnSel).addEventListener('click', () => {

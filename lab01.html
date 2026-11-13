@@ -38,6 +38,14 @@
   .tt-grid fieldset { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; margin: 0; min-width: 0; }
   .sim--fit > .sim-main.is-wide { align-self: stretch; } /* results column uses the full height of the sim box */
   .tt-grid legend { font-weight: 600; font-size: .9rem; padding: 0 4px; }
+  .predict-box { margin: 0 0 14px; border-left: 4px solid var(--accent); }
+  .predict-state { font-size: .8rem; font-weight: 600; margin-left: 6px; padding: 1px 8px; border-radius: 99px; }
+  .predict-state.is-ok { background: var(--ok-soft); color: var(--ok); }
+  .predict-state.is-req { background: var(--warn-soft); color: var(--warn); }
+  .predict-box .prompt textarea { min-height: 3.2rem; }
+  .predict-q { margin: 4px 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid var(--accent); font-style: italic; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .predict-where { margin: 6px 0 0; }
+  .cer-hint { margin: 0 0 10px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -181,12 +189,12 @@
             <figure><canvas class="viz" id="leaf" aria-label="Magnified first true leaf. Tap trichomes on the right margin to count them."></canvas><div class="row" id="leaf-zoom" role="group" aria-label="Magnifier zoom" style="margin:6px 0 0;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn btn--sm" id="zoom-out" type="button" aria-label="Zoom out" style="min-width:44px;min-height:44px">−</button><button class="btn btn--sm" id="zoom-in" type="button" aria-label="Zoom in" style="min-width:44px;min-height:44px">+</button><button class="btn btn--ghost btn--sm" id="zoom-reset" type="button" style="min-height:44px">Reset view</button><span class="muted small" id="zoom-out-label" aria-live="polite">Zoom 1×. Zoom in, then drag the leaf to move it.</span></div><figcaption>Magnifier (≈10×), backlit against a dark card. Count only the right margin.</figcaption></figure>
           </div>
           <div class="readouts">
-            <div class="readout"><span class="k">Hairs marked</span><span class="v" id="mark-count">0</span></div>
-            <div class="readout"><span class="k">Plants scored</span><span class="v" id="r-n">0</span></div>
-            <div class="readout"><span class="k">Mean</span><span class="v" id="r-mean">—</span></div>
-            <div class="readout"><span class="k">Median</span><span class="v" id="r-med">—</span></div>
-            <div class="readout"><span class="k">Range</span><span class="v" id="r-range">—</span></div>
-            <div class="readout"><span class="k">SD</span><span class="v" id="r-sd">—</span></div>
+            <div class="readout"><span class="k">Hairs marked (hairs)</span><span class="v" id="mark-count">0</span></div>
+            <div class="readout"><span class="k">Plants scored (plants)</span><span class="v" id="r-n">0</span></div>
+            <div class="readout"><span class="k">Mean (hairs)</span><span class="v" id="r-mean">—</span></div>
+            <div class="readout"><span class="k">Median (hairs)</span><span class="v" id="r-med">—</span></div>
+            <div class="readout"><span class="k">Range (hairs)</span><span class="v" id="r-range">—</span></div>
+            <div class="readout"><span class="k">SD (hairs)</span><span class="v" id="r-sd">—</span></div>
           </div>
           <div id="hist1"></div>
         </div>
@@ -226,10 +234,10 @@
         <div class="stage">
           <canvas class="viz" id="bee" aria-label="Isolated light box with the selected plants in flower and a bee stick moving pollen between them."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Parents selected</span><span class="v" id="s-n">—</span></div>
-            <div class="readout"><span class="k">Parents' mean</span><span class="v" id="s-mean">—</span></div>
-            <div class="readout"><span class="k">Parents' SD</span><span class="v" id="s-sd">—</span></div>
-            <div class="readout"><span class="k">Flowers pollinated</span><span class="v" id="s-flowers">0</span></div>
+            <div class="readout"><span class="k">Parents selected (plants)</span><span class="v" id="s-n">—</span></div>
+            <div class="readout"><span class="k">Parents' mean (hairs)</span><span class="v" id="s-mean">—</span></div>
+            <div class="readout"><span class="k">Parents' SD (hairs)</span><span class="v" id="s-sd">—</span></div>
+            <div class="readout"><span class="k">Flowers pollinated (flowers)</span><span class="v" id="s-flowers">0</span></div>
           </div>
           <div id="hist-sel"></div>
         </div>
@@ -259,10 +267,10 @@
         </div>
         <div class="stage">
           <div class="readouts">
-            <div class="readout"><span class="k">Gen 1 mean</span><span class="v" id="c-m1">—</span></div>
-            <div class="readout"><span class="k">Gen 2 mean (selected)</span><span class="v" id="c-m2">—</span></div>
-            <div class="readout"><span class="k">Gen 2 mean (control)</span><span class="v" id="c-mc">—</span></div>
-            <div class="readout"><span class="k">Welch t (Gen 2 vs Gen 1)</span><span class="v" id="c-t">—</span></div>
+            <div class="readout"><span class="k">Gen 1 mean (hairs)</span><span class="v" id="c-m1">—</span></div>
+            <div class="readout"><span class="k">Gen 2 mean, selected (hairs)</span><span class="v" id="c-m2">—</span></div>
+            <div class="readout"><span class="k">Gen 2 mean, control (hairs)</span><span class="v" id="c-mc">—</span></div>
+            <div class="readout"><span class="k">Welch t, Gen 2 vs Gen 1 (no units)</span><span class="v" id="c-t">—</span></div>
           </div>
           <div id="cmp-hist"></div>
           <div id="cmp-means"></div>
@@ -273,7 +281,7 @@
       <div class="calc">
         <div class="field"><label for="in-S">Selection differential S (hairs)</label><input id="in-S" type="number" step="any" data-save="calc-S" data-label="Selection differential S"></div>
         <div class="field"><label for="in-R">Response R (hairs)</label><input id="in-R" type="number" step="any" data-save="calc-R" data-label="Response R"></div>
-        <div class="field"><label for="in-h2">Realized heritability h²</label><input id="in-h2" type="number" step="any" data-save="calc-h2" data-label="Realized heritability"></div>
+        <div class="field"><label for="in-h2">Realized heritability h² (no units)</label><input id="in-h2" type="number" step="any" data-save="calc-h2" data-label="Realized heritability"></div>
         <button class="btn" id="check-calc" type="button">Check my numbers</button>
       </div>
       <p class="status" id="calc-status" aria-live="polite"></p>
@@ -314,10 +322,10 @@
         <div class="stage">
           <canvas class="viz" id="d-canvas" aria-label="Representative plants from each generation of the first selected line, drawn to show height, hairs and stem color."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Start mean</span><span class="v" id="d-r0">—</span></div>
-            <div class="readout"><span class="k">Final mean (selected)</span><span class="v" id="d-r1">—</span></div>
-            <div class="readout"><span class="k">Final mean (control)</span><span class="v" id="d-r2">—</span></div>
-            <div class="readout"><span class="k">Welch t, final gen</span><span class="v" id="d-rt">—</span></div>
+            <div class="readout"><span class="k">Start mean (trait units)</span><span class="v" id="d-r0">—</span></div>
+            <div class="readout"><span class="k">Final mean, selected (trait units)</span><span class="v" id="d-r1">—</span></div>
+            <div class="readout"><span class="k">Final mean, control (trait units)</span><span class="v" id="d-r2">—</span></div>
+            <div class="readout"><span class="k">Welch t, final gen (no units)</span><span class="v" id="d-rt">—</span></div>
           </div>
           <div id="d-chart"></div>
           <div id="d-hist"></div>
@@ -336,22 +344,22 @@
       <p class="muted small">Compare two populations' means. Fill in from your simulation or type in your own class data. If |t| is larger than the critical value, the difference is unlikely to be chance alone (p &lt; 0.05).</p>
       <div class="tt-grid">
         <fieldset><legend>Population A</legend>
-          <div class="field"><label for="ta-m">Mean</label><input id="ta-m" type="number" step="any" value="12.0"></div>
-          <div class="field"><label for="ta-s">Standard deviation</label><input id="ta-s" type="number" step="any" value="9.0"></div>
-          <div class="field"><label for="ta-n">n</label><input id="ta-n" type="number" step="1" value="150"></div>
+          <div class="field"><label for="ta-m">Mean (hairs)</label><input id="ta-m" type="number" step="any" value="12.0"></div>
+          <div class="field"><label for="ta-s">Standard deviation (hairs)</label><input id="ta-s" type="number" step="any" value="9.0"></div>
+          <div class="field"><label for="ta-n">n (plants)</label><input id="ta-n" type="number" step="1" value="150"></div>
         </fieldset>
         <fieldset><legend>Population B</legend>
-          <div class="field"><label for="tb-m">Mean</label><input id="tb-m" type="number" step="any" value="20.0"></div>
-          <div class="field"><label for="tb-s">Standard deviation</label><input id="tb-s" type="number" step="any" value="10.0"></div>
-          <div class="field"><label for="tb-n">n</label><input id="tb-n" type="number" step="1" value="150"></div>
+          <div class="field"><label for="tb-m">Mean (hairs)</label><input id="tb-m" type="number" step="any" value="20.0"></div>
+          <div class="field"><label for="tb-s">Standard deviation (hairs)</label><input id="tb-s" type="number" step="any" value="10.0"></div>
+          <div class="field"><label for="tb-n">n (plants)</label><input id="tb-n" type="number" step="1" value="150"></div>
         </fieldset>
       </div>
       <div class="row"><button class="btn btn--primary" id="tt-run" type="button">Calculate t</button><button class="btn" id="tt-fill" type="button">Fill with Gen 1 vs Gen 2 (selected)</button></div>
       <div class="readouts">
-        <div class="readout"><span class="k">Difference</span><span class="v" id="tt-d">—</span></div>
-        <div class="readout"><span class="k">t</span><span class="v" id="tt-t">—</span></div>
-        <div class="readout"><span class="k">df (Welch)</span><span class="v" id="tt-df">—</span></div>
-        <div class="readout"><span class="k">Critical t (0.05)</span><span class="v" id="tt-c">—</span></div>
+        <div class="readout"><span class="k">Difference (same units as the means)</span><span class="v" id="tt-d">—</span></div>
+        <div class="readout"><span class="k">t (no units)</span><span class="v" id="tt-t">—</span></div>
+        <div class="readout"><span class="k">df, Welch (no units)</span><span class="v" id="tt-df">—</span></div>
+        <div class="readout"><span class="k">Critical t, 0.05 (no units)</span><span class="v" id="tt-c">—</span></div>
       </div>
       <p class="status" id="tt-status" aria-live="polite"></p>
       <h3>Questions</h3>
@@ -373,7 +381,7 @@
   <!-- ============ 10. SUBMIT ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
-    <div class="step-body"><p class="muted small">Your tables and answers save in this browser. The virtual plants themselves are regrown when you reload the page, so finish a simulation run before you leave.</p><div data-responses></div></div>
+    <div class="step-body"><p class="muted small">Your tables and answers save in this browser. Your virtual plants, scored counts and the choices you made in the simulation are also saved, so reloading the page brings your work back. A simulation run that is still playing when you leave stops, so let it finish first.</p><div data-responses></div></div>
   </section>
 </main>
 
@@ -389,6 +397,52 @@
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
   Lab.init({ id: 'lab01' });
+/* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
+const Predict = (function () {
+  const $ = Lab.$, ids = [];
+  const val = k => { const t = document.getElementById('p-' + k); return ((t && t.value) || '').trim(); };
+  const has = k => val(k).length >= 6;
+  const refreshAll = () => ids.forEach(f => f());
+  document.addEventListener('input', refreshAll, true);
+  /* Add a required prediction before a simulation. o: {key, label, placeholder, rows, title} */
+  function add(sim, o) {
+    sim = typeof sim === 'string' ? $(sim) : sim;
+    const state = Lab.h('span', { class: 'predict-state' });
+    const inner = Lab.h('div', { class: 'inner' });
+    const det = Lab.h('details', { class: 'disclose predict-box', id: 'predict-box-' + o.key }, Lab.h('summary', null, 'Predict first: ' + (o.title || 'what do you expect to see?') + ' ', state), inner);
+    sim.parentNode.insertBefore(det, sim);
+    Lab.prompt(inner, { key: o.key, label: o.label, rows: o.rows || 2, placeholder: o.placeholder || '' });
+    const upd = () => { const ok = has(o.key); state.textContent = ok ? '✓ saved' : 'required'; state.className = 'predict-state ' + (ok ? 'is-ok' : 'is-req'); };
+    ids.push(upd); upd(); det.open = !has(o.key);
+    return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
+  }
+  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  function compare(container, o) {
+    container = typeof container === 'string' ? $(container) : container;
+    const list = Lab.h('div', { class: 'predict-list' });
+    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
+    container.append(box);
+    const render = () => {
+      list.textContent = '';
+      o.items.forEach(([k, where]) => {
+        const v = val(k);
+        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
+        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
+      });
+    };
+    ids.push(render); render();
+    Lab.onShow(box, render);
+    return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
+  function cer(cerEl, starters, hintHtml) {
+    cerEl = typeof cerEl === 'string' ? $(cerEl) : cerEl;
+    ['claim', 'evidence', 'reasoning'].forEach((k, i) => { const t = cerEl.querySelectorAll('textarea')[i]; if (t && starters[k]) t.placeholder = starters[k]; });
+    const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
+    cerEl.parentNode.insertBefore(d, cerEl);
+  }
+  return { add, compare, cer, has, val };
+})();
 
   /* ---------------- Pre-lab ---------------- */
   Lab.quiz('#prelab', [
@@ -1001,7 +1055,7 @@
   });
 
   /* ---------------- scoring readouts & histogram ---------------- */
-  const hist1 = Lab.chart('#hist1', { type: 'bar', xLabel: 'Trichomes on right margin of first true leaf (hairs)', yLabel: 'Number of plants', series: [], height: 300 });
+  const hist1 = Lab.chart('#hist1', { type: 'bar', xLabel: 'Trichomes on right margin of first true leaf (hairs)', yLabel: 'Plants (count)', series: [], height: 300 });
   const valOf = p => p.hand != null ? p.hand : p.ph.trich;
   const scoredVals = pop => pop.plants.filter(p => p.scored).map(valOf);
   function updateScoring() {
@@ -1064,7 +1118,7 @@
   const selPct = $('#sel-pct'), selOut = $('#sel-pct-out');
   const syncPct = () => selOut.textContent = selPct.value + '%'; selPct.addEventListener('input', syncPct); syncPct();
   $('#dir-seg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dir = +b.dataset.dir; Lab.$$('#dir-seg button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-  const histSel = Lab.chart('#hist-sel', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Number of plants', series: [], height: 260 });
+  const histSel = Lab.chart('#hist-sel', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Plants (count)', series: [], height: 260 });
   function renderSelection() {
     if (!selected) { ['#s-n', '#s-mean', '#s-sd'].forEach(id => $(id).textContent = '—'); $('#s-flowers').textContent = '0'; histSel.update({ categories: [], series: [] }); drawBee(); return; }
     const v = selected.map(valOf), d = describe(v);
@@ -1273,11 +1327,11 @@
   });
 
   /* ================= GENERATION 2 & COMPARISON ================= */
-  const cmpHist = Lab.chart('#cmp-hist', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Number of plants', series: [], height: 300 });
+  const cmpHist = Lab.chart('#cmp-hist', { type: 'bar', xLabel: 'Trichomes (hairs)', yLabel: 'Plants (count)', series: [], height: 300 });
   const cmpMeans = Lab.chart('#cmp-means', { type: 'bar', xLabel: 'Population (error bars: ±2 SE)', yLabel: 'Mean trichomes (hairs)', series: [], height: 280 });
-  const linesChart = Lab.chart('#lines', { xLabel: 'Generation', yLabel: 'Mean trichomes ± 2 SE (hairs)', series: [], height: 300 });
+  const linesChart = Lab.chart('#lines', { xLabel: 'Generation (no.)', yLabel: 'Mean trichomes ± 2 SE (hairs)', series: [], height: 300 });
   const genTable = Lab.table('#gen-table', {
-    columns: [{ key: 'pop', label: 'Population' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'median', label: 'Median', num: true, digits: 1 }, { key: 'range', label: 'Range' }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }]
+    columns: [{ key: 'pop', label: 'Population' }, { key: 'n', label: 'n', unit: 'plants', num: true, digits: 0 }, { key: 'mean', label: 'Mean', unit: 'hairs', num: true, digits: 2 }, { key: 'median', label: 'Median', unit: 'hairs', num: true, digits: 1 }, { key: 'range', label: 'Range', unit: 'hairs' }, { key: 'sd', label: 'SD', unit: 'hairs', num: true, digits: 2 }, { key: 'se', label: 'SE', unit: 'hairs', num: true, digits: 2 }]
   });
   const fullyScored = p => p.plants.every(x => x.scored);
   function statRow(name, v) { const d = describe(v); return { pop: name, n: d.n, mean: d.mean, median: d.median, range: d.n ? `${d.min}–${d.max}` : '—', sd: d.sd, se: d.se }; }
@@ -1352,11 +1406,11 @@
   Object.values(dEls).forEach(el => el.addEventListener('input', dSync)); dSync();
   let dDir = 1;
   $('#d-dir').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dDir = +b.dataset.dir; Lab.$$('#d-dir button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
-  const dChart = Lab.chart('#d-chart', { xLabel: 'Generation', yLabel: 'Mean ± 2 SE', series: [], height: 300 });
-  const dHist = Lab.chart('#d-hist', { type: 'bar', xLabel: 'Trait value', yLabel: 'Number of plants', series: [], height: 260 });
+  const dChart = Lab.chart('#d-chart', { xLabel: 'Generation (no.)', yLabel: 'Mean ± 2 SE (trait units)', series: [], height: 300 });
+  const dHist = Lab.chart('#d-hist', { type: 'bar', xLabel: 'Trait value (trait units)', yLabel: 'Plants (count)', series: [], height: 260 });
   const dTable = Lab.table('#d-table', {
     save: 'design', toast: false,
-    columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'setup', label: 'Settings' }, { key: 'line', label: 'Line' }, { key: 'gen', label: 'Gen', num: true, digits: 0 }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 2 }, { key: 'sd', label: 'SD', num: true, digits: 2 }, { key: 'se', label: 'SE', num: true, digits: 2 }]
+    columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'setup', label: 'Settings' }, { key: 'line', label: 'Line' }, { key: 'gen', label: 'Gen', unit: 'no.', num: true, digits: 0 }, { key: 'n', label: 'n', unit: 'plants', num: true, digits: 0 }, { key: 'mean', label: 'Mean', unit: 'trait units', num: true, digits: 2 }, { key: 'sd', label: 'SD', unit: 'trait units', num: true, digits: 2 }, { key: 'se', label: 'SE', unit: 'trait units', num: true, digits: 2 }]
   });
   const dCanvas = Lab.canvas('#d-canvas', window.innerWidth < 600 ? 0.75 : 0.5, { fit: true });
   let dLast = null;
@@ -1506,6 +1560,7 @@
   ].forEach(([key, label]) => Lab.prompt('#analysis', { key, label, rows: 3 }));
   const cer = $('#cer');
   [['C', 'cer-claim', 'Claim: Did evolution occur in your Fast Plant population?'], ['E', 'cer-evidence', 'Evidence: Which numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Explain the connection between variation, heritability, selection and the change you measured.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
+  Predict.cer(cer, { claim: 'The data show that evolution ___ (did / did not) occur in the population.', evidence: 'In the selected line, the mean was ___ hairs, compared with ___ hairs in the control (error bars ___).', reasoning: 'This happens because ___ (variation, heritability and selection) ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the trait) ___ (increased / did not change) in the selected line.</p><p><strong>Evidence:</strong> In the selected line, the mean was ___ (units), compared with ___ (units) in the control line. The error bars (do / do not) overlap, so ___.</p><p><strong>Reasoning:</strong> This happens because ___ (variation, heritability, selection), so the offspring of the selected parents ___.</p>');
 
   /* ================= REFLECT ================= */
   [
@@ -1514,6 +1569,7 @@
     ['r-natural', 'How is this artificial selection experiment similar to natural selection that causes antibiotic or pesticide resistance? How is it different?'],
     ['r-model', 'The simulation treats trichome number as the sum of many genes plus random environmental noise. Name one way real Fast Plants could behave differently from the model.']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 4 }));
+  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-selection', 'Before selecting the parents you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one mean (with units) from your data. What does any mismatch tell you?', rows: 4 });
 
   /* ---------------- start ---------------- */
   reset(); const restored = replayOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
@@ -1537,13 +1593,16 @@
     { id: 'bin', text: 'Try another bin width', target: '#bin-seg button', optional: true, done: () => binW !== 5, hint: 'Open More options and compare 2, 5 and 10 hairs.' },
     { id: 'desc', text: 'Describe the distribution', target: '#p-g1-describe', done: () => filled('g1-describe'), hint: 'Scroll down and answer the two questions.' }
   ], { doneText: 'Generation 1 is scored. Go on to <a href="#select-and-pollinate">Select &amp; pollinate</a>.' });
+  const predSel = Predict.add('#sel-sim', { key: 'predict-selection', title: 'what will generation 2 look like?', label: 'Before you mark the parents, predict how the mean number of trichomes (hairs) in generation 2 will compare with generation 1 if you select the plants with the most hairs, and why.', placeholder: 'I predict the generation 2 mean will be ___ than generation 1 because ___.' });
   Lab.steps('#sel-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-selection', done: predSel.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'mark', text: 'Choose and mark the parents', target: '#select-btn', done: () => !!selected, hint: 'Pick a direction and fraction, then press <strong>Mark selected plants</strong>. Score generation 1 first (<a href="#grow-and-score">Grow &amp; score</a>).' },
     { id: 'pol', text: 'Pollinate with the bee stick', target: '#pollinate', done: () => pollinated, hint: 'Press <strong>Pollinate</strong> and wait for the bee stick to finish.' },
     { id: 'grow', text: 'Plant generation 2', target: '#grow', done: () => selLine.length > 1, hint: 'Press <strong>Harvest seed and plant generation 2</strong>.' },
     { id: 'desc', text: 'Compare parents (below)', target: '#p-sel-describe', done: () => filled('sel-describe'), hint: 'Scroll down and compare the parents with generation 1.' }
   ], { doneText: 'Generation 2 is planted. Go on to <a href="#generation-2">Generation 2</a>.' });
-  Lab.gate('#select-btn', () => g1Scored() ? '' : 'Score generation 1 first (Grow & score part)');
+  Lab.gate('#select-btn', () => !predSel.has() && selLine.length < 2 ? predSel.reason() : g1Scored() ? '' : 'Score generation 1 first (Grow & score part)', { show: '#p-predict-selection' });
+  Lab.gate('#d-run', () => predD.has() || dTable.getRows().length ? '' : predD.reason(), { show: '#p-predict-design' });
   Lab.steps('#g2-steps', [
     { id: 'plant', text: 'Plant generation 2 first', target: '#score2', done: () => selLine.length > 1, hint: 'Go back to <a href="#select-and-pollinate">Select &amp; pollinate</a> and plant generation 2.' },
     { id: 'score', text: 'Score generation 2', target: '#score2', done: g2Scored, hint: 'Press <strong>Score generation 2</strong>, then read the Graph and Data.' },
@@ -1553,7 +1612,9 @@
   ], { doneText: 'Response measured. Go on to <a href="#design">Design</a>.' });
   Lab.gate('#score2', () => selLine.length > 1 ? '' : 'Plant generation 2 first (Select & pollinate part)');
   Lab.gate('#round', () => selLine.length > 1 ? '' : 'Plant generation 2 first (Select & pollinate part)');
+  const predD = Predict.add('#d-sim', { key: 'predict-design', title: 'how will your trait respond to selection?', label: 'Before you run your experiment, predict how the mean of your trait will change over the generations in the selected line and the control line, and why.', placeholder: 'I predict the selected line will ___ while the control line will ___ because ___.' });
   Lab.steps('#d-steps', [
+    { id: 'predict', text: 'Write your prediction', target: '#p-predict-design', done: predD.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'plan', text: 'Write question + hypothesis', target: '#p-d-question', done: () => filled('d-question') && filled('d-hypothesis'), hint: 'Write your question and hypothesis in the boxes above.' },
     { id: 'iv', text: 'Choose a trait and direction', target: '#d-trait', sticky: true, done: () => dTouched || dTable.getRows().length > 0, hint: 'Pick the trait, direction and number of generations.' },
     { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },

@@ -27,6 +27,7 @@ const nav = p => p.evaluate(() => ({
   console.log('Lab 2: simulation steps move the count live and a reload keeps it');
   let p = await T.open(ctx, 'lab02.html', 'card-model');
   let before = (await nav(p)).links.find(l => l.name === 'Card model');
+  await p.fill('#p-predict-card', 'I predict p stays near 0.5 because mating is random'); await p.waitForTimeout(600); // predict-first gate
   await p.click('#card-step'); await p.waitForTimeout(500);
   let after = (await nav(p)).links.find(l => l.name === 'Card model');
   const num = t => +/^(\d+) of/.exec(t)[1];
