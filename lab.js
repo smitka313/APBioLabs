@@ -2274,12 +2274,48 @@
       if (a.hidden && a.getAttribute('role') === 'tabpanel') { const b = document.getElementById(a.getAttribute('aria-labelledby') || ''); if (b) b.click(); }
     }
   }
-  /* "Show me" arrival: open its part, scroll to it, pulse it for a few seconds and give it keyboard focus. */
+  /* A ring that lands on an element: Lab.highlight(el, {ms = 2500}). A fixed-position overlay (so no clipped ancestor or focus
+     style can hide it) that follows the element while the page scrolls, and runs about 2.5 s once the scroll has settled. Three
+     expanding pulses; with reduced motion it is a steady ring for the same time. Works after the caller has opened the part,
+     closed <details> and tab panels (revealTarget); an element that has no box of its own gets its nearest visible ancestor. */
+  let ringEl = null, ringRaf = 0, ringEnd = 0;
+  function visibleBox(t) {
+    for (let e = t; e && e !== document.body; e = e.parentElement) { const r = e.getBoundingClientRect(); if (r.width > 0 && r.height > 0) return e; }
+    return null;
+  }
+  function stopRing() { cancelAnimationFrame(ringRaf); ringRaf = 0; if (ringEl) { ringEl.remove(); ringEl = null; } }
+  Lab.highlight = function (t, o = {}) {
+    if (typeof t === 'string') t = $(t);
+    if (!t) return null;
+    stopRing();
+    const ms = o.ms || 2500, pad = 6, still = Lab.reducedMotion();
+    const ring = ringEl = h('div', { class: 'lab-ring' + (still ? ' is-still' : ''), 'aria-hidden': 'true' });
+    document.body.append(ring);
+    let last = '', calm = 0, t0 = performance.now(), settled = 0;
+    const tick = now => {
+      if (ringEl !== ring) return;
+      const box = visibleBox(t);
+      if (!box) { ringRaf = requestAnimationFrame(tick); if (now - t0 > 3000) stopRing(); return; }
+      const r = box.getBoundingClientRect();
+      const key = [r.left, r.top, r.width, r.height].map(Math.round).join(',');
+      ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
+      ring.classList.add('is-on');
+      calm = key === last ? calm + 1 : 0; last = key;
+      if (!settled && (calm >= 6 || now - t0 > 1500)) { settled = now; ring.classList.add('go'); }
+      if (settled && now - settled > ms) { stopRing(); return; }
+      ringRaf = requestAnimationFrame(tick);
+    };
+    ringRaf = requestAnimationFrame(tick);
+    return ring;
+  };
+  /* "Show me" arrival: open its part, scroll to it, ring it for a few seconds and give it keyboard focus. */
   function focusTarget(t) {
     const sec = partOf(t);
     if (sec && pages.on && !pages.suspended && sec !== pages.cur) goPart(sec, { hash: true, scroll: false });
     revealTarget(t);
-    t.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
+    const vb = visibleBox(t) || t;
+    vb.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' });
+    Lab.highlight(t);
     t.classList.add('lab-pulse'); clearTimeout(t._flashT);
     t._flashT = setTimeout(() => { if (!PULSED.has(t)) t.classList.remove('lab-pulse'); }, 3600);
     let f = t.matches('input, select, textarea, button, a[href], [tabindex]') ? t : $('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]', t);

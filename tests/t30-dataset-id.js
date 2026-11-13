@@ -24,7 +24,7 @@ const H = require('./_h');
   H.ok(id3 !== id1, 'without a stored record the ID is computed from the changed inputs: ' + id3);
   H.ok(await p.evaluate(() => !!localStorage.getItem('aplab:lab13:dataset')), 'and stored again');
   // New dataset gives a different ID that then sticks.
-  await p.click('.id-newds'); await p.click('.id-confirm .btn--primary'); await p.waitForTimeout(1200);
+  await p.click('.id-newds'); await p.click('.id-confirm .btn--primary'); await p.waitForLoadState('load'); await p.waitForTimeout(2000);
   const id4 = await idOf(p);
   H.ok(id4 !== id3, 'New dataset gives a new ID: ' + id4);
   await p.reload(); await p.waitForTimeout(700);

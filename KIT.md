@@ -188,7 +188,7 @@ Lab.gate('#cup-run', () => poured || rows().length ? '' : 'Pour the disks first 
 ```
 - Numbered checklist; the first unfinished non-optional step is current (highlighted, `aria-current="step"`),
   a one-line **Next:** hint (`hint`, else `text`) sits under it, and the step's `target` control gets a
-  gentle pulsing outline (static under reduced motion). Each step with a `target` has a small "Show me ↓" button
+  gentle pulsing outline (static under reduced motion). "Show me" also lands a **ring** on the target (`Lab.highlight(el, {ms})`, also usable from lab pages): a fixed-position two-tone frame with a glow and three expanding pulses, about 2.5 s once scrolling has settled (a steady ring under reduced motion, hidden in print). It follows the target while the page scrolls and works for targets in closed `details`, hidden Data/Graph/tab panels and other parts. Each step with a `target` has a small "Show me ↓" button
   (it only scrolls, so it is labelled that way; the step text is plain): it opens the control's part, closed
   "More options", and Data/Graph tab if needed, pulses the control for a few seconds and focuses it (and
   opens its part if it is elsewhere). `sticky:true` keeps a step ticked once done.
