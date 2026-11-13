@@ -742,9 +742,9 @@
      Lab.data.startOverAll(opener)   dialog (home page): erase every lab's work, keep name + class, bump dataset numbers
      Lab.data.startOverLab(opener)   dialog (lab page): erase this lab only
      Lab.data.labsWithWork()         [{id, no, done, total, text}] read from storage
-     Site-wide preferences that are not personal (aplab:ui:*, aplab:theme) survive a sign-out. */
+     Site-wide preferences that are not personal (aplab:ui:*, aplab:pref:*) survive a sign-out. */
   const LAB_IDS = Array.from({ length: 13 }, (_, i) => 'lab' + String(i + 1).padStart(2, '0'));
-  const KEEP_PREFS = ['aplab:ui:', 'aplab:theme'];
+  const KEEP_PREFS = ['aplab:ui:', 'aplab:pref:']; // not personal: view mode, theme
   const lsKeys = () => { try { return Object.keys(localStorage); } catch (e) { return []; } };
   const lsRemove = k => { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } };
   const lsWrite = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* blocked */ } };
@@ -798,7 +798,8 @@
     wipe(k => KEEP_PREFS.some(p => k.startsWith(p)));
     memIdentity = null; memBackup = null;
     sessionSet(FLASH_KEY, 'signout');
-    location.reload();
+    /* From a lab page go to the home page: reloading the lab would record a fresh "last visited" for nobody. */
+    if (IS_LAB) location.assign('index.html'); else location.reload();
   }
   function doStartOverAll() {
     const idn = storedIdentity();
@@ -839,7 +840,7 @@
       gateNode = h('div', { class: 'dm-gate' }, h('label', { class: 'dm-check-label', for: uid + '-gate' }, gateEl, h('span', null, o.gate.label)));
     } else {
       gateEl = h('input', { type: 'text', id: uid + '-gate', class: 'dm-text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', 'aria-describedby': uid + '-gate-hint' });
-      const want = String(o.gate.expect), norm = v => normName(v).toLowerCase();
+      const want = String(o.gate.expect), norm = v => o.gate.exact ? String(v).trim() : normName(v).toLowerCase();
       gateEl.addEventListener('input', () => { confirmBtn.disabled = norm(gateEl.value) !== norm(want); });
       gateEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!confirmBtn.disabled) confirmBtn.click(); } });
       gateNode = h('div', { class: 'dm-gate field' }, h('label', { for: uid + '-gate' }, o.gate.label), gateEl, o.gate.hint ? h('p', { class: 'small muted', id: uid + '-gate-hint' }, o.gate.hint) : null);
@@ -924,7 +925,7 @@
       id: 'startover', opener, eyebrow: 'Start over', title: 'Start over with all labs?',
       warn: `This erases all of your lab work in every lab on this computer. ${idn ? 'Your name and class stay, and ' : ''}you get fresh simulated data (a new Dataset ID). It can't be undone.`,
       body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'Work that will be erased:'), list), saveBlock()],
-      gate: { kind: 'text', label: 'To confirm, type ERASE (capital letters)', expect: 'ERASE', hint: 'The button below turns on when you type ERASE.' },
+      gate: { kind: 'text', label: 'To confirm, type ERASE (capital letters)', expect: 'ERASE', exact: true, hint: 'The button below turns on when you type ERASE.' },
       confirmText: 'Erase all my lab work', onConfirm: doStartOverAll,
     });
   }
