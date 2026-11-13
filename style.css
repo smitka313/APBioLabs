@@ -944,3 +944,22 @@ body.has-dm { overflow: hidden; }
 .scroll-hint { font-size: .74rem; font-weight: 700; color: var(--accent); text-align: right; margin-top: 3px; letter-spacing: .02em; }
 .scroll-hint[hidden] { display: none; }
 @media print { .scroll-hint { display: none !important; } .table-wrap { background: none; } .table-wrap.is-scrollable table.data th:first-child, .table-wrap.is-scrollable table.data td:first-child { position: static; box-shadow: none; } }
+
+/* ---------- Phone and touch: every tap target at least 40 px (tests/t50-phone.js) ---------- */
+@media (max-width: 760px), (pointer: coarse) {
+  .btn, .btn--sm, button.btn--ghost, button.chip, a.btn, .sim-tab, .tab, .seg > button, button.tube, .theme-opt, .sound-toggle, .link-btn,
+  .linkbtn, .si-show, .project-link, .crumbs a, .step-nav a, .nav-arrow, .parts-toggle, .pause-btn { min-height: 40px; box-sizing: border-box; }
+  .btn, a.btn, .sim-tab, .tab, .seg > button, .theme-opt, .sound-toggle, .link-btn, .linkbtn, .si-show, .project-link, .step-nav a, .nav-arrow, .parts-toggle, .pause-btn, button.chip, button.tube { display: inline-flex; align-items: center; justify-content: center; }
+  .btn, .link-btn, .sound-toggle, .theme-opt, .linkbtn, .si-show { min-width: 40px; }
+  .linkbtn, .link-btn { padding-inline: 8px; }
+  .theme-opt { padding-inline: 12px; }
+  .si-show { padding-block: 4px; }
+  .step-nav a { padding-block: 6px; }
+  .crumbs a, .project-link { display: inline-flex; align-items: center; }
+  select, input[type="text"], input[type="number"], input[type="search"], input[type="email"], input:not([type]) { min-height: 40px; box-sizing: border-box; }
+  input[type="range"] { min-height: 40px; }
+  details > summary, details.more > summary, details.disclose > summary, details.disclose--sm > summary { min-height: 40px; box-sizing: border-box; padding-block: 10px; }
+  label.check, .choice, .dm-check-label { min-height: 40px; display: flex; align-items: center; }
+  .step-nav ol { padding-block: 6px; }
+  .dm-save .transfer-btn { min-height: 40px; }
+}
