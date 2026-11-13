@@ -185,9 +185,39 @@
      'frq-score', {label:'FRQ self-score', value:3, unit:'of 4'}). Stored as store 'keyres:<id>' = {label, value, unit, part, t}.
      Lab.keyResults() → [{id, label, value, unit, part, t}] oldest first. They go into the report, the progress file
      and the teacher dashboard. */
+  /* Key-result clean-up. A key result is exported as "Label: value unit" with any extra wording in a separate Notes cell,
+     so a stored record is normalised first: pipes, line breaks and control characters are removed from text; an object value
+     becomes "k: v, k: v" (or its own .value), an array "a, b, c", NaN/Infinity becomes "no value"; and a `unit` that is really a
+     sentence ("df = 1; critical value 3.84") is moved into `note`. */
+  const krText = (s, max) => { let t = String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s*\|\s*/g, ' / ').replace(/\s+/g, ' ').trim(); if (max && t.length > max) t = t.slice(0, max - 1) + '…'; return t; };
+  const krNum = n => (Number.isFinite(n) ? Math.round(n * 1e6) / 1e6 : null);
+  function krValue(v, depth) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return krNum(v);
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    if (Array.isArray(v)) { const a = v.map(x => krValue(x, (depth || 0) + 1)).filter(x => x != null); return a.length ? krText(a.join(', '), 200) : null; }
+    if (typeof v === 'object') {
+      if ('value' in v && (depth || 0) < 2) return krValue(v.value, (depth || 0) + 1);
+      const a = Object.keys(v).map(k => { const x = krValue(v[k], (depth || 0) + 1); return x == null ? null : krText(k, 40) + ': ' + x; }).filter(Boolean);
+      return a.length ? krText(a.join(', '), 200) : null;
+    }
+    return krText(v, 200) || null;
+  }
+  const unitIsNote = u => /[;=]/.test(u) || /\b(critical|df|degrees of freedom|threshold)\b/i.test(u) || u.length > 28;
+  function krNorm(r) {
+    const o = Object.assign({}, r);
+    o.value = krValue(r.value);
+    let unit = krText(r.unit, 120), note = krText(r.note, 200);
+    if (unit && unitIsNote(unit)) { note = note ? note + '; ' + unit : unit; unit = ''; }
+    o.unit = unit; o.note = note; if (r.label != null) o.label = krText(r.label, 160);
+    return o;
+  }
   Lab.keyResult = function (id, o) {
-    if (!id || !o || typeof o !== 'object') return null;
-    const rec = { label: o.label, value: o.value, unit: o.unit, part: o.part, t: Date.now() };
+    if (!id) return null;
+    if (o === null) { store.set('keyres:' + id, null); return null; }   // a calculator whose inputs changed can withdraw its result
+    if (!o || typeof o !== 'object') return null;
+    const rec = krNorm({ label: o.label, value: o.value, unit: o.unit, note: o.note, part: o.part });
+    rec.t = Date.now();
     store.set('keyres:' + id, rec);
     return rec;
   };
@@ -197,12 +227,12 @@
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (!k || !k.startsWith(pre)) continue;
-        try { const v = JSON.parse(localStorage.getItem(k)); if (v && typeof v === 'object') out.push(Object.assign({ id: k.slice(pre.length) }, v)); } catch (e) { /* skip bad value */ }
+        try { const v = JSON.parse(localStorage.getItem(k)); if (v && typeof v === 'object') out.push(Object.assign({ id: k.slice(pre.length) }, krNorm(v), { t: v.t })); } catch (e) { /* skip bad value */ }
       }
     } catch (e) { /* storage blocked */ }
     return out.sort((a, b) => (a.t || 0) - (b.t || 0) || String(a.id).localeCompare(String(b.id)));
   };
-  const keyResultText = r => (r.value == null ? '—' : typeof r.value === 'number' ? String(Math.round(r.value * 1e6) / 1e6) : String(r.value)) + (r.unit ? ' ' + r.unit : '');
+  const keyResultText = r => (r.value == null ? '—' : String(r.value)) + (r.value != null && r.unit ? ' ' + r.unit : '');
 
   /* ---------------- "Saved ✓" status line ----------------
      Every Lab.store.set (prompts, tables, quizzes, steps, sim saves) reports here. Each .save-status element
@@ -1306,7 +1336,7 @@
       name: who.name, period: who.period, datasetId: who.datasetId,
       date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
       sections,
-      keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), part: r.part || '' })),
+      keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), value: r.value == null ? '' : String(r.value), unit: r.unit || '', note: r.note || '', part: r.part || '' })),
     };
   }
   /* Chart SVG → PNG in light colors (CSS variables resolved), legend and fit notes drawn in. */
@@ -1374,8 +1404,10 @@
     const borders = { top: border, bottom: border, left: border, right: border };
     const cell = (t, head) => new TableCell({ borders, shading: head ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E8EEEA' } : undefined, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new Paragraph({ children: [new TextRun({ text: String(t == null ? '' : t), bold: !!head, size: 18 })] })] });
     if (rep.keyResults && rep.keyResults.length) {
+      const anyNote = rep.keyResults.some(r => r.note);
+      const krCell = r => new TableCell({ borders, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new Paragraph({ children: [new TextRun({ text: String(r.label), bold: true, size: 18 }), new TextRun({ text: ': ' + r.text, size: 18 })] })] });
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun('Key results')] }));
-      kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ tableHeader: true, children: ['Result', 'Value'].map(t => cell(t, true)) })].concat(rep.keyResults.map(r => new TableRow({ cantSplit: true, children: [cell(r.label), cell(r.text)] }))) }));
+      kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ tableHeader: true, children: (anyNote ? ['Result', 'Notes'] : ['Result']).map(t => cell(t, true)) })].concat(rep.keyResults.map(r => new TableRow({ cantSplit: true, children: anyNote ? [krCell(r), cell(r.note)] : [krCell(r)] }))) }));
     }
     for (const s of rep.sections.concat(rep.timelapse && rep.timelapse.length ? [{ timelapse: true, name: 'My timelapse', items: [] }] : [])) {
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun(s.name + (s.heading && s.heading !== s.name ? ': ' + s.heading : ''))] }));
@@ -1437,7 +1469,7 @@
     const out = [];
     out.push(`<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
       <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div></dl></header>`);
-    if (rep.keyResults && rep.keyResults.length) out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>${rep.keyResults.map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table></section>`);
+    if (rep.keyResults && rep.keyResults.length) { const anyNote = rep.keyResults.some(r => r.note); out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th>${anyNote ? '<th>Notes</th>' : ''}</tr></thead><tbody>${rep.keyResults.map(r => `<tr><td><strong>${esc(r.label)}</strong>: ${esc(r.text)}</td>${anyNote ? `<td>${esc(r.note)}</td>` : ''}</tr>`).join('')}</tbody></table></section>`); }
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
     rep.sections.forEach((s, si) => {
       out.push(`<section class="rv-sec"><h2>${esc(s.name)}${s.heading && s.heading !== s.name ? `<span class="rv-sub">: ${esc(s.heading)}</span>` : ''}</h2>`);
