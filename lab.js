@@ -359,6 +359,7 @@
   const workListeners = []; let workTimer = null;
   function workChanged() { clearTimeout(workTimer); workTimer = setTimeout(() => workListeners.forEach(f => { try { f(); } catch (e) { console.warn(e); } }), 120); }
   const REG = { charts: [], tables: [], quizzes: [], prompts: [] }; // used by reports, worksheets and progress
+  Lab._reg = REG;   // read-only handle for tests (tests/t48-tables.js)
   const CANVASES = []; // every Lab.canvas, so a part that becomes visible can be resized and redrawn at once
   /* Lab.chart draws in a 640-unit-wide viewBox. A responsive chart (opts.responsive, or any chart inside a
      results panel) draws at its real CSS width instead, so axis text stays 12px in narrow columns. */
@@ -545,7 +546,7 @@
     }
     render();
     if (rows.length && opts.onChange) setTimeout(() => opts.onChange(rows), 0);
-    return {
+    return reg.api = {
       /* o.setup: true marks the new rows as page setup (not student work); false marks them as work. Default: setup while the page is still loading. */
       setRows(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; rows = r.map(x => { const c = Object.assign({}, x); if (su && c._setup == null) c._setup = true; else if (!su && o && o.setup === false) delete c._setup; return c; }); changed(); noteRows(rows.length); },
       addRow(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; const c = Object.assign({}, r); if (su) c._setup = true; else delete c._setup; rows.push(c); changed(); noteRows(1); },
@@ -554,6 +555,44 @@
       clear() { rows = []; changed(); },
     };
   };
+
+  /* ---------------- Wide tables: never lose a column off-screen ----------------
+     Every .table-wrap (Lab.table or a page's own) is watched. When its table is wider than the box, the wrap gets .is-scrollable
+     (first column sticks, edge shadows show), is made keyboard-focusable, and a "Scroll →" line under it says so until the
+     right end is reached. Inside a results panel the Data column is also widened (Lab.results) before anything scrolls. */
+  const WRAP_STATE = new WeakMap();
+  function wrapUpdate(w) {
+    const st = WRAP_STATE.get(w); if (!st || !w.isConnected) return;
+    const over = w.scrollWidth - w.clientWidth > 2 && w.clientWidth > 0;
+    const end = !over || w.scrollLeft + w.clientWidth >= w.scrollWidth - 2;
+    w.classList.toggle('is-scrollable', over);
+    w.classList.toggle('at-end', end);
+    if (over) { w.setAttribute('tabindex', '0'); w.setAttribute('role', 'region'); if (!w.getAttribute('aria-label')) w.setAttribute('aria-label', 'Data table. Scrolls sideways; arrow keys move it.'); }
+    else if (w.getAttribute('tabindex') === '0') w.removeAttribute('tabindex');
+    st.hint.hidden = !over || end;
+  }
+  function wrapWatch(w) {
+    if (WRAP_STATE.has(w)) return;
+    const hint = h('div', { class: 'scroll-hint', 'aria-hidden': 'true', hidden: true }, 'Scroll → for more columns');
+    w.after(hint);
+    WRAP_STATE.set(w, { hint });
+    const upd = () => wrapUpdate(w);
+    w.addEventListener('scroll', upd, { passive: true });
+    if (window.ResizeObserver) { const ro = new ResizeObserver(upd); ro.observe(w); const t = $('table', w); if (t) ro.observe(t); }
+    window.addEventListener('resize', upd);
+    upd();
+  }
+  function scanWraps() { $$('.table-wrap').forEach(wrapWatch); }
+  Lab.tableFit = { scan: scanWraps, update: () => $$('.table-wrap').forEach(wrapUpdate) };
+  (function () {
+    const start = () => {
+      scanWraps();
+      if (!('MutationObserver' in window)) return;
+      let q = false;
+      new MutationObserver(() => { if (q) return; q = true; requestAnimationFrame(() => { q = false; scanWraps(); }); }).observe(document.body, { childList: true, subtree: true });
+    };
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start, { once: true });
+  })();
 
   /* ---------------- Quiz ----------------
      Lab.quiz(el, questions, { id:'prelab' })
@@ -2676,16 +2715,32 @@
       if (wide || cur === 'scene') { stage.setAttribute('role', wide ? 'region' : 'tabpanel'); stage.setAttribute('aria-label', 'Scene'); }
       const p = tabs.find(t => t.k === cur);
       if (p && p.k !== 'scene') REG.charts.forEach(c => { if (p.panel.contains(c.el)) c.render(); });
+      fitData();
     }
+    /* A Data panel whose table would scroll sideways gets a wider column (up to 56% of the box) before anything is hidden. */
+    let fitQ = false;
+    function fitData() {
+      main.style.removeProperty('--res-w');
+      const dp = tabs.find(t => t.k === 'data');
+      if (!main.classList.contains('is-wide') || !dp || dp.panel.hidden || !main.clientWidth) { main.classList.remove('is-widened'); return; }
+      let need = 0;
+      $$('.table-wrap', dp.panel).forEach(w => { const t = $('table', w); if (t && t.scrollWidth > w.clientWidth + 2) need = Math.max(need, t.scrollWidth + (dp.panel.clientWidth - w.clientWidth) + 2); });
+      const base = dp.panel.clientWidth;
+      if (need > base) main.style.setProperty('--res-w', Math.min(need, Math.floor(main.clientWidth * 0.56)) + 'px');
+      main.classList.toggle('is-widened', need > base);
+    }
+    const fitSoon = () => { if (fitQ) return; fitQ = true; requestAnimationFrame(() => { fitQ = false; fitData(); }); };
+    window.addEventListener('resize', fitSoon);
     wireTabs(list, tabs, i => { const k = tabs[i].k; if (mq.matches) { if (k !== 'scene') wideSel = k; } else { narrowSel = k; if (k !== 'scene') wideSel = k; } apply(); }, o.label || 'Results');
     stage.setAttribute('aria-labelledby', tabs[0].btn.id);
     if (mq.addEventListener) mq.addEventListener('change', apply); else if (mq.addListener) mq.addListener(apply);
     apply();
     if ('MutationObserver' in window) {
       const mo = new MutationObserver(recs => {
+        fitSoon();
         if (!autoToasts.ready || Date.now() < badgeQuietUntil) return;   // loading, restoring saved data or re-showing a part: not a new result
         const cur = curKind();
-        recs.forEach(r => { const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
+        recs.forEach(r => { if (r.addedNodes.length && Array.from(r.addedNodes).every(n => n.classList && n.classList.contains('scroll-hint'))) return; const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
       });
       watched.forEach(w => mo.observe(w.el, { childList: true }));
     }
