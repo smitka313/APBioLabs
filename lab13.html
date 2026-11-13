@@ -234,6 +234,7 @@
             <div class="readout"><span class="k">Absorbance at 470 nm, control</span><span class="v" id="p1-ac">—</span></div>
             <div class="readout"><span class="k">Trial</span><span class="v" id="p1-trial">—</span></div>
           </div>
+          <div id="p1-timelapse"></div><p class="small muted" id="p1-tl-note" role="status" hidden></p>
           <div>
             <div class="note" style="margin-bottom:6px">Photos from the latest trial (match these to the palette below). After you record your own palette number in the Data tab, the matched number (for example &ldquo;≈ 6&rdquo;) appears on that photo so you can check it.</div>
             <div class="snaps" id="p1-snaps"></div>
@@ -285,6 +286,7 @@
         <div class="stage">
           <canvas class="viz" id="p2-canvas" aria-label="Rack of six reaction tubes, each with a different pH buffer, darkening at different rates"></canvas>
           <div class="readouts" id="p2-read"></div>
+          <div id="p2-timelapse"></div><p class="small muted" id="p2-tl-note" role="status" hidden></p>
           <div class="note chk-row" id="p2-chk" aria-live="polite"></div>
           <div><div class="note" style="margin-bottom:6px">Palette</div><div class="palette" id="palette2"></div></div>
         </div>
@@ -324,6 +326,7 @@
         <div class="stage">
           <canvas class="viz" id="d-canvas" aria-label="Rack of tubes, one per level, in a water bath; tubes darken as product forms"></canvas>
           <div class="readouts" id="d-read"></div>
+          <div id="d-timelapse"></div><p class="small muted" id="d-tl-note" role="status" hidden></p>
         </div>
       </div>
       <div id="d-table"></div>
@@ -808,7 +811,7 @@ function frq(host, o) {
     if (sc.spec) { specDigits(ctx, sc.spec, !!opts.spec, opts.specA); cuvettes(ctx, sc.cuv, [0, opts.spec && tubes[0].trace ? As[0] : 0, opts.spec && tubes[1] && tubes[1].trace ? As[1] : 0]); }
   }
   function animate(cv, tubes, tEnd, speed, opts, onTick, onDone, from = 0) {
-    let t = Math.min(tEnd, Math.max(0, from)); const lp = Lab.loop(dt => { t = Math.min(tEnd, t + dt * speed / 60); drawRack(cv, tubes, t, opts); onTick && onTick(t); if (t >= tEnd) { onDone && onDone(); return false; } });
+    let t = Math.min(tEnd, Math.max(0, from)); const lp = Lab.loop(dt => { t = Math.min(tEnd, t + dt * speed / 60); drawRack(cv, tubes, t, opts); onTick && onTick(t); if (t >= tEnd) { onDone && onDone(); return false; } }, { tick: 1 });
     if (Lab.reducedMotion()) { drawRack(cv, tubes, tEnd, opts); onTick && onTick(tEnd); onDone && onDone(); return; }
     if (t >= tEnd) { drawRack(cv, tubes, tEnd, opts); onTick && onTick(tEnd); onDone && onDone(); return; }
     lp.start();
@@ -832,6 +835,10 @@ function frq(host, o) {
   const mode1 = seg('#m1', v => { p1Opts.spec = v === 'spec'; if (!p1Busy) drawRack(cv1, p1Tubes, p1T, p1Opts); syncP1(); });
   const speed1 = seg('#sp1');
   const cv1 = Lab.canvas('#p1-canvas', 0.5, { fit: '440px' });
+  const tlNote = (id, m) => { const n = $(id); n.textContent = m; n.hidden = !m; };
+  const tlText = 'This run was already going when the page reloaded, so it has no replay.';
+  const rec1 = Lab.timelapse(cv1, { fps: 4, maxFrames: 120, width: 420, label: 'Procedure 1 tubes (5 min)', key: 'p1-tubes' });
+  rec1.mount('#p1-timelapse');
   let p1Tubes = [{ label: 'Enzyme + substrate', trace: null }, { label: 'No-enzyme control', trace: null }], p1Busy = false;
   cv1.onresize = () => drawRack(cv1, p1Tubes, p1T, p1Opts);
   drawRack(cv1, p1Tubes, 0, p1Opts);
@@ -901,10 +908,12 @@ function frq(host, o) {
     if (p1Busy) { $('#p1-status').textContent = 'The timer is running. Wait for the 5-minute reading.'; return; }
     const trial = (t1.getRows().reduce((m, r) => Math.max(m, r.trial), 0)) + 1, spec = mode1() === 'spec';
     Lab.store.set('p1-run', { trial, spec, speed: +speed1(), t0: Date.now() });
-    runP1(trial, spec, 0);
+    Lab.sound.play('click'); tlNote('#p1-tl-note', '');
+    runP1(trial, spec, 0, true);
   });
-  function runP1(trial, spec, from) {
+  function runP1(trial, spec, from, fresh) {
     p1Busy = true;
+    if (fresh && !Lab.reducedMotion()) rec1.start(); else if (!fresh && !Lab.reducedMotion()) tlNote('#p1-tl-note', tlText);
     const batch = rng.normal(1, 0.05);
     p1Tubes = [{ label: 'Enzyme + substrate', trace: react({ batch }) }, { label: 'No-enzyme control', trace: react({ enzMl: 0 }) }];
     const rows = []; let next = 0;
@@ -919,11 +928,12 @@ function frq(host, o) {
         const aE = spec ? readSpec(AE) : null, aC = spec ? readSpec(AC) : null;
         rows.push({ trial, t: next, aE, aC, cE: null, cC: null, _AE: AE, _AC: AC });
         if (spec) p1Opts.specA = aE;
+        if (spec && fresh) Lab.sound.play('beep');
         $('#p1-ae').textContent = spec ? fmt(aE, 3) : '—'; $('#p1-ac').textContent = spec ? fmt(aC, 3) : '—';
         next++;
       }
     }, () => {
-      p1Busy = false; t1.setRows(t1.getRows().concat(rows)); snapsUI(rows); Lab.store.set('p1-run', null);
+      p1Busy = false; if (rec1.recording) rec1.stop(); t1.setRows(t1.getRows().concat(rows)); snapsUI(rows); Lab.store.set('p1-run', null);
       $('#p1-status').textContent = `Trial ${trial} done. Record palette numbers for each time, then run another trial.`;
     }, from);
   }
@@ -958,6 +968,8 @@ function frq(host, o) {
     columns: [{ key: 'trial', label: 'Trial', num: true, digits: 0 }, { key: 'pH', label: 'pH', num: true, digits: 0 }, { key: 'tr', label: 'Read at', unit: 'min', num: true, digits: 0 }, { key: 'a0', label: 'Absorbance at 470 nm, start', num: true, digits: 3 }, { key: 'a1', label: 'Absorbance at 470 nm, read', num: true, digits: 3 }, { key: 'dA', label: 'Change in absorbance, ΔA', num: true, digits: 3 }, { key: 'c', label: 'Color', unit: 'palette number, 1–10', num: true, editable: true }],
     onChange: () => { syncP2(); reportP2(); }
   });
+  const rec2 = Lab.timelapse(cv2, { fps: 4, maxFrames: 120, width: 420, label: 'Procedure 2: six pH buffers', key: 'p2-tubes' });
+  rec2.mount('#p2-timelapse');
   const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'Change in absorbance, ΔA', xMin: 2, xMax: 12, yMin: 0, series: [] });
   function syncP2() {
     const rows = t2.getRows(), spec = mode2() === 'spec', key = spec ? 'dA' : 'c';
@@ -973,15 +985,17 @@ function frq(host, o) {
     const sel = PHS.filter(p => $('#ph-' + p).checked); if (!sel.length) { $('#p2-status').textContent = 'Choose at least one buffer.'; return; }
     const tb = baseT(), spec = mode2() === 'spec', trial = t2.getRows().reduce((m, r) => Math.max(m, r.trial), 0) + 1;
     Lab.store.set('p2-run', { sel, tb, spec, trial, t0: Date.now() });
-    runP2(sel, tb, spec, trial, 0);
+    Lab.sound.play('click'); tlNote('#p2-tl-note', '');
+    runP2(sel, tb, spec, trial, 0, true);
   });
   /* A pH trial is timed (30x clock). After a reload it has kept running by the clock. */
-  function runP2(sel, tb, spec, trial, from) {
-    p2Busy = true; const batch = rng.normal(1, 0.05);
+  function runP2(sel, tb, spec, trial, from, fresh) {
+    p2Busy = true;
+    if (fresh && !Lab.reducedMotion()) rec2.start(); else if (!fresh && !Lab.reducedMotion()) tlNote('#p2-tl-note', tlText); const batch = rng.normal(1, 0.05);
     p2Tubes = sel.map(p => ({ label: 'pH ' + p, trace: react({ pH: p, batch }, tb), tEnd: tb, pH: p }));
     $('#p2-status').textContent = `Trial ${trial}: reading at 0 and ${tb} min…`;
     animate(cv2, p2Tubes, tb, 30, p2Opts, t => { p2T = t; $('#p2-prog').style.width = (t / tb * 100) + '%'; }, () => {
-      p2Busy = false;
+      p2Busy = false; if (rec2.recording) { rec2.stop(); if (spec) Lab.sound.play('beep'); }
       const rows = p2Tubes.map(tu => { const A = at(tu.trace, tb), a0 = spec ? readSpec(0) : null, a1 = spec ? readSpec(A) : null; return { trial, pH: tu.pH, tr: tb, a0, a1, dA: spec ? +(a1 - a0).toFixed(3) : null, c: null, _A: A }; });
       t2.setRows(t2.getRows().concat(rows));
       const rd = $('#p2-read'); rd.innerHTML = '';
@@ -1014,6 +1028,8 @@ function frq(host, o) {
   const cvD = Lab.canvas('#d-canvas', 0.48, { fit: true });
   const dOpts = iv => ({ kind: 'd', caption: DIV[iv].label + ' · replicate 1 shown', bath: iv === 'temp', iv });
   let dTubes = [], dT = 0, dBusy = false;
+  const recD = Lab.timelapse(cvD, { fps: 4, maxFrames: 120, width: 420, label: 'Your experiment: all tubes (5 min)', key: 'design-tubes' });
+  recD.mount('#d-timelapse');
   /* Parse the typed levels. Anything that is not a number or is outside the range the model covers is reported, never silently dropped. */
   function levelsCheck() {
     const d = DIV[ivSel.value], toks = $('#d-levels').value.split(/[,;\s]+/).filter(Boolean), good = [], notNum = [], out = [];
@@ -1066,15 +1082,17 @@ function frq(host, o) {
     for (let r = 0; r < reps; r++) { const batch = rng.normal(1, 0.05); res.levels.forEach(L => { const opt = Object.assign({ batch, pre }, d.opt(L.x)); const tr = react(opt); const read = [0, 1, 2, 3, 4, 5].map(t => t === 0 ? readSpec(0) : readSpec(at(tr, t))); L.reps.push({ tr, read, rate: stats.linreg([0, 1, 2], read.slice(0, 3)).m }); }); }
     res.levels.forEach(L => { const v = L.reps.map(r => r.rate); L.mean = stats.mean(v); L.se = stats.se(v); });
     Lab.store.set('d-run', { iv, res, t0: Date.now() });
-    playD(res, iv, 0);
+    Lab.sound.play('click'); tlNote('#d-tl-note', '');
+    playD(res, iv, 0, true);
   });
   /* The 5-minute experiment (60x clock). Its results are held while it runs; after a reload it carries on by the clock. */
-  function playD(res, iv, from) {
+  function playD(res, iv, from, fresh) {
     const d = DIV[iv]; dBusy = true;
+    if (fresh && !Lab.reducedMotion()) recD.start(); else if (!fresh && !Lab.reducedMotion()) tlNote('#d-tl-note', tlText);
     dTubes = res.levels.map(L => ({ label: L.x + (d.unit ? ' ' + d.unit : ''), trace: L.reps[0].tr, T: iv === 'temp' ? L.x : null })); dTubes.iv = iv;
     $('#d-status').textContent = 'Running all tubes for 5 minutes…';
     animate(cvD, dTubes, 5, 60, dOpts(iv), t => { dT = t; $('#d-prog').style.width = (t / 5 * 100) + '%'; }, () => {
-      dBusy = false; Lab.store.set('d-run', null);
+      dBusy = false; if (recD.recording) { recD.stop(); Lab.sound.play('beep'); } Lab.store.set('d-run', null);
       dTable.setRows(res.levels.flatMap(L => L.reps.map((r, i) => ({ level: L.x + (d.unit ? ' ' + d.unit : ''), rep: i + 1, a1: r.read[1], a2: r.read[2], a3: r.read[3], a4: r.read[4], a5: r.read[5], rate: r.rate }))));
       dSum.setRows(res.levels.map(L => ({ level: L.x + (d.unit ? ' ' + d.unit : ''), n: L.reps.length, mean: L.mean, se: L.se, ci: fmt(L.mean - 2 * L.se, 4) + ' to ' + fmt(L.mean + 2 * L.se, 4) })));
       dRes = { iv, levels: res.levels.map(L => ({ x: L.x, mean: L.mean, se: L.se, reps: L.reps.map(r => ({ read: r.read, rate: r.rate })) })) };
@@ -1118,25 +1136,43 @@ function frq(host, o) {
     .forEach(([k, L, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 4 }); p.querySelector('label').dataset.letter = L; });
   cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
   const rf = $('#reflect-prompts');
-  /* Predict first: quote the student's own saved prediction(s) back in Reflect. */
-  function predRecall(host, items) {
-    const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
-    host.prepend(box);
-    const render = () => {
-      box.innerHTML = '';
-      items.forEach(([key, name]) => {
-        const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
-        box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
-          v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
-      });
-    };
-    render();
-    document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
-    Lab.onShow(host, render);
-  }
-  
-  predRecall(rf, [['predict-assay', 'the baseline assay'], ['p2-pred', 'the effect of pH'], ['d-h', 'your own experiment']]);
-  Lab.prompt(rf, { key: 'r-pred', label: 'Compare your three predictions (quoted above) with your data: the enzyme versus control tubes, the pH optimum, and your own experiment. Cite one measured value with units for each. Which predictions held up, and what does each mismatch tell you about enzyme structure?', rows: 5 });
+  /* Predict vs. actual: each saved prediction beside the matching result. */
+  const rfCompare = h('div', { id: 'reflect-compare' }); rf.prepend(rfCompare);
+  const A13 = (r, k) => numOk(r['a' + k]) ? r['a' + k] : numOk(r['c' + k]) ? 0.075 * (r['c' + k] - 1) : NaN;
+  Lab.predictCompare(rfCompare, {
+    predictKey: 'predict-assay', title: 'Baseline assay: your prediction vs. your tubes', chartEl: '#p1-chart', part: 'Procedure 1', partId: 'procedure-1',
+    getResult: () => {
+      const rows = (t1.getRows() || []).filter(r => r && numOk(r.t)); if (!rows.length) return null;
+      const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), rs = rows.filter(r => r.trial === tr).sort((a, b) => a.t - b.t), e5 = rs.find(r => r.t === 5) || rs[rs.length - 1];
+      const pts = rs.filter(r => r.t <= 2 && numOk(A13(r, 'E')));
+      if (!numOk(A13(e5, 'E')) || pts.length < 2) return null;
+      return { trial: tr, t: e5.t, enz: A13(e5, 'E'), ctl: A13(e5, 'C'), rate: stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E'))).m };
+    },
+    summarize: r => `Trial ${r.trial}: the enzyme tube reached A₄₇₀ = ${fmt(r.enz, 3)} at ${r.t} min (initial rate ${fmt(r.rate, 3)} A₄₇₀/min); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, 3) : 'n/a'}.`,
+    delta: r => numOk(r.ctl) ? (r.ctl > 0 && r.enz > r.ctl ? `The enzyme tube was ${fmt(r.enz / r.ctl, 1)}× the control, so the color came from the enzyme.` : r.enz > r.ctl ? 'The enzyme tube darkened while the control stayed at zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null
+  });
+  Lab.predictCompare(rfCompare, {
+    predictKey: 'p2-pred', title: 'Effect of pH: your prediction vs. your trials', chartEl: '#p2-chart', part: 'Procedure 2: pH', partId: 'procedure-2-ph',
+    getResult: () => {
+      const rows = t2.getRows() || [], spec = mode2() === 'spec', key = spec ? 'dA' : 'c', pts = [];
+      PHS.forEach(p => { const v = rows.filter(r => r.pH === p && numOk(r[key])).map(r => r[key]); if (v.length) pts.push({ pH: p, y: stats.mean(v), n: v.length }); });
+      return pts.length >= 2 ? { pts, spec } : null;
+    },
+    summarize: r => { const hi = r.pts.reduce((a, b) => b.y > a.y ? b : a), lo = r.pts.reduce((a, b) => b.y < a.y ? b : a), u = r.spec ? 'ΔA' : 'palette number'; return `Highest activity at pH ${hi.pH} (mean ${u} ${fmt(hi.y, r.spec ? 3 : 1)}), lowest at pH ${lo.pH} (${fmt(lo.y, r.spec ? 3 : 1)}), across ${r.pts.length} buffers.`; },
+    delta: (r, pred) => {
+      const hi = r.pts.reduce((a, b) => b.y > a.y ? b : a), m = /pH\s*(?:of|near|about|around|=)?\s*(\d+(?:\.\d+)?)/i.exec(pred || '');
+      if (!m) return `Your measured optimum was pH ${hi.pH}.`;
+      const g = +m[1], d = hi.pH - g;
+      return `You predicted an optimum near pH ${g}; you measured pH ${hi.pH}, ${Math.abs(d) < 0.01 ? 'the same' : fmt(Math.abs(d), 1) + ' pH unit' + (Math.abs(d) === 1 ? '' : 's') + (d > 0 ? ' higher' : ' lower')}.`;
+    }
+  });
+  Lab.predictCompare(rfCompare, {
+    predictKey: 'd-h', title: 'Your own experiment: your hypothesis vs. your results', chartEl: '#d-chart2', part: 'Design', partId: 'design',
+    getResult: () => dRes && dRes.levels && dRes.levels.length ? dRes : null,
+    summarize: r => { const d = DIV[r.iv]; return 'Mean initial rate (A₄₇₀/min) by ' + d.label.toLowerCase() + ': ' + r.levels.map(L => `${L.x}${d.unit ? ' ' + d.unit : ''}: ${fmt(L.mean, 4)}`).join('; ') + '.'; },
+    delta: r => { const d = DIV[r.iv], hi = r.levels.reduce((a, b) => b.mean > a.mean ? b : a), lo = r.levels.reduce((a, b) => b.mean < a.mean ? b : a); return `The fastest reaction was at ${hi.x}${d.unit ? ' ' + d.unit : ''} (${fmt(hi.mean, 4)} A₄₇₀/min) and the slowest at ${lo.x}${d.unit ? ' ' + d.unit : ''} (${fmt(lo.mean, 4)}). Levels whose ±2 SE intervals do not overlap are likely truly different.`; }
+  });
+  Lab.prompt(rf, { key: 'r-pred', label: 'Compare your three predictions (shown above) with your data: the enzyme versus control tubes, the pH optimum, and your own experiment. Cite one measured value with units for each. Which predictions held up, and what does each mismatch tell you about enzyme structure?', rows: 5 });
   Lab.prompt(rf, { key: 'r-error', label: 'List the largest sources of error in this assay (timing, pipetting, mixing, judging color, temperature drift). For each, suggest how to reduce it.', rows: 3 });
   Lab.prompt(rf, { key: 'r-veg', label: 'Peroxidase from a turnip root growing in cool soil might differ from peroxidase in a leaf or a fruit. Predict how optimum temperature or pH might differ, and describe the observations you would make before extracting the enzyme.', rows: 3 });
   Lab.prompt(rf, { key: 'r-homeo', label: 'Make a strong argument for the role of enzymes in maintaining homeostasis at the cellular level. Why does a cell need peroxidase at all?', rows: 3 });
