@@ -398,6 +398,7 @@ function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) ret
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const numOk = x => typeof x === 'number' && isFinite(x);
 const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
 /* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
@@ -1500,14 +1501,14 @@ tkInit(); drawRef(); newSexFly(); vialSetup(false); vialDraw(); showCanvas(); dr
 
 /* ---------- Key results, personal-data prompts, AP free-response ---------- */
 function reportTrials(rows) {
-  const rs = (rows || []).filter(r => r && r.A + r.B > 0 && isFinite(r.chi2)); if (!rs.length) return;
+  const rs = (rows || []).filter(r => r && r.A + r.B > 0 && numOk(r.chi2)); if (!rs.length) return;
   const l = rs[rs.length - 1];
   keyRes('chi2', { label: 'χ² for your latest trial (' + l.choice + ')', value: Math.round(l.chi2 * 100) / 100, unit: 'df = 1; critical value 3.84', part: 'Choice chamber' });
   keyRes('pct-a', { label: 'Flies at end A, latest trial (' + l.choice + ')', value: Math.round(1000 * l.A / (l.A + l.B)) / 10, unit: '% at A', part: 'Choice chamber' });
   if (rs.length > 1) { const m = rs.reduce((a, b) => b.chi2 > a.chi2 ? b : a); keyRes('strongest', { label: 'Strongest response across trials (' + m.choice + ')', value: Math.round(m.chi2 * 100) / 100, unit: 'χ²', part: 'Choice chamber' }); }
 }
 function reportVial() {
-  const rs = (Lab.store.get('vial') || []).filter(r => r && r.n > 0 && isFinite(r.t30)); if (!rs.length) return;
+  const rs = (Lab.store.get('vial') || []).filter(r => r && r.n > 0 && numOk(r.t30)); if (!rs.length) return;
   const l = rs[rs.length - 1];
   keyRes('vial-top', { label: 'Flies in top half at 30 s (vial trial ' + l.trial + ')', value: Math.round(1000 * l.t30 / l.n) / 10, unit: '% of flies', part: 'Geotaxis vial' });
 }
@@ -1521,7 +1522,7 @@ personalPrompt(my12, {
   generic: 'Explain the trial in your own data with the strongest (or only) response.',
   ask: 'Do you reject the null hypothesis? What were the flies responding to, and is it an orientation (taxis) or a change in activity (kinesis)?',
   get() {
-    const rs = (Lab.store.get('trials') || []).filter(r => r && r.A + r.B > 0 && isFinite(r.chi2)); if (!rs.length) return null;
+    const rs = (Lab.store.get('trials') || []).filter(r => r && r.A + r.B > 0 && numOk(r.chi2)); if (!rs.length) return null;
     const m = rs.reduce((a, b) => b.chi2 > a.chi2 ? b : a);
     return `Your trial ${m.n} (<strong>${m.choice}</strong>, ${m.setup}) ended with <strong>${m.A}</strong> flies at A and <strong>${m.B}</strong> at B (${Math.round(1000 * m.A / (m.A + m.B)) / 10}% at A, χ² = <strong>${Lab.fmt(m.chi2, 2)}</strong> against the 3.84 cutoff).`;
   }
@@ -1531,7 +1532,7 @@ personalPrompt(my12, {
   generic: 'Explain the movement of the flies in your own vial trial.',
   ask: 'What behavior is this, and what would you expect if the vial were laid on its side?',
   get() {
-    const rs = (Lab.store.get('vial') || []).filter(r => r && r.n > 0 && isFinite(r.t0) && isFinite(r.t30)); if (!rs.length) return null;
+    const rs = (Lab.store.get('vial') || []).filter(r => r && r.n > 0 && numOk(r.t0) && numOk(r.t30)); if (!rs.length) return null;
     const l = rs[rs.length - 1];
     return `In your vial trial ${l.trial} (${l.age} flies), <strong>${l.t0}</strong> of ${l.n} flies were in the top half at 0 s and <strong>${l.t30}</strong> of ${l.n} at 30 s.`;
   }
