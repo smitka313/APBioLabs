@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<title>Class dashboard · AP Bio Digital Lab Bench</title>
+<meta name="description" content="Drop your students' lab reports (.docx) and progress files (.json) on this page to see who is done, their key results, pre-lab misses and possible copying. Everything stays in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .t-hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 22px 26px; }
+  .t-hero .crumbs { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: .92rem; color: var(--muted); margin-bottom: 14px; }
+  .t-hero .crumbs a { color: var(--muted); }
+  .t-hero h1 { font-size: clamp(2rem, 4.6vw, 2.9rem); font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; }
+  .t-hero .lede { margin-top: 10px; max-width: 66ch; color: var(--muted); font-size: 1.1rem; }
+  .dash { display: grid; gap: 22px; padding-block: 24px 56px; }
+  .privacy { display: flex; gap: 12px; align-items: flex-start; background: var(--accent-soft); border: 1px solid var(--accent); border-left-width: 6px; border-radius: var(--r); padding: 12px 16px; }
+  .privacy strong { font-family: var(--f-display); }
+  .drop { display: grid; gap: 8px; justify-items: center; text-align: center; padding: 28px 20px; border: 2px dashed var(--line); border-radius: 14px; background: var(--surface); cursor: pointer; transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.is-over, .drop:focus-within { border-color: var(--accent); background: var(--accent-soft); }
+  .drop .big { font-family: var(--f-display); font-size: 1.3rem; font-weight: 700; }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+  .drop:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .row-actions { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+  .reader-status { font-size: .86rem; color: var(--muted); }
+  .skipped { background: var(--warn-soft); border: 1px solid var(--warn); border-radius: var(--r); padding: 12px 16px; display: grid; gap: 6px; }
+  .skipped h2 { font-size: 1.05rem; }
+  .skipped ul { margin: 0; font-size: .92rem; }
+  .skipped .why { color: var(--muted); }
+  .sample-banner { background: var(--stain-soft); border: 1px solid var(--stain); border-radius: var(--r); padding: 10px 14px; font-size: .95rem; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); position: sticky; top: 0; z-index: 5; }
+  .toolbar .field { display: grid; gap: 3px; min-width: 150px; }
+  .toolbar label { font-size: .78rem; font-weight: 700; color: var(--muted); }
+  .toolbar select, .toolbar input[type=search] { min-height: 38px; }
+  .toolbar .grow { flex: 1 1 auto; }
+  .summary { color: var(--muted); font-size: .95rem; }
+  .labblock { display: grid; gap: 12px; }
+  .labblock > h2 { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; font-size: 1.45rem; }
+  .labblock > h2 small { font-family: var(--f-body); font-size: .92rem; font-weight: 400; color: var(--muted); }
+  .grid-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+  table.grid { width: 100%; border-collapse: collapse; font-size: .92rem; min-width: 640px; }
+  table.grid th, table.grid td { padding: 8px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  table.grid thead th { background: var(--surface-2); font-size: .8rem; font-weight: 650; white-space: nowrap; padding: 0; }
+  table.grid thead th .sort { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 6px; width: 100%; padding: 9px 11px; cursor: pointer; font: inherit; }
+  table.grid thead th .sort:hover { color: var(--accent); }
+  table.grid thead th .sort:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+  table.grid thead th[aria-sort="ascending"] .sort::after { content: "▲"; font-size: .7em; }
+  table.grid thead th[aria-sort="descending"] .sort::after { content: "▼"; font-size: .7em; }
+  table.grid tbody tr:last-child > * { border-bottom: 0; }
+  table.grid tbody tr.is-flagged { background: var(--warn-soft); }
+  table.grid td.num, table.grid td.mono { font-family: var(--f-mono); font-size: .86rem; white-space: nowrap; }
+  table.grid .unit { color: var(--muted); font-family: var(--f-body); font-size: .8rem; }
+  table.grid .none { color: var(--muted); }
+  .pill.sample { background: var(--stain-soft); color: var(--stain); border: 1px solid var(--stain); margin-left: 6px; font-size: .7rem; }
+  .flag { display: block; font-size: .82rem; color: var(--warn); font-weight: 600; max-width: 34ch; }
+  .misses { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+  .misses summary { cursor: pointer; font-weight: 700; font-family: var(--f-display); }
+  .misses ol { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+  .misses li { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 2px 12px; align-items: baseline; }
+  .misses .pct { font-family: var(--f-mono); font-weight: 600; font-size: 1.05rem; text-align: right; }
+  .misses .q { grid-column: 2; }
+  .misses .bar { grid-column: 2; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .misses .bar i { display: block; height: 100%; background: var(--bad); }
+  .misses .meta { grid-column: 2; font-size: .82rem; color: var(--muted); }
+  .empty { text-align: center; padding: 36px 16px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); }
+  @media (max-width: 600px) { .toolbar { position: static; } .toolbar .field { flex: 1 1 140px; } }
+  @media print { .drop, .toolbar, .row-actions { display: none !important; } }
+</style>
+</head>
+<body>
+<header class="t-hero">
+  <div class="wrap wrap--wide gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><a href="teachers.html">For teachers</a><span>Class dashboard</span></nav>
+    <div class="eyebrow">AP Biology · Teacher tool</div>
+    <h1>Class dashboard</h1>
+    <p class="lede">Drop your students’ lab reports (.docx) and progress files (.json) here to see who has finished, each student’s key results, the pre-lab questions to re-teach, and reports that may have been copied.</p>
+  </div>
+</header>
+
+<main id="main">
+<div class="wrap wrap--wide gutter dash">
+
+  <div class="privacy" role="note">
+    <div><strong>Nothing is uploaded.</strong> Your files are opened and read inside this browser window. They are not sent to any server, and nothing is saved after you close or reload the page. Once this page has loaded, it also works without an internet connection.</div>
+  </div>
+
+  <section aria-labelledby="h-add">
+    <h2 id="h-add" class="sr-only">Add student files</h2>
+    <label class="drop" id="drop">
+      <span class="big">Drop .docx reports and .json progress files here</span>
+      <span class="muted">or click to choose files. You can add many at once, and add more later.</span>
+      <input type="file" id="files" multiple accept=".docx,.json,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    </label>
+    <div class="row-actions" style="margin-top:10px">
+      <button class="btn" type="button" id="sample">Load sample data</button>
+      <button class="btn btn--ghost" type="button" id="clear">Clear everything</button>
+      <span class="reader-status" id="reader" aria-live="polite"></span>
+    </div>
+    <p class="small muted" style="margin-top:8px">Only reports made with this site carry the data the dashboard reads. A report that was printed to PDF, retyped or re-created in another program has no data in it.</p>
+    <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="skipped" id="skipped" hidden aria-labelledby="h-skipped"></section>
+  <div class="sample-banner" id="sample-banner" hidden><strong>Sample data.</strong> These students are made up so you can see how the dashboard works. Rows marked <span class="pill sample" style="margin-left:0">Sample</span> are not real. Clear everything before you add your own files.</div>
+
+  <div class="toolbar" id="toolbar" hidden role="search" aria-label="Filter the grid">
+    <div class="field"><label for="f-lab">Lab</label><select id="f-lab"></select></div>
+    <div class="field"><label for="f-class">Class period</label><select id="f-class"></select></div>
+    <div class="field grow"><label for="f-q">Find a student</label><input type="search" id="f-q" placeholder="Type part of a name" autocomplete="off"></div>
+    <button class="btn btn--primary" type="button" id="csv">Export grid as CSV</button>
+  </div>
+  <p class="summary" id="summary" aria-live="polite"></p>
+  <div id="grids"></div>
+  <div class="empty" id="empty">No student files yet. Add some files above, or press <strong>Load sample data</strong> to see an example.</div>
+</div>
+</main>
+
+<footer class="site-footer"><div class="wrap wrap--wide gutter">
+  <p>Adapted from <em>AP Biology Investigative Labs: An Inquiry-Based Approach</em> (Teacher Manual, updated Fall 2019). Simulated data are modeled on typical classroom results and do not replace wet-lab work where it is available.</p>
+  <p>AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site.</p>
+  <p>This page counts nothing and sends nothing. <a href="teachers.html">Back to the teacher guide</a>.</p>
+</div></footer>
+
+<script>
+(function () {
+  'use strict';
+  /* ---------- Reading what the site writes ----------
+     A .docx made by the site carries the student's whole progress payload in custom document properties
+     aplab_payload_000, _001, … (a resume code, "LB1z." + gzip + base64url, cut in pieces). A progress file is the same payload as JSON. */
+  const LAB_NAMES = { 1: 'Artificial Selection', 2: 'Mathematical Modeling: Hardy-Weinberg', 3: 'Comparing DNA Sequences with BLAST', 4: 'Diffusion and Osmosis', 5: 'Photosynthesis', 6: 'Cellular Respiration', 7: 'Cell Division: Mitosis and Meiosis', 8: 'Bacterial Transformation', 9: 'Restriction Enzyme Analysis of DNA', 10: 'Energy Dynamics', 11: 'Transpiration', 12: 'Fruit Fly Behavior', 13: 'Enzyme Activity' };
+  const JSZIP_URLS = ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'];
+  const MAX_BYTES = 40e6;
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const normName = s => String(s == null ? '' : s).normalize('NFKC').trim().replace(/\s+/g, ' ');
+
+  /* Dataset ID, the same function the lab pages use (hash of name | period | lab | dataset number), for progress files that predate stored IDs. */
+  function hash32(str) { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (h1 ^ h2) >>> 0; }
+  const ABC = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  function datasetCode(n) { let s = ''; for (let i = 0; i < 6; i++) { s += ABC[n % 31]; n = Math.floor(n / 31); } return s.slice(0, 3) + '-' + s.slice(3); }
+  const computeDatasetId = (name, period, lab, ds) => datasetCode(hash32([normName(name).toLowerCase() + '|' + (period || ''), lab, ds || 1].join('|') + '#dataset-id'));
+
+  function b64uDecode(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const bin = atob(str); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+  async function readCode(code) {
+    code = String(code || '').replace(/\s+/g, '');
+    const m = /^LB1([zb])\.([A-Za-z0-9_-]+)$/.exec(code);
+    if (!m) throw new Error('The data inside is not in a format this page knows.');
+    let bytes = b64uDecode(m[2]);
+    if (m[1] === 'z') {
+      if (typeof DecompressionStream !== 'function') throw new Error('This browser cannot unpack compressed data. Try a current Chrome, Edge, Firefox or Safari.');
+      try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()); }
+      catch (e) { throw new Error('The data inside is damaged or cut short.'); }
+    }
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  }
+
+  let zipPromise = null;
+  function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.async = true; s.onload = res; s.onerror = () => { s.remove(); rej(new Error('load failed')); }; document.head.append(s); }); }
+  function loadZip() {
+    if (window.JSZip) return Promise.resolve(window.JSZip);
+    if (!zipPromise) zipPromise = (async () => {
+      for (const u of JSZIP_URLS) { try { await loadScript(u); if (window.JSZip) return window.JSZip; } catch (e) { /* next */ } }
+      zipPromise = null; throw new Error('zip-load');
+    })();
+    return zipPromise;
+  }
+  function setReader() {
+    const el = $('#reader');
+    if (window.JSZip) el.textContent = 'Word-file reader ready.';
+    else el.textContent = 'Loading the Word-file reader…';
+  }
+
+  class Skip extends Error {}
+  async function payloadFromDocx(buf) {
+    let JSZip; try { JSZip = await loadZip(); } catch (e) { throw new Skip('The Word-file reader could not load (no internet the first time?). Reload this page while online, or use the .json progress files.'); }
+    let zip; try { zip = await JSZip.loadAsync(buf); } catch (e) { throw new Skip('Could not open this file as a Word document (damaged, or not a real .docx).'); }
+    const f = zip.file('docProps/custom.xml');
+    if (!f) throw new Skip('This Word file has no Lab Bench data in it. It may not have been made by this site, or was saved by a program that removes it.');
+    const xml = new DOMParser().parseFromString(await f.async('string'), 'application/xml');
+    const parts = Array.from(xml.getElementsByTagName('property')).filter(p => /^aplab_payload_\d+$/.test(p.getAttribute('name') || ''))
+      .sort((a, b) => parseInt(a.getAttribute('name').slice(14), 10) - parseInt(b.getAttribute('name').slice(14), 10));
+    if (!parts.length) throw new Skip('This Word file has no Lab Bench data in it. It may not have been made by this site, or was saved by a program that removes it.');
+    try { return await readCode(parts.map(p => p.textContent).join('')); } catch (e) { throw new Skip(e.message || 'The data inside is damaged.'); }
+  }
+
+  /* ---------- Normalizing a payload into one grid row ---------- */
+  const isNum = v => typeof v === 'number' && isFinite(v);
+  function fmtVal(v) { return v == null ? '' : isNum(v) ? String(Math.round(v * 1e4) / 1e4) : String(v); }
+  function normalize(p, file, sample) {
+    if (!p || typeof p !== 'object' || Array.isArray(p) || p.app !== 'aplab') throw new Skip('Not a Lab Bench file (it does not come from this site).');
+    if (typeof p.v === 'number' && p.v > 1) throw new Skip('Made by a newer version of the site than this dashboard understands.');
+    if (typeof p.lab !== 'string' || !/^lab\d\d$/.test(p.lab)) throw new Skip('The file does not say which lab it is for.');
+    if (!p.data || typeof p.data !== 'object' || Array.isArray(p.data)) throw new Skip('The file has no saved work in it.');
+    const labNo = +p.lab.slice(3);
+    const name = p.student && normName(p.student.name) ? normName(p.student.name) : '';
+    const period = p.student && p.student.period ? String(p.student.period) : '';
+    let krs = Array.isArray(p.keyResults) ? p.keyResults : Object.keys(p.data).filter(k => k.startsWith('keyres:')).map(k => Object.assign({ id: k.slice(7) }, p.data[k]));
+    krs = krs.filter(r => r && r.id).map(r => ({ id: String(r.id), label: String(r.label == null ? r.id : r.label), value: r.value, unit: r.unit || '', part: r.part || '', t: r.t || 0 })).sort((a, b) => a.t - b.t);
+    const frq = krs.find(r => r.id === 'frq-score') || null;
+    const kr = krs.filter(r => r.id !== 'frq-score');
+    let pre = null;
+    const quiz = Array.isArray(p.quizzes) ? (p.quizzes.find(q => q && q.id === 'prelab') || p.quizzes[0]) : null;
+    if (quiz && Array.isArray(quiz.questions)) pre = { right: quiz.right, total: quiz.total, questions: quiz.questions.map(q => ({ q: String(q.q || ''), status: q.status })) };
+    else if (p.data['quiz:prelab'] && typeof p.data['quiz:prelab'] === 'object') { const v = Object.values(p.data['quiz:prelab']); pre = { right: v.filter(x => x && x.correct).length, total: v.length, questions: null }; }
+    const when = Date.parse(p.exportedAt || p.savedAt || '') || 0;
+    const parts = p.parts && isNum(p.parts.total) ? { done: p.parts.done, total: p.parts.total } : null;
+    return {
+      file, sample: !!sample, lab: p.lab, labNo, labTitle: String(p.labTitle || p.title || '').replace(/\s+[—–-]\s+AP Bio (Digital )?Lab Bench\s*$/, '') || ('Lab ' + labNo + ' · ' + (LAB_NAMES[labNo] || '')),
+      name: name || '(no name)', named: !!name, period, dataset: p.dataset || 1,
+      datasetId: p.datasetId || (name ? computeDatasetId(name, period, p.lab, p.dataset) : ''),
+      parts, kr, frq, pre, when, flags: [],
+    };
+  }
+  const studentKey = r => r.name.toLowerCase() + '|' + r.period;
+
+  /* ---------- State ---------- */
+  const S = { recs: [], skipped: [], sort: { key: 'name', dir: 1 }, lab: '', period: '', q: '' };
+  const say = t => { $('#live').textContent = t; };
+
+  function addPayload(p, file, sample) {
+    const r = normalize(p, file, sample);
+    const same = S.recs.find(x => x.lab === r.lab && studentKey(x) === studentKey(r) && x.datasetId === r.datasetId && x.named && r.named);
+    if (same) {
+      if ((r.when || 0) > (same.when || 0)) { S.recs[S.recs.indexOf(same)] = r; S.skipped.push({ file: same.file, why: `An older copy of ${r.name}’s Lab ${r.labNo} (replaced by ${r.file}).` }); }
+      else S.skipped.push({ file, why: `An older or identical copy of ${r.name}’s Lab ${r.labNo} (already loaded from ${same.file}).` });
+      return;
+    }
+    S.recs.push(r);
+  }
+  async function addFiles(list) {
+    const files = Array.from(list || []); if (!files.length) return;
+    const before = S.recs.length, skipBefore = S.skipped.length;
+    for (const f of files) {
+      try {
+        if (f.size > MAX_BYTES) throw new Skip('The file is too large to be a lab report.');
+        const lower = f.name.toLowerCase();
+        if (lower.endsWith('.docx')) addPayload(await payloadFromDocx(await f.arrayBuffer()), f.name);
+        else if (lower.endsWith('.json')) {
+          let o; try { o = JSON.parse(await f.text()); } catch (e) { throw new Skip('Not valid JSON, so it is not a progress file.'); }
+          addPayload(o, f.name);
+        } else throw new Skip('Only .docx reports and .json progress files can be read (this is ' + (lower.includes('.') ? '.' + lower.split('.').pop() : 'a file with no extension') + ').');
+      } catch (e) {
+        S.skipped.push({ file: f.name, why: e instanceof Skip ? e.message : 'Could not be read: ' + (e && e.message ? e.message : 'unknown error') });
+      }
+    }
+    render();
+    say(`${S.recs.length - before} added, ${S.skipped.length - skipBefore} skipped.`);
+  }
+
+  /* ---------- Flags: shared Dataset ID, identical key results ---------- */
+  function computeFlags() {
+    S.recs.forEach(r => { r.flags = []; });
+    const byLab = {};
+    S.recs.forEach(r => (byLab[r.lab] = byLab[r.lab] || []).push(r));
+    Object.values(byLab).forEach(group => {
+      const ds = {}, sig = {};
+      group.forEach(r => {
+        if (r.datasetId) (ds[r.datasetId] = ds[r.datasetId] || []).push(r);
+        const nums = r.kr.filter(k => k.value != null && k.value !== '');
+        if (nums.length >= 2 || (nums.length === 1 && isNum(nums[0].value) && !Number.isInteger(nums[0].value))) {
+          const s = JSON.stringify(nums.map(k => [k.id, k.value]).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
+          (sig[s] = sig[s] || []).push(r);
+        }
+      });
+      const mark = (map, text) => Object.values(map).forEach(arr => {
+        const people = new Set(arr.map(studentKey)); if (people.size < 2) return;
+        arr.forEach(r => { const others = arr.filter(o => studentKey(o) !== studentKey(r)).map(o => o.name); r.flags.push(text + ' ' + Array.from(new Set(others)).join(', ')); });
+      });
+      mark(ds, 'Same Dataset ID as'); mark(sig, 'Identical key results to');
+    });
+  }
+
+  /* ---------- Sorting and filtering ---------- */
+  const val = (r, key) => {
+    if (key === 'name') return r.name.toLowerCase();
+    if (key === 'period') return r.period === '' ? null : (isNaN(+r.period) ? 100 : +r.period);
+    if (key === 'ds') return r.datasetId || null;
+    if (key === 'parts') return r.parts && r.parts.total ? r.parts.done / r.parts.total : null;
+    if (key === 'frq') return r.frq && isNum(r.frq.value) ? r.frq.value : null;
+    if (key === 'pre') return r.pre && r.pre.total ? r.pre.right / r.pre.total : null;
+    if (key === 'submitted') return r.when || null;
+    if (key === 'flags') return r.flags.length;
+    if (key.startsWith('kr:')) { const k = r.kr.find(x => x.id === key.slice(3)); return k ? (isNum(k.value) ? k.value : String(k.value).toLowerCase()) : null; }
+    return null;
+  };
+  function sortRows(rows) {
+    const { key, dir } = S.sort;
+    return rows.slice().sort((a, b) => {
+      const x = val(a, key), y = val(b, key);
+      if (x == null && y == null) return a.name.localeCompare(b.name);
+      if (x == null) return 1; if (y == null) return -1;
+      const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true });
+      return c ? c * dir : a.name.localeCompare(b.name);
+    });
+  }
+  const visible = () => S.recs.filter(r => (!S.lab || r.lab === S.lab) && (!S.period || r.period === S.period) && (!S.q || r.name.toLowerCase().includes(S.q.toLowerCase())));
+  const periodLabel = p => p === '' ? '—' : (p === 'Other' ? 'Other' : p);
+
+  /* ---------- Rendering ---------- */
+  const dateText = ms => ms ? new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+  function renderFilters() {
+    const labs = Array.from(new Set(S.recs.map(r => r.lab))).sort();
+    const periods = Array.from(new Set(S.recs.map(r => r.period))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (S.lab && !labs.includes(S.lab)) S.lab = '';
+    if (S.period && !periods.includes(S.period)) S.period = '';
+    $('#f-lab').innerHTML = '<option value="">All labs</option>' + labs.map(l => `<option value="${l}"${S.lab === l ? ' selected' : ''}>Lab ${+l.slice(3)} · ${esc(LAB_NAMES[+l.slice(3)] || '')}</option>`).join('');
+    $('#f-class').innerHTML = '<option value="">All periods</option>' + periods.map(p => `<option value="${esc(p)}"${S.period === p ? ' selected' : ''}>${p === '' ? 'No period' : p === 'Other' ? 'Other' : 'Period ' + esc(p)}</option>`).join('');
+  }
+  function misses(rows) {
+    const qs = new Map();
+    rows.forEach(r => { if (!r.pre || !r.pre.questions) return; r.pre.questions.forEach(q => {
+      const e = qs.get(q.q) || { q: q.q, wrong: 0, answered: 0, blank: 0 };
+      if (q.status === 'Not answered') e.blank++; else { e.answered++; if (q.status !== 'Correct') e.wrong++; }
+      qs.set(q.q, e);
+    }); });
+    return Array.from(qs.values()).filter(e => e.answered > 0).map(e => Object.assign(e, { pct: Math.round(100 * e.wrong / e.answered) })).sort((a, b) => b.pct - a.pct || b.wrong - a.wrong);
+  }
+  function labTable(lab, rows) {
+    const krCols = []; rows.forEach(r => r.kr.forEach(k => { if (!krCols.some(c => c.id === k.id)) krCols.push({ id: k.id, label: k.label, unit: k.unit }); }));
+    const hasFrq = rows.some(r => r.frq);
+    const cols = [{ key: 'name', label: 'Student' }, { key: 'period', label: 'Class' }, { key: 'ds', label: 'Dataset ID' }, { key: 'parts', label: 'Parts done' }]
+      .concat(krCols.map(c => ({ key: 'kr:' + c.id, label: c.label + (c.unit ? ' (' + c.unit + ')' : '') })))
+      .concat([{ key: 'frq', label: 'FRQ self-score' }, { key: 'pre', label: 'Pre-lab' }, { key: 'submitted', label: 'Submitted' }, { key: 'flags', label: 'Flags' }]);
+    const th = c => `<th scope="col" aria-sort="${S.sort.key === c.key ? (S.sort.dir > 0 ? 'ascending' : 'descending') : 'none'}"><button type="button" class="sort" data-sort="${esc(c.key)}">${esc(c.label)}</button></th>`;
+    const td = r => {
+      const cells = [
+        `<th scope="row">${esc(r.name)}${r.sample ? '<span class="pill sample">Sample</span>' : ''}</th>`,
+        `<td>${esc(periodLabel(r.period))}</td>`,
+        `<td class="mono">${esc(r.datasetId || '—')}</td>`,
+        `<td class="num">${r.parts ? `${r.parts.done}/${r.parts.total}` : '<span class="none">—</span>'}</td>`,
+      ];
+      krCols.forEach(c => { const k = r.kr.find(x => x.id === c.id); cells.push(`<td class="num">${k ? esc(fmtVal(k.value)) : '<span class="none">—</span>'}</td>`); });
+      cells.push(`<td class="num">${r.frq ? esc(fmtVal(r.frq.value)) + (r.frq.unit ? ' <span class="unit">' + esc(r.frq.unit) + '</span>' : '') : '<span class="none">—</span>'}</td>`);
+      cells.push(`<td class="num">${r.pre && r.pre.total ? `${r.pre.right}/${r.pre.total}` : '<span class="none">—</span>'}</td>`);
+      cells.push(`<td>${esc(dateText(r.when))}</td>`);
+      cells.push(`<td>${r.flags.map(f => `<span class="flag">⚠ ${esc(f)}</span>`).join('')}</td>`);
+      return `<tr${r.flags.length ? ' class="is-flagged"' : ''}>${cells.join('')}</tr>`;
+    };
+    const m = misses(rows);
+    const first = rows[0];
+    return `<section class="labblock" data-lab="${lab}" aria-labelledby="h-${lab}">
+      <h2 id="h-${lab}">${esc(first.labTitle)} <small>${rows.length} student${rows.length === 1 ? '' : 's'}${rows.some(r => r.flags.length) ? ' · ' + rows.filter(r => r.flags.length).length + ' flagged' : ''}</small></h2>
+      <div class="grid-wrap" tabindex="0" role="region" aria-label="${esc(first.labTitle)} grid, scrolls sideways"><table class="grid" data-lab="${lab}"><caption class="sr-only">${esc(first.labTitle)}: one row per student. Use the column buttons to sort.</caption>
+        <thead><tr>${cols.map(th).join('')}</tr></thead><tbody>${sortRows(rows).map(td).join('')}</tbody></table></div>
+      ${m.length ? `<details class="misses" open><summary>What to re-teach: pre-lab questions students missed</summary><ol>${m.map(e => `<li><span class="pct">${e.pct}%</span><span class="q">${esc(e.q)}</span><span class="bar" aria-hidden="true"><i style="width:${e.pct}%"></i></span><span class="meta">${e.wrong} of ${e.answered} student${e.answered === 1 ? '' : 's'} missed it${e.blank ? ` · ${e.blank} did not answer` : ''}</span></li>`).join('')}</ol></details>` : ''}
+    </section>`;
+  }
+  function render() {
+    computeFlags();
+    renderFilters();
+    const has = S.recs.length > 0;
+    $('#toolbar').hidden = !has; $('#empty').hidden = has;
+    $('#sample-banner').hidden = !S.recs.some(r => r.sample);
+    const sk = $('#skipped');
+    sk.hidden = !S.skipped.length;
+    sk.innerHTML = S.skipped.length ? `<h2 id="h-skipped">Skipped files (${S.skipped.length})</h2><ul>${S.skipped.map(s => `<li><strong>${esc(s.file)}</strong> <span class="why">— ${esc(s.why)}</span></li>`).join('')}</ul><div><button class="btn btn--sm" type="button" id="dismiss-skipped">Dismiss this list</button></div>` : '';
+    const rows = visible();
+    const byLab = {}; rows.forEach(r => (byLab[r.lab] = byLab[r.lab] || []).push(r));
+    $('#grids').innerHTML = Object.keys(byLab).sort().map(l => labTable(l, byLab[l])).join('');
+    const flagged = rows.filter(r => r.flags.length).length;
+    $('#summary').textContent = has ? `${rows.length} of ${S.recs.length} student rows shown across ${Object.keys(byLab).length} lab${Object.keys(byLab).length === 1 ? '' : 's'}${flagged ? ` · ${flagged} flagged for a possible copy` : ''}.` : '';
+  }
+
+  /* ---------- CSV ---------- */
+  const csvCell = v => { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  function buildCsv(rows) {
+    rows = rows.slice().sort((a, b) => a.lab.localeCompare(b.lab) || 0);
+    const labs = Array.from(new Set(rows.map(r => r.lab))).sort();
+    const krCols = []; labs.forEach(l => rows.filter(r => r.lab === l).forEach(r => r.kr.forEach(k => { if (!krCols.some(c => c.lab === l && c.id === k.id)) krCols.push({ lab: l, id: k.id, label: k.label, unit: k.unit }); })));
+    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags']);
+    const out = [head];
+    labs.forEach(l => sortRows(rows.filter(r => r.lab === l)).forEach(r => {
+      out.push([`Lab ${r.labNo}`, r.name + (r.sample ? ' (Sample)' : ''), r.period, r.datasetId, r.parts ? r.parts.done : '', r.parts ? r.parts.total : '']
+        .concat(krCols.map(c => { if (c.lab !== l) return ''; const k = r.kr.find(x => x.id === c.id); return k ? fmtVal(k.value) : ''; }),
+          [r.frq ? fmtVal(r.frq.value) : '', r.pre ? r.pre.right : '', r.pre ? r.pre.total : '', r.when ? new Date(r.when).toISOString().slice(0, 10) : '', r.flags.join('; ')]));
+    }));
+    return '﻿' + out.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+  }
+  function downloadCsv() {
+    const rows = visible(); if (!rows.length) return;
+    const blob = new Blob([buildCsv(rows)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'lab-bench-class-grid.csv'; a.style.display = 'none'; document.body.append(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+    say(`Exported ${rows.length} rows.`);
+  }
+
+  /* ---------- Sample data (made up) ---------- */
+  function sampleData() {
+    let seed = 20261113; const rnd = () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const norm = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    const names = ['Avery Brooks', 'Jordan Castillo', 'Maya Patel', 'Liam Nowak', 'Sofia Reyes', 'Ethan Kowalski', 'Nia Thompson', 'Caleb Ortiz', 'Hana Yamamoto', 'Marcus Bell', 'Priya Nair', 'Owen Fischer', 'Zoe Alvarez', 'Isaiah Grant', 'Lena Petrov', 'Tariq Haddad', 'Chloe Dubois', 'Mateo Silva', 'Grace Kim', 'Devon Walker', 'Ruby Okafor', 'Felix Bauer', 'Aaliyah Jones', 'Noah Lindqvist'];
+    const labs = [
+      { lab: 'lab05', title: 'Lab 5 · Photosynthesis', parts: 6, n: 14, periods: ['2', '2', '4'], prelab: [
+        ['Using the summary equation, how many molecules of O₂ are released for each molecule of glucose made?', .5], ['Why do leaf disks sink after you pull a vacuum on them in the syringe?', .2],
+        ['If you treat leaf disks in a way that increases the net rate of photosynthesis, how will they behave?', .15], ['Estimate ET₅₀ by linear interpolation from the counts of floating disks.', .62], ['Another trial gives ET₅₀ = 8 min. What is 1/ET₅₀?', .3]],
+        kr: [['et50-co2', 'ET₅₀ (with CO₂)', 'min', 10.4, 1.7, 1], ['et50-ctrl', 'ET₅₀ (no CO₂)', 'min', 27, 4, 1]], frq: true },
+      { lab: 'lab06', title: 'Lab 6 · Cellular Respiration', parts: 7, n: 8, periods: ['2', '4'], prelab: [
+        ['What gas does the KOH in a microrespirometer remove?', .15], ['Why is a vial of glass beads included as a control?', .4], ['If temperature rises 10 °C and the rate doubles, what is Q₁₀?', .55], ['What does a negative slope of volume against time show?', .25]],
+        kr: [['q10', 'Q₁₀ (germinating peas)', '', 2.1, .3, 2], ['rate-22', 'Rate of O₂ uptake at 22 °C', 'mL/min', 0.041, .008, 3]], frq: false },
+      { lab: 'lab09', title: 'Lab 9 · Restriction Enzyme Analysis of DNA', parts: 7, n: 6, periods: ['4'], prelab: [
+        ['Which end of the gel is the negative electrode?', .1], ['Why do smaller DNA fragments move farther?', .3], ['A plasmid is cut with EcoRI at 2 sites. How many fragments result if it is circular?', .5]],
+        kr: [['unknown-size', 'Unknown fragment size', 'bp', 4361, 140, 0]], frq: true },
+    ];
+    const payloads = []; let idx = 0;
+    labs.forEach(L => {
+      const made = [];
+      for (let i = 0; i < L.n; i++) {
+        const name = names[(idx++) % names.length], period = L.periods[i % L.periods.length];
+        const done = Math.max(1, Math.min(L.parts, Math.round(L.parts * (0.45 + 0.6 * rnd()))));
+        const krs = L.kr.map(([id, label, unit, mean, sd, dig]) => ({ id, label, unit, part: '', value: +(mean + sd * norm()).toFixed(dig), t: 1 }));
+        const quiz = L.prelab.map(([q, pMiss]) => ({ q, answer: '', status: rnd() < .04 ? 'Not answered' : rnd() < pMiss ? 'Incorrect' : 'Correct' }));
+        if (L.frq) krs.push({ id: 'frq-score', label: 'FRQ self-score', unit: 'of 4', part: '', value: Math.max(0, Math.min(4, Math.round(2.6 + norm()))), t: 2 });
+        made.push({ app: 'aplab', v: 1, lab: L.lab, title: L.title + ' — AP Bio Lab Bench', labTitle: L.title, savedAt: new Date(Date.now() - Math.floor(rnd() * 9) * 864e5 - 36e5).toISOString(), exportedAt: null, student: { name, period }, dataset: 1, data: {}, keyResults: krs,
+          quizzes: [{ id: 'prelab', right: quiz.filter(q => q.status === 'Correct').length, total: quiz.length, questions: quiz }], parts: { done, total: L.parts } });
+      }
+      // Two students with the same Dataset ID (a copied progress file), and two with identical key results (copied numbers)
+      if (made.length >= 6) { made[4].datasetId = made[1].datasetId || computeDatasetId(made[1].student.name, made[1].student.period, L.lab, 1); made[5].keyResults = made[2].keyResults.map(k => Object.assign({}, k)); }
+      made.forEach(m => { m.exportedAt = m.savedAt; payloads.push(m); });
+    });
+    return payloads;
+  }
+  function loadSample() {
+    S.recs = S.recs.filter(r => !r.sample);
+    sampleData().forEach(p => { try { addPayload(p, 'sample', true); } catch (e) { /* cannot happen */ } });
+    render(); say('Sample data loaded. These students are made up.');
+  }
+
+  /* ---------- Events ---------- */
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(ev => { window.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }); });
+  ['dragleave', 'drop'].forEach(ev => window.addEventListener(ev, e => { if (ev === 'drop' || !e.relatedTarget) drop.classList.remove('is-over'); }));
+  window.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+  $('#files').addEventListener('change', e => { const l = e.target.files; addFiles(l).then(() => { e.target.value = ''; }); });
+  $('#sample').addEventListener('click', loadSample);
+  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.q = ''; $('#f-q').value = ''; render(); say('Cleared.'); });
+  $('#f-lab').addEventListener('change', e => { S.lab = e.target.value; render(); });
+  $('#f-class').addEventListener('change', e => { S.period = e.target.value; render(); });
+  $('#f-q').addEventListener('input', e => { S.q = e.target.value.trim(); render(); });
+  $('#csv').addEventListener('click', downloadCsv);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-sort]');
+    if (b) { const k = b.dataset.sort; S.sort = S.sort.key === k ? { key: k, dir: -S.sort.dir } : { key: k, dir: 1 }; render(); const nb = document.querySelector(`[data-sort="${CSS.escape(k)}"]`); if (nb) nb.focus(); return; }
+    if (e.target.id === 'dismiss-skipped') { S.skipped = []; render(); }
+  });
+  window.Dash = { state: S, csv: () => buildCsv(visible()), addFiles };
+
+  render();
+  setReader();
+  loadZip().then(setReader, () => { $('#reader').textContent = 'The Word-file reader could not load. Progress files (.json) still work; reload while online for .docx.'; });
+})();
+</script>
+</body>
+</html>

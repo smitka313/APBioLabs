@@ -998,7 +998,13 @@
         }
       }
     }
+    /* The student's full progress payload (identity, Dataset ID, every stored key, key results, quiz answers, step state,
+       timestamps) rides inside the .docx as custom document properties aplab_payload_000, _001, …: a resume code
+       (gzip + base64) cut into 2000-character pieces. teacher-dashboard.html reads them back. */
+    const customProperties = [{ name: 'aplab_format', value: 'LB1' }];
+    if (rep.embed) for (let i = 0, n = 0; i < rep.embed.length; i += 2000, n++) customProperties.push({ name: 'aplab_payload_' + String(n).padStart(3, '0'), value: rep.embed.slice(i, i + 2000) });
     const doc = new Document({
+      customProperties,
       creator: rep.name || 'Student', title: rep.docTitle || rep.title,
       styles: { default: { document: { run: { font: 'Calibri', size: 22 } } } },
       sections: [{
@@ -1074,7 +1080,7 @@
     collect: collectReport,
     filename: () => reportFileBase(),
     open: openReport, close: closeReport,
-    async docx() { const rep = await renderCharts(collectReport()); return withNativeRandom(() => buildDocx(rep)); },
+    async docx() { const rep = await renderCharts(collectReport()); try { rep.embed = await makeResumeCode(progressPayload(true)); } catch (e) { rep.embed = ''; } return withNativeRandom(() => buildDocx(rep)); },
     docxUrls: DOCX_URLS,
   };
 
