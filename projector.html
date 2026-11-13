@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<title>Projector Mode — AP Bio Lab Bench</title>
+<meta name="description" content="Teacher projector view for the AP Bio Digital Lab Bench: today's parts, a big timer, safety reminders and a QR code to the lab.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { min-height: 100vh; }
+  /* ---------- setup ---------- */
+  .setup { max-width: 760px; margin: 0 auto; padding: 28px 16px 40px; display: grid; gap: 18px; }
+  .setup h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 800; }
+  .setup .lede { color: var(--muted); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 16px; }
+  .field { display: grid; gap: 6px; }
+  .field > label, .field > .lbl { font-weight: 700; }
+  .field input[type=text], .field input[type=number], .field select { font: inherit; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
+  .field .hint { color: var(--muted); font-size: .9rem; }
+  .parts { display: grid; gap: 6px; }
+  .part { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--bg); cursor: pointer; }
+  .part:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+  .part input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+  .part .pn { flex: 1; font-weight: 600; }
+  .part .pm { font-family: var(--f-mono); font-size: .85rem; color: var(--muted); white-space: nowrap; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn--big { font-size: 1.15rem; padding: 12px 22px; }
+  .check { display: inline-flex; gap: 8px; align-items: center; }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+  /* ---------- display ---------- */
+  .disp { --u: clamp(11px, 1vw, 24px); min-height: 100vh; box-sizing: border-box; padding: calc(var(--u) * 1.3) calc(var(--u) * 2) calc(var(--u) * 1.6); display: grid; gap: calc(var(--u) * 1.2); align-content: start; font-size: calc(var(--u) * 1.5); line-height: 1.3; }
+  @media (min-width: 1600px) and (min-height: 700px) { .disp { --u: clamp(11px, min(1vw, 1.42vh), 30px); } }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; font-size: 15px; }
+  .bar .btn { font-size: 15px; }
+  .bar .notes { font-size: calc(var(--u) * 1.5); font-weight: 700; color: var(--stain); }
+  .grid { display: grid; gap: calc(var(--u) * 2); align-items: start; }
+  @media (min-width: 1000px) { .grid { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); } }
+  .left, .right { display: grid; gap: calc(var(--u) * 1.2); min-width: 0; }
+  .eb { font-family: var(--f-mono); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-size: calc(var(--u) * 1.3); }
+  .disp h1 { font-size: calc(var(--u) * 4.2); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; text-wrap: balance; }
+  .dq { font-size: calc(var(--u) * 2.1); font-style: italic; color: var(--ink); line-height: 1.25; }
+  .chips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .6); }
+  .chipx { background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: .2em .8em; font-weight: 800; font-size: calc(var(--u) * 2.2); font-family: var(--f-display); display: inline-flex; gap: .5em; align-items: baseline; }
+  .chipx small { font-family: var(--f-mono); font-weight: 600; font-size: .6em; opacity: .9; }
+  .box { border: 2px solid var(--line); border-radius: 16px; background: var(--surface); padding: calc(var(--u) * 1) calc(var(--u) * 1.3); }
+  .box h2 { font-size: calc(var(--u) * 1.3); font-family: var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .4em; }
+  .stepsx { list-style: none; padding: 0; margin: 0; display: grid; gap: .35em; counter-reset: s; }
+  .stepsx li { counter-increment: s; display: flex; gap: .6em; font-size: calc(var(--u) * 2); font-weight: 600; line-height: 1.2; }
+  .stepsx li::before { content: counter(s); flex: none; width: 1.5em; height: 1.5em; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-family: var(--f-mono); font-weight: 700; display: grid; place-items: center; font-size: .8em; margin-top: .05em; }
+  .safe { background: var(--warn-soft); border-color: var(--warn); }
+  .safe h2 { color: var(--warn); }
+  .safe ul { list-style: none; padding: 0; display: grid; gap: .3em; }
+  .safe li { font-size: calc(var(--u) * 1.65); font-weight: 600; padding-left: 1.1em; position: relative; line-height: 1.25; }
+  .safe li::before { content: "!"; position: absolute; left: 0; font-weight: 800; color: var(--warn); }
+  .safe p { font-size: calc(var(--u) * 1.65); font-weight: 600; }
+  .timer { text-align: center; display: grid; gap: calc(var(--u) * .8); }
+  .time { font-family: var(--f-mono); font-weight: 700; font-size: calc(var(--u) * 9.5); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .timer.amber { border-color: var(--warn); background: var(--warn-soft); }
+  .timer.amber .time { color: var(--warn); }
+  .timer.red { border-color: var(--bad); background: var(--bad-soft); }
+  .timer.red .time { color: var(--bad); }
+  .tstate { font-size: calc(var(--u) * 1.2); font-family: var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); min-height: 1.3em; }
+  .tctl { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .tctl .btn { font-size: calc(var(--u) * 1.3); padding: .4em .9em; }
+  .qr { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--u) * 1.3); align-items: center; }
+  .qrbox { background: #fff; padding: calc(var(--u) * .8); border-radius: 12px; line-height: 0; border: 1px solid var(--line); }
+  .qrbox svg { width: calc(var(--u) * 13); height: calc(var(--u) * 13); max-width: none; display: block; }
+  .qrtext { min-width: 0; display: grid; gap: .3em; }
+  .qrtext .scan { font-weight: 800; font-size: calc(var(--u) * 1.9); font-family: var(--f-display); line-height: 1.1; }
+  .qrtext .url { font-family: var(--f-mono); font-size: calc(var(--u) * 1.05); overflow-wrap: anywhere; color: var(--ink); font-weight: 600; }
+  .signin { font-size: calc(var(--u) * 1.5); font-weight: 700; color: var(--accent); }
+  @media (max-width: 700px) { .qr { grid-template-columns: 1fr; justify-items: center; text-align: center; } .qrbox svg { width: min(60vw, 260px); height: min(60vw, 260px); } }
+  @media (prefers-reduced-motion: no-preference) { .timer.red .time { animation: pulse 1.4s ease-in-out infinite; } @keyframes pulse { 50% { opacity: .72; } } }
+</style>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+
+<main id="setup" class="setup">
+  <header>
+    <div class="eyebrow">For the classroom screen</div>
+    <h1>Projector mode</h1>
+    <p class="lede">Choose a lab and today's parts. The next screen shows large type, a countdown timer, the bench safety reminders and a QR code students can scan.</p>
+  </header>
+  <form class="panel" id="form" autocomplete="off">
+    <div class="field"><label for="lab">Lab</label><select id="lab"></select></div>
+    <div class="field"><span class="lbl" id="parts-l">Today's parts</span><div class="parts" id="parts" role="group" aria-labelledby="parts-l"></div></div>
+    <div class="field"><label for="notes">Due date or notes (optional)</label><input type="text" id="notes" maxlength="120" placeholder="Due Friday: Part 3 questions"></div>
+    <div class="field"><label for="mins">Timer (minutes)</label><input type="number" id="mins" min="1" max="240" step="1"><span class="hint" id="mins-h">Starts as the total of the chosen parts.</span></div>
+    <div class="row"><button type="submit" class="btn btn--primary btn--big" id="start">Start</button><span class="hint" style="color:var(--muted)">Press F on the next screen for full screen.</span></div>
+  </form>
+</main>
+
+<main id="display" class="disp" hidden>
+  <div class="bar">
+    <div class="row">
+      <button type="button" class="btn" id="b-setup">Setup</button>
+      <button type="button" class="btn" id="b-full">Full screen (F)</button>
+      <button type="button" class="btn" id="b-theme" aria-label="Switch theme">Theme: Auto</button>
+      <label class="check"><input type="checkbox" id="chime"> Soft chime</label>
+    </div>
+    <div class="notes" id="d-notes"></div>
+  </div>
+  <div class="grid">
+    <div class="left">
+      <div><div class="eb" id="d-eb"></div><h1 id="d-title"></h1></div>
+      <p class="dq" id="d-dq"></p>
+      <div class="chips" id="d-chips" aria-label="Today's parts"></div>
+      <section class="box" id="d-stepsbox"><h2 id="d-stepsh">Steps</h2><ol class="stepsx" id="d-steps"></ol></section>
+      <section class="box safe" id="d-safe"><h2>Safety at the real bench</h2><div id="d-safec"></div></section>
+    </div>
+    <div class="right">
+      <section class="box timer" id="timer" aria-label="Countdown timer">
+        <div class="time" id="time" role="timer" aria-live="off">0:00</div>
+        <div class="tstate" id="tstate"></div>
+        <div class="tctl">
+          <button type="button" class="btn btn--primary" id="t-go">Start</button>
+          <button type="button" class="btn" id="t-reset">Reset</button>
+          <button type="button" class="btn" id="t-minus" aria-label="Minus 5 minutes">−5 min</button>
+          <button type="button" class="btn" id="t-plus" aria-label="Plus 5 minutes">+5 min</button>
+        </div>
+      </section>
+      <section class="box qr">
+        <div class="qrbox" id="qr" role="img" aria-label="QR code linking to the lab"></div>
+        <div class="qrtext"><div class="scan">Scan to open the lab</div><div class="url" id="d-url"></div></div>
+      </section>
+      <p class="signin">Sign in with your name and class on your laptop.</p>
+    </div>
+  </div>
+</main>
+
+<script src="projector-data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" async></script>
+<script>
+(function () {
+  'use strict';
+  var LABS = window.PROJECTOR_LABS || [], KEY = 'aplab:pref:projector', PAGES = 'https://smitka313.github.io/APBioLabs/';
+  var $ = function (id) { return document.getElementById(id); };
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function labById(id) { for (var i = 0; i < LABS.length; i++) if (LABS[i].id === id) return LABS[i]; return null; }
+
+  var pref = { lab: 'lab01', parts: [], notes: '', minutes: 0, auto: true, chime: false };
+  try { var p = JSON.parse(lsGet(KEY) || 'null'); if (p && typeof p === 'object') for (var k in pref) if (k in p) pref[k] = p[k]; } catch (e) { /* ignore */ }
+  var hm = /^#(lab\d\d)$/.exec(location.hash);
+  if (hm && labById(hm[1]) && hm[1] !== pref.lab) { pref.lab = hm[1]; pref.parts = []; pref.auto = true; }
+  if (!labById(pref.lab)) pref.lab = LABS.length ? LABS[0].id : 'lab01';
+  if (!Array.isArray(pref.parts)) pref.parts = [];
+  function save() { lsSet(KEY, JSON.stringify(pref)); }
+
+  /* ---------- setup ---------- */
+  var labSel = $('lab'), partsBox = $('parts'), notes = $('notes'), mins = $('mins');
+  LABS.forEach(function (l) { var o = el('option', '', 'Lab ' + l.n + ': ' + l.title); o.value = l.id; labSel.appendChild(o); });
+  function curLab() { return labById(pref.lab); }
+  function defaultParts(l) { for (var i = 0; i < l.parts.length; i++) if (l.parts[i].steps.length) return [l.parts[i].slug]; return l.parts.length ? [l.parts[0].slug] : []; }
+  function validParts(l) { var s = {}; l.parts.forEach(function (p) { s[p.slug] = 1; }); pref.parts = pref.parts.filter(function (x) { return s[x]; }); if (!pref.parts.length) pref.parts = defaultParts(l); }
+  function chosen() { var l = curLab(); return l.parts.filter(function (p) { return pref.parts.indexOf(p.slug) >= 0; }); }
+  function sumMins() { return chosen().reduce(function (a, p) { return a + (p.minutes || 0); }, 0) || 10; }
+  function renderParts() {
+    var l = curLab(); validParts(l); partsBox.textContent = '';
+    l.parts.forEach(function (p) {
+      var lab = el('label', 'part'), cb = el('input'); cb.type = 'checkbox'; cb.value = p.slug; cb.checked = pref.parts.indexOf(p.slug) >= 0;
+      lab.append(cb, el('span', 'pn', p.name), el('span', 'pm', p.minutes ? '≈ ' + p.minutes + ' min' : ''));
+      partsBox.appendChild(lab);
+    });
+  }
+  function minsHint() { $('mins-h').textContent = pref.auto ? 'Starts as the total of the chosen parts (' + sumMins() + ' min). Clear the box to go back to that.' : 'Custom length. Clear the box to use the total of the chosen parts.'; }
+  function syncMins() { if (pref.auto) pref.minutes = sumMins(); mins.value = pref.minutes; minsHint(); }
+  labSel.value = pref.lab; notes.value = pref.notes; $('chime').checked = !!pref.chime;
+  renderParts(); syncMins();
+  labSel.addEventListener('change', function () { pref.lab = labSel.value; pref.parts = []; pref.auto = true; renderParts(); syncMins(); save(); });
+  partsBox.addEventListener('change', function () {
+    pref.parts = [].slice.call(partsBox.querySelectorAll('input:checked')).map(function (c) { return c.value; });
+    if (!pref.parts.length) { pref.parts = defaultParts(curLab()); renderParts(); }
+    syncMins(); save();
+  });
+  notes.addEventListener('input', function () { pref.notes = notes.value; save(); });
+  mins.addEventListener('input', function () {
+    var v = parseInt(mins.value, 10);
+    if (isNaN(v)) { pref.auto = true; pref.minutes = sumMins(); } else { pref.auto = false; pref.minutes = Math.max(1, Math.min(240, v)); }
+    minsHint(); save();
+  });
+  window.addEventListener('hashchange', function () {
+    var m = /^#(lab\d\d)$/.exec(location.hash);
+    if (m && labById(m[1])) { pref.lab = m[1]; pref.parts = []; pref.auto = true; labSel.value = pref.lab; renderParts(); syncMins(); save(); if (!$('display').hidden) { show(); resetT(); } }
+  });
+
+  /* ---------- display ---------- */
+  function baseUrl() {
+    if (/^https?:$/.test(location.protocol)) return location.href.replace(/[#?].*$/, '').replace(/[^\/]*$/, '');
+    return PAGES;
+  }
+  function shorten(s) {
+    if (s.length <= 120) return s;
+    var m = s.slice(0, 120).match(/^(.*[.!?])\s/); if (m && m[1].length > 50) return m[1];
+    return s.slice(0, 115).replace(/\s+\S*$/, '').replace(/[,;:\s]+$/, '') + '…';
+  }
+  var qrToken = 0;
+  function drawQr(url) {
+    var box = $('qr'), tok = ++qrToken; box.textContent = '';
+    function go() {
+      if (tok !== qrToken) return;
+      if (typeof qrcode !== 'function') { box.style.display = 'none'; return; }
+      box.style.display = '';
+      try {
+        var q = qrcode(0, 'M'); q.addData(url); q.make();
+        var n = q.getModuleCount(), m = 2, d = '';
+        for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+        var s = n + 2 * m;
+        box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + s + ' ' + s + '" shape-rendering="crispEdges"><rect width="' + s + '" height="' + s + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+        box.setAttribute('data-url', url);
+      } catch (e) { box.style.display = 'none'; }
+    }
+    if (typeof qrcode === 'function') go(); else { var t = 0, w = setInterval(function () { if (typeof qrcode === 'function' || ++t > 40) { clearInterval(w); go(); } }, 100); }
+  }
+  function show() {
+    var l = curLab(), ps = chosen(); if (!ps.length) { validParts(l); ps = chosen(); }
+    $('d-eb').textContent = [l.eyebrow || 'Investigation ' + l.n, l.bigIdea].filter(Boolean).join(' · ');
+    $('d-title').textContent = l.title; $('d-dq').textContent = l.dq;
+    $('d-notes').textContent = pref.notes;
+    var chips = $('d-chips'); chips.textContent = '';
+    ps.forEach(function (p) { var c = el('span', 'chipx', p.name); if (p.minutes) c.appendChild(el('small', '', p.minutes + ' min')); chips.appendChild(c); });
+    /* steps: first 4 of the first chosen part that has a checklist */
+    var withSteps = null; ps.forEach(function (p) { if (!withSteps && p.steps.length) withSteps = p; });
+    var sl = $('d-steps'); sl.textContent = '';
+    if (withSteps) { withSteps.steps.slice(0, 4).forEach(function (s) { sl.appendChild(el('li', '', s)); }); $('d-stepsh').textContent = 'First steps: ' + withSteps.name; }
+    else { sl.appendChild(el('li', '', 'Open ' + ps[0].name + ' on your laptop and follow the page.')); $('d-stepsh').textContent = 'Today'; }
+    /* safety */
+    var sc = $('d-safec'); sc.textContent = ''; var real = null;
+    l.safety.forEach(function (s) { if (!real && !s.virtual) real = s; });
+    if (real) { var ul = el('ul'); real.items.slice(0, 4).forEach(function (t) { ul.appendChild(el('li', '', shorten(t))); }); sc.appendChild(ul); }
+    else sc.appendChild(el('p', '', 'This is a computer investigation, so there are no bench hazards. At a real bench: goggles on, tie back hair, wash hands.'));
+    var url = baseUrl() + l.id + '.html#' + ps[0].slug;
+    $('d-url').textContent = url.replace(/^https?:\/\//, ''); $('d-url').setAttribute('data-url', url);
+    drawQr(url);
+    document.title = l.title + ' — Projector Mode — AP Bio Lab Bench';
+  }
+
+  /* ---------- timer (clock-based so it stays right if the tab is throttled) ---------- */
+  var total = 0, remain = 0, endAt = 0, running = false, iv = null, chimed5 = false, chimed0 = false;
+  function fmt(ms) { var s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60; return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (ss < 10 ? '0' : '') + ss; }
+  function left() { return running ? Math.max(0, endAt - Date.now()) : remain; }
+  function paint() {
+    var ms = left(), t = $('timer'); $('time').textContent = fmt(ms);
+    t.classList.toggle('amber', ms > 0 && ms <= 300000); t.classList.toggle('red', ms <= 0);
+    $('tstate').textContent = ms <= 0 ? "Time's up" : running ? 'Running' : (ms === total ? 'Ready' : 'Paused');
+    $('t-go').textContent = running ? 'Pause' : (ms <= 0 || ms === total ? 'Start' : 'Resume');
+  }
+  function chime(n) {
+    if (!pref.chime) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      window.__ac = window.__ac || new AC(); var ac = window.__ac; if (ac.resume) ac.resume();
+      for (var i = 0; i < n; i++) {
+        var o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * 0.6;
+        o.type = 'sine'; o.frequency.value = 660; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+        o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + 1);
+      }
+    } catch (e) { /* audio is optional */ }
+  }
+  function tick() {
+    var ms = left();
+    if (running && ms <= 300000 && !chimed5 && total > 300000) { chimed5 = true; chime(1); }
+    if (running && ms <= 0) { running = false; remain = 0; clearInterval(iv); iv = null; if (!chimed0) { chimed0 = true; chime(3); } }
+    paint();
+  }
+  function startT() { if (running) return; if (remain <= 0) resetT(); running = true; endAt = Date.now() + remain; if (!iv) iv = setInterval(tick, 250); tick(); }
+  function pauseT() { if (!running) return; remain = Math.max(0, endAt - Date.now()); running = false; clearInterval(iv); iv = null; paint(); }
+  function toggleT() { running ? pauseT() : startT(); }
+  function resetT() { running = false; clearInterval(iv); iv = null; total = remain = pref.minutes * 60000; chimed5 = chimed0 = false; paint(); }
+  function adjust(d) {
+    var ms = left() + d; if (ms < 0) ms = 0; if (d > 0) { chimed0 = false; if (ms > 300000) chimed5 = false; }
+    if (running) endAt = Date.now() + ms; else remain = ms;
+    if (ms > total) total = ms;
+    if (running && ms <= 0) tick(); else paint();
+  }
+  $('t-go').addEventListener('click', toggleT);
+  $('t-reset').addEventListener('click', resetT);
+  $('t-plus').addEventListener('click', function () { adjust(300000); });
+  $('t-minus').addEventListener('click', function () { adjust(-300000); });
+  $('chime').addEventListener('change', function () { pref.chime = $('chime').checked; save(); if (pref.chime) chime(1); });
+
+  /* ---------- views, fullscreen, theme, keys ---------- */
+  function start() { save(); $('setup').hidden = true; $('display').hidden = false; show(); resetT(); window.scrollTo(0, 0); }
+  function toSetup() { pauseT(); $('display').hidden = true; $('setup').hidden = false; document.title = 'Projector Mode — AP Bio Lab Bench'; }
+  $('form').addEventListener('submit', function (e) { e.preventDefault(); start(); });
+  $('b-setup').addEventListener('click', toSetup);
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement; }
+  function toggleFs() {
+    try {
+      var r;
+      if (fsEl()) r = (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else { var d = document.documentElement; r = (d.requestFullscreen || d.webkitRequestFullscreen).call(d); }
+      if (r && r.catch) r.catch(function () { /* refused: stay windowed */ });
+    } catch (e) { /* unsupported */ }
+  }
+  $('b-full').addEventListener('click', toggleFs);
+  function theme() { var t = document.documentElement.getAttribute('data-theme'); return t === 'light' || t === 'dark' ? t : 'auto'; }
+  function paintTheme() { var t = theme(); $('b-theme').textContent = 'Theme: ' + (t === 'auto' ? 'Auto' : t === 'dark' ? 'Dark' : 'Light'); }
+  $('b-theme').addEventListener('click', function () {
+    var n = { auto: 'light', light: 'dark', dark: 'auto' }[theme()];
+    if (n === 'auto') { document.documentElement.removeAttribute('data-theme'); lsSet('aplab:pref:theme', null); } else { document.documentElement.setAttribute('data-theme', n); lsSet('aplab:pref:theme', n); }
+    paintTheme();
+  });
+  paintTheme();
+  /* Esc leaves browser full screen by itself; an Esc pressed outside full screen goes back to setup. */
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var inDisplay = !$('display').hidden, t = e.target, tag = t && t.tagName;
+    if ((tag === 'INPUT' && t.type !== 'checkbox') || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFs(); }
+    else if (e.key === ' ' && inDisplay && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); toggleT(); }
+    else if (e.key === 'Escape' && inDisplay && !fsEl()) toSetup();
+  });
+})();
+</script>
+</body>
+</html>
