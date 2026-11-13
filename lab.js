@@ -2665,20 +2665,53 @@
     if (backupBar) { backupBar.remove(); backupBar = null; }
     document.body.classList.remove('has-backup-bar'); document.documentElement.style.removeProperty('--backup-bar-h');
   }
-  function showBar() {
-    bkShown = true; sessionSet(shownKey(), '1');
-    const region = h('div', { class: 'backup-bar', role: 'status', 'aria-live': 'polite' });
+  /* showBar('nudge') is the end-of-period nudge: the same bar with other words and buttons, shown at most once per browser session. */
+  function showBar(kind) {
+    const nudge = kind === 'nudge';
+    if (nudge) sessionSet(NUDGE_KEY, '1'); else { bkShown = true; sessionSet(shownKey(), '1'); }
+    const region = h('div', { class: 'backup-bar' + (nudge ? ' nudge-bar' : ''), role: 'status', 'aria-live': 'polite' });
     backupBar = region; document.body.append(region);
     setTimeout(() => { // fill after insertion so screen readers announce it politely
       if (!region.isConnected) return;
-      region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
+      const dismiss = h('button', { class: 'bb-close', type: 'button', 'aria-label': 'Dismiss this reminder', title: 'Dismiss', onclick: removeBar }, '×');
+      if (nudge) region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
+        h('p', { class: 'bb-msg' }, NUDGE_MSG),
+        h('div', { class: 'bb-actions' },
+          h('button', { class: 'btn btn--sm btn--primary nudge-docx', type: 'button', onclick: ev => nudgeDocx(ev.currentTarget) }, 'Download .docx'),
+          h('button', { class: 'btn btn--sm nudge-code', type: 'button', onclick: ev => nudgeCode(ev.currentTarget) }, 'Transfer code'),
+          dismiss));
+      else region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
         h('p', { class: 'bb-msg' }, storageBad ? STORAGE_MSG : BACKUP_MSG),
         h('div', { class: 'bb-actions' },
           h('button', { class: 'btn btn--sm btn--primary bb-save', type: 'button', onclick: () => { saveProgressFile(); Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file'),
-          h('button', { class: 'bb-close', type: 'button', 'aria-label': 'Dismiss this reminder', title: 'Dismiss', onclick: removeBar }, '×')));
+          dismiss));
       document.body.classList.add('has-backup-bar');
       document.documentElement.style.setProperty('--backup-bar-h', region.offsetHeight + 'px');
     }, 60);
+  }
+  /* ---- end-of-period nudge ----
+     Meaningful work that is not backed up (Lab.backup.state().unsaved: no progress file or transfer code since) and the lab tab
+     open for 40+ minutes: one gentle, dismissible banner per browser session, with Download .docx and Transfer code buttons.
+     Never while a Lab.loop animation runs, while typing, over a dialog or the tour; it waits and tries again every 2 s. */
+  const NUDGE_MS = 40 * 60 * 1000, NUDGE_KEY = 'aplab:nudge-shown';
+  const NUDGE_MSG = 'Period ending soon? Download your report or get a transfer code.';
+  Lab.nudge = { after: NUDGE_MS, shown: () => !!sessionGet(NUDGE_KEY) };
+  async function nudgeDocx(btn) {
+    btn.disabled = true;
+    try { const blob = await Lab.report.docx(), name = reportFileBase() + '.docx'; downloadBlob(blob, name); Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false }); removeBar(); }
+    catch (e) { Lab.toast(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or get a transfer code.' : 'Could not build the Word file here. Get a transfer code instead.', { type: 'warn' }); btn.disabled = false; }
+  }
+  function nudgeCode(btn) {
+    removeBar();
+    Lab.pause({ opener: btn });   // the pause card holds the transfer code and QR; open it ready to use
+    const go = pauseEl && $('.transfer-btn', pauseEl); if (go) go.click();
+  }
+  function maybeNudge(s) {
+    if (backupBar || !s.unsaved || sessionGet(NUDGE_KEY)) return;
+    if (Date.now() - loadedAt < NUDGE_MS) return;
+    if (document.hidden || LOOPS.size || tourEl || dmEl || pauseEl || isBusyMode()) return;
+    if (Date.now() - lastWork < QUIET_MS) return;
+    showBar('nudge');
   }
   function checkBackup() {
     if (!IS_LAB || !document.body) return;
@@ -2686,6 +2719,7 @@
     syncGuard(s); updateBackupStatus(s);
     if (s.meaningful) requestPersist();
     if (backupBar && !s.dirty) removeBar();
+    maybeNudge(s);
     if (backupBar || bkShown || sessionGet(shownKey())) return;
     if (!s.unsaved || document.hidden || LOOPS.size || tourEl || isBusyMode()) return;
     const t = Date.now();

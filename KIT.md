@@ -70,6 +70,11 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Key results.** `Lab.keyResult(id, {label, value, unit, part})` stores `keyres:<id>` = `{label, value, unit, part, t}`;
   `Lab.keyResults()` lists them. Call it whenever a headline number is computed (FRQ self-score: id `frq-score`, unit `of 4`).
   They appear in the report (Key results table), the progress file and the teacher dashboard.
+- **End-of-period nudge.** If `Lab.backup.state().unsaved` (3+ answers or a recorded row, no progress file or transfer code since)
+  and the lab tab has been open 40+ minutes (`Lab.nudge.after`), a gentle dismissible bar (`.backup-bar.nudge-bar`) says "Period
+  ending soon? Download your report or get a transfer code." with **Download .docx** and **Transfer code** (opens the pause card with the
+  code and QR). At most once per browser session (`sessionStorage['aplab:nudge-shown']`); never while a `Lab.loop` runs, while typing,
+  over a dialog, the tour or the report/worksheet; it waits and tries again every 2 s. Test it with `page.clock` (`tests/t35-nudge.js`).
 - **"Rate my confidence".** lab.js adds a one-tap radio group ("I could teach this" 3 / "I mostly get it" 2 / "I'm lost" 1) as the
   last thing in each lab's Reflect or Evaluate part (found by `data-step`, or the `reflect` / `evaluate` slug; nothing to put in the
   page). Saved as `aplab:<lab>:confidence` = `{v, t}` and reported as key result `confidence` (`value` 1-3, `unit` "(I could teach

@@ -806,3 +806,6 @@ body.has-dm { overflow: hidden; }
 .conf-opt:has(input:checked) .conf-tick { display: inline; }
 .conf-say:empty { display: none; }
 @media print { .confidence { display: none !important; } }
+
+.nudge-bar { border-left-color: var(--warn); }
+.nudge-bar .bb-icon { background: var(--warn-soft); color: var(--warn); }
