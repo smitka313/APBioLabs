@@ -680,178 +680,570 @@ Lab.quiz('#prelab', [
 ], { id: 'prelab' });
 
 /* ---------------- Naturalist plates for the organism cards ----------------
-   Pen-and-ink with watercolour wash on cream paper (inline SVG, generated once per card). Specimen art uses
-   fixed colours so a plate looks the same in light and dark themes; the card around it keeps theme tokens. */
+   Pen-and-ink with layered watercolour washes on cream paper. Each plate is drawn procedurally on an offscreen
+   canvas the first time it is needed and cached as an image (no external art). Specimen art uses fixed colours so
+   a plate looks the same in light and dark themes; light falls from the upper left. Drawing space: 200 × 120
+   units at 4 px per unit. */
 const PLATE = (() => {
-  const INK = '#3a2a1c', f = n => (+n).toFixed(1);
-  const lg = (id, a, b, x2 = 0.3, y2 = 1) => `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
-  const rg = (id, a, b, cx = 0.38, cy = 0.35) => `<radialGradient id="${id}" cx="${cx}" cy="${cy}" r="0.75"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></radialGradient>`;
-  // a watercolour shape: soft wash, darker pooled edge, then the ink line
-  const wash = (d, fill, ink = 1, extra = '') => `<path d="${d}" fill="${fill}" opacity="0.92"${extra}/><path d="${d}" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="2.2"/><path d="${d}" fill="none" stroke="${INK}" stroke-width="${ink}" stroke-linejoin="round" stroke-linecap="round"/>`;
-  const ink = (d, w = 0.8, op = 1) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w}" stroke-opacity="${op}" stroke-linecap="round" stroke-linejoin="round"/>`;
-  const dot = (x, y, r, c = INK) => `<circle cx="${f(x)}" cy="${f(y)}" r="${f(r)}" fill="${c}"/>`;
-  function hatch(x0, y0, x1, y1, n, dx, dy, op = 0.35) { let s = ''; for (let i = 0; i < n; i++) { const t = i / Math.max(1, n - 1), x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; s += `M${f(x)} ${f(y)}l${f(dx)} ${f(dy)}`; } return ink(s, 0.5, op); }
-  function quad(p0, c, p1, t) { const u = 1 - t; return [u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0], u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1]]; }
-  function leafPath(x, y, ang, L, W, serr = 0) {   // lanceolate/ovate leaf from its base point
-    const c = Math.cos(ang), s = Math.sin(ang), n = [-s, c], P = (u, v) => `${f(x + c * u + n[0] * v)} ${f(y + s * u + n[1] * v)}`;
-    if (!serr) return `M${P(0, 0)} Q${P(L * 0.35, W)} ${P(L, 0)} Q${P(L * 0.35, -W)} ${P(0, 0)}Z`;
-    let d = `M${P(0, 0)}`; const k = 9; for (let i = 1; i <= k; i++) { const t = i / k, w = W * Math.sin(Math.PI * Math.min(1, t * 1.08)) * (1 - t * 0.15); d += ` L${P(L * (t - 0.5 / k), w + serr)} L${P(L * t, w * 0.92)}`; }
-    for (let i = k - 1; i >= 0; i--) { const t = i / k, w = W * Math.sin(Math.PI * Math.min(1, t * 1.08)) * (1 - t * 0.15); d += ` L${P(L * (t + 0.5 / k), -w - serr)} L${P(L * t, -w * 0.92)}`; }
-    return d + 'Z';
+  const W = 200, H = 120, S = 4, INK = '#2a1c12', cache = {};
+  let c, R, V = [1, 0, 0];
+  const base = (a = 0, b = 0) => c.setTransform(S * V[0], 0, 0, S * V[0], S * V[1] + a, S * V[2] + b), view = (k = 1, x = 0, y = 0) => { V = [k, x * (1 - k), y * (1 - k)]; base(); };
+  const rnd = (a = 0, b = 1) => a + (b - a) * R.uniform(), lerp = (a, b, t) => a + (b - a) * t;
+  const rgba = (h, a) => `rgba(${[1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(',')},${a})`;
+  const my = (pts, y = 60) => pts.map(q => [q[0], 2 * y - q[1], q[2]]);   // mirror top ↔ bottom
+  const tf = (pts, x, y, a, s = 1) => pts.map(q => [x + q[0] * Math.cos(a) - q[1] * s * Math.sin(a), y + q[0] * Math.sin(a) + q[1] * s * Math.cos(a), q[2]]);
+  // Catmull-Rom spline through [x, y, corner?] points, as cubic Bézier segments
+  function segs(pts, closed) {
+    const n = pts.length, g = i => closed ? pts[(i + n) % n] : pts[Math.max(0, Math.min(n - 1, i))], out = [];
+    for (let i = 0; i < (closed ? n : n - 1); i++) {
+      const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2), a = p1[2] ? 0 : 1 / 6, b = p2[2] ? 0 : 1 / 6;
+      out.push([p1, [p1[0] + (p2[0] - p0[0]) * a, p1[1] + (p2[1] - p0[1]) * a], [p2[0] - (p3[0] - p1[0]) * b, p2[1] - (p3[1] - p1[1]) * b], p2]);
+    }
+    return out;
   }
+  function shape(pts) {
+    const p = new Path2D(); p.moveTo(pts[0][0], pts[0][1]);
+    segs(pts, true).forEach(([, a, b, q]) => p.bezierCurveTo(a[0], a[1], b[0], b[1], q[0], q[1]));
+    p.closePath();
+    const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+    p.b = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; p.pts = pts;
+    return p;
+  }
+  function sample(pts, closed = false, k = 8) {
+    const out = [];
+    segs(pts, closed).forEach(([p, a, b, q]) => { for (let i = 0; i < k; i++) { const t = i / k, u = 1 - t, A = u * u * u, B = 3 * u * u * t, C = 3 * u * t * t, D = t * t * t; out.push([A * p[0] + B * a[0] + C * b[0] + D * q[0], A * p[1] + B * a[1] + C * b[1] + D * q[1]]); } });
+    const e = closed ? pts[0] : pts[pts.length - 1]; out.push([e[0], e[1]]);
+    return out;
+  }
+  // calligraphic ink stroke along a spline; width w0 → w1 (or a profile function of t)
+  function taper(pts, w0, w1 = w0 * 0.25, col = INK, a = 1) {
+    const s = sample(pts, false, 8), n = s.length, L = [], Rt = [];
+    for (let i = 0; i < n; i++) {
+      const p = s[i], q = s[Math.min(n - 1, i + 1)], o = s[Math.max(0, i - 1)], dx = q[0] - o[0], dy = q[1] - o[1], d = Math.hypot(dx, dy) || 1, t = i / (n - 1);
+      const w = (typeof w0 === 'function' ? w0(t) : lerp(w0, w1, t)) / 2;
+      L.push([p[0] - dy / d * w, p[1] + dx / d * w]); Rt.push([p[0] + dy / d * w, p[1] - dx / d * w]);
+    }
+    c.save(); c.globalAlpha = a; c.fillStyle = col; c.beginPath();
+    L.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); Rt.reverse().forEach(p => c.lineTo(p[0], p[1]));
+    c.closePath(); c.fill(); c.restore();
+  }
+  const brush = (pts, w, col = INK, a = 1) => taper(pts, t => w * (0.35 + 0.65 * Math.sin(Math.PI * Math.min(1, 0.12 + t * 0.88))), 0, col, a);
+  // watercolour wash: three offset semi-transparent layers, pigment blooms, volume shading lit from the upper left, pooled edge
+  function wash(p, col, o = {}) {
+    const [x0, y0, x1, y1] = p.b, w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0), dk = o.dk || '#24160c', A = o.a ?? 1;
+    c.save(); c.fillStyle = col;
+    for (let i = 0; i < 3; i++) { c.globalAlpha = A * (i ? 0.3 : 0.82); base(rnd(-1.3, 1.3), rnd(-1.3, 1.3)); c.fill(p); }
+    base(); c.globalAlpha = A; c.clip(p);
+    (o.blot || []).forEach(bc => { for (let i = 0; i < (o.nb || 5); i++) { const x = rnd(x0, x1), y = rnd(y0, y1), r = rnd(0.12, 0.32) * Math.max(w, h), g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, rgba(bc, o.ba ?? 0.4)); g.addColorStop(1, rgba(bc, 0)); c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r); } });
+    c.translate(x0 + w / 2, y0 + h / 2); c.scale(w / 2, h / 2);
+    const g = c.createRadialGradient(-0.45, -0.6, 0, -0.2, -0.3, 1.6);
+    g.addColorStop(0, `rgba(255,250,232,${o.hl ?? 0.4})`); g.addColorStop(0.32, 'rgba(255,250,232,0)'); g.addColorStop(0.6, rgba(dk, 0)); g.addColorStop(1, rgba(dk, o.sh ?? 0.5));
+    c.fillStyle = g; c.fillRect(-3, -3, 6, 6);
+    base(); c.globalAlpha = A * 0.32; c.strokeStyle = o.edge || dk; c.lineWidth = o.ew ?? 1.1; c.stroke(p);
+    c.restore();
+  }
+  // ink outline: a fine line, thickened on the shadow (lower-right) side
+  function ink(p, w = 0.45, a = 1) {
+    c.save(); c.strokeStyle = INK; c.lineJoin = c.lineCap = 'round';
+    c.globalAlpha = 0.85 * a; c.lineWidth = w; c.stroke(p);
+    const o = new Path2D(); o.rect(-20, -20, W + 40, H + 40); o.addPath(p); c.clip(o, 'evenodd');
+    c.translate(w * 0.5, w * 0.6); c.globalAlpha = 0.75 * a; c.lineWidth = w * 1.4; c.stroke(p); c.restore();
+  }
+  const part = (pts, col, o = {}, w = 0.45) => { const p = shape(pts); wash(p, col, o); if (w) ink(p, w, o.ia ?? 1); return p; };
+  // hatching clipped to a shape, fading in toward the shadow side
+  function hatch(p, ang = 0.9, gap = 1.1, w = 0.2, a = 0.45, from = 0.4) {
+    const [x0, y0, x1, y1] = p.b, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, r = Math.hypot(x1 - x0, y1 - y0) / 2 + 1, ca = Math.cos(ang), sa = Math.sin(ang);
+    c.save(); c.clip(p);
+    const g = c.createLinearGradient(lerp(x0, x1, 0.3), y0, lerp(x0, x1, 0.7), y1); g.addColorStop(0, rgba(INK, 0)); g.addColorStop(from, rgba(INK, 0)); g.addColorStop(1, rgba(INK, a));
+    c.strokeStyle = g; c.lineWidth = w; c.beginPath();
+    for (let d = -r; d <= r; d += gap) { const j = d + rnd(-0.15, 0.15); c.moveTo(cx - ca * r - sa * j, cy - sa * r + ca * j); c.lineTo(cx + ca * r - sa * j, cy + sa * r + ca * j); }
+    c.stroke(); c.restore();
+  }
+  // short hair strokes clipped to a shape; colours dark → light, lighter toward the upper left
+  function fur(p, n, dir, len, cols, w = 0.25, a = 0.8) {
+    const [x0, y0, x1, y1] = p.b; c.save(); c.clip(p); c.lineCap = 'round'; c.lineWidth = w;
+    for (let i = 0; i < n; i++) {
+      const x = rnd(x0, x1), y = rnd(y0, y1), an = dir(x, y) + rnd(-0.3, 0.3), l = len * rnd(0.6, 1.3), lit = 1 - ((x - x0) / (x1 - x0 || 1) * 0.35 + (y - y0) / (y1 - y0 || 1) * 0.65);
+      const k = Math.max(0, Math.min(cols.length - 1, Math.floor(lit * cols.length + rnd(-1, 1))));
+      c.strokeStyle = cols[k]; c.globalAlpha = a * rnd(0.5, 1); c.beginPath(); c.moveTo(x, y);
+      c.quadraticCurveTo(x + Math.cos(an) * l / 2 + rnd(-0.3, 0.3), y + Math.sin(an) * l / 2 + rnd(-0.3, 0.3), x + Math.cos(an) * l, y + Math.sin(an) * l); c.stroke();
+    }
+    c.restore();
+  }
+  // hairs that break the silhouette
+  function fringe(p, n, dir, len, col, w = 0.25, a = 0.75, keep) {
+    const s = sample(p.pts, true, 6); c.save(); c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const q = s[Math.floor(rnd(0, s.length))]; if (keep && !keep(q[0], q[1])) continue;
+      const an = dir(q[0], q[1]) + rnd(-0.3, 0.3), l = len * rnd(0.5, 1.2), x = q[0] - Math.cos(an) * l * 0.4, y = q[1] - Math.sin(an) * l * 0.4;
+      c.globalAlpha = a * rnd(0.5, 1); c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(an) * l / 2 + rnd(-0.3, 0.3), y + Math.sin(an) * l / 2 + rnd(-0.3, 0.3), x + Math.cos(an) * l, y + Math.sin(an) * l); c.stroke();
+    }
+    c.restore();
+  }
+  function tint(p, a0, a1, col, al = 0.8) {   // gradient of colour across a shape, from point a0 (none) to a1 (full)
+    c.save(); c.clip(p); const g = c.createLinearGradient(a0[0], a0[1], a1[0], a1[1]); g.addColorStop(0, rgba(col, 0)); g.addColorStop(1, rgba(col, al));
+    c.fillStyle = g; c.fillRect(p.b[0] - 1, p.b[1] - 1, p.b[2] - p.b[0] + 2, p.b[3] - p.b[1] + 2); c.restore();
+  }
+  function blob(x, y, rx, ry, col, a = 1, ang = 0) {   // soft radial spot
+    c.save(); c.translate(x, y); c.rotate(ang); c.scale(rx, ry); const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, rgba(col, a)); g.addColorStop(0.55, rgba(col, a * 0.45)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.beginPath(); c.arc(0, 0, 1, 0, 7); c.fill(); c.restore();
+  }
+  const shadow = (x, y, rx, ry, a = 0.3) => blob(x, y, rx, ry, '#4a3622', a);
+  function dot(x, y, r, col, a = 1) { c.save(); c.globalAlpha = a; c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.restore(); }
+  function ground(x0, x1, y) { for (let x = x0; x < x1; x += rnd(3, 7)) { const l = rnd(2, 6); taper([[x, y + rnd(-0.6, 0.6)], [x + l, y + rnd(-0.5, 0.5)]], 0.3, 0.1, INK, rnd(0.15, 0.35)); } }
+  const spec = (pts, w, a = 0.6) => taper(pts, t => w * Math.sin(Math.PI * t), 0, '#fffdf2', a);
+  function eye(x, y, r, iris, pupil = 0.5, slit = 0) {
+    dot(x + r * 0.15, y + r * 0.2, r * 1.25, '#1a120c', 0.35); dot(x, y, r, '#1a120c');
+    const g = c.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r * 0.85); g.addColorStop(0, iris); g.addColorStop(1, rgba(iris, 0.55));
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 0.82, 0, 7); c.fill();
+    if (slit) { c.fillStyle = '#100a06'; c.beginPath(); c.ellipse(x, y, r * 0.18, r * 0.75, slit, 0, 7); c.fill(); } else if (pupil) dot(x, y, r * pupil, '#0c0805');
+    dot(x - r * 0.35, y - r * 0.38, r * 0.22, '#ffffff', 0.95);
+  }
+  // capsule outline from a to b, full widths w0 → w1
+  function limb(a, b, w0, w1 = w0, bul = 1.08) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, nx = -uy, ny = ux, m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], wm = (w0 + w1) / 2 * bul;
+    const P = (q, w, f = 0) => [q[0] + nx * w + ux * f, q[1] + ny * w + uy * f];
+    return [P(a, w0 / 2), P(m, wm / 2), P(b, w1 / 2), P(b, 0, w1 * 0.45), P(b, -w1 / 2), P(m, -wm / 2), P(a, -w0 / 2), P(a, 0, -w0 * 0.45)];
+  }
+  // outline around a spine (open spline) with half-width hw(u), u = 0..1 along it
+  function body(spine, hw, k = 10) {
+    const s = sample(spine, false, k), n = s.length, L = [], Rt = [], nrm = [];
+    for (let i = 0; i < n; i++) {
+      const q = s[Math.min(n - 1, i + 1)], o = s[Math.max(0, i - 1)], dx = q[0] - o[0], dy = q[1] - o[1], d = Math.hypot(dx, dy) || 1, w = hw(i / (n - 1));
+      nrm.push([-dy / d, dx / d]); L.push([s[i][0] - dy / d * w, s[i][1] + dx / d * w]); Rt.push([s[i][0] + dy / d * w, s[i][1] - dx / d * w]);
+    }
+    return { pts: L.concat(Rt.reverse()), s, nrm };
+  }
+  const pw = (U, V) => u => { for (let i = 1; i < U.length; i++) if (u <= U[i]) return lerp(V[i - 1], V[i], (1 - Math.cos(Math.PI * (u - U[i - 1]) / (U[i] - U[i - 1]))) / 2); return V[V.length - 1]; };
+  function paper() {
+    const g = c.createRadialGradient(92, 50, 4, 100, 60, 125); g.addColorStop(0, '#fbf7ec'); g.addColorStop(1, '#eadfc3'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 28; i++) blob(rnd(0, W), rnd(0, H), rnd(8, 30), rnd(6, 22), R.uniform() < 0.5 ? '#c4aa78' : '#fffdf5', 0.08, rnd(0, 3));
+    c.lineWidth = 0.12;
+    for (let i = 0; i < 70; i++) { const x = rnd(0, W), y = rnd(0, H), a = rnd(0, 7), l = rnd(1.5, 5); c.strokeStyle = `rgba(140,112,76,${rnd(0.08, 0.22).toFixed(2)})`; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(a) * l / 2 + rnd(-0.6, 0.6), y + Math.sin(a) * l / 2 + rnd(-0.6, 0.6), x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke(); }
+  }
+  function grain() {   // paper tooth over paper and paint alike
+    const im = c.getImageData(0, 0, W * S, H * S), d = im.data, w = W * S; let s = 987654321;
+    for (let i = 0, px = 0; i < d.length; i += 4, px++) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      const x = px % w, y = (px / w) | 0, v = (((s >> 8) & 255) / 255 - 0.5) * 9 + Math.sin(x * 0.61 + Math.sin(y * 0.23) * 3) * Math.sin(y * 0.57 + Math.sin(x * 0.19) * 3) * 4;
+      d[i] += v; d[i + 1] += v; d[i + 2] += v * 0.9;
+    }
+    c.putImageData(im, 0, 0);
+  }
+
   const ART = {
-    ins(R, id) {   // grasshopper, facing left
-      const defs = lg(id + 'b', '#a4b25c', '#5f6e2c') + lg(id + 'w', '#c3bf86', '#8f8a52', 0, 1) + lg(id + 'f', '#b3c06a', '#6c7a33');
-      let s = ink('M50 50 Q36 30 16 20 M53 49 Q44 28 30 14', 0.7);
-      s += ink('M138 58 L106 92 L94 95 M106 92 l-2 5', 1.6);   // far hind tibia
-      s += wash('M84 50 Q122 47 160 57 Q167 61 160 66 Q122 72 86 67 Z', `url(#${id}b)`);
-      for (let x = 96; x < 158; x += 9) s += ink(`M${x} ${f(49 + (x - 84) * 0.12)} q2 9 0 ${f(17 - (x - 84) * 0.1)}`, 0.5, 0.6);
-      s += wash('M80 47 Q124 38 170 53 Q172 57 166 59 Q124 53 84 55 Z', `url(#${id}w)`);
-      s += ink('M86 50 Q126 44 166 55 M90 53 Q128 48 160 56 M100 47 l6 6 M114 45 l6 7 M128 45 l6 8 M142 47 l6 7', 0.4, 0.6);
-      s += wash('M58 46 Q70 41 84 45 L87 66 Q74 71 63 68 Z', `url(#${id}b)`);
-      s += hatch(66, 60, 84, 60, 7, 0, 6);
-      s += wash('M48 47 Q38 51 41 64 Q45 75 58 73 L66 67 Q68 52 60 45 Z', `url(#${id}b)`);
-      s += `<ellipse cx="52" cy="54" rx="4.2" ry="5.4" fill="#4a3b20" stroke="${INK}" stroke-width="0.6"/>` + dot(51, 52.5, 1, '#e9e2c8');
-      s += ink('M44 69 l-3 5 M48 72 l-2 5', 0.8);
-      s += wash('M90 62 Q110 43 137 49 Q144 53 137 58 Q114 60 95 71 Z', `url(#${id}f)`);
-      for (let i = 0; i < 8; i++) { const x = 100 + i * 4.5; s += ink(`M${x} ${f(58 - i * 0.9)} l4 -4 M${x} ${f(58 - i * 0.9)} l4 3`, 0.4, 0.55); }
-      s += ink('M139 55 L110 90 L98 93', 2); for (let i = 1; i < 7; i++) s += ink(`M${f(139 - i * 4.1)} ${f(55 + i * 5)} l2 1.6`, 0.5);
-      s += ink('M98 93 l-6 1 M92 94 l-2 2', 0.9);
-      s += ink('M62 69 L56 82 L46 88 M74 68 L77 84 L70 93', 1.2);
-      return [defs, s];
-    },
-    cru(R, id) {   // lobster, dorsal view, head left
-      const defs = lg(id + 'c', '#6b7046', '#343a24') + lg(id + 'k', '#7a6a3c', '#3b3420') + rg(id + 'r', '#8b8a58', '#3b4128');
-      let s = ink('M52 57 Q30 40 6 16 M52 63 Q28 82 4 106', 0.7) + ink('M54 58 Q44 52 36 50 M54 62 Q44 68 36 70', 0.6);
-      const legs = [70, 78, 86, 94]; legs.forEach(x => { s += ink(`M${x} 50 l-4 -10 l-4 -4 M${x} 72 l-4 10 l-4 4`, 1.1); });
-      s += wash('M64 52 L54 40 L48 34', 'none') + ink('M64 52 L54 40 L48 34', 3.4);
-      s += wash('M48 34 Q24 14 12 26 Q10 34 18 38 L24 34 Q32 40 46 40 Z', `url(#${id}k)`); s += ink('M18 38 Q28 30 40 34', 0.6);
-      for (let i = 0; i < 6; i++) s += dot(22 + i * 4, 28 + (i % 2), 0.7, '#e1d7b0');
-      s += ink('M64 70 L54 82 L48 88', 3.2);
-      s += wash('M48 88 Q22 104 14 94 Q14 86 22 84 L28 88 Q34 82 46 82 Z', `url(#${id}k)`); s += ink('M22 84 Q30 90 40 86', 0.6);
-      s += wash('M56 50 Q62 43 100 45 Q108 60 100 75 Q62 77 56 70 Q50 60 56 50 Z', `url(#${id}r)`);
-      s += ink('M56 60 L44 60 M60 55 Q80 60 98 55 M60 66 Q80 62 98 66', 0.6, 0.7) + hatch(64, 71, 96, 71, 9, 1, 3);
-      s += dot(54, 55, 1.6, '#1c1a12') + dot(54, 65, 1.6, '#1c1a12');
-      let x = 100; [11, 10.5, 10, 9.5, 9, 8].forEach((w, i) => { const h = 13 - i * 0.9; s += wash(`M${f(x)} ${f(60 - h)} h${f(w)} q2 ${f(h)} 0 ${f(2 * h)} h${f(-w)} q2 ${f(-h)} 0 ${f(-2 * h)}Z`, `url(#${id}c)`, 0.8); x += w; });
-      s += wash(`M${f(x)} 60 L${f(x + 18)} 46 Q${f(x + 24)} 60 ${f(x + 18)} 74 Z`, `url(#${id}c)`, 0.8) + ink(`M${f(x)} 60 L${f(x + 22)} 60 M${f(x)} 60 L${f(x + 20)} 52 M${f(x)} 60 L${f(x + 20)} 68`, 0.5, 0.7);
-      s += ink('M12 26 l-2 -2 M14 94 l-3 2', 1, 1) + `<path d="M8 22 Q10 26 14 26 M10 96 Q12 92 16 94" stroke="#a5532e" stroke-width="1.4" fill="none"/>`;
-      return [defs, s];
-    },
-    cro(R, id) {   // American alligator, side view
-      const defs = lg(id + 'a', '#6a7146', '#2c3220', 0, 1) + lg(id + 'v', '#d8cc9a', '#b6a873', 0, 1);
-      let s = wash('M118 74 L124 88 L114 93 M124 88 l4 4', 'none') + ink('M118 74 L124 88 L114 93 M124 88 l5 3 M124 88 l1 6', 2.2);
-      s += wash('M10 63 Q14 56 40 55 L60 52 Q82 45 112 47 Q148 51 196 64 Q152 67 122 71 Q92 77 62 73 L40 70 Q20 70 10 66 Z', `url(#${id}a)`);
-      s += wash('M40 69 L62 72 Q92 76 122 70 Q150 66 196 64 Q150 70 122 75 Q92 81 62 77 L40 73 Q24 72 12 67 Z', `url(#${id}v)`, 0.6);
-      s += ink('M12 64 Q26 65 44 63', 0.7);
-      let t = ''; for (let x = 16; x < 44; x += 3.2) t += `M${f(x)} 63.6 l1.2 2.2 l1.2 -2.2`; s += `<path d="${t}" fill="#f2ecd6" stroke="${INK}" stroke-width="0.35"/>`;
-      s += `<ellipse cx="45" cy="53" rx="4" ry="2.6" fill="#8d8a4e" stroke="${INK}" stroke-width="0.6"/>` + dot(45.5, 53, 1.2, '#16140c') + dot(13, 58.5, 0.9);
-      for (let x = 62; x < 192; x += 5.2) { const y = 49 + (x - 62) * 0.105 - (x < 112 ? (112 - x) * 0.03 : 0); s += `<path d="M${f(x)} ${f(y + 1.5)} l2.2 ${x > 120 ? -3.6 : -2.4} l2.4 ${x > 120 ? 3.6 : 2.4}" fill="#3a4128" stroke="${INK}" stroke-width="0.5"/>`; }
-      for (let r = 0; r < 3; r++) for (let x = 66 + r * 2; x < 180; x += 7) s += ink(`M${f(x)} ${f(56 + r * 5 + (x - 66) * 0.08)} q3 -1 6 0`, 0.4, 0.5);
-      s += ink('M64 72 L58 86 L48 90 M48 90 l-3 -2 M48 90 l-4 1 M48 90 l-2 3', 2.2) + ink('M112 74 L120 88 L110 93 M110 93 l-4 -1 M110 93 l-3 3', 2.4);
-      return [defs, s];
-    },
-    bir(R, id) {   // rock pigeon, side view, facing left
-      const defs = lg(id + 'g', '#b8bec8', '#7a828f', 0.2, 1) + lg(id + 'n', '#5f9a7a', '#7c5a8e', 1, 0.4) + lg(id + 'w', '#c3c8d0', '#8a919c');
-      let s = ink('M98 86 L96 100 M108 86 L110 100', 1.6) + `<path d="M96 100 l-6 2 M96 100 l-3 3 M96 100 l2 3 M110 100 l-5 2 M110 100 l-1 3 M110 100 l4 2" stroke="#b5483f" stroke-width="1.4" stroke-linecap="round" fill="none"/>`;
-      s += wash('M136 64 L178 74 Q180 80 172 84 L130 78 Z', `url(#${id}g)`) + `<path d="M170 75 L178 74 Q180 80 172 84 L166 82 Z" fill="#2c2c33" opacity="0.85"/>`;
-      s += wash('M64 46 Q74 54 76 60 Q96 50 124 58 Q146 66 138 76 Q120 90 94 88 Q70 86 62 70 Q58 58 64 46 Z', `url(#${id}g)`);
-      s += wash('M50 34 Q60 28 68 36 Q72 44 70 54 Q66 66 62 70 Q56 60 54 50 Q46 46 50 34 Z', `url(#${id}n)`, 0.8);
-      s += wash('M48 31 Q58 26 66 34 Q68 42 60 46 Q50 46 47 40 Z', `url(#${id}g)`);
-      s += `<path d="M47 37 L39 40 L47 41 Z" fill="#3a3530" stroke="${INK}" stroke-width="0.5"/><ellipse cx="47.5" cy="36.4" rx="1.8" ry="1.2" fill="#f1ede6"/>`;
-      s += dot(54, 35.5, 2, '#d98a2a') + dot(54, 35.5, 1.1, '#111') + dot(53.6, 35.1, 0.35, '#fff');
-      s += wash('M78 60 Q108 52 148 70 Q126 82 94 80 Q80 74 78 60 Z', `url(#${id}w)`);
-      s += `<path d="M98 66 Q114 64 128 72" stroke="#26262c" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M104 72 Q118 71 132 76" stroke="#26262c" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-      for (let i = 0; i < 5; i++) s += ink(`M${126 + i * 4} ${73 + i} q8 1 14 4`, 0.45, 0.6);
-      s += hatch(78, 82, 118, 86, 10, 1, 3, 0.25);
-      return [defs, s];
-    },
-    rod(R, id) {   // house mouse, side view
-      const defs = rg(id + 'm', '#b3a38c', '#6c5f4f') + lg(id + 'p', '#f0c0b8', '#d8908a');
-      let s = `<path d="M134 80 Q160 102 196 72" stroke="#c9958c" stroke-width="2" fill="none" stroke-linecap="round"/>` + ink('M134 80 Q160 102 196 72', 0.5, 0.6);
-      s += wash('M64 62 Q78 50 104 52 Q132 54 138 72 Q140 88 118 90 Q92 92 72 86 Q60 80 64 62 Z', `url(#${id}m)`);
-      s += wash('M66 60 Q52 58 40 70 Q50 79 66 82 Q74 76 74 68 Z', `url(#${id}m)`);
-      s += wash('M62 47 Q74 44 76 56 Q72 64 64 60 Q58 54 62 47 Z', `url(#${id}p)`, 0.7) + ink('M64 50 Q70 50 70 57', 0.4, 0.6);
-      s += dot(40.5, 70, 1.6, '#c66b6b') + dot(55, 65, 2.3, '#16110c') + dot(54.3, 64.2, 0.6, '#fff');
-      s += ink('M44 70 l-12 -6 M44 71 l-13 0 M44 72 l-11 6', 0.35, 0.8);
-      for (let i = 0; i < 26; i++) { const x = 70 + R.uniform() * 62, y = 56 + R.uniform() * 30; s += ink(`M${f(x)} ${f(y)} l3.2 ${f(R.normal(0.4, 0.4))}`, 0.35, 0.45); }
-      s += `<path d="M70 86 l-4 6 l-4 1 M78 88 l-2 6 l-3 1 M118 88 l2 6 l-4 1 M126 86 l4 6 l-3 2" stroke="#d08d86" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
-      s += hatch(80, 88, 120, 89, 9, 1, -3, 0.28);
-      return [defs, s];
-    },
-    ape(R, id) {   // chimpanzee, knuckle-walking, facing left
-      const defs = rg(id + 'h', '#4c3f36', '#1d1612') + lg(id + 'f', '#d6b495', '#a07c5e', 0.4, 1);
-      let s = wash('M126 78 L132 104 L142 105 M84 80 L80 104 L70 105', 'none') + ink('M128 76 L134 102 L146 104 M86 78 L84 103 L74 104', 5);
-      s += wash('M60 44 Q92 28 130 40 Q150 50 148 66 Q142 82 124 82 Q100 86 82 80 L72 74 Q60 62 60 44 Z', `url(#${id}h)`);
-      s += wash('M64 56 Q58 76 60 104 L68 104 Q70 82 78 66 Z', `url(#${id}h)`) + ink('M60 104 l-4 0 M62 104 l-2 -3 M66 104 l0 -3', 0.8);
-      s += wash('M138 66 Q142 84 138 104 L146 104 Q150 86 148 66 Z', `url(#${id}h)`);
-      s += wash('M44 34 Q58 24 68 38 Q72 50 64 58 Q54 64 44 60 Q34 56 34 48 Q36 40 44 34 Z', `url(#${id}h)`);
-      s += wash('M42 42 Q52 40 56 46 Q58 54 50 58 Q40 60 34 54 Q32 47 42 42 Z', `url(#${id}f)`, 0.7);
-      s += `<ellipse cx="62" cy="44" rx="3.5" ry="4.5" fill="#c9a07c" stroke="${INK}" stroke-width="0.5"/>` + ink('M40 44 Q46 41 52 44', 1.2) + dot(43, 46, 1.1, '#111') + dot(49, 46, 1.1, '#111') + ink('M36 55 Q42 57 46 55', 0.6);
-      for (let i = 0; i < 70; i++) { const x = 64 + R.uniform() * 82, y = 36 + R.uniform() * 44; s += `<path d="M${f(x)} ${f(y)} l${f(2.5 + R.uniform() * 2)} ${f(1.5 + R.uniform() * 2)}" stroke="#7d6b5e" stroke-width="0.4" stroke-opacity="0.55"/>`; }
-      return [defs, s];
-    },
-    mos(R, id) {   // haircap moss clump with sporophytes
-      const defs = lg(id + 's', '#8b6a44', '#5b4128', 0, 1);
-      let s = wash('M14 108 Q40 92 100 94 Q160 92 188 108 Z', `url(#${id}s)`, 0.7);
-      const G = ['#5e8a34', '#4c7a2a', '#6f9b3c', '#3f6a24'];
-      for (let i = 0; i < 26; i++) {
-        const x = 34 + i * 5 + R.normal(0, 2), h = 30 + R.uniform() * 24 - Math.abs(i - 13) * 1.1, lean = R.normal(0, 4), top = [x + lean, 100 - h];
-        let leaves = ''; for (let k = 0; k < 9; k++) { const t = k / 8, p = [x + lean * t, 100 - h * t]; [-1, 1].forEach(sd => { leaves += leafPath(p[0], p[1], -Math.PI / 2 + sd * (0.9 - t * 0.4) + R.normal(0, 0.1), 7 - t * 2.5, 1.1); }); }
-        s += `<path d="M${f(x)} 100 L${f(top[0])} ${f(top[1])}" stroke="#4a3a20" stroke-width="0.8"/><path d="${leaves}" fill="${G[i % 4]}" stroke="#2f4a1c" stroke-width="0.35"/>`;
-        if (i % 6 === 3) { const cx = top[0] + R.normal(0, 3), cy = top[1] - 34; s += `<path d="M${f(top[0])} ${f(top[1])} Q${f(top[0] + 2)} ${f(top[1] - 18)} ${f(cx)} ${f(cy)}" stroke="#8a4f22" stroke-width="0.9" fill="none"/>` + wash(`M${f(cx - 2.2)} ${f(cy)} q0 -8 2.2 -9 q2.2 1 2.2 9 Z`, '#9b7a3e', 0.5) + `<path d="M${f(cx - 2.4)} ${f(cy - 7)} q2.4 -6 2.4 -9 q1 3 2.4 9" fill="#d7bf86" stroke="${INK}" stroke-width="0.4"/>`; }
-      }
-      return [defs, s];
-    },
-    fer(R, id) {   // sword fern: arching fronds; one turned to show sori
-      const defs = '';
-      let s = '';
-      const fronds = [[100, 110, 22, 10, 110], [100, 110, 60, 18, 104], [100, 110, 100, 6, 112], [100, 110, 142, 16, 106], [100, 110, 180, 12, 104]];
-      fronds.forEach(([bx, by, tx, ty, cy], fi) => {
-        const p0 = [bx + (fi - 2) * 2, by], c = [(bx + tx) / 2 + (tx - bx) * 0.1, cy - 80], p1 = [tx, ty + 30];
-        let pin = '', sori = '';
-        for (let k = 1; k < 22; k++) {
-          const t = k / 22, q = quad(p0, c, p1, t), q2 = quad(p0, c, p1, t + 0.01), ang = Math.atan2(q2[1] - q[1], q2[0] - q[0]), L = 13 * Math.sin(Math.PI * Math.min(1, 0.25 + t * 0.85)) + 2;
-          [-1, 1].forEach(sd => { pin += leafPath(q[0], q[1], ang + sd * 1.15, L, 2.4, 0.5); if (fi === 3 && t > 0.3 && t < 0.8) for (let m = 1; m < 4; m++) { const a2 = ang + sd * 1.15, d = L * m / 4.3; sori += `<circle cx="${f(q[0] + Math.cos(a2) * d + Math.cos(a2 + sd * 1.57) * 1)}" cy="${f(q[1] + Math.sin(a2) * d + Math.sin(a2 + sd * 1.57) * 1)}" r="0.75"/>`; } });
-        }
-        s += `<path d="M${f(p0[0])} ${f(p0[1])} Q${f(c[0])} ${f(c[1])} ${f(p1[0])} ${f(p1[1])}" stroke="#4d5a2a" stroke-width="1.1" fill="none"/>`;
-        s += `<path d="${pin}" fill="${fi === 3 ? '#6e8f45' : fi % 2 ? '#4f7a36' : '#3f6a2c'}" stroke="#25401a" stroke-width="0.35" fill-opacity="0.92"/>`;
-        if (sori) s += `<g fill="#8a4e22">${sori}</g>`;
+    cru() {   // American lobster, dorsal view, head left: crusher (upper) and cutter (lower) claws
+      const SH = '#56543a', LEG = '#6b5232', o = { blot: ['#7a3a1c', '#2a3420', '#8a6a3a'], dk: '#1c140a', nb: 6, ba: 0.28 };
+      shadow(106, 66, 66, 16, 0.3); shadow(30, 35, 24, 9, 0.25); shadow(30, 96, 26, 8, 0.25); shadow(98, 66, 22, 30, 0.12);
+      [1, -1].forEach(s => {   // antennae and antennules
+        const Y = q => q.map(p => [p[0], 60 + s * (p[1] - 60)]);
+        taper(Y([[58, 58.4], [44, 56.4], [30, 54], [16, 52], [2, 51.2]]), 1, 0.25, '#5a2a14');
+        taper(Y([[58, 59.2], [50, 58.6], [45, 58]]), 0.7, 0.4, '#5a3018'); taper(Y([[45, 58], [38, 57.6]]), 0.4, 0.15, '#5a3018'); taper(Y([[45, 58], [39, 59]]), 0.35, 0.12, '#5a3018');
       });
-      s += `<path d="M90 112 Q100 104 110 112 Z" fill="#6b5236"/>`;
-      return [defs, s];
+      [1, -1].forEach(s => { for (let i = 3; i >= 0; i--) {   // walking legs
+        const x = 72 + i * 7, Y = q => [q[0], 60 + s * q[1]], b = Y([x, 8]), k1 = Y([x + 1 + i * 0.5, 17 + i * 0.4]), k2 = Y([x + 6 + i * 1.6, 22.5 + i * 0.3]), tp = Y([x + 12 + i * 2.4, 25 - i * 0.4]);
+        part(limb(b, k1, 2.1, 1.7), LEG, { dk: '#2a1608', hl: 0.3 }, 0.32); part(limb(k1, k2, 1.7, 1.4), LEG, { dk: '#2a1608', hl: 0.3 }, 0.32); part(limb(k2, tp, 1.3, 0.45), '#7a5a30', { dk: '#2a1608', hl: 0.3 }, 0.28);
+        dot(k1[0], k1[1], 0.45, '#b6542a', 0.8); dot(k2[0], k2[1], 0.4, '#b6542a', 0.8);
+        if (i < 2) { taper([tp, [tp[0] + 1.6, tp[1] + s * 0.9]], 0.4, 0.1, '#8a4a22'); taper([tp, [tp[0] + 1.8, tp[1] - s * 0.4]], 0.4, 0.1, '#8a4a22'); }
+      } });
+      function claw(x, y, tx, ty, L, Wd, crusher, s) {   // propodus (palm + fixed finger) and dactyl
+        const a = Math.atan2(ty - y, tx - x), h = Wd / 2, T = q => tf(q.map(p => [p[0] * L, p[1] * h, p[2]]), x, y, a, s);
+        const prop = T([[0, -0.45], [0.12, -0.85], [0.3, -1], [0.48, -0.9], [0.56, -0.55], [0.6, -0.12], [0.78, 0.0], [0.96, 0.12], [1, 0.24, 1], [0.88, 0.45], [0.7, 0.66], [0.45, 1], [0.22, 0.95], [0.06, 0.7], [0, 0.45]]);
+        const dac = T([[0.5, -0.95], [0.66, -0.98], [0.83, -0.74], [0.95, -0.34], [1.02, 0.04, 1], [0.9, -0.22], [0.76, -0.36], [0.6, -0.38], [0.53, -0.55]]);
+        const P = part(prop, SH, o, 0.55); for (let i = 0; i < 40; i++) { const q = T([[rnd(0.05, 0.9), rnd(-0.8, 0.8)]])[0]; dot(q[0], q[1], rnd(0.12, 0.25), '#1e1a0c', 0.45); }
+        const tub = T([[0, 0]])[0]; for (let i = 0; i < (crusher ? 26 : 18); i++) { const q = T([[rnd(0.08, 0.5), rnd(-0.7, 0.75)]])[0]; dot(q[0] + 0.15, q[1] + 0.2, crusher ? 0.42 : 0.3, '#1c140a', 0.5); dot(q[0], q[1], crusher ? 0.36 : 0.26, '#d7c39a', 0.85); }
+        for (let i = 0; i < (crusher ? 7 : 16); i++) { const t = 0.62 + i * (crusher ? 0.045 : 0.02), q = T([[t, lerp(-0.1, 0.1, (t - 0.6) / 0.4)]])[0]; dot(q[0], q[1], crusher ? 0.75 : 0.3, '#e2d4ae'); c.save(); c.lineWidth = 0.15; c.strokeStyle = INK; c.beginPath(); c.arc(q[0], q[1], crusher ? 0.75 : 0.3, 0, 7); c.stroke(); c.restore(); }
+        const D = part(dac, '#56532f', o, 0.5);
+        const e0 = T([[0.72, 0]])[0], e1 = T([[1, 0]])[0]; tint(P, e0, e1, '#c8582a', 0.85); tint(D, e0, e1, '#c8582a', 0.85);
+        spec(T([[0.1, -0.62], [0.28, -0.78], [0.45, -0.7]]), 0.9, 0.55); void tub;
+      }
+      [[1, true], [-1, false]].forEach(([s, cr]) => {   // chelipeds: merus, carpus, claw
+        const Y = q => [q[0], 60 - s * (60 - q[1])];
+        part(limb(Y([67, 52]), Y([56, 42]), 6.2, 5.2), SH, o, 0.5); part(limb(Y([56, 42]), Y([45.5, 37.5]), 5.6, 5.2), '#5a5530', o, 0.5);
+        [[60, 46], [52, 39.5]].forEach(q => { const p = Y(q); taper([[p[0], p[1]], [p[0] - 2, p[1] - s * 1.6]], 0.6, 0.05, '#2a1a0c'); });
+        if (cr) claw(46, 37, 6, 29, 43, 23, true, -1); else claw(46, 83, 5, 92, 45, 13.5, false, 1);
+      });
+      // tail fan: uropods (two pairs) and telson
+      [1, -1].forEach(s => { const Y = q => s > 0 ? q : my(q);
+        const ex = part(Y([[149, 55.5], [156, 48], [166, 41.5], [174.5, 40.5], [176, 45], [170, 51], [158, 55.5]]), '#5a573a', o, 0.45); taper(Y([[163, 46.5], [170, 43.5]]), 0.3, 0.3, INK, 0.6);
+        fringe(ex, 50, (x, y) => Math.atan2(y - 60, x - 148), 1.2, '#7a5a34', 0.15, 0.7, x => x > 166);
+        const en = part(Y([[150, 57.5], [161, 52], [172, 49], [176.5, 51.5], [174, 56], [160, 58.5]]), '#5e5a3a', o, 0.45);
+        fringe(en, 30, (x, y) => Math.atan2(y - 60, x - 148), 1.2, '#7a5a34', 0.15, 0.7, x => x > 170);
+        void ex; });
+      const tel = part([[150, 55], [165, 54.4], [175, 56.6], [176.5, 60], [175, 63.4], [165, 65.6], [150, 65]], '#5e5a3a', o, 0.45);
+      fringe(tel, 30, () => 0, 1.2, '#7a5a34', 0.15, 0.7, x => x > 174); taper([[152, 60], [172, 60]], 0.25, 0.2, INK, 0.4);
+      void tel;
+      for (let i = 5; i >= 0; i--) {   // abdomen: six overlapping tergites with pleura
+        const x0 = 101 + i * 8.2, len = 9.6, hw = 11.6 - i * 0.75, yt = 60 - hw, yb = 60 + hw;
+        const p = part([[x0, yt + 1.2], [x0 + len * 0.5, yt], [x0 + len, yt + 0.6], [x0 + len + 0.8, yt + 3], [x0 + len + 1.2, 60], [x0 + len + 0.8, yb - 3], [x0 + len, yb - 0.6], [x0 + len * 0.5, yb], [x0, yb - 1.2], [x0 - 1, 60]], SH, o, 0.55);
+        taper([[x0 + 2.5, yt + 2.5], [x0 + 3.2, 60], [x0 + 2.5, yb - 2.5]], 0.35, 0.35, INK, 0.5);
+        hatch(p, 1.2, 0.9, 0.18, 0.35, 0.5);
+        spec([[x0 + 1.5, yt + 2], [x0 + len * 0.55, yt + 1.4], [x0 + len - 0.5, yt + 2]], 0.9, 0.55);
+        [yt + 1, yb - 1].forEach(y => taper([[x0 + 1, y], [x0 + len * 0.6, y + (y < 60 ? -0.6 : 0.6)], [x0 + len, y]], 0.3, 0.3, INK, 0.4));
+      }
+      // carapace with rostrum, cervical groove and granules
+      const cp = part([[50.5, 60, 1], [57, 58.8], [61, 56], [66, 52.2], [74, 49.3], [86, 47.6], [96, 48.2], [100.5, 51.5], [102, 60], [100.5, 68.5], [96, 71.8], [86, 72.4], [74, 70.7], [66, 67.8], [61, 64], [57, 61.2]], SH, o, 0.6);
+      hatch(cp, 1.1, 0.8, 0.18, 0.4, 0.5);
+      taper([[83, 48.6], [79.5, 54], [78.5, 60], [79.5, 66], [83, 71.4]], 0.5, 0.5, INK, 0.75); taper([[90, 49], [91, 60], [90, 71]], 0.25, 0.25, INK, 0.35);
+      taper([[52, 60], [62, 60], [78, 60]], 0.3, 0.3, INK, 0.35);
+      for (let i = 0; i < 40; i++) { const x = rnd(62, 98), y = 60 + rnd(-10, 10) * Math.min(1, (x - 58) / 14); dot(x, y, rnd(0.18, 0.34), '#d8c69a', 0.65); }
+      for (let i = 0; i < 110; i++) { const x = rnd(60, 150), y = 60 + rnd(-10, 10) * Math.min(1, (x - 56) / 16); dot(x, y, rnd(0.12, 0.25), '#1e1a0c', 0.4); }
+      spec([[64, 54], [76, 50.6], [92, 49.6]], 1.4, 0.55); spec([[68, 56], [80, 54]], 0.7, 0.35);
+      eye(60, 55.6, 1.5, '#3a2a18', 0.6); eye(60, 64.4, 1.5, '#3a2a18', 0.6);
     },
-    pin(R, id) {   // white pine twig: needles in bundles of five, long hanging cone
-      const defs = lg(id + 'c', '#b58a52', '#6e4a26', 1, 0.2);
-      let s = '';
-      const tw0 = [8, 34], tw1 = [194, 52], tc = [100, 30];
-      for (let k = 0; k < 14; k++) { const t = 0.06 + k / 14, q = quad(tw0, tc, tw1, t); for (let n = 0; n < 5; n++) { const a = (k % 2 ? -1 : 1) * (0.5 + n * 0.16) + R.normal(0, 0.06) + (k % 2 ? -0.4 : 0.6), L = 34 + R.uniform() * 6, ex = q[0] + Math.cos(a) * L * 0.9 + 6, ey = q[1] + Math.sin(a) * L * 0.75; s += `<path d="M${f(q[0])} ${f(q[1])} Q${f((q[0] + ex) / 2 + 2)} ${f((q[1] + ey) / 2 - 2)} ${f(ex)} ${f(ey)}" stroke="${n % 2 ? '#4f7f6c' : '#6b9a83'}" stroke-width="0.7" fill="none"/>`; } }
-      s += wash(`M${tw0[0]} ${tw0[1] - 1.6} Q${tc[0]} ${tc[1] - 1.6} ${tw1[0]} ${tw1[1] - 1.2} L${tw1[0]} ${tw1[1] + 1.2} Q${tc[0]} ${tc[1] + 1.8} ${tw0[0]} ${tw0[1] + 1.6} Z`, '#7a5a3a', 0.6);
-      s += ink('M118 42 Q124 46 124 52', 1.4);
-      let cone = ''; for (let r = 0; r < 12; r++) { const y = 52 + r * 4.7, w = 7 + Math.sin(Math.PI * Math.min(1, (r + 2) / 12)) * 5; for (let c = -1; c <= 1; c++) { const cx = 124 + c * w * 0.55 + (r % 2) * 2 - 1; cone += `<path d="M${f(cx - w * 0.36)} ${f(y)} Q${f(cx)} ${f(y + 7)} ${f(cx + w * 0.36)} ${f(y)} Z" fill="url(#${id}c)" stroke="${INK}" stroke-width="0.5"/><circle cx="${f(cx)}" cy="${f(y + 4.6)}" r="0.7" fill="#f3ecd8" opacity="0.8"/>`; } }
-      s += `<path d="M114 52 Q110 82 124 112 Q138 82 134 52 Z" fill="#5a3a1e" opacity="0.5"/>` + cone;
-      return [defs, s];
+    ins() {   // differential grasshopper, side view facing left
+      const G = '#8e9140', GD = '#4b4c1c', o = { blot: ['#b8a94e', '#5d6326'], dk: '#2a2a0c' };
+      shadow(100, 97, 68, 4.5, 0.38); ground(40, 160, 98.5);
+      const far = (pts, w0, w1) => taper(pts, w0, w1, '#5e5a2c', 0.75);
+      far([[68, 72], [71, 84], [67, 95]], 1.3, 0.9); far([[67, 95], [62, 96.4]], 0.8, 0.4);
+      far([[88, 74], [97, 85], [99, 96]], 1.3, 0.9); far([[99, 96], [104, 97]], 0.8, 0.4);
+      far([[132, 57], [123, 77], [114, 94.5]], 1.4, 1); far([[114, 94.5], [123, 96.8]], 0.9, 0.4);
+      [[[46.5, 49], [40, 43], [33.5, 37.5], [26, 34]], [[49, 47.8], [44.5, 40], [39.5, 32.5], [34, 27.5]]].forEach((a, k) => {
+        taper(a, 0.9, 0.5, k ? '#5a4a22' : '#3d3016'); sample(a, false, 4).forEach((q, i) => i % 2 && dot(q[0], q[1], 0.42, '#2a1e0c', 0.7));
+      });
+      const ab = part([[84, 55], [100, 52.5], [120, 53], [138, 55.5], [151, 59], [155, 62.5], [151, 66], [137, 69.5], [116, 71.5], [98, 71.2], [87, 68.5]], '#a7a04a', o, 0.5);
+      for (let x = 96; x < 152; x += 6.6) taper([[x, 53.5 + (x - 96) * 0.07], [x + 0.8, 62], [x, 70.8 - (x - 96) * 0.04]], 0.3, 0.3, INK, 0.45);
+      hatch(ab, 1.4, 0.9, 0.18, 0.45, 0.45);
+      taper([[153, 61], [159, 59], [161, 60.5]], 0.6, 0.2, '#4a3e1a');
+      part([[78, 58], [92, 57.5], [97, 66], [93, 74.5], [80, 75], [75, 68]], '#8a8a3c', o, 0.45);
+      const pr = part([[55.5, 47], [66, 45.2], [78, 46], [84.5, 49], [85.5, 57], [83.5, 65], [78, 70], [66, 71], [58.5, 68.5], [56.8, 58]], G, o, 0.6);
+      [[64, 46], [70, 46], [76, 46.5]].forEach(([x, y], i) => taper([[x, y], [x - 0.6 + i * 0.2, y + 10], [x + 0.6, y + 22 - i]], 0.35, 0.2, INK, 0.5));
+      taper([[56.5, 52], [70, 51], [84.5, 52.5]], 0.4, 0.3, '#2f2a10', 0.6); hatch(pr, 1.0, 0.9, 0.18, 0.45, 0.45);
+      spec([[58, 47.8], [70, 46.4], [80, 47.4]], 1.1, 0.55);
+      const hd = part([[40.5, 50], [46, 45.5], [53, 44.6], [58.5, 47.5], [61, 56], [60.2, 66], [55.5, 72], [48.5, 76], [42.2, 74.5], [38.8, 67], [37.8, 58]], '#9c9c48', o, 0.6);
+      hatch(hd, 1.0, 0.9, 0.18, 0.35, 0.55);
+      part([[45, 71.5], [50.5, 72.5], [50.5, 77], [46.5, 78], [44.5, 75]], '#6a5228', { dk: '#1a1004', hl: 0.4 }, 0.4);
+      part([[39.6, 70.2], [44.6, 70.8], [46, 74.6], [42.6, 76.4], [39.4, 74]], '#b09a52', { dk: '#3a2a08', hl: 0.5 }, 0.4);
+      [[[47, 77.5], [46.4, 80], [47.6, 82.4]], [[44, 76], [42.6, 78.6], [43.4, 81]]].forEach(l => { taper(l, 0.75, 0.55, '#8a7a3a'); taper(l, 0.2, 0.2, INK, 0.6); });
+      taper([[40.5, 64], [42, 68], [41.4, 70.4]], 0.25, 0.2, INK, 0.45);
+      dot(42, 57, 0.6, '#efe6c0', 0.8);
+      // compound eye with facets
+      const E = shape(sample([[49.5, 49.5], [53.6, 52.5], [54, 58.5], [50.6, 62.5], [46.6, 60], [45.8, 53.5]], true, 4).map(q => [q[0], q[1]]));
+      wash(E, '#5b4422', { dk: '#140c04', hl: 0.25, sh: 0.7 }); c.save(); c.clip(E); for (let y = 49; y < 63; y += 0.9) for (let x = 45 + ((y * 10 | 0) % 2) * 0.45; x < 55; x += 0.9) dot(x, y, 0.22, '#2a1c0a', 0.45); c.restore();
+      ink(E, 0.45); blob(48.5, 53, 1.6, 2.2, '#fff6dc', 0.55); dot(48.3, 52.6, 0.45, '#ffffff', 0.9);
+      // forewing (tegmen), translucent, net-veined
+      const wg = part([[76, 48.5], [100, 46.6], [130, 47.6], [154, 51], [163.5, 55], [161.5, 59], [148, 59.6], [120, 59.2], [96, 58.6], [80, 57.6]], '#a39a5c', { blot: ['#7d6a3a', '#c8c080'], dk: '#3a2a10', a: 0.85, hl: 0.5 }, 0.5);
+      c.save(); c.clip(wg);
+      [[48.5, 0.3], [51, 0.25], [53.5, 0.28], [56, 0.22]].forEach(([y, w]) => taper([[78, y], [120, y - 0.6], [164, y + 2]], w, w * 0.6, INK, 0.5));
+      for (let x = 82; x < 164; x += 2.2) taper([[x, 47 + rnd(-0.4, 0.4)], [x + 0.6, 52], [x + 0.2, 58]], 0.12, 0.12, INK, 0.3);
+      for (let i = 0; i < 14; i++) blob(rnd(96, 158), rnd(49, 57), rnd(1.2, 2.4), rnd(0.8, 1.3), '#4a3410', 0.35);
+      c.restore();
+      const legN = (pts, cols) => { for (let i = 0; i < pts.length - 1; i++) part(limb(pts[i], pts[i + 1], cols[i][0], cols[i][1]), '#9c9846', o, 0.4); };
+      legN([[64, 70], [60, 82], [53, 92.5]], [[2.4, 2], [1.7, 1.3]]); taper([[53, 92.5], [49, 95.5], [46, 96.4]], 1, 0.4, '#5a5020');
+      legN([[80, 73], [87, 84.5], [82, 94.5]], [[2.6, 2.1], [1.8, 1.3]]); taper([[82, 94.5], [78, 96.5], [75, 97]], 1, 0.4, '#5a5020');
+      // hind leg: tibia with spines, then the big jumping femur with herringbone
+      const tib = [[141, 52.5], [123, 72], [104, 92]];
+      part(limb(tib[0], tib[2], 2.4, 1.6), '#c2a84a', { dk: '#3a2a08', blot: ['#9a7a2a'] }, 0.45);
+      sample(tib, false, 6).forEach((q, i) => { if (i > 1 && i < 12) taper([[q[0] + 0.9, q[1] + 0.9], [q[0] + 2.2, q[1] + 3]], 0.55, 0.05, '#1e1608'); });
+      part(limb([104, 92], [109, 96.2], 1.6, 1.2), '#a08a3a', o, 0.35); part(limb([109, 96.2], [116, 96.8], 1.2, 0.9), '#a08a3a', o, 0.35);
+      taper([[116, 96.8], [118, 95.8]], 0.4, 0.1); taper([[116, 96.8], [118.2, 97.6]], 0.4, 0.1);
+      const fm = part(tf([[0, -3], [5, -6], [12, -7.6], [22, -6.8], [34, -4.6], [46, -3], [53, -2.4], [56.5, -0.8, 1], [55.5, 2], [48, 2.8], [36, 3.8], [22, 5.8], [10, 6.6], [3, 5.2], [-1, 1.5]], 87, 69, Math.atan2(52 - 69, 142 - 87)), '#c3ba62', { blot: ['#8a8a3a', '#e0d488'], dk: '#2c2a0a', hl: 0.5 }, 0.6);
+      c.save(); c.clip(fm);
+      for (let i = 0; i < 9; i++) { const t = 7 + i * 5, k = Math.max(2.4, 6.6 - Math.abs(t - 12) * 0.12); const q = tf([[t, -0.2], [t + 4.2, -k * 0.85], [t + 4.2, k * 0.85]], 87, 69, Math.atan2(52 - 69, 142 - 87)); taper([q[1], q[0]], 0.75, 0.25, '#2a2410', 0.75); taper([q[2], q[0]], 0.75, 0.25, '#2a2410', 0.75); }
+      c.restore();
+      const kn = tf([[50, -2.6], [56.5, 0], [50, 2.8]], 87, 69, Math.atan2(52 - 69, 142 - 87)); taper(kn, 1.4, 0.6, '#1a1206');
+      spec(tf([[8, -3.2], [24, -4.4], [40, -2.6]], 87, 69, Math.atan2(52 - 69, 142 - 87)), 1.3, 0.6);
     },
-    flo(R, id) {   // apple twig: leaves, blossom, fruit
-      const defs = rg(id + 'a', '#e4553f', '#8e1f1a') + lg(id + 'l', '#86b05a', '#4a7a2c');
-      let s = wash('M0 42 Q80 26 200 34 L200 37 Q80 30 0 46 Z', '#6e4e33', 0.6);
-      [[30, 40, -0.9], [58, 34, 0.7], [92, 32, -1.2], [150, 33, 0.9], [176, 35, -0.6], [118, 32, 1.4]].forEach(([x, y, a]) => { const d = leafPath(x, y, a, 34, 10, 0.8); s += wash(d, `url(#${id}l)`, 0.6); const c = Math.cos(a), sn = Math.sin(a); s += ink(`M${x} ${y} L${f(x + c * 33)} ${f(y + sn * 33)}`, 0.5, 0.7); for (let k = 1; k < 5; k++) { const bx = x + c * 7 * k, by = y + sn * 7 * k; s += ink(`M${f(bx)} ${f(by)} l${f(c * 5 - sn * 6)} ${f(sn * 5 + c * 6)} M${f(bx)} ${f(by)} l${f(c * 5 + sn * 6)} ${f(sn * 5 - c * 6)}`, 0.3, 0.6); } });
-      [[66, 18], [78, 14]].forEach(([cx, cy]) => { for (let p = 0; p < 5; p++) { const a = p / 5 * Math.PI * 2 - 0.3; s += `<ellipse cx="${f(cx + Math.cos(a) * 5)}" cy="${f(cy + Math.sin(a) * 5)}" rx="5" ry="3.6" transform="rotate(${f(a * 57.3)} ${f(cx + Math.cos(a) * 5)} ${f(cy + Math.sin(a) * 5)})" fill="#fbeef0" stroke="#b77a86" stroke-width="0.5"/>`; } s += dot(cx, cy, 1.8, '#d8b23a'); for (let k = 0; k < 6; k++) s += dot(cx + Math.cos(k) * 2.4, cy + Math.sin(k) * 2.4, 0.5, '#7a5a1a'); });
-      s += ink('M72 26 L68 21 M72 26 L77 17', 0.6);
-      s += ink('M132 34 Q134 46 132 56', 1.2);
-      s += wash('M132 58 Q114 54 112 74 Q114 98 132 98 Q150 98 152 74 Q150 54 132 58 Z', `url(#${id}a)`, 0.8);
-      s += `<path d="M120 66 Q122 60 128 60" stroke="#fff" stroke-opacity="0.65" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M140 86 Q146 80 146 72" stroke="#e8c04a" stroke-opacity="0.25" stroke-width="5" fill="none" stroke-linecap="round"/>`;
-      return [defs, s];
+    rod() {   // house mouse, side view facing left
+      const o = { blot: ['#6a5644', '#a08c72'], dk: '#2a1c10' }, FUR = ['#3e3024', '#5e4c3c', '#7d6a56', '#9f8b72', '#c4b298'], dirB = (x, y) => 0.12 + (y - 68) * 0.02;
+      shadow(96, 99.5, 58, 4.6, 0.42); ground(44, 150, 100.8);
+      const tail = [[134, 82], [150, 92.5], [163, 97], [178, 95], [189, 88], [195, 79]];
+      taper(tail, 2.6, 0.5, '#c99e92'); taper(tail.map(q => [q[0] + 0.3, q[1] + 0.5]), 1.4, 0.2, '#8a5e54', 0.5); taper(tail.map(q => [q[0] - 0.2, q[1] - 0.6]), 0.8, 0.1, '#f4dcd2', 0.6);
+      sample(tail, false, 12).forEach((q, i, A) => { if (i % 1 || i >= A.length - 4) return; const n = A[i + 1], dx = n[0] - q[0], dy = n[1] - q[1], d = Math.hypot(dx, dy) || 1, w = lerp(1.3, 0.3, i / A.length); taper([[q[0] - dy / d * w, q[1] + dx / d * w], [q[0] + dy / d * w, q[1] - dx / d * w]], 0.14, 0.14, '#5a3a32', 0.5); });
+      const foot = (pts, a = 1) => part(pts, '#e8aca2', { dk: '#7a3a30', hl: 0.5, a }, 0.32);
+      const toes = (x, y, n, sp, col = '#d48e84') => { for (let k = 0; k < n; k++) { const tx = x - k * sp * 0.25 - 2.2, ty = y + k * 0.15; taper([[x, y - 0.8 + k * 0.3], [tx + 0.6, ty - 0.3], [tx, ty]], 0.75, 0.45, col); dot(tx - 0.1, ty, 0.25, '#f8e4dc', 0.9); } };
+      foot([[76, 90], [79, 91], [78.5, 96.5], [74, 99.2], [70.5, 99.4], [71, 97.6], [75, 95.6]], 0.75); toes(71.6, 98.8, 3, 1.6, '#c4867c');
+      fur(shape(limb([68, 82], [65, 95.5], 5.4, 3)), 120, () => 1.7, 1.6, ['#4e3e30', '#6a5848', '#8a7660'], 0.22, 0.85);
+      foot([[63.4, 93.5], [66.4, 94], [66, 97.6], [62, 99.6], [58.6, 99.7], [59, 98.2], [62.4, 96.8]]); toes(59.6, 99.3, 4, 1.6);
+      const bd = shape([[60, 58], [72, 47.5], [90, 41.2], [110, 41], [127, 46.5], [139.5, 57], [144.5, 71], [141, 83.5], [130, 91.5], [110, 94.5], [88, 94], [72, 90], [62.5, 82.5], [58.5, 70]]);
+      wash(bd, '#8c7864', o); fur(bd, 1500, dirB, 2.6, FUR, 0.28, 0.85); tint(bd, [100, 74], [100, 94], '#e2d6bc', 0.75); fur(bd, 260, dirB, 2, ['#b9a98e', '#e8dcc4'], 0.22, 0.6);
+      ink(bd, 0.35, 0.8); fringe(bd, 300, dirB, 2.4, '#4a3a2c', 0.22, 0.7);
+      foot([[121, 92], [125.5, 93.4], [124.6, 97], [117, 98.8], [108, 99.6], [104.6, 99.6], [105, 98.2], [112, 96.6], [118, 94.2]]); toes(105.6, 99.2, 5, 1.5);
+      taper([[124, 95.4], [116, 97.4], [108, 98.6]], 0.2, 0.15, '#8a4a40', 0.5);
+      taper([[112, 70], [124, 66], [134, 72], [132, 84]], 0.3, 0.15, '#2e2218', 0.35);
+      const ear0 = shape([[57, 58], [52.5, 48.5], [53.6, 39.5], [60.5, 34.8], [69, 36.6], [72.6, 44.5], [70.6, 53], [64, 58.6]]);
+      const hd = shape([[29, 73.2, 1], [33.5, 67.5], [41, 61.2], [51, 55.4], [62, 55.2], [71.5, 61], [75, 71.5], [69.5, 82], [59, 86.5], [46.5, 84], [38, 79.8], [32, 76]]);
+      wash(hd, '#8c7864', o); fur(hd, 650, (x, y) => -0.15 + (y - 70) * 0.03, 2.1, FUR, 0.25, 0.85); tint(hd, [50, 74], [52, 86], '#e4d8c0', 0.7);
+      c.save(); const hc = new Path2D(); hc.rect(0, 0, 60, 120); hc.rect(0, 79, 200, 41); c.clip(hc); ink(hd, 0.35, 0.8); c.restore();
+      fur(shape([[60, 58], [70, 57], [77, 66], [74, 80], [66, 86], [64, 72]]), 160, dirB, 2.4, FUR, 0.26, 0.85); fringe(hd, 110, (x, y) => (y - 70) * 0.04, 1.8, '#4a3a2c', 0.2, 0.7, (x, y) => y > 74 || x > 60);
+      wash(ear0, '#d6a49a', { dk: '#6a3028', hl: 0.55, sh: 0.45 });
+      const ear1 = shape([[58.6, 55], [56, 47.5], [57.4, 40.5], [62, 38.2], [67.5, 40], [69.5, 46.5], [67.8, 52.6], [63, 55.6]]); wash(ear1, '#efb7ae', { dk: '#9a4a40', hl: 0.6, sh: 0.4, a: 0.9 });
+      [[[62, 54], [61, 47], [62.5, 41]], [[64, 54], [65.5, 47], [66.5, 42]]].forEach(v => taper(v, 0.25, 0.1, '#b2564a', 0.5)); ink(ear0, 0.4);
+      fur(shape([[56, 60], [62, 56], [70, 58], [66, 64], [58, 64]]), 90, () => -0.9, 1.8, FUR, 0.25, 0.8);
+      dot(30, 72.5, 1.35, '#d47a74'); dot(29.6, 72, 0.45, '#fff0ea', 0.9); taper([[30.5, 74.3], [33, 77.2], [37, 78]], 0.35, 0.2, '#4a2a20', 0.7);
+      eye(46.8, 63.2, 2.5, '#2a1c14', 0.75); taper([[44, 61.2], [46.8, 60.3], [49.6, 61.5]], 0.35, 0.2, INK, 0.6);
+      [[-0.35, 21], [-0.18, 23], [-0.02, 22], [0.12, 20], [0.28, 18], [0.42, 15]].forEach(([a, l]) => { const x = 36, y = 71.5, e = [x - Math.cos(a) * l, y - Math.sin(a) * l + 3]; taper([[x, y], [lerp(x, e[0], 0.5), lerp(y, e[1], 0.5) - 1.2], e], 0.32, 0.04, '#2a1e16', 0.75); });
+      [[-0.25, 16], [0.05, 18]].forEach(([a, l]) => taper([[38, 69], [38 - Math.cos(a) * l * 0.5, 69 - Math.sin(a) * l * 0.5 - 1.5], [38 - Math.cos(a) * l, 69 - Math.sin(a) * l + 1]], 0.25, 0.04, '#e8e0d0', 0.85));
+    },
+    cro() {   // American alligator, dorsal view, head left: broad snout, splayed legs, scutes
+      const SK = '#474a2f', o = { blot: ['#6c6c44', '#24261a', '#7a7048'], dk: '#141408', nb: 8 };
+      const B = body([[10, 62], [32, 62.2], [56, 62], [80, 61.2], [104, 59.4], [128, 54.5], [152, 46.5], [174, 38], [195, 30]],
+        pw([0, 0.008, 0.03, 0.115, 0.15, 0.18, 0.33, 0.5, 0.75, 1], [0, 2.8, 4.6, 6, 8.2, 7.2, 14.5, 9, 4.2, 0.4]), 12);
+      const at = u => { const i = Math.round(u * (B.s.length - 1)); return [B.s[i], B.nrm[i]]; };
+      shadow(70, 66, 52, 20, 0.28); shadow(150, 46, 40, 9, 0.2); shadow(22, 64, 16, 8, 0.2);
+      const legC = '#3f4129', lo = { dk: '#141408', blot: ['#6a6a40'], hl: 0.3 };
+      function leg(sh, el, wr, toes, wd) {
+        const l1 = part(limb(sh, el, wd * 1.35, wd * 0.85), legC, lo, 0.45), l2 = part(limb(el, wr, wd * 0.9, wd * 0.6), legC, lo, 0.45);
+        [l1, l2].forEach(l => { c.save(); c.clip(l); for (let i = 0; i < 40; i++) { const x = rnd(l.b[0], l.b[2]), y = rnd(l.b[1], l.b[3]); dot(x + 0.2, y + 0.25, 0.55, '#141408', 0.35); dot(x, y, 0.45, '#6a6c48', 0.6); } c.restore(); });
+        const web = shape([wr].concat(toes.map(t => [lerp(wr[0], t[0], 0.45), lerp(wr[1], t[1], 0.45)]))); wash(web, '#55573a', { a: 0.6 });
+        toes.forEach(t => { taper([wr, [lerp(wr[0], t[0], 0.5) + rnd(-0.3, 0.3), lerp(wr[1], t[1], 0.5)], t], 1.5, 0.6, legC); taper([[lerp(wr[0], t[0], 0.85), lerp(wr[1], t[1], 0.85)], [t[0] + (t[0] - wr[0]) * 0.12, t[1] + (t[1] - wr[1]) * 0.12]], 0.6, 0.1, '#e6dcc0'); });
+      }
+      [[1, 62], [-1, 59.5]].forEach(([s], k) => {
+        const fy = q => [q[0], 62 + s * (q[1] - 62)], hy = q => [q[0], 59.4 + s * (q[1] - 59.4)];
+        leg(fy([52, 55]), fy([49, 42]), fy([41, 38.5]), [[33.5, 36], [34, 32.8], [36.5, 30.2], [40, 29], [43.5, 29.6]].map(fy), 5.2);
+        leg(hy([96, 52]), hy([104, 39]), hy([97, 33.5]), [[89, 30], [91, 27], [95, 25.5], [99.5, 26]].map(hy), 6.2);
+        void k;
+      });
+      const bp = shape(B.pts); wash(bp, SK, o);
+      c.save(); c.clip(bp);   // scale grid: transverse bands and longitudinal rows
+      B.s.forEach((q, i) => { if (i % 2 || i < 20) return; const n = B.nrm[i], w = 14; taper([[q[0] - n[0] * w, q[1] - n[1] * w], [q[0] + n[0] * w, q[1] + n[1] * w]], 0.18, 0.18, INK, 0.35); });
+      [-0.8, -0.55, 0.55, 0.8].forEach(f => { const L = B.s.map((q, i) => { const u = i / (B.s.length - 1), w = pw([0, 0.15, 0.3, 0.45, 1], [0, 8, 12.5, 11, 0.5])(u) * f; return [q[0] + B.nrm[i][0] * w, q[1] + B.nrm[i][1] * w]; }).filter((q, i) => i > 18 && i % 4 === 0); if (L.length > 1) taper(L, 0.2, 0.15, INK, 0.35); });
+      c.restore();
+      // head: pitted snout, nostrils, raised eyes, nuchal plates
+      for (let i = 0; i < 70; i++) { const u = rnd(0.01, 0.14), [q, n] = at(u), w = pw([0, 0.03, 0.12, 0.15], [0, 4, 5.4, 7.5])(u) * rnd(-0.85, 0.85); dot(q[0] + n[0] * w, q[1] + n[1] * w, rnd(0.15, 0.3), '#1a1a0c', 0.5); }
+      for (let i = Math.round(0.03 * (B.s.length - 1)); i < 0.115 * (B.s.length - 1); i += 1) [-1, 1].forEach(sd => { const q = B.s[i], n = B.nrm[i], w = pw([0, 0.03, 0.115], [0, 4.6, 6])(i / (B.s.length - 1)), x = q[0] + n[0] * sd * w, y = q[1] + n[1] * sd * w; taper([[x - 0.4, y], [x + n[0] * sd * 0.9, y + n[1] * sd * 0.9]], 0.6, 0.05, '#f2ead0'); });
+      const [nq] = at(0.012); blob(nq[0] + 1.6, nq[1], 2.2, 2.4, '#6a6a48', 0.8); dot(nq[0] + 1.2, nq[1] - 0.9, 0.42, '#0e0e06'); dot(nq[0] + 1.2, nq[1] + 0.9, 0.42, '#0e0e06');
+      [1, -1].forEach(s => { const [q, n] = at(0.125), x = q[0] + n[0] * 3.3 * s, y = q[1] + n[1] * 3.3 * s; dot(x + 0.4, y + 0.6, 2.1, '#141408', 0.5); part([[x - 2.2, y], [x, y - 1.8], [x + 2.4, y], [x, y + 1.8]], '#5a5a38', { hl: 0.5 }, 0.4); eye(x + 0.1, y, 1.2, '#b6a23a', 0, 1.57); });
+      [[0.165, [-3.4, 3.4]], [0.178, [-4.6, -1.5, 1.5, 4.6]]].forEach(([u, offs]) => offs.forEach(f => { const [q, n] = at(u), x = q[0] + n[0] * f, y = q[1] + n[1] * f; part([[x - 1.2, y - 1.1], [x + 1.2, y - 1.1], [x + 1.3, y + 1.1], [x - 1.2, y + 1.1]], '#5a5c3a', { hl: 0.6, sh: 0.6 }, 0.35); spec([[x - 0.8, y - 0.2], [x + 0.8, y - 0.2]], 0.5, 0.6); }));
+      // dorsal scutes (keeled osteoderms): paired rows on the back, double then single crest on the tail
+      for (let i = Math.round(0.2 * (B.s.length - 1)); i < B.s.length - 3; i += 2) {
+        const u = i / (B.s.length - 1), q = B.s[i], n = B.nrm[i], hw = pw([0, 0.18, 0.33, 0.5, 0.75, 1], [0, 7.2, 13.4, 9, 4.2, 0.4])(u);
+        const offs = u < 0.48 ? [-0.62, -0.38, -0.13, 0.13, 0.38, 0.62].map(f => f * hw) : u < 0.78 ? [-0.36, 0.36].map(f => f * hw) : [0];
+        const sz0 = u < 0.48 ? 1.3 : lerp(1.6, 0.6, (u - 0.48) / 0.52), dx = n[1], dy = -n[0];
+        offs.forEach(f => { const sz = sz0 * rnd(0.8, 1.1) * (u < 0.48 ? 1 - Math.abs(f / hw) * 0.35 : 1), x = q[0] + n[0] * f + rnd(-0.2, 0.2), y = q[1] + n[1] * f + rnd(-0.2, 0.2), P = (a, b) => [x + dx * a + n[0] * b, y + dy * a + n[1] * b];
+          dot(x + 0.35, y + 0.45, sz * 1.05, '#0c0c04', 0.4);
+          const p = shape([P(-sz, -sz * 0.75), P(sz * 0.6, -sz * rnd(0.6, 0.8)), P(sz * 1.15, 0), P(sz * 0.6, sz * rnd(0.6, 0.8)), P(-sz, sz * 0.75)]);
+          wash(p, u < 0.48 ? '#545637' : '#4a4c30', { hl: 0.45, sh: 0.55, dk: '#0c0c04', ew: 0.5 }); ink(p, 0.16, 0.55); taper([P(-sz * 0.7, -0.15), P(sz * 0.9, -0.15)], 0.4, 0.15, '#cfcca4', 0.4); });
+        if (u < 0.62) [-1, 1].forEach(sd => [0.78, 0.9].forEach(f => { if (R.uniform() < 0.25) return; const x = q[0] + n[0] * sd * f * hw, y = q[1] + n[1] * sd * f * hw; dot(x + 0.2, y + 0.3, 0.75, '#0c0c04', 0.35); dot(x, y, 0.6, '#5c5e3c', 0.9); dot(x - 0.2, y - 0.25, 0.25, '#bdb98e', 0.6); }));
+      }
+      ink(bp, 0.55);
+      spec(B.s.filter((q, i) => i > 30 && i < 60 && i % 3 === 0).map((q, i) => [q[0], q[1] - 9.5 + i * 0.05]), 1.2, 0.35);
+    },
+    ape() {   // chimpanzee knuckle-walking, side view facing left
+      const FUR = ['#120c09', '#21180f', '#33271e', '#4e3e32', '#6f5c4c', '#95806c'], o = { dk: '#080503', hl: 0.25, sh: 0.6, blot: ['#3c2e24'] };
+      const SK = '#a98466', FAR = ['#0e0907', '#1a120d', '#2a2018'];
+      shadow(96, 102.5, 66, 5, 0.45); ground(30, 160, 103.6);
+      const furred = (pts, n, dir, len, cols = FUR, fr = 1) => { const p = shape(pts); wash(p, '#2a2019', o); fur(p, n, dir, len, cols, 0.32, 0.85); if (fr) fringe(p, n * 0.08 * fr, dir, len * 1.2, '#1a120d', 0.26, 0.55); return p; };
+      const down = () => 1.5, back = (x, y) => 0.35 + (y - 50) * 0.02;
+      // far limbs (in shadow)
+      furred(limb([84, 46], [84, 78], 9, 6.5), 260, down, 2.6, FAR, 0.5); furred(limb([84, 76], [81, 95], 6, 5), 150, down, 2.2, FAR, 0.5);
+      part([[77.5, 93], [84, 93.5], [84.6, 99.5], [83, 102.4], [77, 102.6], [75.6, 100.6], [77, 97]], '#1e1611', { dk: '#080503', hl: 0.15 }, 0.35); [78.6, 80.6, 82.4].forEach(x => taper([[x, 98.6], [x - 0.4, 102.2]], 0.25, 0.15, '#6a5446', 0.6));
+      furred(limb([140, 62], [136, 84], 12, 8), 260, down, 2.6, FAR, 0.5); furred(limb([136, 84], [145, 97], 7, 5.5), 140, down, 2.2, FAR, 0.5);
+      part([[140, 96], [147.6, 95.6], [148.4, 101.4], [140, 102.5], [133.4, 102.4], [133, 101.2], [137.6, 99.6]], '#1e1611', { dk: '#080503', hl: 0.15 }, 0.35);
+      // torso: high shoulders sloping to the rump
+      const tor = furred([[60, 42], [72, 30], [92, 27.5], [112, 33], [130, 41.5], [144, 51], [148.5, 63], [142, 75], [128, 79], [108, 77.5], [90, 73], [74, 66], [63, 55]], 2600, back, 3.2);
+      fringe(tor, 160, (x, y) => y > 66 ? 1.5 : back(x, y), 3.4, '#1a120d', 0.28, 0.6, (x, y) => y > 66);
+      fur(tor, 260, back, 3, ['#7a6656', '#9c8672', '#b9a28b'], 0.28, 0.45);   // sheen along the lit back
+      // near leg and foot (big toe spread for grasping)
+      furred(limb([126, 60], [117, 82], 15, 10), 600, (x, y) => 1.9 - (y - 60) * 0.01, 2.8); furred(limb([118, 80], [127, 95], 9, 6.5), 280, (x, y) => 1.1, 2.4);
+      [[0, 1], [1, 0.8], [2, 0.7]].forEach(([k]) => { const b = [119.5 - k * 0.6, 100 - k * 0.2]; part(limb(b, [113.6 - k * 0.8, 101.6], 2.4, 1.9), '#3d2e25', { dk: '#0a0604', hl: 0.35 }, 0.3); dot(112.9 - k * 0.8, 101.6, 0.5, '#8a7262', 0.7); });
+      const ft = part([[121.4, 92.6], [130.4, 93.2], [132, 99.2], [130, 102.4], [122, 102.6], [117.6, 101.6], [118.6, 98.8]], '#3d2e25', { dk: '#0a0604', hl: 0.35, blot: ['#5a4537'] }, 0.45);
+      const ht = part([[121, 96.4], [116.4, 95.2], [112, 95.8], [110.6, 97.6], [112.4, 98.6], [117, 98.6], [121.6, 99.4]], '#4e3b30', { dk: '#0a0604', hl: 0.55 }, 0.45);
+      part([[110.8, 96.4], [112.2, 96], [112.6, 97.6], [111.2, 98]], '#a88a74', { hl: 0.6 }, 0.2); void ft; void ht;
+      // near arm: long, straight, onto the knuckles
+      furred(limb([75, 40], [68, 74], 13, 9), 900, (x, y) => 1.6 + (x - 70) * 0.01, 3);
+      furred(limb([68, 72], [65.5, 92], 9, 7), 420, () => 1.62, 2.6);
+      fur(shape([[66, 30], [82, 32], [84, 52], [72, 56], [64, 46]]), 380, (x, y) => 1.3 + (x - 74) * 0.02, 3, FUR, 0.32, 0.8);
+      for (let k = 3; k >= 0; k--) {   // fingers: proximal phalanx down to the knuckle, middle phalanx flat on the ground, tip tucked under
+        const dx = k * 1.5, sh = k ? 0.75 : 1, mc = [62.4 + dx, 93.6 - k * 0.3], pip = [58.6 + dx, 100.8], dip = [63.4 + dx, 101.6], tip = [64.8 + dx, 98.8];
+        const f1 = part(limb(mc, pip, 3.4, 3), '#4a382c', { dk: '#0a0604', hl: 0.4 * sh, a: 1 }, 0.35), f2 = part(limb(pip, dip, 2.8, 2.5), '#5a463a', { dk: '#0a0604', hl: 0.35 }, 0.35);
+        part(limb(dip, tip, 2.3, 1.8), '#4a382c', { dk: '#0a0604', hl: 0.3 }, 0.3); dot(pip[0] - 0.2, pip[1] - 0.4, 0.8, '#8a6e5a', 0.7); void f1; void f2;
+      }
+      const hand = part([[62.4, 87.6], [69.6, 88.4], [70.6, 93.4], [66.8, 96.6], [61, 96.2], [59.6, 92.6]], '#3a2c24', { dk: '#0a0604', hl: 0.45, blot: ['#5a4436'] }, 0.45);
+      fur(hand, 60, () => 1.9, 1.4, ['#1a120d', '#33271e', '#5a4a3c'], 0.22, 0.7);
+      const th = shape([[62.6, 94], [59.6, 94.8], [56.6, 96.6], [55.2, 98.8], [56.8, 99.4], [60.2, 97.6], [63.4, 96.6]]); wash(th, '#56423a', { dk: '#0a0604', hl: 0.55 }); ink(th, 0.4); part([[55.3, 98.2], [56.3, 97.6], [57, 98.6], [56.1, 99.2]], '#a88a74', { hl: 0.6 }, 0.2);
+      spec([[63, 89.4], [67.4, 89.2]], 0.8, 0.4);
+      // head: fur cap, bare face with heavy brow, projecting muzzle, large ear (drawn at 0.84 scale about the neck)
+      view(0.84, 60, 62);
+      const cap = furred([[30, 37], [33, 29.5], [42, 24], [54, 24], [64, 30], [70, 40], [69, 52], [63, 60], [52, 66], [40, 68.5], [32, 66]], 900, (x, y) => Math.atan2(y - 50, x - 30) * 0.6 + 0.4, 2.4);
+      fringe(cap, 90, (x, y) => Math.atan2(y - 46, x - 46), 2.6, '#1a120d', 0.26, 0.5, (x, y) => y < 40 || x > 60); void cap;
+      const ear = part([[50.5, 37.5], [56, 35.6], [59.6, 40], [59, 47.5], [55, 51], [50.6, 48.4]], '#9a7660', { dk: '#3a2014', hl: 0.45, blot: ['#7a5644'] }, 0.5);
+      taper([[52.6, 40.5], [56.4, 40], [57, 45], [54, 48]], 0.5, 0.3, '#5a3a2a', 0.7); void ear;
+      const face = part([[33.5, 34], [27.4, 37.2], [25, 40.8], [27.4, 44.4], [25.4, 47.6], [20.6, 51.2], [17, 55.4], [16.4, 60], [18.6, 64.4], [24.6, 67.8], [33, 68.4], [40, 64.6], [45.6, 58.4], [47.8, 50], [46, 42], [42, 36]], '#9a7458', { dk: '#3a1e10', blot: ['#c49a78', '#7a5640'], hl: 0.5, sh: 0.55 }, 0.6);
+      tint(face, [30, 50], [44, 40], '#5e3e2c', 0.5);
+      hatch(face, 1.3, 0.75, 0.16, 0.5, 0.45);
+      blob(35.5, 46, 4.6, 3.2, '#4a2c1c', 0.55);
+      taper([[25.4, 40.6], [30, 39], [36, 39.2], [41, 41]], 2.4, 1.2, '#6a4a36'); taper([[25.4, 41.8], [31, 40.6], [37, 41], [41, 42.6]], 0.6, 0.3, INK, 0.85);
+      spec([[26, 39.2], [31, 37.8], [36, 38]], 1.2, 0.5);
+      eye(34.6, 45.2, 1.55, '#6a3c1a', 0.55); taper([[32.4, 44.2], [34.6, 43.4], [37, 44.4]], 0.45, 0.25, INK, 0.9); taper([[32.8, 47.4], [35, 47.9], [37.2, 47.2]], 0.25, 0.15, INK, 0.5);
+      [[[31, 49.5], [35, 50.6], [39, 49.8]], [[38.8, 46], [40.6, 48.6], [41, 52]], [[29, 51.6], [27, 54]]].forEach(l => taper(l, 0.25, 0.15, INK, 0.5));
+      blob(20, 54.4, 2.4, 1.4, '#5a3424', 0.6); dot(19.2, 54.6, 0.55, '#1a0c06', 0.85); dot(21.4, 54.2, 0.5, '#1a0c06', 0.7);
+      blob(21, 59, 4.5, 4, '#c9a585', 0.45);
+      taper([[17.4, 61], [22, 61.8], [28, 62], [33, 60.6]], 0.6, 0.35, INK, 0.85);
+      [[[21.5, 57.5], [26, 58.5], [30, 57.8]], [[23, 63.6], [27, 64.6], [31, 64]], [[30.6, 52.6], [32.4, 56.4], [32.2, 60]]].forEach(l => taper(l, 0.22, 0.12, INK, 0.45));
+      spec([[21, 56.2], [24.5, 56.6]], 0.6, 0.5); spec([[22.5, 65.2], [27, 66.2]], 0.5, 0.4);
+      view();
+    },
+    bir() {   // rock pigeon, side view facing left
+      const GR = '#97a0ae', o = { blot: ['#7a8494', '#b6bcc6'], dk: '#1e2430' };
+      shadow(104, 100.5, 44, 4, 0.42); ground(70, 150, 101.6);
+      taper([[110, 86], [111, 93], [110.5, 98]], 1.6, 1.2, '#a8545a'); [[106, 99.6], [114.5, 99.6], [110.5, 99.8]].forEach(t => taper([[110.5, 98], t], 0.8, 0.5, '#a8545a'));
+      const tl = part([[126, 64.5], [150, 69.5], [174, 75], [180, 78.2], [178.6, 82.6], [152, 82.2], [126, 79]], '#8a93a2', o, 0.5);
+      c.save(); c.clip(tl); for (let x = 132; x < 180; x += 4.5) taper([[x, 66 + (x - 126) * 0.2], [x + 6, 80.4 - (x - 126) * 0.02]], 0.2, 0.2, INK, 0.3); c.restore();
+      tint(tl, [166, 78], [174, 78], '#25262e', 0.9); taper([[164, 72.4], [166.5, 82.4]], 0.9, 0.8, '#d8dce2', 0.5);
+      const bd = part([[60, 60], [74, 52.5], [98, 51.5], [120, 57.5], [136, 65.5], [140.5, 74], [131, 82], [112, 88], [92, 90.2], [74, 87], [61, 78.5], [57, 69]], GR, o, 0.5);
+      c.save(); c.clip(bd); for (let i = 0; i < 160; i++) { const x = rnd(62, 138), y = rnd(56, 90); c.globalAlpha = 0.18; c.strokeStyle = INK; c.lineWidth = 0.18; c.beginPath(); c.arc(x, y, 1.6, 0.4, 2.7); c.stroke(); } c.restore();
+      tint(bd, [90, 72], [96, 90], '#6a7282', 0.45);
+      const nk = shape([[49, 45], [55, 36], [63, 38.5], [71, 46], [80, 53], [74, 68], [63, 74], [56, 66], [52, 55]]);
+      wash(nk, '#7e8a92', { dk: '#1a2028', hl: 0.3 });
+      c.save(); c.clip(nk); blob(63, 50, 10, 6, '#3f9a72', 0.6, 0.5); blob(66, 61, 10, 6, '#8c4a98', 0.55, 0.3); blob(58, 56, 4, 5, '#4f7a9a', 0.45); blob(60, 47, 4, 2.4, '#8ad4a8', 0.5, 0.6); blob(64, 59, 4, 2, '#d08ad4', 0.45, 0.3);
+      for (let i = 0; i < 70; i++) { const x = rnd(48, 76), y = rnd(34, 70); c.globalAlpha = 0.25; c.strokeStyle = R.uniform() < 0.5 ? '#d8f4e0' : '#2a1e30'; c.lineWidth = 0.18; c.beginPath(); c.arc(x, y, 1.2, 0.5, 2.6); c.stroke(); }
+      c.restore(); ink(nk, 0.45);
+      const hd = part([[45.2, 43.4], [47.4, 37.6], [53, 34.6], [59.2, 36.6], [62, 42], [60.4, 47.6], [55.4, 50.4], [48.6, 48.6]], '#848d9b', { dk: '#1a2028', blot: ['#6a7484'] }, 0.5); void hd;
+      part([[47.2, 41.2], [41.6, 44], [40, 45.4, 1], [42.4, 45.6], [47.2, 46.2]], '#3e3a36', { dk: '#0a0806', hl: 0.6 }, 0.4);
+      part([[45.6, 41.4], [48.6, 40.3], [49.6, 42.4], [47.6, 43.6]], '#ece6dc', { hl: 0.4, sh: 0.3 }, 0.3);
+      dot(52.8, 41.2, 2.5, '#9a9690'); eye(52.8, 41.2, 1.75, '#e07418', 0.5);
+      // folded wing: coverts, two black wing bars, secondaries, stepped primaries
+      for (let k = 0; k < 6; k++) { const tip = [171 - k * 4.6, 79.6 + k * 0.2], b = [120 + k * 2, 66 + k * 1.6];
+        const f = part([b, [lerp(b[0], tip[0], 0.5), b[1] - 2.2], [tip[0] - 2, tip[1] - 1.6], tip, [lerp(b[0], tip[0], 0.6), tip[1] + 0.6], [b[0], b[1] + 3]], k ? '#7e8695' : '#6e7684', o, 0.4);
+        tint(f, [lerp(b[0], tip[0], 0.55), 0], [tip[0], 0], '#2a2c34', 0.75); taper([b, [lerp(b[0], tip[0], 0.5), lerp(b[1], tip[1], 0.5) - 0.6], [tip[0] - 2, tip[1] - 0.4]], 0.3, 0.1, '#e4e6ea', 0.5); }
+      const wg = part([[76, 54.5], [96, 52.6], [116, 57.4], [134, 65.4], [142, 72.6], [136, 77.6], [118, 79.4], [100, 79], [86, 75], [77.5, 66]], '#a9b1bd', { dk: '#1e2430', blot: ['#c4cad3', '#8a92a0'], hl: 0.5 }, 0.42);
+      c.save(); c.clip(wg);
+      for (let r = 0; r < 4; r++) for (let x = 80 + r * 3; x < 134 - r * 4; x += 3.6) { const y = 57 + r * 3.2 + (x - 80) * 0.11; c.globalAlpha = 0.3; c.strokeStyle = INK; c.lineWidth = 0.22; c.beginPath(); c.arc(x, y, 1.9, 0.25, 2.9); c.stroke(); }
+      for (let x = 96; x < 136; x += 4) { taper([[x - 1, 72], [x + 1.6, 79.6]], 0.25, 0.25, INK, 0.5); }
+      brush([[100, 60.5], [104, 67], [106.5, 74.5], [107.5, 79.4]], 3.4, '#22242a', 0.9); brush([[113.5, 61.8], [118, 68.4], [120.8, 74], [122, 79.4]], 3.2, '#22242a', 0.9);
+      c.restore(); ink(wg, 0.42);
+      spec([[80, 56.6], [96, 54.4], [112, 58]], 1.4, 0.55);
+      taper([[100, 86], [100.5, 93], [99.5, 98.4]], 1.8, 1.4, '#cf646a'); taper([[100, 86], [100.5, 93], [99.5, 98.4]], 0.3, 0.3, INK, 0.5);
+      [[93, 99.8], [96.2, 100.4], [99.6, 100.4]].forEach(t => { taper([[99.5, 98.4], t], 1, 0.6, '#cf646a'); taper([[t[0] + 0.2, t[1]], [t[0] - 0.8, t[1] + 0.2]], 0.4, 0.1, INK); });
+      taper([[99.5, 98.4], [103, 99.8]], 0.9, 0.5, '#cf646a');
+    },
+    mos() {   // haircap moss: leafy gametophytes with sporophytes (seta, capsule, hairy calyptra)
+      shadow(100, 104, 82, 6, 0.35);
+      const soil = part([[14, 106], [36, 97.5], [70, 94.5], [100, 94], [134, 95], [168, 98], [188, 106], [150, 108.6], [100, 109.4], [50, 108.6]], '#7a5a38', { blot: ['#5a3e24', '#9a7a52'], dk: '#2a1a0c' }, 0.5);
+      hatch(soil, 0.3, 0.9, 0.18, 0.5, 0.2); for (let i = 0; i < 18; i++) { const x = rnd(24, 176), y = rnd(100, 107); part([[x - 1.2, y], [x, y - 0.9], [x + 1.3, y], [x, y + 0.8]], '#b2a080', { hl: 0.6 }, 0.25); }
+      const shoot = (x, h, lean, col, a, depth) => {
+        const top = [x + lean, 97 - h], st = [[x, 97], [x + lean * 0.4, 97 - h * 0.5], top];
+        taper(st, 0.9, 0.5, '#5a4220', a);
+        sample(st, false, 8).forEach((q, i, A) => { if (i < 2) return; const t = i / (A.length - 1), L = lerp(6.5, 3.5, t) * (depth ? 0.85 : 1);
+          [-1, 1].forEach(s => { const an = -Math.PI / 2 + s * lerp(1.2, 0.45, t) + rnd(-0.15, 0.15); taper([q, [q[0] + Math.cos(an) * L * 0.5, q[1] + Math.sin(an) * L * 0.5 - 0.6], [q[0] + Math.cos(an) * L, q[1] + Math.sin(an) * L + 0.4]], 0.9, 0.1, col, a); });
+          if (i % 2) { const an = -Math.PI / 2 + rnd(-0.3, 0.3); taper([q, [q[0] + Math.cos(an) * L * 0.7, q[1] + Math.sin(an) * L * 0.7]], 0.8, 0.1, col, a * 0.8); } });
+        return top;
+      };
+      const tops = [];
+      for (let i = 0; i < 26; i++) shoot(30 + i * 5.6 + rnd(-2, 2), 22 + rnd(0, 12) - Math.abs(i - 13) * 0.8, rnd(-3, 3), ['#8aac5c', '#9aba68', '#7ea054'][i % 3], 0.75, 1);
+      for (let i = 0; i < 24; i++) { const x = 34 + i * 5.6 + rnd(-2, 2), t = shoot(x, 18 + rnd(0, 12) - Math.abs(i - 12) * 0.7, rnd(-4, 4), ['#3f6a26', '#4e7a2e', '#365e20', '#5a8634'][i % 4], 0.95, 0); if (i % 5 === 2) tops.push(t); }
+      tops.forEach((t, k) => {   // sporophytes
+        const h = 30 + k * 3 + rnd(0, 6), lean = rnd(-6, 6), cap = [t[0] + lean, t[1] - h];
+        taper([t, [t[0] + lean * 0.3, t[1] - h * 0.5], cap], 0.9, 0.6, '#8a3e1c');
+        const a = Math.atan2(cap[1] - t[1], cap[0] - t[0]) + Math.PI / 2 + (k % 2 ? 0.5 : 0.2), P = q => tf([q], cap[0], cap[1], a)[0];
+        const cp = part([P([-1.6, 0]), P([-1.8, -4.5]), P([0, -6]), P([1.8, -4.5]), P([1.6, 0])], '#a8743a', { dk: '#2a1406', blot: ['#c89a50'] }, 0.4);
+        if (k % 2 === 0) { const cy = part([P([-2.4, -3.5]), P([-1.6, -8.6]), P([0, -11.4], 1), P([1.6, -8.6]), P([2.4, -3.5]), P([0, -2.2])], '#d8bc78', { dk: '#5a3a10', hl: 0.6 }, 0.35);
+          for (let i = 0; i < 26; i++) { const q = P([rnd(-2.4, 2.4), rnd(-9.5, -3)]), q2 = P([rnd(-2.6, 2.6), rnd(-3, -2)]); taper([q, [lerp(q[0], q2[0], 0.8), lerp(q[1], q2[1], 0.8)]], 0.18, 0.05, '#8a6a2a', 0.6); } void cy; }
+        else { part([P([-1.7, -5.2]), P([0, -7.6]), P([1.7, -5.2])], '#7a3a18', { hl: 0.6 }, 0.35); }
+        void cp;
+      });
+    },
+    fer() {   // western sword fern: arching once-pinnate fronds, eared toothed pinnae, sori on one turned frond, fiddlehead
+      shadow(100, 106, 60, 4.6, 0.38);
+      const frond = (p0, c1, p1, col, a, sori, n = 22) => {
+        const sp = [p0, c1, p1], s = sample(sp, false, 16);
+        taper(sp, 1.4, 0.4, '#5a4a26', a);
+        for (let k = 2; k < n; k++) {
+          const t = k / n, i = Math.round(t * (s.length - 1)), q = s[i], q2 = s[Math.min(s.length - 1, i + 1)], ang = Math.atan2(q2[1] - q[1], q2[0] - q[0]), L = 12.5 * Math.sin(Math.PI * Math.min(1, 0.22 + t * 0.86)) + 1.5;
+          [-1, 1].forEach(sd => {
+            const a2 = ang + sd * 1.05, ca = Math.cos(a2), sa = Math.sin(a2), nx = -sa * sd, ny = ca * sd, wd = Math.max(0.8, L * 0.17), P = (u, v) => [q[0] + ca * u + nx * v, q[1] + sa * u + ny * v];
+            const pts = [P(0, 0), P(L * 0.1, wd * 1.4), P(L * 0.22, wd * 1.0)]; for (let m = 3; m < 9; m++) { const u = m / 9; pts.push(P(L * u, wd * (1 - u * 0.7) + 0.4), P(L * (u + 0.05), wd * (1 - u * 0.7) - 0.1)); }
+            pts.push(P(L, 0, 1)); for (let m = 8; m > 0; m--) { const u = m / 9; pts.push(P(L * u, -wd * (1 - u * 0.6) * 0.9)); }
+            const p = shape(pts); wash(p, col, { a, dk: '#0e2008', hl: 0.35, sh: 0.45, ew: 0.5 }); ink(p, 0.22, a * 0.75);
+            taper([P(0, 0), P(L * 0.92, 0)], 0.25, 0.08, '#28401a', a * 0.6);
+            if (sori && t > 0.25 && t < 0.85) for (let m = 1; m < 6; m++) [-1, 1].forEach(v => { const r = P(L * m / 6.2, v * wd * 0.45); dot(r[0], r[1], 0.5, '#7a3e18', 0.9); dot(r[0] - 0.15, r[1] - 0.15, 0.18, '#d8a060', 0.8); });
+          });
+        }
+      };
+      frond([98, 104], [60, 40], [18, 30], '#6f9a58', 0.7); frond([102, 104], [140, 36], [184, 26], '#6f9a58', 0.7);
+      frond([99, 104], [78, 30], [46, 10], '#3f6e2c', 0.95); frond([101, 104], [126, 24], [158, 8], '#467832', 0.95);
+      frond([100, 104], [96, 40], [104, 6], '#4a7c36', 0.95); frond([100, 104], [124, 60], [168, 70], '#7a9a48', 0.95, true, 18);
+      const crown = part([[90, 107], [94, 100], [100, 98], [106, 100], [110, 107]], '#5a4026', { blot: ['#8a6036'] }, 0.4); void crown;
+      for (let i = 0; i < 26; i++) { const x = rnd(92, 109), y = rnd(99, 106); taper([[x, y], [x + rnd(-1.5, 1.5), y - rnd(1, 2.5)]], 0.7, 0.1, '#b07a3a', 0.85); }
+      const fh = []; for (let i = 0; i <= 40; i++) { const t = i / 40, r = lerp(0.3, 5, 1 - t) * (t < 0.55 ? 1 : 1), an = t * 9.5; fh.push(t < 0.55 ? [86 - 4 + Math.cos(an) * r * 0.3, 98 - t * 26] : [80 + Math.cos(an * 1.2) * r, 78 - Math.sin(an * 1.2) * r]); }
+      taper([[96, 104], [88, 92], [84, 82], [80.5, 78]], 1.6, 1.1, '#7a9a48'); taper([[96, 104], [88, 92], [84, 82], [80.5, 78]], 0.25, 0.25, INK, 0.7);
+      const coil = []; for (let i = 0; i <= 30; i++) { const t = i / 30, an = -0.4 + t * 9, r = lerp(4.2, 0.4, t); coil.push([77 + Math.cos(an) * r, 75.6 + Math.sin(an) * r]); }
+      taper(coil, 2.4, 0.9, '#6f9244'); taper(coil, 0.3, 0.2, INK, 0.7); for (let i = 0; i < 12; i++) { const q = coil[Math.floor(rnd(0, 20))]; taper([q, [q[0] + rnd(-1, 1), q[1] + rnd(-1, 1)]], 0.5, 0.1, '#b07a3a', 0.8); }
+      void fh;
+    },
+    pin() {   // eastern white pine: needles in bundles of five, long slender cone with seed-bearing scales
+      shadow(118, 108, 26, 3.4, 0.25);
+      const tw = [[2, 30], [50, 28], [100, 31], [150, 38], [198, 50]], ts = sample(tw, false, 10);
+      for (let k = 1; k < 24; k++) {   // needle bundles (fascicles)
+        const q = ts[Math.floor(k / 24 * (ts.length - 1))], up = k % 2;
+        for (let n = 0; n < 5; n++) { const a = (up ? -0.9 : 0.75) + (n - 2) * 0.17 + rnd(-0.06, 0.06) + (up ? -0.2 : 0.25), L = 30 + rnd(0, 7), e = [q[0] + Math.cos(a) * L + 4, q[1] + Math.sin(a) * L * 0.8], m = [lerp(q[0], e[0], 0.5) + (up ? -2 : 2), lerp(q[1], e[1], 0.5) + rnd(-1, 1)];
+          taper([q, m, e], 0.55, 0.12, ['#4f7c6c', '#6a9884', '#3d6656', '#7aa892', '#5a8a76'][n], 0.9); taper([[q[0] + 0.15, q[1] + 0.15], [m[0] + 0.15, m[1] + 0.2], e], 0.15, 0.05, '#1e3a2e', 0.4); }
+        taper([q, [q[0] + 1.2, q[1] + (up ? -1.8 : 1.8)]], 1.1, 0.7, '#8a6038');
+      }
+      const twp = shape(body(tw, u => lerp(1.8, 1.0, u), 6).pts); wash(twp, '#7a5838', { blot: ['#a07a4a', '#5a3a20'], dk: '#1e1006' }); ink(twp, 0.4);
+      for (let i = 0; i < 30; i++) { const q = ts[Math.floor(rnd(0, ts.length))]; dot(q[0] + rnd(-0.6, 0.6), q[1] + rnd(-0.8, 0.8), 0.3, '#3a2210', 0.6); }
+      // hanging cone: imbricate scales, lower rows drawn first so each upper scale overlaps the base of the one below
+      taper([[112, 34.5], [114.5, 40], [115.5, 45]], 1.6, 1.3, '#6a4426'); taper([[112, 34.5], [114.5, 40], [115.5, 45]], 0.25, 0.25, INK, 0.7);
+      const axis = [[115.5, 45], [117.5, 70], [116.5, 92], [112.5, 106]], ax = sample(axis, false, 14);
+      for (let r = 22; r >= 0; r--) {
+        const t = r / 22, q = ax[Math.round(t * (ax.length - 1))], w = 5.4 * Math.sin(Math.PI * Math.min(1, 0.12 + t * 0.95)) + 1.2;
+        for (let j = -2; j <= 2; j++) {
+          const f = (j + (r % 2) * 0.5) / 2.5; if (Math.abs(f) > 1) continue;
+          const x = q[0] + f * w, y = q[1] + Math.abs(f) * 1.2, sw = w * 0.42 * Math.cos(f * 1.2), sh = 4.6 * (0.7 + 0.3 * Math.cos(f));
+          const p = part([[x - sw, y - 1.2], [x + sw, y - 1.2], [x + sw * 0.95, y + sh * 0.5], [x + sw * 0.3, y + sh], [x - sw * 0.3, y + sh], [x - sw * 0.95, y + sh * 0.5]], Math.abs(f) > 0.7 ? '#7a5228' : '#a8783e', { dk: '#1e0e04', blot: ['#c8955a', '#6a4220'], hl: 0.5, sh: 0.6 }, 0.35);
+          dot(x + sw * 0.1, y + sh * 0.8, 0.45, '#efe4c8', 0.75); void p;
+        }
+      }
+    },
+    flo() {   // apple: branch with toothed leaves, blossoms, whole fruit and a halved fruit showing seeds
+      shadow(118, 104, 22, 3.2, 0.32); shadow(52, 107, 22, 3, 0.3);
+      const br = [[0, 40], [40, 33], [90, 30], [140, 31], [200, 26]];
+      const leaf = (x, y, a, L, Wd) => {
+        const ca = Math.cos(a), sa = Math.sin(a), P = (u, v) => [x + ca * u - sa * v, y + sa * u + ca * v], pts = [P(0, 0)];
+        for (let m = 1; m <= 12; m++) { const u = m / 12, wv = Wd * Math.sin(Math.PI * Math.pow(u, 0.8)) * (1 - u * 0.2); pts.push(P(L * u - 0.8, wv + 0.5), P(L * u, wv)); }
+        pts.push(P(L + 1, 0, 1)); for (let m = 12; m >= 1; m--) { const u = m / 12, wv = Wd * Math.sin(Math.PI * Math.pow(u, 0.8)) * (1 - u * 0.2); pts.push(P(L * u, -wv), P(L * u - 0.8, -wv - 0.5)); }
+        const p = shape(pts); wash(p, '#6a9a44', { dk: '#14280a', blot: ['#8ab45a', '#3e6a26'], hl: 0.45 }); ink(p, 0.35);
+        taper([P(0, 0), P(L * 0.5, 0.3), P(L, 0)], 0.45, 0.1, '#d6e4a8', 0.8);
+        for (let m = 1; m < 7; m++) { const u = m / 7.5; [-1, 1].forEach(s => taper([P(L * u, 0), P(L * u + 3.2, s * Wd * 0.65 * Math.sin(Math.PI * u))], 0.22, 0.06, '#3a5a20', 0.6)); }
+        hatch(p, a + 1.2, 0.9, 0.15, 0.35, 0.5);
+      };
+      [[22, 36, -0.75, 30, 8], [48, 32, 0.6, 32, 8.5], [92, 30, -1.05, 30, 8], [150, 30, -0.55, 32, 8], [176, 28, 0.5, 30, 8]].forEach(l => taper([[l[0], l[1]], [l[0] + Math.cos(l[2]) * 3, l[1] + Math.sin(l[2]) * 3]], 0.6, 0.5, '#6a4a2a'));
+      [[24, 36, -0.75, 30, 8], [50, 33, 0.6, 32, 8.5], [93, 29, -1.05, 30, 8], [152, 30, -0.55, 32, 8], [178, 28, 0.5, 30, 8]].forEach(l => leaf(...l));
+      const brp = shape(body(br, u => lerp(2.2, 1.2, u), 6).pts); wash(brp, '#6e4e33', { blot: ['#8a6a48', '#4a3020'], dk: '#1e1006' }); ink(brp, 0.45);
+      for (let i = 0; i < 16; i++) { const x = rnd(4, 196); dot(x, 40 - x * 0.07 + rnd(-0.6, 0.6), 0.3, '#d8c8a8', 0.7); }
+      // blossom cluster
+      [[66, 15, 0.2], [80, 11, -0.4]].forEach(([cx, cy, r0]) => {
+        taper([[72, 30], [lerp(72, cx, 0.5) + 1, lerp(30, cy, 0.5)], [cx, cy + 2]], 0.5, 0.4, '#6a7a3a');
+        for (let p = 0; p < 5; p++) { const a = r0 + p / 5 * Math.PI * 2, P = (u, v) => [cx + Math.cos(a) * u - Math.sin(a) * v, cy + Math.sin(a) * u + Math.cos(a) * v];
+          const pe = part([P(0.8, 0), P(2.4, -3.2), P(5.6, -3.4), P(7.4, 0), P(5.6, 3.4), P(2.4, 3.2)], '#fbeef0', { dk: '#a05a6a', hl: 0.5, sh: 0.4, blot: ['#f0a8b8'] }, 0.3);
+          tint(pe, P(5, 0), P(1, 0), '#e898aa', 0.5); taper([P(1.4, 0), P(5.6, 0)], 0.2, 0.05, '#d88a9a', 0.6); }
+        dot(cx, cy, 1.6, '#c8d06a'); for (let k = 0; k < 9; k++) { const a = k * 0.7; taper([[cx, cy], [cx + Math.cos(a) * 2.6, cy + Math.sin(a) * 2.6]], 0.2, 0.2, '#e8d8a0', 0.8); dot(cx + Math.cos(a) * 2.7, cy + Math.sin(a) * 2.7, 0.4, '#b88a2a'); }
+      });
+      const bud = part([[90, 18], [92, 13], [94.5, 17], [92.5, 21]], '#e8a8b4', { dk: '#7a2a3a' }, 0.3); taper([[76, 30], [86, 24], [92.4, 21]], 0.5, 0.4, '#6a7a3a'); void bud;
+      // whole apple
+      taper([[118, 32], [119.5, 40], [118.6, 49]], 1, 0.7, '#5a3a20');
+      const ap = shape([[118, 52], [108, 48.5], [100, 53], [97, 64], [100, 78], [108, 87.5], [118, 89], [129, 87], [136.5, 77], [138.5, 64], [134, 52.5], [126, 48.4]]);
+      wash(ap, '#c8402c', { dk: '#3a0806', blot: ['#e8b04a', '#8a1a14', '#d86a3a'], nb: 6, hl: 0.55, sh: 0.6 });
+      c.save(); c.clip(ap); for (let i = 0; i < 24; i++) { const x = rnd(98, 138); taper([[x, 50], [x + rnd(-1, 1) + (x - 118) * 0.1, 70], [x + (x - 118) * 0.02, 88]], rnd(0.4, 1.1), 0.3, '#8a1a12', 0.25); } for (let i = 0; i < 50; i++) dot(rnd(99, 137), rnd(52, 87), 0.25, '#f4d8a0', 0.6); c.restore();
+      ink(ap, 0.55); spec([[104, 60], [107, 54.6], [112, 52.4]], 2.2, 0.7); blob(116, 51.5, 3, 1.2, '#4a1a08', 0.6);
+      // halved apple: flesh, core star with seeds
+      shadow(52, 107, 22, 3, 0.2);
+      const hp = shape([[52, 82], [42, 79.5], [34, 84], [31.5, 93], [35, 102], [43, 106.6], [52, 107], [61, 106.6], [69, 102], [72.5, 93], [70, 84], [62, 79.5]]);
+      wash(hp, '#f2e2b0', { dk: '#8a6a2a', hl: 0.5, sh: 0.35, blot: ['#fff4cc', '#e6cc88'] });
+      c.save(); c.lineWidth = 1.2; c.strokeStyle = '#b8301e'; c.stroke(hp); c.restore(); ink(hp, 0.45);
+      taper([[52, 82], [52.4, 78], [51.6, 75]], 0.8, 0.6, '#5a3a20');
+      for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * 1.2566, P = (u, v) => [52 + Math.cos(a) * u - Math.sin(a) * v, 94 + Math.sin(a) * u + Math.cos(a) * v];
+        taper([P(1, 0), P(5.5, 1.4), P(8.5, 0)], 0.25, 0.1, '#a88848', 0.7); taper([P(1, 0), P(5.5, -1.4), P(8.5, 0)], 0.25, 0.1, '#a88848', 0.7);
+        if (k % 2 === 0 || k === 3) part([P(2.2, 0), P(4.4, 1.2), P(6.6, 0, 1), P(4.4, -1.2)], '#4a2410', { hl: 0.6, dk: '#0a0402' }, 0.3); }
+      c.save(); c.globalAlpha = 0.5; c.strokeStyle = '#c8b070'; c.lineWidth = 0.25; c.beginPath(); c.ellipse(52, 94, 12, 11, 0, 0, 7); c.stroke(); c.restore();
     }
   };
   const LATIN = { ins: 'Melanoplus differentialis', cru: 'Homarus americanus', cro: 'Alligator mississippiensis', bir: 'Columba livia', rod: 'Mus musculus', ape: 'Pan troglodytes', mos: 'Polytrichum commune', fer: 'Polystichum munitum', pin: 'Pinus strobus', flo: 'Malus domestica' };
+  function render(id) {
+    const cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+    c = cv.getContext('2d'); V = [1, 0, 0]; R = Lab.rng(id.charCodeAt(0) * 131 + id.charCodeAt(1) * 17 + id.charCodeAt(2));
+    c.setTransform(S, 0, 0, S, 0, 0); c.lineCap = c.lineJoin = 'round';
+    paper(); ART[id]();
+    const v = c.createRadialGradient(100, 58, 60, 100, 60, 128); v.addColorStop(0, 'rgba(110,84,50,0)'); v.addColorStop(1, 'rgba(110,84,50,0.16)'); c.fillStyle = v; c.fillRect(0, 0, W, H);
+    grain(); c.setTransform(S, 0, 0, S, 0, 0);
+    c.font = 'italic 7.2px Georgia, "Times New Roman", serif'; c.textAlign = 'right'; c.fillStyle = '#4b3826'; c.fillText(LATIN[id], 195, 115.5);
+    return cv.toDataURL('image/jpeg', 0.9);
+  }
   return function plate(t) {
     if (!ART[t.id]) return '';
-    const id = 'pl-' + t.id, R = Lab.rng(t.id.charCodeAt(0) * 131 + t.id.charCodeAt(1)), [defs, body] = ART[t.id](R, id);
-    let speck = ''; for (let i = 0; i < 40; i++) speck += `<circle cx="${f(R.uniform() * 200)}" cy="${f(R.uniform() * 120)}" r="${f(0.25 + R.uniform() * 0.5)}" fill="#a08a64" opacity="${f(0.15 + R.uniform() * 0.25)}"/>`;
-    return `<svg class="plate-svg" viewBox="0 0 200 120" role="img" aria-label="${esc('Naturalist illustration of a ' + t.ex.toLowerCase() + ' (' + LATIN[t.id] + ')')}">` +
-      `<defs><radialGradient id="${id}-pp" cx="0.45" cy="0.4" r="0.8"><stop offset="0" stop-color="#faf5e8"/><stop offset="1" stop-color="#e9dfc6"/></radialGradient>${defs}</defs>` +
-      `<rect width="200" height="120" fill="url(#${id}-pp)"/>${speck}<g transform="translate(0 -2)">${body}</g>` +
-      `<text x="195" y="116" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="7.2" fill="#5a4632">${LATIN[t.id]}</text></svg>`;
+    if (!cache[t.id]) { try { cache[t.id] = render(t.id); } catch (e) { console.error(e); return ''; } }
+    return `<img class="plate-svg" src="${cache[t.id]}" width="${W * S}" height="${H * S}" alt="${esc('Naturalist illustration of a ' + t.ex.toLowerCase() + ' (' + LATIN[t.id] + ')')}">`;
   };
 })();
 
