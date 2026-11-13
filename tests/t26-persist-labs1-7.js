@@ -5,7 +5,7 @@ const txt = (p, s) => p.evaluate(s => (document.querySelector(s) || {}).textCont
 const go = async (p, slug) => { await p.evaluate(s => Lab.pages.go(s), slug); await p.waitForTimeout(350); };
 const reload = async p => { await p.reload(); await p.waitForTimeout(1500); };
 const badgeIds = p => p.evaluate(() => [...document.querySelectorAll('.tab-badge')].filter(b => !b.hidden && getComputedStyle(b).display !== 'none').map(b => (b.closest('.sim-tab') || {}).id));
-const badges = async p => { const a = await badgeIds(p); if (a.length) console.log('    badges on:', a.join(',')); return a.length; };
+const badges = async p => { await p.waitForTimeout(800); const a = await badgeIds(p); if (a.length) console.log('    badges on:', a.join(',')); return a.length; };
 module.exports = { T, txt, go, reload, badges };
 
 T.lab01 = async (b) => {
@@ -76,6 +76,32 @@ T.lab02 = async (b) => {
   await p.click('#cs-example'); await p.click('#cs-clear-ex'); ok(await p.inputValue('#cs-aa') === '', 'lab02: Clear example blanks it');
   await p.click('#cs-mine'); ok(/χ²/.test(await txt(p, '#cs-status')) && await p.inputValue('#cs-aa') !== '', 'lab02: Use my data fills from spreadsheet run');
   ok(p.errors.length === 0, 'lab02: no page errors ' + p.errors.join('|'));
+  await ctx.close();
+};
+
+
+T.lab03 = async (b) => {
+  const ctx = await ctxFor(b); const p = await open(ctx, 'lab03.html');
+  await go(p, 'blast-the-genes'); await p.fill('#p-predict-blast', 'The chimp.'); await p.selectOption('#q-gene', 'B'); await p.click('#run-blast'); await p.waitForTimeout(800);
+  const top = await txt(p, '#r-top'), idn = await txt(p, '#r-id'), nn = await txt(p, '#r-n'); ok(top && top !== '—', 'lab03: BLAST ran, top hit ' + top);
+  await p.click('#log-blast'); await p.waitForTimeout(300);
+  await go(p, 'design'); await p.fill('#p-predict-design', 'Slope is steeper for fast genes.'); await p.click('#d-run'); await p.waitForTimeout(800);
+  const dq = await txt(p, '#d-q'), dn = await txt(p, '#d-n'); ok(/\d/.test(dn), 'lab03: design BLAST ran ' + dq + ' ' + dn);
+  await reload(p);
+  await go(p, 'blast-the-genes');
+  ok((await txt(p, '#r-top')) === top && (await txt(p, '#r-id')) === idn && (await txt(p, '#r-n')) === nn, 'lab03: BLAST panel restored (' + await txt(p, '#r-top') + ')');
+  ok(await p.inputValue('#q-gene') === 'B', 'lab03: query gene restored');
+  ok((await p.locator('#blast-hits .hits tbody tr').count()) > 0, 'lab03: hit table restored');
+  ok(await p.evaluate(() => !!document.querySelector('#blast-out svg.graphic')), 'lab03: graphic summary restored');
+  await go(p, 'design'); ok((await txt(p, '#d-q')) === dq && (await txt(p, '#d-n')) === dn, 'lab03: design BLAST restored (' + await txt(p, '#d-q') + ')');
+  ok((await badges(p)) === 0, 'lab03: no "new" badges after reload');
+  for (const w of [1366, 1920]) {
+    await p.setViewportSize({ width: w, height: 900 }); await go(p, 'blast-the-genes'); await p.waitForTimeout(500);
+    const bad = await p.evaluate(() => { const out = []; document.querySelectorAll('section.is-current table').forEach(t => { const r = t.getBoundingClientRect(); let a = t.parentElement, cl = null; while (a && a !== document.body) { const cs = getComputedStyle(a); if (/(auto|scroll|hidden)/.test(cs.overflowX)) { cl = a; break; } a = a.parentElement; } const box = cl ? cl.getBoundingClientRect() : { right: window.innerWidth }; if (!cl && r.right > window.innerWidth + 1) out.push('page overflow ' + t.className + ' ' + Math.round(r.right)); if (cl && cl.scrollWidth > cl.clientWidth + 1) out.push('inner scroll ' + (cl.className || cl.tagName) + ' ' + cl.scrollWidth + '>' + cl.clientWidth); }); return out; });
+    console.log('    tables at ' + w + ':', JSON.stringify(bad));
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'lab03: no horizontal page scroll at ' + w);
+  }
+  ok(p.errors.length === 0, 'lab03: no page errors ' + p.errors.join('|'));
   await ctx.close();
 };
 

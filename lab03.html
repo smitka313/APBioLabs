@@ -108,6 +108,15 @@
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
+<style>
+  /* Tables: headers wrap so the trait table fits at any desktop width; a table that still has to scroll sideways inside its own box keeps its first column in view. */
+  table.data.matrix th, table.data.matrix td { white-space: normal; text-align: center; vertical-align: bottom; line-height: 1.25; }
+  table.data.matrix th.rot { min-width: 0; }
+  table.data.matrix th:first-child, table.data.matrix td:first-child { text-align: left; white-space: nowrap; }
+  .table-wrap table.data:not(.hits) th:first-child, .table-wrap table.data:not(.hits) td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+  .table-wrap table.data:not(.hits) th:first-child { background: var(--surface-2); }
+  .table-wrap table.data:not(.hits) tfoot td:first-child { background: var(--surface-2); }
+</style>
 <header class="lab-header">
   <div class="wrap gutter">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 1 · Evolution</span></nav>
@@ -1260,7 +1269,7 @@ function distanceTree(el, query, hits) {
 function targetsFor(gene, ids) { return ids.map(id => ({ id, gene, seq: db[id][gene] })); }
 
 /* ---------------- Part 2 ---------------- */
-let prog = 'blastn', lastRes = null;
+let prog = 'blastn', lastRes = null, restoring = false;
 const VERT = ORG_IDS.filter(id => !['Insects', 'Crustaceans'].includes(ORGS[id][2]));
 const FIG4 = ORG_IDS.filter(id => FIG4_GROUPS.includes(ORGS[id][2]));
 const showQuery = () => { const g = Lab.$('#q-gene').value; Lab.$('#q-seq').textContent = db.fossil[g]; };
@@ -1282,6 +1291,7 @@ function runPart2() {
   if (!blastShown && blastPanels) { blastShown = true; blastPanels.select('data'); }
   // 'bestrun:' (not the old 'best:' key) so a graph auto-drawn by earlier versions on page load is not mistaken for a search the student ran
   if (prog === 'blastn') { const best = {}; hits.forEach(h => { const grp = ORGS[h.id][2]; best[grp] = Math.max(best[grp] || 0, h.ident); }); Lab.store.set('bestrun:' + g, best); drawBestChart(); }
+  if (!restoring) Lab.store.set('blast-last', { g, set, prog, tree: false });   // the search is deterministic, so its inputs are all that is saved
 }
 let blastPanels = null, blastShown = false;
 Lab.$('#blast-hits').innerHTML = '<div class="msg res-empty"><strong>No results yet.</strong> Choose a gene and press BLAST. The hits from your search will be listed here.</div>';
@@ -1342,7 +1352,8 @@ function runDesign() {
   renderBlast(out, dRes, { prog: dprog });
   return true;
 }
-Lab.$('#d-run').addEventListener('click', runDesign);
+Lab.$('#d-run').addEventListener('click', () => { if (runDesign()) saveD(); });
+function saveD() { Lab.store.set('design-last', { g: Lab.$('#d-gene').value, org: Lab.$('#d-org').value, paste: Lab.$('#d-paste').value, ids: Lab.$$('#d-set input:checked').map(i => i.value), prog: dprog }); }
 Lab.$('#d-paste').addEventListener('input', () => fieldError(Lab.$('#d-paste'), ''));
 Lab.$$('#d-set input, #d-all, #d-none').forEach(el => el.addEventListener('click', () => { const se = Lab.$('#d-set'); fieldError(se.querySelector('input'), '', se.parentNode); }));
 const clockTable = Lab.table('#clock-table', {
@@ -1422,13 +1433,39 @@ let dTouched = false, treeTried = false, dRan = false;
 Lab.$('#d-run').addEventListener('click', () => { dRan = true; });
 ['#d-org', '#d-gene', '#d-paste'].forEach(s => { Lab.$(s).addEventListener('input', () => { dTouched = true; }); Lab.$(s).addEventListener('change', () => { dTouched = true; }); });
 Lab.$$('#dprog-seg button, #d-set input').forEach(el => el.addEventListener('click', () => { dTouched = true; }));
-Lab.$('#tree-blast').addEventListener('click', () => { treeTried = true; });
-blastPanels = Lab.results('#blast-sim', { start: 'data', graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-hits', title: 'Hits from this search' }, { el: '#blast-table', title: 'Your recorded hits (top 5 per search)' }] });
+Lab.$('#tree-blast').addEventListener('click', () => { treeTried = true; const sv = Lab.store.get('blast-last'); if (sv && lastRes && lastRes.hits.length) { sv.tree = true; Lab.store.set('blast-last', sv); } });
+  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
+     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
+  function showData(sim, o) {
+    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
+    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
+    return r;
+  }
+blastPanels = showData('#blast-sim', { graph: [{ el: '#blast-chart', title: 'Best identity in each group' }], data: [{ el: '#blast-hits', title: 'Hits from this search' }, { el: '#blast-table', title: 'Your recorded hits (top 5 per search)' }] });
 Lab.gate('#run-blast', () => predB.has() || blastGenes().size ? '' : predB.reason(), { show: '#p-predict-blast' });
 Lab.gate('#d-run', () => predD.has() || clockTable.getRows().length ? '' : predD.reason(), { show: '#p-predict-design' });
 Lab.gate('#log-blast', () => lastRes ? '' : 'Press BLAST first');
 Lab.gate('#tree-blast', () => lastRes ? '' : 'Press BLAST first');
-Lab.results('#d-sim', { graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
+showData('#d-sim', { graph: [{ el: '#clock-chart', title: 'Percent identity vs time since common ancestor' }], data: [{ el: '#clock-table', title: 'Molecular-clock data' }] });
+/* Reload: put the last BLAST searches back (searches are deterministic, so only their settings are saved). */
+{ const sv = Lab.store.get('blast-last');
+  if (sv && ['A', 'B', 'C'].includes(sv.g)) {
+    restoring = true; blastShown = true;
+    Lab.$('#q-gene').value = sv.g; showQuery(); Lab.$('#q-set').value = sv.set || 'all';
+    prog = sv.prog || 'blastn'; Lab.$$('#prog-seg button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.p === prog)));
+    runPart2();
+    if (sv.tree && lastRes && lastRes.hits.length) { distanceTree(Lab.$('#blast-out .dtree'), lastRes.query, lastRes.hits); treeTried = true; }
+    restoring = false;
+    Lab.$('#blast-status').textContent = `Your last search (gene ${sv.g}) was restored.`;
+  }
+  const dv = Lab.store.get('design-last');
+  if (dv && dv.g) {
+    Lab.$('#d-gene').value = dv.g; Lab.$('#d-org').value = dv.org; Lab.$('#d-paste').value = dv.paste || '';
+    Lab.$$('#d-set input').forEach(i => { i.checked = (dv.ids || []).includes(i.value); });
+    dprog = dv.prog || 'blastn'; Lab.$$('#dprog-seg button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.p === dprog)));
+    if (runDesign()) { dRan = true; dTouched = true; Lab.$('#d-status').textContent = 'Your last search was restored.'; Lab.$('#d-status').className = 'status'; }
+  }
+}
 const matrixDone = () => { const D = DATASETS[dsKey], s = Lab.store.get('matrix:' + dsKey, {}); return D.taxa.every(t => D.traits.every((tr, j) => !!s[t.id + j] === tr[1].includes(t.id))) && Object.values(s).some(Boolean); };
 const blastGenes = () => new Set(blastTable.getRows().map(r => r.gene));
 Lab.steps('#clade-steps', [
