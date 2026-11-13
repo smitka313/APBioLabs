@@ -80,8 +80,24 @@
   const studentKey = idn => normName(idn.name).toLowerCase() + '|' + (idn.period || '');
   const dsKey = idn => `dataset:${PAGE.id}:${studentKey(idn)}`;
   const datasetNo = idn => (idn && +gstore.get(dsKey(idn))) || 1;
+  /* The seed and Dataset ID are computed once per student and lab, then stored (aplab:<lab>:dataset) and reused until the
+     student chooses "New dataset" (the stored record is dropped and the dataset number goes up), Start over or Sign out.
+     Why IDs used to flip: they were recomputed on every page load from name | period | lab | dataset number. Any change to
+     one of those inputs gave a new ID with no warning: filling in or correcting the class period (the dataset number is
+     stored per name + period, so it fell back to 1), fixing a typo or capital letter in the name, signing in after
+     starting as an anonymous visitor, or a progress file restored under a slightly different name. Nothing in the hash itself
+     changed between deploys. Storing the first result makes the ID independent of all of that. */
+  const DS_STORE = `aplab:${PAGE.id}:dataset`;
+  function readStoredDataset() {
+    try {
+      const v = JSON.parse(localStorage.getItem(DS_STORE));
+      if (v && typeof v === 'object' && Number.isFinite(v.seed) && typeof v.str === 'string' && /^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/.test(v.datasetId) && Number.isFinite(+v.datasetNumber)) return v;
+    } catch (e) { /* missing or damaged: compute a new one */ }
+    return null;
+  }
   const SEED = (function () {
     const idn = effectiveIdentity();
+    if (IS_LAB) { const st = readStoredDataset(); if (st) return { seed: st.seed >>> 0, str: st.str, basis: st.basis || '', datasetNumber: Math.floor(+st.datasetNumber) || 1, datasetId: st.datasetId, student: !!idn, sticky: true }; }
     let basis;
     if (idn) basis = studentKey(idn);
     else {
@@ -91,7 +107,9 @@
     }
     const ds = datasetNo(idn);
     const str = [basis, PAGE.id, ds].join('|');
-    return { seed: hash32(str), str, basis, datasetNumber: ds, datasetId: datasetCode(hash32(str + '#dataset-id')), student: !!idn };
+    const rec = { seed: hash32(str), str, basis, datasetNumber: ds, datasetId: datasetCode(hash32(str + '#dataset-id')), student: !!idn };
+    if (IS_LAB) { try { localStorage.setItem(DS_STORE, JSON.stringify({ seed: rec.seed, str, basis, datasetNumber: ds, datasetId: rec.datasetId, t: Date.now() })); } catch (e) { /* blocked: recomputed each load, as before */ } }
+    return rec;
   })();
   let rngCount = 0;
   if (IS_LAB) Math.random = mulberry32(SEED.seed);
@@ -674,7 +692,7 @@
         if (name.length < 2) { err.textContent = 'Type your name as your teacher knows it.'; nameIn.focus(); return; }
         if (!period) { err.textContent = 'Choose your class period.'; perSel.focus(); return; }
         const ok = setIdentity({ name, period });
-        if (ok && IS_LAB && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
+        if (ok && IS_LAB && !SEED.sticky && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
           err.textContent = 'Saved. Setting up your own data…';
           reloadForSeed(); return;
         }
@@ -717,6 +735,7 @@
     newDataset() {
       const idn = effectiveIdentity(); if (!idn || !IS_LAB) return false;
       if (!gstore.set(dsKey(idn), SEED.datasetNumber + 1)) return false;
+      try { localStorage.removeItem(DS_STORE); } catch (e) { /* ignore */ }
       reloadForSeed(); return true;
     },
     seed: { seed: SEED.seed, datasetId: SEED.datasetId, datasetNumber: SEED.datasetNumber, student: SEED.student },
@@ -766,7 +785,7 @@
     const keys = lsKeys(), out = [];
     LAB_IDS.forEach(id => {
       const pre = `aplab:${id}:`;
-      const started = keys.some(k => k.startsWith(pre) && !k.endsWith(':field:student-name'));
+      const started = keys.some(k => k.startsWith(pre) && !k.endsWith(':field:student-name') && !k.endsWith(':dataset'));
       const p = gstore.get('progress:' + id);
       if (!started) return;
       const hasP = p && p.total;
@@ -2057,7 +2076,7 @@
     forLab(id) {
       const p = gstore.get('progress:' + id);
       let started = false;
-      try { started = Object.keys(localStorage).some(k => k.startsWith(`aplab:${id}:`) && !k.endsWith(':field:student-name')); } catch (e) { /* blocked */ }
+      try { started = Object.keys(localStorage).some(k => k.startsWith(`aplab:${id}:`) && !k.endsWith(':field:student-name') && !k.endsWith(':dataset')); } catch (e) { /* blocked */ }
       if (p && p.total) return Object.assign({ started }, p);
       return started ? { started: true } : null;
     },

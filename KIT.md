@@ -34,7 +34,11 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Identity + per-student data.** A site-wide name + class period (`localStorage['aplab:student']`) replaces the
   per-lab "Your name" field (still read as a fallback). On lab pages `Math.random` and unseeded `Lab.rng()` are
   seeded from hash(name | period | lab id | dataset number), so use them (not fixed seeds) for data that should
-  differ per student. `Lab.identity.get()/set()/newDataset()`, `Lab.identity.seed` → `{seed, datasetId, datasetNumber}`.
+  differ per student.
+  **The seed and Dataset ID are sticky:** the first time they are computed they are stored in `aplab:<lab>:dataset`
+  (`{seed, str, datasetNumber, datasetId}`) and reused on every later load, even if the name, period or hash inputs change.
+  Only "New dataset" (drops the record, bumps the number), Start over and Sign out change them. A progress file carries the record
+  (it is one of the lab's stored keys), so a restore keeps the same ID. If no record exists the ID is computed as before and stored. `Lab.identity.get()/set()/newDataset()`, `Lab.identity.seed` → `{seed, datasetId, datasetNumber}`.
 - **Report + save/resume** in the `[data-responses]` toolbar: `Lab.report.docx()` (docx@9.0.2 loaded lazily from
   jsDelivr), `Lab.report.open({print})` (print view for Save as PDF), `Lab.progressFile.payload/parse/apply/makeCode/readCode`.
 - **Deep links + progress.** Sections get ids from `data-step` (`#root-tips`; old `#step-N`, `#evaluate-2` and `#reflect-2` still work; do not give an inner container the id `evaluate` or `reflect`, use e.g. `evaluate-prompts`) and a
