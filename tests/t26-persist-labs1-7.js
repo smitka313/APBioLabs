@@ -236,6 +236,88 @@ T.lab06 = async (b) => {
   await ctx.close();
 };
 
+
+T.lab07 = async (b) => {
+  const ctx = await ctxFor(b); const p = await open(ctx, 'lab07.html');
+  const pr = async (k) => { await p.evaluate(k => { const t = document.getElementById('p-' + k); if (t) { t.value = 'I predict a clear pattern because of the cell cycle.'; t.dispatchEvent(new Event('input', { bubbles: true })); } }, k); };
+  for (const k of ['predict-roottips', 'predict-meiosis', 'predict-sordaria', 'predict-design']) await pr(k);
+  const sig = (sel) => p.evaluate(sel => document.querySelector(sel).innerHTML.length + ':' + [...document.querySelectorAll(sel + ' [transform], ' + sel + ' g')].slice(0, 40).map(e => e.getAttribute('transform') || '').join(''), sel);
+  ok(await p.inputValue('#cs-o-0') === '' && await p.inputValue('#cs-e-0') === '' && await p.inputValue('#cs-l-0') === '', 'lab07: chi-square calculator starts empty');
+  // ---- mitosis model
+  await go(p, 'mitosis-model');
+  for (let i = 0; i < 3; i++) { await p.click('#mit-next'); }
+  await p.click('#mit-align'); await p.waitForTimeout(1200); await p.click('#mit-next'); await p.click('#mit-pull'); await p.waitForTimeout(1200);
+  const mitStage = await txt(p, '#mit-stage'), mitSig = await sig('#mit-svg');
+  ok(/Anaphase/.test(mitStage), 'lab07: mitosis model reached anaphase (' + mitStage + ')');
+  await p.evaluate(() => { const ins = [...document.querySelectorAll('#mit-table input')]; ins.forEach((i, k) => { i.value = String([4, 4, 2][k % 3]); i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }); });
+  await p.click('#mit-check-table'); await p.waitForTimeout(200);
+  const pill = await txt(p, '#mit-table-pill'); ok(/of \d+ correct/.test(pill), 'lab07: table checked: ' + pill);
+  // ---- sorting
+  await p.click('#sort-card-0'); await p.click('#sort-card-1'); await p.click('#sort-check'); await p.waitForTimeout(200);
+  const sortMsg = await txt(p, '#sort-msg'), sortOrder = await p.evaluate(() => localStorage.getItem('aplab:lab07:sort'));
+  // ---- root tips
+  await go(p, 'root-tips'); await p.click('#rt-prep'); await p.waitForTimeout(400); await p.evaluate(() => document.getElementById('rt-auto').click()); await p.waitForTimeout(300);
+  const rt = await p.evaluate(() => ['I', 'P', 'M', 'A', 'T', 'left'].map(k => document.getElementById('rt-n-' + k).textContent).join(',') + '|' + document.getElementById('rt-mi').textContent);
+  ok(!/^0,0,0,0,0/.test(rt), 'lab07: cells marked ' + rt);
+  await p.click('#rt-record'); await p.waitForTimeout(200); await p.click('#rt-class'); await p.waitForTimeout(400);
+  await p.evaluate(() => { document.getElementById('chi-e-0').value = '100'; document.getElementById('chi-e-0').dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('chi-e-1').value = '60'; document.getElementById('chi-e-1').dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.click('#chi-run'); await p.waitForTimeout(300);
+  const chiOut = await txt(p, '#chi-out'); ok(/critical value/.test(chiOut), 'lab07: chi-square computed');
+  const mean = await txt(p, '#rt-mean-c');
+  // ---- karyotypes
+  await go(p, 'cancer-karyotypes'); await p.click('button[data-k="hela"]'); await p.click('#k-view-kary'); await p.waitForTimeout(300);
+  await p.evaluate(() => { const g = document.querySelectorAll('#k-svg .chr'); [0, 1, 2].forEach(i => g[i].dispatchEvent(new MouseEvent('click', { bubbles: true }))); });
+  const kc = await txt(p, '#k-count'); ok(kc === '3', 'lab07: three chromosomes counted');
+  await p.evaluate(() => { const i = document.querySelector('#k-table input[data-k="n"]'); i.value = '46'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); });
+  await p.click('#k-check'); await p.waitForTimeout(200); const kmsg = await txt(p, '#k-check-msg');
+  // ---- meiosis
+  await go(p, 'meiosis-model');
+  for (let i = 0; i < 4; i++) await p.click('#mei-next');
+  await p.waitForTimeout(900); const meiStage = await txt(p, '#mei-stage-name');
+  await go(p, 'meiosis-model'); await p.click('#mei-run'); await p.waitForTimeout(300);
+  const meiOut = await txt(p, '#mei-run-out'); ok(/800 gametes/.test(meiOut), 'lab07: 200 meioses run');
+  // ---- sordaria
+  await go(p, 'sordaria'); await p.evaluate(() => document.getElementById('s-auto').click()); await p.waitForTimeout(200);
+  const sc = [await txt(p, '#s-n-P'), await txt(p, '#s-n-R'), await txt(p, '#s-n-left')];
+  await p.click('#s-record'); await p.waitForTimeout(200); await p.click('#s-class'); await p.waitForTimeout(300);
+  ok(+sc[0] + +sc[1] > 0, 'lab07: asci scored ' + sc);
+  const fno = await p.evaluate(() => (document.querySelector('#s-canvas') || {}).id);
+  // ---- design
+  await go(p, 'design'); await p.click('#d-run'); await p.waitForTimeout(800);
+  const dcap = await txt(p, '#d-field-cap'), dn = await p.locator('#d-table tbody tr').count(); ok(dn > 0 && /One field/.test(dcap), 'lab07: design run ' + dcap.slice(0, 40));
+  // ---- chi-square calculator: own data
+  await go(p, 'analyze'); await p.click('#cs-mine'); await p.waitForTimeout(300);
+  const csOut = await txt(p, '#cs-out'); ok(/critical value/.test(csOut), 'lab07: Use my root-tip data fills and runs the calculator');
+  const csL = await p.inputValue('#cs-l-0'), csO = await p.inputValue('#cs-o-0');
+  await reload(p);
+  // ---- everything again after a reload
+  await go(p, 'mitosis-model');
+  ok((await txt(p, '#mit-stage')) === mitStage && (await sig('#mit-svg')) === mitSig, 'lab07: mitosis model restored to the same stage and positions (' + await txt(p, '#mit-stage') + ')');
+  ok((await txt(p, '#mit-table-pill')) === pill, 'lab07: table check result restored');
+  ok((await p.evaluate(() => localStorage.getItem('aplab:lab07:sort'))) === sortOrder && (await txt(p, '#sort-msg')) === sortMsg, 'lab07: sorting order and check restored');
+  await go(p, 'root-tips');
+  const rt2 = await p.evaluate(() => ['I', 'P', 'M', 'A', 'T', 'left'].map(k => document.getElementById('rt-n-' + k).textContent).join(',') + '|' + document.getElementById('rt-mi').textContent);
+  ok(rt2 === rt, 'lab07: marked cells restored (' + rt2 + ')');
+  ok((await txt(p, '#chi-out')) === chiOut && (await txt(p, '#rt-mean-c')) === mean && mean !== '—', 'lab07: class data, chart numbers and chi-square result restored');
+  await go(p, 'cancer-karyotypes');
+  ok((await txt(p, '#k-count')) === kc && await p.evaluate(() => document.getElementById('k-view-kary').getAttribute('aria-pressed') === 'true') && (await txt(p, '#k-check-msg')) === kmsg, 'lab07: karyotype choice, view, tally and check restored');
+  await go(p, 'meiosis-model');
+  ok((await txt(p, '#mei-stage-name')) === meiStage && (await txt(p, '#mei-run-out')) === meiOut, 'lab07: meiosis stage and 200-meiosis result restored (' + meiStage + ')');
+  await go(p, 'sordaria');
+  ok(JSON.stringify([await txt(p, '#s-n-P'), await txt(p, '#s-n-R'), await txt(p, '#s-n-left')]) === JSON.stringify(sc), 'lab07: Sordaria scoring restored ' + [await txt(p, '#s-n-P'), await txt(p, '#s-n-R')]);
+  await go(p, 'design'); ok((await txt(p, '#d-field-cap')) === dcap, 'lab07: design field caption restored');
+  await go(p, 'analyze');
+  ok((await txt(p, '#cs-out')) === csOut && await p.inputValue('#cs-l-0') === csL && await p.inputValue('#cs-o-0') === csO, 'lab07: chi-square calculator restored from saved inputs');
+  await p.click('#cs-clear-ex').catch(() => {}); await p.click('#cs-example'); await p.waitForTimeout(300);
+  ok(await p.locator('#cs-banner').isVisible() && /EXAMPLE/.test(await txt(p, '#cs-out')), 'lab07: worked example banner shown on the calculator');
+  const keyBefore = await p.evaluate(() => localStorage.getItem('aplab:lab07:keyres:chi2-lectin'));
+  await reload(p); await go(p, 'analyze');
+  ok(await p.locator('#cs-banner').isHidden() && await p.inputValue('#cs-l-0') === csL, 'lab07: example not saved as student work');
+  ok((await badges(p)) === 0, 'lab07: no "new" badges after reload');
+  ok(p.errors.length === 0, 'lab07: no page errors ' + p.errors.join('|'));
+  await ctx.close();
+};
+
 if (require.main === module) (async () => {
   const want = process.argv.slice(2), b = await launch();
   for (const k of Object.keys(T)) { if (want.length && !want.includes(k)) continue; console.log('\n== ' + k); await T[k](b); }
