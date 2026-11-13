@@ -37,6 +37,14 @@
   #tr-table table.data td:nth-child(2), #tr-table table.data td:nth-child(4) { white-space: normal; }
   #tr-table table.data td:last-child, #tr-summary table.data td { white-space: normal; overflow-wrap: anywhere; }
   #tr-table table.data input { min-width: 0; width: 3.9em; padding-inline: 4px; }
+  .pred-recall blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .pred-recall .pred-recall-k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .pred-recall p { margin: 4px 0 0; white-space: pre-wrap; }
+  .predict-box { margin: 0 0 14px; }
+  .predict-box { padding: 10px 14px; }
+  .predict-box .prompt { margin: 0; }
+  .predict-box .prompt label { font-size: .82rem; }
+  .predict-box textarea { min-height: 0; height: 3.4rem; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -186,8 +194,8 @@
             <select id="la-species"><option value="bean">Kidney bean (Phaseolus)</option><option value="coleus">Coleus</option><option value="impatiens">Impatiens</option><option value="tomato">Tomato (one leaflet)</option></select></div>
             <button class="btn btn--sm" id="la-new" type="button">Trace a different leaf</button>
             <div class="row two">
-              <div class="field"><label for="la-full">Full squares</label><input type="number" id="la-full" min="0" step="1"></div>
-              <div class="field"><label for="la-part">Partial squares</label><input type="number" id="la-part" min="0" step="1"></div>
+              <div class="field"><label for="la-full">Full squares (squares)</label><input type="number" id="la-full" min="0" step="1"></div>
+              <div class="field"><label for="la-part">Partial squares (squares)</label><input type="number" id="la-part" min="0" step="1"></div>
             </div>
             <button class="btn btn--primary" id="la-calc" type="button">Calculate and record</button>
             <details class="more"><summary>More options</summary><div class="inner">
@@ -202,9 +210,9 @@
         <div class="stage">
           <div class="canvas-box"><canvas class="viz" id="la-cv" aria-label="A traced leaf outline on graph paper with 0.5 centimeter squares."></canvas></div>
           <div class="readouts">
-            <div class="readout"><span class="k">Your area</span><span class="v" id="la-yours">—</span></div>
-            <div class="readout"><span class="k">In mm²</span><span class="v" id="la-mm">—</span></div>
-            <div class="readout"><span class="k">Planimeter value</span><span class="v" id="la-true">hidden</span></div>
+            <div class="readout"><span class="k">Your area (cm²)</span><span class="v" id="la-yours">—</span></div>
+            <div class="readout"><span class="k">Your area (mm²)</span><span class="v" id="la-mm">—</span></div>
+            <div class="readout"><span class="k">Planimeter value (cm²)</span><span class="v" id="la-true">hidden</span></div>
           </div>
           <p class="status" id="la-msg" aria-live="polite"></p>
         </div>
@@ -218,6 +226,7 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Stomata" data-minutes="20">
     <header><div class="eyebrow">Part 1 · Step 2 · Structured inquiry</div><h2>Count stomata in a nail-polish peel</h2></header>
     <div class="step-body">
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you look at any slide: which leaf surface (upper or lower) of a land plant such as bean will have the higher stomatal density (stomata/mm²)? Give a biological reason (1 to 2 sentences).</p><div id="pred-stomata"></div></div>
       <div class="sim sim--fit" id="st-sim">
         <div class="sim-side">
           <div id="st-steps"></div>
@@ -257,9 +266,9 @@
         <div class="stage">
           <div class="canvas-box"><canvas class="viz scope" id="st-cv" aria-label="Microscope field of view of a clear nail-polish peel showing jigsaw-shaped epidermal cells and stomata. Click a stoma to mark it."></canvas></div>
           <div class="readouts">
-            <div class="readout"><span class="k">Your tally</span><span class="v" id="st-tally">0</span></div>
-            <div class="readout"><span class="k">Field area</span><span class="v" id="st-area">0.159 mm²</span></div>
-            <div class="readout"><span class="k">Fields recorded</span><span class="v" id="st-n">0</span></div>
+            <div class="readout"><span class="k">Your tally (stomata)</span><span class="v" id="st-tally">0</span></div>
+            <div class="readout"><span class="k">Field area (mm²)</span><span class="v" id="st-area">0.159</span></div>
+            <div class="readout"><span class="k">Fields recorded (fields)</span><span class="v" id="st-n">0</span></div>
           </div>
           <p class="status" id="st-msg" aria-live="polite"></p>
         </div>
@@ -282,6 +291,7 @@
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Water loss" data-minutes="30">
     <header><div class="eyebrow">Part 2 · Guided inquiry</div><h2>Measure the rate of transpiration</h2></header>
     <div class="step-body">
+      <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you run anything: how will each condition (fan, heat lamp, mist + bag, dark) change the transpiration rate compared with the control? Rank them from the biggest increase to the biggest decrease and give a reason (1 to 2 sentences).</p><div id="pred-water"></div></div>
       <div class="sim sim--fit" id="tr-sim">
         <div class="sim-side">
           <div id="tr-steps"></div>
@@ -311,10 +321,10 @@
         <div class="stage">
           <canvas class="viz" id="tr-cv" aria-label="Animated apparatus: a plant cutting in a potometer, a bagged potted plant on a balance, or a cutting connected to a pressure sensor, with a fan, lamp, misting bag, or dark box as chosen."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k" id="tr-k-time">Time</span><span class="v" id="tr-time">0 min</span></div>
+            <div class="readout"><span class="k" id="tr-k-time">Time (min)</span><span class="v" id="tr-time">0</span></div>
             <div class="readout"><span class="k" id="tr-k-read">Reading</span><span class="v" id="tr-read">—</span></div>
-            <div class="readout"><span class="k">Leaf area</span><span class="v" id="tr-area">—</span></div>
-            <div class="readout"><span class="k">Rate (slope)</span><span class="v" id="tr-rate">—</span></div>
+            <div class="readout"><span class="k">Leaf area (cm²)</span><span class="v" id="tr-area">—</span></div>
+            <div class="readout"><span class="k" id="tr-k-rate">Rate, slope (mL/min)</span><span class="v" id="tr-rate">—</span></div>
           </div>
         </div>
       </div>
@@ -362,9 +372,9 @@
         <div class="stage">
           <canvas class="viz" id="d-cv" aria-label="The apparatus for your current design settings."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">VPD at leaf</span><span class="v" id="d-vpd">—</span></div>
-            <div class="readout"><span class="k">Last group mean</span><span class="v" id="d-last">—</span></div>
-            <div class="readout"><span class="k">Plants tested</span><span class="v" id="d-count">0</span></div>
+            <div class="readout"><span class="k">VPD at leaf (kPa)</span><span class="v" id="d-vpd">—</span></div>
+            <div class="readout"><span class="k" id="d-k-last">Last group mean rate/area (units depend on method)</span><span class="v" id="d-last">—</span></div>
+            <div class="readout"><span class="k">Plants tested (plants)</span><span class="v" id="d-count">0</span></div>
           </div>
           <p class="status" id="d-msg" aria-live="polite"></p>
         </div>
@@ -684,7 +694,7 @@
   newLeaf();
   const laTable = Lab.table('#la-table', {
     save: 'la-table',
-    columns: [{ key: 'n', label: 'Leaf' }, { key: 'sp', label: 'Species' }, { key: 'full', label: 'Full', num: true, digits: 0 }, { key: 'part', label: 'Partial', num: true, digits: 0 }, { key: 'cm2', label: 'Area', unit: 'cm²', num: true, digits: 2 }, { key: 'mm2', label: 'Area', unit: 'mm²', num: true, digits: 0 }, { key: 'ref', label: 'Planimeter', unit: 'cm²', num: true, digits: 2 }, { key: 'err', label: 'Error', unit: '%', num: true, digits: 1 }],
+    columns: [{ key: 'n', label: 'Leaf' }, { key: 'sp', label: 'Species' }, { key: 'full', label: 'Full squares', unit: 'squares', num: true, digits: 0 }, { key: 'part', label: 'Partial squares', unit: 'squares', num: true, digits: 0 }, { key: 'cm2', label: 'Area', unit: 'cm²', num: true, digits: 2 }, { key: 'mm2', label: 'Area', unit: 'mm²', num: true, digits: 0 }, { key: 'ref', label: 'Planimeter area', unit: 'cm²', num: true, digits: 2 }, { key: 'err', label: 'Error vs planimeter', unit: '%', num: true, digits: 1 }],
     footer: rows => ['Mean', '', '', '', fmt(S.mean(rows.map(r => r.cm2)), 2), fmt(S.mean(rows.map(r => r.mm2)), 0), '', '']
   });
   $('#la-calc').addEventListener('click', () => {
@@ -695,7 +705,7 @@
     if (f + p === 0) { V.bad($('#la-full'), 'Count at least one square. A leaf can\u2019t have an area of 0.'); msg.textContent = 'Nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
     msg.removeAttribute('role');
     const a = (f + p / 2) / 4, err = (a - leaf.area) / leaf.area * 100;
-    $('#la-yours').textContent = fmt(a, 2) + ' cm²'; $('#la-mm').textContent = fmt(a * 100, 0) + ' mm²'; $('#la-true').textContent = fmt(leaf.area, 2) + ' cm²';
+    $('#la-yours').textContent = fmt(a, 2); $('#la-mm').textContent = fmt(a * 100, 0); $('#la-true').textContent = fmt(leaf.area, 2);
     const countOk = Math.abs(f - leaf.full) <= 2 && Math.abs(p - leaf.part) <= 3;
     msg.textContent = countOk ? `Good count. Your estimate is within ${fmt(Math.abs(err), 1)}% of the planimeter value.` : `Your estimate is off by ${fmt(err, 1)}%. Tick "Shade full and partial squares" to see where your count differs (${leaf.full} full, ${leaf.part} partial).`;
     msg.className = 'status ' + (countOk ? 'ok' : 'warn');
@@ -722,8 +732,8 @@
   ];
   STOM.forEach(s => $('#st-species').append(h('option', { value: s.k }, s.name)));
   const ref = $('#st-ref');
-  ref.innerHTML = `<thead><tr><th>Plant</th><th class="num">Upper epidermis</th><th class="num">Lower epidermis</th></tr></thead><tbody>${STOM.map(s => `<tr><td>${s.name}</td><td class="num">${s.up}</td><td class="num">${s.lo}</td></tr>`).join('')}</tbody>`;
-  Lab.chart('#st-ref-chart', { type: 'bar', yLabel: 'Stomata per mm²', xLabel: 'Plant', categories: STOM.map(s => s.name.replace('Kidney bean', 'Bean').replace('Black walnut', 'Walnut').replace('Nasturtium', 'Nastur.')), height: 300,
+  ref.innerHTML = `<thead><tr><th>Plant</th><th class="num">Upper epidermis <span class="unit">(stomata/mm²)</span></th><th class="num">Lower epidermis <span class="unit">(stomata/mm²)</span></th></tr></thead><tbody>${STOM.map(s => `<tr><td>${s.name}</td><td class="num">${s.up}</td><td class="num">${s.lo}</td></tr>`).join('')}</tbody>`;
+  Lab.chart('#st-ref-chart', { type: 'bar', yLabel: 'Stomatal density (stomata/mm²)', xLabel: 'Plant', categories: STOM.map(s => s.name.replace('Kidney bean', 'Bean').replace('Black walnut', 'Walnut').replace('Nasturtium', 'Nastur.')), height: 300,
     series: [{ name: 'Upper epidermis', points: STOM.map(s => ({ x: s.name, y: s.up })) }, { name: 'Lower epidermis', points: STOM.map(s => ({ x: s.name, y: s.lo })) }] });
   let st = { sp: 'bean', surf: 'lo', mag: 400, seed: 1, field: null };
   const FOV = { 100: 1.8, 400: 0.45 };
@@ -911,7 +921,7 @@
     if (regen) st.seed = Math.floor(rng.uniform() * 1e9);
     st.field = genField(); st.field.mag = st.mag;
     stView.setSpecimen({ render: peelRenderer(st.field), layers: [{ z: 0 }, { z: 0.07 }], seed: st.seed });
-    $('#st-tally').textContent = '0'; $('#st-area').textContent = fmt(st.field.A, 3) + ' mm²';
+    $('#st-tally').textContent = '0'; $('#st-area').textContent = fmt(st.field.A, 3);
     $('#st-fov').textContent = `Field of view diameter: ${FOV[st.mag]} mm`;
     const msg = $('#st-msg');
     if (st.mag === 100 && st.field.stomata.length > 60) { msg.textContent = 'Too many stomata to count reliably at 100X. Use low power to find a good area, then switch to 400X to count.'; msg.className = 'status warn'; }
@@ -924,7 +934,7 @@
   $('#st-move').addEventListener('click', () => newField());
   const stTable = Lab.table('#st-table', {
     save: 'st-table',
-    columns: [{ key: 'n', label: 'Field' }, { key: 'sp', label: 'Slide' }, { key: 'surf', label: 'Surface' }, { key: 'mag', label: 'Mag.' }, { key: 'count', label: 'Your count', num: true, digits: 0 }, { key: 'actual', label: 'Actual', num: true, digits: 0 }, { key: 'dens', label: 'This field', unit: 'per mm²', num: true, digits: 0 }],
+    columns: [{ key: 'n', label: 'Field' }, { key: 'sp', label: 'Slide' }, { key: 'surf', label: 'Surface' }, { key: 'mag', label: 'Mag.' }, { key: 'count', label: 'Your count', unit: 'stomata', num: true, digits: 0 }, { key: 'actual', label: 'Actual count', unit: 'stomata', num: true, digits: 0 }, { key: 'dens', label: 'Density in this field', unit: 'stomata/mm²', num: true, digits: 0 }],
     onChange: rows => { $('#st-n').textContent = String(rows.length); }
   });
   $('#st-record').addEventListener('click', () => {
@@ -1345,13 +1355,13 @@
   }
   const trTable = Lab.table('#tr-table', {
     save: 'tr-table',
-    columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'condTxt', label: 'Condition' }, { key: 'rate', label: 'Rate', num: true, digits: 4 }, { key: 'unit', label: 'Unit' }, { key: 'area', label: 'Leaf area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpaIn', label: 'Rate/area (you)', num: true, editable: true }, { key: 'rpaUnit', label: 'Rate/area unit' }],
+    columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'condTxt', label: 'Condition' }, { key: 'rate', label: 'Rate (slope)', unit: 'units depend on method', num: true, digits: 4 }, { key: 'unit', label: 'Unit' }, { key: 'area', label: 'Leaf area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpaIn', label: 'Rate/area (you)', unit: 'units depend on method', num: true, editable: true }, { key: 'rpaUnit', label: 'Rate/area unit' }],
     onChange: () => trSummary()
   });
   const trBar = Lab.chart('#tr-bar', { type: 'bar', xLabel: 'Condition', yLabel: 'Rate per area (scaled units)', height: 360, series: [] });
   const syncTr = () => { $('#tr-n-out').textContent = $('#tr-n').value; if (!trBusy) drawTrIdle(); };
   function drawTrIdle() { const m = $('#tr-method').value; drawApparatus(trCv, { method: m, sp: $('#tr-species').value, env: envFrom(COND[$('#tr-cond').value]), t: 0, reading: m === 'pot' ? 0 : m === 'press' ? 101.3 : null, frac: 0, label: '' }); setTrLabels(m); }
-  function setTrLabels(m) { $('#tr-k-time').textContent = m === 'whole' ? 'Day' : 'Time'; $('#tr-k-read').textContent = METH[m].read; trChart.update({ xLabel: m === 'whole' ? 'Time (days)' : 'Time (min)', yLabel: m === 'pot' ? 'Water taken up (mL)' : m === 'press' ? 'Pressure (kPa)' : 'Mass (g)' }); }
+  function setTrLabels(m) { $('#tr-k-time').textContent = m === 'whole' ? 'Time (days)' : 'Time (min)'; $('#tr-k-rate').textContent = 'Rate, slope (' + METH[m].unit + ')'; $('#tr-k-read').textContent = METH[m].read; trChart.update({ xLabel: m === 'whole' ? 'Time (days)' : 'Time (min)', yLabel: m === 'pot' ? 'Water taken up (mL)' : m === 'press' ? 'Pressure (kPa)' : 'Mass (g)' }); }
   $('#tr-n').addEventListener('input', syncTr);
   ['#tr-method', '#tr-cond', '#tr-species'].forEach(s => $(s).addEventListener('change', () => { if ($(s) === $('#tr-method')) { trSeries = []; trUpdate([]); } syncTr(); }));
   trCv.onresize = () => { if (!trBusy) drawTrIdle(); };
@@ -1365,19 +1375,19 @@
       const rows = trTable.getRows();
       trTable.addRow({ n: rows.length + 1, method, methodTxt: { pot: 'Potometer', press: 'Pressure', whole: 'Whole plant' }[method], sp, spTxt: SPP[sp].short, cond: ck, condTxt: COND[ck].label, rate: res.rate, unit: M.unit, area: Math.round(res.area), rpa: res.rate / Math.round(res.area) * M.mult, rpaIn: null, rpaUnit: M.rpaUnit });
     }
-    $('#tr-area').textContent = Math.round(last.area) + ' cm²';
+    $('#tr-area').textContent = Math.round(last.area);
     trBusy = true;
     const live = [];
     trSeries = trSeries.slice(-4);
     const name = `${COND[ck].label} (${SPP[sp].short})`;
     animateRun(trCv, method, env, last, { sp }, (tt, rd) => {
-      $('#tr-time').textContent = method === 'whole' ? fmt(tt, 1) + ' d' : fmt(tt, 0) + ' min';
-      $('#tr-read').textContent = fmt(rd, method === 'pot' ? 3 : method === 'press' ? 2 : 1) + (method === 'pot' ? ' mL' : method === 'press' ? ' kPa' : ' g');
+      $('#tr-time').textContent = method === 'whole' ? fmt(tt, 1) : fmt(tt, 0);
+      $('#tr-read').textContent = fmt(rd, method === 'pot' ? 3 : method === 'press' ? 2 : 1) ;
       const shown = last.pts.filter(p => p.x <= tt + 1e-9);
       if (shown.length !== live.length) { live.length = 0; live.push(...shown); trUpdate(trSeries.concat([{ name, points: live.slice(), line: true, fit: live.length > 2 ? 'linear' : false }])); }
     }, () => {
       trBusy = false; trSeries.push({ name, points: last.pts, line: true, dash: true, dots: false });
-      $('#tr-rate').textContent = fmt(last.rate, method === 'whole' ? 1 : 4) + ' ' + M.unit;
+      $('#tr-rate').textContent = fmt(last.rate, method === 'whole' ? 1 : 4);
     });
   });
   $('#tr-clear').addEventListener('click', () => { trTable.clear(); trSeries = []; trUpdate([]); $('#tr-check-msg').textContent = ''; });
@@ -1391,12 +1401,23 @@
     out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} still blank (not checked)` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: rate ÷ leaf area, then shift the decimal to match the unit.` : '.');
     out.className = 'status ' + (ok.length === rows.length ? 'ok' : 'bad');
   });
+  /* Column units that depend on the measuring method: show the unit the rows actually use. */
+  function unitHeads(sel, map, rows) {
+    const ths = document.querySelectorAll(sel + ' thead th');
+    Object.entries(map).forEach(([i, key]) => {
+      const u = ths[i] && ths[i].querySelector('.unit'); if (!u) return;
+      const set = [...new Set(rows.map(r => r[key]).filter(Boolean))];
+      u.textContent = '(' + (set.length === 1 ? set[0] : set.length ? 'units differ by method; see Unit column' : 'units depend on method') + ')';
+    });
+  }
   function trSummary() {
+    unitHeads('#tr-table', { 4: 'unit', 7: 'rpaUnit' }, trTable.getRows());
     const rows = trTable.getRows(); const groups = new Map();
     rows.forEach(r => { const k = `${r.method}|${r.sp}|${r.cond}`; if (!groups.has(k)) groups.set(k, { method: r.method, sp: r.sp, cond: r.cond, v: [], unit: r.rpaUnit, mt: r.methodTxt, st: r.spTxt, ct: r.condTxt }); groups.get(k).v.push(r.rpa); });
     const gs = [...groups.values()];
     gs.forEach(g => { const c = groups.get(`${g.method}|${g.sp}|control`); g.m = S.mean(g.v); g.se2 = g.v.length > 1 ? 2 * S.se(g.v) : 0; g.adj = c ? g.m - S.mean(c.v) : NaN; g.ctl = c; });
-    $('#tr-summary').innerHTML = gs.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Method</th><th>Plant</th><th>Condition</th><th class="num">n</th><th class="num">Mean rate/area</th><th class="num">±2 SE</th><th class="num">Adjusted (− control)</th><th class="num">t-test vs control</th><th>Unit</th></tr></thead><tbody>${gs.map(g => { const tt = g.ctl && g.cond !== 'control' ? welch(g.v, g.ctl.v) : null; return `<tr><td>${g.mt}</td><td>${g.st}</td><td>${g.ct}</td><td class="num">${g.v.length}</td><td class="num">${fmt(g.m, 3)}</td><td class="num">${g.v.length > 1 ? fmt(g.se2, 3) : '—'}</td><td class="num">${g.cond === 'control' ? '0 (control)' : isFinite(g.adj) ? fmt(g.adj, 3) : 'run a control'}</td><td class="num">${tt ? (tt.p < 0.001 ? 'p &lt; 0.001' : `p = ${fmt(tt.p, 3)}`) : '—'}</td><td>${Lab.esc(g.unit)}</td></tr>`; }).join('')}</tbody></table></div>${gs.some(g => g.v.length < 2) ? '<p class="small muted">A group with one plant has no SE and no t-test. Run at least 2 plants.</p>' : ''}` : '<p class="small muted">Run plants to fill the class table.</p>';
+    const uSet = [...new Set(gs.map(g => g.unit))], uTxt = uSet.length === 1 ? Lab.esc(uSet[0]) : 'units differ by method; see Unit column';
+    $('#tr-summary').innerHTML = gs.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Method</th><th>Plant</th><th>Condition</th><th class="num">n <span class="unit">(plants)</span></th><th class="num">Mean rate/area <span class="unit">(${uTxt})</span></th><th class="num">±2 SE <span class="unit">(${uTxt})</span></th><th class="num">Adjusted (− control) <span class="unit">(${uTxt})</span></th><th class="num">t-test vs control</th><th>Unit</th></tr></thead><tbody>${gs.map(g => { const tt = g.ctl && g.cond !== 'control' ? welch(g.v, g.ctl.v) : null; return `<tr><td>${g.mt}</td><td>${g.st}</td><td>${g.ct}</td><td class="num">${g.v.length}</td><td class="num">${fmt(g.m, 3)}</td><td class="num">${g.v.length > 1 ? fmt(g.se2, 3) : '—'}</td><td class="num">${g.cond === 'control' ? '0 (control)' : isFinite(g.adj) ? fmt(g.adj, 3) : 'run a control'}</td><td class="num">${tt ? (tt.p < 0.001 ? 'p &lt; 0.001' : `p = ${fmt(tt.p, 3)}`) : '—'}</td><td>${Lab.esc(g.unit)}</td></tr>`; }).join('')}</tbody></table></div>${gs.some(g => g.v.length < 2) ? '<p class="small muted">A group with one plant has no SE and no t-test. Run at least 2 plants.</p>' : ''}` : '<p class="small muted">Run plants to fill the class table.</p>';
     const meth = rows.length ? rows[rows.length - 1].method : 'pot', sp = rows.length ? rows[rows.length - 1].sp : null;
     const sel = gs.filter(g => g.method === meth && g.sp === sp);
     const order = ['control', 'fan', 'lamp', 'mist', 'dark'];
@@ -1419,6 +1440,8 @@
 
   /* ================= Design your own ================= */
   const plan = $('#d-plan');
+  Lab.prompt('#pred-stomata', { key: 'predict-stomata', label: 'Your prediction (with a reason)', rows: 2 });
+  Lab.prompt('#pred-water', { key: 'predict-water', label: 'Your prediction (with a reason)', rows: 2 });
   Lab.prompt(plan, { key: 'd-q', label: 'Essential question', rows: 2 });
   Lab.prompt(plan, { key: 'd-hyp', label: 'Hypothesis and prediction: which factor will have the greatest effect, and why?', rows: 3 });
   Lab.prompt(plan, { key: 'd-vars', label: 'Independent variable and levels; dependent variable and how you will measure it', rows: 3 });
@@ -1426,10 +1449,10 @@
   Lab.prompt(plan, { key: 'd-assume', label: 'Assumptions you are making. Can they be verified easily?', rows: 2 });
   Lab.prompt(plan, { key: 'd-meas', label: 'Will your measurements answer the question? How many replicates will you use?', rows: 2 });
   const dCv = Lab.canvas('#d-cv', 0.62, { fit: true });
-  const dChart = Lab.chart('#d-chart', { xLabel: 'Wind speed (m/s)', yLabel: 'Rate per area', series: [] });
+  const dChart = Lab.chart('#d-chart', { xLabel: 'Wind speed (m/s)', yLabel: 'Rate per area (units depend on method)', series: [] });
   const dTable = Lab.table('#d-table', {
     save: 'd-table',
-    columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'wind', label: 'Wind', unit: 'm/s', num: true, digits: 1 }, { key: 'light', label: 'Light', unit: 'PAR', num: true, digits: 0 }, { key: 'rh', label: 'RH', unit: '%', num: true, digits: 0 }, { key: 'temp', label: 'Temp', unit: '°C', num: true, digits: 0 }, { key: 'salt', label: 'NaCl', unit: 'M', num: true, digits: 2 }, { key: 'jelly', label: 'Jelly' }, { key: 'leaves', label: 'Leaves', unit: '%', num: true, digits: 0 }, { key: 'area', label: 'Area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpa', label: 'Rate/area', num: true, digits: 3 }, { key: 'rpaUnit', label: 'Unit' }],
+    columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'wind', label: 'Wind', unit: 'm/s', num: true, digits: 1 }, { key: 'light', label: 'Light (PAR)', unit: 'µmol·m⁻²·s⁻¹', num: true, digits: 0 }, { key: 'rh', label: 'RH', unit: '%', num: true, digits: 0 }, { key: 'temp', label: 'Temp', unit: '°C', num: true, digits: 0 }, { key: 'salt', label: 'NaCl', unit: 'M', num: true, digits: 2 }, { key: 'jelly', label: 'Jelly' }, { key: 'leaves', label: 'Leaves', unit: '%', num: true, digits: 0 }, { key: 'area', label: 'Area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpa', label: 'Rate/area', unit: 'units depend on method', num: true, digits: 3 }, { key: 'rpaUnit', label: 'Unit' }],
     onChange: () => dUpdate()
   });
   const dEnv = () => ({ wind: +$('#d-wind').value, par: +$('#d-light').value, rh: +$('#d-rh').value, temp: +$('#d-temp').value, salt: +$('#d-salt').value, jelly: $('#d-jelly').value, leaves: +$('#d-leaves').value, leafDT: +$('#d-light').value > 400 ? 3 * (+$('#d-light').value) / 1000 : 0 });
@@ -1438,7 +1461,7 @@
     $('#d-wind-out').textContent = e.wind + ' m/s'; $('#d-light-out').textContent = e.par + ' µmol·m⁻²·s⁻¹'; $('#d-rh-out').textContent = e.rh + ' %';
     $('#d-temp-out').textContent = e.temp + ' °C'; $('#d-salt-out').textContent = fmt(e.salt, 2) + ' M'; $('#d-leaves-out').textContent = e.leaves + ' %'; $('#d-n-out').textContent = $('#d-n').value;
     const fl = flux($('#d-species').value, e, 1);
-    $('#d-vpd').textContent = fmt(fl.vpd, 2) + ' kPa';
+    $('#d-vpd').textContent = fmt(fl.vpd, 2);
     drawApparatus(dCv, { method: $('#d-method').value, sp: $('#d-species').value, env: e, t: 0, reading: $('#d-method').value === 'pot' ? 0 : $('#d-method').value === 'press' ? 101.3 : null, frac: 0, leaves: e.leaves });
   }
   ['#d-wind', '#d-light', '#d-rh', '#d-temp', '#d-salt', '#d-leaves', '#d-n'].forEach(s => $(s).addEventListener('input', syncD));
@@ -1456,7 +1479,7 @@
       const rows = dTable.getRows();
       dTable.addRow({ n: rows.length + 1, method, methodTxt: { pot: 'Potometer', press: 'Pressure', whole: 'Whole plant' }[method], sp, spTxt: SPP[sp].short, wind: e.wind, light: e.par, rh: e.rh, temp: e.temp, salt: e.salt, jelly: e.jelly, leaves: e.leaves, area: res.area, rpa: res.rpa * M.mult, rpaUnit: M.rpaUnit });
     }
-    $('#d-last').textContent = fmt(S.mean(vals), 3);
+    $('#d-last').textContent = fmt(S.mean(vals), 3); $('#d-k-last').textContent = 'Last group mean rate/area (' + M.rpaUnit + ')';
     const msg = $('#d-msg');
     msg.textContent = mixed ? 'Careful: your table now mixes methods with different units. Compare only rows measured the same way (or clear the data).' : `${n} plants added.`;
     msg.className = 'status ' + (mixed ? 'warn' : 'ok');
@@ -1468,7 +1491,7 @@
   ['#t-a', '#t-b'].forEach(s => $(s).addEventListener('change', dTtest));
   let dGroups = [];
   function dUpdate() {
-    const rows = dTable.getRows(); $('#d-count').textContent = String(rows.length);
+    const rows = dTable.getRows(); unitHeads('#d-table', { 11: 'rpaUnit' }, rows); $('#d-count').textContent = String(rows.length);
     const by = $('#d-by').value, key = r => by === 'species' ? r.spTxt : r[by];
     const numeric = !['jelly', 'species'].includes(by);
     const m = new Map(); rows.forEach(r => { const k = key(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r.rpa); });
@@ -1476,7 +1499,7 @@
     dGroups = keys.map(k => { const v = m.get(k); return { k, v, n: v.length, mean: S.mean(v), sd: S.sd(v), se2: v.length > 1 ? 2 * S.se(v) : 0 }; });
     const lbl = { wind: 'Wind speed (m/s)', light: 'Light (µmol·m⁻²·s⁻¹)', rh: 'Relative humidity (%)', temp: 'Air temperature (°C)', salt: 'NaCl (M)', jelly: 'Petroleum jelly', leaves: 'Leaves left (%)', species: 'Plant species' }[by];
     const unit = rows.length ? rows[rows.length - 1].rpaUnit : 'scaled units';
-    $('#d-summary').innerHTML = dGroups.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>${lbl}</th><th class="num">n</th><th class="num">Mean rate/area</th><th class="num">SD</th><th class="num">±2 SE</th></tr></thead><tbody>${dGroups.map(g => `<tr><td>${Lab.esc(String(g.k))}</td><td class="num">${g.n}</td><td class="num">${fmt(g.mean, 3)}</td><td class="num">${fmt(g.sd, 3)}</td><td class="num">${g.n > 1 ? fmt(g.se2, 3) : '—'}</td></tr>`).join('')}</tbody></table></div><p class="small muted">Rate/area unit: ${Lab.esc(unit)}. Rows from every trial are grouped by the variable you choose, so change only one variable at a time.</p>` : '<p class="small muted">Run replicates to see group statistics.</p>';
+    $('#d-summary').innerHTML = dGroups.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>${lbl}</th><th class="num">n <span class="unit">(plants)</span></th><th class="num">Mean rate/area <span class="unit">(${Lab.esc(unit)})</span></th><th class="num">SD <span class="unit">(${Lab.esc(unit)})</span></th><th class="num">±2 SE <span class="unit">(${Lab.esc(unit)})</span></th></tr></thead><tbody>${dGroups.map(g => `<tr><td>${Lab.esc(String(g.k))}</td><td class="num">${g.n}</td><td class="num">${fmt(g.mean, 3)}</td><td class="num">${fmt(g.sd, 3)}</td><td class="num">${g.n > 1 ? fmt(g.se2, 3) : '—'}</td></tr>`).join('')}</tbody></table></div><p class="small muted">Rate/area unit: ${Lab.esc(unit)}. Rows from every trial are grouped by the variable you choose, so change only one variable at a time.</p>` : '<p class="small muted">Run replicates to see group statistics.</p>';
     if (numeric && dGroups.length) {
       const fitPts = rows.map(r => ({ x: key(r), y: r.rpa }));
       dChart.update({ type: 'xy', categories: null, xLabel: lbl, yLabel: `Rate/area (${unit})`, series: [{ name: 'Mean ± 2 SE', points: dGroups.map(g => ({ x: g.k, y: g.mean, err: g.se2 })), line: true }, { name: 'Individual plants (linear fit)', points: fitPts, line: false, fit: dGroups.length > 1 ? 'linear' : false }] });
@@ -1513,7 +1536,27 @@
   Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 3 }).querySelector('label').dataset.letter = 'C';
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
   Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
+  cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
+  /* Predict first: quote the student's own saved prediction(s) back in Reflect. */
+  function predRecall(host, items) {
+    const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
+    host.prepend(box);
+    const render = () => {
+      box.innerHTML = '';
+      items.forEach(([key, name]) => {
+        const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
+        box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
+          v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
+      });
+    };
+    render();
+    document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
+    Lab.onShow(host, render);
+  }
+  
   const ev = $('#evaluate-prompts');
+  predRecall(ev.parentElement, [['predict-stomata', 'stomatal density'], ['predict-water', 'transpiration conditions'], ['d-hyp', 'your own experiment']]);
+  Lab.prompt(ev, { key: 'ev-pred', label: 'Compare your three predictions (quoted above) with your data: stomata per mm² on each surface, the effect of each condition on transpiration, and your own experiment. Cite one number for each. Where were you wrong, and what does that tell you about how plants control water loss?', rows: 5 });
   [
     ['e1', '1. Was your hypothesis about the environmental variable supported by your data? Why or why not?'],
     ['e2', '2. What challenges did you have? Did you make any incorrect assumptions about how environmental variables affect transpiration?'],
@@ -1540,8 +1583,12 @@
     { id: 'three', text: 'Trace and record 3 leaves', target: '#la-new', done: () => laTable.getRows().length >= 3, hint: 'Press <strong>Trace a different leaf</strong>, count again and record.' },
     { id: 'qs', text: 'Answer the 3 questions (below)', target: '#p-s1a', done: () => ['s1a', 's1f', 's1cde'].every(filledP), hint: 'Scroll down and answer the three questions.' }
   ], { doneText: 'Leaf area done. Next, <a href="#stomata">count stomata</a>.' });
+  Lab.gate('#st-record', () => filledP('predict-stomata') || stTable.getRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-stomata' });
+  Lab.gate('#tr-run', () => filledP('predict-water') || trTable.getRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-water' });
+  Lab.gate('#d-run', () => filledP('d-hyp') || dTable.getRows().length > 0 ? '' : 'Write your prediction first (hypothesis and prediction above)', { show: '#p-d-hyp' });
   Lab.gate('#la-calc', () => filledNum('#la-full') && filledNum('#la-part') ? '' : 'Enter both counts first');
   Lab.steps('#st-steps', [
+    { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-stomata', done: () => filledP('predict-stomata'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the microscope.' },
     { id: 'mark', text: 'Focus, then mark every stoma', target: '#st-cv', done: () => stTable.getRows().length > 0 || tally() > 0, hint: 'Turn the fine focus until the guard cells are sharp, then click each stoma.' },
     { id: 'rec', text: 'Record this field', target: '#st-record', done: () => stTable.getRows().length > 0, hint: 'Press <strong>Record this field</strong>; a new field opens.' },
     { id: 'three', text: 'Record 3+ fields at 400X', target: '#st-move', done: () => stTable.getRows().filter(r => r.mag === '400X').length >= 3, hint: 'Use 400X for counting. Record at least three fields of the same slide and surface.' },
@@ -1549,6 +1596,7 @@
     { id: 'qs', text: 'Answer the 4 questions (below)', target: '#p-s2-draw', done: () => ['s2-draw', 's2-compare', 's1h', 's1g'].every(filledP), hint: 'Scroll down and answer the four questions.' }
   ], { doneText: 'Stomata done. Next, measure <a href="#water-loss">water loss</a>.' });
   Lab.steps('#tr-steps', [
+    { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-water', done: () => filledP('predict-water'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the apparatus.' },
     { id: 'ctl', text: 'Run the control plants', target: '#tr-run', done: () => trTable.getRows().some(r => r.cond === 'control'), hint: 'Leave Condition on <strong>Control</strong> and press <strong>Run</strong>.' },
     { id: 'trt', text: 'Run a treatment (fan, lamp...)', target: '#tr-cond', done: () => trTable.getRows().some(r => r.cond !== 'control'), hint: 'Choose another condition, then press <strong>Run</strong>.' },
     { id: 'rpa', text: 'Fill in rate ÷ leaf area', target: '#tr-table input', done: () => { const r = trTable.getRows(); return r.length > 0 && r.every(x => isNum(x.rpaIn)); }, hint: 'Open the <strong>Data</strong> tab and type rate ÷ leaf area for every plant.' },
