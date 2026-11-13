@@ -242,7 +242,7 @@
         <div class="stage">
           <canvas class="viz" id="card-canvas" aria-label="Each student shown as an index card on a desk with their two alleles written in marker. A is green, B is magenta."></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Generation (no.)</span><span class="v" id="card-gen">0</span></div>
+            <div class="readout"><span class="k">Generation</span><span class="v" id="card-gen">0</span></div>
             <div class="readout"><span class="k">AA · AB · BB (students)</span><span class="v" id="card-geno">—</span></div>
             <div class="readout"><span class="k">p (A) (frequency)</span><span class="v" id="card-p">—</span></div>
             <div class="readout"><span class="k">q (B) (frequency)</span><span class="v" id="card-q">—</span></div>
@@ -293,7 +293,7 @@
           <div class="readouts">
             <div class="readout"><span class="k">New p (frequency)</span><span class="v" id="ss-newp">—</span></div>
             <div class="readout"><span class="k">New q (frequency)</span><span class="v" id="ss-newq">—</span></div>
-            <div class="readout"><span class="k">χ² vs HW, df = 1 (no units)</span><span class="v" id="ss-chi">—</span></div>
+            <div class="readout"><span class="k">χ² vs HW, df = 1</span><span class="v" id="ss-chi">—</span></div>
             <div class="readout"><span class="k">Fits HW? (crit 3.84)</span><span class="v" id="ss-fit">—</span></div>
           </div>
           <div id="ss-chart"></div>
@@ -409,11 +409,14 @@
       <h3>Chi-square test for Hardy-Weinberg proportions</h3>
       <p class="muted small">Enter genotype counts from your model, a card simulation, or real data (for example, a class taste test where the intermediate phenotype marks heterozygotes).</p>
       <div class="calc">
-        <div class="field"><label for="cs-aa">AA observed (count)</label><input id="cs-aa" type="number" min="0" step="1" value="38"></div>
-        <div class="field"><label for="cs-ab">AB observed (count)</label><input id="cs-ab" type="number" min="0" step="1" value="36"></div>
-        <div class="field"><label for="cs-bb">BB observed (count)</label><input id="cs-bb" type="number" min="0" step="1" value="26"></div>
+        <div class="field"><label for="cs-aa">AA observed (count)</label><input id="cs-aa" type="number" min="0" step="1" placeholder="e.g. 19"></div>
+        <div class="field"><label for="cs-ab">AB observed (count)</label><input id="cs-ab" type="number" min="0" step="1" placeholder="e.g. 53"></div>
+        <div class="field"><label for="cs-bb">BB observed (count)</label><input id="cs-bb" type="number" min="0" step="1" placeholder="e.g. 28"></div>
         <button class="btn btn--primary" id="cs-run" type="button">Calculate χ²</button>
+        <button class="btn" id="cs-mine" type="button">Use my data (latest spreadsheet run)</button>
+        <button class="btn btn--ghost" id="cs-example" type="button">Show a worked example</button>
       </div>
+      <p class="callout callout--tip" id="cs-banner" hidden style="margin:8px 0"><strong>EXAMPLE — not your data.</strong> Sample counts 19 / 53 / 28. <button class="btn btn--sm" id="cs-clear-ex" type="button">Clear example</button></p>
       <div id="cs-out"></div>
       <p class="status" id="cs-status" aria-live="polite"></p>
       <h3>Questions</h3>
@@ -718,21 +721,23 @@ const Predict = (function () {
   const cardN = $('#card-n'); cardN.value = 2 * SR.int(10, 15);
   $('#ss-p').value = (0.3 + 0.05 * SR.int(0, 8)).toFixed(2);
   $('#mg-p').value = (0.3 + 0.05 * SR.int(0, 8)).toFixed(2);
-  { const p = SU(0.38, 0.62), N = 100, e = [p * p * N, 2 * p * (1 - p) * N, (1 - p) * (1 - p) * N], c = e.map(x => Math.max(1, Math.round(x + SR.normal(0, 3))));
-    c[1] = Math.max(1, N - c[0] - c[2]); ['#cs-aa', '#cs-ab', '#cs-bb'].forEach((id, i) => { $(id).value = c[i]; }); }
   const cardTable = Lab.table('#card-table', {
     save: 'cards',
-    columns: [{ key: 'cs', label: 'Case' }, { key: 'gen', label: 'Generation', unit: 'no.', num: true, digits: 0 }, { key: 'aa', label: 'AA', unit: 'students', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'students', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'students', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }]
+    columns: [{ key: 'cs', label: 'Case' }, { key: 'gen', label: 'Generation', num: true, digits: 0 }, { key: 'aa', label: 'AA', unit: 'students', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'students', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'students', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }]
   });
-  const cardChart = Lab.chart('#card-chart', { xLabel: 'Generation (no.)', yLabel: 'Frequency of A, p (no units)', yMin: 0, yMax: 1, xMin: 0, series: [], hLines: [{ y: 0.5, label: 'starting p' }], height: 260 });
+  const cardChart = Lab.chart('#card-chart', { xLabel: 'Generation', yLabel: 'Frequency of A, p', yMin: 0, yMax: 1, xMin: 0, series: [], hLines: [{ y: 0.5, label: 'starting p' }], height: 260 });
   const countG = pop => { let aa = 0, ab = 0, bb = 0; pop.forEach(g => { const s = g[0] + g[1]; s === 2 ? aa++ : s === 1 ? ab++ : bb++; }); return { aa, ab, bb, p: pop.length ? (2 * aa + ab) / (2 * pop.length) : NaN }; };
-  function cardReset() {
+  /* The card class is deterministic given its own seed, so it is saved compactly and replayed on load (store key 'cardsim'). */
+  let crng = Lab.rng(1), cardSeed = 1, cardReplay = false;
+  function saveCard() { if (!cardReplay) Lab.store.set('cardsim', { cs: +$('#card-case').value, n: +cardN.value, seed: cardSeed, gen: cardGen }); }
+  function cardReset(seedN) {
+    cardSeed = typeof seedN === 'number' ? seedN : Math.floor(Math.random() * 1e9); crng = Lab.rng(cardSeed);
     const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGen = 0; cardHist = [];
     const cs = +$('#card-case').value;
     cardGroups = [];
-    if (cs === 4) { const sizes = []; let left = n; while (left > 0) { let s = left <= 6 ? left : rng.int(4, 6); if (left - s > 0 && left - s < 4) s = left - 4 >= 4 ? left - 4 : left; sizes.push(s); left -= s; } let i = 0; sizes.forEach(s => { cardGroups.push(Array.from({ length: s }, (_, k) => i + k)); i += s; }); }
+    if (cs === 4) { const sizes = []; let left = n; while (left > 0) { let s = left <= 6 ? left : crng.int(4, 6); if (left - s > 0 && left - s < 4) s = left - 4 >= 4 ? left - 4 : left; sizes.push(s); left -= s; } let i = 0; sizes.forEach(s => { cardGroups.push(Array.from({ length: s }, (_, k) => i + k)); i += s; }); }
     else cardGroups = [cardPop.map((_, i) => i)];
-    cardBaseLogged = false; recordCardGen(false); renderCards(); status('#card-status', 'Everyone starts as AB, so p = q = 0.5.', '');
+    cardBaseLogged = false; recordCardGen(false); renderCards(); status('#card-status', 'Everyone starts as AB, so p = q = 0.5.', ''); saveCard();
   }
   /* The generation-0 starting row is setup, not student work: it is written to the data table only when the student
      mates the first generation, so a fresh page (or a Reset / case change) leaves the saved table empty and the
@@ -741,27 +746,27 @@ const Predict = (function () {
   function recordCardGen(toTable = true) {
     const c = countG(cardPop), groups = cardGroups.map(g => countG(g.map(i => cardPop[i])).p);
     cardHist.push({ gen: cardGen, p: c.p, groups });
-    if (!toTable) return;
+    if (!toTable || cardReplay) return;
     cardTable.addRow({ cs: ['I', 'II', 'III', 'IV'][+$('#card-case').value - 1], gen: cardGen, aa: c.aa, ab: c.ab, bb: c.bb, p: c.p, q: 1 - c.p });
   }
   function cardGeneration() {
     const cs = +$('#card-case').value, next = cardPop.slice();
-    if (cardGen === 0 && !cardBaseLogged) { const c0 = countG(cardPop); cardTable.addRow({ cs: ['I', 'II', 'III', 'IV'][cs - 1], gen: 0, aa: c0.aa, ab: c0.ab, bb: c0.bb, p: c0.p, q: 1 - c0.p }); }
+    if (cardGen === 0 && !cardBaseLogged && !cardReplay) { const c0 = countG(cardPop); cardTable.addRow({ cs: ['I', 'II', 'III', 'IV'][cs - 1], gen: 0, aa: c0.aa, ab: c0.ab, bb: c0.bb, p: c0.p, q: 1 - c0.p }); }
     cardBaseLogged = true;
-    const survives = g => { const s = g[0] + g[1]; if ((cs === 2 || cs === 3) && s === 0) return false; if (cs === 3 && s === 2) return rng.chance(0.5); return true; };
+    const survives = g => { const s = g[0] + g[1]; if ((cs === 2 || cs === 3) && s === 0) return false; if (cs === 3 && s === 2) return crng.chance(0.5); return true; };
     cardGroups.forEach(group => {
-      const order = rng.shuffle(group);
+      const order = crng.shuffle(group);
       for (let k = 0; k + 1 < order.length; k += 2) {
         const a = cardPop[order[k]], b = cardPop[order[k + 1]];
         for (const who of [order[k], order[k + 1]]) {
           let child, tries = 0;
-          do { child = [rng.pick(a), rng.pick(b)]; tries++; } while (!survives(child) && tries < 50);
+          do { child = [crng.pick(a), crng.pick(b)]; tries++; } while (!survives(child) && tries < 50);
           next[who] = child;
         }
       }
-      if (order.length % 2) { const odd = order[order.length - 1], mate = cardPop[order[0]]; let child, t = 0; do { child = [rng.pick(cardPop[odd]), rng.pick(mate)]; t++; } while (!survives(child) && t < 50); next[odd] = child; }
+      if (order.length % 2) { const odd = order[order.length - 1], mate = cardPop[order[0]]; let child, t = 0; do { child = [crng.pick(cardPop[odd]), crng.pick(mate)]; t++; } while (!survives(child) && t < 50); next[odd] = child; }
     });
-    cardPop = next; cardGen++; recordCardGen();
+    cardPop = next; cardGen++; recordCardGen(); saveCard();
   }
   function renderCards() {
     const c = cardCanvas.ctx, W = cardCanvas.w, H = cardCanvas.h, n = cardPop.length;
@@ -803,14 +808,20 @@ const Predict = (function () {
   // start without adding duplicate rows when the saved table already has data
   // older versions wrote the generation-0 starting row on page load; a table holding only that row has no student work
   if (cardTable.getRows().length && cardTable.getRows().every(r => r.gen === 0)) cardTable.setRows([]);
-  if (!cardTable.getRows().length) cardReset(); else (function initCards() { const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGroups = [cardPop.map((_, i) => i)]; cardHist = [{ gen: 0, p: 0.5, groups: [0.5] }]; renderCards(); })();
+  { const sv = Lab.store.get('cardsim');
+    if (sv && sv.gen > 0 && cardTable.getRows().length && [1, 2, 3, 4].includes(sv.cs)) {
+      cardN.value = sv.n; $('#card-n-out').textContent = cardN.value + ' students'; $('#card-case').value = String(sv.cs);
+      cardReplay = true; cardReset(sv.seed); for (let i = 0; i < sv.gen; i++) cardGeneration(); cardReplay = false; cardBaseLogged = true; renderCards();
+      status('#card-status', `Restored: generation ${cardGen}, p = ${fmt(countG(cardPop).p, 3)}.`, '');
+    } else if (!cardTable.getRows().length) cardReset(); else (function initCards() { const n = +cardN.value; cardPop = Array.from({ length: n }, () => [1, 0]); cardGroups = [cardPop.map((_, i) => i)]; cardHist = [{ gen: 0, p: 0.5, groups: [0.5] }]; renderCards(); })();
+  }
   Lab.prompt('#card-prompts', { key: 'card-compare', label: 'Compare Case I with Cases II–IV. In which case did p change the most, and why? In Case I, did p stay at exactly 0.5? Explain why or why not.', rows: 4 });
 
   /* ================= SPREADSHEET MODEL (one generation) ================= */
   let ssRows = [];
   const ssTable = Lab.table('#ss-table', {
     save: 'ss-runs',
-    columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'n', label: 'Zygotes N', unit: 'zygotes', num: true, digits: 0 }, { key: 'p0', label: 'p (D2)', unit: 'frequency', num: true, digits: 2 }, { key: 'aa', label: 'AA', unit: 'zygotes', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'zygotes', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'zygotes', num: true, digits: 0 }, { key: 'p1', label: 'New p', unit: 'frequency', num: true, digits: 3 }, { key: 'dp', label: 'Δp', unit: 'frequency', num: true, digits: 3 }, { key: 'chi', label: 'χ²', unit: 'no units', num: true, digits: 2 }]
+    columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'n', label: 'Zygotes N', unit: 'zygotes', num: true, digits: 0 }, { key: 'p0', label: 'p (D2)', unit: 'frequency', num: true, digits: 2 }, { key: 'aa', label: 'AA', unit: 'zygotes', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'zygotes', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'zygotes', num: true, digits: 0 }, { key: 'p1', label: 'New p', unit: 'frequency', num: true, digits: 3 }, { key: 'dp', label: 'Δp', unit: 'frequency', num: true, digits: 3 }, { key: 'chi', label: 'χ²', num: true, digits: 2 }]
   });
   const ssChart = Lab.chart('#ss-chart', { type: 'bar', xLabel: 'Zygote genotype', yLabel: 'Zygotes (count)', categories: ['AA', 'AB', 'BB'], series: [], height: 250 });
   let ssLast = null;
@@ -822,10 +833,11 @@ const Predict = (function () {
     return { p, exp, terms, chi2: S.sum(terms) };
   }
   const SS_RULES = () => [{ el: $('#ss-p'), name: 'p (frequency of A)', min: 0, max: 1 }, { el: $('#ss-n'), name: 'the number of zygotes', min: 1, max: 2000, int: true }];
-  function ssRecalc() {
+  function ssRecalc(seedN) {
     if (!checkFields(SS_RULES())) return false; // report the problem; keep the previous run on screen
     const p = parseFloat($('#ss-p').value), n = parseInt($('#ss-n').value, 10);
-    ssRows = []; for (let i = 0; i < n; i++) { const e = rng.uniform() <= p ? 'A' : 'B', f = rng.uniform() <= p ? 'A' : 'B'; ssRows.push([e, f]); }
+    seedN = typeof seedN === 'number' ? seedN : Math.floor(Math.random() * 1e9); const sr = Lab.rng(seedN); Lab.store.set('ss-last', { p, n, seed: seedN, ps: $('#ss-p').value, ns: $('#ss-n').value });
+    ssRows = []; for (let i = 0; i < n; i++) { const e = sr.uniform() <= p ? 'A' : 'B', f = sr.uniform() <= p ? 'A' : 'B'; ssRows.push([e, f]); }
     let aa = 0, ab = 0, bb = 0; ssRows.forEach(([e, f]) => { const z = e + f; z === 'AA' ? aa++ : z === 'BB' ? bb++ : ab++; });
     const newp = (2 * aa + ab) / (2 * n), hw = hwChi(aa, ab, bb);
     ssLast = { n, p, aa, ab, bb, newp, chi: hw.degenerate ? NaN : hw.chi2 };
@@ -886,7 +898,7 @@ const Predict = (function () {
     ssTable.addRow({ run: ssTable.getRows().length + 1, n: L.n, p0: L.p, aa: L.aa, ab: L.ab, bb: L.bb, p1: L.newp, dp: L.newp - L.p, chi: L.chi });
     status('#ss-status', 'Run recorded. Record several runs at each population size to compare how much p changes.', 'ok');
   });
-  ssRecalc();
+  { const sv = Lab.store.get('ss-last'); if (sv && isFinite(sv.p) && isFinite(sv.n)) { $('#ss-p').value = sv.ps != null ? sv.ps : sv.p; $('#ss-n').value = sv.ns != null ? sv.ns : sv.n; ssRecalc(sv.seed); status('#ss-status', 'Your last spreadsheet run was restored.', ''); } else ssRecalc(); }
   [
     ['ss-rand', 'Recalculate 10–20 times with p = 0.5, then with p = 0.8 or 0.9. Do the gamete cells come up A and B in the ratio you expect? Describe how you checked that the model works.'],
     ['ss-english', 'Translate the formula in I5, <code>=IF(G5="AB",1,(IF(G5="BA",1,0)))</code>, into plain English. Why does it need to check for both AB and BA?'],
@@ -1066,8 +1078,8 @@ const Predict = (function () {
     c.stroke(); c.setLineDash([]);
     c.fillStyle = mut; c.font = `11px ${font()}`; c.textAlign = 'right'; c.textBaseline = 'top'; c.fillText('dashed = expected (infinite N)', x1, y0 + 2);
   }
-  const mgTable = Lab.table('#mg-table', { columns: [{ key: 'g', label: 'Gen', unit: 'no.', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }, { key: 'aa', label: 'AA', unit: 'zygotes', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'zygotes', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'zygotes', num: true, digits: 0 }, { key: 'chi', label: 'χ² vs HW', unit: 'no units', num: true, digits: 2 }, { key: 'fit', label: 'HW proportions?' }] });
-  const mgRuns = Lab.table('#mg-runs', { save: 'mg-runs', columns: [{ key: 'run', label: 'Run', unit: 'no.', num: true, digits: 0 }, { key: 'set', label: 'Settings' }, { key: 'mean', label: 'Mean final p', unit: 'frequency', num: true, digits: 3 }, { key: 'sd', label: 'SD', unit: 'frequency', num: true, digits: 3 }, { key: 'fix', label: 'Fixed', unit: 'populations', num: true, digits: 0 }, { key: 'lost', label: 'Lost', unit: 'populations', num: true, digits: 0 }, { key: 'exp', label: 'Expected p', unit: 'frequency', num: true, digits: 3 }] });
+  const mgTable = Lab.table('#mg-table', { columns: [{ key: 'g', label: 'Gen', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }, { key: 'aa', label: 'AA', unit: 'zygotes', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'zygotes', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'zygotes', num: true, digits: 0 }, { key: 'chi', label: 'χ² vs HW', num: true, digits: 2 }, { key: 'fit', label: 'HW proportions?' }] });
+  const mgRuns = Lab.table('#mg-runs', { save: 'mg-runs', columns: [{ key: 'run', label: 'Run', num: true, digits: 0 }, { key: 'set', label: 'Settings' }, { key: 'mean', label: 'Mean final p', unit: 'frequency', num: true, digits: 3 }, { key: 'sd', label: 'SD', unit: 'frequency', num: true, digits: 3 }, { key: 'fix', label: 'Fixed', unit: 'populations', num: true, digits: 0 }, { key: 'lost', label: 'Lost', unit: 'populations', num: true, digits: 0 }, { key: 'exp', label: 'Expected p', unit: 'frequency', num: true, digits: 3 }] });
   function settingsText(P) {
     const parts = [P.drift ? `N=${P.N}` : 'N=∞', `p₀=${fmt(P.p0, 2)}`, `${P.G} gens`];
     if (P.w.some(x => x < 1)) parts.push(`w=${P.w.map(x => fmt(x, 2)).join('/')}`);
@@ -1098,7 +1110,7 @@ const Predict = (function () {
   $('#mg-run').addEventListener('click', () => {
     const P = getParams();
     if (!P) { status('#mg-status', 'The model was not run: fix the highlighted entries (selection, mutation or migration settings), then press Run model again.', 'bad'); return; }
-    mgRes = simulate(P, rng); mgShown = 0;
+    const seedN = Math.floor(Math.random() * 1e9); mgRes = simulate(P, Lab.rng(seedN)); mgShown = 0; mgSave(seedN);
     if (Lab.reducedMotion()) { mgShown = P.G; drawMG(); finishMG(); } else { status('#mg-status', 'Running…', ''); mgLoop.start(); }
   });
   $('#mg-record').addEventListener('click', () => {
@@ -1108,7 +1120,17 @@ const Predict = (function () {
     status('#mg-status', 'Run recorded.', 'ok');
   });
   mgCanvas.onresize = drawMG;
-  mgRes = simulate(getParams(), rng); mgShown = mgRes.P.G; drawMG(); finishMG(); status('#mg-status', 'Showing a starting run: 10 populations of 100 with drift only. Change the settings and press Run model.', '');
+  /* The last run is saved as the control settings plus a seed and replayed on load (store key 'mglast'); a run that was
+     mid-animation comes back finished. */
+  function mgSave(seedN) { const snap = {}; Lab.$$('#mg-sim input, #mg-sim select').forEach(e => { if (e.id) snap[e.id] = e.type === 'checkbox' ? e.checked : e.value; }); Lab.store.set('mglast', { snap, seed: seedN }); }
+  function mgRestore() {
+    const sv = Lab.store.get('mglast'); if (!sv || !sv.snap) return false;
+    Object.keys(sv.snap).forEach(id => { const e = document.getElementById(id); if (!e) return; if (e.type === 'checkbox') e.checked = !!sv.snap[id]; else e.value = sv.snap[id]; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); });
+    const P = getParams(); if (!P) return false;
+    mgRes = simulate(P, Lab.rng(sv.seed)); mgShown = mgRes.P.G; drawMG(); finishMG();
+    status('#mg-status', 'Your last run was restored (' + mgRes.P.G + ' generations).', ''); return true;
+  }
+  if (!mgRestore()) { mgRes = simulate(getParams(), Lab.rng(0x5eed2)); mgShown = mgRes.P.G; drawMG(); finishMG(); status('#mg-status', 'Showing a starting run: 10 populations of 100 with drift only. Change the settings and press Run model.', ''); }
   [
     ['mg-size', 'Compare runs with N = 10, 100 and 1000 (drift only). How does population size affect the spread of p among populations and the number that lose or fix an allele?'],
     ['mg-predict', 'In the absence of random events (drift off), do allele frequencies change from generation to generation? How does that compare with a small population that has random gamete selection? Is the result predictable?'],
@@ -1121,10 +1143,10 @@ const Predict = (function () {
   Lab.prompt('#dz-q', { key: 'dz-hypothesis', label: 'Hypothesis and prediction. What will you vary, what will you hold constant, how many replicates will you run, and what will you measure?', rows: 3 });
   const dzReps = $('#dz-reps'); const dzSync = () => $('#dz-reps-out').textContent = dzReps.value; dzReps.addEventListener('input', dzSync); dzSync();
   const DZ_DEF = { N: '10, 50, 200, 1000', p0: '0.1, 0.3, 0.5, 0.7, 0.9', wbb: '1, 0.9, 0.7, 0.5, 0', wab: '0.8, 0.9, 1', mu: '0, 0.001, 0.01, 0.05', m: '0, 0.01, 0.05, 0.2' };
-  const DZ_LABEL = { N: 'Population size N (zygotes)', p0: 'Starting p (frequency)', wbb: 'Fitness of BB (relative, no units)', wab: 'Fitness of AB (relative, no units)', mu: 'Mutation rate μ, A→B (per generation)', m: 'Migration rate m (fraction per generation)' };
+  const DZ_LABEL = { N: 'Population size N (zygotes)', p0: 'Starting p (frequency)', wbb: 'Fitness of BB (relative)', wab: 'Fitness of AB (relative)', mu: 'Mutation rate μ, A→B (per generation)', m: 'Migration rate m (fraction per generation)' };
   $('#dz-iv').addEventListener('change', () => { $('#dz-levels').value = DZ_DEF[$('#dz-iv').value]; fieldError($('#dz-levels'), ''); });
   const dzChart = Lab.chart('#dz-chart', { xLabel: 'Independent variable', yLabel: 'Response', series: [], height: 300 });
-  const dzTable = Lab.table('#dz-table', { save: 'dz', toast: false, columns: [{ key: 'exp', label: 'Experiment', unit: 'no.', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', unit: 'populations', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
+  const dzTable = Lab.table('#dz-table', { save: 'dz', toast: false, columns: [{ key: 'exp', label: 'Experiment', num: true, digits: 0 }, { key: 'iv', label: 'Variable' }, { key: 'level', label: 'Level', num: true, digits: 3 }, { key: 'reps', label: 'Reps', unit: 'populations', num: true, digits: 0 }, { key: 'dv', label: 'Response' }, { key: 'val', label: 'Mean', num: true, digits: 3 }, { key: 'se2', label: '±2 SE', num: true, digits: 3 }, { key: 'base', label: 'Other settings' }] });
   let dzExp = dzTable.getRows().reduce((m, r) => Math.max(m, r.exp || 0), 0);
   /* Levels: every entry must be a number inside the variable's allowed range (no silent clamping or dropping). Returns the
      list, or null after putting a message under the field. */
@@ -1147,6 +1169,20 @@ const Predict = (function () {
     fieldError(el, ''); return nums;
   }
   $('#dz-levels').addEventListener('input', () => { fieldError($('#dz-levels'), ''); });
+  function dzDraw(exp, iv, dv, pts) {
+    const yl = { p: 'Final p (frequency; mean ± 2 SE)', het: 'Final heterozygosity 2pq (± 2 SE)', lost: 'Populations that lost or fixed A (%)' }[dv];
+    dzChart.update({ xLabel: DZ_LABEL[iv], yLabel: yl, yMin: 0, yMax: dv === 'lost' ? 100 : dv === 'het' ? 0.5 : 1, xMin: iv === 'N' ? 0 : undefined, series: [{ name: `Experiment ${exp}`, points: pts }] });
+  }
+  /* After a reload, the last experiment's chart is rebuilt from its saved table rows and its settings are put back. */
+  { const sv = Lab.store.get('dzlast');
+    if (sv && DZ_RANGE[sv.iv]) {
+      const rows = dzTable.getRows().filter(r => r.exp === sv.exp && r.val != null);
+      if (rows.length) {
+        $('#dz-iv').value = sv.iv; $('#dz-levels').value = sv.levels; $('#dz-dv').value = sv.dv; dzReps.value = sv.reps; dzSync();
+        dzDraw(sv.exp, sv.iv, sv.dv, rows.map(r => ({ x: r.level, y: r.val, err: r.se2 || 0 }))); $('#dz-note').textContent = sv.note || '';
+        status('#dz-status', `Experiment ${sv.exp} restored.`, '');
+      }
+    } }
   $('#dz-run').addEventListener('click', () => {
     const iv = $('#dz-iv').value, dv = $('#dz-dv').value, reps = +dzReps.value;
     const levels = dzParseLevels(iv);
@@ -1168,12 +1204,12 @@ const Predict = (function () {
       rows.push({ exp: dzExp, iv: DZ_LABEL[iv], level: L, reps: vals.length, dv: { p: 'final p', het: 'final 2pq', lost: '% lost or fixed' }[dv], val: m, se2: dv === 'lost' ? null : e, base: settingsText(P) });
     });
     dzTable.setRows(dzTable.getRows().concat(rows));
-    const yl = { p: 'Final p (frequency, no units; mean ± 2 SE)', het: 'Final heterozygosity 2pq (no units; ± 2 SE)', lost: 'Populations that lost or fixed A (%)' }[dv];
-    dzChart.update({ xLabel: DZ_LABEL[iv], yLabel: yl, yMin: 0, yMax: dv === 'lost' ? 100 : dv === 'het' ? 0.5 : 1, xMin: iv === 'N' ? 0 : undefined, series: [{ name: `Experiment ${dzExp}`, points: pts }] });
+    dzDraw(dzExp, iv, dv, pts);
     $('#dz-note').textContent = `Each point: ${base.drift ? reps : 1} population${base.drift && reps > 1 ? 's' : ''} run for ${base.G} generations. ${base.drift ? '' : 'Drift is off, so there is no variation between replicates.'}`;
+    Lab.store.set('dzlast', { exp: dzExp, iv, dv, reps, levels: $('#dz-levels').value, note: $('#dz-note').textContent });
     status('#dz-status', `Experiment ${dzExp} finished (${levels.length} levels).`, 'ok');
   });
-  $('#dz-clear').addEventListener('click', () => { dzTable.clear(); dzExp = 0; dzChart.update({ series: [] }); status('#dz-status', 'Results cleared.', ''); });
+  $('#dz-clear').addEventListener('click', () => { dzTable.clear(); dzExp = 0; Lab.store.set('dzlast', null); dzChart.update({ series: [] }); status('#dz-status', 'Results cleared.', ''); });
   [
     ['dz-results', 'Describe your graph. How did the response change across the levels of your independent variable? Do the ±2 SE error bars overlap?'],
     ['dz-conclude', 'Do your results support your hypothesis? Explain the biological reason for the pattern you found.'],
@@ -1181,8 +1217,9 @@ const Predict = (function () {
   ].forEach(([key, label]) => Lab.prompt('#dz-a', { key, label, rows: 3 }));
 
   /* ================= ANALYZE ================= */
-  const csTable = Lab.table('#cs-out', { columns: [{ key: 'g', label: 'Genotype' }, { key: 'o', label: 'Observed (o)', unit: 'count', num: true, digits: 0 }, { key: 'e', label: 'Expected (e)', unit: 'count', num: true, digits: 2 }, { key: 't', label: '(o − e)² / e', unit: 'no units', num: true, digits: 3 }], footer: rows => ['Total', S.sum(rows.map(r => r.o)), fmt(S.sum(rows.map(r => r.e)), 2), fmt(S.sum(rows.map(r => r.t)), 3)] });
-  function runChi() {
+  const csTable = Lab.table('#cs-out', { columns: [{ key: 'g', label: 'Genotype' }, { key: 'o', label: 'Observed (o)', unit: 'count', num: true, digits: 0 }, { key: 'e', label: 'Expected (e)', unit: 'count', num: true, digits: 2 }, { key: 't', label: '(o − e)² / e', num: true, digits: 3 }], footer: rows => ['Total', S.sum(rows.map(r => r.o)), fmt(S.sum(rows.map(r => r.e)), 2), fmt(S.sum(rows.map(r => r.t)), 3)] });
+  function runChi(mode) {
+    mode = typeof mode === 'string' ? mode : ($('#cs-banner').hidden ? 'run' : 'example'); // 'run' | 'example' | 'restore'
     const CS = [['#cs-aa', 'the AA count'], ['#cs-ab', 'the AB count'], ['#cs-bb', 'the BB count']].map(([id, name]) => ({ el: $(id), name, min: 0, int: true }));
     if (!checkFields(CS)) { csTable.setRows([]); status('#cs-status', 'No χ² calculated: counts must be whole numbers of 0 or more. Fix the highlighted entries.', 'bad'); return; }
     const v = CS.map(r => Number(r.el.value));
@@ -1190,10 +1227,22 @@ const Predict = (function () {
     if (!h || h.degenerate) { csTable.setRows([]); status('#cs-status', v.some(x => x > 0) ? 'No χ² calculated: only one allele is present (the expected count for a genotype would be 0, so the test can\'t be done). Enter counts that include both A and B.' : 'No χ² calculated: enter at least one observed count above 0.', 'bad'); return; }
     csTable.setRows(['AA (p²N)', 'AB (2pqN)', 'BB (q²N)'].map((g, i) => ({ g, o: v[i], e: h.exp[i], t: h.terms[i] })));
     const ok = h.chi2 <= 3.84;
-    status('#cs-status', `p = ${fmt(h.p, 3)}, q = ${fmt(1 - h.p, 3)}. χ² = ${fmt(h.chi2, 2)} with df = 1 (critical value 3.84 at p = 0.05). ${ok ? 'Fail to reject the null hypothesis: the genotypes fit Hardy-Weinberg proportions.' : 'Reject the null hypothesis: the genotypes do not fit Hardy-Weinberg proportions, so something other than chance is likely acting.'}`, ok ? 'ok' : 'warn');
+    if (mode === 'run') Lab.store.set('chi', { v: CS.map(r => r.el.value) });
+    status('#cs-status', `${mode === 'example' ? 'EXAMPLE (not your data). ' : ''}p = ${fmt(h.p, 3)}, q = ${fmt(1 - h.p, 3)}. χ² = ${fmt(h.chi2, 2)} with df = 1 (critical value 3.84 at p = 0.05). ${ok ? 'Fail to reject the null hypothesis: the genotypes fit Hardy-Weinberg proportions.' : 'Reject the null hypothesis: the genotypes do not fit Hardy-Weinberg proportions, so something other than chance is likely acting.'}`, ok ? 'ok' : 'warn');
   }
-  $('#cs-run').addEventListener('click', runChi); runChi();
-  $('#cs-run').addEventListener('click', () => { const v = ['#cs-aa', '#cs-ab', '#cs-bb'].map(id => Number($(id).value)); if (v.some(x => !isFinite(x) || x < 0)) return; const h = hwChi(...v); if (h && !h.degenerate) Own.key('chi2-hw', { label: 'Hardy-Weinberg χ² (df = 1)', value: +fmt(h.chi2, 2), unit: '', part: 'Analyze' }); });
+  $('#cs-run').addEventListener('click', runChi);
+  const CSIDS = ['#cs-aa', '#cs-ab', '#cs-bb'];
+  function chiClear() { CSIDS.forEach(id => { $(id).value = ''; fieldError($(id), ''); }); csTable.setRows([]); status('#cs-status', '', ''); $('#cs-banner').hidden = true; }
+  $('#cs-example').addEventListener('click', () => { [19, 53, 28].forEach((v, i) => { $(CSIDS[i]).value = v; }); $('#cs-banner').hidden = false; runChi('example'); });
+  $('#cs-clear-ex').addEventListener('click', chiClear);
+  $('#cs-mine').addEventListener('click', () => { if (!ssLast) { status('#cs-status', 'Run the spreadsheet model (Build the model part) first.', 'bad'); return; } [ssLast.aa, ssLast.ab, ssLast.bb].forEach((v, i) => { $(CSIDS[i]).value = v; }); $('#cs-banner').hidden = true; runChi('run'); });
+  CSIDS.forEach(id => $(id).addEventListener('input', () => {
+    if ($('#cs-banner').hidden) return;
+    $('#cs-banner').hidden = true;   // typing over the example starts a fresh entry: the other sample counts are removed
+    CSIDS.forEach(o => { if (o !== id) $(o).value = ''; }); csTable.setRows([]); status('#cs-status', '', '');
+  }));
+  { const sv = Lab.store.get('chi'); if (sv && Array.isArray(sv.v) && sv.v.length === 3) { sv.v.forEach((v, i) => { $(CSIDS[i]).value = v; }); runChi('restore'); } }
+  $('#cs-run').addEventListener('click', () => { if (!$('#cs-banner').hidden) return; const v = ['#cs-aa', '#cs-ab', '#cs-bb'].map(id => Number($(id).value)); if (v.some(x => !isFinite(x) || x < 0)) return; const h = hwChi(...v); if (h && !h.degenerate) Own.key('chi2-hw', { label: 'Hardy-Weinberg χ² (df = 1)', value: +fmt(h.chi2, 2), unit: '', part: 'Analyze' }); });
   ['#cs-aa', '#cs-ab', '#cs-bb'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   [
     ['a-infinite', 'In the absence of random events (an infinitely large population), are the allele frequencies of the original population expected to change from generation to generation? Cite a run.'],
@@ -1212,7 +1261,7 @@ const Predict = (function () {
   Own.watch(() => { const r = ssTable.getRows().filter(x => !x._setup && x.dp != null); if (!r.length) return; const top = r.reduce((a, b) => Math.abs(b.dp) > Math.abs(a.dp) ? b : a); Own.key('ss-max-dp', { label: 'Largest one-generation Δp (spreadsheet)', value: +fmt(top.dp, 3), unit: 'frequency', part: 'Build the model' }); });
   const cer = $('#cer');
   [['C', 'cer-claim', 'Claim: How does population size (or the factor you tested) affect evolutionary change in allele frequencies?'], ['E', 'cer-evidence', 'Evidence: Which runs, numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Use random sampling of gametes and the Hardy-Weinberg conditions to explain why the evidence supports the claim.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
-  Predict.cer(cer, { claim: 'The data show that ___ (smaller / larger populations) ___ (changed / did not change) the frequency of A (p).', evidence: 'In the N = ___ condition, final p was ___ (no units), compared with ___ in the N = ___ condition.', reasoning: 'This happens because ___ (random sampling of gametes / a Hardy-Weinberg condition), which causes ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) ___ (change in allele frequency).</p><p><strong>Evidence:</strong> In the ___ condition, final p was ___ (no units; or ___ % of populations lost A), compared with ___ in the ___ condition.</p><p><strong>Reasoning:</strong> This happens because ___ (random sampling of gametes, selection, mutation or migration) ___.</p>');
+  Predict.cer(cer, { claim: 'The data show that ___ (smaller / larger populations) ___ (changed / did not change) the frequency of A (p).', evidence: 'In the N = ___ condition, final p was ___, compared with ___ in the N = ___ condition.', reasoning: 'This happens because ___ (random sampling of gametes / a Hardy-Weinberg condition), which causes ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) ___ (change in allele frequency).</p><p><strong>Evidence:</strong> In the ___ condition, final p was ___ (or ___ % of populations lost A), compared with ___ in the ___ condition.</p><p><strong>Reasoning:</strong> This happens because ___ (random sampling of gametes, selection, mutation or migration) ___.</p>');
 
   /* ================= REFLECT ================= */
   [
@@ -1221,7 +1270,7 @@ const Predict = (function () {
     ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 3 }));
-  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-card', 'Before the card model you predicted:'], ['predict-spreadsheet', 'Before the spreadsheet you predicted:'], ['predict-drift', 'Before the many-generation runs you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one value (with units, or say no units) from your data. What does any mismatch tell you?', rows: 4 });
+  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-card', 'Before the card model you predicted:'], ['predict-spreadsheet', 'Before the spreadsheet you predicted:'], ['predict-drift', 'Before the many-generation runs you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one value (with units where it has them) from your data. What does any mismatch tell you?', rows: 4 });
 
   { const fh = Lab.h('div', { class: 'step-frq' }); $('#reflect-prompts').after(fh);
   Own.frq(fh, { title: 'Free-response question: genetic drift and population size', part: 'Reflect',
@@ -1238,13 +1287,20 @@ const Predict = (function () {
   const forcesInvalid = () => !!document.querySelector('#sub-sel [aria-invalid="true"], #sub-mut [aria-invalid="true"], #sub-mig [aria-invalid="true"]');
   $('#mg-run').addEventListener('click', () => { if (!forcesInvalid()) mgRan++; });
   ['#dz-iv', '#dz-levels', '#dz-dv', '#dz-reps'].forEach(s => { $(s).addEventListener('input', () => { dzTouched = true; }); $(s).addEventListener('change', () => { dzTouched = true; }); });
-  Lab.results('#card-sim', { graph: [{ el: '#card-chart', title: 'p by generation' }], data: [{ el: '#card-table', title: 'Genotype counts each generation' }] });
-  Lab.results('#ss-sim', { graph: [{ el: '#ss-chart', title: 'Zygote genotypes' }], data: [{ el: '#ss-table', title: 'Recorded runs' }] });
+  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
+     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
+  function showData(sim, o) {
+    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
+    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
+    return r;
+  }
+  showData('#card-sim', { graph: [{ el: '#card-chart', title: 'p by generation' }], data: [{ el: '#card-table', title: 'Genotype counts each generation' }] });
+  showData('#ss-sim', { graph: [{ el: '#ss-chart', title: 'Zygote genotypes' }], data: [{ el: '#ss-table', title: 'Recorded runs' }] });
   Lab.results('#mg-sim', { graph: [], data: [{ el: '#mg-table', title: 'Population 1, generation by generation' }, { el: '#mg-runs', title: 'Recorded runs' }] });
   Lab.results('#dz-sim', { graph: [], data: [{ el: '#dz-table', title: 'Results of every experiment' }] });
 
   const cardRows = () => cardTable.getRows();
-  const predC = Predict.add('#card-sim', { key: 'predict-card', title: 'will p change?', label: 'Before you mate the first generation, predict what will happen to the frequency of allele A (p, no units) over many generations in Case I, and whether it will change for a small class, and why.', placeholder: 'I predict p will ___ because ___.' });
+  const predC = Predict.add('#card-sim', { key: 'predict-card', title: 'will p change?', label: 'Before you mate the first generation, predict what will happen to the frequency of allele A (p) over many generations in Case I, and whether it will change for a small class, and why.', placeholder: 'I predict p will ___ because ___.' });
   Lab.steps('#card-steps', [
     { id: 'predict', text: 'Write your prediction', target: '#p-predict-card', done: predC.has, hint: 'Open <strong>Predict first</strong> above the scene and write your prediction, with a reason.' },
     { id: 'mate', text: 'Mate one generation', target: '#card-step', done: () => cardGen >= 1 || cardRows().length > 1, hint: 'Press <strong>Mate one generation</strong> and watch p in the Graph.' },

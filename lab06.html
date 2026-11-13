@@ -241,7 +241,7 @@
       <div class="callout callout--question">
         <div class="callout-title">Find the rate</div>
         <p>Use the graph (two well-separated points on the fit line, or the equation under it) to find the rate of respiration of the germinating seeds at 20 °C.</p>
-        <div class="inline-num"><label for="p-rate-in">Rate =</label><input type="number" step="any" id="p-rate-in" aria-label="Your respiration rate in microliters O2 per minute"><span class="muted">µL O₂/min</span><button class="btn btn--sm" id="p-rate-check" type="button">Check</button></div>
+        <div class="inline-num"><label for="p-rate-in">Rate =</label><input type="number" step="any" id="p-rate-in" data-save="p-rate-in" data-label="Respiration rate (µL O2/min)" aria-label="Your respiration rate in microliters O2 per minute"><span class="muted">µL O₂/min</span><button class="btn btn--sm" id="p-rate-check" type="button">Check</button></div>
         <p class="status" id="p-rate-msg" aria-live="polite"></p>
       </div>
 
@@ -353,12 +353,15 @@
         <div class="callout-title">Q<sub>10</sub> calculator</div>
         <p class="small">Enter two mean rates measured 5–15 °C apart (same organism, everything else held constant).</p>
         <div class="q10-tool">
-          <div class="field"><label for="q-t1">T<sub>1</sub> (°C)</label><input type="number" id="q-t1" value="15" step="any"></div>
-          <div class="field"><label for="q-r1">R<sub>1</sub> (µL O₂/min)</label><input type="number" id="q-r1" step="any" placeholder="rate at T₁"></div>
-          <div class="field"><label for="q-t2">T<sub>2</sub> (°C)</label><input type="number" id="q-t2" value="25" step="any"></div>
-          <div class="field"><label for="q-r2">R<sub>2</sub> (µL O₂/min)</label><input type="number" id="q-r2" step="any" placeholder="rate at T₂"></div>
+          <div class="field"><label for="q-t1">T<sub>1</sub> (°C)</label><input type="number" id="q-t1" step="any" placeholder="e.g. 15"></div>
+          <div class="field"><label for="q-r1">R<sub>1</sub> (µL O₂/min)</label><input type="number" id="q-r1" step="any" placeholder="e.g. 1.8"></div>
+          <div class="field"><label for="q-t2">T<sub>2</sub> (°C)</label><input type="number" id="q-t2" step="any" placeholder="e.g. 25"></div>
+          <div class="field"><label for="q-r2">R<sub>2</sub> (µL O₂/min)</label><input type="number" id="q-r2" step="any" placeholder="e.g. 4.1"></div>
         </div>
-        <div class="readouts"><div class="readout"><span class="k">Q₁₀ (ratio, no units)</span><span class="v" id="q-out">—</span></div></div>
+        <div class="row" style="margin:8px 0"><button class="btn btn--sm" type="button" id="q-mine">Use my data (design trials)</button><button class="btn btn--ghost btn--sm" type="button" id="q-example">Show a worked example</button></div>
+        <p class="callout callout--tip" id="q-banner" hidden style="margin:8px 0"><strong>EXAMPLE — not your data.</strong> Sample temperatures and rates. <button class="btn btn--sm" id="q-clear-ex" type="button">Clear example</button></p>
+        <p class="status" id="q-msg" aria-live="polite"></p>
+        <div class="readouts"><div class="readout"><span class="k">Q₁₀ (ratio)</span><span class="v" id="q-out">—</span></div></div>
       </div>
       <div id="d-results"></div>
     </div>
@@ -525,7 +528,8 @@ const Predict = (function () {
   return { add, compare, cer, has, val };
 })();
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, C = n => Lab.color(n);
-  const rng = Lab.rng();
+  let rng = Lab.rng();   // each simulated run reseeds this from a saved seed, so it can be replayed after a reload
+  const newSeed = () => Math.floor(Math.random() * 1e9);
   /* Input validation helpers: plain-language message under the field, aria-invalid, never compute on bad input. */
   const V = (() => {
     let n = 0;
@@ -1116,14 +1120,15 @@ const Predict = (function () {
   }
 
   /* Run an animation of a precomputed run on a canvas. */
-  function animate(cv, run, makeState, speed, onMark, onDone) {
-    let t = 0, mi = 0; const dur = run.ts[run.ts.length - 1];
+  function animate(cv, run, makeState, speed, onMark, onDone, startT) {
+    let t = startT || 0, mi = 0; const dur = run.ts[run.ts.length - 1];
     const frame = tt => {
       const i = Math.min(run.ts.length - 1, Math.round(tt / run.dt));
       while (mi < run.marks.length && run.marks[mi].t <= tt + 1e-9) { onMark && onMark(run.marks[mi], mi); mi++; }
       drawRig(cv, makeState(tt, i, mi));
     };
     if (!speed || Lab.reducedMotion()) { frame(dur); onDone && onDone(); return null; }
+    if (t > 0) frame(t);
     const loop = Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } });
     loop.start(); return loop;
   }
@@ -1144,13 +1149,14 @@ const Predict = (function () {
     ],
     onChange: rows => updatePChart(rows)
   });
-  const pChart = Lab.chart('#p-chart', { xLabel: 'Time (min)', yLabel: 'O₂ consumed (µL)', xMin: 0, xMax: 25, series: [] });
+  const pChart = Lab.chart('#p-chart', { xLabel: 'Time (min)', yLabel: 'O₂ consumed (µL)', series: [] });
   function o2Rows(rows) { return rows.filter(r => typeof r.e === 'number' && typeof r.c === 'number').map(r => ({ x: r.t, y: (r.e - r.c) * UL_PER_CM })); }
   function updatePChart(rows) {
+    if (!rows.length) { pChart.update({ series: [] }); return; }
     const pts = o2Rows(rows);
     const raw = rows.filter(r => typeof r.e === 'number').map(r => ({ x: r.t, y: r.e * UL_PER_CM }));
     const ctl = rows.filter(r => typeof r.c === 'number').map(r => ({ x: r.t, y: r.c * UL_PER_CM }));
-    pChart.update({ series: [
+    pChart.update({ xMin: 0, xMax: 25, series: [
       { name: 'Corrected (seeds − beads)', points: pts, line: false, fit: pts.length > 1 ? 'linear' : false },
       { name: 'Seeds, uncorrected', points: raw, line: true, dots: false, dash: true },
       { name: 'Beads control', points: ctl, line: true, dots: false, dash: true }
@@ -1175,35 +1181,41 @@ const Predict = (function () {
     $('#p-e').textContent = fmt(e, 2) + ' cm'; $('#p-c').textContent = fmt(c, 2) + ' cm';
     $('#p-o2').textContent = fmt((e - c) * UL_PER_CM, 1) + ' µL';
   }
-  $('#p-run').addEventListener('click', () => {
-    if (pBusy) return;
+  let pSt = null;
+  function runP(st, startT) {
     pBusy = true; $('#p-msg').textContent = ''; $('#p-msg').className = 'status';
-    const equil = $('#p-equil').checked, stable = $('#p-stable').checked;
+    const equil = st.equil, stable = st.stable;
+    rng = Lab.rng(st.sd);
     pRun = simulateRun({ org: 'fastplant', temp: 20, days: 2, light: 'dark' }, rng, { equil, stable, interval: 5, duration: 25 });
-    pTable.clear();
     const mE = [], mC = [];
     pLoop = animate(pCv, pRun, (tt, i) => {
       setReadouts(tt, pRun.dE[i], pRun.dC[i]);
       return { t: tt, temp: 20 + 0, note: !equil && tt < 6 ? 'gas still cooling to bath temperature' : '', items: [
         { label: 'Germinating seeds', look: 'seed', syringe: 1, pos: pRun.dE[i], marks: mE, parts: partsE },
         { label: 'Glass beads (control)', look: 'beads', syringe: 1, pos: pRun.dC[i], marks: mC, parts: partsC }] };
-    }, +$('#p-speed').value, m => {
+    }, st.speed, (m, mi) => {
       mE.push(m.e); mC.push(m.c);
-      pTable.addRow({ t: m.t, T: Math.round((20 + rng.normal(0, stable ? 0.05 : 0.2)) * 10) / 10, e: m.e, c: m.c, de: null, corr: null });
+      const Tn = Math.round((20 + rng.normal(0, stable ? 0.05 : 0.2)) * 10) / 10;   // always drawn, so the replay stays in step
+      if (mi >= pTable.getRows().length) pTable.addRow({ t: m.t, T: Tn, e: m.e, c: m.c, de: null, corr: null });
     }, () => {
       pBusy = false;
       const fit = rateFromMarks(pRun.marks);
-      const reps = pReps.getRows();
-      pReps.addRow({ run: reps.length + 1, set: (equil ? 'equilibrated' : 'no wait') + ', ' + (stable ? 'insulated' : 'open bath'), rate: fit.rate, perg: fit.rate / 0.30 });
+      if (!st.done) { st.done = true; Lab.store.set('p-run', st); const reps = pReps.getRows(); pReps.addRow({ run: reps.length + 1, set: (equil ? 'equilibrated' : 'no wait') + ', ' + (stable ? 'insulated' : 'open bath'), rate: fit.rate, perg: fit.rate / 0.30 }); if (!st.quiet) Lab.toast(`Recorded ${pTable.getRows().length} readings (0–25 min) and the run rate: ${fmt(fit.rate, 2)} µL O₂/min`, { type: pRun.stuckE != null || !equil ? 'warn' : 'ok', announce: false }); }
       const msg = $('#p-msg');
       if (pRun.stuckE != null) { msg.textContent = `The seed plug reached the barrel at ${fmt(pRun.stuckE, 1)} min. Use only the readings before that.`; msg.className = 'status warn'; }
       else if (!equil) { msg.textContent = 'You skipped the 5-min equilibration. Compare the uncorrected and control lines in the first few minutes.'; msg.className = 'status warn'; }
       else { msg.textContent = 'Run complete. Fill in columns D and the corrected distance, then find the rate from the graph.'; msg.className = 'status ok'; }
-      Lab.toast(`Recorded ${pTable.getRows().length} readings (0–25 min) and the run rate: ${fmt(fit.rate, 2)} µL O₂/min`, { type: pRun.stuckE != null || !equil ? 'warn' : 'ok', announce: false });
-    });
+    }, startT);
+  }
+  $('#p-run').addEventListener('click', () => {
+    if (pBusy) return;
+    pSt = { sd: newSeed(), t0: Date.now(), equil: $('#p-equil').checked, stable: $('#p-stable').checked, speed: +$('#p-speed').value, done: false };
+    Lab.store.set('p-run', pSt);
+    pTable.clear();
+    runP(pSt, 0);
   });
-  $('#p-clear').addEventListener('click', () => { if (pBusy) return; pTable.clear(); drawP(0, { e: 0, c: 0 }, [], []); setReadouts(0, 0, 0); $('#p-check-msg').textContent = ''; $('#p-rate-msg').textContent = ''; });
-  $('#p-check').addEventListener('click', () => {
+  $('#p-clear').addEventListener('click', () => { if (pBusy) return; pTable.clear(); Lab.store.set('p-run', null); Lab.store.set('chk-pCheck', false); Lab.store.set('chk-pRate', false); drawP(0, { e: 0, c: 0 }, [], []); setReadouts(0, 0, 0); $('#p-check-msg').textContent = ''; $('#p-rate-msg').textContent = ''; });
+  function pCheck(quiet) {
     const rows = pTable.getRows(), out = $('#p-check-msg');
     if (!rows.length) { out.textContent = 'Run the experiment first.'; out.className = 'status bad'; return; }
     let ok = 0, total = 0; const wrong = [], blank = [];
@@ -1221,9 +1233,10 @@ const Predict = (function () {
     out.removeAttribute('role');
     out.textContent = ok === total ? `All ${total} entries are correct.` : `${ok} of ${total} entries correct. Recheck: ${wrong.slice(0, 6).join(', ')}${wrong.length > 6 ? '…' : ''}.`;
     out.className = 'status ' + (ok === total ? 'ok' : 'bad');
-    Lab.toast(ok === total ? `Checked: all ${total} entries are correct` : `Checked: ${ok} of ${total} entries correct`, { type: ok === total ? 'ok' : 'warn', announce: false });
-  });
-  $('#p-rate-check').addEventListener('click', () => {
+    if (!quiet) Lab.toast(ok === total ? `Checked: all ${total} entries are correct` : `Checked: ${ok} of ${total} entries correct`, { type: ok === total ? 'ok' : 'warn', announce: false });
+  }
+  $('#p-check').addEventListener('click', () => { pCheck(false); Lab.store.set('chk-pCheck', true); });
+  function pRate(quiet) {
     const pts = o2Rows(pTable.getRows()), out = $('#p-rate-msg');
     if (pts.length < 3) { out.textContent = 'You need at least three readings first.'; out.className = 'status bad'; return; }
     const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y)), v = V.num($('#p-rate-in'), { name: 'your rate', empty: 'Type your rate (a number, in \u00B5L O\u2082/min) before pressing Check.', min: 0, minMsg: 'The rate of O\u2082 uptake can\u2019t be negative. Use the slope of the line going up.' });
@@ -1231,8 +1244,17 @@ const Predict = (function () {
     const good = Math.abs(v - f.m) <= Math.max(0.08, Math.abs(f.m) * 0.1);
     out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Not quite. Rate = rise/run of the fit line: (change in µL O<sub>2</sub>) ÷ (change in minutes). Use points on the line, not the first and last data points.';
     out.className = 'status ' + (good ? 'ok' : 'bad');
-    Lab.toast(good ? 'Checked: your rate matches the best-fit slope' : 'Checked: see the hint under the rate', { type: good ? 'ok' : 'warn', announce: false });
-  });
+    if (!quiet) Lab.toast(good ? 'Checked: your rate matches the best-fit slope' : 'Checked: see the hint under the rate', { type: good ? 'ok' : 'warn', announce: false });
+  }
+  $('#p-rate-check').addEventListener('click', () => { pRate(false); Lab.store.set('chk-pRate', true); });
+  { const st = Lab.store.get('p-run');
+    if (st && st.sd != null && (!st.done || pTable.getRows().length)) {
+      pSt = st; st.quiet = true; $('#p-equil').checked = !!st.equil; $('#p-stable').checked = !!st.stable;
+      if ([...$('#p-speed').options].some(o => +o.value === st.speed)) $('#p-speed').value = String(st.speed);
+      runP(st, st.speed ? Math.min(25, (Date.now() - st.t0) / 1000 * st.speed) : 25);
+    }
+    if (Lab.store.get('chk-pCheck')) pCheck(true);
+    if (Lab.store.get('chk-pRate') && $('#p-rate-in').value) pRate(true); }
 
   /* ================= Option 2: gas sensors =================
      Model: 25 germinating peas ≈ 8 g; O2 uptake at 20 °C ≈ 45 µL/min (≈ 5.6 µL·g⁻¹·min⁻¹), Q10 = 2.3,
@@ -1243,7 +1265,7 @@ const Predict = (function () {
      A small bath-temperature wander adds pressure noise. */
   const VGAS = 242000;
   const gCv = Lab.canvas('#g-rig', 0.55, { fit: true });
-  const gChart = Lab.chart('#g-chart', { xLabel: 'Time (min)', yLabel: 'O₂ (%)', xMin: 0, xMax: 25, height: 300, series: [] });
+  const gChart = Lab.chart('#g-chart', { xLabel: 'Time (min)', yLabel: 'O₂ (%)', height: 300, series: [] });
   const gTable = Lab.table('#g-table', {
     save: 'g-table',
     columns: [{ key: 'run', label: 'Run' }, { key: 'contents', label: 'Contents' }, { key: 'T', label: 'Bath temp', unit: '°C', num: true, digits: 0 }, { key: 'sensor', label: 'Sensor' }, { key: 'koh', label: 'KOH' }, { key: 'slope', label: 'Slope', unit: 'sensor units/min', num: true, digits: 4 }, { key: 'o2', label: '≈ O₂ used', unit: 'µL/min', num: true, digits: 1 }]
@@ -1395,20 +1417,20 @@ const Predict = (function () {
   }
   function refreshGChart() {
     const s = SENS[$('#g-sensor').value];
+    if (!gPts.length) { gChart.update({ yLabel: s.label, xMin: undefined, xMax: undefined, yMin: undefined, yMax: undefined, series: [] }); return; }
     const ys = gPts.map(p => p.y);
     const dflt = { '%': [20.3, 21], ppm: [300, 1000], kPa: [100.8, 101.5] }[s.unit];
     let lo = ys.length ? Math.min(...ys) : dflt[0], hi = ys.length ? Math.max(...ys) : dflt[1];
     const pad = Math.max((hi - lo) * 0.15, s.unit === '%' ? 0.05 : s.unit === 'ppm' ? 50 : 0.05);
-    gChart.update({ yLabel: s.label, yMin: lo - pad, yMax: hi + pad, series: [{ name: `${$('#g-contents').selectedOptions[0].text}`, points: gPts.slice(), line: true, dots: false, fit: gPts.length > 4 ? 'linear' : false }] });
+    gChart.update({ yLabel: s.label, xMin: 0, xMax: 25, yMin: lo - pad, yMax: hi + pad, series: [{ name: `${$('#g-contents').selectedOptions[0].text}`, points: gPts.slice(), line: true, dots: false, fit: gPts.length > 4 ? 'linear' : false }] });
   }
   gCv.onresize = drawG;
   gTempSync();
   refreshGChart();
-  $('#g-run').addEventListener('click', () => {
-    if (gBusy) return; gBusy = true;
-    const sensor = $('#g-sensor').value, contents = $('#g-contents').value, T = +$('#g-temp').value, koh = $('#g-koh').checked;
-    const rate = gRate(contents, T) * Math.exp(rng.normal(0, 0.1));
-    const pts = []; let th = 0;
+  /* A sensor run is saved as its settings, a seed and its start time; a reload replays it to where the clock says it is. */
+  function gPoints(st) {
+    rng = Lab.rng(st.sd);
+    const sensor = st.sensor, koh = st.koh, rate = gRate(st.contents, st.T) * Math.exp(rng.normal(0, 0.1)), pts = []; let th = 0;
     for (let k = 0; k <= 50; k++) {
       const t = k * 0.5, v = rate * t; th += -th / 4 * 0.5 + 0.03 * Math.sqrt(0.5) * rng.normal();
       let y;
@@ -1417,22 +1439,27 @@ const Predict = (function () {
       else y = 101.3 * (1 - (koh ? v : v * 0.02) / VGAS) + 101.3 * th / 293 + rng.normal(0, 0.004);
       pts.push({ x: t, y });
     }
-    gPts = []; let shown = 0;
+    return pts;
+  }
+  function runG(st, shown0) {
+    gBusy = true;
+    const sensor = st.sensor, koh = st.koh, T = st.T, pts = gPoints(st); let shown = 0;
+    gPts = [];
     const finish = () => {
       gBusy = false;
       const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y));
       const o2 = sensor === 'o2' ? -f.m / 100 * VGAS : sensor === 'co2' ? (koh ? NaN : f.m * 1e-6 * VGAS) : (koh ? -f.m / 101.3 * VGAS : NaN);
       $('#g-slope').textContent = `${fmt(f.m, sensor === 'co2' ? 1 : 4)} ${SENS[sensor].unit}/min`;
       $('#g-o2').textContent = isFinite(o2) ? fmt(o2, 1) + ' µL/min' : 'can\'t tell';
-      const rows = gTable.getRows();
-      gTable.addRow({ run: rows.length + 1, contents: $('#g-contents').selectedOptions[0].text, T, sensor: SENS[sensor].label, koh: koh ? 'yes' : 'no', slope: f.m, o2: isFinite(o2) ? o2 : null });
+      if (!st.done) { st.done = true; Lab.store.set('g-run', st); const rows = gTable.getRows(); gTable.addRow({ run: rows.length + 1, contents: st.contentsText, T, sensor: SENS[sensor].label, koh: koh ? 'yes' : 'no', slope: f.m, o2: isFinite(o2) ? o2 : null }); }
     };
     const step = () => {
       gPts.push(pts[shown]); gNow = { t: pts[shown].x, v: pts[shown].y };
       $('#g-time').textContent = fmt(gNow.t, 1) + ' min'; $('#g-read').textContent = fmt(gNow.v, SENS[sensor].d) + ' ' + SENS[sensor].unit;
       shown++;
     };
-    if (Lab.reducedMotion()) { while (shown < pts.length) step(); refreshGChart(); drawG(); finish(); return; }
+    if (Lab.reducedMotion() || shown0 >= pts.length) { while (shown < pts.length) step(); refreshGChart(); drawG(); finish(); return; }
+    while (shown < shown0) step();
     let acc = 0;
     const loop = Lab.loop(dt => {
       acc += dt;
@@ -1440,8 +1467,19 @@ const Predict = (function () {
       refreshGChart(); drawG();
       if (shown >= pts.length) { finish(); return false; }
     });
+    refreshGChart(); drawG();
     loop.start();
+  }
+  $('#g-run').addEventListener('click', () => {
+    if (gBusy) return;
+    const st = { sd: newSeed(), t0: Date.now(), sensor: $('#g-sensor').value, contents: $('#g-contents').value, contentsText: $('#g-contents').selectedOptions[0].text, T: +$('#g-temp').value, koh: $('#g-koh').checked, done: false };
+    Lab.store.set('g-run', st); runG(st, 0);
   });
+  { const st = Lab.store.get('g-run');
+    if (st && st.sd != null && (!st.done || gTable.getRows().length)) {
+      $('#g-sensor').value = st.sensor; $('#g-contents').value = st.contents; $('#g-temp').value = st.T; $('#g-koh').checked = !!st.koh; gTempSync();
+      runG(st, Math.floor((Date.now() - st.t0) / 1000 / 0.12) + 1);
+    } }
 
   /* ================= Design your own ================= */
   const prop = $('#d-proposal');
@@ -1486,32 +1524,46 @@ const Predict = (function () {
   }
   dCv.onresize = () => drawD(dLast);
   syncD();
-  $('#d-run').addEventListener('click', () => {
-    if (dBusy) return;
-    const cond = { org: dOrg.value, temp: +$('#d-temp').value, days: +$('#d-days').value, light: $('#d-light').value };
-    const o = ORGS[cond.org], reps = +$('#d-reps').value, interval = +$('#d-int').value;
-    let run = null, notes = [];
+  /* The batch of replicate runs is saved as its conditions and a seed; the table rows are saved separately, so a reload only
+     has to replay the last batch to bring back the rig picture and the readouts. */
+  function simD(cond, reps, interval, sd, add) {
+    rng = Lab.rng(sd);
+    const o = ORGS[cond.org]; let run = null; const notes = [];
     for (let k = 0; k < reps; k++) {
       run = simulateRun(cond, rng, { equil: true, stable: true, interval, duration: 25 });
       run.cond = cond;
       const f = rateFromMarks(run.marks);
       const note = !isFinite(f.rate) ? 'plug hit barrel too soon' : run.stuckE != null ? `plug hit barrel at ${fmt(run.stuckE, 0)} min` : '';
       if (note) notes.push(note);
-      const rows = dTable.getRows();
-      dTable.addRow({ trial: rows.length + 1, org: cond.org, orgName: o.short, temp: cond.temp, days: o.seed ? cond.days : null, daysTxt: o.seed ? (cond.days < 1 ? '12 h' : cond.days + ' d') : 'n/a', light: cond.light, rate: f.rate, mass: o.mass, perg: f.rate / o.mass, note });
+      if (add) { const rows = dTable.getRows(); dTable.addRow({ trial: rows.length + 1, org: cond.org, orgName: o.short, temp: cond.temp, days: o.seed ? cond.days : null, daysTxt: o.seed ? (cond.days < 1 ? '12 h' : cond.days + ' d') : 'n/a', light: cond.light, rate: f.rate, mass: o.mass, perg: f.rate / o.mass, note }); }
       $('#d-last').textContent = isFinite(f.rate) ? fmt(f.rate, 2) + ' µL/min' : '—';
       $('#d-lastg').textContent = isFinite(f.rate) ? fmt(f.rate / o.mass, 2) : '—';
     }
+    return { run, notes };
+  }
+  $('#d-run').addEventListener('click', () => {
+    if (dBusy) return;
+    const cond = { org: dOrg.value, temp: +$('#d-temp').value, days: +$('#d-days').value, light: $('#d-light').value };
+    const reps = +$('#d-reps').value, interval = +$('#d-int').value, sd = newSeed();
+    const { run, notes } = simD(cond, reps, interval, sd, true);
+    Lab.store.set('d-last', { cond, reps, interval, sd, notes: notes.length });
     dLast = run;
     const msg = $('#d-msg');
     if (notes.length) { msg.textContent = `In ${notes.length} trial(s) the plug reached the barrel before 25 min. Rates use only earlier readings; choose a shorter reading interval if fewer than 3 readings were left.`; msg.className = 'status warn'; }
     else { msg.textContent = `${reps} trial(s) added.`; msg.className = 'status ok'; }
     if (notes.length) Lab.toast(`Added ${reps} trial(s); the plug reached the barrel early in ${notes.length}`, { type: 'warn', announce: false, key: 'd-run' });
     dBusy = true;
-    const mE = [], mC = [];
+    const mE = [], mC = [], o = ORGS[cond.org];
+    void o;
     animate(dCv, run, (tt, i) => ({ t: tt, temp: cond.temp, light: cond.light, items: dItems(cond.org, run, i, mE, mC) }), 8, m => { mE.push(m.e); mC.push(m.c); }, () => { dBusy = false; });
   });
-  $('#d-clear').addEventListener('click', () => { dTable.clear(); dLast = null; drawD(null); $('#d-msg').textContent = ''; });
+  { const sv = Lab.store.get('d-last');
+    if (sv && sv.cond && ORGS[sv.cond.org] && dTable.getRows().length) {
+      $('#d-org').value = sv.cond.org; $('#d-temp').value = sv.cond.temp; $('#d-days').value = String(sv.cond.days); $('#d-light').value = sv.cond.light; $('#d-reps').value = sv.reps; $('#d-int').value = String(sv.interval);
+      const r = simD(sv.cond, sv.reps, sv.interval, sv.sd, false); dLast = r.run; syncD(); drawD(dLast);
+      const msg = $('#d-msg'); msg.textContent = `Last batch restored (${sv.reps} trial${sv.reps > 1 ? 's' : ''}).`; msg.className = 'status';
+    } }
+  $('#d-clear').addEventListener('click', () => { dTable.clear(); Lab.store.set('d-last', null); dLast = null; drawD(null); $('#d-msg').textContent = ''; });
   $('#d-group').addEventListener('change', updateDesign);
   function updateDesign() {
     const rows = dTable.getRows().filter(r => isFinite(r.perg));
@@ -1526,6 +1578,7 @@ const Predict = (function () {
     const sum = keys.map(k => { const a = groups.get(k); return { k, n: a.length, m: S.mean(a), sd: S.sd(a), se2: a.length > 1 ? 2 * S.se(a) : 0 }; });
     const label = { temp: 'Temperature (°C)', org: 'Organism', days: 'Germination time (days)', light: 'Lighting' }[by];
     $('#d-summary').innerHTML = sum.length ? `<div class="table-wrap"><table class="data summary-table"><thead><tr><th>${label}</th><th class="num">n <span class="unit">(trials)</span></th><th class="num">Mean <span class="unit">(µL·g⁻¹·min⁻¹)</span></th><th class="num">SD <span class="unit">(µL·g⁻¹·min⁻¹)</span></th><th class="num">±2 SE <span class="unit">(µL·g⁻¹·min⁻¹)</span></th></tr></thead><tbody>${sum.map(s => `<tr><td>${Lab.esc(String(s.k))}</td><td class="num">${s.n}</td><td class="num">${fmt(s.m, 2)}</td><td class="num">${fmt(s.sd, 2)}</td><td class="num">${s.n > 1 ? fmt(s.se2, 2) : '—'}</td></tr>`).join('')}</tbody></table></div>${sum.some(s => s.n < 2) ? '<p class="small muted">A group with only one trial has no SD or SE. Run at least 2 replicates per group to get error bars.</p>' : ''}` : '<p class="small muted">Run some trials to see group means here.</p>';
+    if (!sum.length) { dChart.update({ type: 'xy', categories: null, xMin: undefined, xMax: undefined, xLabel: label, series: [] }); return; }
     if (numeric) {
       const indiv = rows.filter(r => keyOf(r) != null).map(r => ({ x: keyOf(r), y: r.perg }));
       dChart.update({ type: 'xy', categories: null, xMin: 0, xMax: by === 'temp' ? 45 : 5, xLabel: label, yLabel: 'O₂ uptake (µL·g⁻¹·min⁻¹)', series: [{ name: 'Mean ± 2 SE', points: sum.map(s => ({ x: s.k, y: s.m, err: s.se2 })), line: true }, { name: 'Individual trials', points: indiv, line: false }] });
@@ -1543,7 +1596,26 @@ const Predict = (function () {
     if (t.includes(null) || r.includes(null)) return;
     out.textContent = fmt(Math.pow(r[1] / r[0], 10 / (t[1] - t[0])), 2);
   };
-  ['#q-t1', '#q-t2', '#q-r1', '#q-r2'].forEach(s => { $(s)._live = true; $(s).addEventListener('input', q10); });
+  const QIDS = ['#q-t1', '#q-r1', '#q-t2', '#q-r2'];
+  const qSave = () => Lab.store.set('q10-in', QIDS.map(s => $(s).value));
+  QIDS.forEach(s => { $(s)._live = true; $(s).addEventListener('input', () => {
+    if (!$('#q-banner').hidden) { $('#q-banner').hidden = true; QIDS.forEach(o => { if (o !== s) $(o).value = ''; }); }   // typing over an example starts a fresh entry
+    q10(); qSave();
+  }); });
+  const qClear = () => { QIDS.forEach(s => { $(s).value = ''; V.ok($(s)); }); $('#q-out').textContent = '\u2014'; $('#q-banner').hidden = true; $('#q-msg').textContent = ''; qSave(); };
+  $('#q-example').addEventListener('click', () => { [15, 1.8, 25, 4.1].forEach((v, i) => { $(QIDS[i]).value = v; }); $('#q-banner').hidden = false; q10(); $('#q-msg').textContent = 'Worked example only. It is not saved and is not your result.'; });
+  $('#q-clear-ex').addEventListener('click', qClear);
+  /* Use my data: the lowest and highest temperature in the design table, with the mean rate (µL O₂/min) of the organism run most often. */
+  $('#q-mine').addEventListener('click', () => {
+    const rows = dTable.getRows().filter(r => isFinite(r.rate) && isFinite(r.temp) && !r._setup), msg = $('#q-msg');
+    const count = {}; rows.forEach(r => { count[r.org] = (count[r.org] || 0) + 1; });
+    const org = Object.keys(count).sort((a, b) => count[b] - count[a])[0], mine = rows.filter(r => r.org === org), temps = [...new Set(mine.map(r => r.temp))].sort((a, b) => a - b);
+    if (temps.length < 2) { msg.textContent = 'Run the same organism at two different temperatures in the simulation above first, then press this again.'; msg.className = 'status bad'; return; }
+    const mean = T => S.mean(mine.filter(r => r.temp === T).map(r => r.rate)), lo = temps[0], hi = temps[temps.length - 1];
+    $('#q-banner').hidden = true; [lo, mean(lo), hi, mean(hi)].forEach((v, i) => { $(QIDS[i]).value = fmt(v, i % 2 ? 2 : 0); });
+    q10(); qSave(); msg.textContent = `Filled from your ${ORGS[org].short} trials (mean rate at ${lo} °C and ${hi} °C).`; msg.className = 'status';
+  });
+  { const sv = Lab.store.get('q10-in'); if (Array.isArray(sv) && sv.length === 4 && sv.some(v => v !== '')) { sv.forEach((v, i) => { $(QIDS[i]).value = v; }); q10(); } }
   const dRes = $('#d-results');
   Lab.prompt(dRes, { key: 'd-data-sum', label: 'Describe the pattern in your graph. Report each group mean with its ±2 SE interval and say which intervals overlap.', rows: 4 });
   Lab.prompt(dRes, { key: 'd-rate-calc', label: 'Show one rate calculation from start to finish (plug distance → µL O<sub>2</sub> → slope → per gram).', rows: 3 });
@@ -1563,12 +1635,19 @@ const Predict = (function () {
       return (expDe == null || (typeof r.de === 'number' && Math.abs(r.de - expDe) <= 0.015)) && typeof r.corr === 'number' && Math.abs(r.corr - (r.e - r.c)) <= 0.015;
     });
   };
-  Lab.results('#p-sim', {
+  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
+     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
+  function showData(sim, o) {
+    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
+    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
+    return r;
+  }
+  showData('#p-sim', {
     graph: [{ el: '#p-chart', title: 'Corrected O₂ consumed vs. time' }],
     data: [{ el: '#p-table', title: 'Table 1. Results using microrespirometers' }, { el: '#p-reps', title: 'Replicate runs' }]
   });
-  Lab.results('#g-sim', { graph: [{ el: '#g-chart', title: 'Sensor reading vs. time' }], data: [{ el: '#g-table', title: 'Gas-sensor runs' }] });
-  Lab.results('#d-sim', {
+  showData('#g-sim', { graph: [{ el: '#g-chart', title: 'Sensor reading vs. time' }], data: [{ el: '#g-table', title: 'Gas-sensor runs' }] });
+  showData('#d-sim', {
     graph: [{ el: '#d-chart', title: 'Rate per gram, mean ± 2 SE' }],
     data: [{ el: '#d-summary', title: 'Summary by group' }, { el: '#d-table', title: 'Every trial' }]
   });

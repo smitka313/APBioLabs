@@ -226,7 +226,7 @@
       <div id="cup-table"></div>
       <div id="cup-chart"></div>
       <h3>Calculate ET<sub>50</sub> and the rate</h3>
-      <p class="small">Find the two minutes on either side of half the disks floating (5 of 10) in the "With CO<sub>2</sub>" column (open the <strong>Data</strong> tab above). Interpolate: ET<sub>50</sub> = t<sub>before</sub> + (half − n<sub>before</sub>) ÷ (n<sub>after</sub> − n<sub>before</sub>). Then take the reciprocal.</p>
+      <p class="small">Find the two minutes on either side of half the disks floating (<span id="et-half">5 of 10</span>) in the "With CO<sub>2</sub>" column (open the <strong>Data</strong> tab above). Interpolate: ET<sub>50</sub> = t<sub>before</sub> + (half − n<sub>before</sub>) ÷ (n<sub>after</sub> − n<sub>before</sub>). Then take the reciprocal.</p>
       <div class="calc">
         <div class="field"><label for="et-in">Your ET<sub>50</sub> (min)</label><input id="et-in" type="number" step="any" data-save="et-in" data-label="ET50 for the bicarbonate cup (min)"></div>
         <div class="field"><label for="ret-in">Your 1/ET<sub>50</sub> (min⁻¹)</label><input id="ret-in" type="number" step="any" data-save="ret-in" data-label="1/ET50 (per min)"></div>
@@ -439,7 +439,9 @@ const Predict = (function () {
 })();
 (function () {
   'use strict';
-  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, tok = Lab.color, rng = Lab.rng();
+  const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt, tok = Lab.color;
+  let rng = Lab.rng();   // each simulated run reseeds this from a saved seed, so it can be replayed after a reload
+  const newSeed = () => Math.floor(Math.random() * 1e9);
   const FONT = '"Source Sans 3", "Segoe UI", sans-serif';
   const near = (a, b, rel, abs) => a != null && isFinite(a) && Math.abs(a - b) <= Math.max(Math.abs(b) * (rel || 0), abs || 0) + 1e-9;
   function slider(id, outId, f) { const el = $('#' + id), out = $('#' + outId); const s = () => { out.textContent = f(+el.value); }; el.addEventListener('input', s); s(); return el; }
@@ -884,6 +886,7 @@ const Predict = (function () {
   const infcv = Lab.canvas('#inf-viz', 0.62, { fit: true });
   let inf = null, infAnim = null, poured = false;
   const allSunk = () => inf.a.every(Boolean) && inf.b.every(Boolean);
+  function infSave() { Lab.store.set('inf-state', { pulls: inf.pulls, a: inf.a, b: inf.b, xa: inf.xa, xb: inf.xb, poured, soap: $('#inf-soap').value }); }
   function infReset() { poured = false; inf = { pulls: 0, a: Array(10).fill(false), b: Array(10).fill(false), plunger: 0, bubbles: 0, xa: Array.from({ length: 10 }, () => rng.uniform()), xb: Array.from({ length: 10 }, () => rng.uniform()) }; infDraw(); infRead(); $('#inf-fb').innerHTML = ''; }
   /* Vacuum infiltration: a 10 mL plastic syringe held tip down with a finger over the tip. Pulling the
      plunger opens a vacuum above the solution; gas fizzes out of the disks; on release the solution
@@ -947,23 +950,22 @@ const Predict = (function () {
   let infBusy = false;
   const infNudge = () => $('#inf-pull').dispatchEvent(new Event('change', { bubbles: true }));
   function infStop() { if (infAnim) infAnim(true); }
-  $('#inf-reset').addEventListener('click', () => { infStop(); infReset(); });
+  $('#inf-reset').addEventListener('click', () => { infStop(); infReset(); Lab.store.set('inf-state', null); Lab.store.set('inf-pull', null); });
+  $('#inf-soap').addEventListener('change', () => { if (inf.pulls) infSave(); });
   const pullBtn = $('#inf-pull'), pullLabel = pullBtn.textContent, prog = $('#inf-prog');
   /* A vacuum takes 10 s: hold the plunger back (bubbles stream out of the disks), then release and
      the solution floods in so the disks sink one by one. Counters update as each disk sinks. */
-  pullBtn.addEventListener('click', () => {
-    if (infBusy) return;
-    inf.pulls++;
-    const p = SINKP[+$('#inf-soap').value], cur = inf, HOLD = 10, REL = 1.2;
-    const will = [];   // [cup, index, time to sink]
-    ['a', 'b'].forEach(k => cur[k].forEach((s, i) => { if (!s && rng.chance(p)) will.push([k, i, HOLD + 0.1 + rng.uniform() * REL]); }));
+  const HOLD = 10, REL = 1.2;
+  /* A vacuum is saved with its start time and the disks that will sink; after a reload it carries on from the clock. */
+  function runPull(cur, will, t0, quiet) {
     const finish = () => {
       will.forEach(([k, i]) => { cur[k][i] = true; });
       cur.plunger = 0; cur.bubbles = 0; infBusy = false; infAnim = null;
-      pullBtn.textContent = pullLabel; prog.hidden = true; infNudge();
+      pullBtn.textContent = pullLabel; pullBtn.disabled = false; prog.hidden = true; infNudge();
+      Lab.store.set('inf-pull', null); infSave();
       infDraw(); infRead();
       const msgs = [], na = cur.a.filter(Boolean).length, nb = cur.b.filter(Boolean).length;
-      if (na === 10 && nb === 10) { msgs.push('<span class="pill ok">All disks sunk.</span> Pour them into the cups.'); Lab.toast(`All 20 disks sunk after ${cur.pulls} vacuum${cur.pulls > 1 ? 's' : ''}`, { type: 'ok', announce: false }); }
+      if (na === 10 && nb === 10) { msgs.push('<span class="pill ok">All disks sunk.</span> Pour them into the cups.'); if (!quiet) Lab.toast(`All 20 disks sunk after ${cur.pulls} vacuum${cur.pulls > 1 ? 's' : ''}`, { type: 'ok', announce: false }); }
       else {
         msgs.push(`<span class="pill warn">${20 - na - nb} disk${20 - na - nb > 1 ? 's' : ''} still floating.</span> Pull again, or pour now and the floaters will be left out.`);
         if (cur.pulls >= 3 && +$('#inf-soap').value === 0) msgs.push('Without soap the solution cannot wet the leaf. Add a drop of soap.');
@@ -971,10 +973,10 @@ const Predict = (function () {
       if (cur.pulls > 3) msgs.push(`<span class="pill bad">${cur.pulls} vacuums</span> More than three can damage the disks, so they may rise more slowly and less evenly.`);
       fbList($('#inf-fb'), msgs);
     };
-    if (Lab.reducedMotion()) { finish(); return; }
-    infBusy = true; pullBtn.disabled = true; pullBtn.textContent = 'Pulling vacuum… ' + HOLD + ' s'; prog.hidden = false; prog.value = 0; prog.max = HOLD + REL + 0.2;
+    if (Lab.reducedMotion() || t0 >= HOLD + REL + 0.2) { finish(); return; }
+    infBusy = true; pullBtn.disabled = true; prog.hidden = false; prog.max = HOLD + REL + 0.2;
     fbList($('#inf-fb'), ['<span class="pill">Pulling vacuum</span> Hold the plunger back and swirl. Gas is leaving the disks.']);
-    let t = 0;
+    let t = t0;
     const lp = Lab.loop(dt => {
       t += dt;
       cur.plunger = t < 0.6 ? t / 0.6 : t < HOLD + 0.3 ? 1 : Math.max(0, 1 - (t - HOLD - 0.3) / 0.3);
@@ -986,9 +988,28 @@ const Predict = (function () {
       infDraw(); infRead();
       if (t >= HOLD + REL + 0.2) { lp.stop(); finish(); return false; }
     });
-    infAnim = abort => { lp.stop(); if (abort) { infBusy = false; infAnim = null; pullBtn.textContent = pullLabel; prog.hidden = true; infNudge(); } else finish(); };
+    infAnim = abort => { lp.stop(); if (abort) { infBusy = false; infAnim = null; pullBtn.textContent = pullLabel; pullBtn.disabled = false; prog.hidden = true; Lab.store.set('inf-pull', null); infNudge(); } else finish(); };
     lp.start();
+  }
+  pullBtn.addEventListener('click', () => {
+    if (infBusy) return;
+    inf.pulls++;
+    const p = SINKP[+$('#inf-soap').value], cur = inf;
+    const will = [];   // [cup, index, time to sink]
+    ['a', 'b'].forEach(k => cur[k].forEach((s, i) => { if (!s && rng.chance(p)) will.push([k, i, HOLD + 0.1 + rng.uniform() * REL]); }));
+    Lab.store.set('inf-pull', { t0: Date.now(), will, pulls: cur.pulls });
+    runPull(cur, will, 0, false);
   });
+  { const sv = Lab.store.get('inf-state'), ip = Lab.store.get('inf-pull');
+    if (sv && Array.isArray(sv.a) && sv.a.length === 10) {
+      Object.assign(inf, { pulls: sv.pulls || 0, a: sv.a, b: sv.b, xa: sv.xa || inf.xa, xb: sv.xb || inf.xb }); poured = !!sv.poured; if (sv.soap != null) $('#inf-soap').value = sv.soap;
+      infDraw(); infRead();
+    }
+    if (ip && Array.isArray(ip.will)) { inf.pulls = ip.pulls; runPull(inf, ip.will, (Date.now() - ip.t0) / 1000, true); }
+    else if (sv && inf.pulls) {
+      const na = inf.a.filter(Boolean).length, nb = inf.b.filter(Boolean).length;
+      fbList($('#inf-fb'), [poured ? `Poured. ${na} disks in the "With CO₂" cup and ${nb} in the "Without CO₂" cup.` : na === 10 && nb === 10 ? '<span class="pill ok">All disks sunk.</span> Pour them into the cups.' : `<span class="pill warn">${20 - na - nb} disk${20 - na - nb > 1 ? 's' : ''} still floating.</span> Pull again, or pour now and the floaters will be left out.`]);
+    } }
 
   /* =====================================================================
      PROCEDURE B — floating disk assay (two cups)
@@ -1007,52 +1028,83 @@ const Predict = (function () {
     const damage = cupPrep.damage;
     cupA = makeDisks(BASE, cupPrep.na, damage); cupB = makeDisks(Object.assign({}, BASE, { bicarb: 0 }), cupPrep.nb, damage); cupNote();
     cupT = 0; cupDark = false; $('#cup-dark').setAttribute('aria-pressed', 'false'); $('#cup-dark').textContent = 'Cover cups with a box (dark)'; cupRead(); cupDraw();
+    $('#et-half').textContent = (cupPrep.na / 2) + ' of ' + cupPrep.na;
   }
   function cupDraw() { drawCups(cupcv, [{ label: 'With CO₂', sub: '0.2% NaHCO₃', disks: cupA, liq: BICARB }, { label: 'Without CO₂', sub: 'water only', disks: cupB, liq: WATER }], { lamp: true, dark: cupDark, time: cupT }); }
   function cupRead() { $('#cup-t').textContent = fmt(cupT, 1) + ' min'; $('#cup-a').textContent = cupA.filter(d => d.up).length + ' / ' + cupA.length; $('#cup-b').textContent = cupB.filter(d => d.up).length + ' / ' + cupB.length; $('#cup-l').textContent = cupDark ? 'Off (box)' : 'On'; }
   cupcv.onresize = cupDraw;
-  const cupchart = Lab.chart('#cup-chart', { xLabel: 'Time (min)', yLabel: 'Floating disks (count)', yMin: 0, yMax: 10, series: [] });
+  const cupchart = Lab.chart('#cup-chart', { xLabel: 'Time (min)', yLabel: 'Floating disks (count)', series: [] });
   const cupTable = Lab.table('#cup-table', {
     save: 'cups', toast: false, // rows stream in once per simulated minute: one toast when the run ends instead
     columns: [{ key: 'm', label: 'Time', unit: 'min', num: true, digits: 0 }, { key: 'a', label: 'Floating, with CO₂', unit: 'disks', num: true, digits: 0 }, { key: 'b', label: 'Floating, without CO₂', unit: 'disks', num: true, digits: 0 }, { key: 'light', label: 'Light' }],
     onChange: rows => {
-      cupchart.update({ series: [{ name: 'With CO₂ (0.2% NaHCO₃)', points: rows.map(r => ({ x: r.m, y: r.a })) }, { name: 'Without CO₂ (water)', points: rows.map(r => ({ x: r.m, y: r.b })), dash: true }],
+      if (!rows.length) { cupchart.update({ series: [], hLines: [], annotations: [] }); return; }
+      cupchart.update({ yMin: 0, yMax: cupPrep.na, series: [{ name: 'With CO₂ (0.2% NaHCO₃)', points: rows.map(r => ({ x: r.m, y: r.a })) }, { name: 'Without CO₂ (water)', points: rows.map(r => ({ x: r.m, y: r.b })), dash: true }],
         hLines: [{ y: cupPrep.na / 2, label: '50% floating' }], annotations: (() => { const e = et50(rows.map(r => r.a), cupPrep.na); return e != null ? [{ x: e, label: 'ET50' }] : []; })() });
     }
   });
   cupInit();
   $('#inf-pour').addEventListener('click', () => {
     if (infAnim) infAnim();   // let a running vacuum finish first
-    poured = true;
+    poured = true; infSave();
     cupPrep = { na: inf.a.filter(Boolean).length, nb: inf.b.filter(Boolean).length, damage: Math.max(0, inf.pulls - 3) }; Lab.store.set('cup-prep', cupPrep);
-    if (cupLoop) cupLoop.stop();
+    if (cupLoop) cupLoop.stop(); cupInfo = null; Lab.store.set('cup-run', null);
     cupInit(); cupTable.clear();
     const la = 10 - cupPrep.na, lb = 10 - cupPrep.nb, fl = la + lb;
     fbList($('#inf-fb'), [fl ? `<span class="pill warn">${fl} disk${fl > 1 ? 's' : ''} didn't sink and ${fl > 1 ? 'were' : 'was'} left out.</span> You have ${cupPrep.na} disk${cupPrep.na === 1 ? '' : 's'} in the "With CO₂" cup and ${cupPrep.nb} in the "Without CO₂" cup. Only sunk disks go in the cups, as in the real lab. Pull again before pouring if you want more disks.` : '<span class="pill ok">Poured.</span> Go to the next step and start the timer.']);
     Lab.toast(fl ? `Poured ${cupPrep.na + cupPrep.nb} sunk disks; ${fl} floating disk${fl > 1 ? 's were' : ' was'} left out` : 'Poured the disks into the cups', { type: fl ? 'warn' : 'ok', announce: false, action: { label: 'Go to Float assay', onClick: () => Lab.pages.go('float-assay') } });
   });
-  $('#cup-dark').addEventListener('click', () => { cupDark = !cupDark; $('#cup-dark').setAttribute('aria-pressed', String(cupDark)); $('#cup-dark').textContent = cupDark ? 'Remove the box (light)' : 'Cover cups with a box (dark)'; cupRead(); cupDraw(); });
+  const cupSyncDark = () => { $('#cup-dark').setAttribute('aria-pressed', String(cupDark)); $('#cup-dark').textContent = cupDark ? 'Remove the box (light)' : 'Cover cups with a box (dark)'; };
+  $('#cup-dark').addEventListener('click', () => {
+    cupDark = !cupDark; cupSyncDark(); cupRead(); cupDraw();
+    if (cupInfo && cupT < cupInfo.len - 1e-9) { cupInfo.toggles.push([cupT, cupDark]); Lab.store.set('cup-run', cupInfo); }
+  });
+  /* The timer runs on the clock. A run is saved with its seed, start time, length, speed and any dark/light changes; the
+     simulation takes fixed small steps, so after a reload it is replayed to wherever it would be by now (finished, or still
+     going and carrying on), and any minutes missing from the table are filled in. */
+  let cupInfo = null, cupNext = 1, cupTarget = 0, cupTi = 0;
+  const cupRow = m => ({ m, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' });
+  function cupTick(maxT, onRow) {
+    const s = Math.min(0.05, cupNext - cupT);
+    if (cupT + s > maxT + 1e-9) return false;
+    const tg = cupInfo.toggles || [];
+    while (cupTi < tg.length && tg[cupTi][0] <= cupT + 1e-9) { cupDark = tg[cupTi][1]; cupTi++; }
+    stepDisks(cupA, s, cupDark); stepDisks(cupB, s, cupDark); cupT += s;
+    if (cupT >= cupNext - 1e-9) { onRow(cupRow(cupNext)); cupNext++; }
+    return true;
+  }
+  function cupFinishedToast() { const r = cupTable.getRows(), a = r[r.length - 1]; Lab.toast(`Recorded minutes 0–${a.m}: ${a.a} of ${cupPrep.na} disks floating with CO₂`, { type: 'ok' }); }
+  function cupContinue() {
+    const len = cupInfo.len;
+    cupLoop = Lab.loop(dt => {
+      cupTarget += dt / +$('#cup-speed').value;
+      while (cupT < len - 1e-9 && cupTick(Math.min(cupTarget, len), r => cupTable.addRow(r)));
+      easeDisks(cupA, dt * 6); easeDisks(cupB, dt * 6); cupRead(); cupDraw();
+      if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); cupFinishedToast(); return false; }
+    });
+    cupLoop.start();
+  }
   $('#cup-run').addEventListener('click', () => {
     if (cupLoop) cupLoop.stop();
-    const dark0 = cupDark; cupInit(); cupDark = dark0; $('#cup-dark').setAttribute('aria-pressed', String(cupDark));
+    const dark0 = cupDark, sd = newSeed(); rng = Lab.rng(sd); cupInit(); cupDark = dark0; cupSyncDark(); cupRead();
     cupTable.clear();
-    const len = +cupLen.value, rows = [{ m: 0, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' }];
-    cupTable.setRows(rows);
-    let nextMin = 1;
-    const advance = dm => {
-      const step = 0.05; let left = dm;
-      while (left > 1e-9 && cupT < len) {
-        const s = Math.min(step, left, nextMin - cupT); stepDisks(cupA, s, cupDark); stepDisks(cupB, s, cupDark); cupT += s; left -= s;
-        if (cupT >= nextMin - 1e-9) { cupTable.addRow({ m: nextMin, a: cupA.filter(d => d.up).length, b: cupB.filter(d => d.up).length, light: cupDark ? 'off' : 'on' }); nextMin++; }
-      }
-    };
-    const done = () => { const r = cupTable.getRows(), a = r[r.length - 1]; Lab.toast(`Recorded minutes 0–${a.m}: ${a.a} of ${cupPrep.na} disks floating with CO₂`, { type: 'ok' }); };
-    if (Lab.reducedMotion()) { advance(len); easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw(); done(); return; }
-    cupLoop = Lab.loop(dt => { advance(dt / +$('#cup-speed').value); easeDisks(cupA, dt * 6); easeDisks(cupB, dt * 6); cupRead(); cupDraw(); if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); done(); return false; } });
-    cupLoop.start();
+    const len = +cupLen.value;
+    cupInfo = { sd, t0: Date.now(), len, speed: +$('#cup-speed').value, dark0, toggles: [] }; Lab.store.set('cup-run', cupInfo);
+    cupNext = 1; cupTi = 0; cupTarget = 0;
+    cupTable.setRows([cupRow(0)]);
+    if (Lab.reducedMotion()) { while (cupT < len - 1e-9 && cupTick(len, r => cupTable.addRow(r))); easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw(); cupFinishedToast(); return; }
+    cupContinue();
   });
+  { const ci = Lab.store.get('cup-run');
+    if (ci && ci.sd != null && cupTable.getRows().length) {
+      cupInfo = ci; rng = Lab.rng(ci.sd); cupInit(); cupDark = ci.dark0; cupSyncDark(); cupNext = 1; cupTi = 0;
+      const elapsed = Math.min(ci.len, (Date.now() - ci.t0) / 1000 / ci.speed), have = cupTable.getRows().reduce((m, r) => Math.max(m, r.m), -1);
+      while (cupT < elapsed - 1e-9 && cupTick(elapsed, r => { if (r.m > have) cupTable.addRow(r, { setup: false }); }));
+      cupTarget = elapsed; easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw();
+      if (cupT < ci.len - 1e-9) cupContinue();
+    } }
   ['#et-in', '#ret-in'].forEach(id => $(id).addEventListener('input', () => vmsg($(id), '')));
-  $('#et-check').addEventListener('click', () => {
+  function etCheck(quiet) {
     const etIn = $('#et-in'), rIn = $('#ret-in'), n = cupPrep.na;
     const chk = (el, name) => { const raw = el.value.trim(); if (raw === '') return vmsg(el, `Enter your ${name}.`); const x = Number(raw); if (!isFinite(x)) return vmsg(el, `${name} must be a number.`); if (x <= 0) return vmsg(el, `${name} must be greater than 0.`); if (el === etIn && x > 45) return vmsg(el, 'ET50 can\'t be more than 45 minutes in this lab (the longest run).'); return vmsg(el, ''); };
     const ok1 = chk(etIn, 'ET50 in minutes'), ok2 = chk(rIn, '1/ET50 in min⁻¹');
@@ -1064,8 +1116,10 @@ const Predict = (function () {
     out.push(near(v, 1 / u, 0.02, 0.002) ? '<span class="pill ok">1/ET<sub>50</sub> correct</span>' : `<span class="pill warn">1/ET<sub>50</sub></span> Divide 1 by your ET<sub>50</sub>: 1 ÷ ${fmt(u, 2)}.`);
     fbList($('#et-fb'), out);
     const ok = out.filter(t => t.includes('pill ok')).length;
-    Lab.toast(ok === out.length ? 'Checked: your ET₅₀ and 1/ET₅₀ are right' : 'Checked: see the hints under your answers', { type: ok === out.length ? 'ok' : 'warn', announce: false });
-  });
+    if (!quiet) Lab.toast(ok === out.length ? 'Checked: your ET₅₀ and 1/ET₅₀ are right' : 'Checked: see the hints under your answers', { type: ok === out.length ? 'ok' : 'warn', announce: false });
+  }
+  $('#et-check').addEventListener('click', () => { etCheck(false); Lab.store.set('chk-et', true); });
+  if (Lab.store.get('chk-et') && $('#et-in').value && $('#ret-in').value) etCheck(true);
   const pp = $('#proc-prompts');
   Lab.prompt(pp, { key: 'p-ctrl', label: 'What happened in the "Without CO<sub>2</sub>" cup? Explain why it is the control and what it shows about the role of bicarbonate.', rows: 3 });
   Lab.prompt(pp, { key: 'p-dark', label: 'If you covered the cups, describe what happened to the floating disks and explain it in terms of cellular respiration. Was the sinking slope steeper or shallower than the floating slope? Why?', rows: 4 });
@@ -1140,6 +1194,7 @@ const Predict = (function () {
       return { lv: rr2[0].lvl, _k: k, n: rr2.length, med: isFinite(med) ? med : NaN, mean: S.mean(rate), se: rate.length > 1 ? S.se(rate) : NaN, ci: rate.length > 1 ? 2 * S.se(rate) : NaN };
     });
     dsum.setRows(sum);
+    if (!rows.length) { dchart.update({ series: [] }); dchart2.update({ series: [] }); return; }
     if (o.num) {
       const xf = o.xval || (v => v), xl = o.x;
       dchart.update({ type: 'xy', xLabel: xl, yLabel: 'Rate, 1/ET₅₀ (min⁻¹)', categories: undefined, yMin: 0, series: [{ name: 'Mean 1/ET50 ± 2 SE', points: sum.map(s => ({ x: xf(s._k), y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }, { name: 'Each cup', points: rows.map(r => ({ x: xf(r.v), y: r.rate })), line: false }] });
@@ -1150,34 +1205,55 @@ const Predict = (function () {
       dchart2.update({ type: 'bar', xLabel: o.label + ' (category)', yLabel: 'Median ET₅₀ (min)', categories: cats, yMin: 0, series: [{ name: 'Median ET50', points: sum.map(s => ({ x: s.lv, y: isFinite(s.med) ? s.med : 0 })) }] });
     }
   }
-  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', unit: 'no.', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze, toast: rows => `Recorded ET₅₀ for ${rows.length} cups` });
+  const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze, toast: rows => `Recorded ET₅₀ for ${rows.length} cups` });
+  /* The design run is saved (seed, start time, settings) and replayed on the clock after a reload, like the float assay. */
+  const D_MAX = 45, D_RATE = 8;
+  let dT = 0, dTarget = 0, dIvKey = 'dist', dLoop = null;
+  function dTick(maxT) {
+    const nextMin = Math.floor(dT + 1e-9) + 1, s = Math.min(0.1, nextMin - dT);
+    if (dT + s > maxT + 1e-9) return false;
+    dCups.forEach(c => stepDisks(c.disks, s, false)); dT += s;
+    if (dT >= nextMin - 1e-9) dCups.forEach(c => c.counts.push(c.disks.filter(d => d.up).length));
+    return true;
+  }
+  const dAllUp = () => dCups.every(c => c.disks.every(d => d.up));
+  function dFinish(setRows) {
+    dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = Math.min(D_MAX, Math.round(dT)) + ' min'; dAnim = null; dLoop = null;
+    const iv = dIvKey, per = new Map();
+    if (setRows) draw.setRows(dCups.map(c => { const k = String(c.v); per.set(k, (per.get(k) || 0) + 1); const e = et50(c.counts, 10); return { v: c.v, lvl: lvName(iv, c.v), cup: per.get(k), et: e, etTxt: e == null ? '> 45' : fmt(e, 1), rate: e == null || e === 0 ? 0 : 1 / e }; }));
+    Lab.store.set('d-run', Object.assign(Lab.store.get('d-run') || {}, { done: true }));
+  }
+  function dBegin(sd) { rng = Lab.rng(sd); dPreview(); dCups.forEach(c => { c.counts = [c.disks.filter(d => d.up).length]; c.t = 0; }); dT = 0; dTarget = 0; }
+  function dGo() {
+    dLoop = Lab.loop(dt => {
+      dTarget += dt * D_RATE;
+      while (dT < D_MAX - 1e-9 && !dAllUp() && dTick(Math.min(dTarget, D_MAX)));
+      dCups.forEach(c => easeDisks(c.disks, dt * D_RATE)); dDraw(); $('#d-t').textContent = fmt(dT, 0) + ' min';
+      if (dT >= D_MAX - 1e-9 || dAllUp()) { dLoop.stop(); dFinish(true); return false; }
+    });
+    dAnim = () => { dLoop.stop(); while (dT < D_MAX - 1e-9 && !dAllUp() && dTick(D_MAX)); dFinish(true); };
+    dLoop.start();
+  }
   $('#d-run').addEventListener('click', () => {
+    if (dAnim) { const f = dAnim; dAnim = null; f(); }
     dPreview();
     if (!dCups.length) { $('#d-hint').textContent = 'Choose at least one valid level. ' + (IV[dIv.value].hint || ''); return; }
-    const iv = dIv.value;
+    const iv = dIv.value, sd = newSeed(); dIvKey = iv;
     Lab.store.set('d-setup', { iv, levels: dLv.value, checks: IV[iv].num ? null : dLevels() });
-    const MAX = 45;
-    dCups.forEach(c => { c.counts = [c.disks.filter(d => d.up).length]; c.t = 0; });
-    let t = 0;
-    const advance = dm => {
-      let left = dm;
-      while (left > 1e-9 && t < MAX) {
-        const nextMin = Math.floor(t + 1e-9) + 1, s = Math.min(0.1, left, nextMin - t);
-        dCups.forEach(c => stepDisks(c.disks, s, false)); t += s; left -= s;
-        if (t >= nextMin - 1e-9) dCups.forEach(c => c.counts.push(c.disks.filter(d => d.up).length));
-      }
-    };
-    const finish = () => {
-      advance(MAX - t); dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = MAX + ' min';
-      const per = new Map();
-      draw.setRows(dCups.map(c => { const k = String(c.v); per.set(k, (per.get(k) || 0) + 1); const e = et50(c.counts, 10); return { v: c.v, lvl: lvName(iv, c.v), cup: per.get(k), et: e, etTxt: e == null ? '> 45' : fmt(e, 1), rate: e == null || e === 0 ? 0 : 1 / e }; }));
-      dAnim = null;
-    };
-    if (Lab.reducedMotion()) { finish(); return; }
-    const lp = Lab.loop(dt => { advance(dt * 8); dCups.forEach(c => easeDisks(c.disks, dt * 8)); dDraw(); $('#d-t').textContent = fmt(t, 0) + ' min'; if (t >= MAX - 1e-9 || dCups.every(c => c.disks.every(d => d.up))) { lp.stop(); finish(); return false; } });
-    dAnim = () => { lp.stop(); if (dCups[0] && dCups[0].counts) finish(); };
-    lp.start();
+    Lab.store.set('d-run', { sd, t0: Date.now(), reps: +dReps.value, filter: $('#d-filter').checked, done: false });
+    dBegin(sd);
+    if (Lab.reducedMotion()) { while (dT < D_MAX - 1e-9 && !dAllUp() && dTick(D_MAX)); dFinish(true); return; }
+    dGo();
   });
+  { const dr = Lab.store.get('d-run'), ds = Lab.store.get('d-setup');
+    if (dr && dr.sd != null && ds && IV[ds.iv] && (dr.done ? draw.getRows().length : true)) {
+      dReps.value = dr.reps; dReps.dispatchEvent(new Event('input')); $('#d-filter').checked = !!dr.filter; dIvKey = ds.iv;
+      dBegin(dr.sd);
+      const elapsed = Math.min(D_MAX, (Date.now() - dr.t0) / 1000 * D_RATE);
+      while (dT < elapsed - 1e-9 && !dAllUp() && dTick(elapsed));
+      dTarget = elapsed;
+      if (dT >= D_MAX - 1e-9 || dAllUp()) dFinish(!dr.done); else { dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = fmt(dT, 0) + ' min'; dGo(); }
+    } }
   const plan = $('#design-plan');
   Lab.prompt(plan, { key: 'd-q', label: 'Your testable question', rows: 3, placeholder: 'How does … affect the net rate of photosynthesis in …?' });
   Lab.prompt(plan, { key: 'd-h', label: 'Hypothesis and prediction, with the biological reasoning (and a null hypothesis)', rows: 3 });
@@ -1191,8 +1267,15 @@ const Predict = (function () {
      ===================================================================== */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
   const cupRows = () => cupTable.getRows();
-  Lab.results('#cup-sim', { graph: ['#cup-chart'], data: ['#cup-table'] });
-  Lab.results('#d-sim', {
+  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
+     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
+  function showData(sim, o) {
+    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
+    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
+    return r;
+  }
+  showData('#cup-sim', { graph: ['#cup-chart'], data: ['#cup-table'] });
+  showData('#d-sim', {
     graph: [{ el: '#d-chart', title: 'Rate: mean 1/ET₅₀ ± 2 SE' }, { el: '#d-chart2', title: 'Median ET₅₀' }],
     data: [{ el: '#d-sum', title: 'Summary by level' }, { el: '#d-raw', title: 'ET₅₀ for every cup' }]
   });

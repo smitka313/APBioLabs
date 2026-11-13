@@ -23,7 +23,7 @@ module.exports = async ({ b, ok, ctxAs, open, keyres, ownText, frqChecks, frqRel
   await p.click('#mg-run'); await p.waitForTimeout(1500);
   await p.click('#mg-record'); await p.waitForTimeout(400);
   await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
-  await p.click('#cs-run'); await p.waitForTimeout(2000);
+  await p.fill('#cs-aa', '30'); await p.fill('#cs-ab', '40'); await p.fill('#cs-bb', '30'); await p.click('#cs-run'); await p.waitForTimeout(2000);
   const o1 = await ownText(p, 'own-drift'), o2 = await ownText(p, 'own-spreadsheet');
   ok(/SD = \d\.\d+, mean p = \d\.\d+/.test(o1), 'own-drift quotes real run: ' + o1.slice(0, 130));
   ok(/Δp = -?\d\.\d+ \(run \d: N = (16|1000)/.test(o2), 'own-spreadsheet quotes real run: ' + o2.slice(0, 130));
