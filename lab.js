@@ -904,6 +904,7 @@
   function wipe(keep) {
     noFlush = true; wiped = true; if (Lab._allowLeave) Lab._allowLeave();
     lsKeys().filter(k => k.startsWith('aplab:') && !keep(k)).forEach(lsRemove);
+    try { Lab.timelapse.eraseAll(); } catch (e) { /* recorded runs live in IndexedDB */ }
     try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (e) { /* ignore */ }
   }
   function doSignOut() {
@@ -930,6 +931,7 @@
     if (last && last.lab === id) drop.add('aplab:last');
     noFlush = true; wiped = true; if (Lab._allowLeave) Lab._allowLeave();
     lsKeys().filter(k => k.startsWith(`aplab:${id}:`) || drop.has(k)).forEach(lsRemove);
+    try { Lab.timelapse.erase(id); } catch (e) { /* ignore */ }
     try { sessionStorage.removeItem(shownKey()); } catch (e) { /* ignore */ }
     memBackup = null;
     sessionSet(FLASH_KEY, 'lab');
@@ -1336,8 +1338,12 @@
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun('Key results')] }));
       kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ tableHeader: true, children: ['Result', 'Value'].map(t => cell(t, true)) })].concat(rep.keyResults.map(r => new TableRow({ cantSplit: true, children: [cell(r.label), cell(r.text)] }))) }));
     }
-    for (const s of rep.sections) {
+    for (const s of rep.sections.concat(rep.timelapse && rep.timelapse.length ? [{ timelapse: true, name: 'My timelapse', items: [] }] : [])) {
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun(s.name + (s.heading && s.heading !== s.name ? ': ' + s.heading : ''))] }));
+      if (s.timelapse) rep.timelapse.forEach(t => {
+        kids.push(P(t.label + ': your run, replayed about 15 times faster (an animated GIF; it plays in Word when you open the file).', { run: { italics: true }, para: { spacing: { before: 120 } } }));
+        kids.push(new Paragraph({ spacing: { before: 80 }, children: [new ImageRun({ type: 'gif', data: t.bytes, transformation: { width: t.width, height: t.height }, altText: { name: 'Timelapse', title: 'Timelapse: ' + t.label, description: 'Animated timelapse of the student run: ' + t.label } })] }));
+      });
       for (const it of s.items) {
         if (it.kind === 'answer') {
           kids.push(P(it.q, { run: { bold: true }, para: { spacing: { before: 160 } } }));
@@ -1415,6 +1421,13 @@
     if (reportOpener) { try { reportOpener.focus(); } catch (e) { /* gone */ } reportOpener = null; }
   }
   function reportKey(e) { if (e.key === 'Escape') closeReport(); }
+  /* "Include my timelapse in the report": a GIF per recorded run (smaller than the download: 320 px, at most 90 frames), inserted after the last section. */
+  const tlInclude = () => !!store.get('tl-include');
+  async function reportTimelapse() {
+    const out = [];
+    for (const r of Lab.timelapse.withRun()) { try { const blob = await r.gif({ width: 320, maxFrames: 90, speed: 15 }); out.push({ label: r.label, bytes: new Uint8Array(await blob.arrayBuffer()), width: 320, height: Math.round(320 * r.height / r.width) }); } catch (e) { /* a run that cannot be encoded is left out */ } }
+    return out;
+  }
   /* The "Bench-verified" stamp for this report (see Stamp); a failure just leaves it out. */
   function reportStamp(rep) { try { return Lab.stamp.png({ datasetId: rep.datasetId }); } catch (e) { return null; } }
   /* A report was downloaded or sent to the print dialog: the one confetti burst (see Celebrations), only if every part is done. */
@@ -1451,7 +1464,7 @@
     collect: collectReport,
     filename: () => reportFileBase(),
     open: openReport, close: closeReport,
-    async docx() { const rep = await renderCharts(collectReport()); rep.stamp = reportStamp(rep); try { rep.embed = await makeResumeCode(progressPayload(true)); } catch (e) { rep.embed = ''; } return withNativeRandom(() => buildDocx(rep)); },
+    async docx(o = {}) { const rep = await renderCharts(collectReport()); rep.stamp = reportStamp(rep); if (o.timelapse != null ? o.timelapse : tlInclude()) rep.timelapse = await reportTimelapse(); try { rep.embed = await makeResumeCode(progressPayload(true)); } catch (e) { rep.embed = ''; } return withNativeRandom(() => buildDocx(rep)); },
     docxUrls: DOCX_URLS,
   };
 
@@ -1710,9 +1723,13 @@
       } finally { docxBtn.disabled = false; }
     } }, 'Download .docx');
     const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Save as PDF');
+    const tlBox = h('input', { type: 'checkbox', id: 'tl-include', checked: tlInclude() || null, onchange: () => store.set('tl-include', tlBox.checked) });
+    const tlRow = h('label', { class: 'check tl-include', for: 'tl-include', hidden: true }, tlBox, ' Include my timelapse in the report');
+    const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
+    window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
     const bar = h('div', { class: 'responses-bar report-bar' },
       h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
-      h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
+      h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
     return [bar, ss, makeLabBadge(), status, note];
   }
@@ -3329,6 +3346,297 @@
     return true;
   }
   Lab.celebrate = { lab: celebrateLab, complete: () => CEL.complete, done: celebrated, confetti };
+
+  /* ---------------- GIF encoder (no library) ----------------
+     Lab.gif.encode(frames, {delay, delays, loop, onprogress}) → Promise<Uint8Array>   a GIF89a, looping forever by default.
+       frames: [{data: Uint8ClampedArray RGBA, width, height}] (ImageData works), all the same size; delay in 1/100 s (default 8).
+     Lab.gif.Encoder(width, height, {loop}) is the streaming form the timelapse uses (never holds every frame at once):
+       const enc = new Lab.gif.Encoder(360, 240);  enc.setPalette([rgba1, rgba2, …]);  enc.addFrame(rgba, delayCs);  const bytes = enc.finish();
+     One global 255-colour palette from median cut over a sample of the frames (index 255 is "unchanged"), nearest-colour mapping through a
+     5-bit-per-channel lookup, then only the changed rectangle of each frame is stored (transparent where unchanged), LZW-compressed. */
+  const GIF = (function () {
+    const TRANS = 255;
+    let tab = null, stamp = null, gen = 0;
+    function lzw(idx) { // → Uint8Array of the LZW data (min code size 8, 12-bit codes, clear when the table fills)
+      const n = idx.length;
+      if (!tab) { tab = new Int32Array(1 << 20); stamp = new Uint32Array(1 << 20); }
+      gen++;
+      const out = new Uint8Array(Math.ceil(n * 1.6) + 64); let p = 0, cur = 0, shift = 0, size = 9, next = 258;
+      const emit = c => { cur |= c << shift; shift += size; while (shift >= 8) { out[p++] = cur & 255; cur >>>= 8; shift -= 8; } };
+      emit(256);
+      let ib = idx[0];
+      for (let i = 1; i < n; i++) {
+        const k = idx[i], key = (ib << 8) | k;
+        if (stamp[key] === gen) { ib = tab[key]; continue; }
+        emit(ib);
+        if (next === 4096) { emit(256); next = 258; size = 9; gen++; }
+        else { if (next >= (1 << size)) size++; tab[key] = next++; stamp[key] = gen; }
+        ib = k;
+      }
+      emit(ib); emit(257);
+      if (shift > 0) out[p++] = cur & 255;
+      return out.subarray(0, p);
+    }
+    /* Median cut over a 15-bit histogram of the sampled pixels. Returns {pal: Uint8Array(768), lut: Int16Array(32768)}. */
+    function buildPalette(samples) {
+      const hist = new Uint32Array(32768);
+      samples.forEach(d => { const step = Math.max(1, Math.floor(d.length / 4 / 40000)) * 4; for (let i = 0; i < d.length; i += step) { if (d[i + 3] < 128) continue; hist[((d[i] >> 3) << 10) | ((d[i + 1] >> 3) << 5) | (d[i + 2] >> 3)]++; } });
+      const all = []; let total = 0;
+      for (let i = 0; i < 32768; i++) if (hist[i]) { all.push(i); total += hist[i]; }
+      const ch = (k, a) => a === 0 ? k >> 10 : a === 1 ? (k >> 5) & 31 : k & 31;
+      const stat = cols => { let n = 0; const lo = [31, 31, 31], hi = [0, 0, 0]; cols.forEach(k => { n += hist[k]; for (let a = 0; a < 3; a++) { const v = ch(k, a); if (v < lo[a]) lo[a] = v; if (v > hi[a]) hi[a] = v; } }); let ax = 0, best = -1; for (let a = 0; a < 3; a++) if (hi[a] - lo[a] > best) { best = hi[a] - lo[a]; ax = a; } return { cols, n, ax, range: best }; };
+      const boxes = all.length ? [stat(all)] : [];
+      while (boxes.length < 255) {
+        let bi = -1, bs = 0;
+        boxes.forEach((b, i) => { if (b.cols.length > 1) { const s = b.range * Math.sqrt(b.n); if (s > bs) { bs = s; bi = i; } } });
+        if (bi < 0) break;
+        const b = boxes[bi]; b.cols.sort((x, y) => ch(x, b.ax) - ch(y, b.ax));
+        let acc = 0, cut = 1; for (let i = 0; i < b.cols.length - 1; i++) { acc += hist[b.cols[i]]; cut = i + 1; if (acc * 2 >= b.n) break; }
+        boxes.splice(bi, 1, stat(b.cols.slice(0, cut)), stat(b.cols.slice(cut)));
+      }
+      const pal = new Uint8Array(768), lut = new Int16Array(32768).fill(-1);
+      boxes.forEach((b, i) => { let r = 0, g = 0, bl = 0; b.cols.forEach(k => { const w = hist[k]; r += (k >> 10) * w; g += ((k >> 5) & 31) * w; bl += (k & 31) * w; lut[k] = i; }); pal[i * 3] = Math.min(255, Math.round(r / b.n * 8 + 4)); pal[i * 3 + 1] = Math.min(255, Math.round(g / b.n * 8 + 4)); pal[i * 3 + 2] = Math.min(255, Math.round(bl / b.n * 8 + 4)); });
+      return { pal, lut, used: boxes.length, total };
+    }
+    function Encoder(w, h, o = {}) { this.w = w; this.h = h; this.loop = o.loop || 0; this.chunks = []; this.palette = null; this.prev = null; this.pending = null; this.frames = 0; }
+    Encoder.prototype.setPalette = function (samples) {
+      this.palette = buildPalette(samples);
+      const c = [71, 73, 70, 56, 57, 97, this.w & 255, this.w >> 8, this.h & 255, this.h >> 8, 0xF7, 0, 0];
+      this.chunks.push(Uint8Array.from(c), this.palette.pal);
+      this.chunks.push(Uint8Array.from([0x21, 0xFF, 0x0B, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 0x03, 0x01, this.loop & 255, this.loop >> 8, 0]));
+    };
+    Encoder.prototype.map = function (rgba) {
+      const { pal, lut } = this.palette, n = this.w * this.h, idx = new Uint8Array(n);
+      for (let i = 0, j = 0; i < n; i++, j += 4) {
+        const r = rgba[j], g = rgba[j + 1], b = rgba[j + 2], key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        let v = lut[key];
+        if (v < 0) { let best = 1e9; v = 0; for (let c = 0; c < this.palette.used; c++) { const dr = pal[c * 3] - r, dg = pal[c * 3 + 1] - g, db = pal[c * 3 + 2] - b, d = dr * dr * 3 + dg * dg * 4 + db * db * 2; if (d < best) { best = d; v = c; } } lut[key] = v; }
+        idx[i] = v;
+      }
+      return idx;
+    };
+    Encoder.prototype.flush = function () {
+      const f = this.pending; if (!f) return; this.pending = null;
+      const d = Math.max(2, Math.round(f.delay));
+      this.chunks.push(Uint8Array.from([0x21, 0xF9, 0x04, f.trans ? 0x05 : 0x04, d & 255, d >> 8, f.trans ? TRANS : 0, 0]));
+      this.chunks.push(Uint8Array.from([0x2C, f.x & 255, f.x >> 8, f.y & 255, f.y >> 8, f.w & 255, f.w >> 8, f.h & 255, f.h >> 8, 0, 8]));
+      const data = lzw(f.idx), blocks = [];
+      for (let i = 0; i < data.length; i += 255) { const part = data.subarray(i, Math.min(data.length, i + 255)); const b = new Uint8Array(part.length + 1); b[0] = part.length; b.set(part, 1); blocks.push(b); }
+      blocks.push(Uint8Array.from([0]));
+      this.chunks.push(...blocks); this.frames++;
+    };
+    Encoder.prototype.addFrame = function (rgba, delay = 8) {
+      if (!this.palette) this.setPalette([rgba]);
+      const idx = this.map(rgba), w = this.w, h = this.h, prev = this.prev;
+      this.prev = idx;
+      if (!prev) { this.pending = { x: 0, y: 0, w, h, idx, delay, trans: false }; return; }
+      let x0 = w, y0 = h, x1 = -1, y1 = -1;
+      for (let y = 0; y < h; y++) for (let x = 0, i = y * w; x < w; x++, i++) if (idx[i] !== prev[i]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      if (x1 < 0) { if (this.pending) this.pending.delay += delay; return; }  // identical: just hold the previous frame longer
+      this.flush();
+      const rw = x1 - x0 + 1, rh = y1 - y0 + 1, sub = new Uint8Array(rw * rh);
+      for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) { const i = (y0 + y) * w + x0 + x; sub[y * rw + x] = idx[i] === prev[i] ? TRANS : idx[i]; }
+      this.pending = { x: x0, y: y0, w: rw, h: rh, idx: sub, delay, trans: true };
+    };
+    Encoder.prototype.finish = function () {
+      this.flush(); this.chunks.push(Uint8Array.from([0x3B]));
+      let n = 0; this.chunks.forEach(c => { n += c.length; });
+      const out = new Uint8Array(n); let p = 0; this.chunks.forEach(c => { out.set(c, p); p += c.length; });
+      this.chunks = []; return out;
+    };
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    async function encode(frames, o = {}) {
+      if (!frames.length) throw new Error('no frames');
+      const w = frames[0].width, h = frames[0].height, enc = new Encoder(w, h, { loop: o.loop });
+      const pick = []; const k = Math.max(1, Math.ceil(frames.length / 10)); for (let i = 0; i < frames.length; i += k) pick.push(frames[i].data);
+      enc.setPalette(pick);
+      for (let i = 0; i < frames.length; i++) { enc.addFrame(frames[i].data, o.delays ? o.delays[i] : (o.delay || 8)); if (o.onprogress) o.onprogress((i + 1) / frames.length); if (i % 4 === 3) await tick(); }
+      return enc.finish();
+    }
+    return { encode, Encoder, buildPalette, lzw };
+  })();
+  Lab.gif = GIF;
+
+  /* ---------------- Timelapse: record a run, replay it fast, save it as a GIF ----------------
+     const rec = Lab.timelapse(canvasOrScopeView, { fps: 4, maxFrames: 240, width: 360, label: 'Gel run', key: 'gel' });
+     rec.start();  …the run animates…  rec.stop();           // frames are copied from the canvas, downscaled to `width`
+     rec.mount('#gel-timelapse');                            // "Replay my run" + "Download timelapse (GIF)" buttons and a status line
+     rec.replay({ speed: 15 });  rec.gif({ speed: 15 }) → Promise<Blob>;  rec.downloadGif();  rec.clear();  rec.count;  rec.fps;
+     rec.onchange = () => …  (fires after start, each batch of frames, stop, clear and a restore from the previous visit)
+     Frames are small JPEGs kept in memory and in IndexedDB (database aplab-timelapse, capped by maxBytes, every call in try/catch),
+     so a replay survives a reload; a marker aplab:<lab>:tl:<key> is what makes the stored run "this student's", so Sign out and Start over
+     erase it. At maxFrames (or maxBytes) every second frame is dropped and capture slows to match: a long run still covers its whole length.
+     fps is the capture rate; a replay at 15× shows fps × 15 frames per second. A GIF drops frames when that would be faster than browsers
+     show GIFs (they treat delays under 2/100 s as 10/100 s). The .docx can carry the GIF ("Include my timelapse in the report"). */
+  const TLS = [];            // every recorder on this page
+  const TL_DB = 'aplab-timelapse';
+  const tlOpen = () => new Promise((res, rej) => { try { const r = indexedDB.open(TL_DB, 1); r.onupgradeneeded = () => r.result.createObjectStore('runs', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error('blocked')); } catch (e) { rej(e); } });
+  const tlTx = (mode, fn) => tlOpen().then(db => new Promise((res, rej) => { let out; const tx = db.transaction('runs', mode); try { out = fn(tx.objectStore('runs')); } catch (e) { db.close(); rej(e); return; } tx.oncomplete = () => { db.close(); res(out && out.result !== undefined ? out.result : out); }; tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); }; }));
+  const tlPut = rec => tlTx('readwrite', s => s.put(rec));
+  const tlGet = id => tlTx('readonly', s => s.get(id));
+  const tlDel = id => tlTx('readwrite', s => s.delete(id));
+  const tlDelLab = lab => tlTx('readwrite', s => { s.openCursor().onsuccess = e => { const c = e.target.result; if (c) { if (String(c.key).startsWith(lab + ':')) c.delete(); c.continue(); } }; });
+  function tlEraseAll() { try { TLS.forEach(r => r._detach && r._detach()); const q = indexedDB.deleteDatabase(TL_DB); q.onerror = q.onblocked = () => {}; } catch (e) { /* no IndexedDB */ } }
+  function tlEraseLab(lab) { try { tlDelLab(lab).catch(() => {}); } catch (e) { /* ignore */ } }
+  const tlMark = (k, v) => { const name = `aplab:${LAB_ID}:tl:${k}`; try { if (v === undefined) { const r = localStorage.getItem(name); return r ? JSON.parse(r) : null; } if (wiped) return null; if (v === null) localStorage.removeItem(name); else localStorage.setItem(name, JSON.stringify(v)); } catch (e) { /* blocked */ } return null; };
+  const tlYield = () => new Promise(r => setTimeout(r, 0));
+  const tlPlain = html => { const d = document.createElement('div'); d.innerHTML = html; return (d.textContent || '').trim(); };
+  function tlSource(t) { if (typeof t === 'function') t = t(); if (typeof t === 'string') t = $(t); if (t && t.canvas && t.canvas.getContext) t = t.canvas; return t && t.getContext ? t : null; }
+  async function tlBitmap(blob) { if (window.createImageBitmap) { try { return await createImageBitmap(blob); } catch (e) { /* fall back */ } } return new Promise((res, rej) => { const u = URL.createObjectURL(blob), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('decode')); }; im.src = u; }); }
+  Lab.timelapse = function (target, o = {}) {
+    const opts = Object.assign({ fps: 4, maxFrames: 240, width: 360, label: 'My run', quality: 0.85, maxBytes: 6e6 }, o);
+    const srcEl0 = typeof target === 'string' ? $(target) : target;
+    const key = String(opts.key || (srcEl0 && (srcEl0.id || (srcEl0.canvas && srcEl0.canvas.id))) || slugify(opts.label) || 'run');
+    const id = LAB_ID + ':' + key;
+    let frames = [], stride = 1, ticks = 0, pending = 0, timer = 0, recording = false, bytes = 0, W = 0, H = 0, fps = opts.fps, saveT = 0, ui = [];
+    const cap = document.createElement('canvas'), cctx = cap.getContext('2d');
+    const rec = { id, key, label: opts.label, onchange: null, persisted: false };
+    const changed = () => { ui.forEach(f => f()); try { if (rec.onchange) rec.onchange(rec); } catch (e) { console.warn(e); } window.dispatchEvent(new CustomEvent('aplab:timelapse', { detail: { id, count: frames.length } })); };
+    const decimate = () => { if (pending) return; frames = frames.filter((_, i) => i % 2 === 0); stride *= 2; fps = opts.fps / stride; bytes = frames.reduce((a, b) => a + b.size, 0); };
+    function grab() {
+      const src = tlSource(target); if (!src || !src.width || !src.height) return;
+      const w = Math.min(opts.width, src.width), h = Math.max(2, Math.round(w * src.height / src.width));
+      W = w; H = h; if (cap.width !== w || cap.height !== h) { cap.width = w; cap.height = h; }
+      cctx.fillStyle = Lab.color('--surface'); cctx.fillRect(0, 0, w, h);
+      cctx.imageSmoothingQuality = 'medium'; cctx.drawImage(src, 0, 0, src.width, src.height, 0, 0, w, h);
+      const slot = frames.length; frames.push(null); pending++;
+      cap.toBlob(b => { pending--; if (b) { frames[slot] = b; bytes += b.size; } else frames[slot] = undefined; if (!pending) { frames = frames.filter(Boolean); } }, 'image/jpeg', opts.quality);
+    }
+    function step() {
+      if (document.hidden || pending > 3) return;
+      if (ticks++ % stride) return;
+      if (frames.length >= opts.maxFrames || bytes > opts.maxBytes) decimate();
+      if (frames.length >= opts.maxFrames) return;
+      grab(); if (ticks % 4 === 1) changed();
+    }
+    const settle = async () => { for (let i = 0; i < 100 && pending; i++) await tlYield(); frames = frames.filter(Boolean); };
+    async function persist() {
+      const meta = { n: frames.length, fps, w: W, h: H, label: opts.label, t: Date.now() };
+      tlMark(key, meta);
+      try { await tlPut({ id, lab: LAB_ID, key, label: opts.label, fps, w: W, h: H, t: meta.t, frames: frames.slice() }); rec.persisted = true; } catch (e) { rec.persisted = false; }
+      changed();
+    }
+    rec.start = function () {
+      if (recording) return rec; frames = []; stride = 1; ticks = 0; bytes = 0; fps = opts.fps; recording = true;
+      grab(); changed();
+      timer = setInterval(step, 1000 / opts.fps); return rec;
+    };
+    rec.stop = async function () {
+      if (!recording) return rec; recording = false; clearInterval(timer);
+      grab(); await settle(); if (frames.length > opts.maxFrames) frames = frames.filter((_, i) => i % 2 === 0);
+      await persist(); return rec;
+    };
+    rec.capture = function () { grab(); return rec; };
+    rec.clear = async function () { recording = false; clearInterval(timer); frames = []; bytes = 0; tlMark(key, null); try { await tlDel(id); } catch (e) { /* ignore */ } changed(); return rec; };
+    rec._detach = () => { recording = false; clearInterval(timer); frames = []; ui = []; };
+    Object.defineProperties(rec, { count: { get: () => frames.filter(Boolean).length }, fps: { get: () => fps }, recording: { get: () => recording }, width: { get: () => W }, height: { get: () => H }, bytes: { get: () => bytes }, frames: { get: () => frames.filter(Boolean) } });
+    rec.restored = (async () => {
+      const m = tlMark(key);
+      if (!m || !m.n) { try { await tlDel(id); } catch (e) { /* ignore */ } return false; }   // no marker: an erased student's leftovers
+      try {
+        const r = await tlGet(id);
+        if (r && r.frames && r.frames.length && !recording && !frames.length) { frames = r.frames; fps = r.fps || opts.fps; W = r.w; H = r.h; bytes = frames.reduce((a, b) => a + b.size, 0); stride = Math.max(1, Math.round(opts.fps / fps)); rec.persisted = true; changed(); return true; }
+      } catch (e) { /* no IndexedDB: this visit only */ }
+      return false;
+    })();
+
+    /* --- Replay modal --- */
+    let modal = null;
+    rec.replay = async function (ro = {}) {
+      await rec.restored; if (rec.count < 2 || modal) return null;
+      const list = rec.frames, n = list.length; let speed = ro.speed || 15, pos = 0, playing = false, raf = 0, last = 0, shown = -1;
+      const cache = new Map(), inflight = new Set(); let gone = false;
+      const cv = h('canvas', { class: 'tl-canvas', width: W, height: H, 'aria-label': `${opts.label}: replay of your run` });
+      const c2 = cv.getContext('2d');
+      const play = h('button', { class: 'btn btn--primary btn--sm tl-play', type: 'button', 'aria-label': 'Play' }, 'Play');
+      const scrub = h('input', { class: 'tl-scrub', type: 'range', min: 0, max: n - 1, value: 0, step: 1, 'aria-label': 'Position in your run' });
+      const lab = h('span', { class: 'tl-pos', 'aria-live': 'off' });
+      const sel = h('select', { class: 'tl-speed', 'aria-label': 'Replay speed' }, [10, 15, 20].map(v => h('option', { value: v, selected: v === speed }, v + '× speed')));
+      const gifBtn = h('button', { class: 'btn btn--sm', type: 'button' }, 'Download timelapse (GIF)');
+      const closeBtn = h('button', { class: 'btn btn--sm', type: 'button' }, 'Close');
+      const status = h('p', { class: 'tl-gifstatus small muted', 'aria-live': 'polite' });
+      const card = h('div', { class: 'tl-card', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Replay: ' + opts.label },
+        h('div', { class: 'tl-head' }, h('strong', null, opts.label), h('span', { class: 'muted small' }, ' · your run, sped up')),
+        h('div', { class: 'tl-view' }, cv),
+        h('div', { class: 'tl-row' }, play, scrub), h('div', { class: 'tl-row tl-row--meta' }, lab, h('label', { class: 'tl-speed-l' }, 'Speed ', sel)),
+        h('div', { class: 'tl-row' }, gifBtn, closeBtn), status);
+      modal = h('div', { class: 'tl-modal' }, card);
+      const opener = document.activeElement, inert = [];
+      Array.from(document.body.children).forEach(el => { if (el !== modal && !el.hasAttribute('inert') && el.tagName !== 'SCRIPT') { el.setAttribute('inert', ''); inert.push(el); } });
+      document.body.append(modal); document.body.classList.add('has-dm');
+      const ensure = async i => { if (cache.has(i) || inflight.has(i) || gone) return; inflight.add(i); try { const bm = await tlBitmap(list[i]); if (gone) { if (bm.close) bm.close(); } else cache.set(i, bm); } catch (e) { /* skip a bad frame */ } inflight.delete(i); };
+      const trim = i => { cache.forEach((bm, k) => { if (k < i - 6 || k > i + 48) { if (bm.close) bm.close(); cache.delete(k); } }); };
+      const draw = i => { let k = i; while (k >= 0 && !cache.has(k)) k--; if (k < 0) return; if (k === shown) return; shown = k; c2.drawImage(cache.get(k), 0, 0, W, H); };
+      let lastLab = '';
+      const label = i => { const s2 = i + '|' + speed; if (s2 === lastLab) return; lastLab = s2; lab.textContent = `Frame ${i + 1} of ${n} · ${speed}× speed`; scrub.value = i; scrub.setAttribute('aria-valuetext', `Frame ${i + 1} of ${n}`); };
+      const seek = async i => { i = Math.max(0, Math.min(n - 1, Math.round(i))); pos = i; await ensure(i); for (let k = 1; k <= 24; k++) if (i + k < n) ensure(i + k); draw(i); label(i); trim(i); };
+      const setPlay = on => { playing = on; play.textContent = on ? 'Pause' : (pos >= n - 1 ? 'Replay' : 'Play'); play.setAttribute('aria-label', play.textContent); last = 0; if (on && !raf) raf = requestAnimationFrame(loop); };
+      const loop = t => {
+        raf = 0; if (gone || !playing) return;
+        const dt = last ? Math.min(0.1, (t - last) / 1000) : 0; last = t;
+        pos += dt * fps * speed; const i = Math.min(n - 1, Math.floor(pos));
+        for (let k = 0; k < 40 && i + k < n; k += 4) ensure(i + k);
+        draw(i); label(i); if (i % 8 === 0) trim(i);
+        if (pos >= n - 1) { setPlay(false); return; }
+        raf = requestAnimationFrame(loop);
+      };
+      play.onclick = () => { if (!playing && pos >= n - 1) { pos = 0; shown = -1; } setPlay(!playing); };
+      scrub.oninput = () => { setPlay(false); seek(+scrub.value); };
+      sel.onchange = () => { speed = +sel.value; label(Math.floor(pos)); };
+      gifBtn.onclick = async () => { gifBtn.disabled = true; status.textContent = 'Building the GIF…'; try { await rec.downloadGif({ speed, onprogress: f => { status.textContent = `Building the GIF… ${Math.round(f * 100)}%`; } }); status.textContent = 'GIF downloaded.'; } catch (e) { status.textContent = 'Could not build the GIF here.'; } gifBtn.disabled = false; };
+      const close = () => { gone = true; playing = false; cancelAnimationFrame(raf); cache.forEach(bm => { if (bm.close) bm.close(); }); cache.clear(); document.removeEventListener('keydown', onKey, true); modal.remove(); modal = null; inert.forEach(el => el.removeAttribute('inert')); document.body.classList.remove('has-dm'); if (opener && opener.focus) { try { opener.focus(); } catch (e) { /* gone */ } } };
+      const onKey = e => {
+        if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+        if (e.key === ' ' && !['BUTTON', 'SELECT', 'INPUT'].includes(document.activeElement.tagName)) { e.preventDefault(); play.click(); return; }
+        if (e.key !== 'Tab') return;
+        const f = $$('button:not([disabled]), input, select', card); if (!f.length) return;
+        if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+      };
+      document.addEventListener('keydown', onKey, true);
+      closeBtn.onclick = close; modal.addEventListener('pointerdown', e => { if (e.target === modal) close(); });
+      await seek(0);
+      play.focus();
+      rec._modal = { close, get playing() { return playing; }, get pos() { return pos; }, seek, setPlay };
+      if (!Lab.reducedMotion() && ro.autoplay !== false) setPlay(true);   // reduced motion: starts paused, the student presses Play
+      return rec._modal;
+    };
+
+    /* --- GIF --- */
+    rec.gif = async function (go = {}) {
+      await rec.restored; const list = rec.frames; if (list.length < 1) throw new Error('no frames');
+      const speed = go.speed || 15, durCs = 100 / (fps * speed), keep = Math.max(1, Math.ceil(3 / durCs));
+      let pick = list.filter((_, i) => i % keep === 0);
+      const cap2 = go.maxFrames || 160; if (pick.length > cap2) { const k = Math.ceil(pick.length / cap2); pick = pick.filter((_, i) => i % k === 0); }
+      const delay = Math.max(3, Math.round(durCs * keep * (list.length / Math.max(1, pick.length * keep))));
+      const w = Math.min(go.width || W, W) || W, hh = Math.round(w * H / W), tmp = document.createElement('canvas'); tmp.width = w; tmp.height = hh; const tc = tmp.getContext('2d', { willReadFrequently: true });
+      const read = async b => { const bm = await tlBitmap(b); tc.drawImage(bm, 0, 0, w, hh); if (bm.close) bm.close(); return tc.getImageData(0, 0, w, hh).data; };
+      const enc = new GIF.Encoder(w, hh, { loop: 0 });
+      const sample = [], k = Math.max(1, Math.ceil(pick.length / 10));
+      for (let i = 0; i < pick.length; i += k) sample.push(await read(pick[i]));
+      enc.setPalette(sample);
+      for (let i = 0; i < pick.length; i++) { enc.addFrame(i % k === 0 && sample[i / k] ? sample[i / k] : await read(pick[i]), i === pick.length - 1 ? delay + 150 : delay); if (go.onprogress) go.onprogress((i + 1) / pick.length); if (i % 3 === 2) await tlYield(); }
+      const bytes2 = enc.finish();
+      return Object.assign(new Blob([bytes2], { type: 'image/gif' }), { frameCount: enc.frames, sourceFrames: pick.length });
+    };
+    rec.downloadGif = async function (go) { const blob = await rec.gif(go); downloadBlob(blob, reportFileBase().replace(/\.docx$/, '') + '_' + slugify(opts.label || key) + '_timelapse.gif'); return blob; };
+
+    /* --- Buttons --- */
+    rec.mount = function (el) {
+      el = typeof el === 'string' ? $(el) : el;
+      const status = h('span', { class: 'tl-status', role: 'status' });
+      const rb = h('button', { class: 'btn btn--sm tl-replay', type: 'button', onclick: () => rec.replay({ opener: rb }) }, 'Replay my run');
+      const gb = h('button', { class: 'btn btn--sm tl-gif', type: 'button', onclick: async () => { gb.disabled = true; const t0 = status.textContent; status.textContent = 'Building the GIF…'; try { await rec.downloadGif({ onprogress: f => { status.textContent = `Building the GIF… ${Math.round(f * 100)}%`; } }); Lab.toast('Downloaded your timelapse (GIF)', { type: 'ok', announce: false }); } catch (e) { Lab.toast('Could not build the GIF here.', { type: 'warn' }); } status.textContent = t0; sync(); } }, 'Download timelapse (GIF)');
+      const box = h('div', { class: 'tl-bar', role: 'group', 'aria-label': `Timelapse of your run: ${opts.label}` }, status, rb, gb);
+      const sync = () => { const n = rec.count; rb.disabled = gb.disabled = recording || n < 2; status.textContent = recording ? `Recording… ${n} frame${n === 1 ? '' : 's'}` : n < 2 ? 'Run it to record a timelapse.' : `Timelapse ready: ${n} frames.`; };
+      ui.push(sync); sync(); el.append(box); return box;
+    };
+    TLS.push(rec);
+    return rec;
+  };
+  Lab.timelapse.all = () => TLS.slice();
+  Lab.timelapse.erase = tlEraseLab;
+  Lab.timelapse.eraseAll = tlEraseAll;
+  Lab.timelapse.withRun = () => TLS.filter(r => r.count > 1);
 
   /* ---------------- "Bench-verified" stamp ----------------
      A small rotated ink-stamp seal (BENCH-VERIFIED, the Dataset ID and the date) drawn on a canvas, rough-edged and unevenly inked,

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 98 · Timelapse Demo</title>
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<!-- Test fixture and worked example for Lab.timelapse (tests/t44-timelapse.js): an animated "cells dividing" canvas, a Run button that
+     records it, and the Replay / GIF buttons. A lab page would do exactly this around its own run animation. -->
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">All labs</a><span>Fixture</span></nav>
+    <div class="eyebrow">Investigation 98</div>
+    <h1>Timelapse Demo</h1>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+<main>
+  <section class="step wrap wrap--wide gutter" data-step="Run">
+    <header><div class="eyebrow">Procedure</div><h2>Run and record</h2></header>
+    <div class="step-body">
+      <div class="row"><button class="btn btn--primary" id="run" type="button">Run</button> <span id="state" class="muted small">Ready</span></div>
+      <canvas class="viz" id="scene" aria-label="Animation of colored cells drifting and dividing"></canvas>
+      <div id="tl-host"></div>
+      <div id="notes"></div>
+    </div>
+  </section>
+  <section class="step wrap gutter" data-step="Submit"><header><div class="eyebrow">Wrap up</div><h2>Hand in</h2></header><div class="step-body"><div data-responses></div></div></section>
+</main>
+<script src="../../lab.js"></script>
+<script>
+  Lab.init({ id: 'lab98' });
+  Lab.prompt('#notes', { key: 'n1', label: 'What did you see?' });
+  const cv = Lab.canvas('#scene', 0.6), ctx = cv.ctx;
+  const rec = Lab.timelapse(cv.canvas, { fps: 8, maxFrames: +(new URLSearchParams(location.search).get('max') || 240), width: 360, label: 'Cell run', key: 'cells' });
+  rec.mount('#tl-host');
+  let t = 0;
+  function draw() {
+    const w = cv.w, h = cv.h;
+    ctx.fillStyle = Lab.color('--surface-2'); ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = Lab.color('--accent'); ctx.fillRect(0, h - 8, w * Math.min(1, t / 6), 8);
+    for (let i = 0; i < 14; i++) {
+      const a = t * 0.7 + i * 1.3, x = w * (0.12 + 0.76 * ((i * 0.137 + t * 0.03 * (1 + i % 3)) % 1)), y = h * (0.5 + 0.32 * Math.sin(a)), r = 16 + 8 * Math.sin(t * 2 + i);
+      ctx.fillStyle = Lab.color('--s' + (1 + i % 5)); ctx.beginPath(); ctx.arc(x, y, Math.max(4, r), 0, 6.283); ctx.fill();
+      ctx.strokeStyle = Lab.color('--ink'); ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    ctx.fillStyle = Lab.color('--ink'); ctx.font = '600 16px sans-serif'; ctx.fillText('t = ' + t.toFixed(1) + ' s', 12, 24);
+  }
+  cv.onresize = draw; draw();
+  const loop = Lab.loop(dt => { t += dt; draw(); if (t >= 6) { loop.stop(); rec.stop(); document.getElementById('state').textContent = 'Done'; return false; } });
+  document.getElementById('run').addEventListener('click', () => { t = 0; document.getElementById('state').textContent = 'Running'; rec.start(); loop.start(); });
+</script>
+</body>
+</html>
