@@ -70,6 +70,12 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Key results.** `Lab.keyResult(id, {label, value, unit, part})` stores `keyres:<id>` = `{label, value, unit, part, t}`;
   `Lab.keyResults()` lists them. Call it whenever a headline number is computed (FRQ self-score: id `frq-score`, unit `of 4`).
   They appear in the report (Key results table), the progress file and the teacher dashboard.
+- **"Rate my confidence".** lab.js adds a one-tap radio group ("I could teach this" 3 / "I mostly get it" 2 / "I'm lost" 1) as the
+  last thing in each lab's Reflect or Evaluate part (found by `data-step`, or the `reflect` / `evaluate` slug; nothing to put in the
+  page). Saved as `aplab:<lab>:confidence` = `{v, t}` and reported as key result `confidence` (`value` 1-3, `unit` "(I could teach
+  this)"), so it is in the report, progress file and `.docx`. It is not a prompt, quiz, table or step: it never counts toward part
+  completion or the backup reminder. `Lab.confidence.get()` reads it. teacher-dashboard.html gives it its own Confidence column
+  (not a generic key-result column, never a "copied results" signal), a CSV column and a per-lab count of each choice.
 - **Transfer code + Pause & bookmark.** "Get my transfer code" (Submit part, pause card) shows the resume code and a QR code
   for `labNN.html#resume=<code>` (qrcode-generator 1.4.4 from cdnjs, loaded lazily). lab.js strips `#resume=` from the address
   bar on load and offers an inline confirm. `Lab.pause()` saves, stores `aplab:bookmark` and opens the pause card; the home

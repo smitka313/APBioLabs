@@ -2863,9 +2863,49 @@
   }
 
   /* ---------------- Init ---------------- */
+  /* ---------------- "Rate my confidence" ----------------
+     A one-tap, three-choice control at the end of every lab's Reflect or Evaluate part (found by data-step or slug, so lab pages
+     need no markup): "I could teach this" (3) / "I mostly get it" (2) / "I'm lost" (1). It is saved (aplab:<lab>:confidence =
+     {v, t}) and reported as Lab.keyResult('confidence', {label: 'Confidence', value: 1-3, unit: '(I could teach this)'}), so it is
+     in the report, the progress file and the teacher dashboard (its own Confidence column and a per-lab count).
+     It is not a prompt, quiz, table or step, so it never counts toward part completion or the backup reminder. */
+  const CONFIDENCE = [{ v: 3, text: 'I could teach this' }, { v: 2, text: 'I mostly get it' }, { v: 1, text: 'I’m lost' }];
+  Lab.confidence = { choices: CONFIDENCE, get: () => { const r = store.get('confidence'); return r && CONFIDENCE.some(c => c.v === r.v) ? r.v : null; } };
+  function mountConfidence() {
+    if (!IS_LAB) return;
+    const sec = $$('section.step').find(x => /^(reflect|evaluate)$/i.test((x.dataset.step || '').trim())) || document.getElementById('reflect') || document.getElementById('evaluate');
+    if (!sec) return;
+    const body = $(':scope > .step-body', sec) || sec;
+    let box = $('.confidence', sec);
+    if (!box) {
+      const name = 'conf-' + LAB_ID, say = h('p', { class: 'conf-say small muted', 'aria-live': 'polite' });
+      box = h('fieldset', { class: 'confidence', id: 'confidence-box' },
+        h('legend', null, 'Rate my confidence'),
+        h('p', { class: 'small muted conf-help' }, 'One tap. This is for you and your teacher, not a grade. You can change it any time.'),
+        h('div', { class: 'conf-opts' }, CONFIDENCE.map(c => h('label', { class: 'conf-opt', 'data-v': String(c.v) },
+          h('input', { type: 'radio', name, value: String(c.v), id: `${name}-${c.v}` }),
+          h('span', { class: 'conf-dots', 'aria-hidden': 'true' }, '●'.repeat(c.v) + '○'.repeat(3 - c.v)),
+          h('span', { class: 'conf-text' }, c.text),
+          h('span', { class: 'conf-tick', 'aria-hidden': 'true' }, '✓')))),
+        say);
+      box.addEventListener('change', e => {
+        const inp = e.target.closest ? e.target.closest('input[type=radio]') : null; if (!inp) return;
+        const v = +inp.value, c = CONFIDENCE.find(x => x.v === v); if (!c) return;
+        store.set('confidence', { v, t: Date.now() });
+        Lab.keyResult('confidence', { label: 'Confidence', value: v, unit: `(${c.text})`, part: sec.id });
+        say.textContent = `Saved: ${c.text}.`;
+        workChanged();
+      });
+      const saved = Lab.confidence.get();
+      if (saved) { const inp = $(`input[value="${saved}"]`, box); if (inp) inp.checked = true; }
+    }
+    if (box.parentElement !== body || body.lastElementChild !== box) body.append(box); // last thing in the part, above the Back / Next links
+  }
+  Lab._mountConfidence = mountConfidence;
+
   Lab.init = function (o = {}) {
     LAB_ID = o.id || LAB_ID;
-    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); addTimeChips(); }
+    if (IS_LAB) { mountLabIdentity(); addHeaderPrintButton(); addTimeChips(); mountConfidence(); window.addEventListener('load', () => setTimeout(mountConfidence, 0)); }
     buildNav();
     bindAutosave();
     $$('[data-responses]').forEach(el => Lab.responses(el));
