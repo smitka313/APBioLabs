@@ -43,6 +43,11 @@
   .levels { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .note { font-size: .88rem; color: var(--muted); }
   .checklist { display: grid; gap: 4px; font-size: .9rem; }
+  .pred-recall blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .pred-recall .pred-recall-k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .pred-recall p { margin: 4px 0 0; white-space: pre-wrap; }
+  .predict-box { margin: 0 0 14px; }
+  .predict-box .prompt { margin: 0; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -227,10 +232,10 @@
           <canvas class="viz" id="p1-canvas" aria-label="Growth chamber with a flat of Fast Plants under a light bank; harvested cells are empty"></canvas>
           <canvas class="viz" id="p1-bench" aria-label="Lab bench with a drying oven at 100 °C, a 0.001 g digital balance with a weigh boat, and the current harvest laid out on a paper towel, wet or dried"></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Plant age</span><span class="v" id="p1-day">—</span></div><div class="readout"><span class="k">Plants left</span><span class="v" id="p1-left">—</span></div>
-            <div class="readout"><span class="k">Last harvest: mean wet</span><span class="v" id="p1-rw">—</span></div>
-            <div class="readout"><span class="k">Last harvest: mean dry</span><span class="v" id="p1-rd">—</span></div>
-            <div class="readout"><span class="k">Balance precision</span><span class="v">0.001 g</span></div>
+            <div class="readout"><span class="k">Plant age (days)</span><span class="v" id="p1-day">—</span></div><div class="readout"><span class="k">Plants left (plants)</span><span class="v" id="p1-left">—</span></div>
+            <div class="readout"><span class="k">Last harvest: mean wet mass (g)</span><span class="v" id="p1-rw">—</span></div>
+            <div class="readout"><span class="k">Last harvest: mean dry mass (g)</span><span class="v" id="p1-rd">—</span></div>
+            <div class="readout"><span class="k">Balance precision (g)</span><span class="v">0.001</span></div>
           </div>
           <p class="note" id="p1-status">Advance to day 7, then harvest.</p>
         </div>
@@ -254,7 +259,7 @@
         </div>
         <div class="stage">
           <canvas class="viz" id="r-canvas" aria-label="Sealed dark chamber with five plants and a CO2 sensor trace rising over ten minutes"></canvas>
-          <div class="readouts"><div class="readout"><span class="k">Plant age</span><span class="v" id="r-age">—</span></div><div class="readout"><span class="k">Start CO₂</span><span class="v" id="r-start">—</span></div><div class="readout"><span class="k">End CO₂</span><span class="v" id="r-end">—</span></div><div class="readout"><span class="k">Rise</span><span class="v" id="r-rise">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Plant age (days)</span><span class="v" id="r-age">—</span></div><div class="readout"><span class="k">Start CO₂ (ppm)</span><span class="v" id="r-start">—</span></div><div class="readout"><span class="k">End CO₂ (ppm)</span><span class="v" id="r-end">—</span></div><div class="readout"><span class="k">CO₂ rise in 10 min (ppm)</span><span class="v" id="r-rise">—</span></div></div>
         </div>
       </div>
       <div class="calc" id="p1-calc"></div>
@@ -297,10 +302,10 @@
         <div class="stage">
           <canvas class="viz" id="p2-canvas" aria-label="Brassica Barn: larvae feeding on two Brussels sprout halves above a paper towel frass pad, plus a control sprout with no larvae"></canvas>
           <div class="readouts">
-            <div class="readout"><span class="k">Day</span><span class="v" id="p2-day">0</span></div>
-            <div class="readout"><span class="k">Sprout mass</span><span class="v" id="p2-sm">—</span></div>
-            <div class="readout"><span class="k">Larvae (group)</span><span class="v" id="p2-lm">—</span></div>
-            <div class="readout"><span class="k">Frass (dry)</span><span class="v" id="p2-fm">—</span></div>
+            <div class="readout"><span class="k">Time since feeding (days)</span><span class="v" id="p2-day">0</span></div>
+            <div class="readout"><span class="k">Sprout mass (g)</span><span class="v" id="p2-sm">—</span></div>
+            <div class="readout"><span class="k">Larvae, whole group (g)</span><span class="v" id="p2-lm">—</span></div>
+            <div class="readout"><span class="k">Dry frass (g)</span><span class="v" id="p2-fm">—</span></div>
           </div>
         </div>
       </div>
@@ -548,8 +553,8 @@
   });
   const sumT = Lab.table('#p1-sum', {
     save: 'p1sum',
-    columns: [{ key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'wet', label: 'Mean wet/plant', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Mean dry/plant', unit: 'g', num: true, digits: 3 }, { key: 'se', label: 'SE dry', unit: 'g', num: true, digits: 3 },
-      { key: 'pct', label: '% biomass', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'NPP/plant/day', unit: 'kcal/day', num: true, editable: true }],
+    columns: [{ key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'n', label: 'Plants weighed (n)', unit: 'plants', num: true, digits: 0 }, { key: 'wet', label: 'Mean wet/plant', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Mean dry/plant', unit: 'g', num: true, digits: 3 }, { key: 'se', label: 'SE dry', unit: 'g', num: true, digits: 3 },
+      { key: 'pct', label: 'Biomass (dry ÷ wet × 100)', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'NPP/plant/day', unit: 'kcal/day', num: true, editable: true }],
     onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); }
   });
   function checkSummary(rows) {
@@ -793,7 +798,7 @@
   cv1.onresize = draw1;
   function setDay(d) { d = Math.max(0, Math.min(28, d)); anim1 = { from: s1.day, to: d, t: Lab.reducedMotion() ? 1 : 0, fading: anim1.fading }; s1.day = d; save1(); ui1(); loop1.start(); }
   function ui1() {
-    $('#p1-day').textContent = s1.day + ' d';
+    $('#p1-day').textContent = s1.day;
     const left = s1.plants.filter(p => !p.harvested).length;
     $('#p1-left').textContent = left;
     $('#p1-plus1').disabled = $('#p1-plus7').disabled = s1.day >= 28;
@@ -820,7 +825,7 @@
     s1.pending = { hv, age: s1.day, rows };
     benchSet({ phase: 'wet', rows: rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r.wet })), prog: 0 });
     rawT.setRows(rawT.getRows().concat(rows.map(r => ({ hv: r.hv, age: r.age, plant: r.plant, wet: r.wet, dry: null }))));
-    $('#p1-rw').textContent = fmt(stats.mean(rows.map(r => r.wet)), 3) + ' g'; $('#p1-rd').textContent = 'drying…';
+    $('#p1-rw').textContent = fmt(stats.mean(rows.map(r => r.wet)), 3); $('#p1-rd').textContent = 'drying…';
     save1(); ui1(); loop1.start(); drawP1Chart(sumT.getRows());
   });
   let drying = false;
@@ -834,7 +839,7 @@
       rawT.setRows(all);
       const dr = pend.rows.map(r => r._D), wr = pend.rows.map(r => r.wet);
       sumT.addRow({ age: pend.age, n: dr.length, wet: stats.mean(wr), dry: stats.mean(dr), se: stats.se(dr), pct: null, energy: null, npp: null });
-      $('#p1-rd').textContent = fmt(stats.mean(dr), 3) + ' g'; setProg('#p1-prog', 0);
+      $('#p1-rd').textContent = fmt(stats.mean(dr), 3); setProg('#p1-prog', 0);
       benchSet({ phase: 'dry', rows: pend.rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r._D })), prog: 1 });
       save1(); ui1(); updatePlantCalc();
     };
@@ -1037,8 +1042,8 @@
   const loopR = Lab.loop(dt => { respT = Math.min(1, respT + dt / 2.5); drawR(); if (respT >= 1) loopR.stop(); });
   function respUI() {
     const r = s1.resp;
-    $('#r-age').textContent = r ? r.age + ' d' : '—'; $('#r-start').textContent = r ? Math.round(r.start) + ' ppm' : '—';
-    $('#r-end').textContent = r ? Math.round(r.end) + ' ppm' : '—'; $('#r-rise').textContent = r ? Math.round(r.end - r.start) + ' ppm' : '—';
+    $('#r-age').textContent = r ? r.age : '—'; $('#r-start').textContent = r ? Math.round(r.start) : '—';
+    $('#r-end').textContent = r ? Math.round(r.end) : '—'; $('#r-rise').textContent = r ? Math.round(r.end - r.start) : '—';
   }
   $('#p1-resp').addEventListener('click', () => {
     const alive = s1.plants.filter(p => !p.harvested); if (alive.length < 5) { $('#r-rise').textContent = 'need 5 plants'; return; }
@@ -1128,7 +1133,7 @@
 
   const barnT = Lab.table('#p2-raw', {
     save: 'p2barns',
-    columns: [{ key: 'barn', label: 'Barn' }, { key: 'n', label: 'Larvae', num: true, digits: 0 }, { key: 'start', label: 'Sprout day 0', unit: 'g', num: true, digits: 2 }, { key: 'end', label: 'Sprout day 3', unit: 'g', num: true, digits: 2 },
+    columns: [{ key: 'barn', label: 'Barn' }, { key: 'n', label: 'Larvae in barn', unit: 'larvae', num: true, digits: 0 }, { key: 'start', label: 'Sprout day 0', unit: 'g', num: true, digits: 2 }, { key: 'end', label: 'Sprout day 3', unit: 'g', num: true, digits: 2 },
       { key: 'cs', label: 'Control day 0', unit: 'g', num: true, digits: 2 }, { key: 'ce', label: 'Control day 3', unit: 'g', num: true, digits: 2 },
       { key: 'l0', label: 'Larvae day 0', unit: 'g', num: true, digits: 3 }, { key: 'l3', label: 'Larvae day 3', unit: 'g', num: true, digits: 3 }, { key: 'frass', label: 'Frass, dry', unit: 'g', num: true, digits: 3 }],
     onChange: () => updateP2()
@@ -1331,14 +1336,14 @@
     if (p2run) {
       st.t = Math.min(1, st.t + dt / 5); st.eaten = st.t * p2run.eatFrac; st.frass = st.t * Math.min(1, p2run.b.frass / 0.9); st.grow = 1 + st.t * (p2run.b.l3 / p2run.b.l0 - 1); st.evap = st.t * 0.1;
       $('#p2-day').textContent = fmt(st.t * 3, 1); setProg('#p2-prog', st.t);
-      $('#p2-sm').textContent = fmt(p2run.b.start + (p2run.b.end - p2run.b.start) * st.t, 1) + ' g';
+      $('#p2-sm').textContent = fmt(p2run.b.start + (p2run.b.end - p2run.b.start) * st.t, 1);
       if (st.t >= 1) finishBarn();
     }
     draw2();
   });
   function finishBarn() {
     const b = p2run.b; p2run = null;
-    $('#p2-sm').textContent = fmt(b.end, 2) + ' g'; $('#p2-lm').textContent = fmt(b.l3, 3) + ' g'; $('#p2-fm').textContent = fmt(b.frass, 3) + ' g';
+    $('#p2-sm').textContent = fmt(b.end, 2); $('#p2-lm').textContent = fmt(b.l3, 3); $('#p2-fm').textContent = fmt(b.frass, 3);
     barnT.addRow(Object.assign({ barn: 'B' + (barnT.getRows().length + 1) }, { n: b.n, start: b.start, end: b.end, cs: b.cs, ce: b.ce, l0: b.l0, l3: b.l3, frass: b.frass }));
     $('#p2-status').textContent = `Barn ${barnT.getRows().length} done. Larvae moved to a fresh barn to finish their life cycle.`;
   }
@@ -1346,7 +1351,7 @@
     if (p2run) { $('#p2-status').textContent = 'This barn is still feeding. Wait for day 3.'; return; }
     const n = +$('#p2-n').value, b = runBarn({ n });
     barnState = idleBarn(); p2run = { b, eatFrac: Math.min(0.9, (b.start - b.end) / b.start) };
-    $('#p2-sm').textContent = fmt(b.start, 2) + ' g'; $('#p2-lm').textContent = fmt(b.l0, 3) + ' g'; $('#p2-fm').textContent = '0.000 g';
+    $('#p2-sm').textContent = fmt(b.start, 2); $('#p2-lm').textContent = fmt(b.l0, 3); $('#p2-fm').textContent = '0.000';
     $('#p2-status').textContent = `Day 0: sprout ${fmt(b.start, 2)} g, ${n} larvae ${fmt(b.l0, 3)} g. Feeding…`;
     if (Lab.reducedMotion()) { barnState.t = 1; finishBarn(); draw2(); }
   });
@@ -1391,7 +1396,7 @@
   }
   function levelName(sys, iv, x) { return IVS[sys][iv].cat ? FOODS[x].name : x + (IVS[sys][iv].unit ? ' ' + IVS[sys][iv].unit : ''); }
   const dRaw = Lab.table('#d-raw', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, { key: 'a', label: 'Response 1' }, { key: 'b', label: 'Response 2' }, { key: 'c', label: 'Response 3' }] });
-  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'n', num: true, digits: 0 }, { key: 'mean', label: 'Mean', num: true, digits: 3 }, { key: 'sd', label: 'SD', num: true, digits: 3 }, { key: 'se', label: 'SE', num: true, digits: 3 }, { key: 'ci', label: '95% CI (± 2 SE)' }] });
+  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'Replicates (n)', unit: 'replicates', num: true, digits: 0 }, { key: 'mean', label: 'Mean response', unit: 'response units', num: true, digits: 3 }, { key: 'sd', label: 'SD of response', unit: 'response units', num: true, digits: 3 }, { key: 'se', label: 'SE of response', unit: 'response units', num: true, digits: 3 }, { key: 'ci', label: '95% CI (mean ± 2 SE)', unit: 'response units' }] });
   const dChart = Lab.chart('#d-chart', { xLabel: '', yLabel: '', series: [] });
   let dResults = Lab.store.get('d-results') || null;
   function fillIV() {
@@ -1516,6 +1521,7 @@
       dChart.update({ type: 'xy', categories: undefined, xLabel: spec.label + ' (' + spec.unit + ')', yLabel: dvLabel, xMin: 0,
         series: [{ name: 'Mean ± 2 SE', points: dResults.levels.map(L => ({ x: L.x, y: L.mean, err: 2 * L.se })) }] });
     }
+    { const du = (dvLabel.match(/\(([^)]*)\)\s*$/) || [])[1] || 'response units'; document.querySelectorAll('#d-sum thead .unit').forEach((u, i) => { if (i > 0) u.textContent = '(' + du + ')'; }); }
     // pairwise comparison: which means have non-overlapping 95% CIs?
     const Ls = dResults.levels, pairs = [];
     for (let i = 0; i < Ls.length; i++) for (let j = i + 1; j < Ls.length; j++) { const a = Ls[i], b = Ls[j]; if (a.mean + 2 * a.se < b.mean - 2 * b.se || b.mean + 2 * b.se < a.mean - 2 * a.se) pairs.push(levelName(sys, iv, a.x) + ' vs ' + levelName(sys, iv, b.x)); }
@@ -1542,7 +1548,26 @@
   const pe = Lab.prompt(cer, { key: 'cer-e', label: 'Evidence: Cite specific numbers (with SE or CI) from Parts 1–3.', rows: 4 }); pe.querySelector('label').dataset.letter = 'E';
   const pr = Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning: Connect the evidence to the laws of thermodynamics and to how organisms acquire and use energy.', rows: 4 }); pr.querySelector('label').dataset.letter = 'R';
 
+cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
+/* Predict first: quote the student's own saved prediction(s) back in Reflect. */
+function predRecall(host, items) {
+  const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
+  host.prepend(box);
+  const render = () => {
+    box.innerHTML = '';
+    items.forEach(([key, name]) => {
+      const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
+      box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
+        v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
+    });
+  };
+  render();
+  document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
+  Lab.onShow(host, render);
+}
+  predRecall($('#reflect-prompts'), [['p1-diagram', 'plant energy diagram'], ['p2-diagram', 'larva energy fraction'], ['d-hyp', 'your own experiment']]);
   const rf = h('div', { class: 'prompts-2' }); $('#reflect-prompts').append(rf);
+  Lab.prompt(rf, { key: 'r-pred', label: 'Compare your three predictions (quoted above) with your results: your plant energy diagram, the fraction of plant energy that became larval mass, and your own experiment. Which were close, which were off, and why?', rows: 5 });
   Lab.prompt(rf, { key: 'r-track', label: 'How do you keep track of energy as it moves through a biological system? Name two ways the techniques used here could be improved (for example, measuring larval dry fraction or the sprout’s own dry fraction instead of assuming them).', rows: 4 });
   Lab.prompt(rf, { key: 'r-factors', label: 'What kinds of things affect plant productivity, larval growth, or the interaction between them? Use your Part 3 results and one idea you did not test.', rows: 3 });
   Lab.prompt(rf, { key: 'r-role', label: 'What is the role of energy in ecosystems? Explain why food chains rarely have more than four or five links.', rows: 3 });
@@ -1567,12 +1592,16 @@
   const C1 = ['c1-gpd', 'c1-npp', 'c1-co2', 'c1-r', 'c1-gpp', 'c1-ratio'];
   const C2 = ['c2-cons', 'c2-pe', 'c2-gain', 'c2-prod', 'c2-frass', 'c2-fe', 'c2-assim', 'c2-resp', 'c2-eff'];
   Lab.steps('#p1-steps', [
+    { id: 'pred', text: 'Write your prediction (above)', target: '#p-p1-diagram', done: () => filled('p1-diagram'), hint: 'Answer the <strong>Step 1 (predict)</strong> box above the scene with your reason.' },
     { id: 'd7', text: 'Grow plants to day 7 or more', target: '#p1-plus7', done: () => s1.day >= 7 || rawT.getRows().length > 0, hint: 'Press <strong>+7 days</strong> so the plants are at least a week old.' },
     { id: 'h1', text: 'Harvest, blot and weigh wet', target: '#p1-harvest', done: () => rawT.getRows().length > 0, hint: 'Press <strong>Harvest</strong>. Each plant’s wet mass goes into the Data tab.' },
     { id: 'dry1', text: 'Dry 48 h and weigh', target: '#p1-dry', done: () => sumRows().length > 0, hint: 'Press <strong>Dry 48 h</strong> to get the dry mass (biomass).' },
     { id: 'h2', text: 'Repeat at day 14 or later', target: '#p1-plus7', done: () => sumRows().length > 1, hint: 'Advance to about day 14, then harvest and dry a second set.' },
     { id: 'tbl', text: 'Fill in the summary table', target: '#p1-sum input', done: () => sumRows().length > 0 && sumRows().every(r => numOK(r.pct) && numOK(r.energy) && numOK(r.npp)), hint: 'Open the <strong>Data</strong> tab and calculate % biomass, energy and NPP.' }
   ], { doneText: 'Both harvests are done. Next, measure respiration to estimate GPP (below).' });
+  const p1Ready = () => filled('p1-diagram') || s1.day > 0 || rawT.getRows().length > 0;
+  ['#p1-plus1', '#p1-plus7'].forEach(b => Lab.gate(b, () => s1.day >= 28 ? 'Plants are at their oldest (day 28)' : p1Ready() ? '' : 'Write your prediction first', { show: '#p-p1-diagram' }));
+  Lab.gate('#p2-run', () => filled('p2-diagram') || barnT.getRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-p2-diagram' });
   Lab.gate('#p1-harvest', () => s1.pending ? 'Dry the current harvest first' : s1.day < 3 ? 'Let the seedlings grow first (+1 or +7 days)' : '');
   Lab.gate('#p1-dry', () => drying ? 'Drying in the oven…' : s1.pending ? '' : 'Harvest plants first');
   Lab.steps('#r-steps', [
@@ -1583,7 +1612,7 @@
   $('#p1-harvest').addEventListener('click', () => { if (s1.pending) Lab.toast(`Harvest ${s1.pending.hv}: ${s1.pending.rows.length} plants weighed wet (day ${s1.pending.age})`, { type: 'ok', announce: false, key: 'harvest' }); });
   $('#p1-resp').addEventListener('click', () => { if (s1.resp) Lab.toast(`Respiration measured: CO₂ rose ${Math.round(s1.resp.end - s1.resp.start)} ppm in 10 min`, { type: 'ok', announce: false, key: 'resp' }); });
   Lab.steps('#p2-steps', [
-    { id: 'pred', text: 'Predict the larva diagram', target: '#p-p2-diagram', optional: true, done: () => filled('p2-diagram'), hint: 'Write your prediction in the box above the scene.' },
+    { id: 'pred', text: 'Predict the larva diagram', target: '#p-p2-diagram', done: () => filled('p2-diagram'), hint: 'Write your prediction in the box above the scene.' },
     { id: 'b1', text: 'Feed barn 1 for 3 days', target: '#p2-run', done: () => barnT.getRows().length > 0, hint: 'Press <strong>Day 0: weigh, then feed</strong>.' },
     { id: 'b3', text: 'Run at least 3 barns', target: '#p2-run', done: () => barnT.getRows().length >= 3, hint: 'Run more barns so you can calculate standard error.' },
     { id: 'aud', text: 'Audit barn 1 (below)', target: '#calc-c2-cons', done: () => calcFilled(C2), hint: 'Scroll down and work through the energy audit using the Data tab.' },
@@ -1598,7 +1627,7 @@
     { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dRaw.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
     { id: 'vars', text: 'Describe variables + control', target: '#p-d-vars', done: () => filled('d-vars') && filled('d-control'), hint: 'Fill in the variables and control boxes above.' }
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
-  Lab.gate('#d-run', () => dChecked() >= 2 ? '' : 'Tick at least two levels');
+  Lab.gate('#d-run', () => !filled('d-hyp') && !dRaw.getRows().length ? 'Write your prediction first (hypothesis and prediction above)' : dChecked() >= 2 ? '' : 'Tick at least two levels');
   $('#d-run').addEventListener('click', () => { if (dChecked() >= 2 && dResults) Lab.toast(`Ran ${dResults.levels.length} levels × ${dResults.levels[0].reps.length} replicates`, { type: 'ok', announce: false, key: 'drun' }); });
 })();
 </script>
