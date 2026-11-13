@@ -59,6 +59,14 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
   A `beforeunload` guard is attached only while work is unsaved. Rows a page adds itself while loading are not work.
   Any failed localStorage write shows a persistent warning; `navigator.storage.persist()` is requested once work exists.
 - **"Saved ✓" status.** Every `Lab.store.set` (prompts, tables, quizzes, steps, sim saves) updates `.save-status` lines (one in each part's pager, one under the Submit tools): "Saved ✓ just now" / "2 min ago", or "Not saved — see warning" when a write fails. Visible text is aria-hidden; a polite live region speaks only on state changes, at most every 4 s. Use `Lab.store.set` for anything a student would call saved work.
+- **Key results.** `Lab.keyResult(id, {label, value, unit, part})` stores `keyres:<id>` = `{label, value, unit, part, t}`;
+  `Lab.keyResults()` lists them. Call it whenever a headline number is computed (FRQ self-score: id `frq-score`, unit `of 4`).
+  They appear in the report (Key results table), the progress file and the teacher dashboard.
+- **Transfer code + Pause & bookmark.** "Get my transfer code" (Submit part, pause card) shows the resume code and a QR code
+  for `labNN.html#resume=<code>` (qrcode-generator 1.4.4 from cdnjs, loaded lazily). lab.js strips `#resume=` from the address
+  bar on load and offers an inline confirm. `Lab.pause()` saves, stores `aplab:bookmark` and opens the pause card; the home
+  card prefers a bookmark newer than the last part visited. The .docx carries the full payload in custom properties
+  `aplab_payload_NNN`; `teacher-dashboard.html` (JSZip 3.10.1 from cdnjs) reads them and progress files.
 - **Pick up where you left off (index.html).** `Lab.home({resume:'#resume'})` fills a card with the lab, part, the part's last `Lab.steps` "Next:" hint (stored per lab in `aplab:hint:<lab>`), "n of m parts done" and a Resume button; hidden for new visitors.
 - **Running page headers.** The .docx has a header (name, class, lab number and title) and footer (Dataset ID, Page n of N). The PDF report view and worksheet add `@page` margin boxes (Chromium 131+) and otherwise repeat a header through a one-cell table (`body.pr-fallback`, `.pr-t`, `.print-run`). Worksheets print "Name ____ Class ____".
 - **Titles.** Lab page `<title>` is "Lab 5 · Photosynthesis — AP Bio Lab Bench"; page detection matches `^Lab N ·`; `cleanTitle()` strips the suffix in reports and worksheets.
