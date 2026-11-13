@@ -336,6 +336,8 @@
             <div class="readout"><span class="k">Leaf area (cm²)</span><span class="v" id="tr-area">—</span></div>
             <div class="readout"><span class="k" id="tr-k-rate">Rate, slope (mL/min)</span><span class="v" id="tr-rate">—</span></div>
           </div>
+          <div id="tr-timelapse"></div>
+          <p class="small muted" id="tr-tl-note" role="status" hidden></p>
         </div>
       </div>
       <div id="tr-chart"></div>
@@ -1032,6 +1034,7 @@ function frq(host, o) {
     onChange: rows => { $('#st-n').textContent = String(rows.length); }
   });
   $('#st-record').addEventListener('click', () => {
+    Lab.sound.play('click');
     const rows = stTable.getRows(), sp = STOM.find(s => s.k === st.sp), cnt = tally();
     stTable.addRow({ n: rows.length + 1, sp: sp.name, surf: st.surf === 'lo' ? 'lower' : 'upper', mag: st.mag + 'X', count: cnt, actual: st.field.stomata.length, dens: cnt / st.field.A });
     const msg = $('#st-msg');
@@ -1448,12 +1451,15 @@ function frq(host, o) {
     void total;
     if (Lab.reducedMotion()) { frame(dur); onDone && onDone(); return; }
     let t = Math.min(dur, from * dur); const speed = dur / 4.5;
-    Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } }).start();
+    Lab.loop(dt => { t = Math.min(dur, t + dt * speed); frame(t); if (t >= dur) { onDone && onDone(); return false; } }, { tick: 1 }).start();
   }
 
   /* ================= Part 2 structured runs ================= */
   ['#tr-species', '#d-species'].forEach(sel => { Object.keys(SPP).forEach(k => $(sel).append(h('option', { value: k }, SPP[k].name))); const sv = Lab.store.get('field:' + sel.slice(1)); if (sv != null && SPP[sv]) $(sel).value = sv; });
   const trCv = Lab.canvas('#tr-cv', 0.62, { fit: true });
+  const trRec = Lab.timelapse(trCv, { fps: 6, maxFrames: 120, width: 420, label: 'Water-loss run', key: 'transpiration' });
+  trRec.mount('#tr-timelapse');
+  const trNote = m => { const n = $('#tr-tl-note'); n.textContent = m; n.hidden = !m; };
   const trChart = Lab.chart('#tr-chart', { xLabel: 'Time (min)', yLabel: 'Water taken up (mL)', height: 280, series: [] });
   let trBusy = false, trSeries = [];
   function trUpdate(series) {
@@ -1486,13 +1492,15 @@ function frq(host, o) {
       trTable.addRow({ n: rows.length + 1, method, methodTxt: { pot: 'Potometer', press: 'Pressure', whole: 'Whole plant' }[method], sp, spTxt: SPP[sp].short, cond: ck, condTxt: COND[ck].label, rate: res.rate, unit: M.unit, area: Math.round(res.area), rpa: res.rate / Math.round(res.area) * M.mult, rpaIn: null, rpaUnit: M.rpaUnit });
     }
     Lab.store.set('tr-last', { method, sp, ck, pts: last.pts, rate: last.rate, area: last.area, t0: Date.now() });
-    startTrAnim(method, sp, ck, last, 0);
+    Lab.sound.play('click'); trNote('');
+    startTrAnim(method, sp, ck, last, 0, true);
   });
   /* The run animation (4.5 s). After a reload it carries on from the clock, or shows its end state if the time is up. */
-  function startTrAnim(method, sp, ck, last, from) {
+  function startTrAnim(method, sp, ck, last, from, fresh) {
     const env = envFrom(COND[ck]);
     $('#tr-area').textContent = Math.round(last.area);
     trBusy = true;
+    if (fresh && !Lab.reducedMotion()) trRec.start(); else if (!fresh && !Lab.reducedMotion() && from < 1) trNote('This run was already going when the page was reloaded, so it has no replay.');
     const live = [];
     trSeries = trSeries.slice(-4);
     const name = `${COND[ck].label} (${SPP[sp].short})`;
@@ -1503,6 +1511,7 @@ function frq(host, o) {
       if (shown.length !== live.length) { live.length = 0; live.push(...shown); trUpdate(trSeries.concat([{ name, points: live.slice(), line: true, fit: live.length > 2 ? 'linear' : false }])); }
     }, () => {
       trBusy = false; trSeries.push({ name, points: last.pts, line: true, dash: true, dots: false });
+      if (trRec.recording) { trRec.stop(); Lab.sound.play('beep'); }
       $('#tr-rate').textContent = fmt(last.rate, method === 'whole' ? 1 : 4);
     }, from);
   }
@@ -1592,6 +1601,7 @@ function frq(host, o) {
   let dBusy = false;
   $('#d-run').addEventListener('click', () => {
     if (dBusy) return;
+    Lab.sound.play('click');
     const method = $('#d-method').value, sp = $('#d-species').value, e = dEnv(), n = +$('#d-n').value, M = METH[method];
     const prev = dTable.getRows(), mixed = prev.length && prev[0].method !== method;
     let last = null; const vals = [];
@@ -1660,26 +1670,44 @@ function frq(host, o) {
   Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 5 }).querySelector('label').dataset.letter = 'E';
   Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 5 }).querySelector('label').dataset.letter = 'R';
   cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
-  /* Predict first: quote the student's own saved prediction(s) back in Reflect. */
-  function predRecall(host, items) {
-    const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
-    host.prepend(box);
-    const render = () => {
-      box.innerHTML = '';
-      items.forEach(([key, name]) => {
-        const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
-        box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
-          v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
-      });
-    };
-    render();
-    document.addEventListener('input', e => { if (e.target && items.some(it => e.target.id === 'p-' + it[0])) render(); });
-    Lab.onShow(host, render);
-  }
-  
   const ev = $('#evaluate-prompts');
-  predRecall(ev.parentElement, [['predict-stomata', 'stomatal density'], ['predict-water', 'transpiration conditions'], ['d-hyp', 'your own experiment']]);
-  Lab.prompt(ev, { key: 'ev-pred', label: 'Compare your three predictions (quoted above) with your data: stomata per mm² on each surface, the effect of each condition on transpiration, and your own experiment. Cite one number for each. Where were you wrong, and what does that tell you about how plants control water loss?', rows: 5 });
+  /* Predict vs. actual: each saved prediction beside the matching result. */
+  const evCompare = h('div', { id: 'ev-compare' }); ev.parentElement.prepend(evCompare);
+  Lab.predictCompare(evCompare, {
+    predictKey: 'predict-stomata', title: 'Stomatal density: your prediction vs. your counts', part: 'Stomata', partId: 'stomata',
+    getResult: () => {
+      const g = new Map(); stTable.getRows().filter(r => r.mag === '400X' && isFinite(r.count)).forEach(r => { const k = r.sp + '|' + r.surf; if (!g.has(k)) g.set(k, { sp: r.sp, surf: r.surf, v: [] }); g.get(k).v.push(r.count); });
+      const out = [...g.values()].map(x => Object.assign(x, { dens: S.mean(x.v) / (Math.PI * 0.225 * 0.225) }));
+      return out.length ? out : null;
+    },
+    summarize: gs => 'Mean stomatal density at 400X: ' + gs.map(x => `${x.sp}, ${x.surf} surface: ${fmt(x.dens, 0)} stomata/mm² (${x.v.length} field${x.v.length > 1 ? 's' : ''})`).join('; ') + '.',
+    delta: gs => {
+      const out = []; [...new Set(gs.map(x => x.sp))].forEach(sp => { const lo = gs.find(x => x.sp === sp && x.surf === 'lower'), up = gs.find(x => x.sp === sp && x.surf === 'upper'); if (lo && up) out.push(up.dens > 0 ? `${sp}: the lower surface had ${fmt(lo.dens / up.dens, 1)}× the density of the upper (${fmt(lo.dens, 0)} vs ${fmt(up.dens, 0)} stomata/mm²)` : `${sp}: ${fmt(lo.dens, 0)} stomata/mm² on the lower surface and none on the upper`); });
+      return out.length ? out.join('; ') + '. Does that match what you predicted?' : 'Count both surfaces at 400X to compare them with your prediction.';
+    }
+  });
+  Lab.predictCompare(evCompare, {
+    predictKey: 'predict-water', title: 'Transpiration: your prediction vs. your plants', chartEl: '#tr-bar', part: 'Water loss', partId: 'water-loss',
+    getResult: () => {
+      const rows = trTable.getRows().filter(r => isFinite(r.rpa)); if (!rows.length) return null;
+      const last = rows[rows.length - 1], by = {};
+      rows.filter(r => r.method === last.method && r.sp === last.sp).forEach(r => { (by[r.cond] = by[r.cond] || { ct: r.condTxt, cond: r.cond, v: [], u: r.rpaUnit }).v.push(r.rpa); });
+      return Object.values(by).map(x => Object.assign(x, { m: S.mean(x.v) }));
+    },
+    summarize: gs => 'Mean rate per leaf area: ' + gs.map(x => `${x.ct} ${fmt(x.m, 2)} ${x.u} (n = ${x.v.length})`).join('; ') + '.',
+    delta: gs => {
+      const c = gs.find(x => x.cond === 'control'); if (!c) return 'You have no control run on this method yet, so you cannot say what each condition changed.';
+      const o = gs.filter(x => x !== c); if (!o.length) return 'Run at least one treatment to compare with the control.';
+      return o.map(x => `${x.ct} was ${fmt(Math.abs(x.m - c.m), 2)} ${x.u} ${x.m >= c.m ? 'above' : 'below'} the control (${c.m ? fmt(100 * (x.m - c.m) / c.m, 0) + '%' : 'n/a'})`).join('; ') + '.';
+    }
+  });
+  Lab.predictCompare(evCompare, {
+    predictKey: 'd-hyp', title: 'Your own experiment: your hypothesis vs. your results', chartEl: '#d-chart', part: 'Design', partId: 'design',
+    getResult: () => dGroups.length ? dGroups : null,
+    summarize: gs => 'Mean rate per leaf area by group: ' + gs.map(g => `${g.k}: ${fmt(g.mean, 3)} ± ${fmt(g.se2, 3)} (n = ${g.n})`).join('; ') + '.',
+    delta: gs => { const hi = gs.reduce((a, b) => b.mean > a.mean ? b : a), lo = gs.reduce((a, b) => b.mean < a.mean ? b : a); return `The highest rate was ${hi.k} (${fmt(hi.mean, 3)}) and the lowest was ${lo.k} (${fmt(lo.mean, 3)}). ${$('#t-out').textContent}`; }
+  });
+  Lab.prompt(ev, { key: 'ev-pred', label: 'Compare your three predictions (shown above) with your data: stomata per mm² on each surface, the effect of each condition on transpiration, and your own experiment. Cite one number for each. Where were you wrong, and what does that tell you about how plants control water loss?', rows: 5 });
   [
     ['e1', '1. Was your hypothesis about the environmental variable supported by your data? Why or why not?'],
     ['e2', '2. What challenges did you have? Did you make any incorrect assumptions about how environmental variables affect transpiration?'],
