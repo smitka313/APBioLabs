@@ -58,6 +58,10 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
   with no backup, a once-per-session dismissible bar offers "Save progress file" (never while a `Lab.loop` runs).
   A `beforeunload` guard is attached only while work is unsaved. Rows a page adds itself while loading are not work.
   Any failed localStorage write shows a persistent warning; `navigator.storage.persist()` is requested once work exists.
+- **"Saved ✓" status.** Every `Lab.store.set` (prompts, tables, quizzes, steps, sim saves) updates `.save-status` lines (one in each part's pager, one under the Submit tools): "Saved ✓ just now" / "2 min ago", or "Not saved — see warning" when a write fails. Visible text is aria-hidden; a polite live region speaks only on state changes, at most every 4 s. Use `Lab.store.set` for anything a student would call saved work.
+- **Pick up where you left off (index.html).** `Lab.home({resume:'#resume'})` fills a card with the lab, part, the part's last `Lab.steps` "Next:" hint (stored per lab in `aplab:hint:<lab>`), "n of m parts done" and a Resume button; hidden for new visitors.
+- **Running page headers.** The .docx has a header (name, class, lab number and title) and footer (Dataset ID, Page n of N). The PDF report view and worksheet add `@page` margin boxes (Chromium 131+) and otherwise repeat a header through a one-cell table (`body.pr-fallback`, `.pr-t`, `.print-run`). Worksheets print "Name ____ Class ____".
+- **Titles.** Lab page `<title>` is "Lab 5 · Photosynthesis — AP Bio Lab Bench"; page detection matches `^Lab N ·`; `cleanTitle()` strips the suffix in reports and worksheets.
 - **Public teacher page.** `teachers.html` (kind `info`) has no sign-in, report tools, tour or backup prompts.
 - **Worksheet.** `Lab.worksheet.print()` / `.enter()` / `.exit()` builds a printable sheet from `Lab.quiz`,
   `Lab.prompt` and `Lab.table` (blank rows: `worksheetRows` option, else preset `rows`, else 8).

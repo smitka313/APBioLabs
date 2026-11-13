@@ -697,7 +697,7 @@
 
   /* ---------------- Responses toolbar: copy all work ---------------- */
   function collectText() {
-    const title = document.title;
+    const title = cleanTitle(document.title);
     const lines = [title, '='.repeat(title.length), ''];
     const who = reportIdentity();
     if (who.name) lines.push('Name: ' + who.name);
