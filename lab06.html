@@ -1297,7 +1297,10 @@ const Predict = (function () {
   let gBusy = false, gPts = [], gNow = { t: 0, v: null };
   const gTempSync = () => { $('#g-temp-out').textContent = $('#g-temp').value + ' °C'; drawG(); };
   $('#g-temp').addEventListener('input', gTempSync);
-  ['#g-sensor', '#g-contents', '#g-koh'].forEach(s => $(s).addEventListener('change', () => { if (!gBusy) { gPts = []; gNow = { t: 0, v: null }; refreshGChart(); } drawG(); }));
+  /* The four readout tiles describe ONE run. Whenever a new run starts, or the setup changes so the old run no longer applies,
+     they go back to blank instead of keeping the previous run's slope and O2 figure. */
+  const gTilesReset = () => { $('#g-time').textContent = '0.0 min'; $('#g-read').textContent = '—'; $('#g-slope').textContent = '—'; $('#g-o2').textContent = '—'; };
+  ['#g-sensor', '#g-contents', '#g-koh'].forEach(s => $(s).addEventListener('change', () => { if (!gBusy) { gPts = []; gNow = { t: 0, v: null }; gTilesReset(); refreshGChart(); } drawG(); }));
   function gRate(contents, T) {
     const base = { peas: 45, dry: 1.8, boiled: 0, beads: 0 }[contents];
     return base * tempFactor(T, 2.3);
@@ -1468,6 +1471,7 @@ const Predict = (function () {
     gBusy = true;
     const sensor = st.sensor, koh = st.koh, T = st.T, pts = gPoints(st); let shown = 0;
     gPts = [];
+    gTilesReset();
     const finish = () => {
       gBusy = false; gRec.stop(); if (!shown0) Lab.sound.play('beep');
       const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y));
