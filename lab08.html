@@ -381,6 +381,7 @@ function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) ret
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const numOk = x => typeof x === 'number' && isFinite(x);
 const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
 /* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
@@ -1560,13 +1561,13 @@ Lab.steps('#s-steps', [
 ], { doneText: 'Satellite test done. Use the result in the Evaluate questions.' });
 
 /* ---------- Key results, personal-data prompts, AP free-response ---------- */
-const myRuns = () => (Lab.store.get('runs') || []).filter(r => r && isFinite(r.eff));
+const myRuns = () => (Lab.store.get('runs') || []).filter(r => r && numOk(r.eff));
 function reportRuns() {
   const rs = myRuns(); if (!rs.length) return;
   const last = rs[rs.length - 1];
   keyRes('transformation-efficiency', { label: 'Transformation efficiency (latest run)', value: Math.round(last.eff), unit: 'transformants/µg', part: 'Transform' });
   keyRes('colonies-amp', { label: '+pGLO LB/amp colonies (latest run)', value: last.amp, unit: 'colonies', part: 'Transform' });
-  if (isFinite(last.ara)) keyRes('colonies-ara', { label: '+pGLO LB/amp/ara colonies (latest run)', value: last.ara, unit: 'colonies', part: 'Transform' });
+  if (numOk(last.ara)) keyRes('colonies-ara', { label: '+pGLO LB/amp/ara colonies (latest run)', value: last.ara, unit: 'colonies', part: 'Transform' });
   if (rs.length > 1) keyRes('best-efficiency', { label: 'Highest efficiency across runs', value: Math.round(Math.max(...rs.map(r => r.eff))), unit: 'transformants/µg', part: 'Transform' });
 }
 $('#calc-add').addEventListener('click', () => setTimeout(reportRuns, 50));
