@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 99 · Test Fixture Lab</title>
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<!-- Test fixture only (tests/t41-t44): a three-part lab with two prompts, so "all required parts complete" is quick to reach. -->
+<header class="lab-header">
+  <div class="wrap gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">All labs</a><span>Fixture</span></nav>
+    <div class="eyebrow">Investigation 99</div>
+    <h1>Test Fixture Lab</h1>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+<main>
+  <section class="step wrap gutter" data-step="Overview"><header><div class="eyebrow">Overview</div><h2>Fixture</h2></header><div class="step-body prose"><p>A tiny lab used by the tests.</p></div></section>
+  <section class="step wrap gutter" data-step="Part A"><header><div class="eyebrow">Part A</div><h2>First answer</h2></header><div class="step-body" id="pa"></div></section>
+  <section class="step wrap gutter" data-step="Part B"><header><div class="eyebrow">Part B</div><h2>Second answer</h2></header><div class="step-body" id="pb"></div></section>
+  <section class="step wrap gutter" data-step="Submit"><header><div class="eyebrow">Wrap up</div><h2>Hand in</h2></header><div class="step-body"><div data-responses></div></div></section>
+</main>
+<script src="../../lab.js"></script>
+<script>
+  Lab.init({ id: 'lab99' });
+  Lab.prompt('#pa', { key: 'a1', label: 'Answer for part A' });
+  Lab.prompt('#pb', { key: 'b1', label: 'Answer for part B' });
+</script>
+</body>
+</html>
