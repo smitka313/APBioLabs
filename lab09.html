@@ -403,7 +403,7 @@ function digestSeq() {
 }
 Lab.$('#cut-run').addEventListener('click', digestSeq); digestSeq();
 const cutTouched = { run: false, sma: false, map: false };
-Lab.$('#cut-run').addEventListener('click', () => { cutTouched.run = true; if (Lab.$('#cut-enz').value === 'SmaI') cutTouched.sma = true; Lab.toast(`${Lab.$('#cut-enz').value}: ${Lab.$('#cut-sites').textContent} site(s), ${Lab.$('#cut-frags').textContent} fragments`, { type: 'info', announce: false, key: 'cut' }); });
+Lab.$('#cut-run').addEventListener('click', () => { Lab.sound.play('click'); cutTouched.run = true; if (Lab.$('#cut-enz').value === 'SmaI') cutTouched.sma = true; Lab.toast(`${Lab.$('#cut-enz').value}: ${Lab.$('#cut-sites').textContent} site(s), ${Lab.$('#cut-frags').textContent} fragments`, { type: 'info', announce: false, key: 'cut' }); });
 ['E', 'H', 'B'].forEach(k => Lab.$('#map-' + k).addEventListener('change', () => { cutTouched.map = true; }));
 {
   Lab.steps('#cut-steps', [
@@ -848,6 +848,7 @@ function makeGel(rootSel, measSel, cfg) {
     <div class="stage">
       <canvas class="viz gel-canvas" id="${P}-cv" aria-label="Agarose gel in an electrophoresis box with wells at the negative end; bands appear after running and staining"></canvas>
       <div class="readouts"><div class="readout"><span class="k">Gel</span><span class="v" id="${P}-gelno">1</span></div><div class="readout"><span class="k">Run time (min)</span><span class="v" id="${P}-time">0 min</span></div><div class="readout"><span class="k">Dye front distance (mm)</span><span class="v" id="${P}-dye">0 mm</span></div><div class="readout"><span class="k">Current (mA)</span><span class="v" id="${P}-amp">0 mA</span></div></div>
+      <div id="${P}-tl-run"></div><div id="${P}-tl-stain"></div><p class="small muted" id="${P}-tl-note" role="status" hidden></p>
       <div id="${P}-msg" class="msg" aria-live="polite">Choose a tube, then a well.</div>
       <div class="row"><label for="${P}-mlane" class="small">Lane</label><select id="${P}-mlane"></select><button class="btn btn--sm" type="button" id="${P}-mall">Measure all visible bands in lane</button><button class="btn btn--sm" type="button" id="${P}-mdye">Measure dye front</button></div>
       <div class="small muted" id="${P}-legend"></div>
@@ -857,6 +858,11 @@ function makeGel(rootSel, measSel, cfg) {
   Lab.fitHeight($('cv'), 0.8, '312px');
   const cv = fitCanvas($('cv'), gelAspect);
   const rng = Lab.rng();
+  /* Timelapses: the live gel run, and the stain/destain. A run restored by the clock (or paused and continued) is never recorded with fake frames. */
+  const tlRun = Lab.timelapse(() => $('cv'), { fps: 4, maxFrames: 160, width: 420, label: 'Gel run' + (cfg.prefix === 'g2' ? ' (evidence gel)' : ''), key: P + '-run' });
+  const tlStain = Lab.timelapse(() => $('cv'), { fps: 3, maxFrames: 120, width: 420, label: 'Staining' + (cfg.prefix === 'g2' ? ' (evidence gel)' : ''), key: P + '-stain' });
+  tlRun.mount('#' + P + '-tl-run'); tlStain.mount('#' + P + '-tl-stain');
+  const tlNote = m => { const n = $('tl-note'); n.textContent = m; n.hidden = !m; };
   const meas = Lab.table(measSel + ' .mtable', {
     save: P + '-meas',
     columns: [{ key: 'gel', label: 'Gel', num: true, digits: 0 }, { key: 'lane', label: 'Lane', num: true, digits: 0 }, { key: 'sample', label: 'Sample' }, { key: 'band', label: 'Band', num: true, digits: 0 }, { key: 'dist', label: 'Distance migrated', unit: 'mm', num: true, digits: 1, editable: true }, { key: 'known', label: 'Known fragment size', unit: 'bp', num: true, digits: 0, editable: true }],
@@ -866,6 +872,7 @@ function makeGel(rootSel, measSel, cfg) {
   const st = { shown: 'none', lanes: [], t: 0, running: false, stain: 0, stainAt: 0, destainAt: 0, gel: prevGel + 1, sel: cfg.samples[0].key, pipette: null, runF: 1, laneF: [], reversed: false };
   function newGel() {
     st.lanes = Array.from({ length: 8 }, () => []); st.t = 0; st.dist = 0; st.frozen = { pct: pct(), V: V() }; st.running = false; st.stain = 0; st.stainAt = 0; st.destainAt = 0; st.shown = 'none'; st.runF = Math.max(0.9, Math.min(1.1, rng.normal(1, 0.03)));
+    if (tlRun.recording) tlRun.stop(); if (tlStain.recording) tlStain.stop();
     st.laneF = st.lanes.map((_, i) => 1 - 0.012 * Math.pow((i - 3.5) / 3.5, 2) + rng.normal(0, 0.004));
     $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; syncProc(true); drawWells(); updateRead(); draw();
   }
@@ -895,6 +902,7 @@ function makeGel(rootSel, measSel, cfg) {
     syncProc(true);
     drawWells(); updateRead(); draw();
     if (r.running) {   // the power stayed on while the page was closed: catch up by the wall clock
+      tlNote('The power stayed on while the page was closed, so this part of the run was not recorded.');
       const el = Math.max(0, (Date.now() - (r.at || Date.now())) / 1000); let left = el, over = false;
       while (left > 0 && !over) { const d = Math.min(0.25, left); left -= d; over = advance(d); }
       updateRead(); draw();
@@ -926,6 +934,7 @@ function makeGel(rootSel, measSel, cfg) {
     if (spill) [w - 1, w + 1].forEach(n => { if (n >= 0 && n < 8) st.lanes[n].push({ k: st.sel, v: spill / 2, main: false }); });
     st.pipette = { w, t0: performance.now() };
     if (!quiet) msg(spill ? 'warn' : 'ok', spill ? `Well ${w + 1} overflowed: about ${spill} µL spilled into the neighboring wells and will contaminate those lanes.` : `Loaded ${vol} µL of ${sample(st.sel).label} into well ${w + 1}.`);
+    if (!quiet) Lab.sound.play('click');
     drawWells(); animatePipette(); saveState();
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
@@ -1127,18 +1136,20 @@ function makeGel(rootSel, measSel, cfg) {
     updateRead(); draw();
     if (performance.now() - lastSave > 1500) saveState();
     if (over) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
-  });
+  }, { tick: 1 });
   function start() {
     if (!st.lanes.some(l => l.length)) { msg('bad', 'Load at least one sample before switching on the power.'); return; }
     if (st.stain) { msg('bad', 'This gel has been stained. Pour a new gel to run again.'); return; }
     if (st.t === 0) { st.frozen = { pct: pct(), V: V() }; }
-    st.running = true; $('run').textContent = 'Power off: stop';
+    const fresh = st.t === 0 && !Lab.reducedMotion();
+    st.running = true; $('run').textContent = 'Power off: stop'; Lab.sound.play('buzz');
+    if (fresh) { tlNote(''); tlRun.start(); } else if (st.t > 0) tlNote('You continued a paused run. The replay shows the run up to the pause.');
     msg(st.reversed ? 'bad' : 'ok', st.reversed ? '+ and − are swapped (the red lead is on the − well end). Bubbles form, but the purple dye is moving UP, out of the wells and into the buffer. Check your leads!' : 'Current is flowing: bubbles rise at both electrodes and the purple dye is moving toward the red (+) end.');
     if (Lab.reducedMotion()) { st.t += 120 * 50 / V(); st.dist = 0.475 * (V() / 50) * Math.pow(0.8 / st.frozen.pct, 0.8) * st.runF * st.t; st.frozen.V = V(); stop(); return; }
     saveState(); loop.start();
   }
   function stop(note) {
-    loop.stop(); st.running = false; saveState(); $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run'; updateRead(); draw();
+    loop.stop(); st.running = false; if (tlRun.recording) tlRun.stop(); saveState(); $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run'; updateRead(); draw();
     const d = st.dist;
     msg(note ? 'warn' : st.reversed ? 'bad' : d < 45 ? 'warn' : d > 66 ? 'warn' : 'ok', note || (st.reversed ? 'The + and − leads were swapped, so the DNA left the wells in the wrong direction and is lost in the buffer. Pour a new gel and connect black (−) to black, red (+) to red.' : d < 45 ? `Dye front at ${Lab.fmt(d, 1)} mm. It is not yet about 1 cm from the end (about 60 mm), so bands are still crowded near the wells. You can run longer.` : d > 66 ? `Dye front at ${Lab.fmt(d, 1)} mm: past the 1-cm-from-the-end mark (about 60 mm), so small fragments may have run off.` : `Dye front at ${Lab.fmt(d, 1)} mm, about 1 cm from the end of the gel. Press Power off, then stain the gel. Now stain the gel.`));
   }
@@ -1159,6 +1170,7 @@ function makeGel(rootSel, measSel, cfg) {
     }
     if (st.shown !== ph) {
       const before = st.shown; st.shown = ph;
+      if (ph === 'done' && tlStain.recording) tlStain.stop();
       if (!quiet) {
         if (ph === 'stained') { msg('ok', 'Stained in methylene blue: the whole gel is blue and the bands are still faint and fuzzy. Press Destain (water) to clear the background and sharpen the bands.'); Lab.toast('Gel stained: now destain it', { type: 'ok', announce: false, key: P + '-stain' }); }
         else if (ph === 'done') { msg('ok', 'Destained: blue bands on a clear background. Click a band or use "Measure all visible bands in lane" to record distances.'); Lab.toast('Gel destained: ready to measure', { type: 'ok', announce: false, key: P + '-stain' }); }
@@ -1171,12 +1183,13 @@ function makeGel(rootSel, measSel, cfg) {
     return ph;
   }
   function fadeIn() { const c = $('cv'); c.style.transition = 'opacity .3s'; c.style.opacity = '0.35'; requestAnimationFrame(() => requestAnimationFrame(() => { c.style.opacity = ''; })); setTimeout(() => { c.style.transition = ''; }, 400); }
-  stainLoop = Lab.loop(() => { draw(); const ph = syncProc(); if (ph !== 'staining' && ph !== 'destaining') { draw(); return false; } });
+  stainLoop = Lab.loop(() => { draw(); const ph = syncProc(); if (ph !== 'staining' && ph !== 'destaining') { draw(); return false; } }, { tick: 1 });
   $('stain').addEventListener('click', () => {
     if (st.running) { msg('bad', 'Turn off the power and disconnect the leads before you remove the gel.'); return; }
     if (st.t === 0) { msg('warn', 'Run the gel before staining it.'); return; }
     const ph = phase(), rm = Lab.reducedMotion();
-    if (ph === 'none') { st.stain = 1; st.stainAt = rm ? 0 : Date.now(); }
+    Lab.sound.play('click');
+    if (ph === 'none') { st.stain = 1; st.stainAt = rm ? 0 : Date.now(); if (!rm) tlStain.start(); }
     else if (ph === 'stained') { st.stain = 2; st.destainAt = rm ? 0 : Date.now(); }
     else return;
     syncProc(); saveState(); draw(); if (rm) fadeIn();
@@ -1200,13 +1213,14 @@ function makeGel(rootSel, measSel, cfg) {
     return ({ none: 'Stain the gel first', staining: 'Wait for staining to finish, then destain', stained: 'Destain the gel first', destaining: 'Wait for destaining to finish', done: '' })[phase()];
   }
   st.blockReason = blockReason;
-  $('mall').addEventListener('click', () => { if (!ready()) return; const i = +$('mlane').value, vb = visibleBands(i); if (!vb.length) { msg('warn', `No visible bands in lane ${i + 1}.`); return; } vb.forEach((b, k) => addMeasure(i, b, k)); msg('ok', `Recorded ${vb.length} band${vb.length > 1 ? 's' : ''} from lane ${i + 1}.`); });
+  $('mall').addEventListener('click', () => { if (!ready()) return; Lab.sound.play('beep'); const i = +$('mlane').value, vb = visibleBands(i); if (!vb.length) { msg('warn', `No visible bands in lane ${i + 1}.`); return; } vb.forEach((b, k) => addMeasure(i, b, k)); msg('ok', `Recorded ${vb.length} band${vb.length > 1 ? 's' : ''} from lane ${i + 1}.`); });
   $('mdye').addEventListener('click', () => { if (st.t === 0) { msg('warn', 'Run the gel first.'); return; } msg('ok', `Dye front: ${Lab.fmt(st.dist + rng.normal(0, 0.4), 1)} mm from the wells (record it in your notebook).`); });
   $('cv').addEventListener('click', e => {
     const r = $('cv').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, g = st.geom;
     const i = Math.floor((x - g.gx0) / g.lw); if (i < 0 || i > 7) return;
     if (st.t === 0) { load(i); return; }
     if (!ready()) return;
+    Lab.sound.play('beep');
     const d = (y - g.y0) / g.mmPx, vb = visibleBands(i);
     let best = -1, bd = 3.5; vb.forEach((b, k) => { const dd = Math.abs(b.front - 0.5 - d); if (dd < bd) { bd = dd; best = k; } });
     if (best < 0) { msg('warn', `No band there in lane ${i + 1}. Click directly on a blue band.`); return; }
@@ -1414,25 +1428,16 @@ Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { ke
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
 cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
 Lab.prompt(an, { key: 'a3', label: 'Write the ending of the story: "whodunit," based on motive, means, opportunity, and DNA evidence. Remember that the blood only shows whose blood it is, not what happened.', rows: 5 });
-/* Predict first: quote the student's own saved prediction(s) back in Reflect. */
-function predRecall(host, items) {
-  const box = Lab.h('div', { class: 'pred-recall', 'aria-live': 'polite' });
-  host.prepend(box);
-  const render = () => {
-    box.innerHTML = '';
-    items.forEach(([key, name]) => {
-      const t = Lab.$('#p-' + key), v = ((t && t.value) || Lab.store.get(key) || '').trim();
-      box.append(Lab.h('blockquote', null, Lab.h('span', { class: 'pred-recall-k' }, 'Your prediction: ' + name),
-        v ? Lab.h('p', null, '\u201C' + v + '\u201D') : Lab.h('p', { class: 'muted' }, 'You did not write a prediction for this part. Do that investigation part first.')));
-    });
-  };
-  render();
-  document.addEventListener('input', e => { if (e.target && /^p-predict-/.test(e.target.id || '')) render(); });
-  Lab.onShow(host, render);
-}
 const ev = Lab.$('#evaluate-prompts');
-predRecall(ev.parentElement, [['predict-crime', 'what a matching suspect would look like']]);
-Lab.prompt(ev, { key: 'ev-pred', label: 'Compare your prediction (quoted above) with your gel results. What matched, what surprised you, and what would you change about your prediction now?', rows: 4 });
+const evCompare = Lab.h('div', { id: 'ev-compare' }); ev.parentElement.prepend(evCompare);
+Lab.predictCompare(evCompare, {
+  predictKey: 'predict-crime', part: 'Design: crime scene', partId: 'design-crime-scene',
+  title: 'Your prediction vs. your evidence gel',
+  getResult: () => { const c = Lab.store.get('compare-last'); return c && c.rows && c.rows.length ? c : null; },
+  summarize: c => { const ok = c.rows.filter(r => r.all).map(r => r.p); return (ok.length ? `With your match rule (within ${c.tol}%), ${ok.join(' and ')} matched the blood on every band` : `With your match rule (within ${c.tol}%), no suspect matched the blood on every band`) + ': ' + c.rows.map(r => `${r.p} ${r.matched} of ${r.of} bands matched` + (r.extra ? `, ${r.extra} extra` : '') + (r.diff != null ? `, mean difference ${Lab.fmt(r.diff, 1)}%` : '')).join('; ') + '.'; },
+  delta: (c, pred) => { const ok = c.rows.filter(r => r.all).map(r => r.p); return ok.length === 1 ? `Exactly one suspect (${ok[0]}) matched the blood. Does that fit what you wrote?` : ok.length ? `More than one suspect (${ok.join(', ')}) matched at ±${c.tol}%. Did you predict a single clear match?` : `No suspect matched at ±${c.tol}%, which is different from a clean match. Check your tolerance and your bands.`; }
+});
+Lab.prompt(ev, { key: 'ev-pred', label: 'Compare your prediction (shown above) with your gel results. What matched, what surprised you, and what would you change about your prediction now?', rows: 4 });
 Lab.prompt(ev, { key: 'e1', label: '1. What challenges did you have in performing your investigation?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: '2. What are possible sources of error in electrophoresis (loading, voltage, run time, measuring, the doublet, faint bands)? How could you reduce each one?', rows: 4 });
 Lab.prompt(ev, { key: 'e3', label: '3. Who should have access to your genetic profile: health insurers, colleges, employers? Who owns your DNA and its information?', rows: 3 });
