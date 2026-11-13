@@ -14,6 +14,7 @@ async function ctx(b, o = {}) {
 }
 const fillPred = (p, key, text) => p.evaluate(([k, t]) => { const el = document.getElementById('p-' + k); el.value = t; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }, [key, text]);
 const setv = (p, sel, v) => p.evaluate(([s, v]) => { const e = document.querySelector(s); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); }, [sel, String(v)]);
+const jc = (p, sel) => p.evaluate(s => document.querySelector(s).click(), sel);   // for buttons inside closed <details>
 const show = async (p, id) => { await p.evaluate(h => { location.hash = h; }, id); await p.waitForTimeout(500); };
 const cards = p => p.evaluate(() => Array.from(document.querySelectorAll('.pvc')).map(c => ({ quote: (c.querySelector('.pvc-quote') || {}).textContent || '', hasQuote: !c.querySelector('.pvc-quote').hidden, sum: c.querySelector('.pvc-sum').hidden ? '' : c.querySelector('.pvc-sum').textContent, what: c.querySelector('.pvc-what').textContent, wait: c.querySelector('.pvc-what').classList.contains('is-wait'), snap: !c.querySelector('.pvc-snap').hidden, link: (c.querySelector('.pvc-what a') || {}).hash || '' })));
 const badges = p => p.evaluate(() => Array.from(document.querySelectorAll('.tab-badge')).filter(b => !b.hidden && b.offsetParent !== null).length);
@@ -129,6 +130,22 @@ const LABS = {
     await p.click('#p3b-run'); await p.waitForTimeout(3500);
     await show(p, 'design');
     await p.click('#d-run'); await p.waitForTimeout(3500);
+    return p;
+  },
+  async lab07(b) {
+    const c = await ctx(b), p = await T.open(c, 'lab07.html', 'root-tips');
+    await fillPred(p, 'predict-roottips', 'I predict the lectin tips will have a higher mitotic index than the control because lectin triggers cell division.');
+    await fillPred(p, 'predict-meiosis', 'I predict I will get equal numbers of the four gametes, about 1:1:1:1, but crossing over would change that.');
+    await fillPred(p, 'predict-sordaria', 'I predict about 30% of asci will show crossover because the gene is far from the centromere.');
+    await fillPred(p, 'predict-design', 'I predict the mitotic index will increase as the concentration increases because more cells divide.');
+    for (const t of ['control', 'lectin']) {
+      await p.click('[data-treat="' + t + '"]'); await p.click('#rt-prep'); await p.waitForTimeout(300);
+      await jc(p, '#rt-auto'); await p.click('#rt-record'); await p.waitForTimeout(300);
+    }
+    await p.click('#rt-class').catch(() => {}); await p.waitForTimeout(500);
+    await show(p, 'meiosis-model'); await p.click('#mei-run'); await p.waitForTimeout(300);
+    await show(p, 'sordaria'); await jc(p, '#s-auto'); await p.click('#s-record'); await p.waitForTimeout(300);
+    await show(p, 'design'); await p.click('#d-run'); await p.waitForTimeout(800);
     return p;
   },
 };
