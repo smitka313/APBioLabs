@@ -187,6 +187,9 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   console.log('Start over (one lab)');
   ctx = await ctxFor(b, { seed: base() });
   p = await T.open(ctx, 'lab05.html', '', srv.url);
+  /* The page refreshes derived summaries (last visited, progress counts, Next hints) a moment after load; those carry timestamps and are not work. */
+  const DERIVED = /^aplab:(last|progress:|hint:|backup:)/;
+  await p.waitForTimeout(1500);
   const snap3 = await dump(p);
   const ds3 = (await p.locator('.ds-id').first().innerText()).trim();
   T.ok(await p.locator('.responses-bar .btn-startover').count() === 1, 'Submit tools has Start over');
@@ -197,7 +200,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await c3.isDisabled(), 'confirm disabled until the box is ticked');
   await p.screenshot({ path: OUT + '/t24-startlab-1366.png' });
   await p.keyboard.press('Escape');
-  T.ok(await p.locator('.dm-card').count() === 0 && JSON.stringify(await dump(p)) === JSON.stringify(snap3), 'Esc changed nothing');
+  { const now = await dump(p), diff = Object.keys({ ...snap3, ...now }).filter(k => !DERIVED.test(k) && snap3[k] !== now[k]); T.ok(await p.locator('.dm-card').count() === 0 && diff.length === 0, 'Esc changed nothing (work keys)' + (diff.length ? ': ' + diff.map(k => k + ' ' + String(snap3[k]).slice(0, 80) + ' -> ' + String(now[k]).slice(0, 80)).join(' | ') : '')); }
   await p.evaluate(() => document.querySelector('.btn-startover').click());
   await d3.getByRole('button', { name: 'Cancel' }).click();
   { const now = await dump(p), diff = Object.keys({ ...snap3, ...now }).filter(k => k !== 'aplab:last' && snap3[k] !== now[k]); T.ok(diff.length === 0, 'Cancel changed nothing' + (diff.length ? ': ' + diff.map(k => k + ' ' + snap3[k] + ' -> ' + now[k]).join(' | ') : '')); }
