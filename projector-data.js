@@ -901,7 +901,8 @@ window.PROJECTOR_LABS = [
     "steps": [
      "Load the samples into wells",
      "Run until the dye is ~1 cm from the end",
-     "Stain, then measure the bands",
+     "Stain, then destain the gel",
+     "Measure the bands",
      "Add marker sizes (next part)"
     ]
    },
@@ -919,7 +920,8 @@ window.PROJECTOR_LABS = [
      "Write your prediction (above)",
      "Load the samples into wells",
      "Run until the dye is ~1 cm from the end",
-     "Stain, then measure the bands",
+     "Stain, then destain the gel",
+     "Measure the bands",
      "Plan your gel (above)",
      "Compare the profiles (below)"
     ]
