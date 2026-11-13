@@ -37,6 +37,10 @@
   .palette .chart-ft { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; font-size: .66rem; margin-top: 1px; }
   @media (max-width: 520px) { .palette .sw i { height: 30px; } .palette { padding: 7px 6px 6px; } }
   .snaps .sw { border-radius: 3px; border: 1px solid rgba(0,0,0,.2); background-image: linear-gradient(90deg, rgba(40,40,36,.28), rgba(255,255,255,0) 15%, rgba(255,255,255,.6) 24%, rgba(255,255,255,0) 33%, rgba(255,255,255,0) 76%, rgba(255,255,255,.2) 86%, rgba(40,40,36,.3)); }
+  .snaps .sw { display: grid; place-items: center; }
+  .chk { font: 700 .72rem/1 var(--f-mono); padding: 2px 4px; border-radius: 3px; background: rgba(255,255,255,.92); color: rgb(40,38,34); border: 1px solid rgba(0,0,0,.25); white-space: nowrap; }
+  .chk-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: .86rem; }
+  .chk-row .chk { font-size: .84rem; padding: 2px 6px; }
   .snaps .hd { text-align: center; font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
   .note { font-size: .88rem; color: var(--muted); }
   .sim--fit > .sim-main { align-self: stretch; }   /* results panels use the full height of the sim box */
@@ -231,8 +235,9 @@
             <div class="readout"><span class="k">Trial</span><span class="v" id="p1-trial">—</span></div>
           </div>
           <div>
-            <div class="note" style="margin-bottom:6px">Photos from the latest trial (match these to the palette below)</div>
+            <div class="note" style="margin-bottom:6px">Photos from the latest trial (match these to the palette below). After you record your own palette number in the Data tab, the matched number (for example &ldquo;≈ 6&rdquo;) appears on that photo so you can check it.</div>
             <div class="snaps" id="p1-snaps"></div>
+            <div class="note chk-row" id="p1-chk" aria-live="polite"></div>
           </div>
           <div>
             <div class="note" style="margin-bottom:6px">Turnip peroxidase color palette</div>
@@ -280,6 +285,7 @@
         <div class="stage">
           <canvas class="viz" id="p2-canvas" aria-label="Rack of six reaction tubes, each with a different pH buffer, darkening at different rates"></canvas>
           <div class="readouts" id="p2-read"></div>
+          <div class="note chk-row" id="p2-chk" aria-live="polite"></div>
           <div><div class="note" style="margin-bottom:6px">Palette</div><div class="palette" id="palette2"></div></div>
         </div>
       </div>
@@ -858,6 +864,7 @@ function frq(host, o) {
     [['Initial rate, enzyme (0–2 min)', slope(sE)], ['Initial rate, control (0–2 min)', slope(sC)]].forEach(([k, v]) => r.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k + ' (' + u + ')'), h('span', { class: 'v' }, isFinite(v) ? fmt(v, 3) : '—'))));
     // palette-matching feedback
     let n = 0, ok = 0; rows.forEach(row => [['cE', '_AE'], ['cC', '_AC']].forEach(([c, a]) => { if (palOk(row[c])) { n++; if (Math.abs(row[c] - palNum(row[a])) <= 1) ok++; } }));
+    chkP1();
     $('#p1-match').textContent = n ? `${ok} of ${n} of your palette matches are within ±1 of the palette value equivalent to the tube’s true color.` + (ok < n ? ' Look again at the ones that are far off.' : '') : 'Enter a palette number for each reading (even if you also used the spectrophotometer).';
   }
   function snapsUI(trial) {
@@ -866,10 +873,28 @@ function frq(host, o) {
     if (!trial) return;
     [['Enzyme', '_AE'], ['Control', '_AC']].forEach(([lab, key]) => {
       el.append(h('span', { class: 'lab' }, lab));
-      trial.forEach(row => el.append(h('div', { class: 'sw', style: `background-color:${rgbStr(row[key])}`, title: `${lab} at ${row.t} min` })));
+      trial.forEach(row => el.append(h('div', { class: 'sw', 'data-t': row.t, 'data-k': key, style: `background-color:${rgbStr(row[key])}`, title: `${lab} at ${row.t} min` })));
     });
   }
   function lastTrialRows() { const rows = t1.getRows(); if (!rows.length) return null; const tr = rows[rows.length - 1].trial; return rows.filter(r => r.trial === tr); }
+  /* "Check" reveal: the matched palette number is printed (as text, so color is not the only cue) only after the student has recorded their own estimate for that tube. */
+  function chkP1() {
+    const lt = lastTrialRows() || [], P = [['_AE', 'cE'], ['_AC', 'cC']];
+    $$('#p1-snaps .sw').forEach(sw => {
+      const row = lt.find(r => String(r.t) === sw.dataset.t), pr = P.find(q => q[0] === sw.dataset.k); sw.textContent = '';
+      if (row && pr && palOk(row[pr[1]])) sw.append(h('b', { class: 'chk' }, '≈ ' + palNum(row[pr[0]])));
+    });
+    const out = $('#p1-chk'); out.textContent = '';
+    if (!lt.length) return;
+    const l5 = lt[lt.length - 1];
+    [['Enzyme tube', '_AE', 'cE'], ['Control tube', '_AC', 'cC']].forEach(([n, a, c]) => out.append(h('span', null, n + ' matched palette at ' + l5.t + ' min: ', palOk(l5[c]) ? h('b', { class: 'chk' }, '≈ ' + palNum(l5[a])) : h('em', null, 'record your estimate first'))));
+  }
+  function chkP2() {
+    const rows = t2.getRows(), out = $('#p2-chk'); out.textContent = '';
+    if (!rows.length) return;
+    const tr = rows[rows.length - 1].trial;
+    rows.filter(r => r.trial === tr).forEach(r => out.append(h('span', null, 'pH ' + r.pH + ' matched palette: ', palOk(r.c) ? h('b', { class: 'chk' }, '≈ ' + palNum(r._A)) : h('em', null, 'record your estimate first'))));
+  }
   snapsUI(lastTrialRows());
   /* A trial is a timed run: its start time is saved, so after a reload it has kept running by the clock (finished if the 5 minutes are up). */
   $('#p1-run').addEventListener('click', () => {
@@ -940,6 +965,7 @@ function frq(host, o) {
     const pts = []; PHS.forEach(p => { const v = rows.filter(r => r.pH === p && r[key] != null && isFinite(r[key]) && (spec || palOk(r[key]))).map(r => r[key]); if (v.length) pts.push({ x: p, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); });
     ch2.update({ yLabel: spec ? 'Change in absorbance, ΔA (mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
     let n = 0, ok = 0; rows.forEach(r => { if (palOk(r.c)) { n++; if (Math.abs(r.c - palNum(r._A)) <= 1) ok++; } });
+    chkP2();
     $('#p2-match').textContent = n ? `${ok} of ${n} palette matches are within ±1 of the true color.` : 'Record a palette number for each tube at your reading time.';
   }
   $('#p2-run').addEventListener('click', () => {

@@ -30,6 +30,7 @@
   .pred-grid .pill { justify-self: start; font-size: .75rem; }
   @media (max-width: 560px) { .pred-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .count-wrap { max-width: 520px; }
+  .glow-count { display: block; margin-top: 4px; font: 600 .8rem/1.2 var(--f-body); letter-spacing: 0; }
   #ro-plus, #ro-minus, #ro-status, #plate-readouts .v { font-size: .95rem; }
   @media (max-width: 760px) { .sim { grid-template-columns: minmax(0, 1fr); } }
   .step, .step-body, .sim > .stage, .sim > .controls { grid-template-columns: minmax(0, 1fr); }
@@ -1228,6 +1229,11 @@ function colonyUV(ctx, x, y, r, glow) {
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
   const halo = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 3.4); halo.addColorStop(0, 'rgba(70,255,110,0.55)'); halo.addColorStop(0.4, 'rgba(40,220,90,0.18)'); halo.addColorStop(1, 'rgba(20,180,60,0)');
   ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(x, y, r * 3.4, 0, TAU); ctx.fill(); ctx.restore();
+  // shape cue (not hue): a thin ring plus short rays radiate from each glowing colony
+  ctx.save(); ctx.strokeStyle = 'rgba(235,255,225,0.85)'; ctx.lineWidth = Math.max(0.6, r * 0.18); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(x, y, r * 1.55, 0, TAU); ctx.stroke();
+  if (r >= 2.2) { ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = k * TAU / 8 + 0.2; ctx.moveTo(x + Math.cos(a) * r * 1.9, y + Math.sin(a) * r * 1.9); ctx.lineTo(x + Math.cos(a) * r * 2.6, y + Math.sin(a) * r * 2.6); } ctx.stroke(); }
+  ctx.restore();
   const g = ctx.createRadialGradient(x - r * 0.25, y - r * 0.3, 0, x, y, r); g.addColorStop(0, '#f2ffe6'); g.addColorStop(0.35, '#9dff86'); g.addColorStop(0.85, '#3fe063'); g.addColorStop(1, '#22b24a');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
 }
@@ -1315,7 +1321,7 @@ function renderPlateReadouts() {
   const el = $('#plate-readouts');
   if (!plates || !plates['p-amp'] || !plates['p-amp'].incubated) { el.innerHTML = `<div class="readout"><span class="k">Plates</span><span class="v" style="font-size:.95rem">${plates ? 'Spread, not yet incubated' : 'Not yet plated'}</span></div>`; return; }
   const desc = { none: 'No growth', lawn: 'Lawn', white: 'Colonies', glow: 'Colonies' };
-  el.innerHTML = PLATES.map(p => `<div class="readout"><span class="k">${p.name}</span><span class="v" style="font-size:.95rem">${desc[plates[p.id].cls]}</span></div>`).join('');
+  el.innerHTML = PLATES.map(p => { const gl = plates[p.id].cols.filter(c => c.glow).length; return `<div class="readout"><span class="k">${p.name}</span><span class="v" style="font-size:.95rem">${desc[plates[p.id].cls]}${plates[p.id].cls === 'none' || plates[p.id].cls === 'lawn' ? '' : `<span class="glow-count" data-plate="${p.id}">Glowing colonies: ${gl}</span>`}</span></div>`; }).join('');
 }
 function gradePreds() {
   /* Save what the student predicted for each plate next to what grew, so Reflect can quote it. */
