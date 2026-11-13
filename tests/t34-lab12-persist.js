@@ -1,0 +1,44 @@
+/* Lab 12: the vial trial and the choice-chamber trial keep going by the clock across a reload; controls and the
+   chi-square calculator persist; the calculator starts empty with a worked-example mode; the results panel opens on Data. */
+const T = require('./_h');
+(async () => {
+  const b = await T.launch(), ctx = await T.ctxFor(b);
+  const p = await T.open(ctx, 'lab12.html', 'geotaxis-vial');
+  const sayPred = async id => p.evaluate(i => { const t = document.querySelector('#p-' + i); t.value = 'x because y'; t.dispatchEvent(new Event('input', { bubbles: true })); }, id);
+  await sayPred('predict-vial');
+  await p.click('#vial-run'); await p.waitForTimeout(3000);
+  await p.reload(); await p.waitForTimeout(800);
+  T.ok(await p.evaluate(() => document.querySelector('#vial-run').disabled || (Lab.store.get('vial') || []).length > 0), 'vial trial carried on after reload');
+  await p.waitForFunction(() => (Lab.store.get('vial') || []).length > 0, null, { timeout: 20000 });
+  T.ok(true, 'vial row recorded');
+  await p.reload(); await p.waitForTimeout(800);
+  T.ok(await p.evaluate(() => document.querySelector('#vial-t').textContent === '30' && (Lab.store.get('vial') || []).length === 1), 'finished vial state restored (t = 30, one row)');
+  await p.evaluate(() => Lab.pages.go('choice-chamber')); await p.waitForTimeout(400);
+  await sayPred('predict');
+  await p.evaluate(() => { document.querySelector('#c-pause').checked = false; document.querySelector('#c-pause').dispatchEvent(new Event('change', { bubbles: true })); });
+  await p.evaluate(() => { const s = document.querySelector('#c-a'); s.value = 'vinegar'; s.dispatchEvent(new Event('change', { bubbles: true })); });
+  await p.click('#c-run'); await p.waitForTimeout(1500);
+  const t1 = await p.evaluate(() => document.querySelector('#ro-time').textContent);
+  await p.reload(); await p.waitForTimeout(900);
+  await p.evaluate(() => Lab.pages.go('choice-chamber')); await p.waitForTimeout(400);
+  T.ok(await p.evaluate(() => document.querySelector('#c-a').value === 'vinegar' && document.querySelector('#c-pause').checked === false), 'controls restored');
+  const t2 = await p.evaluate(() => ({ time: document.querySelector('#ro-time').textContent, dis: document.querySelector('#c-run').disabled, rows: (Lab.store.get('trials') || []).length }));
+  T.ok(t2.dis || t2.rows > 0, 'trial still running (or finished) after reload: ' + JSON.stringify(t2) + ' was ' + t1);
+  await p.waitForFunction(() => (Lab.store.get('trials') || []).length > 0, null, { timeout: 60000 });
+  T.ok(true, 'trial finished and recorded');
+  T.ok(await p.evaluate(() => { const t = document.querySelector('#ch-sim-tab-data'); return t && t.getAttribute('aria-selected') === 'true'; }), 'results panel opens on Data');
+  await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
+  T.ok(await p.evaluate(() => document.querySelector('#x-a').value === '' && document.querySelector('#x-b').value === ''), 'chi calculator starts empty');
+  await p.evaluate(() => document.querySelector('#x-example').click());
+  T.ok(await p.evaluate(() => /EXAMPLE/.test(document.querySelector('.example-banner').textContent) && document.querySelector('#x-a').value === '21' && /χ²/.test(document.querySelector('#x-out').textContent)), 'worked example');
+  await p.reload(); await p.waitForTimeout(800);
+  await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
+  T.ok(await p.evaluate(() => document.querySelector('#x-a').value === ''), 'example not saved');
+  await p.evaluate(() => document.querySelector('#x-last').click());
+  const out = await p.evaluate(() => document.querySelector('#x-out').textContent);
+  await p.reload(); await p.waitForTimeout(800);
+  await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
+  T.ok(await p.evaluate(o => document.querySelector('#x-out').textContent === o && o.length > 10, out), 'chi result recomputed from saved inputs');
+  T.ok(p.errors.length === 0, 'no page errors ' + p.errors.join(';'));
+  await b.close(); T.done('lab12');
+})();
