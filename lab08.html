@@ -1411,7 +1411,7 @@ $('#s-med').addEventListener('change', () => { if (!satRes) drawSat(); });
   ['a-e3', 'The manual says this protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.']]]
 ].forEach(([el, list]) => list.forEach(([key, label]) => Lab.prompt('#' + el, { key, label, rows: 3 })));
 const cer = $('#cer');
-cer.insertAdjacentHTML('afterend', '<details class="disclose disclose--sm"><summary>Need a hint?</summary><div class="inner"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
+cer.insertAdjacentHTML('afterend', '<details class="disclose disclose--sm cer-hint"><summary>Need a hint?</summary><div class="inner"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
 [['C', 'cer-c', 'Claim: Did your +pGLO cells take up and express the plasmid genes?'], ['E', 'cer-e', 'Evidence: Which plates, colony counts, and UV observations support your claim?'], ['R', 'cer-r', 'Reasoning: Connect your evidence to the genes on pGLO (bla, GFP, araC) and to selection.']].forEach(([L, key, label]) => {
   const p = Lab.prompt(cer, { key, label, rows: 3 }); $('label', p).dataset.letter = L;
 });

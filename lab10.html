@@ -1599,7 +1599,7 @@ function predRecall(host, items) {
     { id: 'h2', text: 'Repeat at day 14 or later', target: '#p1-plus7', done: () => sumRows().length > 1, hint: 'Advance to about day 14, then harvest and dry a second set.' },
     { id: 'tbl', text: 'Fill in the summary table', target: '#p1-sum input', done: () => sumRows().length > 0 && sumRows().every(r => numOK(r.pct) && numOK(r.energy) && numOK(r.npp)), hint: 'Open the <strong>Data</strong> tab and calculate % biomass, energy and NPP.' }
   ], { doneText: 'Both harvests are done. Next, measure respiration to estimate GPP (below).' });
-  const p1Ready = () => filled('p1-diagram') || s1.day > 0 || rawT.getRows().length > 0;
+  const p1Ready = () => filled('p1-diagram') || s1.day > 4 || rawT.getRows().length > 0;
   ['#p1-plus1', '#p1-plus7'].forEach(b => Lab.gate(b, () => s1.day >= 28 ? 'Plants are at their oldest (day 28)' : p1Ready() ? '' : 'Write your prediction first', { show: '#p-p1-diagram' }));
   Lab.gate('#p2-run', () => filled('p2-diagram') || barnT.getRows().length > 0 ? '' : 'Write your prediction first', { show: '#p-p2-diagram' });
   Lab.gate('#p1-harvest', () => s1.pending ? 'Dry the current harvest first' : s1.day < 3 ? 'Let the seedlings grow first (+1 or +7 days)' : '');

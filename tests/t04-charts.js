@@ -69,7 +69,7 @@ const T = require('./_h');
   // 4. Lab 10: harvest only gives the empty note; after drying, points appear (the page feeds the chart from the summary table)
   console.log('Lab 10 flow');
   const r = await T.open(ctx, 'lab10.html', 'part-1-npp');
-  await r.click('#p1-plus7'); await r.waitForTimeout(300);
+  await r.evaluate(() => Lab.pages.go(document.querySelector('#p-p1-diagram'))); await r.fill('#p-p1-diagram', 'Prediction first'); await r.waitForTimeout(900); await r.click('#p1-plus7'); await r.waitForTimeout(300);
   await r.click('#p1-harvest'); await r.waitForTimeout(1200);
   const afterHarvest = await r.evaluate(() => ({ circles: document.querySelectorAll('#p1-chart circle').length, note: !!document.querySelector('#p1-chart .chart-empty') }));
   T.ok(afterHarvest.circles === 0 && afterHarvest.note, 'Lab 10 after harvest: no point yet, but a clear empty-state note (not a blank 0-1 axis)');
