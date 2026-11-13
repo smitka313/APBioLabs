@@ -429,3 +429,64 @@ Each lab page gets a quiet "Project this lab" link in its header crumbs row, add
 `projector.html#labNN`; teacher pages, the home page and the dashboard do not get it. It is entered from teachers.html ("Projector mode"
 button and the "Using projector mode" section) and the index.html footer. **`projector-data.js` is generated: re-run
 `node tools/gen-projector-data.js` whenever a lab's parts, steps or safety callouts change.** `tests/t37-projector.js` fails if the data drifts.
+
+## Delight features (lab.js; all automatic unless an example says to call them)
+
+### Celebrations (nothing to wire)
+- A part that becomes complete (caused by the student, not restored on load) gets a quiet check-sweep on its nav item and on the small progress ring
+  (`.nav-ring`, beside "n of m parts done"), plus the `chime` sound if sound is on. Never more than that.
+- **One confetti burst per lab**, only when the student downloads the .docx or saves/prints the PDF report while every part is complete.
+  `aplab:<lab>:celebrated` remembers it (Start over this lab clears it). Confetti happens nowhere else. Own canvas, ~2.4 s, never prints.
+- Reduced motion: no sweep, no confetti; a static "Lab complete ✓" badge (`.lab-complete`) appears under the report buttons instead.
+- `Lab.celebrate.lab({force})` → fired?; `.complete()`; `.done()`. Event `aplab:celebrate` `{detail:{lab, kind:'confetti'|'badge'}}`.
+
+### Sound: `Lab.sound` (off by default)
+```js
+Lab.sound.play('click');   // pipette      'hiss' vacuum      'beep' spectrophotometer reading
+Lab.sound.play('pop');     // bubble / disk floats   'chime' part complete (lab.js plays it)   'buzz' power supply on   'tick' timer
+Lab.loop(dt => { … }, { tick: 1 });   // opt in: a soft tick every 1 s while this loop runs
+```
+`play` returns true if a sound started. Synthesized in Web Audio (no files), about −18 dB, under a second. Silent unless the student turned on the speaker
+button (header crumbs, beside the theme switch; `localStorage['aplab:pref:sound']='on'`, kept by Sign out and Start over because it lives under `aplab:pref:`),
+and the AudioContext is only created after a real user gesture. Call `play` from click handlers and run steps; never rely on it for meaning (also show text).
+`Lab.sound.enabled`, `.set(bool)`, `.toggle()`, `.names`, `.render(name)` (offline, used by tests).
+
+### Bench-verified stamp (nothing to wire)
+The .docx page header and the top of the PDF report view carry a rotated (−8°), ink-rough "BENCH-VERIFIED" seal with the Dataset ID and date, drawn on a canvas
+(`Lab.stamp.png({datasetId, date, color:'blue'|'red'}) → {dataUrl, bytes, width, height, alt}`, deterministic per ID and date). It floats/flows beside the text, never over it.
+
+### Timelapse + GIF: `Lab.timelapse`
+```js
+const rec = Lab.timelapse(cv.canvas /* or a Scope.view, selector, or () => canvas */, { fps: 4, maxFrames: 240, width: 360, label: 'Gel run', key: 'gel' });
+rec.mount('#gel-timelapse');        // "Replay my run" + "Download timelapse (GIF)" buttons and a status line (give it a spare div in the part)
+runBtn.onclick = () => { rec.start(); loop.start(); };     // start when the animation starts …
+// … and in the run's end handler:  rec.stop();
+```
+Frames are copied from the canvas, downscaled to `width`, kept as small JPEGs in memory and IndexedDB (`aplab-timelapse`, 6 MB cap, all in try/catch), so a
+replay survives a reload. Past `maxFrames`/`maxBytes` every second frame is dropped (capture slows to match), so a long run is covered end to end.
+`fps` is the capture rate (pick 2–8); replay shows `fps × speed` frames/s at 10×, 15× or 20× in a modal with Play/Pause, a scrubber, Esc to close (starts paused
+under reduced motion). `rec.replay()`, `rec.gif({speed, width, maxFrames, onprogress}) → Promise<Blob>`, `rec.downloadGif()`, `rec.clear()`, `rec.count`, `rec.fps`,
+`rec.onchange`. A marker `aplab:<lab>:tl:<key>` ties the stored run to the student, so Sign out and Start over erase it. One recorder per canvas; give each a unique `key`.
+The report tools show **"Include my timelapse in the report"** once a run exists; checked, the .docx gets a "My timelapse" section with a 320 px GIF (Word plays it).
+`Lab.gif.encode(frames, {delay})` / `new Lab.gif.Encoder(w, h)` is the encoder (GIF89a, median-cut 255-colour palette, LZW, changed-rectangle frames; no library, no worker).
+Worked example and fixture: `tests/fixtures/lab98.html`.
+
+### Predict vs. actual: `Lab.predictCompare`
+```js
+Lab.predictCompare('#reflect-compare', {          // an empty div in the Reflect part
+  predictKey: 'predict-floatassay',               // key of the Lab.prompt where the prediction was written
+  chartEl: '#cup-chart',                          // snapshot this Lab.chart (live), and/or return anything from getResult()
+  getResult: () => rows().length ? { ctrl: 12, treat: 8 } : null,   // null = "Finish … first"
+  summarize: r => `Treated disks floated at ${r.treat} min; the control at ${r.ctrl} min.`,
+  delta: (r, prediction) => r.treat < r.ctrl ? 'They floated faster, as you predicted.' : null,   // null → the summary is shown
+  part: 'Float assay', partId: 'float-assay',     // "Finish Float assay first" (a link when partId is given)
+});
+```
+Left: the saved prediction (or a note if none). Right: a live snapshot of the chart and/or the summary text. Below: a highlighted "What happened:" line. With
+`chartEl` and no `getResult`, `summarize`/`delta` receive the chart's options (`series`, …). Updates itself on chart redraws, input, part show and theme change.
+Example: `tests/fixtures/lab97.html`.
+
+### Home banner (index.html)
+The hero is a canvas-drawn lab bench (`LabBench` global on the home page only). Objects change when `aplab:progress:labNN` has `done === total`:
+flask (labs 5, 13) amber; petri dishes (8) colonies; gel box (3, 9) stained bands; microscope (7, 11) lamp + stained slide; fly vials (1, 10, 12) flies;
+balance (2, 4) sample + mass; tube rack (6) colour series. Phones drop the objects with the least progress first. Tests: `tests/t41`–`t46`; fixtures `tests/fixtures/lab9x.html`.
