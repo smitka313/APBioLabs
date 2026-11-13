@@ -218,6 +218,8 @@
               <button class="btn btn--primary" id="do-step" type="button">Do this step</button>
               <button class="btn" id="skip-step" type="button">Skip step</button>
             </div>
+            <progress id="step-prog" max="100" value="0" hidden aria-label="Progress of this timed step"></progress>
+            <div class="small muted" id="step-why" hidden>This step is running. The button comes back when it finishes.</div>
             <button class="btn btn--ghost btn--sm" id="restart" type="button">Start a new transformation</button>
           </div>
           <details class="disclose disclose--sm"><summary>Full procedure and protocol checklist</summary><div class="inner">
@@ -267,13 +269,15 @@
       <h3 style="margin:24px 0 8px">Calculate transformation efficiency</h3>
       <p class="prose small">Use the +pGLO LB/amp plate, as the manual does. Look back at the protocol for the plasmid concentration (0.005 µg/µL) and every volume you added to the +pGLO tube.</p>
       <div class="readouts"><div class="readout"><span class="k">Volumes in your +pGLO tube</span><span class="v" id="vol-list" style="font-size:.9rem">—</span></div></div>
+      <div class="row" style="margin-top:12px"><button class="btn btn--sm" id="calc-example" type="button">Show a worked example</button></div>
+      <div class="callout callout--tip" id="calc-banner" role="status" hidden><strong>EXAMPLE — not your data.</strong> These numbers come from the pre-lab question (40 colonies, 10 µL of plasmid, 100 µL spread). <button class="btn btn--sm" id="calc-example-clear" type="button">Clear example</button></div>
       <div class="grid-2" style="margin-top:12px">
-        <div class="field"><label for="c-count">Colonies on +pGLO LB/amp plate (colonies)</label><input id="c-count" type="number" step="1" min="0"></div>
-        <div class="field"><label for="c-mass">a. Total plasmid DNA used (µg)</label><input id="c-mass" type="number" step="any"></div>
-        <div class="field"><label for="c-frac">b. Fraction of the tube spread on the plate (no units)</label><input id="c-frac" type="number" step="any"></div>
-        <div class="field"><label for="c-spread">c. Plasmid DNA spread on the plate (µg)</label><input id="c-spread" type="number" step="any"></div>
-        <div class="field"><label for="c-eff">Transformation efficiency (transformants/µg)</label><input id="c-eff" type="number" step="any"></div>
-        <div class="field"><label for="c-sci">Efficiency in scientific notation (e.g. 3.1 × 10^3)</label><input id="c-sci" type="text"></div>
+        <div class="field"><label for="c-count">Colonies on +pGLO LB/amp plate (colonies)</label><input id="c-count" placeholder="e.g. 40" type="number" step="1" min="0"></div>
+        <div class="field"><label for="c-mass">a. Total plasmid DNA used (µg)</label><input id="c-mass" placeholder="e.g. 0.05" type="number" step="any"></div>
+        <div class="field"><label for="c-frac">b. Fraction of the tube spread on the plate</label><input id="c-frac" placeholder="e.g. 0.196" type="number" step="any"></div>
+        <div class="field"><label for="c-spread">c. Plasmid DNA spread on the plate (µg)</label><input id="c-spread" placeholder="e.g. 0.0098" type="number" step="any"></div>
+        <div class="field"><label for="c-eff">Transformation efficiency (transformants/µg)</label><input id="c-eff" placeholder="e.g. 4080" type="number" step="any"></div>
+        <div class="field"><label for="c-sci">Efficiency in scientific notation (e.g. 3.1 × 10^3)</label><input id="c-sci" placeholder="e.g. 4.1 × 10^3" type="text"></div>
       </div>
       <div class="row" style="margin-top:12px"><button class="btn btn--primary" id="calc-check" type="button">Check my calculations</button><button class="btn" id="calc-add" type="button">Add this run to my results</button></div>
       <div class="calc-fb" id="calc-fb" aria-live="polite"></div>
@@ -664,6 +668,7 @@ function readOpts() {
   if (g('o-recov')) choices.recov = +g('o-recov').value;
   if (g('o-plateUL')) choices.plateUL = +g('o-plateUL').value;
   if (g('o-incub')) choices.incub = +g('o-incub').value;
+  saveSim();
 }
 
 /* =====================================================================
@@ -728,7 +733,7 @@ function segText(ctx, x, y, dh, str, on, off) {   // str like "42.0"; returns wi
 const bench = Lab.canvas('#bench', window.innerWidth < 600 ? 0.66 : 0.5, { fit: true });
 const POS = { rack: [[0.10, 0.84], [0.17, 0.84]], ice: [[0.33, 0.78], [0.41, 0.78]], bath: [[0.59, 0.76], [0.67, 0.76]] };
 function placeTubes() { tubes.forEach((t, i) => { t.x = POS[t.at][i][0]; t.y = POS[t.at][i][1]; }); }
-let queue = [], phase = null, busy = false, overlay = '', pipette = null;
+let queue = [], phase = null, busy = false, overlay = '', pipette = null, pending = null;
 const speed = () => Lab.reducedMotion() ? 0.25 : 1;
 const loop = Lab.loop(dt => {
   if (!phase && queue.length) { phase = queue.shift(); phase.t = 0; phase.start && phase.start(); }
@@ -739,20 +744,44 @@ const loop = Lab.loop(dt => {
     if (k >= 1) { phase.end && phase.end(); phase = null; }
   }
   drawBench();
-  if (!phase && !queue.length) { busy = false; overlay = ''; pipette = null; drawBench(); renderSteps(); return false; }
+  if (!phase && !queue.length) { busy = false; overlay = ''; pipette = null; pending = null; $('#step-prog').hidden = true; $('#step-why').hidden = true; drawBench(); renderSteps(); saveSim(); return false; }
 });
-function run(phases) { busy = true; queue.push(...phases); $('#do-step').disabled = true; $('#skip-step').disabled = true; loop.start(); }
+function run(phases) {
+  busy = true; queue.push(...phases); $('#do-step').disabled = true; $('#skip-step').disabled = true;
+  $('#do-step').textContent = 'Working…'; $('#step-why').hidden = false; loop.start();
+}
+/* Catch up with real time after a reload: finish every phase that should already be over, resume the one in progress. */
+function fastForward(sec) {
+  let off = sec;
+  while (queue.length) {
+    const ph = queue[0], d = ph.dur * speed();
+    if (off < d) { if (off > 0) { queue.shift(); ph.start && ph.start(); ph.t = off; phase = ph; } break; }
+    queue.shift(); ph.start && ph.start(); ph.tick && ph.tick(1); ph.end && ph.end(); off -= d;
+  }
+}
 const ease = k => k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
 function move(to, dur = 0.9) {
   let from;
   return { dur, start() { from = tubes.map(t => [t.x, t.y]); tubes.forEach(t => t.at = to); },
     tick(k) { const e = ease(k); tubes.forEach((t, i) => { const [tx, ty] = POS[to][i]; const lift = Math.sin(Math.PI * e) * 0.18; t.x = from[i][0] + (tx - from[i][0]) * e; t.y = from[i][1] + (ty - from[i][1]) * e - lift; }); } };
 }
-function wait(label, simSec, dur = 1.6) { return { dur, tick(k) { overlay = `${label} · ${clock(simSec * k)} / ${clock(simSec)}`; }, end() { overlay = ''; } }; }
+/* A timed wait: the scene animates, the button counts down ("Heat shock… 32 s"), a progress bar fills, and the clock is real time. */
+function wait(label, simSec, dur = 4) {
+  dur = Math.max(3, dur);
+  const short = label.split(' at ')[0];
+  return { dur, tick(k) {
+    overlay = `${label} · ${clock(simSec * k)} / ${clock(simSec)}`;
+    const left = Math.max(0, Math.ceil(dur * speed() * (1 - k)));
+    $('#do-step').textContent = `${short}… ${left} s`;
+    const pr = $('#step-prog'); pr.hidden = false; pr.value = Math.round(k * 100);
+  }, end() { overlay = ''; $('#step-prog').hidden = true; } };
+}
 function clock(s) { s = Math.round(s); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`; }
 function drop(ti, what, apply, dur = 0.7) { return { dur, tick(k) { pipette = { ti, k, what }; }, end() { pipette = null; apply(); } }; }
 function fn(f) { return { dur: 0, end: f }; }
+let roStatus = 'Ready';
 function updateRO(status) {
+  if (status) roStatus = status;
   const d = t => t.vol ? `${t.vol} µL${t.cells ? ', cloudy' : ', clear'}${t.plasmid ? ', +plasmid' : ''}` : 'empty';
   $('#ro-plus').textContent = d(tubes[0]); $('#ro-minus').textContent = d(tubes[1]);
   if (status) $('#ro-status').textContent = status;
@@ -1100,16 +1129,16 @@ function drawBench() {
 bench.onresize = drawBench;
 
 /* ---------- Step actions ---------- */
-function doStep(skip) {
+function doStep(skip, resumeSec) {
   if (busy || stepIdx >= STEPS.length) return;
-  readOpts();
+  if (resumeSec == null) readOpts();
   const s = STEPS[stepIdx], P = [];
   const msg = m => { const el = $('#step-msg'); if (el) { el.className = 'msg bad'; el.textContent = m; } };
   switch (s.key) {
     case 'sol': S.sol = choices.sol;
       P.push(drop(0, 'sol', () => { tubes[0].vol = 250; updateRO(); }), drop(1, 'sol', () => { tubes[1].vol = 250; updateRO(`250 µL ${LABEL_SOL[S.sol]} added`); })); break;
     case 'prechill': S.prechill = !skip;
-      if (!skip) P.push(move('ice'), wait('Chilling on ice', 60, 0.8), fn(() => updateRO('Tubes on ice'))); else P.push(fn(() => updateRO('Tubes left at room temperature'))); break;
+      if (!skip) P.push(move('ice'), wait('Chilling on ice', 60, 3), fn(() => updateRO('Tubes on ice'))); else P.push(fn(() => updateRO('Tubes left at room temperature'))); break;
     case 'cells': S.cells = choices.cells;
       P.push(drop(0, 'cells', () => { tubes[0].cells = 1; updateRO(); }, 0.9), drop(1, 'cells', () => { tubes[1].cells = 1; updateRO(`Cells resuspended (${LABEL_CELLS[S.cells]})`); }, 0.9));
       if (S.prechill) P.push(fn(() => {})); break;
@@ -1117,18 +1146,18 @@ function doStep(skip) {
       if (!skip) P.push(drop(0, 'plasmid', () => { tubes[0].plasmid = 1; tubes[0].vol += S.vol; updateRO(`${S.vol} µL pGLO added to +pGLO tube`); }));
       else P.push(fn(() => updateRO('No plasmid added'))); break;
     case 'ice': S.ice = skip ? 0 : choices.ice;
-      if (!skip) P.push(move('ice'), wait('Incubating on ice', S.ice * 60, 1.8), fn(() => updateRO(`${S.ice} min on ice`)));
+      if (!skip) P.push(move('ice'), wait('Incubating on ice', S.ice * 60, 4 + S.ice / 5), fn(() => updateRO(`${S.ice} min on ice`)));
       else P.push(fn(() => updateRO('Ice incubation skipped'))); break;
     case 'heat':
       S.hsT = skip ? 22 : choices.hsT; S.hsTime = skip ? 0 : choices.hsTime;
-      if (!skip) P.push(move('bath', 0.6), wait(`Heat shock at ${S.hsT} °C`, S.hsTime, Math.max(1, S.hsTime / 25)), fn(() => updateRO(`Heat shocked ${S.hsTime} s at ${S.hsT} °C`)));
+      if (!skip) P.push(move('bath', 0.6), wait(`Heat shock at ${S.hsT} °C`, S.hsTime, Math.max(3, S.hsTime / 10)), fn(() => updateRO(`Heat shocked ${S.hsTime} s at ${S.hsT} °C`)));
       else P.push(fn(() => updateRO('No heat shock'))); break;
     case 'ret': S.ret = !skip;
-      if (!skip) P.push(move('ice', 0.6), wait('Back on ice', 120, 1.2), fn(() => updateRO('2 min on ice')));
+      if (!skip) P.push(move('ice', 0.6), wait('Back on ice', 120, 3), fn(() => updateRO('2 min on ice')));
       else P.push(move('rack'), fn(() => updateRO('Tubes left at room temperature'))); break;
     case 'recov': S.recov = choices.recov;
       P.push(move('rack'), drop(0, 'lb', () => { tubes[0].vol += 250; tubes[0].lb = 1; updateRO(); }), drop(1, 'lb', () => { tubes[1].vol += 250; tubes[1].lb = 1; updateRO(); }));
-      if (S.recov) P.push(wait('Recovering at room temperature', S.recov * 60, 1.6));
+      if (S.recov) P.push(wait('Recovering at room temperature', S.recov * 60, 3 + S.recov / 4));
       P.push(fn(() => updateRO(`LB added, ${S.recov} min recovery`))); break;
     case 'plate': S.plateUL = choices.plateUL;
       P.push(drop(1, 'cells', () => {}, 0.5), drop(0, 'cells', () => {}, 0.5), fn(() => {
@@ -1141,7 +1170,7 @@ function doStep(skip) {
       const missing = PLATES.filter(p => !$('#pr-' + p.id).value);
       if (missing.length) { msg(`Make a prediction for every plate first (${missing.length} left).`); return; }
       S.incub = choices.incub;
-      P.push(fn(() => { overlay = ''; }), wait('Incubating at 37 °C', S.incub * 3600, 1.6), fn(() => {
+      P.push(fn(() => { overlay = ''; }), wait('Incubating at 37 °C', S.incub * 3600, S.incub >= 48 ? 7 : 5), fn(() => {
         plates = incubatePlates(S); runCount++;
         drawPlates(); renderPlateReadouts(); gradePreds(); setupZoom(); fillVolumes();
         { const ok = PLATES.filter(p => $('#pr-' + p.id).value === plates[p.id].cls).length; Lab.toast(`${ok} of 6 predictions matched your plates`, { type: ok === 6 ? 'ok' : 'info', announce: false, key: 'preds' }); }
@@ -1150,12 +1179,14 @@ function doStep(skip) {
       })); break;
     }
   }
+  if (resumeSec == null) { pending = { skip: !!skip, t0: Date.now() }; saveSim(true); }
   done[stepIdx] = skip ? 'skip' : 'do'; stepIdx++;
   run(P);
+  if (resumeSec != null) fastForward(resumeSec);
 }
 $('#do-step').addEventListener('click', () => doStep(false));
 $('#skip-step').addEventListener('click', () => doStep(true));
-$('#restart').addEventListener('click', () => { if (!busy) reset(); });
+$('#restart').addEventListener('click', () => { if (!busy) { reset(); saveSim(); } });
 
 /* ---------- Plates ----------
    Top-down view of real petri dishes: clear polystyrene base and lid, translucent amber LB agar
@@ -1296,7 +1327,7 @@ function gradePreds() {
     else { pill.className = 'pill warn'; pill.textContent = 'Differs: ' + PRED_OPTS.find(o => o[0] === act)[1]; }
   });
 }
-function setUV(on) { uv = on; $('#uv-on').setAttribute('aria-pressed', on); $('#uv-off').setAttribute('aria-pressed', !on); drawPlates(); drawZoom(); }
+function setUV(on) { uv = on; $('#uv-on').setAttribute('aria-pressed', on); $('#uv-off').setAttribute('aria-pressed', !on); drawPlates(); drawZoom(); saveSim(); }
 $('#uv-on').addEventListener('click', () => setUV(true));
 $('#uv-off').addEventListener('click', () => setUV(false));
 
@@ -1314,7 +1345,7 @@ function drawZoom() {
   $('#zoom-note').textContent = !p || !p.incubated ? 'Incubate your plates first.' : p.lawn ? 'This plate has a lawn: too many colonies to count (TMTC).' : 'Mark every colony, including tiny ones. Do you think satellites should count as transformants?';
 }
 zoom.onresize = drawZoom;
-zsel.addEventListener('change', drawZoom);
+zsel.addEventListener('change', () => { drawZoom(); saveSim(); });
 $('#zoom').addEventListener('click', e => {
   const id = zsel.value, p = plates && plates[id]; if (!p || !p.incubated || p.lawn) return;
   const r = e.currentTarget.getBoundingClientRect(), R = zoom.w * 0.46;
@@ -1323,10 +1354,10 @@ $('#zoom').addEventListener('click', e => {
   const m = marks[id] = marks[id] || [];
   const hit = m.findIndex(([mx, my]) => (mx - x) ** 2 + (my - y) ** 2 < 0.035 ** 2);
   if (hit >= 0) m.splice(hit, 1); else m.push([x, y]);
-  drawZoom();
+  drawZoom(); saveSim();
 });
-$('#clear-marks').addEventListener('click', () => { marks[zsel.value] = []; drawZoom(); });
-$('#use-count').addEventListener('click', () => { $('#c-count').value = (marks[zsel.value] || []).length; });
+$('#clear-marks').addEventListener('click', () => { marks[zsel.value] = []; drawZoom(); saveSim(); });
+$('#use-count').addEventListener('click', () => { $('#c-count').value = (marks[zsel.value] || []).length; if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); });
 
 /* ---------- Calculations ---------- */
 function fillVolumes() {
@@ -1371,11 +1402,27 @@ function checkCalc() {
   return { count, spread, eff };
 }
 $('#calc-check').addEventListener('click', () => checkCalc());
+/* Calculator inputs are saved (never the worked example) and the feedback is recomputed from them after a reload. */
+const CALC_IDS = ['c-count', 'c-mass', 'c-frac', 'c-spread', 'c-eff', 'c-sci'];
+let exampleOn = false;
+const calcOwn = () => Object.fromEntries(CALC_IDS.map(i => [i, $('#' + i).value]));
+CALC_IDS.forEach(i => $('#' + i).addEventListener('input', () => { if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); }));
+const EXAMPLE = { 'c-count': '40', 'c-mass': '0.05', 'c-frac': '0.196', 'c-spread': '0.0098', 'c-eff': '4080', 'c-sci': '4.1 × 10^3' };
+function setExample(on) {
+  exampleOn = on; $('#calc-banner').hidden = !on; $('#calc-example').hidden = on;
+  const own = Lab.store.get('calc-inputs') || {};
+  CALC_IDS.forEach(i => { const e = $('#' + i); e.value = on ? EXAMPLE[i] : (own[i] || ''); e.readOnly = on; V.ok(e); });
+  $('#calc-fb').innerHTML = '';
+  Lab.steps.refresh && Lab.steps.refresh();
+}
+$('#calc-example').addEventListener('click', () => setExample(true));
+$('#calc-example-clear').addEventListener('click', () => setExample(false));
+{ const own = Lab.store.get('calc-inputs'); if (own) CALC_IDS.forEach(i => { if (own[i]) $('#' + i).value = own[i]; }); }
 const sciStr = v => { if (!isFinite(v) || v <= 0) return '—'; const e = Math.floor(Math.log10(v)); return `${(v / 10 ** e).toFixed(1)} × 10^${e}`; };
-const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number (no units)', yLabel: 'Transformation efficiency (transformants/µg)', series: [], hLines: [{ y: 800, label: '8.0 × 10²' }, { y: 7000, label: '7.0 × 10³' }], xMin: 0 });
+const runsChart = Lab.chart('#runs-chart', { xLabel: 'Run number', yLabel: 'Transformation efficiency (transformants/µg)', series: [], hLines: [{ y: 800, label: '8.0 × 10²' }, { y: 7000, label: '7.0 × 10³' }], xMin: 0 });
 const runsTable = Lab.table('#runs-table', {
   save: 'runs',
-  columns: [{ key: 'run', label: 'Run number', unit: 'no units' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread on plate', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Transformation efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
+  columns: [{ key: 'run', label: 'Run number' }, { key: 'cond', label: 'Conditions' }, { key: 'amp', label: '+pGLO LB/amp colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'ara', label: '+pGLO LB/amp/ara colonies', unit: 'colonies', num: true, digits: 0 }, { key: 'dna', label: 'DNA spread on plate', unit: 'µg', num: true, digits: 4 }, { key: 'eff', label: 'Transformation efficiency', unit: 'transformants/µg', num: true, digits: 0 }, { key: 'sci', label: 'Sci. notation' }],
   onChange: rows => runsChart.update({ series: [{ name: 'Your runs', points: rows.filter(r => isFinite(r.eff)).map(r => ({ x: r.run, y: r.eff })), line: false }], xMax: Math.max(4, rows.length + 1) })
 });
 $('#calc-add').addEventListener('click', () => {
@@ -1408,6 +1455,11 @@ div.addEventListener('change', () => { buildLevels(); });
 buildLevels();
 const reps = $('#d-reps'), repsOut = $('#d-reps-out');
 const syncReps = () => repsOut.textContent = reps.value; reps.addEventListener('input', syncReps); syncReps();
+/* The chosen variable, levels and replicate count are remembered (the results themselves live in the saved table). */
+const saveDesignUi = () => Lab.store.set('design-ui', { iv: div.value, reps: reps.value, levels: $$('#d-levels input').map(i => [i.value, i.checked]) });
+{ const u = Lab.store.get('design-ui');
+  if (u && IVS[u.iv]) { div.value = u.iv; buildLevels(); (u.levels || []).forEach(([v, c]) => { const i = $$('#d-levels input').find(x => x.value === String(v)); if (i) i.checked = !!c; }); if (u.reps) { reps.value = u.reps; syncReps(); } } }
+div.addEventListener('change', saveDesignUi); $('#d-levels').addEventListener('change', saveDesignUi); reps.addEventListener('change', saveDesignUi);
 const dChart = Lab.chart('#d-chart', { xLabel: 'Level of your independent variable', yLabel: 'Transformation efficiency (transformants/µg)', series: [] });
 function drawDesign(rows) {
   if (!rows.length) { dChart.update({ type: 'xy', series: [], categories: undefined }); return; }
@@ -1474,6 +1526,12 @@ $('#s-run').addEventListener('click', () => {
 });
 $('#s-uv').addEventListener('change', drawSat);
 $('#s-med').addEventListener('change', () => { if (!satRes) drawSat(); });
+/* Satellite test: the source plate, the last streak, the result line and the selections survive a reload. */
+function saveSat() { Lab.store.set('sat-state', { src: $('#s-src').value, med: $('#s-med').value, uv: $('#s-uv').checked, satSrc, satRes, res: $('#s-result').textContent }); }
+['#s-src', '#s-med', '#s-uv'].forEach(q => $(q).addEventListener('change', saveSat));
+$('#s-run').addEventListener('click', saveSat);
+{ const r = Lab.store.get('sat-state');
+  if (r && r.satSrc && Array.isArray(r.satSrc.cols)) { satSrc = r.satSrc; satRes = r.satRes || null; $('#s-src').value = r.src; $('#s-med').value = r.med; $('#s-uv').checked = !!r.uv; if (r.res) $('#s-result').textContent = r.res; drawSat(); } }
 
 /* ---------- Analysis & reflection ---------- */
 [['an-pre', [
@@ -1515,7 +1573,41 @@ Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your plate pre
  ['ev7', 'Where can you go from here? Respond to the idea "Just because science can do something doesn\'t mean that it should," using an example such as GM foods or engineered bacteria.']
 ].forEach(([key, label]) => Lab.prompt('#evaluate-prompts', { key, label, rows: 3 }));
 
+/* ---------- Saving the transformation ----------
+   The protocol position, every choice, the tubes, the plates (colonies and all), the predictions, the UV setting and
+   the colony marks are saved. If a timed step was running, the start time is saved too: after a reload the step has
+   kept running by the clock, so it either shows its finished state or carries on with the time that is left. */
+const serPlates = P => P && Object.fromEntries(Object.entries(P).map(([k, v]) => [k, Object.assign({}, v, v.count === Infinity ? { count: -1 } : {})]));
+const desPlates = P => P && Object.fromEntries(Object.entries(P).map(([k, v]) => [k, Object.assign({}, v, v.count === -1 ? { count: Infinity } : {})]));
+let restoring = false;
+function saveSim(force) {
+  if (restoring || (pending && !force)) return;
+  Lab.store.set('sim-state', { v: 1, choices, S, stepIdx, done, tubes, plates: serPlates(plates), roStatus, uv, zp: zsel.value, marks, runCount, runs: runCount,
+    preds: Object.fromEntries(PLATES.map(p => [p.id, $('#pr-' + p.id) ? $('#pr-' + p.id).value : ''])), pending });
+}
+function restoreSim() {
+  const r = Lab.store.get('sim-state');
+  if (!r || r.v !== 1 || !r.S || !Array.isArray(r.tubes) || r.tubes.length !== 2) return false;
+  restoring = true;
+  Object.assign(choices, r.choices); S = r.S; stepIdx = r.stepIdx | 0; done = r.done || []; marks = r.marks || {}; runCount = r.runCount | 0;
+  r.tubes.forEach((t, i) => Object.assign(tubes[i], t)); placeTubes();
+  plates = desPlates(r.plates);
+  PLATES.forEach(p => { const e = $('#pr-' + p.id); if (e && r.preds && r.preds[p.id]) e.value = r.preds[p.id]; });
+  if (r.uv) setUV(true);
+  if (r.zp) zsel.value = r.zp;
+  roStatus = r.roStatus || 'Ready';
+  renderSteps(); drawBench(); drawPlates(); renderPlateReadouts(); setupZoom(); updateRO(roStatus);
+  if (plates && plates['p-amp'] && plates['p-amp'].incubated) { fillVolumes(); gradePreds(); $$('#pred-grid select').forEach(e => { e.disabled = true; }); }
+  restoring = false;
+  if (r.pending && stepIdx < STEPS.length) {   // a timed step was running when the page closed
+    pending = r.pending; Lab.store.set('sim-state', Object.assign({}, r, { pending }));
+    doStep(!!pending.skip, Math.max(0, (Date.now() - pending.t0) / 1000));
+  }
+  return true;
+}
+$('#pred-grid').addEventListener('change', () => saveSim());
 reset();
+restoreSim();
 drawSat();
 
 /* =====================================================================
@@ -1535,9 +1627,10 @@ Lab.steps('#t-steps', [
   { id: 'count', text: 'Count the colonies (below)', target: '#zoom-plate', done: () => Object.values(marks || {}).some(a => a.length > 0) || runsTable.getRows().length > 0, hint: 'Scroll down: pick the +pGLO LB/amp plate and click each colony.' },
   { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => runsTable.getRows().length > 0, hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
 ], { doneText: 'Transformation done. Next, test a variable in <a href="#design">Design</a>.' });
-Lab.gate('#use-count', () => incubated() ? '' : 'Incubate your plates first');
-Lab.gate('#calc-check', () => incubated() ? '' : 'Incubate your plates first');
-Lab.gate('#calc-add', () => incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#use-count', () => exampleOn ? 'Clear the example first' : incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#calc-check', () => exampleOn ? 'Clear the example to check your own numbers' : incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#calc-add', () => exampleOn ? 'Clear the example to add your own run' : incubated() ? '' : 'Incubate your plates first');
+if (incubated() && CALC_IDS.some(i => $('#' + i).value.trim())) checkCalc();
 $('#uv-on').addEventListener('click', () => { if (incubated()) Lab.toast('UV light on: GFP colonies glow green', { type: 'info', announce: false, key: 'uv' }); });
 $('#use-count').addEventListener('click', () => Lab.toast(`Copied your count (${(marks[zsel.value] || []).length}) into the calculation`, { type: 'info', announce: false, key: 'use-count' }));
 $('#calc-check').addEventListener('click', () => { const ok = $$('#calc-fb .ok').length, bad = $$('#calc-fb .bad').length; if (ok + bad) Lab.toast(bad ? `Checked: ${ok} of ${ok + bad} lines correct` : 'Checked: every line is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'calc' }); });
