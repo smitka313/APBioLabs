@@ -793,8 +793,8 @@
   const cleanTitle = t => String(t || '').replace(/\s+[—–-]\s+AP Bio (Digital )?Lab Bench\s*$/, '').trim();
   const HAS_MARGIN_BOXES = (function () { const m = /Chrome\/(\d+)/.exec(navigator.userAgent || ''); return !!m && +m[1] >= 131; })();
   const cssStr = t => '"' + String(t).replace(/[\\"]/g, '').replace(/[\r\n]+/g, ' ') + '"';
-  function printRun(a) { // a: {left, right, bottomLeft} plain text
-    return `<div class="pr-thead print-run" aria-hidden="true"><span>${esc(a.left)}</span><span>${esc(a.right)}</span><span>${esc(a.bottomLeft)}</span></div>`;
+  function printRun(a, body) { // a: {left, right, bottomLeft} plain text; body: the page HTML. A real table so every browser repeats the header group.
+    return `<table class="pr-t" role="presentation"><thead class="pr-thead print-run" aria-hidden="true"><tr><td><span>${esc(a.left)}</span><span>${esc(a.right)}</span><span>${esc(a.bottomLeft)}</span></td></tr></thead><tbody><tr><td class="pr-body">${body}</td></tr></tbody></table>`;
   }
   function printPageStyle(id, a, margin) {
     const f = 'font: 9pt Arial, sans-serif; color: #444;';
@@ -1018,7 +1018,7 @@
           h('button', { class: 'btn', type: 'button', onclick: closeReport }, 'Close report')),
         h('p', { class: 'small' }, 'In the print window, set the printer (Destination) to “Save as PDF” or “Microsoft Print to PDF”, then hand in the PDF the way your teacher asks.'),
         note, status),
-      h('article', { class: 'rv-paper pr-table', html: printRun(run) + '<div class="pr-body">' + reportHtml(rep) + '</div>' }));
+      h('article', { class: 'rv-paper', html: printRun(run, reportHtml(rep)) }));
     document.body.append(view);
     document.body.classList.add('report-mode');
     document.addEventListener('keydown', reportKey);
@@ -1290,7 +1290,7 @@
           h('button', { class: 'btn btn--primary', type: 'button', onclick: () => tryPrint(() => { note.hidden = false; }) }, 'Print worksheet'),
           h('button', { class: 'btn', type: 'button', onclick: exitWorksheet }, 'Back to the lab')),
         note),
-      h('article', { class: 'ws-paper pr-table', html: printRun(run) + '<div class="pr-body">' + buildWorksheet(wasDark) + '</div>' }));
+      h('article', { class: 'ws-paper', html: printRun(run, buildWorksheet(wasDark)) }));
     document.head.append(style);
     document.body.append(root);
     document.body.classList.add('worksheet-mode');

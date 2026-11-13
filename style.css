@@ -687,14 +687,18 @@ details.disclose > .inner > p { max-width: 68ch; }
 
 /* ---------- Running header on every printed page (report PDF, worksheet) ----------
    Browsers with @page margin boxes get them from a <style> that lab.js adds. Others (body.pr-fallback) repeat
-   .print-run as a table header group, which every browser repeats on each printed page. */
+   .print-run: the page content sits in a one-cell table whose header group every browser repeats on each page.
+   On screen (and with margin boxes) the table is just blocks and the header is hidden. */
+.pr-t, .pr-t > tbody, .pr-t > tbody > tr, .pr-t > tbody > tr > td { display: block; padding: 0; border: 0; width: auto; }
 .print-run { display: none; }
 .pr-body > * + * { margin-top: 10px; }
 @media print {
-  body.pr-fallback .pr-table { display: table; width: 100%; }
-  body.pr-fallback .pr-thead { display: table-header-group; font: 9pt Arial, sans-serif; color: #444 !important; }
-  body.pr-fallback .pr-thead span { display: inline; }
-  body.pr-fallback .pr-thead span + span::before { content: " · "; }
-  body.pr-fallback .pr-thead::after { content: ""; display: block; height: 0; border-bottom: 1px solid #999; margin-bottom: 8px; }
-  body.pr-fallback .pr-body { display: table-row-group; }
+  body.pr-fallback .pr-t { display: table; width: 100%; border-collapse: collapse; }
+  body.pr-fallback .pr-t > tbody { display: table-row-group; }
+  body.pr-fallback .pr-t > tbody > tr { display: table-row; }
+  body.pr-fallback .pr-t > tbody > tr > td { display: table-cell; }
+  body.pr-fallback .pr-t > thead.print-run { display: table-header-group; }
+  body.pr-fallback .print-run td { display: table-cell; font: 9pt Arial, sans-serif; color: #444 !important; border-bottom: 1px solid #999; padding: 0 0 4px; }
+  body.pr-fallback .print-run span + span::before { content: " · "; }
+  body.pr-fallback .pr-body { padding-top: 8px; }
 }
