@@ -2815,5 +2815,47 @@
   /* Read a CSS color token for canvas drawing: Lab.color('--accent') (call at draw time so theme changes apply) */
   Lab.color = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#888';
 
+  /* ---------------- Theme switch: Light / Dark / Auto ----------------
+     The choice lives in localStorage 'aplab:pref:theme' ('light' | 'dark'; absent = Auto, follow the computer). It is a
+     preference, not personal data, so Sign out and Start over keep it. Every page's <head> sets data-theme from it before first paint:
+     <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+     Lab.theme.get() gives 'light'|'dark'|'auto'; Lab.theme.set(mode); window event 'aplab:theme' fires after a change (token-driven canvases redraw). */
+  const THEME_KEY = 'aplab:pref:theme';
+  let memTheme = 'auto';
+  const themeGet = () => { try { const t = localStorage.getItem(THEME_KEY); return t === 'light' || t === 'dark' ? t : 'auto'; } catch (e) { return memTheme; } };
+  function themeApply() {
+    const m = themeGet(), root = document.documentElement;
+    if (m === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', m);
+    $$('.theme-switch').forEach(sw => $$('button', sw).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m))));
+    themeRedraw();
+  }
+  function themeRedraw() {
+    window.dispatchEvent(new Event('aplab:theme'));
+    CANVASES.forEach(c => { try { if (c.onresize) c.onresize(); } catch (e) { /* ignore */ } });
+    REG.charts.forEach(c => { try { c.render(); } catch (e) { /* ignore */ } });
+    $$('canvas').forEach(cv => { if (cv.scopeView) { try { cv.scopeView.redraw(); } catch (e) { /* ignore */ } } });
+  }
+  function themeSet(m) {
+    memTheme = m;
+    try { if (m === 'light' || m === 'dark') localStorage.setItem(THEME_KEY, m); else localStorage.removeItem(THEME_KEY); } catch (e) { /* blocked: this page only */ }
+    themeApply();
+  }
+  Lab.theme = { get: themeGet, set: themeSet };
+  function mountThemeSwitch() {
+    if (!document.body || $('.theme-switch')) return;
+    const mk = (mode, label, title) => h('button', { type: 'button', class: 'theme-opt', 'data-mode': mode, 'aria-pressed': 'false', title, onclick: () => themeSet(mode) }, label);
+    const sw = h('div', { class: 'theme-switch', role: 'group', 'aria-label': 'Color theme' },
+      mk('light', 'Light', 'Light theme'), mk('dark', 'Dark', 'Dark theme'), mk('auto', 'Auto', 'Auto: match my computer'));
+    const crumbs = $('.crumbs'), links = $('.hero-links');
+    const printBtn = crumbs && $('.ws-print-btn', crumbs);
+    if (crumbs) { if (printBtn) printBtn.before(sw); else crumbs.append(sw); }
+    else if (links) { sw.classList.add('theme-switch--inline'); links.append(' · ', sw); }
+    else { const bar = h('div', { class: 'theme-bar wrap gutter' }, sw); (document.querySelector('main') || document.body).prepend(bar); }
+    themeApply();
+  }
+  window.addEventListener('storage', e => { if (e.key === THEME_KEY) themeApply(); });
+  try { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const f = () => { if (themeGet() === 'auto') themeRedraw(); }; if (mq.addEventListener) mq.addEventListener('change', f); } catch (e) { /* old browser */ }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountThemeSwitch); else mountThemeSwitch();
+
   window.Lab = Lab;
 })();
