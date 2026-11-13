@@ -1417,7 +1417,7 @@ $('#cnt-rec').addEventListener('click', () => {
     const n = flies.length; a = readCount($('#cnt-a'), 'on the A side', n); b = readCount($('#cnt-b'), 'on the B side', n);
     if (a == null || b == null) return;
     if (a + b === 0) { vmsg($('#cnt-a'), 'A and B cannot both be 0. Count the flies on each side, or leave both boxes empty to use the simulation\'s count.'); return; }
-    if (a + b > n) { vmsg($('#cnt-b'), `A (${a}) and B (${b}) add up to ${a + b}, but there are only ${n} flies in the chamber.`); return; }
+    if (a + b !== n) { vmsg($('#cnt-b'), `A (${a}) and B (${b}) add up to ${a + b}, but there are ${n} flies in the chamber. Every fly is on one side or the other, so the two counts must add up to ${n}. Count again.`); return; }
   } else { vmsg($('#cnt-a'), ''); vmsg($('#cnt-b'), ''); }
   paused = false; $('#count-panel').hidden = true;
   recordInterval(a, b);
@@ -1496,20 +1496,27 @@ $('#d-clear').addEventListener('click', () => { dTable.clear(); Lab.store.set('d
 { const sv = Lab.store.get('d-last'); if (sv && dTable.getRows().length) $('#d-last').textContent = sv; }
 
 /* ---------- Analyze ---------- */
+let xEx = null;   // worked-example handle: the example's numbers are never a key result
+function chiCalcReport(a, b, x) {
+  if (xEx && xEx.on) return;
+  if (a == null || b == null || a + b === 0) { Lab.store.set('keyres:chi-calc', null); delete _krLast['chi-calc']; return; }   // nothing valid to report: drop any earlier calculator result
+  keyRes('chi-calc', { label: `χ² from the calculator (A = ${a}, B = ${b}; df = 1, critical value 3.84; ${x.reject ? 'significant preference' : 'no significant preference'})`, value: Math.round(x.chi2 * 1000) / 1000, unit: 'χ²', part: 'Analyze' });
+}
 function runChi() {
   const a = readCount($('#x-a'), 'at end A'), b = readCount($('#x-b'), 'at end B');
-  if (a == null || b == null) { $('#x-out').textContent = $('#x-a').value.trim() === '' && $('#x-b').value.trim() === '' ? 'Enter the observed counts (or use your last trial) to see χ².' : 'Fix the highlighted count to see χ².'; return; }
-  if (a + b === 0) { vmsg($('#x-a'), 'A and B cannot both be 0: with no flies counted the expected count at each end is 0, so χ² cannot be calculated.'); $('#x-out').textContent = 'Enter at least one fly.'; return; }
+  if (a == null || b == null) { chiCalcReport(null, null); $('#x-out').textContent = $('#x-a').value.trim() === '' && $('#x-b').value.trim() === '' ? 'Enter the observed counts (or use your last trial) to see χ².' : 'Fix the highlighted count to see χ².'; return; }
+  if (a + b === 0) { vmsg($('#x-a'), 'A and B cannot both be 0: with no flies counted the expected count at each end is 0, so χ² cannot be calculated.'); chiCalcReport(0, 0); $('#x-out').textContent = 'Enter at least one fly.'; return; }
   vmsg($('#x-a'), '');
   const small = a + b < 10;
   const e = (a + b) / 2, x = chi(a, b);
+  chiCalcReport(a, b, x);
   $('#x-out').innerHTML = `Expected at each end: ${Lab.fmt(e, 1)}<br>A: (${a} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[0], 3)}<br>B: (${b} − ${Lab.fmt(e, 1)})² / ${Lab.fmt(e, 1)} = ${Lab.fmt(x.terms[1], 3)}<br>χ² = ${Lab.fmt(x.chi2, 3)}, df = 1, critical value (p = 0.05) = 3.84<br><strong>${x.reject ? 'χ² > 3.84: reject the null hypothesis. The flies show a preference.' : 'χ² ≤ 3.84: fail to reject the null hypothesis. No significant preference.'}</strong>${small ? '<br><em>Fewer than 10 flies: the expected count at each end is below 5, so this χ² is not reliable. Count more flies if you can.</em>' : ''}`;
 }
 $('#x-run').addEventListener('click', runChi);
 ['#x-a', '#x-b'].forEach(i => $(i).addEventListener('input', runChi));
 $('#x-last').addEventListener('click', () => { const r = trialsTable.getRows(); if (!r.length) { $('#x-out').textContent = 'Finish a choice-chamber trial first.'; return; } const l = r[r.length - 1]; $('#x-a').value = l.A; $('#x-b').value = l.B; runChi(); });
 runChi();
-workedExample({ anchor: $('#x-a').closest('.grid-2'), button: $('#x-example'), text: 'Sample counts: 21 flies at end A and 9 at end B (30 flies). Your own counts come back when you clear it.',
+xEx = workedExample({ anchor: $('#x-a').closest('.grid-2'), button: $('#x-example'), text: 'Sample counts: 21 flies at end A and 9 at end B (30 flies). Your own counts come back when you clear it.',
   fields: [[$('#x-a'), 21], [$('#x-b'), 9]], onChange: () => runChi() });
 [['an1', 'Describe the patterns in where the flies went. Which substances produced the strongest positive chemotaxis? The strongest negative chemotaxis? Support your answer with % at each end and χ² values.'],
  ['an2', 'Using data from the whole class (or all your trials), build a preference table ranking the substances from most to least attractive.'],
@@ -1605,7 +1612,7 @@ tkInit(); drawRef(); newSexFly(); if (!vialRestored) vialSetup(false); vialDraw(
 function reportTrials(rows) {
   const rs = (rows || []).filter(r => r && r.A + r.B > 0 && numOk(r.chi2)); if (!rs.length) return;
   const l = rs[rs.length - 1];
-  keyRes('chi2', { label: 'χ² for your latest trial (' + l.choice + ')', value: Math.round(l.chi2 * 100) / 100, unit: 'df = 1; critical value 3.84', part: 'Choice chamber' });
+  keyRes('chi2', { label: 'χ² for your latest trial (' + l.choice + '; df = 1, critical value 3.84)', value: Math.round(l.chi2 * 100) / 100, unit: 'χ²', part: 'Choice chamber' });
   keyRes('pct-a', { label: 'Flies at end A, latest trial (' + l.choice + ')', value: Math.round(1000 * l.A / (l.A + l.B)) / 10, unit: '% at A', part: 'Choice chamber' });
   if (rs.length > 1) { const m = rs.reduce((a, b) => b.chi2 > a.chi2 ? b : a); keyRes('strongest', { label: 'Strongest response across trials (' + m.choice + ')', value: Math.round(m.chi2 * 100) / 100, unit: 'χ²', part: 'Choice chamber' }); }
 }
