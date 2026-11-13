@@ -50,5 +50,5 @@ const de = (a, b) => Math.hypot(...lab(a).map((v, i) => v - lab(b)[i]));
     T.ok(/✓/.test(ic.ok) && /✕/.test(ic.bad) && /✓/.test(ic.pok) && /!/.test(ic.pwarn) && /✕/.test(ic.pbad), `${dark ? 'dark' : 'light'}: feedback and pills carry icons ${JSON.stringify(ic)}`);
     await ctx.close();
   }
-  await b.close(); T.done('t37-colorblind');
+  await b.close(); T.done('t39-colorblind');
 })();

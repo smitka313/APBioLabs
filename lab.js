@@ -1840,6 +1840,8 @@
   Lab.worksheet = { enter: enterWorksheet, exit: exitWorksheet, print: printWorksheet, html: () => buildWorksheet(isDarkNow()) };
   function addHeaderPrintButton() {
     const crumbs = $('.lab-header .crumbs'); if (!crumbs || $('.ws-print-btn', crumbs)) return;
+    if (!$('.project-link', crumbs)) crumbs.append(h('a', { class: 'project-link', href: 'projector.html#' + PAGE.id, title: 'Open projector mode for this lab (for teachers)' },
+      h('span', { class: 'pl-icon', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' }), 'Project this lab'));
     crumbs.append(h('button', { class: 'btn btn--sm ws-print-btn', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
   }
 

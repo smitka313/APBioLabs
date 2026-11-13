@@ -840,3 +840,7 @@ body.has-dm { overflow: hidden; }
 .feedback.ok::before, .feedback.bad::before { margin-right: .45em; }
 .q .choice.is-right::after, .q .choice.is-wrong::after { margin-left: auto; padding-left: 10px; }
 .legend .lg-sw { flex: none; display: block; }
+
+.project-link { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--muted); text-decoration: none; padding: 3px 6px; border-radius: 6px; }
+.project-link:hover { color: var(--accent); background: var(--surface-2); }
+@media print { .project-link { display: none !important; } }

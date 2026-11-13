@@ -77,7 +77,7 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
   its own observer still prints a drawn canvas), and puts a static `<img class="print-snap">` (`canvas.toDataURL`) next to each visible canvas;
   `afterprint` (`Lab.print.restore()`) undoes it. The worksheet does the same from dark mode. A canvas that cannot be read is left alone.
   Page code: draw from `Lab.color()` at draw time, never cache colors. `tests/t36-print.js` rasterizes the PDFs of all 13 labs.
-- **Not by color alone.** Series colors (`--s1`..`--s6`) were chosen to stay apart under deuteranopia and protanopia (`tests/t37-colorblind.js`).
+- **Not by color alone.** Series colors (`--s1`..`--s6`) were chosen to stay apart under deuteranopia and protanopia (`tests/t39-colorblind.js`).
   `Lab.chart` adds a marker shape and a dash pattern per series (several series) and a fill pattern for grouped bars 2-4, and draws
   the same swatch in the legend. `.feedback.ok/.bad`, `.pill.ok/.warn/.bad` and quiz choices marked right or wrong carry a check, cross or "!".
   On a lab page, never separate two states by hue only: add a label, number, shape or brightness difference.
@@ -422,3 +422,10 @@ Answer keys belong only here, never on the student page (except pre-lab quiz exp
 ## Test before you finish
 Open both pages in a browser at desktop width and at about 400px wide, in light and dark mode. Check the
 console for errors, make sure the page never scrolls sideways, and exercise every simulation control.
+
+## Projector mode
+`projector.html` shows a lab on the classroom screen with a timer (`projector.html#labNN` opens a lab directly; it remembers the last setup per computer).
+Each lab page gets a quiet "Project this lab" link in its header crumbs row, added from lab.js (`addHeaderPrintButton`), linking to
+`projector.html#labNN`; teacher pages, the home page and the dashboard do not get it. It is entered from teachers.html ("Projector mode"
+button and the "Using projector mode" section) and the index.html footer. **`projector-data.js` is generated: re-run
+`node tools/gen-projector-data.js` whenever a lab's parts, steps or safety callouts change.** `tests/t37-projector.js` fails if the data drifts.
