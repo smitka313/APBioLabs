@@ -51,6 +51,15 @@
   .predict-box .prompt { margin: 0; }
   .predict-box .prompt label { font-size: .82rem; }
   .predict-box textarea { min-height: 0; height: 3.4rem; }
+  .mydata blockquote { margin: 0 0 8px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .mydata .k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .mydata p { margin: 4px 0 0; }
+  .frq { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 14px; display: grid; gap: 12px; margin-top: 24px; min-width: 0; }
+  .frq h3, .frq h4 { margin: 0; }
+  .frq-parts { display: grid; gap: 10px; }
+  .frq-rubric { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+  .frq-rubric .check { display: flex; gap: 8px; align-items: flex-start; }
+  .frq-rubric[hidden] { display: none; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -396,9 +405,86 @@
 (function () {
   'use strict';
   Lab.init({ id: 'lab10' });
+/* ---------- Key results, per-student values, personal-data prompts, AP free-response (page-local) ---------- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+/* Report a key result only when it changed (avoids rewriting storage on every redraw). */
+const _krLast = {};
+function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
+const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
+const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const numOk = x => typeof x === 'number' && isFinite(x);
+const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
+/* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
+function personalPrompt(host, o) {
+  host = typeof host === 'string' ? Lab.$(host) : host;
+  const box = Lab.h('div', { class: 'mydata' });
+  host.append(box);
+  const p = Lab.prompt(host, { key: o.key, label: o.generic, rows: o.rows || 3 });
+  const lab = Lab.$('label', p), ta = Lab.$('textarea', p);
+  let last = '\u0000';
+  function render() {
+    let q = null; try { q = o.get(); } catch (e) { q = null; }
+    const sig = q || '';
+    if (sig === last) return; last = sig;
+    if (q) {
+      box.innerHTML = '';
+      lab.innerHTML = q + ' ' + (o.ask || 'Explain.');
+      ta.dataset.label = lab.textContent.replace(/\s+/g, ' ').trim();
+    } else {
+      box.innerHTML = '<blockquote><span class="k">From your data</span><p class="muted">Finish ' + o.need + ' first, then this question will quote your own result. <a class="btn btn--sm btn--ghost" href="#' + slugOf(o.part) + '">Show me</a></p></blockquote>';
+      lab.textContent = o.generic; ta.dataset.label = o.generic;
+    }
+  }
+  render(); Lab.onShow(host, render); setInterval(render, 1500);
+  return { render };
+}
+/* AP-style multi-part free response + a 4-point self-check rubric that appears once an answer is saved. */
+function frq(host, o) {
+  host = typeof host === 'string' ? Lab.$(host) : host;
+  const wrap = Lab.h('div', { class: 'frq', id: 'frq-box' });
+  wrap.innerHTML = '<h3>AP-style free-response practice</h3><div class="prose" id="frq-stem">' + o.stem + '</div><div class="frq-parts" id="frq-parts"></div>' +
+    '<div class="row"><button class="btn btn--primary" id="frq-save" type="button">Save my answer</button><span class="small muted" id="frq-msg" role="status"></span></div>' +
+    '<div class="frq-rubric" id="frq-rubric" hidden><h4>Self-check: score your own answer (4 points)</h4><p class="small muted">Read each point, then tick the ones your answer earned. Be strict: a point needs the specific idea, not just the topic.</p><div class="stack" id="frq-pts"></div><p class="pill" id="frq-score" role="status"></p></div>';
+  host.append(wrap);
+  const partsHost = Lab.$('#frq-parts', wrap);
+  o.parts.forEach(([L, q]) => Lab.prompt(partsHost, { key: 'frq-' + L, label: '(' + L + ') ' + q, rows: 4 }));
+  const pts = Lab.$('#frq-pts', wrap);
+  o.rubric.forEach((t, i) => pts.append(Lab.h('label', { class: 'check', for: 'frq-r' + i }, Lab.h('input', { type: 'checkbox', id: 'frq-r' + i }), Lab.h('span', { html: ' <strong>' + (i + 1) + '.</strong> ' + t }))));
+  const tas = () => Lab.$$('textarea', partsHost), has = () => tas().some(t => t.value.trim().length >= 10);
+  const st = () => Lab.store.get('frq-state') || { saved: false, r: [false, false, false, false] };
+  function score() { return st().r.filter(Boolean).length; }
+  function show() {
+    const s = st(), vis = s.saved && has();
+    Lab.$('#frq-rubric', wrap).hidden = !vis;
+    Lab.$$('input', pts).forEach((c, i) => { c.checked = !!s.r[i]; });
+    Lab.$('#frq-score', wrap).textContent = 'Self-score: ' + score() + ' of 4';
+    Lab.$('#frq-score', wrap).className = 'pill ' + (score() >= 3 ? 'ok' : score() >= 2 ? 'warn' : 'bad');
+  }
+  Lab.$('#frq-save', wrap).addEventListener('click', () => {
+    const msg = Lab.$('#frq-msg', wrap);
+    if (!has()) { msg.textContent = 'Write an answer to at least one part (a few words) before saving.'; msg.className = 'feedback bad small'; return; }
+    const s = st(); s.saved = true; Lab.store.set('frq-state', s);
+    msg.textContent = 'Saved. Now check your answer against the rubric below.'; msg.className = 'small muted';
+    show();
+  });
+  Lab.$$('input', pts).forEach((c, i) => c.addEventListener('change', () => {
+    const s = st(); s.r[i] = c.checked; s.scored = true; Lab.store.set('frq-state', s); show();
+    keyRes('frq-score', { label: 'FRQ self-score', value: score(), unit: 'of 4', part: 'Reflect' });
+  }));
+  tas().forEach(t => t.addEventListener('input', show));
+  show(); if (st().scored) keyRes('frq-score', { label: 'FRQ self-score', value: score(), unit: 'of 4', part: 'Reflect' });
+}
+
   const { $, h, fmt, stats } = Lab;
   const rng = Lab.rng();
   let PC = {}; const C = n => PC[n] || (PC[n] = Lab.color(n)); const freshColors = () => { PC = {}; };
+  /* Per-student starting values (same student: same values). Tray vigor, larva strain and larva size differ a little from student to student. */
+  const PLANT_BATCH = Math.round(myU(10, 0.92, 1.08) * 1000) / 1000;      // growth multiplier on the standard Fast Plant tray
+  const LARVA_ECI = Math.round(myU(11, 0.88, 1.12) * 1000) / 1000;        // growth-efficiency multiplier for this colony
+  const LARVA_AD = Math.round(myU(13, -0.03, 0.03) * 1000) / 1000;        // shift in assimilation efficiency
+  const LARVA_M0 = Math.round(myU(12, 0.027, 0.033) * 10000) / 10000;     // mean starting mass of one larva (g)
   const KP = 4.35, KL = 5.5, KF = 4.76;          // kcal per g dry: plant, larva, frass (manual)
   const MG_PER_PPM = 0.00364, KCAL_PER_G_CO2 = 2.97;
 
@@ -538,7 +624,7 @@
      Dry fraction f(t) = 0.19 + 0.004 t (21.8% at day 7, 24.6% at day 14) ± 0.012 per plant; low light lowers it.
      Wet mass = dry / f, plus blotting error (sd 0.02 g); washing loses 0–4% of roots (same factor for wet and dry).
      Dark respiration: 4 mg CO2 per g dry mass per hour at 24 °C. */
-  function plantDry(t, G) { const tt = Math.min(t, 28); return 0.045 * G * Math.pow(Math.max(tt, 0.3), 1.147) * (t > 28 ? 1 + 0.01 * (t - 28) : 1); }
+  function plantDry(t, G) { const tt = Math.min(t, 28); return 0.045 * PLANT_BATCH * G * Math.pow(Math.max(tt, 0.3), 1.147) * (t > 28 ? 1 + 0.01 * (t - 28) : 1); }
   function dryFrac(t, lightFactor = 1) { return 0.19 + 0.004 * Math.min(t, 28) - 0.03 * (1 - Math.min(1, lightFactor)); }
 
   const P1KEY = 'p1state';
@@ -558,7 +644,7 @@
     save: 'p1sum',
     columns: [{ key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'n', label: 'Plants weighed (n)', unit: 'plants', num: true, digits: 0 }, { key: 'wet', label: 'Mean wet/plant', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Mean dry/plant', unit: 'g', num: true, digits: 3 }, { key: 'se', label: 'SE dry', unit: 'g', num: true, digits: 3 },
       { key: 'pct', label: 'Biomass (dry ÷ wet × 100)', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'NPP/plant/day', unit: 'kcal/day', num: true, editable: true }],
-    onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); }
+    onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); reportP1(rows); }
   });
   function checkSummary(rows) {
     const out = $('#p1-check'); out.innerHTML = '';
@@ -1108,8 +1194,8 @@
     const F = FOODS[food], q10 = Math.pow(2, (T - 24) / 10);
     const start = foodMass || rng.normal(29, 2.2), ctrlStart = rng.normal(29, 2.2), evap = Math.max(0.05, rng.normal(0.10, 0.015)) * Math.pow(1.5, (T - 24) / 10);
     const dryF = Math.max(0.03, rng.normal(F.dry, 0.008));
-    const eci = Math.max(0.03, (0.10 * F.q - 0.003 * (T - 24)) * rng.normal(1, 0.06));
-    const larvae = Array.from({ length: n }, () => Math.max(0.015, rng.normal(0.030, 0.005)));
+    const eci = Math.max(0.03, (0.10 * F.q - 0.003 * (T - 24)) * LARVA_ECI * rng.normal(1, 0.06));
+    const larvae = Array.from({ length: n }, () => Math.max(0.015, rng.normal(LARVA_M0, 0.005)));
     // demand: dry intake per larva (g) scales with size, temperature and food quality, capped by gut volume for watery food
     let demand = larvae.map(m => 0.24 * (m / 0.03) * q10 * F.q * rng.normal(1, 0.1));
     const wetCap = 2.6 * q10;
@@ -1117,7 +1203,7 @@
     const avail = start * (1 - evap * 0.5) * 0.85 * dryF;           // dry food reachable (tough core left)
     const totalDem = demand.reduce((s, x) => s + x, 0), lim = Math.min(1, avail / totalDem);
     const intake = demand.map(d => d * lim);
-    const ad = Math.min(0.9, rng.normal(F.ad, 0.03));
+    const ad = Math.min(0.9, rng.normal(F.ad + LARVA_AD, 0.03));
     const ends = larvae.map((m, i) => m + Math.max(-0.005, eci * intake[i] - 0.004 * (1 - F.accept)) / LARVA_DRY);
     const eatenWet = intake.reduce((s, x) => s + x, 0) / dryF;
     const end = Math.max(0.5, start - eatenWet - evap * (start - eatenWet / 2));
@@ -1169,6 +1255,7 @@
     const tiles = [['Consumed per larva', fmt(m('C'), 3) + ' kcal'], ['Assimilation eff. (A/C)', fmt(100 * m('A') / m('C'), 0) + '%'], ['Production eff. (P/A)', fmt(100 * m('P') / m('A'), 0) + '%'], ['Gross eff. (P/C)', fmt(100 * m('P') / m('C'), 0) + '%']];
     tiles.forEach(([k, v]) => eff.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k), h('span', { class: 'v' }, v))));
     const off = m('offered'), Cm = m('C'), Fm = m('F'), Pm = m('P'), Rm = m('R');
+    reportP2(Cm, Fm, Pm, Rm);
     sankey('#sankey-larva', { name: 'Sprout offered (per larva)', value: Math.max(off, Cm), color: 'var(--s6)', children: [
       { name: 'Eaten (C)', value: Cm, color: 'var(--s1)', children: [
         { name: 'Assimilated (A)', value: Math.max(0, Cm - Fm), color: 'var(--s3)', children: [
@@ -1632,6 +1719,59 @@ function predRecall(host, items) {
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
   Lab.gate('#d-run', () => !filled('d-hyp') && !dRaw.getRows().length ? 'Write your prediction first (hypothesis and prediction above)' : dChecked() >= 2 ? '' : 'Tick at least two levels');
   $('#d-run').addEventListener('click', () => { if (dChecked() >= 2 && dResults) Lab.toast(`Ran ${dResults.levels.length} levels × ${dResults.levels[0].reps.length} replicates`, { type: 'ok', announce: false, key: 'drun' }); });
+
+  /* ---------- Key results, personal-data prompts, AP free-response ---------- */
+  const nppOf = r => (r && r.dry > 0 && r.age > 0) ? r.dry * KP / r.age : NaN;
+  function reportP1(rows) {
+    const rs = (rows || []).filter(r => numOk(nppOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
+    const last = rs[rs.length - 1];
+    keyRes('npp', { label: 'NPP per plant per day (day ' + last.age + ' harvest)', value: Math.round(nppOf(last) * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
+  }
+  function reportP2(C, F, P, R) {
+    if (!(C > 0)) return;
+    keyRes('transfer-eff', { label: 'Energy transfer efficiency: growth ÷ eaten (P/C)', value: Math.round(1000 * P / C) / 10, unit: '%', part: 'Part 2: Larvae' });
+    keyRes('assim-eff', { label: 'Assimilation efficiency (A/C)', value: Math.round(1000 * (C - F) / C) / 10, unit: '%', part: 'Part 2: Larvae' });
+    keyRes('respiration', { label: 'Respiration per larva (by difference)', value: Math.round(R * 1000) / 1000, unit: 'kcal', part: 'Part 2: Larvae' });
+  }
+  reportP1(Lab.store.get('p1sum') || []);
+  const myBarns = () => { const rp = ratioP(), rl = ratioL(); if (!numOk(rp) || !numOk(rl)) return []; return (Lab.store.get('p2barns') || []).filter(b => b && b.n > 0 && numOk(b.l3)).map((b, i) => Object.assign({ i: i + 1 }, audit(b, rp, rl, $('#p2-correct').checked))).filter(a => a.C > 0); };
+  const an10 = partBody('Analyze');
+  an10.append(h('h3', { style: 'margin-top:20px' }, 'Your own data'));
+  const my10 = h('div', { class: 'prompts-2' }); an10.append(my10);
+  personalPrompt(my10, {
+    key: 'my-npp', part: 'Part 1: NPP', need: 'harvesting and weighing plants in Part 1',
+    generic: 'Look at the NPP values in your own Part 1 table: which harvest day is the odd one out, and why?',
+    ask: 'Explain this, using what is happening to the plants between harvests.',
+    get() {
+      const rs = (Lab.store.get('p1sum') || []).filter(r => numOk(nppOf(r))); if (!rs.length) return null;
+      const v = rs.map(nppOf), mu = stats.mean(v);
+      const o = rs.length > 1 ? rs.reduce((a, b) => Math.abs(nppOf(b) - mu) > Math.abs(nppOf(a) - mu) ? b : a) : rs[0];
+      if (rs.length === 1) return `Your day-${o.age} plants had a mean dry mass of <strong>${fmt(o.dry, 3)} g</strong>, which is <strong>${fmt(nppOf(o), 3)} kcal/plant/day</strong> of NPP.`;
+      if (rs.length === 2) { const [x, y] = rs.slice().sort((p, q) => nppOf(q) - nppOf(p)); return `Your NPP was highest for the day-${x.age} plants (<strong>${fmt(nppOf(x), 3)} kcal/plant/day</strong>) and lowest for the day-${y.age} plants (<strong>${fmt(nppOf(y), 3)}</strong>).`; }
+      return `Your day-${o.age} harvest had the most unusual NPP: <strong>${fmt(nppOf(o), 3)} kcal/plant/day</strong> (mean dry mass ${fmt(o.dry, 3)} g), compared with a mean of ${fmt(mu, 3)} across your ${rs.length} harvests.`;
+    }
+  });
+  personalPrompt(my10, {
+    key: 'my-eff', part: 'Part 2: Larvae', need: 'running a barn in Part 2 (and entering your dry/wet ratios)',
+    generic: 'Look at where the energy went in your own larva barn, and explain why growth was only a small share.',
+    ask: 'Why is this share so small, and what does the rest of the energy do?',
+    get() {
+      const A = myBarns(); if (!A.length) return null;
+      const w = A.length > 1 ? A.reduce((a, b) => b.P / b.C > a.P / a.C ? b : a) : A[0];
+      return `In your ${A.length > 1 ? 'most efficient barn (barn ' + w.i + ')' : 'barn'}, each larva ate <strong>${fmt(w.C, 3)} kcal</strong> but only <strong>${fmt(w.P, 3)} kcal</strong> (${fmt(100 * w.P / w.C, 1)}%) became growth, ${fmt(w.F, 3)} kcal left as frass, and ${fmt(w.R, 3)} kcal was estimated as respiration.`;
+    }
+  });
+  frq(partBody('Reflect'), {
+    stem: '<p>A student feeds a group of 10 cabbage-white larvae Brussels sprout for 3 days. Per larva, the larvae eat 1.24 kcal of plant energy, store 0.14 kcal as new body mass, and egest 0.24 kcal in frass. A sprout kept in an identical cup without larvae loses 10% of its mass to evaporation. Energy in respiration is not measured directly.</p>',
+    parts: [['a', '<strong>Calculate</strong> the energy lost to respiration per larva and the gross production efficiency (growth ÷ eaten). Show your work.'],
+      ['b', '<strong>Explain</strong> why respiration is estimated by difference and why the control sprout is needed.'],
+      ['c', '<strong>Predict</strong> how the efficiency would change if the colony were kept at a higher temperature, and <strong>justify</strong> your prediction using metabolism.'],
+      ['d', '<strong>Justify</strong> using a bar graph with error bars (mean ± 2 SE of several barns) rather than a line graph to show how the eaten energy is divided among pathways.']],
+    rubric: ['(a) Respiration = 1.24 − 0.14 − 0.24 = 0.86 kcal, and efficiency = 0.14 ÷ 1.24 ≈ 11% (work and units shown).',
+      '(b) Respiration (heat and CO₂) is not weighed so it is whatever remains; the control sprout measures water lost by evaporation so it is not counted as energy eaten.',
+      '(c) Efficiency would fall: warmer larvae respire faster, so more of the energy eaten is released as heat and less goes into growth.',
+      '(d) The pathways are separate categories, not a continuous variable, so a bar graph fits; the error bars show variation among barns and whether differences are meaningful.']
+  });
 })();
 </script>
 </body>
