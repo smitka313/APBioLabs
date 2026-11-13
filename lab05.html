@@ -312,6 +312,84 @@
 <script src="lab.js"></script>
 <script>
 Lab.init({ id: 'lab05' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -405,6 +483,9 @@ const Predict = (function () {
     corn: { name: 'Corn (C₄)', Pmax: 0.36, K: 450, Kc: 0.015, R: 0.02, Topt: 34 }
   };
   const AGES = { young: { name: 'Young (expanding)', P: 0.7, R: 1.4 }, mature: { name: 'Mature', P: 1, R: 1 }, old: { name: 'Old (yellowing)', P: 0.5, R: 1.1 } };
+  /* Per-student leaf batch (seeded): every student's spinach leaves photosynthesize at 0.93-1.07 x the nominal rate, so their ET50s differ
+     by up to about 7% before disk-to-disk noise (nominal ET50 stays about 11 min at 15 cm, 0.2% bicarbonate, 25 C). */
+  const BATCH = 0.93 + 0.14 * Lab.rng((Lab.identity.seed.seed ^ 0x1eaf) >>> 0).uniform();
   const BASE = { dist: 15, color: 'white', bicarb: 0.2, temp: 25, leaf: 'spinach', age: 'mature', filter: true };
   function par(c) { return 400 * (15 / c.dist) ** 2 * COLORS[c.color].T; }
   function waterTemp(c) { return c.temp + (c.filter ? 0.2 : 1) * 30 * (5 / c.dist) ** 2; }
@@ -412,7 +493,7 @@ const Predict = (function () {
     const L = LEAVES[c.leaf], A = AGES[c.age], T = waterTemp(c);
     const Ie = par(c) * COLORS[c.color].a, Cc = c.bicarb + 0.004;
     const fT = Math.exp(-(((T - L.Topt) / 18) ** 2)) / (1 + Math.exp((T - 46) / 2));
-    const gross = L.Pmax * Ie / (Ie + L.K) * Cc / (Cc + L.Kc) * fT * A.P;
+    const gross = L.Pmax * Ie / (Ie + L.K) * Cc / (Cc + L.Kc) * fT * A.P * BATCH;
     const R = L.R * A.R * 2 ** ((T - 25) / 10);
     return { gross, R, net: gross - R, T };
   }
@@ -1150,6 +1231,18 @@ const Predict = (function () {
   Lab.prompt(an, { key: 'a2', label: '2. Why did the procedure use the median (ET<sub>50</sub>) rather than the mean time to float? How did you show the variability in your data?', rows: 3 });
   Lab.prompt(an, { key: 'a3', label: '3. How do the light reactions and the Calvin cycle each connect to what you measured? Which part of photosynthesis did your independent variable most directly affect?', rows: 4 });
   Lab.prompt(an, { key: 'a4', label: '4. Respiration happens in leaf cells the whole time. How does that change what the floating disks tell you? Could a disk ever fail to float even though it is photosynthesizing?', rows: 4 });
+  const dRows = () => draw.getRows().filter(r => !r._setup && r.et != null && isFinite(r.et));
+  Own.personal(an, { key: 'own-assay', rows: 3, need: 'Float assay (run the timer)', href: 'float-assay',
+    ask: 'Explain why your bicarbonate disks floated when they did, and what the control cup shows about the role of CO\u2082.',
+    compute: () => { const r = cupTable.getRows().filter(x => !x._setup); if (r.length < 3) return null; const last = r[r.length - 1], e = et50(r.map(x => x.a), cupPrep.na), first = r.find(x => x.a > 0); return `Your bicarbonate cup reached 50% floating at ET\u2085\u2080 = ${e == null ? 'not yet' : fmt(e, 1) + ' min'}${first ? ` (the first disk floated at minute ${first.m})` : ''}; by minute ${last.m} the water-only cup had ${last.b} of ${cupPrep.nb} disks floating.`; } });
+  Own.personal(an, { key: 'own-outlier', rows: 3, need: 'Design (run your experiment)', href: 'design',
+    ask: 'Give one reason this cup\'s ET\u2085\u2080 might differ from the other cups at its level (think about disk-to-disk variation and technique).',
+    compute: () => { const r = dRows(); if (r.length < 3) return null; let best = null; [...new Set(r.map(x => x.v))].forEach(k => { const g = r.filter(x => x.v === k), m = S.median(g.map(x => x.et)); g.forEach(x => { const d = Math.abs(x.et - m); if (g.length > 1 && (!best || d > best.d)) best = { d, x, m }; }); }); if (!best) { const mx = r.reduce((a, b) => b.et > a.et ? b : a); return `Your slowest cup was cup ${mx.cup} at level ${mx.lvl}: ET\u2085\u2080 = ${fmt(mx.et, 1)} min.`; } return `Your cup ${best.x.cup} at level ${best.x.lvl} had ET\u2085\u2080 = ${fmt(best.x.et, 1)} min, while the median for that level was ${fmt(best.m, 1)} min.`; } });
+  Own.watch(() => {
+    const n = cupPrep.na, r = cupTable.getRows().filter(x => !x._setup); if (r.length < 3) return;
+    const e = et50(r.map(x => x.a), n); if (e != null && e > 0) { Own.key('et50-bicarb', { label: 'ET50, bicarbonate cup', value: +fmt(e, 2), unit: 'min', part: 'Float assay' }); Own.key('ret50-bicarb', { label: '1/ET50, bicarbonate cup', value: +fmt(1 / e, 3), unit: 'min\u207b\u00b9', part: 'Float assay' }); }
+    const eb = et50(r.map(x => x.b), cupPrep.nb); if (eb != null && eb > 0) { Own.key('et50-water', { label: 'ET50, water-only cup', value: +fmt(eb, 2), unit: 'min', part: 'Float assay' }); Own.key('ret50-water', { label: '1/ET50, water-only cup', value: +fmt(1 / eb, 3), unit: 'min\u207b\u00b9', part: 'Float assay' }); }
+  });
   const anCer = $('#analysis');
   anCer.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
   anCer.append(Lab.h('p', { class: 'small muted' }, 'Answer your own design question.'));
@@ -1163,6 +1256,12 @@ const Predict = (function () {
   Lab.prompt(ev, { key: 'e3', label: 'A lamp very close to the cups can heat the water. How would that confound a light-intensity experiment, and how would you prevent it?', rows: 3 });
   Lab.prompt(ev, { key: 'e4', label: 'C₄ plants such as corn concentrate CO₂ around rubisco. Predict how their response to low bicarbonate or high temperature would differ from spinach, and explain how you would test it.', rows: 4 });
   Lab.prompt(ev, { key: 'e5', label: 'List one misconception about photosynthesis you had before this lab and how your evidence changed your thinking.', rows: 3 });
+  { const fh = Lab.h('div', { class: 'step-frq' }); ev.after(fh);
+  Own.frq(fh, { title: 'Free-response question: the floating-disk assay', part: 'Evaluate',
+    intro: '<p>A student uses the leaf-disk assay to test how light intensity affects photosynthesis. Ten spinach disks are placed in each of three cups of 0.2% bicarbonate solution at 5, 15 and 30 cm from a lamp, and the number of floating disks is counted every minute. The time for half the disks to float (ET<sub>50</sub>) is recorded for each cup.</p>',
+    data: () => { const e = Lab.store.get('keyres:et50-bicarb'); return e ? `Your own bicarbonate cup: ET\u2085\u2080 = ${e.value} min.` : 'Run the timer in Float assay to see your own ET\u2085\u2080 here.'; },
+    parts: [['a', '<strong>Identify</strong> the independent variable, the dependent variable and two variables that must be held constant.'], ['b', '<strong>Explain</strong> why disks float when exposed to light, and why ET<sub>50</sub> is used instead of the time for every disk to float.'], ['c', '<strong>Predict</strong> how ET<sub>50</sub> will change as the lamp moves from 30 cm to 5 cm, and how the rate (1/ET<sub>50</sub>) would change if the lamp heated the water a lot.'], ['d', '<strong>Justify</strong> why a control cup of water without bicarbonate is included.']],
+    rubric: ['(a) Independent: distance from the lamp (light intensity); dependent: ET50 (or 1/ET50); constants such as bicarbonate concentration, temperature, disk size, leaf type, number of disks.', '(b) Photosynthesis releases O2 that fills the air spaces and makes disks buoyant; the median time is less affected by a few slow or outlier disks.', '(c) Closer lamp means more light, faster O2 production and a shorter ET50 (higher rate) until it levels off; heating can speed or then denature enzymes and raise respiration, changing the rate.', '(d) Without CO2 (bicarbonate) the disks cannot fix carbon, so the control shows floating is due to photosynthesis and not trapped air or other causes.'] }); }
 })();
 </script>
 </body>

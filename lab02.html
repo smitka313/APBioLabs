@@ -453,6 +453,84 @@
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
   Lab.init({ id: 'lab02' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -634,7 +712,13 @@ const Predict = (function () {
      Case IV: mating only within isolated groups of 4–6 students. */
   const cardCanvas = Lab.canvas('#card-canvas', window.innerWidth < 600 ? 0.8 : 0.5, { fit: true });
   let cardPop = [], cardGen = 0, cardHist = [], cardGroups = [];
-  const cardN = $('#card-n');
+  /* Per-student starting values (seeded, realistic bounds): class size, D2's p, starting p of the many-generation model, and the chi-square practice counts. */
+  const SR = Lab.rng((Lab.identity.seed.seed ^ 0x2b2b) >>> 0), SU = (a, b) => a + SR.uniform() * (b - a);
+  const cardN = $('#card-n'); cardN.value = 2 * SR.int(10, 15);
+  $('#ss-p').value = (0.3 + 0.05 * SR.int(0, 8)).toFixed(2);
+  $('#mg-p').value = (0.3 + 0.05 * SR.int(0, 8)).toFixed(2);
+  { const p = SU(0.38, 0.62), N = 100, e = [p * p * N, 2 * p * (1 - p) * N, (1 - p) * (1 - p) * N], c = e.map(x => Math.max(1, Math.round(x + SR.normal(0, 3))));
+    c[1] = Math.max(1, N - c[0] - c[2]); ['#cs-aa', '#cs-ab', '#cs-bb'].forEach((id, i) => { $(id).value = c[i]; }); }
   const cardTable = Lab.table('#card-table', {
     save: 'cards',
     columns: [{ key: 'cs', label: 'Case' }, { key: 'gen', label: 'Generation', unit: 'no.', num: true, digits: 0 }, { key: 'aa', label: 'AA', unit: 'students', num: true, digits: 0 }, { key: 'ab', label: 'AB', unit: 'students', num: true, digits: 0 }, { key: 'bb', label: 'BB', unit: 'students', num: true, digits: 0 }, { key: 'p', label: 'p', unit: 'frequency', num: true, digits: 3 }, { key: 'q', label: 'q', unit: 'frequency', num: true, digits: 3 }]
@@ -1108,6 +1192,7 @@ const Predict = (function () {
     status('#cs-status', `p = ${fmt(h.p, 3)}, q = ${fmt(1 - h.p, 3)}. χ² = ${fmt(h.chi2, 2)} with df = 1 (critical value 3.84 at p = 0.05). ${ok ? 'Fail to reject the null hypothesis: the genotypes fit Hardy-Weinberg proportions.' : 'Reject the null hypothesis: the genotypes do not fit Hardy-Weinberg proportions, so something other than chance is likely acting.'}`, ok ? 'ok' : 'warn');
   }
   $('#cs-run').addEventListener('click', runChi); runChi();
+  $('#cs-run').addEventListener('click', () => { const v = ['#cs-aa', '#cs-ab', '#cs-bb'].map(id => Number($(id).value)); if (v.some(x => !isFinite(x) || x < 0)) return; const h = hwChi(...v); if (h && !h.degenerate) Own.key('chi2-hw', { label: 'Hardy-Weinberg χ² (df = 1)', value: +fmt(h.chi2, 2), unit: '', part: 'Analyze' }); });
   ['#cs-aa', '#cs-ab', '#cs-bb'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   [
     ['a-infinite', 'In the absence of random events (an infinitely large population), are the allele frequencies of the original population expected to change from generation to generation? Cite a run.'],
@@ -1116,6 +1201,14 @@ const Predict = (function () {
     ['a-factors', 'What factors can cause allele frequencies to change in a population? For each one you modeled, describe how you represented it and what it did to p.'],
     ['a-cf', 'Use your model to answer the opening questions: why does the cystic fibrosis allele persist, and why is the dominant polydactyly allele rare?']
   ].forEach(([key, label]) => Lab.prompt('#analysis', { key, label, rows: 3 }));
+  Own.personal('#analysis', { key: 'own-drift', rows: 3, need: 'Many generations (record a run)', href: 'many-generations',
+    ask: 'Explain one reason this run\'s final p varied the way it did, using population size and the number of generations.',
+    compute: () => { const r = mgRuns.getRows().filter(x => !x._setup && x.sd != null); if (!r.length) return null; const top = r.reduce((a, b) => b.sd > a.sd ? b : a); return `Your run ${top.run} (${top.set}) had the widest spread of final p among your recorded runs: SD = ${fmt(top.sd, 3)}, mean p = ${fmt(top.mean, 3)}, with ${top.fix} populations fixed for A and ${top.lost} lost A.`; } });
+  Own.personal('#analysis', { key: 'own-spreadsheet', rows: 3, need: 'Build the model (record a run)', href: 'build-the-model',
+    ask: 'Why was the change in p larger or smaller there than in your other runs? Link it to the number of zygotes.',
+    compute: () => { const r = ssTable.getRows().filter(x => !x._setup && x.dp != null); if (!r.length) return null; const top = r.reduce((a, b) => Math.abs(b.dp) > Math.abs(a.dp) ? b : a); return `Your biggest one-generation change in p was Δp = ${fmt(top.dp, 3)} (run ${top.run}: N = ${top.n}, starting p = ${fmt(top.p0, 2)}, new p = ${fmt(top.p1, 3)}).`; } });
+  Own.watch(() => { const r = mgRuns.getRows().filter(x => !x._setup && x.mean != null); if (!r.length) return; const l = r[r.length - 1]; Own.key('mg-final-p', { label: 'Mean final p (latest recorded run)', value: +fmt(l.mean, 3), unit: 'frequency', part: 'Many generations' }); Own.key('mg-fixed-lost', { label: 'Populations that lost or fixed A (latest run)', value: (l.fix || 0) + (l.lost || 0), unit: 'populations', part: 'Many generations' }); });
+  Own.watch(() => { const r = ssTable.getRows().filter(x => !x._setup && x.dp != null); if (!r.length) return; const top = r.reduce((a, b) => Math.abs(b.dp) > Math.abs(a.dp) ? b : a); Own.key('ss-max-dp', { label: 'Largest one-generation Δp (spreadsheet)', value: +fmt(top.dp, 3), unit: 'frequency', part: 'Build the model' }); });
   const cer = $('#cer');
   [['C', 'cer-claim', 'Claim: How does population size (or the factor you tested) affect evolutionary change in allele frequencies?'], ['E', 'cer-evidence', 'Evidence: Which runs, numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Use random sampling of gametes and the Hardy-Weinberg conditions to explain why the evidence supports the claim.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
   Predict.cer(cer, { claim: 'The data show that ___ (smaller / larger populations) ___ (changed / did not change) the frequency of A (p).', evidence: 'In the N = ___ condition, final p was ___ (no units), compared with ___ in the N = ___ condition.', reasoning: 'This happens because ___ (random sampling of gametes / a Hardy-Weinberg condition), which causes ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) ___ (change in allele frequency).</p><p><strong>Evidence:</strong> In the ___ condition, final p was ___ (no units; or ___ % of populations lost A), compared with ___ in the ___ condition.</p><p><strong>Reasoning:</strong> This happens because ___ (random sampling of gametes, selection, mutation or migration) ___.</p>');
@@ -1128,6 +1221,13 @@ const Predict = (function () {
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 3 }));
   Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-card', 'Before the card model you predicted:'], ['predict-spreadsheet', 'Before the spreadsheet you predicted:'], ['predict-drift', 'Before the many-generation runs you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one value (with units, or say no units) from your data. What does any mismatch tell you?', rows: 4 });
+
+  { const fh = Lab.h('div', { class: 'step-frq' }); $('#reflect-prompts').after(fh);
+  Own.frq(fh, { title: 'Free-response question: genetic drift and population size', part: 'Reflect',
+    intro: '<p>A researcher models 10 isolated populations of an allele A with a starting frequency p = 0.5. Half of the populations contain 10 individuals and half contain 1000. Each population is followed for 50 generations with random mating and no selection, mutation or migration.</p>',
+    data: () => { const r = mgRuns.getRows().filter(x => !x._setup && x.mean != null); if (!r.length) return 'Record a run in Many generations to see your own numbers here.'; const l = r[r.length - 1]; return `Your latest recorded run: ${l.set}, mean final p = ${fmt(l.mean, 3)}, ${l.fix} fixed and ${l.lost} lost A.`; },
+    parts: [['a', '<strong>Predict</strong> how the final allele frequencies will differ between the small and the large populations.'], ['b', '<strong>Explain</strong> the cause of this difference in terms of random sampling of gametes.'], ['c', '<strong>Identify</strong> the independent variable, the dependent variable and one controlled variable in this investigation.'], ['d', '<strong>Justify</strong> why Hardy-Weinberg proportions are still a useful null model even though no real population meets all of its conditions.']],
+    rubric: ['(a) Small populations end with widely scattered final p, many fixed at 0 or 1; large populations stay near 0.5.', '(b) Each generation is a random sample of gametes, so chance changes in p are large when N is small and tiny when N is large (genetic drift).', '(c) Independent variable: population size N; dependent variable: final p (or fixation); controlled: starting p, generations, no selection, mutation or migration.', '(d) HW gives the expected frequencies when no evolution occurs, so deviations from it show which forces (drift, selection, migration) are acting.'] }); }
 
   /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists, gated buttons ================= */
   const filled = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };

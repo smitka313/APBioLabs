@@ -512,6 +512,84 @@
 <script src="scope.js"></script>
 <script>
 Lab.init({ id: 'lab04' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -1337,6 +1415,10 @@ const Predict = (function () {
      non-osmotic fraction b = 0.15. It approaches that volume exponentially (τ ≈ 10–16 s). The living
      membrane is treated as impermeable to the solutes over the viewing time.
      ===================================================================== */
+  /* Per-student specimens (seeded): the plasmolysis cell field (each cell's solute potential, organelles and walls) and the mean cell psi
+     (Elodea -8.6 bars x 0.97-1.03, onion -11 bars x 0.97-1.03) differ from student to student. */
+  const P3SALT = Lab.identity.seed.seed >>> 0, P3R = Lab.rng((P3SALT ^ 0x4ce11) >>> 0);
+  const P3MEAN = { elodea: -8.6 * (0.97 + 0.06 * P3R.uniform()), onion: -11 * (0.97 + 0.06 * P3R.uniform()) };
   const P3SOL = [
     { id: 'w', name: 'Distilled water', i: 1, C: 0 }, { id: 'ova', name: '5% ovalbumin', i: 1, C: 0.0011 },
     { id: 's2', name: '0.2 M sucrose', i: 1, C: 0.2 }, { id: 's4', name: '0.4 M sucrose', i: 1, C: 0.4 }, { id: 's6', name: '0.6 M sucrose', i: 1, C: 0.6 },
@@ -1346,8 +1428,8 @@ const Predict = (function () {
   const p3sel = $('#p3a-sol'); P3SOL.forEach(s => p3sel.append(Lab.h('option', { value: s.id }, s.name))); p3sel.value = 's10';
   let cells = [], p3Spec = 'elodea', p3Bath = P3SOL[0], p3Added = false, p3T = 0, p3Loop = null;
   function makeCells(spec) {
-    const r = Lab.rng(spec === 'elodea' ? 7 : 11), list = [];
-    const cols = spec === 'elodea' ? 5 : 3, rows = spec === 'elodea' ? 6 : 6, mean = spec === 'elodea' ? -8.6 : -11;
+    const r = Lab.rng((spec === 'elodea' ? 7 : 11) + (P3SALT % 100000) * 16), list = [];
+    const cols = spec === 'elodea' ? 5 : 3, rows = spec === 'elodea' ? 6 : 6, mean = P3MEAN[spec];
     for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
       const chl = []; if (spec === 'elodea') for (let k = 0; k < 12; k++) chl.push({ u: r.uniform(), o: r.uniform() * 0.25 });
       list.push({ gx: x, gy: y, cols, rows, off: (y % 2) * 0.5, psi0: mean * Math.exp(r.normal(0, 0.12)), f: 1, target: 1, tau: 10 + r.uniform() * 6, chl, nucU: 0.2 + r.uniform() * 0.6 });
@@ -1379,7 +1461,7 @@ const Predict = (function () {
     return { G, cols, rows, fx, fy, hy, vx, poly, jmin, jmax, imin, imax };
   }
   function makeExtra(spec, L) {
-    const r = Lab.rng(spec === 'elodea' ? 71 : 113), mean = spec === 'elodea' ? -8.6 : -11, list = [];
+    const r = Lab.rng((spec === 'elodea' ? 71 : 113) + (P3SALT % 100000) * 16), mean = P3MEAN[spec], list = [];
     for (let j = L.jmin; j <= L.jmax; j++) for (let i = L.imin; i <= L.imax; i++) {
       if (i >= 0 && i < L.cols && j >= 0 && j < L.rows) continue;
       list.push({ gx: i, gy: j, psi0: mean * Math.exp(r.normal(0, 0.12)), f: 1, target: 1, tau: 10 + r.uniform() * 6 });
@@ -1389,7 +1471,7 @@ const Predict = (function () {
   // Per-cell decoration (geometry, organelle positions), seeded by grid position; not part of the data model.
   function deco(c, L, spec) {
     if (c._d && c._d.spec === spec) return c._d;
-    const R = Lab.rng(1000 + (c.gx + 50) * 131 + (c.gy + 50) * 977 + (spec === 'onion' ? 7 : 0)), pts = L.poly(c.gx, c.gy);
+    const R = Lab.rng(1000 + (c.gx + 50) * 131 + (c.gy + 50) * 977 + (spec === 'onion' ? 7 : 0) + (P3SALT % 100000) * 16), pts = L.poly(c.gx, c.gy);
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), path = new Path2D();
     pts.forEach((p, k) => k ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1])); path.closePath();
     const a = (Math.max(...xs) - Math.min(...xs)) / 2, b = (Math.max(...ys) - Math.min(...ys)) / 2;
@@ -1558,6 +1640,8 @@ const Predict = (function () {
   const TISSUE = { potato: { name: 'White potato', Ciso: 0.30, G: 22, L: 30 }, sweet: { name: 'Sweet potato', Ciso: 0.50, G: 16, L: 26 }, yam: { name: 'Yam', Ciso: 0.40, G: 18, L: 28 }, dry: { name: 'Potato, dry 3 days', Ciso: 0.42, G: 26, L: 26 } };
   const CUPS = [{ c: 'Red', t: '--bad' }, { c: 'Orange', t: '--s4' }, { c: 'Yellow', t: '--warn' }, { c: 'Green', t: '--ok' }, { c: 'Blue', t: '--s3' }, { c: 'Purple', t: '--s5' }];
   const CONCS = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+  /* Per-student specimens: one common shift (+/-0.03 M) plus a small tissue-specific shift (+/-0.01 M) of each tissue's isotonic concentration. */
+  { const TR = Lab.rng((P3SALT ^ 0x7155) >>> 0), common = TR.uniform() * 0.06 - 0.03; Object.keys(TISSUE).sort().forEach(k => { TISSUE[k].Ciso = +(TISSUE[k].Ciso + common + (TR.uniform() * 0.02 - 0.01)).toFixed(3); }); }
   let seed = Lab.store.get('p3b-seed'); if (seed == null) { seed = Math.floor(Math.random() * 1e9); Lab.store.set('p3b-seed', seed); }
   const secret = Lab.rng(seed).shuffle(CONCS); // secret[i] = true concentration of CUPS[i]
   const assignEl = $('#p3b-assign');
@@ -1586,7 +1670,7 @@ const Predict = (function () {
       Lab.toast('Water-filled bag test finished: see the Data tab', { type: 'ok', announce: false, key: 'idtest' }); idTable.setRows(sims.map((s, i) => { const m0 = round(s.masses[0] + rng.normal(0, 0.01), 0.01), m1 = round(s.masses[30] + rng.normal(0, 0.04), 0.01); return { cup: CUPS[i].c, m0, m1, pct: 100 * (m1 - m0) / m0 }; }));
     });
   });
-  function refreshConc() { p3bTable.setRows(p3bTable.getRows().map(r => Object.assign(r, { conc: assigned(colorIdx(r.cup)) }))); }
+  function refreshConc() { p3bTable.setRows(p3bTable.getRows().map(r => Object.assign(r, { conc: assigned(colorIdx(r.cup)) })), { setup: false }); } // setup:false so rows restored on reload stay the student's work
   for (let i = 0; i < CUPS.length; i++) $('#p3b-as' + i).addEventListener('change', refreshConc);
   $('#p3b-idcheck').addEventListener('click', () => {
     const res = CUPS.map((c, i) => assigned(i) === secret[i]);
@@ -1790,6 +1874,23 @@ const Predict = (function () {
   Lab.prompt(an, { key: 'a4', label: '4. What factors determine the rate and direction of osmosis? When will the net rate of osmosis in a model cell equal zero? Will it ever truly be zero?', rows: 4 });
   Lab.prompt(an, { key: 'a5', label: '5. What would you predict if you used a starch solution in the dialysis bag instead of the protein? Draw or describe the flow of water for one of your model cells.', rows: 4 });
   Lab.prompt(an, { key: 'a6', label: '6. Based on what you learned, how could you determine the solute concentration inside a living cell?', rows: 3 });
+  Own.personal(an, { key: 'own-core', rows: 3, need: 'Water potential (run the cores)', href: 'water-potential',
+    ask: 'Explain this result using the water potential of the cores and of the solution, and say which way water moved.',
+    compute: () => { const r = p3bTable.getRows().filter(x => x.pct != null && isFinite(x.pct) && x.conc != null && !x._setup); if (!r.length) return null; const w = r.reduce((a, b) => Math.abs(b.pct) > Math.abs(a.pct) ? b : a); return `Your biggest mass change was the ${w.tissue} core in ${fmt(w.conc, 1)} M sucrose (${w.cup} cup): ${fmt(w.pct, 1)}% (${fmt(w.m0, 2)} g to ${fmt(w.m1, 2)} g).`; } });
+  Own.personal(an, { key: 'own-plasmo', rows: 3, need: 'Plasmolysis (count the cells)', href: 'plasmolysis',
+    ask: 'Explain, using the cell\'s water potential and the solution\'s, why that many cells plasmolyzed and what you saw happen to the membrane and wall.',
+    compute: () => { const r = p3table.getRows().filter(x => x.plz != null && isFinite(x.plz) && x.n && !x._setup); if (!r.length) return null; const w = r.reduce((a, b) => b.plz / b.n > a.plz / a.n ? b : a); return `Your most plasmolyzed sample was ${w.spec} in ${w.sol} (ψ = ${fmt(w.psi, 1)} bars): ${w.plz} of ${w.n} cells (${fmt(100 * w.plz / w.n, 0)}%).`; } });
+  Own.watch(() => {
+    const rows = p3bTable.getRows().filter(r => r.conc != null && isFinite(r.conc) && r.pct != null && !r._setup); if (rows.length) {
+      const tn = rows[rows.length - 1].tissue, tr = rows.filter(r => r.tissue === tn); if (new Set(tr.map(r => r.conc)).size >= 3) {
+        const f = S.linreg(tr.map(r => r.conc), tr.map(r => r.pct)), xi = f.xIntercept; if (isFinite(xi) && xi > 0 && xi < 2) {
+          Own.key('isotonic-point', { label: 'Isotonic sucrose concentration (' + tn + ')', value: +fmt(xi, 2), unit: 'M', part: 'Water potential' });
+          Own.key('psi-tissue', { label: 'Tissue water potential ψ (' + tn + ')', value: +fmt(-xi * R * TK, 1), unit: 'bars', part: 'Water potential' }); } } }
+    const pr = p3table.getRows().filter(x => x.plz != null && isFinite(x.plz) && x.n && !x._setup); if (pr.length) {
+      const sp = pr[pr.length - 1].spec, q = pr.filter(x => x.spec === sp).map(x => ({ psi: x.psi, p: 100 * x.plz / x.n })).sort((a, b) => b.psi - a.psi);
+      for (let i = 0; i < q.length - 1; i++) if (q[i].p < 50 && q[i + 1].p >= 50) { const t = (50 - q[i].p) / (q[i + 1].p - q[i].p); Own.key('incipient-psi', { label: 'Incipient plasmolysis ψ (' + sp + ', 50% of cells)', value: +fmt(q[i].psi + t * (q[i + 1].psi - q[i].psi), 1), unit: 'bars', part: 'Plasmolysis' }); break; }
+    }
+  });
   anTop.append(Lab.h('h3', null, 'Claim, evidence, reasoning'));
   anTop.append(Lab.h('p', { class: 'small muted' }, 'Answer the driving question: what causes a plant to wilt when it is not watered?'));
   const cer = Lab.h('div', { class: 'cer' }); anTop.append(cer);
@@ -1805,6 +1906,12 @@ const Predict = (function () {
   Lab.prompt(ev, { key: 'e3', label: 'Identify two sources of error in the real bench version of these procedures (for example blotting, cutting, or timing) and how you would reduce them.', rows: 3 });
   Lab.prompt(ev, { key: 'e4', label: 'Foods like jams and salted meats keep for a long time. Use osmosis and water potential to explain how high concentrations of sugar or salt preserve food.', rows: 3 });
   Lab.prompt(ev, { key: 'e5', label: 'Do fungal cells have turgor pressure? State a hypothesis and outline an experiment (materials, independent and dependent variables, control) to test it.', rows: 5 });
+  { const fh = Lab.h('div', { class: 'step-frq' }); ev.after(fh);
+  Own.frq(fh, { title: 'Free-response question: water potential in potato cores', part: 'Evaluate',
+    intro: '<p>A student cuts equal-sized potato cores, finds the mass of each, and places one core in each of six beakers containing 0, 0.2, 0.4, 0.6, 0.8 and 1.0 M sucrose. After 30 minutes the cores are blotted and weighed again. The percent change in mass is graphed against sucrose concentration.</p>',
+    data: () => { const r = p3bTable.getRows().filter(x => x.pct != null && isFinite(x.pct) && x.conc != null && !x._setup); if (!r.length) return 'Run the cores in Water potential to see your own numbers here.'; const w = r.reduce((a, b) => Math.abs(b.pct) > Math.abs(a.pct) ? b : a); return `Your own data: the ${w.tissue} core in ${fmt(w.conc, 1)} M sucrose changed by ${fmt(w.pct, 1)}%.`; },
+    parts: [['a', '<strong>Identify</strong> the independent variable, the dependent variable and a control for this investigation.'], ['b', '<strong>Describe</strong> the shape of the graph you would expect and how the student should find the water potential of the potato tissue from it.'], ['c', '<strong>Explain</strong> why a core in 1.0 M sucrose loses mass while a core in distilled water gains mass.'], ['d', '<strong>Justify</strong> the choice of a line graph with a best-fit line (rather than a bar graph) for these data.']],
+    rubric: ['(a) Independent: sucrose concentration; dependent: percent change in mass; control: a core in distilled water (or identical core size, time and temperature).', '(b) Percent change decreases as concentration rises; the concentration where the line crosses 0% is isotonic, so psi tissue = psi of that solution (-iCRT).', '(c) Water moves from higher to lower water potential: the potato is lower than water (water enters, gains mass) but higher than 1.0 M sucrose (water leaves).', '(d) Both variables are continuous numbers, so a line graph with a best-fit line shows the trend and lets the x-intercept be read; bars are for categories.'] }); }
 
   /* =====================================================================
      LAPTOP LAYOUT: results beside each simulation, step checklists, toasts

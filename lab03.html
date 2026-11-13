@@ -508,6 +508,84 @@ function blast(query, targets, progKey) {
   return hits.sort((x, y) => y.bits - x.bits);
 }
 Lab.init({ id: 'lab03' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -555,11 +633,25 @@ const Predict = (function () {
   return { add, compare, cer, has, val };
 })();
 
-const db = buildDB();
+/* Per-student sequence variation: a few random substitutions in every sequence (2-4 per organism and gene, 3-5 in the fossil
+   query), seeded from the student's identity + dataset number. Substitutions only (no indels), so alignments stay valid, and the
+   divergence between groups is far larger than 4 changes in ~300 bp, so the group most similar to the fossil never changes. */
+function personalizeDB(db, seed) {
+  const R = mkRng(seed >>> 0);
+  Object.keys(GENES).forEach(g => Object.keys(db).sort().forEach(id => {
+    const k = (id === 'fossil' ? 3 : 2) + Math.floor(R.u() * (id === 'fossil' ? 3 : 3));
+    const a = db[id][g].split('');
+    for (let i = 0; i < k; i++) { const pos = 3 + Math.floor(R.u() * (a.length - 3)); a[pos] = R.u() < 0.67 ? TS[a[pos]] : NT.split('').filter(b => b !== a[pos] && b !== TS[a[pos]])[Math.floor(R.u() * 2)]; }
+    db[id][g] = a.join('');
+  }));
+  return db;
+}
+const db = personalizeDB(buildDB(), Lab.identity.seed.seed ^ 0x3b1a57);
 const ORG_IDS = Object.keys(ORGS).filter(k => k !== 'fossil');
 const FIG4_GROUPS = ['Insects', 'Crustaceans', 'Crocodilians', 'Birds', 'Rodents', 'Great apes'];
 const orgLabel = id => id === 'fossil' ? 'Mystery fossil' : `${ORGS[id][1][0].toUpperCase() + ORGS[id][1].slice(1)}`;
 const esc = Lab.esc;
+const fmt1 = x => Lab.fmt(x, 1);
 
 /* ---------------- Pre-lab ---------------- */
 Lab.quiz('#prelab', [
@@ -791,6 +883,8 @@ const DATASETS = {
 };
 let dsKey = Lab.store.get('ds', 'fig4');
 if (!DATASETS[dsKey]) dsKey = 'fig4';
+/* Per-student card/row order: the organisms are listed in a seeded order (ids, traits and answers are unchanged). */
+{ const R = Lab.rng((Lab.identity.seed.seed ^ 0x5eed) >>> 0); Object.values(DATASETS).forEach(D => { D.taxa = R.shuffle(D.taxa); }); }
 const getClades = k => Lab.store.get('clades:' + k, []);
 const setClades = (k, c) => Lab.store.set('clades:' + k, c);
 
@@ -1299,12 +1393,26 @@ const cer = Lab.h('div', { class: 'cer' }); anTop.append(Lab.h('h3', { style: 'm
 Lab.prompt(cer, { key: 'cer-c', label: 'Claim', rows: 2 }); Lab.prompt(cer, { key: 'cer-e', label: 'Evidence', rows: 4 }); Lab.prompt(cer, { key: 'cer-r', label: 'Reasoning', rows: 4 });
 Lab.$$('.cer .prompt > label').forEach((l, i) => l.setAttribute('data-letter', 'CER'[i]));
 Predict.cer(cer, { claim: 'The data show that the fossil is most closely related to ___.', evidence: 'The top BLAST hit was ___ with ___% identity (E value ___), compared with ___% for ___.', reasoning: 'This happens because more similar DNA means ___ (a more recent common ancestor), so ___.' }, '<p><strong>Claim:</strong> The data show that the fossil belongs ___ (on the cladogram), as a sister group to ___.</p><p><strong>Evidence:</strong> For gene ___, the top hit was ___ with ___% identity (E value ___), compared with ___% identity for ___.</p><p><strong>Reasoning:</strong> This happens because ___ (more similar sequences mean a more recent common ancestor), so ___.</p>');
+Own.personal(an, { key: 'own-identity', rows: 3, need: 'BLAST the genes (record top hits)', href: 'blast-the-genes',
+  ask: 'Explain why this fossil gene gave a lower or higher identity than the others. What does that tell you about how fast each gene evolves?',
+  compute: () => { const r = blastTable.getRows().filter(x => x.rank === 1 && x.ident != null && !x._setup); if (!r.length) return null; const lo = r.reduce((a, b) => b.ident < a.ident ? b : a), hi = r.reduce((a, b) => b.ident > a.ident ? b : a); return r.length > 1 && lo !== hi ? `Your best hit for gene ${hi.gene} was the ${hi.org} at ${fmt1(hi.ident)}% identity, but for gene ${lo.gene} the top hit (${lo.org}) was only ${fmt1(lo.ident)}%.` : `Your top hit for gene ${lo.gene} was the ${lo.org} at ${fmt1(lo.ident)}% identity (E = ${lo.e}).`; } });
+Own.personal(an, { key: 'own-clock', rows: 3, need: 'Design (add hits to the clock table)', href: 'design',
+  ask: 'Explain one reason this point may sit away from the trend (think about how substitutions accumulate, and about the gene you used).',
+  compute: () => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && !x._setup && x.t > 0); if (r.length < 3) return null; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); const res = r.map(x => ({ x, d: x.ident - L.predict(x.t) })); const w = res.reduce((a, b) => Math.abs(b.d) > Math.abs(a.d) ? b : a); return `Your weirdest clock point is ${w.x.q} vs ${w.x.hit} (gene ${w.x.gene}, ${fmt1(w.x.t)} Mya): identity ${fmt1(w.x.ident)}%, ${fmt1(Math.abs(w.d))} points ${w.d > 0 ? 'above' : 'below'} the trend line.`; } });
+Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); });
+Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); });
 const ev = Lab.$('#evaluate-prompts');
 Predict.compare(ev, { key: 'reflect-predict', items: [['predict-blast', 'Before BLASTing the fossil genes you predicted:'], ['predict-design', 'Before your molecular-clock design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one percent identity (%) from your data. What does any mismatch tell you?', rows: 4 });
 Lab.prompt(ev, { key: 'e1', label: 'Compare your cladogram with your classmates\'. Does everyone agree on where the fossil goes? If not, what is the basis of the disagreement?', rows: 3 });
 Lab.prompt(ev, { key: 'e2', label: 'This page\'s database holds only 18 organisms. Real BLAST searches hundreds of thousands of organisms. How does a small database limit your conclusions? (Hint: what if the fossil\'s closest living relatives were not in the database?)', rows: 3 });
 Lab.prompt(ev, { key: 'e3', label: 'What other data could be collected from the fossil specimen to better work out its evolutionary history?', rows: 3 });
 Lab.prompt(ev, { key: 'e4', label: 'Use the ideas of speciation, extinction and natural selection to describe what happened along the branch leading to the fossil.', rows: 3 });
+{ const fh = Lab.h('div', { class: 'step-frq' }); ev.after(fh);
+Own.frq(fh, { title: 'Free-response question: sequence similarity and relatedness', part: 'Evaluate',
+  intro: '<p>A fossil gene is compared with the same gene in several living organisms using BLAST. A bird returns 97% identity and an E-value of 1e-120. A crocodilian returns 91% identity and an E-value of 1e-90. A fish returns 74% identity and an E-value of 1e-25.</p>',
+  data: () => { const r = blastTable.getRows().filter(x => x.rank === 1 && x.ident != null && !x._setup); if (!r.length) return 'Record your top hits in BLAST the genes to see your own numbers here.'; const l = r[r.length - 1]; return `From your own table: gene ${l.gene} best hit was the ${l.org} (${l.group}) at ${fmt1(l.ident)}% identity, E = ${l.e}.`; },
+  parts: [['a', '<strong>Describe</strong> what percent identity and the E-value each tell you about a hit.'], ['b', '<strong>Explain</strong> which organism the fossil is most closely related to, and why higher sequence identity supports that claim.'], ['c', '<strong>Predict</strong> how the percent identities would change if the student used a faster-evolving gene such as gene C instead of a conserved gene such as gene A.'], ['d', '<strong>Justify</strong> why a cladogram built from DNA data is a hypothesis, naming one limitation of this small database.']],
+  rubric: ['(a) Percent identity is the fraction of aligned bases that match; the E-value is the number of hits this good expected by chance (smaller means stronger, non-random).', '(b) Names the bird and uses the highest identity / lowest E-value as evidence of a more recent common ancestor.', '(c) Faster-evolving genes accumulate more differences, so identities fall for all hits (and distant relatives approach saturation) while conserved genes show high identity even for distant groups.', '(d) A cladogram is a testable hypothesis that can change with new data; the database has only 18 organisms, so the true closest relative may be missing.'] }); }
 
 /* ================= LAPTOP LAYOUT: results beside each simulation, step checklists ================= */
 const filled = k => { const t = Lab.$('#p-' + k); return !!(t && t.value.trim()); };
