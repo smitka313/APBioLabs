@@ -57,6 +57,15 @@
   .predict-box .prompt { margin: 0; }
   .predict-box .prompt label { font-size: .82rem; }
   .predict-box textarea { min-height: 0; height: 3.4rem; }
+  .mydata blockquote { margin: 0 0 8px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 0 6px 6px 0; }
+  .mydata .k { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .mydata p { margin: 4px 0 0; }
+  .frq { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 14px; display: grid; gap: 12px; margin-top: 24px; min-width: 0; }
+  .frq h3, .frq h4 { margin: 0; }
+  .frq-parts { display: grid; gap: 10px; }
+  .frq-rubric { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+  .frq-rubric .check { display: flex; gap: 8px; align-items: flex-start; }
+  .frq-rubric[hidden] { display: none; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -226,7 +235,7 @@
       <div class="prose"><p>The chief investigator (your teacher) gives you DNA from the blood, Ms. Mason (saliva on her cup), Mr. Gladson (his tissue) and Bobby (bubble gum). All four have been cut with the same restriction enzymes, and you also get a <span class="enz"><em>Hin</em>dIII</span> marker. Plan your gel: which wells, how much sample, which voltage, how long, and how many repeat gels. Then run it and size every band. A jury will not accept "the bands look the same." You need fragment sizes and a clear match rule.</p></div>
       <div class="callout callout--question predict-box"><div class="callout-title">Predict first</div><p class="small">Before you run your evidence gel, say what you expect: what will a suspect who <em>matches</em> the blood look like on the gel compared with one who does not, and how many repeat gels do you think you need to be confident? Give a reason (1 to 2 sentences).</p><div id="predict-crime-box"></div></div>
       <div class="grid-2">
-        <div class="field"><label for="case-no">Case file number (from your teacher)</label><input id="case-no" type="number" min="1" max="9999" value="102" data-save="case-no"><span class="hint">Different case numbers lead to different suspects. Use the number your teacher assigns.</span></div>
+        <div class="field"><label for="case-no">Case file number (from your teacher)</label><input id="case-no" type="number" min="1" max="9999" value="102" data-save="case-no"><span class="hint">Different case numbers lead to different suspects. Type the number your teacher assigns. Until you do, this box holds a personal starting number.</span></div>
         <div id="design-plan"></div>
       </div>
       <div id="design-prompts" class="grid-2"></div>
@@ -266,6 +275,77 @@
 <script src="lab.js"></script>
 <script>
 Lab.init({ id: 'lab09' });
+/* ---------- Key results, per-student values, personal-data prompts, AP free-response (page-local) ---------- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+/* Report a key result only when it changed (avoids rewriting storage on every redraw). */
+const _krLast = {};
+function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) return; _krLast[id] = j; Lab.keyResult(id, o); }
+/* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
+const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
+const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
+/* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
+function personalPrompt(host, o) {
+  host = typeof host === 'string' ? Lab.$(host) : host;
+  const box = Lab.h('div', { class: 'mydata' });
+  host.append(box);
+  const p = Lab.prompt(host, { key: o.key, label: o.generic, rows: o.rows || 3 });
+  const lab = Lab.$('label', p), ta = Lab.$('textarea', p);
+  let last = '\u0000';
+  function render() {
+    let q = null; try { q = o.get(); } catch (e) { q = null; }
+    const sig = q || '';
+    if (sig === last) return; last = sig;
+    if (q) {
+      box.innerHTML = '';
+      lab.innerHTML = q + ' ' + (o.ask || 'Explain.');
+      ta.dataset.label = lab.textContent.replace(/\s+/g, ' ').trim();
+    } else {
+      box.innerHTML = '<blockquote><span class="k">From your data</span><p class="muted">Finish ' + o.need + ' first, then this question will quote your own result. <a class="btn btn--sm btn--ghost" href="#' + slugOf(o.part) + '">Show me</a></p></blockquote>';
+      lab.textContent = o.generic; ta.dataset.label = o.generic;
+    }
+  }
+  render(); Lab.onShow(host, render); setInterval(render, 1500);
+  return { render };
+}
+/* AP-style multi-part free response + a 4-point self-check rubric that appears once an answer is saved. */
+function frq(host, o) {
+  host = typeof host === 'string' ? Lab.$(host) : host;
+  const wrap = Lab.h('div', { class: 'frq', id: 'frq-box' });
+  wrap.innerHTML = '<h3>AP-style free-response practice</h3><div class="prose" id="frq-stem">' + o.stem + '</div><div class="frq-parts" id="frq-parts"></div>' +
+    '<div class="row"><button class="btn btn--primary" id="frq-save" type="button">Save my answer</button><span class="small muted" id="frq-msg" role="status"></span></div>' +
+    '<div class="frq-rubric" id="frq-rubric" hidden><h4>Self-check: score your own answer (4 points)</h4><p class="small muted">Read each point, then tick the ones your answer earned. Be strict: a point needs the specific idea, not just the topic.</p><div class="stack" id="frq-pts"></div><p class="pill" id="frq-score" role="status"></p></div>';
+  host.append(wrap);
+  const partsHost = Lab.$('#frq-parts', wrap);
+  o.parts.forEach(([L, q]) => Lab.prompt(partsHost, { key: 'frq-' + L, label: '(' + L + ') ' + q, rows: 4 }));
+  const pts = Lab.$('#frq-pts', wrap);
+  o.rubric.forEach((t, i) => pts.append(Lab.h('label', { class: 'check', for: 'frq-r' + i }, Lab.h('input', { type: 'checkbox', id: 'frq-r' + i }), Lab.h('span', { html: ' <strong>' + (i + 1) + '.</strong> ' + t }))));
+  const tas = () => Lab.$$('textarea', partsHost), has = () => tas().some(t => t.value.trim().length >= 10);
+  const st = () => Lab.store.get('frq-state') || { saved: false, r: [false, false, false, false] };
+  function score() { return st().r.filter(Boolean).length; }
+  function show() {
+    const s = st(), vis = s.saved && has();
+    Lab.$('#frq-rubric', wrap).hidden = !vis;
+    Lab.$$('input', pts).forEach((c, i) => { c.checked = !!s.r[i]; });
+    Lab.$('#frq-score', wrap).textContent = 'Self-score: ' + score() + ' of 4';
+    Lab.$('#frq-score', wrap).className = 'pill ' + (score() >= 3 ? 'ok' : score() >= 2 ? 'warn' : 'bad');
+  }
+  Lab.$('#frq-save', wrap).addEventListener('click', () => {
+    const msg = Lab.$('#frq-msg', wrap);
+    if (!has()) { msg.textContent = 'Write an answer to at least one part (a few words) before saving.'; msg.className = 'feedback bad small'; return; }
+    const s = st(); s.saved = true; Lab.store.set('frq-state', s);
+    msg.textContent = 'Saved. Now check your answer against the rubric below.'; msg.className = 'small muted';
+    show();
+  });
+  Lab.$$('input', pts).forEach((c, i) => c.addEventListener('change', () => {
+    const s = st(); s.r[i] = c.checked; s.scored = true; Lab.store.set('frq-state', s); show();
+    keyRes('frq-score', { label: 'FRQ self-score', value: score(), unit: 'of 4', part: 'Reflect' });
+  }));
+  tas().forEach(t => t.addEventListener('input', show));
+  show(); if (st().scored) keyRes('frq-score', { label: 'FRQ self-score', value: score(), unit: 'of 4', part: 'Reflect' });
+}
+
 const esc = Lab.esc;
 /* ===== λ DNA restriction data (real published coordinates, NEB; genome 48,502 bp) ===== */
 const LAMBDA = 48502;
@@ -1001,11 +1081,26 @@ function makeGel(rootSel, measSel, cfg) {
     const list = Object.values(groups).sort((a, b) => a.sample.localeCompare(b.sample) || a.band - b.band);
     estEl.innerHTML = list.length ? `<div class="table-wrap"><table class="data"><thead><tr><th>Sample</th><th class="num">Band</th><th class="num">n <span class="unit">(readings)</span></th><th class="num">Mean estimate <span class="unit">(bp)</span></th><th class="num">± 2 SE <span class="unit">(bp)</span></th><th class="num">Range <span class="unit">(bp)</span></th></tr></thead><tbody>${list.map(g => { const mn = Lab.stats.mean(g.v), se2 = g.v.length > 1 ? 2 * Lab.stats.se(g.v) : NaN; return `<tr><td>${esc(g.sample)}</td><td class="num">${g.band}</td><td class="num">${g.v.length}</td><td class="num">${Math.round(mn).toLocaleString()}</td><td class="num">${isFinite(se2) ? Math.round(se2).toLocaleString() : '—'}</td><td class="num">${Math.round(Math.min(...g.v)).toLocaleString()}–${Math.round(Math.max(...g.v)).toLocaleString()}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="small muted">Size estimates appear here once a gel has a standard curve (two or more marker bands with known sizes) and some unknown bands.</p>';
     cfg.onAnalyze && cfg.onAnalyze(list);
+    reportFrags(P, list);
   }
   excl.addEventListener('change', analyze); gsel.addEventListener('change', analyze);
   Lab.$('.clear', mroot).addEventListener('click', () => { meas.clear(); });
   newGel(); analyze();
   return { st, analyze, newGel, meas };
+}
+/* Saved summary of sized fragments (used by Reflect prompts) + key results. */
+function reportFrags(P, list) {
+  const L = list.map(g => ({ sample: g.sample, band: g.band, n: g.v.length, mean: Lab.stats.mean(g.v), lo: Math.min(...g.v), hi: Math.max(...g.v), se2: g.v.length > 1 ? 2 * Lab.stats.se(g.v) : null }));
+  if (JSON.stringify(Lab.store.get('frags-' + P)) !== JSON.stringify(L)) Lab.store.set('frags-' + P, L);
+  if (!L.length) return;
+  const fmtL = rows => rows.map(g => Math.round(g.mean).toLocaleString('en-US')).join(', ');
+  if (P === 'g1') {
+    const g1 = L.filter(g => g.sample === L[0].sample);
+    keyRes('frag-sizes', { label: 'Estimated fragment sizes: ' + L[0].sample + ' (practice gel)', value: fmtL(g1), unit: 'bp', part: 'Standard curve' });
+  } else {
+    const bl = L.filter(g => g.sample === 'Blood').sort((a, b) => a.band - b.band);
+    if (bl.length) keyRes('blood-frags', { label: 'Estimated fragment sizes: blood at the scene', value: fmtL(bl), unit: 'bp', part: 'Design: crime scene' });
+  }
 }
 function measBlock(sel, key) {
   Lab.$(sel).innerHTML = `<div class="mtable"></div><div class="feedback bad meas-err" role="alert" hidden></div>
@@ -1086,13 +1181,17 @@ function compare(list) {
   const by = {}; lastList.forEach(g => { (by[g.sample] = by[g.sample] || []).push(Lab.stats.mean(g.v)); });
   const blood = (by.Blood || []).slice().sort((a, b) => b - a);
   if (!blood.length) { Lab.$('#compare').innerHTML = '<p class="small muted">Measure and size the Blood lane and the suspects\' lanes, with a marker on the same gel, to fill this table.</p>'; return; }
+  const cmp = [];
   const rows = ['Mason', 'Gladson', 'Bobby'].map(p => {
     const b = (by[p] || []).slice().sort((a, b2) => b2 - a); if (!b.length) return `<tr><td>${p}</td><td colspan="5" class="muted">not sized yet</td></tr>`;
     const used = new Set(); let matched = 0, diffs = [];
     blood.forEach(x => { let bi = -1, bd = Infinity; b.forEach((y, j) => { if (used.has(j)) return; const d = Math.abs(y - x) / x; if (d < bd) { bd = d; bi = j; } }); if (bi >= 0 && bd <= tol) { used.add(bi); matched++; diffs.push(bd * 100); } });
     const extra = b.length - used.size, all = matched === blood.length && extra === 0;
+    cmp.push({ p, matched, of: blood.length, extra, diff: diffs.length ? Lab.stats.mean(diffs) : null, all });
     return `<tr><td>${p}</td><td class="num">${b.length}</td><td class="num">${matched} of ${blood.length}</td><td class="num">${extra}</td><td class="num">${diffs.length ? Lab.fmt(Lab.stats.mean(diffs), 1) + '%' : '—'}</td><td><span class="pill ${all ? 'ok' : 'bad'}">${all ? 'Consistent with blood' : 'Excluded'}</span></td></tr>`;
   });
+  { const cl = { tol: Math.round(tol * 100), rows: cmp }; if (JSON.stringify(Lab.store.get('compare-last')) !== JSON.stringify(cl)) Lab.store.set('compare-last', cl); }
+  { const ok = cmp.filter(c => c.all).map(c => c.p); keyRes('suspects-match', { label: 'Suspect(s) consistent with the blood (your rule ±' + Math.round(tol * 100) + '%)', value: ok.length ? ok.join(', ') : 'none', unit: '', part: 'Design: crime scene' }); }
   Lab.$('#compare').innerHTML = `<div class="table-wrap"><table class="data"><thead><tr><th>Suspect</th><th class="num">Bands sized <span class="unit">(bands)</span></th><th class="num">Blood bands matched <span class="unit">(bands)</span></th><th class="num">Extra bands <span class="unit">(bands)</span></th><th class="num">Mean size difference <span class="unit">(%)</span></th><th>Verdict at this rule</th></tr></thead><tbody>${rows.join('')}</tbody></table></div><p class="small muted">Blood bands sized: ${blood.map(x => Math.round(x).toLocaleString()).join(', ')} bp.</p>`;
 }
 Lab.$('#tol').addEventListener('input', () => compare());
@@ -1108,6 +1207,8 @@ function caseValid() {
   if (err) { el.setAttribute('aria-invalid', 'true'); el.setAttribute('aria-describedby', 'case-no-err'); } else { el.removeAttribute('aria-invalid'); el.removeAttribute('aria-describedby'); }
   return !err;
 }
+/* Per-student default case number (1-9999) until the student types the one their teacher gave them. The decoder (crimeCase) is unchanged. */
+(function () { const el = Lab.$('#case-no'); if (Lab.store.get('field:case-no') == null) el.value = 1 + Math.floor(myU(9, 0, 9999)); })();
 Lab.$('#case-no').addEventListener('change', () => { if (caseValid()) buildCase(); });
 Lab.$('#case-no').addEventListener('input', caseValid);
 Lab.prompt('#predict-crime-box', { key: 'predict-crime', label: 'Your prediction (with a reason)', rows: 3, placeholder: '' });
@@ -1151,6 +1252,47 @@ Lab.prompt(ev, { key: 'e3', label: '3. Who should have access to your genetic pr
 Lab.prompt(ev, { key: 'e4', label: '4. A DNA test says you have a two-in-three chance of getting cancer in the next 20 years. Who should know? Would you want to know?', rows: 3 });
 Lab.prompt(ev, { key: 'e5', label: '5. The Innocence Project uses DNA testing to re-examine old convictions. What social and ethical issues does this raise? What arguments can you make against using DNA evidence in court?', rows: 3 });
 Lab.prompt(ev, { key: 'e6', label: '6. If a gene from a native plant in another country is engineered into a U.S. crop, should that country share the profits? Who owns the information in DNA?', rows: 3 });
+
+/* ---------- Personal-data prompts and AP free-response ---------- */
+const an9 = partBody('Analyze');
+an9.append(Lab.h('h3', { style: 'margin-top:20px' }, 'Your own data'));
+const my9 = Lab.h('div', { class: 'prompts-2' }); an9.append(my9);
+const bp = x => Math.round(x).toLocaleString('en-US') + ' bp';
+personalPrompt(my9, {
+  key: 'my-spread', part: 'Standard curve', need: 'measuring and sizing bands on a gel (Standard curve part)',
+  generic: 'Explain the least certain fragment size on your own gels.',
+  ask: 'Explain why this band is the least certain, using how band position, the ruler and the standard curve affect an estimate.',
+  get() {
+    const L = (Lab.store.get('frags-g2') || []).concat(Lab.store.get('frags-g1') || []).filter(g => g.n > 1 && g.mean > 0);
+    if (L.length) { const w = L.reduce((a, b) => (b.hi - b.lo) / b.mean > (a.hi - a.lo) / a.mean ? b : a); return `Your ${w.sample} band ${w.band} was sized ${w.n} times and the readings ranged from <strong>${bp(w.lo)}</strong> to <strong>${bp(w.hi)}</strong> (mean ${bp(w.mean)}).`; }
+    const S = (Lab.store.get('frags-g2') || []).concat(Lab.store.get('frags-g1') || []);
+    if (!S.length) return null;
+    const m = S.reduce((a, b) => b.mean < a.mean ? b : a);
+    return `Your smallest sized band (${m.sample} band ${m.band}) came out at <strong>${bp(m.mean)}</strong> from ${m.n} reading${m.n > 1 ? 's' : ''}.`;
+  }
+});
+personalPrompt(my9, {
+  key: 'my-verdict', part: 'Design: crime scene', need: 'sizing the blood and suspect lanes (Design: crime scene part)',
+  generic: 'Explain your suspect comparison using your own match rule.',
+  ask: 'Would a stricter or looser match rule change who you accuse? Explain.',
+  get() {
+    const c = Lab.store.get('compare-last'); if (!c || !c.rows || !c.rows.length) return null;
+    const ok = c.rows.filter(r => r.all).map(r => r.p), no = c.rows.filter(r => !r.all && r.diff != null).sort((a, b) => a.diff - b.diff)[0];
+    return `With your match rule of ±<strong>${c.tol}%</strong>, ${ok.length ? '<strong>' + ok.join(' and ') + '</strong> matched the blood' : '<strong>no suspect</strong> matched the blood'}${no ? `; the closest excluded suspect, ${no.p}, had a mean size difference of <strong>${no.diff.toFixed(1)}%</strong> and ${no.extra} extra band${no.extra === 1 ? '' : 's'}` : ''}.`;
+  }
+});
+
+frq(partBody('Evaluate'), {
+  stem: '<p>A technician cuts DNA from a blood sample and from two suspects with the same restriction enzyme, loads the digests and a <em>Hin</em>dIII size marker into a 0.8% agarose gel, and runs the gel at 100 V. After staining she measures how far each band moved from its well.</p>',
+  parts: [['a', '<strong>Describe</strong> how the DNA fragments are separated in the gel, including which direction they move and which fragments move farthest.'],
+    ['b', '<strong>Explain</strong> why she plots the marker sizes on a log scale against distance moved, and how she then finds the size of an unknown band.'],
+    ['c', '<strong>Predict</strong> how the band pattern would look if she repeated the run in a 1.5% gel and <strong>justify</strong> your prediction.'],
+    ['d', '<strong>Identify</strong> one control or constant she needs on every gel, and say what a suspect with bands identical to the blood\'s does and does not prove.']],
+  rubric: ['(a) DNA is negatively charged so it moves toward the positive electrode; smaller fragments move farther because they pass through the agarose pores more easily.',
+    '(b) Distance moved is roughly linear with the log of fragment size, so a log scale gives a straight standard curve; read or calculate the unknown size from its distance using that line.',
+    '(c) In 1.5% agarose the pores are smaller, so fragments move less far and large fragments are less well separated (small ones resolve better).',
+    '(d) A marker (or same voltage, time, buffer, amount loaded) is a valid control; matching bands show the suspect\'s DNA is consistent with the blood, not that they committed the crime, and they could still be a coincidental match.']
+});
 </script>
 </body>
 </html>
