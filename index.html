@@ -32,13 +32,27 @@
 <link rel="preload" as="image" href="img/lab03.webp" type="image/webp">
 <style>
   :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .hero { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 30px 26px; }
+  /* The hero is a lab bench (canvas drawn by the script at the bottom of the page). The bench is dark in both themes, so the text on it
+     is light (--h-ink on ≥ 10:1) and the sign-in panel and "Pick up where you left off" card keep their own opaque surfaces. */
+  .hero { --h-ink: #f3f8f5; --h-muted: #cddad4; --h-link: #c4f5e3; position: relative; isolation: isolate; overflow: hidden; background: #1b2024; color: var(--h-ink); border-bottom: 1px solid #0a0c0e; padding-block: 198px 30px; }
+  .hero .wrap { position: relative; z-index: 2; }
+  .bench-scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; max-width: none; }
+  .bench-sheen { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+  .bench-sheen::before { content: ""; position: absolute; top: -10%; bottom: -10%; left: -30%; width: 22%; background: linear-gradient(100deg, transparent, rgba(255, 252, 236, .07), transparent); transform: translateX(0) skewX(-14deg); animation: bench-sheen 16s ease-in-out infinite; }
+  @keyframes bench-sheen { 0%, 100% { transform: translateX(0) skewX(-14deg); } 50% { transform: translateX(560%) skewX(-14deg); } }
+  @media (prefers-reduced-motion: reduce) { .bench-sheen { display: none; } }
+  @media print { .bench-sheen { display: none; } .hero { background: #fff; color: #000; padding-block: 12px; } .bench-scene { display: none; } }
   .hero-grid { display: grid; gap: 18px 40px; align-items: end; }
   @media (min-width: 960px) { .hero-grid { grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); } }
-  .hero h1 { font-size: clamp(2.1rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; max-width: 16ch; margin-top: 4px; }
-  .hero p.lede { margin-top: 10px; max-width: 54ch; color: var(--muted); font-size: 1.08rem; }
-  .hero .home-status { margin-top: 0; }
-  .hero .hero-links { margin-top: 10px; }
+  .hero h1 { color: var(--h-ink); font-size: clamp(2.1rem, 5vw, 3.2rem); font-weight: 800; letter-spacing: -0.03em; max-width: 16ch; margin-top: 4px; text-shadow: 0 2px 10px rgba(0, 0, 0, .55); }
+  .hero .eyebrow { color: var(--h-link); text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  .hero p.lede { margin-top: 10px; max-width: 54ch; color: var(--h-muted); font-size: 1.08rem; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  .hero .home-status { color: var(--ink); text-shadow: none; margin-top: 0; padding: 12px 16px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
+  .hero .hero-links { margin-top: 10px; color: var(--h-muted); text-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
+  .hero .hero-links a { color: var(--h-link); }
+  .hero .hero-links a:focus-visible { outline-color: var(--h-link); }
+  .bench-note { margin-top: 6px; font-size: .88rem; color: var(--h-muted); text-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
+  @media (max-width: 640px) { .hero { padding-block: 150px 24px; } }
   .bi { padding-block: 34px 6px; display: grid; gap: 14px; }
   .bi-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
   .bi-head .eyebrow { color: var(--stain); }
@@ -59,6 +73,8 @@
 </head>
 <body>
 <header class="hero">
+  <canvas class="bench-scene" id="bench-scene" role="img" aria-label="A dark lab bench with equipment along the back."></canvas>
+  <div class="bench-sheen" aria-hidden="true"></div>
   <div class="wrap wrap--wide gutter">
     <section class="pickup" id="resume" hidden></section>
     <div class="hero-grid">
@@ -67,6 +83,7 @@
         <h1>AP Bio Digital Lab Bench</h1>
         <p class="lede">Run each AP Biology lab as a realistic simulation, design your own experiment, graph your data, and hand in a lab report. Your work saves in this browser.</p>
         <p class="hero-links small"><a href="teachers.html">For teachers</a> · <a href="teacher-notes.html">Teacher notes (password)</a></p>
+        <p class="bench-note" id="bench-note"></p>
       </div>
       <div class="home-status"><div id="home-identity"></div></div>
     </div>
@@ -128,6 +145,280 @@ document.getElementById('labs').innerHTML = BIG_IDEAS.map(b => `
     </div>
   </section>`).join('');
 Lab.home({ identity: '#home-identity', resume: '#resume' });
+</script>
+<script>
+/* ---------------- Lab-bench banner ----------------
+   A canvas-drawn dark epoxy benchtop under soft overhead light, with a row of equipment along the back. Every object is a physical thing,
+   so it uses fixed colours (like the sim art in lab07/lab08/lab09). Each object belongs to one or more labs; when the student completes
+   a lab (aplab:progress:labNN, done === total) that object changes:
+     flask  (labs 5, 13)    the liquid turns amber           petri dishes (8)       the plates grow colonies (one glows green)
+     gel box (3, 9)         the gel is stained, bands appear  microscope (7, 11)     the lamp is on and a stained slide is on the stage
+     vials  (1, 10, 12)     one vial per lab gets flies       balance (2, 4)         a sample sits on the pan and the display reads a mass
+     tube rack (6)          the tubes fill with a colour series
+   Static: drawn once (and on resize or theme change). The only motion is an optional faint sheen that respects reduced motion. */
+(function () {
+  const cv = document.getElementById('bench-scene'), hero = document.querySelector('.hero');
+  if (!cv || !hero || !cv.getContext) return;
+  const TAU = Math.PI * 2;
+  const rr = (x, X, Y, w, h, r) => { r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2)); x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); };
+  const lin = (x, x0, y0, x1, y1, stops) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const rad = (x, cx, cy, r0, r1, stops) => { const g = x.createRadialGradient(cx, cy, r0, cx, cy, r1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const sh = (x, col, blur, ox, oy, fn) => { x.save(); x.shadowColor = col; x.shadowBlur = blur; x.shadowOffsetX = ox; x.shadowOffsetY = oy; fn(); x.restore(); };
+  const rng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+  const ellipse = (x, cx, cy, rx, ry) => { x.beginPath(); x.ellipse(cx, cy, Math.max(0.1, rx), Math.max(0.1, ry), 0, 0, TAU); };
+  const shadow = (x, w, h = 7) => { x.save(); x.translate(0, 2); x.scale(1, h / (w * 0.5)); x.fillStyle = rad(x, 0, 0, 0, w * 0.5, [[0, 'rgba(0,0,0,.62)'], [0.55, 'rgba(0,0,0,.28)'], [1, 'rgba(0,0,0,0)']]); x.beginPath(); x.arc(0, 0, w * 0.5, 0, TAU); x.fill(); x.restore(); };
+
+  /* ---- the bench top: black epoxy resin with mineral speckle (a tile, drawn once) ---- */
+  let tile = null;
+  function benchTile() {
+    if (tile) return tile;
+    const n = 192, c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d'), R = rng(7);
+    x.fillStyle = '#24282c'; x.fillRect(0, 0, n, n);
+    for (let i = 0; i < 2600; i++) { const l = R() < 0.55, s = 0.5 + R() * 1.3; x.fillStyle = l ? `rgba(110,118,126,${(0.07 + R() * 0.26).toFixed(3)})` : `rgba(4,5,7,${(0.15 + R() * 0.4).toFixed(3)})`; x.fillRect(R() * n, R() * n, s, s); }
+    for (let i = 0; i < 18; i++) { x.fillStyle = `rgba(60,150,140,${(0.05 + R() * 0.07).toFixed(3)})`; x.fillRect(R() * n, R() * n, 1 + R() * 1.4, 1 + R() * 1.4); }
+    return (tile = c);
+  }
+
+  /* ---- objects. Each is drawn with its origin at the centre of its base (y up is negative), `s` = scale, `lv` = completed labs of its set. ---- */
+  function glass(x, pathFn, tint = 'rgba(190,225,240,0.16)') { pathFn(); x.fillStyle = tint; x.fill(); }
+  const OBJ = {
+    flask: { w: 80, h: 116, labs: [5, 13], draw(x, lv) {
+      const body = () => { x.beginPath(); x.moveTo(-11, -112); x.lineTo(-11, -82); x.bezierCurveTo(-11, -66, -40, -34, -40, -8); x.quadraticCurveTo(-40, 0, -31, 0); x.lineTo(31, 0); x.quadraticCurveTo(40, 0, 40, -8); x.bezierCurveTo(40, -34, 11, -66, 11, -82); x.lineTo(11, -112); x.closePath(); };
+      shadow(x, 100, 9);
+      sh(x, 'rgba(0,0,0,.5)', 10, 3, 5, () => { body(); x.fillStyle = 'rgba(200,225,240,.2)'; x.fill(); });
+      const cols = [['rgba(168,214,236,.62)', 'rgba(118,176,208,.7)'], ['#e8b84a', '#c98a1f'], ['#c77a1c', '#8f4a0c']][Math.min(2, lv)];
+      x.save(); body(); x.clip();
+      x.fillStyle = lin(x, -40, 0, 40, 0, [[0, 'rgba(255,255,255,.18)'], [0.5, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,.18)']]); x.fillRect(-44, -114, 88, 116);
+      const top = lv ? -52 : -46;
+      x.fillStyle = lin(x, 0, top, 0, 0, [[0, cols[0]], [1, cols[1]]]); x.fillRect(-44, top, 88, -top + 2);
+      x.fillStyle = lin(x, -40, 0, 40, 0, [[0, 'rgba(255,255,255,.28)'], [0.25, 'rgba(255,255,255,0)'], [0.8, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.32)']]); x.fillRect(-44, top, 88, -top + 2);
+      x.fillStyle = lv ? 'rgba(255,238,170,.55)' : 'rgba(235,248,255,.45)'; ellipse(x, 0, top, 30, 4); x.fill();      // meniscus
+      x.fillStyle = 'rgba(0,0,0,.18)'; ellipse(x, 0, -1, 38, 3.5); x.fill();
+      x.restore();
+      body(); x.lineWidth = 2; x.strokeStyle = 'rgba(225,240,248,.55)'; x.stroke();
+      x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-32, -12); x.bezierCurveTo(-34, -30, -9, -58, -8, -80); x.stroke();     // specular streak
+      x.strokeStyle = 'rgba(255,255,255,.35)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(-6, -108); x.lineTo(-6, -88); x.stroke();
+      rr(x, -15, -116, 30, 6, 3); x.fillStyle = 'rgba(225,240,248,.55)'; x.fill(); x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 1; x.stroke();     // rim
+      x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1; [[-22, 14], [-26, 20], [-30, 14], [-33, 20]].forEach(([yy, ln], i) => { x.beginPath(); x.moveTo(8, -24 - i * 9); x.lineTo(8 + ln * 0.5, -24 - i * 9); x.stroke(); });
+      x.fillStyle = 'rgba(255,255,255,.7)'; x.font = '600 8px Arial, Helvetica, sans-serif'; x.textAlign = 'center'; x.fillText('250 mL', 0, -13);
+    } },
+    petri: { w: 136, h: 62, labs: [8], draw(x, lv) {
+      const R = rng(11);
+      const dish = (cx, cy, rx, ry, kind) => {
+        x.save(); x.translate(cx, cy);
+        sh(x, 'rgba(0,0,0,.55)', 8, 2, 4, () => { ellipse(x, 0, 4, rx, ry); x.fillStyle = 'rgba(200,225,235,.3)'; x.fill(); });
+        ellipse(x, 0, 4, rx, ry); x.fillStyle = 'rgba(160,190,205,.35)'; x.fill();                                                      // wall
+        x.fillStyle = lin(x, -rx, 0, rx, 0, [[0, 'rgba(255,255,255,.3)'], [0.5, 'rgba(255,255,255,.05)'], [1, 'rgba(0,0,0,.25)']]); ellipse(x, 0, 4, rx, ry); x.fill();
+        ellipse(x, 0, 0, rx, ry); x.fillStyle = 'rgba(214,234,242,.34)'; x.fill(); x.lineWidth = 1.4; x.strokeStyle = 'rgba(235,246,252,.75)'; x.stroke();     // rim
+        const ax = rx * 0.9, ay = ry * 0.88; ellipse(x, 0, 1, ax, ay);
+        x.fillStyle = rad(x, -ax * 0.3, -ay * 0.4, 1, ax, [[0, '#ecc66a'], [0.7, '#d9a84a'], [1, '#b98530']]); x.fill();                         // agar
+        x.save(); ellipse(x, 0, 1, ax, ay); x.clip();
+        if (lv) {
+          const n = kind === 'lawn' ? 70 : kind === 'few' ? 22 : 46;
+          for (let i = 0; i < n; i++) { const a = R() * TAU, d = Math.sqrt(R()) * 0.86, px = Math.cos(a) * ax * d, py = 1 + Math.sin(a) * ay * d, cr = 1.3 + R() * 2;
+            if (kind === 'glow') { x.fillStyle = rad(x, px, py, 0, cr * 3.2, [[0, 'rgba(190,255,150,.9)'], [0.4, 'rgba(120,230,110,.45)'], [1, 'rgba(120,230,110,0)']]); x.beginPath(); x.arc(px, py, cr * 3.2, 0, TAU); x.fill(); }
+            x.fillStyle = kind === 'glow' ? '#d9ffb0' : '#fbf4de'; ellipse(x, px, py, cr, cr * 0.62); x.fill();
+            x.fillStyle = 'rgba(120,90,40,.35)'; ellipse(x, px + 0.4, py + cr * 0.3, cr * 0.9, cr * 0.35); x.fill(); }
+        } else { x.strokeStyle = 'rgba(120,90,40,.14)'; x.lineWidth = 1; x.beginPath(); x.moveTo(-ax * 0.5, 1); x.bezierCurveTo(-ax * 0.2, ay * 0.4, ax * 0.1, -ay * 0.4, ax * 0.5, 1); x.stroke(); }
+        x.restore();
+        x.fillStyle = 'rgba(255,255,255,.55)'; ellipse(x, -rx * 0.45, -ry * 0.55, rx * 0.22, ry * 0.12); x.fill();                           // glint on the lid-less rim
+        x.restore();
+      };
+      // a stack of closed lids behind
+      for (let i = 0; i < 3; i++) { x.save(); x.translate(8, -30 - i * 5); ellipse(x, 0, 0, 36, 10.5); x.fillStyle = 'rgba(200,225,238,.28)'; x.fill(); x.strokeStyle = 'rgba(235,246,252,.7)'; x.lineWidth = 1.2; x.stroke(); x.restore(); }
+      shadow(x, 150, 9);
+      dish(-34, -17, 46, 13.5, lv ? 'many' : 'none'); dish(36, -9, 42, 12.5, lv ? 'glow' : 'none');
+    } },
+    gel: { w: 132, h: 64, labs: [3, 9], draw(x, lv) {
+      const W = 132, H = 62;
+      shadow(x, 146, 9);
+      sh(x, 'rgba(0,0,0,.6)', 12, 4, 7, () => { rr(x, -W / 2, -H, W, H, 8); x.fillStyle = 'rgba(210,232,244,.3)'; x.fill(); });
+      rr(x, -W / 2, -H, W, H, 8); x.fillStyle = 'rgba(132,178,206,.34)'; x.fill();
+      x.fillStyle = lin(x, 0, -H, 0, 0, [[0, 'rgba(70,128,168,.3)'], [1, 'rgba(90,150,188,.2)']]); x.fillRect(-W / 2 + 5, -H + 5, W - 10, H - 10);
+      const gx = -W / 2 + 18, gw = W - 40, gy = -H + 10, gh = H - 20;
+      x.fillStyle = 'rgba(214,230,240,.82)'; x.fillRect(gx, gy, gw, gh);                                                                       // gel
+      x.fillStyle = lin(x, gx, 0, gx + gw, 0, [[0, 'rgba(255,255,255,.25)'], [0.1, 'rgba(255,255,255,0)'], [1, 'rgba(0,10,20,.16)']]); x.fillRect(gx, gy, gw, gh);
+      x.strokeStyle = 'rgba(245,250,253,.8)'; x.lineWidth = 1; x.strokeRect(gx + .5, gy + .5, gw - 1, gh - 1);
+      const lanes = 6, lw = gw / lanes;
+      for (let i = 0; i < lanes; i++) { const wx = gx + lw * (i + 0.5) - lw * 0.3; x.fillStyle = 'rgba(16,30,40,.6)'; x.fillRect(wx, gy + 3, lw * 0.6, 4); x.fillStyle = 'rgba(240,248,252,.6)'; x.fillRect(wx, gy + 6.5, lw * 0.6, 1); }
+      const pat = [[.18, .3, .45, .62], [.2, .5, .78], [.14, .26, .4, .55, .7], [.24, .66], [.3, .5, .82], [.12, .22, .36, .58, .74]];
+      const show = lv === 0 ? [] : lv === 1 ? [0, 2, 4] : [0, 1, 2, 3, 4, 5];
+      show.forEach(i => { pat[i].forEach((f, k) => { const by = gy + 12 + (gh - 18) * f, bw = lw * 0.58, a = (lv === 1 ? 0.55 : 0.88) * (1 - k * 0.04);
+        x.fillStyle = rad(x, 0, 0, 0.1, 1, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0)']]);
+        x.fillStyle = lin(x, 0, by - 2.4, 0, by + 2.4, [[0, 'rgba(26,48,140,0)'], [0.5, `rgba(26,48,140,${a})`], [1, 'rgba(26,48,140,0)']]); x.fillRect(gx + lw * (i + 0.5) - bw / 2, by - 2.4, bw, 4.8); }); });
+      x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 1; rr(x, -W / 2 + .5, -H + .5, W - 1, H - 1, 8); x.stroke();
+      x.strokeStyle = 'rgba(0,0,0,.35)'; x.beginPath(); x.moveTo(W / 2 - .5, -H + 8); x.lineTo(W / 2 - .5, -7); x.lineTo(-W / 2 + 8, -.5); x.stroke();
+      [[W / 2 - 10, -H + 14, '#1c1d20', '#5b5f66'], [W / 2 - 10, -H + 36, '#b3221c', '#ec5a50']].forEach(([jx, jy, c, hi]) => { sh(x, 'rgba(0,0,0,.6)', 3, 1, 1.5, () => { x.fillStyle = c; x.beginPath(); x.arc(jx, jy, 5.5, 0, TAU); x.fill(); }); x.fillStyle = rad(x, jx - 1.5, jy - 1.5, .5, 5.5, [[0, hi], [1, c]]); x.beginPath(); x.arc(jx, jy, 5.5, 0, TAU); x.fill(); x.fillStyle = '#0a0a0b'; x.beginPath(); x.arc(jx, jy, 1.8, 0, TAU); x.fill(); });
+      x.save(); rr(x, -W / 2, -H, W, H, 8); x.clip(); x.translate(-W / 2 + 14, -H); x.rotate(0.5); x.fillStyle = lin(x, 0, 0, 24, 0, [[0, 'rgba(255,255,255,0)'], [0.5, 'rgba(255,255,255,.1)'], [1, 'rgba(255,255,255,0)']]); x.fillRect(0, -H, 24, H * 3); x.restore();
+    } },
+    scope: { w: 96, h: 124, labs: [7, 11], draw(x, lv) {
+      shadow(x, 110, 9);
+      const metal = (x0, x1) => lin(x, x0, 0, x1, 0, [[0, '#5a6168'], [0.3, '#2b3036'], [1, '#14171a']]);
+      // lamp glow on the bench (level 1+)
+      if (lv) { x.fillStyle = rad(x, -4, -4, 2, 62, [[0, 'rgba(255,214,130,.5)'], [0.5, 'rgba(255,200,110,.16)'], [1, 'rgba(255,200,110,0)']]); ellipse(x, -4, -4, 62, 20); x.fill(); }
+      // base
+      sh(x, 'rgba(0,0,0,.55)', 8, 3, 4, () => { rr(x, -44, -16, 88, 16, 6); x.fillStyle = '#23282d'; x.fill(); });
+      rr(x, -44, -16, 88, 16, 6); x.fillStyle = metal(-44, 44); x.fill(); x.strokeStyle = 'rgba(255,255,255,.25)'; x.lineWidth = 1; x.stroke();
+      rr(x, -30, -22, 60, 8, 4); x.fillStyle = '#32383e'; x.fill();
+      // arm (C shape) and pillar
+      x.fillStyle = metal(-8, 26); x.beginPath(); x.moveTo(8, -20); x.bezierCurveTo(44, -22, 48, -76, 24, -104); x.lineTo(10, -98); x.bezierCurveTo(30, -76, 26, -40, 2, -36); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(255,255,255,.22)'; x.lineWidth = 1; x.beginPath(); x.moveTo(24, -102); x.bezierCurveTo(46, -76, 42, -26, 8, -22); x.stroke();
+      // stage + slide clip
+      sh(x, 'rgba(0,0,0,.5)', 5, 1, 3, () => { rr(x, -34, -48, 60, 6, 2); x.fillStyle = '#20252a'; x.fill(); });
+      rr(x, -34, -48, 60, 6, 2); x.fillStyle = lin(x, 0, -48, 0, -42, [[0, '#6b727a'], [1, '#2c3238']]); x.fill();
+      if (lv) { x.fillStyle = 'rgba(255,230,160,.6)'; ellipse(x, -6, -48, 12, 2.4); x.fill(); }
+      if (lv) { sh(x, 'rgba(0,0,0,.4)', 3, 1, 2, () => { rr(x, -22, -52, 32, 5, 1); x.fillStyle = 'rgba(230,242,250,.7)'; x.fill(); }); x.fillStyle = lin(x, -22, 0, 10, 0, [[0, 'rgba(214,92,150,.85)'], [1, 'rgba(160,60,128,.85)']]); rr(x, -14, -51, 16, 3, 1.5); x.fill(); x.fillStyle = 'rgba(255,255,255,.5)'; x.fillRect(-21, -52, 30, 0.8); }
+      else { rr(x, -22, -52, 32, 5, 1); x.fillStyle = 'rgba(214,230,240,.38)'; x.fill(); x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 0.8; x.stroke(); }
+      // objective turret + body tube + head + eyepiece
+      x.fillStyle = metal(-18, 8); rr(x, -18, -60, 26, 11, 3); x.fill();
+      [[-14, 7], [-6, 9], [2, 7]].forEach(([ox, ln]) => { x.fillStyle = '#b9bfc6'; rr(x, ox, -50, 5, ln, 1.5); x.fill(); x.fillStyle = 'rgba(255,255,255,.5)'; x.fillRect(ox + 1, -50, 1, ln); });
+      x.fillStyle = metal(-14, 12); rr(x, -12, -92, 20, 34, 4); x.fill();
+      x.save(); x.translate(-2, -92); x.rotate(0.35); x.fillStyle = metal(-9, 9); rr(x, -9, -26, 18, 28, 4); x.fill(); x.fillStyle = '#0c0e10'; rr(x, -6, -33, 12, 9, 2); x.fill(); x.fillStyle = '#cbd1d7'; x.fillRect(-6, -27, 12, 1.5);
+      if (lv > 1) { x.fillStyle = rad(x, 0, -34, 0, 9, [[0, 'rgba(255,240,190,.9)'], [1, 'rgba(255,240,190,0)']]); x.beginPath(); x.arc(0, -34, 9, 0, TAU); x.fill(); }
+      x.restore();
+      // focus knobs
+      [[-22, -34, 9], [-22, -34, 5]].forEach(([kx, ky, kr], i) => { x.fillStyle = rad(x, kx - 2, ky - 2, 1, kr, [[0, '#6a7178'], [1, i ? '#15181b' : '#262b30']]); x.beginPath(); x.arc(kx + 28, ky - 8, kr, 0, TAU); x.fill(); });
+      // illuminator
+      x.fillStyle = lv ? rad(x, -4, -20, 1, 12, [[0, '#fff4c8'], [1, '#e0a840']]) : '#555c63'; ellipse(x, -4, -20, 11, 2.6); x.fill();
+      if (lv > 1) { x.fillStyle = 'rgba(255,255,255,.1)'; x.beginPath(); x.moveTo(-14, -20); x.lineTo(-34, -48); x.lineTo(24, -48); x.lineTo(6, -20); x.fill(); }
+      x.fillStyle = lv ? '#7be08a' : '#2a3a2e'; x.beginPath(); x.arc(32, -9, 1.8, 0, TAU); x.fill();                                         // power LED
+    } },
+    balance: { w: 116, h: 88, labs: [2, 4], draw(x, lv) {
+      shadow(x, 128, 9);
+      sh(x, 'rgba(0,0,0,.55)', 10, 3, 5, () => { rr(x, -52, -34, 104, 34, 9); x.fillStyle = '#c9ced3'; x.fill(); });
+      rr(x, -52, -34, 104, 34, 9); x.fillStyle = lin(x, 0, -34, 0, 0, [[0, '#eef1f3'], [0.6, '#cdd2d7'], [1, '#9aa1a8']]); x.fill(); x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 1; x.stroke();
+      rr(x, -44, -28, 54, 20, 3); x.fillStyle = '#0d1512'; x.fill(); x.strokeStyle = '#6d757c'; x.stroke();
+      const txt = lv === 0 ? '0.00' : lv === 1 ? '12.47' : '37.80';
+      x.fillStyle = lv ? '#9fffb5' : '#4d7a58'; x.font = '700 15px Consolas, "Courier New", monospace'; x.textAlign = 'right'; x.textBaseline = 'middle'; x.fillText(txt, 0, -19); x.font = '600 8px Arial, Helvetica, sans-serif'; x.fillText('g', 8, -12); x.textBaseline = 'alphabetic';
+      [[22, 'rgba(60,70,78,.85)'], [34, 'rgba(60,70,78,.85)']].forEach(([bx, c]) => { x.fillStyle = c; x.beginPath(); x.arc(bx + 12, -17, 5, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.arc(bx + 11, -18.4, 2, 0, TAU); x.fill(); });
+      // pan on a post
+      x.fillStyle = '#7a8189'; x.fillRect(-2.5, -54, 5, 22);
+      sh(x, 'rgba(0,0,0,.5)', 5, 2, 4, () => { ellipse(x, 0, -56, 36, 8); x.fillStyle = '#aeb5bc'; x.fill(); });
+      ellipse(x, 0, -56, 36, 8); x.fillStyle = rad(x, -10, -58, 2, 38, [[0, '#f4f6f8'], [0.6, '#b9c0c7'], [1, '#7c848c']]); x.fill(); x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 1; x.stroke();
+      ellipse(x, 0, -56, 22, 4.4); x.strokeStyle = 'rgba(0,0,0,.14)'; x.stroke();
+      if (lv) {   // weigh boat with a pile of white powder
+        sh(x, 'rgba(0,0,0,.35)', 3, 1, 2, () => { x.beginPath(); x.moveTo(-17, -62); x.lineTo(17, -62); x.lineTo(12, -54); x.lineTo(-12, -54); x.closePath(); x.fillStyle = '#e9eef2'; x.fill(); });
+        x.fillStyle = '#fafcfd'; x.beginPath(); x.moveTo(-14, -61); x.quadraticCurveTo(-4, -77, 5, -75); x.quadraticCurveTo(14, -73, 14, -61); x.closePath(); x.fill();
+        x.fillStyle = 'rgba(150,160,170,.35)'; x.beginPath(); x.moveTo(2, -75); x.quadraticCurveTo(14, -73, 14, -61); x.lineTo(5, -61); x.closePath(); x.fill();
+      }
+      if (lv > 1) { sh(x, 'rgba(0,0,0,.35)', 3, 1, 2, () => { rr(x, 36, -14, 14, 12, 2); x.fillStyle = '#e8edf1'; x.fill(); }); x.fillStyle = 'rgba(120,200,255,.6)'; x.fillRect(38, -9, 10, 5); }
+    } },
+    rack: { w: 124, h: 100, labs: [6], draw(x, lv) {
+      shadow(x, 136, 9);
+      const cols = lv ? ['#f5b4c8', '#f08aa6', '#e46a82', '#e8935a', '#efc15a'] : ['rgba(180,220,238,.5)', 'rgba(180,220,238,.5)', 'rgba(180,220,238,.5)', 'rgba(180,220,238,.5)', 'rgba(180,220,238,.5)'];
+      const tubeX = [-44, -22, 0, 22, 44];
+      // back plate and legs
+      sh(x, 'rgba(0,0,0,.55)', 8, 3, 5, () => { rr(x, -62, -30, 124, 8, 2); x.fillStyle = '#2f7e8e'; x.fill(); });
+      x.fillStyle = '#25687a'; x.fillRect(-60, -22, 6, 22); x.fillRect(54, -22, 6, 22);
+      x.fillStyle = lin(x, -62, 0, 62, 0, [[0, '#4aa3b4'], [1, '#27707f']]); x.fillRect(-60, -22, 6, 22); x.fillRect(54, -22, 6, 22);
+      tubeX.forEach((tx, i) => {
+        const top = -96, bot = -8, w = 9;
+        x.save(); x.beginPath(); x.moveTo(tx - w, top); x.lineTo(tx - w, bot - 2); x.quadraticCurveTo(tx - w, bot + 8, tx, bot + 8); x.quadraticCurveTo(tx + w, bot + 8, tx + w, bot - 2); x.lineTo(tx + w, top); x.closePath();
+        sh(x, 'rgba(0,0,0,.4)', 4, 1, 2, () => { x.fillStyle = 'rgba(200,225,240,.22)'; x.fill(); });
+        x.clip();
+        const lvl = -62 - (lv ? i * 2 : 0);
+        x.fillStyle = lin(x, 0, lvl, 0, bot + 8, [[0, cols[i]], [1, lv ? cols[i] : 'rgba(150,200,225,.65)']]); x.fillRect(tx - w, lvl, w * 2, bot + 10 - lvl);
+        x.fillStyle = lin(x, tx - w, 0, tx + w, 0, [[0, 'rgba(255,255,255,.35)'], [0.35, 'rgba(255,255,255,0)'], [0.8, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.3)']]); x.fillRect(tx - w, top, w * 2, 110);
+        x.fillStyle = 'rgba(255,255,255,.4)'; ellipse(x, tx, lvl, w - 1, 1.6); x.fill();
+        x.restore();
+        x.beginPath(); x.moveTo(tx - w, top); x.lineTo(tx - w, bot - 2); x.quadraticCurveTo(tx - w, bot + 8, tx, bot + 8); x.quadraticCurveTo(tx + w, bot + 8, tx + w, bot - 2); x.lineTo(tx + w, top); x.strokeStyle = 'rgba(235,246,252,.65)'; x.lineWidth = 1.2; x.stroke();
+        x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(tx - w + 2.6, top + 6); x.lineTo(tx - w + 2.6, bot - 8); x.stroke();
+        x.fillStyle = 'rgba(235,246,252,.5)'; ellipse(x, tx, top, w, 1.8); x.fill();
+      });
+      // front rail over the tubes
+      sh(x, 'rgba(0,0,0,.5)', 6, 2, 4, () => { rr(x, -62, -28, 124, 7, 2); x.fillStyle = '#37929f'; x.fill(); });
+      rr(x, -62, -28, 124, 7, 2); x.fillStyle = lin(x, 0, -28, 0, -21, [[0, '#63bccb'], [1, '#2c7886']]); x.fill();
+    } },
+    vials: { w: 100, h: 104, labs: [1, 10, 12], draw(x, lv, done) {
+      const R = rng(23);
+      shadow(x, 116, 9);
+      sh(x, 'rgba(0,0,0,.5)', 6, 2, 4, () => { rr(x, -48, -12, 96, 12, 3); x.fillStyle = '#d4c39a'; x.fill(); });
+      rr(x, -48, -12, 96, 12, 3); x.fillStyle = lin(x, 0, -12, 0, 0, [[0, '#ecdcb0'], [1, '#b49f6e']]); x.fill();
+      [-30, 0, 30].forEach((vx, i) => {
+        const w = 13, top = -100, bot = -8, has = done[i];
+        sh(x, 'rgba(0,0,0,.4)', 4, 1, 3, () => { rr(x, vx - w, top, w * 2, bot - top, 7); x.fillStyle = 'rgba(200,225,240,.2)'; x.fill(); });
+        x.save(); rr(x, vx - w, top, w * 2, bot - top, 7); x.clip();
+        x.fillStyle = 'rgba(200,225,240,.18)'; x.fillRect(vx - w, top, w * 2, 100);
+        x.fillStyle = lin(x, 0, -30, 0, bot, [[0, '#efd9a0'], [1, '#c9a35e']]); x.fillRect(vx - w, -30, w * 2, 24);                      // food medium
+        x.fillStyle = 'rgba(255,255,255,.35)'; ellipse(x, vx, -30, w, 2); x.fill();
+        if (has) { for (let k = 0; k < 8; k++) { const fx = vx + (R() - 0.5) * (w * 1.4), fy = -36 - R() * 54, a = R() * TAU; x.save(); x.translate(fx, fy); x.rotate(a); x.fillStyle = '#2a2018'; ellipse(x, 0, 0, 2.4, 1.3); x.fill(); x.fillStyle = 'rgba(235,245,250,.7)'; ellipse(x, -0.6, -1, 2.2, 0.9); x.fill(); x.restore(); } }
+        x.fillStyle = lin(x, vx - w, 0, vx + w, 0, [[0, 'rgba(255,255,255,.34)'], [0.3, 'rgba(255,255,255,0)'], [0.8, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.28)']]); x.fillRect(vx - w, top, w * 2, 100);
+        x.restore();
+        rr(x, vx - w, top, w * 2, bot - top, 7); x.strokeStyle = 'rgba(235,246,252,.65)'; x.lineWidth = 1.2; x.stroke();
+        x.fillStyle = 'rgba(255,255,255,.55)'; x.fillRect(vx - w + 3, top + 14, 1.8, 46);
+        sh(x, 'rgba(0,0,0,.35)', 3, 1, 2, () => { rr(x, vx - w - 1, top - 10, w * 2 + 2, 20, 5); x.fillStyle = '#efe6cf'; x.fill(); });                  // cotton plug
+        rr(x, vx - w - 1, top - 10, w * 2 + 2, 20, 5); x.fillStyle = lin(x, vx - w, 0, vx + w, 0, [[0, '#fffaf0'], [1, '#d9ceb4']]); x.fill();
+        x.fillStyle = '#fbfbf6'; rr(x, vx - 8, -66, 16, 14, 1.5); x.fill(); x.fillStyle = 'rgba(40,60,90,.45)'; x.fillRect(vx - 5, -63, 10, 1.2); x.fillRect(vx - 5, -60, 7, 1.2);
+      });
+    } },
+  };
+  const ORDER = ['flask', 'petri', 'gel', 'scope', 'balance', 'rack', 'vials'];
+  const ID = { flask: 'flask', petri: 'petri', gel: 'gel', scope: 'scope', balance: 'balance', rack: 'rack', vials: 'vials' };
+  OBJ.petri.name = 'petri dishes'; OBJ.gel.name = 'gel box'; OBJ.scope.name = 'microscope'; OBJ.rack.name = 'test-tube rack'; OBJ.vials.name = 'fly vials'; OBJ.flask.name = 'Erlenmeyer flask'; OBJ.balance.name = 'balance';
+
+  function completedLabs() {
+    const out = [];
+    for (let i = 1; i <= 13; i++) { let p = null; try { p = Lab.progress.forLab('lab' + String(i).padStart(2, '0')); } catch (e) { p = null; } if (p && p.total && p.done >= p.total) out.push(i); }
+    return out;
+  }
+  const isDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t === 'dark' || (t !== 'light' && !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)); };
+
+  const state = { items: [], completed: [], w: 0, h: 0 };
+  function draw() {
+    const r = hero.getBoundingClientRect(), W = Math.max(280, Math.round(r.width)), H = Math.max(160, Math.round(r.height));
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const dark = isDark(), done = completedLabs(), pad = parseFloat(getComputedStyle(hero).paddingTop) || 170, backY = Math.max(110, pad - 38);
+    // wall + bench top
+    x.fillStyle = lin(x, 0, 0, 0, backY, [[0, dark ? '#0d1013' : '#161a1e'], [1, dark ? '#171c20' : '#232a30']]); x.fillRect(0, 0, W, backY);
+    x.fillStyle = x.createPattern(benchTile(), 'repeat'); x.fillRect(0, backY, W, H - backY);
+    x.fillStyle = dark ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.08)'; x.fillRect(0, backY, W, H - backY);
+    x.fillStyle = lin(x, 0, backY - 7, 0, backY + 6, [[0, 'rgba(0,0,0,.5)'], [0.5, 'rgba(120,130,140,.5)'], [1, 'rgba(0,0,0,0)']]); x.fillRect(0, backY - 7, W, 13);   // the back edge of the bench
+    // soft overhead light: a pool on the bench and a wash on the wall, from two fixtures
+    [[0.28, 0.9], [0.74, 1]].forEach(([fx, k]) => {
+      const cx = W * fx, cy = backY - 40;
+      x.fillStyle = rad(x, cx, cy, 8, Math.max(W * 0.46, 240), [[0, `rgba(255,248,226,${((dark ? 0.2 : 0.3) * k).toFixed(3)})`], [0.45, `rgba(255,248,226,${((dark ? 0.07 : 0.11) * k).toFixed(3)})`], [1, 'rgba(255,248,226,0)']]);
+      x.fillRect(0, 0, W, H);
+    });
+    x.fillStyle = rad(x, W / 2, backY, W * 0.3, Math.hypot(W, H) * 0.62, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.45)']]); x.fillRect(0, 0, W, H);       // vignette
+    // layout
+    const margin = Math.max(14, Math.min(40, W * 0.03)), usable = W - margin * 2;
+    const lvOf = k => OBJ[k].labs.filter(n => done.includes(n)).length;
+    const natural = ORDER.reduce((a, k) => a + OBJ[k].w, 0);
+    let list = ORDER.slice(), scale = Math.min(1.08, usable / (natural + 10 * (list.length - 1)));
+    const MINS = 0.64;
+    while (scale < MINS && list.length > 2) {   // narrow screens: drop the objects with the least progress first, keep the rest in their usual order
+      const drop = list.slice().sort((a, b) => lvOf(a) - lvOf(b) || ORDER.indexOf(b) - ORDER.indexOf(a))[0];
+      list = list.filter(k => k !== drop); scale = Math.min(1.08, usable / (list.reduce((a, k) => a + OBJ[k].w, 0) + 10 * (list.length - 1)));
+    }
+    const tw = list.reduce((a, k) => a + OBJ[k].w * scale, 0), gap = list.length > 1 ? Math.min(60, (usable - tw) / (list.length - 1)) : 0;
+    let px = (W - (tw + gap * (list.length - 1))) / 2;
+    state.items = []; state.completed = done; state.w = W; state.h = H;
+    list.forEach((k, i) => {
+      const o = OBJ[k], w = o.w * scale, cx = px + w / 2, by = backY + 14 + (i % 2) * 5 * scale;
+      x.save(); x.translate(cx, by); x.scale(scale, scale);
+      const lv = lvOf(k);
+      o.draw(x, lv, k === 'vials' ? [done.includes(1), done.includes(10), done.includes(12)] : null);
+      x.restore();
+      state.items.push({ id: ID[k], name: o.name, labs: o.labs, level: lv, x0: cx - w / 2 - 4, x1: cx + w / 2 + 4, y0: by - o.h * scale - 6, y1: by + 6 });
+      px += w + gap;
+    });
+    const nm = state.items.map(i => i.name).join(', '), n = done.length;
+    cv.setAttribute('aria-label', `A dark lab bench with ${nm}. ${n === 0 ? 'Finish a lab and its equipment changes.' : `${n} of 13 investigations complete: ${done.map(d => 'Lab ' + d).join(', ')}.`}`);
+    cv.dataset.completed = done.join(',');
+    const note = document.getElementById('bench-note');
+    if (note) note.textContent = n === 0 ? 'Finish a lab and its equipment on the bench changes.' : `${n} of 13 investigations complete. Your bench shows it.`;
+  }
+  let t = 0; const soon = () => { cancelAnimationFrame(t); t = requestAnimationFrame(draw); };
+  draw();
+  if ('ResizeObserver' in window) new ResizeObserver(soon).observe(hero); else window.addEventListener('resize', soon);
+  window.addEventListener('aplab:theme', soon);
+  window.addEventListener('storage', soon);
+  window.addEventListener('pageshow', soon);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(soon);
+  window.LabBench = { draw, items: () => state.items.slice(), completed: () => state.completed.slice(), canvas: cv };
+})();
 </script>
 </body>
 </html>
