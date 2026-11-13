@@ -1132,15 +1132,19 @@ function makeGel(rootSel, measSel, cfg) {
     st.frozen.V = st.frozen.V * 0.98 + v * 0.02; // separation reflects the voltage used over the run
     return st.dist > GEL_MM + 25 || st.t > 400;
   }
+  const WARN_MM = GEL_MM - 10;   // about 1 cm from the end of the gel
   const loop = Lab.loop(dt => {
-    const over = advance(dt);
+    const before = st.dist, over = advance(dt);
     updateRead(); draw();
     if (performance.now() - lastSave > 1500) saveState();
     if (over) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
+    if (!st.reversed && st.dist >= GEL_MM) { stop(`The dye front reached the end of the gel (${Lab.fmt(st.dist, 1)} mm), so the power was switched off for you. Any further running pushes the small fragments out into the buffer.`); Lab.toast('Power switched off: the dye reached the end of the gel.', { type: 'warn', key: P + '-end' }); return false; }
+    if (!st.reversed && before < WARN_MM && st.dist >= WARN_MM) { msg('warn', `Stop now: the dye front is about 1 cm (${Lab.fmt(st.dist, 1)} mm) from the end of the gel. Switch the power off before the small fragments run out.`); Lab.toast('Stop now: the dye is about 1 cm from the end of the gel.', { type: 'warn', key: P + '-warn' }); }
   }, { tick: 1 });
   function start() {
     if (!st.lanes.some(l => l.length)) { msg('bad', 'Load at least one sample before switching on the power.'); return; }
     if (st.stain) { msg('bad', 'This gel has been stained. Pour a new gel to run again.'); return; }
+    if (st.t > 0 && !st.reversed && st.dist >= GEL_MM) { msg('warn', 'The dye front is already at the end of the gel. Running longer would push the small fragments out, so the power stays off. Stain the gel, or pour a new one.'); return; }
     if (st.t === 0) { st.frozen = { pct: pct(), V: V() }; }
     const fresh = st.t === 0 && !Lab.reducedMotion();
     st.running = true; $('run').textContent = 'Power off: stop'; Lab.sound.play('buzz');
@@ -1324,7 +1328,7 @@ function gelGuidance(P, gel, first, last, doneText) {
   if (first) steps.push(...[].concat(first));
   steps.push(
     { id: 'load', text: 'Load the samples into wells', target: `#${P}-wells button`, done: () => loaded() > 0 || st.t > 0 || saved(), hint: 'Pick a tube, then press a well number.' },
-    { id: 'run', text: 'Run until the dye is ~1 cm from the end', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= 66) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout).' },
+    { id: 'run', text: 'Run until the dye is ~1 cm from the end', target: `#${P}-run`, done: () => (st.t > 0 && !st.running && st.dist >= 45 && st.dist <= GEL_MM + 2) || saved(), hint: 'Leads black to black, red to red, then <strong>Power on</strong>. Power off when the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout).' },
     { id: 'stain', text: 'Stain, then destain the gel', target: `#${P}-stain`, done: () => st.phase() === 'done' || saved(), hint: 'Press <strong>Stain</strong> and watch the blue soak in (about 30 s), then press <strong>Destain (water)</strong> (about 25 s). In a hurry? Use <strong>Skip ahead</strong>.' },
     { id: 'meas', text: 'Measure the bands', target: `#${P}-mall`, done: saved, hint: 'Press <strong>Measure all visible bands</strong> for each lane.' }
   );
