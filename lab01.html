@@ -397,6 +397,84 @@
   'use strict';
   const $ = Lab.$, S = Lab.stats, fmt = Lab.fmt;
   Lab.init({ id: 'lab01' });
+/* ---- Own-data prompts, AP free-response question and key results (page-local helpers; no existing keys touched) ---- */
+Lab.keyResult = Lab.keyResult || function (id, o) { Lab.store.set('keyres:' + id, Object.assign({}, o, { t: Date.now() })); };
+const Own = (function () {
+  const watchers = [];
+  const runAll = () => watchers.forEach(f => { try { f(); } catch (e) { /* ignore */ } });
+  document.addEventListener('input', () => setTimeout(runAll, 30), true);
+  document.addEventListener('click', () => setTimeout(runAll, 80), true);
+  setInterval(runAll, 1500);
+  const st = document.createElement('style');
+  st.textContent = '.own-q{display:block;margin:0 0 .35rem;padding:.4rem .6rem;border-left:3px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:4px;font-weight:600}.own-q.is-wait{border-left-color:var(--warn);background:var(--warn-soft)}.frq-rubric{margin-top:1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.frq-rubric label{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;font-weight:400}.frq-rubric input{margin-top:.3rem}.frq-score{font-weight:700}';
+  document.head.append(st);
+  const plain = h => String(h).replace(/<[^>]+>/g, '');
+  /* Record a key result only when its value changes (keeps the timestamp meaningful). */
+  function key(id, o) {
+    if (o.value == null || (typeof o.value === 'number' && !isFinite(o.value))) return;
+    const old = Lab.store.get('keyres:' + id);
+    if (old && old.value === o.value && old.label === o.label) return;
+    Lab.keyResult(id, o);
+  }
+  /* A saved prompt whose label quotes the student's own saved result.
+     o: {key, ask, rows, compute: () => html | null, need: 'Part name', href: 'part-slug'} */
+  function personal(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const w = Lab.prompt(container, { key: o.key, label: o.ask, rows: o.rows || 3 });
+    const label = w.querySelector('label'), ta = w.querySelector('textarea');
+    w.classList.add('own-prompt'); w.dataset.own = o.key;
+    let last = null;
+    const render = () => {
+      let q = null; try { q = o.compute(); } catch (e) { q = null; }
+      const sig = q || '';
+      if (sig === last) return; last = sig;
+      if (q) { label.innerHTML = '<span class="own-q">' + q + '</span> ' + o.ask; ta.dataset.label = plain(q + ' ' + o.ask); }
+      else { label.innerHTML = '<span class="own-q is-wait"><strong>Finish ' + o.need + ' first.</strong> <a href="#' + o.href + '">Show me</a></span>' + o.ask; ta.dataset.label = plain(o.ask); }
+    };
+    watchers.push(render); render();
+    Lab.onShow(w, () => { last = null; render(); });
+    return w;
+  }
+  /* AP-style free-response question with a hidden 4-point self-check rubric.
+     o: {title, intro (html), data: () => html|'' , parts: [[letter, label]...4], rubric: [4 html strings], part: 'Reflect'} */
+  function frq(container, o) {
+    container = typeof container === 'string' ? Lab.$(container) : container;
+    const root = Lab.h('div', { class: 'frq stack', id: 'frq' });
+    root.append(Lab.h('h3', null, o.title));
+    const intro = Lab.h('div', { class: 'callout callout--question' }, Lab.h('div', { class: 'callout-title' }, 'Free-response question'), Lab.h('div', { html: o.intro }));
+    const dataEl = Lab.h('p', { class: 'small' });
+    intro.append(dataEl);
+    root.append(intro);
+    const ps = Lab.h('div', { class: 'stack' }); root.append(ps);
+    o.parts.forEach(([l, label]) => Lab.prompt(ps, { key: 'frq-' + l, label: '(' + l + ') ' + label, rows: 4 }));
+    const status = Lab.h('p', { class: 'status small', 'aria-live': 'polite' });
+    const btn = Lab.h('button', { class: 'btn btn--primary', type: 'button', id: 'frq-save' }, 'Save my answer');
+    root.append(Lab.h('div', { class: 'row' }, btn), status);
+    const rub = Lab.h('div', { class: 'frq-rubric', id: 'frq-rubric', hidden: true });
+    rub.append(Lab.h('div', { class: 'callout-title' }, 'Self-check: 1 point for each box you can honestly tick'));
+    o.rubric.forEach((r, i) => rub.append(Lab.h('label', null, Lab.h('input', { type: 'checkbox', 'data-save': 'frq-r' + (i + 1), id: 'frq-r' + (i + 1) }), Lab.h('span', { html: r }))));
+    const score = Lab.h('p', { class: 'frq-score', id: 'frq-score' });
+    rub.append(score); root.append(rub);
+    container.append(root);
+    Lab.bindAutosave(rub);
+    const val = l => ((Lab.$('#p-frq-' + l) || {}).value || '').trim();
+    const sc = () => Lab.$$('input[type=checkbox]', rub).filter(c => c.checked).length;
+    const showScore = () => { score.textContent = 'Self-score: ' + sc() + ' of 4'; };
+    const reveal = () => { rub.hidden = false; showScore(); };
+    if (Lab.store.get('frq-saved')) reveal();
+    btn.addEventListener('click', () => {
+      if (!o.parts.every(([l]) => val(l).length >= 8)) { status.textContent = 'Answer all four parts (a to d) before you save.'; status.className = 'status small is-bad'; return; }
+      Lab.$$('textarea', ps).forEach(t => t.dispatchEvent(new Event('change')));
+      Lab.store.set('frq-saved', true); reveal();
+      status.textContent = 'Answer saved. Now score yourself with the rubric below.'; status.className = 'status small is-ok';
+    });
+    Lab.$$('input[type=checkbox]', rub).forEach(c => c.addEventListener('change', () => { showScore(); Lab.keyResult('frq-score', { label: 'FRQ self-score', value: sc(), unit: 'of 4', part: o.part || 'Reflect' }); }));
+    watchers.push(() => { try { dataEl.innerHTML = o.data ? o.data() : ''; } catch (e) { dataEl.innerHTML = ''; } });
+    runAll();
+    return root;
+  }
+  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+})();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
   const $ = Lab.$, ids = [];
@@ -1541,7 +1619,12 @@ const Predict = (function () {
     $('#tt-d').textContent = fmt(v('#tb-m') - v('#ta-m'), 2); $('#tt-t').textContent = fmt(w.t, 2); $('#tt-df').textContent = fmt(w.df, 1); $('#tt-c').textContent = fmt(w.crit, 2);
     if (!isFinite(w.t)) { clearOut(); status('#tt-status', 'The t statistic could not be calculated from these numbers. Check each entry.', 'bad'); }
     else status('#tt-status', w.sig ? `|t| = ${fmt(Math.abs(w.t), 2)} > ${fmt(w.crit, 2)}: the means are significantly different (p < 0.05).` : `|t| = ${fmt(Math.abs(w.t), 2)} ≤ ${fmt(w.crit, 2)}: the difference could be due to chance (not significant at p = 0.05).`, w.sig ? 'ok' : 'warn');
+    if (isFinite(w.t)) Own.key('welch-t', { label: 'Welch t (Population B vs A)', value: +fmt(w.t, 2), unit: '', part: 'Analyze' });
   }
+  /* Starting t-test numbers differ per student (seeded, realistic bounds), so copied entries will not match another student's. */
+  { const R = Lab.rng((Lab.identity.seed.seed ^ 0x7a11) >>> 0), U = (a, b) => a + R.uniform() * (b - a), put = (id, v) => { const el = $(id); if (el && !el.dataset.userset) el.value = v; };
+    put('#ta-m', U(10, 14).toFixed(1)); put('#ta-s', U(8, 10.5).toFixed(1)); put('#ta-n', R.int(140, 160));
+    put('#tb-m', U(18, 23).toFixed(1)); put('#tb-s', U(9, 11.5).toFixed(1)); put('#tb-n', R.int(140, 160)); }
   $('#tt-run').addEventListener('click', runT);
   ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n', '#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
   $('#tt-fill').addEventListener('click', () => {
@@ -1558,6 +1641,12 @@ const Predict = (function () {
     ['a-parents', 'Compare generation 2 with the parent subpopulation of generation 1 (the selected 10%). How do they compare, and how is this comparison different from comparing generation 2 with all of generation 1? Use the idea of heritability.'],
     ['a-control', 'What does the control line (offspring of unselected plants) tell you that the selected line alone cannot?']
   ].forEach(([key, label]) => Lab.prompt('#analysis', { key, label, rows: 3 }));
+  Own.personal('#analysis', { key: 'own-response', rows: 3, need: 'Generation 2', href: 'generation-2',
+    ask: 'Explain why your generation 2 mean did not reach the mean of the parents you chose. What does your h² say about the trait?',
+    compute: () => { if (!(selected && g2Scored() && g1Scored())) return null; const m1 = S.mean(scoredVals(g1)), pm = S.mean(selected.map(valOf)), m2 = S.mean(scoredVals(selLine[1])); return `Your parents averaged ${fmt(pm, 1)} hairs (Gen 1 mean ${fmt(m1, 1)}); your Gen 2 mean was ${fmt(m2, 1)}, so R = ${fmt(m2 - m1, 1)} of S = ${fmt(pm - m1, 1)} and realized h² = ${fmt((m2 - m1) / (pm - m1), 2)}.`; } });
+  Own.personal('#analysis', { key: 'own-extreme', rows: 3, need: 'Grow &amp; score', href: 'grow-and-score',
+    ask: 'Would you expect that plant\'s offspring to have just as many hairs? Explain using environment versus heredity.',
+    compute: () => { if (!g1Scored()) return null; const sc = g1.plants.filter(p => p.scored), top = sc.reduce((a, b) => valOf(b) > valOf(a) ? b : a), m = S.mean(sc.map(valOf)), sd = S.sd(sc.map(valOf)); return `Your most hairy generation 1 plant (plant ${top.id}) had ${valOf(top)} hairs, ${fmt((valOf(top) - m) / sd, 1)} SDs above the class mean of ${fmt(m, 1)}.`; } });
   const cer = $('#cer');
   [['C', 'cer-claim', 'Claim: Did evolution occur in your Fast Plant population?'], ['E', 'cer-evidence', 'Evidence: Which numbers and graphs support your claim?'], ['R', 'cer-reasoning', 'Reasoning: Explain the connection between variation, heritability, selection and the change you measured.']].forEach(([l, key, label]) => { const w = Lab.prompt(cer, { key, label, rows: 5 }); w.querySelector('label').dataset.letter = l; });
   Predict.cer(cer, { claim: 'The data show that evolution ___ (did / did not) occur in the population.', evidence: 'In the selected line, the mean was ___ hairs, compared with ___ hairs in the control (error bars ___).', reasoning: 'This happens because ___ (variation, heritability and selection) ___.' }, '<p><strong>Claim:</strong> The data show that ___ (the trait) ___ (increased / did not change) in the selected line.</p><p><strong>Evidence:</strong> In the selected line, the mean was ___ (units), compared with ___ (units) in the control line. The error bars (do / do not) overlap, so ___.</p><p><strong>Reasoning:</strong> This happens because ___ (variation, heritability, selection), so the offspring of the selected parents ___.</p>');
@@ -1570,6 +1659,13 @@ const Predict = (function () {
     ['r-model', 'The simulation treats trichome number as the sum of many genes plus random environmental noise. Name one way real Fast Plants could behave differently from the model.']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 4 }));
   Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-selection', 'Before selecting the parents you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one mean (with units) from your data. What does any mismatch tell you?', rows: 4 });
+
+  { const fh = Lab.h('div', { class: 'step-frq' }); $('#reflect-prompts').after(fh);
+  Own.frq(fh, { title: 'Free-response question: selection on trichome number', part: 'Reflect',
+    intro: '<p>A student selects the 10% of <em>Brassica rapa</em> plants with the most leaf hairs (trichomes) as parents, cross-pollinates them, and counts hairs on the offspring. A control line is bred from unselected plants.</p>',
+    data: () => g2Scored() && g1Scored() ? `Use your own numbers: generation 1 mean ${fmt(S.mean(scoredVals(g1)), 1)} hairs, selected parents ${fmt(S.mean(selected.map(valOf)), 1)}, generation 2 mean ${fmt(S.mean(scoredVals(selLine[1])), 1)}.` : 'Finish Generation 2 to see your own numbers here.',
+    parts: [['a', '<strong>Describe</strong> how the student should choose parents and what data to collect from generation 2.'], ['b', '<strong>Explain</strong> why the offspring mean is usually between the generation 1 mean and the parents\' mean.'], ['c', '<strong>Predict</strong> what happens to the generation 2 mean if the student selects only the top 1% instead of 10%, and what limits the response.'], ['d', '<strong>Justify</strong> why a control line and a statistical test (such as a t-test) are needed before claiming evolution occurred.']].map(([l, t]) => [l, t]),
+    rubric: ['(a) Parents are the plants with the most hairs, cross-pollinated, and hairs are counted on many offspring (and the control line).', '(b) Only the heritable part of the difference is passed on (h² &lt; 1); environment explains the rest, so regression toward the mean.', '(c) Predicts a bigger selection differential but a smaller, more variable group of parents, so a larger S but a response limited by h² and fewer parents (less variation, inbreeding).', '(d) A control shows what happens without selection; the t-test or 2 SE error bars show whether the difference is larger than chance.'] }); }
 
   /* ---------------- start ---------------- */
   reset(); const restored = replayOps(); refreshPopMenu(); drawAll(); updateScoring(); renderSelection(); renderCompare();
@@ -1620,6 +1716,13 @@ const Predict = (function () {
     { id: 'run', text: 'Run the experiment', target: '#d-run', done: () => dTable.getRows().length > 0, hint: 'Press <strong>Run experiment</strong>, then read the Graph and Data.' },
     { id: 'res', text: 'Describe your results (below)', target: '#p-d-results', done: () => filled('d-results') && filled('d-stats'), hint: 'Scroll down and describe your results and statistics.' }
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
+
+  Own.watch(() => {
+    if (!(selected && g1Scored() && g2Scored())) return;
+    const m1 = S.mean(scoredVals(g1)), pm = S.mean(selected.map(valOf)), m2 = S.mean(scoredVals(selLine[1]));
+    Own.key('gen2-mean', { label: 'Generation 2 mean', value: +fmt(m2, 1), unit: 'hairs', part: 'Generation 2' });
+    Own.key('realized-h2', { label: 'Realized heritability h²', value: +fmt((m2 - m1) / (pm - m1), 2), unit: '', part: 'Generation 2' });
+  });
 
   /* toasts for key moments (the status lines are already live regions, so these are not announced twice) */
   let seenSel = null, seenG2 = false, seenRounds = 1;
