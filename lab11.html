@@ -1473,7 +1473,7 @@ function frq(host, o) {
   const trTable = Lab.table('#tr-table', {
     save: 'tr-table',
     columns: [{ key: 'n', label: 'Plant' }, { key: 'methodTxt', label: 'Method' }, { key: 'spTxt', label: 'Species' }, { key: 'condTxt', label: 'Condition' }, { key: 'rate', label: 'Rate (slope)', unit: 'units depend on method', num: true, digits: 4 }, { key: 'unit', label: 'Unit' }, { key: 'area', label: 'Leaf area', unit: 'cm²', num: true, digits: 0 }, { key: 'rpaIn', label: 'Rate/area (you)', unit: 'units depend on method', num: true, editable: true }, { key: 'rpaUnit', label: 'Rate/area unit' }],
-    onChange: () => trSummary()
+    onChange: () => { trSummary(); trCheckNow(true); }
   });
   const trBar = Lab.chart('#tr-bar', { type: 'bar', xLabel: 'Condition', yLabel: 'Rate per area (scaled units)', height: 360, series: [] });
   const syncTr = () => { $('#tr-n-out').textContent = $('#tr-n').value; if (!trBusy) drawTrIdle(); };
@@ -1521,16 +1521,21 @@ function frq(host, o) {
     if (sv && sv.pts && sv.pts.length && METH[sv.method] && COND[sv.ck] && SPP[sv.sp]) { $('#tr-method').value = sv.method; $('#tr-species').value = sv.sp; $('#tr-cond').value = sv.ck; setTrLabels(sv.method); startTrAnim(sv.method, sv.sp, sv.ck, sv, Lab.reducedMotion() ? 1 : Math.min(1, Math.max(0, (Date.now() - sv.t0) / 4500))); } }
   { const sv = Lab.store.get('tr-check-msg'); if (sv && sv.t) { $('#tr-check-msg').textContent = sv.t; $('#tr-check-msg').className = sv.c; } }
   $('#tr-check').addEventListener('click', () => setTimeout(() => Lab.store.set('tr-check-msg', { t: $('#tr-check-msg').textContent, c: $('#tr-check-msg').className }), 0));
-  $('#tr-check').addEventListener('click', () => {
+  /* The check result is derived text: it is recomputed whenever the table changes (new plants, edited or cleared values), so it never says
+     "3 of 3 correct" about rows that have since changed or gone blank. `silent` = a recompute, not a button press. */
+  function trCheckNow(silent) {
     const rows = trTable.getRows(), out = $('#tr-check-msg');
+    if (silent) { if (!out.textContent) return; if (!rows.length) { out.textContent = ''; out.className = 'status'; Lab.store.set('tr-check-msg', { t: '', c: 'status' }); return; } }
     if (!rows.length) { out.textContent = 'Run some plants first.'; out.className = 'status bad'; return; }
     const filled = rows.filter(r => typeof r.rpaIn === 'number' && isFinite(r.rpaIn));
-    if (!filled.length) { out.textContent = 'Nothing to check yet: fill in the last column (rate \u00F7 leaf area) for at least one plant, then press Check.'; out.className = 'status bad'; Lab.toast('Not checked: fill in the rate \u00F7 leaf area column first', { type: 'warn', announce: false, key: 'trchk' }); return; }
+    if (!filled.length) { out.textContent = 'Nothing to check yet: fill in the last column (rate \u00F7 leaf area) for at least one plant, then press Check.'; out.className = 'status bad'; if (!silent) Lab.toast('Not checked: fill in the rate \u00F7 leaf area column first', { type: 'warn', announce: false, key: 'trchk' }); else Lab.store.set('tr-check-msg', { t: out.textContent, c: out.className }); return; }
     const ok = filled.filter(r => Math.abs(r.rpaIn - r.rpa) <= Math.max(0.02, Math.abs(r.rpa) * 0.03));
     const bad = filled.filter(r => !ok.includes(r)).map(r => r.n);
     out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} still blank (not checked)` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: rate ÷ leaf area, then shift the decimal to match the unit.` : '.');
     out.className = 'status ' + (ok.length === rows.length ? 'ok' : 'bad');
-  });
+    if (silent) Lab.store.set('tr-check-msg', { t: out.textContent, c: out.className });
+  }
+  $('#tr-check').addEventListener('click', () => trCheckNow(false));
   /* Column units that depend on the measuring method: show the unit the rows actually use. */
   function unitHeads(sel, map, rows) {
     const ths = document.querySelectorAll(sel + ' thead th');
