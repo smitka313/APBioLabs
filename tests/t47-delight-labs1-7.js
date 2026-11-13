@@ -69,6 +69,20 @@ const LABS = {
     await timelapse(p, 'designrun', '#d-timelapse');
     return p;
   },
+  async lab01(b) {
+    const c = await ctx(b), p = await T.open(c, 'lab01.html', 'grow-and-score');
+    await fillPred(p, 'predict-selection', 'I predict the generation 2 mean will be higher than generation 1 because I pick plants with the most hairs.');
+    await fillPred(p, 'predict-design', 'I predict the selected line will increase while the control line will stay the same.');
+    await p.click('#autocount');
+    await show(p, 'select-and-pollinate');
+    await p.click('#select-btn'); await p.waitForTimeout(300);
+    await p.click('#pollinate');
+    await timelapse(p, 'pollination', '#bee-timelapse');
+    await p.click('#grow'); await show(p, 'generation-2');
+    await p.click('#score2'); await show(p, 'design');
+    await p.click('#d-run'); await p.waitForTimeout(800);
+    return p;
+  },
 };
 
 (async () => {

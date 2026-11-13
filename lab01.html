@@ -240,6 +240,7 @@
             <div class="readout"><span class="k">Parents' SD (hairs)</span><span class="v" id="s-sd">—</span></div>
             <div class="readout"><span class="k">Flowers pollinated (flowers)</span><span class="v" id="s-flowers">0</span></div>
           </div>
+          <div id="bee-timelapse" class="tl-mount"></div>
           <div id="hist-sel"></div>
         </div>
       </div>
@@ -496,23 +497,26 @@ const Predict = (function () {
     ids.push(upd); upd(); det.open = !has(o.key);
     return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
   }
-  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  /* Predict-vs-actual cards (Lab.predictCompare), one per saved prediction.
+     items: [[key, 'where it was made', {title, chartEl, getResult, summarize, delta, part, partId}], ...]. The saved key of the compare prompt is unchanged. */
   function compare(container, o) {
     container = typeof container === 'string' ? $(container) : container;
-    const list = Lab.h('div', { class: 'predict-list' });
-    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
-    container.append(box);
-    const render = () => {
-      list.textContent = '';
-      o.items.forEach(([k, where]) => {
-        const v = val(k);
-        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
-        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
-      });
-    };
-    ids.push(render); render();
-    Lab.onShow(box, render);
+    const wrap = Lab.h('div', { class: 'predict-cards' });
+    container.append(wrap);
+    o.items.forEach(([k, where, cfg]) => Lab.predictCompare(wrap, Object.assign({ predictKey: k }, cfg || {})));
     return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* Direction a prediction claims (+1 up, -1 down, 0 unclear) and a sentence saying whether the actual change agrees. */
+  const dirOf = t => { t = String(t || '').toLowerCase(); const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
+  const verdict = (pred, actual) => { const p = dirOf(pred); return !p || !actual ? '' : p === actual ? ' That matches the direction you predicted.' : ' That is the opposite of the direction you predicted.'; };
+  /* "Y rose from a (at x1) to b (at x2)" for the first series of a chart's options. */
+  function seriesTrend(opts, what, unit, digits) {
+    const s = opts && opts.series && opts.series[0], pts = s && s.points && s.points.filter(p => p && isFinite(p.y));
+    if (!pts || pts.length < 2) return null;
+    if (pts.every(p => typeof p.x === 'number')) pts.sort((a, b) => a.x - b.x);   // levels read from low to high
+    const nx = x => typeof x === 'number' ? Lab.fmt(+x.toPrecision(3), 2).replace(/\.?0+$/, '') : x;
+    const f = pts[0], l = pts[pts.length - 1], d = digits == null ? 2 : digits, u = unit ? ' ' + unit : '', dir = l.y > f.y ? 1 : l.y < f.y ? -1 : 0;
+    return { dir, text: `${what} ${dir > 0 ? 'rose' : dir < 0 ? 'fell' : 'stayed the same'} from ${Lab.fmt(f.y, d)}${u} (at ${nx(f.x)}) to ${Lab.fmt(l.y, d)}${u} (at ${nx(l.x)}).` };
   }
   /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
   function cer(cerEl, starters, hintHtml) {
@@ -521,7 +525,7 @@ const Predict = (function () {
     const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
     cerEl.parentNode.insertBefore(d, cerEl);
   }
-  return { add, compare, cer, has, val };
+  return { add, compare, cer, has, val, dirOf, verdict, seriesTrend };
 })();
 
   /* ---------------- Pre-lab ---------------- */
@@ -1176,6 +1180,7 @@ const Predict = (function () {
   const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
   $('#record').addEventListener('click', () => {
     if (!cur) return;
+    Lab.sound.play('click');
     const mine = marks.size, ref = cur.ph.trich;
     handTable.addRow({ plant: plantLabel(cur), mine, ref, diff: mine - ref });
     commit(['hand', view.key, view.plants.indexOf(cur), mine]);
@@ -1188,6 +1193,7 @@ const Predict = (function () {
   $('#next-plant').addEventListener('click', () => { const i = view.plants.indexOf(cur); const n = view.plants.length; for (let k = 1; k <= n; k++) { const p = view.plants[(i + k) % n]; if (!p.scored) { cur = p; break; } } marks = new Set(); drawAll(); });
   function autoScore(pop) { pop.plants.forEach(p => { if (!p.scored) { p.scored = true; } }); }
   $('#autocount').addEventListener('click', () => {
+    Lab.sound.play('beep');
     const handN = view.plants.filter(p => p.hand != null).length;
     commit(['auto', view.key]); drawAll(); updateScoring(); renderCompare();
     status('#score-status', handN < 5 ? `All ${view.plants.length} plants scored. Tip: hand-count at least 5 plants first so you know how reliable counting is.` : `All ${view.plants.length} plants scored (${handN} by you).`, handN < 5 ? 'warn' : 'ok');
@@ -1219,6 +1225,9 @@ const Predict = (function () {
   /* bee stick canvas */
   const bee = Lab.canvas('#bee', window.innerWidth < 600 ? 0.7 : 0.42, { fit: true });
   let beeState = null; const beeLoop = Lab.loop(dt => stepBee(dt));
+  /* Timelapse of the pollination run (live runs only; the saved, finished pollination is not re-recorded after a reload). */
+  const beeRec = Lab.timelapse(bee, { fps: 4, width: 420, label: 'Pollination', key: 'pollination' });
+  beeRec.mount('#bee-timelapse');
   /* Side view of the isolated light box: shelves of wick-watered bottles under fluorescent tubes. Each plant is
      in flower (small four-petal yellow flowers on a raceme). Layout (also used for the bee's flight path):
      each shelf row is a band with a light bank at its top and the bottles standing on a shelf at its bottom. */
@@ -1378,7 +1387,7 @@ const Predict = (function () {
     const L = beeLayout(), seq = beeState.seq;
     beeState.t += dt * (Lab.reducedMotion() ? 1e5 : seq.length / 5); // whole 3-day sequence plays in about 5 s
     while (beeState.t >= 1 && beeState.k < seq.length) { beeState.t -= 1; const s = seq[beeState.k]; beeState.visited.add(s.i * 3 + s.f); beeState.k++; beeState.day = Math.floor(beeState.k / (selected.length * 3)); }
-    if (beeState.k >= seq.length) { beeState = null; pollinated = true; ops.push(['poll']); persistOps(); Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
+    if (beeState.k >= seq.length) { beeState = null; pollinated = true; beeRec.stop(); ops.push(['poll']); persistOps(); Lab.toast('Pollination finished: seed pods are forming', { type: 'ok', announce: false }); $('#s-flowers').textContent = selected.length * 3 * 3 + ' visits'; status('#sel-status', 'Pollination finished (3 days, one bee stick). Seed pods are forming. Limit each plant to 8–10 pods, then dry the plants and harvest.', 'ok'); drawBee(); return false; }
     const a = seq[Math.max(0, beeState.k - 1)], b = seq[beeState.k];
     const fa = L[a.i].fl[a.f], fb = L[b.i].fl[b.f];
     beeState.pos = { x: fa.x + (fb.x - fa.x) * beeState.t, y: fa.y - 6 + (fb.y - fa.y) * beeState.t - Math.sin(beeState.t * Math.PI) * 10 };
@@ -1390,6 +1399,8 @@ const Predict = (function () {
     if (beeState) return;
     const seq = pollSeq();
     beeState = { seq, k: 0, t: 0, day: 0, visited: new Set(), pos: { x: 0, y: 0 } };
+    Lab.sound.play('click');
+    if (!Lab.reducedMotion()) (beeRec.recording ? beeRec.stop() : Promise.resolve()).then(() => beeRec.start());
     status('#sel-status', 'Brushing pollen from flower to flower…', '');
     beeLoop.start();
   });
@@ -1451,6 +1462,7 @@ const Predict = (function () {
     linesChart.update({ series: [{ name: 'Selected line', points: ser(selLine) }, { name: 'Control line', points: ser(ctrlLine), dash: true }], xMin: 1 });
   }
   $('#score2').addEventListener('click', () => {
+    Lab.sound.play('beep');
     if (selLine.length < 2) { status('#g2-status', 'There is no generation 2 yet. Select, pollinate and plant in the step above.', 'bad'); return; }
     commit(['score2']); drawAll(); updateScoring(); renderCompare();
     const w = welchArr(scoredVals(g1), scoredVals(selLine[1]));
@@ -1602,6 +1614,7 @@ const Predict = (function () {
     return { statsOf };
   }
   $('#d-run').addEventListener('click', () => {
+    Lab.sound.play('click');
     const P = dParams(), T = TRAITS[P.k], seedN = Math.floor(Math.random() * 1e9);
     const R = simulateDesign(P, seedN), env = R.env;
     runNo++;
@@ -1699,7 +1712,16 @@ const Predict = (function () {
     ['r-natural', 'How is this artificial selection experiment similar to natural selection that causes antibiotic or pesticide resistance? How is it different?'],
     ['r-model', 'The simulation treats trichome number as the sum of many genes plus random environmental noise. Name one way real Fast Plants could behave differently from the model.']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 4 }));
-  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-selection', 'Before selecting the parents you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one mean (with units) from your data. What does any mismatch tell you?', rows: 4 });
+  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [
+    ['predict-selection', 'Before selecting the parents you predicted:', {
+      title: 'Selection: your prediction vs. what happened', chartEl: '#cmp-means', part: 'Generation 2', partId: 'generation-2',
+      getResult: () => { const g2 = selLine[1], c2 = ctrlLine[1]; return g2 && fullyScored(g1) && fullyScored(g2) ? { m1: S.mean(scoredVals(g1)), m2: S.mean(scoredVals(g2)), mc: c2 && fullyScored(c2) ? S.mean(scoredVals(c2)) : null } : null; },
+      summarize: r => `Generation 1 averaged ${fmt(r.m1, 1)} hairs and generation 2 averaged ${fmt(r.m2, 1)} hairs` + (r.mc != null ? `; the unselected control averaged ${fmt(r.mc, 1)} hairs.` : '.'),
+      delta: (r, pred) => { const d = r.m2 > r.m1 ? 1 : r.m2 < r.m1 ? -1 : 0; return `Generation 2 had ${fmt(Math.abs(r.m2 - r.m1), 1)} hairs ${d > 0 ? 'more' : d < 0 ? 'fewer' : '(no difference)'} than generation 1 on average.` + Predict.verdict(pred, d); } }],
+    ['predict-design', 'Before your design you predicted:', {
+      title: 'Your design: your prediction vs. what happened', chartEl: '#d-chart', part: 'Design', partId: 'design',
+      summarize: o => { const sv = Lab.store.get('dlast'), T = sv && sv.P && TRAITS[sv.P.k], u = T ? T.unit : '', t = Predict.seriesTrend(o, 'The selected line\'s mean', u, 1), c = Predict.seriesTrend({ series: [o.series.filter(x => x.dash)[0]] }, 'The control line\'s mean', u, 1); return t ? t.text + (c ? ' ' + c.text : '') : 'Your design results are in the Design part.'; },
+      delta: (o, pred) => { const t = Predict.seriesTrend(o, 'The selected line', '', 1); return t ? `The selected line ${t.dir > 0 ? 'rose' : t.dir < 0 ? 'fell' : 'did not change'} across the generations.` + Predict.verdict(pred, t.dir) : null; } }]], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one mean (with units) from your data. What does any mismatch tell you?', rows: 4 });
 
   { const fh = Lab.h('div', { class: 'step-frq' }); $('#reflect-prompts').after(fh);
   Own.frq(fh, { title: 'Free-response question: selection on trichome number', part: 'Reflect',
@@ -1722,17 +1744,10 @@ const Predict = (function () {
   let dTouched = false;
   ['#d-trait', '#d-pct', '#d-n', '#d-gens', '#d-reps', '#d-env', '#d-herb'].forEach(s => { $(s).addEventListener('input', () => { dTouched = true; }); $(s).addEventListener('change', () => { dTouched = true; }); });
   $('#d-dir').addEventListener('click', () => { dTouched = true; });
-  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
-     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
-  function showData(sim, o) {
-    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
-    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
-    return r;
-  }
-  showData('#gs-sim', { graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
+  Lab.results('#gs-sim', { start: 'data', graph: [{ el: '#hist1', title: 'Generation 1 histogram' }], data: [{ el: '#hand-table', title: 'Your hand counts' }] });
   Lab.results('#sel-sim', { graph: [{ el: '#hist-sel', title: 'Parents vs generation 1' }], data: [] });
-  showData('#g2-sim', { graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
-  showData('#d-sim', { graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
+  Lab.results('#g2-sim', { start: 'data', graph: [{ el: '#cmp-means', title: 'Means ± 2 SE' }, { el: '#lines', title: 'Mean by generation' }], data: [{ el: '#gen-table', title: 'All populations' }] });
+  Lab.results('#d-sim', { start: 'data', graph: [{ el: '#d-chart', title: 'Mean ± 2 SE by generation' }, { el: '#d-hist', title: 'Final distributions' }], data: [{ el: '#d-table', title: 'Results of every run' }] });
 
   Lab.steps('#gs-steps', [
     { id: 'hand', text: 'Hand-count 5 plants', target: '#record', done: () => handTable.getRows().length >= 5, hint: 'Tap a seedling, tap each hair on the <em>right</em> margin, then press <strong>Record my count</strong>.' },
