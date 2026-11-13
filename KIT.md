@@ -70,6 +70,17 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Key results.** `Lab.keyResult(id, {label, value, unit, part})` stores `keyres:<id>` = `{label, value, unit, part, t}`;
   `Lab.keyResults()` lists them. Call it whenever a headline number is computed (FRQ self-score: id `frq-score`, unit `of 4`).
   They appear in the report (Key results table), the progress file and the teacher dashboard.
+- **Printing is always light, with real pictures.** `@media print` in style.css redefines every token to its light value (beating the
+  dark-mode rules) and sets break rules (headings keep with what follows; figures, tables, prompts, readouts never split). On
+  `beforeprint`, `Lab.print.prepare()` shows every part, switches to light tokens, redraws every `Lab.canvas`, chart and `Scope.view`,
+  runs pending `ResizeObserver` callbacks and `requestAnimationFrame` frames at once (lab.js wraps both, so a page that redraws from
+  its own observer still prints a drawn canvas), and puts a static `<img class="print-snap">` (`canvas.toDataURL`) next to each visible canvas;
+  `afterprint` (`Lab.print.restore()`) undoes it. The worksheet does the same from dark mode. A canvas that cannot be read is left alone.
+  Page code: draw from `Lab.color()` at draw time, never cache colors. `tests/t36-print.js` rasterizes the PDFs of all 13 labs.
+- **Not by color alone.** Series colors (`--s1`..`--s6`) were chosen to stay apart under deuteranopia and protanopia (`tests/t37-colorblind.js`).
+  `Lab.chart` adds a marker shape and a dash pattern per series (several series) and a fill pattern for grouped bars 2-4, and draws
+  the same swatch in the legend. `.feedback.ok/.bad`, `.pill.ok/.warn/.bad` and quiz choices marked right or wrong carry a check, cross or "!".
+  On a lab page, never separate two states by hue only: add a label, number, shape or brightness difference.
 - **End-of-period nudge.** If `Lab.backup.state().unsaved` (3+ answers or a recorded row, no progress file or transfer code since)
   and the lab tab has been open 40+ minutes (`Lab.nudge.after`), a gentle dismissible bar (`.backup-bar.nudge-bar`) says "Period
   ending soon? Download your report or get a transfer code." with **Download .docx** and **Transfer code** (opens the pause card with the

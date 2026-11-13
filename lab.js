@@ -131,6 +131,16 @@
     PatchedRO.__aplab = true;
     window.ResizeObserver = PatchedRO;
   }
+  /* The same for requestAnimationFrame: a view that redraws "next frame" (the microscope views) would still be blank when the print
+     dialog opens, so pending frame callbacks can be run at once. */
+  const RAF_PENDING = new Map(), nativeRaf = window.requestAnimationFrame.bind(window), nativeCaf = window.cancelAnimationFrame.bind(window);
+  window.requestAnimationFrame = cb => { const id = nativeRaf(t => { RAF_PENDING.delete(id); cb(t); }); RAF_PENDING.set(id, cb); return id; };
+  window.cancelAnimationFrame = id => { RAF_PENDING.delete(id); nativeCaf(id); };
+  function flushFrames() {
+    for (let pass = 0; pass < 3 && RAF_PENDING.size; pass++) {
+      Array.from(RAF_PENDING.entries()).forEach(([id, cb]) => { RAF_PENDING.delete(id); nativeCaf(id); try { cb(performance.now()); } catch (e) { /* a page frame callback failed: ignore */ } });
+    }
+  }
   function flushResize() {
     RO_ALL.forEach(ro => {
       const ents = Array.from(ro._aplab.els).filter(e => e.isConnected).map(e => { const w = e.clientWidth, hh = e.clientHeight; return { target: e, contentRect: { x: 0, y: 0, top: 0, left: 0, width: w, height: hh, right: w, bottom: hh }, borderBoxSize: [{ inlineSize: w, blockSize: hh }], contentBoxSize: [{ inlineSize: w, blockSize: hh }] }; });
@@ -1135,7 +1145,7 @@
      A canvas that cannot be read (a tainted canvas) is left as it is. */
   const PRINT = { snaps: [], restoreTheme: null, on: false };
   function redrawEverything() {
-    try { CANVASES.forEach(c => c.check()); themeRedraw(); flushResize(); } catch (e) { /* ignore */ }
+    try { CANVASES.forEach(c => c.check()); themeRedraw(); flushResize(); flushFrames(); } catch (e) { /* ignore */ }
   }
   function printPrepare() {
     if (PRINT.on) return PRINT.snaps.length;
