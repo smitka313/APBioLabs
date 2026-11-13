@@ -83,6 +83,22 @@ const LABS = {
     await p.click('#d-run'); await p.waitForTimeout(800);
     return p;
   },
+  async lab02(b) {
+    const c = await ctx(b), p = await T.open(c, 'lab02.html', 'card-model');
+    await fillPred(p, 'predict-card', 'I predict p will change and drift down in a small class because of chance.');
+    await fillPred(p, 'predict-spreadsheet', 'I predict new p will be farther from the start with 16 zygotes than with 1000.');
+    await fillPred(p, 'predict-drift', 'I predict small populations will vary and drift apart and large populations will stay the same.');
+    await fillPred(p, 'predict-design', 'I predict the final p will vary less as N increases.');
+    await p.click('#card-run5'); await p.waitForTimeout(300);
+    await show(p, 'build-the-model');
+    for (const n of [16, 16, 1000, 1000]) { await setv(p, '#ss-n', n); await p.click('#ss-recalc'); await p.click('#ss-record'); }
+    await show(p, 'many-generations');
+    await p.click('#mg-run');
+    await timelapse(p, 'genepool', '#mg-timelapse');
+    await show(p, 'design');
+    await p.click('#dz-run'); await p.waitForTimeout(1200);
+    return p;
+  },
 };
 
 (async () => {

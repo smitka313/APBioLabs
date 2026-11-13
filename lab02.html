@@ -359,6 +359,7 @@
           </div>
         </div>
       </div>
+      <div id="mg-timelapse" class="tl-mount"></div>
       <div id="mg-table"></div>
       <div id="mg-runs"></div>
       <div id="mg-prompts" class="prompts-2"></div>
@@ -554,23 +555,26 @@ const Predict = (function () {
     ids.push(upd); upd(); det.open = !has(o.key);
     return { has: () => has(o.key), reason: () => has(o.key) ? '' : 'Write your prediction first', key: o.key };
   }
-  /* Reflect prompt that quotes the student's own predictions. items: [[key, 'where it was made'], ...] */
+  /* Predict-vs-actual cards (Lab.predictCompare), one per saved prediction.
+     items: [[key, 'where it was made', {title, chartEl, getResult, summarize, delta, part, partId}], ...]. The saved key of the compare prompt is unchanged. */
   function compare(container, o) {
     container = typeof container === 'string' ? $(container) : container;
-    const list = Lab.h('div', { class: 'predict-list' });
-    const box = Lab.h('div', { class: 'callout callout--tip predict-quote' }, Lab.h('div', { class: 'callout-title' }, 'Your own predictions'), list);
-    container.append(box);
-    const render = () => {
-      list.textContent = '';
-      o.items.forEach(([k, where]) => {
-        const v = val(k);
-        list.append(Lab.h('p', { class: 'small muted predict-where' }, where));
-        list.append(v ? Lab.h('blockquote', { class: 'predict-q' }, '“' + v + '”') : Lab.h('p', { class: 'small predict-none' }, 'You did not write a prediction here. Next time, predict first.'));
-      });
-    };
-    ids.push(render); render();
-    Lab.onShow(box, render);
+    const wrap = Lab.h('div', { class: 'predict-cards' });
+    container.append(wrap);
+    o.items.forEach(([k, where, cfg]) => Lab.predictCompare(wrap, Object.assign({ predictKey: k }, cfg || {})));
     return Lab.prompt(container, { key: o.key, label: o.label, rows: o.rows || 4 });
+  }
+  /* Direction a prediction claims (+1 up, -1 down, 0 unclear) and a sentence saying whether the actual change agrees. */
+  const dirOf = t => { t = String(t || '').toLowerCase(); const up = /\b(increas\w*|higher|more|faster|rise\w*|rose|greater|larger|grow\w*|gain\w*|up)\b/.test(t), dn = /\b(decreas\w*|lower|less|slower|fall\w*|drop\w*|smaller|reduc\w*|lose\w*|shrink\w*|down)\b/.test(t); return up && !dn ? 1 : dn && !up ? -1 : 0; };
+  const verdict = (pred, actual) => { const p = dirOf(pred); return !p || !actual ? '' : p === actual ? ' That matches the direction you predicted.' : ' That is the opposite of the direction you predicted.'; };
+  /* "Y rose from a (at x1) to b (at x2)" for the first series of a chart's options. */
+  function seriesTrend(opts, what, unit, digits) {
+    const s = opts && opts.series && opts.series[0], pts = s && s.points && s.points.filter(p => p && isFinite(p.y));
+    if (!pts || pts.length < 2) return null;
+    if (pts.every(p => typeof p.x === 'number')) pts.sort((a, b) => a.x - b.x);   // levels read from low to high
+    const nx = x => typeof x === 'number' ? Lab.fmt(+x.toPrecision(3), 2).replace(/\.?0+$/, '') : x;
+    const f = pts[0], l = pts[pts.length - 1], d = digits == null ? 2 : digits, u = unit ? ' ' + unit : '', dir = l.y > f.y ? 1 : l.y < f.y ? -1 : 0;
+    return { dir, text: `${what} ${dir > 0 ? 'rose' : dir < 0 ? 'fell' : 'stayed the same'} from ${Lab.fmt(f.y, d)}${u} (at ${nx(f.x)}) to ${Lab.fmt(l.y, d)}${u} (at ${nx(l.x)}).` };
   }
   /* CER sentence starters: placeholders on the three prompts + a "Need a hint?" disclosure with the full starter. */
   function cer(cerEl, starters, hintHtml) {
@@ -579,7 +583,7 @@ const Predict = (function () {
     const d = Lab.h('details', { class: 'disclose disclose--sm cer-hint' }, Lab.h('summary', null, 'Need a hint?'), Lab.h('div', { class: 'inner', html: hintHtml }));
     cerEl.parentNode.insertBefore(d, cerEl);
   }
-  return { add, compare, cer, has, val };
+  return { add, compare, cer, has, val, dirOf, verdict, seriesTrend };
 })();
   const status = (id, msg, cls) => { const el = $(id); el.textContent = msg; el.className = 'status ' + (cls || ''); };
   /* ---- number-field validation: plain-language message under the field, aria-invalid, never a silent clamp ----
@@ -802,7 +806,7 @@ const Predict = (function () {
   $('#card-n-out').textContent = cardN.value + ' students';
   $('#card-case').addEventListener('change', cardReset);
   $('#card-reset').addEventListener('click', cardReset);
-  $('#card-step').addEventListener('click', () => { if (cardGen >= 30) { status('#card-status', 'Thirty generations is enough. Reset the class to start again.', 'warn'); return; } cardGeneration(); renderCards(); status('#card-status', `Generation ${cardGen}: p = ${fmt(countG(cardPop).p, 3)}.`, ''); });
+  $('#card-step').addEventListener('click', () => { Lab.sound.play('click'); if (cardGen >= 30) { status('#card-status', 'Thirty generations is enough. Reset the class to start again.', 'warn'); return; } cardGeneration(); renderCards(); status('#card-status', `Generation ${cardGen}: p = ${fmt(countG(cardPop).p, 3)}.`, ''); });
   $('#card-run5').addEventListener('click', () => { for (let i = 0; i < 5 && cardGen < 30; i++) cardGeneration(); renderCards(); status('#card-status', `Generation ${cardGen}: p = ${fmt(countG(cardPop).p, 3)}.`, ''); });
   cardCanvas.onresize = renderCards;
   // start without adding duplicate rows when the saved table already has data
@@ -891,7 +895,7 @@ const Predict = (function () {
     const c = e.target.closest('td[data-ref]'); if (!c) return;
     selectCell(c);
   });
-  $('#ss-recalc').addEventListener('click', () => { if (!ssRecalc()) { status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); return; } status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
+  $('#ss-recalc').addEventListener('click', () => { Lab.sound.play('click'); if (!ssRecalc()) { status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); return; } status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
   ['#ss-p', '#ss-n'].forEach(id => { $(id).addEventListener('change', () => { if (ssRecalc()) status('#ss-status', '', ''); else status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); }); $(id).addEventListener('input', () => checkFields(SS_RULES().filter(r => r.el === $(id)))); });
   $('#ss-record').addEventListener('click', () => {
     if (!ssLast) return; if (!checkFields(SS_RULES())) { status('#ss-status', 'Not recorded: the entries above are invalid, so the table still shows your last good run. Fix them and recalculate.', 'bad'); return; } const L = ssLast;
@@ -1037,6 +1041,9 @@ const Predict = (function () {
     return J;
   }
   const mgCanvas = Lab.canvas('#mg-canvas', window.innerWidth < 600 ? 0.9 : 0.6, { fit: true });
+  /* Timelapse of the gene-pool run (live runs only; a restored run is not re-recorded). */
+  const mgRec = Lab.timelapse(mgCanvas, { fps: 4, width: 440, label: 'Gene pool run', key: 'genepool' });
+  mgRec.mount('#mg-timelapse');
   let mgRes = null, mgShown = 0; const mgLoop = Lab.loop(dt => {
     if (!mgRes) return false;
     mgShown = Math.min(mgRes.P.G, mgShown + dt * Math.max(15, mgRes.P.G / 2.5));
@@ -1088,6 +1095,7 @@ const Predict = (function () {
     return parts.join(', ');
   }
   function finishMG() {
+    mgRec.stop();
     const R = mgRes, fin = R.pops.map(p => p.traj[R.P.G]);
     $('#mg-mean').textContent = fmt(S.mean(fin), 3); $('#mg-sd').textContent = fin.length > 1 ? fmt(S.sd(fin), 3) : '—';
     $('#mg-fix').textContent = `${fin.filter(x => x >= 1 - 1e-9).length} of ${fin.length}`; $('#mg-lost').textContent = `${fin.filter(x => x <= 1e-9).length} of ${fin.length}`;
@@ -1111,7 +1119,8 @@ const Predict = (function () {
     const P = getParams();
     if (!P) { status('#mg-status', 'The model was not run: fix the highlighted entries (selection, mutation or migration settings), then press Run model again.', 'bad'); return; }
     const seedN = Math.floor(Math.random() * 1e9); mgRes = simulate(P, Lab.rng(seedN)); mgShown = 0; mgSave(seedN);
-    if (Lab.reducedMotion()) { mgShown = P.G; drawMG(); finishMG(); } else { status('#mg-status', 'Running…', ''); mgLoop.start(); }
+    Lab.sound.play('click');
+    if (Lab.reducedMotion()) { mgShown = P.G; drawMG(); finishMG(); } else { status('#mg-status', 'Running…', ''); (mgRec.recording ? mgRec.stop() : Promise.resolve()).then(() => mgRec.start()); mgLoop.start(); }
   });
   $('#mg-record').addEventListener('click', () => {
     if (!mgRes) { status('#mg-status', 'Run the model first.', 'bad'); return; }
@@ -1184,6 +1193,7 @@ const Predict = (function () {
       }
     } }
   $('#dz-run').addEventListener('click', () => {
+    Lab.sound.play('click');
     const iv = $('#dz-iv').value, dv = $('#dz-dv').value, reps = +dzReps.value;
     const levels = dzParseLevels(iv);
     if (!levels) { status('#dz-status', 'The experiment was not run: fix the levels above.', 'bad'); return; }
@@ -1270,7 +1280,29 @@ const Predict = (function () {
     ['r-taster', 'Plan a supertaster (PTC) investigation for your class: what would you count, how would you get genotype numbers, and how would you test them against Hardy-Weinberg?'],
     ['r-next', 'What new question would you explore next with a more powerful model, and which parameter would you change?']
   ].forEach(([key, label]) => Lab.prompt('#reflect-prompts', { key, label, rows: 3 }));
-  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [['predict-card', 'Before the card model you predicted:'], ['predict-spreadsheet', 'Before the spreadsheet you predicted:'], ['predict-drift', 'Before the many-generation runs you predicted:'], ['predict-design', 'Before your design you predicted:']], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one value (with units where it has them) from your data. What does any mismatch tell you?', rows: 4 });
+  Predict.compare('#reflect-prompts', { key: 'reflect-predict', items: [
+    ['predict-card', 'Before the card model you predicted:', {
+      title: 'Card model: your prediction vs. what happened', chartEl: '#card-chart', part: 'Card model', partId: 'card-model',
+      summarize: o => { const t = Predict.seriesTrend(o, 'The class frequency of A (p)', '', 2); return t ? t.text : 'Your card model results are in the Card model part.'; },
+      delta: (o, pred) => { const t = Predict.seriesTrend(o, 'p', '', 2); return t ? `Across the generations p ${t.dir > 0 ? 'rose' : t.dir < 0 ? 'fell' : 'stayed the same'}.` + Predict.verdict(pred, t.dir) : null; } }],
+    ['predict-spreadsheet', 'Before the spreadsheet you predicted:', {
+      title: 'Spreadsheet: your prediction vs. what happened', chartEl: '#ss-chart', part: 'Build the model', partId: 'build-the-model',
+      getResult: () => { const rows = ssTable.getRows().filter(r => isFinite(r.dp)); if (!rows.length) return null; const by = new Map(); rows.forEach(r => { if (!by.has(r.n)) by.set(r.n, []); by.get(r.n).push(Math.abs(r.dp)); }); return [...by].map(([n, a]) => ({ n, k: a.length, d: S.mean(a) })).sort((x, y) => x.n - y.n); },
+      summarize: r => 'Mean size of the change in p after one generation: ' + r.map(x => `${fmt(x.d, 3)} with ${x.n} zygotes (${x.k} run${x.k > 1 ? 's' : ''})`).join('; ') + '.',
+      delta: (r, pred) => {
+        if (r.length < 2) return 'Record runs at more than one population size to compare them.';
+        const sm = r[0], lg = r[r.length - 1], smallMore = sm.d > lg.d, said = /\b(farther|further|more|larger|bigger|greater)\b/i.test(pred) && !/\b(closer|near\w*|less|smaller|same)\b/i.test(pred);   // predicted that the small population changes more
+        return `The change in p was ${smallMore ? 'larger' : 'smaller'} with ${sm.n} zygotes than with ${lg.n}.` + (said ? (smallMore ? ' That matches your prediction.' : ' That is the opposite of your prediction.') : '');
+      } }],
+    ['predict-drift', 'Before the many-generation runs you predicted:', {
+      title: 'Many generations: your prediction vs. what happened', part: 'Many generations', partId: 'many-generations',
+      getResult: () => { if (!mgRes || mgShown < mgRes.P.G) return null; const fin = mgRes.pops.map(q => q.traj[mgRes.P.G]); return { n: fin.length, N: mgRes.P.drift ? mgRes.P.N : null, G: mgRes.P.G, mean: S.mean(fin), sd: fin.length > 1 ? S.sd(fin) : 0, fix: fin.filter(x => x >= 1 - 1e-9).length, lost: fin.filter(x => x <= 1e-9).length, exp: mgRes.exp[mgRes.P.G] }; },
+      summarize: r => `After ${r.G} generations ${r.n} population${r.n > 1 ? 's' : ''}${r.N ? ' of ' + r.N + ' zygotes' : ''} had a mean p of ${fmt(r.mean, 3)} (SD ${fmt(r.sd, 3)}; expected ${fmt(r.exp, 3)}); A was fixed in ${r.fix} and lost in ${r.lost}.`,
+      delta: (r, pred) => { const spread = r.sd > 0.05 || r.fix + r.lost > 0, said = /\b(vary|varies|differ\w*|spread|drift\w*|random\w*|fix\w*|lose|lost|wander\w*|change\w*)\b/i.test(pred); return spread ? 'The populations drifted apart from one another.' + (said ? ' That fits your prediction.' : '') : 'The populations stayed close together and near the expected p.' + (said ? ' That differs from your prediction.' : ''); } }],
+    ['predict-design', 'Before your design you predicted:', {
+      title: 'Your design: your prediction vs. what happened', chartEl: '#dz-chart', part: 'Design', partId: 'design',
+      summarize: o => { const t = Predict.seriesTrend(o, 'The response', '', 3); return t ? t.text : 'Your design results are in the Design part.'; },
+      delta: (o, pred) => { const t = Predict.seriesTrend(o, 'The response', '', 3); return t ? `The response ${t.dir > 0 ? 'rose' : t.dir < 0 ? 'fell' : 'stayed the same'} as the variable increased.` + Predict.verdict(pred, t.dir) : null; } }]], label: 'Compare your predictions with your results. Which were right, and which were not? Quote one value (with units where it has them) from your data. What does any mismatch tell you?', rows: 4 });
 
   { const fh = Lab.h('div', { class: 'step-frq' }); $('#reflect-prompts').after(fh);
   Own.frq(fh, { title: 'Free-response question: genetic drift and population size', part: 'Reflect',
@@ -1287,15 +1319,8 @@ const Predict = (function () {
   const forcesInvalid = () => !!document.querySelector('#sub-sel [aria-invalid="true"], #sub-mut [aria-invalid="true"], #sub-mig [aria-invalid="true"]');
   $('#mg-run').addEventListener('click', () => { if (!forcesInvalid()) mgRan++; });
   ['#dz-iv', '#dz-levels', '#dz-dv', '#dz-reps'].forEach(s => { $(s).addEventListener('input', () => { dzTouched = true; }); $(s).addEventListener('change', () => { dzTouched = true; }); });
-  /* Results panel that opens on Data. Showing a part re-renders its charts, which the shared panel counts as a change on the
-     (hidden) Graph tab; badges raised only by that re-render are cleared so a reload never shows a false "new". */
-  function showData(sim, o) {
-    const r = Lab.results(sim, Object.assign({ start: 'data' }, o));
-    Lab.onShow(sim, () => { const was = new Set(Array.from(document.querySelectorAll(sim + ' .tab-badge')).filter(b => !b.hidden)); setTimeout(() => document.querySelectorAll(sim + ' .tab-badge').forEach(b => { if (!was.has(b)) b.hidden = true; }), 400); });
-    return r;
-  }
-  showData('#card-sim', { graph: [{ el: '#card-chart', title: 'p by generation' }], data: [{ el: '#card-table', title: 'Genotype counts each generation' }] });
-  showData('#ss-sim', { graph: [{ el: '#ss-chart', title: 'Zygote genotypes' }], data: [{ el: '#ss-table', title: 'Recorded runs' }] });
+  Lab.results('#card-sim', { start: 'data', graph: [{ el: '#card-chart', title: 'p by generation' }], data: [{ el: '#card-table', title: 'Genotype counts each generation' }] });
+  Lab.results('#ss-sim', { start: 'data', graph: [{ el: '#ss-chart', title: 'Zygote genotypes' }], data: [{ el: '#ss-table', title: 'Recorded runs' }] });
   Lab.results('#mg-sim', { graph: [], data: [{ el: '#mg-table', title: 'Population 1, generation by generation' }, { el: '#mg-runs', title: 'Recorded runs' }] });
   Lab.results('#dz-sim', { graph: [], data: [{ el: '#dz-table', title: 'Results of every experiment' }] });
 
