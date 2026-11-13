@@ -832,64 +832,73 @@ const PLATE = (() => {
   }
 
   const ART = {
-    cru() {   // American lobster, dorsal view, head left: crusher (upper) and cutter (lower) claws
-      const SH = '#56543a', LEG = '#6b5232', o = { blot: ['#7a3a1c', '#2a3420', '#8a6a3a'], dk: '#1c140a', nb: 6, ba: 0.28 };
-      shadow(106, 66, 66, 16, 0.3); shadow(30, 35, 24, 9, 0.25); shadow(30, 96, 26, 8, 0.25); shadow(98, 66, 22, 30, 0.12);
-      [1, -1].forEach(s => {   // antennae and antennules
-        const Y = q => q.map(p => [p[0], 60 + s * (p[1] - 60)]);
-        taper(Y([[58, 58.4], [44, 56.4], [30, 54], [16, 52], [2, 51.2]]), 1, 0.25, '#5a2a14');
-        taper(Y([[58, 59.2], [50, 58.6], [45, 58]]), 0.7, 0.4, '#5a3018'); taper(Y([[45, 58], [38, 57.6]]), 0.4, 0.15, '#5a3018'); taper(Y([[45, 58], [39, 59]]), 0.35, 0.12, '#5a3018');
-      });
-      [1, -1].forEach(s => { for (let i = 3; i >= 0; i--) {   // walking legs
-        const x = 72 + i * 7, Y = q => [q[0], 60 + s * q[1]], b = Y([x, 8]), k1 = Y([x + 1 + i * 0.5, 17 + i * 0.4]), k2 = Y([x + 6 + i * 1.6, 22.5 + i * 0.3]), tp = Y([x + 12 + i * 2.4, 25 - i * 0.4]);
-        part(limb(b, k1, 2.1, 1.7), LEG, { dk: '#2a1608', hl: 0.3 }, 0.32); part(limb(k1, k2, 1.7, 1.4), LEG, { dk: '#2a1608', hl: 0.3 }, 0.32); part(limb(k2, tp, 1.3, 0.45), '#7a5a30', { dk: '#2a1608', hl: 0.3 }, 0.28);
-        dot(k1[0], k1[1], 0.45, '#b6542a', 0.8); dot(k2[0], k2[1], 0.4, '#b6542a', 0.8);
-        if (i < 2) { taper([tp, [tp[0] + 1.6, tp[1] + s * 0.9]], 0.4, 0.1, '#8a4a22'); taper([tp, [tp[0] + 1.8, tp[1] - s * 0.4]], 0.4, 0.1, '#8a4a22'); }
+    cru() {   // American lobster (Homarus), dorsal view, head left: heavy carapace, huge crusher (upper) and slimmer cutter (lower) claws
+      const SH = '#3f4630', LEG = '#4e4a30', OR = '#c8602c', o = { blot: ['#2a3020', '#6a5230', '#7a3a1c'], dk: '#140f08', nb: 6, ba: 0.3 }, lo = { dk: '#140c06', hl: 0.35, blot: ['#6a4a28'] };
+      shadow(124, 66, 66, 18, 0.3); shadow(30, 35, 30, 13, 0.26); shadow(30, 94, 28, 8, 0.24); shadow(100, 66, 20, 32, 0.12);
+      [1, -1].forEach(s => { for (let i = 3; i >= 0; i--) {   // four pairs of jointed walking legs; the first two end in small pincers
+        const Y = q => [q[0], 60 + s * q[1]], x = 83 + i * 8, j = [Y([x, 11]), Y([x - 3 + i, 20]), Y([x + 2 + i * 1.5, 26.5]), Y([x + 8 + i * 2, 30]), Y([x + 12.5 + i * 2.2, 31.2])], wd = [2.9, 2.4, 1.9, 1.3, 0.4];
+        for (let k = 0; k < 4; k++) { part(limb(j[k], j[k + 1], wd[k], wd[k + 1] + 0.3), k === 3 ? '#6a4a2a' : LEG, lo, 0.3); if (k) dot(j[k][0], j[k][1], 0.55, OR, 0.85); }
+        if (i < 2) { const b = j[3], t = j[4]; taper([b, [lerp(b[0], t[0], 0.6), lerp(b[1], t[1], 0.6) + s * 1.1], [t[0] - 0.4, t[1] + s * 1.3]], 0.9, 0.2, '#7a4422'); }
       } });
-      function claw(x, y, tx, ty, L, Wd, crusher, s) {   // propodus (palm + fixed finger) and dactyl
-        const a = Math.atan2(ty - y, tx - x), h = Wd / 2, T = q => tf(q.map(p => [p[0] * L, p[1] * h, p[2]]), x, y, a, s);
-        const prop = T([[0, -0.45], [0.12, -0.85], [0.3, -1], [0.48, -0.9], [0.56, -0.55], [0.6, -0.12], [0.78, 0.0], [0.96, 0.12], [1, 0.24, 1], [0.88, 0.45], [0.7, 0.66], [0.45, 1], [0.22, 0.95], [0.06, 0.7], [0, 0.45]]);
-        const dac = T([[0.5, -0.95], [0.66, -0.98], [0.83, -0.74], [0.95, -0.34], [1.02, 0.04, 1], [0.9, -0.22], [0.76, -0.36], [0.6, -0.38], [0.53, -0.55]]);
-        const P = part(prop, SH, o, 0.55); for (let i = 0; i < 40; i++) { const q = T([[rnd(0.05, 0.9), rnd(-0.8, 0.8)]])[0]; dot(q[0], q[1], rnd(0.12, 0.25), '#1e1a0c', 0.45); }
-        const tub = T([[0, 0]])[0]; for (let i = 0; i < (crusher ? 26 : 18); i++) { const q = T([[rnd(0.08, 0.5), rnd(-0.7, 0.75)]])[0]; dot(q[0] + 0.15, q[1] + 0.2, crusher ? 0.42 : 0.3, '#1c140a', 0.5); dot(q[0], q[1], crusher ? 0.36 : 0.26, '#d7c39a', 0.85); }
-        for (let i = 0; i < (crusher ? 7 : 16); i++) { const t = 0.62 + i * (crusher ? 0.045 : 0.02), q = T([[t, lerp(-0.1, 0.1, (t - 0.6) / 0.4)]])[0]; dot(q[0], q[1], crusher ? 0.75 : 0.3, '#e2d4ae'); c.save(); c.lineWidth = 0.15; c.strokeStyle = INK; c.beginPath(); c.arc(q[0], q[1], crusher ? 0.75 : 0.3, 0, 7); c.stroke(); c.restore(); }
-        const D = part(dac, '#56532f', o, 0.5);
-        const e0 = T([[0.72, 0]])[0], e1 = T([[1, 0]])[0]; tint(P, e0, e1, '#c8582a', 0.85); tint(D, e0, e1, '#c8582a', 0.85);
-        spec(T([[0.1, -0.62], [0.28, -0.78], [0.45, -0.7]]), 0.9, 0.55); void tub;
+      function claw(x, y, tx, ty, Wd, crusher, s) {   // propodus (palm + fixed finger) and dactyl; crusher: swollen palm, short blunt molar teeth
+        const L = Math.hypot(tx - x, ty - y), a = Math.atan2(ty - y, tx - x), h = Wd / 2, f = crusher ? 0.6 : 0.46, mx = u => u <= 0.56 ? u * f / 0.56 : f + (u - 0.56) * (1 - f) / 0.44;
+        const T = q => tf(q.map(p => [mx(p[0]) * L, p[1] * h, p[2]]), x, y, a, s);
+        const prop = T(crusher ? [[0, -0.4], [0.1, -0.85], [0.3, -1.02], [0.48, -0.92], [0.56, -0.5], [0.62, -0.08], [0.8, 0.02], [0.95, 0.1], [1, 0.3, 1], [0.9, 0.55], [0.72, 0.78], [0.45, 1.02], [0.22, 0.98], [0.06, 0.72], [0, 0.4]]
+          : [[0, -0.45], [0.12, -0.85], [0.3, -0.98], [0.48, -0.85], [0.56, -0.45], [0.62, -0.06], [0.8, 0], [0.96, 0.08], [1, 0.2, 1], [0.88, 0.34], [0.7, 0.52], [0.45, 0.95], [0.22, 0.95], [0.06, 0.7], [0, 0.45]]);
+        const dac = T(crusher ? [[0.5, -0.95], [0.66, -1.0], [0.84, -0.8], [0.96, -0.4], [1, 0.02, 1], [0.9, -0.24], [0.76, -0.32], [0.6, -0.34], [0.53, -0.5]]
+          : [[0.5, -0.9], [0.66, -0.8], [0.83, -0.55], [0.95, -0.28], [1.02, 0.04, 1], [0.9, -0.16], [0.76, -0.24], [0.6, -0.3], [0.53, -0.5]]);
+        const P = part(prop, SH, o, 0.6);
+        for (let i = 0; i < 50; i++) { const q = T([[rnd(0.04, 0.95), rnd(-0.85, 0.85)]])[0]; dot(q[0], q[1], rnd(0.12, 0.26), '#14120a', 0.45); }
+        for (let i = 0; i < (crusher ? 22 : 26); i++) { const q = T([[rnd(0.06, 0.5), rnd(-0.75, 0.8)]])[0]; dot(q[0] + 0.15, q[1] + 0.2, crusher ? 0.45 : 0.3, '#14100a', 0.5); dot(q[0], q[1], crusher ? 0.38 : 0.26, '#d7c39a', 0.85); }
+        const D = part(dac, '#454a30', o, 0.55);
+        for (let i = 0; i < 20; i++) { const q = T([[rnd(0.6, 0.95), rnd(-0.85, -0.4)]])[0]; dot(q[0], q[1], rnd(0.12, 0.22), '#14120a', 0.45); }
+        if (crusher) [[0.64, -0.06], [0.72, -0.03], [0.8, 0.0], [0.88, 0.05], [0.66, -0.36], [0.76, -0.34], [0.86, -0.27]].forEach(([u, v], k) => { const q = T([[u, v]])[0], r = (k === 1 || k === 5 ? 1.1 : 0.8) * h * 0.06; dot(q[0] + 0.2, q[1] + 0.25, r * 1.1, '#140c06', 0.5); dot(q[0], q[1], r, '#c8b282'); dot(q[0] - r * 0.3, q[1] - r * 0.35, r * 0.35, '#f4ead0', 0.6); });
+        else for (let u = 0.6; u < 0.97; u += 0.02) { const a1 = T([[u, -0.02], [u + 0.008, -0.12]]), a2 = T([[u, -0.29], [u + 0.008, -0.19]]); taper(a1, 0.35, 0.05, '#e6d6aa'); taper(a2, 0.35, 0.05, '#e6d6aa'); }
+        const e0 = T([[0.74, 0]])[0], e1 = T([[1, 0]])[0]; tint(P, e0, e1, OR, 0.9); tint(D, e0, e1, OR, 0.9);
+        spec(T([[0.08, -0.6], [0.3, -0.8], [0.5, -0.7]]), crusher ? 1.4 : 1, 0.55);
       }
-      [[1, true], [-1, false]].forEach(([s, cr]) => {   // chelipeds: merus, carpus, claw
+      [[1, true], [-1, false]].forEach(([s, cr]) => {   // chelipeds on thick jointed arms: merus, carpus (spined), claw
         const Y = q => [q[0], 60 - s * (60 - q[1])];
-        part(limb(Y([67, 52]), Y([56, 42]), 6.2, 5.2), SH, o, 0.5); part(limb(Y([56, 42]), Y([45.5, 37.5]), 5.6, 5.2), '#5a5530', o, 0.5);
-        [[60, 46], [52, 39.5]].forEach(q => { const p = Y(q); taper([[p[0], p[1]], [p[0] - 2, p[1] - s * 1.6]], 0.6, 0.05, '#2a1a0c'); });
-        if (cr) claw(46, 37, 6, 29, 43, 23, true, -1); else claw(46, 83, 5, 92, 45, 13.5, false, 1);
+        part(limb(Y([77, 51]), Y([64, 41]), 8.2, 7.2), SH, o, 0.55); part(limb(Y([64, 41]), Y([53.5, 34.5]), 7.6, 7), '#454a30', o, 0.55);
+        [Y([64, 41]), Y([53.5, 34.5])].forEach(q => dot(q[0], q[1], 1, OR, 0.7));
+        [[70, 45], [61, 37.5], [57, 35.4]].forEach(q => { const p = Y(q); taper([[p[0], p[1]], [p[0] - 2.4, p[1] - s * 2]], 0.8, 0.05, '#2a1a0c'); });
+        if (cr) claw(54, 34, 4, 30, 27, true, -1); else claw(54, 86, 3, 92, 16, false, 1);
       });
-      // tail fan: uropods (two pairs) and telson
+      // tail fan: two pairs of uropods (fringed) and the telson
       [1, -1].forEach(s => { const Y = q => s > 0 ? q : my(q);
-        const ex = part(Y([[149, 55.5], [156, 48], [166, 41.5], [174.5, 40.5], [176, 45], [170, 51], [158, 55.5]]), '#5a573a', o, 0.45); taper(Y([[163, 46.5], [170, 43.5]]), 0.3, 0.3, INK, 0.6);
-        fringe(ex, 50, (x, y) => Math.atan2(y - 60, x - 148), 1.2, '#7a5a34', 0.15, 0.7, x => x > 166);
-        const en = part(Y([[150, 57.5], [161, 52], [172, 49], [176.5, 51.5], [174, 56], [160, 58.5]]), '#5e5a3a', o, 0.45);
-        fringe(en, 30, (x, y) => Math.atan2(y - 60, x - 148), 1.2, '#7a5a34', 0.15, 0.7, x => x > 170);
-        void ex; });
-      const tel = part([[150, 55], [165, 54.4], [175, 56.6], [176.5, 60], [175, 63.4], [165, 65.6], [150, 65]], '#5e5a3a', o, 0.45);
-      fringe(tel, 30, () => 0, 1.2, '#7a5a34', 0.15, 0.7, x => x > 174); taper([[152, 60], [172, 60]], 0.25, 0.2, INK, 0.4);
-      void tel;
-      for (let i = 5; i >= 0; i--) {   // abdomen: six overlapping tergites with pleura
-        const x0 = 101 + i * 8.2, len = 9.6, hw = 11.6 - i * 0.75, yt = 60 - hw, yb = 60 + hw;
-        const p = part([[x0, yt + 1.2], [x0 + len * 0.5, yt], [x0 + len, yt + 0.6], [x0 + len + 0.8, yt + 3], [x0 + len + 1.2, 60], [x0 + len + 0.8, yb - 3], [x0 + len, yb - 0.6], [x0 + len * 0.5, yb], [x0, yb - 1.2], [x0 - 1, 60]], SH, o, 0.55);
-        taper([[x0 + 2.5, yt + 2.5], [x0 + 3.2, 60], [x0 + 2.5, yb - 2.5]], 0.35, 0.35, INK, 0.5);
-        hatch(p, 1.2, 0.9, 0.18, 0.35, 0.5);
-        spec([[x0 + 1.5, yt + 2], [x0 + len * 0.55, yt + 1.4], [x0 + len - 0.5, yt + 2]], 0.9, 0.55);
-        [yt + 1, yb - 1].forEach(y => taper([[x0 + 1, y], [x0 + len * 0.6, y + (y < 60 ? -0.6 : 0.6)], [x0 + len, y]], 0.3, 0.3, INK, 0.4));
+        const ex = part(Y([[163, 55.5], [170, 47], [180, 39.5], [189, 38.5], [190.5, 43.5], [184, 50], [172, 55.5]]), '#4a4e34', o, 0.45); taper(Y([[177, 45], [185, 41.5]]), 0.3, 0.3, INK, 0.6);
+        fringe(ex, 50, (x, y) => Math.atan2(y - 60, x - 162), 1.2, '#7a5a34', 0.15, 0.7, x => x > 181);
+        const en = part(Y([[164, 57.5], [175, 51.5], [186, 48], [191, 51], [188, 56], [174, 58.5]]), '#4e5236', o, 0.45);
+        fringe(en, 30, (x, y) => Math.atan2(y - 60, x - 162), 1.2, '#7a5a34', 0.15, 0.7, x => x > 185);
+        tint(ex, [178, 50], [190, 41], OR, 0.35); });
+      const tel = part([[164, 55], [179, 54.2], [189, 56.6], [190.5, 60], [189, 63.4], [179, 65.8], [164, 65]], '#4e5236', o, 0.45);
+      fringe(tel, 30, () => 0, 1.2, '#7a5a34', 0.15, 0.7, x => x > 188); taper([[166, 60], [186, 60]], 0.25, 0.2, INK, 0.4); tint(tel, [180, 60], [190, 60], OR, 0.3);
+      for (let i = 5; i >= 0; i--) {   // broad abdomen: six overlapping tergites with side pleura
+        const x0 = 115 + i * 8, len = 9.4, hw = 13.8 - i * 0.75, yt = 60 - hw, yb = 60 + hw;
+        const p = part([[x0, yt + 1.4], [x0 + len * 0.3, yt - 0.6], [x0 + len * 0.7, yt - 0.2], [x0 + len, yt + 0.8], [x0 + len + 0.8, yt + 3.4], [x0 + len + 1.2, 60], [x0 + len + 0.8, yb - 3.4], [x0 + len, yb - 0.8], [x0 + len * 0.7, yb + 0.2], [x0 + len * 0.3, yb + 0.6], [x0, yb - 1.4], [x0 - 1, 60]], SH, o, 0.55);
+        taper([[x0 + 2.5, yt + 2.8], [x0 + 3.2, 60], [x0 + 2.5, yb - 2.8]], 0.35, 0.35, INK, 0.5); hatch(p, 1.2, 0.9, 0.18, 0.35, 0.5);
+        spec([[x0 + 1.5, yt + 2.2], [x0 + len * 0.55, yt + 1.4], [x0 + len - 0.5, yt + 2.2]], 1, 0.55);
+        [yt + 1.2, yb - 1.2].forEach(y => taper([[x0 + 1, y], [x0 + len * 0.6, y + (y < 60 ? -0.6 : 0.6)], [x0 + len, y]], 0.3, 0.3, INK, 0.4));
+        for (let k = 0; k < 14; k++) dot(rnd(x0, x0 + len), rnd(yt + 1, yb - 1), rnd(0.12, 0.24), '#14120a', 0.4);
       }
-      // carapace with rostrum, cervical groove and granules
-      const cp = part([[50.5, 60, 1], [57, 58.8], [61, 56], [66, 52.2], [74, 49.3], [86, 47.6], [96, 48.2], [100.5, 51.5], [102, 60], [100.5, 68.5], [96, 71.8], [86, 72.4], [74, 70.7], [66, 67.8], [61, 64], [57, 61.2]], SH, o, 0.6);
-      hatch(cp, 1.1, 0.8, 0.18, 0.4, 0.5);
-      taper([[83, 48.6], [79.5, 54], [78.5, 60], [79.5, 66], [83, 71.4]], 0.5, 0.5, INK, 0.75); taper([[90, 49], [91, 60], [90, 71]], 0.25, 0.25, INK, 0.35);
-      taper([[52, 60], [62, 60], [78, 60]], 0.3, 0.3, INK, 0.35);
-      for (let i = 0; i < 40; i++) { const x = rnd(62, 98), y = 60 + rnd(-10, 10) * Math.min(1, (x - 58) / 14); dot(x, y, rnd(0.18, 0.34), '#d8c69a', 0.65); }
-      for (let i = 0; i < 110; i++) { const x = rnd(60, 150), y = 60 + rnd(-10, 10) * Math.min(1, (x - 56) / 16); dot(x, y, rnd(0.12, 0.25), '#1e1a0c', 0.4); }
-      spec([[64, 54], [76, 50.6], [92, 49.6]], 1.4, 0.55); spec([[68, 56], [80, 54]], 0.7, 0.35);
-      eye(60, 55.6, 1.5, '#3a2a18', 0.6); eye(60, 64.4, 1.5, '#3a2a18', 0.6);
+      // heavy carapace: cervical groove, granules, rostrum with lateral teeth, stalked eyes
+      const cp = part([[66, 60], [66.8, 54.5], [71, 50.2], [80, 46.4], [94, 44.8], [108, 45.2], [114.6, 48.8], [116.6, 60], [114.6, 71.2], [108, 74.8], [94, 75.2], [80, 73.6], [71, 69.8], [66.8, 65.5]], SH, o, 0.65);
+      hatch(cp, 1.1, 0.8, 0.18, 0.42, 0.5);
+      taper([[95, 45.4], [90.5, 52], [89.5, 60], [90.5, 68], [95, 74.6]], 0.55, 0.55, INK, 0.75); taper([[102, 46], [103, 60], [102, 74]], 0.25, 0.25, INK, 0.35); taper([[68, 60], [88, 60]], 0.3, 0.3, INK, 0.35);
+      for (let i = 0; i < 50; i++) { const x = rnd(70, 113), y = 60 + rnd(-12, 12) * Math.min(1, (x - 66) / 12); dot(x, y, rnd(0.18, 0.34), '#d8c69a', 0.6); }
+      for (let i = 0; i < 140; i++) { const x = rnd(68, 114), y = 60 + rnd(-13, 13) * Math.min(1, (x - 64) / 14); dot(x, y, rnd(0.12, 0.25), '#14120a', 0.4); }
+      spec([[70, 52.6], [84, 48.2], [104, 47.4]], 1.6, 0.55); spec([[76, 55], [90, 52.4]], 0.8, 0.35);
+      part([[55.5, 60, 1], [61, 58.8], [66, 57.6], [69, 58.4], [69, 61.6], [66, 62.4], [61, 61.2]], '#4a4e34', o, 0.45);
+      [[60, 58.9], [63.4, 58.2]].forEach(([x, y]) => { taper([[x, y], [x - 1, y - 1.3]], 0.5, 0.05, INK); taper([[x, 120 - y], [x - 1, 121.3 - y]], 0.5, 0.05, INK); });
+      [56.4, 63.6].forEach(y => { taper([[68, 60 + (y - 60) * 0.4], [66.2, y]], 1.2, 1, '#4a4e34'); eye(66, y, 1.6, '#3a2a18', 0.6); });
+      [1, -1].forEach(s => {   // antennules (short, forked) and long reddish antennae
+        const Y = q => q.map(p => [p[0], 60 + s * (p[1] - 60)]);
+        taper(Y([[66, 59], [59, 58.4], [54, 57.8]]), 0.8, 0.45, '#6a3a1c'); taper(Y([[54, 57.8], [45, 57]]), 0.45, 0.12, '#7a3a1a'); taper(Y([[54, 57.8], [46, 59.2]]), 0.4, 0.1, '#7a3a1a');
+        part(limb(Y([[68.5, 56.5]])[0], Y([[62, 51]])[0], 2.6, 2.1), '#6a4a2a', lo, 0.35);
+        const an = Y([[62, 51], [59, 44], [63, 35], [76, 25], [96, 17], [114, 13.4], [130, 12.6]]);
+        taper(an, 1.9, 0.35, '#3a1a0c'); taper(an.map(p => [p[0] - 0.15, p[1] - 0.2]), 1.3, 0.2, '#b4552c');
+        sample(an, false, 6).forEach((q, i) => i % 2 && i < 40 && dot(q[0], q[1], 0.3, '#3a1a0c', 0.5));
+      });
     },
     ins() {   // differential grasshopper, side view facing left
       const G = '#8e9140', GD = '#4b4c1c', o = { blot: ['#b8a94e', '#5d6326'], dk: '#2a2a0c' };
@@ -931,18 +940,23 @@ const PLATE = (() => {
       const legN = (pts, cols) => { for (let i = 0; i < pts.length - 1; i++) part(limb(pts[i], pts[i + 1], cols[i][0], cols[i][1]), '#9c9846', o, 0.4); };
       legN([[64, 70], [60, 82], [53, 92.5]], [[2.4, 2], [1.7, 1.3]]); taper([[53, 92.5], [49, 95.5], [46, 96.4]], 1, 0.4, '#5a5020');
       legN([[80, 73], [87, 84.5], [82, 94.5]], [[2.6, 2.1], [1.8, 1.3]]); taper([[82, 94.5], [78, 96.5], [75, 97]], 1, 0.4, '#5a5020');
-      // hind leg: tibia with spines, then the big jumping femur with herringbone
-      const tib = [[141, 52.5], [123, 72], [104, 92]];
-      part(limb(tib[0], tib[2], 2.4, 1.6), '#c2a84a', { dk: '#3a2a08', blot: ['#9a7a2a'] }, 0.45);
-      sample(tib, false, 6).forEach((q, i) => { if (i > 1 && i < 12) taper([[q[0] + 0.9, q[1] + 0.9], [q[0] + 2.2, q[1] + 3]], 0.55, 0.05, '#1e1608'); });
-      part(limb([104, 92], [109, 96.2], 1.6, 1.2), '#a08a3a', o, 0.35); part(limb([109, 96.2], [116, 96.8], 1.2, 0.9), '#a08a3a', o, 0.35);
-      taper([[116, 96.8], [118, 95.8]], 0.4, 0.1); taper([[116, 96.8], [118.2, 97.6]], 0.4, 0.1);
-      const fm = part(tf([[0, -3], [5, -6], [12, -7.6], [22, -6.8], [34, -4.6], [46, -3], [53, -2.4], [56.5, -0.8, 1], [55.5, 2], [48, 2.8], [36, 3.8], [22, 5.8], [10, 6.6], [3, 5.2], [-1, 1.5]], 87, 69, Math.atan2(52 - 69, 142 - 87)), '#c3ba62', { blot: ['#8a8a3a', '#e0d488'], dk: '#2c2a0a', hl: 0.5 }, 0.6);
+      // hind jumping leg: slender spiny tibia folded beneath a thick, muscular femur (wide at the top, herringbone chevrons)
+      const FA = Math.atan2(44 - 70, 136 - 88), FL = Math.hypot(48, 26), F = q => tf(q.map(p => [p[0] * FL / 57, p[1], p[2]]), 88, 70, FA);
+      const tib = [[135, 46.5], [118, 70], [101, 92.5]];
+      part(limb(tib[0], tib[2], 2.2, 1.5), '#c9ae4c', { dk: '#3a2a08', blot: ['#9a7a2a'] }, 0.45); taper(tib.map(q => [q[0] + 0.5, q[1] + 0.5]), 0.5, 0.3, '#4a3a10', 0.45);
+      sample(tib, false, 6).forEach((q, i) => { if (i > 1 && i < 12) { taper([[q[0] + 0.7, q[1] + 0.5], [q[0] + 2.6, q[1] + 2.2]], 0.6, 0.05, '#1e1608'); taper([[q[0] + 0.7, q[1] + 0.5], [q[0] + 1.6, q[1] + 3]], 0.45, 0.05, '#1e1608', 0.7); } });
+      part(limb([101, 92.5], [106, 96.4], 1.6, 1.2), '#a08a3a', o, 0.35); part(limb([106, 96.4], [113.5, 97], 1.2, 0.9), '#a08a3a', o, 0.35);
+      taper([[113.5, 97], [115.5, 96]], 0.4, 0.1); taper([[113.5, 97], [115.7, 97.8]], 0.4, 0.1);
+      const top = pw([0, 5, 13, 24, 36, 47, 54, 57], [4, 8.6, 10.6, 9.6, 6.6, 4.2, 3, 1]), bot = pw([0, 3, 12, 24, 37, 49, 57], [2, 6.2, 8.2, 7.2, 4.6, 3.2, 2]);
+      const fm = part(F([[0, -4], [5, -8.6], [13, -10.6], [24, -9.6], [36, -6.6], [47, -4.2], [54, -3], [57.5, -1, 1], [56.5, 2.2], [49, 3.2], [37, 4.6], [24, 7.2], [12, 8.2], [3, 6.2], [-1, 2]]), '#c3ba62', { blot: ['#8a8a3a', '#e0d488'], dk: '#2c2a0a', hl: 0.55, sh: 0.55 }, 0.65);
       c.save(); c.clip(fm);
-      for (let i = 0; i < 9; i++) { const t = 7 + i * 5, k = Math.max(2.4, 6.6 - Math.abs(t - 12) * 0.12); const q = tf([[t, -0.2], [t + 4.2, -k * 0.85], [t + 4.2, k * 0.85]], 87, 69, Math.atan2(52 - 69, 142 - 87)); taper([q[1], q[0]], 0.75, 0.25, '#2a2410', 0.75); taper([q[2], q[0]], 0.75, 0.25, '#2a2410', 0.75); }
+      [[20, 2.4], [32, 2]].forEach(([t, w]) => { const q = F([[t, -top(t) + 2]])[0]; blob(q[0], q[1], w * 1.6, w, '#3a3010', 0.55, FA); });
+      tint(fm, F([[30, 2]])[0], F([[30, 8.5]])[0], '#e8dc98', 0.55);
+      taper(F([[3, -0.6], [28, -0.9], [54, -0.4]]), 0.45, 0.25, '#4a4416', 0.7);
+      for (let t = 5; t < 52; t += 3.3) { const q = F([[t, -0.7], [t + 3.8, -top(t + 3.8) * 0.88], [t + 3.8, bot(t + 3.8) * 0.85]]); taper([q[0], q[1]], 0.7, 0.3, '#2a2410', 0.75); taper([q[0], q[2]], 0.7, 0.3, '#2a2410', 0.75); }
       c.restore();
-      const kn = tf([[50, -2.6], [56.5, 0], [50, 2.8]], 87, 69, Math.atan2(52 - 69, 142 - 87)); taper(kn, 1.4, 0.6, '#1a1206');
-      spec(tf([[8, -3.2], [24, -4.4], [40, -2.6]], 87, 69, Math.atan2(52 - 69, 142 - 87)), 1.3, 0.6);
+      taper(F([[50, -3.2], [56.8, 0], [50, 3]]), 1.5, 0.6, '#1a1206'); const kq = F([[54.8, 0]])[0]; dot(kq[0], kq[1], 1, '#2a1c08', 0.7);
+      spec(F([[6, -5.8], [16, -8.4], [30, -7.2], [42, -3.8]]), 1.5, 0.6);
     },
     rod() {   // house mouse, side view facing left
       const o = { blot: ['#6a5644', '#a08c72'], dk: '#2a1c10' }, FUR = ['#3e3024', '#5e4c3c', '#7d6a56', '#9f8b72', '#c4b298'], dirB = (x, y) => 0.12 + (y - 68) * 0.02;
@@ -995,26 +1009,34 @@ const PLATE = (() => {
         void k;
       });
       const bp = shape(B.pts); wash(bp, SK, o);
-      c.save(); c.clip(bp);   // scale grid: transverse bands and longitudinal rows
-      B.s.forEach((q, i) => { if (i % 2 || i < 20) return; const n = B.nrm[i], w = 14; taper([[q[0] - n[0] * w, q[1] - n[1] * w], [q[0] + n[0] * w, q[1] + n[1] * w]], 0.18, 0.18, INK, 0.35); });
-      [-0.8, -0.55, 0.55, 0.8].forEach(f => { const L = B.s.map((q, i) => { const u = i / (B.s.length - 1), w = pw([0, 0.15, 0.3, 0.45, 1], [0, 8, 12.5, 11, 0.5])(u) * f; return [q[0] + B.nrm[i][0] * w, q[1] + B.nrm[i][1] * w]; }).filter((q, i) => i > 18 && i % 4 === 0); if (L.length > 1) taper(L, 0.2, 0.15, INK, 0.35); });
-      c.restore();
       // head: pitted snout, nostrils, raised eyes, nuchal plates
       for (let i = 0; i < 70; i++) { const u = rnd(0.01, 0.14), [q, n] = at(u), w = pw([0, 0.03, 0.12, 0.15], [0, 4, 5.4, 7.5])(u) * rnd(-0.85, 0.85); dot(q[0] + n[0] * w, q[1] + n[1] * w, rnd(0.15, 0.3), '#1a1a0c', 0.5); }
       for (let i = Math.round(0.03 * (B.s.length - 1)); i < 0.115 * (B.s.length - 1); i += 1) [-1, 1].forEach(sd => { const q = B.s[i], n = B.nrm[i], w = pw([0, 0.03, 0.115], [0, 4.6, 6])(i / (B.s.length - 1)), x = q[0] + n[0] * sd * w, y = q[1] + n[1] * sd * w; taper([[x - 0.4, y], [x + n[0] * sd * 0.9, y + n[1] * sd * 0.9]], 0.6, 0.05, '#f2ead0'); });
       const [nq] = at(0.012); blob(nq[0] + 1.6, nq[1], 2.2, 2.4, '#6a6a48', 0.8); dot(nq[0] + 1.2, nq[1] - 0.9, 0.42, '#0e0e06'); dot(nq[0] + 1.2, nq[1] + 0.9, 0.42, '#0e0e06');
       [1, -1].forEach(s => { const [q, n] = at(0.125), x = q[0] + n[0] * 3.3 * s, y = q[1] + n[1] * 3.3 * s; dot(x + 0.4, y + 0.6, 2.1, '#141408', 0.5); part([[x - 2.2, y], [x, y - 1.8], [x + 2.4, y], [x, y + 1.8]], '#5a5a38', { hl: 0.5 }, 0.4); eye(x + 0.1, y, 1.2, '#b6a23a', 0, 1.57); });
       [[0.165, [-3.4, 3.4]], [0.178, [-4.6, -1.5, 1.5, 4.6]]].forEach(([u, offs]) => offs.forEach(f => { const [q, n] = at(u), x = q[0] + n[0] * f, y = q[1] + n[1] * f; part([[x - 1.2, y - 1.1], [x + 1.2, y - 1.1], [x + 1.3, y + 1.1], [x - 1.2, y + 1.1]], '#5a5c3a', { hl: 0.6, sh: 0.6 }, 0.35); spec([[x - 0.8, y - 0.2], [x + 0.8, y - 0.2]], 0.5, 0.6); }));
-      // dorsal scutes (keeled osteoderms): paired rows on the back, double then single crest on the tail
-      for (let i = Math.round(0.2 * (B.s.length - 1)); i < B.s.length - 3; i += 2) {
-        const u = i / (B.s.length - 1), q = B.s[i], n = B.nrm[i], hw = pw([0, 0.18, 0.33, 0.5, 0.75, 1], [0, 7.2, 13.4, 9, 4.2, 0.4])(u);
-        const offs = u < 0.48 ? [-0.62, -0.38, -0.13, 0.13, 0.38, 0.62].map(f => f * hw) : u < 0.78 ? [-0.36, 0.36].map(f => f * hw) : [0];
-        const sz0 = u < 0.48 ? 1.3 : lerp(1.6, 0.6, (u - 0.48) / 0.52), dx = n[1], dy = -n[0];
-        offs.forEach(f => { const sz = sz0 * rnd(0.8, 1.1) * (u < 0.48 ? 1 - Math.abs(f / hw) * 0.35 : 1), x = q[0] + n[0] * f + rnd(-0.2, 0.2), y = q[1] + n[1] * f + rnd(-0.2, 0.2), P = (a, b) => [x + dx * a + n[0] * b, y + dy * a + n[1] * b];
-          dot(x + 0.35, y + 0.45, sz * 1.05, '#0c0c04', 0.4);
-          const p = shape([P(-sz, -sz * 0.75), P(sz * 0.6, -sz * rnd(0.6, 0.8)), P(sz * 1.15, 0), P(sz * 0.6, sz * rnd(0.6, 0.8)), P(-sz, sz * 0.75)]);
-          wash(p, u < 0.48 ? '#545637' : '#4a4c30', { hl: 0.45, sh: 0.55, dk: '#0c0c04', ew: 0.5 }); ink(p, 0.16, 0.55); taper([P(-sz * 0.7, -0.15), P(sz * 0.9, -0.15)], 0.4, 0.15, '#cfcca4', 0.4); });
-        if (u < 0.62) [-1, 1].forEach(sd => [0.78, 0.9].forEach(f => { if (R.uniform() < 0.25) return; const x = q[0] + n[0] * sd * f * hw, y = q[1] + n[1] * sd * f * hw; dot(x + 0.2, y + 0.3, 0.75, '#0c0c04', 0.35); dot(x, y, 0.6, '#5c5e3c', 0.9); dot(x - 0.2, y - 0.25, 0.25, '#bdb98e', 0.6); }));
+      // dorsal armour: big raised keeled osteoderms in staggered rows of mixed size, small bumps on flanks and tail, double tail crest becoming single
+      const HW = pw([0, 0.18, 0.33, 0.5, 0.75, 1], [0, 7.2, 13.4, 9, 4.2, 0.4]), N = B.s.length - 1;
+      const scute = (i, f, sz, col, tri = 0) => {
+        const q = B.s[i], n = B.nrm[i], dx = n[1], dy = -n[0], x = q[0] + n[0] * f, y = q[1] + n[1] * f, P = (a, b) => [x + dx * a + n[0] * b, y + dy * a + n[1] * b];
+        dot(x + 0.4, y + 0.55, sz * 1.1, '#0a0a04', 0.45);
+        const p = shape(tri ? [P(-sz, -sz * 0.75), P(sz * 0.2, -sz * 0.55), P(sz * 1.3, 0, 1), P(sz * 0.2, sz * 0.55), P(-sz, sz * 0.75)] : [P(-sz, -sz * 0.7), P(sz * 0.5, -sz * rnd(0.65, 0.85)), P(sz * 1.1, rnd(-0.2, 0.2) * sz), P(sz * 0.5, sz * rnd(0.65, 0.85)), P(-sz, sz * 0.7)]);
+        wash(p, col, { hl: 0.55, sh: 0.6, dk: '#0a0a04', ew: 0.5 }); ink(p, 0.17, 0.6);
+        taper([P(-sz * 0.8, -0.2), P(sz * 0.9, -0.2)], sz * 0.35, sz * 0.1, '#d6d2a8', 0.5); taper([P(-sz * 0.8, 0.3), P(sz * 0.9, 0.3)], sz * 0.25, sz * 0.08, '#141408', 0.5);
+      };
+      c.save(); c.clip(bp);
+      for (let k = 0; k < 520; k++) {   // small bumps
+        const u = rnd(0.16, 0.98), i = Math.round(u * N), hw = HW(u), f = (R.uniform() < 0.5 ? -1 : 1) * hw * rnd(u < 0.48 ? 0.7 : 0.5, 0.97), q = B.s[i], n = B.nrm[i], x = q[0] + n[0] * f, y = q[1] + n[1] * f, r = rnd(0.3, 0.62) * Math.min(1, hw / 6 + 0.35);
+        dot(x + 0.2, y + 0.28, r * 1.1, '#0c0c04', 0.4); dot(x, y, r, '#55583a', 0.95); dot(x - r * 0.3, y - r * 0.35, r * 0.4, '#b4b088', 0.5);
+      }
+      c.restore();
+      for (let i = Math.round(0.19 * N), row = 0; i < 0.48 * N; i += R.uniform() < 0.35 ? 3 : 2, row++) {   // back: staggered rows, largest along the midline
+        const hw = HW(i / N), st = (row % 2 ? 0.1 : -0.04) * hw;
+        [-0.62, -0.37, -0.12, 0.12, 0.37, 0.62].forEach(f => { if (R.uniform() < 0.12) return; const big = 1 - Math.abs(f) * 1.1; scute(i, f * hw + st + rnd(-0.3, 0.3), (0.8 + big * 1.1) * rnd(0.8, 1.2), '#545637'); });
+      }
+      for (let i = Math.round(0.49 * N); i < N - 2; i += 2) {   // tail crest: two rows, merging into one toward the tip
+        const u = i / N, hw = HW(u), sz = lerp(2, 0.6, (u - 0.49) / 0.51);
+        if (u < 0.78) [-1, 1].forEach(sd => scute(i, sd * hw * 0.36, sz * rnd(0.9, 1.1), '#4e5034', 1)); else scute(i, 0, sz * 1.15, '#4e5034', 1);
       }
       ink(bp, 0.55);
       spec(B.s.filter((q, i) => i > 30 && i < 60 && i % 3 === 0).map((q, i) => [q[0], q[1] - 9.5 + i * 0.05]), 1.2, 0.35);
@@ -1025,34 +1047,53 @@ const PLATE = (() => {
       shadow(96, 102.5, 66, 5, 0.45); ground(30, 160, 103.6);
       const furred = (pts, n, dir, len, cols = FUR, fr = 1) => { const p = shape(pts); wash(p, '#2a2019', o); fur(p, n, dir, len, cols, 0.32, 0.85); if (fr) fringe(p, n * 0.08 * fr, dir, len * 1.2, '#1a120d', 0.26, 0.55); return p; };
       const down = () => 1.5, back = (x, y) => 0.35 + (y - 50) * 0.02;
-      // far limbs (in shadow)
-      furred(limb([84, 46], [84, 78], 9, 6.5), 260, down, 2.6, FAR, 0.5); furred(limb([84, 76], [81, 95], 6, 5), 150, down, 2.2, FAR, 0.5);
-      part([[77.5, 93], [84, 93.5], [84.6, 99.5], [83, 102.4], [77, 102.6], [75.6, 100.6], [77, 97]], '#1e1611', { dk: '#080503', hl: 0.15 }, 0.35); [78.6, 80.6, 82.4].forEach(x => taper([[x, 98.6], [x - 0.4, 102.2]], 0.25, 0.15, '#6a5446', 0.6));
-      furred(limb([140, 62], [136, 84], 12, 8), 260, down, 2.6, FAR, 0.5); furred(limb([136, 84], [145, 97], 7, 5.5), 140, down, 2.2, FAR, 0.5);
-      part([[140, 96], [147.6, 95.6], [148.4, 101.4], [140, 102.5], [133.4, 102.4], [133, 101.2], [137.6, 99.6]], '#1e1611', { dk: '#080503', hl: 0.15 }, 0.35);
+      // limbs with muscle contour: outline from a to b with front/back bulges
+      const musc = (a, b, w0, w1, bf, bb) => {
+        const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d, nx = -uy, ny = ux, P = (t, w, f = 0) => [a[0] + dx * t + nx * w + ux * f, a[1] + dy * t + ny * w + uy * f];
+        return [P(0, w0 / 2), P(0.32, w0 / 2 + bb), P(0.72, w1 / 2 + bb * 0.45), P(1, w1 / 2), P(1, 0, w1 * 0.45), P(1, -w1 / 2), P(0.72, -w1 / 2 - bf * 0.5), P(0.3, -w0 / 2 - bf), P(0, -w0 / 2), P(0, 0, -w0 * 0.45)];
+      };
+      const FARC = ['#140e0a', '#241a14', '#382b22', '#54443a', '#76645a'], SHEEN = ['#6a584a', '#8a7664', '#a8927c'];
+      const farLimb = (pts, n, dir, len) => { const p = furred(pts, n, dir, len, FARC, 0.6); fur(p, n * 0.15, dir, len, SHEEN, 0.26, 0.35); return p; };
+      const handK = (ox, near) => {   // knuckle-walking hand: fingers flexed onto the middle phalanges, knuckle pads on the ground
+        const C = near ? ['#4a382c', '#5a463a', '#3a2c24'] : ['#45352b', '#554237', '#382a22'];
+        for (let k = 3; k >= 0; k--) {
+          const dx = k * 1.5 + ox, mc = [62.4 + dx, 93.6 - k * 0.3], pip = [58.6 + dx, 100.8], dip = [63.4 + dx, 101.6], tip = [64.8 + dx, 98.8];
+          part(limb(mc, pip, 3.4, 3), C[0], { dk: '#0a0604', hl: k ? 0.32 : 0.48 }, 0.35); part(limb(pip, dip, 2.8, 2.5), C[1], { dk: '#0a0604', hl: 0.35 }, 0.35);
+          part(limb(dip, tip, 2.3, 1.8), C[0], { dk: '#0a0604', hl: 0.3 }, 0.3); dot(pip[0] - 0.2, pip[1] - 0.4, 0.8, '#8a6e5a', 0.75); dot(pip[0] - 0.5, pip[1] - 0.8, 0.32, '#c8a88c', 0.75);
+        }
+        const hb = part([[62.4 + ox, 87.6], [69.6 + ox, 88.4], [70.6 + ox, 93.4], [66.8 + ox, 96.6], [61 + ox, 96.2], [59.6 + ox, 92.6]], C[2], { dk: '#0a0604', hl: 0.45, blot: ['#5a4436'] }, 0.45);
+        fur(hb, 60, () => 1.9, 1.4, ['#1a120d', '#33271e', '#5a4a3c'], 0.22, 0.7);
+        [0, 1, 2].forEach(k => taper([[63 + ox + k * 2, 91.5], [61.2 + ox + k * 2, 95.4]], 0.3, 0.15, '#8a6e5a', 0.5));   // tendons over the knuckles
+        spec([[63 + ox, 89.4], [67.4 + ox, 89.2]], 0.8, 0.45);
+      };
+      const footG = (ox, near) => {   // plantigrade foot; the opposable big toe splays forward
+        const C = near ? '#3d2e25' : '#3a2b23';
+        [0, 1, 2].forEach(k => { const b = [119.5 - k * 0.6 + ox, 100 - k * 0.2]; part(limb(b, [113.6 - k * 0.8 + ox, 101.6], 2.4, 1.9), C, { dk: '#0a0604', hl: 0.4 }, 0.3); dot(112.9 - k * 0.8 + ox, 101.6, 0.5, '#8a7262', 0.7); });
+        const ft = part([[121.4 + ox, 92.6], [130.4 + ox, 93.2], [132 + ox, 99.2], [130 + ox, 102.4], [122 + ox, 102.6], [117.6 + ox, 101.6], [118.6 + ox, 98.8]], C, { dk: '#0a0604', hl: 0.42, blot: ['#5a4537'] }, 0.45);
+        fur(ft, 40, () => 2.2, 1.2, ['#1a120d', '#3a2c22', '#5a4a3c'], 0.2, 0.6);
+        part([[121 + ox, 96.4], [116.4 + ox, 95.2], [112 + ox, 95.8], [110.6 + ox, 97.6], [112.4 + ox, 98.6], [117 + ox, 98.6], [121.6 + ox, 99.4]], '#4e3b30', { dk: '#0a0604', hl: 0.55 }, 0.45);
+        part([[110.8 + ox, 96.4], [112.2 + ox, 96], [112.6 + ox, 97.6], [111.2 + ox, 98]], '#a88a74', { hl: 0.6 }, 0.2);
+        spec([[123 + ox, 94], [128 + ox, 94.2]], 0.7, 0.4);
+      };
+      // far limbs: in shade but modelled, with sheen on the lit side
+      farLimb(musc([84, 45], [84, 76], 9.5, 6.5, 1.2, 1.4), 300, () => 1.55, 2.6); farLimb(musc([84, 74], [81, 93], 7, 5.2, 0.7, 1), 170, () => 1.62, 2.3);
+      handK(15.6, false);
+      farLimb(musc([140, 60], [136, 84], 12.5, 8, 1.4, 2.2), 300, () => 1.6, 2.6); farLimb(musc([136, 83], [145, 96], 7.5, 5.5, 0.6, 1.4), 160, () => 1.15, 2.3);
+      footG(18, false);
       // torso: high shoulders sloping to the rump
       const tor = furred([[60, 42], [72, 30], [92, 27.5], [112, 33], [130, 41.5], [144, 51], [148.5, 63], [142, 75], [128, 79], [108, 77.5], [90, 73], [74, 66], [63, 55]], 2600, back, 3.2);
       fringe(tor, 160, (x, y) => y > 66 ? 1.5 : back(x, y), 3.4, '#1a120d', 0.28, 0.6, (x, y) => y > 66);
       fur(tor, 260, back, 3, ['#7a6656', '#9c8672', '#b9a28b'], 0.28, 0.45);   // sheen along the lit back
-      // near leg and foot (big toe spread for grasping)
-      furred(limb([126, 60], [117, 82], 15, 10), 600, (x, y) => 1.9 - (y - 60) * 0.01, 2.8); furred(limb([118, 80], [127, 95], 9, 6.5), 280, (x, y) => 1.1, 2.4);
-      [[0, 1], [1, 0.8], [2, 0.7]].forEach(([k]) => { const b = [119.5 - k * 0.6, 100 - k * 0.2]; part(limb(b, [113.6 - k * 0.8, 101.6], 2.4, 1.9), '#3d2e25', { dk: '#0a0604', hl: 0.35 }, 0.3); dot(112.9 - k * 0.8, 101.6, 0.5, '#8a7262', 0.7); });
-      const ft = part([[121.4, 92.6], [130.4, 93.2], [132, 99.2], [130, 102.4], [122, 102.6], [117.6, 101.6], [118.6, 98.8]], '#3d2e25', { dk: '#0a0604', hl: 0.35, blot: ['#5a4537'] }, 0.45);
-      const ht = part([[121, 96.4], [116.4, 95.2], [112, 95.8], [110.6, 97.6], [112.4, 98.6], [117, 98.6], [121.6, 99.4]], '#4e3b30', { dk: '#0a0604', hl: 0.55 }, 0.45);
-      part([[110.8, 96.4], [112.2, 96], [112.6, 97.6], [111.2, 98]], '#a88a74', { hl: 0.6 }, 0.2); void ft; void ht;
-      // near arm: long, straight, onto the knuckles
-      furred(limb([75, 40], [68, 74], 13, 9), 900, (x, y) => 1.6 + (x - 70) * 0.01, 3);
-      furred(limb([68, 72], [65.5, 92], 9, 7), 420, () => 1.62, 2.6);
+      // near leg (thigh and calf contours) and grasping foot
+      const th1 = furred(musc([126, 60], [117, 82], 15, 10, 2, 1.2), 620, (x, y) => 1.9 - (y - 60) * 0.01, 2.8); fur(th1, 90, () => 1.9, 2.6, SHEEN, 0.26, 0.4);
+      furred(musc([118, 80], [127, 95], 9, 6.5, 0.6, 1.6), 280, () => 1.1, 2.4);
+      footG(0, true);
+      // near arm: long, onto the knuckles; deltoid and forearm contours
+      const ua = furred(musc([75, 40], [68, 74], 13, 9, 1.6, 1.2), 900, (x, y) => 1.6 + (x - 70) * 0.01, 3); fur(ua, 140, () => 1.6, 2.8, SHEEN, 0.28, 0.45);
+      furred(musc([68, 72], [65.5, 92], 9.5, 7, 1, 0.6), 420, () => 1.62, 2.6);
       fur(shape([[66, 30], [82, 32], [84, 52], [72, 56], [64, 46]]), 380, (x, y) => 1.3 + (x - 74) * 0.02, 3, FUR, 0.32, 0.8);
-      for (let k = 3; k >= 0; k--) {   // fingers: proximal phalanx down to the knuckle, middle phalanx flat on the ground, tip tucked under
-        const dx = k * 1.5, sh = k ? 0.75 : 1, mc = [62.4 + dx, 93.6 - k * 0.3], pip = [58.6 + dx, 100.8], dip = [63.4 + dx, 101.6], tip = [64.8 + dx, 98.8];
-        const f1 = part(limb(mc, pip, 3.4, 3), '#4a382c', { dk: '#0a0604', hl: 0.4 * sh, a: 1 }, 0.35), f2 = part(limb(pip, dip, 2.8, 2.5), '#5a463a', { dk: '#0a0604', hl: 0.35 }, 0.35);
-        part(limb(dip, tip, 2.3, 1.8), '#4a382c', { dk: '#0a0604', hl: 0.3 }, 0.3); dot(pip[0] - 0.2, pip[1] - 0.4, 0.8, '#8a6e5a', 0.7); void f1; void f2;
-      }
-      const hand = part([[62.4, 87.6], [69.6, 88.4], [70.6, 93.4], [66.8, 96.6], [61, 96.2], [59.6, 92.6]], '#3a2c24', { dk: '#0a0604', hl: 0.45, blot: ['#5a4436'] }, 0.45);
-      fur(hand, 60, () => 1.9, 1.4, ['#1a120d', '#33271e', '#5a4a3c'], 0.22, 0.7);
+      handK(0, true);
       const th = shape([[62.6, 94], [59.6, 94.8], [56.6, 96.6], [55.2, 98.8], [56.8, 99.4], [60.2, 97.6], [63.4, 96.6]]); wash(th, '#56423a', { dk: '#0a0604', hl: 0.55 }); ink(th, 0.4); part([[55.3, 98.2], [56.3, 97.6], [57, 98.6], [56.1, 99.2]], '#a88a74', { hl: 0.6 }, 0.2);
-      spec([[63, 89.4], [67.4, 89.2]], 0.8, 0.4);
       // head: fur cap, bare face with heavy brow, projecting muzzle, large ear (drawn at 0.84 scale about the neck)
       view(0.84, 60, 62);
       const cap = furred([[30, 37], [33, 29.5], [42, 24], [54, 24], [64, 30], [70, 40], [69, 52], [63, 60], [52, 66], [40, 68.5], [32, 66]], 900, (x, y) => Math.atan2(y - 50, x - 30) * 0.6 + 0.4, 2.4);
