@@ -786,6 +786,22 @@
     if (f.tagName === 'SELECT') { const o = f.selectedOptions && f.selectedOptions[0]; return o ? o.textContent.trim() : ''; }
     return (f.value || '').trim();
   }
+  /* ---- Running header/footer on every printed page (report PDF, .docx, worksheet) ----
+     Browsers with CSS paged-media margin boxes (Chromium 131+) get @top/@bottom boxes from a temporary <style>.
+     Others get a repeated header: the content sits in a display:table whose header group repeats on each page
+     (body.pr-fallback). The fallback cannot show a page number. */
+  const cleanTitle = t => String(t || '').replace(/\s+[—–-]\s+AP Bio (Digital )?Lab Bench\s*$/, '').trim();
+  const HAS_MARGIN_BOXES = (function () { const m = /Chrome\/(\d+)/.exec(navigator.userAgent || ''); return !!m && +m[1] >= 131; })();
+  const cssStr = t => '"' + String(t).replace(/[\\"]/g, '').replace(/[\r\n]+/g, ' ') + '"';
+  function printRun(a) { // a: {left, right, bottomLeft} plain text
+    return `<div class="pr-thead print-run" aria-hidden="true"><span>${esc(a.left)}</span><span>${esc(a.right)}</span><span>${esc(a.bottomLeft)}</span></div>`;
+  }
+  function printPageStyle(id, a, margin) {
+    const f = 'font: 9pt Arial, sans-serif; color: #444;';
+    const boxes = HAS_MARGIN_BOXES ? ` @top-left { content: ${cssStr(a.left)}; ${f} } @top-right { content: ${cssStr(a.right)}; ${f} } @bottom-left { content: ${cssStr(a.bottomLeft)}; ${f} } @bottom-right { content: "Page " counter(page) " of " counter(pages); ${f} }` : '';
+    document.body.classList.toggle('pr-fallback', !HAS_MARGIN_BOXES);
+    return h('style', { id, text: `@page { size: letter; margin: ${margin};${boxes} }` });
+  }
   const labTag = () => { const m = /^lab(\d\d)$/.exec(PAGE.id); return m ? 'Lab' + m[1] : 'Lab'; };
   function reportFileBase() {
     const who = reportIdentity().name;
@@ -844,7 +860,7 @@
       if (items.length) sections.push({ name: sec.dataset.step || '', heading: h2 ? h2.textContent.trim() : '', items });
     });
     return {
-      title, docTitle: document.title, lab: PAGE.id, labNo: labTag().replace('Lab', ''),
+      title, docTitle: cleanTitle(document.title), labTitle: cleanTitle(document.title), lab: PAGE.id, labNo: labTag().replace('Lab', ''),
       name: who.name, period: who.period, datasetId: who.datasetId,
       date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
       sections,
@@ -905,7 +921,7 @@
   }
   async function buildDocx(rep) {
     const D = await loadDocx();
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, ShadingType, BorderStyle } = D;
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, ShadingType, BorderStyle, Header, Footer, PageNumber, TabStopType } = D;
     const P = (text, o = {}) => new Paragraph(Object.assign({ children: [new TextRun(Object.assign({ text: String(text) }, o.run || {}))] }, o.para || {}));
     const kids = [];
     kids.push(new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(rep.docTitle || rep.title)] }));
@@ -943,7 +959,15 @@
     const doc = new Document({
       creator: rep.name || 'Student', title: rep.docTitle || rep.title,
       styles: { default: { document: { run: { font: 'Calibri', size: 22 } } } },
-      sections: [{ properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } }, children: kids }],
+      sections: [{
+        properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } },
+        headers: { default: new Header({ children: [new Paragraph({ tabStops: [{ type: TabStopType.RIGHT, position: 10080 }], border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: '999999', space: 4 } }, children: [
+          new TextRun({ text: (rep.name || '(name not entered)') + (rep.period ? ' · Class ' + rep.period : ''), size: 18, color: '444444' }),
+          new TextRun({ text: '\t' + rep.labTitle, size: 18, color: '444444' })] })] }) },
+        footers: { default: new Footer({ children: [new Paragraph({ tabStops: [{ type: TabStopType.RIGHT, position: 10080 }], children: [
+          new TextRun({ text: 'Dataset ID: ' + rep.datasetId, size: 18, color: '444444' }),
+          new TextRun({ children: ['\tPage ', PageNumber.CURRENT, ' of ', PageNumber.TOTAL_PAGES], size: 18, color: '444444' })] })] }) },
+        children: kids }],
     });
     return Packer.toBlob(doc);
   }
@@ -969,7 +993,8 @@
   }
   function closeReport() {
     const v = $('#lab-report'); if (v) v.remove();
-    document.body.classList.remove('report-mode');
+    const ps = $('#rv-page-style'); if (ps) ps.remove();
+    document.body.classList.remove('report-mode', 'pr-fallback');
     if (restoreTheme) { restoreTheme(); restoreTheme = null; }
     document.removeEventListener('keydown', reportKey);
     if (reportOpener) { try { reportOpener.focus(); } catch (e) { /* gone */ } reportOpener = null; }
@@ -980,6 +1005,9 @@
     reportOpener = o.opener || document.activeElement;
     const rep = await renderCharts(collectReport());
     restoreTheme = forceLight();
+    const run = { left: (rep.name || '(name not entered)') + (rep.period ? ' · Class ' + rep.period : ''), right: rep.labTitle, bottomLeft: 'Dataset ID: ' + rep.datasetId };
+    const rvStyle = printPageStyle('rv-page-style', run, '.7in .6in .6in');
+    document.head.append(rvStyle);
     const note = previewNote(true);
     const status = h('p', { class: 'rv-status', 'aria-live': 'polite' });
     const doPrint = () => tryPrint(() => { note.hidden = false; });
@@ -990,7 +1018,7 @@
           h('button', { class: 'btn', type: 'button', onclick: closeReport }, 'Close report')),
         h('p', { class: 'small' }, 'In the print window, set the printer (Destination) to “Save as PDF” or “Microsoft Print to PDF”, then hand in the PDF the way your teacher asks.'),
         note, status),
-      h('article', { class: 'rv-paper', html: reportHtml(rep) }));
+      h('article', { class: 'rv-paper pr-table', html: printRun(run) + '<div class="pr-body">' + reportHtml(rep) + '</div>' }));
     document.body.append(view);
     document.body.classList.add('report-mode');
     document.addEventListener('keydown', reportKey);
@@ -1253,15 +1281,16 @@
     const restore = forceLight();
     const note = previewNote(true);
     const hd = $('.lab-header h1');
-    const titleText = (document.title || (hd ? hd.textContent : 'Lab')).replace(/["\\]/g, '');
-    const style = h('style', { id: 'ws-page-style', text: `@page { size: letter; margin: .7in .6in .6in; @top-left { content: "${titleText}"; font: 9pt Arial, sans-serif; color: #444; } @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 9pt Arial, sans-serif; color: #444; } }` });
+    const titleText = cleanTitle(document.title || (hd ? hd.textContent : 'Lab'));
+    const run = { left: 'Name ______________________  Class ______', right: titleText, bottomLeft: 'Dataset ID ____________' };
+    const style = printPageStyle('ws-page-style', run, '.7in .6in .6in');
     const root = h('div', { id: 'lab-worksheet', class: 'worksheet', role: 'region', 'aria-label': 'Printable worksheet' },
       h('div', { class: 'ws-tools' },
         h('div', { class: 'row' },
           h('button', { class: 'btn btn--primary', type: 'button', onclick: () => tryPrint(() => { note.hidden = false; }) }, 'Print worksheet'),
           h('button', { class: 'btn', type: 'button', onclick: exitWorksheet }, 'Back to the lab')),
         note),
-      h('article', { class: 'ws-paper', html: buildWorksheet(wasDark) }));
+      h('article', { class: 'ws-paper pr-table', html: printRun(run) + '<div class="pr-body">' + buildWorksheet(wasDark) + '</div>' }));
     document.head.append(style);
     document.body.append(root);
     document.body.classList.add('worksheet-mode');
@@ -1275,7 +1304,7 @@
     if (!wsState) return;
     const s = wsState; wsState = null;
     s.root.remove(); s.style.remove(); s.restore(); pagesResume();
-    document.body.classList.remove('worksheet-mode');
+    document.body.classList.remove('worksheet-mode', 'pr-fallback');
     document.removeEventListener('keydown', wsKey);
     window.scrollTo(0, s.scrollY);
     if (s.opener && s.opener.focus) { try { s.opener.focus({ preventScroll: true }); } catch (e) { /* gone */ } }

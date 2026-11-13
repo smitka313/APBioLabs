@@ -684,3 +684,17 @@ details.disclose > .inner > p { max-width: 68ch; }
 .pickup-next .sn-k { font-weight: 700; color: var(--accent); }
 .pickup .btn--lg { min-height: 56px; padding-inline: 32px; font-size: 1.15rem; font-weight: 700; flex: 0 0 auto; }
 @media (max-width: 520px) { .pickup .btn--lg { width: 100%; justify-content: center; } }
+
+/* ---------- Running header on every printed page (report PDF, worksheet) ----------
+   Browsers with @page margin boxes get them from a <style> that lab.js adds. Others (body.pr-fallback) repeat
+   .print-run as a table header group, which every browser repeats on each printed page. */
+.print-run { display: none; }
+.pr-body > * + * { margin-top: 10px; }
+@media print {
+  body.pr-fallback .pr-table { display: table; width: 100%; }
+  body.pr-fallback .pr-thead { display: table-header-group; font: 9pt Arial, sans-serif; color: #444 !important; }
+  body.pr-fallback .pr-thead span { display: inline; }
+  body.pr-fallback .pr-thead span + span::before { content: " · "; }
+  body.pr-fallback .pr-thead::after { content: ""; display: block; height: 0; border-bottom: 1px solid #999; margin-bottom: 8px; }
+  body.pr-fallback .pr-body { display: table-row-group; }
+}
