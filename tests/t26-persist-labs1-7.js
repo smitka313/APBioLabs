@@ -146,6 +146,49 @@ T.lab04 = async (b) => {
   await ctx.close();
 };
 
+
+T.lab05 = async (b) => {
+  const ctx = await ctxFor(b); const p = await open(ctx, 'lab05.html');
+  const pr = async (k) => { await p.evaluate(k => { const t = document.getElementById('p-' + k); if (t) { t.value = 'I predict a clear pattern because of photosynthesis.'; t.dispatchEvent(new Event('input', { bubbles: true })); } }, k); };
+  for (const k of ['predict-floatassay', 'predict-design']) await pr(k);
+  ok(await p.evaluate(() => document.querySelector('#cup-chart').classList.contains('is-empty')), 'lab05: float chart starts in the shared empty state');
+  ok(await p.evaluate(() => document.querySelector('#d-chart').classList.contains('is-empty')), 'lab05: design chart starts in the shared empty state');
+  await go(p, 'sink-disks'); await p.click('#inf-pull'); await p.waitForTimeout(3000);
+  await reload(p); await go(p, 'sink-disks');
+  ok(await p.evaluate(() => document.querySelector('#inf-pull').disabled && /Pulling/.test(document.querySelector('#inf-pull').textContent)), 'lab05: a vacuum in progress carries on after reload');
+  await p.waitForFunction(() => !document.querySelector('#inf-pull').disabled, null, { timeout: 20000 });
+  const ia = await txt(p, '#inf-a'), ib = await txt(p, '#inf-b'), inn = await txt(p, '#inf-n'); ok(inn === '1', 'lab05: vacuum finished, count 1');
+  await reload(p); await go(p, 'sink-disks');
+  ok((await txt(p, '#inf-a')) === ia && (await txt(p, '#inf-b')) === ib && (await txt(p, '#inf-n')) === '1', 'lab05: sunk disks restored (' + ia + ', ' + ib + ')');
+  await p.click('#inf-pour'); await p.waitForTimeout(300);
+  const na = await p.evaluate(() => JSON.parse(localStorage.getItem('aplab:lab05:cup-prep')).na);
+  await go(p, 'float-assay');
+  ok((await txt(p, '#et-half')) === (na / 2) + ' of ' + na, 'lab05: ET50 wording uses the cup n: ' + await txt(p, '#et-half'));
+  await p.evaluate(() => { document.getElementById('cup-speed').value = '0.5'; }); await p.click('#cup-run'); await p.waitForTimeout(3000);
+  const r1 = await p.locator('#cup-table tbody tr').count(); const t1 = parseFloat(await txt(p, '#cup-t'));
+  await reload(p); await go(p, 'float-assay'); await p.waitForTimeout(300);
+  const r2 = await p.locator('#cup-table tbody tr').count(); const t2 = parseFloat(await txt(p, '#cup-t'));
+  ok(r2 >= r1 && t2 >= t1 - 0.5, 'lab05: timer carries on after reload (rows ' + r1 + ' -> ' + r2 + ', t ' + t1 + ' -> ' + t2 + ')');
+  await p.waitForFunction(() => document.querySelectorAll('#cup-table tbody tr').length >= 21, null, { timeout: 30000 });
+  const rows = await p.locator('#cup-table tbody tr').count(); ok(rows === 21, 'lab05: 21 rows (minutes 0-20) after a run split by a reload: ' + rows);
+  await p.click('#cup-run'); await p.waitForTimeout(500);
+  await p.evaluate(() => { const k = 'aplab:lab05:cup-run', v = JSON.parse(localStorage.getItem(k)); v.t0 -= 60000; localStorage.setItem(k, JSON.stringify(v)); });
+  await reload(p); await go(p, 'float-assay');
+  ok(await p.locator('#cup-table tbody tr').count() === 21 && /20\.0/.test(await txt(p, '#cup-t')), 'lab05: a run that finished while closed shows its end state (' + await txt(p, '#cup-t') + ')');
+  ok(!(await p.evaluate(() => document.querySelector('#cup-chart').classList.contains('is-empty'))), 'lab05: float chart drawn');
+  await p.fill('#et-in', '9.9'); await p.fill('#ret-in', '0.1'); await p.click('#et-check'); await p.waitForTimeout(200);
+  const fb = await txt(p, '#et-fb'); ok(fb.length > 5, 'lab05: ET50 check feedback shown');
+  await reload(p); await go(p, 'float-assay'); ok((await txt(p, '#et-fb')) === fb, 'lab05: ET50 check feedback restored');
+  await go(p, 'design'); await p.click('#d-run'); await p.waitForTimeout(1500); await reload(p); await go(p, 'design');
+  await p.waitForFunction(() => !/No data yet/.test(document.getElementById('d-raw').innerText), null, { timeout: 30000 });
+  const dn = await p.locator('#d-raw tbody tr').count(), dt = await txt(p, '#d-t'); ok(dn > 0, 'lab05: design run interrupted by a reload still finishes (' + dn + ' cups, ' + dt + ')');
+  await reload(p); await go(p, 'design');
+  ok((await p.locator('#d-raw tbody tr').count()) === dn && (await txt(p, '#d-t')) === dt && !(await p.evaluate(() => document.querySelector('#d-chart').classList.contains('is-empty'))), 'lab05: design results and scene restored');
+  ok((await badges(p)) === 0, 'lab05: no "new" badges after reload');
+  ok(p.errors.length === 0, 'lab05: no page errors ' + p.errors.join('|'));
+  await ctx.close();
+};
+
 if (require.main === module) (async () => {
   const want = process.argv.slice(2), b = await launch();
   for (const k of Object.keys(T)) { if (want.length && !want.includes(k)) continue; console.log('\n== ' + k); await T[k](b); }
