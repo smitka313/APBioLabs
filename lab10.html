@@ -413,6 +413,7 @@ function keyRes(id, o) { const j = JSON.stringify(o); if (_krLast[id] === j) ret
 /* A repeatable random stream for this student + dataset (same student: same values; other students: different). */
 const myRng = salt => Lab.rng((Lab.identity.seed.seed ^ Math.imul((salt | 0) + 1, 0x9E3779B1)) >>> 0);
 const myU = (salt, lo, hi) => lo + (hi - lo) * myRng(salt).uniform();
+const numOk = x => typeof x === 'number' && isFinite(x);
 const slugOf = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const partBody = name => Lab.$('section.step[data-step="' + name + '"] .step-body');
 /* A prompt that quotes the student's own saved result. o: {key, generic, get() → html|null, ask, need, part, rows} */
@@ -1722,7 +1723,7 @@ function predRecall(host, items) {
   /* ---------- Key results, personal-data prompts, AP free-response ---------- */
   const nppOf = r => (r && r.dry > 0 && r.age > 0) ? r.dry * KP / r.age : NaN;
   function reportP1(rows) {
-    const rs = (rows || []).filter(r => isFinite(nppOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
+    const rs = (rows || []).filter(r => numOk(nppOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return;
     const last = rs[rs.length - 1];
     keyRes('npp', { label: 'NPP per plant per day (day ' + last.age + ' harvest)', value: Math.round(nppOf(last) * 1000) / 1000, unit: 'kcal/plant/day', part: 'Part 1: NPP' });
   }
@@ -1733,7 +1734,7 @@ function predRecall(host, items) {
     keyRes('respiration', { label: 'Respiration per larva (by difference)', value: Math.round(R * 1000) / 1000, unit: 'kcal', part: 'Part 2: Larvae' });
   }
   reportP1(Lab.store.get('p1sum') || []);
-  const myBarns = () => { const rp = ratioP(), rl = ratioL(); if (!isFinite(rp) || !isFinite(rl)) return []; return (Lab.store.get('p2barns') || []).filter(b => b && b.n > 0 && isFinite(b.l3)).map((b, i) => Object.assign({ i: i + 1 }, audit(b, rp, rl, $('#p2-correct').checked))).filter(a => a.C > 0); };
+  const myBarns = () => { const rp = ratioP(), rl = ratioL(); if (!numOk(rp) || !numOk(rl)) return []; return (Lab.store.get('p2barns') || []).filter(b => b && b.n > 0 && numOk(b.l3)).map((b, i) => Object.assign({ i: i + 1 }, audit(b, rp, rl, $('#p2-correct').checked))).filter(a => a.C > 0); };
   const an10 = partBody('Analyze');
   an10.append(h('h3', { style: 'margin-top:20px' }, 'Your own data'));
   const my10 = h('div', { class: 'prompts-2' }); an10.append(my10);
@@ -1742,7 +1743,7 @@ function predRecall(host, items) {
     generic: 'Look at the NPP values in your own Part 1 table: which harvest day is the odd one out, and why?',
     ask: 'Explain this, using what is happening to the plants between harvests.',
     get() {
-      const rs = (Lab.store.get('p1sum') || []).filter(r => isFinite(nppOf(r))); if (!rs.length) return null;
+      const rs = (Lab.store.get('p1sum') || []).filter(r => numOk(nppOf(r))); if (!rs.length) return null;
       const v = rs.map(nppOf), mu = stats.mean(v);
       const o = rs.length > 1 ? rs.reduce((a, b) => Math.abs(nppOf(b) - mu) > Math.abs(nppOf(a) - mu) ? b : a) : rs[0];
       if (rs.length === 1) return `Your day-${o.age} plants had a mean dry mass of <strong>${fmt(o.dry, 3)} g</strong>, which is <strong>${fmt(nppOf(o), 3)} kcal/plant/day</strong> of NPP.`;
