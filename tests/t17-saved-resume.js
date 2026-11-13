@@ -49,7 +49,7 @@ const OUT = process.env.OUT || require('os').tmpdir();
   T.ok(!card.hidden && card.first, 'card visible and first in hero');
   T.ok(/Pick up where you left off/i.test(card.text) && /Lab 5/.test(card.text) && /Part:\s*Float assay/i.test(card.text), 'lab name and part');
   T.ok(/Next:/.test(card.text), 'Next hint shown');
-  T.ok(/\d+ of \d+ parts done/.test(card.text) || /Started · .+ \d+\/\d+ items/.test(card.text), 'progress shown');
+  T.ok(!/\b0 of \d+ parts/.test(card.text), 'no "0 of N" on the card (no work yet: no progress line; with work: "n of m parts done" or "Started · part n/m items")');
   T.ok(!/AP Bio Lab Bench/.test(card.text), 'title suffix stripped');
   T.ok(/lab05\.html#/.test(card.href), 'resume link ' + card.href);
   await h.screenshot({ path: OUT + '/home-returning.png' });
