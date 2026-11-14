@@ -1156,6 +1156,8 @@ const Predict = (function () {
   pRec.mount('#p-timelapse');
   const partsE = contentParticles('seed', 11), partsC = contentParticles('beads', 12);
   let pRun = null, pLoop = null, pBusy = false;
+  /* The verdicts under the table and the rate belong to the values they were made for; any change to those values withdraws them. */
+  let pCheckSig = null, pRateSig = null;
   const pTable = Lab.table('#p-table', {
     save: 'p-table', toast: false,
     columns: [
@@ -1166,7 +1168,7 @@ const Predict = (function () {
       { key: 'de', label: 'D. Seeds Δ interval', unit: 'cm', num: true, editable: true },
       { key: 'corr', label: 'Corrected (C seeds − C beads)', unit: 'cm', num: true, editable: true }
     ],
-    onChange: rows => updatePChart(rows)
+    onChange: rows => { updatePChart(rows); pStale(); }
   });
   const pChart = Lab.chart('#p-chart', { xLabel: 'Time (min)', yLabel: 'O₂ consumed (µL)', series: [] });
   function o2Rows(rows) { return rows.filter(r => typeof r.e === 'number' && typeof r.c === 'number').map(r => ({ x: r.t, y: (r.e - r.c) * UL_PER_CM })); }
@@ -1236,6 +1238,13 @@ const Predict = (function () {
     runP(pSt, 0);
   });
   $('#p-clear').addEventListener('click', () => { if (pBusy) return; pTable.clear(); Lab.store.set('p-run', null); Lab.store.set('chk-pCheck', false); Lab.store.set('chk-pRate', false); drawP(0, { e: 0, c: 0 }, [], []); setReadouts(0, 0, 0); $('#p-check-msg').textContent = ''; $('#p-rate-msg').textContent = ''; });
+  const pCheckKey = () => JSON.stringify(pTable.getRows().map(r => [r.t, r.e, r.c, r.de, r.corr]));
+  const pRateKey = () => JSON.stringify([$('#p-rate-in').value, o2Rows(pTable.getRows())]);
+  function pStale() {
+    if (pCheckSig != null && pCheckKey() !== pCheckSig) { pCheckSig = null; $('#p-check-msg').textContent = ''; $('#p-check-msg').className = 'status'; $('#p-check-msg').removeAttribute('role'); if (Lab.store.get('chk-pCheck')) Lab.store.set('chk-pCheck', false); }
+    if (pRateSig != null && pRateKey() !== pRateSig) { pRateSig = null; $('#p-rate-msg').textContent = ''; $('#p-rate-msg').className = 'status'; if (Lab.store.get('chk-pRate')) Lab.store.set('chk-pRate', false); }
+  }
+  $('#p-rate-in').addEventListener('input', pStale);
   function pCheck(quiet) {
     const rows = pTable.getRows(), out = $('#p-check-msg');
     if (!rows.length) { out.textContent = 'Run the experiment first.'; out.className = 'status bad'; return; }
@@ -1251,7 +1260,7 @@ const Predict = (function () {
       total++; if (typeof r.corr === 'number' && Math.abs(r.corr - expCorr) <= 0.015) ok++; else wrong.push(`${r.t} min (corrected)`);
     });
     if (blank.length) { out.setAttribute('role', 'alert'); out.textContent = `Not checked yet: ${blank.length} cell${blank.length > 1 ? 's are' : ' is'} still blank or not a number (${blank.slice(0, 4).join(', ')}${blank.length > 4 ? ', \u2026' : ''}). Fill in every D and Corrected cell, then check again.`; out.className = 'status bad'; Lab.toast('Not checked: fill in every blank cell first', { type: 'warn', announce: false }); return; }
-    out.removeAttribute('role');
+    out.removeAttribute('role'); pCheckSig = pCheckKey();
     out.textContent = ok === total ? `All ${total} entries are correct.` : `${ok} of ${total} entries correct. Recheck: ${wrong.slice(0, 6).join(', ')}${wrong.length > 6 ? '…' : ''}.`;
     out.className = 'status ' + (ok === total ? 'ok' : 'bad');
     if (!quiet) Lab.toast(ok === total ? `Checked: all ${total} entries are correct` : `Checked: ${ok} of ${total} entries correct`, { type: ok === total ? 'ok' : 'warn', announce: false });
@@ -1262,6 +1271,7 @@ const Predict = (function () {
     if (pts.length < 3) { out.textContent = 'You need at least three readings first.'; out.className = 'status bad'; return; }
     const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y)), v = V.num($('#p-rate-in'), { name: 'your rate', empty: 'Type your rate (a number, in \u00B5L O\u2082/min) before pressing Check.', min: 0, minMsg: 'The rate of O\u2082 uptake can\u2019t be negative. Use the slope of the line going up.' });
     if (v == null) { out.textContent = ''; out.className = 'status'; return; }
+    pRateSig = pRateKey();
     const good = Math.abs(v - f.m) <= Math.max(0.08, Math.abs(f.m) * 0.1);
     out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Not quite. Rate = rise/run of the fit line: (change in µL O<sub>2</sub>) ÷ (change in minutes). Use points on the line, not the first and last data points.';
     out.className = 'status ' + (good ? 'ok' : 'bad');

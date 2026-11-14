@@ -477,7 +477,9 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* Withdraw a key result whose data is gone or changed (never leave an old run's number in the report). */
+  function drop(id) { if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }
+  return { personal, frq, key, drop, watch: f => { watchers.push(f); f(); }, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1477,10 +1479,14 @@ const Predict = (function () {
     refreshPopMenu(); drawAll(); renderCompare();
     status('#g2-status', `Generation ${g} grown from ${par.length} parents (S = ${fmt(selHist[selHist.length - 1].S, 1)} hairs). New mean: ${fmt(S.mean(scoredVals(nx)), 1)} hairs.`, 'ok');
   });
+  let calcSig = null;   // the expected S / R / h² the visible verdict was made against
+  const calcExpected = () => { if (!(selected && selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) return null; const m1 = S.mean(scoredVals(g1)), Sv = S.mean(selected.map(valOf)) - m1, Rv = S.mean(scoredVals(selLine[1])) - m1; return [Sv, Rv, Rv / Sv].map(x => fmt(x, 4)).join('|'); };
+  const calcStale = () => { calcSig = null; if ($('#calc-status').textContent) status('#calc-status', '', ''); if (Lab.store.get('calc-checked')) Lab.store.set('calc-checked', false); };
   function checkCalc(restore) {
     if (!(selected && selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#calc-status', 'Score generation 2 first so there are numbers to check against.', 'bad'); return; }
     const m1 = S.mean(scoredVals(g1)), Sv = S.mean(selected.map(valOf)) - m1, Rv = S.mean(scoredVals(selLine[1])) - m1, h2 = Rv / Sv;
     if (!checkFields([{ el: $('#in-S'), name: 'your value for S (selection differential)' }, { el: $('#in-R'), name: 'your value for R (response)' }, { el: $('#in-h2'), name: 'your value for h² (heritability)' }])) { status('#calc-status', 'Fix the highlighted entries, then press Check again.', 'bad'); return; }
+    calcSig = calcExpected();
     const iS = parseFloat($('#in-S').value), iR = parseFloat($('#in-R').value), ih = parseFloat($('#in-h2').value);
     const okS = Math.abs(iS - Sv) <= 0.15, okR = Math.abs(iR - Rv) <= 0.15, okh = Math.abs(ih - h2) <= 0.03;
     const msg = [okS ? 'S ✓' : `S: check (expected about ${fmt(Sv, 2)})`, okR ? 'R ✓' : `R: check (expected about ${fmt(Rv, 2)})`, okh ? 'h² ✓' : `h²: check (expected about ${fmt(h2, 2)})`].join(' · ');
@@ -1488,6 +1494,7 @@ const Predict = (function () {
     if (!restore) Lab.store.set('calc-checked', true);
   }
   $('#check-calc').addEventListener('click', () => checkCalc(false));
+  ['#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', calcStale));   // an edited answer has no verdict yet
 
   Lab.prompt('#score-prompts', { key: 'g1-describe', label: 'Step 5: Describe the generation 1 distribution. What shape is it? Which measure of center (mean or median) fits it better, and why? How did changing the bin width change the picture?', rows: 4 });
   Lab.prompt('#score-prompts', { key: 'g1-method', label: 'How reliable were your hand counts compared with the recount? Propose one change to the counting procedure that would make class counts more consistent.', rows: 3 });
@@ -1681,6 +1688,10 @@ const Predict = (function () {
     ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(x => $(x).textContent = '—'); status('#tt-status', '', '');
   }));
   ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n', '#in-S', '#in-R', '#in-h2'].forEach(id => $(id).addEventListener('input', () => fieldError($(id), '')));
+  /* Editing a t-test entry makes the shown t, df, critical value, verdict line and key result out of date: clear them. */
+  ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].forEach(id => $(id).addEventListener('input', () => {
+    ['#tt-d', '#tt-t', '#tt-df', '#tt-c'].forEach(x => { $(x).textContent = '—'; }); if ($('#tt-status').textContent) status('#tt-status', '', ''); Own.drop('welch-t');
+  }));
   $('#tt-fill').addEventListener('click', () => {
     if (!(selLine[1] && fullyScored(selLine[1]) && fullyScored(g1))) { status('#tt-status', 'Score generation 2 in the simulation first.', 'bad'); return; }
     const a = scoredVals(g1), b = scoredVals(selLine[1]);
@@ -1785,7 +1796,8 @@ const Predict = (function () {
   ], { doneText: 'Design done. Go on to <a href="#analyze">Analyze</a>.' });
 
   Own.watch(() => {
-    if (!(selected && g1Scored() && g2Scored())) return;
+    if (!(selected && g1Scored() && g2Scored())) { Own.drop('gen2-mean'); Own.drop('realized-h2'); if (calcSig != null) calcStale(); return; }
+    if (calcSig != null && calcExpected() !== calcSig) calcStale();   // generation 2 was re-scored or replanted since the check
     const m1 = S.mean(scoredVals(g1)), pm = S.mean(selected.map(valOf)), m2 = S.mean(scoredVals(selLine[1]));
     Own.key('gen2-mean', { label: 'Generation 2 mean', value: +fmt(m2, 1), unit: 'hairs', part: 'Generation 2' });
     Own.key('realized-h2', { label: 'Realized heritability h²', value: +fmt((m2 - m1) / (pm - m1), 2), unit: '', part: 'Generation 2' });

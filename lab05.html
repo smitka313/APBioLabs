@@ -1093,7 +1093,7 @@ const Predict = (function () {
     const len = cupInfo.len;
     cupLoop = Lab.loop(dt => {
       cupTarget += dt / +$('#cup-speed').value;
-      while (cupT < len - 1e-9 && cupTick(Math.min(cupTarget, len), r => { const prev = cupTable.getRows().slice(-1)[0]; cupTable.addRow(r); if (prev && (r.a > prev.a || r.b > prev.b)) Lab.sound.play('pop'); }));
+      while (cupT < len - 1e-9 && cupTick(Math.min(cupTarget, len), r => { const prev = cupTable.getRows().slice(-1)[0]; if (prev && r.m <= prev.m) return; cupTable.addRow(r); if (prev && (r.a > prev.a || r.b > prev.b)) Lab.sound.play('pop'); }));
       easeDisks(cupA, dt * 6); easeDisks(cupB, dt * 6); cupRead(); cupDraw();
       if (cupT >= len - 1e-9) { easeDisks(cupA, 1); easeDisks(cupB, 1); cupDraw(); cupRec.stop(); cupFinishedToast(); return false; }
     }, { tick: 1 });
@@ -1115,12 +1115,14 @@ const Predict = (function () {
   { const ci = Lab.store.get('cup-run');
     if (ci && ci.sd != null && cupTable.getRows().length) {
       cupInfo = ci; rng = Lab.rng(ci.sd); cupInit(); cupDark = ci.dark0; cupSyncDark(); cupNext = 1; cupTi = 0;
-      const elapsed = Math.min(ci.len, (Date.now() - ci.t0) / 1000 / ci.speed), have = cupTable.getRows().reduce((m, r) => Math.max(m, r.m), -1);
+      const have = cupTable.getRows().reduce((m, r) => Math.max(m, r.m), -1);
+      /* A run whose table already reaches its last minute is finished (a reduced-motion run finishes instantly, so the clock says it is only a few minutes in): never continue it. */
+      const elapsed = have >= ci.len ? ci.len : Math.min(ci.len, (Date.now() - ci.t0) / 1000 / ci.speed);
       while (cupT < elapsed - 1e-9 && cupTick(elapsed, r => { if (r.m > have) cupTable.addRow(r, { setup: false }); }));
       cupTarget = elapsed; easeDisks(cupA, 1); easeDisks(cupB, 1); cupRead(); cupDraw();
       if (cupT < ci.len - 1e-9) cupContinue();
     } }
-  ['#et-in', '#ret-in'].forEach(id => $(id).addEventListener('input', () => vmsg($(id), '')));
+  ['#et-in', '#ret-in'].forEach(id => $(id).addEventListener('input', () => { vmsg($(id), ''); if (Lab.store.get('chk-et') || $('#et-fb').innerHTML) staleEt(); }));   // editing an answer withdraws the earlier verdict
   function etCheck(quiet) {
     const etIn = $('#et-in'), rIn = $('#ret-in'), n = cupPrep.na;
     const chk = (el, name) => { const raw = el.value.trim(); if (raw === '') return vmsg(el, `Enter your ${name}.`); const x = Number(raw); if (!isFinite(x)) return vmsg(el, `${name} must be a number.`); if (x <= 0) return vmsg(el, `${name} must be greater than 0.`); if (el === etIn && x > 45) return vmsg(el, 'ET50 can\'t be more than 45 minutes in this lab (the longest run).'); return vmsg(el, ''); };

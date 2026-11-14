@@ -658,7 +658,9 @@ const Own = (function () {
     runAll();
     return root;
   }
-  return { personal, frq, key, watch: f => { watchers.push(f); f(); }, runAll };
+  /* Withdraw a key result whose data is gone or changed (never leave an old run's number in the report). */
+  function drop(id) { if (Lab.store.get('keyres:' + id)) Lab.store.set('keyres:' + id, null); }
+  return { personal, frq, key, drop, watch: f => { watchers.push(f); f(); }, runAll };
 })();
 /* Predict first + CER scaffolds (shared helpers; no saved keys of their own). */
 const Predict = (function () {
@@ -1142,7 +1144,16 @@ const MIT = (function () {
 const MIT_ANS = [[4, 4, 2], [4, 8, 4], [4, 8, 4], [8, 8, 4], [4, 4, 2]];
 Lab.table('#mit-table', { save: 'mit-dna', columns: [{ key: 'stage', label: 'Stage' }, { key: 'chr', label: 'Chromosomes', unit: 'count', num: true, digits: 0, editable: true }, { key: 'mol', label: 'DNA molecules', unit: 'count', num: true, digits: 0, editable: true }, { key: 'amt', label: 'DNA amount', unit: 'c', num: true, digits: 0, editable: true }],
   rows: ['G1 (before S phase)', 'G2 (after S phase)', 'Metaphase', 'Anaphase (whole cell)', 'Each daughter after cytokinesis'].map(stage => ({ stage, chr: null, mol: null, amt: null })) });
-$('#mit-table').addEventListener('input', e => { if (e.target.matches('input')) e.target.removeAttribute('aria-invalid'); });
+$('#mit-table').addEventListener('input', e => {
+  if (!e.target.matches('input')) return;
+  e.target.removeAttribute('aria-invalid');
+  /* Editing any cell makes the earlier verdict ("15 of 15 correct", green/red cells) out of date: clear it all. */
+  const pill = $('#mit-table-pill');
+  $$('#mit-table input').forEach(i => i.classList.remove('is-right', 'is-wrong'));
+  if (pill.textContent !== 'not checked') { pill.textContent = 'not checked'; pill.className = 'pill'; }
+  $('#mit-table-fb').hidden = true;
+  if (Lab.store.get('chk-mit')) Lab.store.set('chk-mit', false);
+});
 function mitCheck() {
   let right = 0, tot = 0, blank = 0, badNum = 0; const keys = ['chr', 'mol', 'amt'], fbx = $('#mit-table-fb'), pill = $('#mit-table-pill');
   $$('#mit-table input[data-k]').forEach(inp => { const v = inp.value.trim(); inp.removeAttribute('aria-invalid'); inp.classList.remove('is-right', 'is-wrong');
@@ -1412,7 +1423,9 @@ const CHI = (function () {
     const sm = k => ST.sum(rows.map(r => r[k] || 0)); const A = sm('ci'), B = sm('cm'), C = sm('ti'), D = sm('tm');
     const nobs = (A + B > 0 && C + D > 0) ? { A, B, C, D } : null;
     if (JSON.stringify(nobs) === JSON.stringify(obs) && !pendingRestore) return;   // same counts: keep what the student typed and the result
+    const changed = !pendingRestore;
     obs = nobs; render();
+    if (changed) { Own.drop('chi2-lectin'); Lab.store.set('chi-state', { method, vals: [], ran: false, checked: false }); }   // new counts: the old verdicts and result no longer apply
     if (pendingRestore && obs) { pendingRestore = false; chiRestore(); }   // the saved expected values and result come back once the tips are loaded
   }
   function render() {
@@ -1428,7 +1441,11 @@ const CHI = (function () {
   $$('[data-m]').forEach(b => b.addEventListener('click', () => { method = b.dataset.m; render(); chiSave(false); }));
   const chiVals = () => [0, 1, 2, 3].map(i => { const e = $('#chi-e-' + i); return e ? e.value : null; });
   const chiSave = ran => Lab.store.set('chi-state', { method, vals: chiVals(), ran, checked: !!(Lab.store.get('chi-state') || {}).checked });
-  $('#chi-exp').addEventListener('input', () => chiSave(false));
+  $('#chi-exp').addEventListener('input', e => {
+    const fb = e.target.id && $('#' + e.target.id + '-fb'); if (fb) fb.innerHTML = '';   // editing an expected value withdraws its verdict
+    chiSave(false);
+    if (!$$('#chi-exp .pill').length) { const sv = Lab.store.get('chi-state') || {}; if (sv.checked) { sv.checked = false; Lab.store.set('chi-state', sv); } }
+  });
   function chiCheck() {
     if (!obs) { $('#chi-out').innerHTML = '<div class="feedback bad" role="alert">There are no recorded tips yet. Record tips from both jars (or add class data) first.</div>'; return; }
     expected().forEach((e, i) => {
@@ -1441,11 +1458,11 @@ const CHI = (function () {
   }
   $('#chi-checkexp').addEventListener('click', () => { chiCheck(); const sv = Lab.store.get('chi-state') || {}; sv.method = method; sv.vals = chiVals(); sv.checked = true; Lab.store.set('chi-state', sv); });
   function chiRun(quiet) {
-    if (!obs) { $('#chi-out').innerHTML = '<p class="small">No data yet.</p>'; return; }
+    if (!obs) { $('#chi-out').innerHTML = '<p class="small">No data yet.</p>'; Own.drop('chi2-lectin'); return; }
     const ex = expected(), zero = ex.filter(e => !(e[2] > 0) || !isFinite(e[2]));
-    if (zero.length) { $('#chi-out').innerHTML = `<div class="feedback bad" role="alert">\u03C7\u00B2 can\u2019t be calculated: the expected count for ${zero.map(e => e[0].toLowerCase()).join(' and ')} is 0, and \u03C7\u00B2 divides by the expected count. Record more tips so every phase has at least one cell, then try again.</div>`; return; }
+    if (zero.length) { $('#chi-out').innerHTML = `<div class="feedback bad" role="alert">\u03C7\u00B2 can\u2019t be calculated: the expected count for ${zero.map(e => e[0].toLowerCase()).join(' and ')} is 0, and \u03C7\u00B2 divides by the expected count. Record more tips so every phase has at least one cell, then try again.</div>`; Own.drop('chi2-lectin'); return; }
     const r = ST.chiSquare(ex.map(e => e[1]), ex.map(e => e[2]));
-    if (!quiet) Own.key('chi2-lectin', { label: 'Chi-square, lectin vs control (df = 1)', value: +fmt(r.chi2, 2), unit: '', part: 'Root tips' });
+    Own.key('chi2-lectin', { label: 'Chi-square, lectin vs control (df = 1)', value: +fmt(r.chi2, 2), unit: '', part: 'Root tips' });
     const df = 1, crit = ST.chiCrit(1), crit01 = ST.chiCrit(1, 0.01), rej = r.chi2 >= crit;
     const rows = ex.map((e, i) => [e[0], e[1], fmt(e[2], 1), fmt(e[1] - e[2], 1), fmt((e[1] - e[2]) ** 2, 1), fmt(r.terms[i], 2)]);
     rows.push(['<strong>χ² = Σ (o − e)²/e</strong>', '', '', '', '', `<strong>${fmt(r.chi2, 2)}</strong>`]);
@@ -1609,9 +1626,12 @@ const KARYO = (function () {
   build();
   return { TRUE };
 })();
-const kTab = Lab.table('#k-table', { save: 'kary', columns: [{ key: 'cell', label: 'Cell type' }, { key: 'n', label: 'Chromosome count', num: true, digits: 0, editable: true }, { key: 'obs', label: 'What you notice (pairs, sizes, banding)', editable: true }],
+let kCheckedSig = null;   // the counts the visible verdicts were made for
+const kSig = () => JSON.stringify(kTab.getRows().map(r => r.n));
+const kTab = Lab.table('#k-table', { save: 'kary', onChange: () => { if (kCheckedSig != null && kSig() !== kCheckedSig) { kCheckedSig = null; $('#k-check-msg').innerHTML = ''; if (Lab.store.get('chk-k')) Lab.store.set('chk-k', false); } }, columns: [{ key: 'cell', label: 'Cell type' }, { key: 'n', label: 'Chromosome count', num: true, digits: 0, editable: true }, { key: 'obs', label: 'What you notice (pairs, sizes, banding)', editable: true }],
   rows: [{ cell: 'Normal (46,XX)', n: null, obs: '' }, { cell: 'HeLa (cervical cancer)', n: null, obs: '' }, { cell: 'CML (leukemia)', n: null, obs: '' }] });
 function kCheckRun() {
+  kCheckedSig = kSig();
   const keys = ['normal', 'hela', 'cml'], names = ['Normal', 'HeLa', 'CML'];
   $('#k-check-msg').innerHTML = kTab.getRows().map((r, i) => { const inv = r.n != null && (!(r.n > 0) || r.n !== Math.round(r.n)), ok = r.n != null && !inv && Math.abs(r.n - KARYO.TRUE[keys[i]]) <= (keys[i] === 'hela' ? 1 : 0); return `${names[i]}: <span class="pill ${r.n == null ? '' : inv ? 'warn' : ok ? 'ok' : 'bad'}">${r.n == null ? 'no count yet: enter one' : inv ? 'enter a whole number above 0' : ok ? 'matches' : 'recount'}</span>`; }).join(' ');
 }
@@ -1993,8 +2013,11 @@ const SORD = (function () {
   sordReady = true; sordSave();
   return {};
 })();
+let sCheckedSig = null;   // the totals and typed answers the visible verdict was made for
+const sSig = () => { const r = sTab.getRows(); return [ST.sum(r.map(x => x.p)), ST.sum(r.map(x => x.r)), $('#s-pct').value, $('#s-mu').value].join('|'); };
+function sStale() { if (sCheckedSig != null && sSig() !== sCheckedSig) { sCheckedSig = null; $('#s-calc-msg').innerHTML = ''; if (Lab.store.get('chk-scalc')) Lab.store.set('chk-scalc', false); } }
 const sTab = Lab.table('#s-table', { save: 'sord', columns: [{ key: 'field', label: 'Field', num: true, digits: 0 }, { key: 'p', label: 'Asci showing 4:4', unit: 'asci', num: true, digits: 0 }, { key: 'r', label: 'Asci showing crossover', unit: 'asci', num: true, digits: 0 }, { key: 'tot', label: 'Total asci', unit: 'asci', num: true, digits: 0 }],
-  footer: rows => ['Total', ST.sum(rows.map(r => r.p)), ST.sum(rows.map(r => r.r)), ST.sum(rows.map(r => r.tot))], onChange: () => { $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot)); sClassUpdate(); } });
+  footer: rows => ['Total', ST.sum(rows.map(r => r.p)), ST.sum(rows.map(r => r.r)), ST.sum(rows.map(r => r.tot))], onChange: () => { $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot)); sClassUpdate(); sStale(); } });
 $('#s-n-tot').textContent = ST.sum(sTab.getRows().map(r => r.tot));
 function sCalcRun() {
   const rows = sTab.getRows(), P = ST.sum(rows.map(r => r.p)), R = ST.sum(rows.map(r => r.r)), T = P + R;
@@ -2003,10 +2026,12 @@ function sCalcRun() {
   const a = V.num($('#s-pct'), { name: 'the % of asci showing crossover', min: 0, minMsg: 'A percentage can\u2019t be negative.', max: 100, maxMsg: 'A percentage can\u2019t be more than 100.' });
   const b = V.num($('#s-mu'), { name: 'the map distance', empty: 'Enter the gene-to-centromere distance (map units) first.', min: 0, minMsg: 'A distance in map units can\u2019t be negative.', max: 50, maxMsg: 'Gene-to-centromere distance can\u2019t be more than 50 map units (that is 100% crossover \u00F7 2).' });
   if (a == null || b == null) { V.note(msg, 'Fix the highlighted box' + (a == null && b == null ? 'es' : '') + ' and check again. Nothing was graded.', true); return; }
+  sCheckedSig = sSig();
   const pct = 100 * R / T, mu = pct / 2;
   const okA = Math.abs(a - pct) <= 0.15, okB = Math.abs(b - mu) <= 0.15 || (isFinite(a) && Math.abs(b - a / 2) <= 0.1 && okA);
   msg.innerHTML = `% crossover: <span class="pill ${okA ? 'ok' : 'bad'}">${okA ? 'correct' : 'recheck'}</span> Map distance: <span class="pill ${okB ? 'ok' : 'bad'}">${okB ? 'correct' : 'recheck'}</span>` + (T < 50 ? ' <span class="pill warn">fewer than 50 asci</span>' : '');
 }
+['#s-pct', '#s-mu'].forEach(id => $(id).addEventListener('input', sStale));
 $('#s-calc-check').addEventListener('click', () => { sCalcRun(); Lab.store.set('chk-scalc', true); });
 if (Lab.store.get('chk-scalc') && sTab.getRows().length && $('#s-pct').value && $('#s-mu').value) sCalcRun();
 const sClassTab = Lab.table('#s-class-table', { columns: [{ key: 'g', label: 'Group' }, { key: 'p', label: '4:4', unit: 'asci', num: true, digits: 0 }, { key: 'r', label: 'Crossover', unit: 'asci', num: true, digits: 0 }, { key: 't', label: 'Total', unit: 'asci', num: true, digits: 0 }, { key: 'pct', label: 'Asci with crossover', unit: '%', num: true, digits: 1 }, { key: 'mu', label: 'Map distance', unit: 'map units', num: true, digits: 1 }],
@@ -2231,12 +2256,12 @@ $('#d-run').addEventListener('click', () => { if (dLv() >= 2) Lab.toast(`Scored 
   Own.personal('#an-p2', { key: 'own-tip', rows: 3, need: 'Root tips (record some tips)', href: 'root-tips',
     ask: 'Explain one reason this tip might differ from your other tips (where you cut, how well you squashed, which cells you counted).',
     compute: () => { const r = tipRows(); if (r.length < 3) return null; const avg = {}; ['control', 'lectin'].forEach(j => { const g = r.filter(x => x.jar === j); if (g.length) avg[j] = 100 * ST.sum(g.map(x => x.mit)) / ST.sum(g.map(x => x.total)); }); let best = null; r.forEach(x => { if (r.filter(y => y.jar === x.jar).length < 2) return; const d = Math.abs(x.mi - avg[x.jar]); if (!best || d > best.d) best = { d, x }; }); if (!best) return null; const x = best.x; return `Your ${x.jar} tip ${x.tip} had a mitotic index of ${fmt(x.mi, 1)}% (${x.mit} of ${x.total} cells in mitosis), the furthest from your ${x.jar} average of ${fmt(avg[x.jar], 1)}%.`; } });
-  Own.watch(() => { const r = tipRows(); ['control', 'lectin'].forEach(j => { const g = r.filter(x => x.jar === j); if (g.length) Own.key('mi-' + j, { label: 'Mitotic index, ' + j + ' (pooled tips)', value: +fmt(100 * ST.sum(g.map(x => x.mit)) / ST.sum(g.map(x => x.total)), 1), unit: '%', part: 'Root tips' }); }); });
+  Own.watch(() => { const r = tipRows(); ['control', 'lectin'].forEach(j => { const g = r.filter(x => x.jar === j); if (!g.length) Own.drop('mi-' + j); else Own.key('mi-' + j, { label: 'Mitotic index, ' + j + ' (pooled tips)', value: +fmt(100 * ST.sum(g.map(x => x.mit)) / ST.sum(g.map(x => x.total)), 1), unit: '%', part: 'Root tips' }); }); });
   const sRows = () => sTab.getRows().filter(r => !r._setup && r.tot > 0);
   Own.personal('#an-p5', { key: 'own-field', rows: 3, need: 'Sordaria (record some fields)', href: 'sordaria',
     ask: 'Explain one reason this field might differ from your pooled result, and what you could change to get a more reliable map distance.',
     compute: () => { const r = sRows(); if (r.length < 2) return null; const T = ST.sum(r.map(x => x.tot)), pooled = 100 * ST.sum(r.map(x => x.r)) / T; const w = r.reduce((a, b) => Math.abs(100 * b.r / b.tot - pooled) > Math.abs(100 * a.r / a.tot - pooled) ? b : a); return `Your field ${w.field} showed ${fmt(100 * w.r / w.tot, 1)}% crossover asci (${w.r} of ${w.tot}), the furthest from your pooled ${fmt(pooled, 1)}%, which gives ${fmt(pooled / 2, 1)} map units (published: 26).`; } });
-  Own.watch(() => { const r = sRows(), T = ST.sum(r.map(x => x.tot)); if (T >= 20) Own.key('map-units', { label: 'Gene-to-centromere distance (Sordaria)', value: +fmt(50 * ST.sum(r.map(x => x.r)) / T, 1), unit: 'map units', part: 'Sordaria' }); }); }
+  Own.watch(() => { const r = sRows(), T = ST.sum(r.map(x => x.tot)); if (T < 20) Own.drop('map-units'); else Own.key('map-units', { label: 'Gene-to-centromere distance (Sordaria)', value: +fmt(50 * ST.sum(r.map(x => x.r)) / T, 1), unit: 'map units', part: 'Sordaria' }); }); }
 const cer = $('#an-cer');
 [['C', 'cer-c', 'Claim'], ['E', 'cer-e', 'Evidence (cite mitotic indices, class means ± SD, and χ²)'], ['R', 'cer-r', 'Reasoning (connect lectins, mitogens, and the cell cycle)']].forEach(([L, k, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 5 }); $('label', p).dataset.letter = L; });
 Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'Evidence: cite two mitotic indices (%) or a χ² value.', reasoning: 'Reasoning: link the evidence to the cell cycle.' }, '<p><strong>Claim:</strong> The data show that ___ (the factor) ___ (increased / decreased) the mitotic index of ___ root tips.</p><p><strong>Evidence:</strong> The mitotic index was ___% in the ___ group, compared with ___% in the ___ group (χ² = ___, p ___ 0.05).</p><p><strong>Reasoning:</strong> This happens because ___ (lectin, mitogen, checkpoint, cell cycle) ___.</p>');
@@ -2269,7 +2294,8 @@ Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'E
   $('#cs-run').addEventListener('click', () => { csRun(); if (isEx()) { $('#cs-out').insertAdjacentHTML('afterbegin', '<p class="small"><strong>EXAMPLE — not your data.</strong></p>'); return; } csSave(); Lab.store.set('cs-ran', true); });
   $('#cs-example').addEventListener('click', () => { fill([['Example: interphase', 161, 213], ['Example: mitosis', 88, 36]]); banner.hidden = false; $('#cs-run').click(); });
   $('#cs-clear-ex').addEventListener('click', clearAll);
-  $('#cs-rows').addEventListener('input', e => { if (isEx()) { banner.hidden = true; const keep = e.target.id; $$('#cs-rows input').forEach(i => { if (i.id !== keep) i.value = ''; }); $('#cs-out').innerHTML = ''; } csSave(); });
+  $('#cs-rows').addEventListener('input', e => { if (!isEx() && $('#cs-out').innerHTML) { $('#cs-out').innerHTML = ''; Lab.store.set('cs-ran', false); }   // editing a value withdraws the old result
+  if (isEx()) { banner.hidden = true; const keep = e.target.id; $$('#cs-rows input').forEach(i => { if (i.id !== keep) i.value = ''; }); $('#cs-out').innerHTML = ''; } csSave(); });
   /* Use my data: the observed counts and the expected counts from the root-tip chi-square (the method chosen there), or the 200 meioses. */
   $('#cs-mine').addEventListener('click', () => { const ex = CHI.expected(); if (!ex) { $('#cs-out').innerHTML = '<div class="feedback bad" role="alert" style="margin-top:8px">Record root tips from both jars (or add class data) in Root tips first, then press this again.</div>'; return; } banner.hidden = true; fill(ex.map(e => [e[0], e[1], +e[2].toFixed(1)])); csSave(); csRun(); Lab.store.set('cs-ran', true); });
   $('#cs-mine-mei').addEventListener('click', () => { const t = Lab.store.get('mei-tally'); if (!t) { $('#cs-out').innerHTML = '<div class="feedback bad" role="alert" style="margin-top:8px">Press Run 200 meioses in Meiosis model first, then press this again.</div>'; return; } banner.hidden = true; fill(['AB', 'Ab', 'aB', 'ab'].map(k => [k, t[k], 200])); csSave(); csRun(); Lab.store.set('cs-ran', true); });
