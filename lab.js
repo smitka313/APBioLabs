@@ -324,8 +324,13 @@
   /* "Saved 10:42" in the identity line: the time of the last successful save on this page (hidden until the first one). */
   function savedClock() {
     if (SAVE.ok === false) return 'Not saved';
-    if (!SAVE.at) return '';
-    try { return 'Saved ' + new Date(SAVE.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return 'Saved'; }
+    let t = SAVE.at;
+    if (!t) { try { t = +JSON.parse(localStorage.getItem(`aplab:${LAB_ID}:saved-at`)) || 0; } catch (e) { t = 0; } }   // last change on an earlier visit
+    if (!t) return '';
+    try {
+      const d = new Date(t);
+      return 'Saved ' + (d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : d.toLocaleDateString([], { month: 'short', day: 'numeric' }));
+    } catch (e) { return 'Saved'; }
   }
   function renderSavedClock() {
     const t = savedClock();

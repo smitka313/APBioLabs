@@ -29,6 +29,8 @@ const snap = p => p.evaluate(() => { const o = {}; Object.keys(localStorage).fil
     const t2 = await p.textContent('.id-saved');
     T.ok(/^Saved 9:08\s?AM$/.test(t2), 'updates on the next save: ' + t2);
     T.ok(await p.locator('.storage-warn').count() === 0, 'no storage warning while saving works');
+    await p.reload(); await p.waitForTimeout(900);
+    T.ok(/^Saved 9:08\s?AM$/.test(await p.textContent('.id-saved')), 'after a reload it still shows when the work last changed');
     // A write that throws (quota, private mode) turns on the persistent warning.
     await p.evaluate(() => { const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).startsWith('aplab:lab01:')) throw new DOMException('full', 'QuotaExceededError'); return orig.call(this, k, v); }; });
     await p.fill('#' + ta, 'third thought'); await p.waitForTimeout(1200);
