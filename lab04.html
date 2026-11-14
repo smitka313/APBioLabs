@@ -1314,6 +1314,7 @@ const Predict = (function () {
       $('#p1-note').textContent = maxTrial > 1
         ? `Added as trial ${maxTrial} of these blocks at ${t} min (a replicate): the table keeps every trial, so rows with the same block are repeats, not mistakes. Press "Clear table" to start over.`
         : `Recorded trial 1 of these blocks at ${t} min. Run again to add a replicate (trial 2), or press "Clear table" to start over.`;
+      if (maxTrial > 1) Lab.toast(`Same blocks and soak time again: added as trial ${maxTrial} (replicate), not a duplicate`, { type: 'info', announce: false, key: 'p1-trial' });
     });
   });
 /* "Checked" is only true for the values that were actually checked: each check records a signature of the typed values, and the
