@@ -433,7 +433,7 @@
     const blob = new Blob([buildCsv(rows)], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob), a = document.createElement('a');
     a.href = url; a.download = 'lab-bench-class-grid.csv'; a.style.display = 'none'; document.body.append(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 60000);   // long enough for iOS Safari's "Download?" prompt
     say(`Exported ${rows.length} rows.`);
   }
 

@@ -1,7 +1,7 @@
 # Browser tests for Lab Bench (Playwright). See tests/README.md.
 # - push / pull_request to main: the release-checklist set, split into parallel jobs.
 # - Every run: a Firefox + WebKit smoke test (tests/t60-browsers.js).
-# - Actions tab -> "Tests" -> "Run workflow": choose "checklist" or "all" (every test, split into 4 shards).
+# - Actions tab -> "Tests" -> "Run workflow": choose "checklist" or "all" (every test, split into 5 shards).
 name: Tests
 
 on:
@@ -48,7 +48,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run tests
         env:
-          JOBS: ${{ matrix.group == 'core' && '2' || '1' }}
+          JOBS: "1"   # the timing-sensitive persist tests are flaky when two run at once on a 2-core runner
         run: |
           export NODE_PATH="$PWD/node_modules"
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
@@ -57,7 +57,7 @@ jobs:
   browsers:
     name: Cross-browser smoke (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     strategy:
       fail-fast: false
       matrix:
@@ -79,14 +79,14 @@ jobs:
           node tests/run-all.js t60-browsers
 
   full:
-    name: Full suite (shard ${{ matrix.shard }}/4)
+    name: Full suite (shard ${{ matrix.shard }}/5)
     if: github.event_name == 'workflow_dispatch' && inputs.suite == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -102,8 +102,8 @@ jobs:
           sudo apt-get install -y poppler-utils unzip python3-pil python3-numpy
       - name: Run tests
         env:
-          JOBS: "2"
+          JOBS: "1"
         run: |
           export NODE_PATH="$PWD/node_modules"
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
-          node tests/run-all.js all --shard ${{ matrix.shard }}/4
+          node tests/run-all.js all --shard ${{ matrix.shard }}/5

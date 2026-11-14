@@ -1358,7 +1358,7 @@
     const url = URL.createObjectURL(blob);
     const a = h('a', { href: url, download: name, style: 'display:none' });
     document.body.append(a); a.click();
-    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 60000);   // iOS Safari asks "Download?" first: a URL revoked before the tap saves nothing
   }
   /* window.print() with detection: a blocked print (sandboxed preview) never fires beforeprint. */
   function tryPrint(onBlocked) {
@@ -3354,6 +3354,8 @@
      It is not a prompt, quiz, table or step, so it never counts toward part completion or the backup reminder. */
   const CONFIDENCE = [{ v: 3, text: 'I could teach this' }, { v: 2, text: 'I mostly get it' }, { v: 1, text: 'I’m lost' }];
   Lab.confidence = { choices: CONFIDENCE, get: () => { const r = store.get('confidence'); return r && CONFIDENCE.some(c => c.v === r.v) ? r.v : null; } };
+  /* .is-checked mirrors the checked radio: a style rule with :has() is dropped by browsers without :has() (Firefox before 121). */
+  function syncConf(box) { $$('.conf-opt', box).forEach(l => { const i = $('input', l); l.classList.toggle('is-checked', !!(i && i.checked)); }); }
   function mountConfidence() {
     if (!IS_LAB) return;
     const sec = $$('section.step').find(x => /^(reflect|evaluate)$/i.test((x.dataset.step || '').trim())) || document.getElementById('reflect') || document.getElementById('evaluate');
@@ -3377,10 +3379,12 @@
         store.set('confidence', { v, t: Date.now() });
         Lab.keyResult('confidence', { label: 'Confidence', value: v, unit: `(${c.text})`, part: sec.id });
         say.textContent = `Saved: ${c.text}.`;
+        syncConf(box);
         workChanged();
       });
       const saved = Lab.confidence.get();
       if (saved) { const inp = $(`input[value="${saved}"]`, box); if (inp) inp.checked = true; }
+      syncConf(box);
     }
     if (box.parentElement !== body || body.lastElementChild !== box) body.append(box); // last thing in the part, above the Back / Next links
   }

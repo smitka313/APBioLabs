@@ -27,13 +27,14 @@ const LIBS = [
 async function routeLibs(ctx) {
   for (const [re, file] of LIBS) await ctx.route(re, r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(file()) }));
 }
-/* Tiny static server so tests can open the site over http (a transfer link needs a real origin). Returns {url, close}. */
-function serve() {
+/* Tiny static server so tests can open the site over http (a transfer link needs a real origin; 127.0.0.1 is a secure context,
+   so Web Crypto works in every engine). serve(root) serves another folder. Returns {url, close}. */
+function serve(root = ROOT) {
   const http = require('http');
   const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp' };
   const srv = http.createServer((req, res) => {
-    let f = path.join(ROOT, decodeURIComponent(req.url.split('?')[0].split('#')[0])); if (f.endsWith(path.sep)) f += 'index.html';
-    if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); res.end('nope'); return; }
+    let f = path.join(root, decodeURIComponent(req.url.split('?')[0].split('#')[0])); if (f.endsWith(path.sep)) f += 'index.html';
+    if (!f.startsWith(root) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); res.end('nope'); return; }
     res.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' }); res.end(fs.readFileSync(f));
   });
   return new Promise(r => srv.listen(0, '127.0.0.1', () => r({ url: 'http://127.0.0.1:' + srv.address().port + '/', close: () => srv.close() })));

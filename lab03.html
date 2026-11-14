@@ -69,7 +69,7 @@
   /* The # and organism columns stay in view while the table scrolls sideways inside its panel; narrow panels drop the two least important columns. */
   .hits th:first-child, .hits td:first-child { position: sticky; left: 0; z-index: 1; width: 2.4rem; min-width: 2.4rem; background: var(--surface); }
   .hits th:nth-child(2), .hits td:nth-child(2) { position: sticky; left: 2.4rem; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--grid); }
-  .res table.data.hits tbody tr:nth-child(even) td:nth-child(-n+2) { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+  .res table.data.hits tbody tr:nth-child(even) td:nth-child(-n+2) { background: var(--surface); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
   .res table.data.hits tbody tr.sel td:nth-child(-n+2) { background: var(--accent-soft); }
   #blast-hits { container-type: inline-size; }
   #blast-hits .res-sec { margin: 0; }
