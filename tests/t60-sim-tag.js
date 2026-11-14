@@ -39,6 +39,15 @@ const contrast = p => p.evaluate(() => {
     T.ok(p.errors.length === 0, `${lab}: no page errors ` + p.errors.join(' | '));
     await p.close();
   }
+  // With chi-square tables already filled at load (Lab 7 after a run and a reload) the note stays at the calculator, outside
+  // the tables the page re-renders (it once landed inside #chi-out and changed its text; t26 lab07 covers the filled table).
+  {
+    const p = await T.open(ctx, 'lab07.html');
+    await D.RUN.lab07(p); await p.reload(); await p.waitForTimeout(1200);
+    const r = await p.evaluate(() => ({ n: document.querySelectorAll('.sim-note').length, inTable: !!document.querySelector('table .sim-note, #chi-out .sim-note, #chi-obs .sim-note'), chi: /Observed \(o\)/.test((document.querySelector('#chi-out') || {}).textContent || '') }));
+    T.ok(r.n === 1 && !r.inTable, 'lab07 after a run + reload: one note, not inside the chi-square tables ' + JSON.stringify(r));
+    await p.close();
+  }
   // The AP term stays on the labels.
   { const p = await T.open(ctx, 'lab12.html'); T.ok(/^Observed at end A/.test(await p.textContent('label[for=x-a]')), 'lab12: label still says "Observed at end A"'); await p.close(); }
 

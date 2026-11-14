@@ -659,7 +659,7 @@
       const foot = opts.footer && rows.length ? `<tfoot><tr>${opts.footer(rows).map((v, i) => `<td class="${cols[i] && cols[i].num ? 'num' : ''}">${v == null ? '' : v}</td>`).join('')}</tr></tfoot>` : '';
       el.innerHTML = `<div class="table-wrap"><table class="data"><thead><tr>${head}</tr></thead><tbody>${body || `<tr><td colspan="${cols.length}" class="muted">No data yet. Run a trial to fill this table.</td></tr>`}</tbody>${foot}</table></div>`
         + (opts.simTag === false ? '' : `<p class="sim-tag" title="${esc(SIM_TITLE)}">${SIM_TAG}</p>`);   // always there (no layout shift when rows arrive)
-      if (cols.some(c => /\bobserved\b/i.test(c.label || ''))) observedNote(el);
+      if (cols.some(c => /\bobserved\b/i.test(c.label || ''))) el.dataset.observed = '';   // see scanObserved
       $$('input[data-r]', el).forEach(inp => inp.addEventListener('input', () => { // typed cell values are saved at once, not only on blur
         const r = rows[+inp.dataset.r], c = cols.find(cc => cc.key === inp.dataset.k);
         if (r && c && opts.save) { r[inp.dataset.k] = c.num ? (inp.value === '' || !isFinite(parseFloat(inp.value)) ? null : parseFloat(inp.value)) : inp.value; delete r._setup; store.set(opts.save, rows); }
@@ -699,21 +699,21 @@
     };
   };
 
-  /* "Observed" is the AP chi-square term and stays. The first place a lab page uses it (a field label or table column) gets one
-     short note saying what it means here. Once per page. */
+  /* "Observed" is the AP chi-square term and stays. The first calculator field labelled "observed" on a lab page (else the first
+     Lab.table with an "Observed" column) gets one short note saying what it means here. Once per page, always in the same
+     place: never inside a table or a box the page re-renders. */
   let obsNoted = false;
-  function observedNote(near) {
-    if (obsNoted || !IS_LAB || !near || !near.isConnected) return;
-    const box = near.closest('.calc, .grid-2, .calc-grid, .table-wrap, .field') || near;
-    const host = box.matches('.calc-grid') && box.parentElement && !box.parentElement.matches('.step-body') ? box.parentElement : box;
-    if (!host.parentElement) return;
-    obsNoted = true;
-    host.before(h('p', { class: 'sim-note' }, h('strong', null, '“Observed” '), 'here means what you observed in the simulation (or your own class data, if you type it in). It is still the right word for chi-square.'));
-  }
   function scanObserved() {
     if (obsNoted || !IS_LAB) return;
-    const el = $$('main label, main table th').find(e => /\bobserved\b/i.test(e.textContent) && !e.closest('.sim-note, .tour, #lab-report'));
-    if (el) observedNote(el);
+    let host = null;
+    const lab = $$('main label').find(e => /\bobserved\b/i.test(e.textContent) && !e.closest('.sim-note, .tour, #lab-report, table'));
+    if (lab) {
+      const box = lab.closest('.calc, .grid-2, .calc-grid, .field') || lab;
+      host = box.matches('.calc-grid') && box.parentElement && !box.parentElement.matches('.step-body') ? box.parentElement : box;
+    } else host = $('main [data-observed]');
+    if (!host || !host.parentElement) return;
+    obsNoted = true;
+    host.before(h('p', { class: 'sim-note' }, h('strong', null, '“Observed” '), 'here means what you observed in the simulation (or your own class data, if you type it in). It is still the right word for chi-square.'));
   }
   if (IS_LAB) window.addEventListener('load', () => setTimeout(scanObserved, 0));
 
