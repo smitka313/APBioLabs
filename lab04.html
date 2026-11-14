@@ -153,6 +153,7 @@
         <text x="384" y="128" font-size="12" class="lbl-muted">membrane</text>
       </svg>
         </div></details>
+        <details class="disclose sim-model"><summary>What this simulation models</summary><div class="inner"><ul><li><strong>Process:</strong> Diffusion of acid into agar cubes, osmosis across dialysis tubing, plasmolysis in plant cells, and the water potential of plant tissue.</li><li><strong>Included:</strong> The acid front grows with the square root of time and depends on acid concentration, temperature, and block size and shape. Each solute crosses the tubing at its own rate (protein not at all). Cells and cores respond to the difference in water potential. Specimens and the balance vary a little at random.</li><li><strong>Simplified or left out:</strong> The acid front is perfectly sharp, living membranes block all solutes, and mass changes follow smooth curves. Real blotting, evaporation and temperature drift make class data scatter more.</li></ul></div></details>
       </div>
       <aside class="split-side glossary" aria-labelledby="bg-terms">
         <div class="callout-title" id="bg-terms">Key terms</div>
@@ -2011,6 +2012,7 @@ function idCheck() {
   Lab.prompt(plan, { key: 'd-hyp', label: 'Hypothesis and prediction (include a null hypothesis)', rows: 3 });
   Lab.prompt(plan, { key: 'd-vars', label: 'Independent variable and levels, dependent variable, and variables you will hold constant', rows: 3 });
   Lab.prompt(plan, { key: 'd-control', label: 'What is your control, and how many replicates will you run? Why that many?', rows: 3 });
+  Lab.prompt(plan, { key: 'd-why-const', label: 'Pick one variable you will hold constant. If it changed between your levels, how could it fool you about the effect of your independent variable?', rows: 2 });
   Lab.prompt('#design-after', { key: 'd-results', label: 'Describe your results using the summary table. Do the ±2 SE error bars of neighboring levels overlap? What does that suggest about whether the differences are real? If you ran a numeric variable, report the slope and R².', rows: 5 });
   Lab.prompt('#design-after', { key: 'd-support', label: 'Do your results support your prediction? Explain using diffusion, SA:V, or water potential.', rows: 4 });
 

@@ -97,7 +97,7 @@
     <header><div class="eyebrow">Overview</div><h2>Watching an enzyme work, one shade of brown at a time</h2></header>
     <div class="step-body split">
       <div class="split-main prose">
-      <p class="lede">Turnip roots are full of <strong>peroxidase</strong>, an enzyme that breaks down hydrogen peroxide, a toxic by-product of aerobic metabolism. You will mix a turnip extract with dilute hydrogen peroxide and an indicator, guaiacol, that turns brown as the reaction proceeds. The faster the browning, the faster the enzyme is working.</p>
+      <p class="lede">Turnip roots are full of <strong>peroxidase</strong>, an enzyme that uses hydrogen peroxide (a toxic by-product of aerobic metabolism) to oxidize other molecules, turning the peroxide into water. You will mix a turnip extract with dilute hydrogen peroxide and guaiacol, a colorless compound that peroxidase oxidizes into a brown product. The faster the browning, the faster the enzyme is working.</p>
       <div class="callout callout--question"><div class="callout-title">What you will do</div>
         <ul>
           <li><strong>Procedure 1:</strong> Develop a reliable assay and establish a <em>baseline</em>: an enzyme tube compared with a no-enzyme control, read every minute for 5 minutes with a 1–10 color palette or a spectrophotometer at 470 nm.</li>
@@ -134,15 +134,16 @@
       <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
         <ul>
           <li>Enzymes are protein catalysts that lower the activation energy; their shape (the active site) sets their function.</li>
-          <li>Peroxidase breaks down H<sub>2</sub>O<sub>2</sub>; the oxygen released turns guaiacol brown, so darker means faster.</li>
+          <li>Peroxidase uses H<sub>2</sub>O<sub>2</sub> to oxidize guaiacol into a brown product; the faster the tube darkens, the faster the enzyme works.</li>
           <li>Rate rises with substrate until the enzyme is saturated (V<sub>max</sub>); V<sub>max</sub> scales with enzyme amount.</li>
           <li>Heat and extreme pH change the enzyme's shape; high heat denatures it for good.</li>
           <li>Compare treatments by the initial rate, the slope over the first minutes, against a baseline.</li>
         </ul></div>
       <p>Enzymes are protein catalysts. They speed reactions by lowering the <strong>activation energy</strong>, the energy needed to reach the unstable transition state between reactants and products. The substrate binds in the enzyme’s <strong>active site</strong>, a pocket whose shape comes from the protein’s folding: primary structure (amino acid sequence) determines the hydrogen bonds, ionic bonds, hydrophobic interactions, and disulfide bridges that build secondary, tertiary, and sometimes quaternary structure. Anything that disturbs those interactions can change the active site and the rate.</p>
-      <div class="equation">2 H<sub>2</sub>O<sub>2</sub> &nbsp;—peroxidase→&nbsp; 2 H<sub>2</sub>O + O<sub>2</sub></div>
+      <div class="equation">H<sub>2</sub>O<sub>2</sub> + guaiacol (colorless) &nbsp;—peroxidase→&nbsp; H<sub>2</sub>O + tetraguaiacol (brown)</div>
       <details class="disclose"><summary>Guaiacol, color and Beer–Lambert</summary><div class="inner">
-      <p>The oxygen released reacts with colorless <strong>guaiacol</strong> to form <strong>tetraguaiacol</strong>, which is brown. More product means a darker tube. You can rank the color against a 1–10 palette (a <em>relative</em> rate) or measure absorbance of 470 nm light with a spectrophotometer (an <em>absolute</em> rate, such as 0.083 absorbance units per minute). By the Beer–Lambert law, absorbance is proportional to the concentration of the brown product: A = εlc.</p>
+      <p>Peroxidase is an enzyme that uses hydrogen peroxide to oxidize <strong>guaiacol</strong>. H<sub>2</sub>O<sub>2</sub> is the oxidizing substrate and guaiacol is the hydrogen donor, so the products are water and oxidized guaiacol (<strong>tetraguaiacol</strong>), which is brown. (Balanced, it takes 4 guaiacol + 4 H<sub>2</sub>O<sub>2</sub> to make 1 tetraguaiacol + 8 H<sub>2</sub>O.) No oxygen gas is involved in the color change. As more product forms, the solution becomes darker. By measuring the change in absorbance over time, you can estimate the rate of enzyme activity.</p>
+      <p>You can rank the color against a 1–10 palette, which gives a <em>relative</em> rate (faster, slower, or the same). Or you can read absorbance of 470 nm light with a spectrophotometer, which gives an <em>absorbance-based rate</em>: the change in absorbance per minute (ΔA<sub>470</sub>/min, such as 0.083 per minute). That number is still not a concentration. To turn it into mM of product per minute you need a calibration, the Beer–Lambert law A = εlc, with the product’s molar absorptivity ε and the path length l of the cuvette.</p>
       </div></details>
       <details class="disclose"><summary>Activation energy and Michaelis–Menten</summary><div class="inner">
       <div class="grid-2">
@@ -178,13 +179,14 @@
       <p><strong>Temperature</strong> speeds molecular collisions, so rate rises at first (roughly doubling for each 10 °C), but heat also shakes apart the weak bonds that hold the enzyme’s shape. Above the optimum the protein unfolds; at high temperature the unfolding becomes permanent (<strong>denaturation</strong>), and cooling does not bring the activity back. <strong>pH</strong> changes the charges on amino acid side chains in and around the active site, so each enzyme works best in a narrow pH range that often matches where it normally functions. Peroxidases from different sources have optimum pH values from 4 to 11 and optimum temperatures from 10 to 70 °C. <strong>Inhibitors</strong> bind the enzyme and reduce its activity.</p>
       <p>A <strong>baseline</strong> is the standard reaction you compare everything else to. Because product builds up and conditions change as the reaction runs, compare treatments using the <strong>initial rate</strong>: the slope of absorbance (or color) versus time over the first minutes, when the graph is still nearly straight.</p>
       </div></details>
+        <details class="disclose sim-model"><summary>What this simulation models</summary><div class="inner"><ul><li><strong>Process:</strong> Enzyme catalysis. Turnip peroxidase uses H<sub>2</sub>O<sub>2</sub> to oxidize guaiacol into a brown product, so the tube darkens and absorbance rises as the reaction runs.</li><li><strong>Included:</strong> Substrate amount (saturating at high H<sub>2</sub>O<sub>2</sub>, and used up over time), enzyme amount, temperature (faster collisions, then unfolding and permanent denaturation), pH, heat treatment, the inhibitor hydroxylamine, slow enzyme inactivation, and pipetting, extract and spectrophotometer noise.</li><li><strong>Simplified or left out:</strong> One rate equation, with a pH curve fitted to the lab manual’s data. Real extracts vary in strength and cloudiness, and timing and palette judgments add error, so bench rates scatter more.</li></ul></div></details>
       </div>
       <aside class="split-side glossary" aria-labelledby="bg-terms">
         <div class="callout-title" id="bg-terms">Key terms</div>
         <dl>
           <dt>Activation energy</dt><dd>Energy needed to reach the transition state; enzymes lower it.</dd>
           <dt>Active site</dt><dd>The pocket on the enzyme where the substrate binds.</dd>
-          <dt>Guaiacol</dt><dd>Colorless indicator that turns brown (tetraguaiacol) as peroxidase works.</dd>
+          <dt>Guaiacol</dt><dd>Colorless hydrogen donor that peroxidase oxidizes, using H<sub>2</sub>O<sub>2</sub>, into brown tetraguaiacol.</dd>
           <dt>V<sub>max</sub> / K<sub>m</sub></dt><dd>Maximum rate at saturation, and the substrate level giving half of it.</dd>
           <dt>Denaturation</dt><dd>Permanent loss of an enzyme's shape, often from heat.</dd>
           <dt>Initial rate</dt><dd>Slope of absorbance (or color) versus time over the first minutes.</dd>
@@ -825,11 +827,11 @@ function frq(host, o) {
     { type: 'num', q: 'Your teacher makes the substrate by mixing 15 mL of drugstore 3% H<sub>2</sub>O<sub>2</sub> with 435 mL of distilled water. What is the new concentration?', answer: 0.1, tol: 0.002, unit: '%', explain: '3% × 15 mL ÷ (15 + 435) mL = 3% × 15/450 = 0.1%.' },
     { type: 'num', q: 'The reaction tube receives 0.3 mL of 0.1% H<sub>2</sub>O<sub>2</sub> and has a final volume of 15.0 mL. What is the final H<sub>2</sub>O<sub>2</sub> concentration?', answer: 0.002, tol: 0.0001, unit: '%', explain: '0.1% × 0.3/15.0 = 0.002%. The substrate is very dilute, which keeps the reaction slow enough to time.' },
     { type: 'mc', q: 'You use a 1.0 mL pipette whose smallest divisions are 0.01 mL to measure 0.3 mL of H<sub>2</sub>O<sub>2</sub>. Why does careful reading matter so much here?', choices: ['A misread such as 0.03 mL or 3.0 mL changes the substrate by a power of ten', 'Pipettes measure only to the nearest whole milliliter', 'Hydrogen peroxide evaporates instantly', 'The 1.0 mL pipette is only for water'], answer: 0, explain: 'Reading the wrong set of graduations changes the volume tenfold. Small volumes with big consequences are the main source of error in this lab.' },
-    { type: 'mc', q: 'What does guaiacol do in this assay?', choices: ['It is the enzyme’s substrate that is split into water and oxygen', 'It reacts with the oxygen released to form brown tetraguaiacol, so color shows how much product formed', 'It buffers the pH at 7', 'It denatures the enzyme to stop the reaction'], answer: 1, explain: 'Guaiacol is an indicator. Oxidized guaiacol (tetraguaiacol) is brown and absorbs light at 470 nm.' },
+    { type: 'mc', q: 'What does guaiacol do in this assay?', choices: ['It is split by the enzyme into water and oxygen gas', 'Peroxidase uses H<sub>2</sub>O<sub>2</sub> to oxidize it into brown tetraguaiacol, so the color shows how much product formed', 'It reacts with oxygen gas bubbling out of the tube, so the color shows how much O<sub>2</sub> escaped', 'It denatures the enzyme to stop the reaction'], answer: 1, explain: 'Guaiacol is the hydrogen donor. Peroxidase uses H<sub>2</sub>O<sub>2</sub> to oxidize it, making water and brown tetraguaiacol, which absorbs light at 470 nm. No oxygen gas is needed for the color.' },
     { type: 'mc', q: 'The spectrophotometer blank contains water, guaiacol and enzyme extract but <em>no hydrogen peroxide</em>. Why?', choices: ['So the machine reads zero for everything except the brown product made by the reaction', 'Because the blank must contain no enzyme', 'To measure the fastest possible rate', 'Hydrogen peroxide would break the cuvette'], answer: 0, explain: 'The blank zeroes out the color and cloudiness of the extract and guaiacol. Any absorbance afterward comes from tetraguaiacol formed by the reaction.' },
     { type: 'num', q: 'A baseline tube reads 0.000, 0.083, 0.141, and 0.198 absorbance units at 0, 1, 2, and 3 minutes. What is the average rate over the first 3 minutes?', answer: 0.066, tol: 0.002, unit: 'absorbance/min', explain: '(0.198 − 0.000) ÷ 3 min = 0.066 per minute. The first minute alone gives 0.083/min; the rate slows as the reaction proceeds, which is why we compare initial rates.' },
     { type: 'mc', q: 'In Procedure 2, what changes between the six tube pairs, and what stays the same?', choices: ['The 6.0 mL of water in the enzyme tube is replaced by a different pH buffer; enzyme, substrate, guaiacol, volume and time stay the same', 'The amount of enzyme changes; pH stays the same', 'The substrate tube gets the buffer and the enzyme is left out', 'Every tube gets a different temperature'], answer: 0, explain: 'Only one variable (pH) changes. Keeping volumes, reagents and reading time identical lets you attribute differences to pH.' },
-    { type: 'mc', q: 'What is the difference between a <em>relative</em> rate and an <em>absolute</em> rate in this lab?', choices: ['Relative rates come from comparing colors on a palette (faster/slower/same); absolute rates come from a measured change, such as absorbance per minute', 'Relative rates are always larger', 'Absolute rates need no time measurement', 'There is no difference'], answer: 0, explain: 'A palette lets you rank tubes. A spectrophotometer gives a number with units (e.g., 0.083 absorbance/min) that can be compared across labs.' }
+    { type: 'mc', q: 'What is the difference between a <em>relative</em> rate and an <em>absorbance-based</em> rate in this lab?', choices: ['Relative rates rank tubes by palette color (faster/slower/same); an absorbance-based rate is the measured change in absorbance per minute (ΔA<sub>470</sub>/min)', 'Relative rates are always larger', 'Absorbance-based rates need no time measurement', 'An absorbance-based rate is already in mM of product per minute, so no calibration is ever needed'], answer: 0, explain: 'A palette lets you rank tubes. A spectrophotometer gives a number with units (e.g., 0.083 ΔA<sub>470</sub>/min). Turning that into a concentration rate (mM/min) needs a calibration: Beer–Lambert, A = εlc, with the product’s ε and the path length.' }
   ], { id: 'prelab' });
 
   /* ===================== PROCEDURE 1 ===================== */
@@ -851,7 +853,7 @@ function frq(host, o) {
       { key: 'cE', label: 'Enzyme color', unit: 'palette number, 1–10', num: true, editable: true }, { key: 'cC', label: 'Control color', unit: 'palette number, 1–10', num: true, editable: true }],
     onChange: () => { syncP1(); reportP1(); }
   });
-  const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance at 470 nm', xMin: 0, xMax: 5, yMin: 0, series: [] });
+  const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance (A₄₇₀)', xMin: 0, xMax: 5, yMin: 0, series: [] });
   /* palette numbers run 1-10; anything else is flagged on the cell, reported, and left out of the graph and match count */
   const palOk = v => v != null && isFinite(v) && v >= 1 && v <= 10;
   function palCheck(tableSel, badSel, rows, keys) {
@@ -867,10 +869,10 @@ function frq(host, o) {
     palCheck('#p1-table', '#p1-bad', rows, ['cE', 'cC']);
     const kE = spec ? 'aE' : 'cE', kC = spec ? 'aC' : 'cC';
     const sE = seriesByTime(rows, kE), sC = seriesByTime(rows, kC);
-    ch1.update({ yLabel: spec ? 'Absorbance at 470 nm (mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMin: 0, yMax: spec ? undefined : 10,
+    ch1.update({ yLabel: spec ? 'Absorbance (A₄₇₀; mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMin: 0, yMax: spec ? undefined : 10,
       series: [{ name: 'Enzyme + substrate', points: sE }, { name: 'No-enzyme control', points: sC }] });
     const r = $('#p1-rates'); r.innerHTML = '';
-    const u = spec ? 'A₄₇₀/min' : 'palette units/min';
+    const u = spec ? 'ΔA₄₇₀/min' : 'palette units/min';
     [['Initial rate, enzyme (0–2 min)', slope(sE)], ['Initial rate, control (0–2 min)', slope(sC)]].forEach(([k, v]) => r.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, k + ' (' + u + ')'), h('span', { class: 'v' }, isFinite(v) ? fmt(v, 3) : '—'))));
     // palette-matching feedback
     let n = 0, ok = 0; rows.forEach(row => [['cE', '_AE'], ['cC', '_AC']].forEach(([c, a]) => { if (palOk(row[c])) { n++; if (Math.abs(row[c] - palNum(row[a])) <= 1) ok++; } }));
@@ -973,7 +975,7 @@ function frq(host, o) {
   });
   const rec2 = Lab.timelapse(cv2, { fps: 4, maxFrames: 120, width: 420, label: 'Procedure 2: six pH buffers', key: 'p2-tubes' });
   rec2.mount('#p2-timelapse');
-  const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'Change in absorbance, ΔA', xMin: 2, xMax: 12, yMin: 0, series: [] });
+  const ch2 = Lab.chart('#p2-chart', { xLabel: 'pH', yLabel: 'Change in absorbance (ΔA₄₇₀)', xMin: 2, xMax: 12, yMin: 0, series: [] });
   /* Lab.chart picks its x-axis step from the drawing width: below 480 px (the Graph column at 1366 px) it asks for 4 ticks, which gives a step of 5
      and silently widens pH 2-12 to 0-15, ignoring xMin/xMax. Report a width of at least 480 so the axis keeps the 2-12 range (steps of 2);
      the SVG scales to the column. Used by every chart whose x axis is pH. */
@@ -987,7 +989,7 @@ function frq(host, o) {
     const rows = t2.getRows(), spec = mode2() === 'spec', key = spec ? 'dA' : 'c';
     palCheck('#p2-table', '#p2-bad', rows, ['c']);
     const pts = []; PHS.forEach(p => { const v = rows.filter(r => r.pH === p && r[key] != null && isFinite(r[key]) && (spec || palOk(r[key]))).map(r => r[key]); if (v.length) pts.push({ x: p, y: stats.mean(v), err: v.length > 1 ? 2 * stats.se(v) : 0 }); });
-    ch2.update({ yLabel: spec ? 'Change in absorbance, ΔA (mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
+    ch2.update({ yLabel: spec ? 'Change in absorbance (ΔA₄₇₀; mean ± 2 SE)' : 'Color palette number (1–10; mean ± 2 SE)', yMax: spec ? undefined : 10, series: [{ name: spec ? 'ΔA at reading time' : 'Color at reading time', points: pts }] });
     let n = 0, ok = 0; rows.forEach(r => { if (palOk(r.c)) { n++; if (Math.abs(r.c - palNum(r._A)) <= 1) ok++; } });
     chkP2();
     $('#p2-match').textContent = n ? `${ok} of ${n} palette matches are within ±1 of the true color.` : 'Record a palette number for each tube at your reading time.';
@@ -1065,10 +1067,10 @@ function frq(host, o) {
   }
   cvD.onresize = () => drawD(dT);
   $('#d-levels').addEventListener('change', () => drawD(0));
-  const dTable = Lab.table('#d-table', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, ...[1, 2, 3, 4, 5].map(i => ({ key: 'a' + i, label: `Absorbance at ${i} min`, num: true, digits: 3 })), { key: 'rate', label: 'Initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }] });
-  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'Replicates (n)', unit: 'tubes', num: true, digits: 0 }, { key: 'mean', label: 'Mean initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }, { key: 'se', label: 'SE of initial rate', unit: 'A₄₇₀/min', num: true, digits: 4 }, { key: 'ci', label: '95% CI (mean ± 2 SE)', unit: 'A₄₇₀/min' }] });
-  const dC1 = Lab.chart('#d-chart1', { xLabel: 'Time (min)', yLabel: 'Mean absorbance at 470 nm', xMin: 0, xMax: 5, yMin: 0, height: 320, series: [] });
-  const dC2 = Lab.chart('#d-chart2', { xLabel: 'Level of your independent variable', yLabel: 'Initial rate (A₄₇₀/min)', yMin: 0, height: 320, series: [] });
+  const dTable = Lab.table('#d-table', { save: 'd-raw', columns: [{ key: 'level', label: 'Level' }, { key: 'rep', label: 'Rep', num: true, digits: 0 }, ...[1, 2, 3, 4, 5].map(i => ({ key: 'a' + i, label: `Absorbance at ${i} min`, num: true, digits: 3 })), { key: 'rate', label: 'Initial rate', unit: 'ΔA₄₇₀/min', num: true, digits: 4 }] });
+  const dSum = Lab.table('#d-sum', { save: 'd-sum', columns: [{ key: 'level', label: 'Level' }, { key: 'n', label: 'Replicates (n)', unit: 'tubes', num: true, digits: 0 }, { key: 'mean', label: 'Mean initial rate', unit: 'ΔA₄₇₀/min', num: true, digits: 4 }, { key: 'se', label: 'SE of initial rate', unit: 'ΔA₄₇₀/min', num: true, digits: 4 }, { key: 'ci', label: '95% CI (mean ± 2 SE)', unit: 'ΔA₄₇₀/min' }] });
+  const dC1 = Lab.chart('#d-chart1', { xLabel: 'Time (min)', yLabel: 'Mean absorbance (A₄₇₀)', xMin: 0, xMax: 5, yMin: 0, height: 320, series: [] });
+  const dC2 = Lab.chart('#d-chart2', { xLabel: 'Level of your independent variable', yLabel: 'Initial rate (ΔA₄₇₀/min)', yMin: 0, height: 320, series: [] });
   pinWideAxis(dC2);
   let dRes = Lab.store.get('d-res');
   function renderD() {
@@ -1080,7 +1082,7 @@ function frq(host, o) {
     if (dRes.iv === 'sub') {
       const pts = dRes.levels.filter(L => L.x > 0 && L.mean > 0.002);
       if (pts.length >= 3) { const f = stats.linreg(pts.map(L => 1 / (0.588 * L.x / 0.3)), pts.map(L => 1 / L.mean)); const Vmax = 1 / f.b, Km = f.m * Vmax;
-        msg = `Lineweaver–Burk estimate (1/rate vs 1/[H₂O₂], with [H₂O₂] = 0.588 mM per 0.3 mL): Vmax ≈ ${fmt(Vmax, 3)} A/min, Km ≈ ${fmt(Km, 3)} mM (R² = ${fmt(f.r2, 3)}). The baseline [H₂O₂] is 0.588 mM. `; }
+        msg = `Lineweaver–Burk estimate (1/rate vs 1/[H₂O₂], with [H₂O₂] = 0.588 mM per 0.3 mL): Vmax ≈ ${fmt(Vmax, 3)} ΔA₄₇₀/min, Km ≈ ${fmt(Km, 3)} mM (R² = ${fmt(f.r2, 3)}). The baseline [H₂O₂] is 0.588 mM. `; }
     }
     const Ls = dRes.levels, best = Ls.reduce((a, b) => b.mean > a.mean ? b : a);
     msg += `Highest mean initial rate at ${best.x}${d.unit ? ' ' + d.unit : ''}. Levels whose ±2 SE intervals do not overlap are likely truly different.`;
@@ -1111,7 +1113,7 @@ function frq(host, o) {
       dRes = { iv, levels: res.levels.map(L => ({ x: L.x, mean: L.mean, se: L.se, reps: L.reps.map(r => ({ read: r.read, rate: r.rate })) })) };
       Lab.store.set('d-res', dRes); renderD(); reportD();
       const rd = $('#d-read'); rd.innerHTML = '';
-      res.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Mean initial rate at ' + L.x + (d.unit ? ' ' + d.unit : '') + ' (A₄₇₀/min)'), h('span', { class: 'v' }, fmt(L.mean, 3)))));
+      res.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Mean initial rate at ' + L.x + (d.unit ? ' ' + d.unit : '') + ' (ΔA₄₇₀/min)'), h('span', { class: 'v' }, fmt(L.mean, 3)))));
       $('#d-status').textContent = 'Done. Initial rate = slope of absorbance from 0 to 2 min.';
     }, from);
   }
@@ -1121,7 +1123,7 @@ function frq(host, o) {
   $('#d-clear').addEventListener('click', () => { if (dBusy) return; dRes = null; Lab.store.set('d-res', null); Lab.store.set('d-read', null); dTable.clear(); dSum.clear(); dC1.update({ series: [] }); dC2.update({ series: [] }); reportD(); $('#d-stat').textContent = ''; $('#d-read').innerHTML = ''; dTubes = []; drawD(0); });
   ivChanged();
   if (dRes) { ivSel.value = dRes.iv; $('#d-levels').value = dRes.levels.map(L => L.x).join(', '); $('#d-hint').textContent = DIV[dRes.iv].hint; $('#d-pre-wrap').hidden = dRes.iv !== 'temp'; drawD(0); renderD();
-    { const d = DIV[dRes.iv], rd = $('#d-read'); rd.innerHTML = ''; dRes.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Mean initial rate at ' + L.x + (d.unit ? ' ' + d.unit : '') + ' (A₄₇₀/min)'), h('span', { class: 'v' }, fmt(L.mean, 3))))); $('#d-status').textContent = 'Done. Initial rate = slope of absorbance from 0 to 2 min.'; } }
+    { const d = DIV[dRes.iv], rd = $('#d-read'); rd.innerHTML = ''; dRes.levels.slice(0, 8).forEach(L => rd.append(h('div', { class: 'readout' }, h('span', { class: 'k' }, 'Mean initial rate at ' + L.x + (d.unit ? ' ' + d.unit : '') + ' (ΔA₄₇₀/min)'), h('span', { class: 'v' }, fmt(L.mean, 3))))); $('#d-status').textContent = 'Done. Initial rate = slope of absorbance from 0 to 2 min.'; } }
   /* The measuring method, clock speed, ticked buffers and design settings are remembered. */
   const UI = 'ui13', uiGet = () => Lab.store.get(UI) || {}, uiSet = (k, v) => { const c = uiGet(); c[k] = v; Lab.store.set(UI, c); };
   [['#m1', 'm1'], ['#sp1', 'sp1'], ['#m2', 'm2']].forEach(([sel, k]) => $$('button', $(sel)).forEach(b => b.addEventListener('click', () => uiSet(k, b.dataset.v))));
@@ -1135,7 +1137,7 @@ function frq(host, o) {
     ['#d-pre', '#d-reps'].forEach(sel => { if (u[sel] != null) { $(sel).value = u[sel]; $(sel + '-out').textContent = $(sel).value + (sel === '#d-pre' ? ' min' : ''); } });
     if (!dRes && !Lab.store.get('d-run') && u['d-levels'] && DIV[u['d-levels'].iv]) { ivSel.value = u['d-levels'].iv; ivChanged(); $('#d-levels').value = u['d-levels'].v; levelsShow(); drawD(0); } }
   const plan = $('#d-plan');
-  [['d-q', 'Your question:'], ['d-h', 'Hypothesis and prediction (If … then … because …), based on enzyme structure:'], ['d-v', 'Independent variable, dependent variable (how you will calculate rate), and the variables you will hold constant:'], ['d-c', 'Your control(s), and how you will keep total volume at 15.0 mL:']]
+  [['d-q', 'Your question:'], ['d-h', 'Hypothesis and prediction (If … then … because …), based on enzyme structure:'], ['d-v', 'Independent variable, dependent variable (how you will calculate rate), and the variables you will hold constant:'], ['d-c', 'Your control(s), and how you will keep total volume at 15.0 mL:'], ['d-why-const', 'Why must every tube have the same total volume, enzyme batch and reading times? How could a change in one of them fool you?']]
     .forEach(([k, l]) => { const dd = h('div'); plan.append(dd); Lab.prompt(dd, { key: k, label: l, rows: 3 }); });
 
   /* ===================== ANALYZE & REFLECT ===================== */
@@ -1143,7 +1145,7 @@ function frq(host, o) {
   Lab.prompt(an, { key: 'a-limit', label: 'Was the limiting factor in your baseline reaction the enzyme or the substrate? Use initial rates from runs with doubled and halved enzyme and substrate (your design data or a quick extra run) as evidence.', rows: 4 });
   Lab.prompt(an, { key: 'a-graph', label: 'Graph and describe your independent investigation. Compare the effects of the biotic and abiotic factors you (and your classmates) tested on the rate of the reaction, and explain the differences.', rows: 4 });
   Lab.prompt(an, { key: 'a-denature', label: 'If you tested temperature or heat treatment: at what temperature did activity peak, and above what temperature was the loss permanent? Explain the shape of the curve at the level of protein structure.', rows: 4 });
-  Lab.prompt(an, { key: 'a-palette', label: 'Compare the palette (relative) and spectrophotometer (absolute) methods. How well did your palette numbers agree with absorbance? Which would you trust to detect a 10% difference in rate?', rows: 3 });
+  Lab.prompt(an, { key: 'a-palette', label: 'Compare the palette (relative rate) and spectrophotometer (absorbance-based rate, ΔA₄₇₀/min) methods. How well did your palette numbers agree with absorbance? Which would you trust to detect a 10% difference in rate?', rows: 3 });
   const cer = h('div', { class: 'cer' }); an.append(h('h3', null, 'Claim, evidence, reasoning'), cer);
   [['cer-c', 'C', 'Claim: Answer the driving question for one factor you tested.'], ['cer-e', 'E', 'Evidence: Cite initial rates with error bars (± 2 SE) from your data.'], ['cer-r', 'R', 'Reasoning: Connect the evidence to enzyme structure, the active site, and collision theory.']]
     .forEach(([k, L, l]) => { const p = Lab.prompt(cer, { key: k, label: l, rows: 4 }); p.querySelector('label').dataset.letter = L; });
@@ -1161,7 +1163,7 @@ function frq(host, o) {
       if (!numOk(A13(e5, 'E')) || pts.length < 2) return null;
       return { trial: tr, t: e5.t, enz: A13(e5, 'E'), ctl: A13(e5, 'C'), rate: stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E'))).m };
     },
-    summarize: r => `Trial ${r.trial}: the enzyme tube reached A₄₇₀ = ${fmt(r.enz, 3)} at ${r.t} min (initial rate ${fmt(r.rate, 3)} A₄₇₀/min); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, 3) : 'n/a'}.`,
+    summarize: r => `Trial ${r.trial}: the enzyme tube reached A₄₇₀ = ${fmt(r.enz, 3)} at ${r.t} min (initial rate ${fmt(r.rate, 3)} ΔA₄₇₀/min); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, 3) : 'n/a'}.`,
     delta: r => numOk(r.ctl) ? (r.ctl > 0 && r.enz > r.ctl ? `The enzyme tube was ${fmt(r.enz / r.ctl, 1)}× the control, so the color came from the enzyme.` : r.enz > r.ctl ? 'The enzyme tube darkened while the control stayed at zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null
   });
   Lab.predictCompare(rfCompare, {
@@ -1182,8 +1184,8 @@ function frq(host, o) {
   Lab.predictCompare(rfCompare, {
     predictKey: 'd-h', title: 'Your own experiment: your hypothesis vs. your results', chartEl: '#d-chart2', part: 'Design', partId: 'design',
     getResult: () => dRes && dRes.levels && dRes.levels.length ? dRes : null,
-    summarize: r => { const d = DIV[r.iv]; return 'Mean initial rate (A₄₇₀/min) by ' + d.label.toLowerCase() + ': ' + r.levels.map(L => `${L.x}${d.unit ? ' ' + d.unit : ''}: ${fmt(L.mean, 4)}`).join('; ') + '.'; },
-    delta: r => { const d = DIV[r.iv], hi = r.levels.reduce((a, b) => b.mean > a.mean ? b : a), lo = r.levels.reduce((a, b) => b.mean < a.mean ? b : a); return `The fastest reaction was at ${hi.x}${d.unit ? ' ' + d.unit : ''} (${fmt(hi.mean, 4)} A₄₇₀/min) and the slowest at ${lo.x}${d.unit ? ' ' + d.unit : ''} (${fmt(lo.mean, 4)}). Levels whose ±2 SE intervals do not overlap are likely truly different.`; }
+    summarize: r => { const d = DIV[r.iv]; return 'Mean initial rate (ΔA₄₇₀/min) by ' + d.label.toLowerCase() + ': ' + r.levels.map(L => `${L.x}${d.unit ? ' ' + d.unit : ''}: ${fmt(L.mean, 4)}`).join('; ') + '.'; },
+    delta: r => { const d = DIV[r.iv], hi = r.levels.reduce((a, b) => b.mean > a.mean ? b : a), lo = r.levels.reduce((a, b) => b.mean < a.mean ? b : a); return `The fastest reaction was at ${hi.x}${d.unit ? ' ' + d.unit : ''} (${fmt(hi.mean, 4)} ΔA₄₇₀/min) and the slowest at ${lo.x}${d.unit ? ' ' + d.unit : ''} (${fmt(lo.mean, 4)}). Levels whose ±2 SE intervals do not overlap are likely truly different.`; }
   });
   Lab.prompt(rf, { key: 'r-pred', label: 'Compare your three predictions (shown above) with your data: the enzyme versus control tubes, the pH optimum, and your own experiment. Cite one measured value with units for each. Which predictions held up, and what does each mismatch tell you about enzyme structure?', rows: 5 });
   Lab.prompt(rf, { key: 'r-error', label: 'List the largest sources of error in this assay (timing, pipetting, mixing, judging color, temperature drift). For each, suggest how to reduce it.', rows: 3 });
@@ -1248,7 +1250,7 @@ function frq(host, o) {
     const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), pts = rows.filter(r => r.trial === tr && r.t <= 2).sort((a, b) => a.t - b.t);
     if (pts.length < 2) { dropKeyRes('initial-rate'); return; }
     const f = stats.linreg(pts.map(r => r.t), pts.map(A)), viaChart = !pts.some(r => numOk(r.aE));
-    keyRes('initial-rate', { label: 'Initial rate, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(f.m * 10000) / 10000, unit: 'A₄₇₀/min', part: 'Procedure 1' });
+    keyRes('initial-rate', { label: 'Initial rate, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(f.m * 10000) / 10000, unit: 'ΔA₄₇₀/min', part: 'Procedure 1' });
   }
   const ph2 = () => {
     const rows = (Lab.store.get('p2') || []).filter(r => r && numOk(r.pH)), spec = rows.some(r => r.dA != null && numOk(r.dA)), key = spec ? 'dA' : 'c';
@@ -1262,7 +1264,7 @@ function frq(host, o) {
   function reportD() {
     const r = Lab.store.get('d-res'); if (!r || !r.levels || !r.levels.length) { dropKeyRes('design-fastest'); return; }
     const d = DIV[r.iv], best = r.levels.reduce((a, b) => b.mean > a.mean ? b : a);
-    keyRes('design-fastest', { label: 'Fastest initial rate in your experiment (' + d.label + ' = ' + best.x + (d.unit ? ' ' + d.unit : '') + ')', value: Math.round(best.mean * 10000) / 10000, unit: 'A₄₇₀/min', part: 'Design' });
+    keyRes('design-fastest', { label: 'Fastest initial rate in your experiment (' + d.label + ' = ' + best.x + (d.unit ? ' ' + d.unit : '') + ')', value: Math.round(best.mean * 10000) / 10000, unit: 'ΔA₄₇₀/min', part: 'Design' });
   }
   reportP1(); reportP2(); reportD();
   const an13 = partBody('Analyze');
@@ -1275,8 +1277,8 @@ function frq(host, o) {
     get() {
       const r = Lab.store.get('d-res'); if (!r || !r.levels || r.levels.length < 1) return null;
       const d = DIV[r.iv], u = x => x + (d.unit ? ' ' + d.unit : ''), best = r.levels.reduce((a, b) => b.mean > a.mean ? b : a), worst = r.levels.reduce((a, b) => b.mean < a.mean ? b : a);
-      if (best === worst) return `Your <strong>${u(best.x)}</strong> tubes had a mean initial rate of <strong>${fmt(best.mean, 3)} A₄₇₀/min</strong>.`;
-      return `Your <strong>${u(best.x)}</strong> tubes had the fastest initial rate (<strong>${fmt(best.mean, 3)} A₄₇₀/min</strong>) and your <strong>${u(worst.x)}</strong> tubes the slowest (<strong>${fmt(worst.mean, 3)}</strong>) when you varied ${d.label.toLowerCase()}.`;
+      if (best === worst) return `Your <strong>${u(best.x)}</strong> tubes had a mean initial rate of <strong>${fmt(best.mean, 3)} ΔA₄₇₀/min</strong>.`;
+      return `Your <strong>${u(best.x)}</strong> tubes had the fastest initial rate (<strong>${fmt(best.mean, 3)} ΔA₄₇₀/min</strong>) and your <strong>${u(worst.x)}</strong> tubes the slowest (<strong>${fmt(worst.mean, 3)}</strong>) when you varied ${d.label.toLowerCase()}.`;
     }
   });
   personalPrompt(my13, {

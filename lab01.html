@@ -131,6 +131,7 @@
       </figure>
       <p>One round of strong selection can shift the mean noticeably, but it rarely changes the population all the way. Your job is to measure the shift, decide whether it is bigger than chance, and explain it.</p>
         </div></details>
+        <details class="disclose sim-model"><summary>What this simulation models</summary><div class="inner"><ul><li><strong>Process:</strong> Artificial selection on trichome (leaf hair) number in Wisconsin Fast Plants: you choose which plants become parents, and the next generation’s distribution shifts.</li><li><strong>Included:</strong> Hair number, height and stem color each come from many genes with small additive effects plus random environmental variation (heritability about 0.5 for hairs). Alleles pass on by Mendel’s rules. You set the share selected, population size, growing conditions and herbivore damage (which changes plants but is not inherited).</li><li><strong>Simplified or left out:</strong> No dominance, linkage, mutation or gene interactions, and every seed grows. Real plants face pests, failed pollination and counting mistakes, so real shifts are usually smaller and noisier.</li></ul></div></details>
       </div>
       <aside class="split-side glossary" aria-labelledby="bg-terms">
         <div class="callout-title" id="bg-terms">Key terms</div>
@@ -1503,6 +1504,7 @@ const Predict = (function () {
   /* ================= DESIGN YOUR OWN ================= */
   Lab.prompt('#design-q', { key: 'd-question', label: 'Your question (for example: "Does selecting for fewer hairs work as well as selecting for more hairs?" or "How much does uneven growing slow the response?")', rows: 2 });
   Lab.prompt('#design-q', { key: 'd-hypothesis', label: 'Hypothesis and prediction. Name your independent variable, the levels you will test, what you will hold constant, and what you will measure.', rows: 3 });
+  Lab.prompt('#design-q', { key: 'd-why-const', label: 'Why must your selected and control lines have the same population size, growing conditions and number of generations? What could go wrong if they did not?', rows: 2 });
   const dEls = { pct: $('#d-pct'), n: $('#d-n'), gens: $('#d-gens'), reps: $('#d-reps') };
   const dSync = () => { $('#d-pct-out').textContent = dEls.pct.value + '%'; $('#d-n-out').textContent = dEls.n.value + ' plants'; $('#d-gens-out').textContent = dEls.gens.value; $('#d-reps-out').textContent = dEls.reps.value; };
   Object.values(dEls).forEach(el => el.addEventListener('input', dSync)); dSync();

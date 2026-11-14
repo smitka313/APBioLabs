@@ -205,6 +205,7 @@
 Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
       <p>DNA is only one line of evidence. Fossils, anatomy, embryology and protein sequences can all support or challenge a tree. A good cladogram is a hypothesis that fits the most evidence.</p>
         </div></details>
+        <details class="disclose sim-model"><summary>What this simulation models</summary><div class="inner"><ul><li><strong>Process:</strong> Molecular evolution. DNA changes slowly over time, so species with a more recent common ancestor have more similar genes. A BLAST-style alignment finds and ranks the closest matches.</li><li><strong>Included:</strong> Three genes evolved along a tree of real divergence dates, each at its own speed (slow, medium, fast), with faster change at third codon positions, some sites that never change, and rare insertions or deletions. Hits are scored as bit scores and E-values.</li><li><strong>Simplified or left out:</strong> The sequences are simulated, not from GenBank, and the database holds about 20 species, not millions. Real fossil DNA this old would not survive. Real searches return messier, more surprising hits.</li></ul></div></details>
       </div>
       <aside class="split-side glossary" aria-labelledby="bg-terms">
         <div class="callout-title" id="bg-terms">Key terms</div>
@@ -1773,6 +1774,7 @@ let dprog = 'blastn', dRes = null;
 Lab.prompt('#design-prompts', { key: 'd-question', label: 'Your question', rows: 3, placeholder: 'e.g., Does percent identity drop at a steady rate as divergence time increases, and does the rate differ between genes?' });
 Lab.prompt('#design-prompts', { key: 'd-hypothesis', label: 'Your hypothesis and prediction', rows: 3 });
 Lab.prompt('#design-prompts', { key: 'd-variables', label: 'Independent variable, dependent variable, and what you kept the same (controls)', rows: 3 });
+Lab.prompt('#design-prompts', { key: 'd-why-same', label: 'Why must you use the same gene (and the same query length) for every comparison? What would mixing genes do to your graph?', rows: 2 });
 Lab.$('#d-org').innerHTML = ORG_IDS.concat('fossil').map(id => `<option value="${id}" ${id === 'human' ? 'selected' : ''}>${esc(orgLabel(id))}${id !== 'fossil' ? ' (' + esc(ORGS[id][0]) + ')' : ''}</option>`).join('');
 Lab.$('#d-set').innerHTML = ORG_IDS.map(id => `<label for="ds-${id}"><input type="checkbox" id="ds-${id}" value="${id}" checked>${esc(orgLabel(id))}</label>`).join('');
 Lab.$('#d-all').addEventListener('click', () => Lab.$$('#d-set input').forEach(i => { i.checked = true; }));

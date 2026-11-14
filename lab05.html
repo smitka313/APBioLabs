@@ -90,7 +90,7 @@
             <li>In the light, with bicarbonate as a CO<sub>2</sub> source, photosynthesis puts O<sub>2</sub> back into the air spaces and the disks rise.</li>
             <li>Respiration uses some of that O<sub>2</sub> at the same time, so rising disks measure <strong>net</strong> photosynthesis.</li>
             <li>ET<sub>50</sub> is the time for half the disks to float. A faster rate gives a smaller ET<sub>50</sub>, so 1/ET<sub>50</sub> is used as the rate.</li>
-            <li>Light intensity falls with the square of the lamp distance, and chlorophyll absorbs red and blue light far better than green.</li>
+            <li>For a small lamp, light intensity falls roughly with the square of the distance (an approximation), and chlorophyll absorbs red and blue light far better than green.</li>
           </ul>
         </div>
         <p>In photosynthesis, chloroplasts capture light energy and use it to make carbohydrate from CO<sub>2</sub> and water, releasing O<sub>2</sub>:</p>
@@ -130,11 +130,12 @@
         <details class="disclose"><summary>Turning floating disks into a rate</summary><div class="inner">
           <p>Every minute you count how many disks are floating. Disks do not all rise together, and once in a while one never rises, so the <strong>median</strong> time is a better summary than the mean. The ET<sub>50</sub> is the time when half the disks are floating. You can read it off the floating-versus-time graph by linear interpolation between the two minutes on either side of 50%.</p>
           <p>A faster process gives a <em>smaller</em> ET<sub>50</sub>, so graphing ET<sub>50</sub> against light intensity slopes downward. Taking the reciprocal, <strong>1/ET<sub>50</sub></strong> (min<sup>−1</sup>), gives a quantity that rises with the rate. Plotted against light, it makes the familiar curve that rises and then levels off.</p>
-          <div class="equation">rate ∝ 1 / ET<sub>50</sub> &nbsp;&nbsp;&nbsp; light intensity ∝ 1 / (distance)<sup>2</sup></div>
+          <div class="equation">rate ∝ 1 / ET<sub>50</sub> &nbsp;&nbsp;&nbsp; light intensity ∝ 1 / (distance)<sup>2</sup> (approximately, for a small lamp)</div>
         </div></details>
         <details class="disclose"><summary>Light intensity and light color</summary><div class="inner">
-          <p>Light intensity from a small lamp follows the <strong>inverse square law</strong>: doubling the distance spreads the light over four times the area, so only ¼ as many photons reach the disks. Chlorophyll <em>a</em> and <em>b</em> absorb blue and red light strongly and green light weakly, which is why leaves look green and why green light drives photosynthesis poorly.</p>
+          <p>For a small light source, light intensity approximately follows the <strong>inverse square law</strong>: doubling the distance spreads the light over about four times the area, so only about ¼ as many photons reach the disks. Real classroom lamps may behave differently because of their shape, reflectors, and surrounding light. The simulation uses the inverse square law as its model. <em>Tip:</em> if you have a light meter, measure the intensity at the cups; that is better than relying on distance. Chlorophyll <em>a</em> and <em>b</em> absorb blue and red light strongly and green light weakly, which is why leaves look green and why green light drives photosynthesis poorly.</p>
         </div></details>
+        <details class="disclose sim-model"><summary>What this simulation models</summary><div class="inner"><ul><li><strong>Process:</strong> Net photosynthesis in leaf disks. O<sub>2</sub> made in the light collects in the air spaces until a disk floats, while respiration uses some of it.</li><li><strong>Included:</strong> Light intensity from lamp distance (the inverse square model), light color (chlorophyll absorbs green poorly), bicarbonate as the CO<sub>2</sub> supply, temperature (enzyme optimum, heat damage, lamp heating), respiration, plant type, leaf age, and disk-to-disk variation.</li><li><strong>Simplified or left out:</strong> Floating is a simple O<sub>2</sub> threshold. Solution depth, disks sticking to the cup, CO<sub>2</sub> running low and light damage are ignored. Real lamps and filters vary, and the plant values are estimates, so bench ET<sub>50</sub> values may differ.</li></ul></div></details>
       </div>
       <aside class="split-side glossary" aria-labelledby="bg-terms">
         <div class="callout-title" id="bg-terms">Key terms</div>
@@ -144,7 +145,7 @@
           <dt>Sodium bicarbonate (NaHCO<sub>3</sub>)</dt><dd>Dissolves to give HCO<sub>3</sub><sup>−</sup>, the CO<sub>2</sub> supply for the Calvin cycle.</dd>
           <dt>Net photosynthesis</dt><dd>Gross photosynthesis minus the O<sub>2</sub> used by cellular respiration.</dd>
           <dt>ET<sub>50</sub></dt><dd>Estimated time for 50% of the disks to float: a median time to float.</dd>
-          <dt>Inverse square law</dt><dd>Light intensity ∝ 1/(distance)<sup>2</sup>: twice as far gets ¼ the light.</dd>
+          <dt>Inverse square law</dt><dd>For a small light source, intensity ∝ 1/(distance)<sup>2</sup>, approximately: twice as far gets about ¼ the light. Real lamps only approximate it.</dd>
         </dl>
       </aside>
     </div>
@@ -878,7 +879,7 @@ const Predict = (function () {
     { type: 'mc', q: 'If you treat leaf disks in a way that increases the net rate of photosynthesis, how will they behave?', choices: ['They will float sooner, so ET<sub>50</sub> gets smaller.', 'They will float later, so ET<sub>50</sub> gets larger.', 'ET<sub>50</sub> will not change.', 'They will never sink in the first place.'], answer: 0, explain: 'A faster net rate fills the air spaces with O<sub>2</sub> sooner, so disks rise sooner and ET<sub>50</sub> drops. That inverse relationship is why we plot 1/ET<sub>50</sub>.' },
     { type: 'num', q: 'A cup of 10 disks gives these counts of floating disks at the end of minutes 0–12: 0, 0, 0, 0, 0, 1, 1, 2, 3, 4, 4, 6, 8. Estimate ET<sub>50</sub> by linear interpolation.', answer: 10.5, tol: 0.05, unit: 'min', explain: 'Half of 10 is 5. At 10 min, 4 disks float; at 11 min, 6. ET<sub>50</sub> = 10 + (5 − 4)/(6 − 4) = 10.5 min.' },
     { type: 'num', q: 'Another trial gives ET<sub>50</sub> = 8 min. What is 1/ET<sub>50</sub>?', answer: 0.125, tol: 0.001, unit: 'min⁻¹', explain: '1 ÷ 8 = 0.125 min⁻¹. Bigger values mean faster net photosynthesis.' },
-    { type: 'num', q: 'You move a lamp from 10 cm to 20 cm above the cups. What fraction of the original light intensity reaches the disks?', answer: 0.25, tol: 0.005, unit: '(as a decimal)', explain: 'Intensity ∝ 1/d². Doubling d gives (10/20)² = 1/4 = 0.25.' },
+    { type: 'num', q: 'You move a lamp from 10 cm to 20 cm above the cups. Using the inverse square law (the simulation’s model), what fraction of the original light intensity reaches the disks?', answer: 0.25, tol: 0.005, unit: '(as a decimal)', explain: 'For a small lamp, intensity ∝ 1/d², approximately (the model this simulation uses). Doubling d gives (10/20)² = 1/4 = 0.25. A real lamp with a reflector may not drop off exactly this way; a light meter tells you for sure.' },
     { type: 'mc', q: 'Why would leaf disks under green light rise more slowly than disks under the same number of red or blue photons?', choices: ['Chlorophylls absorb red and blue light strongly but absorb little green light, which is mostly reflected or transmitted.', 'Green light has more energy per photon than red light, which damages chloroplasts.', 'Green light cannot pass through water.', 'Green light speeds up respiration instead.'], answer: 0, explain: 'Chlorophyll <em>a</em> and <em>b</em> absorb in the blue and red regions. Green is absorbed weakly, which is why leaves look green, so fewer photons drive the light reactions.' },
     { type: 'mc', q: 'Why is the median (ET<sub>50</sub>) a better summary for a cup than the mean time to float?', choices: ['A disk occasionally rises very late or never, which would drag the mean far off but barely moves the median.', 'The median is always larger than the mean.', 'You cannot calculate a mean for counts.', 'The mean ignores the control cup.'], answer: 0, explain: 'The median resists outliers. One stuck or damaged disk can make the mean meaningless, or impossible to calculate if it never floats.' }
   ], { id: 'prelab' });
@@ -1148,7 +1149,7 @@ const Predict = (function () {
      DESIGN
      ===================================================================== */
   const IV = {
-    dist: { label: 'Lamp distance (cm)', num: true, def: '10, 15, 20, 30, 45', hint: '5 to 80 cm. Light ∝ 1/d².', check: v => v >= 5 && v <= 80, set: (c, v) => { c.dist = v; }, x: 'Light at cups (µmol photons m⁻² s⁻¹)', xval: v => par(Object.assign({}, BASE, { dist: v })) },
+    dist: { label: 'Lamp distance (cm)', num: true, def: '10, 15, 20, 30, 45', hint: '5 to 80 cm. The model uses light ∝ 1/d² (a small-lamp approximation).', check: v => v >= 5 && v <= 80, set: (c, v) => { c.dist = v; }, x: 'Light at cups (µmol photons m⁻² s⁻¹)', xval: v => par(Object.assign({}, BASE, { dist: v })) },
     color: { label: 'Light color', num: false, opts: COLORS, def: ['white', 'red', 'green', 'blue'], set: (c, v) => { c.color = v; } },
     bicarb: { label: 'NaHCO₃ (%)', num: true, def: '0, 0.05, 0.1, 0.2, 0.4', hint: '0 to 1%.', check: v => v >= 0 && v <= 1, set: (c, v) => { c.bicarb = v; }, x: 'Sodium bicarbonate (%)' },
     temp: { label: 'Temperature (°C)', num: true, def: '10, 20, 30, 40, 50', hint: '4 to 60 °C (never heat higher).', check: v => v >= 4 && v <= 60, set: (c, v) => { c.temp = v; }, x: 'Temperature of solution (°C)' },
