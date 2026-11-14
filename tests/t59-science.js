@@ -401,7 +401,7 @@ LABS.lab12 = async b => {
   T.ok(v && [v.t0, v.t15, v.t30].every(x => x >= 0 && x <= v.n) && v.t15 >= v.t0, `lab12: vial counts within 0–${v && v.n} and flies climb (0 s ${v && v.t0}, 15 s ${v && v.t15}, 30 s ${v && v.t30})`);
   T.ok(L.near(kr(d, 'vial-top'), Math.round(1000 * v.t30 / v.n) / 10, 1e-9), `lab12: key result % in top half ${kr(d, 'vial-top')}`);
   const tri = table(d, 'trials-table'), t1 = tri[tri.length - 1], ref = L.chi2([t1.A, t1.B], [(t1.A + t1.B) / 2, (t1.A + t1.B) / 2]);
-  T.ok(L.near(t1.chi2, ref, 1e-9) && (t1.sig === 'Yes') === (ref > 3.841), `lab12: trial χ² = Σ(o−e)²/e with e = n/2 = ${ref.toFixed(3)}, "p < 0.05" ⇔ χ² > 3.84 (${t1.sig})`);
+  T.ok(L.near(t1.chi2, ref, 1e-9) && (String(t1.sig).startsWith('Yes')) === (ref > 3.841), `lab12: trial χ² = Σ(o−e)²/e with e = n/2 = ${ref.toFixed(3)}, "p < 0.05" ⇔ χ² > 3.84 (${t1.sig})`);
   T.ok(L.near(kr(d, 'chi2'), r2(ref), 1e-9) && L.near(kr(d, 'pct-a'), Math.round(1000 * t1.A / (t1.A + t1.B)) / 10, 1e-9), 'lab12: key results χ² and % at A match');
   const it = table(d, 'int-table');
   T.ok(it.length && it.every(r => r.aa >= 0 && r.ab >= 0 && r.aa + r.ab <= t1.A + t1.B), 'lab12: interval counts never exceed the flies in the chamber');
