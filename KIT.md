@@ -70,6 +70,12 @@ Classroom features (automatic on every `labNN.html`; teacher pages get none of t
 - **Key results.** `Lab.keyResult(id, {label, value, unit, part})` stores `keyres:<id>` = `{label, value, unit, part, t}`;
   `Lab.keyResults()` lists them. Call it whenever a headline number is computed (FRQ self-score: id `frq-score`, unit `of 4`).
   They appear in the report (Key results table), the progress file and the teacher dashboard.
+  **Export format:** each row reads "Label: value unit" and any extra wording goes in `note` (a separate Notes cell in the
+  .docx and PDF report), e.g. `Lab.keyResult('chi2-calc', {label:'χ² (calculator)', value:0.133, unit:'', note:'df = 1; critical value 3.84', part:'Analyze'})`.
+  Call it from a calculator's "Calculate" handler so the standalone result is exported too (and `Lab.keyResult(id, null)` withdraws it
+  when the inputs change). Values are sanitised on the way in: arrays become "a, b", objects "k: v, k: v", pipes and line breaks are removed, NaN
+  shows a dash; a `unit` that is really a sentence (contains `;` or `=`, "critical", "df", or is over 28 characters) is moved to `note`.
+  Keep `unit` to a real unit ("min", "% at A", "of 4") (`tests/t49-keyresults.js`).
 - **Printing is always light, with real pictures.** `@media print` in style.css redefines every token to its light value (beating the
   dark-mode rules) and sets break rules (headings keep with what follows; figures, tables, prompts, readouts never split). On
   `beforeprint`, `Lab.print.prepare()` shows every part, switches to light tokens, redraws every `Lab.canvas`, chart and `Scope.view`,
@@ -200,6 +206,11 @@ Moves existing `Lab.chart` / `Lab.table` containers (ids unchanged) into a resul
 - Charts inside a panel draw at their real width so axis text stays 12 px (any chart can opt in with
   `Lab.chart(el, {responsive:true, …})`); the report always uses a full-size 640-wide copy.
 - ARIA tabs: arrow keys / Home / End, `aria-selected`, `role=tabpanel`. Returns `{select('graph'|'data'|'scene')}`.
+- **Wide tables never hide columns.** Data-panel tables are compact (wrapped headers, small numerals). If a table is still wider than the
+  panel, the results column widens (up to 56% of the sim, `--res-w`, `.is-widened`); if it still does not fit, the `.table-wrap` scrolls
+  sideways with the first column sticky, an edge shadow, and a "Scroll → for more columns" line that disappears at the right end
+  (`Lab.tableFit`, any `.table-wrap` on any page). Nothing to do in a lab; just keep column labels short and do not set `white-space: nowrap`
+  on cells. `tests/t48-tables.js` fills every Data table and measures it at 1366 and 1920.
 
 ### 4. Guidance inside sims: `Lab.steps` and `Lab.gate`
 ```js

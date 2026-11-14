@@ -185,9 +185,39 @@
      'frq-score', {label:'FRQ self-score', value:3, unit:'of 4'}). Stored as store 'keyres:<id>' = {label, value, unit, part, t}.
      Lab.keyResults() → [{id, label, value, unit, part, t}] oldest first. They go into the report, the progress file
      and the teacher dashboard. */
+  /* Key-result clean-up. A key result is exported as "Label: value unit" with any extra wording in a separate Notes cell,
+     so a stored record is normalised first: pipes, line breaks and control characters are removed from text; an object value
+     becomes "k: v, k: v" (or its own .value), an array "a, b, c", NaN/Infinity becomes "no value"; and a `unit` that is really a
+     sentence ("df = 1; critical value 3.84") is moved into `note`. */
+  const krText = (s, max) => { let t = String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s*\|\s*/g, ' / ').replace(/\s+/g, ' ').trim(); if (max && t.length > max) t = t.slice(0, max - 1) + '…'; return t; };
+  const krNum = n => (Number.isFinite(n) ? Math.round(n * 1e6) / 1e6 : null);
+  function krValue(v, depth) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return krNum(v);
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    if (Array.isArray(v)) { const a = v.map(x => krValue(x, (depth || 0) + 1)).filter(x => x != null); return a.length ? krText(a.join(', '), 200) : null; }
+    if (typeof v === 'object') {
+      if ('value' in v && (depth || 0) < 2) return krValue(v.value, (depth || 0) + 1);
+      const a = Object.keys(v).map(k => { const x = krValue(v[k], (depth || 0) + 1); return x == null ? null : krText(k, 40) + ': ' + x; }).filter(Boolean);
+      return a.length ? krText(a.join(', '), 200) : null;
+    }
+    return krText(v, 200) || null;
+  }
+  const unitIsNote = u => /[;=]/.test(u) || /\b(critical|df|degrees of freedom|threshold)\b/i.test(u) || u.length > 28;
+  function krNorm(r) {
+    const o = Object.assign({}, r);
+    o.value = krValue(r.value);
+    let unit = krText(r.unit, 120), note = krText(r.note, 200);
+    if (unit && unitIsNote(unit)) { note = note ? note + '; ' + unit : unit; unit = ''; }
+    o.unit = unit; o.note = note; if (r.label != null) o.label = krText(r.label, 160);
+    return o;
+  }
   Lab.keyResult = function (id, o) {
-    if (!id || !o || typeof o !== 'object') return null;
-    const rec = { label: o.label, value: o.value, unit: o.unit, part: o.part, t: Date.now() };
+    if (!id) return null;
+    if (o === null) { store.set('keyres:' + id, null); return null; }   // a calculator whose inputs changed can withdraw its result
+    if (!o || typeof o !== 'object') return null;
+    const rec = krNorm({ label: o.label, value: o.value, unit: o.unit, note: o.note, part: o.part });
+    rec.t = Date.now();
     store.set('keyres:' + id, rec);
     return rec;
   };
@@ -197,12 +227,12 @@
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (!k || !k.startsWith(pre)) continue;
-        try { const v = JSON.parse(localStorage.getItem(k)); if (v && typeof v === 'object') out.push(Object.assign({ id: k.slice(pre.length) }, v)); } catch (e) { /* skip bad value */ }
+        try { const v = JSON.parse(localStorage.getItem(k)); if (v && typeof v === 'object') out.push(Object.assign({ id: k.slice(pre.length) }, krNorm(v), { t: v.t })); } catch (e) { /* skip bad value */ }
       }
     } catch (e) { /* storage blocked */ }
     return out.sort((a, b) => (a.t || 0) - (b.t || 0) || String(a.id).localeCompare(String(b.id)));
   };
-  const keyResultText = r => (r.value == null ? '—' : typeof r.value === 'number' ? String(Math.round(r.value * 1e6) / 1e6) : String(r.value)) + (r.unit ? ' ' + r.unit : '');
+  const keyResultText = r => (r.value == null ? '—' : String(r.value)) + (r.value != null && r.unit ? ' ' + r.unit : '');
 
   /* ---------------- "Saved ✓" status line ----------------
      Every Lab.store.set (prompts, tables, quizzes, steps, sim saves) reports here. Each .save-status element
@@ -345,11 +375,15 @@
     const raw = range / Math.max(1, ticks), mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
     return (r >= 5 ? 10 : r >= 2 ? 5 : r >= 1 ? 2 : 1) * mag;
   }
-  function niceRange(lo, hi, ticks = 5) {
-    if (!isFinite(lo) || !isFinite(hi)) { lo = 0; hi = 1; }
+  /* exact = both ends were given by the page: keep them as they are, pick a nice step that fits inside, and start the ticks at the first
+     nice multiple at or above the lower end (t0), so a 2-12 pH axis stays 2-12 even in a narrow panel. */
+  function niceRange(lo, hi, ticks = 5, exact = false) {
+    if (!isFinite(lo) || !isFinite(hi)) { lo = 0; hi = 1; exact = false; }
     if (lo === hi) { hi = lo + 1; lo = lo - (lo === 0 ? 0 : 1); }
-    const step = niceStep(hi - lo, ticks);
-    return { lo: Math.floor(lo / step + 1e-9) * step, hi: Math.ceil(hi / step - 1e-9) * step, step };
+    const step = niceStep(hi - lo, exact ? ticks + 2 : ticks);
+    if (exact && hi > lo) return { lo, hi, step, t0: Math.ceil(lo / step - 1e-9) * step };
+    const r = { lo: Math.floor(lo / step + 1e-9) * step, hi: Math.ceil(hi / step - 1e-9) * step, step };
+    r.t0 = r.lo; return r;
   }
   const tickFmt = (v, step) => { const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Lab.fmt(v, Math.min(d, 6)); };
   const errOf = p => { const e = p && p.err != null ? Math.abs(+p.err) : 0; return isFinite(e) ? e : 0; }; // a missing or NaN error bar (e.g. SE of one plant) must not wreck the axis scale
@@ -359,6 +393,7 @@
   const workListeners = []; let workTimer = null;
   function workChanged() { clearTimeout(workTimer); workTimer = setTimeout(() => workListeners.forEach(f => { try { f(); } catch (e) { console.warn(e); } }), 120); }
   const REG = { charts: [], tables: [], quizzes: [], prompts: [] }; // used by reports, worksheets and progress
+  Lab._reg = REG;   // read-only handle for tests (tests/t48-tables.js)
   const CANVASES = []; // every Lab.canvas, so a part that becomes visible can be resized and redrawn at once
   /* Lab.chart draws in a 640-unit-wide viewBox. A responsive chart (opts.responsive, or any chart inside a
      results panel) draws at its real CSS width instead, so axis text stays 12px in narrow columns. */
@@ -426,9 +461,9 @@
         const cats = o.categories || (series[0] ? series[0].points.map(p => p.x) : []);
         let yMax = -Infinity, yMin = 0;
         series.forEach(s => s.points.forEach(p => { if (!isFinite(p.y)) return; yMax = Math.max(yMax, p.y + errOf(p)); yMin = Math.min(yMin, p.y - errOf(p)); }));
-        const yr = niceRange(o.yMin != null ? o.yMin : yMin, o.yMax != null ? o.yMax : (isFinite(yMax) ? yMax : 1));
+        const yr = niceRange(o.yMin != null ? o.yMin : yMin, o.yMax != null ? o.yMax : (isFinite(yMax) ? yMax : 1), 5, o.yMin != null && o.yMax != null);
         const Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
-        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
+        for (let v = yr.t0; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
         const gw = iw / Math.max(1, cats.length), bw = Math.min(56, (gw * 0.72) / Math.max(1, series.length));
         cats.forEach((c, ci) => {
           const gx = m.l + gw * ci + gw / 2;
@@ -448,11 +483,11 @@
         let xs = [], ys = [];
         series.forEach(s => s.points.forEach(p => { if (isFinite(p.x) && isFinite(p.y)) { xs.push(p.x); ys.push(p.y - errOf(p), p.y + errOf(p)); } }));
         if (!empty) (o.hLines || []).forEach(l => { if (isFinite(l.y)) ys.push(l.y); });
-        const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), W < 480 ? 4 : 6);
-        const yr = niceRange(o.yMin != null ? o.yMin : Math.min(0, ...(ys.length ? ys : [0])), o.yMax != null ? o.yMax : Math.max(...(ys.length ? ys : [1])), 5);
+        const xr = niceRange(o.xMin != null ? o.xMin : Math.min(0, ...(xs.length ? xs : [0])), o.xMax != null ? o.xMax : Math.max(...(xs.length ? xs : [1])), W < 480 ? 4 : 6, o.xMin != null && o.xMax != null);
+        const yr = niceRange(o.yMin != null ? o.yMin : Math.min(0, ...(ys.length ? ys : [0])), o.yMax != null ? o.yMax : Math.max(...(ys.length ? ys : [1])), 5, o.yMin != null && o.yMax != null);
         const X = v => m.l + (v - xr.lo) / (xr.hi - xr.lo) * iw, Y = v => m.t + ih - (v - yr.lo) / (yr.hi - yr.lo) * ih;
-        for (let v = yr.lo; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
-        for (let v = xr.lo; v <= xr.hi + 1e-9; v += xr.step) svg += `<line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${m.t + ih}"/>${showX ? `<text x="${X(v)}" y="${m.t + ih + 18}" text-anchor="middle">${tickFmt(v, xr.step)}</text>` : ''}`;
+        for (let v = yr.t0; v <= yr.hi + 1e-9; v += yr.step) svg += `<line class="gridline" x1="${m.l}" x2="${m.l + iw}" y1="${Y(v)}" y2="${Y(v)}"/>${showY ? `<text x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${tickFmt(v, yr.step)}</text>` : ''}`;
+        for (let v = xr.t0; v <= xr.hi + 1e-9; v += xr.step) svg += `<line class="gridline" x1="${X(v)}" x2="${X(v)}" y1="${m.t}" y2="${m.t + ih}"/>${showX ? `<text x="${X(v)}" y="${m.t + ih + 18}" text-anchor="middle">${tickFmt(v, xr.step)}</text>` : ''}`;
         if (yr.lo < 0 && yr.hi > 0) svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${Y(0)}" y2="${Y(0)}"/>`;
         svg += `<line class="axis" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"/><line class="axis" x1="${m.l}" x2="${m.l}" y1="${m.t}" y2="${m.t + ih}"/>`;
         (empty ? [] : o.hLines || []).forEach(l => { if (!isFinite(l.y)) return; svg += `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(l.y)}" y2="${Y(l.y)}" style="stroke:var(--muted)" stroke-dasharray="5 4"/>${l.label ? `<text x="${m.l + iw - 4}" y="${Y(l.y) - 5}" text-anchor="end">${esc(l.label)}</text>` : ''}`; });
@@ -545,7 +580,7 @@
     }
     render();
     if (rows.length && opts.onChange) setTimeout(() => opts.onChange(rows), 0);
-    return {
+    return reg.api = {
       /* o.setup: true marks the new rows as page setup (not student work); false marks them as work. Default: setup while the page is still loading. */
       setRows(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; rows = r.map(x => { const c = Object.assign({}, x); if (su && c._setup == null) c._setup = true; else if (!su && o && o.setup === false) delete c._setup; return c; }); changed(); noteRows(rows.length); },
       addRow(r, o) { const su = o && o.setup != null ? !!o.setup : !autoToasts.ready; const c = Object.assign({}, r); if (su) c._setup = true; else delete c._setup; rows.push(c); changed(); noteRows(1); },
@@ -554,6 +589,44 @@
       clear() { rows = []; changed(); },
     };
   };
+
+  /* ---------------- Wide tables: never lose a column off-screen ----------------
+     Every .table-wrap (Lab.table or a page's own) is watched. When its table is wider than the box, the wrap gets .is-scrollable
+     (first column sticks, edge shadows show), is made keyboard-focusable, and a "Scroll →" line under it says so until the
+     right end is reached. Inside a results panel the Data column is also widened (Lab.results) before anything scrolls. */
+  const WRAP_STATE = new WeakMap();
+  function wrapUpdate(w) {
+    const st = WRAP_STATE.get(w); if (!st || !w.isConnected) return;
+    const over = w.scrollWidth - w.clientWidth > 2 && w.clientWidth > 0;
+    const end = !over || w.scrollLeft + w.clientWidth >= w.scrollWidth - 2;
+    w.classList.toggle('is-scrollable', over);
+    w.classList.toggle('at-end', end);
+    if (over) { w.setAttribute('tabindex', '0'); w.setAttribute('role', 'region'); if (!w.getAttribute('aria-label')) w.setAttribute('aria-label', 'Data table. Scrolls sideways; arrow keys move it.'); }
+    else if (w.getAttribute('tabindex') === '0') w.removeAttribute('tabindex');
+    st.hint.hidden = !over || end;
+  }
+  function wrapWatch(w) {
+    if (WRAP_STATE.has(w)) return;
+    const hint = h('div', { class: 'scroll-hint', 'aria-hidden': 'true', hidden: true }, 'Scroll → for more columns');
+    w.after(hint);
+    WRAP_STATE.set(w, { hint });
+    const upd = () => wrapUpdate(w);
+    w.addEventListener('scroll', upd, { passive: true });
+    if (window.ResizeObserver) { const ro = new ResizeObserver(upd); ro.observe(w); const t = $('table', w); if (t) ro.observe(t); }
+    window.addEventListener('resize', upd);
+    upd();
+  }
+  function scanWraps() { $$('.table-wrap').forEach(wrapWatch); }
+  Lab.tableFit = { scan: scanWraps, update: () => $$('.table-wrap').forEach(wrapUpdate) };
+  (function () {
+    const start = () => {
+      scanWraps();
+      if (!('MutationObserver' in window)) return;
+      let q = false;
+      new MutationObserver(() => { if (q) return; q = true; requestAnimationFrame(() => { q = false; scanWraps(); }); }).observe(document.body, { childList: true, subtree: true });
+    };
+    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start, { once: true });
+  })();
 
   /* ---------------- Quiz ----------------
      Lab.quiz(el, questions, { id:'prelab' })
@@ -1267,7 +1340,7 @@
       name: who.name, period: who.period, datasetId: who.datasetId,
       date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
       sections,
-      keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), part: r.part || '' })),
+      keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), value: r.value == null ? '' : String(r.value), unit: r.unit || '', note: r.note || '', part: r.part || '' })),
     };
   }
   /* Chart SVG → PNG in light colors (CSS variables resolved), legend and fit notes drawn in. */
@@ -1335,8 +1408,10 @@
     const borders = { top: border, bottom: border, left: border, right: border };
     const cell = (t, head) => new TableCell({ borders, shading: head ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E8EEEA' } : undefined, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new Paragraph({ children: [new TextRun({ text: String(t == null ? '' : t), bold: !!head, size: 18 })] })] });
     if (rep.keyResults && rep.keyResults.length) {
+      const anyNote = rep.keyResults.some(r => r.note);
+      const krCell = r => new TableCell({ borders, margins: { top: 40, bottom: 40, left: 80, right: 80 }, children: [new Paragraph({ children: [new TextRun({ text: String(r.label), bold: true, size: 18 }), new TextRun({ text: ': ' + r.text, size: 18 })] })] });
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun('Key results')] }));
-      kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ tableHeader: true, children: ['Result', 'Value'].map(t => cell(t, true)) })].concat(rep.keyResults.map(r => new TableRow({ cantSplit: true, children: [cell(r.label), cell(r.text)] }))) }));
+      kids.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ tableHeader: true, children: (anyNote ? ['Result', 'Notes'] : ['Result']).map(t => cell(t, true)) })].concat(rep.keyResults.map(r => new TableRow({ cantSplit: true, children: anyNote ? [krCell(r), cell(r.note)] : [krCell(r)] }))) }));
     }
     for (const s of rep.sections.concat(rep.timelapse && rep.timelapse.length ? [{ timelapse: true, name: 'My timelapse', items: [] }] : [])) {
       kids.push(new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { before: 320 }, children: [new TextRun(s.name + (s.heading && s.heading !== s.name ? ': ' + s.heading : ''))] }));
@@ -1398,7 +1473,7 @@
     const out = [];
     out.push(`<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
       <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div></dl></header>`);
-    if (rep.keyResults && rep.keyResults.length) out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th><th>Value</th></tr></thead><tbody>${rep.keyResults.map(r => `<tr><td>${esc(r.label)}</td><td>${esc(r.text)}</td></tr>`).join('')}</tbody></table></section>`);
+    if (rep.keyResults && rep.keyResults.length) { const anyNote = rep.keyResults.some(r => r.note); out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th>${anyNote ? '<th>Notes</th>' : ''}</tr></thead><tbody>${rep.keyResults.map(r => `<tr><td><strong>${esc(r.label)}</strong>: ${esc(r.text)}</td>${anyNote ? `<td>${esc(r.note)}</td>` : ''}</tr>`).join('')}</tbody></table></section>`); }
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
     rep.sections.forEach((s, si) => {
       out.push(`<section class="rv-sec"><h2>${esc(s.name)}${s.heading && s.heading !== s.name ? `<span class="rv-sub">: ${esc(s.heading)}</span>` : ''}</h2>`);
@@ -2677,16 +2752,32 @@
       if (wide || cur === 'scene') { stage.setAttribute('role', wide ? 'region' : 'tabpanel'); stage.setAttribute('aria-label', 'Scene'); }
       const p = tabs.find(t => t.k === cur);
       if (p && p.k !== 'scene') REG.charts.forEach(c => { if (p.panel.contains(c.el)) c.render(); });
+      fitData();
     }
+    /* A Data panel whose table would scroll sideways gets a wider column (up to 56% of the box) before anything is hidden. */
+    let fitQ = false;
+    function fitData() {
+      main.style.removeProperty('--res-w');
+      const dp = tabs.find(t => t.k === 'data');
+      if (!main.classList.contains('is-wide') || !dp || dp.panel.hidden || !main.clientWidth) { main.classList.remove('is-widened'); return; }
+      let need = 0;
+      $$('.table-wrap', dp.panel).forEach(w => { const t = $('table', w); if (t && t.scrollWidth > w.clientWidth + 2) need = Math.max(need, t.scrollWidth + (dp.panel.clientWidth - w.clientWidth) + 2); });
+      const base = dp.panel.clientWidth;
+      if (need > base) main.style.setProperty('--res-w', Math.min(need, Math.floor(main.clientWidth * 0.56)) + 'px');
+      main.classList.toggle('is-widened', need > base);
+    }
+    const fitSoon = () => { if (fitQ) return; fitQ = true; requestAnimationFrame(() => { fitQ = false; fitData(); }); };
+    window.addEventListener('resize', fitSoon);
     wireTabs(list, tabs, i => { const k = tabs[i].k; if (mq.matches) { if (k !== 'scene') wideSel = k; } else { narrowSel = k; if (k !== 'scene') wideSel = k; } apply(); }, o.label || 'Results');
     stage.setAttribute('aria-labelledby', tabs[0].btn.id);
     if (mq.addEventListener) mq.addEventListener('change', apply); else if (mq.addListener) mq.addListener(apply);
     apply();
     if ('MutationObserver' in window) {
       const mo = new MutationObserver(recs => {
+        fitSoon();
         if (!autoToasts.ready || Date.now() < badgeQuietUntil) return;   // loading, restoring saved data or re-showing a part: not a new result
         const cur = curKind();
-        recs.forEach(r => { const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
+        recs.forEach(r => { if (r.addedNodes.length && Array.from(r.addedNodes).every(n => n.classList && n.classList.contains('scroll-hint'))) return; const w = watched.find(x => x.el === r.target); if (!w || w.kind === cur) return; const t = tabs.find(x => x.k === w.kind); if (t) t.badge.hidden = false; });
       });
       watched.forEach(w => mo.observe(w.el, { childList: true }));
     }
