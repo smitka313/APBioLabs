@@ -95,9 +95,16 @@
     } catch (e) { /* missing or damaged: compute a new one */ }
     return null;
   }
+  /* Who started this lab's dataset. The record also keeps owner: {name, period}, created (ms) and, after "Yes — I fixed my name",
+     a short ownerHistory. The ID sticks when the name or period changes (fixing a typo must not change your numbers), so a
+     different student who uses "change" on a shared computer is told whose work this is (see ownerNotice in renderIdentity).
+     A record from before owners were stored adopts the current identity silently. Nothing is ever deleted here. */
+  let DS_REC = null;
+  function writeDsRec() { if (!IS_LAB || !DS_REC || wiped) return; try { localStorage.setItem(DS_STORE, JSON.stringify(DS_REC)); } catch (e) { /* blocked: kept in memory */ } }
+  const ownerOf = idn => ({ name: normName(idn.name), period: String(idn.period || '') });
   const SEED = (function () {
     const idn = effectiveIdentity();
-    if (IS_LAB) { const st = readStoredDataset(); if (st) return { seed: st.seed >>> 0, str: st.str, basis: st.basis || '', datasetNumber: Math.floor(+st.datasetNumber) || 1, datasetId: st.datasetId, student: !!idn, sticky: true }; }
+    if (IS_LAB) { const st = readStoredDataset(); if (st) { DS_REC = st; return { seed: st.seed >>> 0, str: st.str, basis: st.basis || '', datasetNumber: Math.floor(+st.datasetNumber) || 1, datasetId: st.datasetId, student: !!idn, sticky: true }; } }
     let basis;
     if (idn) basis = studentKey(idn);
     else {
@@ -108,9 +115,46 @@
     const ds = datasetNo(idn);
     const str = [basis, PAGE.id, ds].join('|');
     const rec = { seed: hash32(str), str, basis, datasetNumber: ds, datasetId: datasetCode(hash32(str + '#dataset-id')), student: !!idn };
-    if (IS_LAB) { try { localStorage.setItem(DS_STORE, JSON.stringify({ seed: rec.seed, str, basis, datasetNumber: ds, datasetId: rec.datasetId, t: Date.now() })); } catch (e) { /* blocked: recomputed each load, as before */ } }
+    if (IS_LAB) {
+      const t = Date.now(), own = storedIdentity();
+      DS_REC = { seed: rec.seed, str, basis, datasetNumber: ds, datasetId: rec.datasetId, t, created: t };
+      if (own) DS_REC.owner = ownerOf(own);
+      writeDsRec(); // blocked storage: recomputed each load, as before
+    }
     return rec;
   })();
+  /* Dataset owner vs the student signed in now. Names compare without case or spaces. 'same' | 'close' (one typo apart,
+     same period) | 'other'; null when there is nothing to compare. An unowned record adopts the current identity here. */
+  function nameKey(n) { return normName(n).toLowerCase().replace(/\s+/g, ''); }
+  function oneEditApart(a, b) {
+    if (a === b) return true;
+    if (Math.abs(a.length - b.length) > 1) return false;
+    let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    let j = a.length - 1, k = b.length - 1; while (j >= i && k >= i && a[j] === b[k]) { j--; k--; }
+    if (j - i + 1 <= 1 && k - i + 1 <= 1) return true;                                      // one insert, delete or swap-in
+    return a.length === b.length && j === i + 1 && a[i] === b[i + 1] && a[i + 1] === b[i]; // two neighbours swapped
+  }
+  function ownerMatch() {
+    if (!IS_LAB || !DS_REC) return null;
+    const idn = storedIdentity(); if (!idn) return null;
+    const o = DS_REC.owner;
+    if (!o || !normName(o.name)) { DS_REC.owner = ownerOf(idn); if (!DS_REC.created) DS_REC.created = DS_REC.t || Date.now(); writeDsRec(); return 'same'; }
+    const a = nameKey(o.name), b = nameKey(idn.name), samePeriod = String(o.period || '') === String(idn.period || '');
+    if (a === b && samePeriod) return 'same';
+    return samePeriod && oneEditApart(a, b) ? 'close' : 'other';
+  }
+  /* The dataset owner, when it is not the student signed in now (for reports and progress files). */
+  function datasetOwnerIfOther() {
+    const m = ownerMatch();
+    return m && m !== 'same' ? { name: DS_REC.owner.name, period: DS_REC.owner.period || '', created: DS_REC.created ? new Date(DS_REC.created).toISOString() : null } : null;
+  }
+  function adoptOwner() {
+    const idn = storedIdentity(); if (!idn || !DS_REC) return;
+    const hist = Array.isArray(DS_REC.ownerHistory) ? DS_REC.ownerHistory.slice(-4) : [];
+    if (DS_REC.owner) hist.push(Object.assign({}, DS_REC.owner, { until: Date.now() }));
+    DS_REC.owner = ownerOf(idn); DS_REC.ownerHistory = hist; delete DS_REC.closeSeen;
+    writeDsRec();
+  }
   let rngCount = 0;
   if (IS_LAB) Math.random = mulberry32(SEED.seed);
   /* Seed for an unseeded Lab.rng(): the n-th call on a page always gets the same seed for the same student. */
@@ -900,7 +944,36 @@
     if (IS_LAB) line.append(' · ', h('button', { class: 'linkbtn id-help', type: 'button', title: 'Show the quick tour of this page again', 'aria-label': 'Help: show the quick tour again', onclick: e => { if (Lab.tour) Lab.tour.start({ opener: e.currentTarget, force: true }); } }, 'Help'));
     line.append(' · ', h('button', { class: 'linkbtn id-signout', type: 'button', title: 'Remove this student and all saved work from this computer', 'aria-haspopup': 'dialog', onclick: e => signOutDialog(e.currentTarget) }, 'Sign out'));
     box.append(line); if (confirmRow) box.append(confirmRow);
+    const own = IS_LAB ? ownerNoticeKind() : null;
+    if (own) box.append(ownerNotice(box, own));
     if (homeManageRefresh) homeManageRefresh();
+  }
+  /* "This lab's work was started by …": shown in the identity box when the signed-in student is not the dataset owner.
+     Non-blocking. One typo apart (same period) is worded gently with "fixed my name" first, shown on one page load only;
+     on the next load that student silently becomes the owner. */
+  let closeShownNow = false;
+  function ownerNoticeKind() {
+    const m = ownerMatch();
+    if (m === 'other') return 'other';
+    if (m !== 'close') return null;
+    const idn = storedIdentity(), key = nameKey(idn.name) + '|' + (idn.period || '');
+    if (DS_REC.closeSeen === key && !closeShownNow) { adoptOwner(); return null; }
+    if (DS_REC.closeSeen !== key) { DS_REC.closeSeen = key; writeDsRec(); }
+    closeShownNow = true;
+    return 'close';
+  }
+  function ownerNotice(box, kind) {
+    const o = DS_REC.owner, gentle = kind === 'close';
+    const who = o.name + (o.period ? ' (' + periodText(o.period) + ')' : '');
+    const fix = h('button', { class: 'btn btn--sm' + (gentle ? ' btn--primary' : ''), type: 'button', onclick: () => {
+      adoptOwner(); idHosts.forEach(b => renderIdentity(b)); focusIn(box, '.id-change'); Lab.toast('Thanks. This lab’s work is now under your name.', { type: 'ok' });
+    } }, 'Yes — I fixed my name');
+    const mine = h('button', { class: 'btn btn--sm' + (gentle ? '' : ' btn--primary'), type: 'button', onclick: () => Lab.identity.newDataset() }, 'Start my own dataset');
+    const out = h('button', { class: 'btn btn--sm btn--ghost', type: 'button', 'aria-haspopup': 'dialog', onclick: e => signOutDialog(e.currentTarget) }, 'Sign out');
+    return h('div', { class: 'id-owner' + (gentle ? ' id-owner--close' : ''), role: 'group', 'aria-label': 'Whose work is this?' },
+      h('p', { class: 'id-owner-msg' }, h('strong', null, `This lab’s work was started by ${who}. Is this your work?`), ' ',
+        gentle ? 'It looks like a small spelling fix. If so, choose “Yes — I fixed my name”.' : 'If not, start your own dataset (their work stays here) or sign out.'),
+      h('div', { class: 'id-owner-actions' }, fix, mine, out));
   }
   let homeManageRefresh = null;
   Lab.identity = {
@@ -930,9 +1003,12 @@
     host.classList.add('id-host');
     Lab.identity.mount(host);
   }
+  const ownerText = o => o.name + (o.period ? ' (' + periodText(o.period) + ')' : '');
   function reportIdentity() {
     const e = effectiveIdentity();
-    return { name: e ? e.name : '', period: e ? e.period : '', datasetId: SEED.datasetId };
+    const r = { name: e ? e.name : '', period: e ? e.period : '', datasetId: SEED.datasetId };
+    const own = datasetOwnerIfOther(); if (own) r.datasetOwner = own;
+    return r;
   }
 
   /* ---------------- Data management: sign out, start over ----------------
@@ -1162,6 +1238,7 @@
     if (who.name) lines.push('Name: ' + who.name);
     if (who.period) lines.push('Class period: ' + who.period);
     if (IS_LAB) lines.push('Dataset ID: ' + who.datasetId);
+    if (who.datasetOwner) lines.push('Dataset started by: ' + ownerText(who.datasetOwner));
     lines.push('');
     $$('.step').forEach(sec => {
       const fields = $$('[data-save]', sec).filter(f => f.id !== 'student-name' && (f.tagName === 'TEXTAREA' || f.dataset.label));
@@ -1350,7 +1427,7 @@
     });
     return {
       title, docTitle: cleanTitle(document.title), labTitle: cleanTitle(document.title), lab: PAGE.id, labNo: labTag().replace('Lab', ''),
-      name: who.name, period: who.period, datasetId: who.datasetId,
+      name: who.name, period: who.period, datasetId: who.datasetId, datasetOwner: who.datasetOwner || null,
       date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
       sections,
       keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), value: r.value == null ? '' : String(r.value), unit: r.unit || '', note: r.note || '', part: r.part || '' })),
@@ -1416,6 +1493,7 @@
     const kids = [];
     kids.push(new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(rep.docTitle || rep.title)] }));
     const info = [['Name', rep.name || '(not entered)'], ['Class period', rep.period || '—'], ['Date', rep.date], ['Dataset ID', rep.datasetId]];
+    if (rep.datasetOwner) info.push(['Dataset started by', ownerText(rep.datasetOwner)]);
     info.forEach(([k, v]) => kids.push(new Paragraph({ children: [new TextRun({ text: k + ': ', bold: true }), new TextRun(String(v))] })));
     const border = { style: BorderStyle.SINGLE, size: 4, color: '999999' };
     const borders = { top: border, bottom: border, left: border, right: border };
@@ -1485,7 +1563,7 @@
   function reportHtml(rep) {
     const out = [];
     out.push(`<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
-      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div></dl></header>`);
+      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div>${rep.datasetOwner ? `<div><dt>Dataset started by</dt><dd>${esc(ownerText(rep.datasetOwner))}</dd></div>` : ''}</dl></header>`);
     if (rep.keyResults && rep.keyResults.length) { const anyNote = rep.keyResults.some(r => r.note); out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th>${anyNote ? '<th>Notes</th>' : ''}</tr></thead><tbody>${rep.keyResults.map(r => `<tr><td><strong>${esc(r.label)}</strong>: ${esc(r.text)}</td>${anyNote ? `<td>${esc(r.note)}</td>` : ''}</tr>`).join('')}</tbody></table></section>`); }
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
     rep.sections.forEach((s, si) => {
@@ -1581,6 +1659,7 @@
     } catch (e) { /* storage blocked */ }
     const idn = effectiveIdentity();
     const p = { app: 'aplab', v: 1, lab: LAB_ID, title: document.title, savedAt: new Date().toISOString(), student: idn ? { name: idn.name, period: idn.period } : null, dataset: SEED.datasetNumber, data };
+    const own = datasetOwnerIfOther(); if (own) p.datasetOwner = own;   // the student who started this dataset, when it is someone else
     if (full === true && IS_LAB) { try { Object.assign(p, dashboardExtras()); } catch (e) { /* extras are optional */ } }
     return p;
   }

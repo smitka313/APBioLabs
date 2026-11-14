@@ -267,6 +267,11 @@ details.disclose > .inner { padding: 0 14px 14px; display: grid; gap: 10px; }
 .id-line .ds-id { font-family: var(--f-mono); color: var(--ink); background: var(--surface-2); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
 .id-note { color: var(--warn); }
 .id-confirm { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; font-size: .9rem; background: var(--warn-soft); border-radius: var(--r-sm); padding: 8px 12px; }
+.id-owner { display: grid; gap: 8px; font-size: .92rem; background: var(--warn-soft); border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: var(--r-sm); padding: 10px 14px; }
+.id-owner--close { background: var(--accent-soft); border-left-color: var(--accent); }
+.id-owner-msg { margin: 0; overflow-wrap: anywhere; }
+.id-owner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media print { .id-owner { display: none !important; } }
 
 /* ---------- Report + save/resume tools (responses toolbar) ---------- */
 [data-responses] { display: grid; gap: 10px; }

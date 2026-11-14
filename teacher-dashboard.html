@@ -239,6 +239,7 @@
       name: name || '(no name)', named: !!name, period, dataset: p.dataset || 1,
       datasetId: p.datasetId || (name ? computeDatasetId(name, period, p.lab, p.dataset) : ''),
       parts, kr, frq, conf, pre, when, flags: [],
+      owner: p.datasetOwner && typeof p.datasetOwner === 'object' && normName(p.datasetOwner.name) ? normName(p.datasetOwner.name) + (p.datasetOwner.period ? ' (Period ' + String(p.datasetOwner.period) + ')' : '') : '',
     };
   }
   const studentKey = r => r.name.toLowerCase() + '|' + r.period;
@@ -279,7 +280,7 @@
 
   /* ---------- Flags: shared Dataset ID, identical key results ---------- */
   function computeFlags() {
-    S.recs.forEach(r => { r.flags = []; });
+    S.recs.forEach(r => { r.flags = r.owner ? ['Dataset started by ' + r.owner] : []; });   // set by the lab page when another student started this lab's dataset
     const byLab = {};
     S.recs.forEach(r => (byLab[r.lab] = byLab[r.lab] || []).push(r));
     Object.values(byLab).forEach(group => {
