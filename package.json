@@ -1,0 +1,17 @@
+{
+  "name": "ap-bio-lab-bench",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AP Bio Digital Lab Bench: a static site. This file only pins the test tools (Playwright, axe-core, docx).",
+  "license": "CC-BY-NC-SA-4.0",
+  "scripts": {
+    "test": "node tests/run-all.js checklist",
+    "test:all": "node tests/run-all.js all",
+    "test:browsers": "node tests/t60-browsers.js"
+  },
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "docx": "9.7.1",
+    "playwright": "1.63.0"
+  }
+}

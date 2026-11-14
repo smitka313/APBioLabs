@@ -1,0 +1,109 @@
+# Browser tests for Lab Bench (Playwright). See tests/README.md.
+# - push / pull_request to main: the release-checklist set, split into parallel jobs.
+# - Every run: a Firefox + WebKit smoke test (tests/t60-browsers.js).
+# - Actions tab -> "Tests" -> "Run workflow": choose "checklist" or "all" (every test, split into 4 shards).
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Which tests to run"
+        type: choice
+        options: [checklist, all]
+        default: all
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  checklist:
+    name: Checklist (${{ matrix.group }})
+    if: github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [core, e2e, science, a11y-axe, a11y-keys, a11y-resp]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run tests
+        env:
+          JOBS: ${{ matrix.group == 'core' && '2' || '1' }}
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          export AXE="$PWD/node_modules/axe-core/axe.min.js"
+          node tests/run-all.js ${{ matrix.group }}
+
+  browsers:
+    name: Cross-browser smoke (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run t60-browsers
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          node tests/run-all.js t60-browsers
+
+  full:
+    name: Full suite (shard ${{ matrix.shard }}/4)
+    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Install PDF tools (t18, t36)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils unzip python3-pil python3-numpy
+      - name: Run tests
+        env:
+          JOBS: "2"
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          export AXE="$PWD/node_modules/axe-core/axe.min.js"
+          node tests/run-all.js all --shard ${{ matrix.shard }}/4

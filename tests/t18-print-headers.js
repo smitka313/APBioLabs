@@ -2,7 +2,7 @@
 const T = require('./_h');
 const fs = require('fs'), os = require('os'), path = require('path'), cp = require('child_process');
 const OUT = process.env.OUT || os.tmpdir();
-const DOCX = path.join(require('child_process').execSync('npm root -g').toString().trim(), 'docx/dist/index.umd.cjs');
+const DOCX = T.docxFile();
 
 function pdfPages(file) {
   const txt = cp.execFileSync('pdftotext', ['-layout', file, '-']).toString();

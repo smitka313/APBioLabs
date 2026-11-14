@@ -2,15 +2,25 @@
      NODE_PATH=$(npm root -g) node tests/<name>.js
    They open the site from disk (file://), seed the sign-in and tour flags so nothing blocks the page,
    and exit non-zero if any check fails. */
-const { chromium } = require('playwright');
+const playwright = require('playwright');
 const path = require('path');
 const fs = require('fs');
 const ROOT = path.resolve(__dirname, '..');
 
 /* The sandbox blocks CDNs. Production pages load these pinned libraries from a CDN; tests answer those requests from disk.
-   docx comes from the npm global modules; qrcode-generator and JSZip are vendored in tests/fixtures (tests only). */
+   docx comes from node_modules (./node_modules after `npm ci`, or the global modules through NODE_PATH);
+   qrcode-generator and JSZip are vendored in tests/fixtures (tests only). */
+let docxCache;
+function docxFile() {
+  if (docxCache) return docxCache;
+  const c = [];
+  try { c.push(path.join(path.dirname(require.resolve('docx')), 'index.umd.cjs')); } catch (e) { /* not on NODE_PATH */ }
+  c.push(path.join(ROOT, 'node_modules/docx/dist/index.umd.cjs'));
+  try { c.push(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'docx/dist/index.umd.cjs')); } catch (e) { /* no npm */ }
+  return (docxCache = c.find(f => fs.existsSync(f)) || c[c.length - 1]);
+}
 const LIBS = [
-  [/cdn\.jsdelivr\.net\/npm\/docx|unpkg\.com\/docx/, () => path.join(require('child_process').execSync('npm root -g').toString().trim(), 'docx/dist/index.umd.cjs')],
+  [/cdn\.jsdelivr\.net\/npm\/docx|unpkg\.com\/docx/, docxFile],
   [/cdnjs\.cloudflare\.com\/ajax\/libs\/qrcode-generator\/1\.4\.4\//, () => path.join(__dirname, 'fixtures/qrcode-1.4.4.js')],
   [/cdnjs\.cloudflare\.com\/ajax\/libs\/jszip\/3\.10\.1\//, () => path.join(__dirname, 'fixtures/jszip-3.10.1.min.js')],
 ];
@@ -33,10 +43,12 @@ let failures = 0, checks = 0;
 function ok(cond, msg) { checks++; if (!cond) { failures++; console.log('  FAIL: ' + msg); } else console.log('  ok:   ' + msg); }
 function done(name) { console.log(`\n${name}: ${checks - failures}/${checks} checks passed`); process.exitCode = failures ? 1 : 0; }
 
-async function launch() { return chromium.launch(); }
+/* BROWSER=chromium|firefox|webkit picks the engine (default chromium). */
+const BROWSER = (process.env.BROWSER || 'chromium').toLowerCase();
+async function launch(opts) { return playwright[BROWSER].launch(opts); }
 /* New context: signed in, tour dismissed. opts: {width, height, dark, reduced, touch, seed: {key: value}} */
 async function ctxFor(b, o = {}) {
-  const ctx = await b.newContext({ viewport: { width: o.width || 1366, height: o.height || 768 }, colorScheme: o.dark ? 'dark' : 'light', reducedMotion: o.reduced ? 'reduce' : 'no-preference', hasTouch: !!o.touch, isMobile: !!o.mobile });
+  const ctx = await b.newContext({ viewport: { width: o.width || 1366, height: o.height || 768 }, colorScheme: o.dark ? 'dark' : 'light', reducedMotion: o.reduced ? 'reduce' : 'no-preference', hasTouch: !!o.touch, ...(o.mobile ? { isMobile: true } : {}) /* Firefox rejects isMobile */ });
   await routeLibs(ctx);
   await ctx.addInitScript(() => { try {
     if (!sessionStorage.getItem('__seeded') && !localStorage.getItem('aplab:student')) localStorage.setItem('aplab:student', JSON.stringify({ name: 'Test Student', period: '3' }));
@@ -55,4 +67,4 @@ async function open(ctx, file, hash = '', base) {
   return p;
 }
 const LABS = Array.from({ length: 13 }, (_, i) => 'lab' + String(i + 1).padStart(2, '0'));
-module.exports = { ok, done, launch, ctxFor, open, LABS, ROOT, serve, routeLibs };
+module.exports = { ok, done, launch, ctxFor, open, LABS, ROOT, serve, routeLibs, docxFile, BROWSER };
