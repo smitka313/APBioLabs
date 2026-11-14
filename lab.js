@@ -212,11 +212,22 @@
   Lab.$ = $; Lab.$$ = $$; Lab.h = h; Lab.esc = esc;
 
   /* ---------------- Storage (per-viewer convenience only) ---------------- */
+  const isBlankVal = v => v == null || v === '' || v === false || (typeof v === 'object' && !Object.keys(v).length);
   const store = {
     get(key, fallback = null) {
       try { const v = localStorage.getItem(`aplab:${LAB_ID}:${key}`); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
     },
-    set(key, val) { if (wiped) return; try { localStorage.setItem(`aplab:${LAB_ID}:${key}`, JSON.stringify(val)); saveNote(true); } catch (e) { storageFailed(); saveNote(false); } },
+    set(key, val) {
+      if (wiped) return;
+      try {
+        const k = `aplab:${LAB_ID}:${key}`, json = JSON.stringify(val), prev = PAGE.kind === 'lab' ? localStorage.getItem(k) : null;
+        localStorage.setItem(k, json);
+        /* When this lab's work last really changed (a restore compares it with the file's date). Rewriting the same value,
+           or a blank value where there was none (pages save their fields on load), does not count. */
+        if (PAGE.kind === 'lab' && prev !== json && !(prev == null && isBlankVal(val))) localStorage.setItem(`aplab:${LAB_ID}:saved-at`, String(Date.now()));
+        saveNote(true);
+      } catch (e) { storageFailed(); saveNote(false); }
+    },
     clearLab() {
       try { Object.keys(localStorage).filter(k => k.startsWith(`aplab:${LAB_ID}:`)).forEach(k => localStorage.removeItem(k)); } catch (e) {}
     }
@@ -310,10 +321,21 @@
     const target = vis[0];
     if (target) setTimeout(() => { target.lastChild.textContent = msg; }, 50);
   }
+  /* "Saved 10:42" in the identity line: the time of the last successful save on this page (hidden until the first one). */
+  function savedClock() {
+    if (SAVE.ok === false) return 'Not saved';
+    if (!SAVE.at) return '';
+    try { return 'Saved ' + new Date(SAVE.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return 'Saved'; }
+  }
+  function renderSavedClock() {
+    const t = savedClock();
+    document.querySelectorAll('.id-saved').forEach(n => { n.hidden = !t; n.dataset.state = SAVE.ok === false ? 'bad' : 'ok'; if (n.textContent !== t) n.textContent = t; });
+  }
   function saveNote(ok) {
     if (PAGE.kind !== 'lab') return;
     const changed = SAVE.ok !== ok;
     SAVE.ok = ok; if (ok) SAVE.at = Date.now();
+    renderSavedClock();
     clearTimeout(saveNote._t); saveNote._t = setTimeout(() => renderSave(true), changed ? 0 : 1500);
   }
   /* A fresh status element for a part or the Submit tools. */
@@ -943,6 +965,7 @@
     }
     if (IS_LAB) line.append(' · ', h('button', { class: 'linkbtn id-help', type: 'button', title: 'Show the quick tour of this page again', 'aria-label': 'Help: show the quick tour again', onclick: e => { if (Lab.tour) Lab.tour.start({ opener: e.currentTarget, force: true }); } }, 'Help'));
     line.append(' · ', h('button', { class: 'linkbtn id-signout', type: 'button', title: 'Remove this student and all saved work from this computer', 'aria-haspopup': 'dialog', onclick: e => signOutDialog(e.currentTarget) }, 'Sign out'));
+    if (IS_LAB) { const t = savedClock(); line.append(h('span', { class: 'id-saved', 'aria-hidden': 'true', hidden: !t, 'data-state': SAVE.ok === false ? 'bad' : 'ok' }, t)); }
     box.append(line); if (confirmRow) box.append(confirmRow);
     const own = IS_LAB ? ownerNoticeKind() : null;
     if (own) box.append(ownerNotice(box, own));
@@ -1663,21 +1686,55 @@
     if (full === true && IS_LAB) { try { Object.assign(p, dashboardExtras()); } catch (e) { /* extras are optional */ } }
     return p;
   }
+  /* Every error message here ends with "nothing was changed": a damaged, partial or wrong file never touches saved work. */
+  const NOCHANGE = ' Nothing on this computer was changed.';
   function parseProgress(text, anyLab) {
     let o;
-    try { o = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { throw new Error('That is not a progress file. Choose the .json file you saved from this lab.'); }
-    if (!o || typeof o !== 'object' || o.app !== 'aplab' || !o.data || typeof o.data !== 'object' || Array.isArray(o.data)) throw new Error('That does not look like a Lab Bench progress file.');
-    if (typeof o.v !== 'number' || o.v > 1) throw new Error('That progress file was made by a newer version of this site. Reload the page and try again.');
-    if (typeof o.lab !== 'string') throw new Error('That progress file is missing its lab number.');
-    if (!anyLab && o.lab !== LAB_ID) { const m = /^lab(\d\d)$/.exec(o.lab); throw new Error(m ? `That progress file is for Lab ${+m[1]}. Open Lab ${+m[1]} and load it there.` : 'That progress file is for a different page.'); }
-    if (o.student && (typeof o.student.name !== 'string' || !normName(o.student.name))) o.student = null;
+    try { o = typeof text === 'string' ? JSON.parse(text) : text; } catch (e) { throw new Error('This file is damaged or incomplete (it may have been cut off while saving), so it could not be loaded. Save a new progress file and try again.' + NOCHANGE); }
+    if (!o || typeof o !== 'object' || Array.isArray(o) || o.app !== 'aplab') throw new Error('That does not look like a Lab Bench progress file. Choose the .json file you saved from this lab.' + NOCHANGE);
+    if (typeof o.v !== 'number' || o.v > 1) throw new Error('That progress file was made by a newer version of this site. Reload the page and try again.' + NOCHANGE);
+    if (typeof o.lab !== 'string') throw new Error('That progress file is missing its lab number, so it could not be loaded.' + NOCHANGE);
+    if (!anyLab && o.lab !== LAB_ID) { const m = /^lab(\d\d)$/.exec(o.lab); throw new Error((m ? `That progress file is for Lab ${+m[1]}. Open Lab ${+m[1]} and load it there.` : 'That progress file is for a different page.') + NOCHANGE); }
+    if (!o.data || typeof o.data !== 'object' || Array.isArray(o.data)) throw new Error('That progress file is missing its saved work, so it could not be loaded.' + NOCHANGE);
+    if (!Object.keys(o.data).length) throw new Error('That progress file has no saved work in it.' + NOCHANGE);
+    if (o.student && (typeof o.student !== 'object' || typeof o.student.name !== 'string' || !normName(o.student.name))) o.student = null;
+    if (o.student) o.student = { name: normName(o.student.name), period: String(o.student.period == null ? '' : o.student.period).slice(0, 20) };
+    if (!Number.isFinite(+o.dataset) || +o.dataset < 1) o.dataset = 1;
+    if (o.savedAt != null && !Number.isFinite(Date.parse(o.savedAt))) o.savedAt = null;
     return o;
   }
+  /* When this lab's work on this computer last changed (ms), or 0 when there is none. */
+  function localSavedAt(id) {
+    id = id || LAB_ID;
+    let t = 0;
+    try { t = +JSON.parse(localStorage.getItem(`aplab:${id}:saved-at`)) || 0; } catch (e) { /* none */ }
+    if (!t) { const pr = gstore.get('progress:' + id); if (pr && +pr.t) t = +pr.t; }
+    if (!t && id === LAB_ID) Lab.keyResults().forEach(r => { if (+r.t > t) t = +r.t; });
+    return t;
+  }
+  const fmtWhen = t => { try { return new Date(t).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return String(new Date(t)); } };
+  /* The confirmation for a restore: names the student, the lab and the file's saved date, and warns when the work on this
+     computer is newer than the file. → {text, newer} */
+  function restoreQuestion(o, viaLink) {
+    const m = /^lab(\d\d)$/.exec(o.lab || ''), lab = m ? 'Lab ' + +m[1] : 'this lab';
+    const who = o.student ? o.student.name + (o.student.period ? ' (' + periodText(o.student.period) + ')' : '') : 'a student with no name entered';
+    const fileT = o.savedAt ? Date.parse(o.savedAt) : 0, when = fileT ? fmtWhen(fileT) : 'an unknown date';
+    const w = workSnapshot(), local = w.answers + w.rows > 0 ? localSavedAt() : 0;   // no work here: nothing to lose
+    const newer = local && (!fileT || local > fileT) ? `The work on this computer is newer than this file (saved ${fmtWhen(local)}). Replace it anyway?` : '';
+    const text = `${viaLink ? 'This link' : 'This file'} holds ${who}’s ${lab} work, saved ${when}. Loading it replaces your ${lab} answers and data on this computer.`;
+    return { text, newer };
+  }
   function applyProgress(o) {
+    /* All or nothing: keep a copy of this lab's saved work, and put it back if any write fails part way. */
+    const pre = `aplab:${LAB_ID}:`, before = {};
+    lsKeys().forEach(k => { if (k.startsWith(pre)) { try { before[k] = localStorage.getItem(k); } catch (e) { /* skip */ } } });
     try {
       store.clearLab();
-      Object.entries(o.data).forEach(([k, v]) => localStorage.setItem(`aplab:${LAB_ID}:${k}`, JSON.stringify(v)));
-    } catch (e) { throw new Error('This browser is not letting the site save data, so the progress could not be loaded here.'); }
+      Object.entries(o.data).forEach(([k, v]) => localStorage.setItem(pre + k, JSON.stringify(v)));
+    } catch (e) {
+      try { lsKeys().forEach(k => { if (k.startsWith(pre)) localStorage.removeItem(k); }); Object.entries(before).forEach(([k, v]) => localStorage.setItem(k, v)); } catch (x) { /* best effort */ }
+      throw new Error('This browser is not letting the site save data, so the progress could not be loaded here.' + NOCHANGE);
+    }
     if (o.student) {
       setIdentity(o.student);
       if (o.dataset > 1) gstore.set(`dataset:${PAGE.id}:${studentKey(o.student)}`, Math.floor(o.dataset));
@@ -1711,7 +1768,7 @@
     let text; try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch (e) { throw new Error('That resume code is damaged. Copy the whole code and try again.'); }
     return parseProgress(text, anyLab);
   }
-  Lab.progressFile = { payload: progressPayload, parse: parseProgress, apply: applyProgress, makeCode: makeResumeCode, readCode: readResumeCode };
+  Lab.progressFile = { payload: progressPayload, parse: parseProgress, apply: applyProgress, makeCode: makeResumeCode, readCode: readResumeCode, question: restoreQuestion, localSavedAt };
 
   /* Download the progress file and record it as the latest backup. Returns the file name. */
   function saveProgressFile() {
@@ -1799,7 +1856,6 @@
     let o;
     try { o = await readResumeCode(code, true); }
     catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); return; }
-    const when = o.savedAt ? new Date(o.savedAt).toLocaleString() : 'an unknown date';
     const who = o.student && o.student.name ? ' from ' + o.student.name : '';
     const m = /^lab(\d\d)$/.exec(o.lab || '');
     if (!IS_LAB || o.lab !== LAB_ID) {
@@ -1810,10 +1866,12 @@
       const a = $('a', box); if (a) a.focus();
       return;
     }
-    say([h('span', null, `This link carries saved work${who} (saved ${when}). Replace your work on this lab with it? Your current answers and data on this computer will be overwritten.`),
-      h('button', { class: 'btn btn--sm btn--primary', type: 'button', id: 'resume-apply', onclick: () => { try { applyProgress(o); say([h('span', null, 'Loaded. Reloading…')]); } catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); } } }, 'Replace my work'),
-      h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { close(); Lab.toast('Nothing was changed', { type: 'info' }); } }, 'Keep my work')]);
-    focusIn(box, '#resume-apply');
+    const q = restoreQuestion(o, true);
+    box.classList.toggle('is-newer', !!q.newer);
+    say([h('span', null, q.text + ' ', q.newer ? h('strong', { class: 'restore-newer' }, q.newer) : 'Replace your work on this lab with it?'),
+      h('button', { class: 'btn btn--sm btn--primary', type: 'button', id: 'resume-apply', onclick: () => { try { applyProgress(o); say([h('span', null, 'Loaded. Reloading…')]); } catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
+      h('button', { class: 'btn btn--sm', type: 'button', id: 'resume-keep', onclick: () => { close(); Lab.toast('Nothing was changed', { type: 'info' }); } }, 'Keep my work')]);
+    focusIn(box, q.newer ? '#resume-keep' : '#resume-apply');   // newer work here: the safe choice has focus
   }
 
   function moveWorkPanel() {
@@ -1829,18 +1887,20 @@
     const codeIn = h('textarea', { id: 'resume-code-in', class: 'code-box', rows: 3, spellcheck: 'false', placeholder: 'LB1z.…' });
     const confirmRow = h('div', { class: 'id-confirm', hidden: true, role: 'group', 'aria-label': 'Confirm loading saved work' });
     function askApply(o) {
-      const when = o.savedAt ? new Date(o.savedAt).toLocaleString() : 'an unknown date';
       confirmRow.innerHTML = '';
+      const q = restoreQuestion(o);
+      confirmRow.classList.toggle('is-newer', !!q.newer);
       confirmRow.append(
-        h('span', null, `Replace your work on this lab with the progress saved ${o.student ? 'by ' + o.student.name + ' ' : ''}on ${when}? Your current answers and data on this computer will be overwritten.`),
-        h('button', { class: 'btn btn--sm btn--primary', type: 'button', onclick: () => { try { applyProgress(o); say('Loaded. Reloading…'); } catch (e) { say(e.message, true); } } }, 'Replace my work'),
-        h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; say('Nothing was changed.'); } }, 'Cancel'));
-      confirmRow.hidden = false; focusIn(confirmRow, 'button');
+        h('span', null, q.text + ' ', q.newer ? h('strong', { class: 'restore-newer' }, q.newer) : 'Replace your work on this lab with it?'),
+        h('button', { class: 'btn btn--sm btn--primary restore-apply', type: 'button', onclick: () => { try { applyProgress(o); say('Loaded. Reloading…'); } catch (e) { confirmRow.hidden = true; say(e.message, true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
+        h('button', { class: 'btn btn--sm restore-cancel', type: 'button', onclick: () => { confirmRow.hidden = true; say('Nothing was changed.'); } }, 'Cancel'));
+      confirmRow.hidden = false; focusIn(confirmRow, q.newer ? '.restore-cancel' : '.restore-apply');
     }
     fileIn.addEventListener('change', async () => {
       const f = fileIn.files && fileIn.files[0]; fileIn.value = '';
       if (!f) return;
-      if (f.size > 5e6) { say('That file is too large to be a progress file.', true); return; }
+      confirmRow.hidden = true;   // a question about an earlier file never stays up next to a new error
+      if (f.size > 5e6) { say('That file is too large to be a progress file.' + NOCHANGE, true); return; }
       try { askApply(parseProgress(await f.text())); say(''); } catch (e) { say(e.message, true); }
     });
     return h('details', { class: 'disclose move-work' },
@@ -1863,6 +1923,7 @@
         codeOut,
         h('div', { class: 'field' }, h('label', { for: 'resume-code-in' }, 'Or paste a resume code'), codeIn),
         h('div', { class: 'row' }, h('button', { class: 'btn btn--sm', type: 'button', onclick: async () => {
+          confirmRow.hidden = true;
           try { askApply(await readResumeCode(codeIn.value)); say(''); } catch (e) { say(e.message, true); }
         } }, 'Load resume code')),
         confirmRow, status, note));
@@ -2890,7 +2951,7 @@
        typing). While unsaved work exists a beforeunload guard is attached (the browser's own generic prompt).
      Storage: if a localStorage write fails, a persistent warning shows; navigator.storage.persist() is requested
        once the student has done real work. */
-  const STORAGE_MSG = 'This browser isn’t saving your work. Download your report or a progress file before you leave.';
+  const STORAGE_MSG = 'This browser isn’t saving your work — download a progress file before you leave.';
   const BACKUP_MSG = 'Your work is only saved in this browser. Save a progress file to be safe.';
   const QUIET_MS = 3500;       // no typing or table changes for this long before the reminder appears
   const isBusyMode = () => document.body.classList.contains('report-mode') || document.body.classList.contains('worksheet-mode');
