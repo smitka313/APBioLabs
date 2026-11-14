@@ -963,3 +963,11 @@ body.has-dm { overflow: hidden; }
   .step-nav ol { padding-block: 6px; }
   .dm-save .transfer-btn { min-height: 40px; }
 }
+
+/* Audit 4: reserve room under the page for the fixed "Save progress file" bar, and a pulse for a freshly recorded timelapse. */
+body.has-backup-bar { padding-bottom: calc(var(--backup-bar-h, 0px) + max(16px, env(safe-area-inset-bottom, 0px)) + 28px); }
+@media (max-width: 640px) { body.has-backup-bar { padding-bottom: calc(var(--backup-bar-h, 0px) + 44px); } }
+.tl-bar--new { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); animation: tl-new 1.2s ease-in-out 3; }
+@keyframes tl-new { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 12%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .tl-bar--new { animation: none; } }
+@media print { body.has-backup-bar { padding-bottom: 0; } }

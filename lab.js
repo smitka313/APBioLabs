@@ -403,20 +403,22 @@
   function wrapLabel(str, room, fs = 13, minFs = 10.5, per = 0.6) {
     const words = String(str == null ? '' : str).split(/\s+/).filter(Boolean);
     if (!words.length) return { lines: [''], fs };
+    let bad = false, noNum = true;
     const fill = cap => {
-      const lines = []; let cur = '';
+      const lines = []; let cur = ''; bad = false;
       words.forEach(wd => {
+        if (wd.length > cap && noNum && /\d/.test(wd)) { bad = true; return; }   // never break inside a number or range
         while (wd.length > cap) { if (cur) { lines.push(cur); cur = ''; } lines.push(wd.slice(0, cap)); wd = wd.slice(cap); }
         if (cur && (cur + ' ' + wd).length > cap) { lines.push(cur); cur = wd; } else cur = cur ? cur + ' ' + wd : wd;
       });
       if (cur) lines.push(cur);
-      return lines;
+      return bad ? Array(99).fill('') : lines;
     };
     const at = f => fill(Math.max(4, Math.floor(room / (per * f))));
     for (const n of [1, 2, 3]) {   // fewest lines first: full size, then (for 2 and 3 lines) slightly smaller text
       for (let f = fs; f >= (n === 1 ? fs : minFs) - 1e-6; f -= 0.5) { const l = at(f); if (l.length <= n) return { lines: l, fs: f }; }
     }
-    return { lines: fill(Math.max(4, Math.floor(room / (per * minFs)))), fs: minFs };
+    noNum = false; return { lines: fill(Math.max(4, Math.floor(room / (per * minFs)))), fs: minFs };
   }
   Lab.chart = function (el, opts) {
     if (typeof el === 'string') el = $(el);
@@ -440,12 +442,22 @@
       /* Axis labels wrap instead of being cut: the x label and the y label take extra lines, and the margins grow to hold them. */
       const xl = wrapLabel(o.xLabel, W - 100), LH = 15;
       m.b += LH * (xl.lines.length - 1);
-      let catWrap = null;
+      let catWrap = null, catRot = null;
       if (o.type === 'bar') { // long category names wrap under their bars too
         const cats0 = o.categories || ((o.series || [])[0] ? o.series[0].points.map(p => p.x) : []);
         const gw0 = (W - 64 - 18 - 30) / Math.max(1, cats0.length);
-        catWrap = cats0.map(c => wrapLabel(c, Math.max(30, gw0 - 8), 12, 10.5));
-        m.b += LH * (Math.max(1, ...catWrap.map(w => w.lines.length)) - 1);
+        /* A bar label is never broken inside a word, number or range ("10–14"). If even the smallest text cannot fit its longest word
+           in the slot, every label is angled instead (and thinned out when the slots are narrower than a text line). */
+        const longest = c => Math.max(0, ...String(c == null ? '' : c).split(/\s+/).filter(x => /\d/.test(x)).map(x => x.length));
+        const slot = Math.max(30, gw0 - 8);
+        if (cats0.some(c => longest(c) * 0.6 * 10.5 > slot)) {
+          const maxLen = Math.max(...cats0.map(c => String(c == null ? '' : c).length));
+          catRot = { fs: 11, every: Math.max(1, Math.ceil(15 / Math.max(1, gw0))) };
+          m.b += Math.min(70, Math.round(maxLen * 0.6 * 11 * 0.7071)) - 14;
+        } else {
+          catWrap = cats0.map(c => wrapLabel(c, slot, 12, 10.5));
+          m.b += LH * (Math.max(1, ...catWrap.map(w => w.lines.length)) - 1);
+        }
       }
       const yl = wrapLabel(o.yLabel, Math.max(40, H - m.t - m.b - 6));
       m.l += LH * (yl.lines.length - 1);
@@ -468,7 +480,8 @@
         cats.forEach((c, ci) => {
           const gx = m.l + gw * ci + gw / 2;
           const cw = (catWrap && catWrap[ci]) || { lines: [String(c)], fs: 12 };
-          svg += `<text x="${gx}" y="${m.t + ih + 18}" text-anchor="middle"${cw.fs < 12 ? ` style="font-size:${cw.fs}px"` : ''}>${cw.lines.map((ln, li) => `<tspan x="${gx}" dy="${li ? 14 : 0}">${esc(ln)}</tspan>`).join('')}</text>`;
+          if (catRot) { if (ci % catRot.every === 0) svg += `<text x="${gx + 4}" y="${m.t + ih + 14}" text-anchor="end" transform="rotate(-45 ${gx + 4} ${m.t + ih + 14})" style="font-size:${catRot.fs}px">${esc(c)}</text>`; }
+          else svg += `<text x="${gx}" y="${m.t + ih + 18}" text-anchor="middle"${cw.fs < 12 ? ` style="font-size:${cw.fs}px"` : ''}>${cw.lines.map((ln, li) => `<tspan x="${gx}" dy="${li ? 14 : 0}">${esc(ln)}</tspan>`).join('')}</text>`;
           series.forEach((s, si) => {
             const p = s.points.find(pp => pp.x === c) || s.points[ci]; if (!p || !isFinite(p.y)) return;
             const x = gx - (bw * series.length) / 2 + bw * si, y0 = Y(Math.max(0, yr.lo)), y1 = Y(p.y);
@@ -1798,12 +1811,13 @@
       } finally { docxBtn.disabled = false; }
     } }, 'Download .docx');
     const pdfBtn = h('button', { class: 'btn', type: 'button', onclick: () => openReport({ print: true, opener: pdfBtn }) }, 'Save as PDF');
+    const prevBtn = h('button', { class: 'btn report-preview-btn', type: 'button', onclick: () => openReport({ opener: prevBtn }) }, 'Preview my report');
     const tlBox = h('input', { type: 'checkbox', id: 'tl-include', checked: tlInclude() || null, onchange: () => store.set('tl-include', tlBox.checked) });
     const tlRow = h('label', { class: 'check tl-include', for: 'tl-include', hidden: true }, tlBox, ' Include my timelapse in the report');
     const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
     window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
     const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn,
+      h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn, prevBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
     return [bar, ss, makeLabBadge(), status, note];
@@ -2913,7 +2927,8 @@
           h('button', { class: 'btn btn--sm btn--primary bb-save', type: 'button', onclick: () => { saveProgressFile(); Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file'),
           dismiss));
       document.body.classList.add('has-backup-bar');
-      document.documentElement.style.setProperty('--backup-bar-h', region.offsetHeight + 'px');
+      const hh = () => document.documentElement.style.setProperty('--backup-bar-h', (region.isConnected ? region.offsetHeight : 0) + 'px');
+      hh(); window.addEventListener('resize', hh);   // the page reserves this much room at the bottom (body.has-backup-bar), so the bar never covers the last lines
     }, 60);
   }
   /* ---- end-of-period nudge ----
@@ -3575,6 +3590,7 @@
   const tlPlain = html => { const d = document.createElement('div'); d.innerHTML = html; return (d.textContent || '').trim(); };
   function tlSource(t) { if (typeof t === 'function') t = t(); if (typeof t === 'string') t = $(t); if (t && t.canvas && t.canvas.getContext) t = t.canvas; return t && t.getContext ? t : null; }
   async function tlBitmap(blob) { if (window.createImageBitmap) { try { return await createImageBitmap(blob); } catch (e) { /* fall back */ } } return new Promise((res, rej) => { const u = URL.createObjectURL(blob), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); res(im); }; im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('decode')); }; im.src = u; }); }
+  const LAB_RECORDED_TOAST = new Set();
   Lab.timelapse = function (target, o = {}) {
     const opts = Object.assign({ fps: 4, maxFrames: 240, width: 360, label: 'My run', quality: 0.85, maxBytes: 6e6 }, o);
     const srcEl0 = typeof target === 'string' ? $(target) : target;
@@ -3616,7 +3632,13 @@
     rec.stop = async function () {
       if (!recording) return rec; recording = false; clearInterval(timer);
       grab(); await settle(); if (frames.length > opts.maxFrames) frames = frames.filter((_, i) => i % 2 === 0);
-      await persist(); return rec;
+      await persist();
+      if (frames.length > 1 && !LAB_RECORDED_TOAST.has(key) && !sessionGet('aplab:tl-toast:' + id)) {   // first recorded run: point at Replay / GIF once per session
+        LAB_RECORDED_TOAST.add(key); sessionSet('aplab:tl-toast:' + id, '1');
+        const bar = (rec._bars || []).find(b => b.isConnected);
+        Lab.toast('Your run was recorded. Replay it or download a GIF.', { type: 'ok', timeout: 9000, key: 'tl-recorded', action: bar ? { label: 'Show me', onClick: () => { bar.scrollIntoView({ block: 'center', behavior: Lab.reducedMotion() ? 'auto' : 'smooth' }); bar.classList.add('tl-bar--new'); setTimeout(() => bar.classList.remove('tl-bar--new'), 4000); } } : null });
+      }
+      return rec;
     };
     rec.capture = function () { grab(); return rec; };
     rec.clear = async function () { recording = false; clearInterval(timer); frames = []; bytes = 0; tlMark(key, null); try { await tlDel(id); } catch (e) { /* ignore */ } changed(); return rec; };
@@ -3720,7 +3742,7 @@
       const gb = h('button', { class: 'btn btn--sm tl-gif', type: 'button', onclick: async () => { gb.disabled = true; const t0 = status.textContent; status.textContent = 'Building the GIF…'; try { await rec.downloadGif({ onprogress: f => { status.textContent = `Building the GIF… ${Math.round(f * 100)}%`; } }); Lab.toast('Downloaded your timelapse (GIF)', { type: 'ok', announce: false }); } catch (e) { Lab.toast('Could not build the GIF here.', { type: 'warn' }); } status.textContent = t0; sync(); } }, 'Download timelapse (GIF)');
       const box = h('div', { class: 'tl-bar', role: 'group', 'aria-label': `Timelapse of your run: ${opts.label}` }, status, rb, gb);
       const sync = () => { const n = rec.count; rb.disabled = gb.disabled = recording || n < 2; status.textContent = recording ? `Recording… ${n} frame${n === 1 ? '' : 's'}` : n < 2 ? 'Run it to record a timelapse.' : `Timelapse ready: ${n} frames.`; };
-      ui.push(sync); sync(); el.append(box); return box;
+      (rec._bars = rec._bars || []).push(box); ui.push(sync); sync(); el.append(box); return box;
     };
     TLS.push(rec);
     return rec;
