@@ -1776,7 +1776,7 @@ const Predict = (function () {
       getResult: () => { const rows = gTable.getRows(); return rows.length ? rows[rows.length - 1] : null; },
       summarize: r => { const k = { 'O₂ (%)': 'o2', 'CO₂ (ppm)': 'co2', 'Pressure (kPa)': 'p' }[r.sensor] || 'o2'; return `In your latest run (${r.contents}${r.koh === 'yes' ? ', with KOH' : ''}) the ${r.sensor} reading changed by ${fmt(r.slope, k === 'co2' ? 1 : 4)} ${SENS[k].unit} per minute.`; },
       delta: (r, pred) => {
-        const re = { 'O₂ (%)': /(?<!C)(O₂|O2|oxygen)/i, 'CO₂ (ppm)': /(CO₂|CO2|carbon dioxide)/i, 'Pressure (kPa)': /pressure/i }[r.sensor], m = re && pred.split(/[.;,]|\band\b|\bbut\b/i).filter(x => re.test(x)), act = r.slope > 0 ? 1 : r.slope < 0 ? -1 : 0;
+        const re = { 'O₂ (%)': /(?:^|[^C])(O₂|O2|oxygen)/i, 'CO₂ (ppm)': /(CO₂|CO2|carbon dioxide)/i, 'Pressure (kPa)': /pressure/i }[r.sensor], m = re && pred.split(/[.;,]|\band\b|\bbut\b/i).filter(x => re.test(x)), act = r.slope > 0 ? 1 : r.slope < 0 ? -1 : 0;
         const fact = `The ${r.sensor} reading ${act > 0 ? 'rose' : act < 0 ? 'fell' : 'stayed flat'} over the run.`;
         return fact + (m && m.length ? Predict.verdict(m[0], act) : '');
       } }],
