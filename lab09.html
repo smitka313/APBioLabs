@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}try{if(localStorage.getItem('aplab:ui:allParts')!=='true')document.documentElement.classList.add('will-page')}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <title>Lab 9 · Restriction Enzyme Analysis of DNA — AP Bio Lab Bench</title>
 <meta name="description" content="How can we use genetic information to identify and profile individuals?">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
+<noscript><style>[data-ph]{display:none!important}</style></noscript>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -78,21 +79,22 @@
 </style>
 <header class="lab-header">
   <div class="wrap gutter">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 3 · Information</span></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 3 · Information</span><a class="project-link" href="projector.html#lab09" title="Open projector mode for this lab (for teachers)"><span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"></rect><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></span>Project this lab</a><div class="theme-switch" role="group" aria-label="Color theme" data-ph="theme" inert="" aria-hidden="true"><button type="button" class="theme-opt" data-mode="light" aria-pressed="false" title="Light theme">Light</button><button type="button" class="theme-opt" data-mode="dark" aria-pressed="false" title="Dark theme">Dark</button><button type="button" class="theme-opt" data-mode="auto" aria-pressed="false" title="Auto: match my computer">Auto</button></div><button type="button" class="sound-toggle" aria-label="Sound effects" aria-pressed="false" title="Sound effects: off (click to turn on)" data-ph="sound" inert="" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"></path><g class="sx-on" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15.5 9a4.2 4.2 0 0 1 0 6"></path><path d="M18 6.5a8 8 0 0 1 0 11"></path></g><path class="sx-off" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button><button class="btn btn--sm ws-print-btn" type="button" data-ph="print" inert="" aria-hidden="true">Print worksheet</button></nav>
     <div class="eyebrow">Investigation 9</div>
     <h1>Biotechnology: Restriction Enzyme Analysis of DNA</h1>
     <p class="driving-q">How can we use genetic information to identify and profile individuals?</p>
-    <div class="tags"><span class="tag">Unit 6: Gene Expression and Regulation</span><span class="tag">IST-1.P</span><span class="tag">Science Practice 6.D</span><span class="tag">≈ 2 class periods + gel run</span></div>
+    <div class="tags"><span class="tag">Unit 6: Gene Expression and Regulation</span><span class="tag">IST-1.P</span><span class="tag">Science Practice 6.D</span><span class="tag">≈ 2 class periods + gel run</span><span class="tag tag--time"><span aria-hidden="true">≈ 155 min total</span><span class="sr-only">About 155 minutes in total</span></span></div>
   </div>
 </header>
-<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter has-progress"><ol><li><a href="#overview"><span class="n">1</span><span class="nl">Overview</span><span class="sr-only done-sr"></span></a></li><li><a href="#background"><span class="n">2</span><span class="nl">Background</span><span class="sr-only done-sr"></span></a></li><li><a href="#pre-lab"><span class="n">3</span><span class="nl">Pre-lab</span><span class="sr-only done-sr"></span></a></li><li><a href="#restriction-enzymes"><span class="n">4</span><span class="nl">Restriction enzymes</span><span class="sr-only done-sr"></span></a></li><li><a href="#run-a-gel"><span class="n">5</span><span class="nl">Run a gel</span><span class="sr-only done-sr"></span></a></li><li><a href="#standard-curve"><span class="n">6</span><span class="nl">Standard curve</span><span class="sr-only done-sr"></span></a></li><li><a href="#design-crime-scene"><span class="n">7</span><span class="nl">Design: crime scene</span><span class="sr-only done-sr"></span></a></li><li><a href="#analyze"><span class="n">8</span><span class="nl">Analyze</span><span class="sr-only done-sr"></span></a></li><li><a href="#evaluate"><span class="n">9</span><span class="nl">Evaluate</span><span class="sr-only done-sr"></span></a></li><li><a href="#submit"><span class="n">10</span><span class="nl">Submit</span><span class="sr-only done-sr"></span></a></li></ol><div class="nav-end" data-ph="nav-end" inert="" aria-hidden="true"><span class="nav-ring" aria-hidden="true"><svg viewBox="0 0 36 36" focusable="false"><circle class="nr-bg" cx="18" cy="18" r="15"></circle><circle class="nr-fg" cx="18" cy="18" r="15" stroke-dasharray="0 94.25" transform="rotate(-90 18 18)"></circle><path class="nr-check" d="M11 18.5l5 5 9.5-11"></path></svg></span><p class="nav-progress"></p><button class="btn btn--sm pause-btn" type="button" aria-label="Pause and bookmark" aria-haspopup="dialog" title="Pause and bookmark"><span class="pb-icon" aria-hidden="true"></span><span class="pb-text">Pause</span></button><button class="btn btn--sm parts-toggle" type="button" aria-pressed="false" aria-label="Show all parts on one page" title="Show all parts on one page"><span class="pt-icon" aria-hidden="true"></span><span class="pt-text">All parts</span></button></div></div></nav>
 
 <main>
-  <div class="wrap gutter">
-    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  <div class="wrap gutter id-host">
+    <div class="field" style="max-width:340px" hidden><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+    <div class="id-box" data-ph="id" inert aria-hidden="true"><p class="id-line"><span>Signed in as <strong>Student Name</strong> · Period 1</span><span> · Dataset ID <code class="ds-id">XXX-XXX</code></span> · <button class="linkbtn" type="button">change</button> · <button class="linkbtn" type="button">New dataset</button> · <button class="linkbtn" type="button">Help</button> · <button class="linkbtn" type="button">Sign out</button></p></div>
   </div>
 
-  <section class="step wrap wrap--wide gutter" data-step="Overview" data-minutes="5">
+  <section id="overview" class="step wrap wrap--wide gutter" data-step="Overview" data-minutes="5">
     <header><div class="eyebrow">Overview</div><h2>The case of the missing teacher</h2></header>
     <div class="step-body split">
       <div class="split-main prose">
@@ -130,7 +132,7 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Background" data-minutes="10">
+  <section id="background" class="step wrap wrap--wide gutter" data-step="Background" data-minutes="10">
     <header><div class="eyebrow">Background</div><h2>Cutting DNA and sorting it by size</h2></header>
     <div class="step-body split">
       <div class="split-main prose">
@@ -187,12 +189,12 @@
   </section>
 
 
-  <section class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="15">
+  <section id="pre-lab" class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="15">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
     <div class="step-body"><div id="prelab" class="quiz--cols"></div></div>
   </section>
 
-  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Restriction enzymes" data-minutes="20">
+  <section id="restriction-enzymes" class="step wrap wrap--wide wrap--sim gutter" data-step="Restriction enzymes" data-minutes="20">
     <header><div class="eyebrow">Getting started · Activities I and II</div><h2>Cut DNA on the computer, then map λ DNA</h2></header>
     <div class="step-body">
       <div class="prose"><p>Here is a 53-bp template strand and its complement. Choose an enzyme and digest. Before you press the button, predict how many fragments you will get.</p></div>
@@ -220,7 +222,7 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Run a gel" data-minutes="20">
+  <section id="run-a-gel" class="step wrap wrap--wide wrap--sim gutter" data-step="Run a gel" data-minutes="20">
     <header><div class="eyebrow">Procedure · Learning to use gel electrophoresis</div><h2>Load and run λ DNA digests</h2></header>
     <div class="step-body">
       <div class="prose"><p>Your gel (0.8% agarose in 1× TAE) is cast, set in the box with the comb at the black (−) end, covered with buffer, and the comb has been removed. Load each sample into its own well: pick a tube, then click a well, either on the gel or with the well buttons (the load volume is under <strong>More options</strong> if you want to change it). Record your loading order. Connect the leads, press <strong>Power on</strong>, and run the gel until the dye front is about 1 cm from the end of the gel (about 60 mm on the Dye front readout). Then press <strong>Power off</strong> and stain the gel. A good order to load, with the uncut control and the digests side by side, is A <span class="enz"><em>Bam</em>HI</span>, B <span class="enz"><em>Eco</em>RI</span>, C <span class="enz"><em>Hin</em>dIII</span>, D uncut.</p></div>
@@ -228,7 +230,7 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Standard curve" data-minutes="20">
+  <section id="standard-curve" class="step wrap wrap--wide gutter" data-step="Standard curve" data-minutes="20">
     <header><div class="eyebrow">Analyzing results · Sizing fragments</div><h2>Measure bands and build a standard curve</h2></header>
     <div class="step-body">
       <div class="prose"><p>After staining, click a band, or use "Measure all visible bands in lane." Each click adds the distance from the front of the well to the front edge of the band. Readings carry about ±0.5 mm of ruler error, as at the bench. In the <strong>Known fragment size</strong> column, type the size of each <span class="enz"><em>Hin</em>dIII</span> marker band, largest (closest to the well) first: 23,130 (the 23,130/27,491 doublet), 9,416, 6,557, 4,361, 2,322, 2,027 … The page fits log<sub>10</sub>(bp) against distance for each gel, then estimates every band with no known size.</p></div>
@@ -236,7 +238,7 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design: crime scene" data-minutes="30">
+  <section id="design-crime-scene" class="step wrap wrap--wide wrap--sim gutter" data-step="Design: crime scene" data-minutes="30">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Whose blood is on the floor?</h2></header>
     <div class="step-body">
       <div class="prose"><p>The chief investigator (your teacher) gives you DNA from the blood, Ms. Mason (saliva on her cup), Mr. Gladson (his tissue) and Bobby (bubble gum). All four have been cut with the same restriction enzymes, and you also get a <span class="enz"><em>Hin</em>dIII</span> marker. Plan your gel: which wells, how much sample, which voltage, how long, and how many repeat gels. Then run it and size every band. A jury will not accept "the bands look the same." You need fragment sizes and a clear match rule.</p></div>
@@ -255,19 +257,19 @@
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="20">
+  <section id="analyze" class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="20">
     <header><div class="eyebrow">Analyzing results</div><h2>Make your case</h2></header>
     <div class="step-body" id="analysis"></div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Evaluate" data-minutes="10">
+  <section id="evaluate" class="step wrap wrap--wide gutter" data-step="Evaluate" data-minutes="10">
     <header><div class="eyebrow">Evaluating results · Thinking about your results</div><h2>Errors, ethics, and the bigger picture</h2></header>
     <div class="step-body"><div id="evaluate-prompts" class="prompts-2"></div>
       <div class="callout callout--tip"><div class="callout-title">Go further</div><p>Learn how DNA evidence has been used to free wrongly convicted people at <a href="https://innocenceproject.org" target="_blank" rel="noopener">innocenceproject.org</a>. Explore interactive DNA-fingerprinting animations from the <a href="https://dnalc.org" target="_blank" rel="noopener">Dolan DNA Learning Center</a>.</p></div>
     </div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5">
+  <section id="submit" class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body"><div data-responses></div></div>
   </section>

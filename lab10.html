@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}try{if(localStorage.getItem('aplab:ui:allParts')!=='true')document.documentElement.classList.add('will-page')}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <title>Lab 10 · Energy Dynamics — AP Bio Lab Bench</title>
 <meta name="description" content="What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
+<noscript><style>[data-ph]{display:none!important}</style></noscript>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -67,22 +68,23 @@
 <body>
 <header class="lab-header">
   <div class="wrap gutter">
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions (Energetics)</span></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 4 · Interactions (Energetics)</span><a class="project-link" href="projector.html#lab10" title="Open projector mode for this lab (for teachers)"><span class="pl-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"></rect><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></span>Project this lab</a><div class="theme-switch" role="group" aria-label="Color theme" data-ph="theme" inert="" aria-hidden="true"><button type="button" class="theme-opt" data-mode="light" aria-pressed="false" title="Light theme">Light</button><button type="button" class="theme-opt" data-mode="dark" aria-pressed="false" title="Dark theme">Dark</button><button type="button" class="theme-opt" data-mode="auto" aria-pressed="false" title="Auto: match my computer">Auto</button></div><button type="button" class="sound-toggle" aria-label="Sound effects" aria-pressed="false" title="Sound effects: off (click to turn on)" data-ph="sound" inert="" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" fill="currentColor"></path><g class="sx-on" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15.5 9a4.2 4.2 0 0 1 0 6"></path><path d="M18 6.5a8 8 0 0 1 0 11"></path></g><path class="sx-off" d="M15.5 9.5l5 5m0-5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button><button class="btn btn--sm ws-print-btn" type="button" data-ph="print" inert="" aria-hidden="true">Print worksheet</button></nav>
     <div class="eyebrow">Investigation 10</div>
     <h1>Energy Dynamics</h1>
     <p class="driving-q">What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?</p>
-    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-1.M</span><span class="tag">ENE-1.N</span><span class="tag">ENE-1.O</span><span class="tag">SYI-3.A</span><span class="tag">Science Practices 6.C, 6.D</span><span class="tag">≈ 2–3 weeks of short sessions</span></div>
+    <div class="tags"><span class="tag">Unit 8: Ecology</span><span class="tag">ENE-1.M</span><span class="tag">ENE-1.N</span><span class="tag">ENE-1.O</span><span class="tag">SYI-3.A</span><span class="tag">Science Practices 6.C, 6.D</span><span class="tag">≈ 2–3 weeks of short sessions</span><span class="tag tag--time"><span aria-hidden="true">≈ 130 min total</span><span class="sr-only">About 130 minutes in total</span></span></div>
   </div>
 </header>
-<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter"><ol></ol></div></nav>
+<nav class="step-nav" aria-label="Lab steps"><div class="wrap wrap--wide gutter has-progress"><ol><li><a href="#overview"><span class="n">1</span><span class="nl">Overview</span><span class="sr-only done-sr"></span></a></li><li><a href="#background"><span class="n">2</span><span class="nl">Background</span><span class="sr-only done-sr"></span></a></li><li><a href="#pre-lab"><span class="n">3</span><span class="nl">Pre-lab</span><span class="sr-only done-sr"></span></a></li><li><a href="#part-1-npp"><span class="n">4</span><span class="nl">Part 1: NPP</span><span class="sr-only done-sr"></span></a></li><li><a href="#part-2-larvae"><span class="n">5</span><span class="nl">Part 2: Larvae</span><span class="sr-only done-sr"></span></a></li><li><a href="#design"><span class="n">6</span><span class="nl">Design</span><span class="sr-only done-sr"></span></a></li><li><a href="#analyze"><span class="n">7</span><span class="nl">Analyze</span><span class="sr-only done-sr"></span></a></li><li><a href="#reflect"><span class="n">8</span><span class="nl">Reflect</span><span class="sr-only done-sr"></span></a></li><li><a href="#submit"><span class="n">9</span><span class="nl">Submit</span><span class="sr-only done-sr"></span></a></li></ol><div class="nav-end" data-ph="nav-end" inert="" aria-hidden="true"><span class="nav-ring" aria-hidden="true"><svg viewBox="0 0 36 36" focusable="false"><circle class="nr-bg" cx="18" cy="18" r="15"></circle><circle class="nr-fg" cx="18" cy="18" r="15" stroke-dasharray="0 94.25" transform="rotate(-90 18 18)"></circle><path class="nr-check" d="M11 18.5l5 5 9.5-11"></path></svg></span><p class="nav-progress"></p><button class="btn btn--sm pause-btn" type="button" aria-label="Pause and bookmark" aria-haspopup="dialog" title="Pause and bookmark"><span class="pb-icon" aria-hidden="true"></span><span class="pb-text">Pause</span></button><button class="btn btn--sm parts-toggle" type="button" aria-pressed="false" aria-label="Show all parts on one page" title="Show all parts on one page"><span class="pt-icon" aria-hidden="true"></span><span class="pt-text">All parts</span></button></div></div></nav>
 
 <main>
-  <div class="wrap gutter">
-    <div class="field" style="max-width:340px"><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+  <div class="wrap gutter id-host">
+    <div class="field" style="max-width:340px" hidden><label for="student-name">Your name</label><input id="student-name" type="text" data-save="student-name" autocomplete="name"></div>
+    <div class="id-box" data-ph="id" inert aria-hidden="true"><p class="id-line"><span>Signed in as <strong>Student Name</strong> · Period 1</span><span> · Dataset ID <code class="ds-id">XXX-XXX</code></span> · <button class="linkbtn" type="button">change</button> · <button class="linkbtn" type="button">New dataset</button> · <button class="linkbtn" type="button">Help</button> · <button class="linkbtn" type="button">Sign out</button></p></div>
   </div>
 
   <!-- ============ 1. OVERVIEW ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Overview" data-minutes="5">
+  <section id="overview" class="step wrap wrap--wide gutter" data-step="Overview" data-minutes="5">
     <header><div class="eyebrow">Overview</div><h2>Running an energy budget for a tiny ecosystem</h2></header>
     <div class="step-body split">
       <div class="split-main prose">
@@ -118,7 +120,7 @@
   </section>
 
   <!-- ============ 2. BACKGROUND ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Background" data-minutes="10">
+  <section id="background" class="step wrap wrap--wide gutter" data-step="Background" data-minutes="10">
     <header><div class="eyebrow">Background</div><h2>Biomass is how we count energy</h2></header>
     <div class="step-body split">
       <div class="split-main prose">
@@ -210,7 +212,7 @@
   </section>
 
   <!-- ============ 3. PRE-LAB ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="10">
+  <section id="pre-lab" class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="10">
     <header><div class="eyebrow">Pre-lab check</div><h2>Getting started: the energy accountant's toolkit</h2></header>
     <div class="step-body">
       <p class="muted">These items review the setup tasks and the conversions you will use. Use a calculator.</p>
@@ -220,7 +222,7 @@
   </section>
 
   <!-- ============ 4. PART 1: NPP ============ -->
-  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Part 1: NPP" data-minutes="25">
+  <section id="part-1-npp" class="step wrap wrap--wide wrap--sim gutter" data-step="Part 1: NPP" data-minutes="25">
     <header><div class="eyebrow">Procedure 1 · Structured inquiry</div><h2>Estimating net primary productivity of Fast Plants</h2></header>
     <div class="step-body">
       <div id="p1-predict"></div>
@@ -287,7 +289,7 @@
   </section>
 
   <!-- ============ 5. PART 2: LARVAE ============ -->
-  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Part 2: Larvae" data-minutes="25">
+  <section id="part-2-larvae" class="step wrap wrap--wide wrap--sim gutter" data-step="Part 2: Larvae" data-minutes="25">
     <header><div class="eyebrow">Procedure 2 · Structured inquiry</div><h2>Energy flow from producer to consumer</h2></header>
     <div class="step-body">
       <div id="p2-predict"></div>
@@ -343,7 +345,7 @@
   </section>
 
   <!-- ============ 6. DESIGN ============ -->
-  <section class="step wrap wrap--wide wrap--sim gutter" data-step="Design" data-minutes="25">
+  <section id="design" class="step wrap wrap--wide wrap--sim gutter" data-step="Design" data-minutes="25">
     <header><div class="eyebrow">Designing and conducting your investigation</div><h2>Ask your own energy question</h2></header>
     <div class="step-body">
       <div class="prose">
@@ -380,18 +382,18 @@
   </section>
 
   <!-- ============ 7. ANALYZE ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="15">
+  <section id="analyze" class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="15">
     <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Close the energy audit</h2></header>
     <div class="step-body" id="analysis"></div>
   </section>
 
   <!-- ============ 8. EVALUATE ============ -->
-  <section class="step wrap wrap--wide gutter" data-step="Reflect" data-minutes="10">
+  <section id="reflect" class="step wrap wrap--wide gutter" data-step="Reflect" data-minutes="10">
     <header><div class="eyebrow">Evaluate and reflect</div><h2>How good is your accounting?</h2></header>
     <div class="step-body" id="reflect-prompts"></div>
   </section>
 
-  <section class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5">
+  <section id="submit" class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5">
     <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
     <div class="step-body">
       <p class="muted">Prepare a mini-poster from your Part 3 results: question, hypothesis, methods, a graph with error bars, your energy diagram, and a claim supported by evidence.</p>

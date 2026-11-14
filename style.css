@@ -1,6 +1,15 @@
 /* AP Bio Lab Bench — shared stylesheet
    Layout: header band → sticky step nav → single reading column (max 880px)
    that widens to 1120px for simulation panels. */
+/* Fallback faces sized to match the web fonts (Audit 5, CLS). While Google Fonts load (font-display: swap), text is drawn in
+   Arial / Courier New (or their metric twins Arimo, Liberation, Cousine) scaled to the web font's width and line metrics, so the
+   swap does not re-wrap the nav, tags or footer. Ratios measured in Chromium against the loaded fonts. */
+@font-face { font-family: "Source Sans fb"; font-weight: 100 549; src: local("Arial"), local("ArialMT"), local("Arimo"), local("Liberation Sans"), local("LiberationSans"); size-adjust: 92.5%; ascent-override: 110%; descent-override: 43%; line-gap-override: 0%; }
+@font-face { font-family: "Source Sans fb"; font-weight: 550 649; src: local("Arial Bold"), local("Arial-BoldMT"), local("Arimo Bold"), local("Arimo-Bold"), local("Liberation Sans Bold"), local("LiberationSans-Bold"); size-adjust: 89.1%; ascent-override: 114.5%; descent-override: 45%; line-gap-override: 0%; }
+@font-face { font-family: "Source Sans fb"; font-weight: 650 900; src: local("Arial Bold"), local("Arial-BoldMT"), local("Arimo Bold"), local("Arimo-Bold"), local("Liberation Sans Bold"), local("LiberationSans-Bold"); size-adjust: 91.6%; ascent-override: 111.5%; descent-override: 43.5%; line-gap-override: 0%; }
+@font-face { font-family: "Bricolage fb"; font-weight: 100 900; src: local("Arial Bold"), local("Arial-BoldMT"), local("Arimo Bold"), local("Arimo-Bold"), local("Liberation Sans Bold"), local("LiberationSans-Bold"); size-adjust: 98.5%; ascent-override: 94.5%; descent-override: 27.5%; line-gap-override: 0%; }
+@font-face { font-family: "JetBrains Mono fb"; font-weight: 100 549; src: local("Courier New"), local("CourierNewPSMT"), local("Cousine"), local("Liberation Mono"), local("LiberationMono"); ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
+@font-face { font-family: "JetBrains Mono fb"; font-weight: 550 900; src: local("Courier New Bold"), local("CourierNewPS-BoldMT"), local("Cousine Bold"), local("Cousine-Bold"), local("Liberation Mono Bold"), local("LiberationMono-Bold"); ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
 :root {
   --bg: #f3f6f4;
   --surface: #ffffff;
@@ -19,9 +28,9 @@
   /* chart series */
   --s1: #0d6e55; --s2: #d55e00; --s3: #0072b2; --s4: #b3261e; --s5: #00798c; --s6: #222222;
   --grid: #e1e8e4;
-  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --f-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --f-display: "Bricolage Grotesque", "Bricolage fb", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Source Sans 3", "Source Sans fb", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", "JetBrains Mono fb", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r: 10px;
   --r-sm: 6px;
   /* Paper colors for the report and worksheet views: always black on white, in every theme */
@@ -453,8 +462,8 @@ body.worksheet-mode::before { display: none; }
 
 /* ---------- Paged mode: one part at a time ---------- */
 body.paged section.step:not(.is-current) { display: none; }
-body.paged main { padding-block: 6px 40px; }
-body.paged .step { border-bottom: 0; padding-block: 22px 26px; }
+body.paged main, html.will-page main { padding-block: 6px 40px; } /* will-page: set in each lab's <head> so first paint has the paged spacing */
+body.paged .step, html.will-page .step { border-bottom: 0; padding-block: 22px 26px; }
 /* A short part still scrolls to the top of the screen, so every part starts in the same place. */
 body.paged section.step.is-current { min-height: calc(100vh - 56px); min-height: calc(100svh - 56px); align-content: start; }
 .step > header h2:focus { outline: none; }
@@ -619,7 +628,7 @@ details.disclose > .inner > p { max-width: 68ch; }
 
 /* 720-px-tall laptops (1280×720): tighten the part header and the sim side column so the sim still fits */
 @media (min-width: 761px) and (max-height: 760px) {
-  body.paged .step { padding-top: 12px; gap: 12px; }
+  body.paged .step, html.will-page .step { padding-top: 12px; gap: 12px; }
   .step > header { gap: 2px; }
   .step > header h2 { font-size: 1.45rem; }
   .sim--fit > .sim-side { padding: 10px 14px; gap: 8px; }
@@ -979,3 +988,20 @@ body.has-backup-bar { padding-bottom: calc(var(--backup-bar-h, 0px) + max(16px, 
 @keyframes tl-new { 50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 12%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .tl-bar--new { animation: none; } }
 @media print { body.has-backup-bar { padding-bottom: 0; } }
+
+/* Audit 5 (CLS): the nav's right end keeps one size from first paint, whatever the progress says, so the part list never re-wraps
+   and the page below never jumps. Ring and count keep their space while empty; the "· part under way" note is cut with … (the
+   full text is in the tooltip). Lab pages also ship inert copies of the header controls ([data-ph], swapped by lab.js). */
+.nav-end .nav-ring[hidden] { display: inline-grid !important; visibility: hidden; }
+.nav-end .nav-progress { display: block; width: 15.5em; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-end .nav-progress[hidden] { display: block !important; visibility: hidden; }
+@media (max-width: 1100px) { .nav-end .nav-progress { width: 9.6em; } }
+@media (max-width: 520px) { .nav-end .nav-progress { width: 6.4em; } }
+/* Home page: the lab cards are written into main#labs by script; until then the footer waits below the fold instead of
+   showing at the top and then jumping away. */
+main#labs:empty { min-height: 100vh; }
+/* The "Copy link" button sits beside the part's eyebrow without making that row taller (it arrives with lab.js, after first paint). */
+.step > header.has-link > .link-tools { margin-block: -4px; }
+@media (max-width: 760px), (pointer: coarse) { .step > header.has-link > .link-tools { margin-block: -11px; } }
+/* Lab pages: the identity line's static stand-in keeps the line's size (wrapping included) but shows nothing until lab.js fills it. */
+.id-box[data-ph] .id-line { visibility: hidden; }

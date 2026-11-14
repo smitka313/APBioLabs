@@ -1023,12 +1023,13 @@
   };
   /* On a lab page, the identity panel replaces the old per-lab "Your name" field (kept in the DOM, hidden). */
   function mountLabIdentity() {
-    if (!IS_LAB || $('.id-box')) return;
+    if (!IS_LAB || $('.id-box:not([data-ph])')) return;
     const old = $('#student-name');
     let host;
     if (old) { const f = old.closest('.field') || old; f.hidden = true; host = f.parentElement; }
     else { const main = $('main'); if (!main) return; host = h('div', { class: 'wrap gutter' }); main.prepend(host); }
     host.classList.add('id-host');
+    const ph = takePh('id'); if (ph) ph.remove(); // the static one-line stand-in (same task: no paint in between)
     Lab.identity.mount(host);
   }
   const ownerText = o => o.name + (o.period ? ' (' + periodText(o.period) + ')' : '');
@@ -2097,11 +2098,16 @@
     setTimeout(() => tryPrint(() => { window.removeEventListener('afterprint', after); const n = wsState && $('.preview-note', wsState.root); if (n) n.hidden = false; }), 60);
   }
   Lab.worksheet = { enter: enterWorksheet, exit: exitWorksheet, print: printWorksheet, html: () => buildWorksheet(isDarkNow()) };
+  /* Lab pages carry inert copies of the header controls in their static markup (data-ph="theme|sound|print|nav-end"), so the
+     page paints at its final size and nothing moves when lab.js builds the live ones (CLS, tests/t58-cls.js). Each mount swaps
+     its copy for the live control in the same task. <noscript> hides the copies when scripts are blocked. */
+  const takePh = name => document.querySelector(`[data-ph="${name}"]`);
+  const putPh = (name, el, fallback) => { const ph = takePh(name); if (ph) ph.replaceWith(el); else fallback(el); };
   function addHeaderPrintButton() {
-    const crumbs = $('.lab-header .crumbs'); if (!crumbs || $('.ws-print-btn', crumbs)) return;
+    const crumbs = $('.lab-header .crumbs'); if (!crumbs || $('.ws-print-btn:not([data-ph])', crumbs)) return;
     if (!$('.project-link', crumbs)) crumbs.append(h('a', { class: 'project-link', href: 'projector.html#' + PAGE.id, title: 'Open projector mode for this lab (for teachers)' },
       h('span', { class: 'pl-icon', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24" width="14" height="14" focusable="false"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' }), 'Project this lab'));
-    crumbs.append(h('button', { class: 'btn btn--sm ws-print-btn', type: 'button', onclick: printWorksheet }, 'Print worksheet'));
+    putPh('print', h('button', { class: 'btn btn--sm ws-print-btn', type: 'button', onclick: printWorksheet }, 'Print worksheet'), el => crumbs.append(el));
   }
 
   /* ---------------- Step navigation, deep links, progress ----------------
@@ -2239,7 +2245,8 @@
     return `${s.done} of ${s.total} parts${opts.suffix ? ' done' : ''}${part ? ' · ' + part : ''}`;
   }
   Lab.progressText = progressText;
-  function updateProgress() {
+  const PAINT_ONLY = {}; // updateProgress(PAINT_ONLY): draw the nav now, but leave the saved summary to the regular update
+  function updateProgress(mode) {
     const nav = $('.step-nav ol'); if (!nav) return null;
     let parts = 0, complete = 0, itemsDone = 0, itemsTotal = 0;
     const partials = [], doneIds = new Set();
@@ -2255,7 +2262,7 @@
       if (sr) sr.textContent = ok ? ' (done)' : '';
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
-    celebrateCheck(doneIds, complete, parts);
+    if (mode === PAINT_ONLY) updateRing(complete, parts); else celebrateCheck(doneIds, complete, parts);
     const curId = pages.cur && pages.cur.id;
     const partial = partials.find(x => x.id === curId) || partials[0] || null;
     const sumObj = { done: complete, total: parts, sections: steps.length, items: { done: itemsDone, total: itemsTotal }, partial };
@@ -2267,7 +2274,7 @@
       navProgressEl.title = progressText(sumObj, { suffix: true });
     }
     const sum = JSON.stringify([complete, parts, itemsDone, partial && [partial.id, partial.done, partial.total]]);
-    if (sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, Object.assign({ t: Date.now() }, sumObj)); }
+    if (mode !== PAINT_ONLY && sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, Object.assign({ t: Date.now() }, sumObj)); }
     return { done: complete, total: parts, sections: steps.length, items: sumObj.items, partial };
   }
   /* ---------------- Paged mode: one part at a time ----------------
@@ -2410,6 +2417,7 @@
     pages.on = !gstore.get(ALL_KEY);
     const first = hashTarget(), sec = partOf(first) || steps[0];
     if (pages.on) { pages.cur = null; showPart(sec); document.body.classList.add('paged'); tidyLegacyHash(first); }
+    document.documentElement.classList.remove('will-page'); // the head script's guess at paged mode (main's top padding) is now real
     // Same-part clicks do not change the hash, so handle them here.
     document.addEventListener('click', e => {
       const a = e.target.closest && e.target.closest('a[href^="#"]');
@@ -2464,6 +2472,7 @@
     setupDeepLinks();
     if (!nav) return;
     navOl = nav;
+    nav.textContent = ''; // the static copy of the list (same items) is rebuilt in the same task, so nothing moves
     steps.forEach((s, i) => {
       nav.append(h('li', null, h('a', { href: '#' + s.id }, h('span', { class: 'n' }, String(i + 1)), h('span', { class: 'nl' }, s.dataset.step || ('Step ' + (i + 1))), IS_LAB ? h('span', { class: 'sr-only done-sr' }) : null)));
     });
@@ -2484,9 +2493,10 @@
         onclick: () => setAllParts(pages.on) }, h('span', { class: 'pt-icon', 'aria-hidden': 'true' }), h('span', { class: 'pt-text' }, 'All parts'));
       const pauseBtn = h('button', { class: 'btn btn--sm pause-btn', type: 'button', 'aria-label': 'Pause and bookmark', title: 'Pause and bookmark: save and remember where you stopped', 'aria-haspopup': 'dialog',
         onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, h('span', { class: 'pb-icon', 'aria-hidden': 'true' }), h('span', { class: 'pb-text' }, 'Pause'));
-      wrap.append(h('div', { class: 'nav-end' }, makeNavRing(), navProgressEl, pauseBtn, steps.length > 1 ? tog : null));
+      putPh('nav-end', h('div', { class: 'nav-end' }, makeNavRing(), navProgressEl, pauseBtn, steps.length > 1 ? tog : null), el => wrap.append(el));
       addCopyLinks(steps);
       workListeners.push(updateProgress);
+      updateProgress(PAINT_ONLY);   // ring and count now, before the next paint
       setTimeout(updateProgress, 0);
       window.addEventListener('load', () => setTimeout(updateProgress, 50));
     }
@@ -3280,7 +3290,9 @@
       else hd.prepend(chip);
     });
     const tags = $('.lab-header .tags');
-    if (total && tags && !$('.tag--time', tags)) tags.append(h('span', { class: 'tag tag--time' }, h('span', { 'aria-hidden': 'true' }, '≈ ' + total + ' min total'), h('span', { class: 'sr-only' }, minutesText(total) + ' in total')));
+    const old = tags && $('.tag--time', tags);
+    if (total && tags) { const tag = h('span', { class: 'tag tag--time' }, h('span', { 'aria-hidden': 'true' }, '≈ ' + total + ' min total'), h('span', { class: 'sr-only' }, minutesText(total) + ' in total')); if (old) old.replaceWith(tag); else tags.append(tag); }
+    else if (old) old.remove();
   }
 
   /* ---------------- Init ---------------- */
@@ -3419,13 +3431,14 @@
   }
   Lab.theme = { get: themeGet, set: themeSet };
   function mountThemeSwitch() {
-    if (!document.body || $('.theme-switch')) return;
+    if (!document.body || $('.theme-switch:not([data-ph])')) return;
     const mk = (mode, label, title) => h('button', { type: 'button', class: 'theme-opt', 'data-mode': mode, 'aria-pressed': 'false', title, onclick: () => themeSet(mode) }, label);
     const sw = h('div', { class: 'theme-switch', role: 'group', 'aria-label': 'Color theme' },
       mk('light', 'Light', 'Light theme'), mk('dark', 'Dark', 'Dark theme'), mk('auto', 'Auto', 'Auto: match my computer'));
     const crumbs = $('.crumbs'), links = $('.hero-links');
     const printBtn = crumbs && $('.ws-print-btn', crumbs);
-    if (crumbs) { if (printBtn) printBtn.before(sw); else crumbs.append(sw); }
+    if (takePh('theme')) takePh('theme').replaceWith(sw);
+    else if (crumbs) { if (printBtn) printBtn.before(sw); else crumbs.append(sw); }
     else if (links) { sw.classList.add('theme-switch--inline'); links.append(' · ', sw); }
     else { const bar = h('div', { class: 'theme-bar wrap gutter' }, sw); (document.querySelector('main') || document.body).prepend(bar); }
     mountSoundToggle(sw);
@@ -3513,9 +3526,9 @@
     $$('.sound-toggle').forEach(b => { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Sound effects: on (click to turn off)' : 'Sound effects: off (click to turn on)'; });
   }
   function mountSoundToggle(after) {
-    if (!IS_LAB || $('.sound-toggle')) return;
+    if (!IS_LAB || $('.sound-toggle:not([data-ph])')) return;
     const b = h('button', { type: 'button', class: 'sound-toggle', 'aria-label': 'Sound effects', 'aria-pressed': 'false', html: SPEAKER_SVG, onclick: () => Lab.sound.toggle() });
-    after.after(b); soundSync();
+    putPh('sound', b, el => after.after(el)); soundSync();
   }
   window.addEventListener('storage', e => { if (e.key === SOUND_KEY) soundSync(); });
 
