@@ -148,7 +148,7 @@ input[type="text"], input[type="number"], select, textarea {
 textarea { min-height: 92px; resize: vertical; line-height: 1.45; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width: 17px; height: 17px; }
-.check { display: flex; gap: 8px; align-items: center; font-size: .92rem; }
+.check { display: flex; gap: 8px; align-items: center; font-size: .92rem; min-height: 24px; }
 .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
 .seg button { border: 0; border-right: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: .88rem; padding: 6px 12px; cursor: pointer; }
 .seg button:last-child { border-right: 0; }
@@ -463,8 +463,8 @@ body.paged section.step.is-current { min-height: calc(100vh - 56px); min-height:
 body:not(.paged) .pager { display: none; }
 .pager .btn { min-height: 44px; padding-inline: 16px; gap: 8px; }
 .pager-next { margin-left: auto; }
-.pager-mid { display: grid; justify-items: center; gap: 2px; font-size: .82rem; color: var(--muted); text-align: center; }
-.pager-all { font-size: .82rem; }
+.pager-mid { display: grid; justify-items: center; gap: 4px; font-size: .82rem; color: var(--muted); text-align: center; }
+.pager-all { font-size: .82rem; min-height: 24px; display: inline-flex; align-items: center; }
 .pager-tip { font-size: .78rem; }
 @media (hover: none) and (pointer: coarse) { .pager-tip { display: none; } }
 @media (max-width: 640px) {
@@ -746,7 +746,7 @@ details.disclose > .inner > p { max-width: 68ch; }
 .pause-btn { padding: 4px 9px; font-size: .8rem; white-space: nowrap; gap: 6px; }
 .pb-icon { display: inline-block; width: 10px; height: 12px; border-inline: 3px solid currentColor; }
 @media (max-width: 1100px) { .pause-btn .pb-text { display: none; } .pause-btn { padding: 6px 8px; } }
-.pager-pause { font-size: .82rem; }
+.pager-pause { font-size: .82rem; min-height: 24px; display: inline-flex; align-items: center; }
 .pause-screen { position: fixed; inset: 0; z-index: 90; overflow-y: auto; background: var(--bg); display: grid; place-items: start center; padding: max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 .pause-card { width: min(720px, 100%); margin-block: auto; display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--accent); border-radius: 14px; padding: clamp(20px, 4vw, 36px); box-shadow: 0 18px 60px color-mix(in srgb, var(--ink) 14%, transparent); }
 .pause-title { font-size: clamp(1.6rem, 4.5vw, 2.3rem); font-weight: 800; letter-spacing: -.02em; }

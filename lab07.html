@@ -257,7 +257,7 @@
 
       <h3>Put real cells in order</h3>
       <p class="txt">These are stained onion root-tip cells at 400×. Click one card and then another to swap them, until they run in order from interphase to cytokinesis. Then check.</p>
-      <div class="sortrow" id="sort-row" role="list"></div>
+      <div class="sortrow" id="sort-row" role="group" aria-label="Cell cards to put in order"></div>
       <div class="row" style="margin-top:10px"><button class="btn btn--sm btn--primary" id="sort-check" type="button">Check order</button><button class="btn btn--sm" id="sort-shuffle" type="button">Shuffle</button><span class="small" id="sort-msg" aria-live="polite"></span></div>
 
       <h3>Think about it</h3>
@@ -1187,7 +1187,7 @@ if (Lab.store.get('chk-mit') && $$('#mit-table input').every(x => x.value !== ''
   function render() {
     row.innerHTML = '';
     order.forEach((ph, i) => {
-      const b = Lab.h('button', { type: 'button', class: 'sortcard', id: 'sort-card-' + i, role: 'listitem', 'aria-pressed': sel === i ? 'true' : 'false', 'aria-label': `Cell image in position ${i + 1}. Click to select, then click another card to swap.` });
+      const b = Lab.h('button', { type: 'button', class: 'sortcard', id: 'sort-card-' + i, 'aria-pressed': sel === i ? 'true' : 'false', 'aria-label': `Cell image in position ${i + 1}. Click to select, then click another card to swap.` });
       const cv = Lab.h('canvas', { 'aria-hidden': 'true' }); b.append(cv, Lab.h('span', { class: 'pos' }, 'Position ' + (i + 1)));
       b.addEventListener('click', () => { if (sel == null) { sel = i; } else { [order[sel], order[i]] = [order[i], order[sel]]; sel = null; $('#sort-msg').textContent = ''; Lab.store.set('sort', { order, checked: false }); } render(); });
       row.append(b); drawThumb(cv, ph);
