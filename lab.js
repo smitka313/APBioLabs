@@ -2046,6 +2046,7 @@
   function stepSaved() { if (!stepDone) stepDone = store.get('stepdone') || {}; return stepDone; }
   function stepStatus(box, it, i) {
     if (it.s.optional) return 'skip';
+    if (it.s.live) return it.d ? 'done' : 'open';   // live: counts only while its done() is true now (not remembered), for steps that must un-complete when the data changes
     if (stepSaved()[stepKey(box, it, i)]) return 'done';
     if (!it.seenOpen || it.init) return it.d ? 'skip' : 'open';
     return it.d && it.ackd ? 'done' : (it.d ? 'skip' : 'open');

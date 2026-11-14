@@ -1545,6 +1545,8 @@ function frq(host, o) {
     if (silent) Lab.store.set('tr-check-msg', { t: out.textContent, c: out.className });
   }
   $('#tr-check').addEventListener('click', () => trCheckNow(false));
+  /* Typing updates the row at once but the table only calls onChange on blur, so also recompute while typing: the text must match the cells on screen. */
+  $('#tr-table').addEventListener('input', e => { if (e.target.matches('input[data-r]')) trCheckNow(true); });
   /* Column units that depend on the measuring method: show the unit the rows actually use. */
   function unitHeads(sel, map, rows) {
     const ths = document.querySelectorAll(sel + ' thead th');
@@ -1765,8 +1767,8 @@ function frq(host, o) {
     { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-water', done: () => filledP('predict-water'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the apparatus.' },
     { id: 'ctl', text: 'Run the control plants', target: '#tr-run', done: () => trTable.getRows().some(r => r.cond === 'control'), hint: 'Leave Condition on <strong>Control</strong> and press <strong>Run</strong>.' },
     { id: 'trt', text: 'Run a treatment (fan, lamp...)', target: '#tr-cond', done: () => trTable.getRows().some(r => r.cond !== 'control'), hint: 'Choose another condition, then press <strong>Run</strong>.' },
-    { id: 'rpa', text: 'Fill in rate ÷ leaf area', target: '#tr-table input', done: () => { const r = trTable.getRows(); return r.length > 0 && r.every(x => isNum(x.rpaIn)); }, hint: 'Open the <strong>Data</strong> tab and type rate ÷ leaf area for every plant.' },
-    { id: 'chk', text: 'Check my values', target: '#tr-check', sticky: true, done: () => /ok/.test($('#tr-check-msg').className), hint: 'Press <strong>Check my rate/area values</strong> under Table 2.' }
+    { id: 'rpa', text: 'Fill in rate ÷ leaf area', target: '#tr-table input', live: true, done: () => { const r = trTable.getRows(); return r.length > 0 && r.every(x => isNum(x.rpaIn)); }, hint: 'Open the <strong>Data</strong> tab and type rate ÷ leaf area for every plant.' },
+    { id: 'chk', text: 'Check my values', target: '#tr-check', live: true, done: () => { const r = trTable.getRows(); return r.length > 0 && r.every(x => isNum(x.rpaIn) && Math.abs(x.rpaIn - x.rpa) <= Math.max(0.02, Math.abs(x.rpa) * 0.03)) && /ok/.test($('#tr-check-msg').className); }, hint: 'Press <strong>Check my rate/area values</strong> under Table 2.' }
   ], { doneText: 'Water loss done. Next, <a href="#design">design your own experiment</a>.' });
   let dTouched = false;
   ['#d-wind', '#d-light', '#d-rh', '#d-temp', '#d-salt', '#d-leaves', '#d-method', '#d-species', '#d-jelly', '#d-n'].forEach(s => $(s).addEventListener('input', () => { dTouched = true; }));

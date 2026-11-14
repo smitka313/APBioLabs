@@ -673,11 +673,12 @@ function workedExample(o) {
     save: 'p1raw', toast: false,
     columns: [{ key: 'hv', label: 'Harvest' }, { key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'plant', label: 'Plant' }, { key: 'wet', label: 'Wet mass', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Dry mass', unit: 'g', num: true, digits: 3 }]
   });
+  let derivedNow = () => {};   // set once the Reflect/Analyze prose exists: regenerates it from the current data on the same change
   const sumT = Lab.table('#p1-sum', {
     save: 'p1sum',
     columns: [{ key: 'age', label: 'Age', unit: 'days', num: true, digits: 0 }, { key: 'n', label: 'Plants weighed (n)', unit: 'plants', num: true, digits: 0 }, { key: 'wet', label: 'Mean wet/plant', unit: 'g', num: true, digits: 3 }, { key: 'dry', label: 'Mean dry/plant', unit: 'g', num: true, digits: 3 }, { key: 'se', label: 'SE dry', unit: 'g', num: true, digits: 3 },
       { key: 'pct', label: 'Biomass (dry ÷ wet × 100)', unit: '%', num: true, editable: true }, { key: 'energy', label: 'Energy/plant', unit: 'kcal', num: true, editable: true }, { key: 'npp', label: 'Average daily gain since planting', unit: 'kcal/day', num: true, editable: true }],
-    onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); reportP1(rows); }
+    onChange: rows => { checkSummary(rows); drawP1Chart(rows); updatePlantCalc(); reportP1(rows); derivedNow(); }
   });
   function checkSummary(rows) {
     const out = $('#p1-check'); out.innerHTML = '';
@@ -1185,7 +1186,7 @@ function workedExample(o) {
   respUI(); drawR();
 
   // ---------- Part 1 calculations & plant Sankey ----------
-  function harvestPair() { const r = sumT.getRows().slice().sort((a, b) => a.age - b.age); return r.length >= 2 ? [r[0], r[r.length - 1]] : null; }
+  function harvestPair() { const r = sumT.getRows().slice().sort((a, b) => a.age - b.age); return r.length >= 2 && r[r.length - 1].age > r[0].age ? [r[0], r[r.length - 1]] : null; }
   /* NPP = the dry mass the average plant added per day between the first and last harvest, in kcal (the manual's approach). */
   function measuredNPP() { const p = harvestPair(); return p && p[1].age > p[0].age ? (p[1].dry - p[0].dry) / (p[1].age - p[0].age) * KP : NaN; }
   function respPerPlant() { const r = s1.resp; if (!r) return NaN; return (r.end - r.start) * MG_PER_PPM / 5 * 144; } // mg CO2 per plant per day
@@ -1717,12 +1718,13 @@ function workedExample(o) {
 cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-hint\"><summary>Need a hint?</summary><div class=\"inner\"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');
   /* Predict vs. actual: each saved prediction beside the matching result. */
   const rfCompare = h('div', { id: 'reflect-compare' }); $('#reflect-prompts').prepend(rfCompare);
-  Lab.predictCompare(rfCompare, {
+  const pcs = [];
+  pcs.push(Lab.predictCompare(rfCompare, {
     predictKey: 'p1-diagram', title: 'Plant energy diagram: your prediction vs. your harvests', chartEl: '#p1-chart', part: 'Part 1: NPP', partId: 'part-1-npp',
     getResult: () => { const rs = (Lab.store.get('p1sum') || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); return rs.length ? rs : null; },
     summarize: rs => 'Mean dry mass per plant: ' + rs.map(r => `${fmt(r.dry, 3)} g on day ${r.age} (${fmt(gainOf(r), 3)} kcal/plant/day since planting)`).join('; ') + '.' + (s1.pending ? ` Harvest ${s1.pending.hv} (day ${s1.pending.age}) is still in the oven and is not counted yet.` : ''),
-    delta: rs => { const nb = nppBetween(rs); return nb ? `Between your day-${nb.a.age} and day-${nb.b.age} harvests, dry mass rose ${fmt(nb.b.dry / nb.a.dry, 1)}-fold (${fmt(nb.a.dry, 3)} g to ${fmt(nb.b.dry, 3)} g), an NPP of ${fmt(nb.npp, 3)} kcal/plant/day. Compare that with the shape you drew.` : `You have one harvest so far (day ${rs[0].age}). A second harvest gives the NPP between harvests.`; }
-  });
+    delta: rs => { const nb = nppBetween(rs); return nb ? `Between your day-${nb.a.age} and day-${nb.b.age} harvests, dry mass rose ${fmt(nb.b.dry / nb.a.dry, 1)}-fold (${fmt(nb.a.dry, 3)} g to ${fmt(nb.b.dry, 3)} g), an NPP of ${fmt(nb.npp, 3)} kcal/plant/day. Compare that with the shape you drew.` : p1Count(rs); }
+  }));
   Lab.predictCompare(rfCompare, {
     predictKey: 'p2-diagram', title: 'Larva energy fraction: your prediction vs. your barns', part: 'Part 2: Larvae', partId: 'part-2-larvae',
     getResult: () => { const A = myBarns(); return A.length ? A : null; },
@@ -1816,6 +1818,11 @@ cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-h
     const a = rs[0], b = rs[rs.length - 1];
     return { a, b, npp: (b.dry - a.dry) / (b.age - a.age) * KP };
   }
+  /* Derived prose that has no NPP yet, written from the harvests actually in the table (one harvest, or several that were all taken on the same day). */
+  function p1Count(rs) {
+    if (rs.length === 1) return `You have one harvest so far (day ${rs[0].age}). A second harvest on a different day gives the NPP between harvests.`;
+    return `You have ${rs.length} harvests so far, all on day ${rs[0].age} (mean dry masses ${rs.map(r => fmt(r.dry, 3) + ' g').join(', ')}). NPP needs harvests on different days: move the clock on, then harvest again.`;
+  }
   function reportP1(rows) {
     const rs = (rows || []).filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) { dropKeyRes('npp', 'avg-daily-gain'); return; }
     const last = rs[rs.length - 1], nb = nppBetween(rows);
@@ -1834,17 +1841,18 @@ cer.insertAdjacentHTML('afterend', '<details class=\"disclose disclose--sm cer-h
   const an10 = partBody('Analyze');
   an10.append(h('h3', { style: 'margin-top:20px' }, 'Your own data'));
   const my10 = h('div', { class: 'prompts-2' }); an10.append(my10);
-  personalPrompt(my10, {
+  const myNpp = personalPrompt(my10, {
     key: 'my-npp', part: 'Part 1: NPP', need: 'harvesting and weighing plants in Part 1',
     generic: 'Compare your own NPP between harvests with the average daily gain since planting for each harvest day. Why are they different numbers?',
     ask: 'Why are these different? Use what is happening to the plants between harvests (and during the first days after planting).',
     get() {
       const rows = Lab.store.get('p1sum') || [], rs = rows.filter(r => numOk(gainOf(r))).sort((a, b) => a.age - b.age); if (!rs.length) return null;
       const nb = nppBetween(rows);
-      if (!nb) { const o = rs[0]; return `Your day-${o.age} plants had a mean dry mass of <strong>${fmt(o.dry, 3)} g</strong>, an average daily gain of <strong>${fmt(gainOf(o), 3)} kcal/plant/day</strong> since planting. NPP needs a second harvest: it is the gain <em>between</em> harvests.`; }
+      if (!nb) { if (rs.length > 1) return `You have <strong>${rs.length} harvests</strong>, all on day ${rs[0].age}, with mean dry masses of ${rs.map(r => '<strong>' + fmt(r.dry, 3) + ' g</strong>').join(', ')}. NPP needs harvests on <em>different</em> days: it is the gain <em>between</em> harvests.`; const o = rs[0]; return `Your day-${o.age} plants had a mean dry mass of <strong>${fmt(o.dry, 3)} g</strong>, an average daily gain of <strong>${fmt(gainOf(o), 3)} kcal/plant/day</strong> since planting. NPP needs a second harvest: it is the gain <em>between</em> harvests.`; }
       return `Between your day-${nb.a.age} and day-${nb.b.age} harvests the NPP was <strong>${fmt(nb.npp, 3)} kcal/plant/day</strong>, but the average daily gain since planting was <strong>${fmt(gainOf(nb.a), 3)}</strong> at day ${nb.a.age} and <strong>${fmt(gainOf(nb.b), 3)}</strong> at day ${nb.b.age}.`;
     }
   });
+  derivedNow = () => { pcs.forEach(c => c.refresh()); myNpp.render(); };
   personalPrompt(my10, {
     key: 'my-eff', part: 'Part 2: Larvae', need: 'running a barn in Part 2 (and entering your dry/wet ratios)',
     generic: 'Look at where the energy went in your own larva barn, and explain why growth was only a small share.',
