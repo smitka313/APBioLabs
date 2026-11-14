@@ -1137,7 +1137,7 @@ function frq(host, o) {
     ['#d-pre', '#d-reps'].forEach(sel => { if (u[sel] != null) { $(sel).value = u[sel]; $(sel + '-out').textContent = $(sel).value + (sel === '#d-pre' ? ' min' : ''); } });
     if (!dRes && !Lab.store.get('d-run') && u['d-levels'] && DIV[u['d-levels'].iv]) { ivSel.value = u['d-levels'].iv; ivChanged(); $('#d-levels').value = u['d-levels'].v; levelsShow(); drawD(0); } }
   const plan = $('#d-plan');
-  [['d-q', 'Your question:'], ['d-h', 'Hypothesis and prediction (If … then … because …), based on enzyme structure:'], ['d-v', 'Independent variable, dependent variable (how you will calculate rate), and the variables you will hold constant:'], ['d-c', 'Your control(s), and how you will keep total volume at 15.0 mL:']]
+  [['d-q', 'Your question:'], ['d-h', 'Hypothesis and prediction (If … then … because …), based on enzyme structure:'], ['d-v', 'Independent variable, dependent variable (how you will calculate rate), and the variables you will hold constant:'], ['d-c', 'Your control(s), and how you will keep total volume at 15.0 mL:'], ['d-why-const', 'Why must every tube have the same total volume, enzyme batch and reading times? How could a change in one of them fool you?']]
     .forEach(([k, l]) => { const dd = h('div'); plan.append(dd); Lab.prompt(dd, { key: k, label: l, rows: 3 }); });
 
   /* ===================== ANALYZE & REFLECT ===================== */

@@ -1774,6 +1774,7 @@ let dprog = 'blastn', dRes = null;
 Lab.prompt('#design-prompts', { key: 'd-question', label: 'Your question', rows: 3, placeholder: 'e.g., Does percent identity drop at a steady rate as divergence time increases, and does the rate differ between genes?' });
 Lab.prompt('#design-prompts', { key: 'd-hypothesis', label: 'Your hypothesis and prediction', rows: 3 });
 Lab.prompt('#design-prompts', { key: 'd-variables', label: 'Independent variable, dependent variable, and what you kept the same (controls)', rows: 3 });
+Lab.prompt('#design-prompts', { key: 'd-why-same', label: 'Why must you use the same gene (and the same query length) for every comparison? What would mixing genes do to your graph?', rows: 2 });
 Lab.$('#d-org').innerHTML = ORG_IDS.concat('fossil').map(id => `<option value="${id}" ${id === 'human' ? 'selected' : ''}>${esc(orgLabel(id))}${id !== 'fossil' ? ' (' + esc(ORGS[id][0]) + ')' : ''}</option>`).join('');
 Lab.$('#d-set').innerHTML = ORG_IDS.map(id => `<label for="ds-${id}"><input type="checkbox" id="ds-${id}" value="${id}" checked>${esc(orgLabel(id))}</label>`).join('');
 Lab.$('#d-all').addEventListener('click', () => Lab.$$('#d-set input').forEach(i => { i.checked = true; }));

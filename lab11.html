@@ -1599,6 +1599,7 @@ function frq(host, o) {
   Lab.prompt(plan, { key: 'd-hyp', label: 'Hypothesis and prediction: which factor will have the greatest effect, and why?', rows: 3 });
   Lab.prompt(plan, { key: 'd-vars', label: 'Independent variable and levels; dependent variable and how you will measure it', rows: 3 });
   Lab.prompt(plan, { key: 'd-ctrl', label: 'Control group and variables held constant', rows: 3 });
+  Lab.prompt(plan, { key: 'd-why-const', label: 'Why must the plant species, leaf area and run time stay the same between your groups? What could go wrong if they differed?', rows: 2 });
   Lab.prompt(plan, { key: 'd-assume', label: 'Assumptions you are making. Can they be verified easily?', rows: 2 });
   Lab.prompt(plan, { key: 'd-meas', label: 'Will your measurements answer the question? How many replicates will you use?', rows: 2 });
   const dCv = Lab.canvas('#d-cv', 0.62, { fit: true });

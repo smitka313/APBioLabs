@@ -1712,7 +1712,7 @@ function workedExample(o) {
   fillIV();
   if (dResults) renderDesign(); else drawD();
   const plan = $('#design-plan');
-  [['d-question', 'Your question (one variable, measurable outcome):'], ['d-hyp', 'Hypothesis and prediction (If … then … because …):'], ['d-vars', 'Independent variable, dependent variable, and the variables you will hold constant:'], ['d-control', 'What is your control group, and why is replication needed?']]
+  [['d-question', 'Your question (one variable, measurable outcome):'], ['d-hyp', 'Hypothesis and prediction (If … then … because …):'], ['d-vars', 'Independent variable, dependent variable, and the variables you will hold constant:'], ['d-control', 'What is your control group, and why is replication needed?'], ['d-why-const', 'Pick one variable you will hold constant. If it differed between your groups, how could it change your energy results?']]
     .forEach(([k, l]) => { const d = h('div'); plan.append(d); Lab.prompt(d, { key: k, label: l, rows: 3 }); });
 
   /* ===================== ANALYZE & REFLECT ===================== */

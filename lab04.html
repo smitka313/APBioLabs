@@ -2012,6 +2012,7 @@ function idCheck() {
   Lab.prompt(plan, { key: 'd-hyp', label: 'Hypothesis and prediction (include a null hypothesis)', rows: 3 });
   Lab.prompt(plan, { key: 'd-vars', label: 'Independent variable and levels, dependent variable, and variables you will hold constant', rows: 3 });
   Lab.prompt(plan, { key: 'd-control', label: 'What is your control, and how many replicates will you run? Why that many?', rows: 3 });
+  Lab.prompt(plan, { key: 'd-why-const', label: 'Pick one variable you will hold constant. If it changed between your levels, how could it fool you about the effect of your independent variable?', rows: 2 });
   Lab.prompt('#design-after', { key: 'd-results', label: 'Describe your results using the summary table. Do the ±2 SE error bars of neighboring levels overlap? What does that suggest about whether the differences are real? If you ran a numeric variable, report the slope and R².', rows: 5 });
   Lab.prompt('#design-after', { key: 'd-support', label: 'Do your results support your prediction? Explain using diffusion, SA:V, or water potential.', rows: 4 });
 

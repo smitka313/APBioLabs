@@ -2115,7 +2115,7 @@ const DES = (function design() {
     } }
   return { tab };
 })();
-[['d-q', 'Your question: what factor will you test, and why might it change the rate of mitosis in roots?'], ['d-h', 'Hypothesis and null hypothesis (state both).'], ['d-ctrl', 'Controlled variables and your control group. How many tips per level, and why?']].forEach(([k, l]) => Lab.prompt('#d-plan', { key: k, label: l, rows: 3 }));
+[['d-q', 'Your question: what factor will you test, and why might it change the rate of mitosis in roots?'], ['d-h', 'Hypothesis and null hypothesis (state both).'], ['d-ctrl', 'Controlled variables and your control group. How many tips per level, and why?'], ['d-why-graph', 'Why must the other conditions (time, stain, how many cells you count) be the same at every level? Will you graph mitotic index as a bar graph or a line graph, and why?']].forEach(([k, l]) => Lab.prompt('#d-plan', { key: k, label: l, rows: 3 }));
 [['d-res', 'Describe your results using the graph and table. Which levels differ significantly from the control (χ², df = 1, critical value 3.84)? Do the 95% confidence intervals (±2 SE) overlap?'], ['d-concl', 'Conclusion: was your hypothesis supported? What are the limits of using the mitotic index as a measure of the rate of cell division?']].forEach(([k, l]) => Lab.prompt('#d-analysis', { key: k, label: l, rows: 4 }));
 
 /* =====================================================================

@@ -1497,6 +1497,7 @@ $('#calc-add').addEventListener('click', () => {
 Lab.prompt('#design-prompts', { key: 'd-question', label: 'Your testable question', rows: 2, placeholder: 'e.g. How does the length of the heat shock affect transformation efficiency?' });
 Lab.prompt('#design-prompts', { key: 'd-hyp', label: 'Hypothesis and prediction (include the biological reasoning)', rows: 3 });
 Lab.prompt('#design-prompts', { key: 'd-controls', label: 'Controls: which plates and conditions serve as controls, and what do you hold constant?', rows: 3 });
+Lab.prompt('#design-prompts', { key: 'd-vars-dv', label: 'Name your independent variable and your dependent variable. What exactly will you measure: colonies per plate or transformation efficiency?', rows: 2 });
 const IVS = {
   hsTime: { label: 'Heat-shock time (s)', key: 'hsTime', levels: [0, 10, 25, 50, 75, 90, 120], on: [0, 25, 50, 90, 120], num: true },
   hsT: { label: 'Heat-shock temperature (°C)', key: 'hsT', levels: [22, 37, 42, 47, 52], on: [22, 37, 42, 47, 52], num: true },
@@ -1611,7 +1612,8 @@ $('#s-run').addEventListener('click', saveSat);
  ['an-eff', [
   ['a-e1', 'Report your calculated transformation efficiency in scientific notation, and show each step (DNA used, fraction spread, DNA spread).'],
   ['a-e2', 'What does your efficiency number mean in terms of cells and DNA?'],
-  ['a-e3', 'This protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.']]]
+  ['a-e3', 'This protocol typically gives 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg. How does yours compare? What could explain a higher or lower value? Use your runs where you changed a step.'],
+  ['a-design-var', 'Look at your design results. Is a bar graph or a line graph better for your variable, and why? How much did the replicate plates at one level differ, and which differences do you trust?']]]
 ].forEach(([el, list]) => list.forEach(([key, label]) => Lab.prompt('#' + el, { key, label, rows: 3 })));
 const cer = $('#cer');
 cer.insertAdjacentHTML('afterend', '<details class="disclose disclose--sm cer-hint"><summary>Need a hint?</summary><div class="inner"><p>Claim: answer the question. Evidence: cite specific numbers with units. Reasoning: connect the evidence to a biological principle.</p></div></details>');

@@ -1490,7 +1490,7 @@ flies = makeFlies(+cn.value);
 Lab.prompt('#predict-prompt', { key: 'predict', label: 'Step 6: List the substances you will test and predict which the flies will prefer or avoid. Explain your reasoning.', rows: 3 });
 
 /* ---------- Design ---------- */
-['question:Your question', 'hyp:Hypothesis (and the null hypothesis you will test with chi-square)', 'ctrl:Independent variable, controls, and what you will hold constant'].forEach(s => { const [k, l] = s.split(':'); Lab.prompt('#design-prompts', { key: 'd-' + k, label: l, rows: 3 }); });
+['question:Your question', 'hyp:Hypothesis (and the null hypothesis you will test with chi-square)', 'ctrl:Independent variable, controls, and what you will hold constant', 'dv-why:What is your dependent variable (what will you count, and when)? Why must the number of flies, trial time and chamber setup be the same in every trial?'].forEach(s => { const [k, l] = s.split(':'); Lab.prompt('#design-prompts', { key: 'd-' + k, label: l, rows: 3 }); });
 const dn = $('#d-n'), dtr = $('#d-trials');
 const syncD = () => { $('#d-n-out').textContent = dn.value; $('#d-trials-out').textContent = dtr.value; }; dn.addEventListener('input', syncD); dtr.addEventListener('input', syncD); syncD();
 const dChart = Lab.chart('#d-chart', { type: 'bar', xLabel: 'Condition number (see Data table)', yLabel: 'Mean flies at A (%)', yMin: 0, yMax: 100, series: [], categories: [] });

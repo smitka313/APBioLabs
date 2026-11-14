@@ -1156,6 +1156,7 @@ const Predict = (function () {
   /* ================= DESIGN: EXPERIMENT RUNNER ================= */
   Lab.prompt('#dz-q', { key: 'dz-question', label: 'Your question', rows: 2 });
   Lab.prompt('#dz-q', { key: 'dz-hypothesis', label: 'Hypothesis and prediction. What will you vary, what will you hold constant, how many replicates will you run, and what will you measure?', rows: 3 });
+  Lab.prompt('#dz-q', { key: 'dz-why-graph', label: 'Why must the settings you are not testing stay the same at every level? Which graph will show your result best: p across generations, or the final p against your variable?', rows: 2 });
   const dzReps = $('#dz-reps'); const dzSync = () => $('#dz-reps-out').textContent = dzReps.value; dzReps.addEventListener('input', dzSync); dzSync();
   const DZ_DEF = { N: '10, 50, 200, 1000', p0: '0.1, 0.3, 0.5, 0.7, 0.9', wbb: '1, 0.9, 0.7, 0.5, 0', wab: '0.8, 0.9, 1', mu: '0, 0.001, 0.01, 0.05', m: '0, 0.01, 0.05, 0.2' };
   const DZ_LABEL = { N: 'Population size N (zygotes)', p0: 'Starting p (frequency)', wbb: 'Fitness of BB (relative)', wab: 'Fitness of AB (relative)', mu: 'Mutation rate μ, A→B (per generation)', m: 'Migration rate m (fraction per generation)' };

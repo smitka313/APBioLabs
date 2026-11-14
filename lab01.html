@@ -1504,6 +1504,7 @@ const Predict = (function () {
   /* ================= DESIGN YOUR OWN ================= */
   Lab.prompt('#design-q', { key: 'd-question', label: 'Your question (for example: "Does selecting for fewer hairs work as well as selecting for more hairs?" or "How much does uneven growing slow the response?")', rows: 2 });
   Lab.prompt('#design-q', { key: 'd-hypothesis', label: 'Hypothesis and prediction. Name your independent variable, the levels you will test, what you will hold constant, and what you will measure.', rows: 3 });
+  Lab.prompt('#design-q', { key: 'd-why-const', label: 'Why must your selected and control lines have the same population size, growing conditions and number of generations? What could go wrong if they did not?', rows: 2 });
   const dEls = { pct: $('#d-pct'), n: $('#d-n'), gens: $('#d-gens'), reps: $('#d-reps') };
   const dSync = () => { $('#d-pct-out').textContent = dEls.pct.value + '%'; $('#d-n-out').textContent = dEls.n.value + ' plants'; $('#d-gens-out').textContent = dEls.gens.value; $('#d-reps-out').textContent = dEls.reps.value; };
   Object.values(dEls).forEach(el => el.addEventListener('input', dSync)); dSync();
