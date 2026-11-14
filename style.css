@@ -204,6 +204,11 @@ table.data tfoot td { background: var(--surface-2); font-weight: 600; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 .chart-note { font-size: .82rem; color: var(--muted); font-family: var(--f-mono); }
+/* Modeled, not measured: a quiet tag under each Lab.table (charts draw it in the SVG), and the one-time note on "observed". */
+.sim-tag { margin: 3px 2px 0; max-width: none; text-align: right; font-size: .74rem; font-weight: 600; letter-spacing: .03em; color: var(--muted); }
+.sim-tag::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; border: 1.5px solid currentColor; vertical-align: 1px; }
+.sim-note { margin: 6px 0 10px; padding: 6px 10px; max-width: 70ch; font-size: .86rem; color: var(--muted); border-left: 3px solid var(--line); background: var(--surface-2); border-radius: 0 var(--r) var(--r) 0; }
+.sim-note strong { color: var(--ink); }
 
 /* Quiz */
 .quiz { display: grid; gap: 14px; }
@@ -310,6 +315,7 @@ body.report-mode::before { display: none; }
 .rv-info div { display: flex; gap: 6px; }
 .rv-info dt { font-weight: 700; }
 .rv-info dd { margin: 0; }
+.rv-sim { margin: 6px 0 0; font-size: 9.5pt; font-style: italic; color: var(--paper-muted); }
 .rv-sec { display: block; }
 .rv-sec h2 { font-size: 14pt; border-bottom: 1.5px solid var(--paper-ink); padding-bottom: 3px; margin-top: 10px; break-after: avoid; }
 .rv-sub { font-weight: 400; }

@@ -28,7 +28,7 @@ const GROUPS = {
   // README release checklist steps 1, 3 and 4 (minus the long suites, which get their own groups)
   core: ['t05-progress', 't30-dataset-id', 't23-dashboard', 't26-persist-labs1-7', 't30-lab9-persist', 't31-lab8-persist', 't32-lab10-persist',
     't33-lab11-persist', 't34-lab12-persist', 't35-lab13-persist', 't49-keyresults', 't21-transfer', 't48-tables', 't04-charts',
-    't50-phone', 't25-theme', 't39-colorblind', 't58-dataset-owner', 't60-legacy-owner'],
+    't50-phone', 't25-theme', 't39-colorblind', 't58-dataset-owner', 't60-legacy-owner', 't60-sim-tag'],
   e2e: ['t59-e2e'],
   science: ['t59-science'],
   'a11y-axe': ['t59-a11y axe'],
