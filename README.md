@@ -1,17 +1,8 @@
 # AP Bio Digital Lab Bench
 
-Interactive online versions of the 13 investigations in *AP Biology Investigative Labs: An Inquiry-Based Approach* (Teacher Manual, updated Fall 2019). Every lab runs in the browser with no install or login.
+Interactive online versions of the 13 investigations in *AP Biology Investigative Labs: An Inquiry-Based Approach* (Teacher Manual, updated Fall 2019). It is a static website: every lab runs in the browser, with no install, no accounts and no server.
 
-Each lab page includes:
-
-- **Overview and background** written for students, with diagrams and equations.
-- **Pre-lab check**: auto-graded questions with explanations.
-- **Structured investigation**: a simulation that follows the real bench procedure and produces realistic, variable data.
-- **Design your own investigation**: students choose a variable, levels and replicates.
-- **Analysis tools**: data tables, graphs with error bars, standard error, chi-square and linear regression.
-- **Written responses (CER)**: answers save in the student's browser, and **Copy all my responses** puts everything on the clipboard to paste into a document or LMS.
-
-Teacher notes and answer keys are kept out of this public site; the teacher has a private copy.
+Each lab page has the same parts: an overview with background and diagrams, an auto-graded pre-lab check, a structured investigation (a simulation that follows the real bench procedure and gives realistic, variable data), a design-your-own investigation, analysis tools (tables, graphs with error bars, standard error, chi-square, regression), written CER prompts, and a Submit part.
 
 | # | Investigation | Page |
 |---|---|---|
@@ -29,21 +20,56 @@ Teacher notes and answer keys are kept out of this public site; the teacher has 
 | 12 | Fruit Fly Behavior | `lab12.html` |
 | 13 | Enzyme Activity | `lab13.html` |
 
-## Hosting
+## For students
 
-This is a static site with no build step. To host it on GitHub Pages, go to **Settings → Pages**, choose **Deploy from a branch**, and pick `main` / `(root)`. To view it locally, open `index.html` in a browser.
+- **Name and Dataset ID.** Students enter their name and class period once per computer. Each student's simulated data are unique, and each lab shows a **Dataset ID** (for example `K7M-2QX`) that also goes on the report. The ID stays the same when a student fixes a typo in their name or period. If a different student signs in on a shared computer, the lab says whose work it is and offers "Yes — I fixed my name", "Start my own dataset" or "Sign out". Nothing is deleted automatically.
+- **Save and resume.** Work saves automatically in the browser as students type. The name line shows "Saved 9:05 AM" after each save. If the browser can't save (private window, blocked site data, full storage), a warning stays at the top of the page.
+- **Progress files and transfer codes.** *Move your work to another computer* saves a progress file (.json) or a resume code. *Get my transfer code* shows a code and a QR code for a phone. Before loading a file, the page names the student, the lab and the file's saved date, and warns if the work on this computer is newer. A damaged or wrong file changes nothing.
+- **Reports.** Submit downloads a Word (.docx) report or opens a print view to save a PDF. **Print worksheet** prints a paper version of the lab.
+- **Timelapse.** Some simulations record the run, so students can replay it fast, download it as a GIF, or add it to their report.
+- **Pause & bookmark**, a first-visit tour (the **Help** link shows it again), and **Sign out** / **Start over** to clear a shared computer.
 
-## Files
+## For teachers
 
-- `index.html`: home page listing all labs
-- `labNN.html`: student lab for each investigation
-- `style.css`: shared styles (light and dark themes)
-- `lab.js`: shared toolkit (charts, tables, quizzes, statistics, autosave)
-- `KIT.md` and `_template.html`: guide and starting template for adding or editing labs
+- **For teachers page** (`teachers.html`): how the site works, handing in work, privacy, and linking to one part of a lab.
+- **Teacher notes** (`teacher-notes.html`, `teacher-labNN.html`): timing, misconceptions, suggested answers and expected ranges. They are encrypted in the page (AES-256-GCM, key from the password with PBKDF2) and need a password. They are encrypted in the page, not behind a school login: anyone with the password can open them. The password is kept only if "Keep unlocked in this tab" is ticked, and **Lock notes** forgets it. The plaintext is not in this repository; `tools/encrypt-notes.js` builds the encrypted pages.
+- **Class dashboard** (`teacher-dashboard.html`): drop a class's .docx reports and progress files to get a sortable grid per lab (parts done, key results, pre-lab, FRQ self-score, confidence), flags for shared Dataset IDs, identical results, or a dataset started by another student, and a CSV export. Files are read in the browser and never uploaded. The Word-file reader (JSZip 3.10.1) is in `vendor/`.
+- **Projector mode** (`projector.html`): shows the day's lab parts on the classroom screen with a timer. `projector.html#lab05` opens one lab.
 
-## Notes
+## Privacy
 
-Simulated data are modeled on typical classroom results. They support wet-lab work and do not replace it. Student work is stored only in each student's own browser (localStorage). To switch computers, students use **Move your work to another computer** in the Submit section (a progress file or a resume code). Each lab's Submit section also downloads a Word (.docx) lab report or opens a print view to save a PDF to upload to any learning management system (LMS), and **Print worksheet** prints a paper version of the lab. Students enter their name and class period once; each student's simulated data is unique and shows a Dataset ID on the report.
+- Student work stays in the student's own browser (localStorage, plus IndexedDB for timelapse frames). Nothing is sent to a server.
+- There are no accounts. A name and class period are stored only on that computer, for reports.
+- The site counts page views with GoatCounter (no cookies, no names, no answers).
+
+## Supported browsers
+
+Current versions of Chrome, Edge, Safari and Firefox, on computers and Chromebooks. Phones work for reading and for carrying on with a transfer code.
+
+## Known limitations
+
+- Saved work belongs to one browser on one device. Clearing site data, a private window, or switching computers loses it unless the student saved a progress file or a resume code.
+- The simulations are models built on typical classroom results. They support wet-lab work and do not replace it.
+- The .docx report tool (and the QR code tool) load from a public code library (CDN) the first time they are needed, so that step needs internet. Save as PDF does not.
+
+## Hosting and files
+
+A static site with no build step. On GitHub Pages: **Settings → Pages → Deploy from a branch**, `main` / `(root)`. Locally, open `index.html`.
+
+- `index.html` home page; `labNN.html` the labs; `teachers.html`, `teacher-dashboard.html`, `projector.html` for teachers
+- `lab.js` shared toolkit (identity, saving, charts, tables, quizzes, statistics, reports); `style.css` shared styles (light and dark)
+- `KIT.md` and `_template.html`: guide and template for adding or editing labs
+- `tools/`: helper scripts (`encrypt-notes.js` for the teacher notes); `vendor/`: third-party files kept locally
+
+## Tests
+
+Browser tests use Playwright (installed globally) and open the site from disk:
+
+```
+NODE_PATH=$(npm root -g) node tests/<file>
+```
+
+For example `NODE_PATH=$(npm root -g) node tests/t05-progress.js`. Each test prints its checks and exits non-zero if any fail.
 
 AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site. The lab content is adapted and paraphrased from the College Board manual; the manual itself is not included in this repository.
 
