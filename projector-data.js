@@ -1260,9 +1260,12 @@ window.PROJECTOR_LABS = [
     "title": "Safety",
     "virtual": false,
     "items": [
-     "Wear goggles, a lab coat, closed-toe shoes, and gloves. Guaiacol can irritate skin at high concentration.",
+     "Wear goggles, a lab coat, closed-toe shoes, and gloves. Guaiacol is harmful if swallowed and irritates the eyes and skin.",
      "Use pipette pumps or syringes. Never pipette by mouth. Use a separate, labeled pipette for each solution.",
-     "The 0.1% hydrogen peroxide and dilute guaiacol used here can go down the drain. Broken glass goes in the glass container.",
+     "Follow your teacher's and your school's chemical disposal rules and the SDS.",
+     "Put used tubes and any solution with guaiacol in it (including stock) in the labeled waste container your teacher gives you. Never pour guaiacol down the drain.",
+     "Leftover dilute (about 0.1–1%) hydrogen peroxide with no guaiacol may be rinsed down the drain with plenty of water, but only if your school's rules allow it.",
+     "Broken glass goes in the glass container. Wash your hands before you leave.",
      "Inhibitors such as hydroxylamine also act on human enzymes. In this lab they appear only in the simulation; do not handle them at the bench."
     ]
    }
