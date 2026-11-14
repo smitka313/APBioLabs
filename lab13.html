@@ -1193,6 +1193,9 @@ function frq(host, o) {
   /* ===================== LAPTOP LAYOUT: results, steps, gates, toasts ===================== */
   const filledP = k => { const t = $('#p-' + k); return !!(t && t.value.trim()); };
   const isNum = v => v != null && v !== '' && isFinite(v);
+  /* A palette number is checked as it is typed, not only when the field loses focus: the message at the table appears at once
+     (the value is never clamped; it is left as typed, flagged, and kept out of the graph and the match count). */
+  [['#p1-table', () => syncP1()], ['#p2-table', () => syncP2()]].forEach(([sel, f]) => $(sel).addEventListener('input', e => { if (e.target.matches('input[data-k]')) f(); }));
   Lab.results('#p1-sim', {
     start: 'data',
     graph: [{ el: '#p1-chart', title: 'Absorbance vs time (mean ± 2 SE)' }, '#p1-rates'],
@@ -1213,7 +1216,7 @@ function frq(host, o) {
   Lab.steps('#p1-steps', [
     { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-assay', done: () => filledP('predict-assay'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the tubes.' },
     { id: 'run', text: 'Combine tubes & start timer', target: '#p1-run', done: () => p1Rows().length > 0, hint: 'Press <strong>Combine tubes &amp; start timer</strong>. The table fills in at 0–5 min.' },
-    { id: 'rec', text: 'Record colors (Data tab)', target: '#p1-table input', done: () => p1Rows().length > 0 && p1Rows().every(r => (isNum(r.cE) && isNum(r.cC)) || isNum(r.aE)), hint: 'Open the <strong>Data</strong> tab and match each photo to the palette (not needed with the spectrophotometer).' },
+    { id: 'rec', text: 'Record colors (Data tab)', target: '#p1-table input', done: () => p1Rows().length > 0 && p1Rows().every(r => (palOk(r.cE) && palOk(r.cC)) || isNum(r.aE)), hint: 'Open the <strong>Data</strong> tab and match each photo to the palette (not needed with the spectrophotometer).' },
     { id: 'two', text: 'Run a second trial', target: '#p1-run', optional: true, done: () => trials(p1Rows()) >= 2, hint: 'A repeat trial shows how much the readings vary.' },
     { id: 'qs', text: 'Pick baseline + answer 2 Qs', target: '#base-time', done: () => filledP('p1-time') && filledP('p1-const'), hint: 'Scroll down: choose your baseline time and answer the two questions.' }
   ], { doneText: 'Procedure 1 done. Next, the <a href="#procedure-2-ph">pH procedure</a>.' });
@@ -1221,7 +1224,7 @@ function frq(host, o) {
     { id: 'pred', text: 'Predict the effect of pH', target: '#p-p2-pred', done: () => filledP('p2-pred'), hint: 'Write your prediction in the box above the scene.' },
     { id: 'run', text: 'Combine all pairs & start', target: '#p2-run', done: () => p2Rows().length > 0, hint: 'Press <strong>Combine all pairs &amp; start</strong>.' },
     { id: 'three', text: 'Run at least 3 trials', target: '#p2-run', done: () => trials(p2Rows()) >= 3, hint: 'Run at least three trials so you can average them.' },
-    { id: 'rec', text: 'Record colors (Data tab)', target: '#p2-table input', done: () => p2Rows().length > 0 && p2Rows().every(r => isNum(r.c) || isNum(r.dA)), hint: 'Open the <strong>Data</strong> tab and enter a palette number for each tube.' },
+    { id: 'rec', text: 'Record colors (Data tab)', target: '#p2-table input', done: () => p2Rows().length > 0 && p2Rows().every(r => palOk(r.c) || isNum(r.dA)), hint: 'Open the <strong>Data</strong> tab and enter a palette number for each tube.' },
     { id: 'qs', text: 'Describe the graph (below)', target: '#p-p2-concl', done: () => filledP('p2-concl'), hint: 'Scroll down and describe your graph and the pH optimum.' }
   ], { doneText: 'pH done. Next, <a href="#design">design your own investigation</a>.' });
   Lab.gate('#p1-run', () => filledP('predict-assay') || p1Rows().length > 0 ? '' : 'Write your prediction first', { show: '#p-predict-assay' });

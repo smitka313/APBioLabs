@@ -32,6 +32,9 @@
   .lc-stage:focus-visible .ring { stroke: var(--accent); stroke-width: 6; }
   .lc-stage { outline: none; }
   .lc-info { background: var(--surface-2); border-radius: var(--r); padding: 12px 14px; font-size: .95rem; min-height: 4.5em; }
+  .ch-msg { margin: 0; padding: 8px 10px; border-radius: var(--r); background: var(--surface-2); border-left: 4px solid var(--muted); }
+  .ch-msg--ok { border-left-color: var(--ok); background: var(--ok-soft); }
+  .ch-msg--warn { border-left-color: var(--warn); background: var(--warn-soft); }
   .count-panel { background: var(--warn-soft); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; }
   .count-panel .row .field { flex: 1 1 120px; }
   .fb { font-size: .95rem; min-height: 1.3em; }
@@ -297,6 +300,7 @@
             <div class="readout"><span class="k">Flies at A (%)</span><span class="v" id="ro-pct">—</span></div>
           </div>
           <div id="ch-timelapse"></div><p class="small muted" id="ch-tl-note" role="status" hidden></p>
+          <p class="small ch-msg" id="ch-msg" role="status" aria-live="polite" hidden></p>
           <div class="count-panel" id="count-panel" hidden>
             <strong id="count-title">Count the flies</strong>
             <div class="row">
@@ -1405,12 +1409,16 @@ function hitInterval() {
   }
   recordInterval(null, null); return !trial;
 }
+/* Calibration feedback: once a minute is recorded, the student's own count is shown beside what the simulation really had, because counting moving flies is the hard skill. */
+function chMsg(text, kind) { const m = $('#ch-msg'); m.textContent = text; m.hidden = !text; m.className = 'small ch-msg' + (kind ? ' ch-msg--' + kind : ''); }
 function recordInterval(a, b) {
   const p = trial.pending; trial.rows.push({ t: p.t, a, b, aa: null, ab: null, _aa: p.aa, _ab: p.ab });
-  intTable.setRows(trial.rows.map(r => Object.assign({}, r, { aa: null, ab: null })));
+  intTable.setRows(trial.rows.map(r => Object.assign({}, r, r.a != null ? { aa: r._aa, ab: r._ab } : { aa: null, ab: null })));   // actual counts show for minutes the student counted themselves
+  if (a != null) { const off = Math.abs(a - p.aa), tm = clock(p.t * 60); chMsg(`At ${tm} you counted ${a} at A and ${b} at B. The simulation had ${p.aa} at A and ${p.ab} at B: ${off === 0 ? 'exactly right' : off <= 1 ? 'off by 1 fly, very close' : 'off by ' + off + ' flies'}. Counting moving flies takes practice.`, off <= 1 ? 'ok' : 'warn'); }
   nextCount += trial.int;
   if (simT >= trial.dur - 1e-6) finishTrial();
 }
+$('#int-table').addEventListener('input', e => { if (e.target.matches('input[data-r]')) chMsg(''); });   // the calibration line quotes the counts as recorded; once one is edited it no longer applies
 $('#cnt-rec').addEventListener('click', () => {
   if (!trial || !paused) return;
   const ea = $('#cnt-a').value.trim() === '', eb = $('#cnt-b').value.trim() === '';
@@ -1442,13 +1450,21 @@ $('#c-run').addEventListener('click', () => {
   const cfg = cfgNow();
   flies = makeFlies(+cn.value); simT = 0;
   trial = { cfg, phi: makePhi(cfg), ft: FLY[cfg.type], int: +$('#c-int').value, dur: +$('#c-dur').value, rows: [] };
-  nextCount = trial.int; paused = false; intTable.clear();
+  nextCount = trial.int; paused = false; intTable.clear(); chMsg('');
   $('#c-run').disabled = true; Lab.sound.play('click'); tlNoteC('');
   if (!Lab.reducedMotion()) chRec.start();
   chSave(true);
   chLoop.start();
 });
-$('#c-stop').addEventListener('click', () => { if (!trial) return; if (chRec.recording) chRec.stop(); trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false); });
+$('#c-stop').addEventListener('click', () => {
+  if (!trial) return;
+  if (chRec.recording) chRec.stop();
+  const had = trial.rows.length;
+  trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false);
+  intTable.clear();   // the partial counts belong to a trial that was never finished, so they do not stay in the table or the graph
+  chMsg('Trial stopped — not recorded.' + (had ? ` The ${had} count${had > 1 ? 's' : ''} so far ${had > 1 ? 'were' : 'was'} cleared and nothing was added to All trials. Press Run trial to start again.` : ' Nothing was added to All trials. Press Run trial to start again.'), 'warn');
+  Lab.toast('Trial stopped: not recorded', { type: 'info', announce: false, key: 'ch-stop' });
+});
 $('#c-swap').addEventListener('click', () => {
   if (trial) return;
   if (orient === 'h') flipped = !flipped;

@@ -251,6 +251,7 @@
             <div class="readout"><span class="k">Balance precision (g)</span><span class="v">0.001</span></div>
           </div>
           <p class="note" id="p1-status">Advance to day 7, then harvest.</p>
+          <div class="row" id="p1-newset-row" hidden><button class="btn btn--primary btn--sm" id="p1-newset" type="button">Plant a new set</button><span class="small muted">Keeps every harvest in your tables.</span></div>
           <div id="p1-timelapse"></div>
         </div>
       </div>
@@ -664,7 +665,7 @@ function workedExample(o) {
   function newFlat() {
     const plants = [];
     for (let i = 0; i < 40; i++) plants.push({ k: Math.exp(rng.normal(0, 0.22)), fn: rng.normal(0, 0.012), harvested: false });
-    return { day: 4, plants, harvests: 0, pending: null, resp: null };
+    return { day: 4, plants, harvests: 0, pending: null, resp: null, set: 1 };
   }
   let s1 = Lab.store.get(P1KEY) || newFlat();
   const save1 = () => Lab.store.set(P1KEY, s1);
@@ -925,7 +926,9 @@ function workedExample(o) {
     const left = s1.plants.filter(p => !p.harvested).length;
     $('#p1-left').textContent = left;
     $('#p1-plus1').disabled = $('#p1-plus7').disabled = s1.day >= 28;
-    $('#p1-status').textContent = s1.pending ? `Harvest ${s1.pending.hv} is weighed wet. Dry it to get biomass.` : (s1.day < 7 ? 'Advance to day 7, then harvest.' : left < +$('#p1-n').value ? 'Not enough plants left for another harvest.' : 'Harvest now, or let the plants keep growing.');
+    const out = !s1.pending && left < +$('#p1-n').value;   // the flat is used up: offer a fresh set instead of leaving the student stuck
+    $('#p1-newset-row').hidden = !out;
+    $('#p1-status').textContent = s1.pending ? `Harvest ${s1.pending.hv} is weighed wet. Dry it to get biomass.` : (s1.day < 7 && !out ? 'Advance to day 7, then harvest.' : out ? (left ? `Only ${left} plant${left > 1 ? 's are' : ' is'} left, fewer than ${$('#p1-n').value} per harvest.` : 'Every plant in this flat has been harvested.') + ' Press Plant a new set to keep harvesting: your harvest data stays in the tables. NPP needs harvests on different days, so grow the new set to an age you have not harvested yet.' : 'Harvest now, or let the plants keep growing.');
   }
   $('#p1-plus1').addEventListener('click', () => { Lab.sound.play('click'); setDay(s1.day + 1); });
   $('#p1-plus7').addEventListener('click', () => { Lab.sound.play('click'); setDay(s1.day + 7); });
@@ -971,6 +974,13 @@ function workedExample(o) {
     if (Lab.reducedMotion()) return finish();
     tlDry.start();
     const t = setInterval(() => { f += 0.1; setProg('#p1-prog', f); bench.prog = Math.min(1, f); drawB(); $('#p1-status').textContent = `Oven at 100 °C… ${Math.round(f * 48)} h`; if (f >= 1) { clearInterval(t); finish(); } }, 70);
+  });
+  $('#p1-newset').addEventListener('click', () => {
+    if (s1.pending || drying) return;
+    const f = newFlat(); f.harvests = s1.harvests; f.resp = s1.resp; f.set = (s1.set || 1) + 1;   // new plants, same harvest numbering, same respiration measurement
+    s1 = f; save1(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] };
+    benchSet({ phase: 'empty', rows: [], prog: 0 }); ui1(); draw1(); loop1.start();
+    Lab.toast(`Set ${s1.set} planted (40 new plants, day ${s1.day}). Your earlier harvests are still in the tables.`, { type: 'ok', announce: true, key: 'newset' });
   });
   $('#p1-reset').addEventListener('click', () => { s1 = newFlat(); save1(); rawT.clear(); sumT.clear(); anim1 = { from: s1.day, to: s1.day, t: 1, fading: [] }; $('#p1-rw').textContent = $('#p1-rd').textContent = '—'; ui1(); draw1(); updatePlantCalc(); benchSet({ phase: 'empty', rows: [], prog: 0 }); });
   ui1(); draw1();
