@@ -1208,7 +1208,17 @@ function doStep(skip, resumeSec) {
 }
 $('#do-step').addEventListener('click', () => doStep(false));
 $('#skip-step').addEventListener('click', () => doStep(true));
-$('#restart').addEventListener('click', () => { if (!busy) { reset(); saveSim(); } });
+/* A new transformation drops everything the old run left behind: the glowing plates, the timelapse frames and the saved predictions
+   that the Evaluate cards and "my prediction" prompt read. (The runs table keeps its rows: those are the student's recorded results.) */
+function clearOldRun() {
+  growPlates = null; growK = 1; plates = null;
+  try { tlInc.stop(); tlInc.clear(); } catch (e) { /* ignore */ }
+  tlNote('');
+  Lab.store.set('plate-pred-record', null);
+  PLATES.forEach(p => Lab.store.set('field:plate-pred-' + p.id, null));
+  try { window.dispatchEvent(new Event('aplab:work')); } catch (e) { /* ignore */ }
+}
+$('#restart').addEventListener('click', () => { if (!busy) { clearOldRun(); reset(); saveSim(); } });
 
 /* ---------- Plates ----------
    Top-down view of real petri dishes: clear polystyrene base and lid, translucent amber LB agar
