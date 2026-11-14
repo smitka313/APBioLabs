@@ -249,6 +249,7 @@
       <div id="p1-timelapse" class="tl-mount"></div>
       <div id="p1-table"></div>
       <div id="p1-checkwrap" class="stack">
+        <p class="small muted" id="p1-note" aria-live="polite"></p>
         <div class="row"><button class="btn" type="button" id="p1-check">Check my calculations</button><button class="btn btn--ghost btn--sm" type="button" id="p1-clear">Clear table</button></div>
         <div class="fb" id="p1-fb" aria-live="polite"></div>
       </div>
@@ -1299,12 +1300,20 @@ const Predict = (function () {
       $('#p1-rate').textContent = tau > 0 ? fmt(kMean * Math.sqrt(tau) / tau, 2) + ' mm/min' : '—';
     }, () => {
       p1Rec.stop();
+      /* Every soak adds rows. A block of the same letter, shape and soak time that is already in the table is a replicate:
+         label it "trial N" (never a silent duplicate) and say so. An earlier row without a trial number counts as trial 1. */
+      const before = p1table.getRows(); let maxTrial = 0;
       blocks.forEach(b => {
         const [L, W, H] = b.d, dm = Math.min(round(b.k * Math.sqrt(t), 0.5), Math.min(L, W, H) * 5), g = geom(L, W, H);
-        p1table.addRow({ blk: b.label.replace('Block ', '') + ' · ' + b.name, dims: dimText(b.d), t, depth: dm, sa: null, v: null, ratio: null, pct: null,
+        const base = b.label.replace('Block ', '') + ' · ' + b.name, dims = dimText(b.d);
+        const trial = before.filter(r => r.dims === dims && r.t === t && (r.blk === base || String(r.blk).startsWith(base + ', trial '))).length + 1; maxTrial = Math.max(maxTrial, trial);
+        p1table.addRow({ blk: base + ', trial ' + trial, dims, t, depth: dm, sa: null, v: null, ratio: null, pct: null,
           _sa: g.sa, _v: g.v, _ratio: g.ratio, _pct: pctDiffused(L, W, H, dm / 10) });
       });
       Lab.store.set('p1-last', { sel: p1sel.map(x => x.value), t, acid, sd });
+      $('#p1-note').textContent = maxTrial > 1
+        ? `Added as trial ${maxTrial} of these blocks at ${t} min (a replicate): the table keeps every trial, so rows with the same block are repeats, not mistakes. Press "Clear table" to start over.`
+        : `Recorded trial 1 of these blocks at ${t} min. Run again to add a replicate (trial 2), or press "Clear table" to start over.`;
     });
   });
 /* "Checked" is only true for the values that were actually checked: each check records a signature of the typed values, and the
@@ -1314,11 +1323,15 @@ const Predict = (function () {
   let p1Sig = null, p2Sig = null, p3bSig = null;
   /* Feedback that describes values which have since changed (a cell edited or emptied, or a new trial added) is withdrawn, so a
      stale "all correct" never sits next to blank rows. */
-  setInterval(() => {
+  const p3bVals = () => ['#p3b-c', '#p3b-psis', '#p3b-psi'].map(i => ($(i).value || '').trim()).join('|') + '|' + p3bTable.getRows().length;
+  const staleChecks = () => {
     if (p1Sig != null && p1Sig !== sigOf(p1table.getRows(), P1K)) { $('#p1-fb').innerHTML = ''; p1Sig = null; }
     if (p2Sig != null && p2Sig !== sigOf(p2table.getRows(), ['pct'])) { $('#p2-fb').innerHTML = ''; p2Sig = null; }
-  }, 500);
-  const p3bVals = () => ['#p3b-c', '#p3b-psis', '#p3b-psi'].map(i => ($(i).value || '').trim()).join('|') + '|' + p3bTable.getRows().length;
+    if (p3bSig != null && p3bSig !== p3bVals()) { $('#p3b-fb').innerHTML = ''; p3bSig = null; }
+  };
+  setInterval(staleChecks, 500);
+  /* ...and at once when something is typed, a soak adds rows, or a table is cleared (the table's own change callback runs first). */
+  ['input', 'change', 'click'].forEach(ev => document.addEventListener(ev, () => setTimeout(staleChecks, 0), true));
   function p1Check() {
     const rows = p1table.getRows(); if (!rows.length) { fbList($('#p1-fb'), ['Run a trial first.']); return; }
     const cols = [['sa', 'surface area'], ['v', 'volume'], ['ratio', 'SA:V'], ['pct', '% diffused']];
@@ -1336,7 +1349,7 @@ const Predict = (function () {
   }
   $('#p1-check').addEventListener('click', () => { p1Check(); Lab.store.set('chk-p1Check', true); });
   ['#p1-table', '#p2-table'].forEach(sel => $(sel).addEventListener('input', e => { if (e.target.matches('input')) V.cell($(sel), e.target.dataset.r, e.target.dataset.k, ''); }));
-  $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; Lab.store.set('chk-p1Check', false); });
+  $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; $('#p1-note').textContent = ''; Lab.store.set('chk-p1Check', false); });
   /* Reload: show the last soak at its end state again (blocks, acid fronts, readouts) and the last check. */
   { const sv = Lab.store.get('p1-last');
     if (sv && p1table.getRows().length) {
@@ -1774,6 +1787,7 @@ function idCheck() {
     fbList($('#p3b-idfb'), [n === 6 ? '<span class="pill ok">All six correct.</span> Your graph now uses true concentrations.' : `<span class="pill warn">${n} of 6 correct</span> ${missing ? missing + ' still unassigned. ' : ''}Rank the cups by how much mass the water-filled bag lost.`]);
   }
   $('#p3b-idcheck').addEventListener('click', () => { idCheck(); Lab.store.set('chk-idCheck', true); });
+  for (let i = 0; i < CUPS.length; i++) $('#p3b-as' + i).addEventListener('change', () => { if ($('#p3b-idfb').innerHTML) { $('#p3b-idfb').innerHTML = ''; Lab.store.set('chk-idCheck', false); } });   // a changed assignment has no verdict yet
   if (Lab.store.get('chk-idCheck')) idCheck();
   $('#p3b-reveal').addEventListener('click', () => { CUPS.forEach((c, i) => { const s = $('#p3b-as' + i); s.value = String(secret[i]); s.dispatchEvent(new Event('change')); }); });
 
