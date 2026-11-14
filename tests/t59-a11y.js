@@ -1,11 +1,15 @@
 /* Accessibility and responsive scan.
    A. axe-core, WCAG 2.0/2.1/2.2 A + AA rules, on index, teachers, teacher-dashboard and every part of all 13 labs, light and dark.
       Critical and serious violations are reported grouped by rule (pages + one example target each) and fail the test.
-   B. Keyboard on Labs 5, 9, 13: the main run control is reachable with Tab, shows a visible focus indicator, works with
-      Enter / Space, and the completion message reaches a live region.
-   C. Responsive at 375, 430, 768, 1024, 1440 px for all 13 labs (every part): no horizontal page scroll, no control outside the
-      viewport (unless inside a scrollable box), dialogs fit the viewport, and no control smaller than 24×24 px without the
-      WCAG 2.5.8 spacing exception.
+   B. Keyboard on all 13 labs: "Skip to content" is the first Tab stop and lands on the current part below the sticky nav;
+      landmarks (header, one main, labelled step nav, one h1); the main run control is reachable with Tab, every stop on the
+      way shows a focus indicator and is not hidden under the sticky nav; Enter / Space runs it; the result reaches a live
+      region; no keyboard trap after the run. Also the skip link on index, teachers, dashboard and projector.
+   C. Responsive for all 13 labs (every part) at 375, 430, 768, 1024, 1440 px, portrait tablets (768×1024, 1024×1366) and
+      200% zoom of a 1366×768 laptop (683×384, WCAG 1.4.10 reflow): no horizontal page scroll, no control outside the
+      viewport (unless inside a scrollable box), dialogs fit the viewport, no control smaller than 24×24 px without the
+      WCAG 2.5.8 spacing exception, and at 200% zoom the sticky bars cover at most half the screen.
+      RESP_VIEWS=683z,768t,1024t (z = zoom, t = tablet) runs only some views.
    Needs axe-core: `npm i axe-core` somewhere and set AXE=/path/to/axe.min.js (or have it resolvable through NODE_PATH).
    Run: NODE_PATH=$(npm root -g) AXE=... node tests/t59-a11y.js [axe] [keys] [resp] */
 const T = require('./_h'), D = require('./t59-drive');
@@ -52,44 +56,134 @@ async function axeScan(b, srv) {
   T.ok(rules.length === 0, 'axe: no critical or serious WCAG 2.2 AA violations (' + (rules.join(', ') || 'none') + ')');
 }
 
-/* ---------- B. keyboard ---------- */
+/* ---------- B. keyboard (all 13 labs) ----------
+   For each lab's main run control: the skip link is the first Tab stop and lands on the current part (below the sticky nav);
+   landmarks (banner header, one main, step nav, one h1); the control is reachable by Tab with a visible, unobscured focus on
+   every stop on the way; Enter or Space runs it; the result reaches a live region; Tab and Shift+Tab move on from it (no trap). */
+const PRED = 'I predict the value will change because of the biology we studied in class.';
+const fillAll = (...keys) => async p => { for (const k of keys) await D.fillPred(p, k, PRED); };
+const typePred = id => async p => { await D.go(p, '#' + id); await p.fill('#' + id, PRED); await sleep(1300); };
 const KEYS = {
-  lab05: { part: 'sink-disks', pre: async p => { await D.fillPred(p, 'predict-floatassay', 'I predict the disks float because of photosynthesis.'); await D.fillPred(p, 'predict-design', 'I predict the rate rises.'); }, btn: '#inf-pull', key: 'Enter', done: p => p.waitForFunction(() => !document.querySelector('#inf-pull').disabled && Lab.store.get('inf') != null || /sunk|sink/i.test((document.querySelector('#inf-fb') || {}).textContent || ''), null, { timeout: 25000 }) },
+  lab01: { part: 'grow-and-score', pre: fillAll('predict-selection', 'predict-design'), btn: '#autocount', key: 'Enter', done: () => sleep(3000) },
+  lab02: { part: 'card-model', pre: fillAll('predict-card', 'predict-spreadsheet', 'predict-drift', 'predict-design'), btn: '#card-run5', key: ' ', done: () => sleep(1500) },
+  lab03: { part: 'blast-the-genes', pre: fillAll('predict-blast', 'predict-design'), btn: '#run-blast', key: 'Enter', done: () => sleep(2000) },
+  lab04: { part: 'sa-v', pre: fillAll('predict-sav', 'predict-bags', 'predict-plasmo', 'predict-soak', 'predict-design'), btn: '#p1-run', key: ' ', done: p => D.tlDone(p, 'agar') },
+  lab05: { part: 'sink-disks', pre: fillAll('predict-floatassay', 'predict-design'), btn: '#inf-pull', key: 'Enter', done: p => p.waitForFunction(() => !document.querySelector('#inf-pull').disabled && Lab.store.get('inf') != null || /sunk|sink/i.test((document.querySelector('#inf-fb') || {}).textContent || ''), null, { timeout: 25000 }) },
+  lab06: { part: 'microrespirometer', pre: async p => { await fillAll('predict-microresp', 'predict-gas', 'predict-design')(p); await D.setv(p, '#p-speed', '6'); }, btn: '#p-run', key: ' ', done: p => D.tlDone(p, 'microresp') },
+  lab07: { part: 'root-tips', pre: async p => { await fillAll('predict-roottips', 'predict-meiosis', 'predict-sordaria', 'predict-design')(p); await p.click('[data-treat="control"]'); }, btn: '#rt-prep', key: 'Enter', done: () => sleep(2000) },
+  lab08: { part: 'transform', pre: async () => {}, btn: '#do-step', key: ' ', done: p => p.waitForFunction(() => !document.querySelector('#do-step').disabled, null, { timeout: 40000 }) },
   lab09: { part: 'run-a-gel', pre: async p => { await p.evaluate(() => document.querySelector('#g1-layout').click()); }, btn: '#g1-run', key: ' ', done: async p => { await sleep(3000); await p.focus('#g1-run'); await p.keyboard.press(' '); await sleep(800); } },
-  lab13: { part: 'procedure-1', pre: async p => { await D.go(p, '#p-predict-assay'); await p.fill('#p-predict-assay', 'Only the tube with enzyme will turn brown.'); await sleep(1300); await p.evaluate(() => { const b = document.querySelector('#m1 button[data-v="spec"]'); if (b) b.click(); }); }, btn: '#p1-run', key: 'Enter', done: p => D.tlReady(p, '#p1-timelapse', 40000) },
+  lab10: { part: 'part-1-npp', pre: typePred('p-p1-diagram'), btn: '#p1-plus7', key: 'Enter', done: () => sleep(1500) },
+  lab11: { part: 'water-loss', pre: typePred('p-predict-water'), btn: '#tr-run', key: ' ', done: p => D.tlReady(p, '#tr-timelapse', 30000) },
+  lab12: { part: 'geotaxis-vial', pre: typePred('p-predict-vial'), btn: '#vial-run', key: 'Enter', done: p => D.tlReady(p, '#vial-timelapse', 40000) },
+  lab13: { part: 'procedure-1', pre: async p => { await typePred('p-predict-assay')(p); await p.evaluate(() => { const b = document.querySelector('#m1 button[data-v="spec"]'); if (b) b.click(); }); }, btn: '#p1-run', key: 'Enter', done: p => D.tlReady(p, '#p1-timelapse', 40000) },
 };
+/* What has focus now: a name, whether the focus is visible (outline or box-shadow), and whether the sticky nav hides it. */
+const focusInfo = p => p.evaluate(() => {
+  const e = document.activeElement; if (!e || e === document.body) return { body: true };
+  const cs = getComputedStyle(e), r = e.getBoundingClientRect();
+  const visible = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1) || (cs.boxShadow && cs.boxShadow !== 'none');
+  const nav = document.querySelector('.step-nav'), nb = nav ? nav.getBoundingClientRect().bottom : 0;
+  const stickyNav = nav && getComputedStyle(nav).position === 'sticky' && !nav.contains(e) && !e.closest('.lab-header');
+  return { name: (e.id ? '#' + e.id : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/)[0] : '')) + ' "' + (e.textContent || e.value || '').trim().slice(0, 20) + '"',
+    visible, obscured: !!stickyNav && r.bottom <= nb + 1 && r.height > 0, fv: e.matches(':focus-visible') };
+});
 async function keyboard(b) {
   for (const [lab, k] of Object.entries(KEYS)) {
     const ctx = await T.ctxFor(b); await ctx.route(/gc\.zgo\.at/, r => r.abort());
     const p = await T.open(ctx, lab + '.html', k.part); await sleep(400);
     await k.pre(p); await goPart(p, k.part); await sleep(400);
-    // Tab from the top of the page until the run control has focus
+
+    // Landmarks
+    const lm = await p.evaluate(() => ({ mains: [...document.querySelectorAll('main')].filter(m => !m.hidden).length, banner: !!document.querySelector('body > header, header.lab-header'), nav: !!document.querySelector('nav.step-nav[aria-label]'), h1: document.querySelectorAll('h1').length, h2: !!document.querySelector('section.step.is-current > header h2') }));
+    T.ok(lm.mains === 1 && lm.banner && lm.nav && lm.h1 === 1 && lm.h2, `${lab}: landmarks: header, one main, labelled step nav, one h1, part heading ${JSON.stringify(lm)}`);
+
+    // Skip link: the first Tab stop on a fresh load, visible when focused, lands on the current part below the sticky nav
+    await p.goto(p.url().split('#')[0]); await sleep(900);
+    await p.keyboard.press('Tab');
+    const sk = await p.evaluate(() => { const e = document.activeElement, r = e.getBoundingClientRect(), cs = getComputedStyle(e); return { skip: e.matches('a.skip-link'), text: e.textContent.trim(), onScreen: r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.width > 40, outline: cs.outlineStyle !== 'none' }; });
+    T.ok(sk.skip && sk.text === 'Skip to content' && sk.onScreen && sk.outline, `${lab}: "Skip to content" is the first Tab stop and shows when focused ${JSON.stringify(sk)}`);
+    await p.keyboard.press('Enter'); await sleep(300);
+    const land = await p.evaluate(() => { const e = document.activeElement, sec = document.querySelector('section.step.is-current'), nav = document.querySelector('.step-nav'); const r = e.getBoundingClientRect(); return { inPart: !!sec && sec.contains(e), below: r.top >= (nav ? nav.getBoundingClientRect().bottom : 0) - 1 && r.top < innerHeight, hash: location.hash }; });
+    T.ok(land.inPart && land.below, `${lab}: skip link lands on the current part, visible below the nav ${JSON.stringify(land)}`);
+    await p.keyboard.press('Tab');
+    T.ok(await p.evaluate(() => { const sec = document.querySelector('section.step.is-current'); return !!sec && sec.contains(document.activeElement); }), `${lab}: the next Tab stays in the current part`);
+    await p.goto(p.url().split('#')[0] + '#' + k.part); await sleep(900); await goPart(p, k.part); await sleep(300);
+
+    // Tab from the top to the run control, checking every stop on the way
     await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
     await p.keyboard.press('Tab');
-    let n = 0, hit = false;
-    for (; n < 250; n++) { if (await p.evaluate(s => document.activeElement === document.querySelector(s), k.btn)) { hit = true; break; } await p.keyboard.press('Tab'); }
+    let n = 0, hit = false; const noRing = new Set(), hidden = new Set();
+    for (; n < 300; n++) {
+      if (await p.evaluate(s => document.activeElement === document.querySelector(s), k.btn)) { hit = true; break; }
+      const f = await focusInfo(p);
+      if (!f.body) { if (!f.visible) noRing.add(f.name); if (f.obscured) hidden.add(f.name); }
+      await p.keyboard.press('Tab');
+    }
     T.ok(hit, `${lab}: ${k.btn} reachable by Tab (${n + 1} presses)`);
+    T.ok(noRing.size === 0, `${lab}: every Tab stop on the way shows a focus indicator${noRing.size ? ': missing on ' + [...noRing].slice(0, 6).join(', ') : ''}`);
+    T.ok(hidden.size === 0, `${lab}: no Tab stop is hidden under the sticky nav${hidden.size ? ': ' + [...hidden].slice(0, 6).join(', ') : ''}`);
     if (!hit) { await ctx.close(); continue; }
     const fv = await p.evaluate(s => { const e = document.querySelector(s), cs = getComputedStyle(e); return { fv: e.matches(':focus-visible'), outline: cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1 ? cs.outlineWidth + ' ' + cs.outlineStyle + ' ' + cs.outlineColor : '', shadow: cs.boxShadow !== 'none' ? cs.boxShadow : '' }; }, k.btn);
-    T.ok(fv.fv && (fv.outline || fv.shadow), `${lab}: focus is visible on ${k.btn} (${fv.outline || fv.shadow})`);
+    T.ok(fv.fv && (fv.outline || fv.shadow), `${lab}: focus is visible on ${k.btn} (${(fv.outline || fv.shadow).slice(0, 60)})`);
     // record what is announced through live regions
     await p.evaluate(() => {
       window.__said = [];
       const live = n => { for (let e = n.nodeType === 1 ? n : n.parentElement; e; e = e.parentElement) { if (e.getAttribute && e.getAttribute('aria-hidden') === 'true') return false; if (e.getAttribute && (/^(polite|assertive)$/.test(e.getAttribute('aria-live') || '') || /^(status|alert|log)$/.test(e.getAttribute('role') || ''))) return true; } return false; };
       new MutationObserver(ms => ms.forEach(m => { [...m.addedNodes, m.target].forEach(n => { if (live(n)) { const t = (n.textContent || '').trim(); if (t) window.__said.push(t.slice(0, 140)); } }); })).observe(document.body, { subtree: true, childList: true, characterData: true });
     });
+    const sig = () => p.evaluate(() => { const sec = document.querySelector('section.step.is-current') || document; return document.querySelector('main').innerText.length + ':' + [...sec.querySelectorAll('canvas')].map(c => { try { return c.toDataURL().length; } catch (e) { return 0; } }).join(','); });
+    const before = await sig();
     await p.keyboard.press(k.key === ' ' ? 'Space' : 'Enter'); await sleep(600);
     const started = await p.evaluate(s => document.querySelector(s).textContent, k.btn);
     await k.done(p).catch(() => {}); await sleep(1500);
+    const after = await sig();
+    T.ok(after !== before, `${lab}: ${k.key === ' ' ? 'Space' : 'Enter'} on ${k.btn} runs it (page text:canvas ${before.slice(0, 40)} → ${after.slice(0, 40)})`);
     const said = await p.evaluate(() => [...new Set(window.__said)]);
     T.ok(said.length > 0, `${lab}: the result is announced in a live region after a keyboard run (button now "${started.trim().slice(0, 30)}"): ${said.slice(-3).join(' | ').slice(0, 220)}`);
+    // No keyboard trap: Tab onward reaches many different stops (or the end of the page), Shift+Tab goes back
+    await p.focus(k.btn).catch(() => {});
+    const seen = new Set(); let end = false;
+    for (let i = 0; i < 40; i++) { await p.keyboard.press('Tab'); const f = await focusInfo(p); if (f.body) { end = true; break; } seen.add(f.name); }
+    const back = new Set(); for (let i = 0; i < 6; i++) { await p.keyboard.press('Shift+Tab'); const f = await focusInfo(p); if (!f.body) back.add(f.name); }
+    T.ok((seen.size >= 8 || end) && back.size >= 3, `${lab}: no keyboard trap after the run (${seen.size} stops forward${end ? ', reached the end' : ''}, ${back.size} back)`);
     T.ok(p.errors.length === 0, `${lab}: no page errors ${p.errors.join(' | ')}`);
+    await ctx.close();
+  }
+  // The other pages: skip link first, and it lands in main
+  for (const [pg, sel] of [['index.html', 'main#labs'], ['teachers.html', 'main#main'], ['teacher-dashboard.html', 'main#main'], ['projector.html', 'main#setup']]) {
+    const ctx = await T.ctxFor(b); await ctx.route(/gc\.zgo\.at/, r => r.abort());
+    const p = await T.open(ctx, pg); await sleep(300);
+    await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
+    await p.keyboard.press('Tab');
+    const first = await p.evaluate(() => { const e = document.activeElement, r = e.getBoundingClientRect(); return e.matches('a.skip-link') && r.top >= 0 && r.bottom <= innerHeight; });
+    await p.keyboard.press('Enter'); await sleep(300); await p.keyboard.press('Tab');
+    const inMain = await p.evaluate(s => { const m = document.querySelector(s); return !!m && (m.contains(document.activeElement) || document.activeElement === m); }, sel);
+    T.ok(first && inMain, `${pg}: "Skip to content" is the first Tab stop and the next Tab is inside ${sel}`);
+    T.ok(p.errors.length === 0, `${pg}: no page errors ${p.errors.join(' | ')}`);
     await ctx.close();
   }
 }
 
 /* ---------- C. responsive ---------- */
-const WIDTHS = [375, 430, 768, 1024, 1440];
+/* Phones, small laptops and desktops, portrait tablets (768×1024, 1024×1366), and 200% zoom of a 1366×768 laptop
+   (a 683×384 CSS-pixel viewport, WCAG 1.4.10 reflow). Optional parts via env RESP_VIEWS="375,683z" etc. */
+const ALL_VIEWS = [
+  { w: 375, h: 800, touch: true, mobile: true }, { w: 430, h: 800, touch: true, mobile: true }, { w: 768, h: 800, touch: true, mobile: true },
+  { w: 1024, h: 900 }, { w: 1440, h: 900 },
+  { w: 768, h: 1024, touch: true, tag: 'tablet portrait' }, { w: 1024, h: 1366, touch: true, tag: 'tablet portrait' },
+  { w: 683, h: 384, tag: '200% zoom', zoom: true },
+];
+const VIEWS = process.env.RESP_VIEWS ? ALL_VIEWS.filter(v => process.env.RESP_VIEWS.split(',').includes(v.w + (v.zoom ? 'z' : v.tag ? 't' : ''))) : ALL_VIEWS;
+/* At 200% zoom the sticky/fixed bars must leave most of the screen for content (they may not cover more than half of it). */
+const stickyShare = p => p.evaluate(() => {
+  window.scrollTo(0, Math.min(600, document.documentElement.scrollHeight - innerHeight));
+  const els = [...document.querySelectorAll('body *')].filter(e => { const cs = getComputedStyle(e); if (!/^(sticky|fixed)$/.test(cs.position) || cs.display === 'none' || cs.visibility === 'hidden') return false; const r = e.getBoundingClientRect(); return r.height > 4 && r.width > innerWidth * 0.5 && r.top < innerHeight && r.bottom > 0 && !e.closest('[hidden], .toasts, .tour, #lab-report'); });
+  const top = Math.max(0, ...els.filter(e => e.getBoundingClientRect().top < innerHeight / 2).map(e => e.getBoundingClientRect().bottom));
+  const bottom = Math.max(0, ...els.filter(e => e.getBoundingClientRect().top >= innerHeight / 2).map(e => innerHeight - e.getBoundingClientRect().top));
+  window.scrollTo(0, 0);
+  return { share: (top + bottom) / innerHeight, top: Math.round(top), bottom: Math.round(bottom), names: els.map(e => e.className && typeof e.className === 'string' ? e.className.split(' ')[0] : e.tagName) };
+});
 const layoutCheck = p => p.evaluate(() => {
   const W = innerWidth, out = { over: document.documentElement.scrollWidth - W, outside: [], small: [] };
   const sec = document.querySelector('section.step.is-current') || document.body;
@@ -119,10 +213,11 @@ const dialogFits = p => p.evaluate(() => {
   return { w: Math.round(r.width), l: Math.round(r.left), r: Math.round(r.right), h: Math.round(r.height), t: Math.round(r.top), b: Math.round(r.bottom), scrolls, W: innerWidth, H: innerHeight };
 });
 async function responsive(b) {
-  const agg = { over: {}, outside: {}, small: {}, dialog: {} };
+  const agg = { over: {}, outside: {}, small: {}, dialog: {}, sticky: {} };
   const add = (k, key, where) => { (agg[k][key] = agg[k][key] || []).push(where); };
-  for (const w of WIDTHS) {
-    const ctx = await T.ctxFor(b, { width: w, height: w < 800 ? 800 : 900, reduced: true, touch: w < 800, mobile: w < 800 }); await ctx.route(/gc\.zgo\.at/, r => r.abort());
+  for (const v of VIEWS) {
+    const w = v.w + (v.tag ? 'x' + v.h + ' (' + v.tag + ')' : '');
+    const ctx = await T.ctxFor(b, { width: v.w, height: v.h, reduced: true, touch: !!v.touch, mobile: !!v.mobile }); await ctx.route(/gc\.zgo\.at/, r => r.abort());
     for (const lab of T.LABS) {
       const p = await T.open(ctx, lab + '.html');
       for (const id of await sectionIds(p)) {
@@ -131,6 +226,7 @@ async function responsive(b) {
         if (c.over > 1) add('over', 'page scrolls sideways', at + ` (+${c.over}px)`);
         c.outside.forEach(x => add('outside', x, at));
         c.small.forEach(x => add('small', x.replace(/ \d+×\d+$/, ''), at + ' ' + x.match(/\d+×\d+$/)[0]));
+        if (v.zoom) { const st = await stickyShare(p); if (st.share > 0.5) add('sticky', 'sticky bars cover over half the screen', at + ` (${Math.round(st.share * 100)}%: top ${st.top}px, bottom ${st.bottom}px of ${v.h}; ${st.names.join(', ')})`); }
       }
       // dialogs: start-over confirmation and the report preview
       for (const [nm, open] of [['start over', () => p.evaluate(() => Lab.data.startOverLab())], ['report preview', () => p.evaluate(() => Lab.report.open({ print: false }))]]) {
@@ -147,7 +243,8 @@ async function responsive(b) {
     await ctx.close();
   }
   const show = (k, title) => { const keys = Object.keys(agg[k]); console.log(`\n  ${title}: ${keys.length}`); keys.slice(0, 40).forEach(x => console.log(`  - ${x}: ${agg[k][x].length} view(s), e.g. ${agg[k][x].slice(0, 4).join(', ')}`)); return keys.length; };
-  T.ok(show('over', 'horizontal page scroll') === 0, 'no horizontal page scroll at 375–1440 px in any lab part');
+  T.ok(show('over', 'horizontal page scroll') === 0, 'no horizontal page scroll in any lab part at ' + VIEWS.map(v => v.w + '×' + v.h).join(', '));
+  if (VIEWS.some(v => v.zoom)) T.ok(show('sticky', 'sticky bars at 200% zoom') === 0, '200% zoom (683×384): sticky bars leave at least half the screen for content');
   T.ok(show('outside', 'controls outside the viewport') === 0, 'no control outside the viewport');
   T.ok(show('dialog', 'dialogs that do not fit') === 0, 'dialogs fit the viewport');
   T.ok(show('small', 'controls under 24×24 px without spacing (WCAG 2.5.8)') === 0, 'no undersized, crowded touch targets in the lab parts');

@@ -630,7 +630,7 @@
       if (patDefs) svg = `<defs>${patDefs}</defs>` + svg;
       /* "Simulated data": every chart with data says its numbers come from the computer model (also in the report PNG). */
       const tagged = !empty && o.simTag !== false;
-      if (tagged) svg += `<text class="sim-tag-svg" x="${W - m.r}" y="13" text-anchor="end" style="font-size:10.5px;font-weight:600;letter-spacing:.03em;fill:var(--muted)">${SIM_TAG}</text>`;
+      if (tagged) svg += `<text class="sim-tag-svg" x="${W - m.r}" y="13" text-anchor="end" style="font-size:11px;font-weight:600;letter-spacing:.03em;fill:var(--muted)">${SIM_TAG}</text>`;
       return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc((o.yLabel || '') + ' vs ' + (o.xLabel || '') + (empty ? ': no data yet' : '') + (tagged ? ' (simulated data)' : ''))}">${svg}</svg>${legend}${fits.length ? `<div class="chart-note">${fits.join('<br>')}</div>` : ''}`;
     }
     render();
@@ -4098,6 +4098,27 @@
   Lab.stamp = { png: stampPng, render: stampRender, date: stampDate };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountThemeSwitch); else mountThemeSwitch();
+
+  /* "Skip to content": a static link, the first thing on every page (it works without JavaScript through its #id).
+     On a lab page it skips the header and the step nav and lands on the current part's heading; elsewhere on its target. */
+  function skipTarget(a) {
+    if (IS_LAB) { const sec = $('section.step.is-current') || $('section.step'); if (sec) return $(':scope > header h2', sec) || sec; }
+    const id = (a.getAttribute('href') || '').replace(/^#/, '');
+    return (id && document.getElementById(id)) || $$('main').find(m => !m.hidden) || null;
+  }
+  function bindSkipLink() {
+    const a = $('a.skip-link'); if (!a || a._aplab) return; a._aplab = true;
+    const main = $('main'); if (main && !main.id && !document.getElementById('main')) main.id = 'main';
+    a.addEventListener('click', e => {
+      const t = skipTarget(a); if (!t) return;
+      e.preventDefault();   // a lab's hash is its part router: do not send it "#main"
+      if (!t.matches('a[href], button, input, select, textarea, [tabindex]')) t.setAttribute('tabindex', '-1');
+      t.focus({ preventScroll: true });
+      const nav = $('.step-nav'), off = (nav ? nav.getBoundingClientRect().height : 0) + 12;
+      window.scrollTo(0, Math.max(0, t.getBoundingClientRect().top + window.scrollY - off));
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindSkipLink); else bindSkipLink();
 
   window.Lab = Lab;
 })();
