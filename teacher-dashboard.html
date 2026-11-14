@@ -149,7 +149,8 @@
      A .docx made by the site carries the student's whole progress payload in custom document properties
      aplab_payload_000, _001, … (a resume code, "LB1z." + gzip + base64url, cut in pieces). A progress file is the same payload as JSON. */
   const LAB_NAMES = { 1: 'Artificial Selection', 2: 'Mathematical Modeling: Hardy-Weinberg', 3: 'Comparing DNA Sequences with BLAST', 4: 'Diffusion and Osmosis', 5: 'Photosynthesis', 6: 'Cellular Respiration', 7: 'Cell Division: Mitosis and Meiosis', 8: 'Bacterial Transformation', 9: 'Restriction Enzyme Analysis of DNA', 10: 'Energy Dynamics', 11: 'Transpiration', 12: 'Fruit Fly Behavior', 13: 'Enzyme Activity' };
-  const JSZIP_URLS = ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'];
+  /* JSZip 3.10.1: the copy in vendor/ first (works offline and when a school blocks CDNs), the CDNs only as fallbacks. */
+  const JSZIP_URLS = ['vendor/jszip.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'];
   const MAX_BYTES = 40e6;
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -193,11 +194,12 @@
 
   class Skip extends Error {}
   async function payloadFromDocx(buf) {
-    let JSZip; try { JSZip = await loadZip(); } catch (e) { throw new Skip('The Word-file reader could not load (no internet the first time?). Reload this page while online, or use the .json progress files.'); }
-    let zip; try { zip = await JSZip.loadAsync(buf); } catch (e) { throw new Skip('Could not open this file as a Word document (damaged, or not a real .docx).'); }
+    let JSZip; try { JSZip = await loadZip(); } catch (e) { throw new Skip('The Word-file reader could not load. Reload this page, or use the .json progress files.'); }
+    let zip; try { zip = await JSZip.loadAsync(buf); } catch (e) { throw new Skip('Could not open this file as a Word document (damaged, cut short, or not a real .docx). Ask the student to download the report again.'); }
     const f = zip.file('docProps/custom.xml');
     if (!f) throw new Skip('This Word file has no Lab Bench data in it. It may not have been made by this site, or was saved by a program that removes it.');
-    const xml = new DOMParser().parseFromString(await f.async('string'), 'application/xml');
+    let xmlText; try { xmlText = await f.async('string'); } catch (e) { throw new Skip('This Word file is damaged (part of it could not be read). Ask the student to download the report again.'); }
+    const xml = new DOMParser().parseFromString(xmlText, 'application/xml');
     const parts = Array.from(xml.getElementsByTagName('property')).filter(p => /^aplab_payload_\d+$/.test(p.getAttribute('name') || ''))
       .sort((a, b) => parseInt(a.getAttribute('name').slice(14), 10) - parseInt(b.getAttribute('name').slice(14), 10));
     if (!parts.length) throw new Skip('This Word file has no Lab Bench data in it. It may not have been made by this site, or was saved by a program that removes it.');
@@ -487,7 +489,7 @@
 
   render();
   setReader();
-  loadZip().then(setReader, () => { $('#reader').textContent = 'The Word-file reader could not load. Progress files (.json) still work; reload while online for .docx.'; });
+  loadZip().then(setReader, () => { $('#reader').textContent = 'The Word-file reader could not load. Progress files (.json) still work; reload the page to try again for .docx.'; });
 })();
 </script>
 </body>
