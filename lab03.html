@@ -72,7 +72,11 @@
   #blast-hits { container-type: inline-size; }
   #blast-hits .res-sec { margin: 0; }
   #blast-hits .res table.data.hits td.desc { white-space: normal; }
-  @container (max-width: 560px) { #blast-hits .hits .opt { display: none; } #blast-hits .hits .desc { min-width: 7.5rem; } #blast-hits .res table.data.hits th, #blast-hits .res table.data.hits td { padding: 3px 5px; } #blast-hits .hits th { white-space: normal; min-width: 0; } #blast-hits .hits .res-sec, #blast-hits .res-sec { padding: 8px 8px; } }
+  /* Compact at every width so the Descriptions table (with Group and Query cover) fits the 36% results panel at 1920 as well:
+     headers wrap, the description wraps, padding is small. Below ~500px the two extra columns are dropped. */
+  #blast-hits .hits .desc { min-width: 7rem; } #blast-hits .res table.data.hits th, #blast-hits .res table.data.hits td { padding: 3px 5px; } #blast-hits .hits th { white-space: normal; min-width: 0; line-height: 1.2; vertical-align: bottom; } #blast-hits .res-sec { padding: 8px 8px; }
+  #blast-table table.data th, #blast-table table.data td { padding: 4px 3px; } #blast-table table.data input { min-width: 0; width: 4rem; }
+  @container (max-width: 520px) { #blast-hits .hits .opt { display: none; } #blast-hits .hits .desc { min-width: 7.5rem; } }
   .res-empty { margin: 4px 0; }
   .hits .lnk { font: inherit; font-size: .8rem; color: var(--accent); background: none; border: 0; padding: 2px 0; text-decoration: underline; cursor: pointer; }
   .bitkey { display: flex; flex-wrap: wrap; align-items: center; gap: 0; font-size: .74rem; margin: 2px 0 6px; }
@@ -1413,7 +1417,9 @@ function renderDataset() {
   const saved = Lab.store.get('matrix:' + dsKey, {});
   Lab.$('#matrix').innerHTML = `<div class="table-wrap"><table class="data matrix"><thead><tr><th>Organism</th>${D.traits.map((t, j) => `<th class="rot">${esc(t[0])}</th>`).join('')}</tr></thead><tbody>${D.taxa.map(t => `<tr><td>${esc(t.name)}</td>${D.traits.map((tr, j) => `<td id="cell-${t.id}-${j}"><input type="checkbox" id="mx-${t.id}-${j}" data-t="${t.id}" data-j="${j}" aria-label="${esc(t.name)} has ${esc(tr[0])}" ${saved[t.id + j] ? 'checked' : ''}></td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr><td>Total</td>${D.traits.map((t, j) => `<td class="num" id="tot-${j}"></td>`).join('')}</tr></tfoot></table></div>`;
   const totals = () => D.traits.forEach((t, j) => { Lab.$('#tot-' + j).textContent = Lab.$$(`#matrix input[data-j="${j}"]:checked`).length; });
-  Lab.$$('#matrix input').forEach(inp => inp.addEventListener('change', () => { const s = Lab.store.get('matrix:' + dsKey, {}); s[inp.dataset.t + inp.dataset.j] = inp.checked; Lab.store.set('matrix:' + dsKey, s); totals(); }));
+  Lab.$$('#matrix input').forEach(inp => inp.addEventListener('change', () => { const s = Lab.store.get('matrix:' + dsKey, {}); s[inp.dataset.t + inp.dataset.j] = inp.checked; Lab.store.set('matrix:' + dsKey, s); totals();
+    /* a changed tick makes the earlier "Table complete" / "n cells to fix" verdict and the green/red cells out of date */
+    Lab.$('#matrix-msg').textContent = ''; Lab.$$('#matrix td.cell-ok, #matrix td.cell-bad').forEach(td => td.classList.remove('cell-ok', 'cell-bad')); }));
   totals();
   Lab.$('#matrix-msg').textContent = '';
   Lab.$('#chips').innerHTML = D.taxa.map(t => `<button type="button" class="chip" data-id="${t.id}" aria-pressed="false">${esc(t.name)}</button>`).join('');
