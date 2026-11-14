@@ -71,6 +71,7 @@
   .conf-sum .lost .n { color: var(--bad); }
   .conf-sum .bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
   .conf-sum .bar i { display: block; height: 100%; }
+  .ds-note { display: block; font-family: var(--f-body); font-size: .78rem; color: var(--muted); font-weight: 400; max-width: 26ch; white-space: normal; }
   .flag { display: block; font-size: .82rem; color: var(--warn); font-weight: 600; max-width: 34ch; }
   .misses { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
   .misses summary { cursor: pointer; font-weight: 700; font-family: var(--f-display); }
@@ -242,7 +243,16 @@
       datasetId: p.datasetId || (name ? computeDatasetId(name, period, p.lab, p.dataset) : ''),
       parts, kr, frq, conf, pre, when, flags: [],
       owner: p.datasetOwner && typeof p.datasetOwner === 'object' && normName(p.datasetOwner.name) ? normName(p.datasetOwner.name) + (p.datasetOwner.period ? ' (Period ' + String(p.datasetOwner.period) + ')' : '') : '',
+      ownerUnverified: ownerUnverified(p),
     };
+  }
+  /* A dataset started before the lab pages recorded who started it (the page says datasetOwnerUnverified; older files show it
+     as a dataset record with no owner and no created time). Not a warning: just "owner not recorded". */
+  function ownerUnverified(p) {
+    if (p.datasetOwner) return false;
+    if (p.datasetOwnerUnverified === true) return true;
+    const d = p.data && p.data.dataset;
+    return !!(d && typeof d === 'object' && !d.owner && (d.ownerUnverified || !d.created));
   }
   const studentKey = r => r.name.toLowerCase() + '|' + r.period;
 
@@ -360,7 +370,7 @@
       const cells = [
         `<th scope="row">${esc(r.name)}${r.sample ? '<span class="pill sample">Sample</span>' : ''}</th>`,
         `<td>${esc(periodLabel(r.period))}</td>`,
-        `<td class="mono">${esc(r.datasetId || '—')}</td>`,
+        `<td class="mono">${esc(r.datasetId || '—')}${r.ownerUnverified ? `<span class="ds-note">${esc(OWNER_UNVERIFIED)}</span>` : ''}</td>`,
         `<td class="num">${r.parts ? `${r.parts.done}/${r.parts.total}` : '<span class="none">—</span>'}</td>`,
       ];
       krCols.forEach(c => { const k = r.kr.find(x => x.id === c.id); cells.push(`<td class="num">${k ? esc(fmtVal(k.value)) : '<span class="none">—</span>'}</td>`); });
@@ -403,17 +413,18 @@
   }
 
   /* ---------- CSV ---------- */
+  const OWNER_UNVERIFIED = 'Dataset owner: not recorded (work started before the November 2026 update)';
   const csvCell = v => { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   function buildCsv(rows) {
     rows = rows.slice().sort((a, b) => a.lab.localeCompare(b.lab) || 0);
     const labs = Array.from(new Set(rows.map(r => r.lab))).sort();
     const krCols = []; labs.forEach(l => rows.filter(r => r.lab === l).forEach(r => r.kr.forEach(k => { if (!krCols.some(c => c.lab === l && c.id === k.id)) krCols.push({ lab: l, id: k.id, label: k.label, unit: k.unit }); })));
-    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Confidence (1-3)', 'Confidence', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags']);
+    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Confidence (1-3)', 'Confidence', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags', 'Dataset owner']);
     const out = [head];
     labs.forEach(l => sortRows(rows.filter(r => r.lab === l)).forEach(r => {
       out.push([`Lab ${r.labNo}`, r.name + (r.sample ? ' (Sample)' : ''), r.period, r.datasetId, r.parts ? r.parts.done : '', r.parts ? r.parts.total : '']
         .concat(krCols.map(c => { if (c.lab !== l) return ''; const k = r.kr.find(x => x.id === c.id); return k ? fmtVal(k.value) : ''; }),
-          [r.frq ? fmtVal(r.frq.value) : '', r.conf || '', r.conf ? CONF[r.conf] : '', r.pre ? r.pre.right : '', r.pre ? r.pre.total : '', r.when ? new Date(r.when).toISOString().slice(0, 10) : '', r.flags.join('; ')]));
+          [r.frq ? fmtVal(r.frq.value) : '', r.conf || '', r.conf ? CONF[r.conf] : '', r.pre ? r.pre.right : '', r.pre ? r.pre.total : '', r.when ? new Date(r.when).toISOString().slice(0, 10) : '', r.flags.join('; '), r.owner ? 'Started by ' + r.owner : r.ownerUnverified ? 'Not recorded (started before the November 2026 update)' : '']));
     }));
     return '﻿' + out.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }

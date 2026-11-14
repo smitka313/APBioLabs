@@ -98,7 +98,11 @@
   /* Who started this lab's dataset. The record also keeps owner: {name, period}, created (ms) and, after "Yes — I fixed my name",
      a short ownerHistory. The ID sticks when the name or period changes (fixing a typo must not change your numbers), so a
      different student who uses "change" on a shared computer is told whose work this is (see ownerNotice in renderIdentity).
-     A record from before owners were stored adopts the current identity silently. Nothing is ever deleted here. */
+     A record from before owners were stored (no owner and no created time) is marked owner: null, ownerUnverified: true:
+     "started before ownership tracking". No notice for it (students are not nagged); reports, progress files and the class
+     dashboard say the owner was not recorded. It becomes verified only when the student claims it ("Use a new dataset" or
+     "Yes — I fixed my name"); page loads and plain edits never claim it. A record made while nobody was signed in (it has a
+     created time) still adopts the first student who signs in. Nothing is ever deleted here. */
   let DS_REC = null;
   function writeDsRec() { if (!IS_LAB || !DS_REC || wiped) return; try { localStorage.setItem(DS_STORE, JSON.stringify(DS_REC)); } catch (e) { /* blocked: kept in memory */ } }
   const ownerOf = idn => ({ name: normName(idn.name), period: String(idn.period || '') });
@@ -124,7 +128,8 @@
     return rec;
   })();
   /* Dataset owner vs the student signed in now. Names compare without case or spaces. 'same' | 'close' (one typo apart,
-     same period) | 'other'; null when there is nothing to compare. An unowned record adopts the current identity here. */
+     same period) | 'other' | 'unverified' (a legacy record: owner not recorded); null when there is nothing to compare.
+     An unowned record made on this site since owners are kept (it has a created time) adopts the current identity here. */
   function nameKey(n) { return normName(n).toLowerCase().replace(/\s+/g, ''); }
   function oneEditApart(a, b) {
     if (a === b) return true;
@@ -138,7 +143,13 @@
     if (!IS_LAB || !DS_REC) return null;
     const idn = storedIdentity(); if (!idn) return null;
     const o = DS_REC.owner;
-    if (!o || !normName(o.name)) { DS_REC.owner = ownerOf(idn); if (!DS_REC.created) DS_REC.created = DS_REC.t || Date.now(); writeDsRec(); return 'same'; }
+    if (!o || !normName(o.name)) {
+      if (DS_REC.ownerUnverified || !DS_REC.created) {   // started before ownership tracking: record that, do not guess
+        if (!DS_REC.ownerUnverified || DS_REC.owner !== null) { DS_REC.owner = null; DS_REC.ownerUnverified = true; writeDsRec(); }
+        return 'unverified';
+      }
+      DS_REC.owner = ownerOf(idn); writeDsRec(); return 'same';
+    }
     const a = nameKey(o.name), b = nameKey(idn.name), samePeriod = String(o.period || '') === String(idn.period || '');
     if (a === b && samePeriod) return 'same';
     return samePeriod && oneEditApart(a, b) ? 'close' : 'other';
@@ -146,13 +157,18 @@
   /* The dataset owner, when it is not the student signed in now (for reports and progress files). */
   function datasetOwnerIfOther() {
     const m = ownerMatch();
-    return m && m !== 'same' ? { name: DS_REC.owner.name, period: DS_REC.owner.period || '', created: DS_REC.created ? new Date(DS_REC.created).toISOString() : null } : null;
+    return m && m !== 'same' && m !== 'unverified' ? { name: DS_REC.owner.name, period: DS_REC.owner.period || '', created: DS_REC.created ? new Date(DS_REC.created).toISOString() : null } : null;
   }
+  /* True when this lab's dataset was started before owners were recorded (and nobody has claimed it since). */
+  function datasetOwnerUnverified() { if (!IS_LAB || !DS_REC) return false; ownerMatch(); return !DS_REC.owner && !!(DS_REC.ownerUnverified || !DS_REC.created); }
+  const UNVERIFIED_TEXT = 'not recorded (work started before the November 2026 update)';
+  /* The signed-in student claims this dataset ("Yes — I fixed my name"; also the way to verify a legacy record). */
   function adoptOwner() {
     const idn = storedIdentity(); if (!idn || !DS_REC) return;
     const hist = Array.isArray(DS_REC.ownerHistory) ? DS_REC.ownerHistory.slice(-4) : [];
     if (DS_REC.owner) hist.push(Object.assign({}, DS_REC.owner, { until: Date.now() }));
     DS_REC.owner = ownerOf(idn); DS_REC.ownerHistory = hist; delete DS_REC.closeSeen;
+    if (DS_REC.ownerUnverified) { delete DS_REC.ownerUnverified; DS_REC.verified = Date.now(); if (!DS_REC.created) DS_REC.created = DS_REC.t || Date.now(); }
     writeDsRec();
   }
   let rngCount = 0;
@@ -1038,6 +1054,7 @@
     const e = effectiveIdentity();
     const r = { name: e ? e.name : '', period: e ? e.period : '', datasetId: SEED.datasetId };
     const own = datasetOwnerIfOther(); if (own) r.datasetOwner = own;
+    if (IS_LAB && datasetOwnerUnverified()) r.datasetOwnerUnverified = true;
     return r;
   }
 
@@ -1269,6 +1286,7 @@
     if (who.period) lines.push('Class period: ' + who.period);
     if (IS_LAB) lines.push('Dataset ID: ' + who.datasetId);
     if (who.datasetOwner) lines.push('Dataset started by: ' + ownerText(who.datasetOwner));
+    if (who.datasetOwnerUnverified) lines.push('Dataset owner: ' + UNVERIFIED_TEXT);
     lines.push('');
     $$('.step').forEach(sec => {
       const fields = $$('[data-save]', sec).filter(f => f.id !== 'student-name' && (f.tagName === 'TEXTAREA' || f.dataset.label));
@@ -1457,7 +1475,7 @@
     });
     return {
       title, docTitle: cleanTitle(document.title), labTitle: cleanTitle(document.title), lab: PAGE.id, labNo: labTag().replace('Lab', ''),
-      name: who.name, period: who.period, datasetId: who.datasetId, datasetOwner: who.datasetOwner || null,
+      name: who.name, period: who.period, datasetId: who.datasetId, datasetOwner: who.datasetOwner || null, datasetOwnerUnverified: !!who.datasetOwnerUnverified,
       date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }),
       sections,
       keyResults: Lab.keyResults().map(r => ({ id: r.id, label: String(r.label == null ? r.id : r.label), text: keyResultText(r), value: r.value == null ? '' : String(r.value), unit: r.unit || '', note: r.note || '', part: r.part || '' })),
@@ -1524,6 +1542,7 @@
     kids.push(new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(rep.docTitle || rep.title)] }));
     const info = [['Name', rep.name || '(not entered)'], ['Class period', rep.period || '—'], ['Date', rep.date], ['Dataset ID', rep.datasetId]];
     if (rep.datasetOwner) info.push(['Dataset started by', ownerText(rep.datasetOwner)]);
+    if (rep.datasetOwnerUnverified) info.push(['Dataset owner', UNVERIFIED_TEXT]);
     info.forEach(([k, v]) => kids.push(new Paragraph({ children: [new TextRun({ text: k + ': ', bold: true }), new TextRun(String(v))] })));
     const border = { style: BorderStyle.SINGLE, size: 4, color: '999999' };
     const borders = { top: border, bottom: border, left: border, right: border };
@@ -1593,7 +1612,7 @@
   function reportHtml(rep) {
     const out = [];
     out.push(`<header class="rv-head">${rep.stamp ? `<img class="rv-stamp" src="${rep.stamp.dataUrl}" alt="${esc(rep.stamp.alt)}" width="110" height="110">` : ''}<p class="rv-eyebrow">AP Biology lab report</p><h1 id="rv-title">${esc(rep.docTitle || rep.title)}</h1>
-      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div>${rep.datasetOwner ? `<div><dt>Dataset started by</dt><dd>${esc(ownerText(rep.datasetOwner))}</dd></div>` : ''}</dl></header>`);
+      <dl class="rv-info"><div><dt>Name</dt><dd>${esc(rep.name || '(not entered)')}</dd></div><div><dt>Class period</dt><dd>${esc(rep.period || '—')}</dd></div><div><dt>Date</dt><dd>${esc(rep.date)}</dd></div><div><dt>Dataset ID</dt><dd>${esc(rep.datasetId)}</dd></div>${rep.datasetOwner ? `<div><dt>Dataset started by</dt><dd>${esc(ownerText(rep.datasetOwner))}</dd></div>` : ''}${rep.datasetOwnerUnverified ? `<div><dt>Dataset owner</dt><dd>${esc(UNVERIFIED_TEXT)}</dd></div>` : ''}</dl></header>`);
     if (rep.keyResults && rep.keyResults.length) { const anyNote = rep.keyResults.some(r => r.note); out.push(`<section class="rv-sec"><h2>Key results</h2><table class="rv-table"><thead><tr><th>Result</th>${anyNote ? '<th>Notes</th>' : ''}</tr></thead><tbody>${rep.keyResults.map(r => `<tr><td><strong>${esc(r.label)}</strong>: ${esc(r.text)}</td>${anyNote ? `<td>${esc(r.note)}</td>` : ''}</tr>`).join('')}</tbody></table></section>`); }
     if (!rep.sections.length) out.push('<p>No answers or data yet.</p>');
     rep.sections.forEach((s, si) => {
@@ -1690,6 +1709,7 @@
     const idn = effectiveIdentity();
     const p = { app: 'aplab', v: 1, lab: LAB_ID, title: document.title, savedAt: new Date().toISOString(), student: idn ? { name: idn.name, period: idn.period } : null, dataset: SEED.datasetNumber, data };
     const own = datasetOwnerIfOther(); if (own) p.datasetOwner = own;   // the student who started this dataset, when it is someone else
+    if (IS_LAB && datasetOwnerUnverified()) p.datasetOwnerUnverified = true;   // started before owners were recorded
     if (full === true && IS_LAB) { try { Object.assign(p, dashboardExtras()); } catch (e) { /* extras are optional */ } }
     return p;
   }

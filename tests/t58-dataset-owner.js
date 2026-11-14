@@ -1,6 +1,7 @@
 /* Audit 5 #1: each lab's dataset record keeps its owner (name, period, created, ID, number). A different student who
    uses "change" on a shared computer sees "This lab's work was started by … Is this your work?" with three choices;
    reports and progress files name the owner when it is someone else. One typo apart is worded gently, shown once.
+   A legacy record (no owner) is "owner not recorded", not adopted (Audit 5 #3; see t60-legacy-owner.js).
    Run: NODE_PATH=$(npm root -g) node tests/t58-dataset-owner.js */
 const T = require('./_h');
 const path = require('path');
@@ -23,12 +24,15 @@ const rec = p => p.evaluate(l => JSON.parse(localStorage.getItem(`aplab:${l}:dat
   T.ok(r && r.created > 0 && r.datasetId === id1 && r.datasetNumber === 1, 'record stores created time, Dataset ID and number');
   T.ok(await p.locator('.id-owner').count() === 0, 'no notice for the owner');
 
-  // An old record without owner metadata adopts the current identity silently.
+  // An old record without owner metadata is marked "owner not recorded" (Audit 5 #3), with no notice. More in t60-legacy-owner.js.
+  const orig = await rec(p);
   await p.evaluate(l => { const v = JSON.parse(localStorage.getItem(`aplab:${l}:dataset`)); delete v.owner; delete v.created; localStorage.setItem(`aplab:${l}:dataset`, JSON.stringify(v)); }, LAB);
   await p.reload(); await p.waitForTimeout(800);
   r = await rec(p);
-  T.ok(r.owner && r.owner.name === 'Test Student' && r.created > 0, 'old record adopts the current identity');
-  T.ok(await p.locator('.id-owner').count() === 0 && await p.evaluate(() => Lab.identity.seed.datasetId) === id1, 'silently, with the same Dataset ID');
+  T.ok(r.owner === null && r.ownerUnverified === true, 'old record is marked owner: null, ownerUnverified: true (not adopted)');
+  T.ok(await p.locator('.id-owner').count() === 0 && await p.evaluate(() => Lab.identity.seed.datasetId) === id1, 'no notice, same Dataset ID');
+  await p.evaluate(([l, v]) => localStorage.setItem(`aplab:${l}:dataset`, JSON.stringify(v)), [LAB, orig]);   // back to an owned record for the rest
+  await p.reload(); await p.waitForTimeout(800);
 
   // Some work in the lab, then a different student signs in with "change".
   const ta = await p.evaluate(() => { const t = Array.from(document.querySelectorAll('textarea[data-save]')).find(x => !x.closest('.id-box')); return t && t.id; });

@@ -144,7 +144,7 @@ async function makeStudent(b, srv, st, dir, via) {
   const csv = fs.readFileSync(csvPath, 'utf8').replace(/^﻿/, '');
   const lines = csv.trim().split(/\r?\n/);
   T.ok(dl.suggestedFilename() === 'lab-bench-class-grid.csv' && lines.length === 6, 'CSV download: header + 5 rows (' + dl.suggestedFilename() + ')');
-  T.ok(/^Lab,Student,Class,Dataset ID,Parts done,Parts total,Lab 5: ET₅₀ \(with CO₂\) \(min\),/.test(lines[0]) && /FRQ self-score/.test(lines[0]) && /Flags$/.test(lines[0]), 'CSV header: ' + lines[0].slice(0, 90));
+  T.ok(/^Lab,Student,Class,Dataset ID,Parts done,Parts total,Lab 5: ET₅₀ \(with CO₂\) \(min\),/.test(lines[0]) && /FRQ self-score/.test(lines[0]) && /Flags,Dataset owner$/.test(lines[0]), 'CSV header: ' + lines[0].slice(0, 90));
   T.ok(lines.some(l => l.startsWith('Lab 5,Ana Diaz,2,' + ana.ds) && l.includes(',10.4,27.1,')) && lines.some(l => /Same Dataset ID as Dee Fox/.test(l)), 'CSV rows carry values and flags');
   await d.selectOption('#f-class', '4');
   const [dl2] = await Promise.all([d.waitForEvent('download'), d.click('#csv')]); await dl2.saveAs(csvPath);
