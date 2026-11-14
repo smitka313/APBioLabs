@@ -686,6 +686,7 @@
     w.classList.toggle('is-scrollable', over);
     w.classList.toggle('at-end', end);
     if (over) { w.setAttribute('tabindex', '0'); w.setAttribute('role', 'region'); if (!w.getAttribute('aria-label')) w.setAttribute('aria-label', 'Data table. Scrolls sideways; arrow keys move it.'); }
+    else if (w.scrollWidth > w.clientWidth && w.clientWidth > 0) w.setAttribute('tabindex', '0'); // a 1-2 px sub-pixel overflow still scrolls: keep it reachable by keyboard
     else if (w.getAttribute('tabindex') === '0') w.removeAttribute('tabindex');
     st.hint.hidden = !over || end;
   }
