@@ -7,7 +7,11 @@
    Each <source>/<name>.html becomes <output>/<name>.html: a small page that asks for the password,
    derives a key with PBKDF2-SHA256 (310,000 iterations), decrypts the page with AES-256-GCM in the
    browser (Web Crypto), and replaces itself with the decrypted page. Without the password the
-   published file contains only ciphertext. */
+   published file contains only ciphertext.
+   The password form says plainly that this is page encryption, not a school login. The password is kept
+   (sessionStorage 'tn-pw', this tab only) only when "Keep unlocked in this tab" is ticked, so a teacher
+   can move between the linked notes pages; it is off by default. Every unlocked page gets a "Lock notes"
+   button that forgets the password and shows the form again. Test: tests/t58-notes-lock.js. */
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const [src, out] = process.argv.slice(2);
 const pw = process.env.NOTES_PASSWORD;
@@ -53,6 +57,10 @@ button { font: inherit; font-weight: 600; padding: 9px 14px; border-radius: 8px;
 a { color: var(--accent); }
 .row { display: flex; gap: 8px; }
 .row input { flex: 1; min-width: 0; }
+.keep { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin-top: 10px; }
+.keep input { width: auto; margin: 4px 0 0; accent-color: var(--accent); }
+.keep small { display: block; color: var(--muted); font-size: .85rem; }
+.honest { border-left: 3px solid var(--line); padding-left: 10px; }
 </style>
 </head>
 <body>
@@ -62,8 +70,10 @@ a { color: var(--accent); }
   <form id="f" autocomplete="off">
     <label for="pw">Password</label>
     <div class="row"><input id="pw" type="password" autocomplete="current-password" required><button type="submit">Unlock</button></div>
+    <label class="keep" for="keep"><input id="keep" type="checkbox"><span>Keep unlocked in this tab<small>So you can move between notes pages without typing the password again. Leave it off on a shared computer.</small></span></label>
   </form>
   <div class="err" id="err" role="alert"></div>
+  <p class="honest">These notes are encrypted in the page, not behind a school login. Anyone with the password can open them.</p>
   <p>Teachers can request the password by emailing <a href="mailto:${CONTACT}?subject=AP%20Bio%20Digital%20Lab%20Bench%20teacher%20notes"><span class="contact">${CONTACT}</span></a>.</p>
   <p><a href="index.html">Back to the labs</a></p>
 </main>
@@ -76,12 +86,31 @@ async function unlock(pw) {
   const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(P.i) }, key, b64(P.c));
   return new TextDecoder().decode(pt);
 }
-function show(html) { document.open(); document.write(html); document.close(); }
+/* The password is kept (sessionStorage 'tn-pw', this tab only) only when "Keep unlocked in this tab" is ticked.
+   "Lock notes" forgets it and reloads, which shows this form again. */
+function lock() { try { sessionStorage.removeItem('tn-pw'); } catch (x) {} location.reload(); }
+function show(html) {
+  document.open(); document.write(html); document.close();
+  const add = () => {
+    if (document.getElementById('tn-lock') || !document.body) return;
+    const st = document.createElement('style');
+    st.textContent = '#tn-lock{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:2147483000;font:600 15px/1.2 "Source Sans 3","Segoe UI",system-ui,sans-serif;padding:9px 14px;border-radius:999px;border:1px solid #0d6e55;background:#0d6e55;color:#fff;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.25)}#tn-lock:hover{background:#0a5743}#tn-lock:focus-visible{outline:3px solid #4cc39b;outline-offset:2px}@media print{#tn-lock{display:none!important}}';
+    const b = document.createElement('button');
+    b.id = 'tn-lock'; b.type = 'button'; b.textContent = 'Lock notes'; b.title = 'Forget the password in this tab and close the notes';
+    b.addEventListener('click', lock);
+    document.head.append(st); document.body.append(b);
+  };
+  add(); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add);
+}
 const err = document.getElementById('err');
 document.getElementById('f').addEventListener('submit', async e => {
   e.preventDefault(); err.textContent = 'Checking…';
-  const pw = document.getElementById('pw').value;
-  try { const html = await unlock(pw); try { sessionStorage.setItem('tn-pw', pw); } catch (x) {} show(html); }
+  const pw = document.getElementById('pw').value, keep = document.getElementById('keep').checked;
+  try {
+    const html = await unlock(pw);
+    try { if (keep) sessionStorage.setItem('tn-pw', pw); else sessionStorage.removeItem('tn-pw'); } catch (x) {}
+    show(html);
+  }
   catch (x) { err.textContent = window.crypto && crypto.subtle ? 'That password is not correct.' : 'This browser cannot unlock the notes. Open the page over https in a current browser.'; }
 });
 (async () => { let pw = null; try { pw = sessionStorage.getItem('tn-pw'); } catch (x) {}
