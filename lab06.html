@@ -101,7 +101,7 @@
         <div class="callout callout--key key-ideas"><div class="callout-title">Key ideas</div>
           <ul>
             <li>Respiration uses O<sub>2</sub> to oxidize glucose and releases CO<sub>2</sub>, so you can follow it by the O<sub>2</sub> that disappears from a sealed chamber.</li>
-            <li>CO<sub>2</sub> is made as fast as O<sub>2</sub> is used, so KOH removes the CO<sub>2</sub>. Then the gas volume falls only because O<sub>2</sub> is consumed.</li>
+            <li>Respiration makes CO<sub>2</sub> while it uses O<sub>2</sub> (one for one with glucose; a bit less CO<sub>2</sub> with oils). KOH removes all the CO<sub>2</sub>, so the gas volume falls only because O<sub>2</sub> is consumed.</li>
             <li>Gas volume also changes with temperature and pressure (PV = nRT), so a control respirometer of glass beads corrects for them.</li>
             <li>Plug travel (cm) × 5.03 µL/cm gives O<sub>2</sub> used (µL). The slope of O<sub>2</sub> vs. time is the respiration rate.</li>
             <li>Q<sub>10</sub> compares rates 10 °C apart; most respiration has a Q<sub>10</sub> of 2 to 3 until enzymes denature.</li>
@@ -1654,13 +1654,14 @@ const Predict = (function () {
   $('#q-clear-ex').addEventListener('click', qClear);
   /* Use my data: the lowest and highest temperature in the design table, with the mean rate (µL O₂/min) of the organism run most often. */
   $('#q-mine').addEventListener('click', () => {
-    const rows = dTable.getRows().filter(r => isFinite(r.rate) && isFinite(r.temp) && !r._setup), msg = $('#q-msg');
+    /* Same rule as the Q10 key result: only trials up to 35 °C, because above that heat damage, not Q10, lowers the rate. */
+    const rows = dTable.getRows().filter(r => isFinite(r.rate) && isFinite(r.temp) && r.temp <= 35 && !r._setup), msg = $('#q-msg');
     const count = {}; rows.forEach(r => { count[r.org] = (count[r.org] || 0) + 1; });
     const org = Object.keys(count).sort((a, b) => count[b] - count[a])[0], mine = rows.filter(r => r.org === org), temps = [...new Set(mine.map(r => r.temp))].sort((a, b) => a - b);
-    if (temps.length < 2) { msg.textContent = 'Run the same organism at two different temperatures in the simulation above first, then press this again.'; msg.className = 'status bad'; return; }
+    if (temps.length < 2) { msg.textContent = 'Run the same organism at two different temperatures (35 °C or below) in the simulation above first, then press this again.'; msg.className = 'status bad'; return; }
     const mean = T => S.mean(mine.filter(r => r.temp === T).map(r => r.rate)), lo = temps[0], hi = temps[temps.length - 1];
     $('#q-banner').hidden = true; [lo, mean(lo), hi, mean(hi)].forEach((v, i) => { $(QIDS[i]).value = fmt(v, i % 2 ? 2 : 0); });
-    q10(); qSave(); msg.textContent = `Filled from your ${ORGS[org].short} trials (mean rate at ${lo} °C and ${hi} °C).`; msg.className = 'status';
+    q10(); qSave(); msg.textContent = `Filled from your ${ORGS[org].short} trials (mean rate at ${lo} °C and ${hi} °C).` + (dTable.getRows().some(r => r.org === org && r.temp > 35 && !r._setup) ? ' Trials above 35 °C were left out: heat damage, not Q\u2081\u2080, lowers the rate there.' : ''); msg.className = 'status';
   });
   { const sv = Lab.store.get('q10-in'); if (Array.isArray(sv) && sv.length === 4 && sv.some(v => v !== '')) { sv.forEach((v, i) => { $(QIDS[i]).value = v; }); q10(); } }
   const dRes = $('#d-results');
