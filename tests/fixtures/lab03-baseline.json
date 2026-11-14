@@ -1,0 +1,36 @@
+{
+ "Ada Lovelace": {
+  "datasetId": "MB5-28M",
+  "db": "c5e3163dbe445232",
+  "blast": "f025689560a4ce6c",
+  "plates": {
+   "Naturalist illustration of a alligator (Alligator mississippiensis)": "466dd905badea5c3",
+   "Naturalist illustration of a chimpanzee (Pan troglodytes)": "cdfb535fe99d017d",
+   "Naturalist illustration of a grasshopper (Melanoplus differentialis)": "25c15670e4142d29",
+   "Naturalist illustration of a pigeon (Columba livia)": "07344f13d87954ed",
+   "Naturalist illustration of a mouse (Mus musculus)": "fe9ffacc88931a01",
+   "Naturalist illustration of a lobster (Homarus americanus)": "286279f14b03be0c",
+   "Naturalist illustration of a haircap moss (Polytrichum commune)": "08440ec48fa72b17",
+   "Naturalist illustration of a apple tree (Malus domestica)": "8035d236af7ce7e6",
+   "Naturalist illustration of a sword fern (Polystichum munitum)": "81bfe9a6a44ac13e",
+   "Naturalist illustration of a white pine (Pinus strobus)": "493d6af37bcceba6"
+  }
+ },
+ "Jordan Ortiz": {
+  "datasetId": "3JB-5VB",
+  "db": "430324c39cd39d1c",
+  "blast": "4fa980ef0d0d3b61",
+  "plates": {
+   "Naturalist illustration of a pigeon (Columba livia)": "07344f13d87954ed",
+   "Naturalist illustration of a mouse (Mus musculus)": "fe9ffacc88931a01",
+   "Naturalist illustration of a chimpanzee (Pan troglodytes)": "cdfb535fe99d017d",
+   "Naturalist illustration of a grasshopper (Melanoplus differentialis)": "25c15670e4142d29",
+   "Naturalist illustration of a lobster (Homarus americanus)": "286279f14b03be0c",
+   "Naturalist illustration of a alligator (Alligator mississippiensis)": "466dd905badea5c3",
+   "Naturalist illustration of a apple tree (Malus domestica)": "8035d236af7ce7e6",
+   "Naturalist illustration of a sword fern (Polystichum munitum)": "81bfe9a6a44ac13e",
+   "Naturalist illustration of a white pine (Pinus strobus)": "493d6af37bcceba6",
+   "Naturalist illustration of a haircap moss (Polytrichum commune)": "08440ec48fa72b17"
+  }
+ }
+}
