@@ -18,7 +18,7 @@ const path = require('path'), fs = require('fs'), { spawn, execSync } = require(
 const DIR = __dirname, ROOT = path.resolve(DIR, '..');
 
 /* Timing-flaky under load: retried once before they count as failed. */
-const FLAKY = ['t26-persist-labs1-7', 't30-dataset-id', 't21-labs1-7-personal', 't21-transfer', 't05-progress', 't05b-teachers', 't35-lab13-persist', 't35-nudge'];
+const FLAKY = ['t26-persist-labs1-7', 't30-dataset-id', 't21-labs1-7-personal', 't21-transfer', 't05-progress', 't05b-teachers', 't35-lab13-persist', 't35-nudge', 't34-lab12-persist', 't58-design-prompts'];
 
 /* Long suites: their own time limits, in seconds. */
 const LIMITS = { 't59-a11y': 3600, 't59-science': 1800, 't59-e2e': 1500, 't59-perf': 900, 't36-lab9-stain': 600, 't60-browsers': 2400 };

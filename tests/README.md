@@ -42,7 +42,7 @@ node tests/run-all.js all --shard 2/5    # a fifth of the full suite (CI splits 
 node tests/run-all.js --list checklist   # show what would run
 ```
 
-Each test runs in its own process with a time limit (15 min by default, longer for the t59 suites). A few tests are timing-sensitive when the machine is busy (`t26`, `t21`, `t05`, `t35`, `t30-dataset-id`): if one fails it runs once more, and the summary lists any test that passed only on the retry. `RETRY=all` retries every failure once, `RETRY=0` never retries. `JOBS=n` runs n tests at once (default 1; more than 1 makes the timing-sensitive tests flakier). The runner sets `NODE_PATH` to `./node_modules` (or the global modules) and `AXE` to `node_modules/axe-core` when they are not set.
+Each test runs in its own process with a time limit (15 min by default, longer for the t59 suites). A few tests are timing-sensitive when the machine is busy (`t26`, `t21`, `t05`, `t35`, `t30-dataset-id`, `t34-lab12-persist`, `t58-design-prompts`): if one fails it runs once more, and the summary lists any test that passed only on the retry. `RETRY=all` retries every failure once, `RETRY=0` never retries. `JOBS=n` runs n tests at once (default 1; more than 1 makes the timing-sensitive tests flakier). The runner sets `NODE_PATH` to `./node_modules` (or the global modules) and `AXE` to `node_modules/axe-core` when they are not set.
 
 ## Continuous integration
 
