@@ -71,6 +71,11 @@
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
+<style>
+  /* Phone and touch: well buttons are real 40 px tap targets (tests/t50-phone.js); four to a row on a narrow phone so each is wide enough too. */
+  @media (max-width: 760px), (pointer: coarse) { .wells button, .sim--fit .wells button { min-height: 40px; padding: 6px 0; } }
+  @media (max-width: 520px) { .wells { grid-template-columns: repeat(4, 1fr); } }
+</style>
 <header class="lab-header">
   <div class="wrap gutter">
     <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">All labs</a><span>Big Idea 3 · Information</span></nav>
