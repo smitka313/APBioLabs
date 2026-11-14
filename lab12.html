@@ -1418,6 +1418,7 @@ function recordInterval(a, b) {
   nextCount += trial.int;
   if (simT >= trial.dur - 1e-6) finishTrial();
 }
+$('#int-table').addEventListener('input', e => { if (e.target.matches('input[data-r]')) chMsg(''); });   // the calibration line quotes the counts as recorded; once one is edited it no longer applies
 $('#cnt-rec').addEventListener('click', () => {
   if (!trial || !paused) return;
   const ea = $('#cnt-a').value.trim() === '', eb = $('#cnt-b').value.trim() === '';

@@ -1410,7 +1410,7 @@ $('#zoom').addEventListener('click', e => {
   drawZoom(); saveSim();
 });
 $('#clear-marks').addEventListener('click', () => { marks[zsel.value] = []; drawZoom(); saveSim(); });
-$('#use-count').addEventListener('click', () => { Lab.sound.play('click'); $('#c-count').value = (marks[zsel.value] || []).length; if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); });
+$('#use-count').addEventListener('click', () => { Lab.sound.play('click'); $('#c-count').value = (marks[zsel.value] || []).length; $('#calc-fb').innerHTML = ''; if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); });
 
 /* ---------- Calculations ---------- */
 /* The mixture line is derived from what has been done so far (not from the end state), so it updates at each step.
@@ -1466,7 +1466,8 @@ $('#calc-check').addEventListener('click', () => checkCalc());
 const CALC_IDS = ['c-count', 'c-mass', 'c-frac', 'c-spread', 'c-eff', 'c-sci'];
 let exampleOn = false;
 const calcOwn = () => Object.fromEntries(CALC_IDS.map(i => [i, $('#' + i).value]));
-CALC_IDS.forEach(i => $('#' + i).addEventListener('input', () => { if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); }));
+/* A verdict ("✓ correct") is about the numbers that were checked: the moment one of them changes it no longer applies, so it is removed until Check is pressed again. */
+CALC_IDS.forEach(i => $('#' + i).addEventListener('input', () => { if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); $('#calc-fb').innerHTML = ''; }));
 const EXAMPLE = { 'c-count': '40', 'c-mass': '0.05', 'c-frac': '0.196', 'c-spread': '0.0098', 'c-eff': '4080', 'c-sci': '4.1 × 10^3' };
 function setExample(on) {
   exampleOn = on; $('#calc-banner').hidden = !on; $('#calc-example').hidden = on;
