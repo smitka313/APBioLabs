@@ -2,6 +2,13 @@
    No dependencies. Every API is documented in KIT.md. */
 (function () {
   'use strict';
+  /* Run every ResizeObserver callback on the next animation frame. A callback that redraws (and so resizes) in the same
+     frame makes Safari/WebKit report "ResizeObserver loop completed with undelivered notifications" as a page error. */
+  if (window.ResizeObserver && !window.ResizeObserver.__nextFrame && window.requestAnimationFrame) {
+    const RO = window.ResizeObserver;
+    const Deferred = class extends RO { constructor(cb) { let id = 0; super((entries, obs) => { cancelAnimationFrame(id); id = requestAnimationFrame(() => cb(entries, obs)); }); } };
+    Deferred.__nextFrame = true; window.ResizeObserver = Deferred;
+  }
   const Lab = {};
   let LAB_ID = 'lab';
 
