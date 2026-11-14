@@ -109,6 +109,8 @@
 </head>
 <body>
 <style>
+  /* Phone and touch: the trait checkboxes are 40 px tap targets; the table scrolls sideways inside its own box. */
+  @media (max-width: 760px), (pointer: coarse) { table.data.matrix input[type="checkbox"] { width: 40px; height: 40px; margin: 0; vertical-align: middle; } table.data.matrix th.rot { min-width: 48px; } }
   /* Tables: headers wrap so the trait table fits at any desktop width; a table that still has to scroll sideways inside its own box keeps its first column in view. */
   table.data.matrix th, table.data.matrix td { white-space: normal; text-align: center; vertical-align: bottom; line-height: 1.25; }
   table.data.matrix th.rot { min-width: 0; }
