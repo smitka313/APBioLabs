@@ -901,7 +901,7 @@ function makeGel(rootSel, measSel, cfg) {
     if (r.lanes.some(l => !Array.isArray(l) || l.some(c => !keys.includes(c.k) || !isFinite(c.v)))) return false;
     $('vol').value = r.vol; $('heat').checked = !!r.heat; $('pct').value = r.pct; $('volt').value = r.volt;
     $('vol-o').textContent = $('vol').value + ' µL'; $('volt-o').textContent = $('volt').value + ' V';
-    Object.assign(st, { gel: Math.max(st.gel, r.gel || 1), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, stainAt: +r.stainAt || 0, destainAt: +r.destainAt || 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
+    Object.assign(st, { gel: Math.max(r.gel || 1, prevGel), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, stainAt: +r.stainAt || 0, destainAt: +r.destainAt || 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
     if (keys.includes(r.sel)) st.sel = r.sel;
     Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel)));
     Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === 'rev') === st.reversed)));
