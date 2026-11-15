@@ -1384,7 +1384,7 @@ const gel1 = makeGel('#gel1', '#meas1', {
   layout: [null, 'B', 'E', 'H', 'U', null, 'H', null]
 });
 gelGuidance('g1', gel1, null,
-  { id: 'curve', text: 'Add marker sizes (next part)', target: '#meas1 .mtable input[data-k="known"]', done: () => gel1.meas.getRows().some(r => r.known > 0), hint: 'Open <a href="#standard-curve">Standard curve</a> and type the HindIII marker sizes, largest first.' },
+  { id: 'curve', text: 'Add marker sizes (next part)', target: '#meas1 .mtable input[data-k="known"]', done: () => gel1.meas.getRows().some(r => r.known > 0), hint: 'Open <a href="#standard-curve">Standard curve</a>. Measure visible marker-band migration distances, then pair each with the supplied HindIII fragment size, largest nearest the well. Do not calculate the known sizes.' },
   'Gel run and measured. Build the standard curve in <a href="#standard-curve">Standard curve</a>.');
 const m1p = Lab.h('div'); Lab.$('#meas1').append(m1p);
 Lab.prompt(m1p, { key: 'p1-obs', label: 'What observations (qualitative) and measurements (quantitative) can you make from your stained gel? Why does uncut λ DNA give a single band so close to the well?', rows: 3 });
