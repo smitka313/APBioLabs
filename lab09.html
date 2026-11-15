@@ -235,6 +235,7 @@
     <header><div class="eyebrow">Analyzing results · Sizing fragments</div><h2>Measure bands and build a standard curve</h2></header>
     <div class="step-body">
       <div class="prose"><p><strong>Important: You do not calculate the known marker sizes.</strong> The HindIII marker contains DNA fragments of already known lengths. First measure how far each visible marker band traveled, then enter its supplied size in the <strong>Known fragment size</strong> column. The standard curve uses those known pairs to estimate <em>unknown</em> fragment sizes. If a band is faint, overlapping, or not visible, do not invent a separate measurement.</p><p>After staining, click a band, or use "Measure all visible bands in lane." Each click adds the distance from the front of the well to the front edge of the band. Readings carry about ±0.5 mm of ruler error, as at the bench. In the <strong>Known fragment size</strong> column, type the size of each <span class="enz"><em>Hin</em>dIII</span> marker band, largest (closest to the well) first: 23,130 (the 23,130/27,491 doublet), 9,416, 6,557, 4,361, 2,322, 2,027 … The page fits log<sub>10</sub>(bp) against distance for each gel, then estimates every band with no known size.</p></div>
+      <p class="small"><strong>Marker sizes are provided:</strong> Measure each visible HindIII marker band and enter its supplied size. Use the standard curve to estimate unknown bands.</p>
       <details class="disclose"><summary>Step-by-step: which numbers go in the marker table?</summary><div class="inner"><ol><li>Find the HindIII marker lane and measure the visible bands, starting at the well.</li><li>For each measured marker band, enter the corresponding known size, largest first: <strong>23,130, 9,416, 6,557, 4,361, 2,322, 2,027 bp</strong>. Smaller fragments are 564 and 125 bp, but may not be clearly resolved.</li><li>Use the resulting standard curve to estimate sizes in the other lanes. You do not calculate the marker sizes with logarithms.</li></ol><p><strong>For unknowns:</strong> log₁₀(bp) = m × distance + b, so bp = 10<sup>(m × distance + b)</sup>. The site fits this relationship from your marker entries.</p></div></details>
       <div id="meas1"></div>
     </div>
@@ -844,7 +845,7 @@ function makeGel(rootSel, measSel, cfg) {
       <div id="${P}-steps"></div>
       <div class="controls">
         <p class="controls-title">Controls</p>
-      <div class="field"><span class="label" id="${P}-rack-l">1 · Sample rack (choose a tube)</span><p class="small muted">The highlighted, open tube is the currently selected sample, ready to load. The other tubes remain capped. Select a tube, then select a well; the highlight indicates selection, not an error.</p><div class="rack" id="${P}-rack" role="group" aria-labelledby="${P}-rack-l"></div></div>
+      <div class="field"><span class="label" id="${P}-rack-l">1 · Sample rack (choose a tube)</span><p class="small muted">The highlighted, open tube is the currently selected sample, ready to load. The other tubes remain capped. Select a tube, then select a well; the highlight indicates selection, not an error.</p><p class="small" id="${P}-selected-status" role="status" aria-live="polite"></p><div class="rack" id="${P}-rack" role="group" aria-labelledby="${P}-rack-l"></div></div>
       <div class="field"><span class="label" id="${P}-wells-l">2 · Load into well</span><div class="wells" id="${P}-wells" role="group" aria-labelledby="${P}-wells-l"></div></div>
         <div class="row"><button class="btn btn--primary" type="button" id="${P}-run">Power on: run</button><button class="btn" type="button" id="${P}-stain">Stain</button></div>
         <div class="row stain-proc" id="${P}-sbox" hidden><progress id="${P}-sprog" max="100" value="0" style="flex:1 1 7rem;min-width:0" aria-label="Staining progress"></progress><span class="small" id="${P}-scount"></span><button class="btn btn--sm btn--ghost" type="button" id="${P}-skip">Skip ahead</button></div>
@@ -908,6 +909,7 @@ function makeGel(rootSel, measSel, cfg) {
     $('vol-o').textContent = $('vol').value + ' µL'; $('volt-o').textContent = $('volt').value + ' V';
     Object.assign(st, { gel: Math.max(r.gel || 1, prevGel), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, stainAt: +r.stainAt || 0, destainAt: +r.destainAt || 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
     if (keys.includes(r.sel)) st.sel = r.sel;
+    updateSelectedStatus();
     Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel)));
     Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === 'rev') === st.reversed)));
     $('gelno').textContent = st.gel;
@@ -925,8 +927,13 @@ function makeGel(rootSel, measSel, cfg) {
     else if (st.lanes.some(l => l.length)) msg('ok', 'Restored your loaded wells. Connect the leads and power on.');
     return true;
   }
+  function updateSelectedStatus() {
+    const current = cfg.samples.find(s => s.key === st.sel);
+    $('selected-status').textContent = 'Selected: ' + (current ? current.label : st.sel) + ' — ready to load into a well.';
+  }
   $('rack').innerHTML = cfg.samples.map(s => `<button type="button" class="tube" data-k="${s.key}" aria-pressed="${s.key === st.sel}">${esc(s.label)}</button>`).join('');
-  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); saveState(); }));
+  updateSelectedStatus();
+  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); saveState(); }));
   const volSync = () => { $('vol-o').textContent = $('vol').value + ' µL'; if (st.geom) draw(); }; $('vol').addEventListener('input', volSync); $('vol').addEventListener('change', () => saveState()); $('heat').addEventListener('change', () => saveState()); volSync();
   const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); if (!st.running) draw(); }; $('volt').addEventListener('input', voltSync); $('volt').addEventListener('change', () => saveState()); $('volt-o').textContent = $('volt').value + ' V';
   Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); saveState(); }));
@@ -951,7 +958,7 @@ function makeGel(rootSel, measSel, cfg) {
     drawWells(); animatePipette(); saveState();
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
-  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
+  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
   function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
