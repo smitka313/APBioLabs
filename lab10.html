@@ -1333,7 +1333,7 @@ function workedExample(o) {
           { name: 'Respiration, heat (R)', value: Math.max(0, Rm), color: 'var(--s2)' }] },
         { name: 'Frass, egested (F)', value: Fm, color: 'var(--s4)' }] },
       { name: 'Left uneaten', value: Math.max(0, off - Cm), color: 'var(--muted)' }] }, { height: 270 });
-    $('#sankey-larva-note').textContent = Rm < 0 ? 'Your budget does not balance: growth + frass is larger than what was eaten, so respiration comes out negative. Check your dry/wet ratios. Which assumption is most likely wrong?' : `Respiration (${fmt(Rm, 3)} kcal) was not measured; it is whatever energy is left after growth and frass are subtracted from consumption.`;
+    $('#sankey-larva-note').textContent = Rm < 0 ? 'Your budget does not balance: growth + frass is larger than what was eaten, so respiration comes out negative. Recheck whether you used dry mass for each energy term and kept every term in kcal. Which assumption could explain the imbalance?' : `Respiration (${fmt(Rm, 3)} kcal) was not measured; it is whatever energy is left after growth and frass are subtracted from consumption.`;
   }
   watchResize('#sankey-larva', updateP2);
   ['#ratio-plant', '#ratio-larva', '#p2-correct'].forEach(s => $(s).addEventListener('input', updateP2));
