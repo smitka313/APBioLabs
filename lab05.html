@@ -231,7 +231,7 @@
       <div id="cup-table"></div>
       <div id="cup-chart"></div>
       <h3>Calculate ET<sub>50</sub> and the rate</h3>
-      <p class="small"><strong>Calculation reminder:</strong> ET<sub>50</sub> is the time when half the leaf disks are floating. If half the disks float between two readings, estimate the time between them using the change in disk count. Relative rate = 1 ÷ ET<sub>50</sub> (min<sup>−1</sup>). A shorter ET<sub>50</sub> indicates faster net oxygen accumulation.</p>
+      <div class="callout callout--tip"><div class="callout-title">ET<sub>50</sub> and relative rate</div><p><strong>ET<sub>50</sub>:</strong> time when 50% of the disks float.</p><p><strong>Relative rate = 1 ÷ ET<sub>50</sub></strong> (min<sup>−1</sup>).</p><p class="small">If 50% occurs between readings, estimate the time using the two neighboring disk counts. Shorter ET<sub>50</sub> means faster net oxygen accumulation.</p></div>
       <p class="small">Find the two minutes on either side of half the disks floating (<span id="et-half">5 of 10</span>) in the "With CO<sub>2</sub>" column (open the <strong>Data</strong> tab above). Interpolate: ET<sub>50</sub> = t<sub>before</sub> + (half − n<sub>before</sub>) ÷ (n<sub>after</sub> − n<sub>before</sub>). Then take the reciprocal.</p>
       <div class="calc">
         <div class="field"><label for="et-in">Your ET<sub>50</sub> (min)</label><input id="et-in" type="number" step="any" data-save="et-in" data-label="ET50 for the bicarbonate cup (min)"></div>
