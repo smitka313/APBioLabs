@@ -1671,7 +1671,7 @@ const Predict = (function () {
     if (!ok) { clearOut(); status('#tt-status', 'No t calculated: fix the highlighted entries.', 'bad'); return; }
     const w = welch(v('#ta-m'), v('#ta-s'), v('#ta-n'), v('#tb-m'), v('#tb-s'), v('#tb-n'));
     $('#tt-d').textContent = fmt(v('#tb-m') - v('#ta-m'), 2); $('#tt-t').textContent = fmt(w.t, 2); $('#tt-df').textContent = fmt(w.df, 1); $('#tt-c').textContent = fmt(w.crit, 2);
-    if (!isFinite(w.t)) { clearOut(); status('#tt-status', 'The t statistic could not be calculated from these numbers. Check each entry.', 'bad'); }
+    if (!isFinite(w.t)) { clearOut(); status('#tt-status', 'The t statistic could not be calculated. Check that both groups have valid sample sizes, means, and variation; then review the units of each entry.', 'bad'); }
     else status('#tt-status', w.sig ? `|t| = ${fmt(Math.abs(w.t), 2)} > ${fmt(w.crit, 2)}: the means are significantly different (p < 0.05).` : `|t| = ${fmt(Math.abs(w.t), 2)} ≤ ${fmt(w.crit, 2)}: the difference could be due to chance (not significant at p = 0.05).`, w.sig ? 'ok' : 'warn');
     if (isFinite(w.t) && mode !== 'example') Lab.store.set('tt', { v: ['#ta-m', '#ta-s', '#ta-n', '#tb-m', '#tb-s', '#tb-n'].map(id => $(id).value) });
     if (isFinite(w.t) && mode === 'example') status('#tt-status', 'Example numbers (not your data). ' + $('#tt-status').textContent, w.sig ? 'ok' : 'warn');

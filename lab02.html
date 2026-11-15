@@ -908,7 +908,7 @@ const Predict = (function () {
   $('#ss-recalc').addEventListener('click', () => { Lab.sound.play('click'); if (!ssRecalc()) { status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); return; } status('#ss-status', `Recalculated ${ssLast.n} zygotes. New p = ${fmt(ssLast.newp, 3)} (started at ${fmt(ssLast.p, 2)}).`, ''); });
   ['#ss-p', '#ss-n'].forEach(id => { $(id).addEventListener('change', () => { if (ssRecalc()) status('#ss-status', '', ''); else status('#ss-status', 'Not recalculated: fix the highlighted entry first.', 'bad'); }); $(id).addEventListener('input', () => checkFields(SS_RULES().filter(r => r.el === $(id)))); });
   $('#ss-record').addEventListener('click', () => {
-    if (!ssLast) return; if (!checkFields(SS_RULES())) { status('#ss-status', 'Not recorded: the entries above are invalid, so the table still shows your last good run. Fix them and recalculate.', 'bad'); return; } const L = ssLast;
+    if (!ssLast) return; if (!checkFields(SS_RULES())) { status('#ss-status', 'Not recorded: one or more inputs above are invalid. Read the message beneath each highlighted field, correct it, then recalculate. The table still shows your last valid run.', 'bad'); return; } const L = ssLast;
     ssTable.addRow({ run: ssTable.getRows().length + 1, n: L.n, p0: L.p, aa: L.aa, ab: L.ab, bb: L.bb, p1: L.newp, dp: L.newp - L.p, chi: L.chi });
     status('#ss-status', 'Run recorded. Record several runs at each population size to compare how much p changes.', 'ok');
   });
