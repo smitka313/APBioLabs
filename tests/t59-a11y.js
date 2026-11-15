@@ -84,7 +84,8 @@ const focusInfo = p => p.evaluate(() => {
   const cs = getComputedStyle(e), r = e.getBoundingClientRect();
   const visible = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1) || (cs.boxShadow && cs.boxShadow !== 'none');
   const nav = document.querySelector('.step-nav'), nb = nav ? nav.getBoundingClientRect().bottom : 0;
-  const stickyNav = nav && getComputedStyle(nav).position === 'sticky' && !nav.contains(e) && !e.closest('.lab-header');
+  // The skip link intentionally appears above the sticky nav when focused; it is not obscured content.
+  const stickyNav = nav && getComputedStyle(nav).position === 'sticky' && !nav.contains(e) && !e.closest('.lab-header') && !e.matches('a.skip-link');
   return { name: (e.id ? '#' + e.id : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/)[0] : '')) + ' "' + (e.textContent || e.value || '').trim().slice(0, 20) + '"',
     visible, obscured: !!stickyNav && r.bottom <= nb + 1 && r.height > 0, fv: e.matches(':focus-visible') };
 });
@@ -109,6 +110,17 @@ async function keyboard(b) {
     await p.keyboard.press('Tab');
     T.ok(await p.evaluate(() => { const sec = document.querySelector('section.step.is-current'); return !!sec && sec.contains(document.activeElement); }), `${lab}: the next Tab stays in the current part`);
     await p.goto(p.url().split('#')[0] + '#' + k.part); await sleep(900); await goPart(p, k.part); await sleep(300);
+
+    // Lab 7's root-tip preparation is gated on a saved prediction. Recheck after navigation:
+    // a disabled button is correctly omitted from Tab order and would otherwise look like a keyboard failure.
+    if (lab === 'lab07') {
+      const enabled = await p.evaluate(() => !document.querySelector('#rt-prep').disabled);
+      if (!enabled) {
+        await fillAll('predict-roottips')(p);
+        await goPart(p, k.part);
+      }
+      T.ok(await p.evaluate(() => !document.querySelector('#rt-prep').disabled), 'lab07: prediction prerequisite unlocks root-tip preparation after navigation');
+    }
 
     // Tab from the top to the run control, checking every stop on the way
     await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
