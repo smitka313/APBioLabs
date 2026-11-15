@@ -2290,7 +2290,7 @@ Predict.cer(cer, { claim: 'Claim: state the effect of ___ on ___.', evidence: 'E
       O.push(o); E.push(e); L.push($('#cs-l-' + i).value || 'Category ' + (i + 1));
     }
     if (bad) { out.innerHTML = `<div class="feedback bad" role="alert" style="margin-top:8px">Fix the highlighted box${bad > 1 ? 'es' : ''} first. \u03C7\u00B2 wasn\u2019t calculated.</div>`; return; }
-    if (O.length < 2) { out.innerHTML = '<div class="feedback bad" role="alert" style="margin-top:8px">Enter at least two categories, each with an observed count and an expected value above 0.</div>'; return; }
+    if (O.length < 2) { out.innerHTML = '<div class="feedback bad" role="alert" style="margin-top:8px">Enter at least two categories. Each needs an observed count and an expected count greater than 0; chi-square divides by the expected count.</div>'; return; }
     const r = ST.chiSquare(O, E);
     $('#cs-out').innerHTML = `<div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Category</th><th class="num">o <span class="unit">(count)</span></th><th class="num">e <span class="unit">(count)</span></th><th class="num">(o − e)²/e</th></tr></thead><tbody>${O.map((o, i) => `<tr><td>${Lab.esc(L[i])}</td><td class="num">${fmt(o, 1)}</td><td class="num">${fmt(E[i], 1)}</td><td class="num">${fmt(r.terms[i], 3)}</td></tr>`).join('')}</tbody></table></div><div class="decision ${r.reject ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${r.df}, critical value (p = 0.05) = ${r.crit}. ${r.reject ? 'Reject the null hypothesis.' : 'Fail to reject the null hypothesis.'}</div>`;
   }
