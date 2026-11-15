@@ -1279,7 +1279,7 @@ const Predict = (function () {
     if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     pRateSig = pRateKey();
     const good = Math.abs(v - f.m) <= Math.max(0.08, Math.abs(f.m) * 0.1);
-    out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Check the units on both graph axes. Rate is the slope of the best-fit line: change in O₂ consumed (µL) divided by change in time (min). Choose two points on the fitted line, not necessarily two measured data points.';
+    out.innerHTML = good ? `Yes. The best-fit slope is ${fmt(f.m, 2)} µL O<sub>2</sub>/min (≈ ${fmt(f.m / 0.30, 1)} µL per gram per minute for 0.30 g of seeds).` : 'Not quite. Check the units on both graph axes. Rate is the slope of the best-fit line: change in O₂ consumed (µL) divided by change in time (min). Choose two points on the fitted line, not necessarily two measured data points.';
     out.className = 'status ' + (good ? 'ok' : 'bad');
     if (!quiet) Lab.toast(good ? 'Checked: your rate matches the best-fit slope' : 'Checked: see the hint under the rate', { type: good ? 'ok' : 'warn', announce: false });
   }
