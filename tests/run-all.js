@@ -106,6 +106,12 @@ const summaryLine = out => (out.match(/^[^\n]*: \d+\/\d+ checks passed$/m) || ['
       results.push({ spec, pass, retried, ms: r.ms + (first ? first.ms : 0), timedOut: r.timedOut, line: summaryLine(r.out) });
       const tag = pass ? (retried ? 'PASS (after retry)' : 'PASS') : (r.timedOut ? 'FAIL (timed out)' : 'FAIL');
       console.log(`== ${tag.padEnd(18)} ${spec.padEnd(28)} ${fmt(r.ms).padStart(7)}  ${summaryLine(r.out)}`);
+      // Phone diagnostics are actionable even when the test passes: expose them in CI.
+      if (pass && name === 't50-phone' && !process.env.VERBOSE) {
+        const lines = r.out.split('\n');
+        const start = lines.findIndex(l => l.startsWith('Lab-specific small controls (not failed):'));
+        if (start >= 0) console.log(lines.slice(start).filter(l => l.trim() && !l.startsWith('t50-phone:')).join('\n'));
+      }
       if (!pass || process.env.VERBOSE) {
         if (first) console.log(`---- first attempt output (${spec}) ----\n` + first.out.split('\n').filter(l => /FAIL|Error|error/.test(l)).slice(0, 40).join('\n'));
         console.log(`---- output (${spec}) ----\n${r.out.trimEnd()}\n---- end ----`);
