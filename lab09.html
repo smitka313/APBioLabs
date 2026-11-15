@@ -910,7 +910,7 @@ function makeGel(rootSel, measSel, cfg) {
     Object.assign(st, { gel: Math.max(r.gel || 1, prevGel), lanes: r.lanes, t: +r.t || 0, dist: +r.dist || 0, frozen: r.frozen || { pct: +r.pct, V: +r.volt }, stain: r.stain | 0, stainAt: +r.stainAt || 0, destainAt: +r.destainAt || 0, reversed: !!r.reversed, runF: r.runF, laneF: r.laneF, running: false });
     if (keys.includes(r.sel)) st.sel = r.sel;
     updateSelectedStatus();
-    Lab.$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel)));
+    Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel)));
     Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String((x.dataset.v === 'rev') === st.reversed)));
     $('gelno').textContent = st.gel;
     $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run';
@@ -933,7 +933,7 @@ function makeGel(rootSel, measSel, cfg) {
   }
   $('rack').innerHTML = cfg.samples.map(s => `<button type="button" class="tube" data-k="${s.key}" aria-pressed="${s.key === st.sel}">${esc(s.label)}</button>`).join('');
   updateSelectedStatus();
-  Lab.$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); saveState(); }));
+  Lab.$$('.tube', $('rack')).forEach(b => b.addEventListener('click', () => { st.sel = b.dataset.k; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x === b)));  draw(); saveState(); }));
   const volSync = () => { $('vol-o').textContent = $('vol').value + ' µL'; if (st.geom) draw(); }; $('vol').addEventListener('input', volSync); $('vol').addEventListener('change', () => saveState()); $('heat').addEventListener('change', () => saveState()); volSync();
   const voltSync = () => { $('volt-o').textContent = $('volt').value + ' V'; updateRead(); if (!st.running) draw(); }; $('volt').addEventListener('input', voltSync); $('volt').addEventListener('change', () => saveState()); $('volt-o').textContent = $('volt').value + ' V';
   Lab.$$('button', $('lead')).forEach(b => b.addEventListener('click', () => { st.reversed = b.dataset.v === 'rev'; Lab.$$('button', $('lead')).forEach(x => x.setAttribute('aria-pressed', String(x === b))); draw(); saveState(); }));
@@ -958,7 +958,7 @@ function makeGel(rootSel, measSel, cfg) {
     drawWells(); animatePipette(); saveState();
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
-  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
+  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
   function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
