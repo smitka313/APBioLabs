@@ -888,7 +888,7 @@ function makeGel(rootSel, measSel, cfg) {
     st.lanes = Array.from({ length: 8 }, () => []); st.t = 0; st.dist = 0; st.frozen = { pct: pct(), V: V() }; st.running = false; st.stain = 0; st.stainAt = 0; st.destainAt = 0; st.shown = 'none'; st.runF = Math.max(0.9, Math.min(1.1, rng.normal(1, 0.03)));
     if (tlRun.recording) tlRun.stop(); if (tlStain.recording) tlStain.stop();
     st.laneF = st.lanes.map((_, i) => 1 - 0.012 * Math.pow((i - 3.5) / 3.5, 2) + rng.normal(0, 0.004));
-    $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; syncProc(true); drawWells(); updateRead(); draw();
+    $('gelno').textContent = st.gel; $('run').textContent = 'Power on: run'; syncProc(true); drawWells(); updateSelectedStatus(); updateRead(); draw();
   }
   const sample = k => cfg.samples.find(s => s.key === k);
   /* Persistence: the loaded wells, run time, dye position, stain stage, leads and controls are saved so a reload restores the gel
@@ -915,7 +915,7 @@ function makeGel(rootSel, measSel, cfg) {
     $('gelno').textContent = st.gel;
     $('run').textContent = st.t > 0 ? 'Power on: continue' : 'Power on: run';
     syncProc(true);
-    drawWells(); updateRead(); draw();
+    drawWells(); updateSelectedStatus(); updateRead(); draw();
     if (r.running) {   // the power stayed on while the page was closed: catch up by the wall clock
       tlNote('The power stayed on while the page was closed, so this part of the run was not recorded.');
       const el = Math.max(0, (Date.now() - (r.at || Date.now())) / 1000); let left = el, over = false;
@@ -929,7 +929,9 @@ function makeGel(rootSel, measSel, cfg) {
   }
   function updateSelectedStatus() {
     const current = cfg.samples.find(s => s.key === st.sel);
-    $('selected-status').textContent = 'Selected: ' + (current ? current.label : st.sel) + ' — ready to load into a well.';
+    const wells = st.lanes.flatMap((lane, i) => lane.some(c => c.main && c.k === st.sel) ? [i + 1] : []);
+    const history = wells.length ? 'Already loaded into ' + (wells.length === 1 ? 'well ' : 'wells ') + wells.join(', ') + '. You can load another well or select a different sample.' : 'Not yet loaded. Choose a well to load this sample.';
+    $('selected-status').textContent = 'Selected: ' + (current ? current.label : st.sel) + ' — ' + history;
   }
   $('rack').innerHTML = cfg.samples.map(s => `<button type="button" class="tube" data-k="${s.key}" aria-pressed="${s.key === st.sel}">${esc(s.label)}</button>`).join('');
   updateSelectedStatus();
@@ -955,10 +957,10 @@ function makeGel(rootSel, measSel, cfg) {
     st.pipette = { w, t0: performance.now() };
     if (!quiet) msg(spill ? 'warn' : 'ok', spill ? `Well ${w + 1} overflowed: about ${spill} µL spilled into the neighboring wells and will contaminate those lanes.` : `Loaded ${vol} µL of ${sample(st.sel).label} into well ${w + 1}.`);
     if (!quiet) Lab.sound.play('click');
-    drawWells(); animatePipette(); saveState();
+    drawWells(); updateSelectedStatus(); animatePipette(); saveState();
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
-  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
+  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
   function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
