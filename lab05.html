@@ -1137,8 +1137,8 @@ const Predict = (function () {
     const rows = cupTable.getRows(), e = et50(rows.map(r => r.a), n);
     if (e == null) { fbList($('#et-fb'), [`Your bicarbonate cup has not reached half its disks (${n / 2}) floating yet. Run the timer longer.`]); return; }
     const u = parseFloat(etIn.value), v = parseFloat(rIn.value), out = [];
-    out.push(near(u, e, 0, 0.15) ? `<span class="pill ok">ET<sub>50</sub> correct</span> (${fmt(e, 2)} min from your counts)` : '<span class="pill warn">ET<sub>50</sub></span> Find the minute just before half the disks floated and the minute it reached half or more, then interpolate.');
-    out.push(near(v, 1 / u, 0.02, 0.002) ? '<span class="pill ok">1/ET<sub>50</sub> correct</span>' : `<span class="pill warn">1/ET<sub>50</sub></span> Divide 1 by your ET<sub>50</sub>: 1 ÷ ${fmt(u, 2)}.`);
+    out.push(near(u, e, 0, 0.15) ? `<span class="pill ok">ET<sub>50</sub> correct</span> (${fmt(e, 2)} min from your counts)` : '<span class="pill warn">ET<sub>50</sub></span> Look in the With CO₂ data column for the two times surrounding 50% flotation. If the count crosses halfway between readings, estimate the time between those measurements.');
+    out.push(near(v, 1 / u, 0.02, 0.002) ? '<span class="pill ok">1/ET<sub>50</sub> correct</span>' : `<span class="pill warn">1/ET<sub>50</sub></span> Check that you used your ET<sub>50</sub> in minutes as the denominator. Relative rate is 1 ÷ ET<sub>50</sub>, with units min⁻¹.`);
     fbList($('#et-fb'), out);
     const ok = out.filter(t => t.includes('pill ok')).length;
     if (!quiet) Lab.toast(ok === out.length ? 'Checked: your ET₅₀ and 1/ET₅₀ are right' : 'Checked: see the hints under your answers', { type: ok === out.length ? 'ok' : 'warn', announce: false });

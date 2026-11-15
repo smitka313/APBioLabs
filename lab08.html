@@ -1455,13 +1455,13 @@ function checkCalc() {
   else if (Math.abs(count - plates['p-amp'].count) > Math.max(2, 0.1 * plates['p-amp'].count)) lines.push(['bad', `Your count (${count}) is quite different from the number of colonies on the plate. Recount, and decide whether you are counting satellites.`]);
   else lines.push(['ok', 'Your colony count is reasonable.']);
   if (vm == null) skipped.push('a'); else lines.push(near(vm, mass) ? ['ok', 'a. Total DNA: correct.'] : ['bad', 'a. Total DNA: multiply concentration (µg/µL) by the volume of plasmid you added.']);
-  if (vf == null) skipped.push('b'); else lines.push(near(vf, frac) ? ['ok', 'b. Fraction spread: correct.'] : ['bad', 'b. Fraction: volume spread ÷ total volume in the tube. Did you add all the volumes?']);
-  if (vs == null) skipped.push('c'); else lines.push(near(vs, spread) ? ['ok', 'c. DNA spread: correct.'] : ['bad', 'c. DNA spread = total DNA × fraction spread.']);
+  if (vf == null) skipped.push('b'); else lines.push(near(vf, frac) ? ['ok', 'b. Fraction spread: correct.'] : ['bad', 'b. Check the denominator: use the entire recovered tube volume, including the added plasmid, not just the volume placed on the plate. The fraction must be between 0 and 1.']);
+  if (vs == null) skipped.push('c'); else lines.push(near(vs, spread) ? ['ok', 'c. DNA spread: correct.'] : ['bad', 'c. Use your answers from (a) and (b): DNA plated (µg) = total DNA used (µg) × fraction plated (unitless).']);
   let eff = NaN;
   if (S.vol === 0) lines.push(['bad', 'No plasmid was added, so efficiency cannot be calculated (division by zero).']);
   else if (count != null) {
     eff = count / spread;
-    if (ve == null) skipped.push('efficiency'); else lines.push(near(ve, eff) ? ['ok', 'Efficiency: correct.'] : ['bad', 'Efficiency = your colony count ÷ µg of DNA spread.']);
+    if (ve == null) skipped.push('efficiency'); else lines.push(near(ve, eff) ? ['ok', 'Efficiency: correct.'] : ['bad', 'Efficiency = colonies counted on the selective +pGLO LB/amp plate ÷ µg of DNA plated. Use the plated DNA from (c), not the total DNA added to the tube.']);
     if (sci == null) skipped.push('scientific notation'); else lines.push(Math.abs(sci - eff) <= eff * 0.06 ? ['ok', 'Scientific notation: correct.'] : ['bad', 'Write the efficiency as a number from 1 to 10 times a power of ten, e.g. 3.1 × 10^3.']);
   }
   fb.innerHTML = (skipped.length ? `<div class="feedback bad" role="alert">Not graded yet: ${skipped.join(', ')}. Fill in or fix ${skipped.length > 1 ? 'those boxes' : 'that box'} (see the messages under the boxes).</div>` : '') + lines.map(([c, t]) => `<span class="${c}">${c === 'ok' ? '✓' : '✗'} ${t}</span>`).join('');

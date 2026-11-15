@@ -1876,9 +1876,9 @@ function idCheck() {
     const c = V.num(ci, { name: 'the isotonic sucrose concentration', min: 0, minMsg: 'Concentration can\u2019t be negative.', max: 2, maxMsg: 'Concentration above 2 M is outside the range of this lab. Recheck where the fit line crosses zero.' });
     const ps = V.num(psi_, { name: '\u03C8S', empty: 'Enter \u03C8S of that solution (in bars) first.', max: 0, maxMsg: '\u03C8S can\u2019t be positive: solutes only lower water potential, so it is zero or negative.' });
     const p = V.num(pi, { name: '\u03C8 of the tissue', empty: 'Enter \u03C8 of the tissue (in bars) first.' });
-    if (c == null || ps == null || p == null) { fbList($('#p3b-fb'), ['<span class="feedback bad" role="alert">Fill in all three boxes with numbers, then check. Nothing was graded.</span>']); return; }
+    if (c == null || ps == null || p == null) { fbList($('#p3b-fb'), ['<span class="feedback bad" role="alert">Complete the isotonic concentration, solution potential, and tissue potential boxes before checking. Use mol/L for concentration and bars for both potentials; no answers were graded.</span>']); return; }
     const out = [];
-    out.push(near(c, xi, 0, 0.04) ? `<span class="pill ok">Isotonic point OK</span> Your fit crosses zero at ${fmt(xi, 2)} M.` : `<span class="pill warn">Isotonic point</span> Recalculate −b ÷ m from the ${Lab.esc(tname)} fit line.`);
+    out.push(near(c, xi, 0, 0.04) ? `<span class="pill ok">Isotonic point OK</span> Your fit crosses zero at ${fmt(xi, 2)} M.` : `<span class="pill warn">Isotonic point</span> Use the ${Lab.esc(tname)} trendline equation (y = mx + b). Set y = 0 and solve x = −b ÷ m; report the concentration in M.`);
     if (isFinite(c)) out.push(near(ps, -c * R * TK, 0.03, 0.05) ? '<span class="pill ok">ψ<sub>S</sub> OK</span> −iCRT with your concentration.' : '<span class="pill warn">ψ<sub>S</sub></span> Use −(1)(C)(0.0831)(295). It should be negative.');
     if (isFinite(ps)) out.push(near(p, ps, 0.01, 0.05) ? '<span class="pill ok">ψ<sub>tissue</sub> OK</span>' : '<span class="pill warn">ψ<sub>tissue</sub></span> At the isotonic point, ψ<sub>tissue</sub> equals ψ of the open-cup solution, where ψ<sub>P</sub> = 0.');
     fbList($('#p3b-fb'), out); p3bSig = p3bVals();
