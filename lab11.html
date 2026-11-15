@@ -1070,7 +1070,7 @@ function frq(host, o) {
     if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     const m = S.mean(rows.map(r => r.count)), dens = m / (Math.PI * 0.225 * 0.225);
     const ok = Math.abs(v - dens) <= Math.max(2, dens * 0.03);
-    out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². A typical average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean count is ${fmt(m, 2)} per field (n = ${rows.length}). Divide by the field area, 0.159 mm².`;
+    out.innerHTML = ok ? `Correct: ${fmt(m, 2)} stomata per field ÷ 0.159 mm² = ${fmt(dens, 0)} per mm². A typical average for ${sp.name} (${surf}) is ${surf === 'lower' ? sp.lo : sp.up} per mm².` : `Not quite. Your mean is ${fmt(m, 2)} stomata per field (n = ${rows.length}). Divide by the area of one microscope field (0.159 mm²), not the total area of the leaf.`;
     out.className = 'status ' + (ok ? 'ok' : 'bad');
     if (silent) Lab.store.set('st-dens-msg', { h: out.innerHTML, c: out.className });
   }
@@ -1551,7 +1551,7 @@ function frq(host, o) {
     if (!filled.length) { out.textContent = 'Nothing to check yet: fill in the last column (rate \u00F7 leaf area) for at least one plant, then press Check.'; out.className = 'status bad'; if (!silent) Lab.toast('Not checked: fill in the rate \u00F7 leaf area column first', { type: 'warn', announce: false, key: 'trchk' }); else Lab.store.set('tr-check-msg', { t: out.textContent, c: out.className }); return; }
     const ok = filled.filter(r => Math.abs(r.rpaIn - r.rpa) <= Math.max(0.02, Math.abs(r.rpa) * 0.03));
     const bad = filled.filter(r => !ok.includes(r)).map(r => r.n);
-    out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} still blank (not checked)` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: rate ÷ leaf area, then shift the decimal to match the unit.` : '.');
+    out.textContent = `${ok.length} of ${rows.length} correct` + (rows.length - filled.length ? `, ${rows.length - filled.length} still blank (not checked)` : '') + (bad.length ? `. Recheck plant(s) ${bad.slice(0, 8).join(', ')}: divide the measured rate by leaf area, then convert units only after checking the area units.` : '.');
     out.className = 'status ' + (ok.length === rows.length ? 'ok' : 'bad');
     if (silent) Lab.store.set('tr-check-msg', { t: out.textContent, c: out.className });
   }
