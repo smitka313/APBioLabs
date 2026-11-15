@@ -110,28 +110,22 @@ async function keyboard(b) {
     T.ok(await p.evaluate(() => { const sec = document.querySelector('section.step.is-current'); return !!sec && sec.contains(document.activeElement); }), `${lab}: the next Tab stays in the current part`);
     await p.goto(p.url().split('#')[0] + '#' + k.part); await sleep(900); await goPart(p, k.part); await sleep(300);
 
-    // Labs 3 and 4 have long, independently focusable investigation controls.
-    // Start at the first control in the active section after checking the skip link above;
-    // this still checks every subsequent Tab stop and the target's keyboard activation.
+    // Labs 3 and 4 contain lengthy focus sequences before the active activity.
+    // The skip-link navigation is tested above; begin this control traversal at
+    // the first visible focusable control inside the active section.
     if (lab === 'lab03' || lab === 'lab04') {
-      const first = await p.evaluate(() => {
+      await p.evaluate(() => {
         const sec = document.querySelector('section.step.is-current');
-        const target = document.querySelector('${k.btn}');
-        if (!sec || !target || !sec.contains(target)) return null;
-        const controls = [...sec.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')];
-        return controls.find(el => el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0)?.outerHTML || null;
+        const controls = sec?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])') || [];
+        for (const el of controls) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) { el.focus(); break; }
+        }
       });
-      if (first) {
-        await p.evaluate(() => {
-          const sec = document.querySelector('section.step.is-current');
-          const el = [...sec.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')].find(x => x.getBoundingClientRect().width > 0 && x.getBoundingClientRect().height > 0);
-          el?.focus();
-        });
-      }
     }
     // Tab from the top to the run control, checking every stop on the way
     await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
-    await p.keyboard.press('Tab');
+    if (lab !== 'lab03' && lab !== 'lab04') await p.keyboard.press('Tab');
     let n = 0, hit = false; const noRing = new Set(), hidden = new Set();
     for (; n < 300; n++) {
       if (await p.evaluate(s => document.activeElement === document.querySelector(s), k.btn)) { hit = true; break; }
