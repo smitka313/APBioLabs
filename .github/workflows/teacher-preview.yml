@@ -1,0 +1,40 @@
+name: Package A visual preview
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    if: github.head_ref == 'feature/teacher-adoption-starter' || github.ref_name == 'feature/teacher-adoption-starter'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Capture desktop and mobile screenshots
+        run: node tests/teacher-preview.js
+      - name: Package static preview
+        run: |
+          mkdir -p preview-site
+          find . -maxdepth 1 -type f \( -name '*.html' -o -name '*.js' -o -name '*.css' -o -name '*.svg' -o -name '*.png' -o -name '*.md' \) -exec cp {} preview-site/ \;
+          cp -r img vendor preview-site/
+          cd preview-site && zip -qr ../preview-site.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-a-screenshots
+          path: preview-screenshots/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-a-static-site
+          path: preview-site.zip
+          retention-days: 14
