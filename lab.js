@@ -2020,7 +2020,7 @@
     const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
     window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
     const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Hand in your work: download a Word file, or save a PDF from the print window.'), docxBtn, pdfBtn, prevBtn,
+      h('span', { class: 'grow' }, 'Hand in your work: download a Word (.docx) report or choose Save as PDF and save it from the print window. Submit that file where your teacher directs. A report is not a progress backup; use Move your work to another computer below if you need to continue on another device.'), docxBtn, pdfBtn, prevBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
     return [bar, ss, makeLabBadge(), status, note];
