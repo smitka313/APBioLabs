@@ -37,6 +37,8 @@ const SHARED = '.step-nav a, .theme-opt, .sound-toggle, .project-link, .lab-head
     await ctx.close();
   }
   console.log('\nLab-specific small controls (not failed):\n  ' + [...labSpecific].sort().join('\n  '));
+  // Surface actionable diagnostics in the CI summary even when the runner suppresses passing test logs.
+  console.log(`t50-phone mobile audit: ${labSpecific.size} distinct lab-specific short-control signatures; inspect verbose output before changing UI.`);
   await b.close();
   done('t50-phone');
 })();
