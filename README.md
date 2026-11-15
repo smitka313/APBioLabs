@@ -79,3 +79,11 @@ AP® is a trademark registered by the College Board, which is not affiliated wit
 ## Credits and license
 
 Created by **Robert Smitka**. © 2026 Robert Smitka. Licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). See [LICENSE.md](LICENSE.md). Teachers may share and adapt it for non-commercial use with credit, under the same license.
+
+## Teacher adoption resources
+
+- [Five-minute getting started guide](getting-started.html): choose a lab, share it in an LMS, and collect work.
+- [Illustrative sample report](sample-report.html): fictional Photosynthesis data and example claim-evidence-reasoning (not a generated Word export).
+- [Feedback and bug reports](feedback.html): email templates that do not require a GitHub account. Please do not include student information.
+
+These pages are static, require no backend, and do not alter the existing student workflows.
