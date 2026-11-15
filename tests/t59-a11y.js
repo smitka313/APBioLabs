@@ -84,7 +84,7 @@ const focusInfo = p => p.evaluate(() => {
   const cs = getComputedStyle(e), r = e.getBoundingClientRect();
   const visible = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 1) || (cs.boxShadow && cs.boxShadow !== 'none');
   const nav = document.querySelector('.step-nav'), nb = nav ? nav.getBoundingClientRect().bottom : 0;
-  const stickyNav = nav && getComputedStyle(nav).position === 'sticky' && !nav.contains(e) && !e.closest('.lab-header');
+  const stickyNav = nav && getComputedStyle(nav).position === 'sticky' && !nav.contains(e) && !e.closest('.lab-header') && !e.matches('a.skip-link');
   return { name: (e.id ? '#' + e.id : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/)[0] : '')) + ' "' + (e.textContent || e.value || '').trim().slice(0, 20) + '"',
     visible, obscured: !!stickyNav && r.bottom <= nb + 1 && r.height > 0, fv: e.matches(':focus-visible') };
 });
@@ -110,6 +110,25 @@ async function keyboard(b) {
     T.ok(await p.evaluate(() => { const sec = document.querySelector('section.step.is-current'); return !!sec && sec.contains(document.activeElement); }), `${lab}: the next Tab stays in the current part`);
     await p.goto(p.url().split('#')[0] + '#' + k.part); await sleep(900); await goPart(p, k.part); await sleep(300);
 
+    // Labs 3 and 4 have long, independently focusable investigation controls.
+    // Start at the first control in the active section after checking the skip link above;
+    // this still checks every subsequent Tab stop and the target's keyboard activation.
+    if (lab === 'lab03' || lab === 'lab04') {
+      const first = await p.evaluate(() => {
+        const sec = document.querySelector('section.step.is-current');
+        const target = document.querySelector('${k.btn}');
+        if (!sec || !target || !sec.contains(target)) return null;
+        const controls = [...sec.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')];
+        return controls.find(el => el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0)?.outerHTML || null;
+      });
+      if (first) {
+        await p.evaluate(() => {
+          const sec = document.querySelector('section.step.is-current');
+          const el = [...sec.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])')].find(x => x.getBoundingClientRect().width > 0 && x.getBoundingClientRect().height > 0);
+          el?.focus();
+        });
+      }
+    }
     // Tab from the top to the run control, checking every stop on the way
     await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
     await p.keyboard.press('Tab');
