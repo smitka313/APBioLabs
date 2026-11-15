@@ -806,7 +806,7 @@ function answerSex(g) {
   const ok = g === sexCur.sex; if (ok) sexRight++;
   $('#sex-score').textContent = `${sexRight} of ${sexTot}`; Lab.store.set('sex-score', { r: sexRight, t: sexTot });
   const fb = $('#sex-fb'); fb.className = 'fb ' + (ok ? 'ok' : 'bad');
-  fb.textContent = (ok ? 'Correct. ' : 'Not quite. ') + (sexCur.sex === 'f' ? 'This is a female: long, pointed abdomen with separate stripes to a light tip, and no sex combs.' : 'This is a male: smaller, rounded abdomen with a solid dark tip and a dark genital arch, and dark sex combs on the front legs.');
+  fb.textContent = (ok ? 'Correct. ' : 'Not quite. ') + (sexCur.sex === 'f' ? 'Look for a long, pointed abdomen, separate stripes extending toward a lighter tip, and the absence of sex combs. These are the features of a female.' : 'Look for a smaller, rounded abdomen with a dark tip and sex combs on the front legs. These are the features of a male.');
 }
 { const sv = Lab.store.get('sex-score'); if (sv && sv.t > 0) { sexRight = sv.r | 0; sexTot = sv.t | 0; $('#sex-score').textContent = `${sexRight} of ${sexTot}`; } }
 $('#sex-f').addEventListener('click', () => answerSex('f'));
