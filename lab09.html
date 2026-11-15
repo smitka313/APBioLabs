@@ -960,7 +960,7 @@ function makeGel(rootSel, measSel, cfg) {
     drawWells(); updateSelectedStatus(); animatePipette(); saveState();
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
-  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
+  $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
   function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
