@@ -187,12 +187,13 @@
         </dl>
       </aside>
     </div>
+    <div class="callout callout--tip" id="lab9-quick-references"><div class="callout-title">Quick references (no memorization required)</div><p><strong>Restriction sites:</strong> EcoRI G↓AATTC; HindIII A↓AGCTT; BamHI G↓GATCC. The arrow marks the cut on the displayed strand.</p><p><strong>Dilution:</strong> C₁V₁ = C₂V₂. For 500 mL of 1× TAE from 50× stock: V₁ = (1 × 500) / 50 = 10 mL stock; add 490 mL water.</p></div>
   </section>
 
 
   <section class="step wrap wrap--wide gutter" data-step="Pre-lab" data-minutes="15" id="pre-lab">
     <header><div class="eyebrow">Pre-lab check</div><h2>Before you start</h2></header>
-    <div class="step-body"><div class="callout callout--tip"><div class="callout-title">Quick references (no memorization required)</div><p><strong>Restriction sites:</strong> EcoRI G↓AATTC; HindIII A↓AGCTT; BamHI G↓GATCC. The arrow marks the cut on the displayed strand.</p><p><strong>Dilution:</strong> C₁V₁ = C₂V₂. For 500 mL of 1× TAE from 50× stock: V₁ = (1 × 500) / 50 = 10 mL stock; add 490 mL water.</p><p><a href="#background">Review the background</a> whenever you need the explanation.</p></div><div id="prelab" class="quiz--cols"></div></div>
+    <div class="step-body"><div id="prelab" class="quiz--cols"></div></div>
   </section>
 
   <section class="step wrap wrap--wide wrap--sim gutter" data-step="Restriction enzymes" data-minutes="20" id="restriction-enzymes">
@@ -235,7 +236,7 @@
   <section class="step wrap wrap--wide gutter" data-step="Standard curve" data-minutes="20" id="standard-curve">
     <header><div class="eyebrow">Analyzing results · Sizing fragments</div><h2>Measure bands and build a standard curve</h2></header>
     <div class="step-body">
-      <p class="small">Need the restriction-site sequences or dilution equation again? <a href="#prelab">Review the quick references in Pre-lab</a>. Your gel measurements will stay saved while you switch sections.</p>
+      <p class="small">Need the restriction-site sequences or dilution equation again? <a href="#lab9-quick-references">Review the quick references in Background</a>. Your gel measurements will stay saved while you switch sections.</p>
       <div class="prose"><p><strong>Important: You do not calculate the known marker sizes.</strong> The HindIII marker contains DNA fragments of already known lengths. First measure how far each visible marker band traveled, then enter its supplied size in the <strong>Known fragment size</strong> column. The standard curve uses those known pairs to estimate <em>unknown</em> fragment sizes. If a band is faint, overlapping, or not visible, do not invent a separate measurement.</p><p>After staining, click a band, or use "Measure all visible bands in lane." Each click adds the distance from the front of the well to the front edge of the band. Readings carry about ±0.5 mm of ruler error, as at the bench. In the <strong>Known fragment size</strong> column, type the size of each <span class="enz"><em>Hin</em>dIII</span> marker band, largest (closest to the well) first: 23,130 (the 23,130/27,491 doublet), 9,416, 6,557, 4,361, 2,322, 2,027 … The page fits log<sub>10</sub>(bp) against distance for each gel, then estimates every band with no known size.</p></div>
       <p class="small"><strong>Marker sizes are provided:</strong> Measure each visible HindIII marker band and enter its supplied size. Use the standard curve to estimate unknown bands.</p>
       <details class="disclose"><summary>Step-by-step: which numbers go in the marker table?</summary><div class="inner"><ol><li>Find the HindIII marker lane and measure the visible bands, starting at the well.</li><li>For each measured marker band, enter the corresponding known size, largest first: <strong>23,130, 9,416, 6,557, 4,361, 2,322, 2,027 bp</strong>. Smaller fragments are 564 and 125 bp, but may not be clearly resolved.</li><li>Use the resulting standard curve to estimate sizes in the other lanes. You do not calculate the marker sizes with logarithms.</li></ol><p><strong>For unknowns:</strong> log₁₀(bp) = m × distance + b, so bp = 10<sup>(m × distance + b)</sup>. The site fits this relationship from your marker entries.</p></div></details>
