@@ -538,7 +538,7 @@
     function build(W) {
       const o = cur, H = Math.round((o.height || 360) * Math.max(0.62, Math.min(1, W / 640))), m = { t: o.simTag === false ? 16 : 24, r: 18, b: 54, l: 64 };
       /* Axis labels wrap instead of being cut: the x label and the y label take extra lines, and the margins grow to hold them. */
-      const xl = wrapLabel(o.xLabel, W - 100), LH = 15;
+      const xl = wrapLabel(o.xLabel, W - 130), LH = 15;
       m.b += LH * (xl.lines.length - 1);
       let catWrap = null, catRot = null;
       if (o.type === 'bar') { // long category names wrap under their bars too
