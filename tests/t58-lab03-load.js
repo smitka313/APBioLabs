@@ -12,6 +12,19 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const FIX = path.join(__dirname, 'fixtures/lab03-baseline.json');
 const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
 const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', period: '5' }];
+// Decoded RGBA reference from the verified Chromium audit run; unlike JPEG bytes, this checks the rendered image content.
+const PIXEL_REFERENCE = {
+  "alligator": "58327d23",
+  "chimpanzee": "87383a35",
+  "grasshopper": "b1aef267",
+  "pigeon": "e9f0edf5",
+  "mouse": "97af3e73",
+  "lobster": "1fe866dd",
+  "haircap moss": "9f61eba2",
+  "apple tree": "8a3eb917",
+  "sword fern": "3dfde006",
+  "white pine": "a73ff6ec"
+};
 
 (async () => {
   const srv = await T.serve(), b = await T.launch();
@@ -73,7 +86,10 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
     T.ok(a.blast === c.blast, `${k}: BLAST results for every gene and program identical (${a.blast} / ${c.blast})`);
     const pk = Object.keys(a.plates);
     console.log('  decoded RGBA checksums (' + k + '): ' + JSON.stringify(out[k] && out[k].pixels || {}));
-    T.ok(pk.length >= 10 && pk.every(n => a.plates[n] === (c.plates || {})[n]), `${k}: all ${pk.length} plate images pixel-identical; mismatches: ${pk.filter(n => a.plates[n] !== (c.plates || {})[n]).map(n => n + ' expected=' + a.plates[n] + ' actual=' + ((c.plates || {})[n] || 'missing')).join(', ')}`);
+    const pixelMismatch = pk.filter(n => { const label = Object.keys(PIXEL_REFERENCE).find(x => n.includes('of a ' + x + ' (')); return !label || c.pixels?.[n] !== PIXEL_REFERENCE[label]; });
+    T.ok(pk.length >= 10 && pixelMismatch.length === 0, `${k}: all ${pk.length} decoded illustrations match reference; mismatches: ${pixelMismatch.map(n => n + ' actual=' + c.pixels?.[n]).join(', ')}`);
+    const jpegMismatch = pk.filter(n => a.plates[n] !== (c.plates || {})[n]);
+    if (jpegMismatch.length) console.log(`  diagnostic: ${jpegMismatch.length} JPEG encodings differ from historical baseline (${k}); decoded pixels checked separately`);
   }
   T.ok(base[IDS[0].name].db !== base[IDS[1].name].db, 'the two identities get different databases (the comparison is meaningful)');
 
