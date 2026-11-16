@@ -2182,7 +2182,7 @@ function idCheck() {
   checkToast('#p1-check', '#p1-fb', () => p1table.getRows().length, 'p1chk', 'calculations');
   checkToast('#p2-check', '#p2-fb', () => p2table.getRows().length, 'p2chk', '% changes');
   $('#p3b-idcheck').addEventListener('click', () => { const n = CUPS.filter((c, i) => assigned(i) === secret[i]).length; Lab.toast(n === 6 ? 'All six cups identified correctly' : `${n} of 6 cups correct so far`, { type: n === 6 ? 'ok' : 'warn', announce: false, key: 'idchk' }); });
-  $('#p3b-check').addEventListener('click', () => { const bad = warnPills('#p3b-fb'), ok = okPills('#p3b-fb'); if ($('#p3b-fb').querySelector('.feedback.bad')) { Lab.toast('Not checked: fill in all three boxes with numbers first', { type: 'warn', announce: false, key: 'p3bchk' }); return; } if (ok + bad) Lab.toast(bad ? 'Checked: see the hints under your calculation' : 'Checked: your water potential calculation is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'p3bchk' }); });
+  $('#p3b-check').addEventListener('click', () => { const bad = warnPills('#p3b-fb'), ok = okPills('#p3b-fb'); if ($('#p3b-fb').querySelector('.feedback.bad')) { Lab.toast('Enter a number in each of the three highlighted boxes, then press Check again', { type: 'warn', announce: false, key: 'p3bchk' }); return; } if (ok + bad) Lab.toast(bad ? 'Checked: see the hints under your calculation' : 'Checked: your water potential calculation is correct', { type: bad ? 'warn' : 'ok', announce: false, key: 'p3bchk' }); });
   $('#p3a-run').addEventListener('click', () => Lab.toast(`Added ${p3Bath.name}: watch the cells for two minutes`, { type: 'info', announce: false, key: 'p3a' }));
 })();
 </script>

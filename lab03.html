@@ -1517,7 +1517,7 @@ Lab.$('#check-matrix').addEventListener('click', () => {
 Lab.$('#add-clade').addEventListener('click', () => {
   const sel = Lab.$$('#chips .chip[aria-pressed="true"]').map(c => c.dataset.id), trait = Lab.$('#trait-pick').value, msg = Lab.$('#build-msg');
   const D = DATASETS[dsKey], clades = getClades(dsKey);
-  if (!sel.length) { msg.className = 'msg bad'; msg.textContent = 'Select at least one organism first.'; return; }
+  if (!sel.length) { msg.className = 'msg bad'; msg.textContent = 'Choose one or more organism cards before building the cladogram.'; return; }
   const clash = clades.find(c => !(c.members.every(m => sel.includes(m)) || sel.every(m => c.members.includes(m)) || !c.members.some(m => sel.includes(m))));
   if (clash) { msg.className = 'msg bad'; msg.textContent = `That group overlaps the "${clash.trait}" group without fitting inside it (or containing it). A clade must be nested inside another clade or completely separate from it.`; return; }
   if (clades.some(c => c.trait === trait)) { msg.className = 'msg bad'; msg.textContent = `You already used "${trait}". Each derived trait evolved once, so it marks only one branch.`; return; }

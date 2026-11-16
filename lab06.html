@@ -1254,7 +1254,7 @@ const Predict = (function () {
   $('#p-rate-in').addEventListener('input', pStale);
   function pCheck(quiet) {
     const rows = pTable.getRows(), out = $('#p-check-msg');
-    if (!rows.length) { out.textContent = 'Run the experiment first.'; out.className = 'status bad'; return; }
+    if (!rows.length) { out.textContent = 'Start the respirometer experiment and record readings before checking the table.'; out.className = 'status bad'; return; }
     let ok = 0, total = 0; const wrong = [], blank = [];
     rows.forEach((r, i) => {
       if (typeof r.e !== 'number') return;
@@ -1275,7 +1275,7 @@ const Predict = (function () {
   $('#p-check').addEventListener('click', () => { pCheck(false); Lab.store.set('chk-pCheck', true); });
   function pRate(quiet) {
     const pts = o2Rows(pTable.getRows()), out = $('#p-rate-msg');
-    if (pts.length < 3) { out.textContent = 'You need at least three readings first.'; out.className = 'status bad'; return; }
+    if (pts.length < 3) { out.textContent = 'Record at least three oxygen readings before calculating a respiration rate.'; out.className = 'status bad'; return; }
     const f = S.linreg(pts.map(p => p.x), pts.map(p => p.y)), v = V.num($('#p-rate-in'), { name: 'your rate', empty: 'Type your rate (a number, in \u00B5L O\u2082/min) before pressing Check.', min: 0, minMsg: 'The rate of O\u2082 uptake can\u2019t be negative. Use the slope of the line going up.' });
     if (v == null) { out.textContent = ''; out.className = 'status'; return; }
     pRateSig = pRateKey();

@@ -1008,7 +1008,7 @@ function frq(host, o) {
   }
   $('#p2-run').addEventListener('click', () => {
     if (p2Busy) { $('#p2-status').textContent = 'Reactions are running. Wait for the reading time.'; return; }
-    const sel = PHS.filter(p => $('#ph-' + p).checked); if (!sel.length) { $('#p2-status').textContent = 'Choose at least one buffer.'; return; }
+    const sel = PHS.filter(p => $('#ph-' + p).checked); if (!sel.length) { $('#p2-status').textContent = 'Select at least one pH buffer before starting the trial.'; return; }
     const tb = baseT(), spec = mode2() === 'spec', trial = t2.getRows().reduce((m, r) => Math.max(m, r.trial), 0) + 1;
     Lab.store.set('p2-run', { sel, tb, spec, trial, t0: Date.now() });
     Lab.sound.play('click'); tlNote('#p2-tl-note', '');
