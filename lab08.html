@@ -1208,8 +1208,11 @@ function doStep(skip, resumeSec) {
       })); break;
     }
   }
-  if (resumeSec == null) { pending = { skip: !!skip, t0: Date.now() }; saveSim(true); }
+  if (resumeSec == null) pending = { skip: !!skip, t0: Date.now() };
   done[stepIdx] = skip ? 'skip' : 'do'; stepIdx++;
+  // Persist the advanced step and its pending timer together. Otherwise a reload
+  // can restore the preceding step and replay it instead of finishing incubation.
+  if (resumeSec == null) saveSim(true);
   run(P);
   if (resumeSec != null) fastForward(resumeSec);
 }
