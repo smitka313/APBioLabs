@@ -2091,7 +2091,7 @@ const DES = (function design() {
   $('#d-run').addEventListener('click', () => {
     Lab.sound.play('click');
     const iv = IVS[sel.value], lv = $$('#d-levels input:checked').map(i => +i.value), nr = +reps.value, nc = +cells.value;
-    if (lv.length < 2) { $('#d-field-cap').textContent = 'Choose at least two levels, including the control.'; return; }
+    if (lv.length < 2) { $('#d-field-cap').textContent = 'Select the control and at least one treatment level before running the investigation.'; return; }
     const raw = lv.map(L => { const tips = []; for (let r = 0; r < nr; r++) { const mu = iv.mi(L), mi = clamp(rng.normal(mu, 0.15 * mu + 0.012), 0.003, 0.8), n = Math.max(20, Math.round(rng.normal(nc, nc * 0.06))), m = rng.binomial(n, mi); tips.push({ n, m, mi }); } return { L, tips }; });
     const ref = raw.find(r => r.L === iv.ref) || raw[0];
     const RI = ST.sum(ref.tips.map(t => t.n - t.m)), RM = ST.sum(ref.tips.map(t => t.m));
