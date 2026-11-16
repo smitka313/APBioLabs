@@ -964,7 +964,7 @@ function makeGel(rootSel, measSel, cfg) {
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
   $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
-  function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel poured and ready to load.'); saveState(); }
+  function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel ready. Select a sample tube, then choose an empty well to load it.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
   const pct = () => +$('pct').value, V = () => +$('volt').value;
@@ -1362,8 +1362,8 @@ function gelGuidance(P, gel, first, last, doneText) {
   Lab.gate(`#${P}-run`, () => (P === 'g2' && !filled('predict-crime') && !saved() && !(st.t > 0)) ? 'Write your prediction first' : (loaded() > 0 || st.t > 0) ? '' : 'Load at least one sample first');
   Lab.gate(`#${P}-mall`, () => st.blockReason());
   Lab.gate(`#${P}-stain`, () => { const ph = st.phase(); return ph === 'staining' ? 'Staining in progress. Wait, or use Skip ahead.' : ph === 'destaining' ? 'Destaining in progress. Wait, or use Skip ahead.' : ph === 'done' ? 'This gel is stained and destained. Measure the bands.' : ''; });
-  Lab.$(`#${P}-run`).addEventListener('click', () => { if (!st.running && st.t > 0 && st.dist >= 45) Lab.toast('Power off. Now stain the gel to see the bands.', { type: 'info', announce: false, key: P + '-run' }); });
-    Lab.$(`#${P}-new`).addEventListener('click', () => Lab.toast('New gel poured and ready to load', { type: 'info', announce: false, key: P + '-new' }));
+  Lab.$(`#${P}-run`).addEventListener('click', () => { if (!st.running && st.t > 0 && st.dist >= 45) Lab.toast('The dye front has reached the stopping point. Switch off the power, then stain the gel to see the DNA bands.', { type: 'info', announce: false, key: P + '-run' }); });
+    Lab.$(`#${P}-new`).addEventListener('click', () => Lab.toast('New gel ready. Select a sample tube, then choose an empty well to load it', { type: 'info', announce: false, key: P + '-new' }));
 }
 function layoutGel2() {
   Lab.results('#g2-sim', { start: 'data',
