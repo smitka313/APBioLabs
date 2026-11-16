@@ -2026,7 +2026,7 @@
     // Do not gate report downloads or introduce additional completion requirements.
     const readiness = h('div', { class: 'callout callout--tip', role: 'region', 'aria-label': 'Submission readiness' });
     const renderReadiness = () => {
-      const parts = $('section.step').filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
+      const parts = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
       const complete = parts.filter(p => p.work.done === p.work.total).length;
       readiness.textContent = '';
       readiness.append(h('p', null, h('strong', null, 'Before you submit: '), `${complete} of ${parts.length} tracked sections complete. This is a guide, not a grade; you can download your report at any time.`));
