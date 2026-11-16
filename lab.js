@@ -2029,13 +2029,13 @@
       const parts = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
       const complete = parts.filter(p => p.work.done === p.work.total).length;
       readiness.textContent = '';
-      readiness.append(h('p', null, h('strong', null, 'Before you submit: '), `${complete} of ${parts.length} tracked sections complete. This is a guide, not a grade; you can download your report at any time.`));
+      readiness.append(h('p', null, h('strong', null, 'Before you submit: '), `${complete} of ${parts.length} sections with saved activities complete. This is a progress guide, not a grade. You can download your report even if some work is unfinished.`));
       const remaining = parts.filter(p => p.work.done < p.work.total);
-      if (remaining.length) readiness.append(h('p', { class: 'small' }, 'To review unfinished work:'),
+      if (remaining.length) readiness.append(h('p', { class: 'small' }, 'Return to sections that still have activities to finish:'),
         h('ul', null, remaining.map(p => h('li', null,
           h('a', { href: '#' + p.sec.id }, p.sec.dataset.step || p.sec.querySelector('h2')?.textContent || 'Review section'),
-          ` — ${p.work.done} of ${p.work.total} tracked items`))));
-      else readiness.append(h('p', { class: 'small' }, 'No unfinished tracked items found. Review your answers before submitting.'));
+          ` — ${p.work.done} of ${p.work.total} activities`))));
+      else readiness.append(h('p', { class: 'small' }, 'All tracked activities are complete. Review your answers before submitting.'));
     };
     workListeners.push(renderReadiness);
     Lab.onShow('#submit', renderReadiness);
