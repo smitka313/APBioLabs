@@ -2022,8 +2022,26 @@
     const bar = h('div', { class: 'responses-bar report-bar' },
       h('span', { class: 'grow' }, 'Hand in your work: download a Word (.docx) report or choose Save as PDF and save it from the print window. Submit that file where your teacher directs. A report is not a progress backup; use Move your work to another computer below if you need to continue on another device.'), docxBtn, pdfBtn, prevBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
+    // Informational only: existing sectionWork() drives the same progress indicators as the step navigation.
+    // Do not gate report downloads or introduce additional completion requirements.
+    const readiness = h('div', { class: 'callout callout--tip', role: 'region', 'aria-label': 'Submission readiness' });
+    const renderReadiness = () => {
+      const parts = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
+      const complete = parts.filter(p => p.work.done === p.work.total).length;
+      readiness.textContent = '';
+      readiness.append(h('p', null, h('strong', null, 'Before you submit: '), `${complete} of ${parts.length} tracked sections complete. This is a guide, not a grade; you can download your report at any time.`));
+      const remaining = parts.filter(p => p.work.done < p.work.total);
+      if (remaining.length) readiness.append(h('p', { class: 'small' }, 'To review unfinished work:'),
+        h('ul', null, remaining.map(p => h('li', null,
+          h('a', { href: '#' + p.sec.id }, p.sec.dataset.step || p.sec.querySelector('h2')?.textContent || 'Review section'),
+          ` — ${p.work.done} of ${p.work.total} tracked items`))));
+      else readiness.append(h('p', { class: 'small' }, 'No unfinished tracked items found. Review your answers before submitting.'));
+    };
+    workListeners.push(renderReadiness);
+    Lab.onShow('#submit', renderReadiness);
+    renderReadiness();
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
-    return [bar, ss, makeLabBadge(), status, note];
+    return [readiness, bar, ss, makeLabBadge(), status, note];
   }
 
   /* ---------------- Printable worksheet ----------------
