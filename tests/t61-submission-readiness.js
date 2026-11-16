@@ -8,10 +8,12 @@ const T = require('./_h');
       const ready = p.getByRole('region', { name: 'Submission readiness' });
       T.ok(await ready.count() === 1, lab + ': readiness region exists');
       const text = await ready.innerText();
-      T.ok(/Before you submit: \d+ of \d+ sections with saved activities complete/.test(text), lab + ': readiness count visible');
-      T.ok(/you can download your report even if some work is unfinished/i.test(text), lab + ': explicitly non-blocking');
+      T.ok(/Your progress: \d+ of \d+ sections with tracked activities complete/.test(text), lab + ': readiness count visible');
+      T.ok(/you can download a report before finishing every activity/i.test(text), lab + ': explicitly non-blocking');
       T.ok(await p.getByRole('button', { name: 'Download .docx' }).isEnabled(), lab + ': Word download enabled with incomplete work');
       T.ok(await p.getByRole('button', { name: 'Save as PDF' }).isEnabled(), lab + ': PDF enabled with incomplete work');
+      T.ok(/saved in this browser; it has not been sent to your teacher/i.test(text), lab + ': saved work is not represented as submitted');
+      T.ok(/activities remaining/i.test(text), lab + ': unfinished activity counts visible');
       const links = ready.locator('a[href^="#"]');
       T.ok(await links.count() > 0, lab + ': unfinished sections linked');
       if (await links.count()) {
