@@ -799,7 +799,7 @@ function frq(host, o) {
     const f = V.num($('#la-full'), { name: 'the number of full squares', empty: 'Enter the number of full squares first.', int: true, min: 0, minMsg: 'A count of squares can\u2019t be negative.', max: 5000, maxMsg: 'That is more squares than fit on the leaf tracing. Recount.' });
     const p = V.num($('#la-part'), { name: 'the number of partial squares', empty: 'Enter the number of partial squares first (0 if none).', int: true, min: 0, minMsg: 'A count of squares can\u2019t be negative.', max: 5000, maxMsg: 'That is more squares than fit on the leaf tracing. Recount.' });
     if (f == null || p == null) { msg.textContent = 'Fix the highlighted box' + (f == null && p == null ? 'es' : '') + '. The area wasn\u2019t calculated and nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
-    if (f + p === 0) { V.bad($('#la-full'), 'Count at least one square. A leaf can\u2019t have an area of 0.'); msg.textContent = 'Nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
+    if (f + p === 0) { V.bad($('#la-full'), 'Count at least one square. A leaf can\u2019t have an area of 0.'); msg.textContent = 'Count at least one full or partial grid square, then record the leaf area.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
     msg.removeAttribute('role');
     laCalc = { f, p }; saveLa(); laShow(f, p);
     const rows = laTable.getRows();
