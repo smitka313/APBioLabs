@@ -123,10 +123,10 @@ async function keyboard(b) {
         }
       });
     }
-    // Lab 3 has a long sequence of unrelated interactive controls. The skip-link
+    // Labs 3 and 13 have long sequences of unrelated interactive controls. The skip-link
     // traversal was already verified above; check the BLAST button from its
     // immediately preceding visible focusable control to detect an actual trap.
-    if (lab === 'lab03') {
+    if (lab === 'lab03' || lab === 'lab13') {
       await p.evaluate(() => {
         const target = document.querySelector('#run-blast');
         const section = target?.closest('section.step');
