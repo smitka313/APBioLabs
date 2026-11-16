@@ -9,6 +9,14 @@ const T = require('./_h');
   await p.click('#g1-stain');
   const before = await rd();
   T.ok(before.t > 10, 'ran: ' + before.t + ' min');
+  // Verify that the completed gel was actually written before testing reload.
+  // A missing record is a save failure, not a restore failure; report it separately.
+  const saved = await p.evaluate(() => {
+    const keys = Object.keys(localStorage).filter(k => k.includes('gelstate-g1'));
+    return keys.map(k => ({ key: k, value: localStorage.getItem(k) }));
+  });
+  T.ok(saved.some(x => { try { const v = JSON.parse(x.value); return v && v.t > 10 && v.lanes?.some(l => l.length); } catch (_) { return false; } }),
+    'gel state persisted before reload (' + saved.map(x => x.key).join(', ') + ')');
   await p.reload(); await p.waitForTimeout(900);
   const after = await rd();
   T.ok(after.t === before.t, 'run time restored ' + after.t);
