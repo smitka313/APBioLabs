@@ -11,16 +11,39 @@ const T = require('./_h');
       const info = await d.evaluate(e => ({ section: e.closest('section.step')?.id, hasSummary: !!e.querySelector(':scope > summary') }));
       if (!info.section || !info.hasSummary) continue;
       await p.evaluate(id => Lab.pages.go(id), info.section);
-      const summary = d.locator('summary').first();
+      // Nested disclosures can be inside a closed parent <details>. Such a
+      // summary is not keyboard-focusable until its ancestors are expanded.
+      // Open those ancestors through their own summary controls first.
+      const ancestors = await d.evaluate(e => {
+        const result = []; let parent = e.parentElement;
+        while (parent) {
+          if (parent.tagName === 'DETAILS' && !parent.open) {
+            const all = [...document.querySelectorAll('details')];
+            result.unshift(all.indexOf(parent));
+          }
+          parent = parent.parentElement;
+        }
+        return result;
+      });
+      for (const index of ancestors) {
+        const parent = p.locator('details').nth(index);
+        await parent.locator(':scope > summary').focus();
+        await p.keyboard.press('Enter');
+        await p.waitForFunction(idx => document.querySelectorAll('details')[idx]?.open, index, { timeout: 2000 });
+      }
+      const summary = d.locator(':scope > summary');
       await summary.focus();
+      const focused = await summary.evaluate(e => document.activeElement === e);
       const before = await d.evaluate(e => e.open);
-      await p.keyboard.press('Enter');
-      await p.waitForFunction(([index, initial]) => {
-        const el = document.querySelectorAll('section.step details.disclose')[index];
-        return !!el && el.open !== initial;
-      }, [i, before], { timeout: 1500 }).catch(() => {});
+      if (focused) {
+        await p.keyboard.press('Enter');
+        await p.waitForFunction(([index, initial]) => {
+          const el = document.querySelectorAll('section.step details.disclose')[index];
+          return !!el && el.open !== initial;
+        }, [i, before], { timeout: 2000 }).catch(() => {});
+      }
       const after = await d.evaluate(e => e.open);
-      T.ok(before !== after, lab + ': disclosure ' + i + ' toggles with Enter (section ' + info.section + ', before=' + before + ', after=' + after + ')');
+      T.ok(focused && before !== after, lab + ': disclosure ' + i + ' keyboard accessible (section ' + info.section + ', focused=' + focused + ', before=' + before + ', after=' + after + ')');
     }
     T.ok(p.errors.length === 0, lab + ': no page errors');
     await ctx.close();
