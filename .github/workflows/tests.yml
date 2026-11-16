@@ -28,9 +28,50 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  classify:
+    name: Select test level
+    runs-on: ubuntu-latest
+    outputs:
+      level: ${{ steps.risk.outputs.level }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: risk
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            node tools/classify-ci-risk.js "$BASE_SHA" "$HEAD_SHA"
+          else
+            echo "level=full" >> "$GITHUB_OUTPUT"
+          fi
+
+  quick:
+    name: Quick syntax and lab-page smoke
+    needs: classify
+    if: github.event_name == 'pull_request' && needs.classify.outputs.level == 'quick'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node --check lab.js
+          NODE_PATH="$PWD/node_modules" node tests/t62-onboarding-quick.js
+          NODE_PATH="$PWD/node_modules" node tests/t60-browsers.js pages
+
   checklist:
     name: Checklist (${{ matrix.group }})
-    if: (github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist') && !(github.event_name == 'pull_request' && github.head_ref == 'feature/phase1e-onboarding-pr24')
+    needs: classify
+    if: (github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist') && needs.classify.outputs.level != 'quick'
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -56,7 +97,8 @@ jobs:
 
   browsers:
     name: Cross-browser smoke (${{ matrix.browser }})
-    if: !(github.event_name == 'pull_request' && github.head_ref == 'feature/phase1e-onboarding-pr24')
+    needs: classify
+    if: needs.classify.outputs.level == 'full'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     strategy:
@@ -109,20 +151,3 @@ jobs:
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
           node tests/run-all.js all --shard ${{ matrix.shard }}/5
 
-  onboarding-quick:
-    name: PR24 onboarding wording smoke
-    if: github.event_name == 'pull_request' && github.head_ref == 'feature/phase1e-onboarding-pr24'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - name: Verify syntax, all lab pages, and first-visit tour
-        run: |
-          node --check lab.js
-          NODE_PATH="$PWD/node_modules" node tests/t62-onboarding-quick.js
