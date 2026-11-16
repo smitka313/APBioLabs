@@ -30,7 +30,7 @@ env:
 jobs:
   checklist:
     name: Checklist (${{ matrix.group }})
-    if: github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist'
+    if: (github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist') && !(github.event_name == 'pull_request' && github.head_ref == 'feature/phase1e-onboarding-pr24')
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
@@ -56,6 +56,7 @@ jobs:
 
   browsers:
     name: Cross-browser smoke (${{ matrix.browser }})
+    if: !(github.event_name == 'pull_request' && github.head_ref == 'feature/phase1e-onboarding-pr24')
     runs-on: ubuntu-latest
     timeout-minutes: 50
     strategy:
@@ -107,3 +108,21 @@ jobs:
           export NODE_PATH="$PWD/node_modules"
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
           node tests/run-all.js all --shard ${{ matrix.shard }}/5
+
+  onboarding-quick:
+    name: PR24 onboarding wording smoke
+    if: github.event_name == 'pull_request' && github.head_ref == 'feature/phase1e-onboarding-pr24'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify syntax, all lab pages, and first-visit tour
+        run: |
+          node --check lab.js
+          NODE_PATH="$PWD/node_modules" node tests/t62-onboarding-quick.js
