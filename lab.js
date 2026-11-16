@@ -98,7 +98,15 @@
   function readStoredDataset() {
     try {
       const v = JSON.parse(localStorage.getItem(DS_STORE));
-      if (v && typeof v === 'object' && Number.isFinite(v.seed) && typeof v.str === 'string' && /^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/.test(v.datasetId) && Number.isFinite(+v.datasetNumber)) return v;
+      if (v && typeof v === 'object' && Number.isFinite(v.seed) && typeof v.str === 'string' && /^[2-9A-HJKMNP-Z]{3}-[2-9A-HJKMNP-Z]{3}$/.test(v.datasetId) && Number.isFinite(+v.datasetNumber)) {
+        // Normalize legacy ownership before any UI asks for the owner. Never infer an owner from the current sign-in.
+        if ((!v.owner || !v.owner.name) && (!v.created || v.ownerUnverified)) {
+          v.owner = null;
+          v.ownerUnverified = true;
+          localStorage.setItem(DS_STORE, JSON.stringify(v));
+        }
+        return v;
+      }
     } catch (e) { /* missing or damaged: compute a new one */ }
     return null;
   }
