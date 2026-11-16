@@ -57,7 +57,7 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
     T.ok(a.db === c.db, `${k}: personalized BLAST database identical (${a.db} / ${c.db})`);
     T.ok(a.blast === c.blast, `${k}: BLAST results for every gene and program identical (${a.blast} / ${c.blast})`);
     const pk = Object.keys(a.plates);
-    T.ok(pk.length >= 10 && pk.every(n => a.plates[n] === (c.plates || {})[n]), `${k}: all ${pk.length} plate images pixel-identical ${pk.filter(n => a.plates[n] !== (c.plates || {})[n]).join(', ')}`);
+    T.ok(pk.length >= 10 && pk.every(n => a.plates[n] === (c.plates || {})[n]), `${k}: all ${pk.length} plate images pixel-identical; mismatches: ${pk.filter(n => a.plates[n] !== (c.plates || {})[n]).map(n => n + ' expected=' + a.plates[n] + ' actual=' + ((c.plates || {})[n] || 'missing')).join(', ')}`);
   }
   T.ok(base[IDS[0].name].db !== base[IDS[1].name].db, 'the two identities get different databases (the comparison is meaningful)');
 
