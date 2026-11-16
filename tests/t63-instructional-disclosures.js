@@ -15,8 +15,12 @@ const T = require('./_h');
       await summary.focus();
       const before = await d.evaluate(e => e.open);
       await p.keyboard.press('Enter');
+      await p.waitForFunction(([index, initial]) => {
+        const el = document.querySelectorAll('section.step details.disclose')[index];
+        return !!el && el.open !== initial;
+      }, [i, before], { timeout: 1500 }).catch(() => {});
       const after = await d.evaluate(e => e.open);
-      T.ok(before !== after, lab + ': disclosure ' + i + ' toggles with Enter');
+      T.ok(before !== after, lab + ': disclosure ' + i + ' toggles with Enter (section ' + info.section + ', before=' + before + ', after=' + after + ')');
     }
     T.ok(p.errors.length === 0, lab + ': no page errors');
     await ctx.close();
