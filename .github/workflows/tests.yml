@@ -52,7 +52,7 @@ jobs:
   quick:
     name: Quick syntax and lab-page smoke
     needs: classify
-    if: github.event_name == 'pull_request' && needs.classify.outputs.level == 'quick'
+    if: github.event_name == 'pull_request' && contains(fromJSON('["quick","ui"]'), needs.classify.outputs.level)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -67,6 +67,25 @@ jobs:
           node --check lab.js
           NODE_PATH="$PWD/node_modules" node tests/t62-onboarding-quick.js
           NODE_PATH="$PWD/node_modules" node tests/t60-browsers.js pages
+
+  ui:
+    name: Focused instructional UI accessibility
+    needs: classify
+    if: github.event_name == 'pull_request' && needs.classify.outputs.level == 'ui'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check disclosure keyboard access
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          node tests/t63-instructional-disclosures.js
 
   checklist:
     name: Checklist (${{ matrix.group }})
