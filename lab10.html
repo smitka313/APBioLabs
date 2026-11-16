@@ -961,7 +961,7 @@ function workedExample(o) {
   });
   let drying = false;
   $('#p1-dry').addEventListener('click', () => {
-    if (!s1.pending || drying) { if (!drying) $('#p1-status').textContent = 'Nothing to dry yet: harvest plants first.'; return; }
+    if (!s1.pending || drying) { if (!drying) $('#p1-status').textContent = 'Harvest plants first, then use Dry to measure their dry mass.'; return; }
     drying = true; let f = 0;
     bench = { phase: 'drying', rows: s1.pending.rows.map(r => ({ id: +r.plant.slice(1), age: r.age, D: r._D, m: r._D })), prog: 0, t: 99 }; loopB.stop(); drawB();
     const finish = () => {
