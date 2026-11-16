@@ -17,8 +17,9 @@ const T = require('./_h');
       if (await links.count()) {
         const target = await links.first().getAttribute('href');
         await links.first().click();
+        await p.waitForFunction(id => Lab.pages.current() && Lab.pages.current().id === id, target.slice(1), { timeout: 5000 }).catch(() => {});
         const current = await p.evaluate(() => Lab.pages.current() && Lab.pages.current().id);
-        T.ok(current === target.slice(1), lab + ': readiness link navigates to unfinished section');
+        T.ok(current === target.slice(1), lab + ': readiness link navigates to unfinished section (expected ' + target + ', got ' + current + ')');
         await p.evaluate(() => Lab.pages.go('submit'));
       }
       T.ok(p.errors.length === 0, lab + ': no page errors ' + p.errors.join('; '));
