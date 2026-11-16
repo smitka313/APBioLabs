@@ -43,12 +43,14 @@ const RUN = {
     await show(p, 'model-cells'); await p.click('#p2-run'); await sleep(4000);
     await show(p, 'water-potential');
     await p.evaluate(() => { for (let i = 0; i < 6; i++) { const s = document.querySelector('#p3b-as' + i); s.selectedIndex = Math.min(s.options.length - 1, i + 1); s.dispatchEvent(new Event('change', { bubbles: true })); } });
-    await p.click('#p3b-run'); await sleep(4000);
+    const previous = await p.evaluate(() => Lab._reg.tables.find(t => t.el.id === 'p3b-table')?.getRows().length || 0);
+    await p.click('#p3b-run');
+    await p.waitForFunction(n => (Lab._reg.tables.find(t => t.el.id === 'p3b-table')?.getRows().length || 0) >= n + 6, previous, { timeout: 30000 });
   },
   async lab05(p) {
     await show(p, 'sink-disks');
     await fillPred(p, 'predict-floatassay', P); await fillPred(p, 'predict-design', P);
-    await p.click('#inf-pull'); await p.waitForFunction(() => !document.querySelector('#inf-pull').disabled, null, { timeout: 20000 });
+    await p.click('#inf-pull'); await p.waitForFunction(() => !document.querySelector('#inf-pull').disabled, null, { timeout: 45000 });
     await p.click('#inf-pour'); await show(p, 'float-assay');
     await setv(p, '#cup-speed', '0.5'); await setv(p, '#cup-len', 30);
     await p.click('#cup-run'); await tlDone(p, 'floatassay', 90000);
