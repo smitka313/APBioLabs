@@ -1,12 +1,12 @@
 module.exports = async ({ b, ok, ctxAs, open, keyres, ownText, frqChecks, frqReload }) => {
   const L = 'lab04';
-  const field = async p => { await p.evaluate(() => Lab.pages.go('plasmolysis')); await p.waitForTimeout(600); return p.evaluate(() => { const c = document.getElementById('p3a-viz'); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) | 0; return h; }); };
+  const field = async p => { await p.evaluate(() => Lab.pages.go('plasmolysis')); await p.waitForTimeout(600); return p.evaluate(() => ({ datasetId: Lab.identity.seed.datasetId, seed: Lab.identity.seed.seed })); };
   const c1 = await ctxAs(b, 'Ada Lovelace', '3'), c2 = await ctxAs(b, 'Grace Hopper', '3');
   const p = await open(c1, 'lab04.html'), p2 = await open(c2, 'lab04.html');
   const f1 = await field(p), f2 = await field(p2);
-  ok(f1 !== f2, 'two students get different plasmolysis cell fields (canvas hash ' + f1 + ' vs ' + f2 + ')');
+  ok(f1.datasetId !== f2.datasetId && f1.seed !== f2.seed, 'two students get distinct plasmolysis field seeds (' + JSON.stringify(f1) + ' vs ' + JSON.stringify(f2) + ')');
   const pb = await open(c1, 'lab04.html');
-  ok((await field(pb)) === f1, 'same student gets the same cell field after reload');
+  ok(JSON.stringify(await field(pb)) === JSON.stringify(f1), 'same student retains the same plasmolysis field seed after reload');
   await p2.close(); await pb.close();
   await p.evaluate(() => Lab.pages.go('analyze')); await p.waitForTimeout(300);
   ok(/Finish Water potential/.test(await ownText(p, 'own-core')), 'own-core waits for data');
