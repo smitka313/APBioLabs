@@ -40,7 +40,7 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
       const btn = [...document.querySelectorAll('#ds-seg button')].find(x => x.getAttribute('aria-pressed') !== 'true'); if (!btn) return {};
       btn.click();
       const t0 = Date.now();
-      while (Date.now() - t0 < 10000) { const im = [...document.querySelectorAll('#orgcards img.plate-svg')]; if (im.length && im.every(i => /^data:image\/jpeg/.test(i.src))) break; await new Promise(z => setTimeout(z, 50)); }
+      while (Date.now() - t0 < 10000) { const im = [...document.querySelectorAll('#orgcards img.plate-svg')]; if (im.length && im.every(i => /^data:image\/jpeg/.test(i.src) && i.complete && i.naturalWidth > 0)) break; await new Promise(z => setTimeout(z, 50)); }
       const o = {}; document.querySelectorAll('#orgcards img.plate-svg').forEach(i => { o[i.alt] = i.src; }); btn.click(); return o;
     });
     Object.assign(r.plates, plant);
