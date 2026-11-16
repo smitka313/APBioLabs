@@ -15,7 +15,7 @@ for (const line of diff.split('\n')) {
   } else if (file && /^[+-]/.test(line) && !/^(---|\+\+\+)/.test(line)) file.lines.push(line.slice(1));
 }
 let level = 'quick';
-const rank = { quick: 0, standard: 1, full: 2 };
+const rank = { quick: 0, ui: 1, standard: 2, full: 3 };
 const bump = x => { if (rank[x] > rank[level]) level = x; };
 for (const f of files) {
   const p = f.path, lines = f.lines;
@@ -23,9 +23,24 @@ for (const f of files) {
   if (/^(docs\/|.*\.(md|txt)$)/.test(p)) continue;
   if (p === 'style.css' || /\.css$/.test(p)) { bump('standard'); continue; }
   if (/^lab\d\d\.html$/.test(p)) {
-    // Only prose inside plain HTML elements; any structural or script change is full.
-    if (lines.length && lines.every(x => /^\s*<(p|li|h[1-6]|span)\b[^>]*>[^<>]*<\/(p|li|h[1-6]|span)>\s*$/.test(x))) bump('quick');
-    else bump('full');
+    // Never classify changes to inline scripts or styles as copy/UI changes.
+    const read = ref => cp.execFileSync('git', ['show', ref + ':' + p], { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 });
+    let before, after;
+    try { before = read(base); after = read(head); } catch (_) { bump('full'); continue; }
+    const blocks = html => [...html.matchAll(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi)].map(m => m[0]);
+    if (JSON.stringify(blocks(before)) !== JSON.stringify(blocks(after))) { bump('full'); continue; }
+    const allowed = /^(?:p|li|h[1-6]|span|strong|em|b|i|small|sub|sup|ol|ul|div|details|summary|a)$/i;
+    const unsafe = /\bon\w+\s*=|javascript:|\$\{|<\/?(?:script|style|iframe|form|input|button|select|textarea|canvas|svg)\b/i;
+    const classifyLine = x => {
+      if (unsafe.test(x)) return 'full';
+      const tags = [...x.matchAll(/<\/?([a-z][\w-]*)\b([^>]*)>/gi)];
+      if (tags.some(m => !allowed.test(m[1]) || /\b(?:style|src|contenteditable|tabindex|autofocus)\s*=/.test(m[2]))) return 'full';
+      if (/<|>/.test(x.replace(/<\/?[a-z][\w-]*\b[^>]*>/gi, ''))) return 'full';
+      if (tags.some(m => /^(?:details|summary|div|ol|ul|a)$/i.test(m[1]))) return 'ui';
+      return 'quick';
+    };
+    if (!lines.length) bump('full');
+    else for (const line of lines) bump(classifyLine(line));
     continue;
   }
   if (p === 'lab.js') {
