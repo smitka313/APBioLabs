@@ -8,6 +8,15 @@ const T = require('./_h');
   const la = () => p.evaluate(() => ({ y: document.querySelector('#la-yours').textContent, t: document.querySelector('#la-true').textContent, m: document.querySelector('#la-msg').textContent }));
   const la0 = await la();
   T.ok(la0.y !== '—' && la0.t !== 'hidden', 'leaf calculated: ' + la0.y);
+  // Autosaved input fields may be debounced independently of the calculated result.
+  // Wait until both the calculation and input counts are durable before reloading.
+  await p.waitForFunction(() => {
+    const state = Lab.store.get('la-state');
+    const saved = Object.keys(localStorage).filter(k => /lab11/.test(k));
+    return state?.calc?.f === 40 && state?.calc?.p === 20 &&
+      saved.some(k => localStorage.getItem(k)?.includes('40'));
+  }, null, { timeout: 5000 });
+  await p.waitForTimeout(700);
   await p.reload(); await p.waitForTimeout(900);
   const la1 = await la();
   T.ok(la1.y === la0.y && la1.t === la0.t && la1.m === la0.m, 'leaf result restored (same leaf, same feedback): ' + la1.y + ' / ' + la1.t);
