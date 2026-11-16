@@ -9,7 +9,7 @@ const checks = [
  ['dilution formula', /C₁V₁ = C₂V₂/],
  ['gel and buffer concentrations distinguished', /different materials with different concentration units/],
  ['selected tube explained', /highlighted, open tube is the currently selected sample/],
- ['background review link', /href="#background">Review the background/]
+ ['background quick-reference link', /href="#lab9-quick-references">Review the quick references in Background/]
 ];
 let failed = 0;
 for (const [name, pattern] of checks) {

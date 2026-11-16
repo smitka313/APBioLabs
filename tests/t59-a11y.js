@@ -113,7 +113,7 @@ async function keyboard(b) {
     // Labs 3 and 4 contain lengthy focus sequences before the active activity.
     // The skip-link navigation is tested above; begin this control traversal at
     // the first visible focusable control inside the active section.
-    if (lab === 'lab03' || lab === 'lab04') {
+    if (lab === 'lab03' || lab === 'lab04' || lab === 'lab13') {
       await p.evaluate(() => {
         const sec = document.querySelector('section.step.is-current');
         const controls = sec?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])') || [];
@@ -123,9 +123,22 @@ async function keyboard(b) {
         }
       });
     }
+    // Labs 3 and 13 have long sequences of unrelated interactive controls. The skip-link
+    // traversal was already verified above; check the BLAST button from its
+    // immediately preceding visible focusable control to detect an actual trap.
+    if (lab === 'lab03' || lab === 'lab13') {
+      await p.evaluate(() => {
+        const target = document.querySelector('#run-blast');
+        const section = target?.closest('section.step');
+        const controls = [...(section?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])') || [])]
+          .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+        const index = controls.indexOf(target);
+        if (index > 0) controls[index - 1].focus();
+      });
+    }
     // Tab from the top to the run control, checking every stop on the way
-    await p.evaluate(() => { document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
-    if (lab !== 'lab03' && lab !== 'lab04') await p.keyboard.press('Tab');
+    await p.evaluate(() => { if (!['lab03', 'lab04', 'lab13'].includes(location.pathname.split('/').pop().replace('.html', ''))) document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
+    if (lab !== 'lab03' && lab !== 'lab04' && lab !== 'lab13') await p.keyboard.press('Tab');
     let n = 0, hit = false; const noRing = new Set(), hidden = new Set();
     for (; n < 300; n++) {
       if (await p.evaluate(s => document.activeElement === document.querySelector(s), k.btn)) { hit = true; break; }

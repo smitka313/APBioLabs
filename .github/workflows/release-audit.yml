@@ -1,0 +1,39 @@
+name: Phase 1F release audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  comprehensive:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'release/phase1f-audit-pr30'
+    name: Full regression (shard ${{ matrix.shard }}/5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Install PDF validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils unzip python3-pil python3-numpy
+      - name: Run complete test shard
+        env:
+          JOBS: '1'
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          export AXE="$PWD/node_modules/axe-core/axe.min.js"
+          node tests/run-all.js all --shard ${{ matrix.shard }}/5

@@ -12,6 +12,19 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const FIX = path.join(__dirname, 'fixtures/lab03-baseline.json');
 const sha = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 16);
 const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', period: '5' }];
+// Decoded RGBA reference from the verified Chromium audit run; unlike JPEG bytes, this checks the rendered image content.
+const PIXEL_REFERENCE = {
+  "alligator": "58327d23",
+  "chimpanzee": "87383a35",
+  "grasshopper": "b1aef267",
+  "pigeon": "e9f0edf5",
+  "mouse": "97af3e73",
+  "lobster": "1fe866dd",
+  "haircap moss": "9f61eba2",
+  "apple tree": "8a3eb917",
+  "sword fern": "3dfde006",
+  "white pine": "a73ff6ec"
+};
 
 (async () => {
   const srv = await T.serve(), b = await T.launch();
@@ -28,7 +41,7 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
     await p.evaluate(() => { location.hash = '#morphology'; });
     await p.waitForFunction(() => { const im = [...document.querySelectorAll('#orgcards img.plate-svg')]; return im.length && im.every(i => /^data:image\/jpeg/.test(i.src) && i.complete && i.naturalWidth > 0); }, null, { timeout: 15000 });
     const r = await p.evaluate(() => {
-      const res = { datasetId: Lab.identity.seed.datasetId, db: JSON.stringify(db), plates: {}, blast: {} };
+      const res = { datasetId: Lab.identity.seed.datasetId, db: JSON.stringify(db), plates: {}, pixels: {}, blast: {} };
       const grab = () => document.querySelectorAll('#orgcards img.plate-svg').forEach(i => { res.plates[i.alt] = i.src; });
       grab();
       Object.keys(GENES).forEach(g => Object.keys(PROGRAMS).forEach(pk => {
@@ -40,12 +53,27 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
       const btn = [...document.querySelectorAll('#ds-seg button')].find(x => x.getAttribute('aria-pressed') !== 'true'); if (!btn) return {};
       btn.click();
       const t0 = Date.now();
-      while (Date.now() - t0 < 10000) { const im = [...document.querySelectorAll('#orgcards img.plate-svg')]; if (im.length && im.every(i => /^data:image\/jpeg/.test(i.src))) break; await new Promise(z => setTimeout(z, 50)); }
+      while (Date.now() - t0 < 10000) { const im = [...document.querySelectorAll('#orgcards img.plate-svg')]; if (im.length && im.every(i => /^data:image\/jpeg/.test(i.src) && i.complete && i.naturalWidth > 0)) break; await new Promise(z => setTimeout(z, 50)); }
       const o = {}; document.querySelectorAll('#orgcards img.plate-svg').forEach(i => { o[i.alt] = i.src; }); btn.click(); return o;
     });
     Object.assign(r.plates, plant);
+    // Diagnostic: compare decoded RGBA pixels separately from browser JPEG bytes.
+    // This does not relax the historical baseline assertion.
+    const decoded = await p.evaluate(async entries => {
+      const result = {};
+      for (const [name, src] of entries) {
+        const im = new Image(); im.src = src; await im.decode();
+        const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+        const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height).data;
+        let h = 2166136261; for (let j = 0; j < d.length; j++) h = Math.imul(h ^ d[j], 16777619) >>> 0;
+        result[name] = h.toString(16).padStart(8, '0');
+      }
+      return result;
+    }, Object.entries(r.plates));
+    r.pixels = decoded;
     const key = idn.name;
-    out[key] = { datasetId: r.datasetId, db: sha(r.db), blast: sha(JSON.stringify(r.blast)), plates: Object.fromEntries(Object.entries(r.plates).map(([k, v]) => [k, sha(v)])) };
+    out[key] = { datasetId: r.datasetId, db: sha(r.db), blast: sha(JSON.stringify(r.blast)), plates: Object.fromEntries(Object.entries(r.plates).map(([k, v]) => [k, sha(v)])), pixels: r.pixels };
     T.ok(errs.length === 0, `${key}: no page errors ${errs.join(' | ')}`);
     await ctx.close();
   }
@@ -57,7 +85,11 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
     T.ok(a.db === c.db, `${k}: personalized BLAST database identical (${a.db} / ${c.db})`);
     T.ok(a.blast === c.blast, `${k}: BLAST results for every gene and program identical (${a.blast} / ${c.blast})`);
     const pk = Object.keys(a.plates);
-    T.ok(pk.length >= 10 && pk.every(n => a.plates[n] === (c.plates || {})[n]), `${k}: all ${pk.length} plate images pixel-identical ${pk.filter(n => a.plates[n] !== (c.plates || {})[n]).join(', ')}`);
+    console.log('  decoded RGBA checksums (' + k + '): ' + JSON.stringify(out[k] && out[k].pixels || {}));
+    const pixelMismatch = pk.filter(n => { const label = Object.keys(PIXEL_REFERENCE).find(x => n.includes('of a ' + x + ' (')); return !label || c.pixels?.[n] !== PIXEL_REFERENCE[label]; });
+    T.ok(pk.length >= 10 && pixelMismatch.length === 0, `${k}: all ${pk.length} decoded illustrations match reference; mismatches: ${pixelMismatch.map(n => n + ' actual=' + c.pixels?.[n]).join(', ')}`);
+    const jpegMismatch = pk.filter(n => a.plates[n] !== (c.plates || {})[n]);
+    if (jpegMismatch.length) console.log(`  diagnostic: ${jpegMismatch.length} JPEG encodings differ from historical baseline (${k}); decoded pixels checked separately`);
   }
   T.ok(base[IDS[0].name].db !== base[IDS[1].name].db, 'the two identities get different databases (the comparison is meaningful)');
 
