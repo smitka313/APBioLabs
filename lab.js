@@ -3206,19 +3206,19 @@
   const firstShown = sel => $$(sel).find(shown) || null;
   const tourDefs = () => [
     { id: 'nav', find: () => firstShown('.step-nav'), title: 'Move through the lab one part at a time',
-      body: 'Use the part tabs up here, or the Back and Next buttons at the bottom of each part (the left and right arrow keys work too). A check mark means the part is done. “All parts” shows the whole lab on one page.' },
+      body: 'Start with Overview, then use the tabs above or Back and Next at the bottom to move between parts. A check mark shows a completed part. Choose “All parts” to see the entire lab on one page.' },
     { id: 'steps', find: () => firstShown('.steps-box'), title: 'Follow the Steps checklist',
-      body: 'Each simulation part starts with a Steps list. A step ticks itself off when you finish it, and the “Next:” line under it tells you what to do now.',
+      body: 'In each simulation, follow the Steps list. Completed steps get a check mark, and the “Next:” line tells you what to do next.',
       plain: 'Each simulation part starts with a Steps list. A step ticks itself off when you finish it, and a “Next:” line tells you what to do now. You will see it as soon as you open a simulation part.' },
     { id: 'results', find: () => firstShown('.sim-tabs'), title: 'Your results build next to the simulation',
       body: 'Switch between Data and Graph to watch your table fill and your graph grow as you run trials.',
       plain: 'Next to each simulation, a Data / Graph switch shows your table filling and your graph growing as you run trials. A small “new” badge marks a tab that changed.' },
     { id: 'who', find: () => firstShown('.id-box'), title: 'Your name and Dataset ID',
-      body: 'Your name and class period go on your report. The Dataset ID tells your teacher which set of simulated numbers is yours. “New dataset” starts fresh numbers, and “Help” shows this tour again.',
+      body: 'Enter your name and class period for your report. Your Dataset ID identifies your simulated data. Choose “New dataset” only when you want a fresh set of numbers. “Help” reopens this tour.',
       plain: 'Your name and class period go on your report, and your Dataset ID identifies your own simulated numbers.' },
     { id: 'submit', find: () => firstShown('.report-bar'), title: 'Hand in your work and back it up',
-      body: 'Download a .docx or save a PDF, then hand it in the way your teacher asks. Your work is saved only in this browser, so also save a progress file below.',
-      plain: 'The last part, Submit, has the report buttons (Download .docx, Save as PDF) and “Move your work to another computer”. Your work is saved only in this browser, so save a progress file there before you leave.' },
+      body: 'In Submit, check your progress and download a Word report or save a PDF. Hand the file in as your teacher directs. To continue on another device, use the separate progress file or resume code.',
+      plain: 'In the last part, Submit, review your progress and download a Word report or save a PDF. To continue on another device, use “Move your work to another computer” to save a progress file or resume code.' },
   ];
   const markTourSeen = () => { memTourSeen = true; gstore.set(TOUR_KEY, { seen: true, v: 1, t: Date.now() }); };
   const tourSeen = () => memTourSeen || !!gstore.get(TOUR_KEY);
