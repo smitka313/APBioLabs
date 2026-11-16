@@ -28,7 +28,7 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
     await p.evaluate(() => { location.hash = '#morphology'; });
     await p.waitForFunction(() => { const im = [...document.querySelectorAll('#orgcards img.plate-svg')]; return im.length && im.every(i => /^data:image\/jpeg/.test(i.src) && i.complete && i.naturalWidth > 0); }, null, { timeout: 15000 });
     const r = await p.evaluate(() => {
-      const res = { datasetId: Lab.identity.seed.datasetId, db: JSON.stringify(db), plates: {}, blast: {} };
+      const res = { datasetId: Lab.identity.seed.datasetId, db: JSON.stringify(db), plates: {}, pixels: {}, blast: {} };
       const grab = () => document.querySelectorAll('#orgcards img.plate-svg').forEach(i => { res.plates[i.alt] = i.src; });
       grab();
       Object.keys(GENES).forEach(g => Object.keys(PROGRAMS).forEach(pk => {
@@ -44,8 +44,23 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
       const o = {}; document.querySelectorAll('#orgcards img.plate-svg').forEach(i => { o[i.alt] = i.src; }); btn.click(); return o;
     });
     Object.assign(r.plates, plant);
+    // Diagnostic: compare decoded RGBA pixels separately from browser JPEG bytes.
+    // This does not relax the historical baseline assertion.
+    const decoded = await p.evaluate(async entries => {
+      const result = {};
+      for (const [name, src] of entries) {
+        const im = new Image(); im.src = src; await im.decode();
+        const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+        const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        const d = x.getImageData(0, 0, c.width, c.height).data;
+        let h = 2166136261; for (let j = 0; j < d.length; j++) h = Math.imul(h ^ d[j], 16777619) >>> 0;
+        result[name] = h.toString(16).padStart(8, '0');
+      }
+      return result;
+    }, Object.entries(r.plates));
+    r.pixels = decoded;
     const key = idn.name;
-    out[key] = { datasetId: r.datasetId, db: sha(r.db), blast: sha(JSON.stringify(r.blast)), plates: Object.fromEntries(Object.entries(r.plates).map(([k, v]) => [k, sha(v)])) };
+    out[key] = { datasetId: r.datasetId, db: sha(r.db), blast: sha(JSON.stringify(r.blast)), plates: Object.fromEntries(Object.entries(r.plates).map(([k, v]) => [k, sha(v)])), pixels: r.pixels };
     T.ok(errs.length === 0, `${key}: no page errors ${errs.join(' | ')}`);
     await ctx.close();
   }
@@ -57,6 +72,7 @@ const IDS = [{ name: 'Ada Lovelace', period: '2' }, { name: 'Jordan Ortiz', peri
     T.ok(a.db === c.db, `${k}: personalized BLAST database identical (${a.db} / ${c.db})`);
     T.ok(a.blast === c.blast, `${k}: BLAST results for every gene and program identical (${a.blast} / ${c.blast})`);
     const pk = Object.keys(a.plates);
+    console.log('  decoded RGBA checksums (' + k + '): ' + JSON.stringify(out[k] && out[k].pixels || {}));
     T.ok(pk.length >= 10 && pk.every(n => a.plates[n] === (c.plates || {})[n]), `${k}: all ${pk.length} plate images pixel-identical; mismatches: ${pk.filter(n => a.plates[n] !== (c.plates || {})[n]).map(n => n + ' expected=' + a.plates[n] + ' actual=' + ((c.plates || {})[n] || 'missing')).join(', ')}`);
   }
   T.ok(base[IDS[0].name].db !== base[IDS[1].name].db, 'the two identities get different databases (the comparison is meaningful)');
