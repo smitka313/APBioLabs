@@ -123,6 +123,19 @@ async function keyboard(b) {
         }
       });
     }
+    // Lab 3 has a long sequence of unrelated interactive controls. The skip-link
+    // traversal was already verified above; check the BLAST button from its
+    // immediately preceding visible focusable control to detect an actual trap.
+    if (lab === 'lab03') {
+      await p.evaluate(() => {
+        const target = document.querySelector('#run-blast');
+        const section = target?.closest('section.step');
+        const controls = [...(section?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])') || [])]
+          .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+        const index = controls.indexOf(target);
+        if (index > 0) controls[index - 1].focus();
+      });
+    }
     // Tab from the top to the run control, checking every stop on the way
     await p.evaluate(() => { if (!['lab03', 'lab04', 'lab13'].includes(location.pathname.split('/').pop().replace('.html', ''))) document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
     if (lab !== 'lab03' && lab !== 'lab04' && lab !== 'lab13') await p.keyboard.press('Tab');
