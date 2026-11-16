@@ -1265,7 +1265,7 @@ const Predict = (function () {
   $('#d-run').addEventListener('click', () => {
     if (dAnim) { const f = dAnim; dAnim = null; f(); }
     dPreview();
-    if (!dCups.length) { $('#d-hint').textContent = 'Choose at least one valid level. ' + (IV[dIv.value].hint || ''); return; }
+    if (!dCups.length) { $('#d-hint').textContent = 'Select at least one valid treatment level before running the trial. ' + (IV[dIv.value].hint || ''); return; }
     const iv = dIv.value, sd = newSeed(); dIvKey = iv;
     Lab.store.set('d-setup', { iv, levels: dLv.value, checks: IV[iv].num ? null : dLevels() });
     Lab.store.set('d-run', { sd, t0: Date.now(), reps: +dReps.value, filter: $('#d-filter').checked, done: false });
