@@ -1528,7 +1528,7 @@ function chiCalcReport(a, b, x) {
 function runChi() {
   const a = readCount($('#x-a'), 'at end A'), b = readCount($('#x-b'), 'at end B');
   if (a == null || b == null) { chiCalcReport(null, null); $('#x-out').textContent = $('#x-a').value.trim() === '' && $('#x-b').value.trim() === '' ? 'Enter the observed counts (or use your last trial) to see χ².' : 'Fix the highlighted count to see χ².'; return; }
-  if (a + b === 0) { vmsg($('#x-a'), 'A and B cannot both be 0: with no flies counted the expected count at each end is 0, so χ² cannot be calculated.'); chiCalcReport(0, 0); $('#x-out').textContent = 'Enter at least one fly.'; return; }
+  if (a + b === 0) { vmsg($('#x-a'), 'A and B cannot both be 0: with no flies counted the expected count at each end is 0, so χ² cannot be calculated.'); chiCalcReport(0, 0); $('#x-out').textContent = 'Enter fly counts for sides A and B, with at least one fly total, before calculating chi-square.'; return; }
   vmsg($('#x-a'), '');
   const small = a + b < 10;
   const e = (a + b) / 2, x = chi(a, b);
