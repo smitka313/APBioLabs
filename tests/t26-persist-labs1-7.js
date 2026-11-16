@@ -132,7 +132,14 @@ T.lab04 = async (b) => {
   await go(p, 'sa-v'); const after = await rows('#p1-table'); ok(after === before + 3, 'lab04: a soak interrupted by a reload is finished, not lost (' + before + ' -> ' + after + ')');
   ok((await txt(p, '#p1-time')).includes('10.0'), 'lab04: p1 readouts at end state after mid-run reload');
   await go(p, 'model-cells'); ok(JSON.stringify([await txt(p, '#p2-time'), await txt(p, '#p2-max'), await txt(p, '#p2-min')]) === JSON.stringify(p2), 'lab04: p2 readouts restored');
-  await go(p, 'plasmolysis'); ok(parseFloat(await txt(p, '#p3a-time')) >= parseFloat(p3[1]) && (await txt(p, '#p3a-now')) === p3[0], 'lab04: plasmolysis restored (' + await txt(p, '#p3a-now') + ' ' + await txt(p, '#p3a-time') + ')');
+  await go(p, 'plasmolysis');
+  // The scene restores asynchronously after navigation; wait for the saved state
+  // rather than sampling the first paint on a loaded CI runner.
+  await p.waitForFunction(([now, time]) => {
+    const n = document.querySelector('#p3a-now'), t = document.querySelector('#p3a-time');
+    return n && t && n.textContent === now && parseFloat(t.textContent) >= parseFloat(time);
+  }, p3, { timeout: 5000 }).catch(() => {});
+  ok(parseFloat(await txt(p, '#p3a-time')) >= parseFloat(p3[1]) && (await txt(p, '#p3a-now')) === p3[0], 'lab04: plasmolysis restored (expected ' + p3.join(' / ') + ', actual ' + await txt(p, '#p3a-now') + ' / ' + await txt(p, '#p3a-time') + ')');
   await go(p, 'water-potential');
   ok((await p.locator('#p3b-idtable tbody').innerText()) === idtxt, 'lab04: water-bag table restored identically');
   ok((await txt(p, '#p3b-time')) === tm && await p.inputValue('#wp-c') === '0.9' && (await txt(p, '#wp-psi')) === wp, 'lab04: soak scene and calculator restored (' + await txt(p, '#wp-psi') + ' vs ' + wp + ')');
