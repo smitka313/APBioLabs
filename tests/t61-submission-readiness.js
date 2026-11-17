@@ -31,11 +31,11 @@ const T = require('./_h');
       await p.waitForFunction(() => {
         const links = [...document.querySelectorAll('.step-nav ol a.has-work')];
         return links.length > 0 && links.every(a =>
-          /(?:\d+ activities? remaining|All tracked activities complete)/.test(a.getAttribute('aria-description') || ''));
+          /(?:\d+ activit(?:y|ies) remaining|All tracked activities complete)/.test(a.getAttribute('aria-description') || ''));
       }, null, { timeout: 3000 }).catch(() => {});
       const navDescriptions = await p.locator('.step-nav ol a.has-work').evaluateAll(links =>
         links.map(a => ({ section: a.getAttribute('href'), description: a.getAttribute('aria-description') })));
-      T.ok(navDescriptions.length > 0 && navDescriptions.every(x => /(?:\d+ activities? remaining|All tracked activities complete)/.test(x.description || '')),
+      T.ok(navDescriptions.length > 0 && navDescriptions.every(x => /(?:\d+ activit(?:y|ies) remaining|All tracked activities complete)/.test(x.description || '')),
         lab + ': navigation exposes remaining counts to assistive technology ' + JSON.stringify(navDescriptions));
       const links = ready.locator('a[href^="#"]');
       T.ok(await links.count() > 0, lab + ': unfinished sections linked');
