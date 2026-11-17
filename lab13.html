@@ -18,6 +18,10 @@
   #p1-table .table-wrap,#p2-table .table-wrap{max-width:100%;overflow-x:auto}
   #p1-bad:not([hidden]),#p2-bad:not([hidden]){position:sticky;bottom:8px;z-index:4;padding:12px;border:2px solid var(--warn);background:var(--surface);box-shadow:0 4px 16px rgba(0,0,0,.14)}
   @media(max-width:700px){#p1-table table.data,#p2-table table.data{min-width:720px}}
+
+/* Audit 6: allow wide scientific tables to scroll without forcing page-wide overflow. */
+#p1-table,#p2-table,#p1-sum,#p1-raw,#chi-out{min-width:0;max-width:100%}
+#p1-table .table-wrap,#p2-table .table-wrap,#p1-sum .table-wrap,#p1-raw .table-wrap,#chi-out .table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
 </style></noscript>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
