@@ -26,6 +26,10 @@ const T = require('./_h');
         T.ok(actual === expected, lab + ': resume opens first unfinished section (' + actual + ')');
         await p.evaluate(() => Lab.pages.go('submit'));
       }
+      const navDescriptions = await p.locator('.step-nav ol a.has-work').evaluateAll(links =>
+        links.map(a => a.getAttribute('aria-description')));
+      T.ok(navDescriptions.length > 0 && navDescriptions.every(x => /activities? remaining|All tracked activities complete/.test(x || '')),
+        lab + ': navigation exposes remaining counts to assistive technology');
       const links = ready.locator('a[href^="#"]');
       T.ok(await links.count() > 0, lab + ': unfinished sections linked');
       if (await links.count()) {
