@@ -107,6 +107,16 @@ async function makeStudent(b, srv, st, dir, via) {
   T.ok(await d.locator('table.grid tbody tr').count() === 4, 'progress filter: four incomplete records');
   await d.selectOption('#f-progress', '');
   T.ok(await d.locator('table.grid tbody tr').count() === 5, 'progress filter: all records restored');
+  // Teacher review batch: counts and review filters only reflect imported records.
+  T.ok(/Imported-record overview/.test(await d.locator('#review-summary').innerText()), 'class progress overview visible');
+  T.ok(/not a class roster/.test(await d.locator('#review-summary').innerText()), 'overview avoids claiming roster completeness');
+  await d.selectOption('#f-review', 'attention');
+  T.ok(await d.locator('table.grid tbody tr').count() > 0, 'needs-review filter shows records requiring attention');
+  await d.selectOption('#f-review', 'missing');
+  T.ok(await d.locator('#summary').isVisible(), 'missing-result filter remains accessible');
+  await d.selectOption('#f-review', '');
+  const csvReview = await d.evaluate(() => Dash.csv());
+  T.ok(/Completion status,Completion percent,Review reasons,Missing result fields/.test(csvReview), 'CSV includes progress and review columns');
   // duplicates
   const flags = n => (row(n) || []).slice(-1)[0];
   T.ok(/Same Dataset ID as Dee Fox/.test(flags('Ana Diaz')) && /Same Dataset ID as Ana Diaz/.test(flags('Dee Fox')), 'shared Dataset ID flagged on both rows');
