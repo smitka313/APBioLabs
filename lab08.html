@@ -353,7 +353,7 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="15" id="analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>What happened on your plates?</h2></header>
-    <div class="step-body">
+    <div class="step-body"><div id="data-feedback-08"></div>
       <p class="small">Need to check the transformation procedure and sample volumes? <a href="#transform">Review that investigation section</a> before interpreting your results.</p>
       <details class="disclose"><summary>How do I use plate evidence to support a transformation claim?</summary><div class="inner"><ol><li><strong>Compare controls.</strong> Identify which plates received +pGLO or −pGLO cells and which contain ampicillin or arabinose.</li><li><strong>Separate growth from glow.</strong> Growth on ampicillin is evidence of resistance; green fluorescence under UV is evidence of GFP expression under the tested conditions.</li><li><strong>Interpret efficiency.</strong> Use the number of transformed colonies and the mass of plasmid DNA actually spread on the plate. Check units before reporting colonies per microgram.</li><li><strong>Explain uncertainty.</strong> Consider colony-counting limits, lawns, sample volume, and protocol variations before comparing outcomes.</li></ol><p class="small">Support your claim with results from your own plates rather than assuming every colony fluoresces.</p></div></details><h3>Before you looked</h3>
       <div id="an-pre" class="prompts-2"></div>
@@ -1781,6 +1781,8 @@ frq(partBody('Evaluate'), {
     '(c) Fewer colonies without heat shock, because the temperature jump helps DNA enter the cells (and typical classroom results show about 10-fold fewer colonies).',
     '(d) Two valid constants (for example: cell amount/colony size, plasmid volume, time on ice, plated volume) and efficiency = colonies ÷ µg of DNA spread on the plate.']
 });
+
+Lab.dataFeedback('#data-feedback-08', {"table":"runs-table","fields":["eff"],"prompt":"Compare transformation efficiency only for relevant plated conditions. Use control-plate growth and fluorescence observations separately when explaining transformation."});
 </script>
 </body>
 </html>
