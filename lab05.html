@@ -1393,7 +1393,7 @@ const Predict = (function () {
     rubric: ['(a) Independent: distance from the lamp (light intensity); dependent: ET50 (or 1/ET50); constants such as bicarbonate concentration, temperature, disk size, leaf type, number of disks.', '(b) Photosynthesis releases O2 that fills the air spaces and makes disks buoyant; the median time is less affected by a few slow or outlier disks.', '(c) Closer lamp means more light, faster O2 production and a shorter ET50 (higher rate) until it levels off; heating can speed or then denature enzymes and raise respiration, changing the rate.', '(d) Without CO2 (bicarbonate) the disks cannot fix carbon, so the control shows floating is due to photosynthesis and not trapped air or other causes.'] }); }
 })();
 
-Lab.dataFeedback('#data-feedback-05', { table: 'cup-table', fields: ["a","b"], prompt: "Compare the with-CO2 and without-CO2 disk counts at matching times. A range alone does not determine ET50." });
+Lab.dataFeedback('#data-feedback-05', { table: 'cup-table', fields: ["a","b"], compare: {left:'a',right:'b',leftLabel:'with-CO2',rightLabel:'without-CO2',time:'time point'}, prompt: "Compare the with-CO2 and without-CO2 disk counts at matching times. A range alone does not determine ET50." });
 </script>
 </body>
 </html>
