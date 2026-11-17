@@ -516,6 +516,31 @@
       }));
       const complete = rows.filter(row => keys.some(key => row[key] !== '' && row[key] != null && Number.isFinite(Number(row[key])))).length;
       if (!values.length) { status.textContent = 'You have recorded rows, but the selected measurement columns do not contain numeric values yet. Check your table before drawing a conclusion.'; return; }
+      /* Compare matched observations only when a lab explicitly supplies its condition
+         fields. Never treat a range across unlike measurements as an effect size. */
+      if (config.compare) {
+        const c = config.compare;
+        const numeric = v => v !== '' && v !== null && v !== undefined && Number.isFinite(Number(v));
+        const paired = rows.filter(r => numeric(r[c.left]) && numeric(r[c.right]));
+        const missing = rows.length - paired.length;
+        if (!paired.length) {
+          status.textContent = 'Recorded rows are present, but none has both ' + c.leftLabel + ' and ' + c.rightLabel +
+            ' measurements. Record both conditions for the same observation before comparing them. ' +
+            config.prompt + ' This is a data-readiness check, not a grade or verification of scientific accuracy.';
+          return;
+        }
+        const differences = paired.map(r => Number(r[c.left]) - Number(r[c.right]));
+        const positive = differences.filter(d => d > 0).length, negative = differences.filter(d => d < 0).length;
+        const equal = differences.length - positive - negative;
+        status.textContent = paired.length + ' of ' + rows.length + ' recorded rows contain both ' +
+          c.leftLabel + ' and ' + c.rightLabel + ' measurements. ' +
+          (missing ? missing + ' rows need one or both measurements. ' : '') +
+          'Within matched observations: ' + positive + ' have a higher ' + c.leftLabel +
+          ' value, ' + negative + ' have a higher ' + c.rightLabel + ' value, and ' + equal + ' are equal. ' +
+          (c.time ? 'Compare observations at the same ' + c.time + '; rows from different times are not paired evidence. ' : '') +
+          config.prompt + ' This is a data-readiness check, not a grade or verification of scientific accuracy.';
+        return;
+      }
       const min = Math.min(...values), max = Math.max(...values);
       status.textContent = complete + ' of ' + rows.length + ' recorded rows contain numeric measurements in the selected evidence columns. The observed values range from ' + min.toLocaleString() + ' to ' + max.toLocaleString() + '. ' +
         (complete < rows.length ? 'Some rows are missing numeric evidence. ' : '') +
