@@ -1219,9 +1219,9 @@ const Predict = (function () {
     const meta = Lab.store.get('d-setup') || { iv: dIv.value }, iv = IV[meta.iv] ? meta.iv : 'dist', o = IV[iv];
     const keys = [...new Set(rows.map(r => r.v))];
     const sum = keys.map(k => {
-      const rr2 = rows.filter(r => r.v === k), rate = rr2.map(r => r.rate), ets = rr2.map(r => r.et == null ? Infinity : r.et);
+      const rr2 = rows.filter(r => r.v === k), rate = rr2.map(r => r.rate).filter(v => v != null && Number.isFinite(v)), ets = rr2.map(r => r.et == null ? Infinity : r.et);
       const med = S.median(ets);
-      return { lv: rr2[0].lvl, _k: k, n: rr2.length, med: isFinite(med) ? med : NaN, mean: S.mean(rate), se: rate.length > 1 ? S.se(rate) : NaN, ci: rate.length > 1 ? 2 * S.se(rate) : NaN };
+      return { lv: rr2[0].lvl, _k: k, n: rr2.length, med: isFinite(med) ? med : NaN, mean: rate.length ? S.mean(rate) : null, se: rate.length > 1 ? S.se(rate) : NaN, ci: rate.length > 1 ? 2 * S.se(rate) : NaN };
     });
     dsum.setRows(sum);
     if (!rows.length) { dchart.update({ series: [] }); dchart2.update({ series: [] }); return; }
@@ -1250,7 +1250,7 @@ const Predict = (function () {
   function dFinish(setRows) {
     dCups.forEach(c => easeDisks(c.disks, 1)); dDraw(); $('#d-t').textContent = Math.min(D_MAX, Math.round(dT)) + ' min'; dAnim = null; dLoop = null; dRec.stop();
     const iv = dIvKey, per = new Map();
-    if (setRows) draw.setRows(dCups.map(c => { const k = String(c.v); per.set(k, (per.get(k) || 0) + 1); const e = et50(c.counts, 10); return { v: c.v, lvl: lvName(iv, c.v), cup: per.get(k), et: e, etTxt: e == null ? '> 45' : fmt(e, 1), rate: e == null || e === 0 ? 0 : 1 / e }; }));
+    if (setRows) draw.setRows(dCups.map(c => { const k = String(c.v); per.set(k, (per.get(k) || 0) + 1); const e = et50(c.counts, 10); return { v: c.v, lvl: lvName(iv, c.v), cup: per.get(k), et: e, etTxt: e == null ? '> 45' : fmt(e, 1), rate: e == null || e === 0 ? null : 1 / e }; }));
     Lab.store.set('d-run', Object.assign(Lab.store.get('d-run') || {}, { done: true }));
   }
   function dBegin(sd) { rng = Lab.rng(sd); dPreview(); dCups.forEach(c => { c.counts = [c.disks.filter(d => d.up).length]; c.t = 0; }); dT = 0; dTarget = 0; }
