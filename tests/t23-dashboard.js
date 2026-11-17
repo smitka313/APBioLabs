@@ -100,6 +100,13 @@ async function makeStudent(b, srv, st, dir, via) {
   T.ok(row('Ana Diaz')[7] === '6/8' && row('Cy Lee')[7] === '7/8', 'pre-lab scores (Ana 6/8, Cy 7/8)');
   T.ok(row('Cy Lee')[2] === cy.ds, 'Cy: progress file, Dataset ID ' + cy.ds);
   T.ok(/^[2-9A-Z]{3}-[2-9A-Z]{3}$/.test(row('Old Format')[2]) && row('Old Format')[3] === '—', 'old-format file: Dataset ID computed, parts unknown');
+  // Progress filters distinguish unfinished work from older files with no progress metadata.
+  await d.selectOption('#f-progress', 'unknown');
+  T.ok(await d.locator('table.grid tbody tr').count() === 1 && /Old Format/.test(await d.locator('table.grid tbody').innerText()), 'progress filter: unknown isolates legacy file');
+  await d.selectOption('#f-progress', 'incomplete');
+  T.ok(await d.locator('table.grid tbody tr').count() === 4, 'progress filter: four incomplete records');
+  await d.selectOption('#f-progress', '');
+  T.ok(await d.locator('table.grid tbody tr').count() === 5, 'progress filter: all records restored');
   // duplicates
   const flags = n => (row(n) || []).slice(-1)[0];
   T.ok(/Same Dataset ID as Dee Fox/.test(flags('Ana Diaz')) && /Same Dataset ID as Ana Diaz/.test(flags('Dee Fox')), 'shared Dataset ID flagged on both rows');

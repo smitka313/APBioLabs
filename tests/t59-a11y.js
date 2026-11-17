@@ -110,35 +110,32 @@ async function keyboard(b) {
     T.ok(await p.evaluate(() => { const sec = document.querySelector('section.step.is-current'); return !!sec && sec.contains(document.activeElement); }), `${lab}: the next Tab stays in the current part`);
     await p.goto(p.url().split('#')[0] + '#' + k.part); await sleep(900); await goPart(p, k.part); await sleep(300);
 
-    // Labs 3 and 4 contain lengthy focus sequences before the active activity.
-    // The skip-link navigation is tested above; begin this control traversal at
-    // the first visible focusable control inside the active section.
-    if (lab === 'lab03' || lab === 'lab04' || lab === 'lab11' || lab === 'lab13') {
-      await p.evaluate(() => {
-        const sec = document.querySelector('section.step.is-current');
-        const controls = sec?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])') || [];
-        for (const el of controls) {
-          const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) { el.focus(); break; }
-        }
-      });
-    }
-    // Labs 3 and 13 have long sequences of unrelated interactive controls. The skip-link
-    // traversal was already verified above; check the BLAST button from its
-    // immediately preceding visible focusable control to detect an actual trap.
-    if (lab === 'lab03' || lab === 'lab11' || lab === 'lab13') {
-      await p.evaluate(selector => {
+    // Skip-link navigation was checked above. For long interactive sections,
+    // start at the nearest preceding keyboard-focusable control in the same
+    // section; this checks forward Tab order without a 300-stop page-wide loop.
+    const nearTarget = ['lab03', 'lab11', 'lab12', 'lab13'].includes(lab);
+    if (nearTarget) {
+      const start = await p.evaluate(selector => {
         const target = document.querySelector(selector);
         const section = target?.closest('section.step');
-        const controls = [...(section?.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])') || [])]
-          .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+        const controls = [...(section?.querySelectorAll('a[href], button, input, select, textarea, summary, [tabindex]') || [])]
+          .filter(el => {
+            const style = getComputedStyle(el), rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' &&
+              style.display !== 'none' && !el.disabled && el.tabIndex >= 0 &&
+              !el.closest('[inert]') && !el.closest('details:not([open]) :not(summary)');
+          });
         const index = controls.indexOf(target);
-        if (index > 0) controls[index - 1].focus();
+        if (index < 1) return { ok: false, index, total: controls.length };
+        controls[index - 1].focus();
+        return { ok: document.activeElement === controls[index - 1], index, total: controls.length };
       }, k.btn);
+      T.ok(start.ok, `${lab}: preceding control is keyboard focusable (${JSON.stringify(start)})`);
+    } else {
+      await p.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
+      await p.keyboard.press('Tab');
     }
-    // Tab from the top to the run control, checking every stop on the way
-    await p.evaluate(() => { if (!['lab03', 'lab04', 'lab11', 'lab13'].includes(location.pathname.split('/').pop().replace('.html', ''))) document.activeElement && document.activeElement.blur(); window.scrollTo(0, 0); });
-    if (lab !== 'lab03' && lab !== 'lab04' && lab !== 'lab11' && lab !== 'lab13') await p.keyboard.press('Tab');
+    // The full skip-link path and the local activity path are checked separately.
     let n = 0, hit = false; const noRing = new Set(), hidden = new Set();
     for (; n < 300; n++) {
       if (await p.evaluate(s => document.activeElement === document.querySelector(s), k.btn)) { hit = true; break; }

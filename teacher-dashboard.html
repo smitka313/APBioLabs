@@ -127,6 +127,7 @@
   <div class="toolbar" id="toolbar" hidden role="search" aria-label="Filter the grid">
     <div class="field"><label for="f-lab">Lab</label><select id="f-lab"></select></div>
     <div class="field"><label for="f-class">Class period</label><select id="f-class"></select></div>
+    <div class="field"><label for="f-progress">Progress</label><select id="f-progress"><option value="">All progress</option><option value="incomplete">Incomplete</option><option value="complete">Complete</option><option value="unknown">No progress data</option></select></div>
     <div class="field grow"><label for="f-q">Find a student</label><input type="search" id="f-q" placeholder="Type part of a name" autocomplete="off"></div>
     <button class="btn btn--primary" type="button" id="csv">Export grid as CSV</button>
   </div>
@@ -258,7 +259,7 @@
   const studentKey = r => r.name.toLowerCase() + '|' + r.period;
 
   /* ---------- State ---------- */
-  const S = { recs: [], skipped: [], sort: { key: 'name', dir: 1 }, lab: '', period: '', q: '' };
+  const S = { recs: [], skipped: [], sort: { key: 'name', dir: 1 }, lab: '', period: '', progress: '', q: '' };
   const say = t => { $('#live').textContent = t; };
 
   function addPayload(p, file, sample) {
@@ -338,7 +339,8 @@
       return c ? c * dir : a.name.localeCompare(b.name);
     });
   }
-  const visible = () => S.recs.filter(r => (!S.lab || r.lab === S.lab) && (!S.period || r.period === S.period) && (!S.q || r.name.toLowerCase().includes(S.q.toLowerCase())));
+  const progressState = r => !r.parts || !(r.parts.total > 0) ? 'unknown' : r.parts.done >= r.parts.total ? 'complete' : 'incomplete';
+  const visible = () => S.recs.filter(r => (!S.lab || r.lab === S.lab) && (!S.period || r.period === S.period) && (!S.progress || progressState(r) === S.progress) && (!S.q || r.name.toLowerCase().includes(S.q.toLowerCase())));
   const periodLabel = p => p === '' ? '—' : (p === 'Other' ? 'Other' : p);
 
   /* ---------- Rendering ---------- */
@@ -487,9 +489,10 @@
   window.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
   $('#files').addEventListener('change', e => { const l = e.target.files; addFiles(l).then(() => { e.target.value = ''; }); });
   $('#sample').addEventListener('click', loadSample);
-  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.q = ''; $('#f-q').value = ''; render(); say('Cleared.'); });
+  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.progress = ''; S.q = ''; $('#f-q').value = ''; $('#f-progress').value = ''; render(); say('Cleared.'); });
   $('#f-lab').addEventListener('change', e => { S.lab = e.target.value; render(); });
   $('#f-class').addEventListener('change', e => { S.period = e.target.value; render(); });
+  $('#f-progress').addEventListener('change', e => { S.progress = e.target.value; render(); });
   $('#f-q').addEventListener('input', e => { S.q = e.target.value.trim(); render(); });
   $('#csv').addEventListener('click', downloadCsv);
   document.addEventListener('click', e => {
