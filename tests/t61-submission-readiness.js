@@ -11,7 +11,7 @@ const T = require('./_h');
       T.ok(/Your progress: \d+ of \d+ sections with tracked activities complete/.test(text), lab + ': readiness count visible');
       T.ok(/you can download a report before finishing every activity/i.test(text), lab + ': explicitly non-blocking');
       T.ok(/Downloading does not submit it/.test(await p.locator('.report-bar').innerText()), lab + ': report download is clearly distinguished from submission');
-      const transferHelp = await p.locator('details.move-work .inner').innerText();
+      const transferHelp = await p.locator('details.move-work .inner').textContent();
       T.ok(/answers and Dataset ID/.test(transferHelp) && /cannot restore editable lab progress/.test(transferHelp), lab + ': transfer instructions distinguish progress backups from reports');
 
       T.ok(await p.getByRole('button', { name: 'Download .docx' }).isEnabled(), lab + ': Word download enabled with incomplete work');
