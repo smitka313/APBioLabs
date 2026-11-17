@@ -295,7 +295,7 @@
       <div class="calc-fb" id="calc-fb" aria-live="polite"></div>
 
       <h3 style="margin:24px 0 8px">Results from your transformations</h3>
-      <div id="runs-table"></div>
+      <details id="runs-history" class="disclose"><summary>Previous transformation runs (saved history)</summary><div id="runs-table"></div></details>
       <div id="runs-chart"></div>
       <p class="small muted">Dashed lines mark the typical range for this protocol: 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.</p>
     </div>
@@ -1227,7 +1227,8 @@ function clearOldRun() {
   PLATES.forEach(p => Lab.store.set('field:plate-pred-' + p.id, null));
   /* The previous prediction verdicts are no longer valid after reset. */
   const previousVerdicts = $('#ev-recall');
-  if (previousVerdicts) previousVerdicts.querySelectorAll('.feedback, .status, .msg').forEach(el => { el.textContent = ''; });
+  if (previousVerdicts) { previousVerdicts.hidden = true; previousVerdicts.setAttribute('aria-hidden', 'true'); }
+  const history = $('#runs-history'); if (history) history.open = false;
   try { window.dispatchEvent(new Event('aplab:work')); } catch (e) { /* ignore */ }
 }
 $('#restart').addEventListener('click', () => { if (!busy) { clearOldRun(); reset(); saveSim(); } });
@@ -1382,6 +1383,7 @@ function savePlatePredText() {
   PLATES.forEach((p, i) => { if (rec[i]) Lab.store.set('field:plate-pred-' + p.id, rec[i].pred); });
 }
 function gradePreds() {
+  const previousVerdicts = $('#ev-recall'); if (previousVerdicts) { previousVerdicts.hidden = false; previousVerdicts.removeAttribute('aria-hidden'); }
   /* Save what the student predicted for each plate next to what grew, so Reflect can quote it. */
   Lab.store.set('plate-pred-record', PLATES.map(p => ({ plate: p.name, pred: ($('#pr-' + p.id).selectedOptions[0] || {}).text || '', actual: (PRED_OPTS.find(o => o[0] === plates[p.id].cls) || [])[1] || '' })));
   savePlatePredText();
