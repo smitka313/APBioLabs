@@ -68,6 +68,26 @@
   .card .meta { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; }
   .card .sim-line { font-size: .88rem; color: var(--ink); }
   .icon { width: 44px; height: 44px; }
+
+  /* Desktop homepage: preserve the animated lab bench, reclaim vertical space. */
+  .hero { padding-block: 176px 24px; }
+  .hero-grid { align-items: center; gap: 20px 42px; }
+  .hero-actions { display: grid; gap: 12px; min-width: 0; align-content: center; }
+  .hero-actions .pickup { margin: 0; max-width: none; width: 100%; box-sizing: border-box; }
+  .hero-actions .pickup:not([hidden]) { display: grid; }
+  .hero-actions .home-status { margin: 0; }
+  .hero-browse { color: var(--h-link); font-weight: 700; font-size: .94rem; width: fit-content; text-underline-offset: 4px; }
+  .hero-browse:focus-visible { outline: 3px solid var(--h-link); outline-offset: 4px; }
+  @media (min-width: 960px) {
+    .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(340px, .95fr); }
+    .hero h1 { max-width: 18ch; }
+    .hero .lede { max-width: 50ch; }
+    .hero-actions .pickup { padding: 18px 20px; }
+  }
+  @media (min-width: 1400px) { .hero { padding-block: 180px 26px; } }
+  @media (max-width: 959px) { .hero-grid { align-items: stretch; } .hero-actions { max-width: 680px; } }
+  @media (max-width: 640px) { .hero { padding-block: 150px 22px; } .hero-actions .pickup { padding: 14px; } }
+  @media print { .hero { padding-block: 12px; } }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <noscript><style>main#labs:empty { min-height: 0 !important; } .home-status { display: none !important; } .nojs-labs { padding-block: 32px 40px; }</style></noscript>
@@ -78,7 +98,6 @@
   <canvas class="bench-scene" id="bench-scene" role="img" aria-label="A dark lab bench with equipment along the back."></canvas>
   <div class="bench-sheen" aria-hidden="true"></div>
   <div class="wrap wrap--wide gutter">
-    <section class="pickup" id="resume" hidden></section>
     <div class="hero-grid">
       <div>
         <div class="eyebrow">AP Biology · 13 investigations</div>
@@ -87,7 +106,7 @@
         <nav class="hero-links small" aria-label="Teacher resources"><a href="teachers.html">For teachers</a> · <a href="getting-started.html">5-minute teacher setup</a> · <a href="teacher-notes.html">Teacher notes (password)</a></nav>
         <p class="bench-note" id="bench-note"></p>
       </div>
-      <div class="home-status"><div id="home-identity"></div></div>
+      <div class="hero-actions"><section class="pickup" id="resume" hidden></section><div class="home-status"><div id="home-identity"></div></div><a class="hero-browse" href="#labs">Explore all 13 investigations ↓</a></div>
     </div>
   </div>
 </header>
