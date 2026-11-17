@@ -26,10 +26,17 @@ const T = require('./_h');
         T.ok(actual === expected, lab + ': resume opens first unfinished section (' + actual + ')');
         await p.evaluate(() => Lab.pages.go('submit'));
       }
+      // Progress can be repainted after restoring the current section.
+      // Wait for the accessibility descriptions to match the visible status.
+      await p.waitForFunction(() => {
+        const links = [...document.querySelectorAll('.step-nav ol a.has-work')];
+        return links.length > 0 && links.every(a =>
+          /(?:\d+ activities? remaining|All tracked activities complete)/.test(a.getAttribute('aria-description') || ''));
+      }, null, { timeout: 3000 }).catch(() => {});
       const navDescriptions = await p.locator('.step-nav ol a.has-work').evaluateAll(links =>
-        links.map(a => a.getAttribute('aria-description')));
-      T.ok(navDescriptions.length > 0 && navDescriptions.every(x => /activities? remaining|All tracked activities complete/.test(x || '')),
-        lab + ': navigation exposes remaining counts to assistive technology');
+        links.map(a => ({ section: a.getAttribute('href'), description: a.getAttribute('aria-description') })));
+      T.ok(navDescriptions.length > 0 && navDescriptions.every(x => /(?:\d+ activities? remaining|All tracked activities complete)/.test(x.description || '')),
+        lab + ': navigation exposes remaining counts to assistive technology ' + JSON.stringify(navDescriptions));
       const links = ready.locator('a[href^="#"]');
       T.ok(await links.count() > 0, lab + ': unfinished sections linked');
       if (await links.count()) {
