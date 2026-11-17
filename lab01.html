@@ -346,7 +346,7 @@
   <!-- ============ 8. ANALYZE ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="15" id="analyze">
     <header><div class="eyebrow">Analyzing and evaluating results</div><h2>Did evolution happen?</h2></header>
-    <div class="step-body"><div class="callout callout--tip"><div class="callout-title">Selection: which means do I compare?</div><p><strong>Selection differential:</strong> selected parents − original population.</p><p><strong>Response to selection:</strong> offspring − original population.</p><p class="small">Label each mean by generation before subtracting.</p></div>
+    <div class="step-body"><div id="data-feedback-01"></div><div class="callout callout--tip"><div class="callout-title">Selection: which means do I compare?</div><p><strong>Selection differential:</strong> selected parents − original population.</p><p><strong>Response to selection:</strong> offspring − original population.</p><p class="small">Label each mean by generation before subtracting.</p></div>
       <details class="disclose"><summary>How do I interpret selection across generations?</summary><div class="inner"><ol><li><strong>Label the populations.</strong> Identify the original population, selected parents, and offspring before comparing means.</li><li><strong>Separate selection from response.</strong> The selection differential describes how the chosen parents differ from the original population; the response describes how the offspring differ from the original population.</li><li><strong>Use evidence and uncertainty.</strong> Compare the means and variation in your results. If you use a t-test, interpret its result alongside sample size and the observed effect.</li><li><strong>Evaluate the claim.</strong> Explain whether the offspring data support a heritable response to selection, and identify a limitation or alternative explanation.</li></ol><p class="small">A change in one generation is evidence to evaluate, not proof that every future generation will change the same way.</p></div></details><h3>Two-sample t-test</h3>
       <p class="muted small">Compare two populations' means. Type your own numbers, press <strong>Use my data</strong> to fill them from your simulation, or press <strong>Show a worked example</strong> for clearly labelled sample numbers (never saved as your work). If |t| is larger than the critical value, the difference is unlikely to be chance alone (p &lt; 0.05).</p>
       <p class="callout callout--tip" id="tt-banner" hidden style="margin:8px 0"><strong>EXAMPLE — not your data.</strong> These are sample numbers. <button class="btn btn--sm" id="tt-clear-ex" type="button">Clear example</button></p>
@@ -1818,6 +1818,8 @@ const Predict = (function () {
   $('#score2').addEventListener('click', () => { if (g2Scored()) Lab.toast('Generation 2 scored', { type: 'ok', announce: false, key: 'scored2' }); });
   $('#round').addEventListener('click', () => { if (selLine.length > seenRounds) { seenRounds = selLine.length; Lab.toast(`Generation ${selLine[selLine.length - 1].gen} grown`, { type: 'ok', announce: false, key: 'round' }); } });
 })();
+
+Lab.dataFeedback('#data-feedback-01', {"table":"d-table","fields":["mean"],"prompt":"Compare mean trichome traits across selection generations and identify which population each value represents. A change in means alone does not establish its cause."});
 </script>
 </body>
 </html>
