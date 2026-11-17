@@ -232,7 +232,8 @@
           <p class="status" id="la-msg" aria-live="polite"></p>
         </div>
       </div>
-      <div id="la-table"></div>      <div id="la-table"></div>
+      <div id="la-table"></div>
+      <p class="small muted">The planimeter measures the traced leaf outline, while the grid method estimates area from counted squares. A negative percent difference means your grid estimate is smaller than the planimeter value; check tracing scale, full and partial square counts, and boundary squares before concluding you miscounted.</p>
       <div id="la-q" class="stack prompts-2"></div>
     </div>
   </section>
@@ -288,7 +289,8 @@
           <p class="status" id="st-msg" aria-live="polite"></p>
         </div>
       </div>
-      <div id="st-table"></div>      <div id="st-table"></div>
+      <div id="st-table"></div>
+      <button class="btn btn--primary" id="st-record-below" type="button">Record this field</button>
       <div class="callout callout--question">
         <div class="callout-title">Calculate stomatal density</div>
         <div class="callout callout--tip"><div class="callout-title">Stomatal density and units</div><p><strong>Density (stomata/mm²) = mean count per field ÷ field area (mm²)</strong></p><p class="small">Field area = πr<sup>2</sup>; here r = 0.225 mm. Average counts from the same microscope field type.</p></div>
@@ -1049,6 +1051,7 @@ function frq(host, o) {
     columns: [{ key: 'n', label: 'Field' }, { key: 'sp', label: 'Slide' }, { key: 'surf', label: 'Surface' }, { key: 'mag', label: 'Mag.' }, { key: 'count', label: 'Your count', unit: 'stomata', num: true, digits: 0 }, { key: 'actual', label: 'Actual count', unit: 'stomata', num: true, digits: 0 }, { key: 'dens', label: 'Density in this field', unit: 'stomata/mm²', num: true, digits: 0 }],
     onChange: rows => { $('#st-n').textContent = String(rows.length); setTimeout(() => stDensCheck(true), 0); }
   });
+  $('#st-record-below').addEventListener('click', () => $('#st-record').click());
   $('#st-record').addEventListener('click', () => {
     Lab.sound.play('click');
     const rows = stTable.getRows(), sp = STOM.find(s => s.k === st.sp), cnt = tally();
