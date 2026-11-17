@@ -10,6 +10,7 @@ const T = require('./_h');
       const text = await ready.innerText();
       T.ok(/Your progress: \d+ of \d+ sections with tracked activities complete/.test(text), lab + ': readiness count visible');
       T.ok(/you can download a report before finishing every activity/i.test(text), lab + ': explicitly non-blocking');
+      T.ok(/Downloading does not submit it/.test(await p.locator('.report-bar').innerText()), lab + ': report download is clearly distinguished from submission');
       T.ok(await p.getByRole('button', { name: 'Download .docx' }).isEnabled(), lab + ': Word download enabled with incomplete work');
       T.ok(await p.getByRole('button', { name: 'Save as PDF' }).isEnabled(), lab + ': PDF enabled with incomplete work');
       T.ok(/saved in this browser; it has not been sent to your teacher/i.test(text), lab + ': saved work is not represented as submitted');
