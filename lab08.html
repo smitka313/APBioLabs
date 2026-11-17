@@ -297,7 +297,7 @@
       <h3 style="margin:24px 0 8px">Results from your transformations</h3>
       <details id="runs-history" class="disclose"><summary>Previous transformation runs (saved history)</summary><div id="runs-table"></div></details>
       <div id="runs-chart"></div>
-      <p class="small muted">Dashed lines mark the typical range for this protocol: 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.</p>
+      <p class="small muted" id="runs-range-caption">Dashed lines mark the typical range for this protocol: 8.0 × 10<sup>2</sup> to 7.0 × 10<sup>3</sup> transformants/µg.</p>
     </div>
   </section>
 
@@ -1655,7 +1655,7 @@ PLATES.forEach((p, i) => Lab.predictCompare('#ev-recall', {
   summarize: r => { const pl = plates && plates[p.id]; return `${r.plate}: ${r.actual.toLowerCase()}` + (pl && pl.incubated && !pl.lawn && pl.count ? ` (${pl.count} colonies)` : '') + '.'; },
   delta: r => r.pred === r.actual ? 'Your prediction matched this plate.' : `You predicted “${r.pred}”, but the plate showed: ${r.actual.toLowerCase()}.`
 }));
-Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'Compare your plate predictions (shown above) with what grew. Which predictions were right, which were wrong, and what did the differences teach you about transformation, selection, or the <em>ara</em> promoter?', rows: 4 });
+Lab.prompt('#evaluate-prompts', { key: 'ev-pred', label: 'If you have completed a transformation, compare your saved plate predictions with what grew. If you reset the bench, review the previous runs in saved history. Which predictions were right, which were wrong, and what did the differences teach you about transformation, selection, or the <em>ara</em> promoter?', rows: 4 });
 [['ev1', 'What challenges did you run into? Did you make any incorrect assumptions?'],
  ['ev2', 'What are possible sources of error in the transformation procedure? How would you reduce them if you repeated it?'],
  ['ev3', 'Were the efficiency calculations straightforward? Which step was hardest?'],
@@ -1720,6 +1720,10 @@ Lab.steps('#t-steps', [
   { id: 'count', text: 'Count the colonies (below)', target: '#zoom-plate', done: () => Object.values(marks || {}).some(a => a.length > 0) || runsTable.getRows().length > 0, hint: 'Scroll down: pick the +pGLO LB/amp plate and click each colony.' },
   { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => runsTable.getRows().length > 0, hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
 ], { doneText: 'Transformation done. Next, test a variable in <a href="#design">Design</a>.' });
+const rangeCaption = $('#runs-range-caption');
+const syncRangeCaption = () => { if (rangeCaption) rangeCaption.hidden = !$('#runs-chart').querySelector('svg, canvas'); };
+new MutationObserver(syncRangeCaption).observe($('#runs-chart'), { childList: true, subtree: true });
+syncRangeCaption();
 Lab.gate('#use-count', () => exampleOn ? 'Clear the example first' : incubated() ? '' : 'Incubate your plates first');
 Lab.gate('#calc-check', () => exampleOn ? 'Clear the example to check your own numbers' : incubated() ? '' : 'Incubate your plates first');
 Lab.gate('#calc-add', () => exampleOn ? 'Clear the example to add your own run' : incubated() ? '' : 'Incubate your plates first');
