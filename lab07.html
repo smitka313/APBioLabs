@@ -1472,7 +1472,7 @@ const CHI = (function () {
     const r = ST.chiSquare(ex.map(e => e[1]), ex.map(e => e[2]));
     Own.key('chi2-lectin', { label: 'Chi-square, lectin vs control (df = 1)', value: +fmt(r.chi2, 2), unit: '', part: 'Root tips' });
     const df = 1, crit = ST.chiCrit(1), crit01 = ST.chiCrit(1, 0.01), rej = r.chi2 >= crit;
-    const rows = ex.map((e, i) => [e[0], e[1], fmt(e[2], 1), fmt(e[1] - e[2], 1), fmt((e[1] - e[2]) ** 2, 1), fmt(r.terms[i], 2)]);
+    const rows = ex.map((e, i) => [e[0], e[1], fmt(e[2], 2), fmt(e[1] - e[2], 2), fmt((e[1] - e[2]) ** 2, 2), fmt(r.terms[i], 2)]);
     rows.push(['<strong>χ² = Σ (o − e)²/e</strong>', '', '', '', '', `<strong>${fmt(r.chi2, 2)}</strong>`]);
     $('#chi-out').innerHTML = '<h4 style="margin:10px 0 4px">Table 4 · Calculation of chi-square</h4>' + tbl(['Group', 'Observed (o)', 'Expected (e)', 'o − e', '(o − e)²', '(o − e)²/e'], rows) +
       `<div class="decision ${rej ? 'rej' : 'keep'}" style="margin-top:8px">χ² = <strong>${fmt(r.chi2, 2)}</strong>, df = ${df}, critical value = ${crit} (<i>p</i> = 0.05)${r.chi2 >= crit01 ? `; it also exceeds ${crit01} (<i>p</i> = 0.01)` : ''}. ${rej ? 'Because χ² ≥ the critical value, <strong>reject the null hypothesis</strong>: the difference in mitotic cells is unlikely to be due to chance alone.' : 'Because χ² is below the critical value, <strong>fail to reject the null hypothesis</strong>: the difference could be due to chance.'}</div>`;
