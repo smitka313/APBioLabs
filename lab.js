@@ -503,7 +503,7 @@
     if (!root) return;
     const status = h('p', { class: 'small', role: 'status', 'aria-live': 'polite' });
     const run = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => {
-      const table = REG.tables.find(t => t.el.id === config.table);
+      const table = REG.tables.find(t => t.el.id === config.table || (config.table.startsWith('#') && t.el.matches(config.table)));
       if (!table) { status.textContent = 'This data table is not available yet. Return to the investigation.'; return; }
       const rows = table.getRows().filter(r => !r._setup);
       if (!rows.length) { status.textContent = 'No recorded trial rows yet. Complete the investigation and return to check your evidence.'; return; }
