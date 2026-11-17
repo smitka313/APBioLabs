@@ -410,9 +410,9 @@
     };
     const m = misses(rows);
     const first = rows[0];
-    const cc = { 3: 0, 2: 0, 1: 0, 0: 0 }; rows.forEach(r => { cc[r.conf || 0]++; });
+    const cc = { 3: 0, 2: 0, 1: 0, 0: 0 }; rows.forEach(r => { const value = confOf(r.conf); cc[value == null ? 0 : value]++; });
     const answered = cc[1] + cc[2] + cc[3];
-    const confBlock = answered ? `<section class="conf-sum" aria-label="Confidence summary for ${esc(first.labTitle)}"><h3>Confidence: how students rated themselves</h3>
+    const confBlock = rows.length ? `<section class="conf-sum" aria-label="Confidence summary for ${esc(first.labTitle)}"><h3>Confidence: how students rated themselves (${rows.length} imported records)</h3>
       <ul><li><span class="conf"><span class="dots" aria-hidden="true">${confDots(3)}</span> ${CONF[3]}</span> <span class="n">${cc[3]}</span></li><li><span class="conf"><span class="dots" aria-hidden="true">${confDots(2)}</span> ${CONF[2]}</span> <span class="n">${cc[2]}</span></li><li class="lost"><span class="conf"><span class="dots" aria-hidden="true">${confDots(1)}</span> ${CONF[1]}</span> <span class="n">${cc[1]}</span></li><li class="muted">No answer <span class="n">${cc[0]}</span></li></ul>
       <div class="bar" aria-hidden="true"><i style="width:${100 * cc[3] / rows.length}%;background:var(--ok)"></i><i style="width:${100 * cc[2] / rows.length}%;background:var(--warn)"></i><i style="width:${100 * cc[1] / rows.length}%;background:var(--bad)"></i></div></section>` : '';
     return `<section class="labblock" data-lab="${lab}" aria-labelledby="h-${lab}">
