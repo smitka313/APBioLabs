@@ -352,7 +352,7 @@
 
   <section class="step wrap wrap--wide gutter" data-step="Analyze" data-minutes="15" id="analyze">
     <header><div class="eyebrow">Analyzing results</div><h2>What controls the rate?</h2></header>
-    <div class="step-body" id="analysis">
+    <div class="step-body" id="analysis"><div id="data-feedback-13"></div>
       <p class="small">Need to revisit the pH investigation and enzyme-rate measurements? <a href="#procedure-2-ph">Review the investigation steps</a> before interpreting your results.</p><details class="disclose"><summary>How do I compare enzyme activity across conditions?</summary><div class="inner"><ol><li><strong>Use one measurement method.</strong> Compare color scores with color scores or absorbance-change rates with absorbance-change rates, not a mixture of the two.</li><li><strong>Compare rates fairly.</strong> Use the same measurement interval and units for each trial, and describe how activity changes across pH or other tested conditions.</li><li><strong>Use controls and repeats.</strong> Explain what the no-enzyme control reveals and how repeated measurements affect confidence in the pattern.</li><li><strong>Interpret the evidence.</strong> Identify the tested condition with the greatest measured activity and discuss uncertainty without assuming that all enzymes have the same optimum.</li></ol><p class="small">An observed change in color or absorbance is evidence of the assay response; explain how it supports your claim about enzyme activity.</p></div></details>      <details class="disclose"><summary>Scientific reasoning self-check (optional)</summary><div class="inner"><p class="small">Review your explanation before submitting. These checkpoints are reminders, not automatic grading or evaluation of your writing.</p><ul><li>My claim compares enzyme activity across tested conditions.</li><li>I cite color scores or absorbance-change rates using consistent units and intervals.</li><li>I connect the trend to enzyme function and explain the role of controls.</li><li>I acknowledge uncertainty and avoid assuming the same optimum for every enzyme.</li></ul><p class="small">If something is missing, revisit your measurements and revise your explanation. Your writing is not automatically scored here.</p></div></details>
 </div>
   </section>
@@ -1316,6 +1316,8 @@ function frq(host, o) {
       '(d) A single late reading is affected by substrate running out and enzyme losing activity; the slope of the early linear part measures the rate before those effects, so the tubes can be fairly compared.']
   });
 })();
+
+Lab.dataFeedback('#data-feedback-13', {"table":"p2-table","fields":["dA"],"prompt":"Compare absorbance changes across pH only with matched measurement intervals and methods. The sign and magnitude of change require interpretation alongside controls."});
 </script>
 </body>
 </html>
