@@ -2012,7 +2012,7 @@
         const blob = await Lab.report.docx();
         const name = reportFileBase() + '.docx';
         downloadBlob(blob, name);
-        say(`Downloaded ${name}. Hand it in the way your teacher asks.` + nameWarn());
+        say(`Downloaded ${name} to this device. It has not been submitted; upload or hand in the file where your teacher directs.` + nameWarn());
         reportSaved();
         Lab.toast(`Downloaded ${name}`, { type: 'ok', announce: false });
         if (LIKELY_PREVIEW) note.hidden = false;
@@ -2028,7 +2028,7 @@
     const tlSync = () => { tlRow.hidden = !Lab.timelapse.withRun().length; };
     window.addEventListener('aplab:timelapse', tlSync); setTimeout(tlSync, 400);
     const bar = h('div', { class: 'responses-bar report-bar' },
-      h('span', { class: 'grow' }, 'Hand in your work: download a Word (.docx) report or choose Save as PDF and save it from the print window. Submit that file where your teacher directs. A report is not a progress backup; use Move your work to another computer below if you need to continue on another device.'), docxBtn, pdfBtn, prevBtn,
+      h('span', { class: 'grow' }, 'Step 1 — Download a report: choose Word (.docx), or choose Save as PDF and save the file from the print window. Step 2 — Submit the downloaded file in the location your teacher specifies (such as your class LMS). Downloading does not submit it. To continue editing on another device, use Move your work to another computer below; a report is not a progress backup.'), docxBtn, pdfBtn, prevBtn,
       h('button', { class: 'btn btn--ghost', type: 'button', onclick: printWorksheet }, 'Print worksheet'), tlRow);
     // Informational only: existing sectionWork() drives the same progress indicators as the step navigation.
     // Do not gate report downloads or introduce additional completion requirements.
