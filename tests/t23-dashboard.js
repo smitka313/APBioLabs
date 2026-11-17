@@ -161,7 +161,7 @@ async function makeStudent(b, srv, st, dir, via) {
   const csv = fs.readFileSync(csvPath, 'utf8').replace(/^﻿/, '');
   const lines = csv.trim().split(/\r?\n/);
   T.ok(dl.suggestedFilename() === 'lab-bench-class-grid.csv' && lines.length === 6, 'CSV download: header + 5 rows (' + dl.suggestedFilename() + ')');
-  T.ok(/^Lab,Student,Class,Dataset ID,Parts done,Parts total,Lab 5: ET₅₀ \(with CO₂\) \(min\),/.test(lines[0]) && /FRQ self-score/.test(lines[0]) && /Flags,Dataset owner$/.test(lines[0]), 'CSV header: ' + lines[0].slice(0, 90));
+  T.ok(/^Lab,Student,Class,Dataset ID,Parts done,Parts total,Completion status,Completion percent,Review reasons,Missing result fields,Lab 5: ET₅₀ \(with CO₂\) \(min\),/.test(lines[0]) && /FRQ self-score/.test(lines[0]) && /Flags,Dataset owner$/.test(lines[0]), 'CSV header: ' + lines[0].slice(0, 90));
   T.ok(lines.some(l => l.startsWith('Lab 5,Ana Diaz,2,' + ana.ds) && l.includes(',10.4,27.1,')) && lines.some(l => /Same Dataset ID as Dee Fox/.test(l)), 'CSV rows carry values and flags');
   await d.selectOption('#f-class', '4');
   const [dl2] = await Promise.all([d.waitForEvent('download'), d.click('#csv')]); await dl2.saveAs(csvPath);
@@ -173,7 +173,7 @@ async function makeStudent(b, srv, st, dir, via) {
   // clear, then sample data
   await d.click('#clear'); T.ok(await d.locator('table.grid').count() === 0, 'Clear everything empties the grid');
   await d.click('#sample'); await d.waitForSelector('table.grid');
-  const sample = await d.evaluate(() => ({ tables: document.querySelectorAll('table.grid').length, pills: document.querySelectorAll('.pill.sample').length, banner: !document.getElementById('sample-banner').hidden, flagged: document.querySelectorAll('tr.is-flagged').length, misses: document.querySelectorAll('.misses').length }));
+  const sample = await d.evaluate(() => ({ tables: document.querySelectorAll('table.grid').length, pills: document.querySelectorAll('.pill.sample').length, banner: !document.getElementById('sample-banner').hidden, flagged: document.querySelectorAll('tr.is-flagged').length, misses: document.querySelectorAll('.labblock .misses').length }));
   T.ok(sample.tables === 3 && sample.pills >= 28 && sample.banner && sample.flagged >= 4 && sample.misses === 3, 'sample data: 3 labs, every row labelled Sample, banner, flags ' + JSON.stringify(sample));
   await d.selectOption('#f-lab', 'lab09');
   T.ok(await d.locator('table.grid').count() === 1, 'lab filter');
