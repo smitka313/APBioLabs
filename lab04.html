@@ -1287,7 +1287,7 @@ const Predict = (function () {
     ],
     onChange: rows => {
       const g = new Map();
-      rows.forEach(r => { const k = r.t + ' min'; if (!g.has(k)) g.set(k, []); g.get(k).push({ x: r._ratio, y: r._pct }); });
+      rows.forEach(r => { const k = r.t + ' min'; if (!Number.isFinite(r._ratio) || !Number.isFinite(r._pct)) return; if (!g.has(k)) g.set(k, []); const points = g.get(k); if (!points.some(p => Math.abs(p.x - r._ratio) < 1e-8 && Math.abs(p.y - r._pct) < 1e-8)) points.push({ x: r._ratio, y: r._pct }); });
       p1chart.update({ series: [...g.entries()].map(([name, points]) => ({ name, points, line: false })) });
     }
   });
