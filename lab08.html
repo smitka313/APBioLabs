@@ -1230,6 +1230,8 @@ function clearOldRun() {
   if (previousVerdicts) { previousVerdicts.hidden = true; previousVerdicts.setAttribute('aria-hidden', 'true'); }
   const history = $('#runs-history'); if (history) history.open = false;
   Lab.store.set('awaiting-new-transformation', true);
+  Lab.store.set('current-transformation-added', false);
+  if (typeof syncRangeCaption === 'function') syncRangeCaption();
   const previousRunChart = $('#runs-chart'); if (previousRunChart) previousRunChart.hidden = true;
   const resultMessage = $('#calc-fb'); if (resultMessage) resultMessage.textContent = '';
   Lab.store.set('calc-inputs', null);
@@ -1517,6 +1519,10 @@ $('#calc-add').addEventListener('click', () => {
   const r = checkCalc(); if (!r || r.count == null) return;
   const araN = plates['p-ara'].cols.filter(c => !c.sat).length;
   runsTable.addRow({ run: runsTable.getRows().length + 1, cond: summary(S), amp: r.count, ara: araN, dna: r.spread, eff: isFinite(r.eff) ? r.eff : null, sci: sciStr(r.eff) });
+  Lab.store.set('current-transformation-added', true);
+  Lab.store.set('awaiting-new-transformation', false);
+  $('#runs-chart').hidden = false;
+  syncRangeCaption();
 });
 
 /* ---------- Design your own ---------- */
@@ -1718,11 +1724,11 @@ Lab.steps('#t-steps', [
   { id: 'pred', text: 'Predict all six plates', target: '#pred-grid select', done: () => $$('#pred-grid select').every(s => s.value !== '') || incubated(), hint: 'Choose what you expect on each plate in <strong>Your predictions</strong>.' },
   { id: 'incub', text: 'Incubate the plates', target: '#do-step', done: () => stepIdx >= STEPS.length, hint: 'Press <strong>Incubate plates</strong>, then view them in room and UV light.' },
   { id: 'count', text: 'Count the colonies (below)', target: '#zoom-plate', done: () => Object.values(marks || {}).some(a => a.length > 0), hint: 'Scroll down: pick the +pGLO LB/amp plate and click each colony.' },
-  { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => !Lab.store.get('awaiting-new-transformation') && runsTable.getRows().length > 0, hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
+  { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => !!Lab.store.get('current-transformation-added'), hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
 ], { doneText: 'Transformation done. Next, test a variable in <a href="#design">Design</a>.' });
 const rangeCaption = $('#runs-range-caption');
-const syncRangeCaption = () => { if (rangeCaption) rangeCaption.hidden = $('#runs-chart').hidden || !!Lab.store.get('awaiting-new-transformation') || !runsTable.getRows().length; };
-new MutationObserver(syncRangeCaption).observe($('#runs-chart'), { childList: true, subtree: true });
+const syncRangeCaption = () => { if (rangeCaption) rangeCaption.hidden = $('#runs-chart').hidden || !runsTable.getRows().length; };
+new MutationObserver(syncRangeCaption).observe($('#runs-chart'), { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
 syncRangeCaption();
 Lab.gate('#use-count', () => exampleOn ? 'Clear the example first' : incubated() ? '' : 'Incubate your plates first');
 Lab.gate('#calc-check', () => exampleOn ? 'Clear the example to check your own numbers' : incubated() ? '' : 'Incubate your plates first');
