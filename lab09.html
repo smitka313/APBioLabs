@@ -967,7 +967,7 @@ function makeGel(rootSel, measSel, cfg) {
   }
   function animatePipette() { const lp = Lab.loop(() => { draw(); if (!st.pipette || performance.now() - st.pipette.t0 > 600) { st.pipette = null; draw(); return false; } }); lp.start(); }
   $('layout').addEventListener('click', () => { if (st.t > 0) newGelBtn(); cfg.layout.forEach((k, i) => { if (k) { st.sel = k; load(i, true); } }); st.sel = cfg.samples[0].key; updateSelectedStatus(); Lab.$$('.tube', $('rack')).forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === st.sel))); msg('ok', 'Loaded: ' + cfg.layout.map((k, i) => k ? `${i + 1} ${sample(k).short}` : null).filter(Boolean).join(', ') + '. Now connect the leads and run.'); });
-  function newGelBtn() { st.gel = Math.max(st.gel, ...meas.getRows().map(r => r.gel || 0)) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel ready. Select a sample tube, then choose an empty well to load it.'); saveState(); }
+  function newGelBtn() { const measured = meas.getRows().filter(r => r.dist != null && Number.isFinite(Number(r.dist))); const previous = Math.max(0, ...measured.map(r => Number(r.gel) || 0)); st.gel = Math.max(st.gel, previous) + (st.t > 0 ? 1 : 0); newGel(); msg('', 'New gel ready. Select a sample tube, then choose an empty well to load it.'); saveState(); }
   $('new').addEventListener('click', newGelBtn);
   // physics
   const pct = () => +$('pct').value, V = () => +$('volt').value;
@@ -1159,6 +1159,7 @@ function makeGel(rootSel, measSel, cfg) {
     st.frozen.V = st.frozen.V * 0.98 + v * 0.02; // separation reflects the voltage used over the run
     return st.dist > GEL_MM + 25 || st.t > 400;
   }
+  const TARGET_MM = 60; // classroom protocol target; distinguish from the physical end of the gel
   const WARN_MM = GEL_MM - 10;   // about 1 cm from the end of the gel
   const loop = Lab.loop(dt => {
     const before = st.dist, over = advance(dt);
@@ -1166,6 +1167,7 @@ function makeGel(rootSel, measSel, cfg) {
     if (performance.now() - lastSave > 1500) saveState();
     if (over) { stop('The dye front ran off the gel. Small fragments ran out of the gel into the buffer.'); return false; }
     if (!st.reversed && st.dist >= GEL_MM) { stop(`The dye front reached the end of the gel (${Lab.fmt(st.dist, 1)} mm), so the power was switched off for you. Any further running pushes the small fragments out into the buffer.`); Lab.toast('Power switched off: the dye reached the end of the gel.', { type: 'warn', key: P + '-end' }); return false; }
+    if (!st.reversed && before < TARGET_MM && st.dist >= TARGET_MM) { msg('warn', 'The dye front has reached the recommended stopping point (about 60 mm). Switch off power and stain the gel; continuing can run small bands off the gel.'); Lab.toast('Dye front at 60 mm: stop the run and stain.', { type: 'warn', key: P + '-target' }); }
     if (!st.reversed && before < WARN_MM && st.dist >= WARN_MM) { msg('warn', `Stop now: the dye front is about 1 cm (${Lab.fmt(st.dist, 1)} mm) from the end of the gel. Switch the power off before the small fragments run out.`); Lab.toast('Stop now: the dye is about 1 cm from the end of the gel.', { type: 'warn', key: P + '-warn' }); }
   }, { tick: 1 });
   function start() {
