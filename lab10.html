@@ -947,8 +947,7 @@ function workedExample(o) {
     if (s1.plants.filter(p => !p.harvested).length < +$('#p1-n').value) { $('#p1-status').textContent = 'Not enough plants left for another harvest.'; return; }
     const ages = [...new Set(rawT.getRows().map(r => r.age).filter(Number.isFinite))];
     if (s1.harvests > 0 && ages.length === 1 && ages[0] === s1.day) {
-      $('#p1-status').textContent = 'NPP requires harvests at different ages. Advance the plants before using another harvest; no plants were harvested.';
-      return;
+      $('#p1-status').textContent = 'Same-age replicate harvest: allowed for estimating variation at day ' + s1.day + '. To calculate NPP, also harvest at a different age (or plant a new set).';
     }
     const n = +$('#p1-n').value, avail = s1.plants.map((p, i) => i).filter(i => !s1.plants[i].harvested);
     const pick = rng.shuffle(avail).slice(0, n).sort((a, b) => a - b);
