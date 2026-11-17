@@ -1224,6 +1224,9 @@ function clearOldRun() {
   tlNote('');
   Lab.store.set('plate-pred-record', null);
   PLATES.forEach(p => Lab.store.set('field:plate-pred-' + p.id, null));
+  /* The previous prediction verdicts are no longer valid after reset. */
+  const previousVerdicts = $('#ev-recall');
+  if (previousVerdicts) previousVerdicts.querySelectorAll('.feedback, .status, .msg').forEach(el => { el.textContent = ''; });
   try { window.dispatchEvent(new Event('aplab:work')); } catch (e) { /* ignore */ }
 }
 $('#restart').addEventListener('click', () => { if (!busy) { clearOldRun(); reset(); saveSim(); } });
