@@ -1891,14 +1891,15 @@ function drawClock(rows) {
     if (!pts.length) return;
     const fitPts = useMax ? pts.filter(p => p.x <= maxT) : pts;
     const col = { A: 'var(--s1)', B: 'var(--s2)', C: 'var(--s3)' }[g];
-    series.push({ name: `Gene ${g}`, points: pts, line: false, color: col });
+    series.push({ name: `Gene ${g} (all observations)`, points: pts, line: false, color: col });
+    if (useMax) series.push({ name: `Gene ${g} (included in fit)`, points: fitPts, line: false, color: col });
     if (fitPts.length > 1 && new Set(fitPts.map(p => p.x)).size > 1) { series.push({ name: `Gene ${g} fit`, points: fitPts, line: false, dots: false, fit: 'linear', color: col }); const f = Lab.stats.linreg(fitPts.map(p => p.x), fitPts.map(p => p.y)); if (!shown) { shown = f; shownGene = g; shownCount = fitPts.length; shownIntercept = f.b; } }
   });
   clockChart.update({ series });
   Lab.$('#d-slope').textContent = shown ? `${Lab.fmt(shown.m * 100, 2)} %/100 My` : '—';
   Lab.$('#d-r2').textContent = shown ? Lab.fmt(shown.r2, 3) : '—';
   const interceptOut = Lab.$('#d-intercept'); if (interceptOut) interceptOut.textContent = shown && Number.isFinite(shownIntercept) ? Lab.fmt(shownIntercept, 2) + ' %' : '—';
-  const clockInfo = Lab.$('#d-fit-info'); if (clockInfo) clockInfo.textContent = shown ? 'Fit uses ' + shownCount + ' recorded Gene ' + shownGene + ' points' + (useMax ? ' up to ' + maxT + ' million years' : '') + '. Recalculate using only the plotted points.' : 'Record at least two distinct divergence times for a fit.';
+  const clockInfo = Lab.$('#d-fit-info'); if (clockInfo) clockInfo.textContent = shown ? 'Fit uses ' + shownCount + ' recorded Gene ' + shownGene + ' points' + (useMax ? ' up to ' + maxT + ' million years' : '') + '. The graph shows all observations, but only points at or below the selected cutoff contribute to the fit. Recalculate using those included points.' : 'Record at least two distinct divergence times for a fit.';
 }
 Lab.$('#clock-max').addEventListener('change', () => drawClock());
 Lab.$('#clock-max-range').addEventListener('input', () => drawClock());
