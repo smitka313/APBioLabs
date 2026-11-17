@@ -496,6 +496,36 @@
   const workListeners = []; let workTimer = null;
   function workChanged() { clearTimeout(workTimer); workTimer = setTimeout(() => workListeners.forEach(f => { try { f(); } catch (e) { console.warn(e); } }), 120); }
   const REG = { charts: [], tables: [], quizzes: [], prompts: [] }; // used by reports, worksheets and progress
+  /* Optional, local-only scientific data feedback. Uses registered saved table
+     rows, never reads or grades a student's written claim. */
+  Lab.dataFeedback = function (mount, config) {
+    const root = typeof mount === 'string' ? $(mount) : mount;
+    if (!root) return;
+    const status = h('p', { class: 'small', role: 'status', 'aria-live': 'polite' });
+    const run = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => {
+      const table = REG.tables.find(t => t.el.id === config.table);
+      if (!table) { status.textContent = 'This data table is not available yet. Return to the investigation.'; return; }
+      const rows = table.getRows().filter(r => !r._setup);
+      if (!rows.length) { status.textContent = 'No recorded trial rows yet. Complete the investigation and return to check your evidence.'; return; }
+      const keys = config.fields;
+      const values = rows.flatMap(row => keys.flatMap(key => {
+        const value = row[key];
+        if (value === '' || value === null || value === undefined) return [];
+        const n = Number(value);
+        return Number.isFinite(n) ? [n] : [];
+      }));
+      const complete = rows.filter(row => keys.some(key => row[key] !== '' && row[key] != null && Number.isFinite(Number(row[key])))).length;
+      if (!values.length) { status.textContent = 'You have recorded rows, but the selected measurement columns do not contain numeric values yet. Check your table before drawing a conclusion.'; return; }
+      const min = Math.min(...values), max = Math.max(...values);
+      status.textContent = complete + ' of ' + rows.length + ' recorded rows contain numeric measurements in the selected evidence columns. The observed values range from ' + min.toLocaleString() + ' to ' + max.toLocaleString() + '. ' +
+        (complete < rows.length ? 'Some rows are missing numeric evidence. ' : '') +
+        (min === max ? 'These values do not show a difference by themselves. ' : 'Compare values under the relevant experimental conditions. ') +
+        config.prompt + ' This is a data-readiness check, not a grade or verification of scientific accuracy.';
+    } }, 'Check my recorded evidence');
+    root.append(h('div', { class: 'callout callout--tip' },
+      h('p', { class: 'small' }, 'Optional data-based feedback: checks recorded numeric evidence in your lab table. It does not read your written explanation or determine whether your conclusion is correct.'),
+      run, status));
+  };
   Lab._reg = REG;   // read-only handle for tests (tests/t48-tables.js)
   const CANVASES = []; // every Lab.canvas, so a part that becomes visible can be resized and redrawn at once
   /* Lab.chart draws in a 640-unit-wide viewBox. A responsive chart (opts.responsive, or any chart inside a
