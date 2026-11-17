@@ -8,7 +8,7 @@ const T = require('./_h');
       const ready = p.getByRole('region', { name: 'Submission readiness' });
       T.ok(await ready.count() === 1, lab + ': readiness region exists');
       const text = await ready.innerText();
-      T.ok(/Your progress: \d+ of \d+ sections with tracked activities complete/.test(text), lab + ': readiness count visible');
+      T.ok(/Your progress: \d+ of \d+ sections with all tracked activities complete/.test(text), lab + ': readiness count visible');
       T.ok(/you can download a report before finishing every activity/i.test(text), lab + ': explicitly non-blocking');
       T.ok(/Downloading does not submit it/.test(await p.locator('.report-bar').innerText()), lab + ': report download is clearly distinguished from submission');
       const transferHelp = await p.locator('details.move-work .inner').textContent();
