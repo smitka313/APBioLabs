@@ -43,7 +43,7 @@ const T = require('./_h');
   T.ok(heads.includes('Confidence'), 'dashboard has a Confidence column: ' + heads.join(' | '));
   const cells = await d.$$eval('table.grid tbody tr', trs => trs.map(tr => tr.innerText.replace(/\s+/g, ' ')));
   T.ok(cells.some(c => /I’m lost/.test(c)) && cells.some(c => /I could teach this/.test(c)), 'rows show the choice as text: ' + cells.map(c => c.slice(0, 60)).join(' || '));
-  const sum = (await d.textContent('.conf-sum')).replace(/\s+/g, ' ');
+  const sum = (await d.textContent('.labblock .conf-sum')).replace(/\s+/g, ' ');
   T.ok(/I could teach this ?1/.test(sum) && /I mostly get it ?0/.test(sum) && /I’m lost ?1/.test(sum) && /No answer ?1/.test(sum), 'per-lab summary counts: ' + sum);
   T.ok(!/Confidence \(/.test(heads.join('|')), 'confidence is not also listed as a generic key-result column');
   const csv = await d.evaluate(() => Dash.csv());
