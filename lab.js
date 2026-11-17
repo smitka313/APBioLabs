@@ -2091,8 +2091,10 @@
     const renderReadiness = () => {
       const parts = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
       const complete = parts.filter(p => p.work.done === p.work.total).length;
+      const underway = parts.filter(p => p.work.done > 0 && p.work.done < p.work.total).length;
       readiness.textContent = '';
       readiness.append(h('p', null, h('strong', null, 'Your progress: '), `${complete} of ${parts.length} sections with tracked activities complete. Your work is saved in this browser; it has not been sent to your teacher. This progress count is not a grade, and you can download a report before finishing every activity.`));
+      if (underway) readiness.append(h('p', { class: 'small' }, underway + ' additional section' + (underway === 1 ? ' has' : 's have') + ' work in progress. A section counts as complete only when all its tracked activities are done.'));
       const remaining = parts.filter(p => p.work.done < p.work.total);
       if (remaining.length) readiness.append(
         h('button', { class: 'btn btn--primary btn--sm', type: 'button', onclick: () => {
