@@ -28,8 +28,12 @@ const rec = p => p.evaluate(l => JSON.parse(localStorage.getItem(`aplab:${l}:dat
   const orig = await rec(p);
   await p.evaluate(l => { const v = JSON.parse(localStorage.getItem(`aplab:${l}:dataset`)); delete v.owner; delete v.created; localStorage.setItem(`aplab:${l}:dataset`, JSON.stringify(v)); }, LAB);
   await p.reload(); await p.waitForTimeout(800);
+  await p.waitForFunction(l => {
+    try { const v = JSON.parse(localStorage.getItem('aplab:' + l + ':dataset')); return v?.owner === null && v.ownerUnverified === true; }
+    catch (_) { return false; }
+  }, LAB, { timeout: 3000 }).catch(() => {});
   r = await rec(p);
-  T.ok(r.owner === null && r.ownerUnverified === true, 'old record is marked owner: null, ownerUnverified: true (not adopted)');
+  T.ok(r.owner === null && r.ownerUnverified === true, 'old record is marked owner: null, ownerUnverified: true (not adopted); actual=' + JSON.stringify({ owner: r.owner, created: r.created, ownerUnverified: r.ownerUnverified }));
   T.ok(await p.locator('.id-owner').count() === 0 && await p.evaluate(() => Lab.identity.seed.datasetId) === id1, 'no notice, same Dataset ID');
   await p.evaluate(([l, v]) => localStorage.setItem(`aplab:${l}:dataset`, JSON.stringify(v)), [LAB, orig]);   // back to an owned record for the rest
   await p.reload(); await p.waitForTimeout(800);
