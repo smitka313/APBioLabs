@@ -868,6 +868,24 @@ function frq(host, o) {
   });
   const ch1 = Lab.chart('#p1-chart', { xLabel: 'Time (min)', yLabel: 'Absorbance (A₄₇₀)', xMin: 0, xMax: 5, yMin: 0, series: [] });
   /* palette numbers run 1-10; anything else is flagged on the cell, reported, and left out of the graph and match count */
+  /* Clamp palette entries before the table's change handler saves them. */
+  ['#p1-table', '#p2-table'].forEach(selector => {
+    const host = $(selector);
+    if (!host) return;
+    host.addEventListener('change', event => {
+      const input = event.target;
+      if (!input.matches('input[data-k="cE"], input[data-k="cC"], input[data-k="c"]') || input.value === '') return;
+      const n = Number(input.value);
+      if (!Number.isFinite(n)) return;
+      const clamped = Math.max(1, Math.min(10, Math.round(n)));
+      if (clamped !== n) {
+        input.value = String(clamped);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const warning = $(selector === '#p1-table' ? '#p1-bad' : '#p2-bad');
+        if (warning) { warning.hidden = false; warning.textContent = 'Palette entries must be whole numbers from 1 to 10. Your entry was adjusted to ' + clamped + '.'; }
+      }
+    }, true);
+  });
   const palOk = v => v != null && isFinite(v) && v >= 1 && v <= 10;
   function palCheck(tableSel, badSel, rows, keys) {
     const root = $(tableSel); let bad = 0;
