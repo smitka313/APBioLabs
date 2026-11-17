@@ -3,7 +3,7 @@ const T = require('./_h');
 (async () => {
   const b = await T.launch();
   try {
-    for (const [lab, table, field] of [['01','d-table','mean'],['02','ss-table','p1'],['03','blast-table','ident'],['04','p1-table','pct'],['05','cup-table','a'],['06','p-table','e'],['07','rt-table-t','ci'],['08','runs-table','eff'],['09','#meas1 .mtable','dist'],['10','p1-raw','dry'],['11','tr-table','rate'],['12','trials-table','A'],['13','p2-table','dA']]) {
+    for (const [lab, table, field] of [['01','gen-table','mean'],['02','ss-table','p1'],['03','blast-table','ident'],['04','p1-table','pct'],['05','cup-table','a'],['06','p-table','e'],['07','rt-table-t','ci'],['08','runs-table','eff'],['09','#meas1 .mtable','dist'],['10','p1-raw','dry'],['11','tr-table','rate'],['12','trials-table','A'],['13','p2-table','dA']]) {
       const ctx = await T.ctxFor(b);
       const p = await T.open(ctx, 'lab' + lab + '.html', 'analyze');
       const btn = p.getByRole('button', { name: 'Check my recorded evidence' });
