@@ -2023,7 +2023,7 @@ Lab.$('#add-clade').addEventListener('click', () => { const m = Lab.$('#build-ms
 Lab.$('#fossil-final').addEventListener('change', e => { if (e.target.value) Lab.toast('Final placement saved', { type: 'ok', announce: false, key: 'final' }); });
 
 
-Lab.dataFeedback('#data-feedback-03', {"table":"blast-table","fields":["bits","ident"],"prompt":"Bit scores and percent identity use different scales; do not compare their combined range as a single biological measurement. Consider alignment length, E values, and organism identity for each hit."});
+Lab.dataFeedback('#data-feedback-03', {"table":"blast-table","fields":["ident"],"prompt":"Bit scores and percent identity use different scales; do not compare their combined range as a single biological measurement. Consider alignment length, E values, and organism identity for each hit."});
 </script>
 </body>
 </html>
