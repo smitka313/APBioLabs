@@ -1883,18 +1883,19 @@ function drawClock(rows) {
   rows = rows || clockTable.getRows();
   const useMax = Lab.$('#clock-max').checked, maxT = +Lab.$('#clock-max-range').value;
   Lab.$('#clock-max-out').textContent = maxT;
-  const series = []; let shown = null;
+  const series = []; let shown = null; let shownGene = ''; let shownCount = 0;
   ['A', 'B', 'C'].forEach(g => {
-    const pts = rows.filter(r => r.gene === g && isFinite(r.t) && isFinite(r.ident)).map(r => ({ x: r.t, y: r.ident }));
+    const pts = rows.filter(r => r.gene === g && r.t != null && r.ident != null && r.t !== '' && r.ident !== '' && Number.isFinite(Number(r.t)) && Number.isFinite(Number(r.ident))).map(r => ({ x: Number(r.t), y: Number(r.ident) }));
     if (!pts.length) return;
     const fitPts = useMax ? pts.filter(p => p.x <= maxT) : pts;
     const col = { A: 'var(--s1)', B: 'var(--s2)', C: 'var(--s3)' }[g];
     series.push({ name: `Gene ${g}`, points: pts, line: false, color: col });
-    if (fitPts.length > 1 && new Set(fitPts.map(p => p.x)).size > 1) { series.push({ name: `Gene ${g} fit`, points: fitPts, line: false, dots: false, fit: 'linear', color: col }); const f = Lab.stats.linreg(fitPts.map(p => p.x), fitPts.map(p => p.y)); if (!shown) shown = f; }
+    if (fitPts.length > 1 && new Set(fitPts.map(p => p.x)).size > 1) { series.push({ name: `Gene ${g} fit`, points: fitPts, line: false, dots: false, fit: 'linear', color: col }); const f = Lab.stats.linreg(fitPts.map(p => p.x), fitPts.map(p => p.y)); if (!shown) { shown = f; shownGene = g; shownCount = fitPts.length; } }
   });
   clockChart.update({ series });
   Lab.$('#d-slope').textContent = shown ? `${Lab.fmt(shown.m * 100, 2)} %/100 My` : '—';
   Lab.$('#d-r2').textContent = shown ? Lab.fmt(shown.r2, 3) : '—';
+  const clockInfo = Lab.$('#d-fit-info'); if (clockInfo) clockInfo.textContent = shown ? 'Fit uses ' + shownCount + ' recorded Gene ' + shownGene + ' points' + (useMax ? ' up to ' + maxT + ' million years' : '') + '. Recalculate using only the plotted points.' : 'Record at least two distinct divergence times for a fit.';
 }
 Lab.$('#clock-max').addEventListener('change', () => drawClock());
 Lab.$('#clock-max-range').addEventListener('input', () => drawClock());
