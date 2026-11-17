@@ -292,7 +292,7 @@
           </div>
         </div>
       </div>
-      <div id="g-timelapse" class="tl-mount"></div>
+      <div class="field"><label for="g-mass">Measured seed mass (g) for per-gram comparison (optional)</label><input id="g-mass" type="number" min="0" step="any" placeholder="Enter measured mass"></div><div id="g-timelapse" class="tl-mount"></div>
       <p class="callout callout--tip small">The gas-sensor estimate is for the entire chamber of 25 peas, while the microrespirometer results may be reported per gram of seed tissue. These numbers are <strong>not directly comparable</strong> until you use the same mass, time, and volume units. To compare rates, divide each chamber’s total oxygen use (µL/min) by its measured seed mass (g) to obtain µL O₂·g⁻¹·min⁻¹.</p>
       <div class="resp-evidence-grid"><div id="g-chart"></div><div id="g-table"></div></div>
     </div>
@@ -1312,7 +1312,7 @@ const Predict = (function () {
   const gChart = Lab.chart('#g-chart', { xLabel: 'Time (min)', yLabel: 'O₂ (%)', height: 300, series: [] });
   const gTable = Lab.table('#g-table', {
     save: 'g-table',
-    columns: [{ key: 'run', label: 'Run' }, { key: 'contents', label: 'Contents' }, { key: 'T', label: 'Bath temp', unit: '°C', num: true, digits: 0 }, { key: 'sensor', label: 'Sensor' }, { key: 'koh', label: 'KOH' }, { key: 'slope', label: 'Slope', unit: 'sensor units/min', num: true, digits: 4 }, { key: 'o2', label: '≈ O₂ used', unit: 'µL/min', num: true, digits: 1 }]
+    columns: [{ key: 'run', label: 'Run' }, { key: 'contents', label: 'Contents' }, { key: 'T', label: 'Bath temp', unit: '°C', num: true, digits: 0 }, { key: 'sensor', label: 'Sensor' }, { key: 'koh', label: 'KOH' }, { key: 'slope', label: 'Slope', unit: 'sensor units/min', num: true, digits: 4 }, { key: 'o2', label: '≈ O₂ used', unit: 'µL/min', num: true, digits: 1 }, { key: 'perGram', label: 'O₂ per gram', unit: 'µL/(g·min)', num: true, digits: 2 }]
   });
   const SENS = { o2: { unit: '%', label: 'O₂ (%)', d: 3 }, co2: { unit: 'ppm', label: 'CO₂ (ppm)', d: 0 }, p: { unit: 'kPa', label: 'Pressure (kPa)', d: 2 } };
   let gBusy = false, gPts = [], gNow = { t: 0, v: null };
@@ -1499,7 +1499,7 @@ const Predict = (function () {
       const o2 = sensor === 'o2' ? -f.m / 100 * VGAS : sensor === 'co2' ? (koh ? NaN : f.m * 1e-6 * VGAS) : (koh ? -f.m / 101.3 * VGAS : NaN);
       $('#g-slope').textContent = `${fmt(f.m, sensor === 'co2' ? 1 : 4)} ${SENS[sensor].unit}/min`;
       $('#g-o2').textContent = isFinite(o2) ? fmt(o2, 1) + ' µL/min' : 'can\'t tell';
-      if (!st.done) { st.done = true; Lab.store.set('g-run', st); const rows = gTable.getRows(); gTable.addRow({ run: rows.length + 1, contents: st.contentsText, T, sensor: SENS[sensor].label, koh: koh ? 'yes' : 'no', slope: f.m, o2: isFinite(o2) ? o2 : null }); }
+      if (!st.done) { st.done = true; Lab.store.set('g-run', st); const rows = gTable.getRows(); gTable.addRow({ run: rows.length + 1, contents: st.contentsText, T, sensor: SENS[sensor].label, koh: koh ? 'yes' : 'no', slope: f.m, o2: isFinite(o2) ? o2 : null, perGram: isFinite(o2) && Number($('#g-mass').value) > 0 ? o2 / Number($('#g-mass').value) : null }); }
     };
     const step = () => {
       gPts.push(pts[shown]); gNow = { t: pts[shown].x, v: pts[shown].y };
