@@ -1292,6 +1292,8 @@ const Predict = (function () {
     }
   });
   $('#p1-run').addEventListener('click', () => {
+    if ($('#p1-run').disabled) return;
+    $('#p1-run').disabled = true;
     if (p1Anim) p1Anim.finish();
     p1Preview();
     const t = +p1t.value, acid = $('#p1-acid').value, sd = newSeed(); rng = Lab.rng(sd);
@@ -1308,7 +1310,7 @@ const Predict = (function () {
       $('#p1-depth').textContent = fmt(kMean * Math.sqrt(tau), 1) + ' mm';
       $('#p1-rate').textContent = tau > 0 ? fmt(kMean * Math.sqrt(tau) / tau, 2) + ' mm/min' : '—';
     }, () => {
-      p1Rec.stop();
+      p1Rec.stop(); $('#p1-run').disabled = false;
       /* Every soak adds rows. A block of the same letter, shape and soak time that is already in the table is a replicate:
          label it "trial N" (never a silent duplicate) and say so. An earlier row without a trial number counts as trial 1. */
       const before = p1table.getRows(); let maxTrial = 0;
