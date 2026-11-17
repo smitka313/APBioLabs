@@ -1977,7 +1977,7 @@
     return h('details', { class: 'disclose move-work' },
       h('summary', null, 'Move your work to another computer'),
       h('div', { class: 'inner' },
-        h('p', { class: 'small muted' }, 'Your work saves only in this browser. To keep working on a different computer, save a progress file (or copy a resume code), then load it on the other computer.'),
+        h('p', { class: 'small muted' }, 'Your work saves only in this browser, not automatically across devices. Before switching computers, save a progress file or copy a resume code. On the new computer, open this same lab and load that file or code. Check that your answers and Dataset ID appear before leaving the original device. A Word or PDF report cannot restore editable lab progress.'),
         h('p', { class: 'small backup-status', 'aria-live': 'polite' }),
         h('div', { class: 'row' },
           h('button', { class: 'btn', type: 'button', onclick: () => {
