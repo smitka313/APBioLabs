@@ -2003,10 +2003,10 @@ const SORD = (function () {
   let lastRecordedFieldSignature = null;
   $('#s-record').addEventListener('click', () => {
     const signature = String(fieldNo) + '|' + String(field && field.seed) + '|' + JSON.stringify([...marks]);
-    if (signature === lastRecordedFieldSignature) { V.note($('#s-msg'), 'This field has already been recorded. Choose New squash / next field before recording again.', true); return; }
+    if (signature === lastRecordedFieldSignature || sTab.getRows().some(row => row._fieldSeed === field.seed)) { V.note($('#s-msg'), 'This field has already been recorded. Choose New squash / next field before recording again.', true); return; }
     Lab.sound.play('click');
     const { p, r } = counts(); if (!p && !r) { V.note($('#s-msg'), 'Score the asci in this field before recording. Nothing was recorded.', true); return; }
-    const rows = sTab.getRows(); rows.push({ field: rows.length + 1, p, r, tot: p + r }); sTab.setRows(rows); lastRecordedFieldSignature = signature;
+    const rows = sTab.getRows(); rows.push({ field: rows.length + 1, p, r, tot: p + r, _fieldSeed: field.seed }); sTab.setRows(rows); lastRecordedFieldSignature = signature;
     V.note($('#s-msg'), `Field recorded (${p + r} asci). ` + (ST.sum(sTab.getRows().map(x => x.tot)) < 50 ? 'Make a new squash or move to the next field and keep counting until you reach 50.' : 'You have at least 50 asci.'));
   });
   themeHooks.push(draw);
