@@ -28,6 +28,19 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  domain-redirect:
+    name: Domain redirect and saved-work protection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: node --test tests/domain-redirect.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/domain-redirect-browser.js
+
   classify:
     name: Select test level
     runs-on: ubuntu-latest
@@ -169,4 +182,5 @@ jobs:
           export NODE_PATH="$PWD/node_modules"
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
           node tests/run-all.js all --shard ${{ matrix.shard }}/5
+
 
