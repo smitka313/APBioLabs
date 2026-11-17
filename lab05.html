@@ -1217,6 +1217,8 @@ const Predict = (function () {
 
   const dchart = Lab.chart('#d-chart', { xLabel: 'Level', yLabel: 'Rate, 1/ET₅₀ (min⁻¹)', series: [], height: 340 });
   const dchart2 = Lab.chart('#d-chart2', { xLabel: 'Level', yLabel: 'Median ET₅₀ (min)', series: [], height: 340 });
+  const censoredGraphNote = Lab.h('p', { class: 'small muted', 'aria-live': 'polite' });
+  $('#d-chart').insertAdjacentElement('afterend', censoredGraphNote);
   const dsum = Lab.table('#d-sum', { columns: [{ key: 'lv', label: 'Level' }, { key: 'n', label: 'Cups', unit: 'count', num: true, digits: 0 }, { key: 'med', label: 'Median ET50', unit: 'min', num: true, digits: 1 }, { key: 'mean', label: 'Mean 1/ET50', unit: 'min⁻¹', num: true, digits: 3 }, { key: 'se', label: 'SE', unit: 'min⁻¹', num: true, digits: 3 }, { key: 'ci', label: '±2 SE', unit: 'min⁻¹', num: true, digits: 3 }], rows: [] });
   function dAnalyze(rows) {
     const meta = Lab.store.get('d-setup') || { iv: dIv.value }, iv = IV[meta.iv] ? meta.iv : 'dist', o = IV[iv];
@@ -1227,6 +1229,9 @@ const Predict = (function () {
       return { lv: rr2[0].lvl, _k: k, n: rr2.length, med: isFinite(med) ? med : NaN, mean: rate.length ? S.mean(rate) : null, se: rate.length > 1 ? S.se(rate) : NaN, ci: rate.length > 1 ? 2 * S.se(rate) : NaN };
     });
     dsum.setRows(sum);
+    const censoredLevels = sum.filter(v => v.mean == null || !Number.isFinite(v.mean));
+    censoredGraphNote.textContent = censoredLevels.length ? `Not plotted: ${censoredLevels.map(v => v.lv).join(', ')}. No cup at these levels reached ET50 by 45 min (ET50 >45 min; 1/ET50 <0.0222 min⁻¹). These censored rates are not measured zeros and are excluded from the plotted mean.` : '';
+
     if (!rows.length) { dchart.update({ series: [] }); dchart2.update({ series: [] }); return; }
     if (o.num) {
       const xf = o.xval || (v => v), xl = o.x;
