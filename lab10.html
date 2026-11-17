@@ -12,7 +12,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
-<noscript><style>[data-ph]{display:none!important}</style></noscript>
+<noscript><style>[data-ph]{display:none!important}
+/* Audit 6: allow wide scientific tables to scroll without forcing page-wide overflow. */
+#p1-table,#p2-table,#p1-sum,#p1-raw,#chi-out{min-width:0;max-width:100%}
+#p1-table .table-wrap,#p2-table .table-wrap,#p1-sum .table-wrap,#p1-raw .table-wrap,#chi-out .table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+</style></noscript>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
