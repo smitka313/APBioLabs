@@ -1229,6 +1229,9 @@ function clearOldRun() {
   const previousVerdicts = $('#ev-recall');
   if (previousVerdicts) { previousVerdicts.hidden = true; previousVerdicts.setAttribute('aria-hidden', 'true'); }
   const history = $('#runs-history'); if (history) history.open = false;
+  const previousRunChart = $('#runs-chart'); if (previousRunChart) previousRunChart.hidden = true;
+  const resultMessage = $('#calc-fb'); if (resultMessage) resultMessage.textContent = '';
+  drawPlates(); renderPlateReadouts();
   try { window.dispatchEvent(new Event('aplab:work')); } catch (e) { /* ignore */ }
 }
 $('#restart').addEventListener('click', () => { if (!busy) { clearOldRun(); reset(); saveSim(); } });
@@ -1383,6 +1386,7 @@ function savePlatePredText() {
   PLATES.forEach((p, i) => { if (rec[i]) Lab.store.set('field:plate-pred-' + p.id, rec[i].pred); });
 }
 function gradePreds() {
+  const previousRunChart = $('#runs-chart'); if (previousRunChart) previousRunChart.hidden = false;
   const previousVerdicts = $('#ev-recall'); if (previousVerdicts) { previousVerdicts.hidden = false; previousVerdicts.removeAttribute('aria-hidden'); }
   /* Save what the student predicted for each plate next to what grew, so Reflect can quote it. */
   Lab.store.set('plate-pred-record', PLATES.map(p => ({ plate: p.name, pred: ($('#pr-' + p.id).selectedOptions[0] || {}).text || '', actual: (PRED_OPTS.find(o => o[0] === plates[p.id].cls) || [])[1] || '' })));
