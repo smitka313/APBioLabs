@@ -83,7 +83,16 @@
   .t-foot-link { margin-top: 6px; }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
-</head>
+<style>
+.teacher-tour-overlay{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.66);display:flex;align-items:flex-end;justify-content:center;padding:16px;box-sizing:border-box}
+.teacher-tour-panel{position:relative;z-index:2;width:min(100%,460px);max-height:80vh;overflow:auto;background:var(--surface);color:var(--ink);border:2px solid var(--accent);border-radius:14px;padding:22px;box-shadow:0 16px 55px rgba(0,0,0,.35)}
+.teacher-tour-panel h2{margin:.4rem 0}.teacher-tour-panel p{margin:.5rem 0}.teacher-tour-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:18px}
+.teacher-tour-actions button{min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);cursor:pointer}
+.teacher-tour-actions button:last-child{background:var(--accent);color:white}.teacher-tour-actions button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.teacher-tour-target{position:relative!important;z-index:99991!important;outline:4px solid var(--accent)!important;outline-offset:5px;border-radius:5px;background:var(--surface)!important;color:var(--ink)!important}
+@media(min-width:700px){.teacher-tour-overlay{align-items:center;justify-content:flex-end;padding:32px}}
+@media(prefers-reduced-motion:reduce){.teacher-tour-target{scroll-behavior:auto}}
+</style></head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="t-hero">
@@ -284,5 +293,6 @@
 </div></footer>
 
 <script src="lab.js"></script>
+<script src="teacher-tour.js"></script>
 </body>
 </html>
