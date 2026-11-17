@@ -1282,12 +1282,13 @@ function frq(host, o) {
   /* ---------- Key results, personal-data prompts, AP free-response ---------- */
   function reportP1() {
     /* Absorbance when the student used the spectrophotometer; otherwise the color-chart number (A = 0.075 × (n − 1)). */
-    const A = r => numOk(r.aE) ? r.aE : numOk(r.cE) ? 0.075 * (r.cE - 1) : NaN;
+    const specMode = mode1() === 'spec';
+    const A = r => specMode ? (numOk(r.aE) ? r.aE : NaN) : (numOk(r.cE) && r.cE >= 1 && r.cE <= 10 ? r.cE : NaN);
     const rows = (Lab.store.get('p1') || []).filter(r => r && numOk(r.t) && numOk(A(r))); if (!rows.length) { dropKeyRes('initial-rate'); return; }
     const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), pts = rows.filter(r => r.trial === tr && r.t <= 2).sort((a, b) => a.t - b.t);
     if (pts.length < 2) { dropKeyRes('initial-rate'); return; }
-    const f = stats.linreg(pts.map(r => r.t), pts.map(A)), viaChart = !pts.some(r => numOk(r.aE));
-    keyRes('initial-rate', { label: 'Initial rate magnitude, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(Math.abs(f.m) * 10000) / 10000, unit: viaChart ? 'color-chart levels/min' : 'ΔA₄₇₀/min', part: 'Procedure 1' });
+    const f = stats.linreg(pts.map(r => r.t), pts.map(A)), viaChart = !specMode;
+    keyRes('initial-rate', { label: 'Initial rate magnitude, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(Math.abs(f.m) * 10000) / 10000, unit: viaChart ? 'palette levels/min' : 'ΔA₄₇₀/min', part: 'Procedure 1' });
   }
   const ph2 = () => {
     const rows = (Lab.store.get('p2') || []).filter(r => r && numOk(r.pH)), spec = rows.some(r => r.dA != null && numOk(r.dA)), key = spec ? 'dA' : 'c';
