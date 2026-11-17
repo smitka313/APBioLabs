@@ -6,7 +6,9 @@ const T = require('./_h');
   const ctx = await T.ctxFor(browser);
   const page = await T.open(ctx,'lab03.html','design');
   const result = await page.evaluate(() => {
-   const rows = Lab._reg.tables.find(t=>t.el.id==='clock-table').getRows();
+   const clock = Lab._reg.tables.find(t=>t.el.id==='clock-table');
+   clock.api.setRows([{gene:'A',t:100,ident:95},{gene:'A',t:200,ident:89},{gene:'A',t:300,ident:84},{gene:'A',t:400,ident:77},{gene:'A',t:500,ident:73}],{setup:false});
+   const rows = clock.getRows();
    const eligible = rows.filter(r=>r.gene==='A' && r.t!=null && r.ident!=null && Number.isFinite(Number(r.t)) && Number.isFinite(Number(r.ident)));
    const filtered = document.querySelector('#clock-max').checked ? eligible.filter(r=>Number(r.t)<=Number(document.querySelector('#clock-max-range').value)) : eligible;
    if(filtered.length<2)return {count:filtered.length};
@@ -17,7 +19,7 @@ const T = require('./_h');
    const sst=ys.reduce((a,y)=>a+(y-my)**2,0),sse=ys.reduce((a,y,i)=>a+(y-(slope*xs[i]+intercept))**2,0);
    return {count:n,slope,intercept,r2:1-sse/sst,displaySlope:parseFloat(document.querySelector('#d-slope').textContent),displayIntercept:parseFloat(document.querySelector('#d-intercept').textContent),displayR2:parseFloat(document.querySelector('#d-r2').textContent)};
   });
-  T.ok(result.count>=0,'clock data inspected');
+  T.ok(result.count>=2,'clock data inspected with a nontrivial synthetic fixture');
   if(result.count>=2){T.ok(Math.abs(result.slope*100-result.displaySlope)<.02,'independent slope matches');T.ok(Math.abs(result.intercept-result.displayIntercept)<.02,'independent intercept matches');T.ok(Math.abs(result.r2-result.displayR2)<.002,'independent R2 matches');}
   T.ok(page.errors.length===0,'no browser errors');
   await ctx.close();
