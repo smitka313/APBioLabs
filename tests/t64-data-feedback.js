@@ -13,7 +13,7 @@ const T = require('./_h');
       T.ok(/No recorded trial rows yet/.test(await area.innerText()), 'lab' + lab + ': empty-data feedback');
       await p.evaluate(([id, key]) => {
         const table = Lab._reg.tables.find(t => t.el.id === id || (id.startsWith('#') && t.el.matches(id)));
-        if (!table) throw new Error('Missing registered table ' + id); table.api.addRow({ [key]: 12 }, { setup: false });
+        if (!table) throw new Error('Missing registered table ' + id); table.getRows().push({ [key]: 12 });
       }, [table, field]);
       await btn.click();
       T.ok(/recorded rows contain numeric measurements/.test(await area.innerText()), 'lab' + lab + ': numeric evidence recognized');
