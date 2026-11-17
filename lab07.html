@@ -2000,10 +2000,13 @@ const SORD = (function () {
   $('#s-new').addEventListener('click', newField);
   $('#s-check').addEventListener('click', () => { checking = !checking; $('#s-check').setAttribute('aria-pressed', String(checking)); let ok = 0; marks.forEach((v, i) => { if ((v === 'R') === field.asci[i].pat.xo) ok++; }); $('#s-msg').textContent = checking ? (marks.size ? `${ok} of ${marks.size} scores match the key (green = match, red = look again).` : 'Score some asci first.') : ''; draw(); sordSave(); });
   $('#s-auto').addEventListener('click', () => { field.asci.forEach((c, i) => { if (c.mature && !c.edge && !marks.has(i)) marks.set(i, c.pat.xo ? 'R' : 'P'); }); draw(); counts(); sordSave(); });
+  let lastRecordedFieldSignature = null;
   $('#s-record').addEventListener('click', () => {
+    const signature = String(fieldNo) + '|' + String(field && field.seed) + '|' + JSON.stringify([...marks]);
+    if (signature === lastRecordedFieldSignature) { V.note($('#s-msg'), 'This field has already been recorded. Choose New squash / next field before recording again.', true); return; }
     Lab.sound.play('click');
     const { p, r } = counts(); if (!p && !r) { V.note($('#s-msg'), 'Score the asci in this field before recording. Nothing was recorded.', true); return; }
-    const rows = sTab.getRows(); rows.push({ field: rows.length + 1, p, r, tot: p + r }); sTab.setRows(rows);
+    const rows = sTab.getRows(); rows.push({ field: rows.length + 1, p, r, tot: p + r }); sTab.setRows(rows); lastRecordedFieldSignature = signature;
     V.note($('#s-msg'), `Field recorded (${p + r} asci). ` + (ST.sum(sTab.getRows().map(x => x.tot)) < 50 ? 'Make a new squash or move to the next field and keep counting until you reach 50.' : 'You have at least 50 asci.'));
   });
   themeHooks.push(draw);
