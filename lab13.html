@@ -268,7 +268,7 @@
       </div>
       <div id="p1-table"></div>
       <p class="note" id="p1-match" aria-live="polite"></p>
-      <p class="feedback bad" id="p1-bad" role="alert" hidden></p>
+      <p class="feedback bad" id="p1-bad" role="alert" hidden></p><p class="status" id="p1-correction" role="status" aria-live="polite" hidden></p>
       <div id="p1-chart"></div>
       <div class="readouts" id="p1-rates"></div>
       <div class="grid-2">
@@ -313,7 +313,7 @@
       </div>
       <div id="p2-table"></div>
       <p class="note" id="p2-match"></p>
-      <p class="feedback bad" id="p2-bad" role="alert" hidden></p>
+      <p class="feedback bad" id="p2-bad" role="alert" hidden></p><p class="status" id="p2-correction" role="status" aria-live="polite" hidden></p>
       <div id="p2-chart"></div>
       <div id="p2-prompts" class="prompts-2"></div>
     </div>
@@ -888,7 +888,7 @@ function frq(host, o) {
       if (clamped !== n) {
         input.value = String(clamped);
         input.dispatchEvent(new Event('input', { bubbles: true }));
-        const warning = $(selector === '#p1-table' ? '#p1-bad' : '#p2-bad');
+        const warning = $(selector === '#p1-table' ? '#p1-correction' : '#p2-correction');
         if (warning) { warning.hidden = false; warning.textContent = 'Palette entries must be whole numbers from 1 to 10. Your entry was adjusted to ' + clamped + '.'; }
       }
     }, true);
@@ -1191,7 +1191,7 @@ function frq(host, o) {
   const rf = $('#reflect-prompts');
   /* Predict vs. actual: each saved prediction beside the matching result. */
   const rfCompare = h('div', { id: 'reflect-compare' }); rf.prepend(rfCompare);
-  const A13 = (r, k) => numOk(r['a' + k]) ? r['a' + k] : numOk(r['c' + k]) ? 0.075 * (r['c' + k] - 1) : NaN;
+  const A13 = (r, k) => mode1() === 'spec' ? (numOk(r['a' + k]) ? r['a' + k] : NaN) : (numOk(r['c' + k]) && r['c' + k] >= 1 && r['c' + k] <= 10 ? r['c' + k] : NaN);
   Lab.predictCompare(rfCompare, {
     predictKey: 'predict-assay', title: 'Baseline assay: your prediction vs. your tubes', chartEl: '#p1-chart', part: 'Procedure 1', partId: 'procedure-1',
     getResult: () => {
@@ -1199,9 +1199,9 @@ function frq(host, o) {
       const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), rs = rows.filter(r => r.trial === tr).sort((a, b) => a.t - b.t), e5 = rs.find(r => r.t === 5) || rs[rs.length - 1];
       const pts = rs.filter(r => r.t <= 2 && numOk(A13(r, 'E')));
       if (!numOk(A13(e5, 'E')) || pts.length < 2) return null;
-      return { trial: tr, t: e5.t, enz: A13(e5, 'E'), ctl: A13(e5, 'C'), rate: stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E'))).m };
+      return { trial: tr, t: e5.t, enz: A13(e5, 'E'), ctl: A13(e5, 'C'), rate: Math.abs(stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E'))).m), palette: mode1() !== 'spec' };
     },
-    summarize: r => `Trial ${r.trial}: the enzyme tube reached A₄₇₀ = ${fmt(r.enz, 3)} at ${r.t} min (initial rate ${fmt(r.rate, 3)} ΔA₄₇₀/min); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, 3) : 'n/a'}.`,
+    summarize: r => `Trial ${r.trial}: the enzyme tube reached ${r.palette ? 'palette level' : 'A₄₇₀'} = ${fmt(r.enz, r.palette ? 0 : 3)} at ${r.t} min (initial rate magnitude ${fmt(r.rate, 3)} ${r.palette ? 'palette levels/min' : 'ΔA₄₇₀/min'}); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, r.palette ? 0 : 3) : 'n/a'}.`,
     delta: r => numOk(r.ctl) ? (r.ctl > 0 && r.enz > r.ctl ? `The enzyme tube was ${fmt(r.enz / r.ctl, 1)}× the control, so the color came from the enzyme.` : r.enz > r.ctl ? 'The enzyme tube darkened while the control stayed at zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null
   });
   Lab.predictCompare(rfCompare, {
