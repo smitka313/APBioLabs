@@ -2037,12 +2037,16 @@
       const parts = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit').map(sec => ({ sec, work: sectionWork(sec) })).filter(p => p.work.total > 0);
       const complete = parts.filter(p => p.work.done === p.work.total).length;
       readiness.textContent = '';
-      readiness.append(h('p', null, h('strong', null, 'Before you submit: '), `${complete} of ${parts.length} sections with saved activities complete. This is a progress guide, not a grade. You can download your report even if some work is unfinished.`));
+      readiness.append(h('p', null, h('strong', null, 'Your progress: '), `${complete} of ${parts.length} sections with tracked activities complete. Your work is saved in this browser; it has not been sent to your teacher. This progress count is not a grade, and you can download a report before finishing every activity.`));
       const remaining = parts.filter(p => p.work.done < p.work.total);
-      if (remaining.length) readiness.append(h('p', { class: 'small' }, 'Return to sections that still have activities to finish:'),
-        h('ul', null, remaining.map(p => h('li', null,
-          h('a', { href: '#' + p.sec.id }, p.sec.dataset.step || p.sec.querySelector('h2')?.textContent || 'Review section'),
-          ` — ${p.work.done} of ${p.work.total} activities`))));
+      if (remaining.length) readiness.append(h('p', { class: 'small' }, 'Choose a section below to return to its unfinished work:'),
+        h('ul', null, remaining.map(p => {
+          const label = p.sec.dataset.step || p.sec.querySelector('h2')?.textContent || 'Review section';
+          const left = p.work.total - p.work.done;
+          return h('li', null,
+            h('a', { href: '#' + p.sec.id, 'aria-label': label + ': ' + left + ' activities remaining' }, label),
+            ' — ' + left + ' ' + (left === 1 ? 'activity' : 'activities') + ' remaining');
+        })));
       else readiness.append(h('p', { class: 'small' }, 'All tracked activities are complete. Review your answers before submitting.'));
     };
     workListeners.push(renderReadiness);
