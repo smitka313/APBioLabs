@@ -42,11 +42,17 @@ const T = require('./_h');
   T.ok(bar, '#5 the Save progress file bar shows after unsaved work');
   await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await p.waitForTimeout(300);
   const ov = await p.evaluate(() => {
-    const bb = document.querySelector('.backup-bar').getBoundingClientRect();
-    const els = Array.from(document.body.children).filter(e => !e.matches('.backup-bar,.toasts,script,.tour,.dm-scrim') && e.getBoundingClientRect().height);
-    return { barTop: bb.top, contentBottom: Math.max(...els.map(e => e.getBoundingClientRect().bottom)), pad: getComputedStyle(document.body).paddingBottom };
+    const bar = document.querySelector('.backup-bar');
+    const rect = bar.getBoundingClientRect();
+    const position = getComputedStyle(bar).position;
+    const controls = [...document.querySelectorAll('input,button,textarea,select')].filter(el => !bar.contains(el));
+    const overlaps = controls.filter(el => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && r.left < rect.right && r.right > rect.left && r.top < rect.bottom && r.bottom > rect.top;
+    }).length;
+    return { position, overlaps };
   });
-  T.ok(ov.contentBottom <= ov.barTop + 1, `#5 page content ends above the bar (content ${Math.round(ov.contentBottom)} <= bar top ${Math.round(ov.barTop)}, body padding ${ov.pad})`);
+  T.ok(ov.position !== 'fixed' && ov.overlaps === 0, `#5 backup reminder stays in page flow and does not cover inputs (position ${ov.position}, overlaps ${ov.overlaps})`);
 
   // #7 toast after first recorded run
   await p.evaluate(async () => {
