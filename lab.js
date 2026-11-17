@@ -2039,7 +2039,13 @@
       readiness.textContent = '';
       readiness.append(h('p', null, h('strong', null, 'Your progress: '), `${complete} of ${parts.length} sections with tracked activities complete. Your work is saved in this browser; it has not been sent to your teacher. This progress count is not a grade, and you can download a report before finishing every activity.`));
       const remaining = parts.filter(p => p.work.done < p.work.total);
-      if (remaining.length) readiness.append(h('p', { class: 'small' }, 'Choose a section below to return to its unfinished work:'),
+      if (remaining.length) readiness.append(
+        h('button', { class: 'btn btn--primary btn--sm', type: 'button', onclick: () => {
+          const first = Array.from(document.querySelectorAll('section.step')).filter(sec => sec.id !== 'submit')
+            .find(sec => { const work = sectionWork(sec); return work.total > 0 && work.done < work.total; });
+          if (first) Lab.pages.go(first);
+        } }, 'Continue unfinished work'),
+        h('p', { class: 'small' }, 'Choose a section below to return to its unfinished work:'),
         h('ul', null, remaining.map(p => {
           const label = p.sec.dataset.step || p.sec.querySelector('h2')?.textContent || 'Review section';
           const left = p.work.total - p.work.done;
