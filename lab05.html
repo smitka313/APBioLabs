@@ -241,7 +241,7 @@
         <button class="btn" type="button" id="et-check">Check</button>
       </div>
       <div class="fb" id="et-fb" aria-live="polite"></div>
-      <p class="small muted">Use the disk-count table below to estimate when five of ten disks floated, then return to the ET₅₀ entry immediately above. Use Check to verify your calculation.</p><div id="cup-table"></div>
+      <p class="small muted">Use the disk-count table below to estimate when half of the disks in your cup floated, then return to the ET₅₀ entry immediately above. Use Check to verify your calculation.</p><div id="cup-table"></div>
       <div id="cup-chart"></div>
       <div id="proc-prompts" class="prompts-2"></div>
     </div>
@@ -1230,12 +1230,12 @@ const Predict = (function () {
     if (!rows.length) { dchart.update({ series: [] }); dchart2.update({ series: [] }); return; }
     if (o.num) {
       const xf = o.xval || (v => v), xl = o.x;
-      dchart.update({ type: 'xy', xLabel: xl, yLabel: 'Rate, 1/ET₅₀ (min⁻¹)', categories: undefined, yMin: 0, series: [{ name: 'Mean 1/ET50 ± 2 SE', points: sum.map(s => ({ x: xf(s._k), y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }, { name: 'Each cup', points: rows.map(r => ({ x: xf(r.v), y: r.rate })), line: false }] });
+      dchart.update({ type: 'xy', xLabel: xl, yLabel: 'Rate, 1/ET₅₀ (min⁻¹)', categories: undefined, yMin: 0, series: [{ name: 'Mean 1/ET50 ± 2 SE', points: sum.filter(s => s.mean != null && Number.isFinite(s.mean)).map(s => ({ x: xf(s._k), y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }, { name: 'Each cup', points: rows.filter(r => r.rate != null && Number.isFinite(r.rate)).map(r => ({ x: xf(r.v), y: r.rate })), line: false }] });
       dchart2.update({ type: 'xy', xLabel: xl, yLabel: 'Median ET₅₀ (min)', categories: undefined, yMin: 0, series: [{ name: 'Median ET50', points: sum.filter(s => isFinite(s.med)).map(s => ({ x: xf(s._k), y: s.med })) }] });
     } else {
       const cats = sum.map(s => s.lv);
-      dchart.update({ type: 'bar', xLabel: o.label + ' (category)', yLabel: 'Rate, 1/ET₅₀ (min⁻¹)', categories: cats, yMin: 0, series: [{ name: 'Mean 1/ET50', points: sum.map(s => ({ x: s.lv, y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }] });
-      dchart2.update({ type: 'bar', xLabel: o.label + ' (category)', yLabel: 'Median ET₅₀ (min)', categories: cats, yMin: 0, series: [{ name: 'Median ET50', points: sum.map(s => ({ x: s.lv, y: isFinite(s.med) ? s.med : 0 })) }] });
+      dchart.update({ type: 'bar', xLabel: o.label + ' (category)', yLabel: 'Rate, 1/ET₅₀ (min⁻¹)', categories: cats, yMin: 0, series: [{ name: 'Mean 1/ET50', points: sum.filter(s => s.mean != null && Number.isFinite(s.mean)).map(s => ({ x: s.lv, y: s.mean, err: isFinite(s.ci) ? s.ci : 0 })) }] });
+      dchart2.update({ type: 'bar', xLabel: o.label + ' (category)', yLabel: 'Median ET₅₀ (min)', categories: cats, yMin: 0, series: [{ name: 'Median ET50', points: sum.filter(s => Number.isFinite(s.med)).map(s => ({ x: s.lv, y: s.med })) }] });
     }
   }
   const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze, toast: rows => `Recorded ET₅₀ for ${rows.length} cups` });
