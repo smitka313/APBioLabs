@@ -13,10 +13,10 @@ const T = require('./_h');
       T.ok(/No recorded trial rows yet/.test(await area.innerText()), 'lab' + lab + ': empty-data feedback');
       await p.evaluate(([id, key]) => {
         const table = Lab._reg.tables.find(t => t.el.id === id || (id.startsWith('#') && t.el.matches(id)));
-        if (!table) throw new Error('Missing registered table ' + id); table.getRows().push({ [key]: 12 });
+        if (!table) throw new Error('Missing registered table ' + id); table.getRows().push({ [key]: 12, ...({ '05': { b: 7 }, '06': { c: 8 }, '12': { B: 9 } }[window.location.pathname.match(/lab(\d\d)/)?.[1]] || {}) });
       }, [table, field]);
       await btn.click();
-      T.ok(/recorded rows contain numeric measurements/.test(await area.innerText()), 'lab' + lab + ': numeric evidence recognized');
+      T.ok((['05','06','12'].includes(lab) ? /recorded rows contain both/.test(await area.innerText()) : /recorded rows contain numeric measurements/.test(await area.innerText())), 'lab' + lab + ': numeric evidence recognized');
       T.ok(p.errors.length === 0, 'lab' + lab + ': no page errors');
       await ctx.close();
     }
