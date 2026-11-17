@@ -1561,7 +1561,7 @@
         if (n.closest('.quiz')) return;
         if (n.matches('.chart')) {
           const c = chartByEl.get(n);
-          if (c && $('svg', n) && chartHasData(c.opts)) { const full = h('div', { class: 'chart', html: c.html(640) }); items.push({ kind: 'chart', el: full, opts: c.opts }); } // full-size copy, whatever width it is shown at
+          if (c && $('svg', n) && chartHasData(c.opts)) { const full = h('div', { class: 'chart', html: c.html(640) }); items.push({ kind: 'chart', el: full, opts: c.opts }); const note = n.parentElement && n.parentElement.querySelector('[data-report-chart-note]'); if (note && note.textContent.trim()) items.push({ kind: 'answer', q: 'Graph note', a: note.textContent.trim() }); } // full-size copy, whatever width it is shown at
           return;
         }
         if (n.matches('table.data')) { const t = tableItem(n); if (t) items.push(t); return; }
