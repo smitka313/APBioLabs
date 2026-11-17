@@ -1819,7 +1819,7 @@ const Predict = (function () {
   $('#round').addEventListener('click', () => { if (selLine.length > seenRounds) { seenRounds = selLine.length; Lab.toast(`Generation ${selLine[selLine.length - 1].gen} grown`, { type: 'ok', announce: false, key: 'round' }); } });
 })();
 
-Lab.dataFeedback('#data-feedback-01', {"table":"d-table","fields":["mean"],"prompt":"Compare mean trichome traits across selection generations and identify which population each value represents. A change in means alone does not establish its cause."});
+Lab.dataFeedback('#data-feedback-01', {"table":"gen-table","fields":["mean"],"includeSummaryRows":true,"prompt":"Compare mean trichome traits across selection generations and identify which population each value represents. A change in means alone does not establish its cause."});
 </script>
 </body>
 </html>
