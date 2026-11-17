@@ -14,6 +14,18 @@ const T = require('./_h');
       T.ok(await p.getByRole('button', { name: 'Save as PDF' }).isEnabled(), lab + ': PDF enabled with incomplete work');
       T.ok(/saved in this browser; it has not been sent to your teacher/i.test(text), lab + ': saved work is not represented as submitted');
       T.ok(/activities remaining/i.test(text), lab + ': unfinished activity counts visible');
+      const resume = ready.getByRole('button', { name: 'Continue unfinished work' });
+      T.ok(await resume.count() === 1, lab + ': resume button appears when work remains');
+      if (await resume.count()) {
+        const expected = await p.evaluate(() => {
+          const link = document.querySelector('[aria-label="Submission readiness"] a[href^="#"]');
+          return link?.getAttribute('href')?.slice(1);
+        });
+        await resume.click();
+        const actual = await p.evaluate(() => Lab.pages.current()?.id);
+        T.ok(actual === expected, lab + ': resume opens first unfinished section (' + actual + ')');
+        await p.evaluate(() => Lab.pages.go('submit'));
+      }
       const links = ready.locator('a[href^="#"]');
       T.ok(await links.count() > 0, lab + ': unfinished sections linked');
       if (await links.count()) {
