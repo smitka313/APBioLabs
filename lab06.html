@@ -11,7 +11,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
-<noscript><style>[data-ph]{display:none!important}</style></noscript>
+<noscript><style>[data-ph]{display:none!important}@media(min-width:1100px){.resp-evidence-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}.resp-evidence-grid>*{min-width:0}}
+</style></noscript>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -291,8 +292,7 @@
         </div>
       </div>
       <div id="g-timelapse" class="tl-mount"></div>
-      <div id="g-chart"></div>
-      <div id="g-table"></div>
+      <div class="resp-evidence-grid"><div id="g-chart"></div><div id="g-table"></div></div>
     </div>
   </section>
 
