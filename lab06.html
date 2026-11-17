@@ -1802,7 +1802,7 @@ const Predict = (function () {
     rubric: ['(a) O2 is used by respiration and the CO2 released is absorbed by KOH, so gas volume falls and fluid moves toward the chamber.', '(b) The beads are a control for changes in temperature and pressure; subtracting its movement corrects the seeds\' reading.', '(c) Rate rises with temperature (about doubling every 10 \u00b0C), peaks, then falls because enzymes denature at high temperature.', '(d) Q10 is the factor by which the rate rises for a 10 \u00b0C increase, so rates at different temperature gaps can be compared; about 2 shows enzyme-driven chemical reactions.'] }); }
 })();
 
-Lab.dataFeedback('#data-feedback-06', { table: 'p-table', fields: ["e","c"], prompt: "Compare seeds and bead-control readings at matching times, then calculate corrected oxygen consumption before drawing conclusions." });
+Lab.dataFeedback('#data-feedback-06', { table: 'p-table', fields: ["e","c"], compare: {left:'e',right:'c',leftLabel:'seed reading',rightLabel:'bead-control reading',time:'time point'}, prompt: "Compare seeds and bead-control readings at matching times, then calculate corrected oxygen consumption before drawing conclusions." });
 </script>
 </body>
 </html>
