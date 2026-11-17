@@ -128,10 +128,13 @@
     <div class="field"><label for="f-lab">Lab</label><select id="f-lab"></select></div>
     <div class="field"><label for="f-class">Class period</label><select id="f-class"></select></div>
     <div class="field"><label for="f-progress">Progress</label><select id="f-progress"><option value="">All progress</option><option value="incomplete">Incomplete</option><option value="complete">Complete</option><option value="unknown">No progress data</option></select></div>
+    <div class="field"><label for="f-review">Review</label><select id="f-review"><option value="">All records</option><option value="attention">Needs review</option><option value="missing">Missing key results</option></select></div>
     <div class="field grow"><label for="f-q">Find a student</label><input type="search" id="f-q" placeholder="Type part of a name" autocomplete="off"></div>
     <button class="btn btn--primary" type="button" id="csv">Export grid as CSV</button>
   </div>
   <p class="summary" id="summary" aria-live="polite"></p>
+  <section id="review-summary" class="conf-sum" aria-label="Class progress summary" hidden></section>
+  <section id="review-attention" class="misses" aria-label="Records needing review" hidden></section>
   <div id="grids"></div>
   <div class="empty" id="empty">No student files yet. Add some files above, or press <strong>Load sample data</strong> to see an example.</div>
 </div>
@@ -259,7 +262,7 @@
   const studentKey = r => r.name.toLowerCase() + '|' + r.period;
 
   /* ---------- State ---------- */
-  const S = { recs: [], skipped: [], sort: { key: 'name', dir: 1 }, lab: '', period: '', progress: '', q: '' };
+  const S = { recs: [], skipped: [], sort: { key: 'name', dir: 1 }, lab: '', period: '', progress: '', review: '', q: '' };
   const say = t => { $('#live').textContent = t; };
 
   function addPayload(p, file, sample) {
@@ -340,7 +343,27 @@
     });
   }
   const progressState = r => !r.parts || !(r.parts.total > 0) ? 'unknown' : r.parts.done >= r.parts.total ? 'complete' : 'incomplete';
-  const visible = () => S.recs.filter(r => (!S.lab || r.lab === S.lab) && (!S.period || r.period === S.period) && (!S.progress || progressState(r) === S.progress) && (!S.q || r.name.toLowerCase().includes(S.q.toLowerCase())));
+  // Missing results means a field absent relative to other imported records
+  // of the same lab. It does not assert that a result was required by the lab.
+  const expectedKeys = () => {
+    const map = new Map();
+    S.recs.forEach(r => { if (!map.has(r.lab)) map.set(r.lab, new Set()); r.kr.forEach(k => map.get(r.lab).add(k.id)); });
+    return map;
+  };
+  const missingKeys = (r, keys) => [...(keys.get(r.lab) || [])].filter(id => !r.kr.some(k => k.id === id && k.value !== null && k.value !== ''));
+  const reviewReason = (r, keys) => {
+    const reasons = [];
+    if (progressState(r) === 'incomplete') reasons.push('Incomplete progress');
+    if (progressState(r) === 'unknown') reasons.push('Progress unknown');
+    if (missingKeys(r, keys).length) reasons.push('Missing result fields');
+    if (r.flags.length) reasons.push('Flagged for review');
+    return reasons;
+  };
+  const visible = () => {
+    const keys = expectedKeys();
+    return S.recs.filter(r => (!S.lab || r.lab === S.lab) && (!S.period || r.period === S.period) && (!S.progress || progressState(r) === S.progress) && (!S.q || r.name.toLowerCase().includes(S.q.toLowerCase())) &&
+      (!S.review || (S.review === 'missing' ? missingKeys(r, keys).length > 0 : reviewReason(r, keys).length > 0)));
+  };
   const periodLabel = p => p === '' ? '—' : (p === 'Other' ? 'Other' : p);
 
   /* ---------- Rendering ---------- */
@@ -411,6 +434,22 @@
     const rows = visible();
     const byLab = {}; rows.forEach(r => (byLab[r.lab] = byLab[r.lab] || []).push(r));
     $('#grids').innerHTML = Object.keys(byLab).sort().map(l => labTable(l, byLab[l])).join('');
+    const keys = expectedKeys();
+    const counts = { complete: 0, incomplete: 0, unknown: 0, review: 0, missing: 0 };
+    rows.forEach(r => {
+      counts[progressState(r)]++;
+      if (missingKeys(r, keys).length) counts.missing++;
+      if (reviewReason(r, keys).length) counts.review++;
+    });
+    const summaryPanel = $('#review-summary');
+    summaryPanel.hidden = !has;
+    summaryPanel.innerHTML = has ? '<h3>Imported-record overview</h3><p class="small">Counts reflect only the currently filtered imported files, not a class roster or confirmed submissions.</p><ul>' +
+      [['Complete', counts.complete], ['Incomplete', counts.incomplete], ['Progress unknown', counts.unknown], ['Needs review', counts.review]].map(([label, n]) =>
+        '<li>' + esc(label) + ' <span class="n">' + n + '</span></li>').join('') + '</ul>' : '';
+    const attention = $('#review-attention');
+    attention.hidden = !has || !rows.length;
+    attention.innerHTML = attention.hidden ? '' : '<h3>Review priorities</h3><p class="small">These are prompts to inspect imported work, not automatic grades or proof of missing submissions.</p><p>' +
+      counts.review + ' records need review; ' + counts.missing + ' have result fields absent compared with another imported record from the same lab.</p>';
     const flagged = rows.filter(r => r.flags.length).length;
     $('#summary').textContent = has ? `${rows.length} of ${S.recs.length} student rows shown across ${Object.keys(byLab).length} lab${Object.keys(byLab).length === 1 ? '' : 's'}${flagged ? ` · ${flagged} flagged for a possible copy` : ''}.` : '';
   }
@@ -422,10 +461,10 @@
     rows = rows.slice().sort((a, b) => a.lab.localeCompare(b.lab) || 0);
     const labs = Array.from(new Set(rows.map(r => r.lab))).sort();
     const krCols = []; labs.forEach(l => rows.filter(r => r.lab === l).forEach(r => r.kr.forEach(k => { if (!krCols.some(c => c.lab === l && c.id === k.id)) krCols.push({ lab: l, id: k.id, label: k.label, unit: k.unit }); })));
-    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Confidence (1-3)', 'Confidence', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags', 'Dataset owner']);
+    const head = ['Lab', 'Student', 'Class', 'Dataset ID', 'Parts done', 'Parts total', 'Completion status', 'Completion percent', 'Review reasons', 'Missing result fields'].concat(krCols.map(c => `Lab ${+c.lab.slice(3)}: ${c.label}${c.unit ? ' (' + c.unit + ')' : ''}`), ['FRQ self-score', 'Confidence (1-3)', 'Confidence', 'Pre-lab correct', 'Pre-lab total', 'Submitted', 'Flags', 'Dataset owner']);
     const out = [head];
     labs.forEach(l => sortRows(rows.filter(r => r.lab === l)).forEach(r => {
-      out.push([`Lab ${r.labNo}`, r.name + (r.sample ? ' (Sample)' : ''), r.period, r.datasetId, r.parts ? r.parts.done : '', r.parts ? r.parts.total : '']
+      out.push([`Lab ${r.labNo}`, r.name + (r.sample ? ' (Sample)' : ''), r.period, r.datasetId, r.parts ? r.parts.done : '', r.parts ? r.parts.total : '', progressState(r), progressState(r) === 'unknown' ? '' : Math.round(100 * r.parts.done / r.parts.total), reviewReason(r, expectedKeys()).join('; '), missingKeys(r, expectedKeys()).join('; ')]
         .concat(krCols.map(c => { if (c.lab !== l) return ''; const k = r.kr.find(x => x.id === c.id); return k ? fmtVal(k.value) : ''; }),
           [r.frq ? fmtVal(r.frq.value) : '', r.conf || '', r.conf ? CONF[r.conf] : '', r.pre ? r.pre.right : '', r.pre ? r.pre.total : '', r.when ? new Date(r.when).toISOString().slice(0, 10) : '', r.flags.join('; '), r.owner ? 'Started by ' + r.owner : r.ownerUnverified ? 'Not recorded (started before the November 2026 update)' : '']));
     }));
@@ -489,10 +528,11 @@
   window.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
   $('#files').addEventListener('change', e => { const l = e.target.files; addFiles(l).then(() => { e.target.value = ''; }); });
   $('#sample').addEventListener('click', loadSample);
-  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.progress = ''; S.q = ''; $('#f-q').value = ''; $('#f-progress').value = ''; render(); say('Cleared.'); });
+  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.progress = ''; S.review = ''; S.q = ''; $('#f-q').value = ''; $('#f-progress').value = ''; $('#f-review').value = ''; render(); say('Cleared.'); });
   $('#f-lab').addEventListener('change', e => { S.lab = e.target.value; render(); });
   $('#f-class').addEventListener('change', e => { S.period = e.target.value; render(); });
   $('#f-progress').addEventListener('change', e => { S.progress = e.target.value; render(); });
+  $('#f-review').addEventListener('change', e => { S.review = e.target.value; render(); });
   $('#f-q').addEventListener('input', e => { S.q = e.target.value.trim(); render(); });
   $('#csv').addEventListener('click', downloadCsv);
   document.addEventListener('click', e => {
