@@ -1,0 +1,20 @@
+/* Optional, local-only first-visit teacher tour. No network or accounts. */
+(function(){
+'use strict';
+const KEY='aplab:teacher-tour:v1';
+const steps=[
+ {selector:'.t-hero h1',title:'Welcome, teachers!',body:'The Lab Bench has 13 free, interactive AP Biology investigations. This quick tour takes less than a minute.'},
+ {selector:'a[href="getting-started.html"]',title:'Start here',body:'The five-minute setup guide explains how to assign a lab, save progress, and collect student reports.'},
+ {selector:'a[href="projector.html"]',title:'Present a lab',body:'Projector mode lets you show the class which lab sections to complete.'},
+ {selector:'a[href="#dashboard"]',title:'Review class work',body:'The teacher dashboard reads reports you import on your own computer; it does not automatically collect submissions.'},
+ {selector:'a[href="feedback.html"]',title:'Help improve the site',body:'Send suggestions or report problems. No student information should be included.'}
+];
+let current=0, layer=null, panel=null, focusBefore=null, target=null;
+function saved(){try{return localStorage.getItem(KEY)==='done'}catch(e){return false}}
+function finish(){if(!layer)return;try{localStorage.setItem(KEY,'done')}catch(e){}if(target)target.classList.remove('teacher-tour-target');layer.remove();document.removeEventListener('keydown',keys);layer=null;target=null;(focusBefore&&focusBefore.isConnected?focusBefore:document.querySelector('#teacher-tour-replay'))?.focus()}
+function keys(e){if(e.key==='Escape'){e.preventDefault();finish()}if(e.key==='Tab'&&layer){const buttons=[...layer.querySelectorAll('button')];const first=buttons[0],last=buttons[buttons.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}}
+function show(i){current=i;if(target)target.classList.remove('teacher-tour-target');target=document.querySelector(steps[i].selector);if(!target){if(i<steps.length-1)return show(i+1);return finish()}target.classList.add('teacher-tour-target');target.scrollIntoView({block:'center',behavior:'instant'});panel.innerHTML='';const s=steps[i];const heading=document.createElement('h2');heading.id='teacher-tour-title';heading.textContent=s.title;const progress=document.createElement('p');progress.textContent='Step '+(i+1)+' of '+steps.length;const body=document.createElement('p');body.textContent=s.body;const actions=document.createElement('div');actions.className='teacher-tour-actions';const skip=document.createElement('button');skip.type='button';skip.textContent='Skip tour';skip.onclick=finish;const back=document.createElement('button');back.type='button';back.textContent='Back';back.disabled=i===0;back.onclick=()=>show(i-1);const next=document.createElement('button');next.type='button';next.textContent=i===steps.length-1?'Finish':'Next';next.onclick=()=>i===steps.length-1?finish():show(i+1);actions.append(skip,back,next);panel.append(progress,heading,body,actions);next.focus()}
+function start(){if(layer)return;focusBefore=document.activeElement;layer=document.createElement('div');layer.className='teacher-tour-overlay';panel=document.createElement('div');panel.className='teacher-tour-panel';panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-labelledby','teacher-tour-title');layer.append(panel);document.body.append(layer);document.addEventListener('keydown',keys);show(0)}
+function init(){const button=document.createElement('button');button.id='teacher-tour-replay';button.type='button';button.className='btn';button.textContent='Show me around';button.addEventListener('click',start);const hero=document.querySelector('.t-hero .wrap');if(!hero)return;hero.append(button);if(!saved()){document.addEventListener('pointerdown',function firstPointer(e){if(e.target.closest('a,button,input,select,textarea,[role="button"]'))return;document.removeEventListener('pointerdown',firstPointer);if(!layer)start()})}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();

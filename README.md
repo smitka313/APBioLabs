@@ -31,7 +31,7 @@ Each lab page has the same parts: an overview with background and diagrams, an a
 
 ## For teachers
 
-- **For teachers page** (`teachers.html`): how the site works, handing in work, privacy, and linking to one part of a lab.
+- **Quick start** (`getting-started.html`): five-minute classroom setup, backups, submissions and dashboard workflow. The `sample-report.html` page is illustrative (not a verified DOCX export); `feedback.html` links to GitHub issues.\n- **For teachers page** (`teachers.html`): how the site works, handing in work, privacy, and linking to one part of a lab.
 - **Teacher notes** (`teacher-notes.html`, `teacher-labNN.html`): timing, misconceptions, suggested answers and expected ranges. They are encrypted in the page (AES-256-GCM, key from the password with PBKDF2) and need a password. They are encrypted in the page, not behind a school login: anyone with the password can open them. The password is kept only if "Keep unlocked in this tab" is ticked, and **Lock notes** forgets it. The plaintext is not in this repository; `tools/encrypt-notes.js` builds the encrypted pages.
 - **Class dashboard** (`teacher-dashboard.html`): drop a class's .docx reports and progress files to get a sortable grid per lab (parts done, key results, pre-lab, FRQ self-score, confidence), flags for shared Dataset IDs, identical results, or a dataset started by another student, and a CSV export. Files are read in the browser and never uploaded. The Word-file reader (JSZip 3.10.1) is in `vendor/`.
 - **Projector mode** (`projector.html`): shows the day's lab parts on the classroom screen with a timer. `projector.html#lab05` opens one lab.
