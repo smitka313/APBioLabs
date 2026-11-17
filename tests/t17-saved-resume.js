@@ -44,7 +44,7 @@ const OUT = process.env.OUT || require('os').tmpdir();
   T.ok(!!hint, 'part has a Next hint: ' + hint);
   await lp.close();
   h = await T.open(ctx2, 'index.html');
-  const card = await h.evaluate(() => { const e = document.getElementById('resume'); const a = e.querySelector('a.resume-link'); return { hidden: e.hidden, text: e.innerText, first: document.querySelector('.hero .wrap').firstElementChild === e, href: a && a.getAttribute('href') }; });
+  const card = await h.evaluate(() => { const e = document.getElementById('resume'); const a = e.querySelector('a.resume-link'); return { hidden: e.hidden, text: e.innerText, first: !!e.closest('.hero-actions') && e.parentElement.firstElementChild === e, href: a && a.getAttribute('href') }; });
   console.log(card.text.replace(/\n+/g, ' | '));
   T.ok(!card.hidden && card.first, 'card visible and first in hero');
   T.ok(/Pick up where you left off/i.test(card.text) && /Lab 5/.test(card.text) && /Part:\s*Float assay/i.test(card.text), 'lab name and part');
