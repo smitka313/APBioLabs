@@ -888,7 +888,7 @@ function makeGel(rootSel, measSel, cfg) {
     columns: [{ key: 'gel', label: 'Gel', num: true, digits: 0 }, { key: 'lane', label: 'Lane', num: true, digits: 0 }, { key: 'sample', label: 'Sample' }, { key: 'band', label: 'Band', num: true, digits: 0 }, { key: 'dist', label: 'Distance migrated', unit: 'mm', num: true, digits: 1, editable: true }, { key: 'known', label: 'Known fragment size', unit: 'bp', num: true, digits: 0, editable: true }],
     onChange: () => analyze()
   });
-  const prevGel = Math.max(0, ...meas.getRows().map(r => r.gel || 0));
+  const prevGel = Math.max(0, ...meas.getRows().filter(r => r && r.dist != null && Number.isFinite(Number(r.dist))).map(r => Number(r.gel) || 0));
   const st = { shown: 'none', lanes: [], t: 0, running: false, stain: 0, stainAt: 0, destainAt: 0, gel: prevGel + 1, sel: cfg.samples[0].key, pipette: null, runF: 1, laneF: [], reversed: false };
   function newGel() {
     st.lanes = Array.from({ length: 8 }, () => []); st.t = 0; st.dist = 0; st.frozen = { pct: pct(), V: V() }; st.running = false; st.stain = 0; st.stainAt = 0; st.destainAt = 0; st.shown = 'none'; st.runF = Math.max(0.9, Math.min(1.1, rng.normal(1, 0.03)));
@@ -1264,7 +1264,7 @@ function makeGel(rootSel, measSel, cfg) {
   const fitsEl = Lab.$('.fits', mroot), curveEl = Lab.$('.curve', mroot), estEl = Lab.$('.est', mroot);
   const excl = Lab.$('.excl input', mroot), gsel = Lab.$('.gsel', mroot);
   function fits() {
-    const rows = meas.getRows(), byGel = {};
+    const rows = meas.getRows().filter(r => r && r.dist != null && Number.isFinite(Number(r.dist))), byGel = {};
     rows.forEach(r => { if (rowOk(r) && r.known > 0 && !(excl.checked && r.known > 20000)) (byGel[r.gel] = byGel[r.gel] || []).push(r); });
     const F = {}; Object.entries(byGel).forEach(([g, rs]) => { if (rs.length >= 2 && new Set(rs.map(r => r.dist)).size > 1) F[g] = Lab.stats.linreg(rs.map(r => r.dist), rs.map(r => Math.log10(r.known))); });
     return F;
@@ -1288,7 +1288,7 @@ function makeGel(rootSel, measSel, cfg) {
   }
   function analyze() {
     validateMeas(meas.getRows());
-    const F = fits(), rows = meas.getRows(), gels = [...new Set(rows.map(r => r.gel))].sort((a, b) => a - b);
+    const F = fits(), rows = meas.getRows().filter(r => r && r.dist != null && Number.isFinite(Number(r.dist))), gels = [...new Set(rows.map(r => r.gel))].sort((a, b) => a - b);
     const cur = gsel.value && gels.includes(+gsel.value) ? +gsel.value : gels[gels.length - 1];
     gsel.innerHTML = gels.length ? gels.map(g => `<option value="${g}" ${g === cur ? 'selected' : ''}>Gel ${g}</option>`).join('') : '<option value="">No data yet</option>';
     fitsEl.innerHTML = gels.length ? gels.map(g => F[g] ? `<div class="readout"><span class="k">Gel ${g} curve</span><span class="v" style="font-size:.9rem">log₁₀bp = ${Lab.fmt(F[g].m, 4)}d + ${Lab.fmt(F[g].b, 3)} · R² ${Lab.fmt(F[g].r2, 3)}</span></div>` : `<div class="readout"><span class="k">Gel ${g}</span><span class="v" style="font-size:.9rem">enter ≥ 2 known sizes</span></div>`).join('') : '';
