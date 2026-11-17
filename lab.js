@@ -2347,12 +2347,14 @@
     steps.forEach(s => {
       const link = $$('a', nav).find(a => a.getAttribute('href') === '#' + s.id); if (!link) return;
       const r = sectionWork(s), sr = $('.done-sr', link);
-      if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); return; }
+      if (!r.total) { link.classList.remove('is-done', 'has-work'); if (sr) sr.textContent = ''; link.removeAttribute('title'); link.removeAttribute('aria-description'); return; }
       parts++; const ok = r.done === r.total; if (ok) { complete++; doneIds.add(s.id); }
       itemsDone += r.done; itemsTotal += r.total;
       if (r.done > 0 && !ok) partials.push({ id: s.id, name: (s.dataset.step || '').trim() || 'This part', done: r.done, total: r.total });
       link.classList.add('has-work'); link.classList.toggle('is-done', ok);
       if (sr) sr.textContent = ok ? ' (done)' : '';
+      const remaining = r.total - r.done;
+      link.setAttribute('aria-description', ok ? 'All tracked activities complete' : `${remaining} ${remaining === 1 ? 'activity' : 'activities'} remaining; ${r.done} of ${r.total} complete`);
       link.title = ok ? 'Done' : `${r.done} of ${r.total} items done`;
     });
     if (mode === PAINT_ONLY) updateRing(complete, parts); else celebrateCheck(doneIds, complete, parts);
