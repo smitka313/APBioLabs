@@ -1019,3 +1019,7 @@ main#labs:empty { min-height: 100vh; }
 @media (max-width: 760px), (pointer: coarse) { .step > header.has-link > .link-tools { margin-block: -11px; } }
 /* Lab pages: the identity line's static stand-in keeps the line's size (wrapping included) but shows nothing until lab.js fills it. */
 .id-box[data-ph] .id-line { visibility: hidden; }
+
+/* Audit 5: backup reminder participates in page flow instead of covering controls. */
+.backup-bar,.backup-bar.nudge-bar{position:relative;left:auto;right:auto;bottom:auto;width:auto;max-width:900px;margin:12px auto;padding:10px 14px;box-sizing:border-box;}
+@media(max-width:600px){.backup-bar,.backup-bar.nudge-bar{left:auto;right:auto;width:auto;margin:8px 12px;}body.has-backup-bar .toasts{bottom:max(16px,env(safe-area-inset-bottom,0px));}}

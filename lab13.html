@@ -1263,7 +1263,7 @@ function frq(host, o) {
     const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), pts = rows.filter(r => r.trial === tr && r.t <= 2).sort((a, b) => a.t - b.t);
     if (pts.length < 2) { dropKeyRes('initial-rate'); return; }
     const f = stats.linreg(pts.map(r => r.t), pts.map(A)), viaChart = !pts.some(r => numOk(r.aE));
-    keyRes('initial-rate', { label: 'Initial rate, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(f.m * 10000) / 10000, unit: 'ΔA₄₇₀/min', part: 'Procedure 1' });
+    keyRes('initial-rate', { label: 'Initial rate magnitude, enzyme tube, trial ' + tr + ' (slope 0 to 2 min' + (viaChart ? ', from your color chart' : '') + ')', value: Math.round(Math.abs(f.m) * 10000) / 10000, unit: viaChart ? 'color-chart levels/min' : 'ΔA₄₇₀/min', part: 'Procedure 1' });
   }
   const ph2 = () => {
     const rows = (Lab.store.get('p2') || []).filter(r => r && numOk(r.pH)), spec = rows.some(r => r.dA != null && numOk(r.dA)), key = spec ? 'dA' : 'c';

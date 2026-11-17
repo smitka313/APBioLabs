@@ -3216,7 +3216,7 @@
     const nudge = kind === 'nudge';
     if (nudge) sessionSet(NUDGE_KEY, '1'); else { bkShown = true; sessionSet(shownKey(), '1'); }
     const region = h('div', { class: 'backup-bar' + (nudge ? ' nudge-bar' : ''), role: 'status', 'aria-live': 'polite' });
-    backupBar = region; document.body.append(region);
+    backupBar = region; const host = document.querySelector('.step-nav'); if (host) host.insertAdjacentElement('afterend', region); else document.body.prepend(region);
     setTimeout(() => { // fill after insertion so screen readers announce it politely
       if (!region.isConnected) return;
       const dismiss = h('button', { class: 'bb-close', type: 'button', 'aria-label': 'Dismiss this reminder', title: 'Dismiss', onclick: removeBar }, '×');
