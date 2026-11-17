@@ -363,7 +363,7 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
         </div></details>
         </div>
         <div class="stage">
-          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits (count)</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope (% per 100 My)</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
+          <div class="readouts"><div class="readout"><span class="k">Query</span><span class="v" id="d-q">—</span></div><div class="readout"><span class="k">Hits (count)</span><span class="v" id="d-n">—</span></div><div class="readout"><span class="k">Slope (% per 100 My)</span><span class="v" id="d-slope">—</span></div><div class="readout"><span class="k">Intercept (%)</span><span class="v" id="d-intercept">—</span></div><div class="readout"><span class="k">R²</span><span class="v" id="d-r2">—</span></div></div>
           <div id="d-out"><div class="res-empty msg" id="d-empty"><strong>No results yet.</strong> Choose a query organism and gene, then press BLAST.</div></div>
         </div>
       </div>
@@ -1884,18 +1884,19 @@ function drawClock(rows) {
   rows = rows || clockTable.getRows();
   const useMax = Lab.$('#clock-max').checked, maxT = +Lab.$('#clock-max-range').value;
   Lab.$('#clock-max-out').textContent = maxT;
-  const series = []; let shown = null; let shownGene = ''; let shownCount = 0;
+  const series = []; let shown = null; let shownGene = ''; let shownCount = 0; let shownIntercept = null;
   ['A', 'B', 'C'].forEach(g => {
     const pts = rows.filter(r => r.gene === g && r.t != null && r.ident != null && r.t !== '' && r.ident !== '' && Number.isFinite(Number(r.t)) && Number.isFinite(Number(r.ident))).map(r => ({ x: Number(r.t), y: Number(r.ident) }));
     if (!pts.length) return;
     const fitPts = useMax ? pts.filter(p => p.x <= maxT) : pts;
     const col = { A: 'var(--s1)', B: 'var(--s2)', C: 'var(--s3)' }[g];
     series.push({ name: `Gene ${g}`, points: pts, line: false, color: col });
-    if (fitPts.length > 1 && new Set(fitPts.map(p => p.x)).size > 1) { series.push({ name: `Gene ${g} fit`, points: fitPts, line: false, dots: false, fit: 'linear', color: col }); const f = Lab.stats.linreg(fitPts.map(p => p.x), fitPts.map(p => p.y)); if (!shown) { shown = f; shownGene = g; shownCount = fitPts.length; } }
+    if (fitPts.length > 1 && new Set(fitPts.map(p => p.x)).size > 1) { series.push({ name: `Gene ${g} fit`, points: fitPts, line: false, dots: false, fit: 'linear', color: col }); const f = Lab.stats.linreg(fitPts.map(p => p.x), fitPts.map(p => p.y)); if (!shown) { shown = f; shownGene = g; shownCount = fitPts.length; shownIntercept = f.b; } }
   });
   clockChart.update({ series });
   Lab.$('#d-slope').textContent = shown ? `${Lab.fmt(shown.m * 100, 2)} %/100 My` : '—';
   Lab.$('#d-r2').textContent = shown ? Lab.fmt(shown.r2, 3) : '—';
+  const interceptOut = Lab.$('#d-intercept'); if (interceptOut) interceptOut.textContent = shown && Number.isFinite(shownIntercept) ? Lab.fmt(shownIntercept, 2) + ' %' : '—';
   const clockInfo = Lab.$('#d-fit-info'); if (clockInfo) clockInfo.textContent = shown ? 'Fit uses ' + shownCount + ' recorded Gene ' + shownGene + ' points' + (useMax ? ' up to ' + maxT + ' million years' : '') + '. Recalculate using only the plotted points.' : 'Record at least two distinct divergence times for a fit.';
 }
 Lab.$('#clock-max').addEventListener('change', () => drawClock());
