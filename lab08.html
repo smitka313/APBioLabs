@@ -1718,10 +1718,10 @@ Lab.steps('#t-steps', [
   { id: 'pred', text: 'Predict all six plates', target: '#pred-grid select', done: () => $$('#pred-grid select').every(s => s.value !== '') || incubated(), hint: 'Choose what you expect on each plate in <strong>Your predictions</strong>.' },
   { id: 'incub', text: 'Incubate the plates', target: '#do-step', done: () => stepIdx >= STEPS.length, hint: 'Press <strong>Incubate plates</strong>, then view them in room and UV light.' },
   { id: 'count', text: 'Count the colonies (below)', target: '#zoom-plate', done: () => Object.values(marks || {}).some(a => a.length > 0), hint: 'Scroll down: pick the +pGLO LB/amp plate and click each colony.' },
-  { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => runsTable.getRows().length > 0, hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
+  { id: 'calc', text: 'Calculate + add the run', target: '#calc-add', done: () => !Lab.store.get('awaiting-new-transformation') && runsTable.getRows().length > 0, hint: 'Scroll down: fill in the calculation, check it, then <strong>Add this run</strong>.' }
 ], { doneText: 'Transformation done. Next, test a variable in <a href="#design">Design</a>.' });
 const rangeCaption = $('#runs-range-caption');
-const syncRangeCaption = () => { if (rangeCaption) rangeCaption.hidden = !$('#runs-chart').querySelector('svg, canvas'); };
+const syncRangeCaption = () => { if (rangeCaption) rangeCaption.hidden = $('#runs-chart').hidden || !!Lab.store.get('awaiting-new-transformation') || !runsTable.getRows().length; };
 new MutationObserver(syncRangeCaption).observe($('#runs-chart'), { childList: true, subtree: true });
 syncRangeCaption();
 Lab.gate('#use-count', () => exampleOn ? 'Clear the example first' : incubated() ? '' : 'Incubate your plates first');
