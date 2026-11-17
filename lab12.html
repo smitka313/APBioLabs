@@ -1683,7 +1683,7 @@ frq(partBody('Evaluate'), {
     '(d) Substances are categories, not a continuous variable, so bars fit; the error bars (mean ± 2 SE of repeated trials) show the variation, so the reader can judge whether differences are real.']
 });
 
-Lab.dataFeedback('#data-feedback-12', {"table":"trials-table","fields":["A","B"],"prompt":"A and B are different chamber choices; compare them within the same trial, then consider controls and the expected distribution before interpreting chi-square."});
+Lab.dataFeedback('#data-feedback-12', {"table":"trials-table","fields":["A","B"],"compare":{"left":"A","right":"B","leftLabel":"choice A","rightLabel":"choice B"},"prompt":"A and B are different chamber choices; compare them within the same trial, then consider controls and the expected distribution before interpreting chi-square."});
 </script>
 </body>
 </html>
