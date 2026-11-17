@@ -489,7 +489,7 @@
   window.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
   $('#files').addEventListener('change', e => { const l = e.target.files; addFiles(l).then(() => { e.target.value = ''; }); });
   $('#sample').addEventListener('click', loadSample);
-  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.q = ''; $('#f-q').value = ''; render(); say('Cleared.'); });
+  $('#clear').addEventListener('click', () => { S.recs = []; S.skipped = []; S.lab = ''; S.period = ''; S.progress = ''; S.q = ''; $('#f-q').value = ''; $('#f-progress').value = ''; render(); say('Cleared.'); });
   $('#f-lab').addEventListener('change', e => { S.lab = e.target.value; render(); });
   $('#f-class').addEventListener('change', e => { S.period = e.target.value; render(); });
   $('#f-progress').addEventListener('change', e => { S.progress = e.target.value; render(); });
