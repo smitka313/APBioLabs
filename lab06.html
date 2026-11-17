@@ -387,7 +387,8 @@
       <h3>Claim, evidence, reasoning</h3>
       <p class="small muted">Answer the question you chose in your own investigation.</p>
       <div class="cer" id="cer"></div>
-    </div>
+    <div id="data-feedback-06"></div>
+      </div>
   </section>
 
   <!-- ============ 8. EVALUATE ============ -->
@@ -1800,6 +1801,8 @@ const Predict = (function () {
     parts: [['a', '<strong>Describe</strong> why the fluid moves toward the chamber and what the KOH does.'], ['b', '<strong>Explain</strong> the purpose of the bead respirometer.'], ['c', '<strong>Predict</strong> the shape of a graph of rate against temperature from 5 to 45 \u00b0C, and explain the drop at the highest temperatures.'], ['d', '<strong>Justify</strong> using Q<sub>10</sub> to compare rates at two temperatures, and state what a Q<sub>10</sub> near 2 suggests.']],
     rubric: ['(a) O2 is used by respiration and the CO2 released is absorbed by KOH, so gas volume falls and fluid moves toward the chamber.', '(b) The beads are a control for changes in temperature and pressure; subtracting its movement corrects the seeds\' reading.', '(c) Rate rises with temperature (about doubling every 10 \u00b0C), peaks, then falls because enzymes denature at high temperature.', '(d) Q10 is the factor by which the rate rises for a 10 \u00b0C increase, so rates at different temperature gaps can be compared; about 2 shows enzyme-driven chemical reactions.'] }); }
 })();
+
+Lab.dataFeedback('#data-feedback-06', { table: 'p-table', fields: ["e","c"], prompt: "Compare seeds and bead-control readings at matching times, then calculate corrected oxygen consumption before drawing conclusions." });
 </script>
 </body>
 </html>
