@@ -1248,6 +1248,24 @@ const Predict = (function () {
     }
   }
   const draw = Lab.table('#d-raw', { save: 'design', columns: [{ key: 'lvl', label: 'Level' }, { key: 'cup', label: 'Cup', num: true, digits: 0 }, { key: 'etTxt', label: 'ET50', unit: 'min' }, { key: 'rate', label: '1/ET50', unit: 'min⁻¹', num: true, digits: 3 }], onChange: dAnalyze, toast: rows => `Recorded ET₅₀ for ${rows.length} cups` });
+  /* Report notes are derived from recorded cup results, not the rendered chart DOM. */
+  Lab.lab05ReportNotes = () => {
+    const rows = draw.getRows();
+    const levels = [...new Set(rows.map(r => r.lvl))];
+    const omitted = levels.filter(level => {
+      const cups = rows.filter(r => r.lvl === level);
+      return cups.length && cups.every(r => r.rate == null || !Number.isFinite(Number(r.rate)));
+    });
+    const partial = levels.filter(level => {
+      const cups = rows.filter(r => r.lvl === level);
+      return cups.some(r => r.rate == null || !Number.isFinite(Number(r.rate))) &&
+             cups.some(r => r.rate != null && Number.isFinite(Number(r.rate)));
+    });
+    const notes = [];
+    if (omitted.length) notes.push(`Not plotted: ${omitted.join(', ')}. No cup at these levels reached ET50 by 45 min (ET50 >45 min; 1/ET50 <0.0222 min⁻¹). These censored rates are not measured zeros and are excluded from the plotted mean.`);
+    if (partial.length) notes.push(`Partially censored: ${partial.join(', ')}. Some cups did not reach ET50 by 45 min (ET50 >45 min; 1/ET50 <0.0222 min⁻¹). The plotted mean uses only measured rates; censored values are excluded rather than counted as zero.`);
+    return notes;
+  };
   /* The design run is saved (seed, start time, settings) and replayed on the clock after a reload, like the float assay. */
   const D_MAX = 45, D_RATE = 8;
   let dT = 0, dTarget = 0, dIvKey = 'dist', dLoop = null;

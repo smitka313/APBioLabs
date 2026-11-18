@@ -1568,6 +1568,13 @@
         if (n.id === 'student-name' || !(n.tagName === 'TEXTAREA' || n.dataset.label)) return;
         items.push({ kind: 'answer', q: fieldLabel(n), a: fieldValue(n) });
       });
+      if (PAGE.id === 'lab05' && sec.id === 'design' && typeof Lab.lab05ReportNotes === 'function') {
+        Lab.lab05ReportNotes().forEach(note => {
+          if (note && !items.some(it => it.kind === 'answer' && it.a === note)) {
+            items.push({ kind: 'answer', q: 'Censored ET50 graph explanation', a: note });
+          }
+        });
+      }
       const h2 = $(':scope > header h2', sec);
       if (items.length) sections.push({ name: sec.dataset.step || '', heading: h2 ? h2.textContent.trim() : '', items });
     });
