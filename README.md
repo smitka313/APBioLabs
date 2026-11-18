@@ -81,6 +81,20 @@ Old `smitka313.github.io/APBioLabs/` links redirect to the new domain when no sa
 - `tools/`: helper scripts (`encrypt-notes.js` for teacher notes; `build-student-directions.py` and `student-directions.json` for walkthroughs); `vendor/`: third-party files kept locally
 - `tests/`, `package.json`, `.github/`: browser tests and CI only (not needed to host the site)
 
+### Search visibility
+
+Public lab pages and printable guides have unique search descriptions, production canonical URLs, social previews, and structured learning-resource data. The homepage contains all 13 lab cards in static HTML; JavaScript adds personal progress. `sitemap.xml` lists only the 30 public learning/resource pages. Teacher answer keys, the dashboard, projector, example report, feedback, template, and error page are excluded from the sitemap and marked `noindex`; Cloudflare `_headers` reinforces that for protected and utility routes. Encryption continues to protect teacher answers.
+
+Edit `tools/seo-content.json` when changing catalog descriptions or search copy, then regenerate and check:
+
+```sh
+python3 tools/build-seo.py
+python3 tools/build-seo.py --check
+python3 tests/seo.test.py
+```
+
+The student-directions generator also refreshes SEO metadata. Generated HTML is committed, so hosting needs no build service or added dependencies. Canonicals use Cloudflare Pages’ extensionless production URLs; relative `.html` links remain usable on GitHub Pages and local copies. See [search setup and verification](docs/search-visibility.md) for Search Console/Bing submission and deployment checks.
+
 ### Updating student directions
 
 Edit the lab-specific steps in `tools/student-directions.json`, then regenerate the static guides and their Overview/Submit links:

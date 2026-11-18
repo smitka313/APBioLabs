@@ -28,6 +28,14 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  seo:
+    name: Search metadata and crawlability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/build-seo.py --check
+      - run: python3 tests/seo.test.py
+
   domain-redirect:
     name: Domain redirect and saved-work protection
     runs-on: ubuntu-latest

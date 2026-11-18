@@ -1,0 +1,7 @@
+# Public lessons are crawlable; protected/utility pages carry noindex.
+User-agent: *
+Allow: /
+Disallow: /tests/
+Disallow: /tools/
+
+Sitemap: https://biologylabbench.com/sitemap.xml

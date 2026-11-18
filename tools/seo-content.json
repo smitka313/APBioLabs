@@ -1,0 +1,214 @@
+{
+  "groups": [
+    {
+      "n": 1,
+      "name": "Evolution",
+      "units": "Units 5–7",
+      "labs": [
+        {
+          "id": 1,
+          "alt": "Simulation scene: a growth chamber of Fast Plant seedlings seen from above",
+          "title": "Artificial Selection",
+          "q": "Can extreme selection change expression of a quantitative trait in a population in one generation?",
+          "sim": "Count trichomes on Fast Plants, select parents, and grow the next generation.",
+          "topics": [
+            "EVO-1",
+            "Histograms",
+            "Descriptive stats"
+          ],
+          "searchTitle": "Artificial Selection Virtual Lab",
+          "description": "Explore artificial selection in a free AP Biology virtual lab. Count Fast Plant trichomes, select parents, compare generations, and analyze your results."
+        },
+        {
+          "id": 2,
+          "alt": "Simulation scene: a gene-pool jar of allele beads beside a graph of allele frequency over generations",
+          "title": "Mathematical Modeling: Hardy-Weinberg",
+          "q": "How can mathematical models be used to investigate the relationship between allele frequencies in populations of organisms and evolutionary change?",
+          "sim": "Spreadsheet-style model with selection, mutation, migration and drift.",
+          "topics": [
+            "EVO-1",
+            "Modeling",
+            "Chi-square"
+          ],
+          "searchTitle": "Hardy-Weinberg Virtual Lab",
+          "description": "Model Hardy-Weinberg equilibrium in a free AP Biology virtual lab. Investigate allele frequencies, natural selection, mutation, migration, and genetic drift."
+        },
+        {
+          "id": 3,
+          "alt": "Simulation scene: a fossil slab of a small feathered animal",
+          "title": "Comparing DNA Sequences with BLAST",
+          "q": "How can bioinformatics be used as a tool to determine evolutionary relationships and to better understand genetic diseases?",
+          "sim": "Build a cladogram, then align a mystery gene against a sequence database.",
+          "topics": [
+            "EVO-3",
+            "Cladograms",
+            "Alignment"
+          ],
+          "searchTitle": "BLAST and Evolution Virtual Lab",
+          "description": "Investigate evolutionary relationships in a free AP Biology virtual lab. Compare DNA sequences with simulated BLAST, build cladograms, and fit molecular clocks."
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "name": "Energetics",
+      "units": "Units 2–3",
+      "labs": [
+        {
+          "id": 4,
+          "alt": "Simulation scene: dialysis-tubing bags in cups of solution",
+          "title": "Diffusion and Osmosis",
+          "q": "What causes my plants to wilt if I forget to water them?",
+          "sim": "Agar cubes, dialysis-tube model cells, potato cores, and plasmolysis.",
+          "topics": [
+            "ENE-2",
+            "Water potential",
+            "SA:V"
+          ],
+          "searchTitle": "Diffusion and Osmosis Virtual Lab",
+          "description": "Explore diffusion and osmosis in a free AP Biology virtual lab using agar cubes, dialysis bags, potato cores, plasmolysis, and water-potential calculations."
+        },
+        {
+          "id": 5,
+          "alt": "Simulation scene: two cups of leaf disks under a lamp, with disks floating in the bicarbonate cup",
+          "title": "Photosynthesis",
+          "q": "What factors affect the rate of photosynthesis in living leaves?",
+          "sim": "Floating leaf disk assay under changing light, CO₂ and temperature.",
+          "topics": [
+            "ENE-1",
+            "ET₅₀",
+            "Rate"
+          ],
+          "searchTitle": "Photosynthesis Virtual Lab",
+          "description": "Investigate photosynthesis with a free AP Biology floating leaf disk virtual lab. Test light, carbon dioxide, and temperature; calculate ET50 and compare rates."
+        },
+        {
+          "id": 6,
+          "alt": "Simulation scene: two microrespirometers in a water bath",
+          "title": "Cellular Respiration",
+          "q": "What factors affect the rate of cellular respiration in multicellular organisms?",
+          "sim": "Microrespirometers with germinating seeds, beads, and temperature.",
+          "topics": [
+            "ENE-1",
+            "Q₁₀",
+            "Slope"
+          ],
+          "searchTitle": "Cellular Respiration Virtual Lab",
+          "description": "Measure cellular respiration in a free AP Biology virtual lab. Use simulated respirometers and gas sensors to compare seeds, temperature, and respiration rates."
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "name": "Information Storage and Transmission",
+      "units": "Units 4–6",
+      "labs": [
+        {
+          "id": 7,
+          "alt": "Simulation scene: stained onion root-tip cells under the microscope",
+          "title": "Cell Division: Mitosis and Meiosis",
+          "q": "How do eukaryotic cells divide to produce genetically identical cells or to produce gametes with half the normal DNA?",
+          "sim": "Onion root tip counts, chi-square, meiosis models, and Sordaria crossing over.",
+          "topics": [
+            "IST-1",
+            "Mitotic index",
+            "Map units"
+          ],
+          "searchTitle": "Mitosis and Meiosis Virtual Lab",
+          "description": "Explore mitosis and meiosis in a free AP Biology virtual lab. Count onion root-tip cells, model chromosome movement, and investigate Sordaria crossing over."
+        },
+        {
+          "id": 8,
+          "alt": "Simulation scene: a lab bench with a tube rack, an ice bucket and a 42 °C water bath",
+          "title": "Bacterial Transformation",
+          "q": "How can we use genetic engineering techniques to manipulate heritable information?",
+          "sim": "pGLO transformation, heat shock, four plates, and transformation efficiency.",
+          "topics": [
+            "IST-1",
+            "Gene regulation",
+            "Efficiency"
+          ],
+          "searchTitle": "Bacterial Transformation Virtual Lab",
+          "description": "Explore pGLO bacterial transformation in a free AP Biology virtual lab. Simulate heat shock, compare growth and fluorescence, and calculate transformation efficiency."
+        },
+        {
+          "id": 9,
+          "alt": "Simulation scene: a stained agarose gel with DNA bands beside a power supply",
+          "title": "Restriction Enzyme Analysis of DNA",
+          "q": "How can we use genetic information to identify and profile individuals?",
+          "sim": "Digest lambda DNA, run a gel, and size fragments from a standard curve.",
+          "topics": [
+            "IST-1",
+            "Electrophoresis",
+            "Semi-log plots"
+          ],
+          "searchTitle": "DNA Gel Electrophoresis Virtual Lab",
+          "description": "Analyze DNA in a free AP Biology virtual lab. Digest lambda DNA with restriction enzymes, run gel electrophoresis, fit a standard curve, and compare profiles."
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "name": "Systems Interactions",
+      "units": "Units 2, 6, 8",
+      "labs": [
+        {
+          "id": 10,
+          "alt": "Simulation scene: shelves of Fast Plants under a light bank",
+          "title": "Energy Dynamics",
+          "q": "What factors govern energy capture, allocation, storage, and transfer between producers and consumers in a terrestrial ecosystem?",
+          "sim": "Fast Plant biomass and butterfly larvae energy budgets with a live energy-flow diagram.",
+          "topics": [
+            "ENE-1",
+            "Biomass",
+            "kcal"
+          ],
+          "searchTitle": "Energy Dynamics Virtual Lab",
+          "description": "Investigate ecosystem energy dynamics in a free AP Biology virtual lab. Measure Fast Plant biomass and model energy capture and transfer to butterfly larvae."
+        },
+        {
+          "id": 11,
+          "alt": "Simulation scene: a plant cutting in a water-filled potometer",
+          "title": "Transpiration",
+          "q": "What factors, including environmental variables, affect the rate of transpiration in plants?",
+          "sim": "Stomata peels under the microscope and whole-plant water loss.",
+          "topics": [
+            "ENE-3",
+            "Stomatal density",
+            "Leaf area"
+          ],
+          "searchTitle": "Transpiration Virtual Lab",
+          "description": "Investigate transpiration in a free AP Biology virtual lab. Count stomata, measure plant water loss, and test how environmental conditions affect transpiration."
+        },
+        {
+          "id": 12,
+          "alt": "Simulation scene: fruit flies climbing in an upright vial",
+          "title": "Fruit Fly Behavior",
+          "q": "What environmental factors trigger a fruit fly response?",
+          "sim": "A two-chamber choice test with live fly movement and chi-square.",
+          "topics": [
+            "ENE-3",
+            "Taxis vs kinesis",
+            "Chi-square"
+          ],
+          "searchTitle": "Fruit Fly Behavior Virtual Lab",
+          "description": "Explore fruit fly behavior in a free AP Biology virtual lab. Investigate geotaxis and choice chambers, design controlled trials, and analyze chi-square results."
+        },
+        {
+          "id": 13,
+          "alt": "Simulation scene: a rack of pH tubes turning brown as the enzyme works",
+          "title": "Enzyme Activity",
+          "q": "How do abiotic or biotic factors influence the rates of enzymatic reactions?",
+          "sim": "Turnip peroxidase and guaiacol color changes across pH, temperature and concentration.",
+          "topics": [
+            "ENE-1",
+            "Initial rate",
+            "Optima"
+          ],
+          "searchTitle": "Enzyme Activity Virtual Lab",
+          "description": "Investigate enzyme activity in a free AP Biology virtual lab. Measure turnip peroxidase reactions and test pH, temperature, enzyme, and substrate concentration."
+        }
+      ]
+    }
+  ]
+}
