@@ -1062,3 +1062,36 @@ main#labs:empty { min-height: 100vh; }
 @media screen and (pointer: coarse) {
   .btn, .btn--sm, .sim-tab, .tab, .seg > button { min-height: 44px; }
 }
+
+
+/* Phase A: shared screen-only visual consistency, November 2026.
+   No markup, simulation state, print, or report changes. */
+@media screen {
+  /* Keep instructional blocks visually aligned across all labs. */
+  .step > header { row-gap: 8px; }
+  .step-body > :is(.callout, .prose, .table-wrap) { min-width: 0; }
+  .callout { line-height: 1.5; }
+  .callout > .callout-title { line-height: 1.4; }
+  /* Unify button label alignment while retaining semantic variants. */
+  .btn { justify-content: center; line-height: 1.35; text-wrap: pretty; }
+  .btn:disabled { cursor: not-allowed; }
+  /* Clarify numeric columns without altering table dimensions. */
+  table.data td.num, table.data th.num { font-variant-numeric: tabular-nums; }
+  table.data th { vertical-align: bottom; }
+  /* Give data-entry controls a consistent interactive state. */
+  table.data td :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+  /* Keep diagrams and charts inside their panels on small displays. */
+  .sim-panel :is(svg, canvas, img) { max-width: 100%; }
+}
+@media screen and (max-width: 760px) {
+  .callout { padding: 12px 14px; }
+  .step > header { gap: 8px; }
+  .sim-tabs, .tabs-list { row-gap: 8px; }
+  .sim-panel { min-width: 0; }
+  .table-wrap { overscroll-behavior-inline: contain; }
+}
+@media screen and (prefers-reduced-motion: reduce) {
+  .btn, .sim-tab, .tab { transition-duration: 0.01ms; }
+}
