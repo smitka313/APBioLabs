@@ -1,0 +1,102 @@
+# Cloudflare Pages: keep answer keys and utility pages out of search.
+# Apply to clean URLs and source-file URLs; encryption remains the access control.
+/teacher-notes
+  X-Robots-Tag: noindex, nosnippet
+/teacher-notes.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab01
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab01.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab02
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab02.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab03
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab03.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab04
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab04.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab05
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab05.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab06
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab06.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab07
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab07.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab08
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab08.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab09
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab09.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab10
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab10.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab11
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab11.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab12
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab12.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-lab13
+  X-Robots-Tag: noindex, nosnippet
+/teacher-lab13.html
+  X-Robots-Tag: noindex, nosnippet
+
+/teacher-dashboard
+  X-Robots-Tag: noindex, nosnippet
+/teacher-dashboard.html
+  X-Robots-Tag: noindex, nosnippet
+
+/projector
+  X-Robots-Tag: noindex, nosnippet
+/projector.html
+  X-Robots-Tag: noindex, nosnippet
+
+/feedback
+  X-Robots-Tag: noindex, nosnippet
+/feedback.html
+  X-Robots-Tag: noindex, nosnippet
+
+/sample-report
+  X-Robots-Tag: noindex, nosnippet
+/sample-report.html
+  X-Robots-Tag: noindex, nosnippet
+
+/_template
+  X-Robots-Tag: noindex, nosnippet
+/_template.html
+  X-Robots-Tag: noindex, nosnippet
+
+/404
+  X-Robots-Tag: noindex, nosnippet
+/404.html
+  X-Robots-Tag: noindex, nosnippet
+
