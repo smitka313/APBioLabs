@@ -41,7 +41,7 @@ a { color: var(--accent); }
   <form id="f" autocomplete="off">
     <label for="pw">Password</label>
     <div class="row"><input id="pw" type="password" autocomplete="current-password" required><button type="submit">Unlock</button></div>
-    <label class="keep" for="keep"><input id="keep" type="checkbox"><span>Keep unlocked in this tab<small>So you can move between notes pages without typing the password again. Leave it off on a shared computer.</small></span></label>
+    <label class="keep" for="keep"><input id="keep" type="checkbox"><span>Keep unlocked in this tab<small>Move between notes pages without re-entering the password. The notes lock after 15 minutes without activity. Leave this off on a shared computer.</small></span></label>
   </form>
   <div class="err" id="err" role="alert"></div>
   <p class="honest">These notes are encrypted in the page, not behind a school login. Anyone with the password can open them.</p>
@@ -57,35 +57,87 @@ async function unlock(pw) {
   const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(P.i) }, key, b64(P.c));
   return new TextDecoder().decode(pt);
 }
-/* The password is kept (sessionStorage 'tn-pw', this tab only) only when "Keep unlocked in this tab" is ticked.
-   "Lock notes" forgets it and reloads, which shows this form again. */
-function lock() { try { sessionStorage.removeItem('tn-pw'); } catch (x) {} location.reload(); }
+/* When selected, the passphrase stays in sessionStorage for this tab. Unlocked notes auto-lock after 15 minutes without activity. */
+const TN_IDLE_MS = 15 * 60 * 1000;
+let tnUnlocked = false, tnActivityBound = false;
+function lock() {
+  tnUnlocked = false;
+  try { sessionStorage.removeItem('tn-pw'); sessionStorage.removeItem('tn-last-active'); } catch (x) {}
+  location.reload();
+}
+function markNotesActive() {
+  if (!tnUnlocked) return;
+  try { sessionStorage.setItem('tn-last-active', String(Date.now())); } catch (x) {}
+}
+function bindNotesActivity() {
+  if (tnActivityBound) return;
+  tnActivityBound = true;
+  for (const eventName of ['pointerdown', 'keydown', 'touchstart', 'scroll']) {
+    document.addEventListener(eventName, markNotesActive, { passive: true });
+  }
+  window.addEventListener('pageshow', lockIfIdle);
+}
+function lockIfIdle() {
+  if (!tnUnlocked) return;
+  let last = 0;
+  try { last = Number(sessionStorage.getItem('tn-last-active')) || 0; } catch (x) {}
+  if (!last || Date.now() - last >= TN_IDLE_MS) lock();
+}
+setInterval(lockIfIdle, 30000);
 function show(html) {
+  tnUnlocked = true;
+  try { if (!sessionStorage.getItem('tn-last-active')) sessionStorage.setItem('tn-last-active', String(Date.now())); } catch (x) {}
   document.open(); document.write(html); document.close();
+  bindNotesActivity();
   const add = () => {
-    if (document.getElementById('tn-lock') || !document.body) return;
+    if (document.getElementById('tn-toolbar') || !document.body || !document.head) return;
     const st = document.createElement('style');
-    st.textContent = '#tn-lock{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:2147483000;font:600 15px/1.2 "Source Sans 3","Segoe UI",system-ui,sans-serif;padding:9px 14px;border-radius:999px;border:1px solid #0d6e55;background:#0d6e55;color:#fff;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.25)}#tn-lock:hover{background:#0a5743}#tn-lock:focus-visible{outline:3px solid #4cc39b;outline-offset:2px}@media print{#tn-lock{display:none!important}}';
-    const b = document.createElement('button');
-    b.id = 'tn-lock'; b.type = 'button'; b.textContent = 'Lock notes'; b.title = 'Forget the password in this tab and close the notes';
-    b.addEventListener('click', lock);
-    document.head.append(st); document.body.append(b);
+    st.textContent = '#tn-toolbar{position:fixed;top:max(12px,env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:2147483000;display:flex;gap:8px;font:600 15px/1.2 "Source Sans 3","Segoe UI",system-ui,sans-serif}#tn-toolbar button{font:inherit;padding:9px 14px;border-radius:999px;border:1px solid #0d6e55;background:#0d6e55;color:#fff;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.25)}#tn-toolbar button:hover{background:#0a5743}#tn-toolbar button:focus-visible{outline:3px solid #4cc39b;outline-offset:2px}#tn-toolbar #tn-print{background:#fff;color:#14211c;border-color:#64756d}@media(prefers-color-scheme:dark){#tn-toolbar #tn-print{background:#17211d;color:#e4ece8;border-color:#9db0a7}}@media print{#tn-toolbar{display:none!important}}';
+    const toolbar = document.createElement('div');
+    toolbar.id = 'tn-toolbar';
+    const print = document.createElement('button');
+    print.id = 'tn-print'; print.type = 'button'; print.textContent = 'Print'; print.setAttribute('aria-label', 'Print teacher notes');
+    print.addEventListener('click', () => window.print());
+    const lockButton = document.createElement('button');
+    lockButton.id = 'tn-lock'; lockButton.type = 'button'; lockButton.textContent = 'Lock notes'; lockButton.title = 'Forget the password in this tab and close the notes';
+    lockButton.addEventListener('click', lock);
+    toolbar.append(print, lockButton);
+    document.head.append(st); document.body.append(toolbar);
   };
   add(); if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add);
 }
 const err = document.getElementById('err');
-document.getElementById('f').addEventListener('submit', async e => {
+const form = document.getElementById('f');
+const passwordInput = document.getElementById('pw');
+form.addEventListener('submit', async e => {
   e.preventDefault(); err.textContent = 'Checking…';
-  const pw = document.getElementById('pw').value, keep = document.getElementById('keep').checked;
+  const pw = passwordInput.value, keep = document.getElementById('keep').checked;
   try {
     const html = await unlock(pw);
-    try { if (keep) sessionStorage.setItem('tn-pw', pw); else sessionStorage.removeItem('tn-pw'); } catch (x) {}
+    try {
+      if (keep) { sessionStorage.setItem('tn-pw', pw); sessionStorage.setItem('tn-last-active', String(Date.now())); }
+      else { sessionStorage.removeItem('tn-pw'); sessionStorage.setItem('tn-last-active', String(Date.now())); }
+    } catch (x) {}
     show(html);
+  } catch (x) {
+    err.textContent = window.crypto && crypto.subtle ? 'That password is not correct.' : 'This browser cannot unlock the notes. Open the page over https in a current browser.';
+    passwordInput.value = '';
+    passwordInput.focus();
   }
-  catch (x) { err.textContent = window.crypto && crypto.subtle ? 'That password is not correct.' : 'This browser cannot unlock the notes. Open the page over https in a current browser.'; }
 });
-(async () => { let pw = null; try { pw = sessionStorage.getItem('tn-pw'); } catch (x) {}
-  if (pw) { try { show(await unlock(pw)); } catch (x) { try { sessionStorage.removeItem('tn-pw'); } catch (y) {} } } })();
+(async () => {
+  let pw = null, last = 0;
+  try { pw = sessionStorage.getItem('tn-pw'); last = Number(sessionStorage.getItem('tn-last-active')) || 0; } catch (x) {}
+  if (pw && (!last || Date.now() - last >= TN_IDLE_MS)) {
+    try { sessionStorage.removeItem('tn-pw'); sessionStorage.removeItem('tn-last-active'); } catch (x) {}
+    pw = null;
+  }
+  if (pw) {
+    try { show(await unlock(pw)); } catch (x) {
+      try { sessionStorage.removeItem('tn-pw'); sessionStorage.removeItem('tn-last-active'); } catch (y) {}
+    }
+  }
+})();
 </script>
 </body>
 </html>
