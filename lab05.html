@@ -1219,7 +1219,7 @@ const Predict = (function () {
   const dchart2 = Lab.chart('#d-chart2', { xLabel: 'Level', yLabel: 'Median ET₅₀ (min)', series: [], height: 340 });
   const censoredGraphNote = Lab.h('p', { class: 'small muted', 'aria-live': 'polite' });
   $('#d-chart').insertAdjacentElement('afterend', censoredGraphNote);
-  censoredGraphNote.dataset.reportChartNote = 'true';
+  censoredGraphNote.setAttribute('data-report-chart-note', 'true');
   const evaluateCensoredNote = Lab.h('p', { class: 'small muted', 'aria-live': 'polite' });
   $('#evaluate-prompts').prepend(evaluateCensoredNote);
   const dsum = Lab.table('#d-sum', { columns: [{ key: 'lv', label: 'Level' }, { key: 'n', label: 'Cups', unit: 'count', num: true, digits: 0 }, { key: 'med', label: 'Median ET50', unit: 'min', num: true, digits: 1 }, { key: 'mean', label: 'Mean 1/ET50', unit: 'min⁻¹', num: true, digits: 3 }, { key: 'se', label: 'SE', unit: 'min⁻¹', num: true, digits: 3 }, { key: 'ci', label: '±2 SE', unit: 'min⁻¹', num: true, digits: 3 }], rows: [] });
