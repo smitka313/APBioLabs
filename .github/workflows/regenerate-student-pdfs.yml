@@ -1,0 +1,46 @@
+name: Regenerate student PDFs (PR 117)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/regenerate-student-pdfs.yml'
+      - 'tools/build-student-pdfs.py'
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pdf-guide-date-page-labels
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r tools/pdf-requirements.txt
+      - run: python tools/build-student-pdfs.py
+      - run: python tools/build-student-pdfs.py --check
+      - name: Verify all PDFs contain Date and page labels and remain two pages
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+          for path in sorted(Path('student-pdfs').glob('directions-lab*.pdf')):
+              pdf = PdfReader(str(path))
+              assert len(pdf.pages) == 2, (path, len(pdf.pages))
+              first = pdf.pages[0].extract_text()
+              assert 'Date:' in first, path
+              for i, page in enumerate(pdf.pages, 1):
+                  assert f'Page {i} of 2' in page.extract_text(), (path, i)
+          assert len(list(Path('student-pdfs').glob('directions-lab*.pdf'))) == 13
+          PY
+      - name: Commit regenerated PDF artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add student-pdfs/
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate 13 student PDFs and manifest [skip actions]"
+            git push origin HEAD:pdf-guide-date-page-labels
+          fi
