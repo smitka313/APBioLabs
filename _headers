@@ -100,3 +100,6 @@
 /404.html
   X-Robots-Tag: noindex, nosnippet
 
+# Printable copies duplicate the indexable HTML guides.
+/student-pdfs/*
+  X-Robots-Tag: noindex

@@ -71,7 +71,9 @@ for lab, custom in CONTENT.items():
         else:
             raise ValueError(f'{source.name}: no directions for {name}')
         sections_html.append('<section id="' + escape(anchor) + '"><h2>' + escape(name) + '</h2><p class="open-part"><a href="' + source.name + '#' + escape(anchor) + '">Open this part in the lab</a></p>' + items(steps) + '</section>')
-    body = '<nav class="screen-actions" aria-label="Guide actions"><a href="' + source.name + '">Back to Lab ' + str(int(lab)) + '</a><a href="student-directions.html">All student guides</a><button type="button" id="print-directions" hidden>Print / Save as PDF</button></nav>\n'
+    pdf = 'student-pdfs/directions-lab' + lab + '.pdf'
+    body = '<nav class="screen-actions" aria-label="Guide actions"><a href="' + source.name + '">Back to Lab ' + str(int(lab)) + '</a><a href="student-directions.html">All student guides</a><a class="pdf-download" href="' + pdf + '" download>Download PDF</a><button type="button" id="print-directions" hidden>Print / Save as PDF</button></nav>\n'
+    body += '<p class="screen-only print-help">If printing is blocked, use <strong>Download PDF</strong> to open a ready-to-print copy. Save or print it from your PDF viewer. You can also use your browser’s Print command.</p>\n'
     body += '<header><p class="eyebrow">Lab ' + str(int(lab)) + ' · Printable student directions</p><h1>' + escape(title) + '</h1><p class="question">' + escape(question) + '</p><p class="identity">Name: ____________________ &nbsp; Class/period: __________ &nbsp; Dataset ID: __________</p></header>\n'
     body += '<main id="directions"><aside><h2>How to use this guide</h2><p>Check off each numbered step as you work in the online simulation. Follow your teacher’s assigned sections and repeat counts. This guide explains the workflow; enter your measurements and responses in the lab or your assigned worksheet.</p><p>Use Data for tables and editable calculations, Graph for plots, and Scene for the simulation. Some controls are under More options. Write predictions before running an experiment and scroll below the simulation for response boxes.</p><p class="screen-only">To print, use the button above or your browser’s Print command. Choose Save as PDF to keep a copy.</p></aside>\n'
     body += '\n'.join(sections_html) + '<section class="notes"><h2>Teacher instructions / notes</h2><div class="rules" aria-label="Space for handwritten notes"></div></section></main>'
@@ -87,7 +89,7 @@ for lab, custom in CONTENT.items():
         if count != 1:
             raise ValueError(f'{source.name}: no {part} insertion point')
     source.write_text(html)
-    catalog.append('<li><a href="' + page + '">Lab ' + str(int(lab)) + ' · ' + escape(title) + '</a></li>')
+    catalog.append('<li><a href="' + page + '">Lab ' + str(int(lab)) + ' · ' + escape(title) + '</a> <a class="catalog-pdf" href="' + pdf + '" download aria-label="Download Lab ' + str(int(lab)) + ' student directions as PDF">Download PDF</a></li>')
 
 index = '<nav class="screen-actions" aria-label="Navigation"><a href="index.html">All labs</a><a href="teachers.html#printing">Teacher guide</a></nav><header><p class="eyebrow">Biology Lab Bench</p><h1>Printable student directions</h1><p>Choose a lab for a numbered walkthrough, data-recording reminders, and submission checklist. Each guide can be printed or saved as PDF from your browser.</p></header><main id="directions"><ol class="catalog">' + ''.join(catalog) + '</ol></main>'
 (ROOT / 'student-directions.html').write_text(shell('Printable student directions', index))
