@@ -1095,3 +1095,12 @@ main#labs:empty { min-height: 100vh; }
 @media screen and (prefers-reduced-motion: reduce) {
   .btn, .sim-tab, .tab { transition-duration: 0.01ms; }
 }
+
+
+/* Audit follow-up: keep progress readable where the header has room. */
+@media screen and (min-width: 1200px) {
+  .nav-end .nav-progress { width: 16em; }
+}
+@media screen and (min-width: 760px) and (max-width: 1199px) {
+  .nav-end .nav-progress { width: 12em; }
+}
