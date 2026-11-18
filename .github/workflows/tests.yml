@@ -28,6 +28,46 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  regenerate-pdf-guides:
+    name: Regenerate PDF artifacts for PR 117
+    if: github.event_name == 'pull_request' && github.head_ref == 'pdf-guide-date-page-labels'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pdf-guide-date-page-labels
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install -r tools/pdf-requirements.txt
+      - run: python3 tools/build-student-pdfs.py
+      - run: python3 tools/build-student-pdfs.py --check
+      - name: Validate PDF page counts and new fields
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+          paths = sorted(Path('student-pdfs').glob('directions-lab*.pdf'))
+          assert len(paths) == 13, len(paths)
+          for path in paths:
+              pdf = PdfReader(str(path))
+              assert len(pdf.pages) == 2, (path, len(pdf.pages))
+              assert 'Date:' in pdf.pages[0].extract_text(), path
+              for i, page in enumerate(pdf.pages, 1):
+                  assert f'Page {i} of 2' in page.extract_text(), (path, i)
+          PY
+      - name: Commit regenerated guides and manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add student-pdfs
+          if ! git diff --cached --quiet; then
+            git commit -m "Regenerate PDF guides and manifest"
+            git push origin HEAD:pdf-guide-date-page-labels
+          fi
   student-pdfs:
     name: Downloadable student guides
     runs-on: ubuntu-latest
