@@ -9,6 +9,24 @@ permissions:
   contents: read
 
 jobs:
+  targeted-persistence:
+    if: github.head_ref == 'audit/production-evidence-31-80'
+    name: Focused Lab 9 and 11 persistence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify Lab 11 duplicate protection and reload
+        run: node tests/t59-science.js lab11
+      - name: Verify Lab 9 staining reload
+        run: node tests/t36-lab9-stain.js
+
   comprehensive:
     if: github.event_name == 'workflow_dispatch' || github.head_ref == 'release/phase1f-audit-pr30' || github.head_ref == 'audit/production-evidence-31-80'
     name: Full regression (shard ${{ matrix.shard }}/5)
