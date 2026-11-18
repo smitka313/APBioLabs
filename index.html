@@ -586,7 +586,7 @@ Lab.home({ identity: '#home-identity', resume: '#resume' });
     cv.setAttribute('aria-label', `A dark lab bench with ${nm}. ${n === 0 ? 'Finish a lab and its equipment changes.' : `${n} of 13 investigations complete: ${done.map(d => 'Lab ' + d).join(', ')}.`}`);
     cv.dataset.completed = done.join(',');
     const note = document.getElementById('bench-note');
-    if (note) note.textContent = n === 0 ? 'Finish a lab and its equipment on the bench changes.' : `${n} of 13 investigations complete. Your bench shows it.`;
+    if (note) note.textContent = n === 0 ? 'Explore the labs and watch your virtual lab bench evolve as you make progress.' : `${n} of 13 investigations complete. Your bench shows it.`;
   }
   let t = 0; const soon = () => { cancelAnimationFrame(t); t = requestAnimationFrame(draw); };
   draw();
