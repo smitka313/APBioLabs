@@ -41,7 +41,7 @@ a { color: var(--accent); }
   <form id="f" autocomplete="off">
     <label for="pw">Password</label>
     <div class="row"><input id="pw" type="password" autocomplete="current-password" required><button type="submit">Unlock</button></div>
-    <label class="keep" for="keep"><input id="keep" type="checkbox"><span>Keep unlocked in this tab<small>Move between notes pages without re-entering the password. The notes lock after 15 minutes without activity. Leave this off on a shared computer.</small></span></label>
+    <label class="keep" for="keep"><input id="keep" type="checkbox"><span>Keep unlocked in this tab<small>Move between notes pages without re-entering the password. Access expires after 15 minutes without activity on a notes page. Working in a student lab does not extend this time. Leave this off on a shared computer.</small></span></label>
   </form>
   <div class="err" id="err" role="alert"></div>
   <p class="honest">These notes are encrypted in the page, not behind a school login. Anyone with the password can open them.</p>
@@ -57,7 +57,7 @@ async function unlock(pw) {
   const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(P.i) }, key, b64(P.c));
   return new TextDecoder().decode(pt);
 }
-/* When selected, the passphrase stays in sessionStorage for this tab. Unlocked notes auto-lock after 15 minutes without activity. */
+/* When selected, the passphrase stays in sessionStorage for this tab. Unlocked notes auto-lock after 15 minutes without activity on a notes page. */
 const TN_IDLE_MS = 15 * 60 * 1000;
 let tnUnlocked = false, tnActivityBound = false;
 function lock() {

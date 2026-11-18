@@ -1324,6 +1324,12 @@ function makeGel(rootSel, measSel, cfg) {
     cfg.onAnalyze && cfg.onAnalyze(list);
     reportFrags(P, list);
   }
+  // Lab.table saves typed cells at the input target; its onChange runs only on blur.
+  // Refresh after the target's save handler, in this container's bubble phase, so the
+  // last marker immediately leaves unknown estimates and joins the fitted curve.
+  mroot.addEventListener('input', event => {
+    if (event.target.matches('.mtable input[data-r]')) analyze();
+  });
   excl.addEventListener('change', () => { excludeLarge = excl.checked; Lab.store.set(P + '-exclude-large', excludeLarge); analyze(); }); gsel.addEventListener('change', analyze);
   Lab.$('.clear', mroot).addEventListener('click', () => { meas.clear(); });
   if (!restoreState()) newGel();
