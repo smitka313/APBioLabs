@@ -43,7 +43,9 @@ def page_specs():
     }
     for lab in LABS:
         number = lab['id']
-        specs[f'lab{number:02}.html'] = (lab['searchTitle'] + ' | AP Bio Lab Bench',
+        # Reports, progress files and the teacher dashboard reuse the document
+        # title. Preserve their numbered-lab convention while improving search copy.
+        specs[f'lab{number:02}.html'] = (f'Lab {number} · ' + lab['searchTitle'] + ' — AP Bio Lab Bench',
                                         lab['description'], lab['title'])
         topic = lab['searchTitle'].removesuffix(' Virtual Lab')
         specs[f'directions-lab{number:02}.html'] = (

@@ -81,6 +81,9 @@ class SearchContracts(unittest.TestCase):
                 self.assertIn('<meta charset="utf-8">\n<script src="domain-redirect.js"></script>',
                               (ROOT / filename).read_text())
                 self.assertEqual(len(p.titles), 1)
+                if re.fullmatch(r'lab\d\d\.html', filename):
+                    self.assertTrue(p.titles[0].startswith('Lab ' + str(int(filename[3:5])) + ' · '))
+                    self.assertTrue(p.titles[0].endswith(' — AP Bio Lab Bench'))
                 self.assertEqual(len(p.canonicals), 1)
                 self.assertEqual(len(p.meta['description']), 1)
                 canonical = p.canonicals[0]
