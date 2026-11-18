@@ -78,6 +78,8 @@ class SearchContracts(unittest.TestCase):
         for filename in PUBLIC:
             with self.subTest(page=filename):
                 p = Page(filename)
+                self.assertIn('<meta charset="utf-8">\n<script src="domain-redirect.js"></script>',
+                              (ROOT / filename).read_text())
                 self.assertEqual(len(p.titles), 1)
                 self.assertEqual(len(p.canonicals), 1)
                 self.assertEqual(len(p.meta['description']), 1)

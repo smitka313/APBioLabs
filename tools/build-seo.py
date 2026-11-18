@@ -132,11 +132,17 @@ def metadata(filename, title, description, label):
 
 def apply_metadata(filename, html, spec):
     head, rest = html.split('</head>', 1)
-    head = re.sub(r'\n?<!-- seo:start -->.*?<!-- seo:end -->\n?', '', head, flags=re.S)
+    head = re.sub(r'\n?<!-- seo:start -->.*?<!-- seo:end -->\n?', '\n', head, flags=re.S)
     head = re.sub(r'<title>.*?</title>\n?', '', head, flags=re.S)
     head = re.sub(r'<meta\b[^>]*(?:name="(?:description|robots|twitter:[^"]+)"|property="og:[^"]+")[^>]*>\n?', '', head)
     head = re.sub(r'<link\b[^>]*rel="canonical"[^>]*>\n?', '', head)
-    return re.sub(r'(<meta charset="utf-8">)\n?', lambda m: m[1] + '\n' + metadata(filename, *spec) + '\n', head, count=1) + '</head>' + rest
+    # Keep the migration script immediately after charset, before metadata JSON-LD
+    # and all existing scripts, so old-domain visitors retain the saved-work guard.
+    head, count = re.subn(r'(<script src="domain-redirect.js"></script>)\n?',
+                         lambda m: m[1] + '\n' + metadata(filename, *spec) + '\n', head, count=1)
+    if count != 1:
+        raise ValueError(filename + ': missing domain-migration script')
+    return head + '</head>' + rest
 
 
 def cards():
