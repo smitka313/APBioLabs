@@ -391,6 +391,13 @@ LABS.lab11 = async b => {
   T.ok(ctl.every(r => r.rpa > 0.2 && r.rpa < 10), 'lab11: control rates are plausible (0.2–10 × 10⁻⁴ mL·min⁻¹·cm⁻²)');
   const st = table(d, 'st-table');
   T.ok(st.length >= 2 && st.every(r => r.actual >= 0 && (r.surf !== 'lower' || r.actual > 0)), 'lab11: stomata counts are non-negative and the lower surface has stomata');
+  await D.go(p, '#st-record');
+  await p.click('#st-record');
+  T.ok((await D.dump(p)).tables.find(t => t.id === 'st-table').rows.length === st.length && /already recorded/.test(await text(p, '#st-msg')), 'lab11: repeated Record refuses a duplicate field');
+  await p.reload(); await sleep(1200); await D.go(p, '#st-record'); await p.click('#st-record');
+  T.ok((await D.dump(p)).tables.find(t => t.id === 'st-table').rows.length === st.length, 'lab11: duplicate protection survives reload');
+  await p.click('#st-move'); await p.click('#st-record');
+  T.ok((await D.dump(p)).tables.find(t => t.id === 'st-table').rows.length === st.length + 1, 'lab11: moving to a new field permits another replicate');
   errs(p, 'lab11'); await ctx.close();
 };
 

@@ -94,15 +94,19 @@ const RUN = {
     await go(p, '#p-p1-diagram'); await p.fill('#p-p1-diagram', P); await sleep(1300);
     await p.click('#p1-plus7'); await sleep(900);
     await p.click('#p1-harvest'); await sleep(500);
-    await p.click('#p1-dry'); await tlReady(p, '#p1-timelapse', 20000); await sleep(800);
+    const harvests = await p.evaluate(() => Lab._reg.tables.find(t => t.el.id === 'p1-sum').getRows().length);
+    await p.click('#p1-dry');
+    await p.waitForFunction(n => Lab._reg.tables.find(t => t.el.id === 'p1-sum').getRows().length > n, harvests, { timeout: 20000 });
     await go(p, '#p-p2-diagram'); await p.fill('#p-p2-diagram', P); await sleep(1300);
-    await p.click('#p2-run'); await tlReady(p, '#p2-timelapse', 20000); await sleep(800);
+    const barns = await p.evaluate(() => Lab._reg.tables.find(t => t.el.id === 'p2-raw').getRows().length);
+    await p.click('#p2-run');
+    await p.waitForFunction(n => Lab._reg.tables.find(t => t.el.id === 'p2-raw').getRows().length > n, barns, { timeout: 20000 });
   },
   async lab11(p) {
     await show(p, 'stomata');
     await go(p, '#p-predict-stomata'); await p.fill('#p-predict-stomata', P); await sleep(1300);
     await p.click('#st-m400'); await sleep(300);
-    for (let i = 0; i < 2; i++) { await p.click('#st-record'); await sleep(200); }
+    for (let i = 0; i < 2; i++) { if (i) await p.click('#st-move'); await p.click('#st-record'); await sleep(200); }
     await go(p, '#p-predict-water'); await p.fill('#p-predict-water', P); await sleep(1300);
     await go(p, '#tr-run'); await p.click('#tr-run'); await tlReady(p, '#tr-timelapse', 20000); await sleep(800);
   },
