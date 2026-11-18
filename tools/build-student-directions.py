@@ -22,9 +22,9 @@ def shell(title, body):
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script src="domain-redirect.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>''' + escape(title) + ''' · Biology Lab Bench</title>
-<script src="domain-redirect.js"></script>
 <link rel="stylesheet" href="student-directions.css">
 <script src="student-directions.js" defer></script>
 </head>
