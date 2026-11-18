@@ -37,6 +37,14 @@
 /* Audit 6: allow wide scientific tables to scroll without forcing page-wide overflow. */
 #p1-table,#p2-table,#p1-sum,#p1-raw,#chi-out{min-width:0;max-width:100%}
 #p1-table .table-wrap,#p2-table .table-wrap,#p1-sum .table-wrap,#p1-raw .table-wrap,#chi-out .table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+
+  /* Keep scientific units together in the plasmolysis results at laptop widths.
+     Horizontal scrolling is preferable to stacking a single symbol on a line. */
+  @media screen and (min-width: 761px) {
+    #p3a-table table.data th { min-width: 6.5em; }
+    #p3a-table table.data th:nth-child(3) { min-width: 8.5em; }
+    #p3a-table table.data th:last-child { min-width: 9em; }
+  }
 </style></noscript>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
