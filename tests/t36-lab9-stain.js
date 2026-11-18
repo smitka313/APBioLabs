@@ -14,16 +14,31 @@ const contrast = p => p.evaluate(() => {
 });
 const phase = p => p.evaluate(() => gel1.st.phase());
 const ui = p => p.evaluate(() => ({ btn: document.querySelector('#g1-stain').textContent, dis: document.querySelector('#g1-stain').disabled, box: !document.querySelector('#g1-sbox').hidden, prog: +document.querySelector('#g1-sprog').value, count: document.querySelector('#g1-scount').textContent, mall: document.querySelector('#g1-mall').disabled, why: (document.querySelector('#g1-mall-why') || {}).textContent, skip: !document.querySelector('#g1-skip').offsetParent }));
-const prep = async p => { await p.evaluate(() => document.querySelector('#g1-layout').click()); await p.click('#g1-run'); await p.waitForTimeout(5500); await p.click('#g1-run'); };
+const prep = async p => {
+  await p.evaluate(() => document.querySelector('#g1-layout').click());
+  await p.click('#g1-run');
+  await p.waitForFunction(() => gel1.st.dist >= 45, null, { timeout: 20000 });
+  // The gel may already have paused automatically at 60 mm. Clicking in that
+  // state would restart it, leaving the following Stain click correctly gated.
+  await p.evaluate(() => { if (gel1.st.running) document.querySelector('#g1-run').click(); });
+  await p.waitForFunction(() => !gel1.st.running && gel1.st.t > 0);
+};
+
+async function startStaining(p) {
+  await p.click('#g1-stain');
+  await p.waitForFunction(() => gel1.st.phase() === 'staining' &&
+    Lab.store.get('gelstate-g1')?.stain === 1, null, { timeout: 5000 });
+}
 
 (async () => {
-  const b = await T.launch(), ctx = await T.ctxFor(b);
-  const p = await T.open(ctx, 'lab09.html', 'run-a-gel');
+  const srv = await T.serve(), b = await T.launch(), ctx = await T.ctxFor(b);
+  try {
+  const p = await T.open(ctx, 'lab09.html', 'run-a-gel', srv.url);
   await prep(p);
   const c0 = await contrast(p);
 
   // 1. the stain progresses over time
-  await p.click('#g1-stain');
+  await startStaining(p);
   const t0 = Date.now(); let u = await ui(p);
   T.ok(u.dis && u.box && /Staining/.test(u.btn) && /s left/.test(u.count), 'button disabled with countdown while staining: ' + u.btn + ' / ' + u.count);
   await p.waitForTimeout(300);
@@ -59,7 +74,7 @@ const prep = async p => { await p.evaluate(() => document.querySelector('#g1-lay
 
   // 3. skip during staining, then reload mid-destain resumes from the clock
   await p.evaluate(() => document.querySelector('#g1-new').click()); await prep(p);
-  await p.click('#g1-stain'); await p.waitForTimeout(500); await p.click('#g1-skip'); await p.waitForTimeout(400);
+  await startStaining(p); await p.waitForTimeout(500); await p.click('#g1-skip'); await p.waitForTimeout(400);
   T.ok(await phase(p) === 'stained', 'Skip ahead finishes staining');
   await p.click('#g1-stain'); await p.waitForTimeout(6000);
   const before = (await ui(p)).prog; const at = await p.evaluate(() => gel1.st.destainAt);
@@ -74,10 +89,11 @@ const prep = async p => { await p.evaluate(() => document.querySelector('#g1-lay
   T.ok(await phase(p) === 'done' && !(await ui(p)).mall, 'reload after the time has passed: destained and measurable');
   // reload mid-stain
   await p.evaluate(() => document.querySelector('#g1-new').click()); await prep(p);
-  await p.click('#g1-stain'); await p.waitForTimeout(400);
-  await p.evaluate(() => { const k = 'gelstate-g1', r = Lab.store.get(k); r.stainAt -= 15000; Lab.store.set(k, r); });
+  await startStaining(p); await p.waitForTimeout(400);
+  const stainStart = await p.evaluate(() => { const k = 'gelstate-g1', r = Lab.store.get(k); r.stainAt -= 15000; Lab.store.set(k, r); return r.stainAt; });
   await p.reload(); await p.waitForTimeout(1200);
   u = await ui(p); const sp = await p.evaluate(() => gel1.st.stainP());
+  T.ok(await p.evaluate(at => gel1.st.stainAt === at, stainStart), 'staining start timestamp survives reload unchanged');
   T.ok(await phase(p) === 'staining' && sp > 0.5 && sp < 0.65 && /1\d s left/.test(u.count), 'reload mid-stain resumes at ~55%: ' + Math.round(sp * 100) + '%, ' + u.count);
   T.ok(await p.evaluate(() => gel1.st.blockReason()) === 'Wait for staining to finish, then destain', 'measuring gated mid-stain');
   T.ok(p.errors.length === 0, 'no page errors ' + p.errors.join(';'));
@@ -87,7 +103,7 @@ const prep = async p => { await p.evaluate(() => document.querySelector('#g1-lay
   const c2 = await b.newContext({ viewport: { width: 1366, height: 768 }, reducedMotion: 'reduce' });
   await T.routeLibs(c2);
   await c2.addInitScript(() => { try { localStorage.setItem('aplab:student', JSON.stringify({ name: 'Test Student', period: '3' })); localStorage.setItem('aplab:tour', JSON.stringify({ seen: true, v: 1 })); } catch (e) { /* ignore */ } });
-  const q = await T.open(c2, 'lab09.html', 'run-a-gel');
+  const q = await T.open(c2, 'lab09.html', 'run-a-gel', srv.url);
   await q.evaluate(() => document.querySelector('#g1-layout').click()); await q.click('#g1-run'); await q.waitForTimeout(600);
   await q.click('#g1-stain'); await q.waitForTimeout(500);
   T.ok(await phase(q) === 'stained' && !(await ui(q)).box, 'reduced motion: staining jumps straight to the end');
@@ -96,5 +112,7 @@ const prep = async p => { await p.evaluate(() => document.querySelector('#g1-lay
   T.ok(await phase(q) === 'done' && !u.mall && !u.box, 'reduced motion: destaining jumps straight to the end, measuring open');
   T.ok(await contrast(q) > 40, 'reduced motion end state shows crisp bands: ' + Math.round(await contrast(q)));
   T.ok(q.errors.length === 0, 'no page errors (reduced motion) ' + q.errors.join(';'));
-  await b.close(); T.done('lab9 stain');
+  T.done('lab9 stain');
+  } finally { await b.close(); srv.close(); }
 })();
+

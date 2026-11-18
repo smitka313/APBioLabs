@@ -379,7 +379,9 @@ LABS.lab10 = async b => {
 };
 
 LABS.lab11 = async b => {
-  const ctx = await ctxAs(b, IDS[0]), p = await T.open(ctx, 'lab11.html');
+  const srv = await T.serve(), ctx = await ctxAs(b, IDS[0]);
+  try {
+  const p = await T.open(ctx, 'lab11.html', '', srv.url);
   await D.RUN.lab11(p);
   await D.go(p, '#tr-run'); await p.selectOption('#tr-cond', 'fan'); await p.click('#tr-run'); await D.tlReady(p, '#tr-timelapse', 20000).catch(() => {}); await sleep(1500);
   const d = await D.dump(p);
@@ -394,11 +396,21 @@ LABS.lab11 = async b => {
   await D.go(p, '#st-record');
   await p.click('#st-record');
   T.ok((await D.dump(p)).tables.find(t => t.id === 'st-table').rows.length === st.length && /already recorded/.test(await text(p, '#st-msg')), 'lab11: repeated Record refuses a duplicate field');
-  await p.reload(); await sleep(1200); await D.go(p, '#st-record'); await p.click('#st-record');
+  const savedStomata = await p.evaluate(() => ({ rows: Lab.store.get('st-table'),
+    state: Lab.store.get('st-state'), recorded: Lab.store.get('st-recorded-seed') }));
+  T.ok(savedStomata.rows?.length === st.length && savedStomata.state?.seed === savedStomata.recorded,
+    'lab11: field rows and duplicate-protection seed are saved before reload');
+  await p.reload(); await p.waitForFunction(() => window.Lab && Lab._reg.tables.some(t => t.el.id === 'st-table'));
+  const restoredStomata = await p.evaluate(() => ({ rows: Lab.store.get('st-table'),
+    state: Lab.store.get('st-state'), recorded: Lab.store.get('st-recorded-seed') }));
+  T.ok(JSON.stringify(restoredStomata) === JSON.stringify(savedStomata),
+    'lab11: recorded fields and duplicate-protection state survive HTTP reload unchanged');
+  await D.go(p, '#st-record'); await p.click('#st-record');
   T.ok((await D.dump(p)).tables.find(t => t.id === 'st-table').rows.length === st.length, 'lab11: duplicate protection survives reload');
   await p.click('#st-move'); await p.click('#st-record');
   T.ok((await D.dump(p)).tables.find(t => t.id === 'st-table').rows.length === st.length + 1, 'lab11: moving to a new field permits another replicate');
-  errs(p, 'lab11'); await ctx.close();
+  errs(p, 'lab11');
+  } finally { await ctx.close(); srv.close(); }
 };
 
 LABS.lab12 = async b => {
@@ -470,8 +482,9 @@ LABS.lab13 = async b => {
   for (const n of Object.keys(LABS)) {
     if (!want(n)) continue;
     console.log('\n== ' + n);
-    try { await LABS[n](b); } catch (e) { T.ok(false, n + ': test crashed: ' + e.message.split('\n')[0]); }
+    try { await LABS[n](b); } catch (e) { T.ok(false, n + ': test crashed: ' + (e.stack || e.message)); }
   }
   await b.close();
   T.done('t59-science');
 })();
+

@@ -16,11 +16,17 @@ const T = require('./_h');
     T.ok(r.length === 13, '13 card images');
     const fold = h * 1.25;
     const above = r.filter(i => i.top < fold);
-    T.ok(above.length >= 1 && above.every(i => i.done), `every image in or near the first screen (${above.length}) has loaded without scrolling: ` + above.filter(i => !i.done).map(i => i.src));
+    // The taller phone hero may put every lab card below the first screen.
+    // Keep checking every image that is near the fold, then verify the first
+    // card explicitly after scrolling it into view (and all cards below).
+    T.ok(above.every(i => i.done), `every image in or near the first screen (${above.length}) has loaded without scrolling: ` + above.filter(i => !i.done).map(i => i.src));
     T.ok(above.every(i => !i.lazy), 'none of those is loading="lazy"');
     T.ok(r.every(i => i.w && i.h && i.box > 40), 'all images have width and height attributes and a reserved box');
     // shift check: layout height must not change after every image has loaded
     const before = await p.evaluate(() => document.documentElement.scrollHeight);
+    await p.locator('img.thumb').first().scrollIntoViewIfNeeded();
+    await p.waitForFunction(() => { const image = document.querySelector('img.thumb'); return image.complete && image.naturalWidth > 0; });
+    T.ok(await p.locator('img.thumb').first().isVisible(), 'first card image is visible after scrolling to the cards');
     await p.evaluate(async () => { for (let y = 0; y < document.documentElement.scrollHeight; y += 500) { scrollTo(0, y); await new Promise(r => setTimeout(r, 120)); } });
     await p.waitForTimeout(600);
     const after = await p.evaluate(() => document.documentElement.scrollHeight);
@@ -36,3 +42,4 @@ const T = require('./_h');
   await b.close();
   T.done('t13-home-images');
 })();
+
