@@ -59,14 +59,25 @@ const T = require('./_h');
     const before = await ready.innerText();
     await p.evaluate(() => Lab.pages.go('reflect'));
     await p.locator('#reflect textarea[data-save]').first().fill('Evidence supports the claim because the model data changed.');
-    await p.waitForTimeout(500);
+    const field = await p.locator('#reflect textarea[data-save]').first().getAttribute('data-save');
+    const answer = 'Evidence supports the claim because the model data changed.';
+    await p.waitForFunction(({ field, answer }) => Lab.store.get('field:' + field) === answer,
+      { field, answer }, { timeout: 5000 });
+    T.ok(await p.evaluate(({ field, answer }) => Lab.store.get('field:' + field) === answer,
+      { field, answer }), 'lab02: response saved before reload');
     await p.evaluate(() => Lab.pages.go('submit'));
     const after = await ready.innerText();
     T.ok(before !== after, 'lab02: readiness updates after student work');
     await p.reload();
     await p.waitForTimeout(800);
     const restored = await p.getByRole('region', { name: 'Submission readiness' }).innerText();
-    T.ok(restored === after, 'lab02: readiness survives reload');
+    const restoredAnswer = await p.evaluate(field => {
+      const el = [...document.querySelectorAll('#reflect textarea[data-save]')].find(t => t.dataset.save === field);
+      return el && el.value;
+    }, field);
+    T.ok(restoredAnswer === answer, 'lab02: saved response restored (' + JSON.stringify(restoredAnswer) + ')');
+    T.ok(restored === after, 'lab02: readiness survives reload' +
+      (restored !== after ? '\\nExpected: ' + after + '\\nRestored: ' + restored : ''));
     T.ok(p.errors.length === 0, 'lab02: no errors after progress update/reload ' + p.errors.join('; '));
     await p.close();
   } finally { await b.close(); }

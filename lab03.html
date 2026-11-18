@@ -1880,6 +1880,18 @@ Lab.$('#d-log').addEventListener('click', () => {
   dRes.hits.forEach(h => rows.push({ gene: dRes.gene, q: orgLabel(dRes.org), hit: orgLabel(h.id), t: mrcaAge(dRes.org, h.id), ident: h.ident, bits: Math.round(h.bits) }));
   clockTable.setRows(rows);
 });
+// Restore both controls before the first graph/report calculation, including after progress import.
+const savedClockFit = Lab.store.get('clock-fit-options');
+if (savedClockFit && typeof savedClockFit === 'object') {
+  if (typeof savedClockFit.enabled === 'boolean') Lab.$('#clock-max').checked = savedClockFit.enabled;
+  const cutoff = Number(savedClockFit.cutoff);
+  if (Number.isFinite(cutoff) && cutoff >= 50 && cutoff <= 600 && cutoff % 10 === 0) Lab.$('#clock-max-range').value = String(cutoff);
+}
+function saveClockFitOptions() {
+  Lab.store.set('clock-fit-options', { enabled: Lab.$('#clock-max').checked, cutoff: Number(Lab.$('#clock-max-range').value) });
+  drawClock();
+  Own.runAll();
+}
 const clockChart = Lab.chart('#clock-chart', { xLabel: 'Time since common ancestor (millions of years)', yLabel: 'Percent identity (%)', xMin: 0, yMax: 100, series: [] });
 function clockFitRows(rows, gene) {
   const useMax = Lab.$('#clock-max').checked, maxT = +Lab.$('#clock-max-range').value;
@@ -1912,8 +1924,8 @@ function drawClock(rows) {
   const interceptOut = Lab.$('#d-intercept'); if (interceptOut) interceptOut.textContent = shown && Number.isFinite(shownIntercept) ? Lab.fmt(shownIntercept, 2) + ' %' : '—';
   const clockInfo = Lab.$('#d-fit-info'); if (clockInfo) clockInfo.textContent = shown ? 'Fit uses ' + shownCount + ' recorded Gene ' + shownGene + ' points' + (useMax ? ' up to ' + maxT + ' million years' : '') + '. The graph shows all observations, but only points at or below the selected cutoff contribute to the fit. Recalculate using those included points.' : 'Record at least two distinct divergence times for a fit.';
 }
-Lab.$('#clock-max').addEventListener('change', () => { drawClock(); Own.runAll(); });
-Lab.$('#clock-max-range').addEventListener('input', () => { drawClock(); Own.runAll(); });
+Lab.$('#clock-max').addEventListener('change', saveClockFitOptions);
+Lab.$('#clock-max-range').addEventListener('input', saveClockFitOptions);
 drawClock();
 Lab.prompt('#design-analysis', { key: 'd-analysis', label: 'Analyze: what is the slope (percent identity lost per 100 million years) for each gene you tested, and how well does a straight line fit (R²)? Where does the pattern stop being linear, and why might very old splits level off?', rows: 4 });
 Lab.prompt('#design-analysis', { key: 'd-conclusion', label: 'Conclusion: was your hypothesis supported? Name one limitation of your design and one way to improve it.', rows: 3 });

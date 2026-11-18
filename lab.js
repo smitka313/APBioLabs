@@ -2122,6 +2122,10 @@
     workListeners.push(renderReadiness);
     Lab.onShow('#submit', renderReadiness);
     renderReadiness();
+    // Responses can mount during Lab.init, before page-local prompts, tables and
+    // step checklists restore their work. Refresh once those scripts have finished;
+    // otherwise a direct #submit reload can retain an incomplete startup snapshot.
+    if (document.readyState !== 'complete') window.addEventListener('load', renderReadiness, { once: true });
     const ss = saveStatusEl(); ss.classList.add('save-status--bar');
     return [readiness, bar, ss, makeLabBadge(), status, note];
   }

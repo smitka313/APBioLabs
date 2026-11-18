@@ -115,6 +115,17 @@ async function keyboard(b) {
     // section; this checks forward Tab order without a 300-stop page-wide loop.
     const nearTarget = ['lab03', 'lab11', 'lab12', 'lab13'].includes(lab);
     if (nearTarget) {
+      // A reload restores saved predictions and refreshes gated controls asynchronously.
+      // Wait for the prerequisite gate before locating the preceding Tab stop.
+      // Do not focus or enable the run button programmatically.
+      await p.waitForFunction(selector => {
+        const target = document.querySelector(selector);
+        if (!target || target.disabled || target.closest('[inert]')) return false;
+        const style = getComputedStyle(target), rect = target.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' &&
+          style.display !== 'none' && target.tabIndex >= 0 &&
+          !target.closest('details:not([open]) :not(summary)');
+      }, k.btn, { timeout: 10000 });
       const start = await p.evaluate(selector => {
         const target = document.querySelector(selector);
         const section = target?.closest('section.step');

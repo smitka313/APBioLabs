@@ -36,21 +36,21 @@ Each lab page has the same parts: an overview with background and diagrams, an a
 
 - **Quick start** (`getting-started.html`): five-minute classroom setup, backups, submissions and dashboard workflow. The `sample-report.html` page is illustrative (not a verified DOCX export); `feedback.html` links to GitHub issues.
 - **For teachers page** (`teachers.html`): how the site works, handing in work, privacy, and linking to one part of a lab.
-- **Teacher notes** (`teacher-notes.html`, `teacher-labNN.html`): timing, misconceptions, suggested answers and expected ranges. They are encrypted in the page (AES-256-GCM, key from the password with PBKDF2) and need a password. They are encrypted in the page, not behind a school login: anyone with the password can open them. The password is kept only if "Keep unlocked in this tab" is ticked. Unlocked pages provide **Print** and **Lock notes** controls at the top and auto-lock after 15 minutes without activity; **Lock notes** clears remembered access immediately. Leave remembered access off on shared computers. The plaintext is not in this repository; `tools/encrypt-notes.js` builds the encrypted pages.
+- **Teacher notes** (`teacher-notes.html`, `teacher-labNN.html`): timing, misconceptions, suggested answers and expected ranges. They are encrypted in the page (AES-256-GCM, key from the password with PBKDF2) and need a password. They are encrypted in the page, not behind a school login: anyone with the password can open them. The password is kept only if "Keep unlocked in this tab" is ticked. Unlocked pages provide **Print** and **Lock notes** controls at the top and auto-lock after 15 minutes without activity on a notes page (working in a student lab does not extend this time); **Lock notes** clears remembered access immediately. Leave remembered access off on shared computers. The plaintext is not in this repository; `tools/encrypt-notes.js` builds the encrypted pages.
 - **Class dashboard** (`teacher-dashboard.html`): drop a class's .docx reports and progress files to get a sortable grid per lab (parts done, key results, pre-lab, FRQ self-score, confidence), flags for shared Dataset IDs, identical results, or a dataset started by another student, and a CSV export. Files are read in the browser and never uploaded. The Word-file reader (JSZip 3.10.1) is in `vendor/`.
 - **Printable walkthroughs.** Use [student-directions.html](student-directions.html) to print or save a guide for any lab. These provide simulation directions; **Print worksheet** supplies the questions and working space.
 - **Projector mode** (`projector.html`): shows the day's lab parts on the classroom screen with a timer. `projector.html#lab05` opens one lab.
 
 ## Data interpretation and recent fixes
 
-- **Lab 3:** the molecular-clock graph, residual feedback, and report slope use the same gene and selected divergence-time cutoff. Report labels identify the gene, fitted point count, and cutoff.
+- **Lab 3:** the molecular-clock graph, residual feedback, and report slope use the same gene and selected divergence-time cutoff. Report labels identify the gene, fitted point count, and cutoff. The cutoff and its enabled/disabled setting are saved with the lab's progress.
 - **Lab 5:** cups that do not reach ET₅₀ within the observation window are treated as censored results, with explanations in report data rather than a measured zero rate.
-- **Lab 9:** the large-marker exclusion setting is saved, uncut λ is modeled as one 48,502-bp band, and estimates outside the fitted marker-distance range show an extrapolation warning.
+- **Lab 9:** marker edits refresh the curve and warnings as you type, the large-marker exclusion setting is saved, uncut λ is modeled as one 48,502-bp band, and estimates outside the fitted marker-distance range show an extrapolation warning.
 - **Lab 11:** a stomatal field can be recorded once; students must move to a new field for another replicate, including after reload.
 - **Lab 12:** stopping a choice-chamber trial discards its partial recording without a completed-run toast.
 - **Lab 13:** Reflect and report results use the recorded measurement method when the current mode changes. The page explains small negative blank-corrected readings and distinguishes endpoint reading ratios from reaction rates.
 
-These changes have passed automated checks. Independent live verification of PRs #102–103 and visual print review of the student guides remain separate checks.
+Independent live verification confirmed the regression/report, recording, and measurement-mode fixes in PRs #102–103. Follow-up changes address marker-edit refresh, cutoff persistence, and notes-timeout wording. Visual print review and the phone-width pass remain separate checks.
 
 ## Privacy
 
