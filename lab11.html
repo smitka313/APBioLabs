@@ -1049,6 +1049,29 @@ function frq(host, o) {
   stView.hint.textContent = 'Turn the fine focus until the guard cells are sharp, then click or tap each stoma to mark it. With the canvas selected, arrow keys nudge the slide.';
   stView.canvas.peelField = () => st.field;   // for tests (not a DOM attribute), like canvas.scopeView
   function drawScope() { stView.redraw(); }
+  /* A microscope opened in a hidden lab section can have its canvas cleared by
+     a later layout resize. Repaint its cached specimen on entry without changing
+     the slide, focus, marks, field seed, or recorded student work. */
+  if ('IntersectionObserver' in window) {
+    let wasVisible = false;
+    const microscopeVisibility = new IntersectionObserver(entries => {
+      const visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio > 0);
+      if (visible && !wasVisible && st.field) {
+        requestAnimationFrame(() => {
+          if (!st.field || !stView.canvas.isConnected) return;
+          stView.setSpecimen({
+            render: peelRenderer(st.field),
+            layers: [{ z: 0 }, { z: 0.07 }],
+            seed: st.seed,
+            refocus: false,
+            recenter: false
+          });
+        });
+      }
+      wasVisible = visible;
+    }, { threshold: 0.01 });
+    microscopeVisibility.observe(stView.canvas);
+  }
   const tally = () => st.field.stomata.filter(s => s.marked).length;
   /* The slide (species, surface, magnification, field seed) and the stomata you have marked are saved. */
   const saveSt = () => Lab.store.set('st-state', { sp: st.sp, surf: st.surf, mag: st.mag, seed: st.seed, marked: st.field ? st.field.stomata.map((q, i) => q.marked ? i : -1).filter(i => i >= 0) : [] });
