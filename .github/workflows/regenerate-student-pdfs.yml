@@ -44,3 +44,5 @@ jobs:
             git commit -m "Regenerate 13 student PDFs and manifest [skip actions]"
             git push origin HEAD:pdf-guide-date-page-labels
           fi
+
+# One-time regeneration run for PR 117.
