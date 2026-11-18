@@ -1054,13 +1054,15 @@ function frq(host, o) {
   });
   $('#st-record-below').addEventListener('click', () => $('#st-record').click());
   $('#st-record').addEventListener('click', () => {
+    if (Lab.store.get('st-recorded-seed') === st.seed) { $('#st-msg').textContent = 'This field is already recorded. Move to a new field and count again.'; $('#st-msg').className = 'status warn'; return; }
     Lab.sound.play('click');
     const rows = stTable.getRows(), sp = STOM.find(s => s.k === st.sp), cnt = tally();
     stTable.addRow({ n: rows.length + 1, sp: sp.name, surf: st.surf === 'lo' ? 'lower' : 'upper', mag: st.mag + 'X', count: cnt, actual: st.field.stomata.length, dens: cnt / st.field.A });
+    Lab.store.set('st-recorded-seed', st.seed);
     const msg = $('#st-msg');
     msg.textContent = cnt === st.field.stomata.length ? 'Recorded. Your tally matches. Move to a new field and count again.' : `Recorded. You marked ${cnt}; the field holds ${st.field.stomata.length}. Missed stomata near the edge? Count those more than half inside the circle.`;
     msg.className = 'status ' + (cnt === st.field.stomata.length ? 'ok' : 'warn');
-    newField();
+    saveSt();
   });
   $('#st-clear').addEventListener('click', () => stTable.clear());
   /* The density message is derived from the recorded fields and the chosen plant and surface, so it is recomputed when they change (silent) and cleared if it no longer applies. */

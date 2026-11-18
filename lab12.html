@@ -1465,7 +1465,7 @@ $('#c-run').addEventListener('click', () => {
 });
 $('#c-stop').addEventListener('click', () => {
   if (!trial) return;
-  if (chRec.recording) chRec.stop();
+  if (chRec.recording) chRec.clear();
   const had = trial.rows.length;
   trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false);
   intTable.clear();   // the partial counts belong to a trial that was never finished, so they do not stay in the table or the graph

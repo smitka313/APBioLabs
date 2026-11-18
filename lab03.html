@@ -1881,6 +1881,17 @@ Lab.$('#d-log').addEventListener('click', () => {
   clockTable.setRows(rows);
 });
 const clockChart = Lab.chart('#clock-chart', { xLabel: 'Time since common ancestor (millions of years)', yLabel: 'Percent identity (%)', xMin: 0, yMax: 100, series: [] });
+function clockFitRows(rows, gene) {
+  const useMax = Lab.$('#clock-max').checked, maxT = +Lab.$('#clock-max-range').value;
+  return (rows || clockTable.getRows()).filter(r => r.gene === gene && !r._setup && r.t !== '' && r.ident !== '' && r.t != null && r.ident != null && Number.isFinite(Number(r.t)) && Number.isFinite(Number(r.ident)) && (!useMax || Number(r.t) <= maxT));
+}
+function selectedClockFit() {
+  for (const gene of ['A', 'B', 'C']) {
+    const rows = clockFitRows(null, gene);
+    if (rows.length > 1 && new Set(rows.map(r => Number(r.t))).size > 1) return { gene, rows, fit: Lab.stats.linreg(rows.map(r => Number(r.t)), rows.map(r => Number(r.ident))) };
+  }
+  return null;
+}
 function drawClock(rows) {
   rows = rows || clockTable.getRows();
   const useMax = Lab.$('#clock-max').checked, maxT = +Lab.$('#clock-max-range').value;
@@ -1889,7 +1900,7 @@ function drawClock(rows) {
   ['A', 'B', 'C'].forEach(g => {
     const pts = rows.filter(r => r.gene === g && r.t != null && r.ident != null && r.t !== '' && r.ident !== '' && Number.isFinite(Number(r.t)) && Number.isFinite(Number(r.ident))).map(r => ({ x: Number(r.t), y: Number(r.ident) }));
     if (!pts.length) return;
-    const fitPts = useMax ? pts.filter(p => p.x <= maxT) : pts;
+    const fitPts = clockFitRows(rows, g).map(r => ({ x: Number(r.t), y: Number(r.ident) }));
     const col = { A: 'var(--s1)', B: 'var(--s2)', C: 'var(--s3)' }[g];
     series.push({ name: `Gene ${g} (all observations)`, points: pts, line: false, color: col });
     if (useMax) series.push({ name: `Gene ${g} (included in fit)`, points: fitPts, line: false, color: col });
@@ -1901,8 +1912,8 @@ function drawClock(rows) {
   const interceptOut = Lab.$('#d-intercept'); if (interceptOut) interceptOut.textContent = shown && Number.isFinite(shownIntercept) ? Lab.fmt(shownIntercept, 2) + ' %' : '—';
   const clockInfo = Lab.$('#d-fit-info'); if (clockInfo) clockInfo.textContent = shown ? 'Fit uses ' + shownCount + ' recorded Gene ' + shownGene + ' points' + (useMax ? ' up to ' + maxT + ' million years' : '') + '. The graph shows all observations, but only points at or below the selected cutoff contribute to the fit. Recalculate using those included points.' : 'Record at least two distinct divergence times for a fit.';
 }
-Lab.$('#clock-max').addEventListener('change', () => drawClock());
-Lab.$('#clock-max-range').addEventListener('input', () => drawClock());
+Lab.$('#clock-max').addEventListener('change', () => { drawClock(); Own.runAll(); });
+Lab.$('#clock-max-range').addEventListener('input', () => { drawClock(); Own.runAll(); });
 drawClock();
 Lab.prompt('#design-analysis', { key: 'd-analysis', label: 'Analyze: what is the slope (percent identity lost per 100 million years) for each gene you tested, and how well does a straight line fit (R²)? Where does the pattern stop being linear, and why might very old splits level off?', rows: 4 });
 Lab.prompt('#design-analysis', { key: 'd-conclusion', label: 'Conclusion: was your hypothesis supported? Name one limitation of your design and one way to improve it.', rows: 3 });
@@ -1925,9 +1936,9 @@ Own.personal(an, { key: 'own-identity', rows: 3, need: 'BLAST the genes (record 
   compute: () => { const r = blastTable.getRows().filter(x => x.rank === 1 && x.ident != null && !x._setup); if (!r.length) return null; const lo = r.reduce((a, b) => b.ident < a.ident ? b : a), hi = r.reduce((a, b) => b.ident > a.ident ? b : a); return r.length > 1 && lo !== hi ? `Your best hit for gene ${hi.gene} was the ${hi.org} at ${fmt1(hi.ident)}% identity, but for gene ${lo.gene} the top hit (${lo.org}) was only ${fmt1(lo.ident)}%.` : `Your top hit for gene ${lo.gene} was the ${lo.org} at ${fmt1(lo.ident)}% identity (E = ${lo.e}).`; } });
 Own.personal(an, { key: 'own-clock', rows: 3, need: 'Design (add hits to the clock table)', href: 'design',
   ask: 'Explain one reason this point may sit away from the trend (think about how substitutions accumulate, and about the gene you used).',
-  compute: () => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && !x._setup && x.t > 0); if (r.length < 3) return null; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); const res = r.map(x => ({ x, d: x.ident - L.predict(x.t) })); const w = res.reduce((a, b) => Math.abs(b.d) > Math.abs(a.d) ? b : a); return `Your weirdest clock point is ${w.x.q} vs ${w.x.hit} (gene ${w.x.gene}, ${fmt1(w.x.t)} Mya): identity ${fmt1(w.x.ident)}%, ${fmt1(Math.abs(w.d))} points ${w.d > 0 ? 'above' : 'below'} the trend line.`; } });
+  compute: () => { const selected = selectedClockFit(); if (!selected) return null; const r = selected.rows, L = selected.fit; const res = r.map(x => ({ x, d: x.ident - L.predict(x.t) })); const w = res.reduce((a, b) => Math.abs(b.d) > Math.abs(a.d) ? b : a); return `Your weirdest clock point is ${w.x.q} vs ${w.x.hit} (gene ${w.x.gene}, ${fmt1(w.x.t)} Mya): identity ${fmt1(w.x.ident)}%, ${fmt1(Math.abs(w.d))} points ${w.d > 0 ? 'above' : 'below'} the trend line.`; } });
 Own.watch(() => { ['A', 'B', 'C'].forEach(g => { const r = blastTable.getRows().filter(x => x.gene === g && x.rank === 1 && x.ident != null && !x._setup); if (r.length) { const l = r[r.length - 1]; Own.key('top-ident-' + g, { label: 'Fossil gene ' + g + ' top hit identity (' + l.org + ')', value: +fmt1(l.ident), unit: '%', part: 'BLAST the genes' }); } }); }, ['top-ident-A', 'top-ident-B', 'top-ident-C']);
-Own.watch(() => { const r = clockTable.getRows().filter(x => x.t != null && x.ident != null && x.t > 0 && !x._setup); if (r.length < 3) return; const L = Lab.stats.linreg(r.map(x => x.t), r.map(x => x.ident)); Own.key('clock-slope', { label: 'Molecular clock slope (identity vs time)', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); }, ['clock-slope']);
+Own.watch(() => { const selected = selectedClockFit(); if (!selected) return; const L = selected.fit; Own.key('clock-slope', { label: 'Molecular clock slope (Gene ' + selected.gene + ', ' + selected.rows.length + ' fitted points' + (Lab.$('#clock-max').checked ? ', cutoff ' + Lab.$('#clock-max-range').value + ' Mya' : ', all times') + ')', value: +L.m.toFixed(4), unit: '% per Mya', part: 'Design' }); }, ['clock-slope']);
 const ev = Lab.$('#evaluate-prompts');
 Predict.compare(ev, { key: 'reflect-predict', items: [
     ['predict-blast', 'Before BLASTing the fossil genes you predicted:', {
