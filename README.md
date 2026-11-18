@@ -43,14 +43,16 @@ Each lab page has the same parts: an overview with background and diagrams, an a
 
 ## Data interpretation and recent fixes
 
-- **Lab 3:** the molecular-clock graph, residual feedback, and report slope use the same gene and selected divergence-time cutoff. Report labels identify the gene, fitted point count, and cutoff. The cutoff and its enabled/disabled setting are saved with the lab's progress.
+- **Lab 3:** the molecular-clock graph, residual feedback, and report slope use the same gene and selected divergence-time cutoff. Report labels identify the gene, fitted point count, and cutoff. The cutoff and its enabled/disabled setting are saved with the lab's progress. **Add all hits to clock table** refreshes the selected query/gene's rows with the latest search, repairing duplicate or stale entries while retaining other queries and genes.
 - **Lab 5:** cups that do not reach ET₅₀ within the observation window are treated as censored results, with explanations in report data rather than a measured zero rate.
 - **Lab 9:** marker edits refresh the curve and warnings as you type, the large-marker exclusion setting is saved, uncut λ is modeled as one 48,502-bp band, and estimates outside the fitted marker-distance range show an extrapolation warning.
 - **Lab 11:** a stomatal field can be recorded once; students must move to a new field for another replicate, including after reload.
 - **Lab 12:** stopping a choice-chamber trial discards its partial recording without a completed-run toast.
 - **Lab 13:** Reflect and report results use the recorded measurement method when the current mode changes. The page explains small negative blank-corrected readings and distinguishes endpoint reading ratios from reaction rates.
 
-Independent live verification confirmed the regression/report, recording, and measurement-mode fixes in PRs #102–103. Follow-up changes address marker-edit refresh, cutoff persistence, and notes-timeout wording. Visual print review and the phone-width pass remain separate checks.
+Independent live verification confirmed the regression/report, recording, and measurement-mode fixes in PRs #102–103, plus cutoff persistence, immediate marker-edit refresh, readiness reload, and notes-timeout wording in PRs #105–106. The follow-up Lab 3 clock-row refresh still needs live verification. Visual print review and the phone-width pass remain separate checks.
+
+**New dataset changes future simulated numbers; it keeps existing tables, answers, and saved simulation states.** It is not a clean reset. For an independent fresh investigation, first export a progress backup and then use **Start over** for that lab (this explicitly erases its saved work). For a contaminated Lab 3 clock group, rerun BLAST for that query/gene and choose **Add all hits to clock table** to refresh just that group.
 
 ## Privacy
 

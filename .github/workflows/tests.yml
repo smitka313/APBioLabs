@@ -46,7 +46,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - run: node --test tests/domain-redirect.test.js
       - name: Check completion-audit regressions
-        run: node --test tests/audit6-followup.test.js tests/submission-readiness.test.js
+        run: node --test tests/audit6-followup.test.js tests/submission-readiness.test.js tests/lab3-clock-recording.test.js
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node tests/domain-redirect-browser.js

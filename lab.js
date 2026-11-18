@@ -1078,7 +1078,7 @@
       const nb = h('button', { class: 'linkbtn id-newds', type: 'button', 'aria-expanded': 'false', onclick: () => { confirmRow.hidden = !confirmRow.hidden; nb.setAttribute('aria-expanded', String(!confirmRow.hidden)); if (!confirmRow.hidden) focusIn(confirmRow, 'button'); } }, 'New dataset');
       line.append(' · ', nb);
       confirmRow = h('div', { class: 'id-confirm', hidden: true, role: 'group', 'aria-label': 'Confirm new dataset' },
-        h('span', null, 'Start a new dataset? Simulations will give different numbers from now on. Data already in your tables stays.'),
+        h('span', null, 'Start a new dataset? Future simulations will use different numbers. Existing tables, answers, and saved simulation states stay. For a clean start, back up your work and use Start over for this lab.'),
         h('button', { class: 'btn btn--sm btn--primary', type: 'button', onclick: () => Lab.identity.newDataset() }, 'Use a new dataset'),
         h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; nb.setAttribute('aria-expanded', 'false'); nb.focus(); } }, 'Cancel'));
     }
