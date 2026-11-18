@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   comprehensive:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'release/phase1f-audit-pr30'
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'release/phase1f-audit-pr30' || github.head_ref == 'audit/production-evidence-31-80'
     name: Full regression (shard ${{ matrix.shard }}/5)
     runs-on: ubuntu-latest
     timeout-minutes: 120
