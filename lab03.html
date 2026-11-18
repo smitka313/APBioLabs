@@ -371,7 +371,8 @@ Organism B  ACGACTCAGT     7 of 10 match → 70% identity</pre>
             <div class="field"><label for="d-org">Query organism</label><select id="d-org"></select></div>
             <div class="field"><label for="d-gene">Gene (independent variable: rate of evolution)</label><select id="d-gene"><option value="A">Gene A (slow)</option><option value="B">Gene B (moderate)</option><option value="C">Gene C (fast)</option></select></div>
             <button class="btn btn--primary" type="button" id="d-run">BLAST</button>
-            <button class="btn" type="button" id="d-log">Add all hits to clock table</button>
+            <button class="btn" type="button" id="d-log" aria-describedby="d-log-help">Add all hits to clock table</button>
+            <p class="small muted" id="d-log-help">Adding hits refreshes the clock rows for this query and gene. Other queries and genes stay in the table.</p>
             <p class="status" id="d-status" aria-live="polite"></p>
             <details class="more"><summary>More options</summary><div class="inner">
               <div class="field"><span class="label" id="dprog-label">Program</span><div class="seg" role="group" aria-labelledby="dprog-label" id="dprog-seg"><button type="button" data-p="blastn" aria-pressed="true">blastn</button><button type="button" data-p="megablast" aria-pressed="false">megablast</button></div></div>
@@ -1897,9 +1898,19 @@ Lab.$('#d-log').addEventListener('click', () => {
   Lab.sound.play('click');
   if (!dRes) { Lab.$('#d-status').textContent = 'Press BLAST first, then add the hits to the clock table.'; Lab.$('#d-status').className = 'status bad'; return; }
   if (!dRes || dRes.org === 'pasted') { Lab.$('#d-out').insertAdjacentHTML('afterbegin', '<div class="msg warn">Divergence times are only known for organisms in the database, so pasted queries cannot be added to the clock table.</div>'); return; }
-  const rows = clockTable.getRows().slice();
-  dRes.hits.forEach(h => rows.push({ gene: dRes.gene, q: orgLabel(dRes.org), hit: orgLabel(h.id), t: mrcaAge(dRes.org, h.id), ident: h.ident, bits: Math.round(h.bits) }));
-  clockTable.setRows(rows);
+  const query = orgLabel(dRes.org), fresh = new Map();
+  dRes.hits.forEach(h => fresh.set(h.id, { gene: dRes.gene, q: query, hit: orgLabel(h.id), t: mrcaAge(dRes.org, h.id), ident: h.ident, bits: Math.round(h.bits) }));
+  const status = Lab.$('#d-status');
+  if (!fresh.size) { status.textContent = 'No hits to add. Run BLAST with another organism set.'; status.className = 'status warn'; return; }
+  // One current search per query/gene: refresh old values and remove duplicates
+  // together, including tables retained after choosing a new simulation dataset.
+  const before = clockTable.getRows(), keep = before.filter(r => r.gene !== dRes.gene || r.q !== query);
+  const replaced = before.length - keep.length;
+  clockTable.setRows(keep.concat([...fresh.values()]));
+  Own.runAll();
+  status.textContent = (replaced ? 'Refreshed' : 'Added') + ' ' + fresh.size + ' clock comparisons for ' + query + ', Gene ' + dRes.gene +
+    (replaced ? '; replaced ' + replaced + ' previously recorded rows for this query and gene.' : '.') + ' Other queries and genes are unchanged.';
+  status.className = 'status ok';
 });
 // Restore both controls before the first graph/report calculation, including after progress import.
 const savedClockFit = Lab.store.get('clock-fit-options');
