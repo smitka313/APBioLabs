@@ -1023,3 +1023,42 @@ main#labs:empty { min-height: 100vh; }
 /* Audit 5: backup reminder participates in page flow instead of covering controls. */
 .backup-bar,.backup-bar.nudge-bar{position:relative;left:auto;right:auto;bottom:auto;width:auto;max-width:900px;margin:12px auto;padding:10px 14px;box-sizing:border-box;}
 @media(max-width:600px){.backup-bar,.backup-bar.nudge-bar{left:auto;right:auto;width:auto;margin:8px 12px;}body.has-backup-bar .toasts{bottom:max(16px,env(safe-area-inset-bottom,0px));}}
+
+
+/* November 2026: restrained readability and touch-target polish.
+   Scoped to screen layouts; print and report rendering remain unchanged. */
+@media screen {
+  /* Keep long scientific labels readable without widening the viewport. */
+  .step-body, .prose, .sim-panel, .step > header { min-width: 0; }
+  .step-body p, .prose p, .prose li, .step > header { overflow-wrap: break-word; }
+  /* Subtle scan lines, with no row-height or column-width changes. */
+  table.data tbody tr:nth-child(even) td { background-color: color-mix(in srgb, var(--surface-2) 34%, var(--surface)); }
+  table.data tbody tr:hover td { background-color: var(--accent-soft); }
+  /* Make editable values visually discoverable without changing data semantics. */
+  table.data td input:not([type="checkbox"]):not([type="radio"]),
+  table.data td select, table.data td textarea {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  table.data td :is(input, select, textarea):focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 1px;
+  }
+  /* Prevent long button captions from spilling beyond narrow screens. */
+  .btn, .step-nav a { text-align: center; overflow-wrap: anywhere; }
+}
+@media screen and (max-width: 760px) {
+  .step { padding-block: 26px; gap: 14px; }
+  .step-body { gap: 14px; }
+  .step-nav ol { scroll-padding-inline: 12px; }
+  .step-nav a, .btn, .btn--sm, .sim-tab, .tab, .seg > button {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+  .step-nav a { padding-inline: 10px; }
+}
+@media screen and (pointer: coarse) {
+  .btn, .btn--sm, .sim-tab, .tab, .seg > button { min-height: 44px; }
+}
