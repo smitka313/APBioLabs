@@ -10,6 +10,14 @@ const attr = p => p.evaluate(() => document.documentElement.getAttribute('data-t
 const pressed = p => p.evaluate(() => Array.from(document.querySelectorAll('.theme-switch button')).filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.mode));
 const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
 
+/* Keep theme checks independent of third-party font/analytics response times.
+   Local CSS/scripts and the shared library fixtures still load normally. */
+async function themeContext(browser, options = {}) {
+  const ctx = await T.ctxFor(browser, options);
+  await ctx.route(/^https?:\/\/(?:fonts\.googleapis\.com|fonts\.gstatic\.com|gc\.zgo\.at|smitka313\.goatcounter\.com)\//, route => route.abort());
+  return ctx;
+}
+
 (async () => {
   const srv = await T.serve(), b = await T.launch();
 
@@ -23,7 +31,7 @@ const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
   }
 
   console.log('Modes apply and persist');
-  let ctx = await T.ctxFor(b, { dark: false });
+  let ctx = await themeContext(b, { dark: false });
   let p = await T.open(ctx, 'index.html', '', srv.url);
   T.ok(await p.locator('.theme-switch').count() === 1, 'switch on the home page');
   T.ok(await attr(p) === null && (await pressed(p)).join() === 'auto', 'default is Auto: no data-theme, Auto pressed');
@@ -61,7 +69,7 @@ const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
   await ctx.close();
 
   console.log('No flash of the wrong theme');
-  ctx = await T.ctxFor(b, { dark: false });
+  ctx = await themeContext(b, { dark: false });
   await ctx.addInitScript(k => { try { localStorage.setItem(k, 'dark'); } catch (e) { /* ignore */ } }, KEY);
   for (const f of ['index.html', 'lab05.html', 'teachers.html']) {
     const pg = await ctx.newPage();
@@ -73,7 +81,7 @@ const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
   await ctx.close();
 
   console.log('Charts and canvases redraw');
-  ctx = await T.ctxFor(b, { dark: false });
+  ctx = await themeContext(b, { dark: false });
   p = await T.open(ctx, 'lab05.html', '', srv.url);
   const res = await p.evaluate(async () => {
     const cv = document.createElement('canvas'); cv.style.cssText = 'width:300px;height:100px;display:block'; document.body.append(cv);
@@ -91,7 +99,7 @@ const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
 
   console.log('Sign out and Start over keep the preference');
   for (const mode of ['signout', 'startover']) {
-    ctx = await T.ctxFor(b);
+    ctx = await themeContext(b);
     await ctx.addInitScript(k => { try { if (!localStorage.getItem('__t')) { localStorage.setItem('__t', '1'); localStorage.setItem(k, 'dark'); localStorage.setItem('aplab:lab05:field:x', '"a"'); } } catch (e) { /* ignore */ } }, KEY);
     p = await T.open(ctx, 'index.html', '', srv.url);
     T.ok(await stored(p) === 'dark', mode + ': preference seeded');
@@ -109,7 +117,7 @@ const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
 
   console.log('Sweep in both forced themes (400 px)');
   for (const mode of ['light', 'dark']) {
-    ctx = await T.ctxFor(b, { width: 400, height: 800 });
+    ctx = await themeContext(b, { width: 400, height: 800 });
     await ctx.addInitScript(a => { try { localStorage.setItem(a.k, a.m); } catch (e) { /* ignore */ } }, { k: KEY, m: mode });
     let bad = [];
     for (const f of PAGES) {

@@ -27,7 +27,7 @@ Each lab page has the same parts: an overview with background and diagrams, an a
 - **Name and Dataset ID.** Students enter their name and class period once per computer. Each student's simulated data are unique, and each lab shows a **Dataset ID** (for example `K7M-2QX`) that also goes on the report. The ID stays the same when a student fixes a typo in their name or period. If a different student signs in on a shared computer, the lab says whose work it is and offers "Yes — I fixed my name", "Start my own dataset" or "Sign out". Nothing is deleted automatically. Work started before the November 2026 update has no recorded owner: reports, progress files and the dashboard say "Dataset owner: not recorded", with no notice to the student, until they choose a new dataset.
 - **Save and resume.** Work saves automatically in the browser as students type. The name line shows "Saved 9:05 AM" after each save. If the browser can't save (private window, blocked site data, full storage), a warning stays at the top of the page.
 - **Progress files and transfer codes.** *Move your work to another computer* saves a progress file (.json) or a resume code. *Get my transfer code* shows a code and a QR code for a phone. Before loading a file, the page names the student, the lab and the file's saved date, and warns if the work on this computer is newer. A damaged or wrong file changes nothing.
-- **Printable student directions.** Every lab links to a guide from **Overview** and **Submit**. Guides follow the lab's sections with numbered steps, checkboxes, data-recording reminders, and a submission checklist. Each has blank name, period, and Dataset ID fields, plus **Print / Save as PDF**. They contain no answer keys or student results, and remain readable and printable without JavaScript. Browse [all 13 guides](student-directions.html).
+- **Printable student directions.** Every lab links to a guide from **Overview** and **Submit**. Guides follow the lab's sections with numbered steps, checkboxes, data-recording reminders, and a submission checklist. Each has blank name, period, and Dataset ID fields, plus **Download PDF** and **Print / Save as PDF**. The guide index also links directly to all 13 PDFs. Downloads work without JavaScript or a native print dialog; the browser may open a PDF viewer where students can save or print. They contain no answer keys or student results, and remain readable and printable without JavaScript. Browse [all 13 guides](student-directions.html).
 - **Reports and worksheets.** Submit downloads a Word (.docx) report or opens a print view to save a PDF. **Print worksheet** creates a separate paper worksheet with questions and space for work. Downloading a report does not submit it: students must upload or hand in the file where their teacher directs.
 - **Timelapse.** Some simulations record the run, so students can replay it fast, download it as a GIF, or add it to their report.
 - **Pause & bookmark**, a first-visit tour (the **Help** link shows it again), and **Sign out** / **Start over** to clear a shared computer.
@@ -104,6 +104,17 @@ Edit the lab-specific steps in `tools/student-directions.json`, then regenerate 
 ```sh
 python3 tools/build-student-directions.py
 ```
+
+The committed PDF copies in `student-pdfs/` are built from those public HTML guides. After changing guide content or PDF layout, regenerate and validate them:
+
+```sh
+python3 -m pip install -r tools/pdf-requirements.txt
+python3 tools/build-student-pdfs.py
+python3 tools/build-student-pdfs.py --check
+python3 tests/student-pdfs.test.py
+```
+
+The manifest tracks semantic guide contents, renderer/fonts, and PDF bytes; CI rejects stale or modified copies. The PDF generator uses bundled, licensed DejaVu fonts and no network resources. These are development-only dependencies: hosting still serves ordinary static files for free. Cloudflare marks PDF copies `noindex` while the HTML guides remain the search destinations. Narrow-screen guides use smaller outer margins and links with at least 44-pixel touch targets. Real Safari print-dialog behavior and physical-phone interaction still need manual verification.
 
 The generator reads section names and anchors from the current student labs and rejects missing or unknown sections. Commit the regenerated HTML alongside the source changes. Normal hosting serves the generated pages directly and does not need Python. Preview a guide in print mode after editing its content or styles.
 

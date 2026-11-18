@@ -1,0 +1,67 @@
+{
+  "directions-lab01.pdf": {
+    "pdf_sha256": "8a4e522562412a3a41ad11116cbe4a087203a7392f17be68daeb675d0cac83ad",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "2721dd1ca0e09b1f6bf3bfc3af992a69ee8d775373c7c9f917d5b34c1868d7d6"
+  },
+  "directions-lab02.pdf": {
+    "pdf_sha256": "02887964ed33ea677326842ef3e4c83aeeaa55aeae4a3b44ea763304534b6e95",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "70d37fcf3e40fcf00090ad31e9342e5f9a05f3074bf752094a7c70515e7ce6e4"
+  },
+  "directions-lab03.pdf": {
+    "pdf_sha256": "d10c072ee1cf202780927a7271d3480be83f001636ba363d3042d0be7ca1f7d5",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "07468b206247c0c73187a15d5f61ce0c61198d6952b557578c9164c164f56407"
+  },
+  "directions-lab04.pdf": {
+    "pdf_sha256": "a41a0d6dc1bfaf86f31492775f42a04130dfcd34956917066a6cf48572e754aa",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "c5b1ea3c1d43163f3e88544e7dc6553c9450f8aa3465a537d76bd4550d3c6d99"
+  },
+  "directions-lab05.pdf": {
+    "pdf_sha256": "f0b77a834680d46f4002be395377da181aa2cf9412541d509650b27ec2804db4",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "f1016ead1a9453b8628891496560d5f32f50314ceb878a111841cdf8bc573208"
+  },
+  "directions-lab06.pdf": {
+    "pdf_sha256": "a4da5a4978cabd458a2e1eebbb7219db694e79640619c17cffc9362ca6a3913d",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "e3f1b2e1582a2db9cf452ce101ab78bc29ba6a1b7b70baac0c00d7bcec64c1d6"
+  },
+  "directions-lab07.pdf": {
+    "pdf_sha256": "ce9b1dc624a35501278198e508eedd224718c1de2170e6041e12cc134f944f2d",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "136bab72ada998abd648ce8d022ac5c77424e6865d5c95f83f7886e57251f413"
+  },
+  "directions-lab08.pdf": {
+    "pdf_sha256": "0686734f257aca95aa064b554f77c383e0466c3b471bf8604cdfa1d6c62fe411",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "365dcd3ab72cea995fbc09d3ca54d7c9ab9eb758cb3cb9166a43c941ab0b9b72"
+  },
+  "directions-lab09.pdf": {
+    "pdf_sha256": "2f4dc4099d57209058894c97fa00934147cdbddc4e0a735ad345ae0c3d6498ae",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "7d16ee180d3ae7172c1da1b52c93483071074d1d154a5421227597b7e34fb4a5"
+  },
+  "directions-lab10.pdf": {
+    "pdf_sha256": "d202da908f162e0c493d56d604b945ad3d40b88413557abee32d7127446e9aa3",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "207ed926c17c0b97029e845f76032054a2043be74e2edb7a13685e3e2539f52a"
+  },
+  "directions-lab11.pdf": {
+    "pdf_sha256": "2de86216df1c08c5c762a1ac3253db226e0310b75ccc8d23dbdc55399d9f9eb2",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "acec545785fee7d085df0f7bdaf053c296c97f073e8bbf508ee273142bdb08d1"
+  },
+  "directions-lab12.pdf": {
+    "pdf_sha256": "dfdb09958b2ed720e3776a3d41f2093a6f7bc8d4a9bd1f35f7b0b53ee05d7e3e",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "065cdb2a14d6d3314bfc18ca339d69860a18c6e98929ca14ec17e2f5b4b87973"
+  },
+  "directions-lab13.pdf": {
+    "pdf_sha256": "a4851d3b6011047159ef80fa6fcab3ec8423fe7e61286b528087d0fa3949e1fe",
+    "renderer_sha256": "c2a14ede03464dde81c3bdd856ab169ceaa692881f0610885e1beff3ef452670",
+    "source_sha256": "c0aedccd7a38a088910121484fbd72cfbaa3aeabdc2ac3696e959e5ede81e5c1"
+  }
+}

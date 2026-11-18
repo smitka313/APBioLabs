@@ -23,6 +23,19 @@ section { padding-top: 24px; }
 .rules { height: 80px; background: repeating-linear-gradient(white, white 25px, #aab5ae 26px, white 27px); }
 footer { font-size: .8rem; padding: 18px 0; }
 .catalog li { margin-bottom: 16px; }
+.pdf-download { padding: 9px 16px; border: 1px solid #07573f; border-radius: 6px; background: white; font-weight: 700; text-decoration: none; }
+.print-help { margin: -8px 0 20px; font-size: .9rem; }
+.catalog a { display: inline-flex; align-items: center; min-height: 44px; }
+.catalog-pdf { font-size: .85rem; margin-left: 12px; white-space: nowrap; }
+@media (max-width: 540px) {
+  body { padding: 12px; }
+  header, main { padding: 16px; }
+  h1 { font-size: 1.65rem; }
+  .screen-actions { gap: 8px 16px; }
+  .identity { overflow-wrap: anywhere; }
+  .catalog { padding-left: 1.4em; }
+  .catalog-pdf { margin-left: 0; }
+}
 .skip { position: absolute; top: -100px; }
 .skip:focus { top: 8px; background: white; padding: 8px; }
 @page { size: auto; margin: 15mm; }
