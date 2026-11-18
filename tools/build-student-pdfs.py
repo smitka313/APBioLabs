@@ -151,13 +151,14 @@ def render(data, target):
                 self.setFont('Guide', 7)
                 self.setFillColor(ink)
                 self.drawString(40, 23, f'Biology Lab Bench | Lab {data["lab"]} | Robert Smitka | CC BY-NC-SA 4.0')
-                self.drawRightString(572, 23, f'{self._pageNumber} / {total}')
+                self.drawRightString(572, 23, f'Page {self._pageNumber} of {total}')
                 super().showPage()
             super().save()
 
     story = [Paragraph(f'LAB {data["lab"]} | PRINTABLE STUDENT DIRECTIONS', small),
              Paragraph(escape(print_text(data['title'])), title), Paragraph(escape(print_text(data['question'])), body),
-             Spacer(1, 5), Paragraph('Name: ____________________   Class/period: __________   Dataset ID: __________', small),
+             Spacer(1, 5), Paragraph('Name: ____________________   Date: __________   Class/period: __________', small),
+             Paragraph('Dataset ID: ____________________', small),
              Paragraph('<a href="' + data['url'] + '" color="#07573f">' + data['url'] + '</a>', small),
              Paragraph('How to use this guide', heading)]
     story += [Paragraph(escape(print_text(p)), body) for p in data['intro']]
