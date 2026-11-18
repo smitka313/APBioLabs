@@ -28,46 +28,6 @@ env:
   NODE_VERSION: "22"
 
 jobs:
-  regenerate-pr117:
-    name: One-time PR 117 PDF regeneration
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: pdf-guide-date-page-labels
-          persist-credentials: true
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: python3 -m pip install -r tools/pdf-requirements.txt
-      - run: python3 tools/build-student-pdfs.py
-      - run: python3 tools/build-student-pdfs.py --check
-      - name: Validate all 13 PDF guides
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          from pypdf import PdfReader
-          files = sorted(Path('student-pdfs').glob('directions-lab*.pdf'))
-          assert len(files) == 13, len(files)
-          for file in files:
-              reader = PdfReader(str(file))
-              assert len(reader.pages) == 2, (file, len(reader.pages))
-              assert 'Date:' in reader.pages[0].extract_text(), file
-              for n, page in enumerate(reader.pages, 1):
-                  assert f'Page {n} of 2' in page.extract_text(), (file, n)
-          PY
-      - name: Commit generated PDFs and manifest to PR branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add student-pdfs
-          if ! git diff --cached --quiet; then
-            git commit -m "Regenerate 13 student guide PDFs and manifest"
-            git push origin HEAD:pdf-guide-date-page-labels
-          fi
   student-pdfs:
     name: Downloadable student guides
     runs-on: ubuntu-latest
@@ -250,5 +210,6 @@ jobs:
           export NODE_PATH="$PWD/node_modules"
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
           node tests/run-all.js all --shard ${{ matrix.shard }}/5
+
 
 

@@ -49,12 +49,12 @@ class StudentPDFs(unittest.TestCase):
                 self.assertFalse(pdf.is_encrypted)
                 self.assertIn(f'Lab {number}:', pdf.metadata.title)
                 self.assertEqual(pdf.metadata.author, 'Robert Smitka')
-                self.assertGreaterEqual(len(pdf.pages), 1)
-                self.assertLessEqual(len(pdf.pages), 4)
+                self.assertEqual(len(pdf.pages), 2)
                 content = plain(' '.join(p.extract_text() for p in pdf.pages))
                 self.assertIn(plain(data['title']), content)
                 self.assertIn(plain(data['question']), content)
                 self.assertIn('Dataset ID:', content)
+                self.assertIn('Date:', plain(pdf.pages[0].extract_text()))
                 for intro in data['intro']:
                     self.assertIn(plain(intro), content)
                 for section in data['sections']:
@@ -63,7 +63,7 @@ class StudentPDFs(unittest.TestCase):
                         self.assertIn(plain(step), content)
                 for i, page in enumerate(pdf.pages, 1):
                     page_text = plain(page.extract_text())
-                    self.assertIn(f'{i} / {len(pdf.pages)}', page_text)
+                    self.assertIn(f'Page {i} of 2', page_text)
                     self.assertGreater(len(page_text), 150, 'blank or nearly blank page')
                     self.assertEqual(tuple(float(x) for x in page.mediabox), (0, 0, 612, 792))
                 links = [a.get_object().get('/A', {}).get('/URI')
@@ -93,3 +93,4 @@ class StudentPDFs(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+

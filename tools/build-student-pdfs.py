@@ -112,11 +112,11 @@ def render(data, target):
             pdfmetrics.registerFont(TTFont(name, str(fonts / filename)))
     pdfmetrics.registerFontFamily('Guide', normal='Guide', bold='GuideBold', italic='Guide', boldItalic='GuideBold')
     ink, green = colors.HexColor('#17271e'), colors.HexColor('#07573f')
-    body = ParagraphStyle('body', fontName='Guide', fontSize=10, leading=13, textColor=ink, spaceAfter=7)
-    small = ParagraphStyle('small', parent=body, fontSize=8, leading=11, spaceAfter=6)
-    title = ParagraphStyle('title', parent=body, fontName='GuideBold', fontSize=22, leading=26, spaceAfter=10)
-    heading = ParagraphStyle('heading', parent=body, fontName='GuideBold', fontSize=12, leading=16,
-                             spaceBefore=8, spaceAfter=4, keepWithNext=True)
+    body = ParagraphStyle('body', fontName='Guide', fontSize=9.5, leading=12, textColor=ink, spaceAfter=5)
+    small = ParagraphStyle('small', parent=body, fontSize=7.5, leading=10, spaceAfter=4)
+    title = ParagraphStyle('title', parent=body, fontName='GuideBold', fontSize=21, leading=25, spaceAfter=8)
+    heading = ParagraphStyle('heading', parent=body, fontName='GuideBold', fontSize=11.5, leading=15,
+                             spaceBefore=5, spaceAfter=3, keepWithNext=True)
 
     class Checkbox(Flowable):
         def __init__(self):
@@ -151,13 +151,14 @@ def render(data, target):
                 self.setFont('Guide', 7)
                 self.setFillColor(ink)
                 self.drawString(40, 23, f'Biology Lab Bench | Lab {data["lab"]} | Robert Smitka | CC BY-NC-SA 4.0')
-                self.drawRightString(572, 23, f'{self._pageNumber} / {total}')
+                self.drawRightString(572, 23, f'Page {self._pageNumber} of {total}')
                 super().showPage()
             super().save()
 
     story = [Paragraph(f'LAB {data["lab"]} | PRINTABLE STUDENT DIRECTIONS', small),
              Paragraph(escape(print_text(data['title'])), title), Paragraph(escape(print_text(data['question'])), body),
-             Spacer(1, 5), Paragraph('Name: ____________________   Class/period: __________   Dataset ID: __________', small),
+             Spacer(1, 5), Paragraph('Name: ____________________   Date: __________   Class/period: __________', small),
+             Paragraph('Dataset ID: ____________________', small),
              Paragraph('<a href="' + data['url'] + '" color="#07573f">' + data['url'] + '</a>', small),
              Paragraph('How to use this guide', heading)]
     story += [Paragraph(escape(print_text(p)), body) for p in data['intro']]
@@ -170,7 +171,7 @@ def render(data, target):
             row = Table([[Checkbox(), Paragraph(str(i) + '. ' + escape(print_text(step)), body)]], colWidths=[18, 514])
             row.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'TOP'),
                                      ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                                     ('TOPPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 2)]))
+                                     ('TOPPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 1)]))
             story.append(row)
     doc = SimpleDocTemplate(str(target), pagesize=letter, leftMargin=40, rightMargin=40,
                             topMargin=34, bottomMargin=38, title=f'Lab {data["lab"]}: {data["title"]} - Student Directions',
@@ -210,3 +211,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     build(parser.parse_args().check)
+
