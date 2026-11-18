@@ -188,7 +188,21 @@ R.lab13 = async (b) => {
   await go('section.step[data-step="Reflect"]'); await p.waitForTimeout(2300);
   const cards = await p.evaluate(() => [...document.querySelectorAll('#reflect-compare .pvc')].map(c => c.querySelector('.pvc-what').textContent));
   T.ok(cards.length === 3, 'three predictCompare cards');
-  T.ok(/enzyme tube reached/.test(cards[0]) || /enzyme tube/.test(cards[0]), 'assay card has real data: ' + cards[0].slice(0, 160));
+  const assay = await p.evaluate(() => {
+    const rows = Lab.store.get('p1') || [];
+    const trial = Math.max(...rows.map(r => r.trial));
+    const final = rows.filter(r => r.trial === trial).sort((a, b) => b.t - a.t)[0];
+    return { final, summary: document.querySelector('#reflect-compare .pvc .pvc-sum').textContent };
+  });
+  T.ok(assay.final && Number.isFinite(assay.final.aE) &&
+    assay.summary.includes('enzyme tube reached A₄₇₀ = ' + assay.final.aE.toFixed(3)) &&
+    assay.summary.includes('initial rate magnitude'), 'assay summary contains the recorded enzyme reading and initial-rate description: ' + assay.summary);
+  if (assay.final && assay.final.aC > 0 && assay.final.aE > assay.final.aC) {
+    T.ok(cards[0].includes((assay.final.aE / assay.final.aC).toFixed(1) + '× the control reading') &&
+      /endpoint reading ratio, not a rate ratio/.test(cards[0]), 'assay comparison reports the recorded endpoint ratio without calling it a rate ratio: ' + cards[0]);
+  } else {
+    T.ok(/enzyme tube/.test(cards[0]) && !/Finish/.test(cards[0]), 'assay comparison describes the recorded enzyme/control result: ' + cards[0]);
+  }
   T.ok(/You predicted an optimum near pH 6/.test(cards[1]), 'pH card compares predicted and measured optimum: ' + cards[1].slice(0, 160));
   T.ok(/fastest reaction/.test(cards[2]), 'design card has real data: ' + cards[2].slice(0, 160));
   await p.reload(); await p.waitForTimeout(1500);
@@ -202,3 +216,4 @@ R.lab13 = async (b) => {
   for (const k of Object.keys(R)) if (want(k)) await R[k](b);
   await b.close(); T.done('delight labs 8-13');
 })();
+

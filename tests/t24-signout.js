@@ -39,7 +39,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   let p = await T.open(ctx, 'lab05.html', '', srv.url);
   let beforeUnloadPrompts = 0; p.on('dialog', d => { beforeUnloadPrompts++; d.dismiss().catch(() => {}); });
   const line = (await p.locator('.id-line').first().innerText()).replace(/\s+/g, ' ');
-  T.ok(/Signed in as Jordan Lee · Period 3 · Dataset ID \S+ · change · New dataset · Help · Sign out/.test(line), 'identity line ends with Sign out: ' + line);
+  T.ok(/Signed in as Jordan Lee · Period 3 · Dataset ID \S+ · change · New dataset values · Help · Sign out$/.test(line), 'identity line ends with Sign out: ' + line);
   const snap = await dump(p);
   T.ok(Object.keys(snap).length >= 10, 'seeded work is in storage');
 
@@ -225,3 +225,4 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   await b.close(); srv.close();
   T.done('t24-signout');
 })();
+

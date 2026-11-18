@@ -21,7 +21,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   T.ok(base.avg > 15 && base.avg < 110, 'a dark bench (mean brightness ' + base.avg.toFixed(0) + ')');
   T.ok(base.ids.join() === 'flask,petri,gel,scope,balance,rack,vials', 'all seven pieces of equipment: ' + base.ids.join(', '));
   T.ok(/dark lab bench/.test(base.label) && /Finish a lab/.test(base.label), 'the canvas has an accessible description');
-  T.ok(/Finish a lab/.test(await p.locator('#bench-note').innerText()), 'a visible note explains it');
+  T.ok(await p.locator('#bench-note').isVisible() && /Explore the labs.*bench evolve.*progress/.test(await p.locator('#bench-note').innerText()), 'a visible note explains how progress changes the bench');
   const items = await p.evaluate(() => LabBench.items());
   T.ok(items.every(i => i.level === 0), 'with nothing finished every object is in its plain state');
   const grid = await p.evaluate(() => [document.querySelectorAll('.card').length, document.querySelector('.cards').getBoundingClientRect().width]);
@@ -112,3 +112,4 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   await b.close(); srv.close();
   T.done('t46-bench-banner');
 })();
+

@@ -39,3 +39,15 @@ This workspace receives HTTP 403 for biologylabbench.com. The web viewer also co
 ## Closure criteria
 
 Keep #31 open until production-origin checks, representative save/restore/report flows and desktop/mobile evidence are recorded. Keep #80 open until each scientific/workflow row has a fixed/partial/broken/not-tested result, the full-suite outcome is attached, and confirmed defects are separately tracked. Do not close either issue merely because the new PR passes CI.
+
+## First full-suite findings on PR #119
+
+The ordinary Tests workflow [44405111125](https://github.com/smitka313/APBioLabs/actions/runs/44405111125) passed. Full audit [44405111203](https://github.com/smitka313/APBioLabs/actions/runs/44405111203) passed shards 2/5 and 4/5, with five failures in the other shards. Log/source review identified outdated test assumptions:
+
+- t24 expected the old New dataset label; it now verifies New dataset values and the final Sign out action.
+- t46 expected the old Finish a lab note; it now verifies the visible inviting progress explanation.
+- t13 required a card image near the phone's first screen even when the taller hero placed the cards below it. It still requires all near-fold images to load immediately, explicitly scrolls the first card into view, and retains all-image loading/reserved-space/layout-stability checks.
+- t47 looked for enzyme-tube wording in the comparison paragraph after the summary and comparison were separated. It now compares the actual saved absorbance to the summary and verifies the numeric endpoint ratio is distinguished from a rate ratio.
+- t53 expected a running 60 mm warning although the current lab pauses automatically at 60 mm. It now verifies the exact classroom pause and explanation, deliberately continues to the physical 70 mm end, and requires further continuation to be refused without dye movement.
+
+These changes affect tests only. Syntax checks and all 22 focused Node tests pass locally. Browser validation of the corrections remains pending CI; this is not a new live-site pass.
