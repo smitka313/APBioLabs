@@ -1,40 +1,56 @@
 # AP Bio Digital Lab Bench
 
+**Free to use:** [biologylabbench.com](https://biologylabbench.com/) · [Teacher setup](https://biologylabbench.com/getting-started.html) · [Printable student directions](https://biologylabbench.com/student-directions.html)
+
 Interactive online versions of the 13 investigations in *AP Biology Investigative Labs: An Inquiry-Based Approach* (Teacher Manual, updated Fall 2019). It is a static website: every lab runs in the browser, with no install, no accounts and no server.
 
 Each lab page has the same parts: an overview with background and diagrams, an auto-graded pre-lab check, a structured investigation (a simulation that follows the real bench procedure and gives realistic, variable data), a design-your-own investigation, analysis tools (tables, graphs with error bars, standard error, chi-square, regression), written CER prompts, and a Submit part.
 
-| # | Investigation | Page |
-|---|---|---|
-| 1 | Artificial Selection | `lab01.html` |
-| 2 | Mathematical Modeling: Hardy-Weinberg | `lab02.html` |
-| 3 | Comparing DNA Sequences with BLAST | `lab03.html` |
-| 4 | Diffusion and Osmosis | `lab04.html` |
-| 5 | Photosynthesis | `lab05.html` |
-| 6 | Cellular Respiration | `lab06.html` |
-| 7 | Cell Division: Mitosis and Meiosis | `lab07.html` |
-| 8 | Biotechnology: Bacterial Transformation | `lab08.html` |
-| 9 | Biotechnology: Restriction Enzyme Analysis of DNA | `lab09.html` |
-| 10 | Energy Dynamics | `lab10.html` |
-| 11 | Transpiration | `lab11.html` |
-| 12 | Fruit Fly Behavior | `lab12.html` |
-| 13 | Enzyme Activity | `lab13.html` |
+| # | Investigation | Student lab | Printable directions |
+|---|---|---|---|
+| 1 | Artificial Selection | [Open lab](lab01.html) | [Student guide](directions-lab01.html) |
+| 2 | Mathematical Modeling: Hardy-Weinberg | [Open lab](lab02.html) | [Student guide](directions-lab02.html) |
+| 3 | Comparing DNA Sequences with BLAST | [Open lab](lab03.html) | [Student guide](directions-lab03.html) |
+| 4 | Diffusion and Osmosis | [Open lab](lab04.html) | [Student guide](directions-lab04.html) |
+| 5 | Photosynthesis | [Open lab](lab05.html) | [Student guide](directions-lab05.html) |
+| 6 | Cellular Respiration | [Open lab](lab06.html) | [Student guide](directions-lab06.html) |
+| 7 | Cell Division: Mitosis and Meiosis | [Open lab](lab07.html) | [Student guide](directions-lab07.html) |
+| 8 | Biotechnology: Bacterial Transformation | [Open lab](lab08.html) | [Student guide](directions-lab08.html) |
+| 9 | Biotechnology: Restriction Enzyme Analysis of DNA | [Open lab](lab09.html) | [Student guide](directions-lab09.html) |
+| 10 | Energy Dynamics | [Open lab](lab10.html) | [Student guide](directions-lab10.html) |
+| 11 | Transpiration | [Open lab](lab11.html) | [Student guide](directions-lab11.html) |
+| 12 | Fruit Fly Behavior | [Open lab](lab12.html) | [Student guide](directions-lab12.html) |
+| 13 | Enzyme Activity | [Open lab](lab13.html) | [Student guide](directions-lab13.html) |
 
 ## For students
 
 - **Name and Dataset ID.** Students enter their name and class period once per computer. Each student's simulated data are unique, and each lab shows a **Dataset ID** (for example `K7M-2QX`) that also goes on the report. The ID stays the same when a student fixes a typo in their name or period. If a different student signs in on a shared computer, the lab says whose work it is and offers "Yes — I fixed my name", "Start my own dataset" or "Sign out". Nothing is deleted automatically. Work started before the November 2026 update has no recorded owner: reports, progress files and the dashboard say "Dataset owner: not recorded", with no notice to the student, until they choose a new dataset.
 - **Save and resume.** Work saves automatically in the browser as students type. The name line shows "Saved 9:05 AM" after each save. If the browser can't save (private window, blocked site data, full storage), a warning stays at the top of the page.
 - **Progress files and transfer codes.** *Move your work to another computer* saves a progress file (.json) or a resume code. *Get my transfer code* shows a code and a QR code for a phone. Before loading a file, the page names the student, the lab and the file's saved date, and warns if the work on this computer is newer. A damaged or wrong file changes nothing.
-- **Reports.** Submit downloads a Word (.docx) report or opens a print view to save a PDF. **Print worksheet** prints a paper version of the lab.
+- **Printable student directions.** Every lab links to a guide from **Overview** and **Submit**. Guides follow the lab's sections with numbered steps, checkboxes, data-recording reminders, and a submission checklist. Each has blank name, period, and Dataset ID fields, plus **Print / Save as PDF**. They contain no answer keys or student results, and remain readable and printable without JavaScript. Browse [all 13 guides](student-directions.html).
+- **Reports and worksheets.** Submit downloads a Word (.docx) report or opens a print view to save a PDF. **Print worksheet** creates a separate paper worksheet with questions and space for work. Downloading a report does not submit it: students must upload or hand in the file where their teacher directs.
 - **Timelapse.** Some simulations record the run, so students can replay it fast, download it as a GIF, or add it to their report.
 - **Pause & bookmark**, a first-visit tour (the **Help** link shows it again), and **Sign out** / **Start over** to clear a shared computer.
 
 ## For teachers
 
-- **Quick start** (`getting-started.html`): five-minute classroom setup, backups, submissions and dashboard workflow. The `sample-report.html` page is illustrative (not a verified DOCX export); `feedback.html` links to GitHub issues.\n- **For teachers page** (`teachers.html`): how the site works, handing in work, privacy, and linking to one part of a lab.
-- **Teacher notes** (`teacher-notes.html`, `teacher-labNN.html`): timing, misconceptions, suggested answers and expected ranges. They are encrypted in the page (AES-256-GCM, key from the password with PBKDF2) and need a password. They are encrypted in the page, not behind a school login: anyone with the password can open them. The password is kept only if "Keep unlocked in this tab" is ticked, and **Lock notes** forgets it. The plaintext is not in this repository; `tools/encrypt-notes.js` builds the encrypted pages.
+- **Quick start** (`getting-started.html`): five-minute classroom setup, backups, submissions and dashboard workflow. The `sample-report.html` page is illustrative (not a verified DOCX export); `feedback.html` links to GitHub issues.
+- **For teachers page** (`teachers.html`): how the site works, handing in work, privacy, and linking to one part of a lab.
+- **Teacher notes** (`teacher-notes.html`, `teacher-labNN.html`): timing, misconceptions, suggested answers and expected ranges. They are encrypted in the page (AES-256-GCM, key from the password with PBKDF2) and need a password. They are encrypted in the page, not behind a school login: anyone with the password can open them. The password is kept only if "Keep unlocked in this tab" is ticked. Unlocked pages provide **Print** and **Lock notes** controls at the top and auto-lock after 15 minutes without activity; **Lock notes** clears remembered access immediately. Leave remembered access off on shared computers. The plaintext is not in this repository; `tools/encrypt-notes.js` builds the encrypted pages.
 - **Class dashboard** (`teacher-dashboard.html`): drop a class's .docx reports and progress files to get a sortable grid per lab (parts done, key results, pre-lab, FRQ self-score, confidence), flags for shared Dataset IDs, identical results, or a dataset started by another student, and a CSV export. Files are read in the browser and never uploaded. The Word-file reader (JSZip 3.10.1) is in `vendor/`.
+- **Printable walkthroughs.** Use [student-directions.html](student-directions.html) to print or save a guide for any lab. These provide simulation directions; **Print worksheet** supplies the questions and working space.
 - **Projector mode** (`projector.html`): shows the day's lab parts on the classroom screen with a timer. `projector.html#lab05` opens one lab.
+
+## Data interpretation and recent fixes
+
+- **Lab 3:** the molecular-clock graph, residual feedback, and report slope use the same gene and selected divergence-time cutoff. Report labels identify the gene, fitted point count, and cutoff.
+- **Lab 5:** cups that do not reach ET₅₀ within the observation window are treated as censored results, with explanations in report data rather than a measured zero rate.
+- **Lab 9:** the large-marker exclusion setting is saved, uncut λ is modeled as one 48,502-bp band, and estimates outside the fitted marker-distance range show an extrapolation warning.
+- **Lab 11:** a stomatal field can be recorded once; students must move to a new field for another replicate, including after reload.
+- **Lab 12:** stopping a choice-chamber trial discards its partial recording without a completed-run toast.
+- **Lab 13:** Reflect and report results use the recorded measurement method when the current mode changes. The page explains small negative blank-corrected readings and distinguishes endpoint reading ratios from reaction rates.
+
+These changes have passed automated checks. Independent live verification of PRs #102–103 and visual print review of the student guides remain separate checks.
 
 ## Privacy
 
@@ -44,7 +60,7 @@ Each lab page has the same parts: an overview with background and diagrams, an a
 
 ## Supported browsers
 
-Current versions of Chrome, Edge, Firefox and Safari (macOS, iPadOS and iOS), on computers, Chromebooks and tablets. Phones work for reading and for carrying on with a transfer code. Every push is tested in Chromium, and a smoke test runs in Firefox and WebKit (Safari's engine): pages load, simulations run, work saves and restores, reports download, and teacher notes unlock. Teacher notes need the site over https (GitHub Pages is), because the browser's encryption tools only work on secure pages.
+Current versions of Chrome, Edge, Firefox and Safari (macOS, iPadOS and iOS), on computers, Chromebooks and tablets. Phones work for reading and for carrying on with a transfer code. Pull requests select checks based on the changed files; full-checklist runs include Chromium tests and smoke tests in Firefox and WebKit (Safari's engine): pages load, simulations run, work saves and restores, reports download, and teacher notes unlock. Teacher notes need HTTPS (the public site uses it), because the browser's encryption tools only work on secure pages.
 
 ## Known limitations
 
@@ -54,13 +70,26 @@ Current versions of Chrome, Edge, Firefox and Safari (macOS, iPadOS and iOS), on
 
 ## Hosting and files
 
-A static site with no build step. On GitHub Pages: **Settings → Pages → Deploy from a branch**, `main` / `(root)`. Locally, open `index.html`.
+The public site is [biologylabbench.com](https://biologylabbench.com/), deployed through Cloudflare Pages. It is a static site with no application build step. It can also be hosted on GitHub Pages: **Settings → Pages → Deploy from a branch**, `main` / `(root)`. Locally, open `index.html` or serve the folder over HTTP for features that need a secure origin.
+
+Old `smitka313.github.io/APBioLabs/` links redirect to the new domain when no saved lab work is detected. Students with saved work stay on the old site and see transfer instructions. Use **Move your work to another computer** in each lab to transfer progress to the new domain; saved browser work does not move automatically. Download timelapse recordings separately.
 
 - `index.html` home page; `labNN.html` the labs; `teachers.html`, `teacher-dashboard.html`, `projector.html` for teachers
+- `student-directions.html` guide index; `directions-labNN.html` printable walkthroughs; `student-directions.css` and `student-directions.js` print layout and button
 - `lab.js` shared toolkit (identity, saving, charts, tables, quizzes, statistics, reports); `style.css` shared styles (light and dark)
 - `KIT.md` and `_template.html`: guide and template for adding or editing labs
-- `tools/`: helper scripts (`encrypt-notes.js` for the teacher notes); `vendor/`: third-party files kept locally
+- `tools/`: helper scripts (`encrypt-notes.js` for teacher notes; `build-student-directions.py` and `student-directions.json` for walkthroughs); `vendor/`: third-party files kept locally
 - `tests/`, `package.json`, `.github/`: browser tests and CI only (not needed to host the site)
+
+### Updating student directions
+
+Edit the lab-specific steps in `tools/student-directions.json`, then regenerate the static guides and their Overview/Submit links:
+
+```sh
+python3 tools/build-student-directions.py
+```
+
+The generator reads section names and anchors from the current student labs and rejects missing or unknown sections. Commit the regenerated HTML alongside the source changes. Normal hosting serves the generated pages directly and does not need Python. Preview a guide in print mode after editing its content or styles.
 
 ## Tests
 
@@ -72,7 +101,7 @@ node tests/run-all.js checklist          # the release checklist (what CI runs)
 NODE_PATH=$PWD/node_modules node tests/t05-progress.js     # one test
 ```
 
-A global install still works: `NODE_PATH=$(npm root -g) node tests/<file>.js`. GitHub Actions (`.github/workflows/tests.yml`) runs the checklist on every push and pull request to `main`, plus a Firefox and WebKit smoke test; the full suite can be started by hand from the Actions tab. See [tests/README.md](tests/README.md) for setup, the runner, CI and the checklist.
+A global install still works: `NODE_PATH=$(npm root -g) node tests/<file>.js`. GitHub Actions (`.github/workflows/tests.yml`) always checks domain redirects and saved-work protection. Pull requests use `tools/classify-ci-risk.js` to select quick, instructional-UI, standard, or full-checklist coverage. Pushes to `main` run the checklist and Firefox/WebKit smoke tests. The entire test suite can be started manually from the Actions tab. See [tests/README.md](tests/README.md) for setup, the runner, CI and the checklist.
 
 AP® is a trademark registered by the College Board, which is not affiliated with and does not endorse this site. The lab content is adapted and paraphrased from the College Board manual; the manual itself is not included in this repository.
 
