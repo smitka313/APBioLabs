@@ -104,6 +104,16 @@
   @media (max-width: 959px) { .hero-grid { align-items: stretch; } .hero-actions { max-width: 680px; } }
   @media (max-width: 640px) { .hero { padding-block: 150px 22px; } .hero-actions .pickup { padding: 14px; } }
   @media print { .hero { padding-block: 12px; } }
+
+  /* Resume card sits on a pale surface even though the surrounding hero is dark.
+     Override inherited hero-white headings/eyebrows for readable light-mode contrast. */
+  .hero .pickup { color: var(--ink); text-shadow: none; }
+  .hero .pickup :is(h1, h2, h3, h4, .pickup-lab, .pickup-part, .eyebrow, .pickup-label) {
+    color: var(--ink); text-shadow: none;
+  }
+  .hero .pickup :is(p, .pickup-next) { color: var(--ink); text-shadow: none; }
+  .hero .pickup .pickup-next .sn-k { color: var(--accent); }
+  .hero .pickup .btn--primary { color: var(--accent-ink); }
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <noscript><style>.home-status { display: none !important; } .nojs-labs { padding-block: 32px 40px; }</style></noscript>
