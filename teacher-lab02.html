@@ -59,7 +59,7 @@ async function unlock(pw) {
 }
 /* When selected, the passphrase stays in sessionStorage for this tab. Unlocked notes auto-lock after 15 minutes without activity. */
 const TN_IDLE_MS = 15 * 60 * 1000;
-let tnUnlocked = false;
+let tnUnlocked = false, tnActivityBound = false;
 function lock() {
   tnUnlocked = false;
   try { sessionStorage.removeItem('tn-pw'); sessionStorage.removeItem('tn-last-active'); } catch (x) {}
@@ -69,21 +69,26 @@ function markNotesActive() {
   if (!tnUnlocked) return;
   try { sessionStorage.setItem('tn-last-active', String(Date.now())); } catch (x) {}
 }
+function bindNotesActivity() {
+  if (tnActivityBound) return;
+  tnActivityBound = true;
+  for (const eventName of ['pointerdown', 'keydown', 'touchstart', 'scroll']) {
+    document.addEventListener(eventName, markNotesActive, { passive: true });
+  }
+  window.addEventListener('pageshow', lockIfIdle);
+}
 function lockIfIdle() {
   if (!tnUnlocked) return;
   let last = 0;
   try { last = Number(sessionStorage.getItem('tn-last-active')) || 0; } catch (x) {}
   if (!last || Date.now() - last >= TN_IDLE_MS) lock();
 }
-for (const eventName of ['pointerdown', 'keydown', 'touchstart', 'scroll']) {
-  document.addEventListener(eventName, markNotesActive, { passive: true });
-}
-window.addEventListener('pageshow', lockIfIdle);
 setInterval(lockIfIdle, 30000);
 function show(html) {
   tnUnlocked = true;
-  markNotesActive();
+  try { if (!sessionStorage.getItem('tn-last-active')) sessionStorage.setItem('tn-last-active', String(Date.now())); } catch (x) {}
   document.open(); document.write(html); document.close();
+  bindNotesActivity();
   const add = () => {
     if (document.getElementById('tn-toolbar') || !document.body || !document.head) return;
     const st = document.createElement('style');
