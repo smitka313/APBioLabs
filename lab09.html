@@ -383,7 +383,7 @@ function cutPositions(enzymes) { return [...new Set(enzymes.flatMap(e => SITES[e
    ~30% annealed in unheated samples, ~3% after 65 °C heating (e.g. HindIII 23130 + 4361 → 27491). */
 function digestFragments(enzymes, heated) {
   const a = heated ? 0.03 : 0.3, pos = [0, ...cutPositions(enzymes), LAMBDA], fr = [];
-  if (pos.length === 2) return [{ bp: LAMBDA, m: 1 - a }, { bp: 2 * LAMBDA, m: a }];   // uncut: monomer + cos-joined dimer
+  if (pos.length === 2) return [{ bp: LAMBDA, m: 1 }];   // uncut: monomer + cos-joined dimer
   for (let i = 0; i < pos.length - 1; i++) { const end = i === 0 || i === pos.length - 2; fr.push({ bp: pos[i + 1] - pos[i], m: (pos[i + 1] - pos[i]) / LAMBDA * (end ? 1 - a : 1) }); }
   const L = pos[1], R = LAMBDA - pos[pos.length - 2]; fr.push({ bp: L + R, m: (L + R) / LAMBDA * a });
   return fr;
@@ -1266,9 +1266,11 @@ function makeGel(rootSel, measSel, cfg) {
   const mroot = Lab.$(measSel);
   const fitsEl = Lab.$('.fits', mroot), curveEl = Lab.$('.curve', mroot), estEl = Lab.$('.est', mroot);
   const excl = Lab.$('.excl input', mroot), gsel = Lab.$('.gsel', mroot);
+  let excludeLarge = Lab.store.get(P + '-exclude-large') !== false;
+  excl.checked = excludeLarge;
   function fits() {
     const rows = meas.getRows().filter(r => r && r.dist != null && Number.isFinite(Number(r.dist))), byGel = {};
-    rows.forEach(r => { if (rowOk(r) && r.known > 0 && !(excl.checked && r.known > 20000)) (byGel[r.gel] = byGel[r.gel] || []).push(r); });
+    rows.forEach(r => { if (rowOk(r) && r.known > 0 && !(excludeLarge && r.known > 20000)) (byGel[r.gel] = byGel[r.gel] || []).push(r); });
     const F = {}; Object.entries(byGel).forEach(([g, rs]) => { if (rs.length >= 2 && new Set(rs.map(r => r.dist)).size > 1) F[g] = Lab.stats.linreg(rs.map(r => r.dist), rs.map(r => Math.log10(r.known))); });
     return F;
   }
@@ -1295,6 +1297,11 @@ function makeGel(rootSel, measSel, cfg) {
     const cur = gsel.value && gels.includes(+gsel.value) ? +gsel.value : gels[gels.length - 1];
     gsel.innerHTML = gels.length ? gels.map(g => `<option value="${g}" ${g === cur ? 'selected' : ''}>Gel ${g}</option>`).join('') : '<option value="">No data yet</option>';
     fitsEl.innerHTML = gels.length ? gels.map(g => F[g] ? `<div class="readout"><span class="k">Gel ${g} curve</span><span class="v" style="font-size:.9rem">log₁₀bp = ${Lab.fmt(F[g].m, 4)}d + ${Lab.fmt(F[g].b, 3)} · R² ${Lab.fmt(F[g].r2, 3)}</span></div>` : `<div class="readout"><span class="k">Gel ${g}</span><span class="v" style="font-size:.9rem">enter ≥ 2 known sizes</span></div>`).join('') : '';
+    const extrapolated = estimates().filter(e => {
+      const markers = rows.filter(r => r.gel === e.r.gel && rowOk(r) && r.known > 0 && !(excludeLarge && r.known > 20000));
+      return markers.length > 1 && (e.r.dist < Math.min(...markers.map(r => r.dist)) || e.r.dist > Math.max(...markers.map(r => r.dist)));
+    });
+    if (extrapolated.length) fitsEl.insertAdjacentHTML('beforeend', '<p class="msg warn" role="status">Extrapolation warning: ' + extrapolated.map(e => esc(e.r.sample) + ' band ' + e.r.band).join(', ') + ' lies outside the fitted marker distances. These size estimates are unreliable; use markers spanning the unknown sizes.</p>');
     // semi-log plot
     const W = 640, H = 380, m = { l: 70, r: 16, t: 14, b: 50 }, iw = W - m.l - m.r, ih = H - m.t - m.b, lo = 2, hi = 5;
     const X = d => m.l + d / GEL_MM * iw, Yl = bp => m.t + ih - (Math.log10(bp) - lo) / (hi - lo) * ih;
@@ -1306,7 +1313,7 @@ function makeGel(rootSel, measSel, cfg) {
     s += `<text class="axl" x="${m.l + iw / 2}" y="${H - 8}" text-anchor="middle">Distance migrated (mm)</text><text class="axl" transform="translate(16 ${m.t + ih / 2}) rotate(-90)" text-anchor="middle">Fragment size (bp, log scale)</text>`;
     const f = F[cur];
     if (f) { const d0 = 0, d1 = GEL_MM; const yb = d => Math.pow(10, f.predict(d)); s += `<line x1="${X(d0)}" y1="${Yl(Math.min(1e5, Math.max(100, yb(d0))))}" x2="${X(d1)}" y2="${Yl(Math.max(100, Math.min(1e5, yb(d1))))}" style="stroke:var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>`; }
-    rows.filter(r => r.gel === cur && r.known > 0 && r.dist != null).forEach(r => { const ex = excl.checked && r.known > 20000; s += `<circle cx="${X(r.dist)}" cy="${Yl(r.known)}" r="5" style="fill:${ex ? 'var(--surface)' : 'var(--accent)'};stroke:var(--accent)" stroke-width="2"><title>Marker ${r.known} bp at ${r.dist} mm${ex ? ' (excluded)' : ''}</title></circle>`; });
+    rows.filter(r => r.gel === cur && r.known > 0 && r.dist != null).forEach(r => { const ex = excludeLarge && r.known > 20000; s += `<circle cx="${X(r.dist)}" cy="${Yl(r.known)}" r="5" style="fill:${ex ? 'var(--surface)' : 'var(--accent)'};stroke:var(--accent)" stroke-width="2"><title>Marker ${r.known} bp at ${r.dist} mm${ex ? ' (excluded)' : ''}</title></circle>`; });
     estimates().filter(e => e.r.gel === cur && isFinite(e.est)).forEach(e => { s += `<rect x="${X(e.r.dist) - 4}" y="${Yl(Math.max(100, Math.min(1e5, e.est))) - 4}" width="8" height="8" transform="rotate(45 ${X(e.r.dist)} ${Yl(Math.max(100, Math.min(1e5, e.est)))})" style="fill:var(--stain)"><title>${esc(e.r.sample)} band ${e.r.band}: ≈ ${Math.round(e.est)} bp</title></rect>`; });
     curveEl.innerHTML = `<svg class="semilog" viewBox="0 0 ${W} ${H}" role="img" aria-label="Semi-log standard curve for gel ${cur || ''}: distance versus fragment size">${s}</svg><div class="legend"><span><i style="background:var(--accent)"></i>Marker bands (open = excluded)</span><span><i style="background:var(--stain)"></i>Unknown bands read from the line</span></div>`;
     // estimates summary: mean ± 2SE over repeat gels/readings
@@ -1317,7 +1324,7 @@ function makeGel(rootSel, measSel, cfg) {
     cfg.onAnalyze && cfg.onAnalyze(list);
     reportFrags(P, list);
   }
-  excl.addEventListener('change', analyze); gsel.addEventListener('change', analyze);
+  excl.addEventListener('change', () => { excludeLarge = excl.checked; Lab.store.set(P + '-exclude-large', excludeLarge); analyze(); }); gsel.addEventListener('change', analyze);
   Lab.$('.clear', mroot).addEventListener('click', () => { meas.clear(); });
   if (!restoreState()) newGel();
   analyze();

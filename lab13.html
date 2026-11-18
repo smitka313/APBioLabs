@@ -255,7 +255,7 @@
           <div class="readouts">
             <div class="readout"><span class="k">Time (min:s)</span><span class="v" id="p1-time">0:00</span></div>
             <div class="readout"><span class="k">Absorbance at 470 nm, enzyme</span><span class="v" id="p1-ae">—</span></div>
-            <div class="readout"><span class="k">Absorbance at 470 nm, control</span><span class="v" id="p1-ac">—</span></div>
+            <p class="small muted">Blank-corrected absorbance can be slightly negative because of instrument noise near zero; this does not mean negative product concentration.</p><div class="readout"><span class="k">Absorbance at 470 nm, control</span><span class="v" id="p1-ac">—</span></div>
             <div class="readout"><span class="k">Trial</span><span class="v" id="p1-trial">—</span></div>
           </div>
           <div id="p1-timelapse"></div><p class="small muted" id="p1-tl-note" role="status" hidden></p>
@@ -1195,18 +1195,19 @@ function frq(host, o) {
   const rf = $('#reflect-prompts');
   /* Predict vs. actual: each saved prediction beside the matching result. */
   const rfCompare = h('div', { id: 'reflect-compare' }); rf.prepend(rfCompare);
-  const A13 = (r, k) => mode1() === 'spec' ? (numOk(r['a' + k]) ? r['a' + k] : NaN) : (numOk(r['c' + k]) && r['c' + k] >= 1 && r['c' + k] <= 10 ? r['c' + k] : NaN);
+  const A13 = (r, k, spec) => spec ? (numOk(r['a' + k]) ? r['a' + k] : NaN) : (numOk(r['c' + k]) && r['c' + k] >= 1 && r['c' + k] <= 10 ? r['c' + k] : NaN);
   Lab.predictCompare(rfCompare, {
     predictKey: 'predict-assay', title: 'Baseline assay: your prediction vs. your tubes', chartEl: '#p1-chart', part: 'Procedure 1', partId: 'procedure-1',
     getResult: () => {
       const rows = (t1.getRows() || []).filter(r => r && numOk(r.t)); if (!rows.length) return null;
       const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), rs = rows.filter(r => r.trial === tr).sort((a, b) => a.t - b.t), e5 = rs.find(r => r.t === 5) || rs[rs.length - 1];
-      const pts = rs.filter(r => r.t <= 2 && numOk(A13(r, 'E')));
-      if (!numOk(A13(e5, 'E')) || pts.length < 2) return null;
-      return { trial: tr, t: e5.t, enz: A13(e5, 'E'), ctl: A13(e5, 'C'), rate: Math.abs(stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E'))).m), palette: mode1() !== 'spec' };
+      const spec = numOk(e5.aE);
+      const pts = rs.filter(r => r.t <= 2 && numOk(A13(r, 'E', spec)));
+      if (!numOk(A13(e5, 'E', spec)) || pts.length < 2) return null;
+      return { trial: tr, t: e5.t, enz: A13(e5, 'E', spec), ctl: A13(e5, 'C', spec), rate: Math.abs(stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E', spec))).m), palette: !spec };
     },
     summarize: r => `Trial ${r.trial}: the enzyme tube reached ${r.palette ? 'palette level' : 'A₄₇₀'} = ${fmt(r.enz, r.palette ? 0 : 3)} at ${r.t} min (initial rate magnitude ${fmt(r.rate, 3)} ${r.palette ? 'palette levels/min' : 'ΔA₄₇₀/min'}); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, r.palette ? 0 : 3) : 'n/a'}.`,
-    delta: r => numOk(r.ctl) ? (r.ctl > 0 && r.enz > r.ctl ? `The enzyme tube was ${fmt(r.enz / r.ctl, 1)}× the control, so the color came from the enzyme.` : r.enz > r.ctl ? 'The enzyme tube darkened while the control stayed at zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null
+    delta: r => numOk(r.ctl) ? (r.ctl > 0 && r.enz > r.ctl ? `The final ${r.palette ? 'palette reading' : 'absorbance reading'} was ${fmt(r.enz / r.ctl, 1)}× the control reading. This is an endpoint reading ratio, not a rate ratio; compare initial slopes for reaction rates.` : r.enz > r.ctl ? 'The enzyme tube darkened while the control stayed near zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null
   });
   Lab.predictCompare(rfCompare, {
     predictKey: 'p2-pred', title: 'Effect of pH: your prediction vs. your trials', chartEl: '#p2-chart', part: 'Procedure 2: pH', partId: 'procedure-2-ph',
@@ -1287,7 +1288,10 @@ function frq(host, o) {
   /* ---------- Key results, personal-data prompts, AP free-response ---------- */
   function reportP1() {
     /* Absorbance when the student used the spectrophotometer; otherwise the color-chart number (A = 0.075 × (n − 1)). */
-    const specMode = mode1() === 'spec';
+    const saved = (Lab.store.get('p1') || []).filter(r => r && numOk(r.t));
+    const latest = saved.reduce((m, r) => Math.max(m, r.trial), 0);
+    const latestRows = saved.filter(r => r.trial === latest);
+    const specMode = latestRows.some(r => numOk(r.aE));
     const A = r => specMode ? (numOk(r.aE) ? r.aE : NaN) : (numOk(r.cE) && r.cE >= 1 && r.cE <= 10 ? r.cE : NaN);
     const rows = (Lab.store.get('p1') || []).filter(r => r && numOk(r.t) && numOk(A(r))); if (!rows.length) { dropKeyRes('initial-rate'); return; }
     const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), pts = rows.filter(r => r.trial === tr && r.t <= 2).sort((a, b) => a.t - b.t);
