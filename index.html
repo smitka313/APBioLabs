@@ -57,9 +57,16 @@
   .hero .eyebrow { color: var(--h-link); text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
   .hero p.lede { margin-top: 10px; max-width: 54ch; color: var(--h-muted); font-size: 1.08rem; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
   .hero .home-status { color: var(--ink); text-shadow: none; margin-top: 0; padding: 12px 16px; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
-  .hero .hero-links { margin-top: 10px; color: var(--h-muted); text-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
-  .hero .hero-links a { color: var(--h-link); white-space: nowrap; }
-  .hero .hero-links a:focus-visible { outline-color: var(--h-link); }
+  .hero .hero-links { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 14px; color: var(--h-muted); text-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
+  .hero .hero-links a { display: inline-flex; align-items: center; gap: 5px; padding-block: 4px; color: var(--h-link); white-space: nowrap; text-underline-offset: 3px; }
+  .hero .hero-links a:focus-visible { outline: 2px solid var(--h-link); outline-offset: 4px; border-radius: 2px; }
+  .hero-preferences { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; color: var(--h-muted); }
+  .hero-preferences:has([data-ph="theme"]) { display: none; }
+  @media (max-width: 640px) {
+    .hero .hero-links { gap: 4px 12px; }
+    .hero .hero-links a { min-height: 44px; padding: 8px 4px; box-sizing: border-box; }
+    .hero-preferences .theme-opt { min-width: 44px; min-height: 44px; }
+  }
   .bench-note { margin-top: 6px; font-size: .88rem; color: var(--h-muted); text-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
   @media (max-width: 640px) { .hero { padding-block: 150px 24px; } }
   .bi { padding-block: 34px 6px; display: grid; gap: 14px; }
@@ -112,7 +119,13 @@
         <div class="eyebrow">Free AP Biology virtual labs · 13 investigations</div>
         <h1>AP Bio Digital Lab Bench</h1>
         <p class="lede">Explore all 13 AP Biology investigative labs for free, with interactive simulations, data tables, graphs, and printable student directions. Test your ideas, collect evidence, and think like a biologist at your own pace—no installation or paid account needed.</p>
-        <nav class="hero-links small" aria-label="Teacher resources"><a href="teachers.html">For teachers</a> · <a href="getting-started.html">5-minute teacher setup</a> · <a href="student-directions.html">Printable student directions</a> · <a href="teacher-notes.html">Teacher notes (password)</a></nav>
+        <nav class="hero-links small" aria-label="Teacher resources">
+          <a href="teachers.html">For teachers</a>
+          <a href="getting-started.html">5-minute teacher setup</a>
+          <a href="student-directions.html">Printable student directions</a>
+          <a href="teacher-notes.html" aria-label="Teacher notes (password required)">Teacher notes <span aria-hidden="true">🔒</span></a>
+        </nav>
+        <div class="hero-preferences small"><span>Theme</span><span data-ph="theme" hidden></span></div>
         <p class="bench-note" id="bench-note"></p>
       </div>
       <div class="hero-actions"><section class="pickup" id="resume" hidden></section><div class="home-status"><div id="home-identity"></div></div><a class="hero-browse" href="#labs">Explore all 13 investigations ↓</a></div>
