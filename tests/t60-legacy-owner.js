@@ -60,11 +60,11 @@ const strip = (p, keepCreated) => p.evaluate(([l, k]) => { const v = JSON.parse(
   T.ok(/,Dataset owner\r\n/.test(dash.csv) && /Not recorded \(started before the November 2026 update\)/.test(dash.csv), 'CSV has a Dataset owner column');
   await d.close();
 
-  // "Use a new dataset" claims it: a new record with this student as owner.
+  // Generating new values claims it: a new record with this student as owner.
   await p.click('.id-newds'); await p.waitForTimeout(200);
-  await Promise.all([p.waitForEvent('load'), p.click('.id-confirm button:has-text("Use a new dataset")')]); await p.waitForTimeout(900);
+  await Promise.all([p.waitForEvent('load'), p.click('.id-confirm button:has-text("Generate new values")')]); await p.waitForTimeout(900);
   r = await rec(p);
-  T.ok(r.owner && r.owner.name === 'Test Student' && !r.ownerUnverified, 'after "Use a new dataset" the owner is recorded');
+  T.ok(r.owner && r.owner.name === 'Test Student' && !r.ownerUnverified, 'after generating new values the owner is recorded');
   T.ok(!(await p.evaluate(() => Lab.report.collect())).datasetOwnerUnverified, 'report no longer says not recorded');
 
   // A record made before sign-in (created time, no owner) is adopted silently, as before.

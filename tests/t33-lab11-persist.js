@@ -24,6 +24,25 @@ const T = require('./_h');
   // stomata: mark one, reload
   await p.evaluate(() => Lab.pages.go('stomata')); await p.waitForTimeout(500);
   const f0 = await p.evaluate(() => { const f = document.querySelector('#st-cv').peelField(); return { n: f.stomata.length, area: f.A }; });
+
+  // A valid field can contain stomata in state while the microscope is blank.
+  // Check actual painted pixels, not just the generated field's data model.
+  await p.waitForTimeout(650);
+  const microscopePixels = async () => p.evaluate(() => {
+    const c = document.querySelector('#st-cv'), x = c.getContext('2d');
+    if (!c.width || !c.height) return { visible: false, spread: 0 };
+    const w = Math.min(96, c.width), h = Math.min(96, c.height);
+    const pixels = x.getImageData(Math.floor((c.width - w) / 2), Math.floor((c.height - h) / 2), w, h).data;
+    let lo = 255, hi = 0;
+    for (let i = 0; i < pixels.length; i += 16) {
+      const y = (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+      lo = Math.min(lo, y); hi = Math.max(hi, y);
+    }
+    return { visible: hi - lo > 15, spread: Math.round(hi - lo) };
+  });
+  const painted = await microscopePixels();
+  T.ok(painted.visible, 'stomata microscope renders a nonblank field (pixel spread ' + painted.spread + ')');
+
   await p.evaluate(() => { const f = document.querySelector('#st-cv').peelField(); if (f.stomata[0]) f.stomata[0].marked = true; });
   await p.click('#st-upper'); await p.click('#st-lower'); // regenerate then restore through save
   await p.evaluate(() => { const f = document.querySelector('#st-cv').peelField(); if (f.stomata[0]) f.stomata[0].marked = true; });

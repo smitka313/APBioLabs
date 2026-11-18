@@ -104,6 +104,12 @@
   @media (max-width: 959px) { .hero-grid { align-items: stretch; } .hero-actions { max-width: 680px; } }
   @media (max-width: 640px) { .hero { padding-block: 150px 22px; } .hero-actions .pickup { padding: 14px; } }
   @media print { .hero { padding-block: 12px; } }
+  .bench-preview-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+  .bench-preview-btn { font: inherit; font-size: .85rem; font-weight: 700; padding: 7px 12px; min-height: 44px; border: 1px solid var(--h-link); border-radius: 8px; color: var(--h-ink); background: rgba(0,0,0,.4); cursor: pointer; }
+  .bench-preview-btn:hover, .bench-preview-btn:focus-visible { background: rgba(0,0,0,.7); }
+  .bench-preview-btn:focus-visible { outline: 3px solid var(--h-link); outline-offset: 3px; }
+  .bench-preview-label { color: var(--h-muted); font-size: .84rem; }
+  @media print { .bench-preview-controls { display: none; } }
 
   /* Resume card sits on a pale surface even though the surrounding hero is dark.
      Override inherited hero-white headings/eyebrows for readable light-mode contrast. */
@@ -144,7 +150,7 @@
           <a href="teacher-notes.html" aria-label="Teacher notes (password required)">Teacher notes <span aria-hidden="true">🔒</span></a>
         </nav>
         <div class="hero-preferences small"><span>Theme</span><span data-ph="theme" hidden></span></div>
-        <p class="bench-note" id="bench-note"></p>
+        <p class="bench-note" id="bench-note"></p><div class="bench-preview-controls"><button class="bench-preview-btn" id="bench-preview" type="button" aria-pressed="false">Preview completed bench</button><span class="bench-preview-label" id="bench-preview-label" aria-live="polite"></span></div>
       </div>
       <div class="hero-actions"><section class="pickup" id="resume" hidden></section><div class="home-status"><div id="home-identity"></div></div><a class="hero-browse" href="#labs">Explore all 13 investigations ↓</a></div>
     </div>
@@ -542,12 +548,15 @@ Lab.home({ identity: '#home-identity', resume: '#resume' });
   const isDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t === 'dark' || (t !== 'light' && !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)); };
 
   const state = { items: [], completed: [], w: 0, h: 0 };
+  let previewAll = false;
+  const previewButton = document.getElementById('bench-preview');
+  const previewLabel = document.getElementById('bench-preview-label');
   function draw() {
     const r = hero.getBoundingClientRect(), W = Math.max(280, Math.round(r.width)), H = Math.max(160, Math.round(r.height));
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const dark = isDark(), done = completedLabs(), pad = parseFloat(getComputedStyle(hero).paddingTop) || 170, backY = Math.max(110, pad - 38);
+    const dark = isDark(), actualDone = completedLabs(), done = previewAll ? Array.from({ length: 13 }, (_, i) => i + 1) : actualDone, pad = parseFloat(getComputedStyle(hero).paddingTop) || 170, backY = Math.max(110, pad - 38);
     // wall + bench top
     x.fillStyle = lin(x, 0, 0, 0, backY, [[0, dark ? '#0d1013' : '#161a1e'], [1, dark ? '#171c20' : '#232a30']]); x.fillRect(0, 0, W, backY);
     x.fillStyle = x.createPattern(benchTile(), 'repeat'); x.fillRect(0, backY, W, H - backY);
@@ -585,10 +594,14 @@ Lab.home({ identity: '#home-identity', resume: '#resume' });
     const nm = state.items.map(i => i.name).join(', '), n = done.length;
     cv.setAttribute('aria-label', `A dark lab bench with ${nm}. ${n === 0 ? 'Finish a lab and its equipment changes.' : `${n} of 13 investigations complete: ${done.map(d => 'Lab ' + d).join(', ')}.`}`);
     cv.dataset.completed = done.join(',');
+    cv.dataset.preview = previewAll ? 'true' : 'false';
     const note = document.getElementById('bench-note');
-    if (note) note.textContent = n === 0 ? 'Finish a lab and its equipment on the bench changes.' : `${n} of 13 investigations complete. Your bench shows it.`;
+    if (note) note.textContent = previewAll ? 'Preview only — your saved lab progress has not changed.' : n === 0 ? 'Explore the labs and watch your virtual lab bench evolve as you make progress.' : `${n} of 13 investigations complete. Your bench shows it.`;
+    if (previewButton) { previewButton.textContent = previewAll ? 'Return to my bench' : 'Preview completed bench'; previewButton.setAttribute('aria-pressed', String(previewAll)); }
+    if (previewLabel) previewLabel.textContent = previewAll ? 'Showing all 13 investigations completed' : '';
   }
   let t = 0; const soon = () => { cancelAnimationFrame(t); t = requestAnimationFrame(draw); };
+  if (previewButton) previewButton.addEventListener('click', () => { previewAll = !previewAll; draw(); });
   draw();
   if ('ResizeObserver' in window) new ResizeObserver(soon).observe(hero); else window.addEventListener('resize', soon);
   window.addEventListener('aplab:theme', soon);
