@@ -114,6 +114,14 @@
   .hero .pickup :is(p, .pickup-next) { color: var(--ink); text-shadow: none; }
   .hero .pickup .pickup-next .sn-k { color: var(--accent); }
   .hero .pickup .btn--primary { color: var(--accent-ink); }
+
+  /* The sign-in/status panel is also light against the dark hero. */
+  .hero .home-status { color: var(--ink); }
+  .hero .home-status :is(h1, h2, h3, h4, p, label, .id-title, .lab-prog, .muted) {
+    color: var(--ink); text-shadow: none;
+  }
+  .hero .home-status a:not(.btn) { color: var(--accent); }
+
 </style>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <noscript><style>.home-status { display: none !important; } .nojs-labs { padding-block: 32px 40px; }</style></noscript>
