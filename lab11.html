@@ -81,7 +81,7 @@
 
   <!-- ============ OVERVIEW ============ -->
   <section class="step wrap wrap--wide gutter" data-step="Overview" data-minutes="5" id="overview">
-    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header>
+    <header><div class="eyebrow">Overview</div><h2>What you'll investigate</h2></header><!-- student-directions-overview --><p class="student-directions-link"><a href="directions-lab11.html">Printable student directions</a> — a step-by-step guide you can print or save as PDF.</p><!-- student-directions-overview -->
     <div class="step-body split">
       <div class="split-main prose">
       <p class="lede">A single tomato plant can move more than a liter of water from the soil to the air on a hot day, and it keeps less than 5% of that water. Why lose so much? And what decides how fast it goes?</p>
@@ -439,7 +439,7 @@
   </section>
 
   <section class="step wrap wrap--wide gutter" data-step="Submit" data-minutes="5" id="submit">
-    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header>
+    <header><div class="eyebrow">Wrap up</div><h2>Save and hand in your work</h2></header><!-- student-directions-submit --><p class="student-directions-link"><a href="directions-lab11.html">Printable student directions</a> — a step-by-step guide you can print or save as PDF.</p><!-- student-directions-submit -->
     <div class="step-body"><div data-responses></div></div>
   </section>
 </main>
@@ -1778,7 +1778,7 @@ function frq(host, o) {
   Lab.steps('#st-steps', [
     { id: 'pred', text: 'Write your prediction (above)', target: '#p-predict-stomata', done: () => filledP('predict-stomata'), hint: 'Write your prediction in the <strong>Predict first</strong> box above the microscope.' },
     { id: 'mark', text: 'Focus, then mark every stoma', target: '#st-cv', done: () => stTable.getRows().length > 0 || tally() > 0, hint: 'Turn the fine focus until the guard cells are sharp, then click each stoma.' },
-    { id: 'rec', text: 'Record this field', target: '#st-record', done: () => stTable.getRows().length > 0, hint: 'Press <strong>Record this field</strong>; a new field opens.' },
+    { id: 'rec', text: 'Record this field', target: '#st-record', done: () => stTable.getRows().length > 0, hint: 'Press <strong>Record this field</strong>, then use <strong>Move to a new field</strong> before recording another replicate.' },
     { id: 'three', text: 'Record 3+ fields at 400X', target: '#st-move', done: () => stTable.getRows().filter(r => r.mag === '400X').length >= 3, hint: 'Use 400X for counting. Record at least three fields of the same slide and surface.' },
     { id: 'dens', text: 'Calculate stomatal density', target: '#st-dens', sticky: true, done: () => /ok/.test($('#st-dens-msg').className), hint: 'Scroll down: mean per field ÷ 0.159 mm², then press <strong>Check</strong>.' },
     { id: 'qs', text: 'Answer the 4 questions (below)', target: '#p-s2-draw', done: () => ['s2-draw', 's2-compare', 's1h', 's1g'].every(filledP), hint: 'Scroll down and answer the four questions.' }
