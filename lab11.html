@@ -816,6 +816,7 @@ function frq(host, o) {
   { const sv = Lab.store.get('la-state'); if (sv && LEAVES[sv.sp] && sv.seed != null) { $('#la-species').value = sv.sp; laSeed = sv.seed; laCalc = sv.calc || null; newLeaf(sv.seed, true); } else newLeaf(); }
   const laTable = Lab.table('#la-table', {
     save: 'la-table',
+    toast: false,
     columns: [{ key: 'n', label: 'Leaf' }, { key: 'sp', label: 'Species' }, { key: 'full', label: 'Full squares', unit: 'squares', num: true, digits: 0 }, { key: 'part', label: 'Partial squares', unit: 'squares', num: true, digits: 0 }, { key: 'cm2', label: 'Area', unit: 'cm²', num: true, digits: 2 }, { key: 'mm2', label: 'Area', unit: 'mm²', num: true, digits: 0 }, { key: 'ref', label: 'Planimeter area', unit: 'cm²', num: true, digits: 2 }, { key: 'err', label: 'Error vs planimeter', unit: '%', num: true, digits: 1 }],
     footer: rows => ['Mean', '', '', '', fmt(S.mean(rows.map(r => r.cm2)), 2), fmt(S.mean(rows.map(r => r.mm2)), 0), '', '']
   });
@@ -826,9 +827,26 @@ function frq(host, o) {
     if (f == null || p == null) { msg.textContent = 'Fix the highlighted box' + (f == null && p == null ? 'es' : '') + '. The area wasn\u2019t calculated and nothing was recorded.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
     if (f + p === 0) { V.bad($('#la-full'), 'Count at least one square. A leaf can\u2019t have an area of 0.'); msg.textContent = 'Count at least one full or partial grid square, then record the leaf area.'; msg.className = 'status bad'; msg.setAttribute('role', 'alert'); return; }
     msg.removeAttribute('role');
+    const previousCalc = laCalc;
     laCalc = { f, p }; saveLa(); laShow(f, p);
     const rows = laTable.getRows();
-    laTable.addRow({ n: rows.length + 1, sp: $('#la-species').selectedOptions[0].text.split(' (')[0], full: f, part: p, cm2: (f + p / 2) / 4, mm2: (f + p / 2) * 25, ref: leaf.area, err: ((f + p / 2) / 4 - leaf.area) / leaf.area * 100 });
+    const sp = $('#la-species').selectedOptions[0].text.split(' (')[0];
+    const record = { n: rows.length + 1, sp, full: f, part: p, cm2: (f + p / 2) / 4, mm2: (f + p / 2) * 25, ref: leaf.area, err: ((f + p / 2) / 4 - leaf.area) / leaf.area * 100, leafSeed: laSeed };
+    let existing = rows.findIndex(r => r.leafSeed === laSeed);
+    // Older saved rows predate the leafSeed key. On a reload, the saved calculation identifies the current leaf's last row.
+    if (existing < 0 && previousCalc && rows.length) {
+      const last = rows.length - 1, prior = rows[last];
+      if (prior && prior.leafSeed == null && prior.sp === sp && Number(prior.full) === previousCalc.f && Number(prior.part) === previousCalc.p) existing = last;
+    }
+    if (existing >= 0) {
+      record.n = rows[existing].n;
+      rows[existing] = record;
+      laTable.setRows(rows, { setup: false });
+      Lab.toast('Updated this leaf’s record. The mean now uses the corrected count.', { type: 'ok' });
+    } else {
+      laTable.addRow(record);
+      Lab.toast('Recorded this leaf in your data table.', { type: 'ok' });
+    }
   });
   /* The result readouts and feedback for a count (also redrawn after a reload). */
   function laShow(f, p) {
