@@ -53,6 +53,8 @@ const T = require('./_h');
     const evidenceGelState = await p.evaluate(() => JSON.parse(localStorage.getItem('aplab:lab09:gelstate-g2-903')));
     T.ok(gelStateAfterNewEvidenceGel.gel === savedG1.gel && gelStateAfterNewEvidenceGel.t === savedG1.t && gelStateAfterNewEvidenceGel.dist === savedG1.dist && JSON.stringify(gelStateAfterNewEvidenceGel.lanes) === JSON.stringify(savedG1.lanes), 'pouring a new evidence gel preserves the saved standard-gel state');
     T.ok(evidenceGelState && evidenceGelState.t === 0 && evidenceGelState.lanes.every(l => l.length === 0), 'new evidence gel starts with its own empty state');
+    await p.evaluate(() => Lab.pages.go('run-a-gel'));
+    await p.waitForTimeout(400);
     await p.evaluate(() => document.querySelector('#g1-new').click()); await p.evaluate(() => document.querySelector('#g1-layout').click());
     await p.click('#g1-run'); await p.waitForTimeout(600);
     const t1 = (await rd()).t;
