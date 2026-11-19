@@ -23,6 +23,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   T.ok(/virtual lab bench/.test(base.label) && /finished/.test(base.label) && /all 13 investigations/.test(base.label), 'the canvas describes the ready-to-use finished equipment');
   T.ok(await p.locator('#bench-note').isVisible() && /full virtual lab bench is ready for all 13 investigations/.test(await p.locator('#bench-note').innerText()), 'the note describes the permanent finished bench');
   T.ok(await p.evaluate(() => !document.querySelector('#bench-preview') && !document.querySelector('#bench-preview-label') && !('preview' in document.querySelector('#bench-scene').dataset)), 'the preview controls and state are removed');
+  T.ok(await p.locator('#migration-help').count() === 0, 'the retired old-site migration banner is absent from the homepage');
   const items = await p.evaluate(() => LabBench.items());
   T.ok(items.every(i => i.level === i.labs.length), 'every object starts in its finished appearance');
   const grid = await p.evaluate(() => [document.querySelectorAll('.card').length, document.querySelector('.cards').getBoundingClientRect().width]);
