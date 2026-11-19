@@ -87,37 +87,13 @@
     const g=state.game;g.logs.push(text);if(g.logs.length>80)g.logs.shift();
   }
   function renderDice(){
-    const dice=state.game.lastDice||[],tray=$('#dice-tray');
-    const faces={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
-    tray.innerHTML='';
-    for(let d=0;d<4;d++){
-      const die=document.createElement('div');die.className='die'+(state.game.rolling?' rolling':'');die.setAttribute('aria-label',dice[d]?'Die '+(d+1)+': '+dice[d]:'Die '+(d+1)+': not rolled');
-      const face=document.createElement('div');face.className='die-face';
-      if(!dice[d]){const q=document.createElement('span');q.className='die-value';q.textContent='?';face.appendChild(q);}
-      else for(let p=0;p<9;p++){const dot=document.createElement('i');if(faces[dice[d]].includes(p))dot.className='die-pip';face.appendChild(dot);}
-      die.appendChild(face);tray.appendChild(die);
-    }
+    if(window.CellCycleScene)window.CellCycleScene.rolling(!!state.game.rolling);
     $('#turn-count').textContent='Turn '+Math.max(1,state.game.turns);
   }
   function renderBoard(){
-    const g=state.game,columns=window.matchMedia('(max-width: 760px)').matches?5:11,rows=[];
-    for(let i=0;i<track.length;i+=columns)rows.push(track.slice(i,i+columns));
-    const board=$('#cell-board');board.innerHTML='';
-    rows.forEach(function(row,rowIndex){
-      const wrap=document.createElement('div');wrap.className='board-row row-'+(rowIndex+1)+(rowIndex%2?' row-reverse row-even':' row-odd')+(rowIndex===rows.length-1?' row-last':'');wrap.style.setProperty('--board-columns',String(columns));
-      row.forEach(function(tile){
-        const pos=track.indexOf(tile),tokens=g.playersState.filter(function(p){return p.pos===pos;});
-        const cell=document.createElement('div');
-        const style=tile.type==='checkpoint'?'check':tile.type==='start'?'start':tile.type==='finish'?'finish':tile.phase;
-        const active=tokens.some(function(p){return g.playersState[g.active]&&p.id===g.playersState[g.active].id&&p.status==='playing';});
-        cell.className='board-tile phase-'+style+(tile.chance&&g.round===2?' chance-space':'')+(active?' tile-active':'');
-        cell.setAttribute('aria-label',(pos+1)+'. '+tile.label+(tile.chance&&g.round===2?', chance card space':'')+(tokens.length?', '+tokens.map(p=>'Player '+p.id).join(', '):''));
-        cell.innerHTML='<span class="tile-number">'+(pos===0?'START':String(pos).padStart(2,'0'))+'</span><strong class="tile-label">'+tile.label+'</strong><small class="tile-note">'+(tile.chance&&g.round===2?'Chance card':tile.note)+'</small><span class="tile-tokens">'+tokens.map(function(p){return '<i class="cell-token token-'+p.id+(p.unchecked?' unchecked-token':'')+'" title="Player '+p.id+(p.unchecked?' · unchecked model division':'')+'" aria-label="Player '+p.id+(p.unchecked?' · unchecked model division':'')+'">'+p.id+'</i>';}).join('')+'</span>';
-        wrap.appendChild(cell);
-      });
-      if(row.length<columns)for(let i=row.length;i<columns;i++){const gap=document.createElement('div');gap.className='board-gap';wrap.appendChild(gap);}
-      board.appendChild(wrap);
-    });
+    if(window.CellCycleScene)window.CellCycleScene.update(state.game,track);
+    const p=state.game.playersState[state.game.active];
+    $('#scene-description').textContent=p?'Player '+p.id+' is on '+track[p.pos].label+'. '+turnInstruction(p):'Choose players to start. The board and cell model are shown above.';
   }
   function renderScorecards(){
     const g=state.game;
@@ -221,7 +197,7 @@
     $('#position-label').textContent='Space '+(p.pos+1)+' · '+track[p.pos].label;
     $('#dice-prompt').textContent=turnInstruction(p);
     $('#dice-result').textContent=g.lastDice.length?(g.lastRollSummary||'See the turn result below.'):'Four dice are ready. Roll when it is your turn.';
-    $('#roll-dice').textContent=p.bonusRolls?'🎲 Roll bonus dice':'🎲 Roll 4 dice';
+    $('#roll-dice').textContent=p.bonusRolls?'Roll bonus dice':'Roll four dice';
     $('#roll-dice').disabled=!!g.rolling||g.complete;
     $('#roll-dice').hidden=g.complete;
     $('#turn-event').classList.toggle('is-card',g.event.kicker==='Cellular chance card');
@@ -329,6 +305,7 @@
     if(!p||p.status!=='playing'||g.complete||g.rolling)return;
     g.rolling=true;renderDice();$('#roll-dice').disabled=true;
     window.setTimeout(function(){
+      if(state.game!==g)return;
       const dice=Array.from({length:4},function(){return 1+Math.floor(Math.random()*6);});
       g.rolling=false;g.lastDice=dice;g.turns++;
       const bonus=p.bonusRolls>0,required=bonus?null:getTarget(p),startPos=p.pos;
@@ -407,7 +384,7 @@
     localStorage.removeItem(KEY);window.location.reload();
   }
   function wire(){
-    readStore();restoreFields();renderTrials();renderGame();
+    readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();
     window.addEventListener('resize',function(){renderBoard();},{passive:true});
     $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;save();});
     $$('input[name="game-mode"]').forEach(function(el){el.addEventListener('change',function(){$('#group-size-wrap').hidden=this.value!=='group';save();});});
