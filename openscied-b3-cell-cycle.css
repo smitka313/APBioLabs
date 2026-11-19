@@ -192,3 +192,16 @@
   .score-phase-head { font-size:.55rem; }
   .score-phase-row > * { font-size:.67rem; }
 }
+
+.board-game.is-pregame .game-statusbar,
+.board-game.is-pregame .game-play-grid,
+.board-game.is-pregame .turn-event,
+.board-game.is-pregame .turn-log,
+.board-game.is-pregame .game-actions { display:none; }
+.board-game.is-pregame .board-legend { margin-top:3px; }
+.board-game.is-pregame .board-tile { min-height:88px; }
+.checkpoint-card.checkpoint-ready { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.tile-active .cell-token { animation:cell-token-pop .55s ease-out; }
+@keyframes cell-token-pop { 0% { transform:scale(.72); } 65% { transform:scale(1.24); } 100% { transform:scale(1); } }
+.turn-event.is-card { border-left-color:#42a4c7; background:linear-gradient(110deg,#d8f4ff,var(--surface)); }
+@media(prefers-reduced-motion:reduce) { .tile-active .cell-token { animation:none; } }
