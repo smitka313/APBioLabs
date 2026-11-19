@@ -48,13 +48,13 @@ const T = require('./_h');
   T.ok(await p.evaluate(() => document.querySelector('#c-count').value === '33' && document.querySelector('#c-mass').value === '0.05'), 'calculator inputs restored');
   T.ok(await p.evaluate(() => /Incubated/.test(document.querySelector('#ro-status').textContent)), 'status restored');
   T.ok(await p.evaluate(() => /Checking|✓|✗|correct|Not graded/i.test(document.querySelector('#calc-fb').textContent)), 'calculator feedback recomputed');
-  // worked example never saved
+  // Worked example stays separate from saved, editable student inputs.
   await p.click('#calc-example'); await p.waitForTimeout(200);
-  T.ok(await p.evaluate(() => !document.querySelector('#calc-banner').hidden && /EXAMPLE/.test(document.querySelector('#calc-banner').textContent) && document.querySelector('#c-count').value === '40'), 'example shown with banner');
+  T.ok(await p.evaluate(() => !document.querySelector('#calc-banner').hidden && /Worked example/i.test(document.querySelector('#calc-banner').textContent) && document.querySelector('#c-count').value === '33' && !document.querySelector('#c-count').readOnly && !document.querySelector('#calc-check').disabled), 'example shown without replacing or locking student inputs');
   await p.reload(); await p.waitForTimeout(900);
-  T.ok(await p.evaluate(() => document.querySelector('#c-count').value === '33'), 'example not saved; own value back');
+  T.ok(await p.evaluate(() => document.querySelector('#c-count').value === '33'), 'student value persists after viewing example');
   await p.click('#calc-example'); await p.click('#calc-example-clear'); await p.waitForTimeout(200);
-  T.ok(await p.evaluate(() => document.querySelector('#calc-banner').hidden && document.querySelector('#c-count').value === '33'), 'clear example returns own inputs');
+  T.ok(await p.evaluate(() => document.querySelector('#calc-banner').hidden && document.querySelector('#c-count').value === '33'), 'hide example preserves student inputs');
   T.ok(p.errors.length === 0, 'no page errors ' + p.errors.join(';'));
   await b.close(); T.done('lab8 persist');
 })();
