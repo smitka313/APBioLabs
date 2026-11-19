@@ -239,3 +239,20 @@
 }
 .board-row.row-last::after { content:none!important; }
 
+
+/* Multiplayer turn clarity and checkpoint progress */
+.player-score.player-color-1 { --player-glow: #55e9ba; --player-tint: rgba(48,174,132,.23); }
+.player-score.player-color-2 { --player-glow: #ffd36a; --player-tint: rgba(195,139,30,.23); }
+.player-score.player-color-3 { --player-glow: #7bbcff; --player-tint: rgba(49,117,200,.23); }
+.player-score.player-color-4 { --player-glow: #ff92b5; --player-tint: rgba(202,67,121,.23); }
+.player-score.is-active { border:2px solid var(--player-glow,var(--accent)); background:linear-gradient(125deg,var(--player-tint,var(--accent-soft)),var(--surface-2)); box-shadow:0 0 0 2px var(--player-tint,var(--accent-soft)),0 0 24px var(--player-tint,var(--accent-soft)); }
+.player-score.is-active .score-phase-row > span { background:var(--player-tint,var(--accent-soft)); }
+.player-score.is-active .score-player small { color:var(--player-glow,var(--accent)); font-weight:900; letter-spacing:.04em; }
+.checkpoint-card { border-width:2px; border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+.checkpoint-heading strong { font-size:1.12rem; }
+.checkpoint-requirements .requirement { display:grid; gap:5px; padding:10px; border:1px solid var(--line); border-radius:10px; }
+.checkpoint-requirements .requirement strong { font-size:1.1rem; }
+.requirement-meter { display:block; height:7px; border-radius:99px; background:var(--line); overflow:hidden; }
+.requirement-meter > span { display:block; height:100%; border-radius:inherit; background:var(--accent); }
+.requirement.met .requirement-meter > span { background:#46cf8e; }
+@media(prefers-reduced-motion:no-preference){ .player-score { transition:background .2s,border-color .2s,box-shadow .2s; } }
