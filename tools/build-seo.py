@@ -40,9 +40,6 @@ def page_specs():
         'student-directions.html': ('Printable AP Biology Lab Directions | Biology Lab Bench',
                                     'Print free student directions for all 13 AP Biology virtual labs. Each guide includes numbered steps, data-recording reminders, and a submission checklist.',
                                     'Printable student directions'),
-        'openscied-b3-cell-cycle.html': ('OpenSciEd Biology Simulations: Cell Cycle and Cancer Model | Lab Bench',
-                                         'A guided, free biology companion for OpenSciEd B.3 Lessons 3–4. Play a cell-cycle checkpoint game and compare how age, body size, and cell-division rate affect modeled DNA-copying opportunities.',
-                                         'OpenSciEd B.3 cell-cycle and growth model'),
     }
     for lab in LABS:
         number = lab['id']
@@ -105,13 +102,6 @@ def structured_data(filename, title, description, label):
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'}})
             if guide:
                 page['isBasedOn'] = url(f'lab{lab["id"]:02}.html')
-        elif filename == 'openscied-b3-cell-cycle.html':
-            page.update({'@type': ['WebPage', 'LearningResource'],
-                         'educationalLevel': 'High school biology',
-                         'learningResourceType': 'Interactive simulation and guided activity',
-                         'teaches': 'Cell-cycle checkpoints, p53, and cell-division patterns',
-                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
-                         'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
         elif filename == 'student-directions.html':
             page['@type'] = 'CollectionPage'
             page['mainEntity'] = {'@id': canonical + '#labs'}
