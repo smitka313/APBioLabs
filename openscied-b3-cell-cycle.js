@@ -5,6 +5,16 @@
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
   function blankGame(){return {schema:2,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
   const state={game:blankGame(),trials:[],fields:{},quick:''};
+  const ANALYSIS_PROMPTS=[
+    ['Fair test and controlled settings','analysis-design'],
+    ['Variation across repeated trials','analysis-variation'],
+    ['Comparison of named cell types','analysis-celltypes'],
+    ['Effect of age or body size','explanation'],
+    ['Evidence before the cancerous model state','analysis-cancer'],
+    ['Connection to cell-cycle checkpoints','analysis-checkpoints'],
+    ['My revised model','model-revision'],
+    ['New prediction and an unanswered question','model-prediction']
+  ];
   function readStore(){
     try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2)state.game=Object.assign(blankGame(),d.game);if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;}}
     catch(e){}
@@ -408,6 +418,7 @@
     else if(a.min<=b.max&&b.min<=a.max)para('The trial ranges overlap. These recorded results show variation; collect more evidence before deciding how clear the pattern is.');
     else para('The recorded trial ranges do not overlap in this comparison. Use the numbers as evidence, and remember that three trials are a small sample.');
     $('#sentence-evidence').textContent='Use your evidence: “'+(changed.length===1?'When I changed '+names[changed[0]]:'Between Set '+a.index+' and Set '+b.index)+', the mean changed from '+a.mean.toFixed(1)+' to '+b.mean.toFixed(1)+' divisions. Each division creates another opportunity to copy DNA, so…”';
+    if(changed.length===1&&changed[0]==='tissue')$('#sentence-evidence').textContent='These sets compare cell types (Question 3). For Question 4, choose two sets that change age or body size while keeping the other settings the same.';
   }
   function renderReport(){
     const report=$('#investigation-report');if(!report)return;
@@ -415,13 +426,13 @@
     const kicker=document.createElement('div');kicker.className='eyebrow';kicker.textContent='Cell cycle & growth · My evidence';report.appendChild(kicker);
     const h=document.createElement('h3');h.textContent='Your investigation, at a glance.';report.appendChild(h);
     const list=document.createElement('ul');list.className='report-checks';
-    const labels=['Round 1: '+(state.game.roundResults[1]?'completed':'not completed'),'Round 2: '+(state.game.roundResults[2]?'completed':'not completed'),groups.length+' model set'+(groups.length===1?'':'s')+' recorded',($('#explanation').value.trim()?'Explanation written':'Explanation not answered yet')];
+    const labels=['Round 1: '+(state.game.roundResults[1]?'completed':'not completed'),'Round 2: '+(state.game.roundResults[2]?'completed':'not completed'),groups.length+' model set'+(groups.length===1?'':'s')+' recorded',ANALYSIS_PROMPTS.filter(item=>$('#'+item[1]).value.trim()).length+' of '+ANALYSIS_PROMPTS.length+' analysis responses written'];
     labels.forEach(t=>{const li=document.createElement('li');li.textContent=t;list.appendChild(li);});report.appendChild(list);
     if(groups.length){const wrap=document.createElement('div');wrap.className='table-wrap';const table=document.createElement('table');table.className='data';table.innerHTML='<caption>Recorded sets</caption><thead><tr><th>Set</th><th>Settings</th><th>Trial divisions</th><th>Mean</th><th>Cancer-state units by trial</th></tr></thead>';const body=document.createElement('tbody');
       groups.forEach(g=>{const row=document.createElement('tr');[String(g.index),'Age '+g.age+' / '+labelBody(g.size)+' / '+labelTissue(g.tissue),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1),g.trials.map(t=>t.modelVersion===2?String(t.cancerCount):'—').join(', ')].forEach(text=>{const td=document.createElement('td');td.textContent=text;row.appendChild(td);});body.appendChild(row);});table.appendChild(body);wrap.appendChild(table);report.appendChild(wrap);}
     const rounds=state.game.roundResults;
     for(const n of [1,2])if(rounds[n]){const row=document.createElement('p'),r=rounds[n];row.className='report-round';row.textContent='Round '+n+': '+r.rolls+' rolls, '+r.divisions+' completed divisions, '+r.unchecked+' unchecked divisions, '+r.bypassed+' checkpoints bypassed.';report.appendChild(row);}
-    for(const [label,id] of [['My explanation','explanation'],['One model limitation','model-limit']]){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=$('#'+id).value.trim()||'Not answered yet.';report.append(h,p);}
+    for(const [label,id] of ANALYSIS_PROMPTS.concat([['One model limitation','model-limit']])){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=$('#'+id).value.trim()||'Not answered yet.';report.append(h,p);}
     const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities. The cancer state uses three explicitly modeled control changes and deliberately accelerated teaching rules.';report.appendChild(note);
   }
   function runTrials(){
