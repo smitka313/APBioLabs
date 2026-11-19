@@ -48,6 +48,7 @@ const T = require('./_h');
     await p.waitForTimeout(400);
     await p.evaluate(() => Lab.pages.go('design-crime-scene'));
     await p.waitForTimeout(400);
+    await p.locator('#g2-new').evaluate(el => { const details = el.closest('details'); if (details && !details.open) details.querySelector('summary')?.click(); });
     await p.click('#g2-new');
     const gelStateAfterNewEvidenceGel = await p.evaluate(() => JSON.parse(localStorage.getItem('aplab:lab09:gelstate-g1')));
     const evidenceGelState = await p.evaluate(() => JSON.parse(localStorage.getItem('aplab:lab09:gelstate-g2-903')));
