@@ -245,7 +245,7 @@
     const count=Number(players|| (selectedMode==='group'?$('#group-size').value:1))||1;
     const results=Object.assign({},old.roundResults||{});
     state.game={schema:2,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,event:{title:'Round '+round+' begins',copy:round===1?'Move each cell through the cycle and check its materials at G1 and G2.':'Same board, new chance events. Some checkpoint responses may be disrupted.',icon:'🎲',kicker:roundName(round)}};
-    save();renderGame();
+    save();renderGame();$('#roll-dice').focus();
   }
   function drawChance(p){
     const g=state.game;
@@ -364,6 +364,7 @@
       if(!bonusRemains&&!g.complete)activeNext(g.active);
       if(g.complete)finishIfAll();
       save();renderGame();
+      if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus();
     },480);
   }
   function resetRound(){
