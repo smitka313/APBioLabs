@@ -320,13 +320,16 @@
   }
   function activeNext(index){
     const g=state.game,n=g.playersState.length;
+    let skipped=0;
     for(let step=1;step<=n;step++){
       const i=(index+step)%n,p=g.playersState[i];
       if(p.status!=='playing')continue;
-      if(p.skipTurns>0){p.skipTurns--;addLog('Player '+p.id+' loses a turn; the next player rolls.');setEvent('This turn is skipped','A chance event costs this cell one turn.','⏸️','Turn skipped');continue;}
+      if(p.skipTurns>0){p.skipTurns--;skipped++;addLog('Player '+p.id+' loses a turn; the next player rolls.');continue;}
       g.active=i;return;
     }
-    finishIfAll();
+    if(finishIfAll())return;
+    g.active=index;
+    if(skipped)setEvent('The group has completed its skipped turns','Every active player lost a turn to a chance event. The next cycle starts with the current player.','⏸️','Turn skipped');
   }
   function rollDice(){
     const g=state.game,p=g.playersState[g.active];
