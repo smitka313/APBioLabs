@@ -67,7 +67,6 @@
     .hero .hero-links a { min-height: 44px; padding: 8px 4px; box-sizing: border-box; }
     .hero-preferences .theme-opt { min-width: 44px; min-height: 44px; }
   }
-  .bench-note { margin-top: 6px; font-size: .88rem; color: var(--h-muted); text-shadow: 0 1px 5px rgba(0, 0, 0, .6); }
   @media (max-width: 640px) { .hero { padding-block: 150px 24px; } }
   .bi { padding-block: 34px 6px; display: grid; gap: 14px; }
   .bi-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
@@ -144,7 +143,6 @@
           <a href="teacher-notes.html" aria-label="Teacher notes (password required)">Teacher notes <span aria-hidden="true">🔒</span></a>
         </nav>
         <div class="hero-preferences small"><span>Theme</span><span data-ph="theme" hidden></span></div>
-        <p class="bench-note" id="bench-note">The full virtual lab bench is ready for all 13 investigations.</p>
       </div>
       <div class="hero-actions"><section class="pickup" id="resume" hidden></section><div class="home-status"><div id="home-identity"></div></div><a class="hero-browse" href="#labs">Explore all 13 investigations ↓</a></div>
     </div>
@@ -577,8 +575,6 @@ Lab.home({ identity: '#home-identity', resume: '#resume' });
     const nm = state.items.map(i => i.name).join(', ');
     cv.setAttribute('aria-label', `A virtual lab bench with finished ${nm}, ready for all 13 investigations.`);
     cv.dataset.completed = actualDone.join(',');
-    const note = document.getElementById('bench-note');
-    if (note) note.textContent = 'The full virtual lab bench is ready for all 13 investigations.';
   }
   let t = 0; const soon = () => { cancelAnimationFrame(t); t = requestAnimationFrame(draw); };
   draw();

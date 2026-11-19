@@ -21,7 +21,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   T.ok(base.avg > 15 && base.avg < 110, 'a dark bench (mean brightness ' + base.avg.toFixed(0) + ')');
   T.ok(base.ids.join() === 'flask,petri,gel,scope,balance,rack,vials', 'all seven pieces of equipment: ' + base.ids.join(', '));
   T.ok(/virtual lab bench/.test(base.label) && /finished/.test(base.label) && /all 13 investigations/.test(base.label), 'the canvas describes the ready-to-use finished equipment');
-  T.ok(await p.locator('#bench-note').isVisible() && /full virtual lab bench is ready for all 13 investigations/.test(await p.locator('#bench-note').innerText()), 'the note describes the permanent finished bench');
+  T.ok(await p.locator('#bench-note').count() === 0, 'the redundant note below the hero links is absent');
   T.ok(await p.evaluate(() => !document.querySelector('#bench-preview') && !document.querySelector('#bench-preview-label') && !('preview' in document.querySelector('#bench-scene').dataset)), 'the preview controls and state are removed');
   T.ok(await p.locator('#migration-help').count() === 0, 'the retired old-site migration banner is absent from the homepage');
   const items = await p.evaluate(() => LabBench.items());
@@ -55,7 +55,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
     const q = await T.open(c2, 'index.html', '', srv.url);
     T.ok((await q.evaluate(() => LabBench.items())).every(i => i.level === i.labs.length), 'all objects retain their finished appearance when all labs are complete');
     T.ok(await q.evaluate(() => LabBench.completed().length) === 13, 'saved completion is still reported accurately');
-    T.ok(/full virtual lab bench is ready for all 13 investigations/.test(await q.locator('#bench-note').innerText()), 'the note remains a static invitation, not a progress claim');
+    T.ok(await q.locator('#bench-note').count() === 0, 'the redundant note stays absent when all labs are complete');
     if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-all-light.png' });
     await q.evaluate(() => Lab.theme.set('dark')); await q.waitForTimeout(500);
     if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-all-dark.png' });
@@ -67,7 +67,7 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
     const lum = c => { const v = c.map(n => { n /= 255; return n <= .03928 ? n / 12.92 : Math.pow((n + .055) / 1.055, 2.4); }); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2]; };
     const cv = document.getElementById('bench-scene'), k = cv.width / cv.getBoundingClientRect().width, ctx = cv.getContext('2d'), out = {};
     const parse = s => (s.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
-    [['h1', '.hero h1'], ['lede', '.hero p.lede'], ['links', '.hero .hero-links a'], ['note', '#bench-note'], ['eyebrow', '.hero .eyebrow']].forEach(([n, sel]) => {
+    [['h1', '.hero h1'], ['lede', '.hero p.lede'], ['links', '.hero .hero-links a'], ['eyebrow', '.hero .eyebrow']].forEach(([n, sel]) => {
       const e = document.querySelector(sel), r = e.getBoundingClientRect(), hr = document.querySelector('.hero').getBoundingClientRect();
       const d = ctx.getImageData(Math.max(0, (r.left - hr.left) * k), Math.max(0, (r.top - hr.top) * k), Math.max(1, Math.min(r.width, 400) * k), Math.max(1, r.height * k)).data;
       let worst = 0; for (let i = 0; i < d.length; i += 16) { const L = lum([d[i], d[i + 1], d[i + 2]]); if (L > worst) worst = L; }
