@@ -73,6 +73,13 @@ class Page(HTMLParser):
 
 
 class SearchContracts(unittest.TestCase):
+    def test_goatcounter_is_loaded_once_on_every_site_page(self):
+        pages = PUBLIC + PRIVATE + UTILITIES
+        tracker = '<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>'
+        for filename in pages:
+            with self.subTest(page=filename):
+                html = (ROOT / filename).read_text()
+                self.assertEqual(html.count(tracker), 1)
     def test_public_pages_have_one_consistent_search_identity(self):
         titles, descriptions, urls = [], [], []
         for filename in PUBLIC:
