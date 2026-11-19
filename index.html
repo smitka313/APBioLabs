@@ -598,7 +598,7 @@ Lab.home({ identity: '#home-identity', resume: '#resume' });
     const note = document.getElementById('bench-note');
     if (note) note.textContent = previewAll ? 'Preview only — your saved lab progress has not changed.' : n === 0 ? 'Explore the labs and watch your virtual lab bench evolve as you make progress.' : `${n} of 13 investigations complete. Your bench shows it.`;
     if (previewButton) { previewButton.textContent = previewAll ? 'Return to my bench' : 'Preview completed bench'; previewButton.setAttribute('aria-pressed', String(previewAll)); }
-    if (previewLabel) previewLabel.textContent = previewAll ? 'Showing all 13 investigations completed' : '';
+    if (previewLabel) previewLabel.textContent = previewAll ? 'Previewing the bench after all 13 investigations are completed' : '';
   }
   let t = 0; const soon = () => { cancelAnimationFrame(t); t = requestAnimationFrame(draw); };
   if (previewButton) previewButton.addEventListener('click', () => { previewAll = !previewAll; draw(); });
