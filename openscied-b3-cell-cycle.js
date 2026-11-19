@@ -194,12 +194,30 @@
     }
     el.innerHTML=html;el.hidden=false;
   }
+  function renderChanceReveal(){
+    const g=state.game,notice=g.chanceNotice;
+    let overlay=$('#chance-reveal');
+    if(!overlay){
+      overlay=document.createElement('div');overlay.id='chance-reveal';overlay.className='chance-reveal';overlay.hidden=true;
+      overlay.innerHTML='<div class="chance-reveal-panel" role="dialog" aria-modal="true" aria-labelledby="chance-reveal-title" aria-describedby="chance-reveal-copy"><span class="chance-reveal-kicker">✦ ROUND 2 · CELLULAR CHANCE ✦</span><div class="chance-reveal-art" aria-hidden="true"><span id="chance-reveal-icon">🧬</span></div><p class="chance-reveal-player" id="chance-reveal-player"></p><h2 id="chance-reveal-title"></h2><p id="chance-reveal-copy"></p><p class="chance-reveal-note">This is a cell-cycle model event, not a cancer diagnosis.</p><button class="btn btn--primary" type="button" id="chance-reveal-ack">Acknowledge card & continue</button></div>';
+      document.body.appendChild(overlay);
+      $('#chance-reveal-ack').addEventListener('click',function(){state.game.chanceNotice=null;save();renderChanceReveal();if(state.game.complete)$('#round-summary').focus();else $('#roll-dice').focus();});
+      overlay.addEventListener('keydown',function(e){if(e.key==='Tab'){e.preventDefault();$('#chance-reveal-ack').focus();}});
+    }
+    overlay.hidden=!notice;
+    if(!notice)return;
+    $('#chance-reveal-icon').textContent=notice.icon||'🧬';
+    $('#chance-reveal-player').textContent='Player '+notice.player+' drew a card';
+    $('#chance-reveal-title').textContent=notice.title;
+    $('#chance-reveal-copy').textContent=notice.copy;
+    $('#chance-reveal-ack').focus();
+  }
   function renderGame(){
     const g=state.game,setup=$('#game-setup'),panel=$('#game-panel');
     setup.hidden=!!g.round;panel.hidden=false;panel.classList.toggle('is-pregame',!g.round);
     $('#start-round1').hidden=!!g.round;
     $('#start-round2').hidden=true;
-    if(!g.round){renderBoard();return;}
+    if(!g.round){renderChanceReveal();renderBoard();return;}
     const p=g.playersState[g.active]||g.playersState.find(function(x){return x.status==='playing';});
     if(!p)return;
     $('#round-label').textContent=roundName(g.round);
@@ -217,7 +235,7 @@
     $('#event-kicker').textContent=g.event.kicker||'Cell cycle';
     $('#event-title').textContent=g.event.title||'Your turn';
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
-    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderHistory();renderSummary();
+    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderHistory();renderSummary();renderChanceReveal();
     $('#restart-round').hidden=!g.round;
     $('#reset-game').hidden=!g.round;
   }
@@ -233,6 +251,7 @@
     if(!g.chanceDeck.length)g.chanceDeck=shuffledDeck();
     const idx=g.chanceDeck.shift();g.chanceDeck.push(idx);
     const card=chanceCards[idx];
+    g.chanceNotice={player:p.id,title:card.title,copy:card.copy,icon:card.icon};
     setEvent(card.title,card.copy,card.icon,'Cellular chance card');
     addLog('Player '+p.id+': '+card.title+'.');
     if(card.id==='bonus'){p.bonusRolls++;return true;}
@@ -314,7 +333,7 @@
   }
   function rollDice(){
     const g=state.game,p=g.playersState[g.active];
-    if(!p||p.status!=='playing'||g.complete||g.rolling)return;
+    if(!p||p.status!=='playing'||g.complete||g.rolling||g.chanceNotice)return;
     g.rolling=true;renderDice();$('#roll-dice').disabled=true;
     window.setTimeout(function(){
       if(state.game!==g)return;
@@ -351,7 +370,7 @@
       if(!bonusRemains&&!g.complete)activeNext(g.active);
       if(g.complete)finishIfAll();
       save();renderGame();
-      if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus();
+      if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus();
     },480);
   }
   function resetRound(){
