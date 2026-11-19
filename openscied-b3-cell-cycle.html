@@ -145,6 +145,13 @@
 
         <div class="board-scroll"><div class="cell-board" id="cell-board" role="group" aria-label="Cell-cycle game board"></div></div>
         <div class="board-route-note"><span class="route-arrow">START</span><span>Grow</span><span>→</span><span>G1 checkpoint</span><span>→</span><span>Copy DNA</span><span>→</span><span>G2 checkpoint</span><span>→</span><span>Match the M-phase dice</span><span>→</span><strong>Division</strong></div>
+        <details class="disclose game-rules"><summary>How to move and use the checkpoints</summary><div class="inner">
+          <p><strong>Move:</strong> Advance one space per turn. Roll all four dice after moving; dice collect materials, not spaces. In M phase, you must match the number printed on the next space with any die.</p>
+          <p><strong>G1 checkpoint:</strong> 3 or more of each G1 material passes. A 2 sends the cell back 3 spaces; a 1 sends it back 5 spaces; a 0 restarts the cell with a clear scorecard.</p>
+          <p><strong>G2 checkpoint:</strong> Pass with at least 4 DNA copies and at least 1 of each G2 material. If DNA is short, return to the first S space. A missing G2 material restarts the cell.</p>
+          <p><strong>M checkpoint:</strong> The scorecard must show G1 ≥3 in each category, S ≥4 DNA copies, and G2 ≥1 in each category before the model cell divides.</p>
+          <p><strong>Round 2:</strong> The outlined blue spaces draw a chance card. Its effect appears in the event panel and is recorded in the turn history.</p>
+        </div></details>
 
         <div class="game-play-grid">
           <section class="dice-station panel" aria-labelledby="dice-title">
