@@ -1,4 +1,4 @@
-/* Lab-bench banner on index.html: canvas scene draws, completed labs change their equipment, text stays readable, phones crop gracefully.
+/* Lab-bench scene on index.html: finished equipment is always visible, progress stays accurate, text remains readable, and phones crop gracefully.
    Run: NODE_PATH=$(npm root -g) node tests/t46-bench-banner.js  (OUT=dir keeps screenshots) */
 const T = require('./_h');
 const OUT = process.env.OUT || '';
@@ -20,29 +20,30 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   T.ok(base.w > 1300 && base.h > 250, `the canvas fills the hero (${Math.round(base.w)}×${Math.round(base.h)})`);
   T.ok(base.avg > 15 && base.avg < 110, 'a dark bench (mean brightness ' + base.avg.toFixed(0) + ')');
   T.ok(base.ids.join() === 'flask,petri,gel,scope,balance,rack,vials', 'all seven pieces of equipment: ' + base.ids.join(', '));
-  T.ok(/dark lab bench/.test(base.label) && /Finish a lab/.test(base.label), 'the canvas has an accessible description');
-  T.ok(await p.locator('#bench-note').isVisible() && /Explore the labs.*bench evolve.*progress/.test(await p.locator('#bench-note').innerText()), 'a visible note explains how progress changes the bench');
+  T.ok(/virtual lab bench/.test(base.label) && /finished/.test(base.label) && /all 13 investigations/.test(base.label), 'the canvas describes the ready-to-use finished equipment');
+  T.ok(await p.locator('#bench-note').isVisible() && /full virtual lab bench is ready for all 13 investigations/.test(await p.locator('#bench-note').innerText()), 'the note describes the permanent finished bench');
+  T.ok(await p.evaluate(() => !document.querySelector('#bench-preview') && !document.querySelector('#bench-preview-label') && !('preview' in document.querySelector('#bench-scene').dataset)), 'the preview controls and state are removed');
   const items = await p.evaluate(() => LabBench.items());
-  T.ok(items.every(i => i.level === 0), 'with nothing finished every object is in its plain state');
+  T.ok(items.every(i => i.level === i.labs.length), 'every object starts in its finished appearance');
   const grid = await p.evaluate(() => [document.querySelectorAll('.card').length, document.querySelector('.cards').getBoundingClientRect().width]);
   T.ok(grid[0] === 13, 'the 13 lab cards are untouched');
   if (OUT) await p.locator('.hero').screenshot({ path: OUT + '/t46-banner-light-1366.png' });
   const before = {}; for (const i of items) before[i.id] = await sig(p, i);
   for (const i of items) before[i.id + '#core'] = await sig(p, Object.assign({}, i, { x0: i.x0 + (i.x1 - i.x0) * 0.25, x1: i.x1 - (i.x1 - i.x0) * 0.25 }));
 
-  console.log('Completed labs change the equipment');
+  console.log('Finished equipment stays permanent as student progress changes');
   const cases = [['gel', [9]], ['gel', [3, 9]], ['flask', [13]], ['flask', [5, 13]], ['petri', [8]], ['scope', [7]], ['vials', [12]], ['balance', [4]], ['rack', [6]]];
   for (const [id, labs] of cases) {
     const c2 = await T.ctxFor(b);
     await c2.addInitScript(arr => { arr.forEach(([k, v]) => { if (!localStorage.getItem('__bench_done')) localStorage.setItem(k, v); }); localStorage.setItem('__bench_done', '1'); }, labs.map(prog));
     const q = await T.open(c2, 'index.html', '', srv.url);
-    const it = await item(q, id), s = await sig(q, it);
-    T.ok(it.level === labs.length && JSON.stringify(await q.evaluate(() => LabBench.completed())) === JSON.stringify(labs), `${id}: labs ${labs.join(' + ')} done → level ${it.level}`);
-    T.ok(s.h !== before[id].h, `${id} looks different once Lab ${labs.join(' and ')} is complete`);
-    for (const other of base.ids.filter(x => x !== id && !(x === 'vials' && false))) {
-      const oi0 = await item(q, other), oi = Object.assign({}, oi0, { x0: oi0.x0 + (oi0.x1 - oi0.x0) * 0.25, x1: oi0.x1 - (oi0.x1 - oi0.x0) * 0.25 }), os = await sig(q, oi);
-      if (os.h !== before[other + '#core'].h) { T.ok(false, `${id} case changed an unrelated object: ${other}`); }
+    const it = await item(q, id);
+    T.ok(it.level === it.labs.length && JSON.stringify(await q.evaluate(() => LabBench.completed())) === JSON.stringify(labs), `${id}: icon stays finished while saved completion remains ${labs.join(', ')}`);
+    for (const obj of await q.evaluate(() => LabBench.items())) {
+      const signature = await sig(q, obj);
+      T.ok(signature.h === before[obj.id].h, `${obj.id} finished appearance does not change with student progress`);
     }
+    T.ok(await q.locator('#bench-preview').count() === 0, 'no preview option is shown');
     if (OUT && (id === 'gel' && labs.length === 2)) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-some.png' });
     T.ok(q.errors.length === 0, 'no console errors ' + q.errors.join('|'));
     await c2.close();
@@ -51,8 +52,9 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
     const c2 = await T.ctxFor(b);
     await c2.addInitScript(arr => { if (!localStorage.getItem('__bench_done')) { arr.forEach(([k, v]) => localStorage.setItem(k, v)); localStorage.setItem('__bench_done', '1'); } }, ALL.map(prog));
     const q = await T.open(c2, 'index.html', '', srv.url);
-    T.ok((await q.evaluate(() => LabBench.items())).every(i => i.level === i.labs.length), 'all 13 labs done: every object is fully changed');
-    T.ok(/13 of 13/.test(await q.locator('#bench-note').innerText()), 'the note counts them: ' + await q.locator('#bench-note').innerText());
+    T.ok((await q.evaluate(() => LabBench.items())).every(i => i.level === i.labs.length), 'all objects retain their finished appearance when all labs are complete');
+    T.ok(await q.evaluate(() => LabBench.completed().length) === 13, 'saved completion is still reported accurately');
+    T.ok(/full virtual lab bench is ready for all 13 investigations/.test(await q.locator('#bench-note').innerText()), 'the note remains a static invitation, not a progress claim');
     if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-all-light.png' });
     await q.evaluate(() => Lab.theme.set('dark')); await q.waitForTimeout(500);
     if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-all-dark.png' });
@@ -93,12 +95,11 @@ const item = (p, id) => p.evaluate(id => LabBench.items().find(i => i.id === id)
   console.log('Phone');
   for (const dark of [false, true]) {
     const c2 = await T.ctxFor(b, { width: 400, height: 800, dark });
-    await c2.addInitScript(arr => { if (!localStorage.getItem('__d')) { arr.forEach(([k, v]) => localStorage.setItem(k, v)); localStorage.setItem('__d', '1'); } }, [8, 9, 12].map(prog));
     const q = await T.open(c2, 'index.html', '', srv.url);
     const info = await q.evaluate(() => ({ over: document.documentElement.scrollWidth - innerWidth, items: LabBench.items().map(i => [i.id, Math.round(i.x0), Math.round(i.x1), i.level]), w: innerWidth }));
     T.ok(info.over <= 0, 'no sideways scroll at 400 px');
     T.ok(info.items.length >= 4 && info.items.every(([, a, z]) => a >= 0 && z <= info.w), 'the scene scales: ' + info.items.length + ' objects, all inside the screen');
-    T.ok(['gel', 'petri', 'vials'].every(id => info.items.some(i => i[0] === id)), 'objects that show progress are the ones kept: ' + info.items.map(i => i[0]).join(', '));
+    T.ok(['gel', 'petri', 'vials'].every(id => info.items.some(i => i[0] === id)), 'the compact bench consistently keeps its core equipment: ' + info.items.map(i => i[0]).join(', '));
     if (OUT) await q.locator('.hero').screenshot({ path: OUT + '/t46-banner-400-' + (dark ? 'dark' : 'light') + '.png' });
     await c2.close();
   }
