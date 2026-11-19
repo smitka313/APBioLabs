@@ -33,6 +33,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b3-cell-cycle.css">
 <link rel="stylesheet" href="cell-cycle-scene.css">
+<link rel="stylesheet" href="growth-model-scene.css">
 <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -195,50 +196,61 @@
   </section>
 
   <section class="step wrap wrap--wide gutter" id="growth-model">
-    <header><div class="eyebrow">4 · Growth model</div><h2>How many chances are there for a DNA-copying change?</h2></header>
+    <header><div class="eyebrow">4 · A closer look at growth</div><h2>More time. More cells.<br>More chances to copy DNA.</h2></header>
     <div class="step-body">
-      <p class="prose">In this model, different cell types divide at different rates. A larger modeled body has more cells in the system, and a longer time gives those cells more opportunities to divide. Each division is one more opportunity for a DNA-copying change—not a guarantee that a change happens.</p>
-      <div class="model-note"><strong>Model limits:</strong> The numbers are made-up model units, not real human cell counts, mutation rates, or cancer probabilities. Use them to compare patterns, not to predict a person’s health.</div>
-      <div class="sim-grid">
-        <div class="controls panel">
-          <div class="field"><label for="age-slider">Age in the model: <output id="age-value">50</output> years</label><input id="age-slider" type="range" min="20" max="80" value="50"><small>The model follows cell activity from age 20 to your selected age.</small></div>
-          <div class="field"><label for="body-size">Body size in the model</label><select id="body-size"><option value="small">Smaller: 20 cell units</option><option value="average" selected>Average: 30 cell units</option><option value="large">Larger: 40 cell units</option></select><small>Cell units are simplified; they are not literal cell counts.</small></div>
-          <div class="field"><label for="tissue-rate">Cell type</label><select id="tissue-rate"><option value="slow">Slow-dividing tissue</option><option value="medium" selected>Moderate-dividing tissue</option><option value="fast">Fast-dividing tissue</option></select></div>
-          <div class="row"><button class="btn btn--primary" type="button" id="run-trials">Run 3 trials</button><button class="btn" type="button" id="clear-trials">Clear results</button></div>
-        </div>
-        <div class="sim-output panel">
-          <h3>Your results</h3>
-          <p class="small muted">The number of division events will vary across trials. More divisions mean more opportunities for DNA-copying changes, but the model does not predict cancer.</p>
-          <div class="table-wrap"><table class="data" id="trial-table"><caption>Cell-division model results</caption><thead><tr><th>Trial</th><th>Age</th><th>Body size</th><th>Cell type</th><th class="num">Divisions</th><th class="num">Copying opportunities</th></tr></thead><tbody id="trial-rows"><tr><td colspan="6">Run trials to collect results.</td></tr></tbody></table></div>
-          <div class="chart-wrap" id="trial-chart" aria-live="polite"><p class="muted small">A comparison graph will appear after you run trials.</p></div>
-        </div>
+      <p class="prose">Follow a small patch of tissue through time. Watch individual cells divide, then compare three trials. What changes when the model has more cells, more time, or a faster division rate?</p>
+      <div class="growth-controls" aria-label="Growth model settings">
+        <div class="field"><label for="age-slider">Follow to age <output id="age-value">50</output></label><input id="age-slider" type="range" min="20" max="80" value="50"><small>Start at age 20 · stop at your chosen age</small></div>
+        <div class="field"><label for="body-size">Modeled body size</label><select id="body-size"><option value="small">Smaller · 20 cell units</option><option value="average" selected>Average · 30 cell units</option><option value="large">Larger · 40 cell units</option></select></div>
+        <div class="field"><label for="tissue-rate">Division rate</label><select id="tissue-rate"><option value="slow">Slow-dividing tissue</option><option value="medium" selected>Moderate-dividing tissue</option><option value="fast">Fast-dividing tissue</option></select></div>
+        <button class="btn btn--primary" type="button" id="run-trials">Run 3 trials →</button>
       </div>
-      <div class="callout callout--question"><div class="callout-title">Compare one factor at a time</div><ol>
-        <li>Run three trials with the settings you have now.</li>
-        <li>Change only age, body size, or cell type.</li>
-        <li>Run three more trials and compare the results.</li>
-      </ol><p>Changing one setting at a time makes it easier to connect the evidence to that factor.</p></div>
+      <div class="growth-stage" id="growth-stage" role="group" aria-label="Growth model observation station">
+        <button type="button" id="enlarge-growth" class="growth-expand" aria-pressed="false">Enlarge model ↗</button>
+        <canvas id="growth-scene" tabindex="0" aria-describedby="growth-inspection-help" width="1160" height="650" role="img" aria-label="A modeled body connects to a magnified tissue sample. Individual cells divide during playback, while the age and cumulative division count update. These are simplified model units, not human measurements."></canvas>
+        <p class="growth-tip" id="growth-tip" role="status" hidden></p>
+      </div>
+      <div class="growth-playback">
+        <button type="button" class="btn btn--sm" id="pause-growth" disabled>Pause playback</button>
+        <div class="field playback-scrub"><label for="growth-scrub">Recorded age <output id="growth-age">20</output></label><input id="growth-scrub" type="range" min="20" max="50" value="20" disabled></div>
+        <div class="field replay-selector"><label for="replay-set">Replay a recorded set</label><select id="replay-set" disabled><option value="">No recorded sets yet</option></select></div>
+        <button type="button" class="btn btn--sm" id="replay-growth" disabled>Replay</button>
+        <span id="growth-status" class="small" role="status" aria-live="polite">Choose settings, then run three trials.</span>
+      </div>
+      <p class="small muted" id="growth-inspection-help">Inspect a unit: tap a cell, or focus the model and use the left and right arrow keys.</p>
+      <p class="model-caption"><span class="caption-dot"></span>Every flash marks a recorded model division. Two daughter cells replace the dividing cell in the animation; the number of modeled cell units stays fixed.</p>
+      <details class="disclose model-assumptions"><summary>What the model includes—and leaves out</summary><div class="inner"><p>These are invented teaching units, not human cell counts or cancer probabilities. Each modeled cell unit has one chance to divide per modeled year: 5% for the slow setting, 12% for moderate, and 25% for fast. The model keeps the number of cell units constant and counts division events from age 20 onward.</p><p>Each division creates an opportunity to copy DNA. A division does not guarantee a mutation or cancer. The model leaves out repair systems, many genes, exposures, immune responses, and differences among real people. Playback compresses years into seconds. The body drawing identifies the modeled body; the tissue patch is a schematic sample, not an anatomical measurement.</p></div></details>
+      <div class="results-heading"><div><div class="eyebrow">Your evidence, collected</div><h3>Same settings. Three separate trials.</h3></div><button class="btn btn--sm" type="button" id="clear-trials">Clear model results</button></div>
+      <p id="set-summary" class="small" role="status" aria-live="polite">Run a set to begin your comparison.</p>
+      <div id="trial-chart" class="growth-chart-wrap"><canvas id="growth-chart" width="1160" height="330" role="img" aria-label="Recorded trial counts and set means. Exact values are available in the data table below."></canvas></div>
+      <p class="chart-caption">Each dot is one trial. The short line marks the set mean. Overlapping dots are offset vertically. The chart shows the latest eight sets; the table keeps every trial.</p>
+      <details class="disclose trial-data"><summary>Open the exact data table</summary><div class="table-wrap"><table class="data" id="trial-table"><caption>Recorded model divisions and DNA-copying opportunities</caption><thead><tr><th>Set / trial</th><th>Age</th><th>Body size</th><th>Division rate</th><th>Divisions</th><th>Copying opportunities</th></tr></thead><tbody id="trial-rows"><tr><td colspan="6">Run trials to collect results.</td></tr></tbody></table></div></details>
+      <div class="next-experiment"><span class="eyebrow">Try it next</span><p><strong>Change just one setting.</strong> Leave the other two alone, run three more trials, and look at how the results compare.</p></div>
     </div>
   </section>
 
   <section class="step wrap wrap--wide gutter" id="analyze">
-    <header><div class="eyebrow">5 · Analyze</div><h2>Use evidence to explain a pattern</h2></header>
+    <header><div class="eyebrow">5 · Make sense of the evidence</div><h2>What changed?<br>What stayed the same?</h2></header>
     <div class="step-body">
-      <fieldset class="evidence-checks"><legend>Which statements match your results? Select all that apply.</legend>
-        <label class="choice"><input type="checkbox" id="ev-age"> In the model, a longer time usually allowed more cell divisions.</label>
-        <label class="choice"><input type="checkbox" id="ev-size"> A larger modeled body included more cell units.</label>
-        <label class="choice"><input type="checkbox" id="ev-rate"> Faster-dividing cell types had more division opportunities.</label>
-        <label class="choice"><input type="checkbox" id="ev-guarantee"> Every cell division caused cancer.</label>
+      <p class="prose">Choose two sets. The comparison uses your recorded results, so you can point to real numbers from your model.</p>
+      <div class="comparison-selectors"><div class="field"><label for="compare-a">Compare this set</label><select id="compare-a" disabled><option value="">Run a set first</option></select></div><span class="compare-arrow" aria-hidden="true">→</span><div class="field"><label for="compare-b">With this set</label><select id="compare-b" disabled><option value="">Run a second set</option></select></div></div>
+      <div id="comparison-evidence" class="comparison-evidence" role="status" aria-live="polite"><p>Collect two sets to reveal your evidence comparison.</p></div>
+      <fieldset class="evidence-checks"><legend>Which ideas does your investigation support?</legend>
+        <label class="choice"><input type="checkbox" id="ev-age"> A longer modeled time can allow more cell divisions.</label>
+        <label class="choice"><input type="checkbox" id="ev-size"> A larger modeled body contains more cell units.</label>
+        <label class="choice"><input type="checkbox" id="ev-rate"> Faster-dividing tissue can have more division opportunities.</label>
+        <label class="choice"><input type="checkbox" id="ev-guarantee"> Every cell division causes cancer.</label>
       </fieldset>
       <p class="small" id="evidence-hint" role="status" aria-live="polite"></p>
-      <div class="field"><label for="explanation">Complete the explanation. Use one result from your table.</label><textarea id="explanation" rows="4" placeholder="When I changed ______, the number of cell divisions ______. This matters because each division creates another opportunity for ______. The model cannot show ______."></textarea></div>
-      <div class="field"><label for="model-limit">One thing this model leaves out</label><select id="model-limit"><option value="">Choose one…</option><option>It does not include every gene or cell-cycle control.</option><option>It does not include environmental exposures or inherited variants.</option><option>It does not show immune-system responses or medical screening.</option><option>It is not based on real individual cancer-risk data.</option></select></div>
+      <div class="field explanation-field"><label for="explanation">Explain one pattern in two or three sentences.</label><p id="sentence-evidence" class="sentence-evidence">Sentence starter: “When I changed ___, the mean changed from ___ to ___ divisions. This matters because ___.”</p><textarea id="explanation" rows="4" placeholder="When I changed…, the model showed… Each division is another opportunity to copy DNA, so…"></textarea></div>
+      <div class="field"><label for="model-limit">Choose one limitation to keep in mind.</label><select id="model-limit"><option value="">Choose one…</option><option>It does not include every gene or cell-cycle control.</option><option>It does not include environmental exposures or inherited variants.</option><option>It does not show immune-system responses or medical screening.</option><option>It is not based on real individual cancer-risk data.</option></select></div>
     </div>
   </section>
 
   <section class="step wrap wrap--wide gutter" id="submit">
-    <header><div class="eyebrow">6 · Wrap up</div><h2>Save or hand in your work</h2></header>
+    <header><div class="eyebrow">6 · Your investigation</div><h2>Keep the evidence.</h2></header>
     <div class="step-body">
+      <div id="investigation-report" class="investigation-report" aria-label="Your investigation summary"></div>
       <div class="submit-card">
         <p>Your work saves automatically in this browser. Nothing you type is sent to the site. Use <strong>Download my work</strong> to keep a copy or submit it to your teacher.</p>
         <div id="save-status" role="status" aria-live="polite" class="small"></div>
@@ -247,11 +259,11 @@
           <button class="btn" type="button" id="print-work">Print / Save as PDF</button>
           <button class="btn btn--danger" type="button" id="reset-work">Clear this activity</button>
         </div>
-        <p class="small muted">Group predictions use generic player numbers. The browser stores this activity’s work locally; other players using this device may see it until it is cleared.</p>
+        <p class="small muted">Group turns use generic player numbers. The browser stores this activity’s work locally; other players using this device may see it until it is cleared.</p>
       </div>
       <div class="attribution">
         <h3>Source and attribution</h3>
-        <p>This independent, noncommercial companion adapts ideas from OpenSciEd High School Biology Unit B.3, <em>Inheritance &amp; Variation of Traits: Cancer</em>, Lessons 3–4. The source curriculum is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). This page contains original interactive wording and artwork-free models. <a href="https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/" rel="noopener">View the OpenSciEd B.3 materials</a> · <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="license noopener">CC BY-NC 4.0 license</a>.</p>
+        <p>This independent, noncommercial companion adapts ideas from OpenSciEd High School Biology Unit B.3, <em>Inheritance &amp; Variation of Traits: Cancer</em>, Lessons 3–4. The source curriculum is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). This page contains original interactive wording and procedural artwork. <a href="https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/" rel="noopener">View the OpenSciEd B.3 materials</a> · <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="license noopener">CC BY-NC 4.0 license</a>.</p>
         <p>OpenSciEd is not affiliated with or endorsing this independent companion. OpenSciEd names and marks are used only to identify the source curriculum.</p>
         <p class="small muted">Design preview—under development for educator review. The simulation uses simplified teaching assumptions and is not medical advice or a measure of personal risk.</p>
       </div>
@@ -261,6 +273,7 @@
 <footer class="site-footer"><div class="wrap gutter"><p><a href="index.html">Return to AP Bio Digital Lab Bench</a></p><p>Free educational companion · No account required · Student responses stay in this browser unless downloaded and shared by the student.</p></div></footer>
 <script src="lab.js"></script>
 <script src="cell-cycle-scene.js"></script>
+<script src="growth-model-scene.js"></script>
 <script src="openscied-b3-cell-cycle.js"></script>
 </body>
 </html>
