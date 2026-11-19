@@ -108,7 +108,7 @@
     $('#turn-count').textContent='Turn '+Math.max(1,state.game.turns);
   }
   function renderBoard(){
-    const g=state.game,rows=[track.slice(0,11),track.slice(11,22).reverse(),track.slice(22)];
+    const g=state.game,rows=[track.slice(0,11),track.slice(11,22),track.slice(22)];
     const board=$('#cell-board');board.innerHTML='';
     rows.forEach(function(row,rowIndex){
       const wrap=document.createElement('div');wrap.className='board-row row-'+(rowIndex+1);
@@ -173,8 +173,10 @@
     if(need!==null)return 'To move forward, roll a '+need+' on any die. If you miss it, stay here this turn.';
     return 'Move one space forward, then roll all four dice. The dice do not set the number of spaces.';
   }
-  function currentSummary(phase,dice,required,missed,bonus){
+  function currentSummary(tile,dice,required,missed,bonus){
+    const phase=tile.phase;
     if(required!==null)return missed===null?'Matched the required '+required+' on an M-phase die. The cell moves forward.':'Needed a '+required+' on any die; no match this turn.';
+    if(tile.type==='checkpoint')return 'Checkpoint reached. Check the scorecard; this space does not collect materials.';
     if(phase==='g1'||phase==='g2'){
       const n=dice.filter(x=>x===1).length,pr=dice.filter(x=>x===2).length,o=dice.filter(x=>x===3).length;
       const out=[];if(n)out.push('Nutrients ×'+n);if(pr)out.push('Proteins ×'+pr);if(o)out.push('Organelles ×'+o);
@@ -338,7 +340,7 @@
       }else{p.pos=Math.min(30,p.pos+1);moved=true;}
       const rollPos=bonus?startPos:p.pos,rollPhase=track[rollPos].phase;
       if(moved||bonus)scoreRoll(p,dice);
-      const landed=p.pos,summary=currentSummary(rollPhase,dice,required,missed,bonus);
+      const landed=p.pos,summary=currentSummary(track[rollPos],dice,required,missed,bonus);
       g.lastRollSummary=summary;
       let message=summary;
       if(missed!==null)message='No '+missed+' rolled. The cell stays on its space this turn. '+summary;
