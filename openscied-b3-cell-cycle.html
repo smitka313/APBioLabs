@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b3-cell-cycle.css">
+<link rel="stylesheet" href="cell-cycle-scene.css">
 <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -112,13 +113,13 @@
   </section>
 
   <section class="step wrap wrap--wide gutter" id="cell-game">
-    <header><div class="eyebrow">3 · Cell-cycle board game</div><h2>Build a cell. Test the checkpoints. Roll the dice.</h2></header>
+    <header><div class="eyebrow">3 · The cell cycle, in play</div><h2>A cell’s journey.</h2></header>
     <div class="step-body">
       <p class="prose">Move a cell around the cycle one space at a time. Roll four dice to collect nutrients, proteins, organelles, and chromosome copies. At each checkpoint, the cell’s progress determines what can happen next.</p>
       <div class="callout callout--safety"><div class="callout-title">What this game models</div><p>Round 1 shows cell-cycle checkpoints responding to missing materials or DNA. Round 2 adds chance events that sometimes disrupt that response. It is a simplified model of one part of cancer development; it cannot predict a person’s health or risk.</p></div>
 
       <div class="game-setup panel" id="game-setup">
-        <div class="game-setup-copy"><span class="eyebrow">Set up the board</span><h3>Choose your players</h3><p>Play solo or pass one device around a group. Each player moves a cell token and tracks its own materials. Player numbers only—no names or accounts.</p></div>
+        <div class="game-setup-copy"><span class="eyebrow">Set up the board</span><h3>Take a cell through its cycle.</h3><p>Roll. Gather. Grow. Watch the checkpoints respond. Play on your own or share a device with up to four players.</p></div>
         <fieldset class="mode-choice"><legend>Players</legend>
           <label class="choice"><input type="radio" name="game-mode" value="solo" checked> Solo — one cell</label>
           <label class="choice"><input type="radio" name="game-mode" value="group"> Shared-device group</label>
@@ -143,7 +144,12 @@
           <span><i class="legend-swatch swatch-chance"></i>Round 2 chance space</span><span><i class="legend-swatch swatch-flag"></i>unchecked division marker (model only)</span>
         </div>
 
-        <div class="board-scroll"><div class="cell-board" id="cell-board" role="group" aria-label="Cell-cycle game board"></div></div>
+        <div class="specimen-stage" id="cell-board" role="group" aria-label="Interactive cell-cycle board and magnified cell">
+          <canvas id="cycle-scene" width="1160" height="760" role="img" aria-label="A circular cell-cycle track surrounds a magnified cell. The cell shows its membrane, nucleus, mitochondria, and chromosomes. Four dice sit in a felt tray below. See the scorecard and turn result for the current state."></canvas>
+          <p id="specimen-tip" class="specimen-tip" role="status" hidden></p>
+          <div class="scene-action"><button class="btn btn--primary roll-button" id="roll-dice" type="button">Roll four dice</button></div>
+          <span class="sr-only" id="scene-description"></span>
+        </div>
         <div class="board-route-note"><span class="route-arrow">START</span><span>Grow</span><span>→</span><span>G1 checkpoint</span><span>→</span><span>Copy DNA</span><span>→</span><span>G2 checkpoint</span><span>→</span><span>Match the M-phase dice</span><span>→</span><strong>Division</strong></div>
         <details class="disclose game-rules"><summary>How to move and use the checkpoints</summary><div class="inner">
           <p><strong>Move:</strong> Advance one space per turn. Roll all four dice after moving; dice collect materials, not spaces. In M phase, you must match the number printed on the next space with any die.</p>
@@ -159,7 +165,7 @@
             <p id="dice-prompt">Move your token one space, then roll all four dice. The dice collect materials; they do not set the number of spaces.</p>
             <div class="dice-tray" id="dice-tray" aria-label="Four dice"></div>
             <div class="dice-result" id="dice-result" role="status" aria-live="polite">The dice will appear here after the first roll.</div>
-            <button class="btn btn--primary roll-button" id="roll-dice" type="button">🎲 Roll 4 dice</button>
+            
             <div class="dice-key"><strong>Dice key</strong><span>1 Nutrient</span><span>2 Protein</span><span>3 Organelle</span><span>4 Chromosome</span><span>5–6 No material</span></div>
           </section>
 
@@ -246,13 +252,14 @@
         <h3>Source and attribution</h3>
         <p>This independent, noncommercial companion adapts ideas from OpenSciEd High School Biology Unit B.3, <em>Inheritance &amp; Variation of Traits: Cancer</em>, Lessons 3–4. The source curriculum is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). This page contains original interactive wording and artwork-free models. <a href="https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/" rel="noopener">View the OpenSciEd B.3 materials</a> · <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="license noopener">CC BY-NC 4.0 license</a>.</p>
         <p>OpenSciEd is not affiliated with or endorsing this independent companion. OpenSciEd names and marks are used only to identify the source curriculum.</p>
-        <p class="small muted">Pilot page—educator review is needed before classroom release. The simulation uses simplified teaching assumptions and is not medical advice or a measure of personal risk.</p>
+        <p class="small muted">Design preview—under development for educator review. The simulation uses simplified teaching assumptions and is not medical advice or a measure of personal risk.</p>
       </div>
     </div>
   </section>
 </main>
 <footer class="site-footer"><div class="wrap gutter"><p><a href="index.html">Return to AP Bio Digital Lab Bench</a></p><p>Free educational companion · No account required · Student responses stay in this browser unless downloaded and shared by the student.</p></div></footer>
 <script src="lab.js"></script>
+<script src="cell-cycle-scene.js"></script>
 <script src="openscied-b3-cell-cycle.js"></script>
 </body>
 </html>
