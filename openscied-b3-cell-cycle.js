@@ -55,7 +55,7 @@
   track.push({type:'finish',phase:'finish',label:'DIVIDE',note:'Daughter cells'});
   const playerColors=['#58d4b4','#ffcb62','#70baff','#fc8fa3'];
   const resourceNames={nutrients:'Nutrients',proteins:'Proteins',organelles:'Organelles',chromosomes:'Chromosomes'};
-  const zeroScore=function(){return {nutrients:0,proteins:0,organelles:0,chromosomes:0};};
+  const zeroScore=function(){return {g1:{nutrients:0,proteins:0,organelles:0},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0}};};
   const chanceCards=[
     {id:'bonus',title:'p53 is responding',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
     {id:'bonus',title:'A repair response helps',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
@@ -130,12 +130,13 @@
     const g=state.game;
     $('#scorecards').innerHTML=g.playersState.map(function(p,index){
       const active=index===g.active&&p.status==='playing';
-      const status=p.status==='finished'?'Done':p.bonusRolls?'Bonus roll':p.skipTurns?'Turn skipped':'Playing';
+      const status=p.status==='finished'?'Division complete':p.bonusRolls?'Bonus roll':p.skipTurns?'Turn skipped':'Playing';
+      const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const met=x>=thresholds[i];return '<span class="'+(met?'score-met':'')+'">'+['N','P','O','DNA'][i]+' <b>'+x+'</b></span>';}).join('')+'</div>';};
       return '<div class="player-score'+(active?' is-active':'')+(p.status==='finished'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
-        '<div class="score-cell"><strong>'+p.score.nutrients+'</strong><small>Nutrients</small></div>'+
-        '<div class="score-cell"><strong>'+p.score.proteins+'</strong><small>Proteins</small></div>'+
-        '<div class="score-cell"><strong>'+p.score.organelles+'</strong><small>Organelles</small></div>'+
-        '<div class="score-cell"><strong>'+p.score.chromosomes+'</strong><small>DNA copies</small></div></div>';
+        '<div class="score-phase-head"><span>Phase</span><span>Nutrients</span><span>Proteins</span><span>Organelles</span><span>DNA copies</span></div>'+
+        row('G1',[p.score.g1.nutrients,p.score.g1.proteins,p.score.g1.organelles,0],[3,3,3,0])+
+        row('S',[0,0,0,p.score.s.chromosomes],[0,0,0,4])+
+        row('G2',[p.score.g2.nutrients,p.score.g2.proteins,p.score.g2.organelles,0],[1,1,1,0])+'</div>';
     }).join('');
   }
   function getTarget(p){
@@ -145,9 +146,9 @@
   }
   function checkpointState(p,key){
     const s=p.score;
-    if(key==='g1')return {title:'G1 checkpoint',subtitle:'Pass with at least 3 nutrients, proteins, and organelles.',items:[['Nutrients',s.nutrients,3],['Proteins',s.proteins,3],['Organelles',s.organelles,3]]};
-    if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with 4 chromosome copies and at least 1 of each material.',items:[['Chromosomes',s.chromosomes,4],['Nutrients',s.nutrients,1],['Proteins',s.proteins,1],['Organelles',s.organelles,1]]};
-    if(key==='m')return {title:'M checkpoint',subtitle:'Confirm the cell met the material and DNA requirements before division.',items:[['G1 materials',Math.min(s.nutrients,s.proteins,s.organelles),3],['DNA copies',s.chromosomes,4],['G2 materials',Math.min(s.nutrients,s.proteins,s.organelles),1]]};
+    if(key==='g1')return {title:'G1 checkpoint',subtitle:'Pass with at least 3 of each G1 material.',items:[['Nutrients',s.g1.nutrients,3],['Proteins',s.g1.proteins,3],['Organelles',s.g1.organelles,3]]};
+    if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with 4 DNA copies and at least 1 of each G2 material.',items:[['DNA copies',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
+    if(key==='m')return {title:'M checkpoint',subtitle:'Check the materials gathered in G1 and G2, and DNA copied in S.',items:[['G1 materials',Math.min(s.g1.nutrients,s.g1.proteins,s.g1.organelles),3],['DNA copies',s.s.chromosomes,4],['G2 materials',Math.min(s.g2.nutrients,s.g2.proteins,s.g2.organelles),1]]};
     return {title:'Cycle complete',subtitle:'The model cell reached division.',items:[['Division',p.divisions,1],['Unchecked',p.unchecked,0]]};
   }
   function renderCheckpoint(){
@@ -256,7 +257,7 @@
       const cp=nextCheckpoint(p.pos);p.bypassed++;
       if(cp>=29){p.pos=30;p.status='finished';p.divisions++;p.unchecked++;setEvent('Division without a checkpoint check','The model cell bypassed the final checkpoint. This shows why cell-cycle controls matter; it does not predict cancer.','⚠️','Checkpoint bypassed');}
       else p.pos=cp+1;
-    }else if(card.id==='dna'){p.score.chromosomes=Math.max(4,p.score.chromosomes);}
+    }else if(card.id==='dna'){p.score.s.chromosomes=Math.max(4,p.score.s.chromosomes);}
     else if(card.id==='skipTwo'){
       const next=nextCheckpoint(p.pos),second=nextCheckpoint(next);p.bypassed+=2;
       if(second>=29){p.pos=30;p.status='finished';p.divisions++;p.unchecked++;setEvent('Division without a checkpoint check','Two checkpoint checks were bypassed in this model cell.','⚠️','Checkpoint bypassed');}
@@ -274,32 +275,36 @@
   function checkCheckpoint(p){
     const s=p.score;
     if(p.pos===7){
-      const values=[s.nutrients,s.proteins,s.organelles];
-      if(values.includes(0)){restartCell(p,'A material category is still at zero. In Round 1, p53 stops this damaged model cell and it starts again.');return;}
-      if(values.includes(1)){p.pos=Math.max(0,p.pos-5);setEvent('G1 checkpoint: move back 5 spaces','At least one material is present only once. The cell must gather more before it can pass.','↩️','Checkpoint response');return;}
-      if(values.includes(2)){p.pos=Math.max(0,p.pos-3);setEvent('G1 checkpoint: move back 3 spaces','At least one material is present only twice. The cell returns to gather more.','↩️','Checkpoint response');return;}
-      setEvent('G1 checkpoint passed','The cell has at least three nutrients, proteins, and organelles. It can continue to copy its DNA.','✅','Checkpoint passed');return;
+      const values=[s.g1.nutrients,s.g1.proteins,s.g1.organelles];
+      if(values.includes(0)){restartCell(p,'A G1 material category is still at zero. The cell starts again with a fresh scorecard.');return;}
+      if(values.includes(1)){p.pos=Math.max(0,p.pos-5);setEvent('G1 checkpoint: move back 5 spaces','At least one G1 material is present only once. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
+      if(values.includes(2)){p.pos=Math.max(0,p.pos-3);setEvent('G1 checkpoint: move back 3 spaces','At least one G1 material is present only twice. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
+      setEvent('G1 checkpoint passed','The G1 scorecard has at least three nutrients, proteins, and organelles. The cell can continue to S phase.','✅','Checkpoint passed');return;
     }
     if(p.pos===23){
-      if(!s.nutrients||!s.proteins||!s.organelles){restartCell(p,'A required material is missing. The model cell starts again.');return;}
-      if(s.chromosomes<4){p.pos=8;setEvent('G2 checkpoint: return to S phase','The cell needs at least four chromosome copies. Return to the first S space and keep copying DNA.','↩️','Checkpoint response');return;}
-      setEvent('G2 checkpoint passed','The cell has enough DNA copies and at least one of each material. It can prepare for division.','✅','Checkpoint passed');return;
+      const values=[s.g2.nutrients,s.g2.proteins,s.g2.organelles];
+      if(values.includes(0)){restartCell(p,'A G2 material category is still at zero. The cell starts again with a fresh scorecard.');return;}
+      if(s.s.chromosomes<4){p.pos=8;setEvent('G2 checkpoint: return to S phase','The S-phase scorecard has fewer than four chromosome copies. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
+      if(values.some(function(x){return x<1;})){p.pos=15;setEvent('G2 checkpoint: gather more materials','The cell needs at least one of each G2 material before it can continue.','↩️','Checkpoint response');return;}
+      setEvent('G2 checkpoint passed','The cell has at least four chromosome copies and at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
     }
     if(p.pos===29){
-      const ok=s.nutrients>=3&&s.proteins>=3&&s.organelles>=3&&s.chromosomes>=4;
+      const ok=s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3&&s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1;
       if(!ok){
-        p.pos=s.chromosomes<4?8:(s.nutrients<3||s.proteins<3||s.organelles<3?1:15);
-        setEvent('M checkpoint: gather what is missing','The cell has not met every requirement. It returns to the phase where it needs more materials.','↩️','Checkpoint response');return;
+        p.pos=s.s.chromosomes<4?8:(s.g1.nutrients<3||s.g1.proteins<3||s.g1.organelles<3?1:15);
+        setEvent('M checkpoint: gather what is missing','The scorecard does not yet meet every phase requirement. The cell returns to gather what is missing.','↩️','Checkpoint response');return;
       }
       p.pos=30;p.status='finished';p.divisions++;
-      setEvent('The model cell completes division','The cell met the model’s requirements and divides into daughter cells. The game does not label a division as cancer.','🧬','Division complete');
+      setEvent('The model cell completes division','The cell met the G1, S, and G2 requirements and divides into daughter cells. A completed division is not the same as cancer.','🧬','Division complete');
     }
   }
   function scoreRoll(p,dice){
     const tile=track[p.pos],phase=tile.phase;
+    if(tile.type!=='space')return;
     if(phase==='g1'||phase==='g2'){
-      dice.forEach(function(v){if(v===1)p.score.nutrients++;if(v===2)p.score.proteins++;if(v===3)p.score.organelles++;});
-    }else if(phase==='s')dice.forEach(function(v){if(v===4)p.score.chromosomes++;});
+      const bucket=p.score[phase];
+      dice.forEach(function(v){if(v===1)bucket.nutrients++;if(v===2)bucket.proteins++;if(v===3)bucket.organelles++;});
+    }else if(phase==='s')dice.forEach(function(v){if(v===4)p.score.s.chromosomes++;});
   }
   function activeNext(index){
     const g=state.game,n=g.playersState.length;
