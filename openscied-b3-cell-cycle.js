@@ -108,10 +108,11 @@
     $('#turn-count').textContent='Turn '+Math.max(1,state.game.turns);
   }
   function renderBoard(){
-    const g=state.game,rows=[track.slice(0,11),track.slice(11,22),track.slice(22)];
+    const g=state.game,columns=window.matchMedia('(max-width: 760px)').matches?5:11,rows=[];
+    for(let i=0;i<track.length;i+=columns)rows.push(track.slice(i,i+columns));
     const board=$('#cell-board');board.innerHTML='';
     rows.forEach(function(row,rowIndex){
-      const wrap=document.createElement('div');wrap.className='board-row row-'+(rowIndex+1);
+      const wrap=document.createElement('div');wrap.className='board-row row-'+(rowIndex+1)+(rowIndex%2?' row-reverse row-even':' row-odd');wrap.style.setProperty('--board-columns',String(columns));
       row.forEach(function(tile){
         const pos=track.indexOf(tile),tokens=g.playersState.filter(function(p){return p.pos===pos;});
         const cell=document.createElement('div');
@@ -122,7 +123,7 @@
         cell.innerHTML='<span class="tile-number">'+(pos===0?'START':String(pos).padStart(2,'0'))+'</span><strong class="tile-label">'+tile.label+'</strong><small class="tile-note">'+(tile.chance&&g.round===2?'Chance card':tile.note)+'</small><span class="tile-tokens">'+tokens.map(function(p){return '<i class="cell-token token-'+p.id+(p.unchecked?' unchecked-token':'')+'" title="Player '+p.id+(p.unchecked?' · unchecked model division':'')+'" aria-label="Player '+p.id+(p.unchecked?' · unchecked model division':'')+'">'+p.id+'</i>';}).join('')+'</span>';
         wrap.appendChild(cell);
       });
-      if(rowIndex===2)for(let i=row.length;i<11;i++){const gap=document.createElement('div');gap.className='board-gap';wrap.appendChild(gap);}
+      if(row.length<columns)for(let i=row.length;i<columns;i++){const gap=document.createElement('div');gap.className='board-gap';wrap.appendChild(gap);}
       board.appendChild(wrap);
     });
   }
@@ -415,6 +416,7 @@
   }
   function wire(){
     readStore();restoreFields();renderTrials();renderGame();
+    window.addEventListener('resize',function(){renderBoard();},{passive:true});
     $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;save();});
     $$('input[name="game-mode"]').forEach(function(el){el.addEventListener('change',function(){$('#group-size-wrap').hidden=this.value!=='group';save();});});
     $('#start-round1').addEventListener('click',function(){startRound(1);});
