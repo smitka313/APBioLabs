@@ -1270,7 +1270,12 @@ function makeGel(rootSel, measSel, cfg) {
   }
   st.blockReason = blockReason;
   $('mall').addEventListener('click', () => { if (!ready()) return; Lab.sound.play('beep'); const i = +$('mlane').value, vb = visibleBands(i); if (!vb.length) { msg('warn', `No visible bands in lane ${i + 1}.`); return; } vb.forEach((b, k) => addMeasure(i, b, k)); msg('ok', `Recorded ${vb.length} band${vb.length > 1 ? 's' : ''} from lane ${i + 1}.`); });
-  $('mdye').addEventListener('click', () => { if (st.t === 0) { msg('warn', 'Run the gel first.'); return; } msg('ok', `Dye front: ${Lab.fmt(st.dist + rng.normal(0, 0.4), 1)} mm from the wells (record it in your notebook).`); });
+  $('mdye').addEventListener('click', () => {
+    if (st.t === 0) { msg('warn', 'Run the gel first.'); return; }
+    if (st.reversed) { msg('warn', 'The leads were reversed, so the dye moved out of the wells and into the buffer. There is no dye front in the gel to measure. Pour a new gel and connect the leads correctly.'); return; }
+    const estimate = Math.max(0, st.dist + rng.normal(0, 0.4));
+    msg('ok', `Notebook estimate: ${Lab.fmt(estimate, 1)} mm from the wells. Power-supply readout: ${Lab.fmt(st.dist, 1)} mm. The difference is simulated measurement uncertainty.`);
+  });
   $('cv').addEventListener('click', e => {
     const r = $('cv').getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, g = st.geom;
     const i = Math.floor((x - g.gx0) / g.lw); if (i < 0 || i > 7) return;

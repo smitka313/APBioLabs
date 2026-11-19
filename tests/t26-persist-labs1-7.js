@@ -270,7 +270,13 @@ T.lab07 = async (b) => {
   await go(p, 'root-tips'); await p.click('#rt-prep'); await p.waitForTimeout(400); await p.evaluate(() => document.getElementById('rt-auto').click()); await p.waitForTimeout(300);
   const rt = await p.evaluate(() => ['I', 'P', 'M', 'A', 'T', 'left'].map(k => document.getElementById('rt-n-' + k).textContent).join(',') + '|' + document.getElementById('rt-mi').textContent);
   ok(!/^0,0,0,0,0/.test(rt), 'lab07: cells marked ' + rt);
-  await p.click('#rt-record'); await p.waitForTimeout(200); await p.click('#rt-class'); await p.waitForTimeout(400);
+  await p.click('#rt-record'); await p.waitForTimeout(200);
+  const rtRowsBeforeDuplicate = await p.locator('#rt-table-c tbody tr').count();
+  await p.click('#rt-record'); await p.waitForTimeout(200);
+  const rtDuplicateMessage = await txt(p, '#rt-acc'), rtRowsAfterDuplicate = await p.locator('#rt-table-c tbody tr').count();
+  ok(rtRowsBeforeDuplicate === 1 && rtRowsAfterDuplicate === rtRowsBeforeDuplicate, 'lab07: re-recording the same root tip updates its row instead of duplicating it');
+  ok(/already recorded/i.test(rtDuplicateMessage) && /no duplicate row/i.test(rtDuplicateMessage), 'lab07: duplicate root-tip recording explains that the existing row was updated');
+  await p.click('#rt-class'); await p.waitForTimeout(400);
   await p.evaluate(() => { document.getElementById('chi-e-0').value = '100'; document.getElementById('chi-e-0').dispatchEvent(new Event('input', { bubbles: true })); document.getElementById('chi-e-1').value = '60'; document.getElementById('chi-e-1').dispatchEvent(new Event('input', { bubbles: true })); });
   await p.click('#chi-run'); await p.waitForTimeout(300);
   const chiOut = await txt(p, '#chi-out'); ok(/critical value/.test(chiOut), 'lab07: chi-square computed');

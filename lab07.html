@@ -1384,9 +1384,11 @@ $('#rt-prep').addEventListener('click', () => Lab.sound.play('click'));
   Lab.sound.play('click');
     if (!marks.size) { V.note($('#rt-acc'), 'Classify the cells in the field before recording. Nothing was recorded.', true); return; }
     const n = counts(), mit = n.P + n.M + n.A + n.T, total = mit + n.I, left = field.cells.filter(c => !c.edge).length - marks.size;
-    const tb = treat === 'control' ? tabC : tabT, rows = tb.getRows().filter(r => r.tip !== tip);
-    rows.push({ tip, I: n.I, P: n.P, M: n.M, A: n.A, T: n.T, mit, total, mi: 100 * mit / total }); rows.sort((a, b) => a.tip - b.tip); tb.setRows(rows);
-    V.note($('#rt-acc'), `Recorded tip ${tip} (${treat}).` + (left > 0 ? ` ${left} whole cells were left unmarked and are not counted.` : ''));
+    const tb = treat === 'control' ? tabC : tabT, rows = tb.getRows(), alreadyRecorded = rows.some(r => Number(r.tip) === tip);
+    const nextRows = rows.filter(r => Number(r.tip) !== tip);
+    nextRows.push({ tip, I: n.I, P: n.P, M: n.M, A: n.A, T: n.T, mit, total, mi: 100 * mit / total }); nextRows.sort((a, b) => a.tip - b.tip); tb.setRows(nextRows);
+    const note = alreadyRecorded ? `Tip ${tip} was already recorded. Updated its counts; no duplicate row was added.` : `Recorded tip ${tip} (${treat}).`;
+    V.note($('#rt-acc'), note + (left > 0 ? ` ${left} whole cells were left unmarked and are not counted.` : ''));
   });
   themeHooks.push(draw);
   { const sv = Lab.store.get('rt-slide');
