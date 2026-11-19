@@ -1539,7 +1539,7 @@
     return { kind: 'quiz', id: q.id, right, total: q.questions.length, questions: qs };
   }
   function tableItem(t) {
-    const cellText = c => { const i = $('input, select', c); return (i ? i.value : c.textContent).replace(/\s+/g, ' ').trim(); };
+    const cellText = c => { const i = $('input, select', c); const value = !i ? c.textContent : i.type === 'checkbox' ? (i.checked ? 'Yes' : 'No') : i.value; return value.replace(/\s+/g, ' ').trim(); };
     const head = $$('thead th', t).map(cellText);
     const rows = $$('tbody tr', t).filter(tr => !(tr.cells.length === 1 && tr.cells[0].colSpan > 1)).map(tr => $$('th,td', tr).map(cellText));
     const foot = $$('tfoot tr', t).map(tr => $$('th,td', tr).map(cellText));
