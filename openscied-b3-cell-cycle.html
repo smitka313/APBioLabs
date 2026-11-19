@@ -198,16 +198,18 @@
   <section class="step wrap wrap--wide gutter" id="growth-model">
     <header><div class="eyebrow">4 · A closer look at growth</div><h2>More time. More cells.<br>More chances to copy DNA.</h2></header>
     <div class="step-body">
-      <p class="prose">Follow a small patch of tissue through time. Watch individual cells divide, then compare three trials. What changes when the model has more cells, more time, or a faster division rate?</p>
+      <p class="prose">Follow a small patch of tissue through time. Watch individual cells divide, then compare three trials. What changes when you track skin, intestinal, brain-support, or blood-forming cells?</p>
       <div class="growth-controls" aria-label="Growth model settings">
         <div class="field"><label for="age-slider">Follow to age <output id="age-value">50</output></label><input id="age-slider" type="range" min="20" max="80" value="50"><small>Start at age 20 · stop at your chosen age</small></div>
         <div class="field"><label for="body-size">Modeled body size</label><select id="body-size"><option value="small">Smaller · 20 cell units</option><option value="average" selected>Average · 30 cell units</option><option value="large">Larger · 40 cell units</option></select></div>
-        <div class="field"><label for="tissue-rate">Division rate</label><select id="tissue-rate"><option value="slow">Slow-dividing tissue</option><option value="medium" selected>Moderate-dividing tissue</option><option value="fast">Fast-dividing tissue</option></select></div>
+        <div class="field"><label for="tissue-rate">Cell type</label><select id="tissue-rate" aria-describedby="cell-type-description"><option value="skin" selected>Skin · renewing cells</option><option value="colon">Intestinal lining · colon</option><option value="brain">Brain · glial/support cells</option><option value="bloodRed">Blood · red-cell precursors</option><option value="bloodWhite">Blood · white-cell precursors</option></select></div>
         <button class="btn btn--primary" type="button" id="run-trials">Run 3 trials →</button>
       </div>
+      <p id="cell-type-description" class="cell-type-description"></p>
+      <div class="cell-state-legend" aria-label="Cell state key"><span><i class="state-normal"></i>Usual tissue colour · no modeled control change</span><span><i class="state-changed"></i>Amber dot · one or two control changes</span><span><i class="state-cancer"></i>Magenta + C · cancerous state in this model</span></div>
       <div class="growth-stage" id="growth-stage" role="group" aria-label="Growth model observation station">
         <button type="button" id="enlarge-growth" class="growth-expand" aria-pressed="false">Enlarge model ↗</button>
-        <canvas id="growth-scene" tabindex="0" aria-describedby="growth-inspection-help" width="1160" height="650" role="img" aria-label="A modeled body connects to a magnified tissue sample. Individual cells divide during playback, while the age and cumulative division count update. These are simplified model units, not human measurements."></canvas>
+        <canvas id="growth-scene" tabindex="0" aria-describedby="growth-inspection-help" width="1160" height="650" role="img" aria-label="A modeled body connects to a magnified tissue sample. Different named cell populations divide during playback. Magenta cells with a C marker are cancerous in this teaching model; amber dots indicate earlier control changes. Age and exact recorded counts update during playback. These are simplified model units, not human measurements."></canvas>
         <p class="growth-tip" id="growth-tip" role="status" hidden></p>
       </div>
       <div class="growth-playback">
@@ -219,12 +221,12 @@
       </div>
       <p class="small muted" id="growth-inspection-help">Inspect a unit: tap a cell, or focus the model and use the left and right arrow keys.</p>
       <p class="model-caption"><span class="caption-dot"></span>Every flash marks a recorded model division. Two daughter cells replace the dividing cell in the animation; the number of modeled cell units stays fixed.</p>
-      <details class="disclose model-assumptions"><summary>What the model includes—and leaves out</summary><div class="inner"><p>These are invented teaching units, not human cell counts or cancer probabilities. Each modeled cell unit has one chance to divide per modeled year: 5% for the slow setting, 12% for moderate, and 25% for fast. The model keeps the number of cell units constant and counts division events from age 20 onward.</p><p>Each division creates an opportunity to copy DNA. A division does not guarantee a mutation or cancer. The model leaves out repair systems, many genes, exposures, immune responses, and differences among real people. Playback compresses years into seconds. The body drawing identifies the modeled body; the tissue patch is a schematic sample, not an anatomical measurement.</p></div></details>
+      <details class="disclose model-assumptions"><summary>What the model includes—and leaves out</summary><div class="inner"><p>These are invented teaching units, not human cell counts or cancer probabilities. Each modeled cell unit has one chance to divide per modeled year. These invented chances are 18% for renewing skin cells, 60% for colon-lining renewal cells, 2.5% for brain glial/support cells, 65% for red-cell precursors, and 45% for white-cell precursors. These values help compare patterns; they are not real turnover measurements. The model keeps the number of cell units constant and counts division events from age 20 onward.</p><p>Each division creates an opportunity to copy DNA. A division does not guarantee a mutation or cancer. On each division, the model has an intentionally accelerated 12% chance to alter one of three controls: growth signalling, checkpoint braking, or DNA repair. A cell enters the magenta cancerous state only after all three modeled controls are altered; it then has an 80% chance to divide per modeled year. A single change does not turn it cancerous. This three-control rule is a teaching simplification, not a real diagnostic criterion or a claim that three changes always cause cancer. The model leaves out real repair mechanisms, many genes, exposures, immune responses, and differences among people. Playback compresses years into seconds. The highlighted body region follows the chosen tissue. All drawings are schematic. Blood samples represent bone-marrow precursors; the brain sample represents a glial/support-cell population, not mature neurons. The cell count stays fixed even after cells enter the cancerous state; this model does not simulate tumour size or spread.</p><p class="small">Biology references: <a href="https://www.cancer.gov/about-cancer/causes-prevention/genetics">NCI: cancer and genetic changes</a> · <a href="https://stemcells.nih.gov/info/basics/stc-basics/">NIH: stem cells and tissue renewal</a>. Rates and transition rules above are invented for this companion.</p></div></details>
       <div class="results-heading"><div><div class="eyebrow">Your evidence, collected</div><h3>Same settings. Three separate trials.</h3></div><button class="btn btn--sm" type="button" id="clear-trials">Clear model results</button></div>
       <p id="set-summary" class="small" role="status" aria-live="polite">Run a set to begin your comparison.</p>
-      <div id="trial-chart" class="growth-chart-wrap"><canvas id="growth-chart" width="1160" height="330" role="img" aria-label="Recorded trial counts and set means. Exact values are available in the data table below."></canvas></div>
+      <div id="trial-chart" class="growth-chart-wrap"><canvas id="growth-chart" width="1160" height="330" role="img" aria-label="Recorded trial counts and set means. Exact division counts and cancer-state counts are available in the table below."></canvas></div>
       <p class="chart-caption">Each dot is one trial. The short line marks the set mean. Overlapping dots are offset vertically. The chart shows the latest eight sets; the table keeps every trial.</p>
-      <details class="disclose trial-data"><summary>Open the exact data table</summary><div class="table-wrap"><table class="data" id="trial-table"><caption>Recorded model divisions and DNA-copying opportunities</caption><thead><tr><th>Set / trial</th><th>Age</th><th>Body size</th><th>Division rate</th><th>Divisions</th><th>Copying opportunities</th></tr></thead><tbody id="trial-rows"><tr><td colspan="6">Run trials to collect results.</td></tr></tbody></table></div></details>
+      <details class="disclose trial-data"><summary>Open the exact data table</summary><div class="table-wrap"><table class="data" id="trial-table"><caption>Recorded model divisions and DNA-copying opportunities</caption><thead><tr><th>Set / trial</th><th>Age</th><th>Body size</th><th>Division rate</th><th>Divisions</th><th>Copying opportunities</th><th>Cancer-state units</th></tr></thead><tbody id="trial-rows"><tr><td colspan="7">Run trials to collect results.</td></tr></tbody></table></div></details>
       <div class="next-experiment"><span class="eyebrow">Try it next</span><p><strong>Change just one setting.</strong> Leave the other two alone, run three more trials, and look at how the results compare.</p></div>
     </div>
   </section>
@@ -238,7 +240,7 @@
       <fieldset class="evidence-checks"><legend>Which ideas does your investigation support?</legend>
         <label class="choice"><input type="checkbox" id="ev-age"> A longer modeled time can allow more cell divisions.</label>
         <label class="choice"><input type="checkbox" id="ev-size"> A larger modeled body contains more cell units.</label>
-        <label class="choice"><input type="checkbox" id="ev-rate"> Faster-dividing tissue can have more division opportunities.</label>
+        <label class="choice"><input type="checkbox" id="ev-rate"> Different cell types divide at different rates, creating different numbers of copying opportunities.</label>
         <label class="choice"><input type="checkbox" id="ev-guarantee"> Every cell division causes cancer.</label>
       </fieldset>
       <p class="small" id="evidence-hint" role="status" aria-live="polite"></p>
@@ -273,6 +275,7 @@
 <footer class="site-footer"><div class="wrap gutter"><p><a href="index.html">Return to AP Bio Digital Lab Bench</a></p><p>Free educational companion · No account required · Student responses stay in this browser unless downloaded and shared by the student.</p></div></footer>
 <script src="lab.js"></script>
 <script src="cell-cycle-scene.js"></script>
+<script src="growth-cell-types.js"></script>
 <script src="growth-model-scene.js"></script>
 <script src="openscied-b3-cell-cycle.js"></script>
 </body>
