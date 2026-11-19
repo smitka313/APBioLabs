@@ -107,3 +107,11 @@ body.growth-open { overflow:hidden; }
 .state-cancer::after { content:'C'; color:#fff; font:700 9px sans-serif; position:absolute; left:3px; top:1px; }
 .growth-tip { max-width:430px; font-size:.76rem; line-height:1.45; }
 @media(max-width:520px){.cell-state-legend {font-size:.69rem;gap:7px 12px;}.growth-tip {left:5%;max-width:90%;font-size:.67rem;}}
+
+/* The companion follows the AP labs' one-section navigation pattern. */
+body.companion-paged section.step:not(.is-current) { display:none; }
+.companion-pager { margin-top:28px; }
+.companion-pager .pager-mid { font:600 .8rem var(--f-mono,monospace); }
+.companion-pager .pager-prev,.companion-pager .pager-next { max-width:calc(50% - 8px); white-space:normal; text-align:center; }
+@media(max-width:640px){.companion-pager .pager-mid {order:3;flex-basis:100%;}.companion-pager .btn {font-size:.8rem;padding-inline:10px;}}
+@media print { .companion-pager { display:none!important; } }
