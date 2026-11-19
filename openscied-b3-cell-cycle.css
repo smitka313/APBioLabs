@@ -256,3 +256,18 @@
 .requirement-meter > span { display:block; height:100%; border-radius:inherit; background:var(--accent); }
 .requirement.met .requirement-meter > span { background:#46cf8e; }
 @media(prefers-reduced-motion:no-preference){ .player-score { transition:background .2s,border-color .2s,box-shadow .2s; } }
+
+/* Round 2 cellular chance card reveal */
+.chance-reveal[hidden] { display:none!important; }
+.chance-reveal { position:fixed; inset:0; z-index:9999; display:grid; place-items:center; padding:18px; background:rgba(3,9,19,.84); backdrop-filter:blur(7px); overflow-y:auto; }
+.chance-reveal-panel { width:min(100%,490px); max-height:calc(100dvh - 36px); overflow-y:auto; padding:clamp(18px,4vw,30px); text-align:center; border:3px solid #ba83ff; border-radius:24px; background:linear-gradient(145deg,#34205d,#19152d 72%); color:#fff; box-shadow:0 0 0 5px #8e51e133,0 0 55px #9b4dff88; }
+.chance-reveal-kicker { display:block; color:#e5c9ff; font-weight:900; letter-spacing:.1em; font-size:.85rem; }
+.chance-reveal-art { display:grid; place-items:center; min-height:135px; margin:16px auto; border-radius:20px; background:radial-gradient(circle,#7a3ac9 0%,#392269 42%,#211736 80%); box-shadow:inset 0 0 32px #a76cff55; }
+.chance-reveal-art span { font-size:clamp(4rem,12vw,6rem); filter:drop-shadow(0 0 18px #d9a9ff); }
+.chance-reveal-player { color:#e4cbff; font-weight:800; margin:0; }
+.chance-reveal-panel h2 { color:#fff; font-size:clamp(1.5rem,5vw,2rem); line-height:1.2; margin:12px 0; }
+.chance-reveal-panel #chance-reveal-copy { font-size:1.12rem; line-height:1.55; color:#fff; }
+.chance-reveal-note { font-size:.85rem; color:#d5c8e6; }
+.chance-reveal-panel button { width:100%; min-height:48px; margin-top:10px; font-weight:800; }
+@media(prefers-reduced-motion:no-preference){ .chance-reveal-panel { animation:chance-arrive .35s ease-out both; } @keyframes chance-arrive { from { opacity:0; transform:translateY(22px) scale(.94); } to { opacity:1; transform:translateY(0) scale(1); } } }
+@media print { .chance-reveal { display:none!important; } }
