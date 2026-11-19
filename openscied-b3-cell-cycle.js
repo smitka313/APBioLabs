@@ -12,7 +12,7 @@
   function save(){
     try{
       state.fields={};
-      $$('input[type=radio]:checked,input[type=checkbox],textarea,select').forEach(function(el){
+      $$('input[type=radio]:checked,input[type=checkbox],#age-slider,textarea,select').forEach(function(el){
         if(el.name==='prediction')return;
         if(el.type==='checkbox')state.fields[el.id]=el.checked;
         else if(el.type==='radio')state.fields[el.name]=el.value;
@@ -20,6 +20,7 @@
       });
       localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,quick:state.quick}));
       $('#save-status').textContent='Saved on this device.';
+      renderReport();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
   }
   function restoreFields(){
@@ -212,7 +213,7 @@
   function startRound(round,mode,players){
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
     const count=Number(players|| (selectedMode==='group'?$('#group-size').value:1))||1;
-    const results=Object.assign({},old.roundResults||{});
+    const results=round===2&&old.roundResults&&old.roundResults[1]?{1:old.roundResults[1]}:{};
     state.game={schema:2,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,event:{title:'Round '+round+' begins',copy:round===1?'Move each cell through the cycle and check its materials at G1 and G2.':'Same board, new chance events. Some checkpoint responses may be disrupted.',icon:'🎲',kicker:roundName(round)}};
     save();renderGame();$('#roll-dice').focus();
   }
@@ -329,6 +330,11 @@
         const keepTurn=drawChance(p);
         if(keepTurn&&p.status==='playing'){g.active=p.id-1;}
       }
+      if(p.pos===30&&p.status==='playing'){
+        p.status='finished';p.divisions++;p.unchecked++;
+        addLog('Player '+p.id+' completed a model division after bypassing the final checkpoint.');
+        setEvent('Division after a bypassed checkpoint','This model cell reached division after a chance event bypassed the final check.','⚠️','Checkpoint bypassed');
+      }
       finishIfAll();
       const bonusRemains=p.bonusRolls>0&&p.status==='playing'&&!g.complete;
       if(!bonusRemains&&!g.complete)activeNext(g.active);
@@ -351,28 +357,87 @@
     const cellUnits={small:20,average:30,large:40}[size];
     const probability={slow:0.05,medium:0.12,fast:0.25}[tissue];
     let divisions=0;
-    const years=Math.max(0,age-20);
-    for(let y=0;y<years;y++)for(let c=0;c<cellUnits;c++)if(Math.random()<probability)divisions++;
-    return {age:age,size:size,tissue:tissue,divisions:divisions,opportunities:divisions};
+    const timeline=[{year:20,cumulative:0,cells:[]}];
+    for(let y=21;y<=age;y++){
+      const cells=[];
+      for(let c=0;c<cellUnits;c++)if(Math.random()<probability){divisions++;cells.push(c);}
+      timeline.push({year:y,cumulative:divisions,cells:cells});
+    }
+    return {age:age,size:size,tissue:tissue,divisions:divisions,opportunities:divisions,timeline:timeline};
+  }
+  function settings(){return {age:Number($('#age-slider').value),size:$('#body-size').value,tissue:$('#tissue-rate').value};}
+  function trialGroups(){
+    const groups=[];
+    for(let i=0;i<state.trials.length;i+=3){
+      const trials=state.trials.slice(i,i+3),t=trials[0],values=trials.map(t=>t.divisions);
+      groups.push({id:String(groups.length),index:groups.length+1,age:t.age,size:t.size,tissue:t.tissue,trials:trials,mean:values.reduce((a,b)=>a+b,0)/values.length,min:Math.min(...values),max:Math.max(...values)});
+    }return groups;
+  }
+  function setLabel(g){return 'Set '+g.index+' · age '+g.age+' · '+labelBody(g.size)+' · '+labelTissue(g.tissue);}
+  function fillSelect(el,groups,fallback){
+    const current=el.value||state.fields[el.id];
+    el.innerHTML='';
+    groups.forEach(g=>{const option=document.createElement('option');option.value=g.id;option.textContent=setLabel(g);el.appendChild(option);});
+    el.disabled=groups.length===0;
+    if(groups.length)el.value=groups.some(g=>g.id===current)?current:String(fallback);
   }
   function renderTrials(){
-    const body=$('#trial-rows');
-    if(!state.trials.length){body.innerHTML='<tr><td colspan="6">Run trials to collect results.</td></tr>';$('#trial-chart').innerHTML='<p class="muted small">A comparison graph will appear after you run trials.</p>';return;}
-    body.innerHTML='';
+    const body=$('#trial-rows'),groups=trialGroups();body.innerHTML='';
+    if(!state.trials.length)body.innerHTML='<tr><td colspan="6">Run trials to collect results.</td></tr>';
     state.trials.forEach(function(t,i){
       const tr=document.createElement('tr');
-      [String(i+1),String(t.age),labelBody(t.size),labelTissue(t.tissue),String(t.divisions),String(t.opportunities)].forEach(function(v){const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+      ['Set '+(Math.floor(i/3)+1)+' / '+(i%3+1),String(t.age),labelBody(t.size),labelTissue(t.tissue),String(t.divisions),String(t.opportunities)].forEach(function(v){const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
       body.appendChild(tr);
     });
-    const max=Math.max(1,...state.trials.map(x=>x.divisions)),w=680,h=210,pad=36,bar=Math.min(42,(w-pad*2)/state.trials.length-6),gap=(w-pad*2-bar*state.trials.length)/Math.max(1,state.trials.length-1);
-    let svg='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Bar graph of modeled cell divisions for '+state.trials.length+' trials"><title>Modeled cell-division events</title><line x1="'+pad+'" y1="'+(h-pad)+'" x2="'+(w-pad)+'" y2="'+(h-pad)+'" stroke="currentColor"/><text x="'+pad+'" y="18" fill="currentColor" font-size="13">Modeled cell divisions</text>';
-    state.trials.forEach(function(t,i){const bh=Math.max(2,(h-pad*2)*(t.divisions/max)),x=pad+i*(bar+gap),y=h-pad-bh;svg+='<rect x="'+x+'" y="'+y+'" width="'+bar+'" height="'+bh+'" rx="4" fill="var(--s1)"/><text x="'+(x+bar/2)+'" y="'+(y-5)+'" text-anchor="middle" fill="currentColor" font-size="12">'+t.divisions+'</text><text x="'+(x+bar/2)+'" y="'+(h-10)+'" text-anchor="middle" fill="currentColor" font-size="11">T'+(i+1)+'</text>';});
-    svg+='</svg>';$('#trial-chart').innerHTML=svg;
+    if(window.GrowthModelScene)window.GrowthModelScene.chart(groups);
+    const last=groups[groups.length-1];
+    $('#set-summary').textContent=last?setLabel(last)+': '+last.trials.map(t=>t.divisions).join(', ')+' divisions. Mean '+last.mean.toFixed(1)+'; range '+last.min+'–'+last.max+'.':'Run a set to begin your comparison.';
+    fillSelect($('#compare-a'),groups,0);fillSelect($('#compare-b'),groups,Math.max(0,groups.length-1));
+    fillSelect($('#replay-set'),groups,Math.max(0,groups.length-1));
+    $('#replay-growth').disabled=!groups.length;
+    renderComparison();renderReport();
+  }
+  function renderComparison(){
+    const groups=trialGroups(),a=groups[Number($('#compare-a').value)],b=groups[Number($('#compare-b').value)],out=$('#comparison-evidence');
+    out.innerHTML='';
+    $('#sentence-evidence').textContent='Sentence starter: “When I changed ___, the mean changed from ___ to ___ divisions. This matters because ___.”';
+    function para(text,className){const p=document.createElement('p');if(className)p.className=className;p.textContent=text;out.appendChild(p);}
+    if(groups.length<2||!a||!b){para('Collect two sets to reveal your evidence comparison.');return;}
+    if(a.id===b.id){para('Choose two different sets to compare.');return;}
+    const changed=['age','size','tissue'].filter(k=>a[k]!==b[k]),names={age:'modeled age',size:'modeled body size',tissue:'division rate'};
+    const title=document.createElement('h3');title.textContent=changed.length===1?'One setting changed: '+names[changed[0]]:changed.length?'More than one setting changed':'Same settings, separate trials';out.appendChild(title);
+    const display=document.createElement('div');display.className='comparison-means';
+    for(const g of [a,b]){const el=document.createElement('div'),n=document.createElement('strong'),label=document.createElement('span'),range=document.createElement('small');n.textContent=g.mean.toFixed(1);label.textContent='Set '+g.index+' mean divisions';range.textContent='Range '+g.min+'–'+g.max+' · '+g.trials.length+' trials';el.append(n,label,range);display.appendChild(el);}out.appendChild(display);
+    const diff=b.mean-a.mean;
+    para('The second mean is '+(diff===0?'the same.':Math.abs(diff).toFixed(1)+(diff>0?' divisions higher.':' divisions lower.')),'comparison-difference');
+    if(changed.length>1)para('You changed '+changed.map(k=>names[k]).join(' and ')+'. Try another set changing only one setting so you can connect the difference to that setting.');
+    else if(!changed.length)para('Repeated trials vary even with identical settings. That is why we compare several trials.');
+    else if(a.min<=b.max&&b.min<=a.max)para('The trial ranges overlap. These recorded results show variation; collect more evidence before deciding how clear the pattern is.');
+    else para('The recorded trial ranges do not overlap in this comparison. Use the numbers as evidence, and remember that three trials are a small sample.');
+    $('#sentence-evidence').textContent='Use your evidence: “'+(changed.length===1?'When I changed '+names[changed[0]]:'Between Set '+a.index+' and Set '+b.index)+', the mean changed from '+a.mean.toFixed(1)+' to '+b.mean.toFixed(1)+' divisions. Each division creates another opportunity to copy DNA, so…”';
+  }
+  function renderReport(){
+    const report=$('#investigation-report');if(!report)return;
+    const groups=trialGroups();report.innerHTML='';
+    const kicker=document.createElement('div');kicker.className='eyebrow';kicker.textContent='Cell cycle & growth · My evidence';report.appendChild(kicker);
+    const h=document.createElement('h3');h.textContent='Your investigation, at a glance.';report.appendChild(h);
+    const list=document.createElement('ul');list.className='report-checks';
+    const labels=['Round 1: '+(state.game.roundResults[1]?'completed':'not completed'),'Round 2: '+(state.game.roundResults[2]?'completed':'not completed'),groups.length+' model set'+(groups.length===1?'':'s')+' recorded',($('#explanation').value.trim()?'Explanation written':'Explanation not answered yet')];
+    labels.forEach(t=>{const li=document.createElement('li');li.textContent=t;list.appendChild(li);});report.appendChild(list);
+    if(groups.length){const wrap=document.createElement('div');wrap.className='table-wrap';const table=document.createElement('table');table.className='data';table.innerHTML='<caption>Recorded sets</caption><thead><tr><th>Set</th><th>Settings</th><th>Trial divisions</th><th>Mean</th></tr></thead>';const body=document.createElement('tbody');
+      groups.forEach(g=>{const row=document.createElement('tr');[String(g.index),'Age '+g.age+' / '+labelBody(g.size)+' / '+labelTissue(g.tissue),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1)].forEach(text=>{const td=document.createElement('td');td.textContent=text;row.appendChild(td);});body.appendChild(row);});table.appendChild(body);wrap.appendChild(table);report.appendChild(wrap);}
+    const rounds=state.game.roundResults;
+    for(const n of [1,2])if(rounds[n]){const row=document.createElement('p'),r=rounds[n];row.className='report-round';row.textContent='Round '+n+': '+r.rolls+' rolls, '+r.divisions+' completed divisions, '+r.unchecked+' unchecked divisions, '+r.bypassed+' checkpoints bypassed.';report.appendChild(row);}
+    for(const [label,id] of [['My explanation','explanation'],['One model limitation','model-limit']]){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=$('#'+id).value.trim()||'Not answered yet.';report.append(h,p);}
+    const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities.';report.appendChild(note);
   }
   function runTrials(){
-    const age=Number($('#age-slider').value),size=$('#body-size').value,tissue=$('#tissue-rate').value;
-    for(let i=0;i<3;i++)state.trials.push(simulateOne(age,size,tissue));
-    renderTrials();save();
+    const s=settings(),trials=[];
+    for(let i=0;i<3;i++)trials.push(simulateOne(s.age,s.size,s.tissue));
+    state.trials.push(...trials);renderTrials();
+    const last=String(trialGroups().length-1);$('#replay-set').value=last;$('#compare-b').value=last;
+    renderComparison();save();
+    if(window.GrowthModelScene)window.GrowthModelScene.play(trials);
   }
   function download(){
     const payload={format:'openscied-b3-cell-cycle-progress-v1',exportedAt:new Date().toISOString(),game:state.game,simulationTrials:state.trials,answers:state.fields};
@@ -386,7 +451,41 @@
   function wire(){
     readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();
     window.addEventListener('resize',function(){renderBoard();},{passive:true});
-    $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;save();});
+    $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
+    ['body-size','tissue-rate'].forEach(id=>$('#'+id).addEventListener('change',function(){if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());}));
+    if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());
+    $('#growth-scene').addEventListener('growth-playback',function(event){
+      const d=event.detail,has=state.trials.length>0;
+      $('#growth-age').textContent=d.year;$('#growth-scrub').max=d.target;$('#growth-scrub').value=d.year;
+      $('#growth-scrub').disabled=!has||!d.hasHistory||d.type==='settings';$('#pause-growth').disabled=!has||!d.hasHistory||d.type==='settings';
+      $('#pause-growth').textContent=d.playing?'Pause playback':'Resume playback';
+      if(d.type==='start')$('#growth-status').textContent='Playing three recorded trials. Years are compressed into seconds.';
+      if(d.type==='complete')$('#growth-status').textContent='Playback complete. All three trials are saved; compare their counts below.';
+      if(d.type==='settings')$('#growth-status').textContent='Settings changed. Run three trials to record this setup.';
+      if(d.type==='scrub')$('#growth-status').textContent='Trial '+d.trial+' at age '+d.year+': '+d.divisions+' recorded divisions.';
+      if(d.type==='pause')$('#growth-status').textContent=d.playing?'Playback resumed.':'Playback paused. Drag the recorded-age slider to inspect the history.';
+    });
+    $('#pause-growth').addEventListener('click',function(){if(window.GrowthModelScene)window.GrowthModelScene.pause();});
+    $('#enlarge-growth').addEventListener('click',function(){
+      const expanded=$('#growth-stage').classList.toggle('growth-expanded');
+      this.setAttribute('aria-pressed',String(expanded));this.textContent=expanded?'Close enlarged model ×':'Enlarge model ↗';
+      $('#growth-stage').setAttribute('role',expanded?'dialog':'group');
+      if(expanded)$('#growth-stage').setAttribute('aria-modal','true');else $('#growth-stage').removeAttribute('aria-modal');
+      document.body.classList.toggle('growth-open',expanded);
+    });
+    document.addEventListener('keydown',function(event){
+      if(!$('#growth-stage').classList.contains('growth-expanded'))return;
+      if(event.key==='Escape'){$('#enlarge-growth').click();$('#enlarge-growth').focus();}
+      if(event.key==='Tab'){
+        const first=$('#enlarge-growth'),last=$('#growth-scene');
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+      }
+    });
+
+    $('#growth-scrub').addEventListener('input',function(){if(window.GrowthModelScene)window.GrowthModelScene.scrub(Number(this.value));});
+    $('#replay-growth').addEventListener('click',function(){const g=trialGroups()[Number($('#replay-set').value)];if(g&&window.GrowthModelScene)window.GrowthModelScene.play(g.trials);});
+    ['compare-a','compare-b'].forEach(id=>$('#'+id).addEventListener('change',function(){renderComparison();save();}));
     $$('input[name="game-mode"]').forEach(function(el){el.addEventListener('change',function(){$('#group-size-wrap').hidden=this.value!=='group';save();});});
     $('#start-round1').addEventListener('click',function(){startRound(1);});
     $('#start-round2').addEventListener('click',function(){startRound(2);});
@@ -412,7 +511,7 @@
     $('#reset-game').addEventListener('click',resetGame);
     $('#round-summary').addEventListener('click',function(event){if(event.target&&event.target.id==='start-round2-from-summary')startRound(2,state.game.mode,state.game.players);});
     $('#run-trials').addEventListener('click',runTrials);
-    $('#clear-trials').addEventListener('click',function(){state.trials=[];renderTrials();save();});
+    $('#clear-trials').addEventListener('click',function(){if(state.trials.length&&!window.confirm('Clear the growth-model results? The board game and your explanation will stay saved.'))return;state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();});
     $('#check-background').addEventListener('click',function(){
       const choice=$('input[name="quick-check"]:checked');
       const out=$('#background-feedback');
@@ -427,7 +526,7 @@
       save();
     });});
     $('#download-work').addEventListener('click',download);
-    $('#print-work').addEventListener('click',function(){window.print();});
+    $('#print-work').addEventListener('click',function(){renderReport();window.print();});
     $('#reset-work').addEventListener('click',reset);
     $$('input,textarea,select').forEach(function(el){el.addEventListener('change',save);el.addEventListener('input',save);});
     save();
