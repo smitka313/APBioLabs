@@ -1488,7 +1488,7 @@ $('#c-stop').addEventListener('click', () => {
   if (!trial) return;
   if (chRec.recording) chRec.clear();
   const had = trial.rows.length;
-  trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); drawChamber(); chSave(false);
+  trial = null; paused = false; $('#count-panel').hidden = true; $('#c-run').disabled = false; chLoop.stop(); flies = makeFlies(+cn.value); simT = 0; drawChamber(); chSave(false);
   intTable.clear();   // the partial counts belong to a trial that was never finished, so they do not stay in the table or the graph
   chMsg('Trial stopped — not recorded.' + (had ? ` The ${had} count${had > 1 ? 's' : ''} so far ${had > 1 ? 'were' : 'was'} cleared and nothing was added to All trials. Press Run trial to start again.` : ' Nothing was added to All trials. Press Run trial to start again.'), 'warn');
   /* Stopping a trial is not a recorded run. The in-scene message is authoritative; avoid a second toast that can conflict with the timelapse-saved notification. */

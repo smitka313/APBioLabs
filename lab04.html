@@ -1395,7 +1395,7 @@ const Predict = (function () {
   }
   $('#p1-check').addEventListener('click', () => { p1Check(); Lab.store.set('chk-p1Check', true); });
   ['#p1-table', '#p2-table'].forEach(sel => $(sel).addEventListener('input', e => { if (e.target.matches('input')) V.cell($(sel), e.target.dataset.r, e.target.dataset.k, ''); }));
-  $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; $('#p1-note').textContent = ''; Lab.store.set('chk-p1Check', false); });
+  $('#p1-clear').addEventListener('click', () => { p1table.clear(); $('#p1-fb').innerHTML = ''; $('#p1-note').textContent = ''; Lab.store.set('chk-p1Check', false); Lab.store.set('p1-last', null); p1Preview(); $('#p1-time').textContent = '0 min'; $('#p1-depth').textContent = '0.0 mm'; $('#p1-rate').textContent = '—'; });
   /* Reload: show the last soak at its end state again (blocks, acid fronts, readouts) and the last check. */
   { const sv = Lab.store.get('p1-last');
     if (sv && p1table.getRows().length) {
@@ -1516,7 +1516,7 @@ function p2Check() {
     fbList($('#p2-fb'), [`<span class="pill ${wrong.length ? 'warn' : 'ok'}">${ok} of ${rows.length} correct</span>` + (wrong.length ? ` Recheck row${wrong.length > 1 ? 's' : ''} ${wrong.join(', ')}. Did you divide by the <em>initial</em> mass and multiply by 100?` : '')]);
   }
   $('#p2-check').addEventListener('click', () => { p2Check(); Lab.store.set('chk-p2Check', true); });
-  $('#p2-clear').addEventListener('click', () => { p2table.clear(); $('#p2-fb').innerHTML = ''; Lab.store.set('chk-p2Check', false); });
+  $('#p2-clear').addEventListener('click', () => { p2table.clear(); $('#p2-fb').innerHTML = ''; Lab.store.set('chk-p2Check', false); Lab.store.set('p2-last', null); p2Bal = { mass: null, tag: '', load: false }; p2Preview(); $('#p2-time').textContent = '0 min'; $('#p2-max').textContent = '—'; $('#p2-min').textContent = '—'; });
   { const sv = Lab.store.get('p2-last'), rows = p2table.getRows();
     if (sv && sv.pairs && rows.length) {
       sv.pairs.forEach((pr, i) => { if (p2sel[i]) { p2sel[i][0].value = pr[0]; p2sel[i][1].value = pr[1]; } }); p2Preview();
