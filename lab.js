@@ -1310,6 +1310,7 @@
         finally { docx.disabled = false; }
       } }, 'Download report (.docx)');
       const pf = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { say(`Downloaded ${saveProgressFile()}.`); } }, 'Download progress file');
+      if (Lab.timelapse && Lab.timelapse.withRun && Lab.timelapse.withRun().length) kids.push(h('p', { class: 'small muted' }, 'Timelapse recordings are stored separately from progress files and transfer codes. Download a GIF or include it in your report before moving to another computer.'));
       kids.push(h('p', { class: 'dm-sub' }, `This lab (Lab ${labNo(LAB_ID)})`), h('div', { class: 'row' }, docx, pf), transferBlock());
     }
     const others = labsWithWork().filter(l => !(IS_LAB && l.id === LAB_ID));
