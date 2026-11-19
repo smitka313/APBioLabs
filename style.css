@@ -1013,7 +1013,7 @@ body.has-backup-bar { padding-bottom: calc(var(--backup-bar-h, 0px) + max(16px, 
 
 @media (max-width: 520px) { .nav-end .nav-progress { width: 6.4em; } }
 .nav-end { position: relative; }
-.nav-end .nav-progress[role="button"] { appearance: none; border: 0; padding: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: .8rem; text-align: left; cursor: pointer; }
+.nav-end .nav-progress[role="button"] { appearance: none; border: 0; padding: 0; background: transparent; color: var(--muted); font-family: inherit; font-size: .8rem; text-align: left; text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
 .nav-end .nav-progress[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
 .nav-progress-detail { position: absolute; z-index: 40; top: calc(100% + 8px); right: 0; display: grid; gap: 8px; width: min(22rem, calc(100vw - 24px)); padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); box-shadow: 0 8px 24px rgba(0,0,0,.22); white-space: normal; }
 .nav-progress-detail[hidden] { display: none !important; }
