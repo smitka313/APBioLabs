@@ -195,7 +195,7 @@
     const g=state.game;
     if(!g.playersState.length||!g.playersState.every(function(p){return p.status==='finished';}))return false;
     g.complete=true;
-    const totals={divisions:0,unchecked:0,restarts:0,bypassed:0};
+    const totals={divisions:0,unchecked:0,restarts:0,bypassed:0,rolls:g.turns};
     g.playersState.forEach(function(p){totals.divisions+=p.divisions;totals.unchecked+=p.unchecked;totals.restarts+=p.restarts;totals.bypassed+=p.bypassed;});
     g.roundResults[g.round]=totals;
     setEvent(roundName(g.round)+' complete','Every model cell reached the end of this round. Compare how the checkpoints and chance events shaped the path.','🏁','Round complete');
@@ -209,7 +209,7 @@
     if(g.round===1)html+='<p>Round 1 uses functioning checkpoint responses. Start Round 2 with the same group to add the chance-card disruptions.</p><button class="btn btn--primary" id="start-round2-from-summary" type="button">Play Round 2 with disrupted responses</button>';
     if(g.round===2&&g.roundResults[1]){
       const a=g.roundResults[1],b=r;
-      html+='<div class="table-wrap"><table class="data round-compare"><caption>Round 1 and Round 2 comparison</caption><thead><tr><th>What the group observed</th><th>Round 1</th><th>Round 2</th></tr></thead><tbody><tr><th>Completed divisions</th><td>'+a.divisions+'</td><td>'+b.divisions+'</td></tr><tr><th>Divisions without a checkpoint check</th><td>'+a.unchecked+'</td><td>'+b.unchecked+'</td></tr><tr><th>Cells restarted after damage</th><td>'+a.restarts+'</td><td>'+b.restarts+'</td></tr><tr><th>Checkpoints bypassed</th><td>'+a.bypassed+'</td><td>'+b.bypassed+'</td></tr></tbody></table></div><p>A bypassed checkpoint can let a cell keep moving when it has not met the model’s requirements. That outcome shows one possible process; it does not mean that one division or one DNA change equals cancer.</p>';
+      html+='<div class="table-wrap"><table class="data round-compare"><caption>Round 1 and Round 2 comparison</caption><thead><tr><th>What the group observed</th><th>Round 1</th><th>Round 2</th></tr></thead><tbody><tr><th>Dice rolls</th><td>'+a.rolls+'</td><td>'+b.rolls+'</td></tr><tr><th>Completed divisions</th><td>'+a.divisions+'</td><td>'+b.divisions+'</td></tr><tr><th>Divisions without a checkpoint check</th><td>'+a.unchecked+'</td><td>'+b.unchecked+'</td></tr><tr><th>Cells restarted after damage</th><td>'+a.restarts+'</td><td>'+b.restarts+'</td></tr><tr><th>Checkpoints bypassed</th><td>'+a.bypassed+'</td><td>'+b.bypassed+'</td></tr></tbody></table></div><p>A bypassed checkpoint can let a cell keep moving when it has not met the model’s requirements. That outcome shows one possible process; it does not mean that one division or one DNA change equals cancer.</p>';
     }
     el.innerHTML=html;el.hidden=false;
   }
@@ -278,6 +278,7 @@
   }
   function restartCell(p,copy){
     p.restarts++;p.pos=0;p.score=zeroScore();p.bonusRolls=0;
+    addLog('Player '+p.id+' restarted with a fresh scorecard. '+copy);
     setEvent('The cell restarts at the beginning',copy,'🧬','Checkpoint response');
   }
   function checkCheckpoint(p){
@@ -285,24 +286,26 @@
     if(p.pos===7){
       const values=[s.g1.nutrients,s.g1.proteins,s.g1.organelles];
       if(values.includes(0)){restartCell(p,'A G1 material category is still at zero. The cell starts again with a fresh scorecard.');return;}
-      if(values.includes(1)){p.pos=Math.max(0,p.pos-5);setEvent('G1 checkpoint: move back 5 spaces','At least one G1 material is present only once. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
-      if(values.includes(2)){p.pos=Math.max(0,p.pos-3);setEvent('G1 checkpoint: move back 3 spaces','At least one G1 material is present only twice. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
-      setEvent('G1 checkpoint passed','The G1 scorecard has at least three nutrients, proteins, and organelles. The cell can continue to S phase.','✅','Checkpoint passed');return;
+      if(values.includes(1)){p.pos=Math.max(0,p.pos-5);addLog('Player '+p.id+' moved back 5 spaces at G1.');setEvent('G1 checkpoint: move back 5 spaces','At least one G1 material is present only once. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
+      if(values.includes(2)){p.pos=Math.max(0,p.pos-3);addLog('Player '+p.id+' moved back 3 spaces at G1.');setEvent('G1 checkpoint: move back 3 spaces','At least one G1 material is present only twice. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
+      addLog('Player '+p.id+' passed the G1 checkpoint.');setEvent('G1 checkpoint passed','The G1 scorecard has at least three nutrients, proteins, and organelles. The cell can continue to S phase.','✅','Checkpoint passed');return;
     }
     if(p.pos===23){
       const values=[s.g2.nutrients,s.g2.proteins,s.g2.organelles];
       if(values.includes(0)){restartCell(p,'A G2 material category is still at zero. The cell starts again with a fresh scorecard.');return;}
-      if(s.s.chromosomes<4){p.pos=8;setEvent('G2 checkpoint: return to S phase','The S-phase scorecard has fewer than four chromosome copies. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
+      if(s.s.chromosomes<4){p.pos=8;addLog('Player '+p.id+' returned to S phase for more DNA copying.');setEvent('G2 checkpoint: return to S phase','The S-phase scorecard has fewer than four chromosome copies. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
       if(values.some(function(x){return x<1;})){p.pos=15;setEvent('G2 checkpoint: gather more materials','The cell needs at least one of each G2 material before it can continue.','↩️','Checkpoint response');return;}
-      setEvent('G2 checkpoint passed','The cell has at least four chromosome copies and at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
+      addLog('Player '+p.id+' passed the G2 checkpoint.');setEvent('G2 checkpoint passed','The cell has at least four chromosome copies and at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
     }
     if(p.pos===29){
       const ok=s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3&&s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1;
       if(!ok){
         p.pos=s.s.chromosomes<4?8:(s.g1.nutrients<3||s.g1.proteins<3||s.g1.organelles<3?1:15);
+        addLog('Player '+p.id+' returned to gather missing materials before M phase.');
         setEvent('M checkpoint: gather what is missing','The scorecard does not yet meet every phase requirement. The cell returns to gather what is missing.','↩️','Checkpoint response');return;
       }
       p.pos=30;p.status='finished';p.divisions++;
+      addLog('Player '+p.id+' completed a regulated model division.');
       setEvent('The model cell completes division','The cell met the G1, S, and G2 requirements and divides into daughter cells. A completed division is not the same as cancer.','🧬','Division complete');
     }
   }
@@ -338,7 +341,7 @@
         if(dice.includes(required)){p.pos=Math.min(30,p.pos+1);moved=true;}
         else missed=required;
       }else{p.pos=Math.min(30,p.pos+1);moved=true;}
-      const rollPos=bonus?startPos:p.pos,rollPhase=track[rollPos].phase;
+      const rollPos=bonus?startPos:p.pos;
       if(moved||bonus)scoreRoll(p,dice);
       const landed=p.pos,summary=currentSummary(track[rollPos],dice,required,missed,bonus);
       g.lastRollSummary=summary;
