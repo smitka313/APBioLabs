@@ -205,3 +205,10 @@
 @keyframes cell-token-pop { 0% { transform:scale(.72); } 65% { transform:scale(1.24); } 100% { transform:scale(1); } }
 .turn-event.is-card { border-left-color:#42a4c7; background:linear-gradient(110deg,#d8f4ff,var(--surface)); }
 @media(prefers-reduced-motion:reduce) { .tile-active .cell-token { animation:none; } }
+
+.swatch-flag { background:#d34e59; border-color:#a9313a; }
+.cell-token.unchecked-token { background:#d34e59!important; color:#fff; border-color:#fff; }
+.board-row { position:relative; }
+.board-row.row-1::after,.board-row.row-2::after { position:absolute; bottom:-15px; color:var(--accent); font:700 1rem var(--f-mono); z-index:2; }
+.board-row.row-1::after { content:'↴'; right:3px; }
+.board-row.row-2::after { content:'↳'; left:3px; }
