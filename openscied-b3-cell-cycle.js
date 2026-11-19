@@ -10,7 +10,7 @@
     {title:'Severe DNA damage',text:'A check finds serious DNA damage that cannot be repaired.',expected:'stop',good:'The cell stops before dividing. A cell with severe damage should not simply pass it to daughter cells.',disrupted:'The disrupted response may allow the cell to continue with serious damage. This could pass a DNA change to daughter cells; it does not by itself mean cancer.'}
   ];
   const labels={continue:'Continue toward division',pause:'Pause for a check or response',stop:'Stop before dividing'};
-  function blankGame(){return {schema:2,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],roundResults:{},event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
+  function blankGame(){return {schema:2,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
   const state={game:blankGame(),trials:[],fields:{},quick:''};
   function readStore(){
     try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2)state.game=Object.assign(blankGame(),d.game);if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;}}
@@ -131,12 +131,12 @@
     $('#scorecards').innerHTML=g.playersState.map(function(p,index){
       const active=index===g.active&&p.status==='playing';
       const status=p.status==='finished'?'Division complete':p.bonusRolls?'Bonus roll':p.skipTurns?'Turn skipped':'Playing';
-      const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const met=x>=thresholds[i];return '<span class="'+(met?'score-met':'')+'">'+['N','P','O','DNA'][i]+' <b>'+x+'</b></span>';}).join('')+'</div>';};
+      const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const na=x===null,met=!na&&x>=thresholds[i];return '<span class="'+(na?'score-na':met?'score-met':'')+'">'+(na?'—':'<b>'+x+'</b>')+'</span>';}).join('')+'</div>';};
       return '<div class="player-score'+(active?' is-active':'')+(p.status==='finished'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
         '<div class="score-phase-head"><span>Phase</span><span>Nutrients</span><span>Proteins</span><span>Organelles</span><span>DNA copies</span></div>'+
-        row('G1',[p.score.g1.nutrients,p.score.g1.proteins,p.score.g1.organelles,0],[3,3,3,0])+
-        row('S',[0,0,0,p.score.s.chromosomes],[0,0,0,4])+
-        row('G2',[p.score.g2.nutrients,p.score.g2.proteins,p.score.g2.organelles,0],[1,1,1,0])+'</div>';
+        row('G1',[p.score.g1.nutrients,p.score.g1.proteins,p.score.g1.organelles,null],[3,3,3,0])+
+        row('S',[null,null,null,p.score.s.chromosomes],[0,0,0,4])+
+        row('G2',[p.score.g2.nutrients,p.score.g2.proteins,p.score.g2.organelles,null],[1,1,1,0])+'</div>';
     }).join('');
   }
   function getTarget(p){
@@ -173,10 +173,16 @@
     if(need!==null)return 'To move forward, roll a '+need+' on any die. If you miss it, stay here this turn.';
     return 'Move one space forward, then roll all four dice. The dice do not set the number of spaces.';
   }
-  function currentSummary(p,dice){
-    const found=[];
-    for(const v of [1,2,3,4]){const n=dice.filter(x=>x===v).length;if(n)found.push(n+' × '+({1:'nutrient',2:'protein',3:'organelle',4:'chromosome copy'})[v]);}
-    return found.length?found.join(' · '):'No materials collected';
+  function currentSummary(phase,dice,required,missed,bonus){
+    if(required!==null)return missed===null?'Matched the required '+required+' on an M-phase die. The cell moves forward.':'Needed a '+required+' on any die; no match this turn.';
+    if(phase==='g1'||phase==='g2'){
+      const n=dice.filter(x=>x===1).length,pr=dice.filter(x=>x===2).length,o=dice.filter(x=>x===3).length;
+      const out=[];if(n)out.push('Nutrients ×'+n);if(pr)out.push('Proteins ×'+pr);if(o)out.push('Organelles ×'+o);
+      return (bonus?'Bonus roll. ':'')+(out.length?'Collected: '+out.join(', ')+'.':'No G1/G2 materials collected on this roll.');
+    }
+    if(phase==='s'){const n=dice.filter(x=>x===4).length;return (bonus?'Bonus roll. ':'')+(n?'DNA copies ×'+n+' collected.':'No chromosome copies collected on this roll.');}
+    if(phase==='m')return 'M phase: dice are used to match the number on the next space; no materials are collected.';
+    return 'Checkpoint space: this roll does not collect materials.';
   }
   function renderHistory(){
     const logs=state.game.logs.slice(-24).reverse();
@@ -219,7 +225,7 @@
     $('#phase-label').textContent=phaseLabel(p);
     $('#position-label').textContent='Space '+(p.pos+1)+' · '+track[p.pos].label;
     $('#dice-prompt').textContent=turnInstruction(p);
-    $('#dice-result').textContent=g.lastDice.length?'Last roll: '+currentSummary(p,g.lastDice):'Four dice are ready. Roll when it is your turn.';
+    $('#dice-result').textContent=g.lastDice.length?(g.lastRollSummary||'See the turn result below.'):'Four dice are ready. Roll when it is your turn.';
     $('#roll-dice').textContent=p.bonusRolls?'🎲 Roll bonus dice':'🎲 Roll 4 dice';
     $('#roll-dice').disabled=!!g.rolling||g.complete;
     $('#roll-dice').hidden=g.complete;
@@ -235,7 +241,7 @@
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
     const count=Number(players|| (selectedMode==='group'?$('#group-size').value:1))||1;
     const results=Object.assign({},old.roundResults||{});
-    state.game={schema:2,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],roundResults:results,event:{title:'Round '+round+' begins',copy:round===1?'Move each cell through the cycle and check its materials at G1 and G2.':'Same board, new chance events. Some checkpoint responses may be disrupted.',icon:'🎲',kicker:roundName(round)}};
+    state.game={schema:2,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,event:{title:'Round '+round+' begins',copy:round===1?'Move each cell through the cycle and check its materials at G1 and G2.':'Same board, new chance events. Some checkpoint responses may be disrupted.',icon:'🎲',kicker:roundName(round)}};
     save();renderGame();
   }
   function drawChance(p){
@@ -323,22 +329,20 @@
     window.setTimeout(function(){
       const dice=Array.from({length:4},function(){return 1+Math.floor(Math.random()*6);});
       g.rolling=false;g.lastDice=dice;g.turns++;
-      const bonus=p.bonusRolls>0;
+      const bonus=p.bonusRolls>0,required=bonus?null:getTarget(p),startPos=p.pos;
       let moved=false,missed=null;
       if(bonus)p.bonusRolls--;
-      else{
-        const need=getTarget(p);
-        if(need!==null){
-          if(dice.includes(need)){p.pos=Math.min(30,p.pos+1);moved=true;}
-          else missed=need;
-        }else{p.pos=Math.min(30,p.pos+1);moved=true;}
-      }
+      else if(required!==null){
+        if(dice.includes(required)){p.pos=Math.min(30,p.pos+1);moved=true;}
+        else missed=required;
+      }else{p.pos=Math.min(30,p.pos+1);moved=true;}
+      const rollPos=bonus?startPos:p.pos,rollPhase=track[rollPos].phase;
       if(moved||bonus)scoreRoll(p,dice);
-      const landed=p.pos;
-      const summary=currentSummary(p,dice);
-      let message='Roll: '+summary+'.';
-      if(missed!==null)message='No '+missed+' rolled. The cell stays on its space this turn. Roll: '+summary+'.';
-      if(bonus)message='Bonus roll—your token stays put. '+summary+'.';
+      const landed=p.pos,summary=currentSummary(rollPhase,dice,required,missed,bonus);
+      g.lastRollSummary=summary;
+      let message=summary;
+      if(missed!==null)message='No '+missed+' rolled. The cell stays on its space this turn. '+summary;
+      if(bonus)message='Bonus roll—your token stays put. '+summary;
       setEvent(bonus?'Bonus dice added':missed!==null?'The cell waits for the needed roll':'Materials collected',message,'🎲','Four-dice roll');
       addLog('Player '+p.id+' · '+phaseLabel(p)+' · ['+dice.join(', ')+'] · '+message);
       if(moved&&[7,23,29].includes(p.pos))checkCheckpoint(p);
