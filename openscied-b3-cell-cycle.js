@@ -205,7 +205,7 @@
     const g=state.game,el=$('#round-summary');
     if(!g.complete){el.hidden=true;el.innerHTML='';return;}
     const r=g.roundResults[g.round]||{divisions:0,unchecked:0,restarts:0,bypassed:0};
-    let html='<span class="game-kicker">Round '+g.round+' results</span><h3>What happened to the cells?</h3><p>Completed model divisions: <strong>'+r.divisions+'</strong> · Unchecked divisions: <strong>'+r.unchecked+'</strong> · Restarted after damage: <strong>'+r.restarts+'</strong> · Checkpoints bypassed: <strong>'+r.bypassed+'</strong></p>';
+    let html='<span class="game-kicker">Round '+g.round+' results</span><h3>What happened to the cells?</h3><p>Dice rolls taken: <strong>'+r.rolls+'</strong> · Completed model divisions: <strong>'+r.divisions+'</strong> · Unchecked divisions: <strong>'+r.unchecked+'</strong> · Restarted after damage: <strong>'+r.restarts+'</strong> · Checkpoints bypassed: <strong>'+r.bypassed+'</strong></p>';
     if(g.round===1)html+='<p>Round 1 uses functioning checkpoint responses. Start Round 2 with the same group to add the chance-card disruptions.</p><button class="btn btn--primary" id="start-round2-from-summary" type="button">Play Round 2 with disrupted responses</button>';
     if(g.round===2&&g.roundResults[1]){
       const a=g.roundResults[1],b=r;
@@ -215,10 +215,10 @@
   }
   function renderGame(){
     const g=state.game,setup=$('#game-setup'),panel=$('#game-panel');
-    setup.hidden=!!g.round;panel.hidden=!g.round;
+    setup.hidden=!!g.round;panel.hidden=false;panel.classList.toggle('is-pregame',!g.round);
     $('#start-round1').hidden=!!g.round;
     $('#start-round2').hidden=true;
-    if(!g.round)return;
+    if(!g.round){renderBoard();return;}
     const p=g.playersState[g.active]||g.playersState.find(function(x){return x.status==='playing';});
     if(!p)return;
     $('#round-label').textContent=roundName(g.round);
