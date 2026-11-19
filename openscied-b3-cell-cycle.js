@@ -112,7 +112,7 @@
       const active=index===g.active&&p.status==='playing';
       const status=p.status==='finished'?'Division complete':p.bonusRolls?'Bonus roll':p.skipTurns?'Turn skipped':'Playing';
       const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const na=x===null,met=!na&&x>=thresholds[i];return '<span class="'+(na?'score-na':met?'score-met':'')+'">'+(na?'—':'<b>'+x+'</b>')+'</span>';}).join('')+'</div>';};
-      return '<div class="player-score'+(active?' is-active':'')+(p.status==='finished'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
+      return '<div class="player-score player-color-'+p.id+(active?' is-active':'')+(p.status==='finished'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
         '<div class="score-phase-head"><span>Phase</span><span>Nutrients</span><span>Proteins</span><span>Organelles</span><span>DNA copies</span></div>'+
         row('G1',[p.score.g1.nutrients,p.score.g1.proteins,p.score.g1.organelles,null],[3,3,3,0])+
         row('S',[null,null,null,p.score.s.chromosomes],[0,0,0,4])+
@@ -136,9 +136,10 @@
     const key=checkpointFor(p.pos),stateFor=checkpointState(p,key);
     $('#checkpoint-title').textContent='Next checkpoint · '+stateFor.title;
     $('#checkpoint-subtitle').textContent=stateFor.subtitle;
-    $('#checkpoint-requirements').innerHTML=stateFor.items.map(function(x){const met=x[1]>=x[2];return '<span class="requirement'+(met?' met':'')+'"><span>'+x[0]+'</span><strong>'+x[1]+' / '+x[2]+'</strong></span>';}).join('');
+    $('#checkpoint-requirements').innerHTML=stateFor.items.map(function(x){const met=x[1]>=x[2];return '<span class="requirement'+(met?' met':'')+'"><span>'+(met?'✓ ':'○ ')+x[0]+'</span><strong>'+x[1]+' / '+x[2]+'</strong><span class="requirement-meter"><span style="width:'+Math.min(100,100*x[1]/Math.max(1,x[2]))+'%"></span></span></span>';}).join('');
     $('#checkpoint-status').textContent=key==='done'?'Finished':key==='g1'?'G1 ahead':key==='g2'?'G2 ahead':'M phase ahead';
     $('#checkpoint-card').classList.toggle('checkpoint-ready',stateFor.items.every(x=>x[1]>=x[2]));
+    $('#checkpoint-card').setAttribute('aria-label','Player '+p.id+' '+stateFor.title+': '+stateFor.subtitle);
   }
   function phaseLabel(p){
     const tile=track[p.pos];
