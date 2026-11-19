@@ -233,3 +233,4 @@
   .tile-label { font-size:.75rem; }
   .tile-note { font-size:.58rem; }
 }
+.board-row.row-last::after { content:none!important; }
