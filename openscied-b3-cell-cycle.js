@@ -142,7 +142,7 @@
     if(key==='g1')return {title:'G1 checkpoint',subtitle:'Pass with at least 3 of each G1 material.',items:[['Nutrients',s.g1.nutrients,3],['Proteins',s.g1.proteins,3],['Organelles',s.g1.organelles,3]]};
     if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with 4 DNA copies and at least 1 of each G2 material.',items:[['DNA copies',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
     if(key==='m')return {title:'M checkpoint',subtitle:'Check the materials gathered in G1 and G2, and DNA copied in S.',items:[['G1 materials',Math.min(s.g1.nutrients,s.g1.proteins,s.g1.organelles),3],['DNA copies',s.s.chromosomes,4],['G2 materials',Math.min(s.g2.nutrients,s.g2.proteins,s.g2.organelles),1]]};
-    return {title:'Cycle complete',subtitle:'The model cell reached division.',items:[['Division',p.divisions,1],['Unchecked',p.unchecked,0]]};
+    return {title:'Cycle complete',subtitle:'The model cell reached division.',items:[['Divisions completed',p.divisions,1]]};
   }
   function renderCheckpoint(){
     const g=state.game,p=g.playersState[g.active];if(!p)return;
