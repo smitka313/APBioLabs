@@ -56,43 +56,60 @@
     const g=state.game,panel=$('#game-panel');
     if(!g.round){panel.hidden=true;return;}
     panel.hidden=false;
+    $('#prediction-set').hidden=false;
+    $('#prediction-set').disabled=false;
+    $('#reveal-outcome').hidden=false;
+    $('#next-scenario').hidden=true;
+    $('#game-feedback').hidden=true;
+    $('#round-summary').hidden=true;
     $('#round-label').textContent=roundName(g.round);
     $('#player-label').textContent=g.mode==='group'?'Player '+g.player+' of '+g.players:'Solo play';
     $('#card-label').textContent='Condition '+Math.min(g.card+1,4)+' of 4';
     if(g.done||g.card>=4){showSummary();return;}
-    const s=scenarios[g.card];
-    $('#scenario-title').textContent=s.title;
-    $('#scenario-text').textContent=s.text;
+    const sc=scenarios[g.card];
+    $('#scenario-title').textContent=sc.title;
+    $('#scenario-text').textContent=sc.text;
     $('#round-rule').textContent=g.round===1?
       'Round 1: Assume cell-cycle controls are working. Predict whether the cell continues, pauses, or stops.':
       'Round 2: One checkpoint response is disrupted. Predict how the cell may respond to the same condition.';
-    $('#game-feedback').hidden=true;
-    $('#next-scenario').hidden=true;
-    $('#reveal-outcome').hidden=false;
-    $('#prediction-set').disabled=false;
     $$('input[name="prediction"]').forEach(function(el){el.checked=false;});
-    $('#round-summary').hidden=true;
+    if(g.awaiting){
+      const last=g.logs[g.logs.length-1];
+      if(last&&last.round===g.round&&last.card===g.card&&last.player===g.player){
+        $('input[name="prediction"][value="'+last.prediction+'"]').checked=true;
+        $('#prediction-set').disabled=true;
+        $('#reveal-outcome').hidden=true;
+        displayOutcome(last);
+        $('#next-scenario').hidden=false;
+        $('#next-scenario').textContent=g.card===3?'Finish this round':'Next condition';
+      }
+    }
   }
   function startRound(round){
     const mode=$('input[name="game-mode"]:checked').value;
     const count=mode==='group'?Number($('#group-size').value):1;
-    state.game={mode:mode,players:count,round:round,card:0,player:1,awaiting:false,done:false,logs:[]};
+    const previousLogs=state.game.logs||[];
+    state.game={mode:mode,players:count,round:round,card:0,player:1,awaiting:false,done:false,logs:round===2?previousLogs:[]};
     $('#start-round1').hidden=true;
     $('#start-round2').hidden=true;
     renderGame();save();
+  }
+  function displayOutcome(log){
+    const r=resultFor(log.card,log.round),matches=log.matches;
+    const box=$('#game-feedback');box.hidden=false;
+    box.innerHTML='<h4>'+ (matches?'Your prediction matches this model.':'Compare your prediction with the model.') +'</h4><p><strong>Model response:</strong> '+r.text+'</p><p><strong>Why:</strong> '+(log.round===1?'Working controls can pause the cycle so the cell can respond before division.':'When a checkpoint response is disrupted, a cell may continue before a problem is resolved. The model shows a possible pathway, not a diagnosis.')+'</p>';
   }
   function reveal(){
     const g=state.game;
     if(!g.round||g.card>=4||g.awaiting)return;
     const selected=$('input[name="prediction"]:checked');
     if(!selected){$('#game-feedback').hidden=false;$('#game-feedback').textContent='Choose a prediction first. You can change it before revealing the model response.';return;}
-    const s=scenarios[g.card],r=resultFor(g.card,g.round),matches=selected.value===r.kind;
-    const log={round:g.round,card:g.card,player:g.player,prediction:selected.value,outcome:r.kind,matches:matches};
+    const r=resultFor(g.card,g.round);
+    const log={round:g.round,card:g.card,player:g.player,prediction:selected.value,outcome:r.kind,matches:selected.value===r.kind};
     g.logs.push(log);g.awaiting=true;
     $('#prediction-set').disabled=true;
     $('#reveal-outcome').hidden=true;
-    const box=$('#game-feedback');box.hidden=false;
-    box.innerHTML='<h4>'+ (matches?'Your prediction matches this model.':'Compare your prediction with the model.') +'</h4><p><strong>Model response:</strong> '+r.text+'</p><p><strong>Why:</strong> '+(g.round===1?'Working controls can pause the cycle so the cell can respond before division.':'When a checkpoint response is disrupted, a cell may continue before a problem is resolved. The model shows a possible pathway, not a diagnosis.')+'</p>';
+    displayOutcome(log);
     $('#next-scenario').hidden=false;
     $('#next-scenario').textContent=g.card===3?'Finish this round':'Next condition';
     save();
@@ -115,8 +132,13 @@
     $('#round-rule').textContent='The model does not award points. Look for how the cell’s condition and checkpoint response changed the outcome.';
     $('#prediction-set').hidden=true;$('#reveal-outcome').hidden=true;$('#game-feedback').hidden=true;$('#next-scenario').hidden=true;
     const c=countsFor(g.round),sum=$('#round-summary');
+    let comparison='';
+    if(g.round===2){
+      const a=countsFor(1),b=countsFor(2);
+      comparison='<div class="table-wrap"><table class="data"><caption>Compare the two rounds</caption><thead><tr><th>Outcome</th><th>Round 1</th><th>Round 2</th></tr></thead><tbody><tr><th>Continued toward division</th><td>'+a.continue+'</td><td>'+b.continue+'</td></tr><tr><th>Paused</th><td>'+a.pause+'</td><td>'+b.pause+'</td></tr><tr><th>Stopped before division</th><td>'+a.stop+'</td><td>'+b.stop+'</td></tr><tr><th>Possible DNA changes carried forward</th><td>'+a.carried+'</td><td>'+b.carried+'</td></tr></tbody></table></div>';
+    }
     sum.hidden=false;
-    sum.innerHTML='<h3>Round summary</h3><ul><li>Conditions that continued toward division: <strong>'+c.continue+'</strong></li><li>Conditions that paused: <strong>'+c.pause+'</strong></li><li>Conditions that stopped before division: <strong>'+c.stop+'</strong></li>'+(g.round===2?'<li>Conditions where a DNA change might be passed on: <strong>'+c.carried+'</strong></li>':'')+'</ul><p>One DNA change is not the same as cancer. Cancer usually involves multiple changes and interactions over time.</p>';
+    sum.innerHTML='<h3>Round summary</h3><ul><li>Conditions that continued toward division: <strong>'+c.continue+'</strong></li><li>Conditions that paused: <strong>'+c.pause+'</strong></li><li>Conditions that stopped before division: <strong>'+c.stop+'</strong></li>'+(g.round===2?'<li>Conditions where a DNA change might be passed on: <strong>'+c.carried+'</strong></li>':'')+'</ul>'+comparison+'<p>One DNA change is not the same as cancer. Cancer usually involves multiple changes and interactions over time.</p>';
     if(g.round===1){$('#start-round2').hidden=false;$('#start-round2').textContent='Compare with Round 2';}
     else{$('#start-round2').hidden=true;}
     save();
