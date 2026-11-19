@@ -56,7 +56,7 @@
     const g=state.game,panel=$('#game-panel');
     if(!g.round){panel.hidden=true;return;}
     panel.hidden=false;
-    $('input[name="game-mode"]').forEach(function(el){el.disabled=true;});
+    $$('input[name="game-mode"]').forEach(function(el){el.disabled=true;});
     $('#group-size').disabled=true;
     $('#prediction-set').hidden=false;
     $('#prediction-set').disabled=false;
