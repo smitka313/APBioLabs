@@ -391,6 +391,23 @@
     $('#start-round1').addEventListener('click',function(){startRound(1);});
     $('#start-round2').addEventListener('click',function(){startRound(2);});
     $('#roll-dice').addEventListener('click',rollDice);
+    $('#enlarge-scene').addEventListener('click',function(){
+      const expanded=$('#cell-board').classList.toggle('scene-expanded');
+      this.setAttribute('aria-pressed',String(expanded));this.textContent=expanded?'Close enlarged model ×':'Enlarge model ↗';
+      document.body.classList.toggle('scene-open',expanded);
+      $('#cell-board').setAttribute('role',expanded?'dialog':'group');
+      if(expanded)$('#cell-board').setAttribute('aria-modal','true');else $('#cell-board').removeAttribute('aria-modal');
+    });
+    document.addEventListener('keydown',function(event){
+      if(!$('#cell-board').classList.contains('scene-expanded'))return;
+      if(event.key==='Escape')$('#enlarge-scene').click();
+      if(event.key==='Tab'){
+        const controls=Array.from($('#cell-board').querySelectorAll('button:not([hidden]):not(:disabled)'));
+        const first=controls[0],last=controls[controls.length-1];
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+      }
+    });
     $('#restart-round').addEventListener('click',resetRound);
     $('#reset-game').addEventListener('click',resetGame);
     $('#round-summary').addEventListener('click',function(event){if(event.target&&event.target.id==='start-round2-from-summary')startRound(2,state.game.mode,state.game.players);});
