@@ -1221,14 +1221,17 @@ function frq(host, o) {
     predictKey: 'predict-assay', title: 'Baseline assay: your prediction vs. your tubes', chartEl: '#p1-chart', part: 'Procedure 1', partId: 'procedure-1',
     getResult: () => {
       const rows = (t1.getRows() || []).filter(r => r && numOk(r.t)); if (!rows.length) return null;
-      const tr = rows.reduce((m, r) => Math.max(m, r.trial), 0), rs = rows.filter(r => r.trial === tr).sort((a, b) => a.t - b.t), e5 = rs.find(r => r.t === 5) || rs[rs.length - 1];
-      const spec = numOk(e5.aE);
-      const pts = rs.filter(r => r.t <= 2 && numOk(A13(r, 'E', spec)));
-      if (!numOk(A13(e5, 'E', spec)) || pts.length < 2) return null;
-      return { trial: tr, t: e5.t, enz: A13(e5, 'E', spec), ctl: A13(e5, 'C', spec), rate: Math.abs(stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E', spec))).m), palette: !spec };
+      const trials = [...new Set(rows.map(r => r.trial))].sort((a, b) => a - b).map(tr => {
+        const rs = rows.filter(r => r.trial === tr).sort((a, b) => a.t - b.t), e5 = rs.find(r => r.t === 5) || rs[rs.length - 1];
+        const spec = numOk(e5.aE);
+        const pts = rs.filter(r => r.t <= 2 && numOk(A13(r, 'E', spec)));
+        if (!numOk(A13(e5, 'E', spec)) || pts.length < 2) return null;
+        return { trial: tr, t: e5.t, enz: A13(e5, 'E', spec), ctl: A13(e5, 'C', spec), rate: Math.abs(stats.linreg(pts.map(r => r.t), pts.map(r => A13(r, 'E', spec))).m), palette: !spec };
+      }).filter(Boolean);
+      return trials.length ? { trials, latest: trials[trials.length - 1] } : null;
     },
-    summarize: r => `Trial ${r.trial}: the enzyme tube reached ${r.palette ? 'palette level' : 'A₄₇₀'} = ${fmt(r.enz, r.palette ? 0 : 3)} at ${r.t} min (initial rate magnitude ${fmt(r.rate, 3)} ${r.palette ? 'palette levels/min' : 'ΔA₄₇₀/min'}); the no-enzyme control reached ${numOk(r.ctl) ? fmt(r.ctl, r.palette ? 0 : 3) : 'n/a'}.`,
-    delta: r => numOk(r.ctl) ? (r.ctl > 0 && r.enz > r.ctl ? `The final ${r.palette ? 'palette reading' : 'absorbance reading'} was ${fmt(r.enz / r.ctl, 1)}× the control reading. This is an endpoint reading ratio, not a rate ratio; compare initial slopes for reaction rates.` : r.enz > r.ctl ? 'The enzyme tube darkened while the control stayed near zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null
+    summarize: r => r.trials.map(t => `Trial ${t.trial} (${t.palette ? 'palette' : 'spectrophotometer'}): the enzyme tube reached ${t.palette ? 'palette level' : 'A₄₇₀'} = ${fmt(t.enz, t.palette ? 0 : 3)} at ${t.t} min (initial rate magnitude ${fmt(t.rate, 3)} ${t.palette ? 'palette levels/min' : 'ΔA₄₇₀/min'}); the no-enzyme control reached ${numOk(t.ctl) ? fmt(t.ctl, t.palette ? 0 : 3) : 'n/a'}.`).join(' '),
+    delta: r => { const t = r.latest; return numOk(t.ctl) ? (t.ctl > 0 && t.enz > t.ctl ? `The final ${t.palette ? 'palette reading' : 'absorbance reading'} was ${fmt(t.enz / t.ctl, 1)}× the control reading. This is an endpoint reading ratio, not a rate ratio; compare initial slopes for reaction rates.` : t.enz > t.ctl ? 'The enzyme tube darkened while the control stayed near zero, so the color came from the enzyme.' : 'The enzyme tube did not darken more than the control.') : null; }
   });
   Lab.predictCompare(rfCompare, {
     predictKey: 'p2-pred', title: 'Effect of pH: your prediction vs. your trials', chartEl: '#p2-chart', part: 'Procedure 2: pH', partId: 'procedure-2-ph',
