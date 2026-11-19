@@ -213,3 +213,23 @@
 .board-row.row-1::after { content:'↴'; right:3px; }
 .board-row.row-2::after { content:'↳'; left:3px; }
 .die-value { grid-column:2; grid-row:2; place-self:center; }
+
+/* Responsive serpentine layout: 11 columns on desktop, 5 on narrow screens. */
+.cell-board { min-width:0; }
+.board-row { grid-template-columns:repeat(var(--board-columns,11),minmax(0,1fr)); }
+.board-row.row-reverse { direction:rtl; }
+.board-row.row-reverse > * { direction:ltr; }
+.board-row.row-odd::after { content:'↴'; right:3px; }
+.board-row.row-even::after { content:'↳'; left:3px; }
+@media(max-width:760px) {
+  .cell-board { min-width:0; }
+  .board-tile { min-height:72px; }
+  .board-row { gap:4px; }
+}
+@media(max-width:520px) {
+  .cell-board { min-width:0; }
+  .board-row { gap:4px; margin-bottom:4px; }
+  .board-tile { min-height:66px; padding:4px; border-radius:8px; }
+  .tile-label { font-size:.75rem; }
+  .tile-note { font-size:.58rem; }
+}
