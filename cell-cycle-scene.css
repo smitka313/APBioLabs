@@ -58,3 +58,12 @@
   #cell-game .game-setup-copy { max-width:none; }
 }
 @media print { .scene-action { display:none!important; } }
+
+.scene-expand { position:absolute; top:9px; right:14px; z-index:2; border:1px solid #abc6b455; border-radius:99px; padding:6px 12px; background:#142b2e; color:#d4e9df; font:600 .72rem Arial,sans-serif; cursor:pointer; }
+.scene-expand:hover { background:#28514c; }
+.specimen-stage.scene-expanded { position:fixed; inset:10px; z-index:10000; width:calc(100vw - 20px); height:calc(100dvh - 20px); margin:0; overflow:auto; border:1px solid #a7d7bc55; }
+.specimen-stage.scene-expanded canvas { min-width:850px; width:max(100%,850px); }
+.specimen-stage.scene-expanded .scene-action { position:fixed; right:30px; bottom:30px; width:230px; }
+.specimen-stage.scene-expanded .scene-expand { position:fixed; right:30px; top:24px; }
+body.scene-open { overflow:hidden; }
+@media(max-width:760px){.scene-expand { font-size:.65rem; top:6px; right:7px; padding:4px 7px; }.scene-expanded .scene-expand{font-size:.8rem;padding:8px 12px;}}
