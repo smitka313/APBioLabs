@@ -1,12 +1,13 @@
 /* Independent OpenSciEd B.3 Lessons 3–4 companion pilot. */
 .lab-header .crumbs { flex-wrap: wrap; }
 .step-nav ol { justify-content: flex-start; }
-.cycle-map { display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; margin:14px 0; }
-.cycle-stage { flex:1 1 130px; min-height:100px; display:grid; align-content:center; gap:3px; padding:12px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); text-align:center; }
-.cycle-stage span { font-family:var(--f-mono); font-size:.8rem; color:var(--accent); font-weight:700; }
-.cycle-stage strong { font-family:var(--f-display); font-size:1.05rem; }
-.cycle-stage small { color:var(--muted); }
-.cycle-arrow { display:grid; place-items:center; color:var(--accent); font-size:1.25rem; }
+.cycle-map { display:grid; grid-template-columns:minmax(0,1fr) 34px minmax(0,1fr) 34px minmax(0,1fr) 34px minmax(0,1fr); align-items:center; gap:8px; margin:18px 0; }
+.cycle-stage { min-width:0; min-height:140px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:20px 12px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface); text-align:center; }
+.cycle-stage span { display:block; width:100%; margin:0; font-family:var(--f-mono); font-size:1.05rem; line-height:1.3; color:var(--accent); font-weight:700; text-align:center; }
+.cycle-stage strong { display:block; width:100%; margin:0; font-family:var(--f-display); font-size:1.5rem; line-height:1.2; text-align:center; }
+.cycle-stage small { display:block; width:100%; margin:0; font-size:1.05rem; line-height:1.4; color:var(--muted); text-align:center; }
+.cycle-arrow { display:flex; align-items:center; justify-content:center; width:100%; height:100%; margin:0; color:var(--accent); }
+.cycle-arrow svg { display:block; width:30px; height:30px; flex:none; }
 .panel { min-width:0; padding:16px; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); }
 .game-setup, .game-panel, .submit-card { display:grid; gap:12px; }
 .mode-choice, .evidence-checks, #prediction-set { border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; }
@@ -43,7 +44,10 @@
 [role=status]:empty { display:none; }
 @media(max-width:760px) {
   .sim-grid { grid-template-columns:1fr; }
-  .cycle-arrow { flex:0 0 100%; transform:rotate(90deg); height:10px; }
+  .cycle-map { grid-template-columns:minmax(0,1fr); gap:0; }
+  .cycle-arrow { height:42px; transform:none; }
+  .cycle-arrow svg { transform:rotate(90deg); }
+  .cycle-stage { width:100%; min-height:140px; }
 }
 @media(max-width:520px) {
   .step-nav a { padding-inline:8px; }
@@ -234,3 +238,4 @@
   .tile-note { font-size:.58rem; }
 }
 .board-row.row-last::after { content:none!important; }
+
