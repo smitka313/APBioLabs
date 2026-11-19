@@ -3,13 +3,6 @@
   const KEY='aplab:openscied:b3-cell-cycle:v1';
   const $=function(s,root){return (root||document).querySelector(s);};
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
-  const scenarios=[
-    {title:'A steady cycle',text:'The cell has the materials it needs. DNA was copied, and no problem was detected.',expected:'continue',good:'The cell can continue through the cycle and divide.',disrupted:'The cell continues through the cycle and divides.'},
-    {title:'Not enough materials',text:'The cell is missing some of the materials it needs to grow and divide.',expected:'pause',good:'Cell-cycle controls pause the cycle while the cell responds to the shortage.',disrupted:'In this simplified model, a disrupted checkpoint lets the cycle continue even though materials are missing.'},
-    {title:'DNA damage that may be repaired',text:'A check finds DNA damage that may be repairable before division.',expected:'pause',good:'The cycle pauses while the cell responds to the damage. If repair succeeds, the cell may continue later.',disrupted:'The disrupted response may let the cell continue before the damage is resolved. A DNA change could be copied into daughter cells.'},
-    {title:'Severe DNA damage',text:'A check finds serious DNA damage that cannot be repaired.',expected:'stop',good:'The cell stops before dividing. A cell with severe damage should not simply pass it to daughter cells.',disrupted:'The disrupted response may allow the cell to continue with serious damage. This could pass a DNA change to daughter cells; it does not by itself mean cancer.'}
-  ];
-  const labels={continue:'Continue toward division',pause:'Pause for a check or response',stop:'Stop before dividing'};
   function blankGame(){return {schema:2,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
   const state={game:blankGame(),trials:[],fields:{},quick:''};
   function readStore(){
@@ -54,7 +47,6 @@
   track.push({type:'checkpoint',phase:'m',label:'M CHECK',note:'Divide'});
   track.push({type:'finish',phase:'finish',label:'DIVIDE',note:'Daughter cells'});
   const playerColors=['#58d4b4','#ffcb62','#70baff','#fc8fa3'];
-  const resourceNames={nutrients:'Nutrients',proteins:'Proteins',organelles:'Organelles',chromosomes:'Chromosomes'};
   const zeroScore=function(){return {g1:{nutrients:0,proteins:0,organelles:0},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0}};};
   const chanceCards=[
     {id:'bonus',title:'p53 is responding',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
@@ -112,7 +104,7 @@
     for(let i=0;i<track.length;i+=columns)rows.push(track.slice(i,i+columns));
     const board=$('#cell-board');board.innerHTML='';
     rows.forEach(function(row,rowIndex){
-      const wrap=document.createElement('div');wrap.className='board-row row-'+(rowIndex+1)+(rowIndex%2?' row-reverse row-even':' row-odd');wrap.style.setProperty('--board-columns',String(columns));
+      const wrap=document.createElement('div');wrap.className='board-row row-'+(rowIndex+1)+(rowIndex%2?' row-reverse row-even':' row-odd')+(rowIndex===rows.length-1?' row-last':'');wrap.style.setProperty('--board-columns',String(columns));
       row.forEach(function(tile){
         const pos=track.indexOf(tile),tokens=g.playersState.filter(function(p){return p.pos===pos;});
         const cell=document.createElement('div');
