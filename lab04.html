@@ -1493,7 +1493,7 @@ const Predict = (function () {
     Lab.sound.play('click');
     p2Anim = animate(3.2, p => {
       const tm = p * 30, k = Math.min(30, Math.floor(tm)), f = Math.min(1, tm - k), pcts = [];
-      sims.forEach((s, i) => { const m = s.masses[k] + (s.masses[Math.min(30, k + 1)] - s.masses[k]) * f; p2State[i].ratio = m / s.masses[0]; p2State[i].flux = s.flux[Math.min(30, k + 1)]; p2State[i].top = (m >= s.masses[0] ? '+' : '') + fmt(100 * (m / s.masses[0] - 1), 1) + '%'; pcts.push(100 * (m / s.masses[0] - 1)); });
+      sims.forEach((s, i) => { const m = s.masses[k] + (s.masses[Math.min(30, k + 1)] - s.masses[k]) * f; p2State[i].ratio = m / s.masses[0]; p2State[i].flux = s.flux[Math.min(30, k + 1)]; const displayedInitial = round(s.masses[0], 0.01), displayedFinal = round(m, 0.01), pct = 100 * (displayedFinal - displayedInitial) / displayedInitial; p2State[i].top = (pct >= 0 ? '+' : '') + fmt(pct, 1) + '%'; pcts.push(pct); });
       const bi = Math.min(4, Math.floor(p * 5)), mb = sims[bi].masses[k] + (sims[bi].masses[Math.min(30, k + 1)] - sims[bi].masses[k]) * f;
       p2Bal = { mass: mb, tag: 'BAG ' + (bi + 1), load: true };
       phase += 0.02; drawBags(p2cv, p2State, phase, { balance: p2Bal });
