@@ -237,8 +237,8 @@
     $('#event-title').textContent=g.event.title||'Your turn';
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
     renderDice();renderBoard();renderScorecards();renderCheckpoint();renderHistory();renderSummary();
-    $('#restart-round').hidden=!g.complete;
-    $('#reset-game').hidden=!g.complete;
+    $('#restart-round').hidden=!g.round;
+    $('#reset-game').hidden=!g.round;
   }
   function startRound(round,mode,players){
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
