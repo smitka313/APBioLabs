@@ -302,8 +302,18 @@
       <div class="callout callout--tip"><div class="callout-title">Transformation efficiency: four steps</div><ol><li><strong>DNA used (µg)</strong> = concentration (µg/µL) × volume added (µL).</li><li><strong>Fraction plated</strong> = volume plated ÷ total recovered tube volume.</li><li><strong>DNA plated (µg)</strong> = DNA used × fraction plated.</li><li><strong>Efficiency</strong> = colonies on +pGLO LB/amp ÷ DNA plated (µg).</li></ol><p class="small">Use your own volumes and colony count, not example values.</p></div>
       <p class="prose small">Use the +pGLO LB/amp plate, because it shows the cells that took up the plasmid. Look back at the protocol for the plasmid concentration (0.005 µg/µL) and every volume you added to the +pGLO tube.</p>
       <div class="readouts"><div class="readout"><span class="k">Volumes in your +pGLO tube</span><span class="v" id="vol-list" style="font-size:.9rem">—</span></div></div>
-      <div class="row" style="margin-top:12px"><button class="btn btn--sm" id="calc-example" type="button">Show a worked example</button></div>
-      <div class="callout callout--tip" id="calc-banner" role="status" hidden><strong>EXAMPLE — not your data.</strong> These numbers come from the pre-lab question (40 colonies, 10 µL of plasmid, 100 µL spread). <button class="btn btn--sm" id="calc-example-clear" type="button">Clear example</button></div>
+      <div class="row" style="margin-top:12px"><button class="btn btn--sm" id="calc-example" type="button" aria-controls="calc-banner" aria-expanded="false">Show a worked example</button></div>
+      <div class="callout callout--tip" id="calc-banner" aria-label="Worked transformation efficiency example" hidden>
+        <strong>Worked example — pre-lab values, not your data</strong>
+        <p>For 40 colonies, 10 µL of plasmid, and 100 µL spread:</p>
+        <ol>
+          <li>Total DNA: 0.005 µg/µL × 10 µL = <strong>0.05 µg</strong>.</li>
+          <li>Fraction spread: 100 µL ÷ (250 µL transformation solution + 10 µL plasmid + 250 µL LB) = 100 ÷ 510 ≈ <strong>0.196</strong>.</li>
+          <li>DNA spread: 0.05 µg × (100 ÷ 510) ≈ <strong>0.0098 µg</strong>.</li>
+          <li>Efficiency: 40 colonies ÷ unrounded DNA spread = <strong>4,080 transformants/µg</strong>, or <strong>4.1 × 10<sup>3</sup></strong>.</li>
+        </ol>
+        <button class="btn btn--sm" id="calc-example-clear" type="button">Hide worked example</button>
+      </div>
       <div class="grid-2" style="margin-top:12px">
         <div class="field"><label for="c-count">Colonies on +pGLO LB/amp plate (colonies)</label><input id="c-count" placeholder="e.g. 40" type="number" step="1" min="0"></div>
         <div class="field"><label for="c-mass">a. Total plasmid DNA used (µg)</label><input id="c-mass" placeholder="e.g. 0.05" type="number" step="any"></div>
@@ -1257,9 +1267,9 @@ function clearOldRun() {
   const resultMessage = $('#calc-fb'); if (resultMessage) resultMessage.textContent = '';
   Lab.store.set('calc-inputs', null);
   if (typeof CALC_IDS !== 'undefined') {
-    exampleOn = false;
     CALC_IDS.forEach(id => { const input = $('#' + id); input.value = ''; input.readOnly = false; V.ok(input); });
     $('#calc-banner').hidden = true; $('#calc-example').hidden = false;
+    $('#calc-example').setAttribute('aria-expanded', 'false');
   }
   drawPlates(); renderPlateReadouts();
   try { window.dispatchEvent(new Event('aplab:work')); } catch (e) { /* ignore */ }
@@ -1459,7 +1469,7 @@ $('#zoom').addEventListener('click', e => {
   drawZoom(); saveSim();
 });
 $('#clear-marks').addEventListener('click', () => { marks[zsel.value] = []; drawZoom(); saveSim(); });
-$('#use-count').addEventListener('click', () => { Lab.sound.play('click'); $('#c-count').value = (marks[zsel.value] || []).length; $('#calc-fb').innerHTML = ''; if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); });
+$('#use-count').addEventListener('click', () => { Lab.sound.play('click'); $('#c-count').value = (marks[zsel.value] || []).length; $('#calc-fb').innerHTML = ''; Lab.store.set('calc-inputs', calcOwn()); });
 
 /* ---------- Calculations ---------- */
 /* The mixture line is derived from what has been done so far (not from the end state), so it updates at each step.
@@ -1513,17 +1523,12 @@ function checkCalc() {
 $('#calc-check').addEventListener('click', () => checkCalc());
 /* Calculator inputs are saved (never the worked example) and the feedback is recomputed from them after a reload. */
 const CALC_IDS = ['c-count', 'c-mass', 'c-frac', 'c-spread', 'c-eff', 'c-sci'];
-let exampleOn = false;
 const calcOwn = () => Object.fromEntries(CALC_IDS.map(i => [i, $('#' + i).value]));
 /* A verdict ("✓ correct") is about the numbers that were checked: the moment one of them changes it no longer applies, so it is removed until Check is pressed again. */
-CALC_IDS.forEach(i => $('#' + i).addEventListener('input', () => { if (!exampleOn) Lab.store.set('calc-inputs', calcOwn()); $('#calc-fb').innerHTML = ''; }));
-const EXAMPLE = { 'c-count': '40', 'c-mass': '0.05', 'c-frac': '0.196', 'c-spread': '0.0098', 'c-eff': '4080', 'c-sci': '4.1 × 10^3' };
+CALC_IDS.forEach(i => $('#' + i).addEventListener('input', () => { Lab.store.set('calc-inputs', calcOwn()); $('#calc-fb').innerHTML = ''; }));
 function setExample(on) {
-  exampleOn = on; $('#calc-banner').hidden = !on; $('#calc-example').hidden = on;
-  const own = Lab.store.get('calc-inputs') || {};
-  CALC_IDS.forEach(i => { const e = $('#' + i); e.value = on ? EXAMPLE[i] : (own[i] || ''); e.readOnly = on; V.ok(e); });
-  $('#calc-fb').innerHTML = '';
-  Lab.steps.refresh && Lab.steps.refresh();
+  $('#calc-banner').hidden = !on;
+  $('#calc-example').setAttribute('aria-expanded', String(on));
 }
 $('#calc-example').addEventListener('click', () => setExample(true));
 $('#calc-example-clear').addEventListener('click', () => setExample(false));
@@ -1751,9 +1756,9 @@ const rangeCaption = $('#runs-range-caption');
 const syncRangeCaption = () => { if (rangeCaption) rangeCaption.hidden = $('#runs-chart').hidden || !runsTable.getRows().length; };
 new MutationObserver(syncRangeCaption).observe($('#runs-chart'), { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
 syncRangeCaption();
-Lab.gate('#use-count', () => exampleOn ? 'Clear the example first' : incubated() ? '' : 'Incubate your plates first');
-Lab.gate('#calc-check', () => exampleOn ? 'Clear the example to check your own numbers' : incubated() ? '' : 'Incubate your plates first');
-Lab.gate('#calc-add', () => exampleOn ? 'Clear the example to add your own run' : incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#use-count', () => incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#calc-check', () => incubated() ? '' : 'Incubate your plates first');
+Lab.gate('#calc-add', () => incubated() ? '' : 'Incubate your plates first');
 if (incubated() && CALC_IDS.some(i => $('#' + i).value.trim())) checkCalc();
 $('#uv-on').addEventListener('click', () => { if (incubated()) Lab.toast('UV light on: GFP colonies glow green', { type: 'info', announce: false, key: 'uv' }); });
 $('#use-count').addEventListener('click', () => Lab.toast(`Copied your count (${(marks[zsel.value] || []).length}) into the calculation`, { type: 'info', announce: false, key: 'use-count' }));
