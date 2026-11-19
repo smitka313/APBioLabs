@@ -2390,7 +2390,23 @@
     });
     if (changedAny) { if (acted) store.set('stepdone', stepSaved()); progressSoon(); }
   }
-  let navProgressEl = null, lastSummary = '';
+  let navProgressEl = null, navProgressDetailEl = null, lastSummary = '';
+  function setNavProgressExpanded(open, returnFocus = false) {
+    if (!navProgressEl || !navProgressDetailEl) return;
+    navProgressEl.setAttribute('aria-expanded', String(!!open));
+    navProgressDetailEl.hidden = !open;
+    if (returnFocus) navProgressEl.focus();
+  }
+  document.addEventListener('pointerdown', ev => {
+    if (!navProgressEl || navProgressEl.getAttribute('aria-expanded') !== 'true') return;
+    const end = navProgressEl.closest('.nav-end');
+    if (end && !end.contains(ev.target)) setNavProgressExpanded(false);
+  });
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && navProgressEl && navProgressEl.getAttribute('aria-expanded') === 'true') {
+      ev.preventDefault(); setNavProgressExpanded(false, true);
+    }
+  });
   /* Two-level progress. Level 1 is the part count (a part is done when ALL its work is done; unchanged). Level 2 names the
      part that is under way (some, not all, of its items done) with its item count, e.g. "3 of 6 parts · Float assay 6/11 items".
      Before any part is complete it reads "Started · Float assay 6/11 items", never "0 of N". s = {done, total, items:{done,total},
@@ -2432,9 +2448,14 @@
     if (navProgressEl) {
       const started = !complete && itemsDone > 0;
       const pt = partial ? `${partial.name} ${partial.done}/${partial.total} items` : '';
+      const fullStatus = progressText(sumObj, { suffix: true });
       navProgressEl.hidden = !parts;
+      navProgressEl.tabIndex = parts ? 0 : -1;
+      navProgressEl.setAttribute('aria-label', `Progress status: ${fullStatus}. Activate to view full details.`);
       navProgressEl.innerHTML = `<span class="np-long">${started ? 'Started' : `${complete} of ${parts} parts done`}</span><span class="np-short">${started ? 'Started' : `${complete} of ${parts} done`}</span>` + (pt ? `<span class="np-part"> · ${esc(pt)}</span>` : '');
-      navProgressEl.title = progressText(sumObj, { suffix: true });
+      navProgressEl.title = fullStatus;
+      $('.nav-progress-full', navProgressDetailEl).textContent = fullStatus;
+      if (!parts) setNavProgressExpanded(false);
     }
     const sum = JSON.stringify([complete, parts, itemsDone, partial && [partial.id, partial.done, partial.total]]);
     if (mode !== PAINT_ONLY && sum !== lastSummary && parts) { lastSummary = sum; gstore.set('progress:' + PAGE.id, Object.assign({ t: Date.now() }, sumObj)); }
@@ -2649,14 +2670,22 @@
     else if (steps[0]) setActive(first && first.matches('section.step') ? first.id : steps[0].id);
     if (IS_LAB) {
       const wrap = nav.parentElement;
-      navProgressEl = h('p', { class: 'nav-progress', hidden: true });
+      const navProgressId = 'nav-progress-detail-' + PAGE.id;
+      navProgressEl = h('p', { class: 'nav-progress', role: 'button', tabindex: '0', 'aria-expanded': 'false', 'aria-controls': navProgressId, title: 'Show full progress details', hidden: true });
+      navProgressDetailEl = h('div', { class: 'nav-progress-detail', id: navProgressId, role: 'group', 'aria-label': 'Full lab progress', hidden: true },
+        h('p', { class: 'nav-progress-full' }),
+        h('button', { class: 'btn btn--sm', type: 'button', onclick: () => setNavProgressExpanded(false, true) }, 'Close'));
+      navProgressEl.addEventListener('click', () => setNavProgressExpanded(navProgressEl.getAttribute('aria-expanded') !== 'true'));
+      navProgressEl.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setNavProgressExpanded(navProgressEl.getAttribute('aria-expanded') !== 'true'); }
+      });
       wrap.classList.add('has-progress');
       setupNavScroll(nav);
       const tog = h('button', { class: 'btn btn--sm parts-toggle', type: 'button', 'aria-pressed': String(!pages.on), 'aria-label': 'Show all parts on one page', title: 'Show all parts on one page',
         onclick: () => setAllParts(pages.on) }, h('span', { class: 'pt-icon', 'aria-hidden': 'true' }), h('span', { class: 'pt-text' }, 'All parts'));
       const pauseBtn = h('button', { class: 'btn btn--sm pause-btn', type: 'button', 'aria-label': 'Pause and bookmark', title: 'Pause and bookmark: save and remember where you stopped', 'aria-haspopup': 'dialog',
         onclick: ev => Lab.pause({ opener: ev.currentTarget }) }, h('span', { class: 'pb-icon', 'aria-hidden': 'true' }), h('span', { class: 'pb-text' }, 'Pause'));
-      putPh('nav-end', h('div', { class: 'nav-end' }, makeNavRing(), navProgressEl, pauseBtn, steps.length > 1 ? tog : null), el => wrap.append(el));
+      putPh('nav-end', h('div', { class: 'nav-end' }, makeNavRing(), navProgressEl, navProgressDetailEl, pauseBtn, steps.length > 1 ? tog : null), el => wrap.append(el));
       addCopyLinks(steps);
       workListeners.push(updateProgress);
       updateProgress(PAINT_ONLY);   // ring and count now, before the next paint
