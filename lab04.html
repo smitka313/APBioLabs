@@ -1502,7 +1502,9 @@ const Predict = (function () {
         p2table.addRow({ run: runNo, bag: i + 1, pair: pairName(a, b), m0, m1, pct: null, _pct: 100 * (m1 - m0) / m0 });
         p2Bal = { mass: m1, tag: 'BAG ' + (i + 1), load: true };
       });
-      const measuredPcts = p2table.getRows().filter(r => r.run === runNo && Number.isFinite(r._pct)).map(r => r._pct);
+      const measuredRows = p2table.getRows().filter(r => r.run === runNo);
+      measuredRows.forEach(r => { const i = Number(r.bag) - 1; if (p2State[i] && Number.isFinite(r._pct)) p2State[i].top = (r._pct >= 0 ? '+' : '') + fmt(r._pct, 1) + '%'; });
+      const measuredPcts = measuredRows.filter(r => Number.isFinite(r._pct)).map(r => r._pct);
       if (measuredPcts.length) { $('#p2-max').textContent = fmt(Math.max(...measuredPcts), 1) + '%'; $('#p2-min').textContent = fmt(Math.min(...measuredPcts), 1) + '%'; }
       drawBags(p2cv, p2State, 1, { balance: p2Bal });
       Lab.sound.play('beep');   // the balance reading
@@ -1526,7 +1528,9 @@ function p2Check() {
       const sims = p2sel.map(([a, b]) => simBag(a.value, SOL[a.value].C, b.value, SOL[b.value].C, 30)), pcts = [];
       sims.forEach((sm, i) => { const m = sm.masses[30]; p2State[i].ratio = m / sm.masses[0]; p2State[i].flux = sm.flux[30]; p2State[i].top = (m >= sm.masses[0] ? '+' : '') + fmt(100 * (m / sm.masses[0] - 1), 1) + '%'; pcts.push(100 * (m / sm.masses[0] - 1)); });
       const last = rows[rows.length - 1]; p2Bal = { mass: last.m1, tag: 'BAG ' + last.bag, load: true };
-      const measuredPcts = rows.filter(r => Number(r.run) === Number(last.run) && r.m0 != null && r.m1 != null && Number.isFinite(+r.m0) && +r.m0 > 0 && Number.isFinite(+r.m1)).map(r => 100 * (+r.m1 - +r.m0) / +r.m0), displayPcts = measuredPcts.length ? measuredPcts : pcts;
+      const lastRunRows = rows.filter(r => Number(r.run) === Number(last.run));
+      lastRunRows.forEach(r => { const i = Number(r.bag) - 1, pct = 100 * (+r.m1 - +r.m0) / +r.m0; if (p2State[i] && r.m0 != null && +r.m0 > 0 && Number.isFinite(pct)) p2State[i].top = (pct >= 0 ? '+' : '') + fmt(pct, 1) + '%'; });
+      const measuredPcts = lastRunRows.filter(r => r.m0 != null && r.m1 != null && Number.isFinite(+r.m0) && +r.m0 > 0 && Number.isFinite(+r.m1)).map(r => 100 * (+r.m1 - +r.m0) / +r.m0), displayPcts = measuredPcts.length ? measuredPcts : pcts;
       drawBags(p2cv, p2State, 1, { balance: p2Bal });
       $('#p2-time').textContent = '30 min'; $('#p2-max').textContent = fmt(Math.max(...displayPcts), 1) + '%'; $('#p2-min').textContent = fmt(Math.min(...displayPcts), 1) + '%';
       if (Lab.store.get('chk-p2Check')) p2Check();
