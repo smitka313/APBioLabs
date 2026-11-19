@@ -119,7 +119,7 @@
         const active=tokens.some(function(p){return g.playersState[g.active]&&p.id===g.playersState[g.active].id&&p.status==='playing';});
         cell.className='board-tile phase-'+style+(tile.chance&&g.round===2?' chance-space':'')+(active?' tile-active':'');
         cell.setAttribute('aria-label',(pos+1)+'. '+tile.label+(tile.chance&&g.round===2?', chance card space':'')+(tokens.length?', '+tokens.map(p=>'Player '+p.id).join(', '):''));
-        cell.innerHTML='<span class="tile-number">'+(pos===0?'START':String(pos).padStart(2,'0'))+'</span><strong class="tile-label">'+tile.label+'</strong><small class="tile-note">'+(tile.chance&&g.round===2?'Chance card':tile.note)+'</small><span class="tile-tokens">'+tokens.map(function(p){return '<i class="cell-token token-'+p.id+'" title="Player '+p.id+'" aria-label="Player '+p.id+'">'+p.id+'</i>';}).join('')+'</span>';
+        cell.innerHTML='<span class="tile-number">'+(pos===0?'START':String(pos).padStart(2,'0'))+'</span><strong class="tile-label">'+tile.label+'</strong><small class="tile-note">'+(tile.chance&&g.round===2?'Chance card':tile.note)+'</small><span class="tile-tokens">'+tokens.map(function(p){return '<i class="cell-token token-'+p.id+(p.unchecked?' unchecked-token':'')+'" title="Player '+p.id+(p.unchecked?' · unchecked model division':'')+'" aria-label="Player '+p.id+(p.unchecked?' · unchecked model division':'')+'">'+p.id+'</i>';}).join('')+'</span>';
         wrap.appendChild(cell);
       });
       if(rowIndex===2)for(let i=row.length;i<11;i++){const gap=document.createElement('div');gap.className='board-gap';wrap.appendChild(gap);}
@@ -231,6 +231,7 @@
     $('#roll-dice').textContent=p.bonusRolls?'🎲 Roll bonus dice':'🎲 Roll 4 dice';
     $('#roll-dice').disabled=!!g.rolling||g.complete;
     $('#roll-dice').hidden=g.complete;
+    $('#turn-event').classList.toggle('is-card',g.event.kicker==='Cellular chance card');
     $('#event-icon').textContent=g.event.icon||'🧬';
     $('#event-kicker').textContent=g.event.kicker||'Cell cycle';
     $('#event-title').textContent=g.event.title||'Your turn';
