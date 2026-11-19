@@ -941,8 +941,8 @@ function workedExample(o) {
       }
     }
     const fs = clamp(w / 60, 9, 13); ctx.font = `600 ${fs}px ${MONO}`;
-    let txt = `Day ${Math.round(day)} · 24 °C · light bank 200 µmol m⁻² s⁻¹, 24 h`; if (ctx.measureText(txt).width > w * 0.9) txt = `Day ${Math.round(day)} · 24 °C · 200 µmol m⁻² s⁻¹ · 24 h`;
-    if (ctx.measureText(txt).width > w * 0.9) txt = `Day ${Math.round(day)} · 24 °C · 200 µmol m⁻² s⁻¹`;
+    const displayDay = s1.day; let txt = `Day ${displayDay} · 24 °C · light bank 200 µmol m⁻² s⁻¹, 24 h`; if (ctx.measureText(txt).width > w * 0.9) txt = `Day ${displayDay} · 24 °C · 200 µmol m⁻² s⁻¹ · 24 h`;
+    if (ctx.measureText(txt).width > w * 0.9) txt = `Day ${displayDay} · 24 °C · 200 µmol m⁻² s⁻¹`;
     ctx.save(); ctx.fillStyle = 'rgb(140,236,160)'; ctx.shadowColor = 'rgba(110,255,150,0.6)'; ctx.shadowBlur = 4; ctx.fillText(txt, w * 0.05, H * 0.94 + fs * 0.36); ctx.restore();
   }
   const loop1 = Lab.loop(dt => {
