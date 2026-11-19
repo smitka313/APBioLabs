@@ -2399,8 +2399,7 @@
   }
   document.addEventListener('pointerdown', ev => {
     if (!navProgressEl || navProgressEl.getAttribute('aria-expanded') !== 'true') return;
-    const end = navProgressEl.closest('.nav-end');
-    if (end && !end.contains(ev.target)) setNavProgressExpanded(false);
+    if (!navProgressEl.contains(ev.target) && !navProgressDetailEl.contains(ev.target)) setNavProgressExpanded(false);
   });
   document.addEventListener('keydown', ev => {
     if (ev.key === 'Escape' && navProgressEl && navProgressEl.getAttribute('aria-expanded') === 'true') {
