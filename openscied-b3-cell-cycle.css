@@ -170,3 +170,25 @@
   .cell-board { min-width:0; }
   .board-tile { min-height:50px; break-inside:avoid; }
 }
+
+/* Each board row is a serpentine run of spaces; keep the route readable on small screens. */
+.cell-board { display:block; min-width:850px; }
+.board-row { display:grid; grid-template-columns:repeat(11,minmax(60px,1fr)); gap:5px; margin-bottom:5px; }
+.board-row.row-2 { direction:rtl; }
+.board-row.row-2 > * { direction:ltr; }
+.scorecard-grid { gap:10px; }
+.player-score { display:grid; grid-template-columns:1fr; gap:4px; padding:8px; }
+.score-player { display:flex; align-items:center; gap:7px; min-height:24px; }
+.score-player small { margin-left:auto; color:var(--muted); font-weight:400; font-size:.7rem; }
+.score-phase-head,.score-phase-row { display:grid; grid-template-columns:52px repeat(4,minmax(0,1fr)); gap:4px; align-items:center; }
+.score-phase-head { color:var(--muted); font-size:.62rem; text-align:center; padding:0 3px; }
+.score-phase-row > * { text-align:center; padding:4px 2px; border-radius:6px; background:var(--surface); font-size:.72rem; }
+.score-phase-row > strong { background:transparent; text-align:left; color:var(--ink); }
+.score-phase-row b { font:700 .8rem var(--f-mono); }
+.score-phase-row .score-met { color:var(--ink); background:var(--accent-soft); }
+.score-phase-row .score-na { color:var(--muted); }
+@media(max-width:520px) {
+  .score-phase-head,.score-phase-row { grid-template-columns:36px repeat(4,minmax(0,1fr)); gap:3px; }
+  .score-phase-head { font-size:.55rem; }
+  .score-phase-row > * { font-size:.67rem; }
+}
