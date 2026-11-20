@@ -418,7 +418,31 @@
     fillSelect($('#compare-a'),groups,0);fillSelect($('#compare-b'),groups,Math.max(0,groups.length-1));
     fillSelect($('#replay-set'),groups,Math.max(0,groups.length-1));
     $('#replay-growth').disabled=!groups.length;
-    renderComparison();renderReport();
+    renderComparison();renderAnalysisReference();renderReport();
+  }
+  let analysisPage=0;
+  function showAnalysisPage(index){
+    analysisPage=Math.max(0,Math.min(2,index));
+    $('#analyze [data-analysis-page]').forEach(el=>{el.hidden=Number(el.dataset.analysisPage)!==analysisPage;});
+    $('#analysis-page-status').textContent='Part '+(analysisPage+1)+' of 3 · '+['Compare data','Explain mechanisms','Revise your model'][analysisPage];
+    for(const id of ['analysis-prev','analysis-prev-bottom'])$('#'+id).disabled=analysisPage===0;
+    for(const id of ['analysis-next','analysis-next-bottom'){$('#'+id).disabled=analysisPage===2;}
+  }
+  function renderAnalysisReference(){
+    const out=$('#analysis-reference-data');if(!out)return;
+    const groups=trialGroups();out.replaceChildren();
+    const heading=document.createElement('h4');heading.textContent='Growth-model results';out.appendChild(heading);
+    if(!groups.length){const p=document.createElement('p');p.textContent='Run three trials in the Growth Model to collect evidence for these questions.';out.appendChild(p);}
+    groups.forEach(g=>{
+      const box=document.createElement('div');box.className='analysis-evidence-set';
+      const title=document.createElement('strong');title.textContent=setLabel(g);box.appendChild(title);
+      const trials=document.createElement('p');trials.textContent='Trial divisions: '+g.trials.map(t=>t.divisions).join(' · ')+' | Mean: '+g.mean.toFixed(1);box.appendChild(trials);
+      const bar=document.createElement('div');bar.className='analysis-evidence-bar';bar.setAttribute('aria-hidden','true');const fill=document.createElement('span');fill.style.width=Math.max(2,100*g.mean/Math.max(1,...groups.map(x=>x.mean)))+'%';bar.appendChild(fill);box.appendChild(bar);
+      const cancer=document.createElement('p');cancer.textContent='Cancer-state units: '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(' · ');box.appendChild(cancer);out.appendChild(box);
+    });
+    const game=document.createElement('h4');game.textContent='Cell-cycle game evidence';out.appendChild(game);
+    for(const n of [1,2]){const r=state.game.roundResults[n];if(!r)continue;const p=document.createElement('p');p.textContent='Round '+n+': '+r.divisions+' divisions; '+r.bypassed+' checkpoints bypassed; '+r.unchecked+' unchecked divisions.';out.appendChild(p);}
+    const note=document.createElement('p');note.className='small';note.textContent='Model counts are invented teaching units, not measured cancer risk. Magenta cells represent the model state after three control changes.';out.appendChild(note);
   }
   function renderComparison(){
     const groups=trialGroups(),a=groups[Number($('#compare-a').value)],b=groups[Number($('#compare-b').value)],out=$('#comparison-evidence');
@@ -473,7 +497,7 @@
     localStorage.removeItem(KEY);window.location.reload();
   }
   function wire(){
-    readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();
+    readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();showAnalysisPage(0);
     window.addEventListener('resize',function(){renderBoard();},{passive:true});
     $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
     ['body-size','tissue-rate'].forEach(id=>$('#'+id).addEventListener('change',function(){renderCellType();if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());}));
@@ -534,6 +558,8 @@
     $('#restart-round').addEventListener('click',resetRound);
     $('#reset-game').addEventListener('click',resetGame);
     $('#round-summary').addEventListener('click',function(event){if(event.target&&event.target.id==='start-round2-from-summary')startRound(2,state.game.mode,state.game.players);});
+    for(const id of ['analysis-prev','analysis-prev-bottom'])$('#'+id).addEventListener('click',()=>showAnalysisPage(analysisPage-1));
+    for(const id of ['analysis-next','analysis-next-bottom'])$('#'+id).addEventListener('click',()=>showAnalysisPage(analysisPage+1));
     $('#run-trials').addEventListener('click',runTrials);
     $('#clear-trials').addEventListener('click',function(){if(state.trials.length&&!window.confirm('Clear the growth-model results? The board game and your explanation will stay saved.'))return;state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();});
     $('#check-background').addEventListener('click',function(){
