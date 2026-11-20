@@ -7,6 +7,8 @@
  *   A slide is rendered ONCE (per slide, per focal layer) into an offscreen canvas at up to
  *   `maxRes` device pixels per base unit, and a small blur pyramid is precomputed from it by
  *   repeated half-size downscale/upscale passes (no ctx.filter, so Safari/iPad behave).
+ *   The render is lazy: it waits until the canvas is on screen (IntersectionObserver), so a microscope in a
+ *   part that is not open adds nothing to page load.
  *   Each frame only composites: lamp → specimen layers (pan crop, focus cross-fade between
  *   pyramid levels, multiplied onto the lamp) → page overlay (marks) → grain → eyepiece frame → HUD.
  *   Lamp, frame (field stop, vignette, chromatic fringe, dust motes, pointer) and grain are
@@ -233,9 +235,18 @@
       lamp = buildLamp(W, H, f, rng(frameSeed + 1)); frame = buildFrame(W, H, f, sc, rng(frameSeed + 2), shape); grain = buildGrain(W, H, frameSeed + 3);
       temp = mk(W, H); tctx = smooth(temp.getContext('2d'));
     }
+    /* The slide is drawn (and its blur pyramid built) only once the canvas is on screen, so a microscope in a part that is
+       not open costs nothing at page load. renderSpecimen() fixes the resolution exactly as before (from the canvas size at
+       the time of the call) and marks the slide stale; buildSpecimen() draws it right away if the canvas is on screen,
+       otherwise when the IntersectionObserver below first sees it. Same resolution, same seed: the same image. */
+    let stale = false, onScreen = !('IntersectionObserver' in window);
     function renderSpecimen() {
       res = wantRes();
       const px = o.world.w * o.world.h * res * res * o.layers.length; if (px > 7e6) res *= Math.sqrt(7e6 / px);
+      stale = true; if (onScreen) buildSpecimen();
+    }
+    function buildSpecimen() {
+      stale = false;
       levels = o.layers.map((L, i) => {
         const c = mk(o.world.w * res, o.world.h * res), x = c.getContext('2d');
         x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.setTransform(res, 0, 0, res, 0, 0);
@@ -253,6 +264,7 @@
     }
     function composite() {
       raf = 0; if (!W) return;
+      if (stale) { if (!onScreen) return; buildSpecimen(); }
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
       ctx.drawImage(lamp, 0, 0);
       levels.forEach((lv, i) => {
@@ -384,6 +396,10 @@
     canvas.scopeView = api;   // for tests and page scripts (not a DOM attribute)
     size(); center(false); refocus(frameSeed + 5);
     if (o.render) renderSpecimen();
+    if (!onScreen) new IntersectionObserver(entries => {
+      onScreen = entries[entries.length - 1].isIntersecting;
+      if (onScreen) redraw();   // draws (and, the first time, renders) the slide
+    }, { threshold: 0 }).observe(canvas);
     redraw();
     if ('ResizeObserver' in window) new ResizeObserver(() => {
       const pw = canvas.clientWidth; if (!pw || Math.abs(pw - cssW) <= 1) return;
