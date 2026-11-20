@@ -200,6 +200,7 @@ def build(check=False):
     outputs['robots.txt'] = '# Public lessons are crawlable; protected/utility pages carry noindex.\nUser-agent: *\nAllow: /\nDisallow: /tests/\nDisallow: /tools/\n\nSitemap: ' + ORIGIN + '/sitemap.xml\n'
     outputs['_headers'] = '# Cloudflare Pages: keep answer keys and utility pages out of search.\n# Apply to clean URLs and source-file URLs; encryption remains the access control.\n' + ''.join('/' + name.removesuffix('.html') + '\n  X-Robots-Tag: noindex, nosnippet\n/' + name + '\n  X-Robots-Tag: noindex, nosnippet\n\n' for name in PRIVATE + UTILITIES)
     outputs['_headers'] += '# Printable copies duplicate the indexable HTML guides.\n/student-pdfs/*\n  X-Robots-Tag: noindex\n'
+    outputs['_headers'] += '\n# Instructions for AI agents: readable by anyone, kept out of search results.\n/AGENTS.md\n  X-Robots-Tag: noindex\n/CLAUDE.md\n  X-Robots-Tag: noindex\n'
     drift = [name for name, text in outputs.items() if not (ROOT / name).exists() or (ROOT / name).read_text() != text]
     if check and drift:
         raise SystemExit('SEO outputs need rebuilding: ' + ', '.join(drift))
