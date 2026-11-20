@@ -2,16 +2,15 @@ const T = require('./_h');
 const assert = require('node:assert/strict');
 (async () => {
   const browser = await T.launch();
+  const server = await T.serve();
   try {
     for (const width of [1440, 390]) {
       const ctx = await T.ctxFor(browser, { width, height: 1000 });
-      await ctx.addInitScript(() => {
-        if (!sessionStorage.getItem('openscied-guest-test')) {
-          localStorage.removeItem('aplab:student');
-          sessionStorage.setItem('openscied-guest-test', '1');
-        }
-      });
-      const p = await T.open(ctx, 'openscied-dashboard.html');
+      const p = await T.open(ctx, 'openscied-dashboard.html', '', server.url);
+      // Start as a guest after the shared helper has seeded its tour flags.
+      // Do this once, rather than removing identity from a page-init script on reload.
+      await p.evaluate(() => localStorage.removeItem('aplab:student'));
+      await p.reload();
       const identity = p.locator('#openscied-student-identity');
       await identity.getByLabel('Enter your name as your teacher knows it').fill('Casey Student');
       await identity.getByLabel('Class period').selectOption('3');
@@ -65,6 +64,6 @@ const assert = require('node:assert/strict');
       T.ok(true, width + 'px: sign-in, change, backup, cancel, clear, reload, and AP work preservation');
       await ctx.close();
     }
-  } finally { await browser.close(); }
+  } finally { await browser.close(); server.close(); }
   T.done('openscied-dashboard');
 })().catch(e => { console.error(e); process.exitCode = 1; });
