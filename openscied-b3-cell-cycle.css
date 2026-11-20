@@ -271,3 +271,47 @@
 .chance-reveal-panel button { width:100%; min-height:48px; margin-top:10px; font-weight:800; }
 @media(prefers-reduced-motion:no-preference){ .chance-reveal-panel { animation:chance-arrive .35s ease-out both; } @keyframes chance-arrive { from { opacity:0; transform:translateY(22px) scale(.94); } to { opacity:1; transform:translateY(0) scale(1); } } }
 @media print { .chance-reveal { display:none!important; } }
+
+/* Keep the live board and all turn information in one desktop viewport. */
+@media(min-width:1100px) {
+  #game-panel:not(.is-pregame) {
+    display:grid;
+    grid-template-columns:minmax(0,1.6fr) minmax(355px,1fr);
+    grid-template-areas:
+      "status status"
+      "legend legend"
+      "board hud"
+      "board event"
+      "route route"
+      "rules rules"
+      "history history"
+      "summary summary"
+      "actions actions";
+    gap:10px 16px;
+    align-items:start;
+  }
+  #game-panel:not(.is-pregame) > .game-statusbar {grid-area:status}
+  #game-panel:not(.is-pregame) > .board-legend {grid-area:legend}
+  #game-panel:not(.is-pregame) > .specimen-stage {grid-area:board;min-width:0}
+  #game-panel:not(.is-pregame) > .board-route-note {grid-area:route}
+  #game-panel:not(.is-pregame) > .game-rules {grid-area:rules}
+  #game-panel:not(.is-pregame) > .game-play-grid {
+    grid-area:hud;display:flex;flex-direction:column;gap:10px;min-width:0;
+    max-height:calc(100dvh - 160px);overflow-y:auto;
+    scrollbar-width:thin;align-self:start;
+  }
+  #game-panel:not(.is-pregame) > .turn-event {grid-area:event;align-self:start;margin:0}
+  #game-panel:not(.is-pregame) > .turn-log {grid-area:history}
+  #game-panel:not(.is-pregame) > .game-end {grid-area:summary}
+  #game-panel:not(.is-pregame) > .game-actions {grid-area:actions}
+  #game-panel:not(.is-pregame) .scorecard {order:0}
+  #game-panel:not(.is-pregame) .dice-station {order:1}
+  #game-panel:not(.is-pregame) .scorecard,
+  #game-panel:not(.is-pregame) .dice-station {padding:12px;gap:8px}
+  #game-panel:not(.is-pregame) .score-phase-head {font-size:.58rem}
+  #game-panel:not(.is-pregame) .score-phase-row > * {padding:3px 1px}
+  #game-panel:not(.is-pregame) .checkpoint-requirements {gap:5px}
+  #game-panel:not(.is-pregame) .checkpoint-requirements .requirement {padding:6px}
+  #game-panel:not(.is-pregame) .dice-tray {max-width:380px}
+}
+/* On smaller screens retain a readable full-size board and scorecard rather than shrinking both into illegibility. */
