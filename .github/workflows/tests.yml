@@ -40,6 +40,15 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node tests/t76-cell-cycle-controls.js
+      - run: node --test tests/openscied-dashboard.test.js
+      - run: node tests/t77-openscied-dashboard.js
+      - run: node tests/t78-cell-cycle-audit.js
+      - run: node --test tests/cell-cycle-scene.test.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cell-cycle-audit-viewports
+          path: test-artifacts/cell-cycle-*.png
 
   student-pdfs:
     name: Downloadable student guides
@@ -223,6 +232,3 @@ jobs:
           export NODE_PATH="$PWD/node_modules"
           export AXE="$PWD/node_modules/axe-core/axe.min.js"
           node tests/run-all.js all --shard ${{ matrix.shard }}/5
-
-
-
