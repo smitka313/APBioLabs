@@ -3,7 +3,7 @@
   const KEY='aplab:openscied:b3-cell-cycle:v1';
   const $=function(s,root){return (root||document).querySelector(s);};
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
-  function blankGame(){return {schema:3,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},chanceNotice:null,event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
+  function blankGame(){return {schema:3,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},chanceNotice:null,checkpointNotice:null,event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
   const SECTIONS=['overview','background','cell-game','growth-model','analyze','submit'];
   const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:'',lastSection:'overview'};
   function studentIdentity(){return window.Lab&&Lab.identity?Lab.identity.get():null;}
@@ -108,6 +108,32 @@
     {id:'skipTwo',label:'Skip two checkpoints',title:NOT,copy:'Skip ahead two checkpoints and check your scorecard. If there’s only one checkpoint left, skip to the final checkpoint and check your scorecard.',icon:'⚠️'},
     {id:'finish',label:'Move to FINISH: red chip',title:NOT,copy:'Move directly to Finish. Collect a new RED cell chip and start the game again.',icon:'⚠️'}
   ];
+  // Checkpoint cards, worded exactly as printed in Teacher Reference: Game Cards 1 (front of each card; the back shows
+  // p53). Each printed line is a list of [text, bold] runs, matching the card's bold type. `outcome` names the line's
+  // result so the card dialog can highlight the one that applies; `rows` are the scorecard values each card checks.
+  // The cards are presentation only: checkCheckpoint() below is still the rule. The M card prints no line for an
+  // incomplete scorecard; this game's rule for that case (destroyed by p53) is shown as a separate, labelled note.
+  const DESTROYED_RUNS=[['A 0 in any category, ',false],['YOU HAVE BEEN DESTROYED by p53 AND MUST GO BACK TO THE START.',true]];
+  const CHECKPOINT_CARDS={
+    g1:{title:'G1 Checkpoint',intro:'Check your scorecard. If you have:',lines:[
+      {outcome:'pass',runs:[['At least 3 nutrients, 3 proteins, and 3 organelles, YOU PASS THE CHECKPOINT.',false]]},
+      {outcome:'back3',runs:[['2 in any category, GO BACK 3 SPACES.',false]]},
+      {outcome:'back5',runs:[['1 in any category, GO BACK 5 SPACES.',false]]},
+      {outcome:'destroyed',runs:DESTROYED_RUNS}],
+      why:'p53 checks that the cell has grown and gathered enough before it makes new chromosomes.'},
+    g2:{title:'G2 Checkpoint',intro:'Check your scorecard. If you have:',lines:[
+      {outcome:'pass',runs:[['At least 4 DNA and at least 1 nutrient, 1 protein, and 1 organelle, YOU PASS THE CHECKPOINT.',false]]},
+      {outcome:'backS',runs:[['Fewer than 4 DNA, GO BACK TO THE FIRST SPACE.',false]]},
+      {outcome:'destroyed',runs:DESTROYED_RUNS}],
+      why:'p53 checks the chromosomes and materials once more, so a cell does not start dividing without them.'},
+    m:{title:'M Checkpoint',intro:'Double-check your scorecard. Make sure you have:',lines:[
+      {req:'g1',runs:[['G1: at least 3 nutrients, 3 proteins, and 3 organelles.',false]]},
+      {req:'s',runs:[['S: at least 4 DNA.',false]]},
+      {req:'g2',runs:[['G2: at least 1 nutrient, 1 protein, and 1 organelle.',false]]},
+      {outcome:'divided',runs:[['YOU SUCCESSFULLY DIVIDED!',true],[' Take a new blue cell chip!',false]]}],
+      why:'This is the last check before one cell becomes two. When p53 is working, only cells with everything they need divide.'}
+  };
+  const CHECKPOINT_LABELS={pass:'Pass',back3:'Back 3 spaces',back5:'Back 5 spaces',backS:'Back to first S space',destroyed:'Destroyed by p53: back to START',divided:'Divided: blue cell chip'};
   function shuffledDeck(){
     const deck=chanceCards.map(function(card,i){return i;});
     for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const v=deck[i];deck[i]=deck[j];deck[j]=v;}
@@ -305,6 +331,64 @@
     $('#chance-reveal-effect').textContent=notice.effect||'';
     $('#chance-reveal-ack').focus();
   }
+  // Checkpoint card dialog: the printed card (Teacher Reference: Game Cards 1), the player's scorecard checked against
+  // it, and the line that applies. Like a chance card it is two steps: while it is open the board and scorecard show the
+  // cell as it was when the card was turned over; "Follow the card & continue" (or Escape) then applies it once.
+  const P53_SVG='<svg class="checkpoint-card-p53" viewBox="0 0 80 64" aria-hidden="true" focusable="false"><path d="M40 5c8-3 15 2 16 9 7-3 15 1 16 9 1 7-4 11-9 12 5 4 6 11 1 16-5 5-12 4-16 0-2 7-9 10-15 8-6-2-8-7-7-12-6 3-13 1-16-5-3-7 1-12 6-14-6-3-8-10-4-15 4-6 11-6 16-2 1-4 5-7 12-6z" fill="#8fd3f2" stroke="#2c7fb0" stroke-width="2.4" stroke-linejoin="round"/><path d="M30 17c5-4 13-3 16 2M53 22c5 1 9 5 8 10M26 42c3 3 9 4 13 2" fill="none" stroke="#c9ecfb" stroke-width="3" stroke-linecap="round" opacity=".9"/><text x="40" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#0b3550" font-family="Arial, sans-serif">p53</text></svg>';
+  function checkpointRows(phase,s){
+    const row=function(name,have,need,met){return {name:name,have:have,need:need,met:met};};
+    const n=function(x,word){return x+' '+(x===1?word:word+'s');};
+    if(phase==='g1')return [['Nutrients','nutrients'],['Proteins','proteins'],['Organelles','organelles']].map(function(c){const v=s.g1[c[1]];return row(c[0],String(v),'at least 3',v>=3);});
+    if(phase==='g2')return [row('DNA (Phase S)',String(s.s.chromosomes),'at least 4',s.s.chromosomes>=4)].concat([['Nutrients','nutrients'],['Proteins','proteins'],['Organelles','organelles']].map(function(c){const v=s.g2[c[1]];return row(c[0]+' (Phase G2)',String(v),'at least 1',v>=1);}));
+    const three=function(o){return n(o.nutrients,'nutrient')+', '+n(o.proteins,'protein')+', '+n(o.organelles,'organelle');};
+    return [row('G1',three(s.g1),'at least 3 of each',minOf(s.g1)>=3),row('S',s.s.chromosomes+' DNA','at least 4 DNA',s.s.chromosomes>=4),row('G2',three(s.g2),'at least 1 of each',minOf(s.g2)>=1)];
+  }
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function runsHtml(runs){return runs.map(function(r){return r[1]?'<strong>'+esc(r[0])+'</strong>':esc(r[0]);}).join('');}
+  function renderCheckpointReveal(){
+    const g=state.game,n=g.checkpointNotice;
+    let overlay=$('#checkpoint-reveal');
+    if(!overlay){
+      overlay=document.createElement('div');overlay.id='checkpoint-reveal';overlay.className='chance-reveal checkpoint-reveal';overlay.hidden=true;
+      overlay.innerHTML='<div class="checkpoint-card-panel" id="checkpoint-card-panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="checkpoint-reveal-title" aria-describedby="checkpoint-reveal-effect"><div class="checkpoint-card-band"><div class="checkpoint-card-heading"><span class="checkpoint-card-kicker" id="checkpoint-reveal-kicker"></span><h2 id="checkpoint-reveal-title"></h2><p class="checkpoint-card-player" id="checkpoint-reveal-player"></p></div>'+P53_SVG+'</div><div class="checkpoint-card-face"><p class="checkpoint-card-printed-label">Printed card</p><p class="checkpoint-card-intro" id="checkpoint-reveal-intro"></p><ul class="checkpoint-card-lines" id="checkpoint-reveal-lines"></ul></div><p class="checkpoint-card-line checkpoint-card-house" id="checkpoint-reveal-house" hidden></p><h3 class="checkpoint-card-subhead">Your scorecard</h3><ul class="checkpoint-card-checks" id="checkpoint-reveal-checks"></ul><p class="checkpoint-card-result" id="checkpoint-reveal-effect"></p><p class="checkpoint-card-why" id="checkpoint-reveal-why"></p><button class="btn btn--primary" type="button" id="checkpoint-reveal-ack">Follow the card &amp; continue</button></div>';
+      document.body.appendChild(overlay);
+      $('#checkpoint-reveal-ack').addEventListener('click',followCheckpoint);
+      overlay.addEventListener('keydown',function(e){
+        // Focus stays in the card: the button, plus the card itself when it is taller than the window (so it can be
+        // scrolled with the arrow keys).
+        if(e.key==='Tab'){e.preventDefault();const panel=$('#checkpoint-card-panel'),ack=$('#checkpoint-reveal-ack');
+          if(document.activeElement===ack&&panel.scrollHeight>panel.clientHeight+1)panel.focus();else ack.focus();}
+        // Escape closes the card the only way it can close: by following it. Stop it here so it does not also close
+        // the enlarged board behind the card.
+        if(e.key==='Escape'){e.preventDefault();e.stopPropagation();followCheckpoint();}
+      });
+    }
+    overlay.hidden=!n;
+    if(!n)return;
+    const card=CHECKPOINT_CARDS[n.phase],p=g.playersState.find(function(x){return x.id===n.player;});
+    if(!card||!p)return;
+    $('#checkpoint-card-panel').className='checkpoint-card-panel cp-'+n.phase;
+    $('#checkpoint-reveal-kicker').textContent='ROUND '+(n.round||g.round)+' · CHECKPOINT CARD';
+    $('#checkpoint-reveal-title').textContent=card.title;
+    $('#checkpoint-reveal-player').textContent='Player '+n.player+' turned over the card';
+    $('#checkpoint-reveal-intro').textContent=card.intro;
+    const chip='<span class="checkpoint-card-label">'+esc(n.label)+'</span>';
+    const marker='<span class="checkpoint-card-marker">▶ Applies to you</span>';
+    $('#checkpoint-reveal-lines').innerHTML=card.lines.map(function(line){
+      const on=!!line.outcome&&line.outcome===n.outcome;
+      return '<li class="checkpoint-card-line'+(on?' is-applies':'')+(line.req?' is-requirement':'')+'"'+(on?' data-applies="true"':'')+'>'+(on?marker+' ':'')+'<span class="checkpoint-card-text">'+runsHtml(line.runs)+'</span>'+(on?' '+chip:'')+'</li>';
+    }).join('');
+    // The M card prints no outcome for an incomplete scorecard: say this game's rule, marked as not printed.
+    const house=n.phase==='m'&&n.outcome==='destroyed',houseEl=$('#checkpoint-reveal-house');
+    houseEl.hidden=!house;houseEl.classList.toggle('is-applies',house);
+    houseEl.innerHTML=house?marker+' <span class="checkpoint-card-text">Not printed on the card (this game’s rule): if the double-check finds anything missing, p53 does not let the cell divide. The cell is destroyed and goes back to the START.</span> '+chip:'';
+    $('#checkpoint-reveal-checks').innerHTML=checkpointRows(n.phase,p.score).map(function(r){
+      return '<li class="checkpoint-check '+(r.met?'is-met':'is-short')+'"><span class="checkpoint-check-glyph" aria-hidden="true">'+(r.met?'✓':'✗')+'</span><span class="checkpoint-check-name">'+esc(r.name)+'</span><span class="checkpoint-check-have">'+esc(r.have)+' <span class="checkpoint-check-need">(need '+esc(r.need)+')</span></span><span class="checkpoint-check-verdict">'+(r.met?'Met':'Not met')+'</span></li>';
+    }).join('');
+    $('#checkpoint-reveal-effect').innerHTML='<strong>Result: '+esc(n.label)+'.</strong> '+esc(n.effect||'');
+    $('#checkpoint-reveal-why').innerHTML='<strong>Why this checkpoint matters:</strong> '+esc(card.why);
+    $('#checkpoint-card-panel').scrollTop=0;$('#checkpoint-reveal-ack').focus({preventScroll:true});
+  }
   function renderPhaseGuide(p){
     const guide=$('#phase-guide');if(!guide)return;
     const phaseOf=function(pos){const ph=track[pos]&&track[pos].phase;return ph==='start'?'g1':ph==='finish'?'done':ph;};
@@ -328,15 +412,16 @@
     $('#start-round1').hidden=!!g.round;
     $('#start-round2').hidden=true;
     const legacy=$('#legacy-game-note');if(legacy)legacy.hidden=!(!g.round&&g.roundResults&&Object.keys(g.roundResults).length);
-    if(!g.round){renderPhaseGuide(null);renderChanceReveal();renderDice();renderBoard();renderSummary();fitGameViewport();return;}
+    if(!g.round){renderPhaseGuide(null);renderChanceReveal();renderCheckpointReveal();renderDice();renderBoard();renderSummary();fitGameViewport();return;}
     const p=g.playersState[g.active]||g.playersState.find(function(x){return x.status==='playing';})||g.playersState[0];
     if(!p)return;
     $('#round-label').textContent=roundName(g.round);
     $('#active-player-label').textContent=g.complete?'Round complete':'Player '+p.id+'’s turn';
-    $('#turn-instruction').textContent=g.complete?roundEndReason(g.roundResults[g.round])+' See the cell chips below.':turnInstruction(p);
+    const cpWait=g.checkpointNotice&&CHECKPOINT_CARDS[g.checkpointNotice.phase]?'Follow the '+CHECKPOINT_CARDS[g.checkpointNotice.phase].title+' card to continue.':'';
+    $('#turn-instruction').textContent=g.complete?roundEndReason(g.roundResults[g.round])+' See the cell chips below.':cpWait||turnInstruction(p);
     $('#phase-label').textContent=phaseLabel(p);
     $('#position-label').textContent=where(p.pos);
-    $('#dice-prompt').textContent=g.complete?'Round complete.':turnInstruction(p);
+    $('#dice-prompt').textContent=g.complete?'Round complete.':cpWait||turnInstruction(p);
     $('#dice-result').textContent=g.lastRollSummary||'Four dice are ready. Roll when it is your turn.';
     $('#roll-dice').textContent=rollLabel(p);
     $('#roll-dice').disabled=!!g.rolling||g.complete;
@@ -346,11 +431,11 @@
     $('#event-icon').textContent=g.event.icon||'🧬';
     $('#event-kicker').textContent=g.event.kicker||'Cell cycle';
     $('#event-title').textContent=g.event.title||'Your turn';
-    const label=g.event.kicker==='Cellular Chance card'?(g.event.label||cardLabel({title:g.event.title,copy:(g.event.copy||'').split(' Follow the card')[0]})):'';
+    const label=g.event.kicker==='Cellular Chance card'?(g.event.label||cardLabel({title:g.event.title,copy:(g.event.copy||'').split(' Follow the card')[0]})):(g.event.label||'');
     $('#event-label').textContent=label;$('#event-label').hidden=!label;
     const notices=(g.event.notices||[]).join(' ');$('#event-notice').textContent=notices;$('#event-notice').hidden=!notices;
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
-    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();renderRoundEnd();
+    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();renderCheckpointReveal();renderRoundEnd();
     $('#restart-round').hidden=!g.round;
     $('#reset-game').hidden=!g.round;
     $('#end-round').hidden=!g.round||g.complete;
@@ -375,7 +460,7 @@
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
     const count=Number(players|| (selectedMode==='group'?$('#group-size').value:1))||1;
     const results=round===2&&old.roundResults&&old.roundResults[1]?{1:old.roundResults[1]}:{};
-    state.game={schema:3,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,chanceNotice:null,event:{title:'Round '+round+' begins',copy:round===1?'Each player has '+TURNS_PER_ROUND+' turns. Every time your cell divides you collect a new blue cell chip and start a new cell.':'Same board and checkpoint cards. Every time you land on a light-blue square, draw a Cellular Chance card and follow it.',icon:'🎲',kicker:roundName(round)}};
+    state.game={schema:3,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,chanceNotice:null,checkpointNotice:null,event:{title:'Round '+round+' begins',copy:round===1?'Each player has '+TURNS_PER_ROUND+' turns. Every time your cell divides you collect a new blue cell chip and start a new cell.':'Same board and checkpoint cards. Every time you land on a light-blue square, draw a Cellular Chance card and follow it.',icon:'🎲',kicker:roundName(round)}};
     save();renderGame();announce(state.game.event.title+'. '+turnAnnouncement());$('#roll-dice').focus({preventScroll:true});
   }
   function newCell(p){p.score=zeroScore();p.lastChip=null;}
@@ -391,6 +476,14 @@
   function arriveUnchecked(p){
     if(fullScorecard(p.score))collectChip(p,'blue','The cell skipped the M Checkpoint, but its scorecard was complete.');
     else collectChip(p,'red','The cell skipped the M Checkpoint with requirements missing from its scorecard.');
+  }
+  // Which printed line of the checkpoint card applies to this scorecard. It mirrors checkCheckpoint(), which stays the
+  // rule; tests check that the two agree for every case.
+  function checkpointOutcome(p,pos){
+    const s=p.score;
+    if(pos===G1CP){const m=minOf(s.g1);return m===0?'destroyed':m===1?'back5':m===2?'back3':'pass';}
+    if(pos===G2CP)return Math.min(minOf(s.g2),s.s.chromosomes)===0?'destroyed':s.s.chromosomes<4?'backS':'pass';
+    return fullScorecard(s)?'divided':'destroyed';
   }
   function checkCheckpoint(p){
     const s=p.score,pos=p.pos;
@@ -412,6 +505,17 @@
       destroy(p,'destroyed by p53 at the M Checkpoint (scorecard incomplete).');
       setEvent('M Checkpoint: destroyed by p53','The double-check found requirements missing from the scorecard (a checkpoint was skipped earlier). p53 is checking here, so the cell does not divide. Go back to the START with a new scorecard.','🛑','Checkpoint card');
     }
+  }
+  // Turning over a checkpoint card on a turn (the piece moves onto the checkpoint). The result is worked out on a copy of
+  // the game so the card's result line matches what "Follow the card & continue" then does.
+  function openCheckpoint(p){
+    const g=state.game,pos=p.pos,phase=track[pos].phase,card=CHECKPOINT_CARDS[phase],outcome=checkpointOutcome(p,pos);
+    const copy=JSON.parse(JSON.stringify(g));let effect='';
+    try{state.game=copy;const q=copy.playersState.find(function(x){return x.id===p.id;});checkCheckpoint(q);
+      effect=copy.event.copy+(q.pos!==pos&&q.pos!==0&&q.pos!==FINISH?' Your piece moves to '+where(q.pos)+'.':'');}
+    finally{state.game=g;}
+    g.checkpointNotice={pending:true,player:p.id,pos:pos,phase:phase,outcome:outcome,label:CHECKPOINT_LABELS[outcome],effect:effect,round:g.round};
+    setEvent(card.title+' card','p53 checks the scorecard. Follow the card to continue.','🔍','Checkpoint card');
   }
   function moveTo(p,dest){
     // Move a card's distance. Checkpoints jumped over are not checked (p53 is not working); a checkpoint landed on is.
@@ -494,7 +598,7 @@
     useTurn(p);
     if(p.pos===FINISH){newCell(p);p.pos=0;}
     const next=track[p.pos+1];
-    if(next.type==='checkpoint'){p.pos++;checkCheckpoint(p);return {dice:[],text:g.event.title+'. '+g.event.copy,checkpoint:true};}
+    if(next.type==='checkpoint'){p.pos++;openCheckpoint(p);return {dice:[],text:'Turned over the '+next.label+' card.',checkpoint:true};}
     const dice=[rand(),rand(),rand(),rand()];
     if(next.type==='space'&&next.phase==='m'){
       if(!dice.includes(next.roll))return {dice,text:'You must roll a '+next.roll+' to move to M space '+next.roll+'. No '+next.roll+' this turn, so the cell does not move.'};
@@ -513,11 +617,11 @@
   }
   function afterTurnFocus(){
     const g=state.game;
-    if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete&&$('#round-end-dialog').open)$('#round-end-title').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
+    if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.checkpointNotice)$('#checkpoint-reveal-ack').focus({preventScroll:true});else if(g.complete&&$('#round-end-dialog').open)$('#round-end-title').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
   }
   function rollDice(){
     const g=state.game,p=g.playersState[g.active];
-    if(!p||p.status!=='playing'||g.complete||g.rolling||g.chanceNotice)return;
+    if(!p||p.status!=='playing'||g.complete||g.rolling||g.chanceNotice||g.checkpointNotice)return;
     const checkpointTurn=!p.bonusRolls&&p.pos!==FINISH&&track[p.pos+1].type==='checkpoint';
     g.rolling=!checkpointTurn;renderDice();$('#roll-dice').disabled=true;
     window.setTimeout(function(){
@@ -532,12 +636,14 @@
       if(g.chanceNotice){
         g.lastRollSummary=dicePart+result.text+' Then: Cellular Chance card: '+g.chanceNotice.title+' '+g.chanceNotice.copy;
         g.chanceNotice.rollText=dicePart+result.text;
+      }else if(g.checkpointNotice){
+        g.lastRollSummary=result.text;   // the card's result is said once, when it is followed
       }else{
         g.lastRollSummary=dicePart+(g.event.kicker==='Four-dice roll'?result.text:g.event.title+'. '+g.event.copy);
         endTurn(p);
       }
       save();renderGame();renderAnalysisReference();
-      announce('Player '+p.id+(result.dice.length?' rolled '+result.dice.join(', '):'')+'. '+g.lastRollSummary.replace(/^Dice \[[^\]]*\]\. /,'')+(g.chanceNotice?'':' '+turnAnnouncement()));
+      announce('Player '+p.id+(result.dice.length?' rolled '+result.dice.join(', '):'')+'. '+g.lastRollSummary.replace(/^Dice \[[^\]]*\]\. /,'')+(g.chanceNotice||g.checkpointNotice?'':' '+turnAnnouncement()));
       afterTurnFocus();
     },checkpointTurn?120:480);
   }
@@ -555,6 +661,24 @@
         endTurn(p);
         said='Player '+p.id+' followed the card: '+card.title+' '+effect;
       }
+    }
+    save();renderGame();renderAnalysisReference();
+    if(said)announce(said+' '+turnAnnouncement());
+    afterTurnFocus();
+  }
+  // "Follow the card & continue" on a checkpoint card: apply it (once: the notice is cleared before it is applied and
+  // saved with it), then finish the turn. The result goes to the turn event, the history and the announcer as before.
+  function followCheckpoint(){
+    const g=state.game,n=g.checkpointNotice;
+    if(!n)return;
+    g.checkpointNotice=null;
+    let said='';
+    const p=n.pending&&g.playersState.find(function(x){return x.id===n.player;});
+    if(p){
+      if(p.pos===n.pos){checkCheckpoint(p);g.event.label=n.label;}
+      g.lastRollSummary=g.event.title+'. '+g.event.copy;
+      endTurn(p);
+      said='Player '+p.id+'. '+g.lastRollSummary;
     }
     save();renderGame();renderAnalysisReference();
     if(said)announce(said+' '+turnAnnouncement());
@@ -622,7 +746,7 @@
   }
   function endRoundNow(){
     confirmGameReset('End this round now?','Every player stops here, and the cell chips collected so far are recorded as this round’s results. Use this when your class timer runs out.',function(){
-      const g=state.game;g.playersState.forEach(function(p){p.status='done';p.bonusRolls=0;p.skipTurns=0;});g.chanceNotice=null;finishRound('early');save();renderGame();renderAnalysisReference();announce(turnAnnouncement());afterTurnFocus();
+      const g=state.game;g.playersState.forEach(function(p){p.status='done';p.bonusRolls=0;p.skipTurns=0;});g.chanceNotice=null;g.checkpointNotice=null;finishRound('early');save();renderGame();renderAnalysisReference();announce(turnAnnouncement());afterTurnFocus();
     },'End round');
   }
   function resetRound(){
