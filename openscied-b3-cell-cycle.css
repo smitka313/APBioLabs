@@ -376,6 +376,8 @@
 .chance-reveal-effect { font-weight:700; color:#fff3c9; }
 .chance-reveal.is-not-working .chance-reveal-panel { border-color:#ff8f8f; box-shadow:0 0 0 5px #e1515133,0 0 55px #ff4d4d66; }
 .round-compare td { text-align:center; font-variant-numeric:tabular-nums; }
+table.data.round-compare th, table.data.round-compare td { white-space:normal; }
+@media(max-width:520px){ table.data.round-compare { font-size:.8rem; } table.data.round-compare th, table.data.round-compare td { padding:6px 7px; } }
 
 /* Lesson 3 Making Sense (handout table and questions) */
 .making-sense { margin-top:16px; display:grid; gap:8px; }
