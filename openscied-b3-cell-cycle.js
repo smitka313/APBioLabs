@@ -134,7 +134,7 @@
     const s=p.score;
     if(key==='g1')return {title:'G1 checkpoint',subtitle:'Pass with at least 3 of each G1 material.',items:[['Nutrients',s.g1.nutrients,3],['Proteins',s.g1.proteins,3],['Organelles',s.g1.organelles,3]]};
     if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with 4 DNA copies and at least 1 of each G2 material.',items:[['DNA copies',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
-    if(key==='m')return {title:'M checkpoint',subtitle:'Check the earlier requirements and confirm all four modeled chromosomes are attached to the spindle.',items:[['G1 materials',Math.min(s.g1.nutrients,s.g1.proteins,s.g1.organelles),3],['DNA copies',s.s.chromosomes,4],['G2 materials',Math.min(s.g2.nutrients,s.g2.proteins,s.g2.organelles),1],['Spindle attachments',s.m.attachments,4]]};
+    if(key==='m')return {title:'M checkpoint',subtitle:'Confirm all four modeled chromosomes are attached to the spindle.',items:[['Spindle attachments',s.m.attachments,4]]};
     return {title:'Cycle complete',subtitle:'The model cell reached division.',items:[['Divisions completed',p.divisions,1]]};
   }
   function renderCheckpoint(){
@@ -328,14 +328,16 @@
     if(p.pos===29){
       const ok=s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3&&s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1;
       if(s.m.attachments<4){setEvent('M checkpoint: spindle attachment incomplete','The cell waits at the M checkpoint until all four modeled chromosome units are attached. A 5 or 6 on any die records one attachment; this is a simplified stand-in for the real spindle-assembly checkpoint.','⏸️','Checkpoint response');return;}
-      if(!ok){
-        p.pos=s.s.chromosomes<4?8:(s.g1.nutrients<3||s.g1.proteins<3||s.g1.organelles<3?1:15);
-        addLog('Player '+p.id+' returned to gather missing materials before M phase.');
-        setEvent('M checkpoint: gather what is missing','The scorecard does not yet meet every phase requirement. The cell returns to gather what is missing.','↩️','Checkpoint response');return;
-      }
+      // The spindle checkpoint checks only attachment. A cell in mitosis cannot go back to G1 or S, so requirements left
+      // unmet by an earlier bypassed checkpoint are carried into the daughter cells as an unchecked division.
       p.pos=30;p.status='finished';p.divisions++;
+      if(!ok){
+        p.unchecked++;
+        addLog('Player '+p.id+' divided with requirements left unmet by a bypassed earlier checkpoint.');
+        setEvent('Division with unchecked problems','All four chromosomes are attached, so the spindle checkpoint lets the cell divide. That checkpoint checks only spindle attachment, so it cannot catch the materials or DNA copies missed when an earlier checkpoint was bypassed. The daughter cells may inherit those problems. This is a model outcome, not a cancer diagnosis.','⚠️','Checkpoint bypassed');return;
+      }
       addLog('Player '+p.id+' completed a regulated model division.');
-      setEvent('The model cell completes division','The cell met the G1, S, and G2 requirements and divides into daughter cells. A completed division is not the same as cancer.','🧬','Division complete');
+      setEvent('The model cell completes division','All four chromosomes are attached to the spindle, and the cell met the earlier G1, S, and G2 checks. It divides into daughter cells. A completed division is not the same as cancer.','🧬','Division complete');
     }
   }
   function scoreRoll(p,dice,required){
