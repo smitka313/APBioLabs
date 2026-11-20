@@ -1,1 +1,4 @@
 node_modules/
+
+# Screenshots written by tests/t78-cell-cycle-audit.js (uploaded by CI, not committed)
+test-artifacts/
