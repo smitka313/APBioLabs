@@ -54,7 +54,7 @@
         ellipse(p.x,p.y+2,r+2,r+2,'#0006');
         ellipse(p.x,p.y,r,r,gradient(p.x,p.y,r,[[0,col+'dd'],[.7,col+'44'],[1,'#172c2b']]),col+'b0',1.4);
         if(start||finish)text(start?'▶':'✓',p.x,p.y+4,12,'#ecfff7','center','700');
-        else if(t&&t.phase==='m'){text(String(t.need),p.x,p.y+4,11,'#e6dbff','center','700');}
+        else if(t&&t.phase==='m'){text(t.need==='spindle'?'ATTACH':t.need===null?'CHECK':String(t.need),p.x,p.y+4,8,'#e6dbff','center','700');}
         else text(String(i),p.x,p.y+3,7,'#c6e6dc','center','mono');
         if(game&&game.round===2&&t&&t.chance){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.PI/4);ctx.strokeStyle='#8ad5f0';ctx.strokeRect(-11,-11,22,22);ctx.restore();}
       }
@@ -137,7 +137,7 @@
       text('DAUGHTER CELLS',568,455,12,'#b3e6d1','center','mono');
     }else{
       hitRegions.push(...cell(568,328,radius,actualPhase,p.score,p.pos>=26?.8:.1));
-      const phaseText=phase==='s'?'DNA IS COPYING':phase==='g2'?'PREPARING TO DIVIDE':phase==='m'?'CHROMOSOMES SEPARATE':'GROWING & GATHERING';
+      const phaseText=phase==='s'?'DNA IS COPYING':phase==='g2'?'PREPARING TO DIVIDE':phase==='m'?'CHECKING SPINDLE ATTACHMENT':'GROWING & GATHERING';
       text(phaseText,568,455,11,'#a2c8bb','center','mono');
     }
     text('YOUR CELL, MAGNIFIED',568,150,10,'#86aaa1','center','mono');
