@@ -40,6 +40,8 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node tests/t76-cell-cycle-controls.js
+      - run: node --test tests/openscied-dashboard.test.js
+      - run: node tests/t77-openscied-dashboard.js
 
   student-pdfs:
     name: Downloadable student guides
