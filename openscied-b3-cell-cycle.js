@@ -302,7 +302,8 @@
       setEvent(card.title,cardCopy,card.icon,'Cellular chance card');
     }else if(card.id==='skip'){p.skipTurns++;}
     else if(card.id==='advance'){
-      const dest=Math.min(30,p.pos+3);p.bypassed+= [7,23,29].filter(function(n){return n>p.pos&&n<=dest;}).length;p.pos=dest;
+      // Count only checkpoints the cell jumps over. One it lands on is still checked on its next roll.
+      const dest=Math.min(30,p.pos+3);p.bypassed+= [7,23,29].filter(function(n){return n>p.pos&&n<dest;}).length;p.pos=dest;
       if(p.pos===30){p.status='finished';p.divisions++;p.unchecked++;setEvent('Unchecked division in the model','The cell passed the final checkpoint without the normal check. This is a model outcome, not a diagnosis.','⚠️','Checkpoint bypassed');}
     }else if(card.id==='bypass'){
       const cp=nextCheckpoint(p.pos);p.bypassed++;
@@ -310,7 +311,7 @@
       else p.pos=cp+1;
     }
     else if(card.id==='skipTwo'){
-      const next=nextCheckpoint(p.pos),second=nextCheckpoint(next);p.bypassed+=2;
+      const next=nextCheckpoint(p.pos),second=nextCheckpoint(next);p.bypassed+=[next,second].filter(function(n){return n<=29;}).length;
       if(second>=29){p.pos=30;p.status='finished';p.divisions++;p.unchecked++;setEvent('Division without a checkpoint check','Two checkpoint checks were bypassed in this model cell.','⚠️','Checkpoint bypassed');}
       else p.pos=second+1;
     }else if(card.id==='unchecked'){
@@ -386,9 +387,12 @@
       const bonus=p.bonusRolls>0,required=bonus?null:getTarget(p),startPos=p.pos;
       const waitingG1=startPos===7&&(p.score.g1.nutrients<3||p.score.g1.proteins<3||p.score.g1.organelles<3);
       const waitingG2=waitingAtG2(p),waiting=waitingG1||waitingG2;
+      // A cell that a chance card left on the G2 checkpoint with short DNA, or on the M checkpoint with every
+      // attachment made, is checked there instead of walking past the checkpoint.
+      const recheck=!bonus&&((startPos===23&&p.score.s.chromosomes<4)||(startPos===29&&p.score.m.attachments>=4));
       let moved=false,missed=null,attachmentRecorded=false;
       if(bonus)p.bonusRolls--;
-      else if(waiting){/* A checkpoint pause holds the cell in place while it gathers G1 or G2 materials. */}
+      else if(waiting||recheck){/* A checkpoint pause holds the cell in place while it gathers G1 or G2 materials. */}
       else if(required!==null){
         const matched=required==='spindle'?(dice.includes(5)||dice.includes(6)):dice.includes(required);
         if(matched){attachmentRecorded=required==='spindle';if(startPos!==29){p.pos=Math.min(30,p.pos+1);moved=true;}}
@@ -403,7 +407,7 @@
       if(bonus)message='Bonus roll—your token stays put. '+summary;
       setEvent(bonus?'Bonus dice added':missed!==null?'The cell waits for the needed roll':'Materials collected',message,'🎲','Four-dice roll');
       addLog('Player '+p.id+' · '+phaseLabel(p)+' · ['+dice.join(', ')+'] · '+message);
-      if((moved&&[7,23,29].includes(p.pos))||(waiting&&[7,23].includes(p.pos))||(attachmentRecorded&&p.pos===29))checkCheckpoint(p);
+      if((moved&&[7,23,29].includes(p.pos))||(waiting&&[7,23].includes(p.pos))||recheck||(attachmentRecorded&&p.pos===29))checkCheckpoint(p);
       else if(moved&&g.round===2&&track[landed].chance){
         const keepTurn=drawChance(p);
         if(keepTurn&&p.status==='playing'){g.active=p.id-1;}
