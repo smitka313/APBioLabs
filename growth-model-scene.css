@@ -131,3 +131,6 @@ body.companion-paged section.step:not(.is-current) { display:none; }
 #analyze .analysis-question textarea[rows="5"] { min-height:190px; }
 #analyze .model-revision-group > .field:not(.analysis-question) { margin:10px 0 24px; }
 @media(max-width:520px){#analyze .analysis-question label {font-size:1rem;}#analyze .analysis-question > p {font-size:.85rem;}}
+
+/* One-line note under the trial table caption: divisions and copying opportunities are the same count by design. */
+#trial-table caption .caption-note { display:block; margin-top:3px; font-weight:400; font-size:.82rem; color:var(--muted); }
