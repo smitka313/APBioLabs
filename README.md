@@ -2,6 +2,8 @@
 
 **Free to use:** [biologylabbench.com](https://biologylabbench.com/) · [Teacher setup](https://biologylabbench.com/getting-started.html) · [Printable student directions](https://biologylabbench.com/student-directions.html)
 
+> **AI agents and contributors:** read and follow [AGENTS.md](AGENTS.md) before changing anything. It is also at https://raw.githubusercontent.com/smitka313/APBioLabs/main/AGENTS.md.
+
 Interactive online versions of the 13 investigations in *AP Biology Investigative Labs: An Inquiry-Based Approach* (Teacher Manual, updated Fall 2019). It is a static website: every lab runs in the browser, with no install, no accounts and no server.
 
 Each lab page has the same parts: an overview with background and diagrams, an auto-graded pre-lab check, a structured investigation (a simulation that follows the real bench procedure and gives realistic, variable data), a design-your-own investigation, analysis tools (tables, graphs with error bars, standard error, chi-square, regression), written CER prompts, and a Submit part.
