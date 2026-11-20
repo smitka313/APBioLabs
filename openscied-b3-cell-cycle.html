@@ -252,6 +252,53 @@
         <div class="field analysis-question"><label for="ms-limits-explain"><span class="question-number">A</span>What did the model help us explain?</label><textarea id="ms-limits-explain" rows="2"></textarea></div>
         <div class="field analysis-question"><label for="ms-limits-could-not"><span class="question-number">B</span>What questions do we still have that the model COULD NOT help us answer?</label><textarea id="ms-limits-could-not" rows="2"></textarea></div>
         <div class="field analysis-question"><label for="ms-limits-progress"><span class="question-number">C</span>How can we make progress on those questions?</label><textarea id="ms-limits-progress" rows="2"></textarea></div>
+        <section class="cycle-data" id="cell-cycle-data" aria-labelledby="cell-cycle-data-title">
+          <div class="eyebrow">Reference</div><h4 id="cell-cycle-data-title">Cell cycle data</h4>
+          <p class="cycle-data-intro">Evidence from real (non-cancer) cells to help you make progress on what the game could not explain. For each figure, record what the evidence shows and how it relates to the Cell Game.</p>
+          <div class="cycle-data-grid">
+            <figure class="cycle-data-figure" id="cycle-data-size">
+              <figcaption><strong>Figure 1 · Cell size over time.</strong> One plant cell grows larger over 26 hours, then divides into two smaller cells.</figcaption>
+              <div class="size-key" role="img" aria-label="Size key: colours run from blue for 15 square micrometres (smaller) through green and yellow to red for 45 square micrometres (larger).">
+                <span>15 µm² · smaller</span><span class="size-key-bar" aria-hidden="true"></span><span>larger · 45 µm²</span>
+              </div>
+              <div class="table-wrap"><table class="data cycle-data-table" id="cycle-data-size-table">
+                <caption class="sr-only">Figure 1: the same cell at four times, with its colour on the size key</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Cells tracked</th><th scope="col">Colour on the size key</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">54 h</th><td>1 cell</td><td><span class="swatch swatch-blue" aria-hidden="true"></span>Blue · small</td></tr>
+                  <tr><th scope="row">64 h</th><td>1 cell</td><td><span class="swatch swatch-green" aria-hidden="true"></span>Green · medium</td></tr>
+                  <tr><th scope="row">72 h</th><td>1 cell</td><td><span class="swatch swatch-yellow" aria-hidden="true"></span>Yellow · larger</td></tr>
+                  <tr><th scope="row">80 h</th><td>2 cells (it divided)</td><td><span class="swatch swatch-navy" aria-hidden="true"></span>Dark blue · smallest</td></tr>
+                </tbody></table></div>
+              <p class="cycle-data-note">The microscope images show size only as a colour on the 15–45 µm² key (scale bar 10 µm); they do not give an exact area for each cell. Source: adapted from Jones, A. R., et al. (2017).</p>
+            </figure>
+            <figure class="cycle-data-figure" id="cycle-data-dna">
+              <figcaption><strong>Figure 2 · Genetic material by phase.</strong> The relative amount of genetic material doubles, from 1 to 2, during S phase.</figcaption>
+              <svg class="dna-chart" viewBox="0 0 520 290" role="img" aria-labelledby="dna-chart-title dna-chart-desc">
+                <title id="dna-chart-title">Relative amount of genetic material during G1, S and G2</title>
+                <desc id="dna-chart-desc">Line graph. G1: relative amount 1. S: rises steadily from 1 to 2. G2: relative amount 2.</desc>
+                <text class="dna-axis-label" x="4" y="22">↑ Relative amount of genetic material</text>
+                <g class="dna-grid"><line x1="70" y1="150" x2="500" y2="150"/><line x1="70" y1="75" x2="500" y2="75"/></g>
+                <g class="dna-axis"><line x1="70" y1="40" x2="70" y2="225"/><line x1="70" y1="225" x2="500" y2="225"/><line x1="62" y1="150" x2="70" y2="150"/><line x1="62" y1="75" x2="70" y2="75"/></g>
+                <g class="dna-ticks"><text x="54" y="157" text-anchor="end">1</text><text x="54" y="82" text-anchor="end">2</text><text x="54" y="232" text-anchor="end">0</text></g>
+                <g class="dna-phases">
+                  <rect class="phase-g1" x="70" y="231" width="205" height="34"/><rect class="phase-s" x="275" y="231" width="151" height="34"/><rect class="phase-g2" x="426" y="231" width="74" height="34"/>
+                  <text x="172" y="256" text-anchor="middle">G1</text><text x="350" y="256" text-anchor="middle">S</text><text x="463" y="256" text-anchor="middle">G2</text>
+                </g>
+                <text class="dna-axis-label" x="285" y="287" text-anchor="middle">Phase →</text>
+                <polyline class="dna-line" points="70,150 275,150 426,75 500,75"/>
+                <g class="dna-points"><circle cx="275" cy="150" r="5"/><circle cx="426" cy="75" r="5"/></g>
+              </svg>
+              <div class="table-wrap"><table class="data cycle-data-table" id="cycle-data-dna-table">
+                <caption class="sr-only">Figure 2 values: relative amount of genetic material in each phase</caption>
+                <thead><tr><th scope="col">Phase</th><th scope="col">Relative amount of genetic material</th></tr></thead>
+                <tbody><tr><th scope="row">G1</th><td>1</td></tr><tr><th scope="row">S</th><td>Rises from 1 to 2</td></tr><tr><th scope="row">G2</th><td>2</td></tr></tbody>
+              </table></div>
+              <p class="cycle-data-note">Source: Heinz, K., et al. (2018).</p>
+            </figure>
+          </div>
+          <p class="cycle-data-credit">Data from OpenSciEd Biology B.3 Lesson 3, CC BY-NC 4.0 · <a href="https://www.openscied.org/" target="_blank" rel="noopener">openscied.org</a></p>
+        </section>
         <p class="small muted">The red-chip percentages come from the game’s cards and dice only. They do not show how likely real people are to get cancer, and cancer is not inevitable.</p>
       </section>
     </div>

@@ -401,3 +401,31 @@ table.data.round-compare th, table.data.round-compare td { white-space:normal; }
 .making-sense .analysis-question > p { margin:0; font-size:.86rem; color:var(--muted); }
 .making-sense .analysis-question textarea { width:100%; max-width:83ch; min-height:80px; box-sizing:border-box; }
 @media print { .making-sense textarea { border:1px solid #999; } }
+/* Cell cycle data reference (OpenSciEd B.3 Lesson 3 "Cell Cycle Data"), recreated as a chart and tables. */
+.cycle-data { display:grid; gap:10px; margin-top:8px; padding:14px; border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:var(--r); background:var(--surface-2); }
+.cycle-data h4 { margin:0; }
+.cycle-data .eyebrow { margin:0; }
+.cycle-data-intro { margin:0; max-width:83ch; }
+.cycle-data-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:14px; align-items:start; }
+.cycle-data-figure { margin:0; min-width:0; display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); }
+.cycle-data-figure figcaption { line-height:1.45; }
+.cycle-data-table { width:100%; }
+table.data.cycle-data-table th, table.data.cycle-data-table td { white-space:normal; text-align:left; vertical-align:top; }
+@media(max-width:520px){ table.data.cycle-data-table th, table.data.cycle-data-table td { padding:6px 7px; } }
+.cycle-data-note, .cycle-data-credit { margin:0; font-size:.84rem; color:var(--muted); }
+.cycle-data-credit a { color:var(--accent); font-weight:700; }
+.size-key { display:flex; align-items:center; gap:8px; font-size:.8rem; color:var(--muted); font-family:var(--f-mono); flex-wrap:wrap; }
+.size-key-bar { flex:1 1 80px; min-width:80px; height:12px; border-radius:6px; border:1px solid var(--line); background:linear-gradient(90deg,#1b2c8f,#2f6ee0,#3cc0d8,#55c27a,#e3d34a,#ef8a2f,#d8322c); }
+.swatch { display:inline-block; width:.95em; height:.95em; margin-right:6px; vertical-align:-.12em; border-radius:3px; border:1px solid var(--line); }
+.swatch-blue { background:#2f6ee0; } .swatch-green { background:#55c27a; } .swatch-yellow { background:#e3d34a; } .swatch-navy { background:#0d1a5c; }
+.dna-chart { display:block; width:100%; height:auto; max-width:560px; color:var(--ink); }
+.dna-chart text { fill:currentColor; font-family:var(--f-mono); font-size:16px; }
+.dna-chart .dna-axis-label { font-family:inherit; font-size:16px; fill:var(--muted); }
+@media(max-width:520px){ .dna-chart text, .dna-chart .dna-axis-label { font-size:24px; } }
+.dna-axis line { stroke:currentColor; stroke-width:1.5; }
+.dna-grid line { stroke:var(--line); stroke-dasharray:4 4; }
+.dna-phases rect { stroke:currentColor; stroke-width:1; }
+.dna-phases .phase-g1 { fill:var(--surface); } .dna-phases .phase-s { fill:var(--accent-soft); } .dna-phases .phase-g2 { fill:var(--surface-2); }
+.dna-line { fill:none; stroke:var(--accent); stroke-width:3.5; stroke-linejoin:round; }
+.dna-points circle { fill:var(--accent); }
+@media print { .cycle-data { break-inside:avoid; } }
