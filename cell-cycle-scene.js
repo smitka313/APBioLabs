@@ -15,7 +15,10 @@
   function text(s,x,y,size,color,align,font){ctx.fillStyle=color||'#d8e9e5';ctx.font=(font==='mono'?'500':(font||'500'))+' '+size+'px '+(font==='mono'?'monospace':'Arial, sans-serif');ctx.textAlign=align||'left';ctx.fillText(s,x,y);}
   function rounded(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}}
   function gradient(x,y,r,stops){const g=ctx.createRadialGradient(x-r*.25,y-r*.3,1,x,y,r);stops.forEach(s=>g.addColorStop(s[0],s[1]));return g;}
-  function position(index){const a=-Math.PI/2+index/31*Math.PI*2;return {x:568+Math.cos(a)*428,y:328+Math.sin(a)*228,a:a};}
+  // The track has one position per board space (32 on the OpenSciEd board), START at the top.
+  function spaces(){return track.length||32;}
+  function position(index){const a=-Math.PI/2+index/spaces()*Math.PI*2;return {x:568+Math.cos(a)*428,y:328+Math.sin(a)*228,a:a};}
+  const CHANCE_FILL='#bfe7f7',CHANCE_RING='#7fd0ee';
   function phaseColor(i){const t=track[i];return !t?'#78cbb1':t.phase==='s'?'#8cc8ff':t.phase==='g2'?'#e8c786':t.phase==='m'?'#c3b3ef':'#72d4b3';}
   function background(){
     const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#1a2c30');g.addColorStop(.45,'#111e24');g.addColorStop(1,'#0b171c');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -32,15 +35,16 @@
   function path(){
     ctx.save();ctx.shadowColor='#0009';ctx.shadowBlur=18;ctx.shadowOffsetY=8;
     ellipse(568,328,451,251,'#182b30','#789b9138',2);ellipse(568,328,403,203,'#0f2025','#789b9138',1);ctx.restore();
-    for(let i=0;i<31;i++){
-      const p=position(i),next=position((i+1)%31),col=phaseColor(i);
+    const N=spaces();
+    for(let i=0;i<N;i++){
+      const p=position(i),next=position((i+1)%N),col=phaseColor(i);
       line(p.x,p.y,next.x,next.y,col+'55',3);
       if(i%4===1){const q=position(i+.5);ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.a+Math.PI/2);ctx.beginPath();ctx.moveTo(-4,-3);ctx.lineTo(0,2);ctx.lineTo(4,-3);ctx.strokeStyle=col+'b0';ctx.lineWidth=1.5;ctx.stroke();ctx.restore();}
     }
-    const phases=[{i:3.4,label:'G1',sub:'GROW & GATHER'},{i:11.2,label:'S',sub:'COPY DNA'},{i:19.1,label:'G2',sub:'PREPARE & CHECK'},{i:26.3,label:'M',sub:'DIVIDE'}];
+    const phases=[{i:3.5,label:'G1',sub:'GROW & GATHER'},{i:11.5,label:'S',sub:'CHROMOSOMES'},{i:19.5,label:'G2',sub:'GROW & GATHER'},{i:27,label:'M',sub:'MUST ROLL 1–5'}];
     phases.forEach(o=>{const p=position(o.i),x=568+Math.cos(p.a)*505,y=328+Math.sin(p.a)*286;text(o.label,x,y,22,phaseColor(Math.round(o.i)),'center','700');text(o.sub,x,y+16,9,'#98b4b0','center','mono');});
     hitRegions=[];
-    for(let i=0;i<31;i++){
+    for(let i=0;i<N;i++){
       const t=track[i],p=position(i),col=phaseColor(i),check=t&&t.type==='checkpoint';
       if(check){
         ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a+Math.PI/2);
@@ -48,16 +52,18 @@
         line(-19,-13,19,-13,col,3);line(-19,13,19,13,col,3);
         ctx.shadowColor=col;ctx.shadowBlur=10;ellipse(-17,-13,3,3,col);ellipse(17,-13,3,3,col);ctx.restore();
         text(t.phase.toUpperCase(),p.x,p.y+4,11,'#eafdf5','center','700');
-        hitRegions.push({x:p.x,y:p.y,r:22,title:t.phase.toUpperCase()+' checkpoint',copy:'The model checks the cell’s scorecard here before it continues.'});
+        hitRegions.push({x:p.x,y:p.y,r:22,title:t.label,copy:'Turn over the checkpoint card: p53 checks the cell’s scorecard here before it continues.'});
       }else{
-        const start=i===0,finish=i===30,r=start||finish?13:7;
+        const start=t&&t.type==='start',finish=t&&t.type==='finish',chance=!!(t&&t.chance),r=start||finish?13:chance?9:7;
         ellipse(p.x,p.y+2,r+2,r+2,'#0006');
-        ellipse(p.x,p.y,r,r,gradient(p.x,p.y,r,[[0,col+'dd'],[.7,col+'44'],[1,'#172c2b']]),col+'b0',1.4);
-        if(start||finish)text(start?'▶':'✓',p.x,p.y+4,12,'#ecfff7','center','700');
-        else if(t&&t.phase==='m'){text(t.need==='spindle'?'ATTACH':t.need===null?'CHECK':String(t.need),p.x,p.y+4,8,'#e6dbff','center','700');}
-        else text(String(i+1),p.x,p.y+3,7,'#c6e6dc','center','mono');
-        if(game&&game.round===2&&t&&t.chance){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.PI/4);ctx.strokeStyle='#8ad5f0';ctx.strokeRect(-11,-11,22,22);ctx.restore();}
-        hitRegions.push({x:p.x,y:p.y,r:18,title:'Space '+(i+1)+' · '+(t?.label||'START'),copy:t?.chance?'Landing on this blue-diamond space in Round 2 draws a chance card. The dice values do not trigger it.':'This space does not draw a chance card.'});
+        // Light-blue squares, as on the paper board: Cellular Chance spaces in Round 2.
+        if(chance){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a+Math.PI/2);rounded(-r,-r,2*r,2*r,3,CHANCE_FILL,game&&game.round===2?'#ffffff':CHANCE_RING);if(game&&game.round===2){ctx.strokeStyle=CHANCE_RING;ctx.lineWidth=2;ctx.strokeRect(-r-3,-r-3,2*r+6,2*r+6);}ctx.restore();}
+        else ellipse(p.x,p.y,r,r,gradient(p.x,p.y,r,[[0,col+'dd'],[.7,col+'44'],[1,'#172c2b']]),col+'b0',1.4);
+        const ink=chance?'#0f3a4a':'#c6e6dc';
+        if(start||finish){text(start?'▶':'✓',p.x,p.y+4,12,'#ecfff7','center','700');const o=position(i+(start?.55:-.55));text(start?'START':'FINISH',o.x,o.y-20,10,start?'#ffb36b':'#a9e27a','center','700');}
+        else if(t&&t.phase==='m')text(String(t.roll),p.x,p.y+4,10,chance?ink:'#efe6ff','center','700');
+        else if(t)text(String(t.n),p.x,p.y+3,8,ink,'center','mono');
+        hitRegions.push({x:p.x,y:p.y,r:18,title:t?(t.type==='space'?t.label:t.label):'START',copy:t&&t.phase==='m'&&t.type==='space'?'Must roll '+t.roll+': you need a '+t.roll+' on a die to move onto this space.'+(chance?' It is also a light-blue square: in Round 2, landing here draws a Cellular Chance card.':''):chance?'Light-blue square: in Round 2, landing here draws a Cellular Chance card.':'Move one space each turn.'});
       }
     }
     const players=(game&&game.playersState.length?game.playersState:[{id:1,pos:0}]);
@@ -66,7 +72,7 @@
       if(tween){const k=Math.max(0,Math.min(1,(now-tween.time)/750)),ease=k*k*(3-2*k);pos=tween.from+(tween.to-tween.from)*ease;}
       const q=position(pos),same=players.filter(o=>o.pos===p.pos),offset=same.findIndex(o=>o.id===p.id),shift=(offset-(same.length-1)/2)*17;
       let x=q.x+Math.cos(q.a)*shift,y=q.y+Math.sin(q.a)*shift;
-      const active=game&&game.active===index&&!game.complete,col=p.unchecked?'#f2858d':colors[index];
+      const active=game&&game.active===index&&!game.complete,col=colors[index];
       ctx.save();ctx.shadowColor=col;ctx.shadowBlur=active?17:5;
       ellipse(x,y,14,12,gradient(x,y,15,[[0,'#e8fff0'],[.26,col],[1,'#1a574c']]),'#e5fff0',1.6);ctx.restore();
       ellipse(x-2,y-1,5,5,'#174840','#8ee6c8',.8);text(String(p.id),x+1,y+4,10,'#fff','center','700');
@@ -135,10 +141,12 @@
     const actualPhase=phase==='finish'?'m':phase;
     if(phase==='finish'){
       hitRegions.push(...cell(510,325,93,'g1',p.score,0),...cell(630,325,93,'g1',p.score,0));
-      text('DAUGHTER CELLS',568,455,12,'#b3e6d1','center','mono');
+      if(p.lastChip==='red'){ellipse(630,325,96,80,null,'#ff6b6b',3);text('CANCER CELL · RED CHIP (GAME MODEL)',568,455,11,'#ffb3b3','center','mono');hitRegions.push({x:630,y:325,r:60,title:'Cancer cell (game model)',copy:'This cell divided when p53 was not working, so it is a red chip: a cancer cell in this game model.'});}
+      else text('TWO CELLS · NEW BLUE CHIP',568,455,12,'#b3e6d1','center','mono');
     }else{
-      hitRegions.push(...cell(568,328,radius,actualPhase,p.score,p.pos>=26?.8:.1));
-      const phaseText=phase==='s'?'DNA IS COPYING':phase==='g2'?'PREPARING TO DIVIDE':phase==='m'?'CHECKING SPINDLE ATTACHMENT':'GROWING & GATHERING';
+      const mt=track[p.pos],split=mt&&mt.phase==='m'?(mt.type==='checkpoint'?.9:.15+(mt.roll||0)*.13):.1;
+      hitRegions.push(...cell(568,328,radius,actualPhase,p.score,split));
+      const phaseText=phase==='s'?'COLLECTING CHROMOSOMES':phase==='g2'?'GROWING & GATHERING':phase==='m'?'DIVIDING · ROLL 1–5 IN ORDER':'GROWING & GATHERING';
       text(phaseText,568,455,11,'#a2c8bb','center','mono');
     }
     text('YOUR CELL, MAGNIFIED',568,150,10,'#86aaa1','center','mono');
@@ -157,8 +165,8 @@
     if(mitos.length){const m=mitos.reduce(function(a,b){return Math.hypot(b.x-408,b.y-410)<Math.hypot(a.x-408,a.y-410)?b:a;});leader(m.x,m.y,408,410,370,410,'Mitochondria','right');}
     const mem=toward(body.x,body.y,body.r-1,body.r*.83-1,708,403);leader(mem[0],mem[1],708,403,713,403,'Cell membrane');
     if(game&&game.event&&/checkpoint/i.test(game.event.kicker)){
-      const c=/passed/i.test(game.event.title)?'#86e1b8':'#efcd91';
-      text(/passed/i.test(game.event.title)?'CHECKPOINT PASSED':'CHECKPOINT RESPONSE',568,180,10,c,'center','mono');
+      const passed=/passed/i.test(game.event.kicker);
+      text(passed?'p53 CHECK · PASSED':'p53 CHECK · '+(/DESTROYED|destroyed/.test(game.event.title)?'CELL DESTROYED':'SENT BACK'),568,180,10,passed?'#86e1b8':'#efcd91','center','mono');
     }
   }
   const pipPositions={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
@@ -178,8 +186,21 @@
       ctx.restore();
     }
     const phase=track[game?.playersState?.[game.active]?.pos||0]?.phase;
-    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     Chromosome copied in S',392,676,12,'#b1c5bc');text('5–6  No materials; attachment signal in M',392,698,11,'#b1c5bc');text('M phase: a 5 or 6 models one attachment',392,720,11,'#b1c5bc');
+    text('1 Nutrient · 2 Protein · 3 Organelle (G1, G2)',392,654,12,'#b1c5bc');text('4  Chromosome (S)',392,676,12,'#b1c5bc');text('5–6  Nothing to check off',392,698,11,'#b1c5bc');text('M: roll the number on the next space',392,720,11,'#b1c5bc');
+    chipTray();
     text(rolling?'ROLLING…':(game&&game.playersState[game.active]?'PLAYER '+game.playersState[game.active].id+' · ROLL FOUR DICE':'MOVE ONE SPACE · ROLL FOUR DICE'),1122,631,10,'#98b7ad','right','mono');
+  }
+  // Each player's cell chips: blue = non-cancer cell, red = cancer cell (game model). Counts are written beside the colour.
+  function chipTray(){
+    const players=game&&game.playersState||[];if(!players.length)return;
+    // Top-left corner, clear of the track, the phase labels and the Roll button that overlays the bottom right.
+    text('CELL CHIPS',62,70,10,'#9eb7af','left','mono');
+    players.forEach(function(p,i){
+      const y=88+i*15;
+      ellipse(70,y-4,6,6,colors[i]);text(String(p.id),70,y-1,8,'#10201c','center','700');
+      const chip=function(x,fill,stroke,n,label){ellipse(x,y-4,6,6,fill,stroke,1.5);text(n+' '+label,x+10,y,11,'#d6e7e0');};
+      chip(96,'#2f7fd8','#cfe3ff',p.blue||0,'blue');chip(170,'#d23b3b','#ffd0d0',p.red||0,'red');
+    });
   }
   function drawParticles(){particles=particles.filter(p=>now-p.time<850);for(const p of particles){const k=Math.max(0,Math.min(1,(now-p.time)/850)),x=p.x+(p.tx-p.x)*k,y=p.y+(p.ty-p.y)*k-Math.sin(k*Math.PI)*100;ctx.save();ctx.globalAlpha=1-k*.7;ctx.shadowColor=p.color;ctx.shadowBlur=8;ellipse(x,y,3.4,3.4,p.color);ctx.restore();}}
   function paint(){ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);ctx.clearRect(0,0,W,H);background();path();specimen();dice();drawParticles();}

@@ -364,3 +364,38 @@
 @media(max-width:900px){ .phase-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:520px){ .phase-cards { grid-template-columns:1fr; } .phase-guide { padding:12px; } }
 @media(min-width:1100px){ #game-panel:not(.is-pregame) > .phase-guide { grid-area:route; margin:0; } }
+
+/* Cell chips: blue = non-cancer cell, red = cancer cell (game model). Text labels always accompany the colour. */
+.chip { display:inline-block; width:13px; height:13px; border-radius:50%; vertical-align:-2px; margin-right:4px; box-shadow:inset 0 0 0 2px rgba(255,255,255,.65); }
+.chip-blue { background:#2f7fd8; border:1px solid #1b4f8f; }
+.chip-red { background:#d23b3b; border:1px solid #8c1f1f; }
+.chip-tally { white-space:nowrap; font:700 .78rem var(--f-mono); }
+.chip-tally .chip-red { margin-left:8px; }
+.score-chips { margin:0; font-size:.76rem; color:var(--muted); }
+.turn-event.is-red { border-left-color:#d23b3b; }
+.chance-reveal-effect { font-weight:700; color:#fff3c9; }
+.chance-reveal.is-not-working .chance-reveal-panel { border-color:#ff8f8f; box-shadow:0 0 0 5px #e1515133,0 0 55px #ff4d4d66; }
+.round-compare td { text-align:center; font-variant-numeric:tabular-nums; }
+
+/* Lesson 3 Making Sense (handout table and questions) */
+.making-sense { margin-top:16px; display:grid; gap:8px; }
+.making-sense h3 { margin:0; }
+.making-sense h4 { margin:12px 0 0; }
+.making-sense > p { margin:0; }
+.making-sense-table { width:100%; table-layout:fixed; }
+.making-sense-table th[scope=row] { width:20%; text-align:left; white-space:normal; }
+.making-sense-table textarea { width:100%; box-sizing:border-box; min-height:3.4em; resize:vertical; font:inherit; }
+@media(max-width:640px){
+  .making-sense-table, .making-sense-table thead, .making-sense-table tbody, .making-sense-table tr, .making-sense-table th, .making-sense-table td { display:block; width:100%; box-sizing:border-box; }
+  .making-sense-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .making-sense-table tr { padding:8px 0; border-bottom:1px solid var(--line); }
+  .making-sense-table th[scope=row] { width:auto; }
+  .making-sense-table td::before { display:block; font-size:.8rem; color:var(--muted); margin:6px 0 2px; }
+  .making-sense-table td:nth-child(2)::before { content:'What happened in the game?'; }
+  .making-sense-table td:nth-child(3)::before { content:'What could it represent in a cell?'; }
+}
+.making-sense .analysis-question { margin:0 0 14px; gap:6px; }
+.making-sense .analysis-question label { display:flex; align-items:baseline; gap:9px; font-size:1rem; font-weight:700; line-height:1.45; }
+.making-sense .analysis-question > p { margin:0; font-size:.86rem; color:var(--muted); }
+.making-sense .analysis-question textarea { width:100%; max-width:83ch; min-height:80px; box-sizing:border-box; }
+@media print { .making-sense textarea { border:1px solid #999; } }

@@ -68,7 +68,7 @@
         <p class="lede">Cells copy their DNA and divide as organisms grow and repair tissues. Cell-cycle controls can pause division when a cell needs more resources or when its DNA needs attention. In this activity, you will model those controls, then test how the number of cell divisions changes across different conditions.</p>
         <p>You will use two connected models:</p>
         <ol>
-          <li><strong>Play the cell-cycle game.</strong> Make predictions about what happens at checkpoints when controls are working and when one control is disrupted.</li>
+          <li><strong>Play the Cell Game.</strong> In Round 1, p53 checks your cell at every checkpoint. In Round 2, Cellular Chance cards sometimes stop p53 from working. Count the blue (non-cancer) and red (cancer) cell chips your cells make, then make sense of what happened.</li>
           <li><strong>Run the growth model.</strong> Compare age, body size, and cell-division frequency. Collect repeated results and look for a pattern.</li>
         </ol>
         <div class="callout callout--question"><div class="callout-title">By the end, you should be able to</div>
@@ -118,17 +118,17 @@
   <section class="step wrap wrap--wide gutter" id="cell-game" data-step="Cell-cycle game">
     <header><div class="eyebrow">3 · The cell cycle, in play</div><h2>A cell’s journey.</h2></header>
     <div class="step-body">
-      <p class="prose">Move a cell around the cycle one space at a time. Roll four dice to collect nutrients, proteins, organelles, and copied chromosomes. At each checkpoint, the cell’s progress determines what can happen next.</p>
-      <div class="callout callout--safety"><div class="callout-title">What this game models</div><p>Round 1 shows cell-cycle checkpoints responding to missing materials or DNA. Round 2 adds chance events that sometimes disrupt that response. It is a simplified model of one part of cancer development; it cannot predict a person’s health or risk.</p></div>
+      <p class="prose">This is the OpenSciEd Cell Game, played on screen with the same board, cards and scorecard as your handout. Move your cell one space each turn and roll four dice to check off nutrients, proteins, organelles and chromosomes. At each checkpoint, p53 checks your scorecard.</p>
+      <div class="callout callout--safety"><div class="callout-title">What this game models</div><p>The Cell Game is a game model of how a cell grows and divides. In Round 1, p53 works at every checkpoint. In Round 2, Cellular Chance cards can stop p53 from working, and some cells become cancer cells (red chips) in this game model. The game cannot predict anyone’s health: cancer is not inevitable, and no game result is a diagnosis.</p></div>
 
       <div class="game-setup panel" id="game-setup">
-        <div class="game-setup-copy"><span class="eyebrow">Set up the board</span><h3>Take a cell through its cycle.</h3><p>Roll. Gather. Grow. Watch the checkpoints respond. Play on your own or share a device with up to four players.</p></div>
+        <div class="game-setup-copy"><span class="eyebrow">Set up the board</span><h3>Take a cell through its cycle.</h3><p>Each player starts with one non-cancer cell (a blue chip) on START. Each round gives every player 75 turns; every time your cell divides you collect a new chip and start a new cell. Play on your own or share a device with up to four players.</p><p class="small" id="legacy-game-note" hidden>The Cell Game now follows the OpenSciEd board and cards exactly. Rounds you finished with the earlier version are still listed in your evidence; play the rounds again to count your cell chips.</p></div>
         <fieldset class="mode-choice"><legend>Players</legend>
           <label class="choice"><input type="radio" name="game-mode" value="solo" checked> Solo — one cell</label>
           <label class="choice"><input type="radio" name="game-mode" value="group"> Shared-device group</label>
         </fieldset>
-        <div class="field" id="group-size-wrap" hidden><label for="group-size">Players in your group</label><select id="group-size"><option value="2">2 players</option><option value="3">3 players</option><option value="4">4 players</option></select><small>Take turns in player-number order. There is no score or winner.</small></div>
-        <div class="round-start-actions"><button class="btn btn--primary" id="start-round1" type="button">Start Round 1 · Working checkpoints</button><button class="btn" id="start-round2" type="button" hidden>Start Round 2 · Disrupted checkpoint response</button></div>
+        <div class="field" id="group-size-wrap" hidden><label for="group-size">Players in your group</label><select id="group-size"><option value="2">2 players</option><option value="3">3 players</option><option value="4">4 players</option></select><small>Take turns in player-number order, like going clockwise around the table. There is no winner.</small></div>
+        <div class="round-start-actions"><button class="btn btn--primary" id="start-round1" type="button">Start Round 1 · p53 is working</button><button class="btn" id="start-round2" type="button" hidden>Start Round 2 · Cellular Chance cards</button></div>
         <p class="small muted">Your round and turns save in this browser. Reloading the page will keep the game where you left it.</p>
       </div>
 
@@ -140,69 +140,72 @@
 
         <p id="game-announcer" class="sr-only" role="status" aria-live="polite"></p>
         <div class="board-legend" aria-label="Board key">
-          <span><i class="legend-swatch swatch-g1"></i>G1 · gather materials</span>
-          <span><i class="legend-swatch swatch-s"></i>S · copy DNA</span>
-          <span><i class="legend-swatch swatch-g2"></i>G2 · prepare and check</span>
-          <span><i class="legend-swatch swatch-m"></i>M · attach chromosomes</span>
-          <span><i class="legend-swatch swatch-check"></i>Checkpoint</span>
-          <span><i class="legend-swatch swatch-chance"></i>Round 2 chance space</span><span><i class="legend-swatch swatch-flag"></i>unchecked division marker (model only)</span>
+          <span><i class="legend-swatch swatch-g1"></i>G1 · nutrients, proteins, organelles</span>
+          <span><i class="legend-swatch swatch-s"></i>S · chromosomes (DNA)</span>
+          <span><i class="legend-swatch swatch-g2"></i>G2 · nutrients, proteins, organelles</span>
+          <span><i class="legend-swatch swatch-m"></i>M · must roll 1–5 in order</span>
+          <span><i class="legend-swatch swatch-check"></i>Checkpoint · turn over card</span>
+          <span><i class="legend-swatch swatch-chance"></i>Light-blue square · Round 2 Cellular Chance card</span>
+          <span><i class="chip chip-blue"></i>Blue chip · non-cancer cell</span><span><i class="chip chip-red"></i>Red chip · cancer cell (game model)</span>
         </div>
 
         <div class="specimen-stage" id="cell-board" role="group" aria-label="Interactive cell-cycle board and magnified cell">
           <button type="button" id="enlarge-scene" class="scene-expand" aria-pressed="false">Enlarge model ↗</button>
-          <canvas id="cycle-scene" width="1160" height="760" role="img" aria-label="A circular cell-cycle track surrounds a magnified cell. The cell shows its membrane, nucleus, mitochondria, and chromosomes. Four dice sit in a felt tray below. See the scorecard and turn result for the current state."></canvas>
+          <canvas id="cycle-scene" width="1160" height="760" role="img" aria-label="The Cell Game board drawn as an oval track of 32 spaces, from START through 6 G1 spaces, the G1 Checkpoint, 8 S spaces, 8 G2 spaces, the G2 Checkpoint, 5 M spaces marked Must roll 1 to 5, the M Checkpoint and FINISH. Light-blue squares are Cellular Chance spaces. The track surrounds a magnified cell showing its membrane, nucleus, mitochondria and chromosomes. Four dice and each player's cell chips sit below. See the scorecard and turn result for the current state."></canvas>
           <p id="specimen-tip" class="specimen-tip" role="status" hidden></p>
           <div class="scene-action"><button class="btn btn--primary roll-button" id="roll-dice" type="button">Roll four dice</button></div>
           <span class="sr-only" id="scene-description"></span>
         </div>
-        <div class="board-route-note"><span class="route-arrow">START</span><span>Grow</span><span>→</span><span>G1 checkpoint</span><span>→</span><span>Copy DNA</span><span>→</span><span>G2 checkpoint</span><span>→</span><span>Attach chromosomes to spindle</span><span>→</span><strong>Division</strong></div>
+        <div class="board-route-note"><span class="route-arrow">START</span><span>G1 ×6</span><span>→</span><span>G1 Checkpoint</span><span>→</span><span>S ×8</span><span>→</span><span>G2 ×8</span><span>→</span><span>G2 Checkpoint</span><span>→</span><span>M ×5 (must roll 1, 2, 3, 4, 5)</span><span>→</span><span>M Checkpoint</span><span>→</span><strong>FINISH</strong></div>
         <section class="phase-guide" id="phase-guide" aria-labelledby="phase-guide-title">
           <h3 id="phase-guide-title">What each phase needs before the cell moves on</h3>
           <ol class="phase-cards">
             <li class="phase-card" data-phase="g1"><div class="phase-top"><span class="phase-name">G1</span><span class="phase-what">Grow &amp; gather</span><span class="phase-status"></span></div>
-              <p class="phase-does">The cell grows and builds up the materials it needs.</p>
-              <p class="phase-check"><strong>G1 checkpoint:</strong> 3 nutrients, 3 proteins and 3 organelles.</p>
-              <p class="phase-why">Why: a cell that divides before it is big enough leaves its daughter cells short of resources.</p></li>
-            <li class="phase-card" data-phase="s"><div class="phase-top"><span class="phase-name">S</span><span class="phase-what">Copy DNA</span><span class="phase-status"></span></div>
-              <p class="phase-does">Every chromosome is copied (roll a 4 to copy one).</p>
-              <p class="phase-check"><strong>Goal:</strong> all 4 chromosomes copied. This is checked at the G2 checkpoint.</p>
-              <p class="phase-why">Why: each daughter cell needs a complete set of DNA.</p></li>
-            <li class="phase-card" data-phase="g2"><div class="phase-top"><span class="phase-name">G2</span><span class="phase-what">Prepare &amp; check</span><span class="phase-status"></span></div>
-              <p class="phase-does">The cell gathers more materials and checks its copied DNA.</p>
-              <p class="phase-check"><strong>G2 checkpoint:</strong> all 4 chromosomes copied, plus 1 nutrient, 1 protein and 1 organelle.</p>
-              <p class="phase-why">Why: it catches unfinished or damaged DNA copying before the cell divides.</p></li>
+              <p class="phase-does">6 spaces. Check off a nutrient for each 1, a protein for each 2 and an organelle for each 3 you roll.</p>
+              <p class="phase-check"><strong>G1 Checkpoint:</strong> at least 3 nutrients, 3 proteins and 3 organelles to pass. A 2 in any category: go back 3 spaces. A 1: go back 5 spaces. A 0: destroyed by p53, back to the START.</p>
+              <p class="phase-why">Why: p53 checks that the cell has grown and gathered enough before it makes new chromosomes. A cell that is short is sent back to keep gathering, or destroyed.</p></li>
+            <li class="phase-card" data-phase="s"><div class="phase-top"><span class="phase-name">S</span><span class="phase-what">Chromosomes</span><span class="phase-status"></span></div>
+              <p class="phase-does">8 spaces. Check off a chromosome for each 4 you roll (4 boxes).</p>
+              <p class="phase-check"><strong>Goal:</strong> 4 DNA (all 4 Chromosomes boxes). The G2 Checkpoint checks this.</p>
+              <p class="phase-why">Why: the cell needs all of its chromosomes before it can divide into two cells.</p></li>
+            <li class="phase-card" data-phase="g2"><div class="phase-top"><span class="phase-name">G2</span><span class="phase-what">Grow &amp; gather</span><span class="phase-status"></span></div>
+              <p class="phase-does">8 spaces. Check off nutrients, proteins and organelles again (1, 2 and 3).</p>
+              <p class="phase-check"><strong>G2 Checkpoint:</strong> at least 4 DNA and at least 1 nutrient, 1 protein and 1 organelle to pass. Fewer than 4 DNA: go back to the first S space. A 0 in any category: destroyed by p53, back to the START.</p>
+              <p class="phase-why">Why: p53 checks the chromosomes and materials once more, so a cell does not start dividing without them.</p></li>
             <li class="phase-card" data-phase="m"><div class="phase-top"><span class="phase-name">M</span><span class="phase-what">Divide</span><span class="phase-status"></span></div>
-              <p class="phase-does">Chromosomes attach to the spindle and are pulled apart (a 5 or 6 attaches one).</p>
-              <p class="phase-check"><strong>M checkpoint:</strong> all 4 chromosomes attached to the spindle.</p>
-              <p class="phase-why">Why: each daughter cell gets exactly one copy of every chromosome.</p></li>
+              <p class="phase-does">5 spaces marked Must roll 1 to 5. To leave the G2 Checkpoint you must roll a 1; to move to each next space you must roll its number. If you do not, you do not move.</p>
+              <p class="phase-check"><strong>M Checkpoint:</strong> double-check the whole scorecard (G1: 3 of each; S: 4 DNA; G2: 1 of each). Complete: YOU SUCCESSFULLY DIVIDED! Take a new blue cell chip.</p>
+              <p class="phase-why">Why: this is the last check before one cell becomes two. When p53 is working, only cells with everything they need divide.</p></li>
           </ol>
         </section>
         <details class="disclose game-rules"><summary>How to play</summary><div class="inner">
-          <p><strong>Your turn:</strong> Move one space forward, then roll all four dice. The dice collect materials; they never decide how far you move.</p>
-          <p><strong>Dice values:</strong> 1 = nutrient, 2 = protein, 3 = organelle (in G1 and G2). 4 = one chromosome copied (in S; the model cell has four chromosomes, and each is copied once). In M phase, a 5 or 6 attaches one chromosome to the spindle; otherwise 5 and 6 collect nothing. These are ordinary dice standing in for cell processes.</p>
-          <p><strong>When a checkpoint isn’t met:</strong> The cards above list what each checkpoint checks. A checkpoint pauses the cell; it never sends it back. Stay on the checkpoint and keep rolling to collect what is missing. At the G2 checkpoint, if DNA copying is unfinished, each 4 copies one more chromosome; if a G2 material is missing, the cell stays paused at the checkpoint until you roll it. Only the Round 2 “DNA damage” card restarts a cell.</p>
-          <p><strong>M checkpoint:</strong> It checks only that all four chromosomes are attached to the spindle. The cell waits there until they are and never goes back to G1 or S. In real cells, the spindle-assembly checkpoint delays chromosome separation until every chromosome is attached to spindle microtubules at its kinetochore. If a Round 2 chance card let the cell skip an earlier checkpoint, problems that checkpoint would have caught are passed on, and the division counts as unchecked.</p>
-          <p id="chance-space-rule"><strong>Round 2:</strong> Landing on a chance space draws a chance card after the roll. The chance spaces are Spaces 2, 4, 6, 10, 12, 14, 17, 19, 21, 23, 25, 27 and 29; on the board they are outlined with a blue diamond. Space numbers on the board match the status display, counting START as Space 1. A bonus roll or a failed M-phase move does not draw another card. Dice values 5 and 6 do not trigger cards.</p>
+          <p><strong>Your turn:</strong> On your first turn, move your piece to the first G1 space and roll all four dice. The numbers you roll do not tell you how many spaces to move: move forward only one space on every turn unless a card tells you otherwise.</p>
+          <p><strong>Scorecard:</strong> In Phase G1 and Phase G2, check off a nutrient for each 1, a protein for each 2 and an organelle for each 3 (5 boxes each). In Phase S, check off a chromosome for each 4 (4 boxes). Ignore all other numbers.</p>
+          <p><strong>Checkpoints and p53:</strong> When you reach a checkpoint, turn over its card (the game does this for you): p53 checks your scorecard. G1 Checkpoint: pass with at least 3 nutrients, 3 proteins and 3 organelles; a 2 in any category sends you back 3 spaces, a 1 sends you back 5 spaces, and a 0 means YOU HAVE BEEN DESTROYED by p53 and go back to the START. G2 Checkpoint: pass with at least 4 DNA and 1 nutrient, 1 protein and 1 organelle; fewer than 4 DNA sends you back to the first S space, and a 0 in any category means destroyed by p53, back to the START. A cell sent back keeps its check marks; a destroyed cell starts again with a new scorecard.</p>
+          <p><strong>Phase M:</strong> To proceed past the G2 Checkpoint, you must roll a 1. To proceed to each next space you must roll the number on that space (2, then 3, 4 and 5). You may not skip any spaces; if you do not roll the number you need, you do not move during that turn.</p>
+          <p><strong>M Checkpoint and FINISH:</strong> p53 double-checks the whole scorecard. If it is complete, YOU SUCCESSFULLY DIVIDED: take a new blue cell chip (a non-cancer cell). Your next turn starts a new cell on the first G1 space with a new scorecard. Keep playing until every player has used 75 turns (or your class ends the round). If the double-check finds anything missing (possible only after a Round 2 card skipped a checkpoint), p53 destroys the cell and it goes back to the START.</p>
+          <p id="chance-space-rule"><strong>Round 2:</strong> The directions are the same except every time you land on a light-blue square, you draw a Cellular Chance card and follow the directions on it; the card then goes back on the bottom of the stack (13 cards). The light-blue squares are G1 spaces 2, 4 and 6; S spaces 1, 3, 5 and 7; G2 spaces 1, 3, 5 and 7; and M spaces 2 and 4. On the board they are filled light blue. Cards are drawn when your one-space move lands on a light-blue square, not when a card or checkpoint moves your piece there.</p>
+          <p><strong>Red chips:</strong> “p53 is not working!” cards let a cell skip checkpoints. A cell sent directly to FINISH by a card collects a RED cell chip, a cancer cell in this game model. A cell that skips the M Checkpoint and reaches FINISH also collects a red chip if its scorecard is missing anything (a blue chip if it is complete).</p>
         </div></details>
 
         <div class="game-play-grid">
           <section class="dice-station panel" aria-labelledby="dice-title">
-            <div class="station-heading"><div><span class="game-kicker">Your turn</span><h3 id="dice-title">Roll four dice</h3></div><span class="turn-count" id="turn-count">Turn 1</span></div>
-            <p id="dice-prompt">Move your token one space, then roll all four dice. The dice collect materials; they do not set the number of spaces.</p>
+            <div class="station-heading"><div><span class="game-kicker">Your turn</span><h3 id="dice-title">Roll four dice</h3></div><span class="turn-count" id="turn-count">Turn 1 of 75</span></div>
+            <p id="dice-prompt">Move your piece one space, then roll all four dice. The numbers you roll do not tell you how many spaces to move.</p>
             <div class="dice-tray" id="dice-tray" aria-label="Four dice"></div>
             <div class="dice-result" id="dice-result">The dice will appear here after the first roll.</div>
             
-            <div class="dice-key"><strong>Dice key</strong><span>1 Nutrient</span><span>2 Protein</span><span>3 Organelle</span><span>4 Chromosome copied</span><span>5–6 No material; M-phase attachment signal</span></div>
+            <div class="dice-key"><strong>Dice key</strong><span>1 Nutrient</span><span>2 Protein</span><span>3 Organelle</span><span>4 Chromosome (DNA)</span><span>5–6 Nothing to check off</span><span>M: roll the number on the next space</span></div>
           </section>
 
           <section class="scorecard panel" aria-labelledby="scorecard-title">
-            <div class="station-heading"><div><span class="game-kicker">Track your cell</span><h3 id="scorecard-title">Materials scorecard</h3></div><span class="pill" id="checkpoint-status">Building</span></div>
+            <div class="station-heading"><div><span class="game-kicker">Track your cell</span><h3 id="scorecard-title">Scorecard</h3></div><span class="pill" id="checkpoint-status">Building</span></div>
             <div class="scorecard-grid" id="scorecards"></div>
             <div class="checkpoint-card" id="checkpoint-card">
               <div class="checkpoint-heading"><span class="checkpoint-icon">✓</span><div><strong id="checkpoint-title">Next checkpoint · G1</strong><small id="checkpoint-subtitle">Collect at least 3 of each material.</small></div></div>
               <div class="checkpoint-requirements" id="checkpoint-requirements"></div>
             </div>
-            <p class="small muted">In the scorecard’s M row, each successful 5-or-6 roll records one modeled chromosome attachment. The M checkpoint waits for four.</p>
+            <p class="small muted">Same rows as your paper scorecard: Phase G1 and G2 have 5 boxes for each material; Phase S has 4 Chromosomes boxes (the cards call these DNA). A ✓ marks a checkpoint requirement that is met.</p>
           </section>
         </div>
 
@@ -213,7 +216,7 @@
 
         <fieldset class="mechanism-check panel">
           <legend>Think about a checkpoint</legend>
-          <p>A disrupted checkpoint lets a cell keep moving even when DNA is damaged or other requirements are missing. Why does that matter for the cells made next?</p>
+          <p>When p53 is not working, a cell can pass a checkpoint even when it is missing DNA or other requirements. Why does that matter for the cells made next?</p>
           <label class="choice"><input type="radio" name="mechanism-check" value="a"> The next cells may inherit DNA problems or missing instructions; this raises concern but does not guarantee cancer.</label>
           <label class="choice"><input type="radio" name="mechanism-check" value="b"> Every cell that passes a checkpoint immediately becomes cancerous.</label>
           <label class="choice"><input type="radio" name="mechanism-check" value="c"> p53 is the only control that can affect what happens.</label>
@@ -223,10 +226,34 @@
 
         <details class="turn-log panel"><summary>Roll and event history <span id="history-count">0 rolls</span></summary><ol id="turn-history"></ol></details>
         <div class="game-end panel" id="round-summary" tabindex="-1" hidden></div>
-        <div class="row game-actions"><button class="btn" id="restart-round" type="button">Restart this round</button><button class="btn" id="reset-game" type="button">Set up a new game</button></div>
+        <div class="row game-actions"><button class="btn" id="end-round" type="button">End this round now</button><button class="btn" id="restart-round" type="button">Restart this round</button><button class="btn" id="reset-game" type="button">Set up a new game</button></div>
       </div>
 
-      <div class="callout callout--tip"><div class="callout-title">After both rounds</div><p>Compare how often a cell divided in Round 1 and Round 2, and notice which checkpoints were passed or bypassed. The model helps explore how cell-cycle controls matter; a cell division or DNA change by itself does not mean cancer will develop.</p></div>
+      <section class="making-sense panel" id="making-sense" aria-labelledby="making-sense-title">
+        <div class="eyebrow">Lesson 3 · Making sense</div><h3 id="making-sense-title">What did the Cell Game model?</h3>
+        <p class="small">These are the Making Sense questions from your Round 1 and Round 2 handouts. You can start them while you play. Answers save in this browser and are included when you download or print your work.</p>
+        <h4>Round 1: Making Sense</h4>
+        <p>1. Fill in the table below.</p>
+        <div class="table-wrap"><table class="data making-sense-table"><caption class="sr-only">Round 1 Making Sense table</caption><thead><tr><th scope="col">Phase or checkpoint</th><th scope="col">What happened in the game during this phase/checkpoint?</th><th scope="col">What do you think it could represent in a cell?</th></tr></thead><tbody>
+          <tr><th scope="row">Phase: G1</th><td><textarea id="ms-r1-g1-happened" rows="2" aria-label="Phase: G1: what happened in the game"></textarea></td><td><textarea id="ms-r1-g1-represent" rows="2" aria-label="Phase: G1: what it could represent in a cell"></textarea></td></tr>
+          <tr><th scope="row">G1 Checkpoint</th><td><textarea id="ms-r1-g1cp-happened" rows="2" aria-label="G1 Checkpoint: what happened in the game"></textarea></td><td><textarea id="ms-r1-g1cp-represent" rows="2" aria-label="G1 Checkpoint: what it could represent in a cell"></textarea></td></tr>
+          <tr><th scope="row">Phase: S</th><td><textarea id="ms-r1-s-happened" rows="2" aria-label="Phase: S: what happened in the game"></textarea></td><td><textarea id="ms-r1-s-represent" rows="2" aria-label="Phase: S: what it could represent in a cell"></textarea></td></tr>
+          <tr><th scope="row">Phase: G2</th><td><textarea id="ms-r1-g2-happened" rows="2" aria-label="Phase: G2: what happened in the game"></textarea></td><td><textarea id="ms-r1-g2-represent" rows="2" aria-label="Phase: G2: what it could represent in a cell"></textarea></td></tr>
+          <tr><th scope="row">G2 Checkpoint</th><td><textarea id="ms-r1-g2cp-happened" rows="2" aria-label="G2 Checkpoint: what happened in the game"></textarea></td><td><textarea id="ms-r1-g2cp-represent" rows="2" aria-label="G2 Checkpoint: what it could represent in a cell"></textarea></td></tr>
+          <tr><th scope="row">Phase: M</th><td><textarea id="ms-r1-m-happened" rows="2" aria-label="Phase: M: what happened in the game"></textarea></td><td><textarea id="ms-r1-m-represent" rows="2" aria-label="Phase: M: what it could represent in a cell"></textarea></td></tr>
+          <tr><th scope="row">M Checkpoint</th><td><textarea id="ms-r1-mcp-happened" rows="2" aria-label="M Checkpoint: what happened in the game"></textarea></td><td><textarea id="ms-r1-mcp-represent" rows="2" aria-label="M Checkpoint: what it could represent in a cell"></textarea></td></tr>
+        </tbody></table></div>
+        <h4>Round 2: Making Sense</h4>
+        <div class="field analysis-question"><label for="ms-r2-q1"><span class="question-number">1</span>What happened in Round 2 that was different from in Round 1?</label><textarea id="ms-r2-q1" rows="2"></textarea></div>
+        <div class="field analysis-question"><label for="ms-r2-q2"><span class="question-number">2</span>How did the differences change the outcome of the game?</label><p id="hint-ms-r2-q2">Use your blue and red chip counts and percentages from the results table.</p><textarea id="ms-r2-q2" rows="2" aria-describedby="hint-ms-r2-q2"></textarea></div>
+        <div class="field analysis-question"><label for="ms-r2-q3"><span class="question-number">3</span>How was the role of p53 different?</label><textarea id="ms-r2-q3" rows="2"></textarea></div>
+        <div class="field analysis-question"><label for="ms-r2-q4"><span class="question-number">4</span>How does this game help answer the question, <em>How do non-cancer cells become cancer cells?</em></label><textarea id="ms-r2-q4" rows="2"></textarea></div>
+        <h4>The limits of our game model</h4>
+        <div class="field analysis-question"><label for="ms-limits-explain"><span class="question-number">A</span>What did the model help us explain?</label><textarea id="ms-limits-explain" rows="2"></textarea></div>
+        <div class="field analysis-question"><label for="ms-limits-could-not"><span class="question-number">B</span>What questions do we still have that the model COULD NOT help us answer?</label><textarea id="ms-limits-could-not" rows="2"></textarea></div>
+        <div class="field analysis-question"><label for="ms-limits-progress"><span class="question-number">C</span>How can we make progress on those questions?</label><textarea id="ms-limits-progress" rows="2"></textarea></div>
+        <p class="small muted">The red-chip percentages come from the game’s cards and dice only. They do not show how likely real people are to get cancer, and cancer is not inevitable.</p>
+      </section>
     </div>
   </section>
 
@@ -285,7 +312,7 @@
       <div class="analysis-question-group" data-analysis-page="1">
         <h3>Connect the evidence to a mechanism.</h3>
         <div class="field analysis-question"><label for="analysis-cancer"><span class="question-number">5</span>What happened before a cell turned magenta?</label><p id="hint-cancer">Scrub the timeline or inspect a cell. Describe the control changes you observed. Did every division or amber-marked cell become cancerous? Magenta cells are uncommon in this model. If none turned magenta, try a frequently dividing cell type at an older age, or explain what the model would require first.</p><textarea id="analysis-cancer" rows="3" aria-describedby="hint-cancer" placeholder="Before the cell changed colour,… The evidence does / does not show that every division…"></textarea></div>
-        <div class="field analysis-question"><label for="analysis-checkpoints"><span class="question-number">6</span>How does the cell-cycle game help explain these results?</label><p id="hint-checkpoints">Use one checkpoint event from the game. Connect the effect of a working or bypassed checkpoint to what a cell might pass to its daughter cells.</p><textarea id="analysis-checkpoints" rows="3" aria-describedby="hint-checkpoints" placeholder="In the game,… This helps explain… because…"></textarea></div>
+        <div class="field analysis-question"><label for="analysis-checkpoints"><span class="question-number">6</span>How does the cell-cycle game help explain these results?</label><p id="hint-checkpoints">Use one checkpoint event from the game. Connect what happened when p53 was working, or not working, to what a cell might pass to the cells it makes.</p><textarea id="analysis-checkpoints" rows="3" aria-describedby="hint-checkpoints" placeholder="In the game,… This helps explain… because…"></textarea></div>
       </div>
       <fieldset class="evidence-checks" data-analysis-page="1"><legend>Which ideas does your investigation support?</legend>
         <label class="choice"><input type="checkbox" id="ev-age"> A longer modeled time can allow more cell divisions.</label>
