@@ -138,7 +138,7 @@ function savedGame(round = 2) {
       const current=(await read()).game;
       assert.equal(current.playersState[0].pos,pos);
       assert.equal(current.turns,1);assert.ok(current.logs.length>=1);
-      assert.equal(await p.locator('#history-count').textContent(),'1 turn');
+      assert.equal(await p.locator('#history-count').textContent(),'1 event · newest first');   // play-test item 9: counts events, not turns
     }
     T.ok(true,'Damage card clears stale result text; both G2 Checkpoint outcomes and the turn-only history count');
     const finish=savedGame();finish.game.playersState[0].pos=1;finish.game.playersState[0].turnsUsed=74;finish.game.chanceDeck=[12];

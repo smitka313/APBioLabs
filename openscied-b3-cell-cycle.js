@@ -211,8 +211,9 @@
     return '';
   }
   function renderHistory(){
-    const logs=state.game.logs.slice(-30).reverse();
-    $('#history-count').textContent=state.game.turns+' '+(state.game.turns===1?'turn':'turns');
+    // The list holds events (rolls, checkpoint cards, chance cards, lost turns), newest first; say exactly that.
+    const logs=state.game.logs.slice().reverse(),n=logs.length;
+    $('#history-count').textContent=plural(n,'event')+' · newest first'+(n>=120?' (latest 120 kept)':'');
     $('#turn-history').innerHTML=logs.map(function(line){return '<li>'+line+'</li>';}).join('');
   }
   function tally(players,turns){
