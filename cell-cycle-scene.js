@@ -168,7 +168,7 @@
       ctx.restore();
     }
     const phase=track[game?.playersState?.[game.active]?.pos||0]?.phase;
-    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     DNA copies in S',392,676,12,'#b1c5bc');text('5–6  No materials; attachment signal in M',392,698,11,'#b1c5bc');text('M phase: a 5 or 6 models one attachment',392,720,11,'#b1c5bc');
+    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     Chromosome copied in S',392,676,12,'#b1c5bc');text('5–6  No materials; attachment signal in M',392,698,11,'#b1c5bc');text('M phase: a 5 or 6 models one attachment',392,720,11,'#b1c5bc');
     text(rolling?'ROLLING…':(game&&game.playersState[game.active]?'PLAYER '+game.playersState[game.active].id+' · ROLL FOUR DICE':'MOVE ONE SPACE · ROLL FOUR DICE'),1122,631,10,'#98b7ad','right','mono');
   }
   function drawParticles(){particles=particles.filter(p=>now-p.time<850);for(const p of particles){const k=Math.max(0,Math.min(1,(now-p.time)/850)),x=p.x+(p.tx-p.x)*k,y=p.y+(p.ty-p.y)*k-Math.sin(k*Math.PI)*100;ctx.save();ctx.globalAlpha=1-k*.7;ctx.shadowColor=p.color;ctx.shadowBlur=8;ellipse(x,y,3.4,3.4,p.color);ctx.restore();}}

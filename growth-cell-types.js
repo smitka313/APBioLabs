@@ -13,7 +13,7 @@
     medium:{name:'Earlier model · moderate setting',short:'Earlier moderate',rate:.12,color:'#aac9c2',legacy:true},
     fast:{name:'Earlier model · fast setting',short:'Earlier fast',rate:.25,color:'#aac9c2',legacy:true}
   };
-  const changes=['Growth signal altered','Checkpoint brake lost','DNA-repair control lost'];
+  const changes=['Growth signal altered (proto-oncogene → oncogene)','Checkpoint brake lost (tumor-suppressor gene, e.g. p53)','DNA-repair control lost (repair gene)'];
   const CHANGE_CHANCE=.03;
   function profile(key){return profiles[key]||profiles.skin;}
   function simulate(age,size,tissue,rng){

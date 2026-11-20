@@ -76,7 +76,7 @@
     {id:'skip',title:'A checkpoint response is missed',copy:'This cell loses its next turn while the cycle continues to be checked.',icon:'⏸️'},
     {id:'advance',title:'A checkpoint is bypassed',copy:'With the response disrupted, the cell moves ahead three spaces without checking what it passed.',icon:'⚠️'},
     {id:'bypass',title:'A checkpoint is bypassed',copy:'The cell moves beyond the next checkpoint without checking its scorecard.',icon:'⚠️'},
-    {id:'dna',title:'DNA copying is completed',copy:'DNA copies can only be added during S phase. If this card appears in S, the model completes the four-copy requirement; in other phases, no copies are added.',icon:'🧬'},
+    {id:'dna',title:'DNA copying is completed',copy:'Chromosomes are copied only during S phase. If this card appears in S, the model finishes copying all four chromosomes; in other phases, nothing is copied.',icon:'🧬'},
     {id:'skipTwo',title:'Two checkpoints are missed',copy:'The disrupted response lets the cell pass two checkpoints without a scorecard check.',icon:'⚠️'},
     {id:'unchecked',title:'Division happens without a checkpoint check',copy:'The cell reaches division without the usual checkpoint requirements being checked. This is an unchecked model outcome, not a cancer diagnosis.',icon:'⚠️'}
   ];
@@ -135,7 +135,7 @@
   function checkpointState(p,key){
     const s=p.score;
     if(key==='g1')return {title:'G1 checkpoint',subtitle:'Pass with at least 3 of each G1 material.',items:[['Nutrients',s.g1.nutrients,3],['Proteins',s.g1.proteins,3],['Organelles',s.g1.organelles,3]]};
-    if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with 4 DNA copies and at least 1 of each G2 material.',items:[['DNA copies',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
+    if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with all 4 chromosomes copied and at least 1 of each G2 material.',items:[['Chromosomes copied',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
     if(key==='m')return {title:'M checkpoint',subtitle:'Confirm all four modeled chromosomes are attached to the spindle.',items:[['Spindle attachments',s.m.attachments,4]]};
     return {title:'Cycle complete',subtitle:'The model cell reached division.',items:[['Divisions completed',p.divisions,1]]};
   }
@@ -177,7 +177,7 @@
       const out=[];if(n)out.push('Nutrients ×'+n);if(pr)out.push('Proteins ×'+pr);if(o)out.push('Organelles ×'+o);
       return (bonus?'Bonus roll. ':'')+(out.length?'Collected: '+out.join(', ')+'.':'No G1/G2 materials collected on this roll.');
     }
-    if(phase==='s'){const n=dice.filter(x=>x===4).length;return (bonus?'Bonus roll. ':'')+(n?'DNA copies ×'+n+' collected.':'No chromosome copies collected on this roll.');}
+    if(phase==='s'){const n=dice.filter(x=>x===4).length;return (bonus?'Bonus roll. ':'')+(n?'Chromosomes copied ×'+n+'.':'No chromosomes copied on this roll.');}
     if(phase==='m')return 'M phase: the model tracks chromosome attachment to the spindle before division.';
     return 'Checkpoint space: this roll does not collect materials.';
   }
@@ -293,7 +293,7 @@
     let cardCopy=card.copy;
     if(card.id==='dna'){
       if(track[p.pos].phase==='s')p.score.s.chromosomes=Math.max(4,p.score.s.chromosomes);
-      else cardCopy='This card appeared outside S phase, so it adds no DNA copies. In this model, DNA copying happens only in S phase.';
+      else cardCopy='This card appeared outside S phase, so no chromosomes are copied. In this model, DNA copying happens only in S phase.';
     }
     g.chanceNotice={player:p.id,title:card.title,copy:cardCopy,icon:card.icon};
     setEvent(card.title,cardCopy,card.icon,'Cellular chance card');
@@ -331,9 +331,9 @@
     }
     if(p.pos===23){
       const values=[s.g2.nutrients,s.g2.proteins,s.g2.organelles];
-      if(s.s.chromosomes<4){p.pos=8;addLog('Player '+p.id+' returned to S phase for more DNA copying.');setEvent('G2 checkpoint: return to S phase','The S-phase scorecard has fewer than four chromosome copies. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
+      if(s.s.chromosomes<4){p.pos=8;addLog('Player '+p.id+' returned to S phase for more DNA copying.');setEvent('G2 checkpoint: return to S phase','Fewer than four modeled chromosomes have been copied. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
       if(values.some(function(x){return x<1;})){addLog('Player '+p.id+' paused at the G2 checkpoint to gather missing materials.');setEvent('G2 checkpoint: cell-cycle pause','The cell stays at the checkpoint while it gathers at least one of each G2 material. A checkpoint pauses progression; it does not restart the cell.','⏸️','Checkpoint response');return;}
-      addLog('Player '+p.id+' passed the G2 checkpoint.');setEvent('G2 checkpoint passed','The cell has at least four chromosome copies and at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
+      addLog('Player '+p.id+' passed the G2 checkpoint.');setEvent('G2 checkpoint passed','All four modeled chromosomes are copied, and the cell has at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
     }
     if(p.pos===29){
       const ok=s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3&&s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1;
@@ -344,7 +344,7 @@
       if(!ok){
         p.unchecked++;
         addLog('Player '+p.id+' divided with requirements left unmet by a bypassed earlier checkpoint.');
-        setEvent('Division with unchecked problems','All four chromosomes are attached, so the spindle checkpoint lets the cell divide. That checkpoint checks only spindle attachment, so it cannot catch the materials or DNA copies missed when an earlier checkpoint was bypassed. The daughter cells may inherit those problems. This is a model outcome, not a cancer diagnosis.','⚠️','Checkpoint bypassed');return;
+        setEvent('Division with unchecked problems','All four chromosomes are attached, so the spindle checkpoint lets the cell divide. That checkpoint checks only spindle attachment, so it cannot catch the materials or chromosome copying missed when an earlier checkpoint was bypassed. The daughter cells may inherit those problems. This is a model outcome, not a cancer diagnosis.','⚠️','Checkpoint bypassed');return;
       }
       addLog('Player '+p.id+' completed a regulated model division.');
       setEvent('The model cell completes division','All four chromosomes are attached to the spindle, and the cell met the earlier G1, S, and G2 checks. It divides into daughter cells. A completed division is not the same as cancer.','🧬','Division complete');
