@@ -44,13 +44,13 @@
 /* OpenSciEd phenomenon-led illustrated hero; keep existing activities unchanged. */
 .dashboard-shell{padding-top:20px}
 .dashboard-hero{position:relative;overflow:hidden;border:1px solid #476875;border-radius:22px;background:#102c40;box-shadow:0 20px 48px #020b1533;margin:22px 0 28px;isolation:isolate}
-.dashboard-hero-art{display:block;width:100%;height:auto;aspect-ratio:1200/345;object-fit:cover}
-.dashboard-hero-copy{position:absolute;left:clamp(18px,3.5vw,44px);top:clamp(16px,3vw,34px);max-width:48%;padding:12px 18px 16px;border-radius:15px;background:linear-gradient(90deg,#091b30ed,#091b30b8);text-shadow:0 2px 10px #061626}
+.dashboard-hero-art{display:block;width:100%;height:auto;aspect-ratio:2048/682;object-fit:contain}
+.dashboard-hero-copy{position:relative;padding:12px 18px 16px;border-radius:15px;background:linear-gradient(90deg,#091b30ed,#091b30b8);text-shadow:0 2px 10px #061626}
 .dashboard-hero-copy .dashboard-eyebrow{margin:0;color:#b9f6dd;font-size:.73rem}
 .dashboard-hero-copy .dashboard-title{font-size:clamp(1.45rem,3.1vw,2.9rem);margin:7px 0 4px;color:white}
 .dashboard-hero-copy p:last-child{margin:0;color:#e0f5f5;font-size:clamp(.78rem,1.35vw,1rem)}
-.dashboard-hero-caption{position:absolute;bottom:9px;right:16px;color:#fff;font-size:.7rem;letter-spacing:.03em;text-shadow:0 1px 5px #001;opacity:.92}
-@media(max-width:680px){.dashboard-hero-art{aspect-ratio:5/3;object-fit:cover;object-position:center}.dashboard-hero-copy{max-width:none;right:14px;top:12px;left:14px;padding:10px 12px}.dashboard-hero-copy .dashboard-title{font-size:clamp(1.25rem,5vw,1.9rem)}.dashboard-hero-copy p:last-child{font-size:.78rem}.dashboard-hero-caption{font-size:.6rem;right:9px;bottom:5px}}
+.dashboard-hero-caption{display:block;padding:0 18px 12px;color:#fff;font-size:.7rem;letter-spacing:.03em;text-shadow:0 1px 5px #001;opacity:.92}
+@media(max-width:680px){.dashboard-hero-copy{padding:14px}.dashboard-hero-copy .dashboard-title{font-size:clamp(1.25rem,5vw,1.9rem)}.dashboard-hero-copy p:last-child{font-size:.78rem}.dashboard-hero-caption{font-size:.6rem;right:9px;bottom:5px}}
 @media(prefers-color-scheme:light){.dashboard-hero{border-color:#9dbbb8}}
 
 </style>
@@ -60,7 +60,7 @@
 <main id="main" class="dashboard-shell">
 <a class="dashboard-back" href="index.html">← AP Bio Digital Lab Bench</a>
 <header class="dashboard-hero" aria-label="OpenSciEd science phenomena: wildebeest, wildfire, cancer cell, rat, and polar bear">
-<img class="dashboard-hero-art" src="assets/openscied-phenomena-hero.svg" width="1200" height="345" alt="Illustrated panorama of a wildebeest on grassland, a forest wildfire, a cancer cell under a microscope, a rat, and a polar bear in the Arctic." fetchpriority="high">
+<img class="dashboard-hero-art" src="assets/openscied-banner.jpg" width="2048" height="682" alt="Illustrated panorama of a wildebeest on grassland, a forest wildfire, a cancer cell under a microscope, a rat, and a polar bear in the Arctic." fetchpriority="high">
 <div class="dashboard-hero-copy"><p class="dashboard-eyebrow">Free interactive biology companions</p><h1 class="dashboard-title">OpenSciEd Activity Dashboard</h1><p>Explore the phenomena. Investigate the science.</p></div>
 <span class="dashboard-hero-caption" aria-hidden="true">Ecosystems · Change · Cells · Organisms · Climate</span>
 </header>
