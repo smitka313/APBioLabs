@@ -19,6 +19,7 @@ const game = (round, player) => ({schema:3,mode:'solo',players:1,round,active:0,
     const before = (await read()).turns; await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}); await p.waitForTimeout(60);
     if (await p.locator('#chance-reveal').isVisible()) { await p.locator('#chance-reveal-ack').click(); await p.waitForTimeout(60); }
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     if (await p.locator('#round-end-dialog').evaluate(d => d.open)) await p.keyboard.press('Escape');
     return read();
   };

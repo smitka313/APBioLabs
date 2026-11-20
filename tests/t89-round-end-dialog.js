@@ -19,6 +19,7 @@ const game = (round, players, r1) => ({schema:3,mode:players.length>1?'group':'s
     await p.evaluate(() => { Math.random = () => (6 - .5) / 6; });
     const before = (await read()).turns; await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}); await p.waitForTimeout(60);
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
   } };
   const isOpen = () => p.locator('#round-end-dialog').evaluate(d => d.open);
   const fits = async w => p.locator('#round-end-dialog').evaluate((d, w) => { const r = d.getBoundingClientRect(); return r.left >= 0 && r.right <= w + 0.5 && d.scrollWidth <= d.clientWidth + 1 && [...d.querySelectorAll('.table-wrap')].every(t => t.scrollWidth <= t.clientWidth + 1); }, w);

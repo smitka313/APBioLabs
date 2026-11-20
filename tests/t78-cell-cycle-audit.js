@@ -28,6 +28,7 @@ function savedGame(round = 2) {
     const before=(await read()).game.turns;
     await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns>before,{key:KEY,before});
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
   }
   try {
     await p.locator('#start-round1').click();

@@ -18,6 +18,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
         await p.locator('#roll-dice').click();
         await p.waitForFunction(({key, before}) => JSON.parse(localStorage.getItem(key)).game.turns > before,
           {key: KEY, before});
+        if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
       };
       p.on('dialog', dialog => dialog.accept());
       assert.deepEqual(p.errors, [], 'startup must not throw');

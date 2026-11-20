@@ -25,6 +25,7 @@ const MS = ['ms-r1-g1-happened','ms-r1-g1-represent','ms-r1-g1cp-happened','ms-r
     await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}, {timeout:5000});
     if (await p.locator('#chance-reveal-ack').isVisible()) await p.locator('#chance-reveal-ack').click();
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     return (await read()).game;
   };
   try {

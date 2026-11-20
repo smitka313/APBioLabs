@@ -17,6 +17,7 @@ const pl = (id, pos, extra) => Object.assign({id,pos,score:full(),status:'playin
     const before = (await read()).turns;
     await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}, {timeout: 5000}).catch(() => {});
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     return (await read()).turns > before;
   };
   try {
