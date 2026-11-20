@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenSciEd Activity Dashboard | Biology Lab Bench</title>
+<meta name="description" content="Explore free interactive OpenSciEd high school biology companion activities, organized by unit.">
+<link rel="canonical" href="https://biologylabbench.com/openscied-dashboard.html">
+<link rel="stylesheet" href="style.css">
+<style>
+:root{color-scheme:dark}body{margin:0;background:#0d1821;color:#edf7f5;font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.55}
+.dashboard-shell{max-width:1080px;margin:auto;padding:clamp(20px,5vw,60px) 20px 80px}
+.dashboard-back{color:#9ee6d2;text-decoration:none;font-weight:700}
+.dashboard-eyebrow{color:#91ddc6;font-weight:800;text-transform:uppercase;letter-spacing:.13em;font-size:.82rem}
+.dashboard-title{font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;margin:14px 0}
+.dashboard-intro{max-width:730px;color:#c0d2d2;font-size:1.1rem}
+.dashboard-units{display:grid;gap:18px;margin-top:34px}
+.dashboard-unit{background:#142731;border:1px solid #38535b;border-radius:18px;padding:clamp(18px,3vw,30px)}
+.dashboard-unit h2{margin:0 0 6px;font-size:1.45rem;color:#f3fffc}
+.dashboard-unit p{color:#c0d2d2;margin:0 0 16px}
+.dashboard-unit.current{border-color:#65cba8;box-shadow:0 0 0 1px #65cba83b}
+.dashboard-tag{display:inline-block;padding:4px 10px;border-radius:100px;background:#254e43;color:#b8ffdf;font-size:.78rem;font-weight:800;margin-bottom:12px}
+.dashboard-activity{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;background:#203842;border:1px solid #4a7477;border-radius:14px;padding:20px}
+.dashboard-activity h3{font-size:1.18rem;margin:0 0 5px;color:#fff}
+.dashboard-activity p{margin:0 0 8px;font-size:.94rem}
+.dashboard-meta{font-size:.83rem;color:#a9d5d0}
+.dashboard-open{display:inline-block;background:#71e1b5;color:#09231b;padding:12px 18px;border-radius:10px;font-weight:850;text-decoration:none;text-align:center}
+.dashboard-open:hover,.dashboard-open:focus-visible{background:#a3f6d4;outline-offset:3px}
+.dashboard-empty{border:1px dashed #52646a;border-radius:12px;padding:15px;color:#bbced0;font-size:.92rem}
+.dashboard-footer{margin-top:34px;color:#b3c8c9;font-size:.87rem}
+@media(max-width:620px){.dashboard-activity{grid-template-columns:1fr}.dashboard-open{width:100%;box-sizing:border-box}}
+@media(prefers-color-scheme:light){body{background:#f3f8f6;color:#17332f}.dashboard-back{color:#17634c}.dashboard-eyebrow{color:#17634c}.dashboard-intro,.dashboard-unit p{color:#425b59}.dashboard-unit{background:#fff;border-color:#c7d9d4}.dashboard-unit h2,.dashboard-activity h3{color:#17332f}.dashboard-unit.current{border-color:#218b6b}.dashboard-activity{background:#eff8f4;border-color:#c1dcd1}.dashboard-meta,.dashboard-empty,.dashboard-footer{color:#49645e}.dashboard-tag{background:#d8f4e8;color:#14543f}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to activities</a>
+<main id="main" class="dashboard-shell">
+<a class="dashboard-back" href="index.html">← AP Bio Digital Lab Bench</a>
+<p class="dashboard-eyebrow">Free interactive biology companions</p>
+<h1 class="dashboard-title">OpenSciEd Activity Dashboard</h1>
+<p class="dashboard-intro">Choose a unit to explore interactive models, investigations, and activities. These independently developed companions are organized for easy classroom navigation.</p>
+<div class="dashboard-units">
+<section class="dashboard-unit" aria-labelledby="unit1"><h2 id="unit1">Unit 1</h2><p>Activities organized by unit</p><div class="dashboard-empty">No activities published yet.</div></section>
+<section class="dashboard-unit" aria-labelledby="unit2"><h2 id="unit2">Unit 2</h2><p>Activities organized by unit</p><div class="dashboard-empty">No activities published yet.</div></section>
+<section class="dashboard-unit current" aria-labelledby="unit3"><span class="dashboard-tag">1 activity available</span><h2 id="unit3">Unit 3 · Inheritance &amp; Variation of Traits</h2><p>Explore how cell division and its controls contribute to patterns of growth and variation.</p>
+<article class="dashboard-activity"><div><h3>Cell Cycle &amp; Cancer: Checkpoints and Growth</h3><p>Play a multiplayer cell-cycle game, investigate checkpoint disruptions, and analyze a cell-division growth model.</p><div class="dashboard-meta">Lessons 3–4 companion · Solo or 2–4 players · Approximately 40 minutes</div></div><a class="dashboard-open" href="openscied-b3-cell-cycle.html">Open activity →</a></article>
+</section>
+</div>
+<p class="dashboard-footer">These are original, independent educational companion activities and are not official OpenSciEd materials. <a class="dashboard-back" href="https://openscied.org/">Learn about OpenSciEd</a>.</p>
+</main>
+</body>
+</html>
