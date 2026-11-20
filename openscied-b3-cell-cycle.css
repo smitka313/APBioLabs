@@ -458,3 +458,7 @@ table.data.cycle-data-table th, table.data.cycle-data-table td { white-space:nor
 .q-evidence-title { margin:0 0 2px; font:700 .72rem var(--f-mono, monospace); letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
 .q-evidence ul { margin:0; padding-left:1.1rem; font-size:.86rem; line-height:1.45; }
 @media print { .q-evidence { break-inside:avoid; } }
+
+/* Single-column step bodies may not grow wider than the page: a wide report table (Wrap up) scrolls inside its
+   .table-wrap instead of widening the grid track and the whole page at 390px. */
+main > .step > .step-body:not(.split) { grid-template-columns:minmax(0,1fr); }
