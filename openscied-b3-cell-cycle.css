@@ -345,3 +345,22 @@
 .analysis-page-nav button{min-width:100px}.analysis-page-nav span{font-weight:800;text-align:center;font-size:.85rem}
 @media(max-width:850px){.analysis-workspace{grid-template-columns:1fr}.analysis-reference{position:static;max-height:340px}.analysis-page-nav{flex-wrap:wrap}.analysis-page-nav span{order:-1;width:100%}}
 @media print{#analyze [data-analysis-page][hidden]{display:block!important}.analysis-reference{position:static;max-height:none}.analysis-page-nav{display:none}}
+
+/* "What each phase needs": always-visible requirements for G1, S, G2 and M, with the active player's phase highlighted. */
+.phase-guide { margin:14px 0 4px; padding:14px; border:2px solid var(--accent); border-radius:14px; background:var(--surface-2); }
+.phase-guide h3 { margin:0 0 10px; font-size:1.05rem; }
+.phase-cards { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.phase-card { position:relative; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); display:grid; gap:6px; align-content:start; }
+.phase-card p { margin:0; font-size:.86rem; line-height:1.4; }
+.phase-top { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.phase-name { font:800 1.25rem var(--f-mono, monospace); color:var(--accent); }
+.phase-what { font-weight:700; }
+.phase-status { margin-left:auto; font:700 .75rem var(--f-mono, monospace); color:var(--muted); }
+.phase-check { color:var(--ink); }
+.phase-why { color:var(--muted); }
+.phase-card.is-current { border:2px solid var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.phase-card.is-current .phase-status { color:var(--accent); }
+.phase-card.is-met .phase-status { color:var(--ok, #2e9e6b); }
+@media(max-width:900px){ .phase-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:520px){ .phase-cards { grid-template-columns:1fr; } .phase-guide { padding:12px; } }
+@media(min-width:1100px){ #game-panel:not(.is-pregame) > .phase-guide { grid-area:route; margin:0; } }
