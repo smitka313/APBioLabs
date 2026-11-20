@@ -350,13 +350,13 @@
     let overlay=$('#checkpoint-reveal');
     if(!overlay){
       overlay=document.createElement('div');overlay.id='checkpoint-reveal';overlay.className='chance-reveal checkpoint-reveal';overlay.hidden=true;
-      overlay.innerHTML='<div class="checkpoint-card-panel" id="checkpoint-card-panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="checkpoint-reveal-title" aria-describedby="checkpoint-reveal-effect"><div class="checkpoint-card-band"><div class="checkpoint-card-heading"><span class="checkpoint-card-kicker" id="checkpoint-reveal-kicker"></span><h2 id="checkpoint-reveal-title"></h2><p class="checkpoint-card-player" id="checkpoint-reveal-player"></p></div>'+P53_SVG+'</div><div class="checkpoint-card-face"><p class="checkpoint-card-printed-label">Printed card</p><p class="checkpoint-card-intro" id="checkpoint-reveal-intro"></p><ul class="checkpoint-card-lines" id="checkpoint-reveal-lines"></ul></div><p class="checkpoint-card-line checkpoint-card-house" id="checkpoint-reveal-house" hidden></p><h3 class="checkpoint-card-subhead">Your scorecard</h3><ul class="checkpoint-card-checks" id="checkpoint-reveal-checks"></ul><p class="checkpoint-card-result" id="checkpoint-reveal-effect"></p><p class="checkpoint-card-why" id="checkpoint-reveal-why"></p><button class="btn btn--primary" type="button" id="checkpoint-reveal-ack">Follow the card &amp; continue</button></div>';
+      overlay.innerHTML='<div class="checkpoint-card-panel" id="checkpoint-card-panel" role="dialog" aria-modal="true" aria-labelledby="checkpoint-reveal-title" aria-describedby="checkpoint-reveal-effect"><div class="checkpoint-card-scroll" id="checkpoint-card-scroll" tabindex="-1"><div class="checkpoint-card-band"><div class="checkpoint-card-heading"><span class="checkpoint-card-kicker" id="checkpoint-reveal-kicker"></span><h2 id="checkpoint-reveal-title"></h2><p class="checkpoint-card-player" id="checkpoint-reveal-player"></p></div>'+P53_SVG+'</div><div class="checkpoint-card-face"><p class="checkpoint-card-printed-label">Printed card</p><p class="checkpoint-card-intro" id="checkpoint-reveal-intro"></p><ul class="checkpoint-card-lines" id="checkpoint-reveal-lines"></ul></div><p class="checkpoint-card-line checkpoint-card-house" id="checkpoint-reveal-house" hidden></p><h3 class="checkpoint-card-subhead">Your scorecard</h3><ul class="checkpoint-card-checks" id="checkpoint-reveal-checks"></ul><p class="checkpoint-card-result" id="checkpoint-reveal-effect"></p><p class="checkpoint-card-why" id="checkpoint-reveal-why"></p></div><button class="btn btn--primary" type="button" id="checkpoint-reveal-ack">Follow the card &amp; continue</button></div>';
       document.body.appendChild(overlay);
       $('#checkpoint-reveal-ack').addEventListener('click',followCheckpoint);
       overlay.addEventListener('keydown',function(e){
         // Focus stays in the card: the button, plus the card itself when it is taller than the window (so it can be
         // scrolled with the arrow keys).
-        if(e.key==='Tab'){e.preventDefault();const panel=$('#checkpoint-card-panel'),ack=$('#checkpoint-reveal-ack');
+        if(e.key==='Tab'){e.preventDefault();const panel=$('#checkpoint-card-scroll'),ack=$('#checkpoint-reveal-ack');
           if(document.activeElement===ack&&panel.scrollHeight>panel.clientHeight+1)panel.focus();else ack.focus();}
         // Escape closes the card the only way it can close: by following it. Stop it here so it does not also close
         // the enlarged board behind the card.
@@ -387,7 +387,7 @@
     }).join('');
     $('#checkpoint-reveal-effect').innerHTML='<strong>Result: '+esc(n.label)+'.</strong> '+esc(n.effect||'');
     $('#checkpoint-reveal-why').innerHTML='<strong>Why this checkpoint matters:</strong> '+esc(card.why);
-    $('#checkpoint-card-panel').scrollTop=0;$('#checkpoint-reveal-ack').focus({preventScroll:true});
+    $('#checkpoint-card-scroll').scrollTop=0;$('#checkpoint-reveal-ack').focus({preventScroll:true});
   }
   function renderPhaseGuide(p){
     const guide=$('#phase-guide');if(!guide)return;
