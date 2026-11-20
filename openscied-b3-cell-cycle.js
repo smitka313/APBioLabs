@@ -637,6 +637,10 @@
     for(const id of ['analysis-next','analysis-next-bottom'])$('#'+id).addEventListener('click',()=>showAnalysisPage(analysisPage+1));
     $('#run-trials').addEventListener('click',runTrials);
     $('#clear-trials').addEventListener('click',function(){if(state.trials.length&&!window.confirm('Clear the growth-model results? The board game and your explanation will stay saved.'))return;state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();});
+    // Feedback belongs to the answer it judged: clear it (on screen and in storage) when the choice changes.
+    [['quick-check','quick','#background-feedback'],['mechanism-check','mechanism','#mechanism-feedback']].forEach(function(item){
+      $$('input[name="'+item[0]+'"]').forEach(function(el){el.addEventListener('change',function(){state[item[1]]='';$(item[2]).textContent='';save();});});
+    });
     $('#check-background').addEventListener('click',function(){
       const choice=$('input[name="quick-check"]:checked');
       const out=$('#background-feedback');
