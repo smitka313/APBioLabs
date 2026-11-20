@@ -124,6 +124,7 @@
         row('M',[null,null,null,p.score.m.attachments],[0,0,0,4])+'</div>';
     }).join('');
   }
+  function waitingAtG2(p){const s=p.score;return p.pos===23&&s.s.chromosomes>=4&&(s.g2.nutrients<1||s.g2.proteins<1||s.g2.organelles<1);}
   function getTarget(p){
     if(p.pos>=24&&p.pos<=27)return 'spindle';
     if(p.pos===29&&p.score.m.attachments<4)return 'spindle';
@@ -156,16 +157,18 @@
   function turnInstruction(p){
     if(p.bonusRolls>0)return 'Bonus roll: roll four dice again without moving.';
     if(p.pos===7&&(p.score.g1.nutrients<3||p.score.g1.proteins<3||p.score.g1.organelles<3))return 'G1 checkpoint pause: roll here to gather missing materials. Your cell stays at the checkpoint.';
+    if(waitingAtG2(p))return 'G2 checkpoint pause: roll here to gather at least one of each G2 material. Your cell stays at the checkpoint.';
     const need=getTarget(p);
     if(need==='spindle')return 'M phase: roll a 5 or 6 on any die to model one chromosome attaching to the spindle. If you miss, stay here.';
     if(need!==null)return 'To move forward, roll a '+need+' on any die. If you miss it, stay here this turn.';
     return 'Move one space forward, then roll all four dice. The dice do not set the number of spaces.';
   }
-  function currentSummary(tile,dice,required,missed,bonus){
+  function currentSummary(tile,dice,required,missed,bonus,waitingG2){
     const phase=tile.phase;
     if(required==='spindle')return missed===null?'A 5 or 6 models a chromosome attaching to the spindle. One modeled attachment is recorded.':'No 5 or 6 this turn; no chromosome attachment is recorded.';
     if(required!==null)return missed===null?'Matched the required '+required+' on an M-phase die. The cell moves forward.':'Needed a '+required+' on any die; no match this turn.';
     if(tile.type==='checkpoint'&&phase==='g1')return 'The cycle is paused at G1. Roll results add any nutrients, proteins, and organelles the cell still needs.';
+    if(tile.type==='checkpoint'&&phase==='g2'&&dice.length&&waitingG2)return 'The cycle is paused at G2. Roll results add any nutrients, proteins, and organelles the cell still needs.';
     if(tile.type==='checkpoint')return 'Checkpoint reached. Check the scorecard; this space does not collect materials.';
     if(phase==='g1'||phase==='g2'){
       const n=dice.filter(x=>x===1).length,pr=dice.filter(x=>x===2).length,o=dice.filter(x=>x===3).length;
@@ -309,11 +312,6 @@
     }
     return false;
   }
-  function restartCell(p,copy){
-    p.restarts++;p.pos=0;p.score=zeroScore();p.bonusRolls=0;
-    addLog('Player '+p.id+' restarted with a fresh scorecard. '+copy);
-    setEvent('The cell restarts at the beginning',copy,'🧬','Checkpoint response');
-  }
   function checkCheckpoint(p){
     const s=p.score;
     if(p.pos===7){
@@ -323,9 +321,8 @@
     }
     if(p.pos===23){
       const values=[s.g2.nutrients,s.g2.proteins,s.g2.organelles];
-      if(values.includes(0)){restartCell(p,'A G2 material category is still at zero. The cell starts again with a fresh scorecard.');return;}
       if(s.s.chromosomes<4){p.pos=8;addLog('Player '+p.id+' returned to S phase for more DNA copying.');setEvent('G2 checkpoint: return to S phase','The S-phase scorecard has fewer than four chromosome copies. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
-      if(values.some(function(x){return x<1;})){p.pos=15;setEvent('G2 checkpoint: gather more materials','The cell needs at least one of each G2 material before it can continue.','↩️','Checkpoint response');return;}
+      if(values.some(function(x){return x<1;})){addLog('Player '+p.id+' paused at the G2 checkpoint to gather missing materials.');setEvent('G2 checkpoint: cell-cycle pause','The cell stays at the checkpoint while it gathers at least one of each G2 material. A checkpoint pauses progression; it does not restart the cell.','⏸️','Checkpoint response');return;}
       addLog('Player '+p.id+' passed the G2 checkpoint.');setEvent('G2 checkpoint passed','The cell has at least four chromosome copies and at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
     }
     if(p.pos===29){
@@ -343,8 +340,9 @@
   }
   function scoreRoll(p,dice,required){
     const tile=track[p.pos],phase=tile.phase;
-    if(tile.type==='checkpoint'&&phase==='g1'){
-      dice.forEach(function(v){if(v===1)p.score.g1.nutrients++;if(v===2)p.score.g1.proteins++;if(v===3)p.score.g1.organelles++;});
+    if(tile.type==='checkpoint'&&(phase==='g1'||phase==='g2')){
+      const bucket=p.score[phase];
+      dice.forEach(function(v){if(v===1)bucket.nutrients++;if(v===2)bucket.proteins++;if(v===3)bucket.organelles++;});
     }else if(tile.type==='space'&&(phase==='g1'||phase==='g2')){
       const bucket=p.score[phase];
       dice.forEach(function(v){if(v===1)bucket.nutrients++;if(v===2)bucket.proteins++;if(v===3)bucket.organelles++;});
@@ -378,24 +376,25 @@
       g.rolling=false;g.lastDice=dice;g.turns++;
       const bonus=p.bonusRolls>0,required=bonus?null:getTarget(p),startPos=p.pos;
       const waitingG1=startPos===7&&(p.score.g1.nutrients<3||p.score.g1.proteins<3||p.score.g1.organelles<3);
+      const waitingG2=waitingAtG2(p),waiting=waitingG1||waitingG2;
       let moved=false,missed=null,attachmentRecorded=false;
       if(bonus)p.bonusRolls--;
-      else if(waitingG1){/* A checkpoint pause holds the cell in place while it gathers G1 materials. */}
+      else if(waiting){/* A checkpoint pause holds the cell in place while it gathers G1 or G2 materials. */}
       else if(required!==null){
         const matched=required==='spindle'?(dice.includes(5)||dice.includes(6)):dice.includes(required);
         if(matched){attachmentRecorded=required==='spindle';if(startPos!==29){p.pos=Math.min(30,p.pos+1);moved=true;}}
         else missed=required;
       }else{p.pos=Math.min(30,p.pos+1);moved=true;}
       const rollPos=bonus?startPos:p.pos;
-      if(moved||bonus||waitingG1||attachmentRecorded)scoreRoll(p,dice,required);
-      const landed=p.pos,summary=currentSummary(track[rollPos],dice,required,missed,bonus);
+      if(moved||bonus||waiting||attachmentRecorded)scoreRoll(p,dice,required);
+      const landed=p.pos,summary=currentSummary(track[rollPos],dice,required,missed,bonus,waitingG2);
       g.lastRollSummary=summary;
       let message=summary;
       if(missed!==null)message=(missed==='spindle'?'No 5 or 6 rolled.':'No '+missed+' rolled.')+' The cell stays on its space this turn. '+summary;
       if(bonus)message='Bonus roll—your token stays put. '+summary;
       setEvent(bonus?'Bonus dice added':missed!==null?'The cell waits for the needed roll':'Materials collected',message,'🎲','Four-dice roll');
       addLog('Player '+p.id+' · '+phaseLabel(p)+' · ['+dice.join(', ')+'] · '+message);
-      if((moved&&[7,23,29].includes(p.pos))||(waitingG1&&p.pos===7)||(attachmentRecorded&&p.pos===29))checkCheckpoint(p);
+      if((moved&&[7,23,29].includes(p.pos))||(waiting&&[7,23].includes(p.pos))||(attachmentRecorded&&p.pos===29))checkCheckpoint(p);
       else if(moved&&g.round===2&&track[landed].chance){
         const keepTurn=drawChance(p);
         if(keepTurn&&p.status==='playing'){g.active=p.id-1;}
