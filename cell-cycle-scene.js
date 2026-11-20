@@ -183,7 +183,8 @@
       lastTurn=g.turns;
       let gained=0;
       if(prev)for(const p of g.playersState){const before=prev.playersState.find(o=>o.id===p.id);if(before)for(const phase of ['g1','s','g2'])for(const key of Object.keys(p.score[phase]))gained+=Math.max(0,p.score[phase][key]-before.score[phase][key]);}
-      for(let i=0;i<Math.min(12,gained*2);i++)particles.push({x:65+(i%4)*78,y:680,tx:520+(i*19)%100,ty:285+(i*31)%80,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13});
+      // Reduced motion: the scorecard shows what was collected, so skip the flying particles.
+      if(!reduced)for(let i=0;i<Math.min(12,gained*2);i++)particles.push({x:65+(i%4)*78,y:680,tx:520+(i*19)%100,ty:285+(i*31)%80,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13});
     }
     game=JSON.parse(JSON.stringify(g));paint();request();
   }
