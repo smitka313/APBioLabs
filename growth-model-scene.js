@@ -81,9 +81,9 @@
       if(kind==='brain'){
         // Glial/support-cell processes form a network; no mature neurons divide here.
         for(let arm=0;arm<5;arm++){const a=arm/5*Math.PI*2+i*.83,x2=u.x+Math.cos(a)*37,y2=u.y+Math.sin(a)*37;c.beginPath();c.moveTo(u.x,u.y);c.quadraticCurveTo(u.x+Math.cos(a+.3)*20,u.y+Math.sin(a+.3)*20,x2,y2);c.strokeStyle=cancer?'#e395ab99':'#b1a8d875';c.lineWidth=3;c.stroke();line(c,x2,y2,x2+Math.cos(a+.8)*8,y2+Math.sin(a+.8)*8,'#afa7cf66',1.3);}
-        oval(c,u.x,u.y,20,17,cancer?'#a7486c':'#716c96','#b1a8d879');
+        oval(c,u.x,u.y,20,17,cancer?'#a7486c':dividing?'#77b49b':'#716c96','#b1a8d879');
       }else if(kind==='bloodRed'||kind==='bloodWhite'){
-        const r=kind==='bloodRed'?23:25,fill=cancer?'#ac4266':kind==='bloodRed'?'#b98e93':'#8196af';
+        const r=kind==='bloodRed'?23:25,fill=cancer?'#ac4266':dividing?'#77b49b':kind==='bloodRed'?'#b98e93':'#8196af';
         oval(c,u.x,u.y,r,r*.94,disk(c,u.x,u.y,r,fill+'dd',fill+'88'),cancer?'#f4a4c0':'#dad3da99',1.4);
       }else{path(c,poly,col,cancer?'#ef95b5':'#b6c6a980');path(c,inset,null,'#162d2c66');}
       if(kind==='colon'){const a=Math.atan2(u.y,u.x);for(let br=-2;br<=2;br++){const ang=a+br*.02;line(c,Math.cos(ang)*59,Math.sin(ang)*59,Math.cos(ang)*65,Math.sin(ang)*65,'#d6deba99',1);}}
@@ -138,7 +138,7 @@
     if(t.timeline)for(const row of t.timeline)if(row.newCancerCells?.length){const x=x0+(x1-x0)*(row.year-20)/Math.max(1,maxAge-20);oval(c,x,y0+3,2.5,2.5,'#ed8eb2');}
     text(c,'20',x0,y0+20,10,'#a8bba9','center');text(c,maxAge,x1,y0+20,10,'#a8bba9','center');text(c,'modeled age →    • magenta marks a first cancer-state event',580,y0+20,10,'#84a590','center');
   }
-  function draw(){c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);c.clearRect(0,0,W,H);background();body();tissue();metrics();timeline();}
+  function draw(){c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);c.clearRect(0,0,W,H);background();body();tissue();metrics();timeline();const tip=document.getElementById('growth-tip');if(tip&&!tip.hidden)tip.textContent=unitDescription(selected);}
   function emit(type){const t=currentTrial();canvas.dispatchEvent(new CustomEvent('growth-playback',{detail:{type:type,playing:playing,year:Math.floor(year),target:t?.age||settings.age,trial:trialIndex+1,divisions:currentRow()?.cumulative||0,cancerCount:currentRow()?.cancerCount||0,hasCancerState:t?.modelVersion===2,hasHistory:Array.isArray(t?.timeline)}}));}
   function animate(time){
     frameId=0;
@@ -171,14 +171,17 @@
     last.forEach((g,j)=>{const y=84+j*67,color=palette[(g.index-1)%palette.length];text(ctx,'SET '+g.index,28,y,12,color);text(ctx,'Age '+g.age+' · '+unitCounts[g.size]+' units · '+profile(g.tissue).short,28,y+19,12,'#a7beaf');
       const vals=g.trials.map(t=>t.divisions),lo=Math.min(...vals),hi=Math.max(...vals),mean=vals.reduce((a,b)=>a+b,0)/vals.length;
       const scale=v=>x0+v/axisMax*(x1-x0);line(ctx,scale(lo),y,scale(hi),y,color+'77',2);
-      vals.forEach((v,k)=>oval(ctx,scale(v),y+(k-1)*8,5.5,5.5,color+'b0',color,1));line(ctx,scale(mean),y-16,scale(mean),y+16,'#eff9de',2);text(ctx,'mean '+mean.toFixed(1),Math.min(x1-70,scale(hi)+14),y+4,11,'#d9e7d0');
+      vals.forEach((v,k)=>oval(ctx,scale(v),y+(k-1)*8,5.5,5.5,color+'b0',color,1));line(ctx,scale(mean),y-16,scale(mean),y+16,'#eff9de',2);const label='mean '+mean.toFixed(1);ctx.font='500 11px sans-serif';const labelWidth=ctx.measureText(label).width,labelX=Math.max(x0+5,Math.min(x1-labelWidth-5,scale(mean)-labelWidth/2));ctx.fillStyle='#13272d';ctx.fillRect(labelX-4,y-37,labelWidth+8,17);text(ctx,label,labelX,y-24,11,'#d9e7d0');
     });
   }
   function unitDescription(index){
     const t=currentTrial(),row=currentRow(),count=t?.timeline?t.timeline.filter(r=>r.year<=year&&r.cells.includes(index)).length:null,mask=row?.changes?.[index]||0;
     const names=window.GrowthCellTypes.changes.filter((_,bit)=>mask&(1<<bit));
     if(t&&t.modelVersion!==2)return profile(t.tissue).short+' · unit '+(index+1)+(count===null?'':' · '+count+' recorded divisions.')+' Control changes and cancerous state were not tracked in this older trial.';
-    return profile(t?.tissue||settings.tissue).short+' · unit '+(index+1)+(count===null?' · Run a trial to record its history.':' · '+count+' divisions by age '+Math.floor(year)+'. ')+(count===null?'':names.length?'Control changes: '+names.join('; ')+'. '+(mask===7?'Cancerous state in this teaching model.':'Not cancerous in this model.'):'No modeled control change recorded.');
+    const chance=mask===7?.80:profile(t?.tissue||settings.tissue).rate;
+    const rateText=' Modeled division chance next year: '+Number((chance*100).toFixed(1))+'% (invented teaching value; a chance, not a guaranteed division).';
+    const eventText=row?' Recorded division at age '+Math.floor(year)+': '+(row.cells.includes(index)?'yes; split nuclei mark this event.':'no.') : '';
+    return profile(t?.tissue||settings.tissue).short+' · unit '+(index+1)+(count===null?' · Run a trial to record its history.':' · '+count+' divisions by age '+Math.floor(year)+'. ')+(count===null?'':names.length?'Control changes: '+names.join('; ')+'. '+(mask===7?'Cancerous state in this teaching model.':'Not cancerous in this model.'):'No modeled control change recorded.')+rateText+eventText;
   }
   function inspect(event){const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)*W/r.width-627,y=(event.clientY-r.top)*H/r.height-283,tip=document.getElementById('growth-tip');if(Math.hypot(x,y)>184){tip.hidden=true;return;}
     selected=units.reduce((best,p,i)=>Math.hypot(p.x-x,p.y-y)<Math.hypot(units[best].x-x,units[best].y-y)?i:best,0);const t=currentTrial(),count=t?.timeline?t.timeline.filter(row=>row.year<=year&&row.cells.includes(selected)).length:null;
