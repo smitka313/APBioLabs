@@ -4,7 +4,7 @@
   const $=function(s,root){return (root||document).querySelector(s);};
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
   function blankGame(){return {schema:2,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
-  const state={game:blankGame(),trials:[],fields:{},quick:''};
+  const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:''};
   const ANALYSIS_PROMPTS=[
     ['Fair test and controlled settings','analysis-design'],
     ['Variation across repeated trials','analysis-variation'],
@@ -16,7 +16,7 @@
     ['New prediction and an unanswered question','model-prediction']
   ];
   function readStore(){
-    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2)state.game=Object.assign(blankGame(),d.game);if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;}}
+    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();p.score.m=p.score.m||{attachments:0};});}if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(d.mechanism)state.mechanism=d.mechanism;}}
     catch(e){}
   }
   function save(){
@@ -28,7 +28,7 @@
         else if(el.type==='radio')state.fields[el.name]=el.value;
         else state.fields[el.id]=el.value;
       });
-      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,quick:state.quick}));
+      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,quick:state.quick,mechanism:state.mechanism}));
       $('#save-status').textContent='Saved on this device.';
       renderReport();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
@@ -36,7 +36,7 @@
   function restoreFields(){
     Object.keys(state.fields||{}).forEach(function(id){
       const value=state.fields[id];
-      if(id==='quick-check'||id==='game-mode'){
+      if(id==='quick-check'||id==='game-mode'||id==='mechanism-check'){
         const el=$('input[name="'+id+'"][value="'+CSS.escape(value)+'"]');if(el)el.checked=true;
       }else{
         const el=document.getElementById(id);
@@ -46,6 +46,7 @@
     const mode=$('input[name="game-mode"]:checked');
     $('#group-size-wrap').hidden=!mode||mode.value!=='group';
     if(state.quick)$('#background-feedback').textContent=state.quick;
+    if(state.mechanism)$('#mechanism-feedback').textContent=state.mechanism;
     $('#age-value').textContent=$('#age-slider').value;
   }
   const track=[{type:'start',phase:'start',label:'START',note:'Begin'}];
@@ -54,13 +55,13 @@
   for(let i=1;i<=7;i++)track.push({type:'space',phase:'s',label:'S',note:'Copy DNA',chance:i%2===0});
   for(let i=1;i<=8;i++)track.push({type:'space',phase:'g2',label:'G2',note:'Prepare',chance:i%2===0});
   track.push({type:'checkpoint',phase:'g2',label:'G2 CHECK',note:'Checkpoint'});
-  for(let i=1;i<=5;i++)track.push({type:'space',phase:'m',label:'M · '+i,note:'Need '+i,need:i,chance:i%2===1});
-  track.push({type:'checkpoint',phase:'m',label:'M CHECK',note:'Divide'});
+  for(let i=1;i<=5;i++)track.push({type:'space',phase:'m',label:'M · '+i,note:i<=4?'Attach spindle':'Check alignment',need:i<=4?'spindle':null,chance:i%2===1});
+  track.push({type:'checkpoint',phase:'m',label:'M CHECK',note:'Spindle check'});
   track.push({type:'finish',phase:'finish',label:'DIVIDE',note:'Daughter cells'});
   const playerColors=['#58d4b4','#ffcb62','#70baff','#fc8fa3'];
-  const zeroScore=function(){return {g1:{nutrients:0,proteins:0,organelles:0},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0}};};
+  const zeroScore=function(){return {g1:{nutrients:0,proteins:0,organelles:0},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0},m:{attachments:0}};};
   const chanceCards=[
-    {id:'bonus',title:'p53 is responding',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
+    {id:'bonus',title:'p53 is responding',copy:'p53 helps respond to DNA damage by pausing the cell cycle while the cell responds. In this teaching model, that response gives the cell one extra roll without moving.',icon:'🛡️'},
     {id:'bonus',title:'A repair response helps',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
     {id:'bonus',title:'The cell-cycle response holds',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
     {id:'bonus',title:'The cell-cycle response holds',copy:'The cell gets one extra roll. Roll all four dice again without moving.',icon:'🛡️'},
@@ -70,7 +71,7 @@
     {id:'skip',title:'A checkpoint response is missed',copy:'This cell loses its next turn while the cycle continues to be checked.',icon:'⏸️'},
     {id:'advance',title:'A checkpoint is bypassed',copy:'With the response disrupted, the cell moves ahead three spaces without checking what it passed.',icon:'⚠️'},
     {id:'bypass',title:'A checkpoint is bypassed',copy:'The cell moves beyond the next checkpoint without checking its scorecard.',icon:'⚠️'},
-    {id:'dna',title:'DNA copying is completed',copy:'The model cell completes the chromosome-copying requirement for this round.',icon:'🧬'},
+    {id:'dna',title:'DNA copying is completed',copy:'DNA copies can only be added during S phase. If this card appears in S, the model completes the four-copy requirement; in other phases, no copies are added.',icon:'🧬'},
     {id:'skipTwo',title:'Two checkpoints are missed',copy:'The disrupted response lets the cell pass two checkpoints without a scorecard check.',icon:'⚠️'},
     {id:'unchecked',title:'Division happens without a checkpoint check',copy:'The cell reaches division without the usual checkpoint requirements being checked. This is an unchecked model outcome, not a cancer diagnosis.',icon:'⚠️'}
   ];
@@ -113,22 +114,23 @@
       const status=p.status==='finished'?'Division complete':p.bonusRolls?'Bonus roll':p.skipTurns?'Turn skipped':'Playing';
       const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const na=x===null,met=!na&&x>=thresholds[i];return '<span class="'+(na?'score-na':met?'score-met':'')+'">'+(na?'—':'<b>'+x+'</b>')+'</span>';}).join('')+'</div>';};
       return '<div class="player-score player-color-'+p.id+(active?' is-active':'')+(p.status==='finished'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
-        '<div class="score-phase-head"><span>Phase</span><span>Nutrients</span><span>Proteins</span><span>Organelles</span><span>DNA copies</span></div>'+
+        '<div class="score-phase-head"><span>Phase</span><span>Nutrients</span><span>Proteins</span><span>Organelles</span><span>DNA / M</span></div>'+ 
         row('G1',[p.score.g1.nutrients,p.score.g1.proteins,p.score.g1.organelles,null],[3,3,3,0])+
         row('S',[null,null,null,p.score.s.chromosomes],[0,0,0,4])+
-        row('G2',[p.score.g2.nutrients,p.score.g2.proteins,p.score.g2.organelles,null],[1,1,1,0])+'</div>';
+        row('G2',[p.score.g2.nutrients,p.score.g2.proteins,p.score.g2.organelles,null],[1,1,1,0])+
+        row('M',[null,null,null,p.score.m.attachments],[0,0,0,4])+'</div>';
     }).join('');
   }
   function getTarget(p){
-    if(p.pos===23)return 1;
-    if(p.pos>=24&&p.pos<=27)return p.pos-22;
+    if(p.pos>=24&&p.pos<=27)return 'spindle';
+    if(p.pos===29&&p.score.m.attachments<4)return 'spindle';
     return null;
   }
   function checkpointState(p,key){
     const s=p.score;
     if(key==='g1')return {title:'G1 checkpoint',subtitle:'Pass with at least 3 of each G1 material.',items:[['Nutrients',s.g1.nutrients,3],['Proteins',s.g1.proteins,3],['Organelles',s.g1.organelles,3]]};
     if(key==='g2')return {title:'G2 checkpoint',subtitle:'Pass with 4 DNA copies and at least 1 of each G2 material.',items:[['DNA copies',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
-    if(key==='m')return {title:'M checkpoint',subtitle:'Check the materials gathered in G1 and G2, and DNA copied in S.',items:[['G1 materials',Math.min(s.g1.nutrients,s.g1.proteins,s.g1.organelles),3],['DNA copies',s.s.chromosomes,4],['G2 materials',Math.min(s.g2.nutrients,s.g2.proteins,s.g2.organelles),1]]};
+    if(key==='m')return {title:'M checkpoint',subtitle:'Check the earlier requirements and confirm all four modeled chromosomes are attached to the spindle.',items:[['G1 materials',Math.min(s.g1.nutrients,s.g1.proteins,s.g1.organelles),3],['DNA copies',s.s.chromosomes,4],['G2 materials',Math.min(s.g2.nutrients,s.g2.proteins,s.g2.organelles),1],['Spindle attachments',s.m.attachments,4]]};
     return {title:'Cycle complete',subtitle:'The model cell reached division.',items:[['Divisions completed',p.divisions,1]]};
   }
   function renderCheckpoint(){
@@ -146,17 +148,21 @@
     if(tile.type==='checkpoint')return tile.phase.toUpperCase()+' checkpoint';
     if(tile.type==='finish')return 'Division complete';
     if(tile.type==='start')return 'Ready at start';
-    return tile.phase.toUpperCase()+(tile.phase==='g1'?' · Growth':tile.phase==='s'?' · DNA copying':tile.phase==='g2'?' · Preparation':' · Division');
+    return tile.phase.toUpperCase()+(tile.phase==='g1'?' · Growth':tile.phase==='s'?' · DNA copying':tile.phase==='g2'?' · Preparation':' · Spindle attachment');
   }
   function turnInstruction(p){
     if(p.bonusRolls>0)return 'Bonus roll: roll four dice again without moving.';
+    if(p.pos===7&&(p.score.g1.nutrients<3||p.score.g1.proteins<3||p.score.g1.organelles<3))return 'G1 checkpoint pause: roll here to gather missing materials. Your cell stays at the checkpoint.';
     const need=getTarget(p);
+    if(need==='spindle')return 'M phase: roll a 5 or 6 on any die to model one chromosome attaching to the spindle. If you miss, stay here.';
     if(need!==null)return 'To move forward, roll a '+need+' on any die. If you miss it, stay here this turn.';
     return 'Move one space forward, then roll all four dice. The dice do not set the number of spaces.';
   }
   function currentSummary(tile,dice,required,missed,bonus){
     const phase=tile.phase;
+    if(required==='spindle')return missed===null?'A 5 or 6 models a chromosome attaching to the spindle. One modeled attachment is recorded.':'No 5 or 6 this turn; no chromosome attachment is recorded.';
     if(required!==null)return missed===null?'Matched the required '+required+' on an M-phase die. The cell moves forward.':'Needed a '+required+' on any die; no match this turn.';
+    if(tile.type==='checkpoint'&&phase==='g1')return 'The cycle is paused at G1. Roll results add any nutrients, proteins, and organelles the cell still needs.';
     if(tile.type==='checkpoint')return 'Checkpoint reached. Check the scorecard; this space does not collect materials.';
     if(phase==='g1'||phase==='g2'){
       const n=dice.filter(x=>x===1).length,pr=dice.filter(x=>x===2).length,o=dice.filter(x=>x===3).length;
@@ -164,7 +170,7 @@
       return (bonus?'Bonus roll. ':'')+(out.length?'Collected: '+out.join(', ')+'.':'No G1/G2 materials collected on this roll.');
     }
     if(phase==='s'){const n=dice.filter(x=>x===4).length;return (bonus?'Bonus roll. ':'')+(n?'DNA copies ×'+n+' collected.':'No chromosome copies collected on this roll.');}
-    if(phase==='m')return 'M phase: dice are used to match the number on the next space; no materials are collected.';
+    if(phase==='m')return 'M phase: the model tracks chromosome attachment to the spindle before division.';
     return 'Checkpoint space: this roll does not collect materials.';
   }
   function renderHistory(){
@@ -251,13 +257,18 @@
     if(!g.chanceDeck.length)g.chanceDeck=shuffledDeck();
     const idx=g.chanceDeck.shift();g.chanceDeck.push(idx);
     const card=chanceCards[idx];
-    g.chanceNotice={player:p.id,title:card.title,copy:card.copy,icon:card.icon};
-    setEvent(card.title,card.copy,card.icon,'Cellular chance card');
+    let cardCopy=card.copy;
+    if(card.id==='dna'){
+      if(track[p.pos].phase==='s')p.score.s.chromosomes=Math.max(4,p.score.s.chromosomes);
+      else cardCopy='This card appeared outside S phase, so it adds no DNA copies. In this model, DNA copying happens only in S phase.';
+    }
+    g.chanceNotice={player:p.id,title:card.title,copy:cardCopy,icon:card.icon};
+    setEvent(card.title,cardCopy,card.icon,'Cellular chance card');
     addLog('Player '+p.id+': '+card.title+'.');
     if(card.id==='bonus'){p.bonusRolls++;return true;}
     if(card.id==='reset'){
       p.pos=0;p.score=zeroScore();p.restarts++;p.bonusRolls=0;
-      setEvent(card.title,card.copy,card.icon,'Cellular chance card');
+      setEvent(card.title,cardCopy,card.icon,'Cellular chance card');
     }else if(card.id==='skip'){p.skipTurns++;}
     else if(card.id==='advance'){
       const dest=Math.min(30,p.pos+3);p.bypassed+= [7,23,29].filter(function(n){return n>p.pos&&n<=dest;}).length;p.pos=dest;
@@ -266,7 +277,7 @@
       const cp=nextCheckpoint(p.pos);p.bypassed++;
       if(cp>=29){p.pos=30;p.status='finished';p.divisions++;p.unchecked++;setEvent('Division without a checkpoint check','The model cell bypassed the final checkpoint. This shows why cell-cycle controls matter; it does not predict cancer.','⚠️','Checkpoint bypassed');}
       else p.pos=cp+1;
-    }else if(card.id==='dna'){p.score.s.chromosomes=Math.max(4,p.score.s.chromosomes);}
+    }
     else if(card.id==='skipTwo'){
       const next=nextCheckpoint(p.pos),second=nextCheckpoint(next);p.bypassed+=2;
       if(second>=29){p.pos=30;p.status='finished';p.divisions++;p.unchecked++;setEvent('Division without a checkpoint check','Two checkpoint checks were bypassed in this model cell.','⚠️','Checkpoint bypassed');}
@@ -286,9 +297,7 @@
     const s=p.score;
     if(p.pos===7){
       const values=[s.g1.nutrients,s.g1.proteins,s.g1.organelles];
-      if(values.includes(0)){restartCell(p,'A G1 material category is still at zero. The cell starts again with a fresh scorecard.');return;}
-      if(values.includes(1)){p.pos=Math.max(0,p.pos-5);addLog('Player '+p.id+' moved back 5 spaces at G1.');setEvent('G1 checkpoint: move back 5 spaces','At least one G1 material is present only once. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
-      if(values.includes(2)){p.pos=Math.max(0,p.pos-3);addLog('Player '+p.id+' moved back 3 spaces at G1.');setEvent('G1 checkpoint: move back 3 spaces','At least one G1 material is present only twice. The cell returns to gather more before moving on.','↩️','Checkpoint response');return;}
+      if(values.some(function(x){return x<3;})){addLog('Player '+p.id+' paused at the G1 checkpoint to gather missing materials.');setEvent('G1 checkpoint: cell-cycle pause','The cell stays at the checkpoint while it gathers any missing nutrients, proteins, or organelles. A checkpoint pauses progression; it does not rewind the cell.','⏸️','Checkpoint response');return;}
       addLog('Player '+p.id+' passed the G1 checkpoint.');setEvent('G1 checkpoint passed','The G1 scorecard has at least three nutrients, proteins, and organelles. The cell can continue to S phase.','✅','Checkpoint passed');return;
     }
     if(p.pos===23){
@@ -300,6 +309,7 @@
     }
     if(p.pos===29){
       const ok=s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3&&s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1;
+      if(s.m.attachments<4){setEvent('M checkpoint: spindle attachment incomplete','The cell waits at the M checkpoint until all four modeled chromosome copies are attached to the spindle. A 5 or 6 on any die records one attachment.','⏸️','Checkpoint response');return;}
       if(!ok){
         p.pos=s.s.chromosomes<4?8:(s.g1.nutrients<3||s.g1.proteins<3||s.g1.organelles<3?1:15);
         addLog('Player '+p.id+' returned to gather missing materials before M phase.');
@@ -310,13 +320,15 @@
       setEvent('The model cell completes division','The cell met the G1, S, and G2 requirements and divides into daughter cells. A completed division is not the same as cancer.','🧬','Division complete');
     }
   }
-  function scoreRoll(p,dice){
+  function scoreRoll(p,dice,required){
     const tile=track[p.pos],phase=tile.phase;
-    if(tile.type!=='space')return;
-    if(phase==='g1'||phase==='g2'){
+    if(tile.type==='checkpoint'&&phase==='g1'){
+      dice.forEach(function(v){if(v===1)p.score.g1.nutrients++;if(v===2)p.score.g1.proteins++;if(v===3)p.score.g1.organelles++;});
+    }else if(tile.type==='space'&&(phase==='g1'||phase==='g2')){
       const bucket=p.score[phase];
       dice.forEach(function(v){if(v===1)bucket.nutrients++;if(v===2)bucket.proteins++;if(v===3)bucket.organelles++;});
-    }else if(phase==='s')dice.forEach(function(v){if(v===4)p.score.s.chromosomes++;});
+    }else if(tile.type==='space'&&phase==='s')dice.forEach(function(v){if(v===4)p.score.s.chromosomes++;});
+    if(required==='spindle'&&(dice.includes(5)||dice.includes(6)))p.score.m.attachments++;
   }
   function activeNext(index){
     const g=state.game,n=g.playersState.length;
@@ -340,22 +352,25 @@
       const dice=Array.from({length:4},function(){return 1+Math.floor(Math.random()*6);});
       g.rolling=false;g.lastDice=dice;g.turns++;
       const bonus=p.bonusRolls>0,required=bonus?null:getTarget(p),startPos=p.pos;
-      let moved=false,missed=null;
+      const waitingG1=startPos===7&&(p.score.g1.nutrients<3||p.score.g1.proteins<3||p.score.g1.organelles<3);
+      let moved=false,missed=null,attachmentRecorded=false;
       if(bonus)p.bonusRolls--;
+      else if(waitingG1){/* A checkpoint pause holds the cell in place while it gathers G1 materials. */}
       else if(required!==null){
-        if(dice.includes(required)){p.pos=Math.min(30,p.pos+1);moved=true;}
+        const matched=required==='spindle'?(dice.includes(5)||dice.includes(6)):dice.includes(required);
+        if(matched){attachmentRecorded=required==='spindle';if(startPos!==29){p.pos=Math.min(30,p.pos+1);moved=true;}}
         else missed=required;
       }else{p.pos=Math.min(30,p.pos+1);moved=true;}
       const rollPos=bonus?startPos:p.pos;
-      if(moved||bonus)scoreRoll(p,dice);
+      if(moved||bonus||waitingG1||attachmentRecorded)scoreRoll(p,dice,required);
       const landed=p.pos,summary=currentSummary(track[rollPos],dice,required,missed,bonus);
       g.lastRollSummary=summary;
       let message=summary;
-      if(missed!==null)message='No '+missed+' rolled. The cell stays on its space this turn. '+summary;
+      if(missed!==null)message=(missed==='spindle'?'No 5 or 6 rolled.':'No '+missed+' rolled.')+' The cell stays on its space this turn. '+summary;
       if(bonus)message='Bonus roll—your token stays put. '+summary;
       setEvent(bonus?'Bonus dice added':missed!==null?'The cell waits for the needed roll':'Materials collected',message,'🎲','Four-dice roll');
       addLog('Player '+p.id+' · '+phaseLabel(p)+' · ['+dice.join(', ')+'] · '+message);
-      if(moved&&[7,23,29].includes(p.pos))checkCheckpoint(p);
+      if((moved&&[7,23,29].includes(p.pos))||(waitingG1&&p.pos===7)||(attachmentRecorded&&p.pos===29))checkCheckpoint(p);
       else if(moved&&g.round===2&&track[landed].chance){
         const keepTurn=drawChance(p);
         if(keepTurn&&p.status==='playing'){g.active=p.id-1;}
@@ -568,6 +583,13 @@
       if(!choice){out.textContent='Choose one idea first.';return;}
       state.quick=choice.value==='b'?'Yes. Checkpoints can pause cell division when a cell needs to respond. p53 is one important part of a larger control system.':'Try again. Cell division does not always cause cancer, and p53 is not the only cell-cycle control.';
       out.textContent=state.quick;save();
+    });
+    $('#check-mechanism').addEventListener('click',function(){
+      const choice=$('input[name="mechanism-check"]:checked');
+      const out=$('#mechanism-feedback');
+      if(!choice){out.textContent='Choose one idea first.';return;}
+      state.mechanism=choice.value==='a'?'Yes. A bypass can let a cell continue with damage or missing requirements, so daughter cells may inherit problems. That raises concern, but it does not guarantee cancer.':'Try again. A bypass can let a cell pass on problems to daughter cells, but one bypass does not automatically cause cancer, and p53 is one part of a larger control system.';
+      out.textContent=state.mechanism;save();
     });
     const evidence=$$('#analyze input[type="checkbox"]');
     evidence.forEach(function(el){el.addEventListener('change',function(){
