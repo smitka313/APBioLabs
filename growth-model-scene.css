@@ -88,13 +88,13 @@
   .investigation-report tr { break-inside:avoid; }
 }
 
-.growth-expand { position:absolute; top:8px; right:12px; z-index:2; padding:6px 10px; border:1px solid #a5c7af55; border-radius:99px; color:#d4e8d6; background:#142d30; font:600 .72rem Arial,sans-serif; cursor:pointer; }
+.growth-expand { display:block; position:relative; margin:10px 12px 0 auto; z-index:2; padding:6px 10px; border:1px solid #a5c7af55; border-radius:99px; color:#d4e8d6; background:#142d30; font:600 .72rem Arial,sans-serif; cursor:pointer; }
 .growth-expand:hover { background:#2a5148; }
 .growth-stage.growth-expanded { position:fixed; inset:10px; width:calc(100vw - 20px); height:calc(100dvh - 20px); z-index:10000; margin:0; overflow:auto; border:1px solid #a7d7bc55; }
 .growth-stage.growth-expanded canvas { min-width:900px; width:max(100%,900px); }
-.growth-stage.growth-expanded .growth-expand { position:fixed; top:24px; right:30px; }
+.growth-stage.growth-expanded .growth-expand { position:relative; margin:10px 12px 0 auto; }
 body.growth-open { overflow:hidden; }
-@media(max-width:520px){.growth-expand { top:4px; right:5px; font-size:.6rem; padding:4px 7px; }.growth-expanded .growth-expand {font-size:.8rem;padding:8px 12px;}}
+@media(max-width:520px){.growth-expand { margin:6px 6px 0 auto; font-size:.6rem; padding:4px 7px; }.growth-expanded .growth-expand {font-size:.8rem;padding:8px 12px;}}
 @media print {.growth-expand {display:none!important;}}
 
 #growth-scene:focus-visible { outline:3px solid var(--accent); outline-offset:-4px; }
@@ -103,7 +103,7 @@ body.growth-open { overflow:hidden; }
 .cell-state-legend { display:flex; flex-wrap:wrap; gap:8px 20px; font-size:.76rem; color:var(--muted); margin:10px 0 13px; }
 .cell-state-legend span { display:inline-flex; align-items:center; gap:6px; }
 .cell-state-legend i { display:inline-block; width:13px; height:13px; border-radius:50%; border:1px solid #9ebca5; }
-.state-normal { background:#718b7e; }.state-changed { background:#f1c574; }.state-cancer { background:#ac4266; position:relative; }
+.state-dividing { background:#77b49b; }.state-normal { background:#718b7e; }.state-changed { background:#f1c574; }.state-cancer { background:#ac4266; position:relative; }
 .state-cancer::after { content:'C'; color:#fff; font:700 9px sans-serif; position:absolute; left:3px; top:1px; }
 .growth-tip { max-width:430px; font-size:.76rem; line-height:1.45; }
 @media(max-width:520px){.cell-state-legend {font-size:.69rem;gap:7px 12px;}.growth-tip {left:5%;max-width:90%;font-size:.67rem;}}
