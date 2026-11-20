@@ -315,3 +315,16 @@
   #game-panel:not(.is-pregame) .dice-tray {max-width:380px}
 }
 /* On smaller screens retain a readable full-size board and scorecard rather than shrinking both into illegibility. */
+
+/* Guided analysis with evidence visible while students answer */
+#analyze [data-analysis-page][hidden]{display:none!important}
+.analysis-workspace{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:20px;align-items:start}
+.analysis-reference{position:sticky;top:14px;max-height:calc(100dvh - 28px);overflow:auto;padding:18px;border:2px solid var(--accent);border-radius:14px;background:var(--surface-2);scrollbar-width:thin}
+.analysis-reference h3{margin:0 0 6px;font-size:1.3rem}.analysis-reference h4{margin:16px 0 8px}.analysis-reference p{margin:5px 0 9px}
+.analysis-evidence-set{padding:10px;margin:9px 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.analysis-evidence-set strong{font-size:.87rem}.analysis-evidence-set p{font-size:.8rem}
+.analysis-evidence-bar{height:9px;border-radius:99px;background:var(--line);overflow:hidden}.analysis-evidence-bar span{display:block;height:100%;background:var(--accent);border-radius:inherit}
+.analysis-questions{min-width:0}.analysis-page-nav{display:flex;justify-content:space-between;align-items:center;gap:9px;margin:14px 0;padding:10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.analysis-page-nav button{min-width:100px}.analysis-page-nav span{font-weight:800;text-align:center;font-size:.85rem}
+@media(max-width:850px){.analysis-workspace{grid-template-columns:1fr}.analysis-reference{position:static;max-height:340px}.analysis-page-nav{flex-wrap:wrap}.analysis-page-nav span{order:-1;width:100%}}
+@media print{#analyze [data-analysis-page][hidden]{display:block!important}.analysis-reference{position:static;max-height:none}.analysis-page-nav{display:none}}
