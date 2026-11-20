@@ -836,14 +836,19 @@
       const choice=$('input[name="quick-check"]:checked');
       const out=$('#background-feedback');
       if(!choice){out.textContent='Choose one idea first.';return;}
-      state.quick=choice.value==='b'?'Yes. Checkpoints can pause cell division when a cell needs to respond. p53 is one important part of a larger control system.':'Try again. Cell division does not always cause cancer, and p53 is not the only cell-cycle control.';
+      // Each wrong answer says why it is wrong, so a retry teaches rather than guesses.
+      state.quick=choice.value==='b'?'Yes. Checkpoints can pause cell division when a cell needs to respond. p53 is one important part of a larger control system.'
+        :choice.value==='a'?'Try again. Why not: most cell divisions make healthy cells. Cells copy their DNA very accurately and repair most copying mistakes, and cancer usually needs several changes to genes that control the cell cycle, so a single division does not create cancer.'
+        :'Try again. Why not: p53 is one important control, but not the only one. Many other proteins also control division, including growth-signal proteins, other tumor-suppressor proteins and the checkpoint proteins themselves.';
       out.textContent=state.quick;save();
     });
     $('#check-mechanism').addEventListener('click',function(){
       const choice=$('input[name="mechanism-check"]:checked');
       const out=$('#mechanism-feedback');
       if(!choice){out.textContent='Choose one idea first.';return;}
-      state.mechanism=choice.value==='a'?'Yes. A bypass can let a cell continue with damage or missing requirements, so daughter cells may inherit problems. That raises concern, but it does not guarantee cancer.':'Try again. A bypass can let a cell pass on problems to daughter cells, but one bypass does not automatically cause cancer, and p53 is one part of a larger control system.';
+      state.mechanism=choice.value==='a'?'Yes. A bypass can let a cell continue with damage or missing requirements, so daughter cells may inherit problems. That raises concern, but it does not guarantee cancer.'
+        :choice.value==='b'?'Try again. Why not: every healthy cell passes checkpoints each time it divides. A cell that passes with a problem can hand that problem to its daughter cells, but becoming cancerous usually takes several changes, not one checkpoint.'
+        :'Try again. Why not: p53 is one control among many. Other checkpoint proteins, DNA-repair systems and the immune system can also stop or remove a cell with problems.';
       out.textContent=state.mechanism;save();
     });
     const evidence=$$('#analyze input[type="checkbox"]');
