@@ -216,12 +216,24 @@
     return r;
   }
   function pct(part,whole){return whole?Math.round(100*part/whole)+'%':'—';}
-  function finishRound(){
+  // A round ends in one of two ways (a division never ends it: the player takes a chip and starts a new cell):
+  // every player reaches the turn cap ('turns'), or the group presses "End this round now" ('early').
+  function finishRound(endedBy){
     const g=state.game;
-    g.complete=true;g.roundResults[g.round]=tally(g.playersState,g.turns);
+    g.complete=true;g.roundResults[g.round]=Object.assign(tally(g.playersState,g.turns),{endedBy:endedBy||'turns',playerTurns:g.playersState.map(function(p){return Math.min(TURNS_PER_ROUND,p.turnsUsed);})});
     const r=g.roundResults[g.round];
-    setEvent(roundName(g.round)+' complete','Cells made this round: '+r.blue+' blue (non-cancer) and '+r.red+' red (cancer cells in this game model).','🏁','Round complete');
+    setEvent(roundName(g.round)+' complete',roundEndReason(r)+' Cells made this round: '+plural(r.blue,'blue chip')+' (non-cancer cells) and '+plural(r.red,'red chip')+' (cancer cells in this game model).','🏁','Round complete');
   }
+  // Why the round ended, with the real turn counts. Older saves have no endedBy: say only what is known.
+  function roundEndReason(r){
+    if(!r||r.legacy)return 'Round complete.';
+    const turns=Array.isArray(r.playerTurns)?r.playerTurns:null;
+    const counts=turns?(turns.length===1?'Turns used: '+turns[0]+' of '+TURNS_PER_ROUND+'.':'Turns used: '+turns.map(function(n,i){return 'Player '+(i+1)+' '+n;}).join(', ')+' (of '+TURNS_PER_ROUND+' each).'):'';
+    if(r.endedBy==='early')return 'The round was ended early with “End this round now”. '+counts;
+    if(r.endedBy==='turns')return (turns&&turns.length===1?'The round ended when the player used all ':'The round ended when every player had used all ')+TURNS_PER_ROUND+' turns (the turn limit). A division does not end the round.';
+    return 'Round complete.';
+  }
+  function plural(n,word,many){return n+' '+(n===1?word:(many||word+'s'));}
   function finishIfAll(){
     const g=state.game;
     if(!g.playersState.length||g.complete||!g.playersState.every(function(p){return p.status==='done';}))return g.complete;
@@ -251,7 +263,7 @@
     const g=state.game,el=$('#round-summary');
     if(!g.complete){el.hidden=true;el.innerHTML='';return;}
     const r=g.roundResults[g.round];
-    let html='<span class="game-kicker">Round '+g.round+' results</span><h3>What cells did your group make?</h3>';
+    let html='<span class="game-kicker">Round '+g.round+' results</span><h3>What cells did your group make?</h3><p class="round-end-reason">'+roundEndReason(r)+'</p>';
     const rounds=[[1,g.roundResults[1]],[2,g.roundResults[2]]].filter(function(x){return x[1];});
     html+=resultsTable(g.round===2?rounds:[[g.round,r]]);
     if(g.round===1)html+='<p>Every new cell in Round 1 is a blue chip: p53 checked each cell at every checkpoint. Fill in the Round 1 Making Sense table below, then play Round 2 with the same group.</p><button class="btn btn--primary" id="start-round2-from-summary" type="button">Play Round 2 · Cellular Chance cards</button>';
@@ -306,7 +318,7 @@
     if(!p)return;
     $('#round-label').textContent=roundName(g.round);
     $('#active-player-label').textContent=g.complete?'Round complete':'Player '+p.id+'’s turn';
-    $('#turn-instruction').textContent=g.complete?'Every player has used '+TURNS_PER_ROUND+' turns. See the cell chips below.':turnInstruction(p);
+    $('#turn-instruction').textContent=g.complete?roundEndReason(g.roundResults[g.round])+' See the cell chips below.':turnInstruction(p);
     $('#phase-label').textContent=phaseLabel(p);
     $('#position-label').textContent=where(p.pos);
     $('#dice-prompt').textContent=g.complete?'Round complete.':turnInstruction(p);
@@ -485,7 +497,7 @@
   }
   function endRoundNow(){
     confirmGameReset('End this round now?','Every player stops here, and the cell chips collected so far are recorded as this round’s results. Use this when your class timer runs out.',function(){
-      const g=state.game;g.playersState.forEach(function(p){p.status='done';p.bonusRolls=0;p.skipTurns=0;});g.chanceNotice=null;finishRound();save();renderGame();renderAnalysisReference();announce(g.event.title+'. '+g.event.copy);$('#round-summary').focus();
+      const g=state.game;g.playersState.forEach(function(p){p.status='done';p.bonusRolls=0;p.skipTurns=0;});g.chanceNotice=null;finishRound('early');save();renderGame();renderAnalysisReference();announce(g.event.title+'. '+g.event.copy);$('#round-summary').focus();
     },'End round');
   }
   function resetRound(){
