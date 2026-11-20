@@ -374,6 +374,10 @@
 .score-chips { margin:0; font-size:.76rem; color:var(--muted); }
 .turn-event.is-red { border-left-color:#d23b3b; }
 .chance-reveal-effect { font-weight:700; color:#fff3c9; }
+/* Effect label under a card's printed title (several printed cards share a title). */
+.chance-reveal-label { display:inline-block; margin:-4px 0 6px; padding:3px 12px; border-radius:99px; background:#ffffff1f; border:1px solid #ffffff55; color:#fff; font-weight:800; font-size:.92rem; letter-spacing:.02em; }
+.event-label { display:inline-block; margin:2px 0 6px; padding:2px 10px; border-radius:99px; border:1px solid var(--line); background:var(--surface-2,transparent); color:var(--ink); font-weight:700; font-size:.82rem; }
+.event-label[hidden] { display:none; }
 .chance-reveal.is-not-working .chance-reveal-panel { border-color:#ff8f8f; box-shadow:0 0 0 5px #e1515133,0 0 55px #ff4d4d66; }
 .round-compare td { text-align:center; font-variant-numeric:tabular-nums; }
 table.data.round-compare th, table.data.round-compare td { white-space:normal; }

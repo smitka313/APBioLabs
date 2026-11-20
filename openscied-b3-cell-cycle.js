@@ -88,23 +88,25 @@
   const TURNS_PER_ROUND=75;
   const BOX={g1:5,s:4,g2:5};
   const zeroScore=function(){return {g1:{nutrients:0,proteins:0,organelles:0},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0}};};
+  // Each card also carries a short effect label (not printed on the card) shown under its title in the card dialog, the
+  // turn event and the history: several printed cards share a title ("p53 is working well!") but do different things.
   // Round 2 Cellular Chance cards, worded as printed in Teacher Reference: Game Cards 2. The printed set has 14 cards
   // (three "destroys your cell" cards); the Round 2 handout and the Teacher Edition call for 13, so this deck has two.
   const WELL='p53 is working well!',NOT='p53 is not working!';
   const chanceCards=[
-    {id:'extra',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
-    {id:'extra',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
-    {id:'extra',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
-    {id:'extra',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
-    {id:'extra',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
-    {id:'destroy',title:WELL,copy:'p53 detects damage to your DNA and destroys your cell. Go back to the start.',icon:'🛡️'},
-    {id:'destroy',title:WELL,copy:'p53 detects damage to your DNA and destroys your cell. Go back to the start.',icon:'🛡️'},
-    {id:'dna',title:WELL,copy:'You fill all your DNA requirements for this round!',icon:'🧬'},
-    {id:'lose',title:NOT,copy:'p53 will not let you pass. You lose a turn!',icon:'⚠️'},
-    {id:'ahead3',title:NOT,copy:'Move ahead 3 spaces.',icon:'⚠️'},
-    {id:'skipNext',title:NOT,copy:'Move your game piece to the space after the next checkpoint without checking your scorecard.',icon:'⚠️'},
-    {id:'skipTwo',title:NOT,copy:'Skip ahead two checkpoints and check your scorecard. If there’s only one checkpoint left, skip to the final checkpoint and check your scorecard.',icon:'⚠️'},
-    {id:'finish',title:NOT,copy:'Move directly to Finish. Collect a new RED cell chip and start the game again.',icon:'⚠️'}
+    {id:'extra',label:'Extra roll',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
+    {id:'extra',label:'Extra roll',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
+    {id:'extra',label:'Extra roll',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
+    {id:'extra',label:'Extra roll',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
+    {id:'extra',label:'Extra roll',title:WELL,copy:'You get an extra roll!',icon:'🛡️'},
+    {id:'destroy',label:'Cell destroyed',title:WELL,copy:'p53 detects damage to your DNA and destroys your cell. Go back to the start.',icon:'🛡️'},
+    {id:'destroy',label:'Cell destroyed',title:WELL,copy:'p53 detects damage to your DNA and destroys your cell. Go back to the start.',icon:'🛡️'},
+    {id:'dna',label:'DNA filled',title:WELL,copy:'You fill all your DNA requirements for this round!',icon:'🧬'},
+    {id:'lose',label:'Lose a turn',title:NOT,copy:'p53 will not let you pass. You lose a turn!',icon:'⚠️'},
+    {id:'ahead3',label:'Move ahead 3',title:NOT,copy:'Move ahead 3 spaces.',icon:'⚠️'},
+    {id:'skipNext',label:'Skip next checkpoint',title:NOT,copy:'Move your game piece to the space after the next checkpoint without checking your scorecard.',icon:'⚠️'},
+    {id:'skipTwo',label:'Skip two checkpoints',title:NOT,copy:'Skip ahead two checkpoints and check your scorecard. If there’s only one checkpoint left, skip to the final checkpoint and check your scorecard.',icon:'⚠️'},
+    {id:'finish',label:'Move to FINISH: red chip',title:NOT,copy:'Move directly to Finish. Collect a new RED cell chip and start the game again.',icon:'⚠️'}
   ];
   function shuffledDeck(){
     const deck=chanceCards.map(function(card,i){return i;});
@@ -272,12 +274,18 @@
     else html+='<p>In this game model, a red chip is a cancer cell: a cell that divided when p53 was not working. These percentages come from the game’s cards and dice, not from real people. Cancer is not inevitable, and a game result is not a diagnosis.</p>';
     el.innerHTML=html;el.hidden=false;
   }
+  // The effect label for a card notice; notices saved before labels existed are matched by their printed text.
+  function cardLabel(n){
+    if(!n)return '';if(n.label)return n.label;
+    const c=chanceCards[n.card]||chanceCards.find(function(x){return x.title===n.title&&x.copy===n.copy;});
+    return c?c.label:'';
+  }
   function renderChanceReveal(){
     const g=state.game,notice=g.chanceNotice;
     let overlay=$('#chance-reveal');
     if(!overlay){
       overlay=document.createElement('div');overlay.id='chance-reveal';overlay.className='chance-reveal';overlay.hidden=true;
-      overlay.innerHTML='<div class="chance-reveal-panel" role="dialog" aria-modal="true" aria-labelledby="chance-reveal-title" aria-describedby="chance-reveal-copy chance-reveal-effect"><span class="chance-reveal-kicker">ROUND 2 · CELLULAR CHANCE CARD</span><div class="chance-reveal-art" aria-hidden="true"><span id="chance-reveal-icon">🧬</span></div><p class="chance-reveal-player" id="chance-reveal-player"></p><h2 id="chance-reveal-title"></h2><p id="chance-reveal-copy" class="chance-reveal-copy"></p><p id="chance-reveal-effect" class="chance-reveal-effect"></p><p class="chance-reveal-note">A game-model event. Cancer is not inevitable, and nothing in this game is a diagnosis.</p><button class="btn btn--primary" type="button" id="chance-reveal-ack">Follow the card &amp; continue</button></div>';
+      overlay.innerHTML='<div class="chance-reveal-panel" role="dialog" aria-modal="true" aria-labelledby="chance-reveal-title" aria-describedby="chance-reveal-label chance-reveal-copy chance-reveal-effect"><span class="chance-reveal-kicker">ROUND 2 · CELLULAR CHANCE CARD</span><div class="chance-reveal-art" aria-hidden="true"><span id="chance-reveal-icon">🧬</span></div><p class="chance-reveal-player" id="chance-reveal-player"></p><h2 id="chance-reveal-title"></h2><p id="chance-reveal-label" class="chance-reveal-label"></p><p id="chance-reveal-copy" class="chance-reveal-copy"></p><p id="chance-reveal-effect" class="chance-reveal-effect"></p><p class="chance-reveal-note">A game-model event. Cancer is not inevitable, and nothing in this game is a diagnosis.</p><button class="btn btn--primary" type="button" id="chance-reveal-ack">Follow the card &amp; continue</button></div>';
       document.body.appendChild(overlay);
       $('#chance-reveal-ack').addEventListener('click',followCard);
       overlay.addEventListener('keydown',function(e){if(e.key==='Tab'){e.preventDefault();$('#chance-reveal-ack').focus();}});
@@ -288,6 +296,7 @@
     $('#chance-reveal-icon').textContent=notice.icon||'🧬';
     $('#chance-reveal-player').textContent='Player '+notice.player+' drew a card';
     $('#chance-reveal-title').textContent=notice.title;
+    $('#chance-reveal-label').textContent=cardLabel(notice);
     $('#chance-reveal-copy').textContent=notice.copy;
     $('#chance-reveal-effect').textContent=notice.effect||'';
     $('#chance-reveal-ack').focus();
@@ -333,6 +342,8 @@
     $('#event-icon').textContent=g.event.icon||'🧬';
     $('#event-kicker').textContent=g.event.kicker||'Cell cycle';
     $('#event-title').textContent=g.event.title||'Your turn';
+    const label=g.event.kicker==='Cellular Chance card'?(g.event.label||cardLabel({title:g.event.title,copy:(g.event.copy||'').split(' Follow the card')[0]})):'';
+    $('#event-label').textContent=label;$('#event-label').hidden=!label;
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
     renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();
     $('#restart-round').hidden=!g.round;
@@ -413,11 +424,11 @@
     if(!g.chanceDeck.length)g.chanceDeck=shuffledDeck();
     const idx=g.chanceDeck.shift();g.chanceDeck.push(idx);   // the card goes back on the bottom of the stack
     const card=chanceCards[idx];
-    addLog('Player '+p.id+' drew a Cellular Chance card: “'+card.title+' '+card.copy+'”');
-    setEvent(card.title,card.copy+' Follow the card to continue.',card.icon,'Cellular Chance card');
+    addLog('Player '+p.id+' drew a Cellular Chance card · '+card.label+': “'+card.title+' '+card.copy+'”');
+    setEvent(card.title,card.copy+' Follow the card to continue.',card.icon,'Cellular Chance card');state.game.event.label=card.label;
     const real=state.game,copy=JSON.parse(JSON.stringify(real));let effect='';
     try{state.game=copy;effect=applyChance(copy.playersState.find(function(x){return x.id===p.id;}),card);}finally{state.game=real;}
-    g.chanceNotice={pending:true,card:idx,player:p.id,title:card.title,copy:card.copy,effect:effect,icon:card.icon};
+    g.chanceNotice={pending:true,card:idx,player:p.id,title:card.title,label:card.label,copy:card.copy,effect:effect,icon:card.icon};
   }
   function applyChance(p,card){
     const g=state.game;
@@ -442,7 +453,8 @@
       state.game.event={title:card.title,copy:card.copy,icon:card.icon,kicker:'Cellular Chance card'};
     }
     if(card.id==='destroy')state.game.event={title:card.title,copy:card.copy,icon:card.icon,kicker:'Cellular Chance card'};
-    state.game.event.copy=card.copy+' '+effect;
+    state.game.event.copy=card.copy+' '+effect;state.game.event.label=card.label;
+    addLog('Player '+p.id+' followed the card · '+card.label+': '+effect);
     return effect;
   }
   function scoreRoll(p,dice){
