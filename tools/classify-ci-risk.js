@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Conservative PR classifier. Unknown changes always run the full checklist. */
+/* Conservative PR classifier. Unknown/shared changes always run the full checklist. */
 const fs = require('fs');
 const cp = require('child_process');
 const base = process.argv[2], head = process.argv[3] || 'HEAD';
@@ -52,5 +52,19 @@ for (const f of files) {
   bump('full');
 }
 if (!files.length) level = 'full';
+// These companions own their scripts/styles and saved-work keys. Their dedicated browser
+// job checks gameplay, persistence, resets, and exports. Shared toolkit or CI edits stay full.
+const opensciedFiles = new Set([
+  'openscied-dashboard.html', 'openscied-dashboard.js',
+  'openscied-b3-cell-cycle.html', 'openscied-b3-cell-cycle.css', 'openscied-b3-cell-cycle.js',
+  'cell-cycle-scene.js', 'cell-cycle-scene.css',
+  'growth-cell-types.js', 'growth-model-scene.js', 'growth-model-scene.css',
+  'assets/openscied-banner.jpg', 'assets/openscied-phenomena-hero.svg',
+  'tests/t76-cell-cycle-controls.js', 'tests/t77-openscied-dashboard.js', 'tests/t78-cell-cycle-audit.js',
+  'tests/openscied-dashboard.test.js', 'tests/cell-cycle-scene.test.js'
+]);
+const documentation = p => /^(docs\/|.*\.(md|txt)$)/.test(p);
+if (files.some(f => opensciedFiles.has(f.path)) &&
+    files.every(f => opensciedFiles.has(f.path) || documentation(f.path))) level = 'openscied';
 console.log('Risk level:', level, 'Files:', files.map(f => f.path).join(', '));
 if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'level=' + level + '\n');
