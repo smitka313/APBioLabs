@@ -26,6 +26,7 @@ const LIGHT_BLUE = ['G1 space 2 of 6','G1 space 4 of 6','G1 space 6 of 6','S spa
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}, {timeout:5000});
     const card = await p.locator('#chance-reveal-ack').isVisible();
     if (card) await p.locator('#chance-reveal-ack').click();
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     return card;
   };
   // Dice: [1,2,3,4] collects one of each G1/G2 material and one chromosome; in M, roll the number the turn asks for.

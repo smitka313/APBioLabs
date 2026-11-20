@@ -22,6 +22,7 @@ const saved = (round, player, deck) => ({v:1,trials:[],fields:{},game:{schema:3,
     await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}, {timeout:5000}).catch(() => {});
     const ack = p.locator('#chance-reveal-ack'); if (await ack.isVisible()) await ack.click();
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
   };
   try {
     const score = full(); score.g2.organelles = 0;

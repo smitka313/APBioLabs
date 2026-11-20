@@ -39,6 +39,7 @@ const TEXT = {
         notWorking: await p.locator('#chance-reveal').evaluate(el => el.classList.contains('is-not-working'))};
       if (!keepCard) await p.locator('#chance-reveal-ack').click();
     }
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     return read();
   };
   const ONE = [1,2,3,4];

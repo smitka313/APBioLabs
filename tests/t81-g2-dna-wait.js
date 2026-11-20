@@ -14,6 +14,7 @@ const sc = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:2},g2
     await p.evaluate(values => { let i = 0; Math.random = () => (values[i++ % values.length] - .5) / 6; }, values);
     const before = (await read()).turns; await p.locator('#roll-dice').click({timeout: 5000});
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}, {timeout: 8000});
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     await p.evaluate(() => { const st = window.setTimeout; window.setTimeout = (f, ms, ...a) => st(f, Math.min(ms, 5), ...a); });
   };
   try {

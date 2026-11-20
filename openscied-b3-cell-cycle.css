@@ -264,7 +264,8 @@
 
 /* Round 2 cellular chance card reveal */
 .chance-reveal[hidden] { display:none!important; }
-.chance-reveal { position:fixed; inset:0; z-index:9999; display:grid; place-items:center; padding:18px; background:rgba(3,9,19,.84); backdrop-filter:blur(7px); overflow-y:auto; }
+/* Above the enlarged board (.scene-expanded, z-index 10000), so a card drawn there is not hidden behind it. */
+.chance-reveal { position:fixed; inset:0; z-index:10001; display:grid; place-items:center; padding:18px; background:rgba(3,9,19,.84); backdrop-filter:blur(7px); overflow-y:auto; }
 .chance-reveal-panel { width:min(100%,490px); max-height:calc(100dvh - 36px); overflow-y:auto; padding:clamp(18px,4vw,30px); text-align:center; border:3px solid #ba83ff; border-radius:24px; background:linear-gradient(145deg,#34205d,#19152d 72%); color:#fff; box-shadow:0 0 0 5px #8e51e133,0 0 55px #9b4dff88; }
 .chance-reveal-kicker { display:block; color:#e5c9ff; font-weight:900; letter-spacing:.1em; font-size:.85rem; }
 .chance-reveal-art { display:grid; place-items:center; min-height:135px; margin:16px auto; border-radius:20px; background:radial-gradient(circle,#7a3ac9 0%,#392269 42%,#211736 80%); box-shadow:inset 0 0 32px #a76cff55; }
@@ -462,3 +463,63 @@ table.data.cycle-data-table th, table.data.cycle-data-table td { white-space:nor
 /* Single-column step bodies may not grow wider than the page: a wide report table (Wrap up) scrolls inside its
    .table-wrap instead of widening the grid track and the whole page at 390px. */
 main > .step > .step-body:not(.split) { grid-template-columns:minmax(0,1fr); }
+
+/* Checkpoint card dialog (G1 / G2 / M Checkpoint cards, Teacher Reference: Game Cards 1). It reuses the chance-card
+   overlay (.chance-reveal) but draws a printed paper card: a phase-coloured band with the p53 protein (as on the card's
+   back), the printed text on a dashed-edged face, then the player's scorecard checked against it. Band colours follow
+   the board's phase colours (G1 green, G2 amber, M violet). */
+:root { --cp-g1-band:#cfeee2; --cp-g1-ink:#0b3d2e; --cp-g1-edge:#1d7d5d;
+  --cp-g2-band:#f7e5b6; --cp-g2-ink:#4a3200; --cp-g2-edge:#946500;
+  --cp-m-band:#e6ddfb; --cp-m-ink:#2e1f63; --cp-m-edge:#6747c2; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --cp-g1-band:#123d31; --cp-g1-ink:#c4f2df; --cp-g1-edge:#5fd3a8;
+    --cp-g2-band:#3b2d0e; --cp-g2-ink:#f8e2a8; --cp-g2-edge:#e8c786;
+    --cp-m-band:#2a2250; --cp-m-ink:#e0d7ff; --cp-m-edge:#b6a3f2; }
+}
+:root[data-theme="dark"] { --cp-g1-band:#123d31; --cp-g1-ink:#c4f2df; --cp-g1-edge:#5fd3a8;
+  --cp-g2-band:#3b2d0e; --cp-g2-ink:#f8e2a8; --cp-g2-edge:#e8c786;
+  --cp-m-band:#2a2250; --cp-m-ink:#e0d7ff; --cp-m-edge:#b6a3f2; }
+.checkpoint-card-panel { --cp-band:var(--cp-g1-band); --cp-ink:var(--cp-g1-ink); --cp-edge:var(--cp-g1-edge);
+  display:flex; flex-direction:column; width:min(100%,520px); max-height:calc(100dvh - 36px); overflow:hidden; padding:0 0 clamp(12px,3vw,18px); border:3px solid var(--cp-edge); border-radius:22px;
+  background:var(--surface); color:var(--ink); box-shadow:0 18px 48px rgba(0,0,0,.45),0 0 0 5px color-mix(in srgb,var(--cp-edge) 25%,transparent); text-align:left; }
+.checkpoint-card-scroll { flex:1 1 auto; min-height:0; overflow-y:auto; padding-bottom:4px; }
+.checkpoint-card-scroll:focus-visible { outline:3px solid var(--accent); outline-offset:-3px; }
+.checkpoint-card-panel.cp-g2 { --cp-band:var(--cp-g2-band); --cp-ink:var(--cp-g2-ink); --cp-edge:var(--cp-g2-edge); }
+.checkpoint-card-panel.cp-m { --cp-band:var(--cp-m-band); --cp-ink:var(--cp-m-ink); --cp-edge:var(--cp-m-edge); }
+.checkpoint-card-band { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px clamp(14px,4vw,24px) 10px; background:var(--cp-band); color:var(--cp-ink); border-bottom:2px solid var(--cp-edge); }
+.checkpoint-card-kicker { display:block; font:800 .78rem var(--f-mono); letter-spacing:.08em; }
+.checkpoint-card-band h2 { margin:2px 0 0; color:var(--cp-ink); font-family:var(--f-display); font-size:clamp(1.45rem,5vw,1.9rem); line-height:1.15; }
+.checkpoint-card-player { margin:2px 0 0; font-weight:700; font-size:.92rem; }
+.checkpoint-card-p53 { flex:0 0 auto; width:clamp(58px,15vw,78px); height:auto; filter:drop-shadow(0 2px 3px rgba(0,0,0,.25)); }
+.checkpoint-card-face { margin:12px clamp(12px,3.5vw,20px) 0; padding:12px clamp(10px,3vw,16px); border:1.5px dashed var(--line); border-radius:12px; background:var(--surface-2); }
+.checkpoint-card-printed-label { margin:0 0 4px; font:700 .72rem var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.checkpoint-card-intro { margin:0 0 8px; font-weight:600; }
+.checkpoint-card-lines { list-style:none; margin:0; padding:0; display:grid; gap:4px; }
+.checkpoint-card-line { margin:0; padding:2px 10px; border-radius:10px; line-height:1.4; }
+.checkpoint-card-line.is-applies { padding:5px 8px; border:2px solid var(--cp-edge); background:color-mix(in srgb,var(--cp-edge) 16%,var(--surface)); font-weight:600; }
+.checkpoint-card-house { margin:10px clamp(12px,3.5vw,20px) 0; }
+.checkpoint-card-house[hidden] { display:none; }
+.checkpoint-card-marker { display:block; font:800 .74rem var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink); }
+.checkpoint-card-label { display:inline-block; margin:2px 0; padding:2px 10px; border-radius:99px; border:1.5px solid var(--cp-edge); background:var(--cp-band); color:var(--cp-ink); font-weight:800; font-size:.86rem; white-space:normal; }
+.checkpoint-card-subhead { margin:12px clamp(14px,4vw,24px) 6px; font-size:1rem; }
+.checkpoint-card-checks { list-style:none; margin:0 clamp(12px,3.5vw,20px); padding:0; display:grid; gap:4px; }
+.checkpoint-check { display:grid; grid-template-columns:24px minmax(0,auto) minmax(0,1fr) auto; grid-template-areas:"glyph name have verdict"; column-gap:8px; align-items:center; padding:4px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); line-height:1.3; }
+@media(max-width:480px){ .checkpoint-check { grid-template-columns:24px minmax(0,1fr) auto; grid-template-areas:"glyph name verdict" "glyph have verdict"; } }
+.checkpoint-check-glyph { grid-area:glyph; display:grid; place-items:center; width:24px; height:24px; border-radius:50%; font-weight:900; }
+.checkpoint-check.is-met .checkpoint-check-glyph { background:var(--ok-soft); color:var(--ok); border:1.5px solid var(--ok); }
+.checkpoint-check.is-short .checkpoint-check-glyph { background:var(--bad-soft); color:var(--bad); border:1.5px dashed var(--bad); }
+.checkpoint-check-name { grid-area:name; font-weight:700; }
+.checkpoint-check-have { grid-area:have; font-variant-numeric:tabular-nums; }
+.checkpoint-check-need { color:var(--muted); font-size:.88rem; }
+.checkpoint-check-verdict { grid-area:verdict; font-weight:800; font-size:.86rem; }
+.checkpoint-check.is-met .checkpoint-check-verdict { color:var(--ok); }
+.checkpoint-check.is-short .checkpoint-check-verdict { color:var(--bad); }
+.checkpoint-card-result { margin:10px clamp(14px,4vw,24px) 0; line-height:1.45; }
+.checkpoint-card-why { margin:6px clamp(14px,4vw,24px) 0; font-size:.9rem; color:var(--muted); line-height:1.4; }
+.checkpoint-card-why strong { color:var(--ink); }
+.checkpoint-card-panel button { flex:0 0 auto; display:flex; justify-content:center; width:calc(100% - 2 * clamp(14px,4vw,24px)); min-height:48px; margin:10px auto 0; font-weight:800; }
+/* The button stays below the scrolling card text; a hairline shows there is more above it when the card scrolls. */
+.checkpoint-card-scroll + button { box-shadow:0 -11px 0 -10px var(--line); }
+@media(max-height:820px){ .checkpoint-card-band { padding-top:9px; padding-bottom:8px; } .checkpoint-card-p53 { width:56px; } .checkpoint-card-face { margin-top:10px; padding-top:9px; padding-bottom:9px; } .checkpoint-card-subhead { margin-top:9px; } }
+@media(prefers-reduced-motion:no-preference){ .checkpoint-card-panel { animation:checkpoint-flip .38s ease-out both; } @keyframes checkpoint-flip { from { opacity:0; transform:perspective(900px) rotateY(-24deg) translateY(14px) scale(.95); } to { opacity:1; transform:none; } } }
+@media print { .checkpoint-reveal { display:none!important; } }

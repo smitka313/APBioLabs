@@ -18,6 +18,7 @@ const game = players => ({schema:3,mode:players.length>1?'group':'solo',players:
     const before = (await read()).turns;
     await p.locator('#roll-dice').click();
     await p.waitForFunction(({key,before}) => JSON.parse(localStorage.getItem(key)).game.turns > before, {key:KEY,before}, {timeout:5000});
+    if (await p.locator('#checkpoint-reveal-ack').isVisible()) await p.locator('#checkpoint-reveal-ack').click();   // a checkpoint card: follow it
     return read();
   };
   const closeEnd = async () => { if (await p.locator('#round-end-dialog').evaluate(d => d.open).catch(() => false)) await p.keyboard.press('Escape'); };
