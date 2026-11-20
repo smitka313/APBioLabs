@@ -423,7 +423,7 @@
   let analysisPage=0;
   function showAnalysisPage(index){
     analysisPage=Math.max(0,Math.min(2,index));
-    $('#analyze [data-analysis-page]').forEach(el=>{el.hidden=Number(el.dataset.analysisPage)!==analysisPage;});
+    $$('#analyze [data-analysis-page]').forEach(el=>{el.hidden=Number(el.dataset.analysisPage)!==analysisPage;});
     $('#analysis-page-status').textContent='Part '+(analysisPage+1)+' of 3 · '+['Compare data','Explain mechanisms','Revise your model'][analysisPage];
     for(const id of ['analysis-prev','analysis-prev-bottom'])$('#'+id).disabled=analysisPage===0;
     for(const id of ['analysis-next','analysis-next-bottom']){$('#'+id).disabled=analysisPage===2;}
