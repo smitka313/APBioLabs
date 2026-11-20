@@ -123,14 +123,14 @@ function savedGame(round = 2) {
     assert.match(await p.locator('#dice-result').textContent(),/DNA damage/);
     assert.doesNotMatch(await p.locator('#dice-result').textContent(),/Matched the required/);
     await p.locator('#chance-reveal-ack').click();
-    // Short DNA at G2 returns to S; missing G2 material pauses the cell at the G2 checkpoint (it is not restarted).
+    // Short DNA or a missing G2 material both pause the cell at the G2 checkpoint (it is neither sent back nor restarted).
     for(const missing of ['dna','organelle']) {
       const saved=savedGame(1);saved.game.playersState[0].pos=22;
       if(missing==='dna')saved.game.playersState[0].score.s.chromosomes=0;
       else saved.game.playersState[0].score.g2.organelles=0;
       await seed(saved);await roll();
       const current=(await read()).game;
-      assert.equal(current.playersState[0].pos,missing==='dna'?8:23);assert.equal(current.playersState[0].restarts,0);
+      assert.equal(current.playersState[0].pos,23);assert.equal(current.playersState[0].restarts,0);
       assert.equal(current.turns,1);assert.ok(current.logs.length>1);
       assert.equal(await p.locator('#history-count').textContent(),'1 roll');
     }

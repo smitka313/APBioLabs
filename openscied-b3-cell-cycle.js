@@ -126,7 +126,7 @@
         row('M',[null,null,null,p.score.m.attachments],[0,0,0,4])+'</div>';
     }).join('');
   }
-  function waitingAtG2(p){const s=p.score;return p.pos===23&&s.s.chromosomes>=4&&(s.g2.nutrients<1||s.g2.proteins<1||s.g2.organelles<1);}
+  function waitingAtG2(p){const s=p.score;return p.pos===23&&(s.s.chromosomes<4||s.g2.nutrients<1||s.g2.proteins<1||s.g2.organelles<1);}
   function getTarget(p){
     if(p.pos>=24&&p.pos<=27)return 'spindle';
     if(p.pos===29&&p.score.m.attachments<4)return 'spindle';
@@ -159,7 +159,7 @@
   function turnInstruction(p){
     if(p.bonusRolls>0)return 'Bonus roll: roll four dice again without moving.';
     if(p.pos===7&&(p.score.g1.nutrients<3||p.score.g1.proteins<3||p.score.g1.organelles<3))return 'G1 checkpoint pause: roll here to gather missing materials. Your cell stays at the checkpoint.';
-    if(waitingAtG2(p))return 'G2 checkpoint pause: roll here to gather at least one of each G2 material. Your cell stays at the checkpoint.';
+    if(waitingAtG2(p))return p.score.s.chromosomes<4?'G2 checkpoint pause: DNA copying is not finished. Each 4 you roll here copies one more chromosome; your cell stays at the checkpoint.':'G2 checkpoint pause: roll here to gather at least one of each G2 material. Your cell stays at the checkpoint.';
     const need=getTarget(p);
     if(need==='spindle')return 'M phase: roll a 5 or 6 on any die to model one chromosome attaching to the spindle. If you miss, stay here.';
     if(need!==null)return 'To move forward, roll a '+need+' on any die. If you miss it, stay here this turn.';
@@ -331,7 +331,7 @@
     }
     if(p.pos===23){
       const values=[s.g2.nutrients,s.g2.proteins,s.g2.organelles];
-      if(s.s.chromosomes<4){p.pos=8;addLog('Player '+p.id+' returned to S phase for more DNA copying.');setEvent('G2 checkpoint: return to S phase','Fewer than four modeled chromosomes have been copied. Return to the first S space and copy DNA again.','↩️','Checkpoint response');return;}
+      if(s.s.chromosomes<4){addLog('Player '+p.id+' paused at the G2 checkpoint until DNA copying is finished.');setEvent('G2 checkpoint: wait for DNA copying','Fewer than four modeled chromosomes have been copied. The cell stays at the G2 checkpoint until copying is finished: each 4 you roll here copies one more chromosome. A checkpoint pauses the cell; it does not send it back.','⏸️','Checkpoint response');return;}
       if(values.some(function(x){return x<1;})){addLog('Player '+p.id+' paused at the G2 checkpoint to gather missing materials.');setEvent('G2 checkpoint: cell-cycle pause','The cell stays at the checkpoint while it gathers at least one of each G2 material. A checkpoint pauses progression; it does not restart the cell.','⏸️','Checkpoint response');return;}
       addLog('Player '+p.id+' passed the G2 checkpoint.');setEvent('G2 checkpoint passed','All four modeled chromosomes are copied, and the cell has at least one of each G2 material. It can move toward division.','✅','Checkpoint passed');return;
     }
@@ -355,6 +355,8 @@
     if(tile.type==='checkpoint'&&(phase==='g1'||phase==='g2')){
       const bucket=p.score[phase];
       dice.forEach(function(v){if(v===1)bucket.nutrients++;if(v===2)bucket.proteins++;if(v===3)bucket.organelles++;});
+      // While paused at G2 with copying unfinished, each 4 finishes copying one more chromosome.
+      if(phase==='g2'&&p.score.s.chromosomes<4)dice.forEach(function(v){if(v===4&&p.score.s.chromosomes<4)p.score.s.chromosomes++;});
     }else if(tile.type==='space'&&(phase==='g1'||phase==='g2')){
       const bucket=p.score[phase];
       dice.forEach(function(v){if(v===1)bucket.nutrients++;if(v===2)bucket.proteins++;if(v===3)bucket.organelles++;});
