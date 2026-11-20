@@ -681,7 +681,8 @@
     const title=document.createElement('h3');title.textContent=changed.length===1?'One setting changed: '+names[changed[0]]:changed.length?'More than one setting changed':'Same settings, separate trials';out.appendChild(title);
     const display=document.createElement('div');display.className='comparison-means';
     for(const g of [a,b]){const el=document.createElement('div'),n=document.createElement('strong'),label=document.createElement('span'),range=document.createElement('small');n.textContent=g.mean.toFixed(1);label.textContent='Set '+g.index+' mean divisions';range.textContent='Range '+g.min+'–'+g.max+' · '+g.trials.length+' trials';el.append(n,label,range);display.appendChild(el);}out.appendChild(display);
-    const diff=b.mean-a.mean;
+    // From the means as displayed (one decimal), so the difference always matches the two numbers on screen.
+    const shown=g=>Number(g.mean.toFixed(1)),diff=Number((shown(b)-shown(a)).toFixed(1));
     para('The second mean is '+(diff===0?'the same.':Math.abs(diff).toFixed(1)+(diff>0?' divisions higher.':' divisions lower.')),'comparison-difference');
     if(changed.length>1)para('You changed '+changed.map(k=>names[k]).join(' and ')+'. Try another set changing only one setting so you can connect the difference to that setting.');
     else if(!changed.length)para('Repeated trials vary even with identical settings. That is why we compare several trials.');
