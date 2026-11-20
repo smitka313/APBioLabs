@@ -55,8 +55,9 @@
         ellipse(p.x,p.y,r,r,gradient(p.x,p.y,r,[[0,col+'dd'],[.7,col+'44'],[1,'#172c2b']]),col+'b0',1.4);
         if(start||finish)text(start?'▶':'✓',p.x,p.y+4,12,'#ecfff7','center','700');
         else if(t&&t.phase==='m'){text(String(t.need),p.x,p.y+4,11,'#e6dbff','center','700');}
-        else text(String(i),p.x,p.y+3,7,'#c6e6dc','center','mono');
+        else text(String(i+1),p.x,p.y+3,7,'#c6e6dc','center','mono');
         if(game&&game.round===2&&t&&t.chance){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.PI/4);ctx.strokeStyle='#8ad5f0';ctx.strokeRect(-11,-11,22,22);ctx.restore();}
+        hitRegions.push({x:p.x,y:p.y,r:18,title:'Space '+(i+1)+' · '+(t?.label||'START'),copy:t?.chance?'Landing on this blue-diamond space in Round 2 draws a chance card. The dice values do not trigger it.':'This space does not draw a chance card.'});
       }
     }
     const players=(game&&game.playersState.length?game.playersState:[{id:1,pos:0}]);
@@ -167,7 +168,7 @@
       ctx.restore();
     }
     const phase=track[game?.playersState?.[game.active]?.pos||0]?.phase;
-    text('1–3  Materials in G1 / G2',392,662,12,'#b1c5bc');text('4     DNA copies in S',392,684,12,'#b1c5bc');text('M     Match the next space',392,706,12,'#b1c5bc');
+    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     DNA copies in S',392,676,12,'#b1c5bc');text('5–6  No materials collected',392,698,12,'#b1c5bc');text('M phase: match the next number (1–5)',392,720,11,'#b1c5bc');
     text(rolling?'ROLLING…':(game&&game.playersState[game.active]?'PLAYER '+game.playersState[game.active].id+' · ROLL FOUR DICE':'MOVE ONE SPACE · ROLL FOUR DICE'),1122,631,10,'#98b7ad','right','mono');
   }
   function drawParticles(){particles=particles.filter(p=>now-p.time<850);for(const p of particles){const k=Math.max(0,Math.min(1,(now-p.time)/850)),x=p.x+(p.tx-p.x)*k,y=p.y+(p.ty-p.y)*k-Math.sin(k*Math.PI)*100;ctx.save();ctx.globalAlpha=1-k*.7;ctx.shadowColor=p.color;ctx.shadowBlur=8;ellipse(x,y,3.4,3.4,p.color);ctx.restore();}}
@@ -188,12 +189,13 @@
   }
   function setRolling(value){rolling=value;if(value)rollStart=performance.now();request();}
   function showAt(event){
-    const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)*W/r.width,y=(event.clientY-r.top)*H/r.height;
+    const r=canvas.getBoundingClientRect(),scale=Math.min(r.width/W,r.height/H),left=(r.width-W*scale)/2,top=(r.height-H*scale)/2;
+    const x=(event.clientX-r.left-left)/scale,y=(event.clientY-r.top-top)/scale;
     const hit=hitRegions.slice().reverse().find(h=>Math.hypot(x-h.x,y-h.y)<h.r);
     canvas.style.cursor=hit?'help':'default';
     if(!hit){tip.hidden=true;selected=null;return;}
     if(selected!==hit.title){tip.textContent=hit.title+' — '+hit.copy;selected=hit.title;}
-    tip.hidden=false;tip.style.left=Math.min(r.width-240,Math.max(10,x*r.width/W+14))+'px';tip.style.top=Math.max(30,y*r.width/W-70)+'px';
+    tip.hidden=false;tip.style.left=Math.max(10,Math.min(r.width-240,x*scale+left+14))+'px';tip.style.top=Math.max(30,y*scale+top-70)+'px';
   }
   canvas.addEventListener('pointermove',showAt);canvas.addEventListener('pointerdown',showAt);canvas.addEventListener('pointerleave',()=>{tip.hidden=true;selected=null;});
   new ResizeObserver(resize).observe(canvas);
