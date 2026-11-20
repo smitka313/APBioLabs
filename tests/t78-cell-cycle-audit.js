@@ -80,10 +80,12 @@ function savedGame(round = 2) {
     // it skips the G1 Checkpoint and checks at the G2 Checkpoint.
     const first=savedGame();first.game.playersState[0].pos=1;
     await seed(first); await roll([1,2,3,4]);
-    assert.equal((await read()).game.playersState[0].skipped,1);
-    assert.equal((await read()).game.playersState[0].pos,24);
+    // While the card is open the board shows the cell before the card's effect (play-test item 10); following the card applies it.
+    assert.equal((await read()).game.playersState[0].pos,2);
     assert.equal(await p.locator('#chance-reveal').isVisible(),true);
     await p.locator('#chance-reveal-ack').click();
+    assert.equal((await read()).game.playersState[0].skipped,1);
+    assert.equal((await read()).game.playersState[0].pos,24);
     await go('analyze');
     assert.match(await p.locator('#analysis-reference-data').textContent(),/Round 2 \(in progress\).*Checkpoints skipped: 1/);
     await go('submit');
@@ -121,10 +123,12 @@ function savedGame(round = 2) {
 
     const damaged=savedGame();damaged.game.playersState[0].pos=25;damaged.game.chanceDeck=[5];
     await seed(damaged);await roll([2,1,3,4]);
+    assert.equal((await read()).game.playersState[0].pos,26);
+    assert.match(await p.locator('#dice-result').textContent(),/destroys your cell/);
+    await p.locator('#chance-reveal-ack').click();
     assert.equal((await read()).game.playersState[0].pos,0);
     assert.equal((await read()).game.playersState[0].destroyed,1);
     assert.match(await p.locator('#dice-result').textContent(),/destroys your cell/);
-    await p.locator('#chance-reveal-ack').click();
     // Short DNA sends the cell back to the first S space; a missing G2 material destroys it (G2 card).
     for(const [missing,pos] of [['dna',8],['organelle',0]]) {
       const saved=savedGame(1);saved.game.playersState[0].pos=23;
@@ -139,9 +143,10 @@ function savedGame(round = 2) {
     T.ok(true,'Damage card clears stale result text; both G2 Checkpoint outcomes and the turn-only history count');
     const finish=savedGame();finish.game.playersState[0].pos=1;finish.game.playersState[0].turnsUsed=74;finish.game.chanceDeck=[12];
     await seed(finish);await roll();
+    assert.equal((await read()).game.complete,false);
+    await p.locator('#chance-reveal-ack').click();
     assert.equal((await read()).game.complete,true);
     assert.equal((await read()).game.roundResults[2].red,1);
-    await p.locator('#chance-reveal-ack').click();
     assert.match(await p.locator('#round-summary').textContent(),/Round 1 and Round 2/);
     T.ok(true,'Round 2 can end on a red chip from "Move directly to Finish" and records the comparison');
     assert.deepEqual(p.errors,[]);

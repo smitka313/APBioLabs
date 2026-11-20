@@ -279,7 +279,7 @@
       overlay=document.createElement('div');overlay.id='chance-reveal';overlay.className='chance-reveal';overlay.hidden=true;
       overlay.innerHTML='<div class="chance-reveal-panel" role="dialog" aria-modal="true" aria-labelledby="chance-reveal-title" aria-describedby="chance-reveal-copy chance-reveal-effect"><span class="chance-reveal-kicker">ROUND 2 · CELLULAR CHANCE CARD</span><div class="chance-reveal-art" aria-hidden="true"><span id="chance-reveal-icon">🧬</span></div><p class="chance-reveal-player" id="chance-reveal-player"></p><h2 id="chance-reveal-title"></h2><p id="chance-reveal-copy" class="chance-reveal-copy"></p><p id="chance-reveal-effect" class="chance-reveal-effect"></p><p class="chance-reveal-note">A game-model event. Cancer is not inevitable, and nothing in this game is a diagnosis.</p><button class="btn btn--primary" type="button" id="chance-reveal-ack">Follow the card &amp; continue</button></div>';
       document.body.appendChild(overlay);
-      $('#chance-reveal-ack').addEventListener('click',function(){state.game.chanceNotice=null;save();renderChanceReveal();if(state.game.complete)$('#round-summary').focus();else $('#roll-dice').focus();});
+      $('#chance-reveal-ack').addEventListener('click',followCard);
       overlay.addEventListener('keydown',function(e){if(e.key==='Tab'){e.preventDefault();$('#chance-reveal-ack').focus();}});
     }
     overlay.hidden=!notice;
@@ -405,12 +405,22 @@
     else if(CHECKPOINTS.includes(p.pos))checkCheckpoint(p);
     return passed;
   }
+  // Drawing a card and following it are two steps. While the card dialog is open the board, scorecard and turn
+  // counter show the cell as it was when the card was drawn; "Follow the card & continue" then applies the effect
+  // and finishes the turn. The dialog's effect line is worked out on a copy of the game, so it matches what happens.
   function drawChance(p){
     const g=state.game;
     if(!g.chanceDeck.length)g.chanceDeck=shuffledDeck();
     const idx=g.chanceDeck.shift();g.chanceDeck.push(idx);   // the card goes back on the bottom of the stack
     const card=chanceCards[idx];
     addLog('Player '+p.id+' drew a Cellular Chance card: “'+card.title+' '+card.copy+'”');
+    setEvent(card.title,card.copy+' Follow the card to continue.',card.icon,'Cellular Chance card');
+    const real=state.game,copy=JSON.parse(JSON.stringify(real));let effect='';
+    try{state.game=copy;effect=applyChance(copy.playersState.find(function(x){return x.id===p.id;}),card);}finally{state.game=real;}
+    g.chanceNotice={pending:true,card:idx,player:p.id,title:card.title,copy:card.copy,effect:effect,icon:card.icon};
+  }
+  function applyChance(p,card){
+    const g=state.game;
     let effect='';
     setEvent(card.title,card.copy,card.icon,'Cellular Chance card');
     if(card.id==='extra'){p.bonusRolls++;effect='Roll all four dice again without moving.';}
@@ -433,7 +443,7 @@
     }
     if(card.id==='destroy')state.game.event={title:card.title,copy:card.copy,icon:card.icon,kicker:'Cellular Chance card'};
     state.game.event.copy=card.copy+' '+effect;
-    g.chanceNotice={player:p.id,title:card.title,copy:card.copy,effect:effect,icon:card.icon};
+    return effect;
   }
   function scoreRoll(p,dice){
     const tile=track[p.pos];if(tile.type!=='space')return;
@@ -474,6 +484,18 @@
     p.pos++;scoreRoll(p,dice);
     return {dice,text:'Moved to '+where(p.pos)+'. '+collectSummary(next,dice),moved:true};
   }
+  // The end of a turn, once any card drawn on it has been followed: extra rolls, the turn limit and the next player.
+  function endTurn(p){
+    const g=state.game;
+    if(p.status==='done'&&p.bonusRolls)p.status='playing';
+    if(p.turnsUsed>=TURNS_PER_ROUND&&!p.bonusRolls)p.status='done';
+    if(!(p.bonusRolls>0&&p.status==='playing'))activeNext(g.active);
+    finishIfAll();
+  }
+  function afterTurnFocus(){
+    const g=state.game;
+    if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
+  }
   function rollDice(){
     const g=state.game,p=g.playersState[g.active];
     if(!p||p.status!=='playing'||g.complete||g.rolling||g.chanceNotice)return;
@@ -487,15 +509,37 @@
       if(!result.checkpoint)setEvent(result.dice.length?'Rolled '+result.dice.join(', '):'Turn',result.text,'🎲','Four-dice roll');
       if(!result.checkpoint)addLog('Player '+p.id+(result.dice.length?' rolled ['+result.dice.join(', ')+']':'')+': '+result.text);
       if(result.moved&&g.round===2&&p.pos!==before&&track[p.pos].chance)drawChance(p);
-      g.lastRollSummary=(result.dice.length?'Dice ['+result.dice.join(', ')+']. ':'')+(g.chanceNotice?result.text+' Then: '+g.event.title+' '+g.event.copy:g.event.kicker==='Four-dice roll'?result.text:g.event.title+'. '+g.event.copy);
-      if(p.status==='done'&&p.bonusRolls)p.status='playing';
-      if(p.turnsUsed>=TURNS_PER_ROUND&&!p.bonusRolls)p.status='done';
-      if(!(p.bonusRolls>0&&p.status==='playing'))activeNext(g.active);
-      finishIfAll();
+      const dicePart=result.dice.length?'Dice ['+result.dice.join(', ')+']. ':'';
+      if(g.chanceNotice){
+        g.lastRollSummary=dicePart+result.text+' Then: Cellular Chance card: '+g.chanceNotice.title+' '+g.chanceNotice.copy;
+        g.chanceNotice.rollText=dicePart+result.text;
+      }else{
+        g.lastRollSummary=dicePart+(g.event.kicker==='Four-dice roll'?result.text:g.event.title+'. '+g.event.copy);
+        endTurn(p);
+      }
       save();renderGame();renderAnalysisReference();
-      announce('Player '+p.id+(result.dice.length?' rolled '+result.dice.join(', '):'')+'. '+g.lastRollSummary.replace(/^Dice \[[^\]]*\]\. /,'')+' '+turnAnnouncement());
-      if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
+      announce('Player '+p.id+(result.dice.length?' rolled '+result.dice.join(', '):'')+'. '+g.lastRollSummary.replace(/^Dice \[[^\]]*\]\. /,'')+(g.chanceNotice?'':' '+turnAnnouncement()));
+      afterTurnFocus();
     },checkpointTurn?120:480);
+  }
+  // "Follow the card & continue": apply the card drawn this turn, then finish the turn. A notice saved by an older
+  // version (already applied when drawn) is simply closed.
+  function followCard(){
+    const g=state.game,n=g.chanceNotice;
+    g.chanceNotice=null;
+    let said='';
+    if(n&&n.pending&&chanceCards[n.card]){
+      const p=g.playersState.find(function(x){return x.id===n.player;});
+      if(p){
+        const card=chanceCards[n.card],effect=applyChance(p,card);
+        g.lastRollSummary=(n.rollText?n.rollText+' Then: ':'')+card.title+' '+card.copy+' '+effect;
+        endTurn(p);
+        said='Player '+p.id+' followed the card: '+card.title+' '+effect;
+      }
+    }
+    save();renderGame();renderAnalysisReference();
+    if(said)announce(said+' '+turnAnnouncement());
+    afterTurnFocus();
   }
   function endRoundNow(){
     confirmGameReset('End this round now?','Every player stops here, and the cell chips collected so far are recorded as this round’s results. Use this when your class timer runs out.',function(){
