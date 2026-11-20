@@ -73,6 +73,21 @@
 body.scene-open { overflow:hidden; }
 /* Keep the complete artwork and Roll control visible during a desktop turn. */
 .game-reset-dialog{width:min(480px,calc(100% - 32px));padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink)}
+/* Round complete / Game over (play-test item 17). A top-layer modal, so it also sits over the enlarged board. */
+.round-end-dialog{width:min(760px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto;padding:clamp(16px,3vw,28px);border:3px solid var(--accent);border-radius:18px;background:var(--surface);color:var(--ink);box-sizing:border-box}
+.round-end-dialog::backdrop{background:#000a}
+.round-end-dialog h2{margin:4px 0 8px;font-size:clamp(1.6rem,5vw,2.3rem);line-height:1.1}
+.round-end-dialog h2:focus{outline:none}.round-end-dialog h2:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+.round-end-reason{font-weight:700}
+.round-end-table{width:100%;min-width:0;font-size:.86rem}
+.round-end-table caption{text-align:left;font-weight:700;margin-bottom:4px}
+.round-end-dialog table.data.round-end-table th,.round-end-dialog table.data.round-end-table td{padding:5px 7px;white-space:normal;overflow-wrap:anywhere}
+.round-end-dialog table.data.round-end-table thead th{overflow-wrap:normal}
+.round-end-dialog table.data.round-end-table td{text-align:center;font-variant-numeric:tabular-nums}
+.round-end-players{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px 16px;margin:10px 0}
+.round-end-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+@media(max-width:520px){.round-end-dialog table.data.round-end-table,.round-end-dialog table.data.round-end-table th{font-size:.72rem}.round-end-dialog table.data.round-end-table th,.round-end-dialog table.data.round-end-table td{padding:4px 3px;line-height:1.25}.round-end-actions .btn{width:100%;justify-content:center}}
+@media print{.round-end-dialog{display:none!important}}
 .game-reset-dialog::backdrop{background:#0009}.game-reset-dialog p{margin:16px 0}
 @media(min-width:1100px){
   #cell-game{max-width:1880px;width:100%}

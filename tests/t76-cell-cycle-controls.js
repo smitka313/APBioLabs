@@ -58,6 +58,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.locator('#confirm-game-reset').click();
       assert.equal((await read()).game.complete, true, 'End this round now records the round');
       assert.equal((await read()).game.roundResults[1].blue, 1);
+      await p.keyboard.press('Escape');   // close the Round complete / Game over dialog (play-test item 17)
       await p.locator('#start-round2-from-summary').click();
       assert.equal((await read()).game.round, 2);
       await p.evaluate(() => { let i = 0; const values = [1, 2, 3, 4]; Math.random = () => (values[i++ % 4] - 0.5) / 6; });
@@ -120,6 +121,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       assert.equal(await p.evaluate(() => window.printCalled), true);
       await go('growth-model');
       await p.locator('#clear-trials').click();
+      await p.locator('#confirm-game-reset').click();   // the page's confirm dialog, not window.confirm
       assert.equal((await read()).trials.length, 0);
       assert.deepEqual(p.errors, [], 'controls must not produce page errors');
       T.ok(true, width + 'px: game rounds, turns, reset, growth, analysis, export, and reload work');

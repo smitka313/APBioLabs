@@ -11,8 +11,9 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
     await p.locator('.step-nav a[href="#submit"]').click();
     await p.waitForFunction(() => document.getElementById('submit').classList.contains('is-current'));
     T.ok(await p.evaluate(key => !!localStorage.getItem(key), KEY), 'setup: work is saved');
-    p.on('dialog', d => d.accept());
-    await Promise.all([p.waitForEvent('load'), p.locator('#reset-work').click()]);
+    // The page's own confirm dialog (t89-wrapup-clear): window.confirm could be suppressed, so the button did nothing.
+    await p.locator('#reset-work').click();
+    await Promise.all([p.waitForEvent('load'), p.locator('#confirm-game-reset').click()]);
     await p.waitForTimeout(600);
     T.ok(await p.evaluate(key => localStorage.getItem(key), KEY) === null, 'after clearing and reloading, nothing is saved for the activity');
     T.ok(await p.locator('#analysis-design').inputValue() === '', 'the cleared answer is not shown again');
