@@ -38,6 +38,12 @@ const GROUPS = {
 GROUPS.a11y = [...GROUPS['a11y-axe'], ...GROUPS['a11y-keys'], ...GROUPS['a11y-resp']];
 GROUPS.checklist = [...GROUPS.core, ...GROUPS.e2e, ...GROUPS.science, ...GROUPS.a11y];
 const HELPERS = new Set(['t59-drive', 't59-lib']);   // modules used by other tests, not tests themselves
+// Tests that open only the OpenSciEd companion pages (dashboard, cell-cycle activity), never a labNN page.
+// tools/classify-ci-risk.js uses the same rule, so PRs that touch only these files skip the lab-bench checklist.
+GROUPS.openscied = fs.readdirSync(DIR).filter(f => /^t\d.*\.js$/.test(f)).filter(f => {
+  const src = fs.readFileSync(path.join(DIR, f), 'utf8');
+  return /openscied-|cell-cycle/.test(src) && !/lab\d\d\.html|\bLABS\b/.test(src);
+}).map(f => f.replace(/\.js$/, '')).sort();
 GROUPS.all = fs.readdirSync(DIR).filter(f => /^t\d.*\.js$/.test(f)).map(f => f.replace(/\.js$/, '')).filter(n => !HELPERS.has(n)).sort()
   .flatMap(n => n === 't59-a11y' ? GROUPS.a11y : [n]);   // the three a11y parts run as separate tests so shards can split them
 

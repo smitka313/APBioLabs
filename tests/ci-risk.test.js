@@ -41,3 +41,9 @@ test('documentation stays quick and renames cannot bypass broad checks', () => {
   assert.equal(classify({'openscied-dashboard.js':'fixture'},'rename'),'level=full');
   assert.equal(classify({}),'level=full');
 });
+test('new tests that open only OpenSciEd pages select focused checks; tests touching labs stay broad', () => {
+  const osTest = "const p = await T.open(ctx, 'openscied-b3-cell-cycle.html', 'cell-game', url);";
+  assert.equal(classify({'openscied-b3-cell-cycle.js':'fixture','tests/t99-new-game-check.js':osTest}),'level=openscied');
+  assert.equal(classify({'openscied-b3-cell-cycle.js':'fixture','tests/t99-mixed.js':osTest+"\nawait T.open(ctx,'lab05.html');"}),'level=full');
+  assert.equal(classify({'tests/t99-lab-only.js':"await T.open(ctx,'lab05.html');"}),'level=full');
+});

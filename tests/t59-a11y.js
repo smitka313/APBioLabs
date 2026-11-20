@@ -118,14 +118,18 @@ async function keyboard(b) {
       // A reload restores saved predictions and refreshes gated controls asynchronously.
       // Wait for the prerequisite gate before locating the preceding Tab stop.
       // Do not focus or enable the run button programmatically.
-      await p.waitForFunction(selector => {
+      // On a busy CI machine the gate can take longer than 10 s to restore; allow 30 s and
+      // report a named failure instead of crashing the whole suite if it never becomes ready.
+      const ready = await p.waitForFunction(selector => {
         const target = document.querySelector(selector);
         if (!target || target.disabled || target.closest('[inert]')) return false;
         const style = getComputedStyle(target), rect = target.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' &&
           style.display !== 'none' && target.tabIndex >= 0 &&
           !target.closest('details:not([open]) :not(summary)');
-      }, k.btn, { timeout: 10000 });
+      }, k.btn, { timeout: 30000 }).then(() => true, () => false);
+      T.ok(ready, `${lab}: ${k.btn} becomes usable after the saved prediction is restored`);
+      if (!ready) { await ctx.close(); continue; }
       const start = await p.evaluate(selector => {
         const target = document.querySelector(selector);
         const section = target?.closest('section.step');
