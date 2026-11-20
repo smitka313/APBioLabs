@@ -83,9 +83,9 @@
   function makePlayer(i){return {id:i+1,pos:0,score:zeroScore(),status:'playing',divisions:0,unchecked:0,restarts:0,bypassed:0,skipTurns:0,bonusRolls:0};}
   function roundName(round){return round===1?'Round 1 · checkpoints working':'Round 2 · checkpoint response disrupted';}
   function checkpointFor(pos){
-    if(pos<7)return 'g1';
-    if(pos<23)return 'g2';
-    if(pos<29)return 'm';
+    if(pos<=7)return 'g1';
+    if(pos<=23)return 'g2';
+    if(pos<=29)return 'm';
     return 'done';
   }
   function nextCheckpoint(pos){
