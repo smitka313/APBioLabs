@@ -160,7 +160,8 @@
     if(key===G1CP)return {title:'G1 Checkpoint',subtitle:'Pass with at least 3 nutrients, 3 proteins and 3 organelles. A 2 in any category: go back 3 spaces. A 1: go back 5 spaces. A 0: destroyed by p53, back to the START.',items:[['Nutrients',s.g1.nutrients,3],['Proteins',s.g1.proteins,3],['Organelles',s.g1.organelles,3]]};
     if(key===G2CP)return {title:'G2 Checkpoint',subtitle:'Pass with at least 4 DNA and at least 1 nutrient, 1 protein and 1 organelle. Fewer than 4 DNA: back to the first S space. A 0 in any category: destroyed by p53, back to the START.',items:[['DNA',s.s.chromosomes,4],['Nutrients',s.g2.nutrients,1],['Proteins',s.g2.proteins,1],['Organelles',s.g2.organelles,1]]};
     if(key===MCP)return {title:'M Checkpoint',subtitle:'Double-check the whole scorecard. If it is complete, the cell divides: take a new blue cell chip.',items:[['G1 · 3 of each',minOf(s.g1),3],['S · DNA',s.s.chromosomes,4],['G2 · 1 of each',minOf(s.g2),1]]};
-    return {title:'FINISH',subtitle:'The cell divided. The next turn starts a new cell.',items:[['Blue chips',p.blue,0],['Red chips',p.red,0]]};
+    // A red chip is a cell that divided without passing every check: say so instead of a plain "divided".
+    return {title:'FINISH',subtitle:p.lastChip==='red'?'The cell divided anyway: cancer cell in this game model (red chip). The next turn starts a new cell.':'The cell divided: a non-cancer cell (blue chip). The next turn starts a new cell.',items:[['Blue chips',p.blue,0],['Red chips',p.red,0]]};
   }
   function renderCheckpoint(){
     const g=state.game,p=g.playersState[g.active];if(!p)return;
@@ -170,14 +171,14 @@
     $('#checkpoint-title').textContent=(key===FINISH?'':'Next checkpoint · ')+st.title;
     $('#checkpoint-subtitle').textContent=st.subtitle;
     $('#checkpoint-requirements').innerHTML=st.items.map(function(x){const met=x[2]>0&&x[1]>=x[2];return '<span class="requirement'+(met?' met':'')+'"><span>'+(x[2]?(met?'✓ ':'○ '):'')+x[0]+'</span><strong>'+x[1]+(x[2]?' / '+x[2]:'')+'</strong><span class="requirement-meter"><span style="width:'+(x[2]?Math.min(100,100*x[1]/x[2]):0)+'%"></span></span></span>';}).join('');
-    $('#checkpoint-status').textContent=p.status==='done'?'Turns used up':key===FINISH?'Divided':key===G1CP?'G1 Checkpoint ahead':key===G2CP?'G2 Checkpoint ahead':'M Checkpoint ahead';
+    $('#checkpoint-status').textContent=p.status==='done'?'Turns used up':key===FINISH?(p.lastChip==='red'?'Divided anyway · red chip':'Divided · blue chip'):key===G1CP?'G1 Checkpoint ahead':key===G2CP?'G2 Checkpoint ahead':'M Checkpoint ahead';
     $('#checkpoint-card').classList.toggle('checkpoint-ready',st.items.every(function(x){return !x[2]||x[1]>=x[2];}));
     $('#checkpoint-card').setAttribute('aria-label','Player '+p.id+' '+st.title+': '+st.subtitle);
   }
   function phaseLabel(p){
     const tile=track[p.pos];
     if(tile.type==='checkpoint')return tile.label;
-    if(tile.type==='finish')return 'FINISH · cell divided';
+    if(tile.type==='finish')return p.lastChip==='red'?'FINISH · divided anyway (red chip)':'FINISH · cell divided';
     if(tile.type==='start')return 'START';
     return tile.phase.toUpperCase()+(tile.phase==='g1'?' · Grow & gather':tile.phase==='s'?' · Collect chromosomes':tile.phase==='g2'?' · Grow & gather':' · Must roll '+tile.roll);
   }
