@@ -40,9 +40,9 @@ def page_specs():
         'student-directions.html': ('Printable AP Biology Lab Directions | Biology Lab Bench',
                                     'Print free student directions for all 13 AP Biology virtual labs. Each guide includes numbered steps, data-recording reminders, and a submission checklist.',
                                     'Printable student directions'),
-        'openscied-b3-cell-cycle.html': ('OpenSciEd Biology Simulations: Cell Cycle and Cancer Model | Lab Bench',
-                                         'A guided, free biology companion for OpenSciEd B.3 Lessons 3–4. Play a cell-cycle checkpoint game and compare how age, body size, and cell-division rate affect modeled DNA-copying opportunities.',
-                                         'OpenSciEd B.3 cell-cycle and growth model'),
+        'openscied-b3-cell-cycle.html': ('Cell Cycle & Cancer — a companion for OpenSciEd Biology B.3 | Lab Bench',
+                                         'A free, independent cell-cycle and cancer companion for OpenSciEd Biology B.3 Lessons 3–4. Play a checkpoint game and compare how age, body size, and cell-division rate affect modeled DNA-copying opportunities.',
+                                         'Cell cycle and cancer companion (OpenSciEd B.3)'),
     }
     for lab in LABS:
         number = lab['id']

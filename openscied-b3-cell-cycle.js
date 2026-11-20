@@ -526,7 +526,7 @@
     const kicker=document.createElement('div');kicker.className='eyebrow';kicker.textContent='Cell cycle & growth · My evidence';report.appendChild(kicker);
     const h=document.createElement('h3');h.textContent='Your investigation, at a glance.';report.appendChild(h);
     const student=studentIdentity(),identity=document.createElement('p');identity.className='report-student';
-    identity.textContent=student?'Student: '+student.name+(student.period?' · Class period: '+student.period:''):'Student name not entered. Sign in on the OpenSciEd dashboard before submitting.';
+    identity.textContent=student?'Student: '+student.name+(student.period?' · Class period: '+student.period:''):'Student name not entered. Sign in on the Biology Companion Activities dashboard before submitting.';
     report.appendChild(identity);
     const list=document.createElement('ul');list.className='report-checks';
     const labels=['Round 1: '+(state.game.roundResults[1]?'completed':'not completed'),'Round 2: '+(state.game.roundResults[2]?'completed':'not completed'),groups.length+' model set'+(groups.length===1?'':'s')+' recorded',ANALYSIS_PROMPTS.filter(item=>$('#'+item[1]).value.trim()).length+' of '+ANALYSIS_PROMPTS.length+' analysis responses written'];
