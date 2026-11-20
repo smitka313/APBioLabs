@@ -344,6 +344,7 @@
     $('#event-title').textContent=g.event.title||'Your turn';
     const label=g.event.kicker==='Cellular Chance card'?(g.event.label||cardLabel({title:g.event.title,copy:(g.event.copy||'').split(' Follow the card')[0]})):'';
     $('#event-label').textContent=label;$('#event-label').hidden=!label;
+    const notices=(g.event.notices||[]).join(' ');$('#event-notice').textContent=notices;$('#event-notice').hidden=!notices;
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
     renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();
     $('#restart-round').hidden=!g.round;
@@ -362,9 +363,9 @@
   // The one live region for the game: each turn's result and whose turn is next.
   function announce(text){const el=$('#game-announcer');if(el)el.textContent=text;}
   function turnAnnouncement(){
-    const g=state.game;if(g.complete)return roundName(g.round)+' complete.';
+    const g=state.game,notices=(g.event&&g.event.notices||[]).join(' ');if(g.complete)return (notices?notices+' ':'')+roundName(g.round)+' complete.';
     const next=g.playersState[g.active];
-    return next&&next.status==='playing'?'Player '+next.id+'’s turn'+(next.bonusRolls?' (extra roll)':'')+'.':'';
+    return (notices?notices+' ':'')+(next&&next.status==='playing'?'Player '+next.id+'’s turn'+(next.bonusRolls?' (extra roll)':'')+'.':'');
   }
   function startRound(round,mode,players){
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
@@ -468,7 +469,9 @@
     for(let guard=0;guard<n*TURNS_PER_ROUND+n;guard++){
       const i=(index+1+guard)%n,p=g.playersState[i];
       if(p.status!=='playing')continue;
-      if(p.skipTurns>0){p.skipTurns--;useTurn(p);addLog('Player '+p.id+' loses a turn (p53 will not let the cell pass).');continue;}
+      // A lost turn ("p53 will not let you pass. You lose a turn!") is used up here: say so in the history, the turn
+      // event and the announcer, so the turn counter's jump is explained.
+      if(p.skipTurns>0){p.skipTurns--;useTurn(p);const msg='Player '+p.id+' loses this turn (chance card).';addLog(msg);(g.event.notices=g.event.notices||[]).push(msg);continue;}
       g.active=i;return;
     }
     finishIfAll();
