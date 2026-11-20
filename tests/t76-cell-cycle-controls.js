@@ -58,6 +58,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.locator('#confirm-game-reset').click();
       assert.equal((await read()).game.complete, true, 'End this round now records the round');
       assert.equal((await read()).game.roundResults[1].blue, 1);
+      await p.keyboard.press('Escape');   // close the Round complete / Game over dialog (play-test item 17)
       await p.locator('#start-round2-from-summary').click();
       assert.equal((await read()).game.round, 2);
       await p.evaluate(() => { let i = 0; const values = [1, 2, 3, 4]; Math.random = () => (values[i++ % 4] - 0.5) / 6; });

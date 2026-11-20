@@ -46,6 +46,7 @@ const MS = ['ms-r1-g1-happened','ms-r1-g1-represent','ms-r1-g1cp-happened','ms-r
     T.ok(/Blue chips · non-cancer cells 4/.test(summary) && /Percent of new cells that were non-cancer 100%/.test(summary) && /Cells destroyed by p53 1/.test(summary), 'Round 1 results: blue chips, percentages and p53 outcomes');
     T.ok(await p.locator('#end-round').isHidden(), '"End this round now" is hidden once the round is over');
     // Round 2 from the summary; end it early with the button (class timer), after a red chip.
+    await p.keyboard.press('Escape');   // close the Round complete / Game over dialog (play-test item 17)
     await p.locator('#start-round2-from-summary').click();
     g = (await read()).game;
     T.ok(g.round === 2 && g.playersState.length === 2 && g.roundResults[1].blue === 4, 'Round 2 starts with the same group and keeps the Round 1 tallies');
@@ -54,6 +55,7 @@ const MS = ['ms-r1-g1-happened','ms-r1-g1-represent','ms-r1-g1cp-happened','ms-r
     g = await roll([1,2,3,4]);
     T.ok(g.playersState[0].red === 1, 'Player 1 drew "Move directly to Finish" and has a red chip');
     await p.locator('#end-round').click(); await p.locator('#confirm-game-reset').click();
+    await p.keyboard.press('Escape');   // close the Round complete / Game over dialog (play-test item 17)
     g = (await read()).game;
     T.ok(g.complete && g.roundResults[2].blue === 1 && g.roundResults[2].red === 3, `"End this round now" records the chips so far (${JSON.stringify(g.roundResults[2])})`);
     summary = (await p.locator('#round-summary').innerText()).replace(/\s+/g,' ');

@@ -226,7 +226,9 @@
   // every player reaches the turn cap ('turns'), or the group presses "End this round now" ('early').
   function finishRound(endedBy){
     const g=state.game;
-    g.complete=true;g.roundResults[g.round]=Object.assign(tally(g.playersState,g.turns),{endedBy:endedBy||'turns',playerTurns:g.playersState.map(function(p){return Math.min(TURNS_PER_ROUND,p.turnsUsed);})});
+    g.complete=true;g.roundResults[g.round]=Object.assign(tally(g.playersState,g.turns),{endedBy:endedBy||'turns',playerTurns:g.playersState.map(function(p){return Math.min(TURNS_PER_ROUND,p.turnsUsed);}),
+      perPlayer:g.playersState.map(function(p){return {id:p.id,blue:p.blue,red:p.red,destroyed:p.destroyed,sentBack:p.sentBack,skipped:p.skipped,turns:Math.min(TURNS_PER_ROUND,p.turnsUsed)};})});
+    g.endNotice=true;   // show the Round complete / Game over dialog until it is dismissed (kept across a reload)
     const r=g.roundResults[g.round];
     setEvent(roundName(g.round)+' complete',roundEndReason(r)+' Cells made this round: '+plural(r.blue,'blue chip')+' (non-cancer cells) and '+plural(r.red,'red chip')+' (cancer cells in this game model).','🏁','Round complete');
   }
@@ -348,7 +350,7 @@
     $('#event-label').textContent=label;$('#event-label').hidden=!label;
     const notices=(g.event.notices||[]).join(' ');$('#event-notice').textContent=notices;$('#event-notice').hidden=!notices;
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
-    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();
+    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();renderRoundEnd();
     $('#restart-round').hidden=!g.round;
     $('#reset-game').hidden=!g.round;
     $('#end-round').hidden=!g.round||g.complete;
@@ -365,7 +367,7 @@
   // The one live region for the game: each turn's result and whose turn is next.
   function announce(text){const el=$('#game-announcer');if(el)el.textContent=text;}
   function turnAnnouncement(){
-    const g=state.game,notices=(g.event&&g.event.notices||[]).join(' ');if(g.complete)return (notices?notices+' ':'')+roundName(g.round)+' complete.';
+    const g=state.game,notices=(g.event&&g.event.notices||[]).join(' ');if(g.complete)return (notices?notices+' ':'')+roundEndAnnouncement();
     const next=g.playersState[g.active];
     return (notices?notices+' ':'')+(next&&next.status==='playing'?'Player '+next.id+'’s turn'+(next.bonusRolls?' (extra roll)':'')+'.':'');
   }
@@ -511,7 +513,7 @@
   }
   function afterTurnFocus(){
     const g=state.game;
-    if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
+    if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete&&$('#round-end-dialog').open)$('#round-end-title').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
   }
   function rollDice(){
     const g=state.game,p=g.playersState[g.active];
@@ -558,9 +560,69 @@
     if(said)announce(said+' '+turnAnnouncement());
     afterTurnFocus();
   }
+  // Round complete (Round 1) / Game over (Round 2): a modal dialog with the reason the round ended, each player's
+  // results (no winner: the OpenSciEd game has none) and one clear next step. Escape or Close dismisses it.
+  const STAT_ROWS=[['blue','Blue chips · non-cancer cells'],['red','Red chips · cancer cells (game model)'],['destroyed','Cells destroyed by p53'],['sentBack','Times sent back by a checkpoint'],['skipped','Checkpoints skipped'],['turns','Turns used']];
+  function playerRows(r){
+    if(!r||r.legacy)return null;
+    if(Array.isArray(r.perPlayer))return r.perPlayer;
+    return r.players===1?[{id:1,blue:r.blue,red:r.red,destroyed:r.destroyed,sentBack:r.sentBack,skipped:r.skipped,turns:Array.isArray(r.playerTurns)?r.playerTurns[0]:null}]:null;
+  }
+  const cellOf=function(v){return v===null||v===undefined?'—':String(v);};
+  function roundEndAnnouncement(){
+    const g=state.game,r=g.roundResults[g.round];
+    const who=(playerRows(r)||[]).map(function(x){return 'Player '+x.id+': '+plural(x.blue,'blue chip')+', '+plural(x.red,'red chip')+'.';}).join(' ');
+    if(g.round===1)return 'Round 1 complete. '+roundEndReason(r)+' '+who+' Next step: Start Round 2.';
+    const totals=[1,2].map(function(n){const x=g.roundResults[n];if(!x||x.legacy)return '';const made=x.blue+x.red;return 'Round '+n+': '+pct(x.blue,made)+' non-cancer cells, '+pct(x.red,made)+' cancer cells.';}).join(' ');
+    return 'Game over. '+roundEndReason(r)+' '+who+' '+totals+' Next steps: the Making Sense questions, or set up a new game.';
+  }
+  function roundEndHtml(){
+    const g=state.game,r=g.roundResults[g.round],over=g.round===2,esc=function(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+    let html='<span class="game-kicker">'+(over?'Round 1 and Round 2 played':roundName(1))+'</span><h2 id="round-end-title" tabindex="-1">'+(over?'Game over':'Round 1 complete')+'</h2>';
+    html+='<p class="round-end-reason">'+esc(roundEndReason(r))+'</p>';
+    if(!over){
+      const rows=playerRows(r)||[];
+      html+='<div class="table-wrap"><table class="data round-end-table"><caption>Round 1 results for each player</caption><thead><tr><th scope="col">Result</th>'+rows.map(function(x){return '<th scope="col">Player '+x.id+'</th>';}).join('')+(rows.length>1?'<th scope="col">All players</th>':'')+'</tr></thead><tbody>'+
+        STAT_ROWS.map(function(s){return '<tr><th scope="row">'+s[1]+'</th>'+rows.map(function(x){return '<td>'+cellOf(x[s[0]])+'</td>';}).join('')+(rows.length>1?'<td>'+(s[0]==='turns'?rows.reduce(function(a,x){return a+(x.turns||0);},0):r[s[0]])+'</td>':'')+'</tr>';}).join('')+'</tbody></table></div>';
+      html+='<p class="small">There is no winner: compare what happened to each cell. In Round 2, Cellular Chance cards can stop p53 from working. Play it with the same group.</p>';
+      html+='<div class="row round-end-actions"><button class="btn btn--primary" type="button" id="round-end-next">Start Round 2</button><button class="btn" type="button" id="round-end-close">Close</button></div>';
+      return html;
+    }
+    const r1=g.roundResults[1],a=playerRows(r1)||[],b=playerRows(r)||[];
+    const ids=b.map(function(x){return x.id;}).concat(a.map(function(x){return x.id;}).filter(function(id){return !b.some(function(x){return x.id===id;});}));
+    html+='<p class="small">Round 1: '+esc(r1?roundEndReason(r1):'not recorded.')+'</p>';
+    html+='<div class="round-end-players">'+ids.map(function(id){
+      const x=a.find(function(q){return q.id===id;})||{},y=b.find(function(q){return q.id===id;})||{};
+      return '<div class="table-wrap"><table class="data round-end-table"><caption>Player '+id+'</caption><thead><tr><th scope="col">Result</th><th scope="col">Round 1</th><th scope="col">Round 2</th></tr></thead><tbody>'+
+        STAT_ROWS.map(function(s){return '<tr><th scope="row">'+s[1]+'</th><td>'+cellOf(x[s[0]])+'</td><td>'+cellOf(y[s[0]])+'</td></tr>';}).join('')+'</tbody></table></div>';
+    }).join('')+'</div>';
+    const col=function(x,fn){return '<td>'+(!x||x.legacy?'—':fn(x))+'</td>';};
+    html+='<div class="table-wrap"><table class="data round-end-table round-end-totals"><caption>All players together (class-style totals)</caption><thead><tr><th scope="col">Cells</th><th scope="col">Round 1</th><th scope="col">Round 2</th></tr></thead><tbody>'+
+      [['New cells made',function(x){return x.blue+x.red;}],['Blue chips · non-cancer cells',function(x){return x.blue;}],['Red chips · cancer cells (game model)',function(x){return x.red;}],['Percent non-cancer cells',function(x){return pct(x.blue,x.blue+x.red);}],['Percent cancer cells',function(x){return pct(x.red,x.blue+x.red);}]]
+        .map(function(row){return '<tr><th scope="row">'+row[0]+'</th>'+col(r1,row[1])+col(r,row[1])+'</tr>';}).join('')+'</tbody></table></div>';
+    html+='<p class="small">There is no winner. These percentages come from the game’s cards and dice, not from real people: cancer is not inevitable, and a game result is not a diagnosis.</p>';
+    html+='<div class="row round-end-actions"><button class="btn btn--primary" type="button" id="round-end-next">Answer the Making Sense questions</button><button class="btn" type="button" id="round-end-new">Set up a new game</button><button class="btn" type="button" id="round-end-close">Close</button></div>';
+    return html;
+  }
+  function renderRoundEnd(){
+    const dialog=$('#round-end-dialog');if(!dialog)return;
+    const g=state.game;
+    if(!(g.round&&g.complete&&g.endNotice)){if(dialog.open)dialog.close();return;}
+    if(dialog.open&&dialog.dataset.round===String(g.round))return;
+    dialog.dataset.round=String(g.round);
+    $('#round-end-body').innerHTML=roundEndHtml();
+    if(!dialog.open)dialog.showModal();
+    $('#round-end-title').focus();
+  }
+  function closeRoundEnd(then){
+    const dialog=$('#round-end-dialog');
+    state.game.endNotice=false;save();
+    if(dialog.open)dialog.close();
+    if(then)then();else $('#round-summary').focus();
+  }
   function endRoundNow(){
     confirmGameReset('End this round now?','Every player stops here, and the cell chips collected so far are recorded as this round’s results. Use this when your class timer runs out.',function(){
-      const g=state.game;g.playersState.forEach(function(p){p.status='done';p.bonusRolls=0;p.skipTurns=0;});g.chanceNotice=null;finishRound('early');save();renderGame();renderAnalysisReference();announce(g.event.title+'. '+g.event.copy);$('#round-summary').focus();
+      const g=state.game;g.playersState.forEach(function(p){p.status='done';p.bonusRolls=0;p.skipTurns=0;});g.chanceNotice=null;finishRound('early');save();renderGame();renderAnalysisReference();announce(turnAnnouncement());afterTurnFocus();
     },'End round');
   }
   function resetRound(){
@@ -796,6 +858,18 @@
     window.addEventListener('resize',function(){fitGameViewport();renderBoard();},{passive:true});
     document.addEventListener('companion:show',function(){requestAnimationFrame(fitGameViewport);});
     $('#cancel-game-reset').addEventListener('click',function(){$('#game-reset-dialog').close();});
+    // Round complete / Game over dialog: Escape (the dialog's cancel) and Close dismiss it; the buttons give the next step.
+    $('#round-end-dialog').addEventListener('cancel',function(event){event.preventDefault();closeRoundEnd();});
+    $('#round-end-dialog').addEventListener('click',function(event){
+      const id=event.target&&event.target.id;
+      if(id==='round-end-close')closeRoundEnd();
+      else if(id==='round-end-next'&&state.game.round===1)closeRoundEnd(function(){startRound(2,state.game.mode,state.game.players);renderAnalysisReference();});
+      else if(id==='round-end-next')closeRoundEnd(function(){
+        if($('#cell-board').classList.contains('scene-expanded'))$('#enlarge-scene').click();
+        const h=$('#making-sense-title');h.tabIndex=-1;h.scrollIntoView({block:'start'});h.focus({preventScroll:true});
+      });
+      else if(id==='round-end-new')closeRoundEnd(resetGame);
+    });
     $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
     ['body-size','tissue-rate'].forEach(id=>$('#'+id).addEventListener('change',function(){renderCellType();if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());}));
     if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());
@@ -820,7 +894,7 @@
     });
     document.addEventListener('keydown',function(event){
       if(!$('#growth-stage').classList.contains('growth-expanded'))return;
-      if(event.key==='Escape'){$('#enlarge-growth').click();$('#enlarge-growth').focus();}
+      if(event.key==='Escape'&&!document.querySelector('dialog[open]')){$('#enlarge-growth').click();$('#enlarge-growth').focus();}
       if(event.key==='Tab'){
         const first=$('#enlarge-growth'),last=$('#growth-scene');
         if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
@@ -849,7 +923,7 @@
     });
     document.addEventListener('keydown',function(event){
       if(!$('#cell-board').classList.contains('scene-expanded'))return;
-      if(event.key==='Escape')$('#enlarge-scene').click();
+      if(event.key==='Escape'&&!document.querySelector('dialog[open]'))$('#enlarge-scene').click();   // an open dialog takes Escape first
       if(event.key==='Tab'){
         const controls=Array.from($('#cell-board').querySelectorAll('button:not([hidden]):not(:disabled)'));
         const first=controls[0],last=controls[controls.length-1];
