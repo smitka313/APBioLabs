@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parent.parent
 ORIGIN = 'https://biologylabbench.com'
 PUBLIC = ['index.html', 'teachers.html', 'getting-started.html', 'student-directions.html']
+PUBLIC += ['openscied-b3-cell-cycle.html']
 PUBLIC += [f'{prefix}lab{i:02}.html' for prefix in ['', 'directions-'] for i in range(1, 14)]
 PRIVATE = ['teacher-notes.html'] + [f'teacher-lab{i:02}.html' for i in range(1, 14)]
 UTILITIES = ['teacher-dashboard.html', 'projector.html', 'feedback.html',
