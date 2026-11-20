@@ -234,13 +234,29 @@
     $('#chance-reveal-copy').textContent=notice.copy;
     $('#chance-reveal-ack').focus();
   }
+  function renderPhaseGuide(p){
+    const guide=$('#phase-guide');if(!guide)return;
+    const phaseOf=function(pos){const ph=track[pos]&&track[pos].phase;return ph==='start'?'g1':ph==='finish'?'done':ph;};
+    const cur=p?phaseOf(p.pos):null,s=p&&p.score;
+    const status={
+      g1:s?{met:s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3,text:Math.min(s.g1.nutrients,3)+'/3 · '+Math.min(s.g1.proteins,3)+'/3 · '+Math.min(s.g1.organelles,3)+'/3'}:null,
+      s:s?{met:s.s.chromosomes>=4,text:Math.min(s.s.chromosomes,4)+'/4 copied'}:null,
+      g2:s?{met:s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1,text:(s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1?'materials ✓':'materials needed')}:null,
+      m:s?{met:s.m.attachments>=4,text:Math.min(s.m.attachments,4)+'/4 attached'}:null};
+    guide.querySelectorAll('.phase-card').forEach(function(card){
+      const ph=card.dataset.phase,st=status[ph],isCur=ph===cur;
+      card.classList.toggle('is-current',isCur);card.classList.toggle('is-met',!!(st&&st.met));
+      if(isCur)card.setAttribute('aria-current','step');else card.removeAttribute('aria-current');
+      card.querySelector('.phase-status').textContent=!st?'':(st.met?'✓ met':(isCur?'Now · ':'')+st.text);
+    });
+  }
   function renderGame(){
     const g=state.game,setup=$('#game-setup'),panel=$('#game-panel');
     $('#cell-game').classList.toggle('game-running',!!g.round);
     setup.hidden=!!g.round;panel.hidden=false;panel.classList.toggle('is-pregame',!g.round);
     $('#start-round1').hidden=!!g.round;
     $('#start-round2').hidden=true;
-    if(!g.round){renderChanceReveal();renderDice();renderBoard();renderSummary();fitGameViewport();return;}
+    if(!g.round){renderPhaseGuide(null);renderChanceReveal();renderDice();renderBoard();renderSummary();fitGameViewport();return;}
     const p=g.playersState[g.active]||g.playersState.find(function(x){return x.status==='playing';});
     if(!p)return;
     $('#round-label').textContent=roundName(g.round);
@@ -258,7 +274,7 @@
     $('#event-kicker').textContent=g.event.kicker||'Cell cycle';
     $('#event-title').textContent=g.event.title||'Your turn';
     $('#event-copy').textContent=g.event.copy||'Move one space and roll four dice.';
-    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderHistory();renderSummary();renderChanceReveal();
+    renderDice();renderBoard();renderScorecards();renderCheckpoint();renderPhaseGuide(p);renderHistory();renderSummary();renderChanceReveal();
     $('#restart-round').hidden=!g.round;
     $('#reset-game').hidden=!g.round;
     fitGameViewport();

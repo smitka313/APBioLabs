@@ -156,6 +156,27 @@
           <span class="sr-only" id="scene-description"></span>
         </div>
         <div class="board-route-note"><span class="route-arrow">START</span><span>Grow</span><span>→</span><span>G1 checkpoint</span><span>→</span><span>Copy DNA</span><span>→</span><span>G2 checkpoint</span><span>→</span><span>Attach chromosomes to spindle</span><span>→</span><strong>Division</strong></div>
+        <section class="phase-guide" id="phase-guide" aria-labelledby="phase-guide-title">
+          <h3 id="phase-guide-title">What each phase needs before the cell moves on</h3>
+          <ol class="phase-cards">
+            <li class="phase-card" data-phase="g1"><div class="phase-top"><span class="phase-name">G1</span><span class="phase-what">Grow &amp; gather</span><span class="phase-status"></span></div>
+              <p class="phase-does">The cell grows and builds up the materials it needs.</p>
+              <p class="phase-check"><strong>G1 checkpoint:</strong> 3 nutrients, 3 proteins and 3 organelles.</p>
+              <p class="phase-why">Why: a cell that divides before it is big enough leaves its daughter cells short of resources.</p></li>
+            <li class="phase-card" data-phase="s"><div class="phase-top"><span class="phase-name">S</span><span class="phase-what">Copy DNA</span><span class="phase-status"></span></div>
+              <p class="phase-does">Every chromosome is copied (roll a 4 to copy one).</p>
+              <p class="phase-check"><strong>Goal:</strong> all 4 chromosomes copied. This is checked at the G2 checkpoint.</p>
+              <p class="phase-why">Why: each daughter cell needs a complete set of DNA.</p></li>
+            <li class="phase-card" data-phase="g2"><div class="phase-top"><span class="phase-name">G2</span><span class="phase-what">Prepare &amp; check</span><span class="phase-status"></span></div>
+              <p class="phase-does">The cell gathers more materials and checks its copied DNA.</p>
+              <p class="phase-check"><strong>G2 checkpoint:</strong> all 4 chromosomes copied, plus 1 nutrient, 1 protein and 1 organelle.</p>
+              <p class="phase-why">Why: it catches unfinished or damaged DNA copying before the cell divides.</p></li>
+            <li class="phase-card" data-phase="m"><div class="phase-top"><span class="phase-name">M</span><span class="phase-what">Divide</span><span class="phase-status"></span></div>
+              <p class="phase-does">Chromosomes attach to the spindle and are pulled apart (a 5 or 6 attaches one).</p>
+              <p class="phase-check"><strong>M checkpoint:</strong> all 4 chromosomes attached to the spindle.</p>
+              <p class="phase-why">Why: each daughter cell gets exactly one copy of every chromosome.</p></li>
+          </ol>
+        </section>
         <details class="disclose game-rules"><summary>How to move and use the checkpoints</summary><div class="inner">
           <p><strong>Move:</strong> Advance one space per turn. Roll all four dice after moving; dice collect materials, not spaces. At four M-phase spaces, a 5 or 6 on any die represents one chromosome attaching to the spindle. This is a teaching-model action, not a literal dice-like cell process.</p>
           <p><strong>G1 checkpoint:</strong> 3 or more of each G1 material passes. If any category is below 3, the cell stays paused at the checkpoint. Roll there to gather more G1 materials; the cell does not move backward.</p>
