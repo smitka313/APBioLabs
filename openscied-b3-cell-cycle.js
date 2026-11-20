@@ -309,7 +309,7 @@
     }
     if(p.pos===29){
       const ok=s.g1.nutrients>=3&&s.g1.proteins>=3&&s.g1.organelles>=3&&s.s.chromosomes>=4&&s.g2.nutrients>=1&&s.g2.proteins>=1&&s.g2.organelles>=1;
-      if(s.m.attachments<4){setEvent('M checkpoint: spindle attachment incomplete','The cell waits at the M checkpoint until all four modeled chromosome copies are attached to the spindle. A 5 or 6 on any die records one attachment.','⏸️','Checkpoint response');return;}
+      if(s.m.attachments<4){setEvent('M checkpoint: spindle attachment incomplete','The cell waits at the M checkpoint until all four modeled chromosome units are attached. A 5 or 6 on any die records one attachment; this is a simplified stand-in for the real spindle-assembly checkpoint.','⏸️','Checkpoint response');return;}
       if(!ok){
         p.pos=s.s.chromosomes<4?8:(s.g1.nutrients<3||s.g1.proteins<3||s.g1.organelles<3?1:15);
         addLog('Player '+p.id+' returned to gather missing materials before M phase.');
