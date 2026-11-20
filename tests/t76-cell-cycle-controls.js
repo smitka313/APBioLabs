@@ -40,6 +40,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       assert.equal((await read()).game.turns, 1, 'reload preserves progress');
       await roll();
       await p.locator('#restart-round').click();
+      await p.locator('#confirm-game-reset').click();
       assert.equal((await read()).game.turns, 0);
       // Use deterministic dice, while still clicking the real Roll control each turn.
       for (let turns = 0; !(await read()).game.complete && turns < 80; turns++) {
@@ -59,6 +60,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.locator('#chance-reveal-ack').click();
       assert.equal((await read()).game.chanceNotice, null);
       await p.locator('#reset-game').click();
+      await p.locator('#confirm-game-reset').click();
       await p.locator('input[name="game-mode"][value="group"]').check();
       await p.locator('#group-size').selectOption('3');
       await p.locator('#start-round1').click();

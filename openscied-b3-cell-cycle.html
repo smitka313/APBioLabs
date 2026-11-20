@@ -158,7 +158,8 @@
           <p><strong>G1 checkpoint:</strong> 3 or more of each G1 material passes. A 2 sends the cell back 3 spaces; a 1 sends it back 5 spaces; a 0 restarts the cell with a clear scorecard.</p>
           <p><strong>G2 checkpoint:</strong> Pass with at least 4 DNA copies and at least 1 of each G2 material. If DNA is short, return to the first S space. A missing G2 material restarts the cell.</p>
           <p><strong>M checkpoint:</strong> The scorecard must show G1 ≥3 in each category, S ≥4 DNA copies, and G2 ≥1 in each category before the model cell divides.</p>
-          <p><strong>Round 2:</strong> The outlined blue spaces draw a chance card. Its effect appears in the event panel and is recorded in the turn history.</p>
+          <p id="chance-space-rule"><strong>Round 2:</strong> Landing on a space outlined with a blue diamond draws a chance card after the roll. Space numbers on the board match the status display, counting START as Space 1. A bonus roll or a failed M-phase move does not draw another card. Dice values 5 and 6 do not trigger cards.</p>
+          <p><strong>Dice values:</strong> 1 = nutrient, 2 = protein, 3 = organelle in G1/G2; 4 = DNA copy in S. Values 5 and 6 collect no material. In M phase, match the next space’s required number (1–5) on any die to advance. All dice have ordinary faces 1–6.</p>
         </div></details>
 
         <div class="game-play-grid">
@@ -186,7 +187,7 @@
           <div><span class="game-kicker" id="event-kicker">Cell cycle</span><h3 id="event-title">Your cell is ready</h3><p id="event-copy">Follow the path, collect materials, and see what the checkpoints allow.</p></div>
         </section>
 
-        <details class="turn-log panel"><summary>Turn history <span id="history-count">0 turns</span></summary><ol id="turn-history"></ol></details>
+        <details class="turn-log panel"><summary>Roll and event history <span id="history-count">0 rolls</span></summary><ol id="turn-history"></ol></details>
         <div class="game-end panel" id="round-summary" role="status" aria-live="polite" tabindex="-1" hidden></div>
         <div class="row game-actions"><button class="btn" id="restart-round" type="button">Restart this round</button><button class="btn" id="reset-game" type="button">Set up a new game</button></div>
       </div>
@@ -295,6 +296,10 @@ I will also connect… → … because…"></textarea></div>
     </div>
   </section>
 </main>
+<dialog id="game-reset-dialog" class="game-reset-dialog" aria-labelledby="game-reset-title" aria-describedby="game-reset-description">
+<h2 id="game-reset-title">Restart this round?</h2><p id="game-reset-description"></p>
+<div class="row"><button class="btn" id="cancel-game-reset" type="button" autofocus>Cancel</button><button class="btn btn--danger" id="confirm-game-reset" type="button">Confirm reset</button></div>
+</dialog>
 <footer class="site-footer"><div class="wrap gutter"><p><a href="index.html">Return to AP Bio Digital Lab Bench</a></p><p>Free educational companion · No account required · Student responses stay in this browser unless downloaded and shared by the student.</p></div></footer>
 <script src="lab.js"></script>
 <script src="cell-cycle-scene.js"></script>

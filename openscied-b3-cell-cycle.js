@@ -102,7 +102,7 @@
   }
   function renderDice(){
     if(window.CellCycleScene)window.CellCycleScene.rolling(!!state.game.rolling);
-    $('#turn-count').textContent='Turn '+Math.max(1,state.game.turns);
+    $('#turn-count').textContent=state.game.turns+' '+(state.game.turns===1?'roll':'rolls');
   }
   function renderBoard(){
     if(window.CellCycleScene)window.CellCycleScene.update(state.game,track);
@@ -172,7 +172,7 @@
   }
   function renderHistory(){
     const logs=state.game.logs.slice(-24).reverse();
-    $('#history-count').textContent=state.game.logs.length+' '+(state.game.logs.length===1?'turn':'turns');
+    $('#history-count').textContent=state.game.turns+' '+(state.game.turns===1?'roll':'rolls');
     $('#turn-history').innerHTML=logs.map(function(line){return '<li>'+line+'</li>';}).join('');
   }
   function finishIfAll(){
@@ -184,6 +184,14 @@
     g.roundResults[g.round]=totals;
     setEvent(roundName(g.round)+' complete','Every model cell reached the end of this round. Compare how the checkpoints and chance events shaped the path.','🏁','Round complete');
     return true;
+  }
+  function roundEvidence(n){
+    const g=state.game;
+    if(g.roundResults[n])return Object.assign({inProgress:false},g.roundResults[n]);
+    if(g.round!==n||!g.playersState.length)return null;
+    const r={divisions:0,unchecked:0,restarts:0,bypassed:0,rolls:g.turns,inProgress:true};
+    g.playersState.forEach(p=>{r.divisions+=p.divisions;r.unchecked+=p.unchecked;r.restarts+=p.restarts;r.bypassed+=p.bypassed;});
+    return r;
   }
   function renderSummary(){
     const g=state.game,el=$('#round-summary');
@@ -217,10 +225,11 @@
   }
   function renderGame(){
     const g=state.game,setup=$('#game-setup'),panel=$('#game-panel');
+    $('#cell-game').classList.toggle('game-running',!!g.round);
     setup.hidden=!!g.round;panel.hidden=false;panel.classList.toggle('is-pregame',!g.round);
     $('#start-round1').hidden=!!g.round;
     $('#start-round2').hidden=true;
-    if(!g.round){renderChanceReveal();renderBoard();return;}
+    if(!g.round){renderChanceReveal();renderDice();renderBoard();renderSummary();fitGameViewport();return;}
     const p=g.playersState[g.active]||g.playersState.find(function(x){return x.status==='playing';});
     if(!p)return;
     $('#round-label').textContent=roundName(g.round);
@@ -241,13 +250,22 @@
     renderDice();renderBoard();renderScorecards();renderCheckpoint();renderHistory();renderSummary();renderChanceReveal();
     $('#restart-round').hidden=!g.round;
     $('#reset-game').hidden=!g.round;
+    fitGameViewport();
+  }
+  function fitGameViewport(){
+    const active=!!state.game.round&&($('#cell-game').classList.contains('is-current')||location.hash==='#cell-game');
+    document.body.classList.toggle('cell-game-active',active);
+    if(!active||window.innerWidth<1100||$('#cell-board').classList.contains('scene-expanded'))return;
+    const board=$('#cell-board'),nav=$('.step-nav');
+    const top=Math.max(board.getBoundingClientRect().top,(nav?nav.getBoundingClientRect().bottom:0)+10);
+    $('#game-panel').style.setProperty('--game-scene-height',Math.max(300,Math.min(780,window.innerHeight-top-18))+'px');
   }
   function startRound(round,mode,players){
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
     const count=Number(players|| (selectedMode==='group'?$('#group-size').value:1))||1;
     const results=round===2&&old.roundResults&&old.roundResults[1]?{1:old.roundResults[1]}:{};
     state.game={schema:2,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,event:{title:'Round '+round+' begins',copy:round===1?'Move each cell through the cycle and check its materials at G1 and G2.':'Same board, new chance events. Some checkpoint responses may be disrupted.',icon:'🎲',kicker:roundName(round)}};
-    save();renderGame();$('#roll-dice').focus();
+    save();renderGame();$('#roll-dice').focus({preventScroll:true});
   }
   function drawChance(p){
     const g=state.game;
@@ -368,21 +386,28 @@
         addLog('Player '+p.id+' completed a model division after bypassing the final checkpoint.');
         setEvent('Division after a bypassed checkpoint','This model cell reached division after a chance event bypassed the final check.','⚠️','Checkpoint bypassed');
       }
+      if(p.pos!==landed||g.chanceNotice||g.event.kicker==='Checkpoint response'||g.event.kicker==='Checkpoint passed'||p.status==='finished'){
+        g.lastRollSummary='Dice ['+dice.join(', ')+']. '+g.event.title+': '+g.event.copy;
+      }
       finishIfAll();
       const bonusRemains=p.bonusRolls>0&&p.status==='playing'&&!g.complete;
       if(!bonusRemains&&!g.complete)activeNext(g.active);
       if(g.complete)finishIfAll();
-      save();renderGame();
-      if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus();
+      save();renderGame();renderAnalysisReference();
+      if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
     },480);
   }
   function resetRound(){
-    if(!window.confirm('Restart this round? The current round’s scorecards will be cleared.'))return;
-    startRound(state.game.round,state.game.mode,state.game.players);
+    confirmGameReset('Restart this round?', 'This clears the current round’s board and scorecards. Your growth trials and written answers stay saved.',function(){startRound(state.game.round,state.game.mode,state.game.players);renderAnalysisReference();});
   }
   function resetGame(){
-    if(!window.confirm('Set up a new game? Round results and the current board will be cleared.'))return;
-    state.game=blankGame();save();renderGame();
+    confirmGameReset('Set up a new game?', 'This clears both game rounds and returns to player setup. Your growth trials and written answers stay saved.',function(){state.game=blankGame();save();renderGame();renderAnalysisReference();$('#start-round1').focus();});
+  }
+  function confirmGameReset(title,copy,action){
+    const dialog=$('#game-reset-dialog');
+    $('#game-reset-title').textContent=title;$('#game-reset-description').textContent=copy;
+    $('#confirm-game-reset').onclick=function(){dialog.close();action();};
+    dialog.showModal();
   }
   function labelBody(v){return ({small:'Smaller',average:'Average',large:'Larger'})[v]||v;}
   function labelTissue(v){return window.GrowthCellTypes.profile(v).short;}
@@ -444,7 +469,7 @@
       const cancer=document.createElement('p');cancer.textContent='Cancer-state units: '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(' · ');box.appendChild(cancer);out.appendChild(box);
     });
     const game=document.createElement('h4');game.textContent='Cell-cycle game evidence';out.appendChild(game);
-    for(const n of [1,2]){const r=state.game.roundResults[n];if(!r)continue;const p=document.createElement('p');p.textContent='Round '+n+': '+r.divisions+' divisions; '+r.bypassed+' checkpoints bypassed; '+r.unchecked+' unchecked divisions.';out.appendChild(p);}
+    for(const n of [1,2]){const r=roundEvidence(n);if(!r)continue;const p=document.createElement('p');p.textContent='Round '+n+(r.inProgress?' (in progress)':' (complete)')+': '+r.rolls+' rolls; '+r.divisions+' divisions; '+r.bypassed+' checkpoints bypassed; '+r.unchecked+' unchecked divisions; '+r.restarts+' restarts.';out.appendChild(p);}
     const note=document.createElement('p');note.className='small';note.textContent='Model counts are invented teaching units, not measured cancer risk. Magenta cells represent the model state after three control changes.';out.appendChild(note);
   }
   function renderComparison(){
@@ -480,8 +505,7 @@
     labels.forEach(t=>{const li=document.createElement('li');li.textContent=t;list.appendChild(li);});report.appendChild(list);
     if(groups.length){const wrap=document.createElement('div');wrap.className='table-wrap';const table=document.createElement('table');table.className='data';table.innerHTML='<caption>Recorded sets</caption><thead><tr><th>Set</th><th>Settings</th><th>Trial divisions</th><th>Mean</th><th>Cancer-state units by trial</th></tr></thead>';const body=document.createElement('tbody');
       groups.forEach(g=>{const row=document.createElement('tr');[String(g.index),'Age '+g.age+' / '+labelBody(g.size)+' / '+labelTissue(g.tissue),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1),g.trials.map(t=>t.modelVersion===2?String(t.cancerCount):'—').join(', ')].forEach(text=>{const td=document.createElement('td');td.textContent=text;row.appendChild(td);});body.appendChild(row);});table.appendChild(body);wrap.appendChild(table);report.appendChild(wrap);}
-    const rounds=state.game.roundResults;
-    for(const n of [1,2])if(rounds[n]){const row=document.createElement('p'),r=rounds[n];row.className='report-round';row.textContent='Round '+n+': '+r.rolls+' rolls, '+r.divisions+' completed divisions, '+r.unchecked+' unchecked divisions, '+r.bypassed+' checkpoints bypassed.';report.appendChild(row);}
+    for(const n of [1,2]){const r=roundEvidence(n);if(!r)continue;const row=document.createElement('p');row.className='report-round';row.textContent='Round '+n+(r.inProgress?' (in progress)':' (complete)')+': '+r.rolls+' rolls, '+r.divisions+' completed divisions, '+r.unchecked+' unchecked divisions, '+r.bypassed+' checkpoints bypassed, '+r.restarts+' restarts.';report.appendChild(row);}
     for(const [label,id] of ANALYSIS_PROMPTS.concat([['One model limitation','model-limit']])){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=$('#'+id).value.trim()||'Not answered yet.';report.append(h,p);}
     const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities. The cancer state uses three explicitly modeled control changes and deliberately accelerated teaching rules.';report.appendChild(note);
   }
@@ -506,7 +530,9 @@
   function wire(){
     readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();showAnalysisPage(0);
     window.addEventListener('hashchange',save);
-    window.addEventListener('resize',function(){renderBoard();},{passive:true});
+    window.addEventListener('resize',function(){fitGameViewport();renderBoard();},{passive:true});
+    document.addEventListener('companion:show',function(){requestAnimationFrame(fitGameViewport);});
+    $('#cancel-game-reset').addEventListener('click',function(){$('#game-reset-dialog').close();});
     $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
     ['body-size','tissue-rate'].forEach(id=>$('#'+id).addEventListener('change',function(){renderCellType();if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());}));
     if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());
