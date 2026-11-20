@@ -42,21 +42,31 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.locator('#restart-round').click();
       await p.locator('#confirm-game-reset').click();
       assert.equal((await read()).game.turns, 0);
-      // Use deterministic dice, while still clicking the real Roll control each turn.
-      for (let turns = 0; !(await read()).game.complete && turns < 80; turns++) {
-        const pos = (await read()).game.playersState[0].pos;
-        const need = pos >= 24 && pos <= 27 ? 5 : 4;
+      // Use deterministic dice, while still clicking the real Roll control each turn: 1-4 collects everything; in M, roll
+      // the number the turn asks for. Stop after the first division and end the round with the visible button.
+      for (let turns = 0; !(await read()).game.playersState[0].blue && turns < 60; turns++) {
+        const m = /must roll a (\d)/.exec(await p.locator('#turn-instruction').textContent());
         await p.evaluate(need => {
-          let i = 0; const values = [1, 2, 3, need];
+          let i = 0; const values = need ? [need, 6, 6, 6] : [1, 2, 3, 4];
           Math.random = () => (values[i++ % 4] - 0.5) / 6;
-        }, need);
+        }, m ? Number(m[1]) : 0);
         await roll();
       }
-      assert.equal((await read()).game.complete, true, 'Round 1 reaches division');
+      assert.equal((await read()).game.playersState[0].blue, 1, 'Round 1 reaches division and a blue chip');
+      assert.equal((await read()).game.complete, false, 'play continues after a division');
+      await p.locator('#end-round').click();
+      await p.locator('#confirm-game-reset').click();
+      assert.equal((await read()).game.complete, true, 'End this round now records the round');
+      assert.equal((await read()).game.roundResults[1].blue, 1);
       await p.locator('#start-round2-from-summary').click();
       assert.equal((await read()).game.round, 2);
+      await p.evaluate(() => { let i = 0; const values = [1, 2, 3, 4]; Math.random = () => (values[i++ % 4] - 0.5) / 6; });
       await roll();
-      assert.equal(await p.locator('#chance-reveal').isVisible(), true);
+      assert.equal(await p.locator('#chance-reveal').isVisible(), false, 'G1 space 1 is not a light-blue square');
+      await p.evaluate(key => { const s = JSON.parse(localStorage.getItem(key)); s.game.chanceDeck = [7]; localStorage.setItem(key, JSON.stringify(s)); }, KEY);
+      await p.reload();
+      await roll();
+      assert.equal(await p.locator('#chance-reveal').isVisible(), true, 'G1 space 2 (light blue) draws a Cellular Chance card');
       await p.locator('#chance-reveal-ack').click();
       assert.equal((await read()).game.chanceNotice, null);
       await p.locator('#reset-game').click();
@@ -82,6 +92,9 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.locator('#enlarge-growth').click();
       await p.keyboard.press('Escape');
       assert.equal(await p.locator('#enlarge-growth').getAttribute('aria-pressed'), 'false');
+      await go('cell-game');
+      await p.locator('#ms-r1-g1-represent').fill('The cell grows and gathers what it needs.');
+      assert.equal((await read()).fields['ms-r1-g1-represent'], 'The cell grows and gathers what it needs.', 'Making Sense answers save');
       await go('analyze');
       assert.equal((await read()).lastSection, 'analyze', 'current section is saved for dashboard Resume');
       for (const [button, part] of [['analysis-next', 2], ['analysis-next-bottom', 3],
@@ -100,6 +113,8 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       assert.equal(file.suggestedFilename(), 'cell-cycle-cancer-model-work.json');
       const payload = JSON.parse(require('node:fs').readFileSync(await file.path(), 'utf8'));
       assert.deepEqual(payload.student, { name: 'Test Student', period: '3' });
+      assert.equal(payload.answers['ms-r1-g1-represent'], 'The cell grows and gathers what it needs.');
+      assert.equal(payload.lesson3MakingSense.round1Table[0].couldRepresent, 'The cell grows and gathers what it needs.');
       await p.evaluate(() => { window.print = () => { window.printCalled = true; }; });
       await p.locator('#print-work').click();
       assert.equal(await p.evaluate(() => window.printCalled), true);

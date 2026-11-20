@@ -1,4 +1,5 @@
-/* Terminology (review L7). Before the fix the dice key said "4 Chromosome" while the scorecard said "DNA copies" (four
+/* Terminology (review L7; updated to the OpenSciEd handout and card wording: the scorecard says Chromosomes, the
+   checkpoint cards say DNA). Before the fix the dice key said "4 Chromosome" while the scorecard said "DNA copies" (four
    "copies" can read as copying DNA four times), the growth heading said "More cells" though the cell count is fixed,
    and the words proto-oncogene, oncogene and tumor suppressor never appeared. */
 const T = require('./_h');
@@ -8,15 +9,18 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
   const ctx = await T.ctxFor(browser, {width:1440,height:900,reduced:true});
   const p = await T.open(ctx,'openscied-b3-cell-cycle.html','cell-game',server.url);
   try {
-    const score = {g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:2},g2:{nutrients:0,proteins:0,organelles:0},m:{attachments:0}};
-    const game = {schema:2,mode:'solo',players:1,round:1,active:0,turns:0,complete:false,playersState:[{id:1,pos:12,score,status:'playing',divisions:0,unchecked:0,restarts:0,bypassed:0,skipTurns:0,bonusRolls:0}],
+    const score = {g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:2},g2:{nutrients:0,proteins:0,organelles:0}};
+    const game = {schema:3,mode:'solo',players:1,round:1,active:0,turns:0,complete:false,playersState:[{id:1,pos:12,score,status:'playing',turnsUsed:0,blue:0,red:0,destroyed:0,sentBack:0,skipped:0,skipTurns:0,bonusRolls:0,lastChip:null}],
       chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},event:{title:'Ready',copy:'Test',icon:'',kicker:'Cell cycle'}};
     await p.evaluate(({key,game}) => localStorage.setItem(key, JSON.stringify({v:1,trials:[],fields:{},game})), {key:KEY,game});
     await p.reload();
     const key = (await p.locator('.dice-key').textContent()).replace(/\s+/g,' ');
     const card = (await p.locator('#checkpoint-requirements').textContent()).replace(/\s+/g,' ');
-    T.ok(/4 Chromosome copied/.test(key), `dice key: "4 Chromosome copied" (${key})`);
-    T.ok(/Chromosomes copied/.test(card) && !/DNA copies/.test(card), `G2 checkpoint card uses the same term (${card})`);
+    T.ok(/4 Chromosome \(DNA\)/.test(key), `dice key: "4 Chromosome (DNA)" (${key})`);
+    T.ok(/DNA2 \/ 4/.test(card) && !/DNA copies/.test(card), `G2 Checkpoint card counts DNA as the card does (${card})`);
+    const head = (await p.locator('.score-phase-head').first().textContent());
+    T.ok(/Nutrients.*Proteins.*Organelles.*Chromosomes/.test(head), `scorecard columns match the handout (${head})`);
+    T.ok(/FINISH/.test(await p.locator('.board-route-note').textContent()) && !/DIVIDE\b/.test(await p.locator('.board-route-note').textContent()), 'the route ends at FINISH, as on the board');
     const page = await p.evaluate(() => document.body.innerText);
     T.ok(!/DNA cop(y|ies) in S|\b4 DNA copies/.test(page), 'no "DNA copies" counts remain in the game text');
     const heading = await p.locator('#growth-model h2').textContent();
