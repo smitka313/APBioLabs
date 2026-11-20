@@ -103,3 +103,9 @@
 # Printable copies duplicate the indexable HTML guides.
 /student-pdfs/*
   X-Robots-Tag: noindex
+
+# Instructions for AI agents: readable by anyone, kept out of search results.
+/AGENTS.md
+  X-Robots-Tag: noindex
+/CLAUDE.md
+  X-Robots-Tag: noindex
