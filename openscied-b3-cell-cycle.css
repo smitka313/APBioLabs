@@ -429,3 +429,26 @@ table.data.cycle-data-table th, table.data.cycle-data-table td { white-space:nor
 .dna-line { fill:none; stroke:var(--accent); stroke-width:3.5; stroke-linejoin:round; }
 .dna-points circle { fill:var(--accent); }
 @media print { .cycle-data { break-inside:avoid; } }
+
+/* Analyze: evidence panel heading doubles as a fold-away toggle on phones; on wide screens it reads as a plain heading. */
+.analysis-reference-toggle > summary { list-style:none; cursor:pointer; }
+.analysis-reference-toggle > summary::-webkit-details-marker { display:none; }
+.analysis-reference-toggle > summary h3 { display:inline; margin:0; }
+.analysis-page-nav { scroll-margin-top:72px; }
+@media(max-width:850px){
+  .analysis-reference-toggle > summary::after { content:" ▸ show"; font-size:.8rem; color:var(--muted); }
+  .analysis-reference-toggle[open] > summary::after { content:" ▾ hide"; }
+  .analysis-reference{max-height:none}
+}
+@media(min-width:851px){ .analysis-reference-toggle > summary { pointer-events:none; } }
+
+/* Analyze: a one-line section heading keeps each question part close to one screen. */
+#analyze > header h2 { font-size:clamp(1.5rem, 2.6vw, 2.1rem); line-height:1.15; }
+#analyze > header { margin-bottom:6px; }
+#analyze .analysis-question textarea { min-height:64px; field-sizing:content; max-height:320px; }
+
+/* "Your data" box placed between each Analyze question's hint and its answer box. */
+.q-evidence { margin:6px 0 8px; padding:8px 12px; border-left:4px solid var(--accent); border-radius:0 8px 8px 0; background:var(--surface-2); max-width:83ch; }
+.q-evidence-title { margin:0 0 2px; font:700 .72rem var(--f-mono, monospace); letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
+.q-evidence ul { margin:0; padding-left:1.1rem; font-size:.86rem; line-height:1.45; }
+@media print { .q-evidence { break-inside:avoid; } }

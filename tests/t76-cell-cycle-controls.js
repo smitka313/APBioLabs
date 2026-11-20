@@ -21,7 +21,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       };
       p.on('dialog', dialog => dialog.accept());
       assert.deepEqual(p.errors, [], 'startup must not throw');
-      assert.match(await p.locator('#analysis-page-status').textContent(), /Part 1 of 3/);
+      assert.match(await p.locator('#analysis-page-status').textContent(), /Part 1 of 4/);
       await p.locator('#start-round1').click();
       assert.equal((await read()).game.round, 1);
       await roll();
@@ -97,8 +97,8 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       assert.equal((await read()).fields['ms-r1-g1-represent'], 'The cell grows and gathers what it needs.', 'Making Sense answers save');
       await go('analyze');
       assert.equal((await read()).lastSection, 'analyze', 'current section is saved for dashboard Resume');
-      for (const [button, part] of [['analysis-next', 2], ['analysis-next-bottom', 3],
-        ['analysis-prev', 2], ['analysis-prev-bottom', 1]]) {
+      for (const [button, part] of [['analysis-next', 2], ['analysis-next-bottom', 3], ['analysis-next', 4],
+        ['analysis-prev', 3], ['analysis-prev-bottom', 2], ['analysis-prev', 1]]) {
         await p.locator('#' + button).click();
         assert.match(await p.locator('#analysis-page-status').textContent(), new RegExp('Part ' + part));
         assert.ok(await p.locator('[data-analysis-page]').evaluateAll((els, part) =>
