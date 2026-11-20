@@ -235,30 +235,31 @@
     <header><div class="eyebrow">5 · Make sense of the evidence</div><h2>What changed?<br>What stayed the same?</h2></header>
     <div class="step-body">
       <p class="prose">Choose two sets. The comparison uses your recorded results, so you can point to real numbers from your model.</p>
-      <div class="comparison-selectors"><div class="field"><label for="compare-a">Compare this set</label><select id="compare-a" disabled><option value="">Run a set first</option></select></div><span class="compare-arrow" aria-hidden="true">→</span><div class="field"><label for="compare-b">With this set</label><select id="compare-b" disabled><option value="">Run a second set</option></select></div></div>
+      <div class="analysis-workspace"><aside class="analysis-reference" aria-label="Evidence from your investigation"><h3>Evidence to reference</h3><p class="small">Your recorded trial results and cell-cycle events appear here as you work.</p><div id="analysis-reference-data" aria-live="polite"></div><a href="#growth-model">Review growth model ↗</a></aside><div class="analysis-questions"><div class="comparison-selectors"><div class="field"><label for="compare-a">Compare this set</label><select id="compare-a" disabled><option value="">Run a set first</option></select></div><span class="compare-arrow" aria-hidden="true">→</span><div class="field"><label for="compare-b">With this set</label><select id="compare-b" disabled><option value="">Run a second set</option></select></div></div>
       <div id="comparison-evidence" class="comparison-evidence" role="status" aria-live="polite"><p>Collect two sets to reveal your evidence comparison.</p></div>
       <p class="analysis-directions">Use short answers—one or two sentences is enough unless a question asks you to revise your model. Name the sets or trials you used. If you have not tested a condition, collect that comparison or say what evidence you still need.</p>
       <a href="#growth-model" class="analysis-return">← Return to the growth model to collect or inspect evidence</a>
-      <div class="analysis-question-group">
+      <nav class="analysis-page-nav" aria-label="Analysis question groups"><button class="btn btn--sm" type="button" id="analysis-prev">← Previous</button><span id="analysis-page-status" role="status">Part 1 of 3</span><button class="btn btn--sm btn--primary" type="button" id="analysis-next">Next →</button></nav>
+      <div class="analysis-question-group" data-analysis-page="0">
         <h3>Look closely at your data.</h3>
         <div class="field analysis-question"><label for="analysis-design"><span class="question-number">1</span>Was your comparison a fair test?</label><p id="hint-design">Which setting changed? Name the two settings you kept the same. If more than one changed, describe a better comparison.</p><textarea id="analysis-design" rows="2" aria-describedby="hint-design" placeholder="I changed… I kept… the same."></textarea></div>
         <div class="field analysis-question"><label for="analysis-variation"><span class="question-number">2</span>Why did the three trials give different results?</label><p id="hint-variation">Use two trial counts from one set. What does their variation tell you about using just one trial?</p><textarea id="analysis-variation" rows="2" aria-describedby="hint-variation" placeholder="In Set…, the trials included… and… divisions. This suggests…"></textarea></div>
         <div class="field analysis-question"><label for="analysis-celltypes"><span class="question-number">3</span>How did two named cell types compare?</label><p id="hint-celltypes">Compare their division counts at the same modeled age and body size. How could their roles in the body help explain the difference? If you have only tested one type, collect another set.</p><textarea id="analysis-celltypes" rows="2" aria-describedby="hint-celltypes" placeholder="The… cells had… divisions, while… cells had… At the same age and size,…"></textarea></div>
         <div class="field analysis-question explanation-field"><label for="explanation"><span class="question-number">4</span>What pattern did changing age or body size produce?</label><p id="sentence-evidence" class="sentence-evidence">Use the recorded means above. Explain what your chosen change did to the number of opportunities to copy DNA.</p><textarea id="explanation" rows="3" aria-describedby="sentence-evidence" placeholder="When I changed…, the mean changed from… to… divisions. Each division is another opportunity to copy DNA, so…"></textarea></div>
       </div>
-      <div class="analysis-question-group">
+      <div class="analysis-question-group" data-analysis-page="1">
         <h3>Connect the evidence to a mechanism.</h3>
         <div class="field analysis-question"><label for="analysis-cancer"><span class="question-number">5</span>What happened before a cell turned magenta?</label><p id="hint-cancer">Scrub the timeline or inspect a cell. Describe the control changes you observed. Did every division or amber-marked cell become cancerous? If none turned magenta, explain what the model would require first.</p><textarea id="analysis-cancer" rows="3" aria-describedby="hint-cancer" placeholder="Before the cell changed colour,… The evidence does / does not show that every division…"></textarea></div>
         <div class="field analysis-question"><label for="analysis-checkpoints"><span class="question-number">6</span>How does the cell-cycle game help explain these results?</label><p id="hint-checkpoints">Use one checkpoint event from the game. Connect the effect of a working or bypassed checkpoint to what a cell might pass to its daughter cells.</p><textarea id="analysis-checkpoints" rows="3" aria-describedby="hint-checkpoints" placeholder="In the game,… This helps explain… because…"></textarea></div>
       </div>
-      <fieldset class="evidence-checks"><legend>Which ideas does your investigation support?</legend>
+      <fieldset class="evidence-checks" data-analysis-page="1"><legend>Which ideas does your investigation support?</legend>
         <label class="choice"><input type="checkbox" id="ev-age"> A longer modeled time can allow more cell divisions.</label>
         <label class="choice"><input type="checkbox" id="ev-size"> A larger modeled body contains more cell units.</label>
         <label class="choice"><input type="checkbox" id="ev-rate"> Different cell types divide at different rates, creating different numbers of copying opportunities.</label>
         <label class="choice"><input type="checkbox" id="ev-guarantee"> Every cell division causes cancer.</label>
       </fieldset>
-      <p class="small" id="evidence-hint" role="status" aria-live="polite"></p>
-      <div class="analysis-question-group model-revision-group">
+      <p class="small" data-analysis-page="1" id="evidence-hint" role="status" aria-live="polite"></p>
+      <div class="analysis-question-group model-revision-group" data-analysis-page="2">
         <h3>Add to your model.</h3>
         <div class="field analysis-question"><label for="model-revision"><span class="question-number">7</span>What will you add or change in your explanation of how cancer can develop?</label><p id="hint-revision">Update your class model, or describe it here if you are working independently. Connect cell type, DNA copying, control changes, checkpoints, and daughter cells. Add at least two labelled arrows (→), and identify one idea your data caused you to revise.</p><textarea id="model-revision" rows="5" aria-describedby="hint-revision" placeholder="I used to think… My evidence suggests…
 In my revised model: … → … because…
@@ -266,6 +267,8 @@ I will also connect… → … because…"></textarea></div>
         <div class="field"><label for="model-limit">Choose a limitation to keep visible in your revised model.</label><select id="model-limit"><option value="">Choose one…</option><option>It does not include every gene or cell-cycle control.</option><option>It does not include environmental exposures or inherited variants.</option><option>It does not show immune-system responses or medical screening.</option><option>It is not based on real individual cancer-risk data.</option></select></div>
         <div class="field analysis-question"><label for="model-prediction"><span class="question-number">8</span>What new prediction does your revised model make?</label><p id="hint-prediction">Choose a condition you have not tested. Predict a result, explain why, and name one question about real people that this simplified model cannot answer.</p><textarea id="model-prediction" rows="3" aria-describedby="hint-prediction" placeholder="If I changed…, I predict… because… The model cannot tell me…"></textarea></div>
       </div>
+      <nav class="analysis-page-nav" aria-label="Continue analysis"><button class="btn btn--sm" type="button" id="analysis-prev-bottom">← Previous</button><button class="btn btn--sm btn--primary" type="button" id="analysis-next-bottom">Next →</button></nav>
+      </div></div>
     </div>
   </section>
 
