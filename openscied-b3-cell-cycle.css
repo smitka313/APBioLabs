@@ -289,7 +289,8 @@
       "rules rules"
       "history history"
       "summary summary"
-      "actions actions";
+      "actions actions"
+      "reasoning reasoning";
     gap:10px 16px;
     align-items:start;
   }
@@ -307,6 +308,7 @@
   #game-panel:not(.is-pregame) > .turn-log {grid-area:history}
   #game-panel:not(.is-pregame) > .game-end {grid-area:summary}
   #game-panel:not(.is-pregame) > .game-actions {grid-area:actions}
+  #game-panel:not(.is-pregame) > .mechanism-check {grid-area:reasoning;min-width:0}
   #game-panel:not(.is-pregame) .scorecard {order:0}
   #game-panel:not(.is-pregame) .dice-station {order:1}
   #game-panel:not(.is-pregame) .scorecard,

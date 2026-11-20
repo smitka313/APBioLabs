@@ -1,6 +1,7 @@
 # Browser tests for Lab Bench (Playwright). See tests/README.md.
 # - push / pull_request to main: the release-checklist set, split into parallel jobs.
-# - Every run: a Firefox + WebKit smoke test (tests/t60-browsers.js).
+# - OpenSciEd-only PRs: dedicated companion controls plus the always-on safety checks.
+# - Shared/unknown changes and main: full checklist, with cross-browser parts in parallel.
 # - Actions tab -> "Tests" -> "Run workflow": choose "checklist" or "all" (every test, split into 5 shards).
 name: Tests
 
@@ -37,6 +38,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node tests/t76-cell-cycle-controls.js
@@ -64,6 +66,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node tests/t108-student-pdfs.js
@@ -84,6 +87,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: node --test tests/domain-redirect.test.js
       - name: Check completion-audit regressions
         run: node --test tests/audit6-followup.test.js tests/submission-readiness.test.js tests/lab3-clock-recording.test.js tests/lab5-censored-report.test.js
@@ -111,6 +115,8 @@ jobs:
           else
             echo "level=full" >> "$GITHUB_OUTPUT"
           fi
+      - name: Verify CI routing
+        run: node --test tests/ci-risk.test.js
 
   quick:
     name: Quick syntax and lab-page smoke
@@ -153,13 +159,14 @@ jobs:
   checklist:
     name: Checklist (${{ matrix.group }})
     needs: classify
-    if: (github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist') && needs.classify.outputs.level != 'quick'
+    if: (github.event_name != 'workflow_dispatch' || inputs.suite == 'checklist') && !contains(fromJSON('["quick","openscied"]'), needs.classify.outputs.level)
     runs-on: ubuntu-latest
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        group: [core, e2e, science, a11y-axe, a11y-keys, a11y-resp]
+        # Split core across separate runners; keep one timing-sensitive test per runner.
+        group: ['core --shard 1/2', 'core --shard 2/2', e2e, science, a11y-axe, a11y-keys, a11y-resp]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -178,7 +185,7 @@ jobs:
           node tests/run-all.js ${{ matrix.group }}
 
   browsers:
-    name: Cross-browser smoke (${{ matrix.browser }})
+    name: Cross-browser smoke (${{ matrix.browser }}, ${{ matrix.part }})
     needs: classify
     if: needs.classify.outputs.level == 'full'
     runs-on: ubuntu-latest
@@ -187,6 +194,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [firefox, webkit]
+        part: [pages, sims, save, notes]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -201,7 +209,7 @@ jobs:
           BROWSER: ${{ matrix.browser }}
         run: |
           export NODE_PATH="$PWD/node_modules"
-          node tests/run-all.js t60-browsers
+          node tests/run-all.js "t60-browsers ${{ matrix.part }}"
 
   full:
     name: Full suite (shard ${{ matrix.shard }}/5)

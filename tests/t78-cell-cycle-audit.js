@@ -61,14 +61,16 @@ function savedGame(round = 2) {
     fs.mkdirSync(path.join(T.ROOT,'test-artifacts'),{recursive:true});
     for(const [width,height] of [[1920,1000],[1440,900],[1366,768],[390,844],[768,1024],[1024,768]]) {
       await p.setViewportSize({width,height}); await go('cell-game'); await p.waitForTimeout(150);
+      await p.screenshot({path:path.join(T.ROOT,'test-artifacts','cell-cycle-'+width+'x'+height+'.png')});
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth>innerWidth),false,width+'px: no page overflow');
       if(width>=1100) {
         const button=await p.locator('#roll-dice').boundingBox(),board=await p.locator('#cell-board').boundingBox();
-        assert.ok(button.y>=0&&button.y+button.height<=height,width+'px: Roll stays above the fold');
+        assert.ok(button.y>=0&&button.y+button.height<=height,width+'px: Roll stays above the fold '+JSON.stringify({button,board,height}));
         assert.ok(board.y>=0&&board.y+board.height<=height,width+'px: full board stays above the fold');
         assert.equal(await p.locator('#cycle-scene').evaluate(el => getComputedStyle(el).objectFit),'contain');
+        const question=await p.locator('.mechanism-check').boundingBox();
+        assert.ok(question.y>=board.y+board.height,width+'px: reasoning question stays below the play area');
       }
-      await p.screenshot({path:path.join(T.ROOT,'test-artifacts','cell-cycle-'+width+'x'+height+'.png')});
     }
     T.ok(true,'Six desktop/tablet/mobile viewports; full canvas and Roll visible on desktop');
     await p.setViewportSize({width:1440,height:900});
