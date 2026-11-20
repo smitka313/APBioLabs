@@ -18,10 +18,12 @@
     ['New prediction and an unanswered question','model-prediction']
   ];
   function readStore(){
-    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();p.score.m=p.score.m||{attachments:0};});}if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(d.mechanism)state.mechanism=d.mechanism;if(SECTIONS.includes(d.lastSection))state.lastSection=d.lastSection;}}
+    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){hadSaved=true;if(d.game&&d.game.schema===2){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();p.score.m=p.score.m||{attachments:0};});}if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(d.mechanism)state.mechanism=d.mechanism;if(SECTIONS.includes(d.lastSection))state.lastSection=d.lastSection;}}
     catch(e){}
   }
+  let cleared=false,hadSaved=false;
   function save(){
+    if(cleared)return;
     try{
       state.fields={};
       $$('input[type=radio]:checked,input[type=checkbox],#age-slider,textarea,select').forEach(function(el){
@@ -557,7 +559,14 @@
   }
   function reset(){
     if(!window.confirm('Clear this activity’s saved work from this browser?'))return;
-    localStorage.removeItem(KEY);window.location.reload();
+    // Blank the fields first so a browser that restores form values on reload cannot save the old answers again.
+    $$('textarea').forEach(function(el){el.value='';});
+    $$('input[type=checkbox],input[type=radio]').forEach(function(el){el.checked=el.defaultChecked;});
+    $$('select').forEach(function(el){Array.from(el.options).forEach(function(o){o.selected=o.defaultSelected;});});
+    $$('input[type=range]').forEach(function(el){el.value=el.defaultValue;});
+    cleared=true;
+    try{localStorage.removeItem(KEY);}catch(e){}
+    window.location.reload();
   }
   function wire(){
     readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();showAnalysisPage(0);
@@ -652,6 +661,8 @@
     $('#print-work').addEventListener('click',function(){renderReport();window.print();});
     $('#reset-work').addEventListener('click',reset);
     $$('input,textarea,select').forEach(function(el){el.addEventListener('change',save);el.addEventListener('input',save);});
-    save();
+    // Only refresh an existing record on load. Saving a blank page (e.g. right after "Clear this activity") would make
+    // the dashboard report the activity as started.
+    if(hadSaved)save();else renderReport();
   }  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
 })();
