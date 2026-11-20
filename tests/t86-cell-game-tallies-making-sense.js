@@ -72,7 +72,7 @@ const MS = ['ms-r1-g1-happened','ms-r1-g1-represent','ms-r1-g1cp-happened','ms-r
     T.ok(restored === MS.length, `all ${MS.length} Making Sense answers save and restore (${restored})`);
     await go('analyze');
     const ref = (await p.locator('#analysis-reference-data').textContent()).replace(/\s+/g,' ');
-    T.ok(/Round 2 \(complete\): 1 blue chips.*3 red chips.*75% of the 4 new cells were cancer cells/.test(ref), 'the analysis evidence lists the Round 2 chips and percentage');
+    T.ok(/Round 2 \(complete\): 1 blue chip .*3 red chips.*75% of the 4 new cells were cancer cells/.test(ref), 'the analysis evidence lists the Round 2 chips and percentage');
     await go('submit');
     const report = (await p.locator('#investigation-report').textContent()).replace(/\s+/g,' ');
     T.ok(/21 of 21 Lesson 3 Making Sense responses written/.test(report) && /Answer for ms-r1-g2cp-represent/.test(report) && /Answer for ms-limits-could-not/.test(report), 'the report includes the Making Sense table and questions');

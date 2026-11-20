@@ -254,7 +254,7 @@
   function evidenceLine(n,r){
     if(r.legacy)return 'Round '+n+': played with an earlier version of the game rules (no chip counts).';
     const made=r.blue+r.red;
-    return 'Round '+n+(r.inProgress?' (in progress)':' (complete)')+': '+r.blue+' blue chips (non-cancer cells), '+r.red+' red chips (cancer cells in this game model); '+pct(r.red,made)+' of the '+made+' new cells were cancer cells. Destroyed by p53: '+r.destroyed+'. Sent back by a checkpoint: '+r.sentBack+'. Checkpoints skipped: '+r.skipped+'.';
+    return 'Round '+n+(r.inProgress?' (in progress)':' (complete)')+': '+plural(r.blue,'blue chip')+' (non-cancer cells), '+plural(r.red,'red chip')+' (cancer cells in this game model); '+pct(r.red,made)+' of the '+(made===1?'1 new cell was a cancer cell':made+' new cells were cancer cells')+'. Destroyed by p53: '+r.destroyed+'. Sent back by a checkpoint: '+r.sentBack+'. Checkpoints skipped: '+r.skipped+'.';
   }
   function resultsTable(rounds){
     const head='<thead><tr><th>Cells and events</th>'+rounds.map(function(x){return '<th>Round '+x[0]+'</th>';}).join('')+'</tr></thead>';
@@ -764,7 +764,7 @@
       if(d.type==='start')$('#growth-status').textContent='Playing three recorded trials. Years are compressed into seconds.';
       if(d.type==='complete')$('#growth-status').textContent='Playback complete. All three trials are saved; compare their counts below.';
       if(d.type==='settings')$('#growth-status').textContent='Settings changed. Run three trials to record this setup.';
-      if(d.type==='scrub')$('#growth-status').textContent='Trial '+d.trial+' at age '+d.year+': '+d.divisions+' recorded divisions.'+(d.hasCancerState?' '+d.cancerCount+' cancer-state units in this teaching model.':' Cancerous state was not tracked in this earlier trial.');
+      if(d.type==='scrub')$('#growth-status').textContent='Trial '+d.trial+' at age '+d.year+': '+plural(d.divisions,'recorded division')+'.'+(d.hasCancerState?' '+plural(d.cancerCount,'cancer-state unit')+' in this teaching model.':' Cancerous state was not tracked in this earlier trial.');
       if(d.type==='pause')$('#growth-status').textContent=d.playing?'Playback resumed.':'Playback paused. Drag the recorded-age slider to inspect the history.';
     });
     $('#pause-growth').addEventListener('click',function(){if(window.GrowthModelScene)window.GrowthModelScene.pause();});

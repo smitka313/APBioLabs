@@ -9,6 +9,7 @@
   const unitCounts={small:20,average:30,large:40},rates={slow:'SLOW',medium:'MODERATE',fast:'FAST'};
   let cachedKey='',units=[],polygons=[];
   function profile(key){return window.GrowthCellTypes.profile(key);}
+  function plural(n,word){return n+' '+word+(n===1?'':'s');}
   function text(ctx,s,x,y,size,color,align,weight){ctx.fillStyle=color||'#d0e4da';ctx.font=(weight||500)+' '+size+'px sans-serif';ctx.textAlign=align||'left';ctx.fillText(String(s),x,y);}
   function line(ctx,x,y,x2,y2,color,width){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width||1;ctx.stroke();}
   function oval(ctx,x,y,rx,ry,fill,stroke,width){ctx.beginPath();ctx.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width||1;ctx.stroke();}}
@@ -179,11 +180,11 @@
   function unitDescription(index){
     const t=currentTrial(),row=currentRow(),count=t?.timeline?t.timeline.filter(r=>r.year<=year&&r.cells.includes(index)).length:null,mask=row?.changes?.[index]||0;
     const names=window.GrowthCellTypes.changes.filter((_,bit)=>mask&(1<<bit));
-    if(t&&t.modelVersion!==2)return profile(t.tissue).short+' · unit '+(index+1)+(count===null?'':' · '+count+' recorded divisions.')+' Control changes and cancerous state were not tracked in this older trial.';
+    if(t&&t.modelVersion!==2)return profile(t.tissue).short+' · unit '+(index+1)+(count===null?'':' · '+plural(count,'recorded division')+'.')+' Control changes and cancerous state were not tracked in this older trial.';
     const chance=mask===7?.80:profile(t?.tissue||settings.tissue).rate;
     const rateText=' Modeled division chance next year: '+Number((chance*100).toFixed(1))+'% (invented teaching value; a chance, not a guaranteed division).';
     const eventText=row?' Recorded division at age '+Math.floor(year)+': '+(row.cells.includes(index)?'yes; split nuclei mark this event.':'no.') : '';
-    return profile(t?.tissue||settings.tissue).short+' · unit '+(index+1)+(count===null?' · Run a trial to record its history.':' · '+count+' divisions by age '+Math.floor(year)+'. ')+(count===null?'':names.length?'Control changes: '+names.join('; ')+'. '+(mask===7?'Cancerous state in this teaching model.':'Not cancerous in this model.'):'No modeled control change recorded.')+rateText+eventText;
+    return profile(t?.tissue||settings.tissue).short+' · unit '+(index+1)+(count===null?' · Run a trial to record its history.':' · '+plural(count,'division')+' by age '+Math.floor(year)+'. ')+(count===null?'':names.length?'Control changes: '+names.join('; ')+'. '+(mask===7?'Cancerous state in this teaching model.':'Not cancerous in this model.'):'No modeled control change recorded.')+rateText+eventText;
   }
   function inspect(event){const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)*W/r.width-627,y=(event.clientY-r.top)*H/r.height-283,tip=document.getElementById('growth-tip');if(Math.hypot(x,y)>184){tip.hidden=true;return;}
     selected=units.reduce((best,p,i)=>Math.hypot(p.x-x,p.y-y)<Math.hypot(units[best].x-x,units[best].y-y)?i:best,0);const t=currentTrial(),count=t?.timeline?t.timeline.filter(row=>row.year<=year&&row.cells.includes(selected)).length:null;
