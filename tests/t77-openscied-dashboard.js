@@ -52,7 +52,7 @@ const assert = require('node:assert/strict');
       });
       await p.reload();
       assert.match(await identity.textContent(), /Casey Student/);
-      assert.match(await p.locator('#cell-cycle-progress').textContent(), /1 of 8 responses/);
+      assert.match(await p.locator('#cell-cycle-progress').textContent(), /1 of 29 responses/);
       assert.equal(await p.locator('#openscied-resume-link').getAttribute('href'), 'openscied-b3-cell-cycle.html#analyze');
       // Open the actual activity using Resume and verify its section and saved answer.
       await p.locator('#openscied-resume-link').click();

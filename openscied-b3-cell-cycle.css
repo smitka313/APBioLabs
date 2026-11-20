@@ -364,3 +364,68 @@
 @media(max-width:900px){ .phase-cards { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:520px){ .phase-cards { grid-template-columns:1fr; } .phase-guide { padding:12px; } }
 @media(min-width:1100px){ #game-panel:not(.is-pregame) > .phase-guide { grid-area:route; margin:0; } }
+
+/* Cell chips: blue = non-cancer cell, red = cancer cell (game model). Text labels always accompany the colour. */
+.chip { display:inline-block; width:13px; height:13px; border-radius:50%; vertical-align:-2px; margin-right:4px; box-shadow:inset 0 0 0 2px rgba(255,255,255,.65); }
+.chip-blue { background:#2f7fd8; border:1px solid #1b4f8f; }
+.chip-red { background:#d23b3b; border:1px solid #8c1f1f; }
+.chip-tally { white-space:nowrap; font:700 .78rem var(--f-mono); }
+.chip-tally .chip-red { margin-left:8px; }
+.score-chips { margin:0; font-size:.76rem; color:var(--muted); }
+.turn-event.is-red { border-left-color:#d23b3b; }
+.chance-reveal-effect { font-weight:700; color:#fff3c9; }
+.chance-reveal.is-not-working .chance-reveal-panel { border-color:#ff8f8f; box-shadow:0 0 0 5px #e1515133,0 0 55px #ff4d4d66; }
+.round-compare td { text-align:center; font-variant-numeric:tabular-nums; }
+table.data.round-compare th, table.data.round-compare td { white-space:normal; }
+@media(max-width:520px){ table.data.round-compare { font-size:.8rem; } table.data.round-compare th, table.data.round-compare td { padding:6px 7px; } }
+
+/* Lesson 3 Making Sense (handout table and questions) */
+.making-sense { margin-top:16px; display:grid; gap:8px; }
+.making-sense h3 { margin:0; }
+.making-sense h4 { margin:12px 0 0; }
+.making-sense > p { margin:0; }
+.making-sense-table { width:100%; table-layout:fixed; }
+.making-sense-table th[scope=row] { width:20%; text-align:left; white-space:normal; }
+.making-sense-table textarea { width:100%; box-sizing:border-box; min-height:3.4em; resize:vertical; font:inherit; }
+@media(max-width:640px){
+  .making-sense-table, .making-sense-table thead, .making-sense-table tbody, .making-sense-table tr, .making-sense-table th, .making-sense-table td { display:block; width:100%; box-sizing:border-box; }
+  .making-sense-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .making-sense-table tr { padding:8px 0; border-bottom:1px solid var(--line); }
+  .making-sense-table th[scope=row] { width:auto; }
+  .making-sense-table td::before { display:block; font-size:.8rem; color:var(--muted); margin:6px 0 2px; }
+  .making-sense-table td:nth-child(2)::before { content:'What happened in the game?'; }
+  .making-sense-table td:nth-child(3)::before { content:'What could it represent in a cell?'; }
+}
+.making-sense .analysis-question { margin:0 0 14px; gap:6px; }
+.making-sense .analysis-question label { display:flex; align-items:baseline; gap:9px; font-size:1rem; font-weight:700; line-height:1.45; }
+.making-sense .analysis-question > p { margin:0; font-size:.86rem; color:var(--muted); }
+.making-sense .analysis-question textarea { width:100%; max-width:83ch; min-height:80px; box-sizing:border-box; }
+@media print { .making-sense textarea { border:1px solid #999; } }
+/* Cell cycle data reference (OpenSciEd B.3 Lesson 3 "Cell Cycle Data"), recreated as a chart and tables. */
+.cycle-data { display:grid; gap:10px; margin-top:8px; padding:14px; border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:var(--r); background:var(--surface-2); }
+.cycle-data h4 { margin:0; }
+.cycle-data .eyebrow { margin:0; }
+.cycle-data-intro { margin:0; max-width:83ch; }
+.cycle-data-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:14px; align-items:start; }
+.cycle-data-figure { margin:0; min-width:0; display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--surface); }
+.cycle-data-figure figcaption { line-height:1.45; }
+.cycle-data-table { width:100%; }
+table.data.cycle-data-table th, table.data.cycle-data-table td { white-space:normal; text-align:left; vertical-align:top; }
+@media(max-width:520px){ table.data.cycle-data-table th, table.data.cycle-data-table td { padding:6px 7px; } }
+.cycle-data-note, .cycle-data-credit { margin:0; font-size:.84rem; color:var(--muted); }
+.cycle-data-credit a { color:var(--accent); font-weight:700; }
+.size-key { display:flex; align-items:center; gap:8px; font-size:.8rem; color:var(--muted); font-family:var(--f-mono); flex-wrap:wrap; }
+.size-key-bar { flex:1 1 80px; min-width:80px; height:12px; border-radius:6px; border:1px solid var(--line); background:linear-gradient(90deg,#1b2c8f,#2f6ee0,#3cc0d8,#55c27a,#e3d34a,#ef8a2f,#d8322c); }
+.swatch { display:inline-block; width:.95em; height:.95em; margin-right:6px; vertical-align:-.12em; border-radius:3px; border:1px solid var(--line); }
+.swatch-blue { background:#2f6ee0; } .swatch-green { background:#55c27a; } .swatch-yellow { background:#e3d34a; } .swatch-navy { background:#0d1a5c; }
+.dna-chart { display:block; width:100%; height:auto; max-width:560px; color:var(--ink); }
+.dna-chart text { fill:currentColor; font-family:var(--f-mono); font-size:16px; }
+.dna-chart .dna-axis-label { font-family:inherit; font-size:16px; fill:var(--muted); }
+@media(max-width:520px){ .dna-chart text, .dna-chart .dna-axis-label { font-size:24px; } }
+.dna-axis line { stroke:currentColor; stroke-width:1.5; }
+.dna-grid line { stroke:var(--line); stroke-dasharray:4 4; }
+.dna-phases rect { stroke:currentColor; stroke-width:1; }
+.dna-phases .phase-g1 { fill:var(--surface); } .dna-phases .phase-s { fill:var(--accent-soft); } .dna-phases .phase-g2 { fill:var(--surface-2); }
+.dna-line { fill:none; stroke:var(--accent); stroke-width:3.5; stroke-linejoin:round; }
+.dna-points circle { fill:var(--accent); }
+@media print { .cycle-data { break-inside:avoid; } }

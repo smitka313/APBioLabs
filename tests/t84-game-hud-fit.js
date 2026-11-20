@@ -3,16 +3,18 @@
 const T = require('./_h');
 const KEY = 'aplab:openscied:b3-cell-cycle:v1';
 const states = {
-  'division complete': { pos:30, status:'finished', divisions:1, score:{g1:{nutrients:1,proteins:4,organelles:4},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0},m:{attachments:0}} },
-  'G1 checkpoint (3 cards)': { pos:7, status:'playing', divisions:0, score:{g1:{nutrients:1,proteins:2,organelles:3},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0},m:{attachments:0}} },
+  'division complete (FINISH)': { pos:31, status:'playing', blue:1, red:1, lastChip:'red', score:{g1:{nutrients:3,proteins:4,organelles:4},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1}} },
+  'turns used up': { pos:12, status:'done', turnsUsed:75, blue:2, red:3, score:{g1:{nutrients:3,proteins:4,organelles:4},s:{chromosomes:2},g2:{nutrients:0,proteins:0,organelles:0}} },
+  'M phase (3 cards)': { pos:27, status:'playing', score:{g1:{nutrients:3,proteins:4,organelles:5},s:{chromosomes:4},g2:{nutrients:5,proteins:1,organelles:2}} },
+  'G1 phase (3 cards)': { pos:6, status:'playing', score:{g1:{nutrients:1,proteins:2,organelles:3},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0}} },
 };
 (async () => {
   const b = await T.launch(), server = await T.serve();
   for (const [w, h] of [[1920, 1000], [1366, 768], [1100, 700]]) for (const [name, st] of Object.entries(states)) {
     const ctx = await T.ctxFor(b, {width:w, height:h, reduced:true});
     const p = await T.open(ctx, 'openscied-b3-cell-cycle.html', 'cell-game', server.url);
-    const pl = Object.assign({id:1,unchecked:0,restarts:0,bypassed:0,skipTurns:0,bonusRolls:0}, st);
-    const game = {schema:2,mode:'solo',players:1,round:1,active:0,turns:5,complete:st.status==='finished',playersState:[pl],chanceDeck:[11],logs:[],lastDice:[1,2,3,4],lastRollSummary:'',roundResults:{},event:{title:'Test',copy:'x',icon:'',kicker:'Cell cycle'}};
+    const pl = Object.assign({id:1,turnsUsed:20,blue:0,red:0,destroyed:0,sentBack:0,skipped:0,skipTurns:0,bonusRolls:0,lastChip:null}, st);
+    const game = {schema:3,mode:'solo',players:1,round:2,active:0,turns:5,complete:st.status==='done',playersState:[pl],chanceDeck:[11],logs:[],lastDice:[1,2,3,4],lastRollSummary:'',roundResults:{1:{blue:1,red:0,destroyed:0,sentBack:0,skipped:0,turns:75,players:1},...(st.status==='done'?{2:{blue:2,red:3,destroyed:0,sentBack:0,skipped:0,turns:75,players:1}}:{})},chanceNotice:null,event:{title:'Test',copy:'x',icon:'',kicker:'Cell cycle'}};
     await p.evaluate(({k,g}) => localStorage.setItem(k, JSON.stringify({v:1,trials:[],fields:{},game:g})), {k:KEY,g:game});
     await p.reload(); await p.locator('.step-nav a[href="#cell-game"]').click(); await p.waitForTimeout(600);
     const r = await p.evaluate(() => {
@@ -23,7 +25,7 @@ const states = {
         for (const k of c.children) { const kr = k.getBoundingClientRect(); if (kr.left < cr.left - 1 || kr.right > cr.right + 1 || kr.top < cr.top - 1 || kr.bottom > cr.bottom + 1) bad.push(`"${k.textContent.trim()}" sticks out of its card`); }
       }
       const panel = document.querySelector('.game-play-grid'), pr = panel.getBoundingClientRect();
-      for (const el of document.querySelectorAll('.score-player .cell-token, .score-player small')) { const er = el.getBoundingClientRect();
+      for (const el of document.querySelectorAll('.score-player .cell-token, .score-player small, .score-chips .chip-tally')) { const er = el.getBoundingClientRect();
         if (er.left < pr.left + 4 || er.right > pr.left + panel.clientWidth - 2) bad.push(`"${el.textContent.trim()}" touches the panel edge`); }
       return { n: document.querySelectorAll('#checkpoint-requirements .requirement').length, bad };
     });

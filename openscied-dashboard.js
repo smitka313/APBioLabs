@@ -4,7 +4,18 @@
   const PREFIX = 'aplab:openscied:';
   const ACTIVITIES = [{ id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1' }];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
-  const ANSWERS = ['analysis-design', 'analysis-variation', 'analysis-celltypes', 'explanation', 'analysis-cancer', 'analysis-checkpoints', 'model-revision', 'model-prediction'];
+  // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
+  // dashboard counts whatever the activity actually asks. This list is only the fallback for saves made before the
+  // activity recorded them: the 8 analysis answers plus the 21 Lesson 3 Making Sense fields.
+  const MAKING_SENSE = ['g1', 'g1cp', 's', 'g2', 'g2cp', 'm', 'mcp'].reduce((ids, row) => ids.concat(['ms-r1-' + row + '-happened', 'ms-r1-' + row + '-represent']), [])
+    .concat(['ms-r2-q1', 'ms-r2-q2', 'ms-r2-q3', 'ms-r2-q4', 'ms-limits-explain', 'ms-limits-could-not', 'ms-limits-progress']);
+  const ANALYSIS = ['analysis-design', 'analysis-variation', 'analysis-celltypes', 'explanation', 'analysis-cancer', 'analysis-checkpoints', 'model-revision', 'model-prediction'];
+  const FALLBACK_RESPONSES = MAKING_SENSE.concat(ANALYSIS);
+  function responseIds(saved) {
+    const listed = saved && Array.isArray(saved.responseIds) ? saved.responseIds.filter(id => typeof id === 'string' && id) : [];
+    return listed.length ? Array.from(new Set(listed)) : FALLBACK_RESPONSES;
+  }
+  function written(fields, id) { return typeof fields[id] === 'string' && !!fields[id].trim(); }
   const $ = selector => document.querySelector(selector);
   function progress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
@@ -12,17 +23,18 @@
     try { saved = JSON.parse(raw); if (!saved || saved.v !== 1) throw Error('Unknown saved format'); }
     catch (e) { return { summary: 'Saved work could not be read. Download a copy before restarting.', started: false, section: 'overview', visited: 0 }; }
     const fields = saved.fields || {}, game = saved.game || {}, results = game.roundResults || {};
-    const answers = ANSWERS.filter(id => typeof fields[id] === 'string' && fields[id].trim()).length;
+    const ids = responseIds(saved), answers = ids.filter(id => written(fields, id)).length;
+    const analysisStarted = ids.some(id => !/^ms-/.test(id) && written(fields, id));
     const trials = Array.isArray(saved.trials) ? saved.trials.length : 0;
     const sets = Math.ceil(trials / 3);
     const rounds = [1, 2].filter(n => results[n]).map(n => 'Round ' + n + ' complete');
     if (game.round && !results[game.round]) rounds.push('Round ' + game.round + ' in progress');
     const gameStatus = rounds.length ? rounds.join(' · ') : game.round ? 'Round ' + game.round + ' in progress' : 'Game not started';
     const started = !!(game.round || trials || answers || saved.quick || (SECTIONS.includes(saved.lastSection) && saved.lastSection !== 'overview'));
-    const fallback = answers === ANSWERS.length ? 'submit' : answers ? 'analyze' : trials ? 'growth-model' : game.round ? 'cell-game' : 'overview';
+    const fallback = answers === ids.length ? 'submit' : analysisStarted ? 'analyze' : answers ? 'cell-game' : trials ? 'growth-model' : game.round ? 'cell-game' : 'overview';
     return { started, section: SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
-      summary: started ? gameStatus + ' · ' + sets + ' trial set' + (sets === 1 ? '' : 's') + ' saved · ' + answers + ' of ' + ANSWERS.length + ' responses written' : 'Not started' };
+      summary: started ? gameStatus + ' · ' + sets + ' trial set' + (sets === 1 ? '' : 's') + ' saved · ' + answers + ' of ' + ids.length + ' responses written' : 'Not started' };
   }
   function init() {
     Lab.identity.mount('#openscied-student-identity');
@@ -71,8 +83,17 @@
     function downloadWork(onlyKeys) {
       try {
         const work = {};
-        (onlyKeys || savedKeys()).forEach(key => { work[key] = localStorage.getItem(key); });
-        const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: Lab.identity.get(), work };
+        const keys = onlyKeys || savedKeys(), responses = {};
+        keys.forEach(key => { work[key] = localStorage.getItem(key); });
+        // A readable copy of every written response (Making Sense and analysis) next to the raw saved work.
+        ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
+          let saved = null;
+          try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
+          const fields = saved && saved.fields || {};
+          responses[activity.id] = {};
+          responseIds(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
+        });
+        const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: Lab.identity.get(), work, responses };
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url; link.download = 'openscied-saved-work.json';

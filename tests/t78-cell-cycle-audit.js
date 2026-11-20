@@ -1,15 +1,16 @@
-/* Targeted regressions from the independent post-153 audit. */
+/* Targeted regressions from the independent post-153 audit, updated to the OpenSciEd Cell Game rules (board indices:
+   G1 1-6, G1 Checkpoint 7, S 8-15, G2 16-23, G2 Checkpoint 24, M 25-29, M Checkpoint 30, FINISH 31). */
 const T = require('./_h');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const KEY = 'aplab:openscied:b3-cell-cycle:v1';
-const score = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1},m:{attachments:4}});
-const player = () => ({id:1,pos:0,score:score(),status:'playing',divisions:0,unchecked:0,restarts:0,bypassed:0,skipTurns:0,bonusRolls:0});
+const score = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1}});
+const player = () => ({id:1,pos:0,score:score(),status:'playing',turnsUsed:0,blue:0,red:0,destroyed:0,sentBack:0,skipped:0,skipTurns:0,bonusRolls:0,lastChip:null});
 function savedGame(round = 2) {
-  return {v:1,trials:[],fields:{'analysis-design':'Keep my answer'},game:{schema:2,mode:'solo',players:1,
+  return {v:1,trials:[],fields:{'analysis-design':'Keep my answer'},game:{schema:3,mode:'solo',players:1,
     round,active:0,turns:0,complete:false,playersState:[player()],chanceDeck:[11],logs:[],lastDice:[],lastRollSummary:'',
-    roundResults:round===2?{1:{divisions:1,unchecked:0,restarts:0,bypassed:0,rolls:40}}:{},event:{title:'Ready',copy:'Test setup',icon:'',kicker:'Cell cycle'}}};
+    roundResults:round===2?{1:{blue:1,red:0,destroyed:0,sentBack:0,skipped:0,turns:75,players:1}}:{},chanceNotice:null,event:{title:'Ready',copy:'Test setup',icon:'',kicker:'Cell cycle'}}};
 }
 (async () => {
   const browser = await T.launch(), server = await T.serve();
@@ -51,10 +52,10 @@ function savedGame(round = 2) {
     assert.equal(group.active,0); assert.equal(group.playersState.length,4);
     group.playersState.forEach(player => {assert.equal(player.pos,1);assert.equal(player.score.g1.nutrients,1);});
     const firstDivision=savedGame(1);firstDivision.game.mode='group';firstDivision.game.players=4;
-    firstDivision.game.playersState=Array.from({length:4},(_,i)=>Object.assign(player(),{id:i+1,pos:i===0?28:0}));
+    firstDivision.game.playersState=Array.from({length:4},(_,i)=>Object.assign(player(),{id:i+1,pos:i===0?29:0}));
     await seed(firstDivision);await roll();
-    assert.equal((await read()).game.playersState[0].status,'finished');
-    assert.equal((await read()).game.complete,false,'one player finishing must not end the group round');
+    assert.equal((await read()).game.playersState[0].blue,1);
+    assert.equal((await read()).game.complete,false,'one player dividing must not end the group round');
     assert.equal((await read()).game.active,1);
     T.ok(true,'Visible reset/cancel controls and four independent player turns');
 
@@ -75,73 +76,74 @@ function savedGame(round = 2) {
     T.ok(true,'Six desktop/tablet/mobile viewports; full canvas and Roll visible on desktop');
     await p.setViewportSize({width:1440,height:900});
 
-    // First diamond: a card fires even though no die has a 5. Card 11 bypasses two checkpoints.
-    await seed(savedGame()); await roll([1,2,3,4]);
-    assert.equal((await read()).game.playersState[0].bypassed,2);
+    // First light-blue square (G1 space 2): a card fires even though no die has a 5. Card 11 skips two checkpoints:
+    // it skips the G1 Checkpoint and checks at the G2 Checkpoint.
+    const first=savedGame();first.game.playersState[0].pos=1;
+    await seed(first); await roll([1,2,3,4]);
+    assert.equal((await read()).game.playersState[0].skipped,1);
+    assert.equal((await read()).game.playersState[0].pos,24);
     assert.equal(await p.locator('#chance-reveal').isVisible(),true);
     await p.locator('#chance-reveal-ack').click();
     await go('analyze');
-    assert.match(await p.locator('#analysis-reference-data').textContent(),/Round 2 \(in progress\).*2 checkpoints bypassed/);
+    assert.match(await p.locator('#analysis-reference-data').textContent(),/Round 2 \(in progress\).*Checkpoints skipped: 1/);
     await go('submit');
-    assert.match(await p.locator('.report-round').last().textContent(),/Round 2 \(in progress\).*2 checkpoints bypassed/);
-    // A circle does not draw a card even with four 5s. Index 2 is status Space 3.
-    const circle=savedGame();circle.game.playersState[0].pos=1;
-    await seed(circle); await roll([5,5,5,5]);
-    assert.equal((await read()).game.playersState[0].pos,2);
-    assert.equal((await read()).game.chanceNotice,undefined);
-    // Matching the M-phase target and landing on a diamond draws a card.
-    const mitosis=savedGame();mitosis.game.playersState[0].pos=23;mitosis.game.chanceDeck=[10];
-    await seed(mitosis);await roll([1,2,3,4]);
-    assert.equal((await read()).game.playersState[0].pos,24);
+    assert.match(await p.locator('.report-round').last().textContent(),/Round 2 \(in progress\).*Checkpoints skipped: 1/);
+    // A square that is not light blue draws no card even with four 5s.
+    const plain=savedGame();plain.game.playersState[0].pos=2;
+    await seed(plain); await roll([5,5,5,5]);
+    assert.equal((await read()).game.playersState[0].pos,3);
+    assert.equal((await read()).game.chanceNotice,null);
+    // Matching the M-phase number and landing on a light-blue square (M space 2) draws a card.
+    const mitosis=savedGame();mitosis.game.playersState[0].pos=25;mitosis.game.chanceDeck=[7];
+    await seed(mitosis);await roll([2,6,6,6]);
+    assert.equal((await read()).game.playersState[0].pos,26);
     assert.equal(await p.locator('#chance-reveal').isVisible(),true);
     await p.locator('#chance-reveal-ack').click();
-    const missed=savedGame();missed.game.playersState[0].pos=24;
-    await seed(missed);await roll([1,2,3,4]);
-    assert.equal((await read()).game.playersState[0].pos,24);
-    assert.equal((await read()).game.chanceNotice,undefined);
-    T.ok(true,'Cards follow diamond landings, including M phase; dice 5s and missed moves do not trigger cards');
+    const missed=savedGame();missed.game.playersState[0].pos=25;
+    await seed(missed);await roll([1,3,4,5]);
+    assert.equal((await read()).game.playersState[0].pos,25);
+    assert.equal((await read()).game.chanceNotice,null);
+    T.ok(true,'Cards follow light-blue landings, including M phase; dice values and missed moves do not trigger cards');
 
-    // An incomplete spindle checkpoint holds the cell until all four modeled attachments are made.
-    const spindle=savedGame(1);spindle.game.playersState[0].pos=28;spindle.game.playersState[0].score.m.attachments=0;
-    await seed(spindle);await roll([1,2,3,4]);
-    assert.equal((await read()).game.playersState[0].pos,29);
-    assert.equal((await read()).game.playersState[0].status,'playing');
-    await roll([1,2,3,4]);
-    assert.equal((await read()).game.playersState[0].score.m.attachments,0);
-    for(let attachments=1;attachments<=4;attachments++) {
-      await roll([5,1,2,3]);
-      const current=(await read()).game.playersState[0];
-      assert.equal(current.score.m.attachments,attachments);
-      assert.equal(current.status,attachments===4?'finished':'playing');
+    // M phase: each space needs its number; the M Checkpoint double-checks the scorecard and divides into a blue chip.
+    const mphase=savedGame(1);mphase.game.playersState[0].pos=24;
+    await seed(mphase);
+    for(const need of [1,2,3,4,5]) {
+      await roll([6,6,6,6]);
+      assert.equal((await read()).game.playersState[0].pos,23+need,'a miss does not move');
+      await roll([need,6,6,6]);
+      assert.equal((await read()).game.playersState[0].pos,24+need);
     }
-    T.ok(true,'M checkpoint waits for four attachments; unsuccessful rolls keep the cell paused');
+    await roll([1]);
+    assert.equal((await read()).game.playersState[0].blue,1);
+    assert.equal((await read()).game.playersState[0].pos,31);
+    T.ok(true,'M phase needs 1-5 in order; the M Checkpoint divides a complete cell into a blue chip');
 
     const damaged=savedGame();damaged.game.playersState[0].pos=25;damaged.game.chanceDeck=[5];
-    await seed(damaged);await roll([5,1,2,4]);
+    await seed(damaged);await roll([2,1,3,4]);
     assert.equal((await read()).game.playersState[0].pos,0);
-    assert.equal((await read()).game.playersState[0].restarts,1);
-    assert.match(await p.locator('#dice-result').textContent(),/DNA damage/);
-    assert.doesNotMatch(await p.locator('#dice-result').textContent(),/Matched the required/);
+    assert.equal((await read()).game.playersState[0].destroyed,1);
+    assert.match(await p.locator('#dice-result').textContent(),/destroys your cell/);
     await p.locator('#chance-reveal-ack').click();
-    // Short DNA or a missing G2 material both pause the cell at the G2 checkpoint (it is neither sent back nor restarted).
-    for(const missing of ['dna','organelle']) {
-      const saved=savedGame(1);saved.game.playersState[0].pos=22;
-      if(missing==='dna')saved.game.playersState[0].score.s.chromosomes=0;
+    // Short DNA sends the cell back to the first S space; a missing G2 material destroys it (G2 card).
+    for(const [missing,pos] of [['dna',8],['organelle',0]]) {
+      const saved=savedGame(1);saved.game.playersState[0].pos=23;
+      if(missing==='dna')saved.game.playersState[0].score.s.chromosomes=3;
       else saved.game.playersState[0].score.g2.organelles=0;
       await seed(saved);await roll();
       const current=(await read()).game;
-      assert.equal(current.playersState[0].pos,23);assert.equal(current.playersState[0].restarts,0);
-      assert.equal(current.turns,1);assert.ok(current.logs.length>1);
-      assert.equal(await p.locator('#history-count').textContent(),'1 roll');
+      assert.equal(current.playersState[0].pos,pos);
+      assert.equal(current.turns,1);assert.ok(current.logs.length>=1);
+      assert.equal(await p.locator('#history-count').textContent(),'1 turn');
     }
-    T.ok(true,'Damage clears stale result text; both G2 failure paths and the roll-only history count');
-    const unchecked=savedGame();unchecked.game.chanceDeck=[12];
-    await seed(unchecked);await roll();
+    T.ok(true,'Damage card clears stale result text; both G2 Checkpoint outcomes and the turn-only history count');
+    const finish=savedGame();finish.game.playersState[0].pos=1;finish.game.playersState[0].turnsUsed=74;finish.game.chanceDeck=[12];
+    await seed(finish);await roll();
     assert.equal((await read()).game.complete,true);
-    assert.equal((await read()).game.roundResults[2].unchecked,1);
+    assert.equal((await read()).game.roundResults[2].red,1);
     await p.locator('#chance-reveal-ack').click();
-    assert.match(await p.locator('#round-summary').textContent(),/Round 1 and Round 2 comparison/);
-    T.ok(true,'Round 2 can finish through an unchecked division and records the comparison');
+    assert.match(await p.locator('#round-summary').textContent(),/Round 1 and Round 2/);
+    T.ok(true,'Round 2 can end on a red chip from "Move directly to Finish" and records the comparison');
     assert.deepEqual(p.errors,[]);
   } finally {await ctx.close();await browser.close();server.close();}
   T.done('cell-cycle-audit');

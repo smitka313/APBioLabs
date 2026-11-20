@@ -1,12 +1,14 @@
-/* M (spindle) checkpoint (review M2): it checks only chromosome attachment to the spindle and never sends an M-phase
-   cell back to G1 or S. Before the fix a cell with unmet earlier requirements (left by a bypassed checkpoint) was sent
-   back to G1 space 1 or the first S space. Now it divides, and the division is recorded as unchecked. */
+/* M phase and M Checkpoint (Round 1 handout step 8; Teacher Reference: Game Cards 1, M card; TE p20). The M spaces are
+   "Must Roll" 1 to 5 in order, and the M Checkpoint double-checks the whole scorecard (G1 3 of each, S 4 DNA, G2 1 of
+   each): complete -> "YOU SUCCESSFULLY DIVIDED! Take a new blue cell chip!". The earlier spindle-attachment rule (5 or
+   6 attaches a chromosome) is gone, so the game does not answer the M-phase card sort in advance.
+   Board: G2 Checkpoint 24, M 25-29, M Checkpoint 30, FINISH 31. */
 const T = require('./_h');
 const KEY = 'aplab:openscied:b3-cell-cycle:v1';
-const full = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1},m:{attachments:0}});
-const pl = (pos, score) => ({id:1,pos,score:score||full(),status:'playing',divisions:0,unchecked:0,restarts:0,bypassed:0,skipTurns:0,bonusRolls:0});
-const saved = (round, player, deck) => ({v:1,trials:[],fields:{},game:{schema:2,mode:'solo',players:1,round,active:0,turns:0,complete:false,
-  playersState:[player],chanceDeck:deck||[],logs:[],lastDice:[],lastRollSummary:'',roundResults:round===2?{1:{divisions:1,unchecked:0,restarts:0,bypassed:0,rolls:40}}:{},
+const full = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1}});
+const pl = (pos, score) => ({id:1,pos,score:score||full(),status:'playing',turnsUsed:0,blue:0,red:0,destroyed:0,sentBack:0,skipped:0,skipTurns:0,bonusRolls:0,lastChip:null});
+const saved = (round, player) => ({v:1,trials:[],fields:{},game:{schema:3,mode:'solo',players:1,round,active:0,turns:0,complete:false,
+  playersState:[player],chanceDeck:[7],logs:[],lastDice:[],lastRollSummary:'',roundResults:round===2?{1:{blue:1,red:0,destroyed:0,sentBack:0,skipped:0,turns:75,players:1}}:{},chanceNotice:null,
   event:{title:'Ready',copy:'Test setup',icon:'',kicker:'Cell cycle'}}});
 (async () => {
   const browser = await T.launch(), server = await T.serve();
@@ -23,33 +25,31 @@ const saved = (round, player, deck) => ({v:1,trials:[],fields:{},game:{schema:2,
     const ack = p.locator('#chance-reveal-ack'); if (await ack.isVisible()) await ack.click();
   };
   try {
-    for (const [what, edit, label] of [
-      ['G1 materials', s => { s.g1.proteins = 0; }, 'G1'],
-      ['DNA copies', s => { s.s.chromosomes = 2; }, 'S'],
-      ['G2 materials', s => { s.g2.organelles = 0; }, 'G2']]) {
-      const score = full(); score.m.attachments = 4; edit(score);
-      await seed(saved(2, pl(28, score)));
-      await roll([1,2,3,4]);
-      const q = (await read()).playersState[0];
-      T.ok(q.pos === 30 && q.status === 'finished', `${what} missing at the M checkpoint: the cell is not sent back to ${label} (pos ${q.pos}, ${q.status})`);
-      T.ok(q.unchecked === 1, `${what}: the division is recorded as an unchecked division (unchecked ${q.unchecked})`);
+    await seed(saved(1, pl(26)));
+    T.ok(/must roll a 3/.test(await p.locator('#turn-instruction').textContent()), 'on Must roll 2 the instruction asks for a 3');
+    await roll([5,6,5,6]);
+    T.ok((await read()).playersState[0].pos === 26, '5s and 6s no longer advance M phase (no spindle-attachment rule)');
+    await roll([3,6,6,6]);
+    T.ok((await read()).playersState[0].pos === 27, 'a 3 moves the cell to Must roll 3');
+    await seed(saved(1, pl(29)));
+    T.ok(/Turn over the M Checkpoint card/.test(await p.locator('#roll-dice').textContent()), 'on Must roll 5 the next move turns over the M Checkpoint card');
+    await roll([1]);
+    let g = await read(), q = g.playersState[0];
+    T.ok(q.blue === 1 && q.pos === 31 && /YOU SUCCESSFULLY DIVIDED! Take a new blue cell chip!/.test(g.event.title), `a complete scorecard divides with a blue chip ("${g.event.title}")`);
+    // The double-check looks at every phase. Only possible after a Round 2 card skipped an earlier checkpoint.
+    for (const [what, edit] of [['G1 proteins', s => { s.g1.proteins = 2; }], ['DNA', s => { s.s.chromosomes = 3; }], ['G2 organelles', s => { s.g2.organelles = 0; }]]) {
+      const score = full(); edit(score);
+      await seed(saved(2, pl(29, score)));
+      await roll([1]);
+      q = (await read()).playersState[0];
+      T.ok(q.blue === 0 && q.red === 0 && q.pos === 0 && q.destroyed === 1, `${what} short at the M Checkpoint: no chip; p53 destroys the cell (pos ${q.pos})`);
     }
-    // A fully checked cell still divides as a regulated division.
-    const okScore = full(); okScore.m.attachments = 4;
-    await seed(saved(1, pl(28, okScore)));
-    await roll([1,2,3,4]);
-    let q = (await read()).playersState[0];
-    T.ok(q.status === 'finished' && q.unchecked === 0, 'a cell that met every requirement completes a regulated division');
-    // Missing attachments still hold the cell at the checkpoint.
-    await seed(saved(1, pl(28, full())));
-    await roll([1,2,3,4]);
-    q = (await read()).playersState[0];
-    T.ok(q.pos === 29 && q.status === 'playing', 'without four attachments the cell waits at the M checkpoint');
-    const card = await p.locator('#checkpoint-requirements').textContent();
-    T.ok(/Spindle attachments/.test(card) && !/G1 materials|DNA copies|G2 materials/.test(card), `the M checkpoint card lists only spindle attachments ("${card.replace(/\s+/g,' ').trim()}")`);
-    const rules = await p.locator('.game-rules').textContent();
-    const mRule = rules.split('M checkpoint:')[1].split('Round 2:')[0];
-    T.ok(!/along with the G1, S, and G2 requirements/.test(mRule) && /only/i.test(mRule) && /never/i.test(mRule), 'rules text says the M checkpoint checks only spindle attachment and never sends a cell back');
+    await seed(saved(1, pl(27)));
+    const card = (await p.locator('#checkpoint-requirements').textContent()).replace(/\s+/g,' ');
+    T.ok(/G1 · 3 of each/.test(card) && /S · DNA/.test(card) && /G2 · 1 of each/.test(card) && !/Spindle/.test(card), `the M Checkpoint card lists the whole scorecard ("${card.trim()}")`);
+    const rules = (await p.locator('.game-rules').textContent()).replace(/\s+/g,' ');
+    T.ok(/you must roll a 1/.test(rules) && /MUST roll|must roll the number on that space/.test(rules) && !/spindle/i.test(rules), 'rules text gives the 1-5 sequence and no spindle rule');
+    T.ok(!/spindle/i.test(await p.locator('#phase-guide').textContent()), 'the phase guide no longer describes spindle attachment');
     T.ok(p.errors.length === 0, 'no page errors: ' + p.errors.join('; '));
   } catch (e) { T.ok(false, 'unexpected error: ' + e.message.split('\n')[0]); }
   await browser.close(); server.close(); T.done('t81-m-checkpoint-spindle');
