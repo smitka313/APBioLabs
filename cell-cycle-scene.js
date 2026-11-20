@@ -54,7 +54,7 @@
         ellipse(p.x,p.y+2,r+2,r+2,'#0006');
         ellipse(p.x,p.y,r,r,gradient(p.x,p.y,r,[[0,col+'dd'],[.7,col+'44'],[1,'#172c2b']]),col+'b0',1.4);
         if(start||finish)text(start?'▶':'✓',p.x,p.y+4,12,'#ecfff7','center','700');
-        else if(t&&t.phase==='m'){text(String(t.need),p.x,p.y+4,11,'#e6dbff','center','700');}
+        else if(t&&t.phase==='m'){text(t.need==='spindle'?'ATTACH':t.need===null?'CHECK':String(t.need),p.x,p.y+4,8,'#e6dbff','center','700');}
         else text(String(i+1),p.x,p.y+3,7,'#c6e6dc','center','mono');
         if(game&&game.round===2&&t&&t.chance){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.PI/4);ctx.strokeStyle='#8ad5f0';ctx.strokeRect(-11,-11,22,22);ctx.restore();}
         hitRegions.push({x:p.x,y:p.y,r:18,title:'Space '+(i+1)+' · '+(t?.label||'START'),copy:t?.chance?'Landing on this blue-diamond space in Round 2 draws a chance card. The dice values do not trigger it.':'This space does not draw a chance card.'});
@@ -138,7 +138,7 @@
       text('DAUGHTER CELLS',568,455,12,'#b3e6d1','center','mono');
     }else{
       hitRegions.push(...cell(568,328,radius,actualPhase,p.score,p.pos>=26?.8:.1));
-      const phaseText=phase==='s'?'DNA IS COPYING':phase==='g2'?'PREPARING TO DIVIDE':phase==='m'?'CHROMOSOMES SEPARATE':'GROWING & GATHERING';
+      const phaseText=phase==='s'?'DNA IS COPYING':phase==='g2'?'PREPARING TO DIVIDE':phase==='m'?'CHECKING SPINDLE ATTACHMENT':'GROWING & GATHERING';
       text(phaseText,568,455,11,'#a2c8bb','center','mono');
     }
     text('YOUR CELL, MAGNIFIED',568,150,10,'#86aaa1','center','mono');
@@ -168,7 +168,7 @@
       ctx.restore();
     }
     const phase=track[game?.playersState?.[game.active]?.pos||0]?.phase;
-    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     DNA copies in S',392,676,12,'#b1c5bc');text('5–6  No materials collected',392,698,12,'#b1c5bc');text('M phase: match the next number (1–5)',392,720,11,'#b1c5bc');
+    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     DNA copies in S',392,676,12,'#b1c5bc');text('5–6  No materials; attachment signal in M',392,698,11,'#b1c5bc');text('M phase: a 5 or 6 models one attachment',392,720,11,'#b1c5bc');
     text(rolling?'ROLLING…':(game&&game.playersState[game.active]?'PLAYER '+game.playersState[game.active].id+' · ROLL FOUR DICE':'MOVE ONE SPACE · ROLL FOUR DICE'),1122,631,10,'#98b7ad','right','mono');
   }
   function drawParticles(){particles=particles.filter(p=>now-p.time<850);for(const p of particles){const k=Math.max(0,Math.min(1,(now-p.time)/850)),x=p.x+(p.tx-p.x)*k,y=p.y+(p.ty-p.y)*k-Math.sin(k*Math.PI)*100;ctx.save();ctx.globalAlpha=1-k*.7;ctx.shadowColor=p.color;ctx.shadowBlur=8;ellipse(x,y,3.4,3.4,p.color);ctx.restore();}}

@@ -45,7 +45,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       // Use deterministic dice, while still clicking the real Roll control each turn.
       for (let turns = 0; !(await read()).game.complete && turns < 80; turns++) {
         const pos = (await read()).game.playersState[0].pos;
-        const need = pos === 23 ? 1 : pos >= 24 && pos <= 27 ? pos - 22 : 4;
+        const need = pos >= 24 && pos <= 27 ? 5 : 4;
         await p.evaluate(need => {
           let i = 0; const values = [1, 2, 3, need];
           Math.random = () => (values[i++ % 4] - 0.5) / 6;

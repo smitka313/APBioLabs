@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const KEY = 'aplab:openscied:b3-cell-cycle:v1';
-const score = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1}});
+const score = () => ({g1:{nutrients:3,proteins:3,organelles:3},s:{chromosomes:4},g2:{nutrients:1,proteins:1,organelles:1},m:{attachments:4}});
 const player = () => ({id:1,pos:0,score:score(),status:'playing',divisions:0,unchecked:0,restarts:0,bypassed:0,skipTurns:0,bonusRolls:0});
 function savedGame(round = 2) {
   return {v:1,trials:[],fields:{'analysis-design':'Keep my answer'},game:{schema:2,mode:'solo',players:1,
@@ -61,14 +61,16 @@ function savedGame(round = 2) {
     fs.mkdirSync(path.join(T.ROOT,'test-artifacts'),{recursive:true});
     for(const [width,height] of [[1920,1000],[1440,900],[1366,768],[390,844],[768,1024],[1024,768]]) {
       await p.setViewportSize({width,height}); await go('cell-game'); await p.waitForTimeout(150);
+      await p.screenshot({path:path.join(T.ROOT,'test-artifacts','cell-cycle-'+width+'x'+height+'.png')});
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth>innerWidth),false,width+'px: no page overflow');
       if(width>=1100) {
         const button=await p.locator('#roll-dice').boundingBox(),board=await p.locator('#cell-board').boundingBox();
-        assert.ok(button.y>=0&&button.y+button.height<=height,width+'px: Roll stays above the fold');
+        assert.ok(button.y>=0&&button.y+button.height<=height,width+'px: Roll stays above the fold '+JSON.stringify({button,board,height}));
         assert.ok(board.y>=0&&board.y+board.height<=height,width+'px: full board stays above the fold');
         assert.equal(await p.locator('#cycle-scene').evaluate(el => getComputedStyle(el).objectFit),'contain');
+        const question=await p.locator('.mechanism-check').boundingBox();
+        assert.ok(question.y>=board.y+board.height,width+'px: reasoning question stays below the play area');
       }
-      await p.screenshot({path:path.join(T.ROOT,'test-artifacts','cell-cycle-'+width+'x'+height+'.png')});
     }
     T.ok(true,'Six desktop/tablet/mobile viewports; full canvas and Roll visible on desktop');
     await p.setViewportSize({width:1440,height:900});
@@ -94,13 +96,28 @@ function savedGame(round = 2) {
     assert.equal(await p.locator('#chance-reveal').isVisible(),true);
     await p.locator('#chance-reveal-ack').click();
     const missed=savedGame();missed.game.playersState[0].pos=24;
-    await seed(missed);await roll([6,6,6,6]);
+    await seed(missed);await roll([1,2,3,4]);
     assert.equal((await read()).game.playersState[0].pos,24);
     assert.equal((await read()).game.chanceNotice,undefined);
     T.ok(true,'Cards follow diamond landings, including M phase; dice 5s and missed moves do not trigger cards');
 
+    // An incomplete spindle checkpoint holds the cell until all four modeled attachments are made.
+    const spindle=savedGame(1);spindle.game.playersState[0].pos=28;spindle.game.playersState[0].score.m.attachments=0;
+    await seed(spindle);await roll([1,2,3,4]);
+    assert.equal((await read()).game.playersState[0].pos,29);
+    assert.equal((await read()).game.playersState[0].status,'playing');
+    await roll([1,2,3,4]);
+    assert.equal((await read()).game.playersState[0].score.m.attachments,0);
+    for(let attachments=1;attachments<=4;attachments++) {
+      await roll([5,1,2,3]);
+      const current=(await read()).game.playersState[0];
+      assert.equal(current.score.m.attachments,attachments);
+      assert.equal(current.status,attachments===4?'finished':'playing');
+    }
+    T.ok(true,'M checkpoint waits for four attachments; unsuccessful rolls keep the cell paused');
+
     const damaged=savedGame();damaged.game.playersState[0].pos=25;damaged.game.chanceDeck=[5];
-    await seed(damaged);await roll([3,1,2,4]);
+    await seed(damaged);await roll([5,1,2,4]);
     assert.equal((await read()).game.playersState[0].pos,0);
     assert.equal((await read()).game.playersState[0].restarts,1);
     assert.match(await p.locator('#dice-result').textContent(),/DNA damage/);
