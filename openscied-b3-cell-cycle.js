@@ -361,8 +361,12 @@
       g.active=i;return;
     }
     if(finishIfAll())return;
-    g.active=index;
-    if(skipped)setEvent('The group has completed its skipped turns','Every active player lost a turn to a chance event. The next cycle starts with the current player.','⏸️','Turn skipped');
+    // Every other player used up a skipped turn. Hand the dice to the next player who is still playing; the player
+    // who just finished (index) may no longer be playing, and giving them the dice would leave the round stuck.
+    let next=index;
+    for(let step=1;step<=n;step++){const i=(index+step)%n;if(g.playersState[i].status==='playing'){next=i;break;}}
+    g.active=next;
+    if(skipped)setEvent('The group has completed its skipped turns','Every other active player lost a turn to a chance event. Player '+g.playersState[next].id+' rolls next.','⏸️','Turn skipped');
   }
   function rollDice(){
     const g=state.game,p=g.playersState[g.active];
