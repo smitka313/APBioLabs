@@ -269,12 +269,19 @@
     const top=Math.max(board.getBoundingClientRect().top,(nav?nav.getBoundingClientRect().bottom:0)+10);
     $('#game-panel').style.setProperty('--game-scene-height',Math.max(300,Math.min(780,window.innerHeight-top-18))+'px');
   }
+  // The one live region for the game: each roll's result and whose turn is next.
+  function announce(text){const el=$('#game-announcer');if(el)el.textContent=text;}
+  function turnAnnouncement(){
+    const g=state.game;if(g.complete)return roundName(g.round)+' complete.';
+    const next=g.playersState[g.active];
+    return next&&next.status==='playing'?'Player '+next.id+'’s turn'+(next.bonusRolls?' (bonus roll)':'')+'.':'';
+  }
   function startRound(round,mode,players){
     const old=state.game,selectedMode=mode||($('input[name="game-mode"]:checked')||{}).value||old.mode||'solo';
     const count=Number(players|| (selectedMode==='group'?$('#group-size').value:1))||1;
     const results=round===2&&old.roundResults&&old.roundResults[1]?{1:old.roundResults[1]}:{};
     state.game={schema:2,mode:selectedMode,players:count,round:round,active:0,turns:0,complete:false,playersState:Array.from({length:count},function(_,i){return makePlayer(i);}),chanceDeck:round===2?shuffledDeck():[],logs:[],lastDice:[],lastRollSummary:'',roundResults:results,event:{title:'Round '+round+' begins',copy:round===1?'Move each cell through the cycle and check its materials at G1 and G2.':'Same board, new chance events. Some checkpoint responses may be disrupted.',icon:'🎲',kicker:roundName(round)}};
-    save();renderGame();$('#roll-dice').focus({preventScroll:true});
+    save();renderGame();announce(state.game.event.title+'. '+turnAnnouncement());$('#roll-dice').focus({preventScroll:true});
   }
   function drawChance(p){
     const g=state.game;
@@ -414,6 +421,7 @@
       if(!bonusRemains&&!g.complete)activeNext(g.active);
       if(g.complete)finishIfAll();
       save();renderGame();renderAnalysisReference();
+      announce('Player '+p.id+' rolled '+dice.join(', ')+'. '+g.event.title+'. '+g.event.copy+' '+turnAnnouncement());
       if(g.chanceNotice)$('#chance-reveal-ack').focus();else if(g.complete)$('#round-summary').focus();else $('#roll-dice').focus({preventScroll:true});
     },480);
   }

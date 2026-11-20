@@ -136,6 +136,7 @@
           <div class="game-status-pills"><span class="pill" id="phase-label">G1 · Growth</span><span class="pill" id="position-label">Start</span></div>
         </div>
 
+        <p id="game-announcer" class="sr-only" role="status" aria-live="polite"></p>
         <div class="board-legend" aria-label="Board key">
           <span><i class="legend-swatch swatch-g1"></i>G1 · gather materials</span>
           <span><i class="legend-swatch swatch-s"></i>S · copy DNA</span>
@@ -167,7 +168,7 @@
             <div class="station-heading"><div><span class="game-kicker">Your turn</span><h3 id="dice-title">Roll four dice</h3></div><span class="turn-count" id="turn-count">Turn 1</span></div>
             <p id="dice-prompt">Move your token one space, then roll all four dice. The dice collect materials; they do not set the number of spaces.</p>
             <div class="dice-tray" id="dice-tray" aria-label="Four dice"></div>
-            <div class="dice-result" id="dice-result" role="status" aria-live="polite">The dice will appear here after the first roll.</div>
+            <div class="dice-result" id="dice-result">The dice will appear here after the first roll.</div>
             
             <div class="dice-key"><strong>Dice key</strong><span>1 Nutrient</span><span>2 Protein</span><span>3 Organelle</span><span>4 Chromosome</span><span>5–6 No material; M-phase attachment signal</span></div>
           </section>
@@ -183,7 +184,7 @@
           </section>
         </div>
 
-        <section class="turn-event panel" id="turn-event" aria-live="polite">
+        <section class="turn-event panel" id="turn-event">
           <div class="event-icon" id="event-icon">🧬</div>
           <div><span class="game-kicker" id="event-kicker">Cell cycle</span><h3 id="event-title">Your cell is ready</h3><p id="event-copy">Follow the path, collect materials, and see what the checkpoints allow.</p></div>
         </section>
@@ -199,7 +200,7 @@
         </fieldset>
 
         <details class="turn-log panel"><summary>Roll and event history <span id="history-count">0 rolls</span></summary><ol id="turn-history"></ol></details>
-        <div class="game-end panel" id="round-summary" role="status" aria-live="polite" tabindex="-1" hidden></div>
+        <div class="game-end panel" id="round-summary" tabindex="-1" hidden></div>
         <div class="row game-actions"><button class="btn" id="restart-round" type="button">Restart this round</button><button class="btn" id="reset-game" type="button">Set up a new game</button></div>
       </div>
 
