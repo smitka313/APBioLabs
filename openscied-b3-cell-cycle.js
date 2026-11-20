@@ -727,7 +727,10 @@
   function download(){
     save();
     const makingSense={round1Table:MAKING_SENSE_ROWS.map(function(r){return {row:r[1],whatHappened:state.fields['ms-r1-'+r[0]+'-happened']||'',couldRepresent:state.fields['ms-r1-'+r[0]+'-represent']||''};}),questions:MAKING_SENSE_PROMPTS.map(function(x){return {prompt:x[0],answer:state.fields[x[1]]||''};})};
-    const payload={format:'openscied-b3-cell-cycle-progress-v1',exportedAt:new Date().toISOString(),student:studentIdentity(),game:state.game,cellChips:{round1:roundEvidence(1),round2:roundEvidence(2)},lesson3MakingSense:makingSense,simulationTrials:state.trials,answers:state.fields};
+    const payload={format:'openscied-b3-cell-cycle-progress-v1',exportedAt:new Date().toISOString(),student:studentIdentity(),game:state.game,cellChips:{round1:roundEvidence(1),round2:roundEvidence(2)},lesson3MakingSense:makingSense,
+      // Each trial also names its set (Set 1, 2, …: three trials each, in the order they were run) and its trial number
+      // within that set, as in the data table. Every earlier field is kept, so older readers of this file still work.
+      simulationTrials:state.trials.map(function(t,i){return Object.assign({},t,{setNumber:Math.floor(i/3)+1,trialInSet:i%3+1});}),answers:state.fields};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='cell-cycle-cancer-model-work.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
