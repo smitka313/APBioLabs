@@ -30,6 +30,9 @@ async function footerChecks(p, where) {
       T.ok(/Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(text), `section ${id}: non-endorsement statement visible`);
     }
     await footerChecks(p, 'cell-cycle page');
+    const foot = (await p.locator('footer.site-footer').textContent()).replace(/\s+/g,' ');
+    T.ok(/Biology Unit B\.3: Inheritance & Variation of Traits/.test(foot), 'footer names the unit by its official title');
+    T.ok(!/Traits: Cancer/.test(await p.content()), 'no other unit title remains on the page');
     const ld = JSON.parse(await p.locator('script[type="application/ld+json"]').textContent());
     T.ok(ld['@graph'].find(n => /#webpage$/.test(n['@id'])).license === 'https://creativecommons.org/licenses/by-nc-sa/4.0/', 'JSON-LD license stays this site\'s CC BY-NC-SA 4.0');
     const body = await p.evaluate(() => document.body.innerText);
