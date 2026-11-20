@@ -541,13 +541,44 @@
   }
   let analysisPage=0;
   function showAnalysisPage(index){
-    analysisPage=Math.max(0,Math.min(2,index));
+    analysisPage=Math.max(0,Math.min(3,index));
     $$('#analyze [data-analysis-page]').forEach(el=>{el.hidden=Number(el.dataset.analysisPage)!==analysisPage;});
-    $('#analysis-page-status').textContent='Part '+(analysisPage+1)+' of 3 · '+['Compare data','Explain mechanisms','Revise your model'][analysisPage];
+    $('#analysis-page-status').textContent='Part '+(analysisPage+1)+' of 4 · '+['Compare data','Look for patterns','Explain mechanisms','Revise your model'][analysisPage];
     for(const id of ['analysis-prev','analysis-prev-bottom'])$('#'+id).disabled=analysisPage===0;
-    for(const id of ['analysis-next','analysis-next-bottom']){$('#'+id).disabled=analysisPage===2;}
+    for(const id of ['analysis-next','analysis-next-bottom']){$('#'+id).disabled=analysisPage===3;}
+  }
+  /* "Your data" beside each Analyze question: the exact recorded numbers that question asks students to use. */
+  function renderQuestionEvidence(){
+    const groups=trialGroups(),a=groups[Number(($('#compare-a')||{}).value)],b=groups[Number(($('#compare-b')||{}).value)];
+    const settings=g=>'age '+g.age+' · '+labelBody(g.size)+' body · '+labelTissue(g.tissue);
+    const counts=g=>g.trials.map(t=>t.divisions).join(', ')+' divisions (mean '+g.mean.toFixed(1)+')';
+    const rounds=[1,2].map(n=>{const r=roundEvidence(n);if(!r)return 'Round '+n+': not played yet.';
+      return 'Round '+n+(r.inProgress?' (in progress)':'')+': '+r.blue+' blue and '+r.red+' red cell chips; destroyed by p53: '+r.destroyed+'; sent back: '+r.sentBack+'; checkpoints skipped: '+r.skipped+'.';});
+    const none=['Run three trials in the growth model to collect data for this question.'];
+    const lines={
+      'analysis-design':groups.length<2?['Collect two sets in the growth model, then choose them in the comparison above.']:(a&&b&&a.id!==b.id?['Set '+a.index+': '+settings(a)+'.','Set '+b.index+': '+settings(b)+'.','Changed: '+(['age','size','tissue'].filter(k=>a[k]!==b[k]).map(k=>({age:'age',size:'body size',tissue:'cell type'})[k]).join(', ')||'nothing (same settings)')+'.']:['Choose two different sets in the comparison above.']),
+      'analysis-variation':groups.length?[(a||groups[groups.length-1])].map(g=>'Set '+g.index+' ('+settings(g)+'): trials '+counts(g)+', range '+g.min+'–'+g.max+'.'):none,
+      'analysis-celltypes':(()=>{if(!groups.length)return none;const by={};groups.forEach(g=>{(by[g.tissue]=by[g.tissue]||[]).push(g);});const keys=Object.keys(by);
+        const out=keys.map(k=>labelTissue(k)+': '+by[k].map(g=>'Set '+g.index+' mean '+g.mean.toFixed(1)+' (age '+g.age+', '+labelBody(g.size).toLowerCase()+' body)').join('; ')+'.');
+        if(keys.length<2)out.push('You have tested one cell type so far. Run a set with a different cell type at the same age and body size.');return out;})(),
+      'explanation':(()=>{if(!groups.length)return none;const out=groups.slice().sort((x,y)=>x.age-y.age||String(x.size).localeCompare(String(y.size))).map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions.');
+        if(!groups.some(x=>groups.some(y=>x!==y&&x.tissue===y.tissue&&(x.age!==y.age)!==(x.size!==y.size))))out.push('To see a pattern, run a set that changes only age or only body size.');return out;})(),
+      'analysis-cancer':groups.length?groups.map(g=>'Set '+g.index+' ('+settings(g)+'): cancer-state units '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(', ')+'.'):none,
+      'analysis-checkpoints':rounds,
+      'model-revision':(groups.length?groups.map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+'.'):none).concat(rounds),
+      'model-prediction':groups.length?groups.map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+'.'):none
+    };
+    Object.keys(lines).forEach(id=>{
+      const field=document.getElementById(id);if(!field)return;
+      let box=document.getElementById('qe-'+id);
+      if(!box){box=document.createElement('div');box.className='q-evidence';box.id='qe-'+id;
+        const h=document.createElement('p');h.className='q-evidence-title';h.textContent='Your data';box.appendChild(h);
+        const list=document.createElement('ul');box.appendChild(list);field.parentNode.insertBefore(box,field);}
+      const list=box.querySelector('ul');list.replaceChildren(...lines[id].map(t=>{const li=document.createElement('li');li.textContent=t;return li;}));
+    });
   }
   function renderAnalysisReference(){
+    renderQuestionEvidence();
     const out=$('#analysis-reference-data');if(!out)return;
     const groups=trialGroups();out.replaceChildren();
     const heading=document.createElement('h4');heading.textContent='Growth-model results';out.appendChild(heading);
@@ -565,6 +596,7 @@
   }
   function renderComparison(){
     const groups=trialGroups(),a=groups[Number($('#compare-a').value)],b=groups[Number($('#compare-b').value)],out=$('#comparison-evidence');
+    renderQuestionEvidence();
     out.innerHTML='';
     $('#sentence-evidence').textContent='Sentence starter: “When I changed ___, the mean changed from ___ to ___ divisions. This matters because ___.”';
     function para(text,className){const p=document.createElement('p');if(className)p.className=className;p.textContent=text;out.appendChild(p);}
@@ -700,8 +732,14 @@
     $('#end-round').addEventListener('click',endRoundNow);
     $('#reset-game').addEventListener('click',resetGame);
     $('#round-summary').addEventListener('click',function(event){if(event.target&&event.target.id==='start-round2-from-summary')startRound(2,state.game.mode,state.game.players);});
-    for(const id of ['analysis-prev','analysis-prev-bottom'])$('#'+id).addEventListener('click',()=>showAnalysisPage(analysisPage-1));
-    for(const id of ['analysis-next','analysis-next-bottom'])$('#'+id).addEventListener('click',()=>showAnalysisPage(analysisPage+1));
+    // The bottom buttons also bring the start of the new part into view, so students never scroll back up to find it.
+    const toPartTop=()=>{const nav=$('#analysis-page-status').closest('.analysis-page-nav');if(nav)nav.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});};
+    $('#analysis-prev').addEventListener('click',()=>showAnalysisPage(analysisPage-1));
+    $('#analysis-next').addEventListener('click',()=>showAnalysisPage(analysisPage+1));
+    $('#analysis-prev-bottom').addEventListener('click',()=>{showAnalysisPage(analysisPage-1);toPartTop();});
+    $('#analysis-next-bottom').addEventListener('click',()=>{showAnalysisPage(analysisPage+1);toPartTop();});
+    // Phones: the evidence panel starts folded so the questions come first; wide screens keep it open beside them.
+    const refToggle=$('#analysis-reference-toggle');if(refToggle&&matchMedia('(max-width: 850px)').matches)refToggle.open=false;
     $('#run-trials').addEventListener('click',runTrials);
     $('#clear-trials').addEventListener('click',function(){if(state.trials.length&&!window.confirm('Clear the growth-model results? The board game and your explanation will stay saved.'))return;state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();});
     // Feedback belongs to the answer it judged: clear it (on screen and in storage) when the choice changes.
