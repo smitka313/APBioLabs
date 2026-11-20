@@ -30,9 +30,14 @@ env:
 
 jobs:
   cell-cycle-controls:
-    name: Cell-cycle activity controls
+    # Every test that opens only the OpenSciEd pages (tests/run-all.js "openscied" group), in two halves.
+    name: OpenSciEd activities (${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,16 +46,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: node tests/t76-cell-cycle-controls.js
-      - run: node --test tests/openscied-dashboard.test.js
-      - run: node tests/t77-openscied-dashboard.js
-      - run: node tests/t78-cell-cycle-audit.js
-      - run: node --test tests/cell-cycle-scene.test.js
+      - if: matrix.shard == 1
+        run: node --test tests/openscied-dashboard.test.js tests/cell-cycle-scene.test.js
+      - run: node tests/run-all.js openscied --shard ${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cell-cycle-audit-viewports
+          name: cell-cycle-audit-viewports-${{ matrix.shard }}
           path: test-artifacts/cell-cycle-*.png
+          if-no-files-found: ignore
 
   student-pdfs:
     name: Downloadable student guides

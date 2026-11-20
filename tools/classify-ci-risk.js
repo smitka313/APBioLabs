@@ -64,7 +64,16 @@ const opensciedFiles = new Set([
   'tests/openscied-dashboard.test.js', 'tests/cell-cycle-scene.test.js'
 ]);
 const documentation = p => /^(docs\/|.*\.(md|txt)$)/.test(p);
-if (files.some(f => opensciedFiles.has(f.path)) &&
-    files.every(f => opensciedFiles.has(f.path) || documentation(f.path))) level = 'openscied';
+// Any test file that opens only OpenSciEd pages (same rule as the "openscied" group in tests/run-all.js).
+const isOpensciedTest = p => {
+  if (!/^tests\/[^/]+\.js$/.test(p)) return false;
+  let src = '';
+  try { src = cp.execFileSync('git', ['show', head + ':' + p], { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 }); } catch (_) { return false; }
+  return /openscied-|cell-cycle/.test(src) && !/lab\d\d\.html|\bLABS\b/.test(src);
+};
+
+const isOpenscied = p => opensciedFiles.has(p) || isOpensciedTest(p);
+if (files.some(f => isOpenscied(f.path)) &&
+    files.every(f => isOpenscied(f.path) || documentation(f.path))) level = 'openscied';
 console.log('Risk level:', level, 'Files:', files.map(f => f.path).join(', '));
 if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, 'level=' + level + '\n');
