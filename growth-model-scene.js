@@ -138,7 +138,9 @@
     if(t.timeline)for(const row of t.timeline)if(row.newCancerCells?.length){const x=x0+(x1-x0)*(row.year-20)/Math.max(1,maxAge-20);oval(c,x,y0+3,2.5,2.5,'#ed8eb2');}
     text(c,'20',x0,y0+20,10,'#a8bba9','center');text(c,maxAge,x1,y0+20,10,'#a8bba9','center');text(c,'modeled age →    • magenta marks a first cancer-state event',580,y0+20,10,'#84a590','center');
   }
-  function draw(){c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);c.clearRect(0,0,W,H);background();body();tissue();metrics();timeline();const tip=document.getElementById('growth-tip');if(tip&&!tip.hidden)tip.textContent=unitDescription(selected);}
+  function draw(){c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);c.clearRect(0,0,W,H);background();body();tissue();metrics();timeline();}
+  // #growth-tip is a status region: refresh it on inspect, pause, scrub or completion, never on every playback frame.
+  function refreshTip(){const tip=document.getElementById('growth-tip');if(tip&&!tip.hidden)tip.textContent=unitDescription(selected);}
   function emit(type){const t=currentTrial();canvas.dispatchEvent(new CustomEvent('growth-playback',{detail:{type:type,playing:playing,year:Math.floor(year),target:t?.age||settings.age,trial:trialIndex+1,divisions:currentRow()?.cumulative||0,cancerCount:currentRow()?.cancerCount||0,hasCancerState:t?.modelVersion===2,hasHistory:Array.isArray(t?.timeline)}}));}
   function animate(time){
     frameId=0;
@@ -148,18 +150,18 @@
       const t=currentTrial(),duration=4200,progress=Math.min(1,elapsed/duration),span=t.age-20;
       year=20+Math.floor(span*progress);fraction=span*progress-Math.floor(span*progress);
       if(time-lastFrame>70){draw();emit('tick');lastFrame=time;}
-      if(progress>=1){if(trialIndex<recordings.length-1){trialIndex++;elapsed=0;year=20;}else{playing=false;year=t.age;draw();emit('complete');}}
+      if(progress>=1){if(trialIndex<recordings.length-1){trialIndex++;elapsed=0;year=20;}else{playing=false;year=t.age;draw();refreshTip();emit('complete');}}
     }
     if(playing)frameId=requestAnimationFrame(animate);
   }
   function schedule(){if(!frameId&&playing)frameId=requestAnimationFrame(animate);}
-  function configure(s){settings=s;recordings=[];trialIndex=0;playing=false;year=20;fraction=0;previous=0;draw();emit('settings');}
+  function configure(s){settings=s;recordings=[];trialIndex=0;playing=false;year=20;fraction=0;previous=0;draw();refreshTip();emit('settings');}
   function play(trials){recordings=trials;trialIndex=0;elapsed=0;previous=0;year=20;fraction=0;playing=true;
-    if(reduce||trials.every(t=>t.age===20)||trials.some(t=>!Array.isArray(t.timeline))){trialIndex=trials.length-1;year=trials[trialIndex].age;playing=false;draw();emit('complete');return;}
+    if(reduce||trials.every(t=>t.age===20)||trials.some(t=>!Array.isArray(t.timeline))){trialIndex=trials.length-1;year=trials[trialIndex].age;playing=false;draw();refreshTip();emit('complete');return;}
     draw();emit('start');schedule();
   }
-  function pause(){playing=!playing;if(playing&&year>=currentTrial().age){elapsed=0;year=20;}previous=0;emit('pause');schedule();}
-  function scrub(value){if(!recordings.length)return;playing=false;year=Math.max(20,Math.min(currentTrial().age,value));elapsed=(year-20)/Math.max(1,currentTrial().age-20)*4200;fraction=.5;previous=0;draw();emit('scrub');}
+  function pause(){playing=!playing;if(playing&&year>=currentTrial().age){elapsed=0;year=20;}previous=0;if(!playing)refreshTip();emit('pause');schedule();}
+  function scrub(value){if(!recordings.length)return;playing=false;year=Math.max(20,Math.min(currentTrial().age,value));elapsed=(year-20)/Math.max(1,currentTrial().age-20)*4200;fraction=.5;previous=0;draw();refreshTip();emit('scrub');}
   function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.width*H/W*dpr));draw();drawChart(groups);}
   function drawChart(data){
     groups=data;const last=data.slice(-8),ctx=chart.getContext('2d'),height=Math.max(280,92+last.length*67),rect=chart.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);

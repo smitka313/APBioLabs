@@ -142,10 +142,20 @@
       text(phaseText,568,455,11,'#a2c8bb','center','mono');
     }
     text('YOUR CELL, MAGNIFIED',568,150,10,'#86aaa1','center','mono');
-    // Leaders connect structure labels to the model.
-    line(615,294,703,243,'#adc8bd70');line(703,243,741,243,'#adc8bd70');text(phase==='m'?'Spindle fibres':'Nucleus / DNA',747,247,10,'#bdcfc6');
-    line(478,368,408,410,'#adc8bd70');line(408,410,370,410,'#adc8bd70');text('Mitochondria',366,414,10,'#bdcfc6','right');
-    line(648,377,708,403,'#adc8bd70');text('Cell membrane',713,407,10,'#bdcfc6');
+    // Leaders connect structure labels to the model. The cell grows and its organelles move with the score, so each
+    // leader is anchored to where the structure is actually drawn this frame (a dot marks the exact spot).
+    const lc='#adc8bd70',body=phase==='finish'?{x:630,y:325,r:93}:{x:568,y:328,r:radius};
+    const leader=function(ax,ay,ex,ey,tx,ty,label,align){line(ax,ay,ex,ey,lc);line(ex,ey,tx,ty,lc);ellipse(ax,ay,2.6,2.6,'#d9ece4');text(label,align==='right'?tx-4:tx+6,ty+4,10,'#bdcfc6',align);};
+    const toward=function(cx,cy,rx,ry,tx,ty){const a=Math.atan2((ty-cy)/ry,(tx-cx)/rx);return [cx+Math.cos(a)*rx,cy+Math.sin(a)*ry];};
+    if(actualPhase==='m'&&phase!=='finish'){
+      leader(body.x+body.r*.77,body.y,703,243,741,243,'Spindle fibres');
+    }else{
+      const nuc=hitRegions.find(function(h){return h.title==='Nucleus'||/^S phase/.test(h.title);});
+      if(nuc){const pt=toward(nuc.x,nuc.y,nuc.r*.92,nuc.r*.88*.92,703,243);leader(pt[0],pt[1],703,243,741,243,'Nucleus / DNA');}
+    }
+    const mitos=hitRegions.filter(function(h){return h.title==='Mitochondrion';});
+    if(mitos.length){const m=mitos.reduce(function(a,b){return Math.hypot(b.x-408,b.y-410)<Math.hypot(a.x-408,a.y-410)?b:a;});leader(m.x,m.y,408,410,370,410,'Mitochondria','right');}
+    const mem=toward(body.x,body.y,body.r-1,body.r*.83-1,708,403);leader(mem[0],mem[1],708,403,713,403,'Cell membrane');
     if(game&&game.event&&/checkpoint/i.test(game.event.kicker)){
       const c=/passed/i.test(game.event.title)?'#86e1b8':'#efcd91';
       text(/passed/i.test(game.event.title)?'CHECKPOINT PASSED':'CHECKPOINT RESPONSE',568,180,10,c,'center','mono');
@@ -168,7 +178,7 @@
       ctx.restore();
     }
     const phase=track[game?.playersState?.[game.active]?.pos||0]?.phase;
-    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     DNA copies in S',392,676,12,'#b1c5bc');text('5–6  No materials; attachment signal in M',392,698,11,'#b1c5bc');text('M phase: a 5 or 6 models one attachment',392,720,11,'#b1c5bc');
+    text('1–3  Materials in G1 / G2',392,654,12,'#b1c5bc');text('4     Chromosome copied in S',392,676,12,'#b1c5bc');text('5–6  No materials; attachment signal in M',392,698,11,'#b1c5bc');text('M phase: a 5 or 6 models one attachment',392,720,11,'#b1c5bc');
     text(rolling?'ROLLING…':(game&&game.playersState[game.active]?'PLAYER '+game.playersState[game.active].id+' · ROLL FOUR DICE':'MOVE ONE SPACE · ROLL FOUR DICE'),1122,631,10,'#98b7ad','right','mono');
   }
   function drawParticles(){particles=particles.filter(p=>now-p.time<850);for(const p of particles){const k=Math.max(0,Math.min(1,(now-p.time)/850)),x=p.x+(p.tx-p.x)*k,y=p.y+(p.ty-p.y)*k-Math.sin(k*Math.PI)*100;ctx.save();ctx.globalAlpha=1-k*.7;ctx.shadowColor=p.color;ctx.shadowBlur=8;ellipse(x,y,3.4,3.4,p.color);ctx.restore();}}
@@ -183,7 +193,8 @@
       lastTurn=g.turns;
       let gained=0;
       if(prev)for(const p of g.playersState){const before=prev.playersState.find(o=>o.id===p.id);if(before)for(const phase of ['g1','s','g2'])for(const key of Object.keys(p.score[phase]))gained+=Math.max(0,p.score[phase][key]-before.score[phase][key]);}
-      for(let i=0;i<Math.min(12,gained*2);i++)particles.push({x:65+(i%4)*78,y:680,tx:520+(i*19)%100,ty:285+(i*31)%80,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13});
+      // Reduced motion: the scorecard shows what was collected, so skip the flying particles.
+      if(!reduced)for(let i=0;i<Math.min(12,gained*2);i++)particles.push({x:65+(i%4)*78,y:680,tx:520+(i*19)%100,ty:285+(i*31)%80,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13});
     }
     game=JSON.parse(JSON.stringify(g));paint();request();
   }

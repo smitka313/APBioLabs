@@ -250,6 +250,8 @@
 .player-score.player-color-4 { --player-glow: #ff92b5; --player-tint: rgba(202,67,121,.23); }
 .player-score.is-active { border:2px solid var(--player-glow,var(--accent)); background:linear-gradient(125deg,var(--player-tint,var(--accent-soft)),var(--surface-2)); box-shadow:0 0 0 2px var(--player-tint,var(--accent-soft)),0 0 24px var(--player-tint,var(--accent-soft)); }
 .player-score.is-active .score-phase-row > span { background:var(--player-tint,var(--accent-soft)); }
+.player-score.is-active .score-phase-row > span.score-met { background:var(--surface); box-shadow:inset 0 0 0 2px var(--player-glow,var(--accent)); }
+.score-phase-row .score-check { font-style:normal; font-weight:900; margin-left:3px; color:var(--accent); }
 .player-score.is-active .score-player small { color:var(--player-glow,var(--accent)); font-weight:900; letter-spacing:.04em; }
 .checkpoint-card { border-width:2px; border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
 .checkpoint-heading strong { font-size:1.12rem; }
