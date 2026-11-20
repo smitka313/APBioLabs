@@ -29,6 +29,8 @@
     ['Model limits · How can we make progress on those questions?','ms-limits-progress']
   ];
   const MAKING_SENSE_IDS=MAKING_SENSE_ROWS.reduce(function(a,r){return a.concat(['ms-r1-'+r[0]+'-happened','ms-r1-'+r[0]+'-represent']);},[]).concat(MAKING_SENSE_PROMPTS.map(function(x){return x[1];}));
+  // Every written-response field, saved with the work so the OpenSciEd dashboard counts what this activity asks.
+  const RESPONSE_IDS=MAKING_SENSE_IDS.concat(ANALYSIS_PROMPTS.map(function(x){return x[1];}));
   function readStore(){
     try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){hadSaved=true;if(d.game&&d.game.schema===3){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();});}
       // Games saved under the earlier rules (schema 2) used a different board. Keep which rounds were completed, marked
@@ -48,7 +50,7 @@
         else state.fields[el.id]=el.value;
       });
       const section=location.hash.slice(1);if(SECTIONS.includes(section))state.lastSection=section;
-      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()}));
+      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()}));
       $('#save-status').textContent='Saved on this device.';
       renderReport();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
