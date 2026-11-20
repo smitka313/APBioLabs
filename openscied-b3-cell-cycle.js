@@ -117,7 +117,7 @@
     $('#scorecards').innerHTML=g.playersState.map(function(p,index){
       const active=index===g.active&&p.status==='playing';
       const status=p.status==='finished'?'Division complete':p.bonusRolls?'Bonus roll':p.skipTurns?'Turn skipped':'Playing';
-      const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const na=x===null,met=!na&&x>=thresholds[i];return '<span class="'+(na?'score-na':met?'score-met':'')+'">'+(na?'—':'<b>'+x+'</b>')+'</span>';}).join('')+'</div>';};
+      const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const na=x===null,met=!na&&x>=thresholds[i];return '<span class="'+(na?'score-na':met?'score-met':'')+'">'+(na?'—':'<b>'+x+'</b>'+(met?'<i class="score-check" aria-hidden="true">✓</i><span class="sr-only"> met</span>':''))+'</span>';}).join('')+'</div>';};
       return '<div class="player-score player-color-'+p.id+(active?' is-active':'')+(p.status==='finished'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
         '<div class="score-phase-head"><span>Phase</span><span>Nutrients</span><span>Proteins</span><span>Organelles</span><span>DNA / M</span></div>'+ 
         row('G1',[p.score.g1.nutrients,p.score.g1.proteins,p.score.g1.organelles,null],[3,3,3,0])+
