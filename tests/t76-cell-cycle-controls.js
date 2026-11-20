@@ -120,6 +120,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       assert.equal(await p.evaluate(() => window.printCalled), true);
       await go('growth-model');
       await p.locator('#clear-trials').click();
+      await p.locator('#confirm-game-reset').click();   // the page's confirm dialog, not window.confirm
       assert.equal((await read()).trials.length, 0);
       assert.deepEqual(p.errors, [], 'controls must not produce page errors');
       T.ok(true, width + 'px: game rounds, turns, reset, growth, analysis, export, and reload work');

@@ -655,8 +655,10 @@
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='cell-cycle-cancer-model-work.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
-  function reset(){
-    if(!window.confirm('Clear this activity’s saved work from this browser?'))return;
+  // "Clear this activity" clears what the dashboard's Clear clears for this activity (its saved record), then reloads a
+  // fresh activity at the Overview. The student's name and class period are shared with the whole site and stay saved,
+  // as they do on the dashboard. Uses the page's own confirm dialog (window.confirm can be suppressed by the browser).
+  function clearActivity(){
     // Blank the fields first so a browser that restores form values on reload cannot save the old answers again.
     $$('textarea').forEach(function(el){el.value='';});
     $$('input[type=checkbox],input[type=radio]').forEach(function(el){el.checked=el.defaultChecked;});
@@ -664,7 +666,11 @@
     $$('input[type=range]').forEach(function(el){el.value=el.defaultValue;});
     cleared=true;
     try{localStorage.removeItem(KEY);}catch(e){}
+    try{history.replaceState(null,'',location.pathname+location.search+'#overview');}catch(e){}
     window.location.reload();
+  }
+  function reset(){
+    confirmGameReset('Clear this activity?','This erases this activity’s saved game rounds, growth-model trials and written answers from this browser and starts the activity fresh. Your name and class period stay saved. Download your work first if you want to keep a copy.',clearActivity,'Clear this activity');
   }
   function wire(){
     readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();showAnalysisPage(0);
@@ -741,7 +747,8 @@
     // Phones: the evidence panel starts folded so the questions come first; wide screens keep it open beside them.
     const refToggle=$('#analysis-reference-toggle');if(refToggle&&matchMedia('(max-width: 850px)').matches)refToggle.open=false;
     $('#run-trials').addEventListener('click',runTrials);
-    $('#clear-trials').addEventListener('click',function(){if(state.trials.length&&!window.confirm('Clear the growth-model results? The board game and your explanation will stay saved.'))return;state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();});
+    const clearTrials=function(){state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();};
+    $('#clear-trials').addEventListener('click',function(){if(!state.trials.length){clearTrials();return;}confirmGameReset('Clear the growth-model results?','This removes every recorded trial set. The board game and your written answers stay saved.',clearTrials,'Clear model results');});
     // Feedback belongs to the answer it judged: clear it (on screen and in storage) when the choice changes.
     [['quick-check','quick','#background-feedback'],['mechanism-check','mechanism','#mechanism-feedback']].forEach(function(item){
       $$('input[name="'+item[0]+'"]').forEach(function(el){el.addEventListener('change',function(){state[item[1]]='';$(item[2]).textContent='';save();});});
