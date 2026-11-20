@@ -281,8 +281,9 @@
       "status status"
       "legend legend"
       "board hud"
-      "route hud"
-      "rules hud"
+      "board event"
+      "route route"
+      "rules rules"
       "history history"
       "summary summary"
       "actions actions";
@@ -296,10 +297,10 @@
   #game-panel:not(.is-pregame) > .game-rules {grid-area:rules}
   #game-panel:not(.is-pregame) > .game-play-grid {
     grid-area:hud;display:flex;flex-direction:column;gap:10px;min-width:0;
-    position:sticky;top:12px;max-height:calc(100dvh - 24px);overflow-y:auto;
+    max-height:calc(100dvh - 160px);overflow-y:auto;
     scrollbar-width:thin;align-self:start;
   }
-  #game-panel:not(.is-pregame) > .turn-event {grid-column:2;grid-row:3;align-self:end;z-index:1;margin:0 8px 8px;pointer-events:none}
+  #game-panel:not(.is-pregame) > .turn-event {grid-area:event;align-self:start;margin:0}
   #game-panel:not(.is-pregame) > .turn-log {grid-area:history}
   #game-panel:not(.is-pregame) > .game-end {grid-area:summary}
   #game-panel:not(.is-pregame) > .game-actions {grid-area:actions}
