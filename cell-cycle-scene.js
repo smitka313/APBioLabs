@@ -84,10 +84,30 @@
     ctx.shadowColor='#0008';ctx.shadowBlur=4;ellipse(0,0,18,8,gradient(0,0,19,[[0,'#eac78f'],[.6,'#b68259'],[1,'#664d3a']]),'#d5ba8c',1);ctx.shadowBlur=0;
     ctx.beginPath();ctx.moveTo(-12,0);for(let i=0;i<7;i++)ctx.lineTo(-10+i*3.4,i%2?-4:4);ctx.strokeStyle='#765940';ctx.lineWidth=1.8;ctx.stroke();ctx.restore();
   }
-  function chromosome(x,y,angle,scale,color){
+  // armColor (optional) paints the second arm differently: the changed section of a chromosome.
+  function chromosome(x,y,angle,scale,color,armColor){
     ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(scale,scale);ctx.lineCap='round';
-    for(const off of [-1,1]){ctx.beginPath();ctx.moveTo(-8,off*12);ctx.bezierCurveTo(-2,off*8,-2,-off*3,8,-off*12);ctx.strokeStyle='#11132555';ctx.lineWidth=8;ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=5;ctx.stroke();}
+    for(const off of [-1,1]){ctx.beginPath();ctx.moveTo(-8,off*12);ctx.bezierCurveTo(-2,off*8,-2,-off*3,8,-off*12);ctx.strokeStyle='#11132555';ctx.lineWidth=8;ctx.stroke();ctx.strokeStyle=off===1&&armColor||color;ctx.lineWidth=5;ctx.stroke();}
     ellipse(0,0,2.2,2.2,'#efe2ff');ctx.restore();
+  }
+  // Daughter cells after a division (OpenSciEd B.3 Lesson 3 Multiple Models): each gets the same chromosome set, two
+  // purple and two orange. After a red-chip division one daughter carries a changed (red) section on one chromosome,
+  // also marked with a dashed outline and a CHANGED label so the difference never depends on colour alone.
+  const DAUGHTER_SET=[[-13,-13,'#a99af2'],[13,-13,'#f5b04a'],[-13,11,'#f5b04a'],[13,11,'#a99af2']],CHANGED_RED='#ff3b3b';
+  let sceneState={view:'cell',caption:'',daughters:[]};
+  const DL=472,DR=664;
+  function chromosomeSet(x,y,changed){
+    const cx=x-4,cy=y-8,set=DAUGHTER_SET.map(function(c,i){return {color:c[2],changed:!!(changed&&i===2),x:cx+c[0],y:cy+c[1]};});
+    ellipse(cx,cy,30,27,'#1d173acc');
+    set.forEach(function(c){chromosome(c.x,c.y,.25,.62,c.color,c.changed?CHANGED_RED:null);});
+    const hit=set.find(function(c){return c.changed;});
+    if(hit){
+      // A point on the changed (red) arm, 1/5 of the way along it: local (-5, 8.8), then scaled and rotated as drawn.
+      const lx=-5*.62,ly=8.8*.62,ax=hit.x+lx*Math.cos(.25)-ly*Math.sin(.25),ay=hit.y+lx*Math.sin(.25)+ly*Math.cos(.25);
+      ctx.save();ctx.setLineDash([4,3]);ctx.lineDashOffset=reduced?0:-now*.02;ellipse(hit.x,hit.y,13,13,null,'#ffffff',2);ctx.restore();
+      hit.markX=ax;hit.markY=ay;
+    }
+    return set;
   }
   function cell(x,y,r,phase,score,split){
     const membrane=ctx.createRadialGradient(x-r*.3,y-r*.4,r*.1,x,y,r);
@@ -140,10 +160,24 @@
     ellipse(568,328,221,164,null,'#94c6b516',1);
     const actualPhase=phase==='finish'?'m':phase;
     if(phase==='finish'){
-      hitRegions.push(...cell(510,325,93,'g1',p.score,0),...cell(630,325,93,'g1',p.score,0));
-      if(p.lastChip==='red'){ellipse(630,325,96,80,null,'#ff6b6b',3);text('CANCER CELL · RED CHIP (GAME MODEL)',568,455,11,'#ffb3b3','center','mono');hitRegions.push({x:630,y:325,r:60,title:'Cancer cell (game model)',copy:'This cell divided when p53 was not working, so it is a red chip: a cancer cell in this game model.'});}
-      else text('TWO CELLS · NEW BLUE CHIP',568,455,12,'#b3e6d1','center','mono');
+      const red=p.lastChip==='red';
+      // Two separate daughter cells, side by side inside the magnified frame.
+      hitRegions.push(...cell(DL,325,93,'g1',p.score,0),...cell(DR,325,93,'g1',p.score,0));
+      const left=chromosomeSet(DL,325,red),right=chromosomeSet(DR,325,false);
+      const caption=red?'Daughter cells · one carries changed DNA (game model)':'Daughter cells · identical DNA';
+      text(caption,568,447,15,red?'#ffc2c2':'#c4f0dc','center','700');
+      text(red?'RED CHIP · CANCER CELL IN THIS GAME MODEL':'SAME CHROMOSOMES IN BOTH · NEW BLUE CHIP',568,466,10,'#9fc2b6','center','mono');
+      const changed=left.find(function(c){return c.changed;});
+      if(changed){
+        line(changed.x-12,changed.y+4,440,228,'#ffd0d0',1.4);ellipse(changed.x-12,changed.y+4,2.6,2.6,'#ffd0d0');
+        rounded(368,212,76,20,5,'#3a1418e6','#ff8a8a');text('CHANGED',406,226,11,'#ffe1e1','center','700');
+        hitRegions.push({x:changed.x,y:changed.y,r:16,title:'Changed chromosome (game model)',copy:'This daughter cell carries a changed section of DNA (red, dashed outline). The cell divided without p53 stopping it, so it is a red chip: a cancer cell in this game model.'});
+      }
+      hitRegions.push({x:DL-4,y:317,r:30,title:'Daughter cell DNA',copy:red?'One daughter has a changed chromosome; the other has the original set.':'Both daughter cells have the same chromosome set: identical DNA.'});
+      sceneState={view:'daughters',caption:caption,daughters:[left,right].map(function(set){return {changed:set.some(function(c){return c.changed;}),chromosomes:set.map(function(c){return c.changed?'changed':c.color;})};}),
+        changedAt:changed?{x:changed.markX,y:changed.markY}:null};
     }else{
+      sceneState={view:'cell',caption:'',daughters:[]};
       const mt=track[p.pos],split=mt&&mt.phase==='m'?(mt.type==='checkpoint'?.9:.15+(mt.roll||0)*.13):.1;
       hitRegions.push(...cell(568,328,radius,actualPhase,p.score,split));
       const phaseText=phase==='s'?'COLLECTING CHROMOSOMES':phase==='g2'?'GROWING & GATHERING':phase==='m'?'DIVIDING · ROLL 1–5 IN ORDER':'GROWING & GATHERING';
@@ -152,13 +186,13 @@
     text('YOUR CELL, MAGNIFIED',568,150,10,'#86aaa1','center','mono');
     // Leaders connect structure labels to the model. The cell grows and its organelles move with the score, so each
     // leader is anchored to where the structure is actually drawn this frame (a dot marks the exact spot).
-    const lc='#adc8bd70',body=phase==='finish'?{x:630,y:325,r:93}:{x:568,y:328,r:radius};
+    const lc='#adc8bd70',body=phase==='finish'?{x:DR,y:325,r:93}:{x:568,y:328,r:radius};
     const leader=function(ax,ay,ex,ey,tx,ty,label,align){line(ax,ay,ex,ey,lc);line(ex,ey,tx,ty,lc);ellipse(ax,ay,2.6,2.6,'#d9ece4');text(label,align==='right'?tx-4:tx+6,ty+4,10,'#bdcfc6',align);};
     const toward=function(cx,cy,rx,ry,tx,ty){const a=Math.atan2((ty-cy)/ry,(tx-cx)/rx);return [cx+Math.cos(a)*rx,cy+Math.sin(a)*ry];};
     if(actualPhase==='m'&&phase!=='finish'){
       leader(body.x+body.r*.77,body.y,703,243,741,243,'Spindle fibres');
     }else{
-      const nuc=hitRegions.find(function(h){return h.title==='Nucleus'||/^S phase/.test(h.title);});
+      const nucs=hitRegions.filter(function(h){return h.title==='Nucleus'||/^S phase/.test(h.title);}),nuc=nucs[nucs.length-1];
       if(nuc){const pt=toward(nuc.x,nuc.y,nuc.r*.92,nuc.r*.88*.92,703,243);leader(pt[0],pt[1],703,243,741,243,'Nucleus / DNA');}
     }
     const mitos=hitRegions.filter(function(h){return h.title==='Mitochondrion';});
@@ -233,5 +267,5 @@
   new ResizeObserver(resize).observe(canvas);
   new IntersectionObserver(es=>{visible=es[0].isIntersecting;if(visible)request();else if(raf){cancelAnimationFrame(raf);raf=0;}},{rootMargin:'150px'}).observe(canvas);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)request();else if(raf){cancelAnimationFrame(raf);raf=0;}});
-  window.CellCycleScene={update:update,rolling:setRolling};
+  window.CellCycleScene={update:update,rolling:setRolling,state:function(){return JSON.parse(JSON.stringify(sceneState));}};
 })();

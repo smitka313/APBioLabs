@@ -125,7 +125,16 @@
   function renderBoard(){
     if(window.CellCycleScene)window.CellCycleScene.update(state.game,track);
     const p=state.game.playersState[state.game.active];
-    $('#scene-description').textContent=p?'Player '+p.id+' is on '+where(p.pos)+'. '+turnInstruction(p)+' Chips: '+p.blue+' blue (non-cancer cells), '+p.red+' red (cancer cells in this game model).':'Choose players to start. The board and cell model are shown above.';
+    const daughters=p&&p.pos===FINISH?daughterText(p):'';
+    $('#scene-description').textContent=p?'Player '+p.id+' is on '+where(p.pos)+'. '+(daughters?daughters+' ':'')+turnInstruction(p)+' Chips: '+p.blue+' blue (non-cancer cells), '+p.red+' red (cancer cells in this game model).':'Choose players to start. The board and cell model are shown above.';
+    const canvas=$('#cycle-scene');
+    if(canvas){if(!canvas.dataset.baseLabel)canvas.dataset.baseLabel=canvas.getAttribute('aria-label')||'';canvas.setAttribute('aria-label',canvas.dataset.baseLabel+(daughters?' Magnified view now: '+daughters:''));}
+  }
+  // What the magnified view shows after a division (matches the caption drawn by cell-cycle-scene.js).
+  function daughterText(p){
+    return p.lastChip==='red'
+      ?'Daughter cells · one carries changed DNA (game model). One daughter cell has a changed chromosome, drawn red with a dashed outline and labelled CHANGED; the other has the original chromosomes.'
+      :'Daughter cells · identical DNA. Both daughter cells have the same chromosome set.';
   }
   function chipText(p){return '<span class="chip-tally"><i class="chip chip-blue" aria-hidden="true"></i>'+p.blue+' blue <i class="chip chip-red" aria-hidden="true"></i>'+p.red+' red</span>';}
   function renderScorecards(){

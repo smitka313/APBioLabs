@@ -62,11 +62,19 @@ test('cell chips are drawn per player with their counts written out', () => {
   assert.ok(s.labels.some(l => l.value === 'CELL CHIPS'));
   assert.ok(s.labels.some(l => l.value === '2 blue') && s.labels.some(l => l.value === '1 red') && s.labels.some(l => l.value === '3 red'), 'chip counts appear as text beside the colours');
 });
-test('a red chip at FINISH is labelled a cancer cell in the game model', () => {
+test('FINISH shows daughter cells: identical DNA after a blue chip, one changed chromosome after a red chip', () => {
   const s = scene();
   const game = { round: 2, active: 0, turns: 3, playersState: [player({ pos: 31, red: 1, lastChip: 'red' })], lastDice: [], event: {} };
   s.api.update(game, board());
-  assert.ok(s.labels.some(l => /CANCER CELL · RED CHIP \(GAME MODEL\)/.test(l.value)));
+  assert.ok(s.labels.some(l => l.value === 'Daughter cells · one carries changed DNA (game model)'));
+  assert.ok(s.labels.some(l => /RED CHIP · CANCER CELL IN THIS GAME MODEL/.test(l.value)) && s.labels.some(l => l.value === 'CHANGED'));
+  let state = JSON.parse(JSON.stringify(s.api.state()));
+  assert.deepEqual(state.daughters.map(d => d.changed), [true, false], 'one daughter carries the changed chromosome');
+  assert.ok(state.changedAt && s.fills.length, 'the changed section has a position on the canvas');
   s.reset(); game.playersState[0].lastChip = 'blue'; s.api.update(game, board());
-  assert.ok(s.labels.some(l => /TWO CELLS · NEW BLUE CHIP/.test(l.value)));
+  assert.ok(s.labels.some(l => l.value === 'Daughter cells · identical DNA') && s.labels.some(l => /NEW BLUE CHIP/.test(l.value)));
+  assert.ok(!s.labels.some(l => l.value === 'CHANGED'));
+  state = JSON.parse(JSON.stringify(s.api.state()));
+  assert.deepEqual(state.daughters[0].chromosomes, state.daughters[1].chromosomes, 'blue chip: both daughters have the same chromosome set');
+  assert.equal(state.changedAt, null);
 });
