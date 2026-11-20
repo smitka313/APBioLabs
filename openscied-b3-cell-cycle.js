@@ -162,7 +162,9 @@
   }
   function renderCheckpoint(){
     const g=state.game,p=g.playersState[g.active];if(!p)return;
-    const key=p.pos===FINISH?FINISH:p.pos===G1CP||p.pos===G2CP?p.pos:nextCheckpoint(p.pos),st=checkpointState(p,key);
+    // Always the upcoming checkpoint. A piece standing on a checkpoint has already been checked there (a cell that
+    // fails is moved off it), so the panel moves on to the next one instead of repeating the checkpoint just passed.
+    const key=p.pos===FINISH?FINISH:nextCheckpoint(p.pos),st=checkpointState(p,key);
     $('#checkpoint-title').textContent=(key===FINISH?'':'Next checkpoint · ')+st.title;
     $('#checkpoint-subtitle').textContent=st.subtitle;
     $('#checkpoint-requirements').innerHTML=st.items.map(function(x){const met=x[2]>0&&x[1]>=x[2];return '<span class="requirement'+(met?' met':'')+'"><span>'+(x[2]?(met?'✓ ':'○ '):'')+x[0]+'</span><strong>'+x[1]+(x[2]?' / '+x[2]:'')+'</strong><span class="requirement-meter"><span style="width:'+(x[2]?Math.min(100,100*x[1]/x[2]):0)+'%"></span></span></span>';}).join('');
