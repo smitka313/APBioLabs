@@ -91,7 +91,10 @@
 .growth-expand { display:block; position:relative; margin:10px 12px 0 auto; z-index:2; padding:6px 10px; border:1px solid #a5c7af55; border-radius:99px; color:#d4e8d6; background:#142d30; font:600 .72rem Arial,sans-serif; cursor:pointer; }
 .growth-expand:hover { background:#2a5148; }
 .growth-stage.growth-expanded { position:fixed; inset:10px; width:calc(100vw - 20px); height:calc(100dvh - 20px); z-index:10000; margin:0; overflow:auto; border:1px solid #a7d7bc55; }
-.growth-stage.growth-expanded canvas { min-width:900px; width:max(100%,900px); }
+.growth-stage.growth-expanded { display:flex; flex-direction:column; align-items:center; overflow:hidden; }
+/* Fit the whole model under the close button: canvas is 1160×650; leave room for the button row. */
+.growth-stage.growth-expanded canvas, #growth-stage.growth-expanded #growth-scene { min-width:0; max-width:none; width:min(100%, calc((100vh - 90px) * 1160 / 650)); width:min(100%, calc((100dvh - 90px) * 1160 / 650)); height:auto; margin:auto; }
+.growth-stage.growth-expanded .growth-expand { align-self:flex-end; }
 .growth-stage.growth-expanded .growth-expand { position:relative; margin:10px 12px 0 auto; }
 body.growth-open { overflow:hidden; }
 @media(max-width:520px){.growth-expand { margin:6px 6px 0 auto; font-size:.6rem; padding:4px 7px; }.growth-expanded .growth-expand {font-size:.8rem;padding:8px 12px;}}

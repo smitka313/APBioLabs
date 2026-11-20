@@ -62,7 +62,9 @@
 .scene-expand { position:absolute; top:9px; right:14px; z-index:2; border:1px solid #abc6b455; border-radius:99px; padding:6px 12px; background:#142b2e; color:#d4e9df; font:600 .72rem Arial,sans-serif; cursor:pointer; }
 .scene-expand:hover { background:#28514c; }
 .specimen-stage.scene-expanded { position:fixed; inset:10px; z-index:10000; width:calc(100vw - 20px); height:calc(100dvh - 20px); margin:0; overflow:auto; border:1px solid #a7d7bc55; }
-.specimen-stage.scene-expanded canvas { min-width:850px; width:max(100%,850px); }
+.specimen-stage.scene-expanded { display:flex; align-items:center; justify-content:center; overflow:hidden; }
+/* Fit the whole board inside the window: as wide as possible without getting taller than the window (canvas is 1160×760). */
+.specimen-stage.scene-expanded canvas, #cell-board.scene-expanded #cycle-scene { min-width:0; max-width:none; width:min(100%, calc((100vh - 40px) * 1160 / 760)); width:min(100%, calc((100dvh - 40px) * 1160 / 760)); height:auto; }
 .specimen-stage.scene-expanded .scene-action { position:fixed; right:30px; bottom:30px; width:230px; }
 .specimen-stage.scene-expanded .scene-expand { position:fixed; right:30px; top:24px; }
 body.scene-open { overflow:hidden; }
