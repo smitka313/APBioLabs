@@ -276,7 +276,7 @@
 @media(min-width:1100px) {
   #game-panel:not(.is-pregame) {
     display:grid;
-    grid-template-columns:minmax(0,1.6fr) minmax(355px,1fr);
+    grid-template-columns:minmax(0,1fr) minmax(310px,330px);
     grid-template-areas:
       "status status"
       "legend legend"
@@ -315,3 +315,13 @@
   #game-panel:not(.is-pregame) .dice-tray {max-width:380px}
 }
 /* On smaller screens retain a readable full-size board and scorecard rather than shrinking both into illegibility. */
+
+/* Give the interactive scene the unused horizontal space, without sacrificing HUD readability. */
+@media(min-width:1100px){
+  #game-panel:not(.is-pregame) > .specimen-stage{width:100%;max-width:none;justify-self:stretch}
+  #game-panel:not(.is-pregame) > .specimen-stage canvas{display:block;width:100%;height:auto;max-width:none}
+  #game-panel:not(.is-pregame) > .game-play-grid{width:100%;box-sizing:border-box}
+  #game-panel:not(.is-pregame) .scorecard{min-width:0}
+  #game-panel:not(.is-pregame) .score-phase-head,
+  #game-panel:not(.is-pregame) .score-phase-row{grid-template-columns:42px repeat(4,minmax(0,1fr))}
+}
