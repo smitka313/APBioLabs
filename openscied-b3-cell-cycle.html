@@ -140,7 +140,7 @@
           <span><i class="legend-swatch swatch-g1"></i>G1 · gather materials</span>
           <span><i class="legend-swatch swatch-s"></i>S · copy DNA</span>
           <span><i class="legend-swatch swatch-g2"></i>G2 · prepare and check</span>
-          <span><i class="legend-swatch swatch-m"></i>M · divide</span>
+          <span><i class="legend-swatch swatch-m"></i>M · attach chromosomes</span>
           <span><i class="legend-swatch swatch-check"></i>Checkpoint</span>
           <span><i class="legend-swatch swatch-chance"></i>Round 2 chance space</span><span><i class="legend-swatch swatch-flag"></i>unchecked division marker (model only)</span>
         </div>
@@ -152,12 +152,12 @@
           <div class="scene-action"><button class="btn btn--primary roll-button" id="roll-dice" type="button">Roll four dice</button></div>
           <span class="sr-only" id="scene-description"></span>
         </div>
-        <div class="board-route-note"><span class="route-arrow">START</span><span>Grow</span><span>→</span><span>G1 checkpoint</span><span>→</span><span>Copy DNA</span><span>→</span><span>G2 checkpoint</span><span>→</span><span>Match the M-phase dice</span><span>→</span><strong>Division</strong></div>
+        <div class="board-route-note"><span class="route-arrow">START</span><span>Grow</span><span>→</span><span>G1 checkpoint</span><span>→</span><span>Copy DNA</span><span>→</span><span>G2 checkpoint</span><span>→</span><span>Attach chromosomes to spindle</span><span>→</span><strong>Division</strong></div>
         <details class="disclose game-rules"><summary>How to move and use the checkpoints</summary><div class="inner">
-          <p><strong>Move:</strong> Advance one space per turn. Roll all four dice after moving; dice collect materials, not spaces. In M phase, you must match the number printed on the next space with any die.</p>
-          <p><strong>G1 checkpoint:</strong> 3 or more of each G1 material passes. A 2 sends the cell back 3 spaces; a 1 sends it back 5 spaces; a 0 restarts the cell with a clear scorecard.</p>
+          <p><strong>Move:</strong> Advance one space per turn. Roll all four dice after moving; dice collect materials, not spaces. At four M-phase spaces, a 5 or 6 on any die represents one chromosome attaching to the spindle. This is a teaching-model action, not a literal dice-like cell process.</p>
+          <p><strong>G1 checkpoint:</strong> 3 or more of each G1 material passes. If any category is below 3, the cell stays paused at the checkpoint. Roll there to gather more G1 materials; the cell does not move backward.</p>
           <p><strong>G2 checkpoint:</strong> Pass with at least 4 DNA copies and at least 1 of each G2 material. If DNA is short, return to the first S space. A missing G2 material restarts the cell.</p>
-          <p><strong>M checkpoint:</strong> The scorecard must show G1 ≥3 in each category, S ≥4 DNA copies, and G2 ≥1 in each category before the model cell divides.</p>
+          <p><strong>M checkpoint:</strong> The model checks that all four chromosome copies are attached to the spindle, along with the G1, S, and G2 requirements, before division. In real cells, the spindle-assembly checkpoint delays chromosome separation until chromosomes are properly attached.</p>
           <p><strong>Round 2:</strong> The outlined blue spaces draw a chance card. Its effect appears in the event panel and is recorded in the turn history.</p>
         </div></details>
 
@@ -168,7 +168,7 @@
             <div class="dice-tray" id="dice-tray" aria-label="Four dice"></div>
             <div class="dice-result" id="dice-result" role="status" aria-live="polite">The dice will appear here after the first roll.</div>
             
-            <div class="dice-key"><strong>Dice key</strong><span>1 Nutrient</span><span>2 Protein</span><span>3 Organelle</span><span>4 Chromosome</span><span>5–6 No material</span></div>
+            <div class="dice-key"><strong>Dice key</strong><span>1 Nutrient</span><span>2 Protein</span><span>3 Organelle</span><span>4 Chromosome</span><span>5–6 No material; M-phase attachment signal</span></div>
           </section>
 
           <section class="scorecard panel" aria-labelledby="scorecard-title">
@@ -178,6 +178,7 @@
               <div class="checkpoint-heading"><span class="checkpoint-icon">✓</span><div><strong id="checkpoint-title">Next checkpoint · G1</strong><small id="checkpoint-subtitle">Collect at least 3 of each material.</small></div></div>
               <div class="checkpoint-requirements" id="checkpoint-requirements"></div>
             </div>
+            <p class="small muted">In the scorecard’s M row, each successful 5-or-6 roll records one modeled chromosome attachment. The M checkpoint waits for four.</p>
           </section>
         </div>
 
@@ -185,6 +186,16 @@
           <div class="event-icon" id="event-icon">🧬</div>
           <div><span class="game-kicker" id="event-kicker">Cell cycle</span><h3 id="event-title">Your cell is ready</h3><p id="event-copy">Follow the path, collect materials, and see what the checkpoints allow.</p></div>
         </section>
+
+        <fieldset class="mechanism-check panel">
+          <legend>Think about a checkpoint</legend>
+          <p>A disrupted checkpoint lets a cell keep moving even when DNA is damaged or other requirements are missing. Why does that matter for the cells made next?</p>
+          <label class="choice"><input type="radio" name="mechanism-check" value="a"> The next cells may inherit DNA problems or missing instructions; this raises concern but does not guarantee cancer.</label>
+          <label class="choice"><input type="radio" name="mechanism-check" value="b"> Every cell that passes a checkpoint immediately becomes cancerous.</label>
+          <label class="choice"><input type="radio" name="mechanism-check" value="c"> p53 is the only control that can affect what happens.</label>
+          <button type="button" class="btn btn--sm" id="check-mechanism">Check my thinking</button>
+          <p class="feedback" id="mechanism-feedback" role="status" aria-live="polite"></p>
+        </fieldset>
 
         <details class="turn-log panel"><summary>Turn history <span id="history-count">0 turns</span></summary><ol id="turn-history"></ol></details>
         <div class="game-end panel" id="round-summary" role="status" aria-live="polite" tabindex="-1" hidden></div>
