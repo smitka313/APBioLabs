@@ -81,6 +81,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.keyboard.press('Escape');
       assert.equal(await p.locator('#enlarge-growth').getAttribute('aria-pressed'), 'false');
       await go('analyze');
+      assert.equal((await read()).lastSection, 'analyze', 'current section is saved for dashboard Resume');
       for (const [button, part] of [['analysis-next', 2], ['analysis-next-bottom', 3],
         ['analysis-prev', 2], ['analysis-prev-bottom', 1]]) {
         await p.locator('#' + button).click();
@@ -90,9 +91,13 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       }
       await p.locator('#analysis-design').fill('I kept cell type and body size constant.');
       await go('submit');
+      assert.match(await p.locator('.report-student').textContent(), /Test Student.*Class period: 3/);
       const downloaded = p.waitForEvent('download');
       await p.locator('#download-work').click();
-      assert.equal((await downloaded).suggestedFilename(), 'cell-cycle-cancer-model-work.json');
+      const file = await downloaded;
+      assert.equal(file.suggestedFilename(), 'cell-cycle-cancer-model-work.json');
+      const payload = JSON.parse(require('node:fs').readFileSync(await file.path(), 'utf8'));
+      assert.deepEqual(payload.student, { name: 'Test Student', period: '3' });
       await p.evaluate(() => { window.print = () => { window.printCalled = true; }; });
       await p.locator('#print-work').click();
       assert.equal(await p.evaluate(() => window.printCalled), true);

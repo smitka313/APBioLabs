@@ -4,7 +4,9 @@
   const $=function(s,root){return (root||document).querySelector(s);};
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
   function blankGame(){return {schema:2,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
-  const state={game:blankGame(),trials:[],fields:{},quick:''};
+  const SECTIONS=['overview','background','cell-game','growth-model','analyze','submit'];
+  const state={game:blankGame(),trials:[],fields:{},quick:'',lastSection:'overview'};
+  function studentIdentity(){return window.Lab&&Lab.identity?Lab.identity.get():null;}
   const ANALYSIS_PROMPTS=[
     ['Fair test and controlled settings','analysis-design'],
     ['Variation across repeated trials','analysis-variation'],
@@ -16,7 +18,7 @@
     ['New prediction and an unanswered question','model-prediction']
   ];
   function readStore(){
-    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2)state.game=Object.assign(blankGame(),d.game);if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;}}
+    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){if(d.game&&d.game.schema===2)state.game=Object.assign(blankGame(),d.game);if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(SECTIONS.includes(d.lastSection))state.lastSection=d.lastSection;}}
     catch(e){}
   }
   function save(){
@@ -28,7 +30,8 @@
         else if(el.type==='radio')state.fields[el.name]=el.value;
         else state.fields[el.id]=el.value;
       });
-      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,quick:state.quick}));
+      const section=location.hash.slice(1);if(SECTIONS.includes(section))state.lastSection=section;
+      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,quick:state.quick,lastSection:state.lastSection,lastVisitedAt:Date.now()}));
       $('#save-status').textContent='Saved on this device.';
       renderReport();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
@@ -469,6 +472,9 @@
     const groups=trialGroups();report.innerHTML='';
     const kicker=document.createElement('div');kicker.className='eyebrow';kicker.textContent='Cell cycle & growth · My evidence';report.appendChild(kicker);
     const h=document.createElement('h3');h.textContent='Your investigation, at a glance.';report.appendChild(h);
+    const student=studentIdentity(),identity=document.createElement('p');identity.className='report-student';
+    identity.textContent=student?'Student: '+student.name+(student.period?' · Class period: '+student.period:''):'Student name not entered. Sign in on the OpenSciEd dashboard before submitting.';
+    report.appendChild(identity);
     const list=document.createElement('ul');list.className='report-checks';
     const labels=['Round 1: '+(state.game.roundResults[1]?'completed':'not completed'),'Round 2: '+(state.game.roundResults[2]?'completed':'not completed'),groups.length+' model set'+(groups.length===1?'':'s')+' recorded',ANALYSIS_PROMPTS.filter(item=>$('#'+item[1]).value.trim()).length+' of '+ANALYSIS_PROMPTS.length+' analysis responses written'];
     labels.forEach(t=>{const li=document.createElement('li');li.textContent=t;list.appendChild(li);});report.appendChild(list);
@@ -488,7 +494,8 @@
     if(window.GrowthModelScene)window.GrowthModelScene.play(trials);
   }
   function download(){
-    const payload={format:'openscied-b3-cell-cycle-progress-v1',exportedAt:new Date().toISOString(),game:state.game,simulationTrials:state.trials,answers:state.fields};
+    save();
+    const payload={format:'openscied-b3-cell-cycle-progress-v1',exportedAt:new Date().toISOString(),student:studentIdentity(),game:state.game,simulationTrials:state.trials,answers:state.fields};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='cell-cycle-cancer-model-work.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
@@ -498,6 +505,7 @@
   }
   function wire(){
     readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();showAnalysisPage(0);
+    window.addEventListener('hashchange',save);
     window.addEventListener('resize',function(){renderBoard();},{passive:true});
     $('#age-slider').addEventListener('input',function(){$('#age-value').textContent=this.value;if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());save();});
     ['body-size','tissue-rate'].forEach(id=>$('#'+id).addEventListener('change',function(){renderCellType();if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());}));
