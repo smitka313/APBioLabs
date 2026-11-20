@@ -19,8 +19,8 @@ function savedGame(round = 2) {
   const go = async id => { await p.locator('.step-nav a[href="#'+id+'"]').click(); await p.waitForFunction(id => document.getElementById(id).classList.contains('is-current'),id); };
   async function seed(saved) {
     await p.evaluate(({key,saved}) => localStorage.setItem(key,JSON.stringify(saved)),{key:KEY,saved});
-    await p.goto(server.url+'openscied-b3-cell-cycle.html#cell-game');
     await p.reload();
+    await go('cell-game');
   }
   async function roll(values = [1,2,3,4]) {
     await p.evaluate(values => {let i=0;Math.random=()=> (values[i++%values.length]-.5)/6;},values);
