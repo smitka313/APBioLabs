@@ -28,6 +28,19 @@ env:
   NODE_VERSION: "22"
 
 jobs:
+  cell-cycle-controls:
+    name: Cell-cycle activity controls
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/t76-cell-cycle-controls.js
+
   student-pdfs:
     name: Downloadable student guides
     runs-on: ubuntu-latest
