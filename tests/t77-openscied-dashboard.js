@@ -11,6 +11,32 @@ const assert = require('node:assert/strict');
       // Do this once, rather than removing identity from a page-init script on reload.
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
+      const theme = p.getByRole('group', { name: 'Color theme', exact: true });
+      assert.equal(await theme.count(), 1);
+      const palette = () => p.evaluate(() => ({
+        background: getComputedStyle(document.body).backgroundColor,
+        card: getComputedStyle(document.querySelector('.dashboard-unit')).backgroundColor
+      }));
+      for (const system of ['light', 'dark']) {
+        await p.emulateMedia({ colorScheme: system });
+        await theme.getByRole('button', { name: 'Light', exact: true }).click();
+        const light = await palette();
+        assert.equal(light.background, 'rgb(243, 246, 244)');
+        assert.equal(light.card, 'rgb(255, 255, 255)');
+        await theme.getByRole('button', { name: 'Dark', exact: true }).click();
+        const dark = await palette();
+        assert.equal(dark.background, 'rgb(15, 22, 19)');
+        assert.notEqual(dark.card, light.card);
+        await theme.getByRole('button', { name: 'Auto', exact: true }).click();
+        assert.equal(await theme.getByRole('button', { name: 'Auto', exact: true }).getAttribute('aria-pressed'), 'true');
+        assert.deepEqual(await palette(), system === 'light' ? light : dark);
+        assert.equal(await p.evaluate(() => localStorage.getItem('aplab:pref:theme')), null);
+      }
+      await p.emulateMedia({ colorScheme: 'light' });
+      await theme.getByRole('button', { name: 'Dark', exact: true }).click();
+      await p.reload();
+      assert.equal((await palette()).background, 'rgb(15, 22, 19)', 'manual theme survives reload');
+      assert.equal(await theme.getByRole('button', { name: 'Dark', exact: true }).getAttribute('aria-pressed'), 'true');
       const identity = p.locator('#openscied-student-identity');
       await identity.getByLabel('Enter your name as your teacher knows it').fill('Casey Student');
       await identity.getByLabel('Class period').selectOption('3');
@@ -19,7 +45,7 @@ const assert = require('node:assert/strict');
       await p.evaluate(() => {
         localStorage.setItem('aplab:openscied:b3-cell-cycle:v1', JSON.stringify({v: 1, trials: [], fields: {'analysis-design': 'My evidence'}}));
         localStorage.setItem('aplab:lab05:sim:test', JSON.stringify({rate: 4}));
-        localStorage.setItem('aplab:pref:theme', '"dark"');
+        localStorage.setItem('aplab:pref:theme', 'dark');
       });
       await p.reload();
       assert.match(await identity.textContent(), /Casey Student/);
@@ -47,7 +73,7 @@ const assert = require('node:assert/strict');
       assert.equal(saved.identity.period, '3');
       assert.equal(saved.activity, null);
       assert.equal(saved.ap, '{"rate":4}');
-      assert.equal(saved.theme, '"dark"');
+      assert.equal(saved.theme, 'dark');
       assert.equal(await clear.isDisabled(), true);
       await p.reload();
       assert.equal(await clear.isDisabled(), true, 'cleared results stay cleared after reload');
@@ -61,7 +87,7 @@ const assert = require('node:assert/strict');
       assert.equal(await p.locator('.dashboard-hero-art').evaluate(el => el.complete && el.naturalWidth === 2048), true);
       assert.equal(await p.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.deepEqual(p.errors, []);
-      T.ok(true, width + 'px: sign-in, change, backup, cancel, clear, reload, and AP work preservation');
+      T.ok(true, width + 'px: Light/Dark/Auto, theme persistence, sign-in, backup, clear, and AP work preservation');
       await ctx.close();
     }
   } finally { await browser.close(); server.close(); }
