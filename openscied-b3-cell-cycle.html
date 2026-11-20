@@ -325,7 +325,9 @@
         <button type="button" class="btn btn--sm" id="pause-growth" disabled>Pause playback</button>
         <div class="field playback-scrub"><label for="growth-scrub">Recorded age <output id="growth-age">20</output></label><input id="growth-scrub" type="range" min="20" max="50" value="20" disabled></div>
         <div class="field replay-selector"><label for="replay-set">Replay a recorded set</label><select id="replay-set" disabled><option value="">No recorded sets yet</option></select></div>
+        <div class="field replay-selector replay-trial-selector"><label for="replay-trial">Trial</label><select id="replay-trial" disabled><option value="all">All three trials</option></select></div>
         <button type="button" class="btn btn--sm" id="replay-growth" disabled>Replay</button>
+        <button type="button" class="btn btn--sm" id="jump-cancer" hidden>Jump to a trial with a cancer-state cell</button>
         <span id="growth-status" class="small" role="status" aria-live="polite">Choose settings, then run three trials.</span>
       </div>
       <p class="small muted" id="growth-inspection-help">Inspect a unit: tap a cell, or focus the model and use the left and right arrow keys.</p>

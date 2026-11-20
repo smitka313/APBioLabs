@@ -4,7 +4,7 @@
   const canvas=document.getElementById('growth-scene'),chart=document.getElementById('growth-chart');
   if(!canvas||!chart)return;
   const c=canvas.getContext('2d'),W=1160,H=650,reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let settings={age:50,size:'average',tissue:'skin'},recordings=[],trialIndex=0,year=20,fraction=0,playing=false,visible=true,frameId=0,lastFrame=0,previous=0,elapsed=0,selected=0,groups=[];
+  let settings={age:50,size:'average',tissue:'skin'},recordings=[],trialIndex=0,only=false,year=20,fraction=0,playing=false,visible=true,frameId=0,lastFrame=0,previous=0,elapsed=0,selected=0,groups=[];
   const palette=['#8cddb7','#b8c8f2','#e5c18d','#edb0c4','#8bd0e0','#cbd59a','#c4a9e3','#e9b39c'];
   const unitCounts={small:20,average:30,large:40},rates={slow:'SLOW',medium:'MODERATE',fast:'FAST'};
   let cachedKey='',units=[],polygons=[];
@@ -141,8 +141,18 @@
   }
   function draw(){c.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);c.clearRect(0,0,W,H);background();body();tissue();metrics();timeline();}
   // #growth-tip is a status region: refresh it on inspect, pause, scrub or completion, never on every playback frame.
-  function refreshTip(){const tip=document.getElementById('growth-tip');if(tip&&!tip.hidden)tip.textContent=unitDescription(selected);}
-  function emit(type){const t=currentTrial();canvas.dispatchEvent(new CustomEvent('growth-playback',{detail:{type:type,playing:playing,year:Math.floor(year),target:t?.age||settings.age,trial:trialIndex+1,divisions:currentRow()?.cumulative||0,cancerCount:currentRow()?.cancerCount||0,hasCancerState:t?.modelVersion===2,hasHistory:Array.isArray(t?.timeline)}}));}
+  function refreshTip(){const tip=document.getElementById('growth-tip');if(tip&&!tip.hidden){tip.textContent=unitDescription(selected);placeTip();}}
+  // Keep the inspector tip inside the drawing, below the canvas's own header strip (y 0-47 of 650) and so also below
+  // the "Enlarge model" / "Close enlarged model" button above the canvas, in both the inline and the enlarged view.
+  function placeTip(){
+    const tip=document.getElementById('growth-tip');if(!tip||tip.hidden)return;
+    const stage=canvas.offsetParent||canvas.parentElement,h=canvas.offsetHeight,w=canvas.offsetWidth;
+    tip.style.top=Math.round(canvas.offsetTop+h*58/H)+'px';
+    const room=(stage?stage.clientWidth:w)-tip.offsetWidth-8;
+    tip.style.left=Math.round(Math.max(8,Math.min(canvas.offsetLeft+w*.31,room)))+'px';
+  }
+  function showTip(index){const tip=document.getElementById('growth-tip');tip.textContent=unitDescription(index);tip.hidden=false;placeTip();}
+  function emit(type){const t=currentTrial();canvas.dispatchEvent(new CustomEvent('growth-playback',{detail:{type:type,playing:playing,only:only,trials:recordings.length,year:Math.floor(year),target:t?.age||settings.age,trial:trialIndex+1,divisions:currentRow()?.cumulative||0,cancerCount:currentRow()?.cancerCount||0,hasCancerState:t?.modelVersion===2,hasHistory:Array.isArray(t?.timeline)}}));}
   function animate(time){
     frameId=0;
     if(!visible||document.hidden){previous=0;return;}
@@ -151,19 +161,26 @@
       const t=currentTrial(),duration=4200,progress=Math.min(1,elapsed/duration),span=t.age-20;
       year=20+Math.floor(span*progress);fraction=span*progress-Math.floor(span*progress);
       if(time-lastFrame>70){draw();emit('tick');lastFrame=time;}
-      if(progress>=1){if(trialIndex<recordings.length-1){trialIndex++;elapsed=0;year=20;}else{playing=false;year=t.age;draw();refreshTip();emit('complete');}}
+      if(progress>=1){if(!only&&trialIndex<recordings.length-1){trialIndex++;elapsed=0;year=20;}else{playing=false;year=t.age;draw();refreshTip();emit('complete');}}
     }
     if(playing)frameId=requestAnimationFrame(animate);
   }
   function schedule(){if(!frameId&&playing)frameId=requestAnimationFrame(animate);}
-  function configure(s){settings=s;recordings=[];trialIndex=0;playing=false;year=20;fraction=0;previous=0;draw();refreshTip();emit('settings');}
-  function play(trials){recordings=trials;trialIndex=0;elapsed=0;previous=0;year=20;fraction=0;playing=true;
-    if(reduce||trials.every(t=>t.age===20)||trials.some(t=>!Array.isArray(t.timeline))){trialIndex=trials.length-1;year=trials[trialIndex].age;playing=false;draw();refreshTip();emit('complete');return;}
+  function configure(s){settings=s;recordings=[];trialIndex=0;only=false;playing=false;year=20;fraction=0;previous=0;draw();refreshTip();emit('settings');}
+  // play(trials) plays every trial of a set in turn; play(trials,{start:k,only:true}) replays trial k on its own.
+  function play(trials,opts){opts=opts||{};only=!!opts.only;recordings=trials;trialIndex=Math.max(0,Math.min(trials.length-1,opts.start||0));elapsed=0;previous=0;year=20;fraction=0;playing=true;
+    if(reduce||trials.every(t=>t.age===20)||trials.some(t=>!Array.isArray(t.timeline))){if(!only)trialIndex=trials.length-1;year=trials[trialIndex].age;playing=false;draw();refreshTip();emit('complete');return;}
     draw();emit('start');schedule();
   }
   function pause(){playing=!playing;if(playing&&year>=currentTrial().age){elapsed=0;year=20;}previous=0;if(!playing)refreshTip();emit('pause');schedule();}
+  // Load trial `index` of a set, paused at age `atYear`, with cell unit `unit` selected and described in the inspector.
+  function inspectAt(trials,index,atYear,unit){
+    recordings=trials;trialIndex=Math.max(0,Math.min(trials.length-1,index));only=true;playing=false;previous=0;
+    const t=currentTrial();year=Math.max(20,Math.min(t.age,atYear));elapsed=(year-20)/Math.max(1,t.age-20)*4200;fraction=.5;
+    selected=Math.max(0,unit|0);draw();showTip(selected);emit('scrub');
+  }
   function scrub(value){if(!recordings.length)return;playing=false;year=Math.max(20,Math.min(currentTrial().age,value));elapsed=(year-20)/Math.max(1,currentTrial().age-20)*4200;fraction=.5;previous=0;draw();refreshTip();emit('scrub');}
-  function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.width*H/W*dpr));draw();drawChart(groups);}
+  function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.width*H/W*dpr));draw();drawChart(groups);placeTip();}
   function drawChart(data){
     groups=data;const last=data.slice(-8),ctx=chart.getContext('2d'),height=Math.max(280,92+last.length*67),rect=chart.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
     chart.style.aspectRatio=W+' / '+height;chart.width=Math.max(1,Math.round((rect.width||W)*dpr));chart.height=Math.max(1,Math.round((rect.width||W)*height/W*dpr));ctx.setTransform(chart.width/W,0,0,chart.height/height,0,0);
@@ -188,16 +205,16 @@
   }
   function inspect(event){const r=canvas.getBoundingClientRect(),x=(event.clientX-r.left)*W/r.width-627,y=(event.clientY-r.top)*H/r.height-283,tip=document.getElementById('growth-tip');if(Math.hypot(x,y)>184){tip.hidden=true;return;}
     selected=units.reduce((best,p,i)=>Math.hypot(p.x-x,p.y-y)<Math.hypot(units[best].x-x,units[best].y-y)?i:best,0);const t=currentTrial(),count=t?.timeline?t.timeline.filter(row=>row.year<=year&&row.cells.includes(selected)).length:null;
-    tip.textContent=unitDescription(selected);tip.hidden=false;draw();}
+    showTip(selected);draw();}
   canvas.addEventListener('pointerdown',inspect);canvas.addEventListener('pointerleave',()=>{document.getElementById('growth-tip').hidden=true;});
   canvas.addEventListener('keydown',function(event){
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();selected=event.key==='Home'?0:event.key==='End'?units.length-1:(selected+(event.key==='ArrowRight'?1:-1)+units.length)%units.length;
     const t=currentTrial(),count=t?.timeline?t.timeline.filter(row=>row.year<=year&&row.cells.includes(selected)).length:null,tip=document.getElementById('growth-tip');
-    tip.textContent=unitDescription(selected);tip.hidden=false;draw();
+    showTip(selected);draw();
   });
   new ResizeObserver(resize).observe(canvas);
   new IntersectionObserver(es=>{visible=es[0].isIntersecting;previous=0;if(visible)schedule();},{rootMargin:'150px'}).observe(canvas);
   document.addEventListener('visibilitychange',()=>{previous=0;if(!document.hidden)schedule();});
-  window.GrowthModelScene={configure:configure,play:play,pause:pause,scrub:scrub,chart:drawChart};
+  window.GrowthModelScene={configure:configure,play:play,pause:pause,scrub:scrub,chart:drawChart,inspectAt:inspectAt,placeTip:placeTip};
 })();

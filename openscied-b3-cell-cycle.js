@@ -611,8 +611,47 @@
     $('#set-summary').textContent=last?setLabel(last)+': '+last.trials.map(t=>t.divisions).join(', ')+' divisions. Mean '+last.mean.toFixed(1)+'; range '+last.min+'–'+last.max+'.'+(last.trials.every(t=>t.modelVersion===2)?' Cancer-state units by trial: '+last.trials.map(t=>t.cancerCount).join(', ')+'.':' Cancerous state was not tracked in these earlier trials.'):'Run a set to begin your comparison.';
     fillSelect($('#compare-a'),groups,0);fillSelect($('#compare-b'),groups,Math.max(0,groups.length-1));
     fillSelect($('#replay-set'),groups,Math.max(0,groups.length-1));
+    fillTrialSelect();
     $('#replay-growth').disabled=!groups.length;
+    renderCancerJump();
     renderComparison();renderAnalysisReference();renderReport();
+  }
+  // The Trial picker beside "Replay a recorded set": all trials of the set in turn, or one trial on its own.
+  function fillTrialSelect(){
+    const el=$('#replay-trial');if(!el)return;
+    const g=trialGroups()[Number($('#replay-set').value)],current=el.value;
+    el.innerHTML='';
+    const add=function(value,text){const o=document.createElement('option');o.value=value;o.textContent=text;el.appendChild(o);};
+    if(!g){add('all','All three trials');el.disabled=true;return;}
+    add('all',g.trials.length===1?'The trial':'All '+(g.trials.length===3?'three':g.trials.length)+' trials');
+    g.trials.forEach(function(t,k){add(String(k),'Trial '+(k+1)+' · '+plural(t.divisions,'division')+(t.modelVersion===2&&t.cancerCount?' · '+plural(t.cancerCount,'cancer-state cell'):''));});
+    el.disabled=false;el.value=Array.from(el.options).some(function(o){return o.value===current;})?current:'all';
+  }
+  // The first cancer-state (magenta) cell recorded in any trial, newest set first: where and when it appeared.
+  function firstCancerCell(){
+    const groups=trialGroups();
+    for(let gi=groups.length-1;gi>=0;gi--){
+      const g=groups[gi];
+      for(let k=0;k<g.trials.length;k++){
+        const t=g.trials[k];if(t.modelVersion!==2||!t.cancerCount||!Array.isArray(t.timeline))continue;
+        const row=t.timeline.find(function(r){return r.newCancerCells&&r.newCancerCells.length;});
+        if(row)return {group:g,trial:k,year:row.year,unit:row.newCancerCells[0]};
+      }
+    }
+    return null;
+  }
+  function renderCancerJump(){
+    const btn=$('#jump-cancer');if(!btn)return;
+    const hit=firstCancerCell();btn.hidden=!hit;
+    if(hit)btn.textContent='Jump to a trial with a cancer-state cell (Set '+hit.group.index+', trial '+(hit.trial+1)+', age '+hit.year+')';
+  }
+  function jumpToCancer(){
+    const hit=firstCancerCell();if(!hit||!window.GrowthModelScene)return;
+    $('#replay-set').value=hit.group.id;fillTrialSelect();$('#replay-trial').value=String(hit.trial);
+    window.GrowthModelScene.inspectAt(hit.group.trials,hit.trial,hit.year,hit.unit);
+    $('#growth-status').textContent='Set '+hit.group.index+', trial '+(hit.trial+1)+' at age '+hit.year+': the first cancer-state cell (unit '+(hit.unit+1)+') appeared here and is selected in the inspector. Use the arrow keys or the recorded-age slider to look before and after.';
+    $('#growth-scene').focus({preventScroll:true});
+    $('#growth-stage').scrollIntoView({block:'nearest'});
   }
   let analysisPage=0;
   function showAnalysisPage(index){
@@ -720,7 +759,7 @@
     const s=settings(),trials=[];
     for(let i=0;i<3;i++)trials.push(simulateOne(s.age,s.size,s.tissue));
     state.trials.push(...trials);renderTrials();
-    const last=String(trialGroups().length-1);$('#replay-set').value=last;$('#compare-b').value=last;
+    const last=String(trialGroups().length-1);$('#replay-set').value=last;$('#compare-b').value=last;fillTrialSelect();
     renderComparison();save();
     if(window.GrowthModelScene)window.GrowthModelScene.play(trials);
   }
@@ -765,8 +804,8 @@
       $('#growth-age').textContent=d.year;$('#growth-scrub').max=d.target;$('#growth-scrub').value=d.year;
       $('#growth-scrub').disabled=!has||!d.hasHistory||d.type==='settings';$('#pause-growth').disabled=!has||!d.hasHistory||d.type==='settings';
       $('#pause-growth').textContent=d.playing?'Pause playback':'Resume playback';
-      if(d.type==='start')$('#growth-status').textContent='Playing three recorded trials. Years are compressed into seconds.';
-      if(d.type==='complete')$('#growth-status').textContent='Playback complete. All three trials are saved; compare their counts below.';
+      if(d.type==='start')$('#growth-status').textContent=d.only?'Playing trial '+d.trial+' on its own. Years are compressed into seconds.':'Playing three recorded trials. Years are compressed into seconds.';
+      if(d.type==='complete')$('#growth-status').textContent=d.only?'Playback of trial '+d.trial+' complete. Choose another trial or replay the set.':'Playback complete. All three trials are saved; compare their counts below.';
       if(d.type==='settings')$('#growth-status').textContent='Settings changed. Run three trials to record this setup.';
       if(d.type==='scrub')$('#growth-status').textContent='Trial '+d.trial+' at age '+d.year+': '+plural(d.divisions,'recorded division')+'.'+(d.hasCancerState?' '+plural(d.cancerCount,'cancer-state unit')+' in this teaching model.':' Cancerous state was not tracked in this earlier trial.');
       if(d.type==='pause')$('#growth-status').textContent=d.playing?'Playback resumed.':'Playback paused. Drag the recorded-age slider to inspect the history.';
@@ -790,7 +829,12 @@
     });
 
     $('#growth-scrub').addEventListener('input',function(){if(window.GrowthModelScene)window.GrowthModelScene.scrub(Number(this.value));});
-    $('#replay-growth').addEventListener('click',function(){const g=trialGroups()[Number($('#replay-set').value)];if(g&&window.GrowthModelScene)window.GrowthModelScene.play(g.trials);});
+    $('#replay-growth').addEventListener('click',function(){
+      const g=trialGroups()[Number($('#replay-set').value)],which=$('#replay-trial').value;if(!g||!window.GrowthModelScene)return;
+      if(which==='all')window.GrowthModelScene.play(g.trials);else window.GrowthModelScene.play(g.trials,{start:Number(which),only:true});
+    });
+    $('#replay-set').addEventListener('change',fillTrialSelect);
+    $('#jump-cancer').addEventListener('click',jumpToCancer);
     ['compare-a','compare-b'].forEach(id=>$('#'+id).addEventListener('change',function(){renderComparison();save();}));
     $$('input[name="game-mode"]').forEach(function(el){el.addEventListener('change',function(){$('#group-size-wrap').hidden=this.value!=='group';save();});});
     $('#start-round1').addEventListener('click',function(){startRound(1);});
