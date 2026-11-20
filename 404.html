@@ -68,10 +68,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
-<link rel="stylesheet" href="/APBioLabs/style.css">
-<link rel="icon" href="/APBioLabs/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/APBioLabs/favicon-32.png" type="image/png" sizes="32x32">
-<link rel="apple-touch-icon" href="/APBioLabs/apple-touch-icon.png">
+<script>
+/* This page is served for any missing address, at any depth, on both hosts: the site root on
+   biologylabbench.com and /APBioLabs/ on the old GitHub Pages address. Load assets from the right root. */
+var SITE_ROOT = location.hostname === 'smitka313.github.io' ? '/APBioLabs/' : '/';
+document.write('<link rel="stylesheet" href="' + SITE_ROOT + 'style.css">'
+  + '<link rel="icon" href="' + SITE_ROOT + 'favicon.svg" type="image/svg+xml">'
+  + '<link rel="icon" href="' + SITE_ROOT + 'favicon-32.png" type="image/png" sizes="32x32">'
+  + '<link rel="apple-touch-icon" href="' + SITE_ROOT + 'apple-touch-icon.png">');
+</script>
+<noscript><link rel="stylesheet" href="/style.css"><link rel="icon" href="/favicon.svg" type="image/svg+xml"></noscript>
 <style>
   :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { min-height: 100vh; display: flex; flex-direction: column; }
@@ -88,16 +94,16 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<main>
+<main id="main">
   <div class="wrap wrap--wide gutter">
     <div class="nf">
-      <img class="flask" src="/APBioLabs/favicon.svg" alt="" width="56" height="56">
+      <img class="flask" data-site-path="favicon.svg" alt="" width="56" height="56">
       <div class="code">Error 404</div>
       <h1>That page is not on the bench</h1>
       <p>The link may be old or mistyped. Your saved answers are not affected. Pick up where you left off from the list of labs.</p>
       <div class="row">
-        <a class="btn btn--primary" href="/APBioLabs/index.html">Go to the labs</a>
-        <a class="btn" href="/APBioLabs/teachers.html">For teachers</a>
+        <a class="btn btn--primary" data-site-path="index.html" href="/index.html">Go to the labs</a>
+        <a class="btn" data-site-path="teachers.html" href="/teachers.html">For teachers</a>
       </div>
     </div>
   </div>
@@ -110,6 +116,9 @@
   <p>This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere.</p>
 </div></footer>
 
-<script src="/APBioLabs/lab.js"></script>
+<script>
+document.querySelectorAll('[data-site-path]').forEach(function (el) { el.setAttribute(el.tagName === 'IMG' ? 'src' : 'href', SITE_ROOT + el.getAttribute('data-site-path')); });
+document.write('<script src="' + SITE_ROOT + 'lab.js"><\/script>');
+</script>
 </body>
 </html>
