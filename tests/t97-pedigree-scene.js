@@ -124,7 +124,8 @@ const msg = (p, sel) => p.locator(sel).innerText();
     T.ok(await p.getAttribute(P + ' .ped-chip[data-genotype="AB"]', 'aria-pressed') === 'true' && /Yes! Only AB fits/.test(await msg(p, P + ' .ped-msg')), 'Tab and Space pick AB for the father with the keyboard');
     await p.keyboard.press('Escape');
     T.ok(await p.evaluate(() => document.activeElement.dataset && document.activeElement.dataset.person) === 'father', 'Escape returns to the person');
-    T.ok(await p.locator('#announcer').innerText() !== '', 'announcements go to the page live region');
+    // announce() clears the region, then refills it 30 ms later so repeats are re-read; wait for the refill
+  T.ok(await p.waitForFunction(() => { const e = document.querySelector('#announcer'); return e && e.textContent.trim() !== ''; }, null, { timeout: 3000 }).then(() => true, () => false), 'announcements go to the page live region');
 
     // --- two-gene: the people and the key's alleles ---
     await go(p, 'twogene');
