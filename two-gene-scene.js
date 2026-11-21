@@ -173,7 +173,7 @@
     if (!L || !desc) throw new Error('two-gene scene: host is incomplete');
     if (!document.getElementById('tg-scene-css')) { const st = document.createElement('style'); st.id = 'tg-scene-css'; st.textContent = CSS; document.head.appendChild(st); }
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-    const svgEl = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); }); if (parent) parent.appendChild(e); return e; };
+    const svgEl = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); Object.keys(attrs || {}).forEach(function (k) { const v = String(attrs[k]); if (v.indexOf('var(') >= 0 && e.style) e.style.setProperty(k, v); else e.setAttribute(k, v); }); if (parent) parent.appendChild(e); return e; };
     const mqReduce = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 
     let data = cleanState(L, api.getState().twoGene);
@@ -245,8 +245,9 @@
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const to = navigate(p.id, e.key); tabStop = to; setTabs(); els[to].g.focus(); }
       });
     }
-    L.TWO_GENE.persons.forEach(drawPerson);
-    function setTabs() { IDS.forEach(function (id) { els[id].g.setAttribute('tabindex', id === tabStop ? '0' : '-1'); }); }
+    let drawFailed = false;
+    try { L.TWO_GENE.persons.forEach(drawPerson); } catch (err) { drawFailed = true; fig.appendChild(el('p', 'tg-note', 'The picture could not be drawn in this browser. Use the text description below.')); }
+    function setTabs() { if (drawFailed) return; IDS.forEach(function (id) { els[id].g.setAttribute('tabindex', id === tabStop ? '0' : '-1'); }); }
     function drawDyn(id) {
       const p = byId(L, id), m = M[id], dyn = els[id].dyn, odd = data.mismatch.includes(id) ? oddIndex(id) : -1;
       dyn.replaceChildren();
@@ -444,7 +445,7 @@
     }
     function refresh(focusFirst) {
       MODES.forEach(function (m) { modeBtns[m[0]].setAttribute('aria-pressed', mode === m[0] ? 'true' : 'false'); });
-      IDS.forEach(function (id) {
+      if (!drawFailed) IDS.forEach(function (id) {
         const e = els[id];
         e.g.setAttribute('aria-label', ariaLabel(L, id, !!data.genotypes[id]));
         e.g.classList.toggle('is-sel', sel === id && (mode === 'read' || mode === 'trace'));

@@ -183,7 +183,7 @@
     if (!L || !desc) throw new Error('pedigree scene: host is incomplete');
     if (!document.getElementById('ped-scene-css')) { const st = document.createElement('style'); st.id = 'ped-scene-css'; st.textContent = CSS; document.head.appendChild(st); }
     const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-    const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); }); return e; };
+    const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); Object.keys(attrs || {}).forEach(function (k) { const v = String(attrs[k]); if (v.indexOf('var(') >= 0 && e.style) e.style.setProperty(k, v); else e.setAttribute(k, v); }); return e; };
 
     /* state */
     const saved = api.getState().pedigree || {};
@@ -252,8 +252,9 @@
         if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const to = navigate(p.id, e.key); tabStop = to; setTabs(); els[to].g.focus(); }
       });
     }
-    L.LAKITA.persons.forEach(drawPerson);
-    function setTabs() { Object.keys(els).forEach(function (id) { els[id].g.setAttribute('tabindex', id === tabStop ? '0' : '-1'); }); }
+    let drawFailed = false;
+    try { L.LAKITA.persons.forEach(drawPerson); } catch (err) { drawFailed = true; fig.appendChild(el('p', 'ped-note', 'The picture could not be drawn in this browser. Use the text description below.')); }
+    function setTabs() { if (drawFailed) return; Object.keys(els).forEach(function (id) { els[id].g.setAttribute('tabindex', id === tabStop ? '0' : '-1'); }); }
 
     function chromIcon(parent, cx, top, genotype) {
       const known = genotype && genotype.length === 2 ? genotype.split('') : ['?', '?'];
@@ -368,7 +369,7 @@
     }
     function refresh(focusChip) {
       svg.setAttribute('aria-label', 'Lakita’s family pedigree. Use the arrow keys to move between people and Enter to choose genotypes.');
-      L.LAKITA.persons.forEach(function (p) {
+      if (!drawFailed) L.LAKITA.persons.forEach(function (p) {
         const e = els[p.id];
         e.g.setAttribute('aria-label', ariaLabel(L, p.id, guesses[p.id]));
         e.g.classList.toggle('is-sel', mode === 'choose' && sel === p.id);
