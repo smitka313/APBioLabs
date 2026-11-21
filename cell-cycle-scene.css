@@ -60,6 +60,12 @@
   #cell-game .game-setup { gap:12px; }
   #cell-game .game-setup-copy { max-width:none; }
 }
+/* Phones and small tablets: the scene is redrawn as a tall 360 × 612 composition (see cell-cycle-scene.js), shown at about
+   1 canvas px = 1 CSS px so every label is at least 12 px. The Roll button sits under the board instead of over it. */
+#cycle-scene { --scene-ar:1.526; }
+#cycle-scene[data-layout="portrait"] { --scene-ar:.5882; aspect-ratio:360 / 612; max-width:560px; margin:0 auto; }
+.specimen-stage.is-portrait .scene-action { position:static; width:auto; margin:4px 12px 14px; }
+#cell-game .specimen-stage.is-portrait .scene-action .roll-button { min-height:52px; font-size:1rem; padding:10px 14px; }
 @media print { .scene-action { display:none!important; } }
 
 .scene-expand { position:absolute; top:9px; right:14px; z-index:2; border:1px solid #abc6b455; border-radius:99px; padding:6px 12px; background:#142b2e; color:#d4e9df; font:600 .72rem Arial,sans-serif; cursor:pointer; }
@@ -67,7 +73,11 @@
 .specimen-stage.scene-expanded { position:fixed; inset:10px; z-index:10000; width:calc(100vw - 20px); height:calc(100dvh - 20px); margin:0; overflow:auto; border:1px solid #a7d7bc55; }
 .specimen-stage.scene-expanded { display:flex; align-items:center; justify-content:center; overflow:hidden; }
 /* Fit the whole board inside the window: as wide as possible without getting taller than the window (canvas is 1160×760). */
-.specimen-stage.scene-expanded canvas, #cell-board.scene-expanded #cycle-scene { min-width:0; max-width:none; width:min(100%, calc((100vh - 40px) * 1160 / 760)); width:min(100%, calc((100dvh - 40px) * 1160 / 760)); height:auto; }
+.specimen-stage.scene-expanded canvas, #cell-board.scene-expanded #cycle-scene { min-width:0; max-width:none; width:min(100%, calc((100vh - 40px) * var(--scene-ar,1.526))); width:min(100%, calc((100dvh - 40px) * var(--scene-ar,1.526))); height:auto; }
+/* Enlarged on a portrait phone: the Roll button sits under the board, so the board is a little shorter than the window. */
+.specimen-stage.scene-expanded.is-portrait { flex-direction:column; gap:8px; }
+.specimen-stage.scene-expanded.is-portrait canvas, #cell-board.scene-expanded #cycle-scene[data-layout="portrait"] { max-width:none; margin:0; width:min(100%, calc((100vh - 120px) * var(--scene-ar))); width:min(100%, calc((100dvh - 120px) * var(--scene-ar))); }
+.specimen-stage.scene-expanded.is-portrait .scene-action { position:static; width:min(320px,86%); margin:0; }
 .specimen-stage.scene-expanded .scene-action { position:fixed; right:30px; bottom:30px; width:230px; }
 .specimen-stage.scene-expanded .scene-expand { position:fixed; right:30px; top:24px; }
 body.scene-open { overflow:hidden; }
@@ -108,4 +118,4 @@ body.scene-open { overflow:hidden; }
   #cell-game .scene-action{width:210px;right:14px;bottom:14px}
   #cell-game .scene-action .roll-button{min-height:44px;font-size:.95rem}
 }
-@media(max-width:760px){.scene-expand { font-size:.65rem; top:6px; right:7px; padding:4px 7px; }.scene-expanded .scene-expand{font-size:.8rem;padding:8px 12px;}}
+@media(max-width:760px){.scene-expand { font-size:.78rem; top:6px; right:7px; padding:4px 10px; min-height:28px; }.scene-expanded .scene-expand{font-size:.8rem;padding:8px 12px;}}

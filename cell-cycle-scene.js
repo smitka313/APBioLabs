@@ -3,16 +3,20 @@
   'use strict';
   const canvas=document.getElementById('cycle-scene');
   if(!canvas)return;
-  const ctx=canvas.getContext('2d'),W=1160,H=760;
+  const ctx=canvas.getContext('2d'),WIDE_W=1160,WIDE_H=760;
+  // Two compositions share one canvas: the wide board (oval track, dice tray below) and, on phones and small tablets, a
+  // tall portrait board (rounded track, big cell, dice in the middle) drawn at about CSS pixel size so its text stays readable.
+  let W=WIDE_W,H=WIDE_H,portrait=false,minFont=99;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const colors=['#67e5bf','#ffd681','#83c7ff','#f3a2bc'];
+  const PORTRAIT_W=360,PORTRAIT_H=612,PORTRAIT_MIN_FONT=13;
   let game=null,track=[],visible=true,raf=0,lastTime=0,now=0,rollStart=0,rolling=false,selected=null;
   let lastTurn=0,particles=[],transitions={},hitRegions=[];
   const frame=document.getElementById('cell-board');
   const tip=document.getElementById('specimen-tip');
   function ellipse(x,y,rx,ry,fill,stroke,width){ctx.beginPath();ctx.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width||1;ctx.stroke();}}
   function line(x,y,x2,y2,color,width){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.strokeStyle=color;ctx.lineWidth=width||1;ctx.stroke();}
-  function text(s,x,y,size,color,align,font){ctx.fillStyle=color||'#d8e9e5';ctx.font=(font==='mono'?'500':(font||'500'))+' '+size+'px '+(font==='mono'?'monospace':'Arial, sans-serif');ctx.textAlign=align||'left';ctx.fillText(s,x,y);}
+  function text(s,x,y,size,color,align,font){if(portrait)size=Math.max(size,PORTRAIT_MIN_FONT);if(size<minFont)minFont=size;ctx.fillStyle=color||'#d8e9e5';ctx.font=(font==='mono'?'500':(font||'500'))+' '+size+'px '+(font==='mono'?'monospace':'Arial, sans-serif');ctx.textAlign=align||'left';ctx.fillText(s,x,y);}
   function rounded(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}}
   function gradient(x,y,r,stops){const g=ctx.createRadialGradient(x-r*.25,y-r*.3,1,x,y,r);stops.forEach(s=>g.addColorStop(s[0],s[1]));return g;}
   // The track has one position per board space (32 on the OpenSciEd board), START at the top.
@@ -237,10 +241,202 @@
     });
   }
   function drawParticles(){particles=particles.filter(p=>now-p.time<850);for(const p of particles){const k=Math.max(0,Math.min(1,(now-p.time)/850)),x=p.x+(p.tx-p.x)*k,y=p.y+(p.ty-p.y)*k-Math.sin(k*Math.PI)*100;ctx.save();ctx.globalAlpha=1-k*.7;ctx.shadowColor=p.color;ctx.shadowBlur=8;ellipse(x,y,3.4,3.4,p.color);ctx.restore();}}
-  function paint(){ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);ctx.clearRect(0,0,W,H);background();path();specimen();dice();drawParticles();}
+    // ---- Portrait composition (phones and small tablets, canvas drawn 360 × 612 logical px) ----
+  // The 32 spaces run round a rounded rectangle (START at the top centre, clockwise). Inside it: the magnified cell, its
+  // labels, the four dice and the dice key. Plain-space numbers are left out (the hover/tap text and the scorecard have
+  // them); the Must-roll numbers on the M spaces stay. Every text is drawn at 13 logical px or more, and the canvas is shown
+  // at about 1 logical px = 1 CSS px, so nothing is smaller than about 12 CSS px.
+  const PT={x1:26,x2:334,y1:108,y2:572,rc:70,cx:180,cy:282};
+  let ring=null;
+  function buildRing(){
+    const pts=[],x1=PT.x1,x2=PT.x2,y1=PT.y1,y2=PT.y2,rc=PT.rc,mid=(x1+x2)/2;
+    const add=function(x,y){pts.push({x:x,y:y,d:0});};
+    const arc=function(ox,oy,a0,a1){for(let k=1;k<=16;k++){const a=a0+(a1-a0)*k/16;add(ox+Math.cos(a)*rc,oy+Math.sin(a)*rc);}};
+    add(mid,y1);add(x2-rc,y1);arc(x2-rc,y1+rc,-Math.PI/2,0);add(x2,y2-rc);arc(x2-rc,y2-rc,0,Math.PI/2);add(x1+rc,y2);
+    arc(x1+rc,y2-rc,Math.PI/2,Math.PI);add(x1,y1+rc);arc(x1+rc,y1+rc,Math.PI,Math.PI*1.5);add(mid,y1);
+    let len=0;for(let i=1;i<pts.length;i++){len+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y);pts[i].d=len;}
+    ring={pts:pts,len:len};
+  }
+  // Same contract as position(): x, y and a = the direction pointing out of the track.
+  function pPosition(index){
+    const n=spaces(),t=(((index%n)+n)%n)/n*ring.len,pts=ring.pts;
+    let i=1;while(i<pts.length-1&&pts[i].d<t)i++;
+    const a=pts[i-1],b=pts[i],k=b.d>a.d?(t-a.d)/(b.d-a.d):0,tx=b.x-a.x,ty=b.y-a.y;
+    return {x:a.x+tx*k,y:a.y+ty*k,a:Math.atan2(-tx,ty)};
+  }
+  function pStatus(){
+    const p=game&&game.playersState[game.active];
+    return rolling?'ROLLING…':(p?'PLAYER '+p.id+' · ROLL FOUR DICE':'MOVE ONE SPACE · ROLL FOUR DICE');
+  }
+  function pBackground(){
+    const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#1a2c30');g.addColorStop(.45,'#111e24');g.addColorStop(1,'#0b171c');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(let i=0;i<500;i++){const x=(i*197.31)%W,y=(i*83.91)%H;ellipse(x,y,.45+(i%3)*.18,.45,'rgba(178,208,196,.055)');}
+    for(let x=20;x<W;x+=40)line(x,0,x,H,'#b6dace06');
+    for(let y=20;y<H;y+=40)line(0,y,W,y,'#b6dace06');
+    const vignette=ctx.createRadialGradient(180,300,60,180,300,470);vignette.addColorStop(0,'#72b7a908');vignette.addColorStop(1,'#00000065');ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+    text(pStatus(),18,26,13,'#a9c6c0','left','mono');
+    text('MAGNIFIED CELL · SCHEMATIC · NOT TO SCALE',180,604,13,'#80a39b','center','mono');
+    // Each player's cell chips (blue = non-cancer cell, red = cancer cell in the game model), counts written beside the colour.
+    (game&&game.playersState||[]).forEach(function(p,i){
+      const x0=24+(i%2)*166,y=58+Math.floor(i/2)*19;
+      ellipse(x0+9,y-4,9,9,colors[i]);text(String(p.id),x0+9,y,13,'#10201c','center','700');
+      ellipse(x0+40,y-4,6,6,'#2f7fd8','#cfe3ff',1.5);text((p.blue||0)+' blue',x0+49,y,13,'#d6e7e0');
+      ellipse(x0+106,y-4,6,6,'#d23b3b','#ffd0d0',1.5);text((p.red||0)+' red',x0+115,y,13,'#d6e7e0');
+    });
+  }
+  function pPath(){
+    const x1=PT.x1,x2=PT.x2,y1=PT.y1,y2=PT.y2,rc=PT.rc,N=spaces();
+    ctx.save();ctx.shadowColor='#0009';ctx.shadowBlur=16;ctx.shadowOffsetY=6;
+    rounded(x1-22,y1-22,x2-x1+44,y2-y1+44,rc+22,'#182b30','#789b9138');ctx.restore();
+    rounded(x1+22,y1+22,x2-x1-44,y2-y1-44,rc-22,'#0f2025','#789b9138');
+    for(let i=0;i<N;i++){
+      const p=pPosition(i),next=pPosition((i+1)%N),col=phaseColor(i);
+      line(p.x,p.y,next.x,next.y,col+'66',3);
+      if(i%4===1){const q=pPosition(i+.5);ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.a+Math.PI/2);ctx.beginPath();ctx.moveTo(-4,-3);ctx.lineTo(0,2);ctx.lineTo(4,-3);ctx.strokeStyle=col+'c0';ctx.lineWidth=1.8;ctx.stroke();ctx.restore();}
+    }
+    // Phase letters sit just inside the track, away from the labels and the cell.
+    [{i:2,l:'G1'},{i:11.5,l:'S'},{i:20.7,l:'G2'},{i:27,l:'M'}].forEach(function(o){const p=pPosition(o.i);text(o.l,p.x-Math.cos(p.a)*32,p.y-Math.sin(p.a)*32+6,17,phaseColor(Math.round(o.i)),'center','700');});
+    hitRegions=[];
+    for(let i=0;i<N;i++){
+      const t=track[i],p=pPosition(i),col=phaseColor(i),check=t&&t.type==='checkpoint';
+      if(check){
+        ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a+Math.PI/2);
+        rounded(-16,-18,32,36,8,'#10201f',col+'cc');
+        line(-17,-11,17,-11,col,3);line(-17,11,17,11,col,3);
+        ctx.shadowColor=col;ctx.shadowBlur=8;ellipse(-15,-11,2.8,2.8,col);ellipse(15,-11,2.8,2.8,col);ctx.restore();
+        text(t.phase.toUpperCase(),p.x,p.y+5,13,'#eafdf5','center','700');
+        hitRegions.push({x:p.x,y:p.y,r:22,title:t.label,copy:'Turn over the checkpoint card: p53 checks the cell’s scorecard here before it continues.'});
+      }else{
+        const start=t&&t.type==='start',finish=t&&t.type==='finish',chance=!!(t&&t.chance),m=t&&t.phase==='m',r=start||finish?14:chance||m?10:9;
+        ellipse(p.x,p.y+2,r+2,r+2,'#0006');
+        if(chance){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a+Math.PI/2);rounded(-r,-r,2*r,2*r,3,CHANCE_FILL,game&&game.round===2?'#ffffff':CHANCE_RING);if(game&&game.round===2){ctx.strokeStyle=CHANCE_RING;ctx.lineWidth=2;ctx.strokeRect(-r-3,-r-3,2*r+6,2*r+6);}ctx.restore();}
+        else ellipse(p.x,p.y,r,r,gradient(p.x,p.y,r,[[0,col+'dd'],[.7,col+'44'],[1,'#172c2b']]),col+'b0',1.4);
+        const ink=chance?'#0f3a4a':'#c6e6dc';
+        if(start||finish){text(start?'▶':'✓',p.x,p.y+5,13,'#ecfff7','center','700');text(start?'START':'FINISH',p.x+(start?12:-12),p.y-20,13,start?'#ffb36b':'#a9e27a','center','700');}
+        else if(m)text(String(t.roll),p.x,p.y+5,13,chance?ink:'#efe6ff','center','700');
+        hitRegions.push({x:p.x,y:p.y,r:20,title:t?t.label:'START',copy:t&&t.phase==='m'&&t.type==='space'?'Must roll '+t.roll+': you need a '+t.roll+' on a die to move onto this space.'+(chance?' It is also a light-blue square: in Round 2, landing here draws a Cellular Chance card.':''):chance?'Light-blue square: in Round 2, landing here draws a Cellular Chance card.':'Move one space each turn.'});
+      }
+    }
+    const players=(game&&game.playersState.length?game.playersState:[{id:1,pos:0}]);
+    players.forEach(function(p,index){
+      const tween=transitions[p.id];let pos=p.pos;
+      if(tween){const k=Math.max(0,Math.min(1,(now-tween.time)/750)),ease=k*k*(3-2*k);pos=tween.from+(tween.to-tween.from)*ease;}
+      const q=pPosition(pos),same=players.filter(function(o){return o.pos===p.pos;}),offset=same.findIndex(function(o){return o.id===p.id;}),shift=(offset-(same.length-1)/2)*22;
+      // Pieces sharing a space spread along the track, so they never cover the START / FINISH label.
+      const x=q.x+Math.cos(q.a+Math.PI/2)*shift,y=q.y+Math.sin(q.a+Math.PI/2)*shift;
+      const active=game&&game.active===index&&!game.complete,col=colors[index];
+      ctx.save();ctx.shadowColor=col;ctx.shadowBlur=active?15:4;
+      ellipse(x,y,13,11.5,gradient(x,y,14,[[0,'#e8fff0'],[.26,col],[1,'#1a574c']]),'#e5fff0',1.6);ctx.restore();
+      ellipse(x,y,9,9,'#174840','#8ee6c8',.8);text(String(p.id),x,y+5,13,'#fff','center','700');
+      if(active){const pulse=reduced?0:Math.sin(now*.003)*2;ellipse(x,y,19+pulse,17+pulse,null,col+'aa',1.4);}
+    });
+  }
+  function mapHits(hits,ox,oy,k){return hits.map(function(h){return {x:ox+h.x*k,y:oy+h.y*k,r:Math.max(14,h.r*k),title:h.title,copy:h.copy};});}
+  function wrap(s,maxW,mono,bold){
+    ctx.font=(mono?'500 13px monospace':(bold?'700':'500')+' 13px Arial, sans-serif');
+    const words=String(s).split(' '),lines=[];let cur='';
+    words.forEach(function(w){const t=cur?cur+' '+w:w;if(cur&&ctx.measureText(t).width>maxW){lines.push(cur);cur=w;}else cur=t;});
+    if(cur)lines.push(cur);return lines;
+  }
+  function pSpecimen(){
+    const player=game&&game.playersState[game.active],p=player||{pos:3,score:{g1:{nutrients:2,proteins:2,organelles:2},s:{chromosomes:0},g2:{nutrients:0,proteins:0,organelles:0}}};
+    const phase=track[p.pos]?.phase||'g1',grow=Math.min(1,(p.score.g1.nutrients+p.score.g1.proteins)/16),radius=132+grow*13;
+    const S=.72,cx=PT.cx,cy=PT.cy,actualPhase=phase==='finish'?'m':phase,fin=phase==='finish';
+    const rowY=fin?338:390;
+    let body;
+    if(fin){
+      const red=p.lastChip==='red',DX=64,dy=262,KC=.62,KS=1.05,sets=[];
+      [-1,1].forEach(function(side){
+        const ox=cx+side*DX;
+        ctx.save();ctx.translate(ox,dy);ctx.scale(KC,KC);const lh=cell(0,0,93,'g1',p.score,0);ctx.restore();hitRegions.push(...mapHits(lh,ox,dy,KC));
+      });
+      [-1,1].forEach(function(side){
+        const ox=cx+side*DX;
+        ctx.save();ctx.translate(ox,dy);ctx.scale(KS,KS);const set=chromosomeSet(0,0,red&&side===-1);ctx.restore();
+        sets.push(set.map(function(c){return {color:c.color,changed:c.changed,x:ox+c.x*KS,y:dy+c.y*KS,markX:c.markX===undefined?undefined:ox+c.markX*KS,markY:c.markY===undefined?undefined:dy+c.markY*KS};}));
+      });
+      const caption=red?'Daughter cells · one carries changed DNA (game model)':'Daughter cells · identical DNA';
+      const sub=red?'RED CHIP · CANCER CELL IN THIS GAME MODEL':'SAME CHROMOSOMES IN BOTH · NEW BLUE CHIP';
+      let y=364;
+      wrap(caption,264,false,true).forEach(function(l){text(l,cx,y,13,red?'#ffc2c2':'#c4f0dc','center','700');y+=17;});
+      y+=2;wrap(sub,264,true).forEach(function(l){text(l,cx,y,13,'#a9cbbf','center','mono');y+=17;});
+      const changed=sets[0].find(function(c){return c.changed;});
+      if(changed){
+        const bx=cx-DX-44,by=176;
+        line(changed.markX,changed.markY,bx+44,by+24,'#ffd0d0',1.6);ellipse(changed.markX,changed.markY,3,3,'#ffd0d0');
+        rounded(bx,by,88,24,6,'#3a1418f2','#ff8a8a');text('CHANGED',bx+44,by+17,13,'#ffe1e1','center','700');
+        hitRegions.push({x:changed.x,y:changed.y,r:18,title:'Changed chromosome (game model)',copy:'This daughter cell carries a changed section of DNA (red, dashed outline). The cell divided without p53 stopping it, so it is a red chip: a cancer cell in this game model.'});
+      }
+      hitRegions.push({x:cx-DX-4*KS,y:dy-8*KS,r:30,title:'Daughter cell DNA',copy:red?'One daughter has a changed chromosome; the other has the original set.':'Both daughter cells have the same chromosome set: identical DNA.'});
+      sceneState={view:'daughters',caption:caption,daughters:sets.map(function(set){return {changed:set.some(function(c){return c.changed;}),chromosomes:set.map(function(c){return c.changed?'changed':c.color;})};}),
+        changedAt:changed?{x:changed.markX,y:changed.markY}:null};
+      body={x:cx+DX,y:dy,r:93*KC};
+    }else{
+      sceneState={view:'cell',caption:'',daughters:[]};
+      const mt=track[p.pos],split=mt&&mt.phase==='m'?(mt.type==='checkpoint'?.9:.15+(mt.roll||0)*.13):.1;
+      ctx.save();ctx.translate(cx,cy);ctx.scale(S,S);const lh=cell(0,0,radius,actualPhase,p.score,split);ctx.restore();
+      hitRegions.push(...mapHits(lh,cx,cy,S));
+      const phaseText=phase==='s'?'COLLECTING CHROMOSOMES':phase==='g2'?'GROWING & GATHERING':phase==='m'?'DIVIDING · ROLL 1–5 IN ORDER':'GROWING & GATHERING';
+      text(phaseText,cx,412,13,'#b0d3c6','center','mono');
+      body={x:cx,y:cy,r:radius*S};
+    }
+    // Leaders are anchored to where each structure is drawn this frame (a dot marks the exact spot).
+    const lc='#adc8bdb0';
+    const leader=function(ax,ay,ex,ey,tx,ty,label,align){line(ax,ay,ex,ey,lc,1.2);line(ex,ey,tx,ty,lc,1.2);ellipse(ax,ay,3,3,'#d9ece4');text(label,align==='right'?tx-4:tx+6,ty+4,13,'#cfdfd7',align);};
+    const toward=function(cx0,cy0,rx,ry,tx,ty){const a=Math.atan2((ty-cy0)/ry,(tx-cx0)/rx);return [cx0+Math.cos(a)*rx,cy0+Math.sin(a)*ry];};
+    if(actualPhase==='m'&&!fin){
+      leader(body.x+body.r*.77,body.y,196,168,200,168,'Spindle fibres');
+    }else{
+      const nucs=hitRegions.filter(function(h){return h.title==='Nucleus'||/^S phase/.test(h.title);}),nuc=nucs[nucs.length-1];
+      if(nuc){const pt=toward(nuc.x,nuc.y,nuc.r*.92,nuc.r*.88*.92,196,168);leader(pt[0],pt[1],196,168,200,168,'Nucleus / DNA');}
+    }
+    const mitos=hitRegions.filter(function(h){return h.title==='Mitochondrion';});
+    if(mitos.length){const m=mitos.reduce(function(a,b){return Math.hypot(b.x-110,b.y-rowY)<Math.hypot(a.x-110,a.y-rowY)?b:a;});leader(m.x,m.y,150,rowY,146,rowY,'Mitochondria','right');}
+    const mem=toward(body.x,body.y,body.r-1,body.r*.83-1,208,rowY);leader(mem[0],mem[1],208,rowY,212,rowY,'Cell membrane');
+    if(game&&game.event&&/checkpoint/i.test(game.event.kicker)){
+      const passed=/passed/i.test(game.event.kicker);
+      text(passed?'p53 CHECK · PASSED':'p53 CHECK · '+(/DESTROYED|destroyed/.test(game.event.title)?'CELL DESTROYED':'SENT BACK'),cx,134,13,passed?'#86e1b8':'#efcd91','center','mono');
+    }
+  }
+  function pDice(){
+    rounded(68,424,224,56,14,'#233e36','#8ba89750');rounded(73,429,214,46,10,'#19352d','#86ad9040');
+    const vals=game?.lastDice||[];
+    for(let i=0;i<4;i++){
+      const spin=rolling&&!reduced,tt=(now-rollStart)*.018,x=180+(i-1.5)*50,y=452+(spin?Math.sin(tt+i)*4:0),angle=spin?Math.sin(tt+i)*.18:((i%2?-1:1)*.075);
+      ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(.72,.72);ctx.shadowColor='#0009';ctx.shadowBlur=8;ctx.shadowOffsetY=5;
+      rounded(-26,-26,53,57,11,'#a6b3a6');ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+      const g=ctx.createLinearGradient(-24,-24,24,24);g.addColorStop(0,'#ffffed');g.addColorStop(.6,'#e9e7d3');g.addColorStop(1,'#cbcebb');rounded(-26,-28,53,52,10,g,'#faffeb');
+      const val=spin?1+(Math.floor(now*.02+i*3)%6):(vals[i]||0);
+      if(val)for(const q of pipPositions[val]){const px=(q%3-1)*13,py=(Math.floor(q/3)-1)*13-2;ellipse(px,py,3.8,3.8,'#223b32');ellipse(px+.3,py+.5,2.9,2.9,'#314c40');}
+      else text('?',0,5,23,'#6b7e6f','center','700');
+      ctx.restore();
+    }
+    text('1 Nutrient · 2 Protein · 3 Organelle',180,505,13,'#b9cdc4','center');text('4 Chromosome (S) · 5–6 nothing',180,522,13,'#b9cdc4','center');text('M: roll the number on the next space',180,539,13,'#b9cdc4','center');
+  }
+  const PORTRAIT_LABEL='The Cell Game board drawn as a rounded track of 32 spaces, starting at the top: START, 6 G1 spaces, the G1 Checkpoint, 8 S spaces, 8 G2 spaces, the G2 Checkpoint, 5 M spaces marked with the number to roll (1 to 5), the M Checkpoint and FINISH. Light-blue squares are Cellular Chance spaces. Inside the track is a magnified cell showing its membrane, nucleus, mitochondria and chromosomes, then four dice and the dice key. Each player\'s cell chips are listed at the top. See the scorecard and turn result for the current state.';
+  function wantPortrait(){
+    if(!(window.innerWidth<1100))return false;
+    const expanded=!!(frame&&frame.classList&&frame.classList.contains('scene-expanded'));
+    if(expanded)return window.innerWidth<900&&window.innerWidth<window.innerHeight;
+    const w=frame&&frame.clientWidth;
+    return w?w<900:portrait;
+  }
+  function applyLayout(want){
+    portrait=want;W=want?PORTRAIT_W:WIDE_W;H=want?PORTRAIT_H:WIDE_H;
+    if(want&&!ring)buildRing();
+    if(!canvas.setAttribute)return;
+    canvas.setAttribute('data-layout',want?'portrait':'wide');
+    if(frame&&frame.classList)frame.classList.toggle('is-portrait',want);
+    const cur=canvas.getAttribute('aria-label')||'';
+    if(!canvas.dataset.wideLabel)canvas.dataset.wideLabel=cur;
+    const wide=canvas.dataset.wideLabel,oldBase=canvas.dataset.baseLabel||wide,base=want?PORTRAIT_LABEL:wide;
+    const suffix=cur.indexOf(oldBase)===0?cur.slice(oldBase.length):'';
+    canvas.dataset.baseLabel=base;canvas.setAttribute('aria-label',base+suffix);
+  }
+  function paint(){minFont=99;ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);ctx.clearRect(0,0,W,H);if(portrait){pBackground();pPath();pSpecimen();pDice();}else{background();path();specimen();dice();}drawParticles();}
   function animate(time){raf=0;now=time;if(!visible||document.hidden)return;if(time-lastTime>1000/28){lastTime=time;paint();}if(!reduced||rolling||particles.length)raf=requestAnimationFrame(animate);}
   function request(){if(!raf)raf=requestAnimationFrame(animate);}
-  function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.width*H/W*dpr);paint();request();}
+  function resize(){const want=wantPortrait();if(want!==portrait||!canvas.getAttribute||!canvas.dataset||!canvas.dataset.baseLabel)applyLayout(want);const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.width*H/W*dpr);paint();request();}
   function update(g,t){
     const prev=game;track=t;game=g;
     if(prev){for(const p of g.playersState){const before=prev.playersState.find(o=>o.id===p.id);if(before&&before.pos!==p.pos)transitions[p.id]={from:before.pos,to:p.pos,time:performance.now()};}}
@@ -249,7 +445,7 @@
       let gained=0;
       if(prev)for(const p of g.playersState){const before=prev.playersState.find(o=>o.id===p.id);if(before)for(const phase of ['g1','s','g2'])for(const key of Object.keys(p.score[phase]))gained+=Math.max(0,p.score[phase][key]-before.score[phase][key]);}
       // Reduced motion: the scorecard shows what was collected, so skip the flying particles.
-      if(!reduced)for(let i=0;i<Math.min(12,gained*2);i++)particles.push({x:65+(i%4)*78,y:680,tx:520+(i*19)%100,ty:285+(i*31)%80,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13});
+      if(!reduced)for(let i=0;i<Math.min(12,gained*2);i++)particles.push(portrait?{x:99+(i%4)*54,y:452,tx:150+(i*19)%60,ty:250+(i*31)%60,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13}:{x:65+(i%4)*78,y:680,tx:520+(i*19)%100,ty:285+(i*31)%80,color:i%3?'#9ee9bf':'#d1b3ee',time:performance.now()+i*13});
     }
     game=JSON.parse(JSON.stringify(g));paint();request();
   }
@@ -264,8 +460,8 @@
     tip.hidden=false;tip.style.left=Math.max(10,Math.min(r.width-240,x*scale+left+14))+'px';tip.style.top=Math.max(30,y*scale+top-70)+'px';
   }
   canvas.addEventListener('pointermove',showAt);canvas.addEventListener('pointerdown',showAt);canvas.addEventListener('pointerleave',()=>{tip.hidden=true;selected=null;});
-  new ResizeObserver(resize).observe(canvas);
+  new ResizeObserver(resize).observe(canvas);if(frame)new ResizeObserver(resize).observe(frame);
   new IntersectionObserver(es=>{visible=es[0].isIntersecting;if(visible)request();else if(raf){cancelAnimationFrame(raf);raf=0;}},{rootMargin:'150px'}).observe(canvas);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)request();else if(raf){cancelAnimationFrame(raf);raf=0;}});
-  window.CellCycleScene={update:update,rolling:setRolling,state:function(){return JSON.parse(JSON.stringify(sceneState));}};
+  window.CellCycleScene={update:update,rolling:setRolling,state:function(){return Object.assign(JSON.parse(JSON.stringify(sceneState)),{layout:portrait?'portrait':'wide',logicalWidth:W,minFont:minFont});}};
 })();
