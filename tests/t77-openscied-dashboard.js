@@ -11,7 +11,7 @@ const assert = require('node:assert/strict');
       // Do this once, rather than removing identity from a page-init script on reload.
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      assert.equal(await p.locator('.dashboard-units > section').first().getAttribute('aria-labelledby'), 'unit3');
+      assert.equal(await p.locator('.dashboard-units > section').first().getAttribute('aria-labelledby'), 'unit2');
       assert.equal(await p.locator('.dashboard-coming-soon').getAttribute('open'), null);
       const theme = p.getByRole('group', { name: 'Color theme', exact: true });
       assert.equal(await theme.count(), 1);

@@ -59,13 +59,14 @@ const opensciedFiles = new Set([
   'openscied-b3-cell-cycle.html', 'openscied-b3-cell-cycle.css', 'openscied-b3-cell-cycle.js',
   'openscied-b3-dna-p53.html', 'openscied-b3-dna-p53.css', 'openscied-b3-dna-p53.js', 'openscied-b3-dna-p53-logic.js',
   'openscied-b3-inheritance-environment.html', 'openscied-b3-inheritance-environment.css', 'openscied-b3-inheritance-environment.js', 'openscied-b3-inheritance-logic.js',
+  'openscied-b2-fires.html', 'openscied-b2-fires.css', 'openscied-b2-fires.js', 'openscied-b2-fires-logic.js', 'matter-energy-scene.js', 'decomposition-scene.js', 'tilt-scene.js',
   'pedigree-scene.js', 'two-gene-scene.js', 'meiosis-scene.js', 'skin-data-scene.js', 'investigation-planner-scene.js', 'yeast-uv-scene.js', 'yeast-uv-scene.css', 'pedigree-scene.css',
   'dna-replication-scene.js', 'dna-replication-scene.css', 'gene-expression-scene.js', 'gene-expression-scene.css',
   'cell-cycle-scene.js', 'cell-cycle-scene.css',
   'growth-cell-types.js', 'growth-model-scene.js', 'growth-model-scene.css',
   'assets/openscied-banner.jpg', 'assets/openscied-phenomena-hero.svg',
   'tests/t76-cell-cycle-controls.js', 'tests/t77-openscied-dashboard.js', 'tests/t78-cell-cycle-audit.js',
-  'tests/openscied-dashboard.test.js', 'tests/cell-cycle-scene.test.js', 'tests/openscied-b3-dna-p53-logic.test.js', 'tests/openscied-b3-inheritance-logic.test.js', 'tests/pedigree-scenes.test.js', 'tests/openscied-b3-meiosis-skin-logic.test.js', 'tests/openscied-b3-planner-yeast.test.js'
+  'tests/openscied-dashboard.test.js', 'tests/cell-cycle-scene.test.js', 'tests/openscied-b3-dna-p53-logic.test.js', 'tests/openscied-b3-inheritance-logic.test.js', 'tests/pedigree-scenes.test.js', 'tests/openscied-b3-meiosis-skin-logic.test.js', 'tests/openscied-b3-planner-yeast.test.js', 'tests/openscied-b2-fires-logic.test.js'
 ]);
 const documentation = p => /^(docs\/|.*\.(md|txt)$)/.test(p);
 // Any test file that opens only OpenSciEd pages (same rule as the "openscied" group in tests/run-all.js).

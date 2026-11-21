@@ -394,7 +394,32 @@
     return d;
   }
 
-  return { num, clamp, hash32, makeRng, TEMPS, TIMES, END_MIN, RATE, TARGET20, DEFAULT_TEMPS, TEMP_NAMES, BEAKER_NAMES, SIM_MIN_MS,
+  /* "My bluest (or yellowest) tube had ___": checked against the student's own tubes. kind = 'bluest' | 'yellowest'. Ties count (the setting must
+     belong to a tube that is among the most extreme). status: correct | wrong | nodata | empty. */
+  function checkTiltPick(kind, value, tiltState) {
+    if (!value) return { status: 'empty', message: '' };
+    if (!tiltState || !tiltState.recorded || !num(tiltState.seed)) return { status: 'nodata', message: 'Run the tilt test and record the results first, then check this.' };
+    const res = tiltResults(tiltState.seed, tiltState.settings), pos = res.map(r => r.btb);
+    const extreme = kind === 'yellowest' ? Math.max.apply(null, pos) : Math.min.apply(null, pos);
+    const match = res.filter(r => r.btb === extreme), mine = res.filter(r => r.light === value);
+    const names = match.map(r => 'Tube ' + r.tube + ' (' + LIGHTS[r.light].short + ')').join(' and ');
+    if (!mine.length) return { status: 'wrong', message: 'You did not use that setting. Your ' + kind + ' tube was ' + names + '.' };
+    if (Math.min.apply(null, pos) === Math.max.apply(null, pos)) return { status: 'wrong', message: 'All your tubes read the same, so none was the ' + kind + '.' };
+    return mine.some(r => r.btb === extreme) ? { status: 'correct', message: 'Yes. Your ' + kind + ' tube was ' + names + '.' }
+      : { status: 'wrong', message: 'Try again. Why not: look at your table. Your ' + kind + ' tube was ' + names + '.' };
+  }
+  // The prediction "foam will grow fastest in the cold / room / warm beaker" against the student's last reading. null when there is no reading yet.
+  function predictionCheck(pred, foamState) {
+    if (!pred) return null;
+    const last = lastRow(foamRows(foamState));
+    if (!last || last.t === 0) return null;
+    const temps = normalizeTemps(foamState.temps), order = temps.map((t, i) => i).sort((a, b) => temps[a] - temps[b]);
+    const idx = pred === 'cold' ? order[0] : pred === 'warm' ? order[2] : order[1];
+    const top = Math.max.apply(null, last.h), winner = last.h.indexOf(top);
+    return { matched: last.h[idx] === top, picked: BEAKER_NAMES[idx] + ' (' + temps[idx] + ' °C)', winner: BEAKER_NAMES[winner] + ' (' + temps[winner] + ' °C)', minute: last.t };
+  }
+
+  return { checkTiltPick, predictionCheck, num, clamp, hash32, makeRng, TEMPS, TIMES, END_MIN, RATE, TARGET20, DEFAULT_TEMPS, TEMP_NAMES, BEAKER_NAMES, SIM_MIN_MS,
     normalizeTemp, normalizeTemps, nominalFoam, foamSeries, foamAt, co2Made, minutesElapsed, foamRows, lastRow,
     CARDS, REACTION, checkCards, PICKS, checkPick, checkSugarSentence, HYP_REASONS, checkHypothesis,
     LIGHTS, LIGHT_IDS, TUBE_IDS, SUGGESTED_SETUP, RESP, NIGHT_MS, NIGHT_HOURS, lightIntensity, photosynthesis, BTB_LABELS, BTB_RGB, BTB_START,

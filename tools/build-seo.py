@@ -49,6 +49,9 @@ def page_specs():
         'openscied-b3-inheritance-environment.html': ('Inheritance, Environment and Cancer Risk — a companion for OpenSciEd Biology B.3 | Lab Bench',
                                       'A free, independent companion for OpenSciEd Biology B.3 Lessons 8–9. Read pedigrees, follow alleles through meiosis and crossing over, explore skin cancer data, and run a virtual UV yeast experiment.',
                                       'Inheritance, environment and cancer risk companion (OpenSciEd B.3)'),
+        'openscied-b2-fires.html': ('Fires: Peat, Decomposition and Earth’s Tilt — a companion for OpenSciEd Biology B.2 | Lab Bench',
+                                    'A free, independent companion for OpenSciEd Biology B.2 Lessons 3 and 5. Sort matter and energy cards, run a simulated yeast decomposition test, and test how the angle of light changes photosynthesis with BTB.',
+                                    'Fires: peat, decomposition and Earth’s tilt companion (OpenSciEd B.2)'),
     }
     for lab in LABS:
         number = lab['id']
@@ -125,6 +128,13 @@ def structured_data(filename, title, description, label):
                          'teaches': 'Pedigrees, inheritance of alleles, meiosis and crossing over, and how the environment (UV) affects cancer risk',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
+        elif filename == 'openscied-b2-fires.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive simulation and guided activity',
+                         'teaches': 'Decomposition and cellular respiration, how temperature changes their rate, and how light drives photosynthesis and carbon storage',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://www.openscied.org/'})
         elif filename == 'openscied-b3-dna-p53.html':
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',
