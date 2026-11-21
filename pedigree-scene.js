@@ -111,6 +111,8 @@
     }).join('; ') + '.';
   }
   // Arrow-key movement. rows: ROWS. Left/Right along a row, Up/Down to the nearest person in the next row, Home/End row ends.
+  // "Next person" follows the drawing: top generation first, left to right, then the next row down, and back to the top.
+  function nextPerson(from) { const all = [].concat.apply([], ROWS), i = all.indexOf(from); return all[(i + 1) % all.length]; }
   function navigate(from, key) {
     let r = ROWS.findIndex(function (row) { return row.includes(from); });
     if (r < 0) return from;
@@ -143,7 +145,7 @@
     const done = L.LAKITA.persons.filter(function (p) { return g[p.id] && feedback(L, p.id, g[p.id]).status === 'correct'; }).length;
     return { done: done, total: L.LAKITA.persons.length, picked: Object.keys(g).length };
   }
-  const pure = { META, ROWS, ORDER, GENOS, GENO_WORDS, cleanGuesses, feedback, hint, reasonImpossible, ariaLabel, describe, navigate, punnett, summary, orList, badgeText };
+  const pure = { META, ROWS, ORDER, nextPerson, GENOS, GENO_WORDS, cleanGuesses, feedback, hint, reasonImpossible, ariaLabel, describe, navigate, punnett, summary, orList, badgeText };
 
   /* ---------- the scene ---------- */
   const NS = 'http://www.w3.org/2000/svg';
@@ -309,7 +311,7 @@
       const act = el('div', 'ped-actions');
       const nx = el('button', 'btn btn--sm', 'Next person'), hb = el('button', 'btn btn--sm', 'Hint'), cl = el('button', 'btn btn--sm btn--ghost', 'Clear this person');
       [nx, hb, cl].forEach(function (b) { b.type = 'button'; act.appendChild(b); });
-      nx.addEventListener('click', function () { const i = ORDER.indexOf(sel); choose(ORDER[(i + 1) % ORDER.length], false); });
+      nx.addEventListener('click', function () { choose(nextPerson(sel), false); });
       hb.addEventListener('click', function () { const t = hint(L, sel); lastMsg = t; renderPanel(); api.announce(t); });
       cl.addEventListener('click', function () { delete guesses[sel]; lastMsg = ''; persist(); refresh(); api.announce('Cleared.'); });
       panel.appendChild(act);

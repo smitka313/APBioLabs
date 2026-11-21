@@ -345,6 +345,13 @@
       row.classList.toggle('is-done', d);
     });
     // "Sorted" counts every idea marked I know it / I need it. A know-it row also needs its source before it counts as done in the section strip.
+    // The key ideas list mirrors the seven rows in order: show beside each one how the student sorted it.
+    $$('.key-list li').forEach(function (li, i) {
+      const k = CHECK_ROWS[i]; if (!k) return;
+      const status = byId('cl-' + k + '-status').value, src = $$('input[type=checkbox]', byId('cl-row-' + k)).some(c => c.checked);
+      let tag = $('.key-mine', li); if (!tag) { tag = el('span', 'key-mine'); li.appendChild(tag); }
+      tag.textContent = 'You marked: ' + (status === 'know' ? (src ? '\u2713 I know it, with a source' : '\u2713 I know it (tap where you learned it)') : status === 'need' ? '\u2192 I need it. Find it in the reading or the model.' : '\u25cb not sorted yet');
+    });
     $('#checklist-count').textContent = marked + ' of ' + CHECK_ROWS.length + ' ideas sorted.' + (needSrc ? ' ' + needSrc + (needSrc === 1 ? ' still needs' : ' still need') + ' a source.' : '');
   }
   // Older saves: a row with evidence written or a source ticked was a "know" row.

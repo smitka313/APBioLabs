@@ -215,3 +215,6 @@ fieldset.src[hidden] { display: none; }
   .write-more[open] textarea, .write-more textarea { min-height: 3.5em; }
   .bank, .flow--steps { display: none; }
 }
+
+/* Key ideas list: how the student sorted each one */
+.key-mine { display: block; margin-top: 2px; font-size: .88rem; font-weight: 650; color: var(--muted); }

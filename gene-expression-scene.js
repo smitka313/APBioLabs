@@ -146,7 +146,8 @@
       S.wrongCard = null; S.matched.push(code);
       const card = L.cardFor(codon);
       const m = S.matched.length, total = res.edited.length;
-      say('✓ ' + codon + ' pairs with card ' + code + ': ' + card.amino + ', "' + card.word + '". ' + (m < total ? (total - m) + ' to go.' : 'The chain is complete.'), false, m === total ? false : false);
+      const realAmino = res.aminoReal[col], realNote = realAmino && realAmino !== card.amino ? ' † The real genetic code gives ' + realAmino + ' for ' + codon + '; the lesson card says ' + card.amino + '.' : '';
+      say('✓ ' + codon + ' pairs with card ' + code + ': ' + card.amino + ', "' + card.word + '". ' + realNote + (m < total ? ' ' + (total - m) + ' to go.' : ' The chain is complete.'), false, m === total ? false : false);
       afterAction('match');
     }
     function matchForMe(all) {
@@ -224,6 +225,7 @@
 .ge-card .c{font:700 1rem var(--f-mono);letter-spacing:.1em}
 .ge-card .a{font:700 .8rem var(--f-body);color:var(--accent)}
 .ge-card .w{font:.84rem var(--f-body);color:var(--muted)}
+.ge-card .r{font:700 .74rem var(--f-body);color:var(--warn)}
 .ge-card.is-wrong{border-color:var(--bad);background:var(--bad-soft)}
 .ge-feedback{min-height:1.4em;font-weight:600}
 .ge-feedback[data-bad=true]{color:var(--bad)}
@@ -296,8 +298,10 @@
     const deck = $el('div', 'ge-deck'); deck.setAttribute('role', 'group'); deck.setAttribute('aria-label', 'Amino acid cards at Location 2');
     const cardBtns = L.CARD_DECK.map(c => {
       const b = $el('button', 'btn ge-card'); b.type = 'button'; b.dataset.code = c[0];
-      b.append($el('span', 'c', c[0]), $el('span', 'a', c[1]), $el('span', 'w', '“' + c[2] + '”'));
-      b.setAttribute('aria-label', 'Card ' + c[0].split('').join(' ') + ', ' + c[1] + ', word ' + c[2]);
+      const real = L.STANDARD_CODE[L.anticodon(c[0])], differs = !!real && real !== c[1];   // the one lesson card that disagrees with the real code
+      b.append($el('span', 'c', c[0]), $el('span', 'a', c[1] + (differs ? ' †' : '')), $el('span', 'w', '“' + c[2] + '”'));
+      if (differs) b.append($el('span', 'r', '† real code: ' + real));
+      b.setAttribute('aria-label', 'Card ' + c[0].split('').join(' ') + ', ' + c[1] + ', word ' + c[2] + (differs ? '. The real genetic code gives ' + real + ' for this group, the lesson card says ' + c[1] : ''));
       b.addEventListener('click', () => pickCard(c[0])); deck.appendChild(b); return b;
     });
     const rowM = $el('div', 'ge-row');
@@ -612,8 +616,8 @@
           if (!M.narrow) { ctx.beginPath(); ctx.moveTo(cx - 6, cy - ch / 2); ctx.lineTo(cx, cy - ch / 2 - 6); ctx.lineTo(cx + 6, cy - ch / 2); ctx.closePath(); ctx.fillStyle = theme.surface; ctx.fill(); ctx.strokeStyle = theme.stain; ctx.lineWidth = 1.6; ctx.stroke(); }
           rr(cx - cw / 2, cy - ch / 2, cw, ch, 5); ctx.fillStyle = theme.surface; ctx.fill(); ctx.strokeStyle = theme.stain; ctx.lineWidth = 1.6; ctx.stroke();
           if (!M.narrow) { ctx.fillStyle = theme.surface; ctx.fillRect(cx - 5, cy - ch / 2 - 1, 10, 3); }
-          if (M.narrow) { txt(card ? card.code : '???', cx - 14, cy + 1, 12, theme.ink, 'center', 700, true); txt(card ? card.amino : '?', cx + 18, cy + 1, 11, theme.stain, 'center', 700); }
-          else { txt(card ? card.code : '???', cx, cy - 7, 12, theme.ink, 'center', 700, true); txt(card ? card.amino : '?', cx, cy + 9, 11, theme.stain, 'center', 700); }
+          if (M.narrow) { txt(card ? card.code : '???', cx - 14, cy + 1, 12, theme.ink, 'center', 700, true); txt(card ? card.amino + (res.aminoReal[k] !== (card && card.amino) ? '†' : '') : '?', cx + 18, cy + 1, 11, theme.stain, 'center', 700); }
+          else { txt(card ? card.code : '???', cx, cy - 7, 12, theme.ink, 'center', 700, true); txt(card ? card.amino + (res.aminoReal[k] !== (card && card.amino) ? '†' : '') : '?', cx, cy + 9, 11, theme.stain, 'center', 700); }
         };
         if (matched) {
           drawCard();
