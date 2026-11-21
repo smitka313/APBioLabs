@@ -63,25 +63,87 @@
     const c = CARD_DECK.find(card => card[0] === wanted);
     return c ? { code: c[0], amino: c[1], word: c[2] } : null;
   }
-  // Everything a student writes in Part 1 of the kinesthetic model, computed from the DNA.
-  function express(dna) {
-    const copy = transcribe(dna);
-    if (!copy) return null;
-    const edited = editCopy(copy);
+  // Everything a student writes in Part 1 of the kinesthetic model, computed from a copy (RNA). The copy may hold a copying
+  // error, so the scene calls this with the copy the student actually built.
+  function expressCopy(rna) {
+    const c = clean(rna);
+    if (!isRna(c)) return null;
+    const edited = editCopy(c);
     const cards = edited.map(cardFor);
     const known = cards.every(Boolean);
     return {
-      copy: groups(copy), edited, cards,
-      aminoCards: cards.map(c => c ? c.amino : '?'),
-      aminoReal: edited.map(c => STANDARD_CODE[c] || '?'),
-      sentence: known ? cards.map(c => c.word).join(' ').replace(/^./, m => m.toUpperCase()).replace(/\s*$/, '.') : ''
+      copy: groups(c), edited, cards,
+      aminoCards: cards.map(x => x ? x.amino : '?'),
+      aminoReal: edited.map(x => STANDARD_CODE[x] || '?'),
+      sentence: known && cards.length ? cards.map(x => x.word).join(' ').replace(/^./, m => m.toUpperCase()).replace(/\s*$/, '.') : ''
     };
+  }
+  // Everything a student writes in Part 1 of the kinesthetic model, computed from the DNA.
+  function express(dna) {
+    const copy = transcribe(dna);
+    return copy ? expressCopy(copy) : null;
   }
   // Where the official card disagrees with the standard genetic code (position from 1, card and real amino acid).
   function cardDisagreements(result) {
     const out = [];
     if (result) result.edited.forEach((codon, i) => { if (result.aminoCards[i] !== result.aminoReal[i]) out.push({ position: i + 1, codon, card: result.aminoCards[i], real: result.aminoReal[i] }); });
     return out;
+  }
+  // ---- Helpers for the gene expression scene (live checking, copying errors, saved runs) ----
+  // Live check while a student pairs a DNA base with an RNA base.
+  function pairCheck(dnaBase, choice) {
+    const d = clean(dnaBase).slice(0, 1), c = clean(choice).slice(0, 1), want = PAIR_DNA_TO_RNA[d];
+    if (!want || !c || !'ACGTU'.includes(c)) return { ok: false, expected: want || null, message: 'Choose A, U, G or C.' };
+    if (c === want) return { ok: true, expected: want, message: d + ' in the DNA pairs with ' + want + ' in the copy.' };
+    let why = '';
+    if (c === 'T') why = ' RNA uses U instead of T.';
+    else if (d === 'A') why = ' In the copy, A in the DNA pairs with U.';
+    else if (d === 'T') why = ' T in the DNA pairs with A.';
+    return { ok: false, expected: want, message: 'Not a match: ' + d + ' in the DNA pairs with ' + want + ', not ' + c + '.' + why };
+  }
+  // Which groups (1-based numbers) are wrongly crossed out or wrongly left in. crossed = array of group numbers.
+  function crossCheck(crossed, groupCount) {
+    const set = new Set((crossed || []).map(Number));
+    const n = Math.max(0, Math.floor(Number(groupCount) || 0));
+    const wrong = [], missing = [];
+    for (let g = 1; g <= n; g++) {
+      const should = EDIT_REMOVES.includes(g);
+      if (set.has(g) && !should) wrong.push(g);
+      if (!set.has(g) && should) missing.push(g);
+    }
+    return { wrong, missing, complete: !wrong.length && !missing.length && n >= Math.max(...EDIT_REMOVES) };
+  }
+  // Copying errors the model can add: one-base substitutions inside a kept group whose new group still matches a card,
+  // so the new sentence is readable. position is 0-based in the copy; group is 1-based.
+  function injectCandidates(dna) {
+    const rna = transcribe(dna), out = [];
+    if (!rna) return out;
+    for (let i = 0; i < rna.length; i++) {
+      const g = Math.floor(i / 3) + 1;
+      if (EDIT_REMOVES.includes(g) || g * 3 > rna.length) continue;
+      const was = cardFor(rna.slice(g * 3 - 3, g * 3));
+      for (const b of 'ACGU') {
+        if (b === rna[i]) continue;
+        const codon = rna.slice(g * 3 - 3, i) + b + rna.slice(i + 1, g * 3);
+        const card = cardFor(codon);
+        if (card && (!was || card.word !== was.word)) out.push({ position: i, group: g, from: rna[i], to: b, codon, card, was });
+      }
+    }
+    return out;
+  }
+  // Choose one candidate using a number r in [0, 1), for example from a seeded generator. Same r, same DNA, same error.
+  function pickInjectedError(dna, r) {
+    const list = injectCandidates(dna);
+    if (!list.length) return null;
+    const x = Number.isFinite(r) ? Math.min(Math.max(r, 0), 0.999999) : 0;
+    return list[Math.floor(x * list.length)];
+  }
+  // The saved run (contract in openscied-b3-dna-p53.js). copy = RNA letters; strand = 'A' | 'B' | 'C'.
+  function buildRun(strand, dna, copy, injectedError, at) {
+    const r = expressCopy(copy);
+    if (!r) return null;
+    return { strand, dna: clean(dna), copy: r.copy.join('-'), edited: r.edited.join('-'), aminoAcids: r.aminoCards, sentence: r.sentence,
+      matchesKey: !!KEY_SENTENCE[strand] && checkSentence(strand, r.sentence) === 'match', injectedError: !!injectedError, at: at == null ? Date.now() : at };
   }
   function normalizeSentence(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim(); }
   // 'empty' | 'match' | 'differs' for a typed sentence against the key for the chosen strand.
@@ -129,6 +191,6 @@
     return 'foundational';
   }
 
-  return { STANDARD_CODE, STRANDS, KEY_SENTENCE, CARD_DECK, EDIT_REMOVES, transcribe, groups, editCopy, anticodon, cardFor, express, cardDisagreements,
+  return { STANDARD_CODE, STRANDS, KEY_SENTENCE, CARD_DECK, EDIT_REMOVES, transcribe, groups, editCopy, anticodon, cardFor, expressCopy, express, cardDisagreements, pairCheck, crossCheck, injectCandidates, pickInjectedError, buildRun,
     normalizeSentence, checkSentence, substitutionRate, strandCounts, forkSummary, explanationLevel };
 });

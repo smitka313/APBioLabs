@@ -72,3 +72,50 @@ test('explanation levels follow the key', () => {
   assert.equal(L.explanationLevel([true, true, true, true, true, true]), 'organized');
   assert.equal(L.explanationLevel([true, true, true, true, true, false]), 'linked');
 });
+
+/* ---- helpers used by the gene expression scene ---- */
+test('pairCheck follows the pairing rules and explains mistakes', () => {
+  assert.deepEqual([['A', 'U'], ['T', 'A'], ['G', 'C'], ['C', 'G']].map(([d, c]) => L.pairCheck(d, c).ok), [true, true, true, true]);
+  const bad = L.pairCheck('A', 'T');
+  assert.equal(bad.ok, false); assert.equal(bad.expected, 'U'); assert.match(bad.message, /A in the DNA pairs with U/);
+  assert.equal(L.pairCheck('T', 'U').expected, 'A');
+  assert.equal(L.pairCheck('A', 'Z').ok, false); assert.equal(L.pairCheck('', 'A').ok, false); assert.equal(L.pairCheck('A', '').ok, false);
+});
+test('crossCheck: only groups 2, 3, 5 and 6 complete the edit', () => {
+  assert.equal(L.crossCheck([2, 3, 5, 6], 13).complete, true);
+  assert.equal(L.crossCheck([2, 3, 5, 6], 12).complete, true);
+  assert.deepEqual(L.crossCheck([2, 3, 4], 13), { wrong: [4], missing: [5, 6], complete: false });
+  assert.equal(L.crossCheck([], 13).complete, false); assert.equal(L.crossCheck(null, 0).complete, false);
+});
+test('expressCopy reads a copy with a copying error and matches express for a clean copy', () => {
+  for (const s of 'ABC') assert.deepEqual(L.expressCopy(L.transcribe(L.STRANDS[s])), L.express(L.STRANDS[s]));
+  const rna = L.transcribe(L.STRANDS.A), pos = 24; // first base of group 9: A -> C makes CUU, the "missing" card
+  const r = L.expressCopy(rna.slice(0, pos) + 'C' + rna.slice(pos + 1));
+  assert.equal(r.sentence, 'I am a p53 missing with a butterfly shape.');
+  assert.equal(L.expressCopy('AAT'), null);
+});
+test('injected errors are real substitutions that change the sentence, same for the same number', () => {
+  for (const s of 'ABC') {
+    const list = L.injectCandidates(L.STRANDS[s]), rna = L.transcribe(L.STRANDS[s]), key = L.express(L.STRANDS[s]).sentence;
+    assert.ok(list.length >= 10, 'candidates ' + s);
+    for (const e of list) {
+      assert.ok(![2, 3, 5, 6].includes(e.group)); assert.notEqual(e.from, e.to); assert.equal(rna[e.position], e.from);
+      const r = L.expressCopy(rna.slice(0, e.position) + e.to + rna.slice(e.position + 1));
+      assert.notEqual(r.sentence, ''); assert.notEqual(r.sentence, key, 'sentence changes ' + s + e.position + e.to);
+      assert.equal(r.edited.length, L.express(L.STRANDS[s]).edited.length);
+    }
+    assert.deepEqual(L.pickInjectedError(L.STRANDS[s], 0.37), L.pickInjectedError(L.STRANDS[s], 0.37));
+    assert.deepEqual(L.pickInjectedError(L.STRANDS[s], NaN), list[0]); assert.deepEqual(L.pickInjectedError(L.STRANDS[s], 5), list[list.length - 1]);
+  }
+  assert.equal(L.pickInjectedError('XYZ', 0.5), null);
+});
+test('buildRun follows the saved-run contract', () => {
+  const run = L.buildRun('B', L.STRANDS.B, L.transcribe(L.STRANDS.B), false, 123);
+  assert.deepEqual(Object.keys(run).sort(), ['aminoAcids', 'at', 'copy', 'dna', 'edited', 'injectedError', 'matchesKey', 'sentence', 'strand']);
+  assert.equal(run.copy, 'UUC-GGU-UCU-AGU-GCG-GUG-AGG-GGU-AUU-CUU-AGG-GCU'); assert.equal(run.edited, 'UUC-AGU-AGG-GGU-AUU-CUU-AGG-GCU');
+  assert.equal(run.sentence, 'I am a p53 protein missing a piece.'); assert.equal(run.matchesKey, true); assert.equal(run.at, 123);
+  const e = L.injectCandidates(L.STRANDS.A)[0], rna = L.transcribe(L.STRANDS.A);
+  const mut = L.buildRun('A', L.STRANDS.A, rna.slice(0, e.position) + e.to + rna.slice(e.position + 1), true);
+  assert.equal(mut.matchesKey, false); assert.equal(mut.injectedError, true);
+  assert.equal(L.buildRun('A', 'AAG', 'XYZ'), null);
+});
