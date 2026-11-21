@@ -800,7 +800,7 @@
     w.classList.toggle('at-end', end);
     if (over) { w.setAttribute('tabindex', '0'); w.setAttribute('role', 'region'); if (!w.getAttribute('aria-label')) w.setAttribute('aria-label', 'Data table. Scrolls sideways; arrow keys move it.'); }
     else if (w.scrollWidth > w.clientWidth && w.clientWidth > 0) w.setAttribute('tabindex', '0'); // a 1-2 px sub-pixel overflow still scrolls: keep it reachable by keyboard
-    else if (w.getAttribute('tabindex') === '0') w.removeAttribute('tabindex');
+    else if (w.clientWidth > 0 && w.getAttribute('tabindex') === '0') w.removeAttribute('tabindex'); // never un-focus a table because it was measured while hidden (width 0): it would be unreachable by keyboard until the next measurement
     st.hint.hidden = !over || end;
   }
   function wrapWatch(w) {

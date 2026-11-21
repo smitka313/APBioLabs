@@ -403,7 +403,10 @@
       const rows = ys.dishes;
       const wrap = h('div', { class: 'yu-results' });
       wrap.appendChild(h('h4', { text: 'Results: simulated dishes' }));
-      const tw = h('div', { class: 'table-wrap' }), t = h('table', { class: 'data yu-table' });
+      const tw = h('div', { class: 'table-wrap', role: 'region', tabindex: '0', 'aria-label': 'Data collection table (simulated). Scrolls sideways on narrow screens.' }), t = h('table', { class: 'data yu-table' });
+      // Focusable from the first frame: the shared table watcher only adds this after it has measured the table (a frame later),
+      // and a scrollable region that cannot take keyboard focus is an accessibility failure in that gap. The watcher removes
+      // tabindex again if the table turns out not to scroll.
       t.appendChild(h('caption', { text: 'Data collection table (simulated). ' + nCounted() + ' of ' + rows.length + ' dishes counted.' }));
       t.appendChild(h('thead', {}, h('tr', {}, ['Dish', 'Condition', 'UV dose*', 'Colonies', 'Growth', 'Prediction'].map(x => h('th', { scope: 'col', text: x })))));
       const tb = h('tbody');
