@@ -47,7 +47,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - if: matrix.shard == 1
-        run: node --test tests/openscied-dashboard.test.js tests/cell-cycle-scene.test.js tests/openscied-b3-dna-p53-logic.test.js
+        run: node --test tests/openscied-dashboard.test.js tests/cell-cycle-scene.test.js tests/openscied-b3-dna-p53-logic.test.js tests/openscied-b3-inheritance-logic.test.js tests/pedigree-scenes.test.js tests/openscied-b3-meiosis-skin-logic.test.js tests/openscied-b3-planner-yeast.test.js
       - run: node tests/run-all.js openscied --shard ${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: always()
@@ -221,6 +221,13 @@ jobs:
         run: |
           export NODE_PATH="$PWD/node_modules"
           node tests/t98-webkit-dna-p53.js
+      - name: Run t98-webkit-inheritance (iPhone-sized Lessons 8-9 page)
+        if: matrix.part == 'pages'
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          node tests/t98-webkit-inheritance.js
       - name: Upload screenshots
         if: always() && matrix.part == 'pages'
         uses: actions/upload-artifact@v4

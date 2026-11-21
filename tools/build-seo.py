@@ -46,6 +46,9 @@ def page_specs():
         'openscied-b3-dna-p53.html': ('DNA Copying, p53 and Gene Expression — a companion for OpenSciEd Biology B.3 | Lab Bench',
                                       'A free, independent companion for OpenSciEd Biology B.3 Lessons 5–6. Copy DNA in a model, find copying mistakes, test three versions of p53, and follow a gene from DNA to protein.',
                                       'DNA copying, p53 and gene expression companion (OpenSciEd B.3)'),
+        'openscied-b3-inheritance-environment.html': ('Inheritance, Environment and Cancer Risk — a companion for OpenSciEd Biology B.3 | Lab Bench',
+                                      'A free, independent companion for OpenSciEd Biology B.3 Lessons 8–9. Read pedigrees, follow alleles through meiosis and crossing over, explore skin cancer data, and run a virtual UV yeast experiment.',
+                                      'Inheritance, environment and cancer risk companion (OpenSciEd B.3)'),
     }
     for lab in LABS:
         number = lab['id']
@@ -113,6 +116,13 @@ def structured_data(filename, title, description, label):
                          'educationalLevel': 'High school biology',
                          'learningResourceType': 'Interactive simulation and guided activity',
                          'teaches': 'Cell-cycle checkpoints, p53, and cell-division patterns',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
+        elif filename == 'openscied-b3-inheritance-environment.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive simulation and guided activity',
+                         'teaches': 'Pedigrees, inheritance of alleles, meiosis and crossing over, and how the environment (UV) affects cancer risk',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
         elif filename == 'openscied-b3-dna-p53.html':
