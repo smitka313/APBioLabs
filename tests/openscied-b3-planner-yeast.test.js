@@ -97,11 +97,12 @@ test('UV dose depends only on the cover and the minutes: same for either yeast, 
 test('calibration: the lesson pattern shows across many student datasets without exaggeration', () => {
   const dish = (seed, strain, spec) => Y.simulateDish(seed, Object.assign({ strain, spf: null, foil: false, dark: false, minutes: 15 }, spec), 0).truth;
   const SPFS = [15, 18, 20, 30, 50], N = 400;
-  let spf50Higher = 0, trend = 0, noCoverLow = 0, darkTop = 0, foilTop = 0, timeOrdered = 0, wildFlat = 0;
+  let spf50Higher = 0, sum15 = 0, sum50 = 0, trend = 0, noCoverLow = 0, darkTop = 0, foilTop = 0, timeOrdered = 0, wildFlat = 0;
   for (let i = 1; i <= N; i++) {
     const seed = i * 7919 + 13;
     const s = SPFS.map(spf => dish(seed, 'sensitive', { spf }));
-    if (s[4] > s[0]) spf50Higher++;
+    if (s[4] > s[0] + 20) spf50Higher++;
+    sum15 += s[0]; sum50 += s[4];
     // rank correlation sign: more SPF, more colonies (SPF 15/18/20 are alike, so look at the whole run, not each step)
     const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
     if (mean(s.slice(3)) > mean(s.slice(0, 3))) trend++;
@@ -113,7 +114,9 @@ test('calibration: the lesson pattern shows across many student datasets without
     const w = SPFS.map(spf => dish(seed, 'wild', { spf })), wd = dish(seed, 'wild', { dark: true, minutes: 0 });
     if (Math.abs(mean(w) - wd) < 0.2 * wd) wildFlat++;
   }
-  assert.ok(spf50Higher / N >= 0.9, 'SPF 50 beats SPF 15 for UV-sensitive yeast in at least 90% of datasets: ' + spf50Higher / N);
+  const ratio = sum50 / sum15;
+  assert.ok(spf50Higher / N >= 0.9, 'SPF 50 beats SPF 15 by at least 20 colonies for UV-sensitive yeast in 90% of datasets: ' + spf50Higher / N);
+  assert.ok(ratio >= 1.45, 'on average SPF 50 gives at least 1.45 times the colonies of SPF 15: ' + ratio);
   assert.ok(trend / N >= 0.9, 'higher SPFs average more colonies than lower ones in at least 90%: ' + trend / N);
   assert.ok(noCoverLow / N >= 0.9, 'no cover for 15 minutes leaves almost no UV-sensitive colonies: ' + noCoverLow / N);
   assert.ok(darkTop / N >= 0.9, 'dark and foil dishes beat the average sunscreen dish: ' + darkTop / N);
