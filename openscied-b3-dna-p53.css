@@ -47,7 +47,7 @@ fieldset.field > .field { margin: 0 0 8px 28px; }
 /* Tables with writing in them */
 .table-wrap { max-width: 100%; overflow-x: auto; }
 .checklist-table, .map-table, .progress-table, .rubric-table { width: 100%; table-layout: fixed; }
-.checklist-table th, .checklist-table td, .map-table th, .map-table td, .progress-table th, .progress-table td, .rubric-table th, .rubric-table td { white-space: normal; vertical-align: top; }
+.checklist-table th, .checklist-table td, .map-table th, .map-table td, .progress-table th, .progress-table td, .rubric-table th, .rubric-table td { white-space: normal; vertical-align: top; white-space: normal; }
 .checklist-table th[scope=row], .map-table th[scope=row], .progress-table th[scope=row], .rubric-table th[scope=row] { width: 21%; text-align: left; font-weight: 650; background: var(--surface-2); }
 .checklist-table textarea, .map-table textarea, .progress-table textarea { width: 100%; box-sizing: border-box; min-height: 4.2em; resize: vertical; font: inherit; }
 .row-status { display: block; margin-top: 6px; font-weight: 700; font-size: .82rem; color: var(--ok); }
@@ -116,11 +116,14 @@ fieldset.src { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-wi
   /* Tables become stacked cards on phones. */
   .checklist-table, .checklist-table thead, .checklist-table tbody, .checklist-table tr, .checklist-table th, .checklist-table td,
   .map-table, .map-table thead, .map-table tbody, .map-table tr, .map-table th, .map-table td,
-  .progress-table, .progress-table thead, .progress-table tbody, .progress-table tr, .progress-table th, .progress-table td { display: block; width: 100% !important; box-sizing: border-box; }
-  .checklist-table thead, .map-table thead, .progress-table thead { position: absolute; width: 1px !important; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .checklist-table tr, .map-table tr, .progress-table tr { padding: 10px 0; border-bottom: 2px solid var(--line); }
+  .progress-table, .progress-table thead, .progress-table tbody, .progress-table tr, .progress-table th, .progress-table td,
+  .rubric-table, .rubric-table thead, .rubric-table tbody, .rubric-table tr, .rubric-table th, .rubric-table td { display: block; width: 100% !important; box-sizing: border-box; }
+  .checklist-table thead, .map-table thead, .progress-table thead, .rubric-table thead { display: none; }
+  .checklist-table tr, .map-table tr, .progress-table tr, .rubric-table tr { padding: 10px 0; border-bottom: 2px solid var(--line); }
   .checklist-table td::before, .map-table td::before, .progress-table td::before { content: attr(data-label); display: block; font-weight: 700; font-size: .82rem; color: var(--muted); margin: 6px 0 3px; }
   .map-table td.na { display: none; }
+  .checklist-table caption, .map-table caption, .progress-table caption, .rubric-table caption { display: block; width: 100%; }
+  .checklist-table th[scope=row], .map-table th[scope=row], .progress-table th[scope=row], .rubric-table th[scope=row] { width: 100% !important; }
   .glossary { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
@@ -138,3 +141,5 @@ fieldset.src { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-wi
   .panel, .callout, .part-card { break-inside: avoid; }
   textarea { min-height: 3.5em; }
 }
+
+table.data.checklist-table th, table.data.checklist-table td, table.data.map-table th, table.data.map-table td, table.data.progress-table th, table.data.progress-table td, table.data.rubric-table th, table.data.rubric-table td { vertical-align: top; white-space: normal; }

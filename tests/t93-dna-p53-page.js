@@ -192,6 +192,7 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
         await q.waitForFunction(x => document.querySelector('#' + x + '.is-current'), id);
         const over = await q.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         if (over > 0) bad.push(id + ' +' + over); worst = Math.max(worst, over);
+        if (w < 600) { await q.waitForTimeout(150); const wide = await q.evaluate(() => document.querySelectorAll('.step.is-current .table-wrap.is-scrollable').length); if (wide) bad.push(id + ' has a table that scrolls sideways'); }
       }
       T.ok(bad.length === 0, w + ' px: no horizontal overflow in any section ' + bad.join(', '));
       const small = await q.evaluate(() => Array.from(document.querySelectorAll('.step.is-current button, .step.is-current a.btn, .step.is-current input[type=checkbox], .step.is-current input[type=radio]')).filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.width < 24 || r.height < 24); }).length);
