@@ -31,7 +31,7 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
         const tw = document.createTreeWalker(sec, NodeFilter.SHOW_TEXT);
         for (let n; (n = tw.nextNode());) {
           const par = n.parentElement;
-          if (!par || par.closest(EX) || par.closest('script,style')) continue;
+          if (!par || par.closest(EX) || par.closest('script,style,select')) continue; // a dropdown repeats the hidden radio labels
           const c = (n.textContent.match(/\S+/g) || []).length; if (!c) continue;
           all += c;
           let d = par.closest('details'), closed = false;
