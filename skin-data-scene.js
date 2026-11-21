@@ -123,9 +123,9 @@
 .sk-panel h4 { margin: 0; } .sk-panel p { margin: 0; }
 .sk-tablewrap { overflow-x: auto; max-width: 100%; }
 .sk-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-.sk-table th, .sk-table td { padding: 4px 8px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.sk-table th, .sk-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .sk-table tr[aria-current="true"] { background: var(--accent-soft); }
-.sk-table .sk-site { font: inherit; font-weight: 650; background: none; border: 0; padding: 2px 4px; min-height: 28px; cursor: pointer; color: var(--accent); text-decoration: underline; }
+.sk-table .sk-site { display: inline-flex; align-items: center; min-width: 28px; font: inherit; font-weight: 650; background: none; border: 0; padding: 2px 4px; min-height: 28px; cursor: pointer; color: var(--accent); text-decoration: underline; }
 .sk-poll { display: grid; gap: 6px; }
 .sk-poll .sk-q { font-weight: 650; margin: 0; }
 .sk-fb { min-height: 1.3em; font-weight: 600; margin: 0; }
@@ -149,8 +149,10 @@
       layout: window.innerWidth >= 1000 ? 'wide' : 'narrow' };
     function persist() { api.saveState('skin', { viewed: Object.assign({}, S.viewed), scale: S.scale, polls: Object.assign({}, S.polls), updatedAt: Date.now() }); }
     const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
-    host.replaceChildren(); host.dataset.sk = '1';
-    const root = el('div', { class: 'sk' }); root.dataset.layout = S.layout; host.appendChild(root);
+    host.dataset.sk = '1';
+    const root = el('div', { class: 'sk' }); root.dataset.layout = S.layout;
+    const cv = host.querySelector('canvas'); if (cv) cv.remove();
+    host.insertBefore(root, host.firstChild);
 
     root.appendChild(el('p', { class: 'sk-note', text: 'Each dot is one place (a cancer registry site). Tap a dot, or use the arrow keys and Enter, to see its value.' }));
     // controls

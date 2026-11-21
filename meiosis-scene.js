@@ -141,7 +141,7 @@
 .ms { display: grid; gap: 14px; min-width: 0; }
 .ms * { box-sizing: border-box; }
 .ms-legend { margin: 0; font-size: .9rem; color: var(--muted); }
-.ms-stage { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.ms-stage { display: block; width: 100%; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
 .ms-stage .ms-cell { fill: var(--accent-soft); stroke: var(--muted); stroke-width: 2; transition: opacity .6s ease; }
 .ms-stage .ms-o0 { fill: var(--s3); } .ms-stage .ms-o1 { fill: url(#ms-hatch-a); } .ms-stage .ms-o2 { fill: var(--surface-2); } .ms-stage .ms-o3 { fill: url(#ms-hatch-b); }
 .ms-stage .ms-chr { transition: transform .9s ease, opacity .6s ease; }
@@ -157,6 +157,7 @@
 .ms-stage .ms-call line { stroke: var(--ink); stroke-width: 1.4; }
 .ms-stage .ms-call circle { fill: var(--ink); }
 .ms-stage .ms-glabel { font-weight: 650; text-anchor: middle; transition: opacity .6s ease; }
+.ms[data-layout="narrow"] .ms-stage { max-width: 560px; margin: 0 auto; }
 @media (prefers-reduced-motion: reduce) { .ms-stage *, .ms-bar > i { transition: none !important; } }
 .ms-caption { margin: 0; padding: 10px 14px; border-left: 4px solid var(--accent); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--accent-soft); min-height: 4.6em; }
 .ms-caption b { display: block; font-size: .8rem; font-family: var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
@@ -215,7 +216,7 @@
     const saved = (api.getState() || {}).meiosis;
     let runs = saved && Array.isArray(saved.runs) ? saved.runs.filter(r => r && Array.isArray(r.gametes) && r.gametes.every(g => ALL_TYPES.includes(g))).slice(-40) : [];
     const S = { stage: 0, crossing: runs.length ? !!runs[runs.length - 1].crossing : false, dist: saved && num(saved.distanceCM) ? clampDist(saved.distanceCM) : DIST_DEFAULT,
-      parentIdx: 0, picks: [], playing: false, timer: 0, layout: window.innerWidth >= 700 ? 'wide' : 'narrow' };
+      parentIdx: 0, picks: [], playing: false, timer: 0, layout: window.innerWidth >= 1000 ? 'wide' : 'narrow' };
     const parentOf = () => PARENTS[S.parentIdx];
     const ANIM_PARENT = PARENTS[0];
 
@@ -225,10 +226,10 @@
 
     /* ----- skeleton ----- */
     const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
-    host.replaceChildren();
     const root = el('div', { class: 'ms' });
-    host.appendChild(root);
-    host.dataset.ms = '1';
+    const cv = host.querySelector('canvas'); if (cv) cv.remove();
+    host.insertBefore(root, host.firstChild);
+    host.dataset.ms = '1'; root.dataset.layout = S.layout;
     root.appendChild(el('p', { class: 'ms-legend', text: 'Letters: A or B is the p53 gene, C or D is the BRCA1 gene (A fixes mutations, B does not; C is the lower-risk version, D the higher-risk one). Blue plain and orange striped are the two chromosomes of a pair.' }));
     const stageWrap = el('div'); root.appendChild(stageWrap);
     const caption = el('p', { class: 'ms-caption', id: 'ms-caption' }); root.appendChild(caption);
@@ -493,10 +494,10 @@
     /* ----- start ----- */
     sw.setAttribute('aria-checked', String(S.crossing)); sw.querySelector('.ms-swt').textContent = 'Crossing over: ' + (S.crossing ? 'on' : 'off');
     build(); renderCaption(); renderReadout(); renderTally(); renderCheck(); renderCompare();
-    // The picture changes layout on phones: a taller, bigger-lettered drawing below 700 px of scene width.
+    // The picture changes layout on phones: a taller, bigger-lettered drawing below 900 px of scene width.
     if ('ResizeObserver' in window) {
       let lastW = 0;
-      new ResizeObserver(() => { const w = host.clientWidth; if (!w || Math.abs(w - lastW) < 4) return; lastW = w; const want = w >= 700 ? 'wide' : 'narrow'; if (want !== S.layout) { S.layout = want; build(); renderCaption(); } }).observe(host);
+      new ResizeObserver(() => { const w = host.clientWidth; if (!w || Math.abs(w - lastW) < 4) return; lastW = w; const want = w >= 900 ? 'wide' : 'narrow'; if (want !== S.layout) { S.layout = want; root.dataset.layout = want; build(); renderCaption(); } }).observe(host);
     }
     window.B3MeiosisScene = { state: () => ({ stage: S.stage, crossing: S.crossing, dist: S.dist, layout: S.layout, runs: runs.length, kinds: host.dataset.kinds }), layout: () => G, poses: () => chroms.map(o => ({ p: o.p, h: o.h, s: o.s, x: o.g.style.transform })) };
   }
