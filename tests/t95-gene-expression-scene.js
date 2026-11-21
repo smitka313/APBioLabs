@@ -96,6 +96,8 @@ const EDITED = { A: 'UUC-AGU-AGG-GGU-AUU-ACC-AGG-GAA-GAC', B: 'UUC-AGU-AGG-GGU-A
     T.ok(t.includes('(groups 2, 3, 5, 6 crossed out)') && t.includes(EDITED.A), 'edited copy drops groups 2, 3, 5 and 6');
     await p.click('#ge-send');
     // ---------- card matching ----------
+    T.ok(/real code: Leu/.test(await p.locator('.ge-card[data-code=GAA]').innerText()) && /real genetic code gives Leu/.test(await p.locator('.ge-card[data-code=GAA]').getAttribute('aria-label')), 'the GAA card shows its real code (Leu) on the card itself, in text and in its accessible name');
+    T.ok(await p.locator('.ge-card .r').count() === 1, 'only the one disagreeing card carries the note');
     await p.click('.ge-card[data-code=CGA]');
     fb = await p.locator('#ge-feedback').innerText();
     T.ok(/^✕/.test(fb) && /not the complement of UUC/.test(fb) && /AAG/.test(fb), 'wrong card flagged with glyph and words: ' + fb);

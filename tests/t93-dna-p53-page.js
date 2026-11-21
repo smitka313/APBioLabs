@@ -112,6 +112,7 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     await p.evaluate(h => { location.hash = h; }, 'checklist');
     await pick('cl-process-r', 'know');
     T.ok(/^1 of 7 ideas sorted\. 1 still needs a source/.test(await p.locator('#checklist-count').innerText()) && /Tap where you learned it/.test(await p.locator('#cl-status-process').innerText()), 'a "know" row asks for a source (text, not color)');
+    T.ok(/You marked: ✓ I know it/.test(await p.locator('.key-list li:nth-child(3) .key-mine').textContent()) && /not sorted yet/.test(await p.locator('.key-list li:nth-child(1) .key-mine').textContent()), 'the key ideas list shows how each idea was sorted (item 3 known, item 1 not sorted yet)');
     await p.check('#cl-process-src-sim');
     T.ok(/✓ Know it, with a source/.test(await p.locator('#cl-status-process').innerText()) && /1 of 7/.test(await p.locator('#checklist-count').innerText()) && await p.locator('#cl-row-process.is-done').count() === 1, 'row is complete once it has a status and a source');
     await pick('cl-why-r', 'need');

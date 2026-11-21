@@ -97,3 +97,10 @@ test('two genes: saved state is checked against the key', () => {
   assert.strictEqual(TG.navigate('child1', 'ArrowUp'), 'father');
   assert.strictEqual(TG.navigate('mother', 'ArrowDown'), 'child2');
 });
+
+test('Next person follows the drawing, generation by generation, and wraps', () => {
+  const seen = []; let id = 'grandfather';
+  for (let i = 0; i < 9; i++) { seen.push(id); id = PED.nextPerson(id); }
+  assert.deepStrictEqual(seen, ['grandfather', 'grandmother', 'aunt1', 'aunt2', 'uncle', 'aunt3', 'father', 'mother', 'lakita']);
+  assert.strictEqual(id, 'grandfather');
+});
