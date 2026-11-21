@@ -211,6 +211,10 @@ def build(check=False):
     outputs['_headers'] = '# Cloudflare Pages: keep answer keys and utility pages out of search.\n# Apply to clean URLs and source-file URLs; encryption remains the access control.\n' + ''.join('/' + name.removesuffix('.html') + '\n  X-Robots-Tag: noindex, nosnippet\n/' + name + '\n  X-Robots-Tag: noindex, nosnippet\n\n' for name in PRIVATE + UTILITIES)
     outputs['_headers'] += '# Printable copies duplicate the indexable HTML guides.\n/student-pdfs/*\n  X-Robots-Tag: noindex\n'
     outputs['_headers'] += '\n# Instructions for AI agents: readable by anyone, kept out of search results.\n/AGENTS.md\n  X-Robots-Tag: noindex\n/CLAUDE.md\n  X-Robots-Tag: noindex\n'
+    outputs['_headers'] += ('\n# Always revalidate (a cheap 304 when unchanged). Without this a phone can keep an old script or stylesheet\n'
+        '# while the page itself is new, so a deploy that changes HTML and JS together breaks for that visitor\n'
+        '# (blank scenes, unstyled cards). Scripts and styles are not fingerprinted, and pages are served at clean\n'
+        '# addresses without .html, so the rule covers every path.\n/*\n  Cache-Control: no-cache\n')
     drift = [name for name, text in outputs.items() if not (ROOT / name).exists() or (ROOT / name).read_text() != text]
     if check and drift:
         raise SystemExit('SEO outputs need rebuilding: ' + ', '.join(drift))
