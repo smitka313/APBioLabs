@@ -416,6 +416,7 @@
       wrap.appendChild(h('p', { class: 'yu-muted', text: '*UV dose in minutes of unprotected lamp UV that would give the same dose. Simulated numbers, not measurements.' }));
       const fig = h('figure', { class: 'yu-fig' }, h('div', { class: 'yu-chart', 'data-yu': 'chart' }), h('figcaption', { class: 'yu-muted', text: 'Bar chart of the table above (simulated). Bars show colonies counted; if you repeated a dish, the bar is the average with the range.' }));
       wrap.appendChild(fig); ui.appendChild(wrap);
+      if (win.Lab && Lab.tableFit) Lab.tableFit.scan();
       if (win.Lab && Lab.chart) {
         const data = chartData(rows);
         try { Lab.chart(fig.firstChild, { type: 'bar', responsive: true, xLabel: 'Dish condition', yLabel: 'Colonies counted (simulated)', yMin: 0, categories: data.cats, series: data.series }); } catch (e) { fig.firstChild.textContent = 'The chart could not be drawn. The table above has every number.'; }
