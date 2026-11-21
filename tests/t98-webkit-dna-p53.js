@@ -57,7 +57,14 @@ const canvasInk = (p, sel) => p.evaluate(s => {
     await go(id); await shot(id);
     const r = await p.evaluate(sec => {
       const S = document.getElementById(sec), out = { cards: 0, problems: [], sample: null };
-      S.querySelectorAll('.opts').forEach(g => {
+      S.querySelectorAll('select.rsel').forEach(d => { // row cards are dropdowns
+        out.cards++;
+        const r = d.getBoundingClientRect(), cs = getComputedStyle(d);
+        if (r.height < 24 || r.width < 24) out.problems.push('small dropdown ' + Math.round(r.width) + 'x' + Math.round(r.height));
+        if (!(parseFloat(cs.borderTopWidth) > 0)) out.problems.push('dropdown has no border');
+        if (d.options.length < 2) out.problems.push('dropdown has no options');
+      });
+      S.querySelectorAll('.opts:not([hidden])').forEach(g => {
         out.cards++;
         const opts = [...g.querySelectorAll('.opt')], rects = opts.map(o => o.getBoundingClientRect());
         opts.forEach((o, i) => {

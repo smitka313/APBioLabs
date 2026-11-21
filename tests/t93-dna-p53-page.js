@@ -89,7 +89,13 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     T.ok(await p.evaluate(() => localStorage.getItem('aplab:openscied:b3-cell-cycle:v1')) === null, 'cell-cycle key is untouched');
 
     // --- cards save and restore across reload; last section ---
-    const pick = (name, value) => p.check('input[name="' + name + '"][value="' + value + '"]');
+    // Row cards are dropdowns (the radios stay hidden as stored state); the other cards are tap cards.
+    const pick = async (name, value) => {
+      const radio = p.locator('input[name="' + name + '"][value="' + value + '"]');
+      if (await radio.isVisible()) return radio.check();
+      const row = p.locator('.rrow:has(input[name="' + name + '"])');
+      return row.locator('select.rsel').selectOption(value);
+    };
     await p.evaluate(h => { location.hash = h; }, 'ideas');
     await pick('p-ideas-chrom-r', 'a');
     T.ok(/Saved/.test(await p.locator('[data-q="p-ideas-chrom"] .q-fb').innerText()), 'a poll card answers right away with a friendly note');

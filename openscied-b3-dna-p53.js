@@ -234,6 +234,33 @@
     if (type === 'rows') return $$('.rrow', card).length > 0 && $$('.rrow', card).every(r => !!sel[r.dataset.row]);
     return type === 'multi' ? sel.length > 0 : !!sel;
   }
+  /* Row cards use a dropdown (native select) per row. The radios stay in the page, hidden, as the stored state, so saved answers load as before. */
+  function syncSelect(row) {
+    const sel = $('select.rsel', row); if (!sel) return;
+    const checked = $('input[data-ui]:checked', row), lab = checked ? checked.closest('label') : null;
+    sel.value = checked ? checked.value : '';
+    const mark = $('.rmark', row), state = (lab && lab.dataset.state) || '';
+    if (state) sel.dataset.state = state; else delete sel.dataset.state;
+    sel.classList.toggle('has-pick', !!checked);
+    if (mark) { mark.className = 'rmark' + (state ? ' ' + state : ''); }
+    if (mark) { mark.textContent = state === 'ok' ? '\u2713' : state === 'no' ? '\u2715' : ''; mark.setAttribute('aria-hidden', 'true'); }
+  }
+  function enhanceRows(card) {
+    $$('.rrow', card).forEach(function (row) {
+      const group = $('.opts', row); if (!group || $('select.rsel', row)) return;
+      const sel = el('select', 'rsel');
+      sel.id = 'sel-' + card.dataset.q + '-' + row.dataset.row;
+      sel.setAttribute('aria-label', oneLine(($('.rlabel', row) || { textContent: '' }).textContent) + ': choose an answer');
+      const first = el('option', '', 'Choose\u2026'); first.value = ''; sel.appendChild(first);
+      $$('label', group).forEach(function (l) { const o = el('option', '', optText(l)); o.value = $('input', l).value; sel.appendChild(o); });
+      sel.addEventListener('change', function () {
+        $$('input[data-ui]', row).forEach(function (i) { i.checked = i.value === sel.value; });
+        onCard(card);
+      });
+      const wrap = el('span', 'rsel-wrap'); wrap.appendChild(sel); wrap.appendChild(el('span', 'rmark'));
+      group.hidden = true; group.parentNode.insertBefore(wrap, group);
+    });
+  }
   function renderCard(card, speak) {
     const type = card.dataset.type, sel = parseVal(card), keyed = isKeyed(card);
     $$('input[data-ui]', card).forEach(function (i) {
@@ -243,6 +270,7 @@
       lab.classList.toggle('is-sel', i.checked);
       if (i.checked && keyed) lab.dataset.state = lab.hasAttribute('data-ok') ? 'ok' : 'no'; else delete lab.dataset.state;
     });
+    if (type === 'rows') $$('.rrow', card).forEach(syncSelect);
     const fb = $('.q-fb', card);
     let msg = '', st = '';
     if (type === 'single' && sel) {
@@ -588,6 +616,7 @@
     RESPONSE_IDS = responseIds();
     restoreFields();
     migrateChecklist();
+    cardEls().forEach(function (c) { if (c.dataset.type === 'rows') enhanceRows(c); });
     cardEls().forEach(function (c) { renderCard(c, false); });
     renderData(); renderChecklist(); renderSelfLevel(false); renderEcho(); renderSentence(); renderEarlier(); resumeBar();
     if (state.feedback.sentence) $('#sentence-feedback').textContent = state.feedback.sentence;
