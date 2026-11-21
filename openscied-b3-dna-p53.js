@@ -282,7 +282,7 @@
     const sel = parseVal(card), items = [];
     $$('.rrow', card).forEach(function (r) {
       const v = sel[r.dataset.row]; if (!v) return;
-      const lab = optionFor(card, r.dataset.row, v), idea = lab.dataset.idea;
+      const lab = optionFor(card, r.dataset.row, v), tagged = $('[data-idea]', r), idea = tagged ? tagged.dataset.idea : null;
       if (idea != null) byId('ex-el-' + idea).checked = lab.hasAttribute('data-ok');
       items.push(r.dataset.stem + ' ' + optText(lab) + '.');
     });
@@ -349,7 +349,7 @@
     box.replaceChildren();
     if (!ws.length) box.appendChild(el('span', 'muted placeholder', 'Tap words in order.'));
     else {
-      ws.forEach(function (w, i) { box.appendChild(el('span', 'w', i ? w : w.charAt(0).toUpperCase() + w.slice(1))); });
+      ws.forEach(function (w, i) { box.appendChild(el('span', 'w', i ? w : w.charAt(0).toUpperCase() + w.slice(1))); if (i < ws.length - 1) box.appendChild(document.createTextNode(' ')); });
       box.appendChild(el('span', 'muted', '.'));
     }
     const strand = byId('expr-strand').value;
