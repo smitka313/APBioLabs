@@ -3,6 +3,8 @@
    no free-text boxes, keyboard use, layouts 390-1920, no page errors, axe (when AXE is set).
    Run: NODE_PATH=$(npm root -g) [AXE=<axe.min.js>] node tests/t97-planner-yeast-scenes.js */
 const T = require('./_h');
+// Planner single-choice groups are dropdowns: key is starter | iv | dv | strain.
+const pickSel = (pg, key, v) => pg.selectOption('[data-sel="' + key + '"]', v);
 const fs = require('fs');
 const PAGE = 'openscied-b3-inheritance-environment.html', KEY = 'aplab:openscied:b3-inheritance-environment:v1';
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
@@ -30,14 +32,14 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
     T.ok(await p.locator('#data-planner-body').innerText().then(t => /Run the model first/.test(t)), 'nothing is saved until the student plans');
 
     // --- plan checks ---
-    await p.click('[data-starter="clear"]');
+    await pickSel(p, 'starter', 'clear');
     T.ok(/Pick a starter or add a dish/.test(await p.locator('.pl-summary').innerText()), 'empty plan prompts a starter');
     await p.click('[data-add="1"]'); await p.click('[data-add="1"]');
     await p.selectOption('[data-f="cover1"]', 'spf15'); await p.selectOption('[data-f="time1"]', '30');
     const checks = () => p.locator('.pl-list').innerText();
     let t = await checks();
     T.ok(/Two things change at once: the cover and UV time/.test(t) || /Tap what you change/.test(t), 'warns about two changes or an unset variable');
-    await p.click('.pl-group [data-k="spf"]');
+    await pickSel(p, 'iv', 'spf');
     t = await checks();
     T.ok(/Two things change at once: the cover and UV time/.test(t), 'two things change at once is flagged');
     T.ok(/No dark control/.test(t), 'no dark control is flagged');
@@ -54,24 +56,25 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
     T.ok(/Dish 1.*Dark/s.test(await p.locator('#data-planner-body').innerText()), 'Your plan box fills from the scene');
 
     // starter plan, held chips, predictions
-    await p.click('[data-starter="class"]');
+    await pickSel(p, 'starter', 'class');
     T.ok(await p.locator('.pl-row').count() === 8, 'class set has 8 dishes (7 groups + dark control)');
     await p.click('[data-k="held-yeast"]'); await p.click('[data-k="held-distance"]'); await p.click('[data-k="held-days"]'); await p.click('[data-k="held-agar"]'); await p.click('[data-k="held-time"]');
     T.ok(/Everything else is kept the same/.test(await checks()), 'held-constant check passes');
     await p.click('[data-k="held-cover"]');
     T.ok(/cannot stay the same/.test(await checks()), 'holding the changed thing constant is flagged');
     await p.click('[data-k="held-cover"]');
-    await p.click('[data-k="p0fewer"]');
+    await p.selectOption('[data-f="dir0"]', 'fewer');
     T.ok(/Think again: with no UV/.test(await p.locator('.pl-pred').innerText()), 'a prediction against the cause gets a friendly hint');
-    await p.click('[data-k="p0more"]');
+    await p.selectOption('[data-f="dir0"]', 'more');
     T.ok(/Good thinking/.test(await p.locator('.pl-pred').innerText()), 'a sensible prediction is acknowledged');
-    await p.click('[data-k="p2more"]');
+    await p.selectOption('[data-f="dir2"]', 'more');
     T.ok((await saved(p, 'planner')).conditions[2].predict.dir === 'more', 'predictions are saved on the condition');
 
     // keyboard only: focus a chip and press Space
-    await p.focus('.pl-group [data-k="time"]'); await p.keyboard.press('Space');
-    T.ok(await p.locator('.pl-group [data-k="time"]').getAttribute('aria-pressed') === 'true', 'chips work from the keyboard');
-    await p.click('.pl-group [data-k="spf"]');
+    await p.focus('[data-sel="iv"]'); await p.keyboard.press('ArrowDown');
+    await pickSel(p, 'iv', 'time');
+    T.ok(await p.locator('[data-sel="iv"]').inputValue() === 'time' && await p.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-sel') === 'iv'), 'the dropdown keeps focus and shows the choice');
+    await pickSel(p, 'iv', 'spf');
 
     // --- yeast: setup, lamp ---
     await go(p, 'yeast');
@@ -144,7 +147,7 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
     const ctx2 = await T.ctxFor(browser, { width: 1366, height: 900 });
     await ctx2.addInitScript(() => { try { if (!sessionStorage.getItem('__s2')) { localStorage.setItem('aplab:student', JSON.stringify({ name: 'Other Person', period: '5' })); sessionStorage.setItem('__s2', '1'); } } catch (e) { /* ignore */ } });
     const p2 = await open(ctx2, server, 'plan', problems);
-    await p2.click('[data-starter="class"]'); await go(p2, 'yeast'); await p2.click('[data-yu="spread"]'); await p2.click('[data-yu="lamp"]'); await p2.waitForSelector('[data-yu="skip"]');
+    await pickSel(p2, 'starter', 'class'); await go(p2, 'yeast'); await p2.click('[data-yu="spread"]'); await p2.click('[data-yu="lamp"]'); await p2.waitForSelector('[data-yu="skip"]');
     const b = (await saved(p2, 'yeast')).dishes.map(d => d.truth);
     T.ok(JSON.stringify(a) !== JSON.stringify(b) || (await saved(p2, 'yeast')).seed !== (await saved(p, 'yeast')).seed, 'another Dataset ID gives different dishes');
     await ctx2.close();
@@ -153,7 +156,7 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
     for (const [w, h] of [[390, 844], [768, 900], [1366, 900], [1920, 1080]]) {
       const c = await T.ctxFor(browser, { width: w, height: h, dark: w === 390 });
       const q = await open(c, server, 'plan', problems);
-      await q.click('[data-starter="class"]'); await go(q, 'yeast');
+      await pickSel(q, 'starter', 'class'); await go(q, 'yeast');
       await q.click('[data-yu="spread"]'); await q.click('[data-yu="lamp"]'); await q.waitForSelector('[data-yu="skip"]'); await q.click('[data-yu="skip"]'); await q.click('[data-yu="autoall"]');
       for (const sec of ['plan', 'yeast']) {
         await go(q, sec);
@@ -172,7 +175,7 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
         const c = await T.ctxFor(browser, { width: 390, height: 844, dark, reduced: true });
         const q = await open(c, server, 'plan', problems);
         await q.addScriptTag({ content: fs.readFileSync(axeFile, 'utf8') });
-        await q.click('[data-starter="class"]'); await q.click('[data-k="p2more"]');
+        await pickSel(q, 'starter', 'class'); await q.selectOption('[data-f="dir2"]', 'more');
         await go(q, 'yeast'); await q.click('[data-yu="spread"]'); await q.click('[data-yu="lamp"]'); await q.waitForSelector('[data-yu="skip"]'); await q.click('[data-yu="skip"]'); await q.click('[data-yu="autoall"]');
         await q.waitForTimeout(500);
         const found = [];

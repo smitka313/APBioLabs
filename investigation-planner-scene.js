@@ -165,31 +165,28 @@
     host.insertBefore(ui, desc || null);
     canvas.setAttribute('role', 'img');
 
-    function toggleGroup(label, options, current, onPick, extraClass) {
-      const g = h('div', { class: 'pl-group ' + (extraClass || ''), role: 'group', 'aria-label': label }, h('span', { class: 'pl-legend', text: label }));
-      const row = h('div', { class: 'pl-chips' });
-      Object.keys(options).forEach(k => {
-        const on = current === k;
-        const b = h('button', { type: 'button', class: 'pl-chip', 'aria-pressed': on ? 'true' : 'false', 'data-k': k }, h('span', { class: 'pl-tick', 'aria-hidden': 'true', text: on ? '✓' : '' }), options[k]);
-        b.addEventListener('click', () => onPick(k)); row.appendChild(b);
-      });
-      g.appendChild(row); return g;
+    // Single-choice groups are dropdowns (a wrapped row of pills was hard to read on a phone). Held steady: id, label and a data-sel hook.
+    function selectGroup(key, label, options, current, onPick, placeholder) {
+      const id = 'pl-sel-' + key;
+      const g = h('div', { class: 'pl-group' }, h('label', { class: 'pl-legend', for: id, text: label }));
+      const sel = h('select', { id: id, class: 'pl-select', 'data-sel': key });
+      if (placeholder || !(current in options)) sel.appendChild(h('option', { value: '', text: placeholder || 'Choose\u2026' }));
+      Object.keys(options).forEach(k => { const o = h('option', { value: k, text: options[k] }); if (current === k) o.selected = true; sel.appendChild(o); });
+      sel.addEventListener('change', () => { if (sel.value) onPick(sel.value); });
+      const wrap = h('div', { class: 'pl-selwrap' }, sel, h('span', { class: 'pl-tick', 'aria-hidden': 'true', text: current in options ? '\u2713' : '' }));
+      g.appendChild(wrap); return g;
     }
     function render(focusSel) {
       const keep = focusSel || (doc.activeElement && ui.contains(doc.activeElement) ? selectorFor(doc.activeElement) : '');
       const scrollY = root_scroll();
       ui.textContent = '';
       // 1. starters
-      const starters = h('div', { class: 'pl-group' }, h('span', { class: 'pl-legend', text: 'Start from' }));
-      const sr = h('div', { class: 'pl-chips' });
-      [['class', 'The class set (SPF)'], ['time', 'A UV time test'], ['foil', 'A foil test'], ['clear', 'Empty plan']].forEach(p => {
-        const b = h('button', { type: 'button', class: 'pl-chip', 'data-starter': p[0], text: p[1] }); b.addEventListener('click', () => applyPreset(p[0])); sr.appendChild(b);
-      });
-      starters.appendChild(sr); ui.appendChild(starters);
+      const STARTS = { class: 'The class set (SPF)', time: 'A UV time test', foil: 'A foil test', clear: 'Empty plan' };
+      ui.appendChild(selectGroup('starter', 'Start from', STARTS, '', k => applyPreset(k), 'Pick a starter plan\u2026'));
       // 2. question taps
-      ui.appendChild(toggleGroup('I change', IVS, iv, k => { iv = k; held = held.filter(x => x !== 'time' && x !== 'cover'); change('You change ' + IVS[k].toLowerCase() + '.', '[data-k="' + k + '"]'); }));
-      ui.appendChild(toggleGroup('I measure', DVS, dv, k => { dv = k; change('You measure ' + DVS[k].toLowerCase() + '.', '[data-k="' + k + '"]'); }));
-      ui.appendChild(toggleGroup('Yeast', STRAINS, strainMode, k => { strainMode = k; conds.forEach(c => { c.strain = k === 'wild' ? 'wild' : 'sensitive'; }); change('Yeast: ' + STRAINS[k].toLowerCase() + '.', '[data-k="' + k + '"]'); }));
+      ui.appendChild(selectGroup('iv', 'I change', IVS, iv, k => { iv = k; held = held.filter(x => x !== 'time' && x !== 'cover'); change('You change ' + IVS[k].toLowerCase() + '.', '[data-sel="iv"]'); }));
+      ui.appendChild(selectGroup('dv', 'I measure', DVS, dv, k => { dv = k; change('You measure ' + DVS[k].toLowerCase() + '.', '[data-sel="dv"]'); }));
+      ui.appendChild(selectGroup('strain', 'Yeast', STRAINS, strainMode, k => { strainMode = k; conds.forEach(c => { c.strain = k === 'wild' ? 'wild' : 'sensitive'; }); change('Yeast: ' + STRAINS[k].toLowerCase() + '.', '[data-sel="strain"]'); }));
       const q = api.getQuestion && api.getQuestion();
       if (q && q.ok && q.text) ui.appendChild(h('p', { class: 'pl-q', text: 'Your question: ' + q.text }));
       // 3. plan table
@@ -241,12 +238,13 @@
         const card = h('div', { class: 'pl-card' }, h('strong', { class: 'pl-cardname', text: 'Dish ' + c.group + ': ' + c.label }));
         if (i === refI) card.appendChild(h('span', { class: 'pl-muted', text: 'This is the comparison dish.' }));
         else {
-          const dirs = h('div', { class: 'pl-chips', role: 'group', 'aria-label': 'Dish ' + c.group + ' prediction' });
-          [['more', 'More growth'], ['fewer', 'Fewer'], ['same', 'About the same']].forEach(d => {
-            const on = c.predict && c.predict.dir === d[0];
-            const b = h('button', { type: 'button', class: 'pl-chip pl-sm', 'aria-pressed': on ? 'true' : 'false', 'data-k': 'p' + i + d[0] }, h('span', { class: 'pl-tick', 'aria-hidden': 'true', text: on ? '✓' : '' }), d[1]);
-            b.addEventListener('click', () => { c.predict = { dir: d[0], why: c.predict ? c.predict.why : '' }; change('Dish ' + c.group + ' prediction: ' + d[1].toLowerCase() + '.', '[data-k="p' + i + d[0] + '"]'); }); dirs.appendChild(b);
-          });
+          const DIRS = [['more', 'More growth'], ['fewer', 'Fewer'], ['same', 'About the same']];
+          const dirs = h('div', { class: 'pl-selwrap' });
+          const dsel = h('select', { class: 'pl-select', 'aria-label': 'Dish ' + c.group + ' prediction', 'data-f': 'dir' + i });
+          dsel.appendChild(h('option', { value: '', text: 'Will the yeast grow\u2026' }));
+          DIRS.forEach(d => { const o = h('option', { value: d[0], text: d[1] }); if (c.predict && c.predict.dir === d[0]) o.selected = true; dsel.appendChild(o); });
+          dsel.addEventListener('change', () => { const d = DIRS.find(x => x[0] === dsel.value); c.predict = { dir: dsel.value, why: c.predict ? c.predict.why : '' }; change(d ? 'Dish ' + c.group + ' prediction: ' + d[1].toLowerCase() + '.' : '', '[data-f="dir' + i + '"]'); });
+          dirs.appendChild(dsel); dirs.appendChild(h('span', { class: 'pl-tick', 'aria-hidden': 'true', text: c.predict && c.predict.dir ? '\u2713' : '' }));
           const why = h('select', { 'aria-label': 'Dish ' + c.group + ' reason', 'data-f': 'why' + i });
           why.appendChild(h('option', { value: '', text: 'Because…' }));
           REASONS.forEach(r => { const op = h('option', { value: r, text: r }); if (c.predict && c.predict.why === r) op.selected = true; why.appendChild(op); });
@@ -263,7 +261,7 @@
       restore_scroll(scrollY);
       drawAndDescribe(checks);
     }
-    function selectorFor(e) { return e.getAttribute('data-k') ? '[data-k="' + e.getAttribute('data-k') + '"]' : e.getAttribute('data-f') ? '[data-f="' + e.getAttribute('data-f') + '"]' : e.getAttribute('data-add') ? '[data-add]' : e.getAttribute('data-starter') ? '[data-starter="' + e.getAttribute('data-starter') + '"]' : ''; }
+    function selectorFor(e) { return e.getAttribute('data-sel') ? '[data-sel="' + e.getAttribute('data-sel') + '"]' : e.getAttribute('data-k') ? '[data-k="' + e.getAttribute('data-k') + '"]' : e.getAttribute('data-f') ? '[data-f="' + e.getAttribute('data-f') + '"]' : e.getAttribute('data-add') ? '[data-add]' : e.getAttribute('data-starter') ? '[data-starter="' + e.getAttribute('data-starter') + '"]' : ''; }
     function root_scroll() { return (doc.scrollingElement || doc.documentElement).scrollTop; }
     function restore_scroll(y) { const s = doc.scrollingElement || doc.documentElement; if (Math.abs(s.scrollTop - y) > 2) s.scrollTop = y; }
     function renumber() { conds.forEach((c, i) => { c.group = i + 1; c.strain = strainMode === 'wild' ? 'wild' : 'sensitive'; c.label = labelFor(c); }); }
@@ -352,7 +350,7 @@
   const CSS = '.pl-ui{display:grid;gap:12px}.pl-group{display:grid;gap:6px;min-width:0}.pl-legend{font-weight:700}.pl-chips{display:flex;flex-wrap:wrap;gap:8px}' +
     '.pl-chip{font:inherit;font-weight:600;font-size:.9rem;min-height:40px;min-width:44px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-align:left}' +
     '.pl-chip:hover{border-color:var(--accent)}.pl-chip[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink);box-shadow:inset 0 0 0 1px var(--accent)}.pl-tick{display:inline-block;min-width:.9em;color:var(--accent);font-weight:800}' +
-    '.pl-chip.pl-sm{min-height:36px;padding:4px 10px;font-size:.86rem}.pl-q{margin:0;padding:8px 12px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 var(--r-sm) var(--r-sm) 0;font-weight:600}' +
+    '.pl-selwrap{display:flex;align-items:center;gap:8px;min-width:0}.pl-select{flex:1;min-width:0;min-height:44px;padding:6px 10px;font:inherit;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:var(--r-sm)}.pl-select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}.pl-selwrap .pl-tick{flex:none;width:1.2em}.pl-chip.pl-sm{min-height:36px;padding:4px 10px;font-size:.86rem}.pl-q{margin:0;padding:8px 12px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 var(--r-sm) var(--r-sm) 0;font-weight:600}' +
     '.pl-plan{display:grid;gap:6px}.pl-head,.pl-row{display:grid;grid-template-columns:5.5em minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}.pl-head{font-size:.82rem;font-weight:700;color:var(--muted);padding:0 8px}' +
     '.pl-row{padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface)}.pl-row.is-dark{background:var(--surface-2);border-style:dashed}.pl-num{font-weight:700}' +
     '.pl-row select,.pl-card select{font:inherit;min-height:40px;max-width:100%;min-width:0;width:100%;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);padding:4px 8px}' +
