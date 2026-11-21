@@ -20,6 +20,8 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     p.on('requestfailed', r => { if (!/goatcounter|gc\.zgo\.at|fonts\.g/.test(r.url())) problems.push('requestfailed: ' + r.url()); });
     p.on('response', r => { if (r.status() >= 400 && !/goatcounter|gc\.zgo\.at|fonts\.g/.test(r.url())) problems.push('http ' + r.status() + ': ' + r.url()); });
     await stub(p);
+    // This test is about the page contract with no scene present: serve the scene scripts empty (the scenes have their own tests, t94-*).
+    await p.route(/(dna-replication|gene-expression)-scene\.js/, r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
     await p.goto(server.url + PAGE);
     await p.waitForFunction(() => window.B3DnaP53 && document.querySelector('.step.is-current'));
 

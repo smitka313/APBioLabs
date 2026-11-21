@@ -75,6 +75,24 @@ async function finishPairing(p) {
       await ctx.close();
     }
 
+    // layout shift while the scene mounts, and axe on the scene in its busiest state (counts, p53 cards, canvas)
+    for (const [w, h, dark] of [[1366, 900, false], [390, 844, true]]) {
+      const ctx = await T.ctxFor(browser, { width: w, height: h, reduced: true, dark }); await stub(ctx);
+      await ctx.addInitScript(() => { window.__cls = 0; try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput && (e.sources || []).some(x => x.node && x.node.closest && x.node.closest('#dna-fork-scene'))) window.__cls += e.value; }).observe({ type: 'layout-shift', buffered: true }); } catch (e) { /* not supported */ } });
+      const p = await ctx.newPage();
+      await p.goto(server.url + PAGE + '#fork'); await p.waitForFunction(() => window.B3DnaForkScene && document.querySelector('#fork.is-current')); await p.waitForTimeout(1200);
+      T.ok(await p.evaluate(() => window.__cls) <= 0.1, `${w} px: layout shift caused by the scene (its canvas and controls) is at most 0.1 (${await p.evaluate(() => window.__cls)})`);
+      const axeFile = [process.env.AXE, '../node_modules/axe-core/axe.min.js'].filter(Boolean).map(f => require('path').resolve(__dirname, f)).find(f => require('fs').existsSync(f));
+      if (axeFile) {
+        await p.click(S + ' button[data-act="unwind"]'); await p.click(S + ' button[data-act="helicase"]'); await finishPairing(p);
+        await p.click(S + ' button[data-p53="a"][data-strand="top"]');
+        await p.addScriptTag({ content: require('fs').readFileSync(axeFile, 'utf8') });
+        const bad = await p.evaluate(async sel => (await axe.run(document.querySelector(sel), { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'] }, resultTypes: ['violations'] })).violations.map(v => v.id + ': ' + v.nodes.slice(0, 2).map(n => n.target.join(' ')).join(' ; ')), S);
+        T.ok(bad.length === 0, `${w} px ${dark ? 'dark' : 'light'}: axe finds nothing in the scene ${bad.join(' | ')}`);
+      } else console.log('  (axe-core not found: set AXE to run the in-scene axe check)');
+      await ctx.close();
+    }
+
     // dark mode pixels (red and green cells visible against the dark board)
     {
       const { ctx, p } = await open(browser, server, { w: 390, h: 844, dark: true });

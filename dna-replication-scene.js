@@ -99,7 +99,7 @@
       const z = { correct: 0, substitutions: 0 };
       const paired = isPaired();
       const before = paired ? { top: planCounts('top'), bottom: planCounts('bottom') } : { top: z, bottom: z };
-      const showAfter = paired && triedAny() && !gaps('top') && !gaps('bottom');
+      const showAfter = paired && p53.a.removed > 0 && !gaps('top') && !gaps('bottom');
       const after = showAfter ? { top: cnt('top'), bottom: cnt('bottom') } : { top: z, bottom: z };
       api.saveFork({ seed, run, steps: { unwound: steps.unwound, unzipped: steps.unzipped }, before, p53: JSON.parse(JSON.stringify(p53)), after,
         progress: { run, sites: { top: sites.top, bottom: sites.bottom } }, updatedAt: Date.now() });
@@ -155,6 +155,7 @@
       });
       ui.p53.el.hidden = !(st === 'p53' || st === 'complete');
       ui.counts.hidden = !isPaired();
+      ui.result.hidden = !lastResult || !isPaired(); ui.result.textContent = lastResult ? 'Last p53 result: ' + lastResult : '';
       ui.reset.hidden = !steps.unwound;
       fillCounts();
       ui.hint.textContent = held ? 'Selected: ' + (held.kind === 'p53' ? 'p53 (' + held.v + ')' : 'letter ' + held.v) + '. Click a strand to drop it, or press Escape to cancel.' : '';
@@ -199,6 +200,7 @@
         ['top', 'bottom'].forEach(k => { const b = btn(k === 'top' ? 'Top strand' : 'Bottom strand', 'btn btn--sm'); b.setAttribute('aria-label', 'Add p53 (' + v + ') to the ' + NAME[k]); b.dataset.p53 = v; b.dataset.strand = k; card.appendChild(b); });
         p53el.appendChild(card);
       });
+      const result = el('p', 'fork-result'); result.style.cssText = 'margin:0;font-weight:600'; result.hidden = true;
       const counts = el('div', 'fork-counts');
       const tBefore = countTable('After pairing, before p53'), tAfter = countTable('After p53 and replacing letters');
       counts.append(tBefore.wrap, tAfter.wrap, el('p', 'fork-note', 'Simulated counts. Substitution rate = 100 × substitutions ÷ (correctly paired + substitutions). They also appear in “Your data from the DNA fork” below.'));
@@ -208,7 +210,7 @@
       const dialog = document.createElement('dialog'); dialog.className = 'reset-dialog'; dialog.setAttribute('aria-labelledby', 'fork-reset-title');
       dialog.innerHTML = '<h2 id="fork-reset-title">Start the DNA fork over?</h2><p>The model starts again with a fresh copy (new random mismatches). The counts you have so far in this model will be replaced. Your written answers stay.</p><div class="row"></div>';
       const cancel = btn('Cancel', 'btn'), ok = btn('Start over', 'btn btn--danger'); dialog.querySelector('.row').append(cancel, ok);
-      root.append(next, hint, actions, lettersWrap, p53el, counts, legend, resetRow, model);
+      root.append(next, hint, actions, lettersWrap, p53el, result, counts, legend, resetRow, model);
       desc.insertAdjacentElement('afterend', root);
       root.appendChild(dialog);
       unwind.addEventListener('click', doUnwind); helicase.addEventListener('click', doHelicase);
@@ -217,7 +219,7 @@
       reset.addEventListener('click', () => { if (stage() === 'complete' || steps.unwound) { dialog.showModal(); cancel.focus(); } });
       cancel.addEventListener('click', () => dialog.close());
       ok.addEventListener('click', () => { dialog.close(); doReset(); });
-      return { root, next, hint, actions, unwind, helicase, letters, p53: { el: p53el }, counts, reset, dialog, tBefore, tAfter };
+      return { root, next, hint, actions, result, unwind, helicase, letters, p53: { el: p53el }, counts, reset, dialog, tBefore, tAfter };
     }
     function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
     function btn(text, cls) { const b = el('button', cls, text); b.type = 'button'; return b; }
@@ -238,7 +240,7 @@
       const put = (tbl, c) => ['top', 'bottom'].forEach(k => { const x = c[k], r = L.substitutionRate(x.correct, x.substitutions); tbl.cells[k][0].textContent = x.correct; tbl.cells[k][1].textContent = x.substitutions; tbl.cells[k][2].textContent = r == null ? 'n/a' : r.toFixed(1) + '%'; });
       put(ui.tBefore, { top: planCounts('top'), bottom: planCounts('bottom') });
       ui.tBefore.wrap.hidden = !paired;
-      const showAfter = paired && triedAny() && !gaps('top') && !gaps('bottom');
+      const showAfter = paired && p53.a.removed > 0 && !gaps('top') && !gaps('bottom');
       put(ui.tAfter, { top: cnt('top'), bottom: cnt('bottom') });
       ui.tAfter.wrap.hidden = !showAfter;
     }
@@ -328,7 +330,7 @@
       if (cssW < 40) return false;
       const wide = cssW >= 700;
       const o = wide
-        ? { wide: true, W: 800, H: 360, cw: 28.5, x0: 100, bw: 25, bh: 32, D: 39, rows: { top: { t: [56], n: [95] }, bottom: { n: [265], t: [304] } }, yJ: [180], trayY: 172, font: 15, lab: 13, rail: 7, cols: 24 }
+        ? { wide: true, W: 800, H: 392, cw: 28.5, x0: 100, bw: 25, bh: 32, D: 39, rows: { top: { t: [56], n: [95] }, bottom: { n: [297], t: [336] } }, yJ: [196], trayY: 196, font: 15, lab: 13, rail: 7, cols: 24 }
         : { wide: false, W: 340, H: 500, cw: 26.5, x0: 11, bw: 22, bh: 28, D: 35, rows: { top: { t: [40, 126], n: [75, 161] }, bottom: { n: [339, 425], t: [374, 460] } }, yJ: [135, 365], trayY: 250, font: 14, lab: 12, rail: 6, cols: 12 };
       const w = wide ? cssW : Math.min(cssW, 520), s = w / o.W;
       const dpr = window.devicePixelRatio || 1;
@@ -338,7 +340,7 @@
       const bw = Math.round(w * dpr), bh = Math.round(o.cssH * dpr);
       if (canvas.width !== bw || canvas.height !== bh) { canvas.width = bw; canvas.height = bh; }
       // wound bundle: 24 rungs along a flat spiral around the center
-      const cx = o.W / 2, cy = wide ? 180 : 250, rungs = [];
+      const cx = o.W / 2, cy = wide ? 196 : 250, rungs = [];
       let th = 0, r = 48; const k = 9.5, arc = 25;
       for (let i = 0; i < N; i++) { rungs.push({ th, r, cx, cy }); const rr = r; th += arc / rr; r = 48 + k * th; }
       o.spiral = rungs; o.cx = cx; o.cy = cy;
@@ -455,14 +457,15 @@
     function label(txt, x, y, o) {
       o = o || {};
       ctx.save(); ctx.font = (o.weight || 600) + ' ' + (o.size || LY.lab) + 'px ' + C.body; ctx.textAlign = o.align || 'left'; ctx.textBaseline = 'middle';
+      if (o.halo !== false) { ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.bg; ctx.strokeText(txt, x, y); }
       ctx.fillStyle = o.color || C.ink; ctx.fillText(txt, x, y); ctx.restore();
     }
-    function callout(txt, ax, ay, lx, ly, color) {   // leader line from a label to the exact anchor point, with a dot on the anchor
+    function callout(txt, ax, ay, lx, ly, color, later) {   // leader line from a label to the exact anchor point, with a dot on the anchor
       const sgn = ly < ay ? 1 : -1;
       ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.moveTo(lx, ly + sgn * 8); ctx.lineTo(ax, ay); ctx.stroke();
       ctx.beginPath(); ctx.arc(ax, ay, 2.8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-      label(txt, lx, ly, { align: 'center', color: C.ink });
+      if (later) later.push(() => label(txt, lx, ly, { align: 'center', color: C.ink })); else label(txt, lx, ly, { align: 'center', color: C.ink });
     }
 
     function siteChar(k, i) {
@@ -575,7 +578,7 @@
         let hx, hy, sc = 1;
         if (anim.unzip) { const f = u * (N - 1), f0 = Math.floor(f), f1 = Math.min(N - 1, f0 + 1); hx = segOf(f0) === segOf(f1) ? lerp(xOf(f0), xOf(f1), f - f0) : xOf(f0); hy = o.yJ[segOf(f0)]; hx -= o.cw * 0.2; }
         else if (drag && drag.item.kind === 'helicase') { hx = drag.x; hy = drag.y; }
-        else { hx = o.wide ? o.W - 70 : o.W / 2; hy = o.wide ? 276 : o.trayY; }
+        else { hx = o.wide ? o.W - 70 : o.W / 2; hy = o.wide ? 300 : o.trayY; }
         if (!anim.unzip) {
           // target ring on the left end
           const pulse = reducedMQ.matches ? 0 : (Math.sin(now / 280) + 1) / 2;
@@ -603,7 +606,6 @@
             cell(px, py, { letter: l, face: -1, mode: 'tok', sel: isHeld, i: q });
             hits.push({ kind: 'letter', v: l, x: x, y: y, w: Math.max(30, o.bw + 8), h: o.bh + 8 });
           });
-          if (o.wide) label('Free letters: pick the partner', baseX, ty - 34, { align: 'center', color: C.muted });
           // red arrows (warn colour + arrow shape + dashed box) at the next place on each strand are drawn with the new strand slots below
         }
         if (showP53) {
@@ -620,7 +622,7 @@
         if (st === 'pairing') ['top', 'bottom'].forEach(k => { const m = manualDone(k); if (m < MANUAL && !(anim.fly && anim.fly.strand === k)) slot(xOf(m), rowY(k, 'n', m), k === 'top' ? -1 : 1, true); });
         if (st === 'p53') ['top', 'bottom'].forEach(k => { const g = sites[k].indexOf('x'); if (g >= 0 && !(anim.fly && anim.fly.strand === k)) slot(xOf(g), rowY(k, 'n', g), k === 'top' ? -1 : 1, true); });
         // result / banner text in the tray
-        const msg = st === 'complete' ? '✓ Copy complete: two double strands, 0 substitutions' : lastResult && (st === 'p53') ? lastResult : '';
+        const msg = st === 'complete' ? '✓ Copy complete: two double strands, 0 substitutions' : '';
         if (msg) {
           const words = msg, maxW = o.W - (o.wide ? 120 : 24);
           ctx.save(); ctx.font = '600 ' + o.lab + 'px ' + C.body;
@@ -629,7 +631,7 @@
         }
         // callouts for every substitution (wide board: room next to the strand; labels are placed in two lanes so they never overlap)
         if (o.wide && (st === 'p53' || st === 'complete' || st === 'auto' || st === 'pairing') && !anim.auto) {
-          ctx.save(); ctx.font = '600 ' + o.lab + 'px ' + C.body;
+          ctx.save(); ctx.font = '600 ' + o.lab + 'px ' + C.body; const later = [];
           ['top', 'bottom'].forEach(k => {
             const out = k === 'top' ? 1 : -1, lanes = [[], []];
             for (let i = 0; i < N; i++) {
@@ -639,15 +641,18 @@
               const w = ctx.measureText(txt).width + 12, lx = Math.max(w / 2 + 4, Math.min(o.W - w / 2 - 4, x));
               const lane = lanes.findIndex(l => l.every(iv => lx - w / 2 > iv[1] || lx + w / 2 < iv[0])); if (lane < 0) continue;
               lanes[lane].push([lx - w / 2, lx + w / 2]);
-              ctx.save(); callout(txt, x, ny + out * (o.bh / 2 + 5), lx, ny + out * (o.bh / 2 + 27 + lane * 16), C.bad); ctx.restore();
+              ctx.save(); callout(txt, x, ny + out * (o.bh / 2 + 5), lx, ny + out * (o.bh / 2 + 27 + lane * 16), C.bad, later); ctx.restore();
             }
           });
+          later.forEach(f => f());
           ctx.restore();
         }
         // phone board: no room beside the strands, so one text line in the tray names every substitution
         if (!o.wide && (st === 'p53' || st === 'complete') && (cnt('top').substitutions + cnt('bottom').substitutions) > 0) {
           const part = k => { const p = positions(k, 'b'); return p.length ? (k === 'top' ? 'top ' : 'bottom ') + p.join(', ') : ''; };
-          label('✕ mismatch at ' + [part('top'), part('bottom')].filter(Boolean).join(' · '), o.W / 2, ty - 54, { align: 'center', color: C.bad, weight: 700 });
+          ctx.save(); ctx.font = '700 ' + o.lab + 'px ' + C.body;
+          const cap = wrapText('✕ mismatch at ' + [part('top'), part('bottom')].filter(Boolean).join(' · '), o.W - 24); ctx.restore();
+          cap.forEach((ln, q) => label(ln, o.W / 2, ty - 54 - (cap.length - 1 - q) * (o.lab + 3), { align: 'center', color: C.bad, weight: 700 }));
         }
       }
       // ----- flying letter and p53 animations
