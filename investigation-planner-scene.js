@@ -313,7 +313,8 @@
       ctx.strokeStyle = col.uv; ctx.fillStyle = col.uv; ctx.lineWidth = 2;
       [-0.5, 0, 0.5].forEach(k => { const x = cx + k * r, y0 = top - r * 0.55; ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, top - 4); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x - 3.5, top - 8); ctx.lineTo(x, top - 2); ctx.lineTo(x + 3.5, top - 8); ctx.fill(); });
     }
-    function drawAndDescribe(checks) {
+    function drawAndDescribe(checks) { try { drawAndDescribe0(checks); } catch (e) { canvas.setAttribute('aria-label', 'Investigation planner. The picture could not be drawn on this device; use the controls.'); if (desc) desc.textContent = 'The picture could not be drawn on this device. The plan controls and checks still work.'; } }
+    function drawAndDescribe0(checks) {
       const w = Math.max(280, Math.floor(canvas.clientWidth || host.clientWidth || 640)), dpr = window.devicePixelRatio || 1;
       const n = conds.length, col = { glass: css('--surface', '#fff'), rim: css('--muted', '#56665f'), ink: css('--ink', '#14211c'), muted: css('--muted', '#56665f'), uv: css('--stain', '#a8326b'), bg: css('--surface-2', '#e8eeea') };
       const cols = Math.max(1, Math.min(n || 1, Math.floor(w / 92))), d = Math.min(104, Math.floor((w - 16) / cols) - 10), r = d / 2 * 0.86;

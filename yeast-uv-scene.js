@@ -202,7 +202,7 @@
       if (!ys) return stopTick();
       if (isFinished()) { stopTick(); if (!finishedAnnounced) { finishedAnnounced = true; api.announce('Incubation finished after ' + ys.incubationDays + ' simulated days. Time to count the colonies.'); } render(); return; }
       const d = dayNow(); if (d !== announcedDay) { announcedDay = d; api.announce('Day ' + d + ' of ' + ys.incubationDays + '.'); }
-      updateClock(); if (!reduced() || d !== lastDrawDay) { lastDrawDay = d; drawCanvas(); drawThumbs(); }
+      updateClock(); if (!reduced() || d !== lastDrawDay) { lastDrawDay = d; drawCanvas(); try { drawThumbs(); } catch (e) { /* ignore */ } }
     }
     let lastDrawDay = 0;
 
@@ -245,9 +245,11 @@
       return ar;
     }
     function setSize(w, hh) { const dpr = win.devicePixelRatio || 1; canvas.width = Math.round(w * dpr); canvas.height = Math.round(hh * dpr); canvas.style.aspectRatio = w + ' / ' + hh; canvas.style.minHeight = '0'; const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx; }
-    function badge(ctx, x, y, text, col) { ctx.font = '700 12px system-ui, sans-serif'; const w = ctx.measureText(text).width + 14; ctx.fillStyle = col.warnSoft; ctx.strokeStyle = col.warn; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, 22, 5) : ctx.rect(x, y, w, 22); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.ink; ctx.textAlign = 'left'; ctx.fillText(text, x + 7, y + 15); }
+    function badge(ctx, x, y, text, col) { ctx.font = '700 12px system-ui, sans-serif'; const w = ctx.measureText(text).width + 14; ctx.fillStyle = col.warnSoft; ctx.strokeStyle = col.warn; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.rect(x, y, w, 22); ctx.fill(); ctx.stroke(); ctx.fillStyle = col.ink; ctx.textAlign = 'left'; ctx.fillText(text, x + 7, y + 15); }
     let layoutInfo = null;
-    function drawCanvas() {
+    function drawCanvas() { try { drawCanvas0(); } catch (e) { fallback(); } }
+    function fallback() { canvas.setAttribute('aria-label', 'SIMULATED virtual yeast dishes. The picture could not be drawn on this device; use the controls and the table.'); if (desc) desc.textContent = 'The picture could not be drawn on this device. The buttons and the results table still work. All data are simulated.'; }
+    function drawCanvas0() {
       const w = Math.max(280, Math.floor(canvas.clientWidth || host.clientWidth || 640)), st = stage(), list = dishesNow();
       const col = { ink: css('--ink', '#14211c'), muted: css('--muted', '#56665f'), bg: css('--surface-2', '#e8eeea'), warn: css('--warn', '#9a5b00'), warnSoft: css('--warn-soft', '#fbedd5'), uv: css('--stain', '#a8326b') };
       let ctx, text;
@@ -331,7 +333,7 @@
       ui.appendChild(h('p', { class: 'yu-note' }, h('strong', { text: 'About the model: ' }), 'Yeast DNA repair genes are an analogy to p53, not p53 itself. The counts are simulated from your Dataset ID, so they are not from a real experiment. Cancer is not inevitable and this says nothing about any person.'));
       if (keep) { const t = ui.querySelector(keep); if (t && !t.disabled) { try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); } } }
       const s = doc.scrollingElement || doc.documentElement; if (Math.abs(s.scrollTop - sy) > 2) s.scrollTop = sy;
-      drawCanvas(); drawThumbs(); updateClock();
+      drawCanvas(); try { drawThumbs(); } catch (e) { /* thumbnails are decoration */ } updateClock();
     }
     function sel(e) { const y = e.getAttribute('data-yu'); if (!y) return ''; const i = e.getAttribute('data-i'), k = e.getAttribute('data-k'); return '[data-yu="' + y + '"]' + (i != null ? '[data-i="' + i + '"]' : '') + (k != null ? '[data-k="' + k + '"]' : ''); }
     function setupPanel(st) {
@@ -450,7 +452,7 @@
 
     // keep the dishes in step with the plan until the lamp is used, and redraw on size or theme change
     doc.addEventListener('b3:planner-changed', () => { if (!ys) { plan = dishesFromPlan(api.getState().planner); if (!exposing) { spread = false; render(); } } else { const n = ui.querySelector('.yu-warn'); if (!n) { render(); } } });
-    let raf = 0; const redraw = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { drawCanvas(); drawThumbs(); }); };
+    let raf = 0; const redraw = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { drawCanvas(); try { drawThumbs(); } catch (e) { /* ignore */ } }); };
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(redraw).observe(canvas.parentElement || host);
     win.addEventListener('resize', redraw, { passive: true }); doc.addEventListener('companion:show', redraw);
     new MutationObserver(redraw).observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
