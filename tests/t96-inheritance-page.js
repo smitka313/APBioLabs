@@ -60,7 +60,7 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
       c.querySelectorAll('.scene-host, .attribution, .pager, script, .your-data, #investigation-report, details:not([open]) > :not(summary)').forEach(n => n.remove());
       return (c.textContent.match(/\S+/g) || []).length;
     });
-    T.ok(words <= 1700, 'visible page text (no scenes, attribution, hidden details) stays light (1650 plus the short Plan a test background): ' + words + ' words');
+    T.ok(words <= 1750, 'visible page text (no scenes, attribution, hidden details) stays light (1650 plus four short Background cards): ' + words + ' words');
 
     // --- sensitivity: content note, teacher note, links only, no personal-health inputs ---
     T.ok(/pause, skip a part, or step away/.test(await p.locator('#content-note').innerText()) && /Nobody is asked to share anything about their own family/.test(await p.locator('#content-note').innerText()), 'content note at the top');

@@ -14,6 +14,7 @@ const PAGE = 'openscied-b3-inheritance-environment.html';
       await p.evaluate(() => { location.hash = 'plan'; }); await p.waitForSelector('#plan.is-current');
       await p.waitForSelector('#planner-scene [data-sel="iv"]');
       T.ok(await p.locator('#plan #plan-background').isVisible() && /UV light/.test(await p.locator('#plan-background').innerText()) && /SPF/.test(await p.locator('#plan-background').innerText()) && /Wild-type/i.test(await p.locator('#plan-background').innerText()), 'Plan a test opens with a short Background card (UV, yeast, SPF, fair test)' + tag);
+      T.ok(await p.evaluate(() => ['plan-background', 'twogene-background', 'env-background', 'skin-background'].every(id => { const e = document.getElementById(id); return e && e.querySelectorAll('li').length >= 1 && !e.querySelector('input,textarea,select,button'); })), 'four Background cards exist and ask nothing of the student (no inputs)' + tag);
       const keys = ['starter', 'iv', 'dv', 'strain'];
       T.ok(await p.locator(keys.map(k => '#planner-scene select[data-sel="' + k + '"]').join(',')).count() === 4, 'four dropdowns: start from, change, measure, yeast' + tag);
       T.ok(await p.locator('#planner-scene .pl-chip[data-k="spf"], #planner-scene [data-starter]').count() === 0, 'the old pill buttons for these are gone' + tag);
