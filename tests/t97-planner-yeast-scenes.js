@@ -124,6 +124,7 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
     // table and chart match the saved data
     const rows = await p.locator('.yu-table tbody tr').evaluateAll(trs => trs.map(tr => Array.from(tr.children).map(c => c.textContent)));
     T.ok(rows.length === 16 && rows.every((r, i) => r[3].replace('≈ ', '') === String(ys2.dishes[i].colonies)), 'results table matches the saved counts');
+    T.ok(rows.every(r => r[4] !== '—' && r[5] !== '—') && rows.some(r => r[4] === 'not rated yet') && /Counting does not rate growth/.test(await p.locator('#yeast-uv-scene').innerText()), 'after Count all, Growth says "not rated yet" in words (no bare dash) and the page says rating is the student\'s job');
     T.ok(await p.locator('.yu-chart svg').count() >= 1 && /Colonies\s*counted\s*\(?simulated/.test(await p.locator('.yu-chart').textContent()), 'bar chart drawn with a units axis title');
     T.ok(await p.locator('.yu-chart rect').count() >= 16, 'chart has a bar per counted dish');
     T.ok(/Prediction/.test(await p.locator('.yu-table').innerText()) && /✓ matched/.test(await p.locator('.yu-table').innerText()), 'prediction check appears in the table');

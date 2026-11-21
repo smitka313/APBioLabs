@@ -105,7 +105,7 @@
     if (!(syy > 0)) return 0; // every count the same: no trend
     return sxy / Math.sqrt(sxx * syy);
   }
-  function evidenceChecks(dishes) {
+  function evidenceDetail(dishes) {
     const fin = x => typeof x === 'number' && isFinite(x);
     const d = (Array.isArray(dishes) ? dishes : []).filter(x => x && typeof x === 'object' && fin(x.colonies) && x.colonies >= 0);
     const out = { more: null, dark: null, spf: null };
@@ -123,9 +123,14 @@
     // The UV and SPF trends are judged on the UV-sensitive yeast when they were run (wild-type dishes stay flat on purpose); the dark dish on every strain.
     const trend = (list, byStrain) => byStrain.sensitive != null ? byStrain.sensitive : (list.length ? list.every(Boolean) : null);
     out.more = trend(more, moreBy); out.spf = trend(spf, spfBy);
+    const basisOf = by2 => by2.sensitive != null ? 'sensitive' : Object.keys(by2).length ? 'wild' : null;
+    const basis = { more: basisOf(moreBy), spf: basisOf(spfBy) };
     if (dark.length) out.dark = dark.every(Boolean);
-    return out;
+    return { checks: out, basis: basis };
   }
+  const evidenceChecks = dishes => evidenceDetail(dishes).checks;
+  // Which yeast the UV and SPF verdicts were judged on: 'sensitive', 'wild', or null.
+  const evidenceBasis = dishes => evidenceDetail(dishes).basis;
 
   /* ---------- pedigree data model and constraint checker ----------
      person = { id, label, sex:'M'|'F', affected:bool, deceased:bool, untested:bool, parents:[id,id]|null, knownGenotype:'AA'|null }
@@ -270,7 +275,7 @@
   /* ---------- evidence kinds (Lesson 9 correlation and causation) ---------- */
   const EVIDENCE_KINDS = { graphs: 'pattern', dishes: 'test', reading: 'how' };
 
-  return { EXIT_ITEMS, checkExit, MEIOSIS_ORDER, checkOrder, FRAMES, buildQuestion, checkQuestion, claimLevel, evidenceChecks,
+  return { EXIT_ITEMS, checkExit, MEIOSIS_ORDER, checkOrder, FRAMES, buildQuestion, checkQuestion, claimLevel, evidenceChecks, evidenceBasis,
     GENOTYPES, LAKITA, childGenotypes, solvePedigree, possibleGenotypes, normalizeGuess, checkGuess, explainImpossible,
     TWO_GENE, twoGeneGenotypes, twoGeneRisk, explainedWithoutCrossing, gameteTypes, recombinantPercent, gameteShares,
     aminoFor, cToT, SKIN_META, SITE_UV, SKIN_READINGS, pearson, skinCorrelation, EVIDENCE_KINDS };

@@ -176,6 +176,7 @@
     out.hasAfter = has(out.after.top) || has(out.after.bottom);
     ['a', 'b', 'c'].forEach(v => { const p = fork.p53 && fork.p53[v] || {}; out.p53[v] = { tried: count(p.tried), removed: count(p.removed) }; });
     out.hasP53 = ['a', 'b', 'c'].some(v => out.p53[v].tried > 0);
+    out.stage = ['wound', 'zipped', 'pairing', 'auto', 'p53', 'complete'].includes(fork.stage) ? fork.stage : null; // how far this run got
     return out.hasBefore || out.hasAfter || out.hasP53 ? out : null;
   }
 

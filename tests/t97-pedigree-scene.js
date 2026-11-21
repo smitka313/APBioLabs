@@ -121,6 +121,7 @@ const msg = (p, sel) => p.locator(sel).innerText();
     await p.keyboard.press('Enter');
     T.ok(await p.evaluate(() => document.activeElement.classList.contains('ped-chip')) && /Lakita’s father/.test(await p.locator(P + ' .ped-panel h4').innerText()), 'Enter opens the chooser and focuses the first genotype');
     await p.keyboard.press('Tab'); await p.keyboard.press('Space');
+    T.ok(await p.evaluate(sel => { const t = Array.from(document.querySelectorAll(sel + ' svg text')).map(x => x.textContent); return t.includes('Aunt 1') && t.includes('Aunt 2') && t.includes('Aunt 3'); }, P), 'the three aunts are labeled Aunt 1, Aunt 2 and Aunt 3 in the drawing');
     T.ok(await p.getAttribute(P + ' .ped-chip[data-genotype="AB"]', 'aria-pressed') === 'true' && /Yes! Only AB fits/.test(await msg(p, P + ' .ped-msg')), 'Tab and Space pick AB for the father with the keyboard');
     await p.keyboard.press('Escape');
     T.ok(await p.evaluate(() => document.activeElement.dataset && document.activeElement.dataset.person) === 'father', 'Escape returns to the person');

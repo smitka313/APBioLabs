@@ -132,6 +132,7 @@ const tableRows = (p, caption) => p.evaluate(([sel, cap]) => {
     const after = await tableRows(p, 'After p53 and replacing letters');
     T.ok(after && after[0].join('|') === 'Top strand|24|0|0.0%' && after[1].join('|') === 'Bottom strand|24|0|0.0%', 'after-p53 table: 24 correct, 0 substitutions, 0.0% on both strands');
     fork = (await p.evaluate(() => B3DnaP53.getState())).fork;
+    T.ok(fork.stage === 'complete', 'the saved run records how far it got (stage: ' + fork.stage + ')');
     T.ok(fork.after.top.correct === 24 && fork.after.bottom.substitutions === 0 && fork.p53.a.tried >= 1 && fork.steps.unzipped, 'saved fork.after, p53 and steps follow the contract');
     T.ok(/✓ Copy complete|two double strands/.test(await p.locator('#dna-fork-desc').innerText()), 'end state says two double strands');
     T.ok(p.problems.length === 0, 'no page errors in the full run ' + p.problems.join(' | '));
