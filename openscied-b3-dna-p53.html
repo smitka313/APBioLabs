@@ -71,18 +71,17 @@
     <div class="step-body split">
       <div class="split-main prose">
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
-        <p class="lede">In the Cell Game, cancer cells ended with chromosomes that did not match. What could make chromosomes different, and what does p53 do about it?</p>
+        <p class="lede">What makes chromosomes different, and what does p53 do about it?</p>
         <div class="journey" aria-label="The activity in two parts">
           <div class="part-card"><span class="part-tag">Part A · Lesson 5</span><p><strong>Copy DNA, find the mistakes, test p53.</strong></p>
             <ol class="flow"><li>DNA fork</li><li>Checklist</li><li>Explain</li></ol></div>
           <div class="part-card"><span class="part-tag">Part B · Lesson 6</span><p><strong>Follow a gene from DNA to protein.</strong></p>
             <ol class="flow"><li>Gene model</li><li>Connect to the cell</li><li>Exit ticket</li></ol></div>
         </div>
-        <p class="small">About 60–75 minutes. Mostly taps and picks, with a few short sentences.</p>
-      </div>
+              </div>
       <aside class="split-side">
-        <div class="callout callout--safety"><div class="callout-title">A note about cancer</div><p>These are simplified models. Most copying mistakes are fixed, and most mutations do not cause cancer. Cancer is not inevitable, and nothing here is a diagnosis.</p></div>
-        <div class="callout"><div class="callout-title">Simulated data</div><p>Every number comes from a model, not a real cell. Your answers save in this browser.</p></div>
+        <div class="callout callout--safety"><div class="callout-title">A note about cancer</div><p>Simplified models. Most mistakes are fixed, cancer is not inevitable, and nothing here is a diagnosis.</p></div>
+        <div class="callout"><div class="callout-title">Simulated data</div><p>Numbers come from models. Answers save in this browser.</p></div>
       </aside>
     </div>
   </section>
@@ -91,8 +90,7 @@
   <section class="step wrap wrap--wide gutter" id="ideas" data-step="First ideas">
     <header><div class="eyebrow">Part A · Lesson 5 · 2 · First ideas</div><h2>What do you think so far?</h2></header>
     <div class="step-body">
-      <p class="small">No wrong answers here. You will see these again when you explain.</p>
-      <div class="cards">
+            <div class="cards">
         <fieldset class="qcard" data-q="p-ideas-chrom" data-type="single" data-label="First idea: what a chromosome is" data-saved="Saved. You will test this idea soon.">
           <legend><span class="question-number">1</span>A chromosome is…</legend>
           <div class="opts">
@@ -133,11 +131,11 @@
         <p class="scene-notice" id="dna-fork-notice" hidden>Interactive model coming in the next update. The questions and tables on the following sections already work, and they will fill in from this model when it arrives.</p>
       </div>
       <ol class="flow flow--steps" aria-label="Steps in the model"><li>Unwind</li><li>Unzip</li><li>Pair letters</li><li>Count mismatches</li><li>Try p53</li></ol>
-      <p>Pair the first five letters on each strand. The model does the rest, and some pairs will be wrong (a <strong>substitution</strong>, shown red with ✕). Try all three p53 versions.</p>
+      <p>Pair five letters per strand. Wrong pairs are <strong>substitutions</strong> (red, ✕). Try all three p53 versions.</p>
       <div class="your-data panel" id="data-fork" aria-labelledby="data-fork-title">
         <h3 id="data-fork-title">Your data from the DNA fork</h3>
         <div class="your-data-body" id="data-fork-body"><p class="muted">Run the model first. Your counts will appear here.</p></div>
-        <p class="small muted">Substitution rate = 100 × substitutions ÷ (correctly paired + substitutions). Simulated counts.</p>
+        <p class="small muted">Rate = 100 × substitutions ÷ (correct + substitutions). Simulated.</p>
       </div>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner">
         <p><strong>Modeled:</strong> unzipping, pairing A with T and G with C, occasional wrong pairs, and three versions of p53.</p>
@@ -190,31 +188,23 @@
           <div class="rrow" data-row="c"><span class="rlabel">p53 (c)</span><div class="opts seg"><label class="opt"><input type="radio" name="p-ms5-p53-c" value="fixed" data-ui><span>Fixed mismatches</span></label><label class="opt" data-ok><input type="radio" name="p-ms5-p53-c" value="nofit" data-ui><span>Did not fit</span></label></div></div>
           <input type="hidden" id="p-ms5-p53"><p class="q-fb"></p>
         </fieldset>
-        <fieldset class="qcard" data-q="p-ms5-trust" data-type="single" data-label="How knowing real cells copy DNA changes my view of the model" data-wrong="Not quite. Scientists have watched real cells copy DNA, and the model is a simplified version of that.">
-          <legend><span class="question-number">5</span>Scientists have watched cells copy DNA for decades. For this model, that…</legend>
-          <div class="opts">
-            <label class="opt" data-ok data-why="Yes. Real observations back the main idea, and the model is still simplified."><input type="radio" name="p-ms5-trust-r" value="a" data-ui><span>backs up the main idea, but the model is simplified</span></label>
-            <label class="opt"><input type="radio" name="p-ms5-trust-r" value="b" data-ui><span>makes no difference</span></label>
-            <label class="opt"><input type="radio" name="p-ms5-trust-r" value="c" data-ui><span>means the model is exactly like a cell</span></label>
-          </div><input type="hidden" id="p-ms5-trust"><p class="q-fb"></p>
-        </fieldset>
         <fieldset class="qcard" data-q="p-ms5-cer" data-type="rows" data-label="Sum it up: claim, evidence, reasoning" data-done="Yes. That is a claim backed by evidence and reasoning.">
-          <legend><span class="question-number">6</span>Sum it up. Build your claim, evidence and reasoning.</legend>
+          <legend><span class="question-number">5</span>Sum it up: claim, evidence, reasoning.</legend>
           <div class="rrow rrow--stack" data-row="claim"><span class="rlabel">Claim</span><div class="opts">
-            <label class="opt" data-ok><input type="radio" name="p-ms5-cer-claim" value="a" data-ui><span>p53 (a) removed wrong letters, so both strands ended with 0 mismatches.</span></label>
-            <label class="opt"><input type="radio" name="p-ms5-cer-claim" value="b" data-ui><span>p53 stops wrong letters from ever going in.</span></label>
-            <label class="opt"><input type="radio" name="p-ms5-cer-claim" value="c" data-ui><span>All three p53 versions worked the same.</span></label></div></div>
+            <label class="opt" data-ok><input type="radio" name="p-ms5-cer-claim" value="a" data-ui><span>p53 (a) removed wrong letters. Both strands ended with 0.</span></label>
+            <label class="opt"><input type="radio" name="p-ms5-cer-claim" value="b" data-ui><span>p53 stops wrong letters going in.</span></label>
+            <label class="opt"><input type="radio" name="p-ms5-cer-claim" value="c" data-ui><span>All three p53s worked the same.</span></label></div></div>
           <div class="rrow rrow--stack" data-row="evidence"><span class="rlabel">Evidence</span><div class="opts">
-            <label class="opt" data-ok><input type="radio" name="p-ms5-cer-evidence" value="a" data-ui><span>My table: substitutions dropped to 0 after p53 (a).</span></label>
+            <label class="opt" data-ok><input type="radio" name="p-ms5-cer-evidence" value="a" data-ui><span>My table: substitutions fell to 0.</span></label>
             <label class="opt"><input type="radio" name="p-ms5-cer-evidence" value="b" data-ui><span>The strands looked tidy.</span></label>
             <label class="opt"><input type="radio" name="p-ms5-cer-evidence" value="c" data-ui><span>I think p53 is important.</span></label></div></div>
           <div class="rrow rrow--stack" data-row="reason"><span class="rlabel">Reasoning</span><div class="opts">
-            <label class="opt" data-ok><input type="radio" name="p-ms5-cer-reason" value="a" data-ui><span>Only p53 (a) fits next to a wrong letter, so only it can remove it.</span></label>
+            <label class="opt" data-ok><input type="radio" name="p-ms5-cer-reason" value="a" data-ui><span>Only p53 (a) fits a wrong letter, so only it removes it.</span></label>
             <label class="opt"><input type="radio" name="p-ms5-cer-reason" value="b" data-ui><span>Letters always pair correctly.</span></label>
             <label class="opt"><input type="radio" name="p-ms5-cer-reason" value="c" data-ui><span>More p53 is always better.</span></label></div></div>
           <input type="hidden" id="p-ms5-cer"><p class="q-fb"></p>
         </fieldset>
-        <div class="field analysis-question"><label for="ms5-summary"><span class="question-number">7</span>In one or two sentences: what if a wrong letter were not fixed?</label>
+        <div class="field analysis-question"><label for="ms5-summary"><span class="question-number">6</span>What if a wrong letter were not fixed?</label>
           <textarea id="ms5-summary" rows="2" maxlength="300" placeholder="A wrong letter stays, so…" aria-describedby="ms5-summary-hint"></textarea><span class="len-hint" id="ms5-summary-hint" data-for="ms5-summary">1–2 sentences</span></div>
       </div>
       <details class="disclose write-more"><summary>Write more (optional)</summary><div class="inner">
@@ -228,7 +218,7 @@
   <section class="step wrap wrap--wide gutter" id="checklist" data-step="Checklist and reading">
     <header><div class="eyebrow">Part A · Lesson 5 · 5 · Evidence</div><h2>What must a good explanation include?</h2></header>
     <div class="step-body">
-      <p>For each idea, tap <strong>I know it</strong> or <strong>I need it</strong>. If you know it, tap where you learned it. Read the card below, then update your taps.</p>
+      <p>Tap <strong>I know it</strong> or <strong>I need it</strong> for each idea. Read the card, then update.</p>
       <ul class="checklist" id="checklist-table" aria-label="Gotta-Have-It checklist">
         <li class="cl-row" id="cl-row-relation" data-row="relation"><span class="cl-name" id="cl-name-relation">How DNA and chromosomes are related</span>
           <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-relation"><label class="opt know"><input type="radio" name="cl-relation-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-relation-r" value="need" data-ui><span>I need it</span></label></div>
@@ -290,10 +280,10 @@
             <text x="605" y="160" text-anchor="middle" class="fig-text">Protein</text>
           </svg>
         </figure>
-        <p>DNA is a long molecule whose order of bases (A, T, G, C) is the genetic code. A pairs with T and G pairs with C. Each <strong>chromosome</strong> is one very long DNA molecule, and a <strong>gene</strong> is a section of it that codes for one protein.</p>
-        <p>In S phase, before mitosis, the cell copies all its DNA: it unwinds, unzips, and each letter picks up its partner. Sometimes a wrong letter goes in (a <strong>substitution</strong>, a kind of <strong>mutation</strong>). If it stays, the new cells’ chromosomes are no longer identical.</p>
+        <p>Each <strong>chromosome</strong> is one long DNA molecule. A <strong>gene</strong> is a section of it that codes for one protein.</p>
+        <p>In S phase the cell copies its DNA. A wrong letter that stays is a <strong>mutation</strong>, so new cells’ chromosomes differ.</p>
         <details class="disclose disclose--sm"><summary>Show more</summary><div class="inner">
-          <p>A human cell copies about 6 billion letters this way. Copying is very accurate, and cells fix many mistakes. Most mutations are harmless, and cancer usually takes several changes in genes that control cell division.</p>
+          <p>A human cell copies about 6 billion letters. Copying is very accurate, and cells fix many mistakes. Most mutations are harmless, and cancer usually takes several changes in genes that control cell division.</p>
         </div></details>
       </article>
       <details class="disclose"><summary>Check my checklist against the key ideas</summary><div class="inner">
@@ -307,20 +297,20 @@
   <section class="step wrap wrap--wide gutter" id="explain" data-step="Explanation">
     <header><div class="eyebrow">Part A · Lesson 5 · 6 · Explanation</div><h2>Explain it, check it, revise it</h2></header>
     <div class="step-body">
-      <div class="callout callout--question"><div class="callout-title">Lesson question</div><p>How do cancer cells end up with differences in their chromosomes, and what is the role of p53 in preventing the differences?</p></div>
-      <div class="echo panel" id="first-ideas-echo" aria-labelledby="echo-title"><h3 id="echo-title">My first ideas</h3><p class="muted" id="first-ideas-text">You have not picked first ideas yet. You can add them in section 2.</p></div>
+      <p class="small"><strong>Lesson question:</strong> How do cancer cells get different chromosomes, and what does p53 do?</p>
+      <div class="echo panel" id="first-ideas-echo" aria-labelledby="echo-title"><h3 id="echo-title">My first ideas</h3><p class="muted" id="first-ideas-text">No first ideas yet (section 2).</p></div>
       <fieldset class="qcard build" data-q="p-explain" data-type="rows" data-build data-label="Build my explanation" data-done="Nice. Every piece is there. Now say it in your own words.">
-        <legend>Build your explanation. Pick the best ending for each.</legend>
+        <legend>Build your explanation.</legend>
         <div class="rrow rrow--stack" data-row="copy" data-stem="Copying works when"><span class="rlabel">Copying works when…</span><div class="opts">
-          <label class="opt" data-ok data-idea="0"><input type="radio" name="p-explain-copy" value="a" data-ui><span>the DNA unwinds and unzips, then A pairs with T and G with C</span></label>
+          <label class="opt" data-ok data-idea="0"><input type="radio" name="p-explain-copy" value="a" data-ui><span>DNA unzips, then A pairs with T, G with C</span></label>
           <label class="opt"><input type="radio" name="p-explain-copy" value="b" data-ui><span>letters pair at random</span></label>
           <label class="opt"><input type="radio" name="p-explain-copy" value="c" data-ui><span>a new chromosome appears from nothing</span></label></div></div>
         <div class="rrow rrow--stack" data-row="mistake" data-stem="A mistake happens when"><span class="rlabel">A mistake happens when…</span><div class="opts">
-          <label class="opt" data-ok data-idea="1"><input type="radio" name="p-explain-mistake" value="a" data-ui><span>a wrong letter is paired (a substitution, which is a mutation)</span></label>
+          <label class="opt" data-ok data-idea="1"><input type="radio" name="p-explain-mistake" value="a" data-ui><span>a wrong letter is paired (a mutation)</span></label>
           <label class="opt"><input type="radio" name="p-explain-mistake" value="b" data-ui><span>p53 attaches to the strand</span></label>
           <label class="opt"><input type="radio" name="p-explain-mistake" value="c" data-ui><span>the cell finishes mitosis</span></label></div></div>
         <div class="rrow rrow--stack" data-row="p53" data-stem="In the model, p53"><span class="rlabel">In the model, p53…</span><div class="opts">
-          <label class="opt" data-ok data-idea="2"><input type="radio" name="p-explain-p53" value="a" data-ui><span>removes a mismatched letter after the copy is made</span></label>
+          <label class="opt" data-ok data-idea="2"><input type="radio" name="p-explain-p53" value="a" data-ui><span>removes a mismatched letter after copying</span></label>
           <label class="opt"><input type="radio" name="p-explain-p53" value="b" data-ui><span>stops mistakes from happening</span></label>
           <label class="opt"><input type="radio" name="p-explain-p53" value="c" data-ui><span>unzips the DNA</span></label></div></div>
         <div class="rrow rrow--stack" data-row="versions" data-stem="The versions of p53"><span class="rlabel">The versions of p53…</span><div class="opts">
@@ -328,8 +318,8 @@
           <label class="opt"><input type="radio" name="p-explain-versions" value="b" data-ui><span>all work the same</span></label>
           <label class="opt"><input type="radio" name="p-explain-versions" value="c" data-ui><span>none of them work</span></label></div></div>
         <div class="rrow rrow--stack" data-row="fate" data-stem="If a mistake is not fixed"><span class="rlabel">If a mistake is not fixed…</span><div class="opts">
-          <label class="opt" data-ok data-idea="4"><input type="radio" name="p-explain-fate" value="a" data-ui><span>it is passed on, so the new cell’s chromosomes differ</span></label>
-          <label class="opt"><input type="radio" name="p-explain-fate" value="b" data-ui><span>the new cell always still matches</span></label>
+          <label class="opt" data-ok data-idea="4"><input type="radio" name="p-explain-fate" value="a" data-ui><span>it is passed on, so chromosomes differ</span></label>
+          <label class="opt"><input type="radio" name="p-explain-fate" value="b" data-ui><span>the new cell always matches</span></label>
           <label class="opt"><input type="radio" name="p-explain-fate" value="c" data-ui><span>the cell always becomes cancer</span></label></div></div>
         <div class="rrow rrow--stack" data-row="evidence" data-stem="My evidence came mainly from"><span class="rlabel">My evidence came from…</span><div class="opts seg">
           <label class="opt" data-ok data-idea="5"><input type="radio" name="p-explain-evidence" value="a" data-ui><span>the simulation</span></label>
@@ -343,9 +333,9 @@
       <div class="field analysis-question"><label for="explanation-draft"><span class="question-number">2</span>Now say it in your own words</label>
         <textarea id="explanation-draft" rows="4" maxlength="500" placeholder="DNA copying can go wrong when… p53 helps by…" aria-describedby="explanation-draft-hint"></textarea><span class="len-hint" id="explanation-draft-hint" data-for="explanation-draft">2–3 sentences</span></div>
       <div class="callout callout--safety"><div class="callout-title">Check your wording</div>
-        <p>Copying mistakes do <strong>not</strong> always cause cancer. In the model, p53 <strong>fixes</strong> mistakes after copying. It does not stop them.</p></div>
+        <p>Mistakes do <strong>not</strong> always cause cancer. p53 <strong>fixes</strong> mistakes after copying; it does not stop them.</p></div>
 
-      <h3>Peer feedback</h3>
+      <details class="disclose" id="peer-section"><summary>Peer feedback (with a partner)</summary><div class="inner">
       <fieldset class="qcard" data-q="p-peer" data-type="rows" data-label="Peer feedback on each important idea" data-saved="Saved. Now add one specific thing below.">
         <legend>Partner: tap what you see for each idea.</legend>
         <div class="rrow" data-row="relation"><span class="rlabel">DNA and chromosomes</span><div class="opts seg"><label class="opt"><input type="radio" name="p-peer-relation" value="clear" data-ui><span>Clear</span></label><label class="opt"><input type="radio" name="p-peer-relation" value="more" data-ui><span>Add more</span></label><label class="opt"><input type="radio" name="p-peer-relation" value="missing" data-ui><span>Missing</span></label></div></div>
@@ -361,6 +351,7 @@
       <div class="row"><button class="btn" type="button" id="copy-rubric">Copy the full peer rubric</button><span class="small" id="copy-rubric-status"></span></div>
       <label class="sr-only" for="rubric-text">Peer rubric as plain text, to select and copy by hand</label>
       <textarea id="rubric-text" class="rubric-text" rows="4" readonly hidden></textarea>
+      </div></details>
       <details class="disclose write-more"><summary>Write more (optional)</summary><div class="inner">
         <div class="field"><label for="explanation-revised">My revised explanation, and the questions we should answer next</label>
           <textarea id="explanation-revised" rows="6"></textarea></div>
@@ -377,8 +368,8 @@
         <p class="scene-desc" id="gene-expression-desc">Text description of the model: DNA in the nucleus, an RNA copy, and a ribosome that builds a chain of amino acids.</p>
         <p class="scene-notice" id="gene-expression-notice" hidden>Interactive model coming in the next update. You can still check your paper results below.</p>
       </div>
-      <ol class="flow flow--steps" aria-label="Steps in the model"><li>Copy DNA to RNA</li><li>Edit the copy</li><li>Read at the ribosome</li></ol>
-      <p>Try strands A, B and C. They are almost the same. Then build the sentence your cards made.</p>
+      <ol class="flow flow--steps" aria-label="Steps in the model"><li>Copy to RNA</li><li>Edit</li><li>Ribosome reads</li></ol>
+      <p>Try strands A, B and C, then build your sentence.</p>
       <div class="your-data panel" id="data-expression" aria-labelledby="data-expression-title">
         <h3 id="data-expression-title">Your data from the gene expression model</h3>
         <div class="your-data-body" id="data-expression-body"><p class="muted">Run the model first. The strands you tried will appear here.</p></div>
@@ -417,7 +408,7 @@
       </div>
       <div class="cards">
         <fieldset class="qcard" data-q="p-ms6-map" data-type="rows" data-label="Map the model to the cell" data-done="Yes. Each model part stands for a real part of the cell.">
-          <legend><span class="question-number">1</span>What does each part of the model stand for?</legend>
+          <legend><span class="question-number">1</span>What does each part stand for?</legend>
           <div class="rrow" data-row="loc1"><span class="rlabel">Location 1</span><div class="opts seg"><label class="opt" data-ok><input type="radio" name="p-ms6-map-loc1" value="a" data-ui><span>nucleus</span></label><label class="opt"><input type="radio" name="p-ms6-map-loc1" value="b" data-ui><span>ribosome</span></label><label class="opt"><input type="radio" name="p-ms6-map-loc1" value="c" data-ui><span>cell membrane</span></label></div></div>
           <div class="rrow" data-row="dna"><span class="rlabel">Paper DNA strand</span><div class="opts seg"><label class="opt"><input type="radio" name="p-ms6-map-dna" value="a" data-ui><span>a protein</span></label><label class="opt" data-ok><input type="radio" name="p-ms6-map-dna" value="b" data-ui><span>a gene</span></label><label class="opt"><input type="radio" name="p-ms6-map-dna" value="c" data-ui><span>a ribosome</span></label></div></div>
           <div class="rrow" data-row="copy"><span class="rlabel">Copy and edited copy</span><div class="opts seg"><label class="opt"><input type="radio" name="p-ms6-map-copy" value="a" data-ui><span>a protein</span></label><label class="opt"><input type="radio" name="p-ms6-map-copy" value="b" data-ui><span>a new chromosome</span></label><label class="opt" data-ok><input type="radio" name="p-ms6-map-copy" value="c" data-ui><span>RNA</span></label></div></div>
@@ -427,45 +418,29 @@
           <input type="hidden" id="p-ms6-map"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-ms6-differs" data-type="multi" data-label="How the model differs from the real thing" data-done="Yes. Real genes and proteins are much bigger, and real RNA editing is not a fixed set of groups." data-wrong="Not quite. Check the options marked ✕.">
-          <legend><span class="question-number">2</span>How is the model different from the real thing? <span class="hint">Pick all that apply.</span></legend>
+          <legend><span class="question-number">2</span>How does the model differ from reality? <span class="hint">Pick all.</span></legend>
           <div class="opts chips">
             <label class="opt" data-ok><input type="checkbox" value="a" data-ui><span>Real genes are far longer</span></label>
-            <label class="opt" data-ok><input type="checkbox" value="b" data-ui><span>Real proteins have far more amino acids</span></label>
-            <label class="opt" data-ok><input type="checkbox" value="c" data-ui><span>Real RNA editing cuts pieces of different sizes</span></label>
-            <label class="opt"><input type="checkbox" value="d" data-ui><span>Real cells do not use RNA</span></label>
+            <label class="opt" data-ok><input type="checkbox" value="b" data-ui><span>Real proteins are far longer</span></label>
+            <label class="opt" data-ok><input type="checkbox" value="c" data-ui><span>Real RNA editing cuts different sizes</span></label>
+            <label class="opt"><input type="checkbox" value="d" data-ui><span>Real cells skip RNA</span></label>
           </div><input type="hidden" id="p-ms6-differs"><p class="q-fb"></p>
         </fieldset>
-        <fieldset class="qcard" data-q="p-ms6-help" data-type="single" data-label="How the model helps answer: how do we make p53, and why is it different sometimes?" data-wrong="Not quite. Think about what the model changed from strand to strand.">
-          <legend><span class="question-number">3</span>How does the model explain why p53 is different sometimes?</legend>
-          <div class="opts">
-            <label class="opt" data-ok data-why="Yes. A different DNA code gives a different amino acid chain, and so a different protein."><input type="radio" name="p-ms6-help-r" value="a" data-ui><span>A different DNA code makes a different chain and protein</span></label>
-            <label class="opt"><input type="radio" name="p-ms6-help-r" value="b" data-ui><span>The cards are chosen at random</span></label>
-            <label class="opt"><input type="radio" name="p-ms6-help-r" value="c" data-ui><span>The ribosome changes the DNA</span></label>
-          </div><input type="hidden" id="p-ms6-help"><p class="q-fb"></p>
-        </fieldset>
         <fieldset class="qcard" data-q="p-ms6-compare" data-type="rows" data-label="Comparing strands" data-done="Yes. Same DNA gives the same sentence unless a copying mistake is added. Different DNA gives a different one.">
-          <legend><span class="question-number">4</span>Compare two runs. What do you expect?</legend>
+          <legend><span class="question-number">3</span>Two runs: what do you expect?</legend>
           <div class="rrow" data-row="same"><span class="rlabel">Same strand again</span><div class="opts seg"><label class="opt" data-ok><input type="radio" name="p-ms6-compare-same" value="same" data-ui><span>Same sentence</span></label><label class="opt"><input type="radio" name="p-ms6-compare-same" value="diff" data-ui><span>Different sentence</span></label></div></div>
           <div class="rrow" data-row="other"><span class="rlabel">A different strand</span><div class="opts seg"><label class="opt"><input type="radio" name="p-ms6-compare-other" value="same" data-ui><span>Same sentence</span></label><label class="opt" data-ok><input type="radio" name="p-ms6-compare-other" value="diff" data-ui><span>Different sentence</span></label></div></div>
           <input type="hidden" id="p-ms6-compare"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-ms6-mismatch" data-type="single" data-label="What a sentence that does not match the key stands for" data-wrong="Not quite. Think about a copy that was made with a mistake.">
-          <legend><span class="question-number">5</span>A sentence does not match the key. In a cell, that could stand for…</legend>
+          <legend><span class="question-number">4</span>A sentence misses the key. In a cell, that is like…</legend>
           <div class="opts">
-            <label class="opt" data-ok data-why="Yes. A copying mistake changes the DNA code, like a mutation, so the amino acids and the sentence change."><input type="radio" name="p-ms6-mismatch-r" value="a" data-ui><span>a copy made with a mistake (a mutation)</span></label>
+            <label class="opt" data-ok data-why="Yes. A copying mistake changes the DNA code, like a mutation, so the amino acids and the sentence change."><input type="radio" name="p-ms6-mismatch-r" value="a" data-ui><span>a copy with a mistake (mutation)</span></label>
             <label class="opt"><input type="radio" name="p-ms6-mismatch-r" value="b" data-ui><span>RNA turning into DNA</span></label>
             <label class="opt"><input type="radio" name="p-ms6-mismatch-r" value="c" data-ui><span>nothing at all</span></label>
           </div><input type="hidden" id="p-ms6-mismatch"><p class="q-fb"></p>
         </fieldset>
-        <fieldset class="qcard" data-q="p-ms6-shape" data-type="single" data-label="What a changed sentence means for the protein's shape" data-wrong="Not quite. A different chain can fold into a different shape.">
-          <legend><span class="question-number">6</span>If the sentence changes, the protein’s shape…</legend>
-          <div class="opts">
-            <label class="opt" data-ok data-why="Yes. A different shape may fit DNA worse. Not every change breaks a protein, and a changed protein does not always cause cancer."><input type="radio" name="p-ms6-shape-r" value="a" data-ui><span>may change, so it could fit DNA worse</span></label>
-            <label class="opt"><input type="radio" name="p-ms6-shape-r" value="b" data-ui><span>never changes</span></label>
-            <label class="opt"><input type="radio" name="p-ms6-shape-r" value="c" data-ui><span>always causes cancer</span></label>
-          </div><input type="hidden" id="p-ms6-shape"><p class="q-fb"></p>
-        </fieldset>
-        <div class="field analysis-question"><label for="ms6-questions"><span class="question-number">7</span>What question do you still have?</label>
+        <div class="field analysis-question"><label for="ms6-questions"><span class="question-number">5</span>One question you still have?</label>
           <textarea id="ms6-questions" rows="2" maxlength="300" placeholder="I still wonder…" aria-describedby="ms6-questions-hint"></textarea><span class="len-hint" id="ms6-questions-hint" data-for="ms6-questions">1 sentence</span></div>
       </div>
       <article class="reading panel" aria-labelledby="reading-p53-title">
@@ -483,7 +458,7 @@
             <path d="M200 100 q14 -22 28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0" class="fig-protein" stroke-width="5" fill="none" stroke-linecap="round" transform="translate(40 0)"/>
           </svg>
         </figure>
-        <p>Your DNA is in the nucleus, in 23 pairs of chromosomes. The p53 gene is on chromosome 17. A different DNA code makes a different amino acid chain and a different protein shape, and shape decides how a protein fits other molecules, such as DNA.</p>
+        <p>The p53 gene is on chromosome 17. A different DNA code makes a different amino acid chain and protein shape, and shape decides how well p53 fits DNA.</p>
         <details class="disclose disclose--sm"><summary>Show more</summary><div class="inner">
           <p>The real p53 gene is roughly 18,000 to 20,000 base pairs; the model strands had 36 to 39, so the model is about 500 times shorter. The lesson says p53 has 375 amino acids; the usual full-length form has 393. The model had 8 or 9. Either way, real genes and proteins are much bigger. Not all DNA codes for a protein: some turns genes on or off.</p>
         </div></details>
@@ -513,7 +488,7 @@
     <div class="step-body">
       <div class="cards">
         <fieldset class="qcard" data-q="exit-q1" data-type="single" data-label="Exit ticket 1: How is genetic information organized in cells?" data-wrong="Try again. Why not: this idea is true, but it is only one part. Look for the answer that uses both the reading and the picture in section 5.">
-          <legend><span class="question-number">1</span>How is genetic information organized in cells? Use the reading and the picture in section 5.</legend>
+          <legend><span class="question-number">1</span>How is genetic information organized? Use the section 5 reading and picture.</legend>
           <div class="opts">
             <label class="opt" data-ok data-why="Yes. The reading says DNA is organized into chromosomes and genes code for proteins, and the picture shows that genes are sections of the chromosome. This answer uses both."><input type="radio" name="exit-q1-r" value="a" data-ui><span>DNA makes up chromosomes, which are organized into genes that code for proteins.</span></label>
             <label class="opt" data-why="Try again. Why not: this is true, but it leaves out where genes are. The picture shows that genes are sections of a chromosome."><input type="radio" name="exit-q1-r" value="b" data-ui><span>Chromosomes are made of DNA. Genes code for proteins.</span></label>
@@ -521,7 +496,7 @@
           </div><input type="hidden" id="exit-q1"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="exit-q2" data-type="single" data-label="Exit ticket 2: Why are there versions of p53 that work differently?" data-wrong="Try again. Why not: this idea is true and helps, but it is only one part. Reread all the choices, and look for the one that includes everything.">
-          <legend><span class="question-number">2</span>Which help explain why p53 versions work differently?</legend>
+          <legend><span class="question-number">2</span>Why do p53 versions work differently?</legend>
           <div class="opts">
             <label class="opt"><input type="radio" name="exit-q2-r" value="a" data-ui><span>Some p53 genes have mutations in the code.</span></label>
             <label class="opt"><input type="radio" name="exit-q2-r" value="b" data-ui><span>Different DNA codes make proteins with different shapes.</span></label>
@@ -531,7 +506,7 @@
           </div><input type="hidden" id="exit-q2"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-exit3" data-type="single" data-label="Exit ticket 3: an everyday example of structure affecting function" data-saved="Saved. Shape decides how things fit, from keys to proteins.">
-          <legend><span class="question-number">3</span>Which everyday example shows structure affecting function?</legend>
+          <legend><span class="question-number">3</span>Which shows structure affecting function?</legend>
           <div class="opts">
             <label class="opt"><input type="radio" name="p-exit3-r" value="a" data-ui><span>A key’s shape fits only its lock</span></label>
             <label class="opt"><input type="radio" name="p-exit3-r" value="b" data-ui><span>A glove’s shape fits a hand</span></label>
@@ -539,8 +514,8 @@
           </div><input type="hidden" id="p-exit3"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="exit-q4" data-type="single" data-label="Exit ticket 4: how the structure of p53 differs in versions that correct mutations and versions that do not" data-wrong="Try again. Why not: this idea is true and helps, but it is only one part. Reread all the choices, and look for the one that includes everything.">
-          <legend><span class="question-number">4</span>How does p53 (a), which corrects mutations, differ from p53 (b)?</legend>
-          <p class="seqs"><strong>p53 (a)</strong> Phe-Ser-Arg-Gly-Ile-Thr-Arg-Glu-Asp<br><strong>p53 (b)</strong> Phe-Ser-Arg-Gly-Ile-Pro-Arg-Ala <span class="small">(as on the lesson’s cards; see the CUU note in section 7)</span></p>
+          <legend><span class="question-number">4</span>How does p53 (a) differ from p53 (b)?</legend>
+          <p class="seqs"><strong>p53 (a)</strong> Phe-Ser-Arg-Gly-Ile-Thr-Arg-Glu-Asp<br><strong>p53 (b)</strong> Phe-Ser-Arg-Gly-Ile-Pro-Arg-Ala</p>
           <div class="opts">
             <label class="opt"><input type="radio" name="exit-q4-r" value="a" data-ui><span>p53 (a) has 9 amino acids.</span></label>
             <label class="opt"><input type="radio" name="exit-q4-r" value="b" data-ui><span>p53 (b) has 8, and one is different.</span></label>
@@ -549,7 +524,7 @@
           </div><input type="hidden" id="exit-q4"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-exit5" data-type="multi" data-label="Exit ticket 5: which sources helped me make sense of p53" data-saved="Saved. Using several sources makes an explanation stronger.">
-          <legend><span class="question-number">5</span>Which sources helped you make sense of p53? <span class="hint">Pick any.</span></legend>
+          <legend><span class="question-number">5</span>Which sources helped? <span class="hint">Pick any.</span></legend>
           <div class="opts chips">
             <label class="opt"><input type="checkbox" value="model" data-ui><span>the models</span></label>
             <label class="opt"><input type="checkbox" value="reading" data-ui><span>the readings</span></label>
@@ -558,14 +533,14 @@
           </div><input type="hidden" id="p-exit5"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-exit6" data-type="single" data-label="Exit ticket 6: how structure and function help explain p53" data-wrong="Not quite. Think about how a protein’s shape affects how it fits DNA.">
-          <legend><span class="question-number">6</span>Structure and function: p53 can have different shapes and different jobs because…</legend>
+          <legend><span class="question-number">6</span>p53 can have different shapes and jobs because…</legend>
           <div class="opts">
-            <label class="opt" data-ok data-why="Yes. A different amino acid chain folds into a different shape, and the shape decides how well the protein fits and does its job."><input type="radio" name="p-exit6-r" value="a" data-ui><span>a different amino acid chain folds into a different shape</span></label>
+            <label class="opt" data-ok data-why="Yes. A different amino acid chain folds into a different shape, and the shape decides how well the protein fits and does its job."><input type="radio" name="p-exit6-r" value="a" data-ui><span>a different chain folds into a different shape</span></label>
             <label class="opt"><input type="radio" name="p-exit6-r" value="b" data-ui><span>the cell picks a job at random</span></label>
             <label class="opt"><input type="radio" name="p-exit6-r" value="c" data-ui><span>shape never affects the job</span></label>
           </div><input type="hidden" id="p-exit6"><p class="q-fb"></p>
         </fieldset>
-        <div class="field analysis-question"><label for="exit-q7"><span class="question-number">7</span>Who helped you revise, and what did they do?</label>
+        <div class="field analysis-question"><label for="exit-q7"><span class="question-number">7</span>Who helped you revise, and how?</label>
           <textarea id="exit-q7" rows="2" maxlength="300" placeholder="___ helped by…" aria-describedby="exit-q7-hint"></textarea><span class="len-hint" id="exit-q7-hint" data-for="exit-q7">1 sentence</span></div>
       </div>
 
@@ -577,16 +552,7 @@
         <input type="hidden" id="p-progress"><p class="q-fb"></p>
       </fieldset>
       <div class="cards">
-        <fieldset class="qcard" data-q="p-wrap-limits" data-type="single" data-label="One thing the models leave out" data-saved="Saved. Asking what a model leaves out is good science.">
-          <legend>One thing these models leave out…</legend>
-          <div class="opts">
-            <label class="opt"><input type="radio" name="p-wrap-limits-r" value="size" data-ui><span>how huge real DNA is</span></label>
-            <label class="opt"><input type="radio" name="p-wrap-limits-r" value="proofread" data-ui><span>proofreading while copying</span></label>
-            <label class="opt"><input type="radio" name="p-wrap-limits-r" value="fold" data-ui><span>3D protein folding</span></label>
-            <label class="opt"><input type="radio" name="p-wrap-limits-r" value="p53" data-ui><span>what p53 really does</span></label>
-          </div><input type="hidden" id="p-wrap-limits"><p class="q-fb"></p>
-        </fieldset>
-        <div class="field analysis-question"><label for="wrap-reflection"><span class="question-number">A</span>Look back at section 2. What would you add or change now?</label>
+        <div class="field analysis-question"><label for="wrap-reflection"><span class="question-number">A</span>Looking back at section 2, what would you change?</label>
           <textarea id="wrap-reflection" rows="2" maxlength="300" placeholder="Now I would add…" aria-describedby="wrap-reflection-hint"></textarea><span class="len-hint" id="wrap-reflection-hint" data-for="wrap-reflection">1–2 sentences</span></div>
       </div>
       <details class="disclose write-more"><summary>Write more (optional)</summary><div class="inner">
@@ -597,7 +563,7 @@
 
       <div id="investigation-report" class="investigation-report" aria-label="Your investigation summary"></div>
       <div class="submit-card">
-        <p>Your work saves automatically in this browser. Nothing you pick or type is sent anywhere. Use <strong>Download my work</strong> to keep a copy or hand it in.</p>
+        <p>Your work saves in this browser. Nothing is sent anywhere. Download it to keep or hand in.</p>
         <div id="save-status" class="small"></div>
         <div class="row">
           <button class="btn btn--primary" type="button" id="download-work">Download my work (.json)</button>
