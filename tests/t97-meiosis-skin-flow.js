@@ -96,7 +96,7 @@ const SKIN = { white: { Hawaii: 46, Atlanta: 28, 'New Mexico': 26, 'San Jose': 2
     await p.waitForSelector('#skin-data-scene[data-sk]');
     const K = '#skin-data-scene';
     T.ok(await p.locator('#skin-data-notice').isHidden() && await p.locator(K + ' canvas').count() === 0, 'skin: notice gone, placeholder replaced');
-    T.ok(await p.locator(K + ' input, ' + K + ' textarea, ' + K + ' select').count() === 0, 'skin: no free-text boxes');
+    T.ok(await p.locator(K + ' input, ' + K + ' textarea').count() === 0, 'skin: no free-text boxes (a native dropdown per poll is the only form control)');
     T.ok(await p.locator(K + ' .sk-fig:not([hidden])').count() === 3, 'three graphs visible at 1366');
     const dots = await p.$$eval(K + ' .sk-pt', n => n.map(x => [x.dataset.group, x.dataset.site, +x.dataset.rate, +x.dataset.uv]));
     T.ok(dots.length === 33 && dots.every(([g, s, r]) => SKIN[g][s] === r), 'all 33 plotted points equal the verified table');
@@ -121,11 +121,11 @@ const SKIN = { white: { Hawaii: 46, Atlanta: 28, 'New Mexico': 26, 'San Jose': 2
     await p.keyboard.press('ArrowRight'); await p.keyboard.press('Enter');
     T.ok(/Black ✓/.test(await p.locator(K + ' [data-role=explored]').innerText()) && /Black graph/.test(await p.locator(K + ' [data-role=readout]').innerText()), 'keyboard: arrow keys move between points, Enter selects');
     // polls
-    await p.click(K + ' [data-poll="high-white"] [data-option="Atlanta"]');
+    await p.selectOption(K + ' [data-poll-select="high-white"]', 'Atlanta');
     T.ok(/^Try again/.test(await p.locator(K + ' [data-poll-feedback="high-white"]').innerText()), 'wrong poll answer gets a friendly retry');
-    await p.click(K + ' [data-poll="high-white"] [data-option="Hawaii"]');
+    await p.selectOption(K + ' [data-poll-select="high-white"]', 'Hawaii');
     T.ok(await p.locator(K + ' [data-poll-feedback="high-white"]').getAttribute('data-state') === 'correct', 'right poll answer is marked');
-    await p.click(K + ' [data-poll="top-both"] [data-option="Atlanta"]');
+    await p.selectOption(K + ' [data-poll-select="top-both"]', 'Atlanta');
     // framing note
     const sceneText = await p.locator(K).innerText(), pageText = await p.locator('#skindata').innerText();
     T.ok(/not a biological split/.test(pageText) && /not a biological split/.test(sceneText), 'framing note (labels are not a biological split) is on the page and in the scene');

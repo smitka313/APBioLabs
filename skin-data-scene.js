@@ -111,7 +111,8 @@
 .sk .sk-pt .sk-mark { fill: var(--c); stroke: var(--surface); stroke-width: 1.5; }
 .sk .sk-pt { cursor: pointer; outline: none; }
 .sk .sk-pt .sk-hit { fill: transparent; }
-.sk .sk-pt:focus-visible .sk-ring, .sk .sk-pt[aria-pressed="true"] .sk-ring { opacity: 1; }
+.sk .sk-pt:focus-visible .sk-ring { opacity: 1; }
+.sk .sk-pt[aria-pressed="true"] .sk-ring { opacity: 1; }
 .sk .sk-ring { fill: none; stroke: var(--ink); stroke-width: 2.4; opacity: 0; }
 .sk .sk-pt[aria-pressed="true"] .sk-ring { stroke-dasharray: 3 2; }
 .sk .sk-pt:focus-visible .sk-ring { stroke-dasharray: none; stroke: var(--accent); stroke-width: 3; }
@@ -127,6 +128,7 @@
 .sk-table tr[aria-current="true"] { background: var(--accent-soft); }
 .sk-table .sk-site { display: inline-flex; align-items: center; min-width: 28px; font: inherit; font-weight: 650; background: none; border: 0; padding: 2px 4px; min-height: 28px; cursor: pointer; color: var(--accent); text-decoration: underline; }
 .sk-poll { display: grid; gap: 6px; }
+.sk-poll select { font: inherit; min-height: 36px; max-width: 100%; padding: 4px 8px; border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); }
 .sk-poll .sk-q { font-weight: 650; margin: 0; }
 .sk-fb { min-height: 1.3em; font-weight: 600; margin: 0; }
 .sk-fb[data-state="correct"] { color: var(--ok); } .sk-fb[data-state="correct"]::before { content: "\\2713\\00a0"; }
@@ -282,8 +284,11 @@
       pollBox.replaceChildren(el('h4', { text: 'Quick checks' }));
       POLLS.forEach(p => {
         const fb = el('p', { class: 'sk-fb', 'data-poll-feedback': p.id }), row = el('div', { class: 'sk-row', role: 'group', 'aria-label': p.q });
-        const upd = () => { const r = checkPoll(p.id, S.polls[p.id]); fb.textContent = r.message; fb.dataset.state = r.status === 'empty' ? '' : r.status; row.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(S.polls[p.id] === b.dataset.option))); };
-        p.options.forEach(o => { const b = el('button', { type: 'button', class: 'sk-chip', 'data-option': o, 'aria-pressed': 'false', text: o }); b.addEventListener('click', () => { S.polls[p.id] = o; persist(); upd(); api.announce(fb.textContent); }); row.appendChild(b); });
+        const upd = () => { const r = checkPoll(p.id, S.polls[p.id]); fb.textContent = r.message; fb.dataset.state = r.status === 'empty' ? '' : r.status;  };
+        const sel = el('select', { 'data-poll-select': p.id, 'aria-label': p.q });
+        sel.appendChild(el('option', { value: '', text: 'Choose an answer\u2026' })); p.options.forEach(o => sel.appendChild(el('option', { value: o, text: o })));
+        sel.value = S.polls[p.id] || '';
+        sel.addEventListener('change', () => { S.polls[p.id] = sel.value; persist(); upd(); api.announce(fb.textContent); }); row.appendChild(sel);
         pollBox.appendChild(el('div', { class: 'sk-poll', 'data-poll': p.id }, [el('p', { class: 'sk-q', text: p.q }), row, fb])); upd();
       });
     }
@@ -299,7 +304,8 @@
       scaleLine.textContent = S.scale === 'same' ? scaleNote() : 'Each graph uses its own y axis, as in the lesson (about 0 to 50, 0 to 1.8 and 0 to 12). Tap Same scale to compare sizes.';
       renderTabs(); renderExplored(); renderTable(); renderSel();
     }
-    renderPolls(); render();
+    renderPolls();
+    try { render(); } catch (e) { charts.replaceChildren(el('p', { class: 'sk-note', text: 'The graphs could not be drawn on this device. Open the data table to see every value.' })); tableBtn.click(); }
     if ('ResizeObserver' in window) {
       new ResizeObserver(() => { const w = host.clientWidth; if (!w) return; const want = w >= 960 ? 'wide' : 'narrow'; if (want !== S.layout) { S.layout = want; render(); } }).observe(host);
     }

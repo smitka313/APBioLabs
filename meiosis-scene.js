@@ -166,7 +166,8 @@
 .ms-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .ms-chip { font: inherit; font-weight: 600; font-size: .88rem; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
 .ms-chip:hover { border-color: var(--accent); }
-.ms-chip[aria-pressed="true"], .ms-chip[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ms-chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ms-chip[aria-current="step"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .ms-chip[aria-pressed="true"]::before { content: "\\2713\\00a0"; }
 .ms-switch { display: inline-flex; align-items: center; gap: 10px; font: inherit; font-weight: 650; padding: 6px 14px 6px 8px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; min-height: 36px; }
 .ms-switch .ms-knob { width: 38px; height: 22px; border-radius: 999px; background: var(--muted); position: relative; flex: none; }
@@ -493,7 +494,8 @@
 
     /* ----- start ----- */
     sw.setAttribute('aria-checked', String(S.crossing)); sw.querySelector('.ms-swt').textContent = 'Crossing over: ' + (S.crossing ? 'on' : 'off');
-    build(); renderCaption(); renderReadout(); renderTally(); renderCheck(); renderCompare();
+    try { build(); } catch (e) { stageWrap.replaceChildren(el('p', { class: 'ms-small', text: 'The drawing could not be shown on this device. The steps, tally and checks below still work.' })); svg = null; }
+    renderCaption(); renderReadout(); renderTally(); renderCheck(); renderCompare();
     // The picture changes layout on phones: a taller, bigger-lettered drawing below 900 px of scene width.
     if ('ResizeObserver' in window) {
       let lastW = 0;

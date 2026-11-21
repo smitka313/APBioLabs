@@ -32,7 +32,7 @@ function axePath() {
       await p.waitForSelector('#skin-data-scene[data-sk]');
       (await run()).forEach(r => found.push('skin start ' + r));
       await p.click('#skin-data-scene .sk-fig:not([hidden]) .sk-pt[data-site="Hawaii"]'); await p.click('#skin-data-scene [data-toggle="table"]');
-      await p.click('#skin-data-scene [data-toggle="trend"]'); await p.click('#skin-data-scene [data-scale="same"]'); await p.click('#skin-data-scene [data-poll="top-both"] [data-option="Hawaii"]');
+      await p.click('#skin-data-scene [data-toggle="trend"]'); await p.click('#skin-data-scene [data-scale="same"]'); await p.selectOption('#skin-data-scene [data-poll-select="top-both"]', 'Hawaii');
       (await run()).forEach(r => found.push('skin used ' + r));
       T.ok(await p.locator('#skin-data-scene .sk-fig svg[role="group"][aria-label]').count() === 3, 'skin graphs have a role and label');
       T.ok(found.length === 0, `axe clean at ${w}px ${dark ? 'dark' : 'light'} ${found.join(' | ')}`);
