@@ -185,3 +185,9 @@ details.more summary { cursor: pointer; font-weight: 600; min-height: 24px; colo
 .field textarea { min-height: 3.2em; } .field input[type=text] { min-height: 40px; }
 @media (max-width: 520px) { .mcq, .chipset { padding: 10px; } .order-choices .btn { width: 100%; justify-content: center; } }
 .feedback:empty::before { content: none !important; }
+
+/* Background card on the Plan a test section */
+.background { margin: 0 0 14px; border-left: 4px solid var(--stain, var(--accent)); }
+.background h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.bg-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px; }
+.bg-list li { max-width: 72ch; }
