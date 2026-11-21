@@ -164,7 +164,7 @@
       if (now === 'done' && !S.saved) finishRun();
       else if (now !== before) {
         const next = ({ edit: 'Copy complete (' + S.dna.length + ' letters). Next, edit the copy: cross out groups 2, 3, 5 and 6.', move: 'Edit complete. Send the edited copy to the ribosome.', match: 'The edited copy is at the ribosome. Match each group of three to a card, in order.' })[now];
-        if (next) { S.msgBad = false; S.msg = next; api.announce(next); }
+        if (next) { const keep = S.msg.charAt(0) === '⚠' ? S.msg + ' ' : ''; S.msgBad = !!keep; S.msg = keep + next; api.announce(S.msg); }
       }
       render(now !== before || !!force);
     }
@@ -381,7 +381,7 @@
       const dl = $el('dl');
       const row = (t, v) => { dl.appendChild($el('dt', '', t)); const d = $el('dd'); if (v && v.nodeType) d.appendChild(v); else d.textContent = v; dl.appendChild(d); };
       row('Strand', 'Strand ' + S.strand + ': ' + S.dna.length + ' DNA letters, ' + nGroups() + ' groups of three' + (S.errFired ? '. A copying error was added.' : '.'));
-      if (S.copy.length) row('Copy (RNA)', res.copy.join('-') + (S.copy.length % 3 ? '-' + S.copy.slice(res.copy.length * 3) : ''));
+      if (S.copy.length) row('Copy (RNA)', res.copy.concat(S.copy.length % 3 ? [S.copy.slice(res.copy.length * 3)] : []).join('-'));
       if (st !== 'copy' && st !== 'edit') row('Edited copy', res.edited.join('-') + ' (groups ' + S.crossed.slice().sort((a, b) => a - b).join(', ') + ' crossed out)');
       if (S.matched.length) {
         const e = result(), cards = e.cards.slice(0, S.matched.length);
