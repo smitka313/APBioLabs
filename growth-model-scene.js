@@ -1,7 +1,7 @@
 /* Original schematic artwork; all playback counts come from recorded trial data. */
 (function(){
   'use strict';
-  const canvas=document.getElementById('growth-scene'),chart=document.getElementById('growth-chart');
+  const canvas=document.getElementById('growth-scene'),chart=document.getElementById('growth-chart'),chart2=document.getElementById('growth-chart-changes');
   if(!canvas||!chart)return;
   const c=canvas.getContext('2d'),W=1160,H=650,reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let settings={age:50,size:'average',tissue:'skin'},recordings=[],trialIndex=0,only=false,year=20,fraction=0,playing=false,visible=true,frameId=0,lastFrame=0,previous=0,elapsed=0,selected=0,groups=[];
@@ -180,7 +180,7 @@
     selected=Math.max(0,unit|0);draw();showTip(selected);emit('scrub');
   }
   function scrub(value){if(!recordings.length)return;playing=false;year=Math.max(20,Math.min(currentTrial().age,value));elapsed=(year-20)/Math.max(1,currentTrial().age-20)*4200;fraction=.5;previous=0;draw();refreshTip();emit('scrub');}
-  function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.width*H/W*dpr));draw();drawChart(groups);placeTip();}
+  function resize(){const rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.width*H/W*dpr));draw();drawChart(groups);drawChanges(groups);placeTip();}
   function drawChart(data){
     groups=data;const last=data.slice(-8),ctx=chart.getContext('2d'),height=Math.max(280,92+last.length*67),rect=chart.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
     chart.style.aspectRatio=W+' / '+height;chart.width=Math.max(1,Math.round((rect.width||W)*dpr));chart.height=Math.max(1,Math.round((rect.width||W)*height/W*dpr));ctx.setTransform(chart.width/W,0,0,chart.height/height,0,0);
@@ -193,6 +193,40 @@
       const scale=v=>x0+v/axisMax*(x1-x0);line(ctx,scale(lo),y,scale(hi),y,color+'77',2);
       vals.forEach((v,k)=>oval(ctx,scale(v),y+(k-1)*8,5.5,5.5,color+'b0',color,1));line(ctx,scale(mean),y-16,scale(mean),y+16,'#eff9de',2);const label='mean '+mean.toFixed(1);ctx.font='500 11px sans-serif';const labelWidth=ctx.measureText(label).width,labelX=Math.max(x0+5,Math.min(x1-labelWidth-5,scale(mean)-labelWidth/2));ctx.fillStyle='#13272d';ctx.fillRect(labelX-4,y-37,labelWidth+8,17);text(ctx,label,labelX,y-24,11,'#d9e7d0');
     });
+  }
+  /* Divisions against control changes (mutations), one marker per trial. Each set has its own colour AND marker shape
+     (circle, square, triangle, diamond), and its mean is a ringed marker labelled with the set number, so colour is never the
+     only cue. Trials saved before control changes were counted are left out. The same numbers are in the data table. */
+  function marker(ctx,shape,x,y,r,fill,stroke,width){
+    ctx.beginPath();
+    if(shape===0)ctx.arc(x,y,r,0,Math.PI*2);
+    else if(shape===1)ctx.rect(x-r*.85,y-r*.85,r*1.7,r*1.7);
+    else if(shape===2){ctx.moveTo(x,y-r*1.1);ctx.lineTo(x+r,y+r*.8);ctx.lineTo(x-r,y+r*.8);ctx.closePath();}
+    else{ctx.moveTo(x,y-r*1.15);ctx.lineTo(x+r*1.15,y);ctx.lineTo(x,y+r*1.15);ctx.lineTo(x-r*1.15,y);ctx.closePath();}
+    if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width||1;ctx.stroke();}
+  }
+  function niceStep(max,ticks){const raw=Math.max(1,max)/ticks,pow=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/pow;return (f<=1?1:f<=2?2:f<=5?5:10)*pow;}
+  function drawChanges(data){
+    if(!chart2)return;
+    const ctx=chart2.getContext('2d'),H2=430,rect=chart2.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
+    chart2.style.aspectRatio=W+' / '+H2;chart2.width=Math.max(1,Math.round((rect.width||W)*dpr));chart2.height=Math.max(1,Math.round((rect.width||W)*H2/W*dpr));ctx.setTransform(chart2.width/W,0,0,chart2.height/H2,0,0);
+    ctx.fillStyle='#13272d';ctx.fillRect(0,0,W,H2);text(ctx,'DIVISIONS AGAINST CONTROL CHANGES (MUTATIONS) · ONE MARKER PER TRIAL',28,30,12,'#b2cbbd');
+    const sets=(data||[]).slice(-8).map(g=>({g:g,pts:g.trials.map((t,k)=>({x:t.divisions,y:g.changes?g.changes[k]:null})).filter(p=>Number.isFinite(p.y))})).filter(o=>o.pts.length);
+    if(!sets.length){text(ctx,'Run a set to compare divisions with control changes.',W/2,215,18,'#91b5a5','center');return;}
+    const all=sets.flatMap(o=>o.pts),xs=Math.max(1,...all.map(p=>p.x)),ys=Math.max(1,...all.map(p=>p.y));
+    const sx=niceStep(xs,6),sy=niceStep(ys,5),xMax=Math.ceil(xs/sx)*sx||sx,yMax=Math.ceil(ys/sy)*sy||sy,x0=120,x1=1110,y0=64,y1=346;
+    const px=v=>x0+v/xMax*(x1-x0),py=v=>y1-v/yMax*(y1-y0);
+    for(let v=0;v<=yMax+1e-9;v+=sy){line(ctx,x0,py(v),x1,py(v),'#a0c5ae22');text(ctx,v,x0-10,py(v)+4,11,'#8fac9b','right');}
+    for(let v=0;v<=xMax+1e-9;v+=sx){line(ctx,px(v),y0,px(v),y1,'#a0c5ae14');text(ctx,v,px(v),y1+18,11,'#8fac9b','center');}
+    line(ctx,x0,y1,x1,y1,'#8fac9b',1.5);line(ctx,x0,y0,x0,y1,'#8fac9b',1.5);
+    text(ctx,'Divisions per trial (count)',(x0+x1)/2,y1+40,12,'#b2cbbd','center');
+    ctx.save();ctx.translate(34,(y0+y1)/2);ctx.rotate(-Math.PI/2);text(ctx,'Control changes (mutations) per trial (count)',0,0,12,'#b2cbbd','center');ctx.restore();
+    sets.forEach(o=>{const shape=(o.g.index-1)%4,color=palette[(o.g.index-1)%palette.length];
+      o.pts.forEach(p=>{ctx.globalAlpha=.8;marker(ctx,shape,px(p.x),py(p.y),6.5,color+'cc',color,1.2);ctx.globalAlpha=1;});
+      const mx=o.pts.reduce((a,p)=>a+p.x,0)/o.pts.length,my=o.pts.reduce((a,p)=>a+p.y,0)/o.pts.length;
+      marker(ctx,shape,px(mx),py(my),11,null,'#eff9de',2.4);text(ctx,o.g.index,px(mx)+15,py(my)-12,12,'#eff9de','left',700);});
+    let lx=x0;sets.forEach(o=>{const shape=(o.g.index-1)%4,color=palette[(o.g.index-1)%palette.length],label='Set '+o.g.index;marker(ctx,shape,lx+6,H2-14,5.5,color+'cc',color,1);text(ctx,label,lx+16,H2-10,11,'#a7beaf');lx+=Math.max(66,ctx.measureText(label).width+40);});
+    text(ctx,'Ringed marker = set mean',x1,H2-10,11,'#a7beaf','right');
   }
   function unitDescription(index){
     const t=currentTrial(),row=currentRow(),count=t?.timeline?t.timeline.filter(r=>r.year<=year&&r.cells.includes(index)).length:null,mask=row?.changes?.[index]||0;
@@ -216,5 +250,5 @@
   new ResizeObserver(resize).observe(canvas);
   new IntersectionObserver(es=>{visible=es[0].isIntersecting;previous=0;if(visible)schedule();},{rootMargin:'150px'}).observe(canvas);
   document.addEventListener('visibilitychange',()=>{previous=0;if(!document.hidden)schedule();});
-  window.GrowthModelScene={configure:configure,play:play,pause:pause,scrub:scrub,chart:drawChart,inspectAt:inspectAt,placeTip:placeTip};
+  window.GrowthModelScene={configure:configure,play:play,pause:pause,scrub:scrub,chart:drawChart,changesChart:drawChanges,inspectAt:inspectAt,placeTip:placeTip};
 })();

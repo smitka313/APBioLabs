@@ -28,6 +28,11 @@
 .results-heading .btn { border-radius:99px; font-size:.78rem; }
 .growth-chart-wrap { overflow:auto; margin-top:15px; border-radius:12px; background:#13272d; }
 #growth-chart { display:block; width:100%; height:auto; aspect-ratio:1160 / 330; }
+#growth-chart-changes { display:block; width:100%; height:auto; aspect-ratio:1160 / 430; }
+.legend-mutation { flex-basis:100%; }
+.chart-views { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.chart-views .btn[aria-pressed="true"] { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700; }
+.chart-views .btn[aria-pressed="true"]::before { content:"✓ "; }
 .trial-data { margin-top:12px; }
 .trial-data table { min-width:660px; }
 .next-experiment { border-top:1px solid var(--line); padding:16px 0 0; margin-top:25px; }
@@ -75,7 +80,7 @@
   .comparison-selectors { gap:7px; }.comparison-selectors select { font-size:.75rem; }
   .comparison-means { gap:22px; }.comparison-means small { font-size:.68rem; }
   .results-heading { align-items:start; flex-direction:column; }
-  #growth-chart { min-width:650px; }
+  #growth-chart, #growth-chart-changes { min-width:650px; }
 }
 @media print {
   .lab-header,.step-nav,.site-footer,.skip-link,main > .step:not(#submit),#submit > header,#submit .submit-card,#submit .attribution { display:none!important; }

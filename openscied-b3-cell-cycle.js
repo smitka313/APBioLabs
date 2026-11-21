@@ -8,10 +8,12 @@
   const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:'',lastSection:'overview'};
   function studentIdentity(){return window.Lab&&Lab.identity?Lab.identity.get():null;}
   const ANALYSIS_PROMPTS=[
+    ['My starting idea (before running the model)','model-baseline'],
     ['Fair test and controlled settings','analysis-design'],
     ['Variation across repeated trials','analysis-variation'],
     ['Comparison of named cell types','analysis-celltypes'],
-    ['Effect of age or body size','explanation'],
+    ['Effect of age','explanation'],
+    ['Effect of body size (height)','explanation-size'],
     ['Evidence before the cancerous model state','analysis-cancer'],
     ['Connection to cell-cycle checkpoints','analysis-checkpoints'],
     ['My revised model','model-revision'],
@@ -52,7 +54,7 @@
       const section=location.hash.slice(1);if(SECTIONS.includes(section))state.lastSection=section;
       localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()}));
       $('#save-status').textContent='Saved on this device.';
-      renderReport();
+      renderReport();renderBaselineEcho();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
   }
   function restoreFields(){
@@ -769,13 +771,25 @@
     $('#cell-type-description').textContent=p.description||'This is an earlier model setting.';
   }
   function settings(){return {age:Number($('#age-slider').value),size:$('#body-size').value,tissue:$('#tissue-rate').value};}
+  /* Control changes (mutations) in one trial: the number of altered controls summed over all cell units at the last
+     timeline row. Trials saved before this was counted are derived from their timeline; with neither, null ("not recorded"). */
+  function changeCount(t){
+    if(t&&t.modelVersion===2&&Array.isArray(t.timeline)&&t.timeline.length){
+      const last=t.timeline[t.timeline.length-1];
+      if(last&&Array.isArray(last.changes))return last.changes.reduce(function(sum,mask){let m=mask|0,n=0;while(m){n+=m&1;m>>=1;}return sum+n;},0);
+    }
+    return t&&Number.isFinite(t.controlChanges)?t.controlChanges:null;
+  }
+  function changeText(t){const n=changeCount(t);return n===null?'not recorded':String(n);}
   function trialGroups(){
     const groups=[];
     for(let i=0;i<state.trials.length;i+=3){
-      const trials=state.trials.slice(i,i+3),t=trials[0],values=trials.map(t=>t.divisions);
-      groups.push({id:String(groups.length),index:groups.length+1,age:t.age,size:t.size,tissue:t.tissue,trials:trials,mean:values.reduce((a,b)=>a+b,0)/values.length,min:Math.min(...values),max:Math.max(...values)});
+      const trials=state.trials.slice(i,i+3),t=trials[0],values=trials.map(t=>t.divisions),changes=trials.map(changeCount),known=changes.every(n=>n!==null);
+      groups.push({id:String(groups.length),index:groups.length+1,age:t.age,size:t.size,tissue:t.tissue,trials:trials,mean:values.reduce((a,b)=>a+b,0)/values.length,min:Math.min(...values),max:Math.max(...values),
+        changes:changes,changeMean:known?changes.reduce((a,b)=>a+b,0)/changes.length:null});
     }return groups;
   }
+  const changeMeanText=g=>g.changeMean===null?'not recorded':g.changeMean.toFixed(1);
   function setLabel(g){return 'Set '+g.index+' · age '+g.age+' · '+labelBody(g.size)+' · '+labelTissue(g.tissue);}
   function fillSelect(el,groups,fallback){
     const current=el.value||state.fields[el.id];
@@ -786,21 +800,44 @@
   }
   function renderTrials(){
     const body=$('#trial-rows'),groups=trialGroups();body.innerHTML='';
-    if(!state.trials.length)body.innerHTML='<tr><td colspan="7">Run trials to collect results.</td></tr>';
+    if(!state.trials.length)body.innerHTML='<tr><td colspan="8">Run trials to collect results.</td></tr>';
     state.trials.forEach(function(t,i){
       const tr=document.createElement('tr');
-      ['Set '+(Math.floor(i/3)+1)+' / '+(i%3+1),String(t.age),labelBody(t.size),labelTissue(t.tissue),String(t.divisions),String(t.opportunities),t.modelVersion===2?String(t.cancerCount):'—'].forEach(function(v){const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+      ['Set '+(Math.floor(i/3)+1)+' / '+(i%3+1),String(t.age),labelBody(t.size),labelTissue(t.tissue),String(t.divisions),String(t.opportunities),changeText(t),t.modelVersion===2?String(t.cancerCount):'—'].forEach(function(v){const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
       body.appendChild(tr);
     });
-    if(window.GrowthModelScene)window.GrowthModelScene.chart(groups);
+    if(window.GrowthModelScene){window.GrowthModelScene.chart(groups);if(!$('#changes-chart-wrap').hidden)window.GrowthModelScene.changesChart(groups);}
+    renderChangesText(groups);
     const last=groups[groups.length-1];
-    $('#set-summary').textContent=last?setLabel(last)+': '+last.trials.map(t=>t.divisions).join(', ')+' divisions. Mean '+last.mean.toFixed(1)+'; range '+last.min+'–'+last.max+'.'+(last.trials.every(t=>t.modelVersion===2)?' Cancer-state units by trial: '+last.trials.map(t=>t.cancerCount).join(', ')+'.':' Cancerous state was not tracked in these earlier trials.'):'Run a set to begin your comparison.';
+    $('#set-summary').textContent=last?setLabel(last)+': '+last.trials.map(t=>t.divisions).join(', ')+' divisions. Mean '+last.mean.toFixed(1)+'; range '+last.min+'–'+last.max+'.'+(last.trials.every(t=>t.modelVersion===2)?' Cancer-state units by trial: '+last.trials.map(t=>t.cancerCount).join(', ')+'.':' Cancerous state was not tracked in these earlier trials.')+' Control changes (mutations) by trial: '+last.changes.map(n=>n===null?'not recorded':n).join(', ')+(last.changeMean===null?'.':'; mean '+last.changeMean.toFixed(1)+'.'):'Run a set to begin your comparison.';
     fillSelect($('#compare-a'),groups,0);fillSelect($('#compare-b'),groups,Math.max(0,groups.length-1));
     fillSelect($('#replay-set'),groups,Math.max(0,groups.length-1));
     fillTrialSelect();
     $('#replay-growth').disabled=!groups.length;
     renderCancerJump();
     renderComparison();renderAnalysisReference();renderReport();
+  }
+  // Plain-text version of the divisions-against-changes view, for screen readers and as a check on the picture.
+  function renderChangesText(groups){
+    const el=$('#changes-chart-text'),canvas=$('#growth-chart-changes');if(!el)return;
+    const pts=[];groups.forEach(g=>g.trials.forEach((t,k)=>{if(g.changes[k]!==null)pts.push({d:t.divisions,c:g.changes[k]});}));
+    const lines=groups.slice(-8).map(g=>'Set '+g.index+' ('+labelBody(g.size).toLowerCase()+' body, age '+g.age+', '+labelTissue(g.tissue)+'): mean '+g.mean.toFixed(1)+' divisions and '+changeMeanText(g)+' control changes (mutations).');
+    let trend='';
+    if(pts.length>=3){
+      const mx=pts.reduce((a,p)=>a+p.d,0)/pts.length,my=pts.reduce((a,p)=>a+p.c,0)/pts.length;
+      let sxy=0,sxx=0,syy=0;pts.forEach(p=>{sxy+=(p.d-mx)*(p.c-my);sxx+=(p.d-mx)*(p.d-mx);syy+=(p.c-my)*(p.c-my);});
+      if(sxx>0&&syy>0){const r=sxy/Math.sqrt(sxx*syy);trend=' Across these '+pts.length+' trials, '+(r>=.5?'trials with more divisions tended to have more control changes':r<=-.5?'trials with more divisions tended to have fewer control changes':'there is no clear link between divisions and control changes')+' (correlation '+r.toFixed(2)+'). A pattern in three trials per set is only a hint.';}
+    }
+    el.textContent=groups.length?(lines.join(' ')+trend):'Run a set to compare divisions with control changes.';
+    const skipped=groups.reduce((n,g)=>n+g.changes.filter(c=>c===null).length,0);
+    if(skipped)el.textContent+=' '+skipped+' earlier '+(skipped===1?'trial is':'trials are')+' left out because control changes were not recorded.';
+    if(canvas)canvas.setAttribute('aria-label','Divisions against control changes for each recorded trial. '+(groups.length?lines.join(' ')+trend:'No trials yet.')+' Exact counts are in the data table below.');
+  }
+  function showChartView(which){
+    const changes=which==='changes';
+    $('#trial-chart').hidden=changes;$('#chart-caption-divisions').hidden=changes;$('#changes-chart-wrap').hidden=!changes;
+    $('#chart-view-divisions').setAttribute('aria-pressed',String(!changes));$('#chart-view-changes').setAttribute('aria-pressed',String(changes));
+    if(window.GrowthModelScene){if(changes)window.GrowthModelScene.changesChart(trialGroups());else window.GrowthModelScene.chart(trialGroups());}
   }
   // The Trial picker beside "Replay a recorded set": all trials of the set in turn, or one trial on its own.
   function fillTrialSelect(){
@@ -855,15 +892,25 @@
     const rounds=[1,2].map(n=>{const r=roundEvidence(n);if(!r)return 'Round '+n+': not played yet.';
       return 'Round '+n+(r.inProgress?' (in progress)':'')+': '+r.blue+' blue and '+r.red+' red cell chips; destroyed by p53: '+r.destroyed+'; sent back: '+r.sentBack+'; checkpoints skipped: '+r.skipped+'.';});
     const none=['Run three trials in the growth model to collect data for this question.'];
+    const SIZE_ORDER={small:0,average:1,large:2};
+    const onlyChanged=(key,name,advice)=>{
+      if(!groups.length)return none;
+      const other=key==='age'?'size':'age',pair=(x,y)=>x!==y&&x.tissue===y.tissue&&x[other]===y[other]&&x[key]!==y[key];
+      const hits=groups.filter(x=>groups.some(y=>pair(x,y)));
+      if(!hits.length)return ['You have not yet run two sets that differ only in '+name+'. '+advice];
+      return hits.sort((x,y)=>labelTissue(x.tissue).localeCompare(labelTissue(y.tissue))||x[other]-y[other]||String(x[other]).localeCompare(String(y[other]))||(key==='age'?x.age-y.age:SIZE_ORDER[x.size]-SIZE_ORDER[y.size]))
+        .map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions, '+changeMeanText(g)+' control changes (mutations).');
+    };
     const lines={
       'analysis-design':groups.length<2?['Collect two sets in the growth model, then choose them in the comparison above.']:(a&&b&&a.id!==b.id?['Set '+a.index+': '+settings(a)+'.','Set '+b.index+': '+settings(b)+'.','Changed: '+(['age','size','tissue'].filter(k=>a[k]!==b[k]).map(k=>({age:'age',size:'body size',tissue:'cell type'})[k]).join(', ')||'nothing (same settings)')+'.']:['Choose two different sets in the comparison above.']),
       'analysis-variation':groups.length?[(a||groups[groups.length-1])].map(g=>'Set '+g.index+' ('+settings(g)+'): trials '+counts(g)+', range '+g.min+'–'+g.max+'.'):none,
       'analysis-celltypes':(()=>{if(!groups.length)return none;const by={};groups.forEach(g=>{(by[g.tissue]=by[g.tissue]||[]).push(g);});const keys=Object.keys(by);
         const out=keys.map(k=>labelTissue(k)+': '+by[k].map(g=>'Set '+g.index+' mean '+g.mean.toFixed(1)+' (age '+g.age+', '+labelBody(g.size).toLowerCase()+' body)').join('; ')+'.');
         if(keys.length<2)out.push('You have tested one cell type so far. Run a set with a different cell type at the same age and body size.');return out;})(),
-      'explanation':(()=>{if(!groups.length)return none;const out=groups.slice().sort((x,y)=>x.age-y.age||String(x.size).localeCompare(String(y.size))).map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions.');
-        if(!groups.some(x=>groups.some(y=>x!==y&&x.tissue===y.tissue&&(x.age!==y.age)!==(x.size!==y.size))))out.push('To see a pattern, run a set that changes only age or only body size.');return out;})(),
-      'analysis-cancer':groups.length?groups.map(g=>'Set '+g.index+' ('+settings(g)+'): cancer-state units '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(', ')+'.'):none,
+      // 4a: sets that differ only in age. 4b: sets that differ only in body size (same cell type, same other setting).
+      'explanation':onlyChanged('age','age','Run a set that changes only age (keep body size and cell type the same).'),
+      'explanation-size':onlyChanged('size','body size','Run a set that changes only body size (keep age and cell type the same).'),
+      'analysis-cancer':groups.length?groups.map(g=>'Set '+g.index+' ('+settings(g)+'): control changes (mutations) '+g.changes.map(n=>n===null?'not recorded':n).join(', ')+'; cancer-state units '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(', ')+'.'):none,
       'analysis-checkpoints':rounds,
       'model-revision':(groups.length?groups.map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+'.'):none).concat(rounds),
       'model-prediction':groups.length?groups.map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+'.'):none
@@ -877,8 +924,19 @@
       const list=box.querySelector('ul');list.replaceChildren(...lines[id].map(t=>{const li=document.createElement('li');li.textContent=t;return li;}));
     });
   }
+  /* "Your starting idea" above Question 7: the student's own pre-model text, so revision has a baseline. */
+  function renderBaselineEcho(){
+    const field=document.getElementById('model-revision'),base=document.getElementById('model-baseline');if(!field||!base)return;
+    let box=document.getElementById('baseline-echo');
+    if(!box){box=document.createElement('div');box.className='q-evidence baseline-echo';box.id='baseline-echo';
+      const h=document.createElement('p');h.className='q-evidence-title';h.textContent='Your starting idea';const body=document.createElement('p');body.className='baseline-echo-text';box.append(h,body);
+      field.parentNode.insertBefore(box,field);}
+    const text=base.value.trim(),body=box.querySelector('.baseline-echo-text');
+    body.textContent=text||'You did not write a starting idea before running the model. You can add one in the Growth model section, or write “I used to think…” from memory below.';
+    body.classList.toggle('is-empty',!text);
+  }
   function renderAnalysisReference(){
-    renderQuestionEvidence();
+    renderQuestionEvidence();renderBaselineEcho();
     const out=$('#analysis-reference-data');if(!out)return;
     const groups=trialGroups();out.replaceChildren();
     const heading=document.createElement('h4');heading.textContent='Growth-model results';out.appendChild(heading);
@@ -888,7 +946,8 @@
       const title=document.createElement('strong');title.textContent=setLabel(g);box.appendChild(title);
       const trials=document.createElement('p');trials.textContent='Trial divisions: '+g.trials.map(t=>t.divisions).join(' · ')+' | Mean: '+g.mean.toFixed(1);box.appendChild(trials);
       const bar=document.createElement('div');bar.className='analysis-evidence-bar';bar.setAttribute('aria-hidden','true');const fill=document.createElement('span');fill.style.width=Math.max(2,100*g.mean/Math.max(1,...groups.map(x=>x.mean)))+'%';bar.appendChild(fill);box.appendChild(bar);
-      const cancer=document.createElement('p');cancer.textContent='Cancer-state units: '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(' · ');box.appendChild(cancer);out.appendChild(box);
+      const cancer=document.createElement('p');cancer.textContent='Cancer-state units: '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(' · ');
+      const muts=document.createElement('p');muts.textContent='Control changes (mutations): '+g.changes.map(n=>n===null?'not recorded':n).join(' · ')+' | Mean: '+changeMeanText(g);box.append(muts,cancer);out.appendChild(box);
     });
     const game=document.createElement('h4');game.textContent='Cell-cycle game evidence';out.appendChild(game);
     for(const n of [1,2]){const r=roundEvidence(n);if(!r)continue;const p=document.createElement('p');p.textContent=evidenceLine(n,r);out.appendChild(p);}
@@ -914,7 +973,7 @@
     else if(a.min<=b.max&&b.min<=a.max)para('The trial ranges overlap. These recorded results show variation; collect more evidence before deciding how clear the pattern is.');
     else para('The recorded trial ranges do not overlap in this comparison. Use the numbers as evidence, and remember that three trials are a small sample.');
     $('#sentence-evidence').textContent='Use your evidence: “'+(changed.length===1?'When I changed '+names[changed[0]]:'Between Set '+a.index+' and Set '+b.index)+', the mean changed from '+a.mean.toFixed(1)+' to '+b.mean.toFixed(1)+' divisions. Each division creates another opportunity to copy DNA, so…”';
-    if(changed.length===1&&changed[0]==='tissue')$('#sentence-evidence').textContent='These sets compare cell types (Question 3). For Question 4, choose two sets that change age or body size while keeping the other settings the same.';
+    if(changed.length===1&&changed[0]==='tissue')$('#sentence-evidence').textContent='These sets compare cell types (Question 3). For Questions 4a and 4b, choose two sets that change only age, or only body size, while keeping the other settings the same.';
   }
   function renderReport(){
     const report=$('#investigation-report');if(!report)return;
@@ -928,8 +987,8 @@
     const msDone=MAKING_SENSE_IDS.filter(id=>$('#'+id)&&$('#'+id).value.trim()).length;
     const labels=['Round 1: '+(state.game.roundResults[1]?'completed':'not completed'),'Round 2: '+(state.game.roundResults[2]?'completed':'not completed'),msDone+' of '+MAKING_SENSE_IDS.length+' Lesson 3 Making Sense responses written',groups.length+' model set'+(groups.length===1?'':'s')+' recorded',ANALYSIS_PROMPTS.filter(item=>$('#'+item[1]).value.trim()).length+' of '+ANALYSIS_PROMPTS.length+' analysis responses written'];
     labels.forEach(t=>{const li=document.createElement('li');li.textContent=t;list.appendChild(li);});report.appendChild(list);
-    if(groups.length){const wrap=document.createElement('div');wrap.className='table-wrap';const table=document.createElement('table');table.className='data';table.innerHTML='<caption>Recorded sets</caption><thead><tr><th>Set</th><th>Settings</th><th>Trial divisions</th><th>Mean</th><th>Cancer-state units by trial</th></tr></thead>';const body=document.createElement('tbody');
-      groups.forEach(g=>{const row=document.createElement('tr');[String(g.index),'Age '+g.age+' / '+labelBody(g.size)+' / '+labelTissue(g.tissue),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1),g.trials.map(t=>t.modelVersion===2?String(t.cancerCount):'—').join(', ')].forEach(text=>{const td=document.createElement('td');td.textContent=text;row.appendChild(td);});body.appendChild(row);});table.appendChild(body);wrap.appendChild(table);report.appendChild(wrap);}
+    if(groups.length){const wrap=document.createElement('div');wrap.className='table-wrap';const table=document.createElement('table');table.className='data';table.innerHTML='<caption>Recorded sets</caption><thead><tr><th>Set</th><th>Settings</th><th>Trial divisions</th><th>Mean</th><th>Control changes (mutations) by trial</th><th>Mean changes</th><th>Cancer-state units by trial</th></tr></thead>';const body=document.createElement('tbody');
+      groups.forEach(g=>{const row=document.createElement('tr');[String(g.index),'Age '+g.age+' / '+labelBody(g.size)+' / '+labelTissue(g.tissue),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1),g.changes.map(n=>n===null?'—':String(n)).join(', '),g.changeMean===null?'—':g.changeMean.toFixed(1),g.trials.map(t=>t.modelVersion===2?String(t.cancerCount):'—').join(', ')].forEach(text=>{const td=document.createElement('td');td.textContent=text;row.appendChild(td);});body.appendChild(row);});table.appendChild(body);wrap.appendChild(table);report.appendChild(wrap);}
     for(const n of [1,2]){const r=roundEvidence(n);if(!r)continue;const row=document.createElement('p');row.className='report-round';row.textContent=evidenceLine(n,r);report.appendChild(row);}
     const ms=document.createElement('h4');ms.textContent='Lesson 3 · Making sense of the Cell Game';report.appendChild(ms);
     const msWrap=document.createElement('div');msWrap.className='table-wrap';const msTable=document.createElement('table');msTable.className='data report-making-sense';
@@ -939,11 +998,11 @@
     msTable.appendChild(msBody);msWrap.appendChild(msTable);report.appendChild(msWrap);
     for(const [label,id] of MAKING_SENSE_PROMPTS){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=($('#'+id)||{value:''}).value.trim()||'Not answered yet.';report.append(h,p);}
     for(const [label,id] of ANALYSIS_PROMPTS.concat([['One model limitation','model-limit']])){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=$('#'+id).value.trim()||'Not answered yet.';report.append(h,p);}
-    const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities. The cancer state uses three explicitly modeled control changes and deliberately accelerated teaching rules.';report.appendChild(note);
+    const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities. In this model a control change is a mutation. The cancer state uses three explicitly modeled control changes and deliberately accelerated teaching rules.';report.appendChild(note);
   }
   function runTrials(){
     const s=settings(),trials=[];
-    for(let i=0;i<3;i++)trials.push(simulateOne(s.age,s.size,s.tissue));
+    for(let i=0;i<3;i++){const t=simulateOne(s.age,s.size,s.tissue);t.controlChanges=changeCount(t);trials.push(t);}
     state.trials.push(...trials);renderTrials();
     const last=String(trialGroups().length-1);$('#replay-set').value=last;$('#compare-b').value=last;fillTrialSelect();
     renderComparison();save();
@@ -955,7 +1014,7 @@
     const payload={format:'openscied-b3-cell-cycle-progress-v1',exportedAt:new Date().toISOString(),student:studentIdentity(),game:state.game,cellChips:{round1:roundEvidence(1),round2:roundEvidence(2)},lesson3MakingSense:makingSense,
       // Each trial also names its set (Set 1, 2, …: three trials each, in the order they were run) and its trial number
       // within that set, as in the data table. Every earlier field is kept, so older readers of this file still work.
-      simulationTrials:state.trials.map(function(t,i){return Object.assign({},t,{setNumber:Math.floor(i/3)+1,trialInSet:i%3+1});}),answers:state.fields};
+      simulationTrials:state.trials.map(function(t,i){return Object.assign({},t,{setNumber:Math.floor(i/3)+1,trialInSet:i%3+1,controlChanges:changeCount(t)});}),answers:state.fields};
     const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='cell-cycle-cancer-model-work.json';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
@@ -1069,6 +1128,8 @@
     const refToggle=$('#analysis-reference-toggle');if(refToggle&&matchMedia('(max-width: 850px)').matches)refToggle.open=false;
     $('#run-trials').addEventListener('click',runTrials);
     const clearTrials=function(){state.trials=[];if(window.GrowthModelScene)window.GrowthModelScene.configure(settings());renderTrials();save();};
+    $('#chart-view-divisions').addEventListener('click',function(){showChartView('divisions');});
+    $('#chart-view-changes').addEventListener('click',function(){showChartView('changes');});
     $('#clear-trials').addEventListener('click',function(){if(!state.trials.length){clearTrials();return;}confirmGameReset('Clear the growth-model results?','This removes every recorded trial set. The board game and your written answers stay saved.',clearTrials,'Clear model results');});
     // Feedback belongs to the answer it judged: clear it (on screen and in storage) when the choice changes.
     [['quick-check','quick','#background-feedback'],['mechanism-check','mechanism','#mechanism-feedback']].forEach(function(item){

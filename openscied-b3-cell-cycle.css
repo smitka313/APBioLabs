@@ -458,6 +458,12 @@ table.data.cycle-data-table th, table.data.cycle-data-table td { white-space:nor
 .q-evidence { margin:6px 0 8px; padding:8px 12px; border-left:4px solid var(--accent); border-radius:0 8px 8px 0; background:var(--surface-2); max-width:83ch; }
 .q-evidence-title { margin:0 0 2px; font:700 .72rem var(--f-mono, monospace); letter-spacing:.06em; text-transform:uppercase; color:var(--accent); }
 .q-evidence ul { margin:0; padding-left:1.1rem; font-size:.86rem; line-height:1.45; }
+.baseline-prompt { max-width:83ch; margin:14px 0 18px; padding:12px 14px; border:1px solid var(--line, currentColor); border-left:4px solid var(--accent); border-radius:0 10px 10px 0; background:var(--surface-2); }
+.baseline-prompt label { font-weight:700; }
+.baseline-prompt p { margin:4px 0 8px; font-size:.88rem; }
+.baseline-prompt textarea { width:100%; }
+.baseline-echo-text { margin:0; white-space:pre-wrap; font-size:.9rem; }
+.baseline-echo-text.is-empty { font-style:italic; color:var(--muted); }
 @media print { .q-evidence { break-inside:avoid; } }
 
 /* Single-column step bodies may not grow wider than the page: a wide report table (Wrap up) scrolls inside its
