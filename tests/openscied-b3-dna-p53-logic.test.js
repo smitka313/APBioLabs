@@ -72,3 +72,50 @@ test('explanation levels follow the key', () => {
   assert.equal(L.explanationLevel([true, true, true, true, true, true]), 'organized');
   assert.equal(L.explanationLevel([true, true, true, true, true, false]), 'linked');
 });
+
+// ---- DNA fork model ----
+const mkRand = seed => { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+test('fork plan: 24 letters, bottom strand pairs with top, first 5 sites never wrong, 1 to 6 substitutions per strand, for 500 seeds', () => {
+  for (let seed = 1; seed <= 500; seed++) {
+    const plan = L.forkPlan(mkRand(seed));
+    assert.equal(plan.top.length, 24); assert.equal(plan.bottom.length, 24);
+    plan.top.forEach((b, i) => { assert.ok('ACGT'.includes(b)); assert.equal(plan.bottom[i], { A: 'T', T: 'A', G: 'C', C: 'G' }[b]); });
+    ['top', 'bottom'].forEach(k => {
+      const subs = plan.subs[k], n = subs.filter(Boolean).length, need = L.forkNeeded(plan, k);
+      assert.ok(n >= 1 && n <= 6, 'seed ' + seed + ' ' + k + ' has ' + n);
+      subs.forEach((w, i) => { if (w) { assert.ok(i >= 5, 'manual sites are never wrong'); assert.notEqual(w, need[i]); assert.ok('ACGT'.includes(w)); } });
+    });
+  }
+});
+test('fork plan is reproducible for one seed and differs between seeds', () => {
+  assert.deepEqual(L.forkPlan(mkRand(42)), L.forkPlan(mkRand(42)));
+  const sigs = new Set(); for (let s = 1; s <= 40; s++) sigs.add(JSON.stringify(L.forkPlan(mkRand(s))));
+  assert.ok(sigs.size >= 39);
+  let total = 0; for (let s = 1; s <= 300; s++) { const p = L.forkPlan(mkRand(s)); total += p.subs.top.filter(Boolean).length + p.subs.bottom.filter(Boolean).length; }
+  const mean = total / 600; assert.ok(mean > 1.2 && mean < 3.5, 'mean substitutions per strand ' + mean);
+});
+test('p53: only version a fits and removes the leftmost substitution; b and c change nothing', () => {
+  const sites = 'ggggggbgggbggggggggggggg';
+  const a = L.p53Apply(sites, 'a'); assert.equal(a.sites, 'ggggggxgggbggggggggggggg'); assert.equal(a.index, 6); assert.ok(a.fits && a.removed);
+  ['b', 'c'].forEach(v => { const r = L.p53Apply(sites, v); assert.equal(r.sites, sites); assert.equal(r.index, 6); assert.equal(r.fits, false); assert.equal(r.removed, false); });
+  const none = L.p53Apply('g'.repeat(24), 'a'); assert.equal(none.index, -1); assert.equal(none.removed, false);
+});
+test('replacing a gap needs the correct letter; counts follow the site string', () => {
+  const plan = L.forkPlan(mkRand(7));
+  const i = plan.subs.top.findIndex(Boolean);
+  const sites = 'g'.repeat(i) + 'x' + 'g'.repeat(23 - i);
+  const need = L.forkNeeded(plan, 'top')[i], wrong = 'ACGT'.split('').find(l => l !== need);
+  assert.equal(L.replaceGap(sites, plan, 'top', wrong).fits, false);
+  const ok = L.replaceGap(sites, plan, 'top', need); assert.ok(ok.fits); assert.equal(ok.sites, 'g'.repeat(24));
+  assert.deepEqual(L.siteCounts('ggbxe'), { correct: 2, substitutions: 1 });
+  assert.equal(L.substitutionRate(L.siteCounts('g'.repeat(22) + 'bb').correct, 2), 8.3);
+});
+test('site strings from damaged saves are rejected', () => {
+  const plan = L.forkPlan(mkRand(9));
+  assert.equal(L.sitesValid('g'.repeat(24), plan, 'top'), true);
+  assert.equal(L.sitesValid('g'.repeat(23), plan, 'top'), false);
+  assert.equal(L.sitesValid('z'.repeat(24), plan, 'top'), false);
+  assert.equal(L.sitesValid(null, plan, 'top'), false);
+  const noSub = plan.subs.top.findIndex(w => !w);
+  assert.equal(L.sitesValid('g'.repeat(noSub) + 'b' + 'g'.repeat(23 - noSub), plan, 'top'), false);
+});
