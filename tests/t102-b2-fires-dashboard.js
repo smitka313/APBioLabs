@@ -13,7 +13,7 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 1 && /1 activity available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), width + ' px: Unit 2 has one activity');
+      T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 2 && /2 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), width + ' px: Unit 2 has two activities (Fires, Peat Bog Carbon Lab)');
       T.ok(/Fires/.test(await p.locator('#unit2').innerText()) && /Lessons 3 and 5/.test(await p.locator('section[aria-labelledby="unit2"]').innerText()), 'Unit 2 card names the lessons');
       T.ok(/Units 1, 4–5/.test(await p.locator('.dashboard-coming-soon summary').innerText()) && await p.locator('.dashboard-coming-soon #unit2').count() === 0, 'Coming soon note no longer lists Unit 2');
       T.ok(await p.locator('#b2-fires-open').getAttribute('href') === 'openscied-b2-fires.html#overview' && /Not started/.test(await p.locator('#b2-fires-progress').innerText()) && await p.locator('#b2-fires-reset').isDisabled(), 'card opens its page, not started, restart disabled');
