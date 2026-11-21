@@ -196,8 +196,10 @@
     const g=state.game,p=g.playersState[g.active];if(!p)return;
     // Always the upcoming checkpoint. A piece standing on a checkpoint has already been checked there (a cell that
     // fails is moved off it), so the panel moves on to the next one instead of repeating the checkpoint just passed.
-    // While a checkpoint card is still waiting to be followed, the piece stands on that checkpoint and the panel keeps showing it.
-    const n=g.checkpointNotice,key=n&&n.pending&&n.player===p.id&&n.pos?n.pos:(p.pos===FINISH?FINISH:nextCheckpoint(p.pos)),st=checkpointState(p,key);
+    // A waiting card that will send the cell back (or destroy it) means that checkpoint is not passed yet, so the panel keeps showing it.
+    // A card that passes the cell moves the panel on to the next checkpoint straight away.
+    const n=g.checkpointNotice,holds=n&&n.pending&&n.player===p.id&&n.pos&&n.outcome!=='pass'&&n.outcome!=='divided';
+    const key=holds?n.pos:(p.pos===FINISH?FINISH:nextCheckpoint(p.pos)),st=checkpointState(p,key);
     $('#checkpoint-title').textContent=(key===FINISH?'':'Next checkpoint · ')+st.title;
     $('#checkpoint-subtitle').textContent=st.subtitle;
     $('#checkpoint-requirements').innerHTML=st.items.map(function(x){const met=x[2]>0&&x[1]>=x[2];return '<span class="requirement'+(met?' met':'')+'"><span>'+(x[2]?(met?'✓ ':'○ '):'')+x[0]+'</span><strong>'+x[1]+(x[2]?' / '+x[2]:'')+'</strong><span class="requirement-meter"><span style="width:'+(x[2]?Math.min(100,100*x[1]/x[2]):0)+'%"></span></span></span>';}).join('');

@@ -27,6 +27,8 @@ const game = (players, extra) => Object.assign({schema:3,mode:'solo',players:pla
     T.ok(g1 > 0, 'found the G1 checkpoint square (' + g1 + ')');
     await seed(game([pl(1,g1,{score:none()})], {checkpointNotice:{pending:true,player:1,pos:g1,phase:'g1',outcome:'back5',label:'GO BACK 5',effect:'',round:1}}));
     T.ok(/G1/.test(await p.locator('#checkpoint-title').textContent()) && !/G2/.test(await p.locator('#checkpoint-title').textContent()), 'while the G1 card is waiting the panel still shows the G1 checkpoint: ' + await p.locator('#checkpoint-title').textContent());
+    await seed(game([pl(1,g1)], {checkpointNotice:{pending:true,player:1,pos:g1,phase:'g1',outcome:'pass',label:'Pass',effect:'',round:1}}));
+    T.ok(/G2/.test(await p.locator('#checkpoint-title').textContent()), 'a waiting card that passes the cell moves the panel on to G2 straight away');
     await seed(game([pl(1,g1)]));
     T.ok(/G2/.test(await p.locator('#checkpoint-title').textContent()), 'with no card waiting, a piece past G1 sees the next checkpoint (G2)');
     // 3. No new cells: words, not a bare dash.
