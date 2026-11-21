@@ -36,7 +36,7 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     T.ok(/Lessons 5–6 of OpenSciEd Biology Unit B\.3: Inheritance & Variation of Traits/.test(foot), 'footer credits OpenSciEd Biology B.3 Lessons 5-6');
     T.ok(await p.locator('.site-footer a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1, 'footer links CC BY-NC 4.0');
     T.ok(await p.locator('.site-footer a[href="https://www.openscied.org/"]').count() >= 1, 'footer links openscied.org');
-    T.ok(/Adapted and reorganized as an interactive companion; the models, readings summaries and questions are new/.test(foot), 'footer states what was changed');
+    T.ok(/Adapted and reorganized as an interactive companion; the models, reading summaries and questions are new/.test(foot), 'footer states what was changed');
     T.ok(/Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(foot), 'non-endorsement line');
     T.ok(/GoatCounter/.test(foot) && /Nothing you type/.test(foot), 'privacy line');
     T.ok(await p.locator('.attribution a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1, 'attribution block links the license');
