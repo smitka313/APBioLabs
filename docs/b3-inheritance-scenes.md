@@ -80,8 +80,8 @@ The pedigree data model is `{ id, label, sex:'M'|'F', affected, deceased, untest
 
 ## Videos and TO CONFIRM items for the owner
 
-Videos are linked only, never embedded. YouTube ids from the unit's video-links PDF (Lesson 8, all CC BY 4.0): `U1Zifbvvl0Q`,
-`ux7obpTlkbU` (the two interviews) and `-NhqJRIJJsw` (why one syndrome can lead to many cancers).
+Videos are linked only, never embedded. YouTube ids from the unit's video-links PDF (Lesson 8, all CC BY 4.0): `U1Zifbvvl0Q`
+("B.3 Lauren Family History"), `ux7obpTlkbU` ("B.3 Lakita Family History") and `-NhqJRIJJsw` ("B.3 Lauren Talks About Surgery", 1:09). Titles checked on YouTube by the Nov 21 audit.
 
 - **TO CONFIRM:** which of `U1Zifbvvl0Q` and `ux7obpTlkbU` is which interview (the Teacher Edition and the links PDF list them in different orders). The page labels them "Interview video A / B" for this reason.
 - **TO CONFIRM:** that `-NhqJRIJJsw` is the third video (Lauren, why many cancer types).
