@@ -238,12 +238,13 @@
         const card = h('div', { class: 'pl-card' }, h('strong', { class: 'pl-cardname', text: 'Dish ' + c.group + ': ' + c.label }));
         if (i === refI) card.appendChild(h('span', { class: 'pl-muted', text: 'This is the comparison dish.' }));
         else {
-          const dirs = h('div', { class: 'pl-chips', role: 'group', 'aria-label': 'Dish ' + c.group + ' prediction' });
-          [['more', 'More growth'], ['fewer', 'Fewer'], ['same', 'About the same']].forEach(d => {
-            const on = c.predict && c.predict.dir === d[0];
-            const b = h('button', { type: 'button', class: 'pl-chip pl-sm', 'aria-pressed': on ? 'true' : 'false', 'data-k': 'p' + i + d[0] }, h('span', { class: 'pl-tick', 'aria-hidden': 'true', text: on ? '✓' : '' }), d[1]);
-            b.addEventListener('click', () => { c.predict = { dir: d[0], why: c.predict ? c.predict.why : '' }; change('Dish ' + c.group + ' prediction: ' + d[1].toLowerCase() + '.', '[data-k="p' + i + d[0] + '"]'); }); dirs.appendChild(b);
-          });
+          const DIRS = [['more', 'More growth'], ['fewer', 'Fewer'], ['same', 'About the same']];
+          const dirs = h('div', { class: 'pl-selwrap' });
+          const dsel = h('select', { class: 'pl-select', 'aria-label': 'Dish ' + c.group + ' prediction', 'data-f': 'dir' + i });
+          dsel.appendChild(h('option', { value: '', text: 'Will the yeast grow\u2026' }));
+          DIRS.forEach(d => { const o = h('option', { value: d[0], text: d[1] }); if (c.predict && c.predict.dir === d[0]) o.selected = true; dsel.appendChild(o); });
+          dsel.addEventListener('change', () => { const d = DIRS.find(x => x[0] === dsel.value); c.predict = { dir: dsel.value, why: c.predict ? c.predict.why : '' }; change(d ? 'Dish ' + c.group + ' prediction: ' + d[1].toLowerCase() + '.' : '', '[data-f="dir' + i + '"]'); });
+          dirs.appendChild(dsel); dirs.appendChild(h('span', { class: 'pl-tick', 'aria-hidden': 'true', text: c.predict && c.predict.dir ? '\u2713' : '' }));
           const why = h('select', { 'aria-label': 'Dish ' + c.group + ' reason', 'data-f': 'why' + i });
           why.appendChild(h('option', { value: '', text: 'Because…' }));
           REASONS.forEach(r => { const op = h('option', { value: r, text: r }); if (c.predict && c.predict.why === r) op.selected = true; why.appendChild(op); });

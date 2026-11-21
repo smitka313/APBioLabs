@@ -63,11 +63,11 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
     await p.click('[data-k="held-cover"]');
     T.ok(/cannot stay the same/.test(await checks()), 'holding the changed thing constant is flagged');
     await p.click('[data-k="held-cover"]');
-    await p.click('[data-k="p0fewer"]');
+    await p.selectOption('[data-f="dir0"]', 'fewer');
     T.ok(/Think again: with no UV/.test(await p.locator('.pl-pred').innerText()), 'a prediction against the cause gets a friendly hint');
-    await p.click('[data-k="p0more"]');
+    await p.selectOption('[data-f="dir0"]', 'more');
     T.ok(/Good thinking/.test(await p.locator('.pl-pred').innerText()), 'a sensible prediction is acknowledged');
-    await p.click('[data-k="p2more"]');
+    await p.selectOption('[data-f="dir2"]', 'more');
     T.ok((await saved(p, 'planner')).conditions[2].predict.dir === 'more', 'predictions are saved on the condition');
 
     // keyboard only: focus a chip and press Space
@@ -175,7 +175,7 @@ const saved = (p, k) => p.evaluate(([key, f]) => { const d = JSON.parse(localSto
         const c = await T.ctxFor(browser, { width: 390, height: 844, dark, reduced: true });
         const q = await open(c, server, 'plan', problems);
         await q.addScriptTag({ content: fs.readFileSync(axeFile, 'utf8') });
-        await pickSel(q, 'starter', 'class'); await q.click('[data-k="p2more"]');
+        await pickSel(q, 'starter', 'class'); await q.selectOption('[data-f="dir2"]', 'more');
         await go(q, 'yeast'); await q.click('[data-yu="spread"]'); await q.click('[data-yu="lamp"]'); await q.waitForSelector('[data-yu="skip"]'); await q.click('[data-yu="skip"]'); await q.click('[data-yu="autoall"]');
         await q.waitForTimeout(500);
         const found = [];
