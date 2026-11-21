@@ -48,6 +48,8 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     await p.waitForFunction(() => document.querySelector('#ideas.is-current'));
     await p.locator('#ideas .pager-next').click();
     await p.waitForFunction(() => document.querySelector('#families.is-current'));
+    const vidLabels = await p.locator('#families a[href*="youtu.be"]').evaluateAll(a => a.map(x => x.href.split('/').pop() + '|' + x.textContent.replace(/\(opens in a new tab\)/, '').trim()));
+    T.ok(vidLabels.join(';') === 'U1Zifbvvl0Q|Video A: Lauren’s family history;ux7obpTlkbU|Video B: Lakita’s family history;-NhqJRIJJsw|Video C: Lauren talks about surgery (about 1 minute)', 'video links are labeled with what each video is (C is the surgery video, not "why one syndrome leads to many cancers"): ' + vidLabels.join(' ; '));
     T.ok(true, 'pager Next works');
     T.ok(await p.locator('[aria-live], [role=status], [role=alert]').count() === 1, 'exactly one live region');
 
