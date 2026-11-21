@@ -65,7 +65,7 @@ const opensciedFiles = new Set([
   'growth-cell-types.js', 'growth-model-scene.js', 'growth-model-scene.css',
   'assets/openscied-banner.jpg', 'assets/openscied-phenomena-hero.svg',
   'tests/t76-cell-cycle-controls.js', 'tests/t77-openscied-dashboard.js', 'tests/t78-cell-cycle-audit.js',
-  'tests/openscied-dashboard.test.js', 'tests/cell-cycle-scene.test.js', 'tests/openscied-b3-dna-p53-logic.test.js', 'tests/openscied-b3-inheritance-logic.test.js'
+  'tests/openscied-dashboard.test.js', 'tests/cell-cycle-scene.test.js', 'tests/openscied-b3-dna-p53-logic.test.js', 'tests/openscied-b3-inheritance-logic.test.js', 'tests/pedigree-scenes.test.js'
 ]);
 const documentation = p => /^(docs\/|.*\.(md|txt)$)/.test(p);
 // Any test file that opens only OpenSciEd pages (same rule as the "openscied" group in tests/run-all.js).

@@ -153,9 +153,9 @@
     '.ped-seg button{font:inherit;font-weight:600;font-size:.9rem;min-height:40px;padding:6px 14px;border:0;background:transparent;color:var(--ink);cursor:pointer}' +
     '.ped-seg button+button{border-left:1px solid var(--line)}.ped-seg button[aria-pressed=true]{background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}' +
     '.ped-tool{min-height:40px}.ped-tool[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent)}' +
-    '.ped-figure{border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);padding:6px}' +
+    '.ped-figure{border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);padding:2px}' +
     'svg.ped-svg{display:block;width:100%;max-width:760px;height:auto;margin:0 auto;aspect-ratio:' + VIEW_W + '/' + VIEW_H + ';touch-action:manipulation}' +
-    '.ped-svg text{font-family:var(--f-body);fill:var(--ink);font-size:20px;font-weight:600}.ped-svg .ped-gen{fill:var(--muted);font-size:20px;font-weight:700}' +
+    '.ped-svg text{font-family:var(--f-body);fill:var(--ink);font-size:21px;font-weight:600}.ped-svg .ped-gen{fill:var(--muted);font-size:20px;font-weight:700}' +
     '.ped-svg .ped-line{stroke:var(--ink);stroke-width:2.5;fill:none}.ped-svg .ped-link.is-hl{stroke:var(--accent);stroke-width:5}' +
     '.ped-svg .ped-sym{fill:var(--surface);stroke:var(--ink);stroke-width:2.5}.ped-svg .ped-sym.is-shaded{fill:url(#ped-hatch)}' +
     '.ped-svg .ped-slash{stroke:var(--ink);stroke-width:3;fill:none}.ped-svg .ped-q{font-size:30px;font-weight:700;text-anchor:middle}' +
@@ -172,7 +172,7 @@
     '.ped-chip.ok{border-color:var(--ok);background:var(--ok-soft)}.ped-chip.bad{border-color:var(--bad);background:var(--bad-soft)}.ped-chip:hover{border-color:var(--accent)}' +
     '.ped-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.ped-note{margin:0;font-size:.84rem;color:var(--muted)}' +
     '.ped-punnett{border-collapse:collapse;margin:2px 0}.ped-punnett th,.ped-punnett td{border:1px solid var(--line);padding:8px 14px;text-align:center;font-family:var(--f-mono);font-size:1.05rem;min-width:64px}' +
-    '.ped-punnett th{background:var(--surface-2);font-weight:700}.ped-punnett .is-hl{background:var(--accent-soft);box-shadow:inset 0 0 0 3px var(--accent)}.ped-punnett td{opacity:.55}.ped-punnett td.is-hl,.ped-punnett td.is-pick{opacity:1}' +
+    '.ped-punnett th{background:var(--surface-2);font-weight:700}.ped-punnett .is-hl{background:var(--accent-soft);box-shadow:inset 0 0 0 3px var(--accent)}.ped-punnett td{color:var(--muted)}.ped-punnett td.is-hl,.ped-punnett td.is-pick{color:var(--ink);font-weight:700}' +
     '.ped-punnett caption{caption-side:top;text-align:left;font-size:.84rem;color:var(--muted);padding-bottom:4px}' +
     '@media (prefers-reduced-motion:no-preference){.ped-svg .ped-sym,.ped-svg .ped-ring,.ped-punnett td,.ped-punnett th{transition:all .18s ease}}' +
     '@media (max-width:480px){.ped-chip{min-width:84px;flex:1 1 84px}.ped-tool{flex:1 1 100%}}';
@@ -323,7 +323,7 @@
       const P = punnett(L);
       panel.appendChild(el('h4', '', 'How Lakita got her alleles · step ' + (step + 1) + ' of 3'));
       const t = el('table', 'ped-punnett'); t.appendChild(el('caption', '', 'Punnett-style square. Rows: Lakita’s father’s alleles. Columns: Lakita’s mother’s alleles. Each box is one possible child.'));
-      const head = el('tr'); head.appendChild(el('td')); head.firstChild.style.border = '0'; head.firstChild.style.background = 'none'; head.firstChild.style.opacity = '1';
+      const head = el('tr'); head.appendChild(el('td')); head.firstChild.style.border = '0'; head.firstChild.style.background = 'none'; 
       P.cols.forEach(function (c) { const th = el('th', step === 1 ? 'is-hl' : '', c); th.scope = 'col'; th.title = 'Mother gives ' + c; head.appendChild(th); });
       const thead = el('thead'); thead.appendChild(head); t.appendChild(thead);
       const tb = el('tbody');

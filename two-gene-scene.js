@@ -148,9 +148,9 @@
   const CSS = '.tg-ui{display:grid;gap:10px}.tg-steps{display:flex;flex-wrap:wrap;gap:8px}' +
     '.tg-steps button{font:inherit;font-weight:600;font-size:.9rem;min-height:40px;padding:6px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);cursor:pointer}' +
     '.tg-steps button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}' +
-    '.tg-figure{border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);padding:6px}' +
+    '.tg-figure{border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);padding:2px}' +
     'svg.tg-svg,svg.tg-trace{display:block;width:100%;height:auto;margin:0 auto;touch-action:manipulation}svg.tg-svg{max-width:760px;aspect-ratio:' + VIEW_W + '/' + VIEW_H + '}svg.tg-trace{max-width:600px;aspect-ratio:440/292}' +
-    '.tg-svg text,.tg-trace text{font-family:var(--f-body);fill:var(--ink);font-size:20px;font-weight:600}.tg-svg .tg-gene{fill:var(--muted);font-style:italic;font-weight:600;font-size:19px}' +
+    '.tg-svg text,.tg-trace text{font-family:var(--f-body);fill:var(--ink);font-size:21px;font-weight:600}.tg-svg .tg-gene{fill:var(--muted);font-style:italic;font-weight:600;font-size:21px}' +
     '.tg-svg .tg-line,.tg-trace .tg-line{stroke:var(--ink);stroke-width:2.5;fill:none}' +
     '.tg-svg .tg-sym{stroke:var(--ink);stroke-width:2.5}.tg-svg .tg-hit{fill:transparent;cursor:pointer}.tg-svg .tg-ring{fill:none;stroke:var(--accent);stroke-width:4;opacity:0}' +
     '.tg-person{outline:none;cursor:pointer}.tg-person:focus-visible .tg-ring{opacity:1}.tg-person.is-sel .tg-ring{opacity:1;stroke-dasharray:7 4}.tg-person.is-sel:focus-visible .tg-ring{stroke-dasharray:0}' +
@@ -287,7 +287,7 @@
       if (mode === 'mix') {
         panel.append(el('p', 'tg-ask', 'Tap every child who got a chromosome that matches neither parent’s.'),
           el('p', 'tg-note', 'Parents’ chromosomes: father ' + wholeText(byId(L, 'father')) + '; mother ' + wholeText(byId(L, 'mother')) + '.'), msgEl());
-        if (data.mismatch.length === 2) { msgText = CONCLUSION; msgState = 'ok'; panel.querySelector('.tg-msg').textContent = CONCLUSION; panel.querySelector('.tg-msg').dataset.state = 'ok'; }
+        if (data.mismatch.length === 2 && !msgText) { msgText = CONCLUSION; msgState = 'ok'; panel.querySelector('.tg-msg').textContent = CONCLUSION; panel.querySelector('.tg-msg').dataset.state = 'ok'; }
         return;
       }
       return panelTrace();
