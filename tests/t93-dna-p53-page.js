@@ -65,7 +65,8 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
       T.ok(await p.locator('#' + id + ' canvas[role="img"][aria-label]').count() === 1, id + ' has a canvas with role and aria-label');
       T.ok((await p.locator('#' + id + ' .scene-desc').innerText()).length > 30, id + ' has a text description');
       await p.evaluate(h => { location.hash = h; }, id === 'dna-fork-scene' ? 'fork' : 'expression');
-      T.ok(await p.locator(notice).isVisible() && /Interactive model coming in the next update/.test(await p.locator(notice).innerText()), id + ' shows the coming-soon notice while no scene script is registered');
+      const mounted = await p.locator('#' + id + '[data-mounted]').count() === 1;   // a registered scene hides the notice
+      T.ok(mounted ? await p.locator(notice).isHidden() : await p.locator(notice).isVisible() && /Interactive model coming in the next update/.test(await p.locator(notice).innerText()), id + (mounted ? ' hides the coming-soon notice once its scene registers' : ' shows the coming-soon notice while no scene script is registered'));
     }
     T.ok(await p.evaluate(() => { const c = document.querySelector('#dna-fork-scene canvas'); return c.width > 0 && c.height > 0; }), 'placeholder canvas is drawn');
 
