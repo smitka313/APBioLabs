@@ -146,6 +146,7 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(await p.locator('#cer-level').getAttribute('data-level') !== 'organized' && /does not fit/.test(await p.locator('#cer-level').innerText()), 'a claim the dishes contradict (UV has no effect) cannot reach Organized and says why');
     await p.check('#cer-ev-3');
     T.ok(/✕/.test(await p.locator('#cer-ev-3-note').innerText()) || /✓/.test(await p.locator('#cer-ev-3-note').innerText()), 'a statement about SPF gets a text mark (✓ or ✕) from the student\'s own table');
+    T.ok(/UV-sensitive/.test(await p.locator('#cer-ev-3-note').innerText()), 'the SPF verdict says which yeast it judged (UV-sensitive)');
     await p.uncheck('#cer-ev-3'); await pick(p, 'cer-claim', 'a'); await pick(p, 'cer-reason', 'a');
     await p.uncheck('#cer-caveat'); await p.evaluate(() => B3Inh.saveState('yeast', null));
     await p.uncheck('#cer-ev-1'); await p.check('#cer-ev-1');

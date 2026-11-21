@@ -122,3 +122,11 @@ test('evidenceChecks compares the claim evidence with the student\'s own yeast t
   assert.equal(L.evidenceChecks(mixed).spf, true); // judged on the UV-sensitive yeast; wild-type dishes are flat on purpose
   assert.equal(L.evidenceChecks(good.map(d => Object.assign({}, d, { strain: 'wild', colonies: 200 }))).spf, false); // wild-type only and flat: not shown
 });
+
+test('evidenceBasis names the yeast the UV and SPF verdicts were judged on', () => {
+  const mk = o => Object.assign({ strain: 'sensitive', minutes: 15 }, o);
+  const sens = [mk({ dark: true, dose: 0, colonies: 200 }), mk({ spf: 15, dose: 1, colonies: 90 }), mk({ spf: 30, dose: 0.5, colonies: 115 }), mk({ spf: 50, dose: 0.3, colonies: 140 })];
+  assert.deepEqual(L.evidenceBasis(sens), { more: 'sensitive', spf: 'sensitive' });
+  assert.deepEqual(L.evidenceBasis(sens.map(d => Object.assign({}, d, { strain: 'wild' }))), { more: 'wild', spf: 'wild' });
+  assert.deepEqual(L.evidenceBasis([]), { more: null, spf: null });
+});

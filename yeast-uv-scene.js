@@ -395,6 +395,7 @@
       box.appendChild(og);
       const all = h('button', { type: 'button', class: 'btn btn--sm yu-btn', 'data-yu': 'autoall', text: 'Count all dishes for me' }); all.addEventListener('click', () => { ys.dishes.forEach(x => { if (!counted(x)) { x.colonies = x.truth; x.how = 'auto'; } }); save(); render('[data-yu="autoall"]'); api.announce('All dishes counted for you. ' + ys.dishes.length + ' of ' + ys.dishes.length + '.'); });
       box.appendChild(h('div', { class: 'yu-actions' }, all, resetButton()));
+      box.appendChild(h('p', { class: 'yu-muted', text: 'Counting does not rate growth. Pick None, Few, Some or Many for each dish yourself.' }));
       ui.appendChild(box);
       resultsPanel();
     }
@@ -416,11 +417,11 @@
       t.appendChild(h('thead', {}, h('tr', {}, ['Dish', 'Condition', 'UV dose*', 'Colonies', 'Growth', 'Prediction'].map(x => h('th', { scope: 'col', text: x })))));
       const tb = h('tbody');
       rows.forEach(d => {
-        let pred = '—';
         const ref = refDish(rows, d.strain);
+        let pred = d === ref ? 'comparison dish' : (d.predict && d.predict.dir ? 'waiting for counts' : 'no prediction');
         if (d.predict && d.predict.dir && counted(d) && ref && counted(ref) && d !== ref) { const act = actualDirection(d.colonies, ref.colonies); pred = act === d.predict.dir ? '✓ matched' : '✕ differed (' + act + ')'; }
         tb.appendChild(h('tr', {}, h('th', { scope: 'row', text: nameOf(d) }), h('td', { text: d.cond || d.label }), h('td', { text: (num(d.dose) ? d.dose : 0).toFixed(d.dose < 10 ? 2 : 1) }),
-          h('td', { text: counted(d) ? (d.how === 'estimate' ? '≈ ' : '') + d.colonies : 'not counted' }), h('td', { text: d.rating ? (RATINGS.find(r => r[0] === d.rating) || ['', d.rating])[1] : '—' }), h('td', { text: pred })));
+          h('td', { text: counted(d) ? (d.how === 'estimate' ? '≈ ' : '') + d.colonies : 'not counted' }), h('td', { text: d.rating ? (RATINGS.find(r => r[0] === d.rating) || ['', d.rating])[1] : 'not rated yet' }), h('td', { text: pred })));
       });
       t.appendChild(tb); tw.appendChild(t); wrap.appendChild(tw);
       wrap.appendChild(h('p', { class: 'yu-muted', text: '*UV dose in minutes of unprotected lamp UV that would give the same dose. Simulated numbers, not measurements.' }));

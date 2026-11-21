@@ -101,7 +101,7 @@
       const before = paired ? { top: planCounts('top'), bottom: planCounts('bottom') } : { top: z, bottom: z };
       const showAfter = paired && p53.a.removed > 0 && !gaps('top') && !gaps('bottom');
       const after = showAfter ? { top: cnt('top'), bottom: cnt('bottom') } : { top: z, bottom: z };
-      api.saveFork({ seed, run, steps: { unwound: steps.unwound, unzipped: steps.unzipped }, before, p53: JSON.parse(JSON.stringify(p53)), after,
+      api.saveFork({ seed, run, stage: stage(), steps: { unwound: steps.unwound, unzipped: steps.unzipped }, before, p53: JSON.parse(JSON.stringify(p53)), after,
         progress: { run, sites: { top: sites.top, bottom: sites.bottom } }, updatedAt: Date.now() });
     }
     function planCounts(k) { const s = plan.subs[k].filter(Boolean).length; return { correct: N - s, substitutions: s }; }
@@ -204,7 +204,7 @@
       const counts = el('div', 'fork-counts');
       const tBefore = countTable('After pairing, before p53'), tAfter = countTable('After p53 and replacing letters');
       counts.append(tBefore.wrap, tAfter.wrap, el('p', 'fork-note', 'Simulated counts. Substitution rate = 100 × substitutions ÷ (correctly paired + substitutions). They also appear in “Your data from the DNA fork” below.'));
-      const legend = el('p', 'fork-legend'); legend.innerHTML = '<b>✓ green</b> = correct pair (A with T, G with C) · <b>✕ red</b> = substitution (mismatch: the letter does not fit its partner) · dashed box = empty place or gap · arrow = next place to fill.';
+      const legend = el('p', 'fork-legend'); legend.innerHTML = '<b>✓ green</b> = correct pair (A with T, G with C) · <b>✕ red</b> = substitution (the model slipped and put in a letter that does not fit its partner) · dashed box = empty place or gap · arrow = next place to fill.';
       const model = el('p', 'fork-note'); model.textContent = 'This is a simplified model: it shows only one kind of copying difference, a swapped letter (a substitution). Real copying enzymes also proofread as they go, and real p53 does not pull letters out directly: it senses DNA damage and triggers repair, a pause in the cell cycle or cell death. Chromosome differences in cancer are more than single substitutions. Differences that are not fixed are copied into new cells, and some of those cells can become cancer cells, but cancer is not inevitable.';
       const reset = btn('Start over (new copy)', 'btn btn--sm'); const resetRow = el('div', 'row'); resetRow.appendChild(reset);
       const dialog = document.createElement('dialog'); dialog.className = 'reset-dialog'; dialog.setAttribute('aria-labelledby', 'fork-reset-title');

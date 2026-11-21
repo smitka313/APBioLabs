@@ -30,10 +30,10 @@
   const META = {
     grandfather: { name: 'Grandfather', say: 'Lakita’s grandfather', row: 0, x: 172, y: 64 },
     grandmother: { name: 'Grandmother', say: 'Lakita’s grandmother', row: 0, x: 316, y: 64 },
-    aunt1: { name: 'Aunt', say: 'First aunt', row: 1, x: 52, y: 256 },
-    aunt2: { name: 'Aunt', say: 'Second aunt', row: 1, x: 148, y: 256 },
+    aunt1: { name: 'Aunt', short: 'Aunt 1', say: 'First aunt', row: 1, x: 52, y: 256 },
+    aunt2: { name: 'Aunt', short: 'Aunt 2', say: 'Second aunt', row: 1, x: 148, y: 256 },
     uncle: { name: 'Uncle', say: 'Uncle', row: 1, x: 244, y: 256 },
-    aunt3: { name: 'Aunt', say: 'Third aunt', row: 1, x: 340, y: 256 },
+    aunt3: { name: 'Aunt', short: 'Aunt 3', say: 'Third aunt', row: 1, x: 340, y: 256 },
     father: { name: 'Father', say: 'Lakita’s father', row: 1, x: 436, y: 256 },
     mother: { name: 'Mother', say: 'Lakita’s mother', row: 1, x: 532, y: 256 },
     lakita: { name: 'Lakita', say: 'Lakita, daughter', row: 2, x: 484, y: 434 }
@@ -241,7 +241,7 @@
       g.appendChild(sym);
       if (p.untested) { const q = svgEl('text', { class: 'ped-q', x: m.x, y: m.y + 10 }); q.textContent = '?'; g.appendChild(q); }
       if (p.deceased) g.appendChild(svgEl('path', { class: 'ped-slash', d: 'M' + (m.x - half - 9) + ' ' + (m.y + half + 9) + ' L' + (m.x + half + 9) + ' ' + (m.y - half - 9) }));
-      const lab = svgEl('text', { x: m.x, y: m.y + half + 24, 'text-anchor': 'middle' }); lab.textContent = m.name; g.appendChild(lab);
+      const lab = svgEl('text', { x: m.x, y: m.y + half + 24, 'text-anchor': 'middle' }); lab.textContent = m.short || m.name; g.appendChild(lab);
       const dyn = svgEl('g', { class: 'ped-dyn' }); g.appendChild(dyn);
       svg.appendChild(g);
       els[p.id] = { g: g, dyn: dyn };

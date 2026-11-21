@@ -168,7 +168,7 @@
   function yeastNodes() {
     const d = state.yeast && Array.isArray(state.yeast.dishes) ? state.yeast.dishes.filter(function (x) { return x && num(x.colonies); }) : [];
     if (!d.length) return [];
-    const rows = d.map(function (x) { return ['Dish ' + x.group, x.label || '', String(Math.max(0, Math.round(x.colonies))), x.rating || '—']; });
+    const rows = d.map(function (x) { return ['Dish ' + x.group, x.label || '', String(Math.max(0, Math.round(x.colonies))), x.rating || 'not rated yet']; });
     return [table('Simulated yeast dishes', ['Dish', 'Condition', 'Colonies', 'Growth'], rows), el('p', 'small muted', 'SIMULATED. Not measurements from a real lab.')];
   }
   const BOXES = [['#data-pedigree-body', pedigreeNodes], ['#data-twogene-body', twoGeneNodes], ['#data-meiosis-body', meiosisNodes], ['#data-skin-body', skinNodes], ['#data-planner-body', plannerNodes], ['#data-yeast-body', yeastNodes]];
@@ -258,15 +258,16 @@
   const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your dishes and from the study or reading, reasoning, and a limit. (This is your own check, not a grade.)' };
   // Evidence chips about "my dishes" are checked against the student's own yeast table, so a statement the data do not show earns no credit.
   const EV_KEY = { 'cer-ev-1': 'more', 'cer-ev-2': 'dark', 'cer-ev-3': 'spf' };
+  function whose(id) { const b = EV_KEY[id] === 'dark' ? null : L.evidenceBasis(state.yeast && state.yeast.dishes)[EV_KEY[id]]; return b === 'sensitive' ? 'Your UV-sensitive dishes' : b === 'wild' ? 'Your wild-type dishes' : 'Your dishes'; }
   function renderClaim(speak) {
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
     const dishes = state.yeast && Array.isArray(state.yeast.dishes) ? state.yeast.dishes : [], checks = L.evidenceChecks(dishes);
     const counted = dishes.filter(function (x) { return x && num(x.colonies); }).length;
-    const ok = {};
+    const basis = L.evidenceBasis(dishes), ok = {};
     Object.keys(EV_KEY).forEach(function (id) {
       const v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = ck(id);
       ok[id] = on && v === true;
-      if (note) note.textContent = !on ? '' : v === true ? '✓ Your dishes show this.' : v === false ? '✕ Your dishes do not show this. Check your table.' : (counted ? 'Count more dishes to check this.' : 'Count your dishes first to check this.');
+      if (note) note.textContent = !on ? '' : v === true ? '✓ ' + whose(id) + ' show this.' : v === false ? '✕ ' + whose(id) + ' do not show this. Check your table.' : (counted ? 'Count more dishes to check this.' : 'Count your dishes first to check this.');
     });
     const claimOk = !!claimEl && claimEl.value !== 'c', reasonOk = !!reason && reason.value === 'a';
     const flags = [claimOk, ok['cer-ev-1'] || ok['cer-ev-2'] || ok['cer-ev-3'], ck('cer-ev-4') || reasonOk, reasonOk, ck('cer-caveat')];
