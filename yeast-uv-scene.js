@@ -9,7 +9,7 @@
 
    MODEL (assumptions; the page's "What this simulation models" says the same in plain words):
    - Dose = lamp x minutes x transmittance, in "minutes of unprotected UV". The lamp is 1 unit per minute. Transmittance is 1 with no cover,
-     about 1/SPF for sunscreen (SPF 30 passes about one thirtieth; each dish gets a little spread, SD 12%, like a thin or thick layer),
+     about 1/SPF for sunscreen (SPF 30 passes about one thirtieth; the same cover and time always give the same dose, for either yeast),
      0 for foil, and a dark dish gets no UV at all.
    - Survival of UV-sensitive yeast falls exponentially with dose: S = exp(-0.35 x dose) (no repair genes).
      Wild-type yeast repair DNA, so they shrug off small doses (a shoulder of 4 min-equivalents) and then fall slowly: S = exp(-0.04 x (dose - 4)),
@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MODEL = { N0: 200, plateSD: 0.07, leakSD: 0.12, kSens: 0.35, kWild: 0.04, shoulderWild: 4, dayMs: 20000, minDays: 3, maxDays: 5 };
+  const MODEL = { N0: 200, plateSD: 0.07, leakSD: 0, kSens: 0.35, kWild: 0.04, shoulderWild: 4, dayMs: 20000, minDays: 3, maxDays: 5 };
   const num = x => typeof x === 'number' && isFinite(x);
   const BRACKETS = [{ id: 'b0', label: '0', lo: 0, hi: 0 }, { id: 'b1', label: '1–10', lo: 1, hi: 10 }, { id: 'b2', label: '11–50', lo: 11, hi: 50 }, { id: 'b3', label: '51–100', lo: 51, hi: 100 },
     { id: 'b4', label: '101–150', lo: 101, hi: 150 }, { id: 'b5', label: '151–200', lo: 151, hi: 200 }, { id: 'b6', label: '201 or more', lo: 201, hi: 250 }];

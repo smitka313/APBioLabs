@@ -81,3 +81,15 @@ test('plan to dishes, ratings, directions, days, layout', () => {
   for (let s = 0; s < 50; s++) { const d = Y.incubationDaysFor(s); assert.ok(d >= 3 && d <= 5); }
   const L = Y.layoutColonies(5, 150); assert.equal(L.length, 150); assert.ok(L.every(c => Math.hypot(c.x, c.y) + c.r <= 1)); assert.deepEqual(L, Y.layoutColonies(5, 150)); assert.equal(Y.layoutColonies(5, 0).length, 0);
 });
+
+test('UV dose depends only on the cover and the minutes: same for either yeast, every student, and 15 / SPF for sunscreen', () => {
+  for (const seed of [1, 99, 123456, 987654321]) for (const spf of [15, 18, 20, 30, 50]) {
+    const a = Y.simulateDish(seed, { strain: 'sensitive', spf, foil: false, dark: false, minutes: 15 }, 0);
+    const b = Y.simulateDish(seed, { strain: 'wild', spf, foil: false, dark: false, minutes: 15 }, 0);
+    assert.equal(a.dose, Math.round(15 / spf * 100) / 100, 'SPF ' + spf + ' gives 15 / SPF minutes of dose');
+    assert.equal(a.dose, b.dose, 'both strains get the same dose for the same cover');
+  }
+  // a higher SPF never gives a higher dose
+  const doses = [15, 18, 20, 30, 50].map(spf => Y.simulateDish(7, { strain: 'sensitive', spf, foil: false, dark: false, minutes: 15 }, 0).dose);
+  assert.deepEqual(doses, doses.slice().sort((x, y) => y - x));
+});

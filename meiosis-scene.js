@@ -461,7 +461,7 @@
       rngOut.textContent = S.dist + ' map units';
       rng.setAttribute('aria-valuetext', S.dist + ' map units apart');
       readout.replaceChildren(document.createTextNode('With crossing over on, about ' + p + ' in 100 gametes get a NEW combination of these two genes, and about ' + tg + ' in 100 keep the parent’s combination. '),
-        el('span', { class: 'ms-small', text: S.crossing ? 'Closer genes: new combinations are rarer.' : 'Crossing over is off right now, so the tally below shows 0 new combinations.' }));
+        el('span', { class: 'ms-small', text: S.crossing ? 'Closer genes: new combinations are rarer. The percent is a little below the map distance because two swaps can undo each other, and it never goes above 50.' : 'Crossing over is off right now, so the tally below shows 0 new combinations.' }));
       pairBody.querySelectorAll('button').forEach(b => { const pr = EXIT_PAIRS.find(x => x.id === b.dataset.pair); b.setAttribute('aria-pressed', String(pr.cM === S.dist)); });
     }
     function renderTally() {

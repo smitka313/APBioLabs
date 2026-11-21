@@ -105,3 +105,19 @@ test('skin cancer readings: 11 sites per group, no impossible values, trends as 
   assert.equal(L.pearson([1, 1, 1], [1, 2, 3]), null); assert.equal(L.pearson([1], [1]), null);
   assert.equal(L.SKIN_META.approximate, true);
 });
+
+test('evidenceChecks compares the claim evidence with the student\'s own yeast table', () => {
+  const mk = (o) => Object.assign({ strain: 'sensitive', minutes: 15 }, o);
+  const good = [mk({ dark: true, dose: 0, colonies: 201 }), mk({ dose: 15, colonies: 1 }), mk({ spf: 15, dose: 1, colonies: 140 }), mk({ spf: 30, dose: 0.5, colonies: 172 }), mk({ spf: 50, dose: 0.3, colonies: 190 })];
+  assert.deepEqual(L.evidenceChecks(good), { more: true, dark: true, spf: true });
+  // SPF 20 below SPF 15 and a dark dish well below the top: those statements fail
+  const noisy = [mk({ dark: true, dose: 0, colonies: 150 }), mk({ spf: 15, dose: 1, colonies: 190 }), mk({ spf: 20, dose: 0.75, colonies: 150 }), mk({ spf: 30, dose: 0.5, colonies: 160 }), mk({ spf: 50, dose: 0.3, colonies: 140 })];
+  const r = L.evidenceChecks(noisy); assert.equal(r.dark, false); assert.equal(r.spf, false);
+  // too little data: cannot say
+  assert.deepEqual(L.evidenceChecks([]), { more: null, dark: null, spf: null });
+  assert.deepEqual(L.evidenceChecks([mk({ dose: 1, colonies: 10 })]), { more: null, dark: null, spf: null });
+  // never mixes strains and never crashes on junk
+  assert.doesNotThrow(() => L.evidenceChecks([null, 5, { colonies: NaN }, { colonies: -1 }]));
+  const mixed = good.concat(good.map(d => Object.assign({}, d, { strain: 'wild', colonies: 200 })));
+  assert.equal(L.evidenceChecks(mixed).spf, false); // wild-type covered dishes are flat, so "higher SPF, more colonies" is not true for both
+});
