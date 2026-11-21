@@ -547,7 +547,7 @@
       }
       // row captions
       const p0 = groupXY(0);
-      if (!M.narrow) { txt('DNA', p0.x - 6, p0.y + 20 + M.th / 2, 11, theme.muted, 'right', 700, true); txt('copy', p0.x - 6, p0.y + 34 + M.th * 1.5, 11, theme.muted, 'right', 700, true); }
+      if (!M.narrow && p0.x > 44) { txt('DNA', p0.x - 6, p0.y + 20 + M.th / 2, 11, theme.muted, 'right', 700, true); txt('copy', p0.x - 6, p0.y + 34 + M.th * 1.5, 11, theme.muted, 'right', 700, true); }
     }
     // flying groups during the move, drawn above both panels
     function drawFlying(mv) {
