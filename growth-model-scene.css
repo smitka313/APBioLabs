@@ -29,6 +29,7 @@
 .growth-chart-wrap { overflow:auto; margin-top:15px; border-radius:12px; background:#13272d; }
 #growth-chart { display:block; width:100%; height:auto; aspect-ratio:1160 / 330; }
 #growth-chart-changes { display:block; width:100%; height:auto; aspect-ratio:1160 / 430; }
+.legend-mutation { flex-basis:100%; }
 .chart-views { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
 .chart-views .btn[aria-pressed="true"] { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700; }
 .chart-views .btn[aria-pressed="true"]::before { content:"✓ "; }

@@ -899,7 +899,7 @@
       const hits=groups.filter(x=>groups.some(y=>pair(x,y)));
       if(!hits.length)return ['You have not yet run two sets that differ only in '+name+'. '+advice];
       return hits.sort((x,y)=>labelTissue(x.tissue).localeCompare(labelTissue(y.tissue))||x[other]-y[other]||String(x[other]).localeCompare(String(y[other]))||(key==='age'?x.age-y.age:SIZE_ORDER[x.size]-SIZE_ORDER[y.size]))
-        .map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions.');
+        .map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions, '+changeMeanText(g)+' control changes (mutations).');
     };
     const lines={
       'analysis-design':groups.length<2?['Collect two sets in the growth model, then choose them in the comparison above.']:(a&&b&&a.id!==b.id?['Set '+a.index+': '+settings(a)+'.','Set '+b.index+': '+settings(b)+'.','Changed: '+(['age','size','tissue'].filter(k=>a[k]!==b[k]).map(k=>({age:'age',size:'body size',tissue:'cell type'})[k]).join(', ')||'nothing (same settings)')+'.']:['Choose two different sets in the comparison above.']),
@@ -998,7 +998,7 @@
     msTable.appendChild(msBody);msWrap.appendChild(msTable);report.appendChild(msWrap);
     for(const [label,id] of MAKING_SENSE_PROMPTS){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=($('#'+id)||{value:''}).value.trim()||'Not answered yet.';report.append(h,p);}
     for(const [label,id] of ANALYSIS_PROMPTS.concat([['One model limitation','model-limit']])){const h=document.createElement('h4');h.textContent=label;const p=document.createElement('p');p.className='report-answer';p.textContent=$('#'+id).value.trim()||'Not answered yet.';report.append(h,p);}
-    const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities. The cancer state uses three explicitly modeled control changes and deliberately accelerated teaching rules.';report.appendChild(note);
+    const note=document.createElement('p');note.className='small muted';note.textContent='Simplified teaching model. Divisions are DNA-copying opportunities; these counts are not human measurements or cancer probabilities. In this model a control change is a mutation. The cancer state uses three explicitly modeled control changes and deliberately accelerated teaching rules.';report.appendChild(note);
   }
   function runTrials(){
     const s=settings(),trials=[];
