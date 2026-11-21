@@ -1,0 +1,140 @@
+/* OpenSciEd B.3 Lessons 5-6 companion: DNA copying, p53 and gene expression. Uses the site tokens in style.css. */
+.lab-header .crumbs { flex-wrap: wrap; }
+.step-nav ol { justify-content: flex-start; }
+[role=status]:empty { display: none; }
+.panel { min-width: 0; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.row .btn { max-width: 100%; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field.grow { flex: 1 1 260px; }
+.field label, .field legend { font-weight: 650; }
+.field textarea, .field input[type=text] { width: 100%; max-width: 83ch; box-sizing: border-box; font: inherit; }
+.field textarea { min-height: 5.5em; resize: vertical; }
+fieldset.field { border: 0; padding: 0; margin: 0; }
+fieldset.field > legend { padding: 0; margin-bottom: 4px; }
+fieldset.field > .field { margin: 0 0 8px 28px; }
+.analysis-question label, .analysis-question > legend { display: flex; align-items: baseline; gap: 9px; line-height: 1.45; }
+.question-number { flex: none; display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font: 700 .85rem var(--f-mono); }
+.choice { display: flex; gap: 9px; align-items: flex-start; margin: 6px 0; padding: 7px 9px; border-radius: var(--r-sm); min-height: 24px; }
+.choice input { flex: none; margin: 1px 0 0; width: 24px; height: 24px; }
+.choice:hover { background: var(--surface-2); }
+.feedback { min-height: 1.4em; margin: 4px 0 0; }
+.feedback:empty { min-height: 0; }
+.steps { padding-left: 1.3em; display: grid; gap: 8px; max-width: 72ch; }
+.part-card { border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 12px 16px; background: var(--surface); }
+.part-card p { margin: 4px 0; }
+.part-tag { display: inline-block; font: 600 .76rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.resume-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--accent-soft); }
+.resume-bar[hidden] { display: none; }
+
+/* Scenes: reserve the space so nothing jumps while the model loads. */
+.scene-host { display: grid; gap: 8px; }
+.scene-host canvas { display: block; width: 100%; height: auto; aspect-ratio: 960 / 340; min-height: 150px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.scene-desc { margin: 0; font-size: .9rem; color: var(--muted); }
+.scene-notice { margin: 0; padding: 10px 14px; border-left: 4px solid var(--warn); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--warn-soft); color: var(--ink); font-weight: 600; }
+.scene-notice::before { content: "ⓘ "; }
+.scene-notice[hidden] { display: none; }
+
+/* "Your data" boxes */
+.your-data { display: grid; gap: 10px; border-left: 4px solid var(--accent); }
+.your-data h3, .your-data h4 { margin: 0; }
+.your-data p { margin: 0; }
+.your-data table.data { font-size: .88rem; }
+.your-data table.data th, .your-data table.data td { white-space: normal; }
+.your-data table.data td.num { text-align: left; font-family: inherit; }
+.your-data table caption, .checklist-table caption, .map-table caption, .progress-table caption, .rubric-table caption { text-align: left; padding: 6px 2px; font-weight: 700; color: var(--ink); }
+
+/* Tables with writing in them */
+.table-wrap { max-width: 100%; overflow-x: auto; }
+.checklist-table, .map-table, .progress-table, .rubric-table { width: 100%; table-layout: fixed; }
+.checklist-table th, .checklist-table td, .map-table th, .map-table td, .progress-table th, .progress-table td, .rubric-table th, .rubric-table td { white-space: normal; vertical-align: top; }
+.checklist-table th[scope=row], .map-table th[scope=row], .progress-table th[scope=row], .rubric-table th[scope=row] { width: 21%; text-align: left; font-weight: 650; background: var(--surface-2); }
+.checklist-table textarea, .map-table textarea, .progress-table textarea { width: 100%; box-sizing: border-box; min-height: 4.2em; resize: vertical; font: inherit; }
+.row-status { display: block; margin-top: 6px; font-weight: 700; font-size: .82rem; color: var(--ok); }
+.row-status:empty { display: none; }
+.checklist-table tr.is-done th[scope=row] { box-shadow: inset 4px 0 0 var(--ok); }
+fieldset.src { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-width: 0; }
+.chip { display: flex; align-items: center; gap: 7px; min-height: 28px; font-size: .88rem; white-space: normal; }
+.chip input { width: 24px; height: 24px; flex: none; margin: 0; }
+.map-table td.na { color: var(--muted); text-align: center; }
+.key-list { display: grid; gap: 6px; padding-left: 1.2em; }
+
+/* Reading */
+.reading { display: grid; gap: 10px; }
+.reading h3 { margin: 0; }
+.reading p, .reading li { max-width: 70ch; margin: 0; }
+.reading ol { display: grid; gap: 6px; padding-left: 1.3em; margin: 0; }
+.organize-figure { margin: 4px 0; }
+.organize-figure svg { display: block; width: 100%; max-width: 680px; height: auto; }
+.fig-cell { fill: var(--surface-2); stroke: var(--muted); }
+.fig-nucleus { fill: var(--accent-soft); stroke: var(--accent); }
+.fig-thread, .fig-leader { stroke: var(--accent); fill: none; }
+.fig-arrow, .fig-protein { stroke: var(--muted); }
+.fig-protein { stroke: var(--stain); }
+.fig-chrom { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
+.fig-gene { fill: var(--stain-soft); stroke: var(--stain); stroke-width: 2; }
+.fig-dot { fill: var(--stain); }
+.fig-text { fill: var(--ink); font: 600 13px var(--f-body); }
+.fig-text-mono text { fill: var(--ink); font: 600 15px var(--f-mono); letter-spacing: .12em; }
+.fig-text-mono text.fig-text { font: 600 13px var(--f-body); letter-spacing: 0; }
+
+/* Explanation and checks */
+.echo { border-left: 4px solid var(--stain); }
+.echo h3 { margin: 0 0 6px; }
+.echo p { margin: 0 0 6px; max-width: 72ch; }
+.self-check, .mechanism-check { display: grid; gap: 4px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); background: var(--surface); padding: 12px 14px; margin: 0; min-width: 0; }
+.self-check legend, .mechanism-check legend { padding: 0 5px; font-weight: 800; }
+.self-level { margin: 6px 0 0; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); font-weight: 600; }
+.self-level[data-level=organized] { background: var(--ok-soft); }
+.self-level[data-level=organized]::before { content: "✓ "; }
+.rubric-text { width: 100%; box-sizing: border-box; font: .85rem var(--f-mono); }
+.rubric-text[hidden] { display: none; }
+.exit-item { display: grid; gap: 8px; }
+.exit-item h3 { margin: 0; }
+.exit-item p { margin: 0; }
+.exit-item .btn { justify-self: start; }
+.seqs { font-family: var(--f-mono); font-size: .88rem; overflow-wrap: anywhere; }
+.glossary { display: grid; gap: 4px 14px; grid-template-columns: max-content 1fr; margin: 0; }
+.glossary dt { font-weight: 700; }
+.glossary dd { margin: 0; }
+.sentence-check { display: grid; gap: 8px; }
+.sentence-check h3 { margin: 0; }
+.sentence-check p { margin: 0; }
+.sentence-check select, .sentence-check input[type=text] { min-height: 36px; }
+
+.report-answer { margin: 0 0 6px; white-space: pre-wrap; }
+.investigation-report h4 { margin: 12px 0 2px; font-size: .95rem; }
+.report-checks { margin: 6px 0; }
+.submit-card { display: grid; gap: 12px; }
+.attribution { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; font-size: .9rem; }
+.attribution h3 { margin-top: 0; }
+.reset-dialog { max-width: min(480px, calc(100% - 32px)); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); padding: 20px; }
+.reset-dialog::backdrop { background: #0009; }
+.reset-dialog h2 { margin-top: 0; }
+
+@media (max-width: 760px) {
+  /* Tables become stacked cards on phones. */
+  .checklist-table, .checklist-table thead, .checklist-table tbody, .checklist-table tr, .checklist-table th, .checklist-table td,
+  .map-table, .map-table thead, .map-table tbody, .map-table tr, .map-table th, .map-table td,
+  .progress-table, .progress-table thead, .progress-table tbody, .progress-table tr, .progress-table th, .progress-table td { display: block; width: 100% !important; box-sizing: border-box; }
+  .checklist-table thead, .map-table thead, .progress-table thead { position: absolute; width: 1px !important; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .checklist-table tr, .map-table tr, .progress-table tr { padding: 10px 0; border-bottom: 2px solid var(--line); }
+  .checklist-table td::before, .map-table td::before, .progress-table td::before { content: attr(data-label); display: block; font-weight: 700; font-size: .82rem; color: var(--muted); margin: 6px 0 3px; }
+  .map-table td.na { display: none; }
+  .glossary { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .step-nav a { padding-inline: 8px; }
+  .panel { padding: 12px; }
+  .row .btn { width: 100%; justify-content: center; }
+  fieldset.field > .field { margin-left: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .row-status, .self-level { transition: background .2s; }
+}
+@media print {
+  .step-nav, .theme-switch, #download-work, #print-work, #reset-work, #copy-rubric, .skip-link, .pager, .scene-notice, .resume-bar { display: none !important; }
+  body { background: #fff; color: #111; }
+  .panel, .callout, .part-card { break-inside: avoid; }
+  textarea { min-height: 3.5em; }
+}
