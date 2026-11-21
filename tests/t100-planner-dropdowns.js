@@ -29,6 +29,8 @@ const PAGE = 'openscied-b3-inheritance-environment.html';
       await p.selectOption('#pl-sel-dv', 'growth').catch(() => {});
       const o = await p.evaluate(() => ({ page: document.documentElement.scrollWidth - innerWidth, bad: [...document.querySelectorAll('#planner-scene .pl-select')].filter(s => { const r = s.getBoundingClientRect(); return r.width < 140 || r.height < 24 || r.right > innerWidth + 1; }).length }));
       T.ok(o.page <= 0 && o.bad === 0, 'dropdowns fit, at least 140 px wide, no sideways scroll' + tag);
+      const leaked = await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('aplab:openscied:b3-inheritance-environment:v1') || '{}'); return Object.keys(d.fields || {}).filter(k => /^pl-sel-/.test(k)); });
+      T.ok(leaked.length === 0, 'planner dropdown ids are not saved as page fields ' + leaked.join(',') + tag);
       await p.reload(); await p.waitForSelector('#planner-scene [data-sel="iv"]');
       await p.evaluate(() => { location.hash = 'plan'; }); await p.waitForSelector('#pl-sel-iv');
       T.ok(await p.locator('#pl-sel-iv').inputValue() === 'time' && await p.locator('#planner-scene [data-f="dir0"]').inputValue() === 'fewer', 'the choices are saved across a reload' + tag);

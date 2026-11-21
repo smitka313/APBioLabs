@@ -49,6 +49,18 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
         sel: [...document.querySelectorAll('select.rsel')].filter(s => s.getClientRects().length).filter(s => { const r = s.getBoundingClientRect(); return r.right > innerWidth + 1 || r.height < 24 || r.width < 140; }).length }));
       T.ok(over.page <= 0 && over.sel === 0, 'no sideways scroll, every dropdown fits, is at least 140 px wide and 24 px tall' + tag);
 
+      // the dropdowns are display only: they must not become saved fields, and so never show up as raw ids in the summary or the download
+      const saved = await p.evaluate(() => { const d = JSON.parse(localStorage.getItem('aplab:openscied:b3-dna-p53:v1') || '{}'); return Object.keys(d.fields || {}).filter(k => /^sel-/.test(k)); });
+      T.ok(saved.length === 0, 'no dropdown ids are saved as fields ' + saved.join(',') + tag);
+      await p.evaluate(() => { location.hash = 'wrapup'; }); await p.waitForSelector('#wrapup.is-current');
+      T.ok(!/sel-p-/.test(await p.locator('#wrapup').innerText()), 'the wrap-up shows no raw ids' + tag);
+      await p.evaluate(() => { location.hash = 'sense5'; }); await p.waitForSelector('#sense5.is-current');
+      // an older save that already holds dropdown ids is cleaned on load (no "Earlier answer: sel-..." lines)
+      await p.evaluate(() => { const k = 'aplab:openscied:b3-dna-p53:v1', d = JSON.parse(localStorage.getItem(k)); d.fields['sel-p-ms5-pairs-A'] = 'T'; localStorage.setItem(k, JSON.stringify(d)); });
+      await p.reload(); await p.waitForFunction(() => window.B3DnaP53);
+      await p.evaluate(() => { location.hash = 'wrapup'; }); await p.waitForSelector('#wrapup.is-current');
+      T.ok(!/sel-p-/.test(await p.locator('main').innerText()), 'an old save holding dropdown ids shows no raw ids' + tag);
+      await p.evaluate(() => { location.hash = 'sense5'; }); await p.waitForSelector('#sense5.is-current');
       // survives a reload
       await p.reload();
       await p.waitForFunction(() => window.B3DnaP53 && document.querySelector('.step.is-current'));

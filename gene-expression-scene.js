@@ -15,7 +15,7 @@
      path is built from the chain. Strand A's chain gives the "butterfly" reference; each residue that differs from it bends
      the ribbon away from that reference, and a missing last residue leaves a gap ("missing a piece").
    - "Inject an error": a seeded one-base substitution arises while the copy is made (a copying slip, as in Lesson 5). The
-     error is chosen with api.rng, so the same student and the same strand get the same error after a reload. Only
+     error is chosen with api.rng, salted with the strand and how many injected runs are already saved: the same student gets the same first error on a strand after a reload, and each later run gets a different one. Only
      substitutions whose new group still matches a card are offered, so the changed sentence can always be read.
    All results come from the student's own choices and the seeded error; nothing here is measured data or a prediction
    about a person. Work in progress is not saved; every finished run is saved with api.addExpressionRun and is restored

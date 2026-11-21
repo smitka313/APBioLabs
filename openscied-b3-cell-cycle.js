@@ -143,6 +143,7 @@
   }
   function makePlayer(i){return {id:i+1,pos:0,score:zeroScore(),status:'playing',turnsUsed:0,blue:0,red:0,destroyed:0,sentBack:0,skipped:0,skipTurns:0,bonusRolls:0,lastChip:null};}
   function roundName(round){return round===1?'Round 1 · p53 is working':'Round 2 · Cellular Chance cards';}
+  function doneLabel(p){return p.turnsUsed>=TURNS_PER_ROUND?'Turns used up':'Round over';}
   function nextCheckpoint(pos){for(const n of CHECKPOINTS)if(n>pos)return n;return FINISH;}
   function setEvent(title,copy,icon,kicker){state.game.event={title:title,copy:copy,icon:icon||'🧬',kicker:kicker||'Cell cycle'};}
   function addLog(text){const g=state.game;g.logs.push(text);if(g.logs.length>120)g.logs.shift();}
@@ -171,7 +172,7 @@
     const g=state.game;
     $('#scorecards').innerHTML=g.playersState.map(function(p,index){
       const active=index===g.active&&p.status==='playing';
-      const status=p.status==='done'?'Turns used up':p.bonusRolls?'Extra roll':p.skipTurns?'Loses next turn':'Turn '+Math.min(TURNS_PER_ROUND,p.turnsUsed+1)+' of '+TURNS_PER_ROUND;
+      const status=p.status==='done'?doneLabel(p):p.bonusRolls?'Extra roll':p.skipTurns?'Loses next turn':'Turn '+Math.min(TURNS_PER_ROUND,p.turnsUsed+1)+' of '+TURNS_PER_ROUND;
       const row=function(label,vals,thresholds){return '<div class="score-phase-row"><strong>'+label+'</strong>'+vals.map(function(x,i){const na=x===null,met=!na&&x>=thresholds[i];return '<span class="'+(na?'score-na':met?'score-met':'')+'">'+(na?'—':'<b>'+x+'</b>'+(met?'<i class="score-check" aria-hidden="true">✓</i><span class="sr-only"> met</span>':''))+'</span>';}).join('')+'</div>';};
       return '<div class="player-score player-color-'+p.id+(active?' is-active':'')+(p.status==='done'?' is-done':'')+'"><div class="score-player"><i class="cell-token token-'+p.id+'">'+p.id+'</i><span>Player '+p.id+'</span><small>'+status+'</small></div>'+
         '<p class="score-chips">Cell chips: '+chipText(p)+'</p>'+
@@ -195,11 +196,14 @@
     const g=state.game,p=g.playersState[g.active];if(!p)return;
     // Always the upcoming checkpoint. A piece standing on a checkpoint has already been checked there (a cell that
     // fails is moved off it), so the panel moves on to the next one instead of repeating the checkpoint just passed.
-    const key=p.pos===FINISH?FINISH:nextCheckpoint(p.pos),st=checkpointState(p,key);
+    // A waiting card that will send the cell back (or destroy it) means that checkpoint is not passed yet, so the panel keeps showing it.
+    // A card that passes the cell moves the panel on to the next checkpoint straight away.
+    const n=g.checkpointNotice,holds=n&&n.pending&&n.player===p.id&&n.pos&&n.outcome!=='pass'&&n.outcome!=='divided';
+    const key=holds?n.pos:(p.pos===FINISH?FINISH:nextCheckpoint(p.pos)),st=checkpointState(p,key);
     $('#checkpoint-title').textContent=(key===FINISH?'':'Next checkpoint · ')+st.title;
     $('#checkpoint-subtitle').textContent=st.subtitle;
     $('#checkpoint-requirements').innerHTML=st.items.map(function(x){const met=x[2]>0&&x[1]>=x[2];return '<span class="requirement'+(met?' met':'')+'"><span>'+(x[2]?(met?'✓ ':'○ '):'')+x[0]+'</span><strong>'+x[1]+(x[2]?' / '+x[2]:'')+'</strong><span class="requirement-meter"><span style="width:'+(x[2]?Math.min(100,100*x[1]/x[2]):0)+'%"></span></span></span>';}).join('');
-    $('#checkpoint-status').textContent=p.status==='done'?'Turns used up':key===FINISH?(p.lastChip==='red'?'Divided anyway · red chip':'Divided · blue chip'):key===G1CP?'G1 Checkpoint ahead':key===G2CP?'G2 Checkpoint ahead':'M Checkpoint ahead';
+    $('#checkpoint-status').textContent=p.status==='done'?doneLabel(p):key===FINISH?(p.lastChip==='red'?'Divided anyway · red chip':'Divided · blue chip'):key===G1CP?'G1 Checkpoint ahead':key===G2CP?'G2 Checkpoint ahead':'M Checkpoint ahead';
     $('#checkpoint-card').classList.toggle('checkpoint-ready',st.items.every(function(x){return !x[2]||x[1]>=x[2];}));
     $('#checkpoint-card').setAttribute('aria-label','Player '+p.id+' '+st.title+': '+st.subtitle);
   }
@@ -212,7 +216,7 @@
   }
   function nextNeed(p){const t=track[p.pos+1];return t&&t.phase==='m'&&t.type==='space'?t.roll:null;}
   function turnInstruction(p){
-    if(p.status==='done')return 'This player has used all '+TURNS_PER_ROUND+' turns for the round.';
+    if(p.status==='done')return p.turnsUsed>=TURNS_PER_ROUND?'This player has used all '+TURNS_PER_ROUND+' turns for the round.':'The round is over for this player after '+p.turnsUsed+' of '+TURNS_PER_ROUND+' turns.';
     if(p.bonusRolls>0)return 'Extra roll! Roll all four dice again without moving.';
     if(p.pos===FINISH)return 'New cell: move to the first G1 space and roll all four dice. Your scorecard starts empty.';
     if(p.pos===0)return 'Move to the first G1 space and roll all four dice.';
@@ -284,7 +288,7 @@
   function evidenceLine(n,r){
     if(r.legacy)return 'Round '+n+': played with an earlier version of the game rules (no chip counts).';
     const made=r.blue+r.red;
-    return 'Round '+n+(r.inProgress?' (in progress)':' (complete)')+': '+plural(r.blue,'blue chip')+' (non-cancer cells), '+plural(r.red,'red chip')+' (cancer cells in this game model); '+pct(r.red,made)+' of the '+(made===1?'1 new cell was a cancer cell':made+' new cells were cancer cells')+'. Destroyed by p53: '+r.destroyed+'. Sent back by a checkpoint: '+r.sentBack+'. Checkpoints skipped: '+r.skipped+'.';
+    return 'Round '+n+(r.inProgress?' (in progress)':' (complete)')+': '+plural(r.blue,'blue chip')+' (non-cancer cells), '+plural(r.red,'red chip')+' (cancer cells in this game model); '+(made?pct(r.red,made)+' of the '+(made===1?'1 new cell was a cancer cell':made+' new cells were cancer cells'):'No new cells were made, so there is no percent of cancer cells')+'. Destroyed by p53: '+r.destroyed+'. Sent back by a checkpoint: '+r.sentBack+'. Checkpoints skipped: '+r.skipped+'.';
   }
   function resultsTable(rounds){
     const head='<thead><tr><th>Cells and events</th>'+rounds.map(function(x){return '<th>Round '+x[0]+'</th>';}).join('')+'</tr></thead>';

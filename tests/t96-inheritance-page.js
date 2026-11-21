@@ -135,7 +135,25 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     // --- claim check, C to T ---
     await go(p, 'yeast');
     T.ok(/Pick a claim/.test(await p.locator('#cer-level').innerText()) && await p.locator('#cer-level').getAttribute('data-level') === 'none', 'claim builder starts empty');
-    await pick(p, 'cer-claim', 'a'); await p.check('#cer-ev-1'); await p.check('#cer-ev-4'); await pick(p, 'cer-reason', 'a');
+    // Evidence about "my dishes" is checked against the student's own yeast table (counted dishes): seed a plausible one.
+    await p.evaluate(() => B3Inh.saveState('yeast', { dishes: [
+      { group: 1, strain: 'sensitive', dark: true, minutes: 0, dose: 0, colonies: 201 }, { group: 2, strain: 'sensitive', minutes: 15, dose: 15, colonies: 1 },
+      { group: 3, strain: 'sensitive', spf: 15, minutes: 15, dose: 1, colonies: 140 }, { group: 4, strain: 'sensitive', spf: 30, minutes: 15, dose: 0.5, colonies: 172 },
+      { group: 5, strain: 'sensitive', spf: 50, minutes: 15, dose: 0.3, colonies: 190 }, { group: 6, strain: 'sensitive', foil: true, minutes: 15, dose: 0, colonies: 198 }] }));
+    await pick(p, 'cer-claim', 'c'); await p.check('#cer-ev-1'); await pick(p, 'cer-reason', 'b'); await p.check('#cer-caveat');
+    T.ok(await p.locator('#cer-level').getAttribute('data-level') !== 'organized' && /does not fit/.test(await p.locator('#cer-level').innerText()), 'a claim the dishes contradict (UV has no effect) cannot reach Organized and says why');
+    await p.check('#cer-ev-3');
+    T.ok(/✕/.test(await p.locator('#cer-ev-3-note').innerText()) || /✓/.test(await p.locator('#cer-ev-3-note').innerText()), 'a statement about SPF gets a text mark (✓ or ✕) from the student\'s own table');
+    await p.uncheck('#cer-ev-3'); await pick(p, 'cer-claim', 'a'); await pick(p, 'cer-reason', 'a');
+    await p.uncheck('#cer-caveat'); await p.evaluate(() => B3Inh.saveState('yeast', null));
+    await p.uncheck('#cer-ev-1'); await p.check('#cer-ev-1');
+    T.ok(/Count your dishes first/.test(await p.locator('#cer-ev-1-note').innerText()), 'evidence about my dishes asks for counted dishes first');
+    await p.evaluate(() => B3Inh.saveState('yeast', { dishes: [
+      { group: 1, strain: 'sensitive', dark: true, minutes: 0, dose: 0, colonies: 201 }, { group: 2, strain: 'sensitive', minutes: 15, dose: 15, colonies: 1 },
+      { group: 3, strain: 'sensitive', spf: 15, minutes: 15, dose: 1, colonies: 140 }, { group: 4, strain: 'sensitive', spf: 30, minutes: 15, dose: 0.5, colonies: 172 },
+      { group: 5, strain: 'sensitive', spf: 50, minutes: 15, dose: 0.3, colonies: 190 }, { group: 6, strain: 'sensitive', foil: true, minutes: 15, dose: 0, colonies: 198 }] }));
+    T.ok(/✓/.test(await p.locator('#cer-ev-1-note').innerText()), 'the mark updates when the dishes are counted (no stale text)');
+    await p.check('#cer-ev-4');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'linked', 'claim, evidence and reasoning gives Linked');
     await p.check('#cer-caveat');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'organized', 'adding a limit gives Organized');

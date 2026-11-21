@@ -73,7 +73,7 @@
   function collectFields() {
     const f = {};
     $$('main input, main textarea, main select').forEach(function (x) {
-      if (x.readOnly || x.type === 'button') return;
+      if (x.readOnly || x.type === 'button' || x.closest('.scene-host')) return; // scene controls save through api.saveState, not as page fields
       if (x.type === 'radio') { if (x.checked) f[x.name] = x.value; }
       else if (x.type === 'checkbox') f[x.id] = x.checked;
       else if (x.id) f[x.id] = x.value;
@@ -178,7 +178,7 @@
       const nodes = b[1](); box.replaceChildren();
       if (!nodes.length) box.appendChild(el('p', 'muted', b[0] === '#data-skin-body' ? 'Open the graphs first. What you viewed will appear here.' : 'Run the model first. Your results will appear here.'));
       else nodes.forEach(function (n) { box.appendChild(n); });
-    });
+    });    renderClaim(false);
   }
   function renderSkinTable() {
     const box = $('#skin-table'); if (!box) return;
@@ -256,10 +256,23 @@
 
   /* ---------- claim self-check and C-to-T ---------- */
   const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your dishes and from the study or reading, reasoning, and a limit. (This is your own check, not a grade.)' };
+  // Evidence chips about "my dishes" are checked against the student's own yeast table, so a statement the data do not show earns no credit.
+  const EV_KEY = { 'cer-ev-1': 'more', 'cer-ev-2': 'dark', 'cer-ev-3': 'spf' };
   function renderClaim(speak) {
-    const ck = id => $('#' + id).checked, claim = !!$('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
-    const flags = [claim, ck('cer-ev-1') || ck('cer-ev-2') || ck('cer-ev-3'), ck('cer-ev-4') || !!(reason && reason.value === 'a'), !!reason, ck('cer-caveat')];
-    const level = L.claimLevel(flags), out = $('#cer-level'); out.textContent = CLAIM_TEXT[level]; out.dataset.level = level;
+    const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
+    const dishes = state.yeast && Array.isArray(state.yeast.dishes) ? state.yeast.dishes : [], checks = L.evidenceChecks(dishes);
+    const counted = dishes.filter(function (x) { return x && num(x.colonies); }).length;
+    const ok = {};
+    Object.keys(EV_KEY).forEach(function (id) {
+      const v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = ck(id);
+      ok[id] = on && v === true;
+      if (note) note.textContent = !on ? '' : v === true ? '✓ Your dishes show this.' : v === false ? '✕ Your dishes do not show this. Check your table.' : (counted ? 'Count more dishes to check this.' : 'Count your dishes first to check this.');
+    });
+    const claimOk = !!claimEl && claimEl.value !== 'c', reasonOk = !!reason && reason.value === 'a';
+    const flags = [claimOk, ok['cer-ev-1'] || ok['cer-ev-2'] || ok['cer-ev-3'], ck('cer-ev-4') || reasonOk, reasonOk, ck('cer-caveat')];
+    const level = L.claimLevel(flags), out = $('#cer-level');
+    const bad = claimEl && claimEl.value === 'c' ? 'Your dishes did change with UV, so “UV has no effect” does not fit. Try another claim. ' : reason && !reasonOk ? 'Yeast do not choose the dark. Think about what UV does to DNA. ' : '';
+    out.textContent = bad + CLAIM_TEXT[level]; out.dataset.level = level;
     if (speak) announce(CLAIM_TEXT[level].split(':')[0]);
   }
   function renderCto() {

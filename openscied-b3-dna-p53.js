@@ -95,13 +95,14 @@
   function findLegacy() {
     state.legacy = {};
     Object.keys(state.fields || {}).forEach(function (id) {
+      if (/^sel-/.test(id)) { delete state.fields[id]; return; } // ids of the row dropdowns were saved by mistake for a short while; drop them
       if (!byId(id)) state.legacy[id] = state.fields[id];
     });
   }
   function collectFields() {
     const f = {};
     $$('main input, main textarea, main select').forEach(function (x) {
-      if (x.readOnly || x.type === 'button' || x.hasAttribute('data-ui')) return;
+      if (x.readOnly || x.type === 'button' || x.hasAttribute('data-ui') || x.classList.contains('rsel')) return; // dropdowns only mirror the hidden radios, which are the saved answer
       if (x.type === 'checkbox') { if (x.id) f[x.id] = x.checked; }
       else if (x.id) f[x.id] = x.value;
     });
@@ -331,7 +332,7 @@
     return status === 'need' || (status === 'know' && src);
   }
   function renderChecklist() {
-    let done = 0;
+    let done = 0, marked = 0, needSrc = 0;
     CHECK_ROWS.forEach(function (k) {
       const row = byId('cl-row-' + k), status = byId('cl-' + k + '-status').value;
       const src = $$('input[type=checkbox]', row).some(c => c.checked), s = byId('cl-status-' + k);
@@ -339,9 +340,12 @@
       $('.src', row).hidden = status !== 'know';
       s.textContent = status === 'know' ? (src ? '✓ Know it, with a source' : '○ Tap where you learned it') : status === 'need' ? '→ Find it in the reading or the model' : '';
       const d = rowDone(k); if (d) done++;
+      if (status) marked++;
+      if (status === 'know' && !src) needSrc++;
       row.classList.toggle('is-done', d);
     });
-    $('#checklist-count').textContent = done + ' of ' + CHECK_ROWS.length + ' ideas sorted.';
+    // "Sorted" counts every idea marked I know it / I need it. A know-it row also needs its source before it counts as done in the section strip.
+    $('#checklist-count').textContent = marked + ' of ' + CHECK_ROWS.length + ' ideas sorted.' + (needSrc ? ' ' + needSrc + (needSrc === 1 ? ' still needs' : ' still need') + ' a source.' : '');
   }
   // Older saves: a row with evidence written or a source ticked was a "know" row.
   function migrateChecklist() {

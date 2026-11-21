@@ -131,7 +131,7 @@
         <p class="scene-notice" id="dna-fork-notice" hidden>Interactive model coming in the next update. The questions and tables on the following sections already work, and they will fill in from this model when it arrives.</p>
       </div>
       <ol class="flow flow--steps" aria-label="Steps in the model"><li>Unwind</li><li>Unzip</li><li>Pair letters</li><li>Count mismatches</li><li>Try p53</li></ol>
-      <p>Pair five letters per strand. Wrong pairs are <strong>substitutions</strong> (red, ✕). Try all three p53 versions.</p>
+      <p>Pair five letters per strand. A letter that does not fit is turned away. The model finishes the rest and sometimes slips: a wrong letter is a <strong>substitution</strong> (red, ✕). Try all three p53 versions.</p>
       <div class="your-data panel" id="data-fork" aria-labelledby="data-fork-title">
         <h3 id="data-fork-title">Your data from the DNA fork</h3>
         <div class="your-data-body" id="data-fork-body"><p class="muted">Run the model first. Your counts will appear here.</p></div>
@@ -392,7 +392,7 @@
       </div>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner">
         <p><strong>Modeled:</strong> copying DNA into RNA (U in place of T), cutting out parts of the copy, and reading groups of three to pick amino acids.</p>
-        <p><strong>Simplified:</strong> the cards and sentence are teaching tools. Real RNA editing removes sections of different sizes, and real proteins fold in 3D. “Inject an error” adds one wrong letter, the same one each reload for your dataset; the shape picture is only a stand-in.</p>
+        <p><strong>Simplified:</strong> the cards and sentence are teaching tools. Real RNA editing removes sections of different sizes, and real proteins fold in 3D. “Inject an error” adds one wrong letter. Your first error on a strand is the same after a reload; each new run picks a different one. The shape picture is only a stand-in.</p>
         <p><strong>One card differs from the real code:</strong> the card for RNA group CUU (code GAA) says Pro, but in the standard code CUU codes for Leu. This page keeps the card words so your sentence matches the lesson, and shows the real amino acid beside it.</p>
       </div></details>
     </div>
