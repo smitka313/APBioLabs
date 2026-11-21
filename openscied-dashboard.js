@@ -2,7 +2,11 @@
 (function () {
   'use strict';
   const PREFIX = 'aplab:openscied:';
-  const ACTIVITIES = [{ id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1' }];
+  // Each activity reads its own saved record: progress(raw) gives {started, section, visited, summary}; ids(saved) lists its written-response ids.
+  const ACTIVITIES = [
+    { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
+    { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds }
+  ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
   // dashboard counts whatever the activity actually asks. This list is only the fallback for saves made before the
@@ -17,7 +21,7 @@
   }
   function written(fields, id) { return typeof fields[id] === 'string' && !!fields[id].trim(); }
   const $ = selector => document.querySelector(selector);
-  function progress(raw) {
+  function cellCycleProgress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
     let saved;
     try { saved = JSON.parse(raw); if (!saved || saved.v !== 1) throw Error('Unknown saved format'); }
@@ -36,6 +40,29 @@
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       summary: started ? gameStatus + ' · ' + sets + ' trial set' + (sets === 1 ? '' : 's') + ' saved · ' + answers + ' of ' + ids.length + ' responses written' : 'Not started' };
   }
+  // DNA Copying, p53 & Gene Expression (Lessons 5-6): the activity saves the ids of every written response; the fallback counts
+  // any written text field in older or partial saves.
+  const DNA_SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain', 'expression', 'sense6', 'wrapup'];
+  function dnaP53ResponseIds(saved) {
+    const listed = saved && Array.isArray(saved.responseIds) ? saved.responseIds.filter(id => typeof id === 'string' && id) : [];
+    if (listed.length) return Array.from(new Set(listed));
+    const fields = saved && saved.fields || {};
+    return Object.keys(fields).filter(id => typeof fields[id] === 'string' && !/^(ex-el-|cl-.*-src-)/.test(id));
+  }
+  function dnaP53Progress(raw) {
+    if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
+    let saved;
+    try { saved = JSON.parse(raw); if (!saved || saved.v !== 1) throw Error('Unknown saved format'); }
+    catch (e) { return { summary: 'Saved work could not be read. Download a copy before restarting.', started: false, section: 'overview', visited: 0 }; }
+    const fields = saved.fields || {}, ids = dnaP53ResponseIds(saved), answers = ids.filter(id => written(fields, id)).length;
+    const fork = !!(saved.fork && typeof saved.fork === 'object' && Object.keys(saved.fork).length);
+    const runs = saved.expression && Array.isArray(saved.expression.runs) ? saved.expression.runs.length : 0;
+    const started = !!(answers || fork || runs || (DNA_SECTIONS.includes(saved.lastSection) && saved.lastSection !== 'overview'));
+    const fallback = answers && answers === ids.length ? 'wrapup' : runs ? 'sense6' : fork ? 'sense5' : answers ? 'ideas' : 'overview';
+    return { started, section: DNA_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
+      visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
+      summary: started ? (fork ? 'DNA fork results saved' : 'DNA fork not run yet') + ' · ' + runs + ' gene expression run' + (runs === 1 ? '' : 's') + ' · ' + answers + ' of ' + ids.length + ' responses written' : 'Not started' };
+  }
   function init() {
     Lab.identity.mount('#openscied-student-identity');
     const status = $('#openscied-results-status');
@@ -51,7 +78,7 @@
         const count = savedKeys().length;
         const recent = [];
         ACTIVITIES.forEach(activity => {
-          const raw = localStorage.getItem(activity.key), item = progress(raw);
+          const raw = localStorage.getItem(activity.key), item = activity.progress(raw);
           $('#' + activity.id + '-progress').textContent = item.summary;
           $('#' + activity.id + '-reset').disabled = !raw;
           const link = $('#' + activity.id + '-open');
@@ -91,7 +118,7 @@
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
           const fields = saved && saved.fields || {};
           responses[activity.id] = {};
-          responseIds(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
+          activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
         });
         const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: Lab.identity.get(), work, responses };
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
@@ -110,8 +137,8 @@
       clearTarget = activity || null;
       $('#clear-openscied-title').textContent = activity ? 'Restart ' + activity.name + '?' : 'Clear OpenSciEd results?';
       $('#clear-openscied-description').textContent = activity
-        ? 'This permanently clears this activity’s game progress, growth-model trials, and answers on this device. Other activities, your name, class period, and AP Biology work stay saved.'
-        : 'This permanently clears all OpenSciEd game progress, growth-model trials, and answers saved on this device. Your name, class period, and AP Biology lab work will stay saved.';
+        ? 'This permanently clears this activity’s ' + activity.clears + ' on this device. Other activities, your name, class period, and AP Biology work stay saved.'
+        : 'This permanently clears all OpenSciEd activity progress, model results, and answers saved on this device. Your name, class period, and AP Biology lab work will stay saved.';
       confirmButton.textContent = activity ? 'Erase this activity’s results' : 'Erase OpenSciEd results';
       confirmation.value = ''; confirmButton.disabled = true;
       $('#openscied-clear-error').textContent = '';
