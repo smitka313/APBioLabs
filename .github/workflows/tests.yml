@@ -47,7 +47,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - if: matrix.shard == 1
-        run: node --test tests/openscied-dashboard.test.js tests/cell-cycle-scene.test.js tests/openscied-b3-dna-p53-logic.test.js
+        run: node --test tests/openscied-dashboard.test.js tests/cell-cycle-scene.test.js tests/openscied-b3-dna-p53-logic.test.js tests/openscied-b3-inheritance-logic.test.js
       - run: node tests/run-all.js openscied --shard ${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: always()
