@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="domain-redirect.js"></script>
+<!-- seo:start -->
+<title>Peat Bog Carbon Lab — a companion for OpenSciEd Biology B.2 | Lab Bench</title>
+<meta name="description" content="A free, independent peat bog simulator for OpenSciEd Biology B.2 (Fires). Change Earth’s tilt, temperature, CO₂, oxygen, water level and fire, and compare photosynthesis, decomposition and burning.">
+<link rel="canonical" href="https://biologylabbench.com/openscied-b2-peat-bog-lab">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AP Bio Digital Lab Bench">
+<meta property="og:title" content="Peat Bog Carbon Lab — a companion for OpenSciEd Biology B.2 | Lab Bench">
+<meta property="og:description" content="A free, independent peat bog simulator for OpenSciEd Biology B.2 (Fires). Change Earth’s tilt, temperature, CO₂, oxygen, water level and fire, and compare photosynthesis, decomposition and burning.">
+<meta property="og:url" content="https://biologylabbench.com/openscied-b2-peat-bog-lab">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://biologylabbench.com/img/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Peat Bog Carbon Lab — a companion for OpenSciEd Biology B.2 | Lab Bench">
+<meta name="twitter:description" content="A free, independent peat bog simulator for OpenSciEd Biology B.2 (Fires). Change Earth’s tilt, temperature, CO₂, oxygen, water level and fire, and compare photosynthesis, decomposition and burning.">
+<meta name="twitter:image" content="https://biologylabbench.com/img/og.png">
+<meta name="twitter:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://biologylabbench.com/#website","url":"https://biologylabbench.com/","name":"AP Bio Digital Lab Bench","alternateName":"Biology Lab Bench","inLanguage":"en","creator":{"@id":"https://biologylabbench.com/#creator"}},{"@type":"Person","@id":"https://biologylabbench.com/#creator","name":"Robert Smitka"},{"@type":["WebPage","LearningResource"],"@id":"https://biologylabbench.com/openscied-b2-peat-bog-lab#webpage","url":"https://biologylabbench.com/openscied-b2-peat-bog-lab","name":"Peat Bog Carbon Lab — a companion for OpenSciEd Biology B.2 | Lab Bench","description":"A free, independent peat bog simulator for OpenSciEd Biology B.2 (Fires). Change Earth’s tilt, temperature, CO₂, oxygen, water level and fire, and compare photosynthesis, decomposition and burning.","inLanguage":"en","isPartOf":{"@id":"https://biologylabbench.com/#website"},"isAccessibleForFree":true,"license":"https://creativecommons.org/licenses/by-nc-sa/4.0/","creator":{"@id":"https://biologylabbench.com/#creator"},"breadcrumb":{"@id":"https://biologylabbench.com/openscied-b2-peat-bog-lab#breadcrumb"},"educationalLevel":"High school biology","learningResourceType":"Interactive simulation","teaches":"Photosynthesis, cellular respiration and burning as opposite or matching reactions, how temperature, oxygen and water change decomposition, Earth’s tilt and Arctic peat, zombie fires, and carbon dioxide and global warming","audience":{"@type":"EducationalAudience","educationalRole":"student"},"isBasedOn":"https://www.openscied.org/"},{"@type":"BreadcrumbList","@id":"https://biologylabbench.com/openscied-b2-peat-bog-lab#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"All labs","item":"https://biologylabbench.com/"},{"@type":"ListItem","position":2,"name":"Peat Bog Carbon Lab companion (OpenSciEd B.2)","item":"https://biologylabbench.com/openscied-b2-peat-bog-lab"}]}]}</script>
+<!-- seo:end -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="openscied-b2-peat-bog-lab.css">
+<script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="lab-header">
+  <div class="wrap wrap--wide gutter">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">AP Bio Digital Lab Bench</a><a href="openscied-dashboard.html">Biology Companion Activities</a><span>Unit 2 · Ecosystems: matter and energy (Fires)</span>
+      <div class="theme-switch" role="group" aria-label="Color theme" data-ph="theme"><button type="button" class="theme-opt" data-mode="light" aria-pressed="false" title="Light theme">Light</button><button type="button" class="theme-opt" data-mode="dark" aria-pressed="false" title="Dark theme">Dark</button><button type="button" class="theme-opt" data-mode="auto" aria-pressed="false" title="Auto: match my computer">Auto</button></div>
+    </nav>
+    <div class="eyebrow">Peat Bog Carbon Lab · Unit B.2 companion · Simulation</div>
+    <h1>Will an Arctic peat bog store carbon or release it?</h1>
+    <p class="driving-q">Change the tilt, temperature, CO₂, oxygen, water and fire. Watch three rates.</p>
+    <div class="tags"><span class="tag">Regular Biology</span><span class="tag">Sliders and graphs</span><span class="tag">≈ 45–60 minutes</span><span class="tag">Simulated data</span><span class="tag">Progress stays in this browser</span></div>
+  </div>
+</header>
+<nav class="step-nav" aria-label="Activity steps">
+  <div class="wrap wrap--wide gutter"><ol>
+    <li><a href="#overview"><span class="n">1</span><span>Overview</span></a></li>
+    <li><a href="#bog"><span class="n">2</span><span>The bog</span></a></li>
+    <li><a href="#graph"><span class="n">3</span><span>Test one variable</span></a></li>
+    <li><a href="#zombie"><span class="n">4</span><span>Zombie fires</span></a></li>
+    <li><a href="#warming"><span class="n">5</span><span>Global warming</span></a></li>
+    <li><a href="#trials"><span class="n">6</span><span>My trials</span><span class="navcount" id="nav-count" aria-hidden="true">0</span></a></li>
+    <li><a href="#model"><span class="n">7</span><span>About this model</span></a></li>
+  </ol></div>
+</nav>
+<p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+<div class="numbar" id="numbar" hidden aria-hidden="true">
+  <div><small>Photosynthesis</small><b id="nbP">0</b></div>
+  <div><small>Decomposition</small><b id="nbD">0</b></div>
+  <div><small>Burning</small><b id="nbB">0</b></div>
+  <div><small>Peat carbon</small><b id="nbN">0</b></div>
+</div>
+<main id="main">
+
+  <!-- 1 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="overview" data-step="Overview">
+    <header><div class="eyebrow">1 · Overview</div><h2>Plants pull carbon out of the air. What puts it back?</h2></header>
+    <div class="step-body">
+      <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
+      <p class="lede">In an Arctic peat bog, plants pull carbon out of the air and store it in their bodies. When they die, the cold, soggy ground keeps them from rotting, so they pile up as peat over thousands of years. Change the conditions and see whether the bog stores carbon or releases it.</p>
+      <p class="sim-tag" id="sim-tag"><strong>Simulated.</strong> Every number here comes from a simplified model. Rates use a 0–100 teaching scale, not real measurements. <button class="info" type="button" aria-expanded="false" aria-controls="tip-scale" aria-label="What does the 0 to 100 scale mean?" title="What does the 0 to 100 scale mean?"><span aria-hidden="true">i</span></button></p>
+      <p class="tip" id="tip-scale" hidden>These are not real-world units. 0 means the process has stopped, and 100 is the fastest it can go in this simulation. The ↑ and ↓ badges show how much each number went up or down after your last change.</p>
+      <div class="key-compare">
+        <article class="proc proc--photo"><h3><span class="gl gl-photo" aria-hidden="true"></span>Photosynthesis · bog plants</h3>
+          <div class="io"><div class="io-row"><span class="chip2"><i class="sw sw-co2" aria-hidden="true"></i>Carbon dioxide</span><span class="chip2"><i class="sw sw-water" aria-hidden="true"></i>Water</span><span class="chip2"><i class="sw sw-light" aria-hidden="true"></i>Sunlight</span></div><div class="io-row"><span class="arrow"><span aria-hidden="true">→</span><span class="sr-only">makes</span></span><span class="chip2"><i class="sw sw-sugar" aria-hidden="true"></i>Glucose</span><span class="chip2"><i class="sw sw-o2" aria-hidden="true"></i>Oxygen</span></div></div>
+          <p class="small muted">Mosses and sedges store carbon in glucose and plant tissue. Dead plants become peat.</p></article>
+        <article class="proc proc--resp"><h3><span class="gl gl-resp" aria-hidden="true"></span>Decomposition · cellular respiration</h3>
+          <div class="io"><div class="io-row"><span class="chip2"><i class="sw sw-sugar" aria-hidden="true"></i>Peat (glucose)</span><span class="chip2"><i class="sw sw-o2" aria-hidden="true"></i>Oxygen</span></div><div class="io-row"><span class="arrow"><span aria-hidden="true">→</span><span class="sr-only">makes</span></span><span class="chip2"><i class="sw sw-co2" aria-hidden="true"></i>Carbon dioxide</span><span class="chip2"><i class="sw sw-water" aria-hidden="true"></i>Water</span><span class="chip2"><i class="sw sw-resp" aria-hidden="true"></i>Energy</span></div></div>
+          <p class="small muted">Bacteria and fungi break down peat slowly to get energy.</p></article>
+        <article class="proc proc--burn"><h3><span class="gl gl-burn" aria-hidden="true"></span>Burning · combustion</h3>
+          <div class="io"><div class="io-row"><span class="chip2"><i class="sw sw-sugar" aria-hidden="true"></i>Peat (fuel)</span><span class="chip2"><i class="sw sw-o2" aria-hidden="true"></i>Oxygen</span></div><div class="io-row"><span class="arrow"><span aria-hidden="true">→</span><span class="sr-only">makes</span></span><span class="chip2"><i class="sw sw-co2" aria-hidden="true"></i>Carbon dioxide</span><span class="chip2"><i class="sw sw-water" aria-hidden="true"></i>Water</span><span class="chip2"><i class="sw sw-burn" aria-hidden="true"></i>Heat &amp; light</span></div></div>
+          <p class="small muted">Same inputs and outputs as respiration, but the energy comes out all at once.</p></article>
+      </div>
+      <div class="mirror">
+        <h3>Photosynthesis and respiration are opposite reactions</h3>
+        <div class="mgrid" role="list" aria-label="The same substances appear in every row, with the arrow pointing the opposite way">
+          <div class="mrow mhead" aria-hidden="true"><span></span><span class="colhead c3">Carbon dioxide, water and energy</span><span></span><span class="colhead c2">Glucose and oxygen</span></div>
+          <div class="mrow" role="listitem" aria-label="Photosynthesis, read left to right: carbon dioxide plus water plus light energy makes glucose plus oxygen"><div class="rl rl-photo" aria-hidden="true">Photosynthesis<small>read left to right</small></div>
+            <div class="cell plus cell-co2" aria-hidden="true">CO₂</div><div class="cell plus cell-water" aria-hidden="true">Water</div><div class="cell cell-light" aria-hidden="true">Light energy</div>
+            <div class="big-arrow rl-photo" aria-hidden="true">→</div>
+            <div class="cell plus cell-sugar" aria-hidden="true">Glucose</div><div class="cell cell-o2" aria-hidden="true">Oxygen</div></div>
+          <div class="mrow" role="listitem" aria-label="Cellular respiration by decomposers, read right to left: glucose plus oxygen makes carbon dioxide plus water plus energy (ATP)"><div class="rl rl-resp" aria-hidden="true">Cellular respiration<small>decomposers · read right to left</small></div>
+            <div class="cell plus cell-co2" aria-hidden="true">CO₂</div><div class="cell plus cell-water" aria-hidden="true">Water</div><div class="cell cell-resp" aria-hidden="true">Energy (ATP)</div>
+            <div class="big-arrow rl-resp" aria-hidden="true">←</div>
+            <div class="cell plus cell-sugar" aria-hidden="true">Glucose</div><div class="cell cell-o2" aria-hidden="true">Oxygen</div></div>
+          <div class="mrow" role="listitem" aria-label="Burning, read right to left: peat (glucose) plus oxygen makes carbon dioxide plus water plus heat and light"><div class="rl rl-burn" aria-hidden="true">Burning<small>read right to left</small></div>
+            <div class="cell plus cell-co2" aria-hidden="true">CO₂</div><div class="cell plus cell-water" aria-hidden="true">Water</div><div class="cell cell-burn" aria-hidden="true">Heat &amp; light</div>
+            <div class="big-arrow rl-burn" aria-hidden="true">←</div>
+            <div class="cell plus cell-sugar" aria-hidden="true">Peat (glucose)</div><div class="cell cell-o2" aria-hidden="true">Oxygen</div></div>
+        </div>
+        <p class="small">The same substances appear in every row, but the arrow points the opposite way. <strong>The outputs of photosynthesis are the inputs of respiration, and the outputs of respiration are the inputs of photosynthesis.</strong> Photosynthesis stores the sun’s energy in glucose. Respiration and burning release that energy and return the carbon to the air. Peat builds up only when photosynthesis runs faster than its opposites.</p>
+      </div>
+      <details class="disclose"><summary>How to use this simulator</summary><div class="inner help">
+        <h3>Set an exact number</h3><p>Type the number in the box next to a slider and press <strong>Enter</strong>. Or click the slider’s round handle and use the <strong>left</strong> and <strong>right arrow keys</strong>.</p>
+        <h3>Start over</h3><p>Choose <strong>Reset</strong> under Quick scenarios, or the Reset button next to Record this trial, to put every bog setting back to the start. <strong>Reset to today</strong> resets the global warming sliders.</p>
+        <h3>Read the bog picture</h3><p>Moving shapes show materials moving. Thicker, faster arrows mean a faster rate. Each material has its own color <em>and</em> shape: gray circles = carbon dioxide, blue diamonds = oxygen, teal drops = water, purple squares = dead plants becoming peat, yellow stars = sunlight. The dashed teal line is the water level. The striped blue layer is permafrost (frozen peat). The <strong>Pause motion</strong> button stops the movement.</p>
+        <h3>Read the number boxes</h3><p>Rates go from 0 (stopped) to 100 (fastest). The ↑ and ↓ badges show how much a number changed. <strong>Peat carbon</strong>: positive (✓ green) means a carbon sink and the peat grows. Negative (✕ red) means carbon is released to the atmosphere and the peat shrinks.</p>
+        <h3>Get more help</h3><p>Choose an <strong>i</strong> button to explain a term. Choose a speaker button to hear a note read aloud with your device’s built-in voice. Nothing is sent anywhere.</p>
+        <h3>Keep your data</h3><p>Choose <strong>Record this trial</strong> to save the current numbers. Open <strong>My trials</strong> to see them, label them, and download a copy. Your settings and trials are saved only in this browser.</p>
+      </div></details>
+    </div>
+  </section>
+
+  <!-- 2 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="bog" data-step="The bog">
+    <header><div class="eyebrow">2 · The bog</div><h2>Change the conditions and watch the three rates</h2></header>
+    <div class="step-body">
+      <div class="bog-lab">
+        <div class="panel" id="controls">
+          <div class="ctrl">
+            <span class="sub">Quick scenarios</span>
+            <div class="presets" id="presets"></div>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="s-tilt">Earth’s tilt</label><span class="numwrap"><input type="number" class="num" id="n-tilt" inputmode="decimal" aria-label="Type a value for Earth’s tilt, in degrees"><span class="numunit" aria-hidden="true">°</span></span></div>
+            <input type="range" id="s-tilt" min="22.1" max="24.5" step="0.05" value="23.44">
+            <span class="hint">Earth’s tilt slowly rocks between 22.1° and 24.5° over about 41,000 years.</span>
+            <div class="presets" id="tiltPresets"></div>
+          </div>
+          <div class="tiltbox">
+            <svg id="earth" viewBox="0 0 300 170" role="img" aria-label="Earth tilted toward the sun on the longest day of summer, with the Arctic Circle and 65 degrees north marked"></svg>
+            <dl class="facts">
+              <dt>Noon sun height at 65°N</dt><dd id="fSun"></dd>
+              <dt>Summer sunlight at 65°N</dt><dd id="fQ"></dd>
+              <dt>Summer sunlight change</dt><dd id="fQd"></dd>
+              <dt>Summer warming from tilt</dt><dd id="fT"></dd>
+              <dt class="facts-hi">Summer temperature with tilt</dt><dd class="facts-hi" id="fTemp"></dd>
+            </dl>
+            <div><span class="sub">What do 65°N and W/m² mean?</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-tilt" aria-label="What do 65 degrees north and watts per square meter mean?" title="What do 65 degrees north and watts per square meter mean?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-tilt" hidden><b>65°N</b> is a latitude in the Arctic, where many peat bogs are. <b>W/m²</b> (watts per square meter) measures how much sunlight energy hits each square meter of ground. The sun height and sunlight are measured on the longest day of summer.</span></div>
+          </div>
+          <div id="sliders" class="sliders"></div>
+        </div>
+
+        <div class="stage" id="bog-stage">
+          <div class="diagram">
+            <p class="swipe">Swipe sideways to see the whole bog →</p>
+            <div class="pic-scroll" tabindex="0" role="region" aria-label="Bog picture. Scrolls sideways on a phone."><svg id="bog-svg" viewBox="0 0 700 400" role="img" aria-label="Cross-section of a peat bog."></svg></div>
+            <div class="pic-foot">
+            <ul class="legend" aria-label="Key to the bog picture">
+              <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1l1.5 3.5 3.8.4-2.8 2.5.8 3.7L6 9.2 2.7 11.1l.8-3.7L.7 4.9l3.8-.4z"/></svg><span class="lg lg-light">Sunlight</span></li>
+              <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.5"/></svg><span class="lg lg-co2">Carbon dioxide</span></li>
+              <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8L11.2 6 6 11.2.8 6z"/></svg><span class="lg lg-o2">Oxygen</span></li>
+              <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8C8.3 4 10.3 5.6 10.3 7.6a4.3 4.3 0 0 1-8.6 0C1.7 5.6 3.7 4 6 .8z"/></svg><span class="lg lg-water">Water</span></li>
+              <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9"/></svg><span class="lg lg-sugar">Dead plants (stored carbon)</span></li>
+              <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8l5.4 10.2H.6z"/></svg><span class="lg lg-burn">Heat &amp; light</span></li>
+            </ul>
+            <div class="pic-tools"><button class="btn btn--sm" type="button" id="motion-btn" aria-pressed="false">Pause motion</button><button class="btn btn--sm" type="button" data-enlarge="bog">Enlarge picture</button></div>
+            </div>
+          </div>
+
+          <div class="meters" id="meters">
+            <div class="meter"><span class="sub"><span class="gl gl-photo" aria-hidden="true"></span>Photosynthesis</span>
+              <div><span class="val val-photo" id="pVal">0</span> <span class="unit">/ 100</span><span class="delta" aria-hidden="true"></span></div>
+              <div class="bar" aria-hidden="true"><span id="pBar" class="fill-photo"></span></div><p>Carbon taken in</p></div>
+            <div class="meter"><span class="sub"><span class="gl gl-resp" aria-hidden="true"></span>Decomposition</span>
+              <div><span class="val val-resp" id="dVal">0</span> <span class="unit">/ 100</span><span class="delta" aria-hidden="true"></span></div>
+              <div class="bar" aria-hidden="true"><span id="dBar" class="fill-resp"></span></div><p>Carbon released by decomposers</p></div>
+            <div class="meter"><span class="sub"><span class="gl gl-burn" aria-hidden="true"></span>Burning</span>
+              <div><span class="val val-burn" id="bVal">0</span> <span class="unit">/ 100</span><span class="delta" aria-hidden="true"></span></div>
+              <div class="bar" aria-hidden="true"><span id="bBar" class="fill-burn"></span></div><p>Carbon released by fire</p></div>
+            <div class="meter meter-net"><span class="sub"><span class="gl gl-net" aria-hidden="true"></span>Peat carbon</span>
+              <span class="unit">photosynthesis − decomposition − burning</span>
+              <div><span class="val" id="nVal">0</span><span class="delta" aria-hidden="true"></span></div>
+              <div class="bar net" aria-hidden="true"><span id="nBar"></span></div>
+              <div class="netkey"><span><b class="pos">+</b> Positive: <strong>Carbon sink created</strong></span><span><b class="neg">−</b> Negative: <strong>Carbon source: carbon released to the air</strong></span></div>
+              <p id="nText"></p></div>
+          </div>
+          <div class="rec-row">
+            <p class="scale-note">Simulated rates on a 0–100 scale: 0 = stopped, 100 = fastest.</p>
+            <span class="rec-wrap"><span class="rec-status" data-rec-status></span><button class="btn btn--sm" id="reset-bog" type="button">Reset</button><button class="btn btn--sm btn--primary" id="record-bog" type="button">Record this trial</button></span>
+          </div>
+          <div class="notes" id="notes"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="graph" data-step="Test one variable">
+    <header><div class="eyebrow">3 · Test one variable</div><h2>How does one setting change each rate?</h2></header>
+    <div class="step-body">
+      <div class="chart-box">
+        <div class="row">
+          <div class="field"><label for="xVar">Change this variable:</label><select id="xVar"></select></div>
+        </div>
+        <p class="small muted">The graph shows each simulated rate across the full range of one variable while every other setting stays where you left it in The bog. The dashed vertical line marks your current setting.</p>
+        <svg id="explore" class="b2chart" role="img" aria-label="Line graph of photosynthesis, decomposition and burning rates against the chosen variable"></svg>
+        <ul class="legend legend-lines" id="explore-legend" aria-label="Graph key"></ul>
+        <p class="small" id="explore-now"></p>
+        <details class="disclose"><summary>Show this graph as a table</summary><div class="inner"><div class="table-wrap" id="explore-table"></div></div></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="zombie" data-step="Zombie fires">
+    <header><div class="eyebrow">4 · Real-world connection · Arctic wildfires</div><h2>Zombie fires</h2></header>
+    <div class="step-body">
+      <p class="lede">Some Arctic peat fires never really go out. After the flames die in the fall, the fire keeps smoldering underground all winter, hidden under the snow. In spring it bursts back to the surface. Scientists call these overwintering or “zombie” fires. They have come back in Alaska, Canada, and Siberia in recent years, as warmer summers dry out and thaw more peat.</p>
+      <div class="zombie">
+        <div class="panel">
+          <span class="sub">Using the bog settings</span>
+          <div>
+            <div class="chance" id="zChance">0%</div>
+            <p class="small muted">Simulated chance this fire survives the winter</p>
+          </div>
+          <dl class="znow"><dt class="sub">Bog settings now</dt><dd>Water level: <b id="znW"></b></dd><dd>Oxygen in the peat: <b id="znO"></b></dd><dd>Burning rate: <b id="znB"></b></dd></dl>
+          <div class="ctrl zwet">
+            <div class="ctrl-top"><label for="zWet">Water level in the bog</label><span class="numwrap"><input type="number" class="num" id="n-zWet" inputmode="decimal" aria-label="Type a value for water level, in percent"><span class="numunit" aria-hidden="true">%</span></span></div>
+            <input type="range" id="zWet" min="0" max="100" step="1" value="75">
+            <span class="hint">This is the same slider as in The bog. Moving either one moves both.</span>
+          </div>
+          <div class="ctrl zwet zburn">
+            <div class="ctrl-top"><label for="zBurn">Burning</label><span class="numwrap"><input type="number" class="num" id="n-zBurn" inputmode="decimal" aria-label="Type a value for burning, in percent"><span class="numunit" aria-hidden="true">%</span></span></div>
+            <input type="range" id="zBurn" min="0" max="100" step="1" value="0">
+            <span class="hint">This is the same slider as in The bog. Moving either one moves both.</span>
+          </div>
+          <div class="ctrl zwet ztemp">
+            <div class="ctrl-top"><label for="zTemp">Summer temperature</label><span class="numwrap"><input type="number" class="num" id="n-zTemp" inputmode="decimal" aria-label="Type a value for summer temperature, in degrees Celsius"><span class="numunit" aria-hidden="true">°C</span></span></div>
+            <input type="range" id="zTemp" min="-5" max="30" step="1" value="10">
+            <span class="hint">This is the same slider as in The bog. Moving either one moves both.</span>
+          </div>
+          <div class="zrec">
+            <button class="btn btn--primary" id="record-zombie" type="button">Record this trial</button>
+            <button class="btn" id="reset-zombie" type="button">Reset</button>
+            <span class="rec-status" data-rec-status></span>
+          </div>
+          <button class="btn btn--primary" id="zSetup" type="button">Set up zombie fire conditions</button>
+        </div>
+        <div class="stage">
+          <div class="seasons" role="group" aria-label="Season">
+            <button class="btn" type="button" data-season="0" aria-pressed="true">Summer</button>
+            <button class="btn" type="button" data-season="1" aria-pressed="false">Fall</button>
+            <button class="btn" type="button" data-season="2" aria-pressed="false">Winter</button>
+            <button class="btn" type="button" data-season="3" aria-pressed="false">Spring</button>
+            <button class="btn btn--primary" type="button" id="zPlay">Play a year</button>
+            <button class="btn btn--sm" type="button" data-enlarge="zombie">Enlarge picture</button>
+          </div>
+          <div class="diagram">
+            <p class="swipe">Swipe sideways to see the whole picture →</p>
+            <div class="pic-scroll" tabindex="0" role="region" aria-label="Zombie fire picture. Scrolls sideways on a phone."><svg id="zombie-svg" viewBox="0 0 700 300" role="img" aria-label="Cross-section of a peat bog through the seasons, showing a fire smoldering underground under winter snow and returning in spring."></svg></div>
+          </div>
+          <div class="caption"><span id="zCaption"></span><button class="speak" type="button" data-say="zCaption" aria-pressed="false" aria-label="Read the season description aloud" title="Read aloud"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+          <div class="panel zneeds">
+            <div><span class="sub">What the fire needs</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-zfac" aria-label="What do these bars mean?" title="What do these bars mean?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-zfac" hidden>Each bar shows how much that condition helps the fire survive the winter. A fire needs all five to be high. One short bar can put it out.</span></div>
+            <div class="flowbars" id="zFactors"></div>
+            <p class="small" id="zWhy"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="warming" data-step="Global warming">
+    <header><div class="eyebrow">5 · Bonus · Earth science connection</div><h2>Carbon dioxide and global warming</h2></header>
+    <div class="step-body">
+      <p class="lede">Photosynthesis pulls CO₂ out of the air. Decomposition and burning put it back. Peat, coal, oil, and gas all formed from ancient plants, so burning them releases carbon that photosynthesis stored long ago. When more CO₂ goes into the air than plants and oceans can remove, it builds up and traps heat.</p>
+      <div class="climate">
+        <div class="panel">
+          <div class="ctrl">
+            <div class="ctrl-top"><span class="lbl-row"><label for="fossil">Burning fossil fuels</label><button class="info" type="button" aria-expanded="false" aria-controls="tip-gt" aria-label="What does Gt mean?" title="What does Gt mean?"><span aria-hidden="true">i</span></button></span><span class="numwrap"><input type="number" class="num" id="n-fossil" inputmode="decimal" aria-label="Type a value for burning fossil fuels, in billion tonnes of carbon per year"><span class="numunit" aria-hidden="true">Gt</span></span></div><span class="tip" id="tip-gt" hidden><b>Gt</b> = gigatonnes, or billions of tonnes of carbon.</span>
+            <input type="range" id="fossil" min="0" max="20" step="0.5" value="10">
+            <span class="hint">Billions of tonnes of carbon per year. Today is about 10.</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="forest">Forests and peatlands</label><span class="numwrap"><input type="number" class="num" id="n-forest" inputmode="decimal" aria-label="Type a value for forests and peatlands, in percent of today"><span class="numunit" aria-hidden="true">% of today</span></span></div>
+            <input type="range" id="forest" min="25" max="150" step="5" value="100">
+            <span class="hint">Compared with today. Protecting them keeps photosynthesis pulling in CO₂. Draining, clearing, or burning them releases stored carbon.</span>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><label for="year">Show year</label><span class="numwrap"><input type="number" class="num" id="n-year" inputmode="numeric" aria-label="Type a year from 2025 to 2100"></span></div>
+            <input type="range" id="year" min="2025" max="2100" step="1" value="2100">
+          </div>
+          <div class="flowbars" id="carbon-bars">
+            <div><span class="sub">Carbon each year (billion tonnes)</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-flows" aria-label="How do I read these bars?" title="How do I read these bars?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-flows" hidden><b>Gt</b> = gigatonnes, or billions of tonnes of carbon. Bars marked “adds” put carbon in the air. Bars marked “removes” take it out. If the “adds” bars are bigger, CO₂ in the air goes up.</span></div>
+            <div class="flowbar"><span>Fossil fuels <em>(adds ▲)</em></span><div class="bar" aria-hidden="true"><span id="b-fossil" class="fill-burn"></span></div><span class="num" id="n-fossil-bar"></span></div>
+            <div class="flowbar"><span>Clearing &amp; draining land <em>(adds ▲)</em></span><div class="bar" aria-hidden="true"><span id="b-clear" class="fill-burn"></span></div><span class="num" id="n-clear"></span></div>
+            <div class="flowbar"><span>Taken up by plants <em>(removes ▼)</em></span><div class="bar" aria-hidden="true"><span id="b-land" class="fill-photo"></span></div><span class="num" id="n-land"></span></div>
+            <div class="flowbar"><span>Taken up by oceans <em>(removes ▼)</em></span><div class="bar" aria-hidden="true"><span id="b-ocean" class="fill-o2"></span></div><span class="num" id="n-ocean"></span></div>
+            <p class="small" id="balanceText"></p>
+          </div>
+          <div class="row"><button class="btn btn--primary" id="sendBog" type="button">Test the bog in this year</button><button class="btn" id="climateReset" type="button">Reset to today</button></div>
+          <p class="small muted">Sets the bog to that year’s CO₂ level. The Arctic warms about 2.5 times faster than the planet as a whole in this model (real estimates run from about 2 to 4 times), so its summer temperature rises more.</p>
+        </div>
+        <div class="stage">
+          <div class="diagram">
+            <div class="pic-tools"><button class="btn btn--sm" type="button" data-enlarge="gh">Enlarge picture</button></div>
+            <p class="swipe">Swipe sideways to see the whole picture →</p>
+            <div class="pic-scroll" tabindex="0" role="region" aria-label="Greenhouse picture. Scrolls sideways on a phone."><svg id="gh-svg" viewBox="0 0 600 300" role="img" aria-label="Greenhouse effect diagram: sunlight reaches the ground, the ground gives off heat, and carbon dioxide in the atmosphere sends some of that heat back down."></svg></div>
+          </div>
+          <div class="climate-charts">
+            <div class="chart-box"><span class="sub">CO₂ in the air (ppm), simulated</span><svg id="c-co2" class="b2chart" role="img" aria-label="Line graph of carbon dioxide from 2025 to 2100"></svg></div>
+            <div class="chart-box"><div><span class="sub">Warming since the 1800s (°C), simulated</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-goal" aria-label="What are the 1.5 and 2 degree lines?" title="What are the 1.5 and 2 degree lines?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-goal" hidden>In the 2015 Paris Agreement, most countries agreed to hold warming well below 2 °C, and to try for 1.5 °C, above 1800s levels.</span></div><svg id="c-temp" class="b2chart" role="img" aria-label="Line graph of global warming from 2025 to 2100"></svg></div>
+          </div>
+          <details class="disclose"><summary>Show the two graphs as a table</summary><div class="inner"><div class="table-wrap" id="climate-table"></div></div></details>
+          <div class="explain">
+            <div><h3>Why CO₂ traps heat</h3><p>Sunlight passes through the air and warms the ground. The ground gives off heat as infrared energy. CO₂ molecules absorb that heat and send some of it back down, like a blanket.</p></div>
+            <div><h3>Why it matters for peat</h3><p>Warming thaws permafrost and dries out bogs. Decomposers wake up, and dry peat can burn, even as zombie fires that last through the winter. Both release more CO₂, which causes more warming. Scientists call this a feedback loop.</p></div>
+          </div>
+        </div>
+      </div>
+      <p class="small muted">This is a simplified model for learning. Rates are on a 0–100 scale chosen to show trends, not real measurements. Real climate projections include many more factors, such as other greenhouse gases, clouds, ice, and how oceans store heat.</p>
+    </div>
+  </section>
+
+  <!-- 6 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="trials" data-step="My trials">
+    <header><div class="eyebrow">6 · My trials</div><h2>Your recorded trials</h2></header>
+    <div class="step-body">
+      <p class="sim-tag"><strong>Simulated data.</strong> Rates are on a 0–100 teaching scale. Nothing in this table is a real measurement.</p>
+      <p class="report-student" id="trial-student"></p>
+      <div class="field grow"><label for="trialLabel">What are you testing? <span class="hint">This label is added to each new trial.</span></label>
+        <input id="trialLabel" type="text" list="labelOptions" maxlength="60" placeholder="Leave blank to label trials automatically" autocomplete="off">
+        <datalist id="labelOptions"><option value="Experiment A: Water level"></option><option value="Experiment B: Temperature"></option><option value="Experiment C: Carbon dioxide"></option><option value="Part 3: Earth’s tilt"></option><option value="Experiment D: Zombie fire"></option><option value="My own test"></option></datalist></div>
+      <div class="row">
+        <button class="btn btn--primary" id="record" type="button">Record this trial</button>
+        <button class="btn" id="undo" type="button" disabled>Undo last trial</button>
+        <button class="btn" id="copy" type="button">Copy table</button>
+        <button class="btn" id="download-csv" type="button">Download table (.csv)</button>
+      </div>
+      <p class="small" id="logStatus">Record a trial each time you change one variable. You can rename any trial’s label in the table. Copy the table into a spreadsheet to graph it.</p>
+      <div class="table-wrap" id="logWrap"></div>
+      <details class="disclose" open><summary>Investigations to try</summary><div class="inner"><ul class="try">
+        <li><b>High tilt</b>Set the tilt to 24.2°, like about 10,700 years ago. What happens to summer sunlight, temperature, and photosynthesis in the Arctic?</li>
+        <li><b>Low tilt</b>Set the tilt to 22.1°. How much of the peat freezes into permafrost? Why can’t decomposers or fire reach frozen peat?</li>
+        <li><b>Why peat builds up</b>Lower the water level from 80% to 10%. What happens to the oxygen in the peat, and to decomposition?</li>
+        <li><b>Peat fire</b>Set burning to 60%. Try it with a wet bog, then a dry bog. Which one releases more CO₂?</li>
+        <li><b>Opposites cancel out</b>Find settings where photosynthesis and decomposition are equal and there is no fire. What happens to the peat? Why does carbon stop building up?</li>
+        <li><b>Compare the outputs</b>Decomposition and burning both release CO₂. What inputs do they share? How is the energy released differently?</li>
+        <li><b>Zombie fire</b>Start a fire, then raise the water level a little at a time. At what water level does the fire stop surviving the winter? Why does water put it out?</li>
+        <li><b>Thaw</b>Choose “Arctic heat wave.” Is the bog still a carbon sink, or is carbon being released to the atmosphere?</li>
+      </ul></div></details>
+      <div class="submit-card">
+        <p>Your settings and trials save automatically in this browser. Nothing you choose or type is sent anywhere. Use <strong>Download my work</strong> to keep a copy or give it to your teacher.</p>
+        <div id="save-status" class="small"></div>
+        <div class="row">
+          <button class="btn btn--primary" type="button" id="download-work">Download my work (.json)</button>
+          <button class="btn" type="button" id="print-work">Print / Save as PDF</button>
+          <button class="btn btn--danger" type="button" id="reset-work">Clear this activity</button>
+        </div>
+        <p class="small muted">Other people using this device may see this work until it is cleared.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 ---------------------------------------------------------------- -->
+  <section class="step wrap wrap--wide gutter" id="model" data-step="About this model">
+    <header><div class="eyebrow">7 · About this model</div><h2>What this simulation models</h2></header>
+    <div class="step-body">
+      <div class="prose">
+        <p class="sim-tag"><strong>Simulated.</strong> Everything on this page comes from a teaching model. It shows trends. It does not predict any real bog.</p>
+        <div class="card-row">
+          <article class="panel card-read"><h3>What is modeled</h3><ul>
+            <li>Summer sunlight at 65°N from Earth’s tilt, using the standard solstice formula.</li>
+            <li>Photosynthesis, decomposition and burning as rates from 0 to 100, set by sunlight, temperature, CO₂, oxygen and water.</li>
+            <li>Frozen peat (permafrost) that decomposers and fire cannot reach.</li>
+            <li>Oxygen reaching the peat, which falls as the water level rises.</li>
+            <li>The chance a smoldering fire lasts through the winter.</li>
+            <li>A carbon budget to 2100: fossil fuels and land clearing add carbon, plants and oceans remove it, and CO₂ drives warming.</li>
+          </ul></article>
+          <article class="panel card-read"><h3>What is simplified</h3><ul>
+            <li>The 0–100 scale is a teaching scale. It is not grams of carbon or any real unit.</li>
+            <li>Peat is shown as “glucose.” Real peat is layers of partly decomposed plants (cellulose, lignin and more).</li>
+            <li>The whole bog has one water level and one oxygen number. Real peat has oxygen near the surface and almost none below the water.</li>
+            <li>Sunlight uses Earth’s average distance from the sun and ignores clouds.</li>
+            <li>Tilt warms the summer by a simple rule (0.1 °C for each extra W/m²).</li>
+            <li>The warming model uses 2.0 °C for each doubling of CO₂ and leaves out other gases, clouds, ice and the ocean’s slow heat storage.</li>
+            <li>Nothing is random, so everyone gets the same numbers for the same settings.</li>
+          </ul></article>
+          <article class="panel card-read"><h3>How real bogs differ</h3><ul>
+            <li>Without oxygen, decomposition slows a lot but does not stop. Some microbes keep working and make methane, another greenhouse gas.</li>
+            <li>A flaming fire needs about 15–16% oxygen. A smoldering peat fire can keep going on less. The model uses 12% as one middle value.</li>
+            <li>Real fires depend on peat depth, snow cover, wind, lightning and people, not only on the five bars shown here.</li>
+            <li>Real bogs differ a lot from place to place, and so do the numbers.</li>
+            <li>Estimates of how much faster the Arctic warms run from about 2 to 4 times the planet’s average. The model uses 2.5.</li>
+          </ul></article>
+        </div>
+        <details class="disclose"><summary>The rules the model uses</summary><div class="inner"><ul>
+          <li><strong>Photosynthesis</strong> = 100 × light × CO₂ × temperature × water × oxygen. Each factor is a number from about 0 to 1.2, and the result is held between 0 and 100. More light and more CO₂ raise it. It peaks near 18 °C. Very dry or very hot bogs slow it.</li>
+          <li><strong>Decomposition</strong> doubles for each 10 °C of warming, rises with oxygen in the peat, and falls toward 0 as the peat freezes.</li>
+          <li><strong>Burning</strong> rises with the Burning slider and with dry peat and oxygen, and falls to 0 at or below 12% oxygen or in frozen peat.</li>
+          <li><strong>Peat carbon</strong> = photosynthesis − decomposition − burning. Above 0 is a carbon sink. Below 0 is a carbon source.</li>
+        </ul></div></details>
+      </div>
+      <div class="attribution">
+        <h3>Source and attribution</h3>
+        <p>This is an original interactive simulator by Robert Smitka, built to support <a href="https://www.openscied.org/" rel="noopener">OpenSciEd</a> Unit B.2, <em>Ecosystems: Matter &amp; Energy: Fires</em> (peat, decomposition, photosynthesis and Earth’s tilt, zombie fires, carbon sinks, and CO₂ and temperature). It is not OpenSciEd material. OpenSciEd releases its high school materials under <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener">CC BY-NC 4.0</a>. What this site changed: the model, the pictures, the graphs and all the wording are new and were not taken from OpenSciEd. The ideas follow the unit’s Lessons 2–9, and the simulator was adapted into a companion page on this site. <a href="https://www.openscied.org/" rel="noopener">View the OpenSciEd materials</a>.</p>
+        <p>Independently developed by Robert Smitka. Not affiliated with, endorsed by, or sponsored by OpenSciEd. This companion’s own content is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license noopener">CC BY-NC-SA 4.0</a>.</p>
+        <p class="small muted">All rates, graphs and tables are simulated on a 0–100 teaching scale. Simplified teaching model, not a forecast. Student worksheet (student pages only): <a href="worksheets/peat-bog-carbon-lab-student-worksheet.docx" download>Word (.docx)</a> · <a href="worksheets/peat-bog-carbon-lab-student-worksheet.pdf" download>PDF</a>.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<dialog id="reset-dialog" class="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description">
+<h2 id="reset-title">Clear this activity?</h2><p id="reset-description">This erases this activity’s saved settings and recorded trials from this browser and starts fresh. Your name and class period stay saved. Download your work first if you want a copy.</p>
+<div class="row"><button class="btn" id="cancel-reset" type="button" autofocus>Cancel</button><button class="btn btn--danger" id="confirm-reset" type="button">Clear this activity</button></div>
+</dialog>
+<dialog id="enlarge-dialog" class="enlarge-dialog" aria-labelledby="enlarge-title">
+<div class="enlarge-head"><h2 id="enlarge-title">Picture</h2><button class="btn" id="enlarge-close" type="button" autofocus>Close</button></div>
+<div class="enlarge-body" id="enlarge-body"></div>
+</dialog>
+<footer class="site-footer"><div class="wrap wrap--wide gutter">
+  <p class="credit"><strong>Created by Robert Smitka.</strong> © 2026 Robert Smitka. Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>: share and adapt for non-commercial use with credit, under the same license.</p>
+  <p class="source-credit">Source: an original simulator by Robert Smitka that supports <a href="https://www.openscied.org/" rel="noopener">OpenSciEd</a> Unit B.2: <em>Ecosystems: Matter &amp; Energy: Fires</em>. OpenSciEd releases its high school materials under <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener">CC BY-NC 4.0</a>. This page is not OpenSciEd material; the model, pictures, graphs and wording are new.</p>
+  <p class="endorsement">Independently developed by Robert Smitka. Not affiliated with, endorsed by, or sponsored by OpenSciEd. OpenSciEd is a trademark of its owner.</p>
+  <p>This site counts anonymous page visits with GoatCounter (no cookies). Nothing you type, including your name and answers, is sent anywhere. Student responses stay in this browser unless downloaded and shared by the student.</p>
+  <p><a href="index.html">Return to AP Bio Digital Lab Bench</a> · <a href="openscied-dashboard.html">Biology Companion Activities</a></p>
+</div></footer>
+<script src="lab.js"></script>
+<script src="openscied-b2-peat-bog-logic.js"></script>
+<script src="openscied-b2-peat-bog-lab.js"></script>
+<script src="companion-pages.js"></script>
+</body>
+</html>

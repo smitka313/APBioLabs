@@ -13,7 +13,7 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('.dashboard-activity').count() === 3, width + ' px: three activity cards');
+      T.ok(await p.locator('.dashboard-unit.current .dashboard-activity').count() === 3, width + ' px: three activity cards');
       T.ok(/3 activities available/.test(await p.locator('.dashboard-unit.current .dashboard-tag').innerText()), width + ' px: tag says 3 activities available');
       T.ok(/Inheritance, Environment/.test(await p.locator('.dashboard-activity').nth(2).innerText()) && /Lessons 8–9/.test(await p.locator('.dashboard-activity').nth(2).innerText()), 'third card is the Lessons 8-9 companion');
       T.ok(await p.locator('#inh-env-open').getAttribute('href') === 'openscied-b3-inheritance-environment.html#overview', 'card opens its page');
