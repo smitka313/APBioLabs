@@ -149,9 +149,9 @@
 
         <div class="stage" id="bog-stage">
           <div class="diagram">
-            <div class="pic-tools"><button class="btn btn--sm" type="button" id="motion-btn" aria-pressed="false">Pause motion</button><button class="btn btn--sm" type="button" data-enlarge="bog">Enlarge picture</button></div>
             <p class="swipe">Swipe sideways to see the whole bog →</p>
             <div class="pic-scroll" tabindex="0" role="region" aria-label="Bog picture. Scrolls sideways on a phone."><svg id="bog-svg" viewBox="0 0 700 400" role="img" aria-label="Cross-section of a peat bog."></svg></div>
+            <div class="pic-foot">
             <ul class="legend" aria-label="Key to the bog picture">
               <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1l1.5 3.5 3.8.4-2.8 2.5.8 3.7L6 9.2 2.7 11.1l.8-3.7L.7 4.9l3.8-.4z"/></svg><span class="lg lg-light">Sunlight</span></li>
               <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4.5"/></svg><span class="lg lg-co2">Carbon dioxide</span></li>
@@ -160,6 +160,8 @@
               <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9"/></svg><span class="lg lg-sugar">Dead plants (stored carbon)</span></li>
               <li class="chip2"><svg class="mk" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8l5.4 10.2H.6z"/></svg><span class="lg lg-burn">Heat &amp; light</span></li>
             </ul>
+            <div class="pic-tools"><button class="btn btn--sm" type="button" id="motion-btn" aria-pressed="false">Pause motion</button><button class="btn btn--sm" type="button" data-enlarge="bog">Enlarge picture</button></div>
+            </div>
           </div>
 
           <div class="meters" id="meters">
@@ -198,7 +200,7 @@
           <div class="field"><label for="xVar">Change this variable:</label><select id="xVar"></select></div>
         </div>
         <p class="small muted">The graph shows each simulated rate across the full range of one variable while every other setting stays where you left it in The bog. The dashed vertical line marks your current setting.</p>
-        <svg id="explore" class="chart" role="img" aria-label="Line graph of photosynthesis, decomposition and burning rates against the chosen variable"></svg>
+        <svg id="explore" class="b2chart" role="img" aria-label="Line graph of photosynthesis, decomposition and burning rates against the chosen variable"></svg>
         <ul class="legend legend-lines" id="explore-legend" aria-label="Graph key"></ul>
         <p class="small" id="explore-now"></p>
         <details class="disclose"><summary>Show this graph as a table</summary><div class="inner"><div class="table-wrap" id="explore-table"></div></div></details>
@@ -304,8 +306,8 @@
             <div class="pic-scroll" tabindex="0" role="region" aria-label="Greenhouse picture. Scrolls sideways on a phone."><svg id="gh-svg" viewBox="0 0 600 300" role="img" aria-label="Greenhouse effect diagram: sunlight reaches the ground, the ground gives off heat, and carbon dioxide in the atmosphere sends some of that heat back down."></svg></div>
           </div>
           <div class="climate-charts">
-            <div class="chart-box"><span class="sub">CO₂ in the air (ppm), simulated</span><svg id="c-co2" class="chart" role="img" aria-label="Line graph of carbon dioxide from 2025 to 2100"></svg></div>
-            <div class="chart-box"><div><span class="sub">Warming since the 1800s (°C), simulated</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-goal" aria-label="What are the 1.5 and 2 degree lines?" title="What are the 1.5 and 2 degree lines?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-goal" hidden>In the 2015 Paris Agreement, most countries agreed to hold warming well below 2 °C, and to try for 1.5 °C, above 1800s levels.</span></div><svg id="c-temp" class="chart" role="img" aria-label="Line graph of global warming from 2025 to 2100"></svg></div>
+            <div class="chart-box"><span class="sub">CO₂ in the air (ppm), simulated</span><svg id="c-co2" class="b2chart" role="img" aria-label="Line graph of carbon dioxide from 2025 to 2100"></svg></div>
+            <div class="chart-box"><div><span class="sub">Warming since the 1800s (°C), simulated</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-goal" aria-label="What are the 1.5 and 2 degree lines?" title="What are the 1.5 and 2 degree lines?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-goal" hidden>In the 2015 Paris Agreement, most countries agreed to hold warming well below 2 °C, and to try for 1.5 °C, above 1800s levels.</span></div><svg id="c-temp" class="b2chart" role="img" aria-label="Line graph of global warming from 2025 to 2100"></svg></div>
           </div>
           <details class="disclose"><summary>Show the two graphs as a table</summary><div class="inner"><div class="table-wrap" id="climate-table"></div></div></details>
           <div class="explain">

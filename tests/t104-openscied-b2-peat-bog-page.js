@@ -182,6 +182,7 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     const big = await p.evaluate(() => { const s = document.querySelector('#enlarge-dialog #bog-svg'); if (!s) return null; const r = s.getBoundingClientRect(), d = document.getElementById('enlarge-dialog').getBoundingClientRect(); return { inside: r.right <= d.right + 1 && r.bottom <= d.bottom + 1 && r.left >= d.left - 1 && r.top >= d.top - 1, w: r.width, h: r.height }; });
     T.ok(big && big.inside && big.w > 900, 'enlarged bog fits inside the dialog ' + JSON.stringify(big));
     await p.keyboard.press('Escape');
+    await p.waitForFunction(() => !document.querySelector('#enlarge-dialog[open]') && document.querySelector('.stage #bog-svg'), null, { timeout: 3000 }).catch(() => {});
     T.ok(await p.locator('.stage #bog-svg').count() === 1 && await p.locator('#enlarge-dialog[open]').count() === 0, 'picture returns to the page on Escape');
 
     // --- error-free through all of it ---

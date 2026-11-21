@@ -72,7 +72,7 @@ async function fill(p) {   // put data in every box
           const r = await p.evaluate(() => {
             const de = document.documentElement, out = { over: de.scrollWidth - innerWidth, clipped: [] };
             const sec = document.querySelector('.step.is-current');
-            sec.querySelectorAll('svg.chart, .diagram svg, .tiltbox svg, .meter, .panel, .chart-box, .note, .flowbar, .mrow, .legend').forEach(e => {
+            sec.querySelectorAll('svg.b2chart, .diagram svg, .tiltbox svg, .meter, .panel, .chart-box, .note, .flowbar, .mrow, .legend').forEach(e => {
               if (e.closest('.pic-scroll') && !e.matches('svg')) return;
               const b = e.getBoundingClientRect(); if (!b.width) return;
               const par = e.closest('.pic-scroll, .mgrid, .table-wrap, .stage, .panel, .diagram');

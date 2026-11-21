@@ -183,13 +183,13 @@ svg .on-peat { fill: var(--b2-on-peat); }
 .flowbar .num { font-family: var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; width: auto; border: 0; background: none; min-height: 0; padding: 0; }
 .climate-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .chart-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; align-content: start; }
-.chart { width: 100%; height: auto; display: block; }
-.chart .grid line { stroke: var(--grid); stroke-dasharray: 2 4; }
-.chart .axis line { stroke: var(--muted); }
-.chart .axis text { font: 11px var(--f-mono); fill: var(--muted); }
-.chart .axis-title { font: 12px var(--f-body); fill: var(--muted); }
-.chart text { stroke: none; }
-.chart .hov-box { fill: var(--surface); stroke: var(--line); }
+.b2chart { width: 100%; height: auto; display: block; }
+.b2chart .grid line { stroke: var(--grid); stroke-dasharray: 2 4; }
+.b2chart .axis line { stroke: var(--muted); }
+.b2chart .axis text { font: 11px var(--f-mono); fill: var(--muted); }
+.b2chart .axis-title { font: 12px var(--f-body); fill: var(--muted); }
+.b2chart text { stroke: none; }
+.b2chart .hov-box { fill: var(--surface); stroke: var(--line); }
 .legend-lines { padding: 0; }
 .legend-lines li { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); font-size: .85rem; }
 .legend-lines svg { width: 34px; height: 12px; flex: none; }
@@ -247,7 +247,7 @@ svg .on-peat { fill: var(--b2-on-peat); }
   .bog-lab .meter { padding: 6px 10px; gap: 3px; } .bog-lab .meter .val { font-size: 1.35rem; }
   .bog-lab .meter .bar { height: 6px; }
   .bog-lab .meter-net p, .bog-lab .meter-net .netkey { display: none; }
-  .bog-lab .notes { display: none; }
+ 
 }
 @media (min-width: 901px) and (max-width: 1150px) { .bog-lab, .zombie, .climate { grid-template-columns: 300px minmax(0, 1fr); } }
 @media (min-width: 901px) { #zombie-svg { max-height: calc(100vh - 240px); min-height: 200px; } #gh-svg { max-height: calc(100vh - 200px); min-height: 220px; } }
@@ -292,3 +292,9 @@ body.numbar-on { padding-bottom: 58px; }
   .lbl-input { border: 0 !important; padding: 0 !important; width: auto !important; }
 }
 #logWrap table.data input.lbl-input { font-family: var(--f-body); text-align: left; min-width: 14em; width: 100%; }
+.tiltbox svg { max-width: 380px; margin-inline: auto; }
+.pic-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
+.pic-foot .legend { padding: 4px 0 0; flex: 1 1 380px; }
+@media (min-width: 901px) { .bog-lab .pic-foot .legend { flex-wrap: wrap; overflow: visible; } }
+@media (min-width: 901px) and (max-height: 820px) { .bog-lab > .stage { gap: 10px; } .bog-lab .diagram { padding: 8px; } .bog-lab #bog-svg { max-height: calc(100vh - 262px - var(--navh, 48px)); } .bog-lab .meter { padding: 6px 10px; gap: 3px; } .bog-lab .meter .val { font-size: 1.35rem; } .bog-lab .meter .bar { height: 6px; } .bog-lab .meter-net p, .bog-lab .meter-net .netkey { display: none; } }
+.meters { align-items: start; }

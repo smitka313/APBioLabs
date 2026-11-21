@@ -13,7 +13,7 @@ const DNA = 'aplab:openscied:b3-dna-p53:v1', CELL = 'aplab:openscied:b3-cell-cyc
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('.dashboard-activity').count() === 3, width + ' px: three activity cards under Unit 3');
+      T.ok(await p.locator('.dashboard-unit.current .dashboard-activity').count() === 3, width + ' px: three activity cards under Unit 3');
       T.ok(/3 activities available/.test(await p.locator('.dashboard-unit.current .dashboard-tag').innerText()), width + ' px: unit tag counts three activities');
       T.ok(await p.locator('#dna-p53-open').getAttribute('href') === 'openscied-b3-dna-p53.html#overview', 'DNA card opens its page');
       T.ok(/Not started/.test(await p.locator('#dna-p53-progress').innerText()) && /Not started/.test(await p.locator('#cell-cycle-progress').innerText()), 'both cards start as Not started');
