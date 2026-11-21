@@ -109,3 +109,13 @@
   X-Robots-Tag: noindex
 /CLAUDE.md
   X-Robots-Tag: noindex
+
+# Always revalidate pages, scripts and styles (a cheap 304 when unchanged). Without this, a phone can keep an old script or
+# stylesheet while the page itself is new, so a deploy that changes HTML and JS together breaks for that visitor
+# (blank scenes, unstyled cards). The JS and CSS files are not fingerprinted, so they must not be served from a stale copy.
+/*.js
+  Cache-Control: no-cache
+/*.css
+  Cache-Control: no-cache
+/*.html
+  Cache-Control: no-cache
