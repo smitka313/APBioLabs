@@ -214,6 +214,20 @@ jobs:
         run: |
           export NODE_PATH="$PWD/node_modules"
           node tests/run-all.js "t60-browsers ${{ matrix.part }}"
+      - name: Run t98-webkit-dna-p53 (iPhone-sized DNA/p53 page)
+        if: matrix.part == 'pages'
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          export NODE_PATH="$PWD/node_modules"
+          node tests/t98-webkit-dna-p53.js
+      - name: Upload screenshots
+        if: always() && matrix.part == 'pages'
+        uses: actions/upload-artifact@v4
+        with:
+          name: t98-${{ matrix.browser }}-screenshots
+          path: test-artifacts/
+          if-no-files-found: ignore
 
   full:
     name: Full suite (shard ${{ matrix.shard }}/5)

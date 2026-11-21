@@ -88,24 +88,35 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     T.ok(await p.evaluate(k => { const d = JSON.parse(localStorage.getItem(k)); return d.v === 1 && d.fork.before.top.correct === 11 && d.expression.runs.length === 1 && Array.isArray(d.responseIds); }, KEY), 'scene data saved in the activity record');
     T.ok(await p.evaluate(() => localStorage.getItem('aplab:openscied:b3-cell-cycle:v1')) === null, 'cell-cycle key is untouched');
 
-    // --- fields save and restore across reload; last section ---
+    // --- cards save and restore across reload; last section ---
+    const pick = (name, value) => p.check('input[name="' + name + '"][value="' + value + '"]');
     await p.evaluate(h => { location.hash = h; }, 'ideas');
-    await p.fill('#ideas-chromosomes', 'Chromosomes hold DNA.');
+    await pick('p-ideas-chrom-r', 'a');
+    T.ok(/Saved/.test(await p.locator('[data-q="p-ideas-chrom"] .q-fb').innerText()), 'a poll card answers right away with a friendly note');
+    await pick('p-ideas-game-r', 'b');
+    T.ok(/did not match/.test(await p.locator('[data-q="p-ideas-game"] .q-fb').innerText()) && await p.locator('[data-q="p-ideas-game"] label[data-state="no"]').count() === 1, 'a wrong pick shows a reason and a text mark, not color alone');
+    await pick('p-ideas-game-r', 'a');
+    T.ok(/^Yes\./.test(await p.locator('[data-q="p-ideas-game"] .q-fb').innerText()) && await p.locator('[data-q="p-ideas-game"] label[data-state="ok"]').count() === 1, 'changing the pick replaces the feedback');
     await p.evaluate(h => { location.hash = h; }, 'sense5');
-    await p.fill('#ms5-q1', 'So the letters can be reached.');
+    await p.fill('#ms5-summary', 'A wrong letter stays, so the new cell differs.');
+    await pick('p-ms5-p53-a', 'nofit');
+    T.ok(!/^Yes\./.test(await p.locator('[data-q="p-ms5-p53"] .q-fb').innerText()), 'partial rows do not claim success');
+    for (const l of ['A', 'T', 'G', 'C']) await pick('p-ms5-pairs-' + l, { A: 'T', T: 'A', G: 'C', C: 'G' }[l]);
+    T.ok(/^Yes\./.test(await p.locator('[data-q="p-ms5-pairs"] .q-fb').innerText()), 'rows card is marked right once every row is right');
     await p.evaluate(h => { location.hash = h; }, 'checklist');
-    await p.fill('#cl-process-have', 'Unwind, unzip, pair A-T and G-C.');
-    T.ok(/0 of 7|1 of 7/.test(await p.locator('#checklist-count').innerText()) && /1 of 7 rows/.test(await p.locator('#checklist-count').innerText()), 'checklist count updates');
-    T.ok(/Add where it came from/.test(await p.locator('#cl-status-process').innerText()), 'row asks for a source (text, not color)');
+    await pick('cl-process-r', 'know');
+    T.ok(/0 of 7/.test(await p.locator('#checklist-count').innerText()) && /Tap where you learned it/.test(await p.locator('#cl-status-process').innerText()), 'a "know" row asks for a source (text, not color)');
     await p.check('#cl-process-src-sim');
-    T.ok(/✓ Evidence and source/.test(await p.locator('#cl-status-process').innerText()), 'row shows a check once evidence and source are given');
-    T.ok(await p.locator('#cl-row-process.is-done').count() === 1, 'row marked complete');
+    T.ok(/✓ Know it, with a source/.test(await p.locator('#cl-status-process').innerText()) && /1 of 7/.test(await p.locator('#checklist-count').innerText()) && await p.locator('#cl-row-process.is-done').count() === 1, 'row is complete once it has a status and a source');
+    await pick('cl-why-r', 'need');
+    T.ok(await p.locator('#cl-row-why.is-done').count() === 1 && await p.locator('#cl-row-why fieldset.src').isHidden(), 'an "I need it" row is complete and hides the source chooser');
+    T.ok(/2 of 7/.test(await p.locator('#checklist .sec-progress .txt').innerText()), 'section progress counts the sorted rows');
     await p.evaluate(h => { location.hash = h; }, 'explain');
-    T.ok(/Chromosomes hold DNA\./.test(await p.locator('#first-ideas-text').innerText()), 'first ideas appear in the explanation section');
+    T.ok(/one long piece of DNA/.test(await p.locator('#first-ideas-text').innerText()), 'first ideas appear in the explanation section');
     await p.reload();
     await p.waitForFunction(() => window.B3DnaP53 && document.querySelector('.step.is-current'));
-    T.ok(await p.inputValue('#ideas-chromosomes') === 'Chromosomes hold DNA.' && await p.inputValue('#ms5-q1') === 'So the letters can be reached.', 'written answers survive a reload');
-    T.ok(await p.isChecked('#cl-process-src-sim') && await p.inputValue('#cl-process-have') !== '', 'checklist row survives a reload');
+    T.ok(await p.inputValue('#ms5-summary') === 'A wrong letter stays, so the new cell differs.' && await p.isChecked('input[name="p-ideas-game-r"][value="a"]'), 'text and card answers survive a reload');
+    T.ok(await p.isChecked('#cl-process-src-sim') && await p.isChecked('input[name="cl-process-r"][value="know"]'), 'checklist row survives a reload');
     T.ok(/8\.3%/.test(await p.locator('#data-fork-body').innerText()), 'model data survives a reload');
     T.ok(await p.evaluate(k => JSON.parse(localStorage.getItem(k)).lastSection, KEY) === 'explain', 'last section saved');
     await p.goto(server.url + PAGE);
@@ -115,58 +126,72 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     await p.waitForFunction(() => document.querySelector('#explain.is-current'));
     T.ok(true, 'Resume returns to the last section');
 
-    // --- explanation self-check ---
-    for (let i = 0; i < 6; i++) await p.check('#ex-el-' + i);
-    T.ok(/^✓ ?Organized|Organized:/.test(await p.locator('#self-level').innerText()) && await p.locator('#self-level').getAttribute('data-level') === 'organized', 'all six ideas gives the Organized message');
-    await p.uncheck('#ex-el-0'); await p.uncheck('#ex-el-5');
-    T.ok(await p.locator('#self-level').getAttribute('data-level') === 'linked', 'fewer ideas drops to Linked (stale Organized mark removed)');
-    for (let i = 1; i < 6; i++) await p.uncheck('#ex-el-' + i);
-    T.ok(await p.locator('#self-level').getAttribute('data-level') === 'none', 'no ideas gives the starting message');
+    // --- build your explanation (replaces the six self-check boxes) ---
+    const BEST = { copy: 'a', mistake: 'a', p53: 'a', versions: 'a', fate: 'a', evidence: 'b' };
+    for (const k of Object.keys(BEST)) await pick('p-explain-' + k, BEST[k]);
+    T.ok(await p.locator('#self-level').getAttribute('data-level') === 'organized' && /^Organized/.test(await p.locator('#self-level').innerText()), 'all six best endings give the Organized message');
+    T.ok(await p.locator('#built-explanation li').count() === 6, 'the picks are assembled into a readable explanation');
+    await pick('p-explain-copy', 'b'); await pick('p-explain-evidence', 'a');
+    T.ok(await p.locator('#self-level').getAttribute('data-level') === 'linked', 'a wrong ending drops to Linked (stale Organized mark removed)');
+    T.ok(await p.evaluate(() => !document.getElementById('ex-el-0').checked && document.getElementById('ex-el-1').checked), 'the old self-check boxes still follow the picks');
+    for (const k of ['mistake', 'p53', 'versions', 'fate']) await pick('p-explain-' + k, 'b');
+    T.ok(['foundational', 'none'].includes(await p.locator('#self-level').getAttribute('data-level')), 'few right endings drops the level');
 
-    // --- sentence check ---
+    // --- sentence builder and check ---
     await p.evaluate(h => { location.hash = h; }, 'expression');
     await p.locator('#check-sentence').click();
     T.ok(/Choose a strand/.test(await p.locator('#sentence-feedback').innerText()), 'sentence check asks for input');
-    await p.selectOption('#expr-strand', 'B');
-    await p.fill('#expr-sentence', 'i am a p53 protein missing a piece');
+    await pick('expr-strand-r', 'B');
+    for (const w of 'I am a p53 protein missing a piece'.split(' ')) await p.locator('#sentence-check .word[data-word="' + w + '"]').click();
+    T.ok(await p.locator('#built-sentence').evaluate(e => e.textContent) === 'I am a p53 protein missing a piece.', 'tapped words build a sentence with a capital and a full stop');
     await p.locator('#check-sentence').click();
     T.ok(/✓ Match/.test(await p.locator('#sentence-feedback').innerText()), 'strand B sentence matches the key');
-    await p.fill('#expr-sentence', 'I am a p53 protein with a butterfly shape.');
-    T.ok(await p.locator('#sentence-feedback').innerText() === '', 'feedback clears when the sentence changes');
+    await p.locator('#undo-word').click();
+    T.ok(await p.locator('#sentence-feedback').innerText() === '' && await p.locator('#built-sentence').evaluate(e => e.textContent) === 'I am a p53 protein missing a.', 'feedback clears and Undo removes the last word');
+    await p.locator('#clear-sentence').click();
+    for (const w of 'I am a p53 protein with a butterfly shape'.split(' ')) await p.locator('#sentence-check .word[data-word="' + w + '"]').click();
     await p.locator('#check-sentence').click();
     T.ok(/key sentence for Strand A/.test(await p.locator('#sentence-feedback').innerText()), 'a sentence that fits another strand says so');
 
-    // --- exit ticket ---
+    // --- exit ticket: immediate feedback, no Check button ---
     await p.evaluate(h => { location.hash = h; }, 'wrapup');
-    await p.locator('[data-check="exit-q2"]').click();
-    T.ok(/Choose one answer first/.test(await p.locator('#feedback-exit-q2').innerText()), 'exit check asks for a choice');
-    await p.check('input[name="exit-q2"][value="a"]');
-    await p.locator('[data-check="exit-q2"]').click();
-    T.ok(/Try again\. Why not/.test(await p.locator('#feedback-exit-q2').innerText()), 'a partial answer is not marked correct and says why');
-    await p.check('input[name="exit-q2"][value="e"]');
-    T.ok(await p.locator('#feedback-exit-q2').innerText() === '', 'feedback clears when the choice changes');
-    await p.locator('[data-check="exit-q2"]').click();
-    T.ok(/^Yes\./.test(await p.locator('#feedback-exit-q2').innerText()), 'Q2 "all of the above" is correct');
-    await p.check('input[name="exit-q1"][value="a"]'); await p.locator('[data-check="exit-q1"]').click();
-    T.ok(/^Yes\./.test(await p.locator('#feedback-exit-q1').innerText()), 'Q1 correct answer accepted');
-    await p.check('input[name="exit-q1"][value="c"]'); await p.locator('[data-check="exit-q1"]').click();
-    T.ok(/leaves out/.test(await p.locator('#feedback-exit-q1').innerText()), 'Q1 wrong answer explains what it leaves out');
-    await p.check('input[name="exit-q4"][value="d"]'); await p.locator('[data-check="exit-q4"]').click();
-    T.ok(/^Yes\./.test(await p.locator('#feedback-exit-q4').innerText()), 'Q4 all of the above is correct');
+    T.ok(await p.locator('[data-check]').count() === 0, 'no Check buttons: feedback is immediate');
+    await pick('exit-q2-r', 'a');
+    T.ok(/Try again\. Why not/.test(await p.locator('[data-q="exit-q2"] .q-fb').innerText()), 'a partial answer is not marked correct and says why');
+    await pick('exit-q2-r', 'e');
+    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q2"] .q-fb').innerText()), 'Q2 "all of the above" is correct');
+    await pick('exit-q1-r', 'a');
+    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q1"] .q-fb').innerText()), 'Q1 correct answer accepted');
+    await pick('exit-q1-r', 'c');
+    T.ok(/leaves out/.test(await p.locator('[data-q="exit-q1"] .q-fb').innerText()), 'Q1 wrong answer explains what it leaves out');
+    await pick('exit-q4-r', 'd');
+    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q4"] .q-fb').innerText()), 'Q4 all of the above is correct');
+    await p.check('[data-q="p-exit5"] input[value="model"]'); await p.check('[data-q="p-exit5"] input[value="people"]');
+    T.ok(await p.evaluate(() => document.getElementById('p-exit5').value) === 'model,people', 'a multi-pick card stores the chosen values');
     await p.reload();
     await p.waitForFunction(() => window.B3DnaP53);
-    T.ok(await p.isChecked('input[name="exit-q2"][value="e"]') && /^Yes\./.test(await p.locator('#feedback-exit-q2').innerText()), 'exit answers and their feedback survive a reload');
+    T.ok(await p.isChecked('input[name="exit-q2-r"][value="e"]') && /^Yes\./.test(await p.locator('[data-q="exit-q2"] .q-fb').innerText()), 'exit answers and their feedback survive a reload');
+    T.ok(await p.evaluate(k => JSON.parse(localStorage.getItem(k)).fields['exit-q2'], KEY) === 'e', 'the old exit-ticket field id still holds the answer');
 
     // --- download ---
+    await p.evaluate(k => { const d = JSON.parse(localStorage.getItem(k)); d.fields['ms5-q1'] = 'Older long answer'; d.fields['cl-why-have'] = 'old evidence'; localStorage.setItem(k, JSON.stringify(d)); }, KEY);
+    await p.reload();
+    await p.waitForFunction(() => window.B3DnaP53);
     await p.evaluate(h => { location.hash = h; }, 'wrapup');
+    await p.fill('#exit-q7', 'My partner helped.');
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const file = await dl.path();
     const payload = JSON.parse(fs.readFileSync(file, 'utf8'));
     T.ok(payload.format === 'openscied-b3-dna-p53-progress-v1' && payload.student && payload.student.name === 'Test Student', 'download has format and student');
     T.ok(payload.fork && payload.forkSummary.before.top.rate === 8.3 && payload.expression.runs.length === 1, 'download carries fork and expression data');
     T.ok(/simulated/i.test(payload.dataNote), 'download labels the data as simulated');
-    T.ok(payload.responses['ms5-q1'].answer === 'So the letters can be reached.' && /^[A-Za-z0-9]/.test(payload.responses['ms5-q1'].prompt), 'download lists responses with prompts');
-    T.ok(payload.exitTicket['exit-q2'].correct === true && payload.checklist.length === 7 && payload.checklist.find(r => /process of replication/.test(r.row)).sources.includes('Simulation'), 'download has exit ticket and checklist');
+    T.ok(payload.responses['ms5-summary'].answer === 'A wrong letter stays, so the new cell differs.' && /^[A-Za-z0-9]/.test(payload.responses['ms5-summary'].prompt), 'download lists responses with prompts');
+    T.ok(payload.responses['p-ms5-pairs'].answerText.includes('A with: T') && payload.responses['p-ideas-game'].answerText.startsWith('different from the others'), 'download carries what was picked, in words');
+    const clRow = re => payload.checklist.find(r => re.test(r.row));
+    T.ok(payload.exitTicket['exit-q2'].correct === true && payload.checklist.length === 7 && clRow(/steps of copying/).sources.includes('Simulation') && clRow(/steps of copying/).status === 'know', 'download has exit ticket and checklist');
+    T.ok(payload.earlierAnswers['ms5-q1'].answer === 'Older long answer' && payload.answers['ms5-q1'] === 'Older long answer' && clRow(/Why, how and when/).evidenceIHave === 'old evidence', 'answers from the older page stay in the download');
+    const rep = await p.locator('#investigation-report').innerText();
+    T.ok(/My partner helped/.test(rep) && /Older long answer/.test(rep), 'the on-page report shows typed text and older answers');
 
     // --- clear this activity ---
     await p.locator('#reset-work').click();
@@ -177,7 +202,7 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     await Promise.all([p.waitForNavigation().catch(() => {}), p.locator('#confirm-reset').click()]);
     await p.waitForFunction(() => window.B3DnaP53 && document.querySelector('.step.is-current'));
     T.ok(await p.evaluate(k => localStorage.getItem(k), KEY) === null, 'confirming clears the saved record and the page does not re-save it');
-    T.ok(await p.inputValue('#ideas-chromosomes') === '' && /Run the model first/.test(await p.locator('#data-fork-body').innerText()), 'cleared page is blank');
+    T.ok(await p.inputValue('#ms5-summary') === '' && /Run the model first/.test(await p.locator('#data-fork-body').innerText()), 'cleared page is blank');
     T.ok(await p.evaluate(() => !!localStorage.getItem('aplab:student')), 'name and class period stay saved');
     await p.close();
     await ctx.close();
@@ -203,15 +228,16 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
       await c.close();
     }
 
-    // --- keyboard reachability: every field in a section is reachable by Tab ---
+    // --- keyboard reachability: cards and chips are reachable by Tab ---
     const c2 = await T.ctxFor(browser, { width: 1366, height: 900 });
     const k = await c2.newPage();
     await stub(k);
     await k.goto(server.url + PAGE + '#checklist');
     await k.waitForFunction(() => document.querySelector('#checklist.is-current'));
+    await k.check('input[name="cl-relation-r"][value="know"]');
     const seen = new Set();
-    for (let i = 0; i < 80; i++) { await k.keyboard.press('Tab'); const id = await k.evaluate(() => document.activeElement && document.activeElement.id); if (id) seen.add(id); }
-    T.ok(['cl-relation-have', 'cl-relation-src-sim', 'cl-cancer-need', 'gotta-ideas'].every(x => seen.has(x)), 'checklist fields and source boxes are reachable with Tab');
+    for (let i = 0; i < 60; i++) { await k.keyboard.press('Tab'); const id = await k.evaluate(() => document.activeElement && (document.activeElement.id || document.activeElement.name)); if (id) seen.add(id); }
+    T.ok(['cl-relation-r', 'cl-relation-src-sim', 'cl-cancer-r'].every(x => seen.has(x)), 'checklist taps and source boxes are reachable with Tab');
     // reduced motion: page still renders complete
     await c2.close();
   } finally { await browser.close(); server.close(); }
