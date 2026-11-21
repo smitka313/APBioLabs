@@ -8,6 +8,7 @@
   const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:'',lastSection:'overview'};
   function studentIdentity(){return window.Lab&&Lab.identity?Lab.identity.get():null;}
   const ANALYSIS_PROMPTS=[
+    ['My starting idea (before running the model)','model-baseline'],
     ['Fair test and controlled settings','analysis-design'],
     ['Variation across repeated trials','analysis-variation'],
     ['Comparison of named cell types','analysis-celltypes'],
@@ -52,7 +53,7 @@
       const section=location.hash.slice(1);if(SECTIONS.includes(section))state.lastSection=section;
       localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()}));
       $('#save-status').textContent='Saved on this device.';
-      renderReport();
+      renderReport();renderBaselineEcho();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
   }
   function restoreFields(){
@@ -877,8 +878,19 @@
       const list=box.querySelector('ul');list.replaceChildren(...lines[id].map(t=>{const li=document.createElement('li');li.textContent=t;return li;}));
     });
   }
+  /* "Your starting idea" above Question 7: the student's own pre-model text, so revision has a baseline. */
+  function renderBaselineEcho(){
+    const field=document.getElementById('model-revision'),base=document.getElementById('model-baseline');if(!field||!base)return;
+    let box=document.getElementById('baseline-echo');
+    if(!box){box=document.createElement('div');box.className='q-evidence baseline-echo';box.id='baseline-echo';
+      const h=document.createElement('p');h.className='q-evidence-title';h.textContent='Your starting idea';const body=document.createElement('p');body.className='baseline-echo-text';box.append(h,body);
+      field.parentNode.insertBefore(box,field);}
+    const text=base.value.trim(),body=box.querySelector('.baseline-echo-text');
+    body.textContent=text||'You did not write a starting idea before running the model. You can add one in the Growth model section, or write “I used to think…” from memory below.';
+    body.classList.toggle('is-empty',!text);
+  }
   function renderAnalysisReference(){
-    renderQuestionEvidence();
+    renderQuestionEvidence();renderBaselineEcho();
     const out=$('#analysis-reference-data');if(!out)return;
     const groups=trialGroups();out.replaceChildren();
     const heading=document.createElement('h4');heading.textContent='Growth-model results';out.appendChild(heading);
