@@ -25,7 +25,7 @@ const DNA = 'aplab:openscied:b3-dna-p53:v1', CELL = 'aplab:openscied:b3-cell-cyc
       await p.evaluate(([dna, cell, t]) => {
         localStorage.setItem(cell, JSON.stringify({ v: 1, trials: [], fields: { 'analysis-design': 'My evidence' }, lastSection: 'analyze', lastVisitedAt: t - 5000 }));
         localStorage.setItem(dna, JSON.stringify({ v: 1, fork: { before: { top: { correct: 11, substitutions: 1 } } }, expression: { runs: [{ strand: 'A' }, { strand: 'B' }] },
-          fields: { 'ideas-chromosomes': 'DNA', 'ms5-q1': 'Because', 'ms5-q2': '  ', 'ex-el-0': true, 'exit-q2': 'e' }, responseIds: ['ideas-chromosomes', 'ms5-q1', 'ms5-q2', 'exit-q2'], lastSection: 'sense6', lastVisitedAt: t }));
+          fields: { 'ideas-chromosomes': 'DNA', 'ms5-q1': 'Because', 'ms5-q2': '  ', 'ms5-summary': 'Kept', 'ex-el-0': true, 'exit-q2': 'e' }, responseIds: ['ideas-chromosomes', 'ms5-q1', 'ms5-q2', 'exit-q2'], lastSection: 'sense6', lastVisitedAt: t }));
       }, [DNA, CELL, t]);
       await p.reload();
       const dnaText = await p.locator('#dna-p53-progress').innerText();
@@ -36,7 +36,10 @@ const DNA = 'aplab:openscied:b3-dna-p53:v1', CELL = 'aplab:openscied:b3-cell-cyc
       T.ok(await p.locator('#dna-p53-open').getAttribute('href') === 'openscied-b3-dna-p53.html#sense6' && /Continue activity/.test(await p.locator('#dna-p53-open').innerText()), 'DNA card says Continue and links to the last section');
       await p.locator('#openscied-resume-link').click();
       await p.waitForFunction(() => document.querySelector('#sense6.is-current'));
-      T.ok(await p.inputValue('#ms5-q1') === 'Because', 'Resume opens the activity with the saved answers');
+      T.ok(await p.inputValue('#ms5-summary') === 'Kept' && await p.inputValue('#exit-q2') === 'e', 'Resume opens the activity with the saved answers that still exist');
+      T.ok(await p.evaluate(k => { const f = JSON.parse(localStorage.getItem(k)).fields; return f['ms5-q1'] === 'Because' && f['ideas-chromosomes'] === 'DNA'; }, DNA), 'answers from the older, longer page are kept in the saved record');
+      T.ok(/Because/.test(await p.locator('#earlier-answers-body').textContent()), 'older answers are shown under Earlier answers');
+      T.ok(await p.evaluate(k => { const d = JSON.parse(localStorage.getItem(k)); return Array.isArray(d.responseIds) && d.responseIds.length > 20 && d.responseIds.length < 60; }, DNA), 'the page rewrites its response id list for the new design');
       T.ok(await p.evaluate(() => document.querySelector('#data-fork-body').textContent.includes('8.3%')), 'saved model data shows on the opened page');
 
       // download includes the DNA responses
