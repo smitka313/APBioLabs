@@ -92,9 +92,9 @@
 
   /* Does the student's own yeast table back up each evidence statement? true / false, or null when there are not enough counted dishes
      to say. dishes = [{ strain, spf, foil, dark, minutes, dose, colonies }]. Checked per strain (UV-sensitive and wild-type are never mixed).
-       more: colonies fall as UV dose rises (Pearson r < -0.2 in every strain that has 3+ dishes and 2+ different doses)
+       more: colonies fall as UV dose rises (Pearson r < -0.2 for the UV-sensitive yeast (or every strain if none) with 3+ dishes and 2+ different doses)
        dark: each strain's dark dish has at least 90% of that strain's highest count (counts are noisy, so "about the most")
-       spf:  among sunscreen dishes (3+ different SPF numbers), colonies rise with SPF (r > 0.5)
+       spf:  among sunscreen dishes (3+ different SPF numbers), colonies rise with SPF (r > 0.5, UV-sensitive yeast when run)
      This is a self-check of the student's reading of their own data, not a grade. */
   function trendR(xs, ys) {
     const n = xs.length; if (n < 3) return null;
@@ -110,19 +110,20 @@
     const d = (Array.isArray(dishes) ? dishes : []).filter(x => x && typeof x === 'object' && fin(x.colonies) && x.colonies >= 0);
     const out = { more: null, dark: null, spf: null };
     const by = {}; d.forEach(x => { const k = x.strain === 'wild' ? 'wild' : 'sensitive'; (by[k] = by[k] || []).push(x); });
-    const more = [], dark = [], spf = [];
+    const more = [], dark = [], spf = [], moreBy = {}, spfBy = {};
     Object.keys(by).forEach(k => {
       const g = by[k];
       const dosed = g.filter(x => fin(x.dose));
-      if (dosed.length >= 3 && new Set(dosed.map(x => x.dose)).size >= 2) { const r = trendR(dosed.map(x => x.dose), dosed.map(x => x.colonies)); if (r != null) more.push(r < -0.2); }
+      if (dosed.length >= 3 && new Set(dosed.map(x => x.dose)).size >= 2) { const r = trendR(dosed.map(x => x.dose), dosed.map(x => x.colonies)); if (r != null) { more.push(r < -0.2); moreBy[k] = r < -0.2; } }
       const darks = g.filter(x => x.dark), top = Math.max.apply(null, g.map(x => x.colonies));
       if (darks.length && g.length >= 2) dark.push(darks.every(x => x.colonies >= 0.9 * top));
       const sp = g.filter(x => fin(x.spf) && x.spf > 0 && !x.dark && !x.foil);
-      if (sp.length >= 3 && new Set(sp.map(x => x.spf)).size >= 3) { const r = trendR(sp.map(x => x.spf), sp.map(x => x.colonies)); if (r != null) spf.push(r > 0.5); }
+      if (sp.length >= 3 && new Set(sp.map(x => x.spf)).size >= 3) { const r = trendR(sp.map(x => x.spf), sp.map(x => x.colonies)); if (r != null) { spf.push(r > 0.5); spfBy[k] = r > 0.5; } }
     });
-    if (more.length) out.more = more.every(Boolean);
+    // The UV and SPF trends are judged on the UV-sensitive yeast when they were run (wild-type dishes stay flat on purpose); the dark dish on every strain.
+    const trend = (list, byStrain) => byStrain.sensitive != null ? byStrain.sensitive : (list.length ? list.every(Boolean) : null);
+    out.more = trend(more, moreBy); out.spf = trend(spf, spfBy);
     if (dark.length) out.dark = dark.every(Boolean);
-    if (spf.length) out.spf = spf.every(Boolean);
     return out;
   }
 

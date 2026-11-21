@@ -11,9 +11,14 @@
    - Dose = lamp x minutes x transmittance, in "minutes of unprotected UV". The lamp is 1 unit per minute. Transmittance is 1 with no cover,
      about 1/SPF for sunscreen (SPF 30 passes about one thirtieth; the same cover and time always give the same dose, for either yeast),
      0 for foil, and a dark dish gets no UV at all.
-   - Survival of UV-sensitive yeast falls exponentially with dose: S = exp(-0.35 x dose) (no repair genes).
-     Wild-type yeast repair DNA, so they shrug off small doses (a shoulder of 4 min-equivalents) and then fall slowly: S = exp(-0.04 x (dose - 4)),
-     which means a very long exposure still hurts wild-type yeast, only much less. Wild-type survival is always at least the sensitive survival.
+   - Survival falls with dose as S = exp(-k x dose^0.63). The exponent below 1 makes the curve gentler at high doses, so one scale of dose
+     covers both tests: a 5 to 30 minute exposure with no cover (dose 5 to 30) and sunscreen dishes at 15 minutes (dose 15/SPF, about 0.3 to 1).
+     UV-sensitive yeast (no repair genes): k = 0.83, so about 44% survive dose 1 (SPF 15 for 15 min), about 68% survive dose 0.3 (SPF 50),
+     about 10% survive 5 unprotected minutes and almost none survive 15.
+     Wild-type yeast repair DNA: k = 0.08 after a small shoulder of 0.5, so covered dishes stay close to the dark dish and 15 unprotected
+     minutes leave about 64%. Wild-type survival is always at least the sensitive survival.
+     Calibrated so the lesson's pattern shows without exaggeration: no UV or foil is highest, more SPF means more colonies (SPF 15 and 18
+     and 20 are close, as they are in life), and more time with no cover means fewer.
    - Colonies = Poisson(mean 200 x plating factor x S). Plating factor is lognormal (SD 7%): the dish-to-dish difference in how much suspension
      lands on the agar. Counts are whole numbers, never negative; zero is allowed (a long exposure of sensitive yeast).
    - Incubation: 3-5 days from the Dataset ID. One simulated day takes 20 real seconds. Colonies start to show after about a day and grow;
@@ -29,7 +34,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  const MODEL = { N0: 200, plateSD: 0.07, leakSD: 0, kSens: 0.35, kWild: 0.04, shoulderWild: 4, dayMs: 20000, minDays: 3, maxDays: 5 };
+  const MODEL = { N0: 200, plateSD: 0.07, leakSD: 0, kSens: 0.83, kWild: 0.08, shoulderWild: 0.5, power: 0.63, dayMs: 20000, minDays: 3, maxDays: 5 };
   const num = x => typeof x === 'number' && isFinite(x);
   const BRACKETS = [{ id: 'b0', label: '0', lo: 0, hi: 0 }, { id: 'b1', label: '1–10', lo: 1, hi: 10 }, { id: 'b2', label: '11–50', lo: 11, hi: 50 }, { id: 'b3', label: '51–100', lo: 51, hi: 100 },
     { id: 'b4', label: '101–150', lo: 101, hi: 150 }, { id: 'b5', label: '151–200', lo: 151, hi: 200 }, { id: 'b6', label: '201 or more', lo: 201, hi: 250 }];
@@ -57,7 +62,7 @@
   const doseFor = (spec, leak) => spec.dark ? 0 : Math.max(0, (num(spec.minutes) ? spec.minutes : 0) * transmittance(spec, leak));
   function survival(strain, dose) {
     const d = Math.max(0, num(dose) ? dose : 0);
-    return strain === 'wild' ? Math.exp(-MODEL.kWild * Math.max(0, d - MODEL.shoulderWild)) : Math.exp(-MODEL.kSens * d);
+    return strain === 'wild' ? Math.exp(-MODEL.kWild * Math.pow(Math.max(0, d - MODEL.shoulderWild), MODEL.power)) : Math.exp(-MODEL.kSens * Math.pow(d, MODEL.power));
   }
   const expectedColonies = (strain, spec) => MODEL.N0 * survival(strain, doseFor(spec, 1));
   const specKey = (s, rep) => [s.strain, s.spf || 0, s.foil ? 1 : 0, s.dark ? 1 : 0, s.minutes || 0, rep || 0].join('|');

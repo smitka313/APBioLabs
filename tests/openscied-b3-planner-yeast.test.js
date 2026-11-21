@@ -69,7 +69,7 @@ test('simulated counts follow the model on average and look like class data', ()
   const dark = mean({ strain: 'sensitive', dark: true, minutes: 0 }, 200), none = mean({ strain: 'sensitive', minutes: 15 }, 200), s15 = mean({ strain: 'sensitive', spf: 15, minutes: 15 }, 200), s50 = mean({ strain: 'sensitive', spf: 50, minutes: 15 }, 200);
   assert.ok(dark > 185 && dark < 215, 'dark ~200: ' + dark); assert.ok(dark > s50 && s50 > s15 && s15 > none && none < 5, [dark, s50, s15, none].join());
   const zeros = Array.from({ length: 50 }, (_, i) => Y.simulateDish(i, { strain: 'sensitive', minutes: 60 }, 0).truth);
-  assert.ok(zeros.every(n => n === 0), 'a long unprotected exposure can leave no colonies');
+  assert.ok(zeros.every(n => n <= 1) && zeros.filter(n => n === 0).length >= 45, 'a long unprotected exposure leaves no colonies, or at most a lone survivor');
 });
 test('plan to dishes, ratings, directions, days, layout', () => {
   const both = Y.dishesFromPlan({ conditions: P.preset('class').conditions, strainMode: 'both' });
@@ -92,4 +92,33 @@ test('UV dose depends only on the cover and the minutes: same for either yeast, 
   // a higher SPF never gives a higher dose
   const doses = [15, 18, 20, 30, 50].map(spf => Y.simulateDish(7, { strain: 'sensitive', spf, foil: false, dark: false, minutes: 15 }, 0).dose);
   assert.deepEqual(doses, doses.slice().sort((x, y) => y - x));
+});
+
+test('calibration: the lesson pattern shows across many student datasets without exaggeration', () => {
+  const dish = (seed, strain, spec) => Y.simulateDish(seed, Object.assign({ strain, spf: null, foil: false, dark: false, minutes: 15 }, spec), 0).truth;
+  const SPFS = [15, 18, 20, 30, 50], N = 400;
+  let spf50Higher = 0, trend = 0, noCoverLow = 0, darkTop = 0, foilTop = 0, timeOrdered = 0, wildFlat = 0;
+  for (let i = 1; i <= N; i++) {
+    const seed = i * 7919 + 13;
+    const s = SPFS.map(spf => dish(seed, 'sensitive', { spf }));
+    if (s[4] > s[0]) spf50Higher++;
+    // rank correlation sign: more SPF, more colonies (SPF 15/18/20 are alike, so look at the whole run, not each step)
+    const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+    if (mean(s.slice(3)) > mean(s.slice(0, 3))) trend++;
+    const none = dish(seed, 'sensitive', {}), dark = dish(seed, 'sensitive', { dark: true, minutes: 0 }), foil = dish(seed, 'sensitive', { foil: true });
+    if (none <= 5) noCoverLow++;
+    if (dark > mean(s) && foil > mean(s)) { darkTop++; }
+    const t = [5, 10, 15, 30].map(m => dish(seed, 'sensitive', { minutes: m }));
+    if (t[0] >= t[1] && t[1] >= t[2] && t[2] >= t[3] - 1) timeOrdered++;
+    const w = SPFS.map(spf => dish(seed, 'wild', { spf })), wd = dish(seed, 'wild', { dark: true, minutes: 0 });
+    if (Math.abs(mean(w) - wd) < 0.2 * wd) wildFlat++;
+  }
+  assert.ok(spf50Higher / N >= 0.9, 'SPF 50 beats SPF 15 for UV-sensitive yeast in at least 90% of datasets: ' + spf50Higher / N);
+  assert.ok(trend / N >= 0.9, 'higher SPFs average more colonies than lower ones in at least 90%: ' + trend / N);
+  assert.ok(noCoverLow / N >= 0.9, 'no cover for 15 minutes leaves almost no UV-sensitive colonies: ' + noCoverLow / N);
+  assert.ok(darkTop / N >= 0.9, 'dark and foil dishes beat the average sunscreen dish: ' + darkTop / N);
+  assert.ok(timeOrdered / N >= 0.8, 'more minutes with no cover mean fewer colonies (5, 10, 15, 30): ' + timeOrdered / N);
+  assert.ok(wildFlat / N >= 0.9, 'wild-type sunscreen dishes stay close to the dark dish: ' + wildFlat / N);
+  // wild-type is never worse off than UV-sensitive for the same set-up
+  for (const m of [5, 15, 30, 60]) for (const spf of [null, 15, 50]) assert.ok(Y.expectedColonies('wild', { spf, minutes: m }) >= Y.expectedColonies('sensitive', { spf, minutes: m }));
 });

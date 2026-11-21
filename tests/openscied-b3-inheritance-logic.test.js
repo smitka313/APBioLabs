@@ -119,5 +119,6 @@ test('evidenceChecks compares the claim evidence with the student\'s own yeast t
   // never mixes strains and never crashes on junk
   assert.doesNotThrow(() => L.evidenceChecks([null, 5, { colonies: NaN }, { colonies: -1 }]));
   const mixed = good.concat(good.map(d => Object.assign({}, d, { strain: 'wild', colonies: 200 })));
-  assert.equal(L.evidenceChecks(mixed).spf, false); // wild-type covered dishes are flat, so "higher SPF, more colonies" is not true for both
+  assert.equal(L.evidenceChecks(mixed).spf, true); // judged on the UV-sensitive yeast; wild-type dishes are flat on purpose
+  assert.equal(L.evidenceChecks(good.map(d => Object.assign({}, d, { strain: 'wild', colonies: 200 }))).spf, false); // wild-type only and flat: not shown
 });
