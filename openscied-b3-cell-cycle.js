@@ -12,7 +12,8 @@
     ['Fair test and controlled settings','analysis-design'],
     ['Variation across repeated trials','analysis-variation'],
     ['Comparison of named cell types','analysis-celltypes'],
-    ['Effect of age or body size','explanation'],
+    ['Effect of age','explanation'],
+    ['Effect of body size (height)','explanation-size'],
     ['Evidence before the cancerous model state','analysis-cancer'],
     ['Connection to cell-cycle checkpoints','analysis-checkpoints'],
     ['My revised model','model-revision'],
@@ -891,14 +892,24 @@
     const rounds=[1,2].map(n=>{const r=roundEvidence(n);if(!r)return 'Round '+n+': not played yet.';
       return 'Round '+n+(r.inProgress?' (in progress)':'')+': '+r.blue+' blue and '+r.red+' red cell chips; destroyed by p53: '+r.destroyed+'; sent back: '+r.sentBack+'; checkpoints skipped: '+r.skipped+'.';});
     const none=['Run three trials in the growth model to collect data for this question.'];
+    const SIZE_ORDER={small:0,average:1,large:2};
+    const onlyChanged=(key,name,advice)=>{
+      if(!groups.length)return none;
+      const other=key==='age'?'size':'age',pair=(x,y)=>x!==y&&x.tissue===y.tissue&&x[other]===y[other]&&x[key]!==y[key];
+      const hits=groups.filter(x=>groups.some(y=>pair(x,y)));
+      if(!hits.length)return ['You have not yet run two sets that differ only in '+name+'. '+advice];
+      return hits.sort((x,y)=>labelTissue(x.tissue).localeCompare(labelTissue(y.tissue))||x[other]-y[other]||String(x[other]).localeCompare(String(y[other]))||(key==='age'?x.age-y.age:SIZE_ORDER[x.size]-SIZE_ORDER[y.size]))
+        .map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions.');
+    };
     const lines={
       'analysis-design':groups.length<2?['Collect two sets in the growth model, then choose them in the comparison above.']:(a&&b&&a.id!==b.id?['Set '+a.index+': '+settings(a)+'.','Set '+b.index+': '+settings(b)+'.','Changed: '+(['age','size','tissue'].filter(k=>a[k]!==b[k]).map(k=>({age:'age',size:'body size',tissue:'cell type'})[k]).join(', ')||'nothing (same settings)')+'.']:['Choose two different sets in the comparison above.']),
       'analysis-variation':groups.length?[(a||groups[groups.length-1])].map(g=>'Set '+g.index+' ('+settings(g)+'): trials '+counts(g)+', range '+g.min+'–'+g.max+'.'):none,
       'analysis-celltypes':(()=>{if(!groups.length)return none;const by={};groups.forEach(g=>{(by[g.tissue]=by[g.tissue]||[]).push(g);});const keys=Object.keys(by);
         const out=keys.map(k=>labelTissue(k)+': '+by[k].map(g=>'Set '+g.index+' mean '+g.mean.toFixed(1)+' (age '+g.age+', '+labelBody(g.size).toLowerCase()+' body)').join('; ')+'.');
         if(keys.length<2)out.push('You have tested one cell type so far. Run a set with a different cell type at the same age and body size.');return out;})(),
-      'explanation':(()=>{if(!groups.length)return none;const out=groups.slice().sort((x,y)=>x.age-y.age||String(x.size).localeCompare(String(y.size))).map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+' divisions.');
-        if(!groups.some(x=>groups.some(y=>x!==y&&x.tissue===y.tissue&&(x.age!==y.age)!==(x.size!==y.size))))out.push('To see a pattern, run a set that changes only age or only body size.');return out;})(),
+      // 4a: sets that differ only in age. 4b: sets that differ only in body size (same cell type, same other setting).
+      'explanation':onlyChanged('age','age','Run a set that changes only age (keep body size and cell type the same).'),
+      'explanation-size':onlyChanged('size','body size','Run a set that changes only body size (keep age and cell type the same).'),
       'analysis-cancer':groups.length?groups.map(g=>'Set '+g.index+' ('+settings(g)+'): control changes (mutations) '+g.changes.map(n=>n===null?'not recorded':n).join(', ')+'; cancer-state units '+g.trials.map(t=>t.modelVersion===2?t.cancerCount:'not recorded').join(', ')+'.'):none,
       'analysis-checkpoints':rounds,
       'model-revision':(groups.length?groups.map(g=>'Set '+g.index+': '+settings(g)+' → mean '+g.mean.toFixed(1)+'.'):none).concat(rounds),
@@ -962,7 +973,7 @@
     else if(a.min<=b.max&&b.min<=a.max)para('The trial ranges overlap. These recorded results show variation; collect more evidence before deciding how clear the pattern is.');
     else para('The recorded trial ranges do not overlap in this comparison. Use the numbers as evidence, and remember that three trials are a small sample.');
     $('#sentence-evidence').textContent='Use your evidence: “'+(changed.length===1?'When I changed '+names[changed[0]]:'Between Set '+a.index+' and Set '+b.index)+', the mean changed from '+a.mean.toFixed(1)+' to '+b.mean.toFixed(1)+' divisions. Each division creates another opportunity to copy DNA, so…”';
-    if(changed.length===1&&changed[0]==='tissue')$('#sentence-evidence').textContent='These sets compare cell types (Question 3). For Question 4, choose two sets that change age or body size while keeping the other settings the same.';
+    if(changed.length===1&&changed[0]==='tissue')$('#sentence-evidence').textContent='These sets compare cell types (Question 3). For Questions 4a and 4b, choose two sets that change only age, or only body size, while keeping the other settings the same.';
   }
   function renderReport(){
     const report=$('#investigation-report');if(!report)return;

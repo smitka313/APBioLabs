@@ -76,7 +76,7 @@ test('progress counts saved rounds, trial sets, and written answers; resume targ
       'analysis-variation': 'Repeated trials', explanation: 'Longer time', 'model-prediction': '   ' },
     lastSection: 'analyze', lastVisitedAt: 123 };
   const s = setup(false, { 'aplab:openscied:b3-cell-cycle:v1': JSON.stringify(saved) });
-  assert.match(s.el('#cell-cycle-progress').textContent, /Round 1 complete.*2 trial sets saved.*3 of 30 responses/);
+  assert.match(s.el('#cell-cycle-progress').textContent, /Round 1 complete.*2 trial sets saved.*3 of 31 responses/);
   assert.equal(s.el('#openscied-resume').hidden, false);
   assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cell-cycle.html#analyze');
 });

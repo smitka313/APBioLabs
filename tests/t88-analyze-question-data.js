@@ -18,7 +18,7 @@ const pl = id => ({id,pos:3,score:sc,status:'playing',turnsUsed:10,blue:1,red:2,
   T.ok(/Set 1: age 50/.test(await box('analysis-design')) && /Changed: cell type/.test(await box('analysis-design')), 'Q1 shows the two compared sets and what changed');
   T.ok(/540, 532, 551/.test(await box('analysis-variation')) && /541\.0/.test(await box('analysis-variation')), 'Q2 shows one set\'s three trial counts and mean');
   T.ok(/Colon lining: Set 1 mean 541\.0/.test(await box('analysis-celltypes')) && /Skin: Set 2 mean 163\.0/.test(await box('analysis-celltypes')), 'Q3 shows each cell type\'s mean');
-  T.ok(/only age or only body size/.test(await box('explanation')), 'Q4 says what to collect when no age/size pattern exists yet');
+  T.ok(/differ only in age/.test(await box('explanation')) && /differ only in body size/.test(await box('explanation-size')), 'Q4a and Q4b say what to collect when no age or size pattern exists yet');
   T.ok(/0, 1, 0/.test(await box('analysis-cancer')), 'Q5 shows cancer-state counts');
   T.ok(/Round 1: 3 blue and 0 red/.test(await box('analysis-checkpoints')) && /Round 2 \(in progress\): 2 blue and 4 red/.test(await box('analysis-checkpoints')), 'Q6 shows both game rounds\' tallies');
   T.ok(/Round 1/.test(await box('model-revision')) && /Set 2/.test(await box('model-prediction')), 'Q7 and Q8 summarize the evidence');
