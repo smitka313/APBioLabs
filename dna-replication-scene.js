@@ -180,6 +180,7 @@
       const next = el('p', 'fork-next'); const hint = el('p', 'fork-hint');
       const actions = el('div', 'fork-actions'); actions.setAttribute('role', 'group'); actions.setAttribute('aria-label', 'Model steps');
       const unwind = btn('Unwind the DNA', 'btn btn--primary'), helicase = btn('Add helicase to the left end', 'btn btn--primary');
+      unwind.dataset.act = 'unwind'; helicase.dataset.act = 'helicase';
       actions.append(unwind, helicase);
       const letters = {};
       const lettersWrap = el('div'); lettersWrap.style.display = 'grid'; lettersWrap.style.gap = '6px';
@@ -779,7 +780,13 @@
 
     /* ---------- start ---------- */
     restore();
-    window.B3DnaForkScene = { state: () => JSON.parse(JSON.stringify({ run, seed, plan, sites, steps, p53, stage: stage(), busy })) };
+    // Read-only view of the model for the browser tests (nothing here changes the model).
+    window.B3DnaForkScene = {
+      state: () => JSON.parse(JSON.stringify({ run, seed, plan, sites, steps, p53, stage: stage(), busy })),
+      layout: () => LY ? { wide: LY.wide, s: LY.s, font: LY.font, lab: LY.lab, W: LY.W, H: LY.H, cssW: LY.cssW, cssH: LY.cssH, trayY: LY.trayY } : null,
+      hits: () => hits.map(h => Object.assign({}, h)),
+      sitePoint: (k, i) => ({ x: xOf(i), y: rowY(k, 'n', i) })
+    };
     if (isPaired() === false && steps.unzipped && manualDone('top') >= MANUAL && manualDone('bottom') >= MANUAL) startAuto();   // resume an interrupted automatic pairing
     refresh();
     relayout();
