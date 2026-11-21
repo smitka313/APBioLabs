@@ -216,7 +216,7 @@
     originalLabels: { white: 'White Non-Hispanic', black: 'Black and Black-Hispanic', hispanic: 'White Hispanic' } };
   const SITE_UV = { Hawaii: 9.7, Atlanta: 5.0, 'New Mexico': 6.2, 'San Jose': 5.3, Connecticut: 3.5, Seattle: 2.7, 'Los Angeles': 5.9, 'San Francisco': 5.3, Utah: 4.8, Detroit: 3.4, Iowa: 4.0 };
   const SKIN_Y = {
-    white: { Hawaii: 46, Atlanta: 27.5, 'New Mexico': 26, 'San Jose': 25, Connecticut: 24.5, Seattle: 25, 'Los Angeles': 25, 'San Francisco': 23.5, Utah: 23, Detroit: 20.5, Iowa: 17.5 },
+    white: { Hawaii: 46, Atlanta: 28, 'New Mexico': 26, 'San Jose': 25, Connecticut: 24.5, Seattle: 25, 'Los Angeles': 25, 'San Francisco': 23.5, Utah: 23, Detroit: 20.5, Iowa: 18 },
     black: { Utah: 1.7, Connecticut: 1.5, Seattle: 1.4, 'New Mexico': 1.4, Atlanta: 1.2, 'Los Angeles': 1.1, Iowa: 0.9, Detroit: 0.9, 'San Francisco': 0.8, Hawaii: 0.2, 'San Jose': 0.1 },
     hispanic: { Atlanta: 10, Utah: 9.6, 'San Francisco': 5.9, Connecticut: 5.7, Seattle: 4.7, Iowa: 4.5, 'San Jose': 4.3, 'Los Angeles': 3.7, 'New Mexico': 3.4, Detroit: 2.5, Hawaii: 0 } };
   const SKIN_READINGS = {};
