@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="domain-redirect.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Serengeti Board Game · Biology Lab Bench</title>
+<script>try{const mode=localStorage.getItem('aplab:pref:theme');if(mode==='light'||mode==='dark')document.documentElement.dataset.theme=mode;}catch(e){}</script>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="openscied-b1-serengeti.css">
+<script defer src="serengeti-logic.js"></script>
+<script defer src="serengeti-scene.js"></script>
+<script defer src="openscied-b1-serengeti.js"></script>
+</head>
+<body class="sg-body">
+<a href="#sg-main" class="sg-skip">Skip to activity</a>
+<header class="sg-header">
+  <div class="sg-wrap">
+    <nav class="sg-top" aria-label="Page links"><a href="index.html">Biology Lab Bench</a><span>Unit 1 · Lesson 7</span><span class="sg-draft">Classroom preview</span><button id="sg-theme" type="button" class="sg-plain" aria-label="Change color theme">Theme: Auto</button></nav>
+    <p class="sg-kicker">Ecosystem interactions</p>
+    <h1>Serengeti Board Game</h1>
+    <p class="sg-subtitle">How do migration and predator–prey interactions change a wildebeest population?</p>
+  </div>
+</header>
+<main class="sg-wrap" id="sg-main">
+  <noscript><p>This activity needs JavaScript to run the model.</p></noscript>
+  <div id="sg-load-error" role="status" hidden>The game did not load. Try reloading this page.</div>
+  <div class="sg-toolbar">
+    <nav class="sg-tabs" aria-label="Activity sections">
+      <button type="button" data-page="play" aria-current="page">Play <span aria-hidden="true">01</span></button>
+      <button type="button" data-page="evidence">Evidence <span id="sg-evidence-count" aria-hidden="true">0</span></button>
+      <button type="button" data-page="analyze">Analyze <span aria-hidden="true">03</span></button>
+    </nav>
+    <button type="button" id="sg-help" class="sg-plain">How to play</button>
+  </div>
+  <section id="sg-play" class="sg-page" aria-label="Play">
+    <div id="sg-season-strip" class="sg-season-strip" aria-label="Four seasons"></div>
+    <button id="sg-toggle-map" class="sg-plain" type="button" aria-expanded="true" aria-controls="sg-map-panel">Hide map</button>
+    <div class="sg-game">
+      <div class="sg-board sg-panel" id="sg-map-panel">
+        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title">Winter range</h2></div><span class="sg-model-tag">SIMULATED</span></header>
+        <div class="sg-board-atlas">
+        <figure class="sg-figure">
+          <div id="sg-scene"></div>
+          <figcaption id="sg-board-caption"></figcaption>
+        </figure>
+        <aside class="sg-map-key" aria-label="Map legend">
+          <p class="sg-kicker">Map key</p>
+          <ul><li><span class="sg-key-prey">W</span> Wildebeest range</li><li><span class="sg-key-hyena">H</span> Hyena territory</li><li><span class="sg-key-lion">L</span> Lion territory</li><li><span class="sg-key-move">+</span> Legal choice</li></ul>
+          <p id="sg-board-access" class="sg-board-access"></p>
+        </aside>
+        </div>
+        <div class="sg-metrics" id="sg-metrics" aria-label="Wildebeest token counts"></div>
+      </div>
+      <div class="sg-control sg-panel" aria-label="Turn controls">
+        <div id="sg-rolebar" class="sg-rolebar" aria-label="Agent roles"></div>
+        <div class="sg-action-top"><p id="sg-phase" class="sg-kicker">Set up</p><h2 id="sg-action-title" tabindex="-1">One device, three roles</h2><p id="sg-action-copy">Take turns controlling the wildebeest, hyenas and lions.</p></div>
+        <div id="sg-interactive"></div>
+        <div id="sg-dice" class="sg-dice" hidden></div>
+        <div id="sg-actions" class="sg-actions"></div>
+        <p id="sg-turn-note" class="sg-turn-note"></p>
+      </div>
+    </div>
+    <aside class="sg-evidence-peek sg-panel"><div><p class="sg-kicker">Field notes</p><p id="sg-last">Completed events and hunts will appear here.</p></div><button type="button" class="sg-plain" data-page="evidence">Open evidence</button></aside>
+  </section>
+  <section id="sg-evidence" class="sg-page" aria-labelledby="sg-evidence-title" hidden>
+    <header class="sg-section-head"><p class="sg-kicker">Field notebook</p><h2 id="sg-evidence-title" tabindex="-1">What happened on the board?</h2><p>Use the season totals and event records as evidence. Cumulative change starts at 0 and never assumes a number of animals in a herd token.</p></header>
+    <div id="sg-evidence-body"></div>
+    <div class="sg-page-actions"><button type="button" class="sg-plain" data-page="play">Back to play</button><button type="button" class="sg-cta" data-page="analyze">Go to analysis</button></div>
+  </section>
+  <section id="sg-analyze" class="sg-page" aria-labelledby="sg-analyze-title" hidden>
+    <header class="sg-section-head"><p class="sg-kicker">Sensemaking</p><h2 id="sg-analyze-title" tabindex="-1">Explain a population change</h2><p>Compare your records, then connect one event or hunt to what happened to the wildebeest.</p></header>
+    <div class="sg-analysis">
+      <aside class="sg-panel sg-question"><h3>Your game evidence</h3><div id="sg-analysis-data"></div><button type="button" class="sg-plain" data-page="evidence">View full event history</button></aside>
+      <div class="sg-panel sg-question">
+        <label for="sg-question">Our investigation question <span class="sg-optional">(optional)</span></label><input id="sg-question" maxlength="240" placeholder="How does group size affect the result of a hunt?">
+        <label for="sg-evidence-choice">1. Choose one recorded event or hunt.</label><select id="sg-evidence-choice"><option value="">Choose evidence</option></select>
+        <p class="sg-selected" id="sg-selected"></p>
+        <label for="sg-claim">2. How did the event affect the wildebeest? Explain using the numbers.</label><textarea id="sg-claim" rows="2" maxlength="750"></textarea>
+        <label for="sg-limits">3. What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="2" maxlength="750"></textarea>
+        <button id="sg-download" type="button" class="sg-cta">Download evidence and responses</button>
+      </div>
+    </div>
+  </section>
+  <p class="sg-save-warning" id="sg-save-warning" hidden>This device has an unreadable or older game save. It was not replaced. Download that save before confirming a restart.</p>
+  <div class="sg-bottom"><span id="sg-save">Progress stays in this browser only.</span><button type="button" class="sg-plain" id="sg-recover" hidden>Download preserved save</button><button type="button" class="sg-plain" id="sg-restart">Restart game</button></div>
+  <div id="sg-live" class="sg-visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+</main>
+<dialog id="sg-instructions" class="sg-dialog" aria-labelledby="sg-inst-title">
+  <header><h2 id="sg-inst-title">How to play</h2><form method="dialog"><button class="sg-plain" aria-label="Close instructions">Close</button></form></header>
+  <p>Share one device. One person or team is wildebeest, one is hyenas, and one is lions. There is no overall winner.</p>
+  <ol>
+    <li>Set up the board in winter. At the start of spring, summer and fall, the surviving wildebeest migrate. Each token normally touches another along a side.</li>
+    <li>Wildebeest, hyenas and lions each draw a card in that order. Read and apply the result, even if it affects another agent.</li>
+    <li>Hyenas hunt, then lions hunt where eligible. Sort the dice high to low; matching dice compete. The lower die is removed, ties and unmatched dice remain. Reroll only surviving dice until one side has none.</li>
+    <li>Record what changes for all roles. After fall, compare your evidence across seasons.</li>
+  </ol>
+  <p><a href="https://youtu.be/6-ooaGN1lSk" target="_blank" rel="noopener noreferrer">OpenSciEd’s game walkthrough (opens in a new tab)</a></p>
+</dialog>
+<dialog id="sg-confirm" class="sg-dialog" aria-labelledby="sg-confirm-title">
+  <header><h2 id="sg-confirm-title">Restart this game?</h2></header>
+  <p>This clears the recorded events and written responses for this activity only. Download your evidence first if you want to keep it.</p>
+  <form method="dialog" class="sg-page-actions"><button class="sg-plain" value="cancel" autofocus>Keep playing</button><button class="sg-cta" value="restart">Restart game</button></form>
+</dialog>
+<footer class="sg-footer sg-wrap">
+  <p><strong>Created by Robert Smitka.</strong> Original digital adaptation licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p>
+  <p>Companion to Lesson 7 of <a href="https://www.openscied.org/">OpenSciEd</a> Biology Unit B.1, Ecosystem Interactions. The source materials use <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. The board art, controls and evidence notebook are new digital presentations. Not affiliated with or endorsed by OpenSciEd.</p>
+  <p>Model inputs and written work are stored on this device only. This activity does not transmit student work.</p>
+</footer>
+</body>
+</html>
