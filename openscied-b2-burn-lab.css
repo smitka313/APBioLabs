@@ -1,0 +1,115 @@
+/* OpenSciEd Unit B.2 Lesson 2 companion: Burning Fuels. Uses the site tokens in style.css. Light by design: tap cards, dropdown rows, three text boxes. */
+.lab-header .crumbs { flex-wrap: wrap; }
+.step-nav ol { justify-content: flex-start; }
+[role=status]:empty { display: none; }
+.panel { min-width: 0; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.row .btn { max-width: 100%; }
+.field { display: grid; gap: 5px; min-width: 0; margin-top: 12px; }
+.field label { font-weight: 650; }
+.field textarea { width: 100%; max-width: 83ch; box-sizing: border-box; font: inherit; min-height: 3.2em; resize: vertical; }
+.hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
+.part-card { border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: var(--r); padding: 12px 16px; background: var(--surface); }
+.part-card p { margin: 4px 0; }
+.part-tag { display: inline-block; font: 600 .76rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.resume-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--accent-soft); }
+.resume-bar[hidden] { display: none; }
+.sim-tag { display: block; max-width: none; margin: 0; padding: 8px 12px; border-left: 4px solid var(--warn); background: var(--warn-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+
+/* Scenes: reserve the space so nothing jumps while the model loads. */
+.scene-host { display: grid; gap: 8px; margin-top: 10px; }
+.scene-host canvas { display: block; width: 100%; height: auto; aspect-ratio: 960 / 340; min-height: 150px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.scene-desc { margin: 0; font-size: .9rem; color: var(--muted); }
+.scene-notice { margin: 0; padding: 10px 14px; border-left: 4px solid var(--warn); border-radius: 0 var(--r-sm) var(--r-sm) 0; background: var(--warn-soft); color: var(--ink); font-weight: 600; }
+.scene-notice::before { content: "ⓘ "; }
+.scene-notice[hidden] { display: none; }
+.scene-host, .scene-host > *, .bn-panel { min-width: 0; max-width: 100%; }
+.scene-host .table-wrap { max-width: 100%; overflow-x: auto; }
+.table-wrap { max-width: 100%; overflow-x: auto; }
+
+/* Tap cards, chips and dropdown rows with instant feedback */
+.mcq, .chipset { display: grid; gap: 4px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); background: var(--surface); padding: 12px 14px; margin: 14px 0 0; min-width: 0; }
+.mcq legend, .chipset legend { padding: 0 5px; font-weight: 700; }
+.mcq.mini, .cer .chipset { border-left-width: 2px; margin-top: 8px; }
+.choice { display: flex; gap: 9px; align-items: flex-start; margin: 6px 0; padding: 7px 9px; border-radius: var(--r-sm); min-height: 24px; }
+.choice input { flex: none; margin: 1px 0 0; width: 24px; height: 24px; }
+.choice:hover { background: var(--surface-2); }
+.mcq .choice { min-height: 44px; align-items: center; margin: 2px 0; border: 1px solid var(--line); }
+.mcq .choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.chip { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); margin: 3px 0; font-size: 1rem; white-space: normal; }
+.chip input { width: 24px; height: 24px; flex: none; margin: 0; }
+.chip:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.feedback { min-height: 1.4em; margin: 4px 0 0; }
+.feedback:empty { min-height: 0; }
+.feedback[data-state=correct]::before { content: "✓ "; font-weight: 700; color: var(--ok); }
+.feedback[data-state=wrong]::before { content: "✕ "; font-weight: 700; }
+.feedback[data-state=partial]::before, .feedback[data-state=poll]::before { content: "→ "; font-weight: 700; }
+.feedback:empty::before { content: none !important; }
+.mcq + .feedback, .chipset > .feedback { padding: 2px 6px 0; max-width: 72ch; }
+.pick-row { display: grid; gap: 4px; margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); background: var(--surface); min-width: 0; }
+.pick-row > label { font-weight: 650; max-width: 72ch; }
+.pick-row select, .sentence select { font: inherit; min-height: 40px; max-width: 100%; padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); }
+.pick-row select { justify-self: start; }
+.sentence { margin: 0; line-height: 2.6; max-width: 80ch; }
+.sentence select { width: auto; margin: 0 2px; vertical-align: middle; white-space: normal; }
+.sentence-row { display: grid; gap: 4px; margin: 10px 0 0; padding: 6px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); background: var(--surface); }
+.pick-row .feedback, .sentence-row .feedback { padding: 2px 6px 0; max-width: 72ch; }
+.sentence-row .feedback { white-space: pre-line; }
+
+/* Background card, fuel cards, Matter-Energy chart */
+.background { margin: 0 0 14px; border-left: 4px solid var(--stain, var(--accent)); }
+.background h3 { margin: 0 0 6px; font-size: 1.05rem; }
+.bg-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px; }
+.bg-list li { max-width: 72ch; }
+.fuel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 4px 0 8px; }
+.fuel-card { display: grid; gap: 4px; align-content: start; padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.fuel-card svg { width: 100%; height: auto; max-height: 96px; border-radius: var(--r-sm); background: var(--surface-2); }
+.fuel-card h3 { margin: 4px 0 0; font-size: 1.05rem; }
+.fuel-card p { margin: 0; font-size: .92rem; }
+.me-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.me-grid .mcq { margin: 0; }
+.me-opts { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.me-opts .choice { flex: 1 1 auto; min-width: 7.2rem; }
+.me-item .feedback-inline { margin: 0; }
+.feedback.me-fb { padding: 2px 6px 0; }
+
+/* Claim, evidence, reasoning */
+.qt, .cer { display: grid; gap: 8px; margin: 12px 0; }
+.qt h3, .cer h3 { margin: 0; }
+.cer select { min-height: 40px; max-width: 100%; }
+.ev-note { margin: -2px 0 4px 12px; font-size: .9rem; font-weight: 600; }
+.ev-note:empty { display: none; }
+.self-level { margin: 6px 0 0; padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); font-weight: 600; }
+.self-level[data-level=organized] { background: var(--ok-soft); }
+.self-level[data-level=organized]::before { content: "✓ "; }
+
+/* Report, submit, attribution */
+.report-answer { margin: 0 0 6px; white-space: pre-wrap; }
+.investigation-report h4 { margin: 12px 0 2px; font-size: .95rem; }
+.report-checks { margin: 6px 0; }
+.investigation-report table.data th, .investigation-report table.data td { white-space: normal; text-align: left; }
+.step-body, .investigation-report { min-width: 0; max-width: 100%; }
+.submit-card { display: grid; gap: 12px; }
+.attribution { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; font-size: .9rem; }
+.attribution h3 { margin-top: 0; }
+.reset-dialog { max-width: min(480px, calc(100% - 32px)); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); padding: 20px; }
+.reset-dialog::backdrop { background: #0009; }
+.reset-dialog h2 { margin-top: 0; }
+
+@media (max-width: 520px) {
+  .step-nav a { padding-inline: 8px; }
+  .panel, .mcq, .chipset { padding: 10px; }
+  .row .btn { width: 100%; justify-content: center; }
+  .pick-row, .sentence-row { padding-inline: 10px; }
+  .pick-row select { justify-self: stretch; }
+  .sentence { line-height: 2.8; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .self-level { transition: background .2s; }
+}
+@media print {
+  .step-nav, .theme-switch, #download-work, #print-work, #reset-work, .skip-link, .pager, .scene-notice, .resume-bar { display: none !important; }
+  body { background: #fff; color: #111; }
+  .panel, .callout, .part-card { break-inside: avoid; }
+  textarea { min-height: 3.5em; }
+}

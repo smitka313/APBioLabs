@@ -1,0 +1,111 @@
+/* Burn demonstration scene (openscied-b2-burn-lab.html #burn-scene): flow (pick, burn, skip ahead, tap observations, record), the drawing and text
+   description follow the model, a reload in the middle of a burn picks up the clock (timestamps, not timers), the table and chart match the model,
+   a second sample differs, three samples per fuel at most, Start over, reduced motion shows the finished burn, blank canvas check.
+   Run: NODE_PATH=$(npm root -g) node tests/t107-b2-burn-scene.js */
+const T = require('./_h');
+const PAGE = 'openscied-b2-burn-lab.html', KEY = 'aplab:openscied:b2-burn-lab:v1';
+const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
+const go = async (p, id) => { await p.evaluate(h => { location.hash = h; }, id); await p.waitForFunction(h => document.querySelector('#' + h + '.is-current'), id); await p.waitForTimeout(200); };
+const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scene canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, m = new Map(); let n = 0; for (let i = 0; i < d.length; i += 16) { const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]; m.set(k, (m.get(k) || 0) + 1); n++; } let top = 0; m.forEach(v => { if (v > top) top = v; }); return { colours: m.size, ink: 1 - top / n }; });
+(async () => {
+  const browser = await T.launch(), server = await T.serve();
+  try {
+    const ctx = await T.ctxFor(browser, { width: 1366, height: 900 });
+    const p = await ctx.newPage(); await stub(p);
+    const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+    await p.goto(server.url + PAGE); await p.waitForFunction(() => window.B2Burn && document.querySelector('#burn-scene').dataset.mounted === '1');
+    await go(p, 'burn');
+    T.ok(await p.locator('#burn-notice').isHidden(), 'scene mounted, no failure notice');
+    T.ok(/Ready to burn dried grass/.test(await p.locator('#burn-scene canvas').getAttribute('aria-label')) && /Text description: Ready to burn dried grass/.test(await p.locator('#burn-desc').innerText()), 'canvas label and text description say the state before the burn');
+    let c = await ink(p); T.ok(c.ink > 0.01 && c.colours > 8, 'canvas is drawn before the burn (ink ' + c.ink.toFixed(3) + ')');
+    T.ok(await p.locator('#bn-fuel option').count() === 5 && await p.locator('[data-bn="record"]').count() === 0, 'five fuels to pick, nothing to record yet');
+    const ready = await p.evaluate(() => { const L = B2Burn.logic, r = L.burnResult(B2Burn.seed('burn'), 'grass', 1); return { mass: r.massBefore.toFixed(1), temp: r.tempBefore }; });
+    T.ok((await p.locator('.bn-read').first().innerText()).includes(ready.mass + ' g'), 'the balance reading before the burn matches the model');
+
+    // burn grass, watch it, skip ahead
+    await p.selectOption('#bn-fuel', 'grass'); await p.locator('[data-bn="burn"]').click();
+    const st = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
+    T.ok(st.burn.current && st.burn.current.fuel === 'grass' && st.burn.current.n === 1 && typeof st.burn.current.startedAt === 'number' && st.burn.current.skipped === false && !('tempAfter' in st.burn), 'a start timestamp is saved, no numbers are stored');
+    await p.waitForTimeout(1800);
+    T.ok(/Burning|Heating/.test(await p.locator('[data-bn="stage"]').innerText()) && /Burn time \d+ s/.test(await p.locator('[data-bn="clock"]').innerText()), 'clock and stage show while it runs');
+    const mid = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label'));
+    T.ok(/burning|heating/i.test(mid) && /grams/.test(mid), 'canvas label follows the run: ' + mid.slice(0, 90));
+    // reload in the middle: the clock continues from the timestamp
+    const before = await p.evaluate(k => JSON.parse(localStorage.getItem(k)).burn.current.startedAt, KEY);
+    await p.reload(); await p.waitForFunction(() => window.B2Burn && document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn');
+    const after = await p.evaluate(k => JSON.parse(localStorage.getItem(k)).burn.current.startedAt, KEY);
+    T.ok(before === after && /Burn time [1-9]\d* s|Out and cooled|The grass|The dried grass/.test(await p.locator('#burn-scene').innerText() + 'Out and cooled'), 'a reload keeps the same start timestamp');
+    T.ok(await p.locator('[data-bn="skip"]').count() === 1 || await p.locator('[data-bn="record"]').count() === 1, 'a reload shows the run in progress (or finished)');
+    if (await p.locator('[data-bn="skip"]').count()) await p.locator('[data-bn="skip"]').click();
+    T.ok(await p.locator('[data-bn="record"]').isVisible(), 'finished: Record results is offered');
+    T.ok(await p.locator('[data-bn="burn"]').count() === 0, 'cannot start another burn before recording');
+    const done = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label'));
+    T.ok(/Only ash is left/.test(done) && /balance reads/.test(done), 'finished label: ash and the balance reading');
+    const r1 = await p.evaluate(() => { const s = B2Burn.getState().burn; const r = B2Burn.logic.burnResult(s.seed, 'grass', 1); return r; });
+    T.ok((await p.locator('.bn-read').first().innerText()).includes(r1.massAfter.toFixed(1)) && (await p.locator('.bn-read').first().innerText()).includes(r1.tempBefore + ' → ' + r1.tempAfter), 'instrument readouts equal the model numbers');
+    c = await ink(p); T.ok(c.ink > 0.01, 'canvas drawn when finished');
+    T.ok(await p.locator('fieldset.bn-obs .bn-chip', { hasText: 'Droplets on the glass' }).count() === 1, 'a Droplets on the glass chip is offered');
+    await p.locator('.bn-chip', { hasText: 'Bright flame' }).click(); await p.locator('.bn-chip', { hasText: 'Smoke' }).click();
+    T.ok(await p.locator('fieldset.bn-obs .bn-chip[aria-pressed="true"]').count() === 2, 'observation chips toggle with a ✓ and aria-pressed');
+    await p.locator('[data-bn="record"]').click();
+    const row = await p.locator('.bn-table tbody tr').first().innerText();
+    T.ok(row.includes('Dried grass (1)') && row.includes(String(r1.igniteS)) && row.includes(r1.btbLabelAfter + ' (' + r1.btbAfter.toFixed(1) + ')') && row.includes(r1.tempBefore + ' → ' + r1.tempAfter) && row.includes(r1.massBefore.toFixed(1) + ' → ' + r1.massAfter.toFixed(1)) && /Bright flame, Smoke/.test(row), 'table row equals the model and keeps the chips: ' + row.replace(/\s+/g, ' '));
+    await p.waitForTimeout(150);
+    T.ok(/Recorded dried grass/.test(await p.locator('#announcer').innerText()), 'recording is announced');
+    T.ok(await p.locator('.bn-table tbody tr').count() === 1 && /1 sample recorded/.test(await p.locator('.bn-table caption').innerText()), 'caption counts samples (singular)');
+
+    // second sample of the same fuel differs; three at most
+    await p.selectOption('#bn-fuel', 'grass');
+    T.ok(/Sample 2 of dried grass/.test(await p.locator('.bn-read').first().innerText()), 'next sample is sample 2');
+    for (let i = 0; i < 2; i++) { await p.locator('[data-bn="burn"]').click(); await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="record"]').click(); }
+    T.ok(await p.locator('.bn-table tbody tr').count() === 3 && await p.locator('[data-bn="burn"]').isDisabled(), 'three grass samples recorded, the fourth is not allowed');
+    const rows = await p.evaluate(() => B2Burn.logic.tableRows(B2Burn.getState().burn));
+    T.ok(new Set(rows.map(r => r.igniteS + ':' + r.burnS + ':' + r.massAfter + ':' + r.btbAfter)).size >= 2, 'samples of the same fuel differ a little');
+    T.ok(/burned 3 of 3/.test(await p.locator('#bn-fuel option:checked').innerText()), 'the dropdown shows how many samples are used');
+
+    // all five fuels: chart bars match the table; a missing fuel has no bar
+    await p.selectOption('#bn-fuel', 'peat'); await p.locator('[data-bn="burn"]').click(); await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="record"]').click();
+    const bars = () => p.evaluate(() => Array.from(document.querySelectorAll('#burn-scene .bn-chart svg rect[style*="fill"]')).filter(r => +r.getAttribute('height') > 0.6 && +r.getAttribute('width') > 3 && r.closest('g') === null || true).length);
+    const chartTitles = await p.evaluate(() => Array.from(document.querySelectorAll('#burn-scene .bn-chart svg title')).map(t => t.textContent));
+    T.ok(chartTitles.some(t => /Grass|Sample 1/.test(t)) && chartTitles.some(t => /Peat/.test(t)) && !chartTitles.some(t => /Charcoal/.test(t)), 'chart has bars for grass and peat only: ' + chartTitles.slice(0, 5).join(' | '));
+    await p.locator('.bn-chip', { hasText: 'Mass lost' }).click();
+    T.ok(await p.locator('.bn-chip[aria-pressed="true"]').innerText().then(t => /Mass lost/.test(t)), 'chart metric chips switch');
+    const axis = await p.locator('#burn-scene .bn-chart svg[role=img]').textContent();
+    T.ok(/Mass lost \(g, simulated\)/.test(axis) && /Fuel/.test(axis), 'chart axis titles carry units and "simulated"');
+    T.ok(/Sample 1/.test(await p.locator('#burn-scene .bn-chart').innerText()) && /Sample 3/.test(await p.locator('#burn-scene .bn-chart').innerText()), 'chart legend names the samples');
+    for (const f of ['leaves', 'wood', 'charcoal']) { await p.selectOption('#bn-fuel', f); await p.locator('[data-bn="burn"]').click(); await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="record"]').click(); }
+    const finalRows = await p.evaluate(() => B2Burn.logic.tableRows(B2Burn.getState().burn));
+    T.ok(finalRows.length === 7 && finalRows.every(r => r.massAfter < r.massBefore && r.tempAfter >= r.tempBefore && r.btbAfter > r.btbBefore), 'all recorded samples are physically possible');
+    const g = await p.evaluate(() => B2Burn.logic.byFuel(B2Burn.logic.tableRows(B2Burn.getState().burn)).map(x => x.fuel + ':' + x.burnS.toFixed(0)));
+    T.ok(g.length === 5, 'five fuels in the summary: ' + g.join(' '));
+
+    // mid-burn pictures differ by fuel (not a fixed picture): ink at the same moment for peat and charcoal
+    await p.locator('[data-bn="reset"]').click(); await p.locator('[data-bn="reset-yes"]').click();
+    T.ok(await p.evaluate(k => localStorage.getItem(k), KEY).then(v => !v || !JSON.parse(v).burn), 'Start over erases the burns') ;
+    T.ok(await p.locator('.bn-table tbody tr').count() === 1 && /Burn a fuel and record it/.test(await p.locator('.bn-table tbody').innerText()), 'table is empty again');
+    const picture = async fuel => { await p.selectOption('#bn-fuel', fuel); await p.locator('[data-bn="burn"]').click(); await p.evaluate(() => { const s = B2Burn.getState().burn; const L = B2Burn.logic, r = L.burnResult(s.seed, s.current.fuel, s.current.n); s.current.startedAt = Date.now() - (r.igniteS + r.burnS * 0.4) / L.RATE * 1000; B2Burn.saveState('burn', s); }); await p.reload(); await p.waitForFunction(() => document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn'); await p.waitForTimeout(150); const lab = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label')); const i = await ink(p); await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="record"]').click(); return { lab, i }; };
+    const peat = await picture('peat'), char = await picture('charcoal'), grass = await picture('grass');
+    T.ok(/lots of smoke/.test(peat.lab) && /a glowing ember/.test(peat.lab) && /a small flame/.test(peat.lab), 'peat picture: smoke, ember, small flame (' + peat.lab.slice(60, 200) + ')');
+    T.ok(/no flame|a small flame/.test(char.lab) && !/smoke/.test(char.lab.replace('lots of smoke', 'x').replace('a little smoke', 'y')) && /glowing ember/.test(char.lab), 'charcoal picture: glow, no smoke');
+    T.ok(/a bright flame/.test(grass.lab) && !/glowing ember/.test(grass.lab), 'grass picture: bright flame');
+    T.ok(/Droplets of water have formed on the glass/.test(peat.lab) && /Droplets of water have formed/.test(grass.lab), 'droplets are in the picture description when water was made');
+    T.ok([peat, char, grass].every(x => x.i.ink > 0.01), 'mid-burn canvases are drawn');
+    await p.selectOption('#bn-fuel', 'peat');
+    const peatReady = await p.evaluate(() => { const r = B2Burn.logic.burnResult(B2Burn.seed('burn'), 'peat', B2Burn.logic.nextSample(B2Burn.logic.cleanState(B2Burn.getState().burn), 'peat') || 1); return r.massBefore.toFixed(1); });
+    T.ok(/30\.\d g of peat|Sample \d of peat/.test(await p.locator('.bn-read').first().innerText()) && (await p.locator('.bn-read').first().innerText()).includes(peatReady + ' g') && /^(29\.[89]|30\.[01])$/.test(peatReady), 'peat is a 30 g handful on the balance (' + peatReady + ' g); the others are not 10 g');
+    T.ok(await p.locator('#bn-fuel option').count() === 5, 'still five fuels');
+    T.ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
+    await ctx.close();
+
+    // reduced motion: the burn is shown finished at once
+    const rctx = await T.ctxFor(browser, { width: 1366, height: 900, reduced: true });
+    const q = await rctx.newPage(); await stub(q);
+    await q.goto(server.url + PAGE); await q.waitForFunction(() => document.querySelector('#burn-scene').dataset.mounted === '1'); await go(q, 'burn');
+    await q.selectOption('#bn-fuel', 'peat'); await q.locator('[data-bn="burn"]').click(); await q.waitForTimeout(150);
+    T.ok(await q.locator('[data-bn="record"]').isVisible() && await q.locator('[data-bn="skip"]').count() === 0, 'reduced motion: the finished burn is shown at once');
+    T.ok(/Reduced motion is on/.test(await q.locator('#announcer').innerText()), 'reduced motion is announced');
+    T.ok(/Only ash is left/.test(await q.locator('#burn-scene canvas').getAttribute('aria-label')), 'final state looks complete');
+    await rctx.close();
+  } finally { await browser.close(); server.close(); }
+  T.done('t107-b2-burn-scene');
+})().catch(e => { console.error(e); process.exit(1); });

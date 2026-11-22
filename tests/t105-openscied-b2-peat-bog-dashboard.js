@@ -11,7 +11,7 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
     await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#peat-bog-progress');
     T.ok(/Not started/.test(await p.locator('#peat-bog-progress').innerText()) && await p.locator('#peat-bog-reset').isDisabled(), 'new visit: Not started, restart disabled');
     T.ok((await p.locator('#peat-bog-open').getAttribute('href')).startsWith('openscied-b2-peat-bog-lab.html'), 'card links to the page');
-    T.ok(/3 activities available/.test(await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').innerText()) && /2 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), 'Unit 3 still lists 3 activities; Unit 2 lists 2');
+    T.ok(/3 activities available/.test(await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').innerText()) && /3 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), 'Unit 3 still lists 3 activities; Unit 2 lists 3');
     T.ok(!/Units 1–2/.test(await p.locator('.dashboard-coming-soon summary').innerText()), 'Unit 2 is no longer "coming soon"');
     // work the real page, then come back
     const q = await ctx.newPage(); await stub(q);
