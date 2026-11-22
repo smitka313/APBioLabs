@@ -69,7 +69,7 @@
     <div class="step-body split">
       <div class="split-main prose">
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
-        <div class="callout callout--safety" id="safety-note"><div class="callout-title">Safety first: a virtual demonstration, not a real fire</div><p>This page replaces nothing. Real burning is a demonstration your teacher does, with goggles, fresh air and everyone 15 feet back, following the OpenSciEd safety steps. Never burn materials at home.</p></div>
+        <div class="callout callout--safety" id="safety-note"><div class="callout-title">Safety first: a virtual demonstration, not a real fire</div><p>This page replaces nothing. Real burning is a demonstration your teacher does, with goggles, fresh air and everyone 15 feet back, following the OpenSciEd safety steps. The glass dome gets hot, so a real lab uses tongs and heat-safe surfaces. Never burn materials at home.</p></div>
         <div class="part-card"><span class="part-tag">Sections 2–3 · Look and predict</span><p><strong>Five fuels.</strong> Which light fast? Which give the most energy?</p></div>
         <div class="part-card"><span class="part-tag">Section 4 · Burn demonstration</span><p><strong>Burn each fuel.</strong> Record the BTB color, the temperature and the mass.</p></div>
         <div class="part-card"><span class="part-tag">Sections 5–8 · Make sense</span><p><strong>Where did the matter and energy go?</strong> Then explain why peat burns so much.</p></div>
@@ -115,7 +115,7 @@
         <h3>Background</h3>
         <ul class="bg-list">
           <li><strong>BTB</strong> is a blue liquid. It turns green, then yellow, as carbon dioxide dissolves in it.</li>
-          <li>You will watch BTB, a thermometer and a balance to see what burning does.</li>
+          <li><strong>The setup:</strong> the fuel burns on a heat-safe tray under a glass dome. A dish of BTB sits inside the dome beside it. A laser thermometer reads the dome glass, and a balance weighs the fuel before and after.</li>
           <li>The handfuls are not equal (4 g to 30 g), as in the class demonstration. So compare the grams each one <em>lost</em>.</li>
         </ul>
       </div>
@@ -140,19 +140,19 @@
     <header><div class="eyebrow">4 · Burn demonstration</div><h2>Burn each fuel</h2></header>
     <div class="step-body">
       <p class="sim-tag"><strong>SIMULATED.</strong> A model, not a real fire. Your teacher does the real burning.</p>
-      <p class="small muted">Pick a fuel, burn it, tap what you saw, then record. Try all five. Burn one again to see sample-to-sample differences.</p>
+      <p class="small muted">Pick a fuel and burn it. Watch the dome, the dish of BTB and the laser thermometer. Tap what you saw, then record. Try all five.</p>
       <div class="scene-host" id="burn-scene" data-scene="burn">
-        <canvas role="img" aria-label="A simulated burn demonstration: a fuel sample held in tongs under a flask of BTB solution with a thermometer, and a balance." width="960" height="340"></canvas>
-        <p class="scene-desc" id="burn-desc">Text description: a simulated burn demonstration. Pick a fuel and burn it to see the flame, the BTB color, the temperature and the mass change.</p>
+        <canvas role="img" aria-label="A simulated burn demonstration: a glass dome over a tray of fuel with a dish of BTB inside the dome, a laser thermometer aimed at the dome glass, and a balance." width="960" height="340"></canvas>
+        <p class="scene-desc" id="burn-desc">Text description: a simulated burn demonstration. A glass dome stands over a tray with a dish of BTB inside it. Pick a fuel and burn it to see the flame, the BTB color, the laser thermometer reading and the mass change.</p>
         <p class="scene-notice" id="burn-notice" hidden>The burn model could not load. Reload the page to try again.</p>
       </div>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
         <li>The handfuls are not equal, because the Teacher Edition notes the fuels are not uniform and the demonstration did not stress equal masses. Starting masses: about 4 g (grass), 4 g (leaves), 10 g (wood chips), 10 g (charcoal) and 30 g (peat). They catch fire after about 4, 6, 14, 28 and 45 s, and burn for about 20, 30, 90, 150 and 260 s. Peat catches slowly, then smolders with smoke and a glowing ember.</li>
         <li>Mass lost: about 93% (grass), 90% (leaves), 97% (wood), 88% (charcoal), 78% (peat, which keeps more ash). So peat loses the most grams, about 23 g. The mass that disappears leaves as gases, mostly carbon dioxide and water vapor. The balance reads to 0.1 g, with a little error.</li>
-        <li>Heat per gram burned is about 15, 16, 18, 29 and 20 kJ. The flask warms by grams burned × heat per gram, about 2 to 22 °C: most for peat (about 20 °C), then charcoal, wood, and a little for grass and leaves. The thermometer reads to 1 °C, with a little error. Charcoal gives the most heat per gram.</li>
-        <li>Carbon dioxide made is the grams lost times the carbon in the fuel (charcoal has the most per gram). A fixed share dissolves into the BTB, so more mass lost and more carbon mean a bigger BTB change, from blue toward green or yellow. Some fuels only turn green, as in a real class.</li>
-        <li>Hydrogen in the fuel joins oxygen and leaves as water vapor, which condenses as droplets on the cool glass: most for peat, least for charcoal.</li>
-        <li>Your samples differ by about 8% in mass lost and heat, and 15% in time to catch, like real samples. One simulated second is one sixth of a real second. Real results also depend on moisture, sample shape, air flow and the flask.</li>
+        <li>Heat per gram burned is about 15, 16, 18, 29 and 20 kJ. The laser thermometer reads the outside of the dome glass before and after. The rise is grams burned × heat per gram × 0.35 ÷ 8, about 2 to 22 °C (the 0.35 and the 8 stand for how much heat reaches the glass and the air under the dome): most for peat (about 20 °C), then charcoal, wood, and a little for grass and leaves. It reads to 1 °C, with a little error. Charcoal gives the most heat per gram.</li>
+        <li>Carbon dioxide made is the grams lost times the carbon in the fuel (charcoal has the most per gram). It collects under the dome, and a fixed share dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says the system was not totally closed). So the BTB shows a color change, not an exact amount: more mass lost and more carbon mean a bigger change, from blue toward green or yellow.</li>
+        <li>Hydrogen in the fuel joins oxygen and leaves as water vapor, which condenses as droplets on the inside of the dome glass: most for peat, least for charcoal.</li>
+        <li>Your samples differ by about 8% in mass lost and heat, and 15% in time to catch, like real samples. One simulated second is one sixth of a real second. Real results also depend on moisture, sample shape, air flow and the dome.</li>
       </ul></div></details>
     </div>
   </section>
@@ -162,7 +162,7 @@
     <header><div class="eyebrow">5 · Make sense</div><h2>Where did the matter and energy go?</h2></header>
     <div class="step-body">
       <p class="small muted">Use your table. Three rows check your own data.</p>
-      <div class="pick-row"><label for="sense-btb">When the BTB turned from blue toward yellow, the flask had more…</label>
+      <div class="pick-row"><label for="sense-btb">When the BTB in the dish turned from blue toward yellow, the air under the dome had more…</label>
         <select id="sense-btb"><option value="">Choose</option><option value="co2">carbon dioxide</option><option value="o2">oxygen</option><option value="water">water</option></select>
         <p class="feedback" id="feedback-sense-btb"></p></div>
       <div class="pick-row"><label for="sense-mass">The mass that went missing…</label>
@@ -171,8 +171,11 @@
       <div class="pick-row"><label for="sense-massbtb">For fuels with similar carbon, the one that lost more mass made…</label>
         <select id="sense-massbtb"><option value="">Choose</option><option value="more">more carbon dioxide and a bigger BTB change</option><option value="less">less carbon dioxide</option><option value="same">the same BTB change</option></select>
         <p class="feedback" id="feedback-sense-massbtb"></p></div>
-      <div class="pick-row"><label for="sense-water">Droplets formed on the glass. The water came from…</label>
-        <select id="sense-water"><option value="">Choose</option><option value="hydrogen">hydrogen in the fuel joining oxygen</option><option value="air">the air in the flask</option><option value="btb">the BTB solution</option></select>
+      <div class="pick-row"><label for="sense-dish">Why is the BTB in a dish INSIDE the dome?</label>
+        <select id="sense-dish"><option value="">Choose</option><option value="reach">so the carbon dioxide from the fire reaches it</option><option value="cool">to keep it cool</option><option value="smoke">so it can catch smoke</option></select>
+        <p class="feedback" id="feedback-sense-dish"></p></div>
+      <div class="pick-row"><label for="sense-water">Droplets formed on the inside of the dome. The water came from…</label>
+        <select id="sense-water"><option value="">Choose</option><option value="hydrogen">hydrogen in the fuel joining oxygen</option><option value="air">the air under the dome</option><option value="btb">the BTB in the dish</option></select>
         <p class="feedback" id="feedback-sense-water"></p></div>
       <div class="pick-row"><label for="sense-energy">The energy stored in the fuel…</label>
         <select id="sense-energy"><option value="">Choose</option><option value="heat">went out as heat and light</option><option value="ash">stayed in the ash</option><option value="vanish">vanished</option></select>
@@ -186,7 +189,7 @@
       <div class="pick-row"><label for="sense-yellowest">In my data, the BTB turned the most yellow for…</label>
         <select id="sense-yellowest"><option value="">Choose</option><option value="grass">Dried grass</option><option value="leaves">Dried leaves</option><option value="wood">Wood chips</option><option value="charcoal">Charcoal</option><option value="peat">Peat</option></select>
         <p class="feedback" id="feedback-sense-yellowest"></p></div>
-      <div class="pick-row"><label for="sense-warmest">In my data, the flask warmed the most for…</label>
+      <div class="pick-row"><label for="sense-warmest">In my data, the dome glass warmed the most for…</label>
         <select id="sense-warmest"><option value="">Choose</option><option value="grass">Dried grass</option><option value="leaves">Dried leaves</option><option value="wood">Wood chips</option><option value="charcoal">Charcoal</option><option value="peat">Peat</option></select>
         <p class="feedback" id="feedback-sense-warmest"></p></div>
     </div>

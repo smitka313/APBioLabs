@@ -2,8 +2,8 @@
    No DOM here, so Node can test it (tests/openscied-b2-burn-logic.test.js) and the scene and the page reuse it.
 
    Source: OpenSciEd Unit B.2 Teacher Edition, Lesson 2 (the teacher's Burning Fuels demonstration: peat and other dry wildfire fuels burned in
-   1-quart glass containers with blue BTB solution, optional infrared thermometer and gram scale; students record BTB color, temperature and mass
-   before and after, and other observations) and its Matter-Energy chart. EVERYTHING NUMERICAL HERE IS SIMULATED by a small model written for this
+   under a glass dome (an inverted bowl or a 1-quart glass container) that captures the carbon dioxide, with blue BTB in a Petri dish inside the dome beside the
+   fuel, a laser (infrared) thermometer and a gram balance; students record BTB color, temperature and mass before and after, and other observations) and its Matter-Energy chart. EVERYTHING NUMERICAL HERE IS SIMULATED by a small model written for this
    site, not measured from real fuels. The page replaces no real demonstration and none of its safety steps.
 
    ASSUMPTIONS (stated once; repeated on the page under "What this simulation models")
@@ -23,16 +23,22 @@
    - Variation. Each student gets a seeded factor and each burned sample a smaller one: heat and mass lost about 8 percent in all (5 + 3), ignition
      time about 15 percent (8 + 7), burn time about 10 percent. A second sample of the same fuel therefore differs a little. The scale reads to 0.1 g
      with +/- 0.1 g noise on both weighings. The infrared thermometer reads to 1 degree C with +/- 1 degree noise on both readings. Starting temperature 22 C.
-   - Mass that disappears leaves as gas, mostly carbon dioxide and water vapor (ash stays). Carbon dioxide made (relative) = grams lost x carbon factor. A FIXED
-     share (0.6) of it dissolves into the BTB in the flask. BTB reading (1 deep blue, 2 blue, 3 blue-green, 4 green, 5 yellow-green, 6 yellow), starting at 2:
-     2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.2 (the noise is zero when nothing was lost), kept from 2 to 6. So for every sample, the BTB
-     change grows with the carbon dioxide made, which grows with grams lost x carbon factor; no mass lost means no BTB change. Real BTB color also
-     depends on its starting pH and on how much gas reaches it.
-   - Heat. Temperature rise of the flask above the flame = grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and 22 C (0.35 is the
-     share of the heat that reaches the flask; 8 kJ per degree is the heat capacity of the flask and BTB solution). The flask is never cooler after than before.
-   - Water. Hydrogen in the fuel joins oxygen and leaves as water vapor. Water made (relative) = grams lost x water factor. It condenses as droplets on
-     the cool glass: most for peat, some for wood, leaves and grass, least for charcoal. The drawing shows droplets in proportion to it.
-   - Never impossible: mass after is below mass before and above zero, the flask is not cooler after than before, BTB 2 to 6, times positive. */
+   - The apparatus. The fuel burns on a heat-safe tray under a large glass dome. A Petri dish of BTB (lid off) sits inside the dome beside the fuel, exposed to the
+     air under the dome. The fuel sample is weighed on a balance before the burn and again after it (the sample sits under the dome during the burn). A laser
+     (infrared) thermometer reads the outside of the dome glass before and after; it reads to about 1 degree C.
+   - Mass that disappears leaves as gas, mostly carbon dioxide and water vapor (ash stays). Carbon dioxide made (relative) = grams lost x carbon factor. It collects
+     under the dome, and a FIXED share (0.6) of it dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says
+     the system was not totally closed); that is why the BTB shows a color change but not an exact amount, and why 0.6 is a share, not all of it. BTB reading (1 deep blue,
+     2 blue, 3 blue-green, 4 green, 5 yellow-green, 6 yellow), starting at 2: 2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.2 (the noise is zero when nothing was lost),
+     kept from 2 to 6. So for every sample, the BTB change grows with the carbon dioxide made, which grows with grams lost x carbon factor; no mass lost means no
+     BTB change. Real BTB color also depends on its starting pH and on how much gas reaches it.
+   - Heat. Temperature rise of the dome glass (the laser-thermometer reading after minus before) = grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and
+     22 C. The 0.35 stands for the share of the heat that reaches the glass and the air under the dome, and the 8 kJ per degree for the heat capacity of that glass
+     and air. The glass is never cooler after than before.
+   - Water. Hydrogen in the fuel joins oxygen and leaves as water vapor. Water made (relative) = grams lost x water factor. It condenses as droplets on the INSIDE of the
+     dome glass: most for peat, some for wood, leaves and grass, least for charcoal. The drawing shows droplets in proportion to it.
+   - Smoke and carbon dioxide collect under the dome in the drawing in proportion to the smoke each fuel makes and to the carbon dioxide made.
+   - Never impossible: mass after is below mass before and above zero, the dome glass is not cooler after than before, BTB 2 to 6, times positive. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(); else root.B2BurnLogic = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
@@ -64,7 +70,7 @@
   const FUEL_IDS = FUELS.map(f => f.id);
   const FUEL = Object.fromEntries(FUELS.map(f => [f.id, f]));
   const SHORT = { grass: 'Grass', leaves: 'Leaves', wood: 'Wood', charcoal: 'Charcoal', peat: 'Peat' };   // chart axis names (short, so they never break inside a word)
-  const SHORT_NARROW = { grass: 'Grass', leaves: 'Leaf', wood: 'Wood', charcoal: 'Char', peat: 'Peat' };   // for a phone-width chart
+  const SHORT_NARROW = { grass: 'Hay', leaves: 'Leaf', wood: 'Wood', charcoal: 'Char', peat: 'Peat' };   // for a phone-width chart: Lab.chart gives each bar label about 4 characters there, so no name is longer than 4 and none can break inside a word (Hay = dried grass)
   const fuelLabel = id => FUEL[id] ? FUEL[id].label : '';
   const normalizeFuel = id => FUEL[id] ? id : 'grass';
   const massOf = id => FUEL[normalizeFuel(id)].mass;   // nominal grams of the handful
@@ -73,8 +79,8 @@
   const MAX_SAMPLES = 3;          // samples of one fuel a student can burn
   const TAIL = 12;                // seconds the thermometer and BTB keep settling after the fuel is out
   const RATE = 6;                 // simulated seconds per real second on screen (peat takes about a minute, grass a few seconds)
-  const FLASK_KJ_PER_C = 8, FLASK_SHARE = 0.35;
-  const DISSOLVED_SHARE = 0.6;     // share of the carbon dioxide that dissolves into the BTB
+  const DOME_KJ_PER_C = 8, DOME_SHARE = 0.35;
+  const DISSOLVED_SHARE = 0.6;     // share of the carbon dioxide that dissolves into the BTB in the dish
   const DROP_FULL = 12;            // relative water made that fills the glass with droplets
 
   /* ---------- BTB ---------- */
@@ -92,7 +98,7 @@
     const c = Math.max(0, num(co2Made) ? co2Made : 0), d = c * DISSOLVED_SHARE;
     return round1(clamp(btbFromDissolved(d) + clamp(num(u) ? u : 0, -1, 1) * 0.2 * Math.min(1, d), START_BTB, 6));
   }
-  // Droplet level on the glass (0 to 1) for water made (relative).
+  // Droplet level on the inside of the dome (0 to 1) for water made (relative).
   const dropletLevel = w => clamp(Math.sqrt(Math.max(0, num(w) ? w : 0) / DROP_FULL), 0, 1);
 
   /* ---------- one burned sample ---------- */
@@ -106,7 +112,7 @@
     const M = f.mass, burnedG = M * lossFrac;                                  // true grams that burned away
     const igniteS = Math.max(1, Math.round(f.ignite * ignF)), burnS = Math.max(1, Math.round(f.burn * burnF));
     const kjPerG = round1(f.kj * heatF), energyKj = kjPerG * burnedG;
-    const dT = round1(clamp(FLASK_SHARE * energyKj / FLASK_KJ_PER_C, 2, 22));
+    const dT = round1(clamp(DOME_SHARE * energyKj / DOME_KJ_PER_C, 2, 22));
     const co2Made = f.co2 * burnedG, dissolved = co2Made * DISSOLVED_SHARE, waterMade = f.water * burnedG;
     const noise = () => { const u = smp.uniform(); return u < 0.2 ? -1 : u < 0.8 ? 0 : 1; };
     const tempBefore = START_TEMP + noise(), tempAfter = Math.max(tempBefore, Math.round(START_TEMP + dT) + noise());
@@ -139,7 +145,7 @@
     const glow = stage === 'heating' ? f.glow * 0.15 * smooth(tt / Math.max(1, res.igniteS)) : stage === 'done' ? 0 : f.glow * (stage === 'dying' ? life : 0.7 + 0.3 * smooth(p * 3));
     const temp = Math.round(res.tempBefore + (res.tempAfter - res.tempBefore) * smooth(settle));
     const btb = round1(res.btbBefore + (res.btbAfter - res.btbBefore) * smooth(settle));
-    return { stage, t: tt, progress: tt / res.runS, burnedFraction: burned, massTrue: res.massStart - res.burnedG * burned, drops: res.dropletLevel * burned, flame, smoke, glow, igniter: stage === 'heating',
+    return { stage, t: tt, progress: tt / res.runS, burnedFraction: burned, massTrue: res.massStart - res.burnedG * burned, drops: res.dropletLevel * burned, gas: clamp(res.co2Made / 12, 0, 1) * burned, haze: clamp(burned * f.smoke * (stage === 'done' ? 0.7 : 1), 0, 1), flame, smoke, glow, igniter: stage === 'heating',
       temp: stage === 'done' ? res.tempAfter : temp, btb: stage === 'done' ? res.btbAfter : btb };
   }
   // Which observation chips the picture actually showed for a fuel (used for the text description and tests).
@@ -197,9 +203,9 @@
     }).filter(Boolean);
   }
   const METRICS = {
-    rise: { label: 'Temperature rise (°C)', yLabel: 'Temperature rise (°C, simulated)', get: r => r.tempRise },
-    mass: { label: 'Mass lost (g)', yLabel: 'Mass lost (g, simulated)', get: r => r.massLost },
-    btb: { label: 'BTB change (steps)', yLabel: 'BTB change from blue (steps on the 1 to 6 scale, simulated)', get: r => r.btbChange }
+    rise: { label: 'Temperature rise (°C)', yLabel: 'Temperature rise (°C, simulated)', yShort: 'Rise (°C, simulated)', get: r => r.tempRise },
+    mass: { label: 'Mass lost (g)', yLabel: 'Mass lost (g, simulated)', yShort: 'Lost (g, simulated)', get: r => r.massLost },
+    btb: { label: 'BTB change (steps)', yLabel: 'BTB change from blue (steps on the 1 to 6 scale, simulated)', yShort: 'BTB steps (simulated)', get: r => r.btbChange }
   };
   // Bar chart series for Lab.chart: one series per sample number so repeats show as separate bars.
   function chartSeries(rows, metric, names) {
@@ -223,16 +229,16 @@
     const others = g.filter(x => x.fuel !== fuelId);
     if (!others.length) return { status: 'nodata', message: 'Burn and record at least one other fuel to compare energy.' };
     const avg = mean(others.map(x => x.tempRise)), more = mine.tempRise > avg, ok = (value === 'more') === more;
-    return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed the flask ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' };
+    return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed the dome glass ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' };
   }
-  // "In my data, ___ turned the BTB most yellow / warmed the flask most / caught fire last." Ties count. Needs two fuels.
+  // "In my data, ___ turned the BTB most yellow / warmed the dome glass most / caught fire last." Ties count. Needs two fuels.
   function checkDataPick(kind, value, st) {
     if (!value) return { status: 'empty', message: '' };
     const g = byFuel(tableRows(st));
     if (g.length < 2) return { status: 'nodata', message: 'Burn and record at least two fuels first, then check this.' };
     const key = kind === 'yellowest' ? 'btbAfter' : kind === 'warmest' ? 'tempRise' : kind === 'lostmost' ? 'massLost' : 'igniteS';
     const top = Math.max.apply(null, g.map(x => Math.round(x[key] * 10) / 10)), win = g.filter(x => Math.round(x[key] * 10) / 10 === top), names = win.map(x => x.label).join(' and ');
-    const mine = g.find(x => x.fuel === value), what = kind === 'yellowest' ? 'turned the BTB the most yellow' : kind === 'warmest' ? 'warmed the flask the most' : kind === 'lostmost' ? 'lost the most mass' : 'took the longest to catch fire';
+    const mine = g.find(x => x.fuel === value), what = kind === 'yellowest' ? 'turned the BTB the most yellow' : kind === 'warmest' ? 'warmed the dome glass the most' : kind === 'lostmost' ? 'lost the most mass' : 'took the longest to catch fire';
     if (!mine) return { status: 'wrong', message: 'You have not burned that fuel yet. In your data ' + names + ' ' + what + '.' };
     return win.some(x => x.fuel === value) ? { status: 'correct', message: 'Yes. In your data ' + names + ' ' + what + '.' }
       : { status: 'wrong', message: 'Try again. Why not: look at your table. In your data ' + names + ' ' + what + '.' };
@@ -241,7 +247,7 @@
   /* ---------- tap and dropdown rows (the Make sense and Matter-Energy parts) ---------- */
   const PICKS = {
     'sense-btb': { correct: ['co2'], why: {
-      co2: 'Yes. BTB turns green, then yellow, as carbon dioxide dissolves in it. Burning made carbon dioxide.',
+      co2: 'Yes. BTB turns green, then yellow, as carbon dioxide dissolves in it. Burning made carbon dioxide under the dome.',
       o2: 'Try again. Why not: burning uses oxygen up. BTB does not turn yellow for oxygen.',
       water: 'Try again. Why not: water vapor does not change BTB. Carbon dioxide does.' } },
     'sense-mass': { correct: ['air'], why: {
@@ -250,14 +256,18 @@
       light: 'Try again. Why not: light is energy, not matter. It has no mass to lose.' } },
     'sense-water': { correct: ['hydrogen'], why: {
       hydrogen: 'Yes. Fuels contain hydrogen. It joins oxygen when the fuel burns and leaves as water vapor, which condenses on the cool glass.',
-      air: 'Try again. Why not: the air in the flask has very little water. The droplets were biggest with peat, which had the most fuel to burn.',
-      btb: 'Try again. Why not: the BTB stays in the bottom of the flask. The droplets formed on the glass wall above it.' } },
+      air: 'Try again. Why not: the air under the dome has very little water. The droplets were biggest with peat, which had the most fuel to burn.',
+      btb: 'Try again. Why not: the BTB stays in its dish on the bench. The droplets formed on the inside of the dome glass.' } },
     'sense-massbtb': { correct: ['more'], why: {
       more: 'Yes. Mass lost leaves as gas. The more mass a fuel lost, the more carbon dioxide it made, so the BTB changed more. Check this in your table.',
       less: 'Try again. Why not: carbon dioxide comes from the mass that is lost. More mass lost means more carbon dioxide.',
       same: 'Try again. Why not: the BTB changed by different amounts, and the fuels lost different amounts of mass.' } },
+    'sense-dish': { correct: ['reach'], why: {
+      reach: 'Yes. The carbon dioxide from the fire collects under the dome, so the dish of BTB inside it is exposed to the gas and changes color.',
+      cool: 'Try again. Why not: the dish sits next to a hot fire, so it is not there to stay cool.',
+      smoke: 'Try again. Why not: BTB shows carbon dioxide, not smoke. Smoke is bits of burning fuel.' } },
     'sense-energy': { correct: ['heat'], why: {
-      heat: 'Yes. Energy stored in the fuel was released as heat and light. The flask warmed up.',
+      heat: 'Yes. Energy stored in the fuel was released as heat and light. The dome glass warmed up.',
       ash: 'Try again. Why not: the ash is what is left over. The energy left with the heat and light.',
       vanish: 'Try again. Why not: energy is never used up. It is transferred.' } },
     'sense-slowest': { correct: ['dense'], why: {

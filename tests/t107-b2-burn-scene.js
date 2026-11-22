@@ -16,7 +16,9 @@ const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scen
     await p.goto(server.url + PAGE); await p.waitForFunction(() => window.B2Burn && document.querySelector('#burn-scene').dataset.mounted === '1');
     await go(p, 'burn');
     T.ok(await p.locator('#burn-notice').isHidden(), 'scene mounted, no failure notice');
-    T.ok(/Ready to burn dried grass/.test(await p.locator('#burn-scene canvas').getAttribute('aria-label')) && /Text description: Ready to burn dried grass/.test(await p.locator('#burn-desc').innerText()), 'canvas label and text description say the state before the burn');
+    const lab0 = await p.locator('#burn-scene canvas').getAttribute('aria-label'), desc0 = await p.locator('#burn-desc').innerText();
+    T.ok(/dome/.test(lab0) && /dish of BTB inside/.test(lab0) && /BTB dish|dish of BTB/.test(desc0 + lab0) && /dome/.test(desc0) && /dish/.test(desc0) && !/flask/i.test(lab0 + desc0), 'aria-label and description mention the dome and the BTB dish, never a flask: ' + lab0.slice(0, 120));
+    T.ok(/Ready to burn dried grass/.test(await p.locator('#burn-scene canvas').getAttribute('aria-label')) && /Text description: A glass dome stands over an empty tray.*Ready to burn dried grass/.test(await p.locator('#burn-desc').innerText()), 'canvas label and text description say the state before the burn');
     let c = await ink(p); T.ok(c.ink > 0.01 && c.colours > 8, 'canvas is drawn before the burn (ink ' + c.ink.toFixed(3) + ')');
     T.ok(await p.locator('#bn-fuel option').count() === 5 && await p.locator('[data-bn="record"]').count() === 0, 'five fuels to pick, nothing to record yet');
     const ready = await p.evaluate(() => { const L = B2Burn.logic, r = L.burnResult(B2Burn.seed('burn'), 'grass', 1); return { mass: r.massBefore.toFixed(1), temp: r.tempBefore }; });
@@ -27,9 +29,9 @@ const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scen
     const st = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(st.burn.current && st.burn.current.fuel === 'grass' && st.burn.current.n === 1 && typeof st.burn.current.startedAt === 'number' && st.burn.current.skipped === false && !('tempAfter' in st.burn), 'a start timestamp is saved, no numbers are stored');
     await p.waitForTimeout(1800);
-    T.ok(/Burning|Heating/.test(await p.locator('[data-bn="stage"]').innerText()) && /Burn time \d+ s/.test(await p.locator('[data-bn="clock"]').innerText()), 'clock and stage show while it runs');
+    T.ok(/Burning|lit/.test(await p.locator('[data-bn="stage"]').innerText()) && /Burn time \d+ s/.test(await p.locator('[data-bn="clock"]').innerText()), 'clock and stage show while it runs');
     const mid = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label'));
-    T.ok(/burning|heating/i.test(mid) && /grams/.test(mid), 'canvas label follows the run: ' + mid.slice(0, 90));
+    T.ok(/dome over burning grass|dome over burning dried grass/i.test(mid) && /grams/.test(mid) && /BTB in the dish inside the dome/.test(mid) && /laser thermometer aimed at the dome glass reads \d+ degrees/.test(mid) && !/flask/i.test(mid), 'canvas label follows the run: ' + mid.slice(0, 110));
     // reload in the middle: the clock continues from the timestamp
     const before = await p.evaluate(k => JSON.parse(localStorage.getItem(k)).burn.current.startedAt, KEY);
     await p.reload(); await p.waitForFunction(() => window.B2Burn && document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn');
@@ -40,9 +42,12 @@ const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scen
     T.ok(await p.locator('[data-bn="record"]').isVisible(), 'finished: Record results is offered');
     T.ok(await p.locator('[data-bn="burn"]').count() === 0, 'cannot start another burn before recording');
     const done = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label'));
-    T.ok(/Only ash is left/.test(done) && /balance reads/.test(done), 'finished label: ash and the balance reading');
+    T.ok(/Only ash is left/.test(done) && /on the balance, which reads/.test(done) && /dome/.test(done) && !/flask/i.test(done), 'finished label: ash on the balance and its reading');
     const r1 = await p.evaluate(() => { const s = B2Burn.getState().burn; const r = B2Burn.logic.burnResult(s.seed, 'grass', 1); return r; });
     T.ok((await p.locator('.bn-read').first().innerText()).includes(r1.massAfter.toFixed(1)) && (await p.locator('.bn-read').first().innerText()).includes(r1.tempBefore + ' → ' + r1.tempAfter), 'instrument readouts equal the model numbers');
+    const tempIn = lab => +(/reads (\d+) degrees/.exec(lab) || [])[1];
+    T.ok(tempIn(done) === r1.tempAfter && tempIn(lab0) === ready.temp && tempIn(done) > tempIn(lab0), 'the laser thermometer readout in the picture goes from ' + tempIn(lab0) + ' to ' + tempIn(done) + ' °C and matches the model (' + r1.tempAfter + ')');
+    T.ok((await p.locator('.bn-read').first().innerText()).includes('Dome glass (laser)') && !/flask/i.test(await p.locator('#burn-scene').innerText()), 'panel readout names the dome glass and the laser, never a flask');
     c = await ink(p); T.ok(c.ink > 0.01, 'canvas drawn when finished');
     T.ok(await p.locator('fieldset.bn-obs .bn-chip', { hasText: 'Droplets on the glass' }).count() === 1, 'a Droplets on the glass chip is offered');
     await p.locator('.bn-chip', { hasText: 'Bright flame' }).click(); await p.locator('.bn-chip', { hasText: 'Smoke' }).click();
@@ -83,12 +88,14 @@ const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scen
     await p.locator('[data-bn="reset"]').click(); await p.locator('[data-bn="reset-yes"]').click();
     T.ok(await p.evaluate(k => localStorage.getItem(k), KEY).then(v => !v || !JSON.parse(v).burn), 'Start over erases the burns') ;
     T.ok(await p.locator('.bn-table tbody tr').count() === 1 && /Burn a fuel and record it/.test(await p.locator('.bn-table tbody').innerText()), 'table is empty again');
-    const picture = async fuel => { await p.selectOption('#bn-fuel', fuel); await p.locator('[data-bn="burn"]').click(); await p.evaluate(() => { const s = B2Burn.getState().burn; const L = B2Burn.logic, r = L.burnResult(s.seed, s.current.fuel, s.current.n); s.current.startedAt = Date.now() - (r.igniteS + r.burnS * 0.4) / L.RATE * 1000; B2Burn.saveState('burn', s); }); await p.reload(); await p.waitForFunction(() => document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn'); await p.waitForTimeout(150); const lab = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label')); const i = await ink(p); await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="record"]').click(); return { lab, i }; };
+    const temps = [];
+    const picture = async fuel => { await p.selectOption('#bn-fuel', fuel); await p.locator('[data-bn="burn"]').click(); await p.evaluate(() => { const s = B2Burn.getState().burn; const L = B2Burn.logic, r = L.burnResult(s.seed, s.current.fuel, s.current.n); s.current.startedAt = Date.now() - (r.igniteS + r.burnS * 0.4) / L.RATE * 1000; B2Burn.saveState('burn', s); }); await p.reload(); await p.waitForFunction(() => document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn'); await p.waitForTimeout(150); const lab = await p.evaluate(() => document.querySelector('#burn-scene canvas').getAttribute('aria-label')); temps.push([fuel, tempIn(lab), await p.evaluate(() => { const s = B2Burn.getState().burn, L = B2Burn.logic, r = L.burnResult(s.seed, s.current.fuel, s.current.n); return [r.tempBefore, r.tempAfter]; })]); const i = await ink(p); await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="record"]').click(); return { lab, i }; };
     const peat = await picture('peat'), char = await picture('charcoal'), grass = await picture('grass');
-    T.ok(/lots of smoke/.test(peat.lab) && /a glowing ember/.test(peat.lab) && /a small flame/.test(peat.lab), 'peat picture: smoke, ember, small flame (' + peat.lab.slice(60, 200) + ')');
-    T.ok(/no flame|a small flame/.test(char.lab) && !/smoke/.test(char.lab.replace('lots of smoke', 'x').replace('a little smoke', 'y')) && /glowing ember/.test(char.lab), 'charcoal picture: glow, no smoke');
+    T.ok(/dome over burning peat/.test(peat.lab) && /lots of smoke/.test(peat.lab) && /a glowing ember/.test(peat.lab) && /a small flame/.test(peat.lab), 'peat picture: dome, smoke, ember, small flame (' + peat.lab.slice(60, 200) + ')');
+    T.ok(/no flame|a small flame/.test(char.lab) && !/ (lots of|a little) smoke/.test(char.lab) && /glowing ember/.test(char.lab), 'charcoal picture: glow, no smoke');
     T.ok(/a bright flame/.test(grass.lab) && !/glowing ember/.test(grass.lab), 'grass picture: bright flame');
-    T.ok(/Droplets of water have formed on the glass/.test(peat.lab) && /Droplets of water have formed/.test(grass.lab), 'droplets are in the picture description when water was made');
+    T.ok(/Droplets of water have formed on the inside of the dome/.test(peat.lab) && /Droplets of water have formed on the inside of the dome/.test(grass.lab) && /Carbon dioxide is collecting under the dome/.test(peat.lab), 'droplets inside the dome and carbon dioxide under it are in the picture description when made');
+    T.ok(temps.every(t => t[1] >= t[2][0] && t[1] <= t[2][1]), 'mid-burn laser readouts sit between the before and after readings: ' + JSON.stringify(temps));
     T.ok([peat, char, grass].every(x => x.i.ink > 0.01), 'mid-burn canvases are drawn');
     await p.selectOption('#bn-fuel', 'peat');
     const peatReady = await p.evaluate(() => { const r = B2Burn.logic.burnResult(B2Burn.seed('burn'), 'peat', B2Burn.logic.nextSample(B2Burn.logic.cleanState(B2Burn.getState().burn), 'peat') || 1); return r.massBefore.toFixed(1); });
