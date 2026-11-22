@@ -211,7 +211,7 @@ svg .on-peat { fill: var(--b2-on-peat); }
 #logWrap td.lbl, #logWrap th.lbl { text-align: left; }
 #logWrap td.p { color: var(--b2-photo-t); font-weight: 700; } #logWrap td.r { color: var(--b2-resp-t); font-weight: 700; } #logWrap td.b { color: var(--b2-burn-t); font-weight: 700; }
 #logWrap tr.newgroup td { border-top: 3px solid var(--accent); }
-.lbl-input { width: 15em; max-width: 100%; min-height: 28px; font: inherit; font-size: .85rem; text-align: left; padding: 3px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.lbl-input { width: 15em; max-width: 100%; min-height: 28px; display: block; resize: none; overflow: hidden; white-space: normal; font: inherit; font-size: .85rem; line-height: 1.35; text-align: left; padding: 3px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
 .empty { padding: 18px; color: var(--muted); font-size: .9rem; }
 .report-student { margin: 0; font-weight: 600; }
 .submit-card { display: grid; gap: 12px; }
@@ -291,7 +291,7 @@ body.numbar-on { padding-bottom: 58px; }
   #logWrap { overflow: visible; } #logWrap table { min-width: 0; font-size: 8pt; }
   .lbl-input { border: 0 !important; padding: 0 !important; width: auto !important; }
 }
-#logWrap table.data input.lbl-input { font-family: var(--f-body); text-align: left; min-width: 14em; width: 100%; }
+#logWrap table.data .lbl-input { font-family: var(--f-body); text-align: left; min-width: 14em; width: 100%; }
 .tiltbox svg { max-width: 380px; margin-inline: auto; }
 .pic-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
 .pic-foot .legend { padding: 4px 0 0; flex: 1 1 380px; }

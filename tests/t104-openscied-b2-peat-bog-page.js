@@ -52,14 +52,14 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
 
     // --- defaults match the reference values (worksheet key) ---
     await go(p, 'bog');
-    T.ok((await rates(p)).join() === '29,16,0,+12', 'default rates 29, 16, 0, +12: ' + await rates(p));
+    T.ok((await rates(p)).join() === '29,16,0,+13', 'default rates 29, 16, 0, +13: ' + await rates(p));
     T.ok((await p.locator('#bog-svg').getAttribute('aria-label')).includes('Photosynthesis 29, decomposition 16, burning 0') && /carbon sink/.test(await p.locator('#bog-svg').getAttribute('aria-label')), 'bog picture label states the current numbers and verdict');
     T.ok(await p.locator('#n-tilt').inputValue() === '23.44', 'today\'s tilt shows 23.44 (not the slider-snapped 23.45)');
     T.ok(await p.locator('#presets .btn[aria-pressed=true]').innerText().then(t => /Arctic summer today/.test(t)), 'the matching quick scenario is marked pressed (with a check mark)');
 
     // --- every control changes the right rates and the right drawing ---
     await p.click('#presets .btn:has-text("Drained bog")');
-    T.ok((await rates(p)).join() === '17,22,0,-6', 'Drained bog: 17, 22, 0, -6 got ' + await rates(p));
+    T.ok((await rates(p)).join() === '17,22,0,-5', 'Drained bog: 17, 22, 0, -5 got ' + await rates(p));
     const verdictText = await p.locator('#nText').innerText();
     T.ok(/Carbon released to atmosphere/.test(verdictText) && /✕/.test(await p.locator('#nVal').innerText()), 'negative peat carbon shows words and a cross, not only red');
     T.ok(+await p.locator('#s-wet').inputValue() === 12 && await p.locator('#n-wet').inputValue() === '12', 'water slider and box both move to 12');
@@ -70,11 +70,11 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     T.ok(w10 > w90, 'lower water level moves the water line down in the picture (' + w90 + ' -> ' + w10 + ')');
     T.ok(+await p.locator('#o2Peat').innerText().then(t => parseFloat(t)) > 18, 'oxygen in the peat rises as the water drops');
     await setRange(p, 's-wet', 75); await setRange(p, 's-temp', 25);
-    T.ok((await rates(p)).join() === '24,53,0,-28', 'temp 25: 24, 53, 0, -28 got ' + await rates(p));
+    T.ok((await rates(p)).join() === '24,53,0,-29', 'temp 25: 24, 53, 0, -29 got ' + await rates(p));
     await setRange(p, 's-temp', 0);
     T.ok(await p.locator('#bog-svg').evaluate(e => e.textContent).then(t => /Permafrost: 100% of peat frozen/.test(t)), 'temp 0 draws 100% permafrost');
     await p.click('#presets .btn:has-text("Reset")');
-    T.ok((await rates(p)).join() === '29,16,0,+12', 'Reset restores the defaults');
+    T.ok((await rates(p)).join() === '29,16,0,+13', 'Reset restores the defaults');
     await setRange(p, 's-burn', 60); await setRange(p, 's-wet', 10);
     T.ok(+(await rates(p))[2] > 40, 'burning 60% on dry peat burns: ' + await rates(p));
     T.ok(await p.locator('#bog-svg').evaluate(s => [...s.querySelectorAll('g')].some(g => g.getAttribute('transform') && /translate\(625/.test(g.getAttribute('transform')) && g.style.display !== 'none')), 'a fire is drawn');

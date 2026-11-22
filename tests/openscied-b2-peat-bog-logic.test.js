@@ -30,22 +30,22 @@ test('tilt warming is 0.1 C per W/m2 of extra sunlight, and the worksheet refere
   assert.deepEqual(R(Object.assign({}, D, { tilt: 22.1 })).slice(0, 2), [21, 10]);
   assert.deepEqual(R(Object.assign({}, D, { tilt: 24.2 })).slice(0, 2), [34, 20]);
 });
-test('default bog by hand: P = 28.6, D = 16.4, no fire, peat carbon +12', () => {
+test('default bog by hand: P = 28.6, D = 16.4, no fire, peat carbon +13 (29 - 16 - 0 from the displayed numbers)', () => {
   // light 0.8; CO2 1.2*370/770 = 0.5766; T = 10 -> exp(-(8/12)^2) = 0.6412; water 0.3+0.7*(1-exp(-3)) = 0.9335; oxygen 1.15-0.147 = 1.003
   const P = 100 * 0.8 * (1.2 * 370 / 770) * Math.exp(-Math.pow(8 / 12, 2)) * (0.3 + 0.7 * (1 - Math.exp(-3))) * (1.15 - 0.147);
   // soilO2 = 1 * (1 - 0.6375) = 0.3625 ; factor 1.3*0.3625/0.6625 = 0.7113 ; D = 30 * 2^(-0.2) * 0.7113 * (1 - 0.95*0.125)
   const so = 1 - 0.85 * 0.75, Dd = 30 * Math.pow(2, -0.2) * (so * 1.3 / (so + 0.3)) * (1 - 0.95 * 0.125);
   const m = L.model(D);
   near(m.P, P, 1e-9); near(m.D, Dd, 1e-9); near(P, 28.6, 0.05); near(Dd, 16.4, 0.05);
-  assert.equal(m.B, 0); near(m.N, P - Dd, 1e-9); assert.deepEqual(R(D), [29, 16, 0, 12]);
+  assert.equal(m.B, 0); assert.equal(m.N, Math.round(P) - Math.round(Dd)); assert.deepEqual(R(D), [29, 16, 0, 13]);
   near(m.perm, 0.125, 1e-12); near(m.peatO2, 21 * (1 - 0.6375), 1e-9);
 });
 test('worksheet reference tables: water level, temperature, carbon dioxide', () => {
-  const wet = { 90: [29, 13, 16], 75: [29, 16, 12], 50: [27, 20, 7], 25: [22, 22, 0], 10: [16, 23, -7] };
+  const wet = { 90: [29, 13, 16], 75: [29, 16, 13], 50: [27, 20, 7], 25: [22, 22, 0], 10: [16, 23, -7] };
   for (const w in wet) { const r = R(Object.assign({}, D, { wet: +w })); assert.deepEqual([r[0], r[1], r[3]], wet[w], 'wet ' + w); }
-  const temp = { 0: [5, 0, 100, 4], 5: [14, 4, 75, 10], 10: [29, 16, 13, 12], 15: [42, 26, 0, 16], 20: [43, 37, 0, 5], 25: [24, 53, 0, -28] };
+  const temp = { 0: [5, 0, 100, 5], 5: [14, 4, 75, 10], 10: [29, 16, 13, 13], 15: [42, 26, 0, 16], 20: [43, 37, 0, 6], 25: [24, 53, 0, -29] };
   for (const t in temp) { const m = L.model(Object.assign({}, D, { temp: +t })); assert.deepEqual([rd(m.P), rd(m.D), rd(m.perm * 100), rd(m.N)], temp[t], 'temp ' + t); }
-  const co2 = { 200: [16, 16, 0], 420: [29, 16, 12], 800: [39, 16, 22], 1200: [44, 16, 28] };
+  const co2 = { 200: [16, 16, 0], 420: [29, 16, 13], 800: [39, 16, 23], 1200: [44, 16, 28] };
   for (const c in co2) { const r = R(Object.assign({}, D, { co2: +c })); assert.deepEqual([r[0], r[1], r[3]], co2[c], 'co2 ' + c); }
 });
 test('trends: more light, CO2 and (up to the optimum) heat raise photosynthesis; warmer is always faster decomposition; dry and oxygen-rich burns more', () => {
@@ -58,7 +58,7 @@ test('trends: more light, CO2 and (up to the optimum) heat raise photosynthesis;
   assert.ok(B({ wet: 10 }) > B({ wet: 50 }) && B({ wet: 50 }) > B({ wet: 90 }));
   assert.ok(B({ o2: 30, wet: 30 }) > B({ o2: 21, wet: 30 }) && B({ o2: 12 }) === 0 && B({ o2: 5 }) === 0);
   assert.ok(L.model(Object.assign({}, D, { wet: 10 })).D > L.model(Object.assign({}, D, { wet: 90 })).D, 'drier peat decomposes faster');
-  assert.ok(B({ temp: -5 }) < 5, 'frozen peat barely burns');
+  assert.equal(B({ temp: -5 }), 0, 'frozen peat does not burn');
 });
 test('burning and decomposition: opposite to photosynthesis in the sense that CO2 only raises photosynthesis', () => {
   const a = L.model(D), b = L.model(Object.assign({}, D, { co2: 1500 }));
@@ -113,8 +113,8 @@ test('"Test the bog in this year" gives that year\'s CO2 and an amplified Arctic
 });
 test('trials store inputs only and recompute outputs; CSV is labelled simulated and quotes safely', () => {
   const t = { tilt: 23.44, temp: 10, co2: 420, o2: 21, wet: 75, burn: 0, label: 'My "test", 1', id: 7, at: 5, P: 999 };
-  const o = L.trialOutputs(t); assert.deepEqual([o.P, o.D, o.B, o.N, o.perm], [29, 16, 0, 12, 13]); near(o.Teff, 10, 1e-9);
-  const row = L.trialRow(t, 1); assert.equal(row.N, '+12'); assert.equal(row.tilt, '23.44');
+  const o = L.trialOutputs(t); assert.deepEqual([o.P, o.D, o.B, o.N, o.perm], [29, 16, 0, 13, 13]); near(o.Teff, 10, 1e-9);
+  const row = L.trialRow(t, 1); assert.equal(row.N, '+13'); assert.equal(row.tilt, '23.44');
   const c = L.csv([t]).split('\r\n'); assert.equal(c.length, 2); assert.match(c[1], /"My ""test"", 1"/); assert.match(c[1], /Simulated/);
   assert.match(c[0], /simulated/);
   const clean = L.cleanTrials([t, null, 5, { wet: 9999, label: 7 }]); assert.equal(clean.length, 2); assert.equal(clean[1].wet, 100); assert.equal(clean[1].label, ''); assert.equal(clean[0].P, undefined);

@@ -12,6 +12,8 @@
        motionPaused: bool                                   the student paused the moving shapes
        trials:   [ { id, label, tilt, temp, co2, o2, wet, burn, at } ]   INPUTS only; every output is recomputed from them
        trialLabel: string                                   the label box in My trials
+       warmingUsed: bool                                    true once the student has used any Global warming control or "Test the bog in this year"
+                                                            (the dashboard reads this; older saves without it fall back to "settings differ from today")
        responseIds: [], fields: {}                          this page has no written answers; kept so the dashboard reads every companion alike
        lastSection, lastVisitedAt }
    Nothing is written until the student changes something, so a fresh visit (or one right after "Clear this activity") leaves no record. */
@@ -29,7 +31,7 @@
   const motionQuery = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   const reduceMotion = () => !!(motionQuery && motionQuery.matches);
 
-  const state = { S: Object.assign({}, L.DEFAULTS), climate: { fossil: 10, forest: 100, year: 2100 }, explore: 'temp', season: 0, motionPaused: false, trials: [], trialLabel: '', lastSection: 'overview' };
+  const state = { S: Object.assign({}, L.DEFAULTS), climate: { fossil: 10, forest: 100, year: 2100 }, warmingUsed: false, explore: 'temp', season: 0, motionPaused: false, trials: [], trialLabel: '', lastSection: 'overview' };
   let cleared = false, hadSaved = false, ready = false, cur = null, rows = [], playTimer = null, nextId = 1;
 
   function svgEl(tag, attrs, parent) {
@@ -45,11 +47,15 @@
   /* ---------- the one live region ---------- */
   let announceTimer = null, quietTimer = null;
   function announce(text) { const e = byId('announcer'); if (!e) return; e.textContent = ''; clearTimeout(announceTimer); announceTimer = setTimeout(function () { e.textContent = text; }, 30); }
-  function announceSoon(text) { clearTimeout(quietTimer); quietTimer = setTimeout(function () { announce(text); }, 700); }
-  function flash(text) {
+  // announceSoon waits while a slider is being dragged; announceNow (typed value, preset, reset, button) updates the region at once, so the
+  // status text never lags one change behind. lastSpoken is the newest summary, kept so a short note can be said with it.
+  let lastSpoken = '';
+  function announceSoon(text) { lastSpoken = text; clearTimeout(quietTimer); quietTimer = setTimeout(function () { announce(text); }, 700); }
+  function announceNow(text) { lastSpoken = text; clearTimeout(quietTimer); announce(text); }
+  function flash(text, withSummary) {
     $$('[data-rec-status]').forEach(function (s) { s.textContent = text; });
     clearTimeout(flash.t); flash.t = setTimeout(function () { $$('[data-rec-status]').forEach(function (s) { s.textContent = ''; }); }, 3500);
-    announce(text);
+    announce(withSummary ? text + ' ' + lastSpoken : text);
   }
 
   /* ---------- saved state ---------- */
@@ -60,6 +66,7 @@
       hadSaved = true;
       if (d.settings) state.S = L.sanitize(d.settings);
       if (d.climate) state.climate = L.sanitizeClimate(d.climate);
+      state.warmingUsed = d.warmingUsed === true;
       if (L.VARS.some(function (v) { return v.key === d.explore; })) state.explore = d.explore;
       if (d.season === 0 || d.season === 1 || d.season === 2 || d.season === 3) state.season = d.season;
       state.motionPaused = d.motionPaused === true;
@@ -70,7 +77,7 @@
     } catch (e) { /* unreadable saved work: start fresh in memory */ }
   }
   function record() {
-    return { v: 1, settings: state.S, climate: state.climate, explore: state.explore, season: state.season, motionPaused: state.motionPaused, trials: state.trials, trialLabel: state.trialLabel,
+    return { v: 1, settings: state.S, climate: state.climate, warmingUsed: state.warmingUsed, explore: state.explore, season: state.season, motionPaused: state.motionPaused, trials: state.trials, trialLabel: state.trialLabel,
       responseIds: [], fields: {}, lastSection: state.lastSection, lastVisitedAt: Date.now() };
   }
   function save() {
@@ -89,16 +96,44 @@
   function paintRange(r) { r.style.setProperty('--pct', ((r.value - r.min) / (r.max - r.min) * 100) + '%'); }
   function decimals(step) { return (String(step).split('.')[1] || '').length; }
   // A slider and its number box edit the same value. The slider snaps to its own step; the number box can be more exact (tilt takes 0.01).
+  // A typed value is clamped to the slider's range and rounded to its step. When that changes what the student typed, say so (visible note
+  // in the control, and the live region) instead of changing the number silently.
+  const clampNotes = new WeakMap();
+  function noteFor(num) {
+    const ctrl = num.closest('.ctrl');
+    if (!ctrl) return null;
+    let n = clampNotes.get(ctrl);
+    if (!n) { n = el('span', 'hint clamp-note'); n.hidden = true; ctrl.appendChild(n); clampNotes.set(ctrl, n); }
+    return n;
+  }
+  function showClampNote(num, text) {
+    const n = noteFor(num); if (!n) return;
+    n.textContent = text; n.hidden = !text;
+    clearTimeout(n._t); if (text) n._t = setTimeout(function () { n.hidden = true; }, 6000);
+  }
+  function unitText(num) {
+    const u = num.parentElement.querySelector('.numunit'), t = u ? u.textContent.trim() : '';
+    return t === '%' || t === '% of today' || t === '°' ? t.charAt(0) : t ? ' ' + t : '';
+  }
   function bindControl(range, num, set, numStep) {
     const st = numStep || +range.step, dec = decimals(st), mn = +range.min, mx = +range.max;
     num.dataset.dec = dec; num.min = mn; num.max = mx; num.step = st;
-    range.addEventListener('input', function () { set(+range.value); });
+    range.addEventListener('input', function () { set(+range.value); showClampNote(num, ''); });
     function commit() {
-      let v = parseFloat(String(num.value).replace(',', '.'));
-      if (isNaN(v)) { num.value = (+num.dataset.value).toFixed(dec); return; }
-      v = clamp(v, mn, mx);
-      v = clamp(+(Math.round((v - mn) / st) * st + mn).toFixed(dec), mn, mx);
-      set(v); num.value = v.toFixed(dec);
+      const typed = parseFloat(String(num.value).replace(',', '.'));
+      if (isNaN(typed)) { num.value = (+num.dataset.value).toFixed(dec); return; }
+      const lim = clamp(typed, mn, mx);
+      const v = clamp(+(Math.round((lim - mn) / st) * st + mn).toFixed(dec), mn, mx);
+      const u = unitText(num), shown = v.toFixed(dec);
+      let msg = '';
+      if (typed > mx) msg = 'Set to ' + shown + u + ', the highest allowed.';
+      else if (typed < mn) msg = 'Set to ' + shown + u + ', the lowest allowed.';
+      else if (Math.abs(v - typed) > 1e-9) msg = 'Rounded to ' + shown + u + ' (this control moves in steps of ' + st + ').';
+      const prev = +num.dataset.value;
+      set(v, true); num.value = shown;
+      // A second commit of the same value (Enter, then leaving the box) must not wipe the note the first one showed.
+      if (msg || v !== prev) showClampNote(num, msg);
+      if (msg) announce(msg + ' ' + lastSpoken);
     }
     num.addEventListener('change', commit);
     num.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); commit(); num.select(); } });
@@ -135,16 +170,16 @@
       box.appendChild(d);
     });
     L.VARS.forEach(function (v) {
-      bindControl(byId('s-' + v.key), byId('n-' + v.key), function (x) { state.S[v.key] = x; update(); }, v.key === 'tilt' ? 0.01 : undefined);
+      bindControl(byId('s-' + v.key), byId('n-' + v.key), function (x, now) { state.S[v.key] = x; update(now); }, v.key === 'tilt' ? 0.01 : undefined);
     });
     // The same three sliders in Zombie fires.
     [['zWet', 'wet'], ['zBurn', 'burn'], ['zTemp', 'temp']].forEach(function (p) {
-      bindControl(byId(p[0]), byId('n-' + p[0]), function (x) { state.S[p[1]] = x; update(); });
+      bindControl(byId(p[0]), byId('n-' + p[0]), function (x, now) { state.S[p[1]] = x; update(now); });
     });
     const bogPresets = byId('presets');
     L.PRESETS.forEach(function (p) {
       const b = el('button', 'btn', p.name); b.type = 'button'; b.dataset.preset = p.name;
-      b.addEventListener('click', function () { setState(p.values); flash('Loaded: ' + p.name + '.'); });
+      b.addEventListener('click', function () { setState(p.values, true); flash('Loaded: ' + p.name + '.', true); });
       bogPresets.appendChild(b);
     });
     const rb = el('button', 'btn', 'Reset'); rb.type = 'button'; rb.dataset.preset = 'Reset';
@@ -152,12 +187,12 @@
     const tp = byId('tiltPresets');
     L.TILT_PRESETS.forEach(function (p) {
       const b = el('button', 'btn', p.name); b.type = 'button'; b.dataset.tilt = p.tilt;
-      b.addEventListener('click', function () { setState({ tilt: p.tilt }); flash('Tilt set to ' + p.tilt + '°.'); });
+      b.addEventListener('click', function () { setState({ tilt: p.tilt }, true); flash('Tilt set to ' + p.tilt + '°.', true); });
       tp.appendChild(b);
     });
   }
-  function setState(vals) { state.S = L.sanitize(Object.assign({}, state.S, vals)); update(); }
-  function bogReset() { setState(L.DEFAULTS); flash('Back to starting values.'); }
+  function setState(vals, now) { state.S = L.sanitize(Object.assign({}, state.S, vals)); update(now); }
+  function bogReset() { setState(L.DEFAULTS, true); flash('Back to starting values.', true); }
   function syncControls() {
     L.VARS.forEach(function (v) { syncControl(byId('s-' + v.key), byId('n-' + v.key), state.S[v.key], speakVar(v, state.S[v.key])); });
     [['zWet', 'wet'], ['zBurn', 'burn'], ['zTemp', 'temp']].forEach(function (p) {
@@ -639,7 +674,7 @@
   }
 
   /* ---------- the whole update ---------- */
-  function update() {
+  function update(now) {
     cur = L.model(state.S);
     syncControls(); drawEarth(); drawBog(cur); updateZombie(cur);
     FLOWS.forEach(function (f) {
@@ -650,7 +685,7 @@
     placeDots(); kick();
     renderMeters(cur); renderNotes(cur); drawExplore();
     byId('record-bog').disabled = false;
-    if (ready) { save(); announceSoon(summaryText(cur)); }
+    if (ready) { save(); (now ? announceNow : announceSoon)(summaryText(cur)); }
   }
 
   /* ---------- Test one variable ---------- */
@@ -669,7 +704,7 @@
       clearInterval(playTimer); setSeason(0, true);
       playTimer = setInterval(function () { if (state.season >= 3) { clearInterval(playTimer); playTimer = null; return; } setSeason(state.season + 1, true); }, reduceMotion() ? 1800 : 2600);
     });
-    byId('zSetup').addEventListener('click', function () { state.season = 0; setState(L.ZOMBIE_SETUP); announce('Zombie fire conditions loaded. ' + L.seasonCaption(0, L.zombie(state.S), state.S.wet)); });
+    byId('zSetup').addEventListener('click', function () { state.season = 0; setState(L.ZOMBIE_SETUP, true); announce('Zombie fire conditions loaded. ' + L.seasonCaption(0, L.zombie(state.S), state.S.wet)); });
     byId('reset-zombie').addEventListener('click', bogReset);
   }
 
@@ -711,7 +746,7 @@
     const tt = svgEl('text', { x: 84, y: 34, class: 'lbl-b' }, svg); tt.textContent = row.y + ': +' + row.T.toFixed(1) + ' °C'; paint(tt, 'fill', '--b2-heat-t');
     svg.setAttribute('aria-label', 'Simulated greenhouse effect in ' + row.y + ': ' + Math.round(row.C) + ' ppm of carbon dioxide in the air and ' + row.T.toFixed(1) + ' degrees Celsius of warming since the 1800s. Of 6 heat arrows, ' + trapped + ' are sent back down to the ground and ' + (N - trapped) + ' escape to space.');
   }
-  function updateClimate() {
+  function updateClimate(now) {
     const c = state.climate, ids = { fossil: byId('fossil'), forest: byId('forest'), year: byId('year') };
     syncControl(ids.fossil, byId('n-fossil'), c.fossil, c.fossil.toFixed(1) + ' gigatonnes of carbon per year');
     syncControl(ids.forest, byId('n-forest'), c.forest, c.forest + ' percent of today');
@@ -725,7 +760,9 @@
     byId('balanceText').textContent = dC > 0.05 ? 'More carbon goes in than comes out, so CO₂ in the air rises about ' + dC.toFixed(1) + ' ppm per year.'
       : dC < -0.05 ? 'Plants and oceans remove more than is added, so CO₂ in the air falls about ' + Math.abs(dC).toFixed(1) + ' ppm per year.' : 'Carbon in and carbon out are balanced, so CO₂ in the air holds steady.';
     drawGreenhouse(row); drawClimateCharts(row);
-    if (ready) { save(); announceSoon(row.y + ': ' + Math.round(row.C) + ' ppm of CO₂ and ' + row.T.toFixed(1) + ' degrees of warming since the 1800s. ' + byId('balanceText').textContent); }
+    const bv = L.bogForYear(rows, c.year);
+    byId('sendInfo').textContent = 'Test the bog in ' + c.year + ' sets the bog to ' + bv.co2 + ' ppm CO₂' + (Math.round(row.C) === bv.co2 ? '' : ' (' + Math.round(row.C) + ' ppm rounded to the bog’s steps of 10 ppm)') + ' and a summer temperature of ' + bv.temp + ' °C.';
+    if (ready) { save(); (now ? announceNow : announceSoon)(row.y + ': ' + Math.round(row.C) + ' ppm of CO₂ and ' + row.T.toFixed(1) + ' degrees of warming since the 1800s. ' + byId('balanceText').textContent); }
   }
   function drawClimateCharts(row) {
     const xs = rows.map(function (r) { return r.y; }), Cs = rows.map(function (r) { return r.C; }), Ts = rows.map(function (r) { return r.T; });
@@ -741,14 +778,15 @@
   }
   function wireClimate() {
     CLIMATE_IDS.forEach(function (k) {
-      bindControl(byId(k), byId('n-' + k), function (x) { state.climate = L.sanitizeClimate(Object.assign({}, state.climate, { [k]: x })); updateClimate(); });
+      bindControl(byId(k), byId('n-' + k), function (x, now) { state.warmingUsed = true; state.climate = L.sanitizeClimate(Object.assign({}, state.climate, { [k]: x })); updateClimate(now); });
     });
     byId('climateReset').addEventListener('click', function () {
-      state.climate = L.sanitizeClimate({}); updateClimate(); flash('Back to today’s values: 10 Gt, 100% forests and peatlands, year 2100.');
+      state.warmingUsed = true; state.climate = L.sanitizeClimate({}); updateClimate(true); flash('Back to today’s values: 10 Gt, 100% forests and peatlands, year 2100.', true);
     });
     byId('sendBog').addEventListener('click', function () {
       const vals = L.bogForYear(rows, state.climate.year);
-      setState(vals);
+      state.warmingUsed = true;
+      setState(vals, true);
       if (window.CompanionPages) CompanionPages.go('bog'); else location.hash = 'bog';
       announce('The bog is set to ' + state.climate.year + ': ' + vals.co2 + ' ppm of CO₂ and a summer temperature of ' + vals.temp + ' degrees Celsius. ' + summaryText(cur));
     });
@@ -769,7 +807,7 @@
     wrap.innerHTML = '<table class="data"><caption class="sr-only">Recorded trials. Simulated data on a 0 to 100 teaching scale.</caption><thead><tr>' + cols.map(function (c) { return '<th scope="col"' + (c.key === 'label' ? ' class="lbl"' : '') + '>' + esc(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       data.map(function (r, i) {
         return '<tr' + (i && r.label !== data[i - 1].label ? ' class="newgroup"' : '') + '>' + cols.map(function (c) {
-          if (c.key === 'label') return '<td class="lbl"><input class="lbl-input" data-i="' + i + '" value="' + esc(r.label) + '" aria-label="Label for trial ' + r.n + '" maxlength="60" placeholder="Add a label"></td>';
+          if (c.key === 'label') return '<td class="lbl"><textarea class="lbl-input" data-i="' + i + '" rows="' + Math.max(1, Math.ceil(r.label.length / 22)) + '" aria-label="Label for trial ' + r.n + '" maxlength="60" placeholder="Add a label" title="' + esc(r.label) + '">' + esc(r.label) + '</textarea></td>';
           return '<td' + (cls[c.key] ? ' class="' + cls[c.key] + '"' : '') + '>' + esc(r[c.key]) + '</td>';
         }).join('') + '</tr>';
       }).join('') + '</tbody></table>';
@@ -792,9 +830,10 @@
     byId('record-bog').addEventListener('click', function () { recordTrial('bog'); });
     byId('record-zombie').addEventListener('click', function () { recordTrial('zombie'); });
     byId('reset-bog').addEventListener('click', bogReset);
+    byId('logWrap').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.matches('.lbl-input')) { e.preventDefault(); e.target.blur(); } });
     byId('logWrap').addEventListener('change', function (e) {
       if (!e.target.matches('.lbl-input')) return;
-      state.trials[+e.target.dataset.i].label = e.target.value.trim().slice(0, 60);
+      state.trials[+e.target.dataset.i].label = e.target.value.replace(/\s+/g, ' ').trim().slice(0, 60);
       save(); renderLog(); byId('logStatus').textContent = 'Label saved.'; announce('Label saved.');
     });
     byId('undo').addEventListener('click', function () {
