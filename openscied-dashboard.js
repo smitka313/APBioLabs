@@ -116,7 +116,9 @@
     catch (e) { return { summary: 'Saved work could not be read. Download a copy before restarting.', started: false, section: 'overview', visited: 0 }; }
     const trials = Array.isArray(saved.trials) ? saved.trials.length : 0;
     const bogChanged = !!saved.settings && Object.keys(PEAT_DEFAULTS).some(k => typeof saved.settings[k] === 'number' && Math.abs(saved.settings[k] - PEAT_DEFAULTS[k]) > 1e-6);
-    const warmChanged = !!saved.climate && Object.keys(PEAT_CLIMATE).some(k => typeof saved.climate[k] === 'number' && saved.climate[k] !== PEAT_CLIMATE[k]);
+    // The page saves warmingUsed once any Global warming control or "Test the bog in this year" is used (even if the student ends on today's values).
+    // Saves from before that flag existed fall back to comparing the climate settings with today's.
+    const warmChanged = saved.warmingUsed === true || (!!saved.climate && Object.keys(PEAT_CLIMATE).some(k => typeof saved.climate[k] === 'number' && saved.climate[k] !== PEAT_CLIMATE[k]));
     const started = !!(trials || bogChanged || warmChanged || (PEAT_SECTIONS.includes(saved.lastSection) && saved.lastSection !== 'overview'));
     const fallback = trials ? 'trials' : warmChanged ? 'warming' : bogChanged ? 'bog' : 'overview';
     return { started, section: PEAT_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,

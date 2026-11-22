@@ -44,7 +44,7 @@ text boxes and every page dropdown; scene controls are not page fields).
 
 - **Yeast foam.** Nominal foam at 20 min (mm): 5 C 3, 18 C 10.5, 27 C 38, 35 C 50, 43 C 62 (settles a little late), 55 C 2.5 after a small early burst.
   Relative rates 0.1, 0.35, 1.0, 1.5, 1.7, 0.2 set the lag and speed. Per beaker seeded size factor +/- 8 percent, whole-mm rounding, noise of -1, 0 or +1 mm,
-  never negative, never down more than 3 mm from the last reading. Relative carbon dioxide = foam / 10.
+  never negative. No foam (and no noise) before the lag. Foam never shrinks for 5, 18, 27 and 35 C (running maximum of the noisy readings); only 55 C and 43 C after 14 minutes may fall, by at most 3 mm per reading. Relative carbon dioxide = foam / 10.
 - **Tilt.** Light I = cos(angle): 1, 0.71, 0.34, foil 0. Respiration R = 0.30; photosynthesis P = 1.1 I / (0.35 + I). Net carbon dioxide = b (R - P) with plant
   size b = student factor (+/- 8 percent) x tube factor (+/- 5 percent). BTB reading = 2 + net / 0.6 (below 2, minimum 1) or 2 + 13 net (above 2, maximum 6).
   Starch index = max(0, -net). The ordering direct <= 45 degrees < foil is guaranteed for every student (tested across 300 seeds).

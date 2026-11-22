@@ -109,7 +109,7 @@
     const rows = L.tableRows(state.burn); if (!rows.length) return [];
     return [table('Simulated burn results', ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB before → after', 'Dome glass temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'],
       rows.map(function (r) { return [r.label + ' (' + r.n + ')', String(r.igniteS), String(r.burnS), L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter), r.tempBefore + ' → ' + r.tempAfter, r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1), obsText(r.obs)]; })),
-      el('p', 'small muted', 'SIMULATED burns. Not measurements from a real demonstration.')];
+      el('p', 'small muted', 'SIMULATED burns. Not measurements from a real demonstration. A rise of only a degree or two can be thermometer noise, so compare fuels with big differences.')];
   }
 
   /* ---------- predictions, checked against the student's own table ---------- */
@@ -212,6 +212,13 @@
     return $$('main fieldset.chipset').map(function (fs) { return { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: $$('input:checked', fs).map(function (b) { return b.parentElement.textContent.trim(); }) }; });
   }
   function textAnswers() { return $$('main textarea, main input[type=text]').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return { id: t.id, prompt: labelFor(t.id), answer: t.value.trim() }; }); }
+  // ONE definition of "answers": every id in RESPONSE_IDS (each radio question, each dropdown, each required text box; boxes marked data-optional
+  // are not counted). The report, the download and the dashboard (which reads the saved responseIds and the saved fields) all use it, so they agree.
+  function answerStats() {
+    const f = collectFields(), has = function (id) { return typeof f[id] === 'string' && f[id].trim() !== ''; };
+    const text = RESPONSE_IDS.filter(function (id) { const e = document.getElementById(id); return e && e.tagName === 'TEXTAREA'; });
+    return { answered: RESPONSE_IDS.filter(has).length, total: RESPONSE_IDS.length, writtenAnswered: text.filter(has).length, writtenTotal: text.length };
+  }
   function renderReport() {
     const report = $('#investigation-report'); if (!report) return;
     report.replaceChildren();
@@ -219,12 +226,13 @@
     report.appendChild(el('h3', '', 'Your work, at a glance.'));
     const student = studentIdentity();
     report.appendChild(el('p', 'report-student', student ? 'Student: ' + student.name + (student.period ? ' · Class period: ' + student.period : '') : 'Student name not entered. Sign in on the Biology Companion Activities dashboard before submitting.'));
-    const p = picks(), dd = dropdowns(), all = p.concat(dd), answered = all.filter(function (x) { return x.value; });
+    const p = picks(), dd = dropdowns(), all = p.concat(dd);
     const good = all.filter(function (x) { return x.result === 'correct'; });
     const graded = $$('main fieldset.mcq[data-correct]').length + dd.filter(function (d) { return L.PICKS[d.id] || DATA_PICKS[d.id] || /^pred-/.test(d.id); }).length;
     const ul = el('ul', 'report-checks');
     const burns = L.tableRows(state.burn).length;
-    [answered.length + ' of ' + all.length + ' choice questions answered', good.length + ' of ' + graded + ' checkable questions correct so far', burns + (burns === 1 ? ' simulated burn recorded' : ' simulated burns recorded')].forEach(function (t) { ul.appendChild(el('li', '', t)); });
+    const st = answerStats(); report.dataset.answered = st.answered; report.dataset.total = st.total;
+    [st.answered + ' of ' + st.total + ' answers saved (' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far', burns + (burns === 1 ? ' simulated burn recorded' : ' simulated burns recorded')].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
     burnNodes().forEach(function (n) { report.appendChild(n); });
     textAnswers().forEach(function (t) { if (t.answer) { report.appendChild(el('h4', '', t.prompt)); report.appendChild(el('p', 'report-answer', t.answer)); } });
@@ -237,7 +245,7 @@
       temperatureBeforeC: r.tempBefore, temperatureAfterC: r.tempAfter, massBeforeG: r.massBefore, massAfterG: r.massAfter, observations: r.obs }; }) };
     const payload = { format: 'openscied-b2-burn-progress-v1', exportedAt: new Date().toISOString(), student: studentIdentity(),
       dataNote: 'Burn results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real demonstration. Nothing here is personal information.',
-      scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
+      answersSaved: answerStats(), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url; a.download = 'burning-fuels-work.json'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
@@ -286,7 +294,7 @@
   function wire() {
     readStore();
     RESPONSE_IDS = Array.from(new Set($$('main input[type=radio]').map(function (r) { return r.name; }).concat(
-      $$('main textarea').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return t.id; }),
+      $$('main textarea').filter(function (t) { return !t.readOnly && t.id && !t.hasAttribute('data-optional'); }).map(function (t) { return t.id; }),
       $$('main select').filter(function (s) { return s.id && !s.closest('.scene-host'); }).map(function (s) { return s.id; }))));
     restoreFields();
     renderData(); renderAll(); resumeBar();

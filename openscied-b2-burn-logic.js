@@ -22,11 +22,14 @@
      it burned longest, and droplets formed on the glass, especially with peat.
    - Variation. Each student gets a seeded factor and each burned sample a smaller one: heat and mass lost about 8 percent in all (5 + 3), ignition
      time about 15 percent (8 + 7), burn time about 10 percent. A second sample of the same fuel therefore differs a little. The scale reads to 0.1 g
-     with +/- 0.1 g noise on both weighings. The infrared thermometer reads to 1 degree C with +/- 1 degree noise on both readings. Starting temperature 22 C.
+     with +/- 0.1 g noise on both weighings. The infrared thermometer shows whole degrees C. Each reading is the true glass temperature plus noise of +/- 0.5 degree, then rounded to the
+     nearest degree (so a reading is off by at most a degree, and usually by none). Starting temperature 22 C. Because the rise is only about 2 to 3 degrees for grass and leaves,
+     two fuels that give almost the same heat can differ by a degree or two in a table: that is thermometer noise, and the page says so. (The earlier version used +/- 1 degree on each reading,
+     which let two near-identical fuels differ by up to 5 degrees.)
    - The apparatus. The fuel burns on a heat-safe tray under a large glass dome. A Petri dish of BTB (lid off) sits inside the dome beside the fuel, exposed to the
      air under the dome. The fuel sample is weighed on a balance before the burn and again after it (the sample sits under the dome during the burn). A laser
      (infrared) thermometer is used at those two weighings only, not during the burn: it reads the dome glass once before the burn (when the sample is weighed) and once
-     after it (when the dome is lifted and cooled enough to read and the ash is weighed). It reads to about 1 degree C. This is a simplification: real readings depend on
+     after it (when the dome is lifted and cooled enough to read and the ash is weighed). It shows whole degrees C. This is a simplification: real readings depend on
      where and when you aim, and which surface to read depends on the teacher's protocol (the dome glass, at the same spot both times, is an assumption here).
    - Mass that disappears leaves as gas, mostly carbon dioxide and water vapor (ash stays). Carbon dioxide made (relative) = grams lost x carbon factor. It collects
      under the dome, and a FIXED share (0.6) of it dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says
@@ -116,8 +119,9 @@
     const kjPerG = round1(f.kj * heatF), energyKj = kjPerG * burnedG;
     const dT = round1(clamp(DOME_SHARE * energyKj / DOME_KJ_PER_C, 2, 22));
     const co2Made = f.co2 * burnedG, dissolved = co2Made * DISSOLVED_SHARE, waterMade = f.water * burnedG;
-    const noise = () => { const u = smp.uniform(); return u < 0.2 ? -1 : u < 0.8 ? 0 : 1; };
-    const tempBefore = START_TEMP + noise(), tempAfter = Math.max(tempBefore, Math.round(START_TEMP + dT) + noise());
+    // Thermometer: the true glass temperature plus uniform noise of +/- 0.5 degree, shown to the nearest whole degree. (One draw per reading, as before, so nothing else in a student's data moves.)
+    const noise = () => smp.uniform() - 0.5;
+    const tempBefore = Math.round(START_TEMP + noise()), tempAfter = Math.max(tempBefore, Math.round(START_TEMP + dT + noise()));
     const scale = () => { const u = smp.uniform(); return u < 0.25 ? -0.1 : u < 0.5 ? 0.1 : 0; };
     const massBefore = round1(M + scale());
     const massAfter = round1(Math.min(massBefore - 0.1, Math.max(0.1, M * (1 - lossFrac) + scale())));

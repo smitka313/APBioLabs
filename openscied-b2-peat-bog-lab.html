@@ -297,6 +297,7 @@
             <p class="small" id="balanceText"></p>
           </div>
           <div class="row"><button class="btn btn--primary" id="sendBog" type="button">Test the bog in this year</button><button class="btn" id="climateReset" type="button">Reset to today</button></div>
+          <p class="small" id="sendInfo"></p>
           <p class="small muted">Sets the bog to that year’s CO₂ level. The Arctic warms about 2.5 times faster than the planet as a whole in this model (real estimates run from about 2 to 4 times), so its summer temperature rises more.</p>
         </div>
         <div class="stage">
@@ -396,8 +397,8 @@
         <details class="disclose"><summary>The rules the model uses</summary><div class="inner"><ul>
           <li><strong>Photosynthesis</strong> = 100 × light × CO₂ × temperature × water × oxygen. Each factor is a number from about 0 to 1.2, and the result is held between 0 and 100. More light and more CO₂ raise it. It peaks near 18 °C. Very dry or very hot bogs slow it.</li>
           <li><strong>Decomposition</strong> doubles for each 10 °C of warming, rises with oxygen in the peat, and falls toward 0 as the peat freezes.</li>
-          <li><strong>Burning</strong> rises with the Burning slider and with dry peat and oxygen, and falls to 0 at or below 12% oxygen or in frozen peat.</li>
-          <li><strong>Peat carbon</strong> = photosynthesis − decomposition − burning. Above 0 is a carbon sink. Below 0 is a carbon source.</li>
+          <li><strong>Burning</strong> rises with the Burning slider and with dry peat and oxygen. It falls to 0 at or below 12% oxygen, and when all of the peat is frozen (a summer temperature of about 3 °C or lower).</li>
+          <li><strong>Peat carbon</strong> = photosynthesis − decomposition − burning, worked out from the whole numbers shown, so you can check the subtraction yourself. Above 0 is a carbon sink. Below 0 is a carbon source. Exactly 0 is balanced.</li>
         </ul></div></details>
       </div>
       <div class="attribution">

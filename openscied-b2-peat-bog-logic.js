@@ -28,11 +28,14 @@
       for every 10 C (a Q10 of 2, typical of microbes). Oxygen factor = 1.3 x s/(s + 0.3) with s = soilO2. Heat damage applies only
       above 40 C. With no oxygen the model stops decomposition; real peat keeps decomposing very slowly without oxygen (microbes
       that make methane).
-   7. Burning B = burning-slider x dryness x oxygen x (1 - 0.9 x frozen) x 1.1, limited to 0..100. dryness = 1 - 0.9 x water/100.
+   7. Burning B = burning-slider x dryness x oxygen x (1 - frozen) x 1.1, limited to 0..100. Frozen peat cannot burn, so B is 0
+      when all the peat is frozen (summer temperature 3 degrees C or lower) and shrinks in proportion to the frozen share before that. dryness = 1 - 0.9 x water/100.
       oxygen factor = (O2% - 12)/9 limited to 0..1.6, so there is no fire at or below 12% oxygen. (Real flaming fire needs about 15-16%
       oxygen; smoldering peat can keep going at lower oxygen, so 12% is a middle value for "fire of any kind".)
-   8. Peat carbon N = P - D - B. Positive: more carbon goes in than comes out (a carbon sink). Negative: the bog is a carbon source.
-      It is a difference of three teaching-scale numbers, not a mass of carbon.
+   8. Peat carbon N = P - D - B, worked out from the three numbers AS DISPLAYED (each rounded to a whole number), so a student can
+      check the subtraction on the screen and it always closes. Positive: more carbon goes in than comes out (a carbon sink).
+      Negative: the bog is a carbon source. Zero (P = D + B once rounded) is balanced. It is a difference of three teaching-scale
+      numbers, not a mass of carbon.
    9. Zombie fire survival (chance, 0-95%) multiplies five 0..1 factors: fire burning now (B/40), dry peat (1.3 x (1 - water/100)),
       oxygen in the peat (soilO2/0.6), thawed ground (1 - frozen), summer heat (0.4 + 0.6 x (T - 4)/14). One weak factor can end the fire.
       It is a teaching chance, not a fire forecast. Real overwintering fires depend on peat depth, snow cover, weather and more.
@@ -128,10 +131,12 @@
 
     const dry = 1 - 0.9 * s.wet / 100;
     const fOB = clamp((s.o2 - 12) / 9, 0, 1.6);
-    const B = clamp(s.burn * dry * fOB * (1 - 0.9 * perm) * 1.1, 0, 100);
-    return { s, P, D, B, N: P - D - B, T, q, relQ, perm, soilO2, peatO2: peatOxygen(s), f: { light: fL / 0.8, co2: fC, temp: fT, water: fW } };
+    const B = clamp(s.burn * dry * fOB * (1 - perm) * 1.1, 0, 100);
+    // Peat carbon uses the displayed (rounded) rates so P - D - B is exact on screen (every page, table, CSV and note reads this N).
+    return { s, P, D, B, N: Math.round(P) - Math.round(D) - Math.round(B), T, q, relQ, perm, soilO2, peatO2: peatOxygen(s), f: { light: fL / 0.8, co2: fC, temp: fT, water: fW } };
   }
-  const verdict = N => N > 1 ? 'sink' : N < -1 ? 'source' : 'balanced';
+  // N is a whole number (see model), so balanced means exactly 0: the displayed P equals D + B.
+  const verdict = N => N > 0 ? 'sink' : N < 0 ? 'source' : 'balanced';
 
   /* ---------- zombie fires: the chance an underground fire survives the winter ---------- */
   function zombie(input, m) {

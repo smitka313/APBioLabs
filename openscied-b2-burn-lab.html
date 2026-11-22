@@ -103,7 +103,7 @@
         <label class="choice"><input type="radio" name="poll-peat" value="c" data-why="Good noticing. You will test how peat burns in the demonstration."> I think it would burn slowly, not fast.</label>
         <label class="choice"><input type="radio" name="poll-peat" value="d" data-why="That is fine. You will gather evidence."> I am not sure yet.</label>
       </fieldset>
-      <div class="field"><label for="ideas-because">I wonder… <span class="hint">(1 sentence, optional)</span></label><textarea id="ideas-because" rows="2" placeholder="I wonder why…" maxlength="240"></textarea></div>
+      <div class="field"><label for="ideas-because">I wonder… <span class="hint">(1 sentence, optional)</span></label><textarea id="ideas-because" data-optional rows="2" placeholder="I wonder why…" maxlength="240"></textarea></div>
     </div>
   </section>
 
@@ -149,10 +149,10 @@
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
         <li>The handfuls are not equal, because the Teacher Edition notes the fuels are not uniform and the demonstration did not stress equal masses. Starting masses: about 4 g (grass), 4 g (leaves), 10 g (wood chips), 10 g (charcoal) and 30 g (peat). They catch fire after about 4, 6, 14, 28 and 45 s, and burn for about 20, 30, 90, 150 and 260 s. Peat catches slowly, then smolders with smoke and a glowing ember.</li>
         <li>Mass lost: about 93% (grass), 90% (leaves), 97% (wood), 88% (charcoal), 78% (peat, which keeps more ash). So peat loses the most grams, about 23 g. The mass that disappears leaves as gases, mostly carbon dioxide and water vapor. The balance reads to 0.1 g, with a little error.</li>
-        <li>Heat per gram burned is about 15, 16, 18, 29 and 20 kJ. The laser thermometer is used only at the two weighings, not while it burns: one reading of the dome glass before the burn, and one after it, once the dome is lifted and cool enough to read. The rise is the difference, grams burned × heat per gram × 0.35 ÷ 8, about 2 to 22 °C (the 0.35 and the 8 stand for how much heat reaches the glass and the air under the dome): most for peat (about 20 °C), then charcoal, wood, and a little for grass and leaves. It reads to 1 °C, with a little error. This is a simplification: real readings depend on where and when you aim. <strong>Assumption:</strong> which surface to read depends on your teacher’s protocol; here it is the dome glass, at the same spot both times.</li>
+        <li>Heat per gram burned is about 15, 16, 18, 29 and 20 kJ. The laser thermometer is used only at the two weighings, not while it burns: one reading of the dome glass before the burn, and one after it, once the dome is lifted and cool enough to read. The rise is the difference, grams burned × heat per gram × 0.35 ÷ 8, about 2 to 22 °C (the 0.35 and the 8 stand for how much heat reaches the glass and the air under the dome): most for peat (about 20 °C), then charcoal, wood, and a little for grass and leaves. It shows whole degrees, and each reading can be a degree off, so a rise of only a degree or two (grass and leaves) can be thermometer noise. This is a simplification: real readings depend on where and when you aim. <strong>Assumption:</strong> which surface to read depends on your teacher’s protocol; here it is the dome glass, at the same spot both times.</li>
         <li>Carbon dioxide made is the grams lost times the carbon in the fuel (charcoal has the most per gram). It collects under the dome, and a fixed share dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says the system was not totally closed). So the BTB shows a color change, not an exact amount: more mass lost and more carbon mean a bigger change, from blue toward green or yellow.</li>
         <li>Hydrogen in the fuel joins oxygen and leaves as water vapor, which condenses as droplets on the inside of the dome glass: most for peat, least for charcoal.</li>
-        <li>Your samples differ by about 8% in mass lost and heat, and 15% in time to catch, like real samples. One simulated second is one sixth of a real second. Real results also depend on moisture, sample shape, air flow and the dome.</li>
+        <li>Your samples differ by about 8% in mass lost and heat, and about 15% in time to catch (shown to the nearest second, so a fuel that catches after about 4 s can show 5 s), like real samples. One simulated second is one sixth of a real second. Real results also depend on moisture, sample shape, air flow and the dome.</li>
       </ul></div></details>
     </div>
   </section>
@@ -260,7 +260,7 @@
         <label class="chip"><input type="checkbox" id="tr-4"> Why peat burns so much.</label>
       </fieldset>
       <div class="field"><label for="wrap-sentence">Peat burns so much because… <span class="hint">(1 sentence)</span></label><textarea id="wrap-sentence" rows="2" maxlength="240" placeholder="Peat is packed with …, and when it burns …"></textarea></div>
-      <div class="field"><label for="wrap-question">One question I still have <span class="hint">(optional)</span></label><textarea id="wrap-question" rows="2" maxlength="240" placeholder="Why do …?"></textarea></div>
+      <div class="field"><label for="wrap-question">One question I still have <span class="hint">(optional)</span></label><textarea id="wrap-question" data-optional rows="2" maxlength="240" placeholder="Why do …?"></textarea></div>
       <p class="small">Also in Unit B.2: <a href="openscied-b2-fires.html">Fires: Peat, Decomposition and Earth’s Tilt</a> (Lessons 3 and 5) · <a href="openscied-b2-peat-bog-lab.html">Peat Bog Carbon Lab</a>.</p>
       <div id="investigation-report" class="investigation-report" aria-label="Your summary"></div>
       <div class="submit-card">
