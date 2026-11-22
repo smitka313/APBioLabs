@@ -24,8 +24,8 @@ function axePath() {
       await p.addScriptTag({ content: src });
       const nav = id => p.evaluate(x => { location.hash = x; }, id).then(() => p.waitForFunction(x => document.querySelector('#' + x + '.is-current'), id));
       // Burn two fuels, record one, and leave one finished and unrecorded so every panel, table, chart and drawing is scanned too.
-      await nav('burn'); await p.locator('[data-bn="burn"]').click(); await p.locator('fieldset.bn-obs .bn-chip').first().click(); await p.locator('[data-bn="record"]').click();
-      await p.selectOption('#bn-fuel', 'peat'); await p.locator('[data-bn="burn"]').click();
+      await nav('burn'); await p.locator('[data-bn="weigh"]').click(); await p.locator('[data-bn="burn"]').click(); await p.locator('[data-bn="after"]').click(); await p.locator('fieldset.bn-obs .bn-chip').first().click(); await p.locator('[data-bn="record"]').click();
+      await p.selectOption('#bn-fuel', 'peat'); await p.locator('[data-bn="weigh"]').click(); await p.locator('[data-bn="burn"]').click();
       await nav('sort'); await p.locator('input[name="me-heat"][value="matter"]').check(); await p.locator('input[name="me-peat"][value="both"]').check();
       await p.evaluate(() => { document.querySelectorAll('input[name="cer-claim"][value="a"], #cer-ev-1, input[name="poll-peat"][value="a"]').forEach(r => { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }); document.querySelectorAll('select').forEach(s => { if (!s.closest('.scene-host') && s.options.length > 1) { s.selectedIndex = 1; s.dispatchEvent(new Event('change', { bubbles: true })); } }); });
       await p.evaluate(() => { location.hash = 'overview'; }); await p.waitForTimeout(300);

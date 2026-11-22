@@ -14,7 +14,9 @@
 
    SCENE STATE CONTRACT (all numbers finite; timestamps are ms since 1970; nothing here is ever a timer)
      burn = { seed:uint32, fuel:'grass'|'leaves'|'wood'|'charcoal'|'peat' (the fuel last picked),
-              current: null | { fuel, n:1..3, startedAt:ms, skipped:bool }      the burn in progress or finished but not yet recorded
+              current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool }   the burn in progress, or finished but not yet recorded; after = the second weighing (balance and
+                                                                                laser thermometer read after the burn, dome lifted) has been done
+              weighed: null | { fuel, n }                                       the first weighing (before the burn) is done for the next sample
               records: [ { fuel, n:1..3, obs:[observation chip ids] } ],         one per recorded sample
               updatedAt }
               Times, masses, temperatures and BTB readings are NOT stored: they are recomputed from seed + fuel + n (B2BurnLogic.burnResult).
@@ -105,7 +107,7 @@
   const obsText = o => o && o.length ? L.OBS.filter(function (x) { return o.includes(x.id); }).map(function (x) { return x.label; }).join(', ') : '—';
   function burnNodes() {
     const rows = L.tableRows(state.burn); if (!rows.length) return [];
-    return [table('Simulated burn results', ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB before → after', 'Temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'],
+    return [table('Simulated burn results', ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB before → after', 'Dome glass temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'],
       rows.map(function (r) { return [r.label + ' (' + r.n + ')', String(r.igniteS), String(r.burnS), L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter), r.tempBefore + ' → ' + r.tempAfter, r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1), obsText(r.obs)]; })),
       el('p', 'small muted', 'SIMULATED burns. Not measurements from a real demonstration.')];
   }
