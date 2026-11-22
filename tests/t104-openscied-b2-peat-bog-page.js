@@ -45,7 +45,10 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     for (const id of SECTIONS) await go(p, id);
     T.ok(await p.locator('[aria-live], [role=status], [role=alert]').count() === 1, 'exactly one live region');
     await go(p, 'bog');
-    T.ok(/Simulated rates on a 0–100 scale/.test(await p.locator('.scale-note').innerText()), 'bog says its rates are simulated, 0-100');
+    const scaleNote = await p.locator('.scale-note').innerText();
+    T.ok(/Simulated rates/.test(scaleNote) && /0–100 teaching scale/.test(scaleNote), 'bog labels its simulated rates as a 0–100 teaching scale');
+    T.ok(/peat carbon = photosynthesis − decomposition − burning/.test(scaleNote), 'bog explains peat carbon as the net difference between rates');
+    T.ok(/not measured carbon amounts/.test(scaleNote), 'bog distinguishes teaching rates from measured carbon amounts');
     await go(p, 'trials');
     T.ok(/Simulated data/.test(await p.locator('#trials .sim-tag').innerText()), 'trials say simulated');
     T.ok(await p.locator('svg[role=img]:not([aria-label])').count() === 0, 'every svg picture has a label');
