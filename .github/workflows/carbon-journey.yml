@@ -1,0 +1,30 @@
+name: Carbon Journey draft
+on:
+  pull_request:
+    paths:
+      - '*carbon-journey*'
+      - 'tests/carbon-journey*'
+      - '.github/workflows/carbon-journey.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  draft-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node --test tests/carbon-journey-logic.test.js
+      - run: node tests/carbon-journey-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: carbon-journey-viewports
+          path: artifacts/l9/
+          if-no-files-found: ignore
