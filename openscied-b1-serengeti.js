@@ -186,6 +186,7 @@
     if (!state || state === before) { state = before; say('That move is not available now.'); return; }
     optionId = ''; currentMoveToken = '';
     save();
+    if (type==='roll') window.SerengetiDice?.markRoll();
     paint(true);
     if (focused && /^sg-(start|next|move)/.test(focused)) {
       const next = qs('#sg-next') || qs('#sg-action-title');
@@ -262,7 +263,13 @@
       selected:selectedCell, selectedCells, position:pos, wet:season===0 || season===1,
       grass:currentPrey.length, reveal:p.kind === 'hunt'});
     const interact = qs('#sg-interactive'), actions = qs('#sg-actions'), dice = qs('#sg-dice');
-    interact.replaceChildren(); actions.replaceChildren(); dice.replaceChildren(); dice.hidden = true;
+    interact.replaceChildren(); actions.replaceChildren();
+    let showedDice = false;
+    const showDice = (details, species, finished) => {
+      showedDice = Boolean(details);
+      if (window.SerengetiDice) window.SerengetiDice.render(dice,{battle:details,species,finished,season});
+      else { dice.replaceChildren(); paintDice(details,species,dice,finished); }
+    };
     app.dataset.phase = p.kind;
     let title = '', desc = '', phaseLabel = '', note = '';
     const chooseDestination = Boolean(source && !optionId);
@@ -318,7 +325,7 @@
       const rounds = battle && Array.isArray(battle.rounds) ? battle.rounds : [];
       desc = [pred && tokenType(pred.type), prey && 'wildebeest ' + tokenType(prey.type).toLowerCase()].filter(Boolean).join(' against ') || 'Compare the predator and wildebeest dice, highest to lowest.';
       const showFinalRoll = lastBattle && !rounds.length;
-      paintDice(showFinalRoll ? lastBattle : battle, showFinalRoll ? last.role : species, dice, showFinalRoll);
+      showDice(showFinalRoll ? lastBattle : battle, showFinalRoll ? last.role : species, showFinalRoll);
       if (currentOptions.length) interact.append(chooser(currentOptions,'Choose the next eligible hunt'));
       advance(rounds.length ? 'Roll remaining dice' : 'Roll hunt dice','roll');
       note = 'Lower dice are removed; ties and unmatched dice stay.';
@@ -337,9 +344,10 @@
       if (chooseDestination) actions.append(button('sg-clear-piece','Clear piece selection',clearBoardSelection,'sg-plain'));
     }
     if (lastBattle && p.kind !== 'complete' && !(battle && battle.rounds && battle.rounds.length)) {
-      if (p.kind !== 'hunt') paintDice(lastBattle, last.role, dice, true);
+      if (p.kind !== 'hunt') showDice(lastBattle, last.role, true);
       note = (outcomeText(last.winner) || last.title || 'Hunt recorded') + ' · Wildebeest ' + signed(last.change) + '. ' + note;
     }
+    if (!showedDice) { dice.hidden = true; if (dice.firstElementChild) dice.replaceChildren(); }
     qs('#sg-phase').textContent = phaseLabel;
     qs('#sg-action-title').textContent = title;
     qs('#sg-action-copy').textContent = desc;

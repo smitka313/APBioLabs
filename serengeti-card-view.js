@@ -19,53 +19,130 @@
     lionStalk: ['Predator movement', 'Choose a legal move for a small group. If it can hunt from there, roll on the board.'],
     removeLion: ['Lion population', 'Select an individual lion token to remove.']
   };
+  // Original field-guide illustrations. The seasonal colors are illustrative; the
+  // event controls the local weather/terrain and never changes a game rule.
   const palette = [
-    ['#445f63','#c5dad1','#7b9d8d','#344e48','#eecb7c'],
-    ['#537b73','#deebc3','#89aa71','#35564e','#ffe29e'],
-    ['#876b42','#fbc578','#cc9d50','#584f35','#fff1b6'],
-    ['#594c62','#e8a27a','#aa805e','#48473e','#ffe1b0']
+    ['#52757d','#c7ded4','#86a567','#435d50','#edddad','#415342'],
+    ['#5f8183','#d2e6c5','#87a75b','#47665e','#fae4b1','#46613d'],
+    ['#937354','#f6d094','#bb985c','#6d684f','#fff1bd','#67573b'],
+    ['#604f69','#e5a8a0','#aa8356','#575862','#ffdfb0','#5a503f']
   ];
-
+  const artDirection = {
+    'old-sick': ['hunt','lion','adult'],
+    'slow-calf': ['hunt','hyena','calf'],
+    'short-grasses': ['short','lion','group'],
+    stomping: ['stomp','hyena','group'],
+    'hyena-cub-dies': ['quiet','hyena','cub'],
+    'hyena-commute': ['track','hyena','pair'],
+    'hyena-cub-survives': ['family','hyena','cub'],
+    landslide: ['rock','hyena','pair'],
+    'isolated-newborn': ['hunt','hyena','calf'],
+    'isolated-adult': ['stalk','lion','adult'],
+    'flood-a': ['water','lion','pair'],
+    'flood-b': ['water','lion','pair'],
+    'drought-a': ['dry','lion','adult'],
+    'drought-b': ['dry','lion','adult'],
+    'lion-cubs': ['family','lion','pair'],
+    'lion-stalk': ['stalk','lion','group'],
+    'lion-dies': ['standoff','lion','adult']
+  };
+  function animal(species,x,y,scale=1,face=1,young=false) {
+    const [base,shade,lit,fur] = ({
+      wildebeest: ['#746155','#363944','#ae8b65','#37323a'],
+      hyena: ['#b39058','#575053','#d8b883','#654a40'],
+      lion: ['#bf9455','#785139','#efc587','#5f4335']
+    })[species];
+    const skin = 'url(#sg-art-'+species+')';
+    const paw = fur;
+    const common = '<ellipse cx="-2" cy="27" rx="44" ry="5" fill="#252830" opacity=".22"/>';
+    let body;
+    if (species==='wildebeest') {
+      body =
+        '<path fill="'+shade+'" d="M-23 2l-7 13-2 12h-4l1-12 4-16m39-1 6 10-1 17h-5l-1-14-6-7"/>'+
+        '<path fill="'+skin+'" stroke="'+shade+'" stroke-width=".9" d="M-40-7Q-37-18-20-19L-3-20Q9-25 21-21L32-17 39-19 48-14 47-9 41-8 36-3 28-2 23 1 21 14 16 27h-5l2-15-2-9-11 1-10 3-12-4-7 11-3 13h-5l1-15 4-11-5-2-4 9-7 5-2-4 5-5z"/>'+
+        '<path fill="'+lit+'" opacity=".65" d="M-34-13Q-15-22 7-21L16-19Q0-16-12-17L-29-13z"/>'+
+        '<path d="M17-19q-10 9-9 20m3-21q-9 8-9 19m2-17q-8 7-8 17m2-16q-7 7-8 15m3-15q-7 7-8 13" stroke="'+fur+'" stroke-width="1.6" opacity=".72" fill="none" stroke-linecap="round"/>'+
+        '<path fill="'+fur+'" d="M8-22q9-5 18 0l5 5-4 1-4-2-3 3-3-3-3 2-3-2-4 1zM26-9l7 4 1 8-4 4-1-4-2-1-3-5zM41-12l6-2 3 2-2 4-6 1z"/>'+
+        (young?'':'<path d="M38-16q-11 0-13-5-2-4 2-7m16 11q7-4 6-9" fill="none" stroke="#dfc9a3" stroke-width="2.8" stroke-linecap="round"/>')+
+        '<path d="M-39-6q-3 12-10 12" stroke="'+shade+'" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+        '<circle cx="39" cy="-13" r="1.1" fill="#282025"/><path fill="'+paw+'" d="M-37 24h6l-1 4h-7zm47 0h6v4h-7z"/>';
+    } else if (species==='hyena') {
+      body =
+        '<path fill="'+shade+'" d="M-25 5l-5 10 2 12h-5l-3-12 4-12m42-6 5 7 2 22h-5l-4-16-5-6"/>'+
+        '<path fill="'+skin+'" stroke="'+shade+'" stroke-width=".9" d="M-40-2Q-32-12-20-12Q-8-15 1-21 9-23 20-19L27-16 33-13 44-8 46-3 41 1 33 1 29 5 24 4 20 9 18 28h-5l-4-15 1-7-12 2-9-1-8 7-1 14h-5l-2-15 2-7-7-1-6 6-10 5-3-4 8-7z"/>'+
+        '<path fill="'+lit+'" opacity=".64" d="M-31-5q14-3 31-13 9-6 16-2-8 3-11 8-15 6-34 11z"/>'+
+        '<path fill="'+fur+'" d="M-4-18q11-8 20-4l8 5-7-1-3 2-5-2-3 2-3-1-4 2zM33-8l11 1 2 4-4 4h-8l-3-3z"/>'+
+        '<path fill="'+lit+'" stroke="'+fur+'" stroke-width="1.4" d="M24-17q-4-6 0-9 5-3 7 4l-1 7zm9 2q0-6 3-5 3 1 1 7z"/>'+
+        '<g fill="'+fur+'" opacity=".83"><circle cx="-29" cy="-4" r="1.8"/><circle cx="-26" cy="3" r="1.5"/><circle cx="-19" cy="-5" r="2.1"/><circle cx="-12" cy="0" r="1.8"/><circle cx="-10" cy="-9" r="1.7"/><circle cx="-4" cy="-5" r="2.15"/><circle cx="1" cy="2" r="1.5"/><circle cx="4" cy="-12" r="2.5"/><circle cx="7" cy="-3" r="1.6"/><circle cx="14" cy="-10" r="1.9"/><circle cx="15" cy="4" r="1.4"/><circle cx="-24" cy="9" r="1.3"/><circle cx="20" cy="-5" r="1.3"/></g>'+
+        '<circle cx="34" cy="-10" r="1.3" fill="#2d231f"/><path fill="'+paw+'" d="M-26 25h6v4h-7zm38 0h7v4h-7z"/>';
+    } else {
+      body =
+        '<path d="M-36-4Q-53-1-54-10q-2-7 6-10" stroke="'+shade+'" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M-49-21q6-4 8 0l-4 4-5 1z" fill="'+fur+'"/>'+
+        '<path fill="'+shade+'" d="M-24 3l-2 13-2 11h-6l3-13-2-11m46-4 8 9 1 19h-5l-4-15-6-6"/>'+
+        '<path fill="'+skin+'" stroke="'+shade+'" stroke-width=".9" d="M-39-5Q-32-16-19-16L2-14 16-17 21-22 29-23 35-18 38-15 47-12 47-7 43-5 34-5 30-2 24-3 18 8 17 27h-6l-1-14-3-6-10-2-13-1-8 7-1 16h-6l-2-14 3-7-6-2z"/>'+
+        '<path fill="'+lit+'" opacity=".73" d="M-34-8q9-9 24-6l14 2 15-4q-5 5-15 7-18-4-38 1zM36-12l10 2v3l-6 2-6-1z"/>'+
+        '<path fill="'+lit+'" stroke="'+fur+'" stroke-width="1" d="M26-20q-5-2-4-6 2-2 5-1 4 2 3 6z"/>'+
+        '<circle cx="36" cy="-14" r="1.1" fill="#2d2322"/><path d="m39-8 12 1m-12 1 10 3" stroke="'+fur+'" stroke-width=".6"/>'+
+        '<path fill="'+paw+'" opacity=".8" d="M-33 25h9v3h-10zm43 0h8v3H10z"/>';
+    }
+    return '<g transform="translate('+x+' '+y+') scale('+(scale*face)+' '+scale+')">'+common+body+'</g>';
+  }
   function picture(card, season) {
-    const [sky,sun,grass,hill,light] = palette[season] || palette[0];
-    const sculpt = (animal,x,y,scale,fill) => {
-      const outlines = {
-        wildebeest: 'M-35-6Q-29-18-19-19L4-16Q15-17 22-11L28-2 38 2 35 8 27 8 22 4 15 1 12 15 9 24 5 24 7 11 4 3-7 3-12 15-15 24-20 24-18 11-21 3-25 3-30 24-34 24-33 11-35 3-42 9-44 6Z',
-        lion: 'M-32 1-25-4Q-18-11-7-11L10-12Q17-24 27-21 36-19 37-8L41-6 38-1 31 2 25 1 22 8 21 22 16 22 15 9 10 10 8 24 3 24 1 9-12 7-19 10-21 23-26 23-25 9-30 5-37 7-46 0-45-7-40-8-40-3Z',
-        hyena: 'M-37-2-26-8-18-10Q-6-24 9-20L18-14 21-19 25-18 27-12 34-7 39-6 37-1 27 3 18 1 13 7 12 24 8 24 7 10 1 6-14 4-19 10-20 23-25 23-24 9-29 6-34 12-40 14-42 11Z'
-      };
-      const horn = animal === 'wildebeest' ? '<path d="M27-3Q22-9 25-15M28-2Q35-8 34-15" fill="none" stroke="#eecfa4" stroke-width="2.5" stroke-linecap="round"/><path d="M18-4L28 7L22 13Z" fill="#231d22"/>' : '';
-      const details = animal === 'lion' ? '<path d="M15-13Q17-24 27-22 35-20 34-14L30-9 24 2 19 7 16 3 13-6Z" fill="#543a31" opacity=".72"/>' : animal === 'hyena' ? '<g fill="#251f28" opacity=".65"><circle cx="-14" cy="-10" r="2"/><circle cx="-6" cy="-5" r="1.8"/><circle cx="1" cy="-12" r="2"/><circle cx="7" cy="-6" r="1.7"/></g>' : horn;
-      return '<g transform="translate('+x+' '+y+') scale('+scale+' '+Math.abs(scale)+')"><path d="'+outlines[animal]+'" fill="'+fill+'"/>'+details+'</g>';
-    };
-    const icon = (symbol,x,y) => {
-      const items = {
-        flood:'<path d="M-31 5q12-14 24 0t24 0t24 0M-29 16q12-13 24 0t24 0t23 0M-15-8q8-8 16 0t16 0" fill="none" stroke="#d9f8ed" stroke-width="4" stroke-linecap="round"/>',
-        landslide:'<path d="M-35 20 2-28 36 20Z" fill="#6d5548" stroke="#ecc096" stroke-width="2"/><path d="M5-11l13 12m-23-6 13 12m-20-3 10 10" stroke="#ffe0a8" stroke-width="3" stroke-linecap="round"/>',
-        commute:'<path d="M-27 12Q-2-23 29-1m-6-16L31 0l-18 7" fill="none" stroke="#fff0bb" stroke-width="4" stroke-linecap="round" stroke-dasharray="7 5"/>',
-        drought:'<path d="M-37 13-23 5-15 13-5 4-2-5 9 5 26 0 37 8M-15 13l-2 10m21-12 5 11" fill="none" stroke="#fce4b0" stroke-width="3" stroke-linecap="round"/><circle cy="-19" r="10" fill="#ffe29e"/>',
-        grass:'<path d="M-28 17q8-9 3-27m-3 27q6-10 14-14m3 16q5-13 2-30m-2 30q7-14 15-18m2 17Q14 5 25-4M6 18q1-10 0-21" fill="none" stroke="#e7f0b6" stroke-width="3" stroke-linecap="round"/>',
-        hunt:'<path d="M-28 8Q0-26 28 8 0 31-28 8Z" fill="none" stroke="#f3d5a7" stroke-width="3"/><circle cy="6" r="7" fill="#f3d5a7"/>',
-        cub:'<path d="M0 15-19-3C-34-26-2-29 0-15 2-29 34-26 19-3Z" fill="#efc795" opacity=".9"/>'
-      };
-      return '<g transform="translate('+x+' '+y+')">'+items[symbol]+'</g>';
-    };
-    const effect = card.effect;
-    const predator = effect.toLowerCase().includes('hyena') || ['slow-calf','isolated-newborn','landslide','hyena-commute'].includes(card.id) ? 'hyena' : 'lion';
-    const scene = effect === 'removePride' ? 'flood' : effect === 'removeClan' ? 'landslide' : effect === 'commute' ? 'commute'
-      : effect === 'lionDrought' ? 'drought' : ['lionStalk','scare','wildebeestFlee'].includes(effect) ? 'grass'
-        : ['addHyena','addLion','removeHyena'].includes(effect) ? 'cub' : 'hunt';
-    const speciesPair = ['wildebeestFlee','scare','removeWildebeest','lionDrought','lionStalk','removeLion'].includes(effect);
-    const foreground = speciesPair ? sculpt('wildebeest',102,139,1.27,'#342a28')+sculpt(predator,308,145,-1.14,'#754f32')
-      : sculpt(predator,108,138,1.35,'#544137')+sculpt(predator,281,154,-0.78,'#866246');
-    return '<svg viewBox="0 0 420 178" role="presentation" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
-      '<rect width="420" height="178" fill="'+sky+'"/>'+
-      '<circle cx="332" cy="43" r="30" fill="'+sun+'"/><circle cx="332" cy="43" r="22" fill="'+light+'" opacity=".78"/>'+
-      '<path d="M0 105Q79 52 154 103T287 104Q367 67 420 106V178H0Z" fill="'+hill+'"/>'+
-      '<path d="M0 115Q119 92 243 119T420 106V178H0Z" fill="'+grass+'"/>'+
-      '<path d="M0 153Q112 135 263 152T420 146V178H0Z" fill="'+hill+'" opacity=".58"/>'+
-      '<path d="M38 157l-9-14m9 14 7-16m330 18-4-16m4 16 8-12m-167 19-3-15m3 15 7-18" fill="none" stroke="'+light+'" stroke-width="2" opacity=".65"/>'+
-      '<circle cx="208" cy="85" r="34" fill="'+hill+'" opacity=".75"/>'+icon(scene,208,85)+foreground+'</svg>';
+    const [sky,haze,field,hills,sun,earth] = palette[season] || palette[0];
+    const [type,species,casting] = artDirection[card.id] || ['short','wildebeest','group'];
+    const dry=type==='dry', wet=type==='water', rocky=type==='rock';
+    const motion=type==='track'?'stride':type==='stomp'?'step':type==='stalk'?'stalk':'';
+    const sceneGround = dry ? '#9a7453' : wet ? '#587978' : earth;
+    const defs =
+      '<defs><linearGradient id="sg-art-sky" x2="0" y2="1"><stop stop-color="'+sky+'"/><stop offset="1" stop-color="'+haze+'"/></linearGradient>'+
+      '<linearGradient id="sg-art-ground" x2="0" y2="1"><stop stop-color="'+field+'"/><stop offset="1" stop-color="'+sceneGround+'"/></linearGradient>'+
+      '<radialGradient id="sg-art-sun"><stop stop-color="'+sun+'" stop-opacity=".78"/><stop offset="1" stop-color="'+sun+'" stop-opacity="0"/></radialGradient>'+
+      '<linearGradient id="sg-art-wildebeest" x2="0" y2="1"><stop stop-color="#ad8c6b"/><stop offset=".5" stop-color="#78665c"/><stop offset="1" stop-color="#494952"/></linearGradient>'+
+      '<linearGradient id="sg-art-hyena" x2="0" y2="1"><stop stop-color="#dbc189"/><stop offset=".58" stop-color="#b3905b"/><stop offset="1" stop-color="#73604c"/></linearGradient>'+
+      '<linearGradient id="sg-art-lion" x2="0" y2="1"><stop stop-color="#dfbc7c"/><stop offset=".55" stop-color="#bd9058"/><stop offset="1" stop-color="#865d41"/></linearGradient></defs>';
+    const tree = (x,y,z) => '<g transform="translate('+x+' '+y+') scale('+z+')" fill="'+hills+'"><path d="M-3 1 0-31-8-44-5-47 5-34 15-48 18-45 8-32 6 1z"/><path d="M-40-44q-2-8 12-10 5-8 18-6 13-11 29-1 16-2 21 7 16 2 14 10l-37 3z"/><path d="M-2-31-20-47m25 11 21-12" stroke="'+hills+'" stroke-width="3" fill="none"/></g>';
+    const dryBed = Array.from({length:11},(_,i)=>{
+      const x=i*45+((i*13)%16),y=154+(i%3)*9;
+      return '<path d="M'+(x-27)+' '+y+'l17-5 12 4 14-4m-14 4 5 8m-17-12-7-7" stroke="#eac492" stroke-width="1.05" opacity=".73" fill="none"/>';
+    }).join('');
+    const water = '<path d="M0 158Q96 140 137 143t62 10q40 16 76 8 77-17 145-25V194H0Z" fill="#4d8286"/><path d="M0 159q92-15 135-13t62 11q40 16 79 9 74-19 144-22" stroke="#c3ded1" stroke-width="2" fill="none"/>'+
+      '<g data-motion="water" stroke="#d6e9da" stroke-width="1.35" opacity=".75">'+Array.from({length:12},(_,i)=>'<path d="M'+(i*40%414)+' '+(163+(i%3)*11)+'h'+(11+i*7%21)+'"/>').join('')+'</g>';
+    const slide = '<path d="M0 125 55 63 99 72 122 106 153 126 99 130 73 113 45 133Z" fill="#715b50"/><path d="M0 125 55 63 69 85 59 102 73 113 45 133Z" fill="#a2836c"/>'+
+      '<g fill="#c6a683" stroke="#756051" stroke-width=".8">'+Array.from({length:12},(_,i)=>{
+        const x=87+i*7.1,y=90+i*4.3+(i%3)*4,z=4+(i*3)%7;
+        return '<path d="M'+x+' '+(y-z)+'l'+z+' '+(z*.75)+'-2 '+z+'-'+z+' -3z"/>';
+      }).join('')+'</g>';
+    const grassBlades = (n,y0,range,color,opacity=.62) => '<g stroke="'+color+'" stroke-width="1" fill="none" opacity="'+opacity+'">'+Array.from({length:n},(_,i)=>{
+      const x=(i*83+17)%425,y=y0+(i*19)%range,h=type==='stalk'? 8+i*7%14 : type==='short'||dry ? 2+i*3%5 : 5+i*3%10;
+      return '<path d="M'+x+' '+y+'q-1 -'+(h*.6)+' -'+(h*.4)+' -'+h+'m'+(h*.4)+' '+h+'q1 -'+(h*.64)+' '+(h*.45)+' -'+(h*.87)+'"/>';
+    }).join('')+'</g>';
+    let figures;
+    if (['short','stomp','hunt','stalk','standoff','dry'].includes(type)) {
+      const trail=type==='stalk'||type==='hunt', left=trail?106:118;
+      const group=casting==='group'?animal('wildebeest',left-40,123,.51,1)+animal('wildebeest',left+36,121,.57,1):'';
+      const calf=casting==='calf'?animal('wildebeest',left+38,144,.49,1,true):'';
+      const adult=animal('wildebeest',left,139,type==='hunt'?.87:1.07,trail?1:-1);
+      const pred=animal(species,type==='dry'?327:299,146,1.05,-1) +(type==='stalk'?animal(species,353,138,.7,-1):'');
+      figures = type==='stomp' ? '<g data-motion="step">'+group+adult+'</g><g data-motion="retreat">'+pred+'</g>' : group+calf+adult+'<g data-motion="'+motion+'">'+pred+'</g>';
+    } else if (type==='family'||type==='quiet') {
+      figures=animal(species,175,140,1.16,1)+
+        (type==='family'?animal(species,232,153,.53,-1,true)+(casting==='pair'?animal(species,277,151,.42,-1,true):''):animal(species,299,138,.67,-1));
+    } else {
+      figures='<g data-motion="'+motion+'">'+animal(species,216,141,1.11,1)+animal(species,310,139,.78,1)+'</g>';
+    }
+    const breeze = dry ? '<g data-motion="glint" fill="'+sun+'" opacity=".23"><path d="M246 144q29-7 59 0-28 4-59 0z"/><path d="M280 150q28-5 52 0-23 3-52 0z"/></g>' : '';
+    return '<svg viewBox="0 0 420 194" preserveAspectRatio="xMidYMid slice" role="presentation" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+defs+
+      '<path d="M0 0h420v194H0Z" fill="url(#sg-art-sky)"/><circle cx="320" cy="43" r="56" fill="url(#sg-art-sun)"/><circle cx="320" cy="43" r="19" fill="'+sun+'" opacity=".83"/>'+
+      '<path d="M15 40q65-15 128-3 38-10 82-3-49 11-100 8-63 9-110-2zM252 64q54-11 102-4 31-7 60-2-47 10-91 8-40 8-71-2z" fill="'+haze+'" opacity=".4"/>'+
+      '<path d="M0 99l28-12 49 8 64-20 41 13 34-2 31 11 45-29 44 10 44-16 40 20v59H0Z" fill="'+hills+'" opacity=".42"/>'+
+      '<path d="M0 110q43-13 86-7t102 0q68-18 113-8 60-19 119-3v71H0Z" fill="'+hills+'" opacity=".67"/>'+
+      '<g opacity=".66">'+tree(51,112,.93)+tree(97,120,.52)+tree(354,113,.64)+'</g>'+
+      '<path d="M0 120q79-15 201-4 113-19 219-8v86H0Z" fill="url(#sg-art-ground)"/>'+
+      (rocky?slide:'')+(dry?dryBed:'')+(wet?water:'')+breeze+
+      (wet?'':grassBlades(dry?20:42,124,28,earth,.49))+
+      figures+(wet?'':grassBlades(type==='stalk'?28:22,159,26,type==='stalk'?'#bfb069':'#cfbb84',.69))+
+      '<path d="M0 191q91-18 152-5 112-9 268 0v8H0Z" fill="'+earth+'" opacity=".55"/>'+
+      '</svg>';
   }
 
   const dialog = document.createElement('dialog');

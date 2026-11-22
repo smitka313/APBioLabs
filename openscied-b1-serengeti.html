@@ -10,8 +10,10 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b1-serengeti.css">
 <link rel="stylesheet" href="serengeti-card-view.css">
+<link rel="stylesheet" href="serengeti-dice-view.css">
 <script defer src="serengeti-logic.js"></script>
 <script defer src="serengeti-scene.js"></script>
+<script defer src="serengeti-dice-view.js"></script>
 <script defer src="openscied-b1-serengeti.js"></script>
 <script defer src="serengeti-board-view.js"></script>
 <script defer src="serengeti-card-view.js"></script>
@@ -109,11 +111,14 @@
         <p class="sg-kicker" id="sg-expanded-phase"></p>
         <h3 id="sg-expanded-action-title"></h3>
         <p id="sg-expanded-player"></p>
-        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
         <details id="sg-expanded-details" class="sg-expanded-details">
           <summary id="sg-expanded-summary">Turn instructions</summary>
           <div id="sg-expanded-context"></div>
         </details>
+        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
+        <div class="sg-expanded-last" id="sg-expanded-last" hidden>
+          <strong>Latest result</strong><span id="sg-expanded-last-text"></span>
+        </div>
         <div id="sg-expanded-dice" class="sg-dice" hidden></div>
         <div id="sg-expanded-options"></div>
         <div id="sg-expanded-actions" class="sg-actions"></div>

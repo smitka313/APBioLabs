@@ -15,5 +15,24 @@
 .sg-event-continue{width:100%;padding:.5rem 1rem;background:var(--ink);color:var(--surface)}
 .sg-event-reopen{margin-top:.55rem;padding:.38rem .7rem;background:var(--surface);color:var(--ink);font-size:.8rem}
 .sg-event-modal button:focus-visible,.sg-event-reopen:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-@media(prefers-reduced-motion:no-preference){.sg-event-modal[open]{animation:sg-event-arrive .18s ease-out}@keyframes sg-event-arrive{from{opacity:.6;transform:translateY(.5rem)}to{opacity:1;transform:translateY(0)}}}
-@media(max-width:400px){.sg-event-art svg{max-height:8rem}.sg-event-modal .sg-event-head{padding-inline:.75rem}.sg-event-body{padding:.68rem .8rem .8rem}.sg-event-body p{font-size:.87rem}.sg-event-effect{margin:.6rem 0;padding:.5rem .6rem}}
+@media(max-width:400px){.sg-event-art svg{max-height:9rem}.sg-event-modal .sg-event-head{padding-inline:.75rem}.sg-event-body{padding:.68rem .8rem .8rem}.sg-event-body p{font-size:.87rem}.sg-event-effect{margin:.6rem 0;padding:.5rem .6rem}}
+@media(prefers-reduced-motion:no-preference){
+  .sg-event-modal[open]{animation:sg-card-deal .32s cubic-bezier(.2,.72,.2,1) both;transform-origin:50% 54%}
+  .sg-event-modal[open] .sg-event-art svg{animation:sg-card-reveal .38s ease-out both}
+  .sg-event-modal[open] [data-motion="stride"]{animation:sg-card-stride .76s .12s ease-out both}
+  .sg-event-modal[open] [data-motion="stalk"]{animation:sg-card-stalk .68s .1s ease-out both}
+  .sg-event-modal[open] [data-motion="step"]{animation:sg-card-step .56s .12s ease-out both}
+  .sg-event-modal[open] [data-motion="water"]{animation:sg-card-water .72s .12s ease-out both}
+  .sg-event-modal[open] [data-motion="glint"]{animation:sg-card-glint .7s .16s ease-out both}
+  @keyframes sg-card-deal{from{opacity:0;transform:perspective(56rem) rotateY(-20deg) translateY(.75rem) scale(.95)}to{opacity:1;transform:none}}
+  @keyframes sg-card-reveal{from{opacity:.38;filter:contrast(.8)}to{opacity:1;filter:none}}
+  @keyframes sg-card-stride{from{transform:translateX(-18px)}45%{transform:translate(-8px,-2px)}to{transform:none}}
+  @keyframes sg-card-stalk{from{transform:translateX(13px)}to{transform:none}}
+  @keyframes sg-card-step{from{transform:none}45%{transform:translateX(6px)}to{transform:none}}
+  @keyframes sg-card-water{from{transform:translateX(-8px);opacity:.32}to{transform:none;opacity:.75}}
+  @keyframes sg-card-glint{from{opacity:0}to{opacity:.23}}
+}
+@media(prefers-reduced-motion:no-preference){
+  .sg-event-modal[open] [data-motion="retreat"]{animation:sg-card-retreat .45s .23s ease-out both}
+  @keyframes sg-card-retreat{from{transform:translateX(-9px)}to{transform:none}}
+}

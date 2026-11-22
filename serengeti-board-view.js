@@ -9,7 +9,7 @@
   const control = document.querySelector('.sg-control');
   const home = map.parentNode, anchor = document.createComment('live Serengeti board returns here');
   home.insertBefore(anchor,map);
-  let scale = 1, pending = false, previousAnnouncement = '', previousCard = '';
+  let scale = 1, pending = false, previousAnnouncement = '', previousCard = '', previousResult = '';
   const phases = {min:1,max:2.5,step:.25};
   const make = (tag, cls, content) => {
     const el = document.createElement(tag);
@@ -80,6 +80,7 @@
   }
   function mirrorDice() {
     const original = find('sg-dice'), target = find('sg-expanded-dice');
+    if (window.SerengetiDice) { window.SerengetiDice.mirror(original,target); return; }
     target.hidden = !original || original.hidden;
     if (target.hidden) { target.replaceChildren(); return; }
     target.replaceChildren(...Array.from(original.children,child=>{
@@ -111,7 +112,7 @@
     details.hidden = !copy.length;
     find('sg-expanded-summary').textContent = card ? 'Read event card' : 'Turn instructions';
     const cardKey = cardText || '';
-    if (cardKey!==previousCard) details.open=Boolean(cardKey);
+    if (cardKey!==previousCard) details.open=false;
     previousCard=cardKey;
   }
   function sync() {
@@ -125,6 +126,21 @@
     find('sg-expanded-phase').textContent = phase;
     find('sg-expanded-action-title').textContent = title;
     find('sg-expanded-player').textContent = player ? player.textContent + ' turn' : '';
+    const result = read('sg-last');
+    const count = read('sg-evidence-count');
+    const actualResult = Boolean(result && count !== '0');
+    const resultPanel = find('sg-expanded-last');
+    const resultText = find('sg-expanded-last-text');
+    const resultKey = count + ':' + result;
+    resultPanel.hidden = !actualResult;
+    if (resultKey !== previousResult || resultText.textContent !== result) {
+      resultText.textContent = actualResult ? result : '';
+      if (actualResult && previousResult && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        resultPanel.getAnimations?.().forEach(animation=>animation.cancel());
+        resultPanel.animate?.([{backgroundColor:'var(--sg-accent-soft)'},{backgroundColor:'var(--sg-paper)'}],{duration:530,easing:'ease-out'});
+      }
+      previousResult = resultKey;
+    }
     mirrorContext(); mirrorDice(); mirrorChooser(); mirrorActions();
     if (focusedId) {
       const replacement = find(focusedId) || find('sg-expanded-next') || close;
@@ -143,7 +159,7 @@
   }
   open.addEventListener('click',()=>{
     if (modal.open || !map.querySelector('svg.sg-map')) return;
-    previousAnnouncement=''; previousCard='';
+    previousAnnouncement=''; previousCard=''; previousResult='';
     slot.append(map);
     try { modal.showModal(); }
     catch (_) { home.insertBefore(map,anchor.nextSibling); return; }
@@ -156,6 +172,7 @@
     if (original && !original.hidden && !original.disabled) original.click();
   });
   modal.addEventListener('close',()=>{
+    window.SerengetiDice?.forget(find('sg-expanded-dice'));
     home.insertBefore(map,anchor.nextSibling);
     if (!open.closest('[hidden]')) open.focus({preventScroll:true});
   });

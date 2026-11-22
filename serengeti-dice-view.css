@@ -1,0 +1,57 @@
+/* Main and expanded boards share the same accessible dice visuals. */
+[data-dice-view] .sg-dice-track {gap:.41rem;}
+[data-dice-view] .sg-pip-die {
+  flex:none; isolation:isolate;
+  color:#512d17; border-color:#8c4e28;
+  background:linear-gradient(145deg,#fff3d6,#e8af71);
+  box-shadow:0 2px 1px #161b1844,inset 0 -2px 1px #a2623966,inset 0 1px 1px #fff7;
+}
+[data-dice-view] .sg-pip-die[data-side="prey"] {
+  color:#174331; border-color:#427358;
+  background:linear-gradient(145deg,#f1f9df,#9dd4a5);
+  box-shadow:0 2px 1px #161b1844,inset 0 -2px 1px #4d795866,inset 0 1px 1px #fff7;
+}
+[data-dice-view] .sg-pip-die[data-result="ready"] {border-style:dashed;}
+[data-dice-view] .sg-die-ready {font-size:.92em;font-weight:750;}
+[data-dice-view] .sg-die-pips {
+  position:absolute;inset:14%;display:grid;
+  grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  place-items:center;
+}
+[data-dice-view] .sg-die-pip {
+  display:block;inline-size:66%;aspect-ratio:1;border-radius:50%;background:currentColor;
+  box-shadow:0 1px 0 #fff6,inset 0 1px 0 #0004;
+}
+[data-dice-view] .sg-pip-die[data-result="removed"] {
+  opacity:.76;text-decoration:none;border-style:dashed;
+  color:#46342b;background:#e5d8c6;box-shadow:none;
+}
+[data-dice-view] .sg-die-mark {
+  position:absolute;right:-.33rem;bottom:-.27rem;
+  min-width:.92rem;height:.92rem;display:grid;place-items:center;
+  font-size:.63rem;line-height:1;font-weight:850;
+  border:1px solid #465748;border-radius:50%;background:#f5f5e8;color:#254535;
+}
+[data-dice-view] [data-result="removed"] .sg-die-mark {background:#702f22;color:#fff;}
+[data-dice-view] [data-result="tie"] .sg-die-mark,
+[data-dice-view] [data-result="unmatched"] .sg-die-mark {background:#fff0d3;color:#41352b;}
+.sg-dice-comparisons {
+  margin:.1rem 0 0;padding:0;list-style:none;display:flex;gap:.19rem .32rem;flex-wrap:wrap;
+  font-size:.71rem;line-height:1.22;font-weight:650;
+}
+.sg-dice-comparison {
+  color:var(--sg-ink);background:var(--sg-paper);border:1px solid var(--sg-line);
+  padding:.13rem .27rem;border-radius:.27rem;
+}
+[data-dice-view] [data-dice-animate] {animation:sg-dice-settle .34s cubic-bezier(.21,.67,.46,1) both;}
+[data-dice-view] [data-dice-animate][data-result="removed"] {animation:sg-dice-settle .34s cubic-bezier(.21,.67,.46,1) both,sg-dice-removed .25s ease-out .30s both;}
+[data-dice-view] [data-dice-animate][data-result="kept"] .sg-die-mark {animation:sg-dice-result-pop .23s ease-out .28s both;}
+@keyframes sg-dice-settle {0%{transform:translateY(-.14rem) rotate(-10deg);} 48%{transform:translateY(-.23rem) rotate(7deg);} 81%{transform:translateY(.04rem) rotate(-2deg);} 100%{transform:none;}}
+@keyframes sg-dice-removed {0%{opacity:1;}100%{opacity:.76;}}
+@keyframes sg-dice-result-pop {0%{transform:scale(.7);}70%{transform:scale(1.15);}100%{transform:scale(1);}}
+@media(max-width:700px) and (orientation:portrait) {
+  #sg-expanded-dice .sg-dice-comparisons {grid-column:1/-1;}
+}
+@media(prefers-reduced-motion:reduce) {
+  [data-dice-view] [data-dice-animate],[data-dice-view] [data-dice-animate] .sg-die-mark {animation:none!important;}
+}
