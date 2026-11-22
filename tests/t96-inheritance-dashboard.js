@@ -13,9 +13,9 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('.dashboard-activity').count() === 5, width + ' px: five activity cards (two Unit 2, three Unit 3)');
+      T.ok(await p.locator('.dashboard-activity').count() === 6, width + ' px: six activity cards (three Unit 2, three Unit 3)');
       T.ok(/3 activities available/.test(await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').innerText()), width + ' px: tag says 3 activities available');
-      T.ok(/Inheritance, Environment/.test(await p.locator('.dashboard-activity').nth(4).innerText()) && /Lessons 8–9/.test(await p.locator('.dashboard-activity').nth(4).innerText()), 'third card is the Lessons 8-9 companion');
+      T.ok(/Inheritance, Environment/.test(await p.locator('.dashboard-activity').nth(5).innerText()) && /Lessons 8–9/.test(await p.locator('.dashboard-activity').nth(5).innerText()), 'third card is the Lessons 8-9 companion');
       T.ok(await p.locator('#inh-env-open').getAttribute('href') === 'openscied-b3-inheritance-environment.html#overview', 'card opens its page');
       for (const id of ['inh-env', 'dna-p53', 'cell-cycle']) T.ok(/Not started/.test(await p.locator('#' + id + '-progress').innerText()), id + ' starts as Not started');
       T.ok(await p.locator('#inh-env-reset').isDisabled(), 'restart disabled with nothing saved');

@@ -55,6 +55,9 @@ def page_specs():
         'openscied-b2-peat-bog-lab.html': ('Peat Bog Carbon Lab — a companion for OpenSciEd Biology B.2 | Lab Bench',
                                       'A free, independent peat bog simulator for OpenSciEd Biology B.2 (Fires). Change Earth’s tilt, temperature, CO₂, oxygen, water level and fire, and compare photosynthesis, decomposition and burning.',
                                       'Peat Bog Carbon Lab companion (OpenSciEd B.2)'),
+        'openscied-b2-burn-lab.html': ('Burning Fuels: What Burns and Why — a companion for OpenSciEd Biology B.2 | Lab Bench',
+                                      'A free, independent companion for OpenSciEd Biology B.2 Lesson 2. Run a virtual burn demonstration of grass, leaves, wood, charcoal and peat, and track BTB color, temperature and mass to see where the matter and energy go.',
+                                      'Burning Fuels companion (OpenSciEd B.2)'),
     }
     for lab in LABS:
         number = lab['id']
@@ -136,6 +139,13 @@ def structured_data(filename, title, description, label):
                          'educationalLevel': 'High school biology',
                          'learningResourceType': 'Interactive simulation and guided activity',
                          'teaches': 'Decomposition and cellular respiration, how temperature changes their rate, and how light drives photosynthesis and carbon storage',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://www.openscied.org/'})
+        elif filename == 'openscied-b2-burn-lab.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive simulation and guided activity',
+                         'teaches': 'Burning as a reaction that turns fuel carbon into carbon dioxide and releases stored energy as heat and light, using BTB color, temperature and mass, and why peat burns so much',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://www.openscied.org/'})
         elif filename == 'openscied-b2-peat-bog-lab.html':

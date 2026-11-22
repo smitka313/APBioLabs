@@ -1,0 +1,53 @@
+# Burning Fuels: what burns and why (OpenSciEd Unit B.2, Lesson 2)
+
+The page is `openscied-b2-burn-lab.html` (8 sections). Its script has the same contract as a comment at the top. All pure logic lives in
+`openscied-b2-burn-logic.js` (global `B2BurnLogic`, tested in `tests/openscied-b2-burn-logic.test.js`): reuse it, do not duplicate it.
+
+**Everything numerical is simulated** and labeled so in the table, chart, drawing, report and download. The assumptions are written at the top of the
+logic file and on the page under "What this simulation models". The page is a virtual demonstration and replaces the teacher's real one and none of its
+safety steps (students 15 feet back, goggles, ventilation, never burn materials at home).
+
+**The page is deliberately light** (about 850 visible words, limit 1,100 in `t106-b2-burn-page.js`). Three short text boxes (`ideas-because`,
+`wrap-sentence`, `wrap-question`); everything else is a native dropdown, a tap card or a tap chip with instant feedback. Scenes must not add writing boxes.
+
+## Sections
+
+`overview, ideas, fuels, burn, sense, sort, peat, wrapup`. Section 3 has five fuel cards (no inputs) and ten prediction dropdowns that are checked against the
+student's own table once the fuel has been burned. Section 5 has four reasoning rows and two "in my data" rows. Section 6 is the Matter-Energy chart
+(7 items, matter / energy / both, feedback inside each card). Section 7 is the claim, evidence and reasoning self-check; evidence chips about "my" fuels
+are checked against the table and lose their mark when the table changes.
+
+## Scene
+
+| Scene id | Host | Notice | File |
+|---|---|---|---|
+| `burn` | `#burn-scene` (canvas) | `#burn-notice` | `burn-lab-scene.js` |
+
+Register with `(window.B2Scenes = window.B2Scenes || []).push({ id, mount(host, api) })` or `B2Burn.registerScene({ id, mount })`. Script order does not matter.
+`api` is `window.B2Burn`: `saveState(id, data)`, `update(id, patch)`, `getState()`, `announce(text)` (the page's only live region), `seed(salt)` / `rng(salt)`
+(per student, stable across reloads), `logic`.
+
+## Saved state (localStorage `aplab:openscied:b2-burn-lab:v1`, format v1)
+
+```
+{ v:1, burn, fields:{ id|radioName: value }, responseIds:[...], lastSection, lastVisitedAt }
+burn = { seed, fuel, current: null | { fuel, n:1..3, startedAt:ms, skipped:bool }, records:[{ fuel, n, obs:[chip ids] }], updatedAt }
+```
+
+A burn stores a start timestamp, never a timer. Times, masses, temperatures and BTB readings are **not stored**: they are recomputed from `seed + fuel + n`
+(`burnResult`), so a table or a "correct" mark can never go stale. Up to three samples of each fuel; a second sample differs a little. With reduced motion
+the burn is shown finished at once. The dashboard counts `records.length` and the answered `responseIds`.
+
+## The model, in one place
+
+Five fuels, 10 g each (nominal): ignite after 4, 6, 14, 28, 45 s (grass, leaves, wood, charcoal, peat); burn for 20, 30, 90, 150, 260 s; mass lost 93, 90, 97,
+88, 78 percent; heat 15, 16, 18, 29, 20 kJ per g burned; carbon dioxide 0.44, 0.45, 0.50, 0.90, 0.50 per g burned (relative). Seeded variation: heat and mass lost
+about 8 percent, ignition 15 percent, burn time 10 percent. Scale reads 0.1 g (+/- 0.1), thermometer 1 C (+/- 1), start 22 C. Flask rise = 0.45 x kJ / 8, kept 4 to 22 C.
+BTB = 2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.3, where dissolved = carbon dioxide x (0.35 + 0.45 (1 - exp(-burn time / 80))). Peat ignites last and burns
+longest and charcoal gives the most heat per gram for every student (tested over 400 seeds). One simulated second is one sixth of a real second.
+
+## Wiring
+
+`tools/build-seo.py` (spec and structured data; run it, then `--check`), `sitemap.xml` (generated), `tests/seo.test.py`, `openscied-dashboard.html/.js` (third Unit 2
+card), `tools/classify-ci-risk.js`, `.github/workflows/tests.yml` (node logic test and `t98-webkit-b2-burn`).
+Tests: `tests/t106-b2-burn-{page,a11y,dashboard}.js`, `tests/t107-b2-burn-{scene,layout}.js`, `tests/t98-webkit-b2-burn.js`.
