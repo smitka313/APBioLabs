@@ -38,6 +38,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       for (let i = 0; i < 10; i++) {
         if (i) await p.locator('#roll').click();
         assert.equal(await p.locator('#prediction-options button').count(), 7);
+        if (width < 851) await fits('#skip-prediction');
         if (i === 0) { await shot('predict'); await p.locator('[data-guess="ocean"]').click(); }
         else await p.locator('#skip-prediction').click();
         assert.ok((await p.locator('#official-card').textContent()).length > 70);

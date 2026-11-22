@@ -103,6 +103,8 @@
     $('#roll').hidden = pending || state.done; $('#roll').disabled = rolling || pending || state.done;
     $('#record').hidden = !pending || !revealed; $('#record').disabled = !pending || !revealed || state.done;
     $('#finish').disabled = n < 10 || pending || state.done;
+    $('#finish').hidden = n < 10 || pending || state.done;
+    $('#skip-prediction').hidden = !pending || revealed;
     $('#prediction-panel').hidden = !pending || revealed;
     $('#outcome-panel').hidden = !pending || !revealed;
     $('#ready-panel').hidden = pending;
