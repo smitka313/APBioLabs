@@ -1,0 +1,57 @@
+/* OpenSciEd B.2 L9, handout pp.1–4 and TE pp.188,194–196.
+ * Official location cards (user-supplied PDF), pp.1–7, transcribed below.
+ * The producer exit table applies to the roll AFTER a main-table 1 or 2.
+ * Every roll counts once at its origin, including staying at that station. No elapsed-time claims.
+ */
+(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.CarbonJourney=factory();})(typeof self!=='undefined'?self:this,function(){
+'use strict';
+const stations=[['atmosphere','Atmosphere','Carbon dioxide in the air'],['ocean','Ocean','Hydrosphere'],['human','Human activity','Biosphere'],['producers','Producers','Biosphere'],['herbivores','Herbivores','Biosphere'],['omnivores','Omnivores','Biosphere'],['soil','Soil and rock','Geosphere']];
+const matter=['Carbon dioxide','Food fuel','Biomass','Fossil fuel','Waste','Sediment','Material good'];
+const energy=['Energy remains in the same arrangement of atoms.','Energy flows to another place/system in the same arrangement of atoms.','Energy changes result from the atoms rearranging.','Energy flows to another place/new system AND the atoms are rearranged.'];
+const valid=id=>stations.some(s=>s[0]===id);
+function die(seed,index){let a=((seed>>>0)+Math.imul(index+1,0x6D2B79F5))>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return 1+Math.floor((((t^(t>>>14))>>>0)/4294967296)*6);}
+// Cards transcribed from the user-supplied OpenSciEd B.2 L9 Location Cards PDF,
+// pp.1–7 (CC BY-NC 4.0). Text retains source wording; categories normalize
+// “another/new system” to the handout's four energy bins, without changing text.
+const card = (id, to, m, e, text, exit = false) => ({id,to,matter:matter[m],energy:energy[e],text,exit});
+const cards = {
+ aStay:card('aStay','atmosphere',0,0,'You remain in the atmosphere as a molecule of carbon dioxide, CO2 (matter). Energy remains in the same arrangement of atoms. Record this action and roll again.'),
+ aOcean:card('aOcean','ocean',0,1,'You enter the ocean as carbon dioxide, CO2, and are dissolved in the water (matter). Energy flows to a new system in the same arrangement of atoms.'),
+ aPlant:card('aPlant','producers',2,3,'You are taken in by a producer as carbon dioxide, CO2. The producer uses energy from sunlight and water to rearrange you into molecules used to build biomass (matter) of the producer. Energy flows to a new system AND the atoms are rearranged.'),
+ oStay:card('oStay','ocean',0,0,'You remain dissolved as carbon dioxide, CO2, in the ocean (matter). Energy remains in the same arrangement of atoms. Record this action and roll again.'),
+ oAir:card('oAir','atmosphere',0,1,'You flow back into the atmosphere as carbon dioxide, CO2 (matter). Energy flows to a new system in the same arrangement of atoms.'),
+ oPlant:card('oPlant','producers',2,3,'You are taken in by a producer as carbon dioxide, CO2, and become part of the producer’s biomass (matter) through photosynthesis. Energy flows to a new system AND the atoms are rearranged.'),
+ oSoil:card('oSoil','soil',5,1,'You become part of ocean sediments and fall to the bottom of the ocean (matter). Energy flows to another new system.'),
+ hHome:card('hHome','human',6,0,'You are used to make a material good (matter) that becomes part of a human’s home (e.g., wood, rock). Energy remains in the same arrangement of atoms. Record this action and roll again.'),
+ hWaste:card('hWaste','soil',6,1,'You are used to make a disposable material good (matter) that the human uses once and then throws away into the landfill. Energy flows to another place in the same arrangement of atoms.'),
+ hMine:card('hMine','atmosphere',0,3,'You are mined and burned for energy for heating human buildings and electricity. You move into the atmosphere as carbon dioxide, CO2 (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ hWell:card('hWell','atmosphere',0,3,'You are brought up from an underground well and burned to for energy for human transportation. You move to the atmosphere as carbon dioxide, CO2 (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ pGrow:card('pGrow','producers',2,0,'You become part of the producer’s biomass (matter) as the organism grows larger. Energy remains in the same arrangement of atoms. Record this action and roll again.',true),
+ pRespire:card('pRespire','atmosphere',0,3,'Your carbon-based molecules are used to generate energy during cellular respiration. You move into the atmosphere as carbon dioxide, CO2 (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ pHerb:card('pHerb','herbivores',1,3,'You are eaten by an herbivore as food fuel (matter). The energy flows to another place AND the atoms are rearranged.'),
+ pOmni:card('pOmni','omnivores',1,1,'You are eaten by an omnivore as food fuel (matter). The energy flows to another place/new system.'),
+ pHuman:card('pHuman','human',6,1,'You are harvested by humans who use your matter to make different material goods. The energy flows to a new system in the same arrangement of atoms.'),
+ pDie:card('pDie','soil',2,1,'The producer you are part of dies. The matter (biomass) and energy flows to a new system in the same arrangement of atoms.'),
+ bRespire:card('bRespire','atmosphere',0,3,'Your carbon-based molecules are used during cellular respiration to generate energy to move and stay warm. You move into the atmosphere as carbon dioxide, CO2 (matter). Energy flows to another place/new system AND the atoms are rearranged.'),
+ bEaten:card('bEaten','omnivores',2,3,'You are eaten by an omnivore. Your biomass flows to the omnivore. You are digested and used to grow and repair parts of the omnivore. Energy flows to another place/new system AND the atoms are rearranged.'),
+ bStay:card('bStay','herbivores',2,3,'You are eaten by the herbivore. You are digested and used to grow and repair parts of the herbivore’s biomass (matter). Energy flows to another place/new system AND the atoms are rearranged. Record this action and roll again.'),
+ bWaste:card('bWaste','soil',4,1,'You were part of a carbon-based molecule that was not digested. You leave the herbivore’s body as waste (matter). Energy flows to a new system in the same arrangement of atoms.'),
+ bDie:card('bDie','soil',2,3,'You are part of the herbivore’s biomass, and the herbivore dies. You decompose and become part of the soil (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ cRespire:card('cRespire','atmosphere',0,3,'Your carbon-based molecules are used during cellular respiration to generate energy to move and stay warm. You move into the atmosphere as carbon dioxide, CO2 (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ cStay:card('cStay','omnivores',2,2,'You are digested and used to grow and repair parts of the omnivore’s biomass (matter). Energy changes result from the atoms rearranging. Record this action and roll again.'),
+ cDie:card('cDie','soil',2,3,'You are part of the omnivore’s biomass, and the omnivore dies. You decompose and become part of the soil (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ cWaste:card('cWaste','soil',4,1,'You were part of a carbon-based molecule that was not digested. You leave the herbivore’s body as waste (matter). Energy flows to a new system in the same arrangement of atoms.'),
+ sRespire:card('sRespire','atmosphere',0,3,'You are eaten by a decomposer and are digested used for energy through cellular respiration. You move to the atmosphere as carbon dioxide, CO2 (matter). Energy flows to a new system AND the atoms are rearranged.'),
+ sGrow:card('sGrow','soil',2,2,'You are digested and used to grow and repair parts of a decomposer’s biomass (matter). Energy changes result from the atoms rearranging. Record this action and roll again.'),
+ sStay:card('sStay','soil',2,0,'You are in a carbon-based molecule that is hard to decompose. Your biomass (matter) remains part of the soil. Energy remains in the same arrangement of atoms. Record this action and roll again.'),
+ sFossil:card('sFossil','soil',3,0,'You become buried and form a fossil fuel like coal (matter). Lots of energy remains in the same arrangement of atoms that could be burned for later use. You remain buried. Record this action and roll again.'),
+ sMine:card('sMine','human',3,1,'You are mined by humans as a fossil fuel. The energy flows to another system in the same arrangement of atoms and will be used to power human-made activities.')
+};
+const table={atmosphere:['aStay','aStay','aStay','aOcean','aPlant','aPlant'],ocean:['oStay','oStay','oAir','oAir','oPlant','oSoil'],human:['hHome','hWaste','hMine','hMine','hWell','hWell'],producers:['pGrow','pGrow','pRespire','pRespire','pRespire','pRespire'],producerExit:['pHerb','pOmni','pHuman','pHuman','pDie','pDie'],herbivores:['bRespire','bRespire','bEaten','bStay','bWaste','bDie'],omnivores:['cRespire','cRespire','cStay','cStay','cDie','cWaste'],soil:['sRespire','sGrow','sStay','sFossil','sMine','sMine']};
+function initial(seed){return {version:2,seed:seed>>>0,rows:[],pending:null,answers:{},done:false,producerExit:false,legacyRows:0};}
+function current(s){return s.rows.length?s.rows[s.rows.length-1].to:'atmosphere';}
+function outcome(s,roll=s.pending){if(!Number.isInteger(roll)||roll<1||roll>6||!valid(current(s)))throw Error('Roll a six-sided die first.');return cards[table[current(s)==='producers'&&s.producerExit?'producerExit':current(s)][roll-1]];}
+function record(s,input={}){if(s.done)throw Error('This journey is complete.');const c=outcome(s);return {...s,pending:null,producerExit:c.exit,rows:s.rows.concat({turn:s.rows.length+1,from:current(s),die:s.pending,to:c.to,matter:c.matter,energy:c.energy,card:c.id,text:c.text,stage:s.producerExit?'producerExit':'main',note:String(input.note||'').slice(0,1000)})};}
+function totals(s,key,keys){return keys.map(k=>({label:k,count:s.rows.filter(r=>r[key]===k).length}));}
+function restore(raw,seed){try{const v=JSON.parse(raw);if(![1,2].includes(v.version)||!Number.isInteger(v.seed)||!Array.isArray(v.rows))return initial(seed);let s=initial(v.seed);const legacy=v.version===1?v.rows.length:Math.max(0,Math.min(v.rows.length,Number.isInteger(v.legacyRows)?v.legacyRows:0));for(let i=0;i<v.rows.length;i++){const r=v.rows[i];if(r.from!==current(s)||r.turn!==s.rows.length+1||!Number.isInteger(r.die)||r.die<1||r.die>6||!valid(r.to)||!matter.includes(r.matter)||!energy.includes(r.energy))throw Error();if(i<legacy){s.rows.push({...r,note:String(r.note||'').slice(0,1000),legacy:true});s.legacyRows++;}else{s.pending=r.die;const next=record(s,r),expected=next.rows.at(-1);for(const k of ['to','matter','energy','card','stage'])if(r[k]!==expected[k])throw Error();s=next;}}s.pending=Number.isInteger(v.pending)&&v.pending>=1&&v.pending<=6?v.pending:null;s.answers={};for(const [k,val] of Object.entries(v.answers||{}))if(/^q[2-6]$/.test(k)&&typeof val==='string')s.answers[k]=val.slice(0,20000);s.done=v.done===true&&s.rows.length>=10;return s;}catch{return initial(seed);}}
+return {stations,matter,energy,die,initial,current,outcome,record,totals,restore};});

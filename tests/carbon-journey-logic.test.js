@@ -1,0 +1,22 @@
+const test=require('node:test'),a=require('node:assert/strict'),L=require('../openscied-b2-carbon-journey-logic');
+// Independent transcription oracle: [destination, matter index, energy index],
+// checked directly against supplied location card PDF pp.1–7, not generated from implementation.
+const oracle={
+ atmosphere:[['atmosphere',0,0],['atmosphere',0,0],['atmosphere',0,0],['ocean',0,1],['producers',2,3],['producers',2,3]],
+ ocean:[['ocean',0,0],['ocean',0,0],['atmosphere',0,1],['atmosphere',0,1],['producers',2,3],['soil',5,1]],
+ human:[['human',6,0],['soil',6,1],['atmosphere',0,3],['atmosphere',0,3],['atmosphere',0,3],['atmosphere',0,3]],
+ producers:[['producers',2,0],['producers',2,0],['atmosphere',0,3],['atmosphere',0,3],['atmosphere',0,3],['atmosphere',0,3]],
+ producerExit:[['herbivores',1,3],['omnivores',1,1],['human',6,1],['human',6,1],['soil',2,1],['soil',2,1]],
+ herbivores:[['atmosphere',0,3],['atmosphere',0,3],['omnivores',2,3],['herbivores',2,3],['soil',4,1],['soil',2,3]],
+ omnivores:[['atmosphere',0,3],['atmosphere',0,3],['omnivores',2,2],['omnivores',2,2],['soil',2,3],['soil',4,1]],
+ soil:[['atmosphere',0,3],['soil',2,2],['soil',2,0],['soil',3,0],['human',3,1],['human',3,1]]
+};
+for(const [station,rows] of Object.entries(oracle))rows.forEach(([to,m,e],i)=>test(`Official card ${station}, roll ${i+1}`,()=>{const s=L.initial(42);if(station!=='atmosphere')s.rows=[{to:station==='producerExit'?'producers':station}];s.producerExit=station==='producerExit';const c=L.outcome(s,i+1);a.equal(c.to,to);a.equal(c.matter,L.matter[m]);a.equal(c.energy,L.energy[e]);a.ok(c.text.length>70);a.equal(c.exit,station==='producers'&&i<2);}));
+test('source contract: seven systems, seven matter forms, four energy categories',()=>{a.equal(L.stations.length,7);a.equal(L.matter.length,7);a.equal(L.energy.length,4);a.equal(L.current(L.initial(1)),'atmosphere');});
+test('rolls reproducible, bounded, variable across identities',()=>{for(let seed=0;seed<100;seed++)for(let i=0;i<100;i++){const n=L.die(seed,i);a.ok(n>=1&&n<=6);a.equal(n,L.die(seed,i));}a.notDeepEqual(Array.from({length:10},(_,i)=>L.die(1,i)),Array.from({length:10},(_,i)=>L.die(2,i)));});
+test('hand-calculated totals include stays once and origin of moving roll',()=>{let s=L.initial(42);for(const roll of [1,5,1]){s.pending=roll;s=L.record(s);}a.deepEqual(L.totals(s,'from',['atmosphere','producers']).map(x=>x.count),[2,1]);a.deepEqual(L.totals(s,'matter',L.matter).map(x=>x.count),[1,0,2,0,0,0,0]);a.equal(L.current(s),'producers');a.equal(s.producerExit,true);a.deepEqual(L.restore(JSON.stringify(s),0),s);});
+test('producer second table persists through reload and resets after leaving',()=>{let s=L.initial(1);for(const die of [5,2]){s.pending=die;s=L.record(s);}s.pending=2;s=L.restore(JSON.stringify(s),8);a.equal(L.outcome(s).to,'omnivores');s=L.record(s);a.equal(s.rows.length,3);a.equal(s.producerExit,false);a.equal(s.rows[2].stage,'producerExit');});
+test('automatic outcome cannot be overridden by user choice',()=>{let s=L.initial(1);s.pending=1;s=L.record(s,{to:'ocean',matter:'Waste',note:'test'});a.equal(s.rows[0].to,'atmosphere');a.equal(s.rows[0].matter,'Carbon dioxide');a.equal(s.rows[0].note,'test');});
+test('unrolled and finished journeys cannot record; invalid saves reset safely',()=>{let s=L.initial(1);a.throws(()=>L.record(s));s.pending=3;s.done=true;a.throws(()=>L.record(s));a.deepEqual(L.restore('{bad',7),L.initial(7));});
+test('pending die and answers survive reload; legacy manual work is preserved and marked',()=>{let s=L.initial(3);s.pending=6;s.answers.q4='An oak tree';a.deepEqual(L.restore(JSON.stringify(s),0),s);const old={version:1,seed:3,rows:[{turn:1,from:'atmosphere',to:'ocean',die:1,matter:'Waste',energy:L.energy[0],note:'Earlier work'}],pending:2,answers:{q4:'Keep my story'}};let next=L.restore(JSON.stringify(old),0);a.equal(next.rows[0].note,'Earlier work');a.equal(next.legacyRows,1);a.equal(next.answers.q4,'Keep my story');next=L.record(next);a.equal(next.rows[1].to,'ocean');a.deepEqual(L.restore(JSON.stringify(next),0),next);});
+test('source inconsistencies retained verbatim, no unapproved science edits',()=>{const s=L.initial(1);s.rows=[{to:'omnivores'}];a.match(L.outcome(s,6).text,/leave the herbivore’s body/);s.rows=[{to:'human'}];a.match(L.outcome(s,5).text,/burned to for/);s.rows=[{to:'ocean'}];a.match(L.outcome(s,6).text,/Energy flows to another new system\./);});
