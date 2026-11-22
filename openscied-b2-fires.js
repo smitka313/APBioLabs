@@ -122,7 +122,7 @@
     out.push(table('Foam at the last reading (' + last.t + ' min)', ['Beaker', 'Water temperature', 'Foam height (mm)', 'Carbon dioxide made (relative)'],
       temps.map(function (t, i) { return [L.BEAKER_NAMES[i], tempText(t), String(last.h[i]), L.co2Made(last.h[i]).toFixed(1)]; })));
     const pc = L.predictionCheck(($('#pred-fastest') || {}).value, st);
-    if (pc) out.push(el('p', 'small', (pc.matched ? '✓ ' : '✕ ') + 'You predicted ' + pc.picked + ' would make the most foam. At ' + pc.minute + ' min the most foam was in ' + pc.winner + '.'));
+    if (pc) out.push(el('p', 'small', L.predictionSentence(pc)));
     out.push(el('p', 'small muted', 'SIMULATED foam. The foam is carbon dioxide gas, so relative carbon dioxide is foam height divided by 10. Not measurements from a real lab.'));
     return out;
   }
@@ -204,7 +204,7 @@
   function renderPredNote() {
     const n = $('#pred-note'); if (!n) return;
     const pc = L.predictionCheck(($('#pred-fastest') || {}).value, state.decomp);
-    n.textContent = pc ? (pc.matched ? '✓ ' : '✕ ') + 'You predicted ' + pc.picked + ' would make the most foam. At ' + pc.minute + ' min the most foam was in ' + pc.winner + '.' : '';
+    n.textContent = L.predictionSentence(pc);
     n.hidden = !pc;
   }
 

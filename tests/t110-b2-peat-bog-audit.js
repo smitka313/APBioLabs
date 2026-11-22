@@ -131,6 +131,7 @@ const ann = p => p.locator('#announcer').textContent();
     await d.goto(server.url + 'openscied-dashboard.html'); await d.waitForSelector('#peat-bog-progress');
     T.ok(/warming explored/.test(await d.locator('#peat-bog-progress').innerText()), 'C4: dashboard says warming explored: ' + await d.locator('#peat-bog-progress').innerText());
     T.ok(!/warming not explored/.test(await d.locator('body').innerText()), 'C4: "warming not explored" appears nowhere on the dashboard (including the Continue banner)');
+    T.ok(Array.isArray(saved.responseIds) && saved.responseIds.length === 0 && !/answers saved/.test(await d.locator('#peat-bog-progress').innerText()), 'D1: the Peat Bog Lab has no written answers, so it saves an empty responseIds and the dashboard shows no answer count (nothing to disagree)');
     // old saves (no flag) still work: changed climate counts, untouched climate does not
     await d.evaluate(k => localStorage.setItem(k, JSON.stringify({ v: 1, settings: { wet: 30 }, climate: { fossil: 10, forest: 100, year: 2100 }, trials: [] })), KEY);
     await d.reload(); await d.waitForSelector('#peat-bog-progress');

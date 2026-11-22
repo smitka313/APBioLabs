@@ -13,7 +13,10 @@
    - Typical foam at 20 minutes (nominal, mm): 5 C 3, 18 C about 10, 27 C 38, 35 C 50, 43 C 62, 55 C 2.5 after a small early burst.
      At 43 C the foam settles a little late in the run. Real foam depends on yeast brand, freshness, sugar, beaker shape and how it was stirred.
    - Each beaker gets its own seeded size factor (+/- 8 percent), so two beakers at the same temperature differ a little, and each reading has
-     whole-millimeter rounding and +/- 1 mm noise. A reading never falls by more than 3 mm from the one before, and is never negative.
+     whole-millimeter rounding and +/- 1 mm noise. Foam does not exist before the lag (no noise is added while the nominal foam is 0). Foam does not shrink in a
+     beaker that is not collapsing: for 5, 18, 27 and 35 C each reading is at least the one before (a running maximum of the noisy readings, so noise can only
+     make a rise look a mm faster or slower, never make foam disappear). Only the beakers that really settle may fall: 43 C after 14 minutes and 55 C (the yeast die),
+     by at most 3 mm per reading. A reading is never negative.
    Tilt and BTB (Lesson 5)
    - Light reaching the plant is I = cos(angle): 1.00 direct (0 degrees), 0.71 at 45 degrees, 0.34 at 70 degrees, 0 under foil.
    - Over the simulated night the plant respires (R = 0.30, constant, it makes carbon dioxide) and photosynthesizes (P = 1.1 I / (0.35 + I),
@@ -85,9 +88,12 @@
     const factor = 1 + (rng.uniform() * 2 - 1) * 0.08;
     const out = [];
     TIMES.forEach(function (t, i) {
-      const noise = clamp(Math.round(rng.normal() * 0.6), -1, 1);
-      let v = i === 0 ? 0 : Math.max(0, Math.round(nominalFoam(temp, t) * factor + noise));
-      if (i > 0) v = Math.max(v, out[i - 1] - (temp === 43 || temp === 55 ? 3 : 1));
+      const noise = clamp(Math.round(rng.normal() * 0.6), -1, 1);   // always drawn, so the sequence of random numbers does not depend on the temperature
+      const nominal = nominalFoam(temp, t) * factor;
+      let v = i === 0 || nominal <= 0 ? 0 : Math.max(0, Math.round(nominal + noise));
+      // Foam only falls where the model says it settles: 55 C (yeast die) and 43 C after 14 minutes. Everywhere else keep the running maximum.
+      const settles = temp === 55 || (temp === 43 && t > 14);
+      if (i > 0) v = Math.max(v, out[i - 1] - (settles ? 3 : 0));
       out.push(v);
     });
     return out;
@@ -416,10 +422,15 @@
     const temps = normalizeTemps(foamState.temps), order = temps.map((t, i) => i).sort((a, b) => temps[a] - temps[b]);
     const idx = pred === 'cold' ? order[0] : pred === 'warm' ? order[2] : order[1];
     const top = Math.max.apply(null, last.h), winner = last.h.indexOf(top);
-    return { matched: last.h[idx] === top, picked: BEAKER_NAMES[idx] + ' (' + temps[idx] + ' °C)', winner: BEAKER_NAMES[winner] + ' (' + temps[winner] + ' °C)', minute: last.t };
+    return { matched: last.h[idx] === top, picked: BEAKER_NAMES[idx] + ' (' + temps[idx] + ' °C)', winner: BEAKER_NAMES[winner] + ' (' + temps[winner] + ' °C)', minute: last.t, height: top };
+  }
+  // The one sentence both the page note (section 6) and the report (section 11) show. It ends in plain text (the foam height), not a bracket.
+  function predictionSentence(pc) {
+    if (!pc) return '';
+    return (pc.matched ? '✓ ' : '✕ ') + 'You predicted ' + pc.picked + ' would make the most foam. At ' + pc.minute + ' min the most foam was in ' + pc.winner + ', at ' + pc.height + ' mm.';
   }
 
-  return { checkTiltPick, predictionCheck, num, clamp, hash32, makeRng, TEMPS, TIMES, END_MIN, RATE, TARGET20, DEFAULT_TEMPS, TEMP_NAMES, BEAKER_NAMES, SIM_MIN_MS,
+  return { checkTiltPick, predictionCheck, predictionSentence, num, clamp, hash32, makeRng, TEMPS, TIMES, END_MIN, RATE, TARGET20, DEFAULT_TEMPS, TEMP_NAMES, BEAKER_NAMES, SIM_MIN_MS,
     normalizeTemp, normalizeTemps, nominalFoam, foamSeries, foamAt, co2Made, minutesElapsed, foamRows, lastRow,
     CARDS, REACTION, checkCards, PICKS, checkPick, checkSugarSentence, HYP_REASONS, checkHypothesis,
     LIGHTS, LIGHT_IDS, TUBE_IDS, SUGGESTED_SETUP, RESP, NIGHT_MS, NIGHT_HOURS, lightIntensity, photosynthesis, BTB_LABELS, BTB_RGB, BTB_START,

@@ -109,6 +109,46 @@ test('yeast foam: nominal curve hits the 20-minute targets; 43 C settles a littl
   assert.equal(L.nominalFoam(NaN, 10), L.nominalFoam(27, 10));
 });
 
+test('foam never shrinks where it should not: monotonic for 5, 18, 27 and 35 C over 300 seeds, and for 43 C until its late settle', () => {
+  const seeds = Array.from({ length: 300 }, (_, i) => (i + 1) * 104729 >>> 0);
+  for (const T of [5, 18, 27, 35]) {
+    let drops = 0;
+    for (const seed of seeds) for (const beaker of [0, 1, 2]) { const x = L.foamSeries(seed, beaker, T); for (let k = 1; k < x.length; k++) if (x[k] < x[k - 1]) drops++; }
+    assert.equal(drops, 0, T + ' C foam never decreases between readings');
+  }
+  let early = 0, late = 0;
+  for (const seed of seeds) for (const beaker of [0, 1, 2]) {
+    const x = L.foamSeries(seed, beaker, 43);
+    for (let k = 1; k < x.length; k++) if (x[k] < x[k - 1]) { if (L.TIMES[k] <= 14) early++; else { late++; assert.ok(x[k - 1] - x[k] <= 3, 'a late settle is at most 3 mm'); } }
+  }
+  assert.equal(early, 0, '43 C foam does not decrease up to 14 minutes');
+  assert.ok(late > 0, 'but it does settle a little late for some beakers (' + late + ')');
+  // the 55 C burst-then-fall behaviour is kept
+  const hot = seeds.filter(seed => { const x = L.foamSeries(seed, 0, 55); return Math.max(...x) > x[10]; }).length;
+  assert.ok(hot > 250, '55 C foam rises and then falls for most beakers (' + hot + ' of 300)');
+  // no foam, and no noise, before the lag: a cold beaker never beats a room-temperature one at 2 minutes
+  for (const seed of seeds) { const cold = L.foamSeries(seed, 0, 18), room = L.foamSeries(seed, 1, 27); assert.ok(cold[1] <= room[1], 'cold is not ahead of room at 2 min'); assert.equal(cold[1], 0); assert.equal(room[1], 0); }
+  // totals still match the stated typicals
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const m = {}; for (const T of [5, 18, 27, 35, 43, 55]) m[T] = mean(seeds.map((seed, i) => L.foamSeries(seed, i % 3, T)[10]));
+  near(m[5], 3, 0.8); near(m[18], 10.5, 1); near(m[27], 38, 1.5); near(m[35], 50, 2); near(m[43], 62, 2.5); near(m[55], 2.5, 0.8);
+  // deterministic per student
+  assert.deepEqual(L.foamSeries(seeds[0], 1, 27), L.foamSeries(seeds[0], 1, 27));
+});
+
+test('prediction sentence: complete, with the foam height, the same for every beaker and temperature (section 6 note and section 11 report)', () => {
+  const seed = 987654321;
+  for (const temps of [[18, 27, 43], [5, 27, 35], [27, 35, 55], [43, 18, 5], [35, 43, 27]]) for (const pred of ['cold', 'room', 'warm']) {
+    const st = { seed, temps, recorded: [0, 2, 20] }, pc = L.predictionCheck(pred, st), text = L.predictionSentence(pc);
+    const last = L.foamRows(st).pop(), top = Math.max(...last.h);
+    assert.ok(/\.$/.test(text) && !/\($/.test(text.replace(/\.$/, '')), 'ends in a full stop, not an open bracket: ' + text);
+    assert.equal((text.match(/\(/g) || []).length, (text.match(/\)/g) || []).length, 'brackets balance: ' + text);
+    assert.ok(text.endsWith(', at ' + top + ' mm.') && pc.height === top, 'ends with the winning foam height: ' + text);
+    assert.ok(new RegExp('most foam was in Beaker [123] \\(\\d+ °C\\), at \\d+ mm\\.$').test(text), text);
+  }
+  assert.equal(L.predictionSentence(null), '');
+});
+
 test('yeast readings across 300 students look like class data', () => {
   const stat = { 18: [], 27: [], 43: [] };
   for (const seed of SEEDS) {
