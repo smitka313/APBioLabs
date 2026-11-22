@@ -12,7 +12,7 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
       await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#b2-burn-progress');
       T.ok(/Not started/.test(await p.locator('#b2-burn-progress').innerText()) && await p.locator('#b2-burn-reset').isDisabled(), width + ' px: new visit: Not started, restart disabled');
       T.ok((await p.locator('#b2-burn-open').getAttribute('href')).startsWith('openscied-b2-burn-lab.html'), 'card links to the page');
-      T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 3 && /3 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), 'Unit 2 lists three activities');
+      T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 4 && /4 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), 'Unit 2 lists three activities');
       T.ok(/Lesson 2/.test(await p.locator('#b2-burn-open').evaluate(a => a.closest('.dashboard-activity').innerText)), 'card names the lesson');
       T.ok(await p.evaluate(() => { const a = document.getElementById('unit2'), c = document.getElementById('unit3'); return !!(a.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING); }), 'Unit 2 stays before Unit 3');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
@@ -46,3 +46,4 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
   } finally { await b.close(); srv.close(); }
   T.done('t106-b2-burn-dashboard');
 })().catch(e => { console.error(e); process.exit(1); });
+

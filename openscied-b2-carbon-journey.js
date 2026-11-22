@@ -7,15 +7,19 @@
   try { raw = localStorage.getItem(key); } catch (_) {}
   let state = L.restore(raw, Lab.identity.seed.seed);
   let guess = null, revealed = false, rolling = false, questionIndex = 0, chart;
+  let section = 'play';
+  try { const v = JSON.parse(raw); if (['play', 'evidence', 'sense'].includes(v.lastSection)) section = v.lastSection; } catch (_) {}
   try { const old = JSON.parse(raw); if (state.pending !== null && old.presentation) { guess = L.stations.some(s => s[0] === old.presentation.guess) ? old.presentation.guess : null; revealed = old.presentation.revealed === true; if (typeof old.presentation.note === 'string') $('#note').value = old.presentation.note.slice(0,1000); } } catch (_) {}
   const name = id => L.stations.find(s => s[0] === id)[1];
   const mobile = () => matchMedia('(max-width:850px)').matches;
   function announce(message) { $('#status').textContent = message; }
   function save(message) {
-    try { localStorage.setItem(key, JSON.stringify({ ...state, presentation: { guess, revealed, note: $('#note').value } })); announce(message || 'Journey saved on this device.'); }
+    try { localStorage.setItem(key, JSON.stringify({ ...state, lastSection: section, lastVisitedAt: Date.now(), presentation: { guess, revealed, note: $('#note').value } })); announce(message || 'Journey saved on this device.'); }
     catch (_) { announce('Could not save on this device. Keep this page open and download your journey.'); }
   }
   function setPage(id) {
+    section = id; save();
+    history.replaceState(null, '', '#' + id);
     document.body.classList.toggle('journey-playing', id === 'play');
     document.querySelectorAll('.journey-page').forEach(p => p.hidden = p.id !== id);
     document.querySelectorAll('[data-page]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.page === id)));
@@ -185,4 +189,7 @@
   function showTotal() { $('#totals').querySelectorAll('[data-total]').forEach(el => el.hidden = mobile() && el.dataset.total !== totalTab); }
   document.querySelectorAll('[data-total-tab]').forEach(b => b.addEventListener('click', () => { totalTab = b.dataset.totalTab; document.querySelectorAll('[data-total-tab]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); showTotal(); }));
   render();
+  const linked = location.hash.slice(1);
+  setPage(['play', 'evidence', 'sense'].includes(linked) ? linked : section);
 })();
+

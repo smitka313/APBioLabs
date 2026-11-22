@@ -59,6 +59,14 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       await p.locator('#question-next').click(); await p.locator('#question-next').click();
       assert.equal(await p.locator('#q4').inputValue(), 'My carbon atom followed the official cards.');
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      const dashboard = await ctx.newPage();
+      await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
+      assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
+      assert.equal(await dashboard.locator('.dashboard-activity').count(),7);
+      assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
+      await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
+      await dashboard.locator('#carbon-journey-open').click();
+      assert.ok(await dashboard.locator('#sense').isVisible());await dashboard.close();
       const downloaded = p.waitForEvent('download'); await p.locator('#download').click(); const d = await downloaded;
       assert.match(d.suggestedFilename(), /carbon-atom-journey/);
       await p.locator('#restart').click(); await p.locator('#cancel-reset').click(); assert.equal(await p.locator('#q4').inputValue(), 'My carbon atom followed the official cards.');

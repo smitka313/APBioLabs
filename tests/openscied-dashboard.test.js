@@ -107,3 +107,25 @@ test('unreadable work stays downloadable and resettable without showing a mislea
   assert.equal(s.el('#openscied-resume').hidden, true);
   assert.equal(s.el('#cell-cycle-reset').disabled, false);
 });
+
+test('Carbon Journey resumes the saved page and counts its actual rolls and answers', () => {
+  const s = setup(false, { 'aplab:openscied:b2-carbon-journey:v1': JSON.stringify({version:2,rows:[{},{}],answers:{q2:'Fire added carbon',q4:'My atom story',q5:'   '},lastSection:'sense',lastVisitedAt:999}) });
+  assert.match(s.el('#carbon-journey-progress').textContent,/2 rolls recorded.*2 of 5 responses/);
+  assert.equal(s.el('#carbon-journey-open').href,'openscied-b2-carbon-journey.html#sense');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b2-carbon-journey.html#sense');
+});
+test('Carbon Journey backup includes readable answers as well as the original save', async () => {
+  const s = setup(false, { 'aplab:openscied:b2-carbon-journey:v1': JSON.stringify({version:1,rows:[],answers:{q4:'My atom story'}}) });
+  s.el('#download-openscied-results').fire('click');
+  const payload=JSON.parse(await s.blob().text());
+  assert.equal(payload.responses['carbon-journey'].q4,'My atom story');
+  assert.ok(payload.work['aplab:openscied:b2-carbon-journey:v1']);
+});
+test('Carbon Journey restart removes only that activity', () => {
+  const s = setup(false, { 'aplab:openscied:b2-carbon-journey:v1': JSON.stringify({version:2,rows:[{}],answers:{}}) });
+  s.el('#carbon-journey-reset').fire('click');
+  assert.match(s.el('#clear-openscied-title').textContent,/Restart Carbon Atom Journey/);
+  s.el('#openscied-erase-confirmation').value='ERASE';s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data['aplab:openscied:b2-carbon-journey:v1'],undefined);
+  assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1']);
+});
