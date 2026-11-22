@@ -42,7 +42,7 @@
     ['#91aa63','#526931'],['#9bb080','#576b3e'],['#a7b586','#606b40'],['#8eac83','#476747']
   ];
   let nextId=0;
-  const fmt=(x,y)=>''+String.fromCharCode(65+x)+(y+1);
+  const fmt=(x,y)=>(x+1)+', '+(y+1);
   const key=(x,y)=>x+':'+y;
   const cellLabel=({x,y,season,territory})=>fmt(x,y)
     +(season===null?', outside grazing regions':', Turn '+(season+1)+' grazing region')
@@ -145,6 +145,8 @@
 
   function mount(host, options={}) {
     const id='sgboard-'+(++nextId), click=typeof options==='function'?options:options.onCell;
+    const cancel=options.onCancel;
+    const motion=typeof matchMedia==='function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
     host.classList.add('sg-map-host');
     host.innerHTML=`<style>
       .sg-map-host{inline-size:100%;min-inline-size:0}
@@ -155,11 +157,13 @@
       .sg-map .sg-map-axis{font:750 8px var(--font,system-ui,sans-serif)}
       .sg-map .sg-map-hit{fill:transparent;outline:none;touch-action:manipulation}
       .sg-map .sg-map-hit[data-legal="true"]{cursor:pointer}
-      .sg-map .sg-map-hit[data-legal="true"]:hover,.sg-map .sg-map-hit:focus-visible{fill:#fffef278;stroke:#203d30;stroke-width:2;vector-effect:non-scaling-stroke}
+      .sg-map .sg-map-hit[data-legal="true"]:hover,.sg-map .sg-map-hit:focus-visible{fill:#fffef23c;stroke:#203d30;stroke-width:2;vector-effect:non-scaling-stroke}
+      .sg-map .sg-map-hit[data-source="true"]:hover{fill:#fff4cf46}
+      .sg-map [data-layer="tokens"],.sg-map [data-layer="selected"],.sg-map [data-layer="choices"]{pointer-events:none}
       .sg-map .sg-map-grazing{transition:opacity 160ms linear}
       @media (prefers-reduced-motion:reduce){.sg-map .sg-map-grazing{transition:none}}
     </style>`;
-    const svg=svgEl('svg',{viewBox:`0 0 ${WIDTH} ${HEIGHT}`,class:'sg-map',role:'group','aria-label':'Serengeti map and movement grid'});
+    const svg=svgEl('svg',{viewBox:`0 0 ${WIDTH} ${HEIGHT}`,class:'sg-map',role:'group',tabindex:'-1','aria-label':'Serengeti map and movement grid'});
     const cells=BOARD.flat();
     const backdrop=`<rect x="1" y="1" width="519" height="624" rx="15" fill="#f0ddb7" stroke="#9a8156" stroke-width="2"/>
       <rect x="8" y="8" width="505" height="610" rx="10" fill="none" stroke="#987c50" stroke-opacity=".43" stroke-width="1"/>
@@ -176,7 +180,7 @@
     const grid=[...Array(COLS+1)].map((_,i)=>`M${LEFT+i*UNIT} ${TOP}v${ROWS*UNIT}`).join('')
       +[...Array(ROWS+1)].map((_,i)=>`M${LEFT} ${TOP+i*UNIT}h${COLS*UNIT}`).join('');
     const outlines=GRAZING.map((_,s)=>`<path class="sg-map-grazing" data-grazing="${s}" d="${perimeter(c=>c.season===s)}" fill="none" stroke="${PALETTES[s][1]}" stroke-width="2.3" stroke-linecap="square" stroke-linejoin="round" opacity=".8"/>`).join('');
-    const cellAxes=Array.from({length:COLS},(_,x)=>`<text x="${LEFT+(x+.5)*UNIT}" y="23" text-anchor="middle">${String.fromCharCode(65+x)}</text>`).join('')
+    const cellAxes=Array.from({length:COLS},(_,x)=>`<text x="${LEFT+(x+.5)*UNIT}" y="23" text-anchor="middle">${x+1}</text>`).join('')
       +Array.from({length:ROWS},(_,y)=>`<text x="22" y="${TOP+(y+.5)*UNIT+2.5}" text-anchor="middle">${y+1}</text>`).join('');
     const turnLabels=[[290,608],[121,403],[62,184],[266,75]].map(([x,y],s)=>`
       <g data-turn="${s}" transform="translate(${x} ${y})"><rect x="-2" y="-9" width="77" height="13" rx="6.5" fill="#efe0bc" fill-opacity=".96" stroke="${PALETTES[s][1]}" stroke-width=".85"/><text x="36" y="0" text-anchor="middle" fill="#293326" class="sg-map-turn">TURN ${s+1} · ${MONTHS[s]}</text></g>`).join('');
@@ -197,7 +201,9 @@
     const choices=svg.querySelector('[data-layer="choices"]');
     const animals=svg.querySelector('[data-layer="tokens"]');
     const selected=svg.querySelector('[data-layer="selected"]');
-    let legal=new Set(), focusKey=null;
+    let legal=new Set(), sourceKeys=new Set(), destinationKeys=new Set(), focusKey=null;
+    const tokenNodes=new Map();
+    let previousStage;
     function activate(x,y) {
       const coord=key(x,y);
       if(!legal.has(coord)||typeof click!=='function')return;
@@ -210,6 +216,11 @@
       if(focus&&coord)buttons.get(coord)?.focus({preventScroll:true});
     }
     function keyAction(evt,x,y) {
+      if(evt.key==='Escape'&&typeof cancel==='function'){
+        // Leave Escape available to the fullscreen dialog's normal dismissal.
+        if(svg.closest?.('dialog[open]'))return;
+        cancel(); return;
+      }
       if(evt.key==='Enter'||evt.key===' '){evt.preventDefault();activate(x,y);return;}
       const vectors={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
       if(!vectors[evt.key])return;
@@ -237,19 +248,21 @@
 
     const speciesStyle={wildebeest:['#f0e7c4','#263c2d','wildebeest'],lion:['#efc15c','#503513','lion-icon'],hyena:['#f4d0c4','#4f332d','hyena-icon']};
     const tokenLabel=t=>NAMES[t.species]+({individual:' individual',smallGroup:' small group',herd:' herd',clan:' clan',pride:' pride'}[t.type]||'');
-    const paintToken=(t,left,top,idx,num)=>{
+    const paintToken=(t,idx,num)=>{
       const [fill,stroke,animal]=speciesStyle[t.species];
-      const gap=num<=1?0:8, cx=left+UNIT/2+(num===1?0:idx%2?gap/2:-gap/2);
-      const cy=top+UNIT/2+(num<=2?0:idx<2?-gap/2:gap/2);
-      const r=num===1?10.2:6.6;
-      const symbol=t.species==='wildebeest'?{individual:'1',smallGroup:'G',herd:'H'}[t.type]:t.species==='lion'?'L':'Y';
+      const gap=num<=1?0:11, cx=UNIT/2+(num===1?0:idx%2?gap/2:-gap/2);
+      const cy=UNIT/2+(num<=2?0:idx<2?-gap/2:gap/2);
+      const r=num===1?10.2:6.3;
+      const symbol={individual:'1',smallGroup:'G',herd:'H',clan:'C',pride:'P'}[t.type];
       return `<g><circle cx="${cx+.7}" cy="${cy+1.1}" r="${r+.45}" fill="#25231a" opacity=".35"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
         ${num===1?`<use href="#${id}-${animal}" x="${cx-8.4}" y="${cy-6.8}" width="16.8" height="10.6"/>`:''}
         <text x="${cx}" y="${cy+(num===1?6.5:2.6)}" text-anchor="middle" fill="${stroke}" font-family="system-ui,sans-serif" font-size="${num===1?6.4:7}" font-weight="900">${symbol||'W'}</text></g>`;
     };
     function update(view={}) {
-      const cellsArg=Array.isArray(view.legalCells)?view.legalCells:[];
-      legal=new Set(cellsArg.filter(c=>c&&BOARD[c.y]?.[c.x]).map(c=>key(c.x,c.y)));
+      const toKeys=list=>new Set((Array.isArray(list)?list:[]).filter(c=>c&&BOARD[c.y]?.[c.x]).map(c=>key(c.x,c.y)));
+      sourceKeys=toKeys(view.sourceCells);
+      destinationKeys=toKeys(view.legalCells);
+      legal=new Set([...sourceKeys,...destinationKeys]);
       const oldFocus=svg.contains(document.activeElement);
       const selectedCell=view.selected||view.position;
       const selectedKey=selectedCell&&key(selectedCell.x,selectedCell.y);
@@ -270,12 +283,50 @@
         if(!byCell.has(k))byCell.set(k,[]);
         byCell.get(k).push(t);
       }
-      animals.innerHTML=Array.from(byCell).map(([k,list])=>{
+      const activeTokens=new Set();
+      for(const [k,list] of byCell){
         const [x,y]=k.split(':').map(Number), [l,t]=point(x,y);
-        if(list.length>4)return `<g><circle cx="${l+13.5}" cy="${t+13.5}" r="10" fill="#f5e9c3" stroke="#314232" stroke-width="1.5"/><text x="${l+13.5}" y="${t+16.3}" text-anchor="middle" fill="#28352a" font-family="system-ui,sans-serif" font-size="8" font-weight="900">${list.length}</text></g>`;
-        return list.map((animal,i)=>paintToken(animal,l,t,i,list.length)).join('');
+        for(const [i,animal] of list.entries()){
+          const idKey=animal.id||k+':'+i;
+          activeTokens.add(idKey);
+          let record=tokenNodes.get(idKey);
+          if(!record){
+            record={el:svgEl('g',{'data-token-id':idKey})};
+            tokenNodes.set(idKey,record);
+            animals.appendChild(record.el);
+          }
+          const {el}=record;
+          const mark=sourceKeys.has(k), picked=animal.id===view.selectedTokenId;
+          const signature=[animal.species,animal.type,i,list.length,mark,picked].join(':');
+          if(record.signature!==signature){
+            record.signature=signature;
+            const lip=mark&&picked?'<circle cx="13.5" cy="13.5" r="12.1" fill="#f9f3bb" stroke="#273f31" stroke-width="2.5"/>'
+              :mark?'<circle cx="13.5" cy="13.5" r="11.9" fill="none" stroke="#294b34" stroke-width="1.25"/>':'';
+            el.innerHTML=lip+(list.length>4
+              ?(i===0?`<circle cx="13.5" cy="13.5" r="10" fill="#f5e9c3" stroke="#314232" stroke-width="1.5"/><text x="13.5" y="16.3" text-anchor="middle" fill="#28352a" font-family="system-ui,sans-serif" font-size="8" font-weight="900">${list.length}</text>`:'')
+              :paintToken(animal,i,list.length));
+          }
+          if(record.x!==l || record.y!==t){
+            el.setAttribute('transform',`translate(${l} ${t})`);
+            if(Number.isFinite(record.x)&&previousStage!=='setup'&&view.stage!=='setup'&&!motion?.matches&&typeof el.animate==='function'){
+              record.animation?.cancel();
+              record.animation=el.animate(
+                [{transform:`translate(${record.x}px,${record.y}px)`},{transform:`translate(${l}px,${t}px)`}],
+                {duration:Math.min(640,190+Math.hypot(l-record.x,t-record.y)*1.2),easing:'cubic-bezier(.2,.72,.29,1)'});
+            }
+            record.x=l; record.y=t;
+          }
+        }
+      }
+      for(const [k,record] of tokenNodes)if(!activeTokens.has(k)){
+        record.animation?.cancel(); record.el.remove(); tokenNodes.delete(k);
+      }
+      const groupCells=Array.isArray(view.selectedCells)?view.selectedCells:[];
+      const formation=groupCells.map(({x,y})=>{
+        const [l,t]=point(x,y);
+        return `<rect x="${l+1}" y="${t+1}" width="${UNIT-2}" height="${UNIT-2}" fill="#f6ee9a" fill-opacity=".43" rx="2" stroke="#33573b" stroke-width="1.1"/>`;
       }).join('');
-      choices.innerHTML=cells.filter(c=>legal.has(key(c.x,c.y))).map(({x,y})=>{
+      choices.innerHTML=formation+cells.filter(c=>destinationKeys.has(key(c.x,c.y))).map(({x,y})=>{
         const [l,t]=point(x,y);
         return `<rect x="${l+1.8}" y="${t+1.8}" width="${UNIT-3.6}" height="${UNIT-3.6}" rx="3" fill="#fafce16b" stroke="#28594f" stroke-width="1.55" stroke-dasharray="2.6 1.7"/><path d="M${l+UNIT-8} ${t+4}h4v4z" fill="#256351"/>`;
       }).join('');
@@ -286,17 +337,26 @@
       }
       for(const cell of cells){
         const k=key(cell.x,cell.y),el=buttons.get(k),canMove=legal.has(k),tokens=byCell.get(k);
+        const isSource=sourceKeys.has(k), isDestination=destinationKeys.has(k);
+        const picked=isSource&&Boolean(tokens?.some(t=>t.id===view.selectedTokenId));
         const label=cellLabel(cell)+(tokens?', contains '+tokens.map(tokenLabel).join(', '):'')+
-          (selectedKey===k?', current selection':'')+(canMove?', available move':'');
+          (picked?', selected piece':isSource?', select piece':'')+
+          (selectedKey===k?', current selection':'')+(isDestination?(sourceKeys.size?', available destination':', available choice'):'');
         el.setAttribute('aria-label',label);
         el.firstElementChild.textContent=label;
         el.setAttribute('data-legal',String(canMove));
+        el.setAttribute('data-source',String(isSource));
+        el.setAttribute('data-destination',String(isDestination));
         el.setAttribute('aria-disabled',String(!canMove));
+        if(isSource)el.setAttribute('aria-pressed',String(picked));
+        else el.removeAttribute('aria-pressed');
       }
       if(!legal.has(focusKey)){
         const next=legal.has(selectedKey)?selectedKey:[...legal][0]||null;
         setRoving(next,oldFocus&&Boolean(next));
+        if(oldFocus&&!next)svg.focus({preventScroll:true});
       }
+      previousStage=view.stage;
     }
     return {update};
   }

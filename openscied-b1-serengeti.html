@@ -9,9 +9,12 @@
 <script>try{const mode=localStorage.getItem('aplab:pref:theme');if(mode==='light'||mode==='dark')document.documentElement.dataset.theme=mode;}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b1-serengeti.css">
+<link rel="stylesheet" href="serengeti-card-view.css">
 <script defer src="serengeti-logic.js"></script>
 <script defer src="serengeti-scene.js"></script>
 <script defer src="openscied-b1-serengeti.js"></script>
+<script defer src="serengeti-board-view.js"></script>
+<script defer src="serengeti-card-view.js"></script>
 </head>
 <body class="sg-body">
 <a href="#sg-main" class="sg-skip">Skip to activity</a>
@@ -39,7 +42,7 @@
     <button id="sg-toggle-map" class="sg-plain" type="button" aria-expanded="true" aria-controls="sg-map-panel">Hide map</button>
     <div class="sg-game">
       <div class="sg-board sg-panel" id="sg-map-panel">
-        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title">Winter range</h2></div><span class="sg-model-tag">SIMULATED</span></header>
+        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title">Winter range</h2></div><div class="sg-board-header-actions"><span class="sg-model-tag">SIMULATED</span><button type="button" class="sg-plain" id="sg-board-open" aria-haspopup="dialog" aria-controls="sg-board-dialog">Enlarge board</button></div></header>
         <div class="sg-board-atlas">
         <figure class="sg-figure">
           <div id="sg-scene"></div>
@@ -87,6 +90,38 @@
   <div class="sg-bottom"><span id="sg-save">Progress stays in this browser only.</span><button type="button" class="sg-plain" id="sg-recover" hidden>Download preserved save</button><button type="button" class="sg-plain" id="sg-restart">Restart game</button></div>
   <div id="sg-live" class="sg-visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 </main>
+<dialog id="sg-board-dialog" class="sg-board-dialog" aria-labelledby="sg-board-dialog-title">
+  <div class="sg-board-dialog-frame">
+    <header class="sg-board-dialog-header">
+      <div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-dialog-title">Expanded board</h2></div>
+      <div class="sg-board-dialog-tools">
+        <button type="button" class="sg-plain sg-board-zoom" id="sg-board-zoom-out" aria-label="Zoom out">−</button>
+        <button type="button" class="sg-plain" id="sg-board-fit" aria-label="Reset map zoom to fit">Fit</button>
+        <button type="button" class="sg-plain sg-board-zoom" id="sg-board-zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" class="sg-plain" id="sg-board-close" autofocus>Close <span class="sg-board-key-hint" aria-hidden="true">Esc</span></button>
+      </div>
+    </header>
+    <div id="sg-expanded-grid" class="sg-expanded-grid">
+      <div id="sg-board-viewport" class="sg-board-viewport" tabindex="0" aria-label="Board canvas. Scroll to pan when zoomed.">
+        <div id="sg-board-slot" class="sg-board-slot"></div>
+      </div>
+      <aside class="sg-expanded-turn" aria-label="Current turn controls">
+        <p class="sg-kicker" id="sg-expanded-phase"></p>
+        <h3 id="sg-expanded-action-title"></h3>
+        <p id="sg-expanded-player"></p>
+        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
+        <details id="sg-expanded-details" class="sg-expanded-details">
+          <summary id="sg-expanded-summary">Turn instructions</summary>
+          <div id="sg-expanded-context"></div>
+        </details>
+        <div id="sg-expanded-dice" class="sg-dice" hidden></div>
+        <div id="sg-expanded-options"></div>
+        <div id="sg-expanded-actions" class="sg-actions"></div>
+        <p class="sg-visually-hidden" id="sg-expanded-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+      </aside>
+    </div>
+  </div>
+</dialog>
 <dialog id="sg-instructions" class="sg-dialog" aria-labelledby="sg-inst-title">
   <header><h2 id="sg-inst-title">How to play</h2><form method="dialog"><button class="sg-plain" aria-label="Close instructions">Close</button></form></header>
   <p>Share one device. One person or team is wildebeest, one is hyenas, and one is lions. There is no overall winner.</p>
@@ -110,3 +145,4 @@
 </footer>
 </body>
 </html>
+
