@@ -77,7 +77,7 @@ test('variation stays near the planned size and the means sit on the nominal val
   }
 });
 
-test('the lesson facts hold for every student: peat loses the most mass, makes the most carbon dioxide and the biggest BTB change, warms the flask most, ignites last and burns longest', () => {
+test('the lesson facts hold for every student: peat loses the most mass, makes the most carbon dioxide and the biggest BTB change, warms the dome glass most, ignites last and burns longest', () => {
   for (const seed of SEEDS) for (const n of [1, 2, 3]) {
     const r = Object.fromEntries(L.FUEL_IDS.map(f => [f, L.burnResult(seed, f, n)]));
     for (const f of L.FUEL_IDS) if (f !== 'peat') {
@@ -181,6 +181,21 @@ test('the timeline: heating, burning, dying out, done; mass and heat only go one
   assert.ok(cm.flame < 0.2 && cm.glow > 0.7 && cm.smoke < 0.1, 'charcoal glows with little flame and little smoke');
 });
 
+test('smoke haze and carbon dioxide under the dome grow with the burn and follow the model: most haze for peat, least for charcoal; gas follows carbon dioxide made', () => {
+  for (const f of L.FUEL_IDS) {
+    const r = L.burnResult(21, f, 1); let hz = -1, gs = -1;
+    for (let t = 0; t <= r.runS; t += r.runS / 60) { const s = L.stateAt(r, t); assert.ok(s.haze >= 0 && s.haze <= 1 && s.gas >= 0 && s.gas <= 1); assert.ok(s.gas >= gs - 1e-9, 'gas never falls'); gs = s.gas; if (s.stage !== 'done') { assert.ok(s.haze >= hz - 1e-9, 'haze grows while it burns'); hz = s.haze; } }
+    assert.equal(L.stateAt(r, 0).gas, 0); assert.equal(L.stateAt(r, 0).haze, 0);
+  }
+  const end = f => L.stateAt(L.burnResult(21, f, 1), 1e6);
+  assert.ok(end('peat').haze > end('wood').haze && end('wood').haze > end('charcoal').haze, 'haze: peat > wood > charcoal');
+  assert.ok(end('peat').gas > end('charcoal').gas && end('charcoal').gas > end('wood').gas && end('wood').gas > end('grass').gas, 'gas follows carbon dioxide made');
+  // the BTB dish row and the dome wording
+  assert.equal(L.checkPick('sense-dish', 'reach').status, 'correct'); assert.equal(L.checkPick('sense-dish', 'cool').status, 'wrong'); assert.equal(L.checkPick('sense-dish', 'smoke').status, 'wrong');
+  const text = JSON.stringify(L.PICKS) + L.checkPrediction('peat', 'energy', 'more', record(3, [['grass', 1], ['peat', 1]])).message + L.checkDataPick('warmest', 'grass', record(3, [['grass', 1], ['peat', 1]])).message;
+  assert.ok(!/flask/i.test(text), 'no flask wording in any feedback');
+});
+
 test('the run clock is timestamp based: elapsed simulated seconds follow the clock, skip jumps to the end', () => {
   assert.equal(L.simSeconds(0, 1000, false, 500), L.RATE); assert.equal(L.simSeconds(0, 10000, false, 500), 10 * L.RATE); assert.equal(L.simSeconds(0, 0, true, 123), 123);
   const peat = L.burnResult(1, 'peat', 1); assert.ok(peat.runS / L.RATE < 70, 'peat takes about a minute on screen');
@@ -228,7 +243,7 @@ test('predictions are checked against the student table and recomputed when it c
   assert.equal(L.checkPrediction('wood', 'ignite', 'slowly', st).status, 'nodata');
   const more = peat.tempRise > grass.tempRise;
   assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, more ? 'correct' : 'wrong');
-  assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, 'correct', 'peat gives more energy than grass'); assert.match(L.checkPrediction('peat', 'energy', 'more', st).message, /warmed the flask [12]\d\.\d °C, more than the others/);
+  assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, 'correct', 'peat gives more energy than grass'); assert.match(L.checkPrediction('peat', 'energy', 'more', st).message, /warmed the dome glass [12]\d\.\d °C, more than the others/);
   assert.equal(L.checkPrediction('grass', 'energy', 'more', record(11, [['grass', 1]])).status, 'nodata', 'energy needs another fuel to compare');
   // add charcoal: grass is now clearly below the others on average
   const st2 = record(11, [['grass', 1], ['charcoal', 1], ['wood', 1]]);
