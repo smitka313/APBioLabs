@@ -255,6 +255,13 @@
     return $$('main fieldset.chipset').map(function (fs) { return { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: $$('input:checked', fs).map(function (b) { return b.parentElement.textContent.trim(); }) }; });
   }
   function textAnswers() { return $$('main textarea, main input[type=text]').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return { id: t.id, prompt: labelFor(t.id), answer: t.value.trim() }; }); }
+  // ONE definition of "answers": every id in RESPONSE_IDS (each radio question, each dropdown, each required text box; boxes marked data-optional
+  // are not counted). The report, the download and the dashboard (which reads the saved responseIds and the saved fields) all use it, so they agree.
+  function answerStats() {
+    const f = collectFields(), has = function (id) { return typeof f[id] === 'string' && f[id].trim() !== ''; };
+    const text = RESPONSE_IDS.filter(function (id) { const e = document.getElementById(id); return e && e.tagName === 'TEXTAREA'; });
+    return { answered: RESPONSE_IDS.filter(has).length, total: RESPONSE_IDS.length, writtenAnswered: text.filter(has).length, writtenTotal: text.length };
+  }
   function renderReport() {
     const report = $('#investigation-report'); if (!report) return;
     report.replaceChildren();
@@ -262,11 +269,12 @@
     report.appendChild(el('h3', '', 'Your work, at a glance.'));
     const student = studentIdentity();
     report.appendChild(el('p', 'report-student', student ? 'Student: ' + student.name + (student.period ? ' · Class period: ' + student.period : '') : 'Student name not entered. Sign in on the Biology Companion Activities dashboard before submitting.'));
-    const p = picks(), dd = dropdowns(), all = p.concat(dd), answered = all.filter(function (x) { return x.value; });
+    const p = picks(), dd = dropdowns(), all = p.concat(dd);
     const good = all.filter(function (x) { return x.result === 'correct'; });
     const graded = $$('main fieldset.mcq[data-correct]').length + dd.filter(function (d) { return L.PICKS[d.id] ? L.PICKS[d.id].correct.length : !!DATA_PICKS[d.id]; }).length;
     const ul = el('ul', 'report-checks');
-    [answered.length + ' of ' + all.length + ' choice questions answered', good.length + ' of ' + graded + ' checkable questions correct so far',
+    const st = answerStats(); report.dataset.answered = st.answered; report.dataset.total = st.total;
+    [st.answered + ' of ' + st.total + ' answers saved (' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far',
       SCENE_IDS.filter(function (id) { return state[id]; }).length + ' of 3 interactive models used'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
     cardsNodes().forEach(function (n) { report.appendChild(n); });
@@ -285,7 +293,7 @@
       tubes: t && typeof t.seed === 'number' && Array.isArray(t.settings) && t.recorded ? L.tiltResults(t.seed, t.settings).map(function (r) { return { tube: r.tube, light: r.light, lightReachingPlant: r.intensity, btbReading: r.btb, btbColor: r.btbLabel, carbonDioxideChangeRelative: r.net, starchIndex: t.starchDone ? r.starch : null }; }) : [] };
     const payload = { format: 'openscied-b2-fires-progress-v1', exportedAt: new Date().toISOString(), student: studentIdentity(),
       dataNote: 'Yeast foam, plant and BTB results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real lab. Nothing here is personal information.',
-      scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
+      answersSaved: answerStats(), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url; a.download = 'fires-peat-work.json'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
@@ -335,7 +343,7 @@
   function wire() {
     readStore();
     RESPONSE_IDS = Array.from(new Set($$('main input[type=radio]').map(function (r) { return r.name; }).concat(
-      $$('main textarea').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return t.id; }),
+      $$('main textarea').filter(function (t) { return !t.readOnly && t.id && !t.hasAttribute('data-optional'); }).map(function (t) { return t.id; }),
       $$('main select').filter(function (s) { return s.id && !s.closest('.scene-host'); }).map(function (s) { return s.id; }))));
     restoreFields();
     renderData(); renderAll(); resumeBar();

@@ -183,6 +183,7 @@
       rows.forEach(r => tb.appendChild(h('tr', {}, h('th', { scope: 'row', text: r.label + ' (' + r.n + ')' }), h('td', { class: 'num', text: String(r.igniteS) }), h('td', { class: 'num', text: String(r.burnS) }),
         h('td', { text: L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter) }), h('td', { class: 'num', text: r.tempBefore + ' → ' + r.tempAfter }), h('td', { class: 'num', text: r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1) }), h('td', { text: obsText(r.obs) }))));
       t.appendChild(tb); tw.appendChild(t); wrap.appendChild(tw);
+      wrap.appendChild(h('p', { class: 'bn-note', 'data-bn': 'temp-note', text: 'A rise of only a degree or two can be thermometer noise (the laser thermometer shows whole degrees). Compare fuels with big differences.' }));
       const chips = h('div', { class: 'bn-chips', role: 'group', 'aria-label': 'Chart shows' }, h('span', { class: 'bn-legend', text: 'Chart shows:' }));
       Object.keys(L.METRICS).forEach(k => {
         const b = h('button', { type: 'button', class: 'bn-chip', 'aria-pressed': metric === k ? 'true' : 'false', text: L.METRICS[k].label });
