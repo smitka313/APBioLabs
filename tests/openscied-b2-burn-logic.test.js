@@ -221,6 +221,19 @@ test('saved state is validated: bad records are dropped, duplicates removed, eve
   assert.equal(L.samplesOf(record(1, [['grass', 1], ['wood', 1]]), 'grass'), 1);
 });
 
+test('the two weighings are saved as flags only: before (weighed for the next sample) and after (current.after); invalid or contradictory flags are dropped', () => {
+  const ok = L.cleanState({ seed: 5, fuel: 'peat', weighed: { fuel: 'peat', n: 2 }, current: null, records: [] });
+  assert.deepEqual(ok.weighed, { fuel: 'peat', n: 2 });
+  assert.equal(L.cleanState({ seed: 5, weighed: { fuel: 'zzz', n: 1 }, records: [] }).weighed, null, 'unknown fuel');
+  assert.equal(L.cleanState({ seed: 5, weighed: { fuel: 'peat', n: 1 }, records: [{ fuel: 'peat', n: 1 }] }).weighed, null, 'that sample is already recorded');
+  assert.equal(L.cleanState({ seed: 5, weighed: { fuel: 'peat', n: 1 }, current: { fuel: 'peat', n: 1, startedAt: 5 }, records: [] }).weighed, null, 'cleared once it is burning');
+  assert.equal(L.cleanState({ seed: 5, current: { fuel: 'wood', n: 1, startedAt: 5, after: 1 }, records: [] }).current.after, true);
+  assert.equal(L.cleanState({ seed: 5, current: { fuel: 'wood', n: 1, startedAt: 5 }, records: [] }).current.after, false);
+  assert.equal(L.cleanState({ seed: 5, records: [] }).weighed, null);
+  // the temperature rise is the difference of the two readings: after minus before, never negative, equal to tempRise in every table row
+  for (const seed of SEEDS.slice(0, 50)) for (const f of L.FUEL_IDS) { const r = L.burnResult(seed, f, 1); assert.equal(r.tempRise, r.tempAfter - r.tempBefore); assert.ok(r.tempRise >= 0); }
+});
+
 test('chart series: a missing bar stays missing (NaN), one series per sample number', () => {
   const rows = L.tableRows(record(3, [['grass', 1], ['peat', 1], ['peat', 2]]));
   const ser = L.chartSeries(rows, 'rise');

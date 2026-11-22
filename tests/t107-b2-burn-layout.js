@@ -19,13 +19,14 @@ const check = async (p, label) => {
   T.ok(r.over <= 0 && r.canvas.every(c => c.fits && c.drawn) && r.clip.length === 0, label + ': fits (' + JSON.stringify(r.canvas) + ' ' + r.clip.join(',') + ' over ' + r.over + ')');
 };
 // Put the saved burn at a chosen moment, then reload so the scene reads it (the run is timestamp based).
-const setBurn = async (p, fuel, frac, records) => {
-  await p.evaluate(([k, fuel, frac, records]) => {
+const setBurn = async (p, fuel, frac, records, opts) => {
+  opts = opts || {};
+  await p.evaluate(([k, fuel, frac, records, opts]) => {
     const L = window.B2BurnLogic, seed = B2Burn.seed('burn'), r = L.burnResult(seed, fuel, 1);
-    const cur = frac == null ? null : { fuel, n: 1, startedAt: Date.now() - frac * r.runS / L.RATE * 1000, skipped: false };
+    const cur = frac == null ? null : { fuel, n: 1, startedAt: Date.now() - frac * r.runS / L.RATE * 1000, skipped: false, after: !!opts.after };
     const d = JSON.parse(localStorage.getItem(k) || '{"v":1,"fields":{},"responseIds":[]}');
-    d.burn = { seed, fuel, current: cur, records: records.map(f => ({ fuel: f, n: 1, obs: ['smoke', 'ash'] })) }; d.lastVisitedAt = Date.now(); localStorage.setItem(k, JSON.stringify(d));
-  }, [KEY, fuel, frac, records]);
+    d.burn = { seed, fuel, current: cur, records: records.map(f => ({ fuel: f, n: 1, obs: ['smoke', 'ash'] })), weighed: opts.weighed ? { fuel, n: 1 } : null }; d.lastVisitedAt = Date.now(); localStorage.setItem(k, JSON.stringify(d));
+  }, [KEY, fuel, frac, records, opts]);
   await p.reload(); await p.waitForFunction(() => document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn');
 };
 (async () => {
@@ -38,13 +39,15 @@ const setBurn = async (p, fuel, frac, records) => {
       await p.goto(server.url + PAGE); await p.waitForFunction(() => window.B2Burn && document.querySelector('.step.is-current')); await p.waitForTimeout(500);
       T.ok(await p.evaluate(() => window.__cls) <= 0.1, tag + ': CLS on load at most 0.1 (' + (await p.evaluate(() => window.__cls)).toFixed(3) + ')');
       const shot = async n => p.screenshot({ path: path.join(OUT, 'b2burn-' + tag + '-' + n + '.png'), fullPage: true });
-      await go(p, 'burn'); await check(p, tag + ' ready'); await shot('ready');
-      await setBurn(p, 'peat', 0.15, []); await check(p, tag + ' peat heating'); await shot('peat-heating');
-      await setBurn(p, 'peat', 0.5, []); await check(p, tag + ' peat mid-burn'); await shot('peat-mid');
+      await go(p, 'burn'); await check(p, tag + ' ready, not weighed'); await shot('ready-unweighed');
+      await setBurn(p, 'peat', null, [], { weighed: true }); await check(p, tag + ' ready, weighed with the laser on the dome'); await shot('ready');
+      await setBurn(p, 'peat', 0.15, []); await check(p, tag + ' peat being lit, laser put down'); await shot('peat-heating');
+      await setBurn(p, 'peat', 0.5, []); await check(p, tag + ' peat mid-burn, laser put down'); await shot('peat-mid');
       await setBurn(p, 'grass', 0.2, ['peat']); await check(p, tag + ' grass bright flame'); await shot('grass-mid');
       await setBurn(p, 'charcoal', 0.5, ['peat', 'grass']); await check(p, tag + ' charcoal glow'); await shot('charcoal-mid');
-      await setBurn(p, 'peat', 1.2, ['grass', 'wood']); await check(p, tag + ' peat finished with droplets'); await shot('peat-finished');
-      await setBurn(p, 'wood', 1.2, ['peat', 'grass']); await check(p, tag + ' finished, not recorded'); await shot('finished');
+      await setBurn(p, 'peat', 1.2, ['grass', 'wood']); await check(p, tag + ' peat finished, dome still down'); await shot('peat-finished-down');
+      await setBurn(p, 'peat', 1.2, ['grass', 'wood'], { after: true }); await check(p, tag + ' peat finished, dome lifted, after reading'); await shot('peat-finished');
+      await setBurn(p, 'wood', 1.2, ['peat', 'grass'], { after: true }); await check(p, tag + ' finished, not recorded'); await shot('finished');
       await setBurn(p, 'wood', null, ['grass', 'leaves', 'wood', 'charcoal', 'peat']); await check(p, tag + ' all five recorded'); await shot('five');
       for (const id of ['overview', 'fuels', 'sense', 'sort', 'peat', 'wrapup']) { await go(p, id); await check(p, tag + ' ' + id); }
       await shot('wrapup');

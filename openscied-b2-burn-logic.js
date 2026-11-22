@@ -25,14 +25,16 @@
      with +/- 0.1 g noise on both weighings. The infrared thermometer reads to 1 degree C with +/- 1 degree noise on both readings. Starting temperature 22 C.
    - The apparatus. The fuel burns on a heat-safe tray under a large glass dome. A Petri dish of BTB (lid off) sits inside the dome beside the fuel, exposed to the
      air under the dome. The fuel sample is weighed on a balance before the burn and again after it (the sample sits under the dome during the burn). A laser
-     (infrared) thermometer reads the outside of the dome glass before and after; it reads to about 1 degree C.
+     (infrared) thermometer is used at those two weighings only, not during the burn: it reads the dome glass once before the burn (when the sample is weighed) and once
+     after it (when the dome is lifted and cooled enough to read and the ash is weighed). It reads to about 1 degree C. This is a simplification: real readings depend on
+     where and when you aim, and which surface to read depends on the teacher's protocol (the dome glass, at the same spot both times, is an assumption here).
    - Mass that disappears leaves as gas, mostly carbon dioxide and water vapor (ash stays). Carbon dioxide made (relative) = grams lost x carbon factor. It collects
      under the dome, and a FIXED share (0.6) of it dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says
      the system was not totally closed); that is why the BTB shows a color change but not an exact amount, and why 0.6 is a share, not all of it. BTB reading (1 deep blue,
      2 blue, 3 blue-green, 4 green, 5 yellow-green, 6 yellow), starting at 2: 2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.2 (the noise is zero when nothing was lost),
      kept from 2 to 6. So for every sample, the BTB change grows with the carbon dioxide made, which grows with grams lost x carbon factor; no mass lost means no
      BTB change. Real BTB color also depends on its starting pH and on how much gas reaches it.
-   - Heat. Temperature rise of the dome glass (the laser-thermometer reading after minus before) = grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and
+   - Heat. Temperature rise of the dome glass (the difference between the two laser-thermometer readings taken at the weighings, after minus before) = grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and
      22 C. The 0.35 stands for the share of the heat that reaches the glass and the air under the dome, and the 8 kJ per degree for the heat capacity of that glass
      and air. The glass is never cooler after than before.
    - Water. Hydrogen in the fuel joins oxygen and leaves as water vapor. Water made (relative) = grams lost x water factor. It condenses as droplets on the INSIDE of the
@@ -177,9 +179,12 @@
     let current = null;
     if (s.current && FUEL[s.current.fuel] && num(s.current.startedAt)) {
       const n = clamp(Math.round(num(s.current.n) ? s.current.n : 1), 1, MAX_SAMPLES);
-      if (!seen[s.current.fuel + ':' + n]) current = { fuel: s.current.fuel, n, startedAt: s.current.startedAt, skipped: !!s.current.skipped };
+      if (!seen[s.current.fuel + ':' + n]) current = { fuel: s.current.fuel, n, startedAt: s.current.startedAt, skipped: !!s.current.skipped, after: !!s.current.after };
     }
-    return { seed: s.seed >>> 0, fuel: normalizeFuel(s.fuel), current, records };
+    // the BEFORE weighing (mass and laser temperature read) taken for the next sample; the AFTER weighing is current.after
+    let weighed = null;
+    if (s.weighed && FUEL[s.weighed.fuel] && !current) { const n = clamp(Math.round(num(s.weighed.n) ? s.weighed.n : 1), 1, MAX_SAMPLES); if (!seen[s.weighed.fuel + ':' + n]) weighed = { fuel: s.weighed.fuel, n }; }
+    return { seed: s.seed >>> 0, fuel: normalizeFuel(s.fuel), current, records, weighed };
   }
   const samplesOf = (st, fuelId) => st && Array.isArray(st.records) ? st.records.filter(r => r.fuel === fuelId).length : 0;
   // The sample number the next burn of this fuel would be (1, 2, 3), or 0 when all three are used.

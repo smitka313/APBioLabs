@@ -14,7 +14,9 @@
 
    SCENE STATE CONTRACT (all numbers finite; timestamps are ms since 1970; nothing here is ever a timer)
      burn = { seed:uint32, fuel:'grass'|'leaves'|'wood'|'charcoal'|'peat' (the fuel last picked),
-              current: null | { fuel, n:1..3, startedAt:ms, skipped:bool }      the burn in progress or finished but not yet recorded
+              current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool }   the burn in progress, or finished but not yet recorded; after = the second weighing (balance and
+                                                                                laser thermometer read after the burn, dome lifted) has been done
+              weighed: null | { fuel, n }                                       the first weighing (before the burn) is done for the next sample
               records: [ { fuel, n:1..3, obs:[observation chip ids] } ],         one per recorded sample
               updatedAt }
               Times, masses, temperatures and BTB readings are NOT stored: they are recomputed from seed + fuel + n (B2BurnLogic.burnResult).
