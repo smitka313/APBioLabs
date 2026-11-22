@@ -13,7 +13,7 @@
 :root{color-scheme:light}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.55}
 .dashboard-topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}.dashboard-theme-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.dashboard-theme-controls .theme-opt{min-height:36px}.dashboard-theme-controls{min-height:40px}.dashboard-topbar{min-height:40px}.dashboard-theme-controls [data-ph="theme"]{display:inline-block;width:165px;height:38px}
 .dashboard-shell{max-width:1080px;margin:auto;padding:clamp(20px,5vw,60px) 20px 80px}
-.dashboard-back{color:var(--accent);text-decoration:none;font-weight:700}
+.dashboard-back{display:inline-flex;align-items:center;min-height:40px;padding:6px 16px;border:2px solid var(--accent);border-radius:999px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:700}.dashboard-back:hover{filter:brightness(1.08)}.dashboard-back:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.dashboard-aplink{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin:14px 0 18px;padding:16px 18px;border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:var(--r);background:var(--surface)}.dashboard-aplink h2{margin:0 0 4px;font-size:1.15rem}.dashboard-aplink p{margin:0;max-width:60ch}.dashboard-aplink .btn{flex:none;min-height:44px;padding:8px 20px;font-size:1rem}
 .dashboard-eyebrow{color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.13em;font-size:.82rem}
 .dashboard-title{font-size:clamp(2rem,5vw,3.4rem);line-height:1.1;margin:14px 0}
 .dashboard-intro{max-width:730px;color:var(--muted);font-size:1.1rem}
@@ -78,6 +78,7 @@
 <span class="dashboard-hero-caption" aria-hidden="true">Ecosystems · Change · Cells · Organisms · Climate</span>
 </header>
 <p class="dashboard-intro">Choose a unit to explore interactive models, investigations, and activities. These independently developed companions are organized for easy classroom navigation.</p>
+<aside class="dashboard-aplink" aria-labelledby="ap-link-title"><div><h2 id="ap-link-title">Teaching AP Biology too?</h2><p>This is the AP Bio Digital Lab Bench: 13 free, interactive AP Biology labs with simulated data, reports and teacher tools. No login.</p></div><a class="btn btn--primary" href="index.html">Explore the AP Bio labs →</a></aside>
 <section class="dashboard-student" aria-labelledby="student-panel-title">
 <h2 id="student-panel-title">Your student workspace</h2>
 <div id="openscied-student-identity"></div>
