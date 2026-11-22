@@ -70,7 +70,7 @@
   const FUEL_IDS = FUELS.map(f => f.id);
   const FUEL = Object.fromEntries(FUELS.map(f => [f.id, f]));
   const SHORT = { grass: 'Grass', leaves: 'Leaves', wood: 'Wood', charcoal: 'Charcoal', peat: 'Peat' };   // chart axis names (short, so they never break inside a word)
-  const SHORT_NARROW = { grass: 'Grass', leaves: 'Leaf', wood: 'Wood', charcoal: 'Char', peat: 'Peat' };   // for a phone-width chart
+  const SHORT_NARROW = { grass: 'Hay', leaves: 'Leaf', wood: 'Wood', charcoal: 'Char', peat: 'Peat' };   // for a phone-width chart: Lab.chart gives each bar label about 4 characters there, so no name is longer than 4 and none can break inside a word (Hay = dried grass)
   const fuelLabel = id => FUEL[id] ? FUEL[id].label : '';
   const normalizeFuel = id => FUEL[id] ? id : 'grass';
   const massOf = id => FUEL[normalizeFuel(id)].mass;   // nominal grams of the handful

@@ -227,7 +227,7 @@ test('chart series: a missing bar stays missing (NaN), one series per sample num
   assert.deepEqual(ser.map(s => s.name), ['Sample 1', 'Sample 2']);
   assert.equal(ser[0].points.length, 5); assert.ok(Number.isNaN(ser[0].points[1].y) && Number.isFinite(ser[0].points[0].y) && Number.isFinite(ser[0].points[4].y));
   assert.ok(Number.isNaN(ser[1].points[0].y) && Number.isFinite(ser[1].points[4].y));
-  assert.deepEqual(L.chartSeries([], 'rise'), []); assert.equal(ser[0].points[0].x, 'Grass'); assert.equal(ser[0].points[4].x, 'Peat');
+  assert.deepEqual(L.chartSeries([], 'rise'), []); assert.ok(L.FUEL_IDS.every(f => L.SHORT_NARROW[f].length <= 4), 'phone chart names are 4 letters or fewer'); assert.equal(L.chartSeries(rows, 'rise', L.SHORT_NARROW)[0].points[0].x, 'Hay'); assert.equal(ser[0].points[0].x, 'Grass'); assert.equal(ser[0].points[4].x, 'Peat');
   for (const k of Object.keys(L.METRICS)) assert.ok(L.chartSeries(rows, k).every(s => s.points.every(p => Number.isNaN(p.y) || Number.isFinite(p.y))));
   assert.equal(L.chartSeries(rows, 'mass')[0].points[0].y, Math.round(rows[0].massLost * 10) / 10);
 });

@@ -170,7 +170,7 @@
       });
       wrap.appendChild(chips);
       const figBox = h('div', { class: 'bn-chart', 'data-bn': 'chart' });
-      wrap.appendChild(h('figure', { class: 'bn-fig' }, figBox, h('figcaption', { class: 'bn-note', text: 'Bar chart of the table above (simulated). Each fuel has one bar per sample, and each sample number has its own pattern. Char = charcoal. The table has every number.' })));
+      wrap.appendChild(h('figure', { class: 'bn-fig' }, figBox, h('figcaption', { class: 'bn-note', text: 'Bar chart of the table above (simulated). Each fuel has one bar per sample, and each sample number has its own pattern. The table has every number.' })));
       bottom.appendChild(wrap);
       if (win.Lab && Lab.tableFit) Lab.tableFit.scan();
       drawChart(figBox);
@@ -179,6 +179,8 @@
       if (!box) return;
       const rows = L.tableRows(st), names = (box.clientWidth || 600) < 480 ? L.SHORT_NARROW : L.SHORT;   // short names so a label never breaks inside a word
       box.replaceChildren();
+      const cap = box.parentElement && box.parentElement.querySelector('figcaption');
+      if (cap) cap.textContent = 'Bar chart of the table above (simulated). Each fuel has one bar per sample, and each sample number has its own pattern.' + (names === L.SHORT_NARROW ? ' Hay = dried grass, Leaf = dried leaves, Char = charcoal.' : '') + ' The table has every number.';
       if (win.Lab && Lab.chart) {
         try { Lab.chart(box, { type: 'bar', responsive: true, height: 300, xLabel: 'Fuel', yLabel: names === L.SHORT_NARROW ? L.METRICS[metric].yShort : L.METRICS[metric].yLabel, yMin: 0, categories: L.FUELS.map(f => names[f.id]), series: L.chartSeries(rows, metric, names), emptyText: 'Record a burn to see its bar here' }); }
         catch (e) { box.textContent = 'The chart could not be drawn. The table above has every number.'; }
