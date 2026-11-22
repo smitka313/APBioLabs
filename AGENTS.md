@@ -120,7 +120,7 @@ You maintain **AP Bio Digital Lab Bench** ([biologylabbench.com](https://biology
   - link [openscied.org](https://www.openscied.org/)
   - say they are not affiliated with or endorsed by OpenSciEd
 - **Images** must be original, drawn in code, or owned by the owner; record their source.
-- **Privacy:** collect no student personal data. Analytics are GoatCounter page counts only.
+- **Privacy:** never send student names, class periods, answers or saved work to a server. Names and class periods are stored only in the browser on the device and may be included in reports or files the student chooses to print or download. Explain this where identity and downloads are offered. Analytics are GoatCounter page counts only.
 
 ## Outside audits
 
