@@ -43,6 +43,7 @@ const setBurn = async (p, fuel, frac, records) => {
       await setBurn(p, 'peat', 0.5, []); await check(p, tag + ' peat mid-burn'); await shot('peat-mid');
       await setBurn(p, 'grass', 0.2, ['peat']); await check(p, tag + ' grass bright flame'); await shot('grass-mid');
       await setBurn(p, 'charcoal', 0.5, ['peat', 'grass']); await check(p, tag + ' charcoal glow'); await shot('charcoal-mid');
+      await setBurn(p, 'peat', 1.2, ['grass', 'wood']); await check(p, tag + ' peat finished with droplets'); await shot('peat-finished');
       await setBurn(p, 'wood', 1.2, ['peat', 'grass']); await check(p, tag + ' finished, not recorded'); await shot('finished');
       await setBurn(p, 'wood', null, ['grass', 'leaves', 'wood', 'charcoal', 'peat']); await check(p, tag + ' all five recorded'); await shot('five');
       for (const id of ['overview', 'fuels', 'sense', 'sort', 'peat', 'wrapup']) { await go(p, id); await check(p, tag + ' ' + id); }

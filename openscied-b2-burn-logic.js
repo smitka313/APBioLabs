@@ -7,25 +7,31 @@
    site, not measured from real fuels. The page replaces no real demonstration and none of its safety steps.
 
    ASSUMPTIONS (stated once; repeated on the page under "What this simulation models")
-   - Five fuels, each a 10 g sample. Nominal values (seconds in the flame, then per fuel):
-       fuel      ignites after   burns for   mass lost   heat (kJ per g burned)   carbon dioxide (relative, per g burned)
-       grass          4 s          20 s        93 %            15                    0.44
-       leaves         6 s          30 s        90 %            16                    0.45
-       wood          14 s          90 s        97 %            18                    0.50
-       charcoal      28 s         150 s        88 %            29                    0.90
-       peat          45 s         260 s        78 %            20                    0.50
-     Peat is slow to catch, then smolders (smoke and a glowing ember front, little flame) and burns longest. Peat keeps more ash because it has
-     mineral content. Charcoal is mostly carbon, so it gives the most heat per gram and the most carbon dioxide per gram, and glows with little flame
-     and little smoke. These are teaching values chosen to look like class data.
+   - The handfuls are NOT equal. The Teacher Edition notes that the fuels are not uniform and that the procedure did not emphasize equal masses or volumes,
+     so the samples start at different masses. Nominal values per fuel (times are seconds in the flame):
+       fuel      mass before   mass lost   ignites after   burns for   heat (kJ per g burned)   carbon factor   water factor
+       grass          4 g         93 %          4 s           20 s              15                  0.44            0.55
+       leaves         4 g         90 %          6 s           30 s              16                  0.45            0.55
+       wood          10 g         97 %         14 s           90 s              18                  0.50            0.60
+       charcoal      10 g         88 %         28 s          150 s              29                  0.90            0.12
+       peat          30 g         78 %         45 s          260 s              20                  0.50            0.80
+     So peat loses the most grams (about 23 g), then wood (9.7), charcoal (8.8), grass (3.7) and leaves (3.6). Peat is slow to catch, then smolders (smoke and a
+     glowing ember front, little flame) and burns longest. Peat keeps more ash because it has mineral content. Charcoal is mostly carbon, so it has the
+     most heat and the most carbon dioxide per gram, and glows with little flame and little smoke. These are teaching values chosen to look like class data
+     and to match the Teacher Edition's sample evidence: peat's mass reduced the most, its temperature change and BTB color change were the greatest,
+     it burned longest, and droplets formed on the glass, especially with peat.
    - Variation. Each student gets a seeded factor and each burned sample a smaller one: heat and mass lost about 8 percent in all (5 + 3), ignition
      time about 15 percent (8 + 7), burn time about 10 percent. A second sample of the same fuel therefore differs a little. The scale reads to 0.1 g
      with +/- 0.1 g noise on both weighings. The infrared thermometer reads to 1 degree C with +/- 1 degree noise on both readings. Starting temperature 22 C.
-   - Temperature rise of the flask above the flame: energy released (kJ per g burned x g burned) x 0.45 / 8 kJ per degree, kept between 4 and 22 C.
-     (0.45 is the share of the heat that reaches the flask; 8 kJ per degree is the heat capacity of the flask and BTB solution.)
-   - Carbon dioxide made = coefficient x g burned. How much dissolves into the BTB grows with the time the flask sits in the gas: fraction dissolved =
-     0.35 + 0.45 (1 - exp(-burn time / 80 s)). BTB reading (1 deep blue, 2 blue, 3 blue-green, 4 green, 5 yellow-green, 6 yellow), starting at 2:
-     2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.3, kept from 2 to 6 (burning only adds carbon dioxide, so the BTB never gets bluer). No fuel
-     reaches full yellow, and some only turn green, as the Teacher Edition says. Real BTB color also depends on its starting pH.
+   - Mass that disappears leaves as gas, mostly carbon dioxide and water vapor (ash stays). Carbon dioxide made (relative) = grams lost x carbon factor. A FIXED
+     share (0.6) of it dissolves into the BTB in the flask. BTB reading (1 deep blue, 2 blue, 3 blue-green, 4 green, 5 yellow-green, 6 yellow), starting at 2:
+     2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.2 (the noise is zero when nothing was lost), kept from 2 to 6. So for every sample, the BTB
+     change grows with the carbon dioxide made, which grows with grams lost x carbon factor; no mass lost means no BTB change. Real BTB color also
+     depends on its starting pH and on how much gas reaches it.
+   - Heat. Temperature rise of the flask above the flame = grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and 22 C (0.35 is the
+     share of the heat that reaches the flask; 8 kJ per degree is the heat capacity of the flask and BTB solution). The flask is never cooler after than before.
+   - Water. Hydrogen in the fuel joins oxygen and leaves as water vapor. Water made (relative) = grams lost x water factor. It condenses as droplets on
+     the cool glass: most for peat, some for wood, leaves and grass, least for charcoal. The drawing shows droplets in proportion to it.
    - Never impossible: mass after is below mass before and above zero, the flask is not cooler after than before, BTB 2 to 6, times positive. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(); else root.B2BurnLogic = factory();
@@ -49,24 +55,27 @@
   /* ---------- the five fuels ---------- */
   // flame, smoke and glow (0 to 1) set how the picture is drawn; the table of nominal values is above.
   const FUELS = [
-    { id: 'grass', label: 'Dried grass', ignite: 4, burn: 20, loss: 0.93, kj: 15, co2: 0.44, flame: 1.0, smoke: 0.2, glow: 0.1, tone: 'a quick, bright flame' },
-    { id: 'leaves', label: 'Dried leaves', ignite: 6, burn: 30, loss: 0.90, kj: 16, co2: 0.45, flame: 0.85, smoke: 0.4, glow: 0.2, tone: 'a quick flame with some smoke' },
-    { id: 'wood', label: 'Wood chips', ignite: 14, burn: 90, loss: 0.97, kj: 18, co2: 0.50, flame: 0.75, smoke: 0.3, glow: 0.5, tone: 'a steady flame' },
-    { id: 'charcoal', label: 'Charcoal', ignite: 28, burn: 150, loss: 0.88, kj: 29, co2: 0.90, flame: 0.12, smoke: 0.05, glow: 1.0, tone: 'a red-orange glow, little flame, little smoke' },
-    { id: 'peat', label: 'Peat', ignite: 45, burn: 260, loss: 0.78, kj: 20, co2: 0.50, flame: 0.25, smoke: 1.0, glow: 0.8, tone: 'lots of smoke and a creeping glowing ember' }
+    { id: 'grass', label: 'Dried grass', mass: 4, water: 0.55, ignite: 4, burn: 20, loss: 0.93, kj: 15, co2: 0.44, flame: 1.0, smoke: 0.2, glow: 0.1, tone: 'a quick, bright flame' },
+    { id: 'leaves', label: 'Dried leaves', mass: 4, water: 0.55, ignite: 6, burn: 30, loss: 0.90, kj: 16, co2: 0.45, flame: 0.85, smoke: 0.4, glow: 0.2, tone: 'a quick flame with some smoke' },
+    { id: 'wood', label: 'Wood chips', mass: 10, water: 0.6, ignite: 14, burn: 90, loss: 0.97, kj: 18, co2: 0.50, flame: 0.75, smoke: 0.3, glow: 0.5, tone: 'a steady flame' },
+    { id: 'charcoal', label: 'Charcoal', mass: 10, water: 0.12, ignite: 28, burn: 150, loss: 0.88, kj: 29, co2: 0.90, flame: 0.12, smoke: 0.05, glow: 1.0, tone: 'a red-orange glow, little flame, little smoke' },
+    { id: 'peat', label: 'Peat', mass: 30, water: 0.8, ignite: 45, burn: 260, loss: 0.78, kj: 20, co2: 0.50, flame: 0.25, smoke: 1.0, glow: 0.8, tone: 'lots of smoke and a creeping glowing ember' }
   ];
   const FUEL_IDS = FUELS.map(f => f.id);
   const FUEL = Object.fromEntries(FUELS.map(f => [f.id, f]));
   const SHORT = { grass: 'Grass', leaves: 'Leaves', wood: 'Wood', charcoal: 'Charcoal', peat: 'Peat' };   // chart axis names (short, so they never break inside a word)
+  const SHORT_NARROW = { grass: 'Grass', leaves: 'Leaf', wood: 'Wood', charcoal: 'Char', peat: 'Peat' };   // for a phone-width chart
   const fuelLabel = id => FUEL[id] ? FUEL[id].label : '';
   const normalizeFuel = id => FUEL[id] ? id : 'grass';
-  const SAMPLE_MASS = 10;
+  const massOf = id => FUEL[normalizeFuel(id)].mass;   // nominal grams of the handful
   const START_TEMP = 22;
   const START_BTB = 2;
   const MAX_SAMPLES = 3;          // samples of one fuel a student can burn
   const TAIL = 12;                // seconds the thermometer and BTB keep settling after the fuel is out
   const RATE = 6;                 // simulated seconds per real second on screen (peat takes about a minute, grass a few seconds)
-  const FLASK_KJ_PER_C = 8, FLASK_SHARE = 0.45;
+  const FLASK_KJ_PER_C = 8, FLASK_SHARE = 0.35;
+  const DISSOLVED_SHARE = 0.6;     // share of the carbon dioxide that dissolves into the BTB
+  const DROP_FULL = 12;            // relative water made that fills the glass with droplets
 
   /* ---------- BTB ---------- */
   const BTB_LABELS = ['deep blue', 'blue', 'blue-green', 'green', 'yellow-green', 'yellow'];
@@ -77,8 +86,14 @@
     return [0, 1, 2].map(k => Math.round(a[k] + (b[k] - a[k]) * f));
   }
   const btbText = p => btbLabel(p) + ' (' + (num(p) ? p : START_BTB).toFixed(1) + ')';
-  const dissolvedFraction = burnS => 0.35 + 0.45 * (1 - Math.exp(-Math.max(0, num(burnS) ? burnS : 0) / 80));
   const btbFromDissolved = d => START_BTB + 4 * (1 - Math.exp(-Math.max(0, num(d) ? d : 0) / 3.5));
+  // The BTB reading for carbon dioxide made (relative): a fixed share dissolves; noise u (-1 to 1) of +/- 0.2 fades to nothing when no gas was made.
+  function btbFor(co2Made, u) {
+    const c = Math.max(0, num(co2Made) ? co2Made : 0), d = c * DISSOLVED_SHARE;
+    return round1(clamp(btbFromDissolved(d) + clamp(num(u) ? u : 0, -1, 1) * 0.2 * Math.min(1, d), START_BTB, 6));
+  }
+  // Droplet level on the glass (0 to 1) for water made (relative).
+  const dropletLevel = w => clamp(Math.sqrt(Math.max(0, num(w) ? w : 0) / DROP_FULL), 0, 1);
 
   /* ---------- one burned sample ---------- */
   // The numbers for sample n (1, 2, 3) of a fuel: always the same for the same seed, fuel and n.
@@ -88,20 +103,20 @@
     const sHeat = spread(stu, 0.05), sLoss = spread(stu, 0.05), sIgn = spread(stu, 0.08);
     const heatF = sHeat * spread(smp, 0.03), lossF = sLoss * spread(smp, 0.03), ignF = sIgn * spread(smp, 0.07), burnF = spread(smp, 0.10);
     const lossFrac = clamp(f.loss * lossF, 0.05, 0.99);
-    const burnedG = SAMPLE_MASS * lossFrac;                                  // true grams that burned away
+    const M = f.mass, burnedG = M * lossFrac;                                  // true grams that burned away
     const igniteS = Math.max(1, Math.round(f.ignite * ignF)), burnS = Math.max(1, Math.round(f.burn * burnF));
     const kjPerG = round1(f.kj * heatF), energyKj = kjPerG * burnedG;
-    const dT = round1(clamp(FLASK_SHARE * energyKj / FLASK_KJ_PER_C, 4, 22));
-    const co2Made = round1(f.co2 * burnedG * 10) / 10, dissolved = co2Made * dissolvedFraction(burnS);
+    const dT = round1(clamp(FLASK_SHARE * energyKj / FLASK_KJ_PER_C, 2, 22));
+    const co2Made = f.co2 * burnedG, dissolved = co2Made * DISSOLVED_SHARE, waterMade = f.water * burnedG;
     const noise = () => { const u = smp.uniform(); return u < 0.2 ? -1 : u < 0.8 ? 0 : 1; };
     const tempBefore = START_TEMP + noise(), tempAfter = Math.max(tempBefore, Math.round(START_TEMP + dT) + noise());
     const scale = () => { const u = smp.uniform(); return u < 0.25 ? -0.1 : u < 0.5 ? 0.1 : 0; };
-    const massBefore = round1(SAMPLE_MASS + scale());
-    const massAfter = round1(Math.min(massBefore - 0.1, Math.max(0.1, SAMPLE_MASS * (1 - lossFrac) + scale())));
-    const btbAfter = round1(clamp(btbFromDissolved(dissolved) + (smp.uniform() * 2 - 1) * 0.3, START_BTB, 6));
+    const massBefore = round1(M + scale());
+    const massAfter = round1(Math.min(massBefore - 0.1, Math.max(0.1, M * (1 - lossFrac) + scale())));
+    const btbAfter = btbFor(co2Made, smp.uniform() * 2 - 1);
     return { fuel: id, n: k, label: f.label, igniteS, burnS, runS: igniteS + burnS + TAIL, massBefore, massAfter, massLost: round1(massBefore - massAfter),
       burnedG: Math.round(burnedG * 100) / 100, lossFrac: Math.round(lossFrac * 1000) / 1000, kjPerG, energyKj: Math.round(energyKj * 10) / 10, dT,
-      tempBefore, tempAfter, tempRise: tempAfter - tempBefore, co2Made: Math.round(co2Made * 100) / 100, dissolved: Math.round(dissolved * 100) / 100,
+      tempBefore, tempAfter, tempRise: tempAfter - tempBefore, co2Made: Math.round(co2Made * 100) / 100, dissolved: Math.round(dissolved * 100) / 100, waterMade: Math.round(waterMade * 100) / 100, dropletLevel: Math.round(dropletLevel(waterMade) * 1000) / 1000, massStart: M, waterMade: Math.round(waterMade * 100) / 100, dropletLevel: Math.round(dropletLevel(waterMade) * 1000) / 1000, massStart: M,
       btbBefore: START_BTB, btbAfter, btbLabelBefore: btbLabel(START_BTB), btbLabelAfter: btbLabel(btbAfter), btbChange: round1(btbAfter - START_BTB) };
   }
 
@@ -124,13 +139,13 @@
     const glow = stage === 'heating' ? f.glow * 0.15 * smooth(tt / Math.max(1, res.igniteS)) : stage === 'done' ? 0 : f.glow * (stage === 'dying' ? life : 0.7 + 0.3 * smooth(p * 3));
     const temp = Math.round(res.tempBefore + (res.tempAfter - res.tempBefore) * smooth(settle));
     const btb = round1(res.btbBefore + (res.btbAfter - res.btbBefore) * smooth(settle));
-    return { stage, t: tt, progress: tt / res.runS, burnedFraction: burned, massTrue: SAMPLE_MASS - res.burnedG * burned, flame, smoke, glow, igniter: stage === 'heating',
+    return { stage, t: tt, progress: tt / res.runS, burnedFraction: burned, massTrue: res.massStart - res.burnedG * burned, drops: res.dropletLevel * burned, flame, smoke, glow, igniter: stage === 'heating',
       temp: stage === 'done' ? res.tempAfter : temp, btb: stage === 'done' ? res.btbAfter : btb };
   }
   // Which observation chips the picture actually showed for a fuel (used for the text description and tests).
   const OBS = [
     { id: 'bright-flame', label: 'Bright flame' }, { id: 'small-flame', label: 'Small flame' }, { id: 'no-flame', label: 'No flame' },
-    { id: 'smoke', label: 'Smoke' }, { id: 'glowing', label: 'Glowing ember' }, { id: 'ash', label: 'Ash left' }
+    { id: 'smoke', label: 'Smoke' }, { id: 'glowing', label: 'Glowing ember' }, { id: 'droplets', label: 'Droplets on the glass' }, { id: 'ash', label: 'Ash left' }
   ];
   const OBS_IDS = OBS.map(o => o.id);
   function obsTruth(fuelId) {
@@ -138,6 +153,7 @@
     if (f.flame >= 0.7) out.push('bright-flame'); else if (f.flame > 0.1) out.push('small-flame'); else out.push('no-flame');
     if (f.smoke >= 0.15) out.push('smoke');
     if (f.glow >= 0.45) out.push('glowing');
+    if (f.water * f.mass * f.loss >= 1.5) out.push('droplets');
     return OBS_IDS.filter(o => out.includes(o));
   }
 
@@ -186,10 +202,11 @@
     btb: { label: 'BTB change (steps)', yLabel: 'BTB change from blue (steps on the 1 to 6 scale, simulated)', get: r => r.btbChange }
   };
   // Bar chart series for Lab.chart: one series per sample number so repeats show as separate bars.
-  function chartSeries(rows, metric) {
+  function chartSeries(rows, metric, names) {
+    names = names || SHORT;
     const m = METRICS[metric] || METRICS.rise;
     // Every fuel gets a point in every series (y is NaN when that sample was not burned), so a missing bar stays missing.
-    return [1, 2, 3].filter(n => rows.some(r => r.n === n)).map(n => ({ name: 'Sample ' + n, points: FUELS.map(f => { const r = rows.find(x => x.fuel === f.id && x.n === n); return { x: SHORT[f.id], y: r ? round1(m.get(r)) : NaN }; }) }));
+    return [1, 2, 3].filter(n => rows.some(r => r.n === n)).map(n => ({ name: 'Sample ' + n, points: FUELS.map(f => { const r = rows.find(x => x.fuel === f.id && x.n === n); return { x: names[f.id], y: r ? round1(m.get(r)) : NaN }; }) }));
   }
 
   /* ---------- predictions, checked against the student's own table ---------- */
@@ -206,17 +223,16 @@
     const others = g.filter(x => x.fuel !== fuelId);
     if (!others.length) return { status: 'nodata', message: 'Burn and record at least one other fuel to compare energy.' };
     const avg = mean(others.map(x => x.tempRise)), more = mine.tempRise > avg, ok = (value === 'more') === more;
-    const tail = fuelId === 'peat' ? ' Peat warms the flask a little, but it keeps burning for much longer.' : '';
-    return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed the flask ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' + tail };
+    return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed the flask ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' };
   }
   // "In my data, ___ turned the BTB most yellow / warmed the flask most / caught fire last." Ties count. Needs two fuels.
   function checkDataPick(kind, value, st) {
     if (!value) return { status: 'empty', message: '' };
     const g = byFuel(tableRows(st));
     if (g.length < 2) return { status: 'nodata', message: 'Burn and record at least two fuels first, then check this.' };
-    const key = kind === 'yellowest' ? 'btbAfter' : kind === 'warmest' ? 'tempRise' : 'igniteS';
+    const key = kind === 'yellowest' ? 'btbAfter' : kind === 'warmest' ? 'tempRise' : kind === 'lostmost' ? 'massLost' : 'igniteS';
     const top = Math.max.apply(null, g.map(x => Math.round(x[key] * 10) / 10)), win = g.filter(x => Math.round(x[key] * 10) / 10 === top), names = win.map(x => x.label).join(' and ');
-    const mine = g.find(x => x.fuel === value), what = kind === 'yellowest' ? 'turned the BTB the most yellow' : kind === 'warmest' ? 'warmed the flask the most' : 'took the longest to catch fire';
+    const mine = g.find(x => x.fuel === value), what = kind === 'yellowest' ? 'turned the BTB the most yellow' : kind === 'warmest' ? 'warmed the flask the most' : kind === 'lostmost' ? 'lost the most mass' : 'took the longest to catch fire';
     if (!mine) return { status: 'wrong', message: 'You have not burned that fuel yet. In your data ' + names + ' ' + what + '.' };
     return win.some(x => x.fuel === value) ? { status: 'correct', message: 'Yes. In your data ' + names + ' ' + what + '.' }
       : { status: 'wrong', message: 'Try again. Why not: look at your table. In your data ' + names + ' ' + what + '.' };
@@ -229,9 +245,17 @@
       o2: 'Try again. Why not: burning uses oxygen up. BTB does not turn yellow for oxygen.',
       water: 'Try again. Why not: water vapor does not change BTB. Carbon dioxide does.' } },
     'sense-mass': { correct: ['air'], why: {
-      air: 'Yes. Most of the missing mass left as gas, mostly carbon dioxide, so the scale showed less. What stayed behind is ash.',
+      air: 'Yes. The mass that disappears leaves as gases, mostly carbon dioxide and water vapor, so the scale showed less. What stayed behind is ash.',
       vanish: 'Try again. Why not: matter is not destroyed. The atoms went somewhere you could not weigh on the scale.',
       light: 'Try again. Why not: light is energy, not matter. It has no mass to lose.' } },
+    'sense-water': { correct: ['hydrogen'], why: {
+      hydrogen: 'Yes. Fuels contain hydrogen. It joins oxygen when the fuel burns and leaves as water vapor, which condenses on the cool glass.',
+      air: 'Try again. Why not: the air in the flask has very little water. The droplets were biggest with peat, which had the most fuel to burn.',
+      btb: 'Try again. Why not: the BTB stays in the bottom of the flask. The droplets formed on the glass wall above it.' } },
+    'sense-massbtb': { correct: ['more'], why: {
+      more: 'Yes. Mass lost leaves as gas. The more mass a fuel lost, the more carbon dioxide it made, so the BTB changed more. Check this in your table.',
+      less: 'Try again. Why not: carbon dioxide comes from the mass that is lost. More mass lost means more carbon dioxide.',
+      same: 'Try again. Why not: the BTB changed by different amounts, and the fuels lost different amounts of mass.' } },
     'sense-energy': { correct: ['heat'], why: {
       heat: 'Yes. Energy stored in the fuel was released as heat and light. The flask warmed up.',
       ash: 'Try again. Why not: the ash is what is left over. The energy left with the heat and light.',
@@ -264,34 +288,31 @@
     if (f[0] && f[1] && n >= 3) return 'linked';
     return 'foundational';
   }
-  /* Does the student's own table back up each evidence statement? true / false, or null when there is not enough data to say.
-       peatLongest:    peat burned longer than every other fuel burned (needs peat and one more fuel)
-       allLostMass:    every recorded sample weighed less after
-       allYellower:    every recorded sample turned the BTB more yellow
-       peatMostYellow: peat turned the BTB the most yellow (needs peat and one more fuel) */
-  function evidenceChecks(st) {
-    const out = { peatLongest: null, allLostMass: null, allYellower: null, peatMostYellow: null };
-    const rows = tableRows(st), g = byFuel(rows);
-    if (rows.length) { out.allLostMass = rows.every(r => r.massAfter < r.massBefore); out.allYellower = rows.every(r => r.btbAfter > r.btbBefore); }
-    const peat = g.find(x => x.fuel === 'peat');
+  /* Does the student's own table back up each evidence statement? true / false, or null when there is not enough data to say (peat and one more fuel).
+     Each compares the mean of the student's recorded samples of each fuel; a tie for the top counts.
+       peatMostMass: peat lost the most mass    peatBtbMost: peat made the biggest BTB change
+       peatWarmest:  peat's temperature rose the most    peatLongest: peat burned the longest */
+  function evidenceChecks(st) { return evidenceFromGroups(byFuel(tableRows(st))); }
+  // The same checks on per-fuel means (what byFuel returns), so a table that does NOT show a statement can be tested with made-up means.
+  function evidenceFromGroups(g) {
+    const out = { peatMostMass: null, peatBtbMost: null, peatWarmest: null, peatLongest: null }, peat = g.find(x => x.fuel === 'peat');
     if (peat && g.length > 1) {
+      const top = (key, scale) => g.every(x => x.fuel === 'peat' || Math.round(peat[key] * scale) >= Math.round(x[key] * scale));
+      out.peatMostMass = top('massLost', 10); out.peatBtbMost = top('btbChange', 10); out.peatWarmest = top('tempRise', 10);
       out.peatLongest = g.every(x => x.fuel === 'peat' || peat.burnS > x.burnS);
-      out.peatMostYellow = g.every(x => x.fuel === 'peat' || Math.round(peat.btbAfter * 10) >= Math.round(x.btbAfter * 10));
     }
     return out;
   }
   function evidenceDetail(st) {
-    const rows = tableRows(st), g = byFuel(rows), d = {};
+    const g = byFuel(tableRows(st)), d = {};
+    const best = (key, fmt) => { const t = g.reduce((a, b) => b[key] > a[key] ? b : a); return t.label + ' (' + fmt(t[key]) + ')'; };
     if (g.length) {
-      const longest = g.reduce((a, b) => b.burnS > a.burnS ? b : a), yellow = g.reduce((a, b) => b.btbAfter > a.btbAfter ? b : a);
-      d.longest = longest.label + ' (' + Math.round(longest.burnS) + ' s)'; d.yellowest = yellow.label + ' (' + yellow.btbAfter.toFixed(1) + ')';
-      d.count = rows.length;
-      d.worstMass = rows.reduce((a, b) => b.massLost < a.massLost ? b : a).label;
+      d.mostMass = best('massLost', v => v.toFixed(1) + ' g'); d.mostBtb = best('btbChange', v => '+' + v.toFixed(1)); d.warmest = best('tempRise', v => v.toFixed(1) + ' °C'); d.longest = best('burnS', v => Math.round(v) + ' s');
     }
     return d;
   }
 
-  return { num, clamp, hash32, makeRng, FUELS, FUEL_IDS, FUEL, SHORT, fuelLabel, normalizeFuel, SAMPLE_MASS, START_TEMP, START_BTB, MAX_SAMPLES, TAIL, RATE, QUICK_S,
-    BTB_LABELS, BTB_RGB, btbLabel, btbColor, btbText, dissolvedFraction, btbFromDissolved, burnResult, simSeconds, burnedFraction, stateAt, OBS, OBS_IDS, obsTruth,
-    cleanState, samplesOf, nextSample, tableRows, byFuel, METRICS, chartSeries, checkPrediction, checkDataPick, PICKS, checkPick, claimLevel, evidenceChecks, evidenceDetail };
+  return { num, clamp, hash32, makeRng, FUELS, FUEL_IDS, FUEL, SHORT, SHORT_NARROW, fuelLabel, normalizeFuel, massOf, DISSOLVED_SHARE, btbFor, dropletLevel, DROP_FULL, START_TEMP, START_BTB, MAX_SAMPLES, TAIL, RATE, QUICK_S,
+    BTB_LABELS, BTB_RGB, btbLabel, btbColor, btbText, btbFromDissolved, burnResult, simSeconds, burnedFraction, stateAt, OBS, OBS_IDS, obsTruth,
+    cleanState, samplesOf, nextSample, tableRows, byFuel, METRICS, chartSeries, checkPrediction, checkDataPick, PICKS, checkPick, claimLevel, evidenceChecks, evidenceFromGroups, evidenceDetail };
 });

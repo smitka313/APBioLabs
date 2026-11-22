@@ -1,5 +1,5 @@
 /* Burn demonstration (OpenSciEd B.2 Lesson 2 companion, host #burn-scene, scene id "burn").
-   A web stand-in for the teacher's Burning Fuels demonstration: five dry fuels (dried grass, dried leaves, wood chips, charcoal, peat) of 10 g each are burned
+   A web stand-in for the teacher's Burning Fuels demonstration: five dry fuels (dried grass 4 g, dried leaves 4 g, wood chips 10 g, charcoal 10 g, peat 30 g: the handfuls are not equal, as the Teacher Edition notes) are burned
    under a glass flask of BTB solution, with a thermometer in the flask and a balance for the before and after mass. EVERYTHING HERE IS SIMULATED: the
    numbers come from the small model in openscied-b2-burn-logic.js (assumptions at the top of that file and on the page under "What this simulation
    models"), seeded from the student's Dataset ID, not measured from real fuels. This page replaces the real demonstration and none of its safety steps:
@@ -112,7 +112,7 @@
       sel.addEventListener('change', () => { pending = L.normalizeFuel(sel.value); render('#bn-fuel'); });
       const go = h('button', { type: 'button', class: 'btn btn--primary', 'data-bn': 'burn', text: left ? 'Burn it (virtual)' : 'All 3 samples burned' }); go.disabled = !left; go.addEventListener('click', burn);
       box.appendChild(h('div', { class: 'bn-setup' }, h('div', { class: 'bn-field' }, h('label', { for: 'bn-fuel', text: 'Fuel to burn' }), sel), h('div', { class: 'bn-actions' }, go, resetControl())));
-      box.appendChild(readoutRow([['Sample', left ? (used ? 'Sample ' + left + ' of ' + L.fuelLabel(pending).toLowerCase() : '10 g of ' + L.fuelLabel(pending).toLowerCase()) : 'none left'], ['Mass on the balance', left ? v.res.massBefore.toFixed(1) + ' g' : '—'], ['Flask thermometer', v.res.tempBefore + ' °C'], ['BTB color', L.btbText(L.START_BTB)]]));
+      box.appendChild(readoutRow([['Sample', left ? (used ? 'Sample ' + left + ' of ' + L.fuelLabel(pending).toLowerCase() : L.massOf(pending) + ' g of ' + L.fuelLabel(pending).toLowerCase()) : 'none left'], ['Mass on the balance', left ? v.res.massBefore.toFixed(1) + ' g' : '—'], ['Flask thermometer', v.res.tempBefore + ' °C'], ['BTB color', L.btbText(L.START_BTB)]]));
       box.appendChild(h('p', { class: 'bn-note', text: st && st.records.length ? 'Burn all five fuels. A second sample of the same fuel gives slightly different numbers.' : 'Simulated: a real burn takes minutes. Here 6 seconds pass every second. Your Dataset ID sets your samples’ small differences.' }));
       top.appendChild(box);
     }
@@ -168,17 +168,17 @@
       });
       wrap.appendChild(chips);
       const figBox = h('div', { class: 'bn-chart', 'data-bn': 'chart' });
-      wrap.appendChild(h('figure', { class: 'bn-fig' }, figBox, h('figcaption', { class: 'bn-note', text: 'Bar chart of the table above (simulated). Each fuel has one bar per sample, and each sample number has its own pattern. The table has every number.' })));
+      wrap.appendChild(h('figure', { class: 'bn-fig' }, figBox, h('figcaption', { class: 'bn-note', text: 'Bar chart of the table above (simulated). Each fuel has one bar per sample, and each sample number has its own pattern. Char = charcoal. The table has every number.' })));
       bottom.appendChild(wrap);
       if (win.Lab && Lab.tableFit) Lab.tableFit.scan();
       drawChart(figBox);
     }
     function drawChart(box) {
       if (!box) return;
-      const rows = L.tableRows(st);
+      const rows = L.tableRows(st), names = (box.clientWidth || 600) < 480 ? L.SHORT_NARROW : L.SHORT;   // short names so a label never breaks inside a word
       box.replaceChildren();
       if (win.Lab && Lab.chart) {
-        try { Lab.chart(box, { type: 'bar', responsive: true, height: 300, xLabel: 'Fuel', yLabel: L.METRICS[metric].yLabel, yMin: 0, categories: L.FUELS.map(f => L.SHORT[f.id]), series: L.chartSeries(rows, metric), emptyText: 'Record a burn to see its bar here' }); }
+        try { Lab.chart(box, { type: 'bar', responsive: true, height: 300, xLabel: 'Fuel', yLabel: L.METRICS[metric].yLabel, yMin: 0, categories: L.FUELS.map(f => names[f.id]), series: L.chartSeries(rows, metric, names), emptyText: 'Record a burn to see its bar here' }); }
         catch (e) { box.textContent = 'The chart could not be drawn. The table above has every number.'; }
       }
     }
@@ -298,7 +298,7 @@
       const ctx = canvas.getContext('2d'); if (!ctx) return;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
       const ink = css('--ink', '#14211c'), muted = css('--muted', '#56665f'), surface2 = css('--surface-2', '#eef2ef'), line = css('--line', '#c9d2cd');
-      const dark = isDark(), G = geom(W, H), v = view(), sim = v.sim, res = v.res, u = G.u;
+      const dark = isDark(), G = geom(W, H), v = view(), sim = v.sim, res = v.res, u = G.u, mf = clamp(Math.sqrt(res.massStart / 10), 0.65, 1.7);   // bigger handfuls are drawn bigger
       const animate = v.phase === 'running' && !reduced(), tm = animate ? win.performance.now() / 1000 : 0, fuel = res.fuel;
       const metal = dark ? '#9aa6a2' : '#6c7874', metalLight = dark ? '#cfd8d4' : '#aab6b1';
       // bench
@@ -333,7 +333,7 @@
       ctx.fillStyle = '#7dffb4'; ctx.font = '700 ' + Math.round(12 * Math.max(0.8, u)) + 'px ' + css('--f-mono', 'monospace'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(reading, G.bcx, dy + dh / 2 + 1); ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = dark ? '#aeb9b4' : '#8c9893'; ctx.fillRect(G.bcx - 5 * u, G.panY, 10 * u, baseTop - G.panY);
       ctx.fillStyle = dark ? '#d6dedb' : '#c4cdc9'; ctx.strokeStyle = dark ? '#6c7a74' : '#7b8782'; ctx.beginPath(); ctx.ellipse(G.bcx, G.panY, bw * 0.36, 7 * u, 0, 0, 6.28); ctx.fill(); ctx.stroke();
-      if (v.phase === 'ready') drawSample(ctx, G.bcx, G.panY - 12 * u, 0.62 * u, fuel, 0, 0, dark);
+      if (v.phase === 'ready') drawSample(ctx, G.bcx, G.panY - 12 * u * mf, 0.62 * u * mf, fuel, 0, 0, dark);
       else if (v.phase === 'finished') drawAsh(ctx, G.bcx, G.panY - 3 * u, u, res.massAfter, dark);
       // flask: glass back, BTB liquid, thermometer, glass front
       const fl = G.cx - G.flaskW / 2, fr = G.cx + G.flaskW / 2, nl = G.cx - G.neckW / 2, nr = G.cx + G.neckW / 2, rr = 7 * u;
@@ -344,7 +344,7 @@
       ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(G.cx - lw / 2, G.liqY); ctx.lineTo(fl + 2, G.flaskBottom - rr); ctx.quadraticCurveTo(fl, G.flaskBottom, fl + rr, G.flaskBottom); ctx.lineTo(fr - rr, G.flaskBottom); ctx.quadraticCurveTo(fr, G.flaskBottom, fr - 2, G.flaskBottom - rr); ctx.lineTo(G.cx + lw / 2, G.liqY); ctx.closePath(); ctx.fill();
       ctx.fillStyle = rgb(mix(liq, [255, 255, 255], 0.3)); ctx.beginPath(); ctx.ellipse(G.cx, G.liqY, lw / 2, 3.4 * u, 0, 0, 6.28); ctx.fill();
       // thermometer in the flask: glass tube, red column that rises with the temperature, scale ticks and a bulb
-      const tb = G.bulb, tp = G.tip, frac = clamp((sim.temp - 15) / 25, 0.02, 1), colTop = { x: tb.x + (tp.x - tb.x) * frac * 0.92, y: tb.y + (tp.y - tb.y) * frac * 0.92 };
+      const tb = G.bulb, tp = G.tip, frac = clamp((sim.temp - 15) / 30, 0.02, 1), colTop = { x: tb.x + (tp.x - tb.x) * frac * 0.92, y: tb.y + (tp.y - tb.y) * frac * 0.92 };
       ctx.strokeStyle = dark ? 'rgba(235,240,240,.85)' : 'rgba(250,250,250,.92)'; ctx.lineWidth = 6 * u; ctx.beginPath(); ctx.moveTo(tb.x, tb.y); ctx.lineTo(tp.x, tp.y); ctx.stroke();
       ctx.strokeStyle = dark ? '#7a8a85' : '#7b8782'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(tb.x + 3.2 * u, tb.y); ctx.lineTo(tp.x + 3.2 * u, tp.y); ctx.moveTo(tb.x - 3.2 * u, tb.y); ctx.lineTo(tp.x - 3.2 * u, tp.y); ctx.stroke();
       ctx.strokeStyle = '#d3322a'; ctx.lineWidth = 2.6 * u; ctx.beginPath(); ctx.moveTo(tb.x, tb.y); ctx.lineTo(colTop.x, colTop.y); ctx.stroke();
@@ -353,6 +353,20 @@
       ctx.strokeStyle = dark ? 'rgba(220,235,240,.85)' : 'rgba(80,110,120,.9)'; ctx.lineWidth = 2.2; outline(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(nl - 4 * u, G.flaskTop); ctx.lineTo(nr + 4 * u, G.flaskTop); ctx.stroke();
       ctx.strokeStyle = dark ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fl + 12 * u, G.flaskBottom - 16 * u); ctx.lineTo(G.cx - G.neckW / 2 - 6 * u, G.neckY + 6 * u); ctx.stroke();
+      // condensation: droplets on the inside of the glass above the liquid, as many as the water the burn made (hydrogen in the fuel); the count grows with the burn
+      let dropAnchor = null; const dn = Math.round(sim.drops * 44);
+      if (dn > 0) {
+        const dr = L.makeRng(L.hash32('drops')), y0 = G.flaskTop + 5 * u, y1 = G.liqY - 7 * u;
+        for (let i = 0; i < 44; i++) {
+          const yy = y0 + dr.uniform() * (y1 - y0), side = dr.uniform() < 0.5 ? -1 : 1, inward = dr.uniform(), rad = (1.2 + dr.uniform() * 1.7) * u, half = (yy < G.neckY ? G.neckW : G.widthAt(yy)) / 2;
+          const xx = G.cx + (dr.uniform() < 0.6 ? side * (half - 3 * u - inward * 6 * u) : (dr.uniform() * 2 - 1) * (half - 4 * u));
+          if (i >= dn) continue;
+          ctx.fillStyle = dark ? 'rgba(210,235,255,.5)' : 'rgba(235,248,255,.7)'; ctx.strokeStyle = dark ? 'rgba(240,250,255,.9)' : 'rgba(40,90,120,.75)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(xx, yy, rad, 0, 6.28); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(xx - rad * 0.3, yy - rad * 0.3, rad * 0.32, 0, 6.28); ctx.fill();
+          if (xx > G.cx && yy > G.neckY && (!dropAnchor || xx > dropAnchor.x)) dropAnchor = { x: xx, y: yy };
+        }
+      }
       ctx.strokeStyle = metal; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.ellipse(G.cx, G.flaskBottom + 3 * u, G.flaskW / 2 + 5 * u, 6 * u, 0, 0, Math.PI); ctx.stroke();
       // tongs holding the sample (when it is in the flame), igniter, flame, ember, smoke
       const hx = Math.max(10, G.cx - 175 * u), hy = G.sy - 34 * u, inFlame = v.phase !== 'ready';
@@ -360,7 +374,7 @@
       if (inFlame) {
         const k = 0.72 * u, b = sim.burnedFraction;
         if (sim.igniter) drawIgniter(ctx, G.cx, by - 7 * u, u, tm);
-        if (v.phase === 'finished') { /* sample is on the balance as ash */ } else drawSample(ctx, G.sx, G.sy, k * (1 + 0.15 * (1 - b)), fuel, b, sim.glow, dark);
+        if (v.phase === 'finished') { /* sample is on the balance as ash */ } else drawSample(ctx, G.sx, G.sy, k * mf * (1 + 0.15 * (1 - b)), fuel, b, sim.glow, dark);
         tong(-8 * u, -9 * u); tong(8 * u, 6 * u);
         if (sim.flame > 0.02) { const fw = (20 + 16 * sim.flame) * u, fh = (14 + 62 * sim.flame) * u; ['grass', 'leaves'].includes(fuel) && sim.flame > 0.4 ? [-9, 0, 9].forEach((o, i) => drawFlame(ctx, G.sx + o * u, G.sy + 4 * u, fw * (i === 1 ? 1 : 0.7), fh * (i === 1 ? 1 : 0.72), tm, i * 1.7)) : drawFlame(ctx, G.sx, G.sy + 4 * u, fw, fh, tm, 0.5); }
         const puffs = Math.round(sim.smoke * 14);
@@ -373,6 +387,7 @@
       const o = { W, H };
       labelBox(ctx, ['BTB solution', L.btbText(sim.btb)], G.cx - G.flaskW / 2 - 12 * u, G.flaskTop + 22 * u, { x: G.cx - lw / 2 + 2, y: G.liqY + 2 }, Object.assign({ align: 'right', maxW: Math.max(70, G.cx - G.flaskW / 2 - 18 * u) }, o));
       labelBox(ctx, ['Thermometer', sim.temp + ' °C'], G.cx + G.flaskW / 2 + 14 * u, G.flaskTop + 4 * u, colTop, Object.assign({ align: 'left', maxW: Math.max(70, G.bx0 - (G.cx + G.flaskW / 2 + 18 * u)) }, o));
+      if (W >= 560 && dropAnchor && dn >= 8) labelBox(ctx, ['Droplets of water', 'on the glass'], G.cx + G.flaskW / 2 + 14 * u, G.flaskTop + 52 * u, dropAnchor, Object.assign({ align: 'left', maxW: Math.max(90, G.bx0 - (G.cx + G.flaskW / 2 + 18 * u)) }, o));
       const massNow = v.phase === 'running' ? null : v.phase === 'ready' ? res.massBefore : res.massAfter;
       labelBox(ctx, ['Balance' + (v.phase === 'ready' ? ': ' + res.label.toLowerCase() : ''), massNow == null ? 'weigh after burning' : massNow.toFixed(1) + ' g'], G.bcx, G.panY - 62 * u, { x: G.bcx - bw * 0.2, y: G.panY - 1 }, Object.assign({ align: 'center', maxW: bw + 20 }, o));
       if (v.phase === 'running') labelBox(ctx, ['Fuel sample', res.label + ' · ' + (sim.massTrue).toFixed(1) + ' g left'], hx, G.sy - 100 * u, v.phase === 'ready' ? { x: G.bcx, y: G.panY - 14 * u } : { x: G.sx, y: G.sy - 6 * u }, Object.assign({ align: 'left', maxW: Math.max(90, G.cx - 70 * u - hx) }, o));
@@ -384,14 +399,14 @@
       // bench caption
       ctx.fillStyle = muted; ctx.font = '600 11px ' + css('--f-mono', 'monospace'); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       ctx.fillText('SIMULATED · ' + stageText(v) + (v.phase === 'running' ? ' · ' + secs(v.t) : ''), 10, H - 12);
-      if (W > 560) { ctx.textAlign = 'right'; ctx.fillText('10 g sample · scale reads 0.1 g · thermometer reads 1 °C', W - 10, H - 12); }
+      if (W > 560) { ctx.textAlign = 'right'; ctx.fillText(res.massStart + ' g handful · scale reads 0.1 g · thermometer reads 1 °C', W - 10, H - 12); }
       canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', canvasLabel(v));
     }
     function canvasLabel(v) {
       v = v || view(); const r = v.res, s = v.sim;
       const flame = s.flame > 0.02 ? (s.flame >= 0.7 ? 'a bright flame' : 'a small flame') : 'no flame', smoke = s.smoke >= 0.5 ? ' lots of smoke,' : s.smoke >= 0.15 ? ' a little smoke,' : '', ember = s.glow >= 0.3 ? ' a glowing ember,' : '';
-      return 'Simulated burn demonstration. ' + (v.phase === 'ready' ? 'Ready to burn ' + r.label.toLowerCase() + '. The 10 g sample is on the balance, reading ' + r.massBefore.toFixed(1) + ' grams.'
-        : r.label + ', sample ' + r.n + ': ' + stageText(v).toLowerCase() + ', ' + secs(v.t) + ' in. ' + (v.phase === 'finished' ? 'Only ash is left, and the balance reads ' + r.massAfter.toFixed(1) + ' grams.' : 'It shows ' + flame + ',' + smoke + ember + ' and the sample is down to ' + s.massTrue.toFixed(1) + ' grams.')) +
+      return 'Simulated burn demonstration. ' + (v.phase === 'ready' ? 'Ready to burn ' + r.label.toLowerCase() + '. The ' + r.massStart + ' g handful is on the balance, reading ' + r.massBefore.toFixed(1) + ' grams.'
+        : r.label + ', sample ' + r.n + ': ' + stageText(v).toLowerCase() + ', ' + secs(v.t) + ' in. ' + (v.phase === 'finished' ? 'Only ash is left, and the balance reads ' + r.massAfter.toFixed(1) + ' grams.' : 'It shows ' + flame + ',' + smoke + ember + ' and the sample is down to ' + s.massTrue.toFixed(1) + ' grams.')) + (s.drops >= 0.2 ? ' Droplets of water have formed on the glass.' : '') +
         ' The BTB in the flask is ' + L.btbText(s.btb) + ' and the thermometer reads ' + s.temp + ' degrees Celsius.';
     }
     function updateDesc() {

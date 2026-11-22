@@ -34,7 +34,7 @@
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const state = { burn: null, fields: {}, lastSection: 'overview' };
   let cleared = false, hadSaved = false, ready = false, RESPONSE_IDS = [];
-  const DATA_PICKS = { 'sense-yellowest': 'yellowest', 'sense-warmest': 'warmest' };
+  const DATA_PICKS = { 'sense-lostmost': 'lostmost', 'sense-yellowest': 'yellowest', 'sense-warmest': 'warmest' };
 
   function announce(text) { const e = $('#announcer'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -166,13 +166,13 @@
   /* ---------- claim, evidence and reasoning self-check ---------- */
   const CLAIM_TEXT = { none: 'Pick a claim to begin. This is your own check, not a grade.', foundational: 'Foundational: add evidence and reasoning next.', linked: 'Linked: your claim has evidence. Add the reasoning and what the evidence cannot show.', organized: 'Organized: claim, evidence from your own data and the reading, reasoning, and a limit. (This is your own check, not a grade.)' };
   // Evidence chips about "my" fuels are checked against the student's own table, so a statement the data do not show earns no credit.
-  const EV_KEY = { 'cer-ev-1': 'peatLongest', 'cer-ev-2': 'allLostMass', 'cer-ev-3': 'allYellower', 'cer-ev-4': 'peatMostYellow' };
+  const EV_KEY = { 'cer-ev-1': 'peatMostMass', 'cer-ev-2': 'peatBtbMost', 'cer-ev-3': 'peatWarmest', 'cer-ev-4': 'peatLongest' };
+  const EV_WHO = { peatMostMass: ['Most mass lost: ', 'mostMass'], peatBtbMost: ['Biggest BTB change: ', 'mostBtb'], peatWarmest: ['Temperature rose the most: ', 'warmest'], peatLongest: ['Longest burn: ', 'longest'] };
   function evidenceNote(id, v, d) {
-    const k = EV_KEY[id];
-    const who = k === 'peatLongest' ? d.longest && 'Longest burn: ' + d.longest + '.' : k === 'peatMostYellow' ? d.yellowest && 'Most yellow BTB: ' + d.yellowest + '.' : d.count ? 'Checked ' + d.count + (d.count === 1 ? ' sample.' : ' samples.') : '';
+    const k = EV_KEY[id], w = EV_WHO[k], who = d[w[1]] ? w[0] + d[w[1]] + '.' : '';
     if (v === true) return '✓ Your data show this' + (who ? ': ' + who : '.');
     if (v === false) return '✕ Your data do not show this' + (who ? ': ' + who : '.') + ' Check your table.';
-    return k === 'peatLongest' || k === 'peatMostYellow' ? 'Burn and record peat and at least one other fuel to check this.' : 'Burn and record a fuel to check this.';
+    return 'Burn and record peat and at least one other fuel to check this.';
   }
   function renderClaim(speak) {
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');

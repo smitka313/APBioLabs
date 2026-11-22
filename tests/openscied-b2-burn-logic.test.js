@@ -11,10 +11,13 @@ const record = (seed, list) => ({ seed, fuel: 'grass', current: null, records: l
 
 test('the five fuels carry the nominal values from the plan', () => {
   assert.deepEqual(L.FUEL_IDS, ['grass', 'leaves', 'wood', 'charcoal', 'peat']);
+  assert.deepEqual(L.FUELS.map(f => f.mass), [4, 4, 10, 10, 30], 'the handfuls are not equal');
+  assert.deepEqual(L.FUELS.map(f => L.massOf(f.id)), [4, 4, 10, 10, 30]);
   assert.deepEqual(L.FUELS.map(f => f.ignite), [4, 6, 14, 28, 45]);
   assert.deepEqual(L.FUELS.map(f => f.burn), [20, 30, 90, 150, 260]);
   assert.deepEqual(L.FUELS.map(f => f.loss), [0.93, 0.90, 0.97, 0.88, 0.78]);
   assert.deepEqual(L.FUELS.map(f => f.kj), [15, 16, 18, 29, 20]);
+  assert.deepEqual(L.FUELS.map(f => f.co2), [0.44, 0.45, 0.50, 0.90, 0.50]);
 });
 
 test('BTB: hand-computed readings, labels and colors', () => {
@@ -25,18 +28,25 @@ test('BTB: hand-computed readings, labels and colors', () => {
   near(L.btbFromDissolved(3.5), 2 + 4 * (1 - Math.exp(-1)), 1e-9); // 4.528
   assert.ok(L.btbFromDissolved(1e9) <= 6 && L.btbFromDissolved(-5) === 2 && L.btbFromDissolved(NaN) === 2);
   assert.deepEqual(L.btbColor(2), L.BTB_RGB[1]); assert.deepEqual(L.btbColor(NaN), L.BTB_RGB[1]);
-  near(L.dissolvedFraction(0), 0.35, 1e-9); near(L.dissolvedFraction(80), 0.35 + 0.45 * (1 - Math.exp(-1)), 1e-9); assert.ok(L.dissolvedFraction(1e6) < 0.8001);
+  // a fixed share (0.6) of the carbon dioxide dissolves; BTB = 2 + 4 (1 - exp(-dissolved / 3.5)); the +/- 0.2 noise fades to nothing when no gas was made
+  assert.equal(L.DISSOLVED_SHARE, 0.6);
+  near(L.btbFor(10, 0), 2 + 4 * (1 - Math.exp(-6 / 3.5)), 0.05); // 5.2
+  assert.equal(L.btbFor(0, 1), 2); assert.equal(L.btbFor(0, -1), 2); assert.equal(L.btbFor(-4, 1), 2); assert.equal(L.btbFor(NaN, 1), 2);
+  assert.ok(L.btbFor(1e9, 1) <= 6 && L.btbFor(1e9, 1) >= 2 && L.btbFor(5, 99) === L.btbFor(5, 1), 'noise is clamped');
+  for (let c = 0; c < 30; c += 0.5) assert.ok(L.btbFor(c + 0.5, 0) >= L.btbFor(c, 0), 'BTB never falls as carbon dioxide rises');
+  near(L.dropletLevel(0), 0, 1e-9); near(L.dropletLevel(12), 1, 1e-9); assert.equal(L.dropletLevel(1e6), 1); assert.equal(L.dropletLevel(NaN), 0); assert.ok(L.dropletLevel(3) < L.dropletLevel(6));
 });
 
 test('every burn is possible: no NaN, mass after below mass before, temperature never falls, BTB 2 to 6, times positive, for 400 students x 5 fuels x 3 samples', () => {
   for (const seed of SEEDS) for (const f of L.FUEL_IDS) for (let n = 1; n <= 3; n++) {
     const r = L.burnResult(seed, f, n);
     for (const k of Object.keys(r)) if (typeof r[k] === 'number') assert.ok(Number.isFinite(r[k]), f + ' ' + k);
-    assert.ok(r.massBefore >= 9.8 && r.massBefore <= 10.2, 'mass before ' + r.massBefore);
+    assert.ok(Math.abs(r.massBefore - L.massOf(f)) <= 0.1001 && r.massStart === L.massOf(f), 'mass before ' + r.massBefore);
     assert.ok(r.massAfter > 0 && r.massAfter < r.massBefore, f + ' mass after ' + r.massAfter + ' before ' + r.massBefore);
     assert.ok(r.tempAfter >= r.tempBefore && r.tempBefore >= 21 && r.tempBefore <= 23, 'temperature');
-    assert.ok(r.dT >= 4 && r.dT <= 22);
-    assert.ok(r.btbAfter >= 2 && r.btbAfter <= 6 && r.btbAfter > r.btbBefore, f + ' btb ' + r.btbAfter);
+    assert.ok(r.dT >= 2 && r.dT <= 22);
+    assert.ok(r.btbAfter >= 2 && r.btbAfter <= 6 && r.btbAfter > r.btbBefore && r.massLost > 0, f + ' btb ' + r.btbAfter);
+    assert.ok(r.waterMade > 0 && r.dropletLevel > 0 && r.dropletLevel <= 1);
     assert.ok(r.igniteS >= 1 && r.burnS >= 1 && r.runS === r.igniteS + r.burnS + L.TAIL);
     assert.ok(Number.isInteger(r.igniteS) && Number.isInteger(r.burnS) && Number.isInteger(r.tempBefore) && Number.isInteger(r.tempAfter));
     near(r.massBefore * 10, Math.round(r.massBefore * 10), 1e-6); near(r.massAfter * 10, Math.round(r.massAfter * 10), 1e-6);
@@ -67,33 +77,76 @@ test('variation stays near the planned size and the means sit on the nominal val
   }
 });
 
-test('the lesson facts hold for every student: peat ignites last and burns longest, charcoal gives the most heat per gram, peat keeps the most ash', () => {
+test('the lesson facts hold for every student: peat loses the most mass, makes the most carbon dioxide and the biggest BTB change, warms the flask most, ignites last and burns longest', () => {
   for (const seed of SEEDS) for (const n of [1, 2, 3]) {
     const r = Object.fromEntries(L.FUEL_IDS.map(f => [f, L.burnResult(seed, f, n)]));
-    for (const f of L.FUEL_IDS) if (f !== 'peat') { assert.ok(r.peat.igniteS > r[f].igniteS, 'peat ignites after ' + f); assert.ok(r.peat.burnS > r[f].burnS, 'peat burns longer than ' + f); }
-    for (const f of L.FUEL_IDS) if (f !== 'charcoal') { assert.ok(r.charcoal.kjPerG > r[f].kjPerG, 'charcoal heat per gram over ' + f); assert.ok(r.charcoal.dT > r[f].dT, 'charcoal true rise over ' + f); }
-    for (const f of L.FUEL_IDS) if (f !== 'peat') assert.ok(r.peat.massAfter > r[f].massAfter - 0.21 && r.peat.burnedG < r[f].burnedG, 'peat leaves more ash than ' + f);
+    for (const f of L.FUEL_IDS) if (f !== 'peat') {
+      assert.ok(r.peat.igniteS > r[f].igniteS, 'peat ignites after ' + f); assert.ok(r.peat.burnS > r[f].burnS, 'peat burns longer than ' + f);
+      assert.ok(r.peat.massLost > r[f].massLost, 'peat loses more grams than ' + f); assert.ok(r.peat.burnedG > r[f].burnedG);
+      assert.ok(r.peat.co2Made > r[f].co2Made, 'peat makes more carbon dioxide than ' + f);
+      assert.ok(r.peat.btbAfter > r[f].btbAfter, 'peat has the biggest BTB change over ' + f + ' ' + r.peat.btbAfter + ' vs ' + r[f].btbAfter);
+      assert.ok(r.peat.dT > r[f].dT, 'peat true temperature rise over ' + f);
+      assert.ok(r.peat.waterMade > r[f].waterMade && r.peat.dropletLevel >= r[f].dropletLevel, 'peat makes the most water');
+    }
+    for (const f of L.FUEL_IDS) if (f !== 'charcoal') { assert.ok(r.charcoal.kjPerG > r[f].kjPerG, 'charcoal heat per gram over ' + f); }
+    for (const f of ['grass', 'leaves', 'wood']) { assert.ok(r.charcoal.dT > r[f].dT, 'charcoal true rise over ' + f); assert.ok(r.charcoal.waterMade < r[f].waterMade, 'charcoal makes the least water'); }
+    assert.ok(r.wood.dT > r.grass.dT && r.wood.dT > r.leaves.dT, 'wood warms more than grass and leaves');
     assert.ok(r.grass.igniteS < r.leaves.igniteS && r.leaves.igniteS < r.wood.igniteS && r.wood.igniteS < r.charcoal.igniteS, 'ignition order');
-    assert.ok(r.charcoal.btbAfter >= Math.max(r.grass.btbAfter, r.leaves.btbAfter, r.wood.btbAfter, r.peat.btbAfter), 'charcoal turns the BTB the most yellow');
-    assert.ok(r.wood.btbAfter > r.grass.btbAfter - 0.01 || r.wood.btbAfter > 3.2, 'wood is at least as yellow as grass');
+    assert.ok(r.charcoal.btbAfter > r.wood.btbAfter && r.wood.btbAfter > Math.max(r.grass.btbAfter, r.leaves.btbAfter), 'BTB order: peat, charcoal, wood, then grass and leaves');
+    assert.ok(r.peat.massAfter > r.wood.massAfter && r.peat.massBefore > 29 && r.grass.massBefore < 5, 'peat is the big handful and keeps the most ash');
   }
 });
 
-test('charcoal is also the warmest as the student reads it, in nearly every table', () => {
-  let ok = 0;
-  for (const seed of SEEDS) { const r = L.FUEL_IDS.map(f => L.burnResult(seed, f, 1)); if (r.every(x => x.fuel === 'charcoal' || r.find(c => c.fuel === 'charcoal').tempRise > x.tempRise)) ok++; }
-  assert.ok(ok / SEEDS.length > 0.98, ok + ' of ' + SEEDS.length);
+test('mass lost, carbon dioxide and BTB change go together: bigger mass lost x carbon factor means more carbon dioxide and a bigger BTB change, and BTB never changes without mass lost', () => {
+  const all = [];
+  for (const seed of SEEDS) for (const f of L.FUEL_IDS) for (let n = 1; n <= 3; n++) all.push(L.burnResult(seed, f, n));
+  for (const r of all) {
+    near(r.co2Made, L.FUEL[r.fuel].co2 * r.burnedG, 0.02, 'carbon dioxide = grams lost x carbon factor');
+    near(r.dissolved, r.co2Made * 0.6, 0.02, 'a fixed share dissolves');
+    assert.ok(r.btbChange >= 0 && Math.abs(r.massLost - r.burnedG) <= 0.25, 'the scale shows the grams that burned away');
+  }
+  // the noise-free BTB is a rising function of carbon dioxide made, so ranking samples by carbon dioxide never ranks the BTB backwards beyond the +/- 0.2 noise
+  all.sort((a, b) => a.co2Made - b.co2Made);
+  for (let i = 1; i < all.length; i++) assert.ok(L.btbFor(all[i].co2Made, 0) >= L.btbFor(all[i - 1].co2Made, 0), 'monotonic');
+  // across the five fuels, mass lost x carbon factor, carbon dioxide made and the mean BTB change all rank the same way (peat greatest), for every student
+  for (const seed of SEEDS) {
+    const r = L.FUEL_IDS.map(f => L.burnResult(seed, f, 1));
+    const byCo2 = r.slice().sort((a, b) => b.co2Made - a.co2Made), byMassCarbon = r.slice().sort((a, b) => b.burnedG * L.FUEL[b.fuel].co2 - a.burnedG * L.FUEL[a.fuel].co2);
+    assert.deepEqual(byCo2.map(x => x.fuel).slice(0, 3), byMassCarbon.map(x => x.fuel).slice(0, 3));
+    assert.deepEqual(byCo2.map(x => x.fuel).slice(0, 3), ['peat', 'charcoal', 'wood'], 'order of carbon dioxide made');
+    assert.equal(byCo2[0].fuel, 'peat'); assert.equal(r.slice().sort((a, b) => b.btbAfter - a.btbAfter)[0].fuel, 'peat'); assert.equal(r.slice().sort((a, b) => b.massLost - a.massLost)[0].fuel, 'peat');
+  }
+  // fuels with similar carbon (grass, leaves, wood, peat: 0.44 to 0.50): more mass lost goes with more carbon dioxide and a bigger BTB change
+  for (const seed of SEEDS) {
+    const r = ['grass', 'wood', 'peat'].map(f => L.burnResult(seed, f, 1)).sort((a, b) => a.burnedG - b.burnedG);
+    assert.ok(r[0].co2Made < r[1].co2Made && r[1].co2Made < r[2].co2Made && r[0].btbAfter < r[1].btbAfter && r[1].btbAfter < r[2].btbAfter, 'grass < wood < peat for mass lost, carbon dioxide and BTB');
+  }
+  // no mass lost, no BTB change (for any noise)
+  for (const u of [-1, -0.5, 0, 0.5, 1]) assert.equal(L.btbFor(0, u), L.START_BTB);
+  // the BTB change shown in a table is zero only when nothing was lost
+  assert.ok(all.every(r => (r.btbChange > 0) === (r.massLost > 0)));
+});
+
+test('droplets: water made follows grams lost x water factor, most for peat, some for wood, leaves and grass, least for charcoal', () => {
+  for (const seed of SEEDS.slice(0, 100)) for (const f of L.FUEL_IDS) { const r = L.burnResult(seed, f, 1); near(r.waterMade, L.FUEL[f].water * r.burnedG, 0.02); near(r.dropletLevel, L.dropletLevel(L.FUEL[f].water * r.burnedG), 0.003); }
+  const m = L.FUEL_IDS.map(f => ({ f, w: SEEDS.slice(0, 100).reduce((a, s) => a + L.burnResult(s, f, 1).waterMade, 0) / 100 })).sort((a, b) => b.w - a.w).map(x => x.f);
+  assert.equal(m[0], 'peat'); assert.equal(m[4], 'charcoal'); assert.equal(m[1], 'wood');
+  const peat = L.burnResult(5, 'peat', 1), mid = L.stateAt(peat, peat.igniteS + peat.burnS / 2), end = L.stateAt(peat, peat.runS), start = L.stateAt(peat, 0);
+  assert.equal(start.drops, 0); assert.ok(mid.drops > 0 && mid.drops < end.drops); near(end.drops, peat.dropletLevel, 1e-9);
+  assert.ok(L.stateAt(L.burnResult(5, 'charcoal', 1), 1e6).drops < end.drops);
 });
 
 test('hand-computed example: grass at nominal values', () => {
-  // 10 g x 0.93 = 9.3 g burned; 15 kJ/g x 9.3 = 139.5 kJ; x 0.45 / 8 = 7.8 C; CO2 = 0.44 x 9.3 = 4.092; dissolved = 4.092 x (0.35 + 0.45 (1 - exp(-20/80)))
-  const g = 10 * 0.93; near(15 * g * 0.45 / 8, 7.846875, 1e-9);
-  const d = 0.44 * g * L.dissolvedFraction(20); near(d, 4.092 * 0.44946, 0.001); // 1.839
-  near(L.btbFromDissolved(d), 2 + 4 * (1 - Math.exp(-d / 3.5)), 1e-9); assert.ok(L.btbFromDissolved(d) > 3.5 && L.btbFromDissolved(d) < 3.7);
-  // the model reproduces the arithmetic: average over many students sits near the hand values
-  const rs = SEEDS.map(s => L.burnResult(s, 'grass', 1));
-  near(rs.reduce((a, r) => a + r.dT, 0) / rs.length, 7.85, 0.15); near(rs.reduce((a, r) => a + r.btbAfter, 0) / rs.length, 3.65, 0.1);
-  near(rs.reduce((a, r) => a + r.massAfter, 0) / rs.length, 0.7, 0.1);
+  // 4 g x 0.93 = 3.72 g burned; 15 kJ/g x 3.72 = 55.8 kJ; x 0.35 / 8 = 2.44 C; CO2 = 0.44 x 3.72 = 1.637; dissolved = 0.6 x 1.637 = 0.982; BTB = 2 + 4 (1 - exp(-0.982 / 3.5))
+  const g = 4 * 0.93; near(15 * g * 0.35 / 8, 2.44125, 1e-9);
+  const d = 0.44 * g * 0.6; near(d, 0.98208, 1e-4); near(L.btbFor(0.44 * g, 0), 2 + 4 * (1 - Math.exp(-d / 3.5)), 0.05); near(2 + 4 * (1 - Math.exp(-d / 3.5)), 2.98, 0.01);
+  // peat: 30 g x 0.78 = 23.4 g; 20 x 23.4 x 0.35 / 8 = 20.5 C; CO2 = 0.5 x 23.4 = 11.7; dissolved 7.02; BTB = 2 + 4 (1 - exp(-7.02 / 3.5)) = 5.46; water = 0.8 x 23.4 = 18.7
+  near(20 * 23.4 * 0.35 / 8, 20.475, 1e-9); near(2 + 4 * (1 - Math.exp(-7.02 / 3.5)), 5.46, 0.01); near(0.8 * 23.4, 18.72, 1e-9);
+  // the model reproduces the arithmetic: the average over many students sits near the hand values
+  const mean = (f, k) => SEEDS.reduce((a, s) => a + L.burnResult(s, f, 1)[k], 0) / SEEDS.length;
+  near(mean('grass', 'dT'), 2.44, 0.12); near(mean('grass', 'btbAfter'), 2.99, 0.08); near(mean('grass', 'massLost'), 3.72, 0.1);
+  near(mean('peat', 'dT'), 20.4, 0.3); near(mean('peat', 'btbAfter'), 5.45, 0.08); near(mean('peat', 'massLost'), 23.4, 0.3); near(mean('peat', 'massBefore'), 30, 0.02);
+  near(mean('charcoal', 'dT'), 11.2, 0.25); near(mean('wood', 'dT'), 7.65, 0.2); near(mean('charcoal', 'btbAfter'), 5.0, 0.08); near(mean('wood', 'btbAfter'), 4.28, 0.08);
 });
 
 test('invalid input is handled: unknown fuel, bad sample number, bad seed', () => {
@@ -107,7 +160,7 @@ test('invalid input is handled: unknown fuel, bad sample number, bad seed', () =
 test('the timeline: heating, burning, dying out, done; mass and heat only go one way', () => {
   for (const seed of SEEDS.slice(0, 60)) for (const f of L.FUEL_IDS) {
     const r = L.burnResult(seed, f, 1);
-    let prevMass = 11, prevTemp = -99, prevBtb = 0, order = ['heating', 'burning', 'dying', 'done'], at = 0;
+    let prevMass = 1e9, prevTemp = -99, prevBtb = 0, order = ['heating', 'burning', 'dying', 'done'], at = 0;
     for (let t = 0; t <= r.runS; t += Math.max(1, r.runS / 80)) {
       const s = L.stateAt(r, t);
       assert.ok(order.indexOf(s.stage) >= at, 'stages in order'); at = order.indexOf(s.stage);
@@ -118,7 +171,7 @@ test('the timeline: heating, burning, dying out, done; mass and heat only go one
     }
     const first = L.stateAt(r, 0), last = L.stateAt(r, r.runS * 5);
     assert.equal(first.stage, 'heating'); assert.equal(first.temp, r.tempBefore); assert.equal(first.btb, r.btbBefore);
-    assert.equal(last.stage, 'done'); assert.equal(last.temp, r.tempAfter); assert.equal(last.btb, r.btbAfter); near(last.massTrue, 10 - r.burnedG, 0.01); assert.equal(last.flame, 0);
+    assert.equal(last.stage, 'done'); assert.equal(last.temp, r.tempAfter); assert.equal(last.btb, r.btbAfter); near(last.massTrue, r.massStart - r.burnedG, 0.01); assert.equal(last.flame, 0);
   }
   const peat = L.burnResult(7, 'peat', 1), mid = L.stateAt(peat, peat.igniteS + peat.burnS / 2), early = L.stateAt(peat, peat.igniteS / 2), g = L.burnResult(7, 'grass', 1), gm = L.stateAt(g, g.igniteS + g.burnS / 2);
   assert.ok(mid.smoke > 0.6 && mid.flame < 0.5 && mid.glow > 0.5, 'peat smolders: smoke and ember, little flame');
@@ -134,9 +187,10 @@ test('the run clock is timestamp based: elapsed simulated seconds follow the clo
 });
 
 test('observation chips the picture shows for each fuel', () => {
-  assert.deepEqual(L.obsTruth('grass'), ['bright-flame', 'smoke', 'ash']);
-  assert.deepEqual(L.obsTruth('charcoal'), ['small-flame', 'glowing', 'ash']);
-  assert.deepEqual(L.obsTruth('peat'), ['small-flame', 'smoke', 'glowing', 'ash']);
+  assert.deepEqual(L.obsTruth('grass'), ['bright-flame', 'smoke', 'droplets', 'ash']);
+  assert.deepEqual(L.obsTruth('charcoal'), ['small-flame', 'glowing', 'ash'], 'charcoal shows the least droplets');
+  assert.deepEqual(L.obsTruth('peat'), ['small-flame', 'smoke', 'glowing', 'droplets', 'ash']);
+  assert.ok(L.OBS.some(o => o.id === 'droplets' && o.label === 'Droplets on the glass'));
   assert.ok(L.obsTruth('wood').includes('glowing') && L.obsTruth('wood').includes('bright-flame'));
 });
 
@@ -158,7 +212,7 @@ test('chart series: a missing bar stays missing (NaN), one series per sample num
   assert.deepEqual(ser.map(s => s.name), ['Sample 1', 'Sample 2']);
   assert.equal(ser[0].points.length, 5); assert.ok(Number.isNaN(ser[0].points[1].y) && Number.isFinite(ser[0].points[0].y) && Number.isFinite(ser[0].points[4].y));
   assert.ok(Number.isNaN(ser[1].points[0].y) && Number.isFinite(ser[1].points[4].y));
-  assert.deepEqual(L.chartSeries([], 'rise'), []);
+  assert.deepEqual(L.chartSeries([], 'rise'), []); assert.equal(ser[0].points[0].x, 'Grass'); assert.equal(ser[0].points[4].x, 'Peat');
   for (const k of Object.keys(L.METRICS)) assert.ok(L.chartSeries(rows, k).every(s => s.points.every(p => Number.isNaN(p.y) || Number.isFinite(p.y))));
   assert.equal(L.chartSeries(rows, 'mass')[0].points[0].y, Math.round(rows[0].massLost * 10) / 10);
 });
@@ -174,7 +228,7 @@ test('predictions are checked against the student table and recomputed when it c
   assert.equal(L.checkPrediction('wood', 'ignite', 'slowly', st).status, 'nodata');
   const more = peat.tempRise > grass.tempRise;
   assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, more ? 'correct' : 'wrong');
-  assert.match(L.checkPrediction('peat', 'energy', 'less', st).message, /keeps burning for much longer/);
+  assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, 'correct', 'peat gives more energy than grass'); assert.match(L.checkPrediction('peat', 'energy', 'more', st).message, /warmed the flask [12]\d\.\d °C, more than the others/);
   assert.equal(L.checkPrediction('grass', 'energy', 'more', record(11, [['grass', 1]])).status, 'nodata', 'energy needs another fuel to compare');
   // add charcoal: grass is now clearly below the others on average
   const st2 = record(11, [['grass', 1], ['charcoal', 1], ['wood', 1]]);
@@ -185,23 +239,33 @@ test('"In my data" picks name the right fuel from the table, ties count, one fue
   assert.equal(L.checkDataPick('yellowest', 'peat', record(4, [['peat', 1]])).status, 'nodata');
   const st = record(4, FUEL_ALL());
   function FUEL_ALL() { return L.FUEL_IDS.map(f => [f, 1]); }
-  assert.equal(L.checkDataPick('yellowest', 'charcoal', st).status, 'correct'); assert.equal(L.checkDataPick('yellowest', 'grass', st).status, 'wrong'); assert.match(L.checkDataPick('yellowest', 'grass', st).message, /Charcoal/);
-  assert.equal(L.checkDataPick('warmest', 'charcoal', st).status, 'correct'); assert.equal(L.checkDataPick('slowest', 'peat', st).status, 'correct'); assert.equal(L.checkDataPick('slowest', 'grass', st).status, 'wrong');
+  assert.equal(L.checkDataPick('yellowest', 'peat', st).status, 'correct'); assert.equal(L.checkDataPick('yellowest', 'grass', st).status, 'wrong'); assert.match(L.checkDataPick('yellowest', 'grass', st).message, /Peat/);
+  assert.equal(L.checkDataPick('lostmost', 'peat', st).status, 'correct'); assert.equal(L.checkDataPick('lostmost', 'wood', st).status, 'wrong'); assert.match(L.checkDataPick('lostmost', 'wood', st).message, /lost the most mass/);
+  assert.equal(L.checkDataPick('warmest', 'peat', st).status, 'correct'); assert.equal(L.checkDataPick('slowest', 'peat', st).status, 'correct'); assert.equal(L.checkDataPick('slowest', 'grass', st).status, 'wrong');
   assert.equal(L.checkDataPick('yellowest', 'wood', record(4, [['grass', 1], ['peat', 1]])).status, 'wrong'); assert.match(L.checkDataPick('yellowest', 'wood', record(4, [['grass', 1], ['peat', 1]])).message, /not burned that fuel/);
   assert.equal(L.checkDataPick('yellowest', '', st).status, 'empty');
 });
 
-test('evidence checks: need data, false when the table does not show it, recomputed after a change', () => {
-  assert.deepEqual(L.evidenceChecks(null), { peatLongest: null, allLostMass: null, allYellower: null, peatMostYellow: null });
-  const one = L.evidenceChecks(record(8, [['grass', 1]]));
-  assert.equal(one.allLostMass, true); assert.equal(one.allYellower, true); assert.equal(one.peatLongest, null);
+test('evidence checks: need peat and another fuel, true or false against the table, recomputed after a change', () => {
+  const none = { peatMostMass: null, peatBtbMost: null, peatWarmest: null, peatLongest: null };
+  assert.deepEqual(L.evidenceChecks(null), none); assert.deepEqual(L.evidenceChecks(record(8, [['grass', 1]])), none); assert.deepEqual(L.evidenceChecks(record(8, [['peat', 1]])), none);
   const two = L.evidenceChecks(record(8, [['grass', 1], ['peat', 1]]));
-  assert.equal(two.peatLongest, true); assert.equal(two.peatMostYellow, L.burnResult(8, 'peat', 1).btbAfter >= L.burnResult(8, 'grass', 1).btbAfter);
-  const all = L.evidenceChecks(record(8, L.FUEL_IDS.map(f => [f, 1])));
-  assert.equal(all.peatLongest, true); assert.equal(all.peatMostYellow, false, 'charcoal is yellower than peat');
-  for (const seed of SEEDS) { const c = L.evidenceChecks(record(seed, L.FUEL_IDS.map(f => [f, 1]))); assert.equal(c.peatLongest, true); assert.equal(c.allLostMass, true); assert.equal(c.allYellower, true); assert.equal(c.peatMostYellow, false); }
-  const d = L.evidenceDetail(record(8, L.FUEL_IDS.map(f => [f, 1]))); assert.match(d.longest, /^Peat \(\d+ s\)/); assert.match(d.yellowest, /^Charcoal/); assert.equal(d.count, 5);
+  assert.equal(two.peatMostMass, true); assert.equal(two.peatBtbMost, true); assert.equal(two.peatLongest, true);
+  const all = L.FUEL_IDS.map(f => [f, 1]);
+  for (const seed of SEEDS) { const c = L.evidenceChecks(record(seed, all)); assert.equal(c.peatMostMass, true); assert.equal(c.peatBtbMost, true); assert.equal(c.peatLongest, true); assert.equal(c.peatWarmest, true, 'warmest ' + seed); }
+  // a table that does not show it: peat is not the top of an invented table (a statement the data do not show is false)
+  const rows = L.tableRows(record(8, all)); const g = L.byFuel(rows); const peat = g.find(x => x.fuel === 'peat');
+  assert.ok(peat.massLost > 15 && g.filter(x => x.fuel !== 'peat').every(x => x.massLost < peat.massLost));
+  const d = L.evidenceDetail(record(8, all)); assert.match(d.mostMass, /^Peat \(2\d\.\d g\)/); assert.match(d.mostBtb, /^Peat \(\+3\.\d\)/); assert.match(d.warmest, /^Peat \(\d+\.\d °C\)/); assert.match(d.longest, /^Peat \(\d+ s\)/);
   assert.deepEqual(L.evidenceDetail(null), {});
+  // statements the table does not show are false, not assumed: made-up means where another fuel is on top
+  const mk = (fuel, burnS, massLost, btbChange, tempRise) => ({ fuel, label: fuel, burnS, massLost, btbChange, tempRise });
+  const fake = [mk('grass', 20, 3.7, 1, 2.4), mk('charcoal', 150, 25, 3.4, 22), mk('peat', 260, 23.4, 3.45, 20.5)];
+  assert.deepEqual(L.evidenceFromGroups(fake), { peatMostMass: false, peatBtbMost: true, peatWarmest: false, peatLongest: true });
+  assert.deepEqual(L.evidenceFromGroups([mk('peat', 1, 1, 1, 1)]), none, 'one fuel is not enough');
+  assert.deepEqual(L.evidenceFromGroups([mk('grass', 1, 1, 1, 1), mk('wood', 1, 1, 1, 1)]), none, 'no peat, nothing to check');
+  assert.equal(L.evidenceFromGroups([mk('peat', 100, 5, 1, 3), mk('wood', 100, 5, 1, 3)]).peatLongest, false, 'a tie in burn time is not "longest"');
+  assert.equal(L.evidenceFromGroups([mk('peat', 100, 5, 1, 3), mk('wood', 90, 5, 1, 3)]).peatMostMass, true, 'a tie for the top counts for mass');
 });
 
 test('tap and dropdown rows: right answers, reasons for wrong ones, unknown ids and empty values', () => {

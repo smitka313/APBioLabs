@@ -44,6 +44,7 @@ const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scen
     const r1 = await p.evaluate(() => { const s = B2Burn.getState().burn; const r = B2Burn.logic.burnResult(s.seed, 'grass', 1); return r; });
     T.ok((await p.locator('.bn-read').first().innerText()).includes(r1.massAfter.toFixed(1)) && (await p.locator('.bn-read').first().innerText()).includes(r1.tempBefore + ' → ' + r1.tempAfter), 'instrument readouts equal the model numbers');
     c = await ink(p); T.ok(c.ink > 0.01, 'canvas drawn when finished');
+    T.ok(await p.locator('fieldset.bn-obs .bn-chip', { hasText: 'Droplets on the glass' }).count() === 1, 'a Droplets on the glass chip is offered');
     await p.locator('.bn-chip', { hasText: 'Bright flame' }).click(); await p.locator('.bn-chip', { hasText: 'Smoke' }).click();
     T.ok(await p.locator('fieldset.bn-obs .bn-chip[aria-pressed="true"]').count() === 2, 'observation chips toggle with a ✓ and aria-pressed');
     await p.locator('[data-bn="record"]').click();
@@ -87,7 +88,12 @@ const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scen
     T.ok(/lots of smoke/.test(peat.lab) && /a glowing ember/.test(peat.lab) && /a small flame/.test(peat.lab), 'peat picture: smoke, ember, small flame (' + peat.lab.slice(60, 200) + ')');
     T.ok(/no flame|a small flame/.test(char.lab) && !/smoke/.test(char.lab.replace('lots of smoke', 'x').replace('a little smoke', 'y')) && /glowing ember/.test(char.lab), 'charcoal picture: glow, no smoke');
     T.ok(/a bright flame/.test(grass.lab) && !/glowing ember/.test(grass.lab), 'grass picture: bright flame');
+    T.ok(/Droplets of water have formed on the glass/.test(peat.lab) && /Droplets of water have formed/.test(grass.lab), 'droplets are in the picture description when water was made');
     T.ok([peat, char, grass].every(x => x.i.ink > 0.01), 'mid-burn canvases are drawn');
+    await p.selectOption('#bn-fuel', 'peat');
+    const peatReady = await p.evaluate(() => { const r = B2Burn.logic.burnResult(B2Burn.seed('burn'), 'peat', B2Burn.logic.nextSample(B2Burn.logic.cleanState(B2Burn.getState().burn), 'peat') || 1); return r.massBefore.toFixed(1); });
+    T.ok(/30\.\d g of peat|Sample \d of peat/.test(await p.locator('.bn-read').first().innerText()) && (await p.locator('.bn-read').first().innerText()).includes(peatReady + ' g') && /^(29\.[89]|30\.[01])$/.test(peatReady), 'peat is a 30 g handful on the balance (' + peatReady + ' g); the others are not 10 g');
+    T.ok(await p.locator('#bn-fuel option').count() === 5, 'still five fuels');
     T.ok(errs.length === 0, 'no page errors ' + errs.join(' | '));
     await ctx.close();
 

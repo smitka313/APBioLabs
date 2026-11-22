@@ -7,15 +7,15 @@ The page is `openscied-b2-burn-lab.html` (8 sections). Its script has the same c
 logic file and on the page under "What this simulation models". The page is a virtual demonstration and replaces the teacher's real one and none of its
 safety steps (students 15 feet back, goggles, ventilation, never burn materials at home).
 
-**The page is deliberately light** (about 850 visible words, limit 1,100 in `t106-b2-burn-page.js`). Three short text boxes (`ideas-because`,
+**The page is deliberately light** (about 920 visible words, limit 1,100 in `t106-b2-burn-page.js`). Three short text boxes (`ideas-because`,
 `wrap-sentence`, `wrap-question`); everything else is a native dropdown, a tap card or a tap chip with instant feedback. Scenes must not add writing boxes.
 
 ## Sections
 
 `overview, ideas, fuels, burn, sense, sort, peat, wrapup`. Section 3 has five fuel cards (no inputs) and ten prediction dropdowns that are checked against the
-student's own table once the fuel has been burned. Section 5 has four reasoning rows and two "in my data" rows. Section 6 is the Matter-Energy chart
-(7 items, matter / energy / both, feedback inside each card). Section 7 is the claim, evidence and reasoning self-check; evidence chips about "my" fuels
-are checked against the table and lose their mark when the table changes.
+student's own table once the fuel has been burned. Section 5 has reasoning rows (BTB, where the mass went, mass lost and BTB change, where the droplet water came from, energy, why peat ignites last) and three "in my data" rows (lost the most mass, most yellow, warmest). Section 6 is the Matter-Energy chart
+(7 items, matter / energy / both, feedback inside each card). Section 7 is the claim, evidence and reasoning self-check; the four evidence chips (peat lost the most mass, made the biggest BTB change, warmed the flask most, burned longest)
+are each checked against the student's own table with a text mark naming the fuel, and lose their mark when the table changes.
 
 ## Scene
 
@@ -40,11 +40,20 @@ the burn is shown finished at once. The dashboard counts `records.length` and th
 
 ## The model, in one place
 
-Five fuels, 10 g each (nominal): ignite after 4, 6, 14, 28, 45 s (grass, leaves, wood, charcoal, peat); burn for 20, 30, 90, 150, 260 s; mass lost 93, 90, 97,
-88, 78 percent; heat 15, 16, 18, 29, 20 kJ per g burned; carbon dioxide 0.44, 0.45, 0.50, 0.90, 0.50 per g burned (relative). Seeded variation: heat and mass lost
-about 8 percent, ignition 15 percent, burn time 10 percent. Scale reads 0.1 g (+/- 0.1), thermometer 1 C (+/- 1), start 22 C. Flask rise = 0.45 x kJ / 8, kept 4 to 22 C.
-BTB = 2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.3, where dissolved = carbon dioxide x (0.35 + 0.45 (1 - exp(-burn time / 80))). Peat ignites last and burns
-longest and charcoal gives the most heat per gram for every student (tested over 400 seeds). One simulated second is one sixth of a real second.
+Matches the Teacher Edition's sample evidence: peat's mass reduced the most, its temperature change and BTB color change were the greatest, it burned longest, and
+droplets formed on the glass (especially with peat). The TE also notes the fuels are not uniform and the demonstration did not stress equal masses, so the handfuls are
+**not equal**. Per fuel (nominal): mass before 4, 4, 10, 10, 30 g (grass, leaves, wood, charcoal, peat); mass lost 93, 90, 97, 88, 78 percent, so about 3.7, 3.6, 9.7, 8.8 and
+23.4 g; ignite after 4, 6, 14, 28, 45 s; burn for 20, 30, 90, 150, 260 s; heat 15, 16, 18, 29, 20 kJ per g burned; carbon factor 0.44, 0.45, 0.50, 0.90, 0.50; water factor
+0.55, 0.55, 0.60, 0.12, 0.80. Seeded variation: heat and mass lost about 8 percent, ignition 15 percent, burn time 10 percent. Scale reads 0.1 g (+/- 0.1), thermometer
+1 C (+/- 1), start 22 C.
+
+- Carbon dioxide made (relative) = grams lost x carbon factor. A fixed 0.6 of it dissolves into the BTB: BTB = 2 + 4 (1 - exp(-dissolved / 3.5)) +/- 0.2 (noise fades to zero when no
+  gas was made), 2 to 6. So BTB change is monotonic in carbon dioxide made, which is grams lost x carbon factor; no mass lost means no BTB change. Means: peat about 5.4, charcoal 5.0,
+  wood 4.3, grass and leaves 3.0. (Noise is +/- 0.2, not 0.3, so peat's BTB is above every other fuel for every student, tested over 400 seeds x 3 samples.)
+- Temperature rise = grams burned x kJ per g x 0.35 / 8, kept 2 to 22 C: peat about 20, charcoal 11, wood 7.7, grass and leaves 2.5. The flask is never cooler after.
+- Water made = grams lost x water factor; droplets on the flask wall grow with it (level = sqrt(water / 12), capped at 1), most for peat, least for charcoal. Observation chip "Droplets
+  on the glass" is true for every fuel except charcoal (`obsTruth`).
+- One simulated second is one sixth of a real second.
 
 ## Wiring
 

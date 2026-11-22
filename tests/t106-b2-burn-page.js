@@ -63,6 +63,7 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
 
     // labeling: simulated and safety
     const body = await p.locator('main').textContent();
+    T.ok(/not equal \(4 g to 30 g\)/.test(body) && /lost/.test(body), 'the page says the handfuls are not equal and to compare grams lost');
     T.ok(/replaces nothing/.test(body) && /15 feet back/.test(body) && /Never burn materials at home/.test(body) && /goggles/.test(body), 'safety note: virtual, replaces nothing, 15 feet, never at home');
     T.ok((body.match(/SIMULATED/g) || []).length >= 1 && await p.locator('details.teacher-note').count() === 1, 'simulated tag and a collapsible teacher note');
     T.ok(await p.locator('.background').count() >= 3 && await p.evaluate(() => Array.from(document.querySelectorAll('.background')).every(b => b.querySelectorAll('li').length <= 5 && b.querySelectorAll('input, select, textarea').length === 0)), 'Background cards have 5 or fewer bullets and no inputs');
@@ -100,8 +101,8 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
     await p.selectOption('#pred-peat-ignite', 'slowly'); await p.selectOption('#pred-peat-energy', 'more'); await p.selectOption('#pred-grass-ignite', 'slowly');
     T.ok(/Burn and record peat to check/.test(await fb(p, 'pred-peat')) && await p.locator('#feedback-pred-peat').getAttribute('data-state') === 'partial', 'predictions wait for data');
     await go(p, 'peat');
-    await p.check('input[name="cer-claim"][value="a"]'); await p.check('#cer-ev-1'); await p.check('#cer-ev-4'); await p.check('#cer-ev-2');
-    T.ok(/Burn and record peat/.test(await p.locator('#cer-ev-1-note').innerText()) && /Burn and record a fuel/.test(await p.locator('#cer-ev-2-note').innerText()), 'evidence chips say what is missing before there is data');
+    await p.check('input[name="cer-claim"][value="a"]'); await p.check('#cer-ev-1'); await p.check('#cer-ev-4'); await p.check('#cer-ev-2'); await p.check('#cer-ev-3');
+    T.ok([1, 2, 4].length === 3 && (await Promise.all([1, 2, 4].map(i => p.locator('#cer-ev-' + i + '-note').innerText()))).every(t => /Burn and record peat and at least one other fuel/.test(t)), 'evidence chips say what is missing before there is data');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'foundational', 'level is foundational without data-backed evidence');
 
     // inject honest data through the scene API and watch everything derived recompute
@@ -109,25 +110,34 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
       const seed = B2Burn.seed('check');
       B2Burn.saveState('burn', { seed, fuel: 'peat', current: null, records: a.map(fuel => ({ fuel, n: 1, obs: [] })) });
     }, ALL);
-    T.ok(/^✓ Your data show this: Longest burn: Peat/.test(await p.locator('#cer-ev-1-note').innerText()), 'peat burned longest verified: ' + await p.locator('#cer-ev-1-note').innerText());
-    T.ok(/^✓ Your data show this: Checked 5 samples/.test(await p.locator('#cer-ev-2-note').innerText()), 'lost mass verified');
-    T.ok(/^✕ Your data do not show this: Most yellow BTB: Charcoal/.test(await p.locator('#cer-ev-4-note').innerText()), 'peat is not the most yellow: charcoal is');
+    T.ok(/^✓ Your data show this: Most mass lost: Peat \(2\d\.\d g\)/.test(await p.locator('#cer-ev-1-note').innerText()), 'peat lost the most mass, verified and named: ' + await p.locator('#cer-ev-1-note').innerText());
+    T.ok(/^✓ Your data show this: Biggest BTB change: Peat \(\+3\.\d\)/.test(await p.locator('#cer-ev-2-note').innerText()), 'peat made the biggest BTB change, verified: ' + await p.locator('#cer-ev-2-note').innerText());
+    T.ok(/^✓ Your data show this: Temperature rose the most: Peat/.test(await p.locator('#cer-ev-3-note').innerText()) && /^✓ Your data show this: Longest burn: Peat/.test(await p.locator('#cer-ev-4-note').innerText()), 'peat warmest and longest burn verified');
     await p.check('#cer-ev-5'); await p.check('input[name="cer-reason"][value="a"]'); await p.check('#cer-caveat');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'organized', 'organized with data-backed evidence');
     // a statement the data do not show loses credit when the data change: drop peat from the table
     await p.evaluate(() => { const s = B2Burn.getState().burn; s.records = s.records.filter(r => r.fuel !== 'peat'); B2Burn.saveState('burn', s); });
-    T.ok(/^Burn and record peat/.test(await p.locator('#cer-ev-1-note').innerText()), 'peat claim loses its mark when peat leaves the table');
+    T.ok(/^Burn and record peat/.test(await p.locator('#cer-ev-1-note').innerText()) && /^Burn and record peat/.test(await p.locator('#cer-ev-3-note').innerText()), 'peat claims lose their mark when peat leaves the table');
     await p.evaluate(() => { const s = B2Burn.getState().burn; s.records = []; B2Burn.saveState('burn', s); });
     T.ok(await p.locator('#cer-level').getAttribute('data-level') !== 'organized', 'level drops when the table empties');
     await p.evaluate(a => { const s = B2Burn.getState().burn; s.records = a.map(fuel => ({ fuel, n: 1, obs: [] })); B2Burn.saveState('burn', s); }, ALL);
     await go(p, 'fuels');
     const peatFb = (await fb(p, 'pred-peat')).split('\n')[0], grassFb = await fb(p, 'pred-grass');
     T.ok(/^Yes\. In your data peat caught fire after \d+ s/.test(peatFb) && /^Not quite\. In your data dried grass caught fire after \d s, which is quick/.test(grassFb), 'predictions are checked against the table: ' + peatFb + ' / ' + grassFb);
+    T.ok(/warmed the flask \d\d\.\d °C, more than the others/.test(await fb(p, 'pred-peat')), 'peat predicted to give more energy: checked against the table');
     await go(p, 'sense');
-    await p.selectOption('#sense-yellowest', 'peat');
-    T.ok(/^Try again/.test(await fb(p, 'sense-yellowest')) && /Charcoal/.test(await fb(p, 'sense-yellowest')), 'yellowest row names the right fuel');
-    await p.selectOption('#sense-yellowest', 'charcoal'); await p.selectOption('#sense-warmest', 'charcoal');
-    T.ok(/^Yes/.test(await fb(p, 'sense-yellowest')) && /^Yes/.test(await fb(p, 'sense-warmest')), 'data rows verified');
+    await p.selectOption('#sense-yellowest', 'charcoal');
+    T.ok(/^Try again/.test(await fb(p, 'sense-yellowest')) && /Peat/.test(await fb(p, 'sense-yellowest')), 'yellowest row names the right fuel');
+    await p.selectOption('#sense-lostmost', 'wood');
+    T.ok(/^Try again/.test(await fb(p, 'sense-lostmost')) && /Peat lost the most mass/.test(await fb(p, 'sense-lostmost')), 'lost-the-most row names the right fuel: ' + await fb(p, 'sense-lostmost'));
+    await p.selectOption('#sense-yellowest', 'peat'); await p.selectOption('#sense-warmest', 'peat'); await p.selectOption('#sense-lostmost', 'peat');
+    T.ok(/^Yes/.test(await fb(p, 'sense-yellowest')) && /^Yes/.test(await fb(p, 'sense-warmest')) && /^Yes/.test(await fb(p, 'sense-lostmost')), 'data rows verified');
+    await p.selectOption('#sense-water', 'air');
+    T.ok(/^Try again/.test(await fb(p, 'sense-water')), 'droplet water is not from the air'); await p.selectOption('#sense-water', 'hydrogen');
+    T.ok(/^Yes\. Fuels contain hydrogen/.test(await fb(p, 'sense-water')), 'droplet water comes from hydrogen in the fuel');
+    await p.selectOption('#sense-massbtb', 'less');
+    T.ok(/^Try again/.test(await fb(p, 'sense-massbtb')), 'more mass lost is more carbon dioxide'); await p.selectOption('#sense-massbtb', 'more');
+    T.ok(/^Yes\. Mass lost leaves as gas/.test(await fb(p, 'sense-massbtb')) && /carbon dioxide and water vapor/.test(await p.locator('#sense-mass').evaluate(e => e.textContent)), 'mass and BTB link, mass leaves as carbon dioxide and water vapor');
 
     // saving, Resume, download, clear
     await go(p, 'wrapup');
