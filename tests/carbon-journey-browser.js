@@ -59,11 +59,55 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       await p.locator('#question-next').click(); await p.locator('#question-next').click();
       assert.equal(await p.locator('#q4').inputValue(), 'My carbon atom followed the official cards.');
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      const dashboard = await ctx.newPage();
+      await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
+      assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
+      assert.equal(await dashboard.locator('.dashboard-activity').count(),7);
+      assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
+      await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
+      await dashboard.locator('#carbon-journey-open').click();
+      assert.ok(await dashboard.locator('#sense').isVisible());await dashboard.close();
       const downloaded = p.waitForEvent('download'); await p.locator('#download').click(); const d = await downloaded;
       assert.match(d.suggestedFilename(), /carbon-atom-journey/);
       await p.locator('#restart').click(); await p.locator('#cancel-reset').click(); assert.equal(await p.locator('#q4').inputValue(), 'My carbon atom followed the official cards.');
       await p.locator('#restart').click(); await p.locator('#confirm-reset').click(); assert.equal(await p.locator('#roll').isEnabled(), true);
       assert.deepEqual(errors, []); console.log('PASS', width, height, 'viewport fit, inspect, map, prediction, official cards, reload, 10 rolls, totals, question paging, download, resets'); await ctx.close();
     }
+    const protectedCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    try {
+      const page = await protectedCtx.newPage();
+      const dashboardUrl = url.replace('openscied-b2-carbon-journey.html', 'openscied-dashboard.html');
+      const key = 'aplab:openscied:b2-carbon-journey:v1';
+      const unsupported = ' {"version":99,"seed":17,"rows":[],"answers":{"q4":"Fictional answer to keep."}} ';
+      for (const [raw, viaDashboard] of [[unsupported, true], ['{unfinished fictional save', false]]) {
+        await page.goto(dashboardUrl);
+        await page.evaluate(([key, raw]) => localStorage.setItem(key, raw), [key, raw]);
+        if (viaDashboard) {
+          await page.reload();
+          assert.match(await page.locator('#carbon-journey-progress').textContent(), /could not be read/);
+          await page.locator('#carbon-journey-open').click();
+        } else await page.goto(url);
+        const readRaw = () => page.evaluate(key => localStorage.getItem(key), key);
+        assert.equal(await readRaw(), raw);
+        assert.ok(await page.locator('#roll').isDisabled());
+        assert.match(await page.locator('#card-instruction').textContent(), /Open Your evidence/);
+        await page.locator('[data-page="evidence"]').click();
+        await page.reload();
+        assert.equal(await readRaw(), raw);
+        const downloaded = page.waitForEvent('download');
+        await page.getByRole('button', { name: 'Download saved backup' }).click();
+        const backup = await downloaded;
+        assert.match(backup.suggestedFilename(), /saved-backup/);
+        assert.equal(fs.readFileSync(await backup.path(), 'utf8'), raw);
+        await page.locator('#restart').click();
+        await page.locator('#cancel-reset').click();
+        assert.equal(await readRaw(), raw);
+        await page.locator('#restart').click();
+        await page.locator('#confirm-reset').click();
+        assert.equal(JSON.parse(await readRaw()).version, 2);
+        assert.equal(JSON.parse(await readRaw()).lastSection, 'play');
+      }
+      console.log('PASS unreadable work stays downloadable and cannot be overwritten before confirmed restart');
+    } finally { await protectedCtx.close(); }
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

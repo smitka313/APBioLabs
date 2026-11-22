@@ -55,6 +55,9 @@ def page_specs():
         'openscied-b2-peat-bog-lab.html': ('Peat Bog Carbon Lab — a companion for OpenSciEd Biology B.2 | Lab Bench',
                                       'A free, independent peat bog simulator for OpenSciEd Biology B.2 (Fires). Change Earth’s tilt, temperature, CO₂, oxygen, water level and fire, and compare photosynthesis, decomposition and burning.',
                                       'Peat Bog Carbon Lab companion (OpenSciEd B.2)'),
+        'openscied-b2-carbon-journey.html': ('Carbon Atom Journey — OpenSciEd Biology B.2 Lesson 9 | Lab Bench',
+                                      'Follow a carbon atom through seven Earth systems in a free OpenSciEd B.2 Lesson 9 board game. Roll dice, read official station events and analyze matter and energy transfers.',
+                                      'Carbon Atom Journey (OpenSciEd B.2 Lesson 9)'),
         'openscied-b2-burn-lab.html': ('Burning Fuels: What Burns and Why — a companion for OpenSciEd Biology B.2 | Lab Bench',
                                       'A free, independent companion for OpenSciEd Biology B.2 Lesson 2. Run a virtual burn demonstration of grass, leaves, wood, charcoal and peat, and track BTB color, temperature and mass to see where the matter and energy go.',
                                       'Burning Fuels companion (OpenSciEd B.2)'),
@@ -141,6 +144,13 @@ def structured_data(filename, title, description, label):
                          'teaches': 'Decomposition and cellular respiration, how temperature changes their rate, and how light drives photosynthesis and carbon storage',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://www.openscied.org/'})
+        elif filename == 'openscied-b2-carbon-journey.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive board game and guided analysis',
+                         'teaches': 'Carbon cycling through Earth systems, matter rearrangements and energy transfers',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-2-ecosystems-matter-energy/'})
         elif filename == 'openscied-b2-burn-lab.html':
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',
@@ -268,3 +278,4 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     build(parser.parse_args().check)
+

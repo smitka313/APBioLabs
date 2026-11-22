@@ -7,6 +7,7 @@
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
+    { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', clears: 'carbon journey, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds }
@@ -25,6 +26,20 @@
   }
   function written(fields, id) { return typeof fields[id] === 'string' && !!fields[id].trim(); }
   const $ = selector => document.querySelector(selector);
+  function carbonResponseIds() { return ['q2', 'q3', 'q4', 'q5', 'q6']; }
+  function carbonJourneyProgress(raw) {
+    const empty = { summary: 'Not started', started: false, section: 'play', visited: 0 };
+    if (!raw) return empty;
+    let saved;
+    try { saved = JSON.parse(raw); if (!saved || ![1, 2].includes(saved.version) || !Array.isArray(saved.rows)) throw Error('Unknown format'); }
+    catch (_) { return { ...empty, summary: 'Saved work could not be read. Download a copy before restarting.' }; }
+    const rolls = saved.rows.length, answers = carbonResponseIds().filter(id => written(saved.answers || {}, id)).length;
+    const started = !!(rolls || answers || saved.pending != null);
+    const fallback = answers ? 'sense' : saved.done ? 'evidence' : 'play';
+    return { started, section: ['play', 'evidence', 'sense'].includes(saved.lastSection) ? saved.lastSection : fallback,
+      visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
+      summary: started ? rolls + ' rolls recorded · ' + answers + ' of 5 responses written' + (saved.done ? ' · Journey complete' : '') : 'Not started' };
+  }
   function cellCycleProgress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
     let saved;
@@ -193,7 +208,7 @@
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const fields = saved && saved.fields || {};
+          const fields = saved && (activity.id === 'carbon-journey' ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
@@ -245,3 +260,4 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+

@@ -5,17 +5,37 @@
   Lab.init({ id: 'openscied-b2-carbon-journey' });
   let raw = null;
   try { raw = localStorage.getItem(key); } catch (_) {}
-  let state = L.restore(raw, Lab.identity.seed.seed);
+  const restored = L.readSaved(raw);
+  let unreadable = raw !== null && restored === null ? raw : null;
+  let state = restored ?? L.initial(Lab.identity.seed.seed);
+  const backupWarning = 'Saved work could not be read and has not been changed. Download the saved backup before starting a new journey.';
+  const downloadButton = $('#download');
+  const downloadLabel = downloadButton.textContent;
+  if (unreadable !== null) downloadButton.textContent = 'Download saved backup';
   let guess = null, revealed = false, rolling = false, questionIndex = 0, chart;
+  let section = 'play';
+  if (restored) try { const v = JSON.parse(raw); if (['play', 'evidence', 'sense'].includes(v.lastSection)) section = v.lastSection; } catch (_) {}
   try { const old = JSON.parse(raw); if (state.pending !== null && old.presentation) { guess = L.stations.some(s => s[0] === old.presentation.guess) ? old.presentation.guess : null; revealed = old.presentation.revealed === true; if (typeof old.presentation.note === 'string') $('#note').value = old.presentation.note.slice(0,1000); } } catch (_) {}
   const name = id => L.stations.find(s => s[0] === id)[1];
   const mobile = () => matchMedia('(max-width:850px)').matches;
   function announce(message) { $('#status').textContent = message; }
-  function save(message) {
-    try { localStorage.setItem(key, JSON.stringify({ ...state, presentation: { guess, revealed, note: $('#note').value } })); announce(message || 'Journey saved on this device.'); }
-    catch (_) { announce('Could not save on this device. Keep this page open and download your journey.'); }
+  function save(message, replaceUnreadable = false) {
+    if (unreadable !== null && !replaceUnreadable) { announce(backupWarning); return; }
+    try {
+      localStorage.setItem(key, JSON.stringify({ ...state, lastSection: section, lastVisitedAt: Date.now(), presentation: { guess, revealed, note: $('#note').value } }));
+      unreadable = null;
+      downloadButton.textContent = downloadLabel;
+      announce(message || 'Journey saved on this device.');
+    } catch (_) {
+      announce(unreadable !== null
+        ? 'Could not start a new saved journey. Your previous save has not been changed. Download the saved backup before trying again.'
+        : 'Could not save on this device. Keep this page open and download your journey.');
+    }
   }
-  function setPage(id) {
+  function setPage(id, saveSection = true) {
+    section = id;
+    if (saveSection) save();
+    history.replaceState(null, '', '#' + id);
     document.body.classList.toggle('journey-playing', id === 'play');
     document.querySelectorAll('.journey-page').forEach(p => p.hidden = p.id !== id);
     document.querySelectorAll('[data-page]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.page === id)));
@@ -99,8 +119,8 @@
     $('#location').textContent = name(L.current(state));
     $('#turns').textContent = n + ' rolls · ' + (state.done ? 'complete' : n < 10 ? (10 - n) + ' to minimum' : 'ready to finish');
     $('#stage-label').textContent = pending ? revealed ? 'READ THE OFFICIAL CARD' : 'PREDICT YOUR NEXT STOP' : state.done ? 'JOURNEY COMPLETE' : 'READY TO EXPLORE';
-    $('#card-instruction').textContent = pending ? name(L.current(state)) + ' · roll ' + state.pending + (state.producerExit ? ' · second table' : '') : state.done ? 'Explore your evidence next.' : 'Roll to discover your atom’s next chapter.';
-    $('#roll').hidden = pending || state.done; $('#roll').disabled = rolling || pending || state.done;
+    $('#card-instruction').textContent = pending ? name(L.current(state)) + ' · roll ' + state.pending + (state.producerExit ? ' · second table' : '') : state.done ? 'Explore your evidence next.' : unreadable !== null ? 'Saving is paused. Open Your evidence to download a backup or start a new journey.' : 'Roll to discover your atom’s next chapter.';
+    $('#roll').hidden = pending || state.done; $('#roll').disabled = rolling || pending || state.done || unreadable !== null;
     $('#record').hidden = !pending || !revealed; $('#record').disabled = !pending || !revealed || state.done;
     $('#finish').disabled = n < 10 || pending || state.done;
     $('#finish').hidden = n < 10 || pending || state.done;
@@ -139,7 +159,7 @@
   $('#note').addEventListener('input', () => save());
   $('#skip-prediction').addEventListener('click', () => reveal(null));
   $('#roll').addEventListener('click', () => {
-    if (state.pending !== null || state.done || rolling) return;
+    if (state.pending !== null || state.done || rolling || unreadable !== null) return;
     state.pending = L.die(state.seed, state.rows.length); guess = null; revealed = false; rolling = true;
     $('#turn-details').open = false; $('#note').value = ''; save('Rolled ' + state.pending + '. Predict the destination, then reveal the card.');
     render(); $('.journey-hud').classList.add('rolling'); $('#turn-stage').scrollTop = 0;
@@ -162,12 +182,15 @@
   $('#restart').addEventListener('click', () => $('#reset-dialog').showModal()); $('#cancel-reset').addEventListener('click', () => $('#reset-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
     state = L.initial((state.seed + 0x6D2B79F5) >>> 0); guess = null; revealed = false; questionIndex = 0;
-    questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset(); $('#reset-dialog').close(); save('New journey ready.'); render(); showQuestion(); setPage('play');
+    questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset(); $('#reset-dialog').close();
+    section = 'play'; save('New journey ready.', true); render(); showQuestion(); setPage('play', false);
   });
   $('#download').addEventListener('click', () => {
     const payload = { format: 'openscied-carbon-journey-v1', mode: 'official-station-cards', simulated: true, exportedAt: new Date().toISOString(), ...state };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })), a = document.createElement('a');
-    a.href = url; a.download = 'carbon-atom-journey.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); announce('Journey downloaded.');
+    const backup = unreadable !== null;
+    const url = URL.createObjectURL(new Blob([backup ? unreadable : JSON.stringify(payload, null, 2)], { type: backup ? 'text/plain' : 'application/json' })), a = document.createElement('a');
+    a.href = url; a.download = backup ? 'carbon-atom-journey-saved-backup.txt' : 'carbon-atom-journey.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    announce(backup ? 'Saved backup downloaded. The original is still on this device.' : 'Journey downloaded.');
   });
   $('#print').addEventListener('click', () => window.print());
   function toggleMap() {
@@ -185,4 +208,6 @@
   function showTotal() { $('#totals').querySelectorAll('[data-total]').forEach(el => el.hidden = mobile() && el.dataset.total !== totalTab); }
   document.querySelectorAll('[data-total-tab]').forEach(b => b.addEventListener('click', () => { totalTab = b.dataset.totalTab; document.querySelectorAll('[data-total-tab]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); showTotal(); }));
   render();
+  const linked = location.hash.slice(1);
+  setPage(['play', 'evidence', 'sense'].includes(linked) ? linked : section);
 })();

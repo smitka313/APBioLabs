@@ -20,3 +20,92 @@ test('automatic outcome cannot be overridden by user choice',()=>{let s=L.initia
 test('unrolled and finished journeys cannot record; invalid saves reset safely',()=>{let s=L.initial(1);a.throws(()=>L.record(s));s.pending=3;s.done=true;a.throws(()=>L.record(s));a.deepEqual(L.restore('{bad',7),L.initial(7));});
 test('pending die and answers survive reload; legacy manual work is preserved and marked',()=>{let s=L.initial(3);s.pending=6;s.answers.q4='An oak tree';a.deepEqual(L.restore(JSON.stringify(s),0),s);const old={version:1,seed:3,rows:[{turn:1,from:'atmosphere',to:'ocean',die:1,matter:'Waste',energy:L.energy[0],note:'Earlier work'}],pending:2,answers:{q4:'Keep my story'}};let next=L.restore(JSON.stringify(old),0);a.equal(next.rows[0].note,'Earlier work');a.equal(next.legacyRows,1);a.equal(next.answers.q4,'Keep my story');next=L.record(next);a.equal(next.rows[1].to,'ocean');a.deepEqual(L.restore(JSON.stringify(next),0),next);});
 test('source inconsistencies retained verbatim, no unapproved science edits',()=>{const s=L.initial(1);s.rows=[{to:'omnivores'}];a.match(L.outcome(s,6).text,/leave the herbivore’s body/);s.rows=[{to:'human'}];a.match(L.outcome(s,5).text,/burned to for/);s.rows=[{to:'ocean'}];a.match(L.outcome(s,6).text,/Energy flows to another new system\./);});
+
+// Run the actual activity script with fictional storage; no student's data is used.
+const vm = require('node:vm');
+const fs = require('node:fs');
+const path = require('node:path');
+const journeyPage = fs.readFileSync(path.join(__dirname, '../openscied-b2-carbon-journey.js'), 'utf8');
+function openFictionalJourney(snapshot, hash = '') {
+  const nodes = new Map(), downloads = [], writes = [];
+  const key = 'aplab:openscied:b2-carbon-journey:v1';
+  let stored = snapshot, blocked = false;
+  function node() {
+    return {
+      value: '', textContent: 'Download journey', dataset: {}, style: {}, events: {},
+      classList: { toggle() {}, add() {}, remove() {} },
+      addEventListener(event, handler) { this.events[event] = handler; },
+      click() { if (this.download) downloads.push(this.download); else this.events.click?.(); },
+      querySelectorAll() { return []; }, append() {}, replaceChildren() {}, setAttribute() {},
+      showModal() {}, close() {}, reset() {}, focus() {}
+    };
+  }
+  function get(selector) { if (!nodes.has(selector)) nodes.set(selector, node()); return nodes.get(selector); }
+  vm.runInNewContext(journeyPage, {
+    window: { CarbonJourney: L, CarbonJourneyScene: { render() {} }, scrollTo() {} },
+    document: { body: node(), querySelector: get, querySelectorAll(selector) {
+      return selector === '.journey-page' ? ['play', 'evidence', 'sense'].map(id => Object.assign(get('#' + id), { id })) : [];
+    }, createElement: node, addEventListener() {} },
+    Lab: { init() {}, identity: { seed: { seed: 42 } }, reducedMotion() { return true; }, chart() { return { update() {} }; } },
+    localStorage: {
+      getItem(k) { a.equal(k, key); return stored; },
+      setItem(k, value) { a.equal(k, key); if (blocked) throw Error('fictional failed write'); writes.push(value); stored = value; }
+    },
+    location: { hash }, history: { replaceState(_, _title, hash) { this.hash = hash; } },
+    matchMedia() { return { matches: false, addEventListener() {} }; },
+    Blob: class { constructor(parts) { downloads.push(parts.join('')); } },
+    URL: { createObjectURL() { return 'blob:fictional'; }, revokeObjectURL() {} },
+    setTimeout() {}
+  });
+  return { get, writes, downloads, setBlocked(value) { blocked = value; }, read() { return stored; } };
+}
+for (const [name, raw, hash] of [
+  ['unsupported version', ' {"version":99,"seed":17,"rows":[],"answers":{"q4":"Keep this fictional answer."}}\n', '#play'],
+  ['malformed JSON', '{unfinished fictional work', ''],
+  ['invalid row in a supported version', '{"version":2,"seed":42,"rows":[{"turn":1,"from":"producers"}],"answers":{"q4":"Keep"}}', '#sense']
+]) {
+  test('opening and playing with ' + name + ' protects the raw save until confirmed reset', () => {
+    const page = openFictionalJourney(raw, hash);
+    a.equal(page.read(), raw);
+    a.equal(page.get('#download').textContent, 'Download saved backup');
+    a.equal(page.get('#roll').disabled, true);
+    a.match(page.get('#card-instruction').textContent, /Open Your evidence/);
+    page.get('[data-show-evidence]').click();
+    page.get('#roll').click();
+    page.get('#note').events.input();
+    page.get('#restart').click();
+    page.get('#cancel-reset').click();
+    a.equal(page.read(), raw);
+    a.equal(page.writes.length, 0);
+    page.get('#download').click();
+    a.deepEqual(page.downloads, [raw, 'carbon-atom-journey-saved-backup.txt']);
+    page.setBlocked(true);
+    page.get('#confirm-reset').click();
+    a.equal(page.read(), raw);
+    a.match(page.get('#status').textContent, /previous save has not been changed/);
+    page.setBlocked(false);
+    page.get('#note').events.input();
+    a.equal(page.read(), raw, 'a failed reset must not unlock subsequent autosaves');
+    page.get('#confirm-reset').click();
+    a.equal(page.writes.length, 1);
+    a.equal(JSON.parse(page.read()).version, 2);
+    a.equal(JSON.parse(page.read()).lastSection, 'play');
+    a.equal(page.get('#download').textContent, 'Download journey');
+  });
+}
+
+for (const version of [1, 2]) {
+  test('activity still resumes v' + version + ' work with its pending roll and written answer', () => {
+    const saved = L.initial(17);
+    const withRow = L.record({ ...saved, pending: 5 });
+    const fixture = { ...withRow, version, pending: 2, lastSection: 'sense', answers: { q4: 'My fictional evidence.' } };
+    const page = openFictionalJourney(JSON.stringify(fixture));
+    const resumed = JSON.parse(page.read());
+    a.equal(resumed.pending, 2);
+    a.equal(resumed.answers.q4, fixture.answers.q4);
+    a.equal(resumed.lastSection, 'sense');
+    a.equal(resumed.rows[0].to, 'producers');
+    a.equal(page.get('#play').hidden, true);
+    a.equal(page.get('#sense').hidden, false);
+  });
+}
