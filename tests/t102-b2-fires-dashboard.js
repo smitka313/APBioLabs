@@ -13,6 +13,7 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
+      T.ok(await p.evaluate(() => { const a = document.getElementById('unit2'), b = document.getElementById('unit3'); return !!(a && b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)); }), width + ' px: Unit 2 is listed before Unit 3');
       T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 2 && /2 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), width + ' px: Unit 2 has two activities (Fires, Peat Bog Carbon Lab)');
       T.ok(/Fires/.test(await p.locator('#unit2').innerText()) && /Lessons 3 and 5/.test(await p.locator('section[aria-labelledby="unit2"]').innerText()), 'Unit 2 card names the lessons');
       T.ok(/Units 1, 4–5/.test(await p.locator('.dashboard-coming-soon summary').innerText()) && await p.locator('.dashboard-coming-soon #unit2').count() === 0, 'Coming soon note no longer lists Unit 2');
