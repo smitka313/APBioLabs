@@ -68,7 +68,12 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           const actions = new Set();
           let draws = 0, movedOnBoard = false, checkedDice = false;
           for (let attempt = 0; attempt < 500; attempt++) {
-            if (!await next.isVisible() || !await next.isEnabled()) break;
+            if (!await next.isVisible()) break;
+            if (!await next.isEnabled()) {
+              const travel = page.locator('#sg-travel-piece');
+              if (!await travel.isVisible()) break;
+              await travel.selectOption('stay');
+            }
             const action = await next.getAttribute('data-action');
             if (!action) break;
             actions.add(action);

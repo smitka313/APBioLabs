@@ -238,6 +238,28 @@
         .map(w=>({ predatorId:p.id, preyId:w.id, predatorName:name(p), preyName:name(w), predatorType:p.type, preyType:w.type,
           predatorCell:p.cell, preyCell:w.cell, predatorDice:DIE_COUNTS[p.type], preyDice:DIE_COUNTS[w.type], rounds:[] })));
   }
+  // Presentation-only observers share the exact candidate rule with the turn engine.
+  // A species that has not started this phase always sees a fresh set of pairings.
+  function huntReadiness(s, role) {
+    const active = s.step === 'hunt' && s.huntRole === role;
+    const hunter = active ? s.eventHunter : null;
+    const hypothetical = active ? s : { ...s, usedPairs: [] };
+    const own = of(s,role).filter(t=>['individual','smallGroup'].includes(t.type)&&(!hunter||t.id===hunter));
+    const qualified = own.filter(t=>eligible(s,t));
+    const pairings = candidateHunts(hypothetical,role,hunter).map(b=>({
+      predatorId:b.predatorId, preyId:b.preyId, predatorType:b.predatorType, preyType:b.preyType,
+      predatorCell:pos(b.predatorCell), preyCell:pos(b.preyCell)
+    }));
+    const prey = of(s,'wildebeest').length;
+    const blocked = !prey ? 'noPrey' : !own.length ? 'noHunters' : !qualified.length ? 'noEligibleHunters'
+      : !pairings.length ? 'noAdjacentPair' : null;
+    return {pairings,blocked,eligibleHunters:qualified.length};
+  }
+  function floodedCells(s) {
+    if (!s) return [];
+    const occupied = new Set(of(s,'lion','pride').map(t=>t.territory));
+    return geometry().territories.lion.flatMap(group=>occupied.has(group[0].home)?[]:group.map(pos));
+  }
   function activeCandidate(s) { return candidateHunts(s,s.huntRole,s.eventHunter)[0] || null; }
   function phase(s) {
     if (s.step==='complete') return { kind:'complete' };
@@ -381,5 +403,5 @@
       return s;
     } catch (_) { return null; }
   }
-  return {SEASONS,ROLES,LABELS,CARDS,create,restore,phase,act,results,compareDice};
+  return {SEASONS,ROLES,LABELS,CARDS,create,restore,phase,act,results,compareDice,huntReadiness,floodedCells};
 });

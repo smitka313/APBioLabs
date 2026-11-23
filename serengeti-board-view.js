@@ -61,22 +61,22 @@
   }
   function mirrorChooser() {
     const target = find('sg-expanded-options');
-    const original = find('sg-options');
-    if (!original || original.hidden) { target.replaceChildren(); return; }
-    const label = make('label','sg-chooser'), choice = original.cloneNode(true);
-    const oldLabel = original.labels && original.labels[0];
-    const labelText = oldLabel && Array.from(oldLabel.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();
-    const labelAttr = original.getAttribute('aria-label');
-    label.append(document.createTextNode(labelText || labelAttr || 'Choose a board action'));
-    choice.id = 'sg-expanded-select'; choice.removeAttribute('aria-labelledby');
-    choice.value = original.value;
-    choice.addEventListener('change',()=>{
-      const active = find('sg-options');
-      if (!active || !Array.from(active.options).some(o=>o.value===choice.value)) return;
-      active.value = choice.value;
-      active.dispatchEvent(new Event('change',{bubbles:true}));
-    });
-    label.append(choice); target.replaceChildren(label);
+    const selectors = [['sg-travel-piece','sg-expanded-travel-piece'],['sg-options','sg-expanded-select']];
+    target.replaceChildren(...selectors.flatMap(([id,mirrorId])=>{
+      const original=find(id);
+      if(!original||original.hidden) return [];
+      const label=make('label','sg-chooser'), choice=original.cloneNode(true);
+      const oldLabel=original.labels&&original.labels[0];
+      const labelText=oldLabel&&Array.from(oldLabel.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();
+      label.append(document.createTextNode(labelText||original.getAttribute('aria-label')||'Choose a board action'));
+      choice.id=mirrorId; choice.removeAttribute('aria-labelledby'); choice.value=original.value;
+      choice.addEventListener('change',()=>{
+        const active=find(id);
+        if(!active||active.disabled||!Array.from(active.options).some(o=>o.value===choice.value)) return;
+        active.value=choice.value; active.dispatchEvent(new Event('change',{bubbles:true}));
+      });
+      label.append(choice); return [label];
+    }));
   }
   function mirrorDice() {
     const original = find('sg-dice'), target = find('sg-expanded-dice');
@@ -118,7 +118,7 @@
   function sync() {
     if (!modal.open) return;
     const active = document.activeElement;
-    const focusedId = active && /^(sg-expanded-(next|move|select|start|view-season))$/.test(active.id) ? active.id : null;
+    const focusedId = active && /^(sg-expanded-(next|move|select|travel-piece|start|view-season))$/.test(active.id) ? active.id : null;
     const header = read('sg-board-title') || 'Expanded board';
     const phase = read('sg-phase'), title = read('sg-action-title');
     const player = find('sg-rolebar') && find('sg-rolebar').querySelector('[aria-current=true] b');

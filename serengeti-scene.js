@@ -232,7 +232,7 @@
       .sg-map .sg-map-hit[data-legal="true"]{cursor:pointer}
       .sg-map .sg-map-hit[data-legal="true"]:hover,.sg-map .sg-map-hit:focus-visible{fill:#fffef23c;stroke:#203d30;stroke-width:2;vector-effect:non-scaling-stroke}
       .sg-map .sg-map-hit[data-source="true"]:hover{fill:#fff4cf46}
-      .sg-map [data-layer="tokens"],.sg-map [data-layer="selected"],.sg-map [data-layer="choices"],.sg-map [data-layer="effects"]{pointer-events:none}
+      .sg-map [data-layer="tokens"],.sg-map [data-layer="selected"],.sg-map [data-layer="choices"], .sg-map [data-layer="effects"],.sg-map [data-layer="recent"],.sg-map [data-layer="flood"]{pointer-events:none}
       .sg-map .sg-map-grazing{transition:opacity 160ms linear}
       @media (prefers-reduced-motion:reduce){.sg-map .sg-map-grazing{transition:none}}
     </style>`;
@@ -274,12 +274,14 @@
       <g transform="translate(35 608)" fill="#5e4932" font-size="7.1" font-weight="700">
         <path d="M0 -2h13" stroke="#88442e" stroke-width="1.4"/><text x="17">Unfenced road</text>
         <path d="M80 -2h13" stroke="#72432e" stroke-width="1.4" stroke-dasharray="2 1.6"/><text x="98">Fenced road</text></g>
-      <g data-layer="choices"></g><g data-layer="effects"></g><g data-layer="tokens"></g><g data-layer="selected"></g></g>`;
+      <g data-layer="flood"></g><g data-layer="choices"></g><g data-layer="effects"></g><g data-layer="tokens"></g><g data-layer="selected"></g><g data-layer="recent"></g></g>`;
     const targets=svgEl('g',{'aria-label':'Map squares'});
     const buttons=new Map();
     const choices=svg.querySelector('[data-layer="choices"]');
     const animals=svg.querySelector('[data-layer="tokens"]');
     const effects=svg.querySelector('[data-layer="effects"]');
+    const flood=svg.querySelector('[data-layer="flood"]'), recent=svg.querySelector('[data-layer="recent"]');
+    let priorMarks='', priorFlood='';
     const selected=svg.querySelector('[data-layer="selected"]');
     let legal=new Set(), sourceKeys=new Set(), destinationKeys=new Set(), focusKey=null;
     const tokenNodes=new Map(), running=new Map();
@@ -344,13 +346,22 @@
 
     const speciesStyle={wildebeest:['#eee9cf','#263d36'],lion:['#f2cd73','#583719'],hyena:['#f0d6c6','#533d39']};
     const tokenLabel=t=>NAMES[t.species]+({individual:' individual',smallGroup:' small group',herd:' herd',clan:' clan',pride:' pride'}[t.type]||'');
+    // The outline identifies species even when tokens are stacked or viewed in grayscale.
+    function tokenBase(species,cx,cy,r,fill,extra='') {
+      if (species==='hyena') return `<path d="M${cx} ${cy-r}l${r} ${r} -${r} ${r} -${r} -${r}Z" fill="${fill}" stroke-linejoin="round" ${extra}/>`;
+      if (species==='lion') {
+        const dx=r*.866, dy=r*.5;
+        return `<path d="M${cx} ${cy-r}l${dx} ${dy}v${r}l-${dx} ${dy} -${dx} -${dy}v-${r}Z" fill="${fill}" stroke-linejoin="round" ${extra}/>`;
+      }
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" ${extra}/>`;
+    }
     const paintToken=(t,idx,num)=>{
       const [fill,stroke]=speciesStyle[t.species];
       const gap=num<=1?0:11, cx=UNIT/2+(num===1?0:idx%2?gap/2:-gap/2);
       const cy=UNIT/2+(num<=2?0:idx<2?-gap/2:gap/2);
       const r=num===1?10.2:6.3;
       const symbol={individual:'1',smallGroup:'G',herd:'H',clan:'C',pride:'P'}[t.type];
-      return `<g><circle cx="${cx+.7}" cy="${cy+1.1}" r="${r+.45}" fill="#25231a" opacity=".35"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
+      return `<g data-species-mark="${t.species}">${tokenBase(t.species,cx+.7,cy+1.1,r+.45,'#25231a','opacity=".35"')}${tokenBase(t.species,cx,cy,r,fill,`stroke="${stroke}" stroke-width="1.45"`)}
         ${num===1?`<use href="#${id}-${t.species}-chip" x="${cx-7.7}" y="${cy-8.1}" width="15.4" height="11.9"/>`:''}
         <text x="${cx}" y="${cy+(num===1?6.5:2.6)}" text-anchor="middle" fill="${stroke}" font-family="system-ui,sans-serif" font-size="${num===1?6.4:7}" font-weight="900">${symbol||'W'}</text></g>`;
     };
@@ -359,6 +370,26 @@
       sourceKeys=toKeys(view.sourceCells);
       destinationKeys=toKeys(view.legalCells);
       legal=new Set([...sourceKeys,...destinationKeys]);
+      const floodCells=toKeys(view.floodedCells);
+      const floodKey=[...floodCells].join('|');
+      if (floodKey!==priorFlood) {
+        priorFlood=floodKey;
+        flood.innerHTML=[...floodCells].map(coord=>{
+          const [x,y]=coord.split(':').map(Number),[l,t]=point(x,y);
+          return `<g data-flood-cell="${coord}"><rect x="${l+1}" y="${t+1}" width="${UNIT-2}" height="${UNIT-2}" rx="2" fill="#9dc8da" fill-opacity=".45" stroke="#134a67" stroke-width="1.3" stroke-dasharray="2.6 1.7"/><path d="M${l+3} ${t+9}q3-2.5 6 0t6 0m-12 5q3-2.5 6 0t6 0" fill="none" stroke="#134a67" stroke-width="1.4"/></g>`;
+        }).join('');
+      }
+      const changeCells=(Array.isArray(view.lastChangedCells)?view.lastChangedCells:[]).filter(c=>c&&BOARD[c.y]?.[c.x]).slice(0,30);
+      const changeKey=changeCells.map(c=>key(c.x,c.y)+c.change).join('|');
+      if (changeKey!==priorMarks) {
+        priorMarks=changeKey;
+        recent.innerHTML=changeCells.map(({x,y,change})=>{
+          const [l,t]=point(x,y), added=change==='added', moved=change==='moved';
+          const ink=added?'#245437':moved?'#594013':'#762f1f';
+          const glyph=added?'M-2.7 0h5.4m-2.7-2.7v5.4':moved?'M-3 0h6m-3-2.2L3 0 0 2.2':'M-2.3-2.3l4.6 4.6m0-4.6-4.6 4.6';
+          return `<g data-change-cell="${x}:${y}" data-change-kind="${added?'added':moved?'moved':'removed'}"><rect x="${l+1.5}" y="${t+1.5}" width="${UNIT-3}" height="${UNIT-3}" rx="3" fill="none" stroke="#fff8db" stroke-width="3.6"/><rect x="${l+1.5}" y="${t+1.5}" width="${UNIT-3}" height="${UNIT-3}" rx="3" fill="none" stroke="${ink}" stroke-width="1.8"/><g transform="translate(${l+(added||moved?UNIT-5:5)} ${t+5})"><circle r="4.6" fill="#fff6d7" stroke="${ink}" stroke-width="1"/><path d="${glyph}" fill="none" stroke="${ink}" stroke-width="1.35"/></g></g>`;
+        }).join('');
+      }
       const oldFocus=svg.contains(document.activeElement);
       const selectedCell=view.selected||view.position;
       const selectedKey=selectedCell&&key(selectedCell.x,selectedCell.y);
@@ -469,6 +500,7 @@
         const isSource=sourceKeys.has(k), isDestination=destinationKeys.has(k);
         const picked=isSource&&Boolean(tokens?.some(t=>t.id===view.selectedTokenId));
         const label=cellLabel(cell)+(tokens?', contains '+tokens.map(tokenLabel).join(', '):'')+
+          (floodCells.has(k)?', flooded territory; lions cannot hunt':'')+
           (picked?', selected piece':isSource?', select piece':'')+
           (huntId&&same(view.predatorPosition,cell)?', predator in the current hunt':'')+
           (selectedKey===k?', current selection':'')+(isDestination?(sourceKeys.size?', available destination':', available choice'):'');
