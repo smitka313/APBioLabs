@@ -13,12 +13,12 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('.dashboard-activity').count() === 12
+      T.ok(await p.locator('.dashboard-activity').count() === 13
         && await p.locator('section[aria-labelledby="unit1"] .dashboard-activity').count() === 3
         && await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 4
         && await p.locator('section[aria-labelledby="unit3"] .dashboard-activity').count() === 4
-        && await p.locator('section[aria-labelledby="unit4"] .dashboard-activity').count() === 1,
-        width + ' px: twelve activity cards (three Unit 1, four Unit 2, four Unit 3, one Unit 4)');
+        && await p.locator('section[aria-labelledby="unit4"] .dashboard-activity').count() === 2,
+        width + ' px: thirteen activity cards (three Unit 1, four Unit 2, four Unit 3, two Unit 4)');
       T.ok((await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').textContent()).trim() === '4 activities available', width + ' px: tag says 4 activities available');
       const unit3Cards = p.locator('section[aria-labelledby="unit3"] .dashboard-activity');
       const steps = await unit3Cards.locator('.dashboard-preview').evaluateAll(links=>links.map(a=>a.getAttribute('href')));

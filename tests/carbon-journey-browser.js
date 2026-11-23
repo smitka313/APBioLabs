@@ -64,8 +64,8 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       assert.equal(await dashboard.locator('section[aria-labelledby="unit1"] .dashboard-activity').count(),3);
       assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
       assert.equal(await dashboard.locator('section[aria-labelledby="unit3"] .dashboard-activity').count(),4);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit4"] .dashboard-activity').count(),1);
-      assert.equal(await dashboard.locator('.dashboard-activity').count(),12);
+      assert.equal(await dashboard.locator('section[aria-labelledby="unit4"] .dashboard-activity').count(),2);
+      assert.equal(await dashboard.locator('.dashboard-activity').count(),13);
       assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
       await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
       const resume = dashboard.locator('#carbon-journey-open');

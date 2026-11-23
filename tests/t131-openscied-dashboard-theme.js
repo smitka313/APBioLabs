@@ -44,6 +44,41 @@ async function checkMastheadLayout(browser,site,seed,description) {
   } finally { release(); await ctx.close(); }
 }
 
+// A returning visitor can still have an older dashboard script in cache.
+async function checkMixedVersionWorkspace(browser,site) {
+  const ctx=await browser.newContext({viewport:{width:1195,height:845},colorScheme:'dark',reducedMotion:'reduce'});
+  try {
+    await ctx.addInitScript(()=>localStorage.setItem('aplab:openscied:b4-hawksbeard:v1',
+      JSON.stringify({prediction:'city',released:2,lastSection:'release',lastVisitedAt:1680000000000,v:1,answers:{}})));
+    await ctx.route(/https:\/\/(?:fonts\.(?:googleapis|gstatic)\.com|gc\.zgo\.at)\//,route=>route.abort());
+    const p=await ctx.newPage();
+    await p.goto(site.url+'openscied-dashboard.html');
+    await p.locator('#openscied-student-identity .id-panel').waitFor();
+    await p.locator('#openscied-resume').waitFor();
+    const heights=await p.evaluate(()=>{
+      const host=document.querySelector('#openscied-student-identity');
+      const live=host.querySelector('.id-box:not([data-ph])');
+      const top=selector=>document.querySelector(selector).getBoundingClientRect().top;
+      const before=top('#activities');
+      const old=live.cloneNode(true);
+      old.dataset.ph='dashboard-identity';
+      old.inert=true;
+      old.setAttribute('aria-hidden','true');
+      host.prepend(old);
+      const after=top('#activities');
+      return {before,after,placeholderDisplay:getComputedStyle(old).display,
+        layoutGap:live.getBoundingClientRect().top-top('#student-panel-title'),
+        heroOffset:Math.abs(top('.dashboard-hero-copy')-top('.dashboard-hero-actions'))};
+    });
+    assert.equal(heights.placeholderDisplay,'none','the real form wins over a lingering placeholder');
+    assert.ok(heights.layoutGap<=60,'sign-in sits directly below the workspace title: '+heights.layoutGap+'px');
+    assert.ok(heights.heroOffset<=2,'hero copy and workspace begin on the same line');
+    assert.ok(Math.abs(heights.after-heights.before)<=2,'duplicate reservation must not push down the activities');
+    if(screenshots)await p.screenshot({path:path.join(screenshots,'1195-returning-workspace.png'),fullPage:true,animations:'disabled'});
+    console.log('1195px returning workspace: stale placeholder collapses and both sides are top aligned');
+  } finally { await ctx.close(); }
+}
+
 (async () => {
   const site = await T.serve();
   let browser;
@@ -53,6 +88,7 @@ async function checkMastheadLayout(browser,site,seed,description) {
     if (screenshots) fs.mkdirSync(screenshots,{recursive:true});
     await checkMastheadLayout(browser,site,undefined,'fresh visit');
     await checkMastheadLayout(browser,site,fixture,'returning student');
+    await checkMixedVersionWorkspace(browser,site);
     for (const [width,height,dark] of sizes) {
       const ctx=await T.ctxFor(browser,{width,height,dark,reduced:true,touch:width===390,seed:fixture});
       try {

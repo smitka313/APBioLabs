@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="104" viewBox="0 0 160 104" role="img" aria-labelledby="alert-rat-title">
+<title id="alert-rat-title">Brown rat paused upright</title>
+<defs>
+  <linearGradient id="alert-fur" x2=".42" y2="1"><stop stop-color="#ac7950"/><stop offset=".56" stop-color="#9b6b4b"/><stop offset="1" stop-color="#745341"/></linearGradient>
+  <linearGradient id="alert-belly" x2=".83" y2="1"><stop stop-color="#dfc29a"/><stop offset="1" stop-color="#a47554"/></linearGradient>
+  <linearGradient id="alert-ear" x2="0" y2="1"><stop stop-color="#d1a08a"/><stop offset="1" stop-color="#8c5e55"/></linearGradient>
+  <path id="alert-body" d="M18 42c9-4 9-10 18-15 3-2 7-4 11-5-1-7 4-11 10-11 6 .4 9 4.5 8 9l2 .2c12 5 17 20 24 28 9 10 21 21 21 35 .3 10-8 15-24 14l-25-.5-13 1c-4 0-6-3-2-5l13-7c-4-5-8-13-11-22-3-7-7-11-13-12-8-2-13 1-19-4-3-2-3-4 0-6Z"/>
+  <path id="alert-tail" d="M100 88c15 9 36 7 45-4 6-8 4-17-3-22-7-5-15-2-18 0"/>
+</defs>
+<use href="#alert-tail" fill="none" stroke="#ebd2a5" stroke-width="7.8" stroke-linecap="round" opacity=".88"/>
+<use href="#alert-tail" fill="none" stroke="#533b3b" stroke-width="5.95" stroke-linecap="round"/>
+<use href="#alert-tail" fill="none" stroke="#b68176" stroke-width="3.25" stroke-linecap="round"/>
+<path d="M108 91q18 6 32-2m2-4q10-14-2-21" fill="none" stroke="#e2a799" stroke-width="1.2" opacity=".78" stroke-linecap="round"/>
+<use href="#alert-body" fill="none" stroke="#ebd2a5" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".88"/>
+<use href="#alert-body" fill="url(#alert-fur)" stroke="#3d2c2c" stroke-width="2.1" stroke-linejoin="round"/>
+<path d="M20 47q11 1 21-2c11 1 12 7 22 19 6 8 9 13 11 22l-11 8-14 .4c-2 0-2-1 0-2l13-8c-4-6-7-13-11-22-4-7-8-11-15-12-7-1-12 2-16-3Z" fill="url(#alert-belly)"/>
+<path d="M53 52c0 8-5 12-13 14-2 1-10 0-9 3.2 2 4 10 3 15 2l12-4 5-8" fill="#ab7b5a" stroke="#67493c" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M35 70h8m9-2 5-2" fill="none" stroke="#dbac92" stroke-width="1.13" stroke-linecap="round"/>
+<path d="M102 72q-6-4-13-3c-9 2-17 9-16 15 1 2 4 4 8 5-7 0-13 2-17 5 0 2 3 3 6 3l18-.2 9-6" fill="#8a644a" stroke="#583f38" stroke-width="1.4" stroke-linejoin="round"/>
+<path d="M66 95q5 .7 12-.6m7-26q4-4 11-2" fill="none" stroke="#d6a68d" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M47 26q-3-7 1-12c4-5 11-4 15 0 2 3 1 8-2 12" fill="#825c50" stroke="#503930" stroke-width="1.45"/>
+<path d="M50 23c-3-6 0-11 5-10 6 0 6 5 3 9" fill="url(#alert-ear)" stroke="#bd8c74" stroke-width=".85"/>
+<path d="M64 26q10 9 17 23c8 13 24 18 26 32" fill="none" stroke="#e1af7e" stroke-width="1.55" opacity=".77" stroke-linecap="round"/>
+<g fill="none" stroke="#d5a77b" stroke-width="1" opacity=".59" stroke-linecap="round">
+<path d="M54 32l4 3m9-3 3 5m-15 4 6 5m4-4 4 6m-3 5 4 7m5-8 4 5m-3 6 4 5m5-3 6 3m5 4 7 6m-18 3 6 2m-49-26 3 5"/>
+</g>
+<path d="M29 37q4-4 9-2" fill="none" stroke="#d99468" stroke-width="1.3"/>
+<ellipse cx="34.4" cy="37.3" rx="3.65" ry="3.6" fill="#2c2826"/>
+<circle cx="33.2" cy="36.1" r="1.11" fill="#f6dfa8"/>
+<path d="M17 42q3-2 6-.5c1 3-2 4-5 4.2q-3-.7-1-3.7Z" fill="#a97273" stroke="#4f3a3b" stroke-width=".8"/>
+<path d="M23 45 6 41m16 6-19 2m22-.5-13 6" fill="none" stroke="#ead9b9" stroke-width=".8" stroke-linecap="round" opacity=".88"/>
+</svg>
