@@ -219,7 +219,7 @@
     host.addEventListener('click',e=>{
       const control=e.target.closest('button');if(!control||!host.contains(control))return;
       if(control.dataset.habitatAnimal||control.dataset.habitatResource){
-        if(e.detail!==0&&suppress?.id===control.dataset.habitatAnimal&&Date.now()<suppress.until){suppress=null;e.preventDefault();return;}
+        if(e.detail!==0&&suppress&&suppress.id===control.dataset.habitatAnimal&&Date.now()<suppress.until){suppress=null;e.preventDefault();return;}
         if(control.dataset.habitatAnimal)selectAnimal(control.dataset.habitatAnimal,e.detail===0);
         else tryMatch(selected,control.dataset.habitatResource);
         return;
