@@ -63,6 +63,7 @@ a { color: var(--accent); }
 .keep small { display: block; color: var(--muted); font-size: .85rem; }
 .honest { border-left: 3px solid var(--line); padding-left: 10px; }
 </style>
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <main class="card">
