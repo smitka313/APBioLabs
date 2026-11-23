@@ -5,23 +5,26 @@
 <script src="domain-redirect.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Serengeti Carrying Capacity Lab · Biology Lab Bench</title>
-<meta name="description" content="Run the OpenSciEd Lesson 5 wildebeest model, test food availability, and compare the results with Serengeti field data.">
+<meta name="description" content="Run the OpenSciEd Lesson 5 wildebeest model, investigate food, water, and shelter, and compare with Serengeti field data.">
 <meta name="robots" content="noindex, follow">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b1-carrying-capacity.css">
+<link rel="stylesheet" href="carrying-habitat.css">
 <script defer src="lab.js"></script>
 <script defer src="carrying-logic.js"></script>
 <script defer src="carrying-scene.js"></script>
+<script defer src="carrying-habitat-logic.js"></script>
+<script defer src="carrying-habitat.js"></script>
 <script defer src="openscied-b1-carrying-capacity.js"></script>
 </head>
 <body class="cc">
-<a class="cc-skip" href="#cc-main">Skip to investigation</a>
+<a class="skip-link" href="#cc-main">Skip to investigation</a>
 <header class="cc-wrap">
 <nav class="cc-top" aria-label="Page links"><a href="openscied-dashboard.html#unit1">← OpenSciEd dashboard</a><span class="theme-switch" data-ph="theme" aria-hidden="true"></span></nav>
 <div class="cc-hero">
   <div class="cc-hero-copy"><p class="cc-tag">Unit 1 · Lesson 5 · Serengeti field lab</p>
-  <h1>How many can the grass support?</h1><p>Follow a wildebeest herd as it grows, competes for food, and sometimes shrinks.</p></div>
+  <h1>What limits the herd?</h1><p>Investigate carrying capacity as wildebeest compete for food, water, and shelter.</p></div>
   <div class="cc-hero-image" aria-hidden="true"></div>
 </div>
 </header>
@@ -29,8 +32,9 @@
 <noscript><p>Enable JavaScript to run this model and save your investigation.</p></noscript>
 <nav class="cc-nav" aria-label="Investigation sections">
 <button type="button" data-cc-go="run" aria-current="page"><small>01</small> Run the model</button>
-<button type="button" data-cc-go="evidence"><small>02</small> Read field data</button>
-<button type="button" data-cc-go="explain"><small>03</small> Explain</button>
+<button type="button" data-cc-go="habitat"><small>02</small> Habitat challenge</button>
+<button type="button" data-cc-go="evidence"><small>03</small> Read field data</button>
+<button type="button" data-cc-go="explain"><small>04</small> Explain</button>
 <span id="cc-save-status">Work saves on this device</span>
 </nav>
 
@@ -58,12 +62,23 @@
   <div class="cc-actions" id="cc-compare-controls" hidden><label for="cc-grass">Grass available <select id="cc-grass"><option value="50">50% of grass roles</option><option value="75">75% of grass roles</option></select></label><button type="button" class="cc-primary" id="cc-compare">Start grass comparison</button></div>
   <div class="cc-actions" id="cc-run-switches" hidden aria-label="Choose a run to inspect"><button type="button" id="cc-view-baseline" aria-pressed="false">Show baseline</button><button type="button" id="cc-view-comparison" aria-pressed="false">Show comparison</button></div>
   <p id="cc-comparison-result" class="cc-result" hidden></p></section>
-  <section class="cc-panel cc-content" aria-labelledby="cc-check-title"><p class="cc-tag">Quick check · Practice, not a grade</p><h3 id="cc-check-title">Why does growth slow?</h3>
+  <section class="cc-panel cc-content" aria-labelledby="cc-check-title"><p class="cc-tag">Quick check · Practice, not a grade</p><h3 id="cc-check-title">Why does growth slow?</h3><p>A <strong>limiting factor</strong> is something that restricts a population’s growth or size. It could be a resource in short supply, such as food, or a condition such as extreme heat.</p>
   <fieldset id="cc-check-food"><legend>If more wildebeest try to feed than there are grass units, what limits the herd?</legend>
    <label><input type="radio" name="cc-check-food" value="grass"> The amount of grass available</label>
    <label><input type="radio" name="cc-check-food" value="herd"> The starting herd size by itself</label>
   </fieldset><button type="button" id="cc-check-answer">Check my thinking</button><p id="cc-feedback" class="cc-result" hidden></p></section>
 </div>
+<div class="cc-panel cc-content cc-habitat-callout">
+<p class="cc-tag">Go beyond grass</p><h3>What else could limit the herd?</h3>
+<p>Grass was the only resource tested here. Now move individual animals to food, water, or shelter and see what changes when one resource runs short.</p>
+<button type="button" class="cc-primary" data-cc-go="habitat">Try the habitat challenge →</button>
+</div>
+</section>
+
+<section id="cc-habitat" aria-labelledby="cc-habitat-title" hidden>
+<div class="cc-section-head"><div><p class="cc-tag">Habitat challenge · Simulated outcomes</p><h2 id="cc-habitat-title" tabindex="-1">Can every animal find what it needs?</h2></div></div>
+<div id="cc-habitat-app"></div>
+<p class="cc-caption">The matching idea comes from Project WILD’s <a href="https://prod2.outdoornebraska.gov/wp-content/uploads/2023/03/Oh-Deer.pdf">“Oh Deer!” as used by Nebraska Game and Parks</a>. This is a separate digital model, not part of the OpenSciEd Lesson 5 classroom rules.</p>
 <p class="cc-next-section"><button type="button" data-cc-go="evidence">Check against field data →</button></p>
 </section>
 
@@ -82,9 +97,10 @@
 <div class="cc-section-head"><div><p class="cc-tag">Use evidence · Write in your own words</p><h2 id="cc-explain-title" tabindex="-1">Explain what limits the herd.</h2></div></div>
 <div class="cc-lab cc-write">
 <div class="cc-panel cc-content"><label for="cc-claim">How did grass availability affect the herd in your model?</label><p class="cc-caption">Use a specific round or compare two runs. Explain what caused the change, not just whether the herd grew.</p><textarea id="cc-claim" rows="5" maxlength="4000"></textarea>
+<label for="cc-habitat-claim">How did a limiting factor change the herd in the habitat challenge?</label><p class="cc-caption">Name the factor and use evidence from two runs. A population can still grow when a factor limits it. Did it grow as much as it did without the shortage?</p><textarea id="cc-habitat-claim" rows="3" maxlength="4000"></textarea>
 <label for="cc-limit">What is one thing this model cannot tell us about the real herd?</label><p class="cc-caption">Consider the difference between a classroom rule and a field observation.</p><textarea id="cc-limit" rows="3" maxlength="4000"></textarea>
 <div class="cc-actions"><button type="button" class="cc-primary" id="cc-download">Download my investigation</button><button type="button" id="cc-copy">View text to copy</button></div><p id="cc-download-status" class="cc-caption" hidden></p></div>
-<aside class="cc-panel cc-content"><h3>Evidence within reach</h3><p id="cc-writing-evidence">No model rounds yet. Return to the model to collect data.</p><div class="cc-actions"><button type="button" data-cc-go="run">Return to runs</button><button type="button" data-cc-go="evidence">Revisit field data</button></div></aside>
+<aside class="cc-panel cc-content"><h3>Evidence within reach</h3><p id="cc-writing-evidence">No model rounds yet. Return to the model to collect data.</p><p id="cc-writing-habitat"></p><div class="cc-actions"><button type="button" data-cc-go="run">Return to runs</button><button type="button" data-cc-go="habitat">Revisit habitat runs</button><button type="button" data-cc-go="evidence">Revisit field data</button></div></aside>
 </div>
 </section>
 
@@ -92,12 +108,13 @@
 <details class="cc-notes"><summary>What this simulation models · sources and limits</summary>
 <p>Adapted from the OpenSciEd B.1 Lesson 5 Serengeti Kinesthetic Model. Two people in the guide’s example class are observers; the other 20 roles start as two wildebeest and 18 grass units. One available grass unit can feed one wildebeest. Unfed animals leave the herd; half of the fed animals, rounded down, contribute one new animal each. Roles switch between rounds, so the model is not a literal count of plants growing in the Serengeti.</p>
 <p>The comparison changes the share of grass roles available to feed the herd, rounding down to whole units. This is a controlled test, not a real drought forecast. No predation, disease, migration, or rainfall is simulated. The rounding rule, fixed role pool, and reproduction rule are classroom simplifications; carrying capacity in the field can change when conditions change.</p>
+<p>The habitat challenge models one immediate need on each piece to make competition visible. Real animals need several resources at once, and shortages can affect health or cause movement before they affect survival. Shelter is modeled as limited access to usable shade or cover, not dens or a universal driver of wildebeest numbers. The shortage trials change one resource on purpose; a real drought could reduce both forage and water. Invented stocks and a short run do not estimate real carrying capacity.</p>
 <p><a href="https://openscied-uploads-production.s3.amazonaws.com/G9_UBE/hires/B.1%20Teacher%20Edition.pdf#page=127">OpenSciEd Lesson 5 Teacher Edition</a> · <a href="openscied-b1-migration.html">Migration Map Explorer</a></p>
 </details>
 <details class="cc-notes"><summary>Name, class period &amp; privacy</summary><div id="cc-identity"></div><p>Names, class periods, and answers stay in this browser. Your file includes your name and class period if entered.</p></details>
 </main>
 <dialog id="cc-report" aria-labelledby="cc-report-title"><div class="cc-strip"><h2 id="cc-report-title">Investigation text</h2><form method="dialog"><button>Close</button></form></div><p id="cc-report-help">Select and copy this text if your device blocks downloads.</p><textarea id="cc-report-text" rows="12" readonly aria-label="Investigation text to copy"></textarea></dialog>
-<dialog id="cc-reset-dialog" aria-labelledby="cc-reset-title"><h2 id="cc-reset-title">Restart this investigation?</h2><p>This clears the runs and written responses for this activity only. Download your investigation first if you need a copy.</p><div class="cc-actions"><form method="dialog"><button autofocus>Keep my work</button></form><button type="button" id="cc-reset-confirm">Clear this investigation</button></div></dialog>
-<footer class="cc-wrap cc-footer"><p><strong>Created by Robert Smitka.</strong> Original digital adaptation: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p><p>Adapted from <a href="https://www.openscied.org/">OpenSciEd</a> Biology B.1 Lesson 5, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes include original illustrations, the virtual role model, a grass-only comparison, graphing, and interpretation prompts. Not affiliated with or endorsed by OpenSciEd.</p><p>Student work stays in this browser. No student responses are transmitted.</p></footer>
+<dialog id="cc-reset-dialog" aria-labelledby="cc-reset-title"><h2 id="cc-reset-title">Restart this investigation?</h2><p>This clears the grass runs, habitat challenge, and written responses for this activity only. Download your investigation first if you need a copy.</p><div class="cc-actions"><form method="dialog"><button autofocus>Keep my work</button></form><button type="button" id="cc-reset-confirm">Clear this investigation</button></div></dialog>
+<footer class="cc-wrap cc-footer"><p><strong>Created by Robert Smitka.</strong> Original digital adaptation: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p><p>Adapted from <a href="https://www.openscied.org/">OpenSciEd</a> Biology B.1 Lesson 5, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes include original illustrations, the virtual role model, a grass-only comparison, graphing, interpretation prompts, and a separate habitat challenge inspired by Project WILD. Not affiliated with or endorsed by OpenSciEd.</p><p>Student work stays in this browser. No student responses are transmitted.</p></footer>
 </body>
 </html>

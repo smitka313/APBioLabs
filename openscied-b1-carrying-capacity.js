@@ -5,8 +5,8 @@
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const n = new Intl.NumberFormat('en-US');
-  const strings = ['prediction', 'claim', 'limit'];
-  const stages = ['run', 'evidence', 'explain'];
+  const strings = ['prediction', 'claim', 'habitat-claim', 'limit'];
+  const stages = ['run', 'habitat', 'evidence', 'explain'];
   const feedback = {
     food: {
       correct: 'Yes. One grass unit feeds one animal. If there is less grass than the herd needs, some animals do not survive.',
@@ -59,6 +59,7 @@
     return 'Over the last four rounds, the herd averaged '+first+' in the baseline and '+second+' with '+state.comparison.grassPercent+'% grass available. A herd can fluctuate from round to round; compare the pattern, not just the last point.';
   };
   const scene = window.CarryingScene.mount($('#cc-board'));
+  const habitat = window.CarryingHabitatUI.mount($('#cc-habitat-app'), {announce:speak});
   let chart, fieldChart;
   const field = L.EVIDENCE;
   function renderLab() {
@@ -96,6 +97,7 @@
   function renderWriting() {
     const items = [state.baseline,state.comparison].filter((s)=>s?.round).map((s)=>'At round '+s.round+', the '+(s.grassPercent === 100?'baseline':s.grassPercent+'% grass comparison')+' ended with '+plural(s.population,'wildebeest','wildebeest')+'.');
     $('#cc-writing-evidence').textContent = [...items,compareText()].filter(Boolean).join(' ') || 'No model rounds yet. Return to the model to collect data.';
+    $('#cc-writing-habitat').textContent = habitat.report() || 'No completed habitat runs yet.';
   }
   function go(page, focus = true) {
     state.page = page;
@@ -122,7 +124,7 @@
   const report = () => {
     const who = Lab.identity.get() || {};
     const describe = (sim,name) => sim?.round ? [name+' (SIMULATED)', 'Round | Starting herd | Grass units | Survivors | Births | Deaths | Ending herd', ...sim.rows.map((r)=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending].join(' | '))].join('\n') : name+': no completed rounds.';
-    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Field evidence (published estimates, not simulated)\n'+fieldSource+'\n'+fieldDOI, 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
+    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (published estimates, not simulated)\n'+fieldSource+'\n'+fieldDOI, 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
   };
   const openReport = (message) => {
     $('#cc-report-text').value = report(); $('#cc-report-help').textContent = message || 'Select and copy this text if your device blocks downloads.'; $('#cc-report').showModal();
@@ -181,7 +183,7 @@
   }
   $('#cc-reset').addEventListener('click',()=>$('#cc-reset-dialog').showModal());
   $('#cc-reset-confirm').addEventListener('click',()=>{
-    state=fresh(); save(); $('#cc-reset-dialog').close(); $('#cc-grass').value='50';
+    state=fresh(); habitat.reset(); save(); $('#cc-reset-dialog').close(); $('#cc-grass').value='50';
     for (const id of strings) $('#cc-'+id).value='';
     $$('input[type="radio"]').forEach((el)=>{el.checked=false;});
     for (const id of ['cc-feedback','cc-field-feedback']) {$('#'+id).hidden=true;$('#'+id).textContent='';}

@@ -101,6 +101,233 @@ async function withPage(browser, cfg, work) {
   }
 }
 
+const HABITAT = '#cc-habitat-app';
+const ANIMAL = '[data-habitat-animal]';
+const SOURCE = ['food', 'water', 'shelter'];
+const habitatAnimal = (p, id) => p.locator(HABITAT + ` [data-habitat-animal="${id}"]`);
+const habitatStation = (p, resource) => p.locator(HABITAT + ` [data-habitat-resource="${resource}"]`);
+const habitatMatch = (p, id) => p.locator(HABITAT + ` [data-habitat-match="${id}"]`);
+const habitatStock = async (p, resource) => p.locator(HABITAT + ` [data-habitat-stock="${resource}"]`).evaluate(el => {
+  // Prefer a numeric accessible/state hook if the UI provides one; prose also
+  // includes the number of remaining whole resource units.
+  const value = el.dataset.habitatRemaining ?? (el.textContent.match(/\d+/) || [])[0];
+  if (value == null || !/^\d+$/.test(value)) throw new Error('Missing numeric habitat stock for ' + el.dataset.habitatStock);
+  return Number(value);
+});
+const habitatAnimals = (p) => p.locator(HABITAT + ' ' + ANIMAL).evaluateAll(nodes => nodes.map(el => ({
+  id: el.dataset.habitatAnimal, need: el.dataset.habitatNeed, disabled: el.disabled
+})));
+const habitatHerd = (p) => p.locator(HABITAT).evaluate(el => [...new Set(
+  [...el.querySelectorAll('[data-habitat-animal], [data-habitat-match]')]
+    .map(item => (item.dataset.habitatAnimal ?? item.dataset.habitatMatch) + ':' + item.dataset.habitatNeed)
+)].sort());
+
+const habitatScores = locator => locator.locator('article.cc-habitat-outcome dl').evaluateAll(rows =>
+  rows.map(dl => Object.fromEntries([...dl.querySelectorAll('dt')].map(term =>
+    [term.textContent.trim(), Number(term.nextElementSibling.textContent.trim())]))));
+const sameScores = (actual, expected) => JSON.stringify(actual) === JSON.stringify(expected);
+const BALANCED_SCORE = { 'Starting herd': 8, Survived: 8, Unmatched: 0, Calves: 4, 'Next herd': 12 };
+const FOOD_SCORE = { 'Starting herd': 8, Survived: 6, Unmatched: 2, Calves: 3, 'Next herd': 9 };
+
+async function beginHabitat(p) {
+  await go(p, 'habitat');
+  const prediction = p.locator('#cc-habitat-prediction');
+  await prediction.waitFor({ state: 'visible' });
+  await p.locator('#cc-habitat-resource').selectOption('low-food');
+  await prediction.selectOption('food');
+  await p.locator('#cc-habitat-start').click();
+  await p.locator(HABITAT + ' ' + ANIMAL).first().waitFor({ state: 'visible' });
+}
+
+async function availableAnimal(p) {
+  const roster = await habitatAnimals(p);
+  for (const piece of roster) {
+    if (!piece.disabled && SOURCE.includes(piece.need) && await habitatStock(p, piece.need) > 0 &&
+        await habitatMatch(p, piece.id).count() === 0) return piece;
+  }
+  return null;
+}
+
+async function requireAvailableAnimal(p) {
+  const piece = await availableAnimal(p);
+  assert.ok(piece, 'At least one unmatched animal should have an available station.');
+  return piece;
+}
+
+async function matchRemainingHabitat(p) {
+  let matched = 0;
+  for (let i = 0, max = (await habitatHerd(p)).length; i < max; i++) {
+    const piece = await availableAnimal(p);
+    if (!piece) break;
+    await matchHabitat(p, piece, 'click');
+    matched++;
+  }
+  return matched;
+}
+
+async function matchHabitat(p, piece, modality) {
+  const source = habitatAnimal(p, piece.id);
+  const target = habitatStation(p, piece.need);
+  const stock = await habitatStock(p, piece.need);
+  if (modality === 'keyboard') {
+    await source.focus();
+    await p.keyboard.press('Space');
+    await target.focus();
+    await p.keyboard.press('Enter');
+  } else if (modality === 'drag') {
+    await source.dragTo(target);
+  } else if (modality === 'tap') {
+    await source.tap();
+    await target.tap();
+  } else {
+    await source.click();
+    await target.click();
+  }
+  await habitatMatch(p, piece.id).waitFor({ state: 'visible' });
+  check(await habitatStock(p, piece.need) === stock - 1,
+    `${modality} match marks one animal and uses exactly one ${piece.need} unit`);
+}
+
+async function habitatVisual(p, cfg) {
+  await beginHabitat(p);
+  check(await fit(p, HABITAT), cfg.name + ': interactive habitat board fits horizontally');
+  await shot(p, cfg.name + '-habitat-setup', true);
+  const roster = await habitatHerd(p);
+  const first = await requireAvailableAnimal(p);
+  await matchHabitat(p, first, cfg.touch ? 'tap' : 'click');
+  check(JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster),
+    cfg.name + ': matching a need leaves the starting herd intact until resolution');
+  await shot(p, cfg.name + '-habitat-matched', true);
+  if (cfg.width === 390) await axeAudit(p, cfg.name + ' Habitat');
+  await matchRemainingHabitat(p);
+  await p.locator('#cc-habitat-finish').click();
+  await p.locator('#cc-habitat-result').waitFor({ state: 'visible' });
+  check(await fit(p, '#cc-habitat-result'), cfg.name + ': habitat result is visible without horizontal overflow');
+  await shot(p, cfg.name + '-habitat-result', true);
+  if (cfg.width === 390) {
+    await p.locator('#cc-habitat-compare').click();
+    await matchRemainingHabitat(p);
+    await p.locator('#cc-habitat-finish').click();
+    await p.locator('#cc-habitat-comparison').waitFor({ state: 'visible' });
+    check(await fit(p, '#cc-habitat-comparison'), cfg.name + ': completed comparison fits horizontally');
+    await shot(p, cfg.name + '-habitat-comparison', true);
+  }
+}
+
+async function followHabitatWorkflow(browser, url) {
+  await withPage(browser, { name: 'desktop-habitat-workflow', width: 1366, height: 900 }, async p => {
+    await readiness(p, url, 'light');
+    await beginHabitat(p);
+    const roster = await habitatHerd(p);
+    check(roster.length === 8 && await p.locator('#cc-habitat-finish').isDisabled(),
+      'eight live cards appear and still-possible matches cannot be skipped');
+    const first = await requireAvailableAnimal(p);
+    const wrong = SOURCE.find(resource => resource !== first.need);
+    const before = Object.fromEntries(await Promise.all(SOURCE.map(async key => [key, await habitatStock(p, key)])));
+    await habitatAnimal(p, first.id).click();
+    await habitatStation(p, wrong).click();
+    check(await habitatMatch(p, first.id).count() === 0 &&
+      /cannot meet that need/i.test(await p.locator('#cc-habitat-live').textContent()) &&
+      (await Promise.all(SOURCE.map(async key => (await habitatStock(p, key)) === before[key]))).every(Boolean),
+    'a wrong station explains the mismatch without using stock or marking an animal');
+    const pending = habitatAnimal(p, first.id);
+    if (await pending.getAttribute('aria-pressed') === 'true') {
+      await p.keyboard.press('Escape');
+      if (await pending.getAttribute('aria-pressed') === 'true') await pending.click();
+    }
+    await matchHabitat(p, first, 'keyboard');
+    const second = await requireAvailableAnimal(p);
+    await matchHabitat(p, second, 'drag');
+    check(JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster),
+      'dragging and matching animals never change the starting herd mid-round');
+
+    await p.reload();
+    await p.locator(`.cc-nav [data-cc-go="habitat"][aria-current="page"]`).waitFor({ state: 'visible' });
+    check(await habitatMatch(p, first.id).isVisible() && await habitatMatch(p, second.id).isVisible() &&
+      JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster),
+    'reload retains the active habitat phase, both matches, and the starting herd');
+
+    check(await matchRemainingHabitat(p) === 6, 'the balanced trial lets all eight animals find their stated needs');
+    await p.locator('#cc-habitat-finish').click();
+    const result = p.locator('#cc-habitat-result');
+    await result.waitFor({ state: 'visible' });
+    check(sameScores(await habitatScores(result), [BALANCED_SCORE]),
+      'balanced result holds 8 starters, 8 survivors, no deaths, 4 calves, and a next herd of 12');
+    await p.locator('#cc-habitat-compare').click();
+    await p.locator(HABITAT + ' ' + ANIMAL).first().waitFor({ state: 'visible' });
+    check(JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster) &&
+      await habitatStock(p, 'food') === 1 && await habitatStock(p, 'water') === before.water &&
+      await habitatStock(p, 'shelter') === before.shelter,
+      'comparison restarts with same original animals and needs; only food changes');
+
+    // Deplete the chosen stock through valid matches only; then try another
+    // hungry animal without using an app-internal test hook or changing state.
+    for (let i = 0; i < roster.length && await habitatStock(p, 'food') > 0; i++) {
+      const candidates = (await habitatAnimals(p)).filter(piece => piece.need === 'food' && !piece.disabled);
+      let eligible;
+      for (const piece of candidates) if (await habitatMatch(p, piece.id).count() === 0) { eligible = piece; break; }
+      if (!eligible) break;
+      await matchHabitat(p, eligible, 'click');
+    }
+    check(await habitatStock(p, 'food') === 0, 'food comparison reaches a depleted station');
+    const seekers = (await habitatAnimals(p)).filter(piece => piece.need === 'food' && !piece.disabled);
+    let blocked;
+    for (const piece of seekers) if (await habitatMatch(p, piece.id).count() === 0) { blocked = piece; break; }
+    check(!!blocked, 'a food seeker remains after the reduced supply is exhausted');
+    await habitatAnimal(p, blocked.id).click();
+    const empty = habitatStation(p, 'food');
+    await empty.scrollIntoViewIfNeeded();
+    const box = await empty.boundingBox();
+    assert.ok(box, 'depleted station is still visibly represented');
+    await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    check(await habitatMatch(p, blocked.id).count() === 0 && await habitatStock(p, 'food') === 0 &&
+      /no food remains/i.test(await p.locator('#cc-habitat-live').textContent()) &&
+      JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster),
+    'a depleted station gives no match and cannot remove an animal before resolution');
+
+    check(await matchRemainingHabitat(p) === 5, 'five other needs still match after food is depleted');
+    await p.locator('#cc-habitat-finish').click();
+    const comparison = p.locator('#cc-habitat-comparison');
+    await comparison.waitFor({ state: 'visible' });
+    const comparisonOutcome = normalizeReport(await comparison.innerText());
+    check(sameScores(await habitatScores(comparison), [BALANCED_SCORE, FOOD_SCORE]) &&
+      /balanced habitat/i.test(comparisonOutcome) && /food was a limiting factor/i.test(comparisonOutcome),
+      'only food is limiting and the comparison shows both exact modeled outcomes (12 vs 9 next herd)');
+    await shot(p, '1366-light-habitat-comparison', true);
+
+    await go(p, 'explain');
+    const claim = 'The habitat challenge showed that extra water cannot replace scarce food.';
+    await p.locator('#cc-habitat-claim').fill(claim);
+    await p.reload();
+    await p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]').waitFor({ state: 'visible' });
+    check(await p.locator('#cc-habitat-claim').inputValue() === claim &&
+      (await p.locator('#cc-writing-habitat').textContent()).trim().length > 20,
+    'reload retains the habitat explanation and its summarized run evidence');
+    await go(p, 'habitat');
+    check(normalizeReport(await comparison.innerText()) === comparisonOutcome, 'both resolved habitat trials survive reload');
+    await go(p, 'explain');
+    const downloadPromise = p.waitForEvent('download');
+    await p.locator('#cc-download').click();
+    const download = await downloadPromise;
+    const report = normalizeReport(await fs.readFile(await download.path(), 'utf8'));
+    check(/Habitat challenge \(SIMULATED\)/i.test(report) && report.includes(claim) &&
+      /Trial A[^\n]+Balanced habitat[^\n]+next herd 12/i.test(report) &&
+      /Trial B[^\n]+Less forage[^\n]+next herd 9/i.test(report),
+    'real downloaded file contains both habitat outcomes and the written explanation');
+    await p.locator('#cc-copy').click();
+    check(normalizeReport(await p.locator('#cc-report-text').inputValue()) === report,
+      'habitat report text matches the real download');
+    await p.keyboard.press('Escape');
+    await p.locator('#cc-report').waitFor({ state: 'hidden' });
+    await go(p, 'run');
+    await p.locator('#cc-reset').click();
+    await p.locator('#cc-reset-confirm').click();
+    await go(p, 'habitat');
+    check(await p.locator('#cc-habitat-start').isVisible() && await comparison.isHidden(),
+      'confirmed investigation reset clears prior habitat trials');
+  });
+}
+
 async function visualSweep(browser, url) {
   for (const cfg of viewportCases) {
     await withPage(browser, cfg, async p => {
@@ -131,6 +358,7 @@ async function visualSweep(browser, url) {
       await p.locator('#cc-field-chart').scrollIntoViewIfNeeded();
       await shot(p, cfg.name + '-evidence', true);
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' evidence');
+      await habitatVisual(p, cfg);
     });
   }
 }
@@ -278,6 +506,7 @@ async function followWorkflow(browser, url) {
     const url = server.url + FILE;
     await visualSweep(browser, url);
     await followWorkflow(browser, url);
+    await followHabitatWorkflow(browser, url);
     console.log(`carrying-capacity-browser: ${checks} checks passed`);
   } finally {
     if (browser) await browser.close();
