@@ -1,0 +1,89 @@
+/* Hawksbeard Wind Lab: keep the matched worlds and the evidence in view. */
+.hb-shell{max-width:1130px;margin:auto;padding:14px clamp(12px,2.2vw,24px) 28px}
+.hb-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+.hb-top a{color:var(--accent);font-weight:700;min-height:32px;display:inline-flex;align-items:center}
+.hb-hero{display:grid;grid-template-columns:1fr minmax(224px,.72fr);border:1px solid var(--line);border-radius:17px;background:var(--surface);overflow:hidden;align-items:stretch}
+.hb-hero-copy{padding:clamp(13px,2.3vw,25px);align-self:center}
+.hb-hero h1{font-size:clamp(1.7rem,4.6vw,3.1rem);line-height:1.02;margin:4px 0 6px}
+.hb-hero p,.hb-stagehead p{margin:0}
+.hb-hero img{width:100%;height:clamp(118px,16vw,167px);object-fit:cover;object-position:50% 53%;align-self:center}
+.hb-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0}
+.hb-steps button{min-width:0;min-height:42px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-weight:750;cursor:pointer;padding:5px 3px}
+.hb-steps button[aria-current="step"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.hb-steps button:disabled{color:var(--muted);cursor:not-allowed}
+.hb-steps button span{margin-right:4px;font-variant-numeric:tabular-nums}
+.hb-section[hidden]{display:none!important}
+.hb-section{margin:0 0 11px}
+.hb-stagehead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px 12px;margin-bottom:8px}
+.hb-stagehead h2{font-size:clamp(1.27rem,2.7vw,1.9rem);line-height:1.1;margin:3px 0}
+.hb-pill{font-size:.92rem;font-weight:750;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:20px}
+.hb-split,.hb-worlds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:9px}
+.hb-panel{min-width:0;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+.hb-panel h3{font-size:1.05rem;margin:0 0 5px}
+.hb-panel>p,.hb-lede{margin:6px 0;color:var(--muted)}
+.hb-panel p:last-child{margin-bottom:0}
+.hb-seed-art{display:block;width:100%;max-height:135px;object-fit:contain;margin:0 auto 5px}
+.hb-tip{font-size:.91rem;background:var(--surface-2);border-left:3px solid var(--accent);border-radius:6px;padding:7px 8px;color:var(--ink)!important}
+.hb-panel fieldset{padding:0;border:0;margin:0}
+.hb-panel legend{font-weight:750;line-height:1.28;margin-bottom:6px}
+.hb-choice{display:flex;align-items:center;gap:7px;padding:5px 8px;min-height:37px;border-radius:6px;cursor:pointer}
+.hb-choice:hover,.hb-choice:has(input:checked){background:var(--surface-2)}
+.hb-choice input{accent-color:var(--accent)}
+.hb-actions{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.hb-actions .btn{min-height:39px}
+.hb-release-actions{margin:6px 0 8px}
+.hb-world{padding:7px 8px}
+.hb-world h3{line-height:1.15;margin-bottom:4px}
+.hb-world h3 span{display:inline-block;font-size:.78rem;color:var(--muted);font-weight:550}
+.hb-world :is(svg,canvas){display:block;width:100%;height:auto;border-radius:6px}
+.hb-legend{display:flex;gap:1px 12px;flex-wrap:wrap;margin:4px 0;color:var(--muted);font-size:.88rem}
+.hb-legend b{color:var(--accent)}
+.hb-result{margin:6px 0;color:var(--ink)}
+.hb-result p{margin:3px 0}
+.hb-answer-panel label{display:block;margin:2px 0 4px;line-height:1.35}
+.hb-answer-panel textarea,#hb-copy-text{width:100%;resize:vertical;min-height:56px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:var(--bg);color:var(--ink);font:inherit;font-size:1rem;margin:0 0 6px}
+.hb-published,.hb-method{margin:7px 0 0;border-top:1px solid var(--line);padding-top:6px}
+.hb-published summary,.hb-method summary{color:var(--accent);font-weight:750;cursor:pointer;min-height:26px}
+.hb-published p,.hb-method p{margin:6px 0;color:var(--muted)}
+.hb-evidence{align-self:start}
+.hb-panel table{width:100%;border-collapse:collapse;font-size:.92rem;table-layout:auto;line-height:1.25;font-variant-numeric:tabular-nums}
+.hb-panel :is(th,td){text-align:left;border-bottom:1px solid var(--line);padding:5px;overflow-wrap:anywhere}
+.hb-panel th{background:var(--surface-2)}
+.hb-panel caption{text-align:left;font-weight:750;margin-bottom:4px}
+.hb-footerbar{display:flex;justify-content:space-between;gap:4px 9px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.hb-footerbar p,.hb-status{color:var(--muted);font-size:.9rem;margin:0}
+.hb-shell :focus-visible,dialog :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+dialog[id^="hb-"]{width:min(470px,calc(100vw - 28px));border:1px solid var(--line);border-radius:13px;background:var(--surface);color:var(--ink);padding:15px}
+dialog[id^="hb-"]::backdrop{background:#101b20a8}
+dialog[id^="hb-"] h2{margin:0;line-height:1.2}
+dialog[id^="hb-"] p{margin:6px 0}
+@media(max-width:670px){
+ .hb-split{grid-template-columns:1fr;gap:7px}
+ .hb-hero{grid-template-columns:1fr minmax(104px,.58fr)}
+ .hb-hero img{height:100%;min-height:98px}
+ .hb-hero h1{font-size:clamp(1.52rem,5.6vw,2.1rem)}
+ .hb-panel{padding:9px}
+ .hb-world{padding:5px}
+ .hb-world h3 span{display:block}
+ .hb-steps button{font-size:.88rem}
+ .hb-steps button span{margin-right:2px}
+ .hb-legend{font-size:.81rem}
+ .hb-seed-art{max-height:98px}
+}
+@media(prefers-reduced-motion:reduce){.hb-shell *{scroll-behavior:auto}}
+.hb-scene-past{opacity:.36}
+.hb-scene-current{opacity:1}
+.hb-tally-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.hb-tally-card{display:grid;gap:1px;background:var(--surface-2);border-radius:7px;padding:6px 8px;font-size:.91rem;line-height:1.3}
+.hb-tally-share{color:var(--muted)}
+.hb-share-chart{margin:0}
+.hb-share-chart figcaption{font-weight:700;font-size:.93rem;margin-bottom:6px}
+.hb-chart-axis{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted)}
+.hb-chart-row{margin-bottom:9px}
+.hb-chart-bar{display:flex;height:20px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.hb-chart-feathery{background:repeating-linear-gradient(135deg,var(--accent) 0 5px,var(--surface-2) 5px 7px)}
+.hb-chart-nonfeathery{background:var(--accent)}
+.hb-chart-values{font-size:.83rem;color:var(--ink)}
+#hb-compare-check{margin-top:6px}
+#hb-compare-check button{min-height:31px;white-space:normal}
+#hb-compare-check :is(fieldset,p){margin:4px 0}

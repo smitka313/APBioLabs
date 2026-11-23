@@ -137,10 +137,10 @@ const serengetiSaved = JSON.stringify({v:1,game:{version:1,season:1,step:'hunt',
 
 test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustration', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
-  assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]).slice(0,3),
-    ['unit1','unit2','unit3']);
+  assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]),
+    ['unit1','unit2','unit3','unit4']);
   assert.equal((page.match(/id="unit1"/g)||[]).length,1);
-  assert.match(page, /<summary>Coming soon: Units 4–5<\/summary>/);
+  assert.match(page, /<summary>Coming soon: Unit 5<\/summary>/);
   const unit = page.split('<section class="dashboard-unit current" aria-labelledby="unit1">')[1].split('</section>')[0];
   assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="serengeti-open"[^>]*href="openscied-b1-serengeti\.html"/);
@@ -152,6 +152,46 @@ test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustratio
   assert.match(root, /\bheight=["']600["']/);
   assert.doesNotMatch(preview, /<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i, 'the preview is original vector artwork, not an embedded image');
   assert.ok((preview.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>12, 'the asset contains the actual vector drawing');
+});
+
+test('Unit 4 publishes the Hawksbeard Wind Lab, leaving only Unit 5 under Coming soon', () => {
+  const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
+  const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';
+  const unit = page.split(heading)[1]?.split('</section>')[0] || '';
+  assert.equal((page.match(/id="unit4"/g)||[]).length, 1);
+  assert.match(unit, /<h2 id="unit4">Unit 4 · Natural Selection &amp; Evolution of Populations<\/h2>/);
+  assert.match(unit, /<span class="dashboard-tag">1 activity available<\/span>/);
+  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 1);
+  assert.match(unit, /href="openscied-b4-hawksbeard\.html"[^>]*><img src="assets\/hawksbeard-preview\.svg" width="960" height="600"/);
+  assert.match(unit, /id="hawksbeard-open"[^>]*href="openscied-b4-hawksbeard\.html"/);
+  const upcoming = page.split('<details class="dashboard-coming-soon">')[1]?.split('</details>')[0] || '';
+  assert.deepEqual([...upcoming.matchAll(/aria-labelledby="(unit\d+)"/g)].map(m=>m[1]), ['unit5']);
+});
+
+test('Hawksbeard continues the saved phase and includes its written answers in a scoped restart backup', async () => {
+  const key = 'aplab:openscied:b4-hawksbeard:v1';
+  const save = JSON.stringify({v:1,seed:12,prediction:'city',released:5,lastSection:'explain',lastVisitedAt:1740000000000,
+    answers:{claim:'The landings differ.',evidence:'I compared both sites.',limits:'  '}});
+  const fresh = setup();
+  assert.equal(fresh.el('#hawksbeard-open').href,'openscied-b4-hawksbeard.html');
+  assert.equal(fresh.el('#hawksbeard-progress').textContent,'Not started');
+  assert.equal(fresh.el('#hawksbeard-reset').disabled,true);
+  const s = setup(false,{[key]:save});
+  assert.equal(s.el('#hawksbeard-progress').textContent,'5 of 5 plant pairs released · 2 of 3 responses saved');
+  assert.equal(s.el('#hawksbeard-open').href,'openscied-b4-hawksbeard.html#explain');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b4-hawksbeard.html#explain');
+  assert.equal(s.el('#hawksbeard-reset').disabled,false);
+  s.el('#hawksbeard-reset').fire('click');
+  s.el('#backup-before-openscied-clear').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.deepEqual(payload.work,{[key]:save});
+  assert.equal(payload.responses.hawksbeard.claim,'The landings differ.');
+  assert.equal(payload.responses.hawksbeard.evidence,'I compared both sites.');
+  s.el('#openscied-erase-confirmation').value='ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data[key],undefined);
+  assert.equal(s.el('#hawksbeard-open').href,'openscied-b4-hawksbeard.html');
+  assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1'],'an activity-only reset preserves other OpenSciEd work');
 });
 
 test('Serengeti progress sees the existing preview save and resumes without a conflicting hash', () => {

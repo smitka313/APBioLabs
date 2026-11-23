@@ -20,7 +20,8 @@
     { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
-    { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds }
+    { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds },
+    { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -279,6 +280,24 @@
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       summary: started ? burns + ' simulated burn' + (burns === 1 ? '' : 's') + ' recorded · ' + answers + ' of ' + ids.length + ' answers saved' : 'Not started' };
   }
+  const HAWKS_SECTIONS = ['predict', 'release', 'compare', 'explain'];
+  function hawksbeardResponseIds() { return ['claim', 'evidence', 'limits']; }
+  function hawksbeardProgress(raw) {
+    const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
+    let saved;
+    try { saved = JSON.parse(raw); } catch (_) { return empty; }
+    if (!saved || saved.v !== 1 || !Number.isInteger(saved.released) || saved.released < 0 || saved.released > 5) return empty;
+    const answers = hawksbeardResponseIds().filter(id => written(saved.answers || {}, id)).length;
+    const prediction = ['city', 'field', 'same'].includes(saved.prediction);
+    const started = Boolean(prediction || saved.released || answers);
+    if (!started) return empty;
+    const requested = saved.lastSection || saved.page;
+    const section = HAWKS_SECTIONS.includes(requested) && (saved.released === 5 || requested === 'predict' || requested === 'release')
+      ? requested : answers ? 'explain' : saved.released === 5 ? 'compare' : 'release';
+    const visited = Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0;
+    const summary = saved.released + ' of 5 plant pairs released' + (answers ? ' · ' + answers + ' of 3 responses saved' : '');
+    return { summary, started, section, visited };
+  }
   function init() {
     Lab.identity.mount('#openscied-student-identity');
     const status = $('#openscied-results-status');
@@ -341,6 +360,7 @@
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
+          if (activity.id === 'hawksbeard' && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
           if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
         });
         if (keys.includes(CARBON_BUDGET_KEY)) {
