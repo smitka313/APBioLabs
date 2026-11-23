@@ -135,18 +135,23 @@ const nearSerengetiKey = 'aplab:openscied-b1-serengeti:do-not-touch';
 const serengetiSaved = JSON.stringify({v:1,game:{version:1,season:1,step:'hunt',log:[{},{}]},
   answers:{question:'Does group size matter?',evidence:'0',claim:'The group survived.',limits:' '},page:'analyze',lastVisitedAt:100});
 
-test('Unit 1 precedes Units 2 and 3 with a linked in-game Serengeti preview', () => {
+test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustration', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]).slice(0,3),
     ['unit1','unit2','unit3']);
   assert.equal((page.match(/id="unit1"/g)||[]).length,1);
   assert.match(page, /<summary>Coming soon: Units 4–5<\/summary>/);
   const unit = page.split('<section class="dashboard-unit current" aria-labelledby="unit1">')[1].split('</section>')[0];
-  assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.webp" width="960" height="600"/);
+  assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="serengeti-open"[^>]*href="openscied-b1-serengeti\.html"/);
-  const preview = fs.readFileSync(path.join(__dirname,'../assets/openscied-serengeti-preview.webp'));
-  assert.equal(preview.subarray(0,4).toString(),'RIFF');
-  assert.equal(preview.subarray(8,12).toString(),'WEBP');
+  const preview = fs.readFileSync(path.join(__dirname,'../assets/openscied-serengeti-preview.svg'),'utf8');
+  const root = preview.match(/<svg\b[^>]*>/i)?.[0] || '';
+  assert.match(root, /\bxmlns=["']http:\/\/www\.w3\.org\/2000\/svg["']/);
+  assert.match(root, /\bviewBox=["']0 0 960 600["']/);
+  assert.match(root, /\bwidth=["']960["']/);
+  assert.match(root, /\bheight=["']600["']/);
+  assert.doesNotMatch(preview, /<(?:[\w.-]+:)?(?:image|feImage)\b|data:image\//i, 'the preview is original vector artwork, not an embedded image');
+  assert.ok((preview.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>12, 'the asset contains the actual vector drawing');
 });
 
 test('Serengeti progress sees the existing preview save and resumes without a conflicting hash', () => {

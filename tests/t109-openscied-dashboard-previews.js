@@ -1,11 +1,11 @@
 /* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
-   in-game Serengeti WebP plus the seven SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
+   external Serengeti illustration plus the seven inline SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 const UNIT1 = ['openscied-b1-serengeti.html'];
-const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.webp';
+const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
 (async () => {
@@ -45,15 +45,15 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 8 && svgCards.length === 7 && m.filter(x=>x.img).length === 1, width + ' px: eight cards: seven SVG illustrations and one in-game WebP');
+      T.ok(m.length === 8 && svgCards.length === 7 && m.filter(x=>x.img).length === 1, width + ' px: eight cards: seven inline SVG illustrations and one linked Serengeti SVG');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
       T.ok(poster?.complete && poster.src===SERENGETI_PREVIEW && poster.w===960 && poster.h===600 &&
         poster.widthAttr==='960' && poster.heightAttr==='600' && Math.abs(poster.w/poster.h-1.6)<0.001,
-        width + ' px: first card actual WebP loads and has reserved 960×600 proportions');
+        width + ' px: first card illustration loads and has reserved 960×600 proportions');
       T.ok(poster?.alt==='' && /^Open Serengeti Board Game/.test(first.label) && first.label.length>40,
-        width + ' px: the WebP preview link has a descriptive accessible name');
+        width + ' px: the illustrated preview link has a descriptive accessible name');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
       T.ok(m.every(x => x.sim && /Simulated/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the Simulated tag are HTML text');
       T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');
