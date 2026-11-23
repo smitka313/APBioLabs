@@ -8,13 +8,26 @@ const read = path => readFileSync(resolve(root, path), 'utf8');
 
 const dashboard = read('openscied-dashboard.html');
 const guide = read('openscied-teacher-guide.html');
-const dashboardActivities = [...dashboard.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)]
-  .map(([, article]) => article.match(/<a\b[^>]*\bclass="dashboard-open"[^>]*\bhref="([^"]+)"/)?.[1]);
+// Inspect complete opening tags; class order and unrelated style tokens are not part of the link contract.
+const attr = (tag, name) => tag.match(new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i'))?.slice(1).find(v => v !== undefined);
+const hasClass = (tag, token) => (attr(tag, 'class') || '').split(/\s+/).includes(token);
+const dashboardCards = [...dashboard.matchAll(/(<article\b[^>]*>)([\s\S]*?)<\/article>/gi)]
+  .filter(([, tag]) => hasClass(tag, 'dashboard-activity'))
+  .map(([, , article]) => {
+    const links = article.match(/<a\b[^>]*>/gi) || [];
+    const destinations = token => links.filter(link => hasClass(link, token)).map(link => attr(link, 'href'));
+    return { direct: destinations('dashboard-open'), preview: destinations('dashboard-preview') };
+  });
 const guideActivities = [...guide.matchAll(/<article\b[^>]*\bdata-guide-for="([^"]+)"[^>]*>([\s\S]*?)<\/article>/g)];
 
 test('each dashboard activity has one implementation card in lesson order', () => {
-  assert.ok(dashboardActivities.length > 0, 'Dashboard activity inventory was not found.');
-  assert.ok(dashboardActivities.every(Boolean), 'Every dashboard card should have a direct activity link.');
+  assert.ok(dashboardCards.length > 0, 'Dashboard activity inventory was not found.');
+  for (const { direct, preview } of dashboardCards) {
+    assert.equal(direct.length, 1, 'Every dashboard card should have exactly one direct activity link.');
+    assert.match(direct[0] || '', /^openscied-[a-z0-9-]+\.html$/, 'The direct link must point to a published activity page.');
+    assert.deepEqual(preview, direct, 'The illustration and direct link must open the same activity.');
+  }
+  const dashboardActivities = dashboardCards.map(card => card.direct[0]);
   assert.equal(new Set(dashboardActivities).size, dashboardActivities.length, 'Duplicate dashboard activity.');
   assert.deepEqual(guideActivities.map(x => x[1]), dashboardActivities,
     'Update the OpenSciEd Teacher Guide in the same PR as every new activity.');
