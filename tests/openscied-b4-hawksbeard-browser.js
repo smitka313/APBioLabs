@@ -148,6 +148,119 @@ async function sceneParity(page, seed, releasedCount, label) {
   check(Object.keys(decoded.field).every(id => decoded.field[id] === decoded.city[id]),
     label + ' both layouts show the same paired seed endpoints at pair ' + releasedCount);
 }
+async function boardCues(page, seed, completed, at) {
+  const model = Model.makeTrial(seed);
+  const legend = page.getByRole('group', { name: 'Seed symbol legend', exact: true });
+  const legendText = exact(await legend.textContent());
+  check(await legend.isVisible() && /Feathery.*Nonfeathery.*Soil landing.*Missed soil/i.test(legendText) &&
+    /newest landings are outlined.*earlier landings fade/i.test(legendText),
+    at + ' visible board key names seed types, hit and miss symbols, and latest versus earlier landings');
+
+  for (const site of SITES) {
+    const svg = page.locator('[data-hb-scene="' + site + '"] .hb-scene-svg');
+    const cues = await svg.evaluate(board => {
+      const v = board.viewBox.baseVal;
+      const plant = board.querySelector('.hb-scene-plant');
+      const transform = plant?.transform.baseVal.getItem(0).matrix;
+      const wind = [...board.querySelectorAll('.hb-scene-wind text')];
+      return {
+        plant: transform && { x: (transform.e - v.x) / v.width, y: (transform.f - v.y) / v.height },
+        plantState: plant?.dataset.hbPlantState,
+        wind: wind.some(el => /wind/i.test(el.textContent)),
+        labelsFit: wind.every(el => {
+          const b = el.getBBox();
+          return b.width > 0 && b.height > 0 && b.x >= v.x && b.y >= v.y &&
+            b.x + b.width <= v.x + v.width && b.y + b.height <= v.y + v.height;
+        }),
+        footprints: [...board.querySelectorAll('[data-hb-footprint]')].map(el => {
+          const r = el.getBBox();
+          return { id:el.dataset.hbFootprint,
+            x:(r.x - v.x) / v.width, y:(r.y - v.y) / v.height,
+            width:r.width / v.width, height:r.height / v.height };
+        }),
+        trails: [...board.querySelectorAll('.hb-scene-trails .hb-seed-trail')].map(el => {
+          const normalize = point => ({ x:(point.x - v.x) / v.width, y:(point.y - v.y) / v.height });
+          return { start:normalize(el.getPointAtLength(0)), end:normalize(el.getPointAtLength(el.getTotalLength())),
+            feathery:el.classList.contains('hb-seed-trail-feathery') };
+        }),
+        phaseContrast: Number(getComputedStyle(board.querySelector('.hb-scene-past')).opacity) <
+          Number(getComputedStyle(board.querySelector('.hb-scene-current')).opacity),
+        earlier: [...board.querySelectorAll('[data-hb-seed][data-hb-fresh="earlier"]')].map(el => el.dataset.hbSeed),
+        latest: [...board.querySelectorAll('[data-hb-seed][data-hb-fresh="latest"]')].map(el => el.dataset.hbSeed)
+      };
+    });
+    const near = (a, b) => Math.abs(a - b) <= .002;
+    const layout = Model.layouts[site];
+    check(cues.wind && cues.labelsFit && cues.plant && near(cues.plant.x, layout.release.x) &&
+      near(cues.plant.y, layout.release.y) && cues.plantState === (completed ? 'landed' : 'ready'),
+      at + ' ' + site + ' wind label fits and launch marker is at the matching release point');
+    check(cues.footprints.length === layout.soil.length && layout.soil.every(expected => {
+      const painted = cues.footprints.find(shape => shape.id === expected.id);
+      return painted && ['x','y','width','height'].every(k => near(painted[k], expected[k]));
+    }), at + ' ' + site + ' drawn soil boundaries match the model patches exactly');
+    const batch = model[site].filter(r => r.plant === completed);
+    const latest = batch.map(r => r.id);
+    const earlier = model[site].filter(r => r.plant < completed).map(r => r.id);
+    check(cues.phaseContrast && cues.trails.length === batch.length &&
+      JSON.stringify(cues.latest.sort()) === JSON.stringify(latest.sort()) &&
+      JSON.stringify(cues.earlier.sort()) === JSON.stringify(earlier.sort()),
+      at + ' ' + site + ' traces only the latest pair and visibly fades earlier seeds at step ' + completed);
+    const pointMatches = (a, b) => near(a.x, b.x) && near(a.y, b.y);
+    if (completed) check(cues.trails.every((t, i) => pointMatches(t.start, batch[i].start) &&
+      pointMatches(t.end, batch[i].end) && t.feathery === (batch[i].type === 'feathery')),
+      at + ' ' + site + ' latest trail endpoints and types match the same seed records');
+  }
+}
+async function boardSizes(page, cfg, seed, at) {
+  const toggle = page.getByRole('checkbox', { name: 'Enlarge boards', exact: true });
+  const boards = page.locator('.hb-worlds');
+  const layout = () => boards.evaluate(group => {
+    const scope = group.getBoundingClientRect();
+    return {
+      width: scope.width,
+      scenes: [...group.querySelectorAll('[data-hb-scene]')].map(scene => {
+        const r = scene.getBoundingClientRect();
+        return { x: r.left - scope.left, y: r.top - scope.top, width: r.width, bottom: r.bottom - scope.top };
+      })
+    };
+  });
+  const compact = await layout();
+  const modelBefore = await snapshot(page);
+  check(!await toggle.isChecked() && compact.scenes.length === 2 &&
+    compact.scenes[1].x > compact.scenes[0].x + compact.scenes[0].width,
+    at + ' starts with two compact side-by-side release boards');
+  const originalNodes = await boards.evaluateHandle(board => [
+    ...board.querySelectorAll('[data-hb-scene] svg, [data-hb-seed]')
+  ]);
+  const unchanged = () => boards.evaluate((board, originals) => {
+    const current = [...board.querySelectorAll('[data-hb-scene] svg, [data-hb-seed]')];
+    return originals.length === current.length && current.every((node, i) => node === originals[i]);
+  }, originalNodes);
+  const flip = () => cfg.touch ? toggle.tap() : toggle.press('Space');
+  try {
+    await flip();
+    const large = await layout();
+    check(await toggle.isChecked() && large.scenes.every((r, i) =>
+      r.width > compact.scenes[i].width * 1.5 && r.width > large.width * .85) &&
+      Math.abs(large.scenes[0].x - large.scenes[1].x) <= 2 &&
+      large.scenes[1].y > large.scenes[0].bottom,
+      at + ' enlargement stacks two substantially wider boards without a new page');
+    check(await unchanged(), at + ' enlargement keeps the same SVGs and seed markers in place');
+    await fits(page, 'main, .hb-worlds, [data-hb-scene]', at + ' enlarged boards');
+    await sceneParity(page, seed, 3, at + ' enlarged');
+    await boards.screenshot({
+      path: path.join(OUT, at + '-release-3-expanded-boards.png'), animations: 'disabled', timeout: 12000
+    });
+    await flip();
+    const returned = await layout();
+    check(!await toggle.isChecked() && await unchanged() &&
+      returned.scenes.every((r, i) => Math.abs(r.width - compact.scenes[i].width) <= 1) &&
+      JSON.stringify(await snapshot(page)) === JSON.stringify(modelBefore),
+      at + ' closing close-up restores the compact view and leaves the same trial intact');
+  } finally {
+    await originalNodes.dispose();
+  }
+}
 async function hasVisibleTable(page, selector) {
   const table = page.locator(selector);
   const disclosure = table.locator('xpath=ancestor::details[1]');
@@ -251,8 +364,12 @@ async function play(browser, base, cfg) {
       await release.locator('[data-hb-scene="city"]').isVisible(),
       at + ' shows both matched layouts together before the first release');
     await fits(page, 'main, #hb-release, [data-hb-scene]', at + ' pair of wind scenes');
+    check(/Field\s+Connected soil/i.test(await page.locator('.hb-field h3').innerText()) &&
+      /City\s+Separated soil patches/i.test(await page.locator('.hb-city h3').innerText()),
+      at + ' visible board headings identify the field and city soil layouts');
     const baseline = await snapshot(page);
     await sceneParity(page, baseline.seed, 0, at);
+    await boardCues(page, baseline.seed, 0, at);
     check(Model.validSeed(baseline.seed) && baseline.released === 0,
       at + ' starts with a reproducible seed and zero completed releases');
     check(!await page.locator('#hb-compare').isVisible() && !await page.locator('#hb-explain').isVisible(),
@@ -266,11 +383,12 @@ async function play(browser, base, cfg) {
           return {
             busy: button.disabled,
             count: JSON.parse(localStorage.getItem(saveKey))?.released,
-            markers: document.querySelectorAll('[data-hb-seed]:not([data-hb-land])').length
+            markers: document.querySelectorAll('[data-hb-seed][data-hb-fresh="flying"]:not([data-hb-land])').length,
+            launching: document.querySelectorAll('.hb-scene-plant[data-hb-plant-state="releasing"]').length
           };
         }, SAVE);
-        check(inFlight.busy && inFlight.count === 1 && inFlight.markers === 20,
-          'animated pair guards against repeat activation and flies ten seeds in each environment');
+        check(inFlight.busy && inFlight.count === 1 && inFlight.markers === 20 && inFlight.launching === 2,
+          'animated pair guards against repeat activation and highlights the matching launch in both environments');
       } else await use(page, '#hb-release-next', cfg);
       await released(page, step);
       await page.waitForFunction(() =>
@@ -288,7 +406,10 @@ async function play(browser, base, cfg) {
       if (step === 3) {
         check(await page.locator('#hb-round').isVisible() && await page.locator('#hb-release-summary').isVisible(),
           at + ' mid-run progress and seed landing summary are on the release screen');
+        await boardCues(page, baseline.seed, step, at);
         await shot(page, at + '-release-3');
+        if (cfg.touch) await axe(page, '#hb-release', at + ' release board and legend');
+        if (cfg.touch || cfg.width === 1366) await boardSizes(page, cfg, baseline.seed, at);
         if (cfg.width === 1366) {
           await page.reload();
           await released(page, step);

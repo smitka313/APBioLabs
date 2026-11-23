@@ -106,116 +106,208 @@
   }
 
   // Both scenes map the engine's normalized coordinates to the same art space.
-  // Animation offsets are illustrative; each endpoint remains exactly as modeled.
+  // Ground textures, paths in flight, and marks clarify the experiment without
+  // changing patch membership, positions, or how any landing is counted.
   const W = 640, H = 350;
   const at = p => [p.x*W,p.y*H];
   const cap = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
   function drawScene(host,site) {
-    const layout = L.layouts[site], city = site === 'city';
-    const titleId = 'hb-scene-'+site+'-title', descId = 'hb-scene-'+site+'-desc';
-    const canvas = svg('svg',{viewBox:'0 0 '+W+' '+H,role:'img','aria-labelledby':titleId+' '+descId,class:'hb-scene-svg'});
-    const title = svg('title',{id:titleId}), desc = svg('desc',{id:descId});
-    title.textContent = siteName(site)+' seed release from above';
+    const layout=L.layouts[site], city=site==='city', stem='hb-'+site;
+    const titleId='hb-scene-'+site+'-title', descId='hb-scene-'+site+'-desc';
+    const canvas=svg('svg',{viewBox:'0 0 '+W+' '+H,role:'img','aria-labelledby':titleId+' '+descId,class:'hb-scene-svg'});
+    const title=svg('title',{id:titleId}), desc=svg('desc',{id:descId});
+    title.textContent=siteName(site)+' seed release from above';
     canvas.append(title,desc);
-    const defs = svg('defs');
-    const soil = svg('pattern',{id:'hb-soil-'+site,width:27,height:23,patternUnits:'userSpaceOnUse'});
-    soil.append(svg('rect',{width:27,height:23,fill:city?'#776044':'#4c633a'}),
-      svg('path',{d:'M2 14l7-2M15 5l5 2M20 18l3-1',fill:'none',stroke:city?'#a38b65':'#819056','stroke-width':1.2,opacity:.72}));
+    const defs=svg('defs');
+    const gradient=(id,top,bottom)=>{
+      const shade=svg('linearGradient',{id,x1:0,x2:1,y1:0,y2:1});
+      shade.append(svg('stop',{offset:0,'stop-color':top}),svg('stop',{offset:1,'stop-color':bottom}));
+      defs.append(shade);
+    };
+    gradient(stem+'-ground',city?'#84928e':'#898b60',city?'#526469':'#4b6444');
+    gradient(stem+'-bed',city?'#815f3f':'#687844',city?'#513d30':'#3f5639');
+    const soil=svg('pattern',{id:stem+'-soil',width:63,height:47,patternUnits:'userSpaceOnUse'});
+    soil.append(svg('path',{d:city?'M2 18l6-2m4 19l7 2m11-28 5-2m14 21 8-1m-8 13 4 1':'M3 20l9-4m13 10 5-7m16-15 7 3m-7 29 7-2',
+      fill:'none',stroke:city?'#c79f68':'#9ba768','stroke-width':1.4,opacity:.53}));
+    const flecks=city?[[3,7,1],[19,25,1.8],[25,41,1],[39,15,1.5],[59,42,1.7]]:[[5,39,1.3],[17,8,1.4],[29,37,1.4],[46,22,1.2],[57,8,1.1]];
+    for (const [cx,cy,r] of flecks) soil.append(svg('circle',{cx,cy,r,fill:city?'#392d28':'#334a2b',opacity:.58}));
     defs.append(soil);
-    canvas.append(defs,svg('rect',{width:W,height:H,fill:city?'#5a6970':'#899264'}));
+    canvas.append(defs,svg('rect',{width:W,height:H,fill:'url(#'+stem+'-ground)'}));
+
+    const scenery=svg('g',{class:'hb-scene-scenery','aria-hidden':'true'});
     if (city) {
-      for (const y of [59,118,178,237,296]) canvas.append(svg('path',{d:'M0 '+y+'H640',stroke:'#a4aaad','stroke-width':1,opacity:.46}));
-      for (const x of [78,172,285,405,531]) canvas.append(svg('path',{d:'M'+x+' 0V350',stroke:'#3c4c54','stroke-width':2,opacity:.46}));
+      // Street edge and curb above the two measured soil footprints.
+      scenery.append(svg('rect',{width:W,height:57,fill:'#394950'}),
+        svg('path',{d:'M0 21H640',stroke:'#bfbe94','stroke-width':2,'stroke-dasharray':'33 24',opacity:.55}),
+        svg('path',{d:'M0 53H640',stroke:'#1f3035','stroke-width':7,opacity:.52}),
+        svg('path',{d:'M0 59H640M0 293H640',stroke:'#c1bfb1','stroke-width':7}),
+        svg('path',{d:'M0 64H640M0 289H640',stroke:'#46565a','stroke-width':2,opacity:.85}),
+        svg('rect',{y:299,width:W,height:51,fill:'#44555a',opacity:.78}),
+        svg('path',{d:'M0 320H640',stroke:'#788781','stroke-width':2,opacity:.55}));
+      for (const y of [87,134,181,228,275]) scenery.append(svg('path',{d:'M0 '+y+'H640',stroke:'#e1e1cc','stroke-width':1.35,opacity:.34}));
+      for (let ci=0;ci<6;ci++) for (let x=ci%2===0?53:108;x<W;x+=111) {
+        const y=64+ci*39;
+        scenery.append(svg('path',{d:'M'+x+' '+y+'v39',stroke:'#263a40','stroke-width':1.25,opacity:.28}));
+      }
+      for (const x of [37,605]) {
+        scenery.append(svg('rect',{x,y:309,width:20,height:18,rx:2,fill:'#273a41',stroke:'#86908a','stroke-width':1}));
+        scenery.append(svg('path',{d:'M'+(x+5)+' 311v14m5-14v14m5-14v14',stroke:'#89988e','stroke-width':1,opacity:.7}));
+      }
     } else {
-      for (const x of [25,96,182,469,541,615]) canvas.append(svg('path',{d:'M'+x+' 350q-15-24 2-38m0 34q3-20 13-24',stroke:'#557045','stroke-width':2,fill:'none',opacity:.7}));
+      scenery.append(svg('path',{d:'M-20 284C119 249 212 305 346 283S567 270 673 222L663 359H-20Z',fill:'#334e38',opacity:.72}),
+        svg('path',{d:'M0 65C143 8 306 51 418 30S571 24 640 12',fill:'none',stroke:'#d1bc77','stroke-width':14,opacity:.22}),
+        svg('path',{d:'M0 297C118 275 232 324 347 292S565 281 640 259',fill:'none',stroke:'#afaf6b','stroke-width':4,opacity:.42}));
+      for (let i=0;i<18;i++) {
+        const x=(21+i*79)%W, y=i%2===0?46+(i%4)*6:314+(i%5)*4;
+        scenery.append(svg('path',{transform:'translate('+x+' '+y+')',d:'M-10 0Q-7-10-11-15M0 0Q5-10 1-18m2 15q4-9 10-11',
+          fill:'none',stroke:i%2===0?'#d1bd7e':'#9baf74','stroke-width':2,'stroke-linecap':'round',opacity:.68}));
+      }
     }
-    const soils = svg('g',{'aria-hidden':'true',class:'hb-scene-soil'});
+    canvas.append(scenery);
+
+    const soils=svg('g',{'aria-hidden':'true',class:'hb-scene-soil'});
     for (const patch of layout.soil) {
-      soils.append(svg('rect',{x:patch.x*W,y:patch.y*H,width:patch.width*W,height:patch.height*H,
-        fill:'url(#hb-soil-'+site+')',stroke:city?'#d5bc83':'#c5d49d','stroke-width':2}));
+      const bounds={x:patch.x*W,y:patch.y*H,width:patch.width*W,height:patch.height*H};
+      soils.append(svg('rect',{...bounds,fill:'url(#'+stem+'-bed)',stroke:city?'#d6b788':'#b1bf82',
+          'stroke-width':city?3.2:2.4,'data-hb-footprint':patch.id}),
+        svg('rect',{...bounds,fill:'url(#'+stem+'-soil)'}));
+      if (city) {
+        const left=bounds.x, right=left+bounds.width, top=bounds.y, bottom=top+bounds.height;
+        soils.append(svg('path',{d:'M'+left+' '+top+'H'+right+'M'+left+' '+top+'V'+bottom,
+          stroke:'#eee0bb','stroke-width':2,'stroke-linecap':'square',opacity:.66}));
+      }
     }
     canvas.append(soils);
-    const [rx,ry] = at(layout.release);
-    const plant = svg('g',{transform:'translate('+rx+' '+ry+')','aria-hidden':'true',class:'hb-scene-plant'});
-    plant.append(svg('circle',{r:16,fill:'#2d492f',stroke:'#ffffdf','stroke-width':1.6}),
-      svg('path',{d:'M-11 3Q-7-8 0 0 5-12 10-4 8 6 0 4-2 11-11 3Z',fill:'#93b57e',stroke:'#172c24','stroke-width':1}),
-      svg('circle',{r:3.5,fill:'#f8dc67',stroke:'#3a401f','stroke-width':1}));
-    canvas.append(plant);
-    const wind = layout.wind;
-    const norm = Math.hypot(wind.dx,wind.dy) || 1, gx = wind.dx / norm, gy = wind.dy / norm;
-    const cx = W - 74, cy = 27, wx = cx + gx*34, wy = cy + gy*18;
-    const windKey = svg('g',{'aria-hidden':'true',class:'hb-scene-wind'});
-    windKey.append(svg('rect',{x:W-142,y:7,width:134,height:40,rx:7,fill:'#172f34',opacity:.94}));
-    const label = svg('text',{x:W-133,y:32,fill:'#f2fbef','font-family':'system-ui,sans-serif','font-size':16});
-    label.textContent = 'Wind';
-    windKey.append(label,svg('path',{d:'M'+cx+' '+cy+'L'+wx+' '+wy+'m'+(-gx*8+gy*5)+' '+(-gy*8-gx*4)+'L'+wx+' '+wy+'l'+(-gx*8-gy*5)+' '+(-gy*8+gx*4),
-      fill:'none',stroke:'#f2fbef','stroke-width':2.2,'stroke-linecap':'round','stroke-linejoin':'round'}));
-    const past = svg('g',{'aria-hidden':'true',class:'hb-scene-past'});
-    const current = svg('g',{'aria-hidden':'true',class:'hb-scene-current'});
-    canvas.append(past,current,windKey);
+
+    const [rx,ry]=at(layout.release);
+    const plant=svg('g',{transform:'translate('+rx+' '+ry+')','aria-hidden':'true',class:'hb-scene-plant','data-hb-plant-state':'ready'});
+    const pulse=svg('circle',{r:31,fill:'none',stroke:'#fcdf70','stroke-width':3.5,opacity:0,class:'hb-launch-pulse'});
+    plant.append(svg('circle',{r:25,fill:'#233b2c',opacity:.8,stroke:'#e4d8a0','stroke-width':2,'stroke-dasharray':'4 4'}),
+      svg('path',{d:'M-37 0h7m60 0h7M0-37v7m0 60v7',stroke:'#ffdf7a','stroke-width':3,fill:'none','stroke-linecap':'round'}),
+      pulse);
+    for(const a of [0,82,166,244]) plant.append(svg('path',{d:'M0-3C-8-7-9-18 0-22c8 6 8 14 0 19 Z',transform:'rotate('+a+')',
+      fill:'#8da960',stroke:'#34432a','stroke-width':1.3}));
+    plant.append(svg('circle',{r:7,fill:'#f9db65',stroke:'#5e4b29','stroke-width':1.7}),
+      svg('circle',{r:2.9,fill:'#846226'}));
+
+    const wind=layout.wind;
+    const norm=Math.hypot(wind.dx,wind.dy)||1, gx=wind.dx/norm, gy=wind.dy/norm;
+    const cx=W-90, cy=37, wx=cx+gx*53, wy=cy+gy*14;
+    const windKey=svg('g',{'aria-hidden':'true',class:'hb-scene-wind'});
+    windKey.append(svg('rect',{x:W-215,y:8,width:204,height:57,rx:10,fill:'#1d3338',stroke:'#d2dec7','stroke-width':1.8}));
+    const label=svg('text',{x:W-202,y:47,fill:'#f6fae9','font-family':'system-ui,sans-serif','font-size':32,'font-weight':700});
+    label.textContent='Wind';
+    windKey.append(label,svg('path',{d:'M'+cx+' '+cy+'L'+wx+' '+wy+'m'+(-gx*12+gy*8)+' '+(-gy*12-gx*7)+'L'+wx+' '+wy+'l'+(-gx*12-gy*8)+' '+(-gy*12+gx*7),
+      fill:'none',stroke:'#f6fae9','stroke-width':3.8,'stroke-linecap':'round','stroke-linejoin':'round'}));
+    const trails=svg('g',{'aria-hidden':'true',class:'hb-scene-trails'});
+    const past=svg('g',{'aria-hidden':'true',class:'hb-scene-past'});
+    const current=svg('g',{'aria-hidden':'true',class:'hb-scene-current'});
+    canvas.append(windKey,trails,plant,past,current);
     host.replaceChildren(canvas);
-    return {site,desc,past,current};
+    return {site,desc,trails,plant,pulse,past,current};
   }
-  const scenes = $$('[data-hb-scene]').filter(host => SITES.includes(host.dataset.hbScene)).map(host=>drawScene(host,host.dataset.hbScene));
-  function mark(record,flying=false) {
-    const feathery = record.type === 'feathery';
-    const g = svg('g',{class:'hb-seed hb-seed-'+record.type,'data-hb-seed':record.id});
-    if (!flying) {
-      g.dataset.hbLand = record.land;
-      if (record.landed) g.append(svg('circle',{r:8,fill:'none',stroke:'#e8ffd1','stroke-width':1.35}));
-      else g.append(svg('path',{d:'M-8 -8l4 4m0-4l-4 4',stroke:'#ffdcca','stroke-width':1.6,fill:'none'}));
+  const scenes=$$('[data-hb-scene]').filter(host=>SITES.includes(host.dataset.hbScene)).map(host=>drawScene(host,host.dataset.hbScene));
+  function mark(record,phase='latest') {
+    const feathery=record.type==='feathery';
+    const g=svg('g',{class:'hb-seed hb-seed-'+record.type,'data-hb-seed':record.id,'data-hb-fresh':phase});
+    if (phase!=='flying') g.dataset.hbLand=record.land;
+    if (phase==='earlier') {
+      g.append(feathery
+        ? svg('circle',{r:4.7,fill:'#f3eedc',stroke:'#233337','stroke-width':2})
+        : svg('path',{d:'M0-5 5 0 0 5-5 0Z',fill:'#e8b864',stroke:'#252e2c','stroke-width':2}));
+      return g;
+    }
+    if (phase==='latest') {
+      if (record.landed) g.append(svg('circle',{r:15,fill:'#223c32','fill-opacity':.68,stroke:'#162e2b','stroke-width':6}),
+        svg('circle',{r:15,fill:'none',stroke:'#f6ffdf','stroke-width':3.3}));
+      else {
+        const d='M7 7l11 11m0-11L7 18';
+        g.append(svg('path',{d,fill:'none',stroke:'#302c2c','stroke-width':7,'stroke-linecap':'round'}),
+          svg('path',{d,fill:'none',stroke:'#ffdfc5','stroke-width':3.6,'stroke-linecap':'round'}));
+      }
     }
     if (feathery) {
-      g.append(svg('path',{d:'M0 4V-1M0-2l-4-3m4 3-2-5m2 5 2-5m-2 5 4-3',fill:'none',stroke:'#15282b','stroke-width':3,'stroke-linecap':'round'}),
-        svg('path',{d:'M0 4V-1M0-2l-4-3m4 3-2-5m2 5 2-5m-2 5 4-3',fill:'none',stroke:'#fffbe8','stroke-width':1.6,'stroke-linecap':'round'}));
+      const d='M0 8V-1m0-1-8-6m8 6-4-10m4 10 4-10m-4 10 8-6';
+      g.append(svg('path',{d,fill:'none',stroke:'#162c30','stroke-width':7,'stroke-linecap':'round'}),
+        svg('path',{d,fill:'none',stroke:'#fffbe8','stroke-width':3.9,'stroke-linecap':'round'}));
     } else {
-      g.append(svg('path',{d:'M0-4 3.8 0 0 4-3.8 0Z',fill:'#ffc862',stroke:'#292824','stroke-width':1.2}));
+      g.append(svg('path',{d:'M0-9 7.5 0 0 9-7.5 0Z',fill:'#ffc55e',stroke:'#352f26','stroke-width':2.7}),
+        svg('path',{d:'M0-4.5 2.4 0 0 4.5-2.4 0Z',fill:'#a96c36'}));
     }
     return g;
   }
-  function place(node,record,p=1,arc=true) {
-    const [x0,y0] = at(record.start), [x1,y1] = at(record.end);
-    // Seeds outside the modeled view stop at the boundary; their soil miss is kept.
-    const x = cap(x0 + (x1-x0)*p, 2, W-2);
-    const y = cap(y0 + (y1-y0)*p - (arc ? 23*Math.sin(Math.PI*p)*p : 0), 2, H-2);
+  function position(record,p) {
+    const [x0,y0]=at(record.start), [x1,y1]=at(record.end);
+    return [cap(x0+(x1-x0)*p,2,W-2),cap(y0+(y1-y0)*p-23*Math.sin(Math.PI*p)*p,2,H-2)];
+  }
+  function place(node,record,p=1) {
+    const [x,y]=position(record,p);
     node.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
   }
-  function settled(count = state.released) {
+  function trail(record,p) {
+    const feathery=record.type==='feathery';
+    const attributes={fill:'none','stroke-linecap':'round','stroke-linejoin':'round',class:'hb-seed-trail hb-seed-trail-'+record.type};
+    const shadow=svg('path',{...attributes,class:'hb-seed-trail-shadow',stroke:'#203131','stroke-width':5.8,opacity:.35,
+      'stroke-dasharray':feathery?'1 10':'6 8'});
+    const ink=svg('path',{...attributes,stroke:feathery?'#e9f6de':'#ffd07c','stroke-width':3.1,opacity:.8,
+      'stroke-dasharray':feathery?'1 10':'6 8'});
+    const update=value=>{
+      const d=Array.from({length:10},(_,i)=>(i?'L':'M')+position(record,value*i/9).map(t=>t.toFixed(2)).join(' ')).join('');
+      shadow.setAttribute('d',d);ink.setAttribute('d',d);
+    };
+    update(p);
+    return {shadow,ink,update};
+  }
+  function settled(count=state.released) {
     for (const scene of scenes) {
-      const area = siteName(scene.site);
-      const old = records(scene.site,Math.max(0,count-1)).map(r=>{const m=mark(r);place(m,r);return m;});
-      const now = count ? records(scene.site,count).filter(r=>r.plant === count).map(r=>{const m=mark(r);place(m,r);return m;}) : [];
+      const area=siteName(scene.site);
+      const old=records(scene.site,Math.max(0,count-1)).map(r=>{const m=mark(r,'earlier');place(m,r);return m;});
+      const batch=count ? records(scene.site,count).filter(r=>r.plant===count) : [];
+      const now=batch.map(r=>{const m=mark(r);place(m,r);return m;});
+      const paths=batch.map(r=>trail(r,1));
+      scene.trails.replaceChildren(...paths.map(t=>t.shadow),...paths.map(t=>t.ink));
+      scene.plant.dataset.hbPlantState=count?'landed':'ready';
+      scene.pulse.setAttribute('opacity',0);
       scene.past.replaceChildren(...old);
       scene.current.replaceChildren(...now);
-      const stats = tally(scene.site,count);
-      scene.desc.textContent = (scene.site === 'field' ? 'Broad area of suitable soil. ' : 'Small soil patches separated by pavement. ') +
-        count+' of '+PAIRS+' matched pairs released. '+area+': '+stats.landed+' of '+stats.released+' model seeds landed on soil.';
+      const stats=tally(scene.site,count);
+      scene.desc.textContent=(scene.site==='field'?'Broad area of suitable soil. ':'Small soil patches separated by pavement. ')+
+        count+' of '+PAIRS+' matched pairs released. '+area+': '+stats.landed+' of '+stats.released+' model seeds landed on soil. '+
+        (count?'The newest paths are shown with dotted feather tracks and dashed heavier seed tracks.':'The ring marks the parent plant and release point.');
     }
   }
   function animate(pair,done) {
     if (motion.matches || !scenes.length) { settled(pair);done();return; }
-    settled(pair-1);
-    const items = [];
+    const items=[];
     for (const scene of scenes) {
-      // Move the previous batch out of the current layer, retaining its final positions.
-      scene.past.append(...scene.current.children);
-      const batch = trial[scene.site].filter(r => r.plant === pair);
+      const old=records(scene.site,pair-1).map(r=>{const m=mark(r,'earlier');place(m,r);return m;});
+      scene.past.replaceChildren(...old);
+      scene.trails.replaceChildren();
+      scene.current.replaceChildren();
+      scene.plant.dataset.hbPlantState='releasing';
+      const batch=trial[scene.site].filter(r=>r.plant===pair);
       batch.forEach((record,i)=>{
-        const node=mark(record,true);
+        const node=mark(record,'flying'), path=trail(record,0);
         place(node,record,0);
         scene.current.append(node);
-        items.push({record,node,delay:Math.min(i*16,250)});
+        scene.trails.append(path.shadow,path.ink);
+        items.push({record,node,path,delay:Math.min(i*16,250)});
       });
     }
     let start;
     function tick(clock) {
-      if (start == null) start = clock;
-      const elapsed = clock-start;
-      for (const item of items) {
-        const t = cap((elapsed-item.delay)/(item.record.type==='feathery'?675:455),0,1);
-        place(item.node,item.record,1-Math.pow(1-t,1.5));
+      if (start==null) start=clock;
+      const elapsed=clock-start;
+      for (const scene of scenes) {
+        const p=cap(elapsed/460,0,1);
+        scene.pulse.setAttribute('r',(28+22*p).toFixed(1));
+        scene.pulse.setAttribute('opacity',(0.92*(1-p)).toFixed(2));
       }
-      if (elapsed < 940 && !motion.matches) frame=requestAnimationFrame(tick);
+      for (const item of items) {
+        const t=cap((elapsed-item.delay)/(item.record.type==='feathery'?675:455),0,1), p=1-Math.pow(1-t,1.5);
+        place(item.node,item.record,p);item.path.update(p);
+      }
+      if (elapsed<940 && !motion.matches) frame=requestAnimationFrame(tick);
       else { frame=0;settled(pair);done(); }
     }
     frame=requestAnimationFrame(tick);
