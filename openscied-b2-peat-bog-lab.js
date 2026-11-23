@@ -118,7 +118,9 @@
   function bindControl(range, num, set, numStep) {
     const st = numStep || +range.step, dec = decimals(st), mn = +range.min, mx = +range.max;
     num.dataset.dec = dec; num.min = mn; num.max = mx; num.step = st;
-    range.addEventListener('input', function () { set(+range.value); showClampNote(num, ''); });
+    let committed = null;
+    range.addEventListener('input', function () { committed = null; set(+range.value); showClampNote(num, ''); });
+    num.addEventListener('input', function () { committed = null; });
     function commit() {
       const typed = parseFloat(String(num.value).replace(',', '.'));
       if (isNaN(typed)) { num.value = (+num.dataset.value).toFixed(dec); return; }
@@ -129,10 +131,11 @@
       if (typed > mx) msg = 'Set to ' + shown + u + ', the highest allowed.';
       else if (typed < mn) msg = 'Set to ' + shown + u + ', the lowest allowed.';
       else if (Math.abs(v - typed) > 1e-9) msg = 'Rounded to ' + shown + u + ' (this control moves in steps of ' + st + ').';
-      const prev = +num.dataset.value;
-      set(v, true); num.value = shown;
-      // A second commit of the same value (Enter, then leaving the box) must not wipe the note the first one showed.
-      if (msg || v !== prev) showClampNote(num, msg);
+      // Enter can be followed by a native change/blur for the same edit. Do not
+      // replace its live correction with a plain summary, or restart its note timer.
+      if (!msg && committed === shown && +num.dataset.value === v) return;
+      set(v, true); num.value = shown; committed = shown;
+      showClampNote(num, msg);
       if (msg) announce(msg + ' ' + lastSpoken);
     }
     num.addEventListener('change', commit);

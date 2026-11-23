@@ -259,11 +259,20 @@
 #sg-expanded-actions button {min-height:2.45rem;font-size:.83rem;padding:.34rem .48rem;}
 @media(max-width:700px) and (orientation:portrait) {
   .sg-board-dialog {width:100vw;height:100dvh;border:0;border-radius:0;}
-  .sg-expanded-grid {grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(6rem,1fr) auto;gap:.28rem;padding:.28rem;}
+  .sg-expanded-grid {
+    grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(6rem,1fr) auto;gap:.28rem;padding:.28rem;
+    container-type:size;
+  }
   .sg-board-key-hint {display:none;}
   .sg-board-dialog-header {padding:.35rem .35rem;}
   .sg-board-dialog-header .sg-kicker {font-size:.56rem;}
-  .sg-expanded-turn {gap:.2rem;padding:.29rem;max-height:min(47dvh,26rem);scroll-padding:.32rem;}
+  .sg-expanded-turn {
+    gap:.2rem;padding:.29rem;scroll-padding:.32rem;
+    max-height:min(43dvh,26rem);
+    /* Reserve the map's actual width-fit height (521:626). The update and controls
+       scroll together outside it; a short portrait screen still gets a usable rail. */
+    max-height:clamp(10.5rem,calc(100cqh - (100cqw - .32rem) * 1.20154 - .6rem),26rem);
+  }
   #sg-expanded-context {max-height:none;overflow:visible;}
   .sg-expanded-turn h3 {font-size:.92rem;}
   .sg-expanded-turn > .sg-kicker {font-size:.64rem;}
