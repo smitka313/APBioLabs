@@ -108,7 +108,25 @@
     $('#rg-cross-jump').hidden=!gated;
     set('cross-gate',gated?'Complete either assigned pair’s Punnett square to continue.':'');
   }
-  function pairs(record,past) {
+  let burrow, nextMotion=false;
+  function drawBurrow(record,row,pair,workbench,showMotion){
+    const host=$('#rg-burrow'), api=window.RatBurrow;
+    if(!host||!api?.mount)return;
+    const assigned=workbench?pair:null, progress=assigned?state.crosses[assigned.id]:null;
+    const selection=row.survivorCounts?{born:row.born,survivors:row.survivors}:null;
+    const opts={rats:selection?row.survivors:row.born,pair:assigned,progress,
+      onParent:(role,ratId)=>workbench?.placeParent?.(role,ratId)===true,canMove:!!assigned,
+      announce:message=>announce(message,true),
+      phase:record.generation===1?'start':record.phase,counts:record.counts,selection,animate:showMotion};
+    if(burrow)burrow.update(opts);else burrow=api.mount(host,opts);
+    const helper=assigned?'Drag the two numbered rats into their matching nest spots. You can also select a rat and then its spot.':
+      selection?'Compare the earlier colony and the rats that survived this model step.':
+      record.generation===1?'The colony starts with four rats. Look for the selected pair.':
+      'The nursery shows the offspring in this snapshot. Use the timeline to review earlier groups.';
+    set('burrow-help',helper);
+    $('#rg-workbench-link').hidden=!pair;
+  }
+  function pairs(record,past,row,showMotion) {
     let crossList=record.pairs, future=false, target=record.generation;
     const next=M.preview(model);
     if(!past&&next?.action==='breed'){
@@ -116,7 +134,7 @@
       crossList=forecast.pairs;target=forecast.generation;future=true;
     }
     const host=$('#rg-pairs'), box=$('#rg-punnett');host.replaceChildren();box.replaceChildren();
-    if(!crossList.length){host.append(node('p','No pairings have been recorded for this snapshot.'));return;}
+    if(!crossList.length){host.append(node('p','No pairings have been recorded for this snapshot.'));drawBurrow(record,row,null,null,showMotion);return;}
     host.append(node('p',future?'Pairs ready to produce Generation '+target+'.':'Pairs that produced Generation '+target+'.'));
     const register=node('div','','rg-pair-list');host.append(register);
     const requested=past?activePair:state.activePair;
@@ -129,11 +147,13 @@
     }
     function show(p) {
       if(future){
-        B.mount(box,{
+        const workbench=B.mount(box,{
           pair:p,progress:state.crosses[p.id],required:state.action===0,tokenUrl:TOKEN,
           announce:message=>announce(message,true),
-          onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();crossGate();}
+          onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();crossGate();drawBurrow(record,row,p,workbench,false);}
         });
+        drawBurrow(record,row,p,workbench,showMotion);
+        showMotion=false;
         if(crossList.some(pair=>pair.reused))box.append(node('p','The parent group was odd, so one parent is used in two pairings.','rg-muted'));
         return;
       }
@@ -146,6 +166,7 @@
         grid.append(cell);
       }
       box.replaceChildren(node('p',first+' × '+second+' · one expected offspring per box'),grid);
+      drawBurrow(record,row,p,null,showMotion);showMotion=false;
       if(crossList.some(pair=>pair.reused))box.append(node('p','The parent group was odd, so one parent is used in two pairings.','rg-muted'));
     }
     show(crossList.find(p=>p.id===focusId));
@@ -192,7 +213,8 @@
     action.hidden=chosen===state.action&&model.done;
     action.textContent=chosen!==state.action?'Back to current snapshot':next?.action==='select'?'Apply modeled selection to Generation '+next.generation:next?.title||'';
     $('#rg-model-analyze').hidden=chosen!==state.action||!model.done;
-    pairs(entry,chosen!==state.action);crossGate();
+    const animate=nextMotion;nextMotion=false;
+    pairs(entry,chosen!==state.action,row,animate);crossGate();
   }
   function metricVal(row,key){
     const c=row.counts;return key==='population'?c.total:key==='carrier'?c.carrierFraction:c.redAlleleFraction;
@@ -282,7 +304,7 @@
   function advance() {
     if(viewAction!==null){viewAction=null;activePair='';renderModel();$('#rg-next').focus({preventScroll:true});return;}
     if(model.done||!state.prediction||needsFirstCross())return;
-    model=M.step(model);state.action=model.step;activePair='';state.activePair='';save();render();
+    model=M.step(model);state.action=model.step;activePair='';state.activePair='';nextMotion=true;save();render();
     announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
     if(model.done)$('#rg-model-analyze').focus({preventScroll:true});
   }

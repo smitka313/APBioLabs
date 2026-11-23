@@ -226,6 +226,11 @@
     shell.addEventListener('pointercancel',event=>end(event,true));
     shell.addEventListener('lostpointercapture',event=>end(event,true));
     shell.addEventListener('dragstart',event=>event.preventDefault());
+    // The live burrow and the workbench intentionally call the same placement.
+    shell.placeParent=(role,ratId)=>{
+      if(![0,1].includes(role)||pair.parents[role]?.id!==ratId)return false;
+      return place('parent-'+role,'parent-'+role,false);
+    };
     render();
     return shell;
   }

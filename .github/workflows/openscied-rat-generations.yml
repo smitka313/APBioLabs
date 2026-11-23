@@ -4,6 +4,7 @@ on:
     paths:
       - 'openscied-b4-rat-generations*'
       - 'openscied-b4-rat-cross-builder.js'
+      - 'openscied-b4-rat-burrow.js'
       - 'assets/*rat-generations*'
       - 'tests/openscied-b4-rat-generations*'
       - '.github/workflows/openscied-rat-generations.yml'

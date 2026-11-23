@@ -149,6 +149,37 @@ async function expectBoard(page, model, action, label) {
   check(tiles.length === 3 && GENOTYPES.every(g => tiles.some(([key,value]) =>
     key === g && String(expected[g]) === String(value).trim())),
     label + ' lists the exact RR, RB and BB totals for the ' + (selection ? 'survivor' : 'birth') + ' phase');
+  await expectScene(page,current,selection?'survived':current.generation===1?'start':'born',label);
+}
+async function expectScene(page, generation, phase, label) {
+  const board = scene(page);
+  await board.waitFor({ state:'visible' });
+  await page.waitForFunction(() => {
+    const art = document.querySelector('#rg-burrow .rg-burrow-art');
+    return art?.complete && art.naturalWidth > 0;
+  });
+  const sprites = await board.locator('[data-rg-burrow-rat]').evaluateAll(nodes =>
+    nodes.map(node => ({
+      id:node.dataset.rgBurrowRat, genotype:node.dataset.rgGenotype,
+      newborn:node.dataset.rgBurrowNewborn==='true', excluded:node.dataset.rgBurrowExcluded==='true'
+    })));
+  const expectedLive = phase==='survived' ? generation.survivors : generation.born;
+  const expectedExcluded = phase==='survived' ?
+    generation.born.filter(item=>!expectedLive.some(live=>live.id===item.id)) : [];
+  function exactSprites(actual,expected){
+    return compact(actual.map(({id,genotype})=>[id,genotype]).sort(),
+      expected.map(({id,genotype})=>[id,genotype]).sort());
+  }
+  const living = sprites.filter(s=>!s.excluded);
+  const excluded = sprites.filter(s=>s.excluded);
+  check(await board.getAttribute('data-rg-burrow-phase')===phase &&
+    exactSprites(living,expectedLive) && exactSprites(excluded,expectedExcluded),
+    label + ' visual burrow has the exact current living and excluded rats for ' + phase);
+  if(phase==='born')check(living.every(rat=>rat.newborn),
+    label + ' nursery marks every actual newborn in this generation');
+  const reduced = await page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if(reduced)check(await board.evaluate(el=>el.getAnimations({subtree:true}).every(a=>a.playState!=='running')),
+    label + ' reduced motion shows the correct finished snapshot without an active animation');
 }
 function builder(page) {
   return page.locator('#rg-punnett [data-rg-builder]');
@@ -183,8 +214,7 @@ async function dragPoints(page, source, target) {
     'pointer starts and ends on visible pieces, not synthetic DOM events');
   return points;
 }
-async function relocate(page, from, to, mode) {
-  const chip = source(page, from), slot = target(page, to);
+async function relocateElements(page, chip, slot, mode) {
   if (mode === 'keyboard') {
     if (await chip.getAttribute('aria-pressed') !== 'true') await chip.press('Enter');
     await slot.press('Enter');
@@ -217,10 +247,66 @@ async function relocate(page, from, to, mode) {
     }
   }
 }
+async function relocate(page, from, to, mode) {
+  return relocateElements(page, source(page, from), target(page, to), mode);
+}
 async function put(page, from, to, mode, label) {
   await relocate(page, from, to, mode);
   check(await target(page, to).getAttribute('data-rg-placed') === 'true',
     label + ' ' + mode + ' places ' + from + ' in ' + to);
+}
+const scene = page => page.locator('#rg-burrow .rg-burrow-board');
+const nest = (page, role) => scene(page).locator('[data-rg-burrow-target="' + role + '"]');
+const ratInColony = (page, id) => scene(page).locator('.rg-burrow-colony [data-rg-burrow-rat="' + id + '"]');
+const ratSource = (page, id) => ratInColony(page,id).and(scene(page).locator('[data-rg-burrow-source="' + id + '"]'));
+const ratInNest = (page, id) => scene(page).locator('[data-rg-burrow-nest-rat="' + id + '"]');
+async function exactNest(page, rat, role, label) {
+  check(await nest(page,role).getAttribute('data-rg-placed') === 'true' &&
+    await nest(page,role).locator('[data-rg-burrow-nest-rat="' + rat.id + '"]').isVisible() &&
+    await ratInNest(page,rat.id).getAttribute('data-rg-genotype') === rat.genotype &&
+    await ratInColony(page,rat.id).count() === 0 &&
+    await target(page,'parent-'+role).getAttribute('data-rg-placed') === 'true',
+    label + ' ' + rat.id + ' keeps ' + rat.genotype + ', moves from the colony to its nest, and sets the same builder slot');
+}
+async function scenePair(page, pair, cfg, seed, label) {
+  const next = page.locator('#rg-next');
+  const [first,second] = pair.parents;
+  check(await scene(page).isVisible() && (await nest(page,0).count()) === 1 &&
+    (await nest(page,1).count()) === 1 &&
+    compact((await scene(page).locator('.rg-burrow-colony [data-rg-assigned="true"]').evaluateAll(nodes =>
+      nodes.map(node=>node.dataset.rgBurrowRat).sort())), [first.id,second.id].sort()),
+    label + ' the burrow highlights the two actual rats assigned to this seeded cross and displays two nests');
+  for (const rat of [first,second]) {
+    const actor = ratSource(page,rat.id);
+    check(await actor.isVisible() && await actor.getAttribute('data-rg-genotype') === rat.genotype &&
+      await actor.evaluate(el=>el.tagName === 'BUTTON' && el.getBoundingClientRect().height >= 24 &&
+        Boolean(el.getAttribute('aria-label')) && Boolean(el.querySelector('img'))),
+      label + ' assigned visual rat ' + rat.id + ' is operable and labeled without relying on color');
+  }
+  const primary = cfg.touch ? 'touch-drag' : cfg.width === 1366 ? 'mouse' : 'keyboard';
+  await relocateElements(page,ratSource(page,first.id),nest(page,1),primary);
+  check(await nest(page,1).getAttribute('data-rg-placed') === 'false' &&
+    await ratInColony(page,first.id).isVisible() && await target(page,'parent-1').getAttribute('data-rg-placed') === 'false' &&
+    await next.isDisabled() && /match|parent|belongs|nest/i.test(await page.locator('#rg-burrow .rg-burrow-feedback').innerText()),
+    label + ' ' + primary + ' rejects the wrong nest without moving the actual rat or filling a builder slot');
+  await relocateElements(page,ratSource(page,second.id),nest(page,1),primary);
+  await exactNest(page,second,1,label + ' ' + primary);
+  if (cfg.touch || cfg.width === 1366) {
+    await scene(page).screenshot({
+      path:path.join(OUT,label+'-burrow-nest-one-filled.png'),animations:'disabled',timeout:15000
+    });
+  }
+  if (cfg.width === 1920) {
+    await put(page,'parent-0','parent-0','keyboard',label);
+    await exactNest(page,first,0,label + ' accessible builder fallback');
+  } else {
+    const alternate = cfg.touch ? 'tap' : 'keyboard';
+    await relocateElements(page,ratSource(page,first.id),nest(page,0),alternate);
+    await exactNest(page,first,0,label + ' ' + alternate);
+  }
+  const saved = await save(page);
+  check(saved.seed === seed && saved.action === 0 && compact(saved.crosses?.[pair.id]?.parents,[true,true]) &&
+    await next.isDisabled(),label + ' scene and builder share one persisted parent state without producing a generation');
 }
 async function firstCross(page, row, cfg, seed, label) {
   const chosen = row.pairs.find(pair => pair.parents.some(parent => parent.genotype === 'RB'));
@@ -236,13 +322,7 @@ async function firstCross(page, row, cfg, seed, label) {
     label + ' gives a reason for the first-cross gate');
 
   const repeatableInput = cfg.touch ? 'tap' : 'keyboard';
-  await relocate(page, 'parent-0', 'parent-1', repeatableInput);
-  check(await target(page, 'parent-1').getAttribute('data-rg-placed') === 'false' &&
-    await next.isDisabled() && (await page.locator('#rg-cross-feedback').innerText()).trim().length > 0,
-    label + ' rejects a rat in the wrong parent slot and leaves the gate locked');
-
-  await put(page, 'parent-1', 'parent-1', cfg.touch ? 'touch-drag' : cfg.width === 1366 ? 'mouse' : 'keyboard', label);
-  await put(page, 'parent-0', 'parent-0', repeatableInput, label);
+  await scenePair(page,chosen,cfg,seed,label);
   if (cfg.width === 1366) {
     await put(page, 'allele-0-0', 'header-0-0', 'mouse', label);
   } else {
@@ -260,6 +340,8 @@ async function firstCross(page, row, cfg, seed, label) {
     check(compact(await placedTargets(page), partial) && (await save(page)).seed === seed &&
       (await save(page)).action === 0 && Boolean((await save(page)).crosses?.[chosen.id]) && await next.isDisabled(),
       'reload restores the exact partial cross without rerolling or advancing the colony');
+    await exactNest(page,chosen.parents[0],0,'reloaded first nest');
+    await exactNest(page,chosen.parents[1],1,'reloaded second nest');
   }
   for (const [role, allele] of [[0,1],[1,0],[1,1]]) {
     await put(page, 'allele-' + role + '-' + allele, 'header-' + role + '-' + allele, repeatableInput, label);
@@ -296,6 +378,8 @@ async function firstCross(page, row, cfg, seed, label) {
         nodes.map(node => node.dataset.rgCell || node.textContent.trim())), chosen.cells) &&
       (await save(page)).action === 0 && (await save(page)).seed === seed,
       'completed cross stays ready after reload without advancing the seed or action');
+    await exactNest(page,chosen.parents[0],0,'completed cross reload');
+    await exactNest(page,chosen.parents[1],1,'completed cross reload');
   }
   const optional = row.pairs.find(candidate => candidate.id !== chosen.id);
   if (optional) {
@@ -509,7 +593,14 @@ async function play(browser, base, cfg) {
     await expectBoard(page, model, null, label);
     check(compact(count(model.generations[0].born), { RR:0,RB:1,BB:3 }),
       label + ' starts with the source handout’s four founders');
-    await fits(page, 'main, #rg-model, #rg-colony, #rg-pairs, #rg-punnett', label + ' initial colony board');
+    await fits(page, 'main, #rg-model, #rg-burrow, .rg-burrow-board, #rg-colony, #rg-pairs, #rg-punnett',
+      label + ' initial colony board');
+    const key=page.locator('#rg-allele-key');
+    const keyText=clean(await key.textContent());
+    check(await key.isVisible() && /one copy comes from each parent/i.test(keyText) &&
+      /R = red resistance allele.*B = blue allele/i.test(keyText) &&
+      /RR Two R copies · resistant.*RB One R and one B · resistant.*BB Two B copies · not resistant/i.test(keyText),
+      label + ' genotype key explains the two inherited copies and each modeled trait');
     await screenshot(page, label + '-founders');
     if (cfg.touch) await axe(page, '#rg-model', label + ' paired colony board');
 

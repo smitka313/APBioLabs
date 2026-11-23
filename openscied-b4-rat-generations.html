@@ -53,7 +53,8 @@
       <div class="rg-panel">
         <h3>Meet the starting colony</h3>
         <p>Every rat has two copies of the gene we’re tracking. Four rats start the model: one <strong>RB</strong> and three <strong>BB</strong>.</p>
-        <p><strong>R</strong> represents the red allele associated with resistance in this simplified model. <strong>B</strong> represents the blue allele. One R is enough for a rat to show the resistant trait in this model.</p>
+        <p>A rat inherits one copy of this gene from each parent. <strong>R</strong> and <strong>B</strong> are two versions of the same gene, called <strong>alleles</strong>.</p>
+        <p><strong>R</strong> is the red resistance allele; <strong>B</strong> is the blue allele. <strong>RR</strong> means two R copies, <strong>RB</strong> means one of each, and <strong>BB</strong> means two B copies. In this model, one R is enough to show the resistant trait.</p>
         <div id="rg-start-colony"></div>
       </div>
       <form class="rg-panel" id="rg-prediction">
@@ -70,15 +71,31 @@
   </section>
   <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
-    <p class="rg-intro">Build one Punnett square before producing Generation 2. Later crosses are optional. The assigned pairs and your placements stay the same if you reload.</p>
+    <p class="rg-intro">Move the two marked rats from the colony to their numbered nest spots. Then use their alleles to build a cross. Each generation is a new snapshot of the same trial.</p>
     <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
     <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
       <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title"></h3><p id="rg-event-explanation"></p></div>
-      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next" aria-describedby="rg-cross-gate"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button><a id="rg-cross-jump" href="#rg-punnett" hidden>Go to Punnett square</a><p id="rg-cross-gate" class="rg-muted" hidden></p></div>
+      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next" aria-describedby="rg-cross-gate"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button><a id="rg-cross-jump" href="#rg-burrow" hidden>Go to the burrow</a><p id="rg-cross-gate" class="rg-muted" hidden></p></div>
     </div>
+    <section class="rg-fieldwork" aria-labelledby="rg-fieldwork-title">
+      <header class="rg-fieldwork-head">
+        <div><p class="eyebrow">Below the city streets</p><h3 id="rg-fieldwork-title">The colony burrow</h3><p id="rg-burrow-help">Move the marked rats to the nest to start their cross. You can also select a rat and then its nest spot.</p></div>
+        <div id="rg-pairs" class="rg-fieldwork-pairs"></div>
+      </header>
+      <div id="rg-burrow" tabindex="-1"></div>
+      <aside class="rg-allele-key" id="rg-allele-key" aria-labelledby="rg-allele-key-title">
+        <div><h4 id="rg-allele-key-title">Genotype key</h4><p>One copy comes from each parent. <strong>R</strong> = red resistance allele. <strong>B</strong> = blue allele.</p></div>
+        <ul aria-label="Genotypes and traits in this model">
+          <li data-rg-genotype-key="RR"><strong>RR</strong> Two R copies · resistant</li>
+          <li data-rg-genotype-key="RB"><strong>RB</strong> One R and one B · resistant</li>
+          <li data-rg-genotype-key="BB"><strong>BB</strong> Two B copies · not resistant</li>
+        </ul>
+      </aside>
+      <div class="rg-fieldwork-foot"><a id="rg-workbench-link" href="#rg-punnett">Continue at the Punnett workbench ↓</a></div>
+    </section>
     <div class="rg-columns rg-model-grid">
-      <div class="rg-panel rg-colony-panel"><h3 id="rg-colony-title">Colony</h3><div id="rg-colony"></div><p id="rg-genotype-key" class="rg-muted"><strong>Model key:</strong> RR and RB show the resistant trait. BB does not.</p><div id="rg-selection-record"></div></div>
-      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-pairs"></div><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div></div>
+      <div class="rg-panel rg-colony-panel"><h3 id="rg-colony-title">Colony</h3><div id="rg-colony"></div><div id="rg-selection-record"></div></div>
+      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div></div>
     </div>
   </section>
   <section id="rg-analyze" data-rg-step="analyze" aria-labelledby="rg-analyze-title" hidden>
@@ -143,6 +160,7 @@
 <script src="lab.js"></script>
 <script src="openscied-b4-rat-generations-logic.js"></script>
 <script src="openscied-b4-rat-cross-builder.js"></script>
+<script src="openscied-b4-rat-burrow.js"></script>
 <script src="openscied-b4-rat-generations.js"></script>
 </body>
 </html>
