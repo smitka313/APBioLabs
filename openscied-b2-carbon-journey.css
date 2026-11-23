@@ -5,3 +5,11 @@
 @media print{body.journey-playing{overflow:visible;height:auto}.journey-playing .journey-shell{height:auto;display:block;padding:0}.journey-tabs,.draft-note,.journey-tools,.journey-hud,.header-actions,dialog,#status,#play,.model-notes{display:none!important}.journey-page[hidden]{display:block!important}.journey-shell{padding:0}.sense-grid{display:block}.sense-grid>aside{position:static}#story-strip,.journal-scroll{max-height:none;overflow:visible}.journal-scroll table{min-width:0}.totals-grid{grid-template-columns:repeat(3,1fr)}textarea{border:0!important}#questions article{break-inside:avoid}.journey-playing .site-footer{display:block;font-size:10px}}
 
 .total-tabs{display:none}.question-pager{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:.8rem}.question-pager .btn{font-size:.85rem}@media(max-width:850px){.total-tabs{display:flex;gap:8px}.total-tabs button{flex:1;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}.total-tabs [aria-pressed=true]{background:var(--ink);color:var(--surface)}.sense-grid>aside{max-height:200px;overflow:auto}#story-strip{max-height:100px}}@media print{#questions article[hidden],.totals-grid>[hidden]{display:block!important}.question-pager,.total-tabs{display:none!important}}
+
+/* The budget is a distinct comparison; hide unrelated journey actions there. */
+.journey-budgeting .journey-tools,.journey-budgeting .draft-note,.journey-budgeting .model-notes,.journey-budgeting #help{display:none}
+.budget-label-short{display:none}
+@media(max-width:500px){.budget-label-full{display:none}.budget-label-short{display:inline}}
+@media print{
+  body:not(.journey-budgeting) #budget,body.journey-budgeting #evidence,body.journey-budgeting #sense{display:none!important}
+}

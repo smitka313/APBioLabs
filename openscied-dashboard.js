@@ -5,6 +5,7 @@
   // Keep the exact existing key so work from the earlier preview stays available.
   const SERENGETI_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
   const CARRYING_KEY = 'aplab:openscied-b1-carrying-capacity:run-v1';
+  const CARBON_BUDGET_KEY = PREFIX + 'b2-carbon-journey:budget:v1';
   const CARRYING_PARTS = ['range', 'habitat', 'field'];
   const CARRYING_EXTRA_KEYS = CARRYING_PARTS.map(part => PREFIX + 'b1-carrying-capacity:' + part + ':v1');
   const isOpenSciEdKey = key => key === SERENGETI_KEY || key === CARRYING_KEY || key.startsWith(PREFIX);
@@ -16,7 +17,7 @@
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
-    { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', clears: 'carbon journey, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
+    { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds }
@@ -130,7 +131,27 @@
   }
   function activityDestination(activity, item) { return activity.file + (item.section ? '#' + item.section : ''); }
   function carbonResponseIds() { return ['q2', 'q3', 'q4', 'q5', 'q6']; }
-  function carbonJourneyProgress(raw) {
+  function carbonJourneyProgress(raw, optional = []) {
+    const journey = originalCarbonJourneyProgress(raw);
+    if (!optional[0]) return journey;
+    let budget;
+    try {
+      budget = JSON.parse(optional[0]);
+      if (budget?.v !== 1 || !Number.isInteger(budget.position) || !Number.isInteger(budget.furthest) ||
+          budget.position < -1 || budget.furthest < budget.position || budget.furthest > 8 ||
+          typeof budget.prediction !== 'string' || typeof budget.explanation !== 'string') throw Error('Unknown budget format');
+    } catch (_) {
+      return {...journey, summary:(journey.summary === 'Not started' ? '' : journey.summary+' · ')+'Saved budget could not be read. Download a copy before restarting.'};
+    }
+    const started = budget.furthest >= 0 || written(budget,'prediction') || written(budget,'explanation');
+    if (!started) return journey;
+    const visited = Number.isFinite(budget.lastVisitedAt) ? budget.lastVisitedAt : 0;
+    const budgetSummary = budget.furthest >= 8 ? 'Budget comparison complete' :
+      'Budget checkpoints: '+Math.max(0,budget.furthest)+' of 8';
+    return {started:true, section:!journey.started || visited >= journey.visited ? 'budget' : journey.section,
+      visited:Math.max(journey.visited,visited),summary:(journey.started ? journey.summary+' · ' : '')+budgetSummary};
+  }
+  function originalCarbonJourneyProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: 'play', visited: 0 };
     if (!raw) return empty;
     let saved;
@@ -322,6 +343,15 @@
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
           if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
         });
+        if (keys.includes(CARBON_BUDGET_KEY)) {
+          try {
+            const saved = JSON.parse(work[CARBON_BUDGET_KEY]);
+            if (saved?.v === 1) {
+              responses['carbon-journey'] ||= {};
+              for (const id of ['prediction','explanation']) if (typeof saved[id] === 'string') responses['carbon-journey']['budget-'+id] = saved[id];
+            }
+          } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
+        }
         const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: Lab.identity.get(), work, responses };
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
