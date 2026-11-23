@@ -81,16 +81,23 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
       T.ok(res.length === 0, 'axe ' + (dark ? 'dark' : 'light') + ' ' + width + ' px: ' + (res.join(', ') || 'clean'));
       await ctx.close();
     }
-    // the picture link still opens its activity
+    // Preview links keep their activity paths; the regular link opens the default section.
     const ctx = await T.ctxFor(b, { width: 1366, height: 900 });
     const p = await ctx.newPage(); await stub(p);
     await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#b2-burn-progress');
     const firstCard = p.locator('.dashboard-activity').first();
     T.ok((await firstCard.locator('.dashboard-preview').getAttribute('href')) === UNIT1[0], 'first card (Migration Explorer) preview links to the exact activity URL');
-    T.ok((await firstCard.locator('.dashboard-open').getAttribute('href')) === UNIT1[0], 'first card button opens Migration Explorer');
+    const migrationOpen = firstCard.locator('.dashboard-open');
+    const migrationStart = UNIT1[0] + '#explore';
+    T.ok((await migrationOpen.getAttribute('href')) === migrationStart, 'first card button links to the Migration Explorer default section');
     const burnCard = p.locator('section[aria-labelledby="unit2"] .dashboard-activity').first();
     T.ok((await burnCard.locator('.dashboard-preview').getAttribute('href')) === UNIT2[0], 'first Unit 2 card (Burning Fuels) preview still links to its activity');
     T.ok((await burnCard.locator('.dashboard-open').getAttribute('href')).startsWith(UNIT2[0]), 'first Unit 2 card button still opens Burning Fuels');
+    await Promise.all([p.waitForURL(srv.url + migrationStart), migrationOpen.click()]);
+    await p.locator('#explore #month-buttons button').first().waitFor({state:'visible'});
+    T.ok(await p.locator('#explore #migration-map').isVisible()
+      && (await p.locator('[data-page="explore"]').getAttribute('aria-current')) === 'page',
+      'first card button opens the live Migration Explorer on Explore the year');
     await ctx.close();
   } finally { await b.close(); srv.close(); }
   T.done('t109-openscied-dashboard-previews');
