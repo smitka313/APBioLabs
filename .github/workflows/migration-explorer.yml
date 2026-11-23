@@ -1,0 +1,34 @@
+name: Migration explorer
+on:
+  pull_request:
+    paths:
+      - '*migration*'
+      - 'assets/migration-*'
+      - 'openscied-dashboard.*'
+      - 'tests/*migration*'
+      - '.github/workflows/migration-explorer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  migration-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node --test tests/migration-explorer.test.js
+      - run: node tests/t120-migration-explorer.js
+        env:
+          MIGRATION_SCREENSHOTS: test-artifacts/migration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: migration-explorer-viewports
+          path: test-artifacts/migration/*.png
+          if-no-files-found: ignore

@@ -7,6 +7,7 @@
   const isOpenSciEdKey = key => key === SERENGETI_KEY || key.startsWith(PREFIX);
   // Each activity reads its own saved record: progress(raw) gives {started, section, visited, summary}; ids(saved) lists its written-response ids.
   const ACTIVITIES = [
+    { id: 'migration', name: 'Migration Map Explorer', file: 'openscied-b1-migration.html', key: PREFIX + 'b1-migration:v1', clears: 'visited months, notebook entries, and written responses', progress: migrationProgress, ids: migrationResponseIds, answers: true },
     { id: 'serengeti', name: 'Serengeti Board Game', file: 'openscied-b1-serengeti.html', key: SERENGETI_KEY, clears: 'board game record, concept checks, and answers', progress: serengetiProgress, ids: serengetiResponseIds, answers: true },
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
@@ -52,6 +53,22 @@
     const phase = completed ? 'Year complete' : turn ? turn + ' turn' : 'Analysis started';
     return { ...empty, started, visited: Number.isFinite(save.lastVisitedAt) ? save.lastVisitedAt : 0,
       summary: started ? phase + ' · ' + records + ' evidence ' + (records===1?'entry':'entries') + ' · ' + writtenCount + ' of 2 explanations written' : empty.summary };
+  }
+  function migrationResponseIds() { return ['question', 'prediction', 'patterns', 'absence', 'rain-prediction', 'rain-claim', 'regions', 'claim', 'limits', 'next']; }
+  function migrationProgress(raw) {
+    const empty = { summary: 'Not started', started: false, section: 'explore', visited: 0 };
+    if (!raw) return empty;
+    let saved;
+    try {
+      saved = JSON.parse(raw);
+      if (!saved || saved.v !== 1 || !Number.isInteger(saved.month) || saved.month < 0 || saved.month > 11 || !Array.isArray(saved.notes) || !Array.isArray(saved.visited) || !saved.answers || typeof saved.answers !== 'object' || Array.isArray(saved.answers)) throw Error('Unknown format');
+    } catch (_) { return { ...empty, summary: 'Saved work could not be read. Download a copy before restarting.' }; }
+    const months = new Set(saved.visited.filter(n => Number.isInteger(n) && n >= 0 && n < 12)).size;
+    const notes = saved.notes.length, answers = migrationResponseIds().filter(id => written(saved.answers,id)).length;
+    const started = !!(months || notes || answers || Object.values(saved.observations || {}).some(v => typeof v === 'string' && v.trim()));
+    return { started, section: ['explore','evidence','explain'].includes(saved.page) ? saved.page : 'explore',
+      visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
+      summary: started ? months + ' of 12 months explored · ' + notes + ' notebook entries · ' + answers + ' of 10 responses written' : 'Not started' };
   }
   function activityDestination(activity, item) { return activity.file + (item.section ? '#' + item.section : ''); }
   function carbonResponseIds() { return ['q2', 'q3', 'q4', 'q5', 'q6']; }
@@ -288,4 +305,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+
 

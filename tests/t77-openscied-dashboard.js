@@ -13,7 +13,7 @@ const assert = require('node:assert/strict');
       await p.reload();
       assert.deepEqual((await p.locator('.dashboard-units > section').evaluateAll(units=>units.map(unit=>unit.getAttribute('aria-labelledby')))).slice(0,3),
         ['unit1','unit2','unit3'], 'published units are listed in curriculum order');
-      assert.equal(await p.locator('.dashboard-activity').first().locator('.dashboard-preview').getAttribute('href'), 'openscied-b1-serengeti.html');
+      assert.equal(await p.locator('.dashboard-activity').first().locator('.dashboard-preview').getAttribute('href'), 'openscied-b1-migration.html');
       assert.equal(await p.locator('.dashboard-coming-soon').getAttribute('open'), null);
       const theme = p.getByRole('group', { name: 'Color theme', exact: true });
       assert.equal(await theme.count(), 1);
@@ -118,4 +118,5 @@ const assert = require('node:assert/strict');
   } finally { await browser.close(); server.close(); }
   T.done('openscied-dashboard');
 })().catch(e => { console.error(e); process.exitCode = 1; });
+
 
