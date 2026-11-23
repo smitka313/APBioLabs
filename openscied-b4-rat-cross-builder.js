@@ -26,9 +26,10 @@
   const complete=p=>!!p&&p.parents?.length===2&&p.parents.every(Boolean)&&p.headers?.length===4&&p.headers.every(Boolean)&&
     p.cells?.length===4&&p.cells.every(pair=>pair?.length===2&&pair.every(Boolean));
   const phaseOf=p=>!p.parents.every(Boolean)?'parents':!p.headers.every(Boolean)?'headers':complete(p)?'done':'offspring';
+  const availableAlleles=pair=>['R','B'].filter(letter=>pair.parents.some(rat=>rat.genotype.includes(letter)));
   function placements(pair,raw,source,destination) {
     const p=clean(raw), phase=phaseOf(p);
-    const a=/^(parent)-(\d)$|^(allele)-(\d)-(\d)$/.exec(source);
+    const a=/^(parent)-(\d)$|^(allele)-([RB])$/.exec(source);
     const t=/^(parent)-(\d)$|^(header|cell)-(\d)-(\d)$/.exec(destination);
     if(!a||!t)return {error:'Choose a rat or allele chip, then choose an open slot.'};
     if(t[1]){
@@ -37,19 +38,18 @@
       if(a[1]!=='parent'||a[2]!==t[2])return {error:'This is the other parent’s slot. Match the numbered rat to its parent slot.'};
       p.parents[i]=true;return {progress:p,activity:'Parent '+(i+1)+' placed.'};
     }
-    if(a[3]!=='allele')return {error:'Use one of the parent’s allele chips here.'};
-    const who=Number(a[4]), which=Number(a[5]), idx=Number(t[4]), side=Number(t[5]);
-    if(who>1||which>1||side>1)return {error:'Choose one of the displayed allele chips.'};
+    if(a[3]!=='allele')return {error:'Use an allele chip here.'};
+    const letter=a[4], idx=Number(t[4]), side=Number(t[5]);
+    if(side>1||!availableAlleles(pair).includes(letter))return {error:'Choose one of the displayed allele chips.'};
     if(t[3]==='header') {
       if(idx>1||phase!=='headers'||p.headers[idx*2+side])return {error:'Choose an open allele header.'};
-      if(who!==idx||which!==side)return {error:'Match the chip’s parent and copy number to the row or column header.'};
+      if(letter!==pair.parents[idx].genotype[side])return {error:'That letter does not match this header. Check Parent '+(idx+1)+'’s genotype.'};
       p.headers[idx*2+side]=true;return {progress:p,activity:'Allele header placed.'};
     }
     if(idx>3||phase!=='offspring'||p.cells[idx][side])return {error:'Choose an open allele slot in an offspring box.'};
-    if(who!==side)return {error:'This slot needs an allele from Parent '+(side+1)+'.'};
     const expectedCopy=side===0?Math.floor(idx/2):idx%2;
-    if(pair.parents[who].genotype[which]!==pair.parents[side].genotype[expectedCopy])
-      return {error:'Use the allele shown in this box’s '+(side===0?'row':'column')+' header.'};
+    if(letter!==pair.parents[side].genotype[expectedCopy])
+      return {error:'Use the letter shown in this box’s '+(side===0?'row':'column')+' header.'};
     p.cells[idx][side]=true;
     return {progress:p,activity:p.cells[idx].every(Boolean)?'Offspring box complete: '+pair.cells[idx]+'.':'Allele placed.'};
   }
@@ -98,8 +98,8 @@
       shell.dataset.rgPhase=phase==='parents'?'parents':phase==='done'?'done':'alleles';
       instruction.textContent=phase==='parents'
         ? (required?'Build one complete cross before continuing. ':'Optional: build this cross or continue. ')+'Drag each numbered rat to its parent slot, or select the rat and then the slot.'
-        : phase==='headers'?'Place the two allele copies from Parent 1 at the left and from Parent 2 across the top.'
-        : phase==='offspring'?'Fill each offspring box with one allele from its row and one from its column. Select or drag the chips again as needed.'
+        : phase==='headers'?'Match Parent 1’s two letters on the left and Parent 2’s along the top. Reuse the same chip wherever its letter matches.'
+        : phase==='offspring'?'Fill each offspring box with the letter from its row and the letter from its column. The chips can be reused.'
         : 'Cross complete. Each box represents one expected offspring in this model.';
       sources.replaceChildren();parents.replaceChildren();grid.replaceChildren();
       pair.parents.forEach((rat,i)=>{
@@ -110,18 +110,14 @@
         parents.append(target('parent-'+i,text,desc,p.parents[i],phase==='parents'));
       });
       if(phase==='headers'||phase==='offspring'){
-        pair.parents.forEach((rat,who)=>{
-          for(const [which,value] of [...rat.genotype].entries()){
-            if(phase==='headers'&&p.headers[who*2+which])continue;
-            sources.append(source('allele-'+who+'-'+which,'P'+(who+1)+' · '+value+(which===0?' ¹':' ²'),
-              'Parent '+(who+1)+', allele copy '+(which+1)+': '+value,value));
-          }
-        });
+        for(const letter of availableAlleles(pair)){
+          sources.append(source('allele-'+letter,letter,letter+' allele',letter));
+        }
       }
       const header=(who,i)=>{
         const placed=p.headers[who*2+i], allele=pair.parents[who].genotype[i];
         return target('header-'+who+'-'+i,placed?allele:(who===0?'Row ':'Column ')+(i+1),
-          (who===0?'Row ':'Column ')+(i+1)+': Parent '+(who+1)+', allele copy '+(i+1)+(placed?' placed: '+allele:''),
+          (who===0?'Row ':'Column ')+(i+1)+': Parent '+(who+1)+' allele'+(placed?' placed: '+allele:''),
           placed,phase==='headers',placed?allele:'');
       };
       grid.append(create('span','rg-cross-corner','×'),header(1,0),header(1,1));
@@ -234,5 +230,5 @@
     render();
     return shell;
   }
-  return Object.freeze({blank,clean,cleanMap,complete,placements,mount});
+  return Object.freeze({blank,clean,cleanMap,complete,availableAlleles,placements,mount});
 });

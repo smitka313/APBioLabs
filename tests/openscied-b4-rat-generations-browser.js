@@ -252,7 +252,8 @@ async function relocate(page, from, to, mode) {
 }
 async function put(page, from, to, mode, label) {
   await relocate(page, from, to, mode);
-  check(await target(page, to).getAttribute('data-rg-placed') === 'true',
+  check(await target(page, to).getAttribute('data-rg-placed') === 'true' &&
+    (!from.startsWith('allele-') || await target(page,to).getAttribute('data-rg-value') === from.slice(7)),
     label + ' ' + mode + ' places ' + from + ' in ' + to);
 }
 const scene = page => page.locator('#rg-burrow .rg-burrow-board');
@@ -308,6 +309,15 @@ async function scenePair(page, pair, cfg, seed, label) {
   check(saved.seed === seed && saved.action === 0 && compact(saved.crosses?.[pair.id]?.parents,[true,true]) &&
     await next.isDisabled(),label + ' scene and builder share one persisted parent state without producing a generation');
 }
+async function plainAlleles(page,label) {
+  const chips=await builder(page).locator('[data-rg-source]').evaluateAll(nodes=>nodes.map(node=>({
+    source:node.dataset.rgSource,value:node.textContent.trim(),label:node.getAttribute('aria-label')
+  })).sort((a,b)=>a.value.localeCompare(b.value)));
+  check(compact(chips,[
+    { source:'allele-B',value:'B',label:'B allele' },
+    { source:'allele-R',value:'R',label:'R allele' }
+  ]),label + ' offers just one plain reusable tile per letter, without parent or copy numbers');
+}
 async function firstCross(page, row, cfg, seed, label) {
   const chosen = row.pairs.find(pair => pair.parents.some(parent => parent.genotype === 'RB'));
   assert.ok(chosen, 'the founder with the R allele has an expected cross');
@@ -323,11 +333,13 @@ async function firstCross(page, row, cfg, seed, label) {
 
   const repeatableInput = cfg.touch ? 'tap' : 'keyboard';
   await scenePair(page,chosen,cfg,seed,label);
-  if (cfg.width === 1366) {
-    await put(page, 'allele-0-0', 'header-0-0', 'mouse', label);
-  } else {
-    await put(page, 'allele-0-0', 'header-0-0', repeatableInput, label);
-  }
+  await plainAlleles(page,label);
+  const firstHeader=chosen.parents[0].genotype[0];
+  const opposite=letter=>letter==='R'?'B':'R';
+  await relocate(page,'allele-'+opposite(firstHeader),'header-0-0',repeatableInput);
+  check(await target(page,'header-0-0').getAttribute('data-rg-placed')==='false' &&
+    await next.isDisabled(),label+' rejects a nonmatching letter in a Punnett header');
+  await put(page,'allele-'+firstHeader,'header-0-0',cfg.width===1366?'mouse':repeatableInput,label);
   const partial = await placedTargets(page);
   check(partial.length === 3 && await next.isDisabled(), label + ' a partially built cross cannot be recorded');
   if (cfg.width === 1366) {
@@ -343,24 +355,36 @@ async function firstCross(page, row, cfg, seed, label) {
     await exactNest(page,chosen.parents[0],0,'reloaded first nest');
     await exactNest(page,chosen.parents[1],1,'reloaded second nest');
   }
-  for (const [role, allele] of [[0,1],[1,0],[1,1]]) {
-    await put(page, 'allele-' + role + '-' + allele, 'header-' + role + '-' + allele, repeatableInput, label);
+  for (const [role,index] of [[0,1],[1,0],[1,1]]) {
+    const letter=chosen.parents[role].genotype[index];
+    await put(page,'allele-'+letter,'header-'+role+'-'+index,repeatableInput,label);
   }
+  await plainAlleles(page,label+' after populating both parents’ headers');
   for (let i = 0; i < 4; i++) {
     if (i === 0) {
-      await relocate(page, 'allele-0-0', 'cell-0-1', repeatableInput);
-      check(await target(page, 'cell-0-1').getAttribute('data-rg-placed') === 'false' &&
-        await next.isDisabled(), label + ' rejects an allele from the wrong parent in the offspring cell');
+      const wrong=opposite(chosen.parents[1].genotype[0]);
+      await relocate(page,'allele-'+wrong,'cell-0-1',repeatableInput);
+      check(await target(page,'cell-0-1').getAttribute('data-rg-placed')==='false' &&
+        await next.isDisabled(),label+' rejects a nonmatching letter in an offspring box');
     }
     for (let role = 0; role < 2; role++) {
-      const index = role === 0 ? Math.floor(i / 2) : i % 2;
-      await put(page, 'allele-' + role + '-' + index, 'cell-' + i + '-' + role, repeatableInput, label);
+      const index=role===0?Math.floor(i/2):i%2;
+      const letter=chosen.parents[role].genotype[index];
+      await put(page,'allele-'+letter,'cell-'+i+'-'+role,repeatableInput,label);
     }
     if (i < 3) check(await square.getAttribute('data-rg-ready') === 'false' && await next.isDisabled(),
       label + ' still gates progression while an offspring box is unfinished');
   }
   const cells = await page.locator('#rg-punnett [data-rg-cell]').evaluateAll(nodes =>
     nodes.map(node => node.dataset.rgCell || node.textContent.trim()));
+  const sortedTargets=await square.locator('[data-rg-target][data-rg-placed="true"][data-rg-value]')
+    .evaluateAll(nodes=>nodes.map(node=>[node.dataset.rgTarget,node.dataset.rgValue]));
+  const targetsOf=(kind,letter,role)=>sortedTargets.filter(([key,value])=>
+    value===letter && (kind==='header'?key.startsWith('header-'+role+'-'):
+      key.startsWith('cell-')&&key.endsWith('-'+role)));
+  check([0,1].every(role=>targetsOf('header','B',role).length>0&&targetsOf('cell','B',role).length>0) &&
+    [0,1].some(role=>targetsOf('header','R',role).length===1&&targetsOf('cell','R',role).length===2),
+    label+' the same reusable B fits both parents’ headers and offspring slots; R fits every R position');
   check(compact(cells, chosen.cells) && await square.getAttribute('data-rg-ready') === 'true' &&
     await next.isEnabled() && (await save(page)).action === 0 && (await save(page)).seed === seed,
     label + ' every expected Punnett cell is built and the original trial can now advance');
