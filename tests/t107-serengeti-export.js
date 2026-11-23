@@ -35,10 +35,19 @@ async function download(page, button, filename) {
         }
         await page.locator('#sg-next[data-action="resolveCard"]').click();
         await page.locator('.sg-tabs [data-page="analyze"]').click();
+        await page.locator('#sg-question-details > summary').click();
         await page.locator('#sg-question').fill('A fictional question.');
         await page.locator('#sg-evidence-choice').selectOption('1');
+        await page.locator('#sg-answer-next').click();
         await page.locator('#sg-claim').fill('A fictional explanation with numbers.');
+        await page.locator('#sg-answer-next').click();
         await page.locator('#sg-limits').fill('A fictional next test.');
+        await page.reload();
+        assert.equal(await page.locator('[data-answer-panel]:visible').getAttribute('data-answer-panel'),'limits');
+        assert.equal(await page.locator('#sg-question').inputValue(),'A fictional question.');
+        assert.equal(await page.locator('#sg-evidence-choice').inputValue(),'1');
+        assert.equal(await page.locator('#sg-claim').inputValue(),'A fictional explanation with numbers.');
+        assert.equal(await page.locator('#sg-limits').inputValue(),'A fictional next test.');
         const filename='Serengeti-game-evidence.txt';
         const raw=await page.evaluate(k=>localStorage.getItem(k),KEY);
         const report=await download(page,page.locator('#sg-download'),filename);
@@ -82,3 +91,4 @@ async function download(page, button, filename) {
     }
   } finally {await browser.close();site.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;});
+

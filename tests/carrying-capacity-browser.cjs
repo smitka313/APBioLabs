@@ -17,6 +17,7 @@ const TEXT = {
   shortage: 'If there are more wildebeest than grass units, only the fed animals survive and half of those, rounded down, add a calf.',
   longRun: 'With unchanged rules, I expect the herd to keep rising and falling inside the late-round band instead of increasing forever.',
   migration: 'Moving between seasonal grazing areas makes more grass accessible over a year, so more wildebeest can persist.',
+  limit: 'The short classroom trial does not measure disease, migration or weather in the real ecosystem.',
   fieldRise: 'The earlier increase was much faster than the long-term change. Disease control reduced mortality.',
   fieldFall: 'A negative net rate shows the herd got smaller; it does not show the cause without more evidence.'
 };
@@ -33,7 +34,44 @@ const check = (condition, message) => {
   console.log('ok: ' + message);
 };
 const go = (p, panel) => p.locator(`button[data-cc-go="${panel}"]:visible`).first().click();
+const explainPicker = p => p.locator('#cc-explain-question');
+const explainPrev = p => p.locator('#cc-explain-prev');
+const explainNext = p => p.locator('#cc-explain-next');
 const normalizeReport = text => text.replace(/\r\n/g, '\n').trim();
+
+async function explainQuestion(p, key) {
+  const picker = explainPicker(p);
+  if (await picker.inputValue() !== key) await picker.selectOption(key);
+  const response = p.locator('#cc-' + key);
+  await response.waitFor({ state: 'visible' });
+  return response;
+}
+
+const EXPLAIN_WRITING = {
+  claim: TEXT.claim, 'shortage-rule': TEXT.shortage, 'long-run': TEXT.longRun,
+  'migration-claim': TEXT.migration, limit: TEXT.limit
+};
+async function explainMatches(p, snapshot) {
+  for (const [key, expected] of Object.entries(snapshot)) {
+    if (await (await explainQuestion(p, key)).inputValue() !== expected) return false;
+  }
+  return true;
+}
+
+async function compactExplain(p, label, maxFormSpan) {
+  const picker = explainPicker(p);
+  check(await p.locator('#cc-explain textarea:visible').count() === 1 &&
+    await picker.evaluate(el => !!el.labels?.length) && await fit(p, '#cc-explain-question'),
+    label + ': the labeled picker exposes one question and does not overflow');
+  const compact = await p.locator('#cc-explain').evaluate(el => {
+    const rect = selector => el.querySelector(selector).getBoundingClientRect();
+    const pick = rect('#cc-explain-question'), action = rect('#cc-download');
+    return {span: action.bottom - pick.top, actionVisible: action.height > 0,
+      details: [...el.querySelectorAll('details[data-cc-evidence]')].length};
+  });
+  check(compact.actionVisible && compact.span > 0 && compact.span <= maxFormSpan && compact.details === 4,
+    label + ': the active prompt and report action stay together with four collapsible evidence groups ' + JSON.stringify(compact));
+}
 
 async function shot(p, name, fullPage = false) {
   if (!SHOTS) return;
@@ -381,10 +419,13 @@ async function followHabitatWorkflow(browser, url) {
 
     await go(p, 'explain');
     const claim = 'The habitat challenge showed that extra water cannot replace scarce food.';
-    await p.locator('#cc-habitat-claim').fill(claim);
+    await (await explainQuestion(p, 'habitat-claim')).fill(claim);
+    check(/0 of 5 core responses/i.test(await p.locator('#cc-explain-progress').textContent()),
+      'the optional habitat response does not count as one of the five core questions');
     await p.reload();
     await p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]').waitFor({ state: 'visible' });
-    check(await p.locator('#cc-habitat-claim').inputValue() === claim &&
+    check(await explainPicker(p).inputValue() === 'habitat-claim' &&
+      await (await explainQuestion(p, 'habitat-claim')).inputValue() === claim &&
       (await p.locator('#cc-writing-habitat').textContent()).trim().length > 20,
     'reload retains the habitat explanation and its summarized run evidence');
     await go(p, 'habitat');
@@ -537,6 +578,18 @@ async function visualSweep(browser, url) {
       await p.locator('#cc-field-chart').scrollIntoViewIfNeeded();
       await shot(p, cfg.name + '-evidence', true);
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' evidence');
+      if (cfg.width === 390 || cfg.width === 1366) {
+        await go(p, 'explain');
+        await compactExplain(p, cfg.name + ' Explain', cfg.width === 390 ? 540 : 430);
+        if (cfg.touch) {
+          await explainNext(p).tap();
+          check(await explainPicker(p).inputValue() === 'shortage-rule' &&
+            await p.locator('#cc-shortage-rule').isVisible() && await p.locator('#cc-claim').isHidden(),
+            'touch moves to a single new question without revealing the other prompts');
+          await axeAudit(p, cfg.name + ' Explain');
+        }
+        await shot(p, cfg.name + '-explain-compact', true);
+      }
       await habitatVisual(p, cfg);
     });
   }
@@ -832,10 +885,35 @@ async function followWorkflow(browser, url) {
       'the evidence check explains why the graph alone does not establish a cause');
     await fieldRateStudy(p);
     await go(p, 'explain');
-    await p.locator('#cc-claim').fill(TEXT.claim);
-    await p.locator('#cc-shortage-rule').fill(TEXT.shortage);
-    await p.locator('#cc-long-run').fill(TEXT.longRun);
-    await p.locator('#cc-migration-claim').fill(TEXT.migration);
+    await compactExplain(p, 'desktop Explain', 430);
+    const picker = explainPicker(p), prevPrompt = explainPrev(p), nextPrompt = explainNext(p);
+    const questionPos = p.locator('#cc-explain-position');
+    const chosenEvidence = () => p.locator('#cc-explain details[data-cc-evidence][open]')
+      .evaluateAll(details => details.map(el => el.dataset.ccEvidence));
+    check(await picker.inputValue() === 'claim' && await prevPrompt.isDisabled() &&
+      /1 of 6/.test(await questionPos.textContent()),
+      'the first Explain question opens by default and Previous does not wrap');
+    await nextPrompt.press('Enter');
+    check(await picker.inputValue() === 'shortage-rule' && await p.locator('#cc-shortage-rule').isVisible() &&
+      await p.locator('#cc-claim').isHidden() && await nextPrompt.evaluate(el => document.activeElement === el) &&
+      /2 of 6/.test(await questionPos.textContent()),
+      'Enter on Next displays just question 2 and keeps the working control focused');
+    await prevPrompt.press('Space');
+    check(await picker.inputValue() === 'claim' && await prevPrompt.isDisabled() &&
+      await picker.evaluate(el => document.activeElement === el),
+      'Space on Previous returns to the first question and moves focus away from the disabled button');
+    for (const [key, writing] of Object.entries(EXPLAIN_WRITING).filter(([key]) => key !== 'limit')) {
+      await (await explainQuestion(p, key)).fill(writing);
+    }
+    check((await chosenEvidence()).includes('field') && !(await chosenEvidence()).includes('habitat'),
+      'the migration question brings field evidence forward without expanding the optional habitat group');
+    await picker.press('End');
+    check(await picker.inputValue() === 'limit' && await nextPrompt.isDisabled() &&
+      await p.locator('#cc-limit').isVisible() && /6 of 6/.test(await questionPos.textContent()),
+      'native keyboard selection reaches the last question and Next does not wrap');
+    await (await explainQuestion(p, 'limit')).fill(TEXT.limit);
+    check(/5 of 5 core responses/i.test(await p.locator('#cc-explain-progress').textContent()),
+      'progress recognizes all five core responses while the optional habitat answer remains blank');
     await go(p, 'run');
     check(await p.locator('#cc-prediction').inputValue() === TEXT.prediction, 'switching sections preserves student work');
     await go(p, 'explain');
@@ -844,11 +922,9 @@ async function followWorkflow(browser, url) {
 
     await p.reload();
     await p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]').waitFor({ state: 'visible' });
-    check(await p.locator('#cc-claim').inputValue() === TEXT.claim &&
-      await p.locator('#cc-shortage-rule').inputValue() === TEXT.shortage &&
-      await p.locator('#cc-long-run').inputValue() === TEXT.longRun &&
-      await p.locator('#cc-migration-claim').inputValue() === TEXT.migration,
-    'the claim, authored if/then rule, long-run prediction, and migration connection survive reload');
+    check(await explainPicker(p).inputValue() === 'limit' && await p.locator('#cc-limit').isVisible() &&
+      await explainMatches(p, EXPLAIN_WRITING),
+    'the active prompt and all five core responses survive reload');
     check(await p.locator('#cc-writing-evidence').textContent().then(s => /baseline/i.test(s) && /50% grass comparison/i.test(s)),
       'both complete trials remain available beside the restored writing');
     const restoredField = await p.locator('#cc-writing-field').textContent();
@@ -870,8 +946,8 @@ async function followWorkflow(browser, url) {
     check(report.includes(TEXT.prediction) && report.includes(TEXT.claim) && /simulat|model/i.test(report),
       'download contains student work and discloses the modeled evidence');
     check(/grass/i.test(report) && /50\s*%/.test(report), 'download includes the selected lower-grass comparison');
-    check(report.includes(TEXT.shortage) && report.includes(TEXT.longRun) && report.includes(TEXT.migration),
-      'download includes the student’s if/then rule, long-run prediction, and migration connection');
+    check(Object.values(EXPLAIN_WRITING).every(writing => report.includes(writing)),
+      'download includes all five core responses, not only the selected prompt');
     const fieldSection = report.split('Field evidence (classroom estimates, not simulated)\n')[1]
       ?.split('How did grass availability affect the herd in your model?')[0] || '';
     const fieldRecords = fieldSection.split('\n\n');
@@ -904,10 +980,7 @@ async function followWorkflow(browser, url) {
     await p.keyboard.press('Escape');
     await p.locator('#cc-reset-confirm').waitFor({ state: 'hidden' });
     await go(p, 'explain');
-    check(await p.locator('#cc-claim').inputValue() === TEXT.claim &&
-      await p.locator('#cc-shortage-rule').inputValue() === TEXT.shortage &&
-      await p.locator('#cc-long-run').inputValue() === TEXT.longRun &&
-      await p.locator('#cc-migration-claim').inputValue() === TEXT.migration,
+    check(await explainMatches(p, EXPLAIN_WRITING),
     'canceling reset does not erase any of the Lesson 5 writing');
     await go(p, 'run');
     await reset.click();
@@ -925,9 +998,10 @@ async function followWorkflow(browser, url) {
     check(await fieldRate(p).inputValue() === '' && await fieldReasoning(p).inputValue() === '',
       'master reset also clears prior field calculations and interpretations');
     await go(p, 'explain');
-    check(await p.locator('#cc-shortage-rule').inputValue() === '' && await p.locator('#cc-long-run').inputValue() === '' &&
-      await p.locator('#cc-migration-claim').inputValue() === '',
-    'master reset clears the Lesson 5 handout responses and migration connection');
+    check(await explainPicker(p).inputValue() === 'claim' &&
+      /0 of 5 core responses/i.test(await p.locator('#cc-explain-progress').textContent()) &&
+      await explainMatches(p, Object.fromEntries(Object.keys(EXPLAIN_WRITING).map(key => [key, '']))),
+    'master reset clears all core Explain responses, progress, and the last prompt selection');
   });
 }
 

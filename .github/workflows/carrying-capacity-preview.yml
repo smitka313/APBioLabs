@@ -8,6 +8,8 @@ on:
       - 'openscied-b1-migration.css'
       - 'openscied-b1-serengeti.html'
       - 'openscied-b1-serengeti.css'
+      - 'openscied-b1-serengeti.js'
+      - 'tests/t107-serengeti*.js'
       - 'carrying-logic.js'
       - 'carrying-scene.js'
       - 'carrying-habitat*'
@@ -54,5 +56,29 @@ jobs:
         with:
           name: carrying-capacity-viewports
           path: test-artifacts/carrying-capacity/*.png
+          if-no-files-found: ignore
+          retention-days: 14
+  serengeti-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Verify game, compact analysis and report
+        run: |
+          node tests/t107-serengeti.js
+          node tests/t107-serengeti-export.js
+        env:
+          SERENGETI_SCREENSHOTS: test-artifacts/serengeti
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: serengeti-layout-viewports
+          path: test-artifacts/serengeti/*.png
           if-no-files-found: ignore
           retention-days: 14

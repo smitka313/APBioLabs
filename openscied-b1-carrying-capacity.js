@@ -6,6 +6,8 @@
   const $$ = (s) => [...document.querySelectorAll(s)];
   const strings = ['prediction', 'claim', 'shortage-rule', 'long-run', 'migration-claim', 'habitat-claim', 'limit'];
   const stages = ['run', 'habitat', 'evidence', 'explain'];
+  const questions = strings.filter(id=>id !== 'prediction');
+  const evidenceFor = {'claim':'model','shortage-rule':'model','long-run':'range','migration-claim':'field','habitat-claim':'habitat','limit':'field'};
   const feedback = {
     food: {
       correct: 'Yes. One grass unit feeds one animal. If there is less grass than the herd needs, some animals do not survive.',
@@ -16,7 +18,7 @@
       wrong: 'Not quite. Other limits could also slow growth. Population counts alone cannot distinguish food from those other possibilities.'
     }
   };
-  const fresh = () => ({baseline:L.create(), comparison:null, selected:'baseline', page:'run', grass:50, answers:{}, checks:{}});
+  const fresh = () => ({baseline:L.create(), comparison:null, selected:'baseline', page:'run', question:'claim', grass:50, answers:{}, checks:{}});
   const cleaned = (r) => {
     const x = L.restore(r);
     return x && x.round <= ROUNDS && x.roleSlots === 20 && x.startingPopulation === 2 ? x : null;
@@ -30,6 +32,7 @@
       if (state.baseline.round === ROUNDS && b && [50,75].includes(b.grassPercent)) state.comparison = b;
       if (raw.selected === 'comparison' && state.comparison) state.selected = 'comparison';
       if (stages.includes(raw.page)) state.page = raw.page;
+      if (questions.includes(raw.question)) state.question = raw.question;
       state.grass = state.comparison?.grassPercent || ([50,75].includes(raw.grass) ? raw.grass : 50);
       for (const id of strings) if (typeof raw.answers?.[id] === 'string') state.answers[id] = raw.answers[id].slice(0,4000);
       for (const [key, choices] of Object.entries({food:['grass','herd'],field:['yes','no']})) if (choices.includes(raw.checks?.[key])) state.checks[key] = raw.checks[key];
@@ -93,6 +96,30 @@
     }
     range.update({baseline:state.baseline,comparison:state.comparison});
   }
+  function updateExplainProgress() {
+    const done = questions.filter(id=>id!=='habitat-claim'&&state.answers[id]?.trim()).length;
+    $('#cc-explain-progress').textContent = done+' of 5 core responses';
+  }
+  function renderQuestion() {
+    const index = questions.indexOf(state.question);
+    $('#cc-explain-question').value = state.question;
+    $$('[data-cc-question]').forEach(el=>{el.hidden = el.dataset.ccQuestion !== state.question;});
+    $('#cc-explain-prev').disabled = index === 0;
+    $('#cc-explain-next').disabled = index === questions.length-1;
+    $('#cc-explain-position').textContent = 'Question '+(index+1)+' of '+questions.length;
+    $$('[data-cc-evidence]').forEach(d=>{d.open = d.dataset.ccEvidence===evidenceFor[state.question];});
+    updateExplainProgress();
+  }
+  function chooseQuestion(id,previousFocus) {
+    if (!questions.includes(id)) return;
+    state.question = id;
+    renderQuestion(); save();
+    if (previousFocus?.disabled) $('#cc-explain-question').focus({preventScroll:true});
+    speak($('#cc-explain-position').textContent+'. '+$('#cc-prompt-'+id).textContent);
+  }
+  $('#cc-explain-question').addEventListener('change',e=>chooseQuestion(e.target.value));
+  $('#cc-explain-prev').addEventListener('click',e=>chooseQuestion(questions[questions.indexOf(state.question)-1],e.currentTarget));
+  $('#cc-explain-next').addEventListener('click',e=>chooseQuestion(questions[questions.indexOf(state.question)+1],e.currentTarget));
   function renderWriting() {
     const items = [state.baseline,state.comparison].filter((s)=>s?.round).map((s)=>'At round '+s.round+', the '+(s.grassPercent === 100?'baseline':s.grassPercent+'% grass comparison')+' ended with '+plural(s.population,'wildebeest','wildebeest')+'.');
     $('#cc-writing-evidence').textContent = [...items,compareText()].filter(Boolean).join(' ') || 'No model rounds yet. Return to the model to collect data.';
@@ -105,7 +132,7 @@
     for (const id of stages) { $('#cc-'+id).hidden = id !== page; const button = $('.cc-nav [data-cc-go="'+id+'"]'); if (id === page) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); }
     if (page === 'run') renderLab();
     if (page === 'evidence') field.update();
-    if (page === 'explain') renderWriting();
+    if (page === 'explain') {renderWriting();renderQuestion();}
     if (focus) { save(); $('#cc-'+page+'-title').focus(); }
   }
   function advance(end) {
@@ -160,7 +187,7 @@
   });
   for (const id of strings) {
     const el = $('#cc-'+id); el.value = state.answers[id] || '';
-    el.addEventListener('input',()=>{state.answers[id]=el.value;save();});
+    el.addEventListener('input',()=>{state.answers[id]=el.value;save();if(id!=='prediction')updateExplainProgress();});
   }
   function renderCheck(key, resultId, choice, correct, announce = false) {
     const target = $('#'+resultId);

@@ -409,3 +409,44 @@
 
 /* Existing original dashboard board illustration, used decoratively in the hero. */
 .b1-hero--serengeti{--b1-hero-image:url(assets/openscied-serengeti-preview.svg);--b1-hero-position:center 60%}
+
+
+/* Compact review flow: the overview stays in reach without stacking every record. */
+.sg-note-disclosure {min-width:0;}
+.sg-note-disclosure > summary {cursor:pointer;min-height:2.35rem;padding:.4rem .28rem;font-weight:750;}
+.sg-map-notes > summary {font-size:.78rem;color:var(--sg-soft);}
+#sg-evidence-body {display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:.6rem;align-items:start;}
+#sg-evidence-body .sg-ledger {margin:0;}
+.sg-evidence-totals .sg-totals {grid-template-columns:repeat(2,minmax(0,1fr));}
+.sg-compact-history .sg-history-label {font-weight:750;font-size:.83rem;}
+.sg-compact-history select {min-height:2.45rem;}
+#sg-evidence-maps {margin:.62rem 0;padding:.24rem .68rem;}
+#sg-evidence-report {margin:.15rem 0 .55rem;}
+.sg-finish-tools,.sg-answer-actions {display:flex;flex-wrap:wrap;gap:.38rem;align-items:center;}
+.sg-finish-tools .sg-cta,.sg-finish-tools .sg-plain,.sg-answer-actions .sg-cta,.sg-answer-actions .sg-plain {min-height:2.45rem;padding:.34rem .62rem;}
+#sg-finish-details {margin-top:.25rem;}
+#sg-finish-totals .sg-totals {margin-bottom:.55rem;}
+.sg-analysis {grid-template-columns:minmax(0,1.26fr) minmax(0,.74fr);gap:.65rem;}
+.sg-analysis-evidence .sg-totals {grid-template-columns:repeat(2,minmax(0,1fr));}
+.sg-analysis-evidence > button {justify-self:start;min-height:2.35rem;}
+.sg-answer-steps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.32rem;}
+.sg-answer-steps button {min-height:2.4rem;padding:.25rem .33rem;font-size:.89rem;}
+.sg-answer-steps button[aria-current=step] {border-color:var(--sg-accent);background:var(--sg-accent-soft);color:var(--sg-accent-text);}
+.sg-answer-panel label {margin:.2rem 0 .3rem;}
+.sg-answer-panel #sg-question-details {margin-top:.35rem;}
+.sg-analysis .sg-selected:not(:empty) {padding:.38rem .5rem;border-inline-start:3px solid var(--sg-accent);background:var(--sg-bg);overflow-wrap:anywhere;}
+.sg-phone-jump {display:none;}
+@media(max-width:700px) {
+  #sg-evidence-body,.sg-analysis {grid-template-columns:minmax(0,1fr);gap:.45rem;}
+  #sg-evidence-body .sg-ledger,.sg-analysis .sg-question {padding:.48rem .52rem;gap:.34rem;}
+  .sg-evidence-totals .sg-totals,.sg-analysis-evidence .sg-totals,#sg-finish-totals .sg-totals {grid-template-columns:repeat(4,minmax(0,1fr));gap:.23rem;}
+  .sg-evidence-totals .sg-totals li,.sg-analysis-evidence .sg-totals li,#sg-finish-totals .sg-totals li {padding:.24rem .17rem;font-size:.69rem;text-align:center;gap:0;}
+  .sg-evidence-totals .sg-totals strong,.sg-analysis-evidence .sg-totals strong,#sg-finish-totals .sg-totals strong {font-size:.78rem;}
+  .sg-evidence-totals .sg-totals li span:nth-child(3),.sg-analysis-evidence .sg-totals li span:nth-child(3),#sg-finish-totals .sg-totals li span:nth-child(3) {display:none;}
+  #sg-evidence-maps {margin:.4rem 0;}
+  .sg-answer-actions button {font-size:.8rem;}
+  .sg-answer-steps button {font-size:.8rem;}
+  #sg-play:not(.sg-role-first) .sg-phone-jump {display:block;width:max-content;max-width:100%;min-height:2.05rem;padding:.18rem .42rem;margin:0 0 .28rem;font-size:.77rem;}
+  #sg-map-panel .sg-map-notes > summary {min-height:2rem;padding:.27rem .25rem;}
+  #sg-play #sg-board-title,#sg-play #sg-action-title {scroll-margin-block-start:.55rem;}
+}

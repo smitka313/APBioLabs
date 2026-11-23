@@ -38,6 +38,14 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
         T.ok(await fit(page), width + ' px: game fits the page');
         T.ok(await page.locator('#sg-phase').isVisible(), 'season phase is visible');
         await shot(page, width + '-game');
+        if(width===390){
+          await page.locator('[data-jump="turn"]').click();
+          T.ok(await page.locator('#sg-action-title').evaluate(el=>document.activeElement===el && el.getBoundingClientRect().top>=0 && el.getBoundingClientRect().top<innerHeight),
+            'phone can jump straight from map to current turn without swiping past the board');
+          await page.locator('[data-jump="map"]').click();
+          T.ok(await page.locator('#sg-board-title').evaluate(el=>document.activeElement===el && el.getBoundingClientRect().top>=0 && el.getBoundingClientRect().top<innerHeight),
+            'phone can jump straight back to useful board context');
+        }
         const expand = page.locator('#sg-board-open');
         const dialog = page.locator('#sg-board-dialog');
         const inlineBoard = await page.locator('#sg-scene .sg-map').boundingBox();
@@ -183,6 +191,8 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           T.ok(actions.has('nextSeason'), 'later seasons can be reached');
           T.ok(/year complete/i.test(await page.locator('#sg-phase').textContent()), 'fall ends the four-season model');
           const fieldReport=page.locator('#sg-finish-report');
+          T.ok(await fieldReport.isHidden(),'final tally does not start with four full maps and a record list');
+          await page.locator('#sg-finish-details > summary').click();
           await fieldReport.waitFor();
           T.ok(await fieldReport.locator('.sg-field-season svg').count()===4, 'final report includes four official grazing maps');
           await fieldReport.locator('.sg-field-season[data-season="0"]').click();
@@ -196,12 +206,33 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           const evidence = page.locator('#sg-evidence-body');
           await evidence.waitFor();
           T.ok((await evidence.innerText()).trim().length > 0, 'data log has generated results');
+          const records=page.locator('#sg-history-select');
+          T.ok(await records.locator('option').count()>12 && await evidence.locator('.sg-rows li').count()===1,
+            'full-year Evidence shows one detailed record while keeping all records selectable');
+          const newest=await page.locator('#sg-history-detail').innerText();
+          await records.selectOption('0');
+          T.ok(await page.locator('#sg-history-detail').innerText()!==newest && /Winter/.test(await page.locator('#sg-history-detail').innerText()),
+            'history selector retrieves the first season without scrolling the entire ledger');
+          T.ok(await page.locator('#sg-evidence-report').isHidden(), 'maps are on demand rather than pushing the record controls below the fold');
           await shot(page, width + '-evidence');
           await page.locator('.sg-tabs [data-page="analyze"]').click();
           await page.locator('#sg-analysis-data').waitFor();
           T.ok(await page.locator('#sg-analysis-data').isVisible(), 'analysis references game data');
           T.ok(await fit(page), width + ' px: analysis fits the page');
+          const activePrompt=page.locator('[data-answer-panel]:visible');
+          T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='evidence',
+            'analysis starts with one focused evidence prompt');
+          await shot(page, width + '-analysis-choose');
+          await page.locator('#sg-evidence-choice').selectOption('0');
+          await page.locator('#sg-answer-next').click();
+          T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='claim' &&
+            await page.locator('#sg-selected').isVisible() && await page.locator('#sg-analysis-data').isVisible(),
+            'explanation step keeps the selected record and season totals without stacking the other prompts');
           await shot(page, width + '-analysis');
+          await page.locator('#sg-answer-next').click();
+          T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='limits' &&
+            await page.locator('#sg-selected').isVisible(), 'follow-up test stays focused on one prompt with the chosen record');
+          await shot(page, width + '-analysis-test');
           if (width === 390) {
             const key = SAVE_KEY;
             const unreadable = ' {"v":99,"fictional":"exact original"} ';
@@ -222,3 +253,4 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
   } finally { await browser.close(); server.close(); }
   T.done('t107-serengeti');
 })().catch(e => { console.error(e); process.exitCode = 1; });
+

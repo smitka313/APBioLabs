@@ -147,9 +147,16 @@ async function stationLabels(map,label){
   const notebookDownload=p.waitForEvent('download');await p.locator('#download-notebook').click();
   const notebookFile=await notebookDownload, notebookBody=fs.readFileSync(await notebookFile.path(),'utf8');
   ok(notebookFile.suggestedFilename()==='migration-notebook.txt'&&/Our revised May observation/.test(notebookBody)&&!notebookBody.includes('MY RESPONSES'),'notebook-only file includes revised evidence without written answers');
-  await p.locator('[data-page="explain"]').click();await p.locator('#answer-claim').fill('The cards connect nutritional health with survival; regional evidence helps explain movement.');
+  await p.locator('[data-page="explain"]').click();
+  const chooseSet=(index,page=p)=>page.locator('#response-stage').selectOption(String(index));
+  ok(await p.locator('#responses textarea:visible').count()===2&&await p.locator('#answer-question').isVisible()&&await p.locator('#response-prev').isDisabled(),'Explain starts with just the first two questions and no backward action');
+  ok(await p.locator('#writing-evidence').evaluate(d=>d.open),'desktop notebook evidence is open alongside the writing set');
+  await p.locator('#response-next').press('Enter');
+  ok(await p.locator('#response-heading-1').evaluate(h=>document.activeElement===h)&&await p.locator('#answer-absence').isVisible(),'keyboard paging focuses the new question-set heading');
+  await chooseSet(3);await p.locator('#answer-claim').fill('The cards connect nutritional health with survival; regional evidence helps explain movement.');
   // Optional evidence checks live with their written prompts and never score or edit drafts.
-  await p.locator('#answer-absence').fill('My own interpretation stays here.');
+  await chooseSet(1);await p.locator('#answer-absence').fill('My own interpretation stays here.');
+  ok(await p.locator('#response-progress').textContent()==='2 of 10 prompts answered','writing progress counts filled drafts across all sets');
   const anthrax=p.locator('[data-evidence-check="anthrax"]');
   ok(await anthrax.evaluate(el=>el.parentElement.querySelector('textarea')?.id==='answer-absence'), 'anthrax check sits beside Q4');
   await anthrax.locator('summary').press('Enter');
@@ -174,6 +181,7 @@ async function stationLabels(map,label){
   await nutrition.locator('[value="all-dead-unhealthy"]').check();
   await nutrition.getByRole('button',{name:'Check this choice'}).click();
   ok(/May are labeled healthy, at 75% and 90%/.test(await nutrition.locator('.mx-check-feedback').textContent()),'nutrition feedback points out the healthy May exception');
+  await chooseSet(2);
   const rainfall=p.locator('[data-evidence-check="rainfall"]');
   await rainfall.locator('summary').click();
   await rainfall.locator('[value="counterexample"]').check();
@@ -183,11 +191,17 @@ async function stationLabels(map,label){
   ok(await p.locator('#occupancy-table').evaluate(el=>document.activeElement===el),'rainfall review opens and focuses the source table');
   await p.locator('[data-page="explain"]').click();
   ok(await p.locator('#writing-notes .mx-note').count()===4,'saved evidence remains beside written explanations');
+  await chooseSet(4);
+  ok(await p.locator('#response-next').isDisabled()&&await p.locator('#answer-next').isVisible(),'final question set is reachable directly and has no forward action');
+  await screenshot(p,'1366-explain-last-set');
   const downloadPromise=p.waitForEvent('download');await p.locator('#download-report').click();const download=await downloadPromise;const body=fs.readFileSync(await download.path(),'utf8');ok(body.includes('51% bone-marrow fat')&&body.includes('regional evidence helps'),'download includes source evidence and student response');ok(body.includes('illustrative, not observations'),'download distinguishes illustrative art from source data');ok(body.includes('Annual Rainfall and Wildebeest Occupancy')&&!body.includes('slides X–Y'),'annual export cites Data Excursion 2 by name');
   await p.locator('#copy-report').click();ok(await p.locator('#text-copy-field').inputValue()===body,'copyable text matches the saved investigation');await p.keyboard.press('Escape');
   await p.evaluate(()=>{window.__createExportURL=URL.createObjectURL;URL.createObjectURL=()=>{throw new Error('download unavailable');};});
   await p.locator('#download-report').click();ok(await p.locator('#text-copy-dialog').evaluate(d=>d.open)&&/could not be downloaded/.test(await p.locator('#text-copy-hint').textContent()),'automatic text fallback if file download fails');await p.keyboard.press('Escape');await p.evaluate(()=>{URL.createObjectURL=window.__createExportURL;delete window.__createExportURL;});
-  await p.reload();ok(await p.locator('#answer-claim').inputValue()==='The cards connect nutritional health with survival; regional evidence helps explain movement.','response restored after reload');ok(await p.locator('#writing-notes .mx-note').count()===4,'notebook restored after reload');
+  await p.reload();
+  ok(await p.locator('#response-stage').inputValue()==='4'&&await p.locator('#answer-next').isVisible(),'reload resumes the last question set');
+  await chooseSet(3);
+  ok(await p.locator('#answer-claim').inputValue()==='The cards connect nutritional health with survival; regional evidence helps explain movement.','response restored after reload');ok(await p.locator('#writing-notes .mx-note').count()===4,'notebook restored after reload');
   await p.goto(server.url+'openscied-dashboard.html');await p.waitForFunction(()=>document.querySelector('#migration-progress')?.textContent.includes('months with notes'));ok(/4 notebook entries/.test(await p.locator('#migration-progress').textContent()),'dashboard reports activity notebook progress');ok(/#explain$/.test(await p.locator('#migration-open').getAttribute('href')),'dashboard resumes saved writing section');
   const backupPromise=p.waitForEvent('download');await p.locator('#download-openscied-results').click();const backup=JSON.parse(fs.readFileSync(await (await backupPromise).path(),'utf8'));ok(backup.responses.migration.claim.includes('regional evidence helps'),'dashboard export includes explorer responses');
   await p.locator('#migration-reset').click();await p.locator('#openscied-erase-confirmation').fill('ERASE');await p.locator('#confirm-openscied-clear').click();ok(await p.evaluate(key=>localStorage.getItem(key)===null,KEY),'dashboard resets only selected activity');
@@ -206,6 +220,19 @@ async function stationLabels(map,label){
   try {
     const phone=await touch.newPage();phone.on('pageerror',e=>errors.push(e.message));
     await phone.goto(server.url+'openscied-b1-migration.html#explain');
+    ok(!await phone.locator('#writing-evidence').evaluate(d=>d.open)&&await phone.locator('#responses textarea:visible').count()===2,'phone starts with a compact evidence notebook and one question set');
+    await phone.locator('#writing-evidence summary').tap();
+    ok(await phone.locator('#writing-notes').isVisible(),'phone evidence notebook opens without leaving the draft');
+    await phone.locator('#writing-evidence summary').tap();
+    await chooseSet(4,phone);await screenshot(phone,'390-explain-last-set');
+    await phone.locator('[data-page="evidence"]').tap();
+    const graph=phone.locator('#health-chart-disclosure');
+    ok(!await graph.evaluate(d=>d.open)&&await phone.locator('.mx-card').first().isVisible(),'phone field cards are available without scrolling past an open chart');
+    await graph.locator('summary').first().tap();
+    await phone.locator('#health-chart svg').first().waitFor({state:'visible'});
+    ok(await graph.evaluate(d=>d.open),'phone can open and read the full graph');
+    await phone.locator('[data-page="explain"]').tap();
+    await chooseSet(1,phone);
     const panel=phone.locator('[data-evidence-check="anthrax"]');
     await panel.locator('summary').tap();await panel.locator('label:has([value="higher-dead"])').tap();
     await panel.getByRole('button',{name:'Check this choice'}).tap();
