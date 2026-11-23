@@ -405,7 +405,7 @@ async function exercise(browser,base,size) {
     await page.getByRole('heading',{name:'DNA Workshop',level:1,exact:true}).waitFor();
     await stage(page,'nucleotide');
     check(await page.locator('nav [data-dw-go]').count()===6 &&
-      tidy(await page.locator('#dw-stage-label').innerText())==='Step 1 of 6' &&
+      tidy(await page.locator('#dw-stage-label').textContent())==='Step 1 of 6' &&
       await button(page,'nucleotide').isEnabled() &&
       (await Promise.all(CONTROL.slice(1).map(name=>button(page,name).isDisabled()))).every(Boolean),
       label+' opens for a novice with only the Nucleotide tab available, even from a direct link to a later step');
