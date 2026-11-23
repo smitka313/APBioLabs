@@ -12,10 +12,10 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
     T.ok(/Not started/.test(await p.locator('#peat-bog-progress').innerText()) && await p.locator('#peat-bog-reset').isDisabled(), 'new visit: Not started, restart disabled');
     T.ok((await p.locator('#peat-bog-open').getAttribute('href')).startsWith('openscied-b2-peat-bog-lab.html'), 'card links to the page');
     const unit2 = p.locator('section[aria-labelledby="unit2"]'), unit3 = p.locator('section[aria-labelledby="unit3"]');
-    T.ok(await unit2.locator('.dashboard-activity').count() === 4 && await unit3.locator('.dashboard-activity').count() === 4 &&
+    T.ok(await unit2.locator('.dashboard-activity').count() === 4 && await unit3.locator('.dashboard-activity').count() === 5 &&
       (await unit2.locator('.dashboard-tag').textContent()).trim() === '4 activities available' &&
-      (await unit3.locator('.dashboard-tag').textContent()).trim() === '4 activities available',
-    'Unit 2 stays at four activities and Unit 3 has four with DNA Workshop');
+      (await unit3.locator('.dashboard-tag').textContent()).trim() === '5 activities available',
+    'Unit 2 stays at four activities and Unit 3 has five including Cancer Rates Data Dive and DNA Workshop');
     T.ok(!/Units 1–2/.test(await p.locator('.dashboard-coming-soon summary').innerText()), 'Unit 2 is no longer "coming soon"');
     // work the real page, then come back
     const q = await ctx.newPage(); await stub(q);
@@ -38,4 +38,3 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
   } finally { await b.close(); srv.close(); }
   T.done('t105-openscied-b2-peat-bog-dashboard');
 })().catch(e => { console.error(e); process.exit(1); });
-
