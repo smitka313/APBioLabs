@@ -1,0 +1,47 @@
+/* Shared layout for the public teaching guide and encrypted companion. */
+.ose-teacher-shell{max-width:1120px;margin-inline:auto;padding:18px 20px 40px}
+.ose-teacher-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 20px;margin-bottom:14px}
+.ose-teacher-top a,.ose-teacher-jumps a,.ose-teacher-links a{display:inline-flex;align-items:center;min-height:36px;font-weight:700}
+.ose-teacher-jumps{display:flex;gap:8px 18px;flex-wrap:wrap;margin:12px 0 18px}
+.ose-teacher-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--surface);align-items:stretch}
+.ose-teacher-hero__copy{padding:clamp(20px,3vw,36px)}
+.ose-teacher-hero h1{font-size:clamp(2rem,4vw,3rem);line-height:1.07;margin:6px 0 10px}
+.ose-teacher-hero p{margin:0;color:var(--muted);max-width:60ch}
+.ose-teacher-hero p.eyebrow{color:var(--accent);font-weight:800}
+.ose-teacher-hero__art{min-height:14rem;width:100%;height:100%;object-fit:cover;object-position:49% center}
+.ose-teacher-callout{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:14px;padding:16px 18px;background:var(--surface);margin:18px 0}
+.ose-teacher-callout h2,.ose-teacher-callout p{margin:0 0 6px}
+.ose-teacher-callout h2{font-size:1.23rem}
+.ose-teacher-callout p{color:var(--muted)}
+.ose-teacher-links{display:flex;align-items:center;gap:4px 16px;flex-wrap:wrap}
+.ose-teacher-unit{margin:28px 0;scroll-margin-top:20px}
+.ose-teacher-unit header{margin-bottom:12px}
+.ose-teacher-unit h2{font-size:clamp(1.4rem,2.5vw,1.9rem);line-height:1.16;margin:0 0 4px}
+.ose-teacher-unit header p{color:var(--muted);margin:0}
+.ose-teacher-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.ose-teacher-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.ose-teacher-card h3{font-size:1.19rem;margin:0 0 4px;line-height:1.22}
+.ose-teacher-card a{color:var(--accent);font-weight:750}
+.ose-teacher-timing{color:var(--muted);margin:0 0 8px;font-size:.92rem}
+.ose-teacher-card dl{margin:0}
+.ose-teacher-card dt{font-weight:750;margin-top:9px}
+.ose-teacher-card dd{margin:0}
+.ose-teacher-card p:last-child{margin-bottom:0}
+.ose-teacher-notes{padding-top:64px}
+.ose-teacher-notes .ose-teacher-hero{display:block}
+.ose-teacher-notes h3{scroll-margin-top:55px}
+.ose-teacher-notes .ose-teacher-unit{scroll-margin-top:55px}
+.ose-teacher-shell :is(a,summary):focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:680px){
+ .ose-teacher-shell{padding-inline:14px}
+ .ose-teacher-grid,.ose-teacher-hero{grid-template-columns:1fr}
+ .ose-teacher-hero__art{height:clamp(90px,26vw,155px);min-height:0;object-fit:cover;object-position:center}
+ .ose-teacher-unit{margin:24px 0}
+}
+@media print{
+ .ose-teacher-shell{padding:0;max-width:none;color:#111}
+ .ose-teacher-top,.ose-teacher-jumps,.ose-teacher-hero__art,.ose-teacher-links{display:none}
+ .ose-teacher-grid,.ose-teacher-hero{display:block}
+ .ose-teacher-unit{margin:12px 0}
+ .ose-teacher-card{break-inside:avoid;margin:0 0 8px}
+}
