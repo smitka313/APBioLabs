@@ -216,12 +216,13 @@ async function dashboard(page, base) {
   const unit=page.locator('section[aria-labelledby="unit3"]');
   const cards=await unit.locator('.dashboard-open').evaluateAll(nodes=>nodes.map(node=>node.id));
   const index=cards.indexOf('dna-workshop-open');
+  const savedDestination=FILE+'#sort';
   check(index>=0 && cards[index+1]==='dna-p53-open' &&
-    await unit.locator('#dna-workshop-open').getAttribute('href')===FILE,
-    'the Unit 3 dashboard lists DNA Workshop immediately before the DNA/p53 activity');
+    await unit.locator('#dna-workshop-open').getAttribute('href')===savedDestination,
+    'the Workshop card precedes DNA/p53 and points to its saved Sort step');
   const resume=page.locator('#openscied-resume-link');
-  check(await resume.isVisible() && (await resume.getAttribute('href')).startsWith(FILE),
-    'the dashboard can resume the current student workshop');
+  check(await resume.isVisible() && await resume.getAttribute('href')===savedDestination,
+    'dashboard Resume points to the same saved Sort step');
   await resume.press('Enter');
   await stage(page,'sort');
   check(await page.locator('#dw-response').inputValue()===NOTES.sort,
