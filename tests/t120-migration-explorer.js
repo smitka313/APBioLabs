@@ -92,6 +92,7 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
   ok(/Northwestern/.test(await p.locator('#season').textContent()),'July label identifies the current northwestern range before the northward shift');
   await p.locator('[data-month="11"]').click();
   ok(/Eastern corridor toward the southern plains/.test(await p.locator('#map-description').textContent()),'December describes a return toward the plains rather than arrival');
+  ok(await p.locator('[data-month="4"]').count()===1&&await p.locator('#month-note-status').getAttribute('aria-pressed')===null,'saving a note does not turn status text into a month control');
   await p.locator('[data-month="4"]').click();
   await p.locator('[data-region="north"]').click();
   ok(/North · a dry-season refuge/.test(await p.locator('#inspector-title').textContent()),'inspector heading follows the selected region, not the May herd range');

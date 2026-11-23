@@ -41,7 +41,7 @@
     $$('#month-buttons button').forEach(b=>{const m=+b.dataset.month,hasNote=months.includes(m);b.dataset.visited=String(hasNote);b.setAttribute('aria-label','Explore '+L.MONTHS[m]+(hasNote?' · note saved':''));});
     $('#record').textContent=months.includes(state.month)?'Update month note':'Save month note';
     const feedback=$('#month-note-status');
-    if(+feedback.dataset.month!==state.month){feedback.textContent='';feedback.hidden=true;}
+    if(+feedback.dataset.noteMonth!==state.month){feedback.textContent='';feedback.hidden=true;}
   }
   function observeMonth(){if(!state.visited.includes(state.month))state.visited.push(state.month);}
   const scene=MigrationScene.init($('#migration-map'),$('#field-scene'),$('#map-wrap'));
@@ -54,7 +54,7 @@
     $$('#view-rain .mx-rain-figure, #rain-dialog .mx-rain-figure').forEach(n=>n.style.setProperty('--mx-rain-month',L.rainColumn(m)));
   }
   function renderMonth(){const m=state.month;$('#month-title').textContent=L.MONTHS[m];$('#month-output').textContent=L.MONTHS[m];$('#season').textContent=L.SEASONS[m];$('#month-slider').value=m;renderInspector();renderRainMonth(m);$('#field-note').textContent=L.NOTES[m];$('#habitat-clue').textContent=L.habitatClue(m);$('#observation').value=typeof state.observations[m]==='string'?state.observations[m]:'';$('#weather').checked=state.weather;const cues=L.weatherCues(m),weatherText=state.weather?cues.rainText+'. '+cues.grassText+'. These cues are not measurements.':'Rain and grass illustrations are off.';$('#weather-reading').textContent=weatherText;$('#map-description').textContent=L.MONTHS[m]+'. Broad herd range: '+L.RANGES[m]+'. '+L.SEASONS[m]+'. This is an example route; real routes vary. '+weatherText+' '+(L.forMonth(m).length?'Field data available at location '+(m-3)+'.':'No health-card data supplied for this month.');$('#field-scene').setAttribute('aria-label','Illustration of wildebeest near the '+L.RANGES[m]+' during '+L.MONTHS[m]+'. Animals are decorative, not population counts.');$('#large-caption').textContent=$('#map-description').textContent;
-    $$('[data-month]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.month===m)));
+    $$('#month-buttons button[data-month]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.month===m)));
     const cards=L.forMonth(m),host=$('#month-evidence');host.replaceChildren();const box=el('div',null,'mx-small-evidence');
     box.append(el('strong',cards.length?'Source evidence · Location '+(m-3):'No health cards for this month'));
     if(cards.length){cards.forEach(c=>box.append(el('span',L.GROUPS[c.group]+': '+c.fat+'% fat')));const b=el('button','Compare these three cards →');b.type='button';b.onclick=()=>{state.filter=String(m);$('#card-month').value=state.filter;renderCards();go('evidence');collection('cards');};box.append(b);}else box.append(el('span','The supplied health cards cover May–October. Explore the map without inventing missing data.'));
@@ -111,7 +111,7 @@
   $('#weather').onchange=e=>{state.weather=e.target.checked;renderMonth();save();};$('#observation').oninput=()=>{state.observations[state.month]=$('#observation').value;save();};
   $('#record').onclick=()=>{
     const field=$('#observation'),result=L.upsertMonthlyNote(state.notes,state.month,field.value),feedback=$('#month-note-status');
-    const noteSay=message=>{feedback.dataset.month=state.month;feedback.hidden=false;feedback.textContent=message;say(message);};
+    const noteSay=message=>{feedback.dataset.noteMonth=state.month;feedback.hidden=false;feedback.textContent=message;say(message);};
     if(result.status==='blank'){noteSay('Write an observation before saving this month’s note.');field.focus();return;}
     if(result.status==='unchanged'){noteSay('This month’s note is already in your notebook.');return;}
     if(result.status==='full'){noteSay('Your notebook has 100 entries. Download a copy, then remove an entry to add another.');return;}
