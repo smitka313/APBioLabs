@@ -281,7 +281,7 @@
       summary: started ? burns + ' simulated burn' + (burns === 1 ? '' : 's') + ' recorded · ' + answers + ' of ' + ids.length + ' answers saved' : 'Not started' };
   }
   const HAWKS_SECTIONS = ['predict', 'release', 'compare', 'explain'];
-  function hawksbeardResponseIds() { return ['claim', 'evidence', 'limits']; }
+  function hawksbeardResponseIds() { return ['reflection', 'claim', 'evidence', 'limits']; }
   function hawksbeardProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
     let saved;
@@ -295,7 +295,7 @@
     const section = HAWKS_SECTIONS.includes(requested) && (saved.released === 5 || requested === 'predict' || requested === 'release')
       ? requested : answers ? 'explain' : saved.released === 5 ? 'compare' : 'release';
     const visited = Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0;
-    const summary = saved.released + ' of 5 plant pairs released' + (answers ? ' · ' + answers + ' of 3 responses saved' : '');
+    const summary = saved.released + ' of 5 plant pairs released' + (answers ? ' · ' + answers + ' of ' + hawksbeardResponseIds().length + ' responses saved' : '');
     return { summary, started, section, visited };
   }
   function init() {

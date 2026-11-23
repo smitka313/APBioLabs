@@ -23,6 +23,10 @@ const EXAMPLE_TEXT = {
   evidence: 'I used the paired release table and compared the share of nonfeathery seeds among all seeds that reached soil in each environment.',
   limits: 'Landing on soil was a proxy. The model did not measure germination, adult survival, or inheritance.'
 };
+const REFLECTION_TEXT = 'I would revise my prediction after checking the nonfeathery fraction of soil landings in both places.';
+const STANDALONE_NAME = 'Wind Lab Standalone QA';
+const STANDALONE_PERIOD = '5';
+const datasetId = seed => 'HB-' + seed.toString(16).toUpperCase().padStart(8, '0');
 const exact = text => text.replace(/\s+/g, ' ').trim();
 let checks = 0;
 function check(test, message) {
@@ -48,6 +52,28 @@ async function stage(page, name, interaction = 'keyboard') {
   check(await tab.getAttribute('aria-current') === 'step' &&
     await page.locator('.hb-steps [aria-current="step"]').count() === 1,
     name + ' is the single step indicated as current');
+}
+async function completedSteps(page, expected, label) {
+  const actual = await page.locator('.hb-steps [data-hb-go]').evaluateAll(buttons =>
+    buttons.filter(button => button.dataset.hbComplete === 'true').map(button => ({
+      step: button.dataset.hbGo,
+      check: button.querySelector('.hb-step-check')?.textContent.trim(),
+      announced: /complete/i.test(button.querySelector('.hb-step-completion:not([hidden])')?.textContent || '')
+    }))
+  );
+  check(actual.map(mark => mark.step).join(',') === expected.join(',') &&
+    actual.every(mark => mark.check === '✓' && mark.announced),
+    label + ' completion markers match recorded work: ' + expected.join(', '));
+}
+async function trialStamp(page, seed, label) {
+  check(await page.locator('#hb-dataset-id').isVisible() &&
+    exact(await page.locator('#hb-dataset-id').textContent()) === datasetId(seed),
+    label + ' shows the exact Dataset ID for the current trial');
+  const note = page.locator('#hb-trial-note');
+  const explanation = exact(await note.textContent());
+  check(await note.isVisible() && /new trial draws new wind paths/i.test(explanation) &&
+    /reloading keeps the same trial/i.test(explanation) && /dataset id is included in your download/i.test(explanation),
+    label + ' explains different runs, reload stability, and the report identifier');
 }
 async function shot(page, label) {
   await page.screenshot({ path: path.join(OUT, label + '.png'), fullPage: true,
@@ -86,7 +112,8 @@ async function makeContext(browser, base, cfg) {
   // Avoid analytics and externally hosted font traffic in automated QA.
   await context.route('**/*', route => new URL(route.request().url()).origin === origin
     ? route.continue() : route.abort());
-  await context.addInitScript(() => {
+  // Exercise a direct activity link with no existing dashboard sign-in at 1366.
+  if (cfg.width !== 1366) await context.addInitScript(() => {
     try {
       if (!localStorage.getItem('aplab:student')) {
         localStorage.setItem('aplab:student', JSON.stringify({ name: 'Hawksbeard QA', period: '3' }));
@@ -311,19 +338,53 @@ async function checkDenominator(page, seed) {
     JSON.stringify(ratio(await feedback.textContent())) ===
       JSON.stringify([city.byType.nonfeathery.landed, city.landed]),
     'keyboard correction explains the soil-landing denominator and uses the student’s counts');
+  const status = page.locator('#hb-status');
+  check(await status.evaluate(el => el.classList.contains('sr-only')) &&
+    exact(await status.textContent()) === exact(await feedback.textContent()),
+    'quiz feedback is shown inline once and also announced offscreen');
   await quiz.locator('summary').press('Enter');
 }
-async function confirmReport(page, state) {
+async function disclosed(page, id, open) {
+  await page.waitForFunction(({ key, id, open }) => {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    return Boolean(saved?.disclosures?.[id]) === open;
+  }, { key:SAVE, id, open });
+}
+async function downloadReport(page) {
   const downloaded = page.waitForEvent('download');
   await page.locator('#hb-download').press('Enter');
   const file = await downloaded;
-  const report = await fs.readFile(await file.path(), 'utf8');
-  check(file.suggestedFilename() === 'hawksbeard-wind-lab.txt' &&
+  return { filename:file.suggestedFilename(), report:await fs.readFile(await file.path(), 'utf8') };
+}
+async function fillStandaloneIdentity(page) {
+  const name = page.locator('#hb-name'), period = page.locator('#hb-period');
+  check(await name.isVisible() && await period.isVisible() &&
+    await name.inputValue() === '' && await period.inputValue() === '' &&
+    !await page.evaluate(() => Boolean(localStorage.getItem('aplab:student'))),
+    'the direct activity link offers local identification without a dashboard sign-in');
+  const anonymous = await downloadReport(page);
+  const lines = anonymous.report.split(String.fromCharCode(10)).map(line => line.trim());
+  check(anonymous.filename === 'hawksbeard-wind-lab.txt' && lines.includes('Name:') && lines.includes('Class period:'),
+    'standalone name and class period remain optional for downloading');
+  await name.fill(STANDALONE_NAME);
+  await name.press('Tab');
+  await period.fill(STANDALONE_PERIOD);
+  await period.press('Tab');
+  check(!await page.evaluate(() => Boolean(localStorage.getItem('aplab:student'))),
+    'editing a standalone report label does not overwrite the dashboard sign-in');
+}
+async function confirmReport(page, state) {
+  const { filename, report } = await downloadReport(page);
+  check(filename === 'hawksbeard-wind-lab.txt' &&
     /Hawksbeard Wind Lab/i.test(report) && /simulat/i.test(report) &&
     /Cheptou/i.test(report) && /0708446105|PMC2268839/i.test(report) &&
-    report.includes('Name: Hawksbeard QA') && report.includes('Class period: 3') &&
+    report.includes('Name: ' + STANDALONE_NAME) && report.includes('Class period: ' + STANDALONE_PERIOD) &&
+    report.includes('Dataset: ' + datasetId(state.seed)) && report.includes(REFLECTION_TEXT) &&
     Object.values(state.answers).filter(Boolean).every(answer => report.includes(answer)),
-    'real report downloads the identified simulation, research citation, and student responses');
+    'real report includes local identification, the Dataset ID, the comparison reflection and explanations');
+  check(exact(await page.locator('#hb-status').textContent()) ===
+    'Download requested. If no file appears, choose Copy investigation.',
+    'download announcement names the exact Copy investigation fallback');
   const flight = Model.makeTrial(state.seed);
   for (let pair = 1; pair <= Model.PLANTS; pair++) {
     const counts = SITES.map(site => Model.summarize(flight[site].filter(seed => seed.plant === pair)));
@@ -357,6 +418,7 @@ async function play(browser, base, cfg) {
       await page.locator('.hb-steps [data-hb-go="compare"]').isDisabled() &&
       await page.locator('.hb-steps [data-hb-go="explain"]').isDisabled(),
       at + ' investigation starts with a genuine prediction gate');
+    await completedSteps(page, [], at + ' new trial');
     await fits(page, 'main, #hb-predict', at + ' prediction');
     await shot(page, at + '-prediction');
     if (cfg.touch) await axe(page, '#hb-predict', at + ' prediction');
@@ -389,6 +451,8 @@ async function play(browser, base, cfg) {
       /City\s+Separated soil patches/i.test(await page.locator('.hb-city h3').innerText()),
       at + ' visible board headings identify the field and city soil layouts');
     const baseline = await snapshot(page);
+    await trialStamp(page, baseline.seed, at);
+    await completedSteps(page, ['predict'], at + ' prediction saved');
     await sceneParity(page, baseline.seed, 0, at);
     await boardCues(page, baseline.seed, 0, at);
     check(Model.validSeed(baseline.seed) && baseline.released === 0,
@@ -436,6 +500,7 @@ async function play(browser, base, cfg) {
           await released(page, step);
           check(await release.isVisible() && (await snapshot(page)).seed === baseline.seed,
             'reload mid-investigation returns to the same release count and paired flight seed');
+          await trialStamp(page, baseline.seed, 'reloaded mid-trial');
         }
       }
     }
@@ -445,13 +510,38 @@ async function play(browser, base, cfg) {
       at + ' comparison displays both the student-run summary and plot');
     await hasVisibleTable(page, '#hb-compare-table');
     const compared = await resultRows(page, '#hb-compare-table', baseline.seed, at + ' compare table');
-    if (cfg.width === 1366) await checkDenominator(page, baseline.seed);
+    await completedSteps(page, ['predict', 'release'], at + ' comparison not yet recorded');
+    const observation = page.locator('#hb-type-observation');
+    const stats = Model.makeTrial(baseline.seed).stats;
+    const fieldType = stats.field.byType.nonfeathery, cityType = stats.city.byType.nonfeathery;
+    const allReachedSoil = fieldType.landed === fieldType.released && cityType.landed === cityType.released;
+    const observationText = exact(await observation.textContent());
+    check(await observation.isVisible() && observationText.includes(
+      'Nonfeathery seeds on soil: ' + fieldType.landed + ' of ' + fieldType.released +
+      ' in the field and ' + cityType.landed + ' of ' + cityType.released + ' in the city.') &&
+      /every nonfeathery seed reached soil/i.test(observationText) === allReachedSoil,
+      at + ' comparison reports counts from this trial and says all landed only when both layouts support it');
+    const reflection = page.getByLabel('Would you keep or change your prediction? Cite one fraction.', { exact:true });
+    check(await reflection.isVisible() && await reflection.getAttribute('id') === 'hb-reflection',
+      at + ' comparison asks students to revisit their prediction using one of their fractions');
+    await reflection.fill(REFLECTION_TEXT);
+    await reflection.press('Tab');
+    await completedSteps(page, ['predict', 'release', 'compare'], at + ' comparison recorded');
+    if (cfg.width === 1366) {
+      await checkDenominator(page, baseline.seed);
+      // Leave the disclosure open for the restoration check, while navigating away.
+      await page.locator('#hb-denominator-check summary').press('Enter');
+      await disclosed(page, 'hb-denominator-check', true);
+    }
     check(!await page.locator('#hb-published').isVisible(),
       at + ' does not mix the published numbers into the student comparison');
     await fits(page, 'main, #hb-compare, #hb-compare-chart, #hb-compare-table', at + ' comparison');
     await shot(page, at + '-compare');
 
     await stage(page, 'explain', cfg.touch ? 'touch' : 'keyboard');
+    await completedSteps(page, ['predict', 'release', 'compare'], at + ' explanation not yet recorded');
+    if (cfg.width === 1366) check(!/soil-landing rate for nonfeathery|compare seeds that landed on soil/i
+      .test(await page.locator('#hb-status').textContent()), 'Compare feedback does not leak into the Explain footer');
     check(await page.locator('#hb-explain-summary').isVisible(),
       at + ' keeps the student’s own released evidence on the explanation screen');
     await hasVisibleTable(page, '#hb-explain-table');
@@ -477,11 +567,24 @@ async function play(browser, base, cfg) {
       const key = await node.getAttribute('data-hb-answer');
       if (EXAMPLE_TEXT[key]) await node.fill(EXAMPLE_TEXT[key]);
     }
-    await fits(page, 'main, #hb-explain, #hb-explain-table, [data-hb-answer]', at + ' explanation');
+    await completedSteps(page, ['predict', 'release', 'compare', 'explain'], at + ' all work recorded');
+    if (cfg.width === 1366) await fillStandaloneIdentity(page);
+    else check(await page.locator('#hb-name').inputValue() === 'Hawksbeard QA' &&
+      await page.locator('#hb-period').inputValue() === '3',
+      at + ' uses the existing dashboard sign-in as the report default');
+    if (cfg.width === 768) {
+      const { report } = await downloadReport(page);
+      check(report.includes('Name: Hawksbeard QA') && report.includes('Class period: 3'),
+        'without overrides the downloaded report uses the existing dashboard sign-in');
+    }
+    await fits(page, 'main, #hb-explain, #hb-explain-table, [data-hb-answer], #hb-name, #hb-period', at + ' explanation');
     await shot(page, at + '-explain');
     if (cfg.touch || cfg.width === 1366) await axe(page, '#hb-explain', at + ' explanation');
 
     if (cfg.width === 1366) {
+      await page.locator('#hb-method summary').press('Enter');
+      await disclosed(page, 'hb-method', true);
+      await disclosed(page, 'hb-published', true);
       const expectedSaved = await snapshot(page);
       check(Object.entries(EXAMPLE_TEXT).every(([key, value]) => expectedSaved.answers[key] === value),
         'answers are saved with the modeled evidence on this browser');
@@ -496,6 +599,25 @@ async function play(browser, base, cfg) {
         check(await page.locator('#hb-explain [data-hb-answer="' + key + '"]').inputValue() === value,
           'restored ' + key + ' appears in the classwork form');
       }
+      check(await published.isVisible() && await page.locator('#hb-method').evaluate(el => el.open) &&
+        await page.locator('#hb-denominator-check').evaluate(el => el.open),
+        'reload restores open research, model method, and Compare quick check disclosures');
+      check(await page.locator('#hb-name').inputValue() === STANDALONE_NAME &&
+        await page.locator('#hb-period').inputValue() === STANDALONE_PERIOD,
+        'this trial restores its standalone report name and class period');
+      await completedSteps(page, ['predict', 'release', 'compare', 'explain'], 'reloaded trial');
+      await stage(page, 'compare');
+      check(await reflection.inputValue() === REFLECTION_TEXT &&
+        await page.locator('#hb-denominator-check').evaluate(el => el.open) &&
+        !await page.locator('.hb-denominator-feedback').isVisible(),
+        'Compare restores the reflection and open disclosure without showing stale quiz feedback');
+      await page.locator('#hb-denominator-check summary').press('Enter');
+      await disclosed(page, 'hb-denominator-check', false);
+      await stage(page, 'explain');
+      await page.reload();
+      await page.locator('#hb-explain').waitFor({ state:'visible' });
+      check(!await page.locator('#hb-denominator-check').evaluate(el => el.open) && await published.isVisible(),
+        'reload preserves closed Compare instructions independently of open research');
       await confirmReport(page, restored);
       await dashboardLinks(page, base);
     }

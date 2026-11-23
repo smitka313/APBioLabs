@@ -171,13 +171,13 @@ test('Unit 4 publishes the Hawksbeard Wind Lab, leaving only Unit 5 under Coming
 test('Hawksbeard continues the saved phase and includes its written answers in a scoped restart backup', async () => {
   const key = 'aplab:openscied:b4-hawksbeard:v1';
   const save = JSON.stringify({v:1,seed:12,prediction:'city',released:5,lastSection:'explain',lastVisitedAt:1740000000000,
-    answers:{claim:'The landings differ.',evidence:'I compared both sites.',limits:'  '}});
+    answers:{reflection:'I kept my prediction after comparing 2/9 and 2/5.',claim:'The landings differ.',evidence:'I compared both sites.',limits:'  '}});
   const fresh = setup();
   assert.equal(fresh.el('#hawksbeard-open').href,'openscied-b4-hawksbeard.html');
   assert.equal(fresh.el('#hawksbeard-progress').textContent,'Not started');
   assert.equal(fresh.el('#hawksbeard-reset').disabled,true);
   const s = setup(false,{[key]:save});
-  assert.equal(s.el('#hawksbeard-progress').textContent,'5 of 5 plant pairs released · 2 of 3 responses saved');
+  assert.equal(s.el('#hawksbeard-progress').textContent,'5 of 5 plant pairs released · 3 of 4 responses saved');
   assert.equal(s.el('#hawksbeard-open').href,'openscied-b4-hawksbeard.html#explain');
   assert.equal(s.el('#openscied-resume-link').href,'openscied-b4-hawksbeard.html#explain');
   assert.equal(s.el('#hawksbeard-reset').disabled,false);
@@ -185,6 +185,7 @@ test('Hawksbeard continues the saved phase and includes its written answers in a
   s.el('#backup-before-openscied-clear').fire('click');
   const payload = JSON.parse(await s.blob().text());
   assert.deepEqual(payload.work,{[key]:save});
+  assert.equal(payload.responses.hawksbeard.reflection,'I kept my prediction after comparing 2/9 and 2/5.');
   assert.equal(payload.responses.hawksbeard.claim,'The landings differ.');
   assert.equal(payload.responses.hawksbeard.evidence,'I compared both sites.');
   s.el('#openscied-erase-confirmation').value='ERASE';

@@ -29,7 +29,13 @@
     if (cls) node.className = cls;
     return node;
   };
-  const announce = value => { const target = $('#hb-status'); if (target) target.textContent = value; };
+  const announce = (value,{quiet=false}={}) => {
+    const target = $('#hb-status');
+    if (target) {
+      target.classList?.toggle('sr-only',quiet);
+      target.textContent = value;
+    }
+  };
   const setText = (selector, value) => { const target = $(selector); if (target) target.textContent = value; };
   const isOwn = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
   const answerInputs = $$('[data-hb-answer]');
@@ -37,7 +43,11 @@
     try { return window.crypto.getRandomValues(new Uint32Array(1))[0]; }
     catch (_) { return (Date.now() ^ Math.floor(Math.random() * 4294967296)) >>> 0; }
   }
-  const fresh = () => ({v:1,seed:newSeed(),page:'predict',lastSection:'predict',lastVisitedAt:0,prediction:'',released:0,answers:{}});
+  const DETAIL_IDS=['hb-method','hb-published','hb-denominator-check'];
+  const PERSON_LIMITS={name:100,period:24};
+  const fresh = () => ({v:1,seed:newSeed(),page:'predict',lastSection:'predict',lastVisitedAt:0,prediction:'',released:0,answers:{},person:{},disclosures:{}});
+  const cleanField = (value,max) => value.trim().replace(/\s+/g,' ').slice(0,max);
+  const datasetId = seed => 'HB-'+seed.toString(16).toUpperCase().padStart(8,'0');
   function restore(raw) {
     const s = JSON.parse(raw);
     if (s?.v !== 1 || !Number.isInteger(s.seed) || s.seed < 0 || s.seed > 4294967295 ||
@@ -49,7 +59,14 @@
       const k = f.dataset.hbAnswer;
       if (typeof s.answers[k] === 'string') answers[k] = s.answers[k].slice(0,8000);
     }
-    return {...s,answers,page:PAGES.includes(s.page) ? s.page : 'predict'};
+    const person={},disclosures={};
+    for (const [field,max] of Object.entries(PERSON_LIMITS)) {
+      if (typeof s.person?.[field]==='string') person[field]=cleanField(s.person[field],max);
+    }
+    for (const id of DETAIL_IDS) {
+      if (typeof s.disclosures?.[id]==='boolean') disclosures[id]=s.disclosures[id];
+    }
+    return {...s,answers,person,disclosures,page:PAGES.includes(s.page) ? s.page : 'predict'};
   }
   let state = fresh(), preserved = false, blocked = false, running = false, frame = 0, trial;
   try {
@@ -91,6 +108,7 @@
       if (focus) return false;
       page = state.prediction ? 'release' : 'predict';
     }
+    if (page!==state.page) announce('');
     state.page = page;
     for (const p of PAGES) { const panel = $('#hb-'+p); if (panel) panel.hidden = p !== page; }
     for (const button of $$('.hb-steps [data-hb-go]')) {
@@ -349,7 +367,7 @@
     const t=txt('table','','hb-data-table');
     t.createCaption().textContent='Your model results · seed counts and percentages';
     const header=t.createTHead().insertRow();
-    for (const s of ['Environment','Seed type','On soil / released','Outside soil','Share of soil landings']) {
+    for (const s of ['Layout','Seed type','On soil / released','Missed soil','Share of soil landings']) {
       const th=txt('th',s);th.scope='col';header.append(th);
     }
     const body=t.createTBody();
@@ -408,9 +426,18 @@
     details.append(panel);
     if (details !== host) host.replaceChildren(details);
   }
+  function rememberDisclosure(details) {
+    if (!details || details.dataset.hbRemember) return;
+    details.dataset.hbRemember='true';
+    details.open=!!state.disclosures[details.id];
+    details.addEventListener('toggle',()=>{
+      if (details.open===!!state.disclosures[details.id]) return;
+      state.disclosures[details.id]=details.open;save();
+    });
+  }
   function compareCheck(host,city) {
     if (!host || host.firstElementChild) return;
-    const check=txt('details','','hb-denominator-check');
+    const check=txt('details','','hb-denominator-check');check.id='hb-denominator-check';
     check.append(txt('summary','Quick check: Which total belongs on the bottom?'));
     const group=txt('fieldset','','hb-denominator-choices');
     group.append(txt('legend','To find the nonfeathery share of city soil landings, which denominator should you use?'));
@@ -421,27 +448,43 @@
       ['type','Only nonfeathery seeds released in the city'],
       ['soil','All seeds that landed on soil in the city']
     ]) {
-      const option=txt('label',label), input=txt('input','');
+      const option=txt('label',''), input=txt('input','');
       input.type='radio';input.name='hb-denominator';input.value=id;
-      option.prepend(input);group.append(option);
+      option.append(input,txt('span',label));group.append(option);
       input.addEventListener('change',()=>{
         const base=id==='all' ? 'That total includes seeds that landed outside soil.' :
           id==='type' ? 'That total would tell you the soil-landing rate for nonfeathery seeds.' : 'Right: compare seeds that landed on soil, not every seed released.';
         const suffix=' Your city result is '+fraction(city.byType.nonfeathery.landed,city.landed)+' of the soil landings.';
         feedback.hidden=false;
         feedback.textContent=base+suffix;
-        announce(feedback.textContent);
+        announce(feedback.textContent,{quiet:true});
       });
     }
     check.append(group,feedback);
-    host.append(check);
+    host.append(check);rememberDisclosure(check);
   }
-  function forecast(host) {
-    if (!host) return;
-    const p=txt('p','Your prediction: '+choices[state.prediction]+'. Would you keep or change it after seeing the model? Cite one fraction.','hb-forecast-reflection');
-    const old=host.querySelector('.hb-forecast-reflection');
-    if (old) old.replaceWith(p);
-    else host.append(p);
+  function recordedAnswers() {
+    const done=id=>!!state.answers[id]?.trim();
+    return {predict:!!state.prediction,release:state.released===PAIRS&&!running,
+      compare:done('reflection'),explain:['claim','evidence','limits'].every(done)};
+  }
+  function renderCompletion() {
+    const done=recordedAnswers();
+    for (const [i,button] of $$('.hb-steps [data-hb-go]').entries()) {
+      const complete=done[button.dataset.hbGo];
+      if (complete) button.setAttribute('data-hb-complete','true');
+      else button.removeAttribute('data-hb-complete');
+      const icon=$('.hb-step-mark',button), text=$('.hb-step-completion',button);
+      if (icon) { icon.textContent=complete?'✓':String(i+1);icon.classList.toggle('hb-step-check',complete); }
+      if (text) text.hidden=!complete;
+    }
+  }
+  function observations(stats) {
+    const f=stats.field.byType.nonfeathery,c=stats.city.byType.nonfeathery;
+    const counts='Nonfeathery seeds on soil: '+f.landed+' of '+f.released+' in the field and '+c.landed+' of '+c.released+' in the city.';
+    const all=f.landed===f.released && c.landed===c.released;
+    setText('#hb-type-observation',counts+(all?' Every nonfeathery seed reached soil in this trial.':'')+
+      ' Compare both layouts before deciding whether either seed type has an advantage.');
   }
   function showReleaseResult() {
     const round=state.released;
@@ -472,7 +515,8 @@
     }
   }
   function render() {
-    gates();
+    gates();renderCompletion();
+    setText('#hb-dataset-id',datasetId(state.seed));
     showReleaseResult();
     if (state.prediction) setText('#hb-prediction-feedback','Prediction saved: '+choices[state.prediction]+'. You can change it and test your thinking with the model.');
     else setText('#hb-prediction-feedback','');
@@ -480,14 +524,14 @@
       const s=currentSummary();
       summary($('#hb-compare-summary'),s);table($('#hb-compare-table'),s);chart($('#hb-compare-chart'),s);
       summary($('#hb-explain-summary'),s);table($('#hb-explain-table'),s);chart($('#hb-explain-chart'),s);
-      forecast($('#hb-forecast-reflection')||$('#hb-compare-summary'));
+      setText('#hb-forecast-reflection','Your prediction: '+choices[state.prediction]+'.');observations(s);
       compareCheck($('#hb-compare-check'),s.city);
       for (const host of $$('#hb-published, [data-hb-published]')) {
-        host.hidden=false;published(host);
+        host.hidden=false;published(host);rememberDisclosure(host);
       }
     } else {
       for (const host of $$('#hb-published, [data-hb-published]')) host.hidden=true;
-      for (const id of ['compare-summary','compare-table','compare-chart','explain-summary','explain-table','explain-chart','compare-check','forecast-reflection']) $('#hb-'+id)?.replaceChildren();
+      for (const id of ['compare-summary','compare-table','compare-chart','explain-summary','explain-table','explain-chart','compare-check','forecast-reflection','type-observation']) $('#hb-'+id)?.replaceChildren();
     }
   }
   function release() {
@@ -509,11 +553,22 @@
       }
     });
   }
+  function reportPerson() {
+    const shared=window.Lab?.identity?.get?.() || {};
+    return {...shared,...state.person};
+  }
+  function fillPerson() {
+    const person=reportPerson();
+    for (const field of Object.keys(PERSON_LIMITS)) {
+      const input=$('#hb-'+field);
+      if (input) input.value=person[field]||'';
+    }
+  }
   function report() {
-    const person=window.Lab?.identity?.get?.() || {};
+    const person=reportPerson();
     const lines=['HAWKSBEARD WIND LAB','OpenSciEd Biology B.4 · Lesson 2 companion','Created by Robert Smitka',
       '', 'Name: '+(person.name||''), 'Class period: '+(person.period||''),
-      'Dataset: HB-'+state.seed.toString(16).toUpperCase().padStart(8,'0'),
+      'Dataset: '+datasetId(state.seed),
       '', 'Prediction: '+(choices[state.prediction]||'Not recorded'),
       'Matched plant pairs released: '+state.released+' of '+PAIRS,
       '', 'YOUR MODEL RESULTS · SIMULATED', 'Soil landing is a proxy for opportunity to germinate, not a measure of survival or reproduction.'];
@@ -556,17 +611,19 @@
       const url=URL.createObjectURL(new Blob([report()],{type:'text/plain;charset=utf-8'}));
       const a=txt('a','');a.href=url;a.download='hawksbeard-wind-lab.txt';document.body.append(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),5000);
-      announce('Download requested. If no file appears, choose View text to copy.');
+      announce('Download requested. If no file appears, choose Copy investigation.');
     } catch (_) { copyText(true); }
   }
   function fillInputs() {
     for (const field of $$('input[name="hb-prediction"]')) field.checked=field.value===state.prediction;
     for (const f of answerInputs) f.value=state.answers[f.dataset.hbAnswer] || '';
+    fillPerson();
   }
   function reset() {
     if (frame) {cancelAnimationFrame(frame);frame=0;}
     running=false;
     state=fresh();trial=L.makeTrial(state.seed);
+    for (const id of DETAIL_IDS) {const details=$('#'+id);if(details) details.open=false;}
     save(true);fillInputs();render();settled();
     $('#hb-reset-dialog')?.close();go('predict',{persist:false});
     if (!blocked) announce('Started a new matched trial on this device.');
@@ -585,8 +642,13 @@
     if (!blocked&&!preserved) announce('Prediction saved. Release your first matched pair when ready.');
   });
   for (const f of answerInputs) f.addEventListener('input',()=>{
-    state.answers[f.dataset.hbAnswer]=f.value.slice(0,8000);save();
+    state.answers[f.dataset.hbAnswer]=f.value.slice(0,8000);renderCompletion();save();
   });
+  for (const [field,max] of Object.entries(PERSON_LIMITS)) {
+    const input=$('#hb-'+field);
+    input?.addEventListener('input',()=>{state.person[field]=cleanField(input.value,max);save();});
+  }
+  rememberDisclosure($('#hb-method'));
   $('#hb-release-next')?.addEventListener('click',release);
   $('#hb-download')?.addEventListener('click',download);
   $('#hb-copy')?.addEventListener('click',()=>copyText(false));

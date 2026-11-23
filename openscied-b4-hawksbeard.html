@@ -41,10 +41,10 @@
   <img src="assets/hawksbeard-preview.svg" width="960" height="600" alt="">
 </header>
 <nav class="hb-steps" aria-label="Investigation steps">
-  <button type="button" data-hb-go="predict" aria-current="step"><span>1</span>Predict</button>
-  <button type="button" data-hb-go="release"><span>2</span>Release</button>
-  <button type="button" data-hb-go="compare"><span>3</span>Compare</button>
-  <button type="button" data-hb-go="explain"><span>4</span>Explain</button>
+  <button type="button" data-hb-go="predict" aria-current="step"><span class="hb-step-mark" aria-hidden="true">1</span>Predict<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="release"><span class="hb-step-mark" aria-hidden="true">2</span>Release<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="compare"><span class="hb-step-mark" aria-hidden="true">3</span>Compare<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="explain"><span class="hb-step-mark" aria-hidden="true">4</span>Explain<span class="sr-only hb-step-completion" hidden> complete</span></button>
 </nav>
 <noscript><p>This investigation needs JavaScript to release seeds and record landings.</p></noscript>
 
@@ -71,6 +71,7 @@
 <section id="hb-release" class="hb-section" data-hb-page="release" aria-labelledby="hb-release-title" hidden>
   <div class="hb-stagehead"><div><p class="eyebrow">02 · Matched investigation</p><h2 id="hb-release-title" tabindex="-1">Release a pair of plants</h2></div><span id="hb-round" class="hb-pill">0 of 5 pairs released</span></div>
   <p class="hb-lede">Each release sends the same 10 seed paths over both layouts. A landing on soil counts as a possible place to germinate.</p>
+  <p id="hb-trial-note" class="hb-trial-note">Each new trial draws new wind paths. Reloading keeps the same trial. The Dataset ID is included in your download. <span>Dataset ID: <strong id="hb-dataset-id"></strong></span></p>
   <div class="hb-release-tools">
     <div class="hb-actions hb-release-actions"><button class="btn btn--primary" id="hb-release-next" type="button">Release plant pair 1</button><button class="btn" type="button" data-hb-go="compare">Compare landings</button></div>
     <label class="hb-enlarge" for="hb-enlarge-boards"><input type="checkbox" id="hb-enlarge-boards"> <span>Enlarge boards</span></label>
@@ -94,9 +95,16 @@
 <section id="hb-compare" class="hb-section" data-hb-page="compare" aria-labelledby="hb-compare-title" hidden>
   <div class="hb-stagehead"><div><p class="eyebrow">03 · Read the results</p><h2 id="hb-compare-title" tabindex="-1">Compare what landed</h2></div><button class="btn btn--primary" data-hb-go="explain" type="button">Go to Explain</button></div>
   <div id="hb-compare-summary" class="hb-result"></div>
-  <p id="hb-forecast-reflection" class="hb-lede"></p>
   <div class="hb-split">
-    <div class="hb-panel"><h3>Your trial</h3><div id="hb-compare-chart"></div></div>
+    <div class="hb-panel"><h3>Your trial</h3><div id="hb-compare-chart"></div>
+      <p id="hb-type-observation" class="hb-tip"></p>
+      <p class="hb-comparison-limit"><strong>Model limit:</strong> The layouts differ in both the amount and arrangement of soil.</p>
+      <div class="hb-reflection hb-answer-panel">
+        <p id="hb-forecast-reflection" class="hb-lede"></p>
+        <label for="hb-reflection"><strong>Would you keep or change your prediction?</strong> Cite one fraction.</label>
+        <textarea id="hb-reflection" data-hb-answer="reflection" rows="2" maxlength="3000"></textarea>
+      </div>
+    </div>
     <div class="hb-panel"><h3>Read the fractions</h3><div id="hb-compare-table"></div><p class="hb-tip"><strong>Two questions, two denominators.</strong> To ask how many nonfeathery seeds reached soil, compare with nonfeathery seeds released. To ask what share of all soil landings were nonfeathery, compare with all seeds that reached soil.</p><div id="hb-compare-check"></div></div>
   </div>
 </section>
@@ -115,6 +123,11 @@
       <textarea id="hb-evidence" data-hb-answer="evidence" rows="3" maxlength="3000"></textarea>
       <label for="hb-limits"><strong>3. Name a limit.</strong> What else would you need to observe to tell whether seed-type proportions change across generations?</label>
       <textarea id="hb-limits" data-hb-answer="limits" rows="3" maxlength="3000"></textarea>
+      <fieldset class="hb-report-identity">
+        <legend>Put your name on the report <span>(optional)</span></legend>
+        <div><label for="hb-name">Name</label><input id="hb-name" type="text" autocomplete="name" maxlength="100"></div>
+        <div><label for="hb-period">Class period</label><input id="hb-period" type="text" maxlength="24"></div>
+      </fieldset>
       <div class="hb-actions"><button class="btn btn--primary" type="button" id="hb-download">Download investigation</button><button class="btn" type="button" id="hb-copy">Copy investigation</button></div>
     </div>
   </div>
@@ -122,7 +135,7 @@
 
 <div class="hb-footerbar"><p id="hb-save-status">Work is saved only in this browser. Download it before switching devices.</p><button class="btn btn--ghost" type="button" id="hb-restart">Start a new trial…</button></div>
 <p id="hb-status" class="hb-status" role="status" aria-live="polite" aria-atomic="true"></p>
-<details class="hb-method">
+<details class="hb-method" id="hb-method">
   <summary>What this model does and does not show</summary>
   <p>The two layouts model connected field soil and fragmented city soil. The same starts and wind paths are used for both. The field and city also have different amounts of soil, so this comparison does not isolate fragmentation from total habitat area.</p>
   <p>Landings are simulated. A seed on suitable soil could germinate; this model does not test actual germination, reproduction, inheritance, or a later generation. The optional research comparison is separate from your simulated results.</p>
