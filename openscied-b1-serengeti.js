@@ -149,7 +149,7 @@
   const notifyTurn = () => app.dispatchEvent(new CustomEvent('sg:turnchange',{bubbles:true}));
 
 
-  // This preview save has its own namespace and never stores a student's name.
+  // Keep the original save key so prior local games remain readable. Student names are never stored here.
   let originalSave = null;
   try {
     originalSave = localStorage.getItem(S);
@@ -214,7 +214,7 @@
     qs('#sg-recover').hidden = true;
     qs('#sg-save-warning').hidden = true;
     try {
-      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress}));
+      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
       saveUnavailable = false;
     } catch (_) { saveUnavailable = true; }
     qs('#sg-save').textContent = saveUnavailable ? 'This browser blocked saving. Download your work before closing.' : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
