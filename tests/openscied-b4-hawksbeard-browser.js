@@ -153,7 +153,7 @@ async function boardCues(page, seed, completed, at) {
   const legend = page.getByRole('group', { name: 'Seed symbol legend', exact: true });
   const legendText = exact(await legend.textContent());
   check(await legend.isVisible() && /Feathery.*Nonfeathery.*Soil landing.*Missed soil/i.test(legendText) &&
-    /newest landings are outlined.*earlier landings fade/i.test(legendText),
+    /release point/i.test(legendText) && /newest seeds.*dotted.*dashed.*earlier landings fade/i.test(legendText),
     at + ' visible board key names seed types, hit and miss symbols, and latest versus earlier landings');
 
   for (const site of SITES) {
