@@ -23,15 +23,19 @@ async function checkMastheadLayout(browser,site,seed,description) {
     await p.locator('.dashboard-student-note').first().waitFor();
     const measure=()=>p.evaluate(async()=>{
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      return Object.fromEntries(['.dashboard-panorama','.dashboard-student-note','#activities'].map(selector=>
+      return Object.fromEntries(['.dashboard-panorama','.dashboard-student-note','#openscied-results-status','#activities'].map(selector=>
         [selector,document.querySelector(selector).getBoundingClientRect().top]));
     });
+    const status=p.locator('#openscied-results-status');
+    const initialStatus=await status.textContent();
+    assert.match(initialStatus,/No OpenSciEd results saved on this device/,'initial workspace status is reserved before scripts mount');
     const before=await measure();
     assert.equal(await p.locator('.dashboard-theme-controls .theme-opt').count(),0,'theme script is still delayed');
     release();
     await p.locator('.dashboard-theme-controls .theme-opt').first().waitFor();
     await p.locator('#openscied-student-identity '+(seed?'.id-line':'.id-panel')).waitFor();
     const after=await measure();
+    assert.equal(await status.textContent(),initialStatus,'empty workspace status matches refresh');
     for(const selector of Object.keys(before)) {
       assert.ok(Math.abs(after[selector]-before[selector])<=2,
         description+': '+selector+' must keep its position as controls mount ('+before[selector]+' → '+after[selector]+' px)');
