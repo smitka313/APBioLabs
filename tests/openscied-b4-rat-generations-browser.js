@@ -150,6 +150,158 @@ async function expectBoard(page, model, action, label) {
     key === g && String(expected[g]) === String(value).trim())),
     label + ' lists the exact RR, RB and BB totals for the ' + (selection ? 'survivor' : 'birth') + ' phase');
 }
+function builder(page) {
+  return page.locator('#rg-punnett [data-rg-builder]');
+}
+function source(page, key) {
+  return builder(page).locator('[data-rg-source="' + key + '"]');
+}
+function target(page, key) {
+  return builder(page).locator('[data-rg-target="' + key + '"]');
+}
+async function placedTargets(page) {
+  return builder(page).locator('[data-rg-target][data-rg-placed="true"]').evaluateAll(nodes =>
+    nodes.map(node => node.dataset.rgTarget).sort());
+}
+async function dragPoints(page, source, target) {
+  await Promise.all([source.waitFor({ state:'visible' }), target.waitFor({ state:'visible' })]);
+  await source.scrollIntoViewIfNeeded();
+  const a = await source.boundingBox(), b = await target.boundingBox();
+  assert.ok(a && b, 'both the dragged piece and the drop slot have a rectangle');
+  const height = page.viewportSize().height;
+  const first = Math.min(a.y, b.y), last = Math.max(a.y + a.height, b.y + b.height);
+  assert.ok(last - first < height - 12, 'piece and slot fit in one viewport for the drag');
+  if (first < 6 || last > height - 6) {
+    await page.evaluate(delta => window.scrollBy({ left:0, top:delta, behavior:'instant' }),
+      (first + last - height) / 2);
+  }
+  const fresh = await Promise.all([source.boundingBox(), target.boundingBox()]);
+  const points = fresh.map(rect => ({
+    x:Math.round(rect.x + rect.width / 2), y:Math.round(rect.y + rect.height / 2)
+  }));
+  assert.ok(points.every(p => p.x > 0 && p.x < page.viewportSize().width && p.y > 0 && p.y < height),
+    'pointer starts and ends on visible pieces, not synthetic DOM events');
+  return points;
+}
+async function relocate(page, from, to, mode) {
+  const chip = source(page, from), slot = target(page, to);
+  if (mode === 'keyboard') {
+    if (await chip.getAttribute('aria-pressed') !== 'true') await chip.press('Enter');
+    await slot.press('Enter');
+  } else if (mode === 'tap') {
+    if (await chip.getAttribute('aria-pressed') !== 'true') await chip.tap();
+    await slot.tap();
+  } else {
+    const [a, b] = await dragPoints(page, chip, slot);
+    if (mode === 'mouse') {
+      await page.mouse.move(a.x, a.y);
+      await page.mouse.down();
+      await page.mouse.move(b.x, b.y, { steps:12 });
+      await page.mouse.up();
+    } else {
+      const session = await page.context().newCDPSession(page);
+      try {
+        const touch = (type, point) => session.send('Input.dispatchTouchEvent', {
+          type, touchPoints:point ? [{ ...point, id:1 }] : []
+        });
+        await touch('touchStart', a);
+        for (let frame = 1; frame <= 12; frame++) {
+          await touch('touchMove', {
+            x:a.x + (b.x - a.x) * frame / 12, y:a.y + (b.y - a.y) * frame / 12
+          });
+        }
+        await touch('touchEnd');
+      } finally {
+        await session.detach();
+      }
+    }
+  }
+}
+async function put(page, from, to, mode, label) {
+  await relocate(page, from, to, mode);
+  check(await target(page, to).getAttribute('data-rg-placed') === 'true',
+    label + ' ' + mode + ' places ' + from + ' in ' + to);
+}
+async function firstCross(page, row, cfg, seed, label) {
+  const chosen = row.pairs.find(pair => pair.parents.some(parent => parent.genotype === 'RB'));
+  assert.ok(chosen, 'the founder with the R allele has an expected cross');
+  const pair = page.locator('#rg-pairs [data-rg-pair="' + chosen.id + '"]');
+  await use(pair, cfg);
+  const square = builder(page), next = page.locator('#rg-next');
+  check(await square.isVisible() && await square.getAttribute('data-rg-ready') === 'false' &&
+    await next.isDisabled() && (await placedTargets(page)).length === 0 &&
+    await page.locator('#rg-punnett [data-rg-cell]').count() === 0,
+    label + ' the first cross starts empty and gates progression without showing completed answers');
+  check((await page.locator('#rg-cross-gate').innerText()).trim().length > 0,
+    label + ' gives a reason for the first-cross gate');
+
+  const repeatableInput = cfg.touch ? 'tap' : 'keyboard';
+  await relocate(page, 'parent-0', 'parent-1', repeatableInput);
+  check(await target(page, 'parent-1').getAttribute('data-rg-placed') === 'false' &&
+    await next.isDisabled() && (await page.locator('#rg-cross-feedback').innerText()).trim().length > 0,
+    label + ' rejects a rat in the wrong parent slot and leaves the gate locked');
+
+  await put(page, 'parent-1', 'parent-1', cfg.touch ? 'touch-drag' : cfg.width === 1366 ? 'mouse' : 'keyboard', label);
+  await put(page, 'parent-0', 'parent-0', repeatableInput, label);
+  if (cfg.width === 1366) {
+    await put(page, 'allele-0-0', 'header-0-0', 'mouse', label);
+  } else {
+    await put(page, 'allele-0-0', 'header-0-0', repeatableInput, label);
+  }
+  const partial = await placedTargets(page);
+  check(partial.length === 3 && await next.isDisabled(), label + ' a partially built cross cannot be recorded');
+  if (cfg.width === 1366) {
+    await screenshot(page, label + '-cross-partial');
+    await page.reload();
+    await page.locator('#rg-model').waitFor({ state:'visible' });
+    await use(pair, cfg);
+    check(compact(await placedTargets(page), partial) && (await save(page)).seed === seed &&
+      (await save(page)).action === 0 && Boolean((await save(page)).crosses?.[chosen.id]) && await next.isDisabled(),
+      'reload restores the exact partial cross without rerolling or advancing the colony');
+  }
+  for (const [role, allele] of [[0,1],[1,0],[1,1]]) {
+    await put(page, 'allele-' + role + '-' + allele, 'header-' + role + '-' + allele, repeatableInput, label);
+  }
+  for (let i = 0; i < 4; i++) {
+    if (i === 0) {
+      await relocate(page, 'allele-0-0', 'cell-0-1', repeatableInput);
+      check(await target(page, 'cell-0-1').getAttribute('data-rg-placed') === 'false' &&
+        await next.isDisabled(), label + ' rejects an allele from the wrong parent in the offspring cell');
+    }
+    for (let role = 0; role < 2; role++) {
+      const index = role === 0 ? Math.floor(i / 2) : i % 2;
+      await put(page, 'allele-' + role + '-' + index, 'cell-' + i + '-' + role, repeatableInput, label);
+    }
+    if (i < 3) check(await square.getAttribute('data-rg-ready') === 'false' && await next.isDisabled(),
+      label + ' still gates progression while an offspring box is unfinished');
+  }
+  const cells = await page.locator('#rg-punnett [data-rg-cell]').evaluateAll(nodes =>
+    nodes.map(node => node.dataset.rgCell || node.textContent.trim()));
+  check(compact(cells, chosen.cells) && await square.getAttribute('data-rg-ready') === 'true' &&
+    await next.isEnabled() && (await save(page)).action === 0 && (await save(page)).seed === seed,
+    label + ' every expected Punnett cell is built and the original trial can now advance');
+  await fits(page, 'main, #rg-punnett, #rg-punnett [data-rg-source], #rg-punnett [data-rg-target]',
+    label + ' complete interactive cross');
+  await screenshot(page, label + '-cross-complete');
+  if (cfg.width === 1366) {
+    await page.reload();
+    await page.locator('#rg-model').waitFor({ state:'visible' });
+    await use(pair, cfg);
+    check(await square.getAttribute('data-rg-ready') === 'true' && await next.isEnabled() &&
+      compact(await page.locator('#rg-punnett [data-rg-cell]').evaluateAll(nodes =>
+        nodes.map(node => node.dataset.rgCell || node.textContent.trim())), chosen.cells) &&
+      (await save(page)).action === 0 && (await save(page)).seed === seed,
+      'completed cross stays ready after reload without advancing the seed or action');
+  }
+  const optional = row.pairs.find(candidate => candidate.id !== chosen.id);
+  if (optional) {
+    await use(page.locator('#rg-pairs [data-rg-pair="' + optional.id + '"]'), cfg);
+    check(await square.getAttribute('data-rg-ready') === 'false' && await next.isEnabled(),
+      label + ' browsing a second first-generation cross does not revoke the completed one');
+    await use(pair, cfg);
+  }
+}
+
 async function inspectPair(page, row, cfg, label) {
   const displayed = await page.locator('#rg-pairs [data-rg-pair]').evaluateAll(buttons =>
     buttons.map(button => button.dataset.rgPair).sort());
@@ -360,9 +512,9 @@ async function play(browser, base, cfg) {
     for (let action = 1; action <= 6; action++) {
       const preview = Model.preview(model);
       const subsequent = Model.step(model);
-      if (preview.action === 'breed' && (action === 1 || action === 4 || action === 6)) {
-        await inspectPair(page, subsequent.generations.at(-1), cfg, label + ' before action ' + action);
-      }
+      if (action === 1) await firstCross(page, subsequent.generations.at(-1), cfg, seed, label);
+      if (action === 4 || action === 6) check(await page.locator('#rg-next').isEnabled(),
+        label + ' later crosses remain optional for classroom pacing at action ' + action);
       const next = page.locator('#rg-next');
       await use(next, cfg);
       await waitAction(page, action);
@@ -374,6 +526,14 @@ async function play(browser, base, cfg) {
         label + ' action ' + action + ' does not reroll the trial or replace the initial prediction');
       if (action < 6) check(await stepButton(page,'analyze').isDisabled() && await stepButton(page,'explain').isDisabled(),
         label + ' analysis stays gated until the six model actions are complete');
+      if (action === 5 && cfg.width === 1366) {
+        await page.locator('#rg-timeline [data-rg-snapshot="4"]').press('Enter');
+        await events(page, 4, 'recorded cross review');
+        await inspectPair(page, model.generations.at(-1), cfg, 'recorded Generation 4');
+        check((await save(page)).action === 5, 'inspecting a recorded later cross does not rewrite the run');
+        await page.locator('#rg-next').press('Enter');
+        await events(page, 5, 'returned from recorded cross');
+      }
       if (action === 3) {
         const selected = model.generations.at(-1);
         check(selected.survivors.length < selected.born.length &&
@@ -401,6 +561,7 @@ async function play(browser, base, cfg) {
         }
       }
     }
+    if (cfg.width === 1366) await inspectPair(page, model.generations.at(-1), cfg, 'recorded Generation 5');
     await screenshot(page, label + '-generation-5-born');
 
     await enterStage(page, 'analyze', cfg);

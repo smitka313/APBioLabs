@@ -1,7 +1,7 @@
 /* Student-facing record of the Lesson 3 model. The engine owns every count and pairing. */
 (() => {
   'use strict';
-  const M=window.RatGenerationsLogic, $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+  const M=window.RatGenerationsLogic, B=window.RatCrossBuilder, $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const KEY='aplab:openscied:b4-rat-generations:v1', STEPS=['predict','model','analyze','explain'];
   const PRED={increase:'Increase',same:'Stay about the same',decrease:'Decrease'};
   const METRICS={population:'Population size',carrier:'% showing resistance',allele:'% of allele copies that are R'};
@@ -11,7 +11,7 @@
   const svg=(tag,attrs={})=>{const n=document.createElementNS(SVG,tag);for (const [k,v] of Object.entries(attrs)) n.setAttribute(k,String(v));return n;};
   const set=(id,text)=>{const el=$('#rg-'+id);if(el)el.textContent=text;};
   const announce=(text,quiet=false)=>{const live=$('#rg-status');live.classList.toggle('sr-only',quiet);live.textContent=text;};
-  if (!M){announce('The model did not load. Please reload this page.');return;}
+  if (!M||!B){announce('The model did not load. Please reload this page.');return;}
   const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key);
   const tidy=(value,n)=>typeof value==='string'?value.trim().replace(/\s+/g,' ').slice(0,n):'';
   const freshSeed=()=>{try{return window.crypto.getRandomValues(new Uint32Array(1))[0];}catch(_){return (Date.now()+Math.random()*0x100000000)>>>0;}};
@@ -19,7 +19,7 @@
   const percent=(n,d)=>d?new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(100*n/d)+'%':'Not defined';
   const fraction=(n,d)=>d?n+' / '+d+' ('+percent(n,d)+')':'Not defined';
   const selectionName={born:'Born',survived:'Survived'};
-  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population'});
+  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',crosses:{}});
   let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='';
   function decode(raw) {
     const s=JSON.parse(raw);
@@ -32,6 +32,7 @@
     for (const el of $answer) if (typeof s.answers[el.dataset.rgAnswer]==='string') safe.answers[el.dataset.rgAnswer]=s.answers[el.dataset.rgAnswer].slice(0,2400);
     for (const [key,n] of Object.entries(fields)) if(typeof s.person?.[key]==='string')safe.person[key]=tidy(s.person[key],n);
     if(own(METRICS,s.metric))safe.metric=s.metric;
+    safe.crosses=B.cleanMap(s.crosses);
     return safe;
   }
   try {
@@ -94,6 +95,18 @@
     }
     host.replaceChildren(group);
   }
+  function needsFirstCross(){
+    if(state.action!==0||viewAction!==null)return false;
+    const assigned=M.step(model).generations.at(-1).pairs;
+    return !assigned.some(pair=>B.complete(state.crosses[pair.id]));
+  }
+  function crossGate(){
+    const gated=needsFirstCross();
+    $('#rg-next').disabled=gated;
+    $('#rg-cross-gate').hidden=!gated;
+    $('#rg-cross-jump').hidden=!gated;
+    set('cross-gate',gated?'Complete either assigned pair’s Punnett square to continue.':'');
+  }
   function pairs(record,past) {
     let crossList=record.pairs, future=false, target=record.generation;
     const next=M.preview(model);
@@ -113,6 +126,15 @@
       register.append(b);
     }
     function show(p) {
+      if(future){
+        B.mount(box,{
+          pair:p,progress:state.crosses[p.id],required:state.action===0,tokenUrl:TOKEN,
+          announce:message=>announce(message,true),
+          onChange:progress=>{state.crosses[p.id]=progress;save();crossGate();}
+        });
+        if(crossList.some(pair=>pair.reused))box.append(node('p','The parent group was odd, so one parent is used in two pairings.','rg-muted'));
+        return;
+      }
       const [first,second]=p.parents.map(parent=>parent.genotype);
       const grid=node('div','','rg-cross');grid.setAttribute('role','img');
       grid.setAttribute('aria-label',first+' crossed with '+second+'. Expected offspring: '+p.cells.join(', ')+'.');
@@ -168,7 +190,7 @@
     action.hidden=chosen===state.action&&model.done;
     action.textContent=chosen!==state.action?'Back to current snapshot':next?.action==='select'?'Apply modeled selection to Generation '+next.generation:next?.title||'';
     $('#rg-model-analyze').hidden=chosen!==state.action||!model.done;
-    pairs(entry,chosen!==state.action);
+    pairs(entry,chosen!==state.action);crossGate();
   }
   function metricVal(row,key){
     const c=row.counts;return key==='population'?c.total:key==='carrier'?c.carrierFraction:c.redAlleleFraction;
@@ -257,7 +279,7 @@
   }
   function advance() {
     if(viewAction!==null){viewAction=null;activePair='';renderModel();$('#rg-next').focus({preventScroll:true});return;}
-    if(model.done||!state.prediction)return;
+    if(model.done||!state.prediction||needsFirstCross())return;
     model=M.step(model);state.action=model.step;activePair='';save();render();
     announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
     if(model.done)$('#rg-model-analyze').focus({preventScroll:true});

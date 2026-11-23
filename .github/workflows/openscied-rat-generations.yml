@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'openscied-b4-rat-generations*'
+      - 'openscied-b4-rat-cross-builder.js'
       - 'assets/*rat-generations*'
       - 'tests/openscied-b4-rat-generations*'
       - '.github/workflows/openscied-rat-generations.yml'

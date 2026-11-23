@@ -81,3 +81,275 @@ dialog[id^=rg-]::backdrop{background:#101b20a8}
  @keyframes rg-arrive{from{opacity:.75;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
 }
 .rg-shared-chart svg rect.rg-chart-survived{fill:var(--surface)!important;stroke:var(--accent)!important;stroke-width:2;stroke-dasharray:4 2}
+
+/* Interactive cross: red/blue match the lesson beads, while the R/B letters,
+   border styles, and filled labels carry the same information without color. */
+.rg-cross-builder {
+  --rg-r: #9e3250;
+  --rg-r-paper: #f9e9ed;
+  --rg-b: #175b9a;
+  --rg-b-paper: #e4eefb;
+  display: grid;
+  gap: .44rem;
+  min-width: 0;
+  padding: .52rem;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-2);
+  background: color-mix(in srgb,var(--surface) 72%,var(--surface-2));
+}
+:root[data-theme=dark] .rg-cross-builder {
+  --rg-r: #f3a2b9;
+  --rg-r-paper: #3c2730;
+  --rg-b: #9ccbff;
+  --rg-b-paper: #1f3446;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) .rg-cross-builder {
+    --rg-r: #f3a2b9;
+    --rg-r-paper: #3c2730;
+    --rg-b: #9ccbff;
+    --rg-b-paper: #1f3446;
+  }
+}
+.rg-cross-builder [hidden] { display: none !important; }
+.rg-cross-builder .rg-cross-instruction {
+  margin: 0;
+  padding: .27rem .45rem;
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 3px 6px 6px 3px;
+  color: var(--ink);
+  background: var(--accent-soft);
+  font-size: .84rem;
+  line-height: 1.28;
+}
+.rg-cross-sources {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .27rem;
+  padding: .24rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.rg-cross-sources:empty { display: none; }
+.rg-cross-sources p,.rg-cross-sources h4 {
+  margin: 0;
+  font-size: .77rem;
+  font-weight: 700;
+}
+.rg-cross-source,.rg-cross-target {
+  appearance: none;
+  min-width: 0;
+  min-height: 36px;
+  gap: .21rem;
+  padding: .16rem .28rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 .84rem/1.1 var(--f-body);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.rg-cross-source {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+  box-shadow: 0 1px 0 var(--line);
+}
+.rg-cross-source:disabled { cursor: not-allowed; }
+.rg-cross-source img,.rg-cross-target img {
+  display: block;
+  flex: none;
+  width: 37px;
+  height: 25px;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.rg-cross-source[aria-pressed=true] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.rg-cross-source.is-dragging {
+  cursor: grabbing;
+  opacity: .68;
+  border-color: var(--accent);
+  box-shadow: none;
+}
+.rg-cross-builder :is(.rg-cross-source,.rg-cross-target)[data-rg-value=R] {
+  color: var(--rg-r);
+  background: var(--rg-r-paper);
+  border-color: var(--rg-r);
+}
+.rg-cross-builder :is(.rg-cross-source,.rg-cross-target)[data-rg-value=B] {
+  color: var(--rg-b);
+  background: var(--rg-b-paper);
+  border-color: var(--rg-b);
+}
+.rg-cross-source:is([data-rg-value=R],[data-rg-value=B]) { min-width: 36px; font-family: var(--f-mono); }
+.rg-cross-parents {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: .32rem;
+}
+.rg-cross-parents .rg-cross-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: .21rem .26rem;
+}
+.rg-cross-target {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  border: 1px dashed var(--muted);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.rg-cross-target:disabled { cursor: not-allowed; }
+.rg-cross-target[data-rg-placed=true] { border-style: solid; }
+.rg-cross-parents .rg-cross-target[data-rg-placed=true] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.rg-cross-parents .rg-cross-target[data-rg-placed=true]::before {
+  content: "";
+  flex: 0 0 31px;
+  height: 23px;
+  background: url("assets/rat-generations-token.svg") center/contain no-repeat;
+}
+.rg-shell .rg-cross-target[data-rg-placed=true]:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.rg-cross-builder:has(.rg-cross-source[aria-pressed=true]) .rg-cross-target:not(:disabled):not([data-rg-placed=true]),
+.rg-cross-builder:has(.rg-cross-source.is-dragging) .rg-cross-target:not(:disabled):not([data-rg-placed=true]) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.rg-cross-target:is(:hover,.is-drop-active,[data-rg-over=true]):not(:disabled) {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+.rg-cross-builder :is(.rg-cross-source,.rg-cross-target):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  z-index: 1;
+}
+.rg-cross-grid {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(2.25rem,.52fr) repeat(2,minmax(0,1fr));
+  gap: .27rem;
+  align-items: stretch;
+}
+.rg-cross-headers { display: contents; }
+.rg-cross-corner {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: .19rem;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 700 .75rem/1.08 var(--f-mono);
+  overflow-wrap: anywhere;
+}
+.rg-cross-cell {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  grid-template-rows: minmax(36px,auto) minmax(1.22rem,auto);
+  align-content: start;
+  gap: .22rem;
+  padding: .27rem;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.rg-cross-cell .rg-cross-target {
+  padding: .13rem .07rem;
+  font-family: var(--f-mono);
+}
+.rg-cross-result {
+  display: block;
+  grid-column: 1/-1;
+  min-height: 1.22rem;
+  margin: 0;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: 750 .9rem/1.3 var(--f-mono);
+  text-align: center;
+  letter-spacing: .045em;
+}
+.rg-cross-result:empty { visibility: hidden; }
+.rg-cross-builder .rg-cross-feedback {
+  margin: 0;
+  min-height: 1.2em;
+  color: var(--ink);
+  font-size: .83rem;
+  line-height: 1.3;
+}
+.rg-cross-builder .rg-cross-feedback:empty { display: none; }
+.rg-cross-builder[data-rg-ready=true] { border-color: var(--accent); }
+.rg-cross-builder[data-rg-ready=true] .rg-cross-cell {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.rg-cross-builder[data-rg-ready=true] .rg-cross-feedback:not(:empty) {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: .24rem .4rem;
+  font-weight: 700;
+}
+#rg-punnett { scroll-margin-block-start: .5rem; }
+.rg-event .rg-actions:has(#rg-cross-jump:not([hidden])) {
+  min-width: 0;
+  max-width: 100%;
+  column-gap: .5rem;
+}
+#rg-cross-jump {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+#rg-cross-gate { flex: 1 0 100%; margin: 0; font-size: .82rem; }
+@media (max-width: 430px) {
+  .rg-cross-builder { padding: .35rem; gap: .35rem; }
+  .rg-cross-grid { grid-template-columns: minmax(2.1rem,.46fr) repeat(2,minmax(0,1fr)); gap: .23rem; }
+  .rg-cross-cell { gap: .17rem; padding: .19rem; }
+  .rg-cross-source,.rg-cross-target { font-size: .8rem; }
+  .rg-cross-source img,.rg-cross-target img { width: 33px; height: 23px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rg-cross-builder[data-rg-ready=true] .rg-cross-result:not(:empty) { animation: rg-cross-arrive .21s ease-out; }
+  @keyframes rg-cross-arrive {
+    from { transform: translateY(2px); opacity: .76; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+@media (forced-colors: active) {
+  .rg-cross-source[aria-pressed=true],.rg-cross-target[data-rg-placed=true] { border: 2px solid ButtonText; }
+  .rg-cross-builder[data-rg-ready=true] .rg-cross-cell { border: 2px solid Highlight; }
+}

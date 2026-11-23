@@ -69,15 +69,15 @@
   </section>
   <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
-    <p class="rg-intro">Read the event after each action. Choose a pair to inspect its cross. Each trial’s random pairings stay the same if you reload; a new trial gets new pairings.</p>
+    <p class="rg-intro">Build one Punnett square before producing Generation 2. Later crosses are optional. The assigned pairs and your placements stay the same if you reload.</p>
     <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
     <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
       <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title"></h3><p id="rg-event-explanation"></p></div>
-      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button></div>
+      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next" aria-describedby="rg-cross-gate"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button><a id="rg-cross-jump" href="#rg-punnett" hidden>Go to Punnett square</a><p id="rg-cross-gate" class="rg-muted" hidden></p></div>
     </div>
     <div class="rg-columns rg-model-grid">
       <div class="rg-panel rg-colony-panel"><h3 id="rg-colony-title">Colony</h3><div id="rg-colony"></div><p id="rg-genotype-key" class="rg-muted"><strong>Model key:</strong> RR and RB show the resistant trait. BB does not.</p><div id="rg-selection-record"></div></div>
-      <div class="rg-panel rg-pairs-panel"><h3>Look inside a cross</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-pairs"></div><div id="rg-punnett"></div></div>
+      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-pairs"></div><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div></div>
     </div>
   </section>
   <section id="rg-analyze" data-rg-step="analyze" aria-labelledby="rg-analyze-title" hidden>
@@ -139,6 +139,7 @@
 </div></footer>
 <script src="lab.js"></script>
 <script src="openscied-b4-rat-generations-logic.js"></script>
+<script src="openscied-b4-rat-cross-builder.js"></script>
 <script src="openscied-b4-rat-generations.js"></script>
 </body>
 </html>
