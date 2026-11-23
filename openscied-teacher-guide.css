@@ -12,7 +12,7 @@
 .teacher-guide-index{margin:16px 0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;scroll-margin-top:12px}
 .teacher-guide-index h2{font-size:1.2rem;line-height:1.25;margin:0 0 6px}
 .teacher-guide-index>p{color:var(--muted);margin:0 0 8px}
-:is(.teacher-guide-index-grid,.teacher-guide-index-groups){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+:is(.teacher-guide-index-grid,.teacher-guide-index-groups){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .teacher-guide-index-group{background:var(--surface-2);border-radius:10px;padding:8px 10px;min-width:0}
 .teacher-guide-index-group h3{font-size:.97rem;line-height:1.24;margin:0 0 1px}
 .teacher-guide-index-group ul{list-style:none;padding:0;margin:0}
@@ -77,3 +77,5 @@ p.teacher-guide-cue,.teacher-guide-cue>p{color:var(--muted)}
 .teacher-guide-before summary{cursor:pointer;font-weight:750;min-height:27px;color:var(--accent)}
 .teacher-guide-before[open] summary{margin-bottom:5px}
 .teacher-guide-launch{margin-top:5px}
+
+@media(min-width:681px) and (max-width:920px){:is(.teacher-guide-index-grid,.teacher-guide-index-groups){grid-template-columns:repeat(2,minmax(0,1fr))}}

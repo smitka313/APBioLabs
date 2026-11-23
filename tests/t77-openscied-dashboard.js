@@ -11,10 +11,12 @@ const assert = require('node:assert/strict');
       // Do this once, rather than removing identity from a page-init script on reload.
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      assert.deepEqual((await p.locator('.dashboard-units > section').evaluateAll(units=>units.map(unit=>unit.getAttribute('aria-labelledby')))).slice(0,3),
-        ['unit1','unit2','unit3'], 'published units are listed in curriculum order');
+      assert.deepEqual(await p.locator('.dashboard-units > section.dashboard-unit.current').evaluateAll(units=>units.map(unit=>unit.getAttribute('aria-labelledby'))),
+        ['unit1','unit2','unit3','unit4'], 'published units are listed in curriculum order');
       assert.equal(await p.locator('.dashboard-activity').first().locator('.dashboard-preview').getAttribute('href'), 'openscied-b1-migration.html');
       assert.equal(await p.locator('.dashboard-coming-soon').getAttribute('open'), null);
+      assert.equal(await p.locator('.dashboard-coming-soon summary').innerText(), 'Coming soon: Unit 5');
+      assert.deepEqual(await p.locator('.dashboard-coming-soon section').evaluateAll(units=>units.map(unit=>unit.getAttribute('aria-labelledby'))), ['unit5']);
       const theme = p.getByRole('group', { name: 'Color theme', exact: true });
       assert.equal(await theme.count(), 1);
       const palette = () => p.evaluate(() => ({
