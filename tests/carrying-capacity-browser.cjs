@@ -127,7 +127,7 @@ async function visualSweep(browser, url) {
       await shot(p, cfg.name + '-round-12');
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' Run');
       await go(p, 'evidence');
-      check(await fit(p, '#cc-field-chart svg'), cfg.name + ': published evidence plot stays on screen horizontally');
+      check(await fit(p, '#cc-field-chart svg[role="img"]'), cfg.name + ': published evidence plot stays on screen horizontally');
       await p.locator('#cc-field-chart').scrollIntoViewIfNeeded();
       await shot(p, cfg.name + '-evidence', true);
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' evidence');
@@ -170,7 +170,7 @@ async function followWorkflow(browser, url) {
       survived === Math.min(start, grass) && births === Math.floor(survived / 2) &&
       deaths === start - survived && end === survived + births),
     'early simulated UI counts honor the feeding, survival and reproduction rules');
-    check(await fit(p, '#cc-chart svg'), 'simulated run chart is available as well as its table');
+    check(await fit(p, '#cc-chart svg[role="img"]'), 'simulated run chart is available as well as its table');
 
     await p.locator('#cc-finish').click();
     await rounds(p, 12);
@@ -203,8 +203,23 @@ async function followWorkflow(browser, url) {
     check((await p.locator('#cc-feedback').textContent()).trim() !== first,
       'rechecking changes the written feedback');
     await go(p, 'evidence');
-    check(await fit(p, '#cc-field-chart svg') && await p.locator('#cc-field-data').isVisible(),
+    check(await fit(p, '#cc-field-chart svg[role="img"]') && await p.locator('#cc-field-data').isVisible(),
       'published evidence has a distinct chart and data presentation');
+    await p.locator('input[name="cc-check-field"][value="yes"]').check();
+    await p.locator('#cc-check-field-answer').click();
+    check(/counts alone/.test(await p.locator('#cc-field-feedback').textContent()),
+      'a claim that the graph proves its cause gets corrective feedback');
+    await p.locator('input[name="cc-check-field"][value="no"]').check();
+    await p.locator('#cc-check-field-answer').click();
+    check(/separate evidence/.test(await p.locator('#cc-field-feedback').textContent()),
+      'the evidence check explains why the graph alone does not establish a cause');
+    await p.locator('.cc-rate summary').click();
+    await p.locator('#cc-rate-reveal').click();
+    check(/73,540 wildebeest per year/.test(await p.locator('#cc-rate-answer').textContent()),
+      'the 1961–1977 interval uses elapsed years and published endpoints');
+    await p.locator('#cc-interval').selectOption('1');
+    check(await p.locator('#cc-rate-answer').isHidden(),
+      'selecting a new time interval hides the previous calculation');
     await go(p, 'explain');
     await p.locator('#cc-claim').fill(TEXT.claim);
     await go(p, 'run');
