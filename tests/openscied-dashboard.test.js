@@ -154,6 +154,25 @@ test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustratio
   assert.ok((preview.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>12, 'the asset contains the actual vector drawing');
 });
 
+test('DNA Workshop comes before DNA Copying and saves a resumable local practice record', async () => {
+  const p = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
+  const unit = p.split('aria-labelledby="unit3">')[1]?.split('</section>')[0] || '';
+  assert.deepEqual([...unit.matchAll(/class="dashboard-preview" href="([^"]+)"/g)].map(m=>m[1]),[
+    'openscied-b3-cell-cycle.html','openscied-b3-dna-workshop.html','openscied-b3-dna-p53.html','openscied-b3-inheritance-environment.html'
+  ]);
+  const key='aplab:openscied:b3-dna-workshop:v1';
+  const raw=JSON.stringify({v:1,step:'copy',progress:{v:1,placed:{'pair-1':'A','pair-2':'C'}},answers:{build:'One new strand.'},lastVisitedAt:1800000000000});
+  const s=setup(false,{[key]:raw});
+  assert.equal(s.el('#dna-workshop-progress').textContent,'2 pieces placed · 1 response saved');
+  assert.equal(s.el('#dna-workshop-open').href,'openscied-b3-dna-workshop.html#copy');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b3-dna-workshop.html#copy');
+  s.el('#dna-workshop-reset').fire('click');
+  s.el('#backup-before-openscied-clear').fire('click');
+  const payload=JSON.parse(await s.blob().text());
+  assert.deepEqual(payload.work,{[key]:raw});
+  assert.equal(payload.responses['dna-workshop'].build,'One new strand.');
+});
+
 test('Unit 4 publishes the Hawksbeard Wind Lab, leaving only Unit 5 under Coming soon', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';

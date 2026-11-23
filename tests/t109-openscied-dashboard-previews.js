@@ -9,7 +9,7 @@ const MIGRATION_PREVIEW = 'assets/migration-explorer-preview.svg';
 const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
-const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
+const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
 const UNIT4 = ['openscied-b4-hawksbeard.html'];
 const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
 (async () => {
@@ -29,7 +29,7 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       T.ok(JSON.stringify(units) === JSON.stringify(['unit1','unit2','unit3','unit4']), width + ' px: all published units appear in curriculum order');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, and Serengeti Board Game');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
-      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 order unchanged');
+      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: DNA Workshop immediately precedes DNA Copying and p53 in Unit 3');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit4"]')) === JSON.stringify(UNIT4), width + ' px: Unit 4 links to the Hawksbeard Wind Lab');
       const serengetiImage = p.locator('img[src="'+SERENGETI_PREVIEW+'"]');
       await serengetiImage.scrollIntoViewIfNeeded(); // Trigger lazy loading below the fold.
@@ -40,6 +40,9 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},CARRYING_PREVIEW,{timeout:10000});
       await p.locator('img[src="'+HAWKSBEARD_PREVIEW+'"]').scrollIntoViewIfNeeded();
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},HAWKSBEARD_PREVIEW,{timeout:10000});
+      const workshopImage=p.locator('img[src="assets/dna-workshop-preview.svg"]');
+      await workshopImage.scrollIntoViewIfNeeded();
+      await workshopImage.evaluate(img=>img.decode());
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
         const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
@@ -56,7 +59,7 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 11 && svgCards.length === 7 && m.filter(x=>x.img).length === 4, width + ' px: eleven cards: seven inline illustrations and four linked SVG illustrations');
+      T.ok(m.length === 12 && svgCards.length === 7 && m.filter(x=>x.img).length === 5, width + ' px: twelve cards: seven inline illustrations and five linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
@@ -76,6 +79,10 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         hawksbeard.img.widthAttr==='960' && hawksbeard.img.heightAttr==='600' &&
         /^Open Hawksbeard Wind Lab/.test(hawksbeard.label) && hawksbeard.label.length>40,
         width + ' px: the Hawksbeard illustration loads at the reserved size and its link has a descriptive accessible name');
+      const workshop=m.find(x=>x.img?.src==='assets/dna-workshop-preview.svg');
+      T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
+        workshop.img.alt==='' && /^Open DNA Workshop/.test(workshop.label),
+        width + ' px: DNA Workshop has its original illustrated and named preview');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
       T.ok(m.every(x => x.sim && /Simulated|Illustrative map|Model \+ field data/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the accurate source/illustration tag are HTML text');
       T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');

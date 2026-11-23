@@ -1,0 +1,31 @@
+name: DNA Workshop
+on:
+  pull_request:
+    paths:
+      - 'openscied-b3-dna-workshop*'
+      - 'assets/*dna-workshop*'
+      - 'tests/openscied-b3-dna-workshop*'
+      - '.github/workflows/openscied-dna-workshop.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dna-workshop-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-b3-dna-workshop-logic.test.js tests/openscied-teacher-guide.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b3-dna-workshop-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-dna-workshop-viewports
+          path: artifacts/openscied-dna-workshop/
+          if-no-files-found: ignore
