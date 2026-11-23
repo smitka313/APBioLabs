@@ -12,8 +12,12 @@
 <link rel="stylesheet" href="serengeti-card-view.css">
 <link rel="stylesheet" href="serengeti-dice-view.css">
 <link rel="stylesheet" href="serengeti-field-report.css">
+<link rel="stylesheet" href="serengeti-surround.css">
+<link rel="stylesheet" href="serengeti-concept-view.css">
 <script defer src="serengeti-logic.js"></script>
 <script defer src="serengeti-turn-explainer.js"></script>
+<script defer src="serengeti-concept-checks.js"></script>
+<script defer src="serengeti-concept-view.js"></script>
 <script defer src="serengeti-scene.js"></script>
 <script defer src="serengeti-dice-view.js"></script>
 <script defer src="serengeti-field-report.js"></script>
@@ -82,6 +86,7 @@
         <div id="sg-interactive"></div>
         <div id="sg-dice" class="sg-dice" hidden></div>
         <div id="sg-actions" class="sg-actions"></div>
+        <button type="button" class="sg-plain sg-concept-cue" data-concept-cue aria-controls="sg-concept" hidden>Quick check available ↓</button>
         <section class="sg-turn-update" id="sg-board-latest" aria-labelledby="sg-update-title">
           <header class="sg-update-head">
             <h3 id="sg-update-title" class="sg-kicker">Turn update</h3>
@@ -94,6 +99,10 @@
           </dl>
         </section>
         <p id="sg-turn-note" class="sg-turn-note"></p>
+        <details class="sg-concept" id="sg-concept" hidden>
+          <summary><strong>Quick concept check</strong><span class="sg-concept-status"></span></summary>
+          <div class="sg-concept-body"></div>
+        </details>
         </section>
       </div>
     </div>
@@ -150,6 +159,7 @@
         <div id="sg-expanded-dice" class="sg-dice" hidden></div>
         <div id="sg-expanded-options"></div>
         <div id="sg-expanded-actions" class="sg-actions"></div>
+        <button type="button" class="sg-plain sg-concept-cue" data-concept-cue aria-controls="sg-expanded-concept" hidden>Quick check available ↓</button>
         <section class="sg-turn-update sg-expanded-last" id="sg-expanded-last" aria-labelledby="sg-expanded-update-title">
           <header class="sg-update-head"><h4 id="sg-expanded-update-title" class="sg-kicker">Turn update</h4></header>
           <dl class="sg-update-list">
@@ -159,6 +169,10 @@
           </dl>
         </section>
         <div id="sg-expanded-reading" hidden></div>
+        <details class="sg-concept" id="sg-expanded-concept" hidden>
+          <summary><strong>Quick concept check</strong><span class="sg-concept-status"></span></summary>
+          <div class="sg-concept-body"></div>
+        </details>
         <details id="sg-expanded-details" class="sg-expanded-details">
           <summary id="sg-expanded-summary">Turn instructions</summary>
           <div id="sg-expanded-context"></div>
@@ -175,7 +189,7 @@
     <li>Set up the board in winter. At the start of spring, summer and fall, the surviving wildebeest migrate. Each token normally touches another along a side.</li>
     <li>Wildebeest, hyenas and lions each draw a card in that order. Read and apply the result, even if it affects another agent.</li>
     <li>Hyenas hunt, then lions hunt where eligible. Sort the dice high to low; matching dice compete. The lower die is removed, ties and unmatched dice remain. Reroll only surviving dice until one side has none.</li>
-    <li>Record what changes for all roles. After fall, compare your evidence across seasons.</li>
+    <li>Record what changes for all roles. Try the quick concept check that appears each season. After fall, compare your evidence across seasons.</li>
   </ol>
   <p class="sg-teacher-scope"><strong>For teachers:</strong> This one-year model tracks migration, event cards and hunts. It does not model wildebeest births, resource supply, prey-dependent changes in predator populations, or carrying capacity.</p>
   <p><a href="https://youtu.be/6-ooaGN1lSk" target="_blank" rel="noopener noreferrer">OpenSciEd’s game walkthrough (opens in a new tab)</a></p>

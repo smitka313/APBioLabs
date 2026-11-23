@@ -24,6 +24,34 @@ const xy=c=>c.x+':'+c.y;
     await restore(state);
     await page.locator('#sg-options').selectOption(formation.id);
     const map=page.locator('#sg-scene .sg-map');
+    const verifyTurnLabels=async season=>{
+      const labels=await map.evaluate((svg,active)=>{
+        const frame=svg.getBoundingClientRect();
+        const tiles=[...svg.querySelectorAll('[data-cell]')].map(e=>e.getBoundingClientRect());
+        const grid={left:Math.min(...tiles.map(e=>e.left)),right:Math.max(...tiles.map(e=>e.right)),bottom:Math.max(...tiles.map(e=>e.bottom))};
+        const inside=e=>e.x>=frame.x-.01&&e.right<=frame.right+.01&&e.y>=frame.y-.01&&e.bottom<=frame.bottom+.01;
+        const keys=[...svg.querySelectorAll('[data-turn-kind="key"]')].map(e=>{
+          const t=e.querySelector('text'), rect=t.getBoundingClientRect(), pill=e.querySelector('rect').getBoundingClientRect();
+          return {label:t.textContent, insideFrame:inside(pill), belowGrid:pill.top>=grid.bottom,
+            insidePill:rect.left>=pill.left&&rect.right<=pill.right&&rect.top>=pill.top&&rect.bottom<=pill.bottom,
+            readable:rect.height>=8, active:e.getAttribute('data-current')==='true'};
+        });
+        const signs=[...svg.querySelectorAll('[data-turn-kind="sign"]')].map(e=>{
+          const circle=e.querySelector('circle').getBoundingClientRect();
+          return {insideFrame:inside(circle),outsideGrid:circle.right<=grid.left||circle.left>=grid.right,active:e.dataset.current==='true'};
+        });
+        return {keys,signs,active};
+      },season);
+      assert.deepEqual(labels.keys.map(k=>k.label),['Turn 1 · Dec–Feb','Turn 2 · Mar–May','Turn 3 · Jun–Aug','Turn 4 · Sep–Nov']);
+      assert.equal(labels.signs.length,4);
+      for(const [i,k] of labels.keys.entries()){
+        assert.ok(k.insideFrame&&k.belowGrid&&k.insidePill&&k.readable,'turn '+(i+1)+' label must fit its pill and stay outside the grid');
+        assert.equal(k.active,i===labels.active);
+        assert.ok(labels.signs[i].insideFrame&&labels.signs[i].outsideGrid,'range sign stays inside the outer frame and outside playable squares');
+        assert.equal(labels.signs[i].active,i===labels.active);
+      }
+    };
+    await verifyTurnLabels(1);
     const preview=map.locator('[data-map-route="preview"]');
     assert.equal(await preview.count(),1);
     const before=state.tokens.filter(t=>t.species==='wildebeest');
@@ -39,6 +67,12 @@ const xy=c=>c.x+':'+c.y;
     await page.locator('#sg-next[data-action="migrate"]').click();
     assert.deepEqual(await hops(map.locator('[data-map-route="committed"]')),expected,'committed route shows the same genuine representative moves with reduced motion');
     assert.match(await page.locator('#sg-map-proximity').textContent(),/At this range/);
+    await page.locator('#sg-board-open').click();
+    const expanded=page.locator('#sg-board-dialog');
+    await expanded.waitFor();
+    await verifyTurnLabels(1);
+    await expanded.locator('#sg-board-close').click();
+    await expanded.waitFor({state:'hidden'});
     state=L.act(L.create(256),{type:'migrate'});
     const prey=state.tokens.find(t=>t.species==='wildebeest'&&t.type==='smallGroup');
     const predator=state.tokens.find(t=>t.species==='hyena'&&t.type==='individual');

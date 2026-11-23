@@ -226,7 +226,12 @@
       .sg-map .sg-map-region{paint-order:stroke;stroke:#ead6ad;stroke-width:2.3;stroke-linejoin:round;font:700 11px var(--font,system-ui,sans-serif);letter-spacing:.9px}
       .sg-map .sg-map-specimen{fill:#4b3e2c;font:800 7.8px var(--font,system-ui,sans-serif);letter-spacing:1px}
       .sg-map .sg-map-small{font-size:8.8px;letter-spacing:.38px}
-      .sg-map .sg-map-turn{font:850 9px var(--font,system-ui,sans-serif);letter-spacing:.55px}
+      .sg-map .sg-map-turn{font:850 11.7px var(--font,system-ui,sans-serif)}
+      .sg-map .sg-map-turn-num{font:900 11px var(--font,system-ui,sans-serif)}
+      .sg-map [data-turn]{pointer-events:none}
+      .sg-map [data-turn][data-current="true"] rect,.sg-map [data-turn][data-current="true"] circle{fill:#293f32;stroke:#293f32;stroke-width:1.65}
+      .sg-map [data-turn][data-current="true"] text{fill:#fff4d6}
+      .sg-map [data-turn][data-current="true"] [data-turn-tab]{opacity:1}
       .sg-map .sg-map-axis{font:750 8px var(--font,system-ui,sans-serif)}
       .sg-map .sg-map-hit{fill:transparent;outline:none;touch-action:manipulation}
       .sg-map .sg-map-hit[data-legal="true"]{cursor:pointer}
@@ -254,8 +259,32 @@
     const outlines=GRAZING.map((_,s)=>`<path class="sg-map-grazing" data-grazing="${s}" d="${perimeter(c=>c.season===s)}" fill="none" stroke="${PALETTES[s][1]}" stroke-width="2.3" stroke-linecap="square" stroke-linejoin="round" opacity=".8"/>`).join('');
     const cellAxes=Array.from({length:COLS},(_,x)=>`<text x="${LEFT+(x+.5)*UNIT}" y="23" text-anchor="middle">${x+1}</text>`).join('')
       +Array.from({length:ROWS},(_,y)=>`<text x="22" y="${TOP+(y+.5)*UNIT+2.5}" text-anchor="middle">${y+1}</text>`).join('');
-    const turnLabels=[[290,608],[121,403],[62,184],[266,75]].map(([x,y],s)=>`
-      <g data-turn="${s}" transform="translate(${x} ${y})"><rect x="-2" y="-9" width="77" height="13" rx="6.5" fill="#efe0bc" fill-opacity=".96" stroke="${PALETTES[s][1]}" stroke-width=".85"/><text x="36" y="0" text-anchor="middle" fill="#293326" class="sg-map-turn">TURN ${s+1} · ${MONTHS[s]}</text></g>`).join('');
+    // The full date key is part of the frame, never the playable grid. The gutter
+    // signs match its turn numbers and point to the true outline of each region.
+    const turnLabels=MONTHS.map((months,s)=>{
+      const x=16+s*122.3;
+      return `<g data-turn="${s}" data-turn-kind="key" transform="translate(${x} 600)">
+        <rect width="121" height="18" rx="5" fill="#f6e7c5" stroke="${PALETTES[s][1]}" stroke-width=".85"/>
+        <path data-turn-tab="" d="M6 6.5v5l4-2.5Z" fill="#fff4d6" opacity="0"/>
+        <text x="62" y="12.8" text-anchor="middle" fill="#293326" class="sg-map-turn">Turn ${s+1} · ${months}</text>
+      </g>`;
+    }).join('');
+    const signs=[
+      [504,556.5,409,556.5], // Turn 1: east edge of the southern range.
+      [15,354,139,361],      // Turn 2: west edge of the central range.
+      [15,219,31,220.5],     // Turn 3: western edge at the map border.
+      [504,178.5,490,178.5]  // Turn 4: northeastern edge at the map border.
+    ];
+    const leaderLines=signs.map(([x,y,edgeX,edgeY],s)=>{
+      const d=`M${x} ${y}L${edgeX} ${edgeY}`;
+      return `<g aria-hidden="true" data-season-leader="${s}"><path d="${d}" stroke="#efe0bc" stroke-width="3" stroke-linecap="round"/>
+        <path d="${d}" stroke="${PALETTES[s][1]}" stroke-width="1.3" stroke-dasharray="3 2" stroke-linecap="round"/>
+        <circle cx="${edgeX}" cy="${edgeY}" r="2.5" fill="${PALETTES[s][1]}" stroke="#f6e7c5" stroke-width=".85"/></g>`;
+    }).join('');
+    const turnSigns=signs.map(([x,y],s)=>`<g data-turn="${s}" data-turn-kind="sign" transform="translate(${x} ${y})">
+      <circle r="7.5" fill="#f6e7c5" stroke="${PALETTES[s][1]}" stroke-width="1.2"/>
+      <text x="0" y="3.9" text-anchor="middle" fill="#293326" class="sg-map-turn-num">${s+1}</text>
+    </g>`).join('');
     const placeLabels=`<g fill="#675139" class="sg-map-region">
       <text x="121" y="330">SERENGETI</text><text x="121" y="344">NATIONAL PARK</text>
       <text x="56" y="376" font-size="9" letter-spacing="1.4">T A N Z A N I A</text>
@@ -268,12 +297,12 @@
     </g>`;
     svg.innerHTML=defs(id)+`<g aria-hidden="true">${backdrop}${landscape(id)}<rect x="31" y="30" width="459" height="567" data-season-wash="bg" fill="none" opacity=".11"/>${grazing}${territories}${geography(id)}
       <path d="${grid}" stroke="#736247" stroke-width=".63" stroke-opacity=".44" fill="none"/>${outlines}${placeLabels}
-      <g fill="#5d4a36" class="sg-map-axis">${cellAxes}</g>${turnLabels}
+      <g fill="#5d4a36" class="sg-map-axis">${cellAxes}</g>${leaderLines}${turnSigns}${turnLabels}
       <g transform="translate(56 558)" fill="#4b422d" stroke="#4b422d"><path d="M0 15V0m-4 7 4-7 4 7M-6 15h12" stroke-width=".9" fill="none"/><text x="0" y="-3" text-anchor="middle" font-size="7" font-weight="800" stroke="none">N</text></g>
       <g transform="translate(67 578)" stroke="#645039" fill="#645039"><path d="M0 -2v4m0-2h27m0-2v4" stroke-width=".9"/><text x="13.5" y="9" text-anchor="middle" font-size="7" stroke="none">6 miles</text></g>
-      <g transform="translate(35 608)" fill="#5e4932" font-size="7.1" font-weight="700">
+      <g transform="translate(101 560)" fill="#5e4932" font-size="7.1" font-weight="700">
         <path d="M0 -2h13" stroke="#88442e" stroke-width="1.4"/><text x="17">Unfenced road</text>
-        <path d="M80 -2h13" stroke="#72432e" stroke-width="1.4" stroke-dasharray="2 1.6"/><text x="98">Fenced road</text></g>
+        <path d="M0 8h13" stroke="#72432e" stroke-width="1.4" stroke-dasharray="2 1.6"/><text x="17" y="10">Fenced road</text></g>
       <g data-layer="range-caption"></g><g data-layer="flood"></g><g data-layer="choices"></g><g data-layer="route"></g><g data-layer="route-caption"></g><g data-layer="hunt-link"></g>
       <g data-layer="effects"></g><g data-layer="tokens"></g><g data-layer="selected"></g><g data-layer="recent"></g><g data-layer="hunt-dice"></g></g>`;
     const targets=svgEl('g',{'aria-label':'Map squares'});
@@ -503,9 +532,7 @@
         ],{duration:460,easing:'ease-out'});
       }
       for(const el of svg.querySelectorAll('[data-turn]')){
-        const current=active===Number(el.getAttribute('data-turn'));
-        el.firstElementChild.setAttribute('stroke-width',current?'1.7':'.85');
-        el.firstElementChild.setAttribute('fill',current&&view.stage==='migration'?'#e4de9a':'#efe0bc');
+        el.setAttribute('data-current',String(active===Number(el.getAttribute('data-turn'))));
       }
       const byCell=new Map();
       for(const t of Array.isArray(view.tokens)?view.tokens:[]) {

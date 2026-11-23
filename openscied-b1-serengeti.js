@@ -24,7 +24,7 @@
   let currentMoveToken = '', scene = null, currentOptions = [], currentPhase = '';
   // UI-only metadata. The engine action log and random state are not modified.
   let huntReview = null, huntStart = null, decision = null, cardChangedCells = [];
-  let huntDetails = Object.create(null);
+  let huntDetails = Object.create(null), conceptProgress = {};
   const app = qs('#sg-play'), shape = qs('#sg-scene');
   const resetConfirm = qs('#sg-confirm'), instructions = qs('#sg-instructions');
   const sameCell = (a,b) => Boolean(a && b && a.x === b.x && a.y === b.y);
@@ -165,6 +165,7 @@
         if (payload.answers && typeof payload.answers[key] === 'string') answers[key] = payload.answers[key].slice(0, 750);
       });
       if (['play','evidence','analyze'].includes(payload.page)) page = payload.page;
+      conceptProgress = state ? window.SerengetiChecks?.restore(payload.conceptProgress) || {} : {};
       if(state && payload.huntDetails && typeof payload.huntDetails==='object'){
         for(const [i,message] of Object.entries(payload.huntDetails)){
           if(state.log[Number(i)]?.kind==='hunt'&&typeof message==='string')huntDetails[i]=message.slice(0,560);
@@ -185,6 +186,14 @@
     if (originalSave !== null) preserveRaw = true;
     else saveUnavailable = true;
   }
+  const conceptView = window.SerengetiConceptView?.mount([qs('#sg-concept'),qs('#sg-expanded-concept')], (progress,message,panel)=>{
+    conceptProgress=progress;
+    save();
+    if(panel.id==='sg-expanded-concept') {
+      const live=qs('#sg-expanded-announcement');
+      if(live)live.textContent=message;
+    }else say(message);
+  });
   let sample = L.create(32737);
   if (window.SerengetiScene && typeof window.SerengetiScene.mount === 'function') {
     try { scene = window.SerengetiScene.mount(shape, {onCell: selectByCell, onCancel: clearBoardSelection}); } catch (_) { scene = null; }
@@ -205,7 +214,7 @@
     qs('#sg-recover').hidden = true;
     qs('#sg-save-warning').hidden = true;
     try {
-      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails,turnDecision:decision}));
+      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress}));
       saveUnavailable = false;
     } catch (_) { saveUnavailable = true; }
     qs('#sg-save').textContent = saveUnavailable ? 'This browser blocked saving. Download your work before closing.' : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
@@ -555,6 +564,7 @@
       else totals.replaceChildren(headline,compareCards(summary));
     } else updateFieldReport('sg-finish-report',false);
     if (page !== 'play') renderEvidence();
+    conceptView?.update(state,p,conceptProgress);
     notifyTurn();
   }
   function travelChooser(options,tokens) {
@@ -769,7 +779,7 @@
       catch (_) { say('Restart could not replace this save. The previous data is still preserved.'); return; }
     }
     state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK();
-    huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[];
+    huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[]; conceptProgress={};
     preserveRaw=false; originalSave=null;
     Object.keys(fields).forEach(k=>{qs(fields[k]).value='';});
     qs('#sg-download-status').textContent = '';
