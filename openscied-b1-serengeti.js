@@ -21,10 +21,60 @@
   const freshSeed = () => window.crypto && window.crypto.getRandomValues ? window.crypto.getRandomValues(new Uint32Array(1))[0] : Date.now() >>> 0;
   const roleName = role => LABEL[role] || 'All roles';
   let state = null, answers = BLANK(), saveUnavailable = false, preserveRaw = false, page = 'play', optionId = '', chosenPhase = '';
-  let currentMoveToken = '', lastLogLength = 0, scene = null, currentOptions = [];
+  let currentMoveToken = '', lastLogLength = 0, scene = null, currentOptions = [], currentPhase = '';
   const app = qs('#sg-play'), shape = qs('#sg-scene');
   const resetConfirm = qs('#sg-confirm'), instructions = qs('#sg-instructions');
+  const sameCell = (a,b) => Boolean(a && b && a.x === b.x && a.y === b.y);
   const currentCellOptions = x => x && (x.to || x.cell || x.position || (x.cells && x.cells[0]));
+  const moving = o => Boolean(o.tokenId && o.to);
+  const cellKey = c => c.x + ':' + c.y;
+  const describeToken = t => (SINGULAR[t.species] || 'Animal') + ' ' + tokenType(t.type).toLowerCase();
+
+  // The official migration rule moves the survivors as a formation. Assign each legal
+  // plan a distinct map marker when available; show all its squares once chosen.
+  function planMarkers(options) {
+    const matched = new Map();
+    function assign(o, seen) {
+      for (const c of o.cells || []) {
+        const k = cellKey(c);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const existing = matched.get(k);
+        if (!existing || assign(existing.option, seen)) {
+          matched.set(k, {option:o, cell:c});
+          return true;
+        }
+      }
+      return false;
+    }
+    options.slice().reverse().forEach(o => assign(o, new Set()));
+    return Array.from(matched.values());
+  }
+  function mapChoices(tokens) {
+    const sources = [];
+    const legal = [];
+    const byId = new Map(tokens.map(t => [t.id,t]));
+    if (currentPhase === 'migration') {
+      planMarkers(currentOptions).forEach(({option,cell}) => legal.push({option,cell}));
+    } else {
+      const seen = new Set();
+      for (const option of currentOptions) {
+        if (moving(option)) {
+          const token = byId.get(option.tokenId);
+          if (token && !seen.has(token.id)) {
+            sources.push(token); seen.add(token.id);
+          }
+          if (currentMoveToken === option.tokenId) legal.push({option,cell:option.to});
+        } else {
+          const cell = currentCellOptions(option) || byId.get(option.tokenId)?.cell;
+          if (cell) legal.push({option,cell});
+        }
+      }
+    }
+    return {sources,legal,byId};
+  }
+  const notifyTurn = () => app.dispatchEvent(new CustomEvent('sg:turnchange',{bubbles:true}));
+
 
   // This preview save has its own namespace and never stores a student's name.
   let originalSave = null;
@@ -49,7 +99,7 @@
   }
   let sample = L.create(32737);
   if (window.SerengetiScene && typeof window.SerengetiScene.mount === 'function') {
-    try { scene = window.SerengetiScene.mount(shape, {onCell: selectByCell}); } catch (_) { scene = null; }
+    try { scene = window.SerengetiScene.mount(shape, {onCell: selectByCell, onCancel: clearBoardSelection}); } catch (_) { scene = null; }
   }
   if (!scene) {
     shape.classList.add('sg-no-scene');
@@ -88,21 +138,36 @@
     }
     save();
   }
+  function clearBoardSelection() {
+    if (!currentMoveToken && !optionId) return;
+    currentMoveToken = ''; optionId = '';
+    paint(false);
+    say('Selection cleared.');
+  }
   function selectByCell(x,y) {
     if (!state) return;
-    if (x && typeof x === 'object') { y = x.y; x = x.x; }
-    const g = currentOptions.find(o => {
-      const cell = currentCellOptions(o);
-      const token = state.tokens.find(t => t.id === o.tokenId);
-      return cell ? cell.x === x && cell.y === y : token && token.cell.x === x && token.cell.y === y;
-    });
-    if (!g) return;
-    optionId = g.id;
-    currentMoveToken = g.tokenId || '';
+    const cell = x && typeof x === 'object' ? x : {x,y};
+    const {sources,legal} = mapChoices(state.tokens);
+    const source = sources.find(t => sameCell(cell, t.cell));
+    if (source) {
+      if (currentMoveToken === source.id) { clearBoardSelection(); return; }
+      currentMoveToken = source.id;
+      optionId = '';
+      paint(false);
+      const total = currentOptions.filter(o=>moving(o) && o.tokenId===source.id).length;
+      say(describeToken(source) + ' selected. Choose a marked square. ' + total + ' available.');
+      return;
+    }
+    const choice = legal.find(entry => sameCell(cell,entry.cell))?.option;
+    if (!choice) return;
+    if (moving(choice) && choice.tokenId === currentMoveToken) {
+      run(currentPhase === 'card' ? 'resolveCard' : 'movePredator', choice.id);
+      return;
+    }
+    optionId = choice.id;
+    currentMoveToken = '';
     paint(false);
-    const input = qs('#sg-options');
-    if (input) input.focus({preventScroll:true});
-    say('Selected ' + g.label + '. Confirm with the turn button.');
+    say('Selected ' + choice.label + '. Confirm with the turn button.');
   }
   function button(id, label, invoke, tone, actionType) {
     const b = node('button', tone || 'sg-cta', label);
@@ -121,6 +186,7 @@
     if (!state || state === before) { state = before; say('That move is not available now.'); return; }
     optionId = ''; currentMoveToken = '';
     save();
+    if (type==='roll') window.SerengetiDice?.markRoll();
     paint(true);
     if (focused && /^sg-(start|next|move)/.test(focused)) {
       const next = qs('#sg-next') || qs('#sg-action-title');
@@ -154,6 +220,7 @@
     const season = Number.isInteger(st.season) ? st.season : 0;
     const key = [p.kind, season, activeRole, p.card && p.card.id].join(':');
     if (chosenPhase !== key) { optionId = ''; currentMoveToken = ''; chosenPhase = key; }
+    currentPhase = p.kind;
     currentOptions = Array.isArray(p.options) ? p.options : [];
 
     const seasonStrip = qs('#sg-season-strip');
@@ -175,21 +242,42 @@
     qs('#sg-metrics').replaceChildren(...[['Wildebeest tokens',currentPrey.length],['Individuals',currentPrey.filter(t=>t.type==='individual').length],['Small groups',currentPrey.filter(t=>t.type==='smallGroup').length],['Herds',currentPrey.filter(t=>t.type==='herd').length]].map(([label,count]) => {
       const v = node('div','sg-stat'); v.append(node('strong','',count),node('span','',label)); return v;
     }));
-    const legalCells = currentOptions.map(o => currentCellOptions(o) || (tokens.find(t => t.id === o.tokenId) || {}).cell).filter(Boolean);
+    const map = mapChoices(tokens);
     const selected = currentOptions.find(o => o.id === optionId);
+    const source = map.byId.get(currentMoveToken);
+    const optionMarker = map.legal.find(e=>e.option === selected)?.cell;
+    const selectedCells = selected?.cells || [];
+    const selectedCell = optionMarker || currentCellOptions(selected) || map.byId.get(selected?.tokenId)?.cell;
     const battle = p.battle || st.battle;
     const lastBattle = last && last.kind === 'hunt' ? st.lastBattle : null;
     const pos = battle && (tokens.find(t => t.id === battle.preyId) || {}).cell;
     const predPos = battle && (tokens.find(t => t.id === battle.predatorId) || {}).cell;
-    qs('#sg-board-access').textContent = p.kind === 'hunt' && battle ? 'The highlighted wildebeest token is involved in the current hunt.' : currentOptions.length ? 'Choose a marked square or use the turn controls.' : 'Each token’s marker identifies the type of group.';
+    qs('#sg-board-access').textContent = p.kind === 'hunt' && battle ? 'The highlighted wildebeest token is involved in the current hunt.'
+      : source ? describeToken(source) + ' selected. Choose a dashed destination to move it. Select the piece again or press Escape to clear.'
+      : map.sources.length ? 'Select an outlined piece, then choose a dashed destination. You can also use the move list.'
+      : p.kind === 'migration' && map.legal.length ? 'Choose a dashed marker to preview a herd placement, then confirm below.'
+      : map.legal.length ? 'Choose a marked square or use the turn controls.'
+      : 'Each token’s marker identifies the type of group.';
     if (scene) scene.update({stage:p.kind, season, tokens, predatorPosition:predPos, herd:currentPrey.filter(t=>t.type==='herd').length,
-      legalCells, selected:currentCellOptions(selected), position:pos, wet:season===0 || season===1,
+      legalCells:map.legal.map(e=>e.cell), sourceCells:map.sources.map(t=>t.cell), selectedTokenId:source?.id,
+      selected:selectedCell, selectedCells, position:pos, wet:season===0 || season===1,
       grass:currentPrey.length, reveal:p.kind === 'hunt'});
     const interact = qs('#sg-interactive'), actions = qs('#sg-actions'), dice = qs('#sg-dice');
-    interact.replaceChildren(); actions.replaceChildren(); dice.replaceChildren(); dice.hidden = true;
+    interact.replaceChildren(); actions.replaceChildren();
+    let showedDice = false;
+    const showDice = (details, species, finished) => {
+      showedDice = Boolean(details);
+      if (window.SerengetiDice) window.SerengetiDice.render(dice,{battle:details,species,finished,season});
+      else { dice.replaceChildren(); paintDice(details,species,dice,finished); }
+    };
     app.dataset.phase = p.kind;
     let title = '', desc = '', phaseLabel = '', note = '';
-    const advance = (label,type) => actions.append(button('sg-next',label,()=>run(type, optionId),null,type));
+    const chooseDestination = Boolean(source && !optionId);
+    const advance = (label,type) => {
+      const next=button('sg-next',label,()=>run(type, optionId),null,type);
+      if (type === 'resolveCard') next.disabled = chooseDestination;
+      actions.append(next);
+    };
 
     if (p.kind === 'setup') {
       phaseLabel = 'Set up'; title = 'One device, three roles';
@@ -209,6 +297,7 @@
       desc = p.card ? 'Apply this event even when it affects a different role.' : 'Pass the device to this role to reveal the next event.';
       if (p.card) {
         const c = node('article','sg-card');
+        c.dataset.cardId = p.card.id; c.dataset.cardRole = activeRole; c.dataset.cardSeason = String(season);
         c.append(node('h3','', 'Drawn by ' + roleName(activeRole)),node('p','',p.card.text || p.card.description || p.card.body || p.card.title || ''));
         interact.append(c);
         if (currentOptions.length) interact.append(chooser(currentOptions,'Choose how to apply it'));
@@ -220,7 +309,9 @@
       desc = 'Only eligible individual or small-group tokens beside wildebeest can hunt. Clans and prides do not roll.';
       if (currentOptions.length) {
         interact.append(chooser(currentOptions,'Optional one-space move'));
-        actions.append(button('sg-move','Use selected move',()=>run('movePredator',optionId || currentOptions[0].id),'sg-plain','movePredator'));
+        const move=button('sg-move','Use selected move',()=>run('movePredator',optionId || currentOptions[0].id),'sg-plain','movePredator');
+        move.disabled=chooseDestination;
+        actions.append(move);
       }
       actions.append(button('sg-next','Begin ' + (activeRole === 'hyena' ? 'hyena' : 'lion') + ' hunts',()=>run('beginHunts'),null,'beginHunts'));
       note = 'You can leave tokens where they are and begin hunting.';
@@ -234,7 +325,7 @@
       const rounds = battle && Array.isArray(battle.rounds) ? battle.rounds : [];
       desc = [pred && tokenType(pred.type), prey && 'wildebeest ' + tokenType(prey.type).toLowerCase()].filter(Boolean).join(' against ') || 'Compare the predator and wildebeest dice, highest to lowest.';
       const showFinalRoll = lastBattle && !rounds.length;
-      paintDice(showFinalRoll ? lastBattle : battle, showFinalRoll ? last.role : species, dice, showFinalRoll);
+      showDice(showFinalRoll ? lastBattle : battle, showFinalRoll ? last.role : species, showFinalRoll);
       if (currentOptions.length) interact.append(chooser(currentOptions,'Choose the next eligible hunt'));
       advance(rounds.length ? 'Roll remaining dice' : 'Roll hunt dice','roll');
       note = 'Lower dice are removed; ties and unmatched dice stay.';
@@ -248,10 +339,15 @@
       desc = 'No one wins the game. Use the seasonal totals and the event history to explain what changed.';
       actions.append(button('sg-next','Analyze your evidence',()=>openPage('analyze',true)),button('sg-view-season','View evidence',()=>openPage('evidence',true),'sg-plain'));
     }
+    if (map.sources.length) {
+      desc += chooseDestination ? ' Tap a dashed square to move the selected piece.' : ' Tap an outlined piece to show its moves.';
+      if (chooseDestination) actions.append(button('sg-clear-piece','Clear piece selection',clearBoardSelection,'sg-plain'));
+    }
     if (lastBattle && p.kind !== 'complete' && !(battle && battle.rounds && battle.rounds.length)) {
-      if (p.kind !== 'hunt') paintDice(lastBattle, last.role, dice, true);
+      if (p.kind !== 'hunt') showDice(lastBattle, last.role, true);
       note = (outcomeText(last.winner) || last.title || 'Hunt recorded') + ' · Wildebeest ' + signed(last.change) + '. ' + note;
     }
+    if (!showedDice) { dice.hidden = true; if (dice.firstElementChild) dice.replaceChildren(); }
     qs('#sg-phase').textContent = phaseLabel;
     qs('#sg-action-title').textContent = title;
     qs('#sg-action-copy').textContent = desc;
@@ -260,6 +356,7 @@
     if (state) lastLogLength = state.log.length;
     if (announce) say(newRow ? qs('#sg-last').textContent + '. ' + title : title + '. ' + desc);
     if (page !== 'play') renderEvidence();
+    notifyTurn();
   }
   function chooser(options, title) {
     const wrap = node('label','sg-chooser',title);
@@ -273,7 +370,9 @@
     menu.addEventListener('change', () => {
       optionId = menu.value;
       const found = options.find(o => o.id === optionId);
-      currentMoveToken = found && found.tokenId || '';
+      currentMoveToken = found && moving(found) ? found.tokenId : '';
+      paint(false);
+      qs('#sg-options')?.focus({preventScroll:true});
     });
     wrap.append(menu);
     return wrap;

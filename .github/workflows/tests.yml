@@ -49,6 +49,14 @@ jobs:
       - if: matrix.shard == 1
         run: node --test tests/openscied-dashboard.test.js tests/cell-cycle-scene.test.js tests/openscied-b3-dna-p53-logic.test.js tests/openscied-b3-inheritance-logic.test.js tests/pedigree-scenes.test.js tests/openscied-b3-meiosis-skin-logic.test.js tests/openscied-b3-planner-yeast.test.js tests/openscied-b2-fires-logic.test.js tests/openscied-b2-peat-bog-logic.test.js tests/openscied-b2-burn-logic.test.js
       - run: node tests/run-all.js openscied --shard ${{ matrix.shard }}/2
+        env:
+          SERENGETI_SCREENSHOTS: test-artifacts/serengeti
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: serengeti-audit-viewports-${{ matrix.shard }}
+          path: test-artifacts/serengeti/*.png
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
