@@ -56,7 +56,7 @@ async function fits(page, selector, label) {
   check(problems.length === 0, label + ' fits the viewport: ' + problems.join(', '));
 }
 async function axe(page, label, scope) {
-  await page.addScriptTag({ path: AXE });
+  if (!await page.evaluate(() => Boolean(window.axe))) await page.addScriptTag({ path: AXE });
   const violations = await page.evaluate(async target => {
     const result = await window.axe.run(target, {
       runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
@@ -69,13 +69,108 @@ async function axe(page, label, scope) {
 async function browserContext(browser, base, viewport) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
-    colorScheme: viewport.dark ? 'dark' : 'light', reducedMotion: 'reduce'
+    colorScheme: viewport.dark ? 'dark' : 'light', reducedMotion: 'reduce',
+    hasTouch: viewport.width === 390
   });
   const origin = new URL(base).origin;
   // All exercised assets and fixtures are local; suppress remote counts/fonts.
   await context.route('**/*', route => new URL(route.request().url()).origin === origin
     ? route.continue() : route.abort());
   return context;
+}
+async function publicReading(page, viewport, label) {
+  const inventory = await page.evaluate(() => {
+    const index = document.querySelector('nav.teacher-guide-index');
+    const cards = [...document.querySelectorAll('article[data-guide-for]')];
+    const ids = new Set(cards.map(card => card.id));
+    return {
+      cards: cards.length,
+      idCount: ids.size,
+      anchors: [...(index?.querySelectorAll('a[href^="#guide-"]') || [])].map(a => a.hash.slice(1)),
+      unitAnchors: [...(index?.querySelectorAll('a[href^="#unit"]') || [])].map(a => a.hash),
+      unitSections: [...document.querySelectorAll('.ose-teacher-unit')].map(unit => '#' + unit.getAttribute('aria-labelledby')),
+      ids: [...ids],
+      summaries: cards.every(card => {
+        const detail = card.querySelector(':scope > details.teacher-guide-detail');
+        return detail && !detail.open &&
+          detail.querySelector(':scope > summary')?.textContent.trim() === 'Classroom plan' &&
+          card.querySelector('.teacher-guide-cue')?.textContent.trim() &&
+          card.querySelector('.teacher-guide-cue a[href="' + card.dataset.guideFor + '"]');
+      })
+    };
+  });
+  check(inventory.idCount === inventory.cards && inventory.ids.every(id => id.startsWith('guide-')) &&
+    new Set(inventory.anchors).size === inventory.anchors.length &&
+    inventory.anchors.length === inventory.cards && inventory.anchors.every(id => inventory.ids.includes(id)),
+    label + ' activity index links to every guide card exactly once');
+  check(inventory.unitAnchors.length > 0 &&
+    inventory.unitAnchors.join(',') === inventory.unitSections.join(','),
+    label + ' index shortcuts match the displayed unit sequence');
+  check(inventory.summaries, label + ' lesson details start closed while timing and the activity link remain visible');
+
+  if (viewport.width !== 390) return;
+  const article = page.locator('article[data-guide-for="openscied-b2-carbon-journey.html"]');
+  const lessonId = await article.getAttribute('id');
+  const jump = page.locator('nav.teacher-guide-index a[href="#' + lessonId + '"]');
+  const details = article.locator('details.teacher-guide-detail');
+  const summary = details.locator('summary');
+  const plan = details.locator('.teacher-guide-detail-body dl');
+  const openFromTop = await page.evaluate(() => document.documentElement.scrollHeight);
+
+  await jump.press('Enter');
+  await page.waitForURL(url => url.hash === '#' + lessonId);
+  check(await article.evaluate(node => {
+    const rect = node.getBoundingClientRect();
+    return rect.top >= -1 && rect.top < innerHeight &&
+      node.querySelector('summary').getBoundingClientRect().bottom < innerHeight;
+  }), 'mobile index scrolls directly to the Carbon Atom Journey card and its summary');
+  check(!await details.evaluate(el => el.open), 'jumping to a lesson does not force its details open');
+
+  // Follow normal sequential focus from the fragment, then activate the native
+  // summary with only the keyboard. Do not focus the summary programmatically.
+  for (let i = 0; i < 5 && !await summary.evaluate(el => el === document.activeElement); i++) {
+    await page.keyboard.press('Tab');
+  }
+  check(await summary.evaluate(el => el === document.activeElement),
+    'keyboard focus proceeds from the activity shortcut to its classroom plan');
+  await page.keyboard.press('Enter');
+  check(await details.evaluate(el => el.open) && await plan.isVisible(),
+    'Enter expands the classroom plan and reveals its directions');
+  await fits(page, '#' + lessonId + ', #' + lessonId + ' .teacher-guide-detail-body',
+    'mobile expanded activity card');
+  await shot(page, label + '-expanded', false);
+  await axe(page, 'mobile expanded activity', '#' + lessonId);
+  const lastLine = plan.locator('dd').last();
+  await lastLine.scrollIntoViewIfNeeded();
+  check(await lastLine.evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    return rect.top >= -1 && rect.bottom <= innerHeight + 1 &&
+      el.scrollWidth <= el.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 1;
+  }), 'the mobile plan can be scrolled through its complete final paragraph');
+  await page.keyboard.press('Space');
+  check(!await details.evaluate(el => el.open) &&
+    await page.evaluate(() => document.documentElement.scrollHeight) === openFromTop,
+    'Space collapses the plan and returns the guide to its original compact length');
+  await article.locator('xpath=ancestor::section[1]').locator('header a[href="#guide-index"]').press('Enter');
+  await page.waitForURL(url => url.hash === '#guide-index');
+  check(await page.locator('#guide-index').evaluate(el => el.getBoundingClientRect().top >= -1 &&
+    el.getBoundingClientRect().top < innerHeight), 'unit shortcut returns to the activity index');
+  await jump.tap();
+  await page.waitForURL(url => url.hash === '#' + lessonId);
+  check(await article.evaluate(el => el.getBoundingClientRect().top >= -1 &&
+    el.getBoundingClientRect().top < innerHeight), 'touch also jumps directly to the indexed guide card');
+
+  await summary.press('Enter');
+  const printPlans = await page.evaluate(() => {
+    const disclosures = [...document.querySelectorAll('details.teacher-guide-detail, details.teacher-guide-before')];
+    const wasOpen = disclosures.map(el => el.open);
+    window.dispatchEvent(new Event('beforeprint'));
+    const allOpen = disclosures.every(el => el.open);
+    window.dispatchEvent(new Event('afterprint'));
+    return { allOpen, restored: disclosures.every((el, index) => el.open === wasOpen[index]) };
+  });
+  check(printPlans.allOpen && printPlans.restored,
+    'print preparation includes every plan without changing the on-screen disclosure choices');
 }
 async function publicAndLock(browser, base, viewport, expectedCards) {
   const context = await browserContext(browser, base, viewport);
@@ -92,6 +187,7 @@ async function publicAndLock(browser, base, viewport, expectedCards) {
     await fits(page, 'main, article[data-guide-for]', at + ' public guide');
     await shot(page, at + '-guide');
     if (viewport.width === 390 || viewport.width === 1366) await axe(page, at + ' guide', 'main');
+    await publicReading(page, viewport, at);
 
     await link(page, NOTES).press('Enter');
     await loaded(page, 'OpenSciEd teacher notes');

@@ -46,3 +46,18 @@ test('both teacher entry points link to the guide and the guide links to encrypt
   }
   assert.doesNotMatch(read('sitemap.xml'), /openscied-teacher-notes/);
 });
+
+test('public activity index gives each guide card a direct jump and a collapsed classroom plan', () => {
+  const index = guide.match(/<nav\b[^>]*\bid="guide-index"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+  assert.ok(index, 'Missing activity index.');
+  for (const [, activity, card] of guideActivities) {
+    const id = 'guide-' + activity.replace(/^openscied-/, '').replace(/\.html$/, '');
+    const openingTag = [...guide.matchAll(/<article\b[^>]*>/g)].map(m => m[0])
+      .find(tag => tag.includes('data-guide-for="' + activity + '"'));
+    assert.ok(openingTag?.includes('id="' + id + '"'), activity + ': missing jump target.');
+    assert.ok(index.includes('href="#' + id + '"'), activity + ': missing index entry.');
+    assert.ok(card.indexOf('Suggested time:') < card.indexOf('<details'), activity + ': pacing must stay visible.');
+    const details = card.match(/<details\b[^>]*>/)?.[0];
+    assert.ok(details && !/\bopen(?:\s|=|>)/.test(details), activity + ': plan should start collapsed.');
+  }
+});
