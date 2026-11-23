@@ -1022,6 +1022,2342 @@
         "mortality": 151.3
       }
     ]
+  },
+  "michigan": {
+    "period": "Michigan registry data: 2019–2023; modeled mammography use: 2021–2023. Median household income: 2023.",
+    "sources": {
+      "All-stage diagnoses (NCI/CDC)": "https://statecancerprofiles.cancer.gov/incidencerates/index.php?age=001&areatype=county&cancer=055&race=00&ruralurban=0&sex=2&statefips=26&type=incd",
+      "Late-stage diagnoses (NCI/CDC)": "https://statecancerprofiles.cancer.gov/incidencerates/index.php?age=001&areatype=county&cancer=055&race=00&ruralurban=0&sex=2&stage=211&statefips=26&type=incd",
+      "Mammography estimates (NCI)": "https://statecancerprofiles.cancer.gov/risk/index.php?datatype=1&race=00&risk=v05&sex=2&sortOrder=desc&sortVariableName=percent&statefips=26&topic=women&type=risk",
+      "Urban/rural classification (USDA)": "https://www.ers.usda.gov/data-products/rural-urban-continuum-codes",
+      "Median household income (Census)": "https://www2.census.gov/programs-surveys/saipe/datasets/2023/2023-state-and-county/est23-mi.txt"
+    },
+    "rows": [
+      {
+        "id": "26001",
+        "name": "Alcona County",
+        "region": "Rural",
+        "incidence": 129.1,
+        "allCI": [
+          90.1,
+          181.9
+        ],
+        "annualAllCount": 12,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 84.9,
+        "screeningCI": [
+          70.3,
+          96.2
+        ],
+        "income": 53033,
+        "incomeCI": [
+          48071,
+          57995
+        ]
+      },
+      {
+        "id": "26003",
+        "name": "Alger County",
+        "region": "Rural",
+        "incidence": 136.3,
+        "allCI": [
+          90.8,
+          198.4
+        ],
+        "annualAllCount": 7,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 82.5,
+        "screeningCI": [
+          66.9,
+          95
+        ],
+        "income": 62543,
+        "incomeCI": [
+          58223,
+          66863
+        ]
+      },
+      {
+        "id": "26005",
+        "name": "Allegan County",
+        "region": "Rural",
+        "incidence": 123.2,
+        "allCI": [
+          112.1,
+          135.3
+        ],
+        "annualAllCount": 99,
+        "late-rate": 35.5,
+        "late-share": 27.8,
+        "lateCI": [
+          29.5,
+          42.4
+        ],
+        "annualLateCount": 27,
+        "screening": 84.5,
+        "screeningCI": [
+          71.9,
+          95
+        ],
+        "income": 78772,
+        "incomeCI": [
+          75383,
+          82161
+        ]
+      },
+      {
+        "id": "26007",
+        "name": "Alpena County",
+        "region": "Rural",
+        "incidence": 147.2,
+        "allCI": [
+          122.6,
+          175.7
+        ],
+        "annualAllCount": 31,
+        "late-rate": 41.7,
+        "late-share": 26.8,
+        "lateCI": [
+          28.8,
+          58.7
+        ],
+        "annualLateCount": 8,
+        "screening": 84.5,
+        "screeningCI": [
+          71.5,
+          94.8
+        ],
+        "income": 53480,
+        "incomeCI": [
+          48778,
+          58182
+        ]
+      },
+      {
+        "id": "26009",
+        "name": "Antrim County",
+        "region": "Rural",
+        "incidence": 139.7,
+        "allCI": [
+          114.1,
+          170.2
+        ],
+        "annualAllCount": 28,
+        "late-rate": 52,
+        "late-share": 33.3,
+        "lateCI": [
+          35.7,
+          73.8
+        ],
+        "annualLateCount": 9,
+        "screening": 81.1,
+        "screeningCI": [
+          65.4,
+          93.9
+        ],
+        "income": 72369,
+        "incomeCI": [
+          66174,
+          78564
+        ]
+      },
+      {
+        "id": "26011",
+        "name": "Arenac County",
+        "region": "Rural",
+        "incidence": 121.6,
+        "allCI": [
+          91.9,
+          159
+        ],
+        "annualAllCount": 15,
+        "late-rate": 30.7,
+        "late-share": 24.7,
+        "lateCI": [
+          16.8,
+          52.9
+        ],
+        "annualLateCount": 4,
+        "screening": 79.6,
+        "screeningCI": [
+          62.6,
+          93.5
+        ],
+        "income": 56213,
+        "incomeCI": [
+          52460,
+          59966
+        ]
+      },
+      {
+        "id": "26013",
+        "name": "Baraga County",
+        "region": "Rural",
+        "incidence": 60,
+        "allCI": [
+          34,
+          101.7
+        ],
+        "annualAllCount": 4,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 71.6,
+        "screeningCI": [
+          52.3,
+          88.3
+        ],
+        "income": 55856,
+        "incomeCI": [
+          48914,
+          62798
+        ]
+      },
+      {
+        "id": "26015",
+        "name": "Barry County",
+        "region": "Urban",
+        "incidence": 121.4,
+        "allCI": [
+          105.7,
+          138.9
+        ],
+        "annualAllCount": 49,
+        "late-rate": 37.1,
+        "late-share": 27.9,
+        "lateCI": [
+          28.3,
+          47.9
+        ],
+        "annualLateCount": 14,
+        "screening": 76.1,
+        "screeningCI": [
+          63.5,
+          87.3
+        ],
+        "income": 75377,
+        "incomeCI": [
+          69218,
+          81536
+        ]
+      },
+      {
+        "id": "26017",
+        "name": "Bay County",
+        "region": "Urban",
+        "incidence": 137.6,
+        "allCI": [
+          125.3,
+          151
+        ],
+        "annualAllCount": 106,
+        "late-rate": 35.8,
+        "late-share": 24.6,
+        "lateCI": [
+          29.4,
+          43.2
+        ],
+        "annualLateCount": 26,
+        "screening": 80.4,
+        "screeningCI": [
+          66.5,
+          92.4
+        ],
+        "income": 59523,
+        "incomeCI": [
+          54958,
+          64088
+        ]
+      },
+      {
+        "id": "26019",
+        "name": "Benzie County",
+        "region": "Urban",
+        "incidence": 140.4,
+        "allCI": [
+          110.9,
+          176.3
+        ],
+        "annualAllCount": 20,
+        "late-rate": 46,
+        "late-share": 26.7,
+        "lateCI": [
+          28.2,
+          71.2
+        ],
+        "annualLateCount": 5,
+        "screening": 79.7,
+        "screeningCI": [
+          63.9,
+          92.9
+        ],
+        "income": 65594,
+        "incomeCI": [
+          60165,
+          71023
+        ]
+      },
+      {
+        "id": "26021",
+        "name": "Berrien County",
+        "region": "Urban",
+        "incidence": 126.3,
+        "allCI": [
+          116.4,
+          136.9
+        ],
+        "annualAllCount": 138,
+        "late-rate": 42.2,
+        "late-share": 31.6,
+        "lateCI": [
+          36.3,
+          48.7
+        ],
+        "annualLateCount": 44,
+        "screening": 76.7,
+        "screeningCI": [
+          61.8,
+          90.1
+        ],
+        "income": 62758,
+        "incomeCI": [
+          59980,
+          65536
+        ]
+      },
+      {
+        "id": "26023",
+        "name": "Branch County",
+        "region": "Rural",
+        "incidence": 119.3,
+        "allCI": [
+          101.2,
+          140
+        ],
+        "annualAllCount": 35,
+        "late-rate": 44.2,
+        "late-share": 33.5,
+        "lateCI": [
+          32.9,
+          58.1
+        ],
+        "annualLateCount": 12,
+        "screening": 78.4,
+        "screeningCI": [
+          63.1,
+          91.7
+        ],
+        "income": 57641,
+        "incomeCI": [
+          52913,
+          62369
+        ]
+      },
+      {
+        "id": "26025",
+        "name": "Calhoun County",
+        "region": "Urban",
+        "incidence": 115,
+        "allCI": [
+          104.7,
+          126.1
+        ],
+        "annualAllCount": 102,
+        "late-rate": 35.4,
+        "late-share": 29.9,
+        "lateCI": [
+          29.7,
+          41.9
+        ],
+        "annualLateCount": 30,
+        "screening": 74.8,
+        "screeningCI": [
+          58.8,
+          89.1
+        ],
+        "income": 58617,
+        "incomeCI": [
+          54512,
+          62722
+        ]
+      },
+      {
+        "id": "26027",
+        "name": "Cass County",
+        "region": "Urban",
+        "incidence": 102.7,
+        "allCI": [
+          87.6,
+          119.9
+        ],
+        "annualAllCount": 39,
+        "late-rate": 37.6,
+        "late-share": 35.6,
+        "lateCI": [
+          28.6,
+          49
+        ],
+        "annualLateCount": 14,
+        "screening": 86.5,
+        "screeningCI": [
+          73.8,
+          96.5
+        ],
+        "income": 68720,
+        "incomeCI": [
+          62107,
+          75333
+        ]
+      },
+      {
+        "id": "26029",
+        "name": "Charlevoix County",
+        "region": "Rural",
+        "incidence": 113.7,
+        "allCI": [
+          92.2,
+          139.4
+        ],
+        "annualAllCount": 25,
+        "late-rate": 34.4,
+        "late-share": 28,
+        "lateCI": [
+          22.7,
+          50.8
+        ],
+        "annualLateCount": 7,
+        "screening": 81.9,
+        "screeningCI": [
+          65.3,
+          94.9
+        ],
+        "income": 78405,
+        "incomeCI": [
+          75658,
+          81152
+        ]
+      },
+      {
+        "id": "26031",
+        "name": "Cheboygan County",
+        "region": "Rural",
+        "incidence": 119.7,
+        "allCI": [
+          97.6,
+          146.1
+        ],
+        "annualAllCount": 27,
+        "late-rate": 41.6,
+        "late-share": 29.9,
+        "lateCI": [
+          28,
+          60.2
+        ],
+        "annualLateCount": 8,
+        "screening": 78.2,
+        "screeningCI": [
+          62.6,
+          91.5
+        ],
+        "income": 61488,
+        "incomeCI": [
+          57927,
+          65049
+        ]
+      },
+      {
+        "id": "26033",
+        "name": "Chippewa County",
+        "region": "Rural",
+        "incidence": 135.5,
+        "allCI": [
+          112.2,
+          162.3
+        ],
+        "annualAllCount": 29,
+        "late-rate": 45,
+        "late-share": 32.9,
+        "lateCI": [
+          32,
+          61.7
+        ],
+        "annualLateCount": 9,
+        "screening": 80,
+        "screeningCI": [
+          63.5,
+          93.3
+        ],
+        "income": 59852,
+        "incomeCI": [
+          56517,
+          63187
+        ]
+      },
+      {
+        "id": "26035",
+        "name": "Clare County",
+        "region": "Rural",
+        "incidence": 128.1,
+        "allCI": [
+          106.6,
+          153
+        ],
+        "annualAllCount": 32,
+        "late-rate": 39.1,
+        "late-share": 28.1,
+        "lateCI": [
+          27,
+          55
+        ],
+        "annualLateCount": 9,
+        "screening": 78.3,
+        "screeningCI": [
+          61.2,
+          92.4
+        ],
+        "income": 47793,
+        "incomeCI": [
+          44029,
+          51557
+        ]
+      },
+      {
+        "id": "26037",
+        "name": "Clinton County",
+        "region": "Urban",
+        "incidence": 137.7,
+        "allCI": [
+          123.1,
+          153.7
+        ],
+        "annualAllCount": 70,
+        "late-rate": 43.7,
+        "late-share": 29.3,
+        "lateCI": [
+          35.3,
+          53.5
+        ],
+        "annualLateCount": 21,
+        "screening": 82.3,
+        "screeningCI": [
+          67.4,
+          94.5
+        ],
+        "income": 91911,
+        "incomeCI": [
+          86151,
+          97671
+        ]
+      },
+      {
+        "id": "26039",
+        "name": "Crawford County",
+        "region": "Rural",
+        "incidence": 136.5,
+        "allCI": [
+          102.9,
+          179
+        ],
+        "annualAllCount": 14,
+        "late-rate": 41.3,
+        "late-share": 30,
+        "lateCI": [
+          24,
+          68
+        ],
+        "annualLateCount": 4,
+        "screening": 83.5,
+        "screeningCI": [
+          66.6,
+          96.1
+        ],
+        "income": 59220,
+        "incomeCI": [
+          54786,
+          63654
+        ]
+      },
+      {
+        "id": "26041",
+        "name": "Delta County",
+        "region": "Rural",
+        "incidence": 131.5,
+        "allCI": [
+          111.1,
+          154.9
+        ],
+        "annualAllCount": 37,
+        "late-rate": 32.9,
+        "late-share": 21.6,
+        "lateCI": [
+          22.5,
+          46.7
+        ],
+        "annualLateCount": 8,
+        "screening": 83.9,
+        "screeningCI": [
+          69.8,
+          95.3
+        ],
+        "income": 58072,
+        "incomeCI": [
+          52104,
+          64040
+        ]
+      },
+      {
+        "id": "26043",
+        "name": "Dickinson County",
+        "region": "Rural",
+        "incidence": 65.4,
+        "allCI": [
+          48.4,
+          87
+        ],
+        "annualAllCount": 12,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 85.8,
+        "screeningCI": [
+          72.1,
+          96.4
+        ],
+        "income": 61704,
+        "incomeCI": [
+          54590,
+          68818
+        ]
+      },
+      {
+        "id": "26045",
+        "name": "Eaton County",
+        "region": "Urban",
+        "incidence": 153.5,
+        "allCI": [
+          140.6,
+          167.4
+        ],
+        "annualAllCount": 117,
+        "late-rate": 41.5,
+        "late-share": 25.6,
+        "lateCI": [
+          34.8,
+          49.3
+        ],
+        "annualLateCount": 30,
+        "screening": 77.1,
+        "screeningCI": [
+          62.1,
+          90.1
+        ],
+        "income": 73130,
+        "incomeCI": [
+          68140,
+          78120
+        ]
+      },
+      {
+        "id": "26047",
+        "name": "Emmet County",
+        "region": "Rural",
+        "incidence": 163.5,
+        "allCI": [
+          139.5,
+          190.7
+        ],
+        "annualAllCount": 41,
+        "late-rate": 45,
+        "late-share": 25.5,
+        "lateCI": [
+          32.5,
+          61
+        ],
+        "annualLateCount": 10,
+        "screening": 92.2,
+        "screeningCI": [
+          82.3,
+          98.9
+        ],
+        "income": 77292,
+        "incomeCI": [
+          70971,
+          83613
+        ]
+      },
+      {
+        "id": "26049",
+        "name": "Genesee County",
+        "region": "Urban",
+        "incidence": 121.7,
+        "allCI": [
+          115.6,
+          128
+        ],
+        "annualAllCount": 333,
+        "late-rate": 35.3,
+        "late-share": 27.1,
+        "lateCI": [
+          32,
+          39
+        ],
+        "annualLateCount": 90,
+        "screening": 83.3,
+        "screeningCI": [
+          71.3,
+          93.8
+        ],
+        "income": 60192,
+        "incomeCI": [
+          57680,
+          62704
+        ]
+      },
+      {
+        "id": "26051",
+        "name": "Gladwin County",
+        "region": "Rural",
+        "incidence": 127.8,
+        "allCI": [
+          104.4,
+          155.6
+        ],
+        "annualAllCount": 27,
+        "late-rate": 26.9,
+        "late-share": 23.7,
+        "lateCI": [
+          17.6,
+          40.6
+        ],
+        "annualLateCount": 6,
+        "screening": 86.8,
+        "screeningCI": [
+          75.3,
+          96
+        ],
+        "income": 51395,
+        "incomeCI": [
+          47991,
+          54799
+        ]
+      },
+      {
+        "id": "26053",
+        "name": "Gogebic County",
+        "region": "Rural",
+        "incidence": 88.3,
+        "allCI": [
+          62.7,
+          122.3
+        ],
+        "annualAllCount": 11,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 76.7,
+        "screeningCI": [
+          58.6,
+          91.4
+        ],
+        "income": 48043,
+        "incomeCI": [
+          43689,
+          52397
+        ]
+      },
+      {
+        "id": "26055",
+        "name": "Grand Traverse County",
+        "region": "Urban",
+        "incidence": 125.4,
+        "allCI": [
+          112.7,
+          139.2
+        ],
+        "annualAllCount": 84,
+        "late-rate": 40.6,
+        "late-share": 29.3,
+        "lateCI": [
+          33.2,
+          49.2
+        ],
+        "annualLateCount": 25,
+        "screening": 78.3,
+        "screeningCI": [
+          62.2,
+          91.9
+        ],
+        "income": 82824,
+        "incomeCI": [
+          79095,
+          86553
+        ]
+      },
+      {
+        "id": "26057",
+        "name": "Gratiot County",
+        "region": "Rural",
+        "incidence": 121.5,
+        "allCI": [
+          101.6,
+          144.4
+        ],
+        "annualAllCount": 30,
+        "late-rate": 28,
+        "late-share": 22.7,
+        "lateCI": [
+          18.8,
+          40.3
+        ],
+        "annualLateCount": 7,
+        "screening": 75,
+        "screeningCI": [
+          57.4,
+          89.8
+        ],
+        "income": 60251,
+        "incomeCI": [
+          54752,
+          65750
+        ]
+      },
+      {
+        "id": "26059",
+        "name": "Hillsdale County",
+        "region": "Rural",
+        "incidence": 110.9,
+        "allCI": [
+          94.3,
+          129.9
+        ],
+        "annualAllCount": 37,
+        "late-rate": 36,
+        "late-share": 27.9,
+        "lateCI": [
+          26.2,
+          48.4
+        ],
+        "annualLateCount": 10,
+        "screening": 79.9,
+        "screeningCI": [
+          64.3,
+          92.5
+        ],
+        "income": 58676,
+        "incomeCI": [
+          53079,
+          64273
+        ]
+      },
+      {
+        "id": "26061",
+        "name": "Houghton County",
+        "region": "Rural",
+        "incidence": 70.5,
+        "allCI": [
+          54.4,
+          90.2
+        ],
+        "annualAllCount": 15,
+        "late-rate": 23.8,
+        "late-share": 29.3,
+        "lateCI": [
+          14.3,
+          37.2
+        ],
+        "annualLateCount": 4,
+        "screening": 75.2,
+        "screeningCI": [
+          56.9,
+          90.5
+        ],
+        "income": 56074,
+        "incomeCI": [
+          53518,
+          58630
+        ]
+      },
+      {
+        "id": "26063",
+        "name": "Huron County",
+        "region": "Rural",
+        "incidence": 124.5,
+        "allCI": [
+          102,
+          150.7
+        ],
+        "annualAllCount": 29,
+        "late-rate": 39.5,
+        "late-share": 30.1,
+        "lateCI": [
+          27.1,
+          56
+        ],
+        "annualLateCount": 9,
+        "screening": 76.5,
+        "screeningCI": [
+          58.9,
+          91.3
+        ],
+        "income": 59319,
+        "incomeCI": [
+          54028,
+          64610
+        ]
+      },
+      {
+        "id": "26065",
+        "name": "Ingham County",
+        "region": "Urban",
+        "incidence": 150.1,
+        "allCI": [
+          141.2,
+          159.3
+        ],
+        "annualAllCount": 232,
+        "late-rate": 44.1,
+        "late-share": 28.4,
+        "lateCI": [
+          39.3,
+          49.3
+        ],
+        "annualLateCount": 66,
+        "screening": 87.9,
+        "screeningCI": [
+          76.9,
+          96.7
+        ],
+        "income": 63483,
+        "incomeCI": [
+          60295,
+          66671
+        ]
+      },
+      {
+        "id": "26067",
+        "name": "Ionia County",
+        "region": "Urban",
+        "incidence": 127.6,
+        "allCI": [
+          111.4,
+          145.6
+        ],
+        "annualAllCount": 48,
+        "late-rate": 41.5,
+        "late-share": 30.8,
+        "lateCI": [
+          32.2,
+          52.8
+        ],
+        "annualLateCount": 15,
+        "screening": 75.5,
+        "screeningCI": [
+          58.4,
+          90.3
+        ],
+        "income": 70177,
+        "incomeCI": [
+          64811,
+          75543
+        ]
+      },
+      {
+        "id": "26069",
+        "name": "Iosco County",
+        "region": "Rural",
+        "incidence": 113.6,
+        "allCI": [
+          91.9,
+          139.8
+        ],
+        "annualAllCount": 27,
+        "late-rate": 43.9,
+        "late-share": 35.1,
+        "lateCI": [
+          29.9,
+          63
+        ],
+        "annualLateCount": 9,
+        "screening": 85.4,
+        "screeningCI": [
+          72.1,
+          95.9
+        ],
+        "income": 52734,
+        "incomeCI": [
+          48276,
+          57192
+        ]
+      },
+      {
+        "id": "26071",
+        "name": "Iron County",
+        "region": "Rural",
+        "incidence": 87.2,
+        "allCI": [
+          58.2,
+          127.2
+        ],
+        "annualAllCount": 8,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 84.6,
+        "screeningCI": [
+          68.2,
+          96.6
+        ],
+        "income": 49137,
+        "incomeCI": [
+          43044,
+          55230
+        ]
+      },
+      {
+        "id": "26073",
+        "name": "Isabella County",
+        "region": "Rural",
+        "incidence": 150.1,
+        "allCI": [
+          130.5,
+          171.9
+        ],
+        "annualAllCount": 46,
+        "late-rate": 46.9,
+        "late-share": 30.2,
+        "lateCI": [
+          36.1,
+          59.9
+        ],
+        "annualLateCount": 14,
+        "screening": 81.8,
+        "screeningCI": [
+          68.5,
+          92.8
+        ],
+        "income": 53213,
+        "incomeCI": [
+          48382,
+          58044
+        ]
+      },
+      {
+        "id": "26075",
+        "name": "Jackson County",
+        "region": "Urban",
+        "incidence": 131.9,
+        "allCI": [
+          121.7,
+          142.9
+        ],
+        "annualAllCount": 139,
+        "late-rate": 39.9,
+        "late-share": 27.7,
+        "lateCI": [
+          34.1,
+          46.5
+        ],
+        "annualLateCount": 38,
+        "screening": 78.8,
+        "screeningCI": [
+          63.9,
+          91.7
+        ],
+        "income": 64070,
+        "incomeCI": [
+          60443,
+          67697
+        ]
+      },
+      {
+        "id": "26077",
+        "name": "Kalamazoo County",
+        "region": "Urban",
+        "incidence": 139.6,
+        "allCI": [
+          130.9,
+          148.7
+        ],
+        "annualAllCount": 208,
+        "late-rate": 41.8,
+        "late-share": 28.9,
+        "lateCI": [
+          37,
+          47
+        ],
+        "annualLateCount": 60,
+        "screening": 78.6,
+        "screeningCI": [
+          65,
+          90.5
+        ],
+        "income": 67671,
+        "incomeCI": [
+          64896,
+          70446
+        ]
+      },
+      {
+        "id": "26079",
+        "name": "Kalkaska County",
+        "region": "Urban",
+        "incidence": 94.4,
+        "allCI": [
+          71.3,
+          123.5
+        ],
+        "annualAllCount": 13,
+        "late-rate": 32.1,
+        "late-share": 33.8,
+        "lateCI": [
+          19.5,
+          51.1
+        ],
+        "annualLateCount": 4,
+        "screening": 78.4,
+        "screeningCI": [
+          61,
+          92.3
+        ],
+        "income": 60410,
+        "incomeCI": [
+          54453,
+          66367
+        ]
+      },
+      {
+        "id": "26081",
+        "name": "Kent County",
+        "region": "Urban",
+        "incidence": 137.6,
+        "allCI": [
+          132.2,
+          143.2
+        ],
+        "annualAllCount": 513,
+        "late-rate": 36.3,
+        "late-share": 25.5,
+        "lateCI": [
+          33.5,
+          39.3
+        ],
+        "annualLateCount": 131,
+        "screening": 72.8,
+        "screeningCI": [
+          64.5,
+          80.8
+        ],
+        "income": 79715,
+        "incomeCI": [
+          76954,
+          82476
+        ]
+      },
+      {
+        "id": "26083",
+        "name": "Keweenaw County",
+        "region": "Rural",
+        "incidence": null,
+        "allCI": [
+          null,
+          null
+        ],
+        "annualAllCount": null,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 85.1,
+        "screeningCI": [
+          68.3,
+          97.2
+        ],
+        "income": 54912,
+        "incomeCI": [
+          47976,
+          61848
+        ]
+      },
+      {
+        "id": "26085",
+        "name": "Lake County",
+        "region": "Rural",
+        "incidence": 148.6,
+        "allCI": [
+          112.6,
+          194.9
+        ],
+        "annualAllCount": 15,
+        "late-rate": 59,
+        "late-share": 33.8,
+        "lateCI": [
+          35.8,
+          93.7
+        ],
+        "annualLateCount": 5,
+        "screening": 73.8,
+        "screeningCI": [
+          54.7,
+          90
+        ],
+        "income": 50660,
+        "incomeCI": [
+          48133,
+          53187
+        ]
+      },
+      {
+        "id": "26087",
+        "name": "Lapeer County",
+        "region": "Urban",
+        "incidence": 129.4,
+        "allCI": [
+          115.9,
+          144.1
+        ],
+        "annualAllCount": 78,
+        "late-rate": 48.4,
+        "late-share": 36,
+        "lateCI": [
+          40.1,
+          58
+        ],
+        "annualLateCount": 28,
+        "screening": 84.5,
+        "screeningCI": [
+          71.7,
+          95
+        ],
+        "income": 71515,
+        "incomeCI": [
+          65604,
+          77426
+        ]
+      },
+      {
+        "id": "26089",
+        "name": "Leelanau County",
+        "region": "Urban",
+        "incidence": 139.5,
+        "allCI": [
+          112.9,
+          171.5
+        ],
+        "annualAllCount": 29,
+        "late-rate": 28.1,
+        "late-share": 20.1,
+        "lateCI": [
+          17.4,
+          44.5
+        ],
+        "annualLateCount": 6,
+        "screening": 83.1,
+        "screeningCI": [
+          68,
+          95.1
+        ],
+        "income": 91727,
+        "incomeCI": [
+          84140,
+          99314
+        ]
+      },
+      {
+        "id": "26091",
+        "name": "Lenawee County",
+        "region": "Rural",
+        "incidence": 110,
+        "allCI": [
+          98.7,
+          122.3
+        ],
+        "annualAllCount": 78,
+        "late-rate": 27.5,
+        "late-share": 23,
+        "lateCI": [
+          21.7,
+          34.3
+        ],
+        "annualLateCount": 18,
+        "screening": 89.2,
+        "screeningCI": [
+          79.1,
+          97.2
+        ],
+        "income": 65707,
+        "incomeCI": [
+          60804,
+          70610
+        ]
+      },
+      {
+        "id": "26093",
+        "name": "Livingston County",
+        "region": "Urban",
+        "incidence": 137.6,
+        "allCI": [
+          128.3,
+          147.4
+        ],
+        "annualAllCount": 183,
+        "late-rate": 43.2,
+        "late-share": 28.6,
+        "lateCI": [
+          37.8,
+          49.2
+        ],
+        "annualLateCount": 52,
+        "screening": 83.2,
+        "screeningCI": [
+          69.7,
+          94.4
+        ],
+        "income": 103737,
+        "incomeCI": [
+          97941,
+          109533
+        ]
+      },
+      {
+        "id": "26095",
+        "name": "Luce County",
+        "region": "Rural",
+        "incidence": 153,
+        "allCI": [
+          99.8,
+          228.5
+        ],
+        "annualAllCount": 7,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 86.3,
+        "screeningCI": [
+          70.6,
+          97.3
+        ],
+        "income": 51664,
+        "incomeCI": [
+          45314,
+          58014
+        ]
+      },
+      {
+        "id": "26097",
+        "name": "Mackinac County",
+        "region": "Rural",
+        "incidence": 151.1,
+        "allCI": [
+          109.2,
+          205.1
+        ],
+        "annualAllCount": 11,
+        "late-rate": 62.8,
+        "late-share": 29.8,
+        "lateCI": [
+          34,
+          105.9
+        ],
+        "annualLateCount": 3,
+        "screening": 80.9,
+        "screeningCI": [
+          66,
+          93.2
+        ],
+        "income": 51353,
+        "incomeCI": [
+          46947,
+          55759
+        ]
+      },
+      {
+        "id": "26099",
+        "name": "Macomb County",
+        "region": "Urban",
+        "incidence": 141.7,
+        "allCI": [
+          137.3,
+          146.3
+        ],
+        "annualAllCount": 842,
+        "late-rate": 46.6,
+        "late-share": 31.1,
+        "lateCI": [
+          44,
+          49.4
+        ],
+        "annualLateCount": 262,
+        "screening": 75.4,
+        "screeningCI": [
+          64.7,
+          85.5
+        ],
+        "income": 73929,
+        "incomeCI": [
+          72005,
+          75853
+        ]
+      },
+      {
+        "id": "26101",
+        "name": "Manistee County",
+        "region": "Rural",
+        "incidence": 107.8,
+        "allCI": [
+          85.3,
+          135.2
+        ],
+        "annualAllCount": 22,
+        "late-rate": 43.9,
+        "late-share": 35.2,
+        "lateCI": [
+          29.1,
+          64
+        ],
+        "annualLateCount": 8,
+        "screening": 81.1,
+        "screeningCI": [
+          64.5,
+          94.4
+        ],
+        "income": 57434,
+        "incomeCI": [
+          52594,
+          62274
+        ]
+      },
+      {
+        "id": "26103",
+        "name": "Marquette County",
+        "region": "Rural",
+        "incidence": 121.9,
+        "allCI": [
+          106.2,
+          139.5
+        ],
+        "annualAllCount": 50,
+        "late-rate": 29.3,
+        "late-share": 23.9,
+        "lateCI": [
+          21.9,
+          38.7
+        ],
+        "annualLateCount": 12,
+        "screening": 82.3,
+        "screeningCI": [
+          68.1,
+          94.1
+        ],
+        "income": 62319,
+        "incomeCI": [
+          59340,
+          65298
+        ]
+      },
+      {
+        "id": "26105",
+        "name": "Mason County",
+        "region": "Rural",
+        "incidence": 147.6,
+        "allCI": [
+          123,
+          176.1
+        ],
+        "annualAllCount": 32,
+        "late-rate": 46.6,
+        "late-share": 26.7,
+        "lateCI": [
+          32.3,
+          65.2
+        ],
+        "annualLateCount": 9,
+        "screening": 81.3,
+        "screeningCI": [
+          66.5,
+          93.7
+        ],
+        "income": 59543,
+        "incomeCI": [
+          55325,
+          63761
+        ]
+      },
+      {
+        "id": "26107",
+        "name": "Mecosta County",
+        "region": "Rural",
+        "incidence": 149.9,
+        "allCI": [
+          128,
+          174.7
+        ],
+        "annualAllCount": 40,
+        "late-rate": 40.2,
+        "late-share": 23.2,
+        "lateCI": [
+          28.6,
+          54.9
+        ],
+        "annualLateCount": 9,
+        "screening": 76.8,
+        "screeningCI": [
+          61.8,
+          89.7
+        ],
+        "income": 59260,
+        "incomeCI": [
+          55737,
+          62783
+        ]
+      },
+      {
+        "id": "26109",
+        "name": "Menominee County",
+        "region": "Rural",
+        "incidence": 71.2,
+        "allCI": [
+          52.6,
+          95
+        ],
+        "annualAllCount": 12,
+        "late-rate": 24.7,
+        "late-share": 30.6,
+        "lateCI": [
+          13.9,
+          41.2
+        ],
+        "annualLateCount": 4,
+        "screening": 87.6,
+        "screeningCI": [
+          73.9,
+          97.6
+        ],
+        "income": 55853,
+        "incomeCI": [
+          51509,
+          60197
+        ]
+      },
+      {
+        "id": "26111",
+        "name": "Midland County",
+        "region": "Urban",
+        "incidence": 146.8,
+        "allCI": [
+          132.3,
+          162.6
+        ],
+        "annualAllCount": 84,
+        "late-rate": 45,
+        "late-share": 27.9,
+        "lateCI": [
+          36.7,
+          54.6
+        ],
+        "annualLateCount": 23,
+        "screening": 89,
+        "screeningCI": [
+          80.3,
+          96.1
+        ],
+        "income": 73722,
+        "incomeCI": [
+          69428,
+          78016
+        ]
+      },
+      {
+        "id": "26113",
+        "name": "Missaukee County",
+        "region": "Rural",
+        "incidence": 124.7,
+        "allCI": [
+          94.2,
+          162.6
+        ],
+        "annualAllCount": 13,
+        "late-rate": 43.9,
+        "late-share": 31.8,
+        "lateCI": [
+          26,
+          70
+        ],
+        "annualLateCount": 4,
+        "screening": 77.9,
+        "screeningCI": [
+          60.1,
+          92.5
+        ],
+        "income": 66397,
+        "incomeCI": [
+          62550,
+          70244
+        ]
+      },
+      {
+        "id": "26115",
+        "name": "Monroe County",
+        "region": "Urban",
+        "incidence": 107.9,
+        "allCI": [
+          98.7,
+          117.9
+        ],
+        "annualAllCount": 112,
+        "late-rate": 40.9,
+        "late-share": 34.7,
+        "lateCI": [
+          35,
+          47.5
+        ],
+        "annualLateCount": 39,
+        "screening": 76.5,
+        "screeningCI": [
+          61.9,
+          89.6
+        ],
+        "income": 73617,
+        "incomeCI": [
+          68499,
+          78735
+        ]
+      },
+      {
+        "id": "26117",
+        "name": "Montcalm County",
+        "region": "Urban",
+        "incidence": 125.8,
+        "allCI": [
+          110.1,
+          143.2
+        ],
+        "annualAllCount": 52,
+        "late-rate": 36.9,
+        "late-share": 26.8,
+        "lateCI": [
+          28.2,
+          47.4
+        ],
+        "annualLateCount": 14,
+        "screening": 81.2,
+        "screeningCI": [
+          66.7,
+          93.4
+        ],
+        "income": 64912,
+        "incomeCI": [
+          61460,
+          68364
+        ]
+      },
+      {
+        "id": "26119",
+        "name": "Montmorency County",
+        "region": "Rural",
+        "incidence": 144.2,
+        "allCI": [
+          101.5,
+          201.2
+        ],
+        "annualAllCount": 12,
+        "late-rate": 60.9,
+        "late-share": 37.3,
+        "lateCI": [
+          32.4,
+          105.8
+        ],
+        "annualLateCount": 4,
+        "screening": 82,
+        "screeningCI": [
+          64.1,
+          95.5
+        ],
+        "income": 47374,
+        "incomeCI": [
+          43746,
+          51002
+        ]
+      },
+      {
+        "id": "26121",
+        "name": "Muskegon County",
+        "region": "Urban",
+        "incidence": 107.8,
+        "allCI": [
+          99.1,
+          117.1
+        ],
+        "annualAllCount": 126,
+        "late-rate": 32.5,
+        "late-share": 29.2,
+        "lateCI": [
+          27.7,
+          38
+        ],
+        "annualLateCount": 37,
+        "screening": 74.1,
+        "screeningCI": [
+          61.2,
+          85.8
+        ],
+        "income": 61223,
+        "incomeCI": [
+          58752,
+          63694
+        ]
+      },
+      {
+        "id": "26123",
+        "name": "Newaygo County",
+        "region": "Rural",
+        "incidence": 117.8,
+        "allCI": [
+          101.2,
+          136.6
+        ],
+        "annualAllCount": 41,
+        "late-rate": 29.7,
+        "late-share": 24.9,
+        "lateCI": [
+          21.7,
+          40
+        ],
+        "annualLateCount": 10,
+        "screening": 77.6,
+        "screeningCI": [
+          62.1,
+          91
+        ],
+        "income": 61951,
+        "incomeCI": [
+          57304,
+          66598
+        ]
+      },
+      {
+        "id": "26125",
+        "name": "Oakland County",
+        "region": "Urban",
+        "incidence": 143.7,
+        "allCI": [
+          139.9,
+          147.5
+        ],
+        "annualAllCount": 1224,
+        "late-rate": 45.5,
+        "late-share": 30.4,
+        "lateCI": [
+          43.3,
+          47.7
+        ],
+        "annualLateCount": 373,
+        "screening": 91.1,
+        "screeningCI": [
+          83.6,
+          97.1
+        ],
+        "income": 92230,
+        "incomeCI": [
+          90066,
+          94394
+        ]
+      },
+      {
+        "id": "26127",
+        "name": "Oceana County",
+        "region": "Rural",
+        "incidence": 112.6,
+        "allCI": [
+          90.2,
+          139.2
+        ],
+        "annualAllCount": 21,
+        "late-rate": 33.3,
+        "late-share": 25.5,
+        "lateCI": [
+          20.9,
+          50.5
+        ],
+        "annualLateCount": 5,
+        "screening": 75.9,
+        "screeningCI": [
+          58.1,
+          90.8
+        ],
+        "income": 61907,
+        "incomeCI": [
+          55750,
+          68064
+        ]
+      },
+      {
+        "id": "26129",
+        "name": "Ogemaw County",
+        "region": "Rural",
+        "incidence": 147.2,
+        "allCI": [
+          117.6,
+          182.6
+        ],
+        "annualAllCount": 23,
+        "late-rate": 44.5,
+        "late-share": 26.7,
+        "lateCI": [
+          28.1,
+          67.2
+        ],
+        "annualLateCount": 6,
+        "screening": 84.6,
+        "screeningCI": [
+          71,
+          95.4
+        ],
+        "income": 51390,
+        "incomeCI": [
+          46408,
+          56372
+        ]
+      },
+      {
+        "id": "26131",
+        "name": "Ontonagon County",
+        "region": "Rural",
+        "incidence": 104.4,
+        "allCI": [
+          62.4,
+          173.3
+        ],
+        "annualAllCount": 6,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 76.7,
+        "screeningCI": [
+          58,
+          91.8
+        ],
+        "income": 51306,
+        "incomeCI": [
+          46329,
+          56283
+        ]
+      },
+      {
+        "id": "26133",
+        "name": "Osceola County",
+        "region": "Rural",
+        "incidence": 138.9,
+        "allCI": [
+          112.6,
+          169.9
+        ],
+        "annualAllCount": 23,
+        "late-rate": 48.1,
+        "late-share": 29.6,
+        "lateCI": [
+          31.9,
+          69.7
+        ],
+        "annualLateCount": 7,
+        "screening": 86.5,
+        "screeningCI": [
+          71.6,
+          97.1
+        ],
+        "income": 55388,
+        "incomeCI": [
+          51674,
+          59102
+        ]
+      },
+      {
+        "id": "26135",
+        "name": "Oscoda County",
+        "region": "Rural",
+        "incidence": 91.7,
+        "allCI": [
+          59.5,
+          138.3
+        ],
+        "annualAllCount": 7,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 79.7,
+        "screeningCI": [
+          63.1,
+          93.2
+        ],
+        "income": 49622,
+        "incomeCI": [
+          43893,
+          55351
+        ]
+      },
+      {
+        "id": "26137",
+        "name": "Otsego County",
+        "region": "Rural",
+        "incidence": 109.3,
+        "allCI": [
+          86.3,
+          136.8
+        ],
+        "annualAllCount": 18,
+        "late-rate": 34.8,
+        "late-share": 27.2,
+        "lateCI": [
+          21.6,
+          53
+        ],
+        "annualLateCount": 5,
+        "screening": 81.6,
+        "screeningCI": [
+          65.7,
+          94.4
+        ],
+        "income": 69029,
+        "incomeCI": [
+          62566,
+          75492
+        ]
+      },
+      {
+        "id": "26139",
+        "name": "Ottawa County",
+        "region": "Urban",
+        "incidence": 127.1,
+        "allCI": [
+          119.4,
+          135.2
+        ],
+        "annualAllCount": 218,
+        "late-rate": 37.6,
+        "late-share": 27,
+        "lateCI": [
+          33.2,
+          42.3
+        ],
+        "annualLateCount": 59,
+        "screening": 84.1,
+        "screeningCI": [
+          72.7,
+          93.8
+        ],
+        "income": 81772,
+        "incomeCI": [
+          79722,
+          83822
+        ]
+      },
+      {
+        "id": "26141",
+        "name": "Presque Isle County",
+        "region": "Rural",
+        "incidence": 148.9,
+        "allCI": [
+          111.4,
+          196.2
+        ],
+        "annualAllCount": 16,
+        "late-rate": 47.8,
+        "late-share": 31.3,
+        "lateCI": [
+          27.5,
+          78.8
+        ],
+        "annualLateCount": 5,
+        "screening": 78.3,
+        "screeningCI": [
+          60.2,
+          93
+        ],
+        "income": 54675,
+        "incomeCI": [
+          49997,
+          59353
+        ]
+      },
+      {
+        "id": "26143",
+        "name": "Roscommon County",
+        "region": "Rural",
+        "incidence": 115.1,
+        "allCI": [
+          94,
+          141.1
+        ],
+        "annualAllCount": 28,
+        "late-rate": 33.9,
+        "late-share": 22.5,
+        "lateCI": [
+          20.8,
+          53.2
+        ],
+        "annualLateCount": 6,
+        "screening": 79.9,
+        "screeningCI": [
+          63,
+          93.7
+        ],
+        "income": 54305,
+        "incomeCI": [
+          49536,
+          59074
+        ]
+      },
+      {
+        "id": "26145",
+        "name": "Saginaw County",
+        "region": "Urban",
+        "incidence": 136.7,
+        "allCI": [
+          127.2,
+          146.7
+        ],
+        "annualAllCount": 179,
+        "late-rate": 41.3,
+        "late-share": 27,
+        "lateCI": [
+          35.9,
+          47.4
+        ],
+        "annualLateCount": 48,
+        "screening": 80.4,
+        "screeningCI": [
+          66.5,
+          92.3
+        ],
+        "income": 59188,
+        "incomeCI": [
+          56258,
+          62118
+        ]
+      },
+      {
+        "id": "26151",
+        "name": "Sanilac County",
+        "region": "Rural",
+        "incidence": 110.9,
+        "allCI": [
+          92.8,
+          131.7
+        ],
+        "annualAllCount": 32,
+        "late-rate": 36.5,
+        "late-share": 30.4,
+        "lateCI": [
+          25.9,
+          50.1
+        ],
+        "annualLateCount": 10,
+        "screening": 84.6,
+        "screeningCI": [
+          70.9,
+          95.5
+        ],
+        "income": 57382,
+        "incomeCI": [
+          54390,
+          60374
+        ]
+      },
+      {
+        "id": "26153",
+        "name": "Schoolcraft County",
+        "region": "Rural",
+        "incidence": 95.1,
+        "allCI": [
+          58.8,
+          147.7
+        ],
+        "annualAllCount": 6,
+        "late-rate": null,
+        "late-share": null,
+        "lateCI": [
+          null,
+          null
+        ],
+        "annualLateCount": null,
+        "screening": 82.2,
+        "screeningCI": [
+          67.1,
+          94.5
+        ],
+        "income": 56019,
+        "incomeCI": [
+          49620,
+          62418
+        ]
+      },
+      {
+        "id": "26155",
+        "name": "Shiawassee County",
+        "region": "Rural",
+        "incidence": 142,
+        "allCI": [
+          126.1,
+          159.6
+        ],
+        "annualAllCount": 66,
+        "late-rate": 43,
+        "late-share": 28.8,
+        "lateCI": [
+          34.2,
+          53.5
+        ],
+        "annualLateCount": 19,
+        "screening": 79.5,
+        "screeningCI": [
+          63.8,
+          92.6
+        ],
+        "income": 63988,
+        "incomeCI": [
+          58259,
+          69717
+        ]
+      },
+      {
+        "id": "26147",
+        "name": "St. Clair County",
+        "region": "Urban",
+        "incidence": 128.5,
+        "allCI": [
+          118.7,
+          138.8
+        ],
+        "annualAllCount": 147,
+        "late-rate": 41.5,
+        "late-share": 30.7,
+        "lateCI": [
+          36,
+          47.8
+        ],
+        "annualLateCount": 45,
+        "screening": 68.9,
+        "screeningCI": [
+          58.3,
+          79.1
+        ],
+        "income": 68831,
+        "incomeCI": [
+          65820,
+          71842
+        ]
+      },
+      {
+        "id": "26149",
+        "name": "St. Joseph County",
+        "region": "Rural",
+        "incidence": 109.4,
+        "allCI": [
+          94.7,
+          126
+        ],
+        "annualAllCount": 44,
+        "late-rate": 38.8,
+        "late-share": 32,
+        "lateCI": [
+          29.6,
+          49.8
+        ],
+        "annualLateCount": 14,
+        "screening": 71.9,
+        "screeningCI": [
+          54.4,
+          87.5
+        ],
+        "income": 65540,
+        "incomeCI": [
+          60374,
+          70706
+        ]
+      },
+      {
+        "id": "26157",
+        "name": "Tuscola County",
+        "region": "Rural",
+        "incidence": 123,
+        "allCI": [
+          106.3,
+          141.8
+        ],
+        "annualAllCount": 46,
+        "late-rate": 37.8,
+        "late-share": 29.6,
+        "lateCI": [
+          28.5,
+          49.3
+        ],
+        "annualLateCount": 14,
+        "screening": 82.3,
+        "screeningCI": [
+          68.3,
+          94
+        ],
+        "income": 64273,
+        "incomeCI": [
+          60986,
+          67560
+        ]
+      },
+      {
+        "id": "26159",
+        "name": "Van Buren County",
+        "region": "Rural",
+        "incidence": 137.5,
+        "allCI": [
+          122.5,
+          153.9
+        ],
+        "annualAllCount": 69,
+        "late-rate": 36.3,
+        "late-share": 24.2,
+        "lateCI": [
+          28.5,
+          45.7
+        ],
+        "annualLateCount": 17,
+        "screening": 76.2,
+        "screeningCI": [
+          62.9,
+          88.1
+        ],
+        "income": 66174,
+        "incomeCI": [
+          60080,
+          72268
+        ]
+      },
+      {
+        "id": "26161",
+        "name": "Washtenaw County",
+        "region": "Urban",
+        "incidence": 148.8,
+        "allCI": [
+          141.1,
+          156.7
+        ],
+        "annualAllCount": 307,
+        "late-rate": 44.3,
+        "late-share": 28.5,
+        "lateCI": [
+          40.1,
+          48.8
+        ],
+        "annualLateCount": 87,
+        "screening": 78.6,
+        "screeningCI": [
+          66.9,
+          89.1
+        ],
+        "income": 84704,
+        "incomeCI": [
+          80307,
+          89101
+        ]
+      },
+      {
+        "id": "26163",
+        "name": "Wayne County",
+        "region": "Urban",
+        "incidence": 133.3,
+        "allCI": [
+          130.2,
+          136.5
+        ],
+        "annualAllCount": 1496,
+        "late-rate": 46,
+        "late-share": 33.3,
+        "lateCI": [
+          44.2,
+          47.9
+        ],
+        "annualLateCount": 498,
+        "screening": 81.5,
+        "screeningCI": [
+          73,
+          89
+        ],
+        "income": 57418,
+        "incomeCI": [
+          55490,
+          59346
+        ]
+      },
+      {
+        "id": "26165",
+        "name": "Wexford County",
+        "region": "Rural",
+        "incidence": 107.4,
+        "allCI": [
+          88.4,
+          129.7
+        ],
+        "annualAllCount": 25,
+        "late-rate": 32.6,
+        "late-share": 27.8,
+        "lateCI": [
+          22.1,
+          46.6
+        ],
+        "annualLateCount": 7,
+        "screening": 74.7,
+        "screeningCI": [
+          56.7,
+          89.8
+        ],
+        "income": 59697,
+        "incomeCI": [
+          54329,
+          65065
+        ]
+      }
+    ]
   }
 };
   if(typeof module==="object"&&module.exports)module.exports=data;else root.CancerRatesData=data;

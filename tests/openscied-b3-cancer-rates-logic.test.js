@@ -72,3 +72,33 @@ test('published national race and ethnicity rates preserve age adjustment and co
   assert.deepEqual([find('race','black').incidence,find('race','black').mortality],[467.7,168.6]);
   assert.deepEqual([find('race','white').incidence,find('race','white').mortality],[482.2,151.3]);
 });
+
+test('Michigan comparisons distinguish a rate, a share, and screening uptake; a missing measure stays unknown',()=>{
+  const fixture={michigan:{rows:[
+    {id:'first','late-rate':34,'late-share':24,screening:80},
+    {id:'second','late-rate':31,'late-share':30,screening:70},
+    {id:'third','late-rate':32,'late-share':25,screening:null}
+  ]}};
+  const pins=measure=>({view:'michigan',measure,a:'first',b:'second'});
+  assert.equal(comparison(fixture,pins('late-rate')).difference,3);
+  assert.equal(comparison(fixture,pins('late-share')).difference,6);
+  assert.equal(comparison(fixture,pins('screening')).difference,10);
+  assert.equal(comparison(fixture,{...pins('screening'),b:'third'}).difference,null);
+  assert.equal(comparison(fixture,pins('mortality')),null);
+  assert.equal(fitLine(fixture.michigan.rows,'screening','late-share'),null);
+});
+
+test('Michigan combines county records by FIPS and retains suppressed diagnosis rates as missing',()=>{
+  const rows=data.michigan.rows;
+  assert.equal(rows.length,83);
+  assert.equal(new Set(rows.map(row=>row.id)).size,83);
+  assert.ok(rows.every(row=>/^26\d{3}$/.test(row.id)&&row.screening>0&&row.screening<=100));
+  assert.equal(rows.filter(row=>Number.isFinite(row['late-rate'])).length,72);
+  const macomb=find('michigan','26099');
+  assert.deepEqual([macomb.incidence,macomb['late-rate'],macomb['late-share'],macomb.screening],[141.7,46.6,31.1,75.4]);
+  const suppressed=find('michigan','26083');
+  assert.equal(suppressed.incidence,null);
+  assert.equal(suppressed['late-rate'],null);
+  assert.ok(Number.isFinite(suppressed.screening));
+});
+

@@ -73,15 +73,33 @@
     <div class="cr-heading"><div><p class="eyebrow">02 · Work with the data</p><h2 id="cr-explore-title" tabindex="-1">Find a pattern worth saving</h2></div><span class="cr-chip" id="cr-pin-count">0 comparisons pinned</span></div>
     <p id="cr-verdict" class="cr-verdict"></p>
     <div class="cr-tools">
-      <label for="cr-view">Data view<select id="cr-view"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option></select></label>
+      <label for="cr-view">Data view<select id="cr-view"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option><option value="michigan">Michigan · screening and diagnosis</option></select></label>
       <label for="cr-measure"><span id="cr-measure-label">Graph and rank by</span><select id="cr-measure"></select></label>
       <label id="cr-socio-control" for="cr-socio" hidden>Scatterplot x-axis<select id="cr-socio"><option value="poverty">Poverty rate</option><option value="income">Median household income</option></select></label>
+      <label id="cr-mi-x-label" for="cr-mi-x" hidden>Scatterplot x-axis<select id="cr-mi-x"><option value="screening">Mammography use</option><option value="income">Median household income</option></select></label>
+      <label id="cr-mi-region-label" for="cr-mi-region" hidden>County type<select id="cr-mi-region"><option value="all">All counties</option><option value="urban">Urban</option><option value="rural">Rural</option></select></label>
       <label for="cr-search">Find rows<input id="cr-search" type="search" placeholder="Type a name…" autocomplete="off" maxlength="80"></label>
     </div>
     <p class="cr-source" id="cr-view-source"></p>
+    <div id="cr-mi-context" class="cr-context" hidden>
+      <h3>RET investigation: Does access change what gets detected?</h3>
+      <p>Predict whether urban and higher-income communities will show more screening, more recorded diagnoses, both, or neither. Then compare counties and look for a counterexample. A diagnosis tells you a cancer was found and recorded, not when it began.</p>
+      <details><summary>Check your hypothesis against national evidence</summary>
+        <p>In a <a href="https://www.cdc.gov/mmwr/volumes/73/wr/mm7315e1.htm">2022 CDC survey</a>, 77.2% of women ages 50–74 in metro areas reported a mammogram in the previous two years, compared with 73.1% outside metros. The estimates were 82.6% for households earning $75,000 or more and 63.1% below $15,000.</p>
+        <p>In <a href="https://www.cdc.gov/united-states-cancer-statistics/publications/common-cancers-in-metropolitan-and-non-metropolitan-counties.html">CDC registry data for 2018–2022</a>, female breast diagnoses per 100,000 were higher in metro counties. Lung and colorectal diagnoses showed the opposite pattern. These are different datasets, not the same people or proof of why the rates differ.</p>
+      </details>
+      <details><summary>Investigate access: screening → follow-up testing → training</summary>
+        <ol>
+          <li><a href="https://www.fda.gov/radiation-emitting-products/mammography-information-patients/search-certified-mammography-facility">FDA mammography facility finder</a>: Can you find a screening site near each county you picked?</li>
+          <li><a href="https://www.acr.org/Accreditation/Accredited-Facility-Search">ACR imaging facility finder</a>: Search Michigan and look for breast ultrasound or other accredited imaging. Which follow-up services are listed? Check for confirmed accreditation, since this directory also includes applications in progress. An empty search is not proof a service is unavailable.</li>
+          <li><a href="https://www.caahep.org/students/find-an-accredited-program">CAAHEP program finder</a>: Search Michigan for Diagnostic Medical Sonography. A program listing shows a training location, not the number of places available or how often working staff can practice.</li>
+        </ol>
+        <p>Record what you find and what you still need to know. Distance, referral, appointment availability, cost, staff, equipment and supplies can all matter. <a href="https://www.cancer.gov/types/breast/screening">Breast ultrasound can be used for follow-up or as a supplement, not as a replacement for routine mammography.</a></p>
+      </details>
+    </div>
     <div class="cr-explore-grid">
       <figure class="cr-figure" aria-labelledby="cr-chart-title">
-        <div class="cr-heading"><div><p class="eyebrow">Interactive chart</p><h3 id="cr-chart-title">Explore the rates</h3></div><span class="cr-chip cr-chart-unit" id="cr-chart-unit"></span></div>
+        <div class="cr-heading"><div><p class="eyebrow">Interactive chart</p><h3 id="cr-chart-title">Explore the rates</h3></div><span class="cr-chip cr-chart-unit" id="cr-chart-unit"></span><button type="button" class="btn btn--sm" id="cr-enlarge" aria-haspopup="dialog">Enlarge chart</button></div>
         <div class="cr-layers" role="group" aria-label="Chart layers">
           <label><input id="cr-labels" type="checkbox" checked> Data labels</label>
           <label><input id="cr-marks" type="checkbox" checked> Data marks</label>
@@ -89,7 +107,7 @@
           <label><input id="cr-pair-only" type="checkbox"> Only A &amp; B</label>
           <label><input id="cr-trend" type="checkbox"> Trend line</label>
         </div>
-        <div id="cr-chart"></div><p id="cr-inspect" class="cr-chart-hint"></p>
+        <div class="cr-plot-scroll" id="cr-plot-scroll" aria-label="Chart viewport"><div id="cr-chart"></div></div><p id="cr-inspect" class="cr-chart-hint"></p>
         <figcaption id="cr-chart-key"></figcaption>
       </figure>
       <aside class="cr-comparison" aria-labelledby="cr-pair-title">
@@ -106,7 +124,7 @@
     <div class="cr-table-panel">
       <div class="cr-heading"><h3 id="cr-table-title">Sort the data</h3><span id="cr-row-count" class="cr-muted"></span></div>
       <p>Activate a column heading to sort it. Select a name to compare it.</p>
-      <table id="cr-table" aria-labelledby="cr-table-title"><thead><tr><th scope="col">Rank</th><th scope="col"><button type="button" data-sort="name">Name<span aria-hidden="true"></span></button></th><th scope="col"><button type="button" data-sort="incidence">Diagnosis rate<span aria-hidden="true"></span></button></th><th scope="col"><button type="button" id="cr-other-sort" data-sort="mortality"><span id="cr-other-label">Death rate</span><span aria-hidden="true"></span></button></th></tr></thead><tbody></tbody></table>
+      <table id="cr-table" aria-labelledby="cr-table-title"><thead><tr><th scope="col">Rank</th><th scope="col"><button type="button" data-sort="name">Name<span aria-hidden="true"></span></button></th><th scope="col"><button type="button" id="cr-first-sort" data-sort="incidence"><span id="cr-first-label">Diagnosis rate</span><span aria-hidden="true"></span></button></th><th scope="col"><button type="button" id="cr-other-sort" data-sort="mortality"><span id="cr-other-label">Death rate</span><span aria-hidden="true"></span></button></th><th scope="col" id="cr-third-head" hidden><button type="button" data-sort="screening">Screening<span aria-hidden="true"></span></button></th></tr></thead><tbody></tbody></table>
       <div class="cr-buttons"><button id="cr-more" class="btn" type="button" hidden>Show 12 more rows</button></div>
     </div>
   </section>
@@ -122,6 +140,20 @@
         <button class="btn btn--primary" type="button" id="cr-finish" disabled>Finish investigation</button>
       </div>
     </div>
+    <details id="cr-ret-review" class="cr-context cr-ret-review" hidden>
+      <summary>RET design review notebook (optional)</summary>
+      <p><strong>Lesson 9.5:</strong> Use your pinned county data to identify a possible access barrier. Record what the directories confirm and one thing they cannot tell you.</p>
+      <label for="cr-ret-access">Screening, diagnostic testing or training access evidence</label><textarea id="cr-ret-access" rows="2" maxlength="1600" placeholder="Name the place or program, the source, and what is still unknown."></textarea>
+      <p><strong>Lesson 11.5:</strong> Record your own ultrasound phantom test. Use the same target and test conditions when comparing designs. These are classroom prototype results, not medical tests.</p>
+      <div class="cr-ret-grid">
+        <label for="cr-ret-cost">Cost per phantom ($)<input id="cr-ret-cost" inputmode="decimal" maxlength="30"></label>
+        <label for="cr-ret-visible">Trials with the target visible<input id="cr-ret-visible" inputmode="numeric" maxlength="20"></label>
+        <label for="cr-ret-trials">Total trials<input id="cr-ret-trials" inputmode="numeric" maxlength="20"></label>
+      </div>
+      <label for="cr-ret-quality">Image quality: rubric score and observation</label><textarea id="cr-ret-quality" rows="2" maxlength="1200"></textarea>
+      <label for="cr-ret-durability">Durability or change after repeated use</label><textarea id="cr-ret-durability" rows="2" maxlength="1200"></textarea>
+      <label for="cr-ret-recommendation">Lesson 12: What would you recommend, and what evidence would you still need?</label><textarea id="cr-ret-recommendation" rows="3" maxlength="1600" placeholder="Use county evidence for the access problem and bench evidence for what the phantom can do."></textarea>
+    </details>
   </section>
   <p id="cr-status" class="cr-status" role="status" aria-atomic="true"></p>
   <section class="cr-card cr-record" aria-labelledby="cr-record-title">
@@ -134,7 +166,7 @@
   </section>
   <details class="cr-card cr-notes" id="cr-sources">
     <summary>Data sources and what the charts can’t tell us</summary>
-    <p id="cr-source-types"></p><p id="cr-source-states"></p><p id="cr-source-poverty"></p><p id="cr-source-race"></p>
+    <p id="cr-source-types"></p><p id="cr-source-states"></p><p id="cr-source-poverty"></p><p id="cr-source-race"></p><p id="cr-source-michigan"></p>
     <p>These data describe groups, not individual risk or genetics. A graph can suggest a question, but it does not prove what caused a difference. Age adjustment makes some comparisons fairer; it does not control for things such as screening, environmental exposure, or access to care.</p>
     <p>Counts and rates answer different questions. The people diagnosed in a year are not necessarily the same people who died that year. Dividing one published rate by the other does not tell you the chance of surviving.</p>
   </details>
@@ -143,6 +175,7 @@
     <p>An independent companion to <a href="https://www.openscied.org/">OpenSciEd</a> Biology Unit B.3 (<a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>). The interactive charts and investigation are original additions. Not affiliated with or endorsed by OpenSciEd.</p>
   </footer>
 </main>
+<dialog id="cr-chart-dialog" class="cr-shell" aria-label="Enlarged chart"><div class="cr-heading cr-zoom-toolbar"><h2>Explore the chart</h2><label for="cr-zoom">Zoom <select id="cr-zoom"><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label><button type="button" class="btn btn--primary" id="cr-chart-close" autofocus>Close chart</button></div><div id="cr-chart-host"></div></dialog>
 <dialog id="cr-reset-dialog" aria-labelledby="cr-reset-title"><h2 id="cr-reset-title">Start this investigation over?</h2><p>This removes your responses and pins for this activity on this device. Other activities are not changed.</p><form method="dialog" class="cr-buttons"><button class="btn" value="cancel" autofocus>Keep my work</button><button type="button" class="btn btn--danger" id="cr-reset-confirm">Start over</button></form></dialog>
 </body>
 </html>

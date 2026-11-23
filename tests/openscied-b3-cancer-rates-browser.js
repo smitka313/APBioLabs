@@ -21,6 +21,15 @@ const CASES = [
 const REASON = 'Different things may affect how often a cancer is diagnosed and how often people die from it.';
 const CLAIM = 'In my comparison, a higher diagnosis rate was not enough to establish why the groups differed.';
 const LIMIT = 'The data compare populations and cannot tell us the cause or predict what will happen to one person.';
+const RET_NOTES = {
+  access:'Compare local facility listings and note that they do not give appointment availability.',
+  cost:'4.75',
+  visible:'4',
+  trials:'5',
+  quality:'Ask a second group to repeat and document the observations.',
+  durability:'Check that the classroom model still works after repeated use.',
+  recommendation:'Compare the classroom evidence before deciding which model to recommend.'
+};
 const clean = s => (s || '').replace(/\s+/g, ' ').trim();
 const view = (page, id) => page.locator('#' + id);
 const record = page => page.evaluate(key => JSON.parse(localStorage.getItem(key) || 'null'), SAVE);
@@ -179,6 +188,79 @@ async function inspectRace(page, label) {
   await capture(page,label+'-race','#cr-chart');
 }
 
+async function inspectMichigan(page, size, label) {
+  await view(page,'cr-view').selectOption('michigan');
+  const measure = view(page,'cr-measure');
+  const measures = await measure.locator('option').evaluateAll(options=>options.map(option=>option.value));
+  check(['late-rate','late-share','screening'].every(id=>measures.includes(id)),
+    label+' Michigan view lets students choose the late-stage rate, late-stage share, or screening estimate');
+  await measure.selectOption('late-rate');
+  check(await page.locator('#cr-chart .cr-scatter').isVisible(),
+    label+' Michigan view directly plots screening alongside the late-stage rate');
+  const search = view(page,'cr-search');
+  const refs = [['Oakland','26125',45.5,30.4,91.1],['Wayne','26163',46.0,33.3,81.5]];
+  const pair = [], names = [];
+  const leadingValue = cell => numeric(cell?.match(/^\s*([\d,.]+)/)?.[1]);
+  for (const [index,[county,fips,...published]] of refs.entries()){
+    await search.fill(county);
+    await waitForNamedRows(page,[county]);
+    const filtered = await snapshot(page);
+    check(filtered.length===1&&filtered[0].id===fips&&filtered[0].cells[1].includes(county),
+      label+' Michigan search isolates '+county+' County');
+    const row = filtered[0];
+    check(published.every((value,offset)=>leadingValue(row.cells[offset+2])===value),
+      label+' '+county+' agrees with the published late-stage rate, share, and mammography estimate');
+    pair.push({...row, lateRate:published[0]});
+    await view(page,index===0?'cr-compare-a':'cr-compare-b').selectOption(row.id);
+    names.push(clean(await view(page,index===0?'cr-compare-a':'cr-compare-b').locator('option:checked').textContent()));
+  }
+  await search.clear();
+  const miX=view(page,'cr-mi-x');
+  await miX.selectOption('income');
+  await measure.selectOption('screening');
+  check((await page.locator('#cr-scatter-title').textContent()).includes('income'),
+    label+' can compare county screening estimates against median household income');
+  await view(page,'cr-mi-region').selectOption('rural');
+  check((await snapshot(page)).every(row=>row.cells[1].includes('Rural')),
+    label+' county type filter shows rural counties without relabeling the data');
+  await view(page,'cr-mi-region').selectOption('all');
+  await miX.selectOption('screening');
+  for (const id of ['late-share','screening','late-rate']){
+    await measure.selectOption(id);
+    check(await measure.inputValue()===id, label+' can actively select Michigan measure '+id);
+    if (id==='late-share') check(await page.locator('#cr-chart .cr-scatter').isVisible(),
+      label+' can display late stage as a share rather than a population rate');
+  }
+  check(await view(page,'cr-compare-a').inputValue()===pair[0].id && await view(page,'cr-compare-b').inputValue()===pair[1].id,
+    label+' changing the Michigan measure does not discard the selected areas');
+  await fits(page,'main, #explore, #cr-chart, #cr-compare-a, #cr-compare-b',label+' Michigan screening view');
+  await capture(page,label+'-michigan','#cr-chart');
+  const enlarge = view(page,'cr-enlarge');
+  const dialog = view(page,'cr-chart-dialog');
+  await invoke(enlarge,size);
+  await dialog.waitFor({state:'visible'});
+  const magnified=dialog.locator('.cr-scatter').first();
+  await magnified.waitFor({state:'visible'});
+  const zoom=view(page,'cr-zoom');
+  const before=await magnified.boundingBox();
+  if (await zoom.evaluate(element=>element.tagName==='SELECT')){
+    const last=await zoom.locator('option').last().getAttribute('value');
+    await zoom.selectOption(last);
+  } else {
+    await zoom.press('End');
+  }
+  const after=await magnified.boundingBox();
+  check(before&&after&&after.width>before.width,label+' enlarging and zooming gives the chart more readable space');
+  await invoke(view(page,'cr-chart-close'),size);
+  await dialog.waitFor({state:'hidden'});
+  await enlarge.waitFor({state:'visible'});
+  check(await enlarge.evaluate(element=>document.activeElement===element),label+' closing the chart returns keyboard focus to its launcher');
+  await invoke(view(page,'cr-pin'),size);
+  const pins = (await record(page))?.evidence || [];
+  check(pins.some(pin=>pin.view==='michigan'&&pin.measure==='late-rate'),label+' pins the Michigan comparison and its chosen measure');
+  return {pair,names};
+}
+
 async function stateSearchAndPair(page, size, label) {
   await view(page, 'cr-view').selectOption('states');
   const search = view(page, 'cr-search');
@@ -224,7 +306,7 @@ async function stateSearchAndPair(page, size, label) {
   return truth;
 }
 
-async function report(page, size, pair) {
+async function report(page, size, pair, michigan) {
   const waiting = page.waitForEvent('download');
   await invoke(view(page,'cr-download'),size);
   const download = await waiting;
@@ -236,6 +318,15 @@ async function report(page, size, pair) {
     'download carries the student’s exact selected groups and rates');
   check(/100,?000/.test(file) && /2019.*2023/.test(file),
     'download identifies comparison units and source period even when read away from the site');
+  if (michigan) {
+    check(michigan.names.every((name,i)=>file.includes(name)&&valueAppears(file,michigan.pair[i].lateRate)),
+      'download retains the named Michigan areas and the selected late-stage evidence');
+    check(Object.values(RET_NOTES).every(value=>file.includes(value)) &&
+      file.includes('Prototype cost ($): '+RET_NOTES.cost) &&
+      file.includes('Trials with visible target: '+RET_NOTES.visible) &&
+      file.includes('Total trials: '+RET_NOTES.trials),
+      'download preserves the full student-authored prototype review');
+  }
 }
 
 async function exercise(browser, base, size) {
@@ -288,11 +379,12 @@ async function exercise(browser, base, size) {
       await inspectPoverty(page,label);
       await inspectRace(page,label);
     }
+    const michigan = size.width===1366 ? await inspectMichigan(page,size,label) : null;
     const pair = await stateSearchAndPair(page,size,label);
     await capture(page,label+'-states','#cr-chart');
     await invoke(view(page,'cr-pin'),size);
     saved = await record(page);
-    check(Array.isArray(saved?.evidence) && saved.evidence.length===1,label+' pinned comparison is recorded once');
+    check(Array.isArray(saved?.evidence) && saved.evidence.length===(michigan?2:1),label+' each comparison is recorded once');
     const serialized = JSON.stringify(saved.evidence);
     await page.reload();
     await visible(page,'explore');
@@ -307,6 +399,14 @@ async function exercise(browser, base, size) {
     const evidence = clean(await view(page,'cr-evidence-list').textContent());
     check(pair.every(row=>evidence.includes(row.cells[1]) && valueAppears(evidence,row.cells[2])),
       label+' Explain brings its own evidence next to the student’s writing, with no backtracking');
+    if (michigan) {
+      check(michigan.names.every((name,i)=>evidence.includes(name)&&valueAppears(evidence,michigan.pair[i].lateRate)),
+        label+' Explain carries the exact Michigan evidence without backtracking');
+      const review = view(page,'cr-ret-review');
+      await review.waitFor({state:'visible'});
+      if(!await review.evaluate(el=>el.open)) await invoke(review.locator('summary'),size);
+      for(const [field,note] of Object.entries(RET_NOTES)) await view(page,'cr-ret-'+field).fill(note);
+    }
     await view(page,'cr-claim').fill(CLAIM);
     await view(page,'cr-limits').fill(LIMIT);
     await invoke(view(page,'cr-finish'),size);
@@ -320,7 +420,11 @@ async function exercise(browser, base, size) {
       await visible(page,'explain');
       check(await view(page,'cr-claim').inputValue()===CLAIM && await view(page,'cr-limits').inputValue()===LIMIT,
         label+' original claim and uncertainty persist across reload');
-      await report(page,size,pair);
+      if (michigan) {
+        const notes = await Promise.all(Object.keys(RET_NOTES).map(field=>view(page,'cr-ret-'+field).inputValue()));
+        check(notes.every((note,i)=>note===Object.values(RET_NOTES)[i]),label+' optional prototype notes survive reload');
+      }
+      await report(page,size,pair,michigan);
     }
     if (size.width===1366) {
       await invoke(view(page,'cr-reset'),size);
@@ -355,3 +459,4 @@ async function exercise(browser, base, size) {
     server.close();
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});
+

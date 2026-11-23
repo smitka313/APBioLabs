@@ -37,7 +37,8 @@
     if(!pin||!Object.hasOwn(dataset,pin.view))return null;
     const rows=dataset[pin.view].rows;
     const other={types:'mortality',states:'count',poverty:'poverty',race:'mortality'}[pin.view];
-    if(!['incidence',other,...(pin.view==='poverty'?['income']:[])].includes(pin.measure))return null;
+    const measures=pin.view==='michigan'?['late-rate','late-share','screening','incidence','income']:['incidence',other,...(pin.view==='poverty'?['income']:[])];
+    if(!measures.includes(pin.measure))return null;
     const a=rows.find(r=>r.id===pin.a),b=rows.find(r=>r.id===pin.b);
     if(!a||!b||a.id===b.id)return null;
     return {a,b,difference:finite(a[pin.measure])&&finite(b[pin.measure])?Math.round(Math.abs(a[pin.measure]-b[pin.measure])*10)/10:null};
