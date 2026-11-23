@@ -10,10 +10,11 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parent.parent
 ORIGIN = 'https://biologylabbench.com'
-PUBLIC = ['index.html', 'teachers.html', 'getting-started.html', 'student-directions.html']
+PUBLIC = ['index.html', 'teachers.html', 'getting-started.html', 'student-directions.html',
+          'openscied-teacher-guide.html']
 PUBLIC += ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-burn-lab.html', 'openscied-b2-carbon-journey.html']
 PUBLIC += [f'{prefix}lab{i:02}.html' for prefix in ['', 'directions-'] for i in range(1, 14)]
-PRIVATE = ['teacher-notes.html'] + [f'teacher-lab{i:02}.html' for i in range(1, 14)]
+PRIVATE = ['teacher-notes.html', 'openscied-teacher-notes.html'] + [f'teacher-lab{i:02}.html' for i in range(1, 14)]
 UTILITIES = ['teacher-dashboard.html', 'projector.html', 'feedback.html',
              'sample-report.html', '_template.html', '404.html']
 
