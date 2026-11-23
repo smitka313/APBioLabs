@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="openscied-b3-dna-workshop.css">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-dna-workshop-logic.js"></script>
+<script defer src="openscied-b3-dna-workshop-codon-wheel.js"></script>
 <script defer src="openscied-b3-dna-workshop.js"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -65,6 +66,12 @@
       <section id="dw-board" class="dw-board" data-current-stage="nucleotide" aria-labelledby="dw-board-title">
         <header class="dw-board-header"><h3 id="dw-board-title">Workbench</h3><p id="dw-task">A nucleotide is one building block of DNA. Connect phosphate, DNA sugar, and a base.</p></header>
         <div id="dw-key" class="dw-key"></div>
+        <details class="dw-wheel-reference" id="dw-wheel" hidden>
+          <summary>Explore the full RNA codon wheel</summary>
+          <div id="dw-wheel-mount"></div>
+          <p class="dw-wheel-credit">Original wheel illustration. Codon assignments from the <a href="https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#SG1">NCBI standard genetic code</a>, shown with RNA letters.</p>
+          <p class="dw-wheel-credit"><a href="https://commons.wikimedia.org/wiki/File:Codon_wheel.svg">Printable codon wheel by Jammi Evil</a> (Openclipart via Wikimedia Commons, <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>).</p>
+        </details>
         <div id="dw-anatomy" class="dw-anatomy" hidden></div>
         <div class="dw-toolbox">
           <div id="dw-palette" class="dw-palette" role="group" aria-label="Pieces to place"></div>

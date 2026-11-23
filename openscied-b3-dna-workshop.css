@@ -668,3 +668,62 @@
   .dw-board[data-current-stage=chain] .dw-track .dw-sequence { gap:.26rem; }
   .dw-anatomy { gap:.12rem .33rem; }
 }
+
+/* Reference stays optional so the fourth workbench remains compact on phones. */
+.dw-wheel-reference {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: .55rem;
+  padding: .35rem .6rem;
+  background: var(--surface-2);
+}
+.dw-wheel-reference[hidden] { display: none; }
+.dw-wheel-reference summary {
+  cursor: pointer;
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.dw-wheel-credit { margin: .32rem 0 .1rem; font-size: .73rem; color: var(--muted); }
+.dw-codon-wheel { min-width: 0; margin-block-start: .38rem; }
+.dw-codon-wheel-graphic { display: block; inline-size: min(100%, 22rem); height: auto; margin-inline: auto; }
+.dw-codon-wheel-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .3rem .65rem; }
+.dw-codon-wheel-controls label { display: grid; gap: .12rem; font-size: .78rem; color: var(--ink); }
+.dw-codon-wheel-controls select {
+  min-height: 2.3rem;
+  min-width: 4.4rem;
+  padding: .15rem .3rem;
+  border: 1px solid var(--line);
+  border-radius: .35rem;
+  color: var(--ink);
+  background: var(--surface);
+}
+.dw-codon-wheel-result { min-height: 1.45em; color: var(--ink); font-weight: 700; }
+.dw-codon-wheel-caption { color: var(--muted); font-size: .76rem; line-height: 1.35; }
+.dw-codon-wheel-controls { display:grid; gap:.35rem; }
+.dw-codon-wheel-selects { display:flex; flex-wrap:wrap; gap:.35rem .6rem; }
+.dw-codon-wheel-caption, .dw-codon-wheel-result { margin:0; }
+.dw-codon-segment path {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1.15;
+}
+.dw-codon-quadrant-1 path { fill: color-mix(in srgb, var(--surface) 80%, #42ab8c); }
+.dw-codon-quadrant-2 path { fill: color-mix(in srgb, var(--surface) 80%, #527bcc); }
+.dw-codon-quadrant-3 path { fill: color-mix(in srgb, var(--surface) 80%, #d09e37); }
+.dw-codon-quadrant-4 path { fill: color-mix(in srgb, var(--surface) 80%, #c3688e); }
+.dw-codon-ring-4 path { stroke-width: 1.4; }
+.dw-codon-stop path { stroke: var(--danger, var(--accent)); stroke-dasharray: 2 2; }
+.dw-codon-wheel-letter, .dw-codon-wheel-center-label {
+  fill: var(--ink);
+  font: 700 12px/1 var(--f-sans, sans-serif);
+}
+.dw-codon-ring-1 .dw-codon-wheel-letter { font-size: 19px; }
+.dw-codon-ring-2 .dw-codon-wheel-letter { font-size: 15px; }
+.dw-codon-wheel-center { fill: var(--surface); stroke: var(--line); }
+.dw-codon-segment.is-selected path {
+  fill: var(--accent);
+  stroke: var(--ink);
+  stroke-width: 2.4;
+}
+.dw-codon-segment.is-selected text { fill: var(--accent-ink); }

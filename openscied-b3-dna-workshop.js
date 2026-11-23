@@ -247,6 +247,11 @@
       strands.append(count);
     }
     makePalette(step,data.slots);makeKey(step);renderAnatomy(step);
+    const wheel=E('wheel');
+    if(wheel){
+      wheel.hidden=step!=='chain'||!window.DNACodonWheel;
+      if(!wheel.hidden)window.DNACodonWheel.mount(E('wheel-mount'));
+    }
   }
   function evidence(step){
     const data=model(step);

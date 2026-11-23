@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: node --test tests/openscied-b3-dna-workshop-logic.test.js tests/openscied-teacher-guide.test.js
+      - run: node --test tests/openscied-b3-dna-workshop-logic.test.js tests/openscied-b3-dna-workshop-codon-wheel.test.js tests/openscied-teacher-guide.test.js
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node tests/openscied-b3-dna-workshop-browser.js

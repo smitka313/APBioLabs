@@ -394,6 +394,64 @@ async function legacyResume(browser,base) {
     await context.close();
   }
 }
+async function codonWheel(page,label,size) {
+  const wheel=page.locator('#dw-wheel');
+  await wheel.waitFor();
+  const saved=await readRecord(page);
+  const copied=await clipboard(page);
+  const before=await board(page).locator('[data-dw-placed]').count();
+  const toggle=wheel.locator('summary');
+  check(await wheel.getAttribute('open')===null &&
+    /RNA codon wheel/i.test(await toggle.innerText()),
+    label+' RNA codon wheel is an optional reference in the Chain stage');
+  await invoke(toggle,size);
+  const output=wheel.locator('[data-dw-codon-output]');
+  const pick=position=>wheel.locator('[data-dw-codon-base="'+position+'"]');
+  async function keyboardBase(position,base) {
+    const select=pick(position);
+    const choices=await select.locator('option').evaluateAll(options=>options.map(option=>option.value));
+    check(same(choices,['','U','C','A','G']),
+      label+' codon position '+position+' offers only the four RNA bases');
+    await select.press('Home');
+    for(let step=0;step<choices.indexOf(base);step++)await select.press('ArrowDown');
+    assert.equal(await select.inputValue(),base,'keyboard sets RNA base at position '+position);
+  }
+  check(await wheel.getByRole('img').isVisible() &&
+    /center outward: first base → second base → third base/.test(await wheel.innerText()) &&
+    /5′ to 3′/.test(await wheel.innerText()) &&
+    await wheel.getByRole('combobox',{name:'First base',exact:true}).isVisible() &&
+    await wheel.getByRole('combobox',{name:'Second base',exact:true}).isVisible() &&
+    await wheel.getByRole('combobox',{name:'Third base',exact:true}).isVisible() &&
+    await output.getAttribute('aria-live')==='polite',
+    label+' wheel explains 5′ to 3′ inside-out reading and has labeled controls and an announced result');
+  check(await wheel.locator('a[href="https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi#SG1"]').isVisible(),
+    label+' standard genetic code data has a visible source link');
+  await keyboardBase(1,'A');
+  await keyboardBase(2,'U');
+  await keyboardBase(3,'G');
+  await output.waitFor();
+  check(/AUG/.test(await output.innerText()) && /Methionine/i.test(await output.innerText()) &&
+    /starts?|start signal/i.test(await output.innerText()),
+    label+' keyboard decoding of AUG announces methionine and the start signal');
+  const highlighted=await wheel.locator('svg [data-dw-selected] text').allTextContents();
+  check(same(highlighted,['A','U','G','Met']),
+    label+' the highlighted path runs from A through U and G out to Met');
+  await keyboardBase(1,'U');
+  await keyboardBase(2,'A');
+  await keyboardBase(3,'A');
+  check(/UAA/.test(await output.innerText()) && /stop/i.test(await output.innerText()) &&
+    /no amino acid|does not add/i.test(await output.innerText()),
+    label+' UAA stops the chain without adding an amino acid');
+  await fits(page,'main, #dw-wheel, #dw-wheel svg, #dw-wheel select',label+' open codon wheel');
+  if(size.touch)await a11y(page,'#dw-wheel',label+' codon wheel');
+  await shot(page,label+'-codon-wheel');
+  check(await board(page).locator('[data-dw-placed]').count()===before &&
+    await page.locator('#dw-next').isDisabled() &&
+    same(await readRecord(page),saved) && same(await clipboard(page),copied),
+    label+' wheel lookup never fills an amino acid, unlocks progress, changes the save, or writes to the clipboard');
+  await invoke(toggle,size);
+}
+
 async function exercise(browser,base,size) {
   const context=await makeContext(browser,base,size);
   try {
@@ -424,6 +482,7 @@ async function exercise(browser,base,size) {
         await rejectFirstPair(page,slots[0],ordinary,label,'nucleotide component');
       }
       if(name==='build')await rejectFirstPair(page,slots[0],ordinary,label);
+      if(name==='chain'&&(size.touch||size.width===1366))await codonWheel(page,label,size);
       if(name==='sort') {
         await evidenceBySort(page,label);
         const wrong=slots[0].choices.find(piece=>piece!==slots[0].expected);
