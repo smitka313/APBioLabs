@@ -21,7 +21,8 @@
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds },
-    { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true }
+    { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true },
+    { id: 'rat-generations', name: 'Rat Generations', file: 'openscied-b4-rat-generations.html', key: PREFIX + 'b4-rat-generations:v1', clears: 'model generations, prediction, and written responses', progress: ratGenerationsProgress, ids: ratGenerationsResponseIds, answers: true }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -282,6 +283,17 @@
   }
   const HAWKS_SECTIONS = ['predict', 'release', 'compare', 'explain'];
   function hawksbeardResponseIds() { return ['reflection', 'claim', 'evidence', 'limits']; }
+  function ratGenerationsResponseIds() { return ['reason','claim','evidence','limits']; }
+  function ratGenerationsProgress(raw) {
+    const empty={summary:'Not started',started:false,section:'',visited:0};
+    let s;try {s=JSON.parse(raw);}catch (_){return empty;}
+    if(!s||s.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||
+      !Number.isInteger(s.action)||s.action<0||s.action>6||!['increase','same','decrease'].includes(s.prediction))return empty;
+    const section=['predict','model'].includes(s.step)||s.action===6&&['analyze','explain'].includes(s.step)?s.step:'model';
+    const n=ratGenerationsResponseIds().filter(id=>written(s.answers||{},id)).length;
+    return {summary:s.action+' of 6 model actions recorded'+(n?' · '+n+' of 4 responses saved':''),
+      started:true,section,visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0};
+  }
   function hawksbeardProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
     let saved;
@@ -360,7 +372,7 @@
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
-          if (activity.id === 'hawksbeard' && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
+          if (['hawksbeard','rat-generations'].includes(activity.id) && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
           if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
         });
         if (keys.includes(CARBON_BUDGET_KEY)) {

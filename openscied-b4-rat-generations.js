@@ -1,0 +1,336 @@
+/* Student-facing record of the Lesson 3 model. The engine owns every count and pairing. */
+(() => {
+  'use strict';
+  const M=window.RatGenerationsLogic, $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+  const KEY='aplab:openscied:b4-rat-generations:v1', STEPS=['predict','model','analyze','explain'];
+  const PRED={increase:'Increase',same:'Stay about the same',decrease:'Decrease'};
+  const METRICS={population:'Population size',carrier:'% showing resistance',allele:'% of allele copies that are R'};
+  const TOKEN='assets/rat-generations-token.svg', SVG='http://www.w3.org/2000/svg';
+  const $answer=$$('[data-rg-answer]'), fields={name:100,period:24};
+  const node=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;};
+  const svg=(tag,attrs={})=>{const n=document.createElementNS(SVG,tag);for (const [k,v] of Object.entries(attrs)) n.setAttribute(k,String(v));return n;};
+  const set=(id,text)=>{const el=$('#rg-'+id);if(el)el.textContent=text;};
+  const announce=(text,quiet=false)=>{const live=$('#rg-status');live.classList.toggle('sr-only',quiet);live.textContent=text;};
+  if (!M){announce('The model did not load. Please reload this page.');return;}
+  const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key);
+  const tidy=(value,n)=>typeof value==='string'?value.trim().replace(/\s+/g,' ').slice(0,n):'';
+  const freshSeed=()=>{try{return window.crypto.getRandomValues(new Uint32Array(1))[0];}catch(_){return (Date.now()+Math.random()*0x100000000)>>>0;}};
+  const trialId=seed=>'RG-'+seed.toString(16).toUpperCase().padStart(8,'0');
+  const percent=(n,d)=>d?new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(100*n/d)+'%':'Not defined';
+  const fraction=(n,d)=>d?n+' / '+d+' ('+percent(n,d)+')':'Not defined';
+  const selectionName={born:'Born',survived:'Survived'};
+  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population'});
+  let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='';
+  function decode(raw) {
+    const s=JSON.parse(raw);
+    const trial=s&&M.restore({v:s.v,seed:s.seed,step:s.action});
+    if (!trial || (s.prediction!==''&&!own(PRED,s.prediction)) || s.action>0&&!s.prediction ||
+      !s.answers||typeof s.answers!=='object'||Array.isArray(s.answers)) throw Error('Unrecognized record');
+    const safe={...newRecord(),seed:s.seed,action:s.action,prediction:s.prediction};
+    safe.step=STEPS.includes(s.step)?s.step:'predict';
+    safe.lastVisitedAt=Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0;
+    for (const el of $answer) if (typeof s.answers[el.dataset.rgAnswer]==='string') safe.answers[el.dataset.rgAnswer]=s.answers[el.dataset.rgAnswer].slice(0,2400);
+    for (const [key,n] of Object.entries(fields)) if(typeof s.person?.[key]==='string')safe.person[key]=tidy(s.person[key],n);
+    if(own(METRICS,s.metric))safe.metric=s.metric;
+    return safe;
+  }
+  try {
+    const raw=localStorage.getItem(KEY);
+    if(raw!==null)try{state=decode(raw);}catch(_){invalid=true;}
+  } catch(_){writeBlocked=true;}
+  model=M.restore({v:1,seed:state.seed,step:state.action});
+  function save(replace=false) {
+    state.lastVisitedAt=Date.now();
+    if(invalid&&!replace){set('save','An older record is preserved. Download this trial before leaving.');return;}
+    try {localStorage.setItem(KEY,JSON.stringify(state));invalid=false;writeBlocked=false;set('save','Work saved on this device.');}
+    catch(_){writeBlocked=true;set('save','Work could not be saved on this device. Download it before leaving.');}
+  }
+  function available(step) {
+    return step==='predict'||(step==='model'&&!!state.prediction)||(['analyze','explain'].includes(step)&&model.done);
+  }
+  function go(step,{focus=true,persist=true}={}) {
+    if(!available(step))return;
+    if(step!==state.step)announce('');
+    state.step=step;
+    for(const section of $$('[data-rg-step]'))section.hidden=section.dataset.rgStep!==step;
+    gates();
+    if(location.hash!=='#'+step)history.replaceState(null,'','#'+step);
+    if(persist)save();
+    if(focus){$('#rg-'+step+'-title').focus({preventScroll:true});$('#rg-'+step).scrollIntoView({block:'start'});}
+  }
+  function gates() {
+    for(const b of $$('[data-rg-go]')) {
+      const wanted=b.dataset.rgGo;
+      b.disabled=!available(wanted);
+      if(b.closest('.rg-steps')&&wanted===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+    }
+  }
+  function snapshots(s=model) {
+    return s.generations.flatMap(g=>[
+      {generation:g.generation,phase:'born',counts:g.counts,born:g.counts.total,pairs:g.pairs},
+      ...(g.survivorCounts?[{generation:g.generation,phase:'survived',counts:g.survivorCounts,born:g.counts.total,pairs:g.pairs}]:[])
+    ]);
+  }
+  function button(text,onClick,attrs={},cls='') {
+    const b=node('button',text,cls);b.type='button';
+    for(const [key,value] of Object.entries(attrs))b.setAttribute(key,value);
+    b.addEventListener('click',onClick);return b;
+  }
+  function colony(host,counts) {
+    const group=node('div','','rg-colony');
+    for(const label of M.GENOTYPES){
+      const n=counts[label], card=node('div','','rg-genotype');
+      card.dataset.rgGenotype=label;
+      const h=node('header'), count=node('b',String(n));count.dataset.rgCount=label;
+      h.append(node('span',label),count);
+      const tokens=node('div','','rg-tokens');tokens.setAttribute('aria-hidden','true');
+      for(let i=0;i<Math.min(n,8);i++){
+        const icon=node('img');icon.src=TOKEN;icon.alt='';icon.width=29;icon.height=24;tokens.append(icon);
+      }
+      if(n>8)tokens.append(node('span','+'+(n-8),'rg-excess'));
+      if(n===0)tokens.append(node('span','None','rg-excess'));
+      card.append(h,node('small',label==='BB'?'Not resistant':'Resistant'),tokens);
+      group.append(card);
+    }
+    host.replaceChildren(group);
+  }
+  function pairs(record,past) {
+    let crossList=record.pairs, future=false, target=record.generation;
+    const next=M.preview(model);
+    if(!past&&next?.action==='breed'){
+      const forecast=M.step(model).generations.at(-1);
+      crossList=forecast.pairs;target=forecast.generation;future=true;
+    }
+    const host=$('#rg-pairs'), box=$('#rg-punnett');host.replaceChildren();box.replaceChildren();
+    if(!crossList.length){host.append(node('p','No pairings have been recorded for this snapshot.'));return;}
+    host.append(node('p',future?'Pairs ready to produce Generation '+target+'.':'Pairs that produced Generation '+target+'.'));
+    const register=node('div','','rg-pair-list');host.append(register);
+    const focusId=crossList.some(p=>p.id===activePair)?activePair:crossList[0].id;
+    for(const [i,p] of crossList.entries()) {
+      const b=button('Pair '+(i+1)+' · '+p.parents.map(parent=>parent.genotype).join(' × '),()=>{
+        activePair=p.id;show(p);for(const other of register.children)other.setAttribute('aria-pressed',String(other===b));
+      },{'data-rg-pair':p.id,'aria-pressed':String(p.id===focusId)},'rg-pair');
+      register.append(b);
+    }
+    function show(p) {
+      const [first,second]=p.parents.map(parent=>parent.genotype);
+      const grid=node('div','','rg-cross');grid.setAttribute('role','img');
+      grid.setAttribute('aria-label',first+' crossed with '+second+'. Expected offspring: '+p.cells.join(', ')+'.');
+      for(const [i,label] of ['×',...second,first[0],p.cells[0],p.cells[1],first[1],p.cells[2],p.cells[3]].entries()){
+        const cell=node('span',label);cell.setAttribute('aria-hidden','true');
+        if([4,5,7,8].includes(i))cell.dataset.rgCell=label;
+        grid.append(cell);
+      }
+      box.replaceChildren(node('p',first+' × '+second+' · one expected offspring per box'),grid);
+      if(crossList.some(pair=>pair.reused))box.append(node('p','The parent group was odd, so one parent is used in two pairings.','rg-muted'));
+    }
+    show(crossList.find(p=>p.id===focusId));
+  }
+  function renderModel() {
+    const chosen=viewAction??state.action;
+    const view=chosen===state.action?model:M.restore({v:1,seed:state.seed,step:chosen});
+    const events=snapshots(view), entry=events.at(-1), row=view.generations.at(-1);
+    const next=M.preview(model), previous=M.STEPS[chosen-1];
+    set('trial-id','Dataset ID: '+trialId(state.seed));
+    const steps=$('#rg-timeline');steps.replaceChildren();
+    const labels=['G1 start','G2 born','G3 born','G3 survived','G4 born','G4 survived','G5 born'];
+    for(const [i,label] of labels.entries()){
+      const b=button(label,()=>{
+        viewAction=i===state.action?null:i;activePair='';renderModel();
+        $('#rg-timeline [data-rg-snapshot="'+i+'"]')?.focus({preventScroll:true});
+      },{'data-rg-snapshot':i,'aria-pressed':String(chosen===i)});
+      b.disabled=i>state.action;steps.append(b);
+    }
+    const event=$('#rg-events');
+    event.dataset.rgAction=chosen;event.dataset.rgGeneration=entry.generation;event.dataset.rgPhase=entry.phase;
+    set('event-stage','Generation '+entry.generation+' · '+(entry.phase==='survived'?'After selection':entry.generation===1?'Starting colony':entry.generation===5?'Final birth record':'Birth record'));
+    let title, why;
+    if(!previous){title='Four rats start the trial';why='One rat is RB. No selection pressure is applied while you produce Generations 2 and 3.';}
+    else if(previous.action==='select'){
+      title='Selection changed which rats survived';
+      const n=entry.counts.total;
+      why=n+' of '+entry.born+' survived. In this model, only RR and RB survive this selection step, so those rats can parent the next generation.';
+    }else{
+      title='Generation '+entry.generation+' offspring recorded';
+      why=entry.counts.total+' offspring replaced the parent generation. Each pair contributed four expected offspring.';
+      if(entry.generation===3)why+=' This is the last count before selection begins.';
+      if(entry.generation===5)why+=' This final record is offspring, not an additional survivor count.';
+    }
+    set('event-title',title);set('event-explanation',why);
+    set('colony-title','Generation '+entry.generation+' · '+(entry.generation===1?'Start':selectionName[entry.phase]));
+    colony($('#rg-colony'),entry.counts);
+    const pressure=$('#rg-selection-record');
+    if(row.survivorCounts){
+      const n=row.survivorCounts.total;
+      pressure.replaceChildren(node('p','Survival: '+fraction(n,row.counts.total)+'. The original '+row.counts.total+' births remain in the evidence table.','rg-selection-note'));
+    }else pressure.replaceChildren();
+    const action=$('#rg-next');
+    action.hidden=chosen===state.action&&model.done;
+    action.textContent=chosen!==state.action?'Back to current snapshot':next?.action==='select'?'Apply modeled selection to Generation '+next.generation:next?.title||'';
+    $('#rg-model-analyze').hidden=chosen!==state.action||!model.done;
+    pairs(entry,chosen!==state.action);
+  }
+  function metricVal(row,key){
+    const c=row.counts;return key==='population'?c.total:key==='carrier'?c.carrierFraction:c.redAlleleFraction;
+  }
+  function table(host,rows){
+    const t=node('table','','rg-data-table');
+    t.createCaption().textContent='Your model snapshots · simulated';
+    const columns=['Group','RR','RB','BB','Rats','% resistant','% R copies','Survival'];
+    const h=t.createTHead().insertRow();
+    columns.forEach(label=>{const th=node('th',label);th.scope='col';h.append(th);});
+    const body=t.createTBody();
+    for(const {generation,phase,counts:c,born} of rows){
+      const tr=body.insertRow();tr.dataset.rgGeneration=generation;tr.dataset.rgPhase=phase;
+      const label=node('th','G'+generation+' '+(generation===1?'start':selectionName[phase].toLowerCase()));label.scope='row';tr.append(label);
+      for(const key of M.GENOTYPES){const cell=node('td',String(c[key]));cell.dataset.rgCount=key;tr.append(cell);}
+      for(const [key,text] of [['population',String(c.total)],['carrier',fraction(c.carriers,c.total)],['allele',fraction(c.redAlleles,c.total*2)],['survival',phase==='survived'?fraction(c.total,born):'Not applied']]){
+        const cell=node('td',text);cell.dataset.rgMeasure=key;tr.append(cell);
+      }
+    }
+    host.replaceChildren(t);
+  }
+  let chartView, chartLabels, chartRows;
+  function chart(rows){
+    const host=$('#rg-chart'), metrics=$('#rg-metrics');
+    if(!metrics.children.length) for(const [key,title] of Object.entries(METRICS)){
+      metrics.append(button(title,()=>{state.metric=key;chart(rows);save();},{'data-rg-metric':key,'aria-pressed':'false'}));
+    }
+    for(const b of metrics.children)b.setAttribute('aria-pressed',String(b.dataset.rgMetric===state.metric));
+    const k=state.metric,n=k==='population';
+    const labels=rows.map(r=>'G'+r.generation+(r.phase==='survived'?' S':''));
+    if(window.Lab?.chart){
+      let graph=host.querySelector('.rg-shared-chart');
+      const decorate=()=>{
+        const plot=graph.querySelector('svg');
+        if(!plot)return;
+        plot.setAttribute('aria-label',chartLabels);
+        [...plot.querySelectorAll('rect > title')].forEach((label,i)=>{
+          if(chartRows[i])label.parentElement.classList.add('rg-chart-'+chartRows[i].phase);
+        });
+      };
+      if(!graph){
+        graph=node('div','','rg-shared-chart');
+        host.append(graph,node('p','Solid bars: start or births. Outlined bars (S): after selection.','rg-plot-key'));
+        if(window.MutationObserver)new MutationObserver(decorate).observe(graph,{childList:true});
+      }
+      chartRows=rows;
+      chartLabels=METRICS[k]+' by model snapshot. '+rows.map((r,i)=>labels[i]+': '+(n?metricVal(r,k):percent(metricVal(r,k)??0,1))).join('; ');
+      const options={type:'bar',responsive:true,height:282,xLabel:'Generation snapshot',
+        yLabel:n?'Number of rats':k==='carrier'?'Rats showing resistance (%)':'R allele copies (%)',
+        categories:labels,yMin:0,yMax:n?Math.max(4,Math.ceil(Math.max(...rows.map(r=>r.counts.total))/4)*4):100,
+        series:[{color:'var(--accent)',points:rows.map((r,i)=>({x:labels[i],y:(n?1:100)*(metricVal(r,k)??0)}))}]};
+      if(chartView)chartView.update(options);else chartView=window.Lab.chart(graph,options);
+      decorate();return;
+    }
+    const max=n?Math.max(4,Math.ceil(Math.max(...rows.map(r=>r.counts.total))/4)*4):1;
+    const left=42,top=12,bottom=151,right=416;
+    const p=rows.map((r,i)=>[left+(right-left)*i/Math.max(1,rows.length-1),bottom-(bottom-top)*(metricVal(r,k)??0)/max]);
+    const g=svg('svg',{viewBox:'0 0 430 179',role:'img','aria-label':METRICS[k]+' by model snapshot. '+rows.map((r,i)=>labels[i]+': '+(n?metricVal(r,k):percent(metricVal(r,k)??0,1))).join('; '),class:'rg-chart-canvas'});
+    for(let i=0;i<=4;i++){
+      const y=bottom-(bottom-top)*i/4;
+      const label=svg('text',{x:left-6,y:y+4,'text-anchor':'end',class:'rg-chart-label'});
+      label.textContent=n?String(max*i/4):String(i*25)+'%';
+      g.append(svg('line',{x1:left,x2:right,y1:y,y2:y,class:'rg-chart-axis'}),label);
+    }
+    for(const [i,[x,y]] of p.entries()){
+      if(i>0)g.append(svg('line',{x1:p[i-1][0],y1:p[i-1][1],x2:x,y2:y,class:'rg-chart-line'+(rows[i].phase==='survived'?' rg-chart-selection':'')}));
+    }
+    for(const [i,[x,y]] of p.entries()){
+      const point=rows[i].phase==='survived'?svg('rect',{x:x-4,y:y-4,width:8,height:8,class:'rg-chart-survived'}):svg('circle',{cx:x,cy:y,r:4.2,class:'rg-chart-born'});
+      const label=svg('text',{x,y:170,'text-anchor':'middle',class:'rg-chart-label'});
+      label.textContent=labels[i];g.append(point,label);
+    }
+    host.replaceChildren(g,node('p','● Start or births · □ S = after selection','rg-plot-key'));
+  }
+  function evidence(){
+    if(!model.done)return;
+    const rows=snapshots();
+    table($('#rg-analysis-table'),rows);table($('#rg-evidence-table'),rows);chart(rows);
+    const last=rows.at(-1), third=rows.find(r=>r.generation===3&&r.phase==='born'), surv=rows.find(r=>r.generation===3&&r.phase==='survived');
+    const list=node('ul','','rg-evidence-list');
+    for(const r of [third,surv,last])list.append(node('li','G'+r.generation+' '+selectionName[r.phase].toLowerCase()+': '+r.counts.total+' rats; '+fraction(r.counts.carriers,r.counts.total)+' show resistance.'));
+    $('#rg-evidence-summary').replaceChildren(list);
+  }
+  function render(){
+    gates();renderModel();evidence();
+  }
+  function advance() {
+    if(viewAction!==null){viewAction=null;activePair='';renderModel();$('#rg-next').focus({preventScroll:true});return;}
+    if(model.done||!state.prediction)return;
+    model=M.step(model);state.action=model.step;activePair='';save();render();
+    announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
+    if(model.done)$('#rg-model-analyze').focus({preventScroll:true});
+  }
+  const person=()=>({...window.Lab?.identity?.get?.(),...state.person});
+  function fill() {
+    for(const r of $$('input[name=rg-prediction]'))r.checked=r.value===state.prediction;
+    for(const f of $answer)f.value=state.answers[f.dataset.rgAnswer]||'';
+    const labels=person();for(const key of Object.keys(fields))$('#rg-'+key).value=labels[key]||'';
+  }
+  function report(){
+    const p=person(), lines=['RAT GENERATIONS · SIMULATED MODEL','OpenSciEd Biology B.4 Lesson 3 companion · Robert Smitka','',
+      'Name: '+(p.name||''),'Class period: '+(p.period||''),'Dataset ID: '+trialId(state.seed),'Prediction: '+(PRED[state.prediction]||'Not recorded'),
+      '','GENERATION RECORD'];
+    for(const {generation,phase,counts:c,born} of snapshots())lines.push(
+      'G'+generation+' '+selectionName[phase]+': RR '+c.RR+', RB '+c.RB+', BB '+c.BB+'; '+c.total+' rats; '+
+      fraction(c.carriers,c.total)+' showing resistance; '+fraction(c.redAlleles,c.total*2)+' R allele copies'+
+      (phase==='survived'?'; survival '+fraction(c.total,born):'')+'.');
+    lines.push('','MY RESPONSES');
+    for(const f of $answer)lines.push(f.labels?.[0]?.textContent?.trim()||f.dataset.rgAnswer,state.answers[f.dataset.rgAnswer]||'[No response yet]','');
+    lines.push('This model does not supply measured animal outcomes or predict a real population.');
+    return lines.join('\n');
+  }
+  function copy(failed=false){
+    const dlg=$('#rg-copy-dialog'), out=$('#rg-copy-text');out.value=report();
+    set('copy-hint',(failed?'The download did not start. ':'')+'Select the text and use Copy on your device.');
+    if(!dlg.open)dlg.showModal();out.focus();out.select();
+  }
+  function download(){
+    try{
+      const url=URL.createObjectURL(new Blob([report()],{type:'text/plain;charset=utf-8'})), a=node('a');
+      a.href=url;a.download='rat-generations-investigation.txt';document.body.append(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),5000);announce('Download requested. If no file appears, choose Copy investigation.');
+    }catch(_){copy(true);}
+  }
+  for(const b of $$('[data-rg-go]'))b.addEventListener('click',()=>go(b.dataset.rgGo));
+  $('#rg-prediction').addEventListener('submit',ev=>{
+    ev.preventDefault();const choice=$('input[name=rg-prediction]:checked')?.value;
+    if(own(PRED,choice)){state.prediction=choice;go('model');}
+  });
+  for(const entry of $answer)entry.addEventListener('input',()=>{state.answers[entry.dataset.rgAnswer]=entry.value.slice(0,2400);save();});
+  for(const [key,limit] of Object.entries(fields))$('#rg-'+key).addEventListener('input',e=>{state.person[key]=tidy(e.currentTarget.value,limit);save();});
+  $('#rg-next').addEventListener('click',advance);
+  $('#rg-check').addEventListener('submit',e=>{
+    e.preventDefault();
+    const selected=$('input[name=rg-concept]:checked')?.value;
+    const msg=selected==='alleles'?'Right. The denominator counts every allele copy of this gene, two per rat.':
+      selected==='rats'?'The number of rats is the denominator for the fraction of rats showing resistance. For allele frequency, count copies.':
+      selected==='r'?'R copies are the numerator. The denominator counts both R and B copies.':'Choose a denominator first.';
+    set('check-feedback',msg);announce(msg,true);
+  });
+  $('#rg-download').addEventListener('click',download);$('#rg-copy').addEventListener('click',()=>copy());
+  $('#rg-copy-select').addEventListener('click',async()=>{
+    const field=$('#rg-copy-text');field.focus();field.select();
+    try {await navigator.clipboard.writeText(field.value);set('copy-hint','Copied.');}
+    catch (_){set('copy-hint','Selected. Use Copy on your device.');}
+  });
+  for(const b of $$('[data-rg-close]'))b.addEventListener('click',()=>b.closest('dialog').close());
+  $('#rg-reset').addEventListener('click',()=>$('#rg-reset-dialog').showModal());
+  $('#rg-confirm-reset').addEventListener('click',()=>{
+    state=newRecord();model=M.create(state.seed);viewAction=null;activePair='';set('check-feedback','');
+    for(const name of ['analysis-table','evidence-table','evidence-summary','metrics'])$('#rg-'+name).replaceChildren();
+    for(const r of $$('input[name=rg-concept]'))r.checked=false;
+    fill();render();save(true);$('#rg-reset-dialog').close();go('predict',{persist:false});
+    if(!writeBlocked)announce('A new trial is ready to start.');
+  });
+  window.addEventListener('hashchange',()=>{
+    const hash=location.hash.slice(1);
+    if(STEPS.includes(hash))go(available(hash)?hash:state.step);
+  });
+  fill();colony($('#rg-start-colony'),M.create(0).generations[0].counts);render();
+  const request=location.hash.slice(1);
+  go(available(request)?request:available(state.step)?state.step:'predict',{focus:false,persist:false});
+  if(invalid)set('save','An older record is preserved. Download this trial before leaving.');
+  if(writeBlocked)set('save','This browser cannot save work. Download your report before leaving.');
+})();

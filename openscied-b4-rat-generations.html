@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script src="domain-redirect.js"></script>
+<!-- seo:start -->
+<title>Rat Generations — OpenSciEd Biology B.4 companion | Lab Bench</title>
+<meta name="description" content="Model natural selection across five generations of a simulated rat colony. Inspect Punnett squares and compare population size, trait share and allele frequency.">
+<link rel="canonical" href="https://biologylabbench.com/openscied-b4-rat-generations">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AP Bio Digital Lab Bench">
+<meta property="og:title" content="Rat Generations — OpenSciEd Biology B.4 companion | Lab Bench">
+<meta property="og:description" content="Model natural selection across five generations of a simulated rat colony. Inspect Punnett squares and compare population size, trait share and allele frequency.">
+<meta property="og:url" content="https://biologylabbench.com/openscied-b4-rat-generations">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://biologylabbench.com/img/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Rat Generations — OpenSciEd Biology B.4 companion | Lab Bench">
+<meta name="twitter:description" content="Model natural selection across five generations of a simulated rat colony. Inspect Punnett squares and compare population size, trait share and allele frequency.">
+<meta name="twitter:image" content="https://biologylabbench.com/img/og.png">
+<meta name="twitter:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://biologylabbench.com/#website","url":"https://biologylabbench.com/","name":"AP Bio Digital Lab Bench","alternateName":"Biology Lab Bench","inLanguage":"en","creator":{"@id":"https://biologylabbench.com/#creator"}},{"@type":"Person","@id":"https://biologylabbench.com/#creator","name":"Robert Smitka"},{"@type":"WebPage","@id":"https://biologylabbench.com/openscied-b4-rat-generations#webpage","url":"https://biologylabbench.com/openscied-b4-rat-generations","name":"Rat Generations — OpenSciEd Biology B.4 companion | Lab Bench","description":"Model natural selection across five generations of a simulated rat colony. Inspect Punnett squares and compare population size, trait share and allele frequency.","inLanguage":"en","isPartOf":{"@id":"https://biologylabbench.com/#website"},"isAccessibleForFree":true,"license":"https://creativecommons.org/licenses/by-nc-sa/4.0/","creator":{"@id":"https://biologylabbench.com/#creator"},"breadcrumb":{"@id":"https://biologylabbench.com/openscied-b4-rat-generations#breadcrumb"}},{"@type":"BreadcrumbList","@id":"https://biologylabbench.com/openscied-b4-rat-generations#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"All labs","item":"https://biologylabbench.com/"},{"@type":"ListItem","position":2,"name":"Rat Generations","item":"https://biologylabbench.com/openscied-b4-rat-generations"}]}]}</script>
+<!-- seo:end -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{const t=localStorage.getItem("aplab:pref:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="openscied-b4-rat-generations.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to activity</a>
+<main id="main" class="rg-shell">
+  <div class="rg-top"><a href="openscied-dashboard.html#unit4">← Biology Companion Activities</a><span data-ph="theme"></span></div>
+  <header class="rg-hero">
+    <div><p class="eyebrow">Unit 4 · Lesson 3 · Virtual investigation</p><h1>Rat Generations</h1><p>Follow an inherited trait through five generations.</p></div>
+    <img src="assets/rat-generations-preview.svg" width="960" height="600" alt="">
+  </header>
+  <nav class="rg-steps" aria-label="Investigation steps">
+    <button type="button" data-rg-go="predict" aria-current="step"><span aria-hidden="true">1</span> Predict</button>
+    <button type="button" data-rg-go="model" disabled><span aria-hidden="true">2</span> Model</button>
+    <button type="button" data-rg-go="analyze" disabled><span aria-hidden="true">3</span> Analyze</button>
+    <button type="button" data-rg-go="explain" disabled><span aria-hidden="true">4</span> Explain</button>
+  </nav>
+  <noscript><p>JavaScript is required to run this virtual investigation.</p></noscript>
+  <section id="rg-predict" data-rg-step="predict" aria-labelledby="rg-predict-title">
+    <div class="rg-stage"><div><p class="eyebrow">01 · Starting idea</p><h2 id="rg-predict-title" tabindex="-1">Make a prediction</h2></div></div>
+    <div class="rg-columns">
+      <div class="rg-panel">
+        <h3>Meet the starting colony</h3>
+        <p>Every rat has two copies of the gene we’re tracking. Four rats start the model: one <strong>RB</strong> and three <strong>BB</strong>.</p>
+        <p><strong>R</strong> represents the red allele associated with resistance in this simplified model. <strong>B</strong> represents the blue allele. One R is enough for a rat to show the resistant trait in this model.</p>
+        <div id="rg-start-colony"></div>
+      </div>
+      <form class="rg-panel" id="rg-prediction">
+        <fieldset><legend>After the selection pressure is introduced, how do you think the percentage of rats with the resistant trait will change?</legend>
+          <label class="rg-choice"><input type="radio" name="rg-prediction" value="increase" required><span>Increase</span></label>
+          <label class="rg-choice"><input type="radio" name="rg-prediction" value="same"><span>Stay about the same</span></label>
+          <label class="rg-choice"><input type="radio" name="rg-prediction" value="decrease"><span>Decrease</span></label>
+        </fieldset>
+        <label for="rg-reason">Why? <span class="rg-muted">(optional)</span></label>
+        <textarea id="rg-reason" rows="2" maxlength="2400" data-rg-answer="reason"></textarea>
+        <div class="rg-actions"><button class="btn btn--primary" type="submit">Save prediction and start</button></div>
+      </form>
+    </div>
+  </section>
+  <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
+    <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
+    <p class="rg-intro">Read the event after each action. Choose a pair to inspect its cross. Each trial’s random pairings stay the same if you reload; a new trial gets new pairings.</p>
+    <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
+    <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
+      <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title"></h3><p id="rg-event-explanation"></p></div>
+      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button></div>
+    </div>
+    <div class="rg-columns rg-model-grid">
+      <div class="rg-panel rg-colony-panel"><h3 id="rg-colony-title">Colony</h3><div id="rg-colony"></div><p id="rg-genotype-key" class="rg-muted"><strong>Model key:</strong> RR and RB show the resistant trait. BB does not.</p><div id="rg-selection-record"></div></div>
+      <div class="rg-panel rg-pairs-panel"><h3>Look inside a cross</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-pairs"></div><div id="rg-punnett"></div></div>
+    </div>
+  </section>
+  <section id="rg-analyze" data-rg-step="analyze" aria-labelledby="rg-analyze-title" hidden>
+    <div class="rg-stage"><div><p class="eyebrow">03 · Read the data</p><h2 id="rg-analyze-title" tabindex="-1">Three ways to describe a colony</h2></div><button type="button" class="btn btn--primary" data-rg-go="explain">Go to Explain</button></div>
+    <div class="rg-columns rg-analysis-grid">
+      <div class="rg-panel">
+        <h3>Plot your trial</h3>
+        <div class="rg-metrics" id="rg-metrics" aria-label="Measure to plot"></div><div id="rg-chart"></div>
+        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller.</p>
+      </div>
+      <div class="rg-panel">
+        <h3>Your generation record</h3><div id="rg-analysis-table"></div>
+        <details class="rg-details"><summary>How are the measures calculated?</summary>
+          <dl class="rg-formulas">
+            <dt>Population size</dt><dd>RR rats + RB rats + BB rats.</dd>
+            <dt>Percent showing resistance</dt><dd>Rats with at least one R ÷ all rats.</dd>
+            <dt>R allele frequency</dt><dd>Number of R copies ÷ all copies of this gene. RR contributes two R copies; RB contributes one.</dd>
+          </dl>
+        </details>
+      </div>
+    </div>
+    <div class="rg-panel rg-concept"><h3>Quick check: Which denominator?</h3>
+      <form id="rg-check"><fieldset><legend>Suppose you are calculating the frequency of R. What goes on the bottom of the fraction?</legend>
+        <label class="rg-choice"><input type="radio" name="rg-concept" value="rats"><span>Number of rats in that snapshot</span></label>
+        <label class="rg-choice"><input type="radio" name="rg-concept" value="alleles"><span>Number of allele copies in that snapshot</span></label>
+        <label class="rg-choice"><input type="radio" name="rg-concept" value="r"><span>Number of R copies in that snapshot</span></label>
+      </fieldset><button class="btn" type="submit">Check answer</button><p id="rg-check-feedback"></p></form>
+    </div>
+  </section>
+  <section id="rg-explain" data-rg-step="explain" aria-labelledby="rg-explain-title" hidden>
+    <div class="rg-stage"><div><p class="eyebrow">04 · Make an evidence-based explanation</p><h2 id="rg-explain-title" tabindex="-1">Explain what changed, and why</h2></div></div>
+    <div class="rg-columns rg-explain-grid">
+      <div class="rg-panel rg-evidence"><h3>Your trial evidence</h3><div id="rg-evidence-summary"></div><details class="rg-details" open><summary>Every generation and selection step</summary><div id="rg-evidence-table"></div></details>
+        <details class="rg-details"><summary>Class reading connection</summary><p>The historical reading compares rats from a farm population and rats from a laboratory population. In your assigned reading, compare each group’s survivors with its starting group. How is that evidence different from a simulated generation?</p><p>The Tokyo percentage from class is a real-world question to explain, not a target that the model is set to produce.</p></details>
+      </div>
+      <div class="rg-panel rg-writing">
+        <label for="rg-claim"><strong>1. Make a claim.</strong> How did selection affect which rats contributed offspring to the next generation?</label><textarea id="rg-claim" rows="3" maxlength="2400" data-rg-answer="claim"></textarea>
+        <label for="rg-evidence"><strong>2. Use evidence.</strong> Compare a count and a percentage from before and after selection. Explain how the population size and the proportion with the trait can change differently.</label><textarea id="rg-evidence" rows="3" maxlength="2400" data-rg-answer="evidence"></textarea>
+        <label for="rg-limits"><strong>3. Name a limit.</strong> Why isn’t this trial enough to predict what happens in a real rat population? If B is still present, explain how it could be passed on.</label><textarea id="rg-limits" rows="3" maxlength="2400" data-rg-answer="limits"></textarea>
+        <fieldset class="rg-identity"><legend>Put your name on the report <span class="rg-muted">(optional)</span></legend>
+          <div><label for="rg-name">Name</label><input id="rg-name" type="text" autocomplete="name" maxlength="100"></div>
+          <div><label for="rg-period">Class period</label><input id="rg-period" type="text" maxlength="24"></div>
+        </fieldset>
+        <div class="rg-actions"><button class="btn btn--primary" type="button" id="rg-download">Download investigation</button><button class="btn" type="button" id="rg-copy">Copy investigation</button></div>
+      </div>
+    </div>
+  </section>
+  <div class="rg-footer"><p id="rg-save">Work stays in this browser. Download it before using another device.</p><button type="button" class="btn btn--ghost" id="rg-reset">Start a new trial…</button></div>
+  <p id="rg-status" role="status" aria-live="polite" aria-atomic="true"></p>
+  <details class="rg-details rg-method"><summary>What the model does and does not show</summary>
+    <p>This is a classroom simulation, not a pest-control investigation. It models two alleles, one simplified trait, fixed expected offspring counts, and nonoverlapping generations. During the selection steps, RR and RB survive and BB does not. Rats do not acquire R because they need it; offspring can inherit it from parents. No rat population measurements come from this simulation.</p>
+  </details>
+</main>
+<dialog id="rg-reset-dialog" aria-labelledby="rg-reset-heading"><h2 id="rg-reset-heading">Start a different trial?</h2><p>This resets your prediction, data and responses for this activity on this browser. Download your current report first to keep a copy.</p><div class="rg-actions"><button type="button" class="btn" data-rg-close autofocus>Keep working</button><button type="button" class="btn btn--danger" id="rg-confirm-reset">Start new trial</button></div></dialog>
+<dialog id="rg-copy-dialog" aria-labelledby="rg-copy-heading"><h2 id="rg-copy-heading">Copy your investigation</h2><label for="rg-copy-text">Investigation report</label><textarea id="rg-copy-text" rows="11" readonly></textarea><div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-copy-select">Select report</button><button type="button" class="btn" data-rg-close>Close</button></div><p id="rg-copy-hint"></p></dialog>
+<footer class="site-footer"><div class="wrap wrap--wide gutter">
+  <p><strong>Created by Robert Smitka.</strong> Original material licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>.</p>
+  <p>Companion to <a href="https://openscied.org/instructional-materials/b-4-natural-selection-evolution/">OpenSciEd High School Biology B.4 Lesson 3</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes: digital model with original artwork, recorded snapshots, graphs, and new evidence prompts. Independent, not affiliated with or endorsed by OpenSciEd.</p>
+</div></footer>
+<script src="lab.js"></script>
+<script src="openscied-b4-rat-generations-logic.js"></script>
+<script src="openscied-b4-rat-generations.js"></script>
+</body>
+</html>
