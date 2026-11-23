@@ -48,7 +48,8 @@
   function compareText(state){
     if(!state.a || !state.b || state.a.phase!=='complete'||state.b.phase!=='complete')return '';
     const change=L.comparison(state.scenario).changes[0], a=L.summary(state.a), b=L.summary(state.b);
-    return 'Both trials began with the same '+a.starting+' animals and the same needs. Only '+name(change.resource).toLowerCase()+' changed: '+change.baseline+' to '+change.scenario+' '+unit(change.scenario)+'. The next herd went from '+a.ending+' to '+b.ending+' across the trials. Trial B’s herd still grew from '+b.starting+' to '+b.ending+'; the shortage slowed growth rather than making the entire population shrink. Extra units at another station could not meet an animal’s assigned need.';
+    const growth=b.ending>b.starting&&b.ending<a.ending?' Trial B’s herd still grew from '+b.starting+' to '+b.ending+'; the shortage slowed growth rather than making the entire population shrink.':'';
+    return 'Both trials began with the same '+a.starting+' animals and the same needs. Only '+name(change.resource).toLowerCase()+' changed: '+change.baseline+' to '+change.scenario+' '+unit(change.scenario)+'. The next herd went from '+a.ending+' to '+b.ending+' across the trials.'+growth+' Extra units at another station could not meet an animal’s assigned need.';
   }
   function reportText(state){
     const a=state.a?.phase==='complete'&&L.summary(state.a), b=state.b?.phase==='complete'&&L.summary(state.b);
@@ -65,7 +66,7 @@
     let state=blank(),storage='ok',raw=null;
     try{raw=root.localStorage.getItem(KEY);const s=restore(raw);if(s)state=s;else storage='preserved';}
     catch(_){storage='blocked';}
-    let selected='',dragged='',touch=null,ghost=null,suppress=0,lastMessage='',recent='';
+    let selected='',gesture=null,ghost=null,suppress=null,lastMessage='',recent='';
     host.classList.add('cc-habitat-ui');
     const $=s=>host.querySelector(s), $$=s=>Array.from(host.querySelectorAll(s));
     const active=()=>state.b?.phase==='match'?state.b:state.a?.phase==='match'?state.a:null;
@@ -115,14 +116,14 @@
       const chips=Array.from({length:max},(_,i)=>`<i data-used="${i>=stock}"></i>`).join('');
       return `<button type="button" data-habitat-resource="${r}" data-empty="${stock===0}" aria-label="${name(r)}, ${stock} ${unit(stock)} left">
         <span class="cc-habitat-emblem">${glyph(r)}</span>
-        <strong>${name(r)}</strong><span class="cc-habitat-stock" data-habitat-stock="${r}">${stock} left <small>of ${max}</small></span>
+        <strong>${name(r)}</strong><span class="cc-habitat-stock" data-habitat-stock="${r}" data-habitat-remaining="${stock}">${stock} left <small>of ${max}</small></span>
         <span class="cc-habitat-chips" aria-hidden="true">${chips||'<i data-used="true"></i>'}</span>
       </button>`;
     }
     function tile(a,match){
       const attr=match?'data-habitat-match':'data-habitat-animal';
-      const head=match?'<div ':'<button type="button" draggable="true" aria-pressed="false" ';
-      return `${head}${attr}="${a.id}" data-habitat-need="${a.need}" class="cc-habitat-animal${match?' cc-habitat-matched':''}">
+      const head=match?'<div ':'<button type="button" aria-pressed="false" ';
+      return `${head}${attr}="${a.id}" data-habitat-need="${a.need}"${match&&a.id===recent?' data-just-match':''} class="cc-habitat-animal${match?' cc-habitat-matched':''}">
         <span class="cc-habitat-beast">${animalIcon}<span>Wildebeest ${numeral(a.id)}</span></span>
         <span class="cc-habitat-need">${glyph(a.need)} ${match?'Found':'Needs'} ${name(a.need).toLowerCase()}${match?' ✓':''}</span>
       ${match?'</div>':'</button>'}`;
@@ -218,7 +219,7 @@
     host.addEventListener('click',e=>{
       const control=e.target.closest('button');if(!control||!host.contains(control))return;
       if(control.dataset.habitatAnimal||control.dataset.habitatResource){
-        if(e.detail!==0&&Date.now()<suppress){e.preventDefault();return;}
+        if(e.detail!==0&&suppress?.id===control.dataset.habitatAnimal&&Date.now()<suppress.until){suppress=null;e.preventDefault();return;}
         if(control.dataset.habitatAnimal)selectAnimal(control.dataset.habitatAnimal,e.detail===0);
         else tryMatch(selected,control.dataset.habitatResource);
         return;
@@ -247,48 +248,36 @@
     });
     function targetAt(x,y){const n=document.elementFromPoint(x,y)?.closest('[data-habitat-resource]');return n&&host.contains(n)?n:null;}
     function over(target){$$('[data-habitat-resource]').forEach(n=>n.toggleAttribute('data-over',n===target));}
-    function endDrag(){dragged='';touch=null;over(null);ghost?.remove();ghost=null;}
-    host.addEventListener('dragstart',e=>{
-      const card=e.target.closest('[data-habitat-animal]');if(!card||!e.dataTransfer)return;
-      dragged=card.dataset.habitatAnimal;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',dragged);
-      selectAnimal(dragged);
-    });
-    host.addEventListener('dragover',e=>{
-      const target=e.target.closest('[data-habitat-resource]');
-      if(dragged&&target){e.preventDefault();over(target);if(e.dataTransfer)e.dataTransfer.dropEffect='move';}
-    });
-    host.addEventListener('dragleave',e=>{if(!host.contains(e.relatedTarget))over(null);});
-    host.addEventListener('dragend',endDrag);
-    host.addEventListener('drop',e=>{
-      const target=e.target.closest('[data-habitat-resource]');
-      if(!dragged||!target)return;
-      e.preventDefault();const id=dragged;endDrag();tryMatch(id,target.dataset.habitatResource);
-    });
+    function endDrag(){gesture=null;over(null);ghost?.remove();ghost=null;}
+    // One captured pointer path works across mouse, pen and touch. The
+    // click/tap and keyboard route remains independent of dragging.
     host.addEventListener('pointerdown',e=>{
-      if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
+      if(!e.isPrimary||e.button!==0)return;
       const card=e.target.closest('[data-habitat-animal]');
-      if(!card||touch)return;
-      touch={pointer:e.pointerId,card,id:card.dataset.habitatAnimal,x:e.clientX,y:e.clientY,drag:false};
+      if(!card||gesture)return;
+      suppress=null;
+      gesture={pointer:e.pointerId,id:card.dataset.habitatAnimal,x:e.clientX,y:e.clientY,drag:false};
       card.setPointerCapture?.(e.pointerId);
     });
     host.addEventListener('pointermove',e=>{
-      if(!touch||touch.pointer!==e.pointerId)return;
-      if(!touch.drag&&Math.hypot(e.clientX-touch.x,e.clientY-touch.y)<10)return;
-      if(!touch.drag){
-        touch.drag=true;selectAnimal(touch.id);
+      if(!gesture||gesture.pointer!==e.pointerId)return;
+      if(!gesture.drag&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<10)return;
+      if(!gesture.drag){
+        gesture.drag=true;selectAnimal(gesture.id);
         ghost=document.createElement('div');ghost.className='cc-habitat-ghost';ghost.setAttribute('aria-hidden','true');
-        ghost.textContent='Wildebeest '+numeral(touch.id);host.append(ghost);
+        ghost.textContent='Wildebeest '+numeral(gesture.id);host.append(ghost);
       }
       ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';
       over(targetAt(e.clientX,e.clientY));
     });
     host.addEventListener('pointerup',e=>{
-      if(!touch||touch.pointer!==e.pointerId)return;
-      const was=touch, target=was.drag&&targetAt(e.clientX,e.clientY);
+      if(!gesture||gesture.pointer!==e.pointerId)return;
+      const was=gesture, target=was.drag&&targetAt(e.clientX,e.clientY);
       endDrag();
-      if(was.drag){suppress=Date.now()+400;if(target)tryMatch(was.id,target.dataset.habitatResource);}
+      if(was.drag){suppress={id:was.id,until:Date.now()+400};if(target)tryMatch(was.id,target.dataset.habitatResource);}
     });
     host.addEventListener('pointercancel',endDrag);
+    host.addEventListener('lostpointercapture',e=>{if(gesture?.pointer===e.pointerId)endDrag();});
     draw();
     return {report:()=>reportText(state),reset};
   }

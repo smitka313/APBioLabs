@@ -47,3 +47,4 @@
 .cc-habitat-callout{margin-top:15px;border-left:4px solid var(--accent)}
 @media(max-width:500px){.cc-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #cc-writing-habitat{white-space:pre-wrap;overflow-wrap:anywhere}
+#cc-writing-range{white-space:pre-wrap;overflow-wrap:anywhere}

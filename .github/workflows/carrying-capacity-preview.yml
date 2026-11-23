@@ -6,10 +6,12 @@ on:
       - 'carrying-logic.js'
       - 'carrying-scene.js'
       - 'carrying-habitat*'
+      - 'carrying-range*'
       - 'carrying-capacity*'
       - 'assets/carrying-capacity*'
       - 'tests/carrying-capacity*'
       - 'tests/carrying-habitat*'
+      - 'tests/carrying-range*'
       - '.github/workflows/carrying-capacity-preview.yml'
   workflow_dispatch:
 
@@ -31,7 +33,7 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Check model and source expectations
-        run: node --test tests/carrying-capacity.test.js tests/carrying-habitat.test.js
+        run: node --test tests/carrying-capacity.test.js tests/carrying-habitat.test.js tests/carrying-range.test.js
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Exercise the activity in desktop and mobile Chromium

@@ -165,6 +165,32 @@ async function matchRemainingHabitat(p) {
   return matched;
 }
 
+async function dragHabitat(p, source, target) {
+  // Scroll both real hit targets into the same viewport before the pointer
+  // goes down. An automatic locator drag would fire native HTML DnD instead.
+  const center = node => node.evaluate(el => {
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2 + scrollX, y: r.top + r.height / 2 + scrollY };
+  });
+  const from = await center(source), to = await center(target);
+  await p.evaluate(y => scrollTo({ top: y - innerHeight / 2, behavior: 'instant' }), (from.y + to.y) / 2);
+  const a = await source.boundingBox(), b = await target.boundingBox();
+  assert.ok(a && b, 'Pointer drag source and station must both be displayed.');
+  const start = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+  const end = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  const { width, height } = p.viewportSize();
+  assert.ok([start, end].every(pt => pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height),
+    `Drag endpoints must be in the viewport: ${JSON.stringify({ start, end, width, height })}`);
+  await dragPointer(p, start, end);
+}
+
+async function dragPointer(p, start, end) {
+  await p.mouse.move(start.x, start.y);
+  await p.mouse.down();
+  try { await p.mouse.move(end.x, end.y, { steps: 8 }); }
+  finally { await p.mouse.up(); }
+}
+
 async function matchHabitat(p, piece, modality) {
   const source = habitatAnimal(p, piece.id);
   const target = habitatStation(p, piece.need);
@@ -175,7 +201,7 @@ async function matchHabitat(p, piece, modality) {
     await target.focus();
     await p.keyboard.press('Enter');
   } else if (modality === 'drag') {
-    await source.dragTo(target);
+    await dragHabitat(p, source, target);
   } else if (modality === 'tap') {
     await source.tap();
     await target.tap();
@@ -230,6 +256,14 @@ async function followHabitatWorkflow(browser, url) {
       /cannot meet that need/i.test(await p.locator('#cc-habitat-live').textContent()) &&
       (await Promise.all(SOURCE.map(async key => (await habitatStock(p, key)) === before[key]))).every(Boolean),
     'a wrong station explains the mismatch without using stock or marking an animal');
+    await p.keyboard.press('Escape');
+    check(!/cannot meet that need/i.test(await p.locator('#cc-habitat-live').textContent()),
+      'previous mismatch feedback is cleared before exercising real pointer events');
+    await dragHabitat(p, habitatAnimal(p, first.id), habitatStation(p, wrong));
+    check(await habitatMatch(p, first.id).count() === 0 &&
+      /cannot meet that need/i.test(await p.locator('#cc-habitat-live').textContent()) &&
+      (await Promise.all(SOURCE.map(async key => (await habitatStock(p, key)) === before[key]))).every(Boolean),
+    'a wrong pointer drop uses the same no-match rules and preserves every stock');
     const pending = habitatAnimal(p, first.id);
     if (await pending.getAttribute('aria-pressed') === 'true') {
       await p.keyboard.press('Escape');
@@ -352,6 +386,13 @@ async function visualSweep(browser, url) {
       check(await fit(p, '#cc-board') && await p.locator('#cc-compare').isVisible(), cfg.name + ': completed round scene fits and comparison unlocks');
       await p.locator('#cc-board').scrollIntoViewIfNeeded();
       await shot(p, cfg.name + '-round-12');
+      if (cfg.width === 390) {
+        check(await fit(p, '#cc-range-plot'), cfg.name + ': estimation worksheet graph fits horizontally');
+        await rangeKeyboard(p, 11);
+        await rangeLock(p).click();
+        check(await confirmedBand(p, 7, 15), cfg.name + ': worksheet confirms the same simulated range');
+        await shot(p, cfg.name + '-range-baseline', true);
+      }
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' Run');
       await go(p, 'evidence');
       check(await fit(p, '#cc-field-chart svg[role="img"]'), cfg.name + ': published evidence plot stays on screen horizontally');
@@ -361,6 +402,68 @@ async function visualSweep(browser, url) {
       await habitatVisual(p, cfg);
     });
   }
+}
+
+const RANGE = '#cc-range-app';
+const RANGE_NOTE = 'The lower-grass trial repeated smaller highs, so the herd fluctuated around a lower estimate.';
+const rangePlot = p => p.locator('#cc-range-plot');
+const rangeLock = p => p.locator('#cc-range-lock');
+const rangeSlider = p => p.locator('#cc-range-slider');
+const rangeFeedback = p => p.locator('#cc-range-estimate-feedback');
+
+async function dragRangeLine(p, value) {
+  const plot = rangePlot(p);
+  await plot.scrollIntoViewIfNeeded();
+  const { start, end } = await plot.evaluate((svg, n) => {
+    const line = svg.querySelector('#cc-range-line');
+    const x = (Number(line.getAttribute('x1')) + Number(line.getAttribute('x2'))) / 2;
+    const y = Number(line.getAttribute('y1'));
+    const top = Number(svg.dataset.yTop), bottom = Number(svg.dataset.yBottom), max = Number(svg.dataset.yMax);
+    const screen = (a, b) => {
+      const p = new DOMPoint(a, b).matrixTransform(svg.getScreenCTM());
+      return { x: p.x, y: p.y };
+    };
+    return { start: screen(x, y), end: screen(x, top + (1 - n / max) * (bottom - top)) };
+  }, value);
+  const { width, height } = p.viewportSize();
+  assert.ok([start, end].every(pt => pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height),
+    `Range drag endpoints are on the visible worksheet SVG: ${JSON.stringify({ start, end })}`);
+  await dragPointer(p, start, end);
+  const renderedAtValue = await plot.evaluate((svg, n) => {
+    const y = Number(svg.querySelector('#cc-range-line').getAttribute('y1'));
+    const top = Number(svg.dataset.yTop), bottom = Number(svg.dataset.yBottom), max = Number(svg.dataset.yMax);
+    return Math.abs(y - (top + (1 - n / max) * (bottom - top))) < 0.2;
+  }, value);
+  check(renderedAtValue && Number(await rangeSlider(p).inputValue()) === value &&
+    new RegExp(`\\b${value}\\b`).test(await p.locator('#cc-range-line-value').textContent()),
+  'pointer moves the horizontal SVG estimate and updates its accessible value to ' + value);
+}
+
+async function rangeKeyboard(p, value) {
+  const slider = rangeSlider(p);
+  const min = Number(await slider.getAttribute('min'));
+  const step = Number(await slider.getAttribute('step') || 1);
+  const presses = (value - min) / step;
+  assert.ok(Number.isInteger(presses) && presses >= 0 && presses < 50, 'The target estimate must be reachable on the range input.');
+  await slider.focus();
+  await p.keyboard.press('Home');
+  for (let i = 0; i < presses; i++) await p.keyboard.press('ArrowRight');
+  check(Number(await slider.inputValue()) === value, 'keyboard positions the horizontal estimate at ' + value);
+}
+
+const includesRange = (copy, low, high) => new RegExp(`\\b${low}\\s*(?:[–—−-]|to)\\s*${high}\\b`).test(copy);
+const confirmedBand = async (p, low, high) => {
+  const band = p.locator('#cc-range-confirmed');
+  return (await rangeFeedback(p).getAttribute('data-range-state')) === 'correct' &&
+    includesRange(await rangeFeedback(p).textContent(), low, high) &&
+    (await band.getAttribute('data-low')) === String(low) && (await band.getAttribute('data-high')) === String(high) &&
+    await band.isVisible() && await p.locator('#cc-range-accepted-band').isVisible();
+};
+
+async function rangeRunEvidence(p, trial, estimate, low, high) {
+  await p.locator('#cc-range-trial').selectOption(trial);
+  check(Number(await rangeSlider(p).inputValue()) === estimate &&
+    await confirmedBand(p, low, high), trial + ' restores its independent locked estimate and confirmed range');
 }
 
 async function followWorkflow(browser, url) {
@@ -404,6 +507,24 @@ async function followWorkflow(browser, url) {
     await rounds(p, 12);
     const baseline = await openHistory();
     check(baseline.length === 12, 'simulated evidence retains the complete baseline trial');
+    await rangePlot(p).waitFor({ state: 'visible' });
+    check(await rangeLock(p).isDisabled() && await rangePlot(p).locator('.cc-range-late').isVisible() &&
+      await rangePlot(p).locator('.cc-range-point').count() === 13,
+    'worksheet shows all rounds, highlights the late window, and requires a mark before locking');
+    await dragRangeLine(p, 15);
+    await rangeLock(p).click();
+    check(await rangeFeedback(p).getAttribute('data-range-state') === 'incorrect' &&
+      /middle|center|try again/i.test(await rangeFeedback(p).textContent()) &&
+      await p.locator('#cc-range-accepted-band').isHidden(),
+    'an estimate at the high peak gets actionable retry feedback');
+    await dragRangeLine(p, 10);
+    await rangeLock(p).click();
+    check(await confirmedBand(p, 7, 15) && /within 1 wildebeest/i.test(await rangeFeedback(p).textContent()),
+      'an estimate one wildebeest off-center is accepted and the allowed margin is explained');
+    await dragRangeLine(p, 11);
+    await rangeLock(p).click();
+    check(await confirmedBand(p, 7, 15), 'baseline accepts a central estimate of 11 and explains the repeated 7–15 band');
+    await shot(p, '1366-light-range-baseline', true);
     await p.locator('#cc-grass').selectOption('50');
     await p.locator('#cc-compare').click();
     await rounds(p, 0);
@@ -412,6 +533,13 @@ async function followWorkflow(browser, url) {
     await p.locator('#cc-finish').click();
     await rounds(p, 12);
     const compared = await openHistory();
+    await p.locator('#cc-range-trial').selectOption('comparison');
+    check(await fit(p, '#cc-range-plot'), 'comparison worksheet plot fits horizontally');
+    await rangeKeyboard(p, 8);
+    await rangeLock(p).press('Enter');
+    check(await confirmedBand(p, 7, 9), '50% grass comparison accepts estimated 8 and explains the repeated 7–9 band');
+    await p.locator('#cc-range-estimate').fill(RANGE_NOTE);
+    await shot(p, '1366-light-range-comparison', true);
     check(compared.length === 12 && compared[0][1] === baseline[0][1] &&
       compared[0][2] === Math.floor(baseline[0][2] / 2) &&
       compared.some((row, i) => row[6] !== baseline[i][6]),
@@ -461,6 +589,14 @@ async function followWorkflow(browser, url) {
     check(await p.locator('#cc-claim').inputValue() === TEXT.claim, 'written claim and active explanation stage survive reload');
     check(await p.locator('#cc-writing-evidence').textContent().then(s => /baseline/i.test(s) && /50% grass comparison/i.test(s)),
       'both complete trials remain available beside the restored writing');
+    const restoredRanges = await p.locator('#cc-writing-range').textContent();
+    check(restoredRanges.includes(RANGE_NOTE) && includesRange(restoredRanges, 7, 15) && includesRange(restoredRanges, 7, 9),
+      'reloading directly into Explain restores both ranges and the student’s reasoning');
+    await go(p, 'run');
+    await rangeRunEvidence(p, 'baseline', 11, 7, 15);
+    await rangeRunEvidence(p, 'comparison', 8, 7, 9);
+    check(await p.locator('#cc-range-estimate').inputValue() === RANGE_NOTE, 'range reasoning also returns to the worksheet on reload');
+    await go(p, 'explain');
     const downloadPromise = p.waitForEvent('download');
     await p.locator('#cc-download').click();
     const download = await downloadPromise;
@@ -469,6 +605,11 @@ async function followWorkflow(browser, url) {
     check(report.includes(TEXT.prediction) && report.includes(TEXT.claim) && /simulat|model/i.test(report),
       'download contains student work and discloses the modeled evidence');
     check(/grass/i.test(report) && /50\s*%/.test(report), 'download includes the selected lower-grass comparison');
+    const rangeSection = report.split('Estimated fluctuation range (SIMULATED)\n')[1]?.split('Habitat challenge (SIMULATED)')[0] || '';
+    const baselineLine = rangeSection.split(String.fromCharCode(10)).find(line => /Baseline.*estimate 11 wildebeest/.test(line)) || '';
+    const reducedLine = rangeSection.split(String.fromCharCode(10)).find(line => /Comparison.*estimate 8 wildebeest/.test(line)) || '';
+    check(includesRange(baselineLine, 7, 15) && includesRange(reducedLine, 7, 9) && rangeSection.includes(RANGE_NOTE),
+      'real download ties each locked estimate to its own late range and includes the student’s reasoning');
 
     const copy = p.locator('#cc-copy');
     await copy.focus();
@@ -495,6 +636,11 @@ async function followWorkflow(browser, url) {
     await go(p, 'run');
     await rounds(p, 0);
     check(await p.locator('#cc-prediction').inputValue() === '', 'confirmed reset starts a fresh trial');
+    check(await rangePlot(p).isHidden(), 'master reset hides the range worksheet until late rounds are available again');
+    await p.locator('#cc-finish').click();
+    await rounds(p, 12);
+    check(await rangeLock(p).isDisabled() && await p.locator('#cc-range-estimate').inputValue() === '',
+      'rerunning the same baseline after reset does not resurrect the estimate or its note');
   });
 }
 
