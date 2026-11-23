@@ -21,6 +21,9 @@ async function stationLabels(map,label){
       const r=content.getBoundingClientRect();
       if(r.width<=0||r.height<=0||r.left<bounds.left-1||r.top<bounds.top-1||
         r.right>bounds.right+1||r.bottom>bounds.bottom+1)return {problem:region+' clipped'};
+      const tag=root.querySelector('.mx-map-tag')?.getBoundingClientRect();
+      if(tag&&r.right>tag.left&&tag.right>r.left&&r.bottom>tag.top&&tag.bottom>r.top)
+        return {problem:region+' overlaps the map caption'};
       result[region]={x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,bounds:r.toJSON()};
     }
     return result;
