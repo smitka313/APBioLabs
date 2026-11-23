@@ -19,10 +19,41 @@ test('anthrax groups describe samples, not cause of death',()=>{assert.equal(L.g
 test('all month positions are finite, inside schematic, southern in Jan and northern in Sep',()=>{assert.equal(L.POSITIONS.length,12);for(const p of L.POSITIONS){assert.ok(p.every(Number.isFinite));assert.ok(p[0]>0&&p[0]<1000&&p[1]>0&&p[1]<660);}assert.ok(L.POSITIONS[0][1]>L.POSITIONS[8][1]);});
 test('invalid month input cannot generate undefined coordinates',()=>{for(const value of [-1,12,NaN,Infinity,null,'5',1.5])assert.equal(L.monthIndex(value),0);assert.equal(L.monthIndex(11),11);});
 function dashboard(){let src=fs.readFileSync(path.join(__dirname,'../openscied-dashboard.js'),'utf8');src=src.replace('  function init() {','  globalThis.migrationTest = { migrationProgress, migrationResponseIds };\n  function init() {');const context={document:{readyState:'loading',addEventListener(){}}};vm.runInNewContext(src,context);return context.migrationTest;}
-test('dashboard recognizes real work and resumes correct section',()=>{const {migrationProgress}=dashboard();assert.equal(migrationProgress(null).summary,'Not started');const result=migrationProgress(JSON.stringify({v:1,month:7,page:'explain',visited:[4,7],notes:[{id:'card'}],answers:{claim:'Evidence-based response'},lastVisitedAt:123}));assert.equal(result.started,true);assert.equal(result.section,'explain');assert.equal(result.visited,123);assert.match(result.summary,/2 of 12 months explored.*1 notebook entries.*1 of 10/);});
+test('dashboard recognizes real work and resumes correct section',()=>{const {migrationProgress}=dashboard();assert.equal(migrationProgress(null).summary,'Not started');const result=migrationProgress(JSON.stringify({v:1,month:7,page:'explain',visited:[4,7],notes:[{id:'card'}],answers:{claim:'Evidence-based response'},lastVisitedAt:123}));assert.equal(result.started,true);assert.equal(result.section,'explain');assert.equal(result.visited,123);assert.match(result.summary,/0 of 12 months with notes.*1 notebook entry.*1 of 10/);});
 test('dashboard preserves unreadable work and rejects unknown schemas',()=>{const {migrationProgress}=dashboard();for(const raw of ['{','null','{}',JSON.stringify({v:2,month:0,visited:[],notes:[],answers:{}}),JSON.stringify({v:1,month:50,visited:[],notes:[],answers:{}})])assert.match(migrationProgress(raw).summary,/could not be read/);});
 test('opening the explorer alone does not claim completed work',()=>{const {migrationProgress}=dashboard();assert.equal(migrationProgress(JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{},observations:{},lastVisitedAt:1})).started,false);});
 test('dashboard exports all ten explorer responses and recognizes observation-only work',()=>{const api=dashboard();assert.equal(api.migrationResponseIds().length,10);assert.equal(api.migrationProgress(JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{},observations:{0:'My question'}})).started,true);});
+test('canonical monthly notes upsert without duplicates and blank notes do not count',()=>{
+  const blank=L.upsertMonthlyNote([],0,'  ');
+  assert.equal(blank.status,'blank');
+  assert.deepEqual(blank.notes,[]);
+  const saved=L.upsertMonthlyNote(blank.notes,0,'  My first observation.  ');
+  assert.equal(saved.status,'new');assert.equal(saved.notes[0].id,'month-0');
+  assert.deepEqual(L.monthsWithNotes(saved.notes),[0]);
+  const same=L.upsertMonthlyNote(saved.notes,0,'My first observation.');
+  assert.equal(same.status,'unchanged');
+  const edit=L.upsertMonthlyNote(same.notes,0,'New January thought.');
+  assert.equal(edit.status,'updated');assert.equal(edit.notes.length,1);
+  assert.match(L.notebookText(edit.notes[0]),/New January thought/);
+  assert.doesNotMatch(L.notebookText(edit.notes[0]),/My first observation/);
+});
+test('legacy notes deduplicate idempotently and preserve distinct student writing',()=>{
+  const note=(id,text)=>({id,title:'May',type:'map-observation',month:4,text});
+  const map=note('month-4-map','Map observation (illustrative broad range): Western corridor.');
+  const first=note('month-4-123','Map observation.\nMy observation: First thought.\nSecond line.\nSource cards available for Location 1.');
+  const recent=note('month-4-456','Map observation.\nMy observation: Latest thought.\nSource cards available for Location 1.');
+  const card={id:'card-m5g0',title:'May living',text:'95% marrow fat'};
+  const blank={id:'month-3-map',title:'April',text:'Map only'};
+  const notes=L.normalizeNotebook([map,first,recent,card,blank]);
+  assert.deepEqual(notes.map(n=>n.id),['month-4','card-m5g0','month-3']);
+  assert.deepEqual(L.monthsWithNotes(notes),[4]);
+  assert.equal(notes[0].observation,'Latest thought.');
+  assert.match(L.notebookText(notes[0]),/Earlier saved observations:[\s\S]*First thought\.\nSecond line\./);
+  assert.deepEqual(L.normalizeNotebook(notes),notes);
+  const {migrationProgress}=dashboard();
+  const save=JSON.stringify({v:1,month:7,page:'explore',visited:[4,7],notes:[map,first,recent,card,blank],answers:{}});
+  assert.match(migrationProgress(save).summary,/1 of 12 months with notes.*3 notebook entries/);
+});
 test('source image and all local activity dependencies exist',()=>{const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');for(const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)){if(/^https?:/.test(match[1])||match[1]==='openscied-dashboard.html')continue;assert.ok(fs.existsSync(path.join(__dirname,'..',match[1])),match[1]);}assert.ok(!html.includes('Answer Key'));});
 test('published evidence charts disable the toolkit simulation label',()=>{
   const ui=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
@@ -59,3 +90,46 @@ test('illustrative weather uses the Lesson 4 wet/dry convention independently of
   assert.equal(L.fieldRegion(11), 'south', 'December returns toward the southern plains');
 });
 
+
+test('Transition labels distinguish range from direction of seasonal movement', () => {
+  assert.match(L.RANGES[6], /Northwestern corridor/);
+  assert.match(L.RANGES[11], /Eastern corridor toward the southern plains/);
+  assert.ok(L.POSITIONS[6][0]>L.POSITIONS[5][0] && L.POSITIONS[6][1]<L.POSITIONS[5][1]);
+  assert.ok(L.POSITIONS[11][1]>L.POSITIONS[10][1] && L.POSITIONS[11][1]<L.POSITIONS[0][1]);
+});
+
+test('Rain illustration always marks the north, and May adds showers in the western corridor', () => {
+  for(const m of [7,8,9]) {
+    const weather=L.weatherCues(m);
+    assert.ok(weather.rain.some(({x,y})=>x>=475 && x<=600 && y<115));
+    assert.match(weather.grassText,/bent tufts/);
+  }
+  const may=L.weatherCues(4);
+  assert.ok(may.rain.some(({x,y})=>x<405 && y>=210 && y<=295));
+  assert.ok(may.rain.every(({y})=>y<410));
+  assert.match(may.grassText,/upright tufts/);
+  assert.ok(L.weatherCues(0).rain.some(({x,y})=>x>620 && y>420));
+});
+
+test('Rainfall outline brackets image positions for January, April, August and December', () => {
+  for(const [m,x,y] of [[0,45,45],[3,223,225],[7,462,478],[11,700,701]]){
+    const left=Number.parseFloat(L.rainColumn(m))*7.5;
+    assert.ok(left<x && y<left+7.94*7.5);
+  }
+});
+
+test('evidence checks explain all distractors without grading free text', () => {
+  const C=require('../migration-evidence-checks.js');
+  const checks=C.create({cards:L.CARDS,months:L.MONTHS,annual:[
+    {region:'South',rain:1160,occupancy:52},{region:'North',rain:1310,occupancy:6}
+  ]});
+  assert.deepEqual(checks.map(c=>c.answer),['absence','patterns','rain-claim']);
+  for(const c of checks) {
+    assert.equal(c.options.filter(o=>C.evaluate(c,o.id).correct).length,1);
+    assert.equal(C.evaluate(c,'some free-text response'),undefined);
+    for(const o of c.options)assert.match(C.evaluate(c,o.id).message,/^(Supported|Recheck the evidence)\./);
+  }
+  const disease=checks[0];
+  assert.match(C.evaluate(disease,'higher-dead').message,/June shows 20% in all three groups; July shows 20% in all three groups/);
+  assert.match(C.evaluate(disease,'same-groups').message,/does not prove anthrax never mattered/);
+});

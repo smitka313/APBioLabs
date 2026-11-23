@@ -28,7 +28,8 @@
     ellipse(c,-61,-40,1.3,1.3,'#e6d9b1');ellipse(c,-60.6,-40, .7,.9,'#18271d');
     c.fillStyle='#3b4436';c.beginPath();c.moveTo(-50,-51);c.lineTo(-37,-55);c.lineTo(-42,-46);c.fill();c.restore();
   }
-  function cloud(c,x,y,s,t,wet){c.save();c.translate(x,y);c.scale(s,s);c.shadowColor='#172d2530';c.shadowBlur=15;ellipse(c,0,0,44,12,'#f7f6e6d9');ellipse(c,-20,-9,24,16,'#f7f6e6d9');ellipse(c,11,-15,31,21,'#f7f6e6d9');c.shadowBlur=0;if(wet){c.strokeStyle='#47777c99';c.lineWidth=2;for(let i=0;i<8;i++){let a=-30+i*9,b=17+((t*28+i*11)%32);c.beginPath();c.moveTo(a,b);c.lineTo(a-4,b+7);c.stroke();}}c.restore();}
+  function cloud(c,x,y,s,t){c.save();c.translate(x,y);c.scale(s,s);c.lineJoin='round';c.shadowColor='#172d253f';c.shadowBlur=10;c.fillStyle='#f3f5ed';c.strokeStyle='#3e5860';c.lineWidth=3;c.beginPath();c.moveTo(-32,8);c.bezierCurveTo(-48,6,-44,-13,-29,-15);c.bezierCurveTo(-27,-30,-7,-34,2,-22);c.bezierCurveTo(8,-39,33,-31,36,-15);c.bezierCurveTo(53,-10,53,8,37,8);c.closePath();c.fill();c.stroke();c.shadowBlur=0;c.strokeStyle='#234852';c.lineWidth=2.7;for(let i=0;i<7;i++){const a=-27+i*10,b=16+((t*23+i*11)%20);c.beginPath();c.moveTo(a,b);c.lineTo(a-4,b+7);c.stroke();}c.restore();}
+  function grassTuft(c,x,y,h,wet){c.beginPath();if(wet){c.moveTo(x-5,y);c.quadraticCurveTo(x-5,y-h*.65,x-10,y-h*.8);c.moveTo(x,y);c.quadraticCurveTo(x-3,y-h*.7,x+1,y-h);c.moveTo(x+4,y);c.quadraticCurveTo(x+5,y-h*.6,x+11,y-h*.85);}else{c.moveTo(x-4,y);c.quadraticCurveTo(x,y-h*.50,x+8,y-h*.45);c.moveTo(x+1,y);c.quadraticCurveTo(x+7,y-h*.65,x+14,y-h*.53);}c.stroke();}
   function init(map,field,wrap){
     let month=0,weather=true,region='south',time=0,raf=0,dirty=true,staticMap=document.createElement('canvas');
     let reduced=matchMedia('(prefers-reduced-motion: reduce)'),oldPos=L.POSITIONS[0].slice(),startPos=oldPos.slice(),transition=1,last=0,visible=true;
@@ -51,8 +52,14 @@
       for(const t of trees)acacia(c,t.x,t.y,t.s);
       // Eastern escarpment and granite kopjes; shadows and lighter ridges.
       for(let i=0;i<12;i++){const x=690+i*5,y=340+i*16;ellipse(c,x+6,y+6,20,10,'#645b4230');ellipse(c,x,y,17,9,'#9e9775');ellipse(c,x-5,y-3,10,5,'#c4b997');}
-      // A route connecting the monthly broad ranges, with no invented distance scale.
-      c.strokeStyle='#fff5d8c0';c.lineWidth=5;c.beginPath();L.POSITIONS.forEach((p,i)=>i?c.lineTo(...p):c.moveTo(...p));c.closePath();c.stroke();c.strokeStyle='#695a3b';c.lineWidth=1.7;c.setLineDash([4,8]);c.stroke();c.setLineDash([]);
+      // The edge and dot/dash pattern are schematic, not a measured land-cover boundary.
+      c.fillStyle='#f5d78428';c.strokeStyle='#5b503a';c.lineWidth=2.8;
+      path(c,[[427,489],[468,475],[524,470],[569,454],[626,450],[671,431],[724,477],[743,531],[689,589],[598,611],[494,588],[430,554]]);
+      c.fill();c.setLineDash([11,7]);c.stroke();c.setLineDash([]);
+      if(weather){c.lineWidth=1.75;c.strokeStyle=wet?'#3f533b9a':'#6c543c9a';for(let i=0;i<grasses.length;i+=wet?3:7){const a=grasses[i];if(a.x>279&&a.x<808&&a.y<598)grassTuft(c,a.x,a.y,a.h*.83,wet);}}
+      // Solid route plus arrowheads distinguishes travel from the dashed grassland edge.
+      c.strokeStyle='#fcf1d6';c.lineWidth=6;c.beginPath();L.POSITIONS.forEach((p,i)=>i?c.lineTo(...p):c.moveTo(...p));c.closePath();c.stroke();c.strokeStyle='#55432e';c.lineWidth=2.1;c.stroke();
+      for(const i of [3,6,9,10]){const [x,y]=L.POSITIONS[i],[nx,ny]=L.POSITIONS[i+1];const angle=Math.atan2(ny-y,nx-x);c.save();c.translate((x+nx)/2,(y+ny)/2);c.rotate(angle);c.fillStyle='#55432e';path(c,[[8,0],[-6,5],[-4,0],[-6,-5]]);c.fill();c.restore();}
       c.font='600 13px system-ui';c.fillStyle='#294b43';c.fillText('LAKE',30,230);c.fillText('VICTORIA',30,248);c.save();c.translate(289,145);c.rotate(.08);c.fillText('Mara River',0,0);c.restore();c.fillText('Grumeti River',220,340);c.font='600 12px system-ui';c.fillStyle='#43583f';c.fillText('KENYA',680,115);c.fillText('TANZANIA',810,315);c.font='italic 15px Georgia';c.fillStyle='#49583d';c.fillText('Maasai Mara',570,75);c.fillText('Southern short-grass plains',470,591);
       // North arrow and inset ecosystem locator.
       c.save();c.translate(912,75);c.fillStyle='#304c3e';path(c,[[0,-23],[-7,8],[0,2],[7,8]]);c.fill();c.font='700 13px system-ui';c.textAlign='center';c.fillText('N',0,-31);c.restore();
@@ -68,7 +75,7 @@
       mc.strokeStyle='#8c4a2b80';mc.lineWidth=1.5;mc.beginPath();mc.ellipse(oldPos[0],oldPos[1],76,46,-.3,0,Math.PI*2);mc.stroke();
       herd.forEach((a,i)=>wildebeest(mc,oldPos[0]+a.x+Math.sin(time*.3+a.phase)*2,oldPos[1]+a.y,a.s,time*2+a.phase,month>=9||month<3));
       mc.fillStyle='#f7efd5';mc.strokeStyle='#794427';mc.lineWidth=1.5;mc.beginPath();mc.arc(goal[0]+48,goal[1]-43,16,0,Math.PI*2);mc.fill();mc.stroke();mc.fillStyle='#67432b';mc.font='700 12px system-ui';mc.textAlign='center';mc.fillText(month>=4&&month<=9?String(month-3):L.MONTHS[month].slice(0,3),goal[0]+48,goal[1]-39);mc.textAlign='left';
-      if(weather){const wet=L.isWetSeason(month);cloud(mc,520+Math.sin(time*.12)*8,80,.6,time,true);if(wet){cloud(mc,690,480,.7,time,true);cloud(mc,470,430,.55,time+5,true);}else cloud(mc,330,230,.5,time,false);}
+      if(weather)L.weatherCues(month).rain.forEach((cue,i)=>cloud(mc,cue.x+Math.sin(time*.12+i)*3,cue.y,cue.size,time+i*2));
       mc.restore();
     }
     function drawField(){if(!field.width)return;const c=fc,w=field.width,h=field.height,s=Math.max(w/1000,h/660);c.save();c.translate((w-1000*s)/2,h-660*s);c.scale(s,s);const fieldRegion=L.fieldRegion(month),south=fieldRegion==='south',wet=L.isWetSeason(month);const green=weather&&wet;let sky=c.createLinearGradient(0,0,0,460);sky.addColorStop(0,'#80aaa9');sky.addColorStop(1,'#ebdfb5');c.fillStyle=sky;c.fillRect(0,0,1000,660);ellipse(c,795,115,48,48,'#fff3caaa');
@@ -78,8 +85,9 @@
       if(fieldRegion==='north'){c.strokeStyle='#83a6a1';c.lineWidth=36;c.beginPath();c.moveTo(-30,445);c.bezierCurveTo(370,355,550,535,1060,410);c.stroke();c.strokeStyle='#c4d7bc';c.lineWidth=2;c.beginPath();c.moveTo(20,430);c.lineTo(130,427);c.moveTo(650,450);c.lineTo(760,443);c.stroke();}
       for(let i=0;i<16;i++)wildebeest(c,55+i*58,400+Math.sin(i*3)*24,.2+i*.005,time*2+i,month>8);
       wildebeest(c,590,565,1.6,time*2.5,month>8);wildebeest(c,245,510,.88,time*2+3,month>8);wildebeest(c,850,480,.59,time*2+1,month>8);
-      c.lineWidth=2;for(const a of grasses){c.strokeStyle=green?'#53643e70':'#79663e80';c.beginPath();c.moveTo(a.x,a.y);c.quadraticCurveTo(a.x-4,a.y-a.h,a.x+Math.sin(time+a.x)*2,a.y-a.h*(south?.6:1.5));c.stroke();}
-      if(weather&&wet)cloud(c,230,120,1.8,time,true);
+      c.lineWidth=2;c.strokeStyle=green?'#53643e90':'#715938a0';
+      for(let i=0;i<grasses.length;i+=weather&&wet?1:3){const a=grasses[i];grassTuft(c,a.x,a.y,a.h*(south?.8:1.5),green);}
+      if(weather&&(wet||fieldRegion==='north'))cloud(c,230,120,1.8,time);
       // A few distant birds with slow wingbeats.
       c.strokeStyle='#425b50';c.lineWidth=2;for(let i=0;i<3;i++){let x=(time*4+i*35+450)%1200-100,y=120+i*18;c.beginPath();c.moveTo(x-8,y+Math.sin(time+i)*3);c.quadraticCurveTo(x-4,y-4,x,y);c.quadraticCurveTo(x+4,y-4,x+8,y+Math.sin(time+i)*3);c.stroke();}c.restore();
     }

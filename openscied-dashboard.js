@@ -63,12 +63,25 @@
       saved = JSON.parse(raw);
       if (!saved || saved.v !== 1 || !Number.isInteger(saved.month) || saved.month < 0 || saved.month > 11 || !Array.isArray(saved.notes) || !Array.isArray(saved.visited) || !saved.answers || typeof saved.answers !== 'object' || Array.isArray(saved.answers)) throw Error('Unknown format');
     } catch (_) { return { ...empty, summary: 'Saved work could not be read. Download a copy before restarting.' }; }
-    const months = new Set(saved.visited.filter(n => Number.isInteger(n) && n >= 0 && n < 12)).size;
-    const notes = saved.notes.length, answers = migrationResponseIds().filter(id => written(saved.answers,id)).length;
-    const started = !!(months || notes || answers || Object.values(saved.observations || {}).some(v => typeof v === 'string' && v.trim()));
+    // Match explorer v1's stable month IDs and older timestamp/map-only IDs without loading the app.
+    const monthNotes = new Set(), noteIds = new Set();
+    for (const note of saved.notes) {
+      if (!note || typeof note.id !== 'string') continue;
+      const match = /^month-(\d{1,2})(?:-(?:map|\d+))?$/.exec(note.id);
+      const month = match && Number(match[1]) < 12 ? Number(match[1])
+        : note.type === 'map-observation' && Number.isInteger(note.month) && note.month >= 0 && note.month < 12 ? note.month : null;
+      if (month === null) { noteIds.add(note.id); continue; }
+      noteIds.add('month-' + month);
+      const observation = typeof note.observation === 'string' ? note.observation
+        : typeof note.text === 'string' ? (note.text.match(/(?:^|\n)My observation: ([\s\S]*?)(?=\nSource cards available for Location \d+\.\s*$|$)/) || [])[1] : '';
+      if (observation?.trim()) monthNotes.add(month);
+    }
+    const months = monthNotes.size, notes = noteIds.size, answers = migrationResponseIds().filter(id => written(saved.answers,id)).length;
+    const browsed = saved.visited.some(n => Number.isInteger(n) && n >= 0 && n < 12);
+    const started = !!(browsed || notes || answers || Object.values(saved.observations || {}).some(v => typeof v === 'string' && v.trim()));
     return { started, section: ['explore','evidence','explain'].includes(saved.page) ? saved.page : 'explore',
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
-      summary: started ? months + ' of 12 months explored · ' + notes + ' notebook entries · ' + answers + ' of 10 responses written' : 'Not started' };
+      summary: started ? months + ' of 12 months with notes · ' + notes + ' notebook ' + (notes===1?'entry':'entries') + ' · ' + answers + ' of 10 responses written' : 'Not started' };
   }
   function activityDestination(activity, item) { return activity.file + (item.section ? '#' + item.section : ''); }
   function carbonResponseIds() { return ['q2', 'q3', 'q4', 'q5', 'q6']; }

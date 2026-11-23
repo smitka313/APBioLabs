@@ -1,6 +1,6 @@
 # Migration Map Explorer: source and verification notes
 
-Independent OpenSciEd B.1 Lessons 3–4 companion. Original map, wildlife, controls, notebook, and adapted questions. No teacher answer key is included in the student site.
+Independent OpenSciEd B.1 Lessons 3–4 companion. Original map, wildlife, controls, notebook, and adapted questions. No teacher answer key is included in the student site. Optional formative evidence checks use the same public data as the cards and compare selected claims, not students’ free-text responses.
 
 ## Source materials supplied by the teacher
 
@@ -21,7 +21,7 @@ The supplied teacher key contains summaries that conflict with the individual st
 
 ## Illustration limits
 
-The map is a schematic of broad ranges, not GPS tracks, exact dates, distances or park boundaries. Between-month interpolation and individual animal motion are visual transitions, not a mechanistic migration model. Weather and grass color are seasonal illustrations, not measured rainfall or grass biomass. Grass appearance does not quantify nutritional quality. The fixed decorative herd does not represent a population count. No predictions are scored against a predetermined biological answer.
+The map is a schematic of broad ranges, not GPS tracks, exact dates, distances or park boundaries. Between-month interpolation and individual animal motion are visual transitions, not a mechanistic migration model. Outlined rain clouds and distinct grass textures are seasonal illustrations, not measured rainfall or grass biomass. Illustrative northern showers reflect the regional card’s year-round rainfall description; the symbol placement does not measure where or how much it rained in any specific month. The selected-month frame on the original rainfall graph identifies the column without changing the source image or fabricating numeric values. Grass appearance does not quantify nutritional quality. The fixed decorative herd does not represent a population count. Written responses are not scored; guided evidence checks give feedback on specific comparisons.
 
 ## Validation
 
