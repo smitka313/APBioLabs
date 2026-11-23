@@ -299,6 +299,7 @@
     return { summary, started, section, visited };
   }
   function init() {
+    $('[data-ph="dashboard-identity"]')?.remove();
     Lab.identity.mount('#openscied-student-identity');
     const status = $('#openscied-results-status');
     const dialog = $('#clear-openscied-dialog');

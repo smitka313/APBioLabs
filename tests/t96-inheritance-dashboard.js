@@ -19,7 +19,7 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
         && await p.locator('section[aria-labelledby="unit3"] .dashboard-activity').count() === 3
         && await p.locator('section[aria-labelledby="unit4"] .dashboard-activity').count() === 1,
         width + ' px: eleven activity cards (three Unit 1, four Unit 2, three Unit 3, one Unit 4)');
-      T.ok(/3 activities available/.test(await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').innerText()), width + ' px: tag says 3 activities available');
+      T.ok((await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').textContent()).trim() === '3 activities available', width + ' px: Unit 3 tag says exactly 3 activities available');
       const unit3Cards = p.locator('section[aria-labelledby="unit3"] .dashboard-activity');
       const thirdUnit3Card = await unit3Cards.nth(2).innerText();
       T.ok(await unit3Cards.count() === 3 && /Inheritance, Environment/.test(thirdUnit3Card) && /Lessons 8–9/.test(thirdUnit3Card), 'third Unit 3 card is the Lessons 8-9 companion');
