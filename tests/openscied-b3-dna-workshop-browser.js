@@ -42,6 +42,18 @@ async function makeContext(browser, base, size) {
   // any attempted copy without exposing names, writing, or other device data.
   await context.addInitScript(() => {
     window.__workshopClipboard = [];
+    window.__workshopNavEvents = [];
+    for (const kind of ['pointerdown','pointerup','pointercancel','click']) {
+      document.addEventListener(kind,event=>{
+        const control=event.target.closest?.('#dw-next, #dw-undo');
+        if (!control) return;
+        window.__workshopNavEvents.push({
+          kind, control:control.id, pointer:event.pointerType||'', detail:event.detail,
+          stage:document.querySelector('#dw-board')?.dataset.currentStage
+        });
+        if (window.__workshopNavEvents.length>12) window.__workshopNavEvents.shift();
+      },true);
+    }
     Object.defineProperty(navigator, 'clipboard', {
       configurable:true, value:{ writeText:async text => window.__workshopClipboard.push(text) }
     });
@@ -143,7 +155,19 @@ function savedPlacements(record) {
 }
 async function stage(page, name) {
   const aliases = [name, MODEL_IDS[name]];
-  await page.waitForFunction(names => names.includes(document.querySelector('#dw-board')?.dataset.currentStage), aliases);
+  try {
+    await page.waitForFunction(names => names.includes(document.querySelector('#dw-board')?.dataset.currentStage),
+      aliases,{ timeout:12000 });
+  } catch (error) {
+    const state=await page.evaluate(()=>({
+      hash:location.hash, active:document.activeElement?.id,
+      stage:document.querySelector('#dw-board')?.dataset.currentStage,
+      next:document.querySelector('#dw-next')?.textContent,
+      nextDisabled:document.querySelector('#dw-next')?.disabled,
+      nav:window.__workshopNavEvents
+    }));
+    throw new Error('Expected workshop stage '+name+' after real input, got '+JSON.stringify(state),{ cause:error });
+  }
   check(await board(page).isVisible() &&
     await button(page,name).getAttribute('aria-current')==='step' &&
     await page.locator('nav [data-dw-go][aria-current="step"]').count()===1,

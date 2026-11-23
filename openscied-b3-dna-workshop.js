@@ -305,15 +305,18 @@
     catch(_){field.focus();field.select();E('save').textContent='Select Copy in your browser to copy the record below.';}
   }
   const mouseShell=E('board');
-  const controlAt=el=>el?.closest('[data-dw-piece],[data-dw-slot]');
+  const controlAt=el=>el?.closest('[data-dw-piece],[data-dw-slot],#dw-next,#dw-undo');
   function activate(control,keyboard){
     if(!control||!mouseShell.contains(control)||control.disabled)return;
-    if(control.dataset.dwPiece)choose(control.dataset.dwPiece);
-    else place(selected,control.dataset.dwSlot,keyboard);
+    if(control===E('next'))goto(STEPS[STEPS.indexOf(state.step)+1]);
+    else if(control===E('undo'))undo();
+    else if(control.dataset.dwPiece)choose(control.dataset.dwPiece);
+    else if(control.dataset.dwSlot)place(selected,control.dataset.dwSlot,keyboard);
   }
   mouseShell.addEventListener('click',event=>{
-    // Pointerup handles the mouse or touch action on the stable board. Ignore any
-    // compatibility click that follows it, even if a successful drop rebuilt the DOM.
+    // Pointerup handles mouse/touch on the stable board, including navigation
+    // immediately after typing on a phone. A later compatibility click must not
+    // place a second tile, undo twice, or advance a second step.
     if(event.detail>0||event.pointerType)return;
     activate(controlAt(event.target),true);
   });
@@ -363,8 +366,6 @@
   mouseShell.addEventListener('lostpointercapture',event=>endPointer(event,true));
   mouseShell.addEventListener('dragstart',event=>event.preventDefault());
   for(const b of $$('[data-dw-go]'))b.addEventListener('click',()=>goto(b.dataset.dwGo));
-  E('next').addEventListener('click',()=>goto(STEPS[STEPS.indexOf(state.step)+1]));
-  E('undo').addEventListener('click',undo);
   E('response').addEventListener('input',event=>{state.answers[state.step]=event.target.value.slice(0,2400);save();});
   for(const key of ['name','period']){
     E(key).value=state.person[key]||'';
