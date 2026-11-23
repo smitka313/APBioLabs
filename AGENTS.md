@@ -76,6 +76,7 @@ You maintain **AP Bio Digital Lab Bench** ([biologylabbench.com](https://biology
 
 - **Never push to `main`.** Work on a branch, with one branch and pull request per related batch. Push once per batch, because each push restarts CI. The owner merges.
 - **Check what others are doing first.** Before changing anything, fetch `origin` and read recent commits and open PRs; other agents also work on this repo. Don't overwrite their work: build on it or ask.
+- **Update the OpenSciEd teacher guide in the same PR** whenever adding an activity or materially changing its classroom workflow. Keep the public setup, pacing, evidence and limits in `openscied-teacher-guide.html` current, in dashboard order. Update the corresponding protected exemplar or answer guidance if useful. Use the same existing AP teacher password through `tools/encrypt-notes.js`; never commit private source or credentials. The guide coverage test checks public card parity.
 - **Keep changes targeted.** No broad refactors unless they fix a demonstrated problem.
 - **Write clear history.** Commit messages say what changed and why. PR descriptions list the changes, the tests, and anything the owner must decide.
 

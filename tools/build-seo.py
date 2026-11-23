@@ -16,7 +16,7 @@ BRAND = 'AP Bio Digital Lab Bench'
 LICENSE = 'https://creativecommons.org/licenses/by-nc-sa/4.0/'
 CONTENT = json.loads((ROOT / 'tools/seo-content.json').read_text())
 LABS = [lab for group in CONTENT['groups'] for lab in group['labs']]
-PRIVATE = ['teacher-notes.html'] + [f'teacher-lab{i:02}.html' for i in range(1, 14)]
+PRIVATE = ['teacher-notes.html', 'openscied-teacher-notes.html'] + [f'teacher-lab{i:02}.html' for i in range(1, 14)]
 UTILITIES = ['teacher-dashboard.html', 'projector.html', 'feedback.html',
              'sample-report.html', '_template.html', '404.html']
 
@@ -34,6 +34,9 @@ def page_specs():
         'teachers.html': ('Free AP Biology Virtual Labs for Teachers | Lab Bench',
                           'Teach all 13 AP Biology investigations with free virtual labs, printable student directions, protected teacher notes, and downloadable student reports.',
                           'For teachers'),
+        'openscied-teacher-guide.html': ('OpenSciEd Biology Teacher Guide for Units 1–3 | Lab Bench',
+                                         'Plan OpenSciEd Biology companion activities with classroom setup, suggested pacing, discussion prompts and teacher-only worked examples for Units 1–3.',
+                                         'OpenSciEd Teacher Guide'),
         'getting-started.html': ('AP Biology Virtual Labs: Teacher Quick Start | Lab Bench',
                                  'Start teaching with free AP Biology virtual labs in five minutes. Choose a lab, share links, explain saving, collect reports, and review class progress.',
                                  'Teacher quick start'),

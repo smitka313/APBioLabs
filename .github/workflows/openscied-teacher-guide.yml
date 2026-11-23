@@ -1,0 +1,35 @@
+name: OpenSciEd teacher guide
+on:
+  pull_request:
+    paths:
+      - 'openscied-dashboard.html'
+      - 'openscied-dashboard.js'
+      - 'openscied-teacher-*'
+      - 'teachers.html'
+      - 'teacher-notes.html'
+      - 'tools/encrypt-notes.js'
+      - 'tests/openscied-teacher-guide*'
+      - '.github/workflows/openscied-teacher-guide.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  teacher-guide-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-teacher-guide.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-teacher-guide-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-teacher-guide-viewports
+          path: artifacts/openscied-teacher-guide/
+          if-no-files-found: ignore
