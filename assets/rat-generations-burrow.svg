@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 528" width="960" height="528" role="img" aria-labelledby="burrow-title burrow-desc">
+<title id="burrow-title">Underground rat colony habitat</title>
+<desc id="burrow-desc">Illustrated section through an urban sidewalk showing a rocky colony chamber at left, a woven nest in the middle, and a deeper nursery with dry grasses at right, joined by tunnels.</desc>
+<defs>
+  <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#233e48"/><stop offset="1" stop-color="#63766c"/></linearGradient>
+  <linearGradient id="soil" x2="0" y2="1"><stop stop-color="#6e5847"/><stop offset=".4" stop-color="#625044"/><stop offset=".79" stop-color="#463e38"/><stop offset="1" stop-color="#303632"/></linearGradient>
+  <linearGradient id="slab" x2="0" y2="1"><stop stop-color="#898b78"/><stop offset="1" stop-color="#566763"/></linearGradient>
+  <linearGradient id="brick" x2=".47" y2="1"><stop stop-color="#805949"/><stop offset="1" stop-color="#594d42"/></linearGradient>
+  <linearGradient id="void" x2="0" y2="1"><stop stop-color="#23362f"/><stop offset=".55" stop-color="#2c4038"/><stop offset="1" stop-color="#252f2b"/></linearGradient>
+  <linearGradient id="cave-rim" x2="0" y2="1"><stop stop-color="#b99b76"/><stop offset=".5" stop-color="#926c4d"/><stop offset="1" stop-color="#5b5545"/></linearGradient>
+  <linearGradient id="stone" x2="0" y2=".95"><stop stop-color="#99886c"/><stop offset=".45" stop-color="#80785f"/><stop offset="1" stop-color="#615a4b"/></linearGradient>
+  <linearGradient id="nest" x2="0" y2="1"><stop stop-color="#9c7b53"/><stop offset=".55" stop-color="#8f6843"/><stop offset="1" stop-color="#5b4937"/></linearGradient>
+  <radialGradient id="left-light"><stop stop-color="#b7b798" stop-opacity=".42"/><stop offset=".57" stop-color="#ada582" stop-opacity=".17"/><stop offset="1" stop-color="#8a966c" stop-opacity="0"/></radialGradient>
+  <radialGradient id="nest-light"><stop stop-color="#f5ca87" stop-opacity=".58"/><stop offset=".55" stop-color="#dcac68" stop-opacity=".23"/><stop offset="1" stop-color="#ddab6d" stop-opacity="0"/></radialGradient>
+  <radialGradient id="nursery-light"><stop stop-color="#aabca4" stop-opacity=".51"/><stop offset=".56" stop-color="#8db49e" stop-opacity=".20"/><stop offset="1" stop-color="#7da791" stop-opacity="0"/></radialGradient>
+  <radialGradient id="screen"><stop offset=".63" stop-color="#132b2e" stop-opacity="0"/><stop offset="1" stop-color="#14272a" stop-opacity=".50"/></radialGradient>
+  <pattern id="dirt-mark" width="41" height="36" patternUnits="userSpaceOnUse">
+    <path d="M1 13 5 11l3 .5m13 3q4-2 7-1m-10 8h4m7 10 3-2 4 1M3 31l3-1m28-26 4 1" fill="none" stroke="#f0c499" stroke-opacity=".26" stroke-width="1" stroke-linecap="round"/>
+    <path d="m9 18 2 1m23 3 4-1M11 4l3-1m2 31h2" fill="none" stroke="#2b2927" stroke-opacity=".40" stroke-width="1.1"/>
+  </pattern>
+  <pattern id="brick-mark" width="61" height="24" patternUnits="userSpaceOnUse">
+    <path d="M0 0h61M0 12h61M0 0v12M30.5 12v12" stroke="#d6aa80" stroke-width="1.5" opacity=".30" fill="none"/>
+    <path d="M4 10h11m24 0h8m-24 12h15m8-7h11" stroke="#dab58d" stroke-width="1" opacity=".21" fill="none"/>
+  </pattern>
+  <path id="burrow" d="M-18 300Q9 266 34 252C40 208 60 173 104 156c49-19 87-18 120-8 38 11 60 32 78 62 13 21 21 32 35 33 20 1 28-13 43-40 23-47 61-73 116-73 58-2 98 26 113 72 9 26 19 41 43 40 17 0 37-19 57-46 32-39 50-51 99-51 54 1 95 30 115 72 19 38 13 55 31 73l28 13v113c-22-2-25 2-43 17-40 51-94 61-144 54-57-7-92-32-122-56-24-23-36-34-58-33-21 0-33 19-63 39-25 17-62 29-117 26-46-1-86-9-112-31-31-26-42-41-62-39-19 2-35 19-59 36-29 25-65 32-113 29-49-4-81-19-114-44-12-15-32-12-48-19Z"/>
+  <clipPath id="chamber"><use href="#burrow"/></clipPath>
+  <g id="stone-small">
+    <path d="M-9 3-5-4l9-2 7 6-1 6-12 1z" fill="#81755c" stroke="#4e4d3d" stroke-width="1"/>
+    <path d="m-6 0 2-3 8-1 5 4" fill="none" stroke="#ac9975" stroke-width="1" opacity=".7"/>
+  </g>
+  <g id="window">
+    <path d="M0 0h36v48H0Z" fill="#374b4c" stroke="#756958" stroke-width="3"/>
+    <path d="M5 5h26v36H5Z" fill="#d4a36a" opacity=".41"/>
+    <path d="M18 1v45M2 22h32" fill="none" stroke="#5c5546" stroke-width="3"/>
+    <path d="M2 3h32M-3 50h42" fill="none" stroke="#c1966c" stroke-width="2"/>
+  </g>
+  <g id="grass" fill="none" stroke-linecap="round">
+    <path d="M0 0q-1-15-11-26m11 26q-2-14 4-31M0 0q7-21 19-22M0 0q-7-12-19-16" stroke="#807c53" stroke-width="2.2"/>
+    <path d="M0 0q4-13 11-23m-13 18q-5-20-7-21" stroke="#ad9f64" stroke-width="1.4"/>
+  </g>
+</defs>
+<path d="M0 0h960v528H0Z" fill="url(#sky)"/>
+<!-- A low, dusk-lit street profile above the soil, not a view through an instrument. -->
+<path d="M0 50h31V25l35-4v28h17v13h51v41H0zm579 4h27V36l27-5v19l38-3v17h30v34H579zm278 2h17V42l40-10v23l24-8V27h22v67H857Z" fill="#536967" opacity=".82"/>
+<path d="M63-20h308v115H63Z" fill="url(#brick)" stroke="#5f5549" stroke-width="4"/>
+<path d="M64-20h307V85H65z" fill="url(#brick-mark)"/>
+<path d="M372-20 445 9v78l-73 8Z" fill="#685d4d" stroke="#696353" stroke-width="3"/>
+<path d="M372-20 445 9v78l-73 8Z" fill="url(#brick-mark)" opacity=".6"/>
+<use href="#window" transform="translate(95 16) scale(.9)"/>
+<use href="#window" transform="translate(165 15) scale(.91)"/>
+<use href="#window" transform="translate(232 14) scale(.9)"/>
+<path d="M304 25h46v66h-46Z" fill="#455754" stroke="#89785e" stroke-width="3"/>
+<path d="M309 31h35v26h-35Zm-1 31h34v23h-34Z" fill="#596753" stroke="#384d49" stroke-width="2"/>
+<path d="m383 20 53 13v31l-53-9z" fill="#344d49" stroke="#83765d" stroke-width="2.5"/>
+<path d="M404 25v34m15-30v34" stroke="#8d8061" stroke-width="1.5"/>
+<path d="M771 85q6-21 4-45l-3-20 5-2 6 27q11-11 16-27l4 1q-3 15-18 32l2 33Z" fill="#594e3d" stroke="#3d4d40" stroke-width="1.7"/>
+<path d="M752 40q-18 6-23-8c-5-5-3-15 5-19-3-13 11-22 22-19 8-13 29-13 38-1 15-7 29 4 29 12 12 2 16 10 12 18q-2 17-24 14c-9 8-23 6-34-1q-12 8-25 4Z" fill="#627b57" stroke="#495e4a" stroke-width="2"/>
+<path d="M746 20q15-9 25-8m11-9q13 7 25 3m-25 21q20 8 33-3" fill="none" stroke="#9b9c63" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"/>
+<path d="M0 83 352 76l92 3 160-4 194 8 162-10v35H0Z" fill="url(#slab)"/>
+<path d="M0 92 350 84l97 4 167-4 181 7 165-9M0 101l351-9 96 5 158-3 192 7 163-10" fill="none" stroke="#adac8d" stroke-width="1.5" opacity=".56"/>
+<path d="m29 83-8 21m62-22-6 21m72-23-5 22m69-24-1 22m71-23 5 20m73-22 5 21m66-19 11 20m66-20 9 18m66-19 11 21m64-18 10 20m65-18 11 20m80-17 16 14m77-15 18 13" fill="none" stroke="#404f4b" stroke-width="1"/>
+<path d="m534 85 99-1 30 10-103 3Z" fill="#334743" stroke="#a49d80" stroke-width="1.9"/>
+<path d="m544 86 22 9m-6-9 26 8m-9-8 27 7m-9-7 28 7m-12-8 28 7" fill="none" stroke="#9f977d" stroke-width="1.7"/>
+<use href="#grass" transform="translate(43 83) scale(.52)"/>
+<use href="#grass" transform="translate(746 82) scale(.59)"/>
+<use href="#grass" transform="translate(813 83) scale(.43)"/>
+<path d="M0 105q172-8 348-9l103 3 145-4 201 8 163-9v434H0Z" fill="url(#soil)"/>
+<path d="M0 106q172-8 348-9l103 3 145-4 201 8 163-9v18l-165 9-200-7-142 4-101-5q-180 4-352 8Z" fill="#585f53" stroke="#48524a" stroke-width="2"/>
+<path d="M0 110q175-6 346-10l107 4 142-5 203 8 162-9" fill="none" stroke="#b6a485" stroke-width="1.5" opacity=".68"/>
+<rect y="118" width="960" height="410" fill="url(#dirt-mark)" opacity=".63"/>
+<g fill="none" stroke-linecap="round">
+  <path d="M-8 145q73-15 194-12t175-11m193 1q56 6 114 7 147 6 297-9M0 182q61-28 103-40m191 6q57 24 117 0m155-12q52 35 113 26 71-14 177-16m-852 353q150 0 234-13l82-15m278 33q149-35 376-9m-925 22q175 4 284-15m214 22q189-26 394-8" stroke="#c09b72" stroke-width="2.1" opacity=".44"/>
+  <path d="M-6 157q92-25 191-19m123 13q126 5 210-22m138 22q96 3 210-13M0 222q98-38 197-46m447 7q68-13 130-20m-769 327q103 13 210-3m461 2q90-45 280-9" stroke="#382f2a" stroke-width="2" opacity=".38"/>
+  <path d="M2 173q79-27 149-26m513-1q79 3 179-19M9 513q72-3 142-1m565-4q128-17 244-5" stroke="#dbaf83" stroke-width="1.25" stroke-dasharray="8 6" opacity=".34"/>
+</g>
+<!-- This continuous winding cavity deliberately leaves large uncluttered visual fields for the live layers. -->
+<use href="#burrow" fill="url(#void)" stroke="#4b3e34" stroke-width="16"/>
+<use href="#burrow" fill="url(#void)" stroke="url(#cave-rim)" stroke-width="10"/>
+<use href="#burrow" fill="none" stroke="#392f27" stroke-width="2"/>
+<g clip-path="url(#chamber)">
+  <ellipse cx="174" cy="315" rx="173" ry="174" fill="url(#left-light)"/>
+  <ellipse cx="485" cy="335" rx="185" ry="205" fill="url(#nest-light)"/>
+  <ellipse cx="803" cy="338" rx="175" ry="195" fill="url(#nursery-light)"/>
+  <path d="M-15 348q37-9 59-47c20-46 45-99 91-115 61-18 115 12 138 47q27 55 59 54c33-2 35-46 74-80 38-35 118-37 169 6 24 22 25 60 72 70 40 8 54-26 78-63 23-39 102-41 148 3q26 26 47 94 8 18 31 26" fill="none" stroke="#d7af80" stroke-width="4" opacity=".21"/>
+  <path d="M-11 412q62-2 102-25c40-20 122-22 179 4 38 14 63 1 89-13 42-28 92-39 159-27q50 11 95 33 39 16 68-1c49-25 110-38 171-25 46 9 85 21 113 14v145H-11Z" fill="#5d5847"/>
+  <path d="M-17 434q56 2 104-26c56-24 127-27 173 1 45 26 77 2 103-11 58-28 129-39 191-8q44 18 72 28t70-3c45-23 115-43 161-30 58 17 85 25 121 11v130H-17Z" fill="url(#stone)" opacity=".81"/>
+  <path d="M-20 456q76 5 115-27c60-37 117-28 163-2 35 15 71 7 100-15 47-27 97-47 153-25 48 19 80 48 141 49 51 1 69-27 111-33 53-12 110 20 209 4" fill="none" stroke="#ad9670" stroke-width="2.2" stroke-opacity=".55"/>
+  <path d="M0 434h960v80H0Z" fill="url(#dirt-mark)" opacity=".31"/>
+  <!-- The nest bowl and its soft litter shelf: visual homes, not outlines for UI. -->
+  <path d="M362 443q14-9 25-32c11-17 41-36 68-42 35-10 75-2 106 11 25 14 42 37 44 63-23 17-67 24-112 22-57-2-98-7-131-22Z" fill="#614d3c" opacity=".88"/>
+  <path d="M381 434c17-13 20-44 61-53 43-13 78-8 109 6 35 14 47 32 48 45-20 11-63 21-107 20-53-1-88-9-111-18Z" fill="url(#nest)" stroke="#c39865" stroke-width="2.6"/>
+  <path d="M389 420q16-31 51-38c42-12 74-9 116 8q16 8 23 23c-24 10-60 13-91 12-34 0-64-3-99-5Z" fill="#796346" stroke="#a38255" stroke-width="1.8"/>
+  <path d="M412 410q28-35 77-34c35 0 64 9 81 24-20 27-135 25-158 10Z" fill="#86704f" opacity=".82"/>
+  <path d="M697 434q24-27 49-37c40-16 93-14 135 3 19 7 34 20 42 38-25 11-66 17-111 17-46 0-85-4-115-21Z" fill="#686958" stroke="#a29a78" stroke-width="2.5"/>
+  <path d="M711 432c47-43 138-44 197-2q-69 29-197 2Z" fill="#7b8066" opacity=".68"/>
+  <!-- Crossing paths worn into the tunnel floor. -->
+  <path d="M261 430q30-20 65-18 30 0 52 17m209 4q23-16 48-13 24 3 54 22" fill="none" stroke="#c0a783" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="2 9" opacity=".41"/>
+</g>
+<path d="m388.4 414.6q16.3 -0.3 32.6 -2.9" fill="none" stroke="#c39468" stroke-width="1.56" stroke-linecap="round" opacity="0.79"/><path d="m395.3 425.1q8.5 1.5 17.1 -2.9" fill="none" stroke="#d2ab79" stroke-width="1.02" stroke-linecap="round" opacity="0.75"/><path d="m461.3 438.2q9.2 0.6 18.4 -2.6" fill="none" stroke="#b39361" stroke-width="1.38" stroke-linecap="round" opacity="0.59"/><path d="m402.7 420.5q9.4 -5.2 18.9 -5.7" fill="none" stroke="#ae8158" stroke-width="1.07" stroke-linecap="round" opacity="0.73"/><path d="m416.0 442.4q15.8 5.4 31.6 0.4" fill="none" stroke="#ae8158" stroke-width="0.87" stroke-linecap="round" opacity="0.54"/><path d="m423.9 440.6q16.4 7.6 32.8 1.4" fill="none" stroke="#ae8158" stroke-width="1.45" stroke-linecap="round" opacity="0.62"/><path d="m402.8 431.2q13.4 5.2 26.8 1.2" fill="none" stroke="#b39361" stroke-width="1.08" stroke-linecap="round" opacity="0.67"/><path d="m513.8 431.6q9.5 -5.9 19.1 -5.8" fill="none" stroke="#d2ab79" stroke-width="0.71" stroke-linecap="round" opacity="0.61"/><path d="m396.7 418.6q9.5 4.9 19.0 0.1" fill="none" stroke="#8a6345" stroke-width="1.63" stroke-linecap="round" opacity="0.68"/><path d="m552.0 443.0q8.5 6.7 17.1 2.4" fill="none" stroke="#8a6345" stroke-width="0.91" stroke-linecap="round" opacity="0.59"/><path d="m480.3 431.6q6.9 -5.2 13.7 -6.8" fill="none" stroke="#b39361" stroke-width="0.85" stroke-linecap="round" opacity="0.80"/><path d="m437.4 444.3q5.6 6.1 11.2 3.0" fill="none" stroke="#d2ab79" stroke-width="1.63" stroke-linecap="round" opacity="0.79"/><path d="m575.9 431.8q5.3 5.9 10.7 1.4" fill="none" stroke="#d6b27e" stroke-width="0.88" stroke-linecap="round" opacity="0.80"/><path d="m579.9 430.0q7.2 -2.6 14.4 -1.5" fill="none" stroke="#b39361" stroke-width="1.53" stroke-linecap="round" opacity="0.62"/><path d="m520.4 438.0q8.8 -3.3 17.6 -3.5" fill="none" stroke="#ae8158" stroke-width="1.69" stroke-linecap="round" opacity="0.58"/><path d="m582.8 425.7q10.2 5.2 20.3 0.2" fill="none" stroke="#ae8158" stroke-width="0.61" stroke-linecap="round" opacity="0.59"/><path d="m425.4 426.9q10.4 -4.0 20.8 -5.9" fill="none" stroke="#d2ab79" stroke-width="1.50" stroke-linecap="round" opacity="0.55"/><path d="m528.2 445.3q9.0 -4.8 17.9 -3.4" fill="none" stroke="#8a6345" stroke-width="1.13" stroke-linecap="round" opacity="0.69"/><path d="m549.5 442.2q8.4 7.1 16.8 2.7" fill="none" stroke="#c39468" stroke-width="0.93" stroke-linecap="round" opacity="0.55"/><path d="m497.8 437.5q7.6 7.8 15.1 3.8" fill="none" stroke="#c39468" stroke-width="1.00" stroke-linecap="round" opacity="0.51"/><path d="m402.5 418.7q10.7 0.3 21.4 -1.2" fill="none" stroke="#ae8158" stroke-width="0.79" stroke-linecap="round" opacity="0.72"/><path d="m584.0 413.3q11.3 1.0 22.7 -2.3" fill="none" stroke="#b39361" stroke-width="1.19" stroke-linecap="round" opacity="0.72"/><path d="m391.8 427.4q11.3 4.2 22.6 0.8" fill="none" stroke="#d6b27e" stroke-width="1.37" stroke-linecap="round" opacity="0.69"/><path d="m510.9 442.4q10.3 5.3 20.6 2.2" fill="none" stroke="#d2ab79" stroke-width="0.68" stroke-linecap="round" opacity="0.70"/><path d="m399.3 447.6q6.2 -1.0 12.5 -3.4" fill="none" stroke="#d2ab79" stroke-width="1.69" stroke-linecap="round" opacity="0.77"/><path d="m529.8 429.9q12.3 0.7 24.5 -2.4" fill="none" stroke="#8a6345" stroke-width="0.85" stroke-linecap="round" opacity="0.49"/><path d="m546.0 435.4q13.9 -1.2 27.9 -1.8" fill="none" stroke="#d6b27e" stroke-width="0.86" stroke-linecap="round" opacity="0.68"/><path d="m521.0 423.7q11.8 -4.1 23.7 -4.0" fill="none" stroke="#8a6345" stroke-width="1.34" stroke-linecap="round" opacity="0.74"/><path d="m412.3 416.7q9.6 5.6 19.1 1.4" fill="none" stroke="#ae8158" stroke-width="1.05" stroke-linecap="round" opacity="0.75"/><path d="m499.2 411.4q7.1 4.1 14.2 -0.4" fill="none" stroke="#d6b27e" stroke-width="0.72" stroke-linecap="round" opacity="0.55"/><path d="m487.1 419.2q15.2 -4.3 30.5 -2.4" fill="none" stroke="#ae8158" stroke-width="0.67" stroke-linecap="round" opacity="0.78"/><path d="m514.1 423.3q16.4 7.7 32.7 2.3" fill="none" stroke="#b39361" stroke-width="1.50" stroke-linecap="round" opacity="0.76"/><path d="m533.4 440.1q6.2 3.9 12.3 -1.0" fill="none" stroke="#8a6345" stroke-width="0.75" stroke-linecap="round" opacity="0.55"/><path d="m503.6 432.0q8.6 0.7 17.3 -1.3" fill="none" stroke="#c39468" stroke-width="0.70" stroke-linecap="round" opacity="0.70"/><path d="m383.5 411.3q11.1 6.2 22.1 0.1" fill="none" stroke="#d2ab79" stroke-width="0.68" stroke-linecap="round" opacity="0.80"/><path d="m586.9 440.4q13.5 -5.7 27.0 -5.0" fill="none" stroke="#d2ab79" stroke-width="1.10" stroke-linecap="round" opacity="0.66"/><path d="m416.8 446.0q13.8 5.5 27.6 1.7" fill="none" stroke="#d6b27e" stroke-width="1.59" stroke-linecap="round" opacity="0.52"/><path d="m382.5 424.2q12.8 4.9 25.5 0.5" fill="none" stroke="#ae8158" stroke-width="0.88" stroke-linecap="round" opacity="0.59"/><path d="m394.8 416.8q9.9 5.8 19.8 1.0" fill="none" stroke="#b39361" stroke-width="0.82" stroke-linecap="round" opacity="0.65"/><path d="m555.6 445.4q8.6 -0.1 17.2 -3.3" fill="none" stroke="#b39361" stroke-width="1.64" stroke-linecap="round" opacity="0.58"/><path d="m428.1 447.5q8.2 7.6 16.5 2.8" fill="none" stroke="#d2ab79" stroke-width="1.40" stroke-linecap="round" opacity="0.69"/><path d="m555.4 431.4q7.9 2.9 15.7 0.3" fill="none" stroke="#d2ab79" stroke-width="0.92" stroke-linecap="round" opacity="0.66"/><path d="m462.3 429.3q8.0 -1.3 15.9 -1.7" fill="none" stroke="#c39468" stroke-width="1.25" stroke-linecap="round" opacity="0.78"/><path d="m431.6 428.5q10.3 -5.6 20.6 -4.1" fill="none" stroke="#d6b27e" stroke-width="0.66" stroke-linecap="round" opacity="0.58"/><path d="m450.9 429.8q6.8 7.2 13.7 1.0" fill="none" stroke="#8a6345" stroke-width="1.33" stroke-linecap="round" opacity="0.51"/><path d="m413.0 429.9q14.0 7.4 28.0 2.3" fill="none" stroke="#d2ab79" stroke-width="0.66" stroke-linecap="round" opacity="0.71"/><path d="m470.1 434.6q15.2 -2.4 30.5 -4.4" fill="none" stroke="#c39468" stroke-width="0.94" stroke-linecap="round" opacity="0.81"/><path d="m402.4 440.7q11.1 -1.3 22.3 -4.4" fill="none" stroke="#8a6345" stroke-width="1.60" stroke-linecap="round" opacity="0.50"/><path d="m474.7 440.3q8.7 -4.6 17.4 -4.7" fill="none" stroke="#ae8158" stroke-width="1.00" stroke-linecap="round" opacity="0.58"/><path d="m463.5 427.4q14.9 -3.7 29.8 -4.5" fill="none" stroke="#c39468" stroke-width="1.52" stroke-linecap="round" opacity="0.64"/><path d="m907.7 428.5q8.9 -4 17.9 -2.1" fill="none" stroke="#c7b892" stroke-width="0.99" stroke-linecap="round" opacity="0.69"/><path d="m821.7 437.3q4.5 -4 9.0 -2.3" fill="none" stroke="#9e9672" stroke-width="1.57" stroke-linecap="round" opacity="0.60"/><path d="m847.2 427.6q5.1 -4 10.1 -5.0" fill="none" stroke="#9e9672" stroke-width="1.48" stroke-linecap="round" opacity="0.68"/><path d="m766.9 425.4q7.9 -4 15.7 -4.2" fill="none" stroke="#9e9672" stroke-width="1.19" stroke-linecap="round" opacity="0.60"/><path d="m729.4 442.9q8.8 -4 17.7 -2.6" fill="none" stroke="#a6a283" stroke-width="0.71" stroke-linecap="round" opacity="0.51"/><path d="m724.9 430.2q8.4 -4 16.8 -1.1" fill="none" stroke="#9e9672" stroke-width="0.95" stroke-linecap="round" opacity="0.47"/><path d="m872.8 429.7q5.7 -4 11.5 -3.9" fill="none" stroke="#9e9672" stroke-width="1.41" stroke-linecap="round" opacity="0.43"/><path d="m840.6 442.5q8.0 -4 16.1 -4.7" fill="none" stroke="#9e9672" stroke-width="0.62" stroke-linecap="round" opacity="0.59"/><path d="m728.5 428.6q9.2 -4 18.4 -2.8" fill="none" stroke="#c7b892" stroke-width="1.35" stroke-linecap="round" opacity="0.68"/><path d="m885.7 441.9q4.7 -4 9.3 -5.5" fill="none" stroke="#9e9672" stroke-width="1.55" stroke-linecap="round" opacity="0.60"/><path d="m832.7 445.0q3.5 -4 7.0 -6.4" fill="none" stroke="#a6a283" stroke-width="0.85" stroke-linecap="round" opacity="0.47"/><path d="m892.8 443.0q5.3 -4 10.5 -6.7" fill="none" stroke="#a6a283" stroke-width="1.46" stroke-linecap="round" opacity="0.54"/><path d="m881.0 445.5q7.1 -4 14.2 -1.7" fill="none" stroke="#9e9672" stroke-width="0.96" stroke-linecap="round" opacity="0.51"/><path d="m868.7 431.6q3.6 -4 7.1 -5.5" fill="none" stroke="#a6a283" stroke-width="1.49" stroke-linecap="round" opacity="0.41"/><path d="m874.9 433.4q9.7 -4 19.3 -2.9" fill="none" stroke="#a6a283" stroke-width="0.93" stroke-linecap="round" opacity="0.49"/><path d="m892.1 425.5q5.8 -4 11.6 -0.2" fill="none" stroke="#9e9672" stroke-width="0.59" stroke-linecap="round" opacity="0.51"/><path d="m804.7 430.4q10.9 -4 21.7 -0.1" fill="none" stroke="#c7b892" stroke-width="1.00" stroke-linecap="round" opacity="0.56"/><path d="m737.6 440.1q9.8 -4 19.5 -6.1" fill="none" stroke="#9e9672" stroke-width="1.46" stroke-linecap="round" opacity="0.68"/><path d="m848.1 446.1q5.8 -4 11.6 -6.0" fill="none" stroke="#c7b892" stroke-width="1.26" stroke-linecap="round" opacity="0.60"/><path d="m854.2 429.2q6.9 -4 13.9 -4.5" fill="none" stroke="#9e9672" stroke-width="0.90" stroke-linecap="round" opacity="0.53"/><path d="m784.9 446.9q9.6 -4 19.1 -6.6" fill="none" stroke="#a6a283" stroke-width="0.86" stroke-linecap="round" opacity="0.49"/><path d="m887.0 435.8q3.4 -4 6.9 -2.1" fill="none" stroke="#9e9672" stroke-width="1.06" stroke-linecap="round" opacity="0.61"/><path d="m796.6 434.2q3.6 -4 7.3 -4.0" fill="none" stroke="#c7b892" stroke-width="0.76" stroke-linecap="round" opacity="0.48"/><path d="m868.6 439.9q3.5 -4 7.0 -0.4" fill="none" stroke="#c7b892" stroke-width="0.91" stroke-linecap="round" opacity="0.66"/><path d="m768.1 444.7q4.4 -4 8.7 -0.8" fill="none" stroke="#9e9672" stroke-width="1.18" stroke-linecap="round" opacity="0.65"/><path d="m878.5 434.9q9.5 -4 19.0 -2.7" fill="none" stroke="#c7b892" stroke-width="0.90" stroke-linecap="round" opacity="0.46"/><path d="m736.4 446.9q4.7 -4 9.4 -0.1" fill="none" stroke="#a6a283" stroke-width="0.74" stroke-linecap="round" opacity="0.63"/><path d="m833.7 431.5q6.9 -4 13.9 -0.7" fill="none" stroke="#9e9672" stroke-width="1.04" stroke-linecap="round" opacity="0.56"/><path d="m860.6 445.0q3.3 -4 6.6 -3.9" fill="none" stroke="#c7b892" stroke-width="1.36" stroke-linecap="round" opacity="0.62"/><path d="m724.6 431.6q8.1 -4 16.3 -1.3" fill="none" stroke="#9e9672" stroke-width="1.49" stroke-linecap="round" opacity="0.42"/><path d="m886.5 441.9q5.2 -4 10.4 -6.1" fill="none" stroke="#9e9672" stroke-width="0.65" stroke-linecap="round" opacity="0.61"/><path d="m817.4 445.6q9.7 -4 19.4 -1.0" fill="none" stroke="#a6a283" stroke-width="0.66" stroke-linecap="round" opacity="0.64"/><path d="m895.9 435.1q5.6 -4 11.1 -2.7" fill="none" stroke="#a6a283" stroke-width="1.59" stroke-linecap="round" opacity="0.53"/><path d="m846.6 442.5q6.6 -4 13.2 -1.8" fill="none" stroke="#c7b892" stroke-width="0.55" stroke-linecap="round" opacity="0.50"/><path d="m799.0 434.3q2.5 -4 5.1 -1.3" fill="none" stroke="#a6a283" stroke-width="1.47" stroke-linecap="round" opacity="0.57"/><path d="m906.4 444.9q9.0 -4 18.1 -0.3" fill="none" stroke="#9e9672" stroke-width="1.45" stroke-linecap="round" opacity="0.52"/><path d="m891.7 431.0q3.3 -4 6.6 -6.4" fill="none" stroke="#a6a283" stroke-width="1.00" stroke-linecap="round" opacity="0.57"/>
+<!-- Rock clusters are peripheral; open soil in front is reserved for the rat overlays. -->
+<use href="#stone-small" transform="translate(47 433) scale(1.87) rotate(-8)"/>
+<use href="#stone-small" transform="translate(67 449) scale(1.17) rotate(17)"/>
+<use href="#stone-small" transform="translate(37 456) scale(.82) rotate(21)"/>
+<use href="#stone-small" transform="translate(218 456) scale(.91) rotate(-13)"/>
+<use href="#stone-small" transform="translate(251 454) scale(1.42) rotate(2)"/>
+<use href="#stone-small" transform="translate(272 445) scale(.87) rotate(17)"/>
+<use href="#stone-small" transform="translate(687 462) scale(.9) rotate(-10)"/>
+<use href="#stone-small" transform="translate(909 468) scale(1.49) rotate(2)"/>
+<use href="#stone-small" transform="translate(938 459) scale(.82) rotate(31)"/>
+<use href="#grass" transform="translate(47 413) scale(.53) rotate(-25)"/>
+<use href="#grass" transform="translate(919 430) scale(.58) rotate(25)"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Tree roots enter the cutaway but end above the live brood area. -->
+  <path d="M779 94q-20 32-33 51-13 18-16 65m47-107q11 28 37 40 27 10 38 54m-84-75q-31 2-48 14-11 6-22 22m116-15q4 19-11 40m19-34q21-5 42 1m-111 19q-23 1-31 21m7 18q-8 17-7 24m126-50q22 6 30 25" stroke="#483d31" stroke-width="6"/>
+  <path d="M779 94q-20 32-33 51-13 18-16 65m47-107q11 28 37 40 27 10 38 54m-84-75q-31 2-48 14-11 6-22 22m116-15q4 19-11 40m19-34q21-5 42 1m-111 19q-23 1-31 21m7 18q-8 17-7 24m126-50q22 6 30 25" stroke="#b09a72" stroke-width="2.4" opacity=".7"/>
+  <path d="M92 115q-4 22 6 45m-5-28q-17 7-20 23m32-13q10 0 19 10m211 59q4-28-19-49m352 64q10-26 3-46m49-44q-2 17-1 21m153 9q9 8 13 24" stroke="#a7916b" stroke-width="1.5" opacity=".51"/>
+</g>
+<path d="M0 0h960v528H0Z" fill="url(#screen)"/>
+</svg>

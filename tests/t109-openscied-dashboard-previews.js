@@ -10,7 +10,7 @@ const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
-const UNIT4 = ['openscied-b4-hawksbeard.html'];
+const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html'];
 const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
 (async () => {
   // order in the script registry matches the page
@@ -56,7 +56,7 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 11 && svgCards.length === 7 && m.filter(x=>x.img).length === 4, width + ' px: eleven cards: seven inline illustrations and four linked SVG illustrations');
+      T.ok(m.length === 12 && svgCards.length === 7 && m.filter(x=>x.img).length === 5, width + ' px: twelve cards: seven inline illustrations and five linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
@@ -70,12 +70,17 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
         /^Open Carrying Capacity/.test(carrying.label),
         width + ' px: second card has the original carrying capacity illustration and a named link');
-      const hawksbeard = m.at(-1);
+      const hawksbeard = m.at(-2);
       T.ok(hawksbeard?.img?.complete && hawksbeard.img.src===HAWKSBEARD_PREVIEW &&
         hawksbeard.img.w===960 && hawksbeard.img.h===600 && hawksbeard.img.alt==='' &&
         hawksbeard.img.widthAttr==='960' && hawksbeard.img.heightAttr==='600' &&
         /^Open Hawksbeard Wind Lab/.test(hawksbeard.label) && hawksbeard.label.length>40,
         width + ' px: the Hawksbeard illustration loads at the reserved size and its link has a descriptive accessible name');
+      const rats = m.at(-1);
+      T.ok(rats?.img?.complete && rats.img.src === 'assets/rat-generations-preview.svg' &&
+        rats.img.w === 960 && rats.img.h === 600 && rats.img.alt === '' &&
+        /^Open Rat Generations/.test(rats.label),
+        width + ' px: Rat Generations has its original illustrated and named preview');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
       T.ok(m.every(x => x.sim && /Simulated|Illustrative map|Model \+ field data/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the accurate source/illustration tag are HTML text');
       T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');
@@ -112,7 +117,7 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
     const burnCard = p.locator('section[aria-labelledby="unit2"] .dashboard-activity').first();
     T.ok((await burnCard.locator('.dashboard-preview').getAttribute('href')) === UNIT2[0], 'first Unit 2 card (Burning Fuels) preview still links to its activity');
     T.ok((await burnCard.locator('.dashboard-open').getAttribute('href')).startsWith(UNIT2[0]), 'first Unit 2 card button still opens Burning Fuels');
-    const hawksbeardCard = p.locator('section[aria-labelledby="unit4"] .dashboard-activity');
+    const hawksbeardCard = p.locator('section[aria-labelledby="unit4"] .dashboard-activity').first();
     T.ok((await hawksbeardCard.locator('.dashboard-preview').getAttribute('href')) === UNIT4[0]
       && (await hawksbeardCard.locator('.dashboard-open').getAttribute('href')) === UNIT4[0],
       'the new card and its default button open the exact Hawksbeard Wind Lab URL');

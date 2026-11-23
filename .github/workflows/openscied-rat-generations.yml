@@ -1,0 +1,33 @@
+name: Rat Generations Lab
+on:
+  pull_request:
+    paths:
+      - 'openscied-b4-rat-generations*'
+      - 'openscied-b4-rat-cross-builder.js'
+      - 'openscied-b4-rat-burrow.js'
+      - 'assets/*rat-generations*'
+      - 'tests/openscied-b4-rat-generations*'
+      - '.github/workflows/openscied-rat-generations.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rat-generations-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-b4-rat-generations-logic.test.js tests/openscied-teacher-guide.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b4-rat-generations-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-rat-generations-viewports
+          path: artifacts/openscied-rat-generations/
+          if-no-files-found: ignore

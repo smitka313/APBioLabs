@@ -154,16 +154,18 @@ test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustratio
   assert.ok((preview.match(/<(?:path|circle|ellipse|rect|polygon)\b/g)||[]).length>12, 'the asset contains the actual vector drawing');
 });
 
-test('Unit 4 publishes the Hawksbeard Wind Lab, leaving only Unit 5 under Coming soon', () => {
+test('Unit 4 shows Hawksbeard then Rat Generations, leaving only Unit 5 under Coming soon', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';
   const unit = page.split(heading)[1]?.split('</section>')[0] || '';
   assert.equal((page.match(/id="unit4"/g)||[]).length, 1);
   assert.match(unit, /<h2 id="unit4">Unit 4 · Natural Selection &amp; Evolution of Populations<\/h2>/);
-  assert.match(unit, /<span class="dashboard-tag">1 activity available<\/span>/);
-  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 1);
+  assert.match(unit, /<span class="dashboard-tag">2 activities available<\/span>/);
+  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 2);
   assert.match(unit, /href="openscied-b4-hawksbeard\.html"[^>]*><img src="assets\/hawksbeard-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="hawksbeard-open"[^>]*href="openscied-b4-hawksbeard\.html"/);
+  assert.match(unit, /href="openscied-b4-rat-generations\.html"[^>]*><img src="assets\/rat-generations-preview\.svg" width="960" height="600"/);
+  assert.ok(unit.indexOf('id="hawksbeard-open"') < unit.indexOf('id="rat-generations-open"'));
   const upcoming = page.split('<details class="dashboard-coming-soon">')[1]?.split('</details>')[0] || '';
   assert.deepEqual([...upcoming.matchAll(/aria-labelledby="(unit\d+)"/g)].map(m=>m[1]), ['unit5']);
 });
@@ -193,6 +195,22 @@ test('Hawksbeard continues the saved phase and includes its written answers in a
   assert.equal(s.data[key],undefined);
   assert.equal(s.el('#hawksbeard-open').href,'openscied-b4-hawksbeard.html');
   assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1'],'an activity-only reset preserves other OpenSciEd work');
+});
+
+test('Rat Generations resumes the saved stage and exports the prediction and written evidence', async () => {
+  const key = 'aplab:openscied:b4-rat-generations:v1';
+  const raw = JSON.stringify({v:1,seed:5,step:'explain',action:6,lastVisitedAt:1800000000000,prediction:'increase',
+    answers:{reason:'I predict a change.',claim:'The survivors were not a random subset.'}});
+  const s = setup(false,{[key]:raw});
+  assert.equal(s.el('#rat-generations-open').href,'openscied-b4-rat-generations.html#explain');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b4-rat-generations.html#explain');
+  assert.equal(s.el('#rat-generations-progress').textContent,'6 of 6 model actions recorded · 2 of 4 responses saved');
+  s.el('#rat-generations-reset').fire('click');
+  s.el('#backup-before-openscied-clear').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.deepEqual(payload.work,{[key]:raw});
+  assert.equal(payload.responses['rat-generations'].prediction,'increase');
+  assert.equal(payload.responses['rat-generations'].claim,'The survivors were not a random subset.');
 });
 
 test('Serengeti progress sees the existing preview save and resumes without a conflicting hash', () => {
