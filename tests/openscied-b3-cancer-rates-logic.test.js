@@ -102,3 +102,11 @@ test('Michigan combines county records by FIPS and retains suppressed diagnosis 
   assert.ok(Number.isFinite(suppressed.screening));
 });
 
+
+test('public activity, dashboard and teacher guide use lesson and topic labels, not program branding',()=>{
+  const {readFileSync}=require('node:fs');
+  const path=require('node:path');
+  for(const file of ['openscied-b3-cancer-rates.html','openscied-b3-cancer-rates.js','openscied-dashboard.html','openscied-teacher-guide.html']){
+    assert.doesNotMatch(readFileSync(path.join(__dirname,'..',file),'utf8'),/\bRET\b/,file);
+  }
+});

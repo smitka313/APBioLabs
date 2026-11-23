@@ -21,7 +21,7 @@ const CASES = [
 const REASON = 'Different things may affect how often a cancer is diagnosed and how often people die from it.';
 const CLAIM = 'In my comparison, a higher diagnosis rate was not enough to establish why the groups differed.';
 const LIMIT = 'The data compare populations and cannot tell us the cause or predict what will happen to one person.';
-const RET_NOTES = {
+const DESIGN_NOTES = {
   access:'Compare local facility listings and note that they do not give appointment availability.',
   cost:'4.75',
   visible:'4',
@@ -321,10 +321,11 @@ async function report(page, size, pair, michigan) {
   if (michigan) {
     check(michigan.names.every((name,i)=>file.includes(name)&&valueAppears(file,michigan.pair[i].lateRate)),
       'download retains the named Michigan areas and the selected late-stage evidence');
-    check(Object.values(RET_NOTES).every(value=>file.includes(value)) &&
-      file.includes('Prototype cost ($): '+RET_NOTES.cost) &&
-      file.includes('Trials with visible target: '+RET_NOTES.visible) &&
-      file.includes('Total trials: '+RET_NOTES.trials),
+    check(Object.values(DESIGN_NOTES).every(value=>file.includes(value)) &&
+      file.includes('ULTRASOUND DESIGN REVIEW') && !/\bRET\b/.test(file) &&
+      file.includes('Prototype cost ($): '+DESIGN_NOTES.cost) &&
+      file.includes('Trials with visible target: '+DESIGN_NOTES.visible) &&
+      file.includes('Total trials: '+DESIGN_NOTES.trials),
       'download preserves the full student-authored prototype review');
   }
 }
@@ -402,10 +403,10 @@ async function exercise(browser, base, size) {
     if (michigan) {
       check(michigan.names.every((name,i)=>evidence.includes(name)&&valueAppears(evidence,michigan.pair[i].lateRate)),
         label+' Explain carries the exact Michigan evidence without backtracking');
-      const review = view(page,'cr-ret-review');
+      const review = view(page,'cr-design-review');
       await review.waitFor({state:'visible'});
       if(!await review.evaluate(el=>el.open)) await invoke(review.locator('summary'),size);
-      for(const [field,note] of Object.entries(RET_NOTES)) await view(page,'cr-ret-'+field).fill(note);
+      for(const [field,note] of Object.entries(DESIGN_NOTES)) await view(page,'cr-design-'+field).fill(note);
     }
     await view(page,'cr-claim').fill(CLAIM);
     await view(page,'cr-limits').fill(LIMIT);
@@ -416,13 +417,19 @@ async function exercise(browser, base, size) {
     await capture(page,label+'-explain','#cr-evidence-list');
     if(size.deep) {
       await a11y(page,'#explain',label+' Explain');
+      if(michigan) await page.evaluate(key=>{
+        const old=JSON.parse(localStorage.getItem(key));
+        old.ret=old.design;
+        delete old.design;
+        localStorage.setItem(key,JSON.stringify(old));
+      },SAVE);
       await page.reload();
       await visible(page,'explain');
       check(await view(page,'cr-claim').inputValue()===CLAIM && await view(page,'cr-limits').inputValue()===LIMIT,
         label+' original claim and uncertainty persist across reload');
       if (michigan) {
-        const notes = await Promise.all(Object.keys(RET_NOTES).map(field=>view(page,'cr-ret-'+field).inputValue()));
-        check(notes.every((note,i)=>note===Object.values(RET_NOTES)[i]),label+' optional prototype notes survive reload');
+        const notes = await Promise.all(Object.keys(DESIGN_NOTES).map(field=>view(page,'cr-design-'+field).inputValue()));
+        check(notes.every((note,i)=>note===Object.values(DESIGN_NOTES)[i]),label+' optional prototype notes survive migration from the previous preview format');
       }
       await report(page,size,pair,michigan);
     }

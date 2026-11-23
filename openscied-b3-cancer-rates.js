@@ -20,8 +20,8 @@
   const full=(v,key)=>!finite(v)?value(v,key):value(v,key)+' '+unit[key];
   const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:12,region:'all',x:'screening'});
   const defaults={labels:true,marks:true,benchmark:true,'pair-only':false,trend:false};
-  const retItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
-  const fresh=()=>({ret:Object.fromEntries(Object.keys(retItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
+  const designItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
+  const fresh=()=>({design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
   let state=fresh(), invalid=false, blocked=false;
   function clean(raw){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid record');
@@ -32,7 +32,7 @@
     const pr=raw.prediction;
     if(Object.hasOwn(predictions,pr?.choice)){next.prediction.choice=pr.choice;next.prediction.locked=pr.locked===true;}
     next.prediction.reason=str(pr?.reason,1200);
-    for(const k of Object.keys(retItems))next.ret[k]=str(raw.ret?.[k],1600);
+    for(const k of Object.keys(designItems))next.design[k]=str((raw.design ?? raw.ret)?.[k],1600);
     next.claim=str(raw.claim,1600);next.limits=str(raw.limits,1600);
     for(const k of ['name','period'])next.person[k]=str(raw.person?.[k],k==='name'?100:24);
     for(const k of Object.keys(defaults))if(typeof raw.layer?.[k]==='boolean')next.layer[k]=raw.layer[k];
@@ -85,7 +85,7 @@
   source($('source-states'),'State diagnoses (2019–2023): ',[['State Cancer Profiles (CDC and NCI)',D.states.source]],'. All cancer sites; rate per 100,000 uses the 2000 U.S. standard age distribution.');
   source($('source-poverty'),'State economic estimates (2023 ACS one-year): ',[['Poverty Appendix Table 1',D.poverty.source],['Household Income Table 1',D.poverty.incomeSource.source]],'. The Census estimates cover a different period than the diagnosis data. Both are estimates, not exact counts of personal circumstances.');
   source($('source-race'),'Race and ethnicity (2018–2022): ',[['ACS Cancer Facts & Figures 2026, Table 9 (diagnoses)',D.race.incidence.url],['2025, Table 9 (deaths)',D.race.mortality.url]],'. '+D.race.notes);
-  source($('source-michigan'),'Michigan RET extension: ',Object.entries(D.michigan.sources).map(([k,url])=>[k,url]),'. '+D.michigan.period);
+  source($('source-michigan'),'Michigan screening and diagnosis data: ',Object.entries(D.michigan.sources).map(([k,url])=>[k,url]),'. '+D.michigan.period);
   const rowTag=r=>r.group==='female'?' · female population':r.group==='male'?' · male population':'';
   const aiCaveat='Diagnosis data: designated counties only. Death data: nationwide, adjusted for race misclassification.';
   const badge=(r,s)=>(r.id===s.a?'● A · ':'')+(r.id===s.b?'◆ B · ':'');
@@ -356,8 +356,8 @@
       });
       li.append(node('p',evidenceText(p)),b);return li;
     }));
-    $('ret-review').hidden=!state.evidence.some(p=>p.view==='michigan');
-    for(const k of Object.keys(retItems))$('ret-'+k).value=state.ret[k];
+    $('design-review').hidden=!state.evidence.some(p=>p.view==='michigan');
+    for(const k of Object.keys(designItems))$('design-'+k).value=state.design[k];
     renderCompletion();
   }
   function renderCompletion(){
@@ -365,7 +365,7 @@
     $('done').hidden=!state.completed;
   }
   function report(){
-    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'','','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['RET DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(retItems).filter(([k])=>state.ret[k].trim()).map(([k,title])=>title+': '+state.ret[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
+    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'','','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['ULTRASOUND DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(designItems).filter(([k])=>state.design[k].trim()).map(([k,title])=>title+': '+state.design[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
     return lines.join('\n')+'\n';
   }
   function syncIdentity(){for(const k of ['name','period'])$(k).value=state.person[k];}
@@ -400,7 +400,7 @@
   $('to-explain').addEventListener('click',()=>goto('explain'));
   for(const k of ['claim','limits'])$(k).addEventListener('input',()=>{state[k]=$(k).value;state.completed=false;save();renderCompletion();});
   $('finish').addEventListener('click',()=>{if(!$('finish').disabled){state.completed=true;save();renderCompletion();announce('Investigation complete. Download your work if you need to turn it in.');$('download').focus();}});
-  for(const k of Object.keys(retItems))$('ret-'+k).addEventListener('input',()=>{state.ret[k]=$('ret-'+k).value;save();});
+  for(const k of Object.keys(designItems))$('design-'+k).addEventListener('input',()=>{state.design[k]=$('design-'+k).value;save();});
   for(const k of ['name','period'])$(k).addEventListener('input',()=>{state.person[k]=$(k).value;save();});
   $('download').addEventListener('click',()=>{
     const url=URL.createObjectURL(new Blob([report()],{type:'text/plain;charset=utf-8'})),a=node('a');
