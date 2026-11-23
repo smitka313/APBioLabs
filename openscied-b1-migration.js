@@ -50,10 +50,16 @@
   let timer=0;
   function pause(){clearInterval(timer);timer=0;$('#play').textContent='Play year';$('#play').setAttribute('aria-pressed','false');}
   function renderInspector(){const title=state.view==='region'?REGIONS[state.region].name:state.view==='rain'?'Read the rainfall graph':L.RANGES[state.month];$('#inspector-title').textContent=title;}
+  function renderRainGraph(context,m){
+    $(context==='dialog'?'#rain-dialog-focus':'#rain-focus').textContent='Reading '+L.MONTHS[m]+' on the original graph';
+    $(context==='dialog'?'#rain-dialog .mx-rain-figure':'#view-rain .mx-rain-figure').style.setProperty('--mx-rain-month',L.rainColumn(m));
+  }
   function renderRainMonth(m){
-    const label='Reading '+L.MONTHS[m]+' on the original graph';
-    $('#rain-focus').textContent=label;$('#rain-dialog-focus').textContent=label;
-    $$('#view-rain .mx-rain-figure, #rain-dialog .mx-rain-figure').forEach(n=>n.style.setProperty('--mx-rain-month',L.rainColumn(m)));
+    renderRainGraph('explore',m);
+    renderRainGraph('dialog',m);
+  }
+  function openRainGraph(m){
+    pause();renderRainGraph('dialog',m);$('#rain-dialog').showModal();
   }
   function renderMonth(){const m=state.month;$('#month-title').textContent=L.MONTHS[m];$('#month-output').textContent=L.MONTHS[m];$('#season').textContent=L.SEASONS[m];$('#month-slider').value=m;renderInspector();renderRainMonth(m);$('#field-note').textContent=L.NOTES[m];$('#habitat-clue').textContent=L.habitatClue(m);$('#observation').value=typeof state.observations[m]==='string'?state.observations[m]:'';$('#weather').checked=state.weather;const cues=L.weatherCues(m),weatherText=state.weather?cues.rainText+'. '+cues.grassText+'. These cues are not measurements.':'Rain and grass illustrations are off.';$('#weather-reading').textContent=weatherText;$('#map-description').textContent=L.MONTHS[m]+'. Broad herd range: '+L.RANGES[m]+'. '+L.SEASONS[m]+'. This is an example route; real routes vary. '+weatherText+' '+(L.forMonth(m).length?'Field data available at location '+(m-3)+'.':'No health-card data supplied for this month.');$('#field-scene').setAttribute('aria-label','Illustration of wildebeest near the '+L.RANGES[m]+' during '+L.MONTHS[m]+'. Animals are decorative, not population counts.');$('#large-caption').textContent=$('#map-description').textContent;
     $$('#month-buttons button[data-month]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.month===m)));
@@ -104,10 +110,74 @@
       say('Download requested. If no file appears, choose View text to copy your '+(kind==='notebook'?'notebook':'investigation')+'.');
     }catch(e){textCopy(kind,true);}
   }
+  // Bring the same source records into Explain; the panels provide data, not model answers.
+  const CONTEXT_LABELS=['Migration map and research measures','Field-card data: bone-marrow fat and anthrax','April map, rainfall graph and annual data','Regional facts and nutritional health','Study design and what was recorded'];
+  function contextTable(caption,headers,rows){
+    const grid=table(headers,rows);
+    grid.createCaption().textContent=caption;
+    Array.from(grid.tBodies[0].rows).forEach(row=>{
+      const th=el('th',row.cells[0].textContent);th.scope='row';row.cells[0].replaceWith(th);
+    });
+    return grid;
+  }
+  function healthEvidence(includeAnthrax){
+    const rows=[4,5,6,7,8,9].map(m=>[
+      L.MONTHS[m],
+      ...L.forMonth(m).map(c=>includeAnthrax ? c.fat+'% / '+c.anthrax+'%' : c.fat+'%')
+    ]);
+    return contextTable(
+      includeAnthrax?'Bone-marrow fat / anthrax (%): each cell shows both measures.':'Bone-marrow fat (%)',
+      ['Month','Living','Predator deaths','Other deaths'],rows
+    );
+  }
+  function writingContext(i){
+    const details=el('details',null,'mx-writing-context');
+    details.dataset.writingContext=i;
+    details.append(el('summary','Evidence: '+CONTEXT_LABELS[i]));
+    const body=el('div',null,'mx-writing-context-body');details.append(body);
+    const caption=text=>el('p',text,'mx-caption');
+    if(i===0){
+      body.append(contextTable('Broad monthly ranges on the schematic route',
+        ['Month','Main range'],[0,5,8,10].map(m=>[L.MONTHS[m],L.RANGES[m]])),
+        caption('OpenSciEd B.1 Lessons 3–4 monthly map. The route is schematic, not a count or a GPS track.'),
+        el('p','The field cards record which group the sampled males were in, their average bone-marrow fat, and the share of the sampled group with anthrax.'));
+    }else if(i===1){
+      body.append(healthEvidence(true),
+        caption('OpenSciEd B.1 Lesson 3 field data cards. Each value summarizes a sampled group, not a count of animals in the population. The anthrax percentages come from an outbreak year.'));
+    }else if(i===2){
+      const graph=el('button','Open the original station graph');graph.type='button';
+      graph.onclick=()=>openRainGraph(3);
+      body.append(el('p','April range on the source map: '+L.RANGES[3]+'.'),
+        el('p','April station comparison on the monthly graph: Simiyu (south) is below Handajega (west), which is below Kogatende (north).'),
+        graph,caption('OpenSciEd B.1 Lesson 4, Data Excursion 1. These are station averages from 1961–1990, not rainfall in the example year below.'),
+        contextTable('Annual rainfall and time in each region · one example year',['Region','Rainfall (mm)','Time in region (%)'],
+          ANNUAL.map(a=>[a.region,a.rain,a.occupancy])),
+        caption('OpenSciEd B.1 Lesson 4, Data Excursion 2. The three shown regions cover 84% of the year.'));
+    }else if(i===3){
+      const regions=el('div',null,'mx-context-regions');
+      for(const key of ['south','west','north']){
+        const label=el('h4',REGIONS[key].name);
+        const facts=el('ul');REGIONS[key].facts.forEach(fact=>facts.append(el('li',fact)));
+        const card=el('div');card.append(label,facts);regions.append(card);
+      }
+      const more=el('details');more.append(el('summary','Compare bone-marrow fat from the field cards'),healthEvidence(false),
+        caption('OpenSciEd B.1 Lesson 3 field data cards; each value is a sampled-group average.'));
+      body.append(regions,caption('Adapted from the OpenSciEd B.1 Lesson 4 Regional Data Cards.'),more);
+    }else{
+      const facts=el('ul');
+      [
+        'The 18 field cards are six months of selected group averages for male wildebeest, drawn from more than one study.',
+        'The monthly rainfall graph summarizes three stations over 1961–1990. The occupancy table shows time in selected regions for one example year.',
+        'The April and other monthly maps show broad ranges. The regional cards describe conditions such as grass traits, local water and seasonal changes.'
+      ].forEach(text=>facts.append(el('li',text)));
+      body.append(facts,caption('OpenSciEd B.1 Lessons 3–4 source scope. Keep observations and proposed new measurements separate.'));
+    }
+    return details;
+  }
   const responseStages=RESPONSE_STAGES.map((title,i)=>{
     const section=el('section',null,'mx-response-stage'),heading=el('h3',title);
     heading.id='response-heading-'+i;heading.tabIndex=-1;
-    section.setAttribute('aria-labelledby',heading.id);section.append(heading);
+    section.setAttribute('aria-labelledby',heading.id);section.append(heading,writingContext(i));
     $('#responses').append(section);
     const option=el('option',(2*i+1)+'–'+(2*i+2)+' · '+title);
     option.value=i;$('#response-stage').append(option);
@@ -179,7 +249,7 @@
     try{await navigator.clipboard.writeText(field.value);$('#text-copy-hint').textContent='Copied. Paste the text wherever you’d like to keep it.';}
     catch(e){field.focus();field.select();$('#text-copy-hint').textContent='Automatic copy is unavailable. Use your device’s Copy command on the selected text.';}
   };
-  $('#help').onclick=()=>{pause();$('#guide').showModal();};$('#rain-enlarge').onclick=()=>{pause();$('#rain-dialog').showModal();};$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
+  $('#help').onclick=()=>{pause();$('#guide').showModal();};$('#rain-enlarge').onclick=()=>openRainGraph(state.month);$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
   const mapWrap=$('#map-wrap'),placeholder=el('div');$('#enlarge').onclick=()=>{pause();mapWrap.before(placeholder);$('#large-map-host').append(mapWrap);$('#map-dialog').showModal();scene.resize();};$('#map-dialog').addEventListener('close',()=>{placeholder.replaceWith(mapWrap);scene.resize();});$('#large-prev').onclick=()=>changeMonth(Math.max(0,state.month-1));$('#large-next').onclick=()=>changeMonth(Math.min(11,state.month+1));
   window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
   try{Lab.identity.mount('#migration-identity');const identityHost=$('#migration-identity');const clarify=()=>{identityHost.querySelectorAll('p.small.muted').forEach(p=>{if(p.textContent.includes('simulated data'))p.textContent='Your name and class period label your downloads. Everyone investigates the same published source evidence in this activity.';});};clarify();new MutationObserver(clarify).observe(identityHost,{childList:true,subtree:true});}catch(e){say('Name entry is unavailable. You can still complete and download your investigation.');}

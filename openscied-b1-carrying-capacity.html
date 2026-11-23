@@ -126,9 +126,11 @@
 </div>
 <aside class="cc-panel cc-content cc-write-evidence" aria-labelledby="cc-writing-title">
 <h3 id="cc-writing-title">Evidence within reach</h3>
-<details data-cc-evidence="model" open><summary>Model results</summary><p id="cc-writing-evidence">No model rounds yet. Return to the model to collect data.</p></details>
-<details data-cc-evidence="range"><summary>Estimate and fluctuation range</summary><p id="cc-writing-range"></p></details>
-<details data-cc-evidence="field"><summary>Field observations and rates</summary><p id="cc-writing-field"></p></details>
+<details data-cc-evidence="model" open><summary>Model results</summary><p id="cc-writing-evidence">No model rounds yet. Run the model to collect data.</p>
+<div id="cc-writing-rounds" hidden><div class="cc-explain-picks"><label for="cc-explain-trial">Run<select id="cc-explain-trial"></select></label><label for="cc-explain-round">Round<select id="cc-explain-round"></select></label></div><dl id="cc-explain-round-data" class="cc-explain-data"></dl></div>
+</details>
+<details data-cc-evidence="range"><summary>Estimate and fluctuation range</summary><p id="cc-writing-range"></p><div id="cc-writing-late"></div></details>
+<details data-cc-evidence="field"><summary>Field observations and rates</summary><div id="cc-writing-migration" hidden><p><strong>Lesson 4 observations:</strong> In February the herd is on the southern plains during the wet season. In September it is in the northern Serengeti and Maasai Mara during the dry season. These are broad seasonal ranges, not fixed routes.</p></div><p id="cc-writing-field"></p><div id="cc-writing-field-data"></div></details>
 <details data-cc-evidence="habitat"><summary>Habitat comparison</summary><p id="cc-writing-habitat"></p></details>
 <div class="cc-actions"><button type="button" data-cc-go="run">Return to runs</button><button type="button" data-cc-go="habitat">Revisit habitat runs</button><button type="button" data-cc-go="evidence">Revisit field data</button></div>
 </aside>

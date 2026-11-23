@@ -131,8 +131,14 @@
           <button type="button" class="sg-plain" data-answer-step="claim">2 · Explain</button>
           <button type="button" class="sg-plain" data-answer-step="limits">3 · Test again</button>
         </nav>
+        <section class="sg-analysis-source" aria-labelledby="sg-analysis-source-title">
+          <h3 id="sg-analysis-source-title">Event and hunt records</h3>
+          <label for="sg-evidence-choice">Record for your explanation</label>
+          <select id="sg-evidence-choice"><option value="">Choose a record</option></select>
+          <p id="sg-analysis-record-note" class="sg-selected"></p>
+          <div id="sg-selected"></div>
+        </section>
         <section class="sg-answer-panel" data-answer-panel="evidence">
-          <label for="sg-evidence-choice">Choose one recorded event or hunt.</label><select id="sg-evidence-choice"><option value="">Choose evidence</option></select>
           <details id="sg-question-details" class="sg-note-disclosure"><summary>Optional: add your investigation question</summary>
             <label for="sg-question">Our investigation question</label><input id="sg-question" maxlength="240" placeholder="How does group size affect the result of a hunt?">
           </details>
@@ -143,7 +149,6 @@
         <section class="sg-answer-panel" data-answer-panel="limits" hidden>
           <label for="sg-limits">What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="3" maxlength="750"></textarea>
         </section>
-        <p class="sg-selected" id="sg-selected"></p>
         <div class="sg-answer-actions">
           <button id="sg-answer-next" type="button" class="sg-plain" data-answer-step="claim">Next: Explain →</button>
           <button id="sg-download" type="button" class="sg-cta" aria-describedby="sg-download-status">Download evidence and responses</button>
@@ -154,7 +159,7 @@
           <label for="sg-download-copy">Text to copy</label><textarea id="sg-download-copy" rows="5" readonly></textarea>
         </details>
       </div>
-      <aside class="sg-panel sg-question sg-analysis-evidence"><h3>Your game evidence</h3><div id="sg-analysis-data"></div><button type="button" class="sg-plain" data-page="evidence">View full event history</button></aside>
+      <aside class="sg-panel sg-question sg-analysis-evidence"><h3>Season totals</h3><div id="sg-analysis-data"></div></aside>
     </div>
   </section>
   <p class="sg-save-warning" id="sg-save-warning" hidden>This device has an unreadable or older game save. It was not replaced. Download that save before confirming a restart.</p>

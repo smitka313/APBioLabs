@@ -79,3 +79,14 @@
   .cc-explain-steps button:not(.theme-btn){padding-inline:8px}
   .cc-explain-download button:not(.theme-btn){font-size:.78rem}
 }
+
+.cc-explain-picks{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:.45rem}
+.cc-explain-picks label{font-size:.83rem;display:grid;gap:.18rem;min-width:0}
+.cc-explain-picks select{width:100%;min-width:0}
+.cc-explain-data{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.36rem;margin:.55rem 0}
+.cc-explain-data div{background:var(--surface-2);border-radius:7px;padding:.3rem .42rem}
+.cc-explain-data dt{font-size:.72rem;line-height:1.2}
+.cc-explain-data dd{margin:0;font:750 .96rem var(--f-mono)}
+#cc-writing-late table{margin-bottom:.55rem}
+#cc-writing-late caption,#cc-writing-field-data caption{text-align:start;font-weight:700;font-size:.78rem}
+#cc-writing-field-data details{border-bottom:0}

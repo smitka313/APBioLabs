@@ -32,6 +32,13 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
         T.ok(await fit(page), width + ' px: no horizontal overflow before play');
         T.ok((await page.locator('meta[name="robots"]').getAttribute('content')).includes('noindex'), 'draft is not indexed');
         await shot(page, width + '-setup');
+        if (width === 390) {
+          await page.locator('.sg-tabs [data-page="analyze"]').click();
+          T.ok(await page.locator('#sg-evidence-choice').isDisabled() && await page.locator('#sg-selected').isHidden() &&
+            /record evidence/i.test(await page.locator('#sg-analysis-record-note').textContent()),
+            'Analyze explains that no evidence is available before the first turn');
+          await page.locator('.sg-tabs [data-page="play"]').click();
+        }
         await page.locator('#sg-start').click();
         const next = page.locator('#sg-next');
         await next.waitFor();
@@ -219,15 +226,33 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           await page.locator('#sg-analysis-data').waitFor();
           T.ok(await page.locator('#sg-analysis-data').isVisible(), 'analysis references game data');
           T.ok(await fit(page), width + ' px: analysis fits the page');
+          const answerRecord=page.locator('#sg-evidence-choice'), source=page.locator('#sg-selected');
+          T.ok(await answerRecord.locator('option').count()===await records.locator('option').count()+1 &&
+            await answerRecord.inputValue()==='' && await source.innerText()===newest,
+            'Analyze provides every record and previews the latest without choosing for the student');
           const activePrompt=page.locator('[data-answer-panel]:visible');
           T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='evidence',
             'analysis starts with one focused evidence prompt');
           await shot(page, width + '-analysis-choose');
-          await page.locator('#sg-evidence-choice').selectOption('0');
+          await answerRecord.selectOption('0');
           await page.locator('#sg-answer-next').click();
           T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='claim' &&
-            await page.locator('#sg-selected').isVisible() && await page.locator('#sg-analysis-data').isVisible(),
+            await source.isVisible() && await page.locator('#sg-analysis-data').isVisible(),
             'explanation step keeps the selected record and season totals without stacking the other prompts');
+          await page.locator('#sg-claim').fill('A fictional draft about the hunt.');
+          const huntIndex=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)).game.log.findIndex(r=>r.kind==='hunt'),SAVE_KEY);
+          T.ok(huntIndex>=0,'the completed run has a hunt to inspect inside Analyze');
+          await answerRecord.selectOption(String(huntIndex));
+          T.ok((await source.innerText()).includes('· Hunt') && /this record[\s\S]*→.*cumulative/.test(await source.innerText()) &&
+            await source.locator('.sg-rows li p').isVisible() && await page.locator('#sg-claim').inputValue()==='A fictional draft about the hunt.' &&
+            await page.locator('#sg-evidence').isHidden(),
+            'switching to the detailed hunt shows the exact change and cumulative before/after alongside untouched writing without leaving Analyze');
+          if (width===390) {
+            await page.reload();
+            T.ok(await answerRecord.inputValue()===String(huntIndex) && await activePrompt.getAttribute('data-answer-panel')==='claim' &&
+              (await source.innerText()).includes('· Hunt'),
+              'reload restores the chosen hunt beside the active explanation');
+          }
           await shot(page, width + '-analysis');
           await page.locator('#sg-answer-next').click();
           T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='limits' &&

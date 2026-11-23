@@ -233,7 +233,12 @@
     });
     next.hidden=n===ANSWER_STEPS.length-1;
     if(!next.hidden){next.dataset.answerStep=ANSWER_STEPS[n+1];next.textContent=n===0?'Next: Explain →':'Next: Test again →';}
-    if(focus)qs(fields[step])?.focus({preventScroll:true});
+    if(focus){
+      const field=qs(fields[step]);
+      field.focus({preventScroll:true});
+      const bounds=field.getBoundingClientRect();
+      if(bounds.top<0 || bounds.bottom>innerHeight)field.scrollIntoView({block:'nearest'});
+    }
   }
   function openPage(target, moveFocus) {
     if (!['play','evidence','analyze'].includes(target)) return;
@@ -696,18 +701,21 @@
       const option=node('option','',seasonName(r.season)+' · '+recordName(r)+' ('+signed(r.change)+')');
       option.value=String(i);return option;
     });
-    if(includeEmpty){const empty=node('option','','Choose evidence');empty.value='';options.unshift(empty);}
+    if(includeEmpty){const empty=node('option','','Choose a record');empty.value='';options.unshift(empty);}
     return options;
   }
   function renderHistoryRecord(host,rows,index) {
     const r=rows[index];
+    host.replaceChildren();
     if(!r)return;
     const list=node('ol','sg-rows'),li=node('li');
     const head=node('div');head.append(node('strong','',recordName(r)),node('br'),node('small','',seasonName(r.season)+' · '+(r.kind==='hunt'?'Hunt':r.kind==='migration'?'Migration':'Event card')));
-    li.append(head,node('span','sg-change',signed(r.change)+' · '+signed(r.population)+' cumulative'));
+    const numbers=node('span','sg-change');
+    numbers.append(node('strong','',signed(r.change)+' this record'),node('small','',signed(r.population-r.change)+' → '+signed(r.population)+' cumulative'));
+    li.append(head,numbers);
     const desc=describeRow(r,index);
     if(desc)li.append(node('p','',desc));
-    list.append(li);host.replaceChildren(list);
+    list.append(li);host.append(list);
   }
   function renderEvidence() {
     const hasMaps=Boolean(state&&window.SerengetiFieldReport),maps=qs('#sg-evidence-maps');
@@ -736,7 +744,15 @@
     es.replaceChildren(totals,log);
     aside.replaceChildren(compareCards(summary));
     selected.replaceChildren(...historyOptions(rows,true));selected.value=answers.evidence;
-    qs('#sg-selected').textContent=selectionText(rows);
+    selected.disabled=!rows.length;
+    renderAnalysisRecord(rows);
+  }
+  function renderAnalysisRecord(rows) {
+    const isChosen=answers.evidence!==''&&Boolean(rows[Number(answers.evidence)]);
+    const index=isChosen?Number(answers.evidence):rows.length-1;
+    qs('#sg-analysis-record-note').textContent=!rows.length?'Play a turn to record evidence.'
+      :isChosen?'':'Latest record shown for reference. Choose the record you want to use.';
+    renderHistoryRecord(qs('#sg-selected'),rows,index);
   }
   function selectionText(rows) {
     if (!answers.evidence || !rows || !rows[Number(answers.evidence)]) return '';
@@ -796,7 +812,11 @@
     const field = qs(fields[key]); field.value = answers[key];
     field.addEventListener(key==='evidence'?'change':'input',() => {
       answers[key]=field.value;
-      if(key==='evidence') qs('#sg-selected').textContent=selectionText(state&&state.log);
+      if(key==='evidence') {
+        renderAnalysisRecord(state?.log || []);
+        const record=field.value===''?null:state?.log[Number(field.value)];
+        if(record) say(recordName(record)+' · '+seasonName(record.season)+'. '+signed(record.change)+' wildebeest.');
+      }
       save();
     });
   });

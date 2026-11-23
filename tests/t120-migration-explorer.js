@@ -157,6 +157,13 @@ async function stationLabels(map,label){
   // Optional evidence checks live with their written prompts and never score or edit drafts.
   await chooseSet(1);await p.locator('#answer-absence').fill('My own interpretation stays here.');
   ok(await p.locator('#response-progress').textContent()==='2 of 10 prompts answered','writing progress counts filled drafts across all sets');
+  const contextual=p.locator('[data-writing-context]:visible');
+  ok(await contextual.count()===1,'only the active question set exposes its evidence');
+  await contextual.locator('summary').first().press('Enter');
+  const healthRows=await contextual.locator('tbody tr').allTextContents();
+  ok(healthRows.length===6&&/May.*95% \/ 0%.*75% \/ 0%.*90% \/ 0%/.test(healthRows[0])&&
+    /July.*89% \/ 20%.*51% \/ 20%.*31% \/ 20%/.test(healthRows[2]),'Explain includes exact source health and anthrax data for the active prompts');
+  await contextual.locator('summary').first().press('Enter');
   const anthrax=p.locator('[data-evidence-check="anthrax"]');
   ok(await anthrax.evaluate(el=>el.parentElement.querySelector('textarea')?.id==='answer-absence'), 'anthrax check sits beside Q4');
   await anthrax.locator('summary').press('Enter');
@@ -182,6 +189,17 @@ async function stationLabels(map,label){
   await nutrition.getByRole('button',{name:'Check this choice'}).click();
   ok(/May are labeled healthy, at 75% and 90%/.test(await nutrition.locator('.mx-check-feedback').textContent()),'nutrition feedback points out the healthy May exception');
   await chooseSet(2);
+  await contextual.locator('summary').first().click();
+  ok(/April range.*South and southwest Serengeti/.test(await contextual.textContent()),'rainfall explanation has the source April range without changing pages');
+  const annualRows=await contextual.locator('tbody tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells,cell=>cell.textContent)));
+  ok(JSON.stringify(annualRows)===JSON.stringify([['South','1160','52'],['West','1180','26'],['North','1310','6']]),'Explain shows all three verified annual observations in the same question set');
+  const graphHere=contextual.getByRole('button',{name:'Open the original station graph'});
+  await graphHere.click();
+  ok(await p.locator('#rain-dialog').evaluate(d=>d.open)&&/Reading April/.test(await p.locator('#rain-dialog-focus').textContent())&&
+    await p.locator('#explain').isVisible(),'Explain opens the original station graph focused on April without leaving the draft');
+  await p.keyboard.press('Escape');
+  ok(await graphHere.evaluate(b=>document.activeElement===b),'closing the source graph returns focus to the writing evidence');
+  await contextual.locator('summary').first().click();
   const rainfall=p.locator('[data-evidence-check="rainfall"]');
   await rainfall.locator('summary').click();
   await rainfall.locator('[value="counterexample"]').check();
@@ -233,6 +251,12 @@ async function stationLabels(map,label){
     ok(await graph.evaluate(d=>d.open),'phone can open and read the full graph');
     await phone.locator('[data-page="explain"]').tap();
     await chooseSet(1,phone);
+    const phoneSource=phone.locator('[data-writing-context]:visible');
+    await phoneSource.locator('summary').first().tap();
+    ok(await phoneSource.locator('table').isVisible()&&await phoneSource.evaluate(el=>
+      el.getBoundingClientRect().right<=innerWidth+1&&el.scrollWidth<=el.clientWidth+1),'phone can open and read its source excerpt beside the answer without horizontal overflow');
+    await screenshot(phone,'390-dark-context-source');
+    await phoneSource.locator('summary').first().tap();
     const panel=phone.locator('[data-evidence-check="anthrax"]');
     await panel.locator('summary').tap();await panel.locator('label:has([value="higher-dead"])').tap();
     await panel.getByRole('button',{name:'Check this choice'}).tap();

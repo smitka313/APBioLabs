@@ -18,7 +18,7 @@
       wrong: 'Not quite. Other limits could also slow growth. Population counts alone cannot distinguish food from those other possibilities.'
     }
   };
-  const fresh = () => ({baseline:L.create(), comparison:null, selected:'baseline', page:'run', question:'claim', grass:50, answers:{}, checks:{}});
+  const fresh = () => ({baseline:L.create(), comparison:null, selected:'baseline', page:'run', question:'claim', evidenceTrial:'baseline', evidenceRound:0, grass:50, answers:{}, checks:{}});
   const cleaned = (r) => {
     const x = L.restore(r);
     return x && x.round <= ROUNDS && x.roleSlots === 20 && x.startingPopulation === 2 ? x : null;
@@ -33,6 +33,8 @@
       if (raw.selected === 'comparison' && state.comparison) state.selected = 'comparison';
       if (stages.includes(raw.page)) state.page = raw.page;
       if (questions.includes(raw.question)) state.question = raw.question;
+      if (raw.evidenceTrial==='comparison' && state.comparison?.round) state.evidenceTrial='comparison';
+      if (Number.isInteger(raw.evidenceRound) && raw.evidenceRound>0 && raw.evidenceRound<=ROUNDS) state.evidenceRound=raw.evidenceRound;
       state.grass = state.comparison?.grassPercent || ([50,75].includes(raw.grass) ? raw.grass : 50);
       for (const id of strings) if (typeof raw.answers?.[id] === 'string') state.answers[id] = raw.answers[id].slice(0,4000);
       for (const [key, choices] of Object.entries({food:['grass','herd'],field:['yes','no']})) if (choices.includes(raw.checks?.[key])) state.checks[key] = raw.checks[key];
@@ -108,6 +110,7 @@
     $('#cc-explain-next').disabled = index === questions.length-1;
     $('#cc-explain-position').textContent = 'Question '+(index+1)+' of '+questions.length;
     $$('[data-cc-evidence]').forEach(d=>{d.open = d.dataset.ccEvidence===evidenceFor[state.question];});
+    $('#cc-writing-migration').hidden = state.question!=='migration-claim';
     updateExplainProgress();
   }
   function chooseQuestion(id,previousFocus) {
@@ -120,12 +123,48 @@
   $('#cc-explain-question').addEventListener('change',e=>chooseQuestion(e.target.value));
   $('#cc-explain-prev').addEventListener('click',e=>chooseQuestion(questions[questions.indexOf(state.question)-1],e.currentTarget));
   $('#cc-explain-next').addEventListener('click',e=>chooseQuestion(questions[questions.indexOf(state.question)+1],e.currentTarget));
+  function renderRoundEvidence() {
+    const models = ['baseline','comparison'].filter(id=>state[id]?.round);
+    $('#cc-writing-rounds').hidden = !models.length;
+    if (!models.length) return;
+    if (!models.includes(state.evidenceTrial)) {state.evidenceTrial=models[0];state.evidenceRound=0;}
+    const trial = state[state.evidenceTrial], shown = trial.rows.find(r=>r.round===state.evidenceRound) || trial.rows.find(r=>r.deaths>0) || trial.rows.at(-1);
+    $('#cc-explain-trial').innerHTML = models.map(id=>'<option value="'+id+'">'+(id==='baseline'?'Baseline · 100% grass':state[id].grassPercent+'% grass comparison')+'</option>').join('');
+    $('#cc-explain-trial').value = state.evidenceTrial;
+    $('#cc-explain-round').innerHTML = trial.rows.map(r=>'<option value="'+r.round+'">Round '+r.round+'</option>').join('');
+    $('#cc-explain-round').value = shown.round;
+    const rows = [['start','Starting herd',shown.starting],['grass','Grass units',shown.grassAvailable],['survived','Survived',shown.survivors],['births','Births',shown.births],['deaths','Deaths',shown.deaths],['end','Ending herd',shown.ending]];
+    $('#cc-explain-round-data').innerHTML = rows.map(([key,label,value])=>'<div><dt>'+label+'</dt><dd data-cc-stat="'+key+'">'+value+'</dd></div>').join('');
+  }
+  $('#cc-explain-trial').addEventListener('change',e=>{
+    if (!['baseline','comparison'].includes(e.target.value)||!state[e.target.value]?.round) return;
+    state.evidenceTrial=e.target.value;state.evidenceRound=0;renderRoundEvidence();save();
+  });
+  $('#cc-explain-round').addEventListener('change',e=>{
+    state.evidenceRound=Number(e.target.value);renderRoundEvidence();save();
+  });
+  function renderLateEvidence() {
+    const late = ['baseline','comparison'].filter(k=>state[k]?.round>=7);
+    $('#cc-writing-late').innerHTML = late.length ? late.map(key=>{
+      const t=state[key], rows=t.rows.filter(r=>r.round>=7);
+      const name=key==='baseline'?'Baseline':t.grassPercent+'% grass comparison';
+      return '<table data-cc-late-trial="'+key+'"><caption>'+name+' · simulated late rounds</caption><thead><tr><th scope="col">Round</th>'+rows.map(r=>'<th scope="col">'+r.round+'</th>').join('')+'</tr></thead><tbody><tr><th scope="row">Wildebeest</th>'+rows.map(r=>'<td data-cc-late-round="'+r.round+'">'+r.ending+'</td>').join('')+'</tr></tbody></table>';
+    }).join('') : '';
+  }
+  function renderFieldEvidence() {
+    const samples = window.CarryingField.DATA;
+    const needed = new Set([1961,1977,1978,1994,1999,2012]);
+    const format = new Intl.NumberFormat('en-US');
+    const dataTable = (points,caption)=>'<table><caption>'+caption+'</caption><thead><tr><th scope="col">Year</th><th scope="col">Estimated herd</th></tr></thead><tbody>'+points.map(p=>tableRow([p.year,format.format(p.population)])).join('')+'</tbody></table>';
+    $('#cc-writing-field-data').innerHTML = dataTable(samples.filter(p=>needed.has(p.year)),'Selected field estimates · not simulated')+'<details><summary>All 20 classroom estimates</summary>'+dataTable(samples,'OpenSciEd B.1 Lesson 5, adapted from Hopcraft et al. (2015)')+'</details><p>There are no classroom estimates for 1995–98. The field graph does not show where the herd grazed.</p>';
+  }
   function renderWriting() {
     const items = [state.baseline,state.comparison].filter((s)=>s?.round).map((s)=>'At round '+s.round+', the '+(s.grassPercent === 100?'baseline':s.grassPercent+'% grass comparison')+' ended with '+plural(s.population,'wildebeest','wildebeest')+'.');
     $('#cc-writing-evidence').textContent = [...items,compareText()].filter(Boolean).join(' ') || 'No model rounds yet. Return to the model to collect data.';
     $('#cc-writing-habitat').textContent = habitat.report() || 'No completed habitat runs yet.';
     $('#cc-writing-range').textContent = range.report() || 'No fluctuation range recorded yet.';
     $('#cc-writing-field').textContent = field.report() || 'No field-rate calculations recorded yet.';
+    renderRoundEvidence();renderLateEvidence();renderFieldEvidence();
   }
   function go(page, focus = true) {
     state.page = page;

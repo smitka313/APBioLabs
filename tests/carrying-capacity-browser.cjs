@@ -58,6 +58,48 @@ async function explainMatches(p, snapshot) {
   return true;
 }
 
+const EVIDENCE_STAT_KEYS = ['start', 'grass', 'survived', 'births', 'deaths', 'end'];
+const modelRound = p => p.locator('#cc-explain-round');
+const modelTrial = p => p.locator('#cc-explain-trial');
+const evidenceRoundRows = p => p.locator('#cc-explain-round-data');
+const currentExplain = p => p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]');
+
+const readExplainRound = async p => evidenceRoundRows(p).evaluate((box, keys) =>
+  keys.map(key => {
+    const raw = box.querySelector('[data-cc-stat="' + key + '"]')?.textContent.trim();
+    return raw && /^\d+$/.test(raw) ? Number(raw) : null;
+  }), EVIDENCE_STAT_KEYS);
+const sameList = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+async function readModelEvidenceBesidePrompt(p) {
+  const url = p.url();
+  const choose = explainPicker(p);
+  check(await modelRound(p).inputValue() === '6' && await modelTrial(p).inputValue() === 'baseline' &&
+    sameList(await readExplainRound(p), [13, 7, 7, 3, 6, 10]),
+    'Explain initially shows the first baseline shortage with all six model counts');
+  await modelRound(p).selectOption('8');
+  check(await evidenceRoundRows(p).isVisible() && sameList(await readExplainRound(p), [15, 5, 5, 2, 10, 7]),
+    'choosing baseline round 8 beside the prompt shows its exact counts including 10 deaths');
+  await modelTrial(p).selectOption('comparison');
+  await modelRound(p).selectOption('8');
+  check(sameList(await readExplainRound(p), [7, 6, 6, 3, 1, 9]) &&
+    await currentExplain(p).isVisible() && await p.locator('#cc-shortage-rule').isVisible() &&
+    await choose.inputValue() === 'shortage-rule' &&
+    await p.locator('#cc-shortage-rule').inputValue() === TEXT.shortage && p.url() === url,
+    'switching to comparison round 8 changes the evidence without backtracking or losing the question');
+}
+
+const lateEvidence = (p, trial) => p.locator(
+  '#cc-writing-late [data-cc-late-trial="' + trial + '"] [data-cc-late-round]');
+const publishedEvidence = p => p.locator('#cc-writing-field-data');
+
+async function readLateEvidence(p, trial) {
+  return lateEvidence(p, trial).evaluateAll(nodes => nodes.map(el => {
+    const number = el.textContent.trim().match(/\d+/g)?.at(-1);
+    return [Number(el.dataset.ccLateRound), number ? Number(number) : null];
+  }));
+}
+
 async function compactExplain(p, label, maxFormSpan) {
   const picker = explainPicker(p);
   check(await p.locator('#cc-explain textarea:visible').count() === 1 &&
@@ -586,6 +628,23 @@ async function visualSweep(browser, url) {
           check(await explainPicker(p).inputValue() === 'shortage-rule' &&
             await p.locator('#cc-shortage-rule').isVisible() && await p.locator('#cc-claim').isHidden(),
             'touch moves to a single new question without revealing the other prompts');
+          if (!(await modelRound(p).isVisible())) {
+            await p.locator('#cc-explain details[data-cc-evidence="model"] summary').tap();
+          }
+          await modelRound(p).selectOption('8');
+          check(await fit(p, '#cc-explain-round-data') && await currentExplain(p).isVisible() &&
+            sameList(await readExplainRound(p), [15, 5, 5, 2, 10, 7]),
+            '390px phone opens and reads exact model data beside the shortage question without horizontal overflow');
+          await shot(p, cfg.name + '-explain-model-evidence', true);
+          await explainNext(p).tap();
+          check(await explainPicker(p).inputValue() === 'long-run' &&
+            await lateEvidence(p, 'baseline').first().isVisible() &&
+            await fit(p, '#cc-writing-late') &&
+            sameList(await readLateEvidence(p, 'baseline'), [[7, 15], [8, 7], [9, 10], [10, 15], [11, 7], [12, 10]]),
+            'the phone long-run prompt opens its own baseline observations without returning to Run');
+          await explainNext(p).tap();
+          check(await explainPicker(p).inputValue() === 'migration-claim' && await fit(p, '#cc-writing-field-data'),
+            'the phone migration prompt shows its published field table within the page width');
           await axeAudit(p, cfg.name + ' Explain');
         }
         await shot(p, cfg.name + '-explain-compact', true);
@@ -898,15 +957,37 @@ async function followWorkflow(browser, url) {
       await p.locator('#cc-claim').isHidden() && await nextPrompt.evaluate(el => document.activeElement === el) &&
       /2 of 6/.test(await questionPos.textContent()),
       'Enter on Next displays just question 2 and keeps the working control focused');
+    await (await explainQuestion(p, 'shortage-rule')).fill(TEXT.shortage);
+    await readModelEvidenceBesidePrompt(p);
+    await shot(p, '1366-light-explain-model-evidence', true);
     await prevPrompt.press('Space');
     check(await picker.inputValue() === 'claim' && await prevPrompt.isDisabled() &&
       await picker.evaluate(el => document.activeElement === el),
       'Space on Previous returns to the first question and moves focus away from the disabled button');
     for (const [key, writing] of Object.entries(EXPLAIN_WRITING).filter(([key]) => key !== 'limit')) {
       await (await explainQuestion(p, key)).fill(writing);
+      if (key === 'long-run') {
+        check(await lateEvidence(p, 'baseline').first().isVisible() &&
+          await lateEvidence(p, 'comparison').first().isVisible() &&
+          sameList(await readLateEvidence(p, 'baseline'), [[7, 15], [8, 7], [9, 10], [10, 15], [11, 7], [12, 10]]) &&
+          sameList(await readLateEvidence(p, 'comparison'), [[7, 7], [8, 9], [9, 7], [10, 9], [11, 7], [12, 9]]),
+          'the long-run response is supported by both actual late-round sequences next to the prompt');
+      }
     }
     check((await chosenEvidence()).includes('field') && !(await chosenEvidence()).includes('habitat'),
       'the migration question brings field evidence forward without expanding the optional habitat group');
+    const shownField = (await publishedEvidence(p).innerText()).replaceAll(',', '');
+    check(await publishedEvidence(p).isVisible() &&
+      ['1961', '1977', '263362', '1400000'].every(value => shownField.includes(value)) &&
+      await currentExplain(p).isVisible(),
+      'the field disclosure beside the migration prompt shows exact published endpoints without leaving Explain');
+    const fullField = publishedEvidence(p).locator('details');
+    check(await fullField.locator('table').isHidden(), 'the complete field table is available without expanding the default view');
+    await fullField.locator('summary').click();
+    const fieldYears = await fullField.locator('tbody th').evaluateAll(rows => rows.map(row => Number(row.textContent.trim())));
+    check(await fullField.locator('table').isVisible() && fieldYears.length === 20 && fieldYears.includes(1994) &&
+      fieldYears.includes(1999) && [1995, 1996, 1997, 1998].every(year => !fieldYears.includes(year)),
+      'the prompt can disclose all 20 exact estimates while keeping absent drought-era years absent');
     await picker.press('End');
     check(await picker.inputValue() === 'limit' && await nextPrompt.isDisabled() &&
       await p.locator('#cc-limit').isVisible() && /6 of 6/.test(await questionPos.textContent()),
@@ -922,8 +1003,13 @@ async function followWorkflow(browser, url) {
 
     await p.reload();
     await p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]').waitFor({ state: 'visible' });
-    check(await explainPicker(p).inputValue() === 'limit' && await p.locator('#cc-limit').isVisible() &&
-      await explainMatches(p, EXPLAIN_WRITING),
+    check(await explainPicker(p).inputValue() === 'limit' && await p.locator('#cc-limit').isVisible(),
+      'reload goes directly to the saved Explain question');
+    await explainQuestion(p, 'shortage-rule');
+    check(await modelTrial(p).inputValue() === 'comparison' && await modelRound(p).inputValue() === '8' &&
+      sameList(await readExplainRound(p), [7, 6, 6, 3, 1, 9]),
+      'the selected explaining evidence trial and round resume beside the shortage response');
+    check(await explainMatches(p, EXPLAIN_WRITING),
     'the active prompt and all five core responses survive reload');
     check(await p.locator('#cc-writing-evidence').textContent().then(s => /baseline/i.test(s) && /50% grass comparison/i.test(s)),
       'both complete trials remain available beside the restored writing');
