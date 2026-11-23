@@ -21,9 +21,9 @@
   const freshSeed = () => window.crypto && window.crypto.getRandomValues ? window.crypto.getRandomValues(new Uint32Array(1))[0] : Date.now() >>> 0;
   const roleName = role => LABEL[role] || 'All roles';
   let state = null, answers = BLANK(), saveUnavailable = false, preserveRaw = false, page = 'play', optionId = '', chosenPhase = '';
-  let currentMoveToken = '', lastLogLength = 0, scene = null, currentOptions = [], currentPhase = '';
+  let currentMoveToken = '', scene = null, currentOptions = [], currentPhase = '';
   // UI-only metadata. The engine action log and random state are not modified.
-  let huntReview = null, huntStart = null, actionNotice = '', cardChangedCells = [];
+  let huntReview = null, huntStart = null, decision = null, cardChangedCells = [];
   let huntDetails = Object.create(null);
   const app = qs('#sg-play'), shape = qs('#sg-scene');
   const resetConfirm = qs('#sg-confirm'), instructions = qs('#sg-instructions');
@@ -131,6 +131,21 @@
     if(Number.isInteger(remaining))parts.push(pairCount(remaining)+' currently available');
     return parts.length ? parts.join(' · ')+'. Pairings can change when tokens move, are removed, or split.' : '';
   }
+  function decisionFor(type,before,after,prior,choice,noCardTarget,beforeReady) {
+    const priorTokens=new Map((before?.tokens||[]).map(t=>[t.id,t]));
+    const nextTokens=new Map(after.tokens.map(t=>[t.id,t]));
+    const tokenData = t => t ? {id:t.id,cell:t.cell,type:t.type,species:t.species,territory:t.territory} : null;
+    const moved = type==='start' || type==='migrate' ? [] : [...new Set([...priorTokens.keys(),...nextTokens.keys()])].flatMap(id=>{
+      const from=priorTokens.get(id), to=nextTokens.get(id);
+      return from && to && sameCell(from.cell,to.cell) ? [] : [{before:tokenData(from),after:tokenData(to)}];
+    }).slice(0,12);
+    const card=prior?.card || (type==='draw' ? L.phase(after).card : null);
+    const option=choice ? {id:choice.id,label:choice.label,tokenId:choice.tokenId,to:choice.to,
+      cornerFallback:Boolean(choice.cornerFallback),singleSurvivor:Boolean(choice.singleSurvivor)} : null;
+    return {type,logLength:after.log.length,season:after.season,previousSeason:before?.season,
+      priorKind:prior?.kind,role:prior?.role,card:card ? {id:card.id,title:card.title,effect:card.effect,text:card.text} : null,
+      noCardTarget,skippedReason:beforeReady?.blocked,count:beforeReady?.count,option,moved};
+  }
   const notifyTurn = () => app.dispatchEvent(new CustomEvent('sg:turnchange',{bubbles:true}));
 
 
@@ -159,6 +174,11 @@
         const {index,cells} = payload.huntReview;
         huntReview={index,event:Boolean(payload.huntReview.event),cells:cells.filter(c=>Number.isInteger(c?.x)&&c.x>=0&&c.x<17&&Number.isInteger(c.y)&&c.y>=0&&c.y<21&&['removed','added'].includes(c.change)).slice(0,3)};
       }
+      const d=payload.turnDecision;
+      if(state && d && d.season===state.season && d.logLength===state.log.length &&
+        ['start','migrate','draw','resolveCard','movePredator','beginHunts','roll','nextSeason'].includes(d.type) &&
+        Array.isArray(d.moved) && d.moved.length<=12 && d.moved.every(x=>x && typeof x==='object') &&
+        JSON.stringify(d).length<9000) decision=d;
       if(state&&payload.huntStart?.season===state.season&&['hyena','lion'].includes(payload.huntStart.role)&&Number.isInteger(payload.huntStart.count))huntStart=payload.huntStart;
     }
   } catch (_) {
@@ -185,7 +205,7 @@
     qs('#sg-recover').hidden = true;
     qs('#sg-save-warning').hidden = true;
     try {
-      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails}));
+      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails,turnDecision:decision}));
       saveUnavailable = false;
     } catch (_) { saveUnavailable = true; }
     qs('#sg-save').textContent = saveUnavailable ? 'This browser blocked saving. Download your work before closing.' : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
@@ -252,11 +272,13 @@
     if (activeReview()) return;
     const before = state, prior = L.phase(before);
     const beforeReady = type==='beginHunts' ? moveReadiness(before,prior.role) : null;
+    const chosen = (prior.options||[]).find(o=>o.id===choice) || prior.options?.[0];
     const noCardTarget = type==='resolveCard' && !(prior.options||[]).some(o=>o.id!=='stay');
     try { state = L.act(state, choice == null || choice === '' ? {type} : {type, optionId: choice}); }
     catch (_) { state = before; say('That move is not available. Choose a listed option.'); return; }
     if (!state || state === before) { state = before; say('That move is not available now.'); return; }
-    optionId = ''; currentMoveToken = ''; actionNotice=''; cardChangedCells = [];
+    decision=decisionFor(type,before,state,prior,chosen,noCardTarget,beforeReady);
+    optionId = ''; currentMoveToken = ''; cardChangedCells = [];
     if (type==='resolveCard') {
       const oldTokens=new Map(before.tokens.map(t=>[t.id,t])), newTokens=new Map(state.tokens.map(t=>[t.id,t]));
       before.tokens.filter(t=>!newTokens.has(t.id)).forEach(t=>cardChangedCells.push({...t.cell,change:'removed'}));
@@ -269,10 +291,8 @@
     const nextPhase=L.phase(state);
     if(type==='beginHunts'){
       huntStart=prior.role ? {season:before.season,role:prior.role,count:beforeReady.count} : null;
-      if(!beforeReady.count)actionNotice=roleName(prior.role)+' did not hunt. '+noHuntReason(beforeReady.blocked);
     }else if(type==='resolveCard'){
       if(nextPhase.kind==='hunt')huntStart={season:state.season,role:nextPhase.role,count:moveReadiness(state,nextPhase.role).count};
-      if(noCardTarget)actionNotice='Event applied without a board change: no legal target or move was available.';
     }else if(type==='nextSeason')huntStart=null;
     if(type==='roll'&&state.log.length>before.log.length&&state.log[state.log.length-1]?.kind==='hunt'){
       accountHunt(before,state);
@@ -318,7 +338,6 @@
     const p = review ? {kind:'huntReview',role:review.row.role,battle:review.battle} : underlying;
     const activeRole = p.role || {migration:'wildebeest',hyenaMove:'hyena',lionMove:'lion'}[p.kind] || null;
     const last = state && state.log.length ? state.log[state.log.length - 1] : null;
-    const newRow = state && state.log.length > lastLogLength;
     qs('#sg-evidence-count').textContent = state ? state.log.length : 0;
     const season = Number.isInteger(st.season) ? st.season : 0;
     const key = [p.kind, season, activeRole, p.card && p.card.id].join(':');
@@ -413,7 +432,7 @@
       const list = node('div','sg-card');
       list.append(node('h3','','A year in the ecosystem'),node('p','','Set up in winter, then play four seasons: migrate, draw three cards, and resolve hyena and lion hunts.'));
       interact.append(list);
-      actions.append(button('sg-start','Start winter', () => { state=L.create(freshSeed()); optionId=''; chosenPhase=''; save(); paint(true); (qs('#sg-next') || qs('#sg-action-title')).focus({preventScroll:true}); },null,'start'));
+      actions.append(button('sg-start','Start winter', () => { state=L.create(freshSeed()); decision=decisionFor('start',null,state,null,null,false,null); optionId=''; chosenPhase=''; save(); paint(true); (qs('#sg-next') || qs('#sg-action-title')).focus({preventScroll:true}); },null,'start'));
     } else if (p.kind === 'migration') {
       phaseLabel = '1 · Migration'; title = season === 0 ? 'Place the winter herd' : 'Move to the ' + seasonName(season).toLowerCase() + ' range';
       desc = season === 0 ? 'Place the starting wildebeest tokens in the winter range.' : 'Move the surviving wildebeest into this season’s range.';
@@ -512,13 +531,20 @@
     qs('#sg-action-title').textContent = title;
     qs('#sg-action-copy').textContent = desc;
     qs('#sg-turn-note').textContent = note;
-    const recentHuntNote = last?.kind==='hunt' ? huntDetails[state.log.length-1] : '';
-    const recent = actionNotice || (review ? note : last ? seasonName(last.season) + ' · ' + (last.title || roleName(last.role))
-      + (recentHuntNote ? '. '+recentHuntNote : ' · Wildebeest ' + signed(last.change) + ' · ' + signed(last.population) + ' cumulative')
-      : 'Completed events and hunts will appear here.');
-    qs('#sg-last').textContent = recent;
-    if (state) lastLogLength = state.log.length;
-    if (announce) say(review || actionNotice ? recent : newRow ? recent + '. ' + title : title + '. ' + desc);
+    const primary = qs('#sg-next') || qs('#sg-start');
+    const explanation = window.SerengetiTurn?.explain({
+      state,phase:p,underlying,decision,review,readiness:activeRole==='hyena'||activeRole==='lion'?moveReadiness(st,activeRole):null,
+      nextLabel:primary?.textContent,priorLabel:title,selected,selectedToken:source,activeRole,
+      selectionPending:chooseDestination,primaryDisabled:Boolean(primary?.disabled),
+      selectedLabel:selected && (p.kind==='migration' ? placementLabel(selected,planMarkers(currentOptions)) : selected.label),
+      last,lastHuntMessage:last?.kind==='hunt' ? huntDetails[state.log.length-1] : '',
+      seasonName:seasonName(season),nextSeasonName:season<L.SEASONS.length-1 ? seasonName(season+1) : null
+    }) || {what:review?.message||last?.description||title,why:note||desc,next:primary?.textContent||''};
+    qs('#sg-last').textContent = explanation.what;
+    const why = qs('#sg-update-why'), next = qs('#sg-update-next');
+    if (why) why.textContent = explanation.why;
+    if (next) next.textContent = explanation.next;
+    if (announce) say([explanation.what,explanation.why,explanation.next].filter(Boolean).join(' '));
     const finish=qs('#sg-finish'), totals=qs('#sg-finish-totals');
     if(finish)finish.hidden=p.kind!=='complete';
     if(totals&&p.kind==='complete'){
@@ -742,8 +768,8 @@
       try { localStorage.setItem(S, JSON.stringify({v:1,game:null,answers:BLANK(),page:'play'})); }
       catch (_) { say('Restart could not replace this save. The previous data is still preserved.'); return; }
     }
-    state=null; page='play'; lastLogLength=0; optionId=''; chosenPhase=''; answers=BLANK();
-    huntReview=null; huntStart=null; huntDetails=Object.create(null); actionNotice=''; cardChangedCells=[];
+    state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK();
+    huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[];
     preserveRaw=false; originalSave=null;
     Object.keys(fields).forEach(k=>{qs(fields[k]).value='';});
     qs('#sg-download-status').textContent = '';

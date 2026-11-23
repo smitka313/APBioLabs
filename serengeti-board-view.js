@@ -127,17 +127,20 @@
     find('sg-expanded-action-title').textContent = title;
     find('sg-expanded-player').textContent = player ? player.textContent + ' turn' : '';
     const result = read('sg-last');
-    const count = read('sg-evidence-count');
-    const actualResult = Boolean(result && count !== '0');
+    const why = read('sg-update-why'), next = read('sg-update-next');
+    const actualResult = Boolean(result);
     const resultPanel = find('sg-expanded-last');
     const resultText = find('sg-expanded-last-text');
-    const resultKey = count + ':' + result;
+    const resultKey = [result,why,next].join(':');
     resultPanel.hidden = !actualResult;
     if (resultKey !== previousResult || resultText.textContent !== result) {
-      resultText.textContent = actualResult ? result : '';
+      resultText.textContent = result;
+      const whyText = find('sg-expanded-last-why'), nextText = find('sg-expanded-last-next');
+      if (whyText) whyText.textContent = why;
+      if (nextText) nextText.textContent = next;
       if (actualResult && previousResult && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         resultPanel.getAnimations?.().forEach(animation=>animation.cancel());
-        resultPanel.animate?.([{backgroundColor:'var(--sg-accent-soft)'},{backgroundColor:'var(--sg-paper)'}],{duration:530,easing:'ease-out'});
+        if (!previousResult.startsWith(result+':')) resultPanel.animate?.([{backgroundColor:'var(--sg-accent-soft)'},{backgroundColor:'var(--sg-paper)'}],{duration:530,easing:'ease-out'});
       }
       previousResult = resultKey;
     }

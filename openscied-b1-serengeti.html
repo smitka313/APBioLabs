@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="serengeti-dice-view.css">
 <link rel="stylesheet" href="serengeti-field-report.css">
 <script defer src="serengeti-logic.js"></script>
+<script defer src="serengeti-turn-explainer.js"></script>
 <script defer src="serengeti-scene.js"></script>
 <script defer src="serengeti-dice-view.js"></script>
 <script defer src="serengeti-field-report.js"></script>
@@ -81,12 +82,19 @@
         <div id="sg-interactive"></div>
         <div id="sg-dice" class="sg-dice" hidden></div>
         <div id="sg-actions" class="sg-actions"></div>
+        <section class="sg-turn-update" id="sg-board-latest" aria-labelledby="sg-update-title">
+          <header class="sg-update-head">
+            <h3 id="sg-update-title" class="sg-kicker">Turn update</h3>
+            <button type="button" class="sg-plain" data-page="evidence">Open evidence</button>
+          </header>
+          <dl class="sg-update-list">
+            <div class="sg-update-row"><dt>What happened</dt><dd><p id="sg-last">The group has not started playing.</p></dd></div>
+            <div class="sg-update-row"><dt>Why</dt><dd><p id="sg-update-why">Each player or team represents one species in this model.</p></dd></div>
+            <div class="sg-update-row sg-update-row-next"><dt>What to do next</dt><dd><p id="sg-update-next">Assign the three roles, then select Start winter.</p></dd></div>
+          </dl>
+        </section>
         <p id="sg-turn-note" class="sg-turn-note"></p>
         </section>
-        <aside class="sg-evidence-peek sg-panel" id="sg-board-latest" aria-label="Latest change">
-          <p class="sg-kicker">Latest change</p><p id="sg-last">Completed events and hunts will appear here.</p>
-          <button type="button" class="sg-plain" data-page="evidence">Open evidence</button>
-        </aside>
       </div>
     </div>
   </section>
@@ -138,18 +146,23 @@
         <p class="sg-kicker" id="sg-expanded-phase"></p>
         <h3 id="sg-expanded-action-title"></h3>
         <p id="sg-expanded-player"></p>
+        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
+        <div id="sg-expanded-dice" class="sg-dice" hidden></div>
+        <div id="sg-expanded-options"></div>
+        <div id="sg-expanded-actions" class="sg-actions"></div>
+        <section class="sg-turn-update sg-expanded-last" id="sg-expanded-last" aria-labelledby="sg-expanded-update-title">
+          <header class="sg-update-head"><h4 id="sg-expanded-update-title" class="sg-kicker">Turn update</h4></header>
+          <dl class="sg-update-list">
+            <div class="sg-update-row"><dt>What happened</dt><dd><p id="sg-expanded-last-text"></p></dd></div>
+            <div class="sg-update-row"><dt>Why</dt><dd><p id="sg-expanded-last-why"></p></dd></div>
+            <div class="sg-update-row sg-update-row-next"><dt>What to do next</dt><dd><p id="sg-expanded-last-next"></p></dd></div>
+          </dl>
+        </section>
+        <div id="sg-expanded-reading" hidden></div>
         <details id="sg-expanded-details" class="sg-expanded-details">
           <summary id="sg-expanded-summary">Turn instructions</summary>
           <div id="sg-expanded-context"></div>
         </details>
-        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
-        <div class="sg-expanded-last" id="sg-expanded-last" hidden>
-          <strong>Latest result</strong><span id="sg-expanded-last-text"></span>
-        </div>
-        <div id="sg-expanded-reading" hidden></div>
-        <div id="sg-expanded-dice" class="sg-dice" hidden></div>
-        <div id="sg-expanded-options"></div>
-        <div id="sg-expanded-actions" class="sg-actions"></div>
         <p class="sg-visually-hidden" id="sg-expanded-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
       </aside>
     </div>
