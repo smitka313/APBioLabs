@@ -160,8 +160,8 @@
 
   const expandedBoard = () => document.querySelector('#sg-board-dialog[open]');
   const boardFocus = () => expandedBoard()
-    ? document.querySelector('#sg-expanded-select') || document.querySelector('#sg-expanded-next')
-    : document.querySelector('#sg-options') || document.querySelector('#sg-next');
+    ? document.querySelector('#sg-expanded-travel-piece') || document.querySelector('#sg-expanded-select:not(:disabled)') || document.querySelector('#sg-expanded-next')
+    : document.querySelector('#sg-travel-piece') || document.querySelector('#sg-options:not(:disabled)') || document.querySelector('#sg-next');
   let previous = '', focusAfterClose = null;
   dialog.addEventListener('close', () => {
     const board = expandedBoard();

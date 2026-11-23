@@ -68,7 +68,12 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           const actions = new Set();
           let draws = 0, movedOnBoard = false, checkedDice = false;
           for (let attempt = 0; attempt < 500; attempt++) {
-            if (!await next.isVisible() || !await next.isEnabled()) break;
+            if (!await next.isVisible()) break;
+            if (!await next.isEnabled()) {
+              const travel = page.locator('#sg-travel-piece');
+              if (!await travel.isVisible()) break;
+              await travel.selectOption('stay');
+            }
             const action = await next.getAttribute('data-action');
             if (!action) break;
             actions.add(action);
@@ -177,7 +182,17 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           T.ok(checkedDice, 'the playthrough exercises the expanded dice animation');
           T.ok(actions.has('nextSeason'), 'later seasons can be reached');
           T.ok(/year complete/i.test(await page.locator('#sg-phase').textContent()), 'fall ends the four-season model');
+          const fieldReport=page.locator('#sg-finish-report');
+          await fieldReport.waitFor();
+          T.ok(await fieldReport.locator('.sg-field-season svg').count()===4, 'final report includes four official grazing maps');
+          await fieldReport.locator('.sg-field-season[data-season="0"]').click();
+          T.ok(await fieldReport.getByRole('heading',{name:'Winter evidence'}).isVisible(), 'selecting a map opens evidence from that season');
+          await fieldReport.locator('[data-filter="migration"]').click();
+          T.ok(await fieldReport.locator('.sg-field-records .sg-field-kind').allTextContents().then(kinds=>kinds.length===1&&kinds[0]==='Migration'),
+            'field report filters the actual season record');
+          await shot(page,width+'-field-report');
           await page.locator('.sg-tabs [data-page="evidence"]').click();
+          T.ok(await page.locator('#sg-evidence-report .sg-field-season').count()===4, 'season maps are also available in Evidence');
           const evidence = page.locator('#sg-evidence-body');
           await evidence.waitFor();
           T.ok((await evidence.innerText()).trim().length > 0, 'data log has generated results');

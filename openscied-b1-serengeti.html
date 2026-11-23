@@ -11,18 +11,26 @@
 <link rel="stylesheet" href="openscied-b1-serengeti.css">
 <link rel="stylesheet" href="serengeti-card-view.css">
 <link rel="stylesheet" href="serengeti-dice-view.css">
+<link rel="stylesheet" href="serengeti-field-report.css">
+<link rel="stylesheet" href="serengeti-surround.css">
+<link rel="stylesheet" href="serengeti-concept-view.css">
 <script defer src="serengeti-logic.js"></script>
+<script defer src="serengeti-turn-explainer.js"></script>
+<script defer src="serengeti-concept-checks.js"></script>
+<script defer src="serengeti-concept-view.js"></script>
 <script defer src="serengeti-scene.js"></script>
 <script defer src="serengeti-dice-view.js"></script>
+<script defer src="serengeti-field-report.js"></script>
 <script defer src="openscied-b1-serengeti.js"></script>
 <script defer src="serengeti-board-view.js"></script>
+<script defer src="serengeti-expedition-layout.js"></script>
 <script defer src="serengeti-card-view.js"></script>
 </head>
 <body class="sg-body">
 <a href="#sg-main" class="sg-skip">Skip to activity</a>
 <header class="sg-header">
   <div class="sg-wrap">
-    <nav class="sg-top" aria-label="Page links"><a href="index.html">Biology Lab Bench</a><span>Unit 1 · Lesson 7</span><span class="sg-draft">Classroom preview</span><button id="sg-theme" type="button" class="sg-plain" aria-label="Change color theme">Theme: Auto</button></nav>
+    <nav class="sg-top" aria-label="Page links"><a href="openscied-dashboard.html">OpenSciEd dashboard</a><span>Unit 1 · Lesson 7</span><button id="sg-theme" type="button" class="sg-plain" aria-label="Change color theme">Theme: Auto</button></nav>
     <p class="sg-kicker">Ecosystem interactions</p>
     <h1>Serengeti Board Game</h1>
     <p class="sg-subtitle">How do migration and predator–prey interactions change a wildebeest population?</p>
@@ -41,36 +49,67 @@
   </div>
   <section id="sg-play" class="sg-page" aria-label="Play">
     <div id="sg-season-strip" class="sg-season-strip" aria-label="Four seasons"></div>
+    <section id="sg-finish" class="sg-panel sg-finish" aria-labelledby="sg-finish-title" hidden>
+      <header class="sg-finish-head"><div><p class="sg-kicker">Final tally</p><h2 id="sg-finish-title">A year on the Serengeti</h2></div><button type="button" id="sg-replay" class="sg-plain">Play again</button></header>
+      <div id="sg-finish-totals"></div>
+      <div id="sg-finish-report" hidden></div>
+    </section>
     <button id="sg-toggle-map" class="sg-plain" type="button" aria-expanded="true" aria-controls="sg-map-panel">Hide map</button>
     <div class="sg-game">
       <div class="sg-board sg-panel" id="sg-map-panel">
-        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title">Winter range</h2></div><div class="sg-board-header-actions"><span class="sg-model-tag">SIMULATED</span><button type="button" class="sg-plain" id="sg-board-open" aria-haspopup="dialog" aria-controls="sg-board-dialog">Enlarge board</button></div></header>
+        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title" tabindex="-1">Winter range</h2></div><div class="sg-board-header-actions"><span class="sg-model-tag">SIMULATED</span><button type="button" class="sg-cta" id="sg-board-open" aria-haspopup="dialog" aria-controls="sg-board-dialog"><span aria-hidden="true">⛶</span> Enlarge board</button></div></header>
         <div class="sg-board-atlas">
-        <figure class="sg-figure">
-          <div id="sg-scene"></div>
-          <figcaption id="sg-board-caption"></figcaption>
-        </figure>
-        <aside class="sg-map-key" aria-label="Map legend">
-          <p class="sg-kicker">Map key</p>
-          <ul><li><span class="sg-key-prey">W</span> Wildebeest range</li><li><span class="sg-key-hyena">H</span> Hyena territory</li><li><span class="sg-key-lion">L</span> Lion territory</li><li><span class="sg-key-move">+</span> Legal choice</li></ul>
-          <p id="sg-board-access" class="sg-board-access"></p>
-        </aside>
+          <figure class="sg-figure">
+            <div id="sg-scene"></div>
+            <figcaption><span id="sg-board-caption"></span><span id="sg-map-proximity" class="sg-map-proximity" hidden></span></figcaption>
+          </figure>
+          <aside class="sg-map-key" aria-label="Map legend">
+            <p class="sg-kicker">Map key</p>
+            <ul>
+              <li><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#eee9cf" stroke="#263d36" stroke-width="1.45"/></svg> Wildebeest</li>
+              <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 1.5 8.5 8.5-8.5 8.5-8.5-8.5Z" fill="#f0d6c6" stroke="#533d39" stroke-width="1.45" stroke-linejoin="round"/></svg> Hyena</li>
+              <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 1.5 7.4 4.25v8.5L10 18.5l-7.4-4.25v-8.5Z" fill="#f2cd73" stroke="#583719" stroke-width="1.45" stroke-linejoin="round"/></svg> Lion</li>
+              <li><span class="sg-key-move" aria-hidden="true">+</span> Legal square</li>
+              <li><span class="sg-key-flood" aria-hidden="true">≈</span> Flooded square</li>
+              <li><span class="sg-key-change" aria-hidden="true">±</span> Latest piece change</li>
+            </ul>
+            <p class="sg-token-key"><strong>1</strong> Individual · <strong>G</strong> Small group · <strong>H</strong> Herd · <strong>C</strong> Clan · <strong>P</strong> Pride</p>
+            <p id="sg-board-access" class="sg-board-access"></p>
+          </aside>
         </div>
         <div class="sg-metrics" id="sg-metrics" aria-label="Wildebeest token counts"></div>
       </div>
-      <div class="sg-control sg-panel" aria-label="Turn controls">
+      <div class="sg-expedition-rail" id="sg-expedition-rail">
+        <section class="sg-control sg-panel" id="sg-expedition-turn" aria-label="Turn controls">
         <div id="sg-rolebar" class="sg-rolebar" aria-label="Agent roles"></div>
         <div class="sg-action-top"><p id="sg-phase" class="sg-kicker">Set up</p><h2 id="sg-action-title" tabindex="-1">One device, three roles</h2><p id="sg-action-copy">Take turns controlling the wildebeest, hyenas and lions.</p></div>
         <div id="sg-interactive"></div>
         <div id="sg-dice" class="sg-dice" hidden></div>
         <div id="sg-actions" class="sg-actions"></div>
+        <button type="button" class="sg-plain sg-concept-cue" data-concept-cue aria-controls="sg-concept" hidden>Quick check available ↓</button>
+        <section class="sg-turn-update" id="sg-board-latest" aria-labelledby="sg-update-title">
+          <header class="sg-update-head">
+            <h3 id="sg-update-title" class="sg-kicker">Turn update</h3>
+            <button type="button" class="sg-plain" data-page="evidence">Open evidence</button>
+          </header>
+          <dl class="sg-update-list">
+            <div class="sg-update-row"><dt>What happened</dt><dd><p id="sg-last">The group has not started playing.</p></dd></div>
+            <div class="sg-update-row"><dt>Why</dt><dd><p id="sg-update-why">Each player or team represents one species in this model.</p></dd></div>
+            <div class="sg-update-row sg-update-row-next"><dt>What to do next</dt><dd><p id="sg-update-next">Assign the three roles, then select Start winter.</p></dd></div>
+          </dl>
+        </section>
         <p id="sg-turn-note" class="sg-turn-note"></p>
+        <details class="sg-concept" id="sg-concept" hidden>
+          <summary><strong>Quick concept check</strong><span class="sg-concept-status"></span></summary>
+          <div class="sg-concept-body"></div>
+        </details>
+        </section>
       </div>
     </div>
-    <aside class="sg-evidence-peek sg-panel"><div><p class="sg-kicker">Field notes</p><p id="sg-last">Completed events and hunts will appear here.</p></div><button type="button" class="sg-plain" data-page="evidence">Open evidence</button></aside>
   </section>
   <section id="sg-evidence" class="sg-page" aria-labelledby="sg-evidence-title" hidden>
     <header class="sg-section-head"><p class="sg-kicker">Field notebook</p><h2 id="sg-evidence-title" tabindex="-1">What happened on the board?</h2><p>Use the season totals and event records as evidence. Cumulative change starts at 0 and never assumes a number of animals in a herd token.</p></header>
+    <div id="sg-evidence-report" hidden></div>
     <div id="sg-evidence-body"></div>
     <div class="sg-page-actions"><button type="button" class="sg-plain" data-page="play">Back to play</button><button type="button" class="sg-cta" data-page="analyze">Go to analysis</button></div>
   </section>
@@ -84,7 +123,12 @@
         <p class="sg-selected" id="sg-selected"></p>
         <label for="sg-claim">2. How did the event affect the wildebeest? Explain using the numbers.</label><textarea id="sg-claim" rows="2" maxlength="750"></textarea>
         <label for="sg-limits">3. What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="2" maxlength="750"></textarea>
-        <button id="sg-download" type="button" class="sg-cta">Download evidence and responses</button>
+        <button id="sg-download" type="button" class="sg-cta" aria-describedby="sg-download-status">Download evidence and responses</button>
+        <p id="sg-download-status" class="sg-download-status"></p>
+        <details id="sg-download-fallback" class="sg-download-fallback" hidden>
+          <summary>Copy evidence and responses instead</summary>
+          <label for="sg-download-copy">Text to copy</label><textarea id="sg-download-copy" rows="5" readonly></textarea>
+        </details>
       </div>
     </div>
   </section>
@@ -111,17 +155,28 @@
         <p class="sg-kicker" id="sg-expanded-phase"></p>
         <h3 id="sg-expanded-action-title"></h3>
         <p id="sg-expanded-player"></p>
+        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
+        <div id="sg-expanded-dice" class="sg-dice" hidden></div>
+        <div id="sg-expanded-options"></div>
+        <div id="sg-expanded-actions" class="sg-actions"></div>
+        <button type="button" class="sg-plain sg-concept-cue" data-concept-cue aria-controls="sg-expanded-concept" hidden>Quick check available ↓</button>
+        <section class="sg-turn-update sg-expanded-last" id="sg-expanded-last" aria-labelledby="sg-expanded-update-title">
+          <header class="sg-update-head"><h4 id="sg-expanded-update-title" class="sg-kicker">Turn update</h4></header>
+          <dl class="sg-update-list">
+            <div class="sg-update-row"><dt>What happened</dt><dd><p id="sg-expanded-last-text"></p></dd></div>
+            <div class="sg-update-row"><dt>Why</dt><dd><p id="sg-expanded-last-why"></p></dd></div>
+            <div class="sg-update-row sg-update-row-next"><dt>What to do next</dt><dd><p id="sg-expanded-last-next"></p></dd></div>
+          </dl>
+        </section>
+        <div id="sg-expanded-reading" hidden></div>
+        <details class="sg-concept" id="sg-expanded-concept" hidden>
+          <summary><strong>Quick concept check</strong><span class="sg-concept-status"></span></summary>
+          <div class="sg-concept-body"></div>
+        </details>
         <details id="sg-expanded-details" class="sg-expanded-details">
           <summary id="sg-expanded-summary">Turn instructions</summary>
           <div id="sg-expanded-context"></div>
         </details>
-        <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
-        <div class="sg-expanded-last" id="sg-expanded-last" hidden>
-          <strong>Latest result</strong><span id="sg-expanded-last-text"></span>
-        </div>
-        <div id="sg-expanded-dice" class="sg-dice" hidden></div>
-        <div id="sg-expanded-options"></div>
-        <div id="sg-expanded-actions" class="sg-actions"></div>
         <p class="sg-visually-hidden" id="sg-expanded-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
       </aside>
     </div>
@@ -134,13 +189,22 @@
     <li>Set up the board in winter. At the start of spring, summer and fall, the surviving wildebeest migrate. Each token normally touches another along a side.</li>
     <li>Wildebeest, hyenas and lions each draw a card in that order. Read and apply the result, even if it affects another agent.</li>
     <li>Hyenas hunt, then lions hunt where eligible. Sort the dice high to low; matching dice compete. The lower die is removed, ties and unmatched dice remain. Reroll only surviving dice until one side has none.</li>
-    <li>Record what changes for all roles. After fall, compare your evidence across seasons.</li>
+    <li>Record what changes for all roles. Try the quick concept check that appears each season. After fall, compare your evidence across seasons.</li>
   </ol>
+  <p class="sg-teacher-scope"><strong>For teachers:</strong> This one-year model tracks migration, event cards and hunts. It does not model wildebeest births, resource supply, prey-dependent changes in predator populations, or carrying capacity.</p>
   <p><a href="https://youtu.be/6-ooaGN1lSk" target="_blank" rel="noopener noreferrer">OpenSciEd’s game walkthrough (opens in a new tab)</a></p>
 </dialog>
 <dialog id="sg-confirm" class="sg-dialog" aria-labelledby="sg-confirm-title">
   <header><h2 id="sg-confirm-title">Restart this game?</h2></header>
   <p>This clears the recorded events and written responses for this activity only. Download your evidence first if you want to keep it.</p>
+  <div class="sg-restart-backup">
+    <button type="button" class="sg-plain" id="sg-restart-download" aria-describedby="sg-restart-download-status">Download evidence before restarting</button>
+    <p id="sg-restart-download-status" class="sg-download-status" tabindex="-1"></p>
+    <details id="sg-restart-download-fallback" class="sg-download-fallback" hidden>
+      <summary>Copy the backup instead</summary>
+      <label for="sg-restart-download-copy">Text to copy</label><textarea id="sg-restart-download-copy" rows="5" readonly></textarea>
+    </details>
+  </div>
   <form method="dialog" class="sg-page-actions"><button class="sg-plain" value="cancel" autofocus>Keep playing</button><button class="sg-cta" value="restart">Restart game</button></form>
 </dialog>
 <footer class="sg-footer sg-wrap">

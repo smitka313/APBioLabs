@@ -62,7 +62,8 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const dashboard = await ctx.newPage();
       await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
       assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
-      assert.equal(await dashboard.locator('.dashboard-activity').count(),7);
+      assert.equal(await dashboard.locator('section[aria-labelledby="unit1"] .dashboard-activity').count(),1);
+      assert.equal(await dashboard.locator('.dashboard-activity').count(),8);
       assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
       await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
       await dashboard.locator('#carbon-journey-open').click();
@@ -111,3 +112,4 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
     } finally { await protectedCtx.close(); }
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
+

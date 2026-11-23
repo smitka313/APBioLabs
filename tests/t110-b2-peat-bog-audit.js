@@ -96,13 +96,39 @@ const ann = p => p.locator('#announcer').textContent();
 
     // ---------- C5: typed values that change are announced and shown ----------
     await p.evaluate(() => { location.hash = 'bog'; }); await p.waitForFunction(() => document.querySelector('#bog.is-current'));
-    await p.fill('#n-temp', '-10'); await p.press('#n-temp', 'Enter');
-    await p.waitForTimeout(150);
-    const note = await p.locator('#n-temp').evaluate(e => { const n = e.closest('.ctrl').querySelector('.clamp-note'); return n && !n.hidden ? n.textContent : null; });
-    T.ok(/Set to -5 °C, the lowest allowed/.test(note || '') && /Set to -5 °C, the lowest allowed/.test(await ann(p)), 'C5: -10 C shows and announces "Set to -5 °C, the lowest allowed": ' + note);
-    await p.fill('#n-temp', '20.5'); await p.press('#n-temp', 'Enter'); await p.waitForTimeout(150);
-    const note2 = await p.locator('#n-temp').evaluate(e => { const n = e.closest('.ctrl').querySelector('.clamp-note'); return n && !n.hidden ? n.textContent : null; });
-    T.ok(/Rounded to 21 °C/.test(note2 || '') && /Rounded to 21 °C/.test(await ann(p)), 'C5: 20.5 C shows and announces the rounding: ' + note2);
+    const commitTwice = async value => {
+      await p.fill('#n-temp', value);
+      // Enter plus a subsequent native change can commit one edit twice. Trigger
+      // both in one browser task so we never observe only the first announcement.
+      await p.locator('#n-temp').evaluate(e => {
+        e.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        e.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    };
+    const clampNote = () => p.locator('#n-temp').evaluate(e => {
+      const n = e.closest('.ctrl').querySelector('.clamp-note');
+      return n && !n.hidden ? n.textContent : '';
+    });
+    const sayClamp = async prefix => {
+      try {
+        await p.waitForFunction(t => document.getElementById('announcer').textContent.startsWith(t), prefix, { timeout: 750 });
+        return true;
+      } catch (e) { return false; }
+    };
+    await commitTwice('-10');
+    const note = await clampNote(), clamped = await sayClamp('Set to -5 °C, the lowest allowed.');
+    T.ok(note.startsWith('Set to -5 °C, the lowest allowed.') && clamped && await p.locator('#n-temp').inputValue() === '-5',
+      'C5: Enter plus change keeps the visible and live lower-bound correction: ' + note + ' | live: ' + await ann(p));
+    await commitTwice('20.5');
+    const note2 = await clampNote(), rounded = await sayClamp('Rounded to 21 °C');
+    T.ok(note2.startsWith('Rounded to 21 °C') && rounded && await p.locator('#n-temp').inputValue() === '21',
+      'C5: Enter plus change keeps the visible and live rounding correction: ' + note2 + ' | live: ' + await ann(p));
+    await p.locator('#n-temp').evaluate(e => {
+      // An explicit new edit to the same accepted number is not a duplicate.
+      e.value = '21'; e.dispatchEvent(new Event('input', { bubbles: true }));
+      e.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    });
+    T.ok(await clampNote() === '' && await sayClamp('Photosynthesis '), 'C5: retyping the accepted value clears the old correction');
     await p.fill('#n-temp', '12'); await p.press('#n-temp', 'Enter'); await p.waitForTimeout(100);
     const exact = await p.locator('#n-temp').evaluate(e => { const n = e.closest('.ctrl').querySelector('.clamp-note'); return n && !n.hidden ? n.textContent : ''; });
     T.ok(exact === '', 'C5: an exact value (12 C) leaves no stale note (' + exact + ')');

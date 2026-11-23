@@ -1,0 +1,64 @@
+/* Audit regression: distinguish legal formations and narrow commute destinations by hyena group. */
+const assert=require('node:assert/strict');
+const T=require('./_h');
+const L=require('../serengeti-logic');
+const key='aplab:openscied-b1-serengeti:preview-v1';
+(async()=>{
+  const browser=await T.launch(), server=await T.serve();
+  let context;
+  try {
+    context=await T.ctxFor(browser,{width:390,height:844,dark:true,reduced:true});
+    const page=await context.newPage();
+    await page.goto(server.url+'openscied-b1-serengeti.html');
+    const fixture=async game=>{
+      await page.evaluate(([k,v])=>localStorage.setItem(k,JSON.stringify({v:1,game:v,answers:{},page:'play'})),[key,game]);
+      await page.reload();
+      await page.locator('#sg-next').waitFor();
+    };
+    let state=L.create(32737);
+    state.season=1;
+    let prey=0;
+    state.tokens=state.tokens.filter(t=>t.species!=='wildebeest'||++prey<=10);
+    const formations=L.phase(state).options;
+    assert(formations.length>1);
+    await fixture(state);
+    const form=page.locator('#sg-options');
+    const names=await form.locator('option:not([value=""])').allTextContents();
+    assert.equal(names.length,formations.length);
+    const anchors=names.map(t=>t.match(/column (\d+), row (\d+)/)?.slice(1).join(':'));
+    assert(anchors.every(Boolean));
+    assert.equal(new Set(anchors).size,names.length,'each formation has its own board marker');
+    await form.selectOption(formations[1].id);
+    const expectedAnchors=formations[1].cells;
+    assert(expectedAnchors.length>0);
+    state=L.act(L.create(32737),{type:'migrate'});
+    const event=L.CARDS.find(c=>c.effect==='commute');
+    state.deck=[event.id,...state.deck.filter(id=>id!==event.id)];
+    state=L.act(state,{type:'draw'});
+    const travel=L.phase(state).options;
+    assert(travel.length>100);
+    await fixture(state);
+    assert(await page.locator('#sg-options').isDisabled());
+    assert(await page.locator('#sg-next').isDisabled(),'do not auto-select a commute');
+    await page.locator('#sg-board-open').click();
+    const board=page.locator('#sg-board-dialog');
+    const src=board.locator('#sg-expanded-travel-piece'), dst=board.locator('#sg-expanded-select');
+    const tokenGroups=new Set(travel.filter(o=>o.tokenId).map(o=>o.tokenId));
+    assert.equal(await src.locator('option').count(),tokenGroups.size+2);
+    const group=[...tokenGroups].at(-1);
+    const legal=travel.filter(o=>o.tokenId===group);
+    await src.selectOption(group);
+    assert.equal(await dst.locator('option').count(),legal.length+1);
+    assert(await board.locator('#sg-expanded-next').isDisabled());
+    const wanted=legal[0];
+    await dst.selectOption(wanted.id);
+    const next=board.locator('#sg-expanded-next');
+    assert(await next.isEnabled());
+    const rawBefore=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).game,key);
+    assert.deepEqual(rawBefore.tokens.find(t=>t.id===group).cell,state.tokens.find(t=>t.id===group).cell);
+    await next.click();
+    const rawAfter=await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).game,key);
+    assert.deepEqual(rawAfter.tokens.find(t=>t.id===group).cell,wanted.to);
+    console.log('PASS: distinct formations and explicit 2-step commute on the expanded phone board');
+  } finally { if(context)await context.close(); await browser.close();server.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,16 +1,18 @@
-/* OpenSciEd dashboard previews: Unit 2 order (Burning Fuels, Fires, Peat Bog Carbon Lab), the registry order in the script,
-   HTML captions under (never inside) each picture, a stable 8:5 preview box, no layout shift, axe clean in light and dark.
+/* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
+   in-game Serengeti WebP plus the seven SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
+const UNIT1 = ['openscied-b1-serengeti.html'];
+const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.webp';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
 (async () => {
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
-  T.ok(JSON.stringify(files) === JSON.stringify(UNIT2.concat(UNIT3)), 'openscied-dashboard.js lists activities in page order (Unit 2: burn, fires, peat bog; then Unit 3)');
+  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3)), 'openscied-dashboard.js lists activities in page order: Serengeti, then Units 2 and 3');
   const b = await T.launch(), srv = await T.serve();
   try {
     for (const width of [375, 768, 1366, 1920]) {
@@ -19,10 +21,16 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
       await p.addInitScript(() => { window.__cls = 0; new PerformanceObserver(l => l.getEntries().forEach(e => { if (!e.hadRecentInput) window.__cls += e.value; })).observe({ type: 'layout-shift', buffered: true }); });
       await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#b2-burn-progress'); await p.waitForTimeout(600);
       const hrefs = sel => p.$$eval(sel + ' .dashboard-preview', as => as.map(a => a.getAttribute('href')));
+      const units = await p.$$eval('.dashboard-units > section.dashboard-unit.current', sections=>sections.map(s=>s.getAttribute('aria-labelledby')));
+      T.ok(JSON.stringify(units.slice(0,3)) === JSON.stringify(['unit1','unit2','unit3']), width + ' px: Unit 1 is above Units 2 and 3');
+      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to the Serengeti Board Game');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 order unchanged');
+      const serengetiImage = p.locator('section[aria-labelledby="unit1"] .dashboard-preview img');
+      await serengetiImage.scrollIntoViewIfNeeded(); // Trigger lazy loading below the fold.
+      await p.waitForFunction(path=>{const img = document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth>0;},SERENGETI_PREVIEW,{timeout:10000});
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
-        const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
+        const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
         const kids = [...cap.children].map(k => k.getBoundingClientRect());
         return {
@@ -30,18 +38,28 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
           svgText: svg ? [...svg.querySelectorAll('text')].map(t => t.textContent.trim()) : [], pill: !!c.querySelector('.dashboard-preview-label'),
           ratio: ar.width / ar.height, capBelow: cr.top >= ar.bottom - 0.5, capInside: cr.left >= fr.left - 0.5 && cr.right <= fr.right + 0.5,
           kidsInside: kids.every(k => k.left >= fr.left - 0.5 && k.right <= fr.right + 0.5), capText: cap.innerText.trim(), capH: cr.height, w: ar.width,
-          sim: !!cap.querySelector('.dashboard-sim'), svgW: svg.getBoundingClientRect().width, shapes: svg.querySelectorAll('path,circle,ellipse,rect').length
+          sim: !!cap.querySelector('.dashboard-sim'), mediaW: media?.getBoundingClientRect().width,
+          svg: !!svg, shapes: svg?.querySelectorAll('path,circle,ellipse,rect').length || 0,
+          img: img ? {src: img.getAttribute('src'), alt: img.getAttribute('alt'), w: img.naturalWidth, h: img.naturalHeight,
+            complete: img.complete, widthAttr: img.getAttribute('width'), heightAttr: img.getAttribute('height')} : null
         };
       }));
-      T.ok(m.length === 7, width + ' px: seven cards');
-      T.ok(m.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
-      T.ok(m.every(x => !x.pill && x.shapes > 40), width + ' px: no pill inside the picture, and each picture is real art');
+      const svgCards = m.filter(x=>x.svg);
+      T.ok(m.length === 8 && svgCards.length === 7 && m.filter(x=>x.img).length === 1, width + ' px: eight cards: seven SVG illustrations and one in-game WebP');
+      T.ok(svgCards.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
+      T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
+      const first = m[0], poster = first?.img;
+      T.ok(poster?.complete && poster.src===SERENGETI_PREVIEW && poster.w===960 && poster.h===600 &&
+        poster.widthAttr==='960' && poster.heightAttr==='600' && Math.abs(poster.w/poster.h-1.6)<0.001,
+        width + ' px: first card actual WebP loads and has reserved 960×600 proportions');
+      T.ok(poster?.alt==='' && /^Open Serengeti Board Game/.test(first.label) && first.label.length>40,
+        width + ' px: the WebP preview link has a descriptive accessible name');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
       T.ok(m.every(x => x.sim && /Simulated/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the Simulated tag are HTML text');
-      T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.svgW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');
+      T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');
       T.ok(m.every(x => x.capH < 60), width + ' px: caption never wraps past two lines');
       // art text must stay inside the picture and never be a long caption
-      T.ok(m.every(x => x.svgText.every(t => t.length <= 12)), width + ' px: text drawn inside the pictures is only short labels (' + [...new Set(m.flatMap(x => x.svgText))].join(' | ') + ')');
+      T.ok(svgCards.every(x => x.svgText.every(t => t.length <= 12)), width + ' px: text drawn inside the pictures is only short labels (' + [...new Set(m.flatMap(x => x.svgText))].join(' | ') + ')');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
       const cls = await p.evaluate(() => window.__cls);
       T.ok(cls <= 0.1, width + ' px: CLS ' + cls.toFixed(3) + ' <= 0.1');
@@ -64,10 +82,15 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
     const ctx = await T.ctxFor(b, { width: 1366, height: 900 });
     const p = await ctx.newPage(); await stub(p);
     await p.goto(srv.url + 'openscied-dashboard.html'); await p.waitForSelector('#b2-burn-progress');
-    T.ok((await p.locator('.dashboard-activity').first().locator('.dashboard-preview').getAttribute('href')) === 'openscied-b2-burn-lab.html', 'first card (Burning Fuels) links to its activity');
-    T.ok((await p.locator('.dashboard-activity').first().locator('.dashboard-open').getAttribute('href')).startsWith('openscied-b2-burn-lab.html'), 'first card button opens Burning Fuels');
+    const firstCard = p.locator('.dashboard-activity').first();
+    T.ok((await firstCard.locator('.dashboard-preview').getAttribute('href')) === UNIT1[0], 'first card (Serengeti) preview links to the exact game URL');
+    T.ok((await firstCard.locator('.dashboard-open').getAttribute('href')) === UNIT1[0], 'first card button opens Serengeti');
+    const burnCard = p.locator('section[aria-labelledby="unit2"] .dashboard-activity').first();
+    T.ok((await burnCard.locator('.dashboard-preview').getAttribute('href')) === UNIT2[0], 'first Unit 2 card (Burning Fuels) preview still links to its activity');
+    T.ok((await burnCard.locator('.dashboard-open').getAttribute('href')).startsWith(UNIT2[0]), 'first Unit 2 card button still opens Burning Fuels');
     await ctx.close();
   } finally { await b.close(); srv.close(); }
   T.done('t109-openscied-dashboard-previews');
 })();
+
 

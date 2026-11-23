@@ -1,0 +1,28 @@
+/* Original illustrated mat for the non-playable space around the live map.
+   Background paint only: it cannot change hit areas, scroll sizes or captions. */
+#sg-map-panel #sg-scene,
+.sg-board-dialog .sg-board-viewport {
+  --sg-surround-base: radial-gradient(ellipse at 48% 43%,#cbb17a 10%,#aa8952 76%,#8c6c43 130%);
+  --sg-surround-shade: linear-gradient(transparent,transparent);
+}
+:root[data-theme="dark"] #sg-map-panel #sg-scene,
+:root[data-theme="dark"] .sg-board-dialog .sg-board-viewport {
+  --sg-surround-base: radial-gradient(ellipse at 48% 43%,#ae9265 9%,#806642 78%,#6a553c 131%);
+  --sg-surround-shade: linear-gradient(#20281c25,#211f1a54);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) #sg-map-panel #sg-scene,
+  :root:not([data-theme]) .sg-board-dialog .sg-board-viewport {
+    --sg-surround-base: radial-gradient(ellipse at 48% 43%,#ae9265 9%,#806642 78%,#6a553c 131%);
+    --sg-surround-shade: linear-gradient(#20281c25,#211f1a54);
+  }
+}
+@media (min-width: 520px) {
+  #sg-map-panel #sg-scene,
+  .sg-board-dialog .sg-board-viewport {
+    background-image: var(--sg-surround-shade), url("serengeti-surround-left.svg"), url("serengeti-surround-right.svg"), var(--sg-surround-base);
+    background-repeat: no-repeat;
+    background-position: center, left center, right center, center;
+    background-size: 100% 100%, clamp(7.5rem,25%,17rem) 100%, clamp(7.5rem,25%,17rem) 100%, 100% 100%;
+  }
+}

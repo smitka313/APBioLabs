@@ -16,7 +16,9 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       T.ok(await p.evaluate(() => { const a = document.getElementById('unit2'), b = document.getElementById('unit3'); return !!(a && b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)); }), width + ' px: Unit 2 is listed before Unit 3');
       T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 4 && /4 activities available/.test(await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').innerText()), width + ' px: Unit 2 has three activities (Fires, Peat Bog Carbon Lab, Burning Fuels)');
       T.ok(/Fires/.test(await p.locator('#unit2').innerText()) && /Lessons 3 and 5/.test(await p.locator('section[aria-labelledby="unit2"]').innerText()), 'Unit 2 card names the lessons');
-      T.ok(/Units 1, 4–5/.test(await p.locator('.dashboard-coming-soon summary').innerText()) && await p.locator('.dashboard-coming-soon #unit2').count() === 0, 'Coming soon note no longer lists Unit 2');
+      T.ok((await p.locator('.dashboard-coming-soon summary').innerText()) === 'Coming soon: Units 4–5'
+        && await p.locator('.dashboard-coming-soon :is(#unit1,#unit2)').count() === 0,
+        'Coming soon lists only Units 4–5, not the published Units 1 and 2');
       T.ok(await p.locator('#b2-fires-open').getAttribute('href') === 'openscied-b2-fires.html#overview' && /Not started/.test(await p.locator('#b2-fires-progress').innerText()) && await p.locator('#b2-fires-reset').isDisabled(), 'card opens its page, not started, restart disabled');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
       const t = Date.now();
@@ -51,4 +53,5 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
   } finally { await browser.close(); server.close(); }
   T.done('t102-b2-fires-dashboard');
 })().catch(e => { console.error(e); process.exit(1); });
+
 

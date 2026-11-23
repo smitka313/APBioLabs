@@ -61,22 +61,22 @@
   }
   function mirrorChooser() {
     const target = find('sg-expanded-options');
-    const original = find('sg-options');
-    if (!original || original.hidden) { target.replaceChildren(); return; }
-    const label = make('label','sg-chooser'), choice = original.cloneNode(true);
-    const oldLabel = original.labels && original.labels[0];
-    const labelText = oldLabel && Array.from(oldLabel.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();
-    const labelAttr = original.getAttribute('aria-label');
-    label.append(document.createTextNode(labelText || labelAttr || 'Choose a board action'));
-    choice.id = 'sg-expanded-select'; choice.removeAttribute('aria-labelledby');
-    choice.value = original.value;
-    choice.addEventListener('change',()=>{
-      const active = find('sg-options');
-      if (!active || !Array.from(active.options).some(o=>o.value===choice.value)) return;
-      active.value = choice.value;
-      active.dispatchEvent(new Event('change',{bubbles:true}));
-    });
-    label.append(choice); target.replaceChildren(label);
+    const selectors = [['sg-travel-piece','sg-expanded-travel-piece'],['sg-options','sg-expanded-select']];
+    target.replaceChildren(...selectors.flatMap(([id,mirrorId])=>{
+      const original=find(id);
+      if(!original||original.hidden) return [];
+      const label=make('label','sg-chooser'), choice=original.cloneNode(true);
+      const oldLabel=original.labels&&original.labels[0];
+      const labelText=oldLabel&&Array.from(oldLabel.childNodes).filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim();
+      label.append(document.createTextNode(labelText||original.getAttribute('aria-label')||'Choose a board action'));
+      choice.id=mirrorId; choice.removeAttribute('aria-labelledby'); choice.value=original.value;
+      choice.addEventListener('change',()=>{
+        const active=find(id);
+        if(!active||active.disabled||!Array.from(active.options).some(o=>o.value===choice.value)) return;
+        active.value=choice.value; active.dispatchEvent(new Event('change',{bubbles:true}));
+      });
+      label.append(choice); return [label];
+    }));
   }
   function mirrorDice() {
     const original = find('sg-dice'), target = find('sg-expanded-dice');
@@ -118,7 +118,7 @@
   function sync() {
     if (!modal.open) return;
     const active = document.activeElement;
-    const focusedId = active && /^(sg-expanded-(next|move|select|start|view-season))$/.test(active.id) ? active.id : null;
+    const focusedId = active && /^(sg-expanded-(next|move|select|travel-piece|start|view-season))$/.test(active.id) ? active.id : null;
     const header = read('sg-board-title') || 'Expanded board';
     const phase = read('sg-phase'), title = read('sg-action-title');
     const player = find('sg-rolebar') && find('sg-rolebar').querySelector('[aria-current=true] b');
@@ -127,19 +127,29 @@
     find('sg-expanded-action-title').textContent = title;
     find('sg-expanded-player').textContent = player ? player.textContent + ' turn' : '';
     const result = read('sg-last');
-    const count = read('sg-evidence-count');
-    const actualResult = Boolean(result && count !== '0');
+    const why = read('sg-update-why'), next = read('sg-update-next');
+    const actualResult = Boolean(result);
     const resultPanel = find('sg-expanded-last');
     const resultText = find('sg-expanded-last-text');
-    const resultKey = count + ':' + result;
+    const resultKey = [result,why,next].join(':');
     resultPanel.hidden = !actualResult;
     if (resultKey !== previousResult || resultText.textContent !== result) {
-      resultText.textContent = actualResult ? result : '';
+      resultText.textContent = result;
+      const whyText = find('sg-expanded-last-why'), nextText = find('sg-expanded-last-next');
+      if (whyText) whyText.textContent = why;
+      if (nextText) nextText.textContent = next;
       if (actualResult && previousResult && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         resultPanel.getAnimations?.().forEach(animation=>animation.cancel());
-        resultPanel.animate?.([{backgroundColor:'var(--sg-accent-soft)'},{backgroundColor:'var(--sg-paper)'}],{duration:530,easing:'ease-out'});
+        if (!previousResult.startsWith(result+':')) resultPanel.animate?.([{backgroundColor:'var(--sg-accent-soft)'},{backgroundColor:'var(--sg-paper)'}],{duration:530,easing:'ease-out'});
       }
       previousResult = resultKey;
+    }
+    const sourceReading=find('sg-hunt-reading'), reading=find('sg-expanded-reading');
+    if(reading){
+      reading.hidden=!sourceReading;
+      if(sourceReading){
+        const copy=sourceReading.cloneNode(true); copy.removeAttribute('id'); reading.replaceChildren(copy);
+      }else if(reading.firstElementChild)reading.replaceChildren();
     }
     mirrorContext(); mirrorDice(); mirrorChooser(); mirrorActions();
     if (focusedId) {

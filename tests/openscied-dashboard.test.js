@@ -129,3 +129,62 @@ test('Carbon Journey restart removes only that activity', () => {
   assert.equal(s.data['aplab:openscied:b2-carbon-journey:v1'],undefined);
   assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1']);
 });
+
+const serengetiKey = 'aplab:openscied-b1-serengeti:preview-v1';
+const nearSerengetiKey = 'aplab:openscied-b1-serengeti:do-not-touch';
+const serengetiSaved = JSON.stringify({v:1,game:{version:1,season:1,step:'hunt',log:[{},{}]},
+  answers:{question:'Does group size matter?',evidence:'0',claim:'The group survived.',limits:' '},page:'analyze',lastVisitedAt:100});
+
+test('Unit 1 precedes Units 2 and 3 with a linked in-game Serengeti preview', () => {
+  const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
+  assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]).slice(0,3),
+    ['unit1','unit2','unit3']);
+  assert.equal((page.match(/id="unit1"/g)||[]).length,1);
+  assert.match(page, /<summary>Coming soon: Units 4–5<\/summary>/);
+  const unit = page.split('<section class="dashboard-unit current" aria-labelledby="unit1">')[1].split('</section>')[0];
+  assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.webp" width="960" height="600"/);
+  assert.match(unit, /id="serengeti-open"[^>]*href="openscied-b1-serengeti\.html"/);
+  const preview = fs.readFileSync(path.join(__dirname,'../assets/openscied-serengeti-preview.webp'));
+  assert.equal(preview.subarray(0,4).toString(),'RIFF');
+  assert.equal(preview.subarray(8,12).toString(),'WEBP');
+});
+
+test('Serengeti progress sees the existing preview save and resumes without a conflicting hash', () => {
+  const s = setup(false, {[serengetiKey]:serengetiSaved});
+  assert.match(s.el('#serengeti-progress').textContent,/Spring turn.*2 evidence entries.*1 of 2 explanations/);
+  assert.equal(s.el('#serengeti-open').href,'openscied-b1-serengeti.html');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b1-serengeti.html');
+  assert.equal(s.el('#serengeti-reset').disabled,false);
+  const broken = setup(false,{[serengetiKey]:'{}'});
+  assert.match(broken.el('#serengeti-progress').textContent,/could not be read/);
+  assert.equal(broken.el('#serengeti-reset').disabled,false,'a bad save can still be downloaded or reset via confirmation');
+});
+
+test('dashboard backups and OpenSciEd-only clearing include the exact Serengeti key, not neighboring names', async () => {
+  const s = setup(false, {[serengetiKey]:serengetiSaved,[nearSerengetiKey]:'separate local data'});
+  s.el('#download-openscied-results').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.equal(payload.work[serengetiKey],serengetiSaved);
+  assert.equal(payload.work[nearSerengetiKey],undefined);
+  assert.equal(payload.responses.serengeti.claim,'The group survived.');
+  assert.equal(payload.responses.serengeti.evidence,'0');
+  s.el('#clear-openscied-results').fire('click');
+  s.el('#openscied-erase-confirmation').value='ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data[serengetiKey],undefined);
+  assert.equal(s.data[nearSerengetiKey],'separate local data');
+  assert.ok(s.data['aplab:lab05:results']);
+});
+test('a Serengeti-only restart provides a scoped backup and preserves other saved work', async () => {
+  const s = setup(false, {[serengetiKey]:serengetiSaved,[nearSerengetiKey]:'keep'});
+  s.el('#serengeti-reset').fire('click');
+  assert.match(s.el('#clear-openscied-title').textContent,/Restart Serengeti Board Game/);
+  s.el('#backup-before-openscied-clear').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.deepEqual(Object.keys(payload.work),[serengetiKey]);
+  s.el('#openscied-erase-confirmation').value='ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data[serengetiKey],undefined);
+  assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1']);
+  assert.equal(s.data[nearSerengetiKey],'keep');
+});

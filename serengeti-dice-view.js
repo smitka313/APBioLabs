@@ -100,7 +100,7 @@
     sourceViews.set(target,{key,serial});
     const animate = fresh && !reducedMotion();
     const content = [];
-    if (finished) content.push(make(doc,'p','sg-kicker','Previous hunt · final roll'));
+    if (finished) content.push(make(doc,'p','sg-kicker','Final roll · hunt result'));
     content.push(makeSide(doc,'prey',battle,round,species,animate),makeSide(doc,'predator',battle,round,species,animate));
     if (round) {
       content.push(comparisons(doc,round,species));

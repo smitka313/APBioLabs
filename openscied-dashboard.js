@@ -2,12 +2,16 @@
 (function () {
   'use strict';
   const PREFIX = 'aplab:openscied:';
+  // Keep the exact existing key so work from the earlier preview stays available.
+  const SERENGETI_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
+  const isOpenSciEdKey = key => key === SERENGETI_KEY || key.startsWith(PREFIX);
   // Each activity reads its own saved record: progress(raw) gives {started, section, visited, summary}; ids(saved) lists its written-response ids.
   const ACTIVITIES = [
+    { id: 'serengeti', name: 'Serengeti Board Game', file: 'openscied-b1-serengeti.html', key: SERENGETI_KEY, clears: 'board game record, concept checks, and answers', progress: serengetiProgress, ids: serengetiResponseIds, answers: true },
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
-    { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', clears: 'carbon journey, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds },
+    { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', clears: 'carbon journey, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds }
@@ -26,6 +30,30 @@
   }
   function written(fields, id) { return typeof fields[id] === 'string' && !!fields[id].trim(); }
   const $ = selector => document.querySelector(selector);
+  // Serengeti restores its last page from the existing saved record rather than a URL hash.
+  function serengetiResponseIds() { return ['question','evidence','claim','limits']; }
+  function serengetiProgress(raw) {
+    const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
+    if (!raw) return empty;
+    let save;
+    try {
+      save = JSON.parse(raw);
+      if (!save || save.v !== 1 || !Object.prototype.hasOwnProperty.call(save, 'game')
+        || !save.answers || typeof save.answers !== 'object' || Array.isArray(save.answers)
+        || (save.game !== null && (save.game.version !== 1 || !Array.isArray(save.game.log)
+          || !Number.isInteger(save.game.season) || save.game.season < 0 || save.game.season > 3
+          || !['migration','card','move','hunt','seasonEnd','complete'].includes(save.game.step)))) throw Error('Unknown format');
+    } catch (_) { return { ...empty, summary: 'Saved work could not be read. Download a copy before restarting.' }; }
+    const writtenCount = ['claim','limits'].filter(id => written(save.answers,id)).length;
+    const started = Boolean(save.game || serengetiResponseIds().some(id => written(save.answers,id)));
+    const records = save.game?.log.length || 0;
+    const completed = save.game?.step === 'complete';
+    const turn = save.game && ['Winter','Spring','Summer','Fall'][save.game.season];
+    const phase = completed ? 'Year complete' : turn ? turn + ' turn' : 'Analysis started';
+    return { ...empty, started, visited: Number.isFinite(save.lastVisitedAt) ? save.lastVisitedAt : 0,
+      summary: started ? phase + ' · ' + records + ' evidence ' + (records===1?'entry':'entries') + ' · ' + writtenCount + ' of 2 explanations written' : empty.summary };
+  }
+  function activityDestination(activity, item) { return activity.file + (item.section ? '#' + item.section : ''); }
   function carbonResponseIds() { return ['q2', 'q3', 'q4', 'q5', 'q6']; }
   function carbonJourneyProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: 'play', visited: 0 };
@@ -163,7 +191,7 @@
     const confirmButton = $('#confirm-openscied-clear');
     let clearTarget = null;
     function savedKeys() {
-      return Object.keys(localStorage).filter(key => key.startsWith(PREFIX));
+      return Object.keys(localStorage).filter(isOpenSciEdKey);
     }
     function refresh(message) {
       try {
@@ -175,7 +203,7 @@
           $('#' + activity.id + '-reset').disabled = !raw;
           const link = $('#' + activity.id + '-open');
           link.textContent = item.started ? 'Continue activity →' : 'Open activity →';
-          link.href = activity.file + '#' + item.section;
+          link.href = activityDestination(activity, item);
           if (item.started) recent.push({ activity, item });
         });
         recent.sort((a, b) => b.item.visited - a.item.visited);
@@ -183,7 +211,7 @@
         if (recent.length) {
           const { activity, item } = recent[0];
           $('#openscied-resume-description').textContent = activity.name + ' · ' + item.summary;
-          $('#openscied-resume-link').href = activity.file + '#' + item.section;
+          $('#openscied-resume-link').href = activityDestination(activity, item);
           $('#openscied-resume-link').textContent = 'Resume ' + activity.name + ' →';
         }
         $('#download-openscied-results').disabled = !count;
@@ -208,7 +236,7 @@
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const fields = saved && (activity.id === 'carbon-journey' ? saved.answers : saved.fields) || {};
+          const fields = saved && (activity.answers ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
@@ -254,7 +282,7 @@
       }
     });
     // The dashboard can remain open while an activity saves in another tab.
-    window.addEventListener('storage', event => { if (!event.key || event.key.startsWith(PREFIX)) refresh(); });
+    window.addEventListener('storage', event => { if (!event.key || isOpenSciEdKey(event.key)) refresh(); });
     window.addEventListener('pageshow', () => refresh());
     refresh();
   }
