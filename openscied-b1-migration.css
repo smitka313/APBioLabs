@@ -9,3 +9,31 @@
 /* Keep the shared theme control in its reserved header slot. */
 .mx-theme-slot{width:170px;min-height:40px;flex:none;display:flex;justify-content:flex-end;align-items:center}.mx-top .mx-theme-slot [data-ph]{display:block;width:165px;height:40px}.mx-top .theme-switch{margin:0}.mx-top .theme-opt{font-size:.75rem;min-height:36px;padding:6px 10px}.mx-heading{padding:8px 0 18px}.mx h1{font-size:clamp(2.3rem,3.8vw,3.7rem)}
 @media(min-width:801px) and (max-height:850px){.mx-top{padding-block:8px}.mx-heading{padding:4px 0 10px}.mx h1{font-size:2.5rem;margin-bottom:5px}.mx-stamp{width:76px;height:76px;font-size:.45rem}.mx-stamp b{font-size:1rem}.mx-pages{margin-bottom:12px}.mx-section-head{margin-bottom:10px}.mx-map{height:300px}.mx-inspector{padding:14px}#field-scene{height:100px}.mx-maphead{padding:10px 16px 6px}.mx-view{margin:9px 0}.mx-record{padding-top:9px;margin-top:10px}.mx-record textarea{min-height:52px}.mx-viewpanel>p:not(.mx-caption){font-size:.82rem}}
+
+/* Keep playback next to the scene, and enlarge the whole 1000 × 660 map. */
+.mx-map-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.mx-map-actions button{font-size:.75rem;min-height:36px;padding:6px 9px}
+.mx-time{border-top:0;border-bottom:1px solid var(--line)}
+.mx-months{padding-top:4px}
+.mx .mx-map-dialog{max-height:calc(100dvh - 16px)}
+.mx-map-dialog .mx-dialog-head{margin-bottom:8px}
+.mx-map-dialog .mx-dialog-controls{margin-bottom:12px}
+#large-map-host{width:min(100%,max(160px,calc((100dvh - 190px) / .66)));margin-inline:auto}
+.mx-map-dialog .mx-map{height:auto;aspect-ratio:1000 / 660}
+.mx-map-dialog>p:last-child{margin-bottom:0}
+
+@media (max-width:800px), (max-height:850px){
+  .mx-top{padding-block:8px}.mx-heading{padding-block:5px 12px}
+  .mx-heading .mx-lead{margin-bottom:0}.mx-pages{margin-bottom:10px;padding-block:4px}
+  .mx-section-head{margin-bottom:8px}.mx-section-head .mx-eyebrow{margin-bottom:4px}
+}
+@media (max-width:480px){
+  .mx h1{font-size:clamp(1.9rem,8vw,2.3rem);margin-bottom:6px}
+  .mx-heading .mx-lead{font-size:.94rem}
+  .mx-maphead{padding:8px 10px 5px}.mx-maphead h3{font-size:1.35rem}
+  .mx-map-actions{gap:5px}.mx-map-actions button{font-size:.72rem}
+  .mx-atlas .mx-map{height:auto;aspect-ratio:1000 / 660}
+  .mx .mx-map-dialog{width:100%;max-width:100%;padding:12px 0;border-inline:0;border-radius:0}
+  .mx-map-dialog .mx-dialog-head,.mx-map-dialog .mx-dialog-controls,.mx-map-dialog>p{margin-inline:12px}
+  #large-map-host{width:100%}
+}

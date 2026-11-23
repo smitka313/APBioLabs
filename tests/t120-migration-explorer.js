@@ -19,9 +19,40 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
   // interactive content visible at every width, including a 200% zoom equivalent.
   for(const [width,height,dark] of [[390,844,true],[768,1024,false],[1366,768,false],[1920,1080,false],[683,768,true]]){
     await p.setViewportSize({width,height});await p.emulateMedia({colorScheme:dark?'dark':'light'});await p.goto(server.url+'openscied-b1-migration.html');await p.evaluate(d=>document.documentElement.dataset.theme=d?'dark':'light',dark);
+    if(width===390||(width===1366&&height===768)){
+      await p.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
+      ok(await p.evaluate(()=>{
+        const rect=id=>document.getElementById(id).getBoundingClientRect();
+        const map=rect('migration-map');
+        return window.scrollY===0 && map.bottom<=innerHeight+1 && ['previous','play','month-slider','next'].every(id=>{
+          const b=rect(id);return b.width>0 && b.height>0 && b.top>=0 && b.bottom<=map.top+1;
+        });
+      }),'playback and whole map fit first viewport at '+width+' × '+height);
+      await screenshot(p,width+'-playback-viewport');
+    }
     for(const m of [0,7,11]){await p.locator(`[data-month="${m}"]`).click();await p.waitForTimeout(150);ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow at '+width+' month '+m);await screenshot(p,width+'-'+(dark?'dark':'light')+'-'+m);}
     for(const page of ['evidence','explain']){await p.locator(`[data-page="${page}"]`).click();ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no '+page+' overflow at '+width);await screenshot(p,width+'-'+page);}
-    await p.locator('[data-page="explore"]').click();await p.locator('#enlarge').click();ok(await p.locator('#map-dialog').evaluate(d=>d.scrollWidth<=d.clientWidth+2),'enlarged map fits '+width);await screenshot(p,width+'-enlarged');await p.keyboard.press('Escape');
+    await p.locator('[data-page="explore"]').click();
+    const inline=await p.locator('#migration-map').boundingBox();
+    await p.locator('#enlarge').click();ok(await p.locator('#map-dialog').evaluate(d=>d.scrollWidth<=d.clientWidth+2),'enlarged map fits '+width);
+    if(width===390){
+      ok(await p.evaluate(inlineWidth=>{
+        const dlg=document.querySelector('#map-dialog');
+        const map=dlg.querySelector('#migration-map').getBoundingClientRect();
+        const controls=['[data-close="map-dialog"]','#large-prev','#large-next'];
+        const inside=b=>b.width>0 && b.height>0 && b.left>=-1 && b.right<=innerWidth+1 && b.top>=-1 && b.bottom<=innerHeight+1;
+        return dlg.open && inside(map) && map.width>=inlineWidth+12 && Math.abs(map.width-innerWidth)<=2 &&
+          Math.abs(map.height-map.width*.66)<=2 && controls.every(selector=>{
+            const b=dlg.querySelector(selector).getBoundingClientRect();return inside(b) && b.bottom<=map.top+1;
+          });
+      },inline.width),'phone dialog enlarges whole unletterboxed map with close and month controls in view');
+    }
+    await screenshot(p,width+'-enlarged');await p.keyboard.press('Escape');
+    await p.locator('.mx-atlas #migration-map').waitFor({state:'visible',timeout:3000});
+    if(width===390){
+      ok(await p.locator('#enlarge').evaluate(button=>document.activeElement===button && !document.querySelector('#map-dialog').open),
+        'phone dialog restores the map and focus on Escape');
+    }
   }
   await p.evaluate(key=>localStorage.removeItem(key),KEY);await p.setViewportSize({width:1366,height:960});await p.emulateMedia({colorScheme:'light'});await p.goto(server.url+'openscied-b1-migration.html');
   for(const month of [4,7,11]){await p.locator(`[data-month="${month}"]`).click();ok((await p.locator('#month-slider').inputValue())===String(month),'month '+month+' controls agree');}
