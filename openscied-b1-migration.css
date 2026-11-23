@@ -62,3 +62,68 @@
 @media(max-width:480px){.mx .mx-mapkey{gap:3px 10px}.mx .mx-map-reading{margin-inline:8px}}
 
 .mx .mx-field-reading p{margin:0 0 8px;font-size:.88rem}.mx .mx-field-clue strong{color:var(--accent)}
+
+/* Existing original dashboard illustration. Crop to the map, not its embedded caption. */
+.b1-hero--migration{--b1-hero-image:url(assets/migration-explorer-preview.svg);--b1-hero-size:165% auto;--b1-hero-position:left 65%}
+.mx-header .b1-hero{margin-bottom:.48rem}
+.mx-header .b1-hero-lead strong{color:inherit}
+
+/* The existing regional controls also label the three station names on the source graph. */
+.mx-pin .mx-station-label{font-size:clamp(.67rem,1.1vw,.76rem);font-weight:750;line-height:1.24;white-space:nowrap;pointer-events:auto}
+.mx-station-label:hover{text-decoration:underline}
+.mx-map-tag small{line-height:1.35}
+.mx-regional-station{margin-bottom:8px;color:var(--ink)}
+
+/* Keep the full atlas and its playback in view on short, wide screens,
+   including a 1366 × 768 classroom laptop. The enlarged view is unchanged. */
+@media(min-width:801px) and (max-height:850px){
+  .mx-header .b1-hero{min-height:92px;margin-bottom:.28rem}
+  .mx-header .b1-hero-copy{padding-block:8px}
+  .mx-header .b1-hero h1{font-size:clamp(1.9rem,3.2vw,2.45rem)}
+  .mx-header .b1-hero .b1-hero-lead{margin-top:.3rem}
+  .mx-atlas .mx-map{height:clamp(220px,calc(100svh - 520px),300px)}
+}
+
+/* Break the writing task into short question sets while retaining all drafts and print text. */
+.mx-writing-tools{display:grid;grid-template-columns:minmax(0,360px) auto;gap:4px 12px;align-items:center;border-block:1px solid var(--line);padding:10px 0;margin:10px 0 14px}
+.mx-writing-tools label{grid-column:1/-1}
+.mx-writing-tools .mx-caption{margin:0!important;line-height:1.3}
+.mx-response-stage h3{font-size:1.1rem;margin:0 0 12px}
+.mx-response-stage h3:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.mx-response-stage .mx-response{margin:0 0 16px}
+.mx-response-nav{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+.mx-response-nav button{font-size:.85rem}
+.mx-writing-evidence summary,.mx-chart-panel>details>summary{line-height:1.3;min-height:40px;padding-block:9px}
+.mx-writing-evidence summary{font-family:var(--f-display);font-size:1.12rem}
+.mx-writing-evidence #writing-note-count{color:var(--muted)}
+.mx-explain-layout .mx-model-limits{margin-top:18px}
+@media(max-width:800px){
+  .mx-explain-layout,.mx-evidence-layout{gap:10px}
+  .mx-explain-layout>.mx-writing-evidence{padding:4px 14px}
+  .mx-writing-evidence details[open],.mx-chart-panel>details[open]{padding-bottom:8px}
+  .mx-evidence-layout>.mx-chart-panel{padding:4px 14px}
+}
+@media(max-width:480px){
+  #explain>.mx-section-head{flex-wrap:wrap;row-gap:8px}
+  #explain .mx-export-actions button{font-size:.78rem;min-height:36px}
+  .mx-writing-tools{grid-template-columns:minmax(0,1fr);padding:8px 0}
+}
+@media print{
+  .mx-writing-tools,.mx-response-nav{display:none!important}
+  .mx-response-stage{break-inside:avoid}
+}
+
+/* Route, field-card, and rainfall facts stay reachable beside the active questions. */
+.mx-writing-context{border:1px solid var(--line);border-radius:8px;margin:0 0 14px;background:var(--surface-2)}
+.mx-writing-context>summary{padding:9px 12px;line-height:1.3;min-height:40px;font-size:.86rem}
+.mx-writing-context-body{padding:10px 12px;border-top:1px solid var(--line);font-size:.86rem}
+.mx-writing-context-body>p:last-child{margin-bottom:0!important}
+.mx-writing-context table{margin:0 0 8px;font-size:.8rem}
+.mx-writing-context caption{text-align:left;font-weight:650;margin-bottom:4px}
+.mx-writing-context tbody th{color:var(--ink)}
+.mx-writing-context ul{margin:0 0 8px;padding-left:20px}
+.mx-writing-context li{margin-bottom:4px}
+.mx-context-regions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.mx-context-regions h4{margin:0 0 6px;font-size:.9rem}
+.mx-writing-context .mx-caption,.mx-writing-context-body summary{font-size:.76rem}
+@media(max-width:650px){.mx-context-regions{grid-template-columns:1fr;gap:4px}.mx-writing-context th,.mx-writing-context td{padding:5px 3px}.mx-writing-context table{font-size:.72rem}}

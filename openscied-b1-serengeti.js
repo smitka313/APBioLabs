@@ -7,6 +7,7 @@
   const LABEL = {wildebeest:'Wildebeest', hyena:'Hyenas', lion:'Lions'};
   const SINGULAR = {wildebeest:'Wildebeest', hyena:'Hyena', lion:'Lion'};
   const TYPES = {individual:'Individual', smallGroup:'Small group', herd:'Herd', clan:'Clan', pride:'Pride'};
+  const ANSWER_STEPS=['evidence','claim','limits'];
   const BLANK = () => ({question:'', evidence:'', claim:'', limits:''});
   const fields = {question:'#sg-question', evidence:'#sg-evidence-choice', claim:'#sg-claim', limits:'#sg-limits'};
   const node = (tag, className, txt) => {
@@ -21,6 +22,7 @@
   const freshSeed = () => window.crypto && window.crypto.getRandomValues ? window.crypto.getRandomValues(new Uint32Array(1))[0] : Date.now() >>> 0;
   const roleName = role => LABEL[role] || 'All roles';
   let state = null, answers = BLANK(), saveUnavailable = false, preserveRaw = false, page = 'play', optionId = '', chosenPhase = '';
+  let answerStep='evidence', historyIndex=null;
   let currentMoveToken = '', scene = null, currentOptions = [], currentPhase = '';
   // UI-only metadata. The engine action log and random state are not modified.
   let huntReview = null, huntStart = null, decision = null, cardChangedCells = [];
@@ -165,6 +167,7 @@
         if (payload.answers && typeof payload.answers[key] === 'string') answers[key] = payload.answers[key].slice(0, 750);
       });
       if (['play','evidence','analyze'].includes(payload.page)) page = payload.page;
+      if(ANSWER_STEPS.includes(payload.answerStep)) answerStep=payload.answerStep;
       conceptProgress = state ? window.SerengetiChecks?.restore(payload.conceptProgress) || {} : {};
       if(state && payload.huntDetails && typeof payload.huntDetails==='object'){
         for(const [i,message] of Object.entries(payload.huntDetails)){
@@ -214,10 +217,28 @@
     qs('#sg-recover').hidden = true;
     qs('#sg-save-warning').hidden = true;
     try {
-      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
+      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,answerStep,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
       saveUnavailable = false;
     } catch (_) { saveUnavailable = true; }
     qs('#sg-save').textContent = saveUnavailable ? 'This browser blocked saving. Download your work before closing.' : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
+  }
+  function showAnswerStep(step,focus=false) {
+    if(!ANSWER_STEPS.includes(step))return;
+    answerStep=step;
+    const next=qs('#sg-answer-next'), n=ANSWER_STEPS.indexOf(step);
+    document.querySelectorAll('[data-answer-panel]').forEach(panel=>{panel.hidden=panel.dataset.answerPanel!==step;});
+    document.querySelectorAll('.sg-answer-steps [data-answer-step]').forEach(button=>{
+      if(button.dataset.answerStep===step)button.setAttribute('aria-current','step');
+      else button.removeAttribute('aria-current');
+    });
+    next.hidden=n===ANSWER_STEPS.length-1;
+    if(!next.hidden){next.dataset.answerStep=ANSWER_STEPS[n+1];next.textContent=n===0?'Next: Explain →':'Next: Test again →';}
+    if(focus){
+      const field=qs(fields[step]);
+      field.focus({preventScroll:true});
+      const bounds=field.getBoundingClientRect();
+      if(bounds.top<0 || bounds.bottom>innerHeight)field.scrollIntoView({block:'nearest'});
+    }
   }
   function openPage(target, moveFocus) {
     if (!['play','evidence','analyze'].includes(target)) return;
@@ -228,6 +249,7 @@
       else b.removeAttribute('aria-current');
     });
     if (page !== 'play') renderEvidence();
+    if (page === 'analyze') showAnswerStep(answerStep);
     if (moveFocus) {
       const targetHeading = qs(page === 'play' ? '#sg-action-title' : '#sg-' + page + '-title');
       targetHeading.focus({preventScroll:true});
@@ -560,9 +582,13 @@
       const summary=rawSummary();
       const headline=node('p','','Board tokens: '+sample.tokens.filter(t=>t.species==='wildebeest').length+' → '+currentPrey.length
         +'. Population change: '+signed(summary.change)+' wildebeest from the start. Token totals count game pieces, not individual animals.');
-      if(updateFieldReport('sg-finish-report')) totals.replaceChildren(headline);
-      else totals.replaceChildren(headline,compareCards(summary));
-    } else updateFieldReport('sg-finish-report',false);
+      totals.replaceChildren(headline,compareCards(summary));
+      qs('#sg-finish-details').hidden=!window.SerengetiFieldReport;
+      if(qs('#sg-finish-details').open)updateFieldReport('sg-finish-report');
+    } else {
+      qs('#sg-finish-details').open=false;
+      updateFieldReport('sg-finish-report',false);
+    }
     if (page !== 'play') renderEvidence();
     conceptView?.update(state,p,conceptProgress);
     notifyTurn();
@@ -670,36 +696,63 @@
     fieldReports.get(id)?.update(state);
     return true;
   }
+  function historyOptions(rows, includeEmpty=false) {
+    const options=rows.map((r,i)=>{
+      const option=node('option','',seasonName(r.season)+' · '+recordName(r)+' ('+signed(r.change)+')');
+      option.value=String(i);return option;
+    });
+    if(includeEmpty){const empty=node('option','','Choose a record');empty.value='';options.unshift(empty);}
+    return options;
+  }
+  function renderHistoryRecord(host,rows,index) {
+    const r=rows[index];
+    host.replaceChildren();
+    if(!r)return;
+    const list=node('ol','sg-rows'),li=node('li');
+    const head=node('div');head.append(node('strong','',recordName(r)),node('br'),node('small','',seasonName(r.season)+' · '+(r.kind==='hunt'?'Hunt':r.kind==='migration'?'Migration':'Event card')));
+    const numbers=node('span','sg-change');
+    numbers.append(node('strong','',signed(r.change)+' this record'),node('small','',signed(r.population-r.change)+' → '+signed(r.population)+' cumulative'));
+    li.append(head,numbers);
+    const desc=describeRow(r,index);
+    if(desc)li.append(node('p','',desc));
+    list.append(li);host.append(list);
+  }
   function renderEvidence() {
-    const visualReport=updateFieldReport('sg-evidence-report',Boolean(state))&&Boolean(state);
-    const rows = state ? state.log : [];
-    const summary = rawSummary();
-    const es = qs('#sg-evidence-body'), aside = qs('#sg-analysis-data'), selected = qs('#sg-evidence-choice');
-    const overview = node('section','sg-panel sg-ledger');
-    overview.append(node('h3','','Cumulative wildebeest change by season'),compareCards(summary));
-    const log = node('section','sg-panel sg-ledger');
+    const hasMaps=Boolean(state&&window.SerengetiFieldReport),maps=qs('#sg-evidence-maps');
+    maps.hidden=!hasMaps;
+    if(hasMaps)updateFieldReport('sg-evidence-report');
+    else {maps.open=false;updateFieldReport('sg-evidence-report',false);}
+    const rows=state?state.log:[],summary=rawSummary();
+    const es=qs('#sg-evidence-body'),aside=qs('#sg-analysis-data'),selected=qs('#sg-evidence-choice');
+    const totals=node('section','sg-panel sg-ledger sg-evidence-totals');
+    totals.append(node('h3','','Season totals'),compareCards(summary));
+    const log=node('section','sg-panel sg-ledger sg-compact-history');
     log.append(node('h3','','Event and hunt history'));
-    if (rows.length) {
-      const list = node('ol','sg-rows');
-      rows.forEach((r,i) => {
-        const li = node('li');
-        const head = node('div'); head.append(node('strong','',recordName(r)),node('br'),node('small','',seasonName(r.season) + ' · ' + (r.kind === 'hunt' ? 'Hunt' : r.kind === 'migration' ? 'Migration' : 'Event card')));
-        li.append(head,node('span','sg-change',signed(r.change) + ' · ' + signed(r.population) + ' cumulative'));
-        const desc = describeRow(r,i);
-        if (desc) li.append(node('p','',desc));
-        list.append(li);
+    if(rows.length){
+      let index=historyIndex!==null&&rows[historyIndex]?historyIndex:rows.length-1;
+      const label=node('label','sg-history-label',rows.length+' recorded '+(rows.length===1?'event':'events')+' · Choose a record');
+      label.htmlFor='sg-history-select';
+      const select=node('select');select.id='sg-history-select';select.append(...historyOptions(rows));select.value=String(index);
+      const detail=node('div');detail.id='sg-history-detail';
+      renderHistoryRecord(detail,rows,index);
+      select.addEventListener('change',()=>{
+        index=Number(select.value);historyIndex=index;renderHistoryRecord(detail,rows,index);
+        say(recordName(rows[index])+' · '+seasonName(rows[index].season)+'. '+signed(rows[index].change)+' wildebeest.');
       });
-      log.append(list);
-    } else log.append(node('p','','Play a turn to begin recording evidence.'));
-    es.replaceChildren(...(visualReport?[log]:[overview,log]));
+      log.append(label,select,detail);
+    }else log.append(node('p','','Play a turn to begin recording evidence.'));
+    es.replaceChildren(totals,log);
     aside.replaceChildren(compareCards(summary));
-    const empty = node('option','','Choose evidence'); empty.value = '';
-    selected.replaceChildren(empty,...rows.map((r,i) => {
-      const o = node('option','',seasonName(r.season) + ' · ' + recordName(r) + ' (' + signed(r.change) + ')');
-      o.value = String(i); return o;
-    }));
-    selected.value = answers.evidence;
-    qs('#sg-selected').textContent = selectionText(rows);
+    selected.replaceChildren(...historyOptions(rows,true));selected.value=answers.evidence;
+    selected.disabled=!rows.length;
+    renderAnalysisRecord(rows);
+  }
+  function renderAnalysisRecord(rows) {
+    const isChosen=answers.evidence!==''&&Boolean(rows[Number(answers.evidence)]);
+    const index=isChosen?Number(answers.evidence):rows.length-1;
+    qs('#sg-analysis-record-note').textContent=!rows.length?'Play a turn to record evidence.'
+      :isChosen?'':'Latest record shown for reference. Choose the record you want to use.';
+    renderHistoryRecord(qs('#sg-selected'),rows,index);
   }
   function selectionText(rows) {
     if (!answers.evidence || !rows || !rows[Number(answers.evidence)]) return '';
@@ -759,9 +812,24 @@
     const field = qs(fields[key]); field.value = answers[key];
     field.addEventListener(key==='evidence'?'change':'input',() => {
       answers[key]=field.value;
-      if(key==='evidence') qs('#sg-selected').textContent=selectionText(state&&state.log);
+      if(key==='evidence') {
+        renderAnalysisRecord(state?.log || []);
+        const record=field.value===''?null:state?.log[Number(field.value)];
+        if(record) say(recordName(record)+' · '+seasonName(record.season)+'. '+signed(record.change)+' wildebeest.');
+      }
       save();
     });
+  });
+  document.querySelectorAll('[data-answer-step]').forEach(el=>el.addEventListener('click',()=>{
+    showAnswerStep(el.dataset.answerStep,true);save();
+  }));
+  document.querySelectorAll('[data-jump]').forEach(el=>el.addEventListener('click',()=>{
+    const board=el.dataset.jump==='map', elId=board?'#sg-board-title':'#sg-action-title';
+    if(board&&qs('.sg-game').classList.contains('sg-map-collapsed'))qs('#sg-toggle-map').click();
+    qs(elId).scrollIntoView({block:'start',behavior:'auto'});qs(elId).focus({preventScroll:true});
+  }));
+  qs('#sg-finish-details').addEventListener('toggle',e=>{
+    if(e.target.open&&app.dataset.phase==='complete')updateFieldReport('sg-finish-report');
   });
   qs('#sg-replay')?.addEventListener('click',()=>qs('#sg-restart').click());
   qs('#sg-restart').addEventListener('click',() => {
@@ -778,7 +846,8 @@
       try { localStorage.setItem(S, JSON.stringify({v:1,game:null,answers:BLANK(),page:'play'})); }
       catch (_) { say('Restart could not replace this save. The previous data is still preserved.'); return; }
     }
-    state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK();
+    state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK(); answerStep='evidence';historyIndex=null;
+    qs('#sg-question-details').open=false;qs('#sg-evidence-maps').open=false;
     huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[]; conceptProgress={};
     preserveRaw=false; originalSave=null;
     Object.keys(fields).forEach(k=>{qs(fields[k]).value='';});
@@ -812,3 +881,4 @@
   openPage(page,false);
   paint(false);
 })();
+

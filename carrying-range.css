@@ -1,0 +1,54 @@
+/* Optional range study below the grass model; uses the shared theme tokens. */
+.cc-range {min-width:0;margin-block-start:.8rem;padding:clamp(.75rem,1.9vw,1.14rem);border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);}
+.cc-range .cc-range-head {display:flex;align-items:flex-start;justify-content:space-between;gap:.65rem;}
+.cc-range-window {flex:none;padding:.37rem .55rem;border:1px solid var(--line);border-radius:.55rem;background:var(--accent-soft);color:var(--ink);font:700 .84rem var(--f-mono,monospace);}
+.cc-range p {font-size:.88rem;line-height:1.45;}
+.cc-range .cc-caption {font-size:.79rem;}
+.cc-range #cc-range-readiness {font-weight:650;}
+.cc-range-task {display:grid;gap:.48rem;}
+.cc-range label {display:grid;gap:.3rem;min-width:0;font-size:.89rem;}
+.cc-range label[for="cc-range-estimate"] {display:block;}
+.cc-range label[for="cc-range-estimate"] span {margin-inline-start:.3rem;}
+.cc-range select {min-width:0;width:100%;min-height:44px;}
+.cc-range-pickers {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;}
+.cc .cc-range .cc-range-table {margin:.25rem 0;table-layout:fixed;border-spacing:0;border-collapse:collapse;width:100%;font-size:.83rem;}
+.cc .cc-range .cc-range-table th,.cc .cc-range .cc-range-table td {text-align:center;padding:.22rem .12rem;}
+.cc .cc-range .cc-range-table th:first-child {text-align:start;width:25%;}
+.cc-range-table tbody td {font-weight:750;font-variant-numeric:tabular-nums;}
+.cc-range .cc-range-marks {font-weight:750;margin:0;}
+.cc-range .cc-range-feedback,.cc-range .cc-range-limit {margin:0;padding:.5rem .65rem;border-inline-start:3px solid var(--muted);background:var(--surface-2);}
+.cc-range .cc-range-feedback[data-range-state="supported"] {border-color:var(--accent);background:var(--accent-soft);}
+.cc-range .cc-range-limit {border-color:var(--warn);}
+.cc-range-compare {margin-block:.18rem;padding:.55rem .65rem;border:1px solid var(--line);border-radius:.56rem;background:var(--surface-2);}
+.cc-range-compare dl {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem;margin:0;}
+.cc-range-compare dt {font-weight:750;font-size:.84rem;}
+.cc-range-compare dd {margin:0;font-size:.85rem;}
+.cc-range-compare p {margin-bottom:0;font-size:.82rem;}
+.cc .cc-range textarea {margin:0;max-width:100%;}
+@media(max-width:540px) {
+  .cc-range-pickers {grid-template-columns:1fr;gap:.5rem;}
+  .cc-range-window {font-size:.73rem;}
+}
+
+/* Graph and estimate line. The accessible slider has the same scale and step. */
+.cc-range #cc-range-plot {display:block;width:100%;height:auto;aspect-ratio:560/212;background:var(--surface);border:1px solid var(--line);border-radius:.55rem;touch-action:none;user-select:none;cursor:ns-resize;min-width:0;}
+.cc-range #cc-range-plot text {fill:var(--ink);font:650 14px var(--f-body,system-ui,sans-serif);}
+.cc-range #cc-range-plot .cc-range-plot-head {font-weight:750;}
+.cc-range-late {fill:var(--accent-soft);}
+.cc-range-grid {stroke:var(--line);stroke-width:1;}
+.cc-range-axis {stroke:var(--muted);stroke-width:1.2;fill:none;}
+.cc-range-series {stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.cc-range-point {fill:var(--surface);stroke:var(--accent);stroke-width:2.2;}
+.cc-range-grab {stroke:transparent;stroke-width:27;}
+.cc-range-guess {stroke:var(--stain);stroke-width:2.6;stroke-dasharray:6 4;}
+.cc-range-handle {fill:var(--stain);stroke:var(--surface);stroke-width:1.7;}
+.cc-range-estimate-controls {display:grid;gap:.34rem;min-width:0;}
+.cc-range #cc-range-slider {margin:0;width:100%;min-height:42px;accent-color:var(--stain);cursor:ew-resize;}
+.cc-range #cc-range-line-value {font-size:.8rem;text-transform:none;color:var(--muted);}
+.cc-range #cc-range-lock {justify-self:start;min-height:44px;}
+.cc-range #cc-range-estimate-feedback[data-range-state="correct"] {border-color:var(--accent);background:var(--accent-soft);}
+.cc-range #cc-range-estimate-feedback[data-range-state="incorrect"] {border-color:var(--warn);background:var(--warn-soft);}
+.cc-range-detail {padding:.35rem .65rem;border:1px solid var(--line);border-radius:.5rem;}
+.cc-range-detail summary {min-height:36px;padding:.25rem 0;}
+#cc-range-accepted-band {fill:var(--accent);fill-opacity:.14;stroke:var(--accent);stroke-opacity:.63;stroke-width:1;stroke-dasharray:3 3;pointer-events:none;}
+#cc-range-accepted-band[hidden] {display:none;}

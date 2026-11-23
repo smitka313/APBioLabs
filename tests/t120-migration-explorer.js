@@ -5,7 +5,36 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require('playwright');const {serve}=require('./_h');
 const KEY='aplab:openscied:b1-migration:v1';let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++;console.log('ok: '+m);};
 const shotDir=process.env.MIGRATION_SCREENSHOTS;
-async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:true});await p.screenshot({path:path.join(shotDir,name+'.png'),fullPage:true});}}
+async function screenshot(p,name,fullPage=true){if(shotDir){fs.mkdirSync(shotDir,{recursive:true});await p.screenshot({path:path.join(shotDir,name+'.png'),fullPage});}}
+const rainStations={north:'Kogatende',west:'Handajega',south:'Simiyu'};
+async function stationLabels(map,label){
+  const visual=await map.evaluate((root,names)=>{
+    const bounds=root.querySelector('#migration-map').getBoundingClientRect();
+    const result={};
+    for(const [region,name] of Object.entries(names)){
+      const el=root.querySelector('[data-region="'+region+'"] [data-map-station="'+region+'"]');
+      const pin=el?.closest('button');
+      if(!el||!el.getClientRects().length||getComputedStyle(el).visibility!=='visible'||
+        el.textContent.trim()!==name||!el.id||
+        !(pin?.getAttribute('aria-describedby')||'').split(/\s+/).includes(el.id))return {problem:region+' missing or not exposed'};
+      const content=document.createRange();content.selectNodeContents(el);
+      const r=content.getBoundingClientRect();
+      if(r.width<=0||r.height<=0||r.left<bounds.left-1||r.top<bounds.top-1||
+        r.right>bounds.right+1||r.bottom>bounds.bottom+1)return {problem:region+' clipped'};
+      const tag=root.querySelector('.mx-map-tag')?.getBoundingClientRect();
+      if(tag&&r.right>tag.left&&tag.right>r.left&&r.bottom>tag.top&&tag.bottom>r.top)
+        return {problem:region+' overlaps the map caption'};
+      result[region]={x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,bounds:r.toJSON()};
+    }
+    return result;
+  },rainStations);
+  ok(!visual.problem&&visual.north.y<visual.west.y&&visual.west.y<visual.south.y&&
+    visual.west.x<Math.min(visual.north.x,visual.south.x),
+    label+': visible rainfall names are positioned north/west/south and fully inside the map '+(visual.problem||''));
+  const boxes=Object.values(visual).map(x=>x.bounds);
+  ok(boxes.every((a,i)=>boxes.slice(i+1).every(b=>a.right<=b.left||b.right<=a.left||
+    a.bottom<=b.top||b.bottom<=a.top)),label+': the three station names do not overlap');
+}
 (async()=>{const server=await serve();let browser;try{
   browser=await chromium.launch(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{});
   const context=await browser.newContext({viewport:{width:1366,height:960},reducedMotion:'reduce',acceptDownloads:true});
@@ -21,20 +50,26 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
     await p.setViewportSize({width,height});await p.emulateMedia({colorScheme:dark?'dark':'light'});await p.goto(server.url+'openscied-b1-migration.html');await p.evaluate(d=>document.documentElement.dataset.theme=d?'dark':'light',dark);
     if(width===390||(width===1366&&height===768)){
       await p.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
-      ok(await p.evaluate(()=>{
+      const firstFold=await p.evaluate(()=>{
         const rect=id=>document.getElementById(id).getBoundingClientRect();
         const map=rect('migration-map');
-        return window.scrollY===0 && map.bottom<=innerHeight+1 && ['previous','play','month-slider','next'].every(id=>{
-          const b=rect(id);return b.width>0 && b.height>0 && b.top>=0 && b.bottom<=map.top+1;
-        });
-      }),'playback and whole map fit first viewport at '+width+' × '+height);
-      await screenshot(p,width+'-playback-viewport');
+        const controlRects=Object.fromEntries(['previous','play','month-slider','next'].map(id=>[id,rect(id).toJSON()]));
+        return {fit:window.scrollY===0 && map.bottom<=innerHeight+1 && Object.values(controlRects).every(b=>
+          b.width>0 && b.height>0 && b.top>=0 && b.bottom<=map.top+1),
+          scroll:window.scrollY,map:map.toJSON(),controls:controlRects};
+      });
+      await screenshot(p,width+'-playback-viewport',false);
+      ok(firstFold.fit,'playback and whole map fit first viewport at '+width+' × '+height+
+        (firstFold.fit?'':' '+JSON.stringify(firstFold)));
     }
     for(const m of [0,7,11]){await p.locator(`[data-month="${m}"]`).click();await p.waitForTimeout(150);ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow at '+width+' month '+m);await screenshot(p,width+'-'+(dark?'dark':'light')+'-'+m);}
     for(const page of ['evidence','explain']){await p.locator(`[data-page="${page}"]`).click();ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no '+page+' overflow at '+width);await screenshot(p,width+'-'+page);}
     await p.locator('[data-page="explore"]').click();
+    const checkStations=width===390||width===1366;
+    if(checkStations)await stationLabels(p.locator('.mx-atlas #map-wrap'),width+' inline map');
     const inline=await p.locator('#migration-map').boundingBox();
     await p.locator('#enlarge').click();ok(await p.locator('#map-dialog').evaluate(d=>d.scrollWidth<=d.clientWidth+2),'enlarged map fits '+width);
+    if(checkStations)await stationLabels(p.locator('#map-dialog #map-wrap'),width+' enlarged map');
     if(width===390){
       ok(await p.evaluate(inlineWidth=>{
         const dlg=document.querySelector('#map-dialog');
@@ -52,6 +87,7 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
     if(width===390){
       ok(await p.locator('#enlarge').evaluate(button=>document.activeElement===button && !document.querySelector('#map-dialog').open),
         'phone dialog restores the map and focus on Escape');
+      await stationLabels(p.locator('.mx-atlas #map-wrap'),'390 restored inline map');
     }
   }
   await p.evaluate(key=>localStorage.removeItem(key),KEY);await p.setViewportSize({width:1366,height:960});await p.emulateMedia({colorScheme:'light'});await p.goto(server.url+'openscied-b1-migration.html');
@@ -111,9 +147,23 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
   const notebookDownload=p.waitForEvent('download');await p.locator('#download-notebook').click();
   const notebookFile=await notebookDownload, notebookBody=fs.readFileSync(await notebookFile.path(),'utf8');
   ok(notebookFile.suggestedFilename()==='migration-notebook.txt'&&/Our revised May observation/.test(notebookBody)&&!notebookBody.includes('MY RESPONSES'),'notebook-only file includes revised evidence without written answers');
-  await p.locator('[data-page="explain"]').click();await p.locator('#answer-claim').fill('The cards connect nutritional health with survival; regional evidence helps explain movement.');
+  await p.locator('[data-page="explain"]').click();
+  const chooseSet=(index,page=p)=>page.locator('#response-stage').selectOption(String(index));
+  ok(await p.locator('#responses textarea:visible').count()===2&&await p.locator('#answer-question').isVisible()&&await p.locator('#response-prev').isDisabled(),'Explain starts with just the first two questions and no backward action');
+  ok(await p.locator('#writing-evidence').evaluate(d=>d.open),'desktop notebook evidence is open alongside the writing set');
+  await p.locator('#response-next').press('Enter');
+  ok(await p.locator('#response-heading-1').evaluate(h=>document.activeElement===h)&&await p.locator('#answer-absence').isVisible(),'keyboard paging focuses the new question-set heading');
+  await chooseSet(3);await p.locator('#answer-claim').fill('The cards connect nutritional health with survival; regional evidence helps explain movement.');
   // Optional evidence checks live with their written prompts and never score or edit drafts.
-  await p.locator('#answer-absence').fill('My own interpretation stays here.');
+  await chooseSet(1);await p.locator('#answer-absence').fill('My own interpretation stays here.');
+  ok(await p.locator('#response-progress').textContent()==='2 of 10 prompts answered','writing progress counts filled drafts across all sets');
+  const contextual=p.locator('[data-writing-context]:visible');
+  ok(await contextual.count()===1,'only the active question set exposes its evidence');
+  await contextual.locator('summary').first().press('Enter');
+  const healthRows=await contextual.locator('tbody tr').allTextContents();
+  ok(healthRows.length===6&&/May.*95% \/ 0%.*75% \/ 0%.*90% \/ 0%/.test(healthRows[0])&&
+    /July.*89% \/ 20%.*51% \/ 20%.*31% \/ 20%/.test(healthRows[2]),'Explain includes exact source health and anthrax data for the active prompts');
+  await contextual.locator('summary').first().press('Enter');
   const anthrax=p.locator('[data-evidence-check="anthrax"]');
   ok(await anthrax.evaluate(el=>el.parentElement.querySelector('textarea')?.id==='answer-absence'), 'anthrax check sits beside Q4');
   await anthrax.locator('summary').press('Enter');
@@ -138,6 +188,18 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
   await nutrition.locator('[value="all-dead-unhealthy"]').check();
   await nutrition.getByRole('button',{name:'Check this choice'}).click();
   ok(/May are labeled healthy, at 75% and 90%/.test(await nutrition.locator('.mx-check-feedback').textContent()),'nutrition feedback points out the healthy May exception');
+  await chooseSet(2);
+  await contextual.locator('summary').first().click();
+  ok(/April range.*South and southwest Serengeti/.test(await contextual.textContent()),'rainfall explanation has the source April range without changing pages');
+  const annualRows=await contextual.locator('tbody tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells,cell=>cell.textContent)));
+  ok(JSON.stringify(annualRows)===JSON.stringify([['South','1160','52'],['West','1180','26'],['North','1310','6']]),'Explain shows all three verified annual observations in the same question set');
+  const graphHere=contextual.getByRole('button',{name:'Open the original station graph'});
+  await graphHere.click();
+  ok(await p.locator('#rain-dialog').evaluate(d=>d.open)&&/Reading April/.test(await p.locator('#rain-dialog-focus').textContent())&&
+    await p.locator('#explain').isVisible(),'Explain opens the original station graph focused on April without leaving the draft');
+  await p.keyboard.press('Escape');
+  ok(await graphHere.evaluate(b=>document.activeElement===b),'closing the source graph returns focus to the writing evidence');
+  await contextual.locator('summary').first().click();
   const rainfall=p.locator('[data-evidence-check="rainfall"]');
   await rainfall.locator('summary').click();
   await rainfall.locator('[value="counterexample"]').check();
@@ -147,11 +209,17 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
   ok(await p.locator('#occupancy-table').evaluate(el=>document.activeElement===el),'rainfall review opens and focuses the source table');
   await p.locator('[data-page="explain"]').click();
   ok(await p.locator('#writing-notes .mx-note').count()===4,'saved evidence remains beside written explanations');
+  await chooseSet(4);
+  ok(await p.locator('#response-next').isDisabled()&&await p.locator('#answer-next').isVisible(),'final question set is reachable directly and has no forward action');
+  await screenshot(p,'1366-explain-last-set');
   const downloadPromise=p.waitForEvent('download');await p.locator('#download-report').click();const download=await downloadPromise;const body=fs.readFileSync(await download.path(),'utf8');ok(body.includes('51% bone-marrow fat')&&body.includes('regional evidence helps'),'download includes source evidence and student response');ok(body.includes('illustrative, not observations'),'download distinguishes illustrative art from source data');ok(body.includes('Annual Rainfall and Wildebeest Occupancy')&&!body.includes('slides X–Y'),'annual export cites Data Excursion 2 by name');
   await p.locator('#copy-report').click();ok(await p.locator('#text-copy-field').inputValue()===body,'copyable text matches the saved investigation');await p.keyboard.press('Escape');
   await p.evaluate(()=>{window.__createExportURL=URL.createObjectURL;URL.createObjectURL=()=>{throw new Error('download unavailable');};});
   await p.locator('#download-report').click();ok(await p.locator('#text-copy-dialog').evaluate(d=>d.open)&&/could not be downloaded/.test(await p.locator('#text-copy-hint').textContent()),'automatic text fallback if file download fails');await p.keyboard.press('Escape');await p.evaluate(()=>{URL.createObjectURL=window.__createExportURL;delete window.__createExportURL;});
-  await p.reload();ok(await p.locator('#answer-claim').inputValue()==='The cards connect nutritional health with survival; regional evidence helps explain movement.','response restored after reload');ok(await p.locator('#writing-notes .mx-note').count()===4,'notebook restored after reload');
+  await p.reload();
+  ok(await p.locator('#response-stage').inputValue()==='4'&&await p.locator('#answer-next').isVisible(),'reload resumes the last question set');
+  await chooseSet(3);
+  ok(await p.locator('#answer-claim').inputValue()==='The cards connect nutritional health with survival; regional evidence helps explain movement.','response restored after reload');ok(await p.locator('#writing-notes .mx-note').count()===4,'notebook restored after reload');
   await p.goto(server.url+'openscied-dashboard.html');await p.waitForFunction(()=>document.querySelector('#migration-progress')?.textContent.includes('months with notes'));ok(/4 notebook entries/.test(await p.locator('#migration-progress').textContent()),'dashboard reports activity notebook progress');ok(/#explain$/.test(await p.locator('#migration-open').getAttribute('href')),'dashboard resumes saved writing section');
   const backupPromise=p.waitForEvent('download');await p.locator('#download-openscied-results').click();const backup=JSON.parse(fs.readFileSync(await (await backupPromise).path(),'utf8'));ok(backup.responses.migration.claim.includes('regional evidence helps'),'dashboard export includes explorer responses');
   await p.locator('#migration-reset').click();await p.locator('#openscied-erase-confirmation').fill('ERASE');await p.locator('#confirm-openscied-clear').click();ok(await p.evaluate(key=>localStorage.getItem(key)===null,KEY),'dashboard resets only selected activity');
@@ -170,12 +238,39 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
   try {
     const phone=await touch.newPage();phone.on('pageerror',e=>errors.push(e.message));
     await phone.goto(server.url+'openscied-b1-migration.html#explain');
+    ok(!await phone.locator('#writing-evidence').evaluate(d=>d.open)&&await phone.locator('#responses textarea:visible').count()===2,'phone starts with a compact evidence notebook and one question set');
+    await phone.locator('#writing-evidence summary').tap();
+    ok(await phone.locator('#writing-notes').isVisible(),'phone evidence notebook opens without leaving the draft');
+    await phone.locator('#writing-evidence summary').tap();
+    await chooseSet(4,phone);await screenshot(phone,'390-explain-last-set');
+    await phone.locator('[data-page="evidence"]').tap();
+    const graph=phone.locator('#health-chart-disclosure');
+    ok(!await graph.evaluate(d=>d.open)&&await phone.locator('.mx-card').first().isVisible(),'phone field cards are available without scrolling past an open chart');
+    await graph.locator('summary').first().tap();
+    await phone.locator('#health-chart svg').first().waitFor({state:'visible'});
+    ok(await graph.evaluate(d=>d.open),'phone can open and read the full graph');
+    await phone.locator('[data-page="explain"]').tap();
+    await chooseSet(1,phone);
+    const phoneSource=phone.locator('[data-writing-context]:visible');
+    await phoneSource.locator('summary').first().tap();
+    ok(await phoneSource.locator('table').isVisible()&&await phoneSource.evaluate(el=>
+      el.getBoundingClientRect().right<=innerWidth+1&&el.scrollWidth<=el.clientWidth+1),'phone can open and read its source excerpt beside the answer without horizontal overflow');
+    await screenshot(phone,'390-dark-context-source');
+    await phoneSource.locator('summary').first().tap();
     const panel=phone.locator('[data-evidence-check="anthrax"]');
     await panel.locator('summary').tap();await panel.locator('label:has([value="higher-dead"])').tap();
     await panel.getByRole('button',{name:'Check this choice'}).tap();
     ok(await panel.locator('.mx-check-feedback').isVisible(),'anthrax feedback works in touch-enabled 390px Chromium');
     ok(await panel.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+1 && el.scrollWidth<=el.clientWidth+1),'open feedback fits the mobile viewport');
     await screenshot(phone,'390-dark-evidence-check');
+    await phone.locator('[data-page="explore"]').tap();
+    await phone.locator('#map-wrap [data-region="north"]').tap();
+    ok(/North · a dry-season refuge/.test(await phone.locator('#inspector-title').textContent()),
+      'station label does not take over the touch control for its mapped region');
+    await stationLabels(phone.locator('.mx-atlas #map-wrap'),'touch-enabled 390 inline map');
+    await phone.locator('#enlarge').tap();
+    await stationLabels(phone.locator('#map-dialog #map-wrap'),'touch-enabled 390 enlarged map');
+    await screenshot(phone,'390-dark-rainfall-station-map');
   } finally {await touch.close();}
   await p.evaluate(key=>localStorage.setItem(key,JSON.stringify({v:1,month:4,page:'explore',visited:[4,7],answers:{},observations:{},notes:[
     {id:'month-4-map',title:'May',text:'Map only',type:'map-observation'},

@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="serengeti-field-report.css">
 <link rel="stylesheet" href="serengeti-surround.css">
 <link rel="stylesheet" href="serengeti-concept-view.css">
+<link rel="stylesheet" href="openscied-b1-hero.css">
 <script defer src="serengeti-logic.js"></script>
 <script defer src="serengeti-turn-explainer.js"></script>
 <script defer src="serengeti-concept-checks.js"></script>
@@ -31,15 +32,20 @@
 <header class="sg-header">
   <div class="sg-wrap">
     <nav class="sg-top" aria-label="Page links"><a href="openscied-dashboard.html">OpenSciEd dashboard</a><span>Unit 1 · Lesson 7</span><button id="sg-theme" type="button" class="sg-plain" aria-label="Change color theme">Theme: Auto</button></nav>
-    <p class="sg-kicker">Ecosystem interactions</p>
-    <h1>Serengeti Board Game</h1>
-    <p class="sg-subtitle">How do migration and predator–prey interactions change a wildebeest population?</p>
+    <div class="b1-hero b1-hero--serengeti">
+      <div class="b1-hero-copy">
+        <p class="b1-hero-kicker">Ecosystem interactions</p>
+        <h1>Serengeti Board Game</h1>
+        <p class="b1-hero-lead">How do migration and predator–prey interactions change a wildebeest population?</p>
+      </div>
+      <div class="b1-hero-art" aria-hidden="true"></div>
+    </div>
   </div>
 </header>
 <main class="sg-wrap" id="sg-main">
   <noscript><p>This activity needs JavaScript to run the model.</p></noscript>
   <div id="sg-load-error" role="status" hidden>The game did not load. Try reloading this page.</div>
-  <div class="sg-toolbar">
+  <div class="sg-toolbar" id="sg-toolbar">
     <nav class="sg-tabs" aria-label="Activity sections">
       <button type="button" data-page="play" aria-current="page">Play <span aria-hidden="true">01</span></button>
       <button type="button" data-page="evidence">Evidence <span id="sg-evidence-count" aria-hidden="true">0</span></button>
@@ -52,18 +58,20 @@
     <section id="sg-finish" class="sg-panel sg-finish" aria-labelledby="sg-finish-title" hidden>
       <header class="sg-finish-head"><div><p class="sg-kicker">Final tally</p><h2 id="sg-finish-title">A year on the Serengeti</h2></div><button type="button" id="sg-replay" class="sg-plain">Play again</button></header>
       <div id="sg-finish-totals"></div>
-      <div id="sg-finish-report" hidden></div>
+      <div class="sg-finish-tools"><button type="button" class="sg-cta" data-page="analyze">Analyze results</button><button type="button" class="sg-plain" data-page="evidence">Review evidence</button></div>
+      <details id="sg-finish-details" class="sg-note-disclosure"><summary>Open the four-season field report</summary><div id="sg-finish-report" hidden></div></details>
     </section>
     <button id="sg-toggle-map" class="sg-plain" type="button" aria-expanded="true" aria-controls="sg-map-panel">Hide map</button>
     <div class="sg-game">
       <div class="sg-board sg-panel" id="sg-map-panel">
         <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title" tabindex="-1">Winter range</h2></div><div class="sg-board-header-actions"><span class="sg-model-tag">SIMULATED</span><button type="button" class="sg-cta" id="sg-board-open" aria-haspopup="dialog" aria-controls="sg-board-dialog"><span aria-hidden="true">⛶</span> Enlarge board</button></div></header>
+        <button type="button" class="sg-plain sg-phone-jump" data-jump="turn">Jump to this turn ↓</button>
         <div class="sg-board-atlas">
           <figure class="sg-figure">
             <div id="sg-scene"></div>
             <figcaption><span id="sg-board-caption"></span><span id="sg-map-proximity" class="sg-map-proximity" hidden></span></figcaption>
           </figure>
-          <aside class="sg-map-key" aria-label="Map legend">
+          <details class="sg-map-notes sg-note-disclosure"><summary>Map key and token labels</summary><aside class="sg-map-key" aria-label="Map legend">
             <p class="sg-kicker">Map key</p>
             <ul>
               <li><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="#eee9cf" stroke="#263d36" stroke-width="1.45"/></svg> Wildebeest</li>
@@ -75,12 +83,13 @@
             </ul>
             <p class="sg-token-key"><strong>1</strong> Individual · <strong>G</strong> Small group · <strong>H</strong> Herd · <strong>C</strong> Clan · <strong>P</strong> Pride</p>
             <p id="sg-board-access" class="sg-board-access"></p>
-          </aside>
+          </aside></details>
         </div>
         <div class="sg-metrics" id="sg-metrics" aria-label="Wildebeest token counts"></div>
       </div>
       <div class="sg-expedition-rail" id="sg-expedition-rail">
         <section class="sg-control sg-panel" id="sg-expedition-turn" aria-label="Turn controls">
+        <button type="button" class="sg-plain sg-phone-jump sg-map-jump" data-jump="map">Jump back to map ↑</button>
         <div id="sg-rolebar" class="sg-rolebar" aria-label="Agent roles"></div>
         <div class="sg-action-top"><p id="sg-phase" class="sg-kicker">Set up</p><h2 id="sg-action-title" tabindex="-1">One device, three roles</h2><p id="sg-action-copy">Take turns controlling the wildebeest, hyenas and lions.</p></div>
         <div id="sg-interactive"></div>
@@ -109,27 +118,48 @@
   </section>
   <section id="sg-evidence" class="sg-page" aria-labelledby="sg-evidence-title" hidden>
     <header class="sg-section-head"><p class="sg-kicker">Field notebook</p><h2 id="sg-evidence-title" tabindex="-1">What happened on the board?</h2><p>Use the season totals and event records as evidence. Cumulative change starts at 0 and never assumes a number of animals in a herd token.</p></header>
-    <div id="sg-evidence-report" hidden></div>
     <div id="sg-evidence-body"></div>
+    <details id="sg-evidence-maps" class="sg-panel sg-note-disclosure" hidden><summary>Season maps and breakdowns</summary><div id="sg-evidence-report" hidden></div></details>
     <div class="sg-page-actions"><button type="button" class="sg-plain" data-page="play">Back to play</button><button type="button" class="sg-cta" data-page="analyze">Go to analysis</button></div>
   </section>
   <section id="sg-analyze" class="sg-page" aria-labelledby="sg-analyze-title" hidden>
     <header class="sg-section-head"><p class="sg-kicker">Sensemaking</p><h2 id="sg-analyze-title" tabindex="-1">Explain a population change</h2><p>Compare your records, then connect one event or hunt to what happened to the wildebeest.</p></header>
     <div class="sg-analysis">
-      <aside class="sg-panel sg-question"><h3>Your game evidence</h3><div id="sg-analysis-data"></div><button type="button" class="sg-plain" data-page="evidence">View full event history</button></aside>
-      <div class="sg-panel sg-question">
-        <label for="sg-question">Our investigation question <span class="sg-optional">(optional)</span></label><input id="sg-question" maxlength="240" placeholder="How does group size affect the result of a hunt?">
-        <label for="sg-evidence-choice">1. Choose one recorded event or hunt.</label><select id="sg-evidence-choice"><option value="">Choose evidence</option></select>
-        <p class="sg-selected" id="sg-selected"></p>
-        <label for="sg-claim">2. How did the event affect the wildebeest? Explain using the numbers.</label><textarea id="sg-claim" rows="2" maxlength="750"></textarea>
-        <label for="sg-limits">3. What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="2" maxlength="750"></textarea>
-        <button id="sg-download" type="button" class="sg-cta" aria-describedby="sg-download-status">Download evidence and responses</button>
+      <div class="sg-panel sg-question sg-analysis-work">
+        <nav class="sg-answer-steps" aria-label="Analysis prompts">
+          <button type="button" class="sg-plain" data-answer-step="evidence" aria-current="step">1 · Choose</button>
+          <button type="button" class="sg-plain" data-answer-step="claim">2 · Explain</button>
+          <button type="button" class="sg-plain" data-answer-step="limits">3 · Test again</button>
+        </nav>
+        <section class="sg-analysis-source" aria-labelledby="sg-analysis-source-title">
+          <h3 id="sg-analysis-source-title">Event and hunt records</h3>
+          <label for="sg-evidence-choice">Record for your explanation</label>
+          <select id="sg-evidence-choice"><option value="">Choose a record</option></select>
+          <p id="sg-analysis-record-note" class="sg-selected"></p>
+          <div id="sg-selected"></div>
+        </section>
+        <section class="sg-answer-panel" data-answer-panel="evidence">
+          <details id="sg-question-details" class="sg-note-disclosure"><summary>Optional: add your investigation question</summary>
+            <label for="sg-question">Our investigation question</label><input id="sg-question" maxlength="240" placeholder="How does group size affect the result of a hunt?">
+          </details>
+        </section>
+        <section class="sg-answer-panel" data-answer-panel="claim" hidden>
+          <label for="sg-claim">How did the event affect the wildebeest? Explain using the numbers.</label><textarea id="sg-claim" rows="3" maxlength="750"></textarea>
+        </section>
+        <section class="sg-answer-panel" data-answer-panel="limits" hidden>
+          <label for="sg-limits">What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="3" maxlength="750"></textarea>
+        </section>
+        <div class="sg-answer-actions">
+          <button id="sg-answer-next" type="button" class="sg-plain" data-answer-step="claim">Next: Explain →</button>
+          <button id="sg-download" type="button" class="sg-cta" aria-describedby="sg-download-status">Download evidence and responses</button>
+        </div>
         <p id="sg-download-status" class="sg-download-status"></p>
         <details id="sg-download-fallback" class="sg-download-fallback" hidden>
           <summary>Copy evidence and responses instead</summary>
           <label for="sg-download-copy">Text to copy</label><textarea id="sg-download-copy" rows="5" readonly></textarea>
         </details>
       </div>
+      <aside class="sg-panel sg-question sg-analysis-evidence"><h3>Season totals</h3><div id="sg-analysis-data"></div></aside>
     </div>
   </section>
   <p class="sg-save-warning" id="sg-save-warning" hidden>This device has an unreadable or older game save. It was not replaced. Download that save before confirming a restart.</p>
@@ -214,4 +244,5 @@
 </footer>
 </body>
 </html>
+
 

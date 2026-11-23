@@ -46,6 +46,7 @@ You maintain **AP Bio Digital Lab Bench** ([biologylabbench.com](https://biology
   - Purposeful and smooth, at about 60 fps.
   - Respect `prefers-reduced-motion`; the final state must look complete without animation.
   - Never block the main thread for long. Draw offscreen work lazily, for example when it scrolls into view.
+- **Keep needed evidence beside the task.** In every new or revised activity, bring the relevant results, graphs, tables, or recorded observations into the Explain/Analyze step that uses them. Use compact summaries and optional full detail on phones as well as desktop; do not require students to go back to an earlier page or reveal the conclusion they are meant to develop.
 - **Delight serves learning.** Replays and timelapses, satisfying feedback on correct work, and a clear "Round complete" or "Game over" moment are welcome, but never at the cost of clarity or accuracy.
 
 ## Simulations and data

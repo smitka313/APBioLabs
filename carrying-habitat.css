@@ -1,0 +1,95 @@
+/* Carrying Capacity · Habitat challenge. No change to the grass model. */
+.cc-habitat-ui {--hab-edge:var(--line);display:grid;gap:.8rem;color:var(--ink);min-width:0;}
+.cc-habitat-ui p {margin:.28rem 0;}
+.cc-habitat-ui h3,.cc-habitat-ui h4 {margin:0 0 .32rem;color:var(--ink);}
+.cc-habitat-ui .cc-habitat-note {padding:.65rem .8rem;border-inline-start:.23rem solid var(--accent);background:var(--surface-2);font-size:.89rem;}
+.cc-habitat-notice {padding:.68rem .85rem;background:var(--warn-soft);color:var(--ink);border-inline-start:4px solid var(--warn);}
+.cc-habitat-setup,.cc-habitat-board,.cc-habitat-result {border:1px solid var(--hab-edge);border-radius:1rem;padding:clamp(.72rem,2vw,1.25rem);background:var(--surface);}
+.cc-habitat-setup {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.2rem;align-items:start;}
+.cc-habitat-form {display:grid;gap:.7rem;}
+.cc-habitat-form label {display:grid;gap:.22rem;font-weight:650;}
+.cc-habitat-form select {width:100%;min-width:0;min-height:44px;}
+.cc-habitat-ui button:disabled {cursor:not-allowed;}
+.cc-habitat-ui button:focus-visible,.cc-habitat-ui select:focus-visible {outline:3px solid var(--accent);outline-offset:2px;}
+.cc-habitat-ui .cc-habitat-eyebrow {color:var(--accent);font:700 .75rem/1.25 var(--f-mono,monospace);letter-spacing:.04em;text-transform:uppercase;}
+.cc-habitat-boardhead {display:flex;justify-content:space-between;align-items:start;gap:.45rem;flex-wrap:wrap;}
+#cc-habitat-pending {padding:.32rem .6rem;border:1px solid var(--hab-edge);border-radius:.55rem;background:var(--surface-2);font-variant-numeric:tabular-nums;font-size:.88rem;}
+#cc-habitat-instructions {font-size:.92rem;margin:.35rem 0 .65rem;}
+.cc-habitat-stations {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(.35rem,1vw,.72rem);}
+.cc-habitat-ui [data-habitat-resource="food"],.cc-habitat-ui [data-habitat-need="food"] {--hab-color:#315c36;--hab-fill:#e6f1df;--hab-border:#6c936c;}
+.cc-habitat-ui [data-habitat-resource="water"],.cc-habitat-ui [data-habitat-need="water"] {--hab-color:#244f79;--hab-fill:#e2eef8;--hab-border:#6a8db4;}
+.cc-habitat-ui [data-habitat-resource="shelter"],.cc-habitat-ui [data-habitat-need="shelter"] {--hab-color:#68491d;--hab-fill:#f5ead5;--hab-border:#ac894f;}
+[data-theme="dark"] .cc-habitat-ui [data-habitat-resource="food"],[data-theme="dark"] .cc-habitat-ui [data-habitat-need="food"] {--hab-color:#c0e6b6;--hab-fill:#233d2b;--hab-border:#82b287;}
+[data-theme="dark"] .cc-habitat-ui [data-habitat-resource="water"],[data-theme="dark"] .cc-habitat-ui [data-habitat-need="water"] {--hab-color:#c6e3f9;--hab-fill:#20374c;--hab-border:#8bb6d7;}
+[data-theme="dark"] .cc-habitat-ui [data-habitat-resource="shelter"],[data-theme="dark"] .cc-habitat-ui [data-habitat-need="shelter"] {--hab-color:#f3d9a3;--hab-fill:#473820;--hab-border:#cba767;}
+@media(prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) .cc-habitat-ui [data-habitat-resource="food"],:root:not([data-theme="light"]) .cc-habitat-ui [data-habitat-need="food"] {--hab-color:#c0e6b6;--hab-fill:#233d2b;--hab-border:#82b287;}
+  :root:not([data-theme="light"]) .cc-habitat-ui [data-habitat-resource="water"],:root:not([data-theme="light"]) .cc-habitat-ui [data-habitat-need="water"] {--hab-color:#c6e3f9;--hab-fill:#20374c;--hab-border:#8bb6d7;}
+  :root:not([data-theme="light"]) .cc-habitat-ui [data-habitat-resource="shelter"],:root:not([data-theme="light"]) .cc-habitat-ui [data-habitat-need="shelter"] {--hab-color:#f3d9a3;--hab-fill:#473820;--hab-border:#cba767;}
+}
+.cc-habitat-ui button[data-habitat-resource] {display:grid;place-items:center;align-content:start;gap:.12rem;min-width:0;min-height:5.75rem;padding:.46rem .2rem;border:2px solid var(--hab-border);border-radius:.72rem;background:var(--hab-fill);color:var(--hab-color);}
+.cc-habitat-ui button[data-habitat-resource]:hover,.cc-habitat-ui button[data-habitat-resource][data-over] {outline:3px solid var(--hab-color);outline-offset:-4px;}
+.cc-habitat-ui button[data-habitat-resource][data-empty="true"] {border-style:dashed;}
+.cc-habitat-ui .cc-habitat-stock {font-size:.79rem;line-height:1.25;font-weight:760;font-variant-numeric:tabular-nums;}
+.cc-habitat-stock small {font-size:inherit;font-weight:525;white-space:nowrap;}
+.cc-habitat-emblem {display:grid;place-items:center;width:2.02rem;height:2.02rem;border:1px solid currentColor;border-radius:50%;}
+.cc-habitat-emblem svg {width:1.21rem;height:1.21rem;}
+.cc-habitat-chips {display:flex;gap:.2rem;padding-top:.13rem;}
+.cc-habitat-chips i {display:block;width:.61rem;height:.51rem;background:currentColor;border:1px solid currentColor;border-radius:.12rem;}
+.cc-habitat-chips i[data-used="true"] {background:transparent;border-style:dashed;}
+.cc-habitat-messages {display:grid;gap:0;min-height:3.1rem;margin:.5rem 0 .4rem;align-content:center;}
+#cc-habitat-selection {margin:0;font-weight:650;font-size:.88rem;}
+.cc-habitat-ui .cc-habitat-status {margin:.05rem 0 0;color:var(--ink);font-size:.86rem;min-height:1.25em;}
+.cc-habitat-animals {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;}
+.cc-habitat-ui .cc-habitat-animal {display:grid;gap:.22rem;align-content:center;min-width:0;min-height:4.3rem;padding:.4rem .5rem;background:var(--surface-2);color:var(--ink);text-align:start;border:1px solid var(--line);border-radius:.6rem;}
+.cc-habitat-ui button.cc-habitat-animal {cursor:grab;touch-action:none;user-select:none;}
+.cc-habitat-ui button.cc-habitat-animal[aria-pressed="true"] {outline:3px solid var(--accent);outline-offset:-3px;background:var(--accent-soft);}
+.cc-habitat-beast {display:flex;align-items:center;gap:.23rem;font-size:.81rem;font-weight:800;line-height:1.18;}
+.cc-habitat-beast svg {width:1.55rem;height:1.15rem;flex:0 0 auto;}
+.cc-habitat-need {justify-self:start;display:inline-flex;align-items:center;gap:.23rem;padding:.15rem .32rem;border-radius:.35rem;background:var(--hab-fill);color:var(--hab-color);font-size:.73rem;font-weight:700;line-height:1.17;}
+.cc-habitat-need svg {flex:0 0 auto;width:.9rem;height:.9rem;}
+.cc-habitat-ui .cc-habitat-matched {border-style:dashed;border-color:var(--hab-border);}
+.cc-habitat-controls {display:flex;align-items:center;justify-content:space-between;gap:.4rem .8rem;flex-wrap:wrap;margin-top:.75rem;}
+.cc-habitat-controls p {font-size:.88rem;}
+.cc-habitat-reset {display:flex;justify-content:flex-start;}
+.cc-habitat-ui button,.cc-habitat-ui select {min-height:44px;}
+.cc-habitat-comparison {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin:.6rem 0;}
+.cc-habitat-outcome {padding:.7rem;border:1px solid var(--line);background:var(--surface-2);border-radius:.65rem;}
+.cc-habitat-outcome dl {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem;margin:.5rem 0;}
+.cc-habitat-outcome dl div {padding:.42rem .25rem;text-align:center;border-radius:.42rem;background:var(--surface);}
+.cc-habitat-outcome dt {font-size:.72rem;color:var(--muted);line-height:1.23;}
+.cc-habitat-outcome dd {margin:0;font-weight:800;font-size:1.28rem;font-variant-numeric:tabular-nums;}
+.cc-habitat-outcome p {font-size:.88rem;}
+.cc-habitat-outcome .cc-habitat-unmatched {font-weight:650;}
+.cc-habitat-result .cc-habitat-lesson {margin:.65rem 0;padding:.65rem .75rem;background:var(--accent-soft);border-radius:.5rem;}
+.cc-habitat-ghost {position:fixed;pointer-events:none;z-index:50000;transform:translate(-50%,-95%);padding:.4rem .65rem;background:var(--accent);color:var(--accent-ink);border-radius:.5rem;box-shadow:0 5px 12px #0005;font-weight:700;white-space:nowrap;}
+@media(prefers-reduced-motion:no-preference) {
+  .cc-habitat-ui [data-just-match] {animation:cc-habitat-settle .22s ease-out;}
+  @keyframes cc-habitat-settle {from {transform:translateY(-3px);box-shadow:inset 0 0 0 2px var(--accent);} to {transform:translateY(0);box-shadow:inset 0 0 0 0 var(--accent);}}
+}
+@media(max-width:750px) {.cc-habitat-setup,.cc-habitat-comparison {grid-template-columns:1fr;gap:.65rem;}}
+@media(max-width:500px) {.cc-habitat-animals {grid-template-columns:repeat(2,minmax(0,1fr));}.cc-habitat-ui .cc-habitat-stock {font-size:.73rem;}.cc-habitat-ui button[data-habitat-resource] {min-height:5.5rem;}}
+/* Keep the drop row in reach while students work down the cards. Preserving
+   scroll clearance on each animal prevents focus or automation from hiding it. */
+@media(max-width:500px) and (min-height:540px) {
+  .cc-habitat-stations {position:sticky;top:.15rem;z-index:2;background:var(--surface);padding-block:.18rem .3rem;}
+  .cc-habitat-animals button {scroll-margin-block-start:7rem;}
+}
+
+/* Resource illustrations double as consistent, non-color cues on cards,
+   stations and the case clue sheet. */
+.cc-habitat-clues{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.35rem;margin:.45rem 0}
+.cc-habitat-clues>div{display:grid;align-content:start;gap:.14rem;padding:.42rem;border:1px solid var(--hab-border);border-radius:.52rem;background:var(--hab-fill);color:var(--hab-color);font-size:.76rem;line-height:1.28;overflow-wrap:anywhere}
+.cc-habitat-clues svg{width:1.75rem;height:1.6rem}
+.cc-habitat-ui .cc-habitat-need{display:grid;grid-template-columns:2.45rem minmax(0,1fr);align-items:center;justify-self:stretch;gap:.35rem;padding:.25rem .42rem}
+.cc-habitat-ui .cc-habitat-need svg{width:2.3rem;height:2.05rem}
+.cc-habitat-need small{display:block;font-size:.72rem}
+.cc-habitat-need strong{font-size:.87rem}
+.cc-habitat-ui .cc-habitat-emblem{border:0;width:2.4rem;height:2.1rem}
+.cc-habitat-ui .cc-habitat-emblem svg{width:2.2rem;height:2rem}
+.cc-habitat-arrivals{min-height:1.2em;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.18rem;font-size:.68rem}
+.cc-habitat-arrivals span:has(+span),.cc-habitat-arrivals span[data-just-match]{font-weight:800}
+.cc-habitat-ui button[data-habitat-preview]:not(.theme-btn),.cc-habitat-ui button[data-habitat-target]:not(.theme-btn){box-shadow:inset 0 0 0 2px var(--hab-color)}
+.cc-habitat-ui button[data-habitat-target]:not(.theme-btn){border-style:double;border-width:3px}
+.cc-habitat-ui button[data-habitat-spotlit]:not(.theme-btn){outline:2px solid var(--hab-color);outline-offset:-3px}
+@media(max-width:500px){.cc-habitat-animals button{scroll-margin-block-start:8.5rem}}

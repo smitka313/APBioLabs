@@ -55,15 +55,38 @@ test('legacy notes deduplicate idempotently and preserve distinct student writin
   assert.match(migrationProgress(save).summary,/1 of 12 months with notes.*3 notebook entries/);
 });
 test('source image and all local activity dependencies exist',()=>{const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');for(const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)){if(/^https?:/.test(match[1])||match[1]==='openscied-dashboard.html')continue;assert.ok(fs.existsSync(path.join(__dirname,'..',match[1])),match[1]);}assert.ok(!html.includes('Answer Key'));});
-test('published evidence charts disable the toolkit simulation label',()=>{
+function chartFixture(collection,open=true){
   const ui=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
-  const fn=ui.slice(ui.indexOf('  function renderCharts()'),ui.indexOf('  function download('));
+  const fn=ui.slice(ui.indexOf('  function renderCharts()'),ui.indexOf('  function reportText('));
+  const captures=[], disclosure={open};
+  const context={
+    L,state:{page:'evidence',collection,measure:'fat'},
+    $(selector){assert.equal(selector,'#health-chart-disclosure');return disclosure;},
+    ANNUAL:[{region:'South',rain:1160,occupancy:52},{region:'West',rain:1180,occupancy:26},{region:'North',rain:1310,occupancy:6}],
+    healthChart:null,occupancyChart:null,Lab:{chart(selector,options){captures.push(options);return {update(o){captures.push(o);}};}}
+  };
+  vm.createContext(context);
+  vm.runInContext(fn,context);
+  return {captures,disclosure,draw:()=>vm.runInContext('renderCharts();',context)};
+}
+test('published evidence charts disable the toolkit simulation label',()=>{
   for(const collection of ['cards','rainfall']){
-    const captures=[];const context={L,state:{page:'evidence',collection,measure:'fat'},ANNUAL:[{region:'South',rain:1160,occupancy:52},{region:'West',rain:1180,occupancy:26},{region:'North',rain:1310,occupancy:6}],healthChart:null,occupancyChart:null,Lab:{chart(selector,options){captures.push(options);return {update(o){captures.push(o);}};}}};
-    vm.runInNewContext(fn+'\nrenderCharts();',context);
+    const {captures,draw}=chartFixture(collection);
+    draw();
     assert.equal(captures.length,1);assert.equal(captures[0].simTag,false,collection+' uses source data, not simulation');
     assert.equal(captures[0].responsive,true,collection+' chart labels remain readable in narrow panels');
   }
+});
+test('the closed mobile health chart waits until open without suppressing annual evidence',()=>{
+  const cards=chartFixture('cards',false);
+  cards.draw();
+  assert.equal(cards.captures.length,0);
+  cards.disclosure.open=true;
+  cards.draw();
+  assert.equal(cards.captures.length,1);
+  const rainfall=chartFixture('rainfall',false);
+  rainfall.draw();
+  assert.equal(rainfall.captures.length,1);
 });
 
 test('April keeps the main herd range in the south despite the lesson’s wetter northern station', () => {
