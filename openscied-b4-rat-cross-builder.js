@@ -57,7 +57,7 @@
     const doc=host.ownerDocument, create=(tag,cls='',text='')=>{
       const item=doc.createElement(tag);item.className=cls;item.textContent=text;return item;
     };
-    let p=clean(progress), selected='', drag=null, mutedClickUntil=0, feedback='';
+    let p=clean(progress), selected='', gesture=null, feedback='';
     const shell=create('div','rg-cross-builder');
     shell.dataset.rgBuilder=pair.id;
     const instruction=create('p','rg-cross-instruction');
@@ -164,48 +164,63 @@
       if(complete(p))feedback+=' Cross complete.';
       render(keepFocus);onChange?.(p);say(feedback);return true;
     }
+    const controlAt=element=>element?.closest('[data-rg-source], [data-rg-target]');
+    function activate(control,keepFocus) {
+      if(!control||control.disabled||!shell.contains(control))return;
+      if(control.dataset.rgSource)choose(control.dataset.rgSource);
+      else if(control.dataset.rgTarget)place(selected,control.dataset.rgTarget,keepFocus);
+    }
     shell.addEventListener('click',event=>{
-      if(event.detail&&Date.now()<mutedClickUntil){event.preventDefault();return;}
-      const token=event.target.closest('[data-rg-source]');
-      if(token){choose(token.dataset.rgSource);return;}
-      const slot=event.target.closest('[data-rg-target]');
-      if(slot&&!slot.disabled)place(selected,slot.dataset.rgTarget,true);
+      // Pointer actions are handled on pointerup. A compatibility click may
+      // follow that pointerup even after the drop has rebuilt the board.
+      // Keyboard, assistive tech and button.click() still use native click.
+      if(event.detail>0||event.pointerType)return;
+      activate(controlAt(event.target),true);
     });
     shell.addEventListener('keydown',event=>{
       if(event.key==='Escape'&&selected){event.preventDefault();choose(selected);}
     });
     shell.addEventListener('pointerdown',event=>{
-      // A fresh deliberate pointer click must not inherit the drag's click guard.
-      mutedClickUntil=0;
-      const chip=event.target.closest('[data-rg-source]');
-      if(!chip||event.button!==0||event.isPrimary===false)return;
-      drag={id:event.pointerId,x:event.clientX,y:event.clientY,chip,key:chip.dataset.rgSource,moved:false};
-      try {chip.setPointerCapture(event.pointerId);} catch (_) {}
+      const control=controlAt(event.target);
+      if(!control||control.disabled||event.button!==0||event.isPrimary===false||gesture)return;
+      gesture={id:event.pointerId,x:event.clientX,y:event.clientY,control,key:control.dataset.rgSource,moved:false};
+      // Keep drag events stable on the same element, even across the replaced
+      // source/target buttons; the actual destination is hit-tested on up.
+      try {shell.setPointerCapture(event.pointerId);} catch (_) {}
     });
     shell.addEventListener('pointermove',event=>{
-      if(!drag||drag.id!==event.pointerId)return;
-      if(!drag.moved&&Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>7){
-        drag.moved=true;drag.chip.classList.add('is-dragging');
-        drag.ghost=create('span','rg-cross-source rg-cross-drag-ghost',drag.chip.textContent);
-        drag.ghost.setAttribute('aria-hidden','true');
-        Object.assign(drag.ghost.style,{position:'fixed',zIndex:'9999',pointerEvents:'none'});
-        shell.append(drag.ghost);
+      if(!gesture||gesture.id!==event.pointerId)return;
+      if(!gesture.moved&&Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>7){
+        gesture.moved=true;
+        if(gesture.key){
+          gesture.control.classList.add('is-dragging');
+          gesture.ghost=create('span','rg-cross-source rg-cross-drag-ghost',gesture.control.textContent);
+          gesture.ghost.setAttribute('aria-hidden','true');
+          Object.assign(gesture.ghost.style,{position:'fixed',zIndex:'9999',pointerEvents:'none'});
+          shell.append(gesture.ghost);
+        }
       }
-      if(drag.moved){
+      if(gesture.ghost){
         event.preventDefault();
-        drag.ghost.style.left=event.clientX+10+'px';
-        drag.ghost.style.top=event.clientY+10+'px';
+        gesture.ghost.style.left=event.clientX+10+'px';
+        gesture.ghost.style.top=event.clientY+10+'px';
       }
     });
-    function end(event,canceled=false){
-      if(!drag||drag.id!==event.pointerId)return;
-      const last=drag;drag=null;last.chip.classList.remove('is-dragging');last.ghost?.remove();
-      if(canceled||!last.moved)return;
-      mutedClickUntil=Date.now()+300;
-      const slot=doc.elementFromPoint(event.clientX,event.clientY)?.closest('[data-rg-target]');
-      if(!slot||!shell.contains(slot)){say('Drop on a parent or allele slot, or tap a chip and then a slot.');return;}
-      if(slot.disabled){say('Choose an open slot for this part of the cross.');return;}
-      place(last.key,slot.dataset.rgTarget,false);
+    function end(event,canceled=false) {
+      if(!gesture||gesture.id!==event.pointerId)return;
+      const last=gesture;
+      gesture=null;
+      last.control.classList.remove('is-dragging');last.ghost?.remove();
+      if(canceled)return;
+      const hit=controlAt(doc.elementFromPoint(event.clientX,event.clientY));
+      if(!last.moved){
+        if(hit===last.control)activate(hit,false);
+        return;
+      }
+      if(!last.key)return;
+      if(!hit?.dataset.rgTarget||!shell.contains(hit)){say('Drop on a parent or allele slot, or tap a chip and then a slot.');return;}
+      if(hit.disabled){say('Choose an open slot for this part of the cross.');return;}
+      place(last.key,hit.dataset.rgTarget,false);
     }
     shell.addEventListener('pointerup',event=>end(event));
     shell.addEventListener('pointercancel',event=>end(event,true));

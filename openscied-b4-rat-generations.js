@@ -19,7 +19,7 @@
   const percent=(n,d)=>d?new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(100*n/d)+'%':'Not defined';
   const fraction=(n,d)=>d?n+' / '+d+' ('+percent(n,d)+')':'Not defined';
   const selectionName={born:'Born',survived:'Survived'};
-  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',crosses:{}});
+  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',crosses:{},activePair:''});
   let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='';
   function decode(raw) {
     const s=JSON.parse(raw);
@@ -33,6 +33,7 @@
     for (const [key,n] of Object.entries(fields)) if(typeof s.person?.[key]==='string')safe.person[key]=tidy(s.person[key],n);
     if(own(METRICS,s.metric))safe.metric=s.metric;
     safe.crosses=B.cleanMap(s.crosses);
+    if(typeof s.activePair==='string'&&/^g[2-5]-pair[1-9][0-9]?$/.test(s.activePair))safe.activePair=s.activePair;
     return safe;
   }
   try {
@@ -118,10 +119,11 @@
     if(!crossList.length){host.append(node('p','No pairings have been recorded for this snapshot.'));return;}
     host.append(node('p',future?'Pairs ready to produce Generation '+target+'.':'Pairs that produced Generation '+target+'.'));
     const register=node('div','','rg-pair-list');host.append(register);
-    const focusId=crossList.some(p=>p.id===activePair)?activePair:crossList[0].id;
+    const requested=past?activePair:state.activePair;
+    const focusId=crossList.some(p=>p.id===requested)?requested:crossList[0].id;
     for(const [i,p] of crossList.entries()) {
       const b=button('Pair '+(i+1)+' · '+p.parents.map(parent=>parent.genotype).join(' × '),()=>{
-        activePair=p.id;show(p);for(const other of register.children)other.setAttribute('aria-pressed',String(other===b));
+        activePair=p.id;if(!past){state.activePair=p.id;save();}show(p);for(const other of register.children)other.setAttribute('aria-pressed',String(other===b));
       },{'data-rg-pair':p.id,'aria-pressed':String(p.id===focusId)},'rg-pair');
       register.append(b);
     }
@@ -130,7 +132,7 @@
         B.mount(box,{
           pair:p,progress:state.crosses[p.id],required:state.action===0,tokenUrl:TOKEN,
           announce:message=>announce(message,true),
-          onChange:progress=>{state.crosses[p.id]=progress;save();crossGate();}
+          onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();crossGate();}
         });
         if(crossList.some(pair=>pair.reused))box.append(node('p','The parent group was odd, so one parent is used in two pairings.','rg-muted'));
         return;
@@ -280,7 +282,7 @@
   function advance() {
     if(viewAction!==null){viewAction=null;activePair='';renderModel();$('#rg-next').focus({preventScroll:true});return;}
     if(model.done||!state.prediction||needsFirstCross())return;
-    model=M.step(model);state.action=model.step;activePair='';save();render();
+    model=M.step(model);state.action=model.step;activePair='';state.activePair='';save();render();
     announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
     if(model.done)$('#rg-model-analyze').focus({preventScroll:true});
   }

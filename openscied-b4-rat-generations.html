@@ -30,6 +30,7 @@
 <script>try{const t=localStorage.getItem("aplab:pref:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b4-rat-generations.css">
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to activity</a>
@@ -121,7 +122,8 @@
           <div><label for="rg-name">Name</label><input id="rg-name" type="text" autocomplete="name" maxlength="100"></div>
           <div><label for="rg-period">Class period</label><input id="rg-period" type="text" maxlength="24"></div>
         </fieldset>
-        <div class="rg-actions"><button class="btn btn--primary" type="button" id="rg-download">Download investigation</button><button class="btn" type="button" id="rg-copy">Copy investigation</button></div>
+        <p class="rg-muted">Your name, period and work stay in this browser unless you download or copy them.</p>
+    <div class="rg-actions"><button class="btn btn--primary" type="button" id="rg-download">Download investigation</button><button class="btn" type="button" id="rg-copy">Copy investigation</button></div>
       </div>
     </div>
   </section>
@@ -135,6 +137,7 @@
 <dialog id="rg-copy-dialog" aria-labelledby="rg-copy-heading"><h2 id="rg-copy-heading">Copy your investigation</h2><label for="rg-copy-text">Investigation report</label><textarea id="rg-copy-text" rows="11" readonly></textarea><div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-copy-select">Select report</button><button type="button" class="btn" data-rg-close>Close</button></div><p id="rg-copy-hint"></p></dialog>
 <footer class="site-footer"><div class="wrap wrap--wide gutter">
   <p><strong>Created by Robert Smitka.</strong> Original material licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>.</p>
+  <p>Analytics count page visits only.</p>
   <p>Companion to <a href="https://openscied.org/instructional-materials/b-4-natural-selection-evolution/">OpenSciEd High School Biology B.4 Lesson 3</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes: digital model with original artwork, recorded snapshots, graphs, and new evidence prompts. Independent, not affiliated with or endorsed by OpenSciEd.</p>
 </div></footer>
 <script src="lab.js"></script>

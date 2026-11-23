@@ -254,7 +254,9 @@ async function firstCross(page, row, cfg, seed, label) {
     await screenshot(page, label + '-cross-partial');
     await page.reload();
     await page.locator('#rg-model').waitFor({ state:'visible' });
-    await use(pair, cfg);
+    check(await pair.getAttribute('aria-pressed') === 'true' &&
+      await square.getAttribute('data-rg-builder') === chosen.id,
+      'reload returns directly to the same selected Punnett cross');
     check(compact(await placedTargets(page), partial) && (await save(page)).seed === seed &&
       (await save(page)).action === 0 && Boolean((await save(page)).crosses?.[chosen.id]) && await next.isDisabled(),
       'reload restores the exact partial cross without rerolling or advancing the colony');
@@ -286,7 +288,9 @@ async function firstCross(page, row, cfg, seed, label) {
   if (cfg.width === 1366) {
     await page.reload();
     await page.locator('#rg-model').waitFor({ state:'visible' });
-    await use(pair, cfg);
+    check(await pair.getAttribute('aria-pressed') === 'true' &&
+      await square.getAttribute('data-rg-builder') === chosen.id,
+      'reload returns directly to the same selected Punnett cross');
     check(await square.getAttribute('data-rg-ready') === 'true' && await next.isEnabled() &&
       compact(await page.locator('#rg-punnett [data-rg-cell]').evaluateAll(nodes =>
         nodes.map(node => node.dataset.rgCell || node.textContent.trim())), chosen.cells) &&
