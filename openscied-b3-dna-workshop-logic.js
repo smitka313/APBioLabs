@@ -15,8 +15,10 @@
   const RNA=frozen(['A','U','C','G']);
   const CHAIN=frozen(['Met','Ala','Phe','Stop']);
   const SORT=frozen(['copy-product','rna-product','chain-product']);
-  const PALETTES=frozen({dna:DNA,rna:RNA,amino:CHAIN,sort:SORT});
-  const TILE_LABELS=frozen({A:'A',T:'T',C:'C',G:'G',U:'U',Met:'Met · Methionine',Ala:'Ala · Alanine',
+  const COMPONENTS=frozen(['phosphate','sugar','base']);
+  const PALETTES=frozen({component:COMPONENTS,dna:DNA,rna:RNA,amino:CHAIN,sort:SORT});
+  const TILE_LABELS=frozen({phosphate:'Phosphate',sugar:'Deoxyribose (DNA sugar)',base:'Adenine (A)',
+    A:'A',T:'T',C:'C',G:'G',U:'U',Met:'Met · Methionine',Ala:'Ala · Alanine',
     Phe:'Phe · Phenylalanine',Stop:'Stop · no amino acid',
     'copy-product':'DNA → DNA','rna-product':'DNA → RNA','chain-product':'RNA → amino acid chain'});
   const TOY=frozen({
@@ -33,6 +35,7 @@
     {codon:'UAA',value:'Stop',label:'Stop · no amino acid',amino:null,stop:true}
   ].map(frozen));
   const SOURCES=frozen({
+    nucleotide:'https://www.genome.gov/genetics-glossary/Nucleotide',
     replication:'https://www.genome.gov/25520258/online-education-kit-1958-semiconservative-replication-of-dna',
     pairing:'https://www.ncbi.nlm.nih.gov/books/NBK26850/',
     transcription:'https://www.ncbi.nlm.nih.gov/books/NBK26887/',
@@ -56,7 +59,19 @@
   function make(id,title,rows,info){
     return frozen({id,title,rows:frozen(rows.map(r=>r.row)),slots:frozen(rows.flatMap(r=>r.slots)),...info});
   }
+  const NUCLEOTIDE=frozen({
+    nodes:frozen([
+      {id:'phosphate',slotId:'nucleotide-phosphate',label:'Phosphate',description:'The phosphate group attaches to the DNA sugar.'},
+      {id:'sugar',slotId:'nucleotide-sugar',label:'Deoxyribose (DNA sugar)',description:'This sugar is the part that both the phosphate and base attach to.'},
+      {id:'base',slotId:'nucleotide-base',label:'Adenine (A)',description:'Adenine is one example of a DNA base.'}
+    ].map(frozen)),
+    bonds:frozen([frozen(['phosphate','sugar']),frozen(['sugar','base'])])
+  });
   const STAGES=frozen([
+    make('nucleotide','Build one DNA nucleotide',NUCLEOTIDE.nodes.map(part=>
+      row(part.slotId,part.label,'component',null,[part.id],[0],{slotId:part.slotId})
+    ),{schematic:NUCLEOTIDE,hint:'The DNA sugar is in the middle. The phosphate and the base attach to the sugar.',
+       takeaway:'A DNA nucleotide has three parts: a phosphate group, a deoxyribose sugar, and one base. A is the base in this example.'}),
     make('pair','Pair the DNA bases',[
       originalRow('pair-upper','Original strand A',forward,TOY.coding),
       originalRow('pair-lower','Original strand B',reverse,TOY.template,[0,1,2,4])
@@ -114,7 +129,8 @@
       return {ok:false,error:'Choose an active position in this part of the workshop.',slot:null};
     if(!slot.choices.includes(value))return {ok:false,error:'That tile is not used in this part of the workshop.',slot};
     if(slot.expected!==value){
-      const hints={dna:'Look at the base across from this blank and use its DNA partner.',
+      const hints={component:'Match the part name to its slot. Both the phosphate and the base attach to the DNA sugar.',
+        dna:'Look at the base across from this blank and use its DNA partner.',
         rna:'Look at the DNA template base across from this blank. Remember that mRNA uses U, not T.',
         amino:'Read all three RNA letters in order and check the codon key. A stop signal is not an amino acid.',
         sort:'Read what goes in and what comes out. Match both to the name of the process.'};

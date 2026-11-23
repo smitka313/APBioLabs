@@ -16,7 +16,7 @@ const CASES = [
   { width:1366, height:768 },
   { width:1920, height:1080 }
 ];
-const CONTROL = ['build','copy','rna','chain','sort'];
+const CONTROL = ['nucleotide','build','copy','rna','chain','sort'];
 const tidy = value => (value || '').replace(/\s+/g,' ').trim();
 const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
 const button = (page, name) => page.locator('button[data-dw-go="' + name + '"]').first();
@@ -139,8 +139,9 @@ async function gesture(page, chip, well, input) {
 }
 
 const SAVE = 'aplab:openscied:b3-dna-workshop:v1';
-const MODEL_IDS = { build:'pair', copy:'copy', rna:'transcribe', chain:'translate', sort:'sort' };
+const MODEL_IDS = { nucleotide:'nucleotide', build:'pair', copy:'copy', rna:'transcribe', chain:'translate', sort:'sort' };
 const NOTES = {
+  nucleotide:'A phosphate and a base each attach to the DNA sugar in the nucleotide.',
   build:'The base pairing on one DNA strand helped me work out the opposite strand.',
   copy:'Each new DNA molecule kept one original strand.',
   rna:'The transcript was made from one DNA template strand.',
@@ -180,7 +181,7 @@ async function place(page, slot, value, input, label) {
 }
 const slotsOf = name => Model.stage(MODEL_IDS[name]).slots.map(item =>
   typeof item === 'string' ? Model.slot(item) : item);
-async function rejectFirstPair(page, first, input, label) {
+async function rejectFirstPair(page, first, input, label, kind='base') {
   const wrong=first.choices.find(piece=>piece!==first.expected);
   assert.ok(wrong,'the base slot offers a meaningful incorrect choice');
   await gesture(page,source(page,wrong),target(page,first.id),input);
@@ -188,7 +189,7 @@ async function rejectFirstPair(page, first, input, label) {
   check(await target(page,first.id).getAttribute('data-dw-placed') === null &&
     await page.locator('#dw-next').isDisabled() &&
     await feedback.isVisible() && tidy(await feedback.textContent()).length > 6,
-    label+' rejects a wrong base choice without filling the slot or unlocking the next step');
+    label+' rejects a wrong '+kind+' choice without filling the slot or unlocking the next step');
 }
 async function report(page) {
   check((await clipboard(page)).length === 0,'nothing writes private workshop notes to the clipboard during the activity');
@@ -245,6 +246,8 @@ const expectedRows = {
   rna:{ 'rna-template':DNA_B,'rna-product':MSG },
   chain:{ 'chain-codons':'AUG GCU UUU UAA','chain-product':'Met Ala Phe Stop' }
 };
+const moleculeArt = (tile,fragment) => tile.locator('.dw-molecule-icon use').evaluate((glyph,fragment)=>
+  glyph.getAttribute('href')?.endsWith('dna-workshop-molecules.svg#'+fragment),fragment);
 async function exactStage(page,name,slots,label) {
   check((await Promise.all(slots.map(slot => target(page,slot.id).getAttribute('data-dw-placed'))))
     .every((value,i)=>value===slots[i].expected),label+' '+name+' preserves placements in their exact positions');
@@ -255,6 +258,21 @@ async function exactStage(page,name,slots,label) {
       return [row.dataset.dwRow,items.join(spacing)];
     })));
     check(same(actual,expectedRows[name]),label+' '+name+' shows each base, codon, and placed product in strand order');
+  }
+  if(name==='build'||name==='copy'){
+    check(await moleculeArt(source(page,'A'),'nucleotide-dna-a'),
+      label+' '+name+' uses the drawn DNA nucleotide icon for A');
+  }else if(name==='rna'){
+    const anatomy=page.locator('#dw-anatomy');
+    check(await moleculeArt(source(page,'U'),'nucleotide-rna-u') &&
+      /DNA: deoxyribose/.test(await anatomy.innerText()) && /RNA: ribose/.test(await anatomy.innerText()) &&
+      await anatomy.locator('use[href$="#sugar-deoxyribose"]').count()===1 &&
+      await anatomy.locator('use[href$="#sugar-ribose"]').count()===1,
+      label+' RNA shows its distinct U icon and compares DNA sugar with RNA sugar visually');
+  }else if(name==='chain'){
+    check(await moleculeArt(source(page,'Met'),'amino-met')&&
+      await source(page,'Stop').locator('.dw-molecule-icon').count()===0,
+      label+' a molecule-shaped amino acid is distinct from the plain Stop instruction');
   }
   if(name==='copy'){
     const groups=await board(page).locator('[data-molecule]').evaluateAll(nodes=>nodes.map(node=>({
@@ -309,6 +327,73 @@ async function evidenceBySort(page,label) {
     label+' Sort carries the completed chain with its separate Stop signal');
 }
 
+async function nucleotidePieces(page,label) {
+  const vocabulary={phosphate:/phosphate/i,sugar:/deoxyribose|DNA sugar/i,base:/adenine/i};
+  const keys=Object.keys(vocabulary);
+  const fragments={phosphate:'phosphate',sugar:'sugar-deoxyribose',base:'base-a'};
+  const palette=page.locator('#dw-palette');
+  check(await palette.locator('button[data-dw-piece]').count()===3,
+    label+' the first board teaches three distinct parts instead of DNA letters alone');
+  await page.waitForFunction(()=>{
+    const icons=[...document.querySelectorAll('#dw-palette .dw-molecule-icon use')];
+    return icons.length===3&&icons.every(icon=>icon.getBBox().width>0&&icon.getBBox().height>0);
+  },undefined,{timeout:8000});
+  for(const part of keys){
+    const tile=source(page,part);
+    check(await tile.isVisible() && vocabulary[part].test(
+      (await tile.getAttribute('aria-label')||'')+' '+await tile.innerText()) &&
+      await tile.locator('svg').evaluate(icon=>icon.getBoundingClientRect().width>0&&icon.children.length>0) &&
+      await moleculeArt(tile,fragments[part]),
+      label+' '+part+' has visible molecule-shaped art and an explicit, accessible part name');
+  }
+}
+async function nucleotideBonds(page,placed,label) {
+  const map=board(page).locator('.dw-nucleotide-map');
+  check(await map.isVisible() && await map.locator('[data-dw-bond]').count()===2 &&
+    await map.locator('[data-dw-bond="phosphate-sugar"]').count()===1 &&
+    await map.locator('[data-dw-bond="sugar-base"]').count()===1,
+    label+' nucleotide’s schematic joins phosphate and base to sugar, never directly to one another');
+  check(await map.locator('[data-dw-bond]').evaluateAll((links,placed)=>links.every(link=>
+    (link.dataset.dwLinked==='true')===link.dataset.dwBond.split('-').every(part=>placed.includes(part))),placed),
+    label+' the drawing connects only components actually assembled: '+(placed.join(', ')||'none'));
+}
+async function legacyResume(browser,base) {
+  const size=CASES[2];
+  const context=await makeContext(browser,base,size);
+  try{
+    let oldProgress=Model.create();
+    for(const name of CONTROL.slice(1))for(const slot of slotsOf(name)){
+      oldProgress=Model.place(oldProgress,slot.id,slot.expected).progress;
+    }
+    const oldWriting='Before this update I matched the products of all three processes.';
+    const old={
+      v:1,step:'sort',progress:Model.serialize(oldProgress),actions:Object.keys(oldProgress.placed),
+      answers:{sort:oldWriting},person:{},lastVisitedAt:1700000000000
+    };
+    await context.addInitScript(({key,record,file})=>{
+      if(location.pathname==='/'+file&&!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(record));
+    },{key:SAVE,record:old,file:FILE});
+    const page=await context.newPage();
+    await page.goto(base+FILE+'#sort');
+    await stage(page,'nucleotide');
+    check(await button(page,'sort').isDisabled()&&same(savedPlacements(await readRecord(page)),oldProgress.placed),
+      'legacy v1 work retains all prior placements as the new first activity is offered');
+    for(const slot of slotsOf('nucleotide'))await place(page,slot.id,slot.expected,'keyboard','legacy resume');
+    const savedPlacementsAfter=savedPlacements(await readRecord(page));
+    check(await button(page,'sort').isEnabled()&&Object.entries(oldProgress.placed).every(([id,value])=>
+      savedPlacementsAfter[id]===value),
+      'completing the intro detaches no previously saved product');
+    check(await page.locator('#dw-next').getAttribute('data-dw-to')==='sort',
+      'the new first step offers to resume the original saved step');
+    await page.locator('#dw-next').press('Enter');
+    await stage(page,'sort');
+    check(await page.locator('#dw-response').inputValue()===oldWriting,
+      'legacy v1 session restores the existing Sort writing once the new intro is completed');
+    await evidenceBySort(page,'legacy resume');
+  }finally{
+    await context.close();
+  }
+}
 async function exercise(browser,base,size) {
   const context=await makeContext(browser,base,size);
   try {
@@ -318,19 +403,26 @@ async function exercise(browser,base,size) {
     const label=size.width+(size.dark?'-dark':'-light');
     await page.goto(base+FILE+(size.width===1366?'#chain':''));
     await page.getByRole('heading',{name:'DNA Workshop',level:1,exact:true}).waitFor();
-    await stage(page,'build');
-    check(await button(page,'build').isEnabled() &&
+    await stage(page,'nucleotide');
+    check(await page.locator('nav [data-dw-go]').count()===6 &&
+      tidy(await page.locator('#dw-stage-label').innerText())==='Step 1 of 6' &&
+      await button(page,'nucleotide').isEnabled() &&
       (await Promise.all(CONTROL.slice(1).map(name=>button(page,name).isDisabled()))).every(Boolean),
-      label+' opens for a novice with only the Build tab available, even from a direct link to a later step');
+      label+' opens for a novice with only the Nucleotide tab available, even from a direct link to a later step');
     await fits(page,'main, #dw-board, #dw-board [data-dw-slot]',label+' initial board');
-    await shot(page,label+'-starting-build');
+    await shot(page,label+'-starting-nucleotide');
     if(size.touch)await a11y(page,'#dw-activity',label+' starting board');
     const ordinary=size.touch?'tap':'keyboard';
     for(const [index,name] of CONTROL.entries()) {
       await stage(page,name);
       const slots=slotsOf(name);
       assert.ok(slots.length,'test fixture has active slots for '+name);
-      if(index<4)check(await page.locator('#dw-next').isDisabled(),label+' '+name+' starts with a completion gate');
+      if(index<CONTROL.length-1)check(await page.locator('#dw-next').isDisabled(),label+' '+name+' starts with a completion gate');
+      if(name==='nucleotide') {
+        await nucleotidePieces(page,label);
+        await nucleotideBonds(page,[],label);
+        await rejectFirstPair(page,slots[0],ordinary,label,'nucleotide component');
+      }
       if(name==='build')await rejectFirstPair(page,slots[0],ordinary,label);
       if(name==='sort') {
         await evidenceBySort(page,label);
@@ -340,9 +432,10 @@ async function exercise(browser,base,size) {
           !await page.locator('#dw-continue').isVisible(),label+' a wrong sort does not complete the workshop');
       }
       for(const [i,slot] of slots.entries()) {
-        const drag=name==='build'&&i===0;
+        const drag=(name==='nucleotide'||name==='build')&&i===0;
         const input=drag&&size.width===1366?'mouse':drag&&size.touch?'touch-drag':ordinary;
         await place(page,slot.id,slot.expected,input,label);
+        if(name==='nucleotide')await nucleotideBonds(page,slots.slice(0,i+1).map(item=>item.expected),label);
         if(name==='build'&&i===0&&size.width===1366) {
           await page.locator('#dw-undo').press('Enter');
           check(await target(page,slot.id).getAttribute('data-dw-placed')===null &&
@@ -362,7 +455,7 @@ async function exercise(browser,base,size) {
       await page.locator('#dw-response').fill(NOTES[name]);
       await fits(page,'main, #dw-board, #dw-board [data-dw-slot], #dw-response',label+' '+name+' completed board');
       await shot(page,label+'-'+name);
-      if(index<4) {
+      if(index<CONTROL.length-1) {
         check(await page.locator('#dw-next').isEnabled() && await button(page,CONTROL[index+1]).isEnabled(),
           label+' '+name+' unlocks exactly the next stage after the correct placements');
         check((await clipboard(page)).length===0,label+' all routine placements and writing leave the clipboard untouched');
@@ -403,6 +496,7 @@ async function exercise(browser,base,size) {
     browser=await chromium.launch(executablePath?{executablePath}:{});
     await fs.mkdir(OUT,{recursive:true});
     for(const size of CASES)await exercise(browser,server.url,size);
+    await legacyResume(browser,server.url);
     console.log('openscied-b3-dna-workshop-browser: '+checks+' checks passed');
   } finally {
     if(browser)await browser.close();

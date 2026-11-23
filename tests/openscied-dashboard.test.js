@@ -171,6 +171,10 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   const payload=JSON.parse(await s.blob().text());
   assert.deepEqual(payload.work,{[key]:raw});
   assert.equal(payload.responses['dna-workshop'].build,'One new strand.');
+  const primer=JSON.stringify({v:1,step:'nucleotide',progress:{v:1,placed:{'nucleotide-sugar':'deoxyribose'}},answers:{nucleotide:'Sugar, phosphate, and a base.'},lastVisitedAt:1800000001000});
+  const starter=setup(false,{[key]:primer});
+  assert.equal(starter.el('#dna-workshop-open').href,'openscied-b3-dna-workshop.html#nucleotide');
+  assert.equal(starter.el('#dna-workshop-progress').textContent,'1 piece placed · 1 response saved');
 });
 
 test('Unit 4 publishes the Hawksbeard Wind Lab, leaving only Unit 5 under Coming soon', () => {

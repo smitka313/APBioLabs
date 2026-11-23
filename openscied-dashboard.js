@@ -188,7 +188,7 @@
   // DNA Copying, p53 & Gene Expression (Lessons 5-6): the activity saves the ids of every written response; the fallback counts
   // any written text field in older or partial saves.
   const DNA_SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain', 'expression', 'sense6', 'wrapup'];
-  function dnaWorkshopResponseIds() { return ['build','copy','rna','chain','sort']; }
+  function dnaWorkshopResponseIds() { return ['nucleotide','build','copy','rna','chain','sort']; }
   function dnaWorkshopProgress(raw) {
     const empty={started:false,section:'',visited:0,summary:'Not started'};
     let s;try {s=JSON.parse(raw);}catch (_){return empty;}
@@ -197,7 +197,7 @@
     const placements=Object.values(s.progress.placed).filter(v=>typeof v==='string'&&v.length>0).length;
     const n=dnaWorkshopResponseIds().filter(id=>written(s.answers||{},id)).length;
     if(!placements&&!n)return empty;
-    return {started:true,section:['build','copy','rna','chain','sort'].includes(s.step)?s.step:'build',
+    return {started:true,section:['nucleotide','build','copy','rna','chain','sort'].includes(s.step)?s.step:'nucleotide',
       visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,
       summary:placements+' '+(placements===1?'piece':'pieces')+' placed'+(n?' · '+n+' '+(n===1?'response':'responses')+' saved':'')};
   }
@@ -313,6 +313,7 @@
     return { summary, started, section, visited };
   }
   function init() {
+    $('[data-ph="dashboard-identity"]')?.remove();
     Lab.identity.mount('#openscied-student-identity');
     const status = $('#openscied-results-status');
     const dialog = $('#clear-openscied-dialog');

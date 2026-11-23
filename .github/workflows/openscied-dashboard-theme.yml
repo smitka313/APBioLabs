@@ -1,0 +1,33 @@
+name: OpenSciEd dashboard theme
+on:
+  pull_request:
+    paths:
+      - 'openscied-dashboard.html'
+      - 'openscied-dashboard.css'
+      - 'tests/t131-openscied-dashboard-theme.js'
+      - '.github/workflows/openscied-dashboard-theme.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dashboard-theme-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-dashboard.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/t131-openscied-dashboard-theme.js
+        env:
+          OPENSCIED_DASHBOARD_SCREENSHOTS: artifacts/openscied-dashboard-theme
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-dashboard-theme-viewports
+          path: artifacts/openscied-dashboard-theme/
+          if-no-files-found: ignore

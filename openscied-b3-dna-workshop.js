@@ -5,24 +5,31 @@
   const $$=(selector,scope=document)=>[...scope.querySelectorAll(selector)];
   const E=id=>$('#dw-'+id);
   const KEY='aplab:openscied:b3-dna-workshop:v1';
-  const STEPS=['build','copy','rna','chain','sort'];
-  const LABELS={
+  const STEPS=['nucleotide','build','copy','rna','chain','sort'];
+  const SVG='http://www.w3.org/2000/svg', ICONS='assets/dna-workshop-molecules.svg';
+  const COMPONENTS={
+    phosphate:{label:'Phosphate',icon:'phosphate',short:'Phosphate'},
+    sugar:{label:'Deoxyribose (DNA sugar)',icon:'sugar-deoxyribose',short:'DNA sugar'},
+    base:{label:'Adenine (base A)',icon:'base-a',short:'Base A'}
+  };
+  const LABELS={...Object.fromEntries(Object.entries(COMPONENTS).map(([k,v])=>[k,v.label])),
     A:'A · adenine',T:'T · thymine',G:'G · guanine',C:'C · cytosine',U:'U · uracil',
     Met:'Methionine',Ala:'Alanine',Phe:'Phenylalanine',Stop:'Stop · no amino acid',
     'copy-product':'Two copies of DNA','rna-product':'One RNA message','chain-product':'An amino acid chain'
   };
   const LESSON={
-    build:{title:'Build DNA',task:'A DNA strand is a row of letter pieces called bases. Use the pairing key to fill the empty spaces across from the first strand.',prompt:'Choose one pair you added. Which two letters paired?',ready:'You built a two-strand DNA fragment.',hint:'Look at the DNA base directly across from this space and use the pairing key.'},
-    copy:{title:'Copy DNA',task:'The two original strands pull apart. Add the missing bases to build a new partner strand alongside each original.',prompt:'What is the same about the two DNA products? What is old and what is new in each?',ready:'Your two DNA products each have one original strand and one new strand.',hint:'Match each empty space to the base directly across from it on the original strand.'},
-    rna:{title:'Make RNA',task:'Use one DNA strand as the template. Fill the missing letters of the RNA message. RNA uses U instead of T.',prompt:'Point to one DNA template base. What letter did you put across from it in RNA?',ready:'You made one RNA message from one DNA template.',hint:'Use the DNA → RNA pairing key. This time your piece is RNA, not DNA.'},
-    chain:{title:'Build a chain',task:'A ribosome reads the RNA message in groups of three. Each group is a codon. Use the small key to place one piece under each codon.',prompt:'Which codon ends the message? What happens at that spot in the chain?',ready:'Your chain has three amino acids. Stop ends the message and adds no amino acid.',hint:'Read the three RNA letters above this spot from left to right. Find that group in the small key.'},
+    nucleotide:{title:'Assemble one nucleotide',task:'A nucleotide is one building block of DNA. Add a phosphate, a DNA sugar, and the base A to make one nucleotide.',prompt:'Which part connects directly to both the phosphate and the base?',ready:'You assembled one DNA nucleotide. Its sugar joins the phosphate and the base.',hint:'Find the spot named for that part. Phosphate and the base attach to the sugar, not directly to each other.'},
+    build:{title:'Build DNA',task:'Each shape is a whole nucleotide. The letter is its base. Use the base-pairing key to complete the strand.',prompt:'Choose one pair you added. Which two letters paired?',ready:'You built a two-strand DNA fragment.',hint:'Look at the DNA base directly across from this space and use the pairing key.'},
+    copy:{title:'Copy DNA',task:'The two original strands pull apart. Add the missing DNA nucleotides to build a new partner strand alongside each original.',prompt:'What is the same about the two DNA products? What is old and what is new in each?',ready:'Your two DNA products each have one original strand and one new strand.',hint:'Match each empty space to the base directly across from it on the original strand.'},
+    rna:{title:'Make RNA',task:'Use one DNA strand as the template. Fill the missing RNA nucleotides. RNA uses the sugar ribose, and its bases include U instead of T.',prompt:'Point to one DNA template base. What letter did you put across from it in RNA?',ready:'You made one RNA message from one DNA template.',hint:'Use the DNA → RNA pairing key. This time your piece is RNA, not DNA.'},
+    chain:{title:'Build a chain',task:'A ribosome reads the RNA message in groups of three bases, called codons. Use the key to place an amino acid under each codon, or Stop.',prompt:'Which codon ends the message? What happens at that spot in the chain?',ready:'Your chain has three amino acids. Stop ends the message and adds no amino acid.',hint:'Read the three RNA letters above this spot from left to right. Find that group in the small key.'},
     sort:{title:'Sort the steps',task:'Match a product to each process. Copying DNA prepares for cell division. Making RNA and reading it are two different steps that can build a chain.',prompt:'A classmate says, “Copying DNA makes a chain.” Use two products from your workshop to correct them.',ready:'Workshop complete. You matched each process with what it makes.',hint:'Compare this step with the product you made earlier. Your completed evidence is beside the board.'}
   };
   const DISCIPLINE={build:'DNA letter',copy:'DNA letter',rna:'RNA letter',chain:'RNA codon',sort:'Process'};
   const node=(tag,text='',cls='')=>{const n=document.createElement(tag);n.textContent=text;if(cls)n.className=cls;return n;};
   function announce(message,tone='') {const el=E('feedback');el.textContent=message;el.dataset.state=tone;}
   if(!M){announce('The workshop did not load. Reload this page to try again.','error');return;}
-  const fresh=()=>({v:1,step:'build',progress:M.create(),actions:[],answers:{},person:{},lastVisitedAt:0});
+  const fresh=()=>({v:1,step:'nucleotide',progress:M.create(),actions:[],answers:{},person:{},lastVisitedAt:0});
   let state=fresh(), invalid=false, blocked=false, selected='', gesture=null, returnFocus=null;
   function decode(raw){
     const record=JSON.parse(raw);
@@ -36,7 +43,11 @@
     for(const slot of Object.keys(placed))if(!safe.actions.includes(slot))safe.actions.push(slot);
     for(const step of STEPS)if(typeof record.answers?.[step]==='string')safe.answers[step]=record.answers[step].slice(0,2400);
     for(const [key,size] of [['name',100],['period',24]])if(typeof record.person?.[key]==='string')safe.person[key]=record.person[key].slice(0,size);
-    safe.step=STEPS.includes(record.step)?record.step:'build';
+    safe.step=STEPS.includes(record.step)?record.step:'nucleotide';
+    // Earlier versions start at Build. Keep their products and remember where to
+    // take them back after the new first step, even through a partial-primer reload.
+    const resume=record.resumeAfterPrimer||(safe.step!=='nucleotide'&&!M.complete('nucleotide',restored)?safe.step:'');
+    if(resume!=='nucleotide'&&STEPS.includes(resume))safe.resumeAfterPrimer=resume;
     safe.lastVisitedAt=Number.isFinite(record.lastVisitedAt)?record.lastVisitedAt:0;
     return safe;
   }
@@ -52,14 +63,86 @@
   const available=step=>STEPS.includes(step)&&STEPS.slice(0,STEPS.indexOf(step)).every(complete);
   const pieceName=value=>LABELS[value]??String(value);
   const pieceText=(value,step)=>step==='sort'?pieceName(value):value==='Stop'?'Stop':value;
-  const pieceKind=step=>step==='chain'?'amino':step==='sort'?'product':'base';
+  const pieceKind=step=>step==='nucleotide'?'component':step==='chain'?'amino':step==='sort'?'product':'base';
   const slotElement=id=>$('[data-dw-slot="'+id+'"]',E('board'));
   function markPiece(n,value,step){
     const kind=pieceKind(step);
     n.dataset.pieceKind=kind;
     if(value&&kind==='base')n.dataset.base=value;
+    if(value&&kind==='component')n.dataset.component=value;
     if(value&&kind==='amino')n.dataset.amino=value;
     return n;
+  }
+  function svg(tag,attrs={}){
+    const el=document.createElementNS(SVG,tag);
+    for(const [key,value] of Object.entries(attrs))el.setAttribute(key,value);
+    return el;
+  }
+  function moleculeIcon(symbol,shape){
+    const icon=svg('svg',{class:'dw-molecule-icon','data-shape':shape,viewBox:'0 0 64 64','aria-hidden':'true',focusable:'false'});
+    icon.append(svg('use',{href:ICONS+'#'+symbol}));
+    return icon;
+  }
+  function represent(host,value,step,kind=''){
+    if(!value||value==='Stop'||step==='sort')return;
+    if(kind==='codon'){
+      const group=node('span','','dw-codon-icons');group.setAttribute('aria-hidden','true');
+      for(const letter of value)group.append(moleculeIcon('nucleotide-rna-'+letter.toLowerCase(),'codon'));
+      host.replaceChildren(group,node('span',value,'dw-chip-symbol'));return;
+    }
+    const shape=step==='nucleotide'?value:step==='chain'?'amino':step==='rna'?'rna':'dna';
+    const symbol=step==='nucleotide'?COMPONENTS[value].icon:step==='chain'?'amino-'+value.toLowerCase():'nucleotide-'+shape+'-'+value.toLowerCase();
+    const text=step==='nucleotide'?COMPONENTS[value].label:value;
+    host.replaceChildren(moleculeIcon(symbol,shape),node('span',text,'dw-chip-symbol'));
+  }
+  function renderNucleotide(host){
+    const info=model('nucleotide').schematic;
+    const diagram=node('div','','dw-nucleotide-map dw-nucleotide-assembly');
+    diagram.setAttribute('role','group');
+    diagram.setAttribute('aria-label','Assemble one DNA nucleotide. Three labeled spots.');
+    const bonds=svg('svg',{class:'dw-nucleotide-bonds',viewBox:'0 0 300 100',preserveAspectRatio:'none','aria-hidden':'true',focusable:'false'});
+    const positions=Object.fromEntries(info.nodes.map((item,index)=>[item.id,50+index*100]));
+    const slotIds=Object.fromEntries(info.nodes.map(item=>[item.id,item.slotId]));
+    for(const [from,to] of info.bonds){
+      const linked=!!state.progress.placed[slotIds[from]]&&!!state.progress.placed[slotIds[to]];
+      bonds.append(svg('line',{'data-dw-bond':from+'-'+to,'data-dw-linked':String(linked),x1:positions[from],x2:positions[to],y1:47,y2:47}));
+    }
+    diagram.append(bonds);
+    for(const part of info.nodes){
+      const item=node('div','','dw-nucleotide-node');item.dataset.component=part.id;
+      item.dataset.dwRow=part.slotId;
+      const value=state.progress.placed[part.slotId], title=COMPONENTS[part.id].label;
+      const b=markPiece(node('button',value?title:'＋','dw-slot dw-assembly-slot'),value,'nucleotide');
+      b.type='button';b.dataset.dwSlot=part.slotId;b.dataset.component=part.id;
+      b.setAttribute('aria-label',title+(value?' placed':', empty slot'));
+      if(value){b.dataset.dwPlaced=value;b.dataset.dwValue=value;represent(b,value,'nucleotide');}
+      item.append(b,node('span',COMPONENTS[part.id].short,'dw-component-label'));
+      diagram.append(item);
+    }
+    host.append(diagram);
+    const summary=node('p','The center sugar has one connection to phosphate and another to the base.','dw-nucleotide-takeaway');
+    summary.dataset.dwNucleotideCount=complete('nucleotide')?'1':'0';
+    host.append(summary);
+  }
+  function renderAnatomy(step){
+    const host=E('anatomy');host.replaceChildren();
+    host.hidden=!['build','copy','rna'].includes(step);
+    if(host.hidden)return;
+    const rna=step==='rna', lead=rna?'Two sugars':'A nucleotide, repeated';
+    const graphics=node('div','','dw-anatomy-icons');
+    function caption(symbol,shape,text){
+      const label=node('span','','dw-molecule-kind');label.append(moleculeIcon(symbol,shape),node('span',text));
+      graphics.append(label);
+    }
+    if(rna){
+      caption('sugar-deoxyribose','sugar','DNA: deoxyribose');
+      caption('sugar-ribose','sugar','RNA: ribose');
+    }else{
+      caption('nucleotide-dna-a','dna','DNA nucleotide A');
+    }
+    const note=rna?'The RNA strand has a sugar–phosphate backbone, too. Ribose has an extra oxygen–hydrogen group (OH) that DNA’s sugar lacks.':
+      'Sugar and phosphate form the strand’s backbone. The base letters stick out and pair across the two strands.';
+    host.append(node('strong',lead),graphics,node('p',note));
   }
   function orderRange(from,to){
     const direction=node('small','','dw-direction');
@@ -70,7 +153,7 @@
   }
   function makePalette(step,slots){
     const list=[...new Set(slots.flatMap(s=>s.choices))];
-    const lead=step==='sort'?'Products':step==='chain'?'Amino acids and stop':step==='rna'?'RNA bases':'DNA bases';
+    const lead=step==='nucleotide'?'Three parts':step==='sort'?'Products':step==='chain'?'Amino acids and stop':step==='rna'?'RNA bases':'DNA bases';
     const palette=E('palette');
     palette.replaceChildren(node('span',lead,'dw-palette-label'));
     for(const value of list){
@@ -78,6 +161,7 @@
       b.type='button';b.dataset.dwPiece=value;
       b.setAttribute('aria-label','Choose '+pieceName(value));
       b.setAttribute('aria-pressed',String(selected===value));
+      represent(b,value,step);
       if(step==='sort')b.append(node('small',M.TILE_LABELS[value],'dw-piece-name'));
       if(step==='chain'&&value!=='Stop')b.append(node('small',pieceName(value),'dw-piece-name'));
       palette.append(b);
@@ -85,7 +169,7 @@
   }
   function makeKey(step){
     const host=E('key');host.replaceChildren();
-    if(step==='sort'){host.hidden=true;return;}
+    if(['sort','nucleotide'].includes(step)){host.hidden=true;return;}
     host.hidden=false;
     const title=node('strong',step==='chain'?'Mini codon key':step==='rna'?'DNA → RNA pairing key':'DNA pairing key');
     const items=step==='chain'?M.CODONS.map(c=>c.codon+' → '+(c.stop?'Stop, no amino acid':c.value+(c.start?' (start)':''))):
@@ -128,11 +212,13 @@
         b.setAttribute('aria-label',name+(source?' across from '+source:'')+(value?', '+pieceName(value)+' placed':', empty slot'));
         if(value){b.dataset.dwPlaced=value;b.dataset.dwValue=value;}
         if(value==='Stop')b.dataset.stop='true';
+        represent(b,value,step);
         wrap.append(b);
       }else{
         const given=markPiece(node('span',String(value??''),'dw-given dw-fixed'),value,chipStep);
         if(value)given.dataset.dwValue=value;
         if(isCodonRow){delete given.dataset.base;given.dataset.pieceKind='codon';given.dataset.codon=value;}
+        represent(given,value,step==='rna'&&row.kind==='dna'?'build':chipStep,row.kind);
         given.setAttribute('role','img');
         given.setAttribute('aria-label',(step==='rna'&&row.kind==='dna'?'Template DNA letter':DISCIPLINE[step])+' position '+(base.index+1)+': '+(value??'empty'));
         wrap.append(given);
@@ -144,7 +230,8 @@
     const data=model(step);const strands=E('strands');
     E('board').dataset.currentStage=step;
     strands.replaceChildren();
-    if(step==='copy'){
+    if(step==='nucleotide'){renderNucleotide(strands);}
+    else if(step==='copy'){
       for(const [i,pair] of [data.rows.slice(0,2),data.rows.slice(2,4)].entries()){
         const group=node('section','','dw-molecule');
         group.dataset.molecule='daughter-'+(i===0?'a':'b');
@@ -159,14 +246,16 @@
       count.dataset.dwChainCount=String(amino.length);
       strands.append(count);
     }
-    makePalette(step,data.slots);makeKey(step);
+    makePalette(step,data.slots);makeKey(step);renderAnatomy(step);
   }
   function evidence(step){
     const data=model(step);
     const rows=data.rows.map(row=>{
       const values=row.bases.map(base=>M.getValue(row,base.index,state.progress));
       let result;
-      if(row.kind==='amino') {
+      if(row.kind==='component') {
+        result=values[0]?pieceName(values[0])+' connected':'Not placed yet';
+      }else if(row.kind==='amino') {
         const amino=values.filter(v=>v&&v!=='Stop').map(pieceName);
         result=amino.length?amino.join(' → '):'No amino acids placed yet';
         if(values.includes('Stop'))result+='; Stop ends the chain (adds no amino acid)';
@@ -213,12 +302,14 @@
       const next=b.dataset.dwGo;b.disabled=!available(next);
       if(next===step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
     }
-    const onward=STEPS[index+1];
+    const resume=step==='nucleotide'&&state.resumeAfterPrimer&&available(state.resumeAfterPrimer)?state.resumeAfterPrimer:'';
+    const onward=resume||STEPS[index+1];
     E('next').hidden=!onward;
     E('next').disabled=!onward||!complete(step);
-    if(onward) E('next').textContent='Next: '+LESSON[onward].title;
+    E('next').dataset.dwTo=onward||'';
+    if(onward) E('next').textContent=(resume?'Resume: ':'Next: ')+LESSON[onward].title;
     E('continue').hidden=step!=='sort'||!complete('sort');
-    E('undo').disabled=right===0||STEPS.slice(index+1).some(id=>model(id).slots.some(slot=>Object.hasOwn(state.progress.placed,slot.id)));
+    E('undo').disabled=right===0||step!=='nucleotide'&&STEPS.slice(index+1).some(id=>model(id).slots.some(slot=>Object.hasOwn(state.progress.placed,slot.id)));
   }
   function render(){
     const i=STEPS.indexOf(state.step), lesson=LESSON[state.step];
@@ -231,7 +322,7 @@
   }
   function goto(step,{focus=true,persist=true}={}){
     if(!available(step))return false;
-    state.step=step;selected='';E('board').classList.remove('has-selection');render();
+    state.step=step;if(step!=='nucleotide')delete state.resumeAfterPrimer;selected='';E('board').classList.remove('has-selection');render();
     announce(complete(step)?LESSON[step].ready:'',complete(step)?'success':'');
     if(location.hash!=='#'+step)history.replaceState(null,'','#'+step);
     if(persist&&(state.actions.length||state.lastVisitedAt))save();
@@ -308,7 +399,7 @@
   const controlAt=el=>el?.closest('[data-dw-piece],[data-dw-slot],#dw-next,#dw-undo');
   function activate(control,keyboard){
     if(!control||!mouseShell.contains(control)||control.disabled)return;
-    if(control===E('next'))goto(STEPS[STEPS.indexOf(state.step)+1]);
+    if(control===E('next'))goto(control.dataset.dwTo);
     else if(control===E('undo'))undo();
     else if(control.dataset.dwPiece)choose(control.dataset.dwPiece);
     else if(control.dataset.dwSlot)place(selected,control.dataset.dwSlot,keyboard);
@@ -336,6 +427,7 @@
       if(gesture.value){
         gesture.control.classList.add('is-dragging');
         const ghost=markPiece(node('span',pieceText(gesture.value,state.step),'dw-piece dw-drag-ghost'),gesture.value,state.step);
+        represent(ghost,gesture.value,state.step);
         ghost.setAttribute('aria-hidden','true');
         Object.assign(ghost.style,{position:'fixed',zIndex:'20',pointerEvents:'none'});
         mouseShell.append(ghost);gesture.ghost=ghost;
@@ -382,11 +474,11 @@
     E('record').open=false;E('record').hidden=true;
     if(blocked)E('save').textContent='Browser storage is unavailable. The open worksheet was reset.';
     else E('save').textContent='Workshop cleared on this device.';
-    E('reset-dialog').close();returnFocus=E('title');goto('build',{persist:false});
+    E('reset-dialog').close();returnFocus=E('title');goto('nucleotide',{persist:false});
   });
   window.addEventListener('hashchange',()=>{if(!goto(location.hash.slice(1),{focus:false}))goto(state.step,{focus:false,persist:false});});
   const first=location.hash.slice(1);
-  goto(available(first)?first:available(state.step)?state.step:'build',{focus:false,persist:false});
+  goto(available(first)?first:available(state.step)?state.step:'nucleotide',{focus:false,persist:false});
   E('save').textContent=invalid?'A previous record is preserved. Download this record before leaving or choose Start over to replace it.':
     blocked?'Browser storage is unavailable. Download or copy your work before leaving.':
     state.lastVisitedAt?'Work saved on this device.':'Placements and writing save here as you work.';

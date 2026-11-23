@@ -111,3 +111,40 @@ test('placements only fill real slots, preserve earlier state, and restore safel
     assert.equal(L.restore(bad),null);
   }
 });
+
+test('nucleotide is the first step, with three separate active components and sugar as the only connector',()=>{
+  const s=L.stage('nucleotide');
+  assert.deepEqual(L.STAGES.map(x=>x.id),['nucleotide','pair','copy','transcribe','translate','sort']);
+  assert.deepEqual(s.slots.map(x=>[x.id,x.expected]),[
+    ['nucleotide-phosphate','phosphate'],['nucleotide-sugar','sugar'],['nucleotide-base','base']
+  ]);
+  assert.deepEqual(s.schematic.nodes.map(x=>[x.id,x.slotId]),s.slots.map(x=>[x.expected,x.id]));
+  assert.deepEqual(s.schematic.bonds,[['phosphate','sugar'],['sugar','base']]);
+  assert.equal(s.schematic.nodes.find(x=>x.id==='sugar').label,'Deoxyribose (DNA sugar)');
+  assert.equal(s.schematic.nodes.find(x=>x.id==='base').label,'Adenine (A)');
+  let p=L.create();
+  assert.equal(L.complete('nucleotide',p),false);
+  for(const [i,slot] of s.slots.entries()){
+    assert.equal(L.getValue(slot.row,0,p),null,'every component remains unplaced until the student places it');
+    for(const choice of slot.choices.filter(c=>c!==slot.expected)){
+      const wrong=L.place(p,slot.id,choice);
+      assert.equal(wrong.ok,false);
+      assert.equal(wrong.progress,p);
+    }
+    p=place(p,slot.id,slot.expected);
+    assert.equal(L.complete('nucleotide',p),i===2);
+  }
+  assert.equal(L.check('nucleotide','nucleotide-base','A').ok,false,'a loose base letter is not the component tile');
+});
+
+test('earlier v1 saves retain completed later steps while the new nucleotide step is empty',()=>{
+  const legacy={v:1,placed:{'pair-lower-0':'T','pair-lower-1':'A','pair-lower-2':'C','pair-lower-4':'G','copy-daughter-a-new-2':'C','chain-product-3':'Stop'}};
+  const existing=L.restore(JSON.stringify(legacy));
+  assert.deepEqual(L.serialize(existing),legacy);
+  assert.equal(L.complete('pair',existing),true);
+  assert.equal(L.complete('nucleotide',existing),false);
+  const updated=solve('nucleotide',existing);
+  assert.equal(L.complete('nucleotide',updated),true);
+  for(const [id,value] of Object.entries(legacy.placed))assert.equal(updated.placed[id],value);
+  assert.equal(L.restore({v:1,placed:{'nucleotide-sugar':'base'}}),null);
+});

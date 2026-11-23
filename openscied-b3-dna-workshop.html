@@ -43,27 +43,29 @@
     <div>
       <p class="eyebrow">Unit 3 · Supplemental practice · 15–20 minutes</p>
       <h1>DNA Workshop</h1>
-      <p>Build a small DNA message, copy it, and see how cells use a message to build an amino acid chain.</p>
+      <p>Start with one DNA building block. Then build a small DNA message, copy it, and use it to make an amino acid chain.</p>
     </div>
     <img class="dw-step-art" src="assets/dna-workshop-preview.svg" width="960" height="600" alt="">
   </header>
   <nav class="dw-stage-nav" aria-label="Workshop steps">
-    <button type="button" data-dw-go="build" aria-current="step"><span aria-hidden="true">1</span> Build DNA</button>
-    <button type="button" data-dw-go="copy" disabled><span aria-hidden="true">2</span> Copy DNA</button>
-    <button type="button" data-dw-go="rna" disabled><span aria-hidden="true">3</span> Make RNA</button>
-    <button type="button" data-dw-go="chain" disabled><span aria-hidden="true">4</span> Build a chain</button>
-    <button type="button" data-dw-go="sort" disabled><span aria-hidden="true">5</span> Sort the steps</button>
+    <button type="button" data-dw-go="nucleotide" aria-current="step"><span aria-hidden="true">1</span> Nucleotide</button>
+    <button type="button" data-dw-go="build" disabled><span aria-hidden="true">2</span> Build DNA</button>
+    <button type="button" data-dw-go="copy" disabled><span aria-hidden="true">3</span> Copy DNA</button>
+    <button type="button" data-dw-go="rna" disabled><span aria-hidden="true">4</span> Make RNA</button>
+    <button type="button" data-dw-go="chain" disabled><span aria-hidden="true">5</span> Build a chain</button>
+    <button type="button" data-dw-go="sort" disabled><span aria-hidden="true">6</span> Sort the steps</button>
   </nav>
   <noscript><p>This activity needs JavaScript to place pieces and save your work.</p></noscript>
   <section id="dw-activity" class="dw-activity" aria-labelledby="dw-title">
     <div class="dw-heading">
-      <div><p id="dw-stage-label" class="eyebrow">Step 1 of 5</p><h2 id="dw-title" tabindex="-1">Build DNA</h2></div>
+      <div><p id="dw-stage-label" class="eyebrow">Step 1 of 6</p><h2 id="dw-title" tabindex="-1">Assemble one nucleotide</h2></div>
       <p id="dw-progress"></p>
     </div>
     <div class="dw-layout">
-      <section id="dw-board" class="dw-board" data-current-stage="build" aria-labelledby="dw-board-title">
-        <header class="dw-board-header"><h3 id="dw-board-title">Workbench</h3><p id="dw-task">Fill the empty spots to build the other DNA strand.</p></header>
+      <section id="dw-board" class="dw-board" data-current-stage="nucleotide" aria-labelledby="dw-board-title">
+        <header class="dw-board-header"><h3 id="dw-board-title">Workbench</h3><p id="dw-task">A nucleotide is one building block of DNA. Connect phosphate, DNA sugar, and a base.</p></header>
         <div id="dw-key" class="dw-key"></div>
+        <div id="dw-anatomy" class="dw-anatomy" hidden></div>
         <div class="dw-toolbox">
           <div id="dw-palette" class="dw-palette" role="group" aria-label="Pieces to place"></div>
           <p id="dw-input-help" class="dw-input-help">Drag a piece to a space. Or tap a piece, then a space. With a keyboard, use Tab and Enter or Space.</p>
@@ -72,7 +74,7 @@
         <p id="dw-feedback" class="dw-status" role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="dw-controls">
           <button type="button" class="btn" id="dw-undo" disabled>Undo last placement</button>
-          <button type="button" class="btn btn--primary" id="dw-next" disabled>Next: Copy DNA</button>
+          <button type="button" class="btn btn--primary" id="dw-next" disabled>Next: Build DNA</button>
           <a id="dw-continue" class="btn btn--primary" href="openscied-b3-dna-p53.html" hidden>Continue to DNA Copying, p53 &amp; Gene Expression</a>
         </div>
       </section>
@@ -84,7 +86,7 @@
         </section>
         <section class="dw-writing" aria-labelledby="dw-writing-title">
           <h3 id="dw-writing-title">Record what you notice</h3>
-          <label for="dw-response" id="dw-response-label">Use one base pair you added as evidence. Which two letters paired?</label>
+          <label for="dw-response" id="dw-response-label">Which part connects directly to both the phosphate and the base?</label>
           <textarea id="dw-response" rows="3" maxlength="2400" placeholder="Write a short observation…"></textarea>
         </section>
       </aside>
@@ -106,7 +108,7 @@
   </section>
   <details class="dw-sources">
     <summary>What this model shows and what it leaves out</summary>
-    <p>This workshop uses one short, fictional message, not an actual gene or a complete cell. The labeled ends and arrows show strand order. Matching tiles stand in for chemical interactions. Real cells use enzymes, and copying a fragment here represents a small part of copying DNA before a cell divides.</p>
+    <p>This workshop uses one short, fictional message, not an actual gene or a complete cell. The molecule shapes are simplified diagrams, not exact structures. The labeled ends and arrows show strand order. Matching tiles stand in for chemical interactions. Real cells use enzymes, and copying a fragment here represents a small part of copying DNA before a cell divides.</p>
     <p>We model RNA made from one DNA template, then a ribosome reading one RNA message in groups of three. We omit extra processing, the transfer molecules that bring amino acids, and the folding of a finished chain. A stop instruction does not add an amino acid.</p>
   </details>
   <footer class="dw-footer">

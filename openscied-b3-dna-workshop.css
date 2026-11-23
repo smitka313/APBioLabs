@@ -470,3 +470,201 @@
   .dw-slot[data-dw-placed=false] { border:1px dashed ButtonText; }
   .dw-piece[aria-pressed=true] { outline:3px solid Highlight; }
 }
+
+/* Molecule-shaped pieces. Labels remain part of the tiles; none of these
+   decorative symbols or color cues is needed to identify a target. */
+.dw-stage-nav { grid-template-columns:repeat(6,minmax(0,1fr)); }
+.dw-molecule-icon {
+  display:block;
+  flex:none;
+  width:1.65rem;
+  height:1.65rem;
+  overflow:visible;
+  pointer-events:none;
+}
+.dw-piece:has(>.dw-molecule-icon) {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.2rem;
+}
+.dw-piece:has(>.dw-molecule-icon[data-shape=amino]) {
+  display:grid;
+  grid-template-columns:auto auto;
+  gap:.02rem .22rem;
+}
+.dw-piece:has(>.dw-molecule-icon[data-shape=amino]) > .dw-molecule-icon { grid-row:1 / span 2; }
+.dw-piece:has(>.dw-molecule-icon[data-shape=amino]) > .dw-piece-name { grid-column:2; }
+.dw-piece[data-piece-kind=component] { font-size:.84rem; }
+.dw-molecule-icon:is([data-shape=phosphate],[data-shape=sugar],[data-shape=base]) { width:1.72rem; height:1.72rem; }
+.dw-track :is(.dw-given,.dw-slot):has(>.dw-molecule-icon) {
+  display:grid;
+  grid-template-rows:auto auto;
+  align-content:center;
+  justify-items:center;
+  gap:.01rem;
+  min-height:43px;
+}
+.dw-track :is(.dw-given,.dw-slot) > .dw-molecule-icon {
+  max-width:100%;
+  width:1.67rem;
+  height:1.05rem;
+}
+.dw-track :is(.dw-given,.dw-slot) > .dw-molecule-icon[data-shape=amino] { height:1.28rem; }
+.dw-molecule-icon[data-shape=dna],.dw-molecule-icon[data-shape=rna] { stroke:currentColor; }
+.dw-board[data-current-stage=chain] .dw-track[data-strand=chain] .dw-slot[data-stop=true] {
+  border:2px dashed var(--dw-g);
+  color:var(--dw-g);
+  background:var(--dw-g-paper);
+  border-radius:6px;
+}
+.dw-nucleotide-map {
+  position:relative;
+  isolation:isolate;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  width:min(100%,28rem);
+  aspect-ratio:3/1;
+  min-height:99px;
+  max-width:100%;
+  margin-inline:auto;
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:var(--bg);
+  background-image:radial-gradient(color-mix(in srgb,var(--dw-edge) 25%,transparent) .65px,transparent .75px);
+  background-size:11px 11px;
+}
+.dw-nucleotide-bonds {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+  color:var(--dw-edge);
+  fill:none;
+  pointer-events:none;
+}
+.dw-nucleotide-node {
+  position:relative;
+  z-index:1;
+  min-width:0;
+}
+.dw-nucleotide-node[data-component=phosphate] { --dw-component-ink:var(--dw-c); --dw-component-paper:var(--dw-c-paper); }
+.dw-nucleotide-node[data-component=sugar] { --dw-component-ink:var(--dw-a); --dw-component-paper:var(--dw-a-paper); }
+.dw-nucleotide-node[data-component=base] { --dw-component-ink:var(--dw-t); --dw-component-paper:var(--dw-t-paper); }
+.dw-nucleotide-map .dw-assembly-slot {
+  position:absolute;
+  inset-block-start:47%;
+  inset-inline-start:50%;
+  transform:translate(-50%,-50%);
+  display:grid;
+  place-content:center;
+  justify-items:center;
+  width:min(87%,6rem);
+  min-height:47px;
+  padding:.17rem .2rem;
+  text-align:center;
+  font-size:.78rem;
+  line-height:1.12;
+}
+.dw-nucleotide-map .dw-assembly-slot:has(>.dw-molecule-icon) {
+  border-color:var(--dw-component-ink,var(--accent));
+  background:var(--dw-component-paper,var(--accent-soft));
+  color:var(--dw-component-ink,var(--ink));
+}
+.dw-nucleotide-map .dw-assembly-slot > .dw-molecule-icon {
+  width:clamp(1.65rem,4.8vw,2.35rem);
+  height:clamp(1.55rem,4.6vw,2.18rem);
+}
+.dw-component-label {
+  position:absolute;
+  inset:78% .18rem auto;
+  min-width:0;
+  color:var(--muted);
+  font-size:.74rem;
+  font-weight:700;
+  line-height:1.12;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+.dw-shell .dw-nucleotide-takeaway {
+  padding:.32rem .47rem;
+  border-inline-start:3px solid var(--accent);
+  border-radius:4px;
+  background:var(--accent-soft);
+  color:var(--ink);
+  font-size:.84rem;
+}
+.dw-molecule-kind { font-size:.75rem; color:var(--muted); }
+@media (max-width:590px) {
+  .dw-stage-nav { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .dw-stage-nav button { min-height:32px; }
+  .dw-stage-nav button span { display:inline-grid; margin:0 .16rem 0 0; padding:0; }
+  .dw-track :is(.dw-given,.dw-slot):has(>.dw-molecule-icon) { min-height:37px; }
+  .dw-track :is(.dw-given,.dw-slot) > .dw-molecule-icon { width:100%; height:.91rem; }
+  .dw-track :is(.dw-given,.dw-slot) > .dw-molecule-icon[data-shape=amino] { height:1.1rem; }
+  .dw-nucleotide-map .dw-assembly-slot { min-height:42px; font-size:.73rem; }
+  .dw-nucleotide-map .dw-assembly-slot > .dw-molecule-icon { width:1.65rem; height:1.5rem; }
+  .dw-component-label { font-size:.69rem; }
+}
+/* The placement pulse animates only paint, not the position that aligns
+   nucleotide slots with the underlying bonds. */
+@media (prefers-reduced-motion:no-preference) {
+  .dw-nucleotide-map .dw-assembly-slot[data-dw-placed] { animation:dw-component-settle .18s ease-out; }
+  @keyframes dw-component-settle { from { opacity:.6; } }
+}
+.dw-nucleotide-bonds [data-dw-bond] {
+  stroke:currentColor;
+  stroke-width:2.2px;
+  stroke-linecap:round;
+  stroke-dasharray:3 4;
+  vector-effect:non-scaling-stroke;
+}
+.dw-nucleotide-bonds [data-dw-linked=true] {
+  stroke:var(--accent);
+  stroke-width:3px;
+  stroke-dasharray:none;
+}
+.dw-anatomy {
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.23rem .47rem;
+  min-width:0;
+  padding:.27rem .39rem;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--bg);
+  color:var(--ink);
+  font-size:.8rem;
+}
+.dw-anatomy > p { flex:1 1 23ch; color:var(--muted); font-size:.76rem; }
+.dw-anatomy-icons { display:flex; align-items:center; flex-wrap:wrap; gap:.12rem .3rem; }
+.dw-anatomy .dw-molecule-kind {
+  display:inline-flex;
+  align-items:center;
+  gap:.14rem;
+  color:var(--ink);
+  font-size:.75rem;
+  white-space:normal;
+}
+.dw-anatomy .dw-molecule-icon { width:1.55rem; height:1.45rem; color:var(--accent); }
+.dw-codon-icons { display:flex; grid-column:1/-1; gap:.05rem; align-items:center; justify-content:center; }
+.dw-codon-icons .dw-molecule-icon { width:.87rem; height:.82rem; }
+.dw-track .dw-given[data-codon] {
+  min-height:35px;
+  display:grid;
+  justify-items:center;
+  align-content:center;
+  gap:.03rem;
+}
+.dw-track .dw-chip-symbol { color:inherit; font:inherit; }
+.dw-track :is(.dw-given,.dw-slot) > .dw-molecule-icon:is([data-shape=dna],[data-shape=rna]) { height:1.53rem; }
+@media(max-width:590px) {
+  .dw-track :is(.dw-given,.dw-slot) > .dw-molecule-icon:is([data-shape=dna],[data-shape=rna]) {
+    height:1.4rem;
+  }
+  .dw-board[data-current-stage=chain] .dw-track .dw-sequence { gap:.26rem; }
+  .dw-anatomy { gap:.12rem .33rem; }
+}
