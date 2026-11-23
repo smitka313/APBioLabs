@@ -317,12 +317,18 @@ async function play(browser, base, cfg) {
     check(JSON.stringify(carried) === JSON.stringify(compared), at + ' carries the exact comparison data into Explain');
     const source = '#hb-published [data-hb-source-content]';
     const published = page.locator(source);
+    const researchDisclosure = page.locator('#hb-published');
+    check(await researchDisclosure.locator('summary').isVisible() && await published.count() === 1,
+      at + ' retains the research disclosure label and exactly one evidence panel');
     check(!await published.isVisible(), at + ' offers published observations as optional separate evidence');
     await hasVisibleTable(page, source);
     const publishedText = exact(await published.textContent());
     check(publishedText.includes('15%') && publishedText.includes('28%') &&
       /published|model trial/i.test(publishedText),
       at + ' labels the measured research separately from the modeled wind release');
+    check((await published.getByRole('link').getAttribute('href')).includes('PMC2268839') ||
+      (await published.getByRole('link').getAttribute('href')).includes('0708446105'),
+      at + ' links the published evidence to the primary study');
     const answers = page.locator('#hb-explain [data-hb-answer]');
     check(await answers.count() >= 3, at + ' offers prompts for a claim, evidence, and a limitation');
     for (const node of await answers.all()) {

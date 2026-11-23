@@ -289,18 +289,17 @@
   function published(host) {
     if (!host || host.dataset.hbPrepared) return;
     host.dataset.hbPrepared = 'true';
-    const preexisting = host.closest('details');
-    const panel=txt('div','','hb-source-body');
-    panel.append(txt('p',research),txt('p',researchScope));
-    if (!preexisting) {
-      const details=txt('details','','hb-published-details');
-      const citation=txt('a','Cheptou and colleagues (2008) · read the study');
-      citation.href=PAPER;
-      citation.target='_blank';citation.rel='noopener noreferrer';
-      panel.append(citation);
-      details.append(txt('summary','Published research · not model data'),panel);
-      host.replaceChildren(details);
-    } else host.replaceChildren(panel);
+    const details = host.tagName === 'DETAILS' ? host : txt('details', '', 'hb-published-details');
+    if (!details.querySelector('summary')) details.append(txt('summary', 'Published research · not model data'));
+    const panel = txt('div', '', 'hb-source-body');
+    panel.dataset.hbSourceContent = 'true';
+    const citation = txt('a', 'Cheptou and colleagues (2008) · read the study');
+    citation.href = PAPER;
+    citation.target = '_blank';
+    citation.rel = 'noopener noreferrer';
+    panel.append(txt('p', research), txt('p', researchScope), citation);
+    details.append(panel);
+    if (details !== host) host.replaceChildren(details);
   }
   function compareCheck(host,city) {
     if (!host || host.firstElementChild) return;
