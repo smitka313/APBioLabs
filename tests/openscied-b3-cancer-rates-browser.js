@@ -196,21 +196,37 @@ async function inspectIncomeCards(page,size,label) {
   await invoke(details.locator('summary').first(),size);
   const tabs=view(page,'cr-income-tabs');
   await tabs.waitFor({state:'visible'});
-  await view(page,'cr-income-access').waitFor({state:'visible'});
-  check(await view(page,'cr-income-screening').isHidden(),label+' first opening defaults to the access evidence');
+  const lesson=['cr-lesson1-diagnoses','cr-lesson1-deaths','cr-lesson1-map'];
+  const addons=['cr-income-access','cr-income-screening'];
+  const exhibitOrder=[...lesson,...addons];
+  const tabOrder=await tabs.locator('button[id$="-tab"]').evaluateAll(buttons=>buttons.map(button=>button.id.replace(/-tab$/,'')));
+  check(JSON.stringify(tabOrder.filter(id=>exhibitOrder.includes(id)))===JSON.stringify(exhibitOrder),
+    label+' the three Lesson 1 exhibits come before the two added income exhibits');
+  const shown=async id=>{
+    await visible(page,id);
+    return (await Promise.all(exhibitOrder.filter(other=>other!==id).map(other=>view(page,other).isHidden()))).every(Boolean);
+  };
+  check(await shown(lesson[0]),label+' first opening defaults to the Lesson 1 diagnosis rates exhibit');
+  for (const id of lesson) {
+    if(id!==lesson[0]) await invoke(view(page,id+'-tab'),size);
+    const graph=view(page,id).locator('.cr-lesson-graph').first();
+    await graph.waitFor({state:'visible'});
+    check(await shown(id) && await view(page,id+'-tab').getAttribute('aria-pressed')==='true',
+      label+' the '+id+' exhibit opens with its graph and keeps the other exhibits hidden');
+    if(size.deep) await capture(page,label+'-'+id,'#'+id);
+  }
   const cards=[
     {id:'access',correct:'falling',values:[29.3,23.6,17.4,12.6],period:/2022.{0,10}2023/},
     {id:'screening',correct:'rising',values:[63.1,69.2,74.7,78.0,82.6],period:/2022/}
   ];
   for (const {id,correct,values,period} of cards) {
-    const inactive=cards.find(item=>item.id!==id).id;
-    const panel=view(page,'cr-income-'+id);
+    const panelId='cr-income-'+id;
+    const panel=view(page,panelId);
     const tab=tabs.locator('#cr-income-'+id+'-tab');
     await invoke(tab,size);
-    await panel.waitFor({state:'visible'});
-    check(await view(page,'cr-income-'+inactive).isHidden() &&
+    check(await shown(panelId) &&
       await tab.getAttribute('aria-pressed')==='true' &&
-      await tabs.locator('#cr-income-'+inactive+'-tab').getAttribute('aria-pressed')==='false',
+      (await Promise.all(exhibitOrder.filter(other=>other!==panelId).map(other=>view(page,other+'-tab').getAttribute('aria-pressed')))).every(pressed=>pressed==='false'),
     label+' only the '+id+' income evidence panel is shown and marked active');
     const bars=panel.locator('.cr-income-bar');
     check(await bars.count()>=2,label+' '+id+' panel contains a real comparison chart');
@@ -218,9 +234,9 @@ async function inspectIncomeCards(page,size,label) {
       label+' '+id+' income card');
     await capture(page,label+'-income-'+id,'#cr-income-'+id);
     if (size.deep) {
-      const rowText=(await bars.allTextContents()).map(clean);
-      check(rowText.length===values.length &&
-        values.every((value,i)=>(rowText[i].match(/\d+(?:\.\d+)?(?=\s*%)/g)||[]).some(raw=>numeric(raw)===value)),
+      const rowValues=await bars.evaluateAll(rows=>rows.map(row=>Array.from(row.querySelectorAll('strong'),strong=>strong.textContent.trim())));
+      check(rowValues.length===values.length && values.every((value,i)=>
+        rowValues[i].length===1 && /^\d+(?:\.\d+)?\s*%$/.test(rowValues[i][0]) && numeric(rowValues[i][0].replace('%',''))===value),
       label+' '+id+' income bars show the exact source percentages in order');
       const panelText=clean(await panel.textContent());
       check(period.test(panelText) && (id!=='screening'||/50[^0-9]{1,6}74/.test(panelText)),
@@ -250,7 +266,10 @@ async function inspectIncomeCards(page,size,label) {
 async function followupPath(page,size) {
   const details=view(page,'cr-income-cards'), form=view(page,'cr-income-followup');
   await invoke(details.locator('summary').first(),size);
+  await invoke(view(page,'cr-lesson1-deaths-tab'),size);
+  await invoke(view(page,'cr-lesson1-map-tab'),size);
   check(await form.isHidden(),'follow-up is not asked until both trends are correct');
+  await invoke(view(page,'cr-income-access-tab'),size);
   await view(page,'cr-income-access-answer').selectOption('falling');
   await invoke(view(page,'cr-income-access-check'),size);
   check(await form.isHidden(),'one correct exhibit does not unlock the follow-up');

@@ -166,3 +166,8 @@
   .cr-income-scale{grid-template-columns:minmax(0,1fr)}
   .cr-income-scale>span{display:none}
 }
+.cr-lesson-graph{min-width:0}
+.cr-lesson-map{max-width:930px;margin:.22rem auto;width:100%}
+.cr-lesson-map img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+.cr-lesson-map figcaption{font-size:.86rem;color:var(--muted);margin-block-start:.36rem}
+#cr-lesson1-deaths .cr-income-track>span{background:var(--cr-amber)}

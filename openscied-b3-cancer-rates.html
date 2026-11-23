@@ -47,26 +47,85 @@
   <details id="cr-income-cards" class="cr-case">
     <summary class="cr-case-cover">
       <span class="cr-case-file" aria-hidden="true">UNIT 3 / CASE FILE</span>
-      <strong>Evidence Cards: Health Care &amp; Income</strong>
+      <strong>Evidence Cards: Who Gets Cancer and Why?</strong>
       <span class="cr-case-action"><span class="cr-case-closed">Open folder</span><span class="cr-case-open">Close folder</span></span>
     </summary>
     <div class="cr-case-content">
-      <p>Examine each graph. Then check whether your observation matches the evidence.</p>
+      <p>Start with the three Lesson 1 figures. Then examine two more exhibits on health care and household income.</p>
       <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an evidence card">
-        <button id="cr-income-access-tab" class="btn" type="button" aria-pressed="true" aria-controls="cr-income-access">Exhibit A · Cost of care</button>
-        <button id="cr-income-screening-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-income-screening">Exhibit B · Mammography</button>
+        <button id="cr-lesson1-diagnoses-tab" class="btn" type="button" aria-pressed="true" aria-controls="cr-lesson1-diagnoses">Exhibit A · Diagnoses</button>
+        <button id="cr-lesson1-deaths-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-lesson1-deaths">Exhibit B · Deaths</button>
+        <button id="cr-lesson1-map-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-lesson1-map">Exhibit C · State map</button>
+        <button id="cr-income-access-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-income-access">Exhibit D · Cost of care</button>
+        <button id="cr-income-screening-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-income-screening">Exhibit E · Mammography</button>
       </div>
-      <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title">
-        <p class="cr-exhibit-tag">EXHIBIT A</p>
+      <section class="cr-exhibit" id="cr-lesson1-diagnoses" aria-labelledby="cr-lesson1-diagnoses-title">
+        <p class="cr-exhibit-tag">EXHIBIT A · LESSON 1</p>
+        <h2 id="cr-lesson1-diagnoses-title">Top 10 cancers by rate of new cases</h2>
+        <figure class="cr-lesson-graph cr-income-figure">
+          <figcaption>United States, 2021 · Rate per 100,000 people</figcaption>
+          <ul class="cr-income-bars" aria-label="Exact values in printed figure order">
+            <li class="cr-income-bar"><span>Female Breast</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:89.20%"></span></span> <strong>133.8</strong></li>
+            <li class="cr-income-bar"><span>Prostate</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:76.47%"></span></span> <strong>114.7</strong></li>
+            <li class="cr-income-bar"><span>Lung and Bronchus</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:32.73%"></span></span> <strong>49.1</strong></li>
+            <li class="cr-income-bar"><span>Colon and Rectum</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:24.00%"></span></span> <strong>36.0</strong></li>
+            <li class="cr-income-bar"><span>Corpus and Uterus, NOS</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:18.87%"></span></span> <strong>28.3</strong></li>
+            <li class="cr-income-bar"><span>Melanomas of the Skin</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:15.33%"></span></span> <strong>23.0</strong></li>
+            <li class="cr-income-bar"><span>Urinary Bladder</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:12.07%"></span></span> <strong>18.1</strong></li>
+            <li class="cr-income-bar"><span>Non-Hodgkin Lymphoma</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:11.87%"></span></span> <strong>17.8</strong></li>
+            <li class="cr-income-bar"><span>Kidney and Renal Pelvis</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:11.33%"></span></span> <strong>17.0</strong></li>
+            <li class="cr-income-bar"><span>Leukemias</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:9.07%"></span></span> <strong>13.6</strong></li>
+          </ul>
+          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>75</span><span>150</span></div></div>
+        </figure>
+        <p class="cr-source">OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 1. Source: U.S. Cancer Statistics (CDC and NCI). For female-specific and male-specific cancers, the denominator is the indicated population.</p>
+        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Which cancer has the highest new diagnosis rate? What do you notice about the shape of the graph?</p><div><button class="btn" type="button" data-case-next="lesson1-deaths">Next: cancer deaths</button></div></div>
+      </section>
+      <section class="cr-exhibit" id="cr-lesson1-deaths" aria-labelledby="cr-lesson1-deaths-title" hidden>
+        <p class="cr-exhibit-tag">EXHIBIT B · LESSON 1</p>
+        <h2 id="cr-lesson1-deaths-title">Top 10 cancers by rate of deaths</h2>
+        <figure class="cr-lesson-graph cr-income-figure">
+          <figcaption>United States, 2021 · Rate per 100,000 people</figcaption>
+          <ul class="cr-income-bars" aria-label="Exact values in printed figure order">
+            <li class="cr-income-bar"><span>Lung and Bronchus</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:74.75%"></span></span> <strong>29.9</strong></li>
+            <li class="cr-income-bar"><span>Prostate</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:46.75%"></span></span> <strong>18.7</strong></li>
+            <li class="cr-income-bar"><span>Female Breast</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:46.75%"></span></span> <strong>18.7</strong></li>
+            <li class="cr-income-bar"><span>Colon and Rectum</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:31.50%"></span></span> <strong>12.6</strong></li>
+            <li class="cr-income-bar"><span>Pancreas</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:27.75%"></span></span> <strong>11.1</strong></li>
+            <li class="cr-income-bar"><span>Liver and Intrahepatic Bile Duct</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:16.25%"></span></span> <strong>6.5</strong></li>
+            <li class="cr-income-bar"><span>Leukemias</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:14.25%"></span></span> <strong>5.7</strong></li>
+            <li class="cr-income-bar"><span>Ovary</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:14.25%"></span></span> <strong>5.7</strong></li>
+            <li class="cr-income-bar"><span>Corpus and Uterus, NOS</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:13.50%"></span></span> <strong>5.4</strong></li>
+            <li class="cr-income-bar"><span>Non-Hodgkin Lymphoma</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:11.75%"></span></span> <strong>4.7</strong></li>
+          </ul>
+          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>20</span><span>40</span></div></div>
+        </figure>
+        <p class="cr-source">OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 2. Source: U.S. Cancer Statistics (CDC and NCI). For female-specific and male-specific cancers, the denominator is the indicated population.</p>
+        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Does the same cancer lead both charts? Find one cancer that appears on both and describe how its position changes.</p><div><button class="btn" type="button" data-case-next="lesson1-map">Next: the state map</button></div></div>
+      </section>
+      <section class="cr-exhibit" id="cr-lesson1-map" aria-labelledby="cr-lesson1-map-title" hidden>
+        <p class="cr-exhibit-tag">EXHIBIT C · LESSON 1</p>
+        <h2 id="cr-lesson1-map-title">Rate of new cancers by state, 2021</h2>
+        <figure class="cr-lesson-graph cr-lesson-map">
+          <img width="1700" height="1220" loading="lazy" src="assets/cancer-rates-lesson1-state-map.webp" alt="Map of 2021 new cancer rates by state. Four blue shades indicate increasing rates. See the readable map key below.">
+          <figcaption>OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 3. Source: U.S. Cancer Statistics (CDC and NCI). <a href="assets/cancer-rates-lesson1-state-map.webp">Open the full-size map</a>.</figcaption>
+        </figure>
+        <details class="cr-case-debrief"><summary>Readable map key</summary>
+          <p>Rates are new diagnoses per 100,000 people. From light to dark the map bins are 342.2–419.5, 421.2–441.2, 442.1–469.7 and 470.2–509.9. California and Texas are in the lightest bin; Kentucky and Iowa are in the darkest. Michigan is in the second-lightest bin. Hatching means no data shown, not zero. Indiana is hatched.</p>
+        </details>
+        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Find two states in different rate groups. What does the map show, and what question does it raise about why rates differ?</p><div><button class="btn" type="button" data-case-next="income-access">Next: cost of care</button></div></div>
+      </section>
+      <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title" hidden>
+        <p class="cr-exhibit-tag">EXHIBIT D</p>
         <h2 id="cr-income-access-title">When does cost keep people from getting care?</h2>
         <p>Adults who needed to see a doctor in the past year but reported they could not afford to go.</p>
         <figure class="cr-income-figure">
           <figcaption>Annual household income · Could not afford a needed visit (%)</figcaption>
           <ul class="cr-income-bars" aria-label="Exact values by income group">
-            <li class="cr-income-bar" data-value="29.3"><span>Under $25,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:73.25%"></span></span><strong>29.3%</strong></li>
-            <li class="cr-income-bar" data-value="23.6"><span>$25,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:59.00%"></span></span><strong>23.6%</strong></li>
-            <li class="cr-income-bar" data-value="17.4"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:43.50%"></span></span><strong>17.4%</strong></li>
-            <li class="cr-income-bar" data-value="12.6"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:31.50%"></span></span><strong>12.6%</strong></li>
+            <li class="cr-income-bar" data-value="29.3"><span>Under $25,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:73.25%"></span></span> <strong>29.3%</strong></li>
+            <li class="cr-income-bar" data-value="23.6"><span>$25,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:59.00%"></span></span> <strong>23.6%</strong></li>
+            <li class="cr-income-bar" data-value="17.4"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:43.50%"></span></span> <strong>17.4%</strong></li>
+            <li class="cr-income-bar" data-value="12.6"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:31.50%"></span></span> <strong>12.6%</strong></li>
           </ul>
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>10%</span><span>20%</span><span>30%</span><span>40%</span></div></div>
         </figure>
@@ -87,17 +146,17 @@
         </div>
       </section>
       <section class="cr-exhibit" id="cr-income-screening" aria-labelledby="cr-income-screening-title" hidden>
-        <p class="cr-exhibit-tag">EXHIBIT B</p>
+        <p class="cr-exhibit-tag">EXHIBIT E</p>
         <h2 id="cr-income-screening-title">Who reported getting a mammogram?</h2>
         <p>Women ages 50–74 who reported having a mammogram in the past two years.</p>
         <figure class="cr-income-figure">
           <figcaption>Annual household income · Reported a mammogram (%)</figcaption>
           <ul class="cr-income-bars" aria-label="Exact values by income group">
-            <li class="cr-income-bar" data-value="63.1"><span>Under $15,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:63.10%"></span></span><strong>63.1%</strong></li>
-            <li class="cr-income-bar" data-value="69.2"><span>$15,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:69.20%"></span></span><strong>69.2%</strong></li>
-            <li class="cr-income-bar" data-value="74.7"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:74.70%"></span></span><strong>74.7%</strong></li>
-            <li class="cr-income-bar" data-value="78.0"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:78.00%"></span></span><strong>78.0%</strong></li>
-            <li class="cr-income-bar" data-value="82.6"><span>$75,000 or more</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:82.60%"></span></span><strong>82.6%</strong></li>
+            <li class="cr-income-bar" data-value="63.1"><span>Under $15,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:63.10%"></span></span> <strong>63.1%</strong></li>
+            <li class="cr-income-bar" data-value="69.2"><span>$15,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:69.20%"></span></span> <strong>69.2%</strong></li>
+            <li class="cr-income-bar" data-value="74.7"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:74.70%"></span></span> <strong>74.7%</strong></li>
+            <li class="cr-income-bar" data-value="78.0"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:78.00%"></span></span> <strong>78.0%</strong></li>
+            <li class="cr-income-bar" data-value="82.6"><span>$75,000 or more</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:82.60%"></span></span> <strong>82.6%</strong></li>
           </ul>
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></div>
         </figure>

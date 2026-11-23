@@ -441,6 +441,7 @@
   });
   // Supplemental evidence cards leave the existing prediction and explorer state intact.
   const casefile=$('income-cards'), question=$('income-question'), followup=$('income-followup');
+  const caseTabs=['lesson1-diagnoses','lesson1-deaths','lesson1-map',...exhibits.map(k=>'income-'+k)];
   const checkedCount=()=>exhibits.filter(k=>state.casework[k]===directions[k]&&directions[k]).length;
   function updateFollowup(){
     const count=checkedCount();
@@ -449,9 +450,9 @@
     text('income-progress',count===2?'Both exhibits checked. Write your follow-up question.':count+' of 2 trends checked. Check both to unlock the next step.');
   }
   function showExhibit(k){
-    for(const exhibit of exhibits){
-      $('income-'+exhibit).hidden=exhibit!==k;
-      $('income-'+exhibit+'-tab').setAttribute('aria-pressed',String(exhibit===k));
+    for(const id of caseTabs){
+      $(id).hidden=id!==k;
+      $(id+'-tab').setAttribute('aria-pressed',String(id===k));
     }
   }
   function feedbackFor(k,right){
@@ -469,8 +470,12 @@
       fb.hidden=!correct;fb.textContent=correct?feedbackFor(k,true):'';
       if(correct)fb.dataset.result='correct';else delete fb.dataset.result;
     }
-    showExhibit('access');updateFollowup();
+    showExhibit(caseTabs[0]);updateFollowup();
   }
+  for(const id of caseTabs)$(id+'-tab').addEventListener('click',()=>showExhibit(id));
+  for(const b of all('[data-case-next]'))b.addEventListener('click',()=>{
+    showExhibit(b.dataset.caseNext);$(b.dataset.caseNext+'-tab').focus();
+  });
   question.addEventListener('input',updateFollowup);
   followup.addEventListener('submit',event=>{
     event.preventDefault();
@@ -482,7 +487,6 @@
   });
   for(const k of exhibits){
     const id='income-'+k, answer=$(id+'-answer'), check=$(id+'-check'), feedback=$(id+'-feedback');
-    $(id+'-tab').addEventListener('click',()=>showExhibit(k));
     answer.addEventListener('change',()=>{
       feedback.hidden=true;feedback.textContent='';check.disabled=!answer.value||!directions[k];
       if(state.casework[k]){state.casework[k]='';save();}
