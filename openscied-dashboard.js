@@ -4,10 +4,14 @@
   const PREFIX = 'aplab:openscied:';
   // Keep the exact existing key so work from the earlier preview stays available.
   const SERENGETI_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
-  const isOpenSciEdKey = key => key === SERENGETI_KEY || key.startsWith(PREFIX);
+  const CARRYING_KEY = 'aplab:openscied-b1-carrying-capacity:run-v1';
+  const CARRYING_PARTS = ['range', 'habitat', 'field'];
+  const CARRYING_EXTRA_KEYS = CARRYING_PARTS.map(part => PREFIX + 'b1-carrying-capacity:' + part + ':v1');
+  const isOpenSciEdKey = key => key === SERENGETI_KEY || key === CARRYING_KEY || key.startsWith(PREFIX);
   // Each activity reads its own saved record: progress(raw) gives {started, section, visited, summary}; ids(saved) lists its written-response ids.
   const ACTIVITIES = [
     { id: 'migration', name: 'Migration Map Explorer', file: 'openscied-b1-migration.html', key: PREFIX + 'b1-migration:v1', clears: 'visited months, notebook entries, and written responses', progress: migrationProgress, ids: migrationResponseIds, answers: true },
+    { id: 'carrying', name: 'Carrying Capacity', file: 'openscied-b1-carrying-capacity.html', key: CARRYING_KEY, extraKeys: CARRYING_EXTRA_KEYS, clears: 'grass model runs, habitat trials, range estimates, field evidence work, and written responses', progress: carryingProgress, ids: carryingResponseIds, answers: true },
     { id: 'serengeti', name: 'Serengeti Board Game', file: 'openscied-b1-serengeti.html', key: SERENGETI_KEY, clears: 'board game record, concept checks, and answers', progress: serengetiProgress, ids: serengetiResponseIds, answers: true },
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
@@ -31,6 +35,47 @@
   }
   function written(fields, id) { return typeof fields[id] === 'string' && !!fields[id].trim(); }
   const $ = selector => document.querySelector(selector);
+  const activityKeys = activity => [activity.key, ...(activity.extraKeys || [])];
+  // The activity restores its own last screen. The three optional tools each have an independent save record.
+  function carryingResponseIds() {
+    return ['prediction', 'claim', 'shortage-rule', 'long-run', 'migration-claim', 'habitat-claim', 'limit'];
+  }
+  function carryingProgress(raw, optional = []) {
+    const empty = {summary:'Not started', started:false, section:'', visited:0};
+    const record = value => value && typeof value === 'object' && !Array.isArray(value);
+    const round = value => Number.isInteger(value) && value >= 0 && value <= 12;
+    let model, range, habitat, field;
+    try {
+      if (raw !== null && raw !== undefined) {
+        model = JSON.parse(raw);
+        if (!record(model) || !round(model.baseline?.round) || !record(model.answers) ||
+            (model.comparison != null && !round(model.comparison.round))) throw Error('Unknown model record');
+      }
+      [range, habitat, field] = optional.map(value => {
+        if (value === null || value === undefined) return null;
+        const saved = JSON.parse(value);
+        if (!record(saved) || saved.v !== 1) throw Error('Unknown tool record');
+        return saved;
+      });
+    } catch (_) { return {...empty, summary:'Saved work could not be read. Download a copy before restarting.'}; }
+    const baseline = model?.baseline.round || 0, comparison = model?.comparison?.round || 0;
+    const answers = carryingResponseIds().filter(id => written(model?.answers || {}, id)).length;
+    const rangeUsed = (typeof range?.note === 'string' && !!range.note.trim()) ||
+      ['baseline','comparison'].some(trial => ['low','high','guess'].some(mark => Number.isFinite(range?.[trial]?.[mark])));
+    const habitatUsed = typeof habitat?.scenario === 'string' && !!habitat.scenario;
+    const fieldUsed = record(field?.entries) && Object.values(field.entries).some(entry =>
+      entry && (written(entry,'answer') || written(entry,'reason') || entry.checked === true));
+    const started = Boolean(baseline || model?.comparison || answers || Object.keys(model?.checks || {}).length ||
+      rangeUsed || habitatUsed || fieldUsed);
+    if (!started) return empty;
+    const parts = [baseline + ' of 12 baseline rounds'];
+    if (model?.comparison) parts.push(comparison + ' of 12 comparison rounds');
+    parts.push(answers + ' of 7 responses written');
+    if (rangeUsed) parts.push('Range work saved');
+    if (habitatUsed) parts.push('Habitat work saved');
+    if (fieldUsed) parts.push('Field work saved');
+    return {started, section:'', visited:0, summary:parts.join(' · ')};
+  }
   // Serengeti restores its last page from the existing saved record rather than a URL hash.
   function serengetiResponseIds() { return ['question','evidence','claim','limits']; }
   function serengetiProgress(raw) {
@@ -228,9 +273,10 @@
         const count = savedKeys().length;
         const recent = [];
         ACTIVITIES.forEach(activity => {
-          const raw = localStorage.getItem(activity.key), item = activity.progress(raw);
+          const [raw, ...optional] = activityKeys(activity).map(key => localStorage.getItem(key));
+          const item = activity.progress(raw, optional);
           $('#' + activity.id + '-progress').textContent = item.summary;
-          $('#' + activity.id + '-reset').disabled = !raw;
+          $('#' + activity.id + '-reset').disabled = raw === null && optional.every(value => value === null);
           const link = $('#' + activity.id + '-open');
           link.textContent = item.started ? 'Continue activity →' : 'Open activity →';
           link.href = activityDestination(activity, item);
@@ -260,8 +306,12 @@
     function downloadWork(onlyKeys) {
       try {
         const work = {};
-        const keys = onlyKeys || savedKeys(), responses = {};
-        keys.forEach(key => { work[key] = localStorage.getItem(key); });
+        const keys = (onlyKeys || savedKeys()).filter(key => {
+          const raw = localStorage.getItem(key);
+          if (raw === null) return false;
+          work[key] = raw;
+          return true;
+        }), responses = {};
         // A readable copy of every written response (Making Sense and analysis) next to the raw saved work.
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
@@ -284,7 +334,7 @@
       }
     }
     $('#download-openscied-results').addEventListener('click', () => downloadWork());
-    $('#backup-before-openscied-clear').addEventListener('click', () => downloadWork(clearTarget ? [clearTarget.key] : null));
+    $('#backup-before-openscied-clear').addEventListener('click', () => downloadWork(clearTarget ? activityKeys(clearTarget) : null));
     function openClear(activity) {
       clearTarget = activity || null;
       $('#clear-openscied-title').textContent = activity ? 'Restart ' + activity.name + '?' : 'Clear OpenSciEd results?';
@@ -304,7 +354,7 @@
       event.preventDefault();
       if (confirmation.value !== 'ERASE') return;
       try {
-        (clearTarget ? [clearTarget.key] : savedKeys()).forEach(key => localStorage.removeItem(key));
+        (clearTarget ? activityKeys(clearTarget) : savedKeys()).forEach(key => localStorage.removeItem(key));
         dialog.close();
         refresh(clearTarget ? clearTarget.name + ' results cleared. Other activities and your student sign-in are still saved.' : 'OpenSciEd results cleared. Your name, class period, and AP Biology work are still saved.');
       } catch (e) {

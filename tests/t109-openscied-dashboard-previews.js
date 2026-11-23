@@ -1,11 +1,12 @@
 /* OpenSciEd dashboard previews: published unit and activity order, the registry order in the script,
-   external migration and Serengeti illustrations plus the seven inline SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
+   external Unit 1 illustrations plus the seven inline SVG previews, HTML captions below each picture, stable 8:5 boxes, no layout shift, and axe clean in light and dark.
    Run: NODE_PATH=$(npm root -g) AXE=<path>/axe.min.js node tests/t109-openscied-dashboard-previews.js */
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
-const UNIT1 = ['openscied-b1-migration.html', 'openscied-b1-serengeti.html'];
+const UNIT1 = ['openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html'];
 const MIGRATION_PREVIEW = 'assets/migration-explorer-preview.svg';
+const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
@@ -13,7 +14,7 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
   const files = [...js.matchAll(/file: '([^']+)'/g)].map(m => m[1]);
-  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3)), 'openscied-dashboard.js lists activities in page order: migration and Serengeti, then Units 2 and 3');
+  T.ok(JSON.stringify(files) === JSON.stringify(UNIT1.concat(UNIT2,UNIT3)), 'openscied-dashboard.js lists activities in page order: migration, carrying capacity, and Serengeti, then Units 2 and 3');
   const b = await T.launch(), srv = await T.serve();
   try {
     for (const width of [375, 768, 1366, 1920]) {
@@ -24,7 +25,7 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
       const hrefs = sel => p.$$eval(sel + ' .dashboard-preview', as => as.map(a => a.getAttribute('href')));
       const units = await p.$$eval('.dashboard-units > section.dashboard-unit.current', sections=>sections.map(s=>s.getAttribute('aria-labelledby')));
       T.ok(JSON.stringify(units.slice(0,3)) === JSON.stringify(['unit1','unit2','unit3']), width + ' px: Unit 1 is above Units 2 and 3');
-      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer and Serengeti Board Game');
+      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, and Serengeti Board Game');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 order unchanged');
       const serengetiImage = p.locator('img[src="'+SERENGETI_PREVIEW+'"]');
@@ -32,6 +33,8 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
       await p.waitForFunction(path=>{const img = document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth>0;},SERENGETI_PREVIEW,{timeout:10000});
       await p.locator('img[src="'+MIGRATION_PREVIEW+'"]').scrollIntoViewIfNeeded();
       await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},MIGRATION_PREVIEW,{timeout:10000});
+      await p.locator('img[src="'+CARRYING_PREVIEW+'"]').scrollIntoViewIfNeeded();
+      await p.waitForFunction(path=>{const img=document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth===960;},CARRYING_PREVIEW,{timeout:10000});
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
         const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
@@ -48,7 +51,7 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 9 && svgCards.length === 7 && m.filter(x=>x.img).length === 2, width + ' px: nine cards: seven inline illustrations and two linked SVG illustrations');
+      T.ok(m.length === 10 && svgCards.length === 7 && m.filter(x=>x.img).length === 3, width + ' px: ten cards: seven inline illustrations and three linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
@@ -57,8 +60,13 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
         width + ' px: first card illustration loads and has reserved 960×600 proportions');
       T.ok(poster?.alt==='' && /^Open Migration Map Explorer/.test(first.label) && first.label.length>40,
         width + ' px: the illustrated preview link has a descriptive accessible name');
+      const carrying = m[1];
+      T.ok(carrying?.img?.complete && carrying.img.src===CARRYING_PREVIEW &&
+        carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
+        /^Open Carrying Capacity/.test(carrying.label),
+        width + ' px: second card has the original carrying capacity illustration and a named link');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
-      T.ok(m.every(x => x.sim && /Simulated|Illustrative map/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the accurate source/illustration tag are HTML text');
+      T.ok(m.every(x => x.sim && /Simulated|Illustrative map|Model \+ field data/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the accurate source/illustration tag are HTML text');
       T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');
       T.ok(m.every(x => x.capH < 60), width + ' px: caption never wraps past two lines');
       // art text must stay inside the picture and never be a long caption
@@ -102,6 +110,3 @@ const UNIT3 = ['openscied-b3-cell-cycle.html', 'openscied-b3-dna-p53.html', 'ope
   } finally { await b.close(); srv.close(); }
   T.done('t109-openscied-dashboard-previews');
 })();
-
-
-

@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
 const { serve, routeLibs } = require('./_h');
 
 const FILE = 'openscied-b1-carrying-capacity.html';
+const DASHBOARD = 'openscied-dashboard.html';
 const SHOTS = process.env.CARRYING_CAPACITY_SCREENSHOTS;
 const AXE = require.resolve('axe-core/axe.min.js');
 const TEXT = {
@@ -523,6 +524,99 @@ async function followAdequateHabitat(browser, url) {
       /result supports your prediction/i.test(await p.locator('#cc-habitat-result').innerText()),
       'both herds reach 12 and the feedback explains why a reduction need not become a limiting factor');
     await shot(p, '1366-light-habitat-nonlimiting', true);
+  });
+}
+
+async function dashboardRelease(browser, base) {
+  const url = base + DASHBOARD;
+  const keys = ['aplab:openscied-b1-carrying-capacity:run-v1',
+    ...['range', 'habitat', 'field'].map(part => 'aplab:openscied:b1-carrying-capacity:' + part + ':v1')];
+  const neighbor = 'aplab:openscied:b1-migration:v1';
+  const adjacent = JSON.stringify({ v: 1, month: 4, page: 'explore', notes: [], answers: { regional: 'Keep migration work' } });
+  await withPage(browser, { name: '1366-light-Unit-1-dashboard', width: 1366, height: 900 }, async p => {
+    const open = p.locator('#carrying-open');
+    const reset = p.locator('#carrying-reset');
+    const progress = p.locator('#carrying-progress');
+    const card = p.locator('.dashboard-activity').filter({ has: open });
+    const resp = await p.goto(url);
+    assert.ok(resp?.ok(), 'local OpenSciEd dashboard loads');
+    check(await card.getByRole('heading', { name: 'Carrying Capacity', exact: true }).isVisible() &&
+      await open.getAttribute('href') === FILE &&
+      await progress.textContent().then(s => /not started/i.test(s)) && await reset.isDisabled(),
+      'Unit 1 lists a real Carrying Capacity link and no restart before local work exists');
+    const order = await p.locator('#migration-open,#carrying-open,#serengeti-open')
+      .evaluateAll(nodes => nodes.map(el => el.id));
+    check(sameList(order, ['migration-open', 'carrying-open', 'serengeti-open']),
+      'Unit 1 keeps Migration, Carrying Capacity, then the Serengeti game in lesson order');
+    const preview = card.locator('a.dashboard-preview');
+    const image = preview.locator('img');
+    await image.scrollIntoViewIfNeeded();
+    check(await preview.getAttribute('href') === FILE && (await preview.getAttribute('aria-label'))?.includes('Carrying Capacity') &&
+      await image.evaluate(async el => {
+        await el.decode();
+        const r = el.getBoundingClientRect();
+        return el.currentSrc.endsWith('/assets/carrying-capacity-preview.svg') &&
+          el.naturalWidth > 0 && el.naturalHeight > 0 && r.width > 100 && Math.abs(r.width / r.height - 1.6) < 0.04;
+      }), 'the linked dashboard card decodes the original art and preserves the standard 8:5 crop');
+    await shot(p, '1366-light-dashboard-carrying-capacity', true);
+    await open.focus();
+    check(await open.evaluate(el => document.activeElement === el), 'the Carrying activity link is keyboard-focusable');
+    await Promise.all([p.waitForURL('**/' + FILE), open.press('Enter')]);
+    await rounds(p, 0);
+    check(await p.locator('#cc-next').isVisible(), 'Enter opens the actual student activity, not a placeholder');
+
+    await p.locator('#cc-finish').click();
+    await rounds(p, 12);
+    await rangeKeyboard(p, 11);
+    await rangeLock(p).click();
+    await go(p, 'evidence');
+    await fieldReasoning(p).fill(TEXT.fieldRise);
+    await beginHabitat(p);
+    await matchHabitat(p, await requireAvailableAnimal(p), 'click');
+    await go(p, 'explain');
+    await (await explainQuestion(p, 'claim')).fill(TEXT.claim);
+    await p.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: neighbor, value: adjacent });
+    const saved = await p.evaluate(all => Object.fromEntries(all.map(key => [key, localStorage.getItem(key)])), keys);
+    check(Object.values(saved).every(text => typeof text === 'string' && text.length > 10),
+      'all four dashboard records have real work created via the activity');
+
+    await p.goto(url);
+    const savedSummary = await progress.textContent();
+    check(/12 of 12.*baseline rounds/i.test(savedSummary) &&
+      /1 of 7 responses written/i.test(savedSummary) &&
+      ['Range', 'Habitat', 'Field'].every(tool => savedSummary.includes(tool + ' work saved')) && await reset.isEnabled() &&
+      /Continue activity/.test(await open.textContent()),
+      'dashboard reads existing carrying progress and offers a local continuation and restart');
+    await Promise.all([p.waitForURL('**/' + FILE), open.press('Enter')]);
+    await currentExplain(p).waitFor({ state: 'visible' });
+    check(await (await explainQuestion(p, 'claim')).inputValue() === TEXT.claim,
+      'Continue resumes the saved Explain page and response rather than starting over');
+    await p.goto(url);
+    await reset.press('Enter');
+    const erase = p.locator('#confirm-openscied-clear');
+    const phrase = p.locator('#openscied-erase-confirmation');
+    check(/Restart Carrying Capacity/.test(await p.locator('#clear-openscied-title').textContent()) &&
+      await phrase.evaluate(el => document.activeElement === el) && await erase.isDisabled(),
+      'the focused scoped restart asks for typed confirmation before erasing anything');
+    const copyPromise = p.waitForEvent('download');
+    await p.locator('#backup-before-openscied-clear').click();
+    const copy = await copyPromise;
+    const json = JSON.parse(await fs.readFile(await copy.path(), 'utf8'));
+    check(json.format === 'openscied-saved-work-v1' && sameList(Object.keys(json.work).sort(), [...keys].sort()) &&
+      keys.every(key => json.work[key] === saved[key]) && json.responses?.carrying?.claim === TEXT.claim,
+      'scoped backup includes all four exact carrying records and readable writing, but not neighboring activities');
+    await p.locator('#cancel-openscied-clear').click();
+    check(await p.evaluate(snapshot => Object.entries(snapshot).every(([k, v]) => localStorage.getItem(k) === v), saved),
+      'cancel leaves every carrying saved-work record untouched');
+    await reset.click();
+    await phrase.fill('erase');
+    check(await erase.isDisabled(), 'an inexact confirmation cannot erase local work');
+    await phrase.fill('ERASE');
+    await erase.click();
+    check(await p.evaluate(({ all, other, value }) => all.every(key => localStorage.getItem(key) === null) &&
+      localStorage.getItem(other) === value, { all: keys, other: neighbor, value: adjacent }) &&
+      /not started/i.test(await progress.textContent()) && await reset.isDisabled(),
+      'confirmed scoped restart deletes every carrying record but leaves the Migration record intact');
   });
 }
 
@@ -1102,6 +1196,7 @@ async function followWorkflow(browser, url) {
     await followWorkflow(browser, url);
     await followHabitatWorkflow(browser, url);
     await followAdequateHabitat(browser, url);
+    await dashboardRelease(browser, server.url);
     console.log(`carrying-capacity-browser: ${checks} checks passed`);
   } finally {
     if (browser) await browser.close();
