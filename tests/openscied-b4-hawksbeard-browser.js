@@ -150,11 +150,32 @@ async function sceneParity(page, seed, releasedCount, label) {
 }
 async function boardCues(page, seed, completed, at) {
   const model = Model.makeTrial(seed);
-  const legend = page.getByRole('group', { name: 'Seed symbol legend', exact: true });
+  const legend = page.getByRole('group', { name: 'Seed key', exact: true });
   const legendText = exact(await legend.textContent());
-  check(await legend.isVisible() && /Feathery.*Nonfeathery.*Soil landing.*Missed soil/i.test(legendText) &&
-    /release point/i.test(legendText) && /newest seeds.*dotted.*dashed.*earlier landings fade/i.test(legendText),
-    at + ' visible board key names seed types, hit and miss symbols, and latest versus earlier landings');
+  const keyBeforeBoards = await legend.evaluate(key => {
+    const boards = key.nextElementSibling;
+    return boards?.classList.contains('hb-worlds') && key.getBoundingClientRect().bottom <= boards.getBoundingClientRect().top;
+  });
+  check(await legend.isVisible() && keyBeforeBoards && /Feathery.*Feather shape.*dotted trail.*Nonfeathery.*Diamond shape.*dashed trail/i.test(legendText) &&
+    /Soil landing.*Missed soil.*Release point.*Earlier releases fade.*dots.*diamonds/i.test(legendText),
+    at + ' a clearly titled seed key appears above both boards and labels both types and outcomes');
+  const swatches = await legend.evaluate((key, completed) => {
+    const board = key.nextElementSibling.querySelector('[data-hb-scene="field"] svg');
+    return ['feathery','nonfeathery'].every(type => {
+      const swatch = key.querySelector('[data-hb-key-seed="'+type+'"] svg');
+      const mini = key.querySelector('[data-hb-key-earlier="'+type+'"] svg');
+      if (!swatch || !mini || swatch.getBoundingClientRect().width < 35) return false;
+      const glyph = swatch.querySelector('g').innerHTML;
+      const dots = swatch.querySelector('path').getAttribute('stroke-dasharray');
+      if (dots !== (type === 'feathery' ? '1 10' : '6 8')) return false;
+      const selector = '.hb-seed-'+type;
+      const latest = board.querySelector(selector+'[data-hb-fresh="latest"]');
+      const earlier = board.querySelector(selector+'[data-hb-fresh="earlier"]');
+      return (!completed || (latest && Array.from(latest.children).slice(-2).map(node => node.outerHTML).join('') === glyph)) &&
+        (completed < 2 || earlier?.innerHTML === mini.innerHTML);
+    });
+  }, completed);
+  check(swatches, at + ' seed key samples use the exact illustrated markers and trail patterns used on the boards');
 
   for (const site of SITES) {
     const svg = page.locator('[data-hb-scene="' + site + '"] .hb-scene-svg');

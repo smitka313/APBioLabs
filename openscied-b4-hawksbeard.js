@@ -207,16 +207,22 @@
     return {site,desc,trails,plant,pulse,past,current};
   }
   const scenes=$$('[data-hb-scene]').filter(host=>SITES.includes(host.dataset.hbScene)).map(host=>drawScene(host,host.dataset.hbScene));
+  function seedGlyph(type, earlier=false) {
+    const feathery=type==='feathery';
+    if (earlier) return [feathery
+      ? svg('circle',{r:4.7,fill:'#f3eedc',stroke:'#233337','stroke-width':2})
+      : svg('path',{d:'M0-5 5 0 0 5-5 0Z',fill:'#e8b864',stroke:'#252e2c','stroke-width':2})];
+    if (feathery) {
+      const d='M0 8V-1m0-1-8-6m8 6-4-10m4 10 4-10m-4 10 8-6';
+      return [svg('path',{d,fill:'none',stroke:'#162c30','stroke-width':7,'stroke-linecap':'round'}),
+        svg('path',{d,fill:'none',stroke:'#fffbe8','stroke-width':3.9,'stroke-linecap':'round'})];
+    }
+    return [svg('path',{d:'M0-9 7.5 0 0 9-7.5 0Z',fill:'#ffc55e',stroke:'#352f26','stroke-width':2.7}),
+      svg('path',{d:'M0-4.5 2.4 0 0 4.5-2.4 0Z',fill:'#a96c36'})];
+  }
   function mark(record,phase='latest') {
-    const feathery=record.type==='feathery';
     const g=svg('g',{class:'hb-seed hb-seed-'+record.type,'data-hb-seed':record.id,'data-hb-fresh':phase});
     if (phase!=='flying') g.dataset.hbLand=record.land;
-    if (phase==='earlier') {
-      g.append(feathery
-        ? svg('circle',{r:4.7,fill:'#f3eedc',stroke:'#233337','stroke-width':2})
-        : svg('path',{d:'M0-5 5 0 0 5-5 0Z',fill:'#e8b864',stroke:'#252e2c','stroke-width':2}));
-      return g;
-    }
     if (phase==='latest') {
       if (record.landed) g.append(svg('circle',{r:15,fill:'#223c32','fill-opacity':.68,stroke:'#162e2b','stroke-width':6}),
         svg('circle',{r:15,fill:'none',stroke:'#f6ffdf','stroke-width':3.3}));
@@ -226,14 +232,7 @@
           svg('path',{d,fill:'none',stroke:'#ffdfc5','stroke-width':3.6,'stroke-linecap':'round'}));
       }
     }
-    if (feathery) {
-      const d='M0 8V-1m0-1-8-6m8 6-4-10m4 10 4-10m-4 10 8-6';
-      g.append(svg('path',{d,fill:'none',stroke:'#162c30','stroke-width':7,'stroke-linecap':'round'}),
-        svg('path',{d,fill:'none',stroke:'#fffbe8','stroke-width':3.9,'stroke-linecap':'round'}));
-    } else {
-      g.append(svg('path',{d:'M0-9 7.5 0 0 9-7.5 0Z',fill:'#ffc55e',stroke:'#352f26','stroke-width':2.7}),
-        svg('path',{d:'M0-4.5 2.4 0 0 4.5-2.4 0Z',fill:'#a96c36'}));
-    }
+    g.append(...seedGlyph(record.type,phase==='earlier'));
     return g;
   }
   function position(record,p) {
@@ -244,19 +243,35 @@
     const [x,y]=position(record,p);
     node.setAttribute('transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+')');
   }
+  function trailInk(type) {
+    const feathery=type==='feathery';
+    return {stroke:feathery?'#e9f6de':'#ffd07c',dash:feathery?'1 10':'6 8'};
+  }
   function trail(record,p) {
-    const feathery=record.type==='feathery';
+    const {stroke,dash}=trailInk(record.type);
     const attributes={fill:'none','stroke-linecap':'round','stroke-linejoin':'round',class:'hb-seed-trail hb-seed-trail-'+record.type};
     const shadow=svg('path',{...attributes,class:'hb-seed-trail-shadow',stroke:'#203131','stroke-width':5.8,opacity:.35,
-      'stroke-dasharray':feathery?'1 10':'6 8'});
-    const ink=svg('path',{...attributes,stroke:feathery?'#e9f6de':'#ffd07c','stroke-width':3.1,opacity:.8,
-      'stroke-dasharray':feathery?'1 10':'6 8'});
+      'stroke-dasharray':dash});
+    const ink=svg('path',{...attributes,stroke,'stroke-width':3.1,opacity:.8,
+      'stroke-dasharray':dash});
     const update=value=>{
       const d=Array.from({length:10},(_,i)=>(i?'L':'M')+position(record,value*i/9).map(t=>t.toFixed(2)).join(' ')).join('');
       shadow.setAttribute('d',d);ink.setAttribute('d',d);
     };
     update(p);
     return {shadow,ink,update};
+  }
+  // Use the same icon renderer and dash patterns as the real board, not approximations.
+  for (const type of Object.keys(TYPES)) {
+    const key = svg('svg',{viewBox:'0 0 60 30',focusable:false});
+    const {stroke,dash}=trailInk(type);
+    const seed = svg('g',{transform:'translate(45 16)'});
+    seed.append(...seedGlyph(type));
+    key.append(svg('path',{d:'M6 17H32',stroke,'stroke-dasharray':dash,'stroke-width':3.1,'stroke-linecap':'round'}),seed);
+    $('[data-hb-key-seed="'+type+'"]')?.append(key);
+    const earlier = svg('svg',{viewBox:'-9 -8 18 16',focusable:false});
+    earlier.append(...seedGlyph(type,true));
+    $('[data-hb-key-earlier="'+type+'"]')?.append(earlier);
   }
   function settled(count=state.released) {
     for (const scene of scenes) {

@@ -75,13 +75,18 @@
     <div class="hb-actions hb-release-actions"><button class="btn btn--primary" id="hb-release-next" type="button">Release plant pair 1</button><button class="btn" type="button" data-hb-go="compare">Compare landings</button></div>
     <label class="hb-enlarge" for="hb-enlarge-boards"><input type="checkbox" id="hb-enlarge-boards"> <span>Enlarge boards</span></label>
   </div>
+  <div class="hb-board-key" role="group" aria-labelledby="hb-seed-key-title">
+    <h3 id="hb-seed-key-title">Seed key</h3>
+    <ul class="hb-key-types">
+      <li><span class="hb-key-swatch" data-hb-key-seed="feathery" aria-hidden="true"></span><span><strong>Feathery</strong><small>Feather shape · dotted trail</small></span></li>
+      <li><span class="hb-key-swatch" data-hb-key-seed="nonfeathery" aria-hidden="true"></span><span><strong>Nonfeathery</strong><small>Diamond shape · dashed trail</small></span></li>
+    </ul>
+    <p class="hb-key-outcomes"><span><b aria-hidden="true">○</b> Soil landing</span><span><b aria-hidden="true">×</b> Missed soil</span><span><b aria-hidden="true">⊕</b> Release point</span></p>
+    <p class="hb-key-earlier">Earlier releases fade to small <span class="hb-key-mini" data-hb-key-earlier="feathery" aria-hidden="true"></span> dots (feathery) and <span class="hb-key-mini" data-hb-key-earlier="nonfeathery" aria-hidden="true"></span> diamonds (nonfeathery).</p>
+  </div>
   <div class="hb-worlds">
     <div class="hb-panel hb-world hb-field"><h3>Field <span>Connected soil</span></h3><div data-hb-scene="field"></div></div>
     <div class="hb-panel hb-world hb-city"><h3>City <span>Separated soil patches</span></h3><div data-hb-scene="city"></div></div>
-  </div>
-  <div class="hb-board-key" role="group" aria-label="Seed symbol legend">
-    <p class="hb-legend"><span><b class="hb-legend-icon" aria-hidden="true">✳</b> Feathery</span><span><b class="hb-legend-icon" aria-hidden="true">◆</b> Nonfeathery</span><span><b class="hb-legend-icon" aria-hidden="true">○</b> Soil landing</span><span><b class="hb-legend-icon" aria-hidden="true">×</b> Missed soil</span><span><b class="hb-legend-icon" aria-hidden="true">⊕</b> Release point</span></p>
-    <p class="hb-legend-note">The newest seeds leave dotted feather trails or dashed heavier-seed trails. Earlier landings fade.</p>
   </div>
   <div id="hb-release-summary" class="hb-result"></div>
 </section>
