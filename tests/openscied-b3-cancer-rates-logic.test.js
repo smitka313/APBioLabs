@@ -110,3 +110,13 @@ test('public activity, dashboard and teacher guide use lesson and topic labels, 
     assert.doesNotMatch(readFileSync(path.join(__dirname,'..',file),'utf8'),/\bRET\b/,file);
   }
 });
+
+test('evidence check judges the ordered values, and does not claim a trend for mixed or missing data',()=>{
+  const {exhibitTrend}=require('../openscied-b3-cancer-rates-logic.js');
+  assert.equal(exhibitTrend([29.3,23.6,17.4,12.6]),'falling');
+  assert.equal(exhibitTrend([63.1,69.2,74.7,78.0,82.6]),'rising');
+  assert.equal(exhibitTrend([6,6,6]),'flat');
+  assert.equal(exhibitTrend([2,2,3]),'rising');
+  assert.equal(exhibitTrend([1,4,2]),null);
+  assert.equal(exhibitTrend([null,4,2]),null);
+});

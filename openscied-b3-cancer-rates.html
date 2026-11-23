@@ -44,9 +44,93 @@
     <div><p class="eyebrow">Unit 3 · Lesson 1 companion · 25–35 minutes</p><h1>Cancer Rates Data Dive</h1><p>Do the same patterns show up when you change what you count or who you compare? Make a prediction, sort real U.S. data, and save the evidence that supports your thinking.</p></div>
     <img src="assets/cancer-rates-preview.svg" width="960" height="600" alt="">
   </header>
+  <details id="cr-income-cards" class="cr-case">
+    <summary class="cr-case-cover">
+      <span class="cr-case-file" aria-hidden="true">UNIT 3 / CASE FILE</span>
+      <strong>Evidence Cards: Health Care &amp; Income</strong>
+      <span class="cr-case-action"><span class="cr-case-closed">Open folder</span><span class="cr-case-open">Close folder</span></span>
+    </summary>
+    <div class="cr-case-content">
+      <p>Examine each graph. Then check whether your observation matches the evidence.</p>
+      <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an evidence card">
+        <button id="cr-income-access-tab" class="btn" type="button" aria-pressed="true" aria-controls="cr-income-access">Exhibit A · Cost of care</button>
+        <button id="cr-income-screening-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-income-screening">Exhibit B · Mammography</button>
+      </div>
+      <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title">
+        <p class="cr-exhibit-tag">EXHIBIT A</p>
+        <h2 id="cr-income-access-title">When does cost keep people from getting care?</h2>
+        <p>Adults who needed to see a doctor in the past year but reported they could not afford to go.</p>
+        <figure class="cr-income-figure">
+          <figcaption>Annual household income · Could not afford a needed visit (%)</figcaption>
+          <ul class="cr-income-bars" aria-label="Exact values by income group">
+            <li class="cr-income-bar" data-value="29.3"><span>Under $25,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:73.25%"></span></span><strong>29.3%</strong></li>
+            <li class="cr-income-bar" data-value="23.6"><span>$25,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:59.00%"></span></span><strong>23.6%</strong></li>
+            <li class="cr-income-bar" data-value="17.4"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:43.50%"></span></span><strong>17.4%</strong></li>
+            <li class="cr-income-bar" data-value="12.6"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:31.50%"></span></span><strong>12.6%</strong></li>
+          </ul>
+          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>10%</span><span>20%</span><span>30%</span><span>40%</span></div></div>
+        </figure>
+        <p class="cr-source">2022–2023 CDC survey of current and recent workers in 36 states and the U.S. Virgin Islands. Selected income groups. <a href="https://www.cdc.gov/mmwr/volumes/74/wr/mm7419a3.htm">CDC Table 2</a></p>
+        <div class="cr-case-question">
+          <p class="cr-exhibit-tag">CASE NOTE</p>
+          <label for="cr-income-access-answer">As household income goes up across the groups shown, what happens to the percentage?</label>
+          <div class="cr-case-controls">
+            <select id="cr-income-access-answer">
+              <option value="">Choose the trend…</option>
+              <option value="rising">It generally goes up.</option>
+              <option value="falling">It generally goes down.</option>
+              <option value="flat">It stays about the same.</option>
+            </select>
+            <button class="btn btn--primary" id="cr-income-access-check" type="button" disabled>Check my trend</button>
+          </div>
+          <p id="cr-income-access-feedback" class="cr-case-feedback" hidden></p>
+        </div>
+      </section>
+      <section class="cr-exhibit" id="cr-income-screening" aria-labelledby="cr-income-screening-title" hidden>
+        <p class="cr-exhibit-tag">EXHIBIT B</p>
+        <h2 id="cr-income-screening-title">Who reported getting a mammogram?</h2>
+        <p>Women ages 50–74 who reported having a mammogram in the past two years.</p>
+        <figure class="cr-income-figure">
+          <figcaption>Annual household income · Reported a mammogram (%)</figcaption>
+          <ul class="cr-income-bars" aria-label="Exact values by income group">
+            <li class="cr-income-bar" data-value="63.1"><span>Under $15,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:63.10%"></span></span><strong>63.1%</strong></li>
+            <li class="cr-income-bar" data-value="69.2"><span>$15,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:69.20%"></span></span><strong>69.2%</strong></li>
+            <li class="cr-income-bar" data-value="74.7"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:74.70%"></span></span><strong>74.7%</strong></li>
+            <li class="cr-income-bar" data-value="78.0"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:78.00%"></span></span><strong>78.0%</strong></li>
+            <li class="cr-income-bar" data-value="82.6"><span>$75,000 or more</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:82.60%"></span></span><strong>82.6%</strong></li>
+          </ul>
+          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></div>
+        </figure>
+        <p class="cr-source">2022 U.S. CDC survey. A mammogram is a screening measure here, not a count of diagnoses. <a href="https://www.cdc.gov/mmwr/volumes/73/wr/mm7315e1.htm">CDC Table 2</a></p>
+        <div class="cr-case-question">
+          <p class="cr-exhibit-tag">CASE NOTE</p>
+          <label for="cr-income-screening-answer">As household income goes up across the groups shown, what happens to the percentage?</label>
+          <div class="cr-case-controls">
+            <select id="cr-income-screening-answer">
+              <option value="">Choose the trend…</option>
+              <option value="rising">It generally goes up.</option>
+              <option value="falling">It generally goes down.</option>
+              <option value="flat">It stays about the same.</option>
+            </select>
+            <button class="btn btn--primary" id="cr-income-screening-check" type="button" disabled>Check my trend</button>
+          </div>
+          <p id="cr-income-screening-feedback" class="cr-case-feedback" hidden></p>
+        </div>
+      </section>
+      <p id="cr-income-progress">Check both trends to unlock the next step.</p>
+      <form id="cr-income-followup" class="cr-case-debrief" hidden>
+        <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
+        <p>The two cards describe different groups of people. They give you a reason to investigate a possible link, not proof of why someone got a mammogram or skipped one.</p>
+        <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
+        <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
+        <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
+        <button id="cr-income-explore" class="btn btn--primary" disabled type="submit">Explore More Data</button>
+      </form>
+    </div>
+  </details>
   <nav class="cr-steps" aria-label="Investigation steps">
     <button type="button" data-step="predict" aria-current="step"><span aria-hidden="true">01</span> Predict</button>
-    <button type="button" data-step="explore" disabled><span aria-hidden="true">02</span> Explore</button>
+    <button type="button" data-step="explore" disabled><span aria-hidden="true">02</span> Explore More Data</button>
     <button type="button" data-step="explain" disabled><span aria-hidden="true">03</span> Explain</button>
   </nav>
   <noscript><p>This activity needs JavaScript for its charts and to save your work.</p></noscript>
@@ -71,6 +155,7 @@
   </section>
   <section id="explore" class="cr-card" aria-labelledby="cr-explore-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">02 · Work with the data</p><h2 id="cr-explore-title" tabindex="-1">Find a pattern worth saving</h2></div><span class="cr-chip" id="cr-pin-count">0 comparisons pinned</span></div>
+    <p class="cr-question-reminder" id="cr-question-explore" hidden><strong>Your investigation question:</strong> <span id="cr-question-explore-text"></span></p>
     <p id="cr-verdict" class="cr-verdict"></p>
     <div class="cr-tools">
       <label for="cr-view">Data view<select id="cr-view"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option><option value="michigan">Michigan · screening and diagnosis</option></select></label>
@@ -131,7 +216,7 @@
   <section id="explain" class="cr-card" aria-labelledby="cr-explain-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">03 · Make sense of it</p><h2 id="cr-explain-title" tabindex="-1">What can you claim?</h2></div><span id="cr-done" class="cr-chip" hidden>Investigation complete</span></div>
     <div class="cr-two cr-explain">
-      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><ol id="cr-evidence-list"></ol></aside>
+      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol></aside>
       <div>
         <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>

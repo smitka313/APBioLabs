@@ -21,7 +21,10 @@
   const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:12,region:'all',x:'screening'});
   const defaults={labels:true,marks:true,benchmark:true,'pair-only':false,trend:false};
   const designItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
-  const fresh=()=>({design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
+  const exhibits=['access','screening'];
+  const exhibitValues=Object.fromEntries(exhibits.map(k=>[k,[...$('income-'+k).querySelectorAll('.cr-income-bar')].map(row=>Number(row.dataset.value))]));
+  const directions=Object.fromEntries(exhibits.map(k=>[k,L.exhibitTrend(exhibitValues[k])]));
+  const fresh=()=>({casework:{access:'',screening:'',question:'',opened:false},design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
   let state=fresh(), invalid=false, blocked=false;
   function clean(raw){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid record');
@@ -32,6 +35,9 @@
     const pr=raw.prediction;
     if(Object.hasOwn(predictions,pr?.choice)){next.prediction.choice=pr.choice;next.prediction.locked=pr.locked===true;}
     next.prediction.reason=str(pr?.reason,1200);
+    for(const k of exhibits)if(directions[k]&&raw.casework?.[k]===directions[k])next.casework[k]=directions[k];
+    next.casework.question=str(raw.casework?.question,500);
+    next.casework.opened=raw.casework?.opened===true&&!!next.casework.question.trim();
     for(const k of Object.keys(designItems))next.design[k]=str((raw.design ?? raw.ret)?.[k],1600);
     next.claim=str(raw.claim,1600);next.limits=str(raw.limits,1600);
     for(const k of ['name','period'])next.person[k]=str(raw.person?.[k],k==='name'?100:24);
@@ -49,8 +55,8 @@
     }
     if(Array.isArray(raw.evidence))next.evidence=raw.evidence.filter(p=>L.comparison(D,p)).slice(0,8).map(p=>({view:p.view,measure:p.measure,a:p.a,b:p.b,context:cleanContext(p.context)}));
     next.completed=raw.completed===true&&next.evidence.length>0&&!!next.claim.trim()&&!!next.limits.trim();
-    if(next.prediction.locked&&raw.step==='explore')next.step='explore';
-    if(next.prediction.locked&&next.evidence.length&&raw.step==='explain')next.step='explain';
+    if((next.prediction.locked||next.casework.opened)&&raw.step==='explore')next.step='explore';
+    if((next.prediction.locked||next.casework.opened)&&next.evidence.length&&raw.step==='explain')next.step='explain';
     next.lastVisitedAt=finite(raw.lastVisitedAt)?raw.lastVisitedAt:0;
     return next;
   }
@@ -94,7 +100,7 @@
     const [a,b]=tops;
     return 'The top cancers differ. '+a.name+' leads new diagnoses ('+full(a.incidence,'incidence')+rowTag(a)+'); '+b.name+' leads deaths ('+full(b.mortality,'mortality')+').';
   }
-  function available(step){return step==='predict'||(state.prediction.locked&&(step==='explore'||(step==='explain'&&state.evidence.length>0)));}
+  function available(step){return step==='predict'||((state.prediction.locked||state.casework.opened)&&(step==='explore'||(step==='explain'&&state.evidence.length>0)));}
   function goto(step,focus=true){
     if(!steps.includes(step)||!available(step))return;
     state.step=step;
@@ -112,6 +118,10 @@
     $('prediction').value=state.prediction.choice;$('reason').value=state.prediction.reason;
     $('prediction').disabled=state.prediction.locked;$('reason').readOnly=state.prediction.locked;
     $('lock').disabled=!state.prediction.choice; $('lock').textContent=state.prediction.locked?'Return to the data':'Lock prediction & open the data';
+    for(const where of ['explore','explain']){
+      $('question-'+where).hidden=!state.casework.opened;
+      text('question-'+where+'-text',state.casework.question);
+    }
     if(state.step==='explore')renderExplore();
     if(state.step==='explain')renderExplain();
   }
@@ -133,7 +143,7 @@
     renderSelect($('measure'),allowed.map(k=>[k,labels[k]]),s.measure);
     const opts=L.sortRows(rows,'name','asc').map(r=>[r.id,r.name]);
     renderSelect($('compare-a'),opts,s.a);renderSelect($('compare-b'),opts,s.b);
-    text('verdict',predictions[state.prediction.choice]+' '+firstResult());text('view-source',spec[v].caption+(isMI()?' '+D.michigan.period:''));
+    $('verdict').hidden=!state.prediction.locked;if(state.prediction.locked)text('verdict',predictions[state.prediction.choice]+' '+firstResult());text('view-source',spec[v].caption+(isMI()?' '+D.michigan.period:''));
     text('pin-count',state.evidence.length+' comparison'+(state.evidence.length===1?'':'s')+' pinned');
     text('chart-title',spec[v].title);
     text('chart-unit',v==='poverty'?'Diagnosis rate per 100,000':unit[s.measure]);
@@ -344,7 +354,8 @@
   }
   function renderExplain(){
     $('claim').value=state.claim;$('limits').value=state.limits;
-    text('explain-prediction',predictions[state.prediction.choice]+' '+(state.prediction.reason?'Reason: '+state.prediction.reason:'')+' '+firstResult());
+    $('explain-prediction').hidden=!state.prediction.locked;
+    if(state.prediction.locked)text('explain-prediction',predictions[state.prediction.choice]+' '+(state.prediction.reason?'Reason: '+state.prediction.reason:'')+' '+firstResult());
     const list=$('evidence-list');
     list.replaceChildren(...state.evidence.map((p,i)=>{
       const li=node('li'),b=node('button','Remove pin','btn btn--sm');b.type='button';
@@ -365,7 +376,7 @@
     $('done').hidden=!state.completed;
   }
   function report(){
-    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'','','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['ULTRASOUND DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(designItems).filter(([k])=>state.design[k].trim()).map(([k,title])=>title+': '+state.design[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
+    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),'','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['ULTRASOUND DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(designItems).filter(([k])=>state.design[k].trim()).map(([k,title])=>title+': '+state.design[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
     return lines.join('\n')+'\n';
   }
   function syncIdentity(){for(const k of ['name','period'])$(k).value=state.person[k];}
@@ -409,7 +420,7 @@
   $('reset').addEventListener('click',()=>$('reset-dialog').showModal());
   $('reset-confirm').addEventListener('click',()=>{
     try{localStorage.removeItem(KEY);invalid=false;blocked=false;}catch(_){blocked=true;}
-    state=fresh();syncIdentity();$('reset-dialog').close();
+    state=fresh();syncCasefile();syncIdentity();$('reset-dialog').close();
     try{history.replaceState(null,'',location.pathname+location.search);}catch(_){}
     text('save','Work stays on this device unless you download it.');render();announce('Investigation reset.');$('predict-title').focus();
   });
@@ -428,7 +439,68 @@
     home.after(figure);$('plot-scroll').removeAttribute('tabindex');$('enlarge').hidden=false;$('chart').style.removeProperty('width');
     $('enlarge').focus({preventScroll:true});
   });
+  // Supplemental evidence cards leave the existing prediction and explorer state intact.
+  const casefile=$('income-cards'), question=$('income-question'), followup=$('income-followup');
+  const checkedCount=()=>exhibits.filter(k=>state.casework[k]===directions[k]&&directions[k]).length;
+  function updateFollowup(){
+    const count=checkedCount();
+    followup.hidden=count!==2;
+    $('income-explore').disabled=count!==2||!question.value.trim();
+    text('income-progress',count===2?'Both exhibits checked. Write your follow-up question.':count+' of 2 trends checked. Check both to unlock the next step.');
+  }
+  function showExhibit(k){
+    for(const exhibit of exhibits){
+      $('income-'+exhibit).hidden=exhibit!==k;
+      $('income-'+exhibit+'-tab').setAttribute('aria-pressed',String(exhibit===k));
+    }
+  }
+  function feedbackFor(k,right){
+    const values=exhibitValues[k],direction=directions[k];
+    const from=number(values[0],1)+'%', to=number(values.at(-1),1)+'%';
+    const movement=direction==='rising'?'rises':direction==='falling'?'falls':'stays level';
+    const reason='From the lowest to the highest income group shown, the percentage '+movement+' from '+from+' to '+to+'.';
+    return right?'That matches the graph. '+reason:'Not quite. Compare the first and last bars. '+reason+' Try again.';
+  }
+  function syncCasefile(){
+    question.value=state.casework.question;
+    for(const k of exhibits){
+      const id='income-'+k,fb=$(id+'-feedback'),correct=!!state.casework[k];
+      $(id+'-answer').value=state.casework[k];$(id+'-check').disabled=!correct;
+      fb.hidden=!correct;fb.textContent=correct?feedbackFor(k,true):'';
+      if(correct)fb.dataset.result='correct';else delete fb.dataset.result;
+    }
+    showExhibit('access');updateFollowup();
+  }
+  question.addEventListener('input',updateFollowup);
+  followup.addEventListener('submit',event=>{
+    event.preventDefault();
+    if(checkedCount()!==2||!question.value.trim())return;
+    const next=question.value.trim();
+    if(next!==state.casework.question)state.completed=false;
+    state.casework.question=next;state.casework.opened=true;
+    casefile.open=false;goto('explore');
+  });
+  for(const k of exhibits){
+    const id='income-'+k, answer=$(id+'-answer'), check=$(id+'-check'), feedback=$(id+'-feedback');
+    $(id+'-tab').addEventListener('click',()=>showExhibit(k));
+    answer.addEventListener('change',()=>{
+      feedback.hidden=true;feedback.textContent='';check.disabled=!answer.value||!directions[k];
+      if(state.casework[k]){state.casework[k]='';save();}
+      updateFollowup();
+    });
+    check.addEventListener('click',()=>{
+      if(!answer.value||!directions[k])return;
+      const right=answer.value===directions[k];
+      if(right){state.casework[k]=directions[k];save();}
+      feedback.textContent=feedbackFor(k,right);
+      feedback.dataset.result=right?'correct':'retry';feedback.hidden=false;
+      updateFollowup();
+      announce(feedback.textContent+(checkedCount()===2?' Both exhibits checked. You can now write a follow-up question.':''));
+    });
+  }
+  syncCasefile();
   const hash=location.hash.slice(1);
+  if(hash==='cr-income-cards')casefile.open=true;
   if(steps.includes(hash)&&available(hash))state.step=hash;
   if(blocked)text('save','Browser storage is unavailable. Download your work before leaving.');
   if(invalid)text('save','A previous record was preserved. Download this investigation before leaving.');

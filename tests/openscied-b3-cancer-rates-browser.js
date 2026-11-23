@@ -188,6 +188,98 @@ async function inspectRace(page, label) {
   await capture(page,label+'-race','#cr-chart');
 }
 
+async function inspectIncomeCards(page,size,label) {
+  await view(page,'cr-view').selectOption('michigan');
+  const details=view(page,'cr-income-cards');
+  await details.waitFor({state:'visible'});
+  check(!await details.evaluate(element=>element.open),label+' income evidence is optional and starts collapsed');
+  await invoke(details.locator('summary').first(),size);
+  const tabs=view(page,'cr-income-tabs');
+  await tabs.waitFor({state:'visible'});
+  await view(page,'cr-income-access').waitFor({state:'visible'});
+  check(await view(page,'cr-income-screening').isHidden(),label+' first opening defaults to the access evidence');
+  const cards=[
+    {id:'access',correct:'falling',values:[29.3,23.6,17.4,12.6],period:/2022.{0,10}2023/},
+    {id:'screening',correct:'rising',values:[63.1,69.2,74.7,78.0,82.6],period:/2022/}
+  ];
+  for (const {id,correct,values,period} of cards) {
+    const inactive=cards.find(item=>item.id!==id).id;
+    const panel=view(page,'cr-income-'+id);
+    const tab=tabs.locator('#cr-income-'+id+'-tab');
+    await invoke(tab,size);
+    await panel.waitFor({state:'visible'});
+    check(await view(page,'cr-income-'+inactive).isHidden() &&
+      await tab.getAttribute('aria-pressed')==='true' &&
+      await tabs.locator('#cr-income-'+inactive+'-tab').getAttribute('aria-pressed')==='false',
+    label+' only the '+id+' income evidence panel is shown and marked active');
+    const bars=panel.locator('.cr-income-bar');
+    check(await bars.count()>=2,label+' '+id+' panel contains a real comparison chart');
+    await fits(page,`#cr-income-cards, #cr-income-tabs, #cr-income-${id}, #cr-income-${id} .cr-income-bar, #cr-income-${id}-answer`,
+      label+' '+id+' income card');
+    await capture(page,label+'-income-'+id,'#cr-income-'+id);
+    if (size.deep) {
+      const rowText=(await bars.allTextContents()).map(clean);
+      check(rowText.length===values.length &&
+        values.every((value,i)=>(rowText[i].match(/\d+(?:\.\d+)?(?=\s*%)/g)||[]).some(raw=>numeric(raw)===value)),
+      label+' '+id+' income bars show the exact source percentages in order');
+      const panelText=clean(await panel.textContent());
+      check(period.test(panelText) && (id!=='screening'||/50[^0-9]{1,6}74/.test(panelText)),
+        label+' '+id+' graph retains its source period'+(id==='screening'?' and age band':''));
+      const answer=view(page,'cr-income-'+id+'-answer');
+      const feedback=view(page,'cr-income-'+id+'-feedback');
+      const checkButton=view(page,'cr-income-'+id+'-check');
+      const prior=/not quite|that matches the graph/i;
+      const wrong=correct==='rising'?'falling':'rising';
+      check(!prior.test(await feedback.textContent()),label+' '+id+' practice starts without giving away the answer');
+      await answer.selectOption(wrong);
+      await invoke(checkButton,size);
+      check(/not quite/i.test(await feedback.textContent()),label+' '+id+' practice gives specific feedback after checking a wrong choice');
+      await answer.selectOption(correct);
+      check(!prior.test(await feedback.textContent()),label+' changing the '+id+' choice removes stale feedback');
+      await invoke(checkButton,size);
+      const response=clean(await feedback.textContent());
+      check(/that matches the graph/i.test(response)&&values.some(value=>valueAppears(response,value)),
+        label+' '+id+' practice confirms the trend with the underlying numbers');
+      await a11y(page,'#cr-income-cards',label+' '+id+' income card');
+    }
+  }
+  await invoke(details.locator('summary').first(),size);
+  check(!await details.evaluate(element=>element.open),label+' students can collapse the extra income evidence again');
+}
+
+async function followupPath(page,size) {
+  const details=view(page,'cr-income-cards'), form=view(page,'cr-income-followup');
+  await invoke(details.locator('summary').first(),size);
+  check(await form.isHidden(),'follow-up is not asked until both trends are correct');
+  await view(page,'cr-income-access-answer').selectOption('falling');
+  await invoke(view(page,'cr-income-access-check'),size);
+  check(await form.isHidden(),'one correct exhibit does not unlock the follow-up');
+  await invoke(view(page,'cr-income-screening-tab'),size);
+  await view(page,'cr-income-screening-answer').selectOption('rising');
+  await invoke(view(page,'cr-income-screening-check'),size);
+  await form.waitFor({state:'visible'});
+  const next=view(page,'cr-income-explore');
+  check(await next.isDisabled(),'both correct trends unlock a question rather than jump straight to data');
+  const investigation='Do counties with higher median household income report more mammograms?';
+  await view(page,'cr-income-question').fill(investigation);
+  await invoke(next,size);
+  await visible(page,'explore');
+  const datasets=await view(page,'cr-view').locator('option').evaluateAll(options=>options.map(el=>el.value));
+  check(['types','states','poverty','race','michigan'].every(x=>datasets.includes(x)),'case file opens the complete explorer without requiring the old prediction');
+  check((await view(page,'cr-question-explore').textContent()).includes(investigation),'student question is next to the exploratory data');
+  await invoke(view(page,'cr-pin'),size);
+  await invoke(view(page,'cr-to-explain'),size);
+  await visible(page,'explain');
+  await page.reload();
+  await visible(page,'explain');
+  check((await view(page,'cr-question-explain').textContent()).includes(investigation),'question survives reload beside the pinned evidence');
+  const waiting=page.waitForEvent('download');
+  await invoke(view(page,'cr-download'),size);
+  const download=await waiting;
+  const file=await fs.readFile(await download.path(),'utf8');
+  check(file.includes(investigation),'download retains the student’s follow-up question');
+}
+
 async function inspectMichigan(page, size, label) {
   await view(page,'cr-view').selectOption('michigan');
   const measure = view(page,'cr-measure');
@@ -380,6 +472,7 @@ async function exercise(browser, base, size) {
       await inspectPoverty(page,label);
       await inspectRace(page,label);
     }
+    await inspectIncomeCards(page,size,label);
     const michigan = size.width===1366 ? await inspectMichigan(page,size,label) : null;
     const pair = await stateSearchAndPair(page,size,label);
     await capture(page,label+'-states','#cr-chart');
@@ -441,6 +534,7 @@ async function exercise(browser, base, size) {
       await visible(page,'predict');
       const empty=await record(page);
       check(!empty?.completed && !empty?.evidence?.length,'confirmed reset returns to the start without old investigation evidence');
+      await followupPath(page,size);
     }
     check(errors.length===0,label+' no uncaught browser errors: '+errors.join(', '));
   } catch(error) {
