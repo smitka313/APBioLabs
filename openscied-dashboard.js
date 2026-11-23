@@ -19,6 +19,7 @@
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
     { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
+    { id: 'dna-workshop', name: 'DNA Workshop: Build, Copy, Decode', file: 'openscied-b3-dna-workshop.html', key: PREFIX + 'b3-dna-workshop:v1', clears: 'piece placements and written responses', progress: dnaWorkshopProgress, ids: dnaWorkshopResponseIds, answers: true },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds },
     { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true },
@@ -188,6 +189,19 @@
   // DNA Copying, p53 & Gene Expression (Lessons 5-6): the activity saves the ids of every written response; the fallback counts
   // any written text field in older or partial saves.
   const DNA_SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain', 'expression', 'sense6', 'wrapup'];
+  function dnaWorkshopResponseIds() { return ['nucleotide','build','copy','rna','chain','sort']; }
+  function dnaWorkshopProgress(raw) {
+    const empty={started:false,section:'',visited:0,summary:'Not started'};
+    let s;try {s=JSON.parse(raw);}catch (_){return empty;}
+    if(!s||s.v!==1||s.progress?.v!==1||!s.progress.placed||
+      typeof s.progress.placed!=='object'||Array.isArray(s.progress.placed))return empty;
+    const placements=Object.values(s.progress.placed).filter(v=>typeof v==='string'&&v.length>0).length;
+    const n=dnaWorkshopResponseIds().filter(id=>written(s.answers||{},id)).length;
+    if(!placements&&!n)return empty;
+    return {started:true,section:['nucleotide','build','copy','rna','chain','sort'].includes(s.step)?s.step:'nucleotide',
+      visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,
+      summary:placements+' '+(placements===1?'piece':'pieces')+' placed'+(n?' · '+n+' '+(n===1?'response':'responses')+' saved':'')};
+  }
   function dnaP53ResponseIds(saved) {
     const listed = saved && Array.isArray(saved.responseIds) ? saved.responseIds.filter(id => typeof id === 'string' && id) : [];
     if (listed.length) return Array.from(new Set(listed));

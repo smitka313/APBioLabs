@@ -1,4 +1,4 @@
-/* Dashboard with two Unit 3 activities: cards, per-activity progress, Resume, download and restart for the DNA/p53 companion.
+/* Dashboard Unit 3 activity order: cards, per-activity progress, Resume, download and restart for the DNA/p53 companion.
    Run: NODE_PATH=$(npm root -g) node tests/t93-dna-p53-dashboard.js */
 const T = require('./_h');
 const fs = require('fs');
@@ -13,8 +13,13 @@ const DNA = 'aplab:openscied:b3-dna-p53:v1', CELL = 'aplab:openscied:b3-cell-cyc
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('section[aria-labelledby="unit3"] .dashboard-activity').count() === 3, width + ' px: three activity cards under Unit 3');
-      T.ok(/3 activities available/.test(await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').innerText()), width + ' px: unit tag counts three activities');
+      const unit3 = p.locator('section[aria-labelledby="unit3"]');
+      const unit3Cards = await unit3.locator('.dashboard-activity .dashboard-open').evaluateAll(links => links.map(link => link.id));
+      T.ok(await unit3.locator('.dashboard-activity').count() === 4 &&
+        JSON.stringify(unit3Cards) === JSON.stringify(['cell-cycle-open','dna-workshop-open','dna-p53-open','inh-env-open']),
+      width + ' px: four Unit 3 cards; DNA Workshop immediately precedes the DNA/p53 companion');
+      T.ok((await unit3.locator('.dashboard-tag').textContent()).trim() === '4 activities available',
+        width + ' px: Unit 3 tag counts four activities');
       T.ok(await p.locator('#dna-p53-open').getAttribute('href') === 'openscied-b3-dna-p53.html#overview', 'DNA card opens its page');
       T.ok(/Not started/.test(await p.locator('#dna-p53-progress').innerText()) && /Not started/.test(await p.locator('#cell-cycle-progress').innerText()), 'both cards start as Not started');
       T.ok(await p.locator('#dna-p53-reset').isDisabled(), 'restart disabled with nothing saved');
