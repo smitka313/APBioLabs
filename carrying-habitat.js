@@ -156,7 +156,7 @@
       const change=L.comparison(state.scenario).changes[0], x=L.summary(complete?state.b:state.a);
       return `<div id="cc-habitat-result" class="cc-habitat-result" tabindex="-1" data-starting="${x.starting}" data-survivors="${x.survivors}" data-deaths="${x.deaths}" data-births="${x.births}" data-ending="${x.ending}">
         <p class="cc-habitat-eyebrow" id="cc-habitat-phase">${complete?'Comparison complete':'Trial A complete'}</p>
-        <h3>${complete?'What changed when one resource became scarce?':'What happened in the balanced habitat?'}</h3>
+        <h3>${complete?'What happened when one resource decreased?':'What happened in the balanced habitat?'}</h3>
         ${complete?`<div id="cc-habitat-comparison" class="cc-habitat-comparison">${scores('Trial A · Balanced habitat',state.a)}${scores('Trial B · '+scenario(state.scenario).label,state.b)}</div>
           <p class="cc-habitat-lesson"><strong>A limiting factor restricts survival, reproduction, or population growth.</strong> ${compareText(state)}</p><p>You predicted ${pred}. ${matched?'This result supports your prediction.':'This result does not match your prediction. Compare how many animals needed '+name(change.resource).toLowerCase()+' with how many units were available.'}</p>`:
           `${scores('Trial A · Balanced habitat',state.a)}<p>Trial B will keep these same eight animals and the same needs. Only ${name(change.resource).toLowerCase()} will change, from ${change.baseline} to ${change.scenario} ${unit(change.scenario)}.</p>

@@ -437,7 +437,7 @@ async function followAdequateHabitat(browser, url) {
     const comparison = p.locator('#cc-habitat-comparison');
     check(sameScores(await habitatScores(comparison), [BALANCED_SCORE, BALANCED_SCORE]) &&
       /no resource limited survival/i.test(await comparison.innerText()) &&
-      /result supports your prediction/i.test(await comparison.innerText()),
+      /result supports your prediction/i.test(await p.locator('#cc-habitat-result').innerText()),
       'both herds reach 12 and the feedback explains why a reduction need not become a limiting factor');
     await shot(p, '1366-light-habitat-nonlimiting', true);
   });

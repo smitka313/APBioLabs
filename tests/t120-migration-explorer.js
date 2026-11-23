@@ -5,7 +5,33 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require('playwright');const {serve}=require('./_h');
 const KEY='aplab:openscied:b1-migration:v1';let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++;console.log('ok: '+m);};
 const shotDir=process.env.MIGRATION_SCREENSHOTS;
-async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:true});await p.screenshot({path:path.join(shotDir,name+'.png'),fullPage:true});}}
+async function screenshot(p,name,fullPage=true){if(shotDir){fs.mkdirSync(shotDir,{recursive:true});await p.screenshot({path:path.join(shotDir,name+'.png'),fullPage});}}
+const rainStations={north:'Kogatende',west:'Handajega',south:'Simiyu'};
+async function stationLabels(map,label){
+  const visual=await map.evaluate((root,names)=>{
+    const bounds=root.querySelector('#migration-map').getBoundingClientRect();
+    const result={};
+    for(const [region,name] of Object.entries(names)){
+      const el=root.querySelector('[data-region="'+region+'"] [data-map-station="'+region+'"]');
+      const pin=el?.closest('button');
+      if(!el||!el.getClientRects().length||getComputedStyle(el).visibility!=='visible'||
+        el.textContent.trim()!==name||!el.id||
+        !(pin?.getAttribute('aria-describedby')||'').split(/\s+/).includes(el.id))return {problem:region+' missing or not exposed'};
+      const content=document.createRange();content.selectNodeContents(el);
+      const r=content.getBoundingClientRect();
+      if(r.width<=0||r.height<=0||r.left<bounds.left-1||r.top<bounds.top-1||
+        r.right>bounds.right+1||r.bottom>bounds.bottom+1)return {problem:region+' clipped'};
+      result[region]={x:(r.left+r.right)/2,y:(r.top+r.bottom)/2,bounds:r.toJSON()};
+    }
+    return result;
+  },rainStations);
+  ok(!visual.problem&&visual.north.y<visual.west.y&&visual.west.y<visual.south.y&&
+    visual.west.x<Math.min(visual.north.x,visual.south.x),
+    label+': visible rainfall names are positioned north/west/south and fully inside the map '+(visual.problem||''));
+  const boxes=Object.values(visual).map(x=>x.bounds);
+  ok(boxes.every((a,i)=>boxes.slice(i+1).every(b=>a.right<=b.left||b.right<=a.left||
+    a.bottom<=b.top||b.bottom<=a.top)),label+': the three station names do not overlap');
+}
 (async()=>{const server=await serve();let browser;try{
   browser=await chromium.launch(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{});
   const context=await browser.newContext({viewport:{width:1366,height:960},reducedMotion:'reduce',acceptDownloads:true});
@@ -21,20 +47,26 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
     await p.setViewportSize({width,height});await p.emulateMedia({colorScheme:dark?'dark':'light'});await p.goto(server.url+'openscied-b1-migration.html');await p.evaluate(d=>document.documentElement.dataset.theme=d?'dark':'light',dark);
     if(width===390||(width===1366&&height===768)){
       await p.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
-      ok(await p.evaluate(()=>{
+      const firstFold=await p.evaluate(()=>{
         const rect=id=>document.getElementById(id).getBoundingClientRect();
         const map=rect('migration-map');
-        return window.scrollY===0 && map.bottom<=innerHeight+1 && ['previous','play','month-slider','next'].every(id=>{
-          const b=rect(id);return b.width>0 && b.height>0 && b.top>=0 && b.bottom<=map.top+1;
-        });
-      }),'playback and whole map fit first viewport at '+width+' × '+height);
-      await screenshot(p,width+'-playback-viewport');
+        const controlRects=Object.fromEntries(['previous','play','month-slider','next'].map(id=>[id,rect(id).toJSON()]));
+        return {fit:window.scrollY===0 && map.bottom<=innerHeight+1 && Object.values(controlRects).every(b=>
+          b.width>0 && b.height>0 && b.top>=0 && b.bottom<=map.top+1),
+          scroll:window.scrollY,map:map.toJSON(),controls:controlRects};
+      });
+      await screenshot(p,width+'-playback-viewport',false);
+      ok(firstFold.fit,'playback and whole map fit first viewport at '+width+' × '+height+
+        (firstFold.fit?'':' '+JSON.stringify(firstFold)));
     }
     for(const m of [0,7,11]){await p.locator(`[data-month="${m}"]`).click();await p.waitForTimeout(150);ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow at '+width+' month '+m);await screenshot(p,width+'-'+(dark?'dark':'light')+'-'+m);}
     for(const page of ['evidence','explain']){await p.locator(`[data-page="${page}"]`).click();ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no '+page+' overflow at '+width);await screenshot(p,width+'-'+page);}
     await p.locator('[data-page="explore"]').click();
+    const checkStations=width===390||width===1366;
+    if(checkStations)await stationLabels(p.locator('.mx-atlas #map-wrap'),width+' inline map');
     const inline=await p.locator('#migration-map').boundingBox();
     await p.locator('#enlarge').click();ok(await p.locator('#map-dialog').evaluate(d=>d.scrollWidth<=d.clientWidth+2),'enlarged map fits '+width);
+    if(checkStations)await stationLabels(p.locator('#map-dialog #map-wrap'),width+' enlarged map');
     if(width===390){
       ok(await p.evaluate(inlineWidth=>{
         const dlg=document.querySelector('#map-dialog');
@@ -52,6 +84,7 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
     if(width===390){
       ok(await p.locator('#enlarge').evaluate(button=>document.activeElement===button && !document.querySelector('#map-dialog').open),
         'phone dialog restores the map and focus on Escape');
+      await stationLabels(p.locator('.mx-atlas #map-wrap'),'390 restored inline map');
     }
   }
   await p.evaluate(key=>localStorage.removeItem(key),KEY);await p.setViewportSize({width:1366,height:960});await p.emulateMedia({colorScheme:'light'});await p.goto(server.url+'openscied-b1-migration.html');
@@ -176,6 +209,14 @@ async function screenshot(p,name){if(shotDir){fs.mkdirSync(shotDir,{recursive:tr
     ok(await panel.locator('.mx-check-feedback').isVisible(),'anthrax feedback works in touch-enabled 390px Chromium');
     ok(await panel.evaluate(el=>el.getBoundingClientRect().right<=innerWidth+1 && el.scrollWidth<=el.clientWidth+1),'open feedback fits the mobile viewport');
     await screenshot(phone,'390-dark-evidence-check');
+    await phone.locator('[data-page="explore"]').tap();
+    await phone.locator('#map-wrap [data-region="north"]').tap();
+    ok(/North · a dry-season refuge/.test(await phone.locator('#inspector-title').textContent()),
+      'station label does not take over the touch control for its mapped region');
+    await stationLabels(phone.locator('.mx-atlas #map-wrap'),'touch-enabled 390 inline map');
+    await phone.locator('#enlarge').tap();
+    await stationLabels(phone.locator('#map-dialog #map-wrap'),'touch-enabled 390 enlarged map');
+    await screenshot(phone,'390-dark-rainfall-station-map');
   } finally {await touch.close();}
   await p.evaluate(key=>localStorage.setItem(key,JSON.stringify({v:1,month:4,page:'explore',visited:[4,7],answers:{},observations:{},notes:[
     {id:'month-4-map',title:'May',text:'Map only',type:'map-observation'},
