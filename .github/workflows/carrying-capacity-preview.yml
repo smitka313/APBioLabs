@@ -1,0 +1,45 @@
+name: Carrying capacity preview
+on:
+  pull_request:
+    paths:
+      - 'openscied-b1-carrying-capacity.*'
+      - 'carrying-logic.js'
+      - 'carrying-scene.js'
+      - 'carrying-capacity*'
+      - 'assets/carrying-capacity*'
+      - 'tests/carrying-capacity*'
+      - '.github/workflows/carrying-capacity-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: carrying-capacity-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  carrying-capacity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Check model and source expectations
+        run: node --test tests/carrying-capacity.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Exercise the activity in desktop and mobile Chromium
+        run: node tests/carrying-capacity-browser.cjs
+        env:
+          CARRYING_CAPACITY_SCREENSHOTS: test-artifacts/carrying-capacity
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: carrying-capacity-viewports
+          path: test-artifacts/carrying-capacity/*.png
+          if-no-files-found: ignore
+          retention-days: 14
