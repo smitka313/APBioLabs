@@ -105,8 +105,8 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0,1.05fr) minmax(0,.95fr);
-  align-items: center;
-  padding: .38rem 0 1.35rem;
+  align-items: start;
+  padding: .38rem 0 1.1rem;
   gap: 1.05rem clamp(1.1rem,4vw,2.6rem);
 }
 .dashboard-hero-copy { min-width: 0; }
@@ -149,6 +149,11 @@
 .dashboard-resume p { margin: .32rem 0; color: var(--muted); font-size: .87rem; }
 .dashboard-student .id-box { margin: .37rem 0; padding: .5rem .63rem; }
 .dashboard-student [data-ph="dashboard-identity"] { visibility: hidden; }
+/* Only reserve space until the real controls mount. Also handle a cached
+   dashboard script that mounts the form without removing the placeholder. */
+#openscied-student-identity:has(> .id-box:not([data-ph])) > [data-ph="dashboard-identity"] {
+  display: none;
+}
 .dashboard-student .id-line { overflow-wrap: anywhere; }
 .dashboard-student-note { color: var(--muted); font-size: .8rem; line-height: 1.35; }
 .dashboard-student-actions {
