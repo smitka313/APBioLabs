@@ -38,7 +38,16 @@
   text-underline-offset: 3px;
   font-size: .89rem;
 }
-.dashboard-nav .dashboard-brand { color: var(--h-ink); font-weight: 730; }
+.dashboard-nav .dashboard-brand {
+  padding-inline: .66rem;
+  border: 1px solid var(--h-link);
+  border-radius: var(--r-sm);
+  background: var(--h-link);
+  color: #0b2a21;
+  font-weight: 730;
+  text-decoration: none;
+}
+.dashboard-nav .dashboard-brand:hover { background: #fff; border-color: #fff; }
 .dashboard-nav a:focus-visible,.dashboard-browse:focus-visible {
   outline-color: var(--h-link);
   outline-offset: 2px;
@@ -172,7 +181,7 @@
   color: var(--stain);
   font: 600 .76rem/1.24 var(--f-mono);
   letter-spacing: .08em;
-  text-transform: uppercase;
+  text-transform: none;
   margin-bottom: -.48rem;
 }
 .dashboard-activity {
