@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://biologylabbench.com/openscied-dashboard.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -46,7 +46,43 @@
         <section class="dashboard-unit dashboard-resume" id="openscied-resume" aria-labelledby="resume-title" hidden><h2 id="resume-title">Continue your activity</h2><p id="openscied-resume-description"></p><a class="dashboard-open btn btn--primary" id="openscied-resume-link" href="openscied-b3-cell-cycle.html">Resume activity →</a></section>
         <section class="dashboard-student" aria-labelledby="student-panel-title">
 <h2 id="student-panel-title">Your student workspace</h2>
-<div id="openscied-student-identity"></div>
+<div id="openscied-student-identity">
+  <!-- Reserve the shared identity form's layout before its script arrives. The stand-in is never interactive. -->
+  <div class="id-box" data-ph="dashboard-identity" inert aria-hidden="true">
+    <div class="id-panel">
+      <p class="id-title">Who is working?</p>
+      <p class="small muted">Your name goes on your lab reports, and your simulated data will be unique to you. You only need to do this once on this computer.</p>
+      <div class="id-fields">
+        <div class="field id-f-name"><label>Enter your name as your teacher knows it</label><input type="text"></div>
+        <div class="field id-f-period"><label>Class period</label><select><option>Choose…</option><option>Period 1</option></select></div>
+        <div class="id-actions"><button class="btn btn--primary" type="button">Save</button></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Match the shorter shared identity line on returning visits, without painting personal data.
+    try {
+      const student = JSON.parse(localStorage.getItem('aplab:student'));
+      const name = String(student?.name ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+      if (name) {
+        const row = document.createElement('p');
+        row.className = 'id-line';
+        const who = document.createElement('strong');
+        who.textContent = name;
+        const period = String(student.period || '');
+        row.append('Signed in as ', who, period ? ' · ' + (period === 'Other' ? 'Other period' : 'Period ' + period) : '');
+        for (const title of ['change', 'Sign out']) {
+          const button = document.createElement('button');
+          button.className = 'linkbtn';
+          button.type = 'button';
+          button.textContent = title;
+          row.append(' · ', button);
+        }
+        document.currentScript.previousElementSibling.replaceChildren(row);
+      }
+    } catch (_) {}
+  </script>
+</div>
 <p class="dashboard-student-note">Your name, class period and work stay in this browser on this device. Downloaded work includes your name and class period; nothing you type is sent to the site. On a shared device, clear the previous student’s OpenSciEd results and check the name and class period before you begin.</p>
 <div class="dashboard-student-actions"><button class="btn" type="button" id="download-openscied-results">Download OpenSciEd work</button><button class="btn btn--danger" type="button" id="clear-openscied-results" aria-haspopup="dialog">Clear OpenSciEd results…</button></div>
 <p class="dashboard-student-note" id="openscied-results-status" role="status" aria-live="polite"></p>

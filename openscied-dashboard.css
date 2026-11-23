@@ -43,9 +43,22 @@
   outline-color: var(--h-link);
   outline-offset: 2px;
 }
-.dashboard-theme-controls { gap: .38rem; font-size: .8rem; color: var(--h-muted); }
-.dashboard-theme-controls .theme-opt { min-height: 34px; }
-.dashboard-theme-controls [data-ph="theme"] { display: inline-block; width: 168px; height: 34px; }
+.dashboard-theme-controls {
+  --theme-block-size: 36px;
+  gap: .38rem;
+  font-size: .8rem;
+  color: var(--h-muted);
+}
+.dashboard-theme-controls :is([data-ph="theme"],.theme-switch) {
+  inline-size: 168px;
+  max-inline-size: 100%;
+  block-size: var(--theme-block-size);
+}
+.dashboard-theme-controls .theme-switch {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+}
+.dashboard-theme-controls .theme-opt { min-width: 0; min-height: 0; padding-inline: .2em; }
 .dashboard-panorama {
   position: relative;
   max-width: 1320px;
@@ -126,6 +139,8 @@
 .dashboard-student h2,.dashboard-resume h2 { font-size: 1.22rem; color: var(--ink); }
 .dashboard-resume p { margin: .32rem 0; color: var(--muted); font-size: .87rem; }
 .dashboard-student .id-box { margin: .37rem 0; padding: .5rem .63rem; }
+.dashboard-student [data-ph="dashboard-identity"] { visibility: hidden; }
+.dashboard-student .id-line { overflow-wrap: anywhere; }
 .dashboard-student-note { color: var(--muted); font-size: .8rem; line-height: 1.35; }
 .dashboard-student-actions {
   display: flex;
@@ -284,7 +299,6 @@
   .dashboard-topbar { min-height: 47px; }
   .dashboard-nav { gap: 0 .72rem; }
   .dashboard-nav a { font-size: .79rem; min-height: 38px; }
-  .dashboard-theme-controls .theme-opt { min-height: 36px; }
   .dashboard-panorama { height: auto; aspect-ratio: 2048/682; }
   .dashboard-hero-art { object-fit: contain; }
   .dashboard-hero-grid { padding-block: .16rem 1rem; gap: .64rem; }

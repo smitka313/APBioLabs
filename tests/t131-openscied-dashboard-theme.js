@@ -8,6 +8,38 @@ const sizes = [[390,844,true],[768,910,false],[940,850,false],[1366,900,false],[
 const screenshots = process.env.OPENSCIED_DASHBOARD_SCREENSHOTS;
 const fixture = {'aplab:student':JSON.stringify({name:'Theme Check',period:'3'})};
 
+// Force a real first paint before either of the shared scripts is available.
+async function checkMastheadLayout(browser,site,seed,description) {
+  // The shared helper signs in by default; the fresh-visit path needs genuinely empty storage.
+  const ctx=await browser.newContext({viewport:{width:375,height:900},reducedMotion:'reduce'});
+  let release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  try {
+    if(seed) await ctx.addInitScript(values=>{for(const [key,value] of Object.entries(values)) localStorage.setItem(key,value);},seed);
+    await ctx.route(/https:\/\/(?:fonts\.(?:googleapis|gstatic)\.com|gc\.zgo\.at)\//,route=>route.abort());
+    await ctx.route(/\/(?:lab|openscied-dashboard)\.js$/, async route=>{await gate; await route.continue();});
+    const p=await ctx.newPage();
+    await p.goto(site.url+'openscied-dashboard.html',{waitUntil:'commit'});
+    await p.locator('.dashboard-student-note').first().waitFor();
+    const measure=()=>p.evaluate(async()=>{
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      return Object.fromEntries(['.dashboard-panorama','.dashboard-student-note','#activities'].map(selector=>
+        [selector,document.querySelector(selector).getBoundingClientRect().top]));
+    });
+    const before=await measure();
+    assert.equal(await p.locator('.dashboard-theme-controls .theme-opt').count(),0,'theme script is still delayed');
+    release();
+    await p.locator('.dashboard-theme-controls .theme-opt').first().waitFor();
+    await p.locator('#openscied-student-identity '+(seed?'.id-line':'.id-panel')).waitFor();
+    const after=await measure();
+    for(const selector of Object.keys(before)) {
+      assert.ok(Math.abs(after[selector]-before[selector])<=2,
+        description+': '+selector+' must keep its position as controls mount ('+before[selector]+' → '+after[selector]+' px)');
+    }
+    console.log('375px '+description+': no late layout growth from theme or student controls');
+  } finally { release(); await ctx.close(); }
+}
+
 (async () => {
   const site = await T.serve();
   let browser;
@@ -15,6 +47,8 @@ const fixture = {'aplab:student':JSON.stringify({name:'Theme Check',period:'3'})
     const executablePath = process.env.CHROMIUM_PATH;
     browser = await T.launch(executablePath ? {executablePath} : undefined);
     if (screenshots) fs.mkdirSync(screenshots,{recursive:true});
+    await checkMastheadLayout(browser,site,undefined,'fresh visit');
+    await checkMastheadLayout(browser,site,fixture,'returning student');
     for (const [width,height,dark] of sizes) {
       const ctx=await T.ctxFor(browser,{width,height,dark,reduced:true,touch:width===390,seed:fixture});
       try {
