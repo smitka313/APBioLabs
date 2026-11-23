@@ -17,14 +17,14 @@
   const CARDS = VALUES.flatMap((row,i) => row.map((fat,g) => Object.freeze({id:'m'+(i+5)+'g'+g, month:i+4, location:i+1, group:g, fat, anthrax:i===1||i===2?20:0, health:HEALTH[i][g]})));
   // Map coordinates are in a 1000 × 660 art space. Month locations follow Slide A;
   // the two northern months deliberately have different centers, as in the source.
-  const POSITIONS = [[620,494],[601,523],[580,504],[520,440],[460,359],[335,309],[365,267],[460,209],[501,129],[554,137],[563,294],[601,413]];
-  const RANGES = ['Southern plains','Southern plains','Southern plains','Central Serengeti','Central / western Serengeti','Western Corridor','Western / northern corridor','Northern Serengeti','Northern Serengeti / Maasai Mara','Maasai Mara / northern range','Eastern return route','Southern return route'];
-  const SEASONS = ['Wet-season range','Wet-season range','Wet-season range','Wet-season transition','Moving west','Western range','Moving north','Northern range','Northern range','Return south begins','Return south','Southern return'];
+  const POSITIONS = [[620,494],[601,523],[580,504],[513,493],[460,359],[335,309],[365,267],[460,209],[501,129],[554,137],[563,294],[601,413]];
+  const RANGES = ['Southern plains','Southern plains','Southern plains','South and southwest Serengeti','Central / western Serengeti','Western Corridor','Western / northern corridor','Northern Serengeti','Northern Serengeti / Maasai Mara','Maasai Mara / northern range','Eastern return route','Southern return route'];
+  const SEASONS = ['Wet-season range','Wet-season range','Wet-season range','Wet-season range','Late wet season · moving west','Western range','Moving north','Northern range','Northern range','Northern dry-season range','Dry-season return south','Early wet-season return'];
   const NOTES = [
     'Look at where the herds gather. What might make this part of the ecosystem useful at this time?',
     'The herds remain in the southern part of the ecosystem. What evidence would explain this pattern?',
     'Nearby herds can occupy different patches. The map simplifies many animals into one broad range.',
-    'The broad range shifts northwest. Predict what the next month’s map will show.',
+    'The main range is still in the south and southwest, near Maswa. The route turns northwest afterward. Where might the herds be next?',
     'Location 1 on the data cards. Compare all three groups before deciding what their health suggests.',
     'Location 2 on the data cards. Check both bone-marrow fat and anthrax across the three groups.',
     'Location 3 on the data cards. Does the disease measure separate living and dead groups?',
@@ -35,13 +35,21 @@
     'The route returns toward the southern plains. The real timing varies between years.'
   ];
   function monthIndex(value) { return Number.isInteger(value)&&value>=0&&value<12?value:0; }
+  // Lesson 4 class map convention: wet December–May, dry June–November.
+  // These labels guide illustrative weather; they are not monthly precipitation readings.
+  function isWetSeason(value) { const month=monthIndex(value); return month<=4||month===11; }
+  function fieldRegion(value) {
+    const month=monthIndex(value);
+    // November depicts the northern end of the southbound corridor.
+    return month<4||month===11?'south':month<7?'west':'north';
+  }
   function forMonth(value) { return CARDS.filter(c=>c.month===monthIndex(value)); }
   function groups(by='month', cards=CARDS) {
     const result = new Map();
     cards.forEach(c=> {const label=by==='group'?GROUPS[c.group]:by==='health'?c.health:by==='anthrax'?c.anthrax+'% anthrax':MONTHS[c.month]+' · Location '+c.location;if(!result.has(label))result.set(label,[]);result.get(label).push(c);});
     return Array.from(result,([label,cards])=>({label,cards}));
   }
-  const API=Object.freeze({MONTHS,GROUPS,CARDS:Object.freeze(CARDS),POSITIONS,RANGES,SEASONS,NOTES,monthIndex,forMonth,groups});
+  const API=Object.freeze({MONTHS,GROUPS,CARDS:Object.freeze(CARDS),POSITIONS,RANGES,SEASONS,NOTES,monthIndex,isWetSeason,fieldRegion,forMonth,groups});
   if(typeof module!=='undefined'&&module.exports)module.exports=API;
   else root.MigrationLogic=API;
 })(typeof window!=='undefined'?window:globalThis);

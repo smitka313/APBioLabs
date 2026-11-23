@@ -24,3 +24,27 @@ test('dashboard preserves unreadable work and rejects unknown schemas',()=>{cons
 test('opening the explorer alone does not claim completed work',()=>{const {migrationProgress}=dashboard();assert.equal(migrationProgress(JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{},observations:{},lastVisitedAt:1})).started,false);});
 test('dashboard exports all ten explorer responses and recognizes observation-only work',()=>{const api=dashboard();assert.equal(api.migrationResponseIds().length,10);assert.equal(api.migrationProgress(JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{},observations:{0:'My question'}})).started,true);});
 test('source image and all local activity dependencies exist',()=>{const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');for(const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)){if(/^https?:/.test(match[1])||match[1]==='openscied-dashboard.html')continue;assert.ok(fs.existsSync(path.join(__dirname,'..',match[1])),match[1]);}assert.ok(!html.includes('Answer Key'));});
+
+test('April keeps the main herd range in the south despite the lesson’s wetter northern station', () => {
+  assert.match(L.RANGES[3], /South and southwest/i);
+  assert.match(L.NOTES[3], /still in the south.*Maswa/i);
+  const [march,april,may] = L.POSITIONS.slice(2,5);
+  assert.ok(april[0] < march[0], 'April is centered to the west of March');
+  assert.ok(Math.abs(april[1]-march[1]) < 25, 'April stays in the southern band with March');
+  assert.ok(may[1] < april[1]-75, 'northward movement is clear by May');
+});
+
+test('the October Maasai Mara range precedes the November southbound return', () => {
+  assert.match(L.RANGES[9], /Maasai Mara/);
+  assert.doesNotMatch(L.SEASONS[9], /return/i);
+  assert.match(L.SEASONS[10], /return south/i);
+  assert.ok(L.POSITIONS[10][1] > L.POSITIONS[9][1], 'southbound range moves down the schematic');
+  assert.equal(L.fieldRegion(10), 'north', 'November shows the northern end of the eastern corridor');
+});
+
+test('illustrative weather uses the Lesson 4 wet/dry convention independently of region', () => {
+  const wetMonths = L.MONTHS.filter((_,i) => L.isWetSeason(i));
+  assert.deepEqual(wetMonths, ['January','February','March','April','May','December']);
+  assert.equal(L.fieldRegion(4), 'west', 'May can be wet even as herds move west');
+  assert.equal(L.fieldRegion(11), 'south', 'December returns toward the southern plains');
+});
