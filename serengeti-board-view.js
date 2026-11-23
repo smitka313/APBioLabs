@@ -141,6 +141,13 @@
       }
       previousResult = resultKey;
     }
+    const sourceReading=find('sg-hunt-reading'), reading=find('sg-expanded-reading');
+    if(reading){
+      reading.hidden=!sourceReading;
+      if(sourceReading){
+        const copy=sourceReading.cloneNode(true); copy.removeAttribute('id'); reading.replaceChildren(copy);
+      }else if(reading.firstElementChild)reading.replaceChildren();
+    }
     mirrorContext(); mirrorDice(); mirrorChooser(); mirrorActions();
     if (focusedId) {
       const replacement = find(focusedId) || find('sg-expanded-next') || close;

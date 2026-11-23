@@ -350,3 +350,54 @@
 .sg-download-fallback label{display:block;margin:.3rem 0}
 .sg-download-fallback textarea{display:block;box-sizing:border-box;width:100%;min-height:5rem}
 .sg-restart-backup{margin:.75rem 0}
+
+/* Expedition layout: one live inline board, with a rail for the current turn and its field note. */
+#sg-play .sg-game {grid-template-columns:minmax(0,1fr) clamp(18rem,28vw,28rem);gap:.78rem;justify-content:initial;}
+.sg-expedition-rail {min-width:0;position:sticky;top:.55rem;display:grid;gap:.55rem;}
+.sg-expedition-rail .sg-control {position:static;}
+#sg-play #sg-map-panel {padding:.52rem;scroll-margin-top:.45rem;}
+#sg-play #sg-map-panel #sg-scene .sg-map {
+  max-inline-size:min(100%,clamp(28rem,calc((100svh - 142px) * .8323),49rem));
+  max-block-size:none;
+}
+#sg-play .sg-figure {background:radial-gradient(ellipse at 46% 45%,#d1b77e 19%,#b79557 65%,#886236 140%);}
+.sg-expedition-rail #sg-board-latest {
+  width:100%;max-width:none;grid-template-columns:minmax(0,1fr) auto;
+  gap:.14rem .4rem;margin:0;padding:.37rem .5rem;row-gap:.1rem;
+}
+.sg-expedition-rail #sg-board-latest .sg-kicker {grid-column:1;grid-row:1;}
+.sg-expedition-rail #sg-board-latest #sg-last {grid-column:1/-1;grid-row:2;padding:.06rem 0 .12rem;font-size:.84rem;}
+.sg-expedition-rail #sg-board-latest button {grid-column:2;grid-row:1;min-height:1.8rem;}
+#sg-play[data-phase="setup"] .sg-expedition-rail #sg-board-latest {display:none;}
+#sg-play[data-phase="setup"] .sg-control .sg-card {border-left-color:var(--sg-accent);}
+#sg-play[data-phase="setup"] #sg-start {min-height:3.1rem;}
+@media(max-width:920px) and (min-width:701px) {
+  #sg-play .sg-game {grid-template-columns:minmax(0,1fr) minmax(16.2rem,36%);gap:.57rem;}
+}
+@media(max-width:700px) {
+  #sg-play .sg-game {grid-template-columns:minmax(0,1fr);gap:.48rem;}
+  .sg-expedition-rail {position:static;gap:.42rem;}
+  #sg-play #sg-map-panel {padding:.35rem;}
+  #sg-play #sg-map-panel #sg-scene .sg-map {max-inline-size:min(100%,calc(clamp(18.5rem,54svh,27rem) * .8323));}
+  .sg-expedition-rail #sg-board-latest {
+    grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:.16rem .36rem;
+    padding:.23rem .34rem;
+  }
+  .sg-expedition-rail #sg-board-latest .sg-kicker {grid-column:1;grid-row:1;}
+  .sg-expedition-rail #sg-board-latest #sg-last {grid-column:2;grid-row:1;font-size:.74rem;padding:0;}
+  .sg-expedition-rail #sg-board-latest button {grid-column:3;grid-row:1;min-height:1.96rem;}
+  #sg-play.sg-role-first #sg-toggle-map {display:none;}
+}
+@media print {
+  .sg-expedition-rail {position:static;}
+}
+
+/* On-map cards show the moment. The rail pairs the visual change with the model score. */
+.sg-map-proximity {display:block;margin-top:.3rem;padding-top:.31rem;border-top:1px solid var(--sg-line);color:var(--sg-ink);font-weight:700;}
+.sg-map-proximity[hidden],#sg-expanded-reading[hidden] {display:none;}
+.sg-hunt-reading {display:grid;grid-template-columns:1fr 1fr;gap:.38rem;margin:.42rem 0;}
+.sg-hunt-reading span {min-width:0;border:1px solid var(--sg-line);border-radius:8px;padding:.4rem;background:var(--sg-paper);}
+.sg-hunt-reading span+span {border-inline-start:3px solid var(--sg-accent);}
+.sg-hunt-reading small {display:block;margin:0 0 .23rem;color:var(--sg-soft);font-size:.72rem;font-weight:700;line-height:1.16;}
+.sg-hunt-reading strong {display:block;color:var(--sg-ink);font-size:.84rem;line-height:1.22;}
+#sg-evidence-report {margin:.6rem 0;}

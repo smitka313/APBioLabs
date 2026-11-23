@@ -11,11 +11,14 @@
 <link rel="stylesheet" href="openscied-b1-serengeti.css">
 <link rel="stylesheet" href="serengeti-card-view.css">
 <link rel="stylesheet" href="serengeti-dice-view.css">
+<link rel="stylesheet" href="serengeti-field-report.css">
 <script defer src="serengeti-logic.js"></script>
 <script defer src="serengeti-scene.js"></script>
 <script defer src="serengeti-dice-view.js"></script>
+<script defer src="serengeti-field-report.js"></script>
 <script defer src="openscied-b1-serengeti.js"></script>
 <script defer src="serengeti-board-view.js"></script>
+<script defer src="serengeti-expedition-layout.js"></script>
 <script defer src="serengeti-card-view.js"></script>
 </head>
 <body class="sg-body">
@@ -41,21 +44,19 @@
   </div>
   <section id="sg-play" class="sg-page" aria-label="Play">
     <div id="sg-season-strip" class="sg-season-strip" aria-label="Four seasons"></div>
-    <aside class="sg-evidence-peek sg-panel" id="sg-board-latest" aria-label="Latest change">
-      <p class="sg-kicker">Latest change</p><p id="sg-last">Completed events and hunts will appear here.</p><button type="button" class="sg-plain" data-page="evidence">Open evidence</button>
-    </aside>
     <section id="sg-finish" class="sg-panel sg-finish" aria-labelledby="sg-finish-title" hidden>
       <header class="sg-finish-head"><div><p class="sg-kicker">Final tally</p><h2 id="sg-finish-title">A year on the Serengeti</h2></div><button type="button" id="sg-replay" class="sg-plain">Play again</button></header>
       <div id="sg-finish-totals"></div>
+      <div id="sg-finish-report" hidden></div>
     </section>
     <button id="sg-toggle-map" class="sg-plain" type="button" aria-expanded="true" aria-controls="sg-map-panel">Hide map</button>
     <div class="sg-game">
       <div class="sg-board sg-panel" id="sg-map-panel">
-        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title">Winter range</h2></div><div class="sg-board-header-actions"><span class="sg-model-tag">SIMULATED</span><button type="button" class="sg-cta" id="sg-board-open" aria-haspopup="dialog" aria-controls="sg-board-dialog"><span aria-hidden="true">⛶</span> Enlarge board</button></div></header>
+        <header class="sg-board-header"><div><p class="sg-kicker">Migration field map</p><h2 id="sg-board-title" tabindex="-1">Winter range</h2></div><div class="sg-board-header-actions"><span class="sg-model-tag">SIMULATED</span><button type="button" class="sg-cta" id="sg-board-open" aria-haspopup="dialog" aria-controls="sg-board-dialog"><span aria-hidden="true">⛶</span> Enlarge board</button></div></header>
         <div class="sg-board-atlas">
           <figure class="sg-figure">
             <div id="sg-scene"></div>
-            <figcaption id="sg-board-caption"></figcaption>
+            <figcaption><span id="sg-board-caption"></span><span id="sg-map-proximity" class="sg-map-proximity" hidden></span></figcaption>
           </figure>
           <aside class="sg-map-key" aria-label="Map legend">
             <p class="sg-kicker">Map key</p>
@@ -73,18 +74,25 @@
         </div>
         <div class="sg-metrics" id="sg-metrics" aria-label="Wildebeest token counts"></div>
       </div>
-      <div class="sg-control sg-panel" aria-label="Turn controls">
+      <div class="sg-expedition-rail" id="sg-expedition-rail">
+        <section class="sg-control sg-panel" id="sg-expedition-turn" aria-label="Turn controls">
         <div id="sg-rolebar" class="sg-rolebar" aria-label="Agent roles"></div>
         <div class="sg-action-top"><p id="sg-phase" class="sg-kicker">Set up</p><h2 id="sg-action-title" tabindex="-1">One device, three roles</h2><p id="sg-action-copy">Take turns controlling the wildebeest, hyenas and lions.</p></div>
         <div id="sg-interactive"></div>
         <div id="sg-dice" class="sg-dice" hidden></div>
         <div id="sg-actions" class="sg-actions"></div>
         <p id="sg-turn-note" class="sg-turn-note"></p>
+        </section>
+        <aside class="sg-evidence-peek sg-panel" id="sg-board-latest" aria-label="Latest change">
+          <p class="sg-kicker">Latest change</p><p id="sg-last">Completed events and hunts will appear here.</p>
+          <button type="button" class="sg-plain" data-page="evidence">Open evidence</button>
+        </aside>
       </div>
     </div>
   </section>
   <section id="sg-evidence" class="sg-page" aria-labelledby="sg-evidence-title" hidden>
     <header class="sg-section-head"><p class="sg-kicker">Field notebook</p><h2 id="sg-evidence-title" tabindex="-1">What happened on the board?</h2><p>Use the season totals and event records as evidence. Cumulative change starts at 0 and never assumes a number of animals in a herd token.</p></header>
+    <div id="sg-evidence-report" hidden></div>
     <div id="sg-evidence-body"></div>
     <div class="sg-page-actions"><button type="button" class="sg-plain" data-page="play">Back to play</button><button type="button" class="sg-cta" data-page="analyze">Go to analysis</button></div>
   </section>
@@ -138,6 +146,7 @@
         <div class="sg-expanded-last" id="sg-expanded-last" hidden>
           <strong>Latest result</strong><span id="sg-expanded-last-text"></span>
         </div>
+        <div id="sg-expanded-reading" hidden></div>
         <div id="sg-expanded-dice" class="sg-dice" hidden></div>
         <div id="sg-expanded-options"></div>
         <div id="sg-expanded-actions" class="sg-actions"></div>

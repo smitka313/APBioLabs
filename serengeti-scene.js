@@ -232,7 +232,7 @@
       .sg-map .sg-map-hit[data-legal="true"]{cursor:pointer}
       .sg-map .sg-map-hit[data-legal="true"]:hover,.sg-map .sg-map-hit:focus-visible{fill:#fffef23c;stroke:#203d30;stroke-width:2;vector-effect:non-scaling-stroke}
       .sg-map .sg-map-hit[data-source="true"]:hover{fill:#fff4cf46}
-      .sg-map [data-layer="tokens"],.sg-map [data-layer="selected"],.sg-map [data-layer="choices"], .sg-map [data-layer="effects"],.sg-map [data-layer="recent"],.sg-map [data-layer="flood"]{pointer-events:none}
+      .sg-map [data-layer="range-caption"],.sg-map [data-layer="route"],.sg-map [data-layer="route-caption"],.sg-map [data-layer="hunt-link"],.sg-map [data-layer="hunt-dice"],.sg-map [data-layer="tokens"],.sg-map [data-layer="selected"],.sg-map [data-layer="choices"], .sg-map [data-layer="effects"],.sg-map [data-layer="recent"],.sg-map [data-layer="flood"]{pointer-events:none}
       .sg-map .sg-map-grazing{transition:opacity 160ms linear}
       @media (prefers-reduced-motion:reduce){.sg-map .sg-map-grazing{transition:none}}
     </style>`;
@@ -266,7 +266,7 @@
       <text x="468" y="511" class="sg-map-small" transform="rotate(-90 468 511)">NGORONGORO</text>
       <text x="171" y="577" font-size="8.8">MASWA GAME</text><text x="173" y="588" font-size="8.8">RESERVE</text>
     </g>`;
-    svg.innerHTML=defs(id)+`<g aria-hidden="true">${backdrop}${landscape(id)}${grazing}${territories}${geography(id)}
+    svg.innerHTML=defs(id)+`<g aria-hidden="true">${backdrop}${landscape(id)}<rect x="31" y="30" width="459" height="567" data-season-wash="bg" fill="none" opacity=".11"/>${grazing}${territories}${geography(id)}
       <path d="${grid}" stroke="#736247" stroke-width=".63" stroke-opacity=".44" fill="none"/>${outlines}${placeLabels}
       <g fill="#5d4a36" class="sg-map-axis">${cellAxes}</g>${turnLabels}
       <g transform="translate(56 558)" fill="#4b422d" stroke="#4b422d"><path d="M0 15V0m-4 7 4-7 4 7M-6 15h12" stroke-width=".9" fill="none"/><text x="0" y="-3" text-anchor="middle" font-size="7" font-weight="800" stroke="none">N</text></g>
@@ -274,7 +274,8 @@
       <g transform="translate(35 608)" fill="#5e4932" font-size="7.1" font-weight="700">
         <path d="M0 -2h13" stroke="#88442e" stroke-width="1.4"/><text x="17">Unfenced road</text>
         <path d="M80 -2h13" stroke="#72432e" stroke-width="1.4" stroke-dasharray="2 1.6"/><text x="98">Fenced road</text></g>
-      <g data-layer="flood"></g><g data-layer="choices"></g><g data-layer="effects"></g><g data-layer="tokens"></g><g data-layer="selected"></g><g data-layer="recent"></g></g>`;
+      <g data-layer="range-caption"></g><g data-layer="flood"></g><g data-layer="choices"></g><g data-layer="route"></g><g data-layer="route-caption"></g><g data-layer="hunt-link"></g>
+      <g data-layer="effects"></g><g data-layer="tokens"></g><g data-layer="selected"></g><g data-layer="recent"></g><g data-layer="hunt-dice"></g></g>`;
     const targets=svgEl('g',{'aria-label':'Map squares'});
     const buttons=new Map();
     const choices=svg.querySelector('[data-layer="choices"]');
@@ -283,6 +284,11 @@
     const flood=svg.querySelector('[data-layer="flood"]'), recent=svg.querySelector('[data-layer="recent"]');
     let priorMarks='', priorFlood='';
     const selected=svg.querySelector('[data-layer="selected"]');
+    const route=svg.querySelector('[data-layer="route"]'), routeCaption=svg.querySelector('[data-layer="route-caption"]');
+    const rangeCaption=svg.querySelector('[data-layer="range-caption"]');
+    const seasonWash=svg.querySelector('[data-season-wash="bg"]');
+    const huntLink=svg.querySelector('[data-layer="hunt-link"]'), huntDice=svg.querySelector('[data-layer="hunt-dice"]');
+    let priorRoute='', priorBadge='', routeRecord=null;
     let legal=new Set(), sourceKeys=new Set(), destinationKeys=new Set(), focusKey=null;
     const tokenNodes=new Map(), running=new Map();
     let previousStage, previousSeason, previousChoices='', previousHunt='';
@@ -365,6 +371,89 @@
         ${num===1?`<use href="#${id}-${t.species}-chip" x="${cx-7.7}" y="${cy-8.1}" width="15.4" height="11.9"/>`:''}
         <text x="${cx}" y="${cy+(num===1?6.5:2.6)}" text-anchor="middle" fill="${stroke}" font-family="system-ui,sans-serif" font-size="${num===1?6.4:7}" font-weight="900">${symbol||'W'}</text></g>`;
     };
+    const onBoard=c=>Boolean(c&&Number.isInteger(c.x)&&Number.isInteger(c.y)&&BOARD[c.y]?.[c.x]);
+    const center=c=>[LEFT+(c.x+.5)*UNIT,TOP+(c.y+.5)*UNIT];
+    const cleanMoves=records=>(Array.isArray(records)?records:[]).filter(move=>
+      onBoard(move.from)&&onBoard(move.to)&&!same(move.from,move.to));
+    // A connector is a change of game square, never a predicted path across the park.
+    // Three actual pieces are enough to show direction while keeping the map readable.
+    function routeMarkup(moves,mode,season) {
+      const sorted=moves.slice().sort((a,b)=>a.from.x-b.from.x||a.from.y-b.from.y||a.to.x-b.to.x||a.to.y-b.to.y);
+      const selected=sorted.length<=3?sorted:[sorted[0],sorted[Math.floor(sorted.length/2)],sorted.at(-1)];
+      const routes=selected.map(({from,to},i)=>{
+        const [fx,fy]=center(from),[tx,ty]=center(to), span=Math.hypot(tx-fx,ty-fy);
+        const dx=(tx-fx)/span,dy=(ty-fy)/span;
+        const pad=Math.min(10,span/3), x1=fx+dx*pad,y1=fy+dy*pad,x2=tx-dx*pad,y2=ty-dy*pad;
+        const arrow=`M${x2-dx*5-dy*3.5} ${y2-dy*5+dx*3.5}L${x2} ${y2}L${x2-dx*5+dy*3.5} ${y2-dy*5-dx*3.5}`;
+        return `<g data-route-hop="${i}" data-from-cell="${key(from.x,from.y)}" data-to-cell="${key(to.x,to.y)}">
+          <path d="M${x1} ${y1}L${x2} ${y2}" stroke="#fff6d9" stroke-width="4.4" opacity=".84"/>
+          <path d="M${x1} ${y1}L${x2} ${y2}" stroke="#236963" stroke-width="2.15" stroke-dasharray="5 3" stroke-linecap="round"/>
+          <path d="${arrow}" stroke="#fff6d9" stroke-width="4.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="${arrow}" stroke="#185951" stroke-width="2.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="${fx}" cy="${fy}" r="10.5" fill="none" stroke="#fff4c7" stroke-width="2.5"/>
+          <circle cx="${tx}" cy="${ty}" r="10.9" fill="none" stroke="#1b655d" stroke-width="1.6" stroke-dasharray="2.5 1.7"/>
+        </g>`;
+      }).join('');
+      const names=['Winter','Spring','Summer','Fall'];
+      const label=(mode==='preview'?'Preview: ':'')+moves.length+' '+(moves.length===1?'token':'tokens')+(mode==='preview'?' shift':' moved')+' · '+names[season];
+      return {routes,label};
+    }
+
+    const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+    function huntDiceFace(value,x,y,pair,side) {
+      const marks=(PIPS[value]||[]).map(n=>`<circle cx="${x+3.6+(n%3)*4.2}" cy="${y+3.6+Math.floor(n/3)*4.2}" r="1.18" fill="#254644"/>`).join('');
+      const out=pair&&pair.winner!==side&&pair.winner!=='tie';
+      const hint=pair?.winner==='tie'?'=':out?'×':'';
+      const numeric=Number.isInteger(value)&&value>=1&&value<=6?value:'ready';
+      return `<g data-map-die="${side}" data-value="${numeric}" data-result="${numeric==='ready'?'ready':out?'removed':hint?'tied':pair?'kept':'unmatched'}">
+        <rect x="${x}" y="${y}" width="15.5" height="15.5" rx="3.05" fill="${out?'#e8c8b3':'#fbedd4'}" stroke="${out?'#764333':'#8c9b76'}" stroke-width=".9"/>
+        ${marks || `<text x="${x+7.75}" y="${y+11}" text-anchor="middle" fill="#40594c" font-size="9" font-weight="900">?</text>`}
+        ${hint?`<circle cx="${x+14}" cy="${y+13.9}" r="4.1" fill="${out?'#883b2a':'#416559'}"/><text x="${x+14}" y="${y+16}" text-anchor="middle" fill="#fff6dd" font-size="6.8" font-weight="900">${hint}</text>`:''}</g>`;
+    }
+    function huntBadge(pred,prey,presentation,occupied) {
+      const [ax,ay]=center(pred),[bx,by]=center(prey), mx=(ax+bx)/2,my=(ay+by)/2;
+      const connector=`<g data-map-hunt-pair="${key(pred.x,pred.y)}>${key(prey.x,prey.y)}">
+        <path d="M${ax} ${ay}L${bx} ${by}" stroke="#fff4cd" stroke-width="6.3" stroke-linecap="round"/>
+        <path d="M${ax} ${ay}L${bx} ${by}" stroke="#713d2e" stroke-width="2.8" stroke-linecap="round"/>
+        <circle cx="${ax}" cy="${ay}" r="11.6" stroke="#713d2e" stroke-width="2.15" stroke-dasharray="3 2" fill="none"/>
+        <circle cx="${bx}" cy="${by}" r="11.6" stroke="#24615c" stroke-width="2.15" fill="none"/>
+      </g>`;
+      if(!presentation)return {connector,badge:''};
+      const {round,revealed=false,winner,species}=presentation;
+      const roundNumber=Math.max(0,Math.min(999,Math.trunc(Number(presentation.roundNumber)||0)));
+      const lion=species==='lion';
+      const width=85,height=56;
+      const offsets=[[30,-height-17],[-width-30,-height-17],[30,18],[-width-30,18],[30,-height/2],[-width-30,-height/2],[-width/2,-height-23],[-width/2,24]];
+      const proposals=offsets.map(([ox,oy],index)=>{
+        const x=Math.max(LEFT+2,Math.min(LEFT+COLS*UNIT-width-2,mx+ox));
+        const y=Math.max(TOP+2,Math.min(TOP+ROWS*UNIT-height-2,my+oy));
+        const overlaps=(px,py,padding)=>px>x-padding&&px<x+width+padding&&py>y-padding&&py<y+height+padding;
+        let score=index*2+(overlaps(ax,ay,15)?1000:0)+(overlaps(bx,by,15)?1000:0);
+        for(const other of occupied){ const [px,py]=center(other); if(overlaps(px,py,7))score+=22; }
+        return {x,y,score};
+      });
+      const {x,y}=proposals.sort((a,b)=>a.score-b.score)[0];
+      const anchorX=Math.max(x+6,Math.min(x+width-6,mx)), anchorY=Math.max(y+4,Math.min(y+height-4,my));
+      const header=revealed?(winner==='prey'?'WILDEBEEST ESCAPES':winner==='predator'?'PREDATOR WINS':'HUNT RESULT')
+        :roundNumber?'HUNT · ROLL '+Math.min(999,roundNumber):'HUNT · READY';
+      const sides=[['predator',lion?'LION':'HYENA',23],['prey','WB',41]];
+      const rows=sides.map(([side,label,rowY])=>{
+        const source=round?.[side];
+        const count=Number(side==='predator'?presentation.predatorDice:presentation.preyDice)||0;
+        const vals=Array.isArray(source)?source.slice(0,3):Array(Math.min(3,Math.max(0,Math.trunc(count)))).fill(null);
+        return `<text x="6" y="${rowY+8.7}" fill="#f6ebcb" font-size="6.9" font-weight="850">${label}</text>`
+          +vals.map((value,i)=>huntDiceFace(value,29+i*17.7,rowY-3,round?.pairs?.[i],side)).join('');
+      }).join('');
+      return {connector,badge:`<path d="M${mx} ${my}L${anchorX} ${anchorY}" stroke="#fff7d7" stroke-width="3.8" stroke-linecap="round"/><path d="M${mx} ${my}L${anchorX} ${anchorY}" stroke="#34554b" stroke-width="1.6" stroke-linecap="round"/>
+        <g transform="translate(${x} ${y})" data-map-hunt-round="${roundNumber}" data-map-hunt-state="${revealed?'result':round?'roll':'ready'}">
+          <rect x="0" y="1" width="${width}" height="${height}" rx="6" fill="#26342a" opacity=".26"/>
+          <rect width="${width}" height="${height}" rx="6" fill="#233e37" stroke="#f3e3bb" stroke-width="1.5"/>
+          <text x="6" y="11" fill="#f6eac9" font-size="6.8" font-weight="850" letter-spacing=".2">${header}</text>
+          <path d="M6 14.5h73" stroke="#85a08a" stroke-width=".65"/>
+          ${rows}
+        </g>`};
+    }
+
     function update(view={}) {
       const toKeys=list=>new Set((Array.isArray(list)?list:[]).filter(c=>c&&BOARD[c.y]?.[c.x]).map(c=>key(c.x,c.y)));
       sourceKeys=toKeys(view.sourceCells);
@@ -394,12 +483,20 @@
       const selectedCell=view.selected||view.position;
       const selectedKey=selectedCell&&key(selectedCell.x,selectedCell.y);
       const active=Number.isInteger(view.season)&&view.season>=0&&view.season<4?view.season:null;
+      // Editorial ink wash only: no weather, grass, or other modeled variables.
+      if(active===null)svg.removeAttribute('data-map-season');
+      else svg.setAttribute('data-map-season',String(active));
+      seasonWash?.setAttribute('fill',active===null?'none':['#596a7d','#799362','#bb8a4b','#a57263'][active]);
       const started=Boolean(previousStage&&previousStage!=='setup'&&view.stage!=='setup');
       const migrating=started&&previousStage==='migration'&&view.stage!=='migration';
+      const preview=cleanMoves(view.migrationPreview);
+      const migrationMoves=[];
       let cohortIndex=0;
+      if(!migrating && (view.stage!=='card'||routeRecord?.season!==active||view.eventCardOpen))routeRecord=null;
       for(const el of svg.querySelectorAll('[data-grazing]')){
         const current=active===Number(el.getAttribute('data-grazing'));
-        el.setAttribute('stroke-width',current?'3.2':'2.3');
+        const targeting=current&&view.stage==='migration';
+        el.setAttribute('stroke-width',targeting?'4.2':current?'3.2':'2.3');
         el.setAttribute('opacity',current||active===null?'.98':'.62');
         if(started&&current&&active!==previousSeason)animate(el,'season',[
           {opacity:.22,strokeWidth:'3.2px'},{opacity:1,strokeWidth:'5px',offset:.55},{opacity:.98,strokeWidth:'3.2px'}
@@ -408,6 +505,7 @@
       for(const el of svg.querySelectorAll('[data-turn]')){
         const current=active===Number(el.getAttribute('data-turn'));
         el.firstElementChild.setAttribute('stroke-width',current?'1.7':'.85');
+        el.firstElementChild.setAttribute('fill',current&&view.stage==='migration'?'#e4de9a':'#efe0bc');
       }
       const byCell=new Map();
       for(const t of Array.isArray(view.tokens)?view.tokens:[]) {
@@ -444,19 +542,41 @@
             el.setAttribute('transform',`translate(${l} ${t})`);
             if(started&&Number.isFinite(record.x)){
               const isCohort=migrating&&animal.species==='wildebeest';
-              const duration=Math.min(isCohort?510:390,240+Math.hypot(l-record.x,t-record.y)*.8);
+              if(isCohort&&record.cell)migrationMoves.push({from:record.cell,to:animal.cell});
+              const duration=Math.min(isCohort?530:390,240+Math.hypot(l-record.x,t-record.y)*.8);
               animate(el,isCohort?'migrate':'move',
                 [{transform:`translate(${record.x}px,${record.y}px)`},{transform:`translate(${l}px,${t}px)`}],
-                {duration,delay:isCohort?(cohortIndex++%6)*20:0,fill:'backwards',easing:'cubic-bezier(.2,.72,.29,1)'});
+                {duration,delay:isCohort?60+(cohortIndex++%3)*85:0,fill:'backwards',easing:'cubic-bezier(.2,.72,.29,1)'});
             }else if(started&&newPiece){
               animate(el,'enter',[
                 {opacity:0,transform:`translate(${l}px,${t+4}px)`},{opacity:1,transform:`translate(${l}px,${t}px)`}
               ],{duration:330,easing:'ease-out'});
             }
-            record.x=l; record.y=t;
+            record.x=l; record.y=t; record.cell={...animal.cell};
           }
         }
       }
+      if(migrating&&migrationMoves.length) routeRecord={season:active,moves:migrationMoves};
+      const routeMode=view.stage==='migration'&&preview.length?'preview':routeRecord?'committed':'';
+      const routeMoves=routeMode==='preview'?preview:routeRecord?.moves;
+      const nextRoute=routeMode?(routeMode+':'+active+':'+routeMoves.map(m=>key(m.from.x,m.from.y)+'>'+key(m.to.x,m.to.y)).join('|')):'';
+      if(nextRoute!==priorRoute){
+        priorRoute=nextRoute;
+        running.get(route)?.cancel();
+        if(routeMode){
+          const routeArt=routeMarkup(routeMoves,routeMode,active);
+          route.innerHTML=routeArt.routes;
+          route.setAttribute('data-map-route',routeMode);
+          route.setAttribute('opacity',routeMode==='committed'?'.74':'1');
+          routeCaption.innerHTML=`<text x="260" y="13.5" text-anchor="middle" fill="#235147" font-size="8" font-weight="800">${routeArt.label} · arrows show board moves</text>`;
+          if(routeMode==='committed')animate(route,'migration-route',[{opacity:.22},{opacity:.98,offset:.18},{opacity:.98,offset:.75},{opacity:.74}],{duration:760,easing:'linear'});
+          else if(started)animate(route,'route-preview',[{opacity:.28},{opacity:1}],{duration:230,easing:'ease-out'});
+        }else{
+          route.innerHTML=''; routeCaption.innerHTML=''; route.removeAttribute('data-map-route');
+        }
+      }
+      rangeCaption.innerHTML=view.stage==='migration'&&!routeMode&&active!==null
+        ?`<text x="260" y="13.5" text-anchor="middle" fill="#2e4d38" font-size="8" font-weight="800">TARGET GRAZING RANGE · TURN ${active+1} · ${MONTHS[active]}</text>`:'';
       for(const [k,record] of tokenNodes)if(!activeTokens.has(k)){
         running.get(record.el)?.cancel();
         if(started&&!motion?.matches&&typeof record.el.animate==='function'){
@@ -487,12 +607,25 @@
         const [l,t]=point(selectedCell.x,selectedCell.y);
         selected.innerHTML=`<rect x="${l+1.5}" y="${t+1.5}" width="${UNIT-3}" height="${UNIT-3}" rx="3" fill="none" stroke="#fff6d5" stroke-width="4"/><rect x="${l+1.5}" y="${t+1.5}" width="${UNIT-3}" height="${UNIT-3}" rx="3" fill="none" stroke="#173e34" stroke-width="2"/>`;
       }
-      const huntId=view.reveal&&view.predatorPosition&&view.position
+      const huntId=view.reveal&&onBoard(view.predatorPosition)&&onBoard(view.position)
         ?key(view.predatorPosition.x,view.predatorPosition.y)+'>'+key(view.position.x,view.position.y):'';
       if(huntId){
         const [px,py]=point(view.predatorPosition.x,view.predatorPosition.y);
         selected.innerHTML+=`<rect x="${px+2.5}" y="${py+2.5}" width="${UNIT-5}" height="${UNIT-5}" rx="3" fill="none" stroke="#f5e5bf" stroke-width="4"/><rect x="${px+2.5}" y="${py+2.5}" width="${UNIT-5}" height="${UNIT-5}" rx="3" fill="none" stroke="#844d34" stroke-width="2.25" stroke-dasharray="3 2"/>`;
-        if(started&&huntId!==previousHunt)animate(selected,'hunt',[{opacity:.55},{opacity:1}],{duration:250,easing:'ease-out'});
+        const presentation=view.huntPresentation;
+        // Same positions can involve a new token after a split; match both IDs too.
+        const badgeKey=huntId+JSON.stringify(presentation||null);
+        if(badgeKey!==priorBadge){
+          const occupied=[...changeCells,...byCell.values()].map(item=>Array.isArray(item)?item[0].cell:item);
+          const layer=huntBadge(view.predatorPosition,view.position,presentation,occupied);
+          huntLink.innerHTML=layer.connector;
+          huntDice.innerHTML=layer.badge;
+          if(started&&huntId!==previousHunt)animate(huntLink,'hunt',[{opacity:.3},{opacity:1}],{duration:220,easing:'ease-out'});
+          if(started&&presentation?.round)animate(huntDice,'hunt-roll',[{opacity:.22},{opacity:1}],{duration:240,easing:'ease-out'});
+          priorBadge=badgeKey;
+        }
+      }else if(priorBadge){
+        priorBadge=''; huntLink.innerHTML=''; huntDice.innerHTML='';
       }
       previousHunt=huntId;
       for(const cell of cells){

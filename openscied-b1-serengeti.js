@@ -341,7 +341,8 @@
     }));
     const tokens = st.tokens || [], currentPrey = tokens.filter(t => t.species === 'wildebeest');
     qs('#sg-board-title').textContent = seasonName(season) + ' range';
-    qs('#sg-board-caption').textContent = 'Season ' + (season + 1) + ' of 4 · Markers represent individuals, small groups, herds, clans or prides.';
+    qs('#sg-board-caption').textContent = 'Season ' + (season + 1) + ' of 4 · Markers represent individuals, small groups, herds, clans or prides.'
+      +(p.kind==='migration' || last?.kind==='migration' ? ' Lines join the starting and ending squares on this board, not the animals’ exact paths.' : '');
     qs('#sg-metrics').replaceChildren(...[['Wildebeest tokens',currentPrey.length],['Individuals',currentPrey.filter(t=>t.type==='individual').length],['Small groups',currentPrey.filter(t=>t.type==='smallGroup').length],['Herds',currentPrey.filter(t=>t.type==='herd').length]].map(([label,count]) => {
       const v = node('div','sg-stat'); v.append(node('strong','',count),node('span','',label)); return v;
     }));
@@ -354,6 +355,28 @@
     const battle = p.battle || st.battle;
     const pos = battle && (battle.preyCell || tokens.find(t => t.id === battle.preyId)?.cell);
     const predPos = battle && (battle.predatorCell || tokens.find(t => t.id === battle.predatorId)?.cell);
+    const migrationPreview = p.kind==='migration'
+      ? selectedCells.map((destination,i)=>({id:currentPrey[i]?.id,from:currentPrey[i]?.cell,to:destination})) : [];
+    const proximity=qs('#sg-map-proximity');
+    if(proximity){
+      const migrationNote=p.kind==='migration' || (p.kind==='card' && last?.kind==='migration');
+      proximity.hidden=!migrationNote;
+      if(migrationNote){
+        let board=st, label='At this range';
+        if(p.kind==='migration' && selectedCells.length===currentPrey.length && selectedCells.length){
+          const moved=new Map(currentPrey.map((token,i)=>[token.id,selectedCells[i]]));
+          board={...st,tokens:st.tokens.map(t=>moved.has(t.id)?{...t,cell:moved.get(t.id)}:t)};
+          label='This placement would put';
+        } else if(p.kind==='migration') label='Before the move';
+        const hyena=moveReadiness(board,'hyena').count, lion=moveReadiness(board,'lion').count;
+        proximity.textContent=label+': '+hyena+' hyena and '+lion+' lion '+(hyena+lion===1?'pair':'pairs')+' within hunting range.';
+      }
+    }
+    const huntPresentation = battle && (p.kind==='hunt' || review) ? {
+      predatorId:battle.predatorId,preyId:battle.preyId,species:activeRole,round:battle.rounds?.at(-1),
+      roundNumber:battle.rounds?.length||0,revealed:Boolean(review),winner:review?battle.winner:null,
+      preyDice:battle.preyDice,predatorDice:battle.predatorDice
+    } : null;
     qs('#sg-board-access').textContent = review ? 'Highlighted squares show the finished hunt. '+review.message
       : p.kind === 'hunt' && battle ? 'The highlighted wildebeest token is involved in the current hunt.'
       : source ? describeToken(source) + ' selected. Choose a dashed destination to move it. Select the piece again or press Escape to clear.'
@@ -365,7 +388,8 @@
       legalCells:map.legal.map(e=>e.cell), sourceCells:map.sources.map(t=>t.cell), selectedTokenId:source?.id,
       selected:selectedCell, selectedCells, position:pos, wet:season===0 || season===1,
       grass:currentPrey.length, reveal:p.kind === 'hunt'||Boolean(review),
-      floodedCells:L.floodedCells(st),lastChangedCells:review?.cells || cardChangedCells});
+      floodedCells:L.floodedCells(st),lastChangedCells:review?.cells || cardChangedCells,
+      migrationPreview,huntPresentation,eventCardOpen:Boolean(p.card)});
     const interact = qs('#sg-interactive'), actions = qs('#sg-actions'), dice = qs('#sg-dice');
     interact.replaceChildren(); actions.replaceChildren();
     let showedDice = false;
@@ -446,6 +470,13 @@
       title = (SINGULAR[activeRole] || 'Predator')+' vs. wildebeest';
       desc = huntMatchup(battle);
       note = (outcomeText(battle.winner)||'Hunt resolved')+'. '+review.message;
+      if (battle.change===-1 && review.cells.filter(cell=>cell.change==='added').length===2) {
+        const reading=node('div','sg-hunt-reading'); reading.id='sg-hunt-reading';
+        const markers=node('span'), loss=node('span');
+        markers.append(node('small','','Board pieces'),node('strong','','1 small-group token → 2 individual tokens'));
+        loss.append(node('small','','Wildebeest population'),node('strong','','1 wildebeest lost'));
+        reading.append(markers,loss); interact.append(reading);
+      }
       showDice(battle,activeRole,true);
       actions.append(button('sg-next',reviewHasNext?'Next hunt':'Done',acknowledgeHunt,null,'huntReview'));
     } else if (p.kind === 'hunt') {
@@ -492,9 +523,11 @@
     if(finish)finish.hidden=p.kind!=='complete';
     if(totals&&p.kind==='complete'){
       const summary=rawSummary();
-      totals.replaceChildren(node('p','','Board tokens: '+sample.tokens.filter(t=>t.species==='wildebeest').length+' → '+currentPrey.length
-        +'. Population change: '+signed(summary.change)+' wildebeest from the start. Token totals count game pieces, not individual animals.'),compareCards(summary));
-    }
+      const headline=node('p','','Board tokens: '+sample.tokens.filter(t=>t.species==='wildebeest').length+' → '+currentPrey.length
+        +'. Population change: '+signed(summary.change)+' wildebeest from the start. Token totals count game pieces, not individual animals.');
+      if(updateFieldReport('sg-finish-report')) totals.replaceChildren(headline);
+      else totals.replaceChildren(headline,compareCards(summary));
+    } else updateFieldReport('sg-finish-report',false);
     if (page !== 'play') renderEvidence();
     notifyTurn();
   }
@@ -591,7 +624,18 @@
     });
     return list;
   }
+  const fieldReports = new Map();
+  function updateFieldReport(id, show = true) {
+    const host=qs('#'+id);
+    if(!host || !window.SerengetiFieldReport) return false;
+    host.hidden=!show;
+    if(!show) { fieldReports.get(id)?.update(null); return true; }
+    if(!fieldReports.has(id)) fieldReports.set(id,window.SerengetiFieldReport.mount(host));
+    fieldReports.get(id)?.update(state);
+    return true;
+  }
   function renderEvidence() {
+    const visualReport=updateFieldReport('sg-evidence-report',Boolean(state))&&Boolean(state);
     const rows = state ? state.log : [];
     const summary = rawSummary();
     const es = qs('#sg-evidence-body'), aside = qs('#sg-analysis-data'), selected = qs('#sg-evidence-choice');
@@ -611,7 +655,7 @@
       });
       log.append(list);
     } else log.append(node('p','','Play a turn to begin recording evidence.'));
-    es.replaceChildren(overview,log);
+    es.replaceChildren(...(visualReport?[log]:[overview,log]));
     aside.replaceChildren(compareCards(summary));
     const empty = node('option','','Choose evidence'); empty.value = '';
     selected.replaceChildren(empty,...rows.map((r,i) => {
