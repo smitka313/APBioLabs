@@ -71,7 +71,7 @@
       if(weather){const wet=L.isWetSeason(month);cloud(mc,520+Math.sin(time*.12)*8,80,.6,time,true);if(wet){cloud(mc,690,480,.7,time,true);cloud(mc,470,430,.55,time+5,true);}else cloud(mc,330,230,.5,time,false);}
       mc.restore();
     }
-    function drawField(){if(!field.width)return;const c=fc,w=field.width,h=field.height,s=w/1000;c.save();c.scale(s,h/660);const fieldRegion=L.fieldRegion(month),south=fieldRegion==='south',wet=L.isWetSeason(month);const green=weather&&wet;let sky=c.createLinearGradient(0,0,0,460);sky.addColorStop(0,'#80aaa9');sky.addColorStop(1,'#ebdfb5');c.fillStyle=sky;c.fillRect(0,0,1000,660);ellipse(c,795,115,48,48,'#fff3caaa');
+    function drawField(){if(!field.width)return;const c=fc,w=field.width,h=field.height,s=Math.max(w/1000,h/660);c.save();c.translate((w-1000*s)/2,h-660*s);c.scale(s,s);const fieldRegion=L.fieldRegion(month),south=fieldRegion==='south',wet=L.isWetSeason(month);const green=weather&&wet;let sky=c.createLinearGradient(0,0,0,460);sky.addColorStop(0,'#80aaa9');sky.addColorStop(1,'#ebdfb5');c.fillStyle=sky;c.fillRect(0,0,1000,660);ellipse(c,795,115,48,48,'#fff3caaa');
       c.fillStyle='#849478';c.beginPath();c.moveTo(0,340);c.bezierCurveTo(160,230,280,340,420,290);c.bezierCurveTo(600,245,730,325,1000,245);c.lineTo(1000,660);c.lineTo(0,660);c.fill();
       const g=c.createLinearGradient(0,360,0,660);g.addColorStop(0,green?'#a9ad70':'#bcb17d');g.addColorStop(1,green?'#748550':'#a18c53');c.fillStyle=g;c.fillRect(0,380,1000,280);
       if(!south){acacia(c,180,395,1.8);acacia(c,820,380,1.1);acacia(c,660,345,.6);}

@@ -24,6 +24,16 @@ test('dashboard preserves unreadable work and rejects unknown schemas',()=>{cons
 test('opening the explorer alone does not claim completed work',()=>{const {migrationProgress}=dashboard();assert.equal(migrationProgress(JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{},observations:{},lastVisitedAt:1})).started,false);});
 test('dashboard exports all ten explorer responses and recognizes observation-only work',()=>{const api=dashboard();assert.equal(api.migrationResponseIds().length,10);assert.equal(api.migrationProgress(JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{},observations:{0:'My question'}})).started,true);});
 test('source image and all local activity dependencies exist',()=>{const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');for(const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)){if(/^https?:/.test(match[1])||match[1]==='openscied-dashboard.html')continue;assert.ok(fs.existsSync(path.join(__dirname,'..',match[1])),match[1]);}assert.ok(!html.includes('Answer Key'));});
+test('published evidence charts disable the toolkit simulation label',()=>{
+  const ui=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
+  const fn=ui.slice(ui.indexOf('  function renderCharts()'),ui.indexOf('  function download('));
+  for(const collection of ['cards','rainfall']){
+    const captures=[];const context={L,state:{page:'evidence',collection,measure:'fat'},ANNUAL:[{region:'South',rain:1160,occupancy:52},{region:'West',rain:1180,occupancy:26},{region:'North',rain:1310,occupancy:6}],healthChart:null,occupancyChart:null,Lab:{chart(selector,options){captures.push(options);return {update(o){captures.push(o);}};}}};
+    vm.runInNewContext(fn+'\nrenderCharts();',context);
+    assert.equal(captures.length,1);assert.equal(captures[0].simTag,false,collection+' uses source data, not simulation');
+    assert.equal(captures[0].responsive,true,collection+' chart labels remain readable in narrow panels');
+  }
+});
 
 test('April keeps the main herd range in the south despite the lesson’s wetter northern station', () => {
   assert.match(L.RANGES[3], /South and southwest/i);
@@ -48,3 +58,4 @@ test('illustrative weather uses the Lesson 4 wet/dry convention independently of
   assert.equal(L.fieldRegion(4), 'west', 'May can be wet even as herds move west');
   assert.equal(L.fieldRegion(11), 'south', 'December returns toward the southern plains');
 });
+
