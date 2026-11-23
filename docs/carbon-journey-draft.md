@@ -50,3 +50,19 @@ Reworked the play screen into ready → roll → optional destination prediction
 Original SVG scenes redrawn with leaf geometry, branching trunks, grasses, mountain layers, ocean light and fish anatomy, zebra legs/mane/stripes, raccoon fur/mask/tail, roots and soil layers, and more detailed buildings. Feature inspection opens a large field view with numbered pins, geometry-based anchor dots and explanatory text. These are illustrative examples, not new simulation quantities.
 
 The 56 rule tests and 6 domain tests pass locally. The updated browser regression checks 375×667, 390×844 dark, 768×1024, 1366×768 and 1920×1080; verifies that board/roll/record controls fit the phone viewport without document scrolling; tests predictions, inspection, expanded map return, saved pending turns, downloads, completion, question paging and reset. Screenshots include ready, prediction, official card, mid-game and evidence. Local Chromium remains unavailable due to the previously documented socket restriction; review CI results and screenshots for this revision.
+
+## Optional Carbon & Energy Budget
+
+The original Journey uses the supplied OpenSciEd Lesson 9 station cards.
+The optional Budget is a separate, teacher-designed controlled model: both
+trials start with the same reservoirs and undergo the same checkpoints except
+for one peat-fire transfer. Four selected reservoirs are enough to make a
+checkable ledger; the original seven-station journey remains available.
+
+The fixed numbers are teaching-model units, not grams, joules, observed
+stocks, atmospheric concentrations or temperature. The carbon ledger tracks
+where the same total quantity sits. The energy ledger adds input from
+sunlight and includes thermal energy that has spread to the surroundings.
+Thermal energy in that account is not usable chemical energy and does not
+return to the peat in this model. The comparison does not predict a wildfire
+or represent all forms, feedbacks or time scales of the Earth system.

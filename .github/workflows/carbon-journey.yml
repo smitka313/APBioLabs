@@ -3,7 +3,9 @@ on:
   pull_request:
     paths:
       - '*carbon-journey*'
+      - '*carbon-budget*'
       - 'tests/carbon-journey*'
+      - 'tests/carbon-budget*'
       - '.github/workflows/carbon-journey.yml'
   workflow_dispatch:
 permissions:
@@ -21,7 +23,9 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: node --test tests/carbon-journey-logic.test.js
+      - run: node --test tests/carbon-budget-logic.test.js
       - run: node tests/carbon-journey-browser.js
+      - run: node tests/carbon-budget-browser.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:

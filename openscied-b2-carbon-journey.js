@@ -32,16 +32,34 @@
         : 'Could not save on this device. Keep this page open and download your journey.');
     }
   }
+  let budgetUI;
   function setPage(id, saveSection = true) {
-    section = id;
-    if (saveSection) save();
+    const budgeting = id === 'budget';
+    if (!budgeting) {
+      section = id;
+      if (saveSection) save();
+    }
     history.replaceState(null, '', '#' + id);
     document.body.classList.toggle('journey-playing', id === 'play');
+    document.body.classList.toggle('journey-budgeting', budgeting);
     document.querySelectorAll('.journey-page').forEach(p => p.hidden = p.id !== id);
     document.querySelectorAll('[data-page]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.page === id)));
     if (id === 'evidence') drawChart();
     if (id === 'play') drawBoard();
+    if (budgeting) {
+      if (!budgetUI) budgetUI = window.CarbonBudgetUI?.mount($('#carbon-budget-host'), {
+        announce,
+        journeyEvidence: () => {
+          const last = state.rows.at(-1);
+          if (!last) return '';
+          return 'Your last recorded roll: '+name(last.from)+' → '+name(last.to)+'. Matter: '+last.matter+'. Energy: '+last.energy+'.';
+        }
+      });
+      else budgetUI.update?.();
+      if (!budgetUI) $('#carbon-budget-host').textContent = 'The budget could not load. Reload to try again. Your original journey is unchanged.';
+    }
     window.scrollTo(0, 0);
+    if (budgeting) $('#cb-title')?.focus({preventScroll:true});
   }
   document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
   $('[data-show-evidence]').addEventListener('click', () => setPage('evidence'));
@@ -209,5 +227,5 @@
   document.querySelectorAll('[data-total-tab]').forEach(b => b.addEventListener('click', () => { totalTab = b.dataset.totalTab; document.querySelectorAll('[data-total-tab]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); showTotal(); }));
   render();
   const linked = location.hash.slice(1);
-  setPage(['play', 'evidence', 'sense'].includes(linked) ? linked : section);
+  setPage(['play', 'evidence', 'sense', 'budget'].includes(linked) ? linked : section);
 })();
