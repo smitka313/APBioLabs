@@ -1,0 +1,36 @@
+/* Original source-data plot and interpretation panel. */
+.cc-field-ui {min-width:0;}
+.cc-field-grid-layout {display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:clamp(.65rem,2vw,1rem);align-items:start;}
+.cc-field-grid-layout > div {min-width:0;}
+.cc-field-ui .cc-field-label {display:grid;gap:.3rem;margin:.75rem 0;min-width:0;}
+.cc-field-label select,.cc-field-label input[type=text] {width:100%;min-width:0;min-height:44px;}
+.cc-field-label input[type=text] {padding:.5rem .65rem;border:1px solid var(--line);border-radius:.5rem;font:inherit;color:var(--ink);background:var(--surface);}
+.cc-field-ui #cc-field-chart {display:block;width:100%;height:auto;aspect-ratio:710/280;border:1px solid var(--line);border-radius:.6rem;background:var(--surface);}
+.cc-field-ui #cc-field-chart text {fill:var(--ink);font:650 13.5px var(--f-body,system-ui,sans-serif);}
+.cc-field-axis-label {font-weight:800!important;}
+.cc-field-grid {stroke:var(--line);stroke-width:1;}
+.cc-field-axis {fill:none;stroke:var(--muted);stroke-width:1.25;}
+.cc-field-gap {fill:var(--warn-soft);stroke:var(--warn);stroke-width:.7;stroke-dasharray:4 4;}
+.cc-field-dot,.cc-field-key-dot {fill:var(--s3);background:var(--s3);}
+.cc-field-ring {fill:none;stroke:var(--ink);stroke-width:1.6;}
+.cc-field-tap {fill:transparent;cursor:pointer;}
+#cc-field-secant {stroke:var(--stain);stroke-width:2.6;stroke-dasharray:7 5;}
+.cc-field-key {display:flex;flex-wrap:wrap;gap:.25rem .9rem;padding:.4rem 0;font-size:.81rem;color:var(--muted);}
+.cc-field-key span {display:inline-flex;align-items:center;gap:.28rem;}
+.cc-field-key i {display:inline-block;width:.8rem;height:.8rem;border-radius:50%;}
+.cc-field-key .cc-field-key-ring {border:2px solid var(--ink);background:none;}
+.cc-field-key .cc-field-key-gap {border:1px dashed var(--warn);border-radius:.12rem;background:var(--warn-soft);}
+.cc-field-secant-toggle {display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;min-height:44px;font-size:.86rem;}
+.cc-field-secant-toggle input {flex:0 0 auto;}
+.cc-field-ui details {margin:.65rem 0 .35rem;border:1px solid var(--line);border-radius:.55rem;padding:.24rem .65rem;}
+.cc-field-ui details summary {min-height:38px;padding:.27rem 0;}
+#cc-field-data caption {caption-side:top;text-align:left;font-weight:750;padding:.2rem .3rem;}
+#cc-field-data [data-endpoint] {background:var(--accent-soft);}
+.cc-field-work .cc-primary {min-height:44px;}
+.cc-field-ui .cc-field-feedback {padding:.5rem .64rem;border-inline-start:3px solid var(--muted);background:var(--surface-2);}
+.cc-field-feedback[data-field-state=correct] {border-color:var(--accent);background:var(--accent-soft);}
+.cc-field-feedback[data-field-state=incorrect] {border-color:var(--warn);background:var(--warn-soft);}
+.cc-field-ui .cc-field-hint {padding:.48rem .65rem;background:var(--surface-2);font-size:.89rem;}
+.cc-field-work textarea {margin:0;}
+.cc-field-work #cc-field-save-note {border-inline-start:3px solid var(--warn);padding:.4rem .6rem;}
+@media(max-width:780px){.cc-field-grid-layout {grid-template-columns:1fr;}}

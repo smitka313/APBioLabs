@@ -13,7 +13,12 @@ const SHOTS = process.env.CARRYING_CAPACITY_SCREENSHOTS;
 const AXE = require.resolve('axe-core/axe.min.js');
 const TEXT = {
   prediction: 'With less grass, the herd will have less food available.',
-  claim: 'The simulated grass comparison tests my prediction by changing food availability.'
+  claim: 'The simulated grass comparison tests my prediction by changing food availability.',
+  shortage: 'If there are more wildebeest than grass units, only the fed animals survive and half of those, rounded down, add a calf.',
+  longRun: 'With unchanged rules, I expect the herd to keep rising and falling inside the late-round band instead of increasing forever.',
+  migration: 'Moving between seasonal grazing areas makes more grass accessible over a year, so more wildebeest can persist.',
+  fieldRise: 'The earlier increase was much faster than the long-term change. Disease control reduced mortality.',
+  fieldFall: 'A negative net rate shows the herd got smaller; it does not show the cause without more evidence.'
 };
 const viewportCases = [
   { name: '390-dark', width: 390, height: 844, dark: true, touch: true },
@@ -80,6 +85,9 @@ async function withPage(browser, cfg, work) {
     hasTouch: !!cfg.touch,
     acceptDownloads: true
   });
+  // Fixture selects a repeatable habitat case without adding a product test
+  // hook or weakening the real app's randomness.
+  await context.addInitScript(value => { Math.random = () => value; }, cfg.habitatRandom ?? 0);
   await routeLibs(context);
   await context.route(/https:\/\/(?:fonts\.(?:googleapis|gstatic)\.com|gc\.zgo\.at)\//, route => route.fulfill({
     status: 200,
@@ -129,14 +137,35 @@ const sameScores = (actual, expected) => JSON.stringify(actual) === JSON.stringi
 const BALANCED_SCORE = { 'Starting herd': 8, Survived: 8, Unmatched: 0, Calves: 4, 'Next herd': 12 };
 const FOOD_SCORE = { 'Starting herd': 8, Survived: 6, Unmatched: 2, Calves: 3, 'Next herd': 9 };
 
-async function beginHabitat(p) {
+async function drawHabitat(p) {
   await go(p, 'habitat');
+  const draw = p.locator('#cc-habitat-draw');
+  check(await p.locator('#cc-habitat-prediction').isDisabled() && await p.locator('#cc-habitat-start').isDisabled(),
+    'the comparison begins with a case draw rather than a blind guess');
+  await draw.click();
+  const clues = p.locator('#cc-habitat-clues');
+  await clues.waitFor({ state: 'visible' });
+  check((await draw.count() === 0 || await draw.isHidden() || await draw.isDisabled()) &&
+    await p.locator('#cc-habitat-resource').count() === 0 &&
+    await clues.locator('[data-habitat-need] svg').count() === 3,
+  'drawing one habitat case shows its clues without a scenario dropdown or an unlimited reroll');
+  return clues;
+}
+
+async function startHabitat(p, choice) {
   const prediction = p.locator('#cc-habitat-prediction');
   await prediction.waitFor({ state: 'visible' });
-  await p.locator('#cc-habitat-resource').selectOption('low-food');
-  await prediction.selectOption('food');
+  await prediction.selectOption(choice);
   await p.locator('#cc-habitat-start').click();
   await p.locator(HABITAT + ' ' + ANIMAL).first().waitFor({ state: 'visible' });
+}
+
+async function beginHabitat(p) {
+  const clues = await drawHabitat(p);
+  const food = await clues.locator('[data-habitat-need="food"]').innerText();
+  check(/3 animals seeking it/i.test(food) && /1 unit available/i.test(food),
+    'the controlled shortage fixture provides observed demand and supply, not just an outcome label');
+  await startHabitat(p, 'food');
 }
 
 async function availableAnimal(p) {
@@ -250,7 +279,18 @@ async function followHabitatWorkflow(browser, url) {
     const first = await requireAvailableAnimal(p);
     const wrong = SOURCE.find(resource => resource !== first.need);
     const before = Object.fromEntries(await Promise.all(SOURCE.map(async key => [key, await habitatStock(p, key)])));
+    await habitatStation(p, first.need).click();
+    check((await habitatStation(p, first.need).getAttribute('data-habitat-preview')) !== null &&
+      JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster) &&
+      await p.locator('[data-habitat-animal][data-habitat-spotlit]').count() ===
+        (await habitatAnimals(p)).filter(animal => animal.need === first.need).length &&
+      (await Promise.all(SOURCE.map(async key => (await habitatStock(p, key)) === before[key]))).every(Boolean),
+    'clicking a station without a selection previews it without spending stock or assigning animals');
     await habitatAnimal(p, first.id).click();
+    check((await habitatStation(p, first.need).getAttribute('data-habitat-target')) !== null &&
+      await habitatAnimal(p, first.id).locator('.cc-habitat-need svg').count() === 1 &&
+      /needs/i.test(await habitatAnimal(p, first.id).locator('.cc-habitat-need').innerText()),
+      'an animal shows its need in words and art and highlights the compatible destination');
     await habitatStation(p, wrong).click();
     check(await habitatMatch(p, first.id).count() === 0 &&
       /cannot meet that need/i.test(await p.locator('#cc-habitat-live').textContent()) &&
@@ -272,6 +312,16 @@ async function followHabitatWorkflow(browser, url) {
     await matchHabitat(p, first, 'keyboard');
     const second = await requireAvailableAnimal(p);
     await matchHabitat(p, second, 'drag');
+    const afterMatch = await habitatStock(p, second.need);
+    await p.locator('#cc-habitat-undo').press('Enter');
+    check(await habitatAnimal(p, second.id).isVisible() && await habitatMatch(p, second.id).count() === 0 &&
+      await habitatStock(p, second.need) === afterMatch + 1 &&
+      await habitatMatch(p, first.id).isVisible(),
+    'Undo restores exactly the last animal and unit, keeping the earlier assignment intact');
+    if (await habitatAnimal(p, second.id).getAttribute('aria-pressed') === 'true') {
+      await p.keyboard.press('Escape');
+    }
+    await matchHabitat(p, second, 'click');
     check(JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster),
       'dragging and matching animals never change the starting herd mid-round');
 
@@ -357,9 +407,70 @@ async function followHabitatWorkflow(browser, url) {
     await p.locator('#cc-reset').click();
     await p.locator('#cc-reset-confirm').click();
     await go(p, 'habitat');
-    check(await p.locator('#cc-habitat-start').isVisible() && await comparison.isHidden(),
+    check(await p.locator('#cc-habitat-draw').isVisible() && await comparison.isHidden(),
       'confirmed investigation reset clears prior habitat trials');
   });
+}
+
+async function followAdequateHabitat(browser, url) {
+  await withPage(browser, { name: 'adequate-habitat-workflow', width: 1366, height: 900, habitatRandom: 0.99 }, async p => {
+    await readiness(p, url, 'light');
+    const clues = await drawHabitat(p);
+    const shelter = clues.locator('[data-habitat-need="shelter"]');
+    check(/2 animals seeking it/i.test(await shelter.innerText()) && /2 units available/i.test(await shelter.innerText()),
+      'a second draw gives a real reduction with enough units for the original shelter demand');
+    await p.reload();
+    await clues.waitFor({ state: 'visible' });
+    check(await p.locator('#cc-habitat-draw').count() === 0 && /2 units available/i.test(await shelter.innerText()),
+      'reloading before trial start restores the same drawn case without offering a reroll');
+    await startHabitat(p, 'none');
+    const roster = await habitatHerd(p);
+    const balancedShelter = await habitatStock(p, 'shelter');
+    await matchRemainingHabitat(p);
+    await p.locator('#cc-habitat-finish').click();
+    await p.locator('#cc-habitat-compare').click();
+    check(JSON.stringify(await habitatHerd(p)) === JSON.stringify(roster) &&
+      balancedShelter === 3 && await habitatStock(p, 'shelter') === 2,
+      'the non-limiting comparison still changes the resource from its balanced stock and restarts the same herd');
+    check(await matchRemainingHabitat(p) === 8, 'all eight matching needs can still be met in the reduced-but-adequate case');
+    await p.locator('#cc-habitat-finish').click();
+    const comparison = p.locator('#cc-habitat-comparison');
+    check(sameScores(await habitatScores(comparison), [BALANCED_SCORE, BALANCED_SCORE]) &&
+      /no resource limited survival/i.test(await comparison.innerText()) &&
+      /result supports your prediction/i.test(await comparison.innerText()),
+      'both herds reach 12 and the feedback explains why a reduction need not become a limiting factor');
+    await shot(p, '1366-light-habitat-nonlimiting', true);
+  });
+}
+
+async function checkDesktopRangeLayout(p, label) {
+  const geometry = await p.evaluate(() => {
+    const grid = document.querySelector('#cc-run .cc-lab');
+    const station = grid.querySelector('.cc-station');
+    const chartPanel = grid.querySelector('.cc-analysis');
+    const chart = chartPanel.querySelector('#cc-chart');
+    const prediction = document.querySelector('#cc-prediction');
+    const section = document.querySelector('#cc-range-section');
+    const worksheet = document.querySelector('#cc-range-app');
+    const dims = el => el.getBoundingClientRect().toJSON();
+    const visibleLast = panel => [...panel.children].filter(el => el.getClientRects().length > 0).at(-1);
+    return {
+      grid: dims(grid), station: dims(station), chartPanel: dims(chartPanel), chart: dims(chart),
+      stationEnd: dims(visibleLast(station)), chartEnd: dims(visibleLast(chartPanel)), section: dims(section),
+      prediction: dims(prediction), follows: grid.nextElementSibling === section,
+      nested: section.contains(worksheet), predictsAtBoard: station.contains(prediction)
+    };
+  });
+  const { grid, station, chartPanel, chart, stationEnd, chartEnd, section, prediction, follows, nested, predictsAtBoard } = geometry;
+  check(follows && nested && predictsAtBoard && prediction.height > 24 &&
+    Math.abs(section.left - grid.left) <= 2 && Math.abs(section.right - grid.right) <= 2,
+  label + ': prediction is usable at the board, and the worksheet opens the next full-width row');
+  const clearance = section.top - Math.max(station.bottom, chartPanel.bottom);
+  check(clearance >= -1 && clearance <= 56 && chart.top - chartPanel.top <= 135 &&
+    station.bottom - stationEnd.bottom <= 48 && chartPanel.bottom - chartEnd.bottom <= 48,
+  label + ': chart is near the top of its panel and the worksheet follows both panels without empty filler ' +
+    JSON.stringify({ clearance, chartTop: chart.top - chartPanel.top, boardBottom: station.bottom - stationEnd.bottom,
+      chartBottom: chartPanel.bottom - chartEnd.bottom }));
 }
 
 async function visualSweep(browser, url) {
@@ -373,6 +484,10 @@ async function visualSweep(browser, url) {
         return stacked ? evidence.top >= board.bottom - 1 :
           evidence.left >= board.right - 1 && Math.abs(evidence.top - board.top) <= 2;
       }, cfg.width <= 768), cfg.name + ': scene and simulated chart reflow without overlap');
+      if (cfg.width === 1366) {
+        await checkDesktopRangeLayout(p, cfg.name + ': before rounds');
+        check(await p.locator('#cc-range-jump').isHidden(), cfg.name + ': no worksheet jump until a trial is complete');
+      }
       await shot(p, cfg.name + '-setup');
       const next = p.locator('#cc-next');
       if (cfg.touch) await next.tap();
@@ -386,6 +501,29 @@ async function visualSweep(browser, url) {
       check(await fit(p, '#cc-board') && await p.locator('#cc-compare').isVisible(), cfg.name + ': completed round scene fits and comparison unlocks');
       await p.locator('#cc-board').scrollIntoViewIfNeeded();
       await shot(p, cfg.name + '-round-12');
+      if (cfg.width === 1366) {
+        await checkDesktopRangeLayout(p, cfg.name + ': completed trial');
+        const rangeJump = p.locator('#cc-range-jump');
+        check(await rangeJump.evaluate(el => document.activeElement === el), cfg.name + ': finishing places focus on the estimate shortcut');
+        await rangeJump.press('Enter');
+        check(await p.locator('#cc-range-title').evaluate(el => {
+          const r = el.getBoundingClientRect();
+          return document.activeElement === el && r.top >= -1 && r.bottom <= innerHeight;
+        }), cfg.name + ': Enter on the shortcut scrolls to and focuses the full-width worksheet heading');
+        const topPanels = () => p.evaluate(() => ['#cc-board', '#cc-chart', '#cc-range-section'].map(selector => {
+          const { left, top, width, height } = document.querySelector(selector).getBoundingClientRect();
+          return [left + scrollX, top + scrollY, width, ...(selector === '#cc-range-section' ? [] : [height])];
+        }));
+        const beforeTable = await topPanels();
+        const table = p.locator('#cc-range-section #cc-table');
+        await table.locator('summary').click();
+        await p.locator('#cc-history tbody tr').last().waitFor({ state: 'visible' });
+        const afterTable = await topPanels();
+        check(beforeTable.every((rect, index) => rect.every((value, i) => Math.abs(value - afterTable[index][i]) <= 2)),
+          cfg.name + ': opening the full 12-row data table does not resize or reposition the board or primary chart');
+        await table.locator('summary').click();
+        await shot(p, cfg.name + '-full-width-worksheet', true);
+      }
       if (cfg.width === 390) {
         check(await fit(p, '#cc-range-plot'), cfg.name + ': estimation worksheet graph fits horizontally');
         await rangeKeyboard(p, 11);
@@ -395,11 +533,45 @@ async function visualSweep(browser, url) {
       }
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' Run');
       await go(p, 'evidence');
-      check(await fit(p, '#cc-field-chart svg[role="img"]'), cfg.name + ': published evidence plot stays on screen horizontally');
+      check(await fit(p, '#cc-field-chart[role="img"]'), cfg.name + ': published evidence plot stays on screen horizontally');
       await p.locator('#cc-field-chart').scrollIntoViewIfNeeded();
       await shot(p, cfg.name + '-evidence', true);
       if (cfg.width === 390 || cfg.width === 1366) await axeAudit(p, cfg.name + ' evidence');
       await habitatVisual(p, cfg);
+    });
+  }
+}
+
+async function companionHeaders(browser, base) {
+  for (const cfg of viewportCases) {
+    await withPage(browser, { ...cfg, name: cfg.name + '-Unit-1-headers' }, async p => {
+      for (const [page, title, asset] of [
+        ['migration', 'Follow the migration.', 'migration-explorer-preview.svg'],
+        ['serengeti', 'Serengeti Board Game', 'openscied-serengeti-preview.svg']
+      ]) {
+        const response = await p.goto(base + 'openscied-b1-' + page + '.html');
+        assert.ok(response?.ok(), page + ' companion activity loads');
+        const hero = p.locator('.b1-hero--' + page);
+        const heroHeading = hero.getByRole('heading', { level: 1, name: title, exact: true });
+        await heroHeading.waitFor({ state: 'visible' });
+        const art = hero.locator('.b1-hero-art');
+        check(await art.getAttribute('aria-hidden') === 'true' && await art.evaluate(async (el, filename) => {
+          const declared = getComputedStyle(el).backgroundImage;
+          if (!declared.includes('/assets/' + filename)) return false;
+          const image = new Image();
+          image.src = new URL('assets/' + filename, document.baseURI).href;
+          await image.decode();
+          const rect = el.getBoundingClientRect();
+          return image.naturalWidth === 960 && image.naturalHeight === 600 && rect.width > 140 && rect.height > 70;
+        }, asset), cfg.name + ' ' + page + ': original decorative hero image is loaded and displayed');
+        check(await fit(p, '.b1-hero--' + page) && await heroHeading.evaluate(el => {
+          const h = el.getBoundingClientRect(), hero = el.closest('.b1-hero').getBoundingClientRect();
+          const summary = el.nextElementSibling.getBoundingClientRect();
+          return h.left >= hero.left && h.right <= hero.right && h.top >= hero.top && h.bottom <= hero.bottom &&
+            summary.bottom < hero.bottom && hero.bottom < innerHeight * 0.5;
+        }), cfg.name + ' ' + page + ': accessible heading and lead fit inside a compact banner');
+        await shot(p, cfg.name + '-' + page + '-header');
+      }
     });
   }
 }
@@ -466,14 +638,102 @@ async function rangeRunEvidence(p, trial, estimate, low, high) {
     await confirmedBand(p, low, high), trial + ' restores its independent locked estimate and confirmed range');
 }
 
+const fieldInterval = p => p.locator('#cc-interval');
+const fieldRate = p => p.locator('#cc-rate-answer');
+const fieldFeedback = p => p.locator('#cc-rate-feedback');
+const fieldReasoning = p => p.locator('#cc-field-reasoning');
+const signAgnosticMagnitude = (s, amount) => s.replaceAll(',', '').includes(String(amount));
+const correctedSignedRate = (s, rate) =>
+  new RegExp(rate < 0 ? `[-−]\\s*${Math.abs(rate)}\\b` : `\\b${rate}\\b`).test(s.replaceAll(',', ''));
+
+async function fieldRateStudy(p) {
+  const interval = fieldInterval(p);
+  const answer = fieldRate(p);
+  const feedback = fieldFeedback(p);
+  const reason = fieldReasoning(p);
+  const plot = p.locator('#cc-field-chart[role="img"]');
+  const observations = await plot.locator('[data-field-year]').evaluateAll(points => Object.fromEntries(
+    points.map(point => [Number(point.dataset.fieldYear), Number(point.dataset.population)])));
+  check(Object.keys(observations).length === 20 &&
+    [1961, 1977, 1978, 1994, 1999, 2012].every(y => Number.isInteger(observations[y])) &&
+    observations[1977] === 1400000 && [1995, 1996, 1997, 1998, 2004].every(y => !(y in observations)),
+  'classroom scatter retains 20 supplied estimates and never invents missing years');
+  check(await plot.locator('.cc-field-gap').isVisible() &&
+    await plot.locator('polyline, #cc-field-secant').count() === 0 &&
+    !(await p.locator('#cc-field-show-secant').isChecked()),
+    'the drought-era gap is marked and the default chart does not connect estimates');
+  await p.locator('#cc-field-show-secant').check();
+  await plot.locator('#cc-field-secant').waitFor({ state: 'visible' });
+  await interval.selectOption('1994-1999');
+  check(await plot.locator('#cc-field-secant').count() === 0 &&
+    await p.locator('#cc-field-show-secant').count() === 0 && await answer.count() === 0,
+    'the missing-data task suppresses the endpoint line and never asks for an invented drought rate');
+  const gapClaim = p.locator('#cc-field-gap-choice');
+  await gapClaim.selectOption('1998');
+  await p.locator('#cc-rate-check').click();
+  check(await feedback.getAttribute('data-field-state') === 'incorrect',
+    'an unsupported exact year of recovery is rejected');
+  await gapClaim.selectOption('by-1999');
+  await p.locator('#cc-rate-check').click();
+  check(await feedback.getAttribute('data-field-state') === 'correct' &&
+    /1999/.test(await feedback.textContent()) && /cannot show when/i.test(await feedback.textContent()),
+    'only recovery by the next available plotted year is supported');
+  if (await p.locator('#cc-field-details').evaluate(el => el.open)) await p.locator('#cc-field-details summary').click();
+  await shot(p, '1366-light-field-gap-checked', true);
+  await interval.selectOption('1977-1978');
+  if (await p.locator('#cc-field-show-secant').isChecked()) await p.locator('#cc-field-show-secant').uncheck();
+  check(await answer.inputValue() === '' && await feedback.getAttribute('data-field-state') === 'unchecked' &&
+      await p.locator('#cc-rate-hint').isHidden() &&
+      !signAgnosticMagnitude(await feedback.textContent() || '', 151066),
+    'switching to an untouched interval reveals no answer before a student calculates it');
+  await answer.fill('151066');
+  await answer.press('Enter');
+  check(await feedback.getAttribute('data-field-state') === 'incorrect' &&
+    /sign|declin|decreas|subtract|less|negative/i.test(await feedback.textContent()),
+  'the correct magnitude with a positive sign is rejected with a useful direction hint');
+  await answer.fill('-151066');
+  await p.locator('#cc-rate-check').click();
+  check(await feedback.getAttribute('data-field-state') === 'correct' &&
+    correctedSignedRate(await feedback.textContent(), -151066) &&
+    /per year|\/year/i.test(await feedback.textContent()),
+  'the signed 1977–78 field rate is accepted and shown in wildebeest per year');
+  await reason.fill(TEXT.fieldFall);
+  await shot(p, '1366-light-field-rate-checked', true);
+  await interval.selectOption('1961-1977');
+  check(await answer.inputValue() === '' &&
+    await feedback.getAttribute('data-field-state') !== 'correct' &&
+    !signAgnosticMagnitude(await feedback.textContent() || '', 71039),
+  'the rise starts independently without revealing its result or carrying over feedback');
+  await answer.fill('71039');
+  await p.locator('#cc-rate-check').press('Enter');
+  check(await feedback.getAttribute('data-field-state') === 'correct' && correctedSignedRate(await feedback.textContent(), 71040),
+    'the rounded early increase is accepted from the classroom handout endpoints');
+  await reason.fill(TEXT.fieldRise);
+  await interval.selectOption('1977-1978');
+  check(await answer.inputValue() === '-151066' && await reason.inputValue() === TEXT.fieldFall,
+    'the two signed calculations do not overwrite each other when switching intervals');
+  await p.reload();
+  await p.locator('.cc-nav [data-cc-go="evidence"][aria-current="page"]').waitFor({ state: 'visible' });
+  check(await interval.inputValue() === '1977-1978' &&
+    await answer.inputValue() === '-151066' && await reason.inputValue() === TEXT.fieldFall,
+    'the selected interval, signed work and interpretation survive reload');
+  await interval.selectOption('1961-1977');
+  check(await answer.inputValue() === '71039' && await reason.inputValue() === TEXT.fieldRise,
+    'reload also retains the independent early increase and its interpretation');
+}
+
 async function followWorkflow(browser, url) {
   await withPage(browser, { name: 'desktop-workflow', width: 1366, height: 900 }, async p => {
     await readiness(p, url, 'light');
     await p.locator('#cc-prediction').fill(TEXT.prediction);
     const next = p.locator('#cc-next');
     await p.locator('#cc-reset').focus();
-    await p.keyboard.press('Tab');
-    check(await next.evaluate(el => document.activeElement === el), 'round control is reachable in sequential keyboard navigation');
+    let reachedNext = false;
+    for (let i = 0; i < 8 && !reachedNext; i++) {
+      await p.keyboard.press('Tab');
+      reachedNext = await next.evaluate(el => document.activeElement === el);
+    }
+    check(reachedNext, 'round control is reachable in sequential keyboard navigation after the prediction moves');
     await p.keyboard.press('Enter');
     await rounds(p, 1);
     const firstOutcome = (await p.locator('#cc-outcome').textContent()).trim();
@@ -559,7 +819,8 @@ async function followWorkflow(browser, url) {
     check((await p.locator('#cc-feedback').textContent()).trim() !== first,
       'rechecking changes the written feedback');
     await go(p, 'evidence');
-    check(await fit(p, '#cc-field-chart svg[role="img"]') && await p.locator('#cc-field-data').isVisible(),
+    await p.locator('#cc-field-details summary').click();
+    check(await fit(p, '#cc-field-chart[role="img"]') && await p.locator('#cc-field-data').isVisible(),
       'published evidence has a distinct chart and data presentation');
     await p.locator('input[name="cc-check-field"][value="yes"]').check();
     await p.locator('#cc-check-field-answer').click();
@@ -569,15 +830,12 @@ async function followWorkflow(browser, url) {
     await p.locator('#cc-check-field-answer').click();
     check(/separate evidence/.test(await p.locator('#cc-field-feedback').textContent()),
       'the evidence check explains why the graph alone does not establish a cause');
-    await p.locator('.cc-rate summary').click();
-    await p.locator('#cc-rate-reveal').click();
-    check(/73,540 wildebeest per year/.test(await p.locator('#cc-rate-answer').textContent()),
-      'the 1961–1977 interval uses elapsed years and published endpoints');
-    await p.locator('#cc-interval').selectOption('1');
-    check(await p.locator('#cc-rate-answer').isHidden(),
-      'selecting a new time interval hides the previous calculation');
+    await fieldRateStudy(p);
     await go(p, 'explain');
     await p.locator('#cc-claim').fill(TEXT.claim);
+    await p.locator('#cc-shortage-rule').fill(TEXT.shortage);
+    await p.locator('#cc-long-run').fill(TEXT.longRun);
+    await p.locator('#cc-migration-claim').fill(TEXT.migration);
     await go(p, 'run');
     check(await p.locator('#cc-prediction').inputValue() === TEXT.prediction, 'switching sections preserves student work');
     await go(p, 'explain');
@@ -586,9 +844,16 @@ async function followWorkflow(browser, url) {
 
     await p.reload();
     await p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]').waitFor({ state: 'visible' });
-    check(await p.locator('#cc-claim').inputValue() === TEXT.claim, 'written claim and active explanation stage survive reload');
+    check(await p.locator('#cc-claim').inputValue() === TEXT.claim &&
+      await p.locator('#cc-shortage-rule').inputValue() === TEXT.shortage &&
+      await p.locator('#cc-long-run').inputValue() === TEXT.longRun &&
+      await p.locator('#cc-migration-claim').inputValue() === TEXT.migration,
+    'the claim, authored if/then rule, long-run prediction, and migration connection survive reload');
     check(await p.locator('#cc-writing-evidence').textContent().then(s => /baseline/i.test(s) && /50% grass comparison/i.test(s)),
       'both complete trials remain available beside the restored writing');
+    const restoredField = await p.locator('#cc-writing-field').textContent();
+    check(restoredField.includes(TEXT.fieldRise) && restoredField.includes(TEXT.fieldFall),
+      'reloading directly into Explain brings both field interpretations alongside the writing');
     const restoredRanges = await p.locator('#cc-writing-range').textContent();
     check(restoredRanges.includes(RANGE_NOTE) && includesRange(restoredRanges, 7, 15) && includesRange(restoredRanges, 7, 9),
       'reloading directly into Explain restores both ranges and the student’s reasoning');
@@ -605,6 +870,16 @@ async function followWorkflow(browser, url) {
     check(report.includes(TEXT.prediction) && report.includes(TEXT.claim) && /simulat|model/i.test(report),
       'download contains student work and discloses the modeled evidence');
     check(/grass/i.test(report) && /50\s*%/.test(report), 'download includes the selected lower-grass comparison');
+    check(report.includes(TEXT.shortage) && report.includes(TEXT.longRun) && report.includes(TEXT.migration),
+      'download includes the student’s if/then rule, long-run prediction, and migration connection');
+    const fieldSection = report.split('Field evidence (classroom estimates, not simulated)\n')[1]
+      ?.split('How did grass availability affect the herd in your model?')[0] || '';
+    const fieldRecords = fieldSection.split('\n\n');
+    check(fieldRecords.some(entry => /^1977\s*[–—-]\s*1978/.test(entry) &&
+      correctedSignedRate(entry, -151066) && entry.includes(TEXT.fieldFall) && /source check: supported/i.test(entry)) &&
+      fieldRecords.some(entry => /^1961\s*[–—-]\s*1977/.test(entry) &&
+        correctedSignedRate(entry, 71039) && entry.includes(TEXT.fieldRise) && /source check: supported/i.test(entry)),
+    'download preserves both checked signed field rates with their interval and each student interpretation');
     const rangeSection = report.split('Estimated fluctuation range (SIMULATED)\n')[1]?.split('Habitat challenge (SIMULATED)')[0] || '';
     const baselineLine = rangeSection.split(String.fromCharCode(10)).find(line => /Baseline.*estimate 11 wildebeest/.test(line)) || '';
     const reducedLine = rangeSection.split(String.fromCharCode(10)).find(line => /Comparison.*estimate 8 wildebeest/.test(line)) || '';
@@ -629,7 +904,11 @@ async function followWorkflow(browser, url) {
     await p.keyboard.press('Escape');
     await p.locator('#cc-reset-confirm').waitFor({ state: 'hidden' });
     await go(p, 'explain');
-    check(await p.locator('#cc-claim').inputValue() === TEXT.claim, 'canceling reset does not erase work');
+    check(await p.locator('#cc-claim').inputValue() === TEXT.claim &&
+      await p.locator('#cc-shortage-rule').inputValue() === TEXT.shortage &&
+      await p.locator('#cc-long-run').inputValue() === TEXT.longRun &&
+      await p.locator('#cc-migration-claim').inputValue() === TEXT.migration,
+    'canceling reset does not erase any of the Lesson 5 writing');
     await go(p, 'run');
     await reset.click();
     await p.locator('#cc-reset-confirm').click();
@@ -641,6 +920,14 @@ async function followWorkflow(browser, url) {
     await rounds(p, 12);
     check(await rangeLock(p).isDisabled() && await p.locator('#cc-range-estimate').inputValue() === '',
       'rerunning the same baseline after reset does not resurrect the estimate or its note');
+    await go(p, 'evidence');
+    await fieldInterval(p).selectOption('1977-1978');
+    check(await fieldRate(p).inputValue() === '' && await fieldReasoning(p).inputValue() === '',
+      'master reset also clears prior field calculations and interpretations');
+    await go(p, 'explain');
+    check(await p.locator('#cc-shortage-rule').inputValue() === '' && await p.locator('#cc-long-run').inputValue() === '' &&
+      await p.locator('#cc-migration-claim').inputValue() === '',
+    'master reset clears the Lesson 5 handout responses and migration connection');
   });
 }
 
@@ -650,9 +937,11 @@ async function followWorkflow(browser, url) {
   try {
     browser = await chromium.launch(process.env.CHROMIUM_EXECUTABLE ? { executablePath: process.env.CHROMIUM_EXECUTABLE } : {});
     const url = server.url + FILE;
+    await companionHeaders(browser, server.url);
     await visualSweep(browser, url);
     await followWorkflow(browser, url);
     await followHabitatWorkflow(browser, url);
+    await followAdequateHabitat(browser, url);
     console.log(`carrying-capacity-browser: ${checks} checks passed`);
   } finally {
     if (browser) await browser.close();

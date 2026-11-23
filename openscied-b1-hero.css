@@ -1,0 +1,83 @@
+/* Unit 1 activity headers. Match the Carrying Capacity field-lab hero;
+   art is decorative and all teaching text remains ordinary HTML. */
+.b1-hero {
+  position:relative;
+  isolation:isolate;
+  display:flex;
+  align-items:center;
+  min-height:156px;
+  border:1px solid var(--line,#3d5b4f);
+  border-radius:20px;
+  overflow:hidden;
+  background:#173b31;
+  color:#f9f8ee;
+}
+.b1-hero-art {
+  position:absolute;
+  z-index:0;
+  inset:0 0 0 43%;
+  background-image:var(--b1-hero-image);
+  background-position:var(--b1-hero-position,center 52%);
+  background-size:var(--b1-hero-size,cover);
+  background-repeat:no-repeat;
+  opacity:.92;
+}
+.b1-hero-copy {
+  position:relative;
+  z-index:1;
+  align-self:stretch;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
+  width:100%;
+  padding:clamp(18px,2.9vw,36px);
+  background:linear-gradient(90deg,#102f28 0%,#102f28 40%,#102f28ed 56%,transparent 83%);
+}
+.b1-hero .b1-hero-kicker {
+  margin:0 0 .28rem;
+  color:#b6e9bd;
+  font:700 .72rem/1.35 var(--f-mono,monospace);
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+.b1-hero h1 {
+  max-width:21ch;
+  margin:0;
+  color:#faf8ed;
+  font-family:var(--f-display,var(--display,Georgia)),serif;
+  font-size:clamp(2rem,4.25vw,3.75rem);
+  line-height:1.1;
+  letter-spacing:-.028em;
+  text-wrap:balance;
+}
+.b1-hero .b1-hero-lead {
+  max-width:52ch;
+  margin:.5rem 0 0;
+  color:#eef6eb;
+  line-height:1.38;
+}
+
+@media (max-height:850px), (max-width:820px) {
+  .b1-hero{min-height:112px}
+  .b1-hero-copy{padding:12px clamp(14px,2vw,24px)}
+  .b1-hero h1{font-size:clamp(1.9rem,3.55vw,2.65rem)}
+}
+@media (max-width:820px) {
+  .b1-hero-copy{background:linear-gradient(90deg,#102f28 3%,#102f28fc 45%,#102f28d9 87%,#102f286a 100%)}
+  .b1-hero-art{inset-inline-start:27%}
+  .b1-hero .b1-hero-lead{max-width:min(53ch,93%)}
+}
+@media (max-width:500px) {
+  .b1-hero{min-height:0;border-radius:15px}
+  .b1-hero-copy{padding:13px 14px}
+  .b1-hero .b1-hero-kicker{font-size:.62rem;letter-spacing:.07em}
+  .b1-hero h1{font-size:clamp(1.7rem,7.2vw,2.1rem)}
+  .b1-hero .b1-hero-lead{margin-top:.33rem;font-size:.92rem}
+}
+@media (forced-colors:active), print {
+  .b1-hero{min-height:0;background:none;color:inherit;break-inside:avoid}
+  .b1-hero-copy{background:none}
+  .b1-hero-art{display:none}
+  .b1-hero .b1-hero-kicker,.b1-hero .b1-hero-lead,.b1-hero h1{color:inherit}
+}

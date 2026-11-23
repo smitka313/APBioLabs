@@ -6,12 +6,11 @@
   const KEY='aplab:openscied:b1-carrying-capacity:habitat:v1';
   const NAMES={food:'Food',water:'Water',shelter:'Shelter'};
   const NEED={food:'forage',water:'drinking water',shelter:'shade or cover'};
-  const EDIT={food:'Less food',water:'Less water',shelter:'Less shelter'};
   const PREDICTIONS=['none','food','water','shelter'];
-  const GLYPHS={
-    food:'<path d="M6 17Q3 7 18 5q1 11-7 13l-4 1m0 2 7-8m-4 5-1-5m2 3 5-2"/>',
-    water:'<path d="M12 3C10 7 5 12 5 16a7 7 0 0 0 14 0c0-4-5-9-7-13Z"/><path d="M8 16q0 3 3 4"/>',
-    shelter:'<path d="M12 3 20 7v6q0 5-8 8-8-3-8-8V7Z"/><path d="M7 13q1-4 5-4t5 4H7m5 0v4"/>'
+  const ART={
+    food:'<path d="M12 33C12 20 8 11 4 6c9 2 13 8 15 16C21 10 27 5 36 3c-4 7-9 12-11 21 5-5 10-7 15-6-4 2-9 8-11 15" fill="currentColor" opacity=".27"/><path d="M12 33C12 20 8 11 4 6c9 2 13 8 15 16C21 10 27 5 36 3c-4 7-9 12-11 21 5-5 10-7 15-6-4 2-9 8-11 15M4 33h36" />',
+    water:'<path d="M22 2C18 9 9 15 9 24a13 13 0 0 0 26 0c0-9-9-15-13-22Z" fill="currentColor" opacity=".24"/><path d="M22 2C18 9 9 15 9 24a13 13 0 0 0 26 0c0-9-9-15-13-22Zm-7 23q1 4 5 6M5 35h4m26 0h4"/>',
+    shelter:'<path d="M4 17Q6 9 15 10q6-11 15 0 8 0 11 7Z" fill="currentColor" opacity=".27"/><path d="M4 17Q6 9 15 10q6-11 15 0 8 0 11 7ZM22 17v15m0-9-7-5m7 7 8-8M7 33h30M5 37h34"/>'
   };
   const ANIMAL='<path d="M11 10q2-4 7-4 2 0 5 2l9 1q4 0 5 3t-3 6l-8 1-8-1-4 2-4-3-4 3-3-1 1-4 4-4 3-1Zm5 8-3 6-1 4m7-10-2 7 1 3m12-10 2 7-1 3m1-10 4 5v5m1-15q4 1 2 5m-29 1 2 4"/><path d="M6 14Q0 11 3 7 4 6 5 8m1 6Q13 9 11 5 10 4 9 6"/><circle cx="7.5" cy="13.2" r=".55" fill="currentColor" stroke="none"/>';
   const blank=()=>({v:1,scenario:'',prediction:'',a:null,b:null});
@@ -21,8 +20,8 @@
   const numeral=id=>id.startsWith('a')?id.slice(1):id;
   const text=(value)=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
   const unit=n=>n===1?'unit':'units';
-  function glyph(resource){
-    return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+GLYPHS[resource]+'</svg>';
+  function illustration(resource){
+    return '<svg viewBox="0 0 44 40" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+ART[resource]+'</svg>';
   }
   const animalIcon='<svg viewBox="0 0 42 30" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+ANIMAL+'</svg>';
   function restore(raw) {
@@ -49,7 +48,7 @@
     if(!state.a || !state.b || state.a.phase!=='complete'||state.b.phase!=='complete')return '';
     const change=L.comparison(state.scenario).changes[0], a=L.summary(state.a), b=L.summary(state.b);
     const growth=b.ending>b.starting&&b.ending<a.ending?' Trial B’s herd still grew from '+b.starting+' to '+b.ending+'; the shortage slowed growth rather than making the entire population shrink.':'';
-    return 'Both trials began with the same '+a.starting+' animals and the same needs. Only '+name(change.resource).toLowerCase()+' changed: '+change.baseline+' to '+change.scenario+' '+unit(change.scenario)+'. The next herd went from '+a.ending+' to '+b.ending+' across the trials.'+growth+' Extra units at another station could not meet an animal’s assigned need.';
+    return 'Both trials began with the same '+a.starting+' animals and the same needs. Only '+name(change.resource).toLowerCase()+' changed: '+change.baseline+' to '+change.scenario+' '+unit(change.scenario)+'. The next herd went from '+a.ending+' to '+b.ending+' across the trials.'+growth+(b.deaths?' Extra units at another station could not meet an animal’s assigned need.':' The reduced resource was still sufficient to match the animals that needed it.');
   }
   function reportText(state){
     const a=state.a?.phase==='complete'&&L.summary(state.a), b=state.b?.phase==='complete'&&L.summary(state.b);
@@ -66,7 +65,7 @@
     let state=blank(),storage='ok',raw=null;
     try{raw=root.localStorage.getItem(KEY);const s=restore(raw);if(s)state=s;else storage='preserved';}
     catch(_){storage='blocked';}
-    let selected='',gesture=null,ghost=null,suppress=null,lastMessage='',recent='';
+    let selected='',inspected='',gesture=null,ghost=null,suppress=null,lastMessage='',recent='';
     host.classList.add('cc-habitat-ui');
     const $=s=>host.querySelector(s), $$=s=>Array.from(host.querySelectorAll(s));
     const active=()=>state.b?.phase==='match'?state.b:state.a?.phase==='match'?state.a:null;
@@ -91,33 +90,30 @@
       return '';
     }
     function reset(){
-      selected='';recent='';lastMessage='';state=blank();
+      selected='';inspected='';recent='';lastMessage='';state=blank();
       try{root.localStorage.removeItem(KEY);storage='ok';}catch(_){storage='blocked';}
       draw();
     }
     function setup(){
-      const options=L.SCENARIOS.slice(1).map(s=>{
-        const change=L.comparison(s.id).changes[0];
-        return '<option value="'+s.id+'"'+(s.id===state.scenario?' selected':'')+'>'+EDIT[change.resource]+' · '+change.baseline+' to '+change.scenario+' units</option>';
-      }).join('');
+      const picked=scenario(state.scenario), reference=L.create();
       return `<div class="cc-habitat-setup">
-        <div><p class="cc-habitat-eyebrow">Plan a fair comparison</p><h3>Keep the herd. Change one resource.</h3>
-        <p>Trial A uses a balanced habitat. In Trial B, the same eight wildebeest face one change. Each needs the resource shown on its card.</p></div>
+        <div><p class="cc-habitat-eyebrow">Plan a fair comparison</p><h3>Same herd. A new habitat case.</h3>
+        <p>Trial A uses a balanced habitat. Draw a case for Trial B, then predict from the clues. A resource can decrease and still be sufficient.</p>
+        ${picked?`<div id="cc-habitat-clues"><h4>Trial B clues</h4><div class="cc-habitat-clues">${L.RESOURCES.map(r=>`<div data-habitat-need="${r}">${illustration(r)}<strong>${name(r)}</strong><span>${reference.animals.filter(a=>a.need===r).length} animals seeking it</span><span>${picked.stocks[r]} ${unit(picked.stocks[r])} available</span></div>`).join('')}</div></div>`:'<button type="button" class="cc-primary" id="cc-habitat-draw">Draw a habitat case</button>'}</div>
         <div class="cc-habitat-form">
-          <label for="cc-habitat-resource">What will you change in Trial B?
-          <select id="cc-habitat-resource"><option value="">Choose a resource change</option>${options}</select></label>
           <label for="cc-habitat-prediction">Which resource, if any, will limit survival in Trial B?
-          <select id="cc-habitat-prediction"><option value="">Make a prediction</option><option value="none"${state.prediction==='none'?' selected':''}>None · all will find what they need</option>${L.RESOURCES.map(r=>`<option value="${r}"${state.prediction===r?' selected':''}>${name(r)}</option>`).join('')}</select></label>
-          <button type="button" class="cc-primary" id="cc-habitat-start"${selectStart()?'':' disabled'}>Start Trial A</button>
+          <select id="cc-habitat-prediction"${picked?'':' disabled'}><option value="">Make a prediction</option><option value="none"${state.prediction==='none'?' selected':''}>None · all will find what they need</option>${L.RESOURCES.map(r=>`<option value="${r}"${state.prediction===r?' selected':''}>${name(r)}</option>`).join('')}</select></label>
+          <button type="button"${picked?' class="cc-primary"':''} id="cc-habitat-start"${selectStart()?'':' disabled'}>Start Trial A</button>
         </div></div>`;
     }
     function station(trial,r){
-      const stock=trial.remaining[r],max=trial.stocks[r];
+      const stock=trial.remaining[r],max=trial.stocks[r], arrivals=trial.matches.filter(x=>x.resource===r);
       const chips=Array.from({length:max},(_,i)=>`<i data-used="${i>=stock}"></i>`).join('');
-      return `<button type="button" data-habitat-resource="${r}" data-empty="${stock===0}" aria-label="${name(r)}, ${stock} ${unit(stock)} left">
-        <span class="cc-habitat-emblem">${glyph(r)}</span>
+      return `<button type="button" data-habitat-resource="${r}" data-empty="${stock===0}" aria-label="${name(r)}, ${stock} ${unit(stock)} left, ${arrivals.length} matched">
+        <span class="cc-habitat-emblem">${illustration(r)}</span>
         <strong>${name(r)}</strong><span class="cc-habitat-stock" data-habitat-stock="${r}" data-habitat-remaining="${stock}">${stock} left <small>of ${max}</small></span>
         <span class="cc-habitat-chips" aria-hidden="true">${chips||'<i data-used="true"></i>'}</span>
+        <span class="cc-habitat-arrivals">${arrivals.length?`<span class="cc-sr">Matched animals</span>${arrivals.map(m=>`<span${m.animalId===recent?' data-just-match':''}>#${numeral(m.animalId)}</span>`).join('')}`:'<span>None here yet</span>'}</span>
       </button>`;
     }
     function tile(a,match){
@@ -125,7 +121,7 @@
       const head=match?'<div ':'<button type="button" aria-pressed="false" ';
       return `${head}${attr}="${a.id}" data-habitat-need="${a.need}"${match&&a.id===recent?' data-just-match':''} class="cc-habitat-animal${match?' cc-habitat-matched':''}">
         <span class="cc-habitat-beast">${animalIcon}<span>Wildebeest ${numeral(a.id)}</span></span>
-        <span class="cc-habitat-need">${glyph(a.need)} ${match?'Found':'Needs'} ${name(a.need).toLowerCase()}${match?' ✓':''}</span>
+        <span class="cc-habitat-need">${illustration(a.need)} <span><small>${match?'Found':'Needs'}</small> <strong>${name(a.need)}${match?' ✓':''}</strong></span></span>
       ${match?'</div>':'</button>'}`;
     }
     function statusText(){
@@ -135,12 +131,12 @@
       const info=L.status(trial),sc=scenario(trial.scenarioId);
       return `<div class="cc-habitat-board">
         <div class="cc-habitat-boardhead"><div><p class="cc-habitat-eyebrow" id="cc-habitat-phase">${trialName()} · ${sc.label}</p><h3 id="cc-habitat-board-title" tabindex="-1">Match animals to habitat resources</h3></div><strong id="cc-habitat-pending">${trial.matches.length} of ${trial.animals.length} matched</strong></div>
-        <p id="cc-habitat-instructions">Drag a card to its station, or select an animal and then choose a station. With the keyboard, use Tab and Enter or Space.</p>
+        <p id="cc-habitat-instructions">Drag a card to its station, or select an animal and then choose a station. Select an unassigned station to see which animals still need it. With the keyboard, use Tab and Enter or Space.</p>
         <div class="cc-habitat-stations" role="group" aria-label="Resource stations">${L.RESOURCES.map(r=>station(trial,r)).join('')}</div>
         <div class="cc-habitat-messages"><p id="cc-habitat-selection">No animal selected.</p>${statusText()}</div>
         <div class="cc-habitat-animals" role="group" aria-label="Wildebeest cards">${trial.animals.map(a=>tile(a,trial.matches.find(m=>m.animalId===a.id))).join('')}</div>
         <div class="cc-habitat-controls"><p>${info.canFinish?(info.remaining?'No more matches fit. Finish to see what happens to the unmatched animals.':'Every animal found its resource. Finish to see the next herd.'):'Keep matching while stations have what an animal needs.'}</p>
-        <button type="button" class="cc-primary" id="cc-habitat-finish"${info.canFinish?'':' disabled'}>Finish ${trialName()}</button></div>
+        <div class="cc-actions"><button type="button" id="cc-habitat-undo"${trial.matches.length?'':' disabled'}>Undo last match</button><button type="button" class="cc-primary" id="cc-habitat-finish"${info.canFinish?'':' disabled'}>Finish ${trialName()}</button></div></div>
       </div>`;
     }
     function scores(title,state){
@@ -178,24 +174,38 @@
         <dialog id="cc-habitat-reset-dialog" aria-labelledby="cc-habitat-reset-title"><h3 id="cc-habitat-reset-title">Reset the habitat challenge?</h3><p>This clears both habitat trials and your prediction, but keeps your other investigation work.</p>
         <div class="cc-habitat-controls"><form method="dialog"><button autofocus>Keep my work</button></form><button type="button" id="cc-habitat-reset-confirm">Clear habitat trials</button></div></dialog>`;
     }
+    function cues(){
+      const need=currentCard(selected)?.need;
+      $$('[data-habitat-resource]').forEach(el=>{
+        el.toggleAttribute('data-habitat-preview',el.dataset.habitatResource===inspected);
+        el.toggleAttribute('data-habitat-target',el.dataset.habitatResource===need);
+      });
+      $$('[data-habitat-animal]').forEach(el=>el.toggleAttribute('data-habitat-spotlit',el.dataset.habitatNeed===inspected));
+    }
+    function inspect(resource,trial){
+      inspected=resource===inspected?'':resource;cues();
+      if(!inspected){tell('Station spotlight cleared.');return;}
+      const waiting=L.summary(trial).byResource[resource].unmatched, available=trial.remaining[resource];
+      tell(name(resource)+': '+waiting+' '+(waiting===1?'animal still needs':'animals still need')+' it; '+available+' '+unit(available)+' left.');
+    }
     function selectAnimal(id,keyboard=false){
       const animal=currentCard(id);
       if(!animal||active().matches.some(m=>m.animalId===id))return;
-      selected=id;
+      selected=id;inspected='';cues();
       $$('[data-habitat-animal]').forEach(node=>node.setAttribute('aria-pressed',String(node.dataset.habitatAnimal===id)));
       $('#cc-habitat-selection').textContent='Wildebeest '+numeral(id)+' selected. It needs '+NEED[animal.need]+'.';
       tell('Wildebeest '+numeral(id)+' selected. Choose a resource station.');
       if(keyboard)focus('[data-habitat-resource]');
     }
     function clearSelection(){
-      selected='';
+      selected='';inspected='';cues();
       $$('[data-habitat-animal]').forEach(node=>node.setAttribute('aria-pressed','false'));
       const p=$('#cc-habitat-selection');if(p)p.textContent='No animal selected.';
     }
     function tryMatch(id,resource){
       const trial=active(),animal=currentCard(id);
       if(!trial||!L.RESOURCES.includes(resource))return;
-      if(!animal){tell('Choose a wildebeest first, then a station.');return;}
+      if(!animal){inspect(resource,trial);return;}
       const changed=L.match(trial,animal.id,resource);
       if(changed===trial){
         if(animal.need!==resource)tell('Wildebeest '+numeral(id)+' needs '+NEED[animal.need]+'. '+name(resource)+' cannot meet that need.');
@@ -206,13 +216,12 @@
       const selector='[data-habitat-resource="'+resource+'"]';
       const keyboard=document.activeElement===$(selector);
       if(trial===state.a)state.a=changed;else state.b=changed;
-      selected='';recent=id;persist();draw();
+      selected='';inspected='';recent=id;persist();draw();
       tell('Wildebeest '+numeral(id)+' matched with '+name(resource).toLowerCase()+'. '+changed.remaining[resource]+' '+unit(changed.remaining[resource])+' left.'+(L.status(changed).canFinish?' You can finish the trial.':''));
       if(keyboard)focus(selector);
     }
     host.addEventListener('change',e=>{
-      if(e.target.id==='cc-habitat-resource')state.scenario=chosen(e.target.value)?e.target.value:'';
-      else if(e.target.id==='cc-habitat-prediction')state.prediction=PREDICTIONS.includes(e.target.value)?e.target.value:'';
+      if(e.target.id==='cc-habitat-prediction')state.prediction=PREDICTIONS.includes(e.target.value)?e.target.value:'';
       else return;
       persist();$('#cc-habitat-start').disabled=!selectStart();
     });
@@ -223,6 +232,18 @@
         if(control.dataset.habitatAnimal)selectAnimal(control.dataset.habitatAnimal,e.detail===0);
         else tryMatch(selected,control.dataset.habitatResource);
         return;
+      }
+      if(control.id==='cc-habitat-draw'&&!state.scenario){
+        state.scenario=L.drawScenario();persist();draw();focus('#cc-habitat-prediction');tell('Case drawn. Compare the clues for all three resources before predicting.');
+      }
+      if(control.id==='cc-habitat-undo'){
+        const prev=active(), latest=prev?.matches.at(-1);
+        if(!latest)return;
+        const updated=L.undoLast(prev);
+        if(prev===state.a)state.a=updated;else state.b=updated;
+        selected='';inspected='';recent='';persist();draw();
+        tell('Wildebeest '+numeral(latest.animalId)+' is back in the herd. One '+name(latest.resource).toLowerCase()+' unit is available again.');
+        focus(updated.matches.length?'#cc-habitat-undo':'[data-habitat-animal="'+latest.animalId+'"]');
       }
       if(control.id==='cc-habitat-start'&&!state.a&&selectStart()){
         state.a=L.create('balanced');lastMessage='';persist();draw();focus('#cc-habitat-board-title');
@@ -239,7 +260,7 @@
         focus('#cc-habitat-result');
       }
       if(control.id==='cc-habitat-clear')$('#cc-habitat-reset-dialog').showModal();
-      if(control.id==='cc-habitat-reset-confirm'){reset();tell('Habitat challenge reset.');focus('#cc-habitat-resource');}
+      if(control.id==='cc-habitat-reset-confirm'){reset();tell('Habitat challenge reset.');focus('#cc-habitat-draw');}
     });
     host.addEventListener('keydown',e=>{
       if(e.key==='Escape'&&selected&&!$('#cc-habitat-reset-dialog')?.open){

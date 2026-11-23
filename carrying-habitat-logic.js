@@ -18,10 +18,18 @@
     makeScenario('balanced','Balanced habitat','This starting habitat has all three resources.'),
     makeScenario('low-food','Less forage','Less grass is available as food. Water and shelter stay the same.',{food:1}),
     makeScenario('drought','Water shortage','A dry period reduces the water stock. Food and shelter stay the same.',{water:1}),
-    makeScenario('shelter-loss','Shelter loss','This habitat loses its shelter. Food and water stay the same.',{shelter:0})
+    makeScenario('shelter-loss','Shelter loss','This habitat loses its shelter. Food and water stay the same.',{shelter:0}),
+    makeScenario('food-tight','Slightly less forage','Food falls to three units, but that is enough for the three animals seeking food.',{food:3}),
+    makeScenario('water-tight','Slightly less water','Water falls to three units, but that is enough for the three animals seeking water.',{water:3}),
+    makeScenario('shelter-tight','Slightly less cover','Shelter falls to two units, but that is enough for the two animals seeking cover.',{shelter:2})
   ]);
   const startNeeds=Object.freeze(['food','water','shelter','food','water','shelter','food','water']);
   const scenarioFor=id=>SCENARIOS.find(s=>s.id===id);
+  function drawScenario(random=Math.random){
+    const roll=Number(random());
+    if(!Number.isFinite(roll)||roll<0||roll>=1)throw new RangeError('Random choice requires a value from 0 up to, but not including, 1.');
+    return SCENARIOS[1+Math.floor(roll*(SCENARIOS.length-1))].id;
+  }
   function create(scenarioId='balanced'){
     const scenario=scenarioFor(scenarioId)||SCENARIOS[0];
     return {
@@ -35,6 +43,11 @@
     const animal=state.animals.find(a=>a.id===animalId);
     if(animal?.need!==resource||state.matches.some(m=>m.animalId===animalId))return state;
     return {...state,remaining:{...state.remaining,[resource]:state.remaining[resource]-1},matches:[...state.matches,{animalId,resource}]};
+  }
+  function undoLast(state){
+    if(!state||state.phase!=='match'||!state.matches.length)return state;
+    const last=state.matches.at(-1), resource=last.resource;
+    return {...state,matches:state.matches.slice(0,-1),remaining:{...state.remaining,[resource]:state.remaining[resource]+1}};
   }
   function breakdown(state){
     return Object.fromEntries(RESOURCES.map(resource=>{
@@ -117,5 +130,5 @@
       return state;
     }catch(_){return null;}
   }
-  return Object.freeze({RESOURCES,SCENARIOS,MAX_GENERATIONS,create,match,status,finish,summary,nextGeneration,comparison,restore});
+  return Object.freeze({RESOURCES,SCENARIOS,MAX_GENERATIONS,create,drawScenario,match,undoLast,status,finish,summary,nextGeneration,comparison,restore});
 });

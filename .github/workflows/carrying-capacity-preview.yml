@@ -3,15 +3,24 @@ on:
   pull_request:
     paths:
       - 'openscied-b1-carrying-capacity.*'
+      - 'openscied-b1-hero.css'
+      - 'openscied-b1-migration.html'
+      - 'openscied-b1-migration.css'
+      - 'openscied-b1-serengeti.html'
+      - 'openscied-b1-serengeti.css'
       - 'carrying-logic.js'
       - 'carrying-scene.js'
       - 'carrying-habitat*'
       - 'carrying-range*'
+      - 'carrying-field*'
       - 'carrying-capacity*'
       - 'assets/carrying-capacity*'
+      - 'assets/migration-explorer-preview.svg'
+      - 'assets/openscied-serengeti-preview.svg'
       - 'tests/carrying-capacity*'
       - 'tests/carrying-habitat*'
       - 'tests/carrying-range*'
+      - 'tests/carrying-field*'
       - '.github/workflows/carrying-capacity-preview.yml'
   workflow_dispatch:
 
@@ -33,7 +42,7 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Check model and source expectations
-        run: node --test tests/carrying-capacity.test.js tests/carrying-habitat.test.js tests/carrying-range.test.js
+        run: node --test tests/carrying-capacity.test.js tests/carrying-habitat.test.js tests/carrying-range.test.js tests/carrying-field.test.js
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Exercise the activity in desktop and mobile Chromium

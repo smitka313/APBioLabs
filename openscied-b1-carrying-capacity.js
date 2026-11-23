@@ -4,8 +4,7 @@
   const KEY = 'aplab:openscied-b1-carrying-capacity:run-v1';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
-  const n = new Intl.NumberFormat('en-US');
-  const strings = ['prediction', 'claim', 'habitat-claim', 'limit'];
+  const strings = ['prediction', 'claim', 'shortage-rule', 'long-run', 'migration-claim', 'habitat-claim', 'limit'];
   const stages = ['run', 'habitat', 'evidence', 'explain'];
   const feedback = {
     food: {
@@ -60,12 +59,12 @@
   };
   const scene = window.CarryingScene.mount($('#cc-board'));
   const habitat = window.CarryingHabitatUI.mount($('#cc-habitat-app'), {announce:speak});
-  let chart, fieldChart, marks = [];
+  let chart, marks = [];
   const range = window.CarryingRange.mount($('#cc-range-app'), {announce:speak,onMarks:(selected)=>{
     marks = selected;
     if (chart && state.page === 'run') chart.update({hLines:marks});
   }});
-  const field = L.EVIDENCE;
+  const field = window.CarryingField.mount($('#cc-field-app'),{announce:speak});
   function renderLab() {
     const s = current(), last = s.rows.at(-1), done = s.round === ROUNDS, compared = !!state.comparison;
     const scenario = state.selected === 'baseline' ? 'Baseline · All grass available' : 'Comparison · '+s.grassPercent+'% grass available';
@@ -76,6 +75,7 @@
     scene.update({herd:s.population,grass:L.available(s),round:s.round,label:done ? 'End of run' : 'Before round '+(s.round+1)});
     $('#cc-outcome').textContent = outcome(last);
     $('#cc-next').disabled = $('#cc-finish').disabled = done;
+    $('#cc-range-jump').hidden = !done;
     $('#cc-history tbody').innerHTML = s.rows.map((r)=>tableRow([r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending])).join('');
     const ready = state.baseline.round === ROUNDS;
     $('#cc-compare-hint').textContent = compared ? 'Both runs stay on the graph. Choose which run to show on the board and in the table.' : ready ? 'Baseline complete. Choose how much grass will be available in the second run.' : 'Finish the baseline to unlock the comparison.';
@@ -88,28 +88,23 @@
     if (state.page === 'run') {
       const series = [{name:'Baseline · 100% grass',line:true,dots:true,points:rounds(state.baseline)}];
       if (compared) series.push({name:'Comparison · '+state.comparison.grassPercent+'% grass',line:true,dots:true,dash:[6,4],points:rounds(state.comparison)});
-      const spec = {responsive:true,height:250,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:20,series,simTag:false,hLines:marks};
+      const spec = {responsive:true,height:300,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:20,series,simTag:false,hLines:marks};
       if (chart) chart.update(spec); else chart = Lab.chart('#cc-chart',spec);
     }
     range.update({baseline:state.baseline,comparison:state.comparison});
-  }
-  function renderField() {
-    const observations = field.rows;
-    const spec = {responsive:true,height:290,xLabel:'Year',yLabel:'Estimated wildebeest',xMin:1961,xMax:1994,yMin:0,yMax:1600000,simTag:false,
-      series:[{name:'Published March estimates',line:true,dots:true,points:observations.map(({year,population})=>({x:year,y:population}))}]};
-    if (!fieldChart) fieldChart = Lab.chart('#cc-field-chart',spec); else fieldChart.update(spec);
   }
   function renderWriting() {
     const items = [state.baseline,state.comparison].filter((s)=>s?.round).map((s)=>'At round '+s.round+', the '+(s.grassPercent === 100?'baseline':s.grassPercent+'% grass comparison')+' ended with '+plural(s.population,'wildebeest','wildebeest')+'.');
     $('#cc-writing-evidence').textContent = [...items,compareText()].filter(Boolean).join(' ') || 'No model rounds yet. Return to the model to collect data.';
     $('#cc-writing-habitat').textContent = habitat.report() || 'No completed habitat runs yet.';
     $('#cc-writing-range').textContent = range.report() || 'No fluctuation range recorded yet.';
+    $('#cc-writing-field').textContent = field.report() || 'No field-rate calculations recorded yet.';
   }
   function go(page, focus = true) {
     state.page = page;
     for (const id of stages) { $('#cc-'+id).hidden = id !== page; const button = $('.cc-nav [data-cc-go="'+id+'"]'); if (id === page) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); }
     if (page === 'run') renderLab();
-    if (page === 'evidence') renderField();
+    if (page === 'evidence') field.update();
     if (page === 'explain') renderWriting();
     if (focus) { save(); $('#cc-'+page+'-title').focus(); }
   }
@@ -120,17 +115,15 @@
     state[state.selected] = s;
     save(); renderLab();
     if (s.round === ROUNDS) {
-      const target = state.comparison ? $('#cc-comparison-result') : $('#cc-compare');
+      const target = $('#cc-range-jump');
       if (!target.hidden) { if (target.tagName !== 'BUTTON') target.tabIndex = -1; target.focus({preventScroll:true}); }
     }
     speak(outcome(s.rows.at(-1))+(s.round === ROUNDS ? ' Run complete.' : ''));
   }
-  const fieldSource = field.source + '. ' + field.method;
-  const fieldDOI = field.url;
   const report = () => {
     const who = Lab.identity.get() || {};
     const describe = (sim,name) => sim?.round ? [name+' (SIMULATED)', 'Round | Starting herd | Grass units | Survivors | Births | Deaths | Ending herd', ...sim.rows.map((r)=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending].join(' | '))].join('\n') : name+': no completed rounds.';
-    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (published estimates, not simulated)\n'+fieldSource+'\n'+fieldDOI, 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
+    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (classroom estimates, not simulated)\n'+(field.report() || 'No field calculations recorded.'), 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'Write an if/then rule for a grass shortage.\n'+(state.answers['shortage-rule'] || 'Not entered'), 'Predict what the graph would look like after 50 rounds.\n'+(state.answers['long-run'] || 'Not entered'), 'How could migration affect carrying capacity?\n'+(state.answers['migration-claim'] || 'Not entered'), 'How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
   };
   const openReport = (message) => {
     $('#cc-report-text').value = report(); $('#cc-report-help').textContent = message || 'Select and copy this text if your device blocks downloads.'; $('#cc-report').showModal();
@@ -148,6 +141,11 @@
   $$('.cc [data-cc-go]').forEach((button) => button.addEventListener('click',()=>go(button.dataset.ccGo)));
   $('#cc-next').addEventListener('click',()=>advance(false));
   $('#cc-finish').addEventListener('click',()=>advance(true));
+  $('#cc-range-jump').addEventListener('click',()=>{
+    const target = $('#cc-range-title');
+    if (!target) return;
+    target.tabIndex = -1; target.focus({preventScroll:true}); target.scrollIntoView({block:'start'});
+  });
   $('#cc-grass').value = state.grass;
   $('#cc-grass').addEventListener('change',(e)=>{ state.grass = Number(e.target.value); save(); });
   $('#cc-compare').addEventListener('click',()=>{
@@ -189,28 +187,13 @@
   }
   $('#cc-reset').addEventListener('click',()=>$('#cc-reset-dialog').showModal());
   $('#cc-reset-confirm').addEventListener('click',()=>{
-    state=fresh(); habitat.reset(); range.reset(); save(); $('#cc-reset-dialog').close(); $('#cc-grass').value='50';
+    state=fresh(); habitat.reset(); range.reset(); field.reset(); save(); $('#cc-reset-dialog').close(); $('#cc-grass').value='50';
     for (const id of strings) $('#cc-'+id).value='';
     $$('input[type="radio"]').forEach((el)=>{el.checked=false;});
     for (const id of ['cc-feedback','cc-field-feedback']) {$('#'+id).hidden=true;$('#'+id).textContent='';}
     $('#cc-table').open = false; $('#cc-download-status').hidden = true;
     go('run'); speak('Investigation cleared. Ready for round 1.');
   });
-  $('#cc-field-source').append(fieldSource+' ');
-  const citation = document.createElement('a'); citation.href=fieldDOI; citation.textContent='Read the study'; $('#cc-field-source').append(citation);
-  $('#cc-field-data').innerHTML = '<details><summary>View published March estimates</summary><table><caption class="cc-sr">March wildebeest population estimates in Table 5</caption><thead><tr><th scope="col">Year</th><th scope="col">Estimated wildebeest</th></tr></thead><tbody>'+field.rows.map(({year,population})=>tableRow([year,n.format(population)])).join('')+'</tbody></table></details>';
-  const interval = $('#cc-interval'), reveal = $('#cc-rate-reveal'), rateAnswer = $('#cc-rate-answer');
-  interval.innerHTML = field.intervals.map((x,i)=>'<option value="'+i+'">'+x.start+' to '+x.end+'</option>').join('');
-  function showInterval(show) {
-    const {start,end} = field.intervals[Number(interval.value)];
-    const r = L.historicalRate(start,end);
-    $('#cc-interval-data').textContent = start+': '+n.format(r.startPopulation)+' estimated wildebeest. '+end+': '+n.format(r.endPopulation)+'. '+plural(r.years,'year','years')+' elapsed. Subtract the start estimate from the end estimate and divide by the years elapsed.';
-    rateAnswer.hidden = !show; reveal.setAttribute('aria-expanded',String(show)); reveal.textContent = show?'Hide average yearly change':'Show average yearly change';
-    rateAnswer.textContent = n.format(r.change)+' ÷ '+r.years+' ≈ '+n.format(Math.round(r.rate))+' wildebeest per year on average. Individual years can differ from this average.';
-  }
-  interval.addEventListener('change',()=>showInterval(false));
-  reveal.addEventListener('click',()=>{ showInterval(rateAnswer.hidden); if(!rateAnswer.hidden) speak(rateAnswer.textContent); });
-  showInterval(false);
   try {
     const host = $('#cc-identity');
     Lab.identity.mount(host);

@@ -12,12 +12,14 @@
 <link rel="stylesheet" href="openscied-b1-carrying-capacity.css">
 <link rel="stylesheet" href="carrying-habitat.css">
 <link rel="stylesheet" href="carrying-range.css">
+<link rel="stylesheet" href="carrying-field.css">
 <script defer src="lab.js"></script>
 <script defer src="carrying-logic.js"></script>
 <script defer src="carrying-scene.js"></script>
 <script defer src="carrying-habitat-logic.js"></script>
 <script defer src="carrying-habitat.js"></script>
 <script defer src="carrying-range.js"></script>
+<script defer src="carrying-field.js"></script>
 <script defer src="openscied-b1-carrying-capacity.js"></script>
 </head>
 <body class="cc">
@@ -34,9 +36,9 @@
 <noscript><p>Enable JavaScript to run this model and save your investigation.</p></noscript>
 <nav class="cc-nav" aria-label="Investigation sections">
 <button type="button" data-cc-go="run" aria-current="page"><small>01</small> Run the model</button>
-<button type="button" data-cc-go="habitat"><small>02</small> Habitat challenge</button>
-<button type="button" data-cc-go="evidence"><small>03</small> Read field data</button>
-<button type="button" data-cc-go="explain"><small>04</small> Explain</button>
+<button type="button" data-cc-go="evidence"><small>02</small> Read field data</button>
+<button type="button" data-cc-go="explain"><small>03</small> Explain</button>
+<button type="button" data-cc-go="habitat"><small>+</small> Habitat challenge</button>
 <span id="cc-save-status">Work saves on this device</span>
 </nav>
 
@@ -48,16 +50,18 @@
     <div id="cc-board"></div>
     <p class="cc-caption" id="cc-board-caption">Board shows the starting herd and available grass for the next round. One grass unit feeds one wildebeest in the model.</p>
     <div class="cc-turn"><p class="cc-tag">What happened and why?</p><p id="cc-outcome">No rounds yet. Predict how the herd will change, then run round 1 to see who gets enough grass.</p></div>
-    <div class="cc-actions"><button type="button" class="cc-primary" id="cc-next">Run next round</button><button type="button" id="cc-finish">Run to round 12</button></div>
+    <div class="cc-actions"><button type="button" class="cc-primary" id="cc-next">Run next round</button><button type="button" id="cc-finish">Run to round 12</button><button type="button" id="cc-range-jump" hidden>Estimate carrying capacity ↓</button></div>
+    <div class="cc-predict"><label for="cc-prediction">Predict: Will the herd keep growing? Why?</label><textarea id="cc-prediction" rows="2" maxlength="2000" placeholder="I predict… because…"></textarea></div>
   </div>
   <div class="cc-panel cc-analysis">
     <div class="cc-strip"><div><p class="cc-tag">Population over time</p><h3>Herd size by round</h3></div><span class="cc-badge">SIMULATED</span></div>
     <p class="cc-caption">Round 0 is the starting herd. Each later point is the population after that round.</p>
     <div id="cc-chart"></div>
-    <details id="cc-table"><summary>View round-by-round data</summary><div class="cc-table-wrap"><table id="cc-history"><caption class="cc-sr">Simulated counts for the selected run</caption><thead><tr><th scope="col">Round</th><th scope="col">Start</th><th scope="col">Grass</th><th scope="col">Survived</th><th scope="col">Births</th><th scope="col">Deaths</th><th scope="col">End</th></tr></thead><tbody></tbody></table></div></details>
-    <div class="cc-predict"><label for="cc-prediction">Predict: Will the herd keep growing? Why?</label><textarea id="cc-prediction" rows="2" maxlength="2000" placeholder="I predict… because…"></textarea></div>
-    <div id="cc-range-app"></div>
   </div>
+</div>
+<div id="cc-range-section" class="cc-after-run">
+  <div class="cc-panel cc-content cc-data-row"><details id="cc-table"><summary>View round-by-round data</summary><div class="cc-table-wrap"><table id="cc-history"><caption class="cc-sr">Simulated counts for the selected run</caption><thead><tr><th scope="col">Round</th><th scope="col">Start</th><th scope="col">Grass</th><th scope="col">Survived</th><th scope="col">Births</th><th scope="col">Deaths</th><th scope="col">End</th></tr></thead><tbody></tbody></table></div></details></div>
+  <div id="cc-range-app"></div>
 </div>
 <div class="cc-below">
   <section class="cc-panel cc-content" aria-labelledby="cc-compare-title"><p class="cc-tag">Run a controlled comparison</p><h3 id="cc-compare-title">What if less grass is available?</h3><p><strong>Carrying capacity</strong> is the population an environment can support over time under its current conditions. Start from the same herd and change only the share of grass the animals can eat. This comparison is a digital extension of the classroom model.</p>
@@ -71,8 +75,9 @@
    <label><input type="radio" name="cc-check-food" value="herd"> The starting herd size by itself</label>
   </fieldset><button type="button" id="cc-check-answer">Check my thinking</button><p id="cc-feedback" class="cc-result" hidden></p></section>
 </div>
+<p class="cc-next-section"><button type="button" class="cc-primary" data-cc-go="evidence">Read the classroom field data →</button></p>
 <div class="cc-panel cc-content cc-habitat-callout">
-<p class="cc-tag">Go beyond grass</p><h3>What else could limit the herd?</h3>
+<p class="cc-tag">Optional extension · Go beyond grass</p><h3>What else could limit the herd?</h3>
 <p>Grass was the only resource tested here. Now move individual animals to food, water, or shelter and see what changes when one resource runs short.</p>
 <button type="button" class="cc-primary" data-cc-go="habitat">Try the habitat challenge →</button>
 </div>
@@ -87,8 +92,9 @@
 
 <section id="cc-evidence" aria-labelledby="cc-evidence-title" hidden>
 <div class="cc-section-head"><div><p class="cc-tag">Published Serengeti estimates · Not simulated</p><h2 id="cc-evidence-title" tabindex="-1">Does the real herd follow the same pattern?</h2></div></div>
+<div id="cc-field-app"></div>
 <div class="cc-below">
-  <section class="cc-panel cc-content" aria-labelledby="cc-field-title"><h3 id="cc-field-title">Wildebeest over time</h3><p id="cc-field-intro">Keep field observations separate from the classroom model. Compare the shape of the patterns, not the size of the herds.</p><div id="cc-field-chart"></div><div id="cc-field-data"></div><details class="cc-rate"><summary>Compare rates of change</summary><label for="cc-interval">Choose a time interval</label><select id="cc-interval"></select><p id="cc-interval-data"></p><button type="button" id="cc-rate-reveal" aria-expanded="false" aria-controls="cc-rate-answer">Show average yearly change</button><p id="cc-rate-answer" class="cc-result" hidden></p></details><p class="cc-caption" id="cc-field-source"></p></section>
+  <aside class="cc-panel cc-content"><p class="cc-tag">Use the event evidence</p><h3>Population change tells only part of the story.</h3><p>Rinderpest affected the herd before cattle vaccination helped control the disease. A severe drought struck in 1993. Use what you know about food and survival to suggest an explanation, but don’t use the slope alone to decide what caused a change.</p></aside>
   <section class="cc-panel cc-content" aria-labelledby="cc-field-check-title"><p class="cc-tag">Evidence check · Practice, not a grade</p><h3 id="cc-field-check-title">What can the graph tell us?</h3><fieldset id="cc-check-field"><legend>Can a leveling-off pattern in population counts alone prove that grass caused the change?</legend>
   <label><input type="radio" name="cc-check-field" value="yes"> Yes, the shape proves what caused it.</label><label><input type="radio" name="cc-check-field" value="no"> No, we need independent evidence about food and health.</label></fieldset>
   <button type="button" id="cc-check-field-answer">Check my thinking</button><p id="cc-field-feedback" class="cc-result" hidden></p></section>
@@ -100,10 +106,13 @@
 <div class="cc-section-head"><div><p class="cc-tag">Use evidence · Write in your own words</p><h2 id="cc-explain-title" tabindex="-1">Explain what limits the herd.</h2></div></div>
 <div class="cc-lab cc-write">
 <div class="cc-panel cc-content"><label for="cc-claim">How did grass availability affect the herd in your model?</label><p class="cc-caption">Use a specific round or compare two runs. Explain what caused the change, not just whether the herd grew.</p><textarea id="cc-claim" rows="5" maxlength="4000"></textarea>
-<label for="cc-habitat-claim">How did a limiting factor change the herd in the habitat challenge?</label><p class="cc-caption">Name the factor and use evidence from two runs. A population can still grow when a factor limits it. Did it grow as much as it did without the shortage?</p><textarea id="cc-habitat-claim" rows="3" maxlength="4000"></textarea>
+<label for="cc-shortage-rule">Write an if/then rule for a grass shortage.</label><p class="cc-caption">If there are more wildebeest than grass units, what happens to survival, births, and the next herd? Use a round to check your rule.</p><textarea id="cc-shortage-rule" rows="3" maxlength="4000"></textarea>
+<label for="cc-long-run">Predict what the graph would look like after 50 rounds.</label><p class="cc-caption">Assume the rules and the total number of roles stay the same. Use the recurring peaks and dips to support your prediction.</p><textarea id="cc-long-run" rows="3" maxlength="4000"></textarea>
+<label for="cc-migration-claim">How could migration affect carrying capacity?</label><p class="cc-caption">Explain how movement can make more grass accessible to the herd without creating more grass at any one site.</p><textarea id="cc-migration-claim" rows="3" maxlength="4000"></textarea>
+<label for="cc-habitat-claim">Optional: How did a limiting factor change the herd in the habitat challenge?</label><p class="cc-caption">Name the factor and use evidence from two runs. A population can still grow when a factor limits it. Did it grow as much as it did without the shortage?</p><textarea id="cc-habitat-claim" rows="3" maxlength="4000"></textarea>
 <label for="cc-limit">What is one thing this model cannot tell us about the real herd?</label><p class="cc-caption">Consider the difference between a classroom rule and a field observation.</p><textarea id="cc-limit" rows="3" maxlength="4000"></textarea>
 <div class="cc-actions"><button type="button" class="cc-primary" id="cc-download">Download my investigation</button><button type="button" id="cc-copy">View text to copy</button></div><p id="cc-download-status" class="cc-caption" hidden></p></div>
-<aside class="cc-panel cc-content"><h3>Evidence within reach</h3><p id="cc-writing-evidence">No model rounds yet. Return to the model to collect data.</p><p id="cc-writing-habitat"></p><p id="cc-writing-range"></p><div class="cc-actions"><button type="button" data-cc-go="run">Return to runs</button><button type="button" data-cc-go="habitat">Revisit habitat runs</button><button type="button" data-cc-go="evidence">Revisit field data</button></div></aside>
+<aside class="cc-panel cc-content"><h3>Evidence within reach</h3><p id="cc-writing-evidence">No model rounds yet. Return to the model to collect data.</p><p id="cc-writing-habitat"></p><p id="cc-writing-range"></p><p id="cc-writing-field"></p><div class="cc-actions"><button type="button" data-cc-go="run">Return to runs</button><button type="button" data-cc-go="habitat">Revisit habitat runs</button><button type="button" data-cc-go="evidence">Revisit field data</button></div></aside>
 </div>
 </section>
 
@@ -112,12 +121,12 @@
 <p>Adapted from the OpenSciEd B.1 Lesson 5 Serengeti Kinesthetic Model. Two people in the guide’s example class are observers; the other 20 roles start as two wildebeest and 18 grass units. One available grass unit can feed one wildebeest. Unfed animals leave the herd; half of the fed animals, rounded down, contribute one new animal each. Roles switch between rounds, so the model is not a literal count of plants growing in the Serengeti.</p>
 <p>The comparison changes the share of grass roles available to feed the herd, rounding down to whole units. This is a controlled test, not a real drought forecast. No predation, disease, migration, or rainfall is simulated. The rounding rule, fixed role pool, and reproduction rule are classroom simplifications; carrying capacity in the field can change when conditions change.</p>
 <p>The habitat challenge models one immediate need on each piece to make competition visible. Real animals need several resources at once, and shortages can affect health or cause movement before they affect survival. Shelter is modeled as limited access to usable shade or cover, not dens or a universal driver of wildebeest numbers. The shortage trials change one resource on purpose; a real drought could reduce both forage and water. Invented stocks and a short run do not estimate real carrying capacity.</p>
-<p><a href="https://openscied-uploads-production.s3.amazonaws.com/G9_UBE/hires/B.1%20Teacher%20Edition.pdf#page=127">OpenSciEd Lesson 5 Teacher Edition</a> · <a href="openscied-b1-migration.html">Migration Map Explorer</a></p>
+<p><a href="https://openscied-uploads-production.s3.amazonaws.com/G9_UBE/hires/B.1%20Teacher%20Edition.pdf#page=134">OpenSciEd Lesson 5 Teacher Edition</a> · <a href="openscied-b1-migration.html">Migration Map Explorer</a></p>
 </details>
 <details class="cc-notes"><summary>Name, class period &amp; privacy</summary><div id="cc-identity"></div><p>Names, class periods, and answers stay in this browser. Your file includes your name and class period if entered.</p></details>
 </main>
 <dialog id="cc-report" aria-labelledby="cc-report-title"><div class="cc-strip"><h2 id="cc-report-title">Investigation text</h2><form method="dialog"><button>Close</button></form></div><p id="cc-report-help">Select and copy this text if your device blocks downloads.</p><textarea id="cc-report-text" rows="12" readonly aria-label="Investigation text to copy"></textarea></dialog>
-<dialog id="cc-reset-dialog" aria-labelledby="cc-reset-title"><h2 id="cc-reset-title">Restart this investigation?</h2><p>This clears the grass runs, habitat challenge, range estimates, and written responses for this activity only. Download your investigation first if you need a copy.</p><div class="cc-actions"><form method="dialog"><button autofocus>Keep my work</button></form><button type="button" id="cc-reset-confirm">Clear this investigation</button></div></dialog>
+<dialog id="cc-reset-dialog" aria-labelledby="cc-reset-title"><h2 id="cc-reset-title">Restart this investigation?</h2><p>This clears the grass runs, habitat challenge, range estimates, field calculations, and written responses for this activity only. Download your investigation first if you need a copy.</p><div class="cc-actions"><form method="dialog"><button autofocus>Keep my work</button></form><button type="button" id="cc-reset-confirm">Clear this investigation</button></div></dialog>
 <footer class="cc-wrap cc-footer"><p><strong>Created by Robert Smitka.</strong> Original digital adaptation: <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p><p>Adapted from <a href="https://www.openscied.org/">OpenSciEd</a> Biology B.1 Lesson 5, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes include original illustrations, the virtual role model, a grass-only comparison, graphing, interpretation prompts, and a separate habitat challenge inspired by Project WILD. Not affiliated with or endorsed by OpenSciEd.</p><p>Student work stays in this browser. No student responses are transmitted.</p></footer>
 </body>
 </html>

@@ -34,11 +34,12 @@
 .sg-wrap {width:min(100% - 2.4rem, 100rem);margin-inline:auto;}
 .sg-visually-hidden,.sg-skip:not(:focus) {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 .sg-skip:focus {position:fixed;z-index:9;top:8px;left:8px;background:#fff;color:#123824;padding:.55rem 1rem;}
-.sg-header {background:radial-gradient(ellipse at 96% 65%,#426448 0,transparent 45%),linear-gradient(118deg,#132921,#253a2d 74%);color:#fbf6e6;border-bottom:3px solid #a57740;padding: .8rem 0 1rem;}
-.sg-header a,.sg-header button {color:#fbf6e6;}
-.sg-top {display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-bottom:.65rem;font-size:.84rem;}
+.sg-header {padding:.22rem 0 0;}
+.sg-header a,.sg-header button {color:var(--sg-ink);}
+.sg-top {display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;min-height:44px;margin-bottom:.14rem;font-size:.84rem;}
 .sg-top a {font-weight:750;text-underline-offset:3px;}
-.sg-top button {margin-left:auto;background:#ffffff14;border-color:#ffffff4d;}
+.sg-top button {margin-left:auto;background:var(--sg-paper);border-color:var(--sg-line);}
+.sg-header .sg-top button:hover {background:var(--sg-accent-soft);color:var(--sg-accent-text);}
 .sg-draft,.sg-model-tag {white-space:nowrap;font-size:.7rem;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:.2rem .52rem;}
 .sg-draft {border:1px solid #edd7a299;color:#fff1c8;}
 .sg-model-tag {background:var(--sg-accent-soft);color:var(--sg-accent-text);}
@@ -140,7 +141,7 @@
   .sg-wrap {width:calc(100% - 1.25rem);}
   .sg-top {gap:.4rem;margin-bottom:.42rem;}
   .sg-top button {font-size:.73rem;min-height:1.75rem;padding:.15rem .38rem;}
-  .sg-header {padding:.52rem 0 .63rem;}
+  .sg-header {padding:.12rem 0 0;}
   .sg-toolbar {padding:.46rem 0;}
   .sg-game,.sg-analysis {grid-template-columns:minmax(0,1fr);gap:.47rem;}
   .sg-control {position:static;padding:.58rem;}
@@ -405,3 +406,6 @@
 .sg-hunt-reading small {display:block;margin:0 0 .23rem;color:var(--sg-soft);font-size:.72rem;font-weight:700;line-height:1.16;}
 .sg-hunt-reading strong {display:block;color:var(--sg-ink);font-size:.84rem;line-height:1.22;}
 #sg-evidence-report {margin:.6rem 0;}
+
+/* Existing original dashboard board illustration, used decoratively in the hero. */
+.b1-hero--serengeti{--b1-hero-image:url(assets/openscied-serengeti-preview.svg);--b1-hero-position:center 60%}

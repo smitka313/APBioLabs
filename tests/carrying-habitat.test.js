@@ -97,3 +97,32 @@ test('restore replays valid partial and complete generations and rejects changed
   assert.equal(H.restore({...next,scenarioId:'invalid'}),null);
   assert.equal(H.restore('{broken'),null);
 });
+
+test('a draw can select any one-resource case, including cases where the remaining quantity is sufficient',()=>{
+  const cases=H.SCENARIOS.slice(1);
+  assert.equal(cases.length,6);
+  const base=H.create();
+  for(const [i,c] of cases.entries()){
+    assert.equal(H.drawScenario(()=> (i+.5)/cases.length),c.id);
+    const changed=H.create(c.id);
+    assert.deepEqual(changed.animals,base.animals);
+    assert.equal(H.comparison(c.id).changes.length,1);
+    const outcome=H.summary(finishAll(changed));
+    if(i<3){assert.equal(outcome.limiting.length,1);assert.equal(outcome.ending,9);}
+    else{assert.deepEqual(outcome.limiting,[]);assert.equal(outcome.ending,12);}
+  }
+  assert.throws(()=>H.drawScenario(()=>1),RangeError);
+});
+
+test('undo returns the last matched animal and its unit without changing earlier matches',()=>{
+  const start=H.create('low-food');
+  assert.equal(H.undoLast(start),start);
+  const first=H.match(start,'a2','water');
+  const second=H.match(first,'a1','food');
+  const undone=H.undoLast(second);
+  assert.deepEqual(undone,first);
+  assert.deepEqual(H.restore(undone),undone);
+  assert.notEqual(H.match(undone,'a4','food'),undone);
+  const completed=finishAll(second);
+  assert.equal(H.undoLast(completed),completed);
+});

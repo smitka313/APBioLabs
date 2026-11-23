@@ -62,3 +62,8 @@
 @media(max-width:480px){.mx .mx-mapkey{gap:3px 10px}.mx .mx-map-reading{margin-inline:8px}}
 
 .mx .mx-field-reading p{margin:0 0 8px;font-size:.88rem}.mx .mx-field-clue strong{color:var(--accent)}
+
+/* Existing original dashboard illustration. Crop to the map, not its embedded caption. */
+.b1-hero--migration{--b1-hero-image:url(assets/migration-explorer-preview.svg);--b1-hero-size:165% auto;--b1-hero-position:left 65%}
+.mx-header .b1-hero{margin-bottom:.48rem}
+.mx-header .b1-hero-lead strong{color:inherit}

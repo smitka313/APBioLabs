@@ -214,13 +214,13 @@
         <p id="cc-range-readiness">${readiness()}</p>
         ${populated()?`<div class="cc-range-task"><label for="cc-range-trial">Trial to inspect
           <select id="cc-range-trial">${MODES.map(mode=>`<option value="${mode}"${k===mode?' selected':''}${trials[mode]?'':' disabled'}>${label(mode,trials[mode])}${trials[mode]?'':' · finish 12 rounds'}</option>`).join('')}</select></label>
-          ${table?`${plot(table,estimateFor(k)??table.maximum/2)}
+          ${table?`<div class="cc-range-workbench">${plot(table,estimateFor(k)??table.maximum/2)}
           <div class="cc-range-estimate-controls">
           <label for="cc-range-slider">Move your carrying-capacity estimate <output id="cc-range-line-value" for="cc-range-slider"></output></label>
           <input type="range" id="cc-range-slider" min="0" max="${table.maximum}" step=".5" value="${estimateFor(k)??table.maximum/2}" aria-describedby="cc-range-estimate-feedback">
           <button type="button" class="cc-primary" id="cc-range-lock">Lock in my estimate</button>
           <p id="cc-range-confirmed" class="cc-range-marks" hidden></p>
-          <p id="cc-range-estimate-feedback" class="cc-range-feedback"${typeof announce==='function'?'':' role="status"'}></p></div>
+          <p id="cc-range-estimate-feedback" class="cc-range-feedback"${typeof announce==='function'?'':' role="status"'}></p></div></div>
           <details class="cc-range-detail"><summary>Optional: mark the late low and high</summary>
           <table class="cc-range-table">
             <caption class="cc-sr">Simulated late-round herd sizes for ${label(k,table)}</caption>

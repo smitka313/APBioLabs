@@ -18,7 +18,7 @@
 .cc-section-head,.cc-strip,.cc-actions{display:flex;justify-content:space-between;align-items:center;gap:10px}.cc-section-head{margin:0 0 13px}.cc-section-head h2{font-size:clamp(1.5rem,2.8vw,2.24rem)}
 .cc-lab,.cc-below{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:start;gap:15px}.cc-below{margin-top:15px}
 .cc-panel{min-width:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 7px 22px rgba(10,30,24,.055)}
-.cc-station,.cc-analysis,.cc-content{padding:clamp(12px,1.6vw,21px)}.cc-analysis{min-height:100%}
+.cc-station,.cc-analysis,.cc-content{padding:clamp(12px,1.6vw,21px)}
 .cc-badge{flex:none;color:var(--ink);font:700 .69rem/1.2 var(--f-mono);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 9px}
 .cc .cc-caption{color:var(--muted);font-size:.78rem;line-height:1.4}
 #cc-board{background:#273d2d;border-radius:10px;overflow:hidden;margin-top:10px;min-height:100px}
@@ -48,3 +48,13 @@
 @media(max-width:500px){.cc-nav{grid-template-columns:repeat(2,minmax(0,1fr))}}
 #cc-writing-habitat{white-space:pre-wrap;overflow-wrap:anywhere}
 #cc-writing-range{white-space:pre-wrap;overflow-wrap:anywhere}
+.cc-after-run{display:grid;gap:14px;margin-top:14px}
+.cc-data-row{padding-block:8px}
+.cc-data-row summary{min-height:32px;display:list-item;align-content:center}
+.cc #cc-range-title{scroll-margin-block-start:18px}
+#cc-writing-field{white-space:pre-wrap;overflow-wrap:anywhere}
+.cc-range-workbench{display:grid;gap:clamp(12px,2vw,22px);align-items:start}
+@media(min-width:860px){
+  .cc-range-workbench{grid-template-columns:minmax(0,1.7fr) minmax(250px,1fr)}
+  #cc-range-app .cc-range-compare dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
