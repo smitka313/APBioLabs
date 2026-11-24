@@ -170,6 +170,40 @@
     save();draw(focus);return true;
   }
   for(const btn of nav)btn.addEventListener('click',()=>go(btn.dataset.step));
+  // This cutaway illustrates the controlled setup. It adds no data and never changes saved progress.
+  function wireAviaryScene(){
+    const art=$('aviary-art'), detail=$('aviary-detail'), replay=$('aviary-replay');
+    if(!art||!detail||!replay)return;
+    const controls=[...art.querySelectorAll('[data-aviary-control]')];
+    const notes={
+      housing:['Matched housing:', 'Birds from the two populations lived separately under the same housing conditions, including similar numbers of birds per unit of floor space.'],
+      food:['Matched food:', 'The matching dishes represent the same food conditions in the home aviaries. Later, dishes in the unfamiliar test room held wood shavings, not food.'],
+      people:['Matched exposure to people:', 'Both populations had the same exposure to researchers and animal care staff. The replay illustrates that control, not the birds’ measured behavior.']
+    };
+    function show(key){
+      if(!Object.hasOwn(notes,key))return;
+      art.dataset.control=key;
+      for(const button of controls)button.setAttribute('aria-pressed',String(button.dataset.aviaryControl===key));
+      const [title,note]=notes[key];
+      detail.replaceChildren(mk('strong',title),document.createTextNode(' '+note));
+      say(title+' '+note);
+    }
+    for(const button of controls)button.addEventListener('click',()=>{
+      art.classList.remove('is-replaying');
+      show(button.dataset.aviaryControl);
+    });
+    replay.addEventListener('click',()=>{
+      show('people');
+      art.classList.remove('is-replaying');
+      if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+      void art.offsetWidth; // Restart the finite CSS animation on repeated clicks.
+      art.classList.add('is-replaying');
+    });
+    art.addEventListener('animationend',event=>{
+      if(event.animationName==='ju-aviary-routine')art.classList.remove('is-replaying');
+    });
+  }
+  wireAviaryScene();
   $('to-aviary').addEventListener('click',()=>go('aviary'));
   $('to-cort').addEventListener('click',()=>go('cort'));
   // Native printing clips text to the textarea's visible rows. Use plain text on paper.

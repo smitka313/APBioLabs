@@ -120,12 +120,115 @@
     <div class="ju-heading"><div><p class="ju-kicker">02 · CONTROLLED COMPARISON</p><h2 id="ju-aviary-title" tabindex="-1">What if both groups grow up in the same setting?</h2></div><span class="ju-tag">Evidence B</span></div>
     <div class="ju-layout">
       <article class="ju-sheet">
-        <div class="ju-aviary-art" role="img" aria-label="Two groups of young juncos come from UC San Diego and Mt. Laguna into identical aviaries, with the same food, housing, and exposure to people.">
-          <div class="ju-origin ju-origin-city"><span aria-hidden="true">▦</span> UC San Diego</div><div class="ju-origin ju-origin-mtn"><span aria-hidden="true">⌃</span> Mt. Laguna</div>
-          <div class="ju-arrow" aria-hidden="true">↓</div><div class="ju-arrow" aria-hidden="true">↓</div>
-          <div class="ju-cage"><b>Identical aviary conditions</b><small>Same food · Same housing · Same exposure to people</small></div>
-        </div>
-        <p>Researchers brought young birds from both populations into identical aviaries. Later they scored how quickly and extensively each bird explored a new room.</p>
+        <figure class="ju-aviary-art" id="ju-aviary-art" data-control="housing" aria-labelledby="ju-aviary-visual-title">
+          <div class="ju-aviary-top">
+            <div><p class="ju-kicker">COMMON GARDEN · HOME AVIARIES</p><h3 id="ju-aviary-visual-title">Different origins, matched conditions</h3></div>
+            <span class="ju-aviary-stamp">SCHEMATIC</span>
+          </div>
+          <div class="ju-aviary-origins"><span><b>01</b> UC San Diego</span><span><b>02</b> Mt. Laguna</span></div>
+          <svg class="ju-aviary-drawing" viewBox="0 0 680 292" role="img" aria-labelledby="ju-cutaway-title ju-cutaway-desc">
+            <title id="ju-cutaway-title">Illustrated cutaway of two representative junco home aviaries</title>
+            <desc id="ju-cutaway-desc">The illustration repeats the same mesh room, perches, food dish and caretaker in both panels. The birds represent the two populations, not actual bird counts or positions.</desc>
+            <defs>
+              <linearGradient id="ju-av-wall" x2="0" y2="1"><stop stop-color="#d7e9df"/><stop offset="1" stop-color="#7c9d88"/></linearGradient>
+              <linearGradient id="ju-av-floor" x2="0" y2="1"><stop stop-color="#7f6954"/><stop offset="1" stop-color="#bd9c73"/></linearGradient>
+              <linearGradient id="ju-av-frame" x2="0" y2="1"><stop stop-color="#677a66"/><stop offset=".48" stop-color="#263b32"/><stop offset="1" stop-color="#142825"/></linearGradient>
+              <linearGradient id="ju-av-feather" x1="0" x2=".8" y1=".1" y2="1"><stop stop-color="#985a40"/><stop offset="1" stop-color="#643e33"/></linearGradient>
+              <linearGradient id="ju-av-hood" x2="0" y2="1"><stop stop-color="#414852"/><stop offset="1" stop-color="#20272c"/></linearGradient>
+              <linearGradient id="ju-av-belly" x2=".9" y2=".7"><stop stop-color="#fff9e9"/><stop offset="1" stop-color="#c6b7a8"/></linearGradient>
+              <pattern id="ju-av-mesh" width="11" height="11" patternUnits="userSpaceOnUse"><path d="M11 0H0v11" fill="none" stroke="#325a4c" stroke-width=".65" opacity=".54"/></pattern>
+              <pattern id="ju-av-grit" width="47" height="24" patternUnits="userSpaceOnUse"><path d="m3 18 8-3m7 6 4 1m7-9 8-2m-11-5 4 2m11 9 5 1" fill="none" stroke="#5b4c3c" stroke-width="1.2" opacity=".4"/></pattern>
+              <g id="ju-av-room">
+                <rect x="3" y="5" width="300" height="222" rx="8" fill="#142822" opacity=".52"/>
+                <path d="M8 15 28 3h242l28 17v167H8Z" fill="#637968"/>
+                <path d="M15 23h276v157H15Z" fill="url(#ju-av-wall)"/>
+                <path d="m15 23 33 24h212l31-24ZM15 180l34-28h211l31 28Z" fill="#516f5d" opacity=".45"/>
+                <path d="M49 47h211v105H49Z" fill="url(#ju-av-mesh)" opacity=".68"/>
+                <path d="M16 181 49 152h211l31 29v31H16Z" fill="url(#ju-av-floor)"/>
+                <path d="M16 181 49 152h211l31 29v31H16Z" fill="url(#ju-av-grit)"/>
+                <path d="m86 24 16-7h100l15 7-12 9H99Z" fill="#edddab" opacity=".91"/>
+                <rect x="100" y="22" width="105" height="5" rx="2" fill="#fff0bd"/>
+                <path d="M55 164V89m139 68v-47m-139-9c39-27 98-20 152-23m-115 9 16-15m52 11 26-15" fill="none" stroke="#594a3a" stroke-width="8" stroke-linecap="round"/>
+                <path d="M55 99c47-23 104-17 151-23m-151 44v24m139-22v19" fill="none" stroke="#a58661" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="m109 149 35-7 33 7" fill="none" stroke="#665440" stroke-width="5" stroke-linecap="round"/>
+                <path d="M16 25v186h275V25Z" fill="none" stroke="url(#ju-av-frame)" stroke-width="7"/>
+                <path d="M18 26v181h272V26" fill="none" stroke="#a5b7a1" stroke-width="1.2" opacity=".65"/>
+                <path d="M242 54h43v151h-43Z" fill="url(#ju-av-mesh)" stroke="#426050" stroke-width="2.5"/>
+                <path d="M243 91h42m-42 69h42m-36-31h7" fill="none" stroke="#426050" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M17 208h275M18 36h272" fill="none" stroke="#122824" stroke-width="2" opacity=".72"/>
+                <path d="M45 27v177m181-177v175" stroke="#e5f3e9" stroke-width="1" opacity=".32"/>
+                <path d="M18 204h274v11H18Z" fill="#33463a"/>
+                <path d="M24 215h263" stroke="#718b75" stroke-width="1.6"/>
+              </g>
+              <g id="ju-av-bird">
+                <path d="m29 39-34 20-3-5 19-19 19-12Z" fill="#262d34"/>
+                <path d="M25 41 1 58l-7 .5L11 41Z" fill="#f9f4e9"/>
+                <path d="m27 46-19 16-6-1 17-15Z" fill="#deded6"/>
+                <path d="M21 47c0-14 13-25 30-28 5-15 15-22 32-20 14 2 22 13 19 24l-4 9c-3 12-14 23-28 28C46 66 29 57 21 47Z" fill="url(#ju-av-belly)"/>
+                <path d="M23 44c6-18 27-28 49-22l13 9c-10 12-19 21-30 23-11 1-19 0-32-10Z" fill="url(#ju-av-feather)"/>
+                <path d="M27 39c11-11 21-14 37-14 4 6 1 13-4 17-7 7-22 8-33-3Z" fill="#895642"/>
+                <path d="M29 41c11 4 21 3 31-5m-27 11c8 1 16 1 23-3" fill="none" stroke="#53403c" stroke-width="1.5" opacity=".7"/>
+                <path d="M52 22c2-8 6-16 12-20 12-8 30-3 36 10 3 6 2 12-2 21L86 45c-12-4-18-10-23-15Z" fill="url(#ju-av-hood)"/>
+                <path d="M68 4c9-5 20-2 25 3" fill="none" stroke="#60616a" stroke-width="1.6" opacity=".6"/>
+                <circle cx="88" cy="15" r="4.1" fill="#131b1e"/><circle cx="89" cy="14" r="1.35" fill="#fff4d0"/>
+                <path d="m99 17 15 4-12 8-4-4Z" fill="#dda9a5" stroke="#9f6d6a" stroke-width=".8"/>
+                <path d="m101 24 10-2" stroke="#ac7979" stroke-width=".7"/>
+                <path d="m52 58 2 8 6 1m5-9 3 7 7 1m-20 0-4 2m17-3-5 3" fill="none" stroke="#8b6358" stroke-width="1.6" stroke-linecap="round"/>
+              </g>
+              <g id="ju-av-food">
+                <ellipse cx="0" cy="11" rx="26" ry="6" fill="#3c352b" opacity=".38"/>
+                <path d="M-24-4h48l-5 13c-9 7-30 7-38 0Z" fill="#7d472e" stroke="#48372b" stroke-width="1.5"/>
+                <ellipse cy="-4" rx="25" ry="7" fill="#cf925a" stroke="#68472f" stroke-width="1.5"/>
+                <ellipse cy="-4" rx="17" ry="4" fill="#aa7045"/>
+                <path d="m-14-5 3 1m3-3 3 2m5-1 4 1m4-3 3 2m3 1 3 1m-8 2 3 1m-15-1 3 1" fill="none" stroke="#f3d293" stroke-width="1.9" stroke-linecap="round"/>
+              </g>
+              <g id="ju-av-person">
+                <ellipse cx="4" cy="48" rx="24" ry="4" fill="#142924" opacity=".4"/>
+                <path d="m-7 23 5 25m10-25 6 23" stroke="#263c43" stroke-width="9" stroke-linecap="round"/>
+                <path d="m-7 48 10 1m7-2 9 1" stroke="#142727" stroke-width="4" stroke-linecap="round"/>
+                <path d="M-10 0c8-4 13-4 19 0l6 26-21 4-7-9Z" fill="#54686c" stroke="#243a3b" stroke-width="2"/>
+                <path d="M-1 2 2 25m-10-13 5 2" stroke="#a6b8ad" stroke-width="1.2"/>
+                <path d="m-8 5-8 11 7 8" fill="none" stroke="#51696a" stroke-width="5" stroke-linecap="round"/>
+                <path d="m6 5 8 9 8-5" fill="none" stroke="#4b6265" stroke-width="5" stroke-linecap="round"/>
+                <circle cx="24" cy="8" r="3" fill="#cc9574"/>
+                <path d="m14 6 16-1-2 12-13 1Z" fill="#d8cead" stroke="#536151" stroke-width="1.4"/>
+                <path d="M-9-13c0-9 13-12 17-4l2 7-4 4a8 8 0 0 1-12-3Z" fill="#d69773"/>
+                <path d="M-11-14c-1-9 12-12 17-5l7 4-23 3Z" fill="#243e3a"/>
+              </g>
+            </defs>
+            <rect width="680" height="292" fill="#203c33"/>
+            <path d="M0 220h680v72H0Z" fill="#4d6254"/>
+            <path d="M0 252h680m-564-23-29 63m205-63-9 63m106-63 11 63m164-63 29 63" fill="none" stroke="#6d8170" stroke-width="2" opacity=".61"/>
+            <path d="M340 13v216" stroke="#adc3ae" stroke-width="1.5" stroke-dasharray="4 6" opacity=".54"/>
+            <g transform="translate(17 16)">
+              <use href="#ju-av-room"/>
+              <use href="#ju-av-bird" transform="translate(87 96) scale(.72)"/>
+              <use href="#ju-av-food" transform="translate(126 179)"/>
+              <g transform="translate(255 204)"><g class="ju-aviary-caretaker"><use href="#ju-av-person"/></g></g>
+              <rect class="ju-aviary-ring ju-aviary-ring--housing" x="11" y="14" width="284" height="193" rx="9"/>
+              <ellipse class="ju-aviary-ring ju-aviary-ring--food" cx="125" cy="178" rx="34" ry="19"/>
+              <rect class="ju-aviary-ring ju-aviary-ring--people" x="227" y="176" width="61" height="81" rx="14"/>
+            </g>
+            <g transform="translate(360 16)">
+              <use href="#ju-av-room"/>
+              <use href="#ju-av-bird" transform="translate(87 96) scale(.72)"/>
+              <use href="#ju-av-food" transform="translate(126 179)"/>
+              <g transform="translate(255 204)"><g class="ju-aviary-caretaker"><use href="#ju-av-person"/></g></g>
+              <rect class="ju-aviary-ring ju-aviary-ring--housing" x="11" y="14" width="284" height="193" rx="9"/>
+              <ellipse class="ju-aviary-ring ju-aviary-ring--food" cx="125" cy="178" rx="34" ry="19"/>
+              <rect class="ju-aviary-ring ju-aviary-ring--people" x="227" y="176" width="61" height="81" rx="14"/>
+            </g>
+          </svg>
+          <figcaption>Representative rooms and birds only. The populations lived apart under matched conditions; this is not a map of the facility or a count of the birds.</figcaption>
+          <div class="ju-aviary-controls" role="group" aria-label="Inspect what the researchers kept the same">
+            <button type="button" data-aviary-control="housing" aria-controls="ju-aviary-detail" aria-pressed="true">Housing</button>
+            <button type="button" data-aviary-control="food" aria-controls="ju-aviary-detail" aria-pressed="false">Food</button>
+            <button type="button" data-aviary-control="people" aria-controls="ju-aviary-detail" aria-pressed="false">Exposure to people</button>
+          </div>
+          <p id="ju-aviary-detail" class="ju-aviary-detail"><strong>Matched housing:</strong> Birds from the two populations lived separately under the same housing conditions, including similar numbers of birds per unit of floor space.</p>
+          <button class="ju-aviary-replay" id="ju-aviary-replay" type="button"><span aria-hidden="true">↻</span> Replay caretaker routine</button>
+        </figure>
+        <p>Researchers captured young juncos after hatching and raised them under matched conditions. Later, they measured how quickly and widely each bird explored a test room it had never visited. The field walk-up measured a different behavior: when a bird flew away from a person.</p>
         <p><strong>Inherited or learned?</strong> Inherited traits are passed from parents. Behavior can also be learned or shaped by early conditions. These birds were collected after hatching, so matching their current housing cannot separate those explanations.</p>
       </article>
       <aside class="ju-clipboard">

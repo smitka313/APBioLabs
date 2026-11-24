@@ -213,6 +213,30 @@ async function exercise(browser,base,size) {
     }
     await selectStep(page,size,'aviary');
     check(await id(page,'ju-aviary-results').isHidden(),label+' aviary evidence starts concealed');
+    const art=id(page,'ju-aviary-art');
+    const savedBeforeControl=await readSaved(page);
+    await activate(art.getByRole('button',{name:'Food',exact:true}),size);
+    check(await art.getAttribute('data-control')==='food' &&
+      await art.locator('.ju-aviary-ring--food:visible').count()===2 &&
+      /wood shavings, not food/.test(await id(page,'ju-aviary-detail').innerText()),
+      label+' opens the matched food note and highlights both dishes');
+    await fits(page,'#ju-aviary-art, .ju-aviary-drawing, .ju-aviary-controls button',label+' aviary cutaway');
+    await shoot(page,label+'-2-aviary-controls','ju-aviary-art');
+    await activate(id(page,'ju-aviary-replay'),size);
+    check(await art.getAttribute('data-control')==='people' &&
+      await art.locator('.ju-aviary-ring--people:visible').count()===2 &&
+      !await art.evaluate(el=>el.classList.contains('is-replaying')),
+      label+' reports matched exposure without movement in reduced-motion mode');
+    if(size.width===1366){
+      await page.emulateMedia({reducedMotion:'no-preference'});
+      await activate(id(page,'ju-aviary-replay'),size);
+      check(await art.locator('.ju-aviary-caretaker').evaluateAll(nodes=>nodes.length===2&&nodes.every(node=>node.getAnimations().length===1)),
+        label+' explicit replay animates both illustrated caretaker routines together');
+      await page.waitForFunction(()=>!document.getElementById('ju-aviary-art').classList.contains('is-replaying'));
+      await page.emulateMedia({reducedMotion:'reduce'});
+    }
+    assert.deepEqual(await readSaved(page),savedBeforeControl,label+' the illustration does not change progress or answers');
+    check(await id(page,'ju-aviary-results').isHidden(),label+' no results reveal when inspecting the setup');
     const reveal=id(page,'ju-reveal');
     check(await reveal.isDisabled(),label+' a choice is required before revealing aviary evidence');
     const prediction=id(page,'ju-prediction');
