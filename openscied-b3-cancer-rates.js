@@ -21,10 +21,18 @@
   const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:12,region:'all',x:'screening'});
   const defaults={labels:true,marks:true,benchmark:true,'pair-only':false,trend:false};
   const designItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
-  const exhibits=['access','diagnosis'];
+  const exhibits=['access','diagnosis','race-stage'];
   const exhibitValues=Object.fromEntries(exhibits.map(k=>[k,[...$('income-'+k).querySelectorAll('.cr-income-bar')].map(row=>Number(row.dataset.value))]));
-  const directions=Object.fromEntries(exhibits.map(k=>[k,L.exhibitTrend(exhibitValues[k])]));
-  const fresh=()=>({casework:{access:'',diagnosis:'',question:'',questionDraft:null,opened:false},design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
+  const raceStageRows=[...$('income-race-stage').querySelectorAll('.cr-income-bar')].map(row=>({
+    group:row.dataset.group,label:row.querySelector('.cr-group-name').textContent,value:Number(row.dataset.value)
+  }));
+  const raceStageValue=group=>raceStageRows.find(row=>row.group===group).value;
+  const directions={
+    access:L.exhibitTrend(exhibitValues.access),
+    diagnosis:L.exhibitTrend(exhibitValues.diagnosis),
+    'race-stage':raceStageValue('white')>raceStageValue('black')?'higher':'lower'
+  };
+  const fresh=()=>({casework:{access:'',diagnosis:'','race-stage':'',question:'',questionDraft:null,opened:false},design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
   let state=fresh(), invalid=false, blocked=false;
   function clean(raw){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid record');
@@ -353,7 +361,10 @@
     const period=p.view==='poverty'?'Cancer 2019–2023; Census 2023':D[p.view].period;
     return spec[p.view].title+' ('+period+') · '+pairStr(pair.a)+' | '+pairStr(pair.b)+extra;
   }
+  const raceStageEvidence=row=>row.label+': '+row.value+'%';
   function renderExplain(){
+    $('explain-race-stage').hidden=!state.casework['race-stage'];
+    $('explain-race-stage-values').replaceChildren(...(state.casework['race-stage']?raceStageRows.map(row=>node('li',raceStageEvidence(row))):[]));
     $('claim').value=state.claim;$('limits').value=state.limits;
     $('explain-prediction').hidden=!state.prediction.locked;
     if(state.prediction.locked)text('explain-prediction',predictions[state.prediction.choice]+' '+(state.prediction.reason?'Reason: '+state.prediction.reason:'')+' '+firstResult());
@@ -377,7 +388,12 @@
     $('done').hidden=!state.completed;
   }
   function report(){
-    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),'','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['ULTRASOUND DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(designItems).filter(([k])=>state.design[k].trim()).map(([k,title])=>title+': '+state.design[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
+    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(state.casework['race-stage']?[
+      '','EXHIBIT F: LOCALIZED STAGE AT DIAGNOSIS',
+      'Share of U.S. invasive breast cancer diagnoses in women at the localized stage, 2017–2021.',
+      ...raceStageRows.map(raceStageEvidence),
+      'Source: '+$('race-stage-source').href
+    ]:[]),'','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['ULTRASOUND DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(designItems).filter(([k])=>state.design[k].trim()).map(([k,title])=>title+': '+state.design[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
     return lines.join('\n')+'\n';
   }
   function syncIdentity(){for(const k of ['name','period'])$(k).value=state.person[k];}
@@ -447,17 +463,22 @@
   let caseOpener=null, focusQuestion=false;
   const caseTabs=['lesson1-diagnoses','lesson1-deaths','lesson1-map',...exhibits.map(k=>'income-'+k)];
   const checkedCount=()=>exhibits.filter(k=>state.casework[k]===directions[k]&&directions[k]).length;
+  // Keep drafts and submitted questions from the earlier two-check case file usable.
+  const mayWriteQuestion=()=>checkedCount()===exhibits.length||
+    (!!state.casework.access&&!!state.casework.diagnosis&&
+      Boolean(state.casework.opened||state.casework.questionDraft?.trim()));
   function updateFollowup(){
-    const count=checkedCount();
-    followup.hidden=count!==2;
-    $('income-explore').disabled=count!==2||!question.value.trim();
-    questionJump.disabled=count!==2;
-    text('income-progress',count===2?'Both exhibits checked. Write your follow-up question.':count+' of 2 comparisons checked. Check both to unlock the next step.');
+    const count=checkedCount(), ready=mayWriteQuestion();
+    followup.hidden=!ready;
+    $('income-explore').disabled=!ready||!question.value.trim();
+    questionJump.disabled=!ready;
+    text('income-progress',count+' of '+exhibits.length+' comparisons checked. '+(ready
+      ?'You can write or revise your follow-up question.':'Check all three to unlock the next step.'));
     for(const k of exhibits){
       const cover=$('income-'+k+'-tab');
       const checked=!!state.casework[k];
       cover.dataset.checked=String(checked);
-      cover.dataset.resume=String(count===1&&!checked&&!state.casework.opened);
+      cover.dataset.resume=String(count>0&&!checked&&!state.casework.opened);
       cover.querySelector('.cr-dossier-link').textContent=checked?'✓ Checked • reopen':cover.dataset.resume==='true'?'Resume here ↗':'Open exhibit ↗';
     }
   }
@@ -491,10 +512,17 @@
   });
   mapZoom.addEventListener('click',()=>setMapZoom(mapZoom.getAttribute('aria-pressed')!=='true'));
   questionJump.addEventListener('click',()=>{
-    if(checkedCount()!==2)return;
+    if(!mayWriteQuestion())return;
     focusQuestion=true;caseDialog.close();
   });
-  function feedbackFor(k,right){
+  function feedbackFor(k,right,guess){
+    if(k==='race-stage'){
+      const white=raceStageValue('white'),black=raceStageValue('black');
+      const reason='Among patients already diagnosed with invasive breast cancer, '+white+'% of non-Hispanic White patients and '+black+'% of non-Hispanic Black patients were diagnosed at the localized stage. That is a '+Math.abs(white-black)+' percentage-point gap. The graph does not test why the shares differ.';
+      return right?'That matches the graph. '+reason:guess==='risk'
+        ?'Not quite. Each bar starts with patients who already had a diagnosis. You would need the number of new diagnoses and the population size for each group to compare diagnosis rates. Try again.'
+        :'Not quite. Compare the '+white+'% and '+black+'% bars: which is higher? Try again.';
+    }
     const values=exhibitValues[k],direction=directions[k];
     const from=number(values[0],1)+'%', to=number(values.at(-1),1)+'%';
     if(k==='diagnosis'){
@@ -522,7 +550,7 @@
   });
   followup.addEventListener('submit',event=>{
     event.preventDefault();
-    if(checkedCount()!==2||!question.value.trim())return;
+    if(!mayWriteQuestion()||!question.value.trim())return;
     const next=question.value.trim();
     if(next!==state.casework.question)state.completed=false;
     state.casework.question=next;state.casework.questionDraft=null;state.casework.opened=true;
@@ -539,10 +567,10 @@
       if(!answer.value||!directions[k])return;
       const right=answer.value===directions[k];
       if(right){state.casework[k]=directions[k];save();}
-      feedback.textContent=feedbackFor(k,right);
+      feedback.textContent=feedbackFor(k,right,answer.value);
       feedback.dataset.result=right?'correct':'retry';feedback.hidden=false;
       updateFollowup();
-      text('case-live',feedback.textContent+(checkedCount()===2?' Both exhibits checked. You can now write a follow-up question.':''));
+      text('case-live',feedback.textContent+(checkedCount()===exhibits.length?' All three comparisons checked. You can now write a follow-up question.':''));
     });
   }
   syncCasefile();

@@ -51,7 +51,7 @@
       <span class="cr-case-action"><span class="cr-case-closed">Open case file</span><span class="cr-case-open">Collapse case file</span><span class="cr-case-chevron" aria-hidden="true"></span></span>
     </summary>
     <div class="cr-case-content">
-      <p class="cr-case-intro">Open each exhibit to study the full-size evidence. Start with the three Lesson 1 figures, then compare what the two exhibits on costs and neighborhood poverty show.</p>
+      <p class="cr-case-intro">Open each exhibit to study the full-size evidence. Start with the three Lesson 1 figures, then look for patterns in costs and stage at diagnosis.</p>
       <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an exhibit">
         <button id="cr-lesson1-diagnoses-tab" class="cr-dossier cr-dossier--cases" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
           <span class="cr-dossier-code">Exhibit A</span>
@@ -83,11 +83,17 @@
           <span class="cr-dossier-name">Stage at diagnosis</span><span class="cr-dossier-meta">Neighborhood poverty · Comparison</span>
           <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
         </button>
+        <button id="cr-income-race-stage-tab" class="cr-dossier cr-dossier--race-stage" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit F</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M17 7h26v26H17zM22 13h15m-15 6h11m-11 6h13"/><circle cx="39" cy="25" r="2"/></svg></span>
+          <span class="cr-dossier-name">Diagnosis by race and ethnicity</span><span class="cr-dossier-meta">U.S. breast cancer · Comparison</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
       </div>
-      <p id="cr-income-progress">Check both comparisons to unlock the next step.</p>
+      <p id="cr-income-progress">Check the three comparisons to unlock the next step.</p>
       <form id="cr-income-followup" class="cr-case-debrief" hidden>
         <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
-        <p>The cost survey and the cancer registry cover different people. Each exhibit can raise a question about access or diagnosis, but these data do not show that cost caused a later diagnosis.</p>
+        <p>The exhibits use different groups of people. What else would you need to know to see whether access to care helps explain a difference in stage at diagnosis?</p>
         <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
         <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
         <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
@@ -97,7 +103,7 @@
   </details>
   <dialog id="cr-case-dialog" class="cr-case-modal" aria-labelledby="cr-lesson1-diagnoses-title">
     <header class="cr-case-modal-bar">
-      <span id="cr-case-position">Exhibit 1 of 5</span>
+      <span id="cr-case-position">Exhibit 1 of 6</span>
       <button class="btn" id="cr-case-close" type="button"><span aria-hidden="true">× </span>Close exhibit</button>
     </header>
     <p id="cr-case-live" class="cr-case-live" role="status" aria-atomic="true"></p>
@@ -222,6 +228,43 @@
             <button class="btn btn--primary" id="cr-income-diagnosis-check" type="button" disabled>Check my comparison</button>
           </div>
           <p id="cr-income-diagnosis-feedback" class="cr-case-feedback" hidden></p>
+          <div><button class="btn" type="button" data-case-next="income-race-stage">Next: diagnosis by race and ethnicity</button></div>
+        </div>
+      </section>
+      <section class="cr-exhibit" id="cr-income-race-stage" aria-labelledby="cr-income-race-stage-title" hidden>
+        <p class="cr-exhibit-tag">EXHIBIT F</p>
+        <h2 id="cr-income-race-stage-title" tabindex="-1">Did stage at diagnosis differ by race and ethnicity?</h2>
+        <p>For women diagnosed with invasive breast cancer in the United States from 2017–2021, what share in each group had cancer that was still confined to the breast?</p>
+        <figure class="cr-income-figure cr-stage-figure cr-race-stage-figure">
+          <figcaption>Share of breast cancer diagnoses at the localized stage (%)</figcaption>
+          <ul class="cr-income-bars" aria-label="Localized-stage diagnosis percentages by race and ethnicity">
+            <li class="cr-income-bar" data-group="white" data-value="68"><span class="cr-group-name">Non-Hispanic White</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:68%"></span></span> <strong>68%</strong></li>
+            <li class="cr-income-bar" data-group="black" data-value="58"><span class="cr-group-name">Non-Hispanic Black</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:58%"></span></span> <strong>58%</strong></li>
+            <li class="cr-income-bar" data-group="hispanic" data-value="60"><span class="cr-group-name">Hispanic (any race)</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:60%"></span></span> <strong>60%</strong></li>
+            <li class="cr-income-bar" data-group="api" data-value="65"><span class="cr-group-name">Non-Hispanic Asian American / Pacific Islander</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:65%"></span></span> <strong>65%</strong></li>
+            <li class="cr-income-bar" data-group="aian" data-value="60"><span class="cr-group-name">Non-Hispanic American Indian / Alaska Native</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:60%"></span></span> <strong>60%</strong></li>
+          </ul>
+          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></div>
+        </figure>
+        <details class="cr-case-debrief">
+          <summary>Who is counted in each bar?</summary>
+          <p>Each bar starts with the breast cancer diagnoses in that group, including cases with unknown stage. Localized means the invasive cancer was confined to the breast. Unlike Exhibit E, this measure does not include in situ cancers.</p>
+          <p>These are the groups used in the source. American Indian / Alaska Native data cover designated Indian Health Service counties, not the entire U.S. These comparisons do not tell us what caused a gap. Race and ethnicity are not explanations for the differences.</p>
+        </details>
+        <p class="cr-source">American Cancer Society analysis of U.S. cancer registries, 2017–2021. <a id="cr-race-stage-source" href="https://acsjournals.onlinelibrary.wiley.com/doi/full/10.3322/caac.21863">Original study, Table 3</a>.</p>
+        <div class="cr-case-question">
+          <p class="cr-exhibit-tag">CASE NOTE</p>
+          <label for="cr-income-race-stage-answer">What does the graph show about non-Hispanic White and Black patients?</label>
+          <div class="cr-case-controls">
+            <select id="cr-income-race-stage-answer">
+              <option value="">Choose the claim…</option>
+              <option value="higher">Higher localized share for White patients.</option>
+              <option value="lower">Higher localized share for Black patients.</option>
+              <option value="risk">Higher risk of breast cancer for White women.</option>
+            </select>
+            <button class="btn btn--primary" id="cr-income-race-stage-check" type="button" disabled>Check my claim</button>
+          </div>
+          <p id="cr-income-race-stage-feedback" class="cr-case-feedback" hidden></p>
           <div><button class="btn" id="cr-case-question-jump" type="button" disabled>Write my question →</button></div>
         </div>
       </section>
@@ -314,7 +357,7 @@
   <section id="explain" class="cr-card" aria-labelledby="cr-explain-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">03 · Make sense of it</p><h2 id="cr-explain-title" tabindex="-1">What can you claim?</h2></div><span id="cr-done" class="cr-chip" hidden>Investigation complete</span></div>
     <div class="cr-two cr-explain">
-      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol></aside>
+      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-explain-race-stage" hidden><summary>Exhibit F: stage at diagnosis</summary><ul id="cr-explain-race-stage-values"></ul><p>Share of U.S. invasive breast cancer diagnoses in women at the localized stage, 2017–2021. See <a href="https://acsjournals.onlinelibrary.wiley.com/doi/full/10.3322/caac.21863">the source, Table 3</a>.</p></details></aside>
       <div>
         <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>

@@ -322,8 +322,11 @@ test('case evidence checks and a question draft are resumable before a compariso
   const key = 'aplab:openscied:b3-cancer-rates:v1';
   const base = { step:'predict', evidence:[], lastVisitedAt:1800000000000 };
   const partial = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',screening:'rising'}})});
-  assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 2 case-file trends checked/);
+  assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 3 case-file trends checked/);
   assert.equal(partial.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
+  const sixthOnly = setup(false,{[key]:JSON.stringify({...base,casework:{'race-stage':'higher'}})});
+  assert.match(sixthOnly.el('#cancer-rates-progress').textContent,/1 of 3 case-file trends checked/);
+  assert.equal(sixthOnly.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
   const draft = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',diagnosis:'rising',questionDraft:'Which groups were diagnosed earlier?'}})});
   assert.match(draft.el('#cancer-rates-progress').textContent,/Question draft saved/);
   assert.equal(draft.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');

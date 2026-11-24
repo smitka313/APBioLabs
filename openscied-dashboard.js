@@ -169,7 +169,7 @@
       summary: started ? rolls + ' rolls recorded · ' + answers + ' of 5 responses written' + (saved.done ? ' · Journey complete' : '') : 'Not started' };
   }
   const CANCER_RATES_SECTIONS = ['predict', 'explore', 'explain'];
-  const CANCER_CASE_DIRECTIONS = ['rising', 'falling', 'flat'];
+  const CANCER_CASE_ANSWERS = {access:'falling',diagnosis:'rising','race-stage':'higher'};
   function cancerRatesResponseIds() { return ['claim', 'limits']; }
   function cancerInvestigationQuestion(saved) {
     const casework = saved?.casework;
@@ -190,11 +190,11 @@
     const answers = cancerRatesResponseIds().filter(field).length;
     const casework = saved.casework || {};
     // The activity only stores checked directions, not unsuccessful guesses.
-    const trends = ['access', 'diagnosis'].filter(key => CANCER_CASE_DIRECTIONS.includes(casework[key])).length;
+    const trends = Object.entries(CANCER_CASE_ANSWERS).filter(([key,answer]) => casework[key] === answer).length;
     const question = cancerInvestigationQuestion(saved);
     const draft = written(casework, 'questionDraft');
     if (!prediction && !evidence && !answers && !completed && !trends && !question && !draft) return empty;
-    const caseSummary = draft ? 'Question draft saved' : question ? 'Investigation question saved' : trends ? trends+' of 2 case-file trends checked' : '';
+    const caseSummary = draft ? 'Question draft saved' : question ? 'Investigation question saved' : trends ? trends+' of 3 case-file trends checked' : '';
     const fallback = answers || completed ? 'explain' : evidence || question ? 'explore' : 'predict';
     let section = CANCER_RATES_SECTIONS.includes(saved.step) ? saved.step : fallback;
     if (draft || (trends && !question && !evidence && !answers && !completed)) section = 'cr-income-cards';
