@@ -64,8 +64,13 @@ async function runStudent(browser, url) {
        'Saving the prediction opens the folder but the six exhibits and question still gate Explore');
     for (const [id, text] of Object.entries(notes)) {
       await tap('lesson1-' + id + '-tab');
-      if (id !== 'map') ok(await $(page, 'lesson1-' + id).getByText(/means “not otherwise specified”/).isVisible(),
+      if (id !== 'map') {
+        const exhibit = $(page, 'lesson1-' + id);
+        await exhibit.waitFor({ state: 'visible' });
+        ok(await exhibit.getByText(/NOS means .*not otherwise specified/i).isVisible() &&
+          await exhibit.getByText('Corpus and Uterus, NOS', { exact: true }).isVisible(),
         'Exhibit ' + id + ' defines NOS without changing the published label');
+      }
       await $(page, 'lesson1-' + id + '-observation').fill(text);
       await tap('lesson1-' + id + '-save');
       await tap('case-close');

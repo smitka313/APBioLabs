@@ -201,9 +201,17 @@ async function openCaseExhibit(page,size,id) {
 
 async function closeCaseExhibit(page,size,trigger,{escape=false}={}) {
   const dialog=view(page,'cr-case-dialog');
+  // The native dialog may already be hidden and restore its opener before the
+  // queued close event. Wait for the activity's close handler before pressing
+  // Enter on a different launcher, or that handler can restore the old focus.
+  await dialog.evaluate(el=>{
+    el.__qaCloseSeen=false;
+    el.addEventListener('close',()=>{el.__qaCloseSeen=true;},{once:true});
+  });
   if(escape) await page.keyboard.press('Escape');
   else await invoke(view(page,'cr-case-close'),size);
   await dialog.waitFor({state:'hidden'});
+  await page.waitForFunction(()=>document.getElementById('cr-case-dialog').__qaCloseSeen===true);
   await trigger.waitFor({state:'visible'});
   await page.waitForFunction(id=>document.activeElement?.id===id,await trigger.getAttribute('id'));
 }

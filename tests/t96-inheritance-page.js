@@ -62,7 +62,7 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
       c.querySelectorAll('.scene-host, .attribution, .pager, script, .your-data, #investigation-report, details:not([open]) > :not(summary)').forEach(n => n.remove());
       return (c.textContent.match(/\S+/g) || []).length;
     });
-    T.ok(words <= 1750, 'visible page text (no scenes, attribution, hidden details) stays light (1650 plus four short Background cards): ' + words + ' words');
+    T.ok(words <= 1750, 'visible page text (no scenes, attribution, hidden details) stays within 1,750 words: ' + words + ' words');
 
     // --- sensitivity: content note, teacher note, links only, no personal-health inputs ---
     T.ok(/pause, skip a part, or step away/.test(await p.locator('#content-note').innerText()) && /Nobody is asked to share anything about their own family/.test(await p.locator('#content-note').innerText()), 'content note at the top');
@@ -200,7 +200,12 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(/3 of 3 people match/.test(await p.locator('#data-pedigree-body').innerText()), 'changing picks recomputes the marks');
     await p.evaluate(() => { B3Inh.saveState('twoGene', { genotypes: { father: { p53: 'AB', brca1: 'CD' }, child2: { p53: 'AB', brca1: 'CC' } } }); B3Inh.saveState('meiosis', { runs: [{ crossing: false, gametes: ['AC', 'BD'] }, { crossing: true, gametes: ['AC', 'AD', 'BC', 'BD'] }] }); B3Inh.saveState('skin', { viewed: { white: true } }); B3Inh.saveState('planner', { conditions: [{ group: 1, label: 'No sunscreen', minutes: 15, spf: null }] }); B3Inh.saveState('yeast', { dishes: [{ group: 1, label: 'No sunscreen', colonies: 12, rating: 'few' }, { group: 2, colonies: -3 }] }); });
     T.ok(/Higher/.test(await p.locator('#data-twogene-body').innerText()) && /Medium/.test(await p.locator('#data-twogene-body').innerText()), 'two-gene box shows the risk text');
-    T.ok(/AC, AD, BC, BD/.test(await p.locator('#data-meiosis-body').textContent()) && /Without crossing over\s*AC, BD\s*2/.test(await p.locator('#data-meiosis-body').textContent()), 'meiosis box shows 2 kinds and 4 kinds');
+    const gameteRows = await p.locator('#data-meiosis-body tbody tr').evaluateAll(rows =>
+      rows.map(row => Array.from(row.cells, cell => cell.textContent.trim())));
+    T.ok(JSON.stringify(gameteRows) === JSON.stringify([
+      ['Gamete set A · without crossing over', 'AC, BD', '2'],
+      ['Gamete set B · with crossing over', 'AC, AD, BC, BD', '4'],
+    ]), 'meiosis box identifies each gamete set and shows exactly 2 and 4 kinds');
     T.ok(/White-labeled graph/.test(await p.locator('#data-skin-body').innerText()), 'skin box shows what was viewed');
     T.ok(/No sunscreen/.test(await p.locator('#data-planner-body').innerText()) && /SIMULATED/.test(await p.locator('#data-yeast-body').innerText()) && !/NaN|-3/.test(await p.locator('#data-yeast-body').innerText()), 'planner and yeast boxes show data, labelled simulated, with no impossible numbers');
     T.ok(await p.evaluate(k => { const d = JSON.parse(localStorage.getItem(k)); return d.v === 1 && d.pedigree.guesses.lakita[0] === 'AB' && Array.isArray(d.responseIds) && d.question && d.question.ok; }, KEY), 'scene data and question are saved in the activity record');

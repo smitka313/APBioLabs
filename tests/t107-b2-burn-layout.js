@@ -56,8 +56,17 @@ const setBurn = async (p, fuel, frac, records, opts) => {
       await laserCheck(p, tag + ' after', 'ash');
       await setBurn(p, 'wood', 1.2, ['peat', 'grass']); await check(p, tag + ' finished, second weighing pending'); await shot('finished');
       await setBurn(p, 'wood', null, ['grass', 'leaves', 'wood', 'charcoal', 'peat']); await check(p, tag + ' all five recorded'); await shot('five');
-      for (const id of ['overview', 'fuels', 'sense', 'sort', 'peat', 'wrapup']) { await go(p, id); await check(p, tag + ' ' + id); }
-      await shot('wrapup');
+      for (const id of ['overview', 'fuels', 'sense', 'sort', 'peat']) { await go(p, id); await check(p, tag + ' ' + id); }
+      const evidence = p.locator('#cer-model-data .table-wrap');
+      T.ok(await evidence.evaluate(el => el.getBoundingClientRect().width === 0), tag + ' peat: closed evidence does not lay out offscreen');
+      await p.locator('#cer-model-data > summary').click();
+      T.ok(await evidence.evaluate(el => {
+        const bounds=el.getBoundingClientRect(), parent=el.parentElement.getBoundingClientRect();
+        return bounds.width > 0 && bounds.left >= parent.left - 1 && bounds.right <= parent.right + 1
+          && getComputedStyle(el).overflowX === 'auto';
+      }), tag + ' peat: opened evidence scrolls inside its panel');
+      await check(p, tag + ' peat: evidence disclosure open'); await shot('peat-evidence');
+      await go(p, 'wrapup'); await check(p, tag + ' wrapup'); await shot('wrapup');
       await ctx.close();
     }
   } finally { await browser.close(); server.close(); }

@@ -117,6 +117,12 @@
 .scene-host .bn-actions > .btn {max-width:100%;white-space:normal;overflow-wrap:anywhere;}
 .bn-pending {margin:0;padding:.54rem .72rem;border-inline-start:4px solid var(--warn);border-radius:var(--r-sm);background:var(--warn-soft);color:var(--ink);}
 .cer-model-note {margin:0;color:var(--muted);}
+/* The evidence table may scroll inside its disclosure, never widen the claim grid. */
+#cer > :is(h3, .cer-model-note, #cer-model-data) { grid-column: 1 / -1; min-width: 0; }
+#cer-model-data > .inner { grid-template-columns: minmax(0, 1fr); }
+#cer-model-data:not([open]) > .inner { display: none; }
+#cer-model-data > .inner > div { min-width: 0; }
+#cer-model-data .table-wrap { max-width: 100%; overflow-x: auto; }
 #cer-evidence input:disabled {opacity:.6;}
 .bn-saved {margin:0;padding:.54rem .72rem;border-inline-start:4px solid var(--accent);border-radius:var(--r-sm);background:var(--accent-soft);color:var(--ink);}
 @media (min-width: 641px) {
