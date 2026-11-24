@@ -43,8 +43,20 @@ const check = async (p, label) => {
       await check(p, tag + ' tilt mid-night'); await shot('tilt-mid');
       await p.locator('[data-tl="skip"]').click(); await check(p, tag + ' tilt morning, foil still on'); await shot('tilt-morning');
       await p.locator('[data-tl="unwrap"]').click(); await p.locator('[data-tl="starch"]').click(); await check(p, tag + ' tilt results and starch'); await shot('tilt-done');
-      for (const id of ['overview', 'sense5', 'peat', 'wrapup']) { await go(p, id); await check(p, tag + ' ' + id); }
-      await shot('wrapup');
+      for (const id of ['overview', 'sense5', 'peat']) { await go(p, id); await check(p, tag + ' ' + id); }
+      await p.locator('#cer-model-data summary').click();
+      const visibleEvidenceFits = await p.evaluate(() => {
+        const inner = document.querySelector('#cer-model-data[open] > .inner');
+        const tables = [...(inner?.querySelectorAll('.table-wrap') || [])];
+        if (tables.length !== 2) return false;
+        return tables.every(table => {
+          const bounds = table.getBoundingClientRect(), parent = table.parentElement.getBoundingClientRect();
+          return bounds.width > 0 && bounds.left >= parent.left - 1 && bounds.right <= parent.right + 1;
+        });
+      });
+      T.ok(visibleEvidenceFits, tag + ' peat: both opened evidence tables stay within their own panel');
+      await check(p, tag + ' peat: evidence disclosure open'); await shot('peat-evidence');
+      await go(p, 'wrapup'); await check(p, tag + ' wrapup'); await shot('wrapup');
       await ctx.close();
     }
   } finally { await browser.close(); server.close(); }

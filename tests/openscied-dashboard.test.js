@@ -513,3 +513,23 @@ test('dashboard direct-card clicks prime the first trip without promoting unchan
   s.events.pageshow();
   assert.match(s.el('#openscied-resume-link').href,/carrying-capacity\.html$/,'first new save without its own timestamp comes first even if page tracker did not load');
 });
+
+test('confirming a required Carbon reference card counts as work, but opening does not', () => {
+  const Resume=require('../openscied-resume.js');
+  let now=1700000000000;
+  const carbon='aplab:openscied:b2-carbon-journey:v1', hawks='aplab:openscied:b4-hawksbeard:v1';
+  const prior={version:3,rows:[{}],answers:{},coverageReviewed:[],lastSection:'play',lastVisitedAt:now-2000};
+  const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+  const s=setup(false,{[carbon]:JSON.stringify(prior),
+    [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
+  const tracker=Tracker.connect(s.data);
+  now+=1000;
+  tracker.snapshot('/openscied-b2-carbon-journey','open');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/);
+  s.data[carbon]=JSON.stringify({...prior,coverageReviewed:['ocean']});
+  now+=1000;
+  tracker.snapshot('/openscied-b2-carbon-journey','exit');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/carbon-journey\.html/);
+});

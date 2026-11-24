@@ -18,7 +18,7 @@
     'b2-fires': [[pref+'b2-fires:v1','fields cards decomp tilt']],
     'b2-peat-bog-lab': [[pref+'b2-peat-bog:v1','settings climate warmingUsed trials trialLabel']],
     'b2-carbon-journey': [
-      [pref+'b2-carbon-journey:v1','rows answers pending done presentation'],
+      [pref+'b2-carbon-journey:v1','rows answers pending done presentation coverageReviewed'],
       [pref+'b2-carbon-journey:budget:v1','furthest prediction explanation']
     ],
     'b3-cancer-rates': [[pref+'b3-cancer-rates:v1','casework prediction evidence claim limits completed design ret']],

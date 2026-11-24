@@ -173,7 +173,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
         assert.equal(await readRaw(), raw);
         await page.locator('#restart').click();
         await page.locator('#confirm-reset').click();
-        assert.equal(JSON.parse(await readRaw()).version, 2);
+        assert.equal(JSON.parse(await readRaw()).version, 3);
         assert.equal(JSON.parse(await readRaw()).lastSection, 'play');
       }
       console.log('PASS unreadable work stays downloadable and cannot be overwritten before confirmed restart');

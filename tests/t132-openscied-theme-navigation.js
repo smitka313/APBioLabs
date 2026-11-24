@@ -1,12 +1,13 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const path = require('node:path');
+const http = require('node:http');
 const { chromium } = require('playwright');
-const { ROOT, serve } = require('./_h');
+const { serve } = require('./_h');
 
 const DASHBOARD = 'openscied-dashboard.html';
 const ACTIVITY = 'openscied-b2-fires.html';
+const CLEAN_ACTIVITY = ACTIVITY.replace(/\.html$/,'');
 const KEY = 'aplab:pref:theme';
 let checks = 0;
 function ok(value, label) {
@@ -48,27 +49,18 @@ async function hop(browser, base, os, mode, cleanRoute) {
     ok(await page.evaluate(key => localStorage.getItem(key),KEY) === mode,
       'dashboard records explicit ' + mode + ' against a ' + os + ' system theme');
 
-    const clean = ACTIVITY.replace(/\.html$/,'');
-    if (cleanRoute) {
-      // Cloudflare Pages canonicalizes this same-origin .html link.
-      await page.route(base + ACTIVITY, route => route.fulfill({ status:302, headers:{location:'/'+clean} }));
-      await page.route(base + clean, route => route.fulfill({
-        path:path.join(ROOT,ACTIVITY), contentType:'text/html'
-      }));
-    }
-    const target = new URL(base + (cleanRoute ? clean : ACTIVITY));
+    const target = new URL(base + (cleanRoute ? CLEAN_ACTIVITY : ACTIVITY));
     let unlockCSS;
     const held = new Promise(resolve => { unlockCSS=resolve; });
     const stylesheet = /\/style\.css(?:[?#]|$)/;
     const delaySheet = async route => { await held; await route.continue(); };
     await page.route(stylesheet,delaySheet,{ times:1 });
     try {
-      const requested=page.waitForRequest(request=>stylesheet.test(request.url()));
       await Promise.all([
-        page.waitForURL(url=>url.origin===target.origin&&url.pathname===target.pathname,{ waitUntil:'commit' }),
+        page.waitForRequest(request=>stylesheet.test(request.url()),{ timeout:8000 }),
+        page.waitForURL(url=>url.origin===target.origin&&url.pathname===target.pathname,{ waitUntil:'commit', timeout:8000 }),
         page.locator('#b2-fires-open').click({ noWaitAfter:true })
       ]);
-      await requested;
       // The first shared CSS request is still blocked. The destination's theme
       // must already be set without its own later inline script or lab.js.
       await page.waitForFunction(wanted=>document.documentElement.getAttribute('data-theme')===wanted,mode,{timeout:5000});
@@ -159,17 +151,43 @@ async function unit2SectionThemes(browser,base) {
   }
 }
 
+// Use an actual HTTP redirect: a Playwright route handler registered for the
+// redirected URL does not intercept a request already following a redirect.
+function serveCleanRoute(fixtures) {
+  const server=http.createServer((req,res)=>{
+    const here=new URL(req.url,'http://127.0.0.1');
+    if(here.pathname==='/'+ACTIVITY){
+      res.writeHead(302,{ location:'/'+CLEAN_ACTIVITY+here.search });
+      res.end();
+      return;
+    }
+    const upstream=new URL(fixtures);
+    upstream.pathname=here.pathname==='/'+CLEAN_ACTIVITY?'/'+ACTIVITY:here.pathname;
+    upstream.search=here.search;
+    http.get(upstream,upstreamRes=>{
+      res.writeHead(upstreamRes.statusCode,upstreamRes.headers);
+      upstreamRes.pipe(res);
+    }).on('error',()=>{res.writeHead(502);res.end('Fixture server unavailable');});
+  });
+  return new Promise(resolve=>server.listen(0,'127.0.0.1',()=>resolve({
+    url:'http://127.0.0.1:'+server.address().port+'/',
+    close:()=>server.close()
+  })));
+}
+
 (async()=>{
   const server=await serve();
+  const clean=await serveCleanRoute(server.url);
   let browser;
   try {
     browser=await chromium.launch();
     await hop(browser,server.url,'light','dark',false);
-    await hop(browser,server.url,'dark','light',true);
+    await hop(browser,clean.url,'dark','light',true);
     await unit2SectionThemes(browser,server.url);
     console.log('openscied-theme-navigation-browser: '+checks+' checks passed');
   } finally {
     if(browser)await browser.close();
+    clean.close();
     server.close();
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});
