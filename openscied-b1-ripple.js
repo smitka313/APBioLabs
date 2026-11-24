@@ -86,6 +86,32 @@
     el.addEventListener('lostpointercapture',finish);
     el.addEventListener('pointerleave',ev=>{if(!ghost&&ev.pointerType==='mouse')start=null;});
   }
+  const clues=[
+    'Start with the visiting wildebeest. What do they leave behind after they eat?',
+    'Start with the dung supply. Which insect uses it to feed and raise its young?',
+    'Start with dung beetle activity. Where do some dung beetles bury the dung they collect?',
+    'Start with dung-derived soil inputs. Which living part of the patch can take up nutrients through roots?',
+    'Start with the visiting wildebeest. Which part of the patch do they eat directly?',
+    'Start with the visiting wildebeest. How might having more prey nearby affect how often predators come across one?'
+  ];
+  function drawProgress(){
+    const left=M.links.filter((l,i)=>s.answers[i]!==l.sign).length, count=M.links.length-left;
+    const next=left===0?'Web complete! Continue to your prediction.':left===1?'One more connection to make!':left===6?'Find six arrows to finish your web.':left+' connections to go.';
+    rp('count').textContent=count+' of '+M.links.length+' connections';
+    if(rp('next').textContent!==next)rp('next').textContent=next;
+    rp('hint').hidden=left===0;
+  }
+  function closeClue(){
+    rp('hint').textContent='Get a hint';rp('hint').setAttribute('aria-expanded','false');
+    rp('clue').hidden=true;
+  }
+  rp('hint').onclick=()=>{
+    if(!rp('clue').hidden){closeClue();return;}
+    const i=M.links.findIndex((l,j)=>s.answers[j]!==l.sign);
+    if(i<0)return;
+    rp('clue').textContent=clues[i];rp('clue').hidden=false;
+    rp('hint').textContent='Hide hint';rp('hint').setAttribute('aria-expanded','true');
+  };
   function selected(k){
     source=k;
     Object.entries(nodes).forEach(([name,n])=>n.setAttribute('aria-pressed',String(name===k)));
@@ -116,7 +142,7 @@
     const link=M.links[pending], target=nodes[link.to];
     if(sign!==link.sign){boardNote('Try the other direction. '+link.why);return;}
     s.answers[pending]=sign;s.checked=M.correct(s.answers);
-    clearLink();save();drawWeb();rp('to-compare').disabled=!ready(s);
+    clearLink();closeClue();save();drawWeb();drawProgress();rp('to-compare').disabled=!ready(s);
     boardNote((s.checked?'All six arrows are connected. ':'Arrow placed. ')+link.why);
     target.focus();
   }
@@ -127,7 +153,9 @@
     for(const [i,l] of M.links.entries()){
       if(s.answers[i]!==l.sign)continue;
       const word=l.sign===1?'increases':'decreases';
-      rp('web').append(buildEl('li',M.names[l.from]+' → '+M.names[l.to]+' ('+word+')'));
+      const item=buildEl('li');
+      item.append(buildEl('strong',M.names[l.from]+' → '+M.names[l.to]+' ('+word+')'),buildEl('p',l.why));
+      rp('web').append(item);
       if(!zone.width)continue;
       const a=nodes[l.from].getBoundingClientRect(),b=nodes[l.to].getBoundingClientRect();
       const ax=a.left+a.width/2, ay=a.top+a.height/2, bx=b.left+b.width/2, by=b.top+b.height/2;
@@ -164,20 +192,20 @@
     else{if(usable)say('One group moved. Move one more to halve the number of visitors.');herdTokens.find(t=>!t.disabled)?.focus();}
   }
   rp('refuge').onclick=()=>{if(herdChoice!==null)moveHerd(herdChoice);else if(usable)say('Select a wildebeest group on the study patch first.');};
-  const highlights={
-    0:'Before the visit, both runs for the study patch start at 100.',
-    1:'Only the number of visiting wildebeest changes first.',
-    2:'Fewer visitors leave less dung and have fewer encounters with predators. Less grazing can leave more standing grass.',
-    3:'With less dung available, beetle activity drops.',
-    4:'With less beetle activity, less dung is moved into the soil.',
-    5:'Less dung returned to the soil can reduce grass growth, even though less grass was eaten.',
-    6:'Compare the grass to its earlier peak. Grazing and soil inputs pull it in opposite directions.',
-    7:'Trace an indirect effect using the same model step for both runs.'
-  };
-  const delay=700;
+  const highlights=[
+    ['Same starting patch','Before the visit, both runs for the study patch start at 100. Nothing downstream has changed yet.'],
+    ['Fewer visitors arrive','Only the number of visiting wildebeest changes first. The other parts of the web take time to respond.'],
+    ['Wildebeest → dung, grass, and predators','Fewer animals leave less dung, eat less grass, and give predators fewer opportunities to come across prey. These are direct effects: each takes one arrow.'],
+    ['Dung → beetle activity','With less dung available, beetles have fewer places to feed and lay eggs. Wildebeest don’t have to interact with the beetles to affect them. The dung connects them.'],
+    ['Beetles → dung returned to the soil','Some dung beetles bury dung as they feed and nest. With less beetle activity, less dung gets buried.'],
+    ['Soil nutrients → grass','As buried dung breaks down, roots can take up the nutrients it releases. Less buried dung can mean less nutrient input, so standing grass drops from its earlier peak in the model.'],
+    ['Grass responds to two different effects','Less grazing leaves more grass at first. Later, less nutrient input works in the opposite direction. Compare grass at steps 2 and 6 in the fewer-visitors run.'],
+    ['Follow the chain','Fewer wildebeest → less dung → less beetle activity → less dung buried. Trace an indirect effect using the same model step for both runs.']
+  ];
+  const delay=2200;
   function showStep(){
     const [a,b]=scenarios(),usual=a[round],fewer=b[round];
-    rp('tick').value=round+' / '+M.steps;rp('scrub').setAttribute('aria-valuetext','Step '+round+' of '+M.steps);rp('scrub').value=String(round);rp('what').textContent=highlights[round];
+    rp('tick').value=round+' / '+M.steps;rp('scrub').setAttribute('aria-valuetext','Step '+round+' of '+M.steps);rp('scrub').value=String(round);rp('cause').textContent=highlights[round][0];rp('what').textContent=highlights[round][1];
     rp('scene').replaceChildren(...M.keys.map(k=>{
       const item=buildEl('div');item.className='rp-observation';item.dataset.kind=k;
       const n=fewer[k], old=b[Math.max(0,round-1)][k];
@@ -242,7 +270,7 @@
     rp('results').hidden=!s.usual;
     if(s.usual&&s.step==='compare')compareTable(rp('results'));
     if(done(s)&&s.step==='explain')compareTable(rp('evidence'));
-    drawWeb();
+    drawWeb();drawProgress();
   }
   document.querySelectorAll('button[data-step]').forEach(btn=>btn.onclick=()=>navigate(btn.dataset.step));
   rp('to-compare').onclick=()=>navigate('compare');

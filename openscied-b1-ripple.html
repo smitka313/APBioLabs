@@ -50,6 +50,11 @@
 <section id="build" class="rp-panel" aria-labelledby="build-title">
   <h2 id="build-title" tabindex="-1">Build the web</h2>
   <p>Drag one part of the ecosystem onto another to show what it directly affects. Or select the two parts in order.</p>
+  <div class="rp-coach">
+    <div><strong id="rp-count">0 of 6 connections</strong><p id="rp-next" role="status">Find six arrows to finish your web.</p></div>
+    <button type="button" class="btn" id="rp-hint" aria-expanded="false" aria-controls="rp-clue">Get a hint</button>
+  </div>
+  <p id="rp-clue" class="rp-clue" role="status" hidden></p>
   <div id="rp-map" class="rp-map">
     <svg id="rp-threads" aria-hidden="true"><defs><marker id="rp-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="context-stroke"/></marker></defs></svg>
     <div id="rp-nodes"></div>
@@ -62,7 +67,7 @@
   </div>
   <p id="rp-board-note" class="rp-board-note" role="status">Start with the herd: where does the dung on this patch come from?</p>
   <p class="rp-muted">Solid arrow: increases. Dashed arrow: decreases. Arrows show influence, not where food moves.</p>
-  <ol id="rp-web" class="rp-web" aria-label="Confirmed connections"></ol>
+  <details class="rp-why-web"><summary>Review your connections and why they work</summary><ol id="rp-web" class="rp-web" aria-label="Confirmed connections"></ol></details>
   <button type="button" class="btn btn--primary" id="rp-to-compare" disabled>Continue to your prediction</button>
 </section>
 <section id="compare" class="rp-panel" aria-labelledby="compare-title" hidden>
@@ -85,7 +90,7 @@
       <h3>Watch the ripple move across the patch</h3>
       <div class="rp-timeline"><button type="button" class="btn" id="rp-replay">Replay ripple</button><label for="rp-scrub">Model step <output id="rp-tick" for="rp-scrub"></output></label><input type="range" min="0" value="0" id="rp-scrub"></div>
       <p class="rp-muted">Each card reads usual visit → fewer visitors. 100 is the starting index, not a count.</p>
-      <p id="rp-what"></p>
+      <div class="rp-mechanism"><strong id="rp-cause"></strong><p id="rp-what"></p></div>
       <div class="rp-scene" id="rp-scene" aria-label="Illustrated study patch"></div>
     </div>
   </div>
@@ -94,6 +99,7 @@
 </section>
 <section id="explain" class="rp-panel" aria-labelledby="explain-title" hidden>
   <h2 id="explain-title" tabindex="-1">Explain the ripple</h2>
+  <p><strong>Direct or indirect?</strong> Wildebeest add dung directly. To affect the beetles, they first have to change the dung supply. That’s an indirect effect: it takes more than one arrow.</p>
   <div class="rp-build">
     <div id="rp-evidence" class="rp-box"></div>
     <div>

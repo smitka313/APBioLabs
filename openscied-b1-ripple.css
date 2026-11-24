@@ -69,3 +69,13 @@
 @media(prefers-reduced-motion:reduce){.rp-shell *{animation:none!important}}
 #rp-threads .rp-trail{stroke:#ffda76;stroke-width:4;stroke-dasharray:6 5}
 .rp-drop-hover{outline:3px solid #ffda76;outline-offset:2px;background-color:#214745}
+.rp-coach{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:.55rem .7rem;margin:.55rem 0;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.rp-coach p{margin:.15rem 0;font-size:.9rem}.rp-coach button{flex:none;min-height:44px}
+.rp-clue,.rp-mechanism{border-inline-start:3px solid var(--accent);padding:.5rem .65rem;background:var(--surface-2);margin:.45rem 0}
+.rp-why-web{border-block:1px solid var(--line);padding:.45rem 0;margin:.4rem 0 .65rem}
+.rp-why-web summary{font-weight:700;cursor:pointer}
+.rp-why-web .rp-web{gap:.55rem .85rem}
+.rp-web li p{margin:.2rem 0 0;line-height:1.4}
+.rp-mechanism{min-height:6lh}
+@media(min-width:720px){.rp-mechanism{min-height:4lh}}
+#rp-what{margin:.22rem 0 0;min-height:0;font-weight:500}

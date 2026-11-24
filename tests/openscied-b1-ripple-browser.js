@@ -19,6 +19,8 @@ const out=path.join(ROOT,'artifacts','ripple');
     await shot('build');
     const node=k=>p.locator('[data-node="'+k+'"]');
     assert.equal(await p.locator('#rp-threads line').count(),0);
+    assert.equal(await by('count').textContent(),'0 of 6 connections');
+    await by('hint').click();assert.match(await by('clue').textContent(),/What do they leave behind/);
     const drag=async (source,target)=>{
       await source.scrollIntoViewIfNeeded();await target.scrollIntoViewIfNeeded();
       const a=await source.boundingBox(),b=await target.boundingBox();
@@ -43,9 +45,20 @@ const out=path.join(ROOT,'artifacts','ripple');
       assert.ok(await by('link-editor').isVisible());
       if(i===0){await by('less').click();assert.match(await by('board-note').textContent(),/Try the other/);}
       await by(edge.sign===1?'more':'less').click();
+      assert.equal(await by('count').textContent(),(i+1)+' of 6 connections');
+      assert.ok(await by('clue').isHidden());
+      if(i===4){
+        assert.equal(await by('next').textContent(),'One more connection to make!');
+        await by('hint').click();assert.match(await by('clue').textContent(),/having more prey/);
+        await p.reload();assert.equal(await by('next').textContent(),'One more connection to make!');
+      }
     }
     assert.match(await by('board-note').textContent(),/All six/);
     assert.equal(await p.locator('#rp-threads line').count(),6);await shot('connected');
+    assert.ok(await by('hint').isHidden());
+    await p.locator('.rp-why-web summary').click();
+    assert.match(await by('web').innerText(),/releases nutrients that roots can take up/);
+    assert.match(await by('web').innerText(),/feed on dung and lay eggs in it/);
     await by('to-compare').click();
     await by('choice').selectOption('decrease');await by('reason').fill('Dung is a resource for beetles.');
     assert.ok(await by('experiment').isHidden());
@@ -59,12 +72,15 @@ const out=path.join(ROOT,'artifacts','ripple');
     if(width===1366){
       await p.waitForFunction(()=>+document.getElementById('rp-scrub').value>=1);
       await by('replay').click();
-      const paused=await by('scrub').inputValue();await p.waitForTimeout(850);assert.equal(await by('scrub').inputValue(),paused);
+      const paused=await by('scrub').inputValue();await p.waitForTimeout(2350);assert.equal(await by('scrub').inputValue(),paused);
     }
     const scrub=by('scrub');
     await scrub.press('Home');
     assert.match(await by('what').textContent(),/start at 100/);
     await scrub.press('ArrowRight');assert.match(await by('what').textContent(),/changes first/);
+    await scrub.press('ArrowRight');await scrub.press('ArrowRight');
+    assert.match(await by('what').textContent(),/fewer places to feed and lay eggs/);
+    await scrub.press('ArrowRight');assert.match(await by('what').textContent(),/bury dung/);
     await scrub.press('End');assert.match(await by('what').textContent(),/indirect effect/);
     await shot('comparison');await by('to-explain').click();
     const [seed,expected]=await p.evaluate(()=>{const {seed}=JSON.parse(localStorage.getItem('aplab:openscied:b1-ripple:v1'));return [seed,Array.from(document.querySelectorAll('#rp-evidence tr'),r=>r.textContent)];});

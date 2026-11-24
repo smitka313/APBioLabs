@@ -9,12 +9,12 @@
   'use strict';
   const names=Object.freeze({herd:'Visiting wildebeest',dung:'Dung supply',beetles:'Dung beetle activity',soil:'Dung-derived soil inputs',grass:'Standing grass',predators:'Predator encounters'});
   const links=Object.freeze([
-    ['herd','dung',1,.74,'More visiting animals leave more dung.'],
-    ['dung','beetles',1,.77,'Dung is food and a breeding resource for many dung beetles.'],
-    ['beetles','soil',1,.71,'Dung beetles move some dung into the soil.'],
-    ['soil','grass',1,.58,'Nutrients returned to the soil can support grass growth.'],
-    ['herd','grass',-1,.22,'More grazers can remove more standing grass.'],
-    ['herd','predators',1,.56,'More visiting prey can mean more encounters with predators, not necessarily more predators.']
+    ['herd','dung',1,.74,'As wildebeest eat and digest grass, they leave dung behind. More visitors supply more dung to this patch.'],
+    ['dung','beetles',1,.77,'Many dung beetles feed on dung and lay eggs in it. More dung gives them more places to feed and breed, which can increase beetle activity here.'],
+    ['beetles','soil',1,.71,'Some dung beetles roll or carry dung into tunnels and bury it. More beetle activity moves more dung underground.'],
+    ['soil','grass',1,.58,'As buried dung breaks down, it releases nutrients that roots can take up. Those nutrients can help grass grow if it also has enough water and light.'],
+    ['herd','grass',-1,.22,'Wildebeest eat grass. More mouths grazing can leave less standing grass: the grass still growing above ground.'],
+    ['herd','predators',1,.56,'Wildebeest are prey. When more are in the same patch, a predator has more chances to come across one. This link does not count births, deaths, or new predators.']
   ].map(([from,to,sign,weight,why])=>Object.freeze({from,to,sign,weight,why})));
   const keys=Object.freeze(Object.keys(names)),steps=7;
   function coefficient(seed,i){
