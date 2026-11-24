@@ -169,7 +169,7 @@
       summary: started ? rolls + ' rolls recorded · ' + answers + ' of 5 responses written' + (saved.done ? ' · Journey complete' : '') : 'Not started' };
   }
   const CANCER_RATES_SECTIONS = ['predict', 'explore', 'explain'];
-  const CANCER_CASE_ANSWERS = {access:'falling',diagnosis:'rising','race-stage':'higher'};
+  const CANCER_CASE_ANSWERS = {access:'falling',diagnosis:'rising','rural-stage':'higher'};
   function cancerRatesResponseIds() { return ['claim', 'limits']; }
   function cancerInvestigationQuestion(saved) {
     const casework = saved?.casework;

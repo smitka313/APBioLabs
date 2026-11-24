@@ -142,7 +142,7 @@
 .cr-dossier--map{--cr-dossier-tint:#dce7f0;--cr-dossier-stamp:#294d67}
 .cr-dossier--access{--cr-dossier-tint:#e3eefb;--cr-dossier-stamp:#294d78}
 .cr-dossier--stage{--cr-dossier-tint:#dbf2ed;--cr-dossier-stamp:#175549}
-.cr-dossier--race-stage{--cr-dossier-tint:#ece6fa;--cr-dossier-stamp:#50407b}
+.cr-dossier--rural-stage{--cr-dossier-tint:#ece6fa;--cr-dossier-stamp:#50407b}
 .cr-dossier:hover,.cr-dossier:focus-visible{border-color:var(--accent)}
 .cr-dossier-code{font:750 .68rem/1.15 var(--f-mono);letter-spacing:.055em;text-transform:uppercase;color:var(--cr-cover-meta)}
 .cr-dossier-illustration{display:grid;place-items:center;min-height:43px;border-radius:5px;background:var(--cr-dossier-tint);color:var(--cr-dossier-stamp)}
@@ -172,7 +172,7 @@ body:has(.cr-case-modal[open]){overflow:hidden}
 .cr-exhibit h2{font-size:clamp(1.24rem,3vw,1.8rem)}
 .cr-income-figure{--cr-income-cols:minmax(165px,1.1fr) minmax(0,4fr) 4.2rem;margin:.2rem 0 .1rem;padding:clamp(.48rem,1.4vw,1rem);border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}
 .cr-stage-figure{--cr-income-cols:minmax(195px,1.5fr) minmax(0,4fr) 4.2rem}
-.cr-race-stage-figure{--cr-income-cols:minmax(205px,1.65fr) minmax(0,3fr) 3.4rem}
+.cr-rural-stage-figure{--cr-income-cols:minmax(205px,1.65fr) minmax(0,3fr) 3.4rem}
 .cr-income-figure figcaption{font-weight:750;margin-bottom:.6rem;font-size:clamp(.88rem,1.5vw,1.05rem)}
 .cr-income-bars{list-style:none;margin:0;padding:0;display:grid;gap:.38rem}
 .cr-income-bar,.cr-income-scale{display:grid;grid-template-columns:var(--cr-income-cols);gap:.52rem;align-items:center}
@@ -181,13 +181,13 @@ body:has(.cr-case-modal[open]){overflow:hidden}
 .cr-income-track{height:1.8rem;background:var(--surface);border-inline-start:2px solid var(--cr-grid);border-radius:0 3px 3px 0}
 .cr-income-track>span{width:var(--cr-extent);height:100%;display:block;background:var(--cr-a);border-radius:0 3px 3px 0}
 #cr-income-diagnosis .cr-income-track>span{background:var(--cr-b)}
-#cr-income-race-stage .cr-income-track>span{background:var(--cr-a)}
+#cr-income-rural-stage .cr-income-track>span{background:var(--cr-a)}
 .cr-income-scale{grid-template-columns:var(--cr-income-cols);margin-top:.33rem;color:var(--muted);font:700 .76rem/1.25 var(--f-mono)}
 .cr-income-scale>div{display:flex;justify-content:space-between;border-top:1px solid var(--cr-grid);padding-block-start:.26rem}
 .cr-case-question{display:grid;gap:.42rem;padding:.65rem;border:1px solid var(--line);border-radius:8px}
 .cr-case-controls{display:flex;align-items:center;flex-wrap:wrap;gap:.42rem}
 .cr-case-controls select{flex:1 1 15rem}
-#cr-income-race-stage .cr-case-controls select{flex-basis:100%}
+#cr-income-rural-stage .cr-case-controls select{flex-basis:100%}
 .cr-case-feedback{padding:.44rem .58rem;border-inline-start:3px solid var(--cr-amber);background:var(--surface-2)}
 .cr-case-feedback[data-result="correct"]{border-color:var(--cr-a);background:var(--cr-a-bg);color:var(--cr-a)}
 .cr-case-debrief,.cr-question-reminder{padding:.66rem;background:var(--surface);border:1px solid var(--line);border-radius:8px}
