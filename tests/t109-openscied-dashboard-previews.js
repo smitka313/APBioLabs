@@ -10,8 +10,9 @@ const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
 const UNIT2 = ['openscied-b2-burn-lab.html', 'openscied-b2-fires.html', 'openscied-b2-peat-bog-lab.html', 'openscied-b2-carbon-journey.html'];
 const UNIT3 = ['openscied-b3-cancer-rates.html', 'openscied-b3-cell-cycle.html', 'openscied-b3-dna-workshop.html', 'openscied-b3-dna-p53.html', 'openscied-b3-inheritance-environment.html'];
-const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html','openscied-b4-junco.html'];
+const UNIT4 = ['openscied-b4-hawksbeard.html','openscied-b4-rat-generations.html','openscied-b4-junco.html','openscied-b4-wildlife-corridor.html'];
 const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
+const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
 (async () => {
   // order in the script registry matches the page
   const js = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
@@ -30,7 +31,7 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, and Serengeti Board Game');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 starts with the data dive, and DNA Workshop immediately precedes DNA Copying and p53');
-      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit4"]')) === JSON.stringify(UNIT4), width + ' px: Unit 4 links to Hawksbeard, Rat Generations, and Junco in lesson order');
+      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit4"]')) === JSON.stringify(UNIT4), width + ' px: Unit 4 links to Hawksbeard, Rat Generations, Junco, and Wildlife Corridor in lesson order');
       const serengetiImage = p.locator('img[src="'+SERENGETI_PREVIEW+'"]');
       await serengetiImage.scrollIntoViewIfNeeded(); // Trigger lazy loading below the fold.
       await p.waitForFunction(path=>{const img = document.querySelector('img[src="'+path+'"]');return img?.complete&&img.naturalWidth>0;},SERENGETI_PREVIEW,{timeout:10000});
@@ -52,6 +53,9 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       const juncoImage = p.locator('img[src="assets/junco-preview.svg"]');
       await juncoImage.scrollIntoViewIfNeeded();
       await juncoImage.evaluate(img => img.decode());
+      const corridorImage=p.locator('img[src="'+CORRIDOR_PREVIEW+'"]');
+      await corridorImage.scrollIntoViewIfNeeded();
+      await corridorImage.evaluate(img=>img.decode());
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
         const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
@@ -72,11 +76,11 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 15 && svgCards.length === 7 && m.filter(x=>x.img).length === 8, width + ' px: fifteen cards: seven inline illustrations and eight linked SVG illustrations');
+      T.ok(m.length === 16 && svgCards.length === 7 && m.filter(x=>x.img).length === 9, width + ' px: sixteen cards: seven inline illustrations and nine linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
-        new Set(m.map(x => x.label)).size === 15 && actionCounts.every(n => n === 1),
+        new Set(m.map(x => x.label)).size === 16 && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
@@ -109,6 +113,11 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       T.ok(junco?.img?.complete && junco.img.w===960 && junco.img.h===600 && junco.img.alt==='' &&
         junco.label === 'Open activity: Junco Investigation' && junco.simText === 'Simulated + real data',
         width + ' px: Junco has a named primary link and a combined simulated/real-data descriptor');
+      const corridor=m.find(x=>x.img?.src===CORRIDOR_PREVIEW);
+      T.ok(corridor?.img?.complete && corridor.img.w===960 && corridor.img.h===600 && corridor.img.alt==='' &&
+        corridor.img.widthAttr==='960' && corridor.img.heightAttr==='600' &&
+        corridor.label==='Open activity: Wildlife Corridor Lab' && corridor.simText==='Simulated',
+        width + ' px: Wildlife Corridor reserves its original model artwork and describes it as simulated');
       const workshop=m.find(x=>x.img?.src==='assets/dna-workshop-preview.svg');
       T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
         workshop.img.alt==='' && workshop.label === 'Open activity: DNA Workshop: Build, Copy, Decode',

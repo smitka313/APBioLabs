@@ -25,7 +25,8 @@
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds },
     { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true },
     { id: 'rat-generations', name: 'Rat Generations', file: 'openscied-b4-rat-generations.html', key: PREFIX + 'b4-rat-generations:v1', clears: 'model generations, prediction, and written responses', progress: ratGenerationsProgress, ids: ratGenerationsResponseIds, answers: true },
-    { id: 'junco', name: 'Junco Investigation', file: 'openscied-b4-junco.html', key: PREFIX + 'b4-junco:v1', clears: 'prediction, investigation progress, and written responses', progress: juncoProgress, ids: juncoResponseIds }
+    { id: 'junco', name: 'Junco Investigation', file: 'openscied-b4-junco.html', key: PREFIX + 'b4-junco:v1', clears: 'prediction, investigation progress, and written responses', progress: juncoProgress, ids: juncoResponseIds },
+    { id: 'wildlife-corridor', name: 'Wildlife Corridor Lab', file: 'openscied-b4-wildlife-corridor.html', key: PREFIX + 'b4-wildlife-corridor:v1', clears: 'prediction, crossing design, model runs, and written responses', progress: wildlifeCorridorProgress, ids: wildlifeCorridorResponseIds }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -459,6 +460,32 @@
       stepsDone,stepsTotal:3,stepsLabel:'Investigation steps completed',
       summary:[stage[section], simulatedTrials ? simulatedTrials+' simulated '+(simulatedTrials===1?'trial':'trials') : flightStarted ? 'Simulated trial in progress' : '', revealed ? 'Aviary results viewed' : prediction ? 'Prediction saved' : '', answers ? answers+' of 2 responses written' : ''].filter(Boolean).join(' · ') };
   }
+  function wildlifeCorridorResponseIds(){ return ['claim','limits']; }
+  function wildlifeCorridorProgress(raw){
+    const empty={summary:'Not started',started:false,section:'',visited:0};
+    if(raw==null)return empty;
+    let s;
+    try{
+      s=JSON.parse(raw);
+      const round=n=>Number.isInteger(n)&&n>=0&&n<=8;
+      if(s?.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||!round(s.generations?.baseline)||
+          !round(s.generations?.corridor)||![-1,1].includes(s.crossing))throw Error('Unknown format');
+    }catch(_){return {...empty,summary:'Saved work could not be read. Download a copy before restarting.'};}
+    const choice=['connected','same','divided'].includes(s.prediction?.choice);
+    const reason=written(s.prediction||{},'reason');
+    const prediction=choice&&reason, baseline=s.generations.baseline===8;
+    const corridor=s.crossing===1&&s.generations.corridor===8;
+    const finished=prediction&&baseline&&corridor&&s.finished===true&&wildlifeCorridorResponseIds().every(id=>written(s,id));
+    const started=choice||reason||s.generations.baseline>0||s.crossing===1||wildlifeCorridorResponseIds().some(id=>written(s,id));
+    if(!started)return empty;
+    const stepsDone=[prediction,baseline,corridor,finished].filter(Boolean).length;
+    // The activity restores its saved section itself; do not add a misleading fragment.
+    return {started,section:'',visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,
+      stepsDone,stepsTotal:4,stepsLabel:'Investigation steps completed',
+      summary:finished?'Investigation complete':[prediction?'Prediction saved':'Prediction in progress',
+        s.generations.baseline>0?'First comparison: '+s.generations.baseline+' of 8 generations':'',
+        s.crossing===1?'Crossing trial: '+s.generations.corridor+' of 8 generations':''].filter(Boolean).join(' · ')};
+  }
   function hawksbeardProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
     let saved;
@@ -482,7 +509,8 @@
     'peat-bog':[2,'Trials saved for a comparison'],'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
-    hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed']
+    hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
+    'wildlife-corridor':[4,'Investigation steps completed']
   };
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();
@@ -658,7 +686,7 @@
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const fields = saved && (['cancer-rates', 'junco'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
+          const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
@@ -666,6 +694,10 @@
           if (activity.id === 'junco' && saved) {
             if (written(saved, 'observation')) responses[activity.id].observation = saved.observation;
             if (written(saved, 'reason')) responses[activity.id].predictionReason = saved.reason;
+          }
+          if (activity.id === 'wildlife-corridor') {
+            responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
+            responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
           }
           if (activity.id === 'cancer-rates') {
             responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
