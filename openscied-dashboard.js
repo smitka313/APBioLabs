@@ -467,8 +467,9 @@
     let s;
     try{
       s=JSON.parse(raw);
+      if(s?.v===1&&s.model===undefined)return empty;
       const round=n=>Number.isInteger(n)&&n>=0&&n<=8;
-      if(s?.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||!round(s.generations?.baseline)||
+      if(s?.v!==1||s.model!=='Aa'||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||!round(s.generations?.baseline)||
           !round(s.generations?.corridor)||![-1,1].includes(s.crossing))throw Error('Unknown format');
     }catch(_){return {...empty,summary:'Saved work could not be read. Download a copy before restarting.'};}
     const choice=['connected','same','divided'].includes(s.prediction?.choice);

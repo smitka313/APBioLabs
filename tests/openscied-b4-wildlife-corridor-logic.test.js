@@ -5,7 +5,7 @@ const L=require('../openscied-b4-wildlife-corridor-logic.js');
 
 const cases=['connected','road','corridor'], total=L.PATCH_SIZE*2;
 function independentCounts(patches) {
-  const counts={A:0,B:0,C:0,D:0};
+  const counts={A:0,a:0};
   for(const patch of patches) for(const individual of patch) for(const allele of individual.alleles) counts[allele]++;
   return counts;
 }
@@ -20,10 +20,10 @@ test('all comparison cases start with the same two diploid populations and preci
     const start=connected.history[0];
     assert.equal(start.generation,0);
     assert.equal(start.population,24);
-    assert.deepEqual(start.variantCounts,{A:12,B:16,C:8,D:12});
-    assert.deepEqual(start.patches.map(p=>p.variantCounts),[{A:12,B:8,C:4,D:0},{A:0,B:8,C:4,D:12}]);
-    assert.deepEqual(start.patches.map(p=>[p.population,p.diversity,p.heterozygosity]),[[12,3,0.5],[12,3,0.5]]);
-    assert.equal(start.diversity,4,'unique variants across both patches are not the sum of the patch richness');
+    assert.deepEqual(start.variantCounts,{A:24,a:24});
+    assert.deepEqual(start.patches.map(p=>p.variantCounts),[{A:20,a:4},{A:4,a:20}]);
+    assert.deepEqual(start.patches.map(p=>[p.population,p.diversity,p.heterozygosity]),[[12,2,2/12],[12,2,2/12]]);
+    assert.equal(start.diversity,2,'unique variants across both patches are not the sum of the patch richness');
     assert.equal(start.crossPatchContributions,0);
   }
 });
@@ -63,13 +63,13 @@ test('generation evidence exactly matches independent counts and every allele co
   }
 });
 
-test('the road never lets the patch-restricted founding variants cross',()=>{
+test('the road never lets a parent contribute across patches',()=>{
   for (let seed=0;seed<64;seed++) {
     const {history}=L.run(seed,'road');
     for (const step of history) {
       assert.equal(step.crossPatchContributions,0);
-      assert.equal(step.patches[0].variantCounts.D,0);
-      assert.equal(step.patches[1].variantCounts.A,0);
+      assert.equal(step.patches[0].crossPatchContributions,0);
+      assert.equal(step.patches[1].crossPatchContributions,0);
     }
   }
 });
@@ -91,12 +91,10 @@ test('paired conditions consume the same cross-patch draws without making a resu
   }
   assert.ok(Math.abs(fullyConnected/slots-L.CONDITIONS.connected.migrationChance)<0.02);
   assert.ok(Math.abs(limited/slots-L.CONDITIONS.corridor.migrationChance)<0.02);
-  const gains=L.run(42,'corridor',1).history[1];
-  assert.equal(gains.patches[0].diversity,4);
-  assert.equal(gains.patches[1].diversity,4);
-  const notGuaranteed=L.run(0,'corridor');
-  assert.ok(notGuaranteed.history.at(-1).crossPatchContributions>0);
-  assert.ok(notGuaranteed.history.at(-1).diversity<L.run(0,'road').history.at(-1).diversity);
+  const gap=s=>Math.abs(s.patches[0].variantCounts.A-s.patches[1].variantCounts.A);
+  const gaps=Object.fromEntries(cases.map(id=>[id,Array.from({length:128},(_,seed)=>gap(L.run(seed,id).history.at(-1))).reduce((a,b)=>a+b,0)]));
+  assert.ok(gaps.connected < gaps.corridor && gaps.corridor < gaps.road);
+  assert.ok(Array.from({length:128},(_,seed)=>gap(L.run(seed,'corridor').history.at(-1))>gap(L.run(seed,'road').history.at(-1))).some(Boolean),'the crossing does not guarantee convergence in every run');
   assert.ok(L.run(73,'corridor').history.slice(1).some(step=>step.crossPatchContributions===0));
 });
 
@@ -106,7 +104,7 @@ test('model state remains stable when stepped, rerun or restored',()=>{
   assert.deepEqual(L.advance(active),L.run(217,'corridor',5));
   assert.equal(JSON.stringify(active),before,'advancing does not mutate the prior visual state');
   assert.deepEqual(L.restore(JSON.parse(before)),active);
-  const badCache={v:1,seed:217,condition:'corridor',generation:4,patches:[],history:[{population:999}]};
+  const badCache={v:2,seed:217,condition:'corridor',generation:4,patches:[],history:[{population:999}]};
   assert.deepEqual(L.restore(badCache),active,'discard cached observations and reconstruct from seed/settings');
   const end=L.run(217,'corridor');
   assert.deepEqual(L.advance(end),end);
@@ -116,7 +114,7 @@ test('invalid controls and unsupported save versions do not fabricate evidence',
   for (const seed of [-1,0xffffffff+1,2.5,NaN,Infinity,'12']) assert.throws(()=>L.create(seed),/seed/);
   for (const caseId of ['random','constructor','__proto__',42]) assert.throws(()=>L.create(42,caseId),/habitat/);
   for (const n of [-1,L.GENERATIONS+1,1.5]) assert.throws(()=>L.run(42,'road',n),/generation/);
-  for(const raw of [null,{}, {v:2,seed:1,condition:'road',generation:0},
-    {v:1,seed:1,condition:'fake',generation:0},{v:1,seed:1,condition:'road',generation:20}]) assert.equal(L.restore(raw),null);
+  for(const raw of [null,{}, {v:1,seed:1,condition:'road',generation:0},
+    {v:2,seed:1,condition:'fake',generation:0},{v:2,seed:1,condition:'road',generation:20}]) assert.equal(L.restore(raw),null);
   assert.throws(()=>L.advance(null), /Start or restore/);
 });

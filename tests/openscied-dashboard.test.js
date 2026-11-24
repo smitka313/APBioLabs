@@ -215,7 +215,7 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curricul
 
 test('Wildlife Corridor tracks real work, resumes without a hash, and preserves both raw and readable work in scoped backups', async () => {
   const key='aplab:openscied:b4-wildlife-corridor:v1', file='openscied-b4-wildlife-corridor.html';
-  const base={v:1,seed:4892,step:'predict',prediction:null,generations:{baseline:0,corridor:0},
+  const base={v:1,model:'Aa',seed:4892,step:'predict',prediction:null,generations:{baseline:0,corridor:0},
     crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:1800000000000};
   const state = input => setup(false,{[key]:JSON.stringify(input)});
   const empty=state(base);
@@ -230,6 +230,8 @@ test('Wildlife Corridor tracks real work, resumes without a hash, and preserves 
     generations:{baseline:8,corridor:8},crossing:1,claim:'The west and east frequencies converged.',limits:'This does not measure real animals.',finished:true};
   const invalid=state({...saved,crossing:-1});
   assert.doesNotMatch(invalid.el('#wildlife-corridor-progress').textContent,/Investigation complete/);
+  const earlierPreview=state({...saved,model:undefined});
+  assert.equal(earlierPreview.el('#wildlife-corridor-progress').textContent,'Not started');
   const finished=state(saved);
   assert.equal(finished.el('#wildlife-corridor-progress').textContent,'Investigation complete');
   finished.el('#wildlife-corridor-reset').fire('click');

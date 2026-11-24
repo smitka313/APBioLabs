@@ -55,6 +55,10 @@ test('prediction gates direct links, and an interrupted paired run reloads from 
   first.node('run-baseline').click();first.step();first.step();
   assert.deepEqual(first.record().generations,{baseline:2,corridor:0});
   assert.equal(first.node('crossing-tile').disabled,true);
+  assert.match(first.node('mix').textContent,/Generation 2/);
+  assert.match(first.node('mix').textContent,/Parent 1.*Parent 2.*Offspring/);
+  assert.ok(first.node('tokens-connected').nodes.every(token=>/^[Aa]\/[Aa]$/.test(token.text.trim())));
+
   const resumed=browser(shared);
   assert.equal(resumed.location.hash,'#model');
   assert.match(resumed.node('map-connected-readout').textContent,/Generation 2/);
@@ -75,7 +79,7 @@ test('crossing needs a valid trail connection; cannot be moved during run; only 
   for(let i=0;i<8;i++)b.step();
   assert.deepEqual(b.record().generations,{baseline:8,corridor:8});
   b.lists['[data-wc-go]'][2].click();
-  assert.match(b.node('explain-evidence').textContent,/East: copies of A/);
+  assert.match(b.node('explain-evidence').textContent,/East: allele copies/);
   assert.equal(b.report().status,'draft');
   for(const [k,value] of [['claim','The comparison provides evidence.'],['limits','Real populations might shrink.']]){
     b.node(k).value=value;b.node(k).fire('input');
@@ -83,11 +87,11 @@ test('crossing needs a valid trail connection; cannot be moved during run; only 
   assert.equal(b.report().status,'draft');
   b.node('finish').click();
   const report=b.report();
-  assert.equal(report.status,'final');assert.equal(report.datasetId,'WC-0000002A');
+  assert.equal(report.status,'final');assert.equal(report.datasetId,'WC-AA-0000002A');
   assert.equal(report.sections[1].items.length,4);
   for(const [i,id] of ['connected','road','corridor'].entries()){
     const end=M.run(42,id).history.at(-1), p=end.patches;
-    assert.deepEqual(Array.from(report.sections[1].items[i+1].rows[8]),[8,p[0].diversity,p[1].diversity,p[1].variantCounts.A,p[0].variantCounts.D]);
+    assert.deepEqual(Array.from(report.sections[1].items[i+1].rows[8]),[8,...p.map(({variantCounts:c})=>c.A+' A, '+c.a+' a'),Math.abs(p[0].variantCounts.A-p[1].variantCounts.A),end.crossPatchContributions]);
   }
 });
 test('stale tab cannot overwrite progress and retains original identity for recovery',()=>{
@@ -102,4 +106,16 @@ test('stale tab cannot overwrite progress and retains original identity for reco
   assert.equal(original.report().student.name,'Original QA');
   original.node('recovery').click();
   assert.equal(original.openCount(),1);
+});
+
+test('older preview data cannot be presented as observations from the two-allele model',()=>{
+  const old={v:1,seed:42,step:'explain',prediction:{choice:'connected',reason:'Old question'},generations:{baseline:8,corridor:8},crossing:1,claim:'Old observations',limits:'Old limits',finished:true};
+  const b=browser(new Map([[key,JSON.stringify(old)]]),'#explain');
+  assert.equal(b.location.hash,'#predict');
+  assert.match(b.status(),/older preview/i);
+  assert.equal(b.report().status,'draft');
+  assert.equal(b.record().claim,'Old observations','do not overwrite older work on page load');
+  b.predict();
+  assert.equal(b.record().model,'Aa');
+  assert.deepEqual(b.record().generations,{baseline:0,corridor:0});
 });

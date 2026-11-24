@@ -1,7 +1,7 @@
 /* Wildlife Corridor Lab: fictional, neutral, one-locus island model.
    The two habitat patches always contain twelve diploid individuals each.
    A barrier changes where parents may come from, not survival or reproduction
-   rates. All four alleles have the same inheritance probability. There is no
+   rates. Dominance changes the modeled coat appearance, not inheritance odds. There is no
    selection, mutation, immigration from outside the two patches, or forecast. */
 (function (root, factory) {
   'use strict';
@@ -11,8 +11,8 @@
 })(typeof window === 'object' ? window : globalThis, function () {
   'use strict';
 
-  const VERSION = 1, PATCH_SIZE = 12, GENERATIONS = 8;
-  const VARIANTS = Object.freeze(['A', 'B', 'C', 'D']);
+  const VERSION = 2, PATCH_SIZE = 12, GENERATIONS = 8;
+  const VARIANTS = Object.freeze(['A', 'a']);
   const CONDITIONS = Object.freeze(Object.fromEntries([
     ['connected','Connected habitat',0.25],
     ['road','Road barrier',0],
@@ -38,10 +38,11 @@
 
   function initialPatches(seed) {
     const draw = rngFor(seed,0);
-    return ['A','D'].map(local=> {
+    return ['A','a'].map(local=> {
       // Hold founding counts fixed, but randomize the positions of individuals.
-      // In each patch: 12 copies of its local variant, 8 B, and 4 C.
-      const pairs = [[local,local,3],[local,'B',4],[local,'C',2],['B','B',2],['C','C',1]];
+      // West starts with 20 A and 4 a; East starts with 4 A and 20 a.
+      const other = local==='A'?'a':'A';
+      const pairs = [[local,local,9],['A','a',2],[other,other,1]];
       const individuals = pairs.flatMap(([a,b,n])=>Array.from({length:n},()=>({alleles:[a,b],origins:null})));
       for (let i=individuals.length-1; i>0; i--) {
         const j=Math.floor(draw()*(i+1));

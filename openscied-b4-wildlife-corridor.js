@@ -7,7 +7,7 @@
   const STEPS=['predict','model','explain'];
   const CONDITIONS=['connected','road','corridor'];
   const LABEL={connected:'Connected habitat',road:'Road, no crossing',corridor:'Road with crossing'};
-  const PRED={connected:'More in connected habitat',same:'About the same',divided:'More with the road and no crossing'};
+  const PRED={connected:'More similar in connected habitat',same:'About the same',divided:'More similar with the road and no crossing'};
   const $=(sel,root=document)=>root.querySelector(sel), $$=(sel,root=document)=>[...root.querySelectorAll(sel)];
   const by=id=>$('#wc-'+id);
   const make=(tag,text,className)=>{const el=document.createElement(tag);if(text!=null)el.textContent=text;if(className)el.className=className;return el;};
@@ -17,23 +17,24 @@
   if(!M){announce('The model did not load. Reload this page to try again.');return;}
   const END=M.GENERATIONS, MAX=2400;
   const seed=()=>{try{return window.crypto.getRandomValues(new Uint32Array(1))[0];}catch(_){return (Date.now()+Math.random()*0x100000000)>>>0;}};
-  const labelId=n=>'WC-'+n.toString(16).toUpperCase().padStart(8,'0');
-  const newState=()=>({v:1,seed:seed(),step:'predict',prediction:null,generations:{baseline:0,corridor:0},crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:0});
+  const labelId=n=>'WC-AA-'+n.toString(16).toUpperCase().padStart(8,'0');
+  const newState=()=>({v:1,model:'Aa',seed:seed(),step:'predict',prediction:null,generations:{baseline:0,corridor:0},crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:0});
   const text=value=>typeof value==='string'?value.slice(0,MAX):'';
   const choice=value=>Object.prototype.hasOwnProperty.call(PRED,value);
   let session;
   try{session=saveAPI?.open(window.localStorage,SCOPE,[KEY]);}catch(_){}
   const reportIdentity=saveAPI?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
-  let state=newState(), badRecord=false, warned='', selected=false, process='', timer=0;
+  let state=newState(), badRecord=false, oldRecord=false, warned='', selected=false, process='', timer=0;
   let models={};
   function decode(raw){
     const s=JSON.parse(raw), a=s?.generations?.baseline, b=s?.generations?.corridor;
     const valid=n=>Number.isInteger(n)&&n>=0&&n<=END;
-    if(s?.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||!valid(a)||!valid(b)||![-1,1].includes(s.crossing)||
+    if(s?.v===1&&s.model===undefined){oldRecord=true;return newState();}
+    if(s?.model!=='Aa'||s?.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff||!valid(a)||!valid(b)||![-1,1].includes(s.crossing)||
        ((s.crossing===1||b>0)&&a!==END)||(b>0&&s.crossing!==1))throw Error('Unrecognized investigation');
     const prediction=choice(s.prediction?.choice)&&text(s.prediction.reason).trim()?{choice:s.prediction.choice,reason:text(s.prediction.reason)}:null;
     if(a>0&&!prediction)throw Error('Unrecognized investigation');
-    return {v:1,seed:s.seed,step:STEPS.includes(s.step)?s.step:'predict',prediction,generations:{baseline:a,corridor:b},crossing:s.crossing,
+    return {v:1,model:'Aa',seed:s.seed,step:STEPS.includes(s.step)?s.step:'predict',prediction,generations:{baseline:a,corridor:b},crossing:s.crossing,
       claim:text(s.claim),limits:text(s.limits),finished:s.finished===true&&b===END&&!!text(s.claim).trim()&&!!text(s.limits).trim(),
       lastVisitedAt:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0};
   }
@@ -50,7 +51,7 @@
     if(msg!==warned){warned=msg;announce(msg);}
     return false;
   }
-  function saved(){warned='';show('save-warning',false);set('save','Saved on this device');reportIdentity();return true;}
+  function saved(){oldRecord=false;warned='';show('save-warning',false);set('save','Saved on this device');reportIdentity();return true;}
   function save(){
     state.lastVisitedAt=Date.now();
     if(badRecord)return notSaved('invalid');
@@ -76,14 +77,15 @@
   }
   const conditionSummary=id=>M.summarize(models[id]);
   const experimentIds=()=>state.generations.corridor>0?CONDITIONS:state.generations.baseline>0?CONDITIONS.slice(0,2):[];
-  const diversity=(s,i)=>Number(s.patches[i].diversity);
-  const copies=(s,i,variant)=>Number(s.patches[i].variantCounts?.[variant]??0);
+  const copies=(s,i,allele)=>Number(s.patches[i].variantCounts[allele]);
+  const gap=s=>Math.abs(copies(s,0,'A')-copies(s,1,'A'));
+  const patchCounts=(s,i)=>copies(s,i,'A')+' A, '+copies(s,i,'a')+' a';
   const recordedIds=()=>experimentIds().filter(id=>models[id].generation===END);
-  const finalRows=(ids=recordedIds())=>ids.map(id=>{
-    const s=conditionSummary(id);
-    return [LABEL[id],diversity(s,0),diversity(s,1),copies(s,1,'A'),copies(s,0,'D')];
-  });
-  const endHeaders=['Habitat at generation '+END,'West: different variants','East: different variants','East: copies of A','West: copies of D'];
+  const stats=s=>[patchCounts(s,0),patchCounts(s,1),gap(s),s.crossPatchContributions];
+  const finalRows=(ids=recordedIds())=>ids.map(id=>[LABEL[id],...stats(conditionSummary(id))]);
+  const headers=['West: allele copies','East: allele copies','Gap in A copies','Copies from the other side'];
+  const endHeaders=['Habitat at generation '+END,...headers];
+  const startingNote='At the start: West had 20 A and 4 a; East had 4 A and 20 a. Each patch has 24 copies total. A smaller gap means the two patches are more similar.';
   function table(host,caption,cols,rows){
     if(!host)return;
     const t=make('table',null,'wc-data-table'), h=make('thead'), hr=make('tr'), body=make('tbody');
@@ -96,19 +98,76 @@
     }
     host.append(t);
   }
+  // Show two inherited copies from one real offspring record, not a separate simulation.
+  // The path represents inheritance; it does not imply that an allele crosses a road alone.
+  function renderMix(host, detail, animate=true){
+    if(!host)return;
+    if(!detail||!detail.generation||!detail.alleles?.every(a=>a==='A'||a==='a')||
+       detail.alleles.length!==2||detail.origins?.length!==2){
+      host.hidden=true;
+      delete host.dataset.wcMixKey;
+      return;
+    }
+    const {condition,patch,alleles,origins,generation}=detail;
+    const key=JSON.stringify([condition,patch,generation,detail.animal,alleles,origins]);
+    host.hidden=false;
+    if(host.dataset.wcMixKey===key)return;
+    host.dataset.wcMixKey=key;
+    const zone=p=>p===0?'West':'East';
+    const names={connected:'Connected habitat',road:'Road, no crossing',corridor:'Road with crossing'};
+    const genotype=alleles.includes('A')?(alleles.includes('a')?'A/a':'A/A'):'a/a';
+    const otherCount=origins.filter(origin=>origin!==patch).length;
+    const traffic=otherCount>0?(condition==='corridor'?'A parent from the other side can contribute a copy when the crossing connects the patches.':
+      'A parent from the other patch contributed a copy. That’s gene flow.'):
+      'Both copies in this offspring came from parents in the same patch.';
+    const heading=make('h3','Watch inheritance');
+    const sub=make('p',(names[condition]||'Modeled habitat')+' · Generation '+generation+' · '+zone(patch)+' offspring','wc-mix-context');
+    const path=make('div',null,'wc-mix-grid');
+    path.setAttribute('aria-hidden','true');
+    path.dataset.animated=String(animate);
+    for(let i=0;i<2;i++){
+      const origin=origins[i], allele=alleles[i], other=origin!==patch;
+      const parent=make('div',null,'wc-mix-parent');
+      parent.append(make('strong','Parent '+(i+1)),make('span',zone(origin)+' patch','wc-mix-location'),
+        make('span',allele,'wc-mix-allele'));
+      const lane=make('div',null,'wc-mix-lane');
+      lane.dataset.other=String(other);
+      if(other&&condition==='corridor')lane.dataset.road='true';
+      const travel=make('span',null,'wc-mix-travel');
+      travel.append(make('span',allele,'wc-mix-allele'));
+      lane.append(travel);
+      path.append(parent,lane);
+    }
+    const offspring=make('div',null,'wc-mix-offspring');
+    offspring.append(make('strong','Offspring'),make('span',genotype,'wc-mix-genotype'),make('span',zone(patch)+' patch','wc-mix-location'));
+    path.append(offspring);
+    const summary=make('p',zone(origins[0])+' parent passes '+alleles[0]+'. '+zone(origins[1])+' parent passes '+alleles[1]+
+      '. Their offspring in the '+zone(patch)+' patch is '+genotype+'. '+traffic,'wc-mix-summary');
+    host.replaceChildren(heading,sub,path,summary);
+  }
+  function showInheritance(replay=false){
+    const id=state.generations.corridor>0?'corridor':'connected';
+    const m=models[id], host=by('mix');
+    if(!host)return;
+    if(!m.generation){renderMix(host,null);show('replay-mix',false);return;}
+    const individuals=m.patches.flatMap((patch,zone)=>patch.map((animal,i)=>({...animal,patch:zone,animal:i})));
+    const animal=individuals.find(a=>a.origins.some(origin=>origin!==a.patch))||individuals[0];
+    if(replay)delete host.dataset.wcMixKey;
+    renderMix(host,{...animal,condition:id,generation:m.generation},!reduced());
+    show('replay-mix',true);
+  }
   function renderMap(id,board){
     const m=models[id], s=conditionSummary(id), map=by('map-'+board), layer=by('tokens-'+board);
     if(!map||!layer)return;
-    set('map-'+board+'-readout',LABEL[id]+' · Generation '+m.generation+' · West: '+diversity(s,0)+' variants · East: '+diversity(s,1)+
-      ' variants'+(m.generation?' · '+s.crossPatchContributions+' copies inherited from the other patch':''));
+    set('map-'+board+'-readout',LABEL[id]+' · Generation '+m.generation+' · West: '+patchCounts(s,0)+' · East: '+patchCounts(s,1)+(m.generation?' · '+s.crossPatchContributions+' copies inherited from the other patch':''));
     layer.replaceChildren();
     layer.setAttribute('aria-hidden','true');
     layer.classList.toggle('wc-tokens-moving',!!process);
     for(const [patch,individuals] of m.patches.entries()){
       for(const [i,a] of individuals.entries()){
-        const dot=make('span',a.alleles.join(''),'wc-token'), x=(patch===0?10:60)+(i%4)*9.5, y=37+Math.floor(i/4)*14;
+        const dot=make('span',a.alleles.slice().sort().join('/'),'wc-token'), x=(patch===0?10:60)+(i%4)*9.5, y=37+Math.floor(i/4)*14;
         dot.style.setProperty('--wc-x',x+'%');dot.style.setProperty('--wc-y',y+'%');
-        dot.dataset.variant=a.alleles[0];
+        dot.dataset.coat=a.alleles.includes('A')?'dark':'light';
         if(a.origins?.some(origin=>origin!==patch))dot.dataset.connected='true';
         layer.append(dot);
       }
@@ -120,19 +179,19 @@
     const ids=experimentIds(), host=by('results'), next=by('explain-evidence');
     if(host){
       host.replaceChildren();
-      if(!ids.length)host.append(make('p','Run the matched habitats to see how many different variants remain.','wc-note'));
+      if(!ids.length)host.append(make('p','Run the matched habitats to see how many copies of A and a each patch has.','wc-note'));
       else {
-        table(host,'Latest result in each modeled habitat',['Habitat','Generation','West variants','East variants','East copies of A','West copies of D'],ids.map(id=>{
-          const s=conditionSummary(id);return [LABEL[id],models[id].generation,diversity(s,0),diversity(s,1),copies(s,1,'A'),copies(s,0,'D')];
+        table(host,'Latest result in each modeled habitat',['Habitat','Generation',...headers],ids.map(id=>{
+          const s=conditionSummary(id);return [LABEL[id],models[id].generation,...stats(s)];
         }));
-        host.append(make('p','“Variants” means different kinds present, not total copies. At the start, A is only in the West and D is only in the East.','wc-note'));
+        host.append(make('p',startingNote,'wc-note'));
       }
     }
     if(next){
       next.replaceChildren();
       if(state.generations.corridor===END){
         table(next,'Your evidence · same starting animals, '+END+' generations',endHeaders,finalRows());
-        next.append(make('p','Both patches began with 3 different variants and still hold '+M.PATCH_SIZE+' animals each. At the start, the East had 0 copies of A and the West had 0 copies of D.','wc-note'));
+        next.append(make('p',startingNote,'wc-note'));
       }
     }
   }
@@ -165,6 +224,7 @@
   function render(){
     renderMap('connected','connected');
     renderMap(state.generations.corridor>0?'corridor':'road','road');
+    showInheritance();
     renderResults();
     gates();
     const lock=state.generations.baseline>0||!!process;
@@ -203,10 +263,10 @@
           'Crossing run complete. Open Explain to compare your three results.');
         return;
       }
-      timer=window.setTimeout(step,520);
+      timer=window.setTimeout(step,1000);
     };
     // Save each observed generation so reloading never wipes a partial run.
-    timer=window.setTimeout(step,reduced()?0:520);
+    timer=window.setTimeout(step,reduced()?0:1000);
   }
   function selectTile(next){
     if(state.generations.baseline!==END||state.generations.corridor>0||process==='corridor')return;
@@ -238,19 +298,19 @@
     if(!state.claim.trim())missing.push('Write your evidence-based claim.');
     if(!state.limits.trim())missing.push('Explain a limit of the model.');
     if(!state.finished)missing.push('Choose Finish investigation.');
-    const notes=[{type:'text',text:'All values come from a seeded classroom model of fictional animals. Each patch has '+M.PATCH_SIZE+' animals with two inherited copies each. Population size is held fixed, so the differences are in gene flow and local variety, not survival.'}];
+    const notes=[{type:'text',text:'All values come from a seeded classroom model of fictional animals. Each patch has '+M.PATCH_SIZE+' animals with two inherited copies each. Population size is held fixed, so the differences are in allele counts and gene flow, not survival. A is dominant for coat appearance only.'}];
     for(const id of experimentIds()){
       const m=models[id];
-      const rows=m.history.map(s=>[s.generation,diversity(s,0),diversity(s,1),copies(s,1,'A'),copies(s,0,'D')]);
+      const rows=m.history.map(s=>[s.generation,...stats(s)]);
       notes.push({type:'table',title:LABEL[id]+' · generation record',columns:['Generation',...endHeaders.slice(1)],rows});
     }
     const student=reportIdentity()||{};
     return {title:'Wildlife Corridor Lab',unit:'OpenSciEd Biology B.4 · Lessons 8–9 supplemental',source:'Independent OpenSciEd companion by Robert Smitka. Fictional habitat and modeled inheritance, not field data.',
       status:badRecord||!session?.check(KEY)?.ok?'recovery':missing.length?'draft':'final',missing,
       student:{name:student.name||'',period:student.period||''},datasetId:labelId(state.seed),keyResults:finalRows().map(row=>({
-        label:row[0]+' · generation '+END,value:row[1]+' west; '+row[2]+' east',note:'Different gene variants in each patch.'})),
+        label:row[0]+' · generation '+END,value:'West: '+row[1]+'; East: '+row[2],note:'Gap: '+row[3]+' A copies. '+row[4]+' copies from the other side in this generation.'})),
       sections:[{title:'My prediction and explanation',items:[
-        {type:'answer',prompt:'Which setup will leave more different variants in each patch?',value:PRED[state.prediction?.choice]||''},
+        {type:'answer',prompt:'Which setup will make the allele counts more similar across the two patches?',value:PRED[state.prediction?.choice]||''},
         {type:'answer',prompt:'What is your prediction based on?',value:state.prediction?.reason||''},
         {type:'answer',prompt:'What does your comparison show? Cite numbers from two setups.',value:state.claim},
         {type:'answer',prompt:'What can’t this model tell you about a real crossing?',value:state.limits}
@@ -277,6 +337,7 @@
     state.prediction={choice:pick.value,reason};go('model');render();
     if(save())announce('Prediction saved. Run the matched habitats.');
   });
+  by('replay-mix')?.addEventListener('click',()=>showInheritance(true));
   by('run-baseline')?.addEventListener('click',()=>play('baseline'));
   by('run-crossing')?.addEventListener('click',()=>play('corridor'));
   by('crossing-tile')?.addEventListener('click',()=>selectTile(!selected));
@@ -323,6 +384,7 @@
   const initial=location.hash.slice(1);
   go(available(initial)?initial:available(state.step)?state.step:'predict',{focus:false});
   render();monitor();
+  if(oldRecord)announce("This model now uses A and a. The older preview used a different question, so start with a fresh prediction.");
   const report=window.OpenSciEdSubmission?.mount({target:'#wc-report',collect:submissionReport,filename:'wildlife-corridor-investigation'});
   by('recovery')?.addEventListener('click',()=>report?.open());
 })();

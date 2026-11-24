@@ -46,6 +46,12 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
           await shot('mid-run','map-connected');
         }
         await waitFor('baseline',8);
+        assert.match(await by('mix').textContent(),/Parent 1.*Parent 2.*Offspring/s);
+        assert.match(await by('mix').textContent(),/A\/A|A\/a|a\/a/);
+        await act(by('replay-mix'));
+        const motion=await by('mix').locator('.wc-mix-travel').first().evaluate(e=>getComputedStyle(e).animationName);
+        assert.equal(motion,desktop?'wc-inherit-copy':'none');
+        await shot('inheritance','mix');
         await shot('baseline','map-road');
         const slot=page.getByRole('button',{name:'Place crossing between the two trail ends'});
         assert.equal(await page.locator('[data-wc-crossing-slot]').count(),1,'only the connection between the trails can accept the crossing');
@@ -65,11 +71,11 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
         await act(by('run-crossing'));await waitFor('corridor',8);
         await act(step('explain'));
         const evidence=by('explain-evidence');
-        const rows=await evidence.locator('tbody tr').evaluateAll(rows=>rows.map(r=>[...r.cells].slice(1).map(c=>Number(c.textContent))));
+        const rows=await evidence.locator('tbody tr').evaluateAll(rows=>rows.map(r=>[...r.cells].slice(1).map(c=>c.textContent)));
         const {seed}=await saved();
         assert.deepEqual(rows,['connected','road','corridor'].map(id=>{
-          const [west,east]=M.run(seed,id).history.at(-1).patches;
-          return [west.diversity,east.diversity,east.variantCounts.A,west.variantCounts.D];
+          const s=M.run(seed,id).history.at(-1), [west,east]=s.patches.map(p=>p.variantCounts);
+          return [west.A+' A, '+west.a+' a',east.A+' A, '+east.a+' a',String(Math.abs(west.A-east.A)),String(s.crossPatchContributions)];
         }));
         await by('claim').fill('I used two of the simulated counts.');
         await by('limits').fill('There are no measurements of real survival in the model.');

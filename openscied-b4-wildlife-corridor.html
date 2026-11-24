@@ -29,7 +29,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b4-wildlife-corridor.css">
+<link rel="stylesheet" href="openscied-b4-wildlife-corridor.css?v=alleles">
 <link rel="stylesheet" href="openscied-submission-report.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -41,7 +41,7 @@
     <div class="wc-hero-copy">
       <p class="wc-kicker">Unit 4 · Lessons 8–9 supplement</p>
       <h1>Wildlife Corridor Lab</h1>
-      <p>One landscape. Two habitat patches. What happens to genetic variety when a road splits them?</p>
+      <p>One landscape. Two habitat patches. How does a road change the mix of alleles on each side?</p>
     </div>
     <div class="wc-hero-art" aria-hidden="true">
       <img src="assets/wildlife-corridor-landscape.svg" width="600" height="360" alt="">
@@ -84,7 +84,7 @@
       </article>
       <form class="wc-panel wc-prediction" id="wc-prediction-form">
         <fieldset>
-          <legend>After eight generations, where do you think each patch will have more different gene versions?</legend>
+          <legend>After eight generations, which setup will make allele counts more similar between West and East?</legend>
           <label><input type="radio" name="wc-prediction" value="connected" required> In the connected habitat</label>
           <label><input type="radio" name="wc-prediction" value="divided"> In the road-split habitat</label>
           <label><input type="radio" name="wc-prediction" value="same"> About the same</label>
@@ -100,12 +100,12 @@
   <section class="wc-stage" id="wc-model" data-wc-step="model" aria-labelledby="wc-model-title" hidden>
     <header class="wc-heading"><div><p class="wc-kicker">02 · Run the model</p><h2 id="wc-model-title" tabindex="-1">Test a connection</h2></div><span class="wc-pill">Fictional landscape · <span id="wc-dataset">Dataset</span></span></header>
     <div class="wc-runbar wc-panel">
-      <div><h3>1. Compare both maps</h3><p>Start each map with the same animals. Look at which gene versions are present in each patch as you run eight generations.</p></div>
+      <div><h3>1. Compare both maps</h3><p>Start each map with the same animals. Compare how common A and a are on each side as you run eight generations.</p></div>
       <button type="button" class="btn btn--primary" id="wc-run-baseline">Run both maps</button>
     </div>
-    <p class="wc-genetics-key"><strong>Read an animal marker:</strong> <span class="wc-allele-sample">AB</span> means one copy of A and one of B. A, B, C, and D are versions of the same gene, called <strong>alleles</strong>. A double outline marks an animal that inherited a copy from a parent in the other patch.</p>
+    <p class="wc-genetics-key"><strong>Read an animal marker:</strong> The slash separates the two inherited copies. <strong>A/A</strong> and <strong>A/a</strong> show a dark coat because <strong>A</strong> is dominant. <strong>a/a</strong> shows a light coat. Neither coat gives an advantage in this model. A double outline shows an animal that inherited a copy from a parent in the other patch.</p>
     <ul class="wc-key" aria-label="Map key">
-      <li><span class="wc-key-animal" aria-hidden="true">AB</span> Animal with two copies</li>
+      <li><span class="wc-key-animal" aria-hidden="true">A/a</span> Animal with two copies</li>
       <li><span class="wc-key-trail" aria-hidden="true"></span> Trail</li>
       <li><span class="wc-key-road" aria-hidden="true"></span> Road</li>
       <li><span class="wc-key-bridge" aria-hidden="true"></span> Wildlife crossing</li>
@@ -139,6 +139,8 @@
       </button>
       <button type="button" class="btn btn--primary" id="wc-run-crossing" disabled>Run with crossing</button>
     </div>
+    <figure class="wc-panel wc-mix" id="wc-mix" aria-label="Inheritance example" hidden></figure>
+    <button type="button" class="btn" id="wc-replay-mix" aria-controls="wc-mix" hidden>Replay inheritance example</button>
     <article class="wc-panel wc-evidence" aria-labelledby="wc-results-title">
       <h3 id="wc-results-title">Your model results</h3>
       <div id="wc-results"><p>Run both maps to start your record.</p></div>
@@ -155,7 +157,7 @@
         <p class="wc-callout"><strong>Movement is not gene flow by itself.</strong> Gene flow happens when a gene version from one population is passed to offspring in another. Here we model that inheritance. We do not count real animals crossing a road.</p>
       </article>
       <div class="wc-panel wc-writing">
-        <label for="wc-claim"><strong>Make a claim.</strong> How did the crossing affect which gene versions showed up in each patch? Compare the road without and with a crossing using at least two counts.</label>
+        <label for="wc-claim"><strong>Make a claim.</strong> How did the crossing affect the difference in A copies between the two patches? Compare the road without and with a crossing using at least two counts.</label>
         <textarea id="wc-claim" rows="4" maxlength="2400"></textarea>
         <label for="wc-limits"><strong>Look beyond the model.</strong> What else would you need to observe before claiming that a real crossing helps gene versions move between populations?</label>
         <textarea id="wc-limits" rows="4" maxlength="2400"></textarea>
@@ -168,7 +170,7 @@
 
   <div class="wc-footerbar"><p id="wc-save">Progress stays in this browser. A report is a separate classroom copy.</p><button type="button" class="btn btn--ghost" id="wc-reset">Start over…</button></div>
   <details class="wc-limits"><summary>What this model does and does not show</summary>
-    <p><strong>Schematic maps:</strong> The maps are invented and not to scale. Each patch stays at 12 animals so you can focus on genetic variety, not changes in population size. The four gene versions have no modeled effect on survival or reproduction. The model gives the three habitats different chances to inherit a copy from the other patch. Those chances are classroom settings, not wildlife measurements. No traffic deaths, mate choices, or estimates of real crossing use are modeled.</p>
+    <p><strong>Schematic maps:</strong> The maps are invented and not to scale. Each patch stays at 12 animals so you can focus on allele counts, not changes in population size. These two alleles affect modeled coat appearance but not survival or reproduction. The model gives the three habitats different chances to inherit a copy from the other patch. Those chances are classroom settings, not wildlife measurements. No traffic deaths, mate choices, or estimates of real crossing use are modeled.</p>
     <p><strong>Model settings, not measured rates:</strong> For each inherited copy, the chance of sampling a parent from the other patch is 25% in the connected habitat, 0% with the road alone, and 10% with the crossing. These settings don’t predict how many wild animals cross a road.</p>
   </details>
   <div id="wc-report"></div>
@@ -187,7 +189,7 @@
 <script src="lab.js"></script>
 <script src="openscied-save-session.js"></script>
 <script src="openscied-submission-report.js"></script>
-<script src="openscied-b4-wildlife-corridor-logic.js"></script>
-<script src="openscied-b4-wildlife-corridor.js"></script>
+<script src="openscied-b4-wildlife-corridor-logic.js?v=alleles"></script>
+<script src="openscied-b4-wildlife-corridor.js?v=alleles"></script>
 </body>
 </html>

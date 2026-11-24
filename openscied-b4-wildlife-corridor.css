@@ -44,7 +44,7 @@
 .wc-key {display:flex;flex-wrap:wrap;align-items:center;gap:.32rem 1rem;padding:0;margin:.36rem 0 .58rem;list-style:none;color:var(--muted);font-size:.86rem;}
 .wc-key li {display:flex;align-items:center;gap:.35rem;min-width:0;}
 .wc-key li span,.wc-tile-icon {display:inline-block;width:22px;height:15px;flex:none;border-radius:2px;}
-.wc-key .wc-key-animal,.wc-allele-sample {display:inline-grid;place-items:center;width:23px;height:17px;border-radius:4px;background:#e8deb2;color:#152c32;border:1.5px solid #153035;outline:1px solid #9d8958;font:800 .64rem/1 var(--f-mono,monospace);} .wc-allele-sample{vertical-align:baseline;}
+.wc-key .wc-key-animal,.wc-allele-sample {display:inline-grid;place-items:center;width:27px;height:17px;border-radius:4px;background:#e8deb2;color:#152c32;border:1.5px solid #153035;outline:1px solid #9d8958;font:800 .64rem/1 var(--f-mono,monospace);} .wc-allele-sample{vertical-align:baseline;}
 .wc-genetics-key {margin:.42rem 0 .54rem;color:var(--ink);font-size:.91rem;}
 .wc-key-trail {border-top:3px dotted #ad641e;transform:translateY(6px);}
 .wc-key-road {background:#414852;border:1px solid #8a918b;position:relative;}
@@ -62,8 +62,8 @@
 .wc-terrain-west {inset-inline-start:7px;}.wc-terrain-east {inset-inline-end:7px;}
 .wc-token-layer {position:absolute;z-index:3;inset:0;pointer-events:none;}
 .wc-token {position:absolute;left:var(--wc-x,10%);top:var(--wc-y,60%);display:grid;place-items:center;min-width:21px;min-height:18px;transform:translate(-50%,-50%);border:1.5px solid #153035;border-radius:4px;background:#e8deb2;color:#152c32;box-shadow:0 0 0 1px #fbebc180;font:800 .65rem/1 var(--f-mono,monospace);white-space:nowrap;}
-.wc-token[data-variant="B"]{background:#d6eab1}.wc-token[data-variant="C"]{background:#f4c4b0}.wc-token[data-variant="D"]{background:#b8d9ea}
-.wc-token[data-connected="true"]{border:3px double #063047}
+.wc-token[data-coat="dark"]{background:#26444c;color:#fff3d4}.wc-token[data-coat="light"]{background:#e8deb2;color:#152c32}
+.wc-token[data-connected="true"]{border:3px double #8a6a32}
 .wc-tokens-moving .wc-token {animation:wc-generation-marker .34s ease-out both;}
 @keyframes wc-generation-marker {from{opacity:.38;transform:translate(-50%,-50%) scale(.82)} to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 .wc-slot {position:absolute;z-index:5;left:50%;top:var(--wc-slot-y);transform:translate(-50%,-50%);display:grid;place-items:center;min-width:44px;min-height:44px;padding:0;border:1px dashed #fff6d4;border-radius:50%;background:#142c33cc;color:#fff8de;font:800 .86rem var(--f-mono,monospace);cursor:pointer;}
@@ -111,3 +111,41 @@
  .wc-evidence table {font-size:.8rem;}
 }
 @media(prefers-reduced-motion:reduce){.wc-tokens-moving .wc-token {animation:none;}}
+
+/* A sample from the actual generation: two parent copies arrive at one offspring. */
+.wc-mix {margin:.64rem 0;}
+.wc-mix .wc-mix-context {margin:0 0 .52rem;color:var(--muted);font-size:.87rem;}
+.wc-mix-grid {display:grid;grid-template-columns:minmax(6rem,1fr) minmax(1.75rem,1fr) minmax(5.65rem,1fr);
+  grid-template-rows:repeat(2,minmax(2.5rem,auto));gap:.32rem .26rem;max-width:36rem;}
+.wc-mix-parent,.wc-mix-offspring {display:flex;min-width:0;justify-content:center;gap:.1rem .32rem;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:.22rem .3rem;}
+.wc-mix-parent {grid-column:1;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-content:start;}
+.wc-mix-parent strong,.wc-mix-offspring strong {font-size:.88rem;line-height:1.2;}
+.wc-mix-location {font-size:.75rem;line-height:1.16;color:var(--muted);}
+.wc-mix-parent .wc-mix-location {grid-column:1;}
+.wc-mix-allele,.wc-mix-genotype {display:inline-grid;place-items:center;
+  min-width:1.3rem;min-height:1.3rem;padding:0 .18rem;border:1px solid var(--accent);border-radius:4px;
+  color:var(--ink);background:var(--accent-soft);line-height:1;font-family:var(--f-mono,monospace);font-weight:800;}
+.wc-mix-parent .wc-mix-allele {grid-column:2;grid-row:1 / span 2;}
+.wc-mix-lane {grid-column:2;position:relative;display:grid;align-self:stretch;align-items:center;
+  color:var(--ink);isolation:isolate;}
+.wc-mix-lane::before {content:"";border-top:2px solid currentColor;width:calc(100% - 4px);}
+.wc-mix-lane[data-other="true"]::before {border-top-style:dashed;}
+.wc-mix-lane[data-road="true"] {background:linear-gradient(90deg,transparent 44%,var(--line) 44% 56%,transparent 56%);}
+.wc-mix-lane::after {content:"";position:absolute;inset-inline-end:1px;top:calc(50% - 4px);
+  width:7px;height:7px;border-top:2px solid currentColor;border-right:2px solid currentColor;transform:rotate(45deg);}
+.wc-mix-travel {position:absolute;inset-inline:0;top:50%;transform:translateY(-50%);opacity:0;
+  pointer-events:none;}
+.wc-mix-grid[data-animated="true"] .wc-mix-travel {animation:wc-inherit-copy .39s ease-in-out;}
+.wc-mix-offspring {grid-column:3;grid-row:1 / span 2;flex-direction:column;align-items:center;text-align:center;}
+.wc-mix-grid[data-animated="true"] .wc-mix-genotype {animation:wc-inherit-result .14s .28s ease-out both;}
+.wc-mix .wc-mix-summary {margin:.45rem 0 0;font-size:.88rem;}
+@keyframes wc-inherit-copy {
+  0% {transform:translate(0,-50%);opacity:0;}
+  16%,82% {opacity:1;}
+  100% {transform:translate(calc(100% - 1.3rem),-50%);opacity:0;}
+}
+@keyframes wc-inherit-result {from{transform:scale(.88);} to{transform:scale(1);}}
+@media(prefers-reduced-motion:reduce){
+  .wc-mix-grid[data-animated="true"] :is(.wc-mix-travel,.wc-mix-genotype) {animation:none;}
+}
