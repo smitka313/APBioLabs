@@ -7,6 +7,7 @@
     try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
     catch (_) { return null; }
   })();
+  const reportStudent = saveAPI?.reportIdentity?.(saveSession, [KEY], () => window.Lab?.identity?.get?.() ?? null);
   const unavailableSave = { ok:false, reason:'unavailable' };
   function showSaveProblem(result, focus = false) {
     const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
@@ -466,7 +467,7 @@
     return lines.join('\n')+'\n';
   }
   function displayIdentity(){
-    const shared=window.Lab?.identity?.get?.() ?? {};
+    const shared=reportStudent?.() ?? {};
     return Object.fromEntries(['name','period'].map(k=>[k,state.person[k].trim() || str(shared[k],k==='name'?100:24)]));
   }
   function syncIdentity(){

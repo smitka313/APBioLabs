@@ -71,6 +71,7 @@
   const scope='b4-hawksbeard', guard=window.OpenSciEdSaveSession;
   let session;
   try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
+  const sharedReportIdentity=guard?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.() ?? null) ?? (()=>null);
   let state = fresh(), preserved = false, blocked = false, running = false, frame = 0, trial;
   let warned='';
   try {
@@ -93,6 +94,7 @@
   }
   function saved() {
     blocked=false;preserved=false;warned='';
+    sharedReportIdentity();
     $('#hb-save-warning').hidden=true;
     setText('#hb-save-status','Work saved on this device');
     return true;
@@ -566,7 +568,7 @@
     });
   }
   function reportPerson() {
-    const shared=window.Lab?.identity?.get?.() || {};
+    const shared=sharedReportIdentity() || {};
     return {...shared,...state.person};
   }
   function fillPerson() {
@@ -672,6 +674,7 @@
   }
   rememberDisclosure($('#hb-method'));
   $('#hb-release-next')?.addEventListener('click',release);
+  window.addEventListener('beforeprint',fillPerson);
   $('#hb-download')?.addEventListener('click',download);
   $('#hb-download-tab')?.addEventListener('click',download);
   $('#hb-copy')?.addEventListener('click',()=>copyText(false));

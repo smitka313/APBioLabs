@@ -44,6 +44,7 @@
     try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
     catch (_) { return null; }
   })();
+  const reportStudent = saveAPI?.reportIdentity?.(saveSession, [KEY], () => window.Lab?.identity?.get?.() ?? null);
   const unavailableSave = { ok:false, reason:'unavailable' };
   function showSaveProblem(result, focus = false) {
     const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
@@ -96,7 +97,7 @@
   function announce(text) { const e = $('#step-announcement'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function copy(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
-  function studentIdentity() { return window.Lab && Lab.identity ? Lab.identity.get() : null; }
+  function studentIdentity() { return reportStudent?.() ?? null; }
   const num = x => typeof x === 'number' && isFinite(x);
 
   /* ---------- saved state ---------- */

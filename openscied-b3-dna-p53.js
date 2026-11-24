@@ -52,6 +52,7 @@
     try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
     catch (_) { return null; }
   })();
+  const reportStudent = saveAPI?.reportIdentity?.(saveSession, [KEY], () => window.Lab?.identity?.get?.() ?? null);
   const unavailableSave = { ok:false, reason:'unavailable' };
   function showSaveProblem(result, focus = false) {
     const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
@@ -111,7 +112,7 @@
   };
   for (const k of CHECK_ROWS) { OLD_LABELS['cl-' + k + '-have'] = 'Checklist (' + k + '): evidence I have'; OLD_LABELS['cl-' + k + '-need'] = 'Checklist (' + k + '): evidence I need'; }
 
-  function studentIdentity() { return window.Lab && Lab.identity ? Lab.identity.get() : null; }
+  function studentIdentity() { return reportStudent?.() ?? null; }
   function hash32(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function announce(text) { const el = $('#step-announcement'); if (!el) return; el.textContent = ''; setTimeout(function () { el.textContent = text; }, 30); }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }

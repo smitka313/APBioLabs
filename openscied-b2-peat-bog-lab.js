@@ -23,6 +23,7 @@
   const KEY = 'aplab:openscied:b2-peat-bog:v1';
   const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b2-peat-bog-lab';
   const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [KEY]); } catch (_) { return null; } })();
+  const reportIdentity = saveAPI?.reportIdentity?.(saveSession, [KEY], studentIdentity) ?? (() => null);
   function readSave() { return saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY); }
   function showSaveConflict(result) {
     const n = document.getElementById('save-conflict');
@@ -36,7 +37,7 @@
     if (!saveSession) return;
     if (event.type === 'storage' && event.key && ![KEY, saveAPI.globalKey, saveAPI.scopeKey(saveScope), saveAPI.resetKey(KEY)].includes(event.key)) return;
     const result = saveSession.check(KEY);
-    if (!result.ok) showSaveConflict(result);
+    if (!result.ok) { showSaveConflict(result); renderStudent(); }
   }
   window.addEventListener('storage', checkSaveConflict);
   window.addEventListener('pageshow', checkSaveConflict);
@@ -870,8 +871,11 @@
         '<dl>' + extra.map(c => '<dt>' + esc(c.label) + '</dt><dd data-trial-detail="' + c.key + '">' + esc(r[c.key]) + '</dd>').join('') + '</dl></article>').join('');
   }
   function renderStudent() {
-    const st = studentIdentity();
-    byId('trial-student').textContent = st && st.name ? 'Student: ' + st.name + (st.period ? ' · Class period: ' + st.period : '') : 'Student name not entered. Sign in on the Biology Companion Activities page before you download or print.';
+    const st = reportIdentity(preservedSave);
+    byId('trial-student').textContent = st?.name
+      ? 'Student: ' + st.name + (st.period ? ' · Class period: ' + st.period : '')
+      : 'No verified student name for this copy.';
+
   }
   function recordTrial(source) {
     const label = state.trialLabel.trim() || L.autoLabel(state.S, source);
@@ -932,9 +936,9 @@
 
   /* ---------- download, print, clear ---------- */
   function payload() {
-    const m = L.model(state.S), who = studentIdentity();
+    const m = L.model(state.S), who = reportIdentity(preservedSave);
     return { format: 'openscied-b2-peat-bog-lab-progress-v1', exportedAt: new Date().toISOString(), student: who, datasetId: window.Lab && Lab.identity && Lab.identity.datasetId ? Lab.identity.datasetId : null,
-      dataNote: 'ALL NUMBERS IN THIS FILE ARE SIMULATED. Rates use a 0-100 teaching scale and are not measurements. The model is a simplified teaching model, not a forecast. Nothing here is personal health information.',
+      dataNote: 'ALL NUMBERS IN THIS FILE ARE SIMULATED. Rates use a 0-100 teaching scale and are not measurements. The model is a simplified teaching model, not a forecast. This file can include the student name and class period. Share it only as your teacher directs.',
       settings: state.S, climate: state.climate, current: { photosynthesis: Math.round(m.P), decomposition: Math.round(m.D), burning: Math.round(m.B), peatCarbon: Math.round(m.N), permafrostPercent: Math.round(m.perm * 100) },
       trials: state.trials.map(function (t, i) { const r = L.trialRow(t, i + 1); return { trial: i + 1, label: r.label, inputs: { tilt: t.tilt, temp: t.temp, co2: t.co2, o2: t.o2, wet: t.wet, burn: t.burn }, outputs: L.trialOutputs(t), recordedAt: t.at ? new Date(t.at).toISOString() : null, simulated: true }; }),
       source: 'Peat Bog Carbon Lab, OpenSciEd Unit B.2 companion, https://biologylabbench.com/openscied-b2-peat-bog-lab' };
@@ -1032,6 +1036,7 @@
     const trialDetails = byId('trial-details');
     let wasDetailsOpen;
     window.addEventListener('beforeprint', function () {
+      renderStudent();
       if (wasDetailsOpen === undefined) wasDetailsOpen = trialDetails.open;
       if (!trialDetails.hidden) trialDetails.open = true;
     });

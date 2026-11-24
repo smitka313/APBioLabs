@@ -59,6 +59,7 @@
     const raw=saveSession?saveSession.read(KEY):localStorage.getItem(KEY);
     if(raw!==null)try{state=decode(raw);}catch(_){invalid=true;}
   } catch(_){blocked=true;}
+  const reportStudent = guard?.reportIdentity?.(saveSession, [KEY], () => window.Lab?.identity?.get?.() ?? null);
   function conflict(result){
     if(!result||result.ok||result.reason==='unavailable')return false;
     const note=E('save-conflict');
@@ -411,7 +412,7 @@
     E('palette').querySelector('button')?.focus({preventScroll:true});
     announce('Last placement removed.');
   }
-  const sharedIdentity=()=>window.Lab?.identity?.get?.()||{};
+  const sharedIdentity=()=>reportStudent?.() || {};
   function refreshIdentity(){
     const signedIn=sharedIdentity();
     for(const key of ['name','period']){

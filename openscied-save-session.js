@@ -119,5 +119,28 @@
     return { read, check, write, reset };
   }
 
-  return Object.freeze({ open, erase, invalidate, isActivityKey, globalKey, scopeKey, resetKey });
+  // Keep recovery labels with the open editor, not whoever signs in next.
+  // The snapshot is in memory only; no identity is added to a saved activity record.
+  function reportIdentity(session, keys, getCurrent) {
+    let trusted = null, conflicted = false;
+    function get(forceRecovery = false) {
+      if (!conflicted && !forceRecovery && session && keys.length) {
+        try {
+          // Read the label first, then check ownership before trusting it.
+          const current = getCurrent();
+          const results = keys.map(key => session.check(key));
+          conflicted = results.some(result => result.reason === 'erased' || result.reason === 'changed');
+          if (!conflicted && results.every(result => result.ok)) {
+            if (typeof current?.name !== 'string' || !current.name.trim()) return null;
+            trusted = { name: current.name, period: typeof current.period === 'string' ? current.period : '' };
+          }
+        } catch (_) { /* No verified current identity; use the last trusted label. */ }
+      }
+      return trusted ? { ...trusted } : null;
+    }
+    get();
+    return get;
+  }
+
+  return Object.freeze({ open, erase, invalidate, isActivityKey, globalKey, scopeKey, resetKey, reportIdentity });
 });

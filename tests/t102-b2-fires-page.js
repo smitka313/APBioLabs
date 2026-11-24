@@ -193,6 +193,41 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
     T.ok(await p.evaluate(() => !!localStorage.getItem('aplab:student')), 'name and class period stay saved');
     await p.close(); await ctx.close();
 
+    // Retired tabs can still export their in-memory work, but must not use the next student's sign-in.
+    for (const startingStudent of [{ name: 'Earlier Test Student', period: '2' }, null]) {
+      const recoveryContext = await browser.newContext();
+      if (startingStudent) await recoveryContext.addInitScript(student => {
+        if (!localStorage.getItem('aplab:student')) localStorage.setItem('aplab:student', JSON.stringify(student));
+      }, startingStudent);
+      const recovery = await recoveryContext.newPage();
+      const otherTab = await recoveryContext.newPage();
+      try {
+        await stub(recovery); await stub(otherTab);
+        await recovery.goto(server.url + PAGE + '#wrapup');
+        await recovery.waitForFunction(() => document.querySelector('#wrapup.is-current .report-student'));
+        await recovery.fill('#wrap-sentence', 'I recorded this before signing out.');
+        await otherTab.goto(server.url + PAGE + '#wrapup');
+        await otherTab.evaluate(k => {
+          if (!OpenSciEdSaveSession.erase(localStorage, null, [k]).ok) throw new Error('Synthetic sign-out could not erase Fires.');
+          localStorage.removeItem('aplab:student');
+          Lab.identity.set({ name: 'Next Test Student', period: '7' });
+        }, KEY);
+        await recovery.locator('#save-conflict').waitFor({ state: 'visible' });
+        await recovery.evaluate(() => { window.print = () => {}; });
+        await recovery.locator('#print-work').click();
+        const reportStudent = await recovery.locator('.report-student').textContent();
+        T.ok(startingStudent ? reportStudent === 'Student: Earlier Test Student · Class period: 2' : /no student name or class period/.test(reportStudent),
+          'printed recovery report uses the opening identity or stays anonymous');
+        const [recoveryFile] = await Promise.all([recovery.waitForEvent('download'), recovery.locator('#download-work').click()]);
+        const recovered = JSON.parse(fs.readFileSync(await recoveryFile.path(), 'utf8'));
+        const rightStudent = startingStudent ? recovered.student?.name === startingStudent.name &&
+          recovered.student?.period === startingStudent.period : recovered.student === null;
+        T.ok(rightStudent && recovered.answers['wrap-sentence'] === 'I recorded this before signing out.' && /can include the student name and class period/.test(recovered.dataNote),
+          'recovery download keeps the original response, protects identity, and explains file privacy');
+        T.ok(await otherTab.evaluate(k => localStorage.getItem(k) === null, KEY), 'exporting the old tab does not recreate the erased record');
+      } finally { await recoveryContext.close(); }
+    }
+
     for (const [w, h, dark] of [[390, 844, true], [1366, 900, false]]) {
       const c = await T.ctxFor(browser, { width: w, height: h, dark });
       const q = await c.newPage();

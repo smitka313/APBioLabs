@@ -23,6 +23,7 @@
   const scope='b4-rat-generations', guard=window.OpenSciEdSaveSession;
   let session;
   try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
+  const sharedReportIdentity=guard?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.() ?? null) ?? (()=>null);
   let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='', warned='';
   function decode(raw) {
     const s=JSON.parse(raw);
@@ -58,6 +59,7 @@
   }
   function saved() {
     invalid=false;writeBlocked=false;warned='';
+    sharedReportIdentity();
     $('#rg-save-warning').hidden=true;set('save','Work saved on this device.');
     return true;
   }
@@ -343,10 +345,13 @@
     announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
     if(model.done)$('#rg-model-analyze').focus({preventScroll:true});
   }
-  const person=()=>({...window.Lab?.identity?.get?.(),...state.person});
+  const person=()=>({...sharedReportIdentity(),...state.person});
   function fill() {
     for(const r of $$('input[name=rg-prediction]'))r.checked=r.value===state.prediction;
     for(const f of $answer)f.value=state.answers[f.dataset.rgAnswer]||'';
+    fillPerson();
+  }
+  function fillPerson(){
     const labels=person();for(const key of Object.keys(fields))$('#rg-'+key).value=labels[key]||'';
   }
   function report(){
@@ -382,6 +387,7 @@
   // Native printing clips text to the textarea's visible rows. Use plain text on paper.
   const printAnswers = [];
   window.addEventListener('beforeprint',()=>{
+    fillPerson();
     for(const [entry,output] of printAnswers)output.textContent=entry.value;
   });
   for(const entry of $answer){

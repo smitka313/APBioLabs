@@ -89,3 +89,53 @@ test('failed marker write does not erase the previous data', () => {
   assert.deepEqual(f.erase(null, [dna]), { ok:false, reason:'unavailable' });
   assert.equal(f.storage.getItem(dna), 'keep');
 });
+
+test('a recovery export keeps the last trusted label after sign-out, without recording identity', () => {
+  const f = fixture({ [carbon]:'{"rows":[4,2]}' });
+  let identity = { name:'First Learner', period:'2', private:'omit' };
+  const get = S.reportIdentity(f.open(C, [carbon]), [carbon], () => identity);
+  assert.deepEqual(get(), { name:'First Learner', period:'2' });
+  identity = { name:'First Learner', period:'3' };
+  assert.equal(get().period, '3', 'an intact editor can pick up a class correction');
+  f.erase(null, [carbon]);
+  identity = { name:'Next Learner', period:'5' };
+  assert.deepEqual(get(), { name:'First Learner', period:'3' });
+  const isolated = get(); isolated.name = 'Changed copy';
+  assert.equal(get().name, 'First Learner', 'export cannot mutate the remembered label');
+  assert.equal(f.data.has(carbon), false);
+  assert.ok([...f.data.values()].every(v => !v.includes('Learner')));
+});
+
+test('anonymous recovery stays unassigned if only a related activity record changed', () => {
+  const f = fixture();
+  let identity = null;
+  const get = S.reportIdentity(f.open(C, [carbon, budget]), [carbon, budget], () => identity);
+  const nextEditor = f.open(C, [budget]);
+  nextEditor.write(budget, '{"trial":7}');
+  identity = { name:'Different Student', period:'6' };
+  assert.equal(get(), null);
+  f.storage.removeItem(budget);
+  assert.equal(get(), null, 'a conflict does not disappear if a record happens to match again');
+});
+
+test('an epoch that changes during the identity lookup cannot relabel the old work', () => {
+  const f = fixture({ [carbon]:'{"rows":[2]}' });
+  let changed = false;
+  const get = S.reportIdentity(f.open(C, [carbon]), [carbon], () => {
+    if (!changed) return {name:'Original',period:'1'};
+    f.erase(null, [carbon]);
+    return {name:'New Name',period:'8'};
+  });
+  changed = true;
+  assert.deepEqual(get(), {name:'Original',period:'1'});
+});
+
+test('a forced recovery uses the captured label without trusting a changed identity', () => {
+  const f = fixture();
+  let identity = {name:'Current',period:'1'};
+  const get = S.reportIdentity(f.open(D, [dna]), [dna], () => identity);
+  identity = {name:'Elsewhere',period:'3'};
+  assert.equal(get(true).name, 'Current');
+  assert.equal(get().name, 'Elsewhere', 'forced recovery does not mark an intact session permanently stale');
+  assert.equal(S.reportIdentity(null, [dna], () => identity)(), null);
+});
