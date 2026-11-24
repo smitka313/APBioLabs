@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="400" viewBox="0 0 960 400" aria-hidden="true">
+<!-- Mt. Laguna-inspired conifer woodland, not a reconstruction or site map. Player lane is centered at y300. -->
+<defs>  <linearGradient id="woods" x1=".3" y1="0" x2=".8" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#365c6c"/><stop offset=".65" stop-color="#92a99c"/><stop offset="1" stop-color="#cbca9d"/></linearGradient>
+  <linearGradient id="ground" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#7a7650"/><stop offset="1" stop-color="#2c3b35"/></linearGradient>
+  <path id="pine" d="M0 0c-3 26-13 45-26 61l20-7c-9 23-27 43-40 49l29-7c-12 24-32 43-50 51l38-7c-14 22-34 43-59 51l73-15v36H9v-37l75 11c-30-14-48-30-62-53l38 10c-26-15-41-31-51-55l28 7C22 85 10 65 6 52l18 6C10 40 4 22 0 0z"/>
+  <g id="needle" fill="none" stroke-linecap="round"><path d="M0 0Q39 9 81 0" stroke="#97754f" stroke-width="3"/><path d="M11 2l11-14M15 3l17 14m-9-13 10-20m-6 20 19 14m-12-15 11-22m-8 23 22 13M46 3l13-22M48 4l23 11M58 3l15-16m-12 16 21 7M68 2l15-9" stroke="#74845a" stroke-width="2.2"/><path d="M18 4l9-9m5 9 17 9m0-9 10-11m5 5 10 7" stroke="#b9ae76" stroke-width="1.5"/></g>
+<linearGradient id="path" x1="0" x2="0" y2="1"><stop stop-color="#beaa74"/><stop offset=".8" stop-color="#978263"/><stop offset="1" stop-color="#726453"/></linearGradient>
+<pattern id="trail" width="77" height="30" patternUnits="userSpaceOnUse"><path d="M23 6h4m31 14h5m-47 5h3m51 0h3" stroke="#675c48" opacity=".42"/><path d="M7 12h3m38-6h4m-8 20h5" stroke="#e7d29c" opacity=".46"/></pattern>
+</defs>
+<path fill="url(#woods)" d="M0 0h960v400H0z"/>
+<path d="m0 226 72-73 54-30 75-74 46 23 44-38 32 28 18-9 117 91 55-35 40 14 67-59 46 24 44-11 118 73 39-12 93 83v100H0z" fill="#a1b3a1"/>
+<path d="m0 226 72-73 54-30 75-74 46 23 44-38 32 28 18-9-20 38-32-9-24 12-23-5-20 13-39 7-47 42-48 18zm513-117 40 14 67-59 46 24 44-11-53 32-37-9-37 32-36 1-25 19-37-24z" fill="#c3d1b6" opacity=".75"/>
+<path d="M0 203q66-20 150 6 66-43 162-24 111-65 223-9 97-53 162-23 92-38 263 15v178H0z" fill="#6e8a75"/>
+<g fill="#456861" opacity=".78">
+ <use href="#pine" transform="translate(114 44) scale(.79 .91)"/><use href="#pine" transform="translate(168 104) scale(.53 .66)"/><use href="#pine" transform="translate(218 119) scale(.42 .55)"/><use href="#pine" transform="translate(334 97) scale(.55 .66)"/><use href="#pine" transform="translate(440 75) scale(.68 .78)"/><use href="#pine" transform="translate(508 93) scale(.53 .77)"/><use href="#pine" transform="translate(609 104) scale(.61 .72)"/><use href="#pine" transform="translate(714 102) scale(.53 .74)"/><use href="#pine" transform="translate(846 72) scale(.82 .87)"/>
+</g>
+<g fill="#304f4a"><use href="#pine" transform="translate(50 20) scale(1.04 1.11)"/><use href="#pine" transform="translate(817 114) scale(.74 .83)"/><use href="#pine" transform="translate(927 8) scale(1.05 1.14)"/></g>
+<path d="M47 37q-5 102 6 216m872-223q-3 101 6 225m-9-141 32-35m-30 89-38-41m39 69 32-34" fill="none" stroke="#a48b68" stroke-width="3.75" opacity=".4"/>
+<path d="M0 235q117-15 225 6 147-33 285-8 127 3 226-18 127 14 224 2v183H0z" fill="url(#ground)"/>
+<path d="M0 257q139 6 246 5 104-9 183-7 139 0 243 1 164 0 288-13v112q-107 15-225 5-219 5-390-1T0 371z" fill="#dbc491"/>
+<path d="M0 271q104 9 228 7 220-18 382-9 175 7 350-12v100q-116 14-226 8-175 5-346 1T0 379z" fill="url(#path)"/>
+<path d="M0 271q104 9 228 7 220-18 382-9 175 7 350-12v100q-116 14-226 8-175 5-346 1T0 379z" fill="url(#trail)"/>
+<path d="M0 272q129 12 224 7 163-14 282-12 156 7 228 3 135 0 226-12M0 374q161-8 331-6 230 0 372 1 167 0 257-12" fill="none" stroke="#efdaa4" stroke-width="2.2" opacity=".57"/>
+<path d="M0 400v-16q99-24 163-5 124-22 249 6 196-14 277-4 164-18 271-8v27z" fill="#455646"/>
+<use href="#needle" transform="translate(25 400) rotate(-68) scale(.92)"/>
+<use href="#needle" transform="translate(57 400) rotate(-128) scale(.78)"/>
+<use href="#needle" transform="translate(952 396) rotate(-134) scale(.90)"/>
+<use href="#needle" transform="translate(932 400) rotate(-160) scale(.82)"/>
+<path d="M0 127q28-32 45-65m-19 47 53-23m846-11 35-36" fill="none" stroke="#5c5b45" stroke-width="4" opacity=".6"/>
+
+</svg>

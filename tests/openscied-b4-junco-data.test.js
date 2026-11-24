@@ -50,3 +50,36 @@ test('the classroom CORT scatterplot is a documented digitization, with no inven
   assert.ok(Math.abs(pearson(rows)**2-published.rSquared)>0.05,
     'the digitized classroom correlation must remain distinct from the published adjusted result');
 });
+
+const flight = require('../openscied-b4-junco-flight.js');
+test('walk-up trials are reproducible, use equal steps between sites, and report the crossed distance',()=>{
+  const seed=23183, sums={};
+  for(const group of ['foraging','incubating']){
+    const increment=group==='foraging'?2:0.2;
+    for(const site of ['urban','mountain']){
+      let sum=0;
+      const outcomes=new Set();
+      for(let id=1;id<=64;id++){
+        const limit=flight.threshold(seed,id,site,group,data.field.rows);
+        const end=flight.endStep(seed,id,site,group,data.field.rows);
+        const reading=flight.distance(group,end);
+        assert.equal(end,flight.endStep(seed,id,site,group,data.field.rows));
+        assert.ok(end>=1&&end<=10);
+        assert.ok(reading<=limit&&limit<reading+increment+1e-9);
+        outcomes.add(reading);sum+=reading;
+      }
+      assert.ok(outcomes.size>1);
+      sums[group+site]=sum;
+    }
+    assert.ok(sums[group+'mountain']>sums[group+'urban']);
+  }
+});
+test('flight notebook restores validated trials and exports them as simulations',()=>{
+  const seed=491,site='mountain',group='foraging';
+  const step=flight.endStep(seed,1,site,group,data.field.rows);
+  const row={id:1,site,group,step};
+  const saved=flight.clean({seed,serial:1,site,group,active:{...row,finished:true},results:[row,row,{...row,step:0}]},data.field.rows);
+  assert.deepEqual(saved.results,[row]);
+  assert.equal(saved.active.finished,true);
+  assert.match(flight.report(saved).join('\n'),/SIMULATED WALK-UP TRIALS.*\nTrial 1:/);
+});

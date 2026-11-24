@@ -29,6 +29,7 @@
       state.aviaryGroup=pick(raw.aviaryGroup,Object.keys(aviaryLabels),'female');
       state.filter=pick(raw.filter,['all',...Object.keys(sites)],'all');
       state.fit=raw.fit===true;
+      if(window.JuncoFlight)state.sim=window.JuncoFlight.clean(raw.sim,D.field.rows);
     }
   }catch(e){canSave=false;}
   function save(){
@@ -163,6 +164,7 @@
     const body=['Junco Investigation — Field report','Published study evidence, not simulated data.','',...evidenceLines(),
       '', 'My observation: '+state.observation,'My prediction: '+(choices[state.prediction]||'Not recorded'),'My reasoning: '+state.reason,
       '', 'Hormone graph: '+view,$('cort-status').textContent,'','My explanation:',state.claim,'','Limits or next question:',state.limits,'',
+      ...(window.JuncoFlight?.report(state.sim)??[]),
       ...[D.field,D.aviary,D.cort].map(d=>d.source+' — '+d.url)].join('\n')+'\n';
     const a=mk('a'),url=URL.createObjectURL(new Blob([body],{type:'text/plain;charset=utf-8'}));
     a.href=url;a.download='junco-field-report.txt';document.body.append(a);a.click();a.remove();
@@ -174,6 +176,7 @@
     const a=mk('a',d.source||['Field data','Aviary data','CORT data'][i]);
     a.href=d.url;if(i)dataSources.append(' · ');dataSources.append(a);
   });
+  if(window.JuncoFlight)window.JuncoFlight.mount({state,field:D.field.rows,save,say});
   const requested=location.hash.slice(1);
   if(steps.includes(requested)&&(requested!=='cort'||state.revealed))state.step=requested;
   draw();

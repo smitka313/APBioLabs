@@ -53,3 +53,30 @@
 .ju-live:empty{display:none}.ju-live:not(:empty){margin:.5rem 0 0;font-size:.86rem}
 @media(max-width:720px){.ju-layout{grid-template-columns:minmax(0,1fr)}.ju-hero{grid-template-columns:minmax(0,1fr)}.ju-cover img{height:clamp(148px,43vw,245px);min-height:0;object-position:center 48%}.ju-nav button{font-size:.79rem;padding:.35rem .14rem}.ju-nav button span{margin-right:.1rem}}
 @media print{.ju-top,.ju-nav,.ju-shell button{display:none!important}.ju-hero,.ju-stage,.ju-sheet,.ju-clipboard{break-inside:avoid}}
+
+/* Virtual field station: drawings are illustrative; the meter reading is the measurement. */
+.ju-sim{margin-bottom:.72rem;border-inline-start:4px solid var(--ju-city)}
+.ju-sim[open]>summary{margin-bottom:.54rem}
+.ju-sim>summary{line-height:1.55}
+.ju-sim>summary .ju-tag{margin-inline:.08rem .35rem}
+.ju-sim-setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:.45rem .75rem}
+.ju-sim-setup label,.ju-sim-setup select{display:block;width:100%}
+.ju-sim-setup .btn{min-height:42px}
+.ju-sim-frame{overflow:hidden;border-radius:8px;border:1px solid var(--ju-line);background:var(--ju-canvas)}
+.ju-sim-frame svg{display:block;width:100%;height:auto;aspect-ratio:12/5}
+.ju-sim-frame figcaption{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.14rem .75rem;padding:.33rem .64rem;color:var(--ju-ink);font-size:.78rem}
+.ju-sim-ruler{stroke:#fdf7dd;stroke-width:4;stroke-dasharray:8 5;filter:drop-shadow(1px 1px 1px #27373e)}
+#ju-sim-observer{transition:transform .28s ease-out}
+.ju-sim-nest,.ju-sim-flight{display:none}
+.ju-sim-frame[data-context=incubating] .ju-sim-nest{display:block}
+#ju-sim-bird[data-state=flying] .ju-sim-standing{display:none}
+#ju-sim-bird[data-state=flying] .ju-sim-flight{display:block;transform:translate(145px,-42px)}
+#ju-sim-bird[data-state=flying].is-launch .ju-sim-flight{animation:ju-takeoff .78s cubic-bezier(.2,.62,.38,1) both}
+@keyframes ju-takeoff{0%{transform:translate(0,0)}45%{transform:translate(96px,-76px)}100%{transform:translate(145px,-42px)}}
+.ju-sim-controls{display:flex;align-items:center;gap:.45rem .85rem;flex-wrap:wrap}
+.ju-sim-controls .btn{min-height:42px}
+.ju-sim-reading{font-variant-numeric:tabular-nums;background:var(--ju-canvas);padding:.37rem .53rem;border-radius:5px;color:var(--ju-ink)}
+#ju-sim-distance{white-space:nowrap}
+#ju-sim-status{font-weight:750;min-height:1.48em}
+@media(max-width:620px){.ju-sim-setup{grid-template-columns:repeat(2,minmax(0,1fr))}.ju-sim-setup .btn{grid-column:1/-1;justify-self:start}}
+@media(prefers-reduced-motion:reduce){#ju-sim-observer{transition:none}#ju-sim-bird[data-state=flying].is-launch .ju-sim-flight{animation:none}}

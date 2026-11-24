@@ -76,6 +76,76 @@ async function download(page,size) {
     'the downloaded file contains the original field observation, claim, and limitation');
 }
 
+async function exerciseFlightSimulation(page,size,label) {
+  const panel=id(page,'ju-field-simulation');
+  const site=id(page,'ju-sim-site'), group=id(page,'ju-sim-context');
+  const start=id(page,'ju-sim-start'), approach=id(page,'ju-sim-approach');
+  const bird=id(page,'ju-sim-bird'), distance=id(page,'ju-sim-distance');
+  const publishedGroup=id(page,'ju-field-group');
+  const publishedTable=id(page,'ju-field-table');
+  const rows=()=>id(page,'ju-sim-trials').locator('tbody tr[data-trial]').evaluateAll(rows=>rows.map(row=>[
+    row.getAttribute('data-trial'),Array.from(row.cells,cell=>cell.textContent.trim())
+  ]));
+  const state=()=>bird.evaluate(el=>el.dataset.state??el.querySelector('[data-state]')?.getAttribute('data-state'));
+  const meters=async()=>{
+    const text=tidy(await distance.textContent());
+    const result=text.match(/(\d+(?:\.\d+)?)\s*(?:m\b|meters?\b)/i);
+    assert.ok(result,label+' simulator distance includes meters: '+text);
+    return Number(result[1]);
+  };
+  const initialGroup=await publishedGroup.inputValue();
+  const published=await plottedMeans(publishedTable);
+  check(!await panel.evaluate(el=>el.open)&&await start.isHidden(),
+    label+' the simulated field visit is optional and not run on load');
+  await activate(panel.locator('summary').first(),size);
+  await start.waitFor({state:'visible'});
+  check((await rows()).length===0,label+' opening the simulation does not invent a trial');
+
+  async function runFlight(n,siteChoice,contextChoice,begin,step) {
+    await site.selectOption(siteChoice);
+    await group.selectOption(contextChoice);
+    await activate(start,size);
+    check(await state()==='stay'&&await meters()===begin&&await start.isDisabled()&&
+      new RegExp('\\bTrial '+n+'\\b','i').test(await id(page,'ju-sim-status').textContent())&&(await rows()).length===n-1,
+    label+' trial '+n+' starts with the bird still perched at '+begin+' m and no extra result');
+    if(n===1) {
+      await fits(page,'#ju-field-simulation, #ju-sim-frame, #ju-sim-start, #ju-sim-approach',label+' running simulator');
+      await shoot(page,label+'-1a-flight-start','ju-sim-frame');
+    }
+    let traveled=begin;
+    for(let attempt=0;attempt<Math.ceil(begin/step)&&await state()==='stay';attempt++) {
+      await activate(approach,size);
+      const now=await meters();
+      assert.ok(Math.abs(now-Math.max(0,traveled-step))<1e-6,
+        label+' each approach in '+contextChoice+' is exactly '+step+' m');
+      traveled=now;
+    }
+    const recorded=await rows();
+    check(await state()==='flying'&&await approach.isDisabled()&&await start.isEnabled()&&
+      recorded.length===n&&recorded.at(-1)[0]===String(n),
+      label+' takeoff in trial '+n+' records exactly once and enables the next trial');
+    const ended=recorded.at(-1)[1];
+    check(new RegExp(siteChoice==='urban'?'San Diego|urban':'Laguna|mountain','i').test(ended.join(' '))&&
+      Math.abs(parseFloat(ended.at(-1))-traveled)<1e-6,
+      label+' the simulated record shows the selected population and measured takeoff distance');
+  }
+
+  await runFlight(1,'urban','foraging',20,2);
+  check(await site.inputValue()==='urban'&&await group.inputValue()==='foraging'&&/next trial/i.test(await start.textContent()),
+    label+' starting another trial is explicit and keeps the chosen settings until changed');
+  await runFlight(2,'mountain','incubating',2,0.2);
+  const completed=await rows();
+  await shoot(page,label+'-1b-flight-finished','ju-sim-frame');
+  await a11y(page,'#ju-field-simulation',label+' optional field simulation');
+  check(await publishedGroup.inputValue()===initialGroup&&
+    JSON.stringify(await plottedMeans(publishedTable))===JSON.stringify(published),
+    label+' the simulated choices and results do not change the published evidence');
+  await page.reload();
+  await id(page,'field').waitFor({state:'visible'});
+  if(!await panel.evaluate(el=>el.open)) await activate(panel.locator('summary').first(),size);
+  check(JSON.stringify(await rows())===JSON.stringify(completed),label+' both completed simulated trials return after reload');
+}
+
 async function exercise(browser,base,size) {
   const label=size.width+(size.dark?'-dark':'-light');
   const context=await browser.newContext({
@@ -111,6 +181,7 @@ async function exercise(browser,base,size) {
         incubating['UC San Diego']===0.36&&incubating['Mt. Laguna']===0.99,
         label+' the field table retains the published figure’s estimated meters under both group choices');
       await id(page,'ju-field-entry').fill(OBSERVATION);
+      await exerciseFlightSimulation(page,size,label);
     }
     await selectStep(page,size,'aviary');
     check(await id(page,'ju-aviary-results').isHidden(),label+' aviary evidence starts concealed');

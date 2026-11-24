@@ -362,10 +362,12 @@
     const answers = ['claim', 'limits'].filter(id => written(saved, id)).length;
     const fallback = revealed ? (answers ? 'cort' : 'aviary') : 'field';
     const section = sections.includes(saved.step) && (saved.step !== 'cort' || revealed) ? saved.step : fallback;
-    if (!prediction && !revealed && !answers && !written(saved,'observation') && section === 'field') return empty;
+    const simulatedTrials = Array.isArray(saved.sim?.results) ? saved.sim.results.length : 0;
+    const flightStarted = Number.isInteger(saved.sim?.serial) && saved.sim.serial > 0;
+    if (!prediction && !revealed && !answers && !written(saved,'observation') && !flightStarted && section === 'field') return empty;
     const stage = { field:'Field notes', aviary:'Shared aviary', cort:'CORT evidence' };
     return { started:true, section, visited:Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
-      summary:[stage[section], revealed ? 'Aviary results viewed' : prediction ? 'Prediction saved' : '', answers ? answers+' of 2 responses written' : ''].filter(Boolean).join(' · ') };
+      summary:[stage[section], simulatedTrials ? simulatedTrials+' simulated '+(simulatedTrials===1?'trial':'trials') : flightStarted ? 'Simulated trial in progress' : '', revealed ? 'Aviary results viewed' : prediction ? 'Prediction saved' : '', answers ? answers+' of 2 responses written' : ''].filter(Boolean).join(' · ') };
   }
   function hawksbeardProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };

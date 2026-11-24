@@ -49,6 +49,51 @@
 
   <section id="field" class="ju-stage" aria-labelledby="ju-field-title">
     <div class="ju-heading"><div><p class="ju-kicker">01 · FIELD OBSERVATIONS</p><h2 id="ju-field-title" tabindex="-1">How close could people get?</h2></div><span class="ju-tag">Evidence A</span></div>
+    <details class="ju-sheet ju-sim" id="ju-field-simulation">
+      <summary><span class="ju-tag">Simulated fieldwork</span> Walk toward a junco</summary>
+      <div class="ju-sim-setup">
+        <label for="ju-sim-site">Population<select id="ju-sim-site"><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label>
+        <label for="ju-sim-context">Observation<select id="ju-sim-context"><option value="foraging">Bird looking for food</option><option value="incubating">Female sitting on eggs</option></select></label>
+        <button type="button" class="btn" id="ju-sim-start">Start trial</button>
+      </div>
+      <p>Move the observer toward the bird, one step at a time. When the bird flies, record how far away the observer was. Start another trial to compare with a different bird or setting.</p>
+      <p class="ju-chart-note">These are simulated birds, not the birds in the published graphs below. The model varies when each bird flies around the published group averages; the amount of variation is illustrative.</p>
+      <figure class="ju-sim-frame" id="ju-sim-frame" data-context="foraging" data-active="false">
+        <svg viewBox="0 0 960 400" aria-hidden="true" focusable="false">
+          <image id="ju-sim-backdrop" href="assets/junco-field-campus.svg" width="960" height="400"/>
+          <g class="ju-sim-ruler" id="ju-sim-gap">
+            <line id="ju-sim-tape" x1="156" x2="781" y1="331" y2="331"/>
+            <path d="M781 324v14" />
+          </g>
+          <g id="ju-sim-observer" transform="translate(156 0)">
+            <ellipse cx="0" cy="299" rx="44" ry="7" fill="#192921" opacity=".27"/>
+            <path d="M-9 242l-13 47h15l13-25 14 25h14L16 240" fill="#2c3945" stroke="#192630" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M-24 291h21m24 0h19" stroke="#192630" stroke-width="9" stroke-linecap="round"/>
+            <path d="M-19 209q15-19 36 0l3 36h-37z" fill="#a55929" stroke="#263338" stroke-width="3"/>
+            <path d="M5 214l20 13 16-7" fill="none" stroke="#a55929" stroke-width="10" stroke-linecap="round"/>
+            <path d="M-17 200q-15 6-15 23v12l14 5" fill="#385b55" stroke="#263338" stroke-width="3"/>
+            <circle cx="-2" cy="184" r="14" fill="#d7a780" stroke="#263338" stroke-width="3"/>
+            <path d="M-18 183q-1-15 15-16 16 0 16 12l11 4z" fill="#385b55" stroke="#263338" stroke-width="2"/>
+          </g>
+          <ellipse class="ju-sim-nest" cx="788" cy="294" rx="55" ry="9" fill="#72553a"/>
+          <g id="ju-sim-bird" data-state="stay">
+            <image class="ju-sim-standing" href="assets/junco-standing.svg" x="716" y="202" width="148" height="100"/>
+            <g class="ju-sim-flight"><image href="assets/junco-flying.svg" x="-74" y="-49" width="148" height="98" transform="translate(790 252) scale(-1 1)"/></g>
+          </g>
+        </svg>
+        <figcaption><span>Observer on the left · Junco on the right</span><span>Scene is not to scale</span></figcaption>
+      </figure>
+      <div class="ju-sim-controls">
+        <button type="button" class="btn btn--primary" id="ju-sim-approach" disabled>Approach one step</button>
+        <span class="ju-sim-reading">Distance: <strong id="ju-sim-distance">—</strong></span>
+      </div>
+      <p id="ju-sim-status">Choose a setting and start a trial.</p>
+      <details class="ju-data" id="ju-sim-record" hidden>
+        <summary>Simulated trial log</summary>
+        <p>Distances are recorded at the first step that made the model bird fly, not at the exact threshold between steps.</p>
+        <table id="ju-sim-trials"><thead><tr><th scope="col">Trial</th><th scope="col">Population</th><th scope="col">Context</th><th scope="col">Takeoff distance</th></tr></thead><tbody></tbody></table>
+      </details>
+    </details>
     <div class="ju-layout">
       <article class="ju-sheet">
         <label for="ju-field-group">Which birds were observed?</label>
@@ -126,11 +171,12 @@
 </main>
 <footer class="site-footer"><div class="wrap wrap--wide gutter">
   <p><strong>Created by Robert Smitka.</strong> Original material licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>.</p>
-  <p>Independent companion to <a href="https://openscied.org/instructional-materials/b-4-natural-selection-evolution/">OpenSciEd High School Biology B.4 Lesson 4</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes include an interactive evidence sequence, redrawn graphs and new writing prompts. Not affiliated with or endorsed by OpenSciEd. AP® is a trademark of the College Board, which does not endorse this site.</p>
+  <p>Independent companion to <a href="https://openscied.org/instructional-materials/b-4-natural-selection-evolution/">OpenSciEd High School Biology B.4 Lesson 4</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. Changes include animated simulated field trials, an interactive evidence sequence, redrawn graphs and new writing prompts. Not affiliated with or endorsed by OpenSciEd. AP® is a trademark of the College Board, which does not endorse this site.</p>
   <p>Student work stays in this browser unless you download a report. Analytics count page visits only.</p>
 </div></footer>
 <script src="lab.js"></script>
 <script src="openscied-b4-junco-data.js"></script>
+<script src="openscied-b4-junco-flight.js"></script>
 <script src="openscied-b4-junco.js"></script>
 </body>
 </html>
