@@ -139,7 +139,7 @@
               <dt>Summer warming from tilt</dt><dd id="fT"></dd>
               <dt class="facts-hi">Summer temperature with tilt</dt><dd class="facts-hi" id="fTemp"></dd>
             </dl>
-            <div><span class="sub">What do 65°N and W/m² mean?</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-tilt" aria-label="What do 65 degrees north and watts per square meter mean?" title="What do 65 degrees north and watts per square meter mean?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-tilt" hidden><b>65°N</b> is a latitude in the Arctic, where many peat bogs are. <b>W/m²</b> (watts per square meter) measures how much sunlight energy hits each square meter of ground. The sun height and sunlight are measured on the longest day of summer.</span></div>
+            <div><span class="sub">What do 65°N and W/m² mean?</span><button class="info" type="button" aria-expanded="false" aria-controls="tip-tilt" aria-label="What do 65 degrees north and watts per square meter mean?" title="What do 65 degrees north and watts per square meter mean?"><span aria-hidden="true">i</span></button><span class="tip" id="tip-tilt" hidden><b>65°N</b> is the model’s chosen latitude, just south of today’s Arctic Circle. <b>W/m²</b> (watts per square meter) measures how much sunlight energy hits each square meter of ground. The sun height and sunlight are measured on the longest day of summer.</span></div>
           </div>
           <div id="sliders" class="sliders"></div>
         </div>
@@ -175,7 +175,7 @@
               <span class="unit">photosynthesis − decomposition − burning</span>
               <div><span class="val" id="nVal">0</span><span class="delta" aria-hidden="true"></span></div>
               <div class="bar net" aria-hidden="true"><span id="nBar"></span></div>
-              <div class="netkey"><span><b class="pos">+</b> Positive: <strong>Carbon sink created</strong></span><span><b class="neg">−</b> Negative: <strong>Carbon source: carbon released to the air</strong></span></div>
+              <div class="netkey"><span><b class="pos">+</b> Positive: <strong>Carbon sink: more carbon enters than leaves</strong></span><span><b class="neg">−</b> Negative: <strong>Carbon source: carbon released to the air</strong></span></div>
               <p id="nText"></p></div>
           </div>
           <div class="rec-row">
@@ -268,7 +268,7 @@
   <section class="step wrap wrap--wide gutter" id="warming" data-step="Global warming">
     <header><div class="eyebrow">5 · Bonus · Earth science connection</div><h2>Carbon dioxide and global warming</h2></header>
     <div class="step-body">
-      <p class="lede">Photosynthesis pulls CO₂ out of the air. Decomposition and burning put it back. Peat, coal, oil, and gas all formed from ancient plants, so burning them releases carbon that photosynthesis stored long ago. When more CO₂ goes into the air than plants and oceans can remove, it builds up and traps heat.</p>
+      <p class="lede">Photosynthesis pulls CO₂ out of the air. Decomposition and burning put it back. Peat and coal form from plant remains. Much oil and natural gas formed from the remains of tiny ocean organisms. Burning these fuels releases stored carbon. When more CO₂ goes into the air than plants and oceans can remove, it builds up and traps heat.</p>
       <div class="climate">
         <div class="panel">
           <div class="ctrl">
@@ -337,7 +337,7 @@
       <details class="disclose trial-details" id="trial-details" hidden><summary>Show inputs and rates for all trials</summary><div class="inner" id="trial-detail-list"></div></details>
       <details class="disclose" open><summary>Investigations to try</summary><div class="inner"><ul class="try">
         <li><b>High tilt</b>Record your starting trial. Then set the tilt to 24.2°, like about 10,700 years ago. What happens to summer sunlight, temperature, and photosynthesis in the Arctic?</li>
-        <li><b>Low tilt</b>Set the tilt to 22.1°. How much of the peat freezes into permafrost? Why can’t decomposers or fire reach frozen peat?</li>
+        <li><b>Low tilt</b>Set the tilt to 22.1°. How much of the peat freezes into permafrost? What happens to the modeled decomposition and burning rates as more peat freezes?</li>
         <li><b>Why peat builds up</b>Set water to 80% and record a baseline. Then lower it to 10%, leaving the other settings unchanged. What happens to the oxygen in the peat, and to decomposition?</li>
         <li><b>Peat fire</b>Set burning to 60%. Record a wet-bog trial and then a dry-bog trial at the same burning setting. Which one releases more CO₂?</li>
         <li><b>Opposites cancel out</b>Find settings where photosynthesis and decomposition are equal and there is no fire. What happens to the peat? Why does carbon stop building up?</li>
@@ -381,7 +381,7 @@
           <article class="panel card-read"><h3>What is modeled</h3><ul>
             <li>Summer sunlight at 65°N from Earth’s tilt, using the standard solstice formula.</li>
             <li>Photosynthesis, decomposition and burning as rates from 0 to 100, set by sunlight, temperature, CO₂, oxygen and water.</li>
-            <li>Frozen peat (permafrost) that decomposers and fire cannot reach.</li>
+            <li>Frozen peat (permafrost) sharply slows decomposition and limits where fire can burn.</li>
             <li>Oxygen reaching the peat, which falls as the water level rises.</li>
             <li>The chance a smoldering fire lasts through the winter.</li>
             <li>A carbon budget to 2100: fossil fuels and land clearing add carbon, plants and oceans remove it, and CO₂ drives warming.</li>
@@ -405,7 +405,7 @@
         </div>
         <details class="disclose"><summary>The rules the model uses</summary><div class="inner"><ul>
           <li><strong>Photosynthesis</strong> = 100 × light × CO₂ × temperature × water × oxygen. Each factor is a number from about 0 to 1.2, and the result is held between 0 and 100. More light and more CO₂ raise it. It peaks near 18 °C. Very dry or very hot bogs slow it.</li>
-          <li><strong>Decomposition</strong> doubles for each 10 °C of warming, rises with oxygen in the peat, and falls toward 0 as the peat freezes.</li>
+          <li><strong>Decomposition</strong> doubles for each 10 °C of warming, rises with oxygen in the peat, and slows sharply as the peat freezes. At 100% frozen, the model still allows a small rate, which can round to 0.</li>
           <li><strong>Burning</strong> rises with the Burning slider and with dry peat and oxygen. It falls to 0 at or below 12% oxygen, and when all of the peat is frozen (a summer temperature of about 3 °C or lower).</li>
           <li><strong>Peat carbon</strong> = photosynthesis − decomposition − burning, worked out from the whole numbers shown, so you can check the subtraction yourself. Above 0 is a carbon sink. Below 0 is a carbon source. Exactly 0 is balanced.</li>
         </ul></div></details>

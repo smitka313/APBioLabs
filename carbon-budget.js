@@ -48,7 +48,7 @@
     <header class="cb-intro">${landscape}<div class="cb-intro-text">
       <p class="cb-eyebrow">B.2 model extension · Simulated</p>
       <h2 id="cb-title" tabindex="-1">Carbon &amp; Energy Budget</h2>
-      <p>Follow carbon and energy through two worlds that start alike. What changes when peat burns?</p>
+      <p>Compare two bogs that start the same. Only one burns. Follow where the carbon goes and how the energy changes form.</p>
     </div></header>
     <div class="cb-setup" id="cb-setup">
       <div class="cb-panel cb-prediction">
@@ -71,6 +71,7 @@
         <textarea id="cb-explanation" rows="4" maxlength="2000" placeholder="My evidence shows…"></textarea>
       </div>
       <div class="cb-evidence" id="cb-explain-evidence"></div>
+      <p class="small cb-report-note">Ready to turn it in? <strong>Preview report</strong> includes your Journey and Budget work. <strong>Download budget evidence</strong> saves just this comparison.</p>
     </section>
     <details class="cb-panel cb-detail" id="cb-log" hidden><summary>Full checkpoint data</summary><div id="cb-log-data"></div></details>
     <details class="cb-panel cb-detail"><summary>What this model tracks</summary>

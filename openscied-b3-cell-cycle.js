@@ -1218,7 +1218,17 @@
     const answered = ids => ids.filter(id => field(id)).length;
     const missing = [];
     if (completed < 2) missing.push('Finish both game rounds, or record an early ending in the game.');
-    if (groups.filter(g => g.trials.length === 3).length < 2) missing.push('Record two full three-trial sets so you can compare results.');
+    const fullSets = groups.filter(g => g.trials.length === 3 &&
+      g.trials.every(t => t.age === g.age && t.size === g.size && t.tissue === g.tissue));
+    const dimensions = [['age','age'], ['size','body size (height)'], ['tissue','cell type']];
+    function controlledPair(setting) {
+      return fullSets.some((a,i) => fullSets.slice(i+1).some(b =>
+        dimensions.every(([key]) => key === setting ? a[key] !== b[key] : a[key] === b[key])));
+    }
+    const readyPairs = dimensions.filter(([setting]) => controlledPair(setting));
+    for (const [setting,label] of dimensions) {
+      if (!controlledPair(setting)) missing.push('Record two full sets that differ only in ' + label + '.');
+    }
     if (answered(MAKING_SENSE_IDS) < MAKING_SENSE_IDS.length) missing.push('Complete the Making Sense responses (' + answered(MAKING_SENSE_IDS) + ' of ' + MAKING_SENSE_IDS.length + ' entered).');
     const analysisIds = ANALYSIS_PROMPTS.map(([,id]) => id);
     if (answered(analysisIds) < analysisIds.length) missing.push('Complete the analysis responses (' + answered(analysisIds) + ' of ' + analysisIds.length + ' entered).');
@@ -1227,6 +1237,8 @@
       status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),keyResults:[
         {label:'Game rounds ended',value:completed + ' of 2'},
         {label:'Recorded growth-model sets',value:groups.length},
+        {label:'Controlled comparisons for the full activity',value:readyPairs.length + ' of 3',
+          note:readyPairs.map(([,label])=>label).join(', ') || 'No one-variable pair recorded yet.'},
         {label:'Written responses entered',value:answered(RESPONSE_IDS) + ' of ' + RESPONSE_IDS.length}
       ],sections:[
         {title:'Cell game evidence',items:[
@@ -1246,7 +1258,8 @@
           ...MAKING_SENSE_PROMPTS.map(answer)
         ]},
         {title:'My analysis and model revision',items:ANALYSIS_PROMPTS.concat([['One model limitation','model-limit']]).map(answer)},
-        {title:'Model limits',items:[{type:'text',text:'The model deliberately accelerates control changes to make a pattern visible. Divisions are modeled DNA-copying opportunities, not observations of people or predictions of cancer.'}]}
+        {title:'Model limits and assignment scope',items:[{type:'text',text:'The model deliberately accelerates control changes to make a pattern visible. Divisions are modeled DNA-copying opportunities, not observations of people or predictions of cancer.'},
+          {type:'text',text:'The status checks the full activity. If your teacher assigned the short route, use this report to submit your age comparison and assigned responses.'}]}
       ]};
   }
 

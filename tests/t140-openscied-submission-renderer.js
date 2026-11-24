@@ -82,6 +82,15 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
     assert.match(await dialog.innerText(), /<img src=x/);
     assert.equal(await dialog.getByRole('img').count(), 0);
     assert.ok(await dialog.locator('article').evaluate(n => n.getBoundingClientRect().right <= innerWidth), 'narrow report fits the viewport');
+    const editIdentity = dialog.locator('.osr-identity-editor');
+    await dialog.getByText('Edit name or period', { exact: true }).click();
+    await editIdentity.getByLabel('Name', { exact: true }).fill('Draft Correction');
+    await editIdentity.getByLabel('Class period', { exact: true }).fill('6');
+    await editIdentity.getByRole('button', { name: 'Apply to this report' }).click();
+    assert.match(await dialog.locator('.osr-meta').innerText(), /Draft Correction/);
+    assert.match(await dialog.locator('.osr-meta').innerText(), /Class period\s*6/);
+    assert.equal(await page.evaluate(() => synthetic.student.name), 'Test Report Student', 'metadata correction does not change stored identity');
+    assert.equal(await dialog.locator('.osr-stamp').count(), 0, 'a draft correction does not earn a seal');
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => document.activeElement.textContent === 'Preview report');
     await page.evaluate(() => { synthetic.status = 'final'; synthetic.missing = []; });
@@ -142,7 +151,7 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
         assert.ok((printed.match(/Dataset ID: TEST-RPT/g) || []).length > 1, 'Dataset ID repeats in PDF running footers');
         assert.match(printed, /Page 2 of /);
         assert.ok((printed.match(/Season header/g) || []).length > 1, 'printed table headers repeat on later pages');
-        assert.doesNotMatch(printed, /Wrong Next Student|Original activity content|Print or save as PDF/);
+        assert.doesNotMatch(printed, /Wrong Next Student|Original activity content|Print or save as PDF|Edit name or period/);
       }
       if (printed !== undefined) {
         const images = execFileSync('pdfimages', ['-list', pdf], { encoding: 'utf8' });
@@ -151,16 +160,36 @@ const FIXTURE = '<!doctype html><html lang="en"><meta charset="utf-8"><title>Ope
       await page.emulateMedia({ media: 'screen' });
     }
     await dialog.getByRole('button', { name: 'Close report' }).click();
-    await page.evaluate(() => { synthetic.datasetId = ''; synthetic.student.name = 'Example No-Id Student'; });
+    await page.evaluate(() => { synthetic.datasetId = ''; synthetic.student = null; });
     await page.getByRole('button', { name: 'Preview report' }).click();
     assert.match(await dialog.innerText(), /Activity complete/i);
+    assert.equal(await dialog.locator('.osr-stamp').count(), 0, 'completion without a name is not stamped');
+    await dialog.getByText('Edit name or period', { exact: true }).click();
+    await editIdentity.getByLabel('Name', { exact: true }).fill('Example No-Id Student');
+    await editIdentity.getByLabel('Class period', { exact: true }).fill('3');
+    await editIdentity.getByRole('button', { name: 'Apply to this report' }).click();
     assert.doesNotMatch(await dialog.innerText(), /Dataset ID/);
     assert.notEqual(await sealPng(dialog), previewSeal, 'named completion without an ID has a genuine no-ID stamp');
     if (shots) await page.screenshot({ path:path.join(shots, 'submission-preview-complete-without-id.png') });
+    await dialog.getByText('More formats', { exact: true }).click();
+    const editedDownload = page.waitForEvent('download');
+    await dialog.getByRole('button', { name: 'Download .docx' }).click();
+    const editedFile = path.join(dir, 'corrected.docx');
+    await (await editedDownload).saveAs(editedFile);
+    assert.match(execFileSync('unzip', ['-p', editedFile, 'word/header1.xml'], { encoding: 'utf8' }), /Example No-Id Student · Class 3/);
+    await page.evaluate(() => { synthetic.status = 'recovery'; window.print = () => { window.printedUnexpectedly = true; }; });
+    await dialog.getByRole('button', { name: 'Print or save as PDF' }).click();
+    assert.match(await dialog.innerText(), /Close it and open a new preview/);
+    assert.equal(await page.evaluate(() => window.printedUnexpectedly), undefined, 'an edited copy cannot be exported after the save is retired');
     await dialog.getByRole('button', { name: 'Close report' }).click();
-    await page.evaluate(() => { synthetic.status = 'recovery'; synthetic.student = null; synthetic.datasetId = ''; });
+    await page.evaluate(() => { synthetic.status = 'final'; synthetic.allowIdentityEdit = false; });
+    await page.getByRole('button', { name: 'Preview report' }).click();
+    assert.equal(await editIdentity.count(), 0, 'a shared report cannot gain an individual name');
+    await dialog.getByRole('button', { name: 'Close report' }).click();
+    await page.evaluate(() => { synthetic.status = 'recovery'; synthetic.student = null; synthetic.datasetId = ''; delete synthetic.allowIdentityEdit; });
     await page.getByRole('button', { name: 'Preview report' }).click();
     assert.match(await dialog.innerText(), /Recovered work/i);
+    assert.equal(await editIdentity.count(), 0, 'a recovery copy cannot be renamed');
     assert.match(await dialog.innerText(), /Not entered/);
     assert.doesNotMatch(await dialog.innerText(), /Wrong Next Student|Dataset ID/);
     assert.equal(await dialog.locator('.osr-stamp').count(), 0);

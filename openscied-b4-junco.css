@@ -100,6 +100,7 @@
 .ju-axis-guide dd{margin:0;line-height:1.35}
 .ju-dot-example{border-inline-start:2px solid var(--ju-city);padding-inline-start:.48rem}
 @media(max-width:530px),(min-width:721px) and (max-width:940px){.ju-axis-guide{grid-template-columns:minmax(0,1fr)}}
+.ju-evidence-strip{border-inline-start:3px solid var(--accent);border-radius:5px;background:var(--surface-2);padding:.55rem .7rem;margin:.6rem 0 .85rem;font-size:.9rem;overflow-wrap:anywhere}.ju-evidence-strip :is(h3,h4,p){margin:0 0 .32rem}.ju-evidence-strip p:last-child{margin-bottom:0}
 .ju-data{min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:.38rem .52rem;font-size:.88rem}
 .ju-shell summary{cursor:pointer;min-height:30px;font-weight:750}
 .ju-shell table{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}

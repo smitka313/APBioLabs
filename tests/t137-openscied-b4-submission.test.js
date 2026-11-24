@@ -144,6 +144,8 @@ test('Junco does not leak unrevealed evidence and distinguishes published and il
   const plotted=table(report(),'Classroom points approximated from the published figure');
   if(points.length){
     assert.equal(plotted.rows.length,points.length);
+    assert.equal(plotted.columns[0],'Bird (dot)','Pooled evidence numbers dots rather than suggesting an identified population');
+    assert.deepEqual(plotted.rows.map(row=>row[0]),points.map((_,i)=>i+1));
     assert.ok(!plotted.columns.includes('Population'),'No population attribution is invented for pooled source data');
   }
 });

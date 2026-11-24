@@ -43,10 +43,10 @@
   <img src="assets/hawksbeard-preview.svg" width="960" height="600" alt="">
 </header>
 <nav class="hb-steps" aria-label="Investigation steps">
-  <button type="button" data-hb-go="predict" aria-current="step"><span class="hb-step-mark" aria-hidden="true">1</span>Predict<span class="sr-only hb-step-completion" hidden> complete</span></button>
-  <button type="button" data-hb-go="release"><span class="hb-step-mark" aria-hidden="true">2</span>Release<span class="sr-only hb-step-completion" hidden> complete</span></button>
-  <button type="button" data-hb-go="compare"><span class="hb-step-mark" aria-hidden="true">3</span>Compare<span class="sr-only hb-step-completion" hidden> complete</span></button>
-  <button type="button" data-hb-go="explain"><span class="hb-step-mark" aria-hidden="true">4</span>Explain<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="predict" aria-current="step"><span class="hb-step-mark" aria-hidden="true">1</span> Predict<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="release"><span class="hb-step-mark" aria-hidden="true">2</span> Release<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="compare"><span class="hb-step-mark" aria-hidden="true">3</span> Compare<span class="sr-only hb-step-completion" hidden> complete</span></button>
+  <button type="button" data-hb-go="explain"><span class="hb-step-mark" aria-hidden="true">4</span> Explain<span class="sr-only hb-step-completion" hidden> complete</span></button>
 </nav>
 <noscript><p>This investigation needs JavaScript to release seeds and record landings.</p></noscript>
 
@@ -56,7 +56,7 @@
     <div class="hb-panel">
       <img class="hb-seed-art" src="assets/hawksbeard-seed-types.svg" width="640" height="296" alt="A slender feathery seed with a parachute of hairs, next to a compact nonfeathery seed without hairs.">
       <p>One hawksbeard plant makes both kinds of seeds. Feathery seeds can travel farther in the wind. Nonfeathery seeds usually fall closer to the parent.</p>
-      <p class="hb-tip"><strong>Matched releases:</strong> In both places, each plant releases 8 feathery and 2 nonfeathery seeds along the same wind paths. Both the amount and arrangement of soil differ, so this test cannot separate their effects.</p>
+      <p class="hb-tip"><strong>Matched releases:</strong> In both places, each plant releases 8 feathery and 2 nonfeathery seeds along the same wind paths. The city has smaller, separate soil patches. The field has more connected soil. This model changes both the amount and layout of soil, so it can’t tell which change mattered more.</p>
     </div>
     <form id="hb-prediction" class="hb-panel">
       <fieldset><legend>Among seeds that land on suitable soil, where will nonfeathery seeds make up a larger share?</legend>
@@ -72,7 +72,7 @@
 </section>
 
 <section id="hb-release" class="hb-section" data-hb-page="release" aria-labelledby="hb-release-title" hidden>
-  <div class="hb-stagehead"><div><p class="eyebrow">02 · Matched investigation</p><h2 id="hb-release-title" tabindex="-1">Release a pair of plants</h2></div><span id="hb-round" class="hb-pill">0 of 5 pairs released</span></div>
+  <div class="hb-stagehead"><div><p class="eyebrow">02 · Matched investigation</p><h2 id="hb-release-title" tabindex="-1">Release the same seeds over both maps</h2></div><span id="hb-round" class="hb-pill">0 of 5 pairs released</span></div>
   <p class="hb-lede">Each release sends the same 10 seed paths over both layouts. <strong>Model limit:</strong> Landing on suitable soil shows where a seed could sprout. This model does not measure germination or later generations.</p>
   <p id="hb-trial-note" class="hb-trial-note">Each new trial draws new wind paths. Reloading keeps the same trial. The Dataset ID is included in your download. <span>Dataset ID: <strong id="hb-dataset-id"></strong></span></p>
   <div class="hb-release-tools">
@@ -108,7 +108,7 @@
         <textarea id="hb-reflection" data-hb-answer="reflection" rows="2" maxlength="3000"></textarea>
       </div>
     </div>
-    <div class="hb-panel"><h3>Read the fractions</h3><div id="hb-compare-table"></div><p class="hb-tip"><strong>Two questions, two denominators.</strong> To ask how many nonfeathery seeds reached soil, compare with nonfeathery seeds released. To ask what share of all soil landings were nonfeathery, compare with all seeds that reached soil.</p><div id="hb-compare-check"></div></div>
+    <div class="hb-panel"><h3>Read the fractions</h3><div id="hb-compare-table"></div><p class="hb-tip"><strong>Same top number, different bottom numbers.</strong> For the nonfeathery landing rate, divide by all nonfeathery seeds released. For the nonfeathery share of landings, divide by all seeds that reached soil, including feathery seeds.</p><div id="hb-compare-check"></div></div>
   </div>
 </section>
 
@@ -120,7 +120,7 @@
       <details class="hb-published" id="hb-published"><summary>Compare with published research</summary></details>
     </div>
     <div class="hb-panel hb-answer-panel">
-      <label for="hb-claim"><strong>1. Make a claim.</strong> How did the city layout affect where the two seed types landed?</label>
+      <label for="hb-claim"><strong>1. Make a claim.</strong> How did soil landings for the two seed types differ between the field and the city?</label>
       <textarea id="hb-claim" data-hb-answer="claim" rows="3" maxlength="3000"></textarea>
       <label for="hb-evidence"><strong>2. Use numbers.</strong> Compare the nonfeathery share of soil landings in the two layouts. Include both fractions.</label>
       <textarea id="hb-evidence" data-hb-answer="evidence" rows="3" maxlength="3000"></textarea>

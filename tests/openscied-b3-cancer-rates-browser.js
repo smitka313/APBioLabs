@@ -729,6 +729,8 @@ async function exercise(browser, base, size) {
     }
     await view(page,'cr-claim').fill(CLAIM);
     await view(page,'cr-limits').fill(LIMIT);
+    check(await view(page,'cr-finish').isDisabled(),label+' Finish waits for the student evidence check');
+    await view(page,'cr-evidence-confirm').check();
     await invoke(view(page,'cr-finish'),size);
     await page.locator('[data-ose-report-final]').getByRole('button',{name:'Preview report'}).waitFor({state:'visible'});
     check((await record(page))?.completed===true,label+' finishing marks the work complete');

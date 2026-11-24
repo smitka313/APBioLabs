@@ -823,9 +823,41 @@
     fieldReports.get(id)?.update(state);
     return true;
   }
+  const huntDice = {individual:1,smallGroup:2,herd:3};
+  function huntPair(rows, preferred = -1) {
+    const hunts=rows.map((row,index)=>({row,index})).filter(({row})=>row.kind==='hunt' && huntDice[row.predatorType] && huntDice[row.preyType]);
+    const species=row=>row.predatorSpecies||row.role;
+    const comparison=({row,index})=>hunts.find(h=>h.index!==index&&species(h.row)===species(row)&&
+      h.row.predatorType===row.predatorType&&h.row.preyType!==row.preyType);
+    const chosen=hunts.find(h=>h.index===preferred);
+    const anchors=chosen?[chosen,...hunts.filter(h=>h!==chosen)]:hunts;
+    for(const anchor of anchors){const partner=comparison(anchor);if(partner)return [anchor,partner];}
+    return [];
+  }
+  function historyOptionText(row,index) {
+    const number='Record '+(index+1)+' · '+seasonName(row.season)+' · ';
+    if(row.kind==='hunt'){
+      return number+(SINGULAR[row.predatorSpecies||row.role]||'Predator')+' '+(tokenType(row.predatorType).toLowerCase()||'(size not recorded)')+
+        ' vs. wildebeest '+(tokenType(row.preyType).toLowerCase()||'(size not recorded)')+' · '+(outcomeText(row.winner)||'Resolved')+' ('+signed(row.change)+')';
+    }
+    return number+recordName(row)+' ('+signed(row.change)+')';
+  }
+  function renderHuntPair(rows,preferred) {
+    const slot=qs('#sg-hunt-comparison');
+    if(!slot)return;
+    const pair=huntPair(rows,preferred);
+    if(!pair.length){
+      slot.replaceChildren(node('p','','No matched pair in this game yet. You can use the records you have, then describe what you would test in another game.'));
+      return;
+    }
+    const list=node('ul');
+    pair.forEach(({row,index})=>list.append(node('li','',historyOptionText(row,index)+' · Starting dice: predator '+
+      huntDice[row.predatorType]+', wildebeest '+huntDice[row.preyType]+'.')));
+    slot.replaceChildren(list);
+  }
   function historyOptions(rows, includeEmpty=false) {
     const options=rows.map((r,i)=>{
-      const option=node('option','',seasonName(r.season)+' · '+recordName(r)+' ('+signed(r.change)+')');
+      const option=node('option','',historyOptionText(r,i));
       option.value=String(i);return option;
     });
     if(includeEmpty){const empty=node('option','','Choose a record');empty.value='';options.unshift(empty);}
@@ -880,6 +912,7 @@
     qs('#sg-analysis-record-note').textContent=!rows.length?'Play a turn to record evidence.'
       :isChosen?'':'Latest record shown for reference. Choose the record you want to use.';
     renderHistoryRecord(qs('#sg-selected'),rows,index);
+    renderHuntPair(rows,isChosen?index:-1);
   }
   function selectionText(rows) {
     if (!answers.evidence || !rows || !rows[Number(answers.evidence)]) return '';
@@ -893,7 +926,9 @@
     const complete=state?.step==='complete';
     const finishedSeasons=complete?4:seasons.filter(s=>Number.isFinite(s.end)).length;
     const missing=[];
+    const recovering=preserveRaw||saveSession?.check(S)?.ok!==true;
     if(preserveRaw)missing.push('An older save could not be read. This report contains work available in this tab only.');
+    else if(recovering)missing.push('This tab cannot save its current copy. Download it before reloading.');
     if(!complete)missing.push(finishedSeasons===4?'Use “Finish the year” in Play.':'Finish playing all four seasons.');
     if(!evidence)missing.push('Choose an event or hunt record to use as evidence.');
     if(!answers.claim.trim())missing.push('Write your explanation.');
@@ -921,7 +956,7 @@
     if(shared)sections.unshift({title:'Shared-device play',items:[{type:'text',text:'This is a group record. No individual name is attached because the game does not collect player names.'}]});
     return {title:'Serengeti Board Game',unit:'Unit B.1 · Lesson 7',
       source:'Adapted from OpenSciEd B.1 Lesson 7. The board game simulates change from the starting wildebeest population, not field counts. Dice model chance; births, available food and water, and predator population responses are not modeled.',
-      status:preserveRaw?'recovery':missing.length?'draft':'final',missing,student:shared||preserveRaw?null:reportIdentity(),
+      status:recovering?'recovery':missing.length?'draft':'final',missing,student:shared||preserveRaw?null:reportIdentity(),allowIdentityEdit:!shared,
       keyResults:[{label:'Seasons completed',value:finishedSeasons+' / 4'},
         ...(state?[{label:'Net modeled change',value:signed(summary.change),note:'Relative to the starting population; not a field count'}]:[]),
         {label:'Events and hunts recorded',value:rows.length}],sections};

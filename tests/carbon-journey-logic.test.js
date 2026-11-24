@@ -168,7 +168,8 @@ test('matching and skipped predictions survive reload and export; old prediction
   const exported=JSON.parse(page.downloads[0]);
   a.equal(exported.rows[1].prediction,'atmosphere');
   a.equal(exported.rows[2].prediction,null);
-  a.match(exported.questions.q1,/start out in the atmosphere/);
+  a.match(exported.questions.q1,/Your atom started in atmospheric carbon dioxide/);
+  a.match(exported.questions.q3,/two turns you recorded/);
   a.equal(exported.budget,null);
 });
 

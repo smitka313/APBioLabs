@@ -67,7 +67,12 @@ for (const page of ['burn-lab', 'fires', 'peat-bog-lab', 'carbon-journey']) {
     assert.ok(reportAt > html.lastIndexOf('</section>') && reportAt < html.indexOf('</main>'));
     const fallback = html.match(/<div[^>]+id="classroom-submission"[^>]*>/)[0];
     assert.ok(!fallback.includes('aria-label'), 'a generic container must not have a prohibited accessible name');
-    assert.equal((html.match(/data-ose-report-final/g) || []).length, 1);
+    // A second mount point lets the same launcher follow the student into the optional Budget.
+    assert.equal((html.match(/data-ose-report-final/g) || []).length, page === 'carbon-journey' ? 2 : 1);
+    if (page === 'carbon-journey') {
+      const budget = html.slice(html.indexOf('id="budget"')).split('</section>')[0];
+      assert.match(budget, /id="carbon-budget-host"[\s\S]*data-ose-report-final/);
+    }
     const finalSection = page === 'carbon-journey' ? 'sense' : page === 'peat-bog-lab' ? 'trials' : 'wrapup';
     const sectionAt = html.indexOf('id="' + finalSection + '"');
     const slotAt = html.indexOf('data-ose-report-final');

@@ -491,6 +491,18 @@ async function play(browser, base, cfg) {
         !document.querySelector('#hb-release-next')?.textContent.startsWith('Releasing'));
       const series = await snapshot(page);
       check(series.seed === baseline.seed && series.released === step, at + ' records matched plant pair ' + step);
+      if(step===1 && cfg.width===1366){
+        await stage(page,'predict');
+        check(await choice.isChecked() && await choice.isDisabled() && await page.locator('#hb-save-prediction').isHidden() &&
+          /starting prediction.*Compare/.test(await page.locator('#hb-prediction-feedback').innerText()),
+          'results lock the starting prediction and show where to revise the explanation');
+        await prediction.evaluate(form=>{
+          form.querySelector('input[value=city]').checked=true;
+          form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+        });
+        check((await snapshot(page)).prediction===predictValue,'the starting prediction stays saved after an attempted rewrite');
+        await stage(page,'release');
+      }
       if (step < Model.PLANTS) {
         check(await page.locator('.hb-steps [data-hb-go="compare"]').isDisabled() &&
           await page.locator('.hb-steps [data-hb-go="explain"]').isDisabled() &&
@@ -519,6 +531,9 @@ async function play(browser, base, cfg) {
     check(await page.locator('#hb-compare-summary').isVisible() && await page.locator('#hb-compare-chart').isVisible(),
       at + ' comparison displays both the student-run summary and plot');
     await hasVisibleTable(page, '#hb-compare-table');
+    check(/Of the seeds that reached soil, what share came from each type/i.test(await page.locator('#hb-compare-chart figcaption').innerText()) &&
+      /all seeds that reached soil, including feathery seeds/.test(await page.locator('#hb-compare').innerText()),
+      at+' clearly separates soil-landing composition from landing rate');
     const compared = await resultRows(page, '#hb-compare-table', baseline.seed, at + ' compare table');
     await completedSteps(page, ['predict', 'release'], at + ' comparison not yet recorded');
     const observation = page.locator('#hb-type-observation');

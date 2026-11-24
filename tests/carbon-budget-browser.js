@@ -192,6 +192,11 @@ async function exerciseBudget(p, cfg, url) {
     Object.fromEntries(rows.map(el => [el.dataset.comparePool, [Number(el.dataset.noFire), Number(el.dataset.fire)]])));
   check(same(evidence, { air:[11,15], peat:[9,5], chemical:[9,5], heat:[2,6] }),
     'explanation evidence includes exact matched results in separate carbon and energy units');
+  const preview = p.getByRole('button', { name:'Preview report', exact:true });
+  await p.locator('#budget [data-ose-report-final]').getByRole('button', { name:'Preview report', exact:true }).waitFor({ state:'visible' });
+  check(await preview.count()===1 && await p.locator('#cb-explain .cb-report-note').isVisible() &&
+    /includes your Journey and Budget/.test(await p.locator('#cb-explain .cb-report-note').innerText()),
+    label+' the combined report stays in Budget and is distinct from the separate evidence export');
   await shot(p, label + '-comparison');
   if (width === 390 || width === 1366) await axe(p, label);
 

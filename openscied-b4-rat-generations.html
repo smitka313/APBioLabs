@@ -68,22 +68,22 @@
         </fieldset>
         <label for="rg-reason">Why? <span class="rg-muted">(optional)</span></label>
         <textarea id="rg-reason" rows="2" maxlength="2400" data-rg-answer="reason"></textarea>
-        <div class="rg-actions"><button class="btn btn--primary" type="submit">Save prediction and start</button></div>
+        <div class="rg-actions"><button class="btn btn--primary" type="submit">Save prediction and start</button><button class="btn" type="button" data-rg-go="model" id="rg-return-model" hidden>Back to your model</button></div><p class="rg-muted" id="rg-prediction-lock" hidden>Your starting prediction is kept with this trial. Use Explain to say what the results showed.</p>
       </form>
     </div>
   </section>
   <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
-    <p class="rg-intro">This trial waits until Generation 3 to add warfarin so you can compare a baseline with selection. Real colonies do not follow a fixed schedule.</p>
-    <p class="rg-intro">Move the two marked rats from the colony to their numbered nest spots. Then use their alleles (versions of a gene) to build one cross before producing each new generation. Each box shows an expected outcome in this model, not a guaranteed pup in nature.</p>
+    <p class="rg-intro">Birth comes first. This model applies selection for the first time after Generation 3 is born, so you can compare the colony before and after. Real colonies do not follow a fixed schedule.</p>
+    <p class="rg-intro">Match the rats marked P1 and P2 to their nests. Then place their allele letters in one Punnett square to unlock the next generation. The boxes show expected outcomes, not guaranteed pups in nature.</p>
     <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
     <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
       <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title" tabindex="-1"></h3><p id="rg-event-explanation"></p></div>
-      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next" aria-describedby="rg-cross-gate"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button><a id="rg-cross-jump" href="#rg-burrow" hidden>Go to the burrow</a><p id="rg-cross-gate" class="rg-muted" hidden></p></div>
+      <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next" aria-describedby="rg-cross-gate"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button><a id="rg-cross-jump" href="#rg-burrow" hidden>Go to the Punnett workbench</a><p id="rg-cross-gate" class="rg-muted" hidden></p></div>
     </div>
     <section class="rg-fieldwork" aria-labelledby="rg-fieldwork-title">
       <header class="rg-fieldwork-head">
-        <div><p class="eyebrow">Below the city streets</p><h3 id="rg-fieldwork-title">The colony burrow</h3><p id="rg-burrow-help">Move the marked rats to the nest to start their cross. You can also select a rat and then its nest spot.</p></div>
+        <div><p class="eyebrow">Below the city streets</p><h3 id="rg-fieldwork-title">The colony burrow</h3><p id="rg-burrow-help">Drag each marked rat to its nest, or select the rat and then its nest.</p></div>
         <div id="rg-pairs" class="rg-fieldwork-pairs"></div>
       </header>
       <div id="rg-burrow" tabindex="-1"></div>
@@ -126,7 +126,7 @@
         <label class="rg-choice"><input type="radio" name="rg-concept" value="rats"><span>Number of rats in that snapshot</span></label>
         <label class="rg-choice"><input type="radio" name="rg-concept" value="alleles"><span>Number of allele copies in that snapshot</span></label>
         <label class="rg-choice"><input type="radio" name="rg-concept" value="r"><span>Number of R copies in that snapshot</span></label>
-      </fieldset><button class="btn" type="submit">Check answer</button><p id="rg-check-feedback"></p></form>
+      </fieldset><button class="btn" type="submit">Check answer</button><p id="rg-check-feedback"></p><p class="rg-muted">Checking an answer records your attempt. Use the feedback to revise it if needed.</p></form>
     </div>
   </section>
   <section id="rg-explain" data-rg-step="explain" aria-labelledby="rg-explain-title" hidden>

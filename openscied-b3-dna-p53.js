@@ -722,7 +722,9 @@
     const fork = L.forkSummary(state.fork), runCount = state.expression.runs.length;
     const missing = [];
     if (!fork?.hasBefore || !fork.hasAfter) missing.push('Record a paired-strand result before and after the p53 model.');
-    if (!runCount) missing.push('Record at least one gene expression run.');
+    const triedVersions = ['a','b','c'].filter(k => Number(fork?.p53?.[k]?.tried) > 0);
+    const strands = ['A','B','C'].filter(k => state.expression.runs.some(run=>run?.strand===k));
+    if (strands.length < 3) missing.push('Record expression runs for strands ' + ['A','B','C'].filter(k=>!strands.includes(k)).join(', ') + '.');
     const core = RESPONSE_IDS.map(id => ({type:'answer',prompt:labelFor(id),value:answerFor(id)}));
     const completed = core.filter(row=>row.value?.trim()).length;
     if (completed < core.length) missing.push('Finish the core responses (' + completed + ' of ' + core.length + ' entered).');
@@ -747,7 +749,7 @@
     return {title:'DNA Copying, p53 & Gene Expression',unit:'OpenSciEd Biology B.3',source:'Simulated DNA fork and gene expression results from a classroom model.',
       status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),
       keyResults:[{label:'Paired-strand comparison',value:fork?.hasBefore && fork.hasAfter ? 'Before and after recorded':'Not complete'},
-        {label:'Expression runs recorded',value:runCount},{label:'Core responses entered',value:completed+' of '+core.length}],sections};
+        {label:'p53 versions tried',value:triedVersions.length,note:'Version (a) supports the before-and-after comparison. Trying (b) and (c) is optional.'},{label:'Required expression strands recorded',value:strands.length+' of 3',note:runCount+' total run(s)'},{label:'Core responses entered',value:completed+' of '+core.length}],sections};
   }
 
   window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});

@@ -84,8 +84,19 @@
     if(persist)save();
     if(focus){$('#rg-'+step+'-title').focus({preventScroll:true});$('#rg-'+step).scrollIntoView({block:'start'});}
   }
+  const predictionLocked=()=>state.action>0||Object.values(state.crosses).some(cross=>cross.parents.some(Boolean));
   function gates() {
-    const done={predict:!!state.prediction,model:model.done,analyze:state.analysisChecked,
+    const locked=predictionLocked();
+    for(const r of $$('input[name=rg-prediction]')){
+      r.disabled=locked;
+      if(locked)r.checked=r.value===state.prediction;
+    }
+    $('#rg-reason').readOnly=locked;
+    $('#rg-prediction button[type=submit]').hidden=locked;
+    $('#rg-prediction button[type=submit]').disabled=locked;
+    $('#rg-return-model').hidden=!locked;
+    $('#rg-prediction-lock').hidden=!locked;
+    const done={predict:!!state.prediction,model:model.done,analyze:!!state.analysisAttempt,
       explain:['claim','evidence','limits'].every(key=>state.answers[key]?.trim())};
     $('#rg-step-hint').hidden=model.done;
     set('step-hint',state.prediction?'Finish the colony model to unlock Analyze and Explain.':'Save your prediction to unlock the colony model.');
@@ -95,7 +106,7 @@
       if(b.closest('.rg-steps')){
         if(wanted===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
         b.toggleAttribute('data-ose-complete',Boolean(done[wanted]));
-        if(done[wanted])b.setAttribute('aria-description','Complete');
+        if(done[wanted])b.setAttribute('aria-description',wanted==='analyze'?'Attempt saved':'Complete');
         else if(b.disabled)b.setAttribute('aria-description',wanted==='model'?'Save your prediction first.':'Finish the colony model first.');
         else b.removeAttribute('aria-description');
       }
@@ -136,16 +147,20 @@
     return assigned.length>0&&!assigned.some(pair=>B.complete(state.crosses[pair.id]));
   }
   function crossGate(){
+    const breeding=viewAction===null&&M.preview(model)?.action==='breed';
     const gated=needsCross();
-    const next=$('#rg-next'), near=$('#rg-produce');
-    next.disabled=gated;
-    near.hidden=viewAction!==null||M.preview(model)?.action!=='breed';
-    near.disabled=gated;
-    near.textContent=next.textContent;
-    set('produce-hint',!near.hidden&&gated?'Build one square above to unlock this action.':'');
+    const next=$('#rg-next'), near=$('#rg-produce'), jump=$('#rg-cross-jump');
+    next.hidden=breeding||(viewAction===null&&model.done);
+    next.disabled=next.hidden;
+    near.hidden=!breeding;
+    near.disabled=!breeding||gated;
+    near.textContent=breeding?next.textContent:'';
+    set('produce-hint',breeding&&gated?'Complete one square above to unlock this action.':'');
     $('#rg-cross-gate').hidden=!gated;
-    $('#rg-cross-jump').hidden=!gated;
-    set('cross-gate',gated?'Build one Punnett square for this generation to unlock Produce. Choose any assigned pair.':'');
+    jump.hidden=!breeding;
+    jump.href=gated?'#rg-burrow':'#rg-produce';
+    jump.textContent=gated?'Go to the Punnett workbench':'Go to the completed square to produce offspring';
+    set('cross-gate',gated?'Choose any assigned pair and build one square.':'');
   }
   let burrow, nextMotion=false;
   function drawBurrow(record,row,pair,workbench,showMotion){
@@ -158,7 +173,9 @@
       announce:message=>announce(message,true),
       phase:record.generation===1?'start':record.phase,counts:record.counts,selection,animate:showMotion};
     if(burrow)burrow.update(opts);else burrow=api.mount(host,opts);
-    const helper=assigned?'Drag the two numbered rats into their matching nest spots. You can also select a rat and then its spot.':
+    const helper=assigned?(progress?.parents?.every(Boolean)
+      ? 'Both parents are in their nests. Use their allele letters in the Punnett square.'
+      : 'Drag each marked rat to its nest, or select the rat and then its nest.'):
       selection?'Compare the earlier colony and the rats that survived this model step.':
       record.generation===1?'The colony starts with four rats. Look for the selected pair.':
       'The nursery shows the offspring in this snapshot. Use the timeline to review earlier groups.';
@@ -189,7 +206,7 @@
         const workbench=B.mount(box,{
           pair:p,progress:state.crosses[p.id],required:needsCross(),tokenUrl:TOKEN,
           announce:message=>announce(message,true),
-          onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();crossGate();drawBurrow(record,row,p,workbench,false);}
+          onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();gates();crossGate();drawBurrow(record,row,p,workbench,false);}
         });
         drawBurrow(record,row,p,workbench,showMotion);
         showMotion=false;
@@ -237,7 +254,7 @@
     }else{
       title='Generation '+entry.generation+' offspring recorded';
       why=entry.counts.total+' offspring replaced the parent generation. Each pair contributed four expected offspring.';
-      if(entry.generation===3)why+=' This is the last count before selection begins.';
+      if(entry.generation===3)why+=' This is the birth count. Apply selection next to see how many survive.';
       if(entry.generation===5)why+=' This final record is offspring, not an additional survivor count.';
     }
     set('event-title',title);set('event-explanation',why);
@@ -340,12 +357,16 @@
   function render(){
     gates();renderModel();evidence();
   }
+  function focusNextModelAction(){
+    const id=model.done?'rg-model-analyze':M.preview(model)?.action==='breed'?'rg-cross-jump':'rg-next';
+    $('#'+id).focus();
+  }
   function advance() {
-    if(viewAction!==null){viewAction=null;activePair='';renderModel();$('#rg-next').focus({preventScroll:true});return;}
+    if(viewAction!==null){viewAction=null;activePair='';renderModel();focusNextModelAction();return;}
     if(model.done||!state.prediction||needsCross())return;
     model=M.step(model);state.action=model.step;activePair='';state.activePair='';nextMotion=true;save();render();
     announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
-    if(model.done)$('#rg-model-analyze').focus({preventScroll:true});
+    focusNextModelAction();
   }
   const person=()=>({...sharedReportIdentity(),...state.person});
   function fill() {
@@ -429,7 +450,9 @@
   }
   for(const b of $$('[data-rg-go]'))b.addEventListener('click',()=>go(b.dataset.rgGo));
   $('#rg-prediction').addEventListener('submit',ev=>{
-    ev.preventDefault();const choice=$('input[name=rg-prediction]:checked')?.value;
+    ev.preventDefault();
+    if(predictionLocked()){gates();announce('The starting prediction is locked. Use Explain to reflect on the results.');return;}
+    const choice=$('input[name=rg-prediction]:checked')?.value;
     if(own(PRED,choice)){state.prediction=choice;go('model');}
   });
   // Native printing clips text to the textarea's visible rows. Use plain text on paper.
@@ -442,7 +465,11 @@
     const output=node('div','','rg-print-answer');
     entry.after(output);
     printAnswers.push([entry,output]);
-    entry.addEventListener('input',()=>{state.answers[entry.dataset.rgAnswer]=entry.value.slice(0,2400);save();gates();});
+    entry.addEventListener('input',()=>{
+      const id=entry.dataset.rgAnswer;
+      if(id==='reason'&&predictionLocked()){entry.value=state.answers[id]||'';return;}
+      state.answers[id]=entry.value.slice(0,2400);save();gates();
+    });
     entry.addEventListener('blur',()=>{entry.scrollTop=0;});
     // The browser can leave the top of the text scrolled after placing the caret at
     // the start. Keep the full first line and its padding visible on this shortcut.
@@ -454,19 +481,21 @@
   }
   for(const [key,limit] of Object.entries(fields))$('#rg-'+key).addEventListener('input',e=>{state.person[key]=tidy(e.currentTarget.value,limit);save();});
   $('#rg-next').addEventListener('click',advance);
-  $('#rg-produce').addEventListener('click',()=>{advance();$('#rg-event-title').focus({preventScroll:true});});
-  if(state.analysisChecked){
-    $('input[name=rg-concept][value=alleles]').checked=true;
-    set('check-feedback','Complete. The denominator counts every allele copy, two per rat.');
+  $('#rg-produce').addEventListener('click',advance);
+  function analysisFeedback(choice){
+    return choice==='alleles'?'Right. Count every copy of this gene: two per rat.':
+      choice==='rats'?'Not quite. To find the fraction of rats showing resistance, count rats. To find the fraction of allele copies that are R, count two copies per rat.':
+      choice==='r'?'Not quite. R copies are the top of the fraction. The bottom counts both R and B copies.':'Choose an answer, then select Check answer.';
+  }
+  if(state.analysisAttempt){
+    $('input[name=rg-concept][value="'+state.analysisAttempt+'"]').checked=true;
+    set('check-feedback',analysisFeedback(state.analysisAttempt));
   }
   $('#rg-check').addEventListener('submit',e=>{
     e.preventDefault();
     const selected=$('input[name=rg-concept]:checked')?.value;
-    const msg=selected==='alleles'?'Right. The denominator counts every allele copy of this gene, two per rat.':
-      selected==='rats'?'Not quite. The number of rats is the denominator for the fraction showing resistance. For allele frequency, count two copies per rat.':
-      selected==='r'?'Not quite. R copies are the numerator. The denominator counts both R and B copies.':'Choose a denominator first.';
-    if(selected)state.analysisAttempt=selected;
-    state.analysisChecked=selected==='alleles';save();gates();
+    if(selected){state.analysisAttempt=selected;state.analysisChecked=selected==='alleles';save();gates();}
+    const msg=analysisFeedback(selected);
     set('check-feedback',msg);announce(msg,true);
   });
   $('#rg-download').addEventListener('click',download);$('#rg-download-tab').addEventListener('click',download);$('#rg-copy').addEventListener('click',()=>copy());

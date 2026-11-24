@@ -273,7 +273,7 @@ async function exactNest(page, rat, role, label) {
     label + ' ' + rat.id + ' keeps ' + rat.genotype + ', moves from the colony to its nest, and sets the same builder slot');
 }
 async function scenePair(page, pair, cfg, seed, label) {
-  const next = page.locator('#rg-next');
+  const next = page.locator('#rg-produce');
   const [first,second] = pair.parents;
   check(await scene(page).isVisible() && (await nest(page,0).count()) === 1 &&
     (await nest(page,1).count()) === 1 &&
@@ -311,6 +311,8 @@ async function scenePair(page, pair, cfg, seed, label) {
   const saved = await save(page);
   check(saved.seed === seed && saved.action === 0 && compact(saved.crosses?.[pair.id]?.parents,[true,true]) &&
     await next.isDisabled(),label + ' scene and builder share one persisted parent state without producing a generation');
+  check(/Both parents are in their nests.*Punnett square/.test(await page.locator('#rg-burrow-help').innerText()),
+    label+' the completed nests explain the next task');
 }
 async function plainAlleles(page,label) {
   const chips=await builder(page).locator('[data-rg-source]').evaluateAll(nodes=>nodes.map(node=>({
@@ -326,7 +328,9 @@ async function firstCross(page, row, cfg, seed, label) {
   assert.ok(chosen, 'the founder with the R allele has an expected cross');
   const pair = page.locator('#rg-pairs [data-rg-pair="' + chosen.id + '"]');
   await use(pair, cfg);
-  const square = builder(page), next = page.locator('#rg-next');
+  const square = builder(page), next = page.locator('#rg-produce');
+  check(await next.isVisible() && await page.locator('#rg-next').isHidden() &&
+    await page.locator('#rg-cross-jump').isVisible(), label+' has one canonical Produce action at the workbench');
   check(await square.isVisible() && await square.getAttribute('data-rg-ready') === 'false' &&
     await next.isDisabled() && (await placedTargets(page)).length === 0 &&
     await page.locator('#rg-punnett [data-rg-cell]').count() === 0,
@@ -562,6 +566,15 @@ async function denominatorCheck(page) {
     await quiz.locator('button[type="submit"]').press('Enter');
     check(await feedback.isVisible() && expected.test(await feedback.textContent()),
       'denominator check explains selecting ' + value);
+    if(value==='rats'){
+      check((await save(page)).analysisAttempt==='rats' && (await save(page)).analysisChecked===false &&
+        await stepButton(page,'analyze').getAttribute('aria-description')==='Attempt saved',
+        'the wrong answer counts as an attempt, not a correct answer');
+      await page.reload();
+      await feedback.waitFor({state:'visible'});
+      check(await choice.isChecked() && expected.test(await feedback.textContent()),
+        'the incorrect selection and specific feedback both survive reload');
+    }
   }
 }
 async function dashboardGuide(page, base) {
@@ -642,16 +655,16 @@ async function play(browser, base, cfg) {
       if ([2,4,6].includes(action)) {
         const cross=subsequent.generations.at(-1).pairs[0];
         if(cross){
-          check(await page.locator('#rg-next').isDisabled(),label+' each new generation requires a different square');
+          check(await page.locator('#rg-produce').isDisabled(),label+' each new generation requires a different square');
           await use(page.locator('#rg-pairs [data-rg-pair="'+cross.id+'"]'),cfg);
           const input=cfg.touch?'tap':'keyboard';
           for(const role of [0,1])await put(page,'parent-'+role,'parent-'+role,input,label);
           for(const role of [0,1])for(const i of [0,1])await put(page,'allele-'+cross.parents[role].genotype[i],'header-'+role+'-'+i,input,label);
           for(let i=0;i<4;i++)for(const role of [0,1])await put(page,'allele-'+cross.parents[role].genotype[role===0?Math.floor(i/2):i%2],'cell-'+i+'-'+role,input,label);
-          check(await page.locator('#rg-next').isEnabled(),label+' a finished square unlocks the next generation');
+          check(await page.locator('#rg-produce').isEnabled() && await page.locator('#rg-next').isHidden(),label+' a finished square unlocks the only Produce action');
         }
       }
-      const next = page.locator('#rg-next');
+      const next = page.locator(preview.action==='breed'?'#rg-produce':'#rg-next');
       await use(next, cfg);
       await waitAction(page, action);
       await events(page, action, label);
@@ -660,6 +673,18 @@ async function play(browser, base, cfg) {
       const record = await save(page);
       check(record.seed === seed && record.prediction === 'increase',
         label + ' action ' + action + ' does not reroll the trial or replace the initial prediction');
+      if(action===1 && cfg.width===1366){
+        await enterStage(page,'predict',cfg);
+        check(await vote.isChecked() && await vote.isDisabled() &&
+          await page.locator('#rg-reason').evaluate(el=>el.readOnly) && await page.locator('#rg-prediction-lock').isVisible(),
+          'the starting forecast and rationale are visible but locked after the model begins');
+        await page.locator('#rg-prediction').evaluate(form=>{
+          form.querySelector('input[value=decrease]').checked=true;
+          form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+        });
+        check((await save(page)).prediction==='increase','even a dispatched submit cannot replace the initial forecast');
+        await use(page.locator('#rg-return-model'),cfg);
+      }
       if (action < 6) check(await stepButton(page,'analyze').isDisabled() && await stepButton(page,'explain').isDisabled(),
         label + ' analysis stays gated until the six model actions are complete');
       if (action === 5 && cfg.width === 1366) {

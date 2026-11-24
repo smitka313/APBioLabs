@@ -351,9 +351,11 @@
   <section id="explore" class="cr-card" aria-labelledby="cr-explore-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">02 · Follow the clues</p><h2 id="cr-explore-title" tabindex="-1">Find a pattern worth saving</h2></div><span class="cr-chip" id="cr-pin-count">0 comparisons pinned</span></div>
     <p class="cr-question-reminder" id="cr-question-explore" hidden><strong>Your investigation question:</strong> <span id="cr-question-explore-text"></span></p>
+    <p class="cr-muted" id="cr-view-help">Pick a dataset that can answer your question. You can switch views at any time.</p>
+    <button type="button" class="btn btn--sm" id="cr-revise-question">Revise my question</button>
     <p id="cr-verdict" class="cr-verdict"></p>
     <div class="cr-tools">
-      <label for="cr-view">Data view<select id="cr-view"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option><option value="michigan">Michigan · screening and diagnosis</option></select></label>
+      <label for="cr-view">Data view<select id="cr-view" aria-describedby="cr-view-help"><option value="types">Cancer types · United States</option><option value="states">Cancer diagnoses by state</option><option value="poverty">State poverty, income and cancer</option><option value="race">Race and ethnicity · U.S. registries</option><option value="michigan">Michigan · screening and diagnosis</option></select></label>
       <label for="cr-measure"><span id="cr-measure-label">Graph and rank by</span><select id="cr-measure"></select></label>
       <label id="cr-socio-control" for="cr-socio" hidden>Scatterplot x-axis<select id="cr-socio"><option value="poverty">Poverty rate</option><option value="income">Median household income</option></select></label>
       <label id="cr-mi-x-label" for="cr-mi-x" hidden>Scatterplot x-axis<select id="cr-mi-x"><option value="screening">Mammography use</option><option value="income">Median household income</option></select></label>
@@ -414,11 +416,12 @@
     <div class="cr-two cr-explain">
       <aside class="cr-context" aria-labelledby="cr-evidence-title"><p class="cr-case-index">Case notebook</p><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-lesson-observations" hidden><summary>Your Exhibit A–C observations</summary><ul id="cr-lesson-observation-list"></ul></details><details class="cr-case-debrief" id="cr-explain-test-cost" hidden><summary>Exhibit F: the cost of getting tested</summary><ul id="cr-explain-test-cost-values"></ul><p>Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014. See <a href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">the source, Exhibit 1</a>.</p></details></aside>
       <div>
-        <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
+        <label for="cr-claim">Answer your question. Name both groups and give the value for each, with units.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>
         <label for="cr-limits">What can’t the chart tell you? What other evidence would you want?</label>
         <p id="cr-limits-help" class="cr-muted">Correlation means two measures tend to vary together. It does not prove that one caused the other.</p>
         <textarea id="cr-limits" rows="3" maxlength="1600" placeholder="These group statistics don’t show…" aria-describedby="cr-limits-help"></textarea>
+        <label class="cr-evidence-confirm" id="cr-evidence-review" for="cr-evidence-confirm"><input type="checkbox" id="cr-evidence-confirm"> I checked that my pinned comparison answers my question and that I cited both values.</label>
         <p id="cr-finish-hint" class="cr-muted">Write both responses to unlock Finish investigation.</p>
         <button class="btn btn--primary" type="button" id="cr-finish" aria-describedby="cr-finish-hint" disabled>Finish investigation</button>
         <div data-ose-report-final></div>

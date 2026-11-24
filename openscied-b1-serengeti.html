@@ -150,6 +150,12 @@
           <select id="sg-evidence-choice"><option value="">Choose a record</option></select>
           <p id="sg-analysis-record-note" class="sg-selected"></p>
           <div id="sg-selected"></div>
+          <details class="sg-note-disclosure">
+            <summary>Compare group sizes across hunts</summary>
+            <p>Compare two recorded hunts with the same predator species and group size but different wildebeest group sizes. What changed about the starting dice?</p>
+            <div id="sg-hunt-comparison"></div>
+            <p>One result does not show which group size usually succeeds. More trials with the same matchups would help you separate the group-size effect from chance.</p>
+          </details>
         </section>
         <section class="sg-answer-panel" data-answer-panel="evidence">
           <details id="sg-question-details" class="sg-note-disclosure"><summary>Optional: add your investigation question</summary>
@@ -161,7 +167,7 @@
         </section>
         <section class="sg-answer-panel" data-answer-panel="limits" hidden>
           <p class="sg-model-scope" id="sg-analysis-scope"><strong>Model limits:</strong> Dice model chance during hunts. This one-year game does not model wildebeest births, the available food or water, or how predator populations respond to prey numbers. A playthrough is not a prediction of carrying capacity or real population size.</p>
-          <label for="sg-limits">What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="3" maxlength="750"></textarea>
+          <label for="sg-limits">What could you test again before drawing a broader conclusion?</label><p id="sg-limits-hint">For example, keep predator species and starting dice the same, change the wildebeest group size, and repeat each matchup. What outcome would you record each time?</p><textarea id="sg-limits" aria-describedby="sg-limits-hint" rows="3" maxlength="750"></textarea>
         </section>
         <div class="sg-answer-actions">
           <button id="sg-answer-next" type="button" class="sg-plain" data-answer-step="claim">Next: Explain →</button>

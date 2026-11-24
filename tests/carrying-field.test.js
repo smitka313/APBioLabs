@@ -35,11 +35,11 @@ test('signed typed rates support standard formatting without quietly dropping a 
   assert.match(F.checkRate('1978-2012','3312').hint,/within the interval/);
   assert.equal(F.checkRate('1978-2012','112614').code,'incorrect');
 });
-test('1994 to 1999 recovery is visible but intervening dates are unresolved',()=>{
+test('1999 is higher, but the beginning of the rebound is not known',()=>{
   assert.equal(F.checkGap('by-1999').code,'correct');
   assert.equal(F.checkGap('1998').code,'incorrect');
   assert.equal(F.checkGap('every-year').code,'incorrect');
-  assert.match(F.checkGap('1998').detail,/cannot show when recovery began or when the drought ended/);
+  assert.match(F.checkGap('1998').detail,/cannot show when the rebound began or when the drought ended/);
   assert.equal(F.checkRate('1994-1999','75948'),null);
 });
 
@@ -90,7 +90,7 @@ test('mounted activity keeps independent rates, checks, reasoning and reset on o
   assert.match(view.api.report(),/Student rate: \+71,040 wildebeest\/year/);
   assert.match(view.api.report(),/Reasoning: The populations differ/);
   assert.match(view.api.report(),/Student rate: -151066 wildebeest\/year/);
-  assert.match(view.api.report(),/recovered by the next plotted observation in 1999/);
+  assert.match(view.api.report(),/next plotted estimate was higher in 1999.*missing years do not show when the rebound began/);
   view.change('cc-interval','1961-1977');
   assert.match(view.host.innerHTML,/value="\+71,040"/);
   assert.equal(view.host.querySelector('#cc-rate-feedback').dataset.fieldState,'correct');

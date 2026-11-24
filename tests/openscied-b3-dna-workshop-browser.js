@@ -320,6 +320,8 @@ async function exactStage(page,name,slots,label) {
   }
   if(name==='rna')check(/skip processing.*cap.*tail.*Introns.*Not all/i.test(await page.locator('#dw-model-note').textContent()),
     label+' makes simplified mRNA processing clear while students are making RNA');
+  if(name==='rna')check(/transcription means making RNA from DNA/i.test(await board(page).innerText()),label+' names transcription during the RNA action');
+  if(name==='chain')check(/translation means reading RNA/i.test(await board(page).innerText()),label+' names translation during the chain action');
   if(name==='sort')check(await page.getByRole('heading',{name:'Match products to processes',exact:true}).isVisible(),
     label+' final step states what students match');
 }

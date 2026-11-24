@@ -135,6 +135,17 @@
       el('p', 'small muted', 'SIMULATED burns. Not measurements from a real demonstration. A rise of only a degree or two can be thermometer noise, so compare fuels with big differences.')];
   }
 
+  function senseBurnNodes() {
+    // Use the same per-fuel averages and precision as the three checks below the table.
+    const grouped = L.byFuel(L.tableRows(state.burn));
+    if (!grouped.length) return [el('p', 'small muted', 'Weigh a fuel after burning to see its results here. Record at least two fuel types to compare.')];
+    const round = v => Math.round(v * 10) / 10;
+    const result = [table('From your simulated burns', ['Fuel', 'Mass lost (g)', 'Temperature change (°C)', 'Final BTB color and number'],
+      grouped.map(g => [g.label, round(g.massLost).toFixed(1), round(g.tempRise).toFixed(1), L.btbText(round(g.btbAfter))]))];
+    if (grouped.length < 2) result.push(el('p', 'small muted', 'Record another type of fuel to compare.'));
+    return result;
+  }
+
   /* ---------- predictions, checked against the student's own table ---------- */
   function predState(fuel) {
     const parts = [['ignite', 'pred-' + fuel + '-ignite'], ['energy', 'pred-' + fuel + '-energy']].map(function (p) { return L.checkPrediction(fuel, p[0], ($('#' + p[1]) || {}).value, state.burn); }).filter(function (r) { return r.status !== 'empty'; });
@@ -153,6 +164,7 @@
     const recorded = burnNodes(), data = $('#cer-model-data');
     data.hidden = !recorded.length;
     $('#cer-data-body').replaceChildren(...recorded);
+    $('#sense-burn-data-body')?.replaceChildren(...senseBurnNodes());
     renderPreds(false); renderDataPicks(); renderClaim(false);
   }
 

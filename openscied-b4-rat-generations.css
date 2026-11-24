@@ -11,7 +11,8 @@
 .rg-steps button,.rg-timeline button,.rg-metrics button,.rg-pair{min-height:39px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;cursor:pointer;padding:5px 6px}
 .rg-steps button[aria-current=step],.rg-timeline button[aria-pressed=true],.rg-metrics button[aria-pressed=true],.rg-pair[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .rg-shell button:disabled{opacity:.68;cursor:not-allowed}.rg-steps button span{margin-right:4px}
-[data-rg-step][hidden],#rg-model-analyze[hidden],#rg-next[hidden]{display:none!important}
+[data-rg-step][hidden],#rg-model-analyze[hidden],#rg-next[hidden],
+#rg-cross-jump[hidden],#rg-produce[hidden],#rg-return-model[hidden],#rg-prediction button[hidden]{display:none!important}
 .rg-stage{margin:0 0 9px}.rg-stage p{margin:0}.rg-stage h2{font-size:clamp(1.27rem,2.7vw,1.96rem);margin-top:3px}
 .rg-chip{padding:3px 9px;border-radius:12px;background:var(--accent-soft);color:var(--accent);font-size:.84rem;font-weight:750;letter-spacing:.02em}
 .rg-panel{min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}

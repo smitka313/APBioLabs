@@ -216,6 +216,9 @@ async function exercise(browser,base,size) {
     }
     await selectStep(page,size,'aviary');
     check(await id(page,'ju-aviary-results').isHidden(),label+' aviary evidence starts concealed');
+    check(/explore the new room/.test(await page.locator('label[for=ju-prediction]').innerText()) &&
+      /kept the same/.test(await id(page,'ju-controls-prompt').locator('..').innerText()),
+      label+' introduces the measured behavior and gives a controls prompt beside the prediction');
     const art=id(page,'ju-aviary-art');
     const savedBeforeControl=await readSaved(page);
     await activate(art.getByRole('button',{name:'Food',exact:true}),size);
@@ -373,8 +376,15 @@ async function verifyCortData(page,label) {
   check(await filter.isDisabled()&&await filter.inputValue()==='all'&&
     origins.length===40&&origins.every(site=>site==='all'),
     label+' all 40 digitized points are available without pretending the birds\' sites can be separated');
+  const rowIds=await id(page,'ju-cort-table').locator('tbody tr > td:first-child').allTextContents();
+  check((await id(page,'ju-cort-id').textContent())==='Bird (dot)' && rowIds.length===40 &&
+    rowIds.every((value,i)=>value===String(i+1)) && /does not identify/.test(await id(page,'ju-cort-pool-note').textContent()),
+    label+' pooled data table uses numbered dots without guessed origins');
+  check(await id(page,'ju-evidence').isVisible() &&
+    /Field distance.*Aviary exploration/.test(tidy(await id(page,'ju-evidence').textContent())),
+    label+' both evidence summaries are visible immediately beside the synthesis');
   const status=tidy(await id(page,'ju-cort-status').textContent());
-  check(/40 birds shown/.test(status)&&/correlation r\s*=\s*[−-]0\.53\b/.test(status)&&/digitized|reconstructed|approximate/i.test(status),
+  check(/40 birds shown/.test(status)&&/correlation r\s*=\s*[−-]0\.53\b/.test(status)&&/digitized|reconstructed|approximate/i.test(status)&&/higher maximum CORT generally went with lower exploration scores/.test(status)&&/does not tell us whether CORT caused/.test(status),
     label+' the graph describes the published figure’s approximate data and negative association');
   await id(page,'ju-fit').check();
   check((await readSaved(page))?.fit===true && await id(page,'ju-chart').locator('svg').first().isVisible(),

@@ -36,8 +36,14 @@ const configuration = [
       setLabel:g=>'Set '+g.index,MAKING_SENSE_ROWS:rows,MAKING_SENSE_IDS:sense,MAKING_SENSE_PROMPTS:[],ANALYSIS_PROMPTS:[['Analysis','analysis']],RESPONSE_IDS:ids
     },finish(){
       state.game.roundResults={1:{legacy:true},2:{blue:0,red:0,destroyed:3,turns:7,endedBy:'early'}};
-      for(let i=1;i<3;i++) groups.push({index:i,trials:Array(3).fill({divisions:0,modelVersion:2,cancerCount:0}),mean:0,changes:[null,0,0]});
+      const settings=[{age:50,size:'average',tissue:'skin'}, {age:50,size:'average',tissue:'skin'}];
+      for (const [i,c] of settings.entries()) groups.push({index:i+1,...c,trials:Array(3).fill({...c,divisions:0,modelVersion:2,cancerCount:0}),mean:0,changes:[null,0,0]});
       sense.forEach(id=>fields[id]=answer);
+    },beforeMore:s=>s.status===draft && s.missing.some(x=>x.includes('differ only in age')),
+    more(){
+      for (const c of [{age:70,size:'average',tissue:'skin'}, {age:50,size:'large',tissue:'skin'}, {age:50,size:'average',tissue:'colon'}]){
+        groups.push({index:groups.length+1,...c,trials:Array(3).fill({...c,divisions:0,modelVersion:2,cancerCount:0}),mean:0,changes:[null,0,0]});
+      }
     },specific:s=>JSON.stringify(s.sections).includes('Ended early') && JSON.stringify(s.sections).includes('Not recorded')};
   }],
   ['dna-p53','download-work',() => {
@@ -47,7 +53,9 @@ const configuration = [
       L:{forkSummary:x=>x},RESPONSE_IDS:['a','b'],labelFor:id=>id,answerFor:id=>answers[id],
       forkDataNodes:()=>state.fork?[{querySelector:()=>table}]:[],expressionDataNodes:()=>[],optionalWriting:()=>[['Optional',answer]],
       OLD_LABELS:{retired:'Earlier response'}
-    },finish(){state.fork={hasBefore:true,hasAfter:true};state.expression.runs.push({});answers.b='My paired-strand comparison.';},
+    },finish(){state.fork={hasBefore:true,hasAfter:true,p53:{a:{tried:1}}};state.expression.runs.push({strand:'A'},{strand:'A'});answers.b='My paired-strand comparison.';},
+    beforeMore:s=>s.status===draft && s.missing.some(x=>x.includes('strands B, C')),
+    more(){state.expression.runs.push({strand:'B'},{strand:'C'});},
     specific:s=>JSON.stringify(s.sections).includes('Earlier saved responses') && JSON.stringify(s.sections).includes('DNA evidence')};
   }],
   ['dna-workshop','dw-download',() => {
@@ -60,14 +68,17 @@ const configuration = [
   }],
   ['inheritance-environment','download-work',() => {
     const state={pedigree:{},planner:{},yeast:{},question:null},answers=[{id:'wrap-sentence',prompt:'Genes and chance',answer}],choices=[{id:'exit-q1',question:'What varied?',answer:'',value:''}],sequence=[];
-    return {state,ctx:{picks:()=>choices,chips:()=>[{question:'Evidence chips',chosen:['My observation']}],
+    const selectedChips = [];
+    return {state,ctx:{picks:()=>choices,chips:()=>[{id:'cer-evidence',question:'Evidence chips',chosen:selectedChips}],
       textAnswers:()=>answers,orderSeq:()=>sequence,BOXES:[],L:{checkOrder:r=>({status:r.length?'correct':'empty'})},
       STEP_LABELS:{copy:'DNA copied'}
     },finish(){
-      choices[0].answer='Differences in exposure';choices[0].value='a';sequence.push('copy');
-      Object.assign(state,{pedigree:{guesses:{p:['AA']}},twoGene:{genotypes:{p:{p53:'Aa'}}},meiosis:{runs:[{}]},skin:{viewed:{black:true}},
-        planner:{ready:true},yeast:{dishes:[{colonies:0}]},question:{text:'My testable question',ok:true}});
-    },specific:s=>JSON.stringify(s.sections).includes('My observation') && JSON.stringify(s.sections).includes('Eide and Weinstock')};
+      Object.assign(state,{skin:{viewed:{black:true}},planner:{ready:true},yeast:{dishes:[{colonies:0}]},question:{text:'My testable question',ok:true}});
+    },beforeMore:s=>s.status===draft && s.missing.some(x=>x.includes('claim, evidence and reasoning')),
+    more(){
+      choices.push({id:'cer-claim',value:'a',question:'Claim',answer:'I noticed a difference.'},{id:'cer-reason',value:'a',question:'Reason',answer:'My dish evidence.'});
+      selectedChips.push('My observation');
+    },specific:s=>s.title==='Environment & UV Evidence · Lesson 9' && JSON.stringify(s.sections).includes('My observation') && JSON.stringify(s.sections).includes('Eide and Weinstock')};
   }]
 ];
 for (const [activity,legacy,fixture] of configuration) {
@@ -97,6 +108,8 @@ for (const [activity,legacy,fixture] of configuration) {
   const initial=sandbox.submissionReport();
   check(initial.status===draft && initial.missing.length>0 && JSON.stringify(initial.sections).includes(answer),'retains actual partial work in a draft: '+activity);
   config.finish();
+  if (config.beforeMore) check(config.beforeMore(sandbox.submissionReport()), 'does not mark a report final without the assigned evidence: '+activity);
+  config.more?.();
   const ready=sandbox.submissionReport();
   check(ready.status===final && !ready.missing.length && config.specific(ready),'final requires work and reports real evidence: '+activity);
   current=false;

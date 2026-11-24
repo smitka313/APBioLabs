@@ -36,6 +36,9 @@ test('anonymous has no generated name, identity or Dataset ID and recovery never
   assert.deepEqual(r.student, { name: '', period: '' });
   assert.equal(r.datasetId, '');
   assert.equal(r.status, 'recovery');
+  assert.equal(r.allowIdentityEdit, false);
+  assert.equal(Report.normalize({ ...fixture(), allowIdentityEdit: false, student: null }, NOW).allowIdentityEdit, false);
+  assert.equal(Report.normalize({ ...fixture(), status: 'draft', student: null }, NOW).allowIdentityEdit, true);
   assert.equal(r.sections[0].items[1].rows[0][0], '0');
 });
 test('invalid evidence shapes fail rather than silently omitting data from the report', () => {
@@ -61,7 +64,7 @@ test('Word contract creates editable typed runs, tables and repeated headers wit
   }
   const json = JSON.stringify(document);
   assert.match(json, /ACTIVITY COMPLETE/);
-  assert.match(json, /This is not a grade or an authenticity check/);
+  assert.match(json, /This does not show who did the work or how well/);
   assert.match(json, /Second <tag> & line/);
   assert.match(json, /Example Student/);
   assert.match(json, /Simulated trial/);

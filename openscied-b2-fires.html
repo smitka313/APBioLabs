@@ -191,7 +191,8 @@
         <p class="scene-desc" id="cards-desc">Text description: five cards to sort into what goes in and what comes out.</p>
         <p class="scene-notice" id="cards-notice" hidden>The card activity could not load. Reload the page to try again.</p>
       </div>
-      <div class="pick-row"><label for="cards-rate-hot">At higher temperature, the reaction goes…</label>
+      <p class="small"><strong>Class example:</strong> After 20 minutes, the model shows about 10 mm of foam at 18 °C and 62 mm at 43 °C. These are example readings, not your recorded data.</p>
+      <div class="pick-row"><label for="cards-rate-hot">In the class example, the reaction at 43 °C went ___ than at 18 °C.</label>
         <select id="cards-rate-hot"><option value="">Choose</option><option value="faster">faster</option><option value="slower">slower</option><option value="same">at the same speed</option></select>
         <p class="feedback" id="feedback-cards-rate-hot"></p></div>
       <div class="pick-row"><label for="cards-rate-peat">In cold, low-oxygen peat, the reaction goes…</label>
@@ -211,22 +212,23 @@
   <section class="step wrap wrap--wide gutter" id="sense3" data-step="Make sense: decomposition">
     <header><div class="eyebrow">Part A · Lesson 3 · 6 · Making Sense</div><h2>What did the yeast show?</h2></header>
     <div class="step-body">
-      <p class="small muted">Use your foam table from section 4.</p>
+      <div class="your-data panel" id="data-sense-foam" aria-labelledby="data-sense-foam-title"><h3 id="data-sense-foam-title">Your last recorded foam reading</h3><div class="your-data-body" id="data-sense-foam-body"><p class="muted">Run the test first. Your readings will appear here.</p></div></div>
+      <p class="small"><strong>Class example for the next two questions:</strong> After 20 minutes the model shows about 10 mm of foam at 18 °C and 62 mm at 43 °C. Answer for those two temperatures, even if you tried different ones. Hotter isn’t always faster. In this model, yeast makes little foam at 55 °C.</p>
       <p class="your-data-line" id="pred-note"></p>
       <div class="panel sentence-row"><p class="sentence">
         <select id="sense-amount" aria-label="More or less sugar"><option value="">choose</option><option value="more">More</option><option value="less">Less</option></select>
-        sugar was converted to carbon dioxide at
+        sugar was broken down at
         <select id="sense-temp" aria-label="Higher or lower temperatures"><option value="">choose</option><option value="higher">higher</option><option value="lower">lower</option></select>
         temperatures.</p>
         <p class="feedback" id="feedback-sugar"></p></div>
-      <div class="pick-row"><label for="sense-energy">Energy moved from sugar to the yeast ___ at high temperatures than at low temperatures.</label>
+      <div class="pick-row"><label for="sense-energy">In the 18 °C and 43 °C class example, energy moved from sugar to the yeast ___ at 43 °C.</label>
         <select id="sense-energy"><option value="">Choose</option><option value="faster">faster</option><option value="slower">slower</option><option value="same">at the same speed</option></select>
         <p class="feedback" id="feedback-sense-energy"></p></div>
       <fieldset class="mcq" data-correct="b" data-id="sense-account"><legend>Can measuring carbon dioxide account for all the matter and energy?</legend>
         <label class="choice"><input type="radio" name="sense-account" value="a" data-why="Try again. Why not: sugar’s matter also ends up in water and in new yeast, and energy is not a gas."> Yes, carbon dioxide is all of it.</label>
         <label class="choice"><input type="radio" name="sense-account" value="b" data-why="Yes. Matter also goes into water and new yeast, and energy is transferred to the yeast and as heat. Foam shows only part."> No, there is more than carbon dioxide.</label>
       </fieldset>
-      <div class="panel map-card"><h3>Which beaker matches…</h3>
+      <div class="panel map-card"><h3>Which class-example beaker best matches…</h3><p class="small">Think about the default 18 °C (cold), 27 °C (room), and 43 °C (warm) beakers as models, not actual Arctic temperatures.</p>
         <div class="pick-row"><label for="sense-past">…the past, when the peat did not rot?</label>
           <select id="sense-past"><option value="">Choose</option><option value="cold">cold</option><option value="room">room temperature</option><option value="warm">warm</option></select>
           <p class="feedback" id="feedback-sense-past"></p></div>
@@ -296,10 +298,10 @@
         <p class="scene-desc" id="tilt-desc">Text description: three simulated test tubes with a plant in blue BTB solution. Choose a light for each tube, then start the night.</p>
         <p class="scene-notice" id="tilt-notice" hidden>The tilt model could not load. Reload the page to try again.</p>
       </div>
-      <fieldset class="mcq" data-correct="a" data-id="tilt-pattern"><legend>As more light reaches the plant, the BTB…</legend>
+      <fieldset class="mcq" data-correct="a" data-id="tilt-pattern"><legend>In the class example (direct light, 45°, and foil), as more light reached the plant, the BTB…</legend>
         <label class="choice"><input type="radio" name="tilt-pattern" value="a" data-why="Yes. More light means more photosynthesis, which uses up carbon dioxide, so the BTB gets bluer."> gets bluer.</label>
-        <label class="choice"><input type="radio" name="tilt-pattern" value="b" data-why="Try again. Why not: look at your table. The foil tube, with no light, was the yellowest."> gets yellower.</label>
-        <label class="choice"><input type="radio" name="tilt-pattern" value="c" data-why="Try again. Why not: your tubes did not all end up the same color."> does not change.</label>
+        <label class="choice"><input type="radio" name="tilt-pattern" value="b" data-why="Try again. In the class example, the foil tube got no light and was the yellowest."> gets yellower.</label>
+        <label class="choice"><input type="radio" name="tilt-pattern" value="c" data-why="Try again. The class example’s tubes did not all end up the same color."> does not change.</label>
       </fieldset>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
         <li>Light on the plant is the cosine of the lamp’s angle: full light at 0°, about 0.71 at 45°, about 0.34 at 70°, none under foil.</li>
@@ -323,10 +325,11 @@
           <p class="feedback" id="feedback-sense-yellowest"></p></div>
       </div>
       <div class="panel map-card"><h3>Why the colors changed</h3>
-        <div class="pick-row"><label for="sense-btb-blue">In a blue tube, the plant used ___ carbon dioxide than it made.</label>
+        <div class="pick-row"><label for="sense-btb-blue">In a tube that got bluer, the plant used ___ carbon dioxide than it made.</label>
           <select id="sense-btb-blue"><option value="">Choose</option><option value="more">more</option><option value="less">less</option><option value="same">the same amount of</option></select>
           <p class="feedback" id="feedback-sense-btb-blue"></p></div>
-        <div class="pick-row"><label for="sense-foil-co2">In the foil tube, carbon dioxide went…</label>
+        <p class="small"><strong>Class example:</strong> The foil-covered tube begins blue (2.0) and ends yellow (above 2.0). If you tested foil, compare this example with your own reading above.</p>
+        <div class="pick-row"><label for="sense-foil-co2">In the class example’s foil-covered tube, carbon dioxide went…</label>
           <select id="sense-foil-co2"><option value="">Choose</option><option value="up">up</option><option value="down">down</option></select>
           <p class="feedback" id="feedback-sense-foil-co2"></p></div>
         <div class="pick-row"><label for="sense-foil-why">…because the plant kept…</label>
@@ -346,11 +349,11 @@
         <div class="pick-row"><label for="sense-plant">The plant in a tube stands for…</label>
           <select id="sense-plant"><option value="">Choose</option><option value="arctic">the Arctic plants</option><option value="sun">the Sun</option><option value="decomp">the decomposers</option></select>
           <p class="feedback" id="feedback-sense-plant"></p></div>
-        <div class="pick-row"><label for="sense-most">Arctic plants did the most photosynthesis when the light was like…</label>
-          <select id="sense-most"><option value="">Choose</option><option value="direct">direct (0°)</option><option value="tilt45">tilted (45°)</option><option value="tilt70">strongly tilted (70°)</option><option value="foil">foil (none)</option></select>
+        <div class="pick-row"><label for="sense-most">In the class example (direct light, 45°, and foil), which tube had the most photosynthesis?</label>
+          <select id="sense-most"><option value="">Choose</option><option value="direct">direct (0°)</option><option value="tilt45">tilted (45°)</option><option value="tilt70" hidden>strongly tilted (70°)</option><option value="foil">foil (no light)</option></select>
           <p class="feedback" id="feedback-sense-most"></p></div>
-        <div class="pick-row"><label for="sense-least">…and the least when it was like…</label>
-          <select id="sense-least"><option value="">Choose</option><option value="direct">direct (0°)</option><option value="tilt45">tilted (45°)</option><option value="tilt70">strongly tilted (70°)</option><option value="foil">foil (none)</option></select>
+        <div class="pick-row"><label for="sense-least">In that same class example, which tube had the least photosynthesis, counting the foil tube?</label>
+          <select id="sense-least"><option value="">Choose</option><option value="direct">direct (0°)</option><option value="tilt45">tilted (45°)</option><option value="tilt70" hidden>strongly tilted (70°)</option><option value="foil">foil (no light)</option></select>
           <p class="feedback" id="feedback-sense-least"></p></div>
         <div class="pick-row"><label for="sense-starch">Optional starch test: extra sugar a plant makes is…</label>
           <select id="sense-starch"><option value="">Choose</option><option value="starch">stored as starch</option><option value="co2">turned back into carbon dioxide</option><option value="vanish">lost</option></select>

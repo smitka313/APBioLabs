@@ -3,6 +3,7 @@
 const T = require('./_h');
 const OUT = process.env.OUT || require('os').tmpdir();
 const ME = { name: 'Jordan Lee', period: '3' };
+const OPENSCIED = 'aplab:openscied:b1-migration:v1';
 
 /* Fresh context that seeds ONCE (a marker in localStorage that sign-out does not touch), so a sign-out really leaves the browser empty. */
 async function ctxFor(b, o = {}) {
@@ -17,6 +18,7 @@ async function ctxFor(b, o = {}) {
 }
 const base = () => ({
   'aplab:student': ME, 'aplab:tour': { seen: true, v: 1 },
+  [OPENSCIED]: { v: 1, answers: { claim: 'my migration evidence' } },
   'aplab:ui:allParts': true, 'aplab:pref:theme': 'dark',
   'aplab:lab05:field:zz-test': 'my answer', 'aplab:lab05:keyres:x': { label: 'x', value: 1 },
   'aplab:progress:lab05': { done: 4, total: 6, sections: 8, t: Date.now() },
@@ -50,7 +52,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   const lid = await dlg.getAttribute('aria-labelledby'), did = await dlg.getAttribute('aria-describedby');
   T.ok(!!(await p.locator('#' + lid).count()) && !!(await p.locator('#' + did).count()), 'labelled and described');
   const txt = await dlg.innerText();
-  T.ok(/This removes Jordan Lee and ALL of their saved work in every lab from this computer\. It can't be undone\./.test(txt), 'explains what is erased');
+  T.ok(/removes the current sign-in and all AP Biology and OpenSciEd work saved in this browser/.test(txt), 'explains that sign-out clears both dashboards');
   T.ok(/Save your work first:/.test(txt), '"Save your work first:" present');
   for (const n of ['Download report (.docx)', 'Download progress file', 'Get my transfer code']) T.ok(await dlg.getByRole('button', { name: n }).count() >= 1, 'lab page offers "' + n + '"');
   T.ok(await dlg.getByRole('button', { name: 'Download progress file for Lab 2' }).count() === 1, 'other labs with work get their own progress-file button');
@@ -58,6 +60,10 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await p.evaluate(() => document.querySelector('main').hasAttribute('inert')), 'page behind is inert');
   const confirm = dlg.getByRole('button', { name: 'Sign out and erase' });
   T.ok(await confirm.isDisabled(), 'Sign out and erase starts disabled');
+  const [oseFile] = await Promise.all([p.waitForEvent('download'), dlg.getByRole('button', {name:'Download OpenSciEd backup'}).click()]);
+  const ose = JSON.parse(require('fs').readFileSync(await oseFile.path(), 'utf8'));
+  T.ok(ose.format === 'openscied-saved-work-v1' && ose.student === null && JSON.parse(ose.work[OPENSCIED]).answers.claim === 'my migration evidence', 'AP sign-out offers an ownership-neutral raw OpenSciEd backup');
+  await dlg.locator('.dm-title').focus();
   await p.screenshot({ path: OUT + '/t24-signout-1366.png' });
 
   // Tab never leaves the dialog
@@ -176,7 +182,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(await p.locator('#resume').isHidden(), 'pick-up card gone');
   const cards = await p.locator('[data-lab-progress]').allInnerTexts();
   T.ok(cards.length === 13 && cards.every(t => /Not started/.test(t)), 'all 13 home cards read "Not started"');
-  T.ok(/All your lab work was erased/.test(await p.locator('.toasts').innerText()), 'confirmation toast');
+  T.ok(/AP Biology and OpenSciEd work was erased/.test(await p.locator('.toasts').innerText()) && !a2[OPENSCIED], 'confirmation toast and OpenSciEd work cleared');
   T.ok(await p.locator('.id-line').first().innerText().then(t => /Jordan Lee/.test(t)), 'still signed in as Jordan Lee');
   await p.goto(srv.url + 'lab05.html'); await p.waitForTimeout(900);
   const ds2 = (await p.locator('.ds-id').first().innerText()).trim();
@@ -217,6 +223,7 @@ const ALLOWED = k => k.startsWith('aplab:ui:') || k.startsWith('aplab:pref:');
   T.ok(!a3['aplab:progress:lab05'] || JSON.parse(a3['aplab:progress:lab05']).done === 0, 'Lab 5 progress cleared');
   T.ok(a3['aplab:lab02:field:zz-test'] === snap3['aplab:lab02:field:zz-test'] && a3['aplab:hint:lab02'] === snap3['aplab:hint:lab02'] && a3['aplab:progress:lab02'] === snap3['aplab:progress:lab02'], 'Lab 2 work, hint and progress untouched');
   T.ok(a3['aplab:student'] === snap3['aplab:student'] && a3['aplab:ui:allParts'] === snap3['aplab:ui:allParts'], 'identity and preferences untouched');
+  T.ok(a3[OPENSCIED] === snap3[OPENSCIED], 'clearing one AP lab does not clear OpenSciEd work');
   T.ok((await p.locator('.ds-id').first().innerText()).trim() === ds3, 'dataset unchanged');
   T.ok(/This lab was erased/.test(await p.locator('.toasts').innerText()), 'confirmation toast');
   T.ok(p.errors.length === 0, 'no page errors' + (p.errors.length ? ': ' + p.errors.join(' | ') : ''));

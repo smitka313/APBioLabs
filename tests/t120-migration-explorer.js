@@ -200,8 +200,15 @@ async function auditNotesAndRain(browser,base){
   await p.locator('[data-page="evidence"]').click();ok(await p.locator('.mx-card').count()===18,'all 18 source cards rendered');
   for(const grouping of ['group','health','anthrax','month']){await p.locator('#card-sort').selectOption(grouping);ok(await p.locator('.mx-card').count()===18,'grouping by '+grouping+' retains all evidence');}
   await p.locator('#card-month').selectOption('6');ok(await p.locator('.mx-card').count()===3,'month filter limits cards to July');ok(/51%/.test(await p.locator('[data-card="m7g1"]').textContent()),'July predator card preserves 51%, not teacher summary');
-  await p.locator('[data-card="m7g1"] button').click();ok(await p.locator('#note-count').textContent()==='3','source card added to notebook');
+  const saveJulyCard=p.locator('[data-card="m7g1"] button');
+  await saveJulyCard.focus();await p.keyboard.press('Enter');
+  ok(await p.locator('#note-count').textContent()==='3','source card added to notebook');
+  ok(await p.locator('[data-card="m7g1"] h4').evaluate(el=>document.activeElement===el),
+    'keyboard save returns focus to the same evidence card after redrawing the notebook');
   await p.locator('#health-measure').selectOption('anthrax');ok(/anthrax/.test(await p.locator('#health-chart').textContent()),'graph switches to disease measure');
+  ok(await p.locator('#health-chart-overlap').isVisible() &&
+    /Filter cards by month/.test(await p.locator('label[for="card-month"]').textContent()),
+    'the overlapping group lines and the card-only month filter are explained on screen');
   await p.locator('#card-month').selectOption('all');ok(await p.locator('#health-chart .sim-tag-svg').count()===0,'published health evidence is not stamped simulated');await screenshot(p,'1366-light-evidence');
   await p.locator('[data-collection="rainfall"]').click();ok(/1160/.test(await p.locator('#occupancy-table').textContent()),'annual example retains verified source values');ok(/84%/.test(await p.locator('#collection-rainfall').textContent()),'selected-region percentage total explained');ok(await p.locator('#collection-rainfall a[href^="https://codap.concord.org"]').textContent()==='Open the interactive rainfall and herd data ↗' &&
     await p.locator('#collection-rainfall a[href*="data-excursion-2"]').textContent()==='Source: OpenSciEd Lesson 4, Data Excursion 2 ↗',

@@ -88,8 +88,8 @@ async function fits(page) {
         ok(/five required questions.*habitat question at the end is optional/.test(await page.locator('#cc-explain-help').textContent()),
           `${width} Explain distinguishes five required questions from the optional sixth prompt`);
         await page.locator('#cc-explain-question').selectOption('long-run');
-        ok(/only ran 12 rounds.*round 50.*do not need to run more/i.test(await page.locator('#cc-hint-long-run').textContent()),
-          `${width} 50-round prompt explains prediction from twelve existing rounds`);
+        ok(/rounds 7–12.*rounds 13–18.*do not need to run more/i.test(await page.locator('#cc-hint-long-run').textContent()),
+          `${width} prediction prompt uses six known rounds to extrapolate the next six`);
         await page.locator('#cc-explain-question').selectOption('habitat-claim');
         ok(/optional/i.test(await page.locator('#cc-explain-position').textContent()),
           `${width} pager also marks the optional habitat prompt`);

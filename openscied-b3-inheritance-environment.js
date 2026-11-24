@@ -480,15 +480,27 @@
       ['UV yeast simulation',state.yeast?.dishes?.some(x=>Number.isFinite(x?.colonies)) || false]
     ];
     const done = seen.filter(([,used])=>used).length;
-    const selected = picks(), selectedCount = selected.filter(x=>x.value).length;
-    const response = textAnswers(), order = orderSeq(), missing = [];
-    if (done < seen.length) missing.push('Use these models or evidence: ' + seen.filter(([,used])=>!used).map(([label])=>label).join('; ') + '.');
-    if (!state.question?.ok) missing.push('Build a testable question in the Question Tool.');
-    const incompleteExit = selected.filter(x=>/^exit-/.test(x.id) && !x.value);
-    if (incompleteExit.length) missing.push('Answer the remaining exit-ticket choices.');
-    if (L.checkOrder(order).status !== 'correct') missing.push('Complete the meiosis ordering check.');
-    if (!response.find(x=>x.id==='wrap-sentence')?.answer.trim()) missing.push('Write the wrap-up response on genes, environment and chance.');
-    const sections = [{title:'My evidence',items:[
+    const selected = picks(), allChips = chips(), selectedCount = selected.filter(x=>x.value).length;
+    const response = textAnswers(), order = orderSeq(), aMissing = [], bMissing = [];
+    const family = seen.slice(0,3), environment = seen.slice(3);
+    const unused = entries => entries.filter(([,used])=>!used).map(([label])=>label);
+    if (unused(family).length) aMissing.push('Use the remaining Lesson 8 models: ' + unused(family).join('; ') + '.');
+    if (unused(environment).length) bMissing.push('Use the remaining Lesson 9 evidence: ' + unused(environment).join('; ') + '.');
+    if (!state.question?.ok) bMissing.push('Build a testable question in the Question Tool.');
+    const answered = id => selected.some(x=>x.id===id && !!x.value);
+    if (!answered('cer-claim') || !answered('cer-reason') || !allChips.some(x=>x.id==='cer-evidence' && x.chosen.length)) {
+      bMissing.push('Complete the yeast claim, evidence and reasoning builder. Your teacher reviews your explanation.');
+    }
+    if (selected.some(x=>/^exit-/.test(x.id) && !x.value)) aMissing.push('Answer the remaining Lesson 8 exit-ticket choices.');
+    if (L.checkOrder(order).status !== 'correct') aMissing.push('Complete the meiosis ordering check.');
+    if (!response.find(x=>x.id==='wrap-sentence')?.answer.trim()) bMissing.push('Write the wrap-up response on genes, environment and chance.');
+    const lesson9Only = !bMissing.length && !!aMissing.length;
+    const missing = lesson9Only ? [] : [...bMissing, ...aMissing];
+    const sections = [{title:'Assignment scope',items:[
+      {type:'text',text:'Lesson 9: Environment and UV evidence ' + (bMissing.length?'in progress.':'recorded.')},
+      {type:'text',text:'Lesson 8: Family and inheritance models ' + (aMissing.length?'not marked complete.':'recorded.')},
+      ...(lesson9Only ? [{type:'text',text:'This report marks only the Lesson 9 pathway complete. Family activities are not required for this pathway.'}] : [])
+    ]},{title:'My evidence',items:[
       {type:'table',title:'Models and evidence used',columns:['Activity','Status'],rows:seen.map(([label,used])=>[label,used?'Recorded':'Not recorded'])},
       ...BOXES.flatMap(([,build])=>build().map(node=>{
         const table = node.querySelector('table');
@@ -500,17 +512,17 @@
       title:'My question and responses',items:[
         answer('My investigation question',state.question?.text),
         ...selected.map(x=>answer(x.question,x.answer)),
-        ...chips().map(x=>answer(x.question,x.chosen.join('; '))),
+        ...allChips.map(x=>answer(x.question,x.chosen.join('; '))),
         answer('My meiosis order',order.map(k=>STEP_LABELS[k]).filter(Boolean).join(' → ')),
         ...response.filter(x=>x.answer).map(x=>answer(x.prompt,x.answer))
       ]
     },{
       title:'Sources and limits',items:[{type:'text',text:'Gametes and yeast results are simulated. Skin-cancer observations are approximate readings of the lesson figures (Eide and Weinstock, 2005; doi:10.1001/archderm.141.4.477). Those figures do not state the y-axis unit. Group patterns cannot determine an individual’s risk or show cause.'}]
     }];
-    return {title:'Inheritance, Environment & Cancer Risk',unit:'OpenSciEd Biology B.3',
+    return {title:lesson9Only?'Environment & UV Evidence · Lesson 9':'Inheritance, Environment & Cancer Risk',unit:'OpenSciEd Biology B.3',
       source:'Models and approximate values from published figures; not a personal diagnosis or prediction.',
       status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),
-      keyResults:[{label:'Model or evidence activities used',value:done+' of '+seen.length},
+      keyResults:[{label:'Model or evidence activities used',value:lesson9Only?'3 of 3 lesson 9 activities':done+' of '+seen.length},
         {label:'Choice responses entered',value:selectedCount+' of '+selected.length}],sections};
   }
 
