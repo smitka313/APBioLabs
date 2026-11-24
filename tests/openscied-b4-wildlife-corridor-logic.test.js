@@ -49,9 +49,16 @@ test('generation evidence exactly matches independent counts and every allele co
         for(const individual of patch) {
           assert.equal(individual.alleles.length,2);
           assert.equal(individual.origins.length,2);
+          assert.equal(individual.parents.length,2);
+          if(individual.origins[0]===individual.origins[1]){
+            assert.notEqual(individual.parents[0].index,individual.parents[1].index);
+          }
           individual.origins.forEach((origin,slot)=>{
             assert.ok(origin===0||origin===1);
             assert.ok(prior[origin].has(individual.alleles[slot]),'no new variants created by movement or inheritance');
+            const parent=individual.parents[slot];
+            assert.deepEqual(parent.genotype,earlier.patches[origin][parent.index].alleles);
+            assert.equal(individual.alleles[slot],parent.genotype[parent.copy]);
             if(origin!==index) counts[index]++;
           });
         }

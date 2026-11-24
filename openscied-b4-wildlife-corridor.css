@@ -149,3 +149,36 @@
 @media(prefers-reduced-motion:reduce){
   .wc-mix-grid[data-animated="true"] :is(.wc-mix-travel,.wc-mix-genotype) {animation:none;}
 }
+
+/* Spotlight the model's real sampled adults on the map before their offspring appears. */
+.wc-mix-actions {margin:.64rem 0;}
+.wc-mix-actions p {margin:.32rem 0;}
+.wc-mix-actions > div {display:flex;align-items:end;gap:.5rem;flex-wrap:wrap;}
+.wc-mix-actions label {display:grid;gap:.2rem;}
+.wc-mix-actions select {font:inherit;max-width:100%;}
+.wc-pair-layer {position:absolute;inset:0;z-index:4;pointer-events:none;background:#0a20274a;}
+.wc-mate {position:absolute;left:var(--wc-x);top:var(--wc-y);transform:translate(-50%,-50%);display:grid;justify-items:center;gap:1px;
+  font:750 .67rem/1.1 var(--f-mono,monospace);text-align:center;color:#122b32;}
+.wc-mate-parent::before {content:"";width:26px;height:18px;display:block;background:currentColor;order:-1;
+  clip-path:polygon(0 15%,13% 20%,22% 5%,37% 9%,45% 33%,70% 35%,94% 19%,100% 26%,82% 50%,69% 60%,69% 100%,57% 100%,52% 68%,37% 67%,32% 100%,20% 100%,21% 58%,10% 49%,0 41%);}
+.wc-mate-parent {color:#ffdaa1;filter:drop-shadow(0 1px 1px #17292d);}
+.wc-mate-parent[data-coat="dark"] {color:#a4ece2;}
+.wc-mate-parent[data-crossing="true"] .wc-mate-tag {border:1px dashed #f8f0cb;}
+.wc-mate-gene,.wc-mate-tag {padding:1px 3px;border-radius:3px;background:#112b35;color:#fff5da;white-space:nowrap;}
+.wc-mate-child .wc-mate-gene {border:2px solid #e5b765;font-size:.8rem;}
+.wc-pair-layer[data-animated="true"] .wc-mate-parent {animation:wc-find-mate 1.12s ease-in-out both;}
+.wc-pair-layer[data-animated="true"] .wc-mate-child {animation:wc-show-offspring 1.35s ease-out both;}
+@keyframes wc-find-mate {
+  0%,14% {left:var(--wc-x);top:var(--wc-y);opacity:1;}
+  38% {left:var(--wc-vx);top:var(--wc-vy);opacity:1;}
+  55%,82% {left:var(--wc-mx);top:var(--wc-my);opacity:1;}
+  100% {left:var(--wc-mx);top:var(--wc-my);opacity:0;}
+}
+@keyframes wc-show-offspring {
+  0%,68% {left:var(--wc-mx);top:var(--wc-my);opacity:0;}
+  76% {left:var(--wc-mx);top:var(--wc-my);opacity:1;}
+  100% {left:var(--wc-x);top:var(--wc-y);opacity:1;}
+}
+.wc-mix-grid[data-animated="true"] .wc-mix-travel {animation-delay:.63s;}
+.wc-mix-grid[data-animated="true"] .wc-mix-genotype {animation-delay:.92s;}
+@media(prefers-reduced-motion:reduce){.wc-pair-layer[data-animated="true"] .wc-mate {animation:none;}}

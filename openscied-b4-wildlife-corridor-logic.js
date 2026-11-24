@@ -102,7 +102,7 @@
     const generation=state.generation+1, draw=rngFor(state.seed,generation);
     const chance=CONDITIONS[state.condition].migrationChance;
     const patches=[0,1].map(patch=>Array.from({length:PATCH_SIZE},()=>{
-      const origins=[], alleles=[];
+      const origins=[], alleles=[], parents=[];
       let firstParent=null;
       for (let copy=0; copy<2; copy++) {
         const origin=draw()<chance?1-patch:patch;
@@ -114,9 +114,11 @@
         if (sameSource&&parent>=firstParent) parent++;
         if (copy===0) firstParent=parent;
         origins.push(origin);
-        alleles.push(state.patches[origin][parent].alleles[inherited]);
+        const genotype=state.patches[origin][parent].alleles;
+        parents.push({index:parent,genotype:genotype.slice(),copy:inherited});
+        alleles.push(genotype[inherited]);
       }
-      return {alleles,origins};
+      return {alleles,origins,parents};
     }));
     const next={v:VERSION,seed:state.seed,condition:state.condition,generation,patches,history:state.history.slice()};
     next.history.push(summarize(next));

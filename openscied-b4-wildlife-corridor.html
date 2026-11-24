@@ -29,7 +29,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b4-wildlife-corridor.css?v=alleles">
+<link rel="stylesheet" href="openscied-b4-wildlife-corridor.css?v=pairing">
 <link rel="stylesheet" href="openscied-submission-report.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -117,6 +117,7 @@
           <img src="assets/wildlife-corridor-landscape.svg" width="600" height="360" alt="">
           <span class="wc-terrain-label wc-terrain-west">West patch</span><span class="wc-terrain-label wc-terrain-east">East patch</span>
           <div class="wc-token-layer" id="wc-tokens-connected" aria-hidden="true"></div>
+          <div class="wc-pair-layer" id="wc-pair-connected" aria-hidden="true" hidden></div>
         </div>
         <p class="wc-map-readout" id="wc-map-connected-readout"></p>
       </figure>
@@ -127,6 +128,7 @@
           <div class="wc-road" aria-hidden="true"></div>
           <span class="wc-terrain-label wc-terrain-west">West patch</span><span class="wc-terrain-label wc-terrain-east">East patch</span>
           <div class="wc-token-layer" id="wc-tokens-road" aria-hidden="true"></div>
+          <div class="wc-pair-layer" id="wc-pair-road" aria-hidden="true" hidden></div>
           <button type="button" class="wc-slot" data-wc-crossing-slot="1" aria-pressed="false" aria-label="Place crossing between the two trail ends"><span class="wc-slot-open" aria-hidden="true">+</span><span class="wc-slot-set" aria-hidden="true">✓</span></button>
         </div>
         <p class="wc-map-readout" id="wc-map-road-readout"></p>
@@ -139,8 +141,13 @@
       </button>
       <button type="button" class="btn btn--primary" id="wc-run-crossing" disabled>Run with crossing</button>
     </div>
+    <div class="wc-mix-actions" id="wc-mix-actions" hidden>
+      <p>Follow one offspring at a time. After a run finishes or pauses, choose any offspring to see its parents meet on the map and pass on their alleles. The model picks pairs at random; the paths illustrate those choices.</p>
+      <div><label>Habitat <select id="wc-mix-habitat"></select></label>
+        <label>Offspring <select id="wc-mix-offspring"></select></label>
+        <button type="button" class="btn" id="wc-replay-mix" aria-controls="wc-mix">Replay parent pair</button></div>
+    </div>
     <figure class="wc-panel wc-mix" id="wc-mix" aria-label="Inheritance example" hidden></figure>
-    <button type="button" class="btn" id="wc-replay-mix" aria-controls="wc-mix" hidden>Replay inheritance example</button>
     <article class="wc-panel wc-evidence" aria-labelledby="wc-results-title">
       <h3 id="wc-results-title">Your model results</h3>
       <div id="wc-results"><p>Run both maps to start your record.</p></div>
@@ -189,7 +196,7 @@
 <script src="lab.js"></script>
 <script src="openscied-save-session.js"></script>
 <script src="openscied-submission-report.js"></script>
-<script src="openscied-b4-wildlife-corridor-logic.js?v=alleles"></script>
-<script src="openscied-b4-wildlife-corridor.js?v=alleles"></script>
+<script src="openscied-b4-wildlife-corridor-logic.js?v=pairing"></script>
+<script src="openscied-b4-wildlife-corridor.js?v=pairing"></script>
 </body>
 </html>

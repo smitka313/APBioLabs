@@ -25,7 +25,7 @@
   try{session=saveAPI?.open(window.localStorage,SCOPE,[KEY]);}catch(_){}
   const reportIdentity=saveAPI?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   let state=newState(), badRecord=false, oldRecord=false, warned='', selected=false, process='', timer=0;
-  let models={};
+  let models={}, inspectedHabitat=null, inspectedOffspring=null;
   function decode(raw){
     const s=JSON.parse(raw), a=s?.generations?.baseline, b=s?.generations?.corridor;
     const valid=n=>Number.isInteger(n)&&n>=0&&n<=END;
@@ -98,6 +98,40 @@
     }
     host.append(t);
   }
+  const genotypeOf=alleles=>alleles.slice().sort().join('/');
+  const patchName=patch=>patch===0?'West':'East';
+  const position=(patch,index)=>[(patch===0?10:60)+(index%4)*9.5,37+Math.floor(index/4)*14];
+  const animalName=(patch,index)=>patchName(patch)+' '+(index+1);
+  function drawMates(detail,animate){
+    const board=detail.condition==='connected'?'connected':'road';
+    const host=by('pair-'+board), other=by('pair-'+(board==='road'?'connected':'road'));
+    if(other){other.hidden=true;other.replaceChildren();}
+    if(!host)return;
+    const key=JSON.stringify([detail.condition,detail.generation,detail.patch,detail.animal]);
+    if(host.dataset.trace===key&&!host.hidden&&!animate)return;
+    host.dataset.trace=key;
+    host.hidden=false;
+    host.dataset.animated=String(animate);
+    host.replaceChildren();
+    const [x,y]=position(detail.patch,detail.animal);
+    const joint=[detail.patch===0?34:66,50];
+    detail.parents.forEach((parent,i)=>{
+      const origin=detail.origins[i], [fromX,fromY]=position(origin,parent.index);
+      const actor=make('span',null,'wc-mate wc-mate-parent');
+      actor.dataset.coat=parent.genotype.includes('A')?'dark':'light';
+      actor.dataset.crossing=String(origin!==detail.patch);
+      for(const [key,value] of Object.entries({x:fromX,y:fromY,mx:joint[0]+(i===0?-6:6),my:joint[1],
+          vx:origin!==detail.patch?50:(fromX+joint[0])/2,vy:origin!==detail.patch?50:(fromY+joint[1])/2})){
+        actor.style.setProperty('--wc-'+key,value+'%');
+      }
+      actor.append(make('span',i===0?'P1':'P2','wc-mate-tag'),make('span',genotypeOf(parent.genotype),'wc-mate-gene'));
+      host.append(actor);
+    });
+    const child=make('span',null,'wc-mate wc-mate-child');
+    for(const [key,value] of Object.entries({x,y,mx:joint[0],my:joint[1]}))child.style.setProperty('--wc-'+key,value+'%');
+    child.append(make('span','Offspring','wc-mate-tag'),make('span',genotypeOf(detail.alleles),'wc-mate-gene'));
+    host.append(child);
+  }
   // Show two inherited copies from one real offspring record, not a separate simulation.
   // The path represents inheritance; it does not imply that an allele crosses a road alone.
   function renderMix(host, detail, animate=true){
@@ -115,20 +149,21 @@
     host.dataset.wcMixKey=key;
     const zone=p=>p===0?'West':'East';
     const names={connected:'Connected habitat',road:'Road, no crossing',corridor:'Road with crossing'};
-    const genotype=alleles.includes('A')?(alleles.includes('a')?'A/a':'A/A'):'a/a';
+    const genotype=genotypeOf(alleles);
     const otherCount=origins.filter(origin=>origin!==patch).length;
     const traffic=otherCount>0?(condition==='corridor'?'A parent from the other side can contribute a copy when the crossing connects the patches.':
       'A parent from the other patch contributed a copy. That’s gene flow.'):
       'Both copies in this offspring came from parents in the same patch.';
     const heading=make('h3','Watch inheritance');
-    const sub=make('p',(names[condition]||'Modeled habitat')+' · Generation '+generation+' · '+zone(patch)+' offspring','wc-mix-context');
+    const sub=make('p',(names[condition]||'Modeled habitat')+' · Generation '+generation+' · Offspring '+animalName(patch,detail.animal),'wc-mix-context');
     const path=make('div',null,'wc-mix-grid');
     path.setAttribute('aria-hidden','true');
     path.dataset.animated=String(animate);
     for(let i=0;i<2;i++){
       const origin=origins[i], allele=alleles[i], other=origin!==patch;
       const parent=make('div',null,'wc-mix-parent');
-      parent.append(make('strong','Parent '+(i+1)),make('span',zone(origin)+' patch','wc-mix-location'),
+      const adult=detail.parents[i];
+      parent.append(make('strong','Parent '+(i+1)+': '+animalName(origin,adult.index)),make('span','Genotype '+genotypeOf(adult.genotype),'wc-mix-location'),
         make('span',allele,'wc-mix-allele'));
       const lane=make('div',null,'wc-mix-lane');
       lane.dataset.other=String(other);
@@ -141,20 +176,47 @@
     const offspring=make('div',null,'wc-mix-offspring');
     offspring.append(make('strong','Offspring'),make('span',genotype,'wc-mix-genotype'),make('span',zone(patch)+' patch','wc-mix-location'));
     path.append(offspring);
-    const summary=make('p',zone(origins[0])+' parent passes '+alleles[0]+'. '+zone(origins[1])+' parent passes '+alleles[1]+
+    const summary=make('p',animalName(origins[0],detail.parents[0].index)+' ('+genotypeOf(detail.parents[0].genotype)+') passes '+alleles[0]+'. '+
+      animalName(origins[1],detail.parents[1].index)+' ('+genotypeOf(detail.parents[1].genotype)+') passes '+alleles[1]+
       '. Their offspring in the '+zone(patch)+' patch is '+genotype+'. '+traffic,'wc-mix-summary');
     host.replaceChildren(heading,sub,path,summary);
   }
   function showInheritance(replay=false){
-    const id=state.generations.corridor>0?'corridor':'connected';
-    const m=models[id], host=by('mix');
+    const auto=state.generations.corridor>0?'corridor':'connected';
+    const id=inspectedHabitat&&models[inspectedHabitat].generation>0?inspectedHabitat:auto;
+    const m=models[id], host=by('mix'), which=by('mix-habitat'), pick=by('mix-offspring');
     if(!host)return;
-    if(!m.generation){renderMix(host,null);show('replay-mix',false);return;}
+    if(!m.generation){
+      renderMix(host,null);show('mix-actions',false);
+      for(const board of ['connected','road']){const map=by('pair-'+board);if(map)map.hidden=true;}
+      return;
+    }
     const individuals=m.patches.flatMap((patch,zone)=>patch.map((animal,i)=>({...animal,patch:zone,animal:i})));
-    const animal=individuals.find(a=>a.origins.some(origin=>origin!==a.patch))||individuals[0];
+    const autoIndex=individuals.findIndex(a=>a.origins.some(origin=>origin!==a.patch));
+    const index=inspectedOffspring??Math.max(0,autoIndex);
+    const detail={...individuals[index],condition:id,generation:m.generation};
+    if(which){
+      const cases=CONDITIONS.filter(c=>models[c].generation>0);
+      if(which.dataset.options!==cases.join(',')){
+        which.replaceChildren(...cases.map(c=>{const opt=make('option',LABEL[c]);opt.value=c;return opt;}));
+        which.dataset.options=cases.join(',');
+      }
+      which.value=id;which.disabled=!!process;
+    }
+    if(pick){
+      if(pick.dataset.options===undefined){
+        pick.replaceChildren(...individuals.map((a,i)=>{const opt=make('option',animalName(a.patch,a.animal));opt.value=String(i);return opt;}));
+        pick.dataset.options='ready';
+      }
+      pick.value=String(index);pick.disabled=!!process;
+    }
+    const key=JSON.stringify([id,detail.patch,m.generation,detail.animal,detail.alleles,detail.origins]);
+    const changed=host.dataset.wcMixKey!==key;
     if(replay)delete host.dataset.wcMixKey;
-    renderMix(host,{...animal,condition:id,generation:m.generation},!reduced());
-    show('replay-mix',true);
+    const animate=(changed||replay)&&!reduced();
+    drawMates(detail,animate);
+    renderMix(host,detail,animate);
+    show('mix-actions',true);
   }
   function renderMap(id,board){
     const m=models[id], s=conditionSummary(id), map=by('map-'+board), layer=by('tokens-'+board);
@@ -165,7 +227,7 @@
     layer.classList.toggle('wc-tokens-moving',!!process);
     for(const [patch,individuals] of m.patches.entries()){
       for(const [i,a] of individuals.entries()){
-        const dot=make('span',a.alleles.slice().sort().join('/'),'wc-token'), x=(patch===0?10:60)+(i%4)*9.5, y=37+Math.floor(i/4)*14;
+        const dot=make('span',genotypeOf(a.alleles),'wc-token'), [x,y]=position(patch,i);
         dot.style.setProperty('--wc-x',x+'%');dot.style.setProperty('--wc-y',y+'%');
         dot.dataset.coat=a.alleles.includes('A')?'dark':'light';
         if(a.origins?.some(origin=>origin!==patch))dot.dataset.connected='true';
@@ -173,7 +235,7 @@
       }
     }
     map.dataset.condition=id;
-    map.dataset.crossing=String(state.crossing===1&&board==='road');
+    map.dataset.crossing=String(state.crossing===1&&board==='road'&&!(state.generations.corridor>0&&id==='road'));
   }
   function renderResults(){
     const ids=experimentIds(), host=by('results'), next=by('explain-evidence');
@@ -223,7 +285,7 @@
   }
   function render(){
     renderMap('connected','connected');
-    renderMap(state.generations.corridor>0?'corridor':'road','road');
+    renderMap(state.generations.corridor>0&&inspectedHabitat!=='road'?'corridor':'road','road');
     showInheritance();
     renderResults();
     gates();
@@ -244,7 +306,7 @@
   function play(which){
     if(process===which)return pause();
     if(process||!available('model')||which==='corridor'&&(state.generations.baseline!==END||state.crossing!==1)||state.generations[which]>=END)return;
-    process=which;
+    process=which;inspectedHabitat=null;inspectedOffspring=null;
     if(which==='corridor'&&state.generations.corridor===0){
       // Give the reset to the matched starting population a visible frame before the first generation.
       renderMap('corridor','road');
@@ -263,10 +325,10 @@
           'Crossing run complete. Open Explain to compare your three results.');
         return;
       }
-      timer=window.setTimeout(step,1000);
+      timer=window.setTimeout(step,1500);
     };
     // Save each observed generation so reloading never wipes a partial run.
-    timer=window.setTimeout(step,reduced()?0:1000);
+    timer=window.setTimeout(step,reduced()?0:1500);
   }
   function selectTile(next){
     if(state.generations.baseline!==END||state.generations.corridor>0||process==='corridor')return;
@@ -337,7 +399,22 @@
     state.prediction={choice:pick.value,reason};go('model');render();
     if(save())announce('Prediction saved. Run the matched habitats.');
   });
-  by('replay-mix')?.addEventListener('click',()=>showInheritance(true));
+  by('mix-habitat')?.addEventListener('change',e=>{
+    if(CONDITIONS.includes(e.target.value)&&models[e.target.value].generation>0){
+      inspectedHabitat=e.target.value;inspectedOffspring=null;
+      renderMap(state.generations.corridor>0&&inspectedHabitat!=='road'?'corridor':'road','road');
+      showInheritance(true);
+    }
+  });
+  by('mix-offspring')?.addEventListener('change',e=>{
+    const index=Number(e.target.value);
+    if(Number.isInteger(index)&&index>=0&&index<M.PATCH_SIZE*2){inspectedOffspring=index;showInheritance(true);}
+  });
+  by('replay-mix')?.addEventListener('click',()=>{
+    showInheritance(true);
+    const active=by('pair-road')?.hidden?'connected':'road';
+    by('map-'+active)?.scrollIntoView({block:'center',behavior:'instant'});
+  });
   by('run-baseline')?.addEventListener('click',()=>play('baseline'));
   by('run-crossing')?.addEventListener('click',()=>play('corridor'));
   by('crossing-tile')?.addEventListener('click',()=>selectTile(!selected));
@@ -369,7 +446,7 @@
     const next=newState(), result=session?.reset(KEY,JSON.stringify(next));
     if(!result?.ok){by('reset-dialog')?.close();notSaved(result?.reason);return;}
     by('reset-dialog')?.close();
-    pause(false);state=next;selected=false;badRecord=false;restoreModels();fill();go('predict');render();saved();
+    pause(false);state=next;selected=false;inspectedHabitat=null;inspectedOffspring=null;badRecord=false;restoreModels();fill();go('predict');render();saved();
     announce('A new investigation is ready.');
   });
   window.addEventListener('hashchange',()=>{

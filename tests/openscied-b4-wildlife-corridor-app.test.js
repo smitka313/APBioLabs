@@ -56,7 +56,15 @@ test('prediction gates direct links, and an interrupted paired run reloads from 
   assert.deepEqual(first.record().generations,{baseline:2,corridor:0});
   assert.equal(first.node('crossing-tile').disabled,true);
   assert.match(first.node('mix').textContent,/Generation 2/);
-  assert.match(first.node('mix').textContent,/Parent 1.*Parent 2.*Offspring/);
+  assert.match(first.node('mix').textContent,/Parent 1.*Genotype.*Parent 2.*Genotype.*Offspring/);
+  assert.equal(first.node('pair-connected').nodes.length,3);
+  assert.equal(first.node('mix-offspring').nodes.length,24);
+  first.node('mix-habitat').value='road';
+  first.node('mix-habitat').fire('change');
+  first.node('mix-offspring').value='23';
+  first.node('mix-offspring').fire('change');
+  assert.match(first.node('mix').textContent,/Offspring East 12/);
+  assert.ok(first.node('pair-road').nodes.slice(0,2).every(parent=>parent.dataset.crossing==='false'));
   assert.ok(first.node('tokens-connected').nodes.every(token=>/^[Aa]\/[Aa]$/.test(token.text.trim())));
 
   const resumed=browser(shared);
