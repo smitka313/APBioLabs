@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><script src="domain-redirect.js"></script>
+<!-- seo:start -->
+<title>Cancer Screening Design Lab — OpenSciEd Biology B.3 | Lab Bench</title>
+<meta name="description" content="Place an ultrasound machine and trained staff, then compare patient journeys, clinic costs, and access in a fictional district.">
+<link rel="canonical" href="https://biologylabbench.com/openscied-b3-screening">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AP Bio Digital Lab Bench">
+<meta property="og:title" content="Cancer Screening Design Lab — OpenSciEd Biology B.3 | Lab Bench">
+<meta property="og:description" content="Place an ultrasound machine and trained staff, then compare patient journeys, clinic costs, and access in a fictional district.">
+<meta property="og:url" content="https://biologylabbench.com/openscied-b3-screening">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://biologylabbench.com/img/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cancer Screening Design Lab — OpenSciEd Biology B.3 | Lab Bench">
+<meta name="twitter:description" content="Place an ultrasound machine and trained staff, then compare patient journeys, clinic costs, and access in a fictional district.">
+<meta name="twitter:image" content="https://biologylabbench.com/img/og.png">
+<meta name="twitter:image:alt" content="AP Bio Digital Lab Bench: lab simulation thumbnails beside the site title">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://biologylabbench.com/#website","url":"https://biologylabbench.com/","name":"AP Bio Digital Lab Bench","alternateName":"Biology Lab Bench","inLanguage":"en","creator":{"@id":"https://biologylabbench.com/#creator"}},{"@type":"Person","@id":"https://biologylabbench.com/#creator","name":"Robert Smitka"},{"@type":["WebPage","LearningResource"],"@id":"https://biologylabbench.com/openscied-b3-screening#webpage","url":"https://biologylabbench.com/openscied-b3-screening","name":"Cancer Screening Design Lab — OpenSciEd Biology B.3 | Lab Bench","description":"Place an ultrasound machine and trained staff, then compare patient journeys, clinic costs, and access in a fictional district.","inLanguage":"en","isPartOf":{"@id":"https://biologylabbench.com/#website"},"isAccessibleForFree":true,"license":"https://creativecommons.org/licenses/by-nc-sa/4.0/","creator":{"@id":"https://biologylabbench.com/#creator"},"breadcrumb":{"@id":"https://biologylabbench.com/openscied-b3-screening#breadcrumb"},"educationalLevel":"High school biology","learningResourceType":"Interactive engineering simulation","teaches":"Evaluating trade-offs in clinic cost and patient access to screening and ultrasound follow-up","audience":{"@type":"EducationalAudience","educationalRole":"student"},"isBasedOn":"https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/"},{"@type":"BreadcrumbList","@id":"https://biologylabbench.com/openscied-b3-screening#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"All labs","item":"https://biologylabbench.com/"},{"@type":"ListItem","position":2,"name":"Cancer Screening Design Lab","item":"https://biologylabbench.com/openscied-b3-screening"}]}]}</script>
+<!-- seo:end -->
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="openscied-b3-screening.css"><link rel="stylesheet" href="openscied-submission-report.css">
+<script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<main class="sd-shell">
+<nav class="sd-top" aria-label="Breadcrumb"><a href="openscied-dashboard.html#unit3">← Unit 3 activities</a><a href="openscied-b3-cancer-rates.html">Cancer Rates Data Dive</a></nav>
+<header class="sd-hero"><p>Unit 3 · Engineering extension · 25–30 min</p><h1>Cancer Screening Design Lab</h1><p>Can you get more people from screening to follow-up without overspending?</p></header>
+<p class="sd-notice"><strong>Fictional district.</strong> The cases, costs, and travel rules are made up for this model. Nothing here recommends a test or diagnoses cancer.</p>
+<nav class="sd-steps" aria-label="Activity steps"><button class="btn" type="button" data-sd-step="map" aria-current="step">1. Design and test</button><button class="btn" type="button" data-sd-step="explain" disabled>2. Recommend a plan</button></nav>
+<p class="sd-status" id="sd-status" role="status" aria-atomic="true"></p>
+<section id="sd-map-section" aria-labelledby="sd-map-title">
+<h2 id="sd-map-title" tabindex="-1">Set up the clinic network</h2>
+<p id="sd-task">Start with the regional hospital. Run it once to see where patients get stuck.</p>
+<div class="sd-grid">
+<div>
+<div id="sd-board" class="sd-board" aria-label="District map">
+ <svg id="sd-travel" viewBox="0 0 1000 640" preserveAspectRatio="none" aria-hidden="true"><polyline id="sd-route" visibility="hidden"/></svg>
+ <span class="sd-home" style="--x:17%;--y:22%">North Fork</span>
+ <span class="sd-home" style="--x:18%;--y:80%">Riverbend</span>
+ <span class="sd-home" style="--x:82%;--y:76%">Central</span>
+ <button data-zone="hub" type="button" class="sd-site sd-hub"><span aria-hidden="true">✚</span> Hospital <small id="sd-hub-items"></small></button>
+ <button data-zone="mobile" type="button" class="sd-site sd-mobile"><span aria-hidden="true">▣</span> Mobile clinic <small id="sd-mobile-items"></small></button>
+ <div id="sd-traveler" class="sd-traveler" aria-hidden="true" hidden></div>
+ <div id="sd-map-event" class="sd-map-event" hidden></div>
+</div>
+<div class="sd-supply">
+ <h3>Equipment and staff</h3><p>Drag a piece to a site, or select it and then select a site. The sonographer and ultrasound machine must work together.</p>
+ <div id="sd-tools"></div><button type="button" class="btn" data-zone="rack">Return selected piece to rack</button>
+</div>
+</div>
+<aside class="sd-side">
+ <section class="sd-ledger"><h3>Clinic design budget <span id="sd-budget"></span></h3><p>A clinic must pay for equipment and trained staff before it can offer a scan. That is separate from what a patient pays to get there. Values are fictional credits.</p><dl id="sd-clinic"></dl><p id="sd-setup-note" class="sd-note"></p><button type="button" class="btn btn--primary" id="sd-run">Run hospital plan</button></section>
+ <details class="sd-ledger"><summary>Look inside the ultrasound cart</summary><div class="sd-scan"><svg viewBox="0 0 280 100" role="img" aria-label="A probe sends sound waves into tissue and returning echoes form an image"><path d="M0 45H280v55H0z" fill="#d99278"/><path d="M0 65q75-12 150 0t130 0v35H0z" fill="#b77276"/><ellipse cx="145" cy="82" rx="24" ry="9" fill="#85536b"/><g id="sd-probe-graphic"><path d="M120 6h44v25l-8 11h-27l-9-11z" fill="#e0e6e9" stroke="#253f4c" stroke-width="3"/><path class="sd-wave" d="M123 51q20 10 39 0m-44 10q25 15 49 0m-55 10q31 18 61 0" fill="none" stroke="#fff1a8" stroke-width="3"/></g></svg></div><label for="sd-probe">Slide the practice probe</label><input id="sd-probe" type="range" min="-90" max="90" value="-80"><p id="sd-probe-note"></p><p>The probe sends sound waves into the body. Echoes returning from tissues form a picture. In this model, ultrasound is used only for selected follow-up cases. An image alone does not tell you whether someone has cancer.</p></details>
+</aside>
+</div>
+<section class="sd-panel" id="sd-journeys" hidden aria-labelledby="sd-journey-title">
+<h3 id="sd-journey-title">Follow a patient</h3>
+<div class="sd-switch"><label>View plan <select id="sd-view"><option value="base">Hospital plan</option><option value="trial">Your redesign</option></select></label><button type="button" class="btn" id="sd-replay">Replay this journey on the map</button></div>
+<div id="sd-patients" class="sd-patients" aria-label="Simulated patient cases"></div>
+<div id="sd-patient" class="sd-patient"></div>
+<div id="sd-results"></div>
+<button type="button" class="btn btn--primary" id="sd-to-explain" disabled>Recommend a plan</button>
+</section>
+</section>
+<section id="sd-explain-section" class="sd-panel" aria-labelledby="sd-explain-title" hidden>
+<h2 id="sd-explain-title" tabindex="-1">Recommend a plan</h2>
+<div class="sd-grid"><div><div id="sd-evidence"></div><div id="sd-case-evidence" class="sd-patient"></div></div><div>
+ <label for="sd-claim"><strong>Which plan would you fund?</strong> Compare one outcome and one cost from the table. Explain what you give up in return.</label><textarea id="sd-claim" rows="4" maxlength="1800"></textarea>
+ <label for="sd-limit"><strong>Who might still get left out?</strong> Use a patient journey or an area’s results to propose one change and explain why it might help.</label><textarea id="sd-limit" rows="4" maxlength="1800"></textarea>
+ <button type="button" class="btn" id="sd-finish" disabled>Finish investigation</button><p id="sd-finished"></p><div data-ose-report-final></div>
+</div></div>
+</section>
+<details class="sd-panel"><summary>What this model leaves out</summary>
+<p>The same 30 fictional patients are used for every plan. Screening and follow-up visits have different costs. A visit is missed if it exceeds a patient’s available credits or time per visit. Patient burden includes fees, net travel cost, and time valued in credits. The clinic budget is separate. Equipment acquisition is a one-period allocation, not a real purchase price. An area’s modeled travel time does not tell you its wealth or cancer risk. Facilities with more resources may be better able to pay for equipment and trained staff, but funding, staffing and geography do not always line up.</p>
+<p>Real screening and follow-up depend on the cancer type, the person and clinical guidance. The model does not simulate how accurate any test is, cancer incidence, or confirmed diagnoses. See <a href="https://www.cancer.gov/about-cancer/diagnosis-staging/diagnosis">National Cancer Institute: How Cancer Is Diagnosed</a>.</p>
+</details>
+<p id="sd-save">Progress stays on this device unless you choose to download a report.</p><div id="sd-report"></div>
+<button type="button" class="btn" id="sd-reset">Start over…</button>
+<dialog id="sd-dialog"><h2>Clear this investigation?</h2><p>Use Preview report first if you want to keep a copy.</p><form method="dialog"><button class="btn" autofocus>Keep working</button> <button type="button" class="btn" id="sd-clear">Clear this activity</button></form></dialog>
+</main>
+<footer class="site-footer"><div class="wrap wrap--wide gutter"><p><strong>Created by Robert Smitka.</strong> This original activity is licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p><p>Independent supplement to <a href="https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/">OpenSciEd B.3</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. New fictional model, prompts and illustrations. Not affiliated with or endorsed by OpenSciEd.</p><p>Student work stays in this browser unless you choose to download a report. Analytics count page visits only.</p></div></footer>
+<script src="lab.js"></script><script src="openscied-save-session.js"></script><script src="openscied-submission-report.js"></script><script src="openscied-b3-screening-logic.js"></script><script src="openscied-b3-screening.js"></script>
+</body></html>

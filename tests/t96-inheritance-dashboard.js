@@ -13,18 +13,18 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       await p.goto(server.url + 'openscied-dashboard.html');
       await p.evaluate(() => localStorage.removeItem('aplab:student'));
       await p.reload();
-      T.ok(await p.locator('.dashboard-activity').count() === 17
+      T.ok(await p.locator('.dashboard-activity').count() === 18
         && await p.locator('section[aria-labelledby="unit1"] .dashboard-activity').count() === 4
         && await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 4
-        && await p.locator('section[aria-labelledby="unit3"] .dashboard-activity').count() === 5
+        && await p.locator('section[aria-labelledby="unit3"] .dashboard-activity').count() === 6
         && await p.locator('section[aria-labelledby="unit4"] .dashboard-activity').count() === 4,
-        width + ' px: seventeen activity cards (four Unit 1, four Unit 2, five Unit 3, four Unit 4)');
-      T.ok((await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').textContent()).trim() === '5 activities available', width + ' px: tag says 5 activities available');
+        width + ' px: eighteen activity cards (four Unit 1, four Unit 2, five Unit 3, four Unit 4)');
+      T.ok((await p.locator('section[aria-labelledby="unit3"] .dashboard-tag').textContent()).trim() === '6 activities available', width + ' px: tag says 6 activities available');
       const unit3Cards = p.locator('section[aria-labelledby="unit3"] .dashboard-activity');
       const steps = await unit3Cards.locator('.dashboard-preview').evaluateAll(links=>links.map(a=>a.getAttribute('href')));
       T.ok(steps.indexOf('openscied-b3-dna-workshop.html') === steps.indexOf('openscied-b3-dna-p53.html')-1, 'DNA Workshop immediately precedes DNA copying and p53');
       const lastUnit3Card = await unit3Cards.last().innerText();
-      T.ok(await unit3Cards.count() === 5 && /Inheritance, Environment/.test(lastUnit3Card) && /Lessons 8–9/.test(lastUnit3Card), 'last Unit 3 card is the Lessons 8-9 companion');
+      T.ok(await unit3Cards.count() === 6 && /Inheritance, Environment/.test(lastUnit3Card) && /Lessons 8–9/.test(lastUnit3Card), 'last Unit 3 card is the Lessons 8-9 companion');
       T.ok(await p.locator('#inh-env-open').getAttribute('href') === 'openscied-b3-inheritance-environment.html#overview', 'card opens its page');
       for (const id of ['inh-env', 'dna-p53', 'cell-cycle', 'dna-workshop', 'cancer-rates']) T.ok(/Not started/.test(await p.locator('#' + id + '-progress').innerText()), id + ' starts as Not started');
       T.ok(await p.locator('#inh-env-reset').isDisabled(), 'restart disabled with nothing saved');

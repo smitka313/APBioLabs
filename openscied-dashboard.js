@@ -20,6 +20,7 @@
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
     { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
     { id: 'cancer-rates', name: 'Cancer Rates Data Dive', file: 'openscied-b3-cancer-rates.html', key: PREFIX + 'b3-cancer-rates:v1', clears: 'prediction, case-file work, pinned comparisons, and written responses', progress: cancerRatesProgress, ids: cancerRatesResponseIds },
+    { id: 'screening', name: 'Cancer Screening Design Lab', file: 'openscied-b3-screening.html', key: PREFIX + 'b3-screening:v1', clears: 'clinic plans and written recommendations', progress: screeningProgress, ids: screeningIds },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-workshop', name: 'DNA Workshop: Build, Copy, Decode', file: 'openscied-b3-dna-workshop.html', key: PREFIX + 'b3-dna-workshop:v1', clears: 'piece placements and written responses', progress: dnaWorkshopProgress, ids: dnaWorkshopResponseIds, answers: true },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
@@ -89,6 +90,22 @@
       ...(baseline || comparison ? {stepsDone:baseline+comparison,stepsTotal:model?.comparison?24:12,stepsLabel:'Population model rounds'} : {})};
   }
   // Serengeti restores its last page from the existing saved record rather than a URL hash.
+  function screeningIds(){return ['claim','limit'];}
+  function screeningProgress(raw){
+    const empty={started:false,section:'',summary:'Not started',visited:0};
+    if(raw==null)return empty;
+    let s;
+    try{s=JSON.parse(raw);if(s?.v!==1||!Number.isInteger(s.seed)||s.seed<0||s.seed>4294967295)throw Error('Invalid save');}
+    catch(_){return {...empty,summary:'Saved work could not be read. Download a copy before restarting.'};}
+    if(s.started!==true)return empty;
+    const zone=z=>z==='hub'||z==='mobile',p=s.trial;
+    const compared=zone(p?.screen)&&zone(p?.machine)&&p.operator===p.machine&&(zone(p.rides)||p.rides===null)
+      &&(p.screen==='mobile'||p.machine==='mobile'||p.rides!==null)
+      &&!(p.screen==='mobile'&&p.machine==='mobile'&&p.rides);
+    const complete=compared&&s.finished===true&&screeningIds().every(id=>written(s,id));
+    return {started:true,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:complete?3:compared?2:1,stepsTotal:3,stepsLabel:'Investigation steps completed',
+      summary:complete?'Investigation complete':compared?'Redesign recorded':'Hospital plan recorded'};
+  }
   function rippleResponseIds(){return ['choice','reason','claim','limit'];}
   function rippleProgress(raw){
     const empty={started:false,section:'',summary:'Not started',visited:0};
@@ -524,7 +541,7 @@
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
     serengeti:[4,'Seasons completed'],ripple:[4,'Investigation steps completed'],'b2-burn':[5,'Fuels with saved results'],'b2-fires':[3,'Model evidence milestones complete'],
-    'peat-bog':[2,'Trials saved for a comparison'],'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],
+    'peat-bog':[2,'Trials saved for a comparison'],'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],screening:[3,'Investigation steps completed'],
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed'],
@@ -704,7 +721,7 @@
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
+          const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple', 'screening'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
