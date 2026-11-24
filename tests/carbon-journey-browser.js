@@ -63,9 +63,9 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
       assert.equal(await dashboard.locator('section[aria-labelledby="unit1"] .dashboard-activity').count(),3);
       assert.equal(await dashboard.locator('section[aria-labelledby="unit2"] .dashboard-activity').count(),4);
-      assert.equal(await dashboard.locator('section[aria-labelledby="unit3"] .dashboard-activity').count(),4);
+      assert.equal(await dashboard.locator('section[aria-labelledby="unit3"] .dashboard-activity').count(),5);
       assert.equal(await dashboard.locator('section[aria-labelledby="unit4"] .dashboard-activity').count(),2);
-      assert.equal(await dashboard.locator('.dashboard-activity').count(),13);
+      assert.equal(await dashboard.locator('.dashboard-activity').count(),14);
       assert.match(await dashboard.locator('#carbon-journey-progress').textContent(),/10 rolls recorded/);
       await dashboard.screenshot({path:path.join(root,`artifacts/l9/${width}-dashboard.png`),fullPage:true});
       const resume = dashboard.locator('#carbon-journey-open');
@@ -119,4 +119,3 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
     } finally { await protectedCtx.close(); }
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
-

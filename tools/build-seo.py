@@ -49,6 +49,9 @@ def page_specs():
         'student-directions.html': ('Printable AP Biology Lab Directions | Biology Lab Bench',
                                     'Print free student directions for all 13 AP Biology virtual labs. Each guide includes numbered steps, data-recording reminders, and a submission checklist.',
                                     'Printable student directions'),
+        'openscied-b3-cancer-rates.html': ('Cancer Rates Data Dive — OpenSciEd Biology B.3 Lesson 1 | Lab Bench',
+                                              'Explore real cancer data in a free OpenSciEd B.3 Lesson 1 companion. Sort and filter rates, compare populations, test predictions, and explain what the data can and cannot tell us.',
+                                              'Cancer Rates Data Dive'),
         'openscied-b3-cell-cycle.html': ('Cell Cycle & Cancer — a companion for OpenSciEd Biology B.3 | Lab Bench',
                                          'A free, independent cell-cycle and cancer companion for OpenSciEd Biology B.3 Lessons 3–4. Play a checkpoint game and compare how age, body size, and cell-division rate affect modeled DNA-copying opportunities.',
                                          'Cell cycle and cancer companion (OpenSciEd B.3)'),
@@ -135,6 +138,13 @@ def structured_data(filename, title, description, label):
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'}})
             if guide:
                 page['isBasedOn'] = url(f'lab{lab["id"]:02}.html')
+        elif filename == 'openscied-b3-cancer-rates.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive data investigation',
+                         'teaches': 'How to interpret cancer incidence and mortality rates and distinguish patterns from causes',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/'})
         elif filename == 'openscied-b3-cell-cycle.html':
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',
@@ -290,4 +300,3 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
     build(parser.parse_args().check)
-

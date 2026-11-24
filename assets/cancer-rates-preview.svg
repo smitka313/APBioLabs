@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+  <defs>
+    <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#19314a"/><stop offset="1" stop-color="#0b1526"/></linearGradient>
+    <radialGradient id="aura" cx=".42" cy=".4" r=".6"><stop stop-color="#376981" stop-opacity=".76"/><stop offset="1" stop-color="#294459" stop-opacity="0"/></radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eafdfd" stop-opacity=".42"/><stop offset=".6" stop-color="#7cbfc9" stop-opacity=".09"/><stop offset="1" stop-color="#14495b" stop-opacity=".16"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e3f8f9"/><stop offset=".55" stop-color="#86bbca"/><stop offset="1" stop-color="#467e97"/></linearGradient>
+    <linearGradient id="note" x2="1" y2="1"><stop stop-color="#eff8f6"/><stop offset="1" stop-color="#cddee5"/></linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#7cbdcc" stroke-opacity=".16"/></pattern>
+    <pattern id="lines" width="9" height="9" patternTransform="rotate(35)" patternUnits="userSpaceOnUse"><path d="M0 0v9" stroke="#785723" stroke-width="3" stroke-opacity=".53"/></pattern>
+    <pattern id="people" width="35" height="43" patternUnits="userSpaceOnUse"><circle cx="16" cy="9" r="4.4" fill="#aee4e9"/><path d="M7 24c0-6 4-9 9-9s9 3 9 9v3h-4v11h-3v-9h-4v9h-3V27H7Z" fill="#aee4e9"/></pattern>
+  </defs>
+  <rect width="960" height="600" fill="url(#bg)"/>
+  <rect width="960" height="600" fill="url(#grid)"/>
+  <rect width="960" height="600" fill="url(#aura)"/>
+  <path d="M0 480C149 415 267 512 427 518s298-68 533-75v157H0" fill="#11293e" opacity=".67"/>
+  <path d="M0 490C149 425 267 522 427 528s298-68 533-75" fill="none" stroke="#87cad9" stroke-opacity=".28" stroke-width="3"/>
+  <g transform="translate(68 117) rotate(-8 160 145)">
+    <rect x="5" y="12" width="318" height="308" rx="22" fill="#081321" fill-opacity=".74"/>
+    <rect width="318" height="308" rx="22" fill="#183d54" stroke="#8ec5d3" stroke-width="3"/>
+    <path d="M25 66h268m-268 198h268" stroke="#8ec5d3" stroke-opacity=".5" stroke-width="2"/>
+    <g font-family="system-ui,sans-serif" fill="#e8fcfc"><text x="25" y="45" font-size="23" font-weight="750" letter-spacing="1.4">POPULATION</text><text x="25" y="290" font-size="14" font-weight="650" letter-spacing="1">DEFINES THE DENOMINATOR</text></g>
+    <rect x="26" y="77" width="264" height="176" rx="4" fill="url(#people)"/>
+    <circle cx="42" cy="174" r="5" fill="#ffd780" stroke="#112b3d" stroke-width="2"/>
+    <circle cx="77" cy="217" r="5" fill="#ffd780" stroke="#112b3d" stroke-width="2"/>
+    <circle cx="147" cy="131" r="5" fill="#ffd780" stroke="#112b3d" stroke-width="2"/>
+  </g>
+  <g transform="translate(409 93) rotate(7 219 175)">
+    <rect x="12" y="17" width="444" height="357" rx="24" fill="#050e1d" fill-opacity=".74"/>
+    <rect width="444" height="357" rx="24" fill="url(#note)" stroke="#9dbdc7" stroke-width="3"/>
+    <path d="M31 70h380" stroke="#839eab" stroke-width="2"/>
+    <text x="31" y="50" fill="#17354b" font-family="system-ui,sans-serif" font-size="29" font-weight="800">Compare rates</text>
+    <text x="31" y="104" fill="#26495a" font-family="system-ui,sans-serif" font-size="16" font-weight="700" letter-spacing="1">CASES PER 100,000 PEOPLE</text>
+    <g fill="none" stroke="#81a2ad" stroke-width="2" stroke-opacity=".6"><path d="M35 137h376M35 186h376M35 235h376M35 284h376"/><path d="M35 124v185h376" stroke="#254963" stroke-width="4" stroke-opacity=".92"/></g>
+    <rect x="79" y="211" width="49" height="96" rx="5" fill="#087480"/>
+    <rect x="158" y="165" width="49" height="142" rx="5" fill="#e7bb68"/><rect x="158" y="165" width="49" height="142" rx="5" fill="url(#lines)"/>
+    <rect x="238" y="142" width="49" height="165" rx="5" fill="#087480"/>
+    <rect x="318" y="189" width="49" height="118" rx="5" fill="#e7bb68"/><rect x="318" y="189" width="49" height="118" rx="5" fill="url(#lines)"/>
+    <path d="M89 329h29m50 0h29m51 0h29m51 0h29" stroke="#456676" stroke-width="4" stroke-linecap="round"/>
+    <text x="389" y="345" text-anchor="end" fill="#26495a" font-family="system-ui,sans-serif" font-size="12" font-weight="700">ILLUSTRATION</text>
+  </g>
+  <g transform="translate(486 351) rotate(39)">
+    <path d="M98 0h95" stroke="#071522" stroke-width="28" stroke-linecap="round"/>
+    <path d="M98 0h95" stroke="url(#edge)" stroke-width="20" stroke-linecap="round"/>
+    <path d="M98 0h57" stroke="#e7f9f6" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <circle cx="486" cy="351" r="113" fill="#061120" fill-opacity=".22"/>
+  <circle cx="486" cy="351" r="100" fill="url(#glass)" stroke="#091d29" stroke-width="16"/>
+  <circle cx="486" cy="351" r="100" fill="none" stroke="url(#edge)" stroke-width="11"/>
+  <path d="M404 343a83 83 0 0 1 76-75" fill="none" stroke="#e8fbff" stroke-opacity=".75" stroke-width="5" stroke-linecap="round"/>
+  <path d="M727 510h104m-65 19h65m-43 19h43" fill="none" stroke="#90c9d2" stroke-opacity=".62" stroke-width="2"/>
+  <circle cx="842" cy="510" r="4" fill="#90c9d2"/><circle cx="842" cy="529" r="4" fill="#90c9d2"/><circle cx="842" cy="548" r="4" fill="#90c9d2"/>
+</svg>

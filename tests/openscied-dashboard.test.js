@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
-function setup(blocked = false, overrides = {}) {
+function setup(blocked = false, overrides = {}, absent = []) {
   const elements = new Map();
   function element() {
     const handlers = {};
@@ -25,7 +25,7 @@ function setup(blocked = false, overrides = {}) {
   Object.defineProperty(data, 'removeItem', { value: key => { delete data[key]; } });
   let mounted = '', blob;
   const context = { document: { readyState: 'complete',
-      querySelector(selector) { if (!elements.has(selector)) elements.set(selector, element()); return elements.get(selector); },
+      querySelector(selector) { if (absent.includes(selector)) return null; if (!elements.has(selector)) elements.set(selector, element()); return elements.get(selector); },
       createElement: element, body: { appendChild() {} } },
     Lab: { identity: { mount(selector) { mounted = selector; }, get: () => ({ name: 'Student', period: '2' }) } },
     localStorage: storage, window: { addEventListener() {} }, Blob,
@@ -158,7 +158,7 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   const p = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const unit = p.split('aria-labelledby="unit3">')[1]?.split('</section>')[0] || '';
   assert.deepEqual([...unit.matchAll(/class="dashboard-preview" href="([^"]+)"/g)].map(m=>m[1]),[
-    'openscied-b3-cell-cycle.html','openscied-b3-dna-workshop.html','openscied-b3-dna-p53.html','openscied-b3-inheritance-environment.html'
+    'openscied-b3-cancer-rates.html','openscied-b3-cell-cycle.html','openscied-b3-dna-workshop.html','openscied-b3-dna-p53.html','openscied-b3-inheritance-environment.html'
   ]);
   const key='aplab:openscied:b3-dna-workshop:v1';
   const raw=JSON.stringify({v:1,step:'copy',progress:{v:1,placed:{'pair-1':'A','pair-2':'C'}},answers:{build:'One new strand.'},lastVisitedAt:1800000000000});
@@ -274,4 +274,75 @@ test('a Serengeti-only restart provides a scoped backup and preserves other save
   assert.equal(s.data[serengetiKey],undefined);
   assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1']);
   assert.equal(s.data[nearSerengetiKey],'keep');
+});
+
+
+test('Cancer Rates Data Dive resumes, backs up its prediction and comparison, and resets only its own work', async () => {
+  const key = 'aplab:openscied:b3-cancer-rates:v1';
+  const fresh = { v:1, step:'predict', prediction:{choice:'', reason:'', locked:false}, evidence:[], claim:'', limits:'', completed:false };
+  const starter = setup(false, { [key]:JSON.stringify(fresh) });
+  assert.equal(starter.el('#cancer-rates-progress').textContent, 'Not started');
+  assert.equal(starter.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html');
+  assert.equal(starter.el('#openscied-resume').hidden, true);
+  const saved = { ...fresh, step:'explain', lastVisitedAt:1800000000000, completed:true,
+    prediction:{choice:'lower', reason:'The groups may differ.', locked:true},
+    evidence:[{view:'state', measure:'incidence', a:'MI', b:'OH'}], claim:'I compared two rates.', limits:'These are population data.' };
+  const raw = JSON.stringify(saved);
+  const s = setup(false, { [key]:raw });
+  assert.equal(s.el('#cancer-rates-progress').textContent, 'Investigation complete · 1 pinned comparison · 2 of 2 responses saved');
+  assert.equal(s.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html#cr-income-cards');
+  assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cancer-rates.html#cr-income-cards');
+  s.el('#download-openscied-results').fire('click');
+  const whole = JSON.parse(await s.blob().text());
+  assert.equal(whole.work[key], raw);
+  s.el('#cancer-rates-reset').fire('click');
+  s.el('#backup-before-openscied-clear').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.deepEqual(payload.work, { [key]:raw });
+  assert.deepEqual(payload.responses['cancer-rates'], {
+    claim:saved.claim, limits:saved.limits, prediction:saved.prediction.choice, predictionReason:saved.prediction.reason
+  });
+  s.el('#openscied-erase-confirmation').value = 'ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data[key], undefined);
+  assert.ok(s.data['aplab:openscied:future-activity:v1']);
+  assert.ok(s.data['aplab:lab05:results']);
+  assert.equal(s.el('#cancer-rates-progress').textContent, 'Not started');
+});
+
+test('a cached dashboard without the Cancer Rates card keeps existing cards and saves usable', () => {
+  const absent = ['progress','open','reset'].map(suffix=> '#cancer-rates-'+suffix);
+  const s = setup(false, {}, absent);
+  assert.equal(s.el('#migration-open').href, 'openscied-b1-migration.html#explore');
+  assert.equal(s.el('#dna-workshop-progress').textContent, 'Not started');
+  assert.equal(s.el('#download-openscied-results').disabled, false);
+});
+
+test('case evidence checks and a question draft are resumable before a comparison is pinned', () => {
+  const key = 'aplab:openscied:b3-cancer-rates:v1';
+  const base = { step:'predict', evidence:[], lastVisitedAt:1800000000000 };
+  const partial = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',screening:'rising','race-stage':'higher','rural-stage':'higher'}})});
+  assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 6 exhibits complete/);
+  assert.equal(partial.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
+  const sixthOnly = setup(false,{[key]:JSON.stringify({...base,casework:{'test-cost':'longer'}})});
+  assert.match(sixthOnly.el('#cancer-rates-progress').textContent,/1 of 6 exhibits complete/);
+  assert.equal(sixthOnly.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
+  const draft = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',diagnosis:'rising',questionDraft:'Which groups were diagnosed earlier?'}})});
+  assert.match(draft.el('#cancer-rates-progress').textContent,/Question draft saved/);
+  assert.equal(draft.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
+});
+
+test('a submitted case question resumes Explore and is included in readable backup responses', async () => {
+  const key = 'aplab:openscied:b3-cancer-rates:v1';
+  const question = 'How does stage at diagnosis differ by place?';
+  const raw = JSON.stringify({step:'explore',evidence:[],lastVisitedAt:1800000000000,
+    casework:{notes:{diagnoses:'A note',deaths:'B note',map:'C note'},access:'falling',diagnosis:'rising','test-cost':'longer',question,opened:true}});
+  const s = setup(false,{[key]:raw});
+  assert.match(s.el('#cancer-rates-progress').textContent,/Investigation question saved/);
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#explore');
+  s.el('#download-openscied-results').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.equal(payload.responses['cancer-rates'].investigationQuestion,question);
+  assert.deepEqual(payload.responses['cancer-rates'].exhibitObservations,{A:'A note',B:'B note',C:'C note'});
+  assert.equal(payload.work[key],raw);
 });
