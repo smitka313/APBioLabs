@@ -6,6 +6,19 @@
 /* Keep old bookmarks useful without stranding work saved on the GitHub origin. */
 (function () {
   'use strict';
+  // OpenSciEd has a few pages whose own fallback theme script follows CSS.
+  // Apply the saved choice in this shared head script, before those sheets.
+  // This changes no storage and deliberately leaves AP lab startup alone.
+  if (/\/openscied-[^/]+\/?$/i.test(location.pathname)) {
+    document.documentElement.setAttribute('data-openscied', '');
+    try {
+      var opensciedTheme = localStorage.getItem('aplab:pref:theme');
+      if (opensciedTheme === 'light' || opensciedTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', opensciedTheme);
+      }
+    } catch (_) { /* Match the system theme when storage is unavailable. */ }
+  }
+
   var oldHost = 'smitka313.github.io';
   var prefix = '/APBioLabs';
   if (location.hostname !== oldHost ||
@@ -57,6 +70,18 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showNotice, { once: true });
   else showNotice();
+}());
+
+
+/* Track visits and real work on OpenSciEd activity routes, without touching saved answers. */
+(function () {
+  'use strict';
+  if (location.hostname === 'smitka313.github.io' ||
+      !/(?:^|\/)openscied-b[1-5]-[a-z0-9-]+(?:\.html)?\/?$/.test(location.pathname) ||
+      !document.currentScript || !document.currentScript.src) return;
+  var script = document.createElement('script');
+  script.src = new URL('openscied-resume.js', document.currentScript.src).href;
+  document.head.appendChild(script);
 }());
 </script>
 <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>

@@ -49,6 +49,11 @@
 .ju-shell summary{cursor:pointer;min-height:30px;font-weight:750}
 .ju-shell table{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
 .ju-shell th,.ju-shell td{text-align:left;padding:.36rem .28rem;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+/* The four known trial-log columns fit on phones if the small values keep their words intact. */
+#ju-sim-trials :is(th,td){overflow-wrap:normal;word-break:normal}
+#ju-sim-trials :is(th,td):first-child{width:1%;white-space:nowrap}
+#ju-sim-trials td:last-child{white-space:nowrap}
+@media(max-width:420px){#ju-sim-trials :is(th,td){padding-inline:.22rem}}
 .ju-tools{justify-content:flex-start}.ju-fit{display:flex;align-items:center;gap:.4rem;min-height:40px}
 .ju-tools input{width:1.1rem;height:1.1rem;accent-color:var(--accent)}
 .ju-live:empty{display:none}.ju-live:not(:empty){margin:.5rem 0 0;font-size:.86rem}

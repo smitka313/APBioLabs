@@ -137,6 +137,21 @@ async function exerciseFlightSimulation(page,size,label) {
     label+' starting another trial is explicit and keeps the chosen settings until changed');
   await runFlight(2,'mountain','incubating',2,0.2);
   const completed=await rows();
+  if(size.width===390) {
+    const trialTable=id(page,'ju-sim-trials');
+    check(await trialTable.getByRole('columnheader',{name:'Trial',exact:true}).count()===1,
+      label+' the compact number heading keeps the accessible name Trial');
+    await page.setViewportSize({width:375,height:size.height});
+    const logFit=await trialTable.evaluate(el=>{
+      const pane=el.closest('details'), context=[...el.querySelectorAll('tbody td')].find(cell=>cell.textContent==='Incubating');
+      if(!pane||!context) return false;
+      const range=document.createRange(); range.selectNodeContents(context);
+      return el.getBoundingClientRect().right<=pane.getBoundingClientRect().right+1
+        && document.documentElement.scrollWidth<=innerWidth+1 && range.getClientRects().length===1;
+    });
+    check(logFit,label+' the trial table fits at 375 px and keeps Incubating readable on one line');
+    await page.setViewportSize({width:size.width,height:size.height});
+  }
   await shoot(page,label+'-1b-flight-finished','ju-sim-frame');
   await a11y(page,'#ju-field-simulation',label+' optional field simulation');
   check(await publishedGroup.inputValue()===initialGroup&&

@@ -61,7 +61,8 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
           svgText: svg ? [...svg.querySelectorAll('text')].map(t => t.textContent.trim()) : [], pill: !!c.querySelector('.dashboard-preview-label'),
           ratio: ar.width / ar.height, capBelow: cr.top >= ar.bottom - 0.5, capInside: cr.left >= fr.left - 0.5 && cr.right <= fr.right + 0.5,
           kidsInside: kids.every(k => k.left >= fr.left - 0.5 && k.right <= fr.right + 0.5), capText: cap.innerText.trim(), capH: cr.height, w: ar.width,
-          sim: !!cap.querySelector('.dashboard-sim'), mediaW: media?.getBoundingClientRect().width,
+          sim: !!cap.querySelector('.dashboard-sim'), simText: cap.querySelector('.dashboard-sim')?.textContent.trim(),
+          mediaW: media?.getBoundingClientRect().width,
           svg: !!svg, shapes: svg?.querySelectorAll('path,circle,ellipse,rect').length || 0,
           img: img ? {src: img.getAttribute('src'), alt: img.getAttribute('alt'), w: img.naturalWidth, h: img.naturalHeight,
             complete: img.complete, widthAttr: img.getAttribute('width'), heightAttr: img.getAttribute('height')} : null
@@ -99,8 +100,8 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         width + ' px: Cancer Rates Data Dive has a named preview and accurate real-data descriptor');
       const junco=m.find(x=>x.img?.src==='assets/junco-preview.svg');
       T.ok(junco?.img?.complete && junco.img.w===960 && junco.img.h===600 && junco.img.alt==='' &&
-        /^Open Junco Investigation/.test(junco.label) && /Real data/.test(junco.capText),
-        width + ' px: Junco uses a named illustration and real-data descriptor');
+        /^Open Junco Investigation/.test(junco.label) && junco.simText === 'Simulated + real data',
+        width + ' px: Junco uses a named illustration and a combined simulated/real-data descriptor');
       const workshop=m.find(x=>x.img?.src==='assets/dna-workshop-preview.svg');
       T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
         workshop.img.alt==='' && /^Open DNA Workshop/.test(workshop.label),

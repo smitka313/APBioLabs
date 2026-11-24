@@ -211,8 +211,7 @@ async function closeCaseExhibit(page,size,trigger,{escape=false}={}) {
 async function inspectIncomeCards(page,size,label) {
   const details=view(page,'cr-income-cards');
   await details.waitFor({state:'visible'});
-  check(!await details.evaluate(element=>element.open),label+' the required Evidence Folder starts collapsed before saving a prediction');
-  await invoke(details.locator('summary').first(),size);
+  check(await details.evaluate(element=>element.open),label+' locking a prediction opens the required Evidence Folder');
   check(await page.locator('.cr-file-stamp').isVisible()&&await details.locator('.cr-case-index').first().isVisible(),label+' case briefing and evidence log are visible');
   await capture(page,label+'-case-dossier');
   const tabs=view(page,'cr-income-tabs');
@@ -373,7 +372,16 @@ async function followupPath(page,size) {
     await invoke(resume,size);
     await page.waitForURL(url=>url.pathname.endsWith('/'+FILE)&&url.hash===hash);
   }
-  await invoke(details.locator('summary').first(),size);
+  check(await details.isHidden(),'a reset investigation hides the Evidence Folder until Predict is saved again');
+  await view(page,'cr-prediction').selectOption('unsure');
+  const draftResume=await dashboardResume('#predict');
+  check(/Prediction draft/i.test(await view(page,'cancer-rates-progress').textContent()),
+    'the dashboard reports a chosen but unlocked prediction as a draft');
+  await followResume(draftResume,'#predict');
+  check(await details.isHidden() && await view(page,'cr-prediction').inputValue()==='unsure',
+    'the dashboard restores the prediction draft without revealing the exhibits');
+  await invoke(view(page,'cr-lock'),size);
+  check(await details.evaluate(element=>element.open),'saving the resumed prediction reveals the Evidence Folder');
   const first=await openCaseExhibit(page,size,'cr-lesson1-deaths');
   await invoke(view(page,'cr-lesson1-deaths').locator('[data-case-next]').first(),size);
   await visible(page,'cr-lesson1-map');
@@ -445,7 +453,7 @@ async function followupPath(page,size) {
   await followResume(resume,'#explore');
   await visible(page,'explore');
   const datasets=await view(page,'cr-view').locator('option').evaluateAll(options=>options.map(el=>el.value));
-  check(['types','states','poverty','race','michigan'].every(x=>datasets.includes(x)),'case file opens the complete explorer without requiring the old prediction');
+  check(['types','states','poverty','race','michigan'].every(x=>datasets.includes(x)),'after saving Predict and completing the case file, all five data views are available');
   check((await view(page,'cr-question-explore').textContent()).includes(investigation),'student question is next to the exploratory data');
   await invoke(view(page,'cr-pin'),size);
   await invoke(view(page,'cr-to-explain'),size);
@@ -624,16 +632,20 @@ async function exercise(browser, base, size) {
   try {
     await page.goto(new URL(FILE, base).href);
     await visible(page,'predict');
-    check(await view(page,'explore').isHidden(), label + ' evidence is not spoiled before the student predicts');
+    check(await view(page,'explore').isHidden() && await view(page,'cr-verdict').isHidden() &&
+      await view(page,'cr-income-cards').isHidden() && await view(page,'cr-case-dialog').isHidden(),
+      label+' neither ranking verdict nor exhibit is spoiled before the student locks Predict');
     await fits(page,'main, #predict, #cr-prediction, #cr-reason, #cr-lock',label+' Predict');
     await capture(page,label+'-predict','#cr-prediction');
     if (size.deep) await a11y(page,'#predict',label+' Predict');
-    await inspectIncomeCards(page,size,label);
     await view(page,'cr-prediction').selectOption(size.touch ? 'same' : 'different');
     await view(page,'cr-reason').fill(REASON);
+    check(await view(page,'cr-income-cards').isHidden(),label+' typing a prediction draft does not reveal the Evidence Folder');
     await invoke(view(page,'cr-lock'),size);
-    check(await view(page,'explore').isHidden()&&await page.locator('[data-step="explore"]').isDisabled(),
+    check(await view(page,'explore').isHidden()&&await view(page,'cr-verdict').isHidden()&&
+      await page.locator('[data-step="explore"]').isDisabled(),
       label+' saving a prediction opens the required exhibits without bypassing them');
+    await inspectIncomeCards(page,size,label);
     await page.goto(new URL(FILE+'#explore',base).href);
     await page.reload();
     check(await view(page,'explore').isHidden(),label+' a direct Explore link cannot bypass incomplete exhibits');

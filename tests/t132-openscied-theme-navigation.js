@@ -56,7 +56,7 @@ async function hop(browser, base, os, mode, cleanRoute) {
         path:path.join(ROOT,ACTIVITY), contentType:'text/html'
       }));
     }
-    const target = base + (cleanRoute ? clean : ACTIVITY);
+    const target = new URL(base + (cleanRoute ? clean : ACTIVITY));
     let unlockCSS;
     const held = new Promise(resolve => { unlockCSS=resolve; });
     const stylesheet = /\/style\.css(?:[?#]|$)/;
@@ -65,12 +65,13 @@ async function hop(browser, base, os, mode, cleanRoute) {
     try {
       const requested=page.waitForRequest(request=>stylesheet.test(request.url()));
       await Promise.all([
-        page.waitForURL(target,{ waitUntil:'commit' }),
+        page.waitForURL(url=>url.origin===target.origin&&url.pathname===target.pathname,{ waitUntil:'commit' }),
         page.locator('#b2-fires-open').click({ noWaitAfter:true })
       ]);
       await requested;
       // The first shared CSS request is still blocked. The destination's theme
       // must already be set without its own later inline script or lab.js.
+      await page.waitForFunction(wanted=>document.documentElement.getAttribute('data-theme')===wanted,mode,{timeout:5000});
       ok(await page.evaluate(() => document.documentElement.getAttribute('data-theme')) === mode,
         mode+' applies in the incoming document before its first stylesheet ('+
         (cleanRoute?'clean URL redirect':'.html link')+')');
