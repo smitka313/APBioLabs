@@ -126,6 +126,11 @@
       }
       actor.append(make('span',i===0?'P1':'P2','wc-mate-tag'),make('span',genotypeOf(parent.genotype),'wc-mate-gene'));
       host.append(actor);
+      const copy=make('span',detail.alleles[i],'wc-map-copy');
+      copy.dataset.parent=String(i+1);
+      copy.style.setProperty('--wc-copy-start',(joint[0]+(i===0?-8:8))+'%');
+      copy.style.setProperty('--wc-copy-end',(joint[0]+(i===0?-2:2))+'%');
+      host.append(copy);
     });
     const child=make('span',null,'wc-mate wc-mate-child');
     for(const [key,value] of Object.entries({x,y,mx:joint[0],my:joint[1]}))child.style.setProperty('--wc-'+key,value+'%');

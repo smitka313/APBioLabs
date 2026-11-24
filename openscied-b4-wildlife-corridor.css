@@ -182,3 +182,17 @@
 .wc-mix-grid[data-animated="true"] .wc-mix-travel {animation-delay:.63s;}
 .wc-mix-grid[data-animated="true"] .wc-mix-genotype {animation-delay:.92s;}
 @media(prefers-reduced-motion:reduce){.wc-pair-layer[data-animated="true"] .wc-mate {animation:none;}}
+
+/* Both transmitted copies stay on the same map as the parents and offspring. */
+.wc-map-copy {position:absolute;left:var(--wc-copy-start);top:72%;z-index:1;
+  display:grid;place-items:center;transform:translate(-50%,-50%);min-width:1.4rem;min-height:1.4rem;
+  border:1px solid #f5d497;border-radius:4px;background:#122a35;color:#fff4d9;
+  font:800 .84rem/1 var(--f-mono,monospace);}
+.wc-pair-layer[data-animated="true"] .wc-map-copy {animation:wc-map-inherit 1.35s linear both;}
+@keyframes wc-map-inherit {
+  0%,48% {left:var(--wc-copy-start);top:72%;opacity:0;}
+  51%,59% {left:var(--wc-copy-start);top:72%;opacity:1;}
+  72% {left:var(--wc-copy-end);top:57%;opacity:1;}
+  82%,100% {left:var(--wc-copy-end);top:57%;opacity:0;}
+}
+@media(prefers-reduced-motion:reduce){.wc-pair-layer[data-animated="true"] .wc-map-copy {animation:none;}}

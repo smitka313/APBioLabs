@@ -15,9 +15,9 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
   try{
     browser=await chromium.launch();
     for(const width of [390,768,1366,1920]){
-      const touch=width===390, desktop=width>=1366;
+      const touch=width===390, desktop=width>=1366, motionEnabled=touch||desktop;
       const ctx=await browser.newContext({viewport:{width,height:desktop?900:844},hasTouch:touch,
-        colorScheme:touch?'dark':'light',reducedMotion:desktop?'no-preference':'reduce'});
+        colorScheme:touch?'dark':'light',reducedMotion:motionEnabled?'no-preference':'reduce'});
       try{
         const origin=new URL(site.url).origin;
         await ctx.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
@@ -50,12 +50,28 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
         assert.match(await by('mix').textContent(),/A\/A|A\/a|a\/a/);
         await act(by('replay-mix'));
         const motion=await by('mix').locator('.wc-mix-travel').first().evaluate(e=>getComputedStyle(e).animationName);
-        assert.equal(motion,desktop?'wc-inherit-copy':'none');
+        assert.equal(motion,motionEnabled?'wc-inherit-copy':'none');
         const pairing=by('pair-connected');
         assert.equal(await pairing.locator('.wc-mate-parent').count(),2);
         assert.equal(await pairing.locator('.wc-mate-child').count(),1);
         const mapMotion=await pairing.locator('.wc-mate-parent').first().evaluate(e=>getComputedStyle(e).animationName);
-        assert.equal(mapMotion,desktop?'wc-find-mate':'none');
+        assert.equal(mapMotion,motionEnabled?'wc-find-mate':'none');
+        const copies=pairing.locator('.wc-map-copy');
+        assert.equal(await copies.count(),2);
+        assert.ok((await copies.allTextContents()).every(a=>a==='A'||a==='a'));
+        if(touch){
+          assert.ok(await copies.evaluateAll(nodes=>{
+            return nodes.every(node=>{
+              const animation=node.getAnimations().find(a=>a.animationName==='wc-map-inherit');
+              if(!animation)return false;
+              animation.pause();
+              animation.currentTime=760;
+              const {top,bottom,left,right}=node.getBoundingClientRect();
+              return Number(getComputedStyle(node).opacity)>.9&&top>=0&&bottom<=innerHeight&&left>=0&&right<=innerWidth;
+            });
+          }), 'both allele copies are visible together on the phone map during replay');
+          await shot('phone-allele-transfer','map-connected');
+        }
         assert.equal(await by('mix-offspring').locator('option').count(),24);
         await by('mix-habitat').selectOption('road');
         await by('mix-offspring').selectOption('23');
