@@ -42,3 +42,28 @@ test('co-location and budgets matter',()=>{
   assert.throws(()=>M.run(-1,mobile),RangeError);
   assert.throws(()=>M.run(2**32,mobile),RangeError);
 });
+test('three stable randomized cases cover all towns and both care needs, with coherent incomes and distances',()=>{
+  assert.notDeepEqual(M.scenarios(1),M.scenarios(2));
+  const screeningOnlyTowns=new Set();
+  for(let seed=0;seed<80;seed++){
+    const cases=M.scenarios(seed);
+    const base=M.run(seed,M.baseline), trial=M.run(seed,mobile);
+    assert.deepEqual(cases,M.scenarios(seed));
+    assert.deepEqual(cases.map(p=>p.place),M.places);
+    assert.equal(cases.filter(p=>p.needed).length,2);
+    screeningOnlyTowns.add(cases.find(p=>!p.needed).place);
+    for(const p of cases){
+      const a=base.patients[p.id-1],b=trial.patients[p.id-1];
+      assert.equal(p.monthlyIncome*.02,p.means);
+      assert.equal(a.needed,b.needed);
+      assert.equal(a.needed,p.needed);
+      assert.equal(a.screen.miles,p.distances.hub);
+      assert.equal(b.screen.miles,p.distances.mobile);
+      if(a.scan)assert.equal(a.scan.miles,p.distances.hub);
+      if(b.scan)assert.equal(b.scan.miles,p.distances.mobile);
+      const allowed=p.needed?'imaged':'screened';
+      assert.equal(M.comparison(a,b),a.outcome===allowed?(b.outcome===allowed?'both':'base'):(b.outcome===allowed?'trial':'neither'));
+    }
+  }
+  assert.equal(screeningOnlyTowns.size,3);
+});

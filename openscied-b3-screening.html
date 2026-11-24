@@ -40,8 +40,15 @@
 <p class="sd-status" id="sd-status" role="status" aria-atomic="true"></p>
 <section id="sd-map-section" aria-labelledby="sd-map-title">
 <h2 id="sd-map-title" tabindex="-1">Try two clinic plans</h2>
-<p id="sd-task">Watch one patient try to get follow-up at the hospital.</p>
-<div class="sd-grid">
+<p id="sd-task">Meet your three patients before you run a plan.</p>
+<section id="sd-intake" class="sd-panel" aria-labelledby="sd-intake-title">
+ <h3 id="sd-intake-title">Meet your three patients</h3>
+ <p>Who can get the care they need? Compare these same three people under both plans.</p>
+ <div id="sd-profiles" class="sd-profiles"></div>
+ <p class="sd-hint">All incomes and distances are fictional. This model sets aside 2% of monthly income for test fees, travel, and time away. Distances are one way.</p>
+ <div id="sd-intake-action"></div>
+</section>
+<div class="sd-grid" id="sd-map-grid" hidden>
 <div>
 <div id="sd-board" class="sd-board" aria-label="District map">
  <svg id="sd-travel" viewBox="0 0 1000 640" preserveAspectRatio="none" aria-hidden="true"><polyline id="sd-route" visibility="hidden"/></svg>
@@ -53,6 +60,7 @@
  <div id="sd-traveler" class="sd-traveler" aria-hidden="true" hidden></div>
  <div id="sd-map-event" class="sd-map-event" hidden></div>
 </div>
+<p class="sd-hint">District map is not to scale. Patient cards show one-way distances.</p>
 <div id="sd-quick" class="sd-supply" hidden>
  <p><strong>Move the ultrasound team.</strong> The machine and its trained operator go together. Screening stays at the hospital.</p>
  <div class="sd-team-actions"><button type="button" class="sd-piece sd-team" id="sd-tool-team" aria-pressed="false"><span aria-hidden="true">✚</span><strong>Ultrasound team</strong><small></small></button><button type="button" class="btn" id="sd-move-team">Move team to mobile clinic</button></div>
@@ -64,18 +72,26 @@
 </details>
 </div>
 <aside class="sd-side">
- <section class="sd-ledger sd-command"><p class="sd-stage" id="sd-stage">Step 1 of 3</p><h3 id="sd-action-title">Watch the hospital plan</h3><p id="sd-action-help">Follow one patient on the map.</p><button type="button" class="btn btn--primary" id="sd-run">Run hospital plan</button><p id="sd-setup-note" class="sd-note" hidden></p><button type="button" class="btn" id="sd-summary-link" hidden>See what changed ↓</button></section>
+ <section class="sd-ledger sd-command"><p class="sd-stage" id="sd-stage">Step 1 of 3</p><h3 id="sd-action-title" tabindex="-1">Watch the hospital plan</h3><p id="sd-action-help">Follow one patient on the map.</p><span id="sd-run-dock"><button type="button" class="btn btn--primary" id="sd-run">Run hospital plan</button></span><p id="sd-setup-note" class="sd-note" hidden></p><button type="button" class="btn" id="sd-summary-link" hidden>See what changed ↓</button></section>
  <details class="sd-ledger" id="sd-cost-details" hidden><summary>What the clinic pays <span id="sd-budget"></span></summary><p>The clinic pays for the machine, upkeep, and trained staff. Patients separately face test fees, travel, and time.</p><dl id="sd-clinic"></dl></details>
 
 </aside>
 </div>
 <section class="sd-panel" id="sd-journeys" hidden aria-labelledby="sd-journey-title">
-<h3 id="sd-journey-title" tabindex="-1">What changed for the patient?</h3>
+<h3 id="sd-journey-title" tabindex="-1">Compare your three patients</h3>
+<p id="sd-case-progress"></p>
+<div id="sd-cases" class="sd-case-tabs" role="group" aria-label="Choose a patient to compare"></div>
 <div id="sd-story" class="sd-story"></div>
-<button type="button" class="btn" id="sd-replay">Replay the selected plan on the map</button>
+<form id="sd-case-form" class="sd-case-form" hidden>
+ <label for="sd-case-pick"><strong>Which plan got this patient all the care they needed?</strong></label>
+ <div><select id="sd-case-pick" required><option value="">Choose a result</option><option value="base">Hospital plan only</option><option value="trial">Redesign only</option><option value="both">Both plans</option><option value="neither">Neither plan</option></select>
+ <button type="submit" class="btn" id="sd-check-case">Check this case</button></div>
+ <p id="sd-case-feedback" role="status"></p>
+</form>
+<div class="sd-switch"><label>View plan on map <select id="sd-view"><option value="base">Hospital plan</option><option value="trial">Your redesign</option></select></label>
+<button type="button" class="btn" id="sd-replay">Replay this case</button></div>
 <div id="sd-results"></div>
 <details id="sd-other-cases" class="sd-deeper"><summary>Explore all 30 patients (optional)</summary>
- <div class="sd-switch"><label>View plan <select id="sd-view"><option value="base">Hospital plan</option><option value="trial">Your redesign</option></select></label></div>
  <div id="sd-patients" class="sd-patients" aria-label="Simulated patient cases"></div>
  <div id="sd-patient" class="sd-patient"></div>
 </details>
@@ -125,14 +141,15 @@
  <p id="sd-scan-feedback" class="sd-note" tabindex="-1" hidden></p>
  <p class="sd-hint">The probe sends sound pulses and measures returning echoes. Tissues can return different echoes, making a shape visible. This is one fictional example; ultrasound alone cannot tell whether a mass is cancer.</p>
 </details>
+<p class="sd-hint" id="sd-unlock-explain">Compare all three patients to unlock your recommendation.</p>
 <button type="button" class="btn btn--primary" id="sd-to-explain" disabled>Recommend a plan</button>
 </section>
 </section>
 <section id="sd-explain-section" class="sd-panel" aria-labelledby="sd-explain-title" hidden>
 <h2 id="sd-explain-title" tabindex="-1">Recommend a plan</h2>
-<div class="sd-grid"><div><div id="sd-evidence"></div><div id="sd-case-evidence" class="sd-patient"></div></div><div>
+<div class="sd-grid"><div><div id="sd-evidence"></div><h3>Evidence from your three patients</h3><div id="sd-case-evidence"></div></div><div>
  <label for="sd-claim"><strong>Which plan would you fund?</strong> Compare one outcome and one cost from the table. Explain what you give up in return.</label><textarea id="sd-claim" rows="4" maxlength="1800"></textarea>
- <label for="sd-limit"><strong>Who might still get left out?</strong> Use a patient journey or an area’s results to propose one change and explain why it might help.</label><textarea id="sd-limit" rows="4" maxlength="1800"></textarea>
+ <label for="sd-limit"><strong>Who might still get left out?</strong> Use one of your three patient comparisons or an area’s results to propose one change and explain why it might help.</label><textarea id="sd-limit" rows="4" maxlength="1800"></textarea>
  <button type="button" class="btn" id="sd-finish" disabled>Finish investigation</button><p id="sd-finished"></p><div data-ose-report-final></div>
 </div></div>
 </section>

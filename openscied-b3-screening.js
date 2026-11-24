@@ -4,10 +4,11 @@
   const $=id=>document.getElementById('sd-'+id), say=t=>{$('status').textContent=t;};
   const el=(tag,t)=>Object.assign(document.createElement(tag),{textContent:t??''});
   const cost=n=>n+' cr', label=z=>M.names[z]||'Supply rack';
-  const fresh=()=>({v:1,seed:crypto.getRandomValues(new Uint32Array(1))[0],plan:{...M.baseline},started:false,trial:null,claim:'',limit:'',finished:false,step:'map',evidencePatient:1,lastVisitedAt:0});
+  const fresh=()=>({v:1,seed:crypto.getRandomValues(new Uint32Array(1))[0],plan:{...M.baseline},started:false,trial:null,claim:'',limit:'',finished:false,step:'map',caseId:null,caseAnswers:{},caseChecks:[],lastVisitedAt:0});
   const cleanPlan=p=>Object.fromEntries(M.pieces.map(k=>[k,M.zones.includes(p?.[k])?p[k]:null]));
   const str=x=>typeof x==='string'?x.slice(0,1800):'';
-  const complete=()=>!!s.trial&&s.claim.trim()&&s.limit.trim()&&s.finished;
+  const ready=()=>!!s.trial&&cases.every(p=>s.caseChecks.includes(p.id));
+  const complete=()=>ready()&&s.claim.trim()&&s.limit.trim()&&s.finished;
   let s=fresh(), session, recovery=false, selected='', view='base', patient=1, animation=0;
   const same=(a,b)=>M.pieces.every(k=>a[k]===b[k]);
   try{
@@ -16,11 +17,20 @@
       const x=JSON.parse(raw);
       if(x?.v!==1||!Number.isInteger(x.seed)||x.seed<0||x.seed>4294967295)throw Error('Invalid save');
       const trial=cleanPlan(x.trial);
-      s={...s,seed:x.seed,plan:cleanPlan(x.plan),started:x.started===true,trial:x.started&&!M.validate(trial)&&!same(trial,M.baseline)?trial:null,claim:str(x.claim),limit:str(x.limit),finished:x.finished===true,evidencePatient:Number.isInteger(x.evidencePatient)&&x.evidencePatient>=1&&x.evidencePatient<=30?x.evidencePatient:1,lastVisitedAt:Number(x.lastVisitedAt)||0,step:x.step==='explain'?'explain':'map'};
-    }
+      s={...s,seed:x.seed,plan:x.started?cleanPlan(x.plan):{...M.baseline},started:x.started===true,trial:x.started&&!M.validate(trial)&&!same(trial,M.baseline)?trial:null,caseId:x.caseId,caseAnswers:x.caseAnswers,caseChecks:Array.isArray(x.caseChecks)?x.caseChecks:[],claim:str(x.claim),limit:str(x.limit),finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0,step:x.step==='explain'?'explain':'map'};
+    }else session.write(KEY,JSON.stringify({v:1,seed:s.seed}));
     if(s.trial)view='trial';
-    patient=s.evidencePatient;
+
   }catch(_){recovery=true;}
+  const cases=M.scenarios(s.seed);
+  const caseIds=cases.map(p=>p.id);
+  s.caseId=caseIds.includes(s.caseId)?s.caseId:caseIds[0];
+  patient=s.caseId;
+  if(s.trial){
+    const a=M.run(s.seed,M.baseline).patients,b=M.run(s.seed,s.trial).patients;
+    s.caseChecks=caseIds.filter(id=>s.caseChecks.includes(id)&&M.comparison(a[id-1],b[id-1])===s.caseAnswers?.[id]);
+  }else s.caseChecks=[];
+  if(!ready()){s.step='map';s.finished=false;}
   const student=api?.reportIdentity?.(session,[KEY],()=>window.Lab?.identity?.get?.()??null)??(()=>null);
   function savable(){return !recovery&&!!session?.check(KEY).ok;}
   function notice(){$('save').textContent=savable()?'Progress stays on this device unless you choose to download a report.':'This tab can’t save over work on this device. Use Preview report to keep a recovery copy.';}
@@ -147,8 +157,11 @@
     const stage=!s.started?1:s.trial?3:2;
     $('stage').textContent='Step '+stage+' of 3';
     $('action-title').textContent=stage===1?'Watch the hospital plan':stage===2?'Try the mobile clinic':'Compare the two plans';
-    $('action-help').textContent=stage===1?'Follow one patient on the map.':stage===2?(moved?'The team is in place. Test it with the same patients.':'Move the ultrasound team to the mobile clinic.'):'Look at what changed for the same patient, then make your recommendation.';
-    $('task').textContent=stage===1?'Watch one patient try to get follow-up at the hospital.':stage===2?'Move one team. Keep screening at the hospital.':'Compare access and cost before choosing a plan.';
+    $('action-help').textContent=stage===1?'Start with your three patient cards.':stage===2?(moved?'The team is in place. Test it with the same patients.':'Move the ultrasound team to the mobile clinic.'):'Check what happened to each of your three patients.';
+    $('map-grid').hidden=!s.started;
+    const runDock=$(s.started?'run-dock':'intake-action');
+    if($('run').parentElement!==runDock)runDock.append($('run'));
+    $('task').textContent=stage===1?'Meet your three patients before you run a plan.':stage===2?'Move one team. Keep screening at the hospital.':'Compare access and cost before choosing a plan.';
     $('quick').hidden=stage!==2;$('advanced').hidden=stage!==3;
     $('cost-details').hidden=stage===1;
     $('summary-link').hidden=stage!==3;
@@ -167,6 +180,31 @@
   const result=()=>get(view==='trial'&&s.trial?s.trial:M.baseline);
   const outcomes={'screen-missed':'Missed screening',screened:'Screening only','follow-up-missed':'Missed follow-up',imaged:'Ultrasound completed'};
   const markers={'screen-missed':'×',screened:'✓','follow-up-missed':'!',imaged:'◆'};
+  const need=p=>p.needed?'Screening + ultrasound follow-up':'Screening only';
+  const income=p=>p.monthlyIncome.toLocaleString('en-US')+' cr/month';
+  for(const [i,p] of cases.entries()){
+    const card=el('article');card.className='sd-profile';
+    const k=el('p','Case '+(i+1));k.className='sd-stage';
+    const distances=el('ul');distances.append(el('li','Hospital: '+p.distances.hub+' mi'),el('li','Mobile clinic: '+p.distances.mobile+' mi'));
+    card.append(k,el('h4','Patient '+p.id+' · '+p.place),el('p',need(p)),el('p','Income: '+income(p)+' · Care budget: '+cost(p.means)),el('p','Time available per visit: '+p.hours+' h'),distances);
+    $('profiles').append(card);
+    const b=el('button');b.type='button';b.className='btn';b.onclick=()=>{
+      s.caseId=patient=p.id;save();$('case-feedback').textContent='';drawCases();drawPatient();trip(false);
+    };
+    $('cases').append(b);
+  }
+  function drawCases(){
+    $('case-progress').textContent=s.trial?s.caseChecks.length+' of 3 comparisons checked.':'Hospital results are ready. Test the redesign to compare all three.';
+    const idx=caseIds.indexOf(s.caseId);
+    for(const [i,b] of [...$('cases').children].entries()){
+      const done=s.caseChecks.includes(caseIds[i]);
+      b.textContent='Case '+(i+1)+(done?' ✓':'');b.setAttribute('aria-label','Case '+(i+1)+' · '+cases[i].place+(done?' · checked':''));
+      b.setAttribute('aria-pressed',String(i===idx));
+    }
+    story($('story'),s.caseId);
+    $('case-form').hidden=!s.trial;
+    $('case-pick').value=s.caseChecks.includes(s.caseId)?s.caseAnswers[s.caseId]:'';
+  }
   function drawPatient(){
     const r=result(),p=r.patients[patient-1],box=$('patient');
     for(const [i,b] of [...$('patients').children].entries()){
@@ -174,11 +212,11 @@
     }
     box.replaceChildren(el('h4','Patient '+p.id+' · '+p.place+' · '+outcomes[p.outcome]),el('p',p.reason),el('p','Available: '+cost(p.means)+' and '+p.hours+' h per visit. Burden from completed visits: '+cost(p.paid)+'.'));
     for(const [t,v] of [['Screening',p.screen],['Ultrasound follow-up',p.scan]])if(v){
-      const detail=el('details');detail.append(el('summary',t+' at '+label(v.place)+': '+cost(v.total)+' · '+v.time+' h'),dl([['Test fee',cost(v.fee)],['Travel after any ride voucher',cost(v.travel)],['Time away, valued in credits',cost(v.timeCost)]]));box.append(detail);
+      const detail=el('details');detail.append(el('summary',t+' at '+label(v.place)+': '+cost(v.total)+' · '+v.time+' h · '+v.miles+' mi one way'),dl([['Test fee',cost(v.fee)],['Travel after any ride voucher',cost(v.travel)],['Time away, valued in credits',cost(v.timeCost)]]));box.append(detail);
     }
   }
   const patientBtns=[];
-  for(let i=1;i<=30;i++){const b=el('button');b.type='button';b.onclick=()=>{patient=i;drawPatient();story($('story'),patient);trip(true);};patientBtns.push(b);}
+  for(let i=1;i<=30;i++){const b=el('button');b.type='button';b.onclick=()=>{patient=i;drawPatient();trip(true);};patientBtns.push(b);}
   $('patients').append(...patientBtns);
   const home=[[170,141],[180,512],[820,486]], sites={hub:[750,141],mobile:[470,365]};
   function route(a,b){
@@ -215,7 +253,7 @@
     }
     animation=requestAnimationFrame(tick);
   }
-  $('view').onchange=()=>{view=$('view').value;drawPatient();trip(false);};$('replay').onclick=()=>trip(true);
+  $('view').onchange=()=>{view=$('view').value;drawPatient();trip(false);};$('replay').onclick=()=>{patient=s.caseId;drawPatient();trip(true);};
   function comparisons(){
     const a=get(M.baseline), b=s.trial?get(s.trial):null;
     const row=(title,f)=>[title,f(a),b?f(b):'Not yet tested'];
@@ -246,54 +284,82 @@
       if(p.scan)text.append(document.createTextNode(' The follow-up visit would take '+p.scan.time+' h and cost '+cost(p.scan.total)+' in fees, travel and time.'));
       return text;
     };
-    host.replaceChildren(el('h4','Patient '+id+' · '+a.place),line('Hospital plan',a));
+    const profile=cases.find(p=>p.id===id);
+    host.replaceChildren(el('h4','Patient '+id+' · '+a.place));
+    if(profile)host.append(el('p',need(profile)+' · Income: '+income(profile)+' · Care budget: '+cost(profile.means)),el('p','One way: '+profile.distances.hub+' mi to hospital · '+profile.distances.mobile+' mi to mobile clinic'));
+    host.append(line('Hospital plan',a));
     if(b)host.append(line('Redesign',b));
   }
   function render(){
-    const explain=s.step==='explain'&&!!s.trial;
+    const explain=s.step==='explain'&&ready();
     $('map-section').hidden=explain;$('explain-section').hidden=!explain;
     for(const b of document.querySelectorAll('[data-sd-step]')){
-      b.disabled=b.dataset.sdStep==='explain'&&!s.trial;
+      b.disabled=b.dataset.sdStep==='explain'&&!ready();
       if((b.dataset.sdStep==='explain')===explain)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
     }
-    $('journeys').hidden=!s.started;$('to-explain').disabled=!s.trial;$('to-explain').hidden=!s.trial;
+    $('journeys').hidden=!s.started;$('to-explain').disabled=!ready();$('to-explain').hidden=!s.trial;$('unlock-explain').hidden=!s.trial||ready();
     $('view').options[1].disabled=!s.trial;$('view').value=view;
-    if(s.started){drawPatient();story($('story'),patient);table($('results'));}
-    if(s.trial){table($('evidence'));story($('case-evidence'),s.evidencePatient);}
-    $('finish').disabled=!(s.trial&&s.claim.trim()&&s.limit.trim())||!!complete();
+    if(s.started){drawPatient();drawCases();table($('results'));}
+    if(s.trial){
+      table($('evidence'));$('case-evidence').replaceChildren(...cases.map((p,i)=>{
+        const d=el('details');d.className='sd-deeper';d.open=i===0;
+        const body=el('div');body.className='sd-story';story(body,p.id);
+        d.append(el('summary','Case '+(i+1)+' · '+p.place),body);return d;
+      }));
+    }
+    $('finish').disabled=!(ready()&&s.claim.trim()&&s.limit.trim())||!!complete();
     $('finished').textContent=complete()?'Investigation complete. Preview your report before submitting it.':'Write both responses to finish.';
     drawSetup();
   }
   function nav(step){
-    if(step==='explain'&&!s.trial)return;
-    clearTrip();s.step=step;if(step==='explain')s.evidencePatient=patient;save();render();$(step+'-title').focus();
+    if(step==='explain'&&!ready())return;
+    clearTrip();s.step=step;save();render();$(step+'-title').focus();
   }
   $('run').onclick=()=>{
     if($('run').disabled)return;
     clearTrip();
     if(!s.started){
       s.started=true;view='base';
-      const a=get(M.baseline).patients, b=get({...M.baseline,machine:'mobile',operator:'mobile'}).patients;
-      patient=(a.find((p,i)=>p.outcome==='follow-up-missed'&&b[i].outcome==='imaged')||a.find((p,i)=>p.outcome!==b[i].outcome)||a.find(p=>p.outcome==='follow-up-missed')||a.find(p=>p.outcome!=='screen-missed')||a[0]).id;
-      s.evidencePatient=patient;
+      patient=s.caseId;
     }
-    else{s.trial={...s.plan};view='trial';s.finished=false;}
-    save();render();trip(false);saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move a tool to test a redesign.':'Redesign recorded. Compare the same patient in both plans.');
+    else{s.trial={...s.plan};view='trial';s.finished=false;s.caseChecks=[];s.caseAnswers={};patient=s.caseId;}
+    $('case-feedback').textContent='';
+    save();render();trip(false);
+    (s.trial?$('journey-title'):$('action-title')).focus();
+    saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':'Redesign recorded. Compare all three patients.');
+  };
+  $('case-form').onsubmit=e=>{
+    e.preventDefault();if(!s.trial||!$('case-pick').value)return;
+    const id=s.caseId, a=get(M.baseline).patients[id-1], b=get(s.trial).patients[id-1];
+    const answer=M.comparison(a,b), choice=$('case-pick').value;
+    if(choice!==answer){
+      $('case-feedback').textContent='Not quite. Check each result above. This patient needs '+need(cases.find(p=>p.id===id)).toLowerCase()+'.';
+      return;
+    }
+    s.caseAnswers={...s.caseAnswers,[id]:choice};
+    if(!s.caseChecks.includes(id))s.caseChecks.push(id);
+    save();render();
+    $('case-feedback').textContent=ready()?'Correct. All three comparisons are checked. You can now recommend a plan.':'Correct. Choose an unchecked case to compare next.';
   };
   for(const b of document.querySelectorAll('[data-sd-step]'))b.onclick=()=>nav(b.dataset.sdStep);
   $('to-explain').onclick=()=>nav('explain');
-  for(const k of ['claim','limit']){$(k).value=s[k];$(k).oninput=()=>{s[k]=str($(k).value);s.finished=false;save();$('finish').disabled=!(s.trial&&s.claim.trim()&&s.limit.trim());$('finished').textContent='Write both responses to finish.';};}
+  for(const k of ['claim','limit']){$(k).value=s[k];$(k).oninput=()=>{s[k]=str($(k).value);s.finished=false;save();$('finish').disabled=!(ready()&&s.claim.trim()&&s.limit.trim());$('finished').textContent='Write both responses to finish.';};}
   $('finish').onclick=()=>{if($('finish').disabled)return;s.finished=true;save();render();saySafe('Report ready.');};
   $('reset').onclick=()=>$('dialog').showModal();
-  $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify(fresh()));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
+  $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify({v:1,seed:fresh().seed}));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);
   render();notice();
   window.OpenSciEdSubmission?.mount({target:'#sd-report',filename:'cancer-screening-design',collect:()=>{
-    const missing=[!s.started&&'Run the hospital plan.',!s.trial&&'Run a redesign.',!complete()&&'Write both recommendations and finish.'].filter(Boolean);
+    const missing=[!s.started&&'Run the hospital plan.',!s.trial&&'Run a redesign.',!ready()&&'Check all three patient comparisons.',!complete()&&'Write both recommendations and finish.'].filter(Boolean);
     const comparison=s.started?[{type:'table',title:'Fictional district results',columns:cols,rows:comparisons()}]:[];
     const plan=s.trial?[{type:'table',title:'Clinic costs by plan',columns:['Clinic expense','Hospital plan','Redesign'],rows:clinicRows(get(M.baseline)).map(([k,v],i)=>[k,v,clinicRows(get(s.trial))[i][1]])},{type:'table',title:'Recorded redesign',columns:['Equipment or support','Location'],rows:M.pieces.map(k=>[M.names[k],label(s.trial[k])])}]:[];
+    const a=get(M.baseline).patients,b=s.trial?get(s.trial).patients:null;
+    const caseItems=[{type:'table',title:'Three patient scenarios',columns:['Patient / town','Income and visit budget','Care needed','Hospital / mobile one-way distance','Hospital plan','Redesign','Comparison'],rows:cases.map(p=>[
+      'Patient '+p.id+' · '+p.place,income(p)+' · '+cost(p.means),need(p),p.distances.hub+' mi / '+p.distances.mobile+' mi',
+      s.started?outcomes[a[p.id-1].outcome]:'Not yet tested',b?outcomes[b[p.id-1].outcome]:'Not yet tested',s.caseChecks.includes(p.id)?'Checked':'Not yet checked'
+    ])}];
     return {title:'Cancer Screening Design Lab',unit:'OpenSciEd Biology B.3 · Engineering extension',source:'Fictional classroom simulation. Costs in made-up credits. No real patient records or cancer diagnosis.',status:!savable()?'recovery':complete()?'final':'draft',student:student(),datasetId:'SD-'+s.seed.toString(16).toUpperCase().padStart(8,'0'),missing,
-      sections:[{title:'Evidence',items:[...comparison,...plan]},
+      sections:[{title:'Evidence',items:[...caseItems,...comparison,...plan]},
       {title:'My recommendation',items:[{type:'answer',prompt:'Which plan would you fund?',value:s.claim},{type:'answer',prompt:'Who might still get left out?',value:s.limit}]}]};
   }});
 })();

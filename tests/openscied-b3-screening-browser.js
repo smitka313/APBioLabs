@@ -20,15 +20,26 @@ const out=path.join(ROOT,'artifacts','screening');
       assert.ok(await p.locator('.sd-board').evaluate(e=>{const r=e.getBoundingClientRect();return [...e.querySelectorAll('.sd-home,.sd-site')].every(s=>{const b=s.getBoundingClientRect();return b.left>=r.left&&b.right<=r.right&&b.top>=r.top&&b.bottom<=r.bottom;});}));
       await p.screenshot({path:path.join(out,width+'-'+name+'.png'),fullPage:true,animations:'disabled'});
     };
-    await shot('hospital-setup');
+    assert.ok(await id('map-grid').isHidden());
+    const profiles=id('profiles').locator('article');
+    assert.equal(await profiles.count(),3);
+    const initial=await profiles.allTextContents();
+    for(const [i,place] of M.places.entries()){
+      assert.match(initial[i],new RegExp(place+'.*Income:.*Hospital: '+M.distances[i].hub+' mi.*Mobile clinic: '+M.distances[i].mobile+' mi'));
+    }
+    assert.equal(initial.filter(t=>t.includes('Screening + ultrasound follow-up')).length,2);
+    assert.equal(initial.filter(t=>t.includes('Screening only')).length,1);
+    await p.reload();assert.deepEqual(await profiles.allTextContents(),initial);
+    await p.screenshot({path:path.join(out,width+'-patient-intake.png'),fullPage:true,animations:'disabled'});
     assert.equal(await id('stage').textContent(),'Step 1 of 3');
     assert.ok(await id('quick').isHidden());assert.ok(await id('advanced').isHidden());assert.ok(await id('cost-details').isHidden());
-    await id('run').click();
+    await id('run').click();await shot('hospital-setup');
     assert.equal(await id('stage').textContent(),'Step 2 of 3');
     assert.ok(await id('quick').isVisible());assert.ok(await id('tool-machine').isHidden());
     assert.ok(await id('to-explain').isHidden());assert.ok(await id('patients').isHidden());
     const starter=await id('story').locator('h4').textContent();
-    if(width===1366)await p.waitForFunction(()=>/Patient .* is traveling/.test(document.querySelector('#sd-map-event').textContent),null,{timeout:5000});
+    if(width===1366&&!(await id('story').innerText()).includes('Missed screening'))await id('replay').click();
+    if(width===1366&&!(await id('story').innerText()).includes('Missed screening'))await p.waitForFunction(()=>/Patient .* is traveling/.test(document.querySelector('#sd-map-event').textContent),null,{timeout:5000});
     const drag=async (source,target)=>{
       await source.scrollIntoViewIfNeeded();await target.scrollIntoViewIfNeeded();
       const a=await source.boundingBox(),b=await target.boundingBox(),[x,y,u,v]=[a.x+a.width/2,a.y+a.height/2,b.x+b.width/2,b.y+b.height/2];
@@ -85,7 +96,20 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.equal(await id('patients').locator('[aria-pressed="true"]').count(),1);
     await id('other-cases').locator(':scope > summary').click();
     await shot('comparison');
+    assert.ok(await id('to-explain').isDisabled());
+    for(const [i,c] of M.scenarios(saved.seed).entries()){
+      await id('cases').getByRole('button').nth(i).click();
+      const answer=M.comparison(baseline.patients[c.id-1],trial.patients[c.id-1]);
+      if(i===0){
+        await id('case-pick').selectOption(answer==='both'?'neither':'both');
+        await id('check-case').click();assert.match(await id('case-feedback').textContent(),/Not quite/);
+      }
+      await id('case-pick').selectOption(answer);await id('check-case').click();
+      assert.match(await id('case-progress').textContent(),new RegExp((i+1)+' of 3'));
+      if(i===0){await p.reload();assert.match(await id('case-progress').textContent(),/1 of 3/);assert.ok(await id('to-explain').isDisabled());}
+    }
     await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);
+    assert.equal(await id('case-evidence').locator('details').count(),3);
     assert.match(await id('case-evidence').innerText(),/Hospital plan:.*Redesign:/s);
     await id('claim').fill('The redesign costs more in exchange for more completed ultrasound visits.');
     await id('limit').fill('Vouchers could help with the price of a trip, but cannot create more time.');
@@ -93,7 +117,7 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.match(await id('finished').textContent(),/Investigation complete/);
     assert.match(await id('claim').inputValue(),/redesign/);
     await p.getByRole('button',{name:'Preview report'}).click();
-    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Ultrasound acquisition/);
+    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Ultrasound acquisition/s);
     assert.deepEqual(errors,[]);
     console.log('ok: Screening Design '+width+'px — map, staffing gate, budget, fair comparison, reload, report');
    }finally{await ctx.close();}

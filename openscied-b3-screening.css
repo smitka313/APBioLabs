@@ -43,3 +43,12 @@
 #sd-tissue{cursor:ew-resize;touch-action:pan-y}
 #sd-mark{margin-top:.5rem;min-height:42px}
 @media(max-width:560px){.sd-scan-pair{grid-template-columns:1fr}}
+
+.sd-profiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.52rem}
+.sd-profile{background:var(--surface-2);border:1px solid var(--line);border-radius:.65rem;padding:.6rem;min-width:0}
+.sd-profile h4,.sd-profile p{margin:.2rem 0 .35rem}.sd-profile .sd-stage{margin:0}
+.sd-profile ul{margin:.3rem 0;padding-left:1.15rem;font-size:.9rem}
+.sd-case-tabs,.sd-case-form>div{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin:.35rem 0}
+.sd-case-tabs [aria-pressed=true]{outline:2px solid var(--accent);outline-offset:1px}
+.sd-case-form{margin:.65rem 0}.sd-case-form p:empty{display:none}#sd-case-evidence .sd-story{margin-block:.38rem}
+@media(max-width:720px){.sd-profiles{grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr))}}

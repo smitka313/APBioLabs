@@ -9,6 +9,10 @@
   const zones=Object.freeze(['hub','mobile']);
   const pieces=Object.freeze(['screen','machine','operator','rides']);
   const places=Object.freeze(['North Fork','Riverbend','Central']);
+  // Fictional, one-way distances; the same distances drive the travel cost bands.
+  const distances=Object.freeze([
+    Object.freeze({hub:42,mobile:14}),Object.freeze({hub:28,mobile:14}),Object.freeze({hub:14,mobile:28})
+  ]);
   const names=Object.freeze({hub:'Regional hospital',mobile:'Shared mobile clinic',screen:'Screening team',machine:'Ultrasound machine',operator:'Trained sonographer',rides:'Ride vouchers'});
   const budget=720;
   const baseline=Object.freeze({screen:'hub',machine:'hub',operator:'hub',rides:null});
@@ -31,10 +35,25 @@
       const needed=new Set();while(needed.size<4)needed.add(ints(10));
       return Array.from({length:10},(_,i)=>({
         id:z*10+i+1,place,z,needed:needed.has(i),means:42+ints(72),hours:2+ints(7),
-        baseHours:[3,2,1][z],value:4+ints(4),routeExtra:ints(2)
+        value:4+ints(4),routeExtra:ints(2)
       }));
     });
   }
+  function scenarios(seed){
+    const patients=cohort(seed),rand=random((seed^0xB5C0FBCF)>>>0);
+    // Choose one person per town; rotate which town shows the screening-only case.
+    // Pick before examining outcomes, so no plan is favored by the selection.
+    const screenOnly=Math.floor(rand()*places.length);
+    return places.map((_,z)=>{
+      const eligible=patients.filter(p=>p.z===z&&p.needed===(z!==screenOnly));
+      return publicProfile(eligible[Math.floor(rand()*eligible.length)]);
+    });
+  }
+  function publicProfile(p){
+    return {...p,monthlyIncome:p.means*50,distances:distances[p.z]};
+  }
+  const reached=(p)=>p.needed?p.outcome==='imaged':p.outcome==='screened';
+  const comparison=(a,b)=>reached(a)?(reached(b)?'both':'base'):(reached(b)?'trial':'neither');
   function validate(p){
     if(!p||!zones.includes(p.screen))return 'Place the screening team first.';
     if(!zones.includes(p.machine)||!zones.includes(p.operator))return 'Place the ultrasound machine and trained sonographer.';
@@ -44,14 +63,14 @@
     return '';
   }
   function visit(person,place,kind,plan){
-    const remote=place==='hub'?person.baseHours:person.z===2?2:1;
+    const miles=distances[person.z][place], remote=miles/14;
     const ride=plan.rides===place;
     const travel=remote*7+person.routeExtra*3;
     const fee=kind==='screen'?8:22;
     const time=remote+1+person.routeExtra;
     const travelPaid=ride?Math.max(0,travel-13):travel;
     const timeCost=time*person.value;
-    return {place,fee,travel:travelPaid,timeCost,time,total:fee+travelPaid+timeCost,ride};
+    return {place,miles,fee,travel:travelPaid,timeCost,time,total:fee+travelPaid+timeCost,ride};
   }
   function run(seed,plan){
     const invalid=validate(plan);if(invalid)throw new RangeError(invalid);
@@ -73,5 +92,5 @@
     });
     return {patients,...summarize(patients),areas:places.map((place,z)=>({place,...summarize(patients.filter(p=>p.z===z))})),costs:costs(plan),clinic:total(plan)};
   }
-  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run});
+  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,distances});
 });

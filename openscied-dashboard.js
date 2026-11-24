@@ -102,9 +102,10 @@
     const compared=zone(p?.screen)&&zone(p?.machine)&&p.operator===p.machine&&(zone(p.rides)||p.rides===null)
       &&(p.screen==='mobile'||p.machine==='mobile'||p.rides!==null)
       &&!(p.screen==='mobile'&&p.machine==='mobile'&&p.rides);
-    const complete=compared&&s.finished===true&&screeningIds().every(id=>written(s,id));
+    const checks=Array.isArray(s.caseChecks)?new Set(s.caseChecks.filter(id=>Number.isInteger(id)&&id>=1&&id<=30)).size:0;
+    const complete=compared&&checks===3&&s.finished===true&&screeningIds().every(id=>written(s,id));
     return {started:true,section:'',visited:Number(s.lastVisitedAt)||0,stepsDone:complete?3:compared?2:1,stepsTotal:3,stepsLabel:'Investigation steps completed',
-      summary:complete?'Investigation complete':compared?'Redesign recorded':'Hospital plan recorded'};
+      summary:complete?'Investigation complete':compared?checks+'/3 patient comparisons checked':'Hospital plan recorded'};
   }
   function rippleResponseIds(){return ['choice','reason','claim','limit'];}
   function rippleProgress(raw){
