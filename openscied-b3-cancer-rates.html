@@ -29,11 +29,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-1">
+<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-2">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
-<script defer src="openscied-b3-cancer-rates.js?v=case-desk-1"></script>
+<script defer src="openscied-b3-cancer-rates.js?v=case-desk-2"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -83,17 +83,17 @@
           <span class="cr-dossier-name">Stage at diagnosis</span><span class="cr-dossier-meta">Neighborhood poverty · Comparison</span>
           <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
         </button>
-        <button id="cr-income-rural-stage-tab" class="cr-dossier cr-dossier--rural-stage" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+        <button id="cr-income-test-cost-tab" class="cr-dossier cr-dossier--test-cost" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
           <span class="cr-dossier-code">Exhibit F</span>
           <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M17 7h26v26H17zM22 13h15m-15 6h11m-11 6h13"/><circle cx="39" cy="25" r="2"/></svg></span>
-          <span class="cr-dossier-name">Rural vs. urban diagnosis</span><span class="cr-dossier-meta">Ohio · Stage comparison</span>
+          <span class="cr-dossier-name">The cost of getting tested</span><span class="cr-dossier-meta">Insurance costs · Time to care</span>
           <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
         </button>
       </div>
       <p id="cr-income-progress">Check the three comparisons to unlock the next step.</p>
       <form id="cr-income-followup" class="cr-case-debrief" hidden>
         <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
-        <p>Income and geography are two different factors. What other evidence, such as travel time to a clinic or wait time for a test, would help you test whether access to care helps explain a difference?</p>
+        <p>A test can only help if people can get it. What would you need to measure before recommending a less expensive option that still gives reliable results?</p>
         <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
         <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
         <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
@@ -228,40 +228,54 @@
             <button class="btn btn--primary" id="cr-income-diagnosis-check" type="button" disabled>Check my comparison</button>
           </div>
           <p id="cr-income-diagnosis-feedback" class="cr-case-feedback" hidden></p>
-          <div><button class="btn" type="button" data-case-next="income-rural-stage">Next: rural vs. urban diagnosis</button></div>
+          <div><button class="btn" type="button" data-case-next="income-test-cost">Next: the cost of getting tested</button></div>
         </div>
       </section>
-      <section class="cr-exhibit" id="cr-income-rural-stage" aria-labelledby="cr-income-rural-stage-title" hidden>
+      <section class="cr-exhibit" id="cr-income-test-cost" aria-labelledby="cr-income-test-cost-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT F</p>
-        <h2 id="cr-income-rural-stage-title" tabindex="-1">Did stage at diagnosis differ between rural and urban areas?</h2>
-        <p>Ohio’s cancer registry compared diagnoses in rural and urban neighborhoods from 2014–2018. The graph combines all cancer types in the report.</p>
-        <figure class="cr-income-figure cr-stage-figure cr-rural-stage-figure">
-          <figcaption>Share of cancer diagnoses at a late stage (%)</figcaption>
-          <ul class="cr-income-bars" aria-label="Late-stage diagnosis percentages by neighborhood type">
-            <li class="cr-income-bar" data-group="rural" data-value="43"><span class="cr-group-name">Rural neighborhoods</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:43%"></span></span> <strong>43%</strong></li>
-            <li class="cr-income-bar" data-group="urban" data-value="41"><span class="cr-group-name">Urban neighborhoods</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:41%"></span></span> <strong>41%</strong></li>
+        <h2 id="cr-income-test-cost-title" tabindex="-1">What happened when patients faced higher costs?</h2>
+        <p>From 2004–2014, some U.S. employers switched workers to health plans with annual deductibles of $1,000 or more. The study compared women who switched with similar women who kept plans with deductibles of $500 or less.</p>
+        <figure class="cr-income-figure cr-stage-figure cr-test-cost-figure">
+          <figcaption>Estimated extra months after the switch, compared with keeping the lower deductible</figcaption>
+          <ul class="cr-income-bars" aria-label="Estimated additional months to each milestone for women in higher-poverty neighborhoods">
+            <li class="cr-income-bar" data-group="imaging" data-value="1.6"><span class="cr-group-name">First diagnostic breast imaging</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:20.00%"></span></span> <strong>+1.6 mo</strong></li>
+            <li class="cr-income-bar" data-group="biopsy" data-value="2.7"><span class="cr-group-name">First breast biopsy</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:33.75%"></span></span> <strong>+2.7 mo</strong></li>
+            <li class="cr-income-bar" data-group="diagnosis" data-value="6.6"><span class="cr-group-name">First early-stage breast cancer diagnosis</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:82.50%"></span></span> <strong>+6.6 mo</strong></li>
           </ul>
-          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></div>
+          <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>2</span><span>4</span><span>6</span><span>8 mo</span></div></div>
+          <p class="cr-cost-scope">Results shown for women living in higher-poverty neighborhoods.</p>
         </figure>
         <details class="cr-case-debrief">
-          <summary>Who is counted in each bar?</summary>
-          <p><strong>Late stage</strong> means regional or distant: the cancer had spread beyond where it started. This is not a measure of how much time passed before diagnosis. Each bar uses all diagnoses in that neighborhood group as its starting total, including cases with no stage recorded (10% rural, 9% urban). Values are rounded.</p>
-          <p>Ohio grouped neighborhoods (census tracts) using population and commuting patterns. Rural does not mean low-income. The combined pattern doesn’t hold for every cancer: for female breast cancer, the reported late-stage share was 33% in both groups.</p>
+          <summary>What did the study measure?</summary>
+          <p>A <strong>deductible</strong> is the amount a patient pays for certain covered services before insurance begins to pay. The dollar amounts describe the plan’s annual deductible, not the price of each test. Here, “higher-poverty” means at least 20% of households lived below the federal poverty line. It does not tell us each patient’s income.</p>
+          <p>The study estimated differences in when groups reached the same benchmark for each step. The bars are separate comparisons, not one patient’s wait times or steps to add together. Employers made the switch, but the study was not randomized. It does not show whether cancers had spread farther or whether a less expensive test works as well.</p>
         </details>
-        <p class="cr-source">Ohio Cancer Incidence Surveillance System, 2014–2018. <a id="cr-rural-stage-source" href="https://odh.ohio.gov/wps/wcm/connect/gov/f009d8af-c27c-4704-9631-2a1c44e33760/Cancer%2BIncidence%2Band%2BMortality%2Bin%2BUrban%2Band%2BRural%2BCensus%2BTracts%2Bin%2BOhio.pdf?MOD=AJPERES#page=7">Ohio Department of Health, Table 4</a>.</p>
+        <details class="cr-case-debrief">
+          <summary>What did patients actually pay? See example costs</summary>
+          <p>A separate analysis of commercial insurance claims from January–June 2023 reported these average amounts paid by patients for follow-up breast tests:</p>
+          <ul>
+            <li>Ultrasound: <strong>$108.15</strong></li>
+            <li>Diagnostic mammogram: <strong>$144.84</strong></li>
+            <li>MRI: <strong>$256.61</strong></li>
+            <li>Biopsy: <strong>$446.93</strong></li>
+          </ul>
+          <p>These are averages from a different group, not prices for the people in the chart. These tests do different jobs. A lower price doesn’t mean one can replace another.</p>
+          <p class="cr-source"><a href="https://www.fightcancer.org/sites/default/files/national_documents/acs_can_bc_oop_cost_white_paper_january_2025.pdf#page=6">American Cancer Society Cancer Action Network, Figure 2</a>.</p>
+        </details>
+        <p class="cr-source">Wharam and colleagues, <cite>Health Affairs</cite> (2019). <a id="cr-test-cost-source" href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">Original study, Exhibit 1</a>.</p>
         <div class="cr-case-question">
           <p class="cr-exhibit-tag">CASE NOTE</p>
-          <label for="cr-income-rural-stage-answer">Which claim about late-stage diagnosis does this graph support?</label>
+          <label for="cr-income-test-cost-answer">Compared with the lower-deductible group, what happened after the switch?</label>
           <div class="cr-case-controls">
-            <select id="cr-income-rural-stage-answer">
+            <select id="cr-income-test-cost-answer">
               <option value="">Choose the claim…</option>
-              <option value="higher">Slightly higher share in rural areas.</option>
-              <option value="lower">Slightly higher share in urban areas.</option>
-              <option value="cause">Living in a rural area caused the gap.</option>
+              <option value="higher">Testing and diagnosis took longer.</option>
+              <option value="lower">Testing and diagnosis happened sooner.</option>
+              <option value="accuracy">Lower-cost tests were more accurate.</option>
             </select>
-            <button class="btn btn--primary" id="cr-income-rural-stage-check" type="button" disabled>Check my claim</button>
+            <button class="btn btn--primary" id="cr-income-test-cost-check" type="button" disabled>Check my claim</button>
           </div>
-          <p id="cr-income-rural-stage-feedback" class="cr-case-feedback" hidden></p>
+          <p id="cr-income-test-cost-feedback" class="cr-case-feedback" hidden></p>
           <div><button class="btn" id="cr-case-question-jump" type="button" disabled>Write my question →</button></div>
         </div>
       </section>
@@ -354,7 +368,7 @@
   <section id="explain" class="cr-card" aria-labelledby="cr-explain-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">03 · Make sense of it</p><h2 id="cr-explain-title" tabindex="-1">What can you claim?</h2></div><span id="cr-done" class="cr-chip" hidden>Investigation complete</span></div>
     <div class="cr-two cr-explain">
-      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-explain-rural-stage" hidden><summary>Exhibit F: rural vs. urban diagnosis</summary><ul id="cr-explain-rural-stage-values"></ul><p>Share of Ohio cancer diagnoses at a late stage, all cancer types combined, 2014–2018. See <a href="https://odh.ohio.gov/wps/wcm/connect/gov/f009d8af-c27c-4704-9631-2a1c44e33760/Cancer%2BIncidence%2Band%2BMortality%2Bin%2BUrban%2Band%2BRural%2BCensus%2BTracts%2Bin%2BOhio.pdf?MOD=AJPERES#page=7">the source, Table 4</a>.</p></details></aside>
+      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-explain-test-cost" hidden><summary>Exhibit F: the cost of getting tested</summary><ul id="cr-explain-test-cost-values"></ul><p>Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014. See <a href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">the source, Exhibit 1</a>.</p></details></aside>
       <div>
         <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>
