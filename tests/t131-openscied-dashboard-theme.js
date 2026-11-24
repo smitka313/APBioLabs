@@ -60,7 +60,12 @@ async function checkMixedVersionWorkspace(browser,site) {
     const p=await ctx.newPage();
     await p.goto(site.url+'openscied-dashboard.html');
     await p.locator('#openscied-student-identity .id-panel').waitFor();
-    await p.locator('#openscied-resume').waitFor();
+    const savedWork = p.getByRole('region', { name:'Saved work on this device', exact:true });
+    await savedWork.waitFor();
+    assert.match(await savedWork.locator('#openscied-resume-description').innerText(),
+      /Continue only if this work is yours\. Otherwise, switch students\./);
+    assert.equal(await savedWork.getByRole('link', { name:'Continue my saved Hawksbeard Wind Lab →', exact:true }).getAttribute('href'),
+      'openscied-b4-hawksbeard.html#release');
     const heights=await p.evaluate(()=>{
       const host=document.querySelector('#openscied-student-identity');
       const live=host.querySelector('.id-box:not([data-ph])');

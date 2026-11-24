@@ -56,8 +56,13 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
         && await inhCard.locator('progress').getAttribute('max') === '6',
         'card counts the recorded pedigree work, not the empty meiosis: ' + text);
       T.ok(/1 of 2 responses written/.test(await p.locator('#dna-p53-progress').innerText()) && /1 of 31 responses/.test(await p.locator('#cell-cycle-progress').innerText()), 'the other two cards are unchanged');
-      T.ok(await p.locator('#openscied-resume-link').getAttribute('href') === 'openscied-b3-inheritance-environment.html#exit8' && /Resume Inheritance/.test(await p.locator('#openscied-resume-link').innerText()), 'Resume points at the newest activity and section');
-      await p.locator('#openscied-resume-link').click();
+      const savedWork = p.getByRole('region', { name: 'Saved work on this device', exact: true });
+      const continueSaved = savedWork.getByRole('link', { name: 'Continue my saved Inheritance, Environment & Cancer Risk →', exact: true });
+      T.ok(await savedWork.isVisible() && await continueSaved.count() === 1 &&
+        (await savedWork.locator('#openscied-resume-description').innerText()).includes('Continue only if this work is yours. Otherwise, switch students.') &&
+        await continueSaved.getAttribute('href') === 'openscied-b3-inheritance-environment.html#exit8',
+        width + ' px: guest continuation warns about ownership and links to the newest saved section');
+      await continueSaved.click();
       await p.waitForFunction(() => document.querySelector('#exit8.is-current'));
       T.ok(await p.isChecked('input[name="exit-q1"][value="b"]'), 'Resume opens the activity with saved picks');
 
