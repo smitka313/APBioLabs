@@ -29,7 +29,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-2">
+<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-3">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
@@ -40,18 +40,47 @@
 <a class="skip-link" href="#main">Skip to activity</a>
 <main id="main" class="cr-shell">
   <div class="cr-top"><a href="openscied-dashboard.html#unit3">← Biology Companion Activities</a><span data-ph="theme"></span></div>
-  <header class="cr-hero">
-    <div><p class="eyebrow">Unit 3 · Lesson 1 companion · 25–35 minutes</p><h1>Cancer Rates Data Dive</h1><p>Do the same patterns show up when you change what you count or who you compare? Make a prediction, sort real U.S. data, and save the evidence that supports your thinking.</p></div>
-    <img src="assets/cancer-rates-preview.svg" width="960" height="600" alt="">
+  <header class="cr-hero cr-file-hero">
+    <div>
+      <p class="cr-file-stamp">Case B3-01 <span>·</span> Investigator briefing</p>
+      <h1>Cancer Rates Data Dive</h1>
+      <p><strong>The mystery:</strong> Why do cancer diagnoses and deaths tell different stories?</p>
+      <p>Search real U.S. records for clues. Build a claim the evidence supports, and flag what you still can’t explain.</p>
+      <p class="cr-file-timing">Unit 3 · Lesson 1 companion · 25–35 minutes</p>
+    </div>
+    <svg class="cr-file-art" viewBox="0 0 350 204" aria-hidden="true" focusable="false">
+      <defs><pattern id="cr-art-grid" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M0 16V0h16" fill="none" stroke="#8fb3c8" stroke-opacity=".18"/></pattern></defs>
+      <path d="M0 0h350v204H0z" fill="url(#cr-art-grid)"/>
+      <g transform="rotate(-8 169 106)">
+        <path d="M45 55h54l16 15h167v105H45z" fill="#a3743d"/>
+        <path d="M55 65h51l14 12h150v94H55z" fill="#d7ad72"/>
+        <path d="M76 40h168v119H76z" fill="#f6ecd5" stroke="#1c2d3a" stroke-width="2"/>
+        <path d="M96 58h34m13 0h73M96 146h101" stroke="#80939d" stroke-width="3" stroke-linecap="round"/>
+        <path d="M99 131V76m0 55h115m-103-4v-18h14v18m11 0v-29h14v29m11 0V85h14v42m11 0V72h14v55" fill="none" stroke="#497374" stroke-width="3"/>
+        <path d="M225 37v22a6 6 0 0 0 12 0V32a8 8 0 0 0-16 0v18" fill="none" stroke="#405564" stroke-width="3"/>
+        <path d="M54 151h217v30H54z" fill="#d7ad72" stroke="#1c2d3a" stroke-width="2"/>
+        <path d="M76 162h49m-49 8h33" stroke="#68502e" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+      <g transform="rotate(-29 248 109)">
+        <path d="M248 141v43" stroke="#172b3c" stroke-width="14" stroke-linecap="round"/>
+        <path d="M248 143v39" stroke="#d2a165" stroke-width="8" stroke-linecap="round"/>
+        <circle cx="248" cy="111" r="35" fill="#b9dfeb" fill-opacity=".25" stroke="#172b3c" stroke-width="10"/>
+        <circle cx="248" cy="111" r="35" fill="none" stroke="#8dbdc7" stroke-width="4"/>
+        <path d="M229 101a21 21 0 0 1 21-11" stroke="#f0fbff" stroke-width="3" stroke-linecap="round" fill="none"/>
+      </g>
+    </svg>
   </header>
   <details id="cr-income-cards" class="cr-case">
     <summary class="cr-case-cover">
-      <span class="cr-case-file" aria-hidden="true">UNIT 3 / CASE FILE</span>
+      <span class="cr-case-file" aria-hidden="true">B3-01 / EVIDENCE FOLDER</span>
       <strong>Evidence Cards: Who Gets Cancer and Why?</strong>
       <span class="cr-case-action"><span class="cr-case-closed">Open case file</span><span class="cr-case-open">Collapse case file</span><span class="cr-case-chevron" aria-hidden="true"></span></span>
     </summary>
     <div class="cr-case-content">
-      <p class="cr-case-intro">Open each exhibit to study the full-size evidence. Start with the three Lesson 1 figures, then look for patterns in costs and stage at diagnosis.</p>
+      <div class="cr-case-briefing">
+        <p class="cr-case-index">Evidence log <span>A–F</span></p>
+        <p class="cr-case-intro">Start with the three Lesson 1 records. Then check three leads: the cost of care, stage at diagnosis, and what happens when patients face higher testing costs.</p>
+      </div>
       <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an exhibit">
         <button id="cr-lesson1-diagnoses-tab" class="cr-dossier cr-dossier--cases" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
           <span class="cr-dossier-code">Exhibit A</span>
@@ -92,6 +121,7 @@
       </div>
       <p id="cr-income-progress">Check the three comparisons to unlock the next step.</p>
       <form id="cr-income-followup" class="cr-case-debrief" hidden>
+        <p class="cr-case-index">Field notebook <span>NEW LEAD</span></p>
         <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
         <p>A test can only help if people can get it. What would you need to measure before recommending a less expensive option that still gives reliable results?</p>
         <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
@@ -103,7 +133,7 @@
   </details>
   <dialog id="cr-case-dialog" class="cr-case-modal" aria-labelledby="cr-lesson1-diagnoses-title">
     <header class="cr-case-modal-bar">
-      <span id="cr-case-position">Exhibit 1 of 6</span>
+      <div class="cr-case-id"><span aria-hidden="true">FILE B3-01</span><span id="cr-case-position">Exhibit 1 of 6</span></div>
       <button class="btn" id="cr-case-close" type="button"><span aria-hidden="true">× </span>Close exhibit</button>
     </header>
     <p id="cr-case-live" class="cr-case-live" role="status" aria-atomic="true"></p>
@@ -287,7 +317,7 @@
   </nav>
   <noscript><p>This activity needs JavaScript for its charts and to save your work.</p></noscript>
   <section id="predict" class="cr-card cr-start" aria-labelledby="cr-predict-title">
-    <div class="cr-heading"><div><p class="eyebrow">01 · Your starting idea</p><h2 id="cr-predict-title" tabindex="-1">Will the rankings match?</h2></div><span class="cr-chip">Real U.S. data</span></div>
+    <div class="cr-heading"><div><p class="eyebrow">01 · Initial hunch</p><h2 id="cr-predict-title" tabindex="-1">Will the rankings match?</h2></div><span class="cr-chip">Real U.S. data</span></div>
     <div class="cr-two">
       <div>
         <p>Imagine two lists of cancers: one ranked by new diagnoses, and one by deaths. Will the same cancer be at the top of both lists?</p>
@@ -306,7 +336,7 @@
     </div>
   </section>
   <section id="explore" class="cr-card" aria-labelledby="cr-explore-title" hidden>
-    <div class="cr-heading"><div><p class="eyebrow">02 · Work with the data</p><h2 id="cr-explore-title" tabindex="-1">Find a pattern worth saving</h2></div><span class="cr-chip" id="cr-pin-count">0 comparisons pinned</span></div>
+    <div class="cr-heading"><div><p class="eyebrow">02 · Follow the clues</p><h2 id="cr-explore-title" tabindex="-1">Find a pattern worth saving</h2></div><span class="cr-chip" id="cr-pin-count">0 comparisons pinned</span></div>
     <p class="cr-question-reminder" id="cr-question-explore" hidden><strong>Your investigation question:</strong> <span id="cr-question-explore-text"></span></p>
     <p id="cr-verdict" class="cr-verdict"></p>
     <div class="cr-tools">
@@ -366,9 +396,9 @@
     </div>
   </section>
   <section id="explain" class="cr-card" aria-labelledby="cr-explain-title" hidden>
-    <div class="cr-heading"><div><p class="eyebrow">03 · Make sense of it</p><h2 id="cr-explain-title" tabindex="-1">What can you claim?</h2></div><span id="cr-done" class="cr-chip" hidden>Investigation complete</span></div>
+    <div class="cr-heading"><div><p class="eyebrow">03 · Case report</p><h2 id="cr-explain-title" tabindex="-1">What can you claim?</h2></div><span id="cr-done" class="cr-chip" hidden>Investigation complete</span></div>
     <div class="cr-two cr-explain">
-      <aside class="cr-context" aria-labelledby="cr-evidence-title"><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-explain-test-cost" hidden><summary>Exhibit F: the cost of getting tested</summary><ul id="cr-explain-test-cost-values"></ul><p>Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014. See <a href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">the source, Exhibit 1</a>.</p></details></aside>
+      <aside class="cr-context" aria-labelledby="cr-evidence-title"><p class="cr-case-index">Case notebook</p><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-explain-test-cost" hidden><summary>Exhibit F: the cost of getting tested</summary><ul id="cr-explain-test-cost-values"></ul><p>Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014. See <a href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">the source, Exhibit 1</a>.</p></details></aside>
       <div>
         <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>

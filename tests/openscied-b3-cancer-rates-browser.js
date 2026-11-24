@@ -214,6 +214,8 @@ async function inspectIncomeCards(page,size,label) {
   await details.waitFor({state:'visible'});
   check(!await details.evaluate(element=>element.open),label+' income evidence is optional and starts collapsed');
   await invoke(details.locator('summary').first(),size);
+  check(await page.locator('.cr-file-stamp').isVisible()&&await details.locator('.cr-case-index').first().isVisible(),label+' case briefing and evidence log are visible');
+  await capture(page,label+'-case-dossier');
   const tabs=view(page,'cr-income-tabs');
   await tabs.waitFor({state:'visible'});
   check(await details.locator('.cr-case-cover strong').evaluate(title=>{
@@ -270,7 +272,11 @@ async function inspectIncomeCards(page,size,label) {
     check(await bars.count()>=2,label+' '+id+' panel contains a real comparison chart');
     await fits(page,`#cr-case-dialog, #cr-income-${id}, #cr-income-${id} .cr-income-bar, #cr-income-${id}-answer`,
       label+' '+id+' income card');
-    await capture(page,label+'-income-'+id,'#cr-income-'+id);
+    check(await panel.evaluate(el=>{
+      const dialog=el.closest('dialog'), rail=dialog.querySelector('header');
+      return el.querySelector('h2').getBoundingClientRect().top>=rail.getBoundingClientRect().bottom-1;
+    }),label+' newly opened exhibit title is not covered by its toolbar');
+    await capture(page,label+'-income-'+id);
     if(id==='test-cost'){
       check((await view(page,'cr-case-position').textContent()).includes('6 of 6'),
         label+' Exhibit F is the sixth case card');
