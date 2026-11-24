@@ -46,6 +46,7 @@
 .osr-dialog .btn--primary { background: var(--osr-blue); color: #fff; border-color: var(--osr-blue); }
 .osr-dialog .btn:disabled { background: #e0e5e9; color: var(--osr-muted); }
 .osr-dialog :focus-visible { outline: 3px solid #185b84; outline-offset: 2px; }
+.osr-dialog .osr-title:focus-visible { outline: none; }
 .osr-screen-help { color: var(--osr-muted); font-size: .88rem; margin: .44rem 0 0; }
 .osr-formats { margin: .25rem 0 0; font-size: .9rem; }
 .osr-formats summary { display: list-item; width: fit-content; min-height: 24px; padding: .15rem 0; color: var(--osr-blue); cursor: pointer; font-weight: 650; }
@@ -54,11 +55,11 @@
 .osr-paper {
   background: #fff; color: var(--osr-ink); margin: clamp(.55rem, 2vw, 1.2rem);
   padding: clamp(.85rem, 4vw, 2.5rem); border: 1px solid var(--osr-line);
-  font-size: 1rem; line-height: 1.52; overflow-wrap: anywhere;
+  font: 1rem/1.52 var(--f-body, "Segoe UI", system-ui, sans-serif); overflow-wrap: anywhere;
 }
 .osr-header { border-bottom: 2px solid var(--osr-blue); padding-bottom: .85rem; }
 .osr-eyebrow { font-size: .82rem; font-weight: 750; letter-spacing: .065em; color: var(--osr-muted); margin: 0 0 .25rem; }
-.osr-paper .osr-title { color: var(--osr-blue); font-size: clamp(1.35rem, 4vw, 2.1rem); line-height: 1.12; margin: .22rem 0 .55rem; }
+.osr-paper .osr-title { color: var(--osr-blue); font-family: var(--f-display, "Segoe UI", system-ui, sans-serif); font-size: clamp(1.35rem, 4vw, 2.1rem); line-height: 1.12; margin: .22rem 0 .55rem; }
 .osr-stamp { float: right; width: 110px; height: 110px; margin: -.2rem 0 .4rem .6rem; }
 .osr-label {
   display: inline-block; text-transform: uppercase; margin: 0 0 .6rem;
@@ -67,9 +68,12 @@
 }
 .osr-label--final { color: var(--osr-blue); background: var(--osr-soft); }
 .osr-label--draft, .osr-label--recovery { color: var(--osr-muted); }
-.osr-meta { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .45rem .8rem; margin: 0 0 .75rem; }
-.osr-meta dt { font-size: .8em; color: var(--osr-muted); font-weight: 700; }
-.osr-meta dd { margin: 0; font-weight: 680; }
+.osr-meta { display: flex; flex-wrap: wrap; gap: .15rem 1.1rem; margin: 0 0 .65rem; font-size: .92em; line-height: 1.52; }
+.osr-meta > div { max-width: 100%; min-width: 0; }
+.osr-meta > .osr-dataset { flex: 1 0 100%; }
+.osr-meta dt, .osr-meta dd { display: inline; }
+.osr-meta dt { color: var(--osr-muted); font-weight: 750; }
+.osr-meta dd { margin: 0 0 0 .35em; }
 .osr-status-note, .osr-source { margin: .4rem 0 0; color: var(--osr-muted); }
 .osr-missing { margin-top: .7rem; padding: .5rem .7rem; background: var(--osr-soft); }
 .osr-missing h3 { font-size: 1rem; margin: 0; color: var(--osr-blue); }
@@ -88,12 +92,15 @@
 .osr-table td { white-space: pre-wrap; }
 @media (max-width: 480px) {
   .osr-stamp { width: 75px; height: 75px; }
+  .osr-meta { row-gap: .35rem; }
   .osr-table th, .osr-table td { padding: .28rem; }
 }
 @page openscied-submission {
-  margin: .58in .56in .62in;
+  margin: .65in .56in .62in;
+  @top-left { font: 9pt system-ui, sans-serif; color: #465965; }
+  @top-right { font: 9pt system-ui, sans-serif; color: #465965; }
   @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 9pt system-ui, sans-serif; color: #465965; }
-  @bottom-left { content: "Biology Lab Bench · OpenSciEd"; font: 9pt system-ui, sans-serif; color: #465965; }
+  @bottom-left { font: 9pt system-ui, sans-serif; color: #465965; }
 }
 @media print {
   body.openscied-report-print > :not(.osr-dialog[open]) { display: none !important; }

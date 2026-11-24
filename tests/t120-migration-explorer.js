@@ -290,8 +290,9 @@ async function auditNotesAndRain(browser,base){
   const backupPromise=p.waitForEvent('download');await p.locator('#download-openscied-results').click();const backup=JSON.parse(fs.readFileSync(await (await backupPromise).path(),'utf8'));ok(backup.responses.migration.claim.includes('regional evidence helps'),'dashboard export includes explorer responses');
   await p.locator('#migration-reset').click();await p.locator('#openscied-erase-confirmation').fill('ERASE');await p.locator('#confirm-openscied-clear').click();ok(await p.evaluate(key=>localStorage.getItem(key)===null,KEY),'dashboard resets only selected activity');
   await p.setViewportSize({width:1366,height:960});await p.goto(server.url+'openscied-b1-migration.html');await p.locator('[data-page="explore"]').click();
+  ok(await p.getByRole('button',{name:'Preview report',exact:true}).isVisible(),'the report action named in the field guide is available before finishing');
   await p.locator('#help').click();
-  ok(await p.locator('#guide').evaluate(d=>d.open)&&/Download (your|the full) investigation/i.test(await p.locator('#guide').textContent()),'field guide opens and points to the full investigation');
+  ok(await p.locator('#guide').evaluate(d=>d.open)&&/Use Preview report when ready to turn in your work/i.test(await p.locator('#guide').textContent()),'field guide opens and points to Preview report for submission');
   await p.keyboard.press('Escape');
   ok(await p.locator('#guide').evaluate(d=>!d.open),'field guide closes with Escape');
   // Explicit play is allowed under reduced motion, but the drawn scene is still.

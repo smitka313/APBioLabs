@@ -8,7 +8,7 @@
 }(typeof window === 'object' ? window : globalThis, function (root) {
   'use strict';
   const doc = root.document;
-  const localeDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const localeDate = new Intl.DateTimeFormat(undefined, { dateStyle: 'long' });
   const labels = Object.freeze({
     final: 'Activity complete',
     draft: 'In progress',
@@ -82,32 +82,121 @@
 
   function identityRows(r) {
     return [['Name', r.student.name || 'Not entered'], ['Class period', r.student.period || 'Not entered'],
-      ['Report created', r.printTime]].concat(r.datasetId ? [['Dataset ID', r.datasetId]] : []);
+      ['Date', r.printTime]].concat(r.datasetId ? [['Dataset ID', r.datasetId]] : []);
+  }
+  // Running metadata is compact; the first-page identity always remains unabridged.
+  function runningText(value, limit) {
+    const chars = Array.from(value.replace(/\s+/g, ' ').trim());
+    return chars.length <= limit ? chars.join('') : chars.slice(0, limit - 1).join('') + '…';
+  }
+  function runningInfo(r) {
+    return {
+      who: runningText((r.student.name.trim() || 'Name not entered') + (r.student.period.trim() ? ' · Class ' + r.student.period.trim() : ''), 44),
+      title: runningText(r.title, 46),
+      dataset: r.datasetId ? 'Dataset ID: ' + runningText(r.datasetId, 40) : '',
+    };
+  }
+  function printRunningStyle(r) {
+    const info = runningInfo(r);
+    // Use a CSS codepoint escape for every character. Names, titles, and IDs
+    // cannot end the quoted CSS value or inject new margin-box declarations.
+    const cssValue = text => '"' + Array.from(text, ch => '\\' + ch.codePointAt(0).toString(16) + ' ').join('') + '"';
+    const style = doc.createElement('style');
+    style.textContent = '@page openscied-submission { @top-left {content:' + cssValue(info.who) + ';} @top-right {content:'
+      + cssValue(info.title) + ';} @bottom-left {content:' + (info.dataset ? cssValue(info.dataset) : 'none') + ';} }';
+    return style;
   }
   function resultTable(r) {
     const notes = r.keyResults.some(k => k.note);
     return { columns: notes ? ['Result', 'Value', 'Notes'] : ['Result', 'Value'],
       rows: r.keyResults.map(k => [k.label, [k.value, k.unit].filter(Boolean).join(' ')].concat(notes ? [k.note] : [])) };
   }
-  // The exact AP seal needs an actual dataset ID, since no ID would make it use
-  // the current AP seed. Activities without Lab/dataset get a completion-only seal.
+  /* The AP Bench seal geometry, blue ink, tilt and distress pattern, adapted
+     from lab.js. No Lab dependency: Serengeti intentionally uses its own chrome.
+     The engraving says completion, never verification of a student or grade. */
+  function stampHash(str) { // cyrb53, folded to 32 bits
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h1 ^ h2) >>> 0;
+  }
+  function stampRandom(a) {
+    return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const stampDate = d => { d = d instanceof Date ? d : new Date(d || Date.now()); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+  function drawActivitySeal(r) {
+    const S = 480, id = r.datasetId.toUpperCase(), date = stampDate(r.exportedAt);
+    const ink = '#1b4a9a';
+    const rnd = stampRandom(stampHash(id + '|' + date + '|openscied-stamp'));
+    const clean = doc.createElement('canvas'); clean.width = clean.height = S;
+    const c = clean.getContext('2d'), cx = S / 2, cy = S / 2;
+    c.fillStyle = c.strokeStyle = ink; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    c.lineWidth = 11; c.beginPath(); c.arc(cx, cy, 218, 0, 6.2832); c.stroke();
+    c.lineWidth = 3.5; c.beginPath(); c.arc(cx, cy, 199, 0, 6.2832); c.stroke();
+    c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, 120, 0, 6.2832); c.stroke();
+    const arc = (text, r, mid, size, top) => {
+      const chars = Array.from(text);
+      let sp, ws, total;
+      do {
+        c.font = `900 ${size}px "Arial Black", Impact, "Helvetica Neue", Arial, sans-serif`;
+        sp = size * 0.16; ws = chars.map(ch => c.measureText(ch).width + sp); total = ws.reduce((a, b) => a + b, 0) - sp;
+      } while (total > r * 2.9 && --size > 18);
+      let a = top ? mid - total / r / 2 : mid + total / r / 2;
+      chars.forEach((ch, i) => {
+        const w = ws[i] - sp, th = a + (top ? 1 : -1) * (w / 2) / r;
+        c.save(); c.translate(cx + Math.cos(th) * r, cy + Math.sin(th) * r); c.rotate(top ? th + Math.PI / 2 : th - Math.PI / 2); c.fillText(ch, 0, 0); c.restore();
+        a += (top ? 1 : -1) * ws[i] / r;
+      });
+    };
+    arc('ACTIVITY COMPLETE', 152, -Math.PI / 2, 40, true);
+    arc('★ BIOLOGY LAB BENCH ★', 152, Math.PI / 2, 29, false);
+    c.font = '700 24px Consolas, "Courier New", monospace'; c.fillText(id ? 'DATASET ID' : 'REQUIRED WORK', cx, cy - 52);
+    let fs = id ? 60 : 39; c.font = `700 ${fs}px Consolas, "Courier New", monospace`;
+    while (id && c.measureText(id).width > 200 && fs > 22) { fs -= 2; c.font = `700 ${fs}px Consolas, "Courier New", monospace`; }
+    c.fillText(id || 'INCLUDED', cx, cy - 4, 200);
+    c.lineWidth = 3; c.beginPath(); c.moveTo(cx - 84, cy + 32); c.lineTo(cx + 84, cy + 32); c.stroke();
+    c.font = '700 29px Consolas, "Courier New", monospace'; c.fillText(date, cx, cy + 58);
+    // roughen: tilt −8°, jitter the edge, thin the ink unevenly (low-frequency blotches + pressure gradient + speckle)
+    const out = doc.createElement('canvas'); out.width = out.height = S;
+    const x = out.getContext('2d');
+    x.translate(cx, cy); x.rotate(-8 * Math.PI / 180); x.translate(-cx, -cy);
+    [[0, 0, 1], [0.9, 0.4, 0.55], [-0.7, -0.6, 0.55]].forEach(([dx, dy, a]) => { x.globalAlpha = a; x.drawImage(clean, dx, dy); });
+    x.globalAlpha = 1; x.setTransform(1, 0, 0, 1, 0, 0);
+    const img = x.getImageData(0, 0, S, S), d = img.data;
+    const G = 24, grid = new Float32Array((G + 2) * (G + 2)); for (let i = 0; i < grid.length; i++) grid[i] = rnd();
+    const vnoise = (px, py, f) => { const u = px / S * f, v = py / S * f, iu = Math.floor(u), iv = Math.floor(v), fu = u - iu, fv = v - iv, w = G + 2;
+      const g = (i, j) => grid[(((j % w) + w) % w) * w + (((i % w) + w) % w)]; const sm = t => t * t * (3 - 2 * t);
+      const a = g(iu, iv), b = g(iu + 1, iv), cc = g(iu, iv + 1), dd = g(iu + 1, iv + 1);
+      return (a + (b - a) * sm(fu)) * (1 - sm(fv)) + (cc + (dd - cc) * sm(fu)) * sm(fv); };
+    const tilt = rnd() * 6.283, tx = Math.cos(tilt), ty = Math.sin(tilt);
+    for (let py = 0; py < S; py++) for (let px = 0; px < S; px++) {
+      const i = (py * S + px) * 4; if (!d[i + 3]) continue;
+      const low = vnoise(px, py, 5), mid = vnoise(px + 40, py + 17, 14), hi = vnoise(px * 1.7, py * 1.3, 23);
+      const press = 0.5 + ((px - cx) * tx + (py - cy) * ty) / S * 0.5; // heavier on one side, like a stamp pressed unevenly
+      let a = d[i + 3] / 255 * (0.52 + 0.55 * low + 0.35 * press + 0.5 * (mid - 0.5) + 0.7 * (hi - 0.5));
+      a = Math.min(1, Math.max(0, (a - 0.3) * 2.3));
+      d[i + 3] = Math.round(a * 255);
+    }
+    x.putImageData(img, 0, 0);
+    x.globalCompositeOperation = 'destination-out';   // flecks where the ink skipped
+    for (let i = 0; i < 380; i++) { const a = rnd() * 6.283, rr = 60 + rnd() * 175; x.globalAlpha = 0.55 + rnd() * 0.45; x.beginPath(); x.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 0.6 + rnd() * rnd() * 3, 0, 6.283); x.fill(); }
+    x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+    return out;
+  }
+  const reportStamps = new WeakMap();
   function stampFor(r) {
     if (r.status !== 'final' || !r.student.name.trim()) return null;
-    try {
-      const exact = r.datasetId && root.Lab?.stamp?.png?.({ datasetId: r.datasetId, date: new Date(r.exportedAt) });
-      if (exact) return exact;
-      const canvas = doc.createElement('canvas'), s = 400;
-      canvas.width = canvas.height = s;
-      const c = canvas.getContext('2d');
-      c.translate(s / 2, s / 2); c.rotate(-8 * Math.PI / 180);
-      c.fillStyle = c.strokeStyle = '#1b4a9a'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      [174, 158].forEach((radius, i) => { c.beginPath(); c.arc(0, 0, radius, 0, 2 * Math.PI); c.lineWidth = i ? 3 : 8; c.stroke(); });
-      c.font = '700 21px Arial, sans-serif'; c.fillText('BIOLOGY LAB BENCH', 0, -76);
-      c.font = '900 37px Arial, sans-serif'; c.fillText('ACTIVITY', 0, -20); c.fillText('COMPLETE', 0, 25);
-      c.font = '700 17px Arial, sans-serif'; c.fillText('REQUIRED WORK INCLUDED', 0, 81);
-      const dataUrl = canvas.toDataURL('image/png');
-      return { dataUrl, bytes: Uint8Array.from(root.atob(dataUrl.split(',')[1]), c => c.charCodeAt(0)) };
-    } catch (_) { return null; }
+    if (!reportStamps.has(r)) {
+      let seal = null;
+      try {
+        const dataUrl = drawActivitySeal(r).toDataURL('image/png');
+        seal = { dataUrl, bytes: Uint8Array.from(root.atob(dataUrl.split(',')[1]), c => c.charCodeAt(0)) };
+      } catch (_) { /* Report status and all evidence still work without canvas. */ }
+      reportStamps.set(r, seal);
+    }
+    return reportStamps.get(r);
   }
 
   function node(tag, className, content) {
@@ -148,7 +237,8 @@
     const heading = node('h2', 'osr-title', r.title); heading.id = titleId; heading.tabIndex = -1;
     const meta = node('dl', 'osr-meta');
     identityRows(r).forEach(([key, value]) => {
-      const entry = node('div'); entry.append(node('dt', '', key), node('dd', '', value)); meta.append(entry);
+      const entry = node('div', key === 'Dataset ID' ? 'osr-dataset' : '');
+      entry.append(node('dt', '', key), node('dd', '', value)); meta.append(entry);
     });
     const badge = node('p', 'osr-label osr-label--' + r.status, labels[r.status]);
     const stamp = stampFor(r);
@@ -215,7 +305,7 @@
   async function word(r, library) {
     const D = library || await loadWord();
     const { Document, Packer, TextRun, Paragraph, HeadingLevel, Table, TableRow, TableCell, WidthType,
-      Header, Footer, PageNumber, BorderStyle, ShadingType } = D;
+      Header, Footer, PageNumber, TabStopType, BorderStyle, ShadingType } = D;
     const run = (text, opts = {}) => new TextRun({ text, ...opts });
     const p = (text, opts = {}, textOpts) => new Paragraph({ children: [run(text, textOpts)], ...opts });
     const h = (text, level = HeadingLevel.HEADING_1) => p(text, { heading: level, keepNext: true, spacing: { before: 260, after: 100 } });
@@ -268,15 +358,23 @@
         }
       });
     });
-    const footer = new Paragraph({ alignment: D.AlignmentType.RIGHT, children: [run('Page ', { size: 18, color: '40535D' }),
-      new TextRun({ children: [PageNumber.CURRENT, ' of ', PageNumber.TOTAL_PAGES], size: 18, color: '40535D' })] });
+    const running = runningInfo(r);
+    const tabs = [{ type: TabStopType.RIGHT, position: 10320 }]; // 8.5 in Letter, two 960-twip margins
+    const soft = { size: 18, color: '40535D' };
+    const header = new Paragraph({ tabStops: tabs, border: { bottom: border }, children: [
+      run(running.who, soft), run('\t' + running.title, soft),
+    ] });
+    const footer = new Paragraph({ tabStops: tabs, children: [
+      run(running.dataset, soft),
+      new TextRun({ children: ['\tPage ', PageNumber.CURRENT, ' of ', PageNumber.TOTAL_PAGES], ...soft }),
+    ] });
     return Packer.toBlob(new Document({
       creator: 'Biology Lab Bench',
       title: r.title,
       styles: { default: { document: { run: { font: 'Calibri', size: 22, color: '172730' } } } },
       sections: [{
         properties: { page: { margin: { top: 1050, right: 960, bottom: 990, left: 960, header: 360, footer: 390 } } },
-        headers: { default: new Header({ children: [p(r.unit + ' · ' + r.title, { border: { bottom: border } }, { size: 18, color: '40535D' })] }) },
+        headers: { default: new Header({ children: [header] }) },
         footers: { default: new Footer({ children: [footer] }) },
         children: content,
       }],
@@ -346,6 +444,12 @@
     live.id = titleId + '-page-status'; live.tabIndex = -1;
     open.setAttribute('aria-describedby', live.id);
     const dialog = node('dialog', 'osr-dialog'); dialog.setAttribute('aria-labelledby', titleId);
+    let runningStyle = null;
+    function clearPrint() {
+      runningStyle?.remove();
+      runningStyle = null;
+      doc.body.classList.remove('openscied-report-print');
+    }
     const capture = () => normalize(config.collect());
     function message(status, text, focus) {
       status.textContent = text;
@@ -380,6 +484,9 @@
       dialog.replaceChildren(tools, preview);
       try { dialog.showModal(); }
       catch (_) { message(live, 'Could not open the report preview. Your work has not changed.', true); return; }
+      clearPrint();
+      runningStyle = printRunningStyle(report);
+      doc.head.append(runningStyle);
       doc.body.classList.add('openscied-report-print');
       print.addEventListener('click', () => {
         if (!root.print) { message(status, 'Printing is not available. Try downloading the Word file.', true); return; }
@@ -392,13 +499,13 @@
     }
     open.addEventListener('click', show);
     dialog.addEventListener('close', () => {
-      doc.body.classList.remove('openscied-report-print');
+      clearPrint();
       if (isShown(open)) open.focus({ preventScroll: true });
     });
     tray.append(open, live);
     const stopPlacing = placeLauncher(config, target, tray, open);
     doc.body.append(dialog);
-    return { open: show, destroy() { stopPlacing(); if (dialog.open) { dialog.close(); doc.body.classList.remove('openscied-report-print'); } dialog.remove(); tray.remove(); } };
+    return { open: show, destroy() { stopPlacing(); if (dialog.open) { dialog.close(); clearPrint(); } dialog.remove(); tray.remove(); } };
   }
 
   return Object.freeze({ mount, normalize, word });
