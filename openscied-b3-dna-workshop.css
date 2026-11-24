@@ -811,15 +811,28 @@
   font:700 .67rem/1.05 var(--f-mono);
   pointer-events:none;
 }
-.dw-translation-scroll .dw-given[data-codon] { grid-template-columns:minmax(0,1fr); }
+.dw-board[data-current-stage=chain] .dw-translation-scroll .dw-given[data-codon] {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+}
 .dw-translation-scroll .dw-translation-start {
-  grid-column:1/-1;
-  display:block;
-  max-inline-size:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.04rem;
+  inline-size:100%;
+  min-inline-size:0;
+  margin-block-start:.17rem;
+  padding-block-end:.06rem;
   color:var(--ink);
-  font:750 .64rem/1.12 var(--f-body,system-ui);
-  overflow-wrap:normal;
-  white-space:normal;
+  font:700 .64rem/1.25 system-ui,sans-serif;
+  text-align:center;
+}
+.dw-translation-scroll .dw-translation-start > span {
+  max-inline-size:100%;
+  overflow-wrap:anywhere;
 }
 .dw-board[data-current-stage=chain] .dw-translation-hint {
   color:var(--muted);

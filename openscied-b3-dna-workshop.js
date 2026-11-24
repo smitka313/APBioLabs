@@ -268,7 +268,12 @@
           const index=node('span',String(base.index+1),'dw-translation-index');
           index.setAttribute('aria-hidden','true');
           given.append(index);
-          if(first)given.append(node('small','Start · Met','dw-translation-start'));
+          if(first){
+            const badge=node('span','','dw-translation-start');
+            badge.setAttribute('aria-hidden','true');
+            badge.append(node('span','Start'),node('span','Met'));
+            given.append(badge);
+          }
         }
         given.setAttribute('aria-label',(step==='rna'&&row.kind==='dna'?'Template DNA letter':DISCIPLINE[step])+' position '+(base.index+1)+': '+(value??'empty')+(isCodonRow&&base.index===0&&value==='AUG'?', Start and methionine':''));
         markEnd(given,base.index);wrap.append(given);

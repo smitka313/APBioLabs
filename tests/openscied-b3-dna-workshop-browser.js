@@ -516,16 +516,27 @@ async function translationRail(page,label,size) {
     return upper.length===9&&lower.length===9&&upper.every((r,i)=>Math.abs(r.left-lower[i].left)<1.5&&Math.abs(r.width-lower[i].width)<1.5);
   });
   check(aligned,label+' every codon lines up horizontally with its next-step placement slot');
-  const contained = await rail.evaluate(el=>{
-    const fits=(inside,outer,tol=.6)=>inside.width>0&&inside.left>=outer.left-tol&&inside.right<=outer.right+tol;
+  const labelFit = await rail.evaluate(el=>{
     const first=el.querySelector('[data-codon="AUG"]'), badge=first.querySelector('.dw-translation-start');
-    const range=document.createRange();range.selectNodeContents(badge);
-    const tile=first.getBoundingClientRect();
-    const letters=first.querySelector('.dw-chip-symbol').getBoundingClientRect();
-    const words=Array.from(range.getClientRects());
-    return words.length>0&&words.every(r=>fits(r,tile)&&r.top>=letters.bottom-.6&&r.bottom<=tile.bottom+.6);
+    const parts=Array.from(badge.querySelectorAll('span'));
+    const bounds=r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width});
+    const textRects=node=>{
+      const range=document.createRange(); range.selectNodeContents(node);
+      return Array.from(range.getClientRects(),bounds).filter(r=>r.width>0);
+    };
+    const tile=bounds(first.getBoundingClientRect());
+    const letters=textRects(first.querySelector('.dw-chip-symbol'));
+    const rows=parts.map(part=>({text:part.textContent,rects:textRects(part)}));
+    const fits=(r,below)=>r.left>=tile.left-.6&&r.right<=tile.right+.6&&r.top>=below-.6&&r.bottom<=tile.bottom+.6;
+    const endOf=rects=>Math.max(...rects.map(r=>r.bottom));
+    const pass=rows.length===2&&rows[0].text==='Start'&&rows[1].text==='Met'&&letters.length>0&&
+      rows.every((row,i)=>row.rects.length===1&&row.rects.every(r=>fits(r,endOf(i?rows[i-1].rects:letters))));
+    return {pass,tile,letters,rows};
   });
-  check(contained,label+' Start and methionine label stays inside the AUG tile, below its codon letters');
+  if(!labelFit.pass) {
+    await shot(page,'translation-start-label-failure-'+size.width).catch(error=>console.warn('Label-failure screenshot:',error.message));
+  }
+  check(labelFit.pass,label+' Start and Met each fit on their own line below the AUG letters: '+JSON.stringify(labelFit));
   if(size.touch){
     const travel=await rail.evaluate(el=>{
       const last=el.querySelector('[data-dw-slot="chain-product-8"]');
@@ -626,7 +637,7 @@ async function exercise(browser,base,size) {
         check(slots.length===9 && await board(page).locator('[data-dw-slot]').count()===9 &&
           choices.length===21 && same([...choices].sort(),[...new Set(Wheel.BASES.flatMap(a=>Wheel.BASES.flatMap(b=>Wheel.BASES.map(c=>Wheel.translate(a+b+c).abbreviation))))].sort()),
           label+' offers nine codon slots and all 20 amino acids plus Stop');
-        check(/Start · Met/.test(await first.innerText()) &&
+        check(same(await first.locator('.dw-translation-start > span').allTextContents(),['Start','Met']) &&
           /AUG, Start and methionine/.test(await first.getAttribute('aria-label')) &&
           /AUG → Start \+ Met/.test(await page.locator('#dw-key').innerText()),
           label+' first AUG is both visibly and accessibly Start plus methionine');
