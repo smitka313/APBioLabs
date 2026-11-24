@@ -17,7 +17,7 @@ const two = {...one,records:[...one.records,{fuel:'wood',n:1,obs:[]}]};
 
 function fixture() {
   const disk = new Map([[FIRES,'control']]);
-  let writes = 0;
+  let writes = 0, signedIn = null;
   const localStorage = { getItem:k=>disk.get(k)??null, setItem(k,v){disk.set(k,v);writes++;}, removeItem:k=>disk.delete(k) };
   const open = () => {
     const handlers = {}, dom = new Map(), location = {hash:'#burn', reload(){this.reloaded=true;}};
@@ -30,20 +30,29 @@ function fixture() {
       return dom.get(s);
     };
     const document = {readyState:'complete',body:el(),createElement:el,querySelector,querySelectorAll:()=>[],getElementById:()=>null};
-    const window = {B2BurnLogic:logic,OpenSciEdSaveSession:SaveSession,addEventListener(k,fn){handlers[k]=fn;}};
+    const Lab = { identity: { get: () => signedIn, seed: {seed:55,datasetId:'student-seed'} } };
+    const window = {Lab,B2BurnLogic:logic,OpenSciEdSaveSession:SaveSession,addEventListener(k,fn){handlers[k]=fn;},print(){}};
     const URL = {createObjectURL(blob){downloaded=blob;return 'fixture-download';},revokeObjectURL(){}};
-    vm.runInNewContext(controller,{window,document,location,localStorage,Blob,URL,setTimeout:f=>f()},{filename:'openscied-b2-burn-lab.js'});
+    vm.runInNewContext(controller,{window,Lab,document,location,localStorage,Blob,URL,setTimeout:f=>f()},{filename:'openscied-b2-burn-lab.js'});
     return {
       record(row){return window.B2Burn.saveState('burn',row);},
       count(){return window.B2Burn.getState().burn?.records.length??0;},
       nav(hash){location.hash=hash;handlers.hashchange();},
       change(key){handlers.storage?.({key});},
       warning(){return querySelector('#burn-save-warning-text').textContent??'';},
-      async download(){querySelector('#download-work').listeners.click();return JSON.parse(await downloaded.text());},
+      async download(recovery=false){
+        querySelector(recovery?'#burn-download-unsaved':'#download-work').listeners.click();
+        return JSON.parse(await downloaded.text());
+      },
+      print(native=false){
+        if(native) handlers.beforeprint?.();
+        else querySelector('#print-work').listeners.click();
+        return querySelector('#investigation-report').children.find(el=>el.className==='report-student')?.textContent;
+      },
       reset(){querySelector('#confirm-reset').listeners.click();return !!location.reloaded;}
     };
   };
-  return {open,localStorage,count:()=>JSON.parse(localStorage.getItem(KEY))?.burn?.records?.length??0,writes:()=>writes};
+  return {open,localStorage,signIn:student=>{signedIn=student;},count:()=>JSON.parse(localStorage.getItem(KEY))?.burn?.records?.length??0,writes:()=>writes};
 }
 
 test('recorded burns survive a freshly opened activity, which does not rewrite storage', () => {
@@ -97,4 +106,49 @@ test('confirmed activity reset clears storage and blocks other open editors with
   stale.nav('#sense');
   assert.equal(f.localStorage.getItem(KEY),null);
   assert.match(stale.warning(),/cleared in another tab/);
+});
+
+
+test('after sign-out, a conflicted editor downloads only its opening identity and unchanged burn data', async () => {
+  const f=fixture(), original={name:'Fixture Ada',period:'2',extra:'omit'};
+  f.signIn(original);
+  const editor=f.open();
+  editor.record(one);
+  assert.doesNotMatch(f.localStorage.getItem(KEY),/Fixture Ada|omit/,'identity is not stored in the saved record');
+  const valid=await editor.download();
+  assert.equal(SaveSession.erase(f.localStorage,null,[KEY],()=> 'signed-out').ok,true);
+  original.name='Mutated fixture object';
+  f.signIn({name:'Fixture Bo',period:'6'});
+  const writes=f.writes();
+  // No storage event has been delivered yet; the download checks for a conflict itself.
+  const backup=await editor.download(true);
+  assert.deepEqual(backup.student,{name:'Fixture Ada',period:'2'});
+  assert.deepEqual(backup.scenes.burn,valid.scenes.burn);
+  assert.deepEqual(backup.simulatedData,valid.simulatedData);
+  assert.match(backup.dataNote,/student name and class period/);
+  assert.equal(f.writes(),writes);
+  assert.equal(f.localStorage.getItem(KEY),null);
+});
+
+test('print and download leave anonymous stale work anonymous after a different student signs in', async () => {
+  const f=fixture(), anonymous=f.open();
+  anonymous.record(one);
+  f.signIn({name:'Fixture Bo',period:'6'});
+  const newer=f.open();
+  newer.record(two);
+  assert.doesNotMatch(anonymous.print(),/Fixture Bo/);
+  assert.equal((await anonymous.download(true)).student,null);
+  const actual=await newer.download();
+  assert.deepEqual(actual.student,{name:'Fixture Bo',period:'6'});
+  assert.equal(actual.simulatedData.burns.length,2);
+});
+
+test('a valid editor still uses corrected current shared identity', async () => {
+  const f=fixture();
+  f.signIn({name:'Fixture Aada',period:'2'});
+  const editor=f.open();
+  editor.record(one);
+  f.signIn({name:'Fixture Ada',period:'3'});
+  assert.match(editor.print(),/Fixture Ada.*Class period: 3/);
+  assert.deepEqual((await editor.download()).student,{name:'Fixture Ada',period:'3'});
 });

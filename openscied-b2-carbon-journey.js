@@ -11,6 +11,7 @@
     saveSession = guard?.open(localStorage, scope, [key,budgetKey]);
     raw = saveSession ? saveSession.read(key) : localStorage.getItem(key);
   } catch (_) {}
+  const reportIdentity = guard?.reportIdentity?.(saveSession, [key,budgetKey], () => Lab.identity.get?.() ?? null) ?? (() => null);
   const restored = L.readSaved(raw);
   let unreadable = raw !== null && restored === null ? raw : null;
   let state = restored ?? L.initial(Lab.identity.seed.seed);
@@ -84,6 +85,7 @@
       if (!budgetUI) budgetUI = window.CarbonBudgetUI?.mount($('#carbon-budget-host'), {
         announce,
         saveSession,
+        reportStudent: reportIdentity,
         journeyEvidence: () => {
           const last = state.rows.at(-1);
           if (!last) return '';
@@ -309,8 +311,9 @@
   });
   $('#download').addEventListener('click', () => {
     const backup = unreadable !== null;
-    const identity = Lab.identity.get?.();
-    const student = identity?.name ? { name:identity.name, period:identity.period||'' } : null;
+    // The unopened extension must not borrow work from the next student's session.
+    const budget = backup ? null : (budgetUI ? budgetUI.exportData() : window.CarbonBudgetUI?.readExport?.(saveSession)) ?? null;
+    const student = backup ? null : reportIdentity(budget?.unreadableBackup != null);
     const payload = backup ? null : {
       format: 'openscied-carbon-journey-v2', mode: 'official-station-cards', simulated: true,
       exportedAt: new Date().toISOString(), ...state, questions: Object.fromEntries(questions),
@@ -318,7 +321,7 @@
       pendingPresentation: state.pending === null ? null : { revealed, ...(revealed ? {prediction: guess} : {}), note: $('#note').value },
       referenceCardsReviewed: L.tour(state).filter(sample => state.coverageReviewed.includes(sample.from))
         .map(({from,to,process,text})=>({from,to,process,text})),
-      budget: (budgetUI?.exportData || window.CarbonBudgetUI?.readExport)?.() ?? null
+      budget
     };
     const url = URL.createObjectURL(new Blob([backup ? unreadable : JSON.stringify(payload, null, 2)], { type: backup ? 'text/plain' : 'application/json' })), a = document.createElement('a');
     a.href = url; a.download = backup ? 'carbon-atom-journey-saved-backup.txt' : 'carbon-atom-journey.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);

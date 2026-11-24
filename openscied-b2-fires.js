@@ -44,7 +44,10 @@
     if (!saveSession) return;
     if (event.type === 'storage' && event.key && ![KEY, saveAPI.globalKey, saveAPI.scopeKey(saveScope), saveAPI.resetKey(KEY)].includes(event.key)) return;
     const result = saveSession.check(KEY);
-    if (!result.ok) showSaveConflict(result);
+    if (!result.ok) {
+      showSaveConflict(result);
+      if (ready) renderReport();
+    }
   }
   window.addEventListener('storage', checkSaveConflict);
   window.addEventListener('pageshow', checkSaveConflict);
@@ -62,6 +65,7 @@
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function copy(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
   function studentIdentity() { return window.Lab && Lab.identity ? Lab.identity.get() : null; }
+  const reportIdentity = saveAPI?.reportIdentity?.(saveSession, [KEY], studentIdentity) ?? (() => null);
 
   /* ---------- saved state ---------- */
   function readStore() {
@@ -332,14 +336,18 @@
     report.replaceChildren();
     report.appendChild(el('div', 'eyebrow', 'Fires: peat, decomposition and Earth’s tilt · My work'));
     report.appendChild(el('h3', '', 'Your work, at a glance.'));
-    const student = studentIdentity();
-    report.appendChild(el('p', 'report-student', student ? 'Student: ' + student.name + (student.period ? ' · Class period: ' + student.period : '') : 'Student name not entered. Sign in on the Biology Companion Activities dashboard before submitting.'));
+    const recovering = preservedSave || !saveSession?.check(KEY).ok;
+    const student = reportIdentity(preservedSave);
+    const studentLabel = student ? 'Student: ' + student.name + (student.period ? ' · Class period: ' + student.period : '') :
+      recovering ? 'This recovery copy has no student name or class period.' :
+      'Student name not entered. Sign in on the Biology Companion Activities dashboard before submitting.';
+    report.appendChild(el('p', 'report-student', studentLabel));
     const p = picks(), dd = dropdowns(), all = p.concat(dd);
     const good = all.filter(function (x) { return x.result === 'correct'; });
     const graded = $$('main fieldset.mcq[data-correct]').length + dd.filter(function (d) { return L.PICKS[d.id] ? L.PICKS[d.id].correct.length : !!DATA_PICKS[d.id]; }).length;
     const ul = el('ul', 'report-checks');
     const st = answerStats(); report.dataset.answered = st.answered; report.dataset.total = st.total;
-    const answerState = document.getElementById('save-conflict')?.hidden === false ? 'answers in this tab' : 'answers saved';
+    const answerState = recovering ? 'answers in this tab' : 'answers saved';
     [st.answered + ' of ' + st.total + ' ' + answerState + ' (questions and writing only; ' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
     const ev = L.sceneEvidence(state);
@@ -363,8 +371,8 @@
       foam: d ? L.foamRows(d).map(function (r) { return { minutes: r.t, foamHeightMm: r.h, carbonDioxideRelative: r.h.map(L.co2Made) }; }) : [],
       foamTemperaturesC: d ? L.normalizeTemps(d.temps) : null,
       tubes: t && typeof t.seed === 'number' && Array.isArray(t.settings) && t.recorded ? L.tiltResults(t.seed, t.settings).map(function (r) { return { tube: r.tube, light: r.light, lightReachingPlant: r.intensity, btbReading: r.btb, btbColor: r.btbLabel, carbonDioxideChangeRelative: r.net, starchIndex: t.starchDone ? r.starch : null }; }) : [] };
-    const payload = { format: 'openscied-b2-fires-progress-v1', exportedAt: new Date().toISOString(), student: studentIdentity(),
-      dataNote: 'Yeast foam, plant and BTB results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real lab. Nothing here is personal information.',
+    const payload = { format: 'openscied-b2-fires-progress-v1', exportedAt: new Date().toISOString(), student: reportIdentity(preservedSave),
+      dataNote: 'Yeast foam, plant and BTB results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real lab. This file can include the student name and class period. Share it only as your teacher directs.',
       answersSaved: answerStats(), modelEvidence: L.sceneEvidence(state), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url; a.download = 'fires-peat-work.json'; document.body.appendChild(a); a.click(); a.remove();
@@ -439,6 +447,7 @@
     $('#cer').addEventListener('change', function () { renderClaim(false); });
     $('#download-work').addEventListener('click', download);
     $('#print-work').addEventListener('click', function () { renderReport(); window.print(); });
+    window.addEventListener('beforeprint', renderReport);
     const dialog = $('#reset-dialog');
     $('#reset-work').addEventListener('click', function () { dialog.showModal(); });
     $('#cancel-reset').addEventListener('click', function () { dialog.close(); });

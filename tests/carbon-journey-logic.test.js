@@ -41,7 +41,7 @@ function openFictionalJourney(snapshot, hash = '', budgetRecord, shared) {
       classList: { toggle() {}, add() {}, remove() {} },
       addEventListener(event, handler) { this.events[event] = handler; },
       click() { if (typeof this.download === 'string') downloads.push(this.download); else this.events.click?.(); },
-      querySelectorAll() { return []; }, querySelector: get, append() {}, replaceChildren() {}, setAttribute() {},
+      querySelectorAll() { return []; }, querySelector: get, append() {}, remove() {}, replaceChildren() {}, setAttribute() {},
       showModal() { this.open = true; }, close() { this.open = false; }, reset() {}, focus() {}
     };
   }
@@ -283,6 +283,92 @@ test('Carbon Journey download uses the current shared sign-in, not a stale page 
   a.equal(tab.read(),null,'reading the activity and exporting do not create a saved record');
   shared.delete('aplab:student');tab.get('#download').click();
   a.equal(Object.hasOwn(JSON.parse(tab.downloads[2]),'student'),false);
+});
+
+test('older Journey recovery export keeps captured identity after dashboard ERASE without waiting for a storage event',()=>{
+  const journey=L.record({...L.initial(42),pending:1});
+  const shared=new Map([[key,JSON.stringify(journey)],['aplab:student',JSON.stringify({name:'Earlier QA',period:'2'})]]);
+  const old=openFictionalJourney(null,'#evidence',undefined,shared);
+  a.equal(sessionGuard.erase(old.storage,null,[key,budgetKey]).ok,true);
+  shared.set('aplab:student',JSON.stringify({name:'Next QA',period:'7'}));
+  old.get('#download').click();
+  const report=JSON.parse(old.downloads[0]);
+  a.deepEqual(report.student,{name:'Earlier QA',period:'2'});
+  a.equal(report.rows.length,1);
+  a.equal(shared.has(key),false,'recovery generates a file only, not a new save');
+});
+
+test('unopened Budget in combined export comes from the original editor snapshot, not the next student',()=>{
+  const past=L.record({...L.initial(42),pending:1});
+  const f=(label)=>JSON.stringify({v:1,position:-1,furthest:-1,prediction:label,explanation:''});
+  for(const priorBudget of ['Earlier Budget QA',null]){
+    const shared=new Map([[key,JSON.stringify(past)],['aplab:student',JSON.stringify({name:'Earlier QA',period:'2'})]]);
+    if(priorBudget)shared.set(budgetKey,f(priorBudget));
+    const old=openFictionalJourney(null,'#evidence',undefined,shared);
+    a.equal(sessionGuard.erase(old.storage,null,[key,budgetKey]).ok,true);
+    shared.set('aplab:student',JSON.stringify({name:'Next QA',period:'7'}));
+    shared.set(budgetKey,f('Next Budget QA'));
+    old.get('#download').click();
+    const report=JSON.parse(old.downloads[0]);
+    a.equal(report.rows.length,1);
+    a.equal(report.budget?.prediction ?? null,priorBudget);
+    a.equal(shared.get(budgetKey),f('Next Budget QA'),'next student’s data stays untouched');
+  }
+});
+
+test('a Budget-only conflict is enough to keep original report attribution and skip live Budget data',()=>{
+  const f=(label)=>JSON.stringify({v:1,position:-1,furthest:-1,prediction:label,explanation:''});
+  const earlier=L.record({...L.initial(42),pending:1});
+  const shared=new Map([[key,JSON.stringify(earlier)],[budgetKey,f('Earlier Budget QA')],['aplab:student',JSON.stringify({name:'Earlier QA',period:'2'})]]);
+  const old=openFictionalJourney(null,'#evidence',undefined,shared);
+  const writer=sessionGuard.open(old.storage,'b2-carbon-journey',[budgetKey]);
+  a.equal(writer.reset(budgetKey,f('Next Budget QA')).ok,true);
+  shared.set('aplab:student',JSON.stringify({name:'Next QA',period:'7'}));
+  old.get('#download').click();
+  const report=JSON.parse(old.downloads[0]);
+  a.deepEqual(report.student,{name:'Earlier QA',period:'2'});
+  a.equal(report.budget.prediction,'Earlier Budget QA');
+  a.equal(report.rows.length,1);
+});
+
+test('late-opened Budget recovery report uses Journey’s opening identity, or none for anonymous work',()=>{
+  for(const name of ['Earlier QA',null]){
+    const shared=new Map([[budgetKey,JSON.stringify({v:1,position:-1,furthest:-1,prediction:'Original evidence QA',explanation:''})]]);
+    if(name)shared.set('aplab:student',JSON.stringify({name,period:'2'}));
+    const old=openFictionalJourney(null,'#play',undefined,shared);
+    a.equal(sessionGuard.erase(old.storage,null,[key,budgetKey]).ok,true);
+    shared.set('aplab:student',JSON.stringify({name:'Next QA',period:'7'}));
+    old.get('[data-page="budget"]').click();
+    old.get('#cb-download').click();
+    const report=old.get('#cb-copy').value;
+    a.match(report,/Prediction: Original evidence QA/);
+    if(name){a.match(report,/Name: Earlier QA/);a.match(report,/Class period: 2/);}
+    else a.doesNotMatch(report,/Name:|Class period:/);
+    a.doesNotMatch(report,/Next QA|Class period: 7/);
+  }
+});
+
+test('a linked unreadable Budget backup is attributed to the original editor, not a later sign-in',()=>{
+  const original='{incomplete QA budget backup';
+  const shared=new Map([[budgetKey,original],['aplab:student',JSON.stringify({name:'Earlier QA',period:'2'})]]);
+  const old=openFictionalJourney(null,'#evidence',undefined,shared);
+  shared.set('aplab:student',JSON.stringify({name:'Next QA',period:'7'}));
+  old.get('#download').click();
+  const report=JSON.parse(old.downloads[0]);
+  a.deepEqual(report.student,{name:'Earlier QA',period:'2'});
+  a.equal(report.budget.unreadableBackup,original);
+  a.equal(shared.get(budgetKey),original);
+});
+
+test('a current Budget report still uses the current shared sign-in',()=>{
+  const shared=new Map([[budgetKey,JSON.stringify({v:1,position:-1,furthest:-1,prediction:'Recorded evidence QA',explanation:''})],
+    ['aplab:student',JSON.stringify({name:'Initial QA',period:'1'})]]);
+  const tab=openFictionalJourney(null,'#budget',undefined,shared);
+  shared.set('aplab:student',JSON.stringify({name:'Current QA',period:'4'}));
+  tab.get('#cb-download').click();
+  const report=tab.get('#cb-copy').value;
+  a.match(report,/Name: Current QA/);a.match(report,/Class period: 4/);
+  a.doesNotMatch(report,/Initial QA|Class period: 1/);
 });
 
 test('blank journey Restart is inert, then unlocks for actual journey work and resets to disabled', () => {

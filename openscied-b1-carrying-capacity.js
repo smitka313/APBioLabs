@@ -7,6 +7,8 @@
   const reopen = () => { try { return saveAPI?.open(localStorage, saveScope, keys); } catch (_) { return null; } };
   let saveSession = reopen(), preservedSave = false;
   const getSaveSession = () => saveSession;
+  const captureReportIdentity = () => saveAPI?.reportIdentity?.(saveSession, keys, () => window.Lab?.identity?.get?.() ?? null) ?? (() => null);
+  let reportIdentity = captureReportIdentity();
   function showSaveConflict(result) {
     const n = document.getElementById('save-conflict');
     const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
@@ -221,7 +223,7 @@
     speak(outcome(s.rows.at(-1))+(s.round === ROUNDS ? ' Run complete.' : ''));
   }
   const report = () => {
-    const who = Lab.identity.get() || {};
+    const who = reportIdentity() || {};
     const describe = (sim,name) => sim?.round ? [name+' (SIMULATED)', 'Round | Starting herd | Grass units | Survivors | Births | Deaths | Ending herd', ...sim.rows.map((r)=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending].join(' | '))].join('\n') : name+': no completed rounds.';
     return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (classroom estimates, not simulated)\n'+(field.report() || 'No field calculations recorded.'), 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'Write an if/then rule for a grass shortage.\n'+(state.answers['shortage-rule'] || 'Not entered'), 'Predict what the baseline graph would look like after 50 rounds.\n'+(state.answers['long-run'] || 'Not entered'), 'How could migration affect carrying capacity?\n'+(state.answers['migration-claim'] || 'Not entered'), 'Optional: How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
   };
@@ -292,7 +294,7 @@
     if (saveSession && !conflict) try { result = saveAPI.erase(localStorage, saveScope, keys); } catch (_) {}
     $('#cc-reset-dialog').close();
     if (!result?.ok) { showSaveConflict(conflict || result); return; }
-    saveSession = reopen(); preservedSave = false; $('#save-conflict').hidden = true;
+    saveSession = reopen(); reportIdentity = captureReportIdentity(); preservedSave = false; $('#save-conflict').hidden = true;
     state=fresh(); habitat.reset(true); range.reset(); field.reset(); $('#cc-grass').value='50';
     for (const id of strings) $('#cc-'+id).value='';
     $$('input[type="radio"]').forEach((el)=>{el.checked=false;});

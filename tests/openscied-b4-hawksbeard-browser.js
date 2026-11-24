@@ -686,7 +686,7 @@ async function dashboardLinks(page, base) {
     await fs.mkdir(OUT, { recursive: true });
     for (const viewport of VIEWPORTS) await play(browser, server.url, viewport);
     await verifySaveConflict(browser, server.url, {
-      file:FILE, key:SAVE, warning:'#hb-save-warning', backup:'#hb-download-tab', check,
+      protectIdentity:true, file:FILE, key:SAVE, warning:'#hb-save-warning', backup:'#hb-download-tab', check,
       async edit(page,n) {
         if(!await page.locator('#hb-predict').isVisible()) await page.locator('.hb-steps [data-hb-go="predict"]').click();
         await page.locator('input[name="hb-prediction"]').nth(n).check();

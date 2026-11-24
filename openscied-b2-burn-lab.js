@@ -36,13 +36,13 @@
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const state = { burn: null, fields: {}, lastSection: 'overview' };
   let cleared = false, hadSaved = false, ready = false, RESPONSE_IDS = [];
-  let saveSession = null, storedResponseIds = null, lastSaveError = '';
+  let saveSession = null, storedResponseIds = null, lastSaveError = '', reportIdentity = () => null;
   const DATA_PICKS = { 'sense-lostmost': 'lostmost', 'sense-yellowest': 'yellowest', 'sense-warmest': 'warmest' };
 
   function announce(text) { const e = $('#announcer'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function copy(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
-  function studentIdentity() { return window.Lab && Lab.identity ? Lab.identity.get() : null; }
+  function studentIdentity() { return window.Lab?.identity?.get() || null; }
 
   /* ---------- saved state ---------- */
   function readStore() {
@@ -98,7 +98,7 @@
   }
   function checkExternalSave() {
     const result = saveSession?.check(KEY);
-    if (result && !result.ok) saveResult(result);
+    if (result && !result.ok) { saveResult(result); renderReport(); }
   }
   function restoreFields() {
     Object.keys(state.fields || {}).forEach(function (id) {
@@ -270,7 +270,7 @@
     report.replaceChildren();
     report.appendChild(el('div', 'eyebrow', 'Burning fuels · My work'));
     report.appendChild(el('h3', '', 'Your work, at a glance.'));
-    const student = studentIdentity();
+    const student = reportIdentity();
     report.appendChild(el('p', 'report-student', student ? 'Student: ' + student.name + (student.period ? ' · Class period: ' + student.period : '') : 'Student name not entered. Sign in on the Biology Companion Activities dashboard before submitting.'));
     const p = picks(), dd = dropdowns(), all = p.concat(dd);
     const good = all.filter(function (x) { return x.result === 'correct'; });
@@ -298,8 +298,8 @@
     const scenes = {}; SCENE_IDS.forEach(function (id) { scenes[id] = state[id]; });
     const simulated = { burns: L.tableRows(state.burn).map(function (r) { return { fuel: r.fuel, sample: r.n, caughtFireAfterSeconds: r.igniteS, burnedForSeconds: r.burnS, btbBefore: r.btbBefore, btbBeforeColor: r.btbLabelBefore, btbAfter: r.btbAfter, btbAfterColor: r.btbLabelAfter,
       temperatureBeforeC: r.tempBefore, temperatureAfterC: r.tempAfter, massBeforeG: r.massBefore, massAfterG: r.massAfter, observations: r.obs }; }) };
-    const payload = { format: 'openscied-b2-burn-progress-v1', exportedAt: new Date().toISOString(), student: studentIdentity(),
-      dataNote: 'Burn results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real demonstration. Nothing here is personal information.',
+    const payload = { format: 'openscied-b2-burn-progress-v1', exportedAt: new Date().toISOString(), student: reportIdentity(),
+      dataNote: 'Burn results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real demonstration. This file can include the student name and class period. Share it only as your teacher directs.',
       answersSaved: answerStats(), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url; a.download = 'burning-fuels-work.json'; document.body.appendChild(a); a.click(); a.remove();
@@ -352,7 +352,9 @@
     renderPicks(); renderPreds(false); renderClaim(false);
   }
   function wire() {
-    try { saveSession = window.OpenSciEdSaveSession?.open(localStorage, SAVE_SCOPE, [KEY]); } catch (_) { /* Export remains available if browser storage is blocked. */ }
+    const saveAPI = window.OpenSciEdSaveSession;
+    try { saveSession = saveAPI?.open(localStorage, SAVE_SCOPE, [KEY]); } catch (_) { /* Export remains available if browser storage is blocked. */ }
+    reportIdentity = saveAPI?.reportIdentity?.(saveSession, [KEY], studentIdentity) ?? (() => null);
     readStore();
     RESPONSE_IDS = Array.from(new Set($$('main input[type=radio]').map(function (r) { return r.name; }).concat(
       $$('main textarea').filter(function (t) { return !t.readOnly && t.id && !t.hasAttribute('data-optional'); }).map(function (t) { return t.id; }),
@@ -378,6 +380,7 @@
     $('#download-work').addEventListener('click', download);
     $('#burn-download-unsaved').addEventListener('click', download);
     $('#print-work').addEventListener('click', function () { renderReport(); window.print(); });
+    window.addEventListener('beforeprint', renderReport);
     const dialog = $('#reset-dialog');
     $('#reset-work').addEventListener('click', function () { dialog.showModal(); });
     $('#cancel-reset').addEventListener('click', function () { dialog.close(); });

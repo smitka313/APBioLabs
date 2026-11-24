@@ -129,13 +129,13 @@
       ...(backup!==null ? {unreadableBackup:backup} : {})
     };
   }
-  function readExport() {
+  function readExport(saveSession) {
     const model=global.CarbonBudgetLogic;
-    if(!model)return null;
-    const frames=buildFrames(model), saved=savedBudget(frames.length-1);
+    if(!model||!saveSession)return null;
+    const frames=buildFrames(model), saved=savedBudget(frames.length-1,saveSession);
     return budgetData(saved.memory,frames,model,saved.preserve?saved.original:null);
   }
-  function mount(host,{announce=()=>{},journeyEvidence=()=>'',saveSession}={}) {
+  function mount(host,{announce=()=>{},journeyEvidence=()=>'',saveSession,reportStudent=()=>null}={}) {
     const model=global.CarbonBudgetLogic;
     if(!host || !model)return null;
     if(host.__carbonBudgetUI)return host.__carbonBudgetUI;
@@ -328,7 +328,7 @@
     function exportReport(){
       if(memory.position<0&&!memory.prediction.trim()&&!memory.explanation.trim())return '';
       const lines=['Carbon & Energy Budget (simulated model units)','Matched trials: without fire and with peat fire. Not measured field data.'];
-      const student=global.Lab?.identity?.get?.();
+      const student=reportStudent(preserve);
       if(student?.name)lines.push('Name: '+student.name);
       if(student?.period)lines.push('Class period: '+student.period);
       if(memory.prediction.trim())lines.push('Prediction: '+memory.prediction.trim());

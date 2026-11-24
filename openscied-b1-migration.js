@@ -4,6 +4,7 @@
   const KEY='aplab:openscied:b1-migration:v1';
   const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b1-migration';
   const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [KEY]); } catch (_) { return null; } })();
+  const reportIdentity = saveAPI?.reportIdentity?.(saveSession, [KEY], () => window.Lab?.identity?.get?.() ?? null) ?? (() => null);
   function readSave() { return saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY); }
   function showSaveConflict(result) {
     const n = document.getElementById('save-conflict');
@@ -141,7 +142,7 @@
   let healthChart=null,occupancyChart=null;
   function renderCharts(){if(state.page!=='evidence')return;if(state.collection==='cards'&&$('#health-chart-disclosure').open){const measure=state.measure==='anthrax'?'anthrax':'fat';const opt={simTag:false,responsive:true,height:360,xLabel:'Month number (5 = May, 10 = October)',yLabel:measure==='fat'?'Bone-marrow fat (%)':'Sampled group with anthrax (%)',xMin:5,xMax:10,yMin:0,yMax:100,series:L.GROUPS.map((name,g)=>({name,line:true,dots:true,points:L.CARDS.filter(c=>c.group===g).map(c=>({x:c.month+1,y:c[measure]}))}))};if(healthChart)healthChart.update(opt);else healthChart=Lab.chart('#health-chart',opt);}if(state.collection==='rainfall'){const opt={simTag:false,responsive:true,height:360,xLabel:'Annual regional rainfall (mm)',yLabel:'Time in region (% of year)',xMin:1100,xMax:1350,yMin:0,yMax:60,series:ANNUAL.map(a=>({name:a.region+' · '+a.rain+' mm / '+a.occupancy+'%',dots:true,line:false,points:[{x:a.rain,y:a.occupancy}]}))};if(occupancyChart)occupancyChart.update(opt);else occupancyChart=Lab.chart('#occupancy-chart',opt);}}
   function reportText(kind){
-    const student=Lab.identity.get()||{};
+    const student=reportIdentity()||{};
     let result='MIGRATION MAP EXPLORER\nOpenSciEd B.1 Lessons 3–4 companion\nCreated by Robert Smitka\n\nName: '+(student.name||'')+'\nClass period: '+(student.period||'')+'\n\nSOURCE DATA AND ILLUSTRATIONS\nField cards and rainfall examples are source evidence, not simulated data. Map, weather, grass and animal animations are illustrative, not observations or population counts.\n\nMY NOTEBOOK\n';
     if(!state.notes.length)result+='\n[No notebook entries saved.]\n';
     state.notes.forEach((n,i)=>result+='\n'+(i+1)+'. '+n.title+'\n'+displayNoteText(n)+'\n');

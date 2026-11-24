@@ -6,6 +6,7 @@
     try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
     catch (_) { return null; }
   })();
+  const reportStudent = saveAPI?.reportIdentity?.(saveSession, [KEY], () => window.Lab?.identity?.get?.() ?? null);
   const unavailableSave = { ok:false, reason:'unavailable' };
   function showSaveProblem(result, focus = false) {
     const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
@@ -37,7 +38,7 @@
   function blankGame(){return {schema:3,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},chanceNotice:null,checkpointNotice:null,event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
   const SECTIONS=['overview','background','cell-game','growth-model','analyze','submit'];
   const state={game:blankGame(),trials:[],fields:{},quick:'',mechanism:'',lastSection:'overview'};
-  function studentIdentity(){return window.Lab&&Lab.identity?Lab.identity.get():null;}
+  function studentIdentity(){return reportStudent?.() ?? null;}
   const ANALYSIS_PROMPTS=[
     ['My starting idea (before running the model)','model-baseline'],
     ['Fair test and controlled settings','analysis-design'],

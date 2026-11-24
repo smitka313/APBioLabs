@@ -761,7 +761,7 @@ async function play(browser, base, cfg) {
     await fs.mkdir(OUT, { recursive:true });
     for (const viewport of VIEWPORTS) await play(browser, server.url, viewport);
     await verifySaveConflict(browser, server.url, {
-      file:FILE, key:SAVE, warning:'#rg-save-warning', backup:'#rg-download-tab', check,
+      protectIdentity:true, file:FILE, key:SAVE, warning:'#rg-save-warning', backup:'#rg-download-tab', check,
       async edit(page,n) {
         if(!await page.locator('#rg-predict').isVisible()) await page.locator('.rg-steps [data-rg-go="predict"]').click();
         const value=['increase','same','decrease'][n];
