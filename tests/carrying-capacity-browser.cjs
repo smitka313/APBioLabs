@@ -553,7 +553,8 @@ async function dashboardRelease(browser, base) {
     const preview = card.locator('a.dashboard-preview');
     const image = preview.locator('img');
     await image.scrollIntoViewIfNeeded();
-    check(await preview.getAttribute('href') === FILE && (await preview.getAttribute('aria-label'))?.includes('Carrying Capacity') &&
+    check(await preview.getAttribute('href') === FILE &&
+      await preview.getAttribute('tabindex') === '-1' && await preview.getAttribute('aria-hidden') === 'true' &&
       await image.evaluate(async el => {
         await el.decode();
         const r = el.getBoundingClientRect();
@@ -562,7 +563,9 @@ async function dashboardRelease(browser, base) {
       }), 'the linked dashboard card decodes the original art and preserves the standard 8:5 crop');
     await shot(p, '1366-light-dashboard-carrying-capacity', true);
     await open.focus();
-    check(await open.evaluate(el => document.activeElement === el), 'the Carrying activity link is keyboard-focusable');
+    check(await card.getByRole('link').count() === 1 &&
+      await card.getByRole('link', { name: 'Open activity: Carrying Capacity', exact: true }).count() === 1 &&
+      await open.evaluate(el => document.activeElement === el), 'one named Carrying activity link is keyboard-focusable');
     await Promise.all([p.waitForURL('**/' + FILE), open.press('Enter')]);
     await rounds(p, 0);
     check(await p.locator('#cc-next').isVisible(), 'Enter opens the actual student activity, not a placeholder');

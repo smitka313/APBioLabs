@@ -65,7 +65,7 @@
     </div>
   </div>
   <script>
-    // Match the shorter shared identity line on returning visits, without painting personal data.
+    // Reserve the same line wraps as the shared-device identity controls, without painting personal data.
     try {
       const student = JSON.parse(localStorage.getItem('aplab:student'));
       const name = String(student?.name ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ');
@@ -76,9 +76,9 @@
         who.textContent = name;
         const period = String(student.period || '');
         row.append('Signed in as ', who, period ? ' · ' + (period === 'Other' ? 'Other period' : 'Period ' + period) : '');
-        for (const title of ['change', 'Sign out']) {
+        for (const [title, kind] of [['Edit my name or class period', 'id-change'], ['Switch student', 'id-signout']]) {
           const button = document.createElement('button');
-          button.className = 'linkbtn';
+          button.className = 'linkbtn ' + kind;
           button.type = 'button';
           button.textContent = title;
           row.append(' · ', button);
@@ -90,7 +90,7 @@
 </div>
 <p class="dashboard-student-note">Your work stays in this browser. To hand in an activity, open it and choose <strong>Preview report</strong>. On a shared device, finish saving your work and close activity tabs before choosing <strong>Switch student</strong>.</p>
 <div class="dashboard-student-actions"><button class="btn" type="button" id="download-openscied-results" disabled>Download backup (.json)</button><button class="btn btn--danger" type="button" id="clear-openscied-results" aria-haspopup="dialog" disabled>Clear saved OpenSciEd work…</button></div>
-<p class="dashboard-student-note" id="openscied-results-status" role="status" aria-live="polite">No OpenSciEd results saved on this device. Choose an activity to get started.</p>
+<p class="dashboard-student-note" id="openscied-results-status" role="status" aria-live="polite">No saved work yet. Choose an activity to get started.</p>
 </section>
       </div>
     </div>

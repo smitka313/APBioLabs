@@ -581,10 +581,18 @@ async function dashboardGuide(page, base) {
   await page.goto(base + 'openscied-dashboard.html');
   const section = page.locator('section[aria-labelledby="unit4"]');
   const card = section.locator('.dashboard-activity').filter({
-    has: page.locator('a[href="' + FILE + '"]')
+    has: page.getByRole('heading', { name:'Rat Generations', level:3, exact:true })
   });
-  check(await card.count() === 1 && /Rat Generations/i.test(await card.innerText()),
-    'the Unit 4 dashboard lists Rat Generations exactly once');
+  check(await card.count() === 1, 'dashboard lists Rat Generations once under Unit 4');
+  const action = card.getByRole('link',{ name:'Continue activity: Rat Generations', exact:true });
+  check(await card.getByRole('link').count() === 1 && await action.isVisible() &&
+    await action.getAttribute('href') === FILE+'#explain',
+    'the saved card has one accessible Continue link that opens the saved Explain step');
+  const artwork = card.locator('a.dashboard-preview');
+  check(await artwork.isVisible() && await artwork.getAttribute('aria-hidden') === 'true' &&
+    await artwork.getAttribute('tabindex') === '-1' && await artwork.locator('img[src="assets/rat-generations-preview.svg"]').count() === 1 &&
+    await artwork.getAttribute('href') === FILE+'#explain',
+    'the original preview art opens the same step without an extra keyboard stop');
   const resume = page.locator('#openscied-resume-link');
   check(await resume.isVisible() && (await resume.getAttribute('href')).startsWith(FILE),
     'dashboard Resume points to the existing Rat Generations trial');

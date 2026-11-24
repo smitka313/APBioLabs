@@ -48,7 +48,7 @@ const fs = require('node:fs');
       assert.equal(await theme.getByRole('button', { name: 'Dark', exact: true }).getAttribute('aria-pressed'), 'true');
       const identity = p.locator('#openscied-student-identity');
       await identity.getByLabel('Enter your name as your teacher knows it').fill('Casey Student');
-      await identity.getByLabel('Class period').selectOption('3');
+      await identity.getByLabel('Class period', { exact: true }).selectOption('3');
       await identity.getByRole('button', { name: 'Save', exact: true }).click();
       assert.match(await identity.textContent(), /Signed in as Casey Student/);
       await p.evaluate(() => {
@@ -111,7 +111,7 @@ const fs = require('node:fs');
       await p.reload();
       assert.equal(await clear.isDisabled(), true, 'cleared results stay cleared after reload');
       await identity.getByRole('button', { name: 'Edit my name or class period', exact: true }).click();
-      await identity.getByLabel('Class period').selectOption('4');
+      await identity.getByLabel('Class period', { exact: true }).selectOption('4');
       await identity.getByRole('button', { name: 'Save', exact: true }).click();
       assert.match(await identity.textContent(), /Period 4/);
       const juncoKey = 'aplab:openscied:b4-junco:v1';

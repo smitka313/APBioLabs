@@ -58,16 +58,20 @@ test('source image and all local activity dependencies exist',()=>{const html=fs
 function chartFixture(collection,open=true){
   const ui=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
   const fn=ui.slice(ui.indexOf('  function renderCharts()'),ui.indexOf('  function reportText('));
-  const captures=[], disclosure={open};
+  const captures=[], disclosure={open}, overlap={hidden:true};
   const context={
     L,state:{page:'evidence',collection,measure:'fat'},
-    $(selector){assert.equal(selector,'#health-chart-disclosure');return disclosure;},
+    $(selector){
+      if(selector==='#health-chart-disclosure')return disclosure;
+      assert.equal(selector,'#health-chart-overlap','the chart renderer uses known test controls');
+      return overlap;
+    },
     ANNUAL:[{region:'South',rain:1160,occupancy:52},{region:'West',rain:1180,occupancy:26},{region:'North',rain:1310,occupancy:6}],
     healthChart:null,occupancyChart:null,Lab:{chart(selector,options){captures.push(options);return {update(o){captures.push(o);}};}}
   };
   vm.createContext(context);
   vm.runInContext(fn,context);
-  return {captures,disclosure,draw:()=>vm.runInContext('renderCharts();',context)};
+  return {captures,disclosure,overlap,state:context.state,draw:()=>vm.runInContext('renderCharts();',context)};
 }
 test('editing pauses the exact playback controller and keeps separate drafts on their months',()=>{
   const ui=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
@@ -128,6 +132,19 @@ test('published evidence charts disable the toolkit simulation label',()=>{
     assert.equal(captures.length,1);assert.equal(captures[0].simTag,false,collection+' uses source data, not simulation');
     assert.equal(captures[0].responsive,true,collection+' chart labels remain readable in narrow panels');
   }
+});
+test('the overlap clue appears only for the coincident anthrax series',()=>{
+  const chart=chartFixture('cards');
+  chart.draw();
+  assert.equal(chart.overlap.hidden,true);
+  chart.state.measure='anthrax';
+  chart.draw();
+  assert.equal(chart.overlap.hidden,false);
+  const [first,...others]=chart.captures.at(-1).series;
+  for(const group of others)assert.deepEqual(group.points,first.points);
+  chart.state.measure='fat';
+  chart.draw();
+  assert.equal(chart.overlap.hidden,true);
 });
 test('the closed mobile health chart waits until open without suppressing annual evidence',()=>{
   const cards=chartFixture('cards',false);

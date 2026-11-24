@@ -178,7 +178,7 @@
       warm: 'Thank you. You will test this in the next part.' } },
     'cards-rate-hot': { correct: ['faster'], why: {
       faster: 'Yes. In the class example, the yeast at 43 °C made more foam in the same time than the yeast at 18 °C.',
-      slower: 'Try again. Check the class example: 43 °C made more foam in the same time than 18 °C.',
+      slower: 'Try again. Why not: in the class example, 43 °C made more foam in the same time than 18 °C.',
       same: 'Try again. The 18 °C and 43 °C class readings differed.' } },
     'cards-rate-peat': { correct: ['slower'], why: {
       slower: 'Yes. Cold, low-oxygen peat slows the reaction, so carbon and energy stay in the peat. That makes a carbon sink.',

@@ -8,12 +8,13 @@ const root = path.join(__dirname, '..');
 const page = fs.readFileSync(path.join(root, 'lab05.html'), 'utf8');
 const shared = fs.readFileSync(path.join(root, 'lab.js'), 'utf8');
 
-function reportFor(rows) {
+function reportFor(rows, { stale = false } = {}) {
   const section = { id: 'design', dataset: { step: 'Design' } };
   const context = {
     draw: { getRows: () => rows },
     Lab: { keyResults: () => [] },
     PAGE: { id: 'lab05' }, REG: { quizzes: [], charts: [] },
+    IS_LAB: true, staleEditor: () => stale, staleEditorMessage: 'Reload after the shared device was cleared.',
     reportIdentity: () => ({ name: 'Audit', period: 'Test', datasetId: 'AUDIT' }),
     document: { title: 'Lab 5: Photosynthesis' }, cleanTitle: x => x, labTag: () => 'Lab5',
     $: () => null,
@@ -72,4 +73,8 @@ test('report annotations follow current recorded rows and survive reconstruction
   rows.splice(0, 1, cup('10 cm', 0.1));
   assert.deepEqual(answers(collect()), []);
   assert.deepEqual(answers(reportFor([])()), []);
+});
+
+test('AP report collection rejects a stale editor before opening a new student’s evidence', () => {
+  assert.throws(reportFor([cup('45 cm', null)], { stale: true }), /Reload after the shared device was cleared/);
 });

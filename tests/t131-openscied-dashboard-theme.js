@@ -28,12 +28,18 @@ async function checkMastheadLayout(browser,site,seed,description) {
     });
     const status=p.locator('#openscied-results-status');
     const initialStatus=await status.textContent();
-    assert.match(initialStatus,/No OpenSciEd results saved on this device/,'initial workspace status is reserved before scripts mount');
+    assert.match(initialStatus,/^No saved work yet\. Choose an activity to get started\.$/,'initial workspace status is reserved before scripts mount');
+    const placeholder=p.locator('#openscied-student-identity [data-ph="dashboard-identity"]');
+    const reservedLabels=seed?await placeholder.locator('button').allTextContents():[];
     const before=await measure();
     assert.equal(await p.locator('.dashboard-theme-controls .theme-opt').count(),0,'theme script is still delayed');
     release();
     await p.locator('.dashboard-theme-controls .theme-opt').first().waitFor();
     await p.locator('#openscied-student-identity '+(seed?'.id-line':'.id-panel')).waitFor();
+    if(seed) {
+      const liveLabels=await p.locator('#openscied-student-identity .id-line button').allTextContents();
+      assert.deepEqual(liveLabels,reservedLabels,'placeholder reserves the same labels as the shared-device controls');
+    }
     const after=await measure();
     assert.equal(await status.textContent(),initialStatus,'empty workspace status matches refresh');
     for(const selector of Object.keys(before)) {

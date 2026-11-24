@@ -106,7 +106,8 @@ async function fits(page) {
         const testNote = page.locator('#hb-predict .hb-tip');
         const testNoteText = await testNote.textContent();
         ok(await testNote.isVisible() && /same wind paths/i.test(testNoteText) &&
-          /amount and arrangement of soil.*cannot separate/i.test(testNoteText),
+          /both the amount and layout of soil/i.test(testNoteText) &&
+          /can(?:not|[’']t) tell which change mattered more/i.test(testNoteText),
           `${width} Hawksbeard explains what is matched and what cannot be isolated before students predict`);
         await screenshot(page, width, 'hawksbeard-hero');
         await page.getByRole('radio', { name: /City with separate soil patches/ }).check();

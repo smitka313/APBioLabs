@@ -65,7 +65,10 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(words <= 1750, 'visible page text (no scenes, attribution, hidden details) stays within 1,750 words: ' + words + ' words');
 
     // --- sensitivity: content note, teacher note, links only, no personal-health inputs ---
-    T.ok(/pause, skip a part, or step away/.test(await p.locator('#content-note').innerText()) && /Nobody is asked to share anything about their own family/.test(await p.locator('#content-note').innerText()), 'content note at the top');
+    const contentNote = p.locator('#content-note');
+    T.ok(/pause or step away/.test(await contentNote.innerText()) && /skip the family stories/.test(await contentNote.innerText()) && /Nobody is asked about their own family/.test(await contentNote.innerText()) &&
+      await contentNote.getByRole('link', {name:'Part B: environment and UV evidence'}).getAttribute('href') === '#envideas',
+      'the content note gives a direct alternative route and keeps private family health out of the activity');
     await go(p, 'ideas');
     T.ok(/do not need to write about any real family/.test(await p.locator('#ideas').innerText()) && /Pause whenever you like/.test(await p.locator('#ideas').innerText()), 'reminder before Part A');
     T.ok(await p.locator('details.teacher-note').count() === 1, 'collapsible teacher note');
