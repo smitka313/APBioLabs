@@ -480,7 +480,7 @@
       ['UV yeast simulation',state.yeast?.dishes?.some(x=>Number.isFinite(x?.colonies)) || false]
     ];
     const done = seen.filter(([,used])=>used).length;
-    const selected = picks(), allChips = chips(), selectedCount = selected.filter(x=>x.value).length;
+    const selected = picks(), allChips = chips();
     const response = textAnswers(), order = orderSeq(), aMissing = [], bMissing = [];
     const family = seen.slice(0,3), environment = seen.slice(3);
     const unused = entries => entries.filter(([,used])=>!used).map(([label])=>label);
@@ -496,34 +496,49 @@
     if (!response.find(x=>x.id==='wrap-sentence')?.answer.trim()) bMissing.push('Write the wrap-up response on genes, environment and chance.');
     const lesson9Only = !bMissing.length && !!aMissing.length;
     const missing = lesson9Only ? [] : [...bMissing, ...aMissing];
+    const beforeLesson9 = id => SECTIONS.indexOf(id) > 0 && SECTIONS.indexOf(id) < SECTIONS.indexOf('envideas');
+    const partA = new Set($$('main .step').filter(section=>beforeLesson9(section.id))
+      .flatMap(section=>$$('fieldset[data-id], textarea[id], input[type=text][id]',section).map(field=>field.dataset.id || field.id)));
+    const scopedChoices = lesson9Only ? selected.filter(x=>!partA.has(x.id)) : selected;
+    const formatModels = boxes => boxes.flatMap(([,build])=>build().map(node=>{
+      const table = node.querySelector('table');
+      if (!table) return {type:'text',text:node.textContent};
+      return {type:'table',title:table.caption?.textContent,columns:Array.from(table.tHead.rows[0].cells,c=>c.textContent),
+        rows:Array.from(table.tBodies[0].rows,r=>Array.from(r.cells,c=>c.textContent))};
+    }));
+    const orderAnswer = answer('My meiosis order',order.map(k=>STEP_LABELS[k]).filter(Boolean).join(' → '));
     const sections = [{title:'Assignment scope',items:[
       {type:'text',text:'Lesson 9: Environment and UV evidence ' + (bMissing.length?'in progress.':'recorded.')},
-      {type:'text',text:'Lesson 8: Family and inheritance models ' + (aMissing.length?'not marked complete.':'recorded.')},
-      ...(lesson9Only ? [{type:'text',text:'This report marks only the Lesson 9 pathway complete. Family activities are not required for this pathway.'}] : [])
+      ...(lesson9Only ? [{type:'text',text:'This report marks only the Lesson 9 pathway complete. Family activities are not required for this pathway.'}] :
+        [{type:'text',text:'Lesson 8: Family and inheritance models ' + (aMissing.length?'not marked complete.':'recorded.')}])
     ]},{title:'My evidence',items:[
-      {type:'table',title:'Models and evidence used',columns:['Activity','Status'],rows:seen.map(([label,used])=>[label,used?'Recorded':'Not recorded'])},
-      ...BOXES.flatMap(([,build])=>build().map(node=>{
-        const table = node.querySelector('table');
-        if (!table) return {type:'text',text:node.textContent};
-        return {type:'table',title:table.caption?.textContent,columns:Array.from(table.tHead.rows[0].cells,c=>c.textContent),
-          rows:Array.from(table.tBodies[0].rows,r=>Array.from(r.cells,c=>c.textContent))};
-      }))
+      {type:'table',title:'Models and evidence used',columns:['Activity','Status'],rows:(lesson9Only?environment:seen).map(([label,used])=>[label,used?'Recorded':'Not recorded'])},
+      ...formatModels(lesson9Only?BOXES.slice(3):BOXES)
     ]},{
       title:'My question and responses',items:[
         answer('My investigation question',state.question?.text),
-        ...selected.map(x=>answer(x.question,x.answer)),
-        ...allChips.map(x=>answer(x.question,x.chosen.join('; '))),
-        answer('My meiosis order',order.map(k=>STEP_LABELS[k]).filter(Boolean).join(' → ')),
-        ...response.filter(x=>x.answer).map(x=>answer(x.prompt,x.answer))
+        ...scopedChoices.map(x=>answer(x.question,x.answer)),
+        ...allChips.filter(x=>!lesson9Only||!partA.has(x.id)).map(x=>answer(x.question,x.chosen.join('; '))),
+        ...(!lesson9Only?[orderAnswer]:[]),
+        ...response.filter(x=>x.answer&&(!lesson9Only||!partA.has(x.id))).map(x=>answer(x.prompt,x.answer))
       ]
-    },{
-      title:'Sources and limits',items:[{type:'text',text:'Gametes and yeast results are simulated. Skin-cancer observations are approximate readings of the lesson figures (Eide and Weinstock, 2005; doi:10.1001/archderm.141.4.477). Those figures do not state the y-axis unit. Group patterns cannot determine an individual’s risk or show cause.'}]
     }];
+    if (lesson9Only) {
+      const earlier = [
+        ...formatModels(BOXES.slice(0,3).filter((entry,i)=>family[i][1])),
+        ...selected.filter(x=>partA.has(x.id)&&x.value).map(x=>answer(x.question,x.answer)),
+        ...allChips.filter(x=>partA.has(x.id)&&x.chosen.length).map(x=>answer(x.question,x.chosen.join('; '))),
+        ...(orderAnswer.value?[orderAnswer]:[]),
+        ...response.filter(x=>x.answer&&partA.has(x.id)).map(x=>answer(x.prompt,x.answer))
+      ];
+      if (earlier.length) sections.push({title:'Earlier Lesson 8 work · not part of this assignment',items:earlier});
+    }
+    sections.push({title:'Sources and limits',items:[{type:'text',text:'Yeast and any gamete results shown are simulated. Skin-cancer observations are approximate readings of the lesson figures (Eide and Weinstock, 2005; doi:10.1001/archderm.141.4.477). Those figures do not state the y-axis unit. Group patterns cannot determine an individual’s risk or show cause.'}]});
     return {title:lesson9Only?'Environment & UV Evidence · Lesson 9':'Inheritance, Environment & Cancer Risk',unit:'OpenSciEd Biology B.3',
       source:'Models and approximate values from published figures; not a personal diagnosis or prediction.',
       status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),
       keyResults:[{label:'Model or evidence activities used',value:lesson9Only?'3 of 3 lesson 9 activities':done+' of '+seen.length},
-        {label:'Choice responses entered',value:selectedCount+' of '+selected.length}],sections};
+        {label:'Choice responses entered',value:scopedChoices.filter(x=>x.value).length+' of '+scopedChoices.length}],sections};
   }
 
   window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});

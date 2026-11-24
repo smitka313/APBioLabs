@@ -182,9 +182,17 @@
   function notes(input, m) {
     const mm = m || model(input), s = mm.s, out = [], dq = (mm.relQ - 1) * 100;
     if (Math.abs(s.tilt - TILT_NOW) > 0.05) {
+      const today = model({ ...s, tilt: TILT_NOW });
+      const compare = (label, before, after, unit = '') => {
+        const first = Math.round(before), last = Math.round(after);
+        return label + (first === last ? ' stays at ' + last + unit : (last > first ? ' rises' : ' falls') +
+          ' from ' + first + unit + ' to ' + last + unit) + '.';
+      };
+      const results = ' With only tilt changed from today’s value: ' +
+        compare('photosynthesis', today.P, mm.P) + ' ' + compare('Frozen peat', today.perm * 100, mm.perm * 100, '%');
       out.push(s.tilt > TILT_NOW
-        ? ['photo', 'Bigger tilt', 'In summer the Arctic leans further toward the sun. The noon sun is ' + (s.tilt - TILT_NOW).toFixed(1) + '° higher and the long summer days deliver ' + dq.toFixed(1) + '% more sunlight. Summers warm by about ' + tiltWarming(s.tilt).toFixed(1) + ' °C, so plants grow faster and take in more carbon.']
-        : ['ice', 'Smaller tilt', 'In summer the Arctic leans less toward the sun. The noon sun is ' + (TILT_NOW - s.tilt).toFixed(1) + '° lower and summer sunlight drops ' + Math.abs(dq).toFixed(1) + '%. Summers cool by about ' + Math.abs(tiltWarming(s.tilt)).toFixed(1) + ' °C, so more ground stays frozen.']);
+        ? ['photo', 'Bigger tilt', 'In summer the Arctic leans further toward the sun. The noon sun is ' + (s.tilt - TILT_NOW).toFixed(1) + '° higher and the long summer days deliver ' + dq.toFixed(1) + '% more sunlight. Summers warm by about ' + tiltWarming(s.tilt).toFixed(1) + ' °C.' + results]
+        : ['ice', 'Smaller tilt', 'In summer the Arctic leans less toward the sun. The noon sun is ' + (TILT_NOW - s.tilt).toFixed(1) + '° lower and summer sunlight drops ' + Math.abs(dq).toFixed(1) + '%. Summers cool by about ' + Math.abs(tiltWarming(s.tilt)).toFixed(1) + ' °C.' + results]);
     }
     if (mm.perm > 0.04) out.push(['ice', 'Permafrost', 'About ' + Math.round(mm.perm * 100) + '% of the peat is frozen. Freezing sharply slows decomposition; the model can still show a small rate even when all peat is frozen. Fire can burn only the thawed share. Slower carbon loss helps explain why many cold peatlands store carbon.']);
     if (mm.T > 40) out.push(['warn', 'Too hot', 'Extreme heat damages the enzymes that plants and decomposers depend on.']);

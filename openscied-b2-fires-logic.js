@@ -122,9 +122,12 @@
 
   function sceneEvidence(state) {
     const source = state || {}, rows = foamRows(source.decomp), cards = checkCards(source.cards && source.cards.placed), tilt = source.tilt;
-    const tubesRead = tilt && tilt.recorded === true && num(tilt.seed) && Array.isArray(tilt.settings) && tilt.settings.length === 3 ? 3 : 0;
-    return { cardsPlaced: cards.placed, cardsRight: cards.right, foamReadings: rows.length, foamAfterBaseline: rows.some(row => row.t > 0),
-      tubesRead, starchTested: !!(tubesRead && tilt.starchDone === true) };
+    const settings = Array.isArray(tilt?.settings) ? tilt.settings : [];
+    const tubesRead = tilt?.recorded === true && num(tilt.seed) && settings.length === 3 && settings.every(id => LIGHT_IDS.includes(id)) ? 3 : 0;
+    const foamAfterBaseline = rows.some(row => row.t > 0);
+    return { cardsPlaced: cards.placed, cardsRight: cards.right, foamReadings: rows.length, foamAfterBaseline,
+      foamComparison: foamAfterBaseline && new Set(normalizeTemps(source.decomp.temps)).size > 1,
+      tubesRead, tiltComparison: !!tubesRead && new Set(settings).size > 1, starchTested: !!(tubesRead && tilt.starchDone === true) };
   }
 
   /* ---------- Matter Energy cards (Lesson 3) ---------- */

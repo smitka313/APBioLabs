@@ -11,7 +11,9 @@ const files = {
 };
 const source=(name,ext)=>readFileSync(root+'/openscied-b1-'+name+'.'+ext,'utf8');
 function collect(name,context){
-  const js=source(name,'js'), start=js.indexOf('  function submissionData('), end=js.indexOf('\n  '+files[name][0],start);
+  const js=source(name,'js');
+  const helper=name==='migration'?js.indexOf('  function unsavedMonthDrafts('):-1;
+  const start=helper>=0?helper:js.indexOf('  function submissionData('), end=js.indexOf('\n  '+files[name][0],start);
   assert.ok(start>=0&&end>start,'activity provides its classroom adapter');
   const key=workKeys[name][0];
   return vm.runInNewContext(js.slice(start,end)+'\nsubmissionData()',{
@@ -69,7 +71,7 @@ test('Migration separates saved observation coverage from visits, gives evidence
   const months=Array.from({length:12},(_,i)=>i);
   const state={visited:months,notes:[{id:'rainfall-example',title:'Published data',text:'Selected field data'}],
     answers:Object.fromEntries(prompts.map(([id])=>[id,'A response']))};
-  const ctx={state, RESPONSES:prompts, L:{monthsWithNotes:n=>n.filter(x=>x.obs).map(x=>x.month)},
+  const ctx={state, RESPONSES:prompts, L:{MONTHS:require('../migration-logic.js').MONTHS,monthsWithNotes:n=>n.filter(x=>x.obs).map(x=>x.month)},
     ANNUAL:[{region:'North',rain:1310,occupancy:6}],ANNUAL_SOURCE:'Classroom data',ANNUAL_URL:'https://openscied.org/',
     reportIdentity:recovery=>recovery?null:{name:'Original student',period:'2'},corrupt:false,displayNoteText:n=>n.text};
   let r=collect('migration',ctx);
@@ -82,6 +84,74 @@ test('Migration separates saved observation coverage from visits, gives evidence
   checkRetired('migration',ctx,'erased');
   r=collect('migration',{...ctx,corrupt:true});
   assert.equal(r.status,'recovery'); assert.equal(r.student,null);
+});
+
+test('Migration draft and recovery files preserve new month drafts and revisions separately from saved notes',()=>{
+  const L=require('../migration-logic.js'),KEY=workKeys.migration[0],RESPONSES=[['q','A prompt']];
+  const note=L.upsertMonthlyNote([],0,'January prior saved note').notes;
+  const saved=L.upsertMonthlyNote(note,3,'April already recorded').notes;
+  const state={notes:saved,answers:{q:'A response'},observations:{
+    0:'January revised draft',3:'  April already recorded  ',7:'  ',8:'September new draft',12:'Out of range'
+  }};
+  const map=new Map([[KEY,JSON.stringify(state)]]);
+  const storage={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
+  const saveSession=Save.open(storage,'b1-migration',[KEY]);
+  let who={name:'First fictional student',period:'2'};
+  const reportIdentity=Save.reportIdentity(saveSession,[KEY],()=>who);
+  const ctx={state,KEY,L,RESPONSES,saveSession,reportIdentity,corrupt:false,displayNoteText:L.notebookText};
+  const drafts=report=>report.sections.find(s=>s.title==='Month drafts · not in the notebook');
+  let report=collect('migration',ctx);
+  assert.equal(report.status,'draft');
+  assert.equal(report.keyResults[0].value,'2 / 12');
+  assert.match(report.sections[0].items[0].value,/January prior saved note/);
+  assert.deepEqual(plain(drafts(report)?.items.slice(1)??null),[
+    {type:'answer',prompt:'January · draft revision',value:'January revised draft'},
+    {type:'answer',prompt:'September · draft observation',value:'September new draft'}
+  ]);
+  assert.match(drafts(report).items[0].text,/do not count as saved month notes/);
+  Save.erase(storage,null,[KEY]);
+  who={name:'Different fictional student',period:'7'};
+  report=collect('migration',ctx);
+  assert.equal(report.status,'recovery');
+  assert.equal(report.student.name,'First fictional student');
+  assert.equal(report.student.period,'2');
+  assert.ok(drafts(report).items.some(d=>d.value==='January revised draft'));
+  assert.ok(drafts(report).items.some(d=>d.value==='September new draft'));
+  assert.equal(storage.getItem(KEY),null);
+  const js=source('migration','js');
+  const from=js.includes('  function unsavedMonthDrafts(')?'  function unsavedMonthDrafts(':'  function submissionData(';
+  const exports=vm.runInNewContext(js.slice(js.indexOf(from),js.indexOf('  function textCopy('))+
+    '\n[reportText("investigation"),reportText("notebook")]',ctx);
+  for(const file of exports){
+    assert.match(file,/Name: First fictional student/);
+    assert.match(file,/January prior saved note/);
+    assert.match(file,/MONTH DRAFTS \(NOT IN THE NOTEBOOK\)/);
+    assert.match(file,/January · draft revision\nJanuary revised draft/);
+    assert.match(file,/September · draft observation\nSeptember new draft/);
+    assert.doesNotMatch(file,/Different fictional student|Out of range/);
+    assert.equal(file.match(/April already recorded/g)?.length,1);
+  }
+});
+
+test('Saved month drafts stop being drafts without changing assignment completion rules',()=>{
+  const L=require('../migration-logic.js'),RESPONSES=[['q','A prompt']];
+  const state={notes:[],answers:{q:'A response'},observations:{}};
+  L.MONTHS.forEach((month,i)=>{
+    state.observations[i]=month+' note';
+    state.notes=L.upsertMonthlyNote(state.notes,i,state.observations[i]).notes;
+  });
+  state.observations[4]='May revision';
+  const ctx={state,L,RESPONSES,corrupt:false,reportIdentity:()=>null,displayNoteText:L.notebookText};
+  let report=collect('migration',ctx);
+  assert.equal(report.status,'final');
+  assert.equal(report.keyResults[0].value,'12 / 12');
+  assert.equal(report.sections.at(-1).title,'Month drafts · not in the notebook');
+  state.notes=L.upsertMonthlyNote(state.notes,4,state.observations[4]).notes;
+  report=collect('migration',ctx);
+  assert.equal(report.status,'final');
+  assert.equal(report.keyResults[0].value,'12 / 12');
+  assert.ok(!report.sections.some(s=>s.title.startsWith('Month drafts')));
+  assert.match(report.sections[0].items[4].value,/May revision/);
 });
 
 test('Carrying Capacity requires two full runs, prediction and only required explanations, with separated evidence',()=>{

@@ -104,3 +104,49 @@ test('Carbon Journey clearly separates die records, examples and which report to
   assert.match(budget, /Only one burns/);
   assert.match(budget, /Preview report<\/strong> includes your Journey and Budget work[\s\S]*Download budget evidence<\/strong> saves just this comparison/);
 });
+
+test('Peat tilt notes reflect rounded results for the same settings at today’s tilt', () => {
+  const L = logic('peat-bog');
+  const hint = (tilt, temp) => L.notes({...L.DEFAULTS, tilt,temp}).find(n=>/ tilt$/.test(n.title)).text;
+  assert.match(hint(24.5,24), /photosynthesis falls from 29 to 22/);
+  assert.match(hint(22.1,20), /Frozen peat stays at 0%/);
+  assert.match(hint(24.5,10), /photosynthesis rises from \d+ to \d+/);
+  assert.match(hint(24.5,18), /photosynthesis stays at 45|photosynthesis falls from 45 to 44/);
+});
+
+test('Fires distinguishes same-setting readings from temperature and lamp comparisons', () => {
+  const L=logic('fires'), seed=11;
+  const same={decomp:{seed,recorded:[20],temps:[43,43,43]},tilt:{seed,recorded:true,settings:['direct','direct','direct']}};
+  let e=L.sceneEvidence(same);
+  assert.equal(e.foamReadings,1); assert.equal(e.foamComparison,false);
+  assert.equal(e.tubesRead,3); assert.equal(e.tiltComparison,false);
+  e=L.sceneEvidence({
+    decomp:{...same.decomp,temps:[43,55,55]},
+    tilt:{...same.tilt,settings:['direct','tilt45','tilt70']}
+  });
+  assert.equal(e.foamComparison,true);
+  assert.equal(e.tiltComparison,true, 'a real lit contrast does not require foil');
+  assert.equal(L.sceneEvidence({tilt:{...same.tilt,settings:['direct','fake','foil']}}).tiltComparison,false);
+});
+
+test('Burning Fuels predictions ask for the measured temperature change without changing save keys', () => {
+  const html=source('openscied-b2-burn-lab.html');
+  assert.equal([...html.matchAll(/id="pred-[a-z]+-energy" aria-label="[^"]+warms up less or more than the others"/g)].length,5);
+  assert.doesNotMatch(html, /give the most energy|gives less or more energy than the others/);
+  const L=logic('burn');
+  const trial={seed:42,records:[{fuel:'peat',n:1,obs:[]}]};
+  assert.match(L.checkPrediction('peat','energy','more',trial).message,/compare temperature changes/);
+});
+
+test('Carbon Journey repeats recorded totals beside Q2 and offers an optional separate sample on Q4', () => {
+  const html=source('openscied-b2-carbon-journey.js');
+  assert.match(html, /article.append\(panel\)[\s\S]*if \(id === 'q4'\)/);
+  assert.match(html, /Example journey for solo work/);
+  assert.match(html, /This example does not change your journal or totals/);
+  assert.match(html, /totalGroups.forEach\([\s\S]*?renderQuestionTotals\(totalGroups\)/);
+  const L=logic('carbon-journey');
+  let sample=L.initial(70);
+  for(let i=0;i<10;i++) sample=L.record({...sample,pending:L.die(70,i)});
+  assert.equal(sample.rows.length,10);
+  assert.ok(new Set(sample.rows.map(row=>row.from)).size>=6);
+});

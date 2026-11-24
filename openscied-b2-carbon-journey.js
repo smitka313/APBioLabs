@@ -108,7 +108,7 @@
     ['q1', 'Your atom started in atmospheric carbon dioxide. Is that a rule of this model or a claim about where all Earth’s carbon is? Explain.'],
     ['q2', 'What relationships or patterns do you notice in your journey’s totals?'],
     ['q3', 'Tell the story of two turns you recorded. For each: Where did the atom go? What was it part of? What process moved it, and what happened to the energy? Name specific organisms or materials. If you also use a reference card, label it as an example, not one of your rolls.'],
-    ['q4', 'Compare with a classmate. What was similar, even though your journeys differed?'],
+    ['q4', 'Compare your journey with a classmate’s or the example below. Name one similarity and one difference.'],
     ['q5', 'How does this model help explain the effects of carbon dioxide added to the atmosphere by fires?']
   ];
   questions.forEach(([id, text]) => {
@@ -117,7 +117,21 @@
     input.maxLength = 20000; input.value = state.answers[id] || '';
     input.addEventListener('input', () => { state.answers[id] = input.value; save(); });
     article.append(label);
+    if (id === 'q2') {
+      const panel = document.createElement('div'); panel.id = 'question-totals'; panel.className = 'journey-question-evidence'; article.append(panel);
+    }
     if (id === 'q3') article.append($('#station-tour'));
+    if (id === 'q4') {
+      const example = document.createElement('details'), title = document.createElement('summary'), description = document.createElement('p'), route = document.createElement('p');
+      example.className = 'journey-question-evidence';
+      title.textContent = 'Example journey for solo work';
+      description.textContent = 'Ten example rolls using the same rules. Repeated stations mean the atom stayed. This example does not change your journal or totals.';
+      const seed = 70;
+      let sample = L.initial(seed);
+      for (let i = 0; i < 10; i++) sample = L.record({ ...sample, pending:L.die(seed, i) });
+      route.textContent = ['Atmosphere', ...sample.rows.map(r => name(r.to))].join(' → ');
+      example.append(title, description, route); article.append(example);
+    }
     article.append(input); $('#questions').append(article);
   });
   let tourStation = '';
@@ -191,6 +205,21 @@
       const a = document.createElement('span'), b = document.createElement('strong'); a.textContent = label; b.textContent = count; row.append(a, b); box.append(row);
     }); target.append(box);
   }
+  function renderQuestionTotals(groups) {
+    const host = $('#question-totals'); host.replaceChildren();
+    const note = document.createElement('p');
+    note.textContent = state.rows.length ? 'Your recorded roll counts (categories with zero omitted):' : 'Record a roll to see your totals here.';
+    host.append(note);
+    if (!state.rows.length) return;
+    const list = document.createElement('dl');
+    for (const [category, items] of groups) {
+      const title = document.createElement('dt'), values = document.createElement('dd');
+      title.textContent = category;
+      values.textContent = items.filter(i => i.count > 0).map(i => i.label + ': ' + i.count).join(' · ');
+      list.append(title, values);
+    }
+    host.append(list);
+  }
   function drawChart() {
     if (!state.rows.length) { $('#charts').textContent = 'Record a turn to build your evidence.'; return; }
     const opts = { type: 'bar', responsive: true, xLabel: 'Starting station', yLabel: 'Recorded rolls (count)', yMin: 0,
@@ -240,8 +269,13 @@
     const last = state.rows.at(-1); $('#last-move').textContent = last ? 'Last turn: ' + name(last.from) + ' → ' + name(last.to) + ' · ' + last.matter : 'Start in atmospheric carbon dioxide.';
     drawDie(); drawBoard();
     const target = $('#totals'); target.replaceChildren();
-    totalBox(target, 'Systems', L.totals(state, 'from', L.stations.map(s => s[0])).map(x => ({ label: name(x.label), count: x.count })));
-    totalBox(target, 'Matter', L.totals(state, 'matter', L.matter)); totalBox(target, 'Energy', L.totals(state, 'energy', L.energy));
+    const totalGroups = [
+      ['Systems', L.totals(state, 'from', L.stations.map(s => s[0])).map(x => ({ label: name(x.label), count: x.count }))],
+      ['Matter', L.totals(state, 'matter', L.matter)],
+      ['Energy', L.totals(state, 'energy', L.energy)]
+    ];
+    totalGroups.forEach(([category, items]) => totalBox(target, category, items));
+    renderQuestionTotals(totalGroups);
     showTotal();
     $('#journal').replaceChildren(); state.rows.forEach(r => {
       const tr = document.createElement('tr'); [r.turn, name(r.from), r.die, r.prediction === null ? 'Skipped' : r.prediction ? name(r.prediction) : 'Not saved in earlier version', r.matter, r.energy, name(r.to), r.text || 'Earlier printed-card record', r.note].forEach(v => {

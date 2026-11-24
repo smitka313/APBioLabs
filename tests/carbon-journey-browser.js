@@ -59,12 +59,30 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       if (width < 851) { await p.locator('[data-total-tab="matter"]').click(); assert.ok(await p.locator('[data-total="matter"]').isVisible()); }
       await p.getByRole('button', { name: '3 · Make sense' }).click();
       await p.locator('#q1').fill('Carbon started in the air.');
-      await p.locator('#question-next').click(); await p.locator('#question-next').click();
+      await p.locator('#question-next').click();
+      const panel = p.locator('#question-totals');
+      assert.ok(await panel.isVisible());
+      for (const group of ['systems','matter','energy']) {
+        const values=await p.locator('#totals [data-total="'+group+'"] .total-line').evaluateAll(rows=>rows
+          .map(row=>[row.firstChild.textContent,Number(row.lastChild.textContent)]).filter(([,count])=>count>0));
+        const line=await panel.locator('dd').nth(['systems','matter','energy'].indexOf(group)).textContent();
+        assert.equal(line,values.map(([label,count])=>label+': '+count).join(' · '));
+      }
+      await shot('question-totals');
+      await p.locator('#question-next').click();
       await p.locator('#station-tour-select').selectOption('soil');
       assert.match(await p.locator('#station-tour-card').textContent(), /decomposer/);
       assert.match(await p.locator('#station-tour').textContent(), /not extra rolls/);
       await p.locator('#q3').fill('My carbon atom followed the official cards.');
       await shot('station-tour');
+      await p.locator('#question-next').click();
+      const readWork = () => p.evaluate(() => localStorage.getItem('aplab:openscied:b2-carbon-journey:v1'));
+      const saved = await readWork();
+      await p.getByText('Example journey for solo work', {exact:true}).click();
+      assert.match(await p.locator('#q4').locator('..').innerText(), /Atmosphere → Producers.*Omnivores.*Soil/s);
+      assert.equal(await readWork(),saved,'the optional example does not modify student progress');
+      assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      await p.locator('#question-prev').click();
       await p.reload(); await p.getByRole('button', { name: '3 · Make sense' }).click();
       await p.locator('#question-next').click(); await p.locator('#question-next').click();
       assert.equal(await p.locator('#q3').inputValue(), 'My carbon atom followed the official cards.');

@@ -43,6 +43,11 @@
     if(!a||!b||a.id===b.id)return null;
     return {a,b,difference:finite(a[pin.measure])&&finite(b[pin.measure])?Math.round(Math.abs(a[pin.measure]-b[pin.measure])*10)/10:null};
   }
+  const isNumericComparison = pair => Number.isFinite(pair?.difference);
+  function hasPendingQuestion(casework) {
+    return typeof casework?.questionDraft === 'string' &&
+      casework.questionDraft.trim() !== String(casework.question || '').trim();
+  }
   // Fixed exhibits use ordered income groups. Judge the plotted pattern, not a student’s wording.
   function exhibitTrend(values){
     if(!Array.isArray(values)||values.length<2||!values.every(finite))return null;
@@ -52,6 +57,6 @@
     if(last<first&&values.every((v,i)=>i===0||v<=values[i-1]))return 'falling';
     return null;
   }
-  const api={sortRows,rankRows,fitLine,comparison,exhibitTrend};
+  const api={sortRows,rankRows,fitLine,comparison,isNumericComparison,hasPendingQuestion,exhibitTrend};
   if(typeof module==='object'&&module.exports)module.exports=api;else root.CancerRatesLogic=api;
 })(typeof globalThis==='object'?globalThis:this);

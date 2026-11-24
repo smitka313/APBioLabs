@@ -198,7 +198,7 @@
 .dashboard-activity {
   min-width: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
   align-content: start;
   background: var(--surface);
   color: var(--ink);
@@ -269,7 +269,11 @@
   margin: 0 .8rem .74rem;
 }
 .dashboard-open { justify-content: center; text-align: center; }
-.dashboard-activity > div button:not(:disabled) { min-height: 36px; }
+.dashboard-activity > .dashboard-card-restart {
+  justify-self: start;
+  margin: 0 .8rem .74rem;
+}
+.dashboard-activity > .dashboard-open:has(+ .dashboard-card-restart) { margin-block-end: .3rem; }
 .dashboard-activity .dashboard-activity-metric { margin: .18rem 0 0; color: var(--muted); font-size: .78rem; }
 progress.dashboard-activity-progress {
   display: block;
@@ -277,7 +281,7 @@ progress.dashboard-activity-progress {
   height: .48rem;
   accent-color: var(--accent);
 }
-time.dashboard-last-opened { color: var(--muted); font-size: .84rem; }
+time.dashboard-last-opened:not([hidden]) { display: block; margin: .22rem 0 .45rem; color: var(--muted); font-size: .84rem; }
 .dashboard-badge-key { margin: 0; color: var(--muted); font-size: .84rem; }
 .dashboard-coming-soon { margin: .6rem 0 0; color: var(--muted); font-size: .88rem; }
 .dashboard-aplink {
@@ -331,7 +335,12 @@ time.dashboard-last-opened { color: var(--muted); font-size: .84rem; }
   .dashboard-activity { border-radius: var(--dashboard-radius); }
   .dashboard-caption { padding: .44rem .66rem 0; }
   .dashboard-activity > div { padding-inline: .66rem; }
-  .dashboard-activity > .dashboard-open { margin-inline: .66rem; }
+  .dashboard-activity > :is(.dashboard-open, .dashboard-card-restart) { margin-inline: .66rem; }
+  .dashboard-activity > .dashboard-open:has(+ .dashboard-card-restart:disabled) { margin-block-end: .74rem; }
+  .dashboard-activity > .dashboard-card-restart:disabled,
+  .dashboard-activity:has(> .dashboard-card-restart:disabled) :is(.dashboard-activity-metric, .dashboard-activity-progress) {
+    display: none;
+  }
 }
 @media print {
   .dashboard-hero { background: var(--surface); color: var(--ink); border-color: var(--line); }

@@ -54,6 +54,10 @@
   function staleEditor() {
     try { return localStorage.getItem(HANDOFF_KEY) !== handoffEpoch; } catch (_) { return false; }
   }
+  function workspaceStatus() {
+    try { return wiped || localStorage.getItem(HANDOFF_KEY) !== handoffEpoch ? 'changed' : 'current'; }
+    catch (_) { return 'unavailable'; }
+  }
   const staleEditorMessage = 'This device was cleared in another tab. Reload this page before saving or signing in.';
   window.addEventListener('storage', e => {
     if (e.key === HANDOFF_KEY && staleEditor() && IS_LAB) Lab.toast(staleEditorMessage, {type:'error', key:'handoff'});
@@ -1514,7 +1518,8 @@
     homeManageRefresh = () => { box.hidden = !(storedIdentity() || labsWithWork().length || lsKeys().some(openSciEdKey)); };
     homeManageRefresh();
   }
-  Lab.data = { signOut: signOutDialog, startOverAll: startOverAllDialog, startOverLab: startOverLabDialog, labsWithWork, openSciEdBackup, wipe };
+  Lab.data = { signOut: signOutDialog, startOverAll: startOverAllDialog, startOverLab: startOverLabDialog, labsWithWork, openSciEdBackup, wipe,
+    workspaceStatus, workspaceEpochKey: HANDOFF_KEY };
 
   /* ---------------- Responses toolbar: copy all work ---------------- */
   function collectText() {
@@ -1998,7 +2003,32 @@
   const fmtWhen = t => { try { return new Date(t).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return String(new Date(t)); } };
   /* The confirmation for a restore: names the student, the lab and the file's saved date, and warns when the work on this
      computer is newer than the file. → {text, newer} */
+  function restoreIdentityBlock(o) {
+    if (!o.student) return '';
+    const current = storedIdentity();
+    const advice = 'Back up the current work and sign out before restoring another student’s work.' + NOCHANGE;
+    if (current) {
+      const sameName = normName(current.name).toLowerCase() === normName(o.student.name).toLowerCase();
+      const samePeriod = !current.period || !o.student.period || current.period === o.student.period;
+      return sameName && samePeriod ? '' :
+        'The student name or class period in this backup does not match the current sign-in. ' + advice;
+    }
+    const legacy = effectiveIdentity();
+    if (legacy?.name && normName(legacy.name).toLowerCase() !== normName(o.student.name).toLowerCase()) {
+      return 'The student name in this backup does not match the name saved by this lab. ' + advice;
+    }
+    const pre = `aplab:${LAB_ID}:`;
+    try {
+      // The destination lab creates defaults even in a fresh browser.
+      // Do not let a restore relabel existing work in a different lab or app.
+      const otherWork = Object.keys(localStorage).some(k=>openSciEdKey(k) ||
+        /^aplab:lab\d\d:/.test(k) && !k.startsWith(pre) && !k.endsWith(':dataset') && !k.endsWith(':field:student-name'));
+      return otherWork ? 'Other work is already saved on this device. ' + advice : '';
+    } catch (_) { return 'This browser could not verify the saved workspace. Check browser storage before restoring named work.' + NOCHANGE; }
+  }
   function restoreQuestion(o, viaLink) {
+    const blocked = workspaceStatus() !== 'current' ? staleEditorMessage + NOCHANGE : restoreIdentityBlock(o);
+    if (blocked) return { text: '', newer: '', blocked };
     const m = /^lab(\d\d)$/.exec(o.lab || ''), lab = m ? 'Lab ' + +m[1] : 'this lab';
     const who = o.student ? o.student.name + (o.student.period ? ' (' + periodText(o.student.period) + ')' : '') : 'a student with no name entered';
     const fileT = o.savedAt ? Date.parse(o.savedAt) : 0, when = fileT ? fmtWhen(fileT) : 'an unknown date';
@@ -2008,21 +2038,25 @@
     return { text, newer };
   }
   function applyProgress(o) {
-    if (wiped || staleEditor()) throw new Error(staleEditorMessage + NOCHANGE);
+    if (workspaceStatus() !== 'current') throw new Error(staleEditorMessage + NOCHANGE);
+    const blocked = restoreIdentityBlock(o);
+    if (blocked) throw new Error(blocked);
     /* All or nothing: keep a copy of this lab's saved work, and put it back if any write fails part way. */
     const pre = `aplab:${LAB_ID}:`, before = {};
+    const signed = storedIdentity(), oldMemory = memIdentity, oldStored = lastStoredIdentity, oldEffective = lastEffectiveIdentity;
     lsKeys().forEach(k => { if (k.startsWith(pre)) { try { before[k] = localStorage.getItem(k); } catch (e) { /* skip */ } } });
     try {
       store.clearLab();
       Object.entries(o.data).forEach(([k, v]) => localStorage.setItem(pre + k, JSON.stringify(v)));
+      // Same-student imports keep the current label, including a class period
+      // that was absent from an older backup. A clean device may adopt a name.
+      if (o.student && !signed && !setIdentity(o.student)) throw new Error('Could not save the restored student name');
     } catch (e) {
       try { lsKeys().forEach(k => { if (k.startsWith(pre)) localStorage.removeItem(k); }); Object.entries(before).forEach(([k, v]) => localStorage.setItem(k, v)); } catch (x) { /* best effort */ }
+      memIdentity = oldMemory; lastStoredIdentity = oldStored; lastEffectiveIdentity = oldEffective;
       throw new Error('This browser is not letting the site save data, so the progress could not be loaded here.' + NOCHANGE);
     }
-    if (o.student) {
-      setIdentity(o.student);
-      if (o.dataset > 1) gstore.set(`dataset:${PAGE.id}:${studentKey(o.student)}`, Math.floor(o.dataset));
-    }
+    if (o.student && o.dataset > 1) gstore.set(`dataset:${PAGE.id}:${studentKey(signed || o.student)}`, Math.floor(o.dataset));
     gstore.set('backup:' + LAB_ID, { t: Date.now(), adopt: true }); // loaded from a backup: nothing is unsaved until the student changes it
     reloadClean();
   }
@@ -2152,6 +2186,11 @@
       return;
     }
     const q = restoreQuestion(o, true);
+    if (q.blocked) {
+      say([h('span', null, q.blocked), h('button', { class:'btn btn--sm', type:'button', onclick:close }, 'Close')], true);
+      focusIn(box, 'button');
+      return;
+    }
     box.classList.toggle('is-newer', !!q.newer);
     say([h('span', null, q.text + ' ', q.newer ? h('strong', { class: 'restore-newer' }, q.newer) : 'Replace your work on this lab with it?'),
       h('button', { class: 'btn btn--sm btn--primary', type: 'button', id: 'resume-apply', onclick: () => { try { applyProgress(o); say([h('span', null, 'Loaded. Reloading…')]); } catch (e) { say([h('span', null, e.message), h('button', { class: 'btn btn--sm', type: 'button', onclick: close }, 'Close')], true); } } }, q.newer ? 'Replace anyway' : 'Replace my work'),
@@ -2174,6 +2213,7 @@
     function askApply(o) {
       confirmRow.innerHTML = '';
       const q = restoreQuestion(o);
+      if (q.blocked) { confirmRow.hidden = true; throw new Error(q.blocked); }
       confirmRow.classList.toggle('is-newer', !!q.newer);
       confirmRow.append(
         h('span', null, q.text + ' ', q.newer ? h('strong', { class: 'restore-newer' }, q.newer) : 'Replace your work on this lab with it?'),

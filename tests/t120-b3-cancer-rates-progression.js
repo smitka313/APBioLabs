@@ -100,9 +100,19 @@ async function runStudent(browser, url) {
     ok(await step(page, 'explain').isDisabled() && !await marked(page, 'explore') && /pin one comparison/i.test(await note(page, 'step-hint')),
       'Explain requires a pinned comparison, and the next action is explicit');
     await fit(page, '390 dark Explore'); await shot(page, '390-dark-explore');
+    await $(page, 'view').selectOption('michigan');
+    await $(page, 'measure').selectOption('late-rate');
+    await $(page, 'compare-a').selectOption('26001'); // Alcona County's rate is unavailable.
+    await $(page, 'compare-b').selectOption('26005'); // Allegan County's rate is reported.
+    ok(await $(page, 'pin').isDisabled() && /two reported values/.test(await note(page, 'pin')),
+      'A comparison with one missing value cannot be pinned as evidence');
+    await $(page, 'view').selectOption('poverty');
+    await $(page, 'search').fill('Kentucky');
     await tap('pin');
     ok(await marked(page, 'explore') && !await step(page, 'explain').isDisabled(), 'Pinning a comparison completes Explore and opens Explain');
     await tap('to-explain');
+    ok(/Not shown in this scatterplot: New Mexico/.test(await note(page, 'evidence-list')),
+      'The pin names the selected state that was outside the filtered scatterplot');
     ok((await note(page, 'evidence-list')).includes('524.7') && (await note(page, 'evidence-list')).includes('378.6') && (await note(page, 'question-explain-text')) === full, 'Explain keeps the actual chart evidence and question beside the responses');
     ok(await $(page, 'limits').getAttribute('aria-describedby') === 'cr-limits-help' && /Correlation means.*does not prove/.test(await note(page, 'limits-help')), 'The limits prompt explicitly distinguishes correlation and causation');
     await $(page, 'claim').fill(claim);
@@ -124,6 +134,31 @@ async function runStudent(browser, url) {
     await page.reload();
     ok(await marked(page, 'explain') && await $(page, 'done').isVisible(), 'Finished status persists after reload');
     await fit(page, '390 dark completed Explain'); await shot(page, '390-dark-explain');
+    await step(page, 'explore').tap();
+    await tap('revise-question');
+    const revised = 'How do cancer diagnosis rates compare between Kentucky and New Mexico?';
+    await $(page, 'income-question').fill(revised);
+    await page.reload();
+    await tap('revise-question');
+    ok(await $(page, 'income-question').inputValue() === revised && (await state(page)).casework.question === full,
+      'Reload preserves the pending revision separately from the question used to investigate');
+    await step(page, 'explain').tap();
+    ok(await $(page, 'done').isHidden() && await $(page, 'finish').isDisabled() &&
+      /Save your revised question/.test(await note(page, 'finish-hint')), 'A pending revision is not marked complete');
+    await preview.tap();
+    const reportDialog = page.locator('dialog.osr-dialog');
+    const previewText = await reportDialog.innerText();
+    ok(previewText.includes(full) && previewText.includes(revised) && /Question draft · not submitted/i.test(previewText) &&
+      /In progress/i.test(previewText), 'Preview includes the saved question and clearly separates the revised draft');
+    await reportDialog.getByRole('button', { name: 'Close report' }).tap();
+    const draftReport = await downloadStatus(page, 'In progress');
+    ok(draftReport.includes('QUESTION DRAFT (NOT SUBMITTED)') && draftReport.includes(revised),
+      'The text backup also preserves both question versions');
+    await step(page, 'explore').tap();
+    await tap('revise-question');
+    await tap('restore-question');
+    await step(page, 'explain').tap();
+    ok(await $(page, 'done').isVisible(), 'Keeping the original question restores the investigation that was already completed');
     await $(page, 'limits').fill(limits + ' Other evidence is needed.');
     ok(!await marked(page, 'explain') && await $(page, 'done').isHidden() && !(await state(page)).completed, 'Editing evidence-based writing clears the stale completion');
     await $(page, 'evidence-confirm').check();
@@ -150,6 +185,7 @@ async function downloadStatus(page, expected) {
   const shared=await page.evaluate(()=>window.Lab.identity.get());
   ok(report.includes('Name: '+shared.name+'\n') && report.includes('Class period: '+shared.period+'\n'),
     'Report includes the active shared name and period without a local override');
+  return report;
 }
 async function verifyLegacy(browser, url) {
   const { ctx, page, errors } = await setup(browser);
@@ -180,6 +216,15 @@ async function verifyLegacy(browser, url) {
       await fit(page, width + ' light completed Explain');
       await shot(page, width + '-light-explain');
     }
+    await page.evaluate(({key})=>{
+      const data=JSON.parse(localStorage.getItem(key));
+      data.evidence=[{view:'michigan',measure:'late-rate',a:'26001',b:'26005'}];
+      data.completed=true;
+      localStorage.setItem(key,JSON.stringify(data));
+    },{key:KEY});
+    await page.reload();
+    ok(await $(page, 'finish').isDisabled() && await $(page, 'done').isHidden() &&
+      /Reference only/.test(await note(page, 'evidence-list')), 'An older pin with a missing rate survives as reference, not completion evidence');
     ok(!errors.length, 'No browser errors in legacy save: ' + errors.join('; '));
   } finally { await ctx.close(); }
 }

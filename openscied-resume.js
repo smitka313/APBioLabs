@@ -2,6 +2,7 @@
 (function (root) {
   'use strict';
   const META_KEY = 'aplab:pref:openscied-resume:v1';
+  const saveEpoch = 'aplab:pref:openscied-save-session:v1:';
   const pref = 'aplab:openscied:';
   // Evidence fields only: looking at another section, rearranging a view, or mounting a saved page
   // must not promote an activity above work that was actually changed.
@@ -75,7 +76,13 @@
     }
     return (a>>>0).toString(36)+'.'+(b>>>0).toString(36);
   }
-  function connect(storage, clock=Date.now) {
+  function connect(storage, clock=Date.now, {scope=null}={}) {
+    // Activity lifecycle listeners from a cleared tab must not inspect the next
+    // student's records. The dashboard intentionally reconnects to current work.
+    const keys=scope ? [saveEpoch+'global',saveEpoch+'scope:'+scope] : [];
+    let baseline;
+    try { baseline=keys.map(key=>storage.getItem(key)); } catch (_) {}
+    const current=()=>!!baseline&&keys.every((key,index)=>storage.getItem(key)===baseline[index]);
     function book() {
       try { const value=JSON.parse(storage.getItem(META_KEY)); return record(value) ? value : {}; }
       catch (_) { return {}; }
@@ -84,6 +91,7 @@
       const id=route(path);
       if (!id) return {};
       try {
+        if (!current()) return {};
         const now=clock(), notes=book(), old=notes[id]||{};
         let stamp=0;
         const data=sources[id].map(([key,fields,extraFields])=>{
@@ -101,7 +109,7 @@
           mode==='exit' && old.signature!==undefined ? now : stamp || (old.signature!==undefined ? now : 0) : 0;
         const opened=mode==='open' ? now : safeDate(old.opened,now);
         const next={signature,changed,opened};
-        if (next.signature!==old.signature || next.changed!==old.changed || next.opened!==old.opened) {
+        if (current() && (next.signature!==old.signature || next.changed!==old.changed || next.opened!==old.opened)) {
           notes[id]=next;
           storage.setItem(META_KEY,JSON.stringify(notes));
         }
@@ -114,9 +122,10 @@
   if(typeof module==='object'&&module.exports){module.exports=api;return;}
   root.OpenSciEdResume=api;
   const path=root.location.pathname;
-  if(!route(path))return; // The dashboard calls snapshot for each card directly.
+  const scope=route(path);
+  if(!scope)return; // The dashboard calls snapshot for each card directly.
   let tracker;
-  try { tracker=connect(root.localStorage); } catch (_) { return; }
+  try { tracker=connect(root.localStorage,Date.now,{scope}); } catch (_) { return; }
   const open=()=>tracker.snapshot(path,'open');
   const exit=()=>tracker.snapshot(path,'exit');
   open();

@@ -30,3 +30,10 @@
 #coverage-panel p{font-size:.86rem;margin:.35rem 0}
 #coverage-route{font-weight:700}
 #coverage-card{margin:.45rem 0;padding:.5rem .7rem;border-inline-start:3px solid var(--accent);background:var(--bg);font-size:.86rem}
+
+.journey-question-evidence{min-width:0;margin:.55rem 0;padding:.55rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.87rem;overflow-wrap:anywhere}
+.journey-question-evidence p{margin:0}
+.journey-question-evidence p+p,.journey-question-evidence summary+p{margin-top:.35rem}
+.journey-question-evidence dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:.25rem .55rem;margin:.3rem 0 0}
+.journey-question-evidence dt,.journey-question-evidence summary{font-weight:700}
+.journey-question-evidence dd{min-width:0;margin:0}

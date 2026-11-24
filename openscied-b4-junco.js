@@ -96,18 +96,26 @@
   }
   const points=D.cort.rows.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
   const identified=points.some(p=>p.site==='urban')&&points.some(p=>p.site==='mountain');
+  function cortReading(){
+    const d=D.cort, rows=points.filter(p=>!identified||state.filter==='all'||p.site===state.filter), r=corr(rows);
+    const view=identified?sites[state.filter]||'Both populations':'All plotted birds';
+    const pattern=Number.isFinite(r)&&(r<-.15||r>.15)
+      ? 'In these data, higher maximum CORT generally went with '+(r<0?'lower':'higher')+' exploration scores. That does not tell us whether CORT caused the difference.'
+      : '';
+    const summary=rows.length
+      ? [rows.length+' birds shown'+(Number.isFinite(r)?'; correlation r = '+fmt(r)+'.':'.'),pattern,d.note].filter(Boolean).join(' ')
+      : d.note||'Individual bird records are not available for plotting. See the original study for the published relationship.';
+    return {d,rows,r,view,summary};
+  }
   function cort(){
-    const d=D.cort;
+    const {d,rows,summary}=cortReading();
     $('cort-tools').hidden=!points.length;
     $('filter').disabled=!identified;
     $('filter').closest('label').hidden=!identified;
     $('cort-details').hidden=!points.length;
     $('chart').hidden=!points.length;
-    if(!points.length){
-      $('cort-status').textContent=d.note||'Individual bird records are not available for plotting. See the original study for the published relationship.';
-      return;
-    }
-    const rows=points.filter(p=>!identified||state.filter==='all'||p.site===state.filter);
+    $('cort-status').textContent=summary;
+    if(!points.length)return;
     const yName='Individual exploration score (PC1)', xName=d.xLabel||'CORT';
     const graphSeries=identified?(state.filter==='all'?Object.keys(sites):[state.filter]).map(site=>({name:sites[site],color:seriesColors[Object.keys(sites).indexOf(site)],points:rows.filter(p=>p.site===site),line:false,dots:true,fit:state.fit?'linear':undefined})):[{name:'All plotted birds',points:rows,line:false,dots:true,fit:state.fit?'linear':undefined}];
     const ext=(axis,f)=>Math.max(1,Math.ceil(Math.max(...points.map(p=>p[axis]))*1.06/f)*f);
@@ -120,19 +128,16 @@
       const tr=mk('tr');tr.dataset.site=p.site||'all';
       [identified?(sites[p.site]||'Not identified'):i+1,fmt(p.x),fmt(p.y)].forEach(v=>tr.append(mk('td',v)));return tr;
     }));
-    const r=corr(rows);
-    const pattern=Number.isFinite(r)&&(r<-.15||r>.15)
-      ? 'In these data, higher maximum CORT generally went with '+(r<0?'lower':'higher')+' exploration scores. That does not tell us whether CORT caused the difference.'
-      : '';
-    $('cort-status').textContent=[rows.length+' birds shown'+(Number.isFinite(r)?'; correlation r = '+fmt(r)+'.':'.'),pattern,d.note].filter(Boolean).join(' ');
   }
   function pairLine(d,group,caption){
     const pairs=groupRows(d,group).map(row=>sites[row.site]+' '+fmt(row.mean));
     return caption+': '+pairs.join(' vs. ')+' ('+d.unit+').';
   }
   function evidenceLines(){
-    return [pairLine(D.field,state.fieldGroup,'Field distance · '+fieldLabels[state.fieldGroup].toLowerCase()),
-      pairLine(D.aviary,state.aviaryGroup,'Aviary exploration · '+aviaryLabels[state.aviaryGroup].toLowerCase())];
+    const field=pairLine(D.field,state.fieldGroup,'Field distance · '+fieldLabels[state.fieldGroup].toLowerCase());
+    return state.revealed
+      ? [field,pairLine(D.aviary,state.aviaryGroup,'Aviary exploration · '+aviaryLabels[state.aviaryGroup].toLowerCase())]
+      : [field];
   }
   function evidence(){
     $('evidence').replaceChildren(...evidenceLines().map(s=>mk('p',s)));
@@ -308,7 +313,7 @@
     sections.push(dataSection(D.field,state.fieldGroup,fieldLabels[state.fieldGroup],'Field distance · published evidence'));
     if(state.revealed){
       sections.push(dataSection(D.aviary,state.aviaryGroup,aviaryLabels[state.aviaryGroup],'Shared aviary · published evidence'));
-      const d=D.cort, rows=points.filter(p=>!identified||state.filter==='all'||p.site===state.filter), r=corr(rows);
+      const {d,rows,r}=cortReading();
       const items=[
         {type:'text',text:d.note},
         {type:'text',text:'CORT and exploration can be related without CORT causing the behavior. The shared aviary does not prove that a difference was inherited.'}
@@ -332,13 +337,18 @@
       status:invalid||!session?.check(key)?.ok?'recovery':missing.length?'draft':'final',missing,
       student:{name:$('name').value.trim(),period:$('period').value.trim()},keyResults,sections};
   }
-  function download(){
-    const view=identified?sites[state.filter]||'Both populations':'All plotted birds';
-    const body=['Junco Investigation — Field report','Name: '+$('name').value.trim(),'Class period: '+$('period').value.trim(),'','PUBLISHED STUDY EVIDENCE',...evidenceLines(),
+  function plainTextReport(){
+    const hormone=state.revealed?cortReading():null;
+    const sources=state.revealed?[D.field,D.aviary,D.cort]:[D.field];
+    return ['Junco Investigation — Field report','Name: '+$('name').value.trim(),'Class period: '+$('period').value.trim(),'','PUBLISHED STUDY EVIDENCE',...evidenceLines(),
       '', 'My observation: '+state.observation,'My prediction: '+(choices[state.prediction]||'Not recorded'),'My reasoning: '+state.reason,
-      '', 'Hormone graph: '+view,$('cort-status').textContent,'','My explanation:',state.claim,'','Limits or next question:',state.limits,'',
+      '', ...(hormone?['Hormone graph: '+hormone.view,hormone.summary]:['Aviary and hormone results: Not revealed yet.']),
+      '','My explanation:',state.claim,'','Limits or next question:',state.limits,'',
       ...(window.JuncoFlight?.report(state.sim)??[]),
-      ...[D.field,D.aviary,D.cort].map(d=>d.source+' — '+d.url)].join('\n')+'\n';
+      ...sources.map(d=>d.source+' — '+d.url)].join('\n')+'\n';
+  }
+  function download(){
+    const body=plainTextReport();
     const a=mk('a'),url=URL.createObjectURL(new Blob([body],{type:'text/plain;charset=utf-8'}));
     a.href=url;a.download='junco-field-report.txt';document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),2000);say('Field report downloaded.');

@@ -141,6 +141,14 @@
   function table(headers,rows){const t=el('table'),thead=el('thead'),tr=el('tr');headers.forEach(h=>{const th=el('th',h);th.scope='col';tr.append(th);});thead.append(tr);t.append(thead);const body=el('tbody');rows.forEach(row=>{const tr=el('tr');row.forEach(x=>tr.append(el('td',x)));body.append(tr);});t.append(body);return t;}
   let healthChart=null,occupancyChart=null;
   function renderCharts(){if(state.page!=='evidence')return;if(state.collection==='cards'&&$('#health-chart-disclosure').open){const measure=state.measure==='anthrax'?'anthrax':'fat';$('#health-chart-overlap').hidden=measure!=='anthrax';const opt={simTag:false,responsive:true,height:360,xLabel:'Month number (5 = May, 10 = October)',yLabel:measure==='fat'?'Bone-marrow fat (%)':'Sampled group with anthrax (%)',xMin:5,xMax:10,yMin:0,yMax:100,series:L.GROUPS.map((name,g)=>({name,line:true,dots:true,points:L.CARDS.filter(c=>c.group===g).map(c=>({x:c.month+1,y:c[measure]}))}))};if(healthChart)healthChart.update(opt);else healthChart=Lab.chart('#health-chart',opt);}if(state.collection==='rainfall'){const opt={simTag:false,responsive:true,height:360,xLabel:'Annual regional rainfall (mm)',yLabel:'Time in region (% of year)',xMin:1100,xMax:1350,yMin:0,yMax:60,series:ANNUAL.map(a=>({name:a.region+' · '+a.rain+' mm / '+a.occupancy+'%',dots:true,line:false,points:[{x:a.rain,y:a.occupancy}]}))};if(occupancyChart)occupancyChart.update(opt);else occupancyChart=Lab.chart('#occupancy-chart',opt);}}
+  function unsavedMonthDrafts(){
+    const saved=new Map(state.notes.filter(n=>n.type==='map-observation').map(n=>[n.month,n.observation?.trim()||'']));
+    return L.MONTHS.flatMap((month,i)=>{
+      const text=state.observations?.[i];
+      const value=typeof text==='string'?text.trim():'';
+      return value&&value!==saved.get(i)?[{type:'answer',prompt:month+(saved.get(i)?' · draft revision':' · draft observation'),value}]:[];
+    });
+  }
   function submissionData(){
     const months=L.monthsWithNotes(state.notes);
     const written=RESPONSES.filter(([id])=>typeof state.answers[id]==='string'&&state.answers[id].trim()).length;
@@ -153,6 +161,9 @@
     const notebook=state.notes.map(n=>({type:'answer',prompt:n.title,value:displayNoteText(n)}));
     const chapters=[{title:'Evidence notebook',items:notebook.length?notebook:[{type:'text',text:'No notebook entries yet.'}]},
       {title:'My investigation responses',items:RESPONSES.map(([id,prompt])=>({type:'answer',prompt,value:state.answers[id]||''}))}];
+    const drafts=unsavedMonthDrafts();
+    if(drafts.length)chapters.push({title:'Month drafts · not in the notebook',items:[
+      {type:'text',text:'These drafts are included so you can keep your work. They do not count as saved month notes.'},...drafts]});
     if(state.notes.some(n=>n.id==='rainfall-example'))chapters.push({title:'Rainfall and occupancy evidence',items:[
       {type:'table',title:'One classroom example year',columns:['Region','Annual rainfall (mm)','Time in region (%)'],rows:ANNUAL.map(a=>[a.region,a.rain,a.occupancy])},
       {type:'text',text:ANNUAL_SOURCE+' · '+ANNUAL_URL}]});
@@ -166,6 +177,11 @@
     let result='MIGRATION MAP EXPLORER\nOpenSciEd B.1 Lessons 3–4 companion\nCreated by Robert Smitka\n\nName: '+(student.name||'')+'\nClass period: '+(student.period||'')+'\n\nSOURCE DATA AND ILLUSTRATIONS\nField cards and rainfall examples are source evidence, not simulated data. Map, weather, grass and animal animations are illustrative, not observations or population counts.\n\nMY NOTEBOOK\n';
     if(!state.notes.length)result+='\n[No notebook entries saved.]\n';
     state.notes.forEach((n,i)=>result+='\n'+(i+1)+'. '+n.title+'\n'+displayNoteText(n)+'\n');
+    const drafts=unsavedMonthDrafts();
+    if(drafts.length){
+      result+='\nMONTH DRAFTS (NOT IN THE NOTEBOOK)\nThese drafts do not count as saved month notes.\n';
+      drafts.forEach(d=>result+='\n'+d.prompt+'\n'+d.value+'\n');
+    }
     if(kind!=='notebook'){
       result+='\nMY RESPONSES\n';
       RESPONSES.forEach(([id,q])=>result+='\n'+q+'\n'+(state.answers[id]||'[No response yet]')+'\n');

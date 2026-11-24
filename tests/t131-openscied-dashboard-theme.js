@@ -81,6 +81,12 @@ async function checkMixedVersionWorkspace(browser,site) {
     assert.ok(heights.heroOffset<=2,'hero copy and workspace begin on the same line');
     assert.ok(Math.abs(heights.after-heights.before)<=2,'duplicate reservation must not push down the activities');
     if(screenshots)await p.screenshot({path:path.join(screenshots,'1195-returning-workspace.png'),fullPage:true,animations:'disabled'});
+    await p.setViewportSize({width:390,height:844});
+    const active=p.locator('.dashboard-activity').filter({ has:p.locator('#hawksbeard-open') });
+    assert.equal(await active.locator('progress.dashboard-activity-progress').isVisible(),true,'saved milestones remain visible on phones');
+    assert.equal(await active.locator('#hawksbeard-reset').isVisible(),true,'students can still restart saved activities on phones');
+    assert.equal(await active.evaluate(card=>card.querySelector('.dashboard-open').nextElementSibling===card.querySelector('.dashboard-card-restart')),true,'the primary activity link precedes Restart in keyboard order');
+    if(screenshots)await p.screenshot({path:path.join(screenshots,'390-returning-workspace.png'),fullPage:true,animations:'disabled'});
     console.log('1195px returning workspace: stale placeholder collapses and both sides are top aligned');
   } finally { await ctx.close(); }
 }
@@ -143,6 +149,12 @@ async function checkMixedVersionWorkspace(browser,site) {
         assert.match(await coming.getByRole('link').getAttribute('href'),/^https:\/\/openscied\.org\/instructional-materials\/b-5-common-ancestry-speciation\/$/);
         assert.equal(await p.locator('#hawksbeard-open').getAttribute('href'),'openscied-b4-hawksbeard.html');
         assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<= innerWidth + 1),true,'no page overflow');
+        if (width <= 580) {
+          const cards = p.locator('.dashboard-activity');
+          assert.equal(await cards.locator('.dashboard-card-restart:visible').count(),0,'blank phone cards do not show inactive Restart');
+          assert.equal(await cards.locator('.dashboard-activity-metric:visible, .dashboard-activity-progress:visible').count(),0,'blank phone cards do not show empty measures');
+          assert.equal(await cards.locator('.dashboard-open:visible').count(),15,'each blank phone card still has its Open activity action');
+        }
         const saveImage=async label=>{if(screenshots) await p.screenshot({path:path.join(screenshots,width+'-'+label+'.png'),animations:'disabled'});};
         await saveImage('masthead');
         await p.getByRole('link',{name:'Browse activities'}).press('Enter');

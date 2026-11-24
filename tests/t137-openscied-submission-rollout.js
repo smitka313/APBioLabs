@@ -29,7 +29,7 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
         const launch = page.getByRole('button', {name:'Preview report', exact:true});
         await launch.waitFor({state:'visible'});
         assert.equal(await launch.count(),1,slug + ' uses one launcher instead of duplicating actions');
-        assert.equal(await page.getByRole('button',{name:'Download .docx',exact:true}).count(),0,slug + ' does not expose Word as a competing main-page choice');
+        assert.equal(await page.getByRole('button',{name:'Download Word (.docx)',exact:true}).count(),0,slug + ' does not expose Word as a competing main-page choice');
         assert.equal(await page.getByRole('button',{name:'Classroom report options',exact:true}).count(),0,slug + ' has no duplicate navigation to the report');
         if (slug === 'b2-peat-bog-lab') {
           await page.locator('.step-nav a[href="#trials"]').click();
@@ -59,9 +59,9 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
         assert.match(reportText, /Evidence source:/, slug + ' reports provenance');
         assert.match(reportText, /Class period/, slug + ' includes a student identity field');
         assert.equal(await dialog.getByRole('button', {name:'Print or save as PDF'}).count(), 1);
-        assert.equal(await dialog.getByRole('button', {name:'Download .docx', exact:true}).count(), 0);
+        assert.equal(await dialog.getByRole('button', {name:'Download Word (.docx)', exact:true}).count(), 0);
         await dialog.getByText('More formats', {exact:true}).click();
-        assert.equal(await dialog.getByRole('button', {name:'Download .docx', exact:true}).count(), 1);
+        assert.equal(await dialog.getByRole('button', {name:'Download Word (.docx)', exact:true}).count(), 1);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), slug + ' page fits the viewport');
         await page.keyboard.press('Escape');
         await dialog.waitFor({state:'hidden'});

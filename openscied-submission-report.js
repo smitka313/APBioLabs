@@ -445,7 +445,11 @@
     live.id = titleId + '-page-status'; live.tabIndex = -1;
     open.setAttribute('aria-describedby', live.id);
     const dialog = node('dialog', 'osr-dialog'); dialog.setAttribute('aria-labelledby', titleId);
-    let runningStyle = null;
+    let runningStyle = null, checkPrint = null;
+    function beforePrint() {
+      if (dialog.open) checkPrint?.();
+    }
+    root.addEventListener('beforeprint', beforePrint);
     function clearPrint() {
       runningStyle?.remove();
       runningStyle = null;
@@ -457,11 +461,13 @@
       if (typeof config.announce === 'function') config.announce(text);
       if (focus && status.getClientRects().length) status.focus();
     }
-    const launchWord = async (report, button, status) => {
+    const launchWord = async (report, button, status, stillCurrent) => {
       button.disabled = true;
       message(status, 'Preparing your Word file…');
       try {
-        downloadBlob(await word(report), nameFor(report, config.filename));
+        const file = await word(report);
+        if (!stillCurrent()) return;
+        downloadBlob(file, nameFor(report, config.filename));
         message(status, 'Word report downloaded.');
       } catch (_) {
         message(status, 'Could not download the Word file. You can still print or save as PDF from the preview.', true);
@@ -474,7 +480,7 @@
       live.textContent = '';
       const original = report;
       const tools = node('div', 'osr-tools'), controls = node('div', 'osr-actions');
-      const print = action('Print or save as PDF', true), save = action('Download .docx'), close = action('Close report');
+      const print = action('Print or save as PDF', true), save = action('Download Word (.docx)'), close = action('Close report');
       const status = node('p', 'osr-live');
       status.id = titleId + '-preview-status'; status.tabIndex = -1;
       print.setAttribute('aria-describedby', status.id); save.setAttribute('aria-describedby', status.id);
@@ -482,14 +488,17 @@
       formats.append(node('summary', '', 'More formats'), save);
       controls.append(print, close);
       tools.append(controls, node('p', 'osr-screen-help', 'In the print window, choose “Save as PDF” to download a PDF file.'), formats, status);
-      let preview = article(report, titleId);
+      let preview = article(report, titleId), identityEditor;
       // Keep the captured work and timestamps immutable. Corrections affect only this preview
       // and its exports; they do not change the browser identity or the underlying record.
+      function originalOwnerIsCurrent(now) {
+        return now.status !== 'recovery' && now.student.name === original.student.name &&
+          now.student.period === original.student.period;
+      }
       function canApplyIdentity() {
         try {
           const now = capture();
-          return now.allowIdentityEdit && now.student.name === original.student.name &&
-            now.student.period === original.student.period;
+          return now.allowIdentityEdit && originalOwnerIsCurrent(now);
         } catch (_) { return false; }
       }
       const mustReopen = 'The activity changed since you opened this report. Close it and open a new preview.';
@@ -500,7 +509,7 @@
       }
       dialog.replaceChildren(tools, preview);
       if (report.allowIdentityEdit) {
-        const editor = node('details', 'osr-identity-editor');
+        const editor = identityEditor = node('details', 'osr-identity-editor');
         const summary = node('summary', '', 'Edit name or period');
         const form = node('form', 'osr-identity-fields');
         const name = node('input'), period = node('input');
@@ -538,31 +547,54 @@
       clearPrint();
       syncPrint();
       doc.body.classList.add('openscied-report-print');
-      function canExport() {
-        const edited = report.student.name !== original.student.name || report.student.period !== original.student.period;
-        if (!edited || canApplyIdentity()) return true;
-        message(status, mustReopen, true);
+      const validateNativePrint = () => canExport(false);
+      function canExport(focus) {
+        if (!dialog.open || checkPrint !== validateNativePrint) return false;
+        if (report.status === 'recovery') return true;
+        let now;
+        try { now = capture(); } catch (_) { /* Do not issue a completion seal when the save cannot be checked. */ }
+        if (now && originalOwnerIsCurrent(now)) return true;
+        // Keep only the original captured evidence and original label. Never replace
+        // either with another editor's records or a preview-only name correction.
+        report = { ...original, status: 'recovery', allowIdentityEdit: false,
+          missing: ['The saved record changed after this preview opened. This copy preserves the work that was already shown here.'] };
+        identityEditor?.remove();
+        identityEditor = null;
+        const updated = article(report, titleId);
+        preview.replaceWith(updated);
+        preview = updated;
+        syncPrint();
+        message(status, 'This preview is now marked Recovered work. Review it before exporting again.', focus);
         return false;
       }
+      checkPrint = validateNativePrint;
       print.addEventListener('click', () => {
-        if (!canExport()) return;
+        if (!canExport(true)) return;
         if (!root.print) { message(status, 'Printing is not available. Try downloading the Word file.', true); return; }
         try { root.print(); }
         catch (_) { message(status, 'Could not open the print window. Try downloading the Word file.', true); }
       });
-      save.addEventListener('click', () => { if (canExport()) launchWord(report, save, status); });
+      save.addEventListener('click', () => {
+        if (!canExport(true)) return;
+        const snapshot = report;
+        // Check again after the asynchronous Word packer finishes. Another tab can
+        // switch students while the library loads or the report is being built.
+        launchWord(snapshot, save, status, () => canExport(true) && report === snapshot);
+      });
       close.addEventListener('click', () => dialog.close());
       preview.querySelector('.osr-title').focus();
     }
     open.addEventListener('click', show);
     dialog.addEventListener('close', () => {
+      if (dialog.open) return;
+      checkPrint = null;
       clearPrint();
       if (isShown(open)) open.focus({ preventScroll: true });
     });
     tray.append(open, live);
     const stopPlacing = placeLauncher(config, target, tray, open);
     doc.body.append(dialog);
-    return { open: show, destroy() { stopPlacing(); if (dialog.open) { dialog.close(); clearPrint(); } dialog.remove(); tray.remove(); } };
+    return { open: show, destroy() { stopPlacing(); root.removeEventListener('beforeprint', beforePrint); if (dialog.open) { dialog.close(); clearPrint(); } dialog.remove(); tray.remove(); } };
   }
 
   return Object.freeze({ mount, normalize, word });
