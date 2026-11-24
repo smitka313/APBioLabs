@@ -38,7 +38,7 @@
 <nav class="rp-top" aria-label="Breadcrumb"><a href="openscied-dashboard.html#unit1">← Unit 1 activities</a><a href="openscied-b1-serengeti.html">Serengeti Board Game</a></nav>
 <header class="rp-hero">
   <div><p class="rp-kicker">Unit 1 · Lesson 8 · 15–20 min</p><h1>Serengeti Ripple Effects</h1><p>Why does protecting the migration matter to organisms that never migrate?</p></div>
-  <img src="assets/openscied-ripple-preview.svg" alt="" width="960" height="600" fetchpriority="high">
+
 </header>
 <nav class="rp-steps" aria-label="Activity steps">
   <button type="button" class="btn" data-step="build" aria-current="step">1. Build the web</button>
@@ -49,9 +49,21 @@
 <noscript>JavaScript is needed for the model and to save your work.</noscript>
 <section id="build" class="rp-panel" aria-labelledby="build-title">
   <h2 id="build-title" tabindex="-1">Build the web</h2>
-  <p>Think about one patch during a migration visit. For each link, decide what happens to the second component when the first one increases, with other conditions held the same.</p>
-  <div class="rp-build"><div id="rp-links"></div><aside class="rp-box" aria-labelledby="rp-web-title"><h3 id="rp-web-title">Your web</h3><p>Checked links appear here. The arrow shows the direction of influence, not the direction food moves.</p><ol id="rp-web"></ol></aside></div>
-  <button type="button" class="btn" id="rp-check">Check connections</button> <button type="button" class="btn btn--primary" id="rp-to-compare" disabled>Continue to your prediction</button>
+  <p>Drag one part of the ecosystem onto another to show what it directly affects. Or select the two parts in order.</p>
+  <div id="rp-map" class="rp-map">
+    <svg id="rp-threads" aria-hidden="true"><defs><marker id="rp-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="context-stroke"/></marker></defs></svg>
+    <div id="rp-nodes"></div>
+  </div>
+  <div id="rp-link-editor" class="rp-editor" hidden>
+    <strong id="rp-link-prompt"></strong>
+    <button type="button" class="btn" id="rp-more">↑ Increases</button>
+    <button type="button" class="btn" id="rp-less">↓ Decreases</button>
+    <button type="button" class="btn" id="rp-cancel-link">Cancel</button>
+  </div>
+  <p id="rp-board-note" class="rp-board-note" role="status">Start with the herd: where does the dung on this patch come from?</p>
+  <p class="rp-muted">Solid arrow: increases. Dashed arrow: decreases. Arrows show influence, not where food moves.</p>
+  <ol id="rp-web" class="rp-web" aria-label="Confirmed connections"></ol>
+  <button type="button" class="btn btn--primary" id="rp-to-compare" disabled>Continue to your prediction</button>
 </section>
 <section id="compare" class="rp-panel" aria-labelledby="compare-title" hidden>
   <h2 id="compare-title" tabindex="-1">Predict and compare</h2>
@@ -62,9 +74,20 @@
     <textarea id="rp-reason" maxlength="1600" rows="2" required></textarea>
     <button type="submit" class="btn btn--primary">Save prediction</button>
   </form>
-  <div class="rp-actions">
-    <button type="button" class="btn" id="rp-baseline" disabled>Run usual migration</button>
-    <button type="button" class="btn" id="rp-fewer" disabled>Run fewer visitors</button>
+  <div id="rp-experiment" hidden>
+    <h3>Move half the herd</h3>
+    <p>Drag two wildebeest groups from the study patch to the neighboring patch. Or select a group, then select the neighboring patch. Only the study patch is measured.</p>
+    <div class="rp-pasture" id="rp-pasture">
+      <div class="rp-plot"><strong>Study patch</strong><div class="rp-herds" id="rp-stay"></div></div>
+      <div class="rp-plot"><button type="button" class="btn rp-refuge" id="rp-refuge">Neighboring patch</button><div class="rp-herds" id="rp-away"></div></div>
+    </div>
+    <div id="rp-observe" hidden>
+      <h3>Watch the ripple move across the patch</h3>
+      <div class="rp-timeline"><button type="button" class="btn" id="rp-replay">Replay ripple</button><label for="rp-scrub">Model step <output id="rp-tick" for="rp-scrub"></output></label><input type="range" min="0" value="0" id="rp-scrub"></div>
+      <p class="rp-muted">Each card reads usual visit → fewer visitors. 100 is the starting index, not a count.</p>
+      <p id="rp-what"></p>
+      <div class="rp-scene" id="rp-scene" aria-label="Illustrated study patch"></div>
+    </div>
   </div>
   <div id="rp-results" class="rp-box" hidden></div>
   <button type="button" class="btn btn--primary" id="rp-to-explain" disabled>Explain the ripple</button>
@@ -97,6 +120,7 @@
 <script src="openscied-save-session.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b1-ripple-logic.js"></script>
+<script src="openscied-b1-ripple-icons.js"></script>
 <script src="openscied-b1-ripple.js"></script>
 </body>
 </html>
