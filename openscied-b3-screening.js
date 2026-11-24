@@ -42,11 +42,15 @@
   const toolButtons={};
   function place(zone,key=selected){
     if(!s.started||!key)return;
-    const old=s.plan[key],dest=zone==='rack'?null:zone;
-    if(dest===old){saySafe(M.names[key]+' is already at '+label(dest)+'.');return;}
-    clearTrip();selected='';s.plan[key]=dest;save();drawSetup();
-    saySafe(M.names[key]+' moved to '+label(dest)+'. '+($('setup-note').textContent));
-    toolButtons[key].focus({preventScroll:true});
+    const dest=zone==='rack'?null:zone;
+    const keys=key==='team'?['machine','operator']:[key], name=key==='team'?'Ultrasound team':M.names[key];
+    if(key==='team'&&!dest){saySafe('Put the ultrasound team at the hospital or the mobile clinic.');return;}
+    if(keys.every(k=>s.plan[k]===dest)){saySafe(name+' is already at '+label(dest)+'.');return;}
+    clearTrip();selected='';for(const k of keys)s.plan[k]=dest;
+    save();drawSetup();
+    saySafe(name+' moved to '+label(dest)+'. '+$('setup-note').textContent);
+    if(key==='team'&&dest==='mobile')$('run').focus({preventScroll:false});
+    else toolButtons[key].focus({preventScroll:true});
   }
   function drag(b,key){
     let start,ghost,hot,block=false;
@@ -77,6 +81,10 @@
     b.append(el('strong',M.names[k]),el('small'));$('tools').append(b);toolButtons[k]=b;drag(b,k);
     b.onclick=()=>{clearTrip();selected=selected===k?'':k;drawSetup();if(selected)saySafe('Choose a site for '+M.names[k].toLowerCase()+'.');};
   }
+  const team=$('tool-team');toolButtons.team=team;drag(team,'team');
+  team.onclick=()=>{clearTrip();selected=selected==='team'?'':'team';drawSetup();if(selected)saySafe('Choose the mobile clinic on the map.');};
+  $('move-team').onclick=()=>place('mobile','team');
+  $('summary-link').onclick=()=>$('journey-title').focus();
   for(const b of document.querySelectorAll('[data-zone]'))b.onclick=()=>{
     if(selected)place(b.dataset.zone);
     else if(s.started)saySafe('Pick a piece below the map first.');
@@ -96,12 +104,25 @@
     }
     drawSites(s.plan);
     const invalid=M.validate(s.plan),notChanged=s.started&&same(s.plan,M.baseline),unchanged=s.trial&&same(s.trial,s.plan);
-    $('task').textContent=s.started?'Move at least one piece. Run the same 30 patients through your new setup.':'Start with the regional hospital. Run it once to see where patients get stuck.';
-    const used=M.total(s.plan);$('budget').textContent=used+' / '+M.budget+' cr';
+    const moved=s.plan.machine==='mobile'&&s.plan.operator==='mobile';
+    const stage=!s.started?1:s.trial?3:2;
+    $('stage').textContent='Step '+stage+' of 3';
+    $('action-title').textContent=stage===1?'Watch the hospital plan':stage===2?'Try the mobile clinic':'Compare the two plans';
+    $('action-help').textContent=stage===1?'Follow one patient on the map.':stage===2?(moved?'The team is in place. Test it with the same patients.':'Move the ultrasound team to the mobile clinic.'):'Look at what changed for the same patient, then make your recommendation.';
+    $('task').textContent=stage===1?'Watch one patient try to get follow-up at the hospital.':stage===2?'Move one team. Keep screening at the hospital.':'Compare access and cost before choosing a plan.';
+    $('quick').hidden=stage!==2;$('advanced').hidden=stage!==3;
+    $('cost-details').hidden=stage===1;$('cart').hidden=stage===1;
+    $('summary-link').hidden=stage!==3;
+    team.setAttribute('aria-pressed',String(selected==='team'));
+    team.querySelector('small').textContent=moved?'Mobile clinic':'Hospital';
+    $('move-team').disabled=moved;
+    const used=M.total(s.plan);$('budget').textContent=' · '+used+' / '+M.budget+' cr';
     $('clinic').replaceChildren(...dl(clinicRows({costs:M.costs(s.plan)})).children);
-    $('setup-note').textContent=invalid||(notChanged?'Move a piece to test a different plan.':unchanged?'This plan is already recorded. Change a piece to test another.':'Plan fits the budget.');
+    $('setup-note').textContent=invalid||(notChanged?'Move the team to test a different plan.':unchanged?'This plan is already recorded.':'Plan fits the budget.');
+    $('setup-note').hidden=!invalid;
+    $('run').hidden=stage===3&&!!unchanged;
     $('run').disabled=!!(invalid||notChanged||unchanged);
-    $('run').textContent=s.started?'Run your redesign':'Run hospital plan';
+    $('run').textContent=stage===1?'Run hospital plan':stage===2?'Test mobile clinic':'Run updated plan';
   }
   const get=(plan)=>M.run(s.seed,plan);
   const result=()=>get(view==='trial'&&s.trial?s.trial:M.baseline);
@@ -118,7 +139,7 @@
     }
   }
   const patientBtns=[];
-  for(let i=1;i<=30;i++){const b=el('button');b.type='button';b.onclick=()=>{patient=i;drawPatient();trip(true);};patientBtns.push(b);}
+  for(let i=1;i<=30;i++){const b=el('button');b.type='button';b.onclick=()=>{patient=i;drawPatient();story($('story'),patient);trip(true);};patientBtns.push(b);}
   $('patients').append(...patientBtns);
   const home=[[170,141],[180,512],[820,486]], sites={hub:[750,141],mobile:[470,365]};
   function route(a,b){
@@ -162,18 +183,32 @@
     return [row('Completed screening (out of 30)',r=>r.screened),
       row('Referred for ultrasound',r=>r.referred),row('Completed ultrasound',r=>r.imaged),
       row('Missed ultrasound after referral',r=>r.referred-r.imaged),
-      row('Network’s clinic cost',r=>cost(r.clinic)),row('Patient burden, completed visits only',r=>cost(r.outlay)),
+      row('Network’s clinic cost',r=>cost(r.clinic)),row('Patient costs, including time (completed visits)',r=>cost(r.outlay)),
       ...M.places.map((p,i)=>row(p+': completed ultrasound',r=>r.areas[i].imaged))];
   }
   const cols=['Simulated outcome','Hospital plan','Your redesign'];
   function table(host){
-    const t=el('table');t.className='sd-table';const thead=el('thead'),th=el('tr'),body=el('tbody');
-    for(const c of cols){const cell=el('th',c);cell.scope='col';th.append(cell);}thead.append(th);
-    for(const row of comparisons()){
-      const tr=el('tr'), first=el('th',row[0]);first.scope='row';tr.append(first,...row.slice(1).map(x=>el('td',x)));body.append(tr);
+    function make(rows,caption){
+      const t=el('table');t.className='sd-table';const thead=el('thead'),th=el('tr'),body=el('tbody');
+      for(const c of cols){const cell=el('th',c);cell.scope='col';th.append(cell);}thead.append(th);
+      for(const row of rows){const tr=el('tr'), first=el('th',row[0]);first.scope='row';tr.append(first,...row.slice(1).map(x=>el('td',x)));body.append(tr);}
+      t.append(el('caption',caption),thead,body);return t;
     }
-    t.append(el('caption','Same fictional patients, two plans'),thead,body);
-    host.replaceChildren(t,el('p','Read cost and access together. A plan can show lower total patient burden simply because fewer people completed a visit.'));
+    if(!s.trial){host.replaceChildren();return;}
+    const rows=comparisons(), details=el('details');details.className='sd-deeper';
+    details.append(el('summary','Show more numbers'),make(rows,'All simulated results'),el('p','Lower total patient burden can mean fewer people got care, not that the trip was easier.'));
+    host.replaceChildren(make([rows[2],rows[4],rows[5]],'Same fictional patients, two plans'),details);
+  }
+  function story(host,id){
+    const a=get(M.baseline).patients[id-1];
+    const b=s.trial?get(s.trial).patients[id-1]:null;
+    const line=(name,p)=>{
+      const text=el('p');text.append(el('strong',name+': '+outcomes[p.outcome]+'. '),document.createTextNode(p.reason));
+      if(p.scan)text.append(document.createTextNode(' The follow-up visit would take '+p.scan.time+' h and cost '+cost(p.scan.total)+' in fees, travel and time.'));
+      return text;
+    };
+    host.replaceChildren(el('h4','Patient '+id+' · '+a.place),line('Hospital plan',a));
+    if(b)host.append(line('Redesign',b));
   }
   function render(){
     const explain=s.step==='explain'&&!!s.trial;
@@ -182,16 +217,10 @@
       b.disabled=b.dataset.sdStep==='explain'&&!s.trial;
       if((b.dataset.sdStep==='explain')===explain)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
     }
-    $('journeys').hidden=!s.started;$('to-explain').disabled=!s.trial;
+    $('journeys').hidden=!s.started;$('to-explain').disabled=!s.trial;$('to-explain').hidden=!s.trial;
     $('view').options[1].disabled=!s.trial;$('view').value=view;
-    if(s.started){drawPatient();table($('results'));}
-    if(s.trial){
-      table($('evidence'));
-      const i=s.evidencePatient-1, a=get(M.baseline).patients[i], b=get(s.trial).patients[i];
-      $('case-evidence').replaceChildren(el('h3','Patient '+a.id+' · '+a.place),
-        el('p','Hospital plan: '+outcomes[a.outcome]+'. '+a.reason),
-        el('p','Redesign: '+outcomes[b.outcome]+'. '+b.reason));
-    }
+    if(s.started){drawPatient();story($('story'),patient);table($('results'));}
+    if(s.trial){table($('evidence'));story($('case-evidence'),s.evidencePatient);}
     $('finish').disabled=!(s.trial&&s.claim.trim()&&s.limit.trim())||!!complete();
     $('finished').textContent=complete()?'Investigation complete. Preview your report before submitting it.':'Write both responses to finish.';
     drawSetup();
@@ -203,10 +232,13 @@
   $('run').onclick=()=>{
     if($('run').disabled)return;
     clearTrip();
-    if(!s.started){s.started=true;view='base';}
+    if(!s.started){
+      s.started=true;view='base';
+      const a=get(M.baseline).patients, b=get({...M.baseline,machine:'mobile',operator:'mobile'}).patients;
+      patient=(a.find((p,i)=>p.outcome==='follow-up-missed'&&b[i].outcome==='imaged')||a.find(p=>p.outcome==='follow-up-missed')||a.find(p=>p.outcome!=='screen-missed')||a[0]).id;
+      s.evidencePatient=patient;
+    }
     else{s.trial={...s.plan};view='trial';s.finished=false;}
-    const rows=result().patients;
-    patient=(rows.find(p=>p.outcome===(view==='base'?'follow-up-missed':'imaged'))||rows.find(p=>p.outcome!=='screen-missed')||rows[0]).id;
     save();render();trip(false);saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move a tool to test a redesign.':'Redesign recorded. Compare the same patient in both plans.');
   };
   for(const b of document.querySelectorAll('[data-sd-step]'))b.onclick=()=>nav(b.dataset.sdStep);

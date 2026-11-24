@@ -30,3 +30,8 @@
 @media(prefers-reduced-motion:reduce){.sd-wave{animation:none}}
 .sd-map-event{position:absolute;z-index:5;left:.4rem;right:.4rem;bottom:.3rem;border-radius:7px;background:#102d37f2;color:#fff8e7;padding:.34rem .5rem;font-size:clamp(.73rem,2vw,.95rem);font-weight:740;line-height:1.22;pointer-events:none}
 #sd-probe{width:100%;min-height:35px}#sd-probe-note{font-size:.87rem}
+.sd-stage{font-size:.84rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.sd-command{border-top:4px solid var(--accent)}.sd-command button{min-height:42px}.sd-team-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.65rem}
+.sd-team{min-height:65px;min-width:140px;padding:.38rem .65rem}.sd-team span{color:var(--accent);font-weight:900;font-size:1.2rem}.sd-hint{font-size:.86rem;color:var(--muted)}
+.sd-story{background:var(--surface-2);border-inline-start:3px solid var(--accent);padding:.55rem .72rem;margin:.45rem 0}.sd-story h4,.sd-story p,.sd-patient h4{margin:.25rem 0}
+.sd-deeper{margin:.5rem 0;padding:.35rem .1rem;border-block-start:1px solid var(--line)}.sd-deeper summary,.sd-supply summary{cursor:pointer;font-weight:720}

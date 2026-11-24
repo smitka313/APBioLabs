@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><script src="domain-redirect.js"></script>
+<meta charset="utf-8">
+<script src="domain-redirect.js"></script>
 <!-- seo:start -->
 <title>Cancer Screening Design Lab — OpenSciEd Biology B.3 | Lab Bench</title>
 <meta name="description" content="Place an ultrasound machine and trained staff, then compare patient journeys, clinic costs, and access in a fictional district.">
@@ -33,13 +34,13 @@
 <body>
 <main class="sd-shell">
 <nav class="sd-top" aria-label="Breadcrumb"><a href="openscied-dashboard.html#unit3">← Unit 3 activities</a><a href="openscied-b3-cancer-rates.html">Cancer Rates Data Dive</a></nav>
-<header class="sd-hero"><p>Unit 3 · Engineering extension · 25–30 min</p><h1>Cancer Screening Design Lab</h1><p>Can you get more people from screening to follow-up without overspending?</p></header>
-<p class="sd-notice"><strong>Fictional district.</strong> The cases, costs, and travel rules are made up for this model. Nothing here recommends a test or diagnoses cancer.</p>
+<header class="sd-hero"><p>Unit 3 · Engineering extension · 25–30 min</p><h1>Cancer Screening Design Lab</h1><p>Can moving one ultrasound team help more people get follow-up care?</p></header>
+<p class="sd-notice"><strong>Fictional district.</strong> All patients and prices are made up. An ultrasound image is not a diagnosis.</p>
 <nav class="sd-steps" aria-label="Activity steps"><button class="btn" type="button" data-sd-step="map" aria-current="step">1. Design and test</button><button class="btn" type="button" data-sd-step="explain" disabled>2. Recommend a plan</button></nav>
 <p class="sd-status" id="sd-status" role="status" aria-atomic="true"></p>
 <section id="sd-map-section" aria-labelledby="sd-map-title">
-<h2 id="sd-map-title" tabindex="-1">Set up the clinic network</h2>
-<p id="sd-task">Start with the regional hospital. Run it once to see where patients get stuck.</p>
+<h2 id="sd-map-title" tabindex="-1">Try two clinic plans</h2>
+<p id="sd-task">Watch one patient try to get follow-up at the hospital.</p>
 <div class="sd-grid">
 <div>
 <div id="sd-board" class="sd-board" aria-label="District map">
@@ -52,22 +53,32 @@
  <div id="sd-traveler" class="sd-traveler" aria-hidden="true" hidden></div>
  <div id="sd-map-event" class="sd-map-event" hidden></div>
 </div>
-<div class="sd-supply">
- <h3>Equipment and staff</h3><p>Drag a piece to a site, or select it and then select a site. The sonographer and ultrasound machine must work together.</p>
- <div id="sd-tools"></div><button type="button" class="btn" data-zone="rack">Return selected piece to rack</button>
+<div id="sd-quick" class="sd-supply" hidden>
+ <p><strong>Move the ultrasound team.</strong> The machine and its trained operator go together. Screening stays at the hospital.</p>
+ <div class="sd-team-actions"><button type="button" class="sd-piece sd-team" id="sd-tool-team" aria-pressed="false"><span aria-hidden="true">✚</span><strong>Ultrasound team</strong><small></small></button><button type="button" class="btn" id="sd-move-team">Move team to mobile clinic</button></div>
+ <p class="sd-hint">Drag the team to the mobile clinic, or use the button.</p>
 </div>
+<details id="sd-advanced" class="sd-supply" hidden><summary>Try more changes (optional)</summary>
+ <p>Move screening, staff, equipment, or ride vouchers. Separate pieces must still make a working plan.</p>
+ <div id="sd-tools"></div><button type="button" class="btn" data-zone="rack">Return selected piece to rack</button>
+</details>
 </div>
 <aside class="sd-side">
- <section class="sd-ledger"><h3>Clinic design budget <span id="sd-budget"></span></h3><p>A clinic must pay for equipment and trained staff before it can offer a scan. That is separate from what a patient pays to get there. Values are fictional credits.</p><dl id="sd-clinic"></dl><p id="sd-setup-note" class="sd-note"></p><button type="button" class="btn btn--primary" id="sd-run">Run hospital plan</button></section>
- <details class="sd-ledger"><summary>Look inside the ultrasound cart</summary><div class="sd-scan"><svg viewBox="0 0 280 100" role="img" aria-label="A probe sends sound waves into tissue and returning echoes form an image"><path d="M0 45H280v55H0z" fill="#d99278"/><path d="M0 65q75-12 150 0t130 0v35H0z" fill="#b77276"/><ellipse cx="145" cy="82" rx="24" ry="9" fill="#85536b"/><g id="sd-probe-graphic"><path d="M120 6h44v25l-8 11h-27l-9-11z" fill="#e0e6e9" stroke="#253f4c" stroke-width="3"/><path class="sd-wave" d="M123 51q20 10 39 0m-44 10q25 15 49 0m-55 10q31 18 61 0" fill="none" stroke="#fff1a8" stroke-width="3"/></g></svg></div><label for="sd-probe">Slide the practice probe</label><input id="sd-probe" type="range" min="-90" max="90" value="-80"><p id="sd-probe-note"></p><p>The probe sends sound waves into the body. Echoes returning from tissues form a picture. In this model, ultrasound is used only for selected follow-up cases. An image alone does not tell you whether someone has cancer.</p></details>
+ <section class="sd-ledger sd-command"><p class="sd-stage" id="sd-stage">Step 1 of 3</p><h3 id="sd-action-title">Watch the hospital plan</h3><p id="sd-action-help">Follow one patient on the map.</p><button type="button" class="btn btn--primary" id="sd-run">Run hospital plan</button><p id="sd-setup-note" class="sd-note" hidden></p><button type="button" class="btn" id="sd-summary-link" hidden>See what changed ↓</button></section>
+ <details class="sd-ledger" id="sd-cost-details" hidden><summary>What the clinic pays <span id="sd-budget"></span></summary><p>The clinic pays for the machine, upkeep, and trained staff. Patients separately face test fees, travel, and time.</p><dl id="sd-clinic"></dl></details>
+ <details class="sd-ledger" id="sd-cart" hidden><summary>Look inside the ultrasound cart</summary><div class="sd-scan"><svg viewBox="0 0 280 100" role="img" aria-label="A probe sends sound waves into tissue and returning echoes form an image"><path d="M0 45H280v55H0z" fill="#d99278"/><path d="M0 65q75-12 150 0t130 0v35H0z" fill="#b77276"/><ellipse cx="145" cy="82" rx="24" ry="9" fill="#85536b"/><g id="sd-probe-graphic"><path d="M120 6h44v25l-8 11h-27l-9-11z" fill="#e0e6e9" stroke="#253f4c" stroke-width="3"/><path class="sd-wave" d="M123 51q20 10 39 0m-44 10q25 15 49 0m-55 10q31 18 61 0" fill="none" stroke="#fff1a8" stroke-width="3"/></g></svg></div><label for="sd-probe">Slide the practice probe</label><input id="sd-probe" type="range" min="-90" max="90" value="-80"><p id="sd-probe-note"></p><p>The probe sends sound waves into the body. Echoes returning from tissues form a picture. In this model, ultrasound is used only for selected follow-up cases. An image alone does not tell you whether someone has cancer.</p></details>
 </aside>
 </div>
 <section class="sd-panel" id="sd-journeys" hidden aria-labelledby="sd-journey-title">
-<h3 id="sd-journey-title">Follow a patient</h3>
-<div class="sd-switch"><label>View plan <select id="sd-view"><option value="base">Hospital plan</option><option value="trial">Your redesign</option></select></label><button type="button" class="btn" id="sd-replay">Replay this journey on the map</button></div>
-<div id="sd-patients" class="sd-patients" aria-label="Simulated patient cases"></div>
-<div id="sd-patient" class="sd-patient"></div>
+<h3 id="sd-journey-title" tabindex="-1">What changed for the patient?</h3>
+<div id="sd-story" class="sd-story"></div>
+<button type="button" class="btn" id="sd-replay">Replay the selected plan on the map</button>
 <div id="sd-results"></div>
+<details id="sd-other-cases" class="sd-deeper"><summary>Explore all 30 patients (optional)</summary>
+ <div class="sd-switch"><label>View plan <select id="sd-view"><option value="base">Hospital plan</option><option value="trial">Your redesign</option></select></label></div>
+ <div id="sd-patients" class="sd-patients" aria-label="Simulated patient cases"></div>
+ <div id="sd-patient" class="sd-patient"></div>
+</details>
 <button type="button" class="btn btn--primary" id="sd-to-explain" disabled>Recommend a plan</button>
 </section>
 </section>
