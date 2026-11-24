@@ -276,6 +276,10 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           const records=page.locator('#sg-history-select');
           T.ok(await records.locator('option').count()>12 && await evidence.locator('.sg-rows li').count()===1,
             'full-year Evidence shows one detailed record while keeping all records selectable');
+          const labels=await records.locator('option').allTextContents();
+          T.ok(labels.every((label,index)=>label.startsWith('Record '+(index+1)+' · ')) &&
+            new Set(labels).size===labels.length,
+            'record labels are unique even when the season and event outcome repeat');
           const newest=await page.locator('#sg-history-detail').innerText();
           await records.selectOption('0');
           T.ok(await page.locator('#sg-history-detail').innerText()!==newest && /Winter/.test(await page.locator('#sg-history-detail').innerText()),

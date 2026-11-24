@@ -71,10 +71,10 @@
     <div class="step-body split">
       <div class="split-main prose">
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
-        <div class="callout callout--safety" id="safety-note"><div class="callout-title">Safety first: a virtual demonstration, not a real fire</div><p>This page replaces nothing. Real burning is a demonstration your teacher does, with goggles, fresh air and everyone 15 feet back, following the OpenSciEd safety steps. The glass dome gets hot, so a real lab uses tongs and heat-safe surfaces. Never burn materials at home.</p></div>
+        <div class="callout callout--safety" id="safety-note"><div class="callout-title">Safety first: a virtual demonstration, not a real fire</div><p>This simulation replaces nothing. Your teacher follows OpenSciEd safety steps: goggles, fresh air and everyone 15 feet back. The glass dome gets hot, so the teacher uses tongs and heat-safe surfaces. Never burn materials at home.</p></div>
         <div class="part-card"><span class="part-tag">Sections 2–3 · Look and predict</span><p><strong>Five fuels.</strong> Which light fast? Which give the most energy?</p></div>
-        <div class="part-card"><span class="part-tag">Section 4 · Burn demonstration</span><p><strong>Burn each fuel.</strong> Observe the BTB, temperature and mass. The second weighing saves the sample.</p></div>
-        <div class="part-card"><span class="part-tag">Sections 5–8 · Make sense</span><p><strong>Where did the matter and energy go?</strong> Then explain why peat burns so much.</p></div>
+        <div class="part-card"><span class="part-tag">Section 4 · Burn demonstration</span><p><strong>Burn each fuel.</strong> Track dye color, temperature and mass.</p></div>
+        <div class="part-card"><span class="part-tag">Sections 5–8 · Make sense</span><p><strong>Explain where matter and energy went.</strong></p></div>
         <details class="disclose teacher-note"><summary>For teachers</summary><div class="inner"><ul>
           <li>This follows Lesson 2 of OpenSciEd Unit B.2. Use it alongside your own demonstration, or when the real one cannot be run.</li>
           <li>Every number is simulated from the student’s Dataset ID, so each student gets their own data. Each burn has a “skip ahead” button.</li>
@@ -82,7 +82,7 @@
         </ul></div></details>
       </div>
       <aside class="split-side">
-        <div class="callout callout--tip"><div class="callout-title">How it works</div><p>Tap and pick to answer. Feedback is instant. All burn data are simulated.</p></div>
+        <div class="callout callout--tip"><div class="callout-title">How it works</div><p><strong>Bromothymol blue (BTB)</strong> is a dye. It turns from blue toward yellow as carbon dioxide dissolves.</p></div>
       </aside>
     </div>
   </section>
@@ -116,9 +116,8 @@
       <div class="panel background" id="fuels-background">
         <h3>Background</h3>
         <ul class="bg-list">
-          <li><strong>BTB</strong> is a blue liquid. It turns green, then yellow, as carbon dioxide dissolves in it.</li>
-          <li><strong>The setup:</strong> the fuel burns on a heat-safe tray under a glass dome, an upside-down glass bowl. A dish of BTB sits inside the dome beside it. You weigh the fuel on a balance and read its temperature with a laser thermometer before the burn, then weigh the ash and read again after it.</li>
-          <li>The handfuls are not equal (4 g to 30 g), as in the class demonstration. So compare the grams each one <em>lost</em>.</li>
+            <li>Fuel burns on a heat-safe tray under a glass dome. A dish of BTB sits inside the dome. Before and after burning, use a balance for mass and a laser thermometer for simulated temperature.</li>
+          <li>The handfuls are not equal (4 g to 30 g). Compare grams lost.</li>
         </ul>
       </div>
       <div class="fuel-grid">
@@ -142,7 +141,8 @@
     <header><div class="eyebrow">4 · Burn demonstration</div><h2>Burn each fuel</h2></header>
     <div class="step-body">
       <p class="sim-tag"><strong>SIMULATED.</strong> A model, not a real fire. Your teacher does the real burning.</p>
-      <p class="small muted">Weigh and read the temperature, burn, then weigh and read the temperature again. Watch the dome and the dish of BTB. The <strong>second weighing saves the sample automatically</strong>. Add observations if you like. Try all five.</p>
+      <p class="small muted">Weigh and read the temperature, burn, then repeat both readings. Watch the bromothymol blue (BTB) dye. The <strong>second weighing saves the sample automatically</strong>. Try all five fuels.</p>
+      <p class="small"><strong>Different starting masses:</strong> Compare temperature changes for these handfuls, not heat per gram. An infrared thermometer cannot reliably measure through the glass dome; that reading is simulated.</p>
       <div class="scene-host" id="burn-scene" data-scene="burn">
         <canvas role="img" aria-label="A simulated burn demonstration: a half-sphere glass bowl, upside down (the dome), over a tray of fuel with a dish of BTB inside it, a laser thermometer, and a balance." width="960" height="340"></canvas>
         <p class="scene-desc" id="burn-desc">Text description: a simulated burn demonstration. A half-sphere glass bowl, upside down (the dome), stands over a tray with a dish of BTB inside it. Weigh the handful and read the temperature, burn it, then weigh and read the temperature again.</p>
@@ -151,7 +151,7 @@
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
         <li>The handfuls are not equal, because the Teacher Edition notes the fuels are not uniform and the demonstration did not stress equal masses. Starting masses: about 4 g (grass), 4 g (leaves), 10 g (wood chips), 10 g (charcoal) and 30 g (peat). They catch fire after about 4, 6, 14, 28 and 45 s, and burn for about 20, 30, 90, 150 and 260 s. Peat catches slowly, then smolders with smoke and a glowing ember.</li>
         <li>Mass lost: about 93% (grass), 90% (leaves), 97% (wood), 88% (charcoal), 78% (peat, which keeps more ash). So peat loses the most grams, about 23 g. The mass that disappears leaves as gases, mostly carbon dioxide and water vapor. The balance reads to 0.1 g, with a little error.</li>
-        <li>Heat per gram burned is about 15, 16, 18, 29 and 20 kJ. The laser thermometer is used only at the two weighings, not while it burns, and it is aimed at the fuel: at the sample before the burn (the beam passes through the dome glass) and at the ash after it, once the dome is lifted. The rise is the difference between the two readings, grams burned × heat per gram × 0.35 ÷ 8, about 2 to 22 °C. It is the temperature of the fuel and its surroundings, what the fuel’s heat does: most for peat (about 20 °C), then charcoal, wood, and a little for grass and leaves. It reads to 1 °C, with a little error. Charcoal gives the most heat per gram. This is a simplification: the laser reads the fuel (or its ash) at each weighing, and real readings depend on where and when you aim.</li>
+        <li>Heat per gram burned is about 15, 16, 18, 29 and 20 kJ. The laser thermometer is used only at the two weighings, not while it burns, and the illustration aims the laser at the fuel before the burn and at the ash after the dome is lifted. The visible laser is an aiming guide. The model supplies a simulated fuel temperature; a real infrared thermometer cannot reliably measure through the glass dome. The rise is the difference between the two readings, grams burned × heat per gram × 0.35 ÷ 8, about 2 to 22 °C. It is a modeled surface temperature change, not a direct measure of heat energy: most for peat (about 20 °C), then charcoal, wood, and a little for grass and leaves. It reads to 1 °C, with a little error. Charcoal gives the most heat per gram. Real infrared readings depend on the surface, the distance and what lies between the instrument and the surface.</li>
         <li>Carbon dioxide made is the grams lost times the carbon in the fuel (charcoal has the most per gram). It collects under the dome, and a fixed share dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says the system was not totally closed). So the BTB shows a color change, not an exact amount: more mass lost and more carbon mean a bigger change, from blue toward green or yellow.</li>
         <li>Hydrogen in the fuel joins oxygen and leaves as water vapor, which condenses as droplets on the inside of the dome glass: most for peat, least for charcoal.</li>
         <li>Your samples differ by about 8% in mass lost and heat, and about 15% in time to catch (shown to the nearest second, so a fuel that catches after about 4 s can show 5 s), like real samples. One simulated second is one sixth of a real second. Real results also depend on moisture, sample shape, air flow and the dome.</li>
@@ -163,7 +163,7 @@
   <section class="step wrap wrap--wide gutter" id="sense" data-step="Make sense">
     <header><div class="eyebrow">5 · Make sense</div><h2>Where did the matter and energy go?</h2></header>
     <div class="step-body">
-      <p class="small muted">Use your burn table as you answer. The last three questions check your own recorded data; the earlier ones ask you to interpret what you saw.</p>
+      <p class="small muted">The last three questions check your own recorded data; the earlier ones ask you to interpret what you saw.</p>
       <div class="pick-row"><label for="sense-btb">When the BTB in the dish turned from blue toward yellow, the air under the dome had more…</label>
         <select id="sense-btb"><option value="">Choose</option><option value="co2">carbon dioxide</option><option value="o2">oxygen</option><option value="water">water</option></select>
         <p class="feedback" id="feedback-sense-btb"></p></div>
@@ -185,6 +185,11 @@
       <div class="pick-row"><label for="sense-slowest">Peat took the longest to catch fire because…</label>
         <select id="sense-slowest"><option value="">Choose</option><option value="dense">it is dense and holds water, so it heats up slowly</option><option value="carbon">it has no carbon</option><option value="light">it is lighter than grass</option></select>
         <p class="feedback" id="feedback-sense-slowest"></p></div>
+      <div class="panel" id="sense-burn-data" role="region" aria-labelledby="sense-burn-data-title">
+        <h3 id="sense-burn-data-title">Your recorded burns</h3>
+        <p class="small muted">Each row averages your samples of one fuel. A higher final BTB number means more yellow.</p>
+        <div id="sense-burn-data-body"><p class="small muted">Weigh a fuel after burning to see its results here. Record at least two fuel types to compare.</p></div>
+      </div>
       <div class="pick-row"><label for="sense-lostmost">In my data, the fuel that lost the most mass was…</label>
         <select id="sense-lostmost"><option value="">Choose</option><option value="grass">Dried grass</option><option value="leaves">Dried leaves</option><option value="wood">Wood chips</option><option value="charcoal">Charcoal</option><option value="peat">Peat</option></select>
         <p class="feedback" id="feedback-sense-lostmost"></p></div>
@@ -208,7 +213,7 @@
           <li><strong>Energy</strong> is not made of atoms. It is transferred.</li>
         </ul>
       </div>
-      <p class="small">Choose one category per item. Pick <strong>Both</strong> if the item is matter and the description also highlights energy it stores or releases. Feedback appears next to each choice.</p>
+      <p class="small">Choose <strong>Both</strong> if the item is matter and stores or releases energy.</p>
       <p class="small muted" id="sort-progress"></p>
       <div class="me-grid">
         <fieldset class="mcq mini me-item" data-correct="both" data-id="me-peat"><legend>Peat (the fuel)</legend><div class="me-opts"><label class="choice"><input type="radio" name="me-peat" value="matter" data-why="Try again. Why not: peat is matter, but it also stores chemical energy."> Matter</label><label class="choice"><input type="radio" name="me-peat" value="energy" data-why="Try again. Why not: peat is made of atoms, so it is matter too."> Energy</label><label class="choice"><input type="radio" name="me-peat" value="both" data-why="Yes. Peat is matter (carbon and other atoms) and it stores chemical energy."> Both</label></div></fieldset>
@@ -270,7 +275,7 @@
       <p class="small">Also in Unit B.2: <a href="openscied-b2-fires.html">Fires: Peat, Decomposition and Earth’s Tilt</a> (Lessons 3 and 5) · <a href="openscied-b2-peat-bog-lab.html">Peat Bog Carbon Lab</a>.</p>
       <div id="investigation-report" class="investigation-report" aria-label="Your summary"></div>
       <div class="submit-card">
-        <p>Choose <strong>Preview report</strong> to review your work, save a PDF, or download a Word file for your teacher. Your work stays in this browser unless you download and share it.</p>
+        <p><strong>Preview report</strong> to save a PDF or Word file. Work stays in this browser unless you download and share it.</p>
         <div data-ose-report-final></div>
         <details class="disclose" id="legacy-report-tools">
           <summary>Other downloads and backups</summary>

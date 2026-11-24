@@ -184,7 +184,7 @@
     return [table('Simulated BTB tubes after the night', head, rows),
       el('p', 'small muted', 'SIMULATED. The tubes started blue (2.0). Under 2 means less carbon dioxide, over 2 means more. Not measurements from a real lab.')];
   }
-  const BOXES = [['#data-decomp-body', function () { return decompNodes(false); }], ['#data-tilt-body', tiltNodes]];
+  const BOXES = [['#data-decomp-body', function () { return decompNodes(false); }], ['#data-sense-foam-body', function () { return decompNodes(false); }], ['#data-tilt-body', tiltNodes]];
   function renderData() {
     BOXES.forEach(function (b) {
       const box = $(b[0]); if (!box) return;

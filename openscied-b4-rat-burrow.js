@@ -238,7 +238,8 @@
       const nest=nests.querySelector('[data-rg-burrow-target="'+slot+'"]');
       const landing=nest?.querySelector('[data-rg-burrow-nest-rat]')??nest;
       flyingSprite(rat,origin,landing?.getBoundingClientRect());
-      say('Rat placed in Parent '+(slot+1)+' nest.');
+      say(filled().every(Boolean)?'Both parents are in their nests. Match their allele letters in the Punnett square.':
+        'Parent '+(slot+1)+' is in its nest. Place the other parent next.');
       if(focus){
         const next=colony.querySelector('[data-rg-burrow-source]');
         if(next)next.focus({preventScroll:true});

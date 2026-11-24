@@ -258,3 +258,8 @@ body:has(.cr-case-modal[open]){overflow:hidden}
 /* Explain non-interactive steps in place, without making the tab itself look active. */
 .cr-shell #cr-step-hint{margin-block:.05rem .58rem;font-size:.86rem}
 .cr-shell #cr-limits-help,.cr-shell #cr-finish-hint{font-size:.84rem;margin-block:.16rem .34rem}
+
+.cr-evidence-confirm{display:flex;align-items:flex-start;gap:.55rem;min-height:24px;margin-top:.6rem}
+.cr-evidence-confirm[hidden]{display:none}
+.cr-evidence-confirm input{flex:none;margin:.16rem 0 0}
+#cr-view-help{margin:.32rem 0}

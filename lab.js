@@ -45,12 +45,25 @@
   var storageBad = false;
   /* Set while the page is being wiped (sign out, start over): nothing may write back before the reload. */
   var wiped = false;
+  const HANDOFF_KEY = 'aplab:pref:workspace-handoff:v1';
+  // Keep this key compatible with OpenSciEdSaveSession even on pages without it.
+  const OPENSCIED_EPOCH_KEY = 'aplab:pref:openscied-save-session:v1:global';
+  const OPENSCIED_RESUME_KEY = 'aplab:pref:openscied-resume:v1';
+  let handoffEpoch = null;
+  try { handoffEpoch = localStorage.getItem(HANDOFF_KEY); } catch (_) { /* Storage may be disabled. */ }
+  function staleEditor() {
+    try { return localStorage.getItem(HANDOFF_KEY) !== handoffEpoch; } catch (_) { return false; }
+  }
+  const staleEditorMessage = 'This device was cleared in another tab. Reload this page before saving or signing in.';
+  window.addEventListener('storage', e => {
+    if (e.key === HANDOFF_KEY && staleEditor() && IS_LAB) Lab.toast(staleEditorMessage, {type:'error', key:'handoff'});
+  });
   function storageFailed() { if (storageBad) return; storageBad = true; setTimeout(function () { if (Lab._storageWarn) Lab._storageWarn(); }, 0); }
 
   /* Site-wide storage (not namespaced to one lab): identity, dataset numbers, progress summaries. */
   const gstore = {
     get(key, fallback = null) { try { const v = localStorage.getItem('aplab:' + key); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; } },
-    set(key, val) { if (wiped) return true; try { localStorage.setItem('aplab:' + key, JSON.stringify(val)); return true; } catch (e) { storageFailed(); return false; } },
+    set(key, val) { if (wiped) return true; if (staleEditor()) return false; try { localStorage.setItem('aplab:' + key, JSON.stringify(val)); return true; } catch (e) { storageFailed(); return false; } },
   };
   Lab.globalStore = gstore;
 
@@ -73,17 +86,22 @@
   const nativeRandom = Math.random.bind(Math);
   const normName = s => String(s == null ? '' : s).normalize('NFKC').trim().replace(/\s+/g, ' ');
   const PERIODS = ['1', '2', '3', '4', '5', '6', '7', '8', 'Other'];
-  let memIdentity = null; // used only when localStorage is blocked
+  let memIdentity = null, lastStoredIdentity = null, lastEffectiveIdentity = null; // in-memory only
   function storedIdentity() {
-    if (memIdentity) return memIdentity;
+    if (staleEditor()) return lastStoredIdentity;
+    if (memIdentity) return lastStoredIdentity = memIdentity;
     const v = gstore.get('student');
-    return v && normName(v.name) ? { name: normName(v.name), period: String(v.period || '') } : null;
+    return lastStoredIdentity = v && normName(v.name) ? { name: normName(v.name), period: String(v.period || '') } : null;
   }
   function legacyName() { // the old per-lab "Your name" field
     try { const v = localStorage.getItem(`aplab:${PAGE.id}:field:student-name`); return v ? normName(JSON.parse(v)) : ''; } catch (e) { return ''; }
   }
   /* Identity used for seeding and reports: the site-wide one, else the old per-lab name. */
-  function effectiveIdentity() { const s = storedIdentity(); if (s) return s; const l = IS_LAB ? legacyName() : ''; return l ? { name: l, period: '', legacy: true } : null; }
+  function effectiveIdentity() {
+    if (staleEditor()) return lastEffectiveIdentity;
+    const s = storedIdentity(), l = !s && IS_LAB ? legacyName() : '';
+    return lastEffectiveIdentity = s || (l ? { name: l, period: '', legacy: true } : null);
+  }
   const studentKey = idn => normName(idn.name).toLowerCase() + '|' + (idn.period || '');
   const dsKey = idn => `dataset:${PAGE.id}:${studentKey(idn)}`;
   const datasetNo = idn => (idn && +gstore.get(dsKey(idn))) || 1;
@@ -119,7 +137,7 @@
      "Yes — I fixed my name"); page loads and plain edits never claim it. A record made while nobody was signed in (it has a
      created time) still adopts the first student who signs in. Nothing is ever deleted here. */
   let DS_REC = null;
-  function writeDsRec() { if (!IS_LAB || !DS_REC || wiped) return; try { localStorage.setItem(DS_STORE, JSON.stringify(DS_REC)); } catch (e) { /* blocked: kept in memory */ } }
+  function writeDsRec() { if (!IS_LAB || !DS_REC || wiped || staleEditor()) return; try { localStorage.setItem(DS_STORE, JSON.stringify(DS_REC)); } catch (e) { /* blocked: kept in memory */ } }
   const ownerOf = idn => ({ name: normName(idn.name), period: String(idn.period || '') });
   const SEED = (function () {
     const idn = effectiveIdentity();
@@ -250,7 +268,7 @@
       try { const v = localStorage.getItem(`aplab:${LAB_ID}:${key}`); return v == null ? fallback : JSON.parse(v); } catch (e) { return fallback; }
     },
     set(key, val) {
-      if (wiped) return;
+      if (wiped || staleEditor()) return;
       try {
         const k = `aplab:${LAB_ID}:${key}`, json = JSON.stringify(val), prev = PAGE.kind === 'lab' ? localStorage.getItem(k) : null;
         localStorage.setItem(k, json);
@@ -261,6 +279,7 @@
       } catch (e) { storageFailed(); saveNote(false); }
     },
     clearLab() {
+      if (wiped || staleEditor()) return;
       try { Object.keys(localStorage).filter(k => k.startsWith(`aplab:${LAB_ID}:`)).forEach(k => localStorage.removeItem(k)); } catch (e) {}
     }
   };
@@ -1010,7 +1029,7 @@
   /* ---------------- Identity UI ----------------
      Lab.identity.get() → {name, period} | null   (site-wide; the old per-lab name is a fallback)
      Lab.identity.set({name, period})               save it (no reload)
-     Lab.identity.mount(el)                         sign-in panel, or "Signed in as … · change" line
+     Lab.identity.mount(el, {sharedDevice})         show correction and safe switch actions separately when requested
      Lab.identity.newDataset()                      next dataset number for this student + lab, then reload
      Lab.identity.seed                              {seed, datasetId, datasetNumber, student} for this page */
   /* After a restore or "Erase my work" the page reloads: its old field values must not be flushed back over the new storage. */
@@ -1018,9 +1037,11 @@
   function reloadClean() { noFlush = true; if (Lab._allowLeave) Lab._allowLeave(); location.reload(); }
   function flushSaves() { if (noFlush) return; saveFns.forEach(f => { try { f(); } catch (e) { /* ignore */ } }); }
   function setIdentity(idn) {
+    if (wiped || staleEditor()) return false;
     const clean = { name: normName(idn.name), period: String(idn.period || '') };
     const ok = gstore.set('student', clean);
     memIdentity = ok ? null : clean;
+    lastStoredIdentity = lastEffectiveIdentity = clean;
     return ok;
   }
   function reloadForSeed() { flushSaves(); if (Lab._allowLeave) Lab._allowLeave(); location.reload(); }
@@ -1041,9 +1062,13 @@
       const perSel = h('select', { id: uid + '-period', 'aria-describedby': uid + '-err' }, h('option', { value: '' }, 'Choose…'),
         PERIODS.map(p => h('option', { value: p, selected: String(pre.period) === p }, p === 'Other' ? 'Other' : 'Period ' + p)));
       const err = h('p', { class: 'id-err', id: uid + '-err', 'aria-live': 'polite' });
+      const previousWork = !idn && box._sharedDevice && (lsKeys().some(openSciEdKey) || labsWithWork().length);
       const form = h('form', { class: 'id-panel', 'aria-labelledby': uid + '-title', novalidate: true },
-        h('p', { class: 'id-title', id: uid + '-title' }, idn ? 'Change who is working' : (IS_LAB ? 'Who is working on this lab?' : 'Who is working?')),
-        h('p', { class: 'small muted' }, 'Your name goes on your lab reports, and your simulated data will be unique to you. You only need to do this once on this computer.'),
+        h('p', { class: 'id-title', id: uid + '-title' }, idn && box._sharedDevice ? 'Correct my name or class period' : idn ? 'Change who is working' : (IS_LAB ? 'Who is working on this lab?' : 'Who is working?')),
+        h('p', { class: 'small muted' }, idn && box._sharedDevice
+          ? 'Use this only to correct your own information. Your work stays on this device. If someone else is taking over, cancel and choose Switch student.'
+          : previousWork ? 'Work is already saved on this device. Enter your name only if it is your work. If another student used this device, choose Switch student first.'
+            : 'Your name goes on your lab reports, and your simulated data will be unique to you. You only need to do this once on this computer.'),
         h('div', { class: 'id-fields' },
           h('div', { class: 'field id-f-name' }, h('label', { for: uid + '-name' }, 'Enter your name as your teacher knows it'), nameIn),
           h('div', { class: 'field id-f-period' }, h('label', { for: uid + '-period' }, 'Class period'), perSel),
@@ -1055,6 +1080,7 @@
         const name = normName(nameIn.value), period = perSel.value;
         if (name.length < 2) { err.textContent = 'Type your name as your teacher knows it.'; nameIn.focus(); return; }
         if (!period) { err.textContent = 'Choose your class period.'; perSel.focus(); return; }
+        if (wiped || staleEditor()) { err.textContent = staleEditorMessage; return; }
         const ok = setIdentity({ name, period });
         if (ok && IS_LAB && !SEED.sticky && studentKey({ name, period }) !== SEED.basis) { // seeding must change: reload once
           err.textContent = 'Saved. Setting up your own data…';
@@ -1067,12 +1093,16 @@
         focusIn(box, '.id-change');
       });
       box.append(form);
+      if (previousWork) box.append(h('button', {class:'linkbtn id-signout', type:'button','aria-haspopup':'dialog',
+        onclick: e => signOutDialog(e.currentTarget,{switchStudent:true,downloadOpenSciEd:box._downloadOpenSciEd})}, 'Switch student'));
       return;
     }
     const line = h('p', { class: 'id-line' },
       h('span', null, 'Signed in as ', h('strong', null, idn.name), idn.period ? ' · ' + periodText(idn.period) : ''));
     if (IS_LAB) line.append(h('span', null, ' · Dataset ID ', h('code', { class: 'ds-id', title: 'Dataset number ' + SEED.datasetNumber }, SEED.datasetId)));
-    line.append(' · ', h('button', { class: 'linkbtn id-change', type: 'button', 'aria-label': 'Change name or class period', onclick: () => { renderIdentity(box, 'form'); focusIn(box, 'input'); } }, 'change'));
+    line.append(' · ', h('button', { class: 'linkbtn id-change', type: 'button',
+      'aria-label': box._sharedDevice ? 'Edit my name or class period' : 'Change name or class period',
+      onclick: () => { renderIdentity(box, 'form'); focusIn(box, 'input'); } }, box._sharedDevice ? 'Edit my name or class period' : 'change'));
     let confirmRow = null;
     if (IS_LAB) {
       const nb = h('button', { class: 'linkbtn id-newds', type: 'button', 'aria-expanded': 'false', onclick: () => { confirmRow.hidden = !confirmRow.hidden; nb.setAttribute('aria-expanded', String(!confirmRow.hidden)); if (!confirmRow.hidden) focusIn(confirmRow, 'button'); } }, 'New dataset values');
@@ -1083,7 +1113,8 @@
         h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { confirmRow.hidden = true; nb.setAttribute('aria-expanded', 'false'); nb.focus(); } }, 'Cancel'));
     }
     if (IS_LAB) line.append(' · ', h('button', { class: 'linkbtn id-help', type: 'button', title: 'Show the quick tour of this page again', 'aria-label': 'Help: show the quick tour again', onclick: e => { if (Lab.tour) Lab.tour.start({ opener: e.currentTarget, force: true }); } }, 'Help'));
-    line.append(' · ', h('button', { class: 'linkbtn id-signout', type: 'button', title: 'Remove this student and all saved work from this computer', 'aria-haspopup': 'dialog', onclick: e => signOutDialog(e.currentTarget) }, 'Sign out'));
+    line.append(' · ', h('button', { class: 'linkbtn id-signout', type: 'button', title: 'Remove this student and all saved work from this computer', 'aria-haspopup': 'dialog',
+      onclick: e => signOutDialog(e.currentTarget, {switchStudent:box._sharedDevice, downloadOpenSciEd:box._downloadOpenSciEd}) }, box._sharedDevice ? 'Switch student' : 'Sign out'));
     if (IS_LAB) { const t = savedClock(); line.append(h('span', { class: 'id-saved', 'aria-hidden': 'true', hidden: !t, 'data-state': SAVE.ok === false ? 'bad' : 'ok' }, t)); }
     box.append(line); if (confirmRow) box.append(confirmRow);
     const own = IS_LAB ? ownerNoticeKind() : null;
@@ -1124,7 +1155,11 @@
     mount(el, opts = {}) {
       if (typeof el === 'string') el = $(el);
       if (!el || PAGE.kind === 'teacher' || PAGE.kind === 'info') return null;
-      const box = h('div', { class: 'id-box' }); box._compact = !!opts.compact; idHosts.push(box); el.append(box); renderIdentity(box); return box;
+      const box = h('div', { class: 'id-box' });
+      box._compact = !!opts.compact;
+      box._sharedDevice = !!opts.sharedDevice;
+      box._downloadOpenSciEd = typeof opts.downloadOpenSciEd === 'function' ? opts.downloadOpenSciEd : null;
+      idHosts.push(box); el.append(box); renderIdentity(box); return box;
     },
     newDataset() {
       const idn = effectiveIdentity(); if (!idn || !IS_LAB) return false;
@@ -1166,12 +1201,25 @@
   const lsKeys = () => { try { return Object.keys(localStorage); } catch (e) { return []; } };
   const lsRemove = k => { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } };
   const lsWrite = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* blocked */ } };
+  // Match activity-key membership even on AP pages without the OpenSciEd toolkit.
+  const openSciEdKey = k => k.startsWith('aplab:openscied:') ||
+    k === 'aplab:openscied-b1-carrying-capacity:run-v1' || k === 'aplab:openscied-b1-serengeti:preview-v1';
+  function openSciEdWork() {
+    return Object.fromEntries(Object.keys(localStorage).filter(openSciEdKey)
+      .map(key => [key,localStorage.getItem(key)]).filter(([,raw]) => raw !== null));
+  }
+  function openSciEdBackup() {
+    if (staleEditor()) throw new Error(staleEditorMessage);
+    // Keep opaque activity values intact, including unreadable saves. A device
+    // sign-in is not proof of ownership for every record in a shared workspace.
+    return { format:'openscied-saved-work-v1', exportedAt:new Date().toISOString(), student:null, work:openSciEdWork(), responses:{} };
+  }
   const labNo = id => +String(id).slice(3);
   const FLASH_KEY = 'aplab:flash';
   function showFlash() {
     const f = sessionGet(FLASH_KEY); if (!f) return;
     try { sessionStorage.removeItem(FLASH_KEY); } catch (e) { /* ignore */ }
-    const msg = f === 'signout' ? 'Signed out. This computer is ready for the next student.' : f === 'reset' ? 'All your lab work was erased. Your name and class are kept, and you will get fresh data.' : f === 'lab' ? 'This lab was erased. Your other labs are untouched.' : '';
+    const msg = f === 'signout' ? 'Signed out. This computer is ready for the next student.' : f === 'reset' ? 'AP Biology and OpenSciEd work was erased. Your name and class are kept, and you will get fresh data.' : f === 'lab' ? 'This lab was erased. Your other labs are untouched.' : '';
     if (msg) Lab.toast(msg, { type: 'ok', timeout: 9000, key: 'flash' });
   }
   function firstNameOf(name) {
@@ -1214,37 +1262,62 @@
     try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (e) { /* ignore */ }
   }
   function invalidateOpenSciEdEditors() {
-    // This non-personal marker survives wipe(), even when Lab Bench is the open page.
-    const key = 'aplab:pref:openscied-save-session:v1:global';
+    if (staleEditor()) throw new Error(staleEditorMessage);
+    // This non-personal marker survives the clear, even from an AP page.
+    const marker = globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + ':' + nativeRandom().toString(36).slice(2);
+    localStorage.setItem(OPENSCIED_EPOCH_KEY, marker);
+    if (localStorage.getItem(OPENSCIED_EPOCH_KEY) !== marker) throw new Error('Could not protect the OpenSciEd clear.');
+    localStorage.setItem(HANDOFF_KEY, marker);
+    if (localStorage.getItem(HANDOFF_KEY) !== marker) throw new Error('Could not protect the device clear.');
+    handoffEpoch = marker;
+  }
+  function wipeSiteWork(keep, signOut, status) {
     try {
-      const marker = globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + ':' + Math.random().toString(36).slice(2);
-      localStorage.setItem(key, marker);
+      // Validate/enumerate before changing anything, then block mounted writers.
+      const discard = k => k.startsWith('aplab:') && !keep(k) &&
+        k !== 'aplab:student' && k !== HANDOFF_KEY;
+      const collect = () => Object.keys(localStorage).filter(discard);
+      const drop = collect();
+      invalidateOpenSciEdEditors();
+      noFlush = true; wiped = true;
+      for (const key of drop) localStorage.removeItem(key);
+      if (staleEditor() || collect().length) throw new Error('Some saved work could not be cleared.');
+      // Erase the identity last: never invite a new sign-in over earlier work.
+      if (signOut) {
+        localStorage.removeItem('aplab:student');
+        if (localStorage.getItem('aplab:student') !== null) throw new Error('The sign-in could not be cleared.');
+      }
+      if (Lab._allowLeave) Lab._allowLeave();
+      try { Lab.timelapse.eraseAll(); } catch (_) { /* Recorded runs use IndexedDB. */ }
+      try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (_) {}
       return true;
-    } catch (_) {
-      Lab.toast('Could not safely clear saved work. Check browser storage and try again.', {type:'error'});
+    } catch (e) {
+      const text = e?.message === staleEditorMessage ? staleEditorMessage :
+        'Could not finish clearing saved work. Do not hand off this device yet. Check browser storage, then try again.';
+      if (status) status(text, true); else Lab.toast(text, {type:'error'});
       return false;
     }
   }
-  function doSignOut() {
-    if (!invalidateOpenSciEdEditors()) return;
-    wipe(k => KEEP_PREFS.some(p => k.startsWith(p)));
-    memIdentity = null; memBackup = null;
+  const keepSitePrefs = k => k !== OPENSCIED_RESUME_KEY && KEEP_PREFS.some(p => k.startsWith(p));
+  function doSignOut(status) {
+    if (!wipeSiteWork(keepSitePrefs, true, status)) return;
+    memIdentity = lastStoredIdentity = lastEffectiveIdentity = null; memBackup = null;
     sessionSet(FLASH_KEY, 'signout');
     /* From a lab page go to the home page: reloading the lab would record a fresh "last visited" for nobody. */
     if (IS_LAB) location.assign('index.html'); else location.reload();
   }
-  function doStartOverAll() {
-    if (!invalidateOpenSciEdEditors()) return;
+  function doStartOverAll(status) {
     const idn = storedIdentity();
     const next = {};
     if (idn) LAB_IDS.forEach(id => { next[`aplab:dataset:${id}:${studentKey(idn)}`] = (+gstore.get(`dataset:${id}:${studentKey(idn)}`) || 1) + 1; });
-    wipe(k => KEEP_PREFS.some(p => k.startsWith(p)) || k === 'aplab:student' || k === 'aplab:tour' || k === 'aplab:anon' || k.startsWith('aplab:dataset:'));
+    if (!wipeSiteWork(k => keepSitePrefs(k) || k === 'aplab:tour' || k === 'aplab:anon' || k.startsWith('aplab:dataset:'), false, status)) return;
     Object.entries(next).forEach(([k, v]) => lsWrite(k, v));
     memBackup = null;
     sessionSet(FLASH_KEY, 'reset');
     location.reload();
   }
   function doStartOverLab() {
+    if (staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return; }
     const id = LAB_ID, bm = gstore.get('bookmark'), last = gstore.get('last');
     const drop = new Set([`aplab:progress:${id}`, `aplab:hint:${id}`, `aplab:backup:${id}`]);
     if (bm && bm.lab === id) drop.add('aplab:bookmark');
@@ -1323,7 +1396,7 @@
         catch (e) { say(e && e.message === 'docx-load' ? 'Could not load the Word file tool. Check your internet connection, or save a progress file instead.' : 'Could not build the Word file here. Save a progress file instead.', true); }
         finally { docx.disabled = false; }
       } }, 'Download report (.docx)');
-      const pf = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { say(`Downloaded ${saveProgressFile()}.`); } }, 'Download progress file');
+      const pf = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { const name = saveProgressFile(); if (name) say(`Downloaded ${name}.`); else say(staleEditorMessage, true); } }, 'Download progress file');
       if (Lab.timelapse && Lab.timelapse.withRun && Lab.timelapse.withRun().length) kids.push(h('p', { class: 'small muted' }, 'Timelapse recordings are stored separately from progress files and transfer codes. Download a GIF or include it in your report before moving to another computer.'));
       kids.push(h('p', { class: 'dm-sub' }, `This lab (Lab ${labNo(LAB_ID)})`), h('div', { class: 'row' }, docx, pf), transferBlock());
     }
@@ -1333,21 +1406,74 @@
         h('ul', { class: 'dm-labs' }, others.map(l => h('li', null, h('span', null, h('strong', null, `Lab ${l.no}`), ` · ${l.text}`),
           h('button', { class: 'btn btn--sm', type: 'button', 'aria-label': `Download progress file for Lab ${l.no}`, onclick: () => { downloadStoredProgress(l.id); say(`Downloaded the progress file for Lab ${l.no}.`); } }, 'Download progress file')))));
     }
-    if (!IS_LAB && !others.length) kids.push(h('p', { class: 'small muted' }, 'No saved lab work was found on this computer.'));
+    let openSciEdFound = false, openSciEdUnreadable = false;
+    if (opts.openSciEd) {
+      try { openSciEdFound = Object.keys(openSciEdWork()).length > 0; } catch (_) { openSciEdUnreadable = true; }
+      {
+        kids.push(h('div', {class:'dm-openscied-work', hidden:!openSciEdFound}, h('p', { class:'dm-sub' }, 'Saved OpenSciEd activity work'),
+          h('p', { class:'small muted' }, 'The backup includes the saved records, including anything the site could not read. It is not a classroom submission.'),
+          h('button', { class:'btn btn--sm dm-openscied-backup', type:'button', onclick:() => {
+            try {
+              if (staleEditor()) throw new Error(staleEditorMessage);
+              if (opts.downloadOpenSciEd) {
+                if (opts.downloadOpenSciEd() !== true) throw new Error('Could not download OpenSciEd work.');
+              } else {
+                const backup = openSciEdBackup();
+                if (!Object.keys(backup.work).length) { say('No OpenSciEd work remains to download.'); return; }
+                downloadBlob(new Blob([JSON.stringify(backup,null,2)], {type:'application/json'}), 'openscied-saved-work.json');
+              }
+              say('OpenSciEd backup requested. Check your browser’s downloads before clearing this device.');
+            } catch (e) {
+              say(e?.message === staleEditorMessage ? staleEditorMessage :
+                'Could not download OpenSciEd work. Check browser storage and try again before clearing this device.', true);
+            }
+          } }, 'Download OpenSciEd backup')));
+      }
+      if (openSciEdUnreadable) kids.push(h('p', {class:'small muted'}, 'OpenSciEd work could not be checked. Check browser storage before clearing this device.'));
+    }
+    if (!IS_LAB && !others.length && !openSciEdFound && !openSciEdUnreadable) kids.push(h('p', { class: 'small muted dm-no-work' }, 'No saved lab work was found on this computer.'));
     if (!IS_LAB && others.length) kids.push(h('p', { class: 'small muted' }, 'To keep a lab report (.docx) too, open that lab first and use Submit.'));
     kids.push(status);
     return h('div', { class: 'dm-save', role: 'group', 'aria-label': 'Save your work first' }, h('p', { class: 'dm-save-title' }, 'Save your work first:'), ...kids);
   }
 
-  function signOutDialog(opener) {
+  function reportClearError(save) {
+    return (message, bad) => {
+      const status = save.querySelector('.tool-status');
+      status.textContent = message; status.classList.toggle('is-bad', !!bad);
+    };
+  }
+  function confirmSiteClear(save, clear) {
+    const status = reportClearError(save);
+    // If an already-open activity saved for the first time while this dialog
+    // was open, offer its backup before honoring the destructive confirmation.
+    const openSciEd = save.querySelector('.dm-openscied-work');
+    if (openSciEd?.hidden) {
+      try {
+        if (Object.keys(openSciEdWork()).length) {
+          openSciEd.hidden = false;
+          const noWork = save.querySelector('.dm-no-work'); if (noWork) noWork.hidden = true;
+          status('OpenSciEd work was saved while this dialog was open. Download a backup if you need it, then confirm again.');
+          openSciEd.querySelector('button').focus();
+          return;
+        }
+      } catch (_) { /* Strict erase verifies access and reports any failure. */ }
+    }
+    clear(status);
+  }
+  function signOutDialog(opener, opts = {}) {
+    if (staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return null; }
     const idn = storedIdentity() || effectiveIdentity();
     const name = idn ? idn.name : 'this student', first = idn ? firstNameOf(idn.name) : '';
+    const save = saveBlock({openSciEd:true, downloadOpenSciEd:opts.downloadOpenSciEd});
     return dataDialog({
-      id: 'signout', opener, eyebrow: 'Sign out', title: `Sign out ${name}?`,
-      warn: `This removes ${name} and ALL of their saved work in every lab from this computer. It can't be undone.`,
-      body: [saveBlock()],
-      gate: { kind: 'text', label: `To confirm, type your first name (${first})`, expect: first, hint: 'The button below turns on when the name matches.' },
-      confirmText: 'Sign out and erase', onConfirm: doSignOut,
+      id: 'signout', opener, eyebrow: opts.switchStudent ? 'Shared device' : 'Sign out',
+      title: opts.switchStudent ? 'Switch to a different student?' : `Sign out ${name}?`,
+      warn: 'This removes the current sign-in and all AP Biology and OpenSciEd work saved in this browser. Download anything you need first. The next student signs in after the clear finishes.',
+      body: [save],
+      gate: first ? { kind:'text', label:`To confirm, type your first name (${first})`, expect:first, hint:'The button below turns on when the name matches.' }
+        : { kind:'text', label:'To confirm, type ERASE (capital letters)', expect:'ERASE', exact:true, hint:'The button below turns on when you type ERASE.' },
+      confirmText: 'Sign out and erase', onConfirm: () => confirmSiteClear(save, doSignOut),
     });
   }
   function startOverAllDialog(opener) {
@@ -1355,13 +1481,14 @@
     const labs = labsWithWork();
     const list = labs.length
       ? h('ul', { class: 'dm-labs dm-labs--plain', 'aria-label': 'Labs with saved work' }, labs.map(l => h('li', null, h('span', null, h('strong', null, `Lab ${l.no}`), `: ${l.text}`))))
-      : h('p', { class: 'small muted' }, 'No saved lab work was found. You will still get fresh data.');
+      : h('p', { class: 'small muted' }, 'No AP Biology lab work was found.');
+    const save = saveBlock({openSciEd:true});
     return dataDialog({
       id: 'startover', opener, eyebrow: 'Start over', title: 'Start over with all labs?',
-      warn: `This erases all of your lab work in every lab on this computer. ${idn ? 'Your name and class stay, and ' : ''}you get fresh simulated data (a new Dataset ID). It can't be undone.`,
-      body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'Work that will be erased:'), list), saveBlock()],
+      warn: `This erases AP Biology and OpenSciEd work saved in this browser. ${idn ? 'Your name and class stay, and ' : ''}you get fresh simulated data (a new Dataset ID). It can't be undone.`,
+      body: [h('div', { class: 'dm-save' }, h('p', { class: 'dm-save-title' }, 'AP Biology lab records:'), list), save],
       gate: { kind: 'text', label: 'To confirm, type ERASE (capital letters)', expect: 'ERASE', exact: true, hint: 'The button below turns on when you type ERASE.' },
-      confirmText: 'Erase all my lab work', onConfirm: doStartOverAll,
+      confirmText: 'Erase all my lab work', onConfirm: () => confirmSiteClear(save, doStartOverAll),
     });
   }
   function startOverLabDialog(opener) {
@@ -1381,13 +1508,13 @@
     const box = h('details', { class: 'disclose disclose--sm manage-data' },
       h('summary', null, 'Manage my data'),
       h('div', { class: 'inner' },
-        h('p', { class: 'small muted' }, 'Your work is saved only in this browser. On a shared computer, sign out when you finish. Start over erases your lab work but keeps your name.'),
+        h('p', { class: 'small muted' }, 'Your work is saved only in this browser. On a shared computer, sign out when you finish. Start over erases AP Biology and OpenSciEd work but keeps your name.'),
         h('div', { class: 'row' }, mk('Start over with all labs…', startOverAllDialog, 'md-startover'), mk('Sign out…', signOutDialog, 'md-signout'))));
     host.append(box);
-    homeManageRefresh = () => { box.hidden = !(storedIdentity() || labsWithWork().length); };
+    homeManageRefresh = () => { box.hidden = !(storedIdentity() || labsWithWork().length || lsKeys().some(openSciEdKey)); };
     homeManageRefresh();
   }
-  Lab.data = { signOut: signOutDialog, startOverAll: startOverAllDialog, startOverLab: startOverLabDialog, labsWithWork, wipe };
+  Lab.data = { signOut: signOutDialog, startOverAll: startOverAllDialog, startOverLab: startOverLabDialog, labsWithWork, openSciEdBackup, wipe };
 
   /* ---------------- Responses toolbar: copy all work ---------------- */
   function collectText() {
@@ -1568,6 +1695,7 @@
   }
   const chartHasData = o => (o.series || []).some(s => (s.points || []).some(p => p && isFinite(p.y)));
   function collectReport() {
+    if (IS_LAB && staleEditor()) throw new Error(staleEditorMessage);
     const who = reportIdentity();
     const hd = $('.lab-header');
     const title = hd && $('h1', hd) ? hd.querySelector('h1').textContent.trim() : document.title;
@@ -1774,6 +1902,7 @@
   /* A report was downloaded or sent to the print dialog: the one confetti burst (see Celebrations), only if every part is done. */
   function reportSaved() { try { Lab.celebrate.lab(); } catch (e) { /* never block a download */ } }
   async function openReport(o = {}) {
+    if (IS_LAB && staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return null; }
     closeReport(); flushSaves();
     reportOpener = o.opener || document.activeElement;
     const rep = await renderCharts(collectReport());
@@ -1824,6 +1953,7 @@
     };
   }
   function progressPayload(full) {
+    if (IS_LAB && staleEditor()) throw new Error(staleEditorMessage);
     flushSaves();
     const data = {}, pre = `aplab:${LAB_ID}:`;
     try {
@@ -1878,6 +2008,7 @@
     return { text, newer };
   }
   function applyProgress(o) {
+    if (wiped || staleEditor()) throw new Error(staleEditorMessage + NOCHANGE);
     /* All or nothing: keep a copy of this lab's saved work, and put it back if any write fails part way. */
     const pre = `aplab:${LAB_ID}:`, before = {};
     lsKeys().forEach(k => { if (k.startsWith(pre)) { try { before[k] = localStorage.getItem(k); } catch (e) { /* skip */ } } });
@@ -1925,6 +2056,7 @@
 
   /* Download the progress file and record it as the latest backup. Returns the file name. */
   function saveProgressFile() {
+    if (IS_LAB && staleEditor()) { Lab.toast(staleEditorMessage, {type:'error'}); return null; }
     const p = progressPayload(true);
     const name = reportFileBase() + '_progress.json';
     downloadBlob(new Blob([JSON.stringify(p)], { type: 'application/json' }), name);
@@ -2064,6 +2196,7 @@
         h('div', { class: 'row' },
           h('button', { class: 'btn', type: 'button', onclick: () => {
             const name = saveProgressFile();
+            if (!name) { say(staleEditorMessage,true); return; }
             say(`Saved ${name} to your Downloads folder.`); if (LIKELY_PREVIEW) note.hidden = false;
             Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false });
           } }, 'Save progress file'),
@@ -2842,7 +2975,7 @@
         h('p', { class: 'small muted' }, 'Come back to the home page and press Resume, or reopen this lab on this computer. To carry on somewhere else, take your work with you.'),
         h('div', { class: 'pause-actions' },
           h('button', { class: 'btn btn--primary btn--lg', type: 'button', id: 'pause-keep', onclick: closePause }, 'Keep working'),
-          h('button', { class: 'btn', type: 'button', onclick: () => { const name = saveProgressFile(); status.textContent = `Saved ${name} to your Downloads folder.`; Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file')),
+          h('button', { class: 'btn', type: 'button', onclick: () => { const name = saveProgressFile(); if (!name) { status.textContent = staleEditorMessage; return; } status.textContent = `Saved ${name} to your Downloads folder.`; Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file')),
         h('div', { class: 'pause-xfer' }, xfer),
         status));
     document.body.append(pauseEl); document.body.classList.add('has-pause');
@@ -3195,7 +3328,7 @@
     storageWarnEl = h('div', { class: 'storage-warn', role: 'alert' },
       h('span', { class: 'sw-icon', 'aria-hidden': 'true' }, '!'),
       h('span', { class: 'sw-msg' }, STORAGE_MSG),
-      IS_LAB ? h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { saveProgressFile(); Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file') : null);
+      IS_LAB ? h('button', { class: 'btn btn--sm', type: 'button', onclick: () => { if (saveProgressFile()) Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file') : null);
     document.body.prepend(storageWarnEl);
   };
   function requestPersist() {
@@ -3290,7 +3423,7 @@
       else region.append(h('span', { class: 'bb-icon', 'aria-hidden': 'true' }, 'i'),
         h('p', { class: 'bb-msg' }, storageBad ? STORAGE_MSG : BACKUP_MSG),
         h('div', { class: 'bb-actions' },
-          h('button', { class: 'btn btn--sm btn--primary bb-save', type: 'button', onclick: () => { saveProgressFile(); Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file'),
+          h('button', { class: 'btn btn--sm btn--primary bb-save', type: 'button', onclick: () => { if (saveProgressFile()) Lab.toast('Progress file saved to Downloads', { type: 'ok', announce: false }); } }, 'Save progress file'),
           dismiss));
       document.body.classList.add('has-backup-bar');
       const hh = () => document.documentElement.style.setProperty('--backup-bar-h', (region.isConnected ? region.offsetHeight : 0) + 'px');
@@ -3965,7 +4098,7 @@
   const tlDelLab = lab => tlTx('readwrite', s => { s.openCursor().onsuccess = e => { const c = e.target.result; if (c) { if (String(c.key).startsWith(lab + ':')) c.delete(); c.continue(); } }; });
   function tlEraseAll() { try { TLS.forEach(r => r._detach && r._detach()); const q = indexedDB.deleteDatabase(TL_DB); q.onerror = q.onblocked = () => {}; } catch (e) { /* no IndexedDB */ } }
   function tlEraseLab(lab) { try { tlDelLab(lab).catch(() => {}); } catch (e) { /* ignore */ } }
-  const tlMark = (k, v) => { const name = `aplab:${LAB_ID}:tl:${k}`; try { if (v === undefined) { const r = localStorage.getItem(name); return r ? JSON.parse(r) : null; } if (wiped) return null; if (v === null) localStorage.removeItem(name); else localStorage.setItem(name, JSON.stringify(v)); } catch (e) { /* blocked */ } return null; };
+  const tlMark = (k, v) => { const name = `aplab:${LAB_ID}:tl:${k}`; try { if (wiped || staleEditor()) return null; if (v === undefined) { const r = localStorage.getItem(name); return r ? JSON.parse(r) : null; } if (v === null) localStorage.removeItem(name); else localStorage.setItem(name, JSON.stringify(v)); } catch (e) { /* blocked */ } return null; };
   const tlYield = () => new Promise(r => setTimeout(r, 0));
   const tlPlain = html => { const d = document.createElement('div'); d.innerHTML = html; return (d.textContent || '').trim(); };
   function tlSource(t) { if (typeof t === 'function') t = t(); if (typeof t === 'string') t = $(t); if (t && t.canvas && t.canvas.getContext) t = t.canvas; return t && t.getContext ? t : null; }
@@ -3999,6 +4132,7 @@
     }
     const settle = async () => { for (let i = 0; i < 100 && pending; i++) await tlYield(); frames = frames.filter(Boolean); };
     async function persist() {
+      if (wiped || staleEditor()) return;
       const meta = { n: frames.length, fps, w: W, h: H, label: opts.label, t: Date.now() };
       tlMark(key, meta);
       try { await tlPut({ id, lab: LAB_ID, key, label: opts.label, fps, w: W, h: H, t: meta.t, frames: frames.slice() }); rec.persisted = true; } catch (e) { rec.persisted = false; }
@@ -4021,7 +4155,7 @@
       return rec;
     };
     rec.capture = function () { grab(); return rec; };
-    rec.clear = async function () { recording = false; clearInterval(timer); frames = []; bytes = 0; tlMark(key, null); try { await tlDel(id); } catch (e) { /* ignore */ } changed(); return rec; };
+    rec.clear = async function () { recording = false; clearInterval(timer); frames = []; bytes = 0; if (!wiped && !staleEditor()) { tlMark(key, null); try { await tlDel(id); } catch (e) { /* ignore */ } } changed(); return rec; };
     rec._detach = () => { recording = false; clearInterval(timer); frames = []; ui = []; };
     Object.defineProperties(rec, { count: { get: () => frames.filter(Boolean).length }, fps: { get: () => fps }, recording: { get: () => recording }, width: { get: () => W }, height: { get: () => H }, bytes: { get: () => bytes }, frames: { get: () => frames.filter(Boolean) } });
     rec.restored = (async () => {

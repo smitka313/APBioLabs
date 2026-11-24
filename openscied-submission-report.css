@@ -51,6 +51,25 @@
 .osr-formats { margin: .25rem 0 0; font-size: .9rem; }
 .osr-formats summary { display: list-item; width: fit-content; min-height: 24px; padding: .15rem 0; color: var(--osr-blue); cursor: pointer; font-weight: 650; }
 .osr-formats > .btn { margin: .25rem 0; min-height: 30px; }
+.osr-identity-editor {
+  margin: .52rem clamp(.55rem, 2vw, 1.2rem) 0;
+  padding: .1rem .75rem; color: var(--osr-ink);
+  font: .9rem/1.45 var(--f-body, "Segoe UI", system-ui, sans-serif);
+}
+.osr-identity-editor[open] { border: 1px solid var(--osr-line); background: #fff; }
+.osr-identity-editor summary {
+  display: list-item; width: fit-content; cursor: pointer; padding: .25rem 0;
+  min-height: 24px; box-sizing: border-box; color: var(--osr-blue); font-weight: 650;
+}
+.osr-identity-editor p { margin: .25rem 0 .5rem; }
+.osr-identity-fields { display: flex; flex-wrap: wrap; align-items: end; gap: .55rem; margin: 0 0 .75rem; }
+.osr-identity-fields label { display: grid; gap: .2rem; width: min(100%, 18rem); color: var(--osr-ink); }
+.osr-identity-fields label:nth-child(2) { width: min(100%, 8rem); }
+.osr-identity-fields input {
+  width: 100%; min-width: 0; min-height: 38px; box-sizing: border-box; padding: .32rem .48rem;
+  font: inherit; font-size: 1rem; background: #fff; color: var(--osr-ink); border: 1px solid #7893a2; border-radius: .25rem;
+}
+
 
 .osr-paper {
   background: #fff; color: var(--osr-ink); margin: clamp(.55rem, 2vw, 1.2rem);
@@ -115,7 +134,7 @@
     display: block !important; position: static !important; inset: auto !important;
     border: 0 !important; box-shadow: none !important; page: openscied-submission;
   }
-  .osr-dialog::backdrop, .osr-tools { display: none !important; }
+  .osr-dialog::backdrop, .osr-tools, .osr-identity-editor { display: none !important; }
   .osr-dialog .osr-paper { margin: 0 !important; padding: 0 !important; border: 0 !important; font-size: 11pt; }
   .osr-paper .osr-stamp { width: 1in; height: 1in; }
   .osr-header, .osr-paper .osr-stamp { break-inside: avoid; print-color-adjust: exact; }

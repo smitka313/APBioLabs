@@ -50,7 +50,8 @@
   const number=(v,precision=0)=>v.toLocaleString('en-US',{minimumFractionDigits:precision,maximumFractionDigits:precision});
   const value=(v,key)=>!finite(v)?(['late-rate','late-share','screening','income','incidence'].includes(key)&&state.view==='michigan'?'Unavailable':'Not in top 10'):['poverty','late-share','screening'].includes(key)?number(v,1)+'%':key==='income'?'$'+number(v):number(v,key==='count'?0:1);
   const full=(v,key)=>!finite(v)?value(v,key):value(v,key)+' '+unit[key];
-  const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:12,region:'all',x:'screening'});
+  const rowBatch=()=>window.matchMedia('(max-width: 600px)').matches?6:12;
+  const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:rowBatch(),region:'all',x:'screening'});
   const defaults={labels:true,marks:true,benchmark:true,'pair-only':false,trend:false};
   const designItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
   const lessonNotes=['diagnoses','deaths','map'];
@@ -94,16 +95,31 @@
       dest.query=str(s?.query,80);
       if(['urban','rural'].includes(s?.region))dest.region=s.region;
       if(s?.x==='income')dest.x='income';
-      if(Number.isInteger(s?.rows))dest.rows=Math.max(12,Math.min(60,s.rows));
+      if(Number.isInteger(s?.rows))dest.rows=Math.max(6,Math.min(60,s.rows));
     }
-    if(Array.isArray(raw.evidence))next.evidence=raw.evidence.filter(p=>L.comparison(D,p)).slice(0,8).map(p=>({view:p.view,measure:p.measure,a:p.a,b:p.b,context:cleanContext(p.context)}));
+    if(Array.isArray(raw.evidence))next.evidence=raw.evidence.filter(p=>L.comparison(D,p)).slice(0,8).map(p=>({view:p.view,measure:p.measure,a:p.a,b:p.b,context:cleanContext(p.context,p.view)}));
     // Keep previous work, including a recorded Finish, even if an older page let a student skip Predict.
     next.completed=raw.completed===true&&hasFinalResponses(next);
     if(available(raw.step,next))next.step=raw.step;
     next.lastVisitedAt=finite(raw.lastVisitedAt)?raw.lastVisitedAt:0;
     return next;
   }
-  function cleanContext(p){return {x:p?.x==='income'?'income':'poverty',trend:p?.trend===true,query:str(p?.query,80),region:['urban','rural'].includes(p?.region)?p.region:'all'};}
+  function cleanContext(p,view){
+    // The two Michigan-prefixed values identify new plot-aware pins. Earlier pins may
+    // have inherited the national axis; don't retrospectively claim what was on that chart.
+    const x=view==='michigan'?(['michigan:screening','michigan:income'].includes(p?.x)?p.x:''):
+      p?.x==='income'?'income':'poverty';
+    return {x,trend:p?.trend===true,query:str(p?.query,80),region:['urban','rural'].includes(p?.region)?p.region:'all'};
+  }
+  function suggestedDataset(questionText){
+    const q=questionText.toLowerCase();
+    if (/\b(michigan|count(?:y|ies)|mammogra\w*|rural|urban|screening|late.stag\w*)\b/.test(q)) return {view:'michigan',x:/\bincome\b/.test(q)?'income':'screening'};
+    if (/\b(poverty|income|socioeconomic)\b/.test(q)) return {view:'poverty',x:/\bincome\b/.test(q)&&!/\bpoverty\b/.test(q)?'income':'poverty'};
+    if (/\b(race|racial|ethnic\w*)\b/.test(q)) return {view:'race'};
+    if (/\b(states?|statewide)\b/.test(q)) return {view:'states'};
+    if (/\b(rank\w*|cancer types?|top ten|top 10)\b/.test(q)) return {view:'types'};
+    return null;
+  }
   try{const saved=(saveSession?.read(KEY) ?? null);if(saved!==null){try{state=clean(JSON.parse(saved));}catch(_){invalid=true;}}}catch(_){blocked=true;}
   function save(){
     state.lastVisitedAt=Date.now();
@@ -156,13 +172,15 @@
   }
   function canFinish(){return available('explain')&&hasFinalResponses(state);}
   function isComplete(){return state.completed&&canFinish();}
+  function reviewReady(){return $('evidence-confirm').checked;}
+  function resetEvidenceReview(){$('evidence-confirm').checked=false;}
   function renderSteps(){
     const locked=state.prediction.locked, ready=available('explore'), pinned=available('explain'), finished=isComplete();
     const complete={predict:locked,explore:pinned,explain:finished};
     const hint={
       predict:locked?'Prediction saved.':'Choose and save a prediction before opening the Evidence Folder.',
       explore:!locked?'Save your prediction first.':!ready?'Complete all six exhibits and save a follow-up question to unlock Explore More Data.':pinned?'Evidence pinned.':'Pin one comparison to finish this step.',
-      explain:!pinned?'Pin at least one comparison in Explore More Data to unlock Explain.':finished?'Investigation complete.':'Write your claim and one limit, then select Finish investigation.'
+      explain:!pinned?'Pin at least one comparison in Explore More Data to unlock Explain.':finished?'Investigation complete.':'Write your claim and one limit, check your evidence, then select Finish investigation.'
     };
     for(const step of steps){
       const b=document.querySelector('[data-step="'+step+'"]');
@@ -215,6 +233,9 @@
     renderSelect($('compare-a'),opts,s.a);renderSelect($('compare-b'),opts,s.b);
     $('verdict').hidden=!state.prediction.locked;if(state.prediction.locked)text('verdict',predictions[state.prediction.choice]+' '+firstResult());text('view-source',spec[v].caption+(isMI()?' '+D.michigan.period:''));
     text('pin-count',state.evidence.length+' comparison'+(state.evidence.length===1?'':'s')+' pinned');
+    const suggested=suggestedDataset(state.casework.question);
+    text('view-help',(suggested ? 'Suggested starting view: '+spec[suggested.view].title+'. ' : '')+
+      'Pick the data that can answer your question. You can switch views.');
     text('chart-title',spec[v].title);
     text('chart-unit',v==='poverty'?'Diagnosis rate per 100,000':unit[s.measure]);
     for(const k of Object.keys(defaults))$(k).checked=state.layer[k];
@@ -402,7 +423,9 @@
     });
     if(!rendered.length){const r=node('tr'),td=node('td','No rows match. Clear your search to see all rows.');td.colSpan=isMI()?5:4;r.append(td);rendered.push(r);}
     tbody.replaceChildren(...rendered);text('row-count','Showing '+Math.min(visible.length,s.rows)+' of '+visible.length+' matching rows');
-    $('more').hidden=visible.length<=s.rows;
+    const remaining=visible.length-s.rows;
+    $('more').hidden=remaining<=0;
+    if(remaining>0)text('more','Show '+Math.min(remaining,rowBatch())+' more rows');
   }
   function evidenceText(p){
     const pair=L.comparison(D,p);
@@ -411,10 +434,21 @@
     let extra='';
     if(p.view==='michigan'){
       const readings=r=>r.name+' ('+r.region+'): '+spec.michigan.measures.filter(k=>finite(r[k])).map(k=>labels[k]+' '+full(r[k],k)).join(', ')+(r.lateCI?.every(finite)?'; late-stage 95% CI '+r.lateCI.join('–'):'')+(r.screeningCI?.every(finite)?'; mammography 95% CI '+r.screeningCI.join('–')+'%':'');
-      return spec.michigan.title+' · '+D.michigan.period+' Pinned by '+labels[p.measure].toLowerCase()+'. '+readings(pair.a)+' | '+readings(pair.b)+'. County comparisons cannot measure individual access or prove a cause.';
+      const ctx=cleanContext(p.context,p.view), x=ctx.x.split(':')[1];
+      let viewNote='';
+      if(x){
+        const filtered=D.michigan.rows.filter(r=>ctx.region==='all'||r.region?.toLowerCase()===ctx.region);
+        const matches=L.sortRows(filtered,p.measure,'desc',ctx.query).filter(r=>finite(r[x])&&finite(r[p.measure]));
+        const scope=(ctx.region==='all'?'all county types':ctx.region+' counties')+(ctx.query?' · search “'+ctx.query+'”':'');
+        const fit=ctx.trend&&x!==p.measure?L.fitLine(matches,x,p.measure):null;
+        const fitNote=ctx.trend&&x!==p.measure?(fit?' Trend line: '+fit.n+' counties, '+(Math.abs(fit.slope)<1e-12?'flat':fit.slope>0?'upward':'downward')+'.':' No line could be fitted from that filtered view.'):'';
+        viewNote=x===p.measure?' Chart was a comparison by '+labels[x].toLowerCase()+' ('+scope+').':
+          ' Scatterplot: '+labels[x]+' (x) and '+labels[p.measure]+' (y), '+scope+'.'+fitNote;
+      }else viewNote=' This older pin did not record which horizontal axis was shown.';
+      return spec.michigan.title+' · '+D.michigan.period+' Pinned by '+labels[p.measure].toLowerCase()+'. '+readings(pair.a)+' | '+readings(pair.b)+'.'+viewNote+' County comparisons cannot measure individual access or prove a cause.';
     }
     if(p.view==='poverty'){
-      const co=cleanContext(p.context),x=co.x;
+      const co=cleanContext(p.context,p.view),x=co.x;
       extra=' · Scatterplot: '+pair.a.name+' '+full(pair.a[x],x)+' and '+pair.b.name+' '+full(pair.b[x],x)+'; diagnoses '+full(pair.a.incidence,'incidence')+' and '+full(pair.b.incidence,'incidence')+'.';
       const rows=L.sortRows(D.poverty.rows,'incidence','desc',co.query);
       if(co.trend){const fit=L.fitLine(rows,x);if(fit)extra+=' Trend fit on '+fit.n+' matching locations ('+(Math.abs(fit.slope)<1e-12?'flat':fit.slope>0?'upward':'downward')+'); not causal.';}
@@ -437,7 +471,7 @@
       const li=node('li'),b=node('button','Remove pin','btn btn--sm');b.type='button';
       b.setAttribute('aria-label','Remove pin '+(i+1));
       b.addEventListener('click',()=>{
-        state.evidence.splice(i,1);state.completed=false;
+        state.evidence.splice(i,1);state.completed=false;resetEvidenceReview();
         if(!state.evidence.length)goto('explore');else{save();renderExplain();list.querySelector('button')?.focus();}
         announce('Removed the comparison.');
       });
@@ -449,9 +483,11 @@
   }
   function renderCompletion(){
     const finished=isComplete(), claim=!!state.claim.trim(), limits=!!state.limits.trim();
-    $('finish').disabled=finished||!canFinish();
+    $('finish').disabled=finished||!canFinish()||!reviewReady();
+    $('evidence-confirm').disabled=finished;
+    $('evidence-review').hidden=finished;
     $('done').hidden=!finished;
-    text('finish-hint',finished?'Finished. Preview your report before turning it in.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':'Select Finish investigation to mark your work complete.');
+    text('finish-hint',finished?'Finished. Preview your report before turning it in.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':!reviewReady()?'Check that your comparison answers your question and that you cited both values.':'Select Finish investigation to mark your work complete.');
     renderSteps();
   }
   function report(){
@@ -482,10 +518,10 @@
   $('lock').addEventListener('click',()=>{if(state.prediction.choice){state.prediction.locked=true;save();updateFollowup();render();casefile.open=true;casefile.querySelector('summary').focus();}});
   $('view').addEventListener('change',()=>{state.view=$('view').value;save();renderExplore();announce('Now showing '+spec[state.view].title+'.');});
   $('mi-x').addEventListener('change',()=>{current().x=$('mi-x').value;save();renderExplore();announce('Michigan scatterplot x-axis updated.');});
-  $('mi-region').addEventListener('change',()=>{current().region=$('mi-region').value;current().rows=12;save();renderExplore();announce('County filter updated.');});
+  $('mi-region').addEventListener('change',()=>{current().region=$('mi-region').value;current().rows=rowBatch();save();renderExplore();announce('County filter updated.');});
   $('socio').addEventListener('change',()=>{state.socio=$('socio').value;if(current().measure!=='incidence')current().measure=state.socio;if(current().sort!=='name'&&current().sort!=='incidence')current().sort=state.socio;save();renderExplore();announce('Scatterplot now uses '+labels[state.socio].toLowerCase()+'.');});
   $('measure').addEventListener('change',()=>{const s=current();s.measure=$('measure').value;s.sort=s.measure;s.dir='desc';save();renderExplore();announce('Ranking by '+labels[s.measure].toLowerCase()+'.');});
-  $('search').addEventListener('input',()=>{current().query=$('search').value;current().rows=12;save();renderChart();renderTable();});
+  $('search').addEventListener('input',()=>{current().query=$('search').value;current().rows=rowBatch();save();renderChart();renderTable();});
   for(const k of Object.keys(defaults))$(k).addEventListener('change',()=>{state.layer[k]=$(k).checked;save();renderChart();if(k==='trend')announce(state.layer.trend?'Trend line requested. Read the chart caption for its fit.':'Trend line hidden.');});
   for(const el of all('input[name="cr-slot"]'))el.addEventListener('change',()=>{state.slot=el.value;save();renderChart();});
   for(const k of ['a','b'])$('compare-'+k).addEventListener('change',()=>{state.slot=k;pick($('compare-'+k).value);});
@@ -494,19 +530,21 @@
     s.dir=s.sort===k?(s.dir==='asc'?'desc':'asc'):(k==='name'?'asc':'desc');s.sort=k;save();renderTable();announce('Table sorted '+(s.dir==='asc'?'ascending':'descending')+' by '+(labels[k]||'name')+'.');
   });
   $('more').addEventListener('click',()=>{
-    const s=current(),next=s.rows;s.rows+=12;save();renderTable();
+    const s=current(),next=s.rows;s.rows+=rowBatch();save();renderTable();
     $('table').tBodies[0].rows[next]?.querySelector('button')?.focus();
   });
   $('pin').addEventListener('click',()=>{
     const s=current(),view=state.view;
-    const p={view,measure:s.measure,a:s.a,b:s.b,context:{x:state.socio,trend:state.layer.trend&&!state.layer['pair-only'],query:s.query,region:s.region}};
+    const plotX=view==='michigan'?(miMeasures().includes('income')?s.x:'screening'):state.socio;
+    const p={view,measure:s.measure,a:s.a,b:s.b,context:{x:view==='michigan'?'michigan:'+plotX:plotX,trend:scatterView()&&state.layer.trend&&!state.layer['pair-only'],query:s.query,region:s.region}};
     if($('pin').disabled||!L.comparison(D,p))return;
-    state.evidence.push(p);state.completed=false;save();renderExplore();renderSteps();announce('Comparison pinned. You can now use it in Explain.');
+    state.evidence.push(p);state.completed=false;resetEvidenceReview();save();renderExplore();renderSteps();announce('Comparison pinned. You can now use it in Explain.');
     $('to-explain').focus({preventScroll:true});
   });
   $('to-explain').addEventListener('click',()=>goto('explain'));
-  for(const k of ['claim','limits'])$(k).addEventListener('input',()=>{state[k]=$(k).value;state.completed=false;save();renderCompletion();});
-  $('finish').addEventListener('click',()=>{if(canFinish()&&!isComplete()){state.completed=true;save();renderCompletion();announce('Investigation complete. Preview your report before turning it in.');
+  for(const k of ['claim','limits'])$(k).addEventListener('input',()=>{state[k]=$(k).value;state.completed=false;resetEvidenceReview();save();renderCompletion();});
+  $('evidence-confirm').addEventListener('change',renderCompletion);
+  $('finish').addEventListener('click',()=>{if(canFinish()&&reviewReady()&&!isComplete()){state.completed=true;save();renderCompletion();announce('Investigation complete. Preview your report before turning it in.');
     requestAnimationFrame(() => (document.querySelector('[data-ose-report-final] .osr-actions button') ||
       document.querySelector('#ose-submission-report .osr-actions button') || $('explain-title')).focus());}});
   for(const k of Object.keys(designItems))$('design-'+k).addEventListener('input',()=>{state.design[k]=$('design-'+k).value;save();});
@@ -523,7 +561,7 @@
     const result=saveSession?.reset(KEY) ?? unavailableSave;
     if(!result.ok){$('reset-dialog').close();$('save').textContent=showSaveProblem(result,true);return;}
     invalid=false;blocked=false;clearSaveProblem();
-    state=fresh();syncCasefile();syncIdentity();$('reset-dialog').close();
+    state=fresh();resetEvidenceReview();syncCasefile();syncIdentity();$('reset-dialog').close();
     try{history.replaceState(null,'',location.pathname+location.search);}catch(_){}
     text('save','Work stays on this device unless you download it.');render();announce('Investigation reset.');$('predict-title').focus();
   });
@@ -653,6 +691,7 @@
     const i=caseTabs.indexOf(b.dataset.caseNext)-1;
     if(caseMarks(state)[i])showExhibit(b.dataset.caseNext);
   });
+  $('revise-question').addEventListener('click',()=>{casefile.open=true;updateFollowup();question.focus();});
   question.addEventListener('input',()=>{
     state.casework.questionDraft=str(question.value,500);save();updateFollowup();
   });
@@ -660,7 +699,15 @@
     event.preventDefault();
     if(!mayWriteQuestion()||!question.value.trim())return;
     const next=question.value.trim();
-    if(next!==state.casework.question)state.completed=false;
+    if(next!==state.casework.question){
+      state.completed=false;resetEvidenceReview();
+      const suggested=suggestedDataset(next);
+      if(suggested){
+        state.view=suggested.view;
+        if(suggested.view==='michigan')state.settings.michigan.x=suggested.x;
+        if(suggested.view==='poverty')state.socio=suggested.x;
+      }
+    }
     state.casework.question=next;state.casework.questionDraft=null;state.casework.opened=true;
     casefile.open=false;goto('explore');
   });
@@ -700,7 +747,7 @@
     if (!state.evidence.length) missing.push('Pin at least one comparison.');
     if (!state.claim.trim()) missing.push('Write your claim.');
     if (!state.limits.trim()) missing.push('Write a limitation or suggest further evidence.');
-    if (canFinish() && !isComplete()) missing.push('Select Finish investigation.');
+    if (canFinish() && !isComplete()) missing.push('Check your pinned evidence and select Finish investigation.');
     const person = displayIdentity();
     const answer = (prompt, x) => ({type:'answer',prompt,value:x || ''});
     const notes = ['A · Diagnoses', 'B · Deaths', 'C · Map'];

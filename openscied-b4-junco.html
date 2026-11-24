@@ -260,10 +260,14 @@
       </article>
       <aside class="ju-clipboard">
         <p class="ju-kicker">WRITE A PREDICTION</p>
-        <label for="ju-prediction">Compared with mountain birds, city birds will score…</label>
-        <select id="ju-prediction"><option value="">Choose your prediction</option><option value="same">About the same</option><option value="higher">Higher</option><option value="lower">Lower</option></select>
+        <label for="ju-prediction">After being raised under the same conditions, will city birds explore the new room more, less, or about the same as mountain birds?</label>
+        <select id="ju-prediction"><option value="">Choose your prediction</option><option value="same">About the same</option><option value="higher">More than mountain birds</option><option value="lower">Less than mountain birds</option></select>
         <label for="ju-reason">Why do you think so? <span>(optional)</span></label><textarea id="ju-reason" maxlength="900" rows="3"></textarea>
         <button class="btn btn--primary ju-next" type="button" id="ju-reveal" disabled>Save prediction and reveal results</button>
+        <section class="ju-evidence-strip" aria-labelledby="ju-controls-prompt">
+          <h3 id="ju-controls-prompt">Before you look at the results</h3>
+          <p>Use Housing, Food, and Exposure to people to find one thing the researchers kept the same. Why does that make the two groups easier to compare?</p>
+        </section>
       </aside>
     </div>
     <article class="ju-sheet ju-reveal" id="ju-aviary-results" aria-labelledby="ju-aviary-results-title" hidden>
@@ -297,11 +301,14 @@
         <div class="ju-tools" id="ju-cort-tools"><label for="ju-filter">Show <select id="ju-filter"><option value="all">Both populations</option><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label><label class="ju-fit" for="ju-fit"><input id="ju-fit" type="checkbox"> Show best-fit line</label></div>
         <div id="ju-chart" class="ju-plot"></div>
         <p id="ju-cort-status" class="ju-chart-note"></p>
-        <details class="ju-data" id="ju-cort-details"><summary>Read the plotted values</summary><table id="ju-cort-table"><thead><tr><th scope="col">Population</th><th scope="col" id="ju-cort-x">CORT</th><th scope="col">Exploration score</th></tr></thead><tbody></tbody></table></details>
+        <details class="ju-data" id="ju-cort-details"><summary>Read the plotted values</summary><p id="ju-cort-pool-note">Rows number the dots in the table. The source does not identify each bird’s population.</p><table id="ju-cort-table"><thead><tr><th scope="col" id="ju-cort-id">Bird (dot)</th><th scope="col" id="ju-cort-x">CORT</th><th scope="col">Exploration score</th></tr></thead><tbody></tbody></table></details>
       </article>
       <aside class="ju-clipboard">
         <p class="ju-kicker">SYNTHESIZE THE EVIDENCE</p><h3>Your field report</h3>
-        <details class="ju-data"><summary>Field and aviary results</summary><div id="ju-evidence"></div><p id="ju-saved-observation"></p></details>
+        <section class="ju-evidence-strip" aria-labelledby="ju-evidence-heading">
+          <h4 id="ju-evidence-heading">Field and aviary evidence</h4>
+          <div id="ju-evidence"></div><p id="ju-saved-observation" hidden></p>
+        </section>
         <label for="ju-claim">How did the aviary results change or support your explanation? Use evidence from at least two parts.</label><textarea id="ju-claim" rows="4" maxlength="1600"></textarea>
         <label for="ju-limits">What can’t these data tell us? Describe a question or comparison you’d investigate next.</label><textarea id="ju-limits" rows="4" maxlength="1600"></textarea>
         <fieldset class="ju-report-identity"><legend>Put your name on the report (optional)</legend>

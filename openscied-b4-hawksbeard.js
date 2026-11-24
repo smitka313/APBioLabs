@@ -403,7 +403,7 @@
   function chart(host,stats) {
     if (!host) return;
     const figure=txt('figure','','hb-share-chart');
-    figure.append(txt('figcaption','Share of seeds that landed on soil, by type (%)'));
+    figure.append(txt('figcaption','Of the seeds that reached soil, what share came from each type?'));
     const axis=txt('div','','hb-chart-axis');
     axis.setAttribute('aria-hidden','true');
     for (const tick of ['0%','25%','50%','75%','100%']) axis.append(txt('span',tick));
@@ -532,7 +532,10 @@
     gates();renderCompletion();
     setText('#hb-dataset-id',datasetId(state.seed));
     showReleaseResult();
-    if (state.prediction) setText('#hb-prediction-feedback','Prediction: '+choices[state.prediction]+'. You can change it and test your thinking with the model.');
+    updatePredictionButton();
+    if (state.prediction) setText('#hb-prediction-feedback','Your starting prediction: '+choices[state.prediction]+'. '+(state.released>0
+      ? 'Use Compare to say whether your results changed your mind.'
+      : 'You can edit this before the first release.'));
     else setText('#hb-prediction-feedback','');
     if (!running && state.released === PAIRS) {
       const s=currentSummary();
@@ -679,9 +682,14 @@
   }
   function updatePredictionButton() {
     const picked = $('input[name="hb-prediction"]:checked')?.value;
-    const disabled=!isOwn(choices,picked);
-    $('#hb-save-prediction').disabled=disabled;
-    $('#hb-prediction-hint').hidden=!disabled;
+    const locked=state.released>0;
+    for(const radio of $$('input[name="hb-prediction"]')){
+      radio.disabled=locked;
+      if(locked)radio.checked=radio.value===state.prediction;
+    }
+    $('#hb-save-prediction').hidden=locked;
+    $('#hb-save-prediction').disabled=locked||!isOwn(choices,picked);
+    $('#hb-prediction-hint').hidden=locked||isOwn(choices,picked);
   }
   function reset() {
     const next={...fresh(),lastVisitedAt:Date.now()}, result=session?.reset(KEY,JSON.stringify(next));
@@ -703,6 +711,7 @@
   $('#hb-prediction')?.addEventListener('change',updatePredictionButton);
   $('#hb-prediction')?.addEventListener('submit',event=>{
     event.preventDefault();
+    if(state.released>0){updatePredictionButton();announce('The starting prediction is locked. Record a change of mind in Compare.');return;}
     const choice=$('input[name="hb-prediction"]:checked',event.currentTarget)?.value;
     if (!isOwn(choices,choice)) {announce('Choose field, city, or about the same first.');return;}
     state.prediction=choice;render();go('release');

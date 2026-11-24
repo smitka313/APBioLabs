@@ -20,7 +20,7 @@
     {id:'1994-1999',start:1994,end:1999,label:'1994–1999 · What does the data gap hide?',gap:true}
   ].map(Object.freeze));
   const GAP=Object.freeze([
-    {value:'by-1999',label:'The population had recovered by the next plotted observation in 1999; the graph cannot tell us exactly when.'},
+    {value:'by-1999',label:'The next plotted estimate was higher in 1999. The missing years do not show when the rebound began.'},
     {value:'1998',label:'The graph shows that the population recovered in 1998.'},
     {value:'every-year',label:'The graph shows that the population rose by the same amount every year from 1994 to 1999.'}
   ].map(Object.freeze));
@@ -58,7 +58,7 @@
   }
   function checkGap(choice){
     if(!GAP.some(o=>o.value===choice))return {code:'invalid',detail:'Choose the statement best supported by the two plotted points.'};
-    const detail='The 1994 estimate is 917,204; the next plotted estimate is 1,296,944 in 1999. The graph shows recovery by 1999, but without 1995–98 observations it cannot show when recovery began or when the drought ended.';
+    const detail='The 1994 estimate is 917,204; the next plotted estimate is 1,296,944 in 1999. The graph shows a higher estimate in 1999. Without 1995–98 observations it cannot show when the rebound began or when the drought ended.';
     return {code:choice==='by-1999'?'correct':'incorrect',detail:(choice==='by-1999'?'Correct. ':'Recheck the gap. ')+detail};
   }
   const fresh=()=>({v:1,interval:TIME[0].id,secant:false,entries:{}});

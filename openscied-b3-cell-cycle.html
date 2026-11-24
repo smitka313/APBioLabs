@@ -68,7 +68,12 @@
     <div class="step-body split">
       <div class="split-main prose">
         <p class="lede">Cells copy their DNA and divide as organisms grow and repair tissues. Cell-cycle controls can pause division when a cell needs more resources or when its DNA needs attention. In this activity, you will model those controls, then test how the number of cell divisions changes across different conditions.</p>
-        <p><strong>Full investigation: two periods.</strong> Play and compare the Cell Game in period 1. Run the growth model and analyze the evidence in period 2.</p>
+        <p><strong>Ask your teacher which route to follow.</strong> The full investigation takes two periods: play the game first, then run and analyze the growth model.</p>
+        <details class="disclose"><summary>Short route · one class period</summary><div class="inner"><ol>
+          <li><a href="#growth-model">Open the growth model</a>. Write your prediction. Run skin at age 50 with average body size, then change only age to 70 and run again.</li>
+          <li><a href="#analyze">Analyze</a>: complete Q1, Q2, Q4a, and one limitation. You can skip the game and the other questions for this route.</li>
+          <li><a href="#submit">Wrap up</a>: preview and save your report. It can say “In progress” for the full activity; it is still the work to submit for this shorter route.</li>
+        </ol></div></details>
         <p>You will use two connected models:</p>
         <ol>
           <li><strong>Play the Cell Game.</strong> In Round 1, p53 checks your cell at every checkpoint. In Round 2, Cellular Chance cards sometimes stop p53 from working. Count the blue (non-cancer) and red (cancer) cell chips your cells make, then make sense of what happened.</li>
@@ -311,8 +316,8 @@
   <section class="step wrap wrap--wide gutter" id="growth-model" data-step="Growth model">
     <header><div class="eyebrow">4 · A closer look at tissue renewal</div><h2>More time. More renewal.<br>More chances to copy DNA.</h2></header>
     <div class="step-body">
-      <p class="prose">Follow a small patch of tissue through time. More cells and more time both mean more divisions, and every division is one more chance for a mutation. Watch individual cells divide, then compare three trials. What changes when you track skin, intestinal, brain-support, or blood-forming cells?</p>
-      <div class="baseline-prompt field"><label for="model-baseline">Before you run the model: what do you think?</label><p id="hint-baseline">Why might older people, and people with more cells, have more cancer? Which cell types do you expect to divide most often? Write what you think now, or sketch a quick model on paper and describe it. Use “?” for the parts you are unsure about. You will look at this again at the end.</p><textarea id="model-baseline" rows="3" aria-describedby="hint-baseline" placeholder="I think cells that divide more often … because …&#10;I think older people … because …&#10;I am not sure about …?"></textarea></div>
+      <p class="prose">In this model, more starting cells or more time usually lead to more divisions. Each division is a chance for a mutation, not a prediction of cancer. Run one starting set, then change only age, height, or cell type. Keep the other two settings the same.</p>
+      <div class="baseline-prompt field"><label for="model-baseline">Before you run the model: what do you think?</label><p id="hint-baseline">Will your modeled tissue divide more often if you follow it for longer or start with more cells? What do you think would change if you modeled a different tissue? Write a prediction or sketch it on paper; you will revisit it after the trials.</p><textarea id="model-baseline" rows="3" aria-describedby="hint-baseline" placeholder="I think cells that divide more often … because …&#10;I think older people … because …&#10;I am not sure about …?"></textarea></div>
       <div class="growth-controls" aria-label="Growth model settings">
         <div class="field"><label for="age-slider">Follow to age <output id="age-value">50</output></label><input id="age-slider" type="range" min="20" max="80" value="50"><small>Start at age 20 · stop at your chosen age</small></div>
         <div class="field"><label for="body-size">Modeled body size (height)</label><select id="body-size" aria-describedby="body-size-note"><option value="small">Smaller · shorter person · 20 cell units</option><option value="average" selected>Average · average height · 30 cell units</option><option value="large">Larger · taller person · 40 cell units</option></select><small id="body-size-note">A taller person has more cells of each type. This is a model, not a prediction for any individual.</small></div>
@@ -356,7 +361,7 @@
   <section class="step wrap wrap--wide gutter" id="analyze" data-step="Analyze">
     <header><div class="eyebrow">5 · Make sense of the evidence</div><h2>What changed? What stayed the same?</h2></header>
     <div class="step-body">
-      <p class="prose" data-analysis-page="0">Choose two sets. The comparison uses your recorded results, so you can point to real numbers from your model.</p>
+      <p class="prose" data-analysis-page="0">Choose two recorded sets that differ in just one setting. Use the age pair for Q4a, height for Q4b, and cell type for Q3.</p>
       <div class="analysis-workspace"><aside class="analysis-reference" aria-label="Evidence from your investigation"><details class="analysis-reference-toggle" id="analysis-reference-toggle" open><summary><h3>Evidence to reference</h3></summary><p class="small">Your recorded trial results and cell-cycle events appear here as you work.</p><div id="analysis-reference-data" aria-live="polite"></div><a href="#growth-model">Review growth model ↗</a></details></aside><div class="analysis-questions"><div data-analysis-page="0" class="comparison-selectors"><div class="field"><label for="compare-a">Compare this set</label><select id="compare-a" disabled><option value="">Run a set first</option></select></div><span class="compare-arrow" aria-hidden="true">→</span><div class="field"><label for="compare-b">With this set</label><select id="compare-b" disabled><option value="">Run a second set</option></select></div></div>
       <div data-analysis-page="0" id="comparison-evidence" class="comparison-evidence" role="status" aria-live="polite"><p>Collect two sets to reveal your evidence comparison.</p></div>
       <p data-analysis-page="0" class="analysis-directions">Use short answers—one or two sentences is enough unless a question asks you to revise your model. Name the sets or trials you used. If you have not tested a condition, collect that comparison or say what evidence you still need.</p>

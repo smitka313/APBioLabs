@@ -105,9 +105,9 @@
   document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
   $('[data-show-evidence]').addEventListener('click', () => setPage('evidence'));
   const questions = [
-    ['q1', 'Why did all the carbon start out in the atmosphere?'],
+    ['q1', 'Your atom started in atmospheric carbon dioxide. Is that a rule of this model or a claim about where all Earth’s carbon is? Explain.'],
     ['q2', 'What relationships or patterns do you notice in your journey’s totals?'],
-    ['q3', 'Tell your carbon atom’s story. Include your recorded stops, forms of matter, energy transfers and mechanisms. Name specific organisms or materials. If you use a station example to show another possible route, label it as an example, not one of your rolls.'],
+    ['q3', 'Tell the story of two turns you recorded. For each: Where did the atom go? What was it part of? What process moved it, and what happened to the energy? Name specific organisms or materials. If you also use a reference card, label it as an example, not one of your rolls.'],
     ['q4', 'Compare with a classmate. What was similar, even though your journeys differed?'],
     ['q5', 'How does this model help explain the effects of carbon dioxide added to the atmosphere by fires?']
   ];

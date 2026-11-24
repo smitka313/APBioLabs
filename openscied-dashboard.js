@@ -411,7 +411,7 @@
       !Number.isInteger(s.action)||s.action<0||s.action>6||!['increase','same','decrease'].includes(s.prediction))return empty;
     const section=['predict','model'].includes(s.step)||s.action===6&&['analyze','explain'].includes(s.step)?s.step:'model';
     const n=ratGenerationsResponseIds().filter(id=>written(s.answers||{},id)).length;
-    const stepsDone=1+Number(s.action===6)+Number(s.analysisChecked===true)+Number(['claim','evidence','limits'].every(id=>written(s.answers||{},id)));
+    const stepsDone=1+Number(s.action===6)+Number(s.analysisChecked===true||['rats','r','alleles'].includes(s.analysisAttempt))+Number(['claim','evidence','limits'].every(id=>written(s.answers||{},id)));
     return {summary:s.action+' of 6 model actions recorded'+(n?' · '+n+' of 4 responses saved':''),
       started:true,section,visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,stepsDone,stepsTotal:4,stepsLabel:'Investigation parts completed'};
   }
@@ -432,7 +432,7 @@
     const simulatedTrials = Array.isArray(saved.sim?.results) ? saved.sim.results.length : 0;
     const flightStarted = saved.sim?.active?.finished === false;
     if (!prediction && !revealed && !answers && !written(saved,'observation') && !written(saved,'reason') && !flightStarted && !simulatedTrials) return empty;
-    const stage = { field:'Field notes', aviary:'Shared aviary', cort:'CORT evidence' };
+    const stage = { field:'Field notes', aviary:'Shared aviary', cort:'Stress hormone evidence' };
     const stepsDone=Number(written(saved,'observation'))+Number(revealed)+Number(answers===2);
     return { started:true, section, visited:Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone,stepsTotal:3,stepsLabel:'Investigation steps completed',
@@ -465,11 +465,12 @@
   };
   function init() {
     $('[data-ph="dashboard-identity"]')?.remove();
-    Lab.identity.mount('#openscied-student-identity');
+    Lab.identity.mount('#openscied-student-identity', { sharedDevice: true, downloadOpenSciEd: () => downloadWork(undefined, null) });
     const status = $('#openscied-results-status');
     const dialog = $('#clear-openscied-dialog');
     const confirmation = $('#openscied-erase-confirmation');
     const confirmButton = $('#confirm-openscied-clear');
+    const backupStatus = $('#openscied-backup-status');
     let clearTarget = null;
     let tracker;
     try { tracker=window.OpenSciEdResume?.connect(localStorage); } catch (_) { /* saved-work display already handles blocked storage */ }
@@ -479,7 +480,7 @@
     resumeDate.hidden=true;
     resumeLink?.before?.(resumeDate);
     const meters=new Map();
-    function updateMeter(activity, status, item) {
+    function updateMilestone(activity, status, item) {
       let meter=meters.get(activity.id);
       const [defaultTotal,defaultLabel]=STEP_SCALES[activity.id]||[];
       const total=item.stepsTotal??(item.started?undefined:defaultTotal);
@@ -498,7 +499,8 @@
       const {summary,bar}=meter;
       if(!known){summary.textContent='Work saved';summary.hidden=false;bar.hidden=true;return;}
       const detail=done+' of '+total+' '+label.toLowerCase();
-      summary.textContent=done+' of '+total+' · '+Math.round(100*done/total)+'% ('+label.toLowerCase()+')';
+      // This bar counts one named milestone, not the whole activity.
+      if (summary.textContent !== detail) summary.textContent = detail;
       summary.hidden=false;bar.hidden=false;
       bar.max=total;bar.value=done;bar.title=detail;
       bar.setAttribute('aria-label',activity.name+' · '+label);
@@ -527,11 +529,15 @@
           const progress = $('#' + activity.id + '-progress'), reset = $('#' + activity.id + '-reset'), link = $('#' + activity.id + '-open');
           // A cached dashboard may not have the newest card yet; keep the existing cards working.
           if (!progress || !reset || !link) return;
-          progress.textContent = item.summary;
+          if (progress.textContent !== item.summary) progress.textContent = item.summary;
           reset.disabled = !item.started && item.summary==='Not started';
-          link.textContent = item.started ? 'Continue activity →' : 'Open activity →';
+          const action = item.started ? 'Continue activity' : 'Open activity';
+          link.textContent = action + ' →';
+          link.setAttribute('aria-label', action + ': ' + activity.name);
           link.href = activityDestination(activity, item);
-          updateMeter(activity,progress,item);
+          const pictureLink = link.closest?.('.dashboard-activity')?.querySelector('.dashboard-preview');
+          if (pictureLink) pictureLink.href = item.started ? link.href : activity.file;
+          updateMilestone(activity, progress, item);
           // Reconcile only a verified progress record. An old visit timestamp can seed the
           // ledger once, but after that only a change in evidence can promote the activity.
           if (item.started) {
@@ -550,9 +556,9 @@
         } else dateLabel(0);
         $('#download-openscied-results').disabled = !count;
         $('#clear-openscied-results').disabled = !count;
-        status.textContent = message || (count
-          ? 'OpenSciEd work is saved on this device. You can download a copy or clear it for a fresh start.'
-          : 'No OpenSciEd results saved on this device. Choose an activity to get started.');
+        const next = message || (count ? 'This browser has saved work. Download a backup before clearing it.'
+          : 'No saved work yet. Choose an activity to get started.');
+        if (status.textContent !== next) status.textContent = next;
       } catch (e) {
         $('#openscied-resume').hidden = true;
         dateLabel(0);
@@ -563,7 +569,7 @@
         $('#clear-openscied-results').disabled = true;
       }
     }
-    function downloadWork(onlyKeys) {
+    function downloadWork(onlyKeys, feedback = status) {
       try {
         const work = {};
         const keys = (onlyKeys || savedKeys()).filter(key => {
@@ -607,19 +613,22 @@
             }
           } catch (_) { /* Keep unreadable budget data in the raw backup. */ }
         }
-        const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: Lab.identity.get(), work, responses };
+        // Only per-activity reports can attribute a student. Browser backups may contain mixed or older work.
+        const payload = { format: 'openscied-saved-work-v1', exportedAt: new Date().toISOString(), student: null, work, responses };
         const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a');
         link.href = url; link.download = 'openscied-saved-work.json';
         document.body.appendChild(link); link.click(); link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        status.textContent = 'Downloaded a copy of your OpenSciEd work.';
+        if (feedback) feedback.textContent = 'Backup download started: openscied-saved-work.json. This is not a classroom report.';
+        return true;
       } catch (e) {
-        status.textContent = 'Could not download your OpenSciEd work. Your saved results have not been cleared.';
+        if (feedback) feedback.textContent = 'Could not download the backup. Nothing was cleared.';
+        return false;
       }
     }
     $('#download-openscied-results').addEventListener('click', () => downloadWork());
-    $('#backup-before-openscied-clear').addEventListener('click', () => downloadWork(clearTarget ? activityKeys(clearTarget) : null));
+    $('#backup-before-openscied-clear').addEventListener('click', () => downloadWork(clearTarget ? activityKeys(clearTarget) : null, backupStatus || status));
     function openClear(activity) {
       clearTarget = activity || null;
       $('#clear-openscied-title').textContent = activity ? 'Restart ' + activity.name + '?' : 'Clear OpenSciEd results?';
@@ -629,12 +638,17 @@
       confirmButton.textContent = activity ? 'Erase this activity’s results' : 'Erase OpenSciEd results';
       confirmation.value = ''; confirmButton.disabled = true;
       $('#openscied-clear-error').textContent = '';
+      if (backupStatus) {
+        backupStatus.textContent = '';
+        backupStatus.setAttribute('role', 'status');
+      }
       dialog.showModal();
     }
     $('#clear-openscied-results').addEventListener('click', () => openClear());
     ACTIVITIES.forEach(activity => $('#' + activity.id + '-reset')?.addEventListener('click', () => openClear(activity)));
     confirmation.addEventListener('input', () => { confirmButton.disabled = confirmation.value !== 'ERASE'; });
     $('#cancel-openscied-clear').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => backupStatus?.removeAttribute?.('role'));
     $('#clear-openscied-form').addEventListener('submit', event => {
       event.preventDefault();
       if (confirmation.value !== 'ERASE') return;

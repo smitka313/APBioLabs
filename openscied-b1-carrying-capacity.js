@@ -90,11 +90,13 @@
     const births = r.births ? plural(r.births,'calf joined','calves joined')+' the herd (half of the '+r.survivors+' fed animals, rounded down).' : 'No calves joined the herd: half of the fed animals rounds down to zero.';
     return 'Round '+r.round+': '+r.starting+' wildebeest competed for '+plural(r.grassAvailable,'grass unit','grass units')+'. '+unfed+' '+births+' The herd '+(r.ending>r.starting?'grew':r.ending<r.starting?'shrunk':'stayed the same')+' ('+r.starting+' → '+r.ending+').';
   };
-  const mean = (rows) => rows.reduce((a,r)=>a+r.ending,0) / rows.length;
+  const lateRange = trial => {
+    const counts=trial.rows.filter(r=>r.round>=7&&r.round<=12).map(r=>r.ending);
+    return counts.length ? Math.min(...counts)+'–'+Math.max(...counts) : 'not recorded';
+  };
   const compareText = () => {
     if (!state.comparison || state.comparison.round < ROUNDS) return '';
-    const first = mean(state.baseline.rows.slice(-4)).toFixed(1), second = mean(state.comparison.rows.slice(-4)).toFixed(1);
-    return 'Over the last four rounds, the herd averaged '+first+' in the baseline and '+second+' with '+state.comparison.grassPercent+'% grass available. A herd can fluctuate from round to round; compare the pattern, not just the last point.';
+    return 'In rounds 7–12, the herd ranged from '+lateRange(state.baseline)+' in the baseline and '+lateRange(state.comparison)+' with '+state.comparison.grassPercent+'% grass available. Compare the range and repeating values, not just the last point.';
   };
   const scene = window.CarryingScene.mount($('#cc-board'));
   const habitat = window.CarryingHabitatUI.mount($('#cc-habitat-app'), {announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
@@ -224,7 +226,9 @@
   }
   function submissionData(){
     const missing=[];
+    const recovering=preservedSave||!keys.every(key=>saveSession?.check(key)?.ok===true);
     if(preservedSave)missing.push('An older save could not be read. This report contains work available in this tab only.');
+    else if(recovering)missing.push('This tab cannot save its current copy. Download it before reloading.');
     const trials=[['Baseline · 100% grass',state.baseline],
       ['Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':''),state.comparison]];
     trials.forEach(([label,trial])=>{if((trial?.round||0)<ROUNDS)missing.push('Finish '+label+' ('+(trial?.round||0)+' of '+ROUNDS+' rounds).');});
@@ -246,7 +250,7 @@
     ];
     return {title:'Serengeti Carrying Capacity Lab',unit:'Unit B.1 · Lesson 5',
       source:'Based on OpenSciEd B.1 Lesson 5. Grass and habitat runs are simulations. Field estimates are classroom estimates adapted from Hopcraft et al. (2015), not simulation results.',
-      status:preservedSave?'recovery':missing.length?'draft':'final',missing,student:preservedSave?null:reportIdentity(),
+      status:recovering?'recovery':missing.length?'draft':'final',missing,student:preservedSave?null:reportIdentity(),
       keyResults:[...trials.filter(([,trial])=>trial?.round).map(([label,trial])=>({
         label:label+' · ending herd at round '+trial.round,value:trial.population,unit:'wildebeest',note:'Simulated'})),
         {label:'Required explanations written',value:written+' / '+requiredQuestions.length}],sections};
@@ -254,7 +258,7 @@
   const report = () => {
     const who = reportIdentity() || {};
     const describe = (sim,name) => sim?.round ? [name+' (SIMULATED)', 'Round | Starting herd | Grass units | Survivors | Births | Deaths | Ending herd', ...sim.rows.map((r)=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending].join(' | '))].join('\n') : name+': no completed rounds.';
-    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (classroom estimates, not simulated)\n'+(field.report() || 'No field calculations recorded.'), 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'Write an if/then rule for a grass shortage.\n'+(state.answers['shortage-rule'] || 'Not entered'), 'Predict what the baseline graph would look like after 50 rounds.\n'+(state.answers['long-run'] || 'Not entered'), 'How could migration affect carrying capacity?\n'+(state.answers['migration-claim'] || 'Not entered'), 'Optional: How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
+    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (classroom estimates, not simulated)\n'+(field.report() || 'No field calculations recorded.'), 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'Write an if/then rule for a grass shortage.\n'+(state.answers['shortage-rule'] || 'Not entered'), 'If the model rules stay the same, what will the baseline graph look like over the next six rounds?\n'+(state.answers['long-run'] || 'Not entered'), 'How could migration affect carrying capacity?\n'+(state.answers['migration-claim'] || 'Not entered'), 'Optional: How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
   };
   const openReport = (message) => {
     $('#cc-report-text').value = report(); $('#cc-report-help').textContent = message || 'Select and copy this text if your device blocks downloads.'; $('#cc-report').showModal();

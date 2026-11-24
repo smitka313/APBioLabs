@@ -214,7 +214,7 @@
       const renderKey=JSON.stringify([k,MODES.map(id=>trials[id]?.fingerprint),status]);
       if(renderKey===paintKey){updateFeedback();return;}
       paintKey=renderKey;
-      host.innerHTML=`<div class="cc-range-head"><div><p class="cc-tag">Range study · Simulated model</p><h3 id="cc-range-title">Estimate the late-round range</h3></div><span class="cc-range-window" aria-hidden="true">7–12</span></div>
+      host.innerHTML=`<div class="cc-range-head"><div><p class="cc-tag">Optional range study · Simulated model</p><h3 id="cc-range-title">Estimate the late-round range</h3></div><span class="cc-range-window" aria-hidden="true">7–12</span></div>
         <p class="cc-caption">Carrying capacity describes what resources can support over time. A population can fluctuate around it. Look for repeated highs and lows, not just the single biggest result.</p>
         <p id="cc-range-storage" class="cc-range-limit"${storageCopy()?'':' hidden'}>${storageCopy()}</p>
         <p id="cc-range-readiness">${readiness()}</p>

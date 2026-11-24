@@ -1,8 +1,12 @@
 /* Lab 11: leaf tracing, stomata slide + marks, transpiration run (chart and readouts) and design readouts survive a reload. */
 const T = require('./_h');
 (async () => {
-  const b = await T.launch(), ctx = await T.ctxFor(b);
-  const p = await T.open(ctx, 'lab11.html', 'leaf-area');
+  // Web Storage for file:// URLs is browser-dependent. Exercise the same
+  // ordinary, stable HTTP origin used by the live activity instead.
+  const b = await T.launch(), site = await T.serve();
+  try {
+  const ctx = await T.ctxFor(b);
+  const p = await T.open(ctx, 'lab11.html', 'leaf-area', site.url);
   // leaf area
   await p.fill('#la-full', '40'); await p.fill('#la-part', '20'); await p.click('#la-calc'); await p.waitForTimeout(200);
   const la = () => p.evaluate(() => ({ y: document.querySelector('#la-yours').textContent, t: document.querySelector('#la-true').textContent, m: document.querySelector('#la-msg').textContent }));
@@ -12,15 +16,20 @@ const T = require('./_h');
   // Wait until both the calculation and input counts are durable before reloading.
   await p.waitForFunction(() => {
     const state = Lab.store.get('la-state');
-    const saved = Object.keys(localStorage).filter(k => /lab11/.test(k));
     return state?.calc?.f === 40 && state?.calc?.p === 20 &&
-      saved.some(k => localStorage.getItem(k)?.includes('40'));
+      Lab.store.get('field:la-full') === '40' && Lab.store.get('field:la-part') === '20';
   }, null, { timeout: 5000 });
-  await p.waitForTimeout(700);
-  await p.reload(); await p.waitForTimeout(900);
+  await p.reload({ waitUntil: 'load' });
+  await p.waitForFunction(expected => {
+    const f = document.querySelector('#la-full'), p = document.querySelector('#la-part');
+    return f?.value === '40' && p?.value === '20' &&
+      document.querySelector('#la-yours')?.textContent === expected.y &&
+      document.querySelector('#la-true')?.textContent === expected.t &&
+      document.querySelector('#la-msg')?.textContent === expected.m;
+  }, la0, { timeout: 5000 }).catch(() => {}); // Evaluate both assertions below even on a hydration timeout.
   const la1 = await la();
   T.ok(la1.y === la0.y && la1.t === la0.t && la1.m === la0.m, 'leaf result restored (same leaf, same feedback): ' + la1.y + ' / ' + la1.t);
-  T.ok(await p.evaluate(() => document.querySelector('#la-full').value === '40'), 'counts restored');
+  T.ok(await p.evaluate(() => document.querySelector('#la-full').value === '40' && document.querySelector('#la-part').value === '20'), 'both counts restored');
   // stomata: mark one, reload
   await p.evaluate(() => Lab.pages.go('stomata')); await p.waitForTimeout(500);
   const f0 = await p.evaluate(() => { const f = document.querySelector('#st-cv').peelField(); return { n: f.stomata.length, area: f.A }; });
@@ -66,5 +75,6 @@ const T = require('./_h');
   T.ok(r1.rate === r0.rate && r1.area === r0.area && r1.time === r0.time, 'run readouts restored: ' + JSON.stringify(r1));
   T.ok(r1.pts > 0, 'chart redrawn');
   T.ok(p.errors.length === 0, 'no page errors ' + p.errors.join(';'));
-  await b.close(); T.done('lab11');
+  T.done('lab11');
+  } finally { await b.close(); site.close(); }
 })();

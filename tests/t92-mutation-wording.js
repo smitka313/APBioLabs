@@ -19,7 +19,7 @@ const T = require('./_h');
     T.ok(/mutation/i.test(await q('explanation-size').catch(() => '')), 'Question 4b and its hint use the word "mutation"');
     T.ok(/mutation/i.test(await q('analysis-cancer')) && /single mutation is not enough/i.test(await q('analysis-cancer')), 'Question 5 and its hint use "mutation" and say one is not enough');
     T.ok(/mutation/i.test(await text('.growth-model-intro, #growth-model .prose')) , 'the section intro mentions that every division is a chance for a mutation');
-    T.ok(/More cells and more time both mean more divisions/.test(await text('#growth-model .prose')), 'the Lesson 4 intro says more cells and more time both mean more divisions');
+    T.ok(/more starting cells or more time usually lead to more divisions/i.test(await text('#growth-model .prose')), 'the Lesson 4 intro says more cells or time generally lead to more divisions in the model');
     T.ok(/does not guarantee a mutation or cancer/.test(assume), 'the text still says a division does not guarantee a mutation or cancer');
   } catch (e) { T.ok(false, 'unexpected error: ' + e.message.split('\n')[0]); }
   await browser.close(); server.close(); T.done('t92-mutation-wording');

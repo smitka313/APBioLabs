@@ -17,7 +17,7 @@
 .hb-steps button[aria-current="step"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .hb-steps button:disabled{color:var(--muted);cursor:not-allowed}
 .hb-steps button span{margin-right:4px;font-variant-numeric:tabular-nums}
-.hb-section[hidden]{display:none!important}
+.hb-section[hidden],#hb-save-prediction[hidden]{display:none!important}
 .hb-section{margin:0 0 11px}
 .hb-stagehead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px 12px;margin-bottom:8px}
 .hb-stagehead h2{font-size:clamp(1.27rem,2.7vw,1.9rem);line-height:1.1;margin:3px 0}

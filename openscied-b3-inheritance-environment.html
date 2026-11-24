@@ -77,9 +77,9 @@
     <div class="step-body split">
       <div class="split-main prose">
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
-        <div class="callout callout--safety" id="content-note"><div class="callout-title">A note before you start</div><p>This activity talks about cancer, young people who have had it, and families who lost relatives. You can pause, skip a part, or step away at any time. Nobody is asked to share anything about their own family’s health.</p></div>
+        <div class="callout callout--safety" id="content-note"><div class="callout-title">A note before you start</div><p>This activity discusses cancer and family loss. You can pause or step away. You can skip the family stories and go straight to <a href="#envideas">Part B: environment and UV evidence</a>. Nobody is asked about their own family’s health.</p></div>
         <div class="part-card"><span class="part-tag">Part A · Lesson 8 · sections 2–8</span><p><strong>Why does cancer seem to run in some families?</strong> Follow alleles through pedigrees.</p></div>
-        <div class="part-card"><span class="part-tag">Part B · Lesson 9 · sections 9–14</span><p><strong>How can the environment affect cancer risk?</strong> Explore skin cancer data and test UV on virtual yeast.</p></div>
+        <div class="part-card"><span class="part-tag">Part B · Lesson 9 · sections 9–14</span><p><strong>How can the environment affect cancer risk?</strong> Follow the graphs, run the UV yeast model, and build a claim from your results.</p></div>
         <p>Cancer is not inevitable and is nobody’s fault. Alleles, UV and chance all matter. Nothing here predicts anyone’s health.</p>
         <details class="disclose teacher-note"><summary>For teachers</summary><div class="inner"><ul>
           <li>Preview the three linked videos. Offer a way to skip them.</li>
@@ -318,7 +318,7 @@
         <h3>Background</h3>
         <ul class="bg-list">
           <li><strong>Melanoma</strong> is a skin cancer that starts in melanin-making cells.</li>
-          <li>A higher <strong>UV index</strong> means stronger UV. Each dot is one site that counts cases.</li>
+          <li>A higher <strong>UV index</strong> means stronger UV. Each dot is one place, not one person. A line can show a pattern; it cannot tell us what caused it.</li>
         </ul>
       </div>
       <div class="scene-host" id="skin-data-scene" data-scene="skin">
@@ -423,7 +423,7 @@
           <label class="choice"><input type="radio" name="cer-claim" value="b"> Cover (SPF or foil) lets more yeast grow.</label>
           <label class="choice"><input type="radio" name="cer-claim" value="c"> UV has no effect.</label>
         </fieldset>
-        <fieldset class="chipset"><legend>Evidence (tap what supports it)</legend>
+        <fieldset class="chipset" data-id="cer-evidence"><legend>Evidence (tap what supports it)</legend>
           <label class="chip"><input type="checkbox" id="cer-ev-1" aria-describedby="cer-ev-1-note"> My dishes with more UV had fewer colonies</label><span class="ev-note" id="cer-ev-1-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-2" aria-describedby="cer-ev-2-note"> My dark dish grew about the most</label><span class="ev-note" id="cer-ev-2-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-3" aria-describedby="cer-ev-3-note"> Dishes with higher SPF had more colonies</label><span class="ev-note" id="cer-ev-3-note"></span>
@@ -504,7 +504,7 @@
 
       <div id="investigation-report" class="investigation-report" aria-label="Your summary"></div>
       <div class="submit-card">
-        <p>Work saves in this browser, not online. Use <strong>Preview report</strong> to review and save a copy for your teacher.</p>
+        <p>Work saves in this browser, not online. If you followed only Part B, your report identifies the environment and UV pathway so it does not claim you completed the family activities.</p>
         <div id="save-status" class="small"></div>
         <div data-ose-report-final></div>
         <details class="ose-report-other"><summary>Other downloads and backups</summary>

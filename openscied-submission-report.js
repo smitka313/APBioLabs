@@ -15,9 +15,9 @@
     recovery: 'Recovered work',
   });
   const words = Object.freeze({
-    final: 'The required work is included. This is not a grade or an authenticity check.',
-    draft: 'This report is a draft. It does not show completion.',
-    recovery: 'This copy preserves work from this tab. It is not marked complete.',
+    final: 'Required work was recorded. This does not show who did the work or how well.',
+    draft: 'You can turn in this draft if your teacher assigned only part of the activity.',
+    recovery: 'This copy contains work still open in this tab. It is not a completed submission.',
   });
   const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
@@ -77,7 +77,8 @@
       ? i.value.trim() : i.type === 'table' ? i.rows.some(row => row.some(c => c.trim())) : i.text.trim()));
     const requested = own(labels, r.status) ? r.status : 'draft';
     const status = requested === 'final' && (!hasEvidence || missing.length) ? 'draft' : requested;
-    return { title, unit, source, status, student, datasetId, keyResults, sections, missing, exportedAt: printDate.toISOString(), printTime: localeDate.format(printDate) };
+    return { title, unit, source, status, student, allowIdentityEdit: status !== 'recovery' && r.allowIdentityEdit !== false,
+      datasetId, keyResults, sections, missing, exportedAt: printDate.toISOString(), printTime: localeDate.format(printDate) };
   }
 
   function identityRows(r) {
@@ -471,6 +472,7 @@
       try { report = capture(); }
       catch (_) { message(live, 'Could not prepare a report. Your work has not changed.', true); return; }
       live.textContent = '';
+      const original = report;
       const tools = node('div', 'osr-tools'), controls = node('div', 'osr-actions');
       const print = action('Print or save as PDF', true), save = action('Download .docx'), close = action('Close report');
       const status = node('p', 'osr-live');
@@ -480,20 +482,75 @@
       formats.append(node('summary', '', 'More formats'), save);
       controls.append(print, close);
       tools.append(controls, node('p', 'osr-screen-help', 'In the print window, choose “Save as PDF” to download a PDF file.'), formats, status);
-      const preview = article(report, titleId);
+      let preview = article(report, titleId);
+      // Keep the captured work and timestamps immutable. Corrections affect only this preview
+      // and its exports; they do not change the browser identity or the underlying record.
+      function canApplyIdentity() {
+        try {
+          const now = capture();
+          return now.allowIdentityEdit && now.student.name === original.student.name &&
+            now.student.period === original.student.period;
+        } catch (_) { return false; }
+      }
+      const mustReopen = 'The activity changed since you opened this report. Close it and open a new preview.';
+      function syncPrint() {
+        runningStyle?.remove();
+        runningStyle = printRunningStyle(report);
+        doc.head.append(runningStyle);
+      }
       dialog.replaceChildren(tools, preview);
+      if (report.allowIdentityEdit) {
+        const editor = node('details', 'osr-identity-editor');
+        const summary = node('summary', '', 'Edit name or period');
+        const form = node('form', 'osr-identity-fields');
+        const name = node('input'), period = node('input');
+        name.type = period.type = 'text';
+        name.maxLength = 80; period.maxLength = 32;
+        name.value = report.student.name; period.value = report.student.period;
+        const nameLabel = node('label', '', 'Name');
+        const periodLabel = node('label', '', 'Class period');
+        nameLabel.append(name); periodLabel.append(period);
+        const apply = action('Apply to this report'); apply.type = 'submit';
+        form.append(nameLabel, periodLabel, apply);
+        editor.append(summary, node('p', '', 'Correct your own name or period here. This changes this report only. For a different student, use the dashboard.'), form);
+        editor.addEventListener('toggle', () => {
+          if (!editor.open) {
+            name.value = report.student.name;
+            period.value = report.student.period;
+          }
+        });
+        form.addEventListener('submit', event => {
+          event.preventDefault();
+          if (!canApplyIdentity()) { message(status, mustReopen, true); return; }
+          report = { ...report, student: { name: name.value.trim(), period: period.value.trim() } };
+          const updated = article(report, titleId);
+          preview.replaceWith(updated);
+          preview = updated;
+          syncPrint();
+          editor.open = false;
+          message(status, 'Name and period updated for this report only.');
+          summary.focus();
+        });
+        tools.after(editor);
+      }
       try { dialog.showModal(); }
       catch (_) { message(live, 'Could not open the report preview. Your work has not changed.', true); return; }
       clearPrint();
-      runningStyle = printRunningStyle(report);
-      doc.head.append(runningStyle);
+      syncPrint();
       doc.body.classList.add('openscied-report-print');
+      function canExport() {
+        const edited = report.student.name !== original.student.name || report.student.period !== original.student.period;
+        if (!edited || canApplyIdentity()) return true;
+        message(status, mustReopen, true);
+        return false;
+      }
       print.addEventListener('click', () => {
+        if (!canExport()) return;
         if (!root.print) { message(status, 'Printing is not available. Try downloading the Word file.', true); return; }
         try { root.print(); }
         catch (_) { message(status, 'Could not open the print window. Try downloading the Word file.', true); }
       });
-      save.addEventListener('click', () => launchWord(report, save, status));
+      save.addEventListener('click', () => { if (canExport()) launchWord(report, save, status); });
       close.addEventListener('click', () => dialog.close());
       preview.querySelector('.osr-title').focus();
     }

@@ -56,8 +56,11 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
         const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
         const kids = [...cap.children].map(k => k.getBoundingClientRect());
+        const action = c.querySelector('.dashboard-open');
         return {
-          label: a.getAttribute('aria-label') || '', hidden: svg && svg.getAttribute('aria-hidden'), role: svg && svg.getAttribute('role'),
+          label: action?.getAttribute('aria-label') || '',
+          previewHidden: a.getAttribute('aria-hidden') === 'true' && a.tabIndex === -1,
+          hidden: svg && svg.getAttribute('aria-hidden'), role: svg && svg.getAttribute('role'),
           svgText: svg ? [...svg.querySelectorAll('text')].map(t => t.textContent.trim()) : [], pill: !!c.querySelector('.dashboard-preview-label'),
           ratio: ar.width / ar.height, capBelow: cr.top >= ar.bottom - 0.5, capInside: cr.left >= fr.left - 0.5 && cr.right <= fr.right + 0.5,
           kidsInside: kids.every(k => k.left >= fr.left - 0.5 && k.right <= fr.right + 0.5), capText: cap.innerText.trim(), capH: cr.height, w: ar.width,
@@ -70,42 +73,46 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       }));
       const svgCards = m.filter(x=>x.svg);
       T.ok(m.length === 15 && svgCards.length === 7 && m.filter(x=>x.img).length === 8, width + ' px: fifteen cards: seven inline illustrations and eight linked SVG illustrations');
-      T.ok(svgCards.every(x => x.hidden === 'true' && !x.role && x.label.length > 40 && /^Open /.test(x.label)), width + ' px: SVG decorative (aria-hidden, no role) and the link names the activity');
+      T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
+      const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
+      T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
+        new Set(m.map(x => x.label)).size === 15 && actionCounts.every(n => n === 1),
+        width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
       T.ok(poster?.complete && poster.src===MIGRATION_PREVIEW && poster.w===960 && poster.h===600 &&
         poster.widthAttr==='960' && poster.heightAttr==='600' && Math.abs(poster.w/poster.h-1.6)<0.001,
         width + ' px: first card illustration loads and has reserved 960×600 proportions');
-      T.ok(poster?.alt==='' && /^Open Migration Map Explorer/.test(first.label) && first.label.length>40,
-        width + ' px: the illustrated preview link has a descriptive accessible name');
+      T.ok(poster?.alt==='' && first.label === 'Open activity: Migration Map Explorer',
+        width + ' px: the decorative Migration image has a named primary activity link alongside');
       const carrying = m[1];
       T.ok(carrying?.img?.complete && carrying.img.src===CARRYING_PREVIEW &&
         carrying.img.w===960 && carrying.img.h===600 && carrying.img.alt==='' &&
-        /^Open Carrying Capacity/.test(carrying.label),
+        carrying.label === 'Open activity: Carrying Capacity',
         width + ' px: second card has the original carrying capacity illustration and a named link');
       const hawksbeard = m.find(x=>x.img?.src===HAWKSBEARD_PREVIEW);
       T.ok(hawksbeard?.img?.complete && hawksbeard.img.src===HAWKSBEARD_PREVIEW &&
         hawksbeard.img.w===960 && hawksbeard.img.h===600 && hawksbeard.img.alt==='' &&
         hawksbeard.img.widthAttr==='960' && hawksbeard.img.heightAttr==='600' &&
-        /^Open Hawksbeard Wind Lab/.test(hawksbeard.label) && hawksbeard.label.length>40,
-        width + ' px: the Hawksbeard illustration loads at the reserved size and its link has a descriptive accessible name');
+        hawksbeard.label === 'Open activity: Hawksbeard Wind Lab',
+        width + ' px: the Hawksbeard illustration loads at the reserved size and its primary link has a descriptive accessible name');
       const rats = m.find(x=>x.img?.src==='assets/rat-generations-preview.svg');
       T.ok(rats?.img?.complete && rats.img.src === 'assets/rat-generations-preview.svg' &&
         rats.img.w === 960 && rats.img.h === 600 && rats.img.alt === '' &&
-        /^Open Rat Generations/.test(rats.label),
-        width + ' px: Rat Generations has its original illustrated and named preview');
+        rats.label === 'Open activity: Rat Generations',
+        width + ' px: Rat Generations keeps its original illustration and a named primary link');
       const cancer=m.find(x=>x.img?.src==='assets/cancer-rates-preview.svg');
       T.ok(cancer?.img?.complete && cancer.img.w===960 && cancer.img.h===600 &&
-        cancer.img.alt==='' && /^Open Cancer Rates Data Dive/.test(cancer.label) && /Real data/.test(cancer.capText),
-        width + ' px: Cancer Rates Data Dive has a named preview and accurate real-data descriptor');
+        cancer.img.alt==='' && cancer.label === 'Open activity: Cancer Rates Data Dive' && /Real data/.test(cancer.capText),
+        width + ' px: Cancer Rates Data Dive has a named primary link and accurate real-data descriptor');
       const junco=m.find(x=>x.img?.src==='assets/junco-preview.svg');
       T.ok(junco?.img?.complete && junco.img.w===960 && junco.img.h===600 && junco.img.alt==='' &&
-        /^Open Junco Investigation/.test(junco.label) && junco.simText === 'Simulated + real data',
-        width + ' px: Junco uses a named illustration and a combined simulated/real-data descriptor');
+        junco.label === 'Open activity: Junco Investigation' && junco.simText === 'Simulated + real data',
+        width + ' px: Junco has a named primary link and a combined simulated/real-data descriptor');
       const workshop=m.find(x=>x.img?.src==='assets/dna-workshop-preview.svg');
       T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
-        workshop.img.alt==='' && /^Open DNA Workshop/.test(workshop.label),
-        width + ' px: DNA Workshop has its original illustrated and named preview');
+        workshop.img.alt==='' && workshop.label === 'Open activity: DNA Workshop: Build, Copy, Decode',
+        width + ' px: DNA Workshop keeps its original illustration and a named primary link');
       T.ok(m.every(x => x.capBelow && x.capInside && x.kidsInside), width + ' px: every caption sits below the picture, inside the card column, without overlapping it');
       T.ok(m.every(x => x.sim && /Simulated|Illustrative map|Model \+ field data|Real data/.test(x.capText) && x.capText.length > 14), width + ' px: caption text and the accurate source/illustration tag are HTML text');
       T.ok(m.every(x => Math.abs(x.ratio - 1.6) < 0.02 && Math.abs(x.mediaW - x.w) < 3), width + ' px: preview keeps its 8:5 box and the art fills it');

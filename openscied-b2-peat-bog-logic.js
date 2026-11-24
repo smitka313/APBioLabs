@@ -21,7 +21,7 @@
       oxygen  = 1.15 - 0.007 x O2%, limited to 0.5..1.15 (high oxygen slightly slows photosynthesis; real plants lose carbon to
                 photorespiration)
    4. Permafrost. Fraction of the peat that is frozen = (11 - T)/8 limited to 0..1, with T the summer temperature including tilt.
-      Frozen peat cannot decompose or burn.
+      Freezing sharply reduces modeled decomposition. Fire cannot burn the frozen share.
    5. Oxygen in the peat. soilO2 = (air O2 / 21) x (1 - 0.85 x water/100): a whole-bog average. Water fills the air spaces, so more
       water means less oxygen reaches the decomposers. (Real peat has oxygen near the surface and almost none under the water table.)
    6. Decomposition D = 30 x 2^((T - 12)/10) x heat-damage x oxygen x (1 - 0.95 x frozen). The temperature rule doubles the rate
@@ -186,7 +186,7 @@
         ? ['photo', 'Bigger tilt', 'In summer the Arctic leans further toward the sun. The noon sun is ' + (s.tilt - TILT_NOW).toFixed(1) + '° higher and the long summer days deliver ' + dq.toFixed(1) + '% more sunlight. Summers warm by about ' + tiltWarming(s.tilt).toFixed(1) + ' °C, so plants grow faster and take in more carbon.']
         : ['ice', 'Smaller tilt', 'In summer the Arctic leans less toward the sun. The noon sun is ' + (TILT_NOW - s.tilt).toFixed(1) + '° lower and summer sunlight drops ' + Math.abs(dq).toFixed(1) + '%. Summers cool by about ' + Math.abs(tiltWarming(s.tilt)).toFixed(1) + ' °C, so more ground stays frozen.']);
     }
-    if (mm.perm > 0.04) out.push(['ice', 'Permafrost', 'About ' + Math.round(mm.perm * 100) + '% of the peat is frozen. Decomposers can’t break down frozen peat and fire can’t burn it, so its carbon stays locked away. This is how cold Arctic peatlands became a carbon sink.']);
+    if (mm.perm > 0.04) out.push(['ice', 'Permafrost', 'About ' + Math.round(mm.perm * 100) + '% of the peat is frozen. Freezing sharply slows decomposition; the model can still show a small rate even when all peat is frozen. Fire can burn only the thawed share. Slower carbon loss helps explain why many cold peatlands store carbon.']);
     if (mm.T > 40) out.push(['warn', 'Too hot', 'Extreme heat damages the enzymes that plants and decomposers depend on.']);
     if (mm.P < 1) {
       out.push(['photo', 'Plants can’t grow', mm.T <= -2 ? 'It is too cold for photosynthesis.' : s.co2 <= 50 ? 'There is not enough carbon dioxide for photosynthesis.' : 'Conditions are too harsh for photosynthesis.']);

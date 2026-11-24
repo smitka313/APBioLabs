@@ -9,7 +9,7 @@
   }
   const key='aplab:openscied:b4-junco:v1';
   const steps=['field','aviary','cort'];
-  const choices={same:'About the same',higher:'Higher for city birds',lower:'Lower for city birds'};
+  const choices={same:'About the same',higher:'More exploration by city birds',lower:'Less exploration by city birds'};
   const sites={urban:'UC San Diego',mountain:'Mt. Laguna'};
   const fieldLabels={foraging:'Birds looking for food',incubating:'Females sitting on eggs'};
   const aviaryLabels={female:'Females',male:'Males'};
@@ -113,23 +113,30 @@
     const ext=(axis,f)=>Math.max(1,Math.ceil(Math.max(...points.map(p=>p[axis]))*1.06/f)*f);
     graph('chart',{type:'xy',xLabel:xName,yLabel:yName,xMin:Math.min(0,...points.map(p=>p.x)),xMax:ext('x',d.xStep||10),yMin:Math.min(0,...points.map(p=>p.y)),yMax:ext('y',d.yStep||5),series:graphSeries});
     $('cort-x').textContent=xName;
+    $('cort-id').textContent=identified?'Population':'Bird (dot)';
+    $('cort-pool-note').hidden=identified;
     const tbody=$('cort-table').tBodies[0];
-    tbody.replaceChildren(...rows.map(p=>{
+    tbody.replaceChildren(...rows.map((p,i)=>{
       const tr=mk('tr');tr.dataset.site=p.site||'all';
-      [sites[p.site]||'Not identified',fmt(p.x),fmt(p.y)].forEach(v=>tr.append(mk('td',v)));return tr;
+      [identified?(sites[p.site]||'Not identified'):i+1,fmt(p.x),fmt(p.y)].forEach(v=>tr.append(mk('td',v)));return tr;
     }));
     const r=corr(rows);
-    $('cort-status').textContent=[rows.length+' birds shown'+(Number.isFinite(r)?'; correlation r = '+fmt(r)+'.':'.'),d.note].filter(Boolean).join(' ');
+    const pattern=Number.isFinite(r)&&(r<-.15||r>.15)
+      ? 'In these data, higher maximum CORT generally went with '+(r<0?'lower':'higher')+' exploration scores. That does not tell us whether CORT caused the difference.'
+      : '';
+    $('cort-status').textContent=[rows.length+' birds shown'+(Number.isFinite(r)?'; correlation r = '+fmt(r)+'.':'.'),pattern,d.note].filter(Boolean).join(' ');
   }
   function pairLine(d,group,caption){
     const pairs=groupRows(d,group).map(row=>sites[row.site]+' '+fmt(row.mean));
     return caption+': '+pairs.join(' vs. ')+' ('+d.unit+').';
   }
   function evidenceLines(){
-    return [pairLine(D.field,state.fieldGroup,fieldLabels[state.fieldGroup]),pairLine(D.aviary,state.aviaryGroup,aviaryLabels[state.aviaryGroup])];
+    return [pairLine(D.field,state.fieldGroup,'Field distance · '+fieldLabels[state.fieldGroup].toLowerCase()),
+      pairLine(D.aviary,state.aviaryGroup,'Aviary exploration · '+aviaryLabels[state.aviaryGroup].toLowerCase())];
   }
   function evidence(){
     $('evidence').replaceChildren(...evidenceLines().map(s=>mk('p',s)));
+    $('saved-observation').hidden=!state.observation.trim();
     $('saved-observation').textContent=state.observation.trim()?'Your field note: '+state.observation:'';
   }
   function completion(){
@@ -310,8 +317,8 @@
       if(rows.length){
         if(Number.isFinite(r))items.push({type:'text',text:'Selected classroom points: n = '+rows.length+', correlation r = '+fmt(r)+'. This is not the published model result.'});
         items.push({type:'table',title:'Classroom points approximated from the published figure',
-          columns:[...(identified?['Population']:[]),d.xLabel||'CORT','Individual exploration score (PC1)'],
-          rows:rows.map(row=>[...(identified?[sites[row.site]||'Not identified']:[]),fmt(row.x),fmt(row.y)])});
+          columns:[identified?'Population':'Bird (dot)',d.xLabel||'CORT','Individual exploration score (PC1)'],
+          rows:rows.map((row,i)=>[identified?(sites[row.site]||'Not identified'):i+1,fmt(row.x),fmt(row.y)])});
       }
       items.push({type:'text',text:d.source+': '+d.url});
       sections.push({title:'Hormone and exploration clue · published evidence',items});

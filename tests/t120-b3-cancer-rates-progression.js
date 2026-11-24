@@ -7,7 +7,7 @@ const FILE = 'openscied-b3-cancer-rates.html';
 const KEY = 'aplab:openscied:b3-cancer-rates:v1';
 const full = 'Do states with higher poverty also tend to have higher diagnosis rates?';
 const notes = { diagnoses: 'One cancer leads the diagnoses chart.', deaths: 'The rankings do not use the same leader.', map: 'Some states have higher rates than others.' };
-const claim = 'Female Breast has 133.8 diagnoses per 100,000; Lung and Bronchus has a different rate.';
+const claim = 'New Mexico had 17.8% poverty and 378.6 diagnoses per 100,000. Kentucky had 16.4% poverty and 524.7 diagnoses per 100,000.';
 const limits = 'The pattern cannot tell us what caused a difference.';
 const state = page => page.evaluate(key => JSON.parse(localStorage.getItem(key)), KEY);
 const $ = (p, id) => p.locator('#cr-' + id);
@@ -94,22 +94,26 @@ async function runStudent(browser, url) {
     await $(page, 'income-question').fill(full);
     await tap('income-explore');
     ok(await page.locator('#explore').isVisible() && (await note(page, 'question-explore-text')) === full, 'Explore opens with the student question visible');
+    ok(await $(page, 'view').inputValue() === 'poverty' && await $(page, 'socio').inputValue() === 'poverty',
+      'Poverty question starts on the related dataset, with the other views still available');
+    ok(await page.locator('#cr-table tbody tr').count() === 6, 'Phone table starts with six rows and can show more');
     ok(await step(page, 'explain').isDisabled() && !await marked(page, 'explore') && /pin one comparison/i.test(await note(page, 'step-hint')),
       'Explain requires a pinned comparison, and the next action is explicit');
     await fit(page, '390 dark Explore'); await shot(page, '390-dark-explore');
     await tap('pin');
     ok(await marked(page, 'explore') && !await step(page, 'explain').isDisabled(), 'Pinning a comparison completes Explore and opens Explain');
     await tap('to-explain');
-    ok((await note(page, 'evidence-list')).includes('133.8') && (await note(page, 'question-explain-text')) === full, 'Explain keeps the actual chart evidence and question beside the responses');
+    ok((await note(page, 'evidence-list')).includes('524.7') && (await note(page, 'evidence-list')).includes('378.6') && (await note(page, 'question-explain-text')) === full, 'Explain keeps the actual chart evidence and question beside the responses');
     ok(await $(page, 'limits').getAttribute('aria-describedby') === 'cr-limits-help' && /Correlation means.*does not prove/.test(await note(page, 'limits-help')), 'The limits prompt explicitly distinguishes correlation and causation');
     await $(page, 'claim').fill(claim);
     ok(await $(page, 'finish').isDisabled() && /Add a limit/.test(await note(page, 'finish-hint')), 'A claim alone is not enough to finish');
     await $(page, 'limits').fill(limits);
-    ok(!await $(page, 'finish').isDisabled() && !await marked(page, 'explain') &&
-      await $(page, 'done').isHidden() && !(await state(page)).completed, 'Writing both responses enables Finish without marking the activity complete');
+    ok(await $(page, 'finish').isDisabled() && !await marked(page, 'explain') &&
+      await $(page, 'done').isHidden() && !(await state(page)).completed, 'Writing both responses still requires checking the evidence before Finish');
     await page.reload();
     ok(await $(page, 'claim').inputValue() === claim && !await marked(page, 'explain'), 'An unfinished response reloads without silently completing');
     await downloadStatus(page, 'In progress');
+    await $(page, 'evidence-confirm').check();
     await tap('finish');
     ok(await marked(page, 'explain') && await $(page, 'done').isVisible() && (await state(page)).completed, 'Only Finish marks the investigation complete');
     const preview = page.locator('[data-ose-report-final]').getByRole('button', { name: 'Preview report' });
@@ -122,6 +126,7 @@ async function runStudent(browser, url) {
     await fit(page, '390 dark completed Explain'); await shot(page, '390-dark-explain');
     await $(page, 'limits').fill(limits + ' Other evidence is needed.');
     ok(!await marked(page, 'explain') && await $(page, 'done').isHidden() && !(await state(page)).completed, 'Editing evidence-based writing clears the stale completion');
+    await $(page, 'evidence-confirm').check();
     await tap('finish');
     await page.getByRole('button', { name: 'Remove pin 1' }).tap();
     ok(!await marked(page, 'explore') && !await marked(page, 'explain') && await step(page, 'explain').isDisabled(), 'Removing the only pin clears downstream completion and reopens Explore');

@@ -177,17 +177,17 @@
       room: 'Thank you. You will test this in the next part.',
       warm: 'Thank you. You will test this in the next part.' } },
     'cards-rate-hot': { correct: ['faster'], why: {
-      faster: 'Yes. Warmer yeast work faster, so more sugar is used up and more carbon dioxide is made.',
-      slower: 'Try again. Why not: your warm beaker made foam faster than the cold one.',
-      same: 'Try again. Why not: the three beakers did not make the same amount of foam.' } },
+      faster: 'Yes. In the class example, the yeast at 43 °C made more foam in the same time than the yeast at 18 °C.',
+      slower: 'Try again. Why not: in the class example, 43 °C made more foam in the same time than 18 °C.',
+      same: 'Try again. The 18 °C and 43 °C class readings differed.' } },
     'cards-rate-peat': { correct: ['slower'], why: {
       slower: 'Yes. Cold, low-oxygen peat slows the reaction, so carbon and energy stay in the peat. That makes a carbon sink.',
       faster: 'Try again. Why not: cold slows the reaction down.',
       same: 'Try again. Why not: temperature changes the rate, and so does oxygen.' } },
     'sense-energy': { correct: ['faster'], why: {
-      faster: 'Yes. At higher temperatures, energy was transferred from sugar to the yeast faster.',
-      slower: 'Try again. Why not: the warm beaker used its sugar up faster, so energy moved faster.',
-      same: 'Try again. Why not: the beakers made different amounts of foam, so energy did not move at the same speed.' } },
+      faster: 'Yes. In the class example, more foam at 43 °C in the same time suggests yeast broke down sugar faster and transferred energy faster.',
+      slower: 'Try again. Compare the 43 °C and 18 °C class readings, not a hotter setting like 55 °C.',
+      same: 'Try again. The class example shows different amounts of foam over the same 20 minutes.' } },
     'sense-past': { correct: ['cold'], why: {
       cold: 'Yes. The past was cold and slow: little decomposition, so the matter stayed in the peat.',
       room: 'Try again. Why not: the permafrost was frozen. The cold beaker is the best match.',
@@ -236,15 +236,15 @@
       vanish: 'Try again. Why not: energy is never used up. It changes form.',
       co2: 'Try again. Why not: carbon dioxide is matter. The light energy goes into the sugar.' } },
     'sense-most': { correct: ['direct'], why: {
-      direct: 'Yes. When the most sunlight reached the Arctic plants, they did the most photosynthesis.',
-      tilt45: 'Try again. Why not: look at your table. Which tube was the bluest?',
-      tilt70: 'Try again. Why not: look at your table. Which tube was the bluest?',
+      direct: 'Yes. In the class example, the direct-light tube had the most light and the most photosynthesis.',
+      tilt45: 'Try again. In the class example, the direct-light tube received more light than the 45° tube.',
+      tilt70: 'Try again. In the class example, the direct-light tube received the most light.',
       foil: 'Try again. Why not: with no light there is no photosynthesis.' } },
-    'sense-least': { correct: ['foil', 'tilt70'], why: {
+    'sense-least': { correct: ['foil'], why: {
       direct: 'Try again. Why not: direct light gave the most photosynthesis.',
       tilt45: 'Try again. Why not: the 45 degree tube made more sugar than the weaker light settings.',
-      tilt70: 'Yes. Less sunlight means less photosynthesis.',
-      foil: 'Yes. Less sunlight means less photosynthesis, and none means none.' } },
+      tilt70: 'Try again. A strongly tilted tube can still receive light. In the class example, the foil tube received none.',
+      foil: 'Yes. The class example’s foil tube received no light, so photosynthesis could not occur.' } },
     'sense-starch': { correct: ['starch'], why: {
       starch: 'Yes. Extra sugar is stored in the plant as starch, and more light means more to store.',
       co2: 'Try again. Why not: sugar made in excess is stored, not turned back into carbon dioxide.',
@@ -263,12 +263,12 @@
     if (!row.correct.length) return { status: 'poll', message };
     return { status: row.correct.includes(value) ? 'correct' : 'wrong', message };
   }
-  // Two dropdowns in one sentence: "More/Less sugar was converted to carbon dioxide at higher/lower temperatures."
+  // Two dropdowns about the 18 °C and 43 °C class example, not the student's run.
   function checkSugarSentence(amount, temp) {
     if (!amount || !temp) return { status: 'empty', message: '' };
     const ok = (amount === 'more' && temp === 'higher') || (amount === 'less' && temp === 'lower');
-    return ok ? { status: 'correct', message: 'Yes. Warmer beakers made more foam, so more sugar was turned into carbon dioxide. Cooler beakers made less.' }
-      : { status: 'wrong', message: 'Try again. Why not: look at your foam table. The warmer the water, the more foam, and the more sugar was used up.' };
+    return ok ? { status: 'correct', message: 'Yes. In the 18 °C and 43 °C class example, the 43 °C beaker made more foam in the same time. That suggests more sugar was broken down there.' }
+      : { status: 'wrong', message: 'Try again. Use the 18 °C and 43 °C class example. More foam at 43 °C suggests more sugar was broken down in the same time.' };
   }
   // Directional hypothesis builder: "If the plant gets [more/less/the same] light energy, then it takes in [more/less/the same] carbon dioxide, because [reason]."
   const HYP_REASONS = {
