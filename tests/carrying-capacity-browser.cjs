@@ -463,7 +463,7 @@ async function followHabitatWorkflow(browser, url) {
     await go(p, 'explain');
     const claim = 'The habitat challenge showed that extra water cannot replace scarce food.';
     await (await explainQuestion(p, 'habitat-claim')).fill(claim);
-    check(/0 of 5 core responses/i.test(await p.locator('#cc-explain-progress').textContent()),
+    check(/0 of 5 required responses/i.test(await p.locator('#cc-explain-progress').textContent()),
       'the optional habitat response does not count as one of the five core questions');
     await p.reload();
     await p.locator('.cc-nav [data-cc-go="explain"][aria-current="page"]').waitFor({ state: 'visible' });
@@ -1044,12 +1044,12 @@ async function followWorkflow(browser, url) {
     const chosenEvidence = () => p.locator('#cc-explain details[data-cc-evidence][open]')
       .evaluateAll(details => details.map(el => el.dataset.ccEvidence));
     check(await picker.inputValue() === 'claim' && await prevPrompt.isDisabled() &&
-      /1 of 6/.test(await questionPos.textContent()),
+      /Required question 1 of 5/.test(await questionPos.textContent()),
       'the first Explain question opens by default and Previous does not wrap');
     await nextPrompt.press('Enter');
     check(await picker.inputValue() === 'shortage-rule' && await p.locator('#cc-shortage-rule').isVisible() &&
       await p.locator('#cc-claim').isHidden() && await nextPrompt.evaluate(el => document.activeElement === el) &&
-      /2 of 6/.test(await questionPos.textContent()),
+      /Required question 2 of 5/.test(await questionPos.textContent()),
       'Enter on Next displays just question 2 and keeps the working control focused');
     await (await explainQuestion(p, 'shortage-rule')).fill(TEXT.shortage);
     await readModelEvidenceBesidePrompt(p);
@@ -1083,12 +1083,16 @@ async function followWorkflow(browser, url) {
       fieldYears.includes(1999) && [1995, 1996, 1997, 1998].every(year => !fieldYears.includes(year)),
       'the prompt can disclose all 20 exact estimates while keeping absent drought-era years absent');
     await picker.press('End');
-    check(await picker.inputValue() === 'limit' && await nextPrompt.isDisabled() &&
-      await p.locator('#cc-limit').isVisible() && /6 of 6/.test(await questionPos.textContent()),
-      'native keyboard selection reaches the last question and Next does not wrap');
+    check(await picker.inputValue() === 'habitat-claim' && await nextPrompt.isDisabled() &&
+      await p.locator('#cc-habitat-claim').isVisible() && /Optional habitat question/.test(await questionPos.textContent()),
+      'native keyboard selection reaches the optional habitat question last and Next does not wrap');
+    await prevPrompt.press('Enter');
+    check(await picker.inputValue() === 'limit' && await p.locator('#cc-limit').isVisible() &&
+      /Required question 5 of 5/.test(await questionPos.textContent()) && /Optional question/.test(await nextPrompt.textContent()),
+      'the last required question makes the optional next step clear');
     await (await explainQuestion(p, 'limit')).fill(TEXT.limit);
-    check(/5 of 5 core responses/i.test(await p.locator('#cc-explain-progress').textContent()),
-      'progress recognizes all five core responses while the optional habitat answer remains blank');
+    check(/5 of 5 required responses/i.test(await p.locator('#cc-explain-progress').textContent()),
+      'progress recognizes all five required responses while the optional habitat answer remains blank');
     await go(p, 'run');
     check(await p.locator('#cc-prediction').inputValue() === TEXT.prediction, 'switching sections preserves student work');
     await go(p, 'explain');
@@ -1104,7 +1108,7 @@ async function followWorkflow(browser, url) {
       sameList(await readExplainRound(p), [7, 6, 6, 3, 1, 9]),
       'the selected explaining evidence trial and round resume beside the shortage response');
     check(await explainMatches(p, EXPLAIN_WRITING),
-    'the active prompt and all five core responses survive reload');
+    'the active prompt and all five required responses survive reload');
     check(await p.locator('#cc-writing-evidence').textContent().then(s => /baseline/i.test(s) && /50% grass comparison/i.test(s)),
       'both complete trials remain available beside the restored writing');
     const restoredField = await p.locator('#cc-writing-field').textContent();
@@ -1127,7 +1131,7 @@ async function followWorkflow(browser, url) {
       'download contains student work and discloses the modeled evidence');
     check(/grass/i.test(report) && /50\s*%/.test(report), 'download includes the selected lower-grass comparison');
     check(Object.values(EXPLAIN_WRITING).every(writing => report.includes(writing)),
-      'download includes all five core responses, not only the selected prompt');
+      'download includes all five required responses, not only the selected prompt');
     const fieldSection = report.split('Field evidence (classroom estimates, not simulated)\n')[1]
       ?.split('How did grass availability affect the herd in your model?')[0] || '';
     const fieldRecords = fieldSection.split('\n\n');
@@ -1179,7 +1183,7 @@ async function followWorkflow(browser, url) {
       'master reset also clears prior field calculations and interpretations');
     await go(p, 'explain');
     check(await explainPicker(p).inputValue() === 'claim' &&
-      /0 of 5 core responses/i.test(await p.locator('#cc-explain-progress').textContent()) &&
+      /0 of 5 required responses/i.test(await p.locator('#cc-explain-progress').textContent()) &&
       await explainMatches(p, Object.fromEntries(Object.keys(EXPLAIN_WRITING).map(key => [key, '']))),
     'master reset clears all core Explain responses, progress, and the last prompt selection');
   });

@@ -7,6 +7,8 @@ const fs = require('fs'), path = require('path');
 const PAGE = 'openscied-b2-peat-bog-lab.html';
 const SECTIONS = ['overview', 'bog', 'graph', 'zombie', 'warming', 'trials', 'model'];
 const OUT = process.env.SHOTS || path.join(T.ROOT, 'test-artifacts'); fs.mkdirSync(OUT, { recursive: true });
+const POLISH = process.env.POLISH_SCREENSHOTS || OUT;
+fs.mkdirSync(POLISH, { recursive: true });
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
 function axePath() {
   const c = [process.env.AXE, (() => { try { return require.resolve('axe-core/axe.min.js'); } catch (e) { return null; } })(), path.join(__dirname, '../node_modules/axe-core/axe.min.js')].filter(Boolean);
@@ -55,7 +57,7 @@ async function fill(p) {   // put data in every box
     // --- layout at four sizes, in several states; screenshots to look at ---
     const STATES = { start: {}, lowtilt: { tilt: 22.1 }, hightilt: { tilt: 24.5, co2: 260 }, fire: { wet: 15, temp: 16, burn: 70 }, zombie: { temp: 19, wet: 22, burn: 55 }, extreme: { tilt: 22.1, temp: 30, co2: 2000, o2: 35, wet: 0, burn: 100 } };
     for (const [w, h, dark] of [[390, 844, true], [768, 1024, false], [1366, 768, false], [1920, 1080, false]]) {
-      const ctx = await T.ctxFor(browser, { width: w, height: h, dark });
+      const ctx = await T.ctxFor(browser, { width: w, height: h, dark, touch: w === 390 });
       const p = await ctx.newPage(); await stub(p); const errs = []; p.on('pageerror', e => errs.push(e.message));
       await p.goto(server.url + PAGE); await p.waitForFunction(() => window.B2Peat && document.querySelector('.step.is-current'));
       const problems = [];
@@ -98,6 +100,60 @@ async function fill(p) {   // put data in every box
         const fit = await p.evaluate(() => { const s = document.getElementById('bog-svg').getBoundingClientRect(), m = document.getElementById('meters').getBoundingClientRect(); return { svgBottom: s.bottom, metersTop: m.top, h: innerHeight, svgTop: s.top }; });
         T.ok(fit.svgTop >= 0 && fit.metersTop < fit.h, 'at 1366x768 the bog picture and the number boxes are on screen together ' + JSON.stringify(fit));
       }
+      // Keep the logged outcomes side by side with their own column headers, and all original inputs behind a disclosure.
+      await go(p, 'trials');
+      await p.evaluate(() => {
+        B2Peat.setState({ wet: 10, burn: 80, temp: 24 });
+        B2Peat.state.trialLabel = 'Dry trial with burning high and water low for this comparison'.slice(0, 60);
+        B2Peat.record('table');
+      });
+      const summary = await p.evaluate(() => {
+        const wrap = document.querySelector('#logWrap'), row = wrap.querySelector('tbody tr:last-child');
+        const box = wrap.getBoundingClientRect();
+        const label = row.querySelector('.lbl-input');
+        const model = B2Peat.logic.trialRow(B2Peat.state.trials.at(-1), B2Peat.state.trials.length);
+        return { fit: wrap.scrollWidth <= wrap.clientWidth + 1 &&
+          [...row.cells].every(c => c.getBoundingClientRect().left >= box.left - 1 && c.getBoundingClientRect().right <= box.right + 1),
+        visible: row.cells.length === 4 && ['N','perm','zc'].every((k, i) => row.cells[i+1].textContent === model[k] + (i ? '%' : '')),
+        labelFit: label.scrollHeight <= label.clientHeight + 1 && label.scrollWidth <= label.clientWidth + 1 };
+      });
+      T.ok(summary.fit && summary.visible && summary.labelFit, `${w}px: three correct trial outcomes and the long editable label fit without scrolling ${JSON.stringify(summary)}`);
+      const details = p.locator('#trial-details');
+      T.ok(await details.count() === 1 && await details.evaluate(e => !e.open), `${w}px: full trial inputs and rates start collapsed`);
+      if (await details.count()) {
+        const toggle = details.locator('summary');
+        if (w === 390) await toggle.tap(); else { await toggle.focus(); await toggle.press('Enter'); }
+        const extra = await details.evaluate(e => {
+          const rows = [...e.querySelectorAll('.trial-detail-card')], last = rows.at(-1);
+          const values = B2Peat.logic.trialRow(B2Peat.state.trials.at(-1), rows.length);
+          const cols = [...last.querySelectorAll('[data-trial-detail]')];
+          return e.open && rows.length === B2Peat.state.trials.length && cols.length === 9 &&
+            cols.every(c => c.textContent === values[c.dataset.trialDetail]) && e.scrollWidth <= e.clientWidth + 1;
+        });
+        T.ok(extra, `${w}px: all inputs/rates match the saved rows and the disclosure fits`);
+      }
+      if (process.env.NOSHOTS !== '1') await p.locator('#logWrap').screenshot({ path: path.join(POLISH, `peat-trial-outcomes-${w}${dark ? 'd' : ''}.png`) });
+      if (w === 390 && await details.count()) {
+        await details.locator('summary').tap();
+        await p.emulateMedia({ media: 'print' });
+        await p.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+        const print = await details.evaluate(e => e.open && getComputedStyle(document.querySelector('.trial-label-mirror')).visibility === 'visible' &&
+          getComputedStyle(document.querySelector('.lbl-input')).display === 'none');
+        await p.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+        T.ok(print && await details.evaluate(e => !e.open), 'Print expands the full record and uses readable labels, then restores the disclosure');
+        await p.emulateMedia({ media: 'screen' });
+      }
+
+      await go(p, 'bog');
+      await p.evaluate(() => B2Peat.setState({ tilt: 22.1, temp: 10, wet: 87, burn: 100 }));
+      const labels = await p.locator('#bog-svg').evaluate(svg => {
+        const find = name => [...svg.querySelectorAll('text')].find(t => name.test(t.textContent) && getComputedStyle(t).display !== 'none' && t.getBBox().width > 0);
+        const [water, ice, fire] = [/^water level$/, /^Permafrost:/, /^Burning peat$/].map(find);
+        const overlaps = (a, b) => { const x = a.getBBox(), y = b.getBBox(); return x.x < y.x + y.width && x.x + x.width > y.x && x.y < y.y + y.height && x.y + x.height > y.y; };
+        return !!(water && ice && fire && !overlaps(water, ice) && !overlaps(water, fire) && !overlaps(ice, fire));
+      });
+      T.ok(labels, `${w}px: water, frozen peat and burning labels occupy distinct lanes`);
+      if (process.env.NOSHOTS !== '1') await p.locator('#bog-svg').screenshot({ path: path.join(POLISH, `peat-cross-section-labels-${w}${dark ? 'd' : ''}.png`) });
       await ctx.close();
     }
 

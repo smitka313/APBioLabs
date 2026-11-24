@@ -4,9 +4,11 @@
   const KEY = 'aplab:openscied-b1-carrying-capacity:run-v1';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
-  const strings = ['prediction', 'claim', 'shortage-rule', 'long-run', 'migration-claim', 'habitat-claim', 'limit'];
+  const optionalQuestion = 'habitat-claim';
+  const requiredQuestions = ['claim', 'shortage-rule', 'long-run', 'migration-claim', 'limit'];
+  const questions = [...requiredQuestions, optionalQuestion];
+  const strings = ['prediction', ...questions];
   const stages = ['run', 'habitat', 'evidence', 'explain'];
-  const questions = strings.filter(id=>id !== 'prediction');
   const evidenceFor = {'claim':'model','shortage-rule':'model','long-run':'range','migration-claim':'field','habitat-claim':'habitat','limit':'field'};
   const feedback = {
     food: {
@@ -99,8 +101,8 @@
     range.update({baseline:state.baseline,comparison:state.comparison});
   }
   function updateExplainProgress() {
-    const done = questions.filter(id=>id!=='habitat-claim'&&state.answers[id]?.trim()).length;
-    $('#cc-explain-progress').textContent = done+' of 5 core responses';
+    const done = requiredQuestions.filter(id=>state.answers[id]?.trim()).length;
+    $('#cc-explain-progress').textContent = done+' of '+requiredQuestions.length+' required responses';
   }
   function renderQuestion() {
     const index = questions.indexOf(state.question);
@@ -108,7 +110,9 @@
     $$('[data-cc-question]').forEach(el=>{el.hidden = el.dataset.ccQuestion !== state.question;});
     $('#cc-explain-prev').disabled = index === 0;
     $('#cc-explain-next').disabled = index === questions.length-1;
-    $('#cc-explain-position').textContent = 'Question '+(index+1)+' of '+questions.length+(state.question==='habitat-claim'?' · Optional':'');
+    $('#cc-explain-position').textContent = state.question === optionalQuestion ? 'Optional habitat question' :
+      'Required question '+(index+1)+' of '+requiredQuestions.length;
+    $('#cc-explain-next').textContent = questions[index+1] === optionalQuestion ? 'Optional question →' : 'Next →';
     $$('[data-cc-evidence]').forEach(d=>{d.open = d.dataset.ccEvidence===evidenceFor[state.question];});
     $('#cc-writing-migration').hidden = state.question!=='migration-claim';
     updateExplainProgress();
@@ -189,7 +193,7 @@
   const report = () => {
     const who = Lab.identity.get() || {};
     const describe = (sim,name) => sim?.round ? [name+' (SIMULATED)', 'Round | Starting herd | Grass units | Survivors | Births | Deaths | Ending herd', ...sim.rows.map((r)=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending].join(' | '))].join('\n') : name+': no completed rounds.';
-    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (classroom estimates, not simulated)\n'+(field.report() || 'No field calculations recorded.'), 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'Write an if/then rule for a grass shortage.\n'+(state.answers['shortage-rule'] || 'Not entered'), 'Predict what the baseline graph would look like after 50 rounds.\n'+(state.answers['long-run'] || 'Not entered'), 'How could migration affect carrying capacity?\n'+(state.answers['migration-claim'] || 'Not entered'), 'How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
+    return ['Serengeti Carrying Capacity Lab · Lesson 5', 'Name: '+(who.name || 'Not entered')+'\nClass period: '+(who.period || 'Not entered'), 'Prediction\n'+(state.answers.prediction || 'Not entered'), describe(state.baseline,'Baseline · 100% grass'), describe(state.comparison,'Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':'')), compareText(), 'Estimated fluctuation range (SIMULATED)\n'+(range.report() || 'No range recorded.'), 'Habitat challenge (SIMULATED)\n'+(habitat.report() || 'No completed habitat runs.'), 'Field evidence (classroom estimates, not simulated)\n'+(field.report() || 'No field calculations recorded.'), 'How did grass availability affect the herd in your model?\n'+(state.answers.claim || 'Not entered'), 'Write an if/then rule for a grass shortage.\n'+(state.answers['shortage-rule'] || 'Not entered'), 'Predict what the baseline graph would look like after 50 rounds.\n'+(state.answers['long-run'] || 'Not entered'), 'How could migration affect carrying capacity?\n'+(state.answers['migration-claim'] || 'Not entered'), 'Optional: How did a limiting factor change the herd in the habitat challenge?\n'+(state.answers['habitat-claim'] || 'Not entered'), 'What is one thing this model cannot tell us about the real herd?\n'+(state.answers.limit || 'Not entered')].filter(Boolean).join('\n\n')+'\n';
   };
   const openReport = (message) => {
     $('#cc-report-text').value = report(); $('#cc-report-help').textContent = message || 'Select and copy this text if your device blocks downloads.'; $('#cc-report').showModal();

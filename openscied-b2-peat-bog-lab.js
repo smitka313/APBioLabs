@@ -817,20 +817,29 @@
     const sr = byId('nav-count').parentElement; let hid = sr.querySelector('.sr-only.cnt');
     if (!hid) { hid = el('span', 'sr-only cnt'); sr.appendChild(hid); }
     hid.textContent = state.trials.length ? ' (' + state.trials.length + ' recorded)' : '';
-    const wrap = byId('logWrap');
-    if (!state.trials.length) { wrap.innerHTML = '<div class="empty">No trials yet. Set up the bog, then choose Record this trial.</div>'; return; }
-    // Put outcomes first on screen; the full spreadsheet keeps its established column order.
-    const cols = ['n','label','N','P','D','B','perm','zc','tilt','Teff','co2','o2','wet','burn']
-      .map(key=>L.TRIAL_COLUMNS.find(c=>c.key===key));
-    const cls = { P: 'p', D: 'r', B: 'b' };
-    const data = state.trials.map(function (t, i) { return L.trialRow(t, i + 1); });
-    wrap.innerHTML = '<table class="data"><caption class="sr-only">Recorded trials. Simulated data on a 0 to 100 teaching scale.</caption><thead><tr>' + cols.map(function (c) { return '<th scope="col"' + (c.key === 'label' ? ' class="lbl"' : '') + '>' + esc(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>' +
-      data.map(function (r, i) {
-        return '<tr' + (i && r.label !== data[i - 1].label ? ' class="newgroup"' : '') + '>' + cols.map(function (c) {
-          if (c.key === 'label') return '<td class="lbl"><textarea class="lbl-input" data-i="' + i + '" rows="' + Math.max(1, Math.ceil(r.label.length / 22)) + '" aria-label="Label for trial ' + r.n + '" maxlength="60" placeholder="Add a label" title="' + esc(r.label) + '">' + esc(r.label) + '</textarea></td>';
-          return '<td' + (cls[c.key] ? ' class="' + cls[c.key] + '"' : '') + '>' + esc(r[c.key]) + '</td>';
-        }).join('') + '</tr>';
-      }).join('') + '</tbody></table>';
+    const wrap = byId('logWrap'), details = byId('trial-details'), list = byId('trial-detail-list');
+    byId('copy-trials-fallback').hidden = true;
+    details.hidden = !state.trials.length;
+    if (details.hidden) {
+      wrap.innerHTML = '<div class="empty">No trials yet. Set up the bog, then choose Record this trial.</div>';
+      details.open = false; list.replaceChildren(); return;
+    }
+    // Keep the three outcomes easy to compare. All other fields are available below and in the full exports.
+    const data = state.trials.map((t, i) => L.trialRow(t, i + 1));
+    wrap.innerHTML = '<table class="data trial-outcomes"><caption class="sr-only">Recorded trial outcomes. Simulated data, not measurements.</caption>' +
+      '<thead><tr><th scope="col" class="trial-label-col">Trial and label</th><th scope="col">Peat carbon</th><th scope="col">Peat frozen</th><th scope="col">Winter fire chance</th></tr></thead><tbody>' +
+      data.map((r, i) =>
+        '<tr' + (i && r.label !== data[i - 1].label ? ' class="newgroup"' : '') + '>' +
+        '<th scope="row" class="trial-label-col"><span>Trial ' + r.n + '</span>' +
+        '<div class="trial-label"><span class="trial-label-mirror" aria-hidden="true">' + esc(r.label) + '</span>' +
+        '<textarea class="lbl-input" data-i="' + i + '" rows="1" aria-label="Label for trial ' + r.n +
+        '" maxlength="60" placeholder="Add a label" title="' + esc(r.label) + '">' + esc(r.label) + '</textarea></div></th>' +
+        '<td data-outcome="N">' + esc(r.N) + '</td><td data-outcome="perm">' + esc(r.perm) + '%</td><td data-outcome="zc">' + esc(r.zc) + '%</td></tr>'
+      ).join('') + '</tbody></table>';
+    const extra = L.TRIAL_COLUMNS.filter(c => !['n', 'label', 'N', 'perm', 'zc'].includes(c.key));
+    list.innerHTML = '<p class="small">Winter fire chance is the modeled chance that a fire survives the winter.</p>' +
+      data.map(r => '<article class="trial-detail-card"><h3>Trial ' + r.n + (r.label ? ' · ' + esc(r.label) : '') + '</h3>' +
+        '<dl>' + extra.map(c => '<dt>' + esc(c.label) + '</dt><dd data-trial-detail="' + c.key + '">' + esc(r[c.key]) + '</dd>').join('') + '</dl></article>').join('');
   }
   function renderStudent() {
     const st = studentIdentity();
@@ -850,6 +859,9 @@
     byId('record-bog').addEventListener('click', function () { recordTrial('bog'); });
     byId('record-zombie').addEventListener('click', function () { recordTrial('zombie'); });
     byId('reset-bog').addEventListener('click', bogReset);
+    byId('logWrap').addEventListener('input', function (e) {
+      if (e.target.matches('.lbl-input')) e.target.previousElementSibling.textContent = e.target.value;
+    });
     byId('logWrap').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.matches('.lbl-input')) { e.preventDefault(); e.target.blur(); } });
     byId('logWrap').addEventListener('change', function (e) {
       if (!e.target.matches('.lbl-input')) return;
@@ -864,12 +876,14 @@
     byId('copy').addEventListener('click', function () {
       if (!state.trials.length) { byId('logStatus').textContent = 'Record at least one trial before copying.'; return; }
       const txt = [L.TRIAL_COLUMNS.map(function (c) { return c.label; }).join('\t')].concat(state.trials.map(function (t, i) { const r = L.trialRow(t, i + 1); return L.TRIAL_COLUMNS.map(function (c) { return r[c.key]; }).join('\t'); })).join('\n');
+      const manual = byId('copy-trials-fallback');
       const fallback = function () {
-        const t = byId('logWrap').querySelector('table');
-        if (t) { const rg = document.createRange(); rg.selectNodeContents(t); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg); }
-        byId('logStatus').textContent = 'The table is selected. Press Ctrl+C (or ⌘+C) to copy it.';
+        const box = byId('copy-trials-text');
+        box.value = txt; manual.hidden = false; box.focus(); box.select();
+        byId('logStatus').textContent = 'Full trial data selected. Use your device’s copy command, or download the CSV.';
+        announce('Full trial data selected. Use your copy command or download the CSV.');
       };
-      try { navigator.clipboard.writeText(txt).then(function () { byId('logStatus').textContent = 'Copied. Paste it into a spreadsheet or document.'; announce('Copied the table.'); }, fallback); } catch (e) { fallback(); }
+      try { navigator.clipboard.writeText(txt).then(function () { manual.hidden = true; byId('logStatus').textContent = 'Copied. Paste it into a spreadsheet or document.'; announce('Copied the table.'); }, fallback); } catch (e) { fallback(); }
     });
     byId('download-csv').addEventListener('click', function () {
       if (!state.trials.length) { byId('logStatus').textContent = 'Record at least one trial before downloading.'; return; }
@@ -976,6 +990,16 @@
     new MutationObserver(function () { redrawCharts(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     byId('download-work').addEventListener('click', download);
     byId('print-work').addEventListener('click', function () { renderStudent(); window.print(); });
+    const trialDetails = byId('trial-details');
+    let wasDetailsOpen;
+    window.addEventListener('beforeprint', function () {
+      if (wasDetailsOpen === undefined) wasDetailsOpen = trialDetails.open;
+      if (!trialDetails.hidden) trialDetails.open = true;
+    });
+    window.addEventListener('afterprint', function () {
+      if (wasDetailsOpen !== undefined) trialDetails.open = wasDetailsOpen;
+      wasDetailsOpen = undefined;
+    });
     const dialog = byId('reset-dialog');
     byId('reset-work').addEventListener('click', function () { dialog.showModal(); });
     byId('cancel-reset').addEventListener('click', function () { dialog.close(); });

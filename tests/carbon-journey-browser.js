@@ -20,6 +20,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       const shot = state => p.screenshot({ path: path.join(root, `artifacts/l9/${width}-${state}.png`), fullPage: true });
       const fits = async selector => { const b = await p.locator(selector).boundingBox(); assert.ok(b && b.y >= 0 && b.y + b.height <= height + 1, `${selector} within viewport at ${width}x${height}: ${JSON.stringify(b)}`); };
       await p.locator('#roll').waitFor();
+      assert.equal(await p.locator('#restart').isDisabled(), true);
       if (width < 851) { await fits('#roll'); await fits('#board'); assert.ok(await p.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)); }
       await shot('start');
       await p.locator('#inspect-current').click();
@@ -33,6 +34,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
         await p.locator('[data-close="inspect-dialog"]').click(); await p.locator('#map-toggle').click(); await fits('#roll');
       }
       await p.locator('#roll').click(); assert.equal(await p.locator('#prediction-options button').count(), 7);
+      assert.equal(await p.locator('#restart').isEnabled(), true);
       const pending = await p.locator('#die').getAttribute('aria-label'); await p.reload();
       assert.equal(await p.locator('#die').getAttribute('aria-label'), pending);
       for (let i = 0; i < 10; i++) {
@@ -91,6 +93,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       assert.equal(payload.rows[1].prediction, null);
       await p.locator('#restart').click(); await p.locator('#cancel-reset').click(); assert.equal(await p.locator('#q3').inputValue(), 'My carbon atom followed the official cards.');
       await p.locator('#restart').click(); await p.locator('#confirm-reset').click(); assert.equal(await p.locator('#roll').isEnabled(), true);
+      assert.equal(await p.locator('#restart').isDisabled(), true);
       assert.deepEqual(errors, []); console.log('PASS', width, height, 'viewport fit, inspect, map, prediction, official cards, reload, 10 rolls, totals, question paging, download, resets'); await ctx.close();
     }
     const auditCtx = await browser.newContext({viewport:{width:390,height:844},colorScheme:'dark',reducedMotion:'reduce'});

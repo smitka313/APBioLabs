@@ -75,3 +75,9 @@ test('every explanation across a real seeded playthrough is complete and never m
   }
   assert.deepEqual([...kinds].sort(),['card','complete','hunt','hyenaMove','lionMove','migration','seasonEnd']);
 });
+
+test('card handoff follows the numbered team in shared mode and stays out of solo play',()=>{
+  const context={phase:{kind:'card',role:'hyena'},nextLabel:'Draw event card'};
+  assert.equal(explain({...context,roleSeat:'Player or team 3'}).next,'Pass the device to player or team 3. Choose Draw event card.');
+  assert.equal(explain({...context,solo:true}).next,'Choose Draw event card.');
+});

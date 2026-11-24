@@ -85,8 +85,8 @@ async function fits(page) {
         ok(baselineScale === '20' && await page.locator('#cc-range-plot').getAttribute('data-y-max') === baselineScale,
           `${width} both range plots use the same 0–20 population scale`);
         await page.locator('.cc-nav [data-cc-go="explain"]').click();
-        ok(/Five core questions and one optional habitat question/.test(await page.locator('#cc-explain-help').textContent()),
-          `${width} Explain distinguishes five core questions from the optional sixth prompt`);
+        ok(/five required questions.*habitat question at the end is optional/.test(await page.locator('#cc-explain-help').textContent()),
+          `${width} Explain distinguishes five required questions from the optional sixth prompt`);
         await page.locator('#cc-explain-question').selectOption('long-run');
         ok(/only ran 12 rounds.*round 50.*do not need to run more/i.test(await page.locator('#cc-hint-long-run').textContent()),
           `${width} 50-round prompt explains prediction from twelve existing rounds`);

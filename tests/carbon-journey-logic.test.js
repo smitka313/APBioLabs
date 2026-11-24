@@ -32,12 +32,14 @@ function openFictionalJourney(snapshot, hash = '', budgetRecord) {
   let stored = snapshot, blocked = false;
   function node() {
     return {
+      set id(value) { this.localId = value; nodes.set('#' + value, this); },
+      get id() { return this.localId; },
       value: '', textContent: 'Download journey and budget', dataset: {}, style: {}, events: {},
       classList: { toggle() {}, add() {}, remove() {} },
       addEventListener(event, handler) { this.events[event] = handler; },
       click() { if (this.download) downloads.push(this.download); else this.events.click?.(); },
       querySelectorAll() { return []; }, append() {}, replaceChildren() {}, setAttribute() {},
-      showModal() {}, close() {}, reset() {}, focus() {}
+      showModal() { this.open = true; }, close() { this.open = false; }, reset() {}, focus() {}
     };
   }
   function get(selector) { if (!nodes.has(selector)) nodes.set(selector, node()); return nodes.get(selector); }
@@ -214,4 +216,31 @@ test('a short route cannot finish without evidence from every missing station an
   const saved=JSON.parse(page.downloads[0]);
   a.equal(saved.referenceCardsReviewed.length,6);
   a.match(saved.referenceCardsReviewed.find(r=>r.from==='soil').text,/decomposer/);
+});
+
+test('blank journey Restart is inert, then unlocks for actual journey work and resets to disabled', () => {
+  const page = openFictionalJourney(null, '#evidence');
+  a.equal(page.get('#restart').disabled, true);
+  a.equal(page.get('#restart-hint').hidden, false);
+  page.get('#restart').click();
+  a.notEqual(page.get('#reset-dialog').open, true);
+  page.get('#q1').value = '   ';
+  page.get('#q1').events.input();
+  a.equal(page.get('#restart').disabled, true);
+  page.get('#q1').value = 'Carbon started in the air.';
+  page.get('#q1').events.input();
+  a.equal(page.get('#restart').disabled, false);
+  a.equal(page.get('#restart-hint').hidden, true);
+  page.get('#restart').click();
+  a.equal(page.get('#reset-dialog').open, true);
+  page.get('#cancel-reset').click();
+  a.equal(page.get('#restart').disabled, false);
+  page.get('#restart').click();
+  page.get('#confirm-reset').click();
+  a.equal(page.get('#restart').disabled, true);
+  a.equal(page.get('#q1').value, '');
+  const pending = openFictionalJourney(JSON.stringify({...L.initial(42), pending:1}));
+  a.equal(pending.get('#restart').disabled, false);
+  const unreadable = openFictionalJourney('{unreadable local save');
+  a.equal(unreadable.get('#restart').disabled, false);
 });

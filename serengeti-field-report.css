@@ -18,7 +18,7 @@
 .sg-field-swatch{display:inline-block;flex:none;width:1.12rem;height:.82rem;border:1px solid #274536;border-radius:.12rem;background:repeating-linear-gradient(38deg,#566f59 0 1px,#a6c0a3 1px 4px)}
 .sg-field-readout{padding:.75rem;background:var(--report-surface);border:1px solid var(--report-line);border-radius:.7rem}
 .sg-field-readout h4{font-size:1.1rem}
-.sg-field-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;padding:.48rem 0 .3rem}
+.sg-field-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem;padding:.48rem 0 .3rem}
 .sg-field-metrics>div{padding:.36rem .42rem;border:1px solid var(--report-line);border-radius:.46rem}
 .sg-field-metrics dt{font-size:.71rem;color:var(--report-muted)}
 .sg-field-metrics dd{margin:0;font-size:.89rem;font-weight:800;font-variant-numeric:tabular-nums}

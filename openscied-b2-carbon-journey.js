@@ -19,7 +19,14 @@
   const name = id => L.stations.find(s => s[0] === id)[1];
   const mobile = () => matchMedia('(max-width:850px)').matches;
   function announce(message) { $('#status').textContent = message; }
+  function updateRestart() {
+    const hasWork = unreadable !== null || state.pending !== null || state.rows.length ||
+      Object.values(state.answers).some(answer => answer.trim()) || $('#note').value.trim();
+    $('#restart').disabled = !hasWork;
+    $('#restart-hint').hidden = !!hasWork;
+  }
   function save(message, replaceUnreadable = false) {
+    updateRestart();
     if (unreadable !== null && !replaceUnreadable) { announce(backupWarning); return; }
     try {
       localStorage.setItem(key, JSON.stringify({ ...state, lastSection: section, lastVisitedAt: Date.now(), presentation: { guess, revealed, note: $('#note').value } }));
@@ -158,6 +165,7 @@
     if (chart) chart.update(opts); else chart = Lab.chart($('#charts'), opts);
   }
   function render() {
+    updateRestart();
     const pending = state.pending !== null, c = pending ? L.outcome(state) : null, n = state.rows.length;
     const missing = L.missingCoverage(state);
     const review = state.coverageCheckpoint ? missing[0] : null;
@@ -260,7 +268,7 @@
     $(state.coverageCheckpoint ? '#coverage-continue' : '#roll').focus({preventScroll:true});
   });
   $('#analyze').addEventListener('click', () => { $('#complete-dialog').close(); setPage('evidence'); });
-  $('#restart').addEventListener('click', () => $('#reset-dialog').showModal()); $('#cancel-reset').addEventListener('click', () => $('#reset-dialog').close());
+  $('#restart').addEventListener('click', () => { if (!$('#restart').disabled) $('#reset-dialog').showModal(); }); $('#cancel-reset').addEventListener('click', () => $('#reset-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
     state = L.initial((state.seed + 0x6D2B79F5) >>> 0); guess = null; revealed = false; questionIndex = 0; tourStation = '';
     questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset(); $('#reset-dialog').close();

@@ -185,7 +185,7 @@
       if (season.start===null) details.replaceChildren();
       else {
         const dl=el('dl','sg-field-metrics');
-        dl.append(metric('Season change',format(season.delta)),metric('Cumulative',format(season.start)+' → '+format(season.end)),
+        dl.append(metric('Cumulative change',format(season.start)+' → '+format(season.end)),
           metric('Event cards',format(season.cardChange)),metric('Hunts',format(season.huntChange)));
         details.replaceChildren(dl);
       }

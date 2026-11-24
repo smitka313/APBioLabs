@@ -199,15 +199,33 @@ svg .on-peat { fill: var(--b2-on-peat); }
 .try li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; font-size: .93rem; }
 .try li b { display: block; font-family: var(--f-display); margin-bottom: 2px; }
 
-/* Trials table */
-#logWrap { max-width: 100%; }
-#logWrap table { min-width: 960px; }
-#logWrap th { white-space: normal; min-width: 6.5em; max-width: 11em; vertical-align: bottom; }
-#logWrap td { white-space: nowrap; }
-#logWrap td.lbl, #logWrap th.lbl { text-align: left; }
-#logWrap td.p { color: var(--b2-photo-t); font-weight: 700; } #logWrap td.r { color: var(--b2-resp-t); font-weight: 700; } #logWrap td.b { color: var(--b2-burn-t); font-weight: 700; }
-#logWrap tr.newgroup td { border-top: 3px solid var(--accent); }
-.lbl-input { width: 15em; max-width: 100%; min-height: 28px; display: block; resize: none; overflow: hidden; white-space: normal; font: inherit; font-size: .85rem; line-height: 1.35; text-align: left; padding: 3px 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
+/* The comparison fits phones; full settings/rates are a separate optional disclosure. */
+#logWrap { min-width: 0; max-width: 100%; }
+#logWrap .trial-outcomes { table-layout: fixed; }
+#logWrap .trial-outcomes :is(th, td) { white-space: normal; padding: .45rem clamp(.25rem, 1vw, .65rem); vertical-align: middle; }
+#logWrap .trial-outcomes thead th { vertical-align: bottom; }
+#logWrap .trial-outcomes :is(th, td):not(.trial-label-col) { text-align: center; }
+#logWrap .trial-outcomes .trial-label-col { width: 37%; text-align: start; }
+#logWrap .trial-outcomes tbody th { background: var(--surface); font-size: .78rem; }
+#logWrap .trial-outcomes tbody td { font-weight: 700; }
+#logWrap .trial-outcomes tr.newgroup > * { border-top: 3px solid var(--accent); }
+.trial-label { display: grid; min-width: 0; margin-top: .2rem; }
+#logWrap .trial-label :is(.lbl-input, .trial-label-mirror) {
+  grid-area: 1 / 1; box-sizing: border-box; display: block; min-width: 0; width: 100%; min-height: 28px;
+  padding: 3px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); font: 400 .85rem/1.35 var(--f-body);
+  white-space: pre-wrap; overflow-wrap: anywhere; text-align: start;
+}
+#logWrap .trial-label .trial-label-mirror { visibility: hidden; }
+#logWrap .trial-label .trial-label-mirror::after { content: " "; }
+#logWrap .trial-label .lbl-input { align-self: stretch; resize: none; overflow: hidden; color: var(--ink); background: var(--surface); }
+.trial-details[hidden], #copy-trials-fallback[hidden] { display: none; }
+.trial-details .inner { display: grid; gap: .65rem; }
+.trial-detail-card { padding: .65rem; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); }
+.trial-detail-card h3 { margin: 0 0 .3rem; font-size: 1rem; overflow-wrap: anywhere; }
+.trial-detail-card dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; margin: 0; gap: .25rem .75rem; font-size: .86rem; }
+.trial-detail-card dt { font-weight: 500; }
+.trial-detail-card dd { margin: 0; text-align: end; font-variant-numeric: tabular-nums; font-weight: 650; }
+@media (min-width: 768px) { .trial-details .inner { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); } .trial-details .inner > p { grid-column: 1 / -1; } }
 .empty { padding: 18px; color: var(--muted); font-size: .9rem; }
 .report-student { margin: 0; font-weight: 600; }
 .submit-card { display: grid; gap: 12px; }
@@ -281,9 +299,11 @@ body.numbar-on { padding-bottom: 58px; }
   .step-nav, .theme-switch, .skip-link, .pager, .resume-bar, .numbar, #download-work, #print-work, #reset-work, .pic-tools { display: none !important; }
   body { background: #fff; color: #111; }
   #logWrap { overflow: visible; } #logWrap table { min-width: 0; font-size: 8pt; }
-  .lbl-input { border: 0 !important; padding: 0 !important; width: auto !important; }
+  #logWrap .trial-label .lbl-input, #copy-trials-fallback { display: none !important; }
+  #logWrap .trial-label .trial-label-mirror { visibility: visible; border: 0; padding: 0; }
+  #logWrap, .trial-details { break-inside: auto; }
+  .trial-detail-card { break-inside: avoid; }
 }
-#logWrap table.data .lbl-input { font-family: var(--f-body); text-align: left; min-width: 14em; width: 100%; }
 .tiltbox svg { max-width: 380px; margin-inline: auto; }
 .pic-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; }
 .pic-foot .legend { padding: 4px 0 0; flex: 1 1 380px; }

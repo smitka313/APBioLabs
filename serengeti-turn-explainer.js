@@ -74,7 +74,7 @@
     return decision;
   }
   function explain(context={}) {
-    const {state, phase={}, decision, review, readiness, nextLabel, selected, selectedToken, last, priorLabel, selectionPending, primaryDisabled, lastHuntMessage, selectedLabel, underlying}=context;
+    const {state, phase={}, decision, review, readiness, nextLabel, selected, selectedToken, last, priorLabel, selectionPending, primaryDisabled, lastHuntMessage, selectedLabel, underlying, roleSeat, solo}=context;
     const p=typeof phase==='string'?{kind:phase}:phase;
     const kind=p.kind||'setup';
     const season=context.seasonName||SEASONS[state?.season]||'Winter';
@@ -87,10 +87,10 @@
     const predName=active==='hyena'?'hyena':active==='lion'?'lion':'predator';
     const cta=fallback=>line(nextLabel)||fallback;
     function nextForPhase(){
-      if(kind==='setup') return 'Choose who reads and plays each role. Then choose '+(nextLabel||'Start winter')+'.';
+      if(kind==='setup') return 'Choose Solo or assign roles on a shared device. Then choose '+(nextLabel||'Start winter')+'.';
       if(kind==='migration') return 'Preview a formation or use the suggested one. Then choose '+(nextLabel||(season==='Winter'?'Place winter herd':'Migrate wildebeest'))+'.';
       if(kind==='card'){
-        if(!p.card)return 'Pass the device to '+activeName.toLowerCase()+'. Choose '+(nextLabel||'Draw event card')+'.';
+        if(!p.card)return (solo?'':'Pass the device to '+(roleSeat||activeName).toLowerCase()+'. ')+'Choose '+(nextLabel||'Draw event card')+'.';
         if(selectionPending || (selectedToken && !selected))return 'Choose one of the marked destinations for the selected piece.';
         if(primaryDisabled)return 'Choose a legal piece and destination, or stay if the card allows it.';
         if(!(p.options||[]).some(x=>x.id!=='stay'))return cta('Continue without changing the board.');

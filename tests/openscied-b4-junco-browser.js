@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const { verifyLongResponse, writePrintPreview } = require('./openscied-b4-written-response-check');
 const { ROOT, serve } = require('./_h');
 
 const PAGE = 'openscied-b4-junco.html';
@@ -234,6 +235,13 @@ async function exercise(browser,base,size) {
     await chart.locator('svg').first().waitFor({state:'visible'});
     await fits(page,'main, #cort, #ju-chart, #ju-claim, #ju-limits',label+' CORT comparison');
     await shoot(page,label+'-3-cort','ju-chart');
+    await verifyLongResponse(page,id(page,'ju-claim'),{
+      name:/How did the aviary results change or support your explanation/i,
+      touch:size.touch, screenshot:path.join(OUT,label+'-long-response.png')
+    });
+    check(true,label+' a six-line response remains editable with a visible first line when returning to its start');
+    if(size.width===1366) await writePrintPreview(page,'#cort',path.join(OUT,label+'-print-preview.pdf'));
+    await id(page,'ju-claim').fill('');
     if(size.deep) {
       await a11y(page,'#cort',label+' CORT comparison');
       await verifyCortData(page,label);

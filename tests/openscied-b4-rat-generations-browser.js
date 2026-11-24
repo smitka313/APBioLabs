@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const { verifyLongResponse, writePrintPreview } = require('./openscied-b4-written-response-check');
 const { serve, ROOT } = require('./_h');
 
 const FILE = 'openscied-b4-rat-generations.html';
@@ -720,6 +721,12 @@ async function play(browser, base, cfg) {
     if (!await table.isVisible()) await use(table.locator('xpath=ancestor::details[1]').locator('summary'), cfg);
     const explained = await parity(page, '#rg-evidence-table', model, label + ' Explain table');
     check(compact(explained, analyzed), label + ' carries exact counts and denominators forward without backtracking');
+    await verifyLongResponse(page,page.locator('#rg-claim'),{
+      name:/How did selection affect which rats contributed offspring/i,
+      touch:cfg.touch, screenshot:path.join(OUT,label+'-long-response.png')
+    });
+    check(true,label+' a six-line response remains editable with a visible first line when returning to its start');
+    if(cfg.width===1366) await writePrintPreview(page,'#rg-explain',path.join(OUT,label+'-print-preview.pdf'));
     for (const [key, value] of Object.entries(EXAMPLE_TEXT)) {
       await page.locator('#rg-' + key).fill(value);
     }

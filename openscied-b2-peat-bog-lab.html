@@ -334,6 +334,11 @@
       <p class="small" id="logStatus">Record a baseline first, then change one variable and record again. The label may be shared by trials in the same investigation; use the trial number to identify a single row.</p>
       <p class="small muted" id="trial-settings"></p>
       <div class="table-wrap" id="logWrap"></div>
+      <details class="disclose trial-details" id="trial-details" hidden><summary>Show inputs and rates for all trials</summary><div class="inner" id="trial-detail-list"></div></details>
+      <div class="field" id="copy-trials-fallback" hidden>
+        <label for="copy-trials-text">Full trial data to copy</label>
+        <textarea id="copy-trials-text" rows="4" readonly></textarea>
+      </div>
       <details class="disclose" open><summary>Investigations to try</summary><div class="inner"><ul class="try">
         <li><b>High tilt</b>Record your starting trial. Then set the tilt to 24.2°, like about 10,700 years ago. What happens to summer sunlight, temperature, and photosynthesis in the Arctic?</li>
         <li><b>Low tilt</b>Set the tilt to 22.1°. How much of the peat freezes into permafrost? Why can’t decomposers or fire reach frozen peat?</li>
