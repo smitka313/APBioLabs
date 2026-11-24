@@ -30,10 +30,12 @@
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-5">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
 <script defer src="openscied-save-session.js"></script>
+<script defer src="openscied-submission-report.js"></script>
 <script defer src="openscied-b3-cancer-rates.js?v=save-session-1"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -419,6 +421,7 @@
         <textarea id="cr-limits" rows="3" maxlength="1600" placeholder="These group statistics don’t show…" aria-describedby="cr-limits-help"></textarea>
         <p id="cr-finish-hint" class="cr-muted">Write both responses to unlock Finish investigation.</p>
         <button class="btn btn--primary" type="button" id="cr-finish" aria-describedby="cr-finish-hint" disabled>Finish investigation</button>
+        <div data-ose-report-final></div>
       </div>
     </div>
     <details id="cr-design-review" class="cr-context cr-design-review" hidden>
@@ -443,8 +446,12 @@
       <label for="cr-name">Name (optional)<input type="text" id="cr-name" maxlength="100" autocomplete="name"></label>
       <label for="cr-period">Class period (optional)<input type="text" id="cr-period" maxlength="24"></label>
     </div>
-    <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-download">Download investigation</button><button class="btn" type="button" id="cr-reset" aria-haspopup="dialog">Start over…</button></div>
+    <details class="ose-report-other"><summary>Other downloads and backups</summary>
+      <button class="btn" type="button" id="cr-download">Download text backup</button>
+    </details>
+    <div class="cr-buttons"><button class="btn" type="button" id="cr-reset" aria-haspopup="dialog">Start over…</button></div>
   </section>
+  <div id="ose-submission-report"></div>
   <details class="cr-card cr-notes" id="cr-sources">
     <summary>Data sources and what the charts can’t tell us</summary>
     <p id="cr-source-types"></p><p id="cr-source-states"></p><p id="cr-source-poverty"></p><p id="cr-source-race"></p><p id="cr-source-michigan"></p>

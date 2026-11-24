@@ -276,6 +276,55 @@
     const field=$(k);field.value=state.person[k]??shared[k]??'';
     field.addEventListener('input',()=>{state.person[k]=cleanText(field.value,max);save();});
   }
+  function submissionReport(){
+    const missing=[];
+    if(!state.observation.trim())missing.push('Write a field observation.');
+    if(!state.revealed)missing.push('Save an aviary prediction and reveal the results.');
+    if(!state.claim.trim())missing.push('Write your explanation using study evidence.');
+    if(!state.limits.trim())missing.push('Write a limit or follow-up question.');
+    const answer=(id,key)=>({type:'answer',prompt:$(id).labels?.[0]?.textContent?.trim()||id,value:state[key]});
+    const responses=[answer('field-entry','observation'),
+      {type:'answer',prompt:$('prediction').labels?.[0]?.textContent?.trim()||'Aviary prediction',value:choices[state.prediction]||''},
+      answer('reason','reason'),answer('claim','claim'),answer('limits','limits')];
+    const sections=[{title:'Field report · your observations and explanation',items:responses}];
+    const keyResults=[];
+    function dataSection(data,group,label,title){
+      const rows=groupRows(data,group);
+      const hasSE=rows.some(row=>Number.isFinite(row.se));
+      keyResults.push({label,value:rows.map(row=>sites[row.site]+' '+fmt(row.mean)).join(' vs. '),unit:data.unit,note:'Approximate published group means.'});
+      return {title,items:[
+        {type:'table',title:label,columns:['Population','Mean ('+data.unit+')',...(hasSE?[errName(data)]:[]),'Birds (n)'],
+          rows:rows.map(row=>hasSE?rowData(row):[sites[row.site],fmt(row.mean),row.n??'Not reported'])},
+        {type:'text',text:data.note},{type:'text',text:data.source+': '+data.url}
+      ]};
+    }
+    sections.push(dataSection(D.field,state.fieldGroup,fieldLabels[state.fieldGroup],'Field distance · published evidence'));
+    if(state.revealed){
+      sections.push(dataSection(D.aviary,state.aviaryGroup,aviaryLabels[state.aviaryGroup],'Shared aviary · published evidence'));
+      const d=D.cort, rows=points.filter(p=>!identified||state.filter==='all'||p.site===state.filter), r=corr(rows);
+      const items=[
+        {type:'text',text:d.note},
+        {type:'text',text:'CORT and exploration can be related without CORT causing the behavior. The shared aviary does not prove that a difference was inherited.'}
+      ];
+      if(d.published)items.push({type:'text',text:d.published.note+' Published model: n = '+d.published.n+', R² = '+d.published.rSquared+', P = '+d.published.p+'.'});
+      if(rows.length){
+        if(Number.isFinite(r))items.push({type:'text',text:'Selected classroom points: n = '+rows.length+', correlation r = '+fmt(r)+'. This is not the published model result.'});
+        items.push({type:'table',title:'Classroom points approximated from the published figure',
+          columns:[...(identified?['Population']:[]),d.xLabel||'CORT','Individual exploration score (PC1)'],
+          rows:rows.map(row=>[...(identified?[sites[row.site]||'Not identified']:[]),fmt(row.x),fmt(row.y)])});
+      }
+      items.push({type:'text',text:d.source+': '+d.url});
+      sections.push({title:'Hormone and exploration clue · published evidence',items});
+    }
+    if(state.sim?.results?.length&&window.JuncoFlight?.distance)sections.push({title:'Optional walk-up trials · simulated, not published observations',items:[
+      {type:'table',title:'Completed virtual observations',columns:['Trial','Population','Context','Distance at takeoff (m)'],
+        rows:state.sim.results.map(row=>[row.id,sites[row.site],fieldLabels[row.group],window.JuncoFlight.distance(row.group,row.step)])},
+      {type:'text',text:'Virtual individual trials are illustrative and are not part of the published sample.'}
+    ]});
+    return {title:'Junco Investigation',unit:'OpenSciEd Biology B.4 · Lesson 4',source:'Independent OpenSciEd companion by Robert Smitka. Published evidence from Atwell et al. (2012) is separate from optional simulated trials.',
+      status:invalid||!session?.check(key)?.ok?'recovery':missing.length?'draft':'final',missing,
+      student:{name:$('name').value.trim(),period:$('period').value.trim()},keyResults,sections};
+  }
   function download(){
     const view=identified?sites[state.filter]||'Both populations':'All plotted birds';
     const body=['Junco Investigation — Field report','Name: '+$('name').value.trim(),'Class period: '+$('period').value.trim(),'','PUBLISHED STUDY EVIDENCE',...evidenceLines(),
@@ -310,4 +359,5 @@
   });
   window.addEventListener('pageshow',monitorSave);
   monitorSave();
+  window.OpenSciEdSubmission?.mount({target:"#ju-submission-report",collect:submissionReport,filename:"junco-field-report"});
 })();

@@ -353,6 +353,11 @@ async function disclosed(page, id, open) {
   }, { key:SAVE, id, open });
 }
 async function downloadReport(page) {
+  const backups=page.locator('#hb-other-downloads');
+  if(!await backups.evaluate(el=>el.open)){
+    check(!await page.locator('#hb-download').isVisible(),'plain-text download is hidden with backups collapsed');
+    await backups.locator('summary').press('Enter');
+  }
   const downloaded = page.waitForEvent('download');
   await page.locator('#hb-download').press('Enter');
   const file = await downloaded;

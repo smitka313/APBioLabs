@@ -19,7 +19,7 @@
   const percent=(n,d)=>d?new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(100*n/d)+'%':'Not defined';
   const fraction=(n,d)=>d?n+' / '+d+' ('+percent(n,d)+')':'Not defined';
   const selectionName={born:'Born',survived:'Survived'};
-  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',analysisChecked:false,crosses:{},activePair:''});
+  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',analysisChecked:false,analysisAttempt:'',crosses:{},activePair:''});
   const scope='b4-rat-generations', guard=window.OpenSciEdSaveSession;
   let session;
   try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
@@ -37,6 +37,8 @@
     for (const [key,n] of Object.entries(fields)) if(typeof s.person?.[key]==='string')safe.person[key]=tidy(s.person[key],n);
     if(own(METRICS,s.metric))safe.metric=s.metric;
     safe.analysisChecked=s.analysisChecked===true&&trial.done;
+    if(trial.done)safe.analysisAttempt=safe.analysisChecked?'alleles':
+      ['rats','r','alleles'].includes(s.analysisAttempt)?s.analysisAttempt:'';
     safe.crosses=B.cleanMap(s.crosses);
     if(typeof s.activePair==='string'&&/^g[2-5]-pair[1-9][0-9]?$/.test(s.activePair))safe.activePair=s.activePair;
     return safe;
@@ -354,6 +356,52 @@
   function fillPerson(){
     const labels=person();for(const key of Object.keys(fields))$('#rg-'+key).value=labels[key]||'';
   }
+  function submissionReport(){
+    const missing=[];
+    if(!state.prediction)missing.push('Save a prediction.');
+    if(!model.done)missing.push('Finish the colony model through Generation 5.');
+    if(!state.analysisAttempt)missing.push('Try the Analyze quick check.');
+    for(const [id,label] of [['claim','claim'],['evidence','evidence response'],['limits','model limits response']])
+      if(!state.answers[id]?.trim())missing.push('Write your '+label+'.');
+
+    const quickSelection=state.analysisAttempt &&
+      $('input[name="rg-concept"][value="'+state.analysisAttempt+'"]')?.labels?.[0]?.textContent?.trim();
+    const sections=[{title:'Prediction, analysis, and explanation',items:[
+      {type:'answer',prompt:$('#rg-prediction legend')?.textContent?.trim()||'Prediction',value:PRED[state.prediction]||''},
+      ...$answer.map(f=>({type:'answer',prompt:f.labels?.[0]?.textContent?.trim()||f.dataset.rgAnswer,value:state.answers[f.dataset.rgAnswer]||''})),
+      {type:'answer',prompt:$('#rg-check legend')?.textContent?.trim()||'Analyze quick check · selected denominator',value:quickSelection||''}
+    ]}];
+    const keyResults=[], simItems=[{type:'text',text:'These are modeled colony snapshots, not measured animal outcomes. R is the red resistance allele, and the model treats RR and RB as resistant and BB as not resistant. Each rat carries two allele copies.'}];
+    const records=snapshots();
+    if(state.action){
+      const rows=records.map(({generation,phase,counts:c,born})=>[
+        generation+' · '+selectionName[phase],'RR '+c.RR+' / RB '+c.RB+' / BB '+c.BB,c.total,fraction(c.carriers,c.total),fraction(c.redAlleles,c.total*2),phase==='survived'?fraction(c.total,born):'Not applicable'
+      ]);
+      const first=records[0], last=records.at(-1);
+      for(const [label,rec] of [['Starting R-allele frequency',first],['Latest R-allele frequency · G'+last.generation+' '+selectionName[last.phase],last]])
+        keyResults.push({label,value:fraction(rec.counts.redAlleles,rec.counts.total*2),note:'R copies / total allele copies in this simulated snapshot.'});
+      simItems.push({type:'table',title:'Generation record',columns:['Generation and stage','Genotype counts','Total rats','Resistant / total','R copies / total copies','Survived / born'],rows});
+    } else simItems.push({type:'text',text:'No model actions recorded yet.'});
+
+    const preview=M.preview(model)?.action==='breed'?M.step(model).generations.at(-1):null;
+    const generations=preview?[...model.generations,preview]:model.generations;
+    const crosses=[], inProgress=[];
+    for(const g of generations)for(const pair of g.pairs||[]){
+      const cross=state.crosses[pair.id];
+      if(B.complete(cross))crosses.push([g.generation,pair.id,pair.parents.map(rat=>rat.genotype).join(' × '),pair.cells.join(', ')]);
+      else if(cross) {
+        const placed=[...cross.parents,...cross.headers,...cross.cells.flat()].filter(Boolean).length;
+        if(placed)inProgress.push([g.generation,pair.id,placed+' of 14 placements']);
+      }
+    }
+    if(crosses.length)simItems.push({type:'table',title:'Punnett squares you built · expected model outcomes',columns:['Generation produced','Pair','Parent genotypes','Four cells'],rows:crosses});
+    else simItems.push({type:'text',text:'No completed Punnett square recorded yet.'});
+    if(inProgress.length)simItems.push({type:'table',title:'Partially built Punnett squares',columns:['Generation produced','Pair','Recorded work'],rows:inProgress});
+    sections.push({title:'Rat colony evidence · simulated',items:simItems});
+    const {name,period}=person();
+    return {title:'Rat Generations',unit:'OpenSciEd Biology B.4 · Lesson 3',source:'Independent OpenSciEd companion by Robert Smitka. Generations and outcomes come from a simplified model.',
+      status:invalid||!session?.check(KEY)?.ok?'recovery':missing.length?'draft':'final',missing,student:{name:name||'',period:period||''},datasetId:trialId(state.seed),keyResults,sections};
+  }
   function report(){
     const p=person(), lines=['RAT GENERATIONS · SIMULATED MODEL','OpenSciEd Biology B.4 Lesson 3 companion · Robert Smitka','',
       'Name: '+(p.name||''),'Class period: '+(p.period||''),'Dataset ID: '+trialId(state.seed),'Prediction: '+(PRED[state.prediction]||'Not recorded'),
@@ -396,6 +444,13 @@
     printAnswers.push([entry,output]);
     entry.addEventListener('input',()=>{state.answers[entry.dataset.rgAnswer]=entry.value.slice(0,2400);save();gates();});
     entry.addEventListener('blur',()=>{entry.scrollTop=0;});
+    // The browser can leave the top of the text scrolled after placing the caret at
+    // the start. Keep the full first line and its padding visible on this shortcut.
+    entry.addEventListener('keyup',event=>{
+      const start=(event.key==='Home'&&(event.ctrlKey||event.metaKey))||
+        (event.key==='ArrowUp'&&event.metaKey);
+      if(start&&!event.altKey&&!event.shiftKey&&entry.selectionStart===0&&entry.selectionEnd===0)entry.scrollTop=0;
+    });
   }
   for(const [key,limit] of Object.entries(fields))$('#rg-'+key).addEventListener('input',e=>{state.person[key]=tidy(e.currentTarget.value,limit);save();});
   $('#rg-next').addEventListener('click',advance);
@@ -410,6 +465,7 @@
     const msg=selected==='alleles'?'Right. The denominator counts every allele copy of this gene, two per rat.':
       selected==='rats'?'Not quite. The number of rats is the denominator for the fraction showing resistance. For allele frequency, count two copies per rat.':
       selected==='r'?'Not quite. R copies are the numerator. The denominator counts both R and B copies.':'Choose a denominator first.';
+    if(selected)state.analysisAttempt=selected;
     state.analysisChecked=selected==='alleles';save();gates();
     set('check-feedback',msg);announce(msg,true);
   });
@@ -447,4 +503,5 @@
   });
   window.addEventListener('pageshow',monitorSave);
   monitorSave();
+  window.OpenSciEdSubmission?.mount({target:"#rg-submission-report",collect:submissionReport,filename:"rat-generations-investigation"});
 })();

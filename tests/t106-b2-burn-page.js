@@ -154,6 +154,7 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
     const saved = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(saved.v === 1 && saved.burn.seed && saved.burn.records.length === 5 && saved.fields['wrap-sentence'] && saved.responseIds.includes('sense-btb') && saved.responseIds.includes('wrap-sentence') && saved.responseIds.includes('cer-claim') && saved.responseIds.includes('me-heat'), 'one saved record with the burn, fields and response ids');
     T.ok(saved.responseIds.every(id => !/^(bn-)/.test(id)), 'scene controls are not page fields');
+    await p.locator('#legacy-report-tools > summary').click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     T.ok(payload.format === 'openscied-b2-burn-progress-v1' && /SIMULATED/.test(payload.dataNote) && payload.simulatedData.burns.length === 5 && payload.dropdowns.length >= 15 && payload.student && payload.student.name === 'Test Student', 'download is labeled simulated and carries the data');

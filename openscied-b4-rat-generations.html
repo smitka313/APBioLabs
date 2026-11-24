@@ -30,6 +30,7 @@
 <script>try{const t=localStorage.getItem("aplab:pref:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b4-rat-generations.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -143,15 +144,21 @@
           <div><label for="rg-period">Class period</label><input id="rg-period" type="text" maxlength="24"></div>
         </fieldset>
         <p class="rg-muted">Your name, period and work stay in this browser unless you download or copy them.</p>
-    <div class="rg-actions"><button class="btn btn--primary" type="button" id="rg-download">Download investigation</button><button class="btn" type="button" id="rg-copy">Copy investigation</button></div>
+    <div data-ose-report-final></div>
+    <details class="ose-report-other" id="rg-other-downloads">
+      <summary>Other downloads and backups</summary>
+      <p>Use these plain-text options to keep a copy of your work. They do not restore your progress.</p>
+      <div class="rg-actions"><button type="button" class="btn" id="rg-download">Download investigation</button> <button type="button" class="btn" id="rg-copy">Copy investigation</button></div>
+    </details>
       </div>
     </div>
   </section>
-  <div class="rg-footer"><p id="rg-save">Work stays in this browser. Download it before using another device.</p><button type="button" class="btn btn--ghost" id="rg-reset">Start a new trial…</button></div>
+  <div class="rg-footer"><p id="rg-save">Your progress stays in this browser. Preview your report to keep a classroom copy.</p><button type="button" class="btn btn--ghost" id="rg-reset">Start a new trial…</button></div>
   <p id="rg-status" role="status" aria-live="polite" aria-atomic="true"></p>
   <details class="rg-details rg-method"><summary>What the model does and does not show</summary>
     <p>This is a classroom simulation, not a pest-control investigation. It models two alleles, one simplified trait, fixed expected offspring counts, and nonoverlapping generations. During the selection steps, RR and RB survive and BB does not. Rats do not acquire R because they need it; offspring can inherit it from parents. No rat population measurements come from this simulation.</p>
   </details>
+  <div id="rg-submission-report"></div>
 </main>
 <dialog id="rg-reset-dialog" aria-labelledby="rg-reset-heading"><h2 id="rg-reset-heading">Start a different trial?</h2><p>This resets your prediction, data and responses for this activity on this browser. Download your current report first to keep a copy.</p><div class="rg-actions"><button type="button" class="btn" data-rg-close autofocus>Keep working</button><button type="button" class="btn btn--danger" id="rg-confirm-reset">Start new trial</button></div></dialog>
 <dialog id="rg-copy-dialog" aria-labelledby="rg-copy-heading"><h2 id="rg-copy-heading">Copy your investigation</h2><label for="rg-copy-text">Investigation report</label><textarea id="rg-copy-text" rows="11" readonly></textarea><div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-copy-select">Select report</button><button type="button" class="btn" data-rg-close>Close</button></div><p id="rg-copy-hint"></p></dialog>
@@ -165,6 +172,7 @@
 <script src="openscied-b4-rat-cross-builder.js"></script>
 <script src="openscied-b4-rat-burrow.js"></script>
 <script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
 <script src="openscied-b4-rat-generations.js"></script>
 </body>
 </html>

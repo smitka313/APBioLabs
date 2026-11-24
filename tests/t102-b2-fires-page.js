@@ -170,6 +170,7 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
     const saved = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(saved.v === 1 && saved.decomp.seed && saved.tilt.recorded && saved.fields['wrap-sentence'] && saved.responseIds.includes('sense-past') && saved.responseIds.includes('wrap-sentence') && saved.responseIds.includes('cer-claim'), 'one saved record with scenes, fields and response ids');
     T.ok(saved.responseIds.every(id => !/^(dc-|tl-)/.test(id)), 'scene controls are not page fields');
+    await p.locator('#legacy-report-tools > summary').click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     T.ok(payload.format === 'openscied-b2-fires-progress-v1' && /SIMULATED/.test(payload.dataNote) && payload.simulatedData.foam.length === 3 && payload.simulatedData.tubes.length === 3 && payload.dropdowns.length >= 25, 'download is labeled simulated and carries the data');
@@ -214,6 +215,7 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
         }, KEY);
         await recovery.locator('#save-conflict').waitFor({ state: 'visible' });
         await recovery.evaluate(() => { window.print = () => {}; });
+        await recovery.locator('#legacy-report-tools > summary').click();
         await recovery.locator('#print-work').click();
         const reportStudent = await recovery.locator('.report-student').textContent();
         T.ok(startingStudent ? reportStudent === 'Student: Earlier Test Student · Class period: 2' : /no student name or class period/.test(reportStudent),

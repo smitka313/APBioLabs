@@ -479,6 +479,8 @@ async function followupPath(page,size) {
   check((await reference.textContent()).includes('First early-stage breast cancer diagnosis: +6.6 months'),
     'Exhibit F values stay beside the writing prompt without backtracking');
   const waiting=page.waitForEvent('download');
+  const backups=page.locator('details.ose-report-other');
+  if(!await backups.evaluate(node=>node.open)) await invoke(backups.locator('summary'),size);
   await invoke(view(page,'cr-download'),size);
   const download=await waiting;
   const file=await fs.readFile(await download.path(),'utf8');
@@ -606,6 +608,8 @@ async function stateSearchAndPair(page, size, label) {
 
 async function report(page, size, pair, michigan) {
   const waiting = page.waitForEvent('download');
+  const backups=page.locator('details.ose-report-other');
+  if(!await backups.evaluate(node=>node.open)) await invoke(backups.locator('summary'),size);
   await invoke(view(page,'cr-download'),size);
   const download = await waiting;
   check(/cancer.*\.(txt|md)$/i.test(download.suggestedFilename()), 'students receive a named text report');
@@ -726,7 +730,7 @@ async function exercise(browser, base, size) {
     await view(page,'cr-claim').fill(CLAIM);
     await view(page,'cr-limits').fill(LIMIT);
     await invoke(view(page,'cr-finish'),size);
-    await view(page,'cr-download').waitFor({state:'visible'});
+    await page.locator('[data-ose-report-final]').getByRole('button',{name:'Preview report'}).waitFor({state:'visible'});
     check((await record(page))?.completed===true,label+' finishing marks the work complete');
     await fits(page,'main, #explain, #cr-claim, #cr-limits, #cr-evidence-list',label+' Explain');
     await capture(page,label+'-explain','#cr-evidence-list');

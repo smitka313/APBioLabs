@@ -467,4 +467,52 @@
     if (hadSaved) save(); else renderReport();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+  function submissionReport() {
+    const answer = (prompt,value) => ({type:'answer',prompt,value:value || ''});
+    const hasList = x => Array.isArray(x) && x.length > 0;
+    const hasEntries = x => x && Object.keys(x).length > 0;
+    const seen = [
+      ['Lakita’s pedigree',!!hasEntries(state.pedigree?.guesses)],
+      ['Two-gene inheritance',!!(hasEntries(state.twoGene?.genotypes) || hasEntries(state.twoGene?.traced) || hasList(state.twoGene?.mismatch) || state.twoGene?.carrier)],
+      ['Meiosis and crossing over',hasList(state.meiosis?.runs)],
+      ['Published skin-cancer graphs',!!(hasEntries(state.skin?.polls) || Object.values(state.skin?.viewed || {}).some(v=>v===true))],
+      ['UV experiment plan',!!(state.planner?.ready || (hasList(state.planner?.conditions) && state.planner?.iv && state.planner?.dv))],
+      ['UV yeast simulation',state.yeast?.dishes?.some(x=>Number.isFinite(x?.colonies)) || false]
+    ];
+    const done = seen.filter(([,used])=>used).length;
+    const selected = picks(), selectedCount = selected.filter(x=>x.value).length;
+    const response = textAnswers(), order = orderSeq(), missing = [];
+    if (done < seen.length) missing.push('Use these models or evidence: ' + seen.filter(([,used])=>!used).map(([label])=>label).join('; ') + '.');
+    if (!state.question?.ok) missing.push('Build a testable question in the Question Tool.');
+    const incompleteExit = selected.filter(x=>/^exit-/.test(x.id) && !x.value);
+    if (incompleteExit.length) missing.push('Answer the remaining exit-ticket choices.');
+    if (L.checkOrder(order).status !== 'correct') missing.push('Complete the meiosis ordering check.');
+    if (!response.find(x=>x.id==='wrap-sentence')?.answer.trim()) missing.push('Write the wrap-up response on genes, environment and chance.');
+    const sections = [{title:'My evidence',items:[
+      {type:'table',title:'Models and evidence used',columns:['Activity','Status'],rows:seen.map(([label,used])=>[label,used?'Recorded':'Not recorded'])},
+      ...BOXES.flatMap(([,build])=>build().map(node=>{
+        const table = node.querySelector('table');
+        if (!table) return {type:'text',text:node.textContent};
+        return {type:'table',title:table.caption?.textContent,columns:Array.from(table.tHead.rows[0].cells,c=>c.textContent),
+          rows:Array.from(table.tBodies[0].rows,r=>Array.from(r.cells,c=>c.textContent))};
+      }))
+    ]},{
+      title:'My question and responses',items:[
+        answer('My investigation question',state.question?.text),
+        ...selected.map(x=>answer(x.question,x.answer)),
+        ...chips().map(x=>answer(x.question,x.chosen.join('; '))),
+        answer('My meiosis order',order.map(k=>STEP_LABELS[k]).filter(Boolean).join(' → ')),
+        ...response.filter(x=>x.answer).map(x=>answer(x.prompt,x.answer))
+      ]
+    },{
+      title:'Sources and limits',items:[{type:'text',text:'Gametes and yeast results are simulated. Skin-cancer observations are approximate readings of the lesson figures (Eide and Weinstock, 2005; doi:10.1001/archderm.141.4.477). Those figures do not state the y-axis unit. Group patterns cannot determine an individual’s risk or show cause.'}]
+    }];
+    return {title:'Inheritance, Environment & Cancer Risk',unit:'OpenSciEd Biology B.3',
+      source:'Models and approximate values from published figures; not a personal diagnosis or prediction.',
+      status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),
+      keyResults:[{label:'Model or evidence activities used',value:done+' of '+seen.length},
+        {label:'Choice responses entered',value:selectedCount+' of '+selected.length}],sections};
+  }
+
+  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();

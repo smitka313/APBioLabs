@@ -30,10 +30,12 @@
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b3-dna-workshop.css?v=storage1">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-dna-workshop-logic.js"></script>
 <script defer src="openscied-b3-dna-workshop-codon-wheel.js"></script>
 <script defer src="openscied-save-session.js?v=1"></script>
+<script defer src="openscied-submission-report.js"></script>
 <script defer src="openscied-b3-dna-workshop.js?v=storage1"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -108,13 +110,16 @@
       <label class="field">Your name <input type="text" id="dw-name" maxlength="100" autocomplete="name"></label>
       <label class="field">Class period <input type="text" id="dw-period" maxlength="24"></label>
     </div>
-    <div class="dw-controls">
-      <button type="button" class="btn btn--primary" id="dw-download">Download record</button>
-      <button type="button" class="btn" id="dw-copy">Copy record</button>
-      <button type="button" class="btn btn--danger" id="dw-reset" aria-haspopup="dialog">Start over…</button>
-    </div>
+    <div id="ose-submission-report"></div>
+    <details class="ose-report-other"><summary>Other downloads and backups</summary>
+      <div class="dw-controls">
+        <button type="button" class="btn" id="dw-download">Download text backup</button>
+        <button type="button" class="btn" id="dw-copy">Copy text</button>
+      </div>
+      <details id="dw-record" hidden><summary>Copy the record manually</summary><label class="field">Workshop record <textarea id="dw-record-text" rows="6" readonly></textarea></label></details>
+    </details>
+    <div class="dw-controls"><button type="button" class="btn btn--danger" id="dw-reset" aria-haspopup="dialog">Start over…</button></div>
     <p id="dw-save" class="dw-save"></p>
-    <details id="dw-record" hidden><summary>Copy the record manually</summary><label class="field">Workshop record <textarea id="dw-record-text" rows="6" readonly></textarea></label></details>
   </section>
   <details class="dw-sources">
     <summary>What this model shows and what it leaves out</summary>

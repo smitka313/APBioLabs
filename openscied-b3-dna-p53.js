@@ -718,4 +718,37 @@
     if (hadSaved) save(); else refreshAll();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+  function submissionReport() {
+    const fork = L.forkSummary(state.fork), runCount = state.expression.runs.length;
+    const missing = [];
+    if (!fork?.hasBefore || !fork.hasAfter) missing.push('Record a paired-strand result before and after the p53 model.');
+    if (!runCount) missing.push('Record at least one gene expression run.');
+    const core = RESPONSE_IDS.map(id => ({type:'answer',prompt:labelFor(id),value:answerFor(id)}));
+    const completed = core.filter(row=>row.value?.trim()).length;
+    if (completed < core.length) missing.push('Finish the core responses (' + completed + ' of ' + core.length + ' entered).');
+    const previous = Object.keys(state.legacy).filter(id => typeof state.legacy[id] === 'string' && state.legacy[id].trim());
+    function modelItems(nodes, emptyText) {
+      return nodes.length ? nodes.map(node => {
+        const table = node.querySelector('table');
+        if (!table) return {type:'text',text:node.textContent};
+        return {type:'table',title:table.caption?.textContent,columns:Array.from(table.tHead.rows[0].cells,c=>c.textContent),
+          rows:Array.from(table.tBodies[0].rows,r=>Array.from(r.cells,c=>c.textContent))};
+      }) : [{type:'text',text:emptyText}];
+    }
+    const sections = [
+      {title:'DNA copying model',items:modelItems(forkDataNodes(),'No DNA copying results recorded yet.')},
+      {title:'Gene expression model',items:modelItems(expressionDataNodes(),'No gene expression runs recorded yet.')},
+      {title:'My responses',items:core}
+    ];
+    const optional = optionalWriting();
+    if (optional.length) sections.push({title:'Optional writing',items:optional.map(([prompt,value])=>({type:'answer',prompt,value}))});
+    if (previous.length) sections.push({title:'Earlier saved responses',items:previous.map(id=>({type:'answer',prompt:OLD_LABELS[id]||id,value:state.legacy[id]}))});
+    sections.push({title:'Model limits',items:[{type:'text',text:'These teaching models simplify how cells copy and use DNA. They do not measure anyone’s cells or diagnose disease.'}]});
+    return {title:'DNA Copying, p53 & Gene Expression',unit:'OpenSciEd Biology B.3',source:'Simulated DNA fork and gene expression results from a classroom model.',
+      status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),
+      keyResults:[{label:'Paired-strand comparison',value:fork?.hasBefore && fork.hasAfter ? 'Before and after recorded':'Not complete'},
+        {label:'Expression runs recorded',value:runCount},{label:'Core responses entered',value:completed+' of '+core.length}],sections};
+  }
+
+  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();

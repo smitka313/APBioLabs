@@ -233,6 +233,7 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     T.ok(/choice questions answered/.test(await p.locator('#investigation-report').innerText()) && /Risk comes from genes/.test(await p.locator('#investigation-report').innerText()), 'report shows picks and written answers');
 
     // --- download ---
+    await p.locator("details.ose-report-other > summary").click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     T.ok(payload.format === 'openscied-b3-inheritance-environment-progress-v1' && payload.student && payload.student.name === 'Test Student' && /SIMULATED/.test(payload.dataNote), 'download has format, student, and the simulated label');

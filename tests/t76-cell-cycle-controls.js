@@ -109,6 +109,7 @@ const KEY = 'aplab:openscied:b3-cell-cycle:v1';
       await p.locator('#analysis-design').fill('I kept cell type and body size constant.');
       await go('submit');
       assert.match(await p.locator('.report-student').textContent(), /Test Student.*Class period: 3/);
+      await p.locator("details.ose-report-other > summary").click();
       const downloaded = p.waitForEvent('download');
       await p.locator('#download-work').click();
       const file = await downloaded;

@@ -18,7 +18,10 @@
   const backupWarning = 'Saved work could not be read and has not been changed. Download the saved backup before starting a new journey.';
   const downloadButton = $('#download');
   const downloadLabel = downloadButton.textContent;
-  if (unreadable !== null) downloadButton.textContent = 'Download saved backup';
+  if (unreadable !== null) {
+    downloadButton.textContent = 'Download saved backup';
+    $('#legacy-report-tools').open = true;
+  }
   let guess = null, revealed = false, rolling = false, questionIndex = 0, chart;
   let section = 'play', migrateLegacy = false;
   if (restored) try {
@@ -39,6 +42,7 @@
   function conflict(result) {
     if (!result || result.ok || result.reason === 'unavailable') return false;
     const note = $('#journey-save-conflict');
+    if (note.hidden) $('#legacy-report-tools').open = true;
     note.hidden = false;
     note.textContent = (result.reason === 'erased' ? 'This journey was cleared in another tab.' : 'This journey was changed in another tab.') +
       ' This tab will not overwrite it. Download your open work before reloading.';
@@ -309,6 +313,67 @@
     questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset();
     section = 'play'; render(); showQuestion(); setPage('play', false);
   });
+  function classroomReport() {
+    const table = (title, columns, rows) => ({ type: 'table', title, columns, rows });
+    const answer = (prompt, value) => ({ type: 'answer', prompt, value });
+    const sections = [], missing = [];
+    const rolls = state.rows;
+    const answered = questions.filter(([id]) => state.answers[id]?.trim());
+    if (!state.done || rolls.length < 10) missing.push('Record at least ten rolls, review missed stations, and finish your journey.');
+    if (answered.length < questions.length) missing.push('Complete ' + (questions.length - answered.length) + ' Make sense responses.');
+    if (rolls.length) {
+      sections.push({ title: 'Your recorded journey · simulated dice', items: [
+        table('Recorded rolls', ['Turn', 'Starting station', 'Die', 'Your prediction', 'Next station'],
+          rolls.map(r => [r.turn, name(r.from), r.die, r.prediction === null ? 'Skipped' :
+            r.prediction ? name(r.prediction) : 'Not saved in earlier version', name(r.to)])),
+        table('Matter and energy in recorded turns', ['Turn', 'Matter', 'Energy'], rolls.map(r => [r.turn, r.matter, r.energy])),
+        ...rolls.filter(r => r.text || r.note).map(r => answer('Turn ' + r.turn + ' · card event and your note',
+          [r.text, r.note ? 'Your note: ' + r.note : ''].filter(Boolean).join('\n')))
+      ] });
+      sections.push({ title: 'Journey totals · counts of recorded rolls', items: [
+        table('Starting stations', ['Station', 'Roll count'], L.totals(state, 'from', L.stations.map(s => s[0])).map(r => [name(r.label), r.count])),
+        table('Forms of matter', ['Category', 'Roll count'], L.totals(state, 'matter', L.matter).map(r => [r.label, r.count])),
+        table('Energy categories', ['Category', 'Roll count'], L.totals(state, 'energy', L.energy).map(r => [r.label, r.count]))
+      ] });
+    }
+    if (state.pending !== null && (revealed || $('#note').value.trim())) {
+      const note = $('#note').value.trim();
+      sections.push({ title: 'Unrecorded turn · draft only', items: [
+        answer('Roll at ' + name(L.current(state)), String(state.pending)),
+        ...(revealed ? [answer('Your prediction', guess ? name(guess) : 'Skipped')] : []),
+        ...(note ? [answer('Your note', note)] : [])
+      ] });
+    }
+    const reviewed = L.tour(state).filter(card => state.coverageReviewed.includes(card.from));
+    if (reviewed.length) sections.push({ title: 'Reference cards you reviewed · not extra rolls', items: reviewed.map(card =>
+      answer(name(card.from) + ' → ' + name(card.to) + ' · ' + card.process, card.text)) });
+    if (answered.length) sections.push({ title: 'Make sense responses', items: answered.map(([id, prompt]) => answer(prompt, state.answers[id])) });
+
+    // Like the text recovery export, read only the editor's paired Budget snapshot (or its live in-memory work).
+    const budget = unreadable === null ? (budgetUI ? budgetUI.exportData() : window.CarbonBudgetUI?.readExport?.(saveSession)) : null;
+    const checkpoints = budget?.checkpoints || [], items = [];
+    if (budget?.prediction?.trim()) items.push(answer('Your Budget prediction', budget.prediction));
+    const labels = [['baseline', 'Without fire'], ['fire', 'With peat fire']];
+    if (checkpoints.length) items.push(
+      table('Carbon checkpoints (model units)', ['Checkpoint', 'Trial', 'Atmosphere', 'Ocean', 'Plants', 'Peat'],
+        checkpoints.flatMap(c => labels.map(([key, label]) => [c.title, label, c[key].carbon.air, c[key].carbon.ocean, c[key].carbon.plants, c[key].carbon.peat]))),
+      table('Energy checkpoints (model units)', ['Checkpoint', 'Trial', 'Sunlight input', 'Plant chemical', 'Peat chemical', 'Thermal dispersed'],
+        checkpoints.flatMap(c => labels.map(([key, label]) => [c.title, label, c[key].energy.sunlight, c[key].energy.plants, c[key].energy.peat, c[key].energy.heat])))
+    );
+    if (budget?.explanation?.trim()) items.push(answer('Your Budget explanation', budget.explanation));
+    if (items.length) sections.push({ title: 'Optional Carbon & Energy Budget · simulated comparison', items });
+    const coreUnreadable = unreadable !== null, budgetUnreadable = budget?.unreadableBackup != null;
+    const recovering = coreUnreadable || budgetUnreadable || ![key, budgetKey].every(k => saveSession?.check(k).ok);
+    if (coreUnreadable || budgetUnreadable) missing.push('An unreadable save is not included in this report. Use the existing backup download to preserve it.');
+    return {
+      title: 'Carbon Atom Journey', unit: 'Unit 2',
+      source: 'OpenSciEd Unit B.2 Lesson 9 station cards and Carbon/Energy Quantitative Model. Journey counts use simulated dice; they are not elapsed time or global carbon quantities. The optional Budget uses model units, not field measurements.',
+      status: recovering ? 'recovery' : missing.length ? 'draft' : 'final', missing, student: reportIdentity(coreUnreadable || budgetUnreadable),
+      keyResults: [{ label: 'Journey rolls recorded', value: rolls.length },
+        { label: 'Reference cards reviewed separately', value: reviewed.length },
+        { label: 'Make sense responses completed', value: answered.length + ' of ' + questions.length }], sections
+    };
+  }
   $('#download').addEventListener('click', () => {
     const backup = unreadable !== null;
     // The unopened extension must not borrow work from the next student's session.
@@ -342,6 +407,7 @@
   let totalTab = 'systems';
   function showTotal() { $('#totals').querySelectorAll('[data-total]').forEach(el => el.hidden = mobile() && el.dataset.total !== totalTab); }
   document.querySelectorAll('[data-total-tab]').forEach(b => b.addEventListener('click', () => { totalTab = b.dataset.totalTab; document.querySelectorAll('[data-total-tab]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); showTotal(); }));
+  window.OpenSciEdSubmission?.mount({ target: '#classroom-submission', collect: classroomReport });
   render();
   const linked = location.hash.slice(1);
   // Opening another tab is read-only for current saves. Legacy formats still migrate

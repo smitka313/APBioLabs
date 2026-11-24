@@ -159,6 +159,13 @@ const setRange = async (p, id, v) => { await p.evaluate(([i, x]) => { const r = 
     await go(p, 'bog');
     T.ok(+await p.locator('#s-wet').inputValue() === 50, 'slider restored after reload');
     await go(p, 'trials');
+    const preview = p.locator('#trials [data-ose-report-final]').getByRole('button', { name: 'Preview report', exact: true });
+    await preview.waitFor({ state: 'visible' });
+    T.ok(await p.getByRole('button', { name: 'Preview report', exact: true }).count() === 1 &&
+      !await p.locator('#download-work').isVisible() && !await p.locator('#download-csv').isVisible() &&
+      !await p.locator('#copy').isVisible() && !await p.locator('#print-work').isVisible(),
+      'My trials has one classroom preview; old backups and table tools start collapsed');
+    await p.locator('#legacy-report-tools > summary').click();
     const dl = p.waitForEvent('download'); await p.click('#download-work'); const d = await dl;
     const j = JSON.parse(fs.readFileSync(await d.path(), 'utf8'));
     T.ok(/simulated/.test(d.suggestedFilename()) && j.format === 'openscied-b2-peat-bog-lab-progress-v1' && /SIMULATED/.test(j.dataNote) && j.student && j.student.name === 'Test Student' && j.student.period === '3', 'download is labeled simulated and carries the student name and period');

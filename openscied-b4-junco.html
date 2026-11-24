@@ -30,6 +30,7 @@
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b4-junco.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -307,8 +308,13 @@
           <div class="field"><label for="ju-name">Name</label><input id="ju-name" type="text" maxlength="100" autocomplete="name"></div>
           <div class="field"><label for="ju-period">Class period</label><input id="ju-period" type="text" maxlength="24"></div>
         </fieldset>
-        <p class="ju-chart-note">Your work, name, and class period stay in this browser unless you download the report.</p>
-        <button type="button" class="btn btn--primary" id="ju-download">Download field report</button>
+        <p class="ju-chart-note">Your work, name, and class period stay in this browser. Downloading a report does not turn it in.</p>
+        <div data-ose-report-final></div>
+        <details class="ose-report-other" id="ju-other-downloads">
+          <summary>Other downloads and backups</summary>
+          <p>Keep a plain-text copy of your field report. It does not restore your progress.</p>
+          <button type="button" class="btn" id="ju-download">Download field report</button>
+        </details>
       </aside>
     </div>
   </section>
@@ -318,6 +324,7 @@
     <p>Identical aviaries make a difference caused only by the birds’ current setting less likely. The experiment did not rule out all effects from before capture. A relationship between CORT and exploration does not establish which, if either, causes the other.</p>
     <p id="ju-source-data"></p>
   </details>
+  <div id="ju-submission-report"></div>
 </main>
 <footer class="site-footer"><div class="wrap wrap--wide gutter">
   <p><strong>Created by Robert Smitka.</strong> Original material licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">CC BY-NC-SA 4.0</a>.</p>
@@ -328,6 +335,7 @@
 <script src="openscied-b4-junco-data.js"></script>
 <script src="openscied-b4-junco-flight.js"></script>
 <script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
 <script src="openscied-b4-junco.js"></script>
 </body>
 </html>

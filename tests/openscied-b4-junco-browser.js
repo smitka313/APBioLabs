@@ -72,6 +72,9 @@ async function shoot(page,label,anchor) {
 async function download(page,size) {
   await id(page,'ju-name').fill('J. Student');
   await id(page,'ju-period').fill('4');
+  const backups=id(page,'ju-other-downloads');
+  check(!await id(page,'ju-download').isVisible(),'plain-text download is hidden with backups collapsed');
+  await activate(backups.locator('summary'),size);
   const fileEvent=page.waitForEvent('download');
   await activate(id(page,'ju-download'),size);
   const file=await fileEvent;

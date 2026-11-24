@@ -10,7 +10,7 @@
     const n = document.getElementById('save-conflict');
     const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
       result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
-    const copy = message + ' Download or copy this tab’s work before reloading.';
+    const copy = message + ' Use Preview report to keep this tab’s work before reloading.';
     if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; say(copy); }
     return copy;
   }
@@ -141,6 +141,24 @@
   function table(headers,rows){const t=el('table'),thead=el('thead'),tr=el('tr');headers.forEach(h=>{const th=el('th',h);th.scope='col';tr.append(th);});thead.append(tr);t.append(thead);const body=el('tbody');rows.forEach(row=>{const tr=el('tr');row.forEach(x=>tr.append(el('td',x)));body.append(tr);});t.append(body);return t;}
   let healthChart=null,occupancyChart=null;
   function renderCharts(){if(state.page!=='evidence')return;if(state.collection==='cards'&&$('#health-chart-disclosure').open){const measure=state.measure==='anthrax'?'anthrax':'fat';const opt={simTag:false,responsive:true,height:360,xLabel:'Month number (5 = May, 10 = October)',yLabel:measure==='fat'?'Bone-marrow fat (%)':'Sampled group with anthrax (%)',xMin:5,xMax:10,yMin:0,yMax:100,series:L.GROUPS.map((name,g)=>({name,line:true,dots:true,points:L.CARDS.filter(c=>c.group===g).map(c=>({x:c.month+1,y:c[measure]}))}))};if(healthChart)healthChart.update(opt);else healthChart=Lab.chart('#health-chart',opt);}if(state.collection==='rainfall'){const opt={simTag:false,responsive:true,height:360,xLabel:'Annual regional rainfall (mm)',yLabel:'Time in region (% of year)',xMin:1100,xMax:1350,yMin:0,yMax:60,series:ANNUAL.map(a=>({name:a.region+' · '+a.rain+' mm / '+a.occupancy+'%',dots:true,line:false,points:[{x:a.rain,y:a.occupancy}]}))};if(occupancyChart)occupancyChart.update(opt);else occupancyChart=Lab.chart('#occupancy-chart',opt);}}
+  function submissionData(){
+    const months=L.monthsWithNotes(state.notes);
+    const written=RESPONSES.filter(([id])=>typeof state.answers[id]==='string'&&state.answers[id].trim()).length;
+    const missing=[];
+    if(corrupt)missing.push('An older save could not be read. This report contains work available in this tab only.');
+    if(months.length<12)missing.push('Save an observation for each month ('+months.length+' of 12).');
+    if(written<RESPONSES.length)missing.push('Answer the investigation questions ('+written+' of '+RESPONSES.length+').');
+    const notebook=state.notes.map(n=>({type:'answer',prompt:n.title,value:displayNoteText(n)}));
+    const chapters=[{title:'Evidence notebook',items:notebook.length?notebook:[{type:'text',text:'No notebook entries yet.'}]},
+      {title:'My investigation responses',items:RESPONSES.map(([id,prompt])=>({type:'answer',prompt,value:state.answers[id]||''}))}];
+    if(state.notes.some(n=>n.id==='rainfall-example'))chapters.push({title:'Rainfall and occupancy evidence',items:[
+      {type:'table',title:'One classroom example year',columns:['Region','Annual rainfall (mm)','Time in region (%)'],rows:ANNUAL.map(a=>[a.region,a.rain,a.occupancy])},
+      {type:'text',text:ANNUAL_SOURCE+' · '+ANNUAL_URL}]});
+    return {title:'Migration Map Explorer',unit:'Unit B.1 · Lessons 3–4',
+      source:'OpenSciEd B.1 field, regional and rainfall evidence; monthly rainfall graph by Concord Consortium (1961–1990 station averages). Map and animations are illustrative, not observations or population counts. The health cards report monthly averages for groups of sampled males.',
+      status:corrupt?'recovery':missing.length?'draft':'final',missing,student:corrupt?null:reportIdentity(),
+      keyResults:[{label:'Months with a saved observation',value:months.length+' / 12'},{label:'Investigation questions answered',value:written+' / '+RESPONSES.length}],sections:chapters};
+  }
   function reportText(kind){
     const student=reportIdentity()||{};
     let result='MIGRATION MAP EXPLORER\nOpenSciEd B.1 Lessons 3–4 companion\nCreated by Robert Smitka\n\nName: '+(student.name||'')+'\nClass period: '+(student.period||'')+'\n\nSOURCE DATA AND ILLUSTRATIONS\nField cards and rainfall examples are source evidence, not simulated data. Map, weather, grass and animal animations are illustrative, not observations or population counts.\n\nMY NOTEBOOK\n';
@@ -310,6 +328,7 @@
     if(target){if(source.collection==='rainfall')target.tabIndex=-1;target.focus();}
   }});
   $('#download-notebook').onclick=()=>download('notebook');$('#download-report').onclick=()=>download('investigation');
+  window.OpenSciEdSubmission?.mount({target:'#migration-submission',collect:submissionData,filename:'migration-investigation'});
   $('#copy-notebook').onclick=()=>textCopy('notebook');$('#copy-report').onclick=()=>textCopy('investigation');
   $('#copy-text').onclick=async()=>{
     const field=$('#text-copy-field');
@@ -318,12 +337,12 @@
   };
   $('#help').onclick=()=>{pause();$('#guide').showModal();};$('#rain-enlarge').onclick=()=>openRainGraph(state.month);$$('[data-close]').forEach(b=>b.onclick=()=>$('#'+b.dataset.close).close());
   const mapWrap=$('#map-wrap'),placeholder=el('div');$('#enlarge').onclick=()=>{pause();mapWrap.before(placeholder);$('#large-map-host').append(mapWrap);$('#map-dialog').showModal();scene.resize();};$('#map-dialog').addEventListener('close',()=>{placeholder.replaceWith(mapWrap);scene.resize();});$('#large-prev').onclick=()=>changeMonth(Math.max(0,state.month-1));$('#large-next').onclick=()=>changeMonth(Math.min(11,state.month+1));
-  window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
-  try{Lab.identity.mount('#migration-identity');const identityHost=$('#migration-identity');const clarify=()=>{identityHost.querySelectorAll('p.small.muted').forEach(p=>{if(p.textContent.includes('simulated data'))p.textContent='Your name and class period label your downloads. Everyone investigates the same published source evidence in this activity.';});};clarify();new MutationObserver(clarify).observe(identityHost,{childList:true,subtree:true});}catch(e){say('Name entry is unavailable. You can still complete and download your investigation.');}
+  window.addEventListener('hashchange',()=>{const page=location.hash.slice(1);if(['explore','evidence','explain'].includes(page))go(page);});
+  try{Lab.identity.mount('#migration-identity');const identityHost=$('#migration-identity');const clarify=()=>{identityHost.querySelectorAll('p.small.muted').forEach(p=>{if(p.textContent.includes('simulated data'))p.textContent='Your name and class period label your classroom report and text downloads. Everyone investigates the same published source evidence in this activity.';});};clarify();new MutationObserver(clarify).observe(identityHost,{childList:true,subtree:true});}catch(e){say('Name entry is unavailable. You can still use Preview report.');}
   renderMonth();region(state.region);view(state.view);renderCards();renderNotes();collection(state.collection);const requested=location.hash.slice(1);go(['explore','evidence','explain'].includes(requested)?requested:state.page,false);hydrating=false;
   if(corrupt){
     const notice=$('#save-conflict');
-    notice.textContent='Saved work could not be read and was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
+    notice.textContent='Saved work could not be read and was kept. Download it from the dashboard before clearing it. Use Preview report to keep any new work from this tab before reloading.';
     notice.hidden=false;$('#save-state').textContent='Saved record needs attention';say(notice.textContent);
   }else if(!unavailable)say('Start with a month. Compare locations, save useful evidence, and build your explanation.');
 })();

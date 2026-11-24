@@ -277,6 +277,7 @@ async function auditNotesAndRain(browser,base){
   await chooseSet(4);
   ok(await p.locator('#response-next').isDisabled()&&await p.locator('#answer-next').isVisible(),'final question set is reachable directly and has no forward action');
   await screenshot(p,'1366-explain-last-set');
+  await p.locator('#migration-other-downloads > summary').click();
   const downloadPromise=p.waitForEvent('download');await p.locator('#download-report').click();const download=await downloadPromise;const body=fs.readFileSync(await download.path(),'utf8');ok(body.includes('51% bone-marrow fat')&&body.includes('regional evidence helps'),'download includes source evidence and student response');ok(body.includes('illustrative, not observations'),'download distinguishes illustrative art from source data');ok(body.includes('Annual Rainfall and Wildebeest Occupancy')&&!body.includes('slides X–Y'),'annual export cites Data Excursion 2 by name');
   await p.locator('#copy-report').click();ok(await p.locator('#text-copy-field').inputValue()===body,'copyable text matches the saved investigation');await p.keyboard.press('Escape');
   await p.evaluate(()=>{window.__createExportURL=URL.createObjectURL;URL.createObjectURL=()=>{throw new Error('download unavailable');};});

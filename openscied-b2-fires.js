@@ -363,6 +363,52 @@
     textAnswers().forEach(function (t) { if (t.answer) { report.appendChild(el('h4', '', t.prompt)); report.appendChild(el('p', 'report-answer', t.answer)); } });
     report.appendChild(el('p', 'small muted', 'Simplified teaching models. Yeast foam, plant and BTB results are simulated and do not replace real laboratory work.'));
   }
+  function classroomResponses() {
+    const answer = (prompt, value) => ({ type: 'answer', prompt, value });
+    return [
+      { title: 'Choices and predictions', items: [...picks().map(r => [r.question, r.answer]),
+        ...dropdowns().map(r => [document.getElementById(r.id)?.getAttribute('aria-label') || labelFor(r.id), r.answer])].filter(([, value]) => value).map(([prompt, value]) => answer(prompt, value)) },
+      { title: 'Evidence and self-check selections', items: chips().flatMap(r => [
+        r.chosen.length ? answer(r.question, r.chosen.join('; ')) : null,
+        r.notSupportedByRecordedData?.length ? answer('Draft selections not supported by recorded evidence', r.notSupportedByRecordedData.join('; ')) : null
+      ].filter(Boolean)) },
+      { title: 'Written responses', items: textAnswers().filter(r => r.answer).map(r => answer(r.prompt, r.answer)) }
+    ].filter(section => section.items.length);
+  }
+  function classroomReport() {
+    const ev = L.sceneEvidence(state), foam = L.foamRows(state.decomp), stats = answerStats();
+    const missing = [];
+    if (ev.cardsPlaced < L.CARDS.length) missing.push('Place all ' + L.CARDS.length + ' matter and energy cards.');
+    if (!ev.foamAfterBaseline) missing.push('Record a yeast foam reading after 0 minutes.');
+    if (!ev.tubesRead) missing.push('Record the three BTB tube readings.');
+    if (stats.answered < stats.total) missing.push('Complete ' + (stats.total - stats.answered) + ' required answers.');
+    const recovering = preservedSave || !saveSession?.check(KEY).ok;
+    const sections = [];
+    if (ev.cardsPlaced) {
+      const cards = L.checkCards(state.cards.placed);
+      sections.push({ title: 'Matter and energy card placements', items: [{ type: 'table', columns: ['Card', 'Your placement'],
+        rows: L.CARDS.filter(c => cards.results[c.id].zone).map(c => [c.label, cards.results[c.id].zone === 'in' ? 'Goes in' : 'Comes out']) }] });
+    }
+    if (foam.length) {
+      const temperatures = L.normalizeTemps(state.decomp.temps);
+      sections.push({ title: 'Yeast investigation · simulated', items: [{ type: 'table', title: 'Recorded foam height (mm)',
+        columns: ['Time (min)', ...temperatures.map((t, i) => L.BEAKER_NAMES[i] + ' · ' + t + ' °C')],
+        rows: foam.map(r => [r.t, ...r.h]) }] });
+    }
+    if (ev.tubesRead) sections.push({ title: 'Light angle investigation · simulated', items: [{ type: 'table',
+      columns: ['Tube', 'Light setting', 'Relative light', 'Final BTB reading', 'CO₂ change (relative)', ...(ev.starchTested ? ['Starch index'] : [])],
+      rows: L.tiltResults(state.tilt.seed, state.tilt.settings).map(r => [r.tube, L.LIGHTS[r.light].label, r.intensity,
+        r.btbLabel + ' (' + r.btb + ')', r.net, ...(ev.starchTested ? [r.starch] : [])]) }] });
+    return {
+      title: 'Fires: Peat, Decomposition and Earth’s Tilt', unit: 'Unit 2',
+      source: 'OpenSciEd Unit B.2 Lessons 3 and 5; yeast, plant and bromothymol blue (BTB) results are simulated, not measured.',
+      status: recovering ? 'recovery' : missing.length ? 'draft' : 'final', missing, student: reportIdentity(preservedSave),
+      keyResults: [{ label: 'Matter and energy cards placed', value: ev.cardsPlaced + ' of ' + L.CARDS.length },
+        { label: 'Foam readings recorded', value: ev.foamReadings }, { label: 'BTB tubes recorded', value: ev.tubesRead + ' of 3' },
+        { label: 'Required answers completed', value: stats.answered + ' of ' + stats.total }],
+      sections: sections.concat(classroomResponses())
+    };
+  }
   function download() {
     state.fields = collectFields();
     const scenes = {}; SCENE_IDS.forEach(function (id) { scenes[id] = state[id]; });
@@ -445,6 +491,7 @@
     ['sense-amount', 'sense-temp'].forEach(function (id) { $('#' + id).addEventListener('change', function () { renderSugar(true); }); });
     ['hyp-light', 'hyp-co2', 'hyp-why'].forEach(function (id) { $('#' + id).addEventListener('change', function () { renderHyp(true); }); });
     $('#cer').addEventListener('change', function () { renderClaim(false); });
+    window.OpenSciEdSubmission?.mount({ target: '#classroom-submission', collect: classroomReport });
     $('#download-work').addEventListener('click', download);
     $('#print-work').addEventListener('click', function () { renderReport(); window.print(); });
     window.addEventListener('beforeprint', renderReport);

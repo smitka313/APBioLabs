@@ -30,6 +30,7 @@
 <script>try{const t=localStorage.getItem("aplab:pref:theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b4-hawksbeard.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -130,18 +131,24 @@
         <div><label for="hb-name">Name</label><input id="hb-name" type="text" autocomplete="name" maxlength="100"></div>
         <div><label for="hb-period">Class period</label><input id="hb-period" type="text" maxlength="24"></div>
       </fieldset>
-      <div class="hb-actions"><button class="btn btn--primary" type="button" id="hb-download">Download investigation</button><button class="btn" type="button" id="hb-copy">Copy investigation</button></div>
+      <div data-ose-report-final></div>
+      <details class="ose-report-other" id="hb-other-downloads">
+        <summary>Other downloads and backups</summary>
+        <p>Use these plain-text options to keep a copy of your work. They do not restore your progress.</p>
+        <div class="hb-actions"><button type="button" class="btn" id="hb-download">Download investigation</button> <button type="button" class="btn" id="hb-copy">Copy investigation</button></div>
+      </details>
     </div>
   </div>
 </section>
 
-<div class="hb-footerbar"><p id="hb-save-status">Work is saved only in this browser. Download it before switching devices.</p><button class="btn btn--ghost" type="button" id="hb-restart">Start a new trial…</button></div>
+<div class="hb-footerbar"><p id="hb-save-status">Your progress stays in this browser. Preview your report to keep a classroom copy.</p><button class="btn btn--ghost" type="button" id="hb-restart">Start a new trial…</button></div>
 <p id="hb-status" class="hb-status" role="status" aria-live="polite" aria-atomic="true"></p>
 <details class="hb-method" id="hb-method">
   <summary>What this model does and does not show</summary>
   <p>The two layouts model connected field soil and fragmented city soil. The same starts and wind paths are used for both. The field and city also have different amounts of soil, so this comparison does not isolate fragmentation from total habitat area.</p>
   <p>Landings are simulated. A seed on suitable soil could germinate; this model does not test actual germination, reproduction, inheritance, or a later generation. The optional research comparison is separate from your simulated results.</p>
 </details>
+  <div id="hb-submission-report"></div>
 </main>
 <dialog id="hb-reset-dialog" aria-labelledby="hb-reset-title">
   <h2 id="hb-reset-title">Start a new trial?</h2><p>This clears this lab’s prediction, seed releases, and responses on this device. Download your investigation first if you want to keep it.</p>
@@ -160,6 +167,7 @@
 <script src="lab.js"></script>
 <script src="openscied-b4-hawksbeard-logic.js"></script>
 <script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
 <script src="openscied-b4-hawksbeard.js"></script>
 </body>
 </html>

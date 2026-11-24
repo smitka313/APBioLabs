@@ -578,6 +578,49 @@
       if (input) input.value=person[field]||'';
     }
   }
+  function submissionReport() {
+    const done=recordedAnswers(), missing=[];
+    if(!done.predict)missing.push('Save a prediction.');
+    if(!done.release)missing.push('Finish releasing all five matched plant pairs.');
+    if(!done.compare)missing.push('Write your comparison reflection.');
+    for(const [id,label] of [['claim','claim'],['evidence','evidence response'],['limits','model limits response']])
+      if(!state.answers[id]?.trim())missing.push('Write your '+label+'.');
+
+    const summary=currentSummary(), keyResults=[];
+    const simulated=[{type:'text',text:'Soil landing is a proxy for an opportunity to germinate, not a measure of actual germination, survival, or reproduction. The modeled field and city differ in the amount of suitable soil as well as its arrangement.'}];
+    if(state.released) {
+      for(const site of SITES) {
+        const counts=summary[site];
+        keyResults.push({label:siteName(site)+' nonfeathery share of soil landings',value:fraction(counts.byType.nonfeathery.landed,counts.landed),note:'Simulated · share among all seeds that landed on soil.'});
+      }
+      const detailRows=SITES.flatMap(site=>Object.keys(TYPES).map(type=>{
+        const siteStats=summary[site], r=siteStats.byType[type];
+        return [siteName(site),typeName(type),r.landed,r.released,r.missed,fraction(r.landed,siteStats.landed)];
+      }));
+      const pairRows=Array.from({length:state.released},(_,i)=>[
+        i+1,...SITES.map(site=>{
+          const group=L.summarize(trial[site].filter(record=>record.plant===i+1));
+          return fraction(group.landed,group.released);
+        })
+      ]);
+      simulated.push({type:'table',title:'Released seeds and landings by environment',columns:['Environment','Seed type','On soil','Released','Outside soil','Share of all soil landings'],rows:detailRows},
+        {type:'table',title:'Matched plant pairs recorded',columns:['Pair','Field on soil / released','City on soil / released'],rows:pairRows});
+    } else simulated.push({type:'text',text:'No completed seed releases yet.'});
+
+    const sections=[
+      {title:'Prediction and classroom responses',items:[
+        {type:'answer',prompt:$('#hb-prediction legend')?.textContent?.trim()||'Prediction',value:choices[state.prediction]||''},
+        ...answerInputs.map(f=>({type:'answer',prompt:(f.labels?.[0]?.textContent||f.dataset.hbAnswer).trim(),value:state.answers[f.dataset.hbAnswer]||''}))
+      ]},
+      {title:'Model data · simulated',items:simulated}
+    ];
+    if(state.released===PAIRS)sections.push({title:'Published research · separate from the model',items:[
+      {type:'text',text:research},{type:'text',text:researchScope},{type:'text',text:'Cheptou et al. (2008): '+PAPER}
+    ]});
+    const {name,period}=reportPerson();
+    return {title:'Hawksbeard Wind Lab',unit:'OpenSciEd Biology B.4 · Lesson 2',source:'Independent OpenSciEd companion by Robert Smitka. Classroom seed releases are simulated.',
+      status:preserved||!session?.check(KEY)?.ok?'recovery':missing.length?'draft':'final',missing,student:{name:name||'',period:period||''},datasetId:datasetId(state.seed),keyResults,sections};
+  }
   function report() {
     const person=reportPerson();
     const lines=['HAWKSBEARD WIND LAB','OpenSciEd Biology B.4 · Lesson 2 companion','Created by Robert Smitka',
@@ -718,4 +761,5 @@
   });
   window.addEventListener('pageshow',monitorSave);
   monitorSave();
+  window.OpenSciEdSubmission?.mount({target:"#hb-submission-report",collect:submissionReport,filename:"hawksbeard-wind-lab"});
 })();

@@ -13,7 +13,7 @@
     const n = document.getElementById('save-conflict');
     const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
       result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
-    const copy = message + ' Download or copy this tab’s work before reloading.';
+    const copy = message + ' Use Preview report to keep this tab’s work before reloading.';
     if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; speak(copy); }
     return copy;
   }
@@ -69,7 +69,7 @@
   } catch { preservedSave = true; }
   if (preservedSave) {
     const notice = document.getElementById('save-conflict');
-    notice.textContent = 'An unreadable save was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
+    notice.textContent = 'An unreadable save was kept. Download it from the dashboard before clearing it. Use Preview report to keep any new work from this tab before reloading.';
     notice.hidden = false;
   }
   const save = () => {
@@ -222,6 +222,35 @@
     }
     speak(outcome(s.rows.at(-1))+(s.round === ROUNDS ? ' Run complete.' : ''));
   }
+  function submissionData(){
+    const missing=[];
+    if(preservedSave)missing.push('An older save could not be read. This report contains work available in this tab only.');
+    const trials=[['Baseline · 100% grass',state.baseline],
+      ['Grass comparison'+(state.comparison?' · '+state.comparison.grassPercent+'% grass':''),state.comparison]];
+    trials.forEach(([label,trial])=>{if((trial?.round||0)<ROUNDS)missing.push('Finish '+label+' ('+(trial?.round||0)+' of '+ROUNDS+' rounds).');});
+    if(!state.answers.prediction?.trim())missing.push('Write your prediction.');
+    const written=requiredQuestions.filter(id=>state.answers[id]?.trim()).length;
+    if(written<requiredQuestions.length)missing.push('Answer the required Explain questions ('+written+' of '+requiredQuestions.length+').');
+    const trialItems=trials.map(([label,trial])=>trial?.round?{
+      type:'table',title:label+' (simulated)',columns:['Round','Starting herd','Grass units','Survivors','Births','Deaths','Ending herd'],
+      rows:trial.rows.map(r=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending])}:
+      {type:'text',text:label+': no rounds recorded.'});
+    if(compareText())trialItems.push({type:'text',text:compareText()});
+    const sections=[
+      {title:'My prediction',items:[{type:'answer',prompt:'How do you think a change in grass availability will affect the wildebeest herd?',value:state.answers.prediction||''}]},
+      {title:'Population runs',items:trialItems},
+      {title:'Range estimates (simulated)',items:[{type:'text',text:range.report()||'No range recorded.'}]},
+      {title:'Habitat challenge (simulated)',items:[{type:'text',text:habitat.report()||'No completed habitat runs.'}]},
+      {title:'Field evidence (classroom estimates, not simulated)',items:[{type:'text',text:field.report()||'No field calculations recorded.'}]},
+      {title:'My explanations',items:questions.map(id=>({type:'answer',prompt:$('#cc-prompt-'+id)?.textContent.trim()||id,value:state.answers[id]||''}))}
+    ];
+    return {title:'Serengeti Carrying Capacity Lab',unit:'Unit B.1 · Lesson 5',
+      source:'Based on OpenSciEd B.1 Lesson 5. Grass and habitat runs are simulations. Field estimates are classroom estimates adapted from Hopcraft et al. (2015), not simulation results.',
+      status:preservedSave?'recovery':missing.length?'draft':'final',missing,student:preservedSave?null:reportIdentity(),
+      keyResults:[...trials.filter(([,trial])=>trial?.round).map(([label,trial])=>({
+        label:label+' · ending herd at round '+trial.round,value:trial.population,unit:'wildebeest',note:'Simulated'})),
+        {label:'Required explanations written',value:written+' / '+requiredQuestions.length}],sections};
+  }
   const report = () => {
     const who = reportIdentity() || {};
     const describe = (sim,name) => sim?.round ? [name+' (SIMULATED)', 'Round | Starting herd | Grass units | Survivors | Births | Deaths | Ending herd', ...sim.rows.map((r)=>[r.round,r.starting,r.grassAvailable,r.survivors,r.births,r.deaths,r.ending].join(' | '))].join('\n') : name+': no completed rounds.';
@@ -240,6 +269,7 @@
     } catch { if (url) URL.revokeObjectURL(url); openReport('Download was unavailable. Select and copy your investigation below.'); }
   });
   $('#cc-copy').addEventListener('click',()=>openReport());
+  window.OpenSciEdSubmission?.mount({target:'#cc-submission',collect:submissionData,filename:'carrying-capacity-investigation'});
   $$('.cc [data-cc-go]').forEach((button) => button.addEventListener('click',()=>go(button.dataset.ccGo)));
   $('#cc-next').addEventListener('click',()=>advance(false));
   $('#cc-finish').addEventListener('click',()=>advance(true));
@@ -299,13 +329,13 @@
     for (const id of strings) $('#cc-'+id).value='';
     $$('input[type="radio"]').forEach((el)=>{el.checked=false;});
     for (const id of ['cc-feedback','cc-field-feedback']) {$('#'+id).hidden=true;$('#'+id).textContent='';}
-    $('#cc-table').open = false; $('#cc-download-status').hidden = true;
+    $('#cc-table').open = false; $('#cc-other-downloads').open = false; $('#cc-download-status').hidden = true;
     go('run'); speak('Investigation cleared. Ready for round 1.');
   });
   try {
     const host = $('#cc-identity');
     Lab.identity.mount(host);
-    const clarify = () => host.querySelectorAll('p.small.muted').forEach((p)=>{if(p.textContent.includes('simulated data')) p.textContent='These details label your local download. The model gives the same result for the same settings.';});
+    const clarify = () => host.querySelectorAll('p.small.muted').forEach((p)=>{if(p.textContent.includes('simulated data')) p.textContent='These details label your classroom report and text download. The model gives the same result for the same settings.';});
     clarify(); new MutationObserver(clarify).observe(host,{childList:true,subtree:true});
   } catch {}
   range.update({baseline:state.baseline,comparison:state.comparison});
