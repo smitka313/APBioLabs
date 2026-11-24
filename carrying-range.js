@@ -18,10 +18,14 @@
     const series=raw.rows.filter(r=>Number.isInteger(r?.round)&&r.round>=1&&r.round<=12&&Number.isSafeInteger(r.ending)&&r.ending>=0)
       .map(({round,ending})=>({round,ending})).sort((a,b)=>a.round-b.round);
     if(Number.isSafeInteger(raw.startingPopulation)&&raw.startingPopulation>=0)series.unshift({round:0,ending:raw.startingPopulation});
-    const maximum=Math.max(4,Math.ceil((Math.max(...series.map(p=>p.ending))+1)/4)*4);
+    const peak=Math.max(...series.map(p=>p.ending));
+    const roles=Number.isInteger(raw.roleSlots)&&raw.roleSlots>=2&&raw.roleSlots<=120?raw.roleSlots:0;
+    const startLine=Math.max(4,Math.ceil((peak+1)/4)*4)/2;
+    // Use the same role-based population scale as the population-over-time chart.
+    const maximum=Math.max(4,Math.ceil(Math.max(roles,peak)/4)*4);
     const percent=Number.isInteger(raw.grassPercent)&&raw.grassPercent>=0&&raw.grassPercent<=100?raw.grassPercent:null;
     const fingerprint=JSON.stringify([percent,raw.roleSlots??null,raw.startingPopulation??null,points.map(p=>p.ending)]);
-    return {points,series,maximum,percent,fingerprint};
+    return {points,series,maximum,startLine,percent,fingerprint};
   }
   function repeatedBand(points) {
     const counts=new Map();
@@ -155,7 +159,7 @@
     function updateEstimate(){
       const k=state.trial, entry=trials[k];
       if(!entry)return;
-      const guess=estimateFor(k),value=guess??entry.maximum/2, y=yAt(value,entry.maximum);
+      const guess=estimateFor(k),value=guess??entry.startLine, y=yAt(value,entry.maximum);
       const line=$('#cc-range-line'),grab=$('.cc-range-grab'),handle=$('#cc-range-handle'),slider=$('#cc-range-slider');
       for(const el of [line,grab])if(el){el.setAttribute('y1',y);el.setAttribute('y2',y);}
       handle?.setAttribute('cy',y);
@@ -214,10 +218,10 @@
         <p id="cc-range-readiness">${readiness()}</p>
         ${populated()?`<div class="cc-range-task"><label for="cc-range-trial">Trial to inspect
           <select id="cc-range-trial">${MODES.map(mode=>`<option value="${mode}"${k===mode?' selected':''}${trials[mode]?'':' disabled'}>${label(mode,trials[mode])}${trials[mode]?'':' · finish 12 rounds'}</option>`).join('')}</select></label>
-          ${table?`<div class="cc-range-workbench">${plot(table,estimateFor(k)??table.maximum/2)}
+          ${table?`<div class="cc-range-workbench">${plot(table,estimateFor(k)??table.startLine)}
           <div class="cc-range-estimate-controls">
           <label for="cc-range-slider">Move your carrying-capacity estimate <output id="cc-range-line-value" for="cc-range-slider"></output></label>
-          <input type="range" id="cc-range-slider" min="0" max="${table.maximum}" step=".5" value="${estimateFor(k)??table.maximum/2}" aria-describedby="cc-range-estimate-feedback">
+          <input type="range" id="cc-range-slider" min="0" max="${table.maximum}" step=".5" value="${estimateFor(k)??table.startLine}" aria-describedby="cc-range-estimate-feedback">
           <button type="button" class="cc-primary" id="cc-range-lock">Lock in my estimate</button>
           <p id="cc-range-confirmed" class="cc-range-marks" hidden></p>
           <p id="cc-range-estimate-feedback" class="cc-range-feedback"${typeof announce==='function'?'':' role="status"'}></p></div></div>

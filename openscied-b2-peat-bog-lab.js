@@ -50,7 +50,7 @@
   // announceSoon waits while a slider is being dragged; announceNow (typed value, preset, reset, button) updates the region at once, so the
   // status text never lags one change behind. lastSpoken is the newest summary, kept so a short note can be said with it.
   let lastSpoken = '';
-  function announceSoon(text) { lastSpoken = text; clearTimeout(quietTimer); quietTimer = setTimeout(function () { announce(text); }, 700); }
+  function announceSoon(text) { lastSpoken = text; clearTimeout(quietTimer); clearTimeout(announceTimer); quietTimer = setTimeout(function () { announce(text); }, 700); }
   function announceNow(text) { lastSpoken = text; clearTimeout(quietTimer); announce(text); }
   function flash(text, withSummary) {
     $$('[data-rec-status]').forEach(function (s) { s.textContent = text; });
@@ -120,6 +120,7 @@
     num.dataset.dec = dec; num.min = mn; num.max = mx; num.step = st;
     let committed = null;
     range.addEventListener('input', function () { committed = null; set(+range.value); showClampNote(num, ''); });
+    range.addEventListener('change', function () { if (lastSpoken) announceNow(lastSpoken); });
     num.addEventListener('input', function () { committed = null; });
     function commit() {
       const typed = parseFloat(String(num.value).replace(',', '.'));
@@ -294,7 +295,11 @@
     LY.airLbl = svgEl('text', { x: 100, class: 'lbl on-peat' }, bog);
     LY.wetLbl = svgEl('text', { x: 100, class: 'lbl on-peat' }, bog);
     LY.perm = svgEl('rect', { x: 0, width: 700, fill: 'url(#icehatch-b)' }, bog);
-    LY.plbl = svgEl('text', { x: 694, 'text-anchor': 'end', class: 'lbl-b' }, bog); paint(LY.plbl, 'fill', '--b2-o2-t');
+    // Give the changing water line and the ice edge separate label lanes.
+    LY.iceTick = svgEl('line', { x1: 697, x2: 697, y2: 379, 'stroke-width': 1.5 }, bog);
+    paint(LY.iceTick, 'stroke', '--b2-o2-t');
+    LY.iceAnchor = svgEl('circle', { cx: 697, r: 2 }, bog); paint(LY.iceAnchor, 'fill', '--b2-o2-t');
+    LY.plbl = svgEl('text', { x: 694, y: 392, 'text-anchor': 'end', class: 'lbl-b' }, bog); paint(LY.plbl, 'fill', '--b2-o2-t');
     svgEl('text', { x: 312, y: 182, class: 'lbl-sm on-peat' }, bog).textContent = 'young peat (recent dead plants)';
     svgEl('text', { x: 312, y: 338, class: 'lbl-sm on-peat' }, bog).textContent = 'old peat: 1000s of years old';
     let seed = 3; const rnd = function () { return (seed = (seed * 9301 + 49297) % 233280) / 233280; };
@@ -346,7 +351,10 @@
     const wy = SURF + 4 + (1 - s.wet / 100) * (BASE - SURF - 8);
     LY.water.setAttribute('y', wy); LY.water.setAttribute('height', Math.max(0, BASE - wy));
     LY.wline.setAttribute('y1', wy); LY.wline.setAttribute('y2', wy);
-    LY.wlbl.setAttribute('y', wy - 5); LY.wlbl.textContent = wy > BASE - 40 ? '' : 'water level';
+    const fireLabelY = SURF + 18;
+    const waterY = m.B > 0.5 && Math.abs(wy - 5 - fireLabelY) < 20
+      ? Math.max(wy + 18, fireLabelY + 20) : wy - 5;
+    LY.wlbl.setAttribute('y', waterY); LY.wlbl.textContent = wy > BASE - 40 ? '' : 'water level';
     LY.airLbl.setAttribute('y', wy - 8); LY.airLbl.textContent = wy > SURF + 40 ? '↑ air spaces with oxygen' : '';
     LY.wetLbl.setAttribute('y', Math.max(wy + 18, SURF + 56)); LY.wetLbl.textContent = wy < BASE - 30 ? '↓ waterlogged, little oxygen' : '';
     LY.pores.forEach(function (c) { c.style.display = +c.dataset.y < wy - 3 && s.o2 > 0 ? '' : 'none'; });
@@ -359,7 +367,9 @@
     });
     const ph = m.perm * (BASE - SURF - 10);
     LY.perm.setAttribute('y', BASE - ph); LY.perm.setAttribute('height', ph);
-    LY.plbl.setAttribute('y', Math.min(BASE - 6, BASE - ph + 18));
+    LY.iceTick.setAttribute('y1', BASE - ph);
+    LY.iceAnchor.setAttribute('cy', BASE - ph);
+    LY.iceTick.style.display = LY.iceAnchor.style.display = ph > 0.75 ? '' : 'none';
     LY.plbl.textContent = 'Permafrost: ' + Math.round(m.perm * 100) + '% of peat frozen';
     LY.plants.style.opacity = (0.35 + 0.65 * Math.min(1, m.P / 45)).toFixed(2);
     LY.microbes.style.opacity = (0.15 + 0.85 * Math.min(1, m.D / 40)).toFixed(2);
@@ -456,8 +466,10 @@
     byId('o2PeatTxt').textContent = 'Air has ' + state.S.o2 + '%. Water blocks oxygen from reaching most of the peat.';
   }
   function summaryText(m) {
+    const warning = L.notes(state.S,m).find(note=>/^The fire/.test(note.title) && note.kind === 'warn');
     return 'Photosynthesis ' + Math.round(m.P) + ', decomposition ' + Math.round(m.D) + ', burning ' + Math.round(m.B) + '. Peat carbon ' + signed(Math.round(m.N)) + ': ' +
-      (L.verdict(m.N) === 'sink' ? 'a carbon sink.' : L.verdict(m.N) === 'source' ? 'carbon is released to the air.' : 'balanced.');
+      (L.verdict(m.N) === 'sink' ? 'a carbon sink.' : L.verdict(m.N) === 'source' ? 'carbon is released to the air.' : 'balanced.')
+      + (warning ? ' ' + warning.text : '');
   }
 
   /* ---------- text to speech (the device's built-in voice; nothing is sent anywhere) ---------- */
@@ -688,6 +700,8 @@
     placeDots(); kick();
     renderMeters(cur); renderNotes(cur); drawExplore();
     byId('record-bog').disabled = false;
+    const settings = L.VARS.map(v=>v.label + ' ' + fmtVar(v,state.S[v.key])).join(' · ');
+    byId('trial-settings').textContent = 'Settings for your next trial: ' + settings + '.';
     if (ready) { save(); (now ? announceNow : announceSoon)(summaryText(cur)); }
   }
 
@@ -805,7 +819,10 @@
     hid.textContent = state.trials.length ? ' (' + state.trials.length + ' recorded)' : '';
     const wrap = byId('logWrap');
     if (!state.trials.length) { wrap.innerHTML = '<div class="empty">No trials yet. Set up the bog, then choose Record this trial.</div>'; return; }
-    const cols = L.TRIAL_COLUMNS, cls = { P: 'p', D: 'r', B: 'b' };
+    // Put outcomes first on screen; the full spreadsheet keeps its established column order.
+    const cols = ['n','label','N','P','D','B','perm','zc','tilt','Teff','co2','o2','wet','burn']
+      .map(key=>L.TRIAL_COLUMNS.find(c=>c.key===key));
+    const cls = { P: 'p', D: 'r', B: 'b' };
     const data = state.trials.map(function (t, i) { return L.trialRow(t, i + 1); });
     wrap.innerHTML = '<table class="data"><caption class="sr-only">Recorded trials. Simulated data on a 0 to 100 teaching scale.</caption><thead><tr>' + cols.map(function (c) { return '<th scope="col"' + (c.key === 'label' ? ' class="lbl"' : '') + '>' + esc(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>' +
       data.map(function (r, i) {

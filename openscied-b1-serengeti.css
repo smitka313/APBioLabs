@@ -457,3 +457,25 @@
   #sg-map-panel .sg-map-notes > summary {min-height:2rem;padding:.27rem .25rem;}
   #sg-play #sg-board-title,#sg-play #sg-action-title {scroll-margin-block-start:.55rem;}
 }
+
+/* Show a compact, non-gameplay example before students roll for the first time. */
+.sg-dice-example {margin-block:.28rem;min-width:0;}
+.sg-dice-example > summary {min-height:24px;}
+.sg-dice-example-body {font-size:.79rem;line-height:1.36;color:var(--sg-ink);}
+.sg-dice-example-body p {margin:.24rem 0;}
+.sg-dice-example-body table {width:100%;border-collapse:collapse;margin:.18rem 0;font-variant-numeric:tabular-nums;}
+.sg-dice-example-body :is(th,td) {text-align:left;padding:.14rem .26rem;border-bottom:1px solid var(--sg-line);}
+.sg-dice-example-body th {background:var(--sg-accent-soft);color:var(--sg-accent-text);}
+.sg-card-app-note,.sg-model-scope {padding:.38rem .52rem;border-inline-start:3px solid var(--sg-accent);background:var(--sg-accent-soft);color:var(--sg-accent-text);border-radius:.25rem;font-size:.84rem;line-height:1.35;}
+.sg-model-scope {margin:.3rem 0 .46rem;}
+
+.sg-season-path {display:flex;flex-wrap:wrap;align-items:baseline;gap:.2rem .31rem;list-style:none;margin:0 0 .45rem;padding:0;font-size:.72rem;line-height:1.25;color:var(--sg-soft);}
+.sg-season-path > li {margin:0;padding:.16rem .23rem;min-width:0;border-block-end:2px solid transparent;}
+.sg-season-path > [data-status=current] {border-color:var(--sg-accent);color:var(--sg-accent-text);font-weight:750;}
+.sg-season-path > [data-status=done] {color:var(--sg-ink);}
+.sg-expanded-turn .sg-season-path {margin:0;font-size:.68rem;gap:.06rem .24rem;}
+#sg-play[data-phase=setup] .sg-role {border-style:dashed;background:none;}
+/* The interactive view already shows each season’s totals; hide only the duplicate plain list. */
+#sg-finish:has(> #sg-finish-details[open]) #sg-finish-totals .sg-totals,
+#sg-evidence:has(> #sg-evidence-maps[open]) .sg-evidence-totals {display:none;}
+#sg-evidence:has(> #sg-evidence-maps[open]) #sg-evidence-body {grid-template-columns:minmax(0,1fr);}

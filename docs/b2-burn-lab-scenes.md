@@ -22,9 +22,9 @@ The laser (infrared) thermometer and the balance are used **only at the two weig
    placed on the tray under the dome (dome down), and the laser gun is aimed AT THE FUEL: the beam passes through the dome glass and its dot lies on the sample. Before this the gun rests on
    the bench and the balance shows `--.- g`. "Burn it" is off until this is done.
 2. **Burn**: the sample is under the dome; the gun is put down on the bench with its display off, the balance shows `--.- g`, and the text description says so. No live reading.
-3. **After** (finished): the dome is still down over the ash and nothing is read. "Lift the dome, weigh and read temperature (after)" stores `current.after = true`: the dome is drawn lifted, the ash is
-   on the balance (after mass) and the laser, with nothing in the way, is aimed at the ash on the balance and reads the after temperature. Only then can the student tap observations and "Record results (both weighings)",
-   which fills the table's temperature and mass before → after at the same two steps.
+3. **After** (finished): the dome is still down over the ash and nothing is read. "Lift dome and weigh ash (after)" lifts the dome, moves ash onto the balance, and aims the laser at the ash to read its temperature.
+   The second weighing automatically records both readings, BTB color and timing in one result. Optional observation chips update that one result; "Choose next sample" returns to fuel setup. A saved review points to the existing record, so reloading does not create a duplicate.
+   A legacy in-progress sample with its after reading saved is promoted once, without requiring a second Record click.
 Reload keeps all of this (flags only; the numbers are recomputed from the seed). Reduced motion shows the finished burn at once; the after weighing is still the student's step.
 
 The dot is computed from where the sample or the ash is drawn (`laserPoints`), and the scene exposes it with the fuel or ash area it must lie in as `data-laser` on the canvas

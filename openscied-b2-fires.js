@@ -71,7 +71,7 @@
       state.fields = collectFields();
       const section = location.hash.slice(1);
       if (SECTIONS.includes(section)) state.lastSection = section;
-      const rec = { v: 1, fields: state.fields, responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now() };
+      const rec = { v: 1, fields: state.fields, responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now(), modelEvidence: L.sceneEvidence(state) };
       SCENE_IDS.forEach(function (id) { rec[id] = state[id]; });
       localStorage.setItem(KEY, JSON.stringify(rec));
       $('#save-status').textContent = 'Saved on this device.';
@@ -147,6 +147,10 @@
       if (!nodes.length) box.appendChild(el('p', 'muted', 'Run the test first. Your results will appear here.'));
       else nodes.forEach(function (n) { box.appendChild(n); });
     });
+    const foam = decompNodes(false), tubes = tiltNodes(), data = $('#cer-model-data');
+    data.hidden = !(foam.length || tubes.length);
+    $('#cer-foam-body').replaceChildren(...foam);
+    $('#cer-tilt-body').replaceChildren(...tubes);
     renderDataPicks(); renderPredNote(); renderClaim(false);
   }
 
@@ -223,15 +227,27 @@
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
     const checks = L.evidenceChecks(state.decomp, state.tilt), detail = L.evidenceDetail(state.decomp, state.tilt), ok = {};
     Object.keys(EV_KEY).forEach(function (id) {
-      const v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = ck(id);
+      const box = $('#' + id), v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = box.checked;
+      // An older selection remains editable, but it no longer counts if its supporting model record is missing or changes.
+      box.disabled = v === null && !on;
+      box.dataset.evidence = v === true ? 'supported' : v === false ? 'not-supported' : 'unavailable';
       ok[id] = on && v === true;
       if (note) note.textContent = on ? evidenceNote(id, v, detail) : '';
     });
+    const hasFoam = checks.warmMost !== null || checks.coldLeast !== null;
+    const hasTubes = checks.directBluest !== null || checks.foilYellow !== null;
+    const needFoam = 'Record a foam reading after 0 min with different temperatures.';
+    const needTubes = 'Read and record a direct-light and a foil comparison.';
+    $('#cer-model-note').textContent = hasFoam && hasTubes
+      ? 'Use your recorded comparisons. A strong explanation cites evidence about both decomposition and light.'
+      : 'Model evidence still needed: ' + (!hasFoam ? needFoam + ' ' : '') + (!hasTubes ? needTubes : '');
     const claimOk = !!claimEl && claimEl.value === 'a', reasonOk = !!reason && reason.value === 'a';
     const flags = [claimOk, Object.keys(ok).some(function (k) { return ok[k]; }), ck('cer-ev-5'), reasonOk, ck('cer-caveat')];
-    const level = L.claimLevel(flags), out = $('#cer-level');
+    const ownsBoth = (ok['cer-ev-1'] || ok['cer-ev-2']) && (ok['cer-ev-3'] || ok['cer-ev-4']);
+    const candidate = L.claimLevel(flags), level = candidate === 'organized' && !ownsBoth ? 'linked' : candidate;
+    const out = $('#cer-level');
     const bad = claimEl && !claimOk ? 'Look again at your data and the reading: sunlight, storage and slow decomposition all matter. Try another claim. ' : reason && !reasonOk ? 'Check what light energy and cold each do to carbon and energy. ' : '';
-    out.textContent = bad + CLAIM_TEXT[level]; out.dataset.level = level;
+    out.textContent = bad + CLAIM_TEXT[level] + (level === 'linked' && !ownsBoth ? ' Include supported evidence from both models for the full explanation.' : ''); out.dataset.level = level;
     if (speak) announce(CLAIM_TEXT[level].split(':')[0]);
   }
 
@@ -252,7 +268,13 @@
     });
   }
   function chips() {
-    return $$('main fieldset.chipset').map(function (fs) { return { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: $$('input:checked', fs).map(function (b) { return b.parentElement.textContent.trim(); }) }; });
+    return $$('main fieldset.chipset').map(function (fs) {
+      const picked = $$('input:checked', fs);
+      const result = { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: picked.filter(b => !b.dataset.evidence || b.dataset.evidence === 'supported').map(b => b.parentElement.textContent.trim()) };
+      const drafts = picked.filter(b => b.dataset.evidence && b.dataset.evidence !== 'supported');
+      if (drafts.length) result.notSupportedByRecordedData = drafts.map(b => b.parentElement.textContent.trim());
+      return result;
+    });
   }
   function textAnswers() { return $$('main textarea, main input[type=text]').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return { id: t.id, prompt: labelFor(t.id), answer: t.value.trim() }; }); }
   // ONE definition of "answers": every id in RESPONSE_IDS (each radio question, each dropdown, each required text box; boxes marked data-optional
@@ -274,9 +296,15 @@
     const graded = $$('main fieldset.mcq[data-correct]').length + dd.filter(function (d) { return L.PICKS[d.id] ? L.PICKS[d.id].correct.length : !!DATA_PICKS[d.id]; }).length;
     const ul = el('ul', 'report-checks');
     const st = answerStats(); report.dataset.answered = st.answered; report.dataset.total = st.total;
-    [st.answered + ' of ' + st.total + ' answers saved (' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far',
-      SCENE_IDS.filter(function (id) { return state[id]; }).length + ' of 3 interactive models used'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
+    [st.answered + ' of ' + st.total + ' answers saved (questions and writing only; ' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
+    const ev = L.sceneEvidence(state);
+    report.appendChild(el('h4','','Model records (counted separately)'));
+    const records=el('ul','report-checks'); records.dataset.modelRecords = '';
+    [ev.cardsRight + ' of ' + L.CARDS.length + ' cards sorted correctly' + (ev.cardsPlaced ? ' (' + ev.cardsPlaced + ' placed)' : ''),
+      ev.foamReadings + ' foam reading' + (ev.foamReadings===1?'':'s') + ' recorded' + (ev.foamReadings && !ev.foamAfterBaseline ? ' (starting reading only)' : ''),
+      ev.tubesRead + ' of 3 BTB tubes read and recorded' + (ev.starchTested ? ' · starch test recorded' : '')].forEach(t=>records.appendChild(el('li','',t)));
+    report.appendChild(records);
     cardsNodes().forEach(function (n) { report.appendChild(n); });
     decompNodes(true).forEach(function (n) { report.appendChild(n); });
     tiltNodes().forEach(function (n) { report.appendChild(n); });
@@ -293,7 +321,7 @@
       tubes: t && typeof t.seed === 'number' && Array.isArray(t.settings) && t.recorded ? L.tiltResults(t.seed, t.settings).map(function (r) { return { tube: r.tube, light: r.light, lightReachingPlant: r.intensity, btbReading: r.btb, btbColor: r.btbLabel, carbonDioxideChangeRelative: r.net, starchIndex: t.starchDone ? r.starch : null }; }) : [] };
     const payload = { format: 'openscied-b2-fires-progress-v1', exportedAt: new Date().toISOString(), student: studentIdentity(),
       dataNote: 'Yeast foam, plant and BTB results in this file are SIMULATED by a model from the student’s Dataset ID. They are not measurements from a real lab. Nothing here is personal information.',
-      answersSaved: answerStats(), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
+      answersSaved: answerStats(), modelEvidence: L.sceneEvidence(state), responseIds: RESPONSE_IDS, scenes, simulatedData: simulated, choices: picks(), dropdowns: dropdowns(), chips: chips(), written: textAnswers(), answers: state.fields };
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = url; a.download = 'fires-peat-work.json'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);

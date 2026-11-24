@@ -110,12 +110,12 @@ const ink = (p, sel) => p.evaluate(s => { const c = document.querySelector(s + '
     T.ok(await p.locator('.tl-chart svg').count() >= 1 && /BTB reading/.test(await p.locator('.tl-chart').innerText()), 'bar chart with axis titles');
     T.ok((await ink(p, '#tilt-scene')).ink > 0.05, 'tubes drawn');
     T.ok(await p.locator('#tilt-scene canvas').evaluate(c => /Tube C: Foil \(no light\), BTB 5|Tube C: Foil \(no light\), BTB 6/.test(c.getAttribute('aria-label'))), 'canvas label reports the unwrapped foil tube');
-    T.ok(/Tube A\s+Direct/.test(await p.locator('#data-tilt-body').innerText()) && /SIMULATED/.test(await p.locator('#data-tilt-body').innerText()), 'Your data box filled and labeled simulated');
     await p.locator('[data-tl="starch"]').click();
     T.ok(await p.locator('.tl-leaf').count() === 3 && /starch/.test(await p.locator('.tl-table').innerText()), 'starch test adds leaves and a column');
     const sres = exp.map(x => x.starchLabel);
     T.ok(sres[2] === 'none' && sres[0] !== 'none', 'starch: none under foil, some in light');
     await go(p, 'sense5');
+    T.ok(/Tube A\s+Direct/.test(await p.locator('#data-tilt-body').innerText()) && /SIMULATED/.test(await p.locator('#data-tilt-body').innerText()), 'Your data box filled and labeled simulated');
     await p.selectOption('#sense-bluest', 'direct');
     T.ok(/^Yes/.test(await p.locator('#feedback-sense-bluest').innerText()), 'data-based row passes');
     T.ok(problems.length === 0, 'no console errors: ' + problems.join(' | '));

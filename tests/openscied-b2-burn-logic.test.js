@@ -311,3 +311,14 @@ test('claim level climbs as the pieces are added', () => {
   assert.equal(L.claimLevel([]), 'none'); assert.equal(L.claimLevel([true]), 'foundational'); assert.equal(L.claimLevel([true, true, true]), 'linked');
   assert.equal(L.claimLevel([true, true, true, true, true]), 'organized'); assert.equal(L.claimLevel([false, true, true, true, true]), 'foundational');
 });
+
+test('a saved burn review points to one existing sample, never manufactures a duplicate', () => {
+  const before={seed:8,fuel:'peat',records:[{fuel:'peat',n:1,obs:['smoke','smoke','invalid']}],review:{fuel:'peat',n:1}};
+  const restored=L.cleanState(before);
+  assert.deepEqual(restored.review,{fuel:'peat',n:1});
+  assert.deepEqual(L.tableRows(restored).map(x=>x.obs),[['smoke']]);
+  assert.equal(L.cleanState({...before,review:{fuel:'peat',n:3}}).review,undefined);
+  const draft=L.cleanState({...before,current:{fuel:'wood',n:1,startedAt:10,after:true,obs:['smoke']}});
+  assert.deepEqual(draft.current.obs,['smoke']);
+  assert.equal(draft.review,undefined);
+});

@@ -64,18 +64,43 @@
   document.querySelectorAll('[data-page]').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
   $('[data-show-evidence]').addEventListener('click', () => setPage('evidence'));
   const questions = [
-    ['q2', 'Why did all the carbon start out in the atmosphere?'],
-    ['q3', 'What relationships or patterns do you notice in your journey’s totals?'],
-    ['q4', 'Tell your carbon atom’s story. Include your recorded stops, forms of matter, energy transfers and mechanisms. Name specific organisms or materials.'],
-    ['q5', 'Compare with a classmate. What was similar, even though your journeys differed?'],
-    ['q6', 'How does this model help explain the effects of carbon dioxide added to the atmosphere by fires?']
+    ['q1', 'Why did all the carbon start out in the atmosphere?'],
+    ['q2', 'What relationships or patterns do you notice in your journey’s totals?'],
+    ['q3', 'Tell your carbon atom’s story. Include your recorded stops, forms of matter, energy transfers and mechanisms. Name specific organisms or materials. If you use a station example to show another possible route, label it as an example, not one of your rolls.'],
+    ['q4', 'Compare with a classmate. What was similar, even though your journeys differed?'],
+    ['q5', 'How does this model help explain the effects of carbon dioxide added to the atmosphere by fires?']
   ];
   questions.forEach(([id, text]) => {
     const article = document.createElement('article'), label = document.createElement('label'), input = document.createElement('textarea');
-    label.htmlFor = id; label.textContent = text; input.id = id; input.rows = id === 'q4' ? 6 : 3;
+    label.htmlFor = id; label.textContent = text; input.id = id; input.rows = id === 'q3' ? 6 : 3;
     input.maxLength = 20000; input.value = state.answers[id] || '';
     input.addEventListener('input', () => { state.answers[id] = input.value; save(); });
-    article.append(label, input); $('#questions').append(article);
+    article.append(label);
+    if (id === 'q3') article.append($('#station-tour'));
+    article.append(input); $('#questions').append(article);
+  });
+  let tourStation = '';
+  function renderTour() {
+    const samples = L.tour(state);
+    const newExamples = samples.filter(sample => !sample.drawn).length;
+    const selected = samples.find(sample => sample.from === tourStation) || samples.find(sample => !sample.drawn) || samples[0];
+    const options = $('#station-tour-select');
+    options.replaceChildren();
+    for (const sample of samples) {
+      const option = document.createElement('option'); option.value = sample.from;
+      option.textContent = name(sample.from) + (sample.drawn ? ' · drawn' : state.coverageReviewed.includes(sample.from) ? ' · reviewed' : ' · example');
+      options.append(option);
+    }
+    options.value = selected.from;
+    $('#station-tour-summary').textContent = newExamples + ' of 7 sample card events are not in your rolls. That’s normal: the die can repeat routes.';
+    $('#station-tour-event').textContent = selected.process + ': ' + name(selected.from) + ' → ' + name(selected.to);
+    $('#station-tour-status').textContent = selected.drawn ? 'This card also appeared in your journey.' :
+      selected.visited ? 'You reached this station, but this card event was not in your rolls.' : 'This station was not in your journey.';
+    $('#station-tour-card').textContent = selected.text;
+  }
+  $('#station-tour-select').addEventListener('change', e => {
+    tourStation = e.currentTarget.value; renderTour();
+    announce(['#station-tour-event','#station-tour-status','#station-tour-card'].map(id => $(id).textContent).join(' '));
   });
   function showQuestion() {
     $('#questions').querySelectorAll('article').forEach((a, i) => a.hidden = i !== questionIndex);
@@ -134,18 +159,31 @@
   }
   function render() {
     const pending = state.pending !== null, c = pending ? L.outcome(state) : null, n = state.rows.length;
+    const missing = L.missingCoverage(state);
+    const review = state.coverageCheckpoint ? missing[0] : null;
+    $('#coverage-panel').hidden = $('#coverage-continue').hidden = !review;
+    if (review) {
+      $('#coverage-reason').textContent = state.coverageCheckpoint === 'repeat' ?
+        'This route has repeated several card events. Read a card from a route you did not draw before your next roll.' :
+        'Your rolls are complete. Review the missing station evidence before finishing (' + missing.length + ' to read).';
+      $('#coverage-route').textContent = review.process + ': ' + name(review.from) + ' → ' + name(review.to);
+      $('#coverage-card').textContent = review.text;
+      $('#coverage-continue').textContent = state.coverageCheckpoint === 'finish' && missing.length === 1 ?
+        'Mark card read and finish' : 'Mark card read';
+    }
     $('#location').textContent = name(L.current(state));
     $('#turns').textContent = n + ' rolls · ' + (state.done ? 'complete' : n < 10 ? (10 - n) + ' to minimum' : 'ready to finish');
-    $('#stage-label').textContent = pending ? revealed ? 'READ THE OFFICIAL CARD' : 'PREDICT YOUR NEXT STOP' : state.done ? 'JOURNEY COMPLETE' : 'READY TO EXPLORE';
-    $('#card-instruction').textContent = pending ? name(L.current(state)) + ' · roll ' + state.pending + (state.producerExit ? ' · second table' : '') : state.done ? 'Explore your evidence next.' : unreadable !== null ? 'Saving is paused. Open Your evidence to download a backup or start a new journey.' : 'Roll to discover your atom’s next chapter.';
-    $('#roll').hidden = pending || state.done; $('#roll').disabled = rolling || pending || state.done || unreadable !== null;
+    $('#stage-label').textContent = review ? 'REFERENCE CARD' : pending ? revealed ? 'READ THE OFFICIAL CARD' : 'PREDICT YOUR NEXT STOP' : state.done ? 'JOURNEY COMPLETE' : 'READY TO EXPLORE';
+    $('#card-instruction').textContent = review ? 'Your recorded journey stays unchanged.' : pending ? name(L.current(state)) + ' · roll ' + state.pending + (state.producerExit ? ' · second table' : '') : state.done ? 'Explore your evidence next.' : unreadable !== null ? 'Saving is paused. Open Your evidence to download a backup or start a new journey.' : 'Roll to discover your atom’s next chapter.';
+    $('#roll').hidden = pending || state.done || !!review; $('#roll').disabled = rolling || pending || state.done || !!review || unreadable !== null;
     $('#record').hidden = !pending || !revealed; $('#record').disabled = !pending || !revealed || state.done;
-    $('#finish').disabled = n < 10 || pending || state.done;
-    $('#finish').hidden = n < 10 || pending || state.done;
+    $('#finish').disabled = n < 10 || pending || state.done || !!review;
+    $('#finish').hidden = n < 10 || pending || state.done || !!review;
+    $('#finish').textContent = missing.length ? 'Review missed stations' : 'Finish journey';
     $('#skip-prediction').hidden = !pending || revealed;
     $('#prediction-panel').hidden = !pending || revealed;
     $('#outcome-panel').hidden = !pending || !revealed;
-    $('#ready-panel').hidden = pending;
+    $('#ready-panel').hidden = pending || !!review;
     $('#prediction-options').replaceChildren();
     if (pending && !revealed) L.stations.forEach(([id, label]) => {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.dataset.guess = id;
@@ -164,12 +202,18 @@
     totalBox(target, 'Matter', L.totals(state, 'matter', L.matter)); totalBox(target, 'Energy', L.totals(state, 'energy', L.energy));
     showTotal();
     $('#journal').replaceChildren(); state.rows.forEach(r => {
-      const tr = document.createElement('tr'); [r.turn, name(r.from), r.die, r.matter, r.energy, name(r.to), r.text || 'Earlier printed-card record', r.note].forEach(v => {
+      const tr = document.createElement('tr'); [r.turn, name(r.from), r.die, r.prediction === null ? 'Skipped' : r.prediction ? name(r.prediction) : 'Not saved in earlier version', r.matter, r.energy, name(r.to), r.text || 'Earlier printed-card record', r.note].forEach(v => {
         const td = document.createElement('td'); td.textContent = v; tr.append(td);
       }); $('#journal').append(tr);
     });
-    $('#summary').textContent = n ? n + ' rolls recorded. Your atom is at ' + name(L.current(state)) + '. Trace the recorded stops below.' : 'Record your journey first, then use its evidence here.';
-    $('#story-strip').replaceChildren(); state.rows.forEach(r => { const p = document.createElement('p'); p.textContent = r.turn + '. ' + name(r.from) + ' → ' + name(r.to) + ' · ' + r.matter + (r.note ? ' · ' + r.note : ''); $('#story-strip').append(p); });
+    renderTour();
+    $('#summary').textContent = n ? n + ' rolls recorded. Your atom is at ' + name(L.current(state)) + '. These are rolls, not elapsed time or global carbon amounts.' : 'Record your journey first, then use its evidence here.';
+    $('#story-strip').replaceChildren(); state.rows.forEach(r => {
+      const turn = document.createElement('details'), summary = document.createElement('summary'), evidence = document.createElement('p');
+      summary.textContent = r.turn + '. ' + name(r.from) + ' → ' + name(r.to);
+      evidence.textContent = 'Matter: ' + r.matter + '. Energy: ' + r.energy + (r.text ? ' Card: ' + r.text : '') + (r.note ? ' Your note: ' + r.note : '');
+      turn.append(summary, evidence); $('#story-strip').append(turn);
+    });
   }
   function reveal(id) {
     guess = id; revealed = true; save(); render(); $('#turn-stage').scrollTop = 0; $('#record').focus({ preventScroll: true });
@@ -177,7 +221,7 @@
   $('#note').addEventListener('input', () => save());
   $('#skip-prediction').addEventListener('click', () => reveal(null));
   $('#roll').addEventListener('click', () => {
-    if (state.pending !== null || state.done || rolling || unreadable !== null) return;
+    if (state.pending !== null || state.done || state.coverageCheckpoint || rolling || unreadable !== null) return;
     state.pending = L.die(state.seed, state.rows.length); guess = null; revealed = false; rolling = true;
     $('#turn-details').open = false; $('#note').value = ''; save('Rolled ' + state.pending + '. Predict the destination, then reveal the card.');
     render(); $('.journey-hud').classList.add('rolling'); $('#turn-stage').scrollTop = 0;
@@ -187,28 +231,54 @@
   $('#record-form').addEventListener('submit', e => {
     e.preventDefault(); if (!revealed) return;
     try {
-      state = L.record(state, { note: $('#note').value }); guess = null; revealed = false; $('#note').value = ''; $('#turn-details').open = false;
+      state = L.record(state, { note: $('#note').value, prediction: guess }); guess = null; revealed = false; $('#note').value = ''; $('#turn-details').open = false;
+      if (L.routeRepeating(state) && L.missingCoverage(state).length) state.coverageCheckpoint = 'repeat';
       save('Turn ' + state.rows.length + ' recorded. Your atom is at ' + name(L.current(state)) + '.'); render(); $('#turn-stage').scrollTop = 0;
-      $('#roll').focus({ preventScroll: true });
+      $(state.coverageCheckpoint ? '#coverage-continue' : '#roll').focus({ preventScroll: true });
     } catch (err) { announce(err.message); }
   });
+  function finishJourney() {
+    state.done = true; state.coverageCheckpoint = null; save(); render();
+    $('#complete-copy').textContent = 'You recorded ' + state.rows.length + ' rolls and finish at ' + name(L.current(state)) + '. Compare your system, matter and energy totals next.';
+    $('#complete-dialog').showModal();
+  }
   $('#finish').addEventListener('click', () => {
-    if (state.rows.length < 10 || state.pending !== null || state.done) return;
-    state.done = true; save(); render(); $('#complete-copy').textContent = 'You recorded ' + state.rows.length + ' rolls and finish at ' + name(L.current(state)) + '. Compare your system, matter and energy totals next.'; $('#complete-dialog').showModal();
+    if (state.rows.length < 10 || state.pending !== null || state.done || state.coverageCheckpoint) return;
+    if (!L.missingCoverage(state).length) { finishJourney(); return; }
+    state.coverageCheckpoint = 'finish'; save('Review missed stations before finishing.'); render();
+    $('#turn-stage').scrollTop = 0; $('#coverage-continue').focus({preventScroll:true});
+  });
+  $('#coverage-continue').addEventListener('click', () => {
+    if (!state.coverageCheckpoint) return;
+    const review = L.missingCoverage(state)[0];
+    if (!review) return;
+    state.coverageReviewed.push(review.from);
+    if (state.coverageCheckpoint === 'finish' && !L.missingCoverage(state).length) { finishJourney(); return; }
+    if (state.coverageCheckpoint === 'repeat') state.coverageCheckpoint = null;
+    save('Station evidence reviewed: '+name(review.from)+'. Your journal has not changed.'); render();
+    $('#turn-stage').scrollTop = 0;
+    $(state.coverageCheckpoint ? '#coverage-continue' : '#roll').focus({preventScroll:true});
   });
   $('#analyze').addEventListener('click', () => { $('#complete-dialog').close(); setPage('evidence'); });
   $('#restart').addEventListener('click', () => $('#reset-dialog').showModal()); $('#cancel-reset').addEventListener('click', () => $('#reset-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
-    state = L.initial((state.seed + 0x6D2B79F5) >>> 0); guess = null; revealed = false; questionIndex = 0;
+    state = L.initial((state.seed + 0x6D2B79F5) >>> 0); guess = null; revealed = false; questionIndex = 0; tourStation = '';
     questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset(); $('#reset-dialog').close();
     section = 'play'; save('New journey ready.', true); render(); showQuestion(); setPage('play', false);
   });
   $('#download').addEventListener('click', () => {
-    const payload = { format: 'openscied-carbon-journey-v1', mode: 'official-station-cards', simulated: true, exportedAt: new Date().toISOString(), ...state };
     const backup = unreadable !== null;
+    const payload = backup ? null : {
+      format: 'openscied-carbon-journey-v2', mode: 'official-station-cards', simulated: true,
+      exportedAt: new Date().toISOString(), ...state, questions: Object.fromEntries(questions),
+      pendingPresentation: state.pending === null ? null : { revealed, ...(revealed ? {prediction: guess} : {}), note: $('#note').value },
+      referenceCardsReviewed: L.tour(state).filter(sample => state.coverageReviewed.includes(sample.from))
+        .map(({from,to,process,text})=>({from,to,process,text})),
+      budget: (budgetUI?.exportData || window.CarbonBudgetUI?.readExport)?.() ?? null
+    };
     const url = URL.createObjectURL(new Blob([backup ? unreadable : JSON.stringify(payload, null, 2)], { type: backup ? 'text/plain' : 'application/json' })), a = document.createElement('a');
     a.href = url; a.download = backup ? 'carbon-atom-journey-saved-backup.txt' : 'carbon-atom-journey.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    announce(backup ? 'Saved backup downloaded. The original is still on this device.' : 'Journey downloaded.');
+    announce(backup ? 'Saved backup downloaded. The original is still on this device.' : 'Journey downloaded, including any saved budget work.');
   });
   $('#print').addEventListener('click', () => window.print());
   function toggleMap() {

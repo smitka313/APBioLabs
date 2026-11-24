@@ -219,3 +219,10 @@ details.more summary { cursor: pointer; font-weight: 600; min-height: 24px; colo
 .your-data { grid-template-columns: minmax(0, 1fr); }
 .your-data, .your-data-body { min-width: 0; max-width: 100%; }
 .your-data .table-wrap { max-width: 100%; overflow-x: auto; }
+
+.cer-model-note {margin:0;color:var(--muted);}
+#cer-evidence input:disabled {opacity:.6;}
+@media (min-width: 641px) {
+  .sentence {display:flex;flex-wrap:wrap;align-items:center;gap:.28rem .36rem;max-width:none;line-height:1.45;}
+  .sentence select {flex:0 1 auto;margin:0;}
+}

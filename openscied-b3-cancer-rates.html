@@ -29,11 +29,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-4">
+<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-5">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
-<script defer src="openscied-b3-cancer-rates.js?v=case-desk-4"></script>
+<script defer src="openscied-b3-cancer-rates.js?v=case-desk-5"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -70,7 +70,7 @@
       </g>
     </svg>
   </header>
-  <details id="cr-income-cards" class="cr-case">
+  <details id="cr-income-cards" class="cr-case" hidden>
     <summary class="cr-case-cover">
       <span class="cr-case-file" aria-hidden="true">B3-01 / EVIDENCE FOLDER</span>
       <strong>Evidence Cards: Who Gets Cancer and Why?</strong>
@@ -147,7 +147,7 @@
             <li class="cr-income-bar"><span>Prostate</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:76.47%"></span></span> <strong>114.7</strong></li>
             <li class="cr-income-bar"><span>Lung and Bronchus</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:32.73%"></span></span> <strong>49.1</strong></li>
             <li class="cr-income-bar"><span>Colon and Rectum</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:24.00%"></span></span> <strong>36.0</strong></li>
-            <li class="cr-income-bar"><span>Corpus and Uterus, NOS</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:18.87%"></span></span> <strong>28.3</strong></li>
+            <li class="cr-income-bar"><span>Corpus and Uterus, <abbr title="Not otherwise specified">NOS</abbr></span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:18.87%"></span></span> <strong>28.3</strong></li>
             <li class="cr-income-bar"><span>Melanomas of the Skin</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:15.33%"></span></span> <strong>23.0</strong></li>
             <li class="cr-income-bar"><span>Urinary Bladder</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:12.07%"></span></span> <strong>18.1</strong></li>
             <li class="cr-income-bar"><span>Non-Hodgkin Lymphoma</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:11.87%"></span></span> <strong>17.8</strong></li>
@@ -157,6 +157,7 @@
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>75</span><span>150</span></div></div>
         </figure>
         <p class="cr-source">OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 1. Source: U.S. Cancer Statistics (CDC and NCI). For female-specific and male-specific cancers, the denominator is the indicated population.</p>
+        <p class="cr-source"><strong>NOS</strong> means “not otherwise specified.” The exact part of the uterus was not recorded for the cases labeled NOS.</p>
         <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Which cancer has the highest new diagnosis rate? What do you notice about the shape of the graph?</p><label for="cr-lesson1-diagnoses-observation">Your Exhibit A observation</label>
           <textarea id="cr-lesson1-diagnoses-observation" rows="2" maxlength="500"></textarea>
           <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-diagnoses-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="lesson1-deaths">Next: cancer deaths</button></div></div>
@@ -175,12 +176,13 @@
             <li class="cr-income-bar"><span>Liver and Intrahepatic Bile Duct</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:16.25%"></span></span> <strong>6.5</strong></li>
             <li class="cr-income-bar"><span>Leukemias</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:14.25%"></span></span> <strong>5.7</strong></li>
             <li class="cr-income-bar"><span>Ovary</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:14.25%"></span></span> <strong>5.7</strong></li>
-            <li class="cr-income-bar"><span>Corpus and Uterus, NOS</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:13.50%"></span></span> <strong>5.4</strong></li>
+            <li class="cr-income-bar"><span>Corpus and Uterus, <abbr title="Not otherwise specified">NOS</abbr></span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:13.50%"></span></span> <strong>5.4</strong></li>
             <li class="cr-income-bar"><span>Non-Hodgkin Lymphoma</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:11.75%"></span></span> <strong>4.7</strong></li>
           </ul>
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>20</span><span>40</span></div></div>
         </figure>
         <p class="cr-source">OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 2. Source: U.S. Cancer Statistics (CDC and NCI). For female-specific and male-specific cancers, the denominator is the indicated population.</p>
+        <p class="cr-source"><strong>NOS</strong> means “not otherwise specified.” The exact part of the uterus was not recorded for the cases labeled NOS.</p>
         <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Does the same cancer lead both charts? Find one cancer that appears on both and describe how its position changes.</p><label for="cr-lesson1-deaths-observation">Your Exhibit B observation</label>
           <textarea id="cr-lesson1-deaths-observation" rows="2" maxlength="500"></textarea>
           <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-deaths-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="lesson1-map">Next: the state map</button></div></div>
@@ -205,7 +207,7 @@
       <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT D</p>
         <h2 id="cr-income-access-title" tabindex="-1">When does cost keep people from getting care?</h2>
-        <p>Adults who needed to see a doctor in the past year but reported they could not afford to go.</p>
+        <p>Percent of surveyed adults in each income group who said cost kept them from seeing a doctor they needed in the past year.</p>
         <figure class="cr-income-figure">
           <figcaption>Annual household income · Could not afford a needed visit (%)</figcaption>
           <ul class="cr-income-bars" aria-label="Exact values by income group">
@@ -216,7 +218,7 @@
           </ul>
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>10%</span><span>20%</span><span>30%</span><span>40%</span></div></div>
         </figure>
-        <p class="cr-source">2022–2023 CDC survey of current and recent workers in 36 states and the U.S. Virgin Islands. Selected income groups. <a href="https://www.cdc.gov/mmwr/volumes/74/wr/mm7419a3.htm">CDC Table 2</a></p>
+        <p class="cr-source">2022–2023 CDC survey of current and recent workers in 36 states and the U.S. Virgin Islands. This chart shows four groups, up to $74,999. <a href="https://www.cdc.gov/mmwr/volumes/74/wr/mm7419a3.htm">CDC Table 2</a> also reports three groups from $75,000 and up.</p>
         <div class="cr-case-question">
           <p class="cr-exhibit-tag">CASE NOTE</p>
           <label for="cr-income-access-answer">As household income goes up across the groups shown, what happens to the percentage?</label>
@@ -316,11 +318,12 @@
         </div>
       </section>
   </dialog>
-  <nav class="cr-steps" aria-label="Investigation steps">
+  <nav class="cr-steps" aria-label="Investigation steps" aria-describedby="cr-step-hint">
     <button type="button" data-step="predict" aria-current="step"><span aria-hidden="true">01</span> Predict</button>
     <button type="button" data-step="explore" disabled><span aria-hidden="true">02</span> Explore More Data</button>
     <button type="button" data-step="explain" disabled><span aria-hidden="true">03</span> Explain</button>
   </nav>
+  <p id="cr-step-hint" class="cr-muted">Choose and save a prediction before opening the Evidence Folder.</p>
   <noscript><p>This activity needs JavaScript for its charts and to save your work.</p></noscript>
   <section id="predict" class="cr-card cr-start" aria-labelledby="cr-predict-title">
     <div class="cr-heading"><div><p class="eyebrow">01 · Initial hunch</p><h2 id="cr-predict-title" tabindex="-1">Will the rankings match?</h2></div><span class="cr-chip">Real U.S. data</span></div>
@@ -335,8 +338,8 @@
       </div>
       <aside class="cr-context" aria-label="Reading the numbers">
         <h3>Two different measurements</h3>
-        <p><b>Incidence</b> counts new diagnoses. <b>Mortality</b> counts deaths. Each is shown as a rate per 100,000 in the population named by that source.</p>
-        <details><summary>Why use a rate?</summary><p>Rates make different-sized populations easier to compare. For example, 20 events out of 200,000 people equals 10 per 100,000. Age-adjusted rates take it a step further by using the same standard age mix.</p></details>
+        <p><b>Incidence</b> means new diagnoses; <b>mortality</b> means deaths. A <b>rate per 100,000</b> puts each group on the same scale so you can compare groups of different sizes. For example, 20 diagnoses among 200,000 people in one year is 10 diagnoses per 100,000 people that year.</p>
+        <details><summary>What does age-adjusted mean?</summary><p>Age-adjusted rates also account for groups having different mixes of younger and older people by using the same standard age mix.</p></details>
         <p>We use group statistics. No one needs to share personal or family health information.</p>
       </aside>
     </div>
@@ -354,6 +357,7 @@
       <label for="cr-search">Find rows<input id="cr-search" type="search" placeholder="Type a name…" autocomplete="off" maxlength="80"></label>
     </div>
     <p class="cr-source" id="cr-view-source"></p>
+    <p class="cr-source" id="cr-rate-reminder">A rate per 100,000 puts populations of different sizes on the same scale. It is not a raw count.</p>
     <div id="cr-mi-context" class="cr-context" hidden>
       <h3>Does access change what gets detected?</h3>
       <p>Predict whether urban and higher-income communities will show more screening, more recorded diagnoses, both, or neither. Then compare counties and look for a counterexample. A diagnosis tells you a cancer was found and recorded, not when it began.</p>
@@ -409,8 +413,10 @@
         <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>
         <label for="cr-limits">What can’t the chart tell you? What other evidence would you want?</label>
-        <textarea id="cr-limits" rows="3" maxlength="1600" placeholder="These group statistics don’t show…"></textarea>
-        <button class="btn btn--primary" type="button" id="cr-finish" disabled>Finish investigation</button>
+        <p id="cr-limits-help" class="cr-muted">Correlation means two measures tend to vary together. It does not prove that one caused the other.</p>
+        <textarea id="cr-limits" rows="3" maxlength="1600" placeholder="These group statistics don’t show…" aria-describedby="cr-limits-help"></textarea>
+        <p id="cr-finish-hint" class="cr-muted">Write both responses to unlock Finish investigation.</p>
+        <button class="btn btn--primary" type="button" id="cr-finish" aria-describedby="cr-finish-hint" disabled>Finish investigation</button>
       </div>
     </div>
     <details id="cr-design-review" class="cr-context cr-design-review" hidden>

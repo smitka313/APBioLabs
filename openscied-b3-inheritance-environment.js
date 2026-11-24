@@ -147,8 +147,8 @@
     if (!runs.length) return [];
     const types = function (c) { return Array.from(new Set([].concat.apply([], runs.filter(function (r) { return !!r.crossing === c; }).map(function (r) { return r.gametes; })))).sort(); };
     const a = types(false), b = types(true), rows = [];
-    if (a.length) rows.push(['Without crossing over', a.join(', '), String(a.length)]);
-    if (b.length) rows.push(['With crossing over', b.join(', '), String(b.length)]);
+    if (a.length) rows.push(['Gamete set A · without crossing over', a.join(', '), String(a.length)]);
+    if (b.length) rows.push(['Gamete set B · with crossing over', b.join(', '), String(b.length)]);
     return [table('Kinds of gametes you made', ['Run', 'Gametes seen', 'Kinds'], rows), el('p', 'small muted', 'Simulated gametes from the meiosis model.')];
   }
   function skinNodes() {

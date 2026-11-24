@@ -108,8 +108,9 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
     await p.selectOption('#sense-bluest', 'direct');
     T.ok(/Run the tilt test/.test(await fb(p, 'sense-bluest')), 'bluest-tube row waits for data');
     await go(p, 'peat');
-    await p.check('input[name="cer-claim"][value="a"]'); await p.check('#cer-ev-1'); await p.check('#cer-ev-3');
-    T.ok(/Record your foam readings/.test(await p.locator('#cer-ev-1-note').innerText()) && /Run the tilt test/.test(await p.locator('#cer-ev-3-note').innerText()), 'evidence chips say what is missing before there is data');
+    await p.check('input[name="cer-claim"][value="a"]');
+    T.ok(await p.locator('#cer-ev-1').isDisabled() && await p.locator('#cer-ev-3').isDisabled() &&
+      /Record a foam reading.*Read and record a direct-light and a foil comparison/.test(await p.locator('#cer-model-note').innerText()), 'missing model data is explained and cannot be cited');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'foundational', 'level is foundational with an unchecked evidence chip');
 
     // inject honest data through the scene API and watch every derived thing recompute
@@ -118,6 +119,7 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
       B2Fires.saveState('decomp', { seed, startedAt: Date.now() - 1e6, skipped: true, temps: [18, 27, 43], recorded: [0, 2, 20] });
       B2Fires.saveState('tilt', { seed, startedAt: Date.now() - 1e6, skipped: true, settings: ['direct', 'tilt45', 'foil'], recorded: true, starchDone: false });
     });
+    await p.check('#cer-ev-1'); await p.check('#cer-ev-3');
     T.ok(/^✓ Your data show this: Beaker 3 \(43 °C\) had the most foam/.test(await p.locator('#cer-ev-1-note').innerText()), 'warm evidence verified: ' + await p.locator('#cer-ev-1-note').innerText());
     T.ok(/^✓ Your data show this: Tube A/.test(await p.locator('#cer-ev-3-note').innerText()), 'direct bluest verified');
     await p.check('#cer-ev-4');

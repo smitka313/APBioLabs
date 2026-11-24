@@ -113,3 +113,13 @@
   .panel, .callout, .part-card { break-inside: avoid; }
   textarea { min-height: 3.5em; }
 }
+
+.scene-host .bn-actions > .btn {max-width:100%;white-space:normal;overflow-wrap:anywhere;}
+.bn-pending {margin:0;padding:.54rem .72rem;border-inline-start:4px solid var(--warn);border-radius:var(--r-sm);background:var(--warn-soft);color:var(--ink);}
+.cer-model-note {margin:0;color:var(--muted);}
+#cer-evidence input:disabled {opacity:.6;}
+.bn-saved {margin:0;padding:.54rem .72rem;border-inline-start:4px solid var(--accent);border-radius:var(--r-sm);background:var(--accent-soft);color:var(--ink);}
+@media (min-width: 641px) {
+  .sentence {display:flex;flex-wrap:wrap;align-items:center;gap:.28rem .36rem;max-width:none;line-height:1.45;}
+  .sentence select {flex:0 1 auto;margin:0;}
+}

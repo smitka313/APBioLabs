@@ -87,7 +87,7 @@
     const predName=active==='hyena'?'hyena':active==='lion'?'lion':'predator';
     const cta=fallback=>line(nextLabel)||fallback;
     function nextForPhase(){
-      if(kind==='setup') return 'Assign the three roles. Then choose '+(nextLabel||'Start winter')+'.';
+      if(kind==='setup') return 'Choose who reads and plays each role. Then choose '+(nextLabel||'Start winter')+'.';
       if(kind==='migration') return 'Preview a formation or use the suggested one. Then choose '+(nextLabel||(season==='Winter'?'Place winter herd':'Migrate wildebeest'))+'.';
       if(kind==='card'){
         if(!p.card)return 'Pass the device to '+activeName.toLowerCase()+'. Choose '+(nextLabel||'Draw event card')+'.';

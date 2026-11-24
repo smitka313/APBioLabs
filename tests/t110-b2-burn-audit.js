@@ -52,6 +52,40 @@ const answerAll = (p, skip) => p.evaluate(skipIds => {
 
   const browser = await T.launch(), server = await T.serve();
   try {
+    const phone = await T.ctxFor(browser, {width:390,height:844,dark:true,reduced:true});
+    try {
+      const q = await phone.newPage(); await stub(q);
+      await q.goto(server.url+PAGE+'#peat');
+      await q.waitForFunction(() => window.B2Burn && document.querySelector('#peat.is-current'));
+      T.ok(await q.locator('#cer-ev-1').isDisabled(), 'unrecorded fuel evidence cannot be selected in the claim builder');
+      await go(q,'burn');
+      await q.locator('[data-bn="weigh"]').click();
+      await q.locator('[data-bn="burn"]').click();
+      const after=q.locator('[data-bn="after"]');
+      T.ok(await q.locator('#bn-pending').isVisible() && await after.isVisible()
+        && await q.evaluate(() => B2Burn.getState().burn.records.length)===0,
+        'finished flame explains the pending weigh on the phone; it is not yet evidence');
+      await after.click();
+      const data = () => q.evaluate(() => B2Burn.getState().burn);
+      T.ok(await q.locator('[data-bn="saved"]').isVisible() && (await data()).records.length===1 &&
+        !await q.locator('[data-bn="record"]').count(), 'second weighing records exactly one result without a second Record click');
+      const obs = q.locator('.bn-obs button').first(); await obs.click();
+      await q.reload(); await q.locator('[data-bn="saved"]').waitFor();
+      T.ok((await data()).records.length===1 && (await data()).records[0].obs.length===1 &&
+        await obs.getAttribute('aria-pressed')==='true' && await q.locator('.bn-table').count()===1,
+        'reload keeps the one recorded row and the optional observation without duplicating the table');
+      await q.locator('[data-bn="next"]').click();
+      T.ok(await q.locator('#bn-fuel').isVisible() && (await data()).records.length===1, 'next sample returns to fuel setup with evidence intact');
+      await q.evaluate(key=> {
+        const save=JSON.parse(localStorage.getItem(key));
+        save.burn.current={fuel:'wood',n:1,startedAt:Date.now()-1e6,skipped:true,after:true};
+        localStorage.setItem(key,JSON.stringify(save));
+      },KEY);
+      await q.reload(); await q.locator('[data-bn="saved"]').waitFor();
+      await q.reload(); await q.locator('[data-bn="saved"]').waitFor();
+      T.ok((await data()).records.map(row=>row.fuel).join(',')==='grass,wood','old already-weighed pending burn migrates once without disturbing saved samples');
+      T.ok(await q.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'pending and recorded controls do not overflow the phone');
+    } finally { await phone.close(); }
     const ctx = await T.ctxFor(browser, { width: 1366, height: 900 });
     const p = await ctx.newPage(); await stub(p);
     const errs = []; p.on('pageerror', e => errs.push(e.message));

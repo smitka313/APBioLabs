@@ -46,12 +46,16 @@
     host.insertBefore(top, canvas); host.insertBefore(bottom, desc || null);
 
     // ----- state: validated copy of the saved record, or null before the first burn -----
-    let st = L.cleanState(api.getState().burn), pending = st ? st.fuel : 'grass', obsPick = [], confirmReset = false, metric = 'rise', lastStage = '', tickTimer = 0, rafId = 0, lastDescKey = '';
+    let st = L.cleanState(api.getState().burn), pending = st ? st.fuel : 'grass', confirmReset = false, metric = 'rise', lastStage = '', tickTimer = 0, rafId = 0, lastDescKey = '';
     const seedNow = () => st ? st.seed : api.seed('burn');
     const sampleNo = fuel => L.nextSample(st, fuel);
     // read = the laser thermometer and the balance have been read at this weighing: before (ready) or after (finished). Nothing is read while it burns.
     function view() {
       const cur = st && st.current;
+      if (!cur && st?.review) {
+        const res = L.burnResult(st.seed, st.review.fuel, st.review.n);
+        return { phase: 'finished', res, sim: L.stateAt(res, res.runS), t: res.runS, read: true, saved: true };
+      }
       if (cur) {
         const res = L.burnResult(st.seed, cur.fuel, cur.n), t = L.simSeconds(cur.startedAt, Date.now(), cur.skipped, res.runS), phase = t >= res.runS ? 'finished' : 'running';
         return { phase, res, sim: L.stateAt(res, t), t, read: phase === 'finished' && !!cur.after };
@@ -59,7 +63,7 @@
       const n = sampleNo(pending) || L.MAX_SAMPLES, res = L.burnResult(seedNow(), pending, n), w = st && st.weighed;
       return { phase: 'ready', res, sim: L.stateAt(res, 0), t: 0, read: !!(w && w.fuel === pending && w.n === sampleNo(pending)) };
     }
-    function persist() { api.saveState('burn', { seed: st.seed, fuel: st.fuel, current: st.current, records: st.records, weighed: st.weighed || null, updatedAt: Date.now() }); }
+    function persist() { api.saveState('burn', { seed: st.seed, fuel: st.fuel, current: st.current, records: st.records, weighed: st.weighed || null, review: st.review || null, updatedAt: Date.now() }); }
     const stageText = v => v.phase === 'ready' ? (v.read ? 'Weighed and read, ready to burn' : 'Ready: not weighed yet') : v.sim.stage === 'heating' ? 'Being lit with a lighter' : v.sim.stage === 'burning' ? 'Burning' : v.sim.stage === 'dying' ? 'Dying out' : v.read ? 'Weighed again' : 'Out and cooled';
     const secs = s => Math.round(s) + ' s';
 
@@ -71,16 +75,29 @@
       const r = view().res;
       api.announce('Weighed: ' + r.massBefore.toFixed(1) + ' grams. The laser thermometer aimed at the fuel reads ' + r.tempBefore + ' degrees Celsius. Now burn it.');
     }
+    function finishReading() {
+      if (!st?.current || view().phase !== 'finished') return false;
+      const c = st.current;
+      // Complete evidence once, after both weighings. A review points at that record, not a second burn.
+      if (!st.records.some(row => row.fuel === c.fuel && row.n === c.n)) {
+        st.records = st.records.concat([{ fuel: c.fuel, n: c.n, obs: (c.obs || []).slice() }]);
+      }
+      st.review = { fuel: c.fuel, n: c.n }; st.current = null; st.weighed = null; pending = c.fuel;
+      lastStage = ''; lastDescKey = ''; persist();
+      return true;
+    }
     function weighAfter() {
-      if (!st || !st.current) return; const v = view(); if (v.phase !== 'finished' || st.current.after) return;
-      st.current.after = true; persist(); render('[data-bn="record"]');
+      if (!st || !st.current) return;
+      const v = view(); if (v.phase !== 'finished') return;
+      if (!finishReading()) return;
+      render('[data-bn="saved"]');
       const r = v.res;
-      api.announce('Dome lifted. Weighed: ' + r.massAfter.toFixed(1) + ' grams of ash. The laser thermometer aimed at the ash reads ' + r.tempAfter + ' degrees Celsius. Tap what you saw, then record your results.');
+      api.announce('Saved ' + r.label.toLowerCase() + ', sample ' + r.n + '. Ash: ' + r.massAfter.toFixed(1) + ' grams and ' + r.tempAfter + ' degrees Celsius. You can add observations or choose the next sample.');
     }
     function burn() {
       const n = sampleNo(pending); if (!n || (st && st.current) || !view().read) return;
       st.fuel = pending; st.weighed = null; st.current = { fuel: pending, n, startedAt: Date.now(), skipped: reduced(), after: false };
-      obsPick = []; lastStage = ''; lastDescKey = ''; persist(); render();
+      lastStage = ''; lastDescKey = ''; persist(); render(reduced() ? '[data-bn="after"]' : '[data-bn="skip"]');
       api.announce(reduced() ? 'Burned ' + L.fuelLabel(pending).toLowerCase() + ', sample ' + n + '. Reduced motion is on, so the burn is shown finished. Lift the dome, weigh it and read the temperature again.'
         : 'Burning ' + L.fuelLabel(pending).toLowerCase() + ', sample ' + n + '. Watch the flame, the BTB in the dish, the laser thermometer and the balance.');
     }
@@ -89,17 +106,12 @@
       st.current.skipped = true; persist(); render('[data-bn="after"]');
       api.announce('Skipped ahead. The fuel is out. Lift the dome, weigh it and read the temperature again.'); lastStage = 'done';
     }
-    function recordIt() {
-      if (!st || !st.current) return;
-      const v = view(); if (v.phase !== 'finished' || !v.read) return;
-      const c = st.current;
-      st.records = st.records.concat([{ fuel: c.fuel, n: c.n, obs: obsPick.slice() }]); st.current = null; st.weighed = null; pending = c.fuel; obsPick = []; lastStage = ''; lastDescKey = '';
-      persist(); render('[data-bn="burn"]');
-      const r = v.res;
-      api.announce('Recorded ' + r.label.toLowerCase() + ', sample ' + r.n + '. It caught fire after ' + r.igniteS + ' seconds. BTB went from ' + L.btbText(r.btbBefore) + ' to ' + L.btbText(r.btbAfter) + '. Temperature ' + r.tempBefore + ' to ' + r.tempAfter + ' degrees Celsius. Mass ' + r.massBefore.toFixed(1) + ' to ' + r.massAfter.toFixed(1) + ' grams.');
+    function nextSample() {
+      if (!st?.review) return;
+      st.review = null; persist(); render('#bn-fuel');
     }
     function startOver() {
-      st = null; confirmReset = false; obsPick = []; lastStage = ''; lastDescKey = ''; pending = 'grass';
+      st = null; confirmReset = false; lastStage = ''; lastDescKey = ''; pending = 'grass';
       api.saveState('burn', null); render(); api.announce('Started over. Pick a fuel to burn.');
     }
 
@@ -143,22 +155,30 @@
       top.appendChild(clock);
     }
     function renderFinished(v) {
-      const r = v.res, box = h('div', { class: 'bn-panel' }, h('h4', { text: v.read ? 'Weighed again: read the instruments.' : 'The ' + r.label.toLowerCase() + ' is out.' }));
+      const r = v.res, box = h('div', { class: 'bn-panel' }, h('h4', { text: v.saved ? 'Both weighings complete' : 'The ' + r.label.toLowerCase() + ' is out.' }));
+      const next = v.saved ? 'This sample is in your evidence table. You can add observations below.' : 'Lift the dome and weigh the ash to save this sample automatically.';
+      box.appendChild(h('p', { class: v.saved ? 'bn-saved' : 'bn-pending', id: 'bn-pending', 'data-bn': v.saved ? 'saved' : 'pending', tabindex: v.saved ? '-1' : null },
+        h('strong', { text: v.saved ? '✓ Sample recorded. ' : 'Not recorded yet. ' }), next));
       box.appendChild(readoutRow([['Caught fire after', r.igniteS + ' s'], ['Burned for', r.burnS + ' s'], ['BTB color', L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter)], ['Fuel temperature, laser', v.read ? r.tempBefore + ' → ' + r.tempAfter + ' °C' : '— (not read yet)'], ['Mass on the balance', v.read ? r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1) + ' g' : '— (not weighed yet)']]));
       if (!v.read) {
-        const ab = h('button', { type: 'button', class: 'btn btn--primary', 'data-bn': 'after', text: 'Lift the dome, weigh and read temperature (after)' }); ab.addEventListener('click', weighAfter);
+        const ab = h('button', { type: 'button', class: 'btn btn--primary', 'data-bn': 'after', 'aria-describedby': 'bn-pending', text: 'Lift dome and weigh ash (after)' }); ab.addEventListener('click', weighAfter);
         box.appendChild(h('div', { class: 'bn-actions' }, ab, resetControl()));
-        box.appendChild(h('p', { class: 'bn-note', text: 'Wait until the dome is cool enough to lift, then weigh the ash and read the temperature again.' }));
+        box.appendChild(h('p', { class: 'bn-note', text: 'This step also reads the simulated ash temperature after the burn.' }));
         top.appendChild(box); return;
       }
-      const fs = h('fieldset', { class: 'bn-obs' }, h('legend', { class: 'bn-legend', text: 'What did you see? Tap all that fit.' }));
+      const recorded = st.records.find(row => row.fuel === r.fuel && row.n === r.n);
+      const fs = h('fieldset', { class: 'bn-obs' }, h('legend', { class: 'bn-legend', text: 'Optional observations: what did you see?' }));
       L.OBS.forEach(o => {
-        const b = h('button', { type: 'button', class: 'bn-chip', 'aria-pressed': obsPick.includes(o.id) ? 'true' : 'false', text: o.label });
-        b.addEventListener('click', () => { obsPick = obsPick.includes(o.id) ? obsPick.filter(x => x !== o.id) : obsPick.concat([o.id]); b.setAttribute('aria-pressed', obsPick.includes(o.id) ? 'true' : 'false'); });
+        const b = h('button', { type: 'button', class: 'bn-chip', 'aria-pressed': String(recorded.obs.includes(o.id)), text: o.label });
+        b.addEventListener('click', () => {
+          recorded.obs = recorded.obs.includes(o.id) ? recorded.obs.filter(x => x !== o.id) : recorded.obs.concat(o.id);
+          b.setAttribute('aria-pressed', String(recorded.obs.includes(o.id)));
+          persist(); renderResults();
+        });
         fs.appendChild(b);
       });
       box.appendChild(fs);
-      const rec = h('button', { type: 'button', class: 'btn btn--primary', 'data-bn': 'record', text: 'Record results (both weighings)' }); rec.addEventListener('click', recordIt);
+      const rec = h('button', { type: 'button', class: 'btn btn--primary', 'data-bn': 'next', text: 'Choose next sample' }); rec.addEventListener('click', nextSample);
       box.appendChild(h('div', { class: 'bn-actions' }, rec, resetControl()));
       box.appendChild(h('p', { class: 'bn-note', text: 'In a real demonstration you aim the laser thermometer and read the balance yourself, at each weighing. Here the buttons read the simulated instruments.' }));
       top.appendChild(box);
@@ -179,7 +199,7 @@
       t.appendChild(h('caption', { text: 'Simulated burn results. ' + rows.length + (rows.length === 1 ? ' sample' : ' samples') + ' recorded.' }));
       t.appendChild(h('thead', {}, h('tr', {}, ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB color before → after (1 to 6)', 'Fuel temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'].map(x => h('th', { scope: 'col', text: x })))));
       const tb = h('tbody');
-      if (!rows.length) tb.appendChild(h('tr', {}, h('td', { colspan: '7', class: 'bn-miss', text: 'Burn a fuel and record it. Your results will appear here.' })));
+      if (!rows.length) tb.appendChild(h('tr', {}, h('td', { colspan: '7', class: 'bn-miss', text: 'Complete both weighings to save your first sample here.' })));
       rows.forEach(r => tb.appendChild(h('tr', {}, h('th', { scope: 'row', text: r.label + ' (' + r.n + ')' }), h('td', { class: 'num', text: String(r.igniteS) }), h('td', { class: 'num', text: String(r.burnS) }),
         h('td', { text: L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter) }), h('td', { class: 'num', text: r.tempBefore + ' → ' + r.tempAfter }), h('td', { class: 'num', text: r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1) }), h('td', { text: obsText(r.obs) }))));
       t.appendChild(tb); tw.appendChild(t); wrap.appendChild(tw);
@@ -193,7 +213,7 @@
       wrap.appendChild(chips);
       const figBox = h('div', { class: 'bn-chart', 'data-bn': 'chart' });
       wrap.appendChild(h('figure', { class: 'bn-fig' }, figBox, h('figcaption', { class: 'bn-note', text: 'Bar chart of the table above (simulated). Each fuel has one bar per sample, and each sample number has its own pattern. The table has every number.' })));
-      bottom.appendChild(wrap);
+      bottom.replaceChildren(wrap);
       if (win.Lab && Lab.tableFit) Lab.tableFit.scan();
       drawChart(figBox);
     }
@@ -520,7 +540,7 @@
       if (v.sim.stage !== lastStage) { if (v.sim.stage === 'burning' && lastStage === 'heating') api.announce('It caught fire after ' + v.res.igniteS + ' seconds.'); lastStage = v.sim.stage; }
       if (reduced()) draw();
       updateDesc();
-      if (v.phase === 'finished') { stopTick(); api.announce('The fuel is out. Tap what you saw, then record your results.'); render('[data-bn="record"]'); }
+      if (v.phase === 'finished') { stopTick(); const active = host.contains(doc.activeElement); persist(); api.announce('The fuel is out. Lift the dome and weigh the ash before recording.'); render(active ? '[data-bn="after"]' : null); }
     }
     const redraw = () => { draw(); };
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(redraw).observe(canvas.parentElement || host);
@@ -529,6 +549,8 @@
     new MutationObserver(redraw).observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (win.matchMedia) { const mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', redraw); }
     win.addEventListener('pagehide', stopTick);
+    // An older save may have both readings but still be waiting for the removed Record button.
+    if (st?.current?.after && view().phase === 'finished') finishReading();
     render();
   }
   (window.B2Scenes = window.B2Scenes || []).push({ id: 'burn', mount: mount });

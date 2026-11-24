@@ -48,16 +48,24 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
         if (i === 0) { await shot('card'); await p.reload(); assert.ok(await p.locator('#record').isVisible()); }
         await p.locator('#record').click(); assert.equal(await p.locator('#location').textContent(), expected);
         if (i === 4) await shot('middle');
+        if(await p.locator('#coverage-continue').isVisible())await p.locator('#coverage-continue').click();
       }
       assert.equal(await p.locator('#finish').isEnabled(), true); await p.locator('#finish').click();
+      while(await p.locator('#coverage-continue').isVisible())await p.locator('#coverage-continue').click();
       assert.equal(await p.locator('#complete-dialog').isVisible(), true); await p.locator('#analyze').click();
       assert.equal(await p.locator('#journal tr').count(), 10); await shot('evidence');
       if (width < 851) { await p.locator('[data-total-tab="matter"]').click(); assert.ok(await p.locator('[data-total="matter"]').isVisible()); }
       await p.getByRole('button', { name: '3 · Make sense' }).click();
-      await p.locator('#question-next').click(); await p.locator('#question-next').click(); await p.locator('#q4').fill('My carbon atom followed the official cards.');
+      await p.locator('#q1').fill('Carbon started in the air.');
+      await p.locator('#question-next').click(); await p.locator('#question-next').click();
+      await p.locator('#station-tour-select').selectOption('soil');
+      assert.match(await p.locator('#station-tour-card').textContent(), /decomposer/);
+      assert.match(await p.locator('#station-tour').textContent(), /not extra rolls/);
+      await p.locator('#q3').fill('My carbon atom followed the official cards.');
+      await shot('station-tour');
       await p.reload(); await p.getByRole('button', { name: '3 · Make sense' }).click();
       await p.locator('#question-next').click(); await p.locator('#question-next').click();
-      assert.equal(await p.locator('#q4').inputValue(), 'My carbon atom followed the official cards.');
+      assert.equal(await p.locator('#q3').inputValue(), 'My carbon atom followed the official cards.');
       assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       const dashboard = await ctx.newPage();
       await dashboard.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
@@ -77,10 +85,63 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       await dashboard.close();
       const downloaded = p.waitForEvent('download'); await p.locator('#download').click(); const d = await downloaded;
       assert.match(d.suggestedFilename(), /carbon-atom-journey/);
-      await p.locator('#restart').click(); await p.locator('#cancel-reset').click(); assert.equal(await p.locator('#q4').inputValue(), 'My carbon atom followed the official cards.');
+      const payload = JSON.parse(await fs.promises.readFile(await d.path(), 'utf8'));
+      assert.equal(payload.answers.q1, 'Carbon started in the air.');
+      assert.equal(payload.rows[0].prediction, 'ocean');
+      assert.equal(payload.rows[1].prediction, null);
+      await p.locator('#restart').click(); await p.locator('#cancel-reset').click(); assert.equal(await p.locator('#q3').inputValue(), 'My carbon atom followed the official cards.');
       await p.locator('#restart').click(); await p.locator('#confirm-reset').click(); assert.equal(await p.locator('#roll').isEnabled(), true);
       assert.deepEqual(errors, []); console.log('PASS', width, height, 'viewport fit, inspect, map, prediction, official cards, reload, 10 rolls, totals, question paging, download, resets'); await ctx.close();
     }
+    const auditCtx = await browser.newContext({viewport:{width:390,height:844},colorScheme:'dark',reducedMotion:'reduce'});
+    try {
+      const p = await auditCtx.newPage();
+      const key='aplab:openscied:b2-carbon-journey:v1';
+      await p.goto(url);
+      await p.evaluate(key=>localStorage.setItem(key,JSON.stringify({version:2,seed:4177023592,rows:[],pending:null,answers:{q2:'Earlier first answer'},done:false})),key);
+      await p.reload();
+      for(let i=0;i<10;i++){
+        await p.locator('#roll').click();
+        await p.locator('#skip-prediction').click();
+        await p.locator('#record').click();
+        if(i===4){
+          assert.equal(await p.locator('#coverage-continue').isVisible(),true);
+          assert.equal(await p.locator('#roll').isVisible(),false);
+          await p.reload();
+          assert.equal(await p.locator('#coverage-continue').isVisible(),true,'reload does not bypass the card');
+          await p.screenshot({path:path.join(root,'artifacts/l9/390-route-loop-checkpoint.png'),fullPage:true});
+        }
+        if(await p.locator('#coverage-continue').isVisible())await p.locator('#coverage-continue').click();
+      }
+      await p.locator('#finish').click();
+      assert.match(await p.locator('#coverage-card').textContent(),/decomposer/);
+      while(await p.locator('#coverage-continue').isVisible())await p.locator('#coverage-continue').click();
+      await p.locator('#analyze').click();
+      await p.getByRole('button',{name:'3 · Make sense'}).click();
+      assert.equal(await p.locator('#q1').inputValue(),'Earlier first answer');
+      await p.locator('#question-next').click();
+      await p.locator('#question-next').click();
+      for(const station of ['human','herbivores','omnivores','soil']){
+        await p.locator('#station-tour-select').selectOption(station);
+        assert.match(await p.locator('#station-tour-status').textContent(),/not in your (journey|rolls)/);
+      }
+      await p.getByRole('button',{name:'Carbon & Energy Budget',exact:true}).click();
+      await p.locator('#cb-prediction').fill('There will be more carbon in the air.');
+      await p.locator('#cb-start').click();
+      while(await p.locator('#cb-next').isVisible()&&await p.locator('#cb-next').isEnabled()) await p.locator('#cb-next').click();
+      await p.locator('#cb-explanation').fill('Four units moved from peat to the air.');
+      await p.getByRole('button',{name:'3 · Make sense'}).click();
+      await p.reload();
+      const downloaded=p.waitForEvent('download');
+      await p.locator('#download').click();
+      const d=await downloaded, payload=JSON.parse(await fs.promises.readFile(await d.path(),'utf8'));
+      assert.deepEqual(payload.rows.map(row=>row.die),[6,6,5,6,5,5,6,3,4,6]);
+      assert.equal(payload.done,true);
+      assert.deepEqual(payload.referenceCardsReviewed.map(row=>row.from),['ocean','human','herbivores','omnivores','soil']);
+      assert.equal(payload.budget.checkpoints.length,9);
+      assert.equal(payload.budget.explanation,'Four units moved from peat to the air.');
+      console.log('PASS looping audit seed, support separate from journey, old answers, full Budget after reload without reopening Budget');
+    } finally { await auditCtx.close(); }
     const protectedCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
     try {
       const page = await protectedCtx.newPage();

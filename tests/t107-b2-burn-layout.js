@@ -54,7 +54,7 @@ const setBurn = async (p, fuel, frac, records, opts) => {
       await setBurn(p, 'peat', 1.2, ['grass', 'wood']); await check(p, tag + ' peat finished, dome still down'); await shot('peat-finished-down');
       await setBurn(p, 'peat', 1.2, ['grass', 'wood'], { after: true }); await check(p, tag + ' peat finished, dome lifted, after reading'); await shot('peat-finished');
       await laserCheck(p, tag + ' after', 'ash');
-      await setBurn(p, 'wood', 1.2, ['peat', 'grass'], { after: true }); await check(p, tag + ' finished, not recorded'); await shot('finished');
+      await setBurn(p, 'wood', 1.2, ['peat', 'grass']); await check(p, tag + ' finished, second weighing pending'); await shot('finished');
       await setBurn(p, 'wood', null, ['grass', 'leaves', 'wood', 'charcoal', 'peat']); await check(p, tag + ' all five recorded'); await shot('five');
       for (const id of ['overview', 'fuels', 'sense', 'sort', 'peat', 'wrapup']) { await go(p, id); await check(p, tag + ' ' + id); }
       await shot('wrapup');

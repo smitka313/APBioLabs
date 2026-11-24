@@ -118,7 +118,7 @@
         <li><a href="https://youtu.be/-NhqJRIJJsw" target="_blank" rel="noopener noreferrer">Video C: Lauren talks about surgery (about 1 minute) <span class="small">(opens in a new tab)</span></a></li>
       </ul>
       <article class="card-read panel"><h3>What is LFS?</h3>
-        <p>Li-Fraumeni syndrome (LFS) is inherited. A person is born with one p53 allele that does not fix mutations well. That raises the chance of several kinds of cancer. Not everyone with it gets cancer.</p></article>
+        <p>Li-Fraumeni syndrome (LFS) is linked to a harmful change in a copy of <em>TP53</em>, the gene for p53. This change is present from birth and can be inherited. It raises the chance of several kinds of cancer, but does not guarantee cancer.</p></article>
       <div class="field"><label for="notice">I notice / I wonder <span class="hint">(1 sentence, optional)</span></label><textarea id="notice" rows="2" placeholder="I wonder…" maxlength="240"></textarea></div>
       <details class="disclose"><summary>Words to know</summary><div class="inner"><dl class="glossary">
         <dt>Allele</dt><dd>One version of a gene.</dd>
@@ -204,7 +204,7 @@
           <li>Genes sit on <strong>chromosomes</strong>. Genes close together usually travel together, unless <strong>crossing over</strong> swaps pieces.</li>
         </ul>
       </div>
-      <p class="small muted">p53: A fixes, B does not. BRCA1: C lower risk, D higher. Darker shading means more likely to get cancer.</p>
+      <p class="small muted">In this model, TP53 allele A helps the cell respond to DNA damage and B does not. BRCA1: C means lower risk, D means higher risk. Darker shading means higher relative risk, not a diagnosis.</p>
       <div class="scene-host" id="two-gene-scene" data-scene="twoGene">
         <canvas role="img" aria-label="Two-gene pedigree: a father with chromosomes A-C and B-D, a mother with A-C and A-C, and three children." width="960" height="340"></canvas>
         <p class="scene-desc" id="two-gene-desc">Text description: the father has one chromosome with p53 A and BRCA1 C, and one with p53 B and BRCA1 D (highest likelihood). The mother has A-C on both. Child 1 has A-C and A-C. Child 2 has B-C and A-C. Child 3 has A-D and A-C.</p>
@@ -262,9 +262,9 @@
   <section class="step wrap wrap--wide gutter" id="exit8" data-step="Exit ticket">
     <header><div class="eyebrow">Part A · Lesson 8 · 8 · Exit ticket</div><h2>Check what you learned</h2></header>
     <div class="step-body">
-      <fieldset class="mcq" data-exit="q1" data-id="exit-q1"><legend>Population A makes gametes by meiosis without crossing over. Population B uses crossing over. Which has more variation?</legend>
-        <label class="choice"><input type="radio" name="exit-q1" value="a"> Population A.</label>
-        <label class="choice"><input type="radio" name="exit-q1" value="b"> Population B.</label>
+      <fieldset class="mcq" data-exit="q1" data-id="exit-q1"><legend>Gamete set A was made without crossing over. Gamete set B was made with crossing over from the same starting parent. Which set has more kinds of gametes?</legend>
+        <label class="choice"><input type="radio" name="exit-q1" value="a"> Gamete set A.</label>
+        <label class="choice"><input type="radio" name="exit-q1" value="b"> Gamete set B.</label>
         <label class="choice"><input type="radio" name="exit-q1" value="c"> Neither has variation.</label>
       </fieldset>
       <figure class="chrom-figure">
@@ -400,6 +400,7 @@
     <header><div class="eyebrow">Part B · Lesson 9 · 12 · Virtual experiment</div><h2>Run the virtual yeast test</h2></header>
     <div class="step-body">
       <p class="sim-tag"><strong>SIMULATED.</strong> A model, not a real lab. Real UV labs need adult supervision.</p>
+      <p class="small">The colony counts show how many simulated yeast cells survived well enough to grow. They do not measure cancer in people.</p>
       <div class="scene-host" id="yeast-uv-scene" data-scene="yeast">
         <canvas role="img" aria-label="Virtual petri dishes of UV-sensitive yeast after growing, with different numbers of colonies." width="960" height="340"></canvas>
         <p class="scene-desc" id="yeast-uv-desc">Text description: simulated petri dishes of yeast after UV exposure. Dishes with more UV and less cover show fewer colonies.</p>
@@ -445,7 +446,7 @@
       <div class="card-row">
         <article class="card-read panel"><h3>UV hits DNA</h3><p>UV can change a DNA letter. A common change turns C into T.</p>
           <details class="more"><summary>Show more</summary><p>This is a simplified picture. Real UV damage links neighboring letters, and copying then often puts in a T.</p></details></article>
-        <article class="card-read panel"><h3>Changed letter, changed protein</h3><p>A new letter can change an amino acid and the protein’s shape. A changed p53 may repair less well.</p></article>
+        <article class="card-read panel"><h3>Changed letter, changed protein</h3><p>A new letter can change an amino acid and the protein’s shape. A changed p53 may be less able to help the cell respond to DNA damage.</p></article>
         <article class="card-read panel"><h3>Melanin is an umbrella</h3><p>Skin cells make melanin, a pigment. It absorbs UV and gives off heat, so less reaches the DNA. People differ in how much they make.</p>
           <details class="more"><summary>Show more</summary><p>Dr. Jewel Plummer Cobb studied melanin and skin cancer, and did early research on cancer medicines.</p></details></article>
       </div>

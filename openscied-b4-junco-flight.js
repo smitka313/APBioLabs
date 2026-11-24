@@ -59,7 +59,7 @@
     const details=$('field-simulation');
     if(!details)return;
     if(!state.sim)state.sim=fresh();
-    const sim=state.sim, site=$('sim-site'), group=$('sim-context'), start=$('sim-start'), approach=$('sim-approach');
+    const sim=state.sim, site=$('sim-site'), group=$('sim-context'), start=$('sim-start'), approach=$('sim-approach'), change=$('sim-change');
     const frame=$('sim-frame'), bird=$('sim-bird'), observer=$('sim-observer'), status=$('sim-status');
     const running=()=>sim.active&&!sim.active.finished;
     const activeHere=()=>sim.active&&sim.active.site===sim.site&&sim.active.group===sim.group;
@@ -71,6 +71,7 @@
       site.disabled=group.disabled=start.disabled=Boolean(running());
       start.textContent=sim.serial?'Start next trial':'Start trial';
       approach.disabled=!running();
+      change.hidden=!running();
       frame.dataset.context=sim.group;frame.dataset.active=String(Boolean(a));
       $('sim-backdrop').setAttribute('href',backdrop[sim.site]);
       const step=a?.step??0,x=156+step*56;
@@ -80,8 +81,8 @@
       bird.dataset.state=a?.finished?'flying':'stay';
       bird.classList.toggle('is-launch',launch);
       status.textContent=a
-        ?'Trial '+a.id+' · '+(a.finished?'Took flight at '+showDistance(a.group,a.step)+'. Recorded in the trial log.':a.step?'Stayed put at '+showDistance(a.group,a.step)+'. You can approach again.':'Bird is in place. Approach in '+context[a.group].increment+' m steps.')
-        :sim.serial?'Ready for another trial.':'Choose a setting and start a trial.';
+        ?'Trial '+a.id+' · '+(a.finished?'Took flight at '+showDistance(a.group,a.step)+'. Recorded in the trial log.':a.step?'Stayed put at '+showDistance(a.group,a.step)+'. You can approach again.':'Bird is in place. Approach in '+context[a.group].increment+' m steps, or change setup.')
+        :sim.serial?'Choose a population and observation for your next trial.':'Choose a setting and start a trial.';
       $('sim-record').hidden=!sim.results.length;
       if(launch)$('sim-record').open=true;
       tbody.replaceChildren(...sim.results.map(r=>{
@@ -103,6 +104,12 @@
       if(!sim.seed)sim.seed=createSeed();
       sim.active={id:++sim.serial,site:sim.site,group:sim.group,step:0,finished:false};
       save();show(false,true);approach.focus();
+    });
+    change.addEventListener('click',()=>{
+      if(!running())return;
+      sim.active=null;
+      save();show();say('Unfinished trial canceled. Choose a setup to try again. Your completed trials are still saved.');
+      site.focus({preventScroll:true});
     });
     approach.addEventListener('click',()=>{
       if(!running())return;

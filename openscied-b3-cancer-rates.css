@@ -254,3 +254,7 @@ body:has(.cr-case-modal[open]){overflow:hidden}
 /* Keep the exhibit requirement visible alongside the individual completion marks. */
 #cr-income-progress{padding:.48rem .66rem;background:var(--cr-cover);border:1px solid var(--cr-desk-line);border-radius:7px;color:var(--cr-desk-ink);font-weight:700}
 .cr-case-question textarea{width:100%;min-height:4rem}
+
+/* Explain non-interactive steps in place, without making the tab itself look active. */
+.cr-shell #cr-step-hint{margin-block:.05rem .58rem;font-size:.86rem}
+.cr-shell #cr-limits-help,.cr-shell #cr-finish-hint{font-size:.84rem;margin-block:.16rem .34rem}

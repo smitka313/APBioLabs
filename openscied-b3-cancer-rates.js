@@ -5,7 +5,7 @@
   const steps=['predict','explore','explain'], views=Object.keys(D), svgNS='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById('cr-'+id), all=selector=>[...document.querySelectorAll(selector)], finite=Number.isFinite;
   const spec={
-    types:{title:'Published U.S. cancer rankings',caption:'2021 U.S. Cancer Statistics, from OpenSciEd’s two published Top 10 charts. Female- and male-specific rates use their respective populations. “Not in top 10” does not mean zero.',pair:['breast','lung'],measures:['incidence','mortality']},
+    types:{title:'Published U.S. cancer rankings',caption:'2021 U.S. Cancer Statistics, from OpenSciEd’s two published Top 10 charts. Female- and male-specific rates use their respective populations. “Not in top 10” does not mean zero. NOS means “not otherwise specified.”',pair:['breast','lung'],measures:['incidence','mortality']},
     states:{title:'New cancer diagnoses by state',caption:'2019–2023 average annual counts and age-adjusted diagnosis rates. All cancer sites, ages, races and ethnicities, and both sexes.',pair:['CA','KY'],measures:['incidence','count']},
     poverty:{title:'Cancer rates and socioeconomic data',caption:'Each point is a state or D.C. Diagnosis rates are from 2019–2023; poverty and income are Census estimates for 2023. A pattern across states does not establish a cause or describe any individual.',pair:['KY','NM'],measures:['incidence','poverty','income']},
     michigan:{title:'Michigan: screening and diagnosis',caption:'County mammography estimates describe women ages 50–74 who reported a mammogram in the past two years. Cancer rates cover females of all ages. These are different populations, not matched patient records.',pair:['26125','26163'],measures:['late-rate','late-share','screening','incidence','income']},
@@ -65,9 +65,9 @@
       if(Number.isInteger(s?.rows))dest.rows=Math.max(12,Math.min(60,s.rows));
     }
     if(Array.isArray(raw.evidence))next.evidence=raw.evidence.filter(p=>L.comparison(D,p)).slice(0,8).map(p=>({view:p.view,measure:p.measure,a:p.a,b:p.b,context:cleanContext(p.context)}));
-    next.completed=raw.completed===true&&next.evidence.length>0&&!!next.claim.trim()&&!!next.limits.trim();
-    if(caseReady(next)&&raw.step==='explore')next.step='explore';
-    if(caseReady(next)&&next.evidence.length&&raw.step==='explain')next.step='explain';
+    // Keep previous work, including a recorded Finish, even if an older page let a student skip Predict.
+    next.completed=raw.completed===true&&hasFinalResponses(next);
+    if(available(raw.step,next))next.step=raw.step;
     next.lastVisitedAt=finite(raw.lastVisitedAt)?raw.lastVisitedAt:0;
     return next;
   }
@@ -115,7 +115,29 @@
     return [...lessonNotes.map(k=>Boolean(record.casework.notes[k]?.trim())),...exhibits.map(k=>Boolean(directions[k]&&record.casework[k]===directions[k]))];
   }
   function caseReady(record){return record.casework.opened&&caseMarks(record).every(Boolean);}
-  function available(step){return step==='predict'||(caseReady(state)&&(step==='explore'||(step==='explain'&&state.evidence.length>0)));}
+  function hasFinalResponses(record){return record.evidence.length>0&&!!record.claim.trim()&&!!record.limits.trim();}
+  function available(step,record=state){
+    return step==='predict'||(record.prediction.locked&&caseReady(record)&&(step==='explore'||(step==='explain'&&record.evidence.length>0)));
+  }
+  function canFinish(){return available('explain')&&hasFinalResponses(state);}
+  function isComplete(){return state.completed&&canFinish();}
+  function renderSteps(){
+    const locked=state.prediction.locked, ready=available('explore'), pinned=available('explain'), finished=isComplete();
+    const complete={predict:locked,explore:pinned,explain:finished};
+    const hint={
+      predict:locked?'Prediction saved.':'Choose and save a prediction before opening the Evidence Folder.',
+      explore:!locked?'Save your prediction first.':!ready?'Complete all six exhibits and save a follow-up question to unlock Explore More Data.':pinned?'Evidence pinned.':'Pin one comparison to finish this step.',
+      explain:!pinned?'Pin at least one comparison in Explore More Data to unlock Explain.':finished?'Investigation complete.':'Write your claim and one limit, then select Finish investigation.'
+    };
+    for(const step of steps){
+      const b=document.querySelector('[data-step="'+step+'"]');
+      b.disabled=!available(step);
+      if(complete[step])b.dataset.oseComplete='true';else delete b.dataset.oseComplete;
+      if(step===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+      b.setAttribute('aria-description',hint[step]);
+    }
+    text('step-hint',!locked?hint.predict:!ready?hint.explore:!pinned?hint.explore:finished?hint.explain:state.step==='explain'?hint.explain:'Open Explain to use your pinned evidence.');
+  }
   function goto(step,focus=true){
     if(!steps.includes(step)||!available(step))return;
     state.step=step;
@@ -124,12 +146,10 @@
     if(focus)$(step+'-title').focus();
   }
   function render(){
-    for(const step of steps){
-      document.getElementById(step).hidden=step!==state.step;
-      const b=document.querySelector('[data-step="'+step+'"]');
-      b.disabled=!available(step);
-      if(step===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
-    }
+    for(const step of steps)document.getElementById(step).hidden=step!==state.step;
+    renderSteps();
+    casefile.hidden=!state.prediction.locked;
+    if(casefile.hidden)casefile.open=false;
     $('prediction').value=state.prediction.choice;$('reason').value=state.prediction.reason;
     $('prediction').disabled=state.prediction.locked;$('reason').readOnly=state.prediction.locked;
     $('lock').disabled=!state.prediction.choice; $('lock').textContent=state.prediction.locked?'Open the Evidence Folder':'Save prediction & open the Evidence Folder';
@@ -393,11 +413,14 @@
     renderCompletion();
   }
   function renderCompletion(){
-    $('finish').disabled=state.completed||!(state.claim.trim()&&state.limits.trim()&&state.evidence.length);
-    $('done').hidden=!state.completed;
+    const finished=isComplete(), claim=!!state.claim.trim(), limits=!!state.limits.trim();
+    $('finish').disabled=finished||!canFinish();
+    $('done').hidden=!finished;
+    text('finish-hint',finished?'Finished. Download your work if you need to turn it in.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':'Select Finish investigation to mark your work complete.');
+    renderSteps();
   }
   function report(){
-    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
+    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'Status: '+(isComplete()?'Complete':'In progress'),'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
       '','LESSON 1 EVIDENCE OBSERVATIONS',...lessonNotes.flatMap((key,i)=>state.casework.notes[key]?['Exhibit '+'ABC'[i]+': '+state.casework.notes[key]]:[])
     ]:[]),...(state.casework['test-cost']?[
       '','EXHIBIT F: THE COST OF GETTING TESTED',
@@ -411,7 +434,7 @@
   for(const b of all('[data-step]'))b.addEventListener('click',()=>goto(b.dataset.step));
   $('prediction').addEventListener('change',()=>{state.prediction.choice=$('prediction').value;save();$('lock').disabled=!state.prediction.choice;});
   $('reason').addEventListener('input',()=>{if(!state.prediction.locked){state.prediction.reason=$('reason').value;save();}});
-  $('lock').addEventListener('click',()=>{if(state.prediction.choice){state.prediction.locked=true;save();render();casefile.open=true;casefile.querySelector('summary').focus();}});
+  $('lock').addEventListener('click',()=>{if(state.prediction.choice){state.prediction.locked=true;save();updateFollowup();render();casefile.open=true;casefile.querySelector('summary').focus();}});
   $('view').addEventListener('change',()=>{state.view=$('view').value;save();renderExplore();announce('Now showing '+spec[state.view].title+'.');});
   $('mi-x').addEventListener('change',()=>{current().x=$('mi-x').value;save();renderExplore();announce('Michigan scatterplot x-axis updated.');});
   $('mi-region').addEventListener('change',()=>{current().region=$('mi-region').value;current().rows=12;save();renderExplore();announce('County filter updated.');});
@@ -433,12 +456,12 @@
     const s=current(),view=state.view;
     const p={view,measure:s.measure,a:s.a,b:s.b,context:{x:state.socio,trend:state.layer.trend&&!state.layer['pair-only'],query:s.query,region:s.region}};
     if($('pin').disabled||!L.comparison(D,p))return;
-    state.evidence.push(p);state.completed=false;save();renderExplore();announce('Comparison pinned. You can now use it in Explain.');
+    state.evidence.push(p);state.completed=false;save();renderExplore();renderSteps();announce('Comparison pinned. You can now use it in Explain.');
     $('to-explain').focus({preventScroll:true});
   });
   $('to-explain').addEventListener('click',()=>goto('explain'));
   for(const k of ['claim','limits'])$(k).addEventListener('input',()=>{state[k]=$(k).value;state.completed=false;save();renderCompletion();});
-  $('finish').addEventListener('click',()=>{if(!$('finish').disabled){state.completed=true;save();renderCompletion();announce('Investigation complete. Download your work if you need to turn it in.');$('download').focus();}});
+  $('finish').addEventListener('click',()=>{if(canFinish()&&!isComplete()){state.completed=true;save();renderCompletion();announce('Investigation complete. Download your work if you need to turn it in.');$('download').focus();}});
   for(const k of Object.keys(designItems))$('design-'+k).addEventListener('input',()=>{state.design[k]=$('design-'+k).value;save();});
   for(const k of ['name','period'])$(k).addEventListener('input',()=>{state.person[k]=$(k).value;save();});
   $('download').addEventListener('click',()=>{
@@ -473,7 +496,7 @@
   const mapWindow=$('lesson1-map-scroll'), mapZoom=$('lesson1-map-zoom');
   let caseOpener=null, focusQuestion=false;
   const caseTabs=['lesson1-diagnoses','lesson1-deaths','lesson1-map',...exhibits.map(k=>'income-'+k)];
-  const mayWriteQuestion=()=>caseMarks(state).every(Boolean);
+  const mayWriteQuestion=()=>state.prediction.locked&&caseMarks(state).every(Boolean);
   function updateFollowup(){
     const marks=caseMarks(state), count=marks.filter(Boolean).length, ready=mayWriteQuestion();
     const remaining=marks.flatMap((mark,i)=>mark?[]:['ABCDEF'[i]]);
@@ -497,7 +520,7 @@
     else{mapWindow.removeAttribute('tabindex');mapWindow.scrollLeft=0;}
   }
   function showExhibit(k,opener){
-    if(!caseTabs.includes(k))return;
+    if(!state.prediction.locked||!caseTabs.includes(k))return;
     for(const id of caseTabs)$(id).hidden=id!==k;
     const title=$(k+'-title');
     caseDialog.setAttribute('aria-labelledby',title.id);
@@ -599,9 +622,9 @@
   }
   syncCasefile();
   const hash=location.hash.slice(1);
-  if(hash==='cr-income-cards'||(!caseReady(state)&&(state.prediction.locked||state.casework.opened||steps.slice(1).includes(hash))))casefile.open=true;
+  if(state.prediction.locked&&(hash==='cr-income-cards'||!caseReady(state)))casefile.open=true;
   const exhibitHash=hash==='cr-income-screening'?'income-diagnosis':['cr-income-race-stage','cr-income-rural-stage'].includes(hash)?'income-test-cost':hash.startsWith('cr-')?hash.slice(3):'';
-  if(caseTabs.includes(exhibitHash)){casefile.open=true;showExhibit(exhibitHash);}
+  if(state.prediction.locked&&caseTabs.includes(exhibitHash)){casefile.open=true;showExhibit(exhibitHash);}
   if(steps.includes(hash)&&available(hash))state.step=hash;
   if(blocked)text('save','Browser storage is unavailable. Download your work before leaving.');
   if(invalid)text('save','A previous record was preserved. Download this investigation before leaving.');

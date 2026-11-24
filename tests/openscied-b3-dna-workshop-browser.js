@@ -188,7 +188,8 @@ async function rejectFirstPair(page, first, input, label, kind='base') {
   const feedback=page.locator('#dw-feedback');
   check(await target(page,first.id).getAttribute('data-dw-placed') === null &&
     await page.locator('#dw-next').isDisabled() &&
-    await feedback.isVisible() && tidy(await feedback.textContent()).length > 6,
+    await feedback.isVisible() && await feedback.getAttribute('data-tone')==='error' &&
+    tidy(await feedback.textContent()).length > 6,
     label+' rejects a wrong '+kind+' choice without filling the slot or unlocking the next step');
 }
 async function report(page) {
@@ -302,6 +303,24 @@ async function exactStage(page,name,slots,label) {
     board(page).locator('[data-dw-row="'+row.id+'"] .dw-direction').getAttribute('aria-label'))))
     .every((text,i)=>text==='Left end '+directions[i].direction[0]+', right end '+directions[i].direction[1]),
     label+' '+name+' keeps each visible strand’s reading direction explicit');
+  for(const row of directions){
+    const host=board(page).locator('[data-dw-row="'+row.id+'"]');
+    const marked=await host.locator('.dw-sequence').evaluate(el=>{
+      const tiles=[...el.querySelectorAll('.dw-slot,.dw-given')];
+      const first=tiles[0].querySelector('[data-dw-end=start]');
+      const last=tiles.at(-1).querySelector('[data-dw-end=finish]');
+      return first&&last?{
+        labels:[first.textContent,last.textContent],
+        visible:[first,last].every(mark=>mark.getBoundingClientRect().width>0)
+      }:null;
+    });
+    check(marked?.visible && same(marked.labels,row.direction),
+      label+' physically labels the first and last tiles of '+row.id);
+  }
+  if(name==='rna')check(/skip processing.*cap.*tail.*Introns.*Not all/i.test(await page.locator('#dw-model-note').textContent()),
+    label+' makes simplified mRNA processing clear while students are making RNA');
+  if(name==='sort')check(await page.getByRole('heading',{name:'Match products to processes',exact:true}).isVisible(),
+    label+' final step states what students match');
 }
 async function evidenceBySort(page,label) {
   check(await page.locator('#dw-evidence-now').isVisible() && await board(page).isVisible(),
@@ -467,8 +486,31 @@ async function exercise(browser,base,size) {
       await button(page,'nucleotide').isEnabled() &&
       (await Promise.all(CONTROL.slice(1).map(name=>button(page,name).isDisabled()))).every(Boolean),
       label+' opens for a novice with only the Nucleotide tab available, even from a direct link to a later step');
+    const gate=page.locator('#dw-unlock');
+    check(await gate.isVisible() && /Place all 3 parts in Nucleotide to unlock Build DNA/.test(await gate.textContent()) &&
+      await button(page,'build').getAttribute('aria-describedby')==='dw-unlock' &&
+      await page.locator('#dw-next').getAttribute('aria-describedby')==='dw-unlock',
+      label+' explains what to do to unlock the next step before students try it');
     await fits(page,'main, #dw-board, #dw-board [data-dw-slot]',label+' initial board');
     await shot(page,label+'-starting-nucleotide');
+    const phosphate=source(page,'phosphate');
+    const feedback=page.locator('#dw-feedback');
+    await invoke(phosphate,size);
+    check(await phosphate.getAttribute('aria-pressed')==='true' &&
+      /Phosphate selected/.test(await feedback.textContent()),label+' confirms the chosen tile');
+    await invoke(phosphate,size);
+    check(await phosphate.getAttribute('aria-pressed')==='false' &&
+      /Phosphate deselected/.test(await feedback.textContent()) &&
+      await page.locator('.dw-toolbox + #dw-feedback').count()===1 &&
+      await board(page).locator('[role=status]').count()===1 &&
+      !await board(page).evaluate(el=>el.classList.contains('has-selection')),
+      label+' confirms deselection beside the palette through one live region');
+    if(!size.touch){
+      await invoke(phosphate,size);
+      await phosphate.press('Escape');
+      check(await phosphate.getAttribute('aria-pressed')==='false' &&
+        /Phosphate deselected/.test(await feedback.textContent()),label+' Escape clears and announces the chosen tile');
+    }
     if(size.touch)await a11y(page,'#dw-activity',label+' starting board');
     const ordinary=size.touch?'tap':'keyboard';
     for(const [index,name] of CONTROL.entries()) {
@@ -511,6 +553,11 @@ async function exercise(browser,base,size) {
         }
       }
       await exactStage(page,name,slots,label);
+      check(await button(page,name).getAttribute('data-ose-complete')==='true' &&
+        await button(page,name).getAttribute('aria-description')==='Complete',
+        label+' finished '+name+' has a visible and accessible completion indicator');
+      if(name==='copy')check(/short DNA fragment.*leaves out.*enzymes/i.test(await page.locator('#dw-task').textContent()),
+        label+' notes the copying model’s limits beside the task');
       await page.locator('#dw-response').fill(NOTES[name]);
       await fits(page,'main, #dw-board, #dw-board [data-dw-slot], #dw-response',label+' '+name+' completed board');
       await shot(page,label+'-'+name);
@@ -529,6 +576,8 @@ async function exercise(browser,base,size) {
       const finished=await readRecord(page);
       await page.reload();
       await stage(page,'sort');
+      check(await page.locator('.dw-stage-nav [data-ose-complete="true"][aria-description="Complete"]').count()===CONTROL.length,
+        'completion markers restore with placements on reload');
       check(same(savedPlacements(await readRecord(page)),savedPlacements(finished)) &&
         await page.locator('#dw-response').inputValue()===NOTES.sort,
         'completed placements and own writing remain intact after reload');

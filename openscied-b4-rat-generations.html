@@ -40,13 +40,14 @@
     <div><p class="eyebrow">Unit 4 · Lesson 3 · Virtual investigation</p><h1>Rat Generations</h1><p>Follow an inherited trait through five generations.</p></div>
     <img src="assets/rat-generations-preview.svg" width="960" height="600" alt="">
   </header>
-  <nav class="rg-steps" aria-label="Investigation steps">
+  <nav class="rg-steps" aria-label="Investigation steps" aria-describedby="rg-step-hint">
     <button type="button" data-rg-go="predict" aria-current="step"><span aria-hidden="true">1</span> Predict</button>
     <button type="button" data-rg-go="model" disabled><span aria-hidden="true">2</span> Model</button>
     <button type="button" data-rg-go="analyze" disabled><span aria-hidden="true">3</span> Analyze</button>
     <button type="button" data-rg-go="explain" disabled><span aria-hidden="true">4</span> Explain</button>
   </nav>
   <noscript><p>JavaScript is required to run this virtual investigation.</p></noscript>
+  <p class="ose-step-hint" id="rg-step-hint">Save your prediction to unlock the colony model.</p>
   <section id="rg-predict" data-rg-step="predict" aria-labelledby="rg-predict-title">
     <div class="rg-stage"><div><p class="eyebrow">01 · Starting idea</p><h2 id="rg-predict-title" tabindex="-1">Make a prediction</h2></div></div>
     <div class="rg-columns">
@@ -71,10 +72,11 @@
   </section>
   <section id="rg-model" data-rg-step="model" aria-labelledby="rg-model-title" hidden>
     <div class="rg-stage"><div><p class="eyebrow">02 · Run the colony model</p><h2 id="rg-model-title" tabindex="-1">Follow five generations</h2></div><span class="rg-chip" id="rg-trial-id"></span></div>
-    <p class="rg-intro">Move the two marked rats from the colony to their numbered nest spots. Then use their alleles to build a cross. Each generation is a new snapshot of the same trial.</p>
+    <p class="rg-intro">This trial waits until Generation 3 to add warfarin so you can compare a baseline with selection. Real colonies do not follow a fixed schedule.</p>
+    <p class="rg-intro">Move the two marked rats from the colony to their numbered nest spots. Then use their alleles (versions of a gene) to build one cross before producing each new generation. Each box shows an expected outcome in this model, not a guaranteed pup in nature.</p>
     <div class="rg-timeline" id="rg-timeline" aria-label="Model timeline"></div>
     <div class="rg-event rg-panel" id="rg-events" aria-labelledby="rg-event-title">
-      <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title"></h3><p id="rg-event-explanation"></p></div>
+      <div><p class="eyebrow" id="rg-event-stage"></p><h3 id="rg-event-title" tabindex="-1"></h3><p id="rg-event-explanation"></p></div>
       <div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-next" aria-describedby="rg-cross-gate"></button><button type="button" class="btn btn--primary" data-rg-go="analyze" id="rg-model-analyze" hidden>Analyze your results</button><a id="rg-cross-jump" href="#rg-burrow" hidden>Go to the burrow</a><p id="rg-cross-gate" class="rg-muted" hidden></p></div>
     </div>
     <section class="rg-fieldwork" aria-labelledby="rg-fieldwork-title">
@@ -95,7 +97,7 @@
     </section>
     <div class="rg-columns rg-model-grid">
       <div class="rg-panel rg-colony-panel"><h3 id="rg-colony-title">Colony</h3><div id="rg-colony"></div><div id="rg-selection-record"></div></div>
-      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div></div>
+      <div class="rg-panel rg-pairs-panel"><h3 id="rg-cross-title">Build a Punnett square</h3><p id="rg-pair-instructions">Offspring use the expected Punnett-square mix for each pair, not four independent draws.</p><div id="rg-punnett" tabindex="-1" aria-labelledby="rg-cross-title"></div><div class="rg-actions"><button type="button" class="btn btn--primary" id="rg-produce" aria-describedby="rg-produce-hint" hidden></button><p class="rg-muted" id="rg-produce-hint"></p></div></div>
     </div>
   </section>
   <section id="rg-analyze" data-rg-step="analyze" aria-labelledby="rg-analyze-title" hidden>
@@ -104,7 +106,7 @@
       <div class="rg-panel">
         <h3>Plot your trial</h3>
         <div class="rg-metrics" id="rg-metrics" aria-label="Measure to plot"></div><div id="rg-chart"></div>
-        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller.</p>
+        <p class="rg-muted">Survivors and starting counts are separate snapshots. A trait percentage can go up even when the colony gets smaller. Pairings vary by trial, but the model uses expected offspring counts rather than chance inheritance in each pup. Real colonies can change by chance as well as by selection.</p>
       </div>
       <div class="rg-panel">
         <h3>Your generation record</h3><div id="rg-analysis-table"></div>

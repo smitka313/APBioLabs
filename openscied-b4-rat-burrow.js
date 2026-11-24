@@ -37,8 +37,8 @@
     const instruction=node('p','rg-burrow-instruction');
     const legend=node('p','rg-burrow-legend');
     const feedback=node('p','rg-burrow-feedback');
-    note.append(instruction,legend,feedback);
-    shell.append(board,note);
+    note.append(instruction,legend);
+    shell.append(feedback,board,note);
     host.replaceChildren(shell);
     let view={}, selected='', gesture=null, signature='', shownPair=null;
     const phase=()=>['start','born','survived'].includes(view.phase)?view.phase:'start';
@@ -52,6 +52,7 @@
     const near=element=>element?.closest?.('[data-rg-burrow-rat], [data-rg-burrow-target]');
     function say(text,alert=true){
       feedback.textContent=text;
+      feedback.toggleAttribute('data-retry',text.startsWith('Not placed.'));
       if(alert)view.announce?.(text);
     }
     function format(rat){
@@ -223,7 +224,7 @@
       if(!id){say('Choose a numbered rat first, then its nest.');return false;}
       const role=roleOf(id);
       if(role<0){say('That rat is not assigned to this pair. Choose a numbered rat.');return false;}
-      if(role!==slot){say('This rat belongs in Parent '+(role+1)+' nest.');return false;}
+      if(role!==slot){say('Not placed. This rat belongs in the Parent '+(role+1)+' nest.');return false;}
       if(filled()[slot]){say('This rat is already in its nest.');return false;}
       const rat=parents()[slot], pairKey=view.pair?.id;
       const token=[...colony.querySelectorAll('[data-rg-burrow-rat]')].find(r=>r.dataset.rgBurrowRat===id);

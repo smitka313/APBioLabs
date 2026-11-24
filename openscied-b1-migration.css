@@ -127,3 +127,14 @@
 .mx-context-regions h4{margin:0 0 6px;font-size:.9rem}
 .mx-writing-context .mx-caption,.mx-writing-context-body summary{font-size:.76rem}
 @media(max-width:650px){.mx-context-regions{grid-template-columns:1fr;gap:4px}.mx-writing-context th,.mx-writing-context td{padding:5px 3px}.mx-writing-context table{font-size:.72rem}}
+
+/* Draft labels name their state in addition to the visual marker. */
+.mx-months button[data-draft=true]::after{content:'Draft';display:block;font-size:.53rem;line-height:1.1;margin-top:2px;font-weight:700}
+.mx-small-evidence>.mx-caption{grid-column:1/-1;margin:0}
+.mx .mx-original-rain{display:inline-block;margin-inline-end:.7rem}
+:root[data-theme=dark] .mx :is(.mx-rain-figure img,.mx-rain-source){filter:invert(.92) hue-rotate(180deg)}
+:root[data-theme=dark] .mx .mx-rain-column{outline-color:#ffda87;background:#ffd67626}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme]) .mx :is(.mx-rain-figure img,.mx-rain-source){filter:invert(.92) hue-rotate(180deg)}
+  :root:not([data-theme]) .mx .mx-rain-column{outline-color:#ffda87;background:#ffd67626}
+}

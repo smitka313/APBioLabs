@@ -104,6 +104,37 @@
     }
     return states;
   }
+  function savedBudget(last) {
+    let original=null;
+    try {
+      original=localStorage.getItem(KEY);
+      if(original===null)return {memory:empty(),preserve:false,original};
+      const data=JSON.parse(original);
+      if(data && data.v===1 && Number.isInteger(data.position) && Number.isInteger(data.furthest) &&
+        data.position>=-1 && data.furthest>=data.position && data.furthest<=last &&
+        typeof data.prediction==='string' && typeof data.explanation==='string') {
+        return {memory:{v:1,position:data.position,furthest:data.furthest,prediction:safeText(data.prediction),explanation:safeText(data.explanation)},preserve:false,original};
+      }
+    } catch (_) {}
+    return {memory:empty(),preserve:true,original};
+  }
+  function budgetData(memory,frames,model,backup=null) {
+    if(memory.furthest<0&&!memory.prediction.trim()&&!memory.explanation.trim()&&backup===null)return null;
+    return {
+      simulated:true, units:{carbon:'carbon model units',energy:'energy model units'}, ...memory,
+      checkpoints:frames.slice(0,memory.furthest+1).map((frame,index)=>({
+        index, title:index ? model.STEPS[index-1]?.title || 'Checkpoint '+index : 'Starting budgets',
+        baseline:frame.baseline, fire:frame.fire
+      })),
+      ...(backup!==null ? {unreadableBackup:backup} : {})
+    };
+  }
+  function readExport() {
+    const model=global.CarbonBudgetLogic;
+    if(!model)return null;
+    const frames=buildFrames(model), saved=savedBudget(frames.length-1);
+    return budgetData(saved.memory,frames,model,saved.preserve?saved.original:null);
+  }
   function mount(host,{announce=()=>{},journeyEvidence=()=>''}={}) {
     const model=global.CarbonBudgetLogic;
     if(!host || !model)return null;
@@ -113,17 +144,7 @@
     const q=id=>host.querySelector('#'+id);
     const frames=buildFrames(model), last=frames.length-1;
     const fireIndex=frames.findIndex(f=>f.fire.ledger.at(-1)?.id==='peat-fire');
-    let memory=empty(), preserve=false, original=null;
-    try {
-      original=localStorage.getItem(KEY);
-      if(original!==null) {
-        const data=JSON.parse(original);
-        if(!data || data.v!==1 || !Number.isInteger(data.position) || !Number.isInteger(data.furthest) ||
-          data.position < -1 || data.furthest < data.position || data.furthest > last ||
-          typeof data.prediction!=='string' || typeof data.explanation!=='string') preserve=true;
-        else memory={v:1,position:data.position,furthest:data.furthest,prediction:safeText(data.prediction),explanation:safeText(data.explanation)};
-      }
-    } catch (_) {preserve=true;}
+    let {memory,preserve,original}=savedBudget(last);
     const saveNote=q('cb-save-status');
     function status(message) {
       saveNote.hidden=!message;
@@ -370,10 +391,10 @@
         announce('Budget cleared. Your atom journey was not changed.');
       }
     });
-    const api=Object.freeze({update:draw,report:exportReport,reset});
+    const api=Object.freeze({update:draw,report:exportReport,reset,exportData:()=>budgetData(memory,frames,model,preserve?original:null)});
     host.__carbonBudgetUI=api;
     draw();
     return api;
   }
-  global.CarbonBudgetUI=Object.freeze({mount});
+  global.CarbonBudgetUI=Object.freeze({mount,readExport});
 })(window);

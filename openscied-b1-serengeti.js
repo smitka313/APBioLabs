@@ -361,6 +361,27 @@
     return [huntDetails[index] || entry.description || '', ...extras].filter(Boolean).join(' · ');
   }
   function rawSummary() { return state ? L.results(state) : {population:null,seasons:[]}; }
+  function paintSeasonPath(st,p,review) {
+    const track=qs('#sg-season-path');
+    if (p.kind==='setup') { track.hidden=true; track.replaceChildren(); return; }
+    const cardCount=st.log.filter(row=>row.kind==='card' && row.season===st.season).length;
+    const huntRole=review?.row?.role || p.role;
+    const current = p.kind==='migration' ? 0 : p.kind==='card' || p.event || review?.event ? 1
+      : p.kind==='hyenaMove' || (huntRole==='hyena' && (p.kind==='hunt' || review)) ? 2
+      : p.kind==='lionMove' || p.kind==='hunt' || review ? 3 : p.kind==='seasonEnd' ? 4 : 5;
+    const labels=[st.season===0?'Place herd':'Migrate','Cards '+cardCount+'/3','Hyena hunts','Lion hunts','Season results'];
+    track.replaceChildren(...labels.map((label,index)=>{
+      const item=node('li','',label);
+      item.dataset.status=index<current?'done':index===current?'current':'pending';
+      if(index===current)item.setAttribute('aria-current','step');
+      const mark=node('span','',index<current?'✓ ':index===current?'› ':'');
+      mark.setAttribute('aria-hidden','true'); item.prepend(mark);
+      if(index<current)item.append(node('span','sg-visually-hidden',' complete'));
+      else if(index>current)item.append(node('span','sg-visually-hidden',' upcoming'));
+      return item;
+    }));
+    track.hidden=false;
+  }
   function paint(announce) {
     const st = state || sample;
     const underlying = state ? L.phase(state) : {kind:'setup'};
@@ -368,6 +389,7 @@
     const reviewHasNext = review && underlying.kind==='hunt' && underlying.role===review.row.role;
     const p = review ? {kind:'huntReview',role:review.row.role,battle:review.battle} : underlying;
     const activeRole = p.role || {migration:'wildebeest',hyenaMove:'hyena',lionMove:'lion'}[p.kind] || null;
+    paintSeasonPath(st,p,review);
     const last = state && state.log.length ? state.log[state.log.length - 1] : null;
     qs('#sg-evidence-count').textContent = state ? state.log.length : 0;
     const season = Number.isInteger(st.season) ? st.season : 0;
@@ -385,7 +407,7 @@
       return d;
     }));
     qs('#sg-rolebar').replaceChildren(...L.ROLES.map(role => {
-      const d = node('div','sg-role'); d.append(node('b','',roleName(role)),node('em','',role === activeRole ? 'Your turn' : p.kind === 'setup' ? 'Player role' : ''));
+      const d = node('div','sg-role'); d.append(node('b','',roleName(role)),node('em','',role === activeRole ? 'Your turn' : p.kind === 'setup' ? 'Read and play' : ''));
       if (role === activeRole) d.setAttribute('aria-current','true');
       return d;
     }));
@@ -451,6 +473,14 @@
     app.dataset.phase = p.kind;
     let title = '', desc = '', phaseLabel = '', note = '';
     const chooseDestination = Boolean(source && !optionId);
+    const example = qs('#sg-dice-example');
+    const firstRoll = p.kind === 'hunt' && !review && !battle?.rounds?.length
+      && !st.log.some(entry => entry.kind === 'hunt');
+    example.hidden = !['hyenaMove','lionMove','hunt','huntReview'].includes(p.kind);
+    if (example.dataset.firstRoll !== String(firstRoll)) {
+      example.dataset.firstRoll = String(firstRoll);
+      example.open = firstRoll;
+    }
     const advance = (label,type) => {
       const next=button('sg-next',label,()=>run(type, optionId),null,type);
       if (type === 'resolveCard') next.disabled = chooseDestination;
@@ -459,9 +489,10 @@
 
     if (p.kind === 'setup') {
       phaseLabel = 'Set up'; title = 'One device, three roles';
-      desc = 'Assign one role to each player or team. You will collect evidence together, not compete for an overall winner.';
+      desc = 'Choose who will read cards and play each of the three roles. Assign roles out loud; there are no names to enter. Everyone shares the same board.';
       const list = node('div','sg-card');
-      list.append(node('h3','','A year in the ecosystem'),node('p','','Set up in winter, then play four seasons: migrate, draw three cards, and resolve hyena and lion hunts.'));
+      list.append(node('h3','','A year in the ecosystem'),node('p','','Set up in winter, then play four seasons: migrate, draw three cards, and resolve hyena and lion hunts.'),
+        node('p','sg-model-scope','This model follows one simulated year. It does not estimate the real herd size or how many animals the habitat can support.'));
       interact.append(list);
       actions.append(button('sg-start','Start winter', () => { state=L.create(freshSeed()); decision=decisionFor('start',null,state,null,null,false,null); optionId=''; chosenPhase=''; save(); paint(true); (qs('#sg-next') || qs('#sg-action-title')).focus({preventScroll:true}); },null,'start'));
     } else if (p.kind === 'migration') {
@@ -480,11 +511,12 @@
         const c = node('article','sg-card');
         c.dataset.cardId = p.card.id; c.dataset.cardRole = activeRole; c.dataset.cardSeason = String(season);
         c.append(node('h3','', 'Drawn by ' + roleName(activeRole)),node('p','',p.card.text || p.card.description || p.card.body || p.card.title || ''));
+        if (p.card.effect === 'removePride') c.append(node('p','sg-card-app-note','On this board: “lion pride clan token” means a lion pride (P), not a hyena clan (C). Remove a lion pride; the other lions in that territory cannot hunt.'));
         interact.append(c);
         if (travelCard(p) && currentOptions.some(moving)) {
           interact.append(travelChooser(currentOptions,tokens));
           desc = 'Choose a hyena group, then pick one of its legal destinations, or choose to stay.';
-        } else if (currentOptions.length) interact.append(chooser(currentOptions,'Choose how to apply it'));
+        } else if (currentOptions.length) interact.append(chooser(currentOptions,p.card.effect === 'removePride' ? 'Choose a lion pride (P) to remove' : 'Choose how to apply it'));
       }
       const noTarget = p.card && !currentOptions.some(o=>o.id!=='stay');
       if(noTarget)note='No legal target or move is available. Continue without changing the board.';
@@ -492,7 +524,7 @@
     } else if (p.kind === 'hyenaMove' || p.kind === 'lionMove') {
       phaseLabel = activeRole === 'hyena' ? '3 · Hyenas hunt' : '4 · Lions hunt';
       title = 'Check ' + (activeRole === 'hyena' ? 'hyena' : 'lion') + ' positions';
-      desc = 'Only eligible individual or small-group tokens beside wildebeest can hunt. Clans and prides do not roll.';
+      desc = 'Only eligible individual or small-group tokens beside wildebeest can hunt. Hyena clans (C) and lion prides (P) do not roll.';
       if (currentOptions.length) {
         interact.append(chooser(currentOptions,'Optional one-space move'));
         const move=button('sg-move','Use selected move',()=>run('movePredator',optionId || currentOptions[0].id),'sg-plain','movePredator');

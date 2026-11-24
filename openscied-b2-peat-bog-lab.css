@@ -63,18 +63,14 @@
 
 .mirror { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 12px; }
 .mirror h3 { font-size: 1.1rem; }
-.mgrid { display: grid; gap: 8px; overflow-x: auto; }
-.mrow { display: grid; grid-template-columns: 170px repeat(3, minmax(96px, 1fr)) 56px repeat(2, minmax(96px, 1fr)); gap: 8px; align-items: center; min-width: 760px; }
-.mhead .colhead { font: 600 .7rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: center; }
-.mhead .c3 { grid-column: span 3; } .mhead .c2 { grid-column: span 2; }
-.rl { font-family: var(--f-display); font-weight: 700; font-size: .98rem; display: flex; flex-direction: column; line-height: 1.2; }
-.rl small { font-family: var(--f-body); font-weight: 400; font-size: .78rem; color: var(--muted); }
+.mirror p { margin: 0; }
+.reaction-flow { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: .91rem; line-height: 1.35; }
+.reaction-flow :is(th,td) { padding: .5rem .56rem; text-align: start; vertical-align: top; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.reaction-flow thead th { background: var(--surface-2); }
+.reaction-flow thead th:first-child { width: 27%; }
+.reaction-flow tbody th { font-weight: 700; }
+.reaction-flow tbody th small { display: block; font-size: .82em; font-weight: 400; color: var(--muted); }
 .rl-photo { color: var(--b2-photo-t); } .rl-resp { color: var(--b2-resp-t); } .rl-burn { color: var(--b2-burn-t); }
-.cell { padding: 8px 10px; border-radius: var(--r-sm); background: var(--surface-2); font-size: .9rem; font-weight: 700; display: flex; align-items: center; gap: 8px; border-top: 4px solid var(--line); }
-.cell.plus::after { content: "+"; margin-left: auto; color: var(--muted); font-weight: 400; }
-.cell-co2 { border-top-color: var(--b2-co2); } .cell-water { border-top-color: var(--b2-water); } .cell-light { border-top-color: var(--b2-light); } .cell-sugar { border-top-color: var(--b2-sugar); }
-.cell-o2 { border-top-color: var(--b2-o2); } .cell-resp { border-top-color: var(--b2-resp); } .cell-burn { border-top-color: var(--b2-burn); }
-.big-arrow { font: 700 2rem var(--f-display); text-align: center; line-height: 1; }
 .help { display: grid; gap: 6px; }
 .help h3 { font-size: 1rem; margin-top: 8px; } .help p { margin: 0; max-width: 72ch; }
 
@@ -269,13 +265,9 @@ body.numbar-on { padding-bottom: 58px; }
   .pic-scroll svg { width: 640px; max-width: none; }
   #gh-svg { width: 560px !important; }
   .climate-charts { grid-template-columns: minmax(0, 1fr); }
-  .mgrid { overflow-x: visible; }
-  .mrow { min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)) 22px repeat(2, minmax(0, 1fr)); gap: 4px; }
-  .mhead { display: none; }
-  .mrow .rl { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 8px; margin-top: 6px; }
-  .cell { font-size: .72rem; padding: 6px 3px; gap: 0; line-height: 1.2; justify-content: center; text-align: center; }
-  .cell.plus::after { content: none; }
-  .big-arrow { font-size: 1.3rem; }
+  .mirror { min-width: 0; padding: .62rem; }
+  .reaction-flow { font-size: .83rem; }
+  .reaction-flow :is(th,td) { padding: .35rem .24rem; }
   .flowbar { grid-template-columns: 1fr 1fr 44px; }
   .flowbar > span:first-child { grid-column: 1 / -1; }
   .flowbar { grid-template-columns: minmax(0, 1fr) 44px; }

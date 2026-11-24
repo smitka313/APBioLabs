@@ -59,7 +59,7 @@
       <header class="sg-finish-head"><div><p class="sg-kicker">Final tally</p><h2 id="sg-finish-title">A year on the Serengeti</h2></div><button type="button" id="sg-replay" class="sg-plain">Play again</button></header>
       <div id="sg-finish-totals"></div>
       <div class="sg-finish-tools"><button type="button" class="sg-cta" data-page="analyze">Analyze results</button><button type="button" class="sg-plain" data-page="evidence">Review evidence</button></div>
-      <details id="sg-finish-details" class="sg-note-disclosure"><summary>Open the four-season field report</summary><div id="sg-finish-report" hidden></div></details>
+      <details id="sg-finish-details" class="sg-note-disclosure"><summary>Explore season maps and records</summary><div id="sg-finish-report" hidden></div></details>
     </section>
     <button id="sg-toggle-map" class="sg-plain" type="button" aria-expanded="true" aria-controls="sg-map-panel">Hide map</button>
     <div class="sg-game">
@@ -78,10 +78,10 @@
               <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 1.5 8.5 8.5-8.5 8.5-8.5-8.5Z" fill="#f0d6c6" stroke="#533d39" stroke-width="1.45" stroke-linejoin="round"/></svg> Hyena</li>
               <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 1.5 7.4 4.25v8.5L10 18.5l-7.4-4.25v-8.5Z" fill="#f2cd73" stroke="#583719" stroke-width="1.45" stroke-linejoin="round"/></svg> Lion</li>
               <li><span class="sg-key-move" aria-hidden="true">+</span> Legal square</li>
-              <li><span class="sg-key-flood" aria-hidden="true">≈</span> Flooded square</li>
+              <li><span class="sg-key-flood" aria-hidden="true">≈</span> Flooded lion territory: no hunts</li>
               <li><span class="sg-key-change" aria-hidden="true">±</span> Latest piece change</li>
             </ul>
-            <p class="sg-token-key"><strong>1</strong> Individual · <strong>G</strong> Small group · <strong>H</strong> Herd · <strong>C</strong> Clan · <strong>P</strong> Pride</p>
+            <p class="sg-token-key"><strong>1</strong> Individual · <strong>G</strong> Small group · <strong>H</strong> Herd · <strong>C</strong> Hyena clan · <strong>P</strong> Lion pride</p>
             <p id="sg-board-access" class="sg-board-access"></p>
           </aside></details>
         </div>
@@ -91,8 +91,18 @@
         <section class="sg-control sg-panel" id="sg-expedition-turn" aria-label="Turn controls">
         <button type="button" class="sg-plain sg-phone-jump sg-map-jump" data-jump="map">Jump back to map ↑</button>
         <div id="sg-rolebar" class="sg-rolebar" aria-label="Agent roles"></div>
+        <ol id="sg-season-path" class="sg-season-path" aria-label="Current season checklist" hidden></ol>
         <div class="sg-action-top"><p id="sg-phase" class="sg-kicker">Set up</p><h2 id="sg-action-title" tabindex="-1">One device, three roles</h2><p id="sg-action-copy">Take turns controlling the wildebeest, hyenas and lions.</p></div>
         <div id="sg-interactive"></div>
+        <details id="sg-dice-example" class="sg-note-disclosure sg-dice-example" hidden>
+          <summary>Worked example: match the dice</summary>
+          <div class="sg-dice-example-body">
+            <p>Roll 1 die for an individual, 2 for a small group, or 3 for a wildebeest herd. Sort each side highest to lowest.</p>
+            <table><caption class="sg-visually-hidden">Example dice rolls, paired from highest to lowest</caption><thead><tr><th scope="col">Predator</th><th scope="col">Wildebeest</th><th scope="col">What stays</th></tr></thead>
+              <tbody><tr><td>6</td><td>5</td><td>6 (higher)</td></tr><tr><td>2</td><td>2</td><td>Both 2s (tie)</td></tr><tr><td>—</td><td>1</td><td>1 (no match)</td></tr></tbody></table>
+            <p><strong>Next roll:</strong> Predator rolls 2 dice; wildebeest rolls 2 dice. Reroll all the dice that stayed, not the old numbers. The first side without dice loses the hunt.</p>
+          </div>
+        </details>
         <div id="sg-dice" class="sg-dice" hidden></div>
         <div id="sg-actions" class="sg-actions"></div>
         <button type="button" class="sg-plain sg-concept-cue" data-concept-cue aria-controls="sg-concept" hidden>Quick check available ↓</button>
@@ -147,6 +157,7 @@
           <label for="sg-claim">How did the event affect the wildebeest? Explain using the numbers.</label><textarea id="sg-claim" rows="3" maxlength="750"></textarea>
         </section>
         <section class="sg-answer-panel" data-answer-panel="limits" hidden>
+          <p class="sg-model-scope" id="sg-analysis-scope"><strong>Model limits:</strong> Dice model chance during hunts. This one-year game does not model wildebeest births, the available food or water, or how predator populations respond to prey numbers. A playthrough is not a prediction of carrying capacity or real population size.</p>
           <label for="sg-limits">What could you test again before drawing a broader conclusion?</label><textarea id="sg-limits" rows="3" maxlength="750"></textarea>
         </section>
         <div class="sg-answer-actions">
@@ -185,7 +196,17 @@
         <p class="sg-kicker" id="sg-expanded-phase"></p>
         <h3 id="sg-expanded-action-title"></h3>
         <p id="sg-expanded-player"></p>
+        <ol id="sg-expanded-season-path" class="sg-season-path" aria-label="Current season checklist" hidden></ol>
         <button type="button" class="sg-plain sg-event-reopen" id="sg-expanded-view-card" aria-haspopup="dialog" hidden>View illustrated card</button>
+        <details id="sg-expanded-dice-example" class="sg-note-disclosure sg-dice-example" hidden>
+          <summary>Worked example: match the dice</summary>
+          <div class="sg-dice-example-body">
+            <p>Roll 1 die for an individual, 2 for a small group, or 3 for a wildebeest herd. Sort each side highest to lowest.</p>
+            <table><caption class="sg-visually-hidden">Example dice rolls, paired from highest to lowest</caption><thead><tr><th scope="col">Predator</th><th scope="col">Wildebeest</th><th scope="col">What stays</th></tr></thead>
+              <tbody><tr><td>6</td><td>5</td><td>6 (higher)</td></tr><tr><td>2</td><td>2</td><td>Both 2s (tie)</td></tr><tr><td>—</td><td>1</td><td>1 (no match)</td></tr></tbody></table>
+            <p><strong>Next roll:</strong> Predator rolls 2 dice; wildebeest rolls 2 dice. Reroll all the dice that stayed, not the old numbers. The first side without dice loses the hunt.</p>
+          </div>
+        </details>
         <div id="sg-expanded-dice" class="sg-dice" hidden></div>
         <div id="sg-expanded-options"></div>
         <div id="sg-expanded-actions" class="sg-actions"></div>
@@ -221,7 +242,7 @@
     <li>Hyenas hunt, then lions hunt where eligible. Sort the dice high to low; matching dice compete. The lower die is removed, ties and unmatched dice remain. Reroll only surviving dice until one side has none.</li>
     <li>Record what changes for all roles. Try the quick concept check that appears each season. After fall, compare your evidence across seasons.</li>
   </ol>
-  <p class="sg-teacher-scope"><strong>For teachers:</strong> This one-year model tracks migration, event cards and hunts. It does not model wildebeest births, resource supply, prey-dependent changes in predator populations, or carrying capacity.</p>
+  <p class="sg-teacher-scope"><strong>What this game models:</strong> Use four seasons of migration, event cards and dice-based hunts to explore short-term population changes. The game does not model wildebeest births, resource supply, prey-dependent changes in predator populations, or carrying capacity.</p>
   <p><a href="https://youtu.be/6-ooaGN1lSk" target="_blank" rel="noopener noreferrer">OpenSciEd’s game walkthrough (opens in a new tab)</a></p>
 </dialog>
 <dialog id="sg-confirm" class="sg-dialog" aria-labelledby="sg-confirm-title">

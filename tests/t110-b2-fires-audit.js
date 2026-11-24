@@ -32,6 +32,28 @@ const answerAll = p => p.evaluate(() => {
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     await p.goto(server.url + PAGE + '#sense3'); await p.waitForFunction(() => window.B2Fires && document.querySelector('.step.is-current'));
 
+    // ---------- Scientific evidence is not an ordinary answer slot ----------
+    await p.evaluate(() => {
+      const b=B2Fires, seed=b.seed('audit'); const L=b.logic;
+      b.saveState('cards',{placed:Object.fromEntries(L.CARDS.map(c=>[c.id,c.zone]))});
+      b.saveState('decomp',{seed,temps:[18,27,43],recorded:[0]});
+      b.saveState('tilt',{seed,settings:['direct','tilt45','foil'],recorded:false});
+    });
+    const model=p.locator('#investigation-report [data-model-records]');
+    T.ok((await counts(p)).answered===0 && /5 of 5 cards sorted correctly/.test(await model.textContent()) &&
+      /1 foam reading recorded \(starting reading only\)/.test(await model.textContent()) && /0 of 3 BTB tubes/.test(await model.textContent()),
+      'a solved card sort and starting foam reading appear separately when no written/question prompts are answered');
+    T.ok(await p.locator('#cer-ev-1').isDisabled() && await p.locator('#cer-ev-3').isDisabled(),
+      '0-minute foam and unread BTB cannot be cited in CER');
+    await p.evaluate(() => {
+      const b=B2Fires, seed=b.seed('audit');
+      b.saveState('decomp',{seed,temps:[18,27,43],recorded:[0,20]});
+      b.saveState('tilt',{seed,settings:['direct','tilt45','foil'],recorded:true});
+    });
+    T.ok(await p.locator('#cer-ev-1').isEnabled() && await p.locator('#cer-ev-3').isEnabled() &&
+      /3 of 3 BTB tubes/.test(await model.textContent()), 'actual comparable records enable citation and count in Wrap up');
+    await p.evaluate(() => { B2Fires.saveState('cards',null); B2Fires.saveState('tilt',null); });
+
     // ---------- B1: the prediction sentence, section 6 note and section 11 report, several beakers ----------
     let allGood = true; const seen = [];
     for (const temps of [[18, 27, 43], [5, 27, 35], [27, 35, 55], [43, 18, 5]]) for (const pred of ['cold', 'room', 'warm']) {

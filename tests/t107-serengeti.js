@@ -29,6 +29,8 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
         page.on('pageerror', error => errors.push(error.message));
         await page.goto(server.url + 'openscied-b1-serengeti.html');
         await page.locator('#sg-start').waitFor();
+        T.ok(/Choose who will read cards and play each/.test(await page.locator('#sg-action-copy').textContent()) &&
+          await page.locator('#sg-rolebar button').count()===0,'setup assigns roles aloud; status labels never require a click');
         T.ok(await fit(page), width + ' px: no horizontal overflow before play');
         T.ok((await page.locator('meta[name="robots"]').getAttribute('content')).includes('noindex'), 'draft is not indexed');
         await shot(page, width + '-setup');
@@ -42,6 +44,9 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
         await page.locator('#sg-start').click();
         const next = page.locator('#sg-next');
         await next.waitFor();
+        const firstPath=page.locator('#sg-season-path');
+        T.ok(await firstPath.locator('li').first().getAttribute('aria-current')==='step' &&
+          await firstPath.getByText('Cards 0/3').isVisible(), width + ' px: season checklist starts at migration');
         T.ok(await fit(page), width + ' px: game fits the page');
         T.ok(await page.locator('#sg-phase').isVisible(), 'season phase is visible');
         await shot(page, width + '-game');
@@ -123,6 +128,14 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
               await expand.click();
               await dialog.waitFor();
               const roll = dialog.locator('#sg-expanded-next[data-action="roll"]');
+              const example = dialog.locator('#sg-expanded-dice-example[open]');
+              await example.waitFor();
+              T.ok(await example.getByRole('cell',{name:'Both 2s (tie)'}).isVisible()
+                && await example.getByRole('cell',{name:'1 (no match)'}).isVisible(),
+                'before first roll the expanded board shows a worked tie and unmatched die');
+              T.ok(await example.evaluate(el=>Boolean(el.compareDocumentPosition(document.querySelector('#sg-expanded-next')) & Node.DOCUMENT_POSITION_FOLLOWING)),
+                'the worked dice example precedes the real roll action');
+              await shot(page, width + '-before-first-hunt');
               await roll.click();
               const tray = dialog.locator('#sg-expanded-dice');
               const faces = tray.locator('.sg-pip-die[data-value]');
@@ -137,6 +150,9 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
                 'roll results have a spoken value and a clear outcome');
               T.ok(values.every(d => d.motion === !reduced), 'dice animation follows the browser motion preference');
               T.ok(await tray.locator('.sg-dice-comparisons').isVisible(), 'the expanded turn explains the matched dice');
+              T.ok(await example.count()===0 && await dialog.locator('#sg-expanded-dice-example summary').isVisible(),
+                'after the first roll the example is folded and can be reopened');
+
               await shot(page, width + '-hunt-dice');
               await dialog.locator('#sg-board-close').click();
               await dialog.waitFor({state:'hidden'});
@@ -201,6 +217,7 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           T.ok(await fieldReport.isHidden(),'final tally does not start with four full maps and a record list');
           await page.locator('#sg-finish-details > summary').click();
           await fieldReport.waitFor();
+          T.ok(await page.locator('#sg-finish-totals .sg-totals').isHidden(), 'opening the interactive map breakdown hides the duplicate plain season totals');
           T.ok(await fieldReport.locator('.sg-field-season svg').count()===4, 'final report includes four official grazing maps');
           await fieldReport.locator('.sg-field-season[data-season="0"]').click();
           T.ok(await fieldReport.getByRole('heading',{name:'Winter evidence'}).isVisible(), 'selecting a map opens evidence from that season');
@@ -222,6 +239,11 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
             'history selector retrieves the first season without scrolling the entire ledger');
           T.ok(await page.locator('#sg-evidence-report').isHidden(), 'maps are on demand rather than pushing the record controls below the fold');
           await shot(page, width + '-evidence');
+          await page.locator('#sg-evidence-maps > summary').click();
+          T.ok(await page.locator('.sg-evidence-totals').isHidden() && await records.isVisible(),
+            'Evidence shows the expanded breakdown without a duplicate plain list and keeps the event picker');
+          await page.locator('#sg-evidence-maps > summary').click();
+          T.ok(await page.locator('.sg-evidence-totals').isVisible(), 'closing the maps restores the quick season totals');
           await page.locator('.sg-tabs [data-page="analyze"]').click();
           await page.locator('#sg-analysis-data').waitFor();
           T.ok(await page.locator('#sg-analysis-data').isVisible(), 'analysis references game data');
@@ -257,6 +279,9 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           await page.locator('#sg-answer-next').click();
           T.ok(await activePrompt.count()===1 && await activePrompt.getAttribute('data-answer-panel')==='limits' &&
             await page.locator('#sg-selected').isVisible(), 'follow-up test stays focused on one prompt with the chosen record');
+          T.ok(await page.locator('#sg-analysis-scope').isVisible() &&
+            /births.*carrying capacity.*real population size/.test(await page.locator('#sg-analysis-scope').textContent()),
+            'the follow-up writing prompt explains model limits in place');
           await shot(page, width + '-analysis-test');
           if (width === 390) {
             const key = SAVE_KEY;

@@ -67,12 +67,14 @@ async function shoot(page,label,anchor) {
   await page.screenshot({path:path.join(OUT,label+'.png'),animations:'disabled',timeout:15000});
 }
 async function download(page,size) {
+  await id(page,'ju-name').fill('J. Student');
+  await id(page,'ju-period').fill('4');
   const fileEvent=page.waitForEvent('download');
   await activate(id(page,'ju-download'),size);
   const file=await fileEvent;
   check(/junco.*\.(txt|json|md)$/i.test(file.suggestedFilename()),'the student receives a named junco work export');
   const saved=await fs.readFile(await file.path(),'utf8');
-  check(saved.includes(CLAIM)&&saved.includes(LIMIT)&&saved.includes(OBSERVATION),
+  check(saved.includes(CLAIM)&&saved.includes(LIMIT)&&saved.includes(OBSERVATION)&&saved.includes('Name: J. Student')&&saved.includes('Class period: 4'),
     'the downloaded file contains the original field observation, claim, and limitation');
 }
 
@@ -140,6 +142,12 @@ async function exerciseFlightSimulation(page,size,label) {
   check(await publishedGroup.inputValue()===initialGroup&&
     JSON.stringify(await plottedMeans(publishedTable))===JSON.stringify(published),
     label+' the simulated choices and results do not change the published evidence');
+  await activate(start,size);
+  const change=id(page,'ju-sim-change');
+  check(await change.isVisible()&&await site.isDisabled(),label+' an unstarted setup error can be corrected');
+  await activate(change,size);
+  check(await site.isEnabled()&&await approach.isDisabled()&&(await rows()).length===2,label+' cancel unlocks setup without discarding or adding records');
+  await site.selectOption('urban');
   await page.reload();
   await id(page,'field').waitFor({state:'visible'});
   if(!await panel.evaluate(el=>el.open)) await activate(panel.locator('summary').first(),size);

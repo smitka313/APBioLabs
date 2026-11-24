@@ -36,11 +36,35 @@
   function save(){state.responseIds=RESPONSES.map(r=>r[0]);state.lastSection=state.page;state.lastVisitedAt=Date.now();if(corrupt){$('#save-state').textContent='Saved record needs attention';return;}try{localStorage.setItem(KEY,JSON.stringify(state));$('#save-state').textContent='Work saved on this device';unavailable=false;}catch(e){unavailable=true;$('#save-state').textContent='Not saved · download a copy';say('This browser could not save your work. Download your investigation before leaving.');}}
   function el(tag,text,cls){const n=document.createElement(tag);if(text!=null)n.textContent=String(text);if(cls)n.className=cls;return n;}
   function shortMonth(m){return L.MONTHS[m].slice(0,3);}
-  function cardText(c){return `${L.MONTHS[c.month]} · Location ${c.location} · ${L.GROUPS[c.group]}: ${c.fat}% bone-marrow fat; ${c.health.toLowerCase()}; ${c.anthrax}% of the sampled group had anthrax.`;}
+  function cardText(c){return `${L.MONTHS[c.month]} · Location ${c.location} · ${L.GROUPS[c.group]}: ${c.fat}% bone-marrow fat; ${c.health.toLowerCase()}; ${c.anthrax}% of the sampled group had anthrax. Monthly group average for sampled male wildebeest, not a herd-wide rate.`;}
+  const observation=$('#observation');
+  function editorMonth(){
+    if(!observation.hasAttribute('data-editor-month'))return null;
+    const month=Number(observation.dataset.editorMonth);
+    return Number.isInteger(month)&&month>=0&&month<L.MONTHS.length?month:null;
+  }
+  function keepDraft(){
+    const month=editorMonth();
+    if(month!==null)state.observations[month]=observation.value;
+  }
+  function showDraft(month){
+    const draft=typeof state.observations[month]==='string'?state.observations[month]:'';
+    if(editorMonth()!==month)observation.dataset.editorMonth=String(month);
+    if(observation.value!==draft)observation.value=draft;
+    $('#month-note-month').textContent=L.MONTHS[month];
+  }
   function renderNoteProgress(){
     const months=L.monthsWithNotes(state.notes);
     $('#visit-progress').textContent='Months with notes: '+months.length+' of 12';
-    $$('#month-buttons button').forEach(b=>{const m=+b.dataset.month,hasNote=months.includes(m);b.dataset.visited=String(hasNote);b.setAttribute('aria-label','Explore '+L.MONTHS[m]+(hasNote?' · note saved':''));});
+    $$('#month-buttons button').forEach(b=>{
+      const m=+b.dataset.month,hasNote=months.includes(m);
+      const draft=typeof state.observations[m]==='string'?state.observations[m].trim():'';
+      const saved=state.notes.find(n=>n.type==='map-observation'&&n.month===m)?.observation?.trim()||'';
+      const hasDraft=Boolean(draft)&&draft!==saved;
+      b.dataset.visited=String(hasNote);
+      b.dataset.draft=String(hasDraft);
+      b.setAttribute('aria-label','Explore '+L.MONTHS[m]+(hasNote?' · note saved':'')+(hasDraft?' · draft not yet in notebook':''));
+    });
     $('#record').textContent=months.includes(state.month)?'Update month note':'Save month note';
     const feedback=$('#month-note-status');
     if(+feedback.dataset.noteMonth!==state.month){feedback.textContent='';feedback.hidden=true;}
@@ -49,6 +73,12 @@
   const scene=MigrationScene.init($('#migration-map'),$('#field-scene'),$('#map-wrap'));
   let timer=0;
   function pause(){clearInterval(timer);timer=0;$('#play').textContent='Play year';$('#play').setAttribute('aria-pressed','false');}
+  function pauseForObservation(){
+    if(!timer)return;
+    pause();
+    const month=editorMonth();
+    say('Playback paused while you work on your '+(month===null?'month':L.MONTHS[month])+' note.');
+  }
   function renderInspector(){const title=state.view==='region'?REGIONS[state.region].name:state.view==='rain'?'Read the rainfall graph':L.RANGES[state.month];$('#inspector-title').textContent=title;}
   function renderRainGraph(context,m){
     $(context==='dialog'?'#rain-dialog-focus':'#rain-focus').textContent='Reading '+L.MONTHS[m]+' on the original graph';
@@ -61,14 +91,14 @@
   function openRainGraph(m){
     pause();renderRainGraph('dialog',m);$('#rain-dialog').showModal();
   }
-  function renderMonth(){const m=state.month;$('#month-title').textContent=L.MONTHS[m];$('#month-output').textContent=L.MONTHS[m];$('#season').textContent=L.SEASONS[m];$('#month-slider').value=m;renderInspector();renderRainMonth(m);$('#field-note').textContent=L.NOTES[m];$('#habitat-clue').textContent=L.habitatClue(m);$('#observation').value=typeof state.observations[m]==='string'?state.observations[m]:'';$('#weather').checked=state.weather;const cues=L.weatherCues(m),weatherText=state.weather?cues.rainText+'. '+cues.grassText+'. These cues are not measurements.':'Rain and grass illustrations are off.';$('#weather-reading').textContent=weatherText;$('#map-description').textContent=L.MONTHS[m]+'. Broad herd range: '+L.RANGES[m]+'. '+L.SEASONS[m]+'. This is an example route; real routes vary. '+weatherText+' '+(L.forMonth(m).length?'Field data available at location '+(m-3)+'.':'No health-card data supplied for this month.');$('#field-scene').setAttribute('aria-label','Illustration of wildebeest near the '+L.RANGES[m]+' during '+L.MONTHS[m]+'. Animals are decorative, not population counts.');$('#large-caption').textContent=$('#map-description').textContent;
+  function renderMonth(){const m=state.month;$('#month-title').textContent=L.MONTHS[m];$('#month-output').textContent=L.MONTHS[m];$('#season').textContent=L.SEASONS[m];$('#month-slider').value=m;renderInspector();renderRainMonth(m);$('#field-note').textContent=L.NOTES[m];$('#habitat-clue').textContent=L.habitatClue(m);showDraft(m);$('#weather').checked=state.weather;const cues=L.weatherCues(m),weatherText=state.weather?cues.rainText+'. '+cues.grassText+'. These cues are not measurements.':'Rain and grass illustrations are off.';$('#weather-reading').textContent=weatherText;$('#map-description').textContent=L.MONTHS[m]+'. Broad herd range: '+L.RANGES[m]+'. '+L.SEASONS[m]+'. This is an example route; real routes vary. '+weatherText+' '+(L.forMonth(m).length?'Field data available at location '+(m-3)+'.':'No health-card data supplied for this month.');$('#field-scene').setAttribute('aria-label','Illustration of wildebeest near the '+L.RANGES[m]+' during '+L.MONTHS[m]+'. Animals are decorative, not population counts.');$('#large-caption').textContent=$('#map-description').textContent;
     $$('#month-buttons button[data-month]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.month===m)));
     const cards=L.forMonth(m),host=$('#month-evidence');host.replaceChildren();const box=el('div',null,'mx-small-evidence');
     box.append(el('strong',cards.length?'Source evidence · Location '+(m-3):'No health cards for this month'));
-    if(cards.length){cards.forEach(c=>box.append(el('span',L.GROUPS[c.group]+': '+c.fat+'% fat')));const b=el('button','Compare these three cards →');b.type='button';b.onclick=()=>{state.filter=String(m);$('#card-month').value=state.filter;renderCards();go('evidence');collection('cards');};box.append(b);}else box.append(el('span','The supplied health cards cover May–October. Explore the map without inventing missing data.'));
+    if(cards.length){box.append(el('p','Monthly group averages for sampled males, not measurements of individual animals.','mx-caption'));cards.forEach(c=>box.append(el('span',L.GROUPS[c.group]+': '+c.fat+'% fat')));const b=el('button','Compare these three cards →');b.type='button';b.onclick=()=>{state.filter=String(m);$('#card-month').value=state.filter;renderCards();go('evidence');collection('cards');};box.append(b);}else box.append(el('span','The supplied health cards cover May–October. Explore the map without inventing missing data.'));
     host.append(box);scene.set(m,{weather:state.weather,region:state.region});$('#large-prev').disabled=m===0;$('#large-next').disabled=m===11;$('#previous').disabled=m===0;$('#next').disabled=m===11;renderNoteProgress();
   }
-  function changeMonth(m,user=true){m=L.monthIndex(m);state.observations[state.month]=$('#observation').value;state.month=m;region(L.fieldRegion(m));if(user)observeMonth();renderMonth();save();}
+  function changeMonth(m,user=true){keepDraft();state.month=L.monthIndex(m);if(user)observeMonth();region(L.fieldRegion(state.month));}
   function go(page,focus=true){if(!['explore','evidence','explain'].includes(page))page='explore';pause();state.page=page;$$('.mx-page').forEach(n=>n.hidden=n.id!==page);$$('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});if(location.hash!=='#'+page)history.replaceState(null,'','#'+page);if(focus){$('#'+page+'-title').focus({preventScroll:true});$('.mx-pages').scrollIntoView({block:'start'});}if(page==='explore')scene.resize();if(page==='evidence')renderCharts();if(page==='explain')renderNotes();save();}
   function view(v){state.view=v;renderInspector();$$('.mx-viewpanel').forEach(n=>n.hidden=n.id!=='view-'+v);$$('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v)));if(v==='field')scene.resize();save();}
   function collection(v){state.collection=v;['cards','rainfall','notebook'].forEach(id=>$('#collection-'+id).hidden=id!==v);$$('[data-collection]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.collection===v)));renderCharts();renderNotes();save();}
@@ -143,7 +173,7 @@
         el('p','The field cards record which group the sampled males were in, their average bone-marrow fat, and the share of the sampled group with anthrax.'));
     }else if(i===1){
       body.append(healthEvidence(true),
-        caption('OpenSciEd B.1 Lesson 3 field data cards. Each value summarizes a sampled group, not a count of animals in the population. The anthrax percentages come from an outbreak year.'));
+        caption('OpenSciEd B.1 Lesson 3 field data cards. These are monthly group averages for sampled male wildebeest from several studies, not counts or rates for the whole herd. The anthrax percentages come from an outbreak year.'));
     }else if(i===2){
       const graph=el('button','Open the original station graph');graph.type='button';
       graph.onclick=()=>openRainGraph(3);
@@ -161,7 +191,7 @@
         const card=el('div');card.append(label,facts);regions.append(card);
       }
       const more=el('details');more.append(el('summary','Compare bone-marrow fat from the field cards'),healthEvidence(false),
-        caption('OpenSciEd B.1 Lesson 3 field data cards; each value is a sampled-group average.'));
+        caption('OpenSciEd B.1 Lesson 3 field data cards. Each value is a monthly group average for sampled male wildebeest, not an individual measurement.'));
       body.append(regions,caption('Adapted from the OpenSciEd B.1 Lesson 4 Regional Data Cards.'),more);
     }else{
       const facts=el('ul');
@@ -214,17 +244,24 @@
   L.MONTHS.forEach((m,i)=>{const b=el('button',m.slice(0,3));b.type='button';b.dataset.month=i;b.setAttribute('aria-label','Explore '+m);b.onclick=()=>{pause();changeMonth(i);};$('#month-buttons').append(b);});
   $$('[data-page]').forEach(b=>b.onclick=()=>go(b.dataset.page));$$('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));$$('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));$$('[data-region]').forEach(b=>b.onclick=()=>region(b.dataset.region,true));$$('[data-collection]').forEach(b=>b.onclick=()=>collection(b.dataset.collection));
   $('#month-slider').oninput=e=>{pause();changeMonth(+e.target.value);};$('#previous').onclick=()=>{pause();changeMonth(Math.max(0,state.month-1));};$('#next').onclick=()=>{pause();changeMonth(Math.min(11,state.month+1));};
-  $('#play').onclick=()=>{if(timer){pause();return;}if(state.month===11)changeMonth(0);observeMonth();$('#play').textContent='Pause year';$('#play').setAttribute('aria-pressed','true');timer=setInterval(()=>{if(state.month>=11){pause();say('Year complete. Compare your observations and investigate the evidence.');return;}changeMonth(state.month+1);if(state.month===11){pause();say('Year complete. Compare your observations and investigate the evidence.');}},1800);};
+  $('#play').onclick=()=>{if(timer){pause();return;}if(state.month===11)changeMonth(0);observeMonth();$('#play').textContent='Pause year';$('#play').setAttribute('aria-pressed','true');timer=setInterval(()=>{if(!timer)return;if(document.activeElement===observation){pauseForObservation();return;}if(state.month>=11){pause();say('Year complete. Compare your observations and investigate the evidence.');return;}changeMonth(state.month+1);if(state.month===11){pause();say('Year complete. Compare your observations and investigate the evidence.');}},1800);};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
-  $('#weather').onchange=e=>{state.weather=e.target.checked;renderMonth();save();};$('#observation').oninput=()=>{state.observations[state.month]=$('#observation').value;save();};
+  $('#weather').onchange=e=>{state.weather=e.target.checked;renderMonth();save();};
+  observation.addEventListener('pointerdown',pauseForObservation);
+  observation.addEventListener('focus',pauseForObservation);
+  observation.addEventListener('input',()=>{pauseForObservation();keepDraft();renderNoteProgress();save();});
   $('#record').onclick=()=>{
-    const field=$('#observation'),result=L.upsertMonthlyNote(state.notes,state.month,field.value),feedback=$('#month-note-status');
-    const noteSay=message=>{feedback.dataset.noteMonth=state.month;feedback.hidden=false;feedback.textContent=message;say(message);};
+    pauseForObservation();
+    const field=observation,month=editorMonth(),feedback=$('#month-note-status');
+    if(month===null)return;
+    keepDraft();
+    const result=L.upsertMonthlyNote(state.notes,month,field.value);
+    const noteSay=message=>{feedback.dataset.noteMonth=month;feedback.hidden=false;feedback.textContent=message;say(message);};
     if(result.status==='blank'){noteSay('Write an observation before saving this month’s note.');field.focus();return;}
     if(result.status==='unchanged'){noteSay('This month’s note is already in your notebook.');return;}
     if(result.status==='full'){noteSay('Your notebook has 100 entries. Download a copy, then remove an entry to add another.');return;}
-    state.notes=result.notes;observeMonth();save();renderNotes();
-    noteSay((result.status==='updated'?'Updated ':'Saved ')+L.MONTHS[state.month]+' note in your notebook.'+(corrupt||unavailable?' Not stored on this device; download or copy it before leaving.':''));
+    state.notes=result.notes;if(!state.visited.includes(month))state.visited.push(month);save();renderNotes();
+    noteSay((result.status==='updated'?'Updated ':'Saved ')+L.MONTHS[month]+' note in your notebook.'+(corrupt||unavailable?' Not stored on this device; download or copy it before leaving.':''));
   };
   $('#record-region').onclick=()=>addNote({id:'region-'+state.region,title:REGIONS[state.region].name,text:REGIONS[state.region].facts.join('\n'),type:'regional-source'});
   $('#save-rain').onclick=()=>addNote({id:'rainfall-example',title:'Annual rainfall & occupancy · one example year',text:ANNUAL.map(a=>a.region+': '+a.rain+' mm annual rainfall; '+a.occupancy+'% of the year.').join('\n')+'\nSource: '+ANNUAL_SOURCE+'. Selected regions total 84%; this is not the full multi-year CODAP dataset.',type:'rainfall-source'});

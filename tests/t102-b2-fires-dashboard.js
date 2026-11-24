@@ -16,10 +16,9 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       T.ok(await p.evaluate(() => { const a = document.getElementById('unit2'), b = document.getElementById('unit3'); return !!(a && b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)); }), width + ' px: Unit 2 is listed before Unit 3');
       T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 4 && (await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').textContent()).trim() === '4 activities available', width + ' px: Unit 2 has four activities (Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey)');
       T.ok(/Fires/.test(await p.locator('#unit2').innerText()) && /Lessons 3 and 5/.test(await p.locator('section[aria-labelledby="unit2"]').innerText()), 'Unit 2 card names the lessons');
-      T.ok((await p.locator('.dashboard-coming-soon summary').innerText()) === 'Coming soon: Unit 5'
-        && await p.locator('.dashboard-coming-soon :is(#unit1,#unit2,#unit3,#unit4)').count() === 0
-        && await p.locator('.dashboard-coming-soon #unit5').count() === 1,
-        'Coming soon lists only Unit 5, not any published unit');
+      T.ok((await p.locator('.dashboard-coming-soon').innerText()) === 'Unit 5: No activities published yet.'
+        && await p.locator('.dashboard-coming-soon :is(a, button, summary)').count() === 0,
+        'Unit 5 is information, not a dead control');
       T.ok(await p.locator('#b2-fires-open').getAttribute('href') === 'openscied-b2-fires.html#overview' && /Not started/.test(await p.locator('#b2-fires-progress').innerText()) && await p.locator('#b2-fires-reset').isDisabled(), 'card opens its page, not started, restart disabled');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
       const t = Date.now();
@@ -29,7 +28,7 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       }, [B2, INH, t]);
       await p.reload();
       const text = await p.locator('#b2-fires-progress').innerText();
-      T.ok(/2 of 3 interactive models used/.test(text) && /3 of 5 answers saved/.test(text), 'card counts models and answers: ' + text);
+      T.ok(await p.locator('.dashboard-activity').filter({has:p.locator('#b2-fires-progress')}).locator('progress').getAttribute('aria-valuetext') === '0 of 3 model evidence milestones complete' && /3 of 5 answers saved/.test(text), 'card counts models and answers: ' + text);
       T.ok(/1 of 6 interactive models used|interactive models used/.test(await p.locator('#inh-env-progress').innerText()), 'the inheritance card still reads its own save');
       T.ok(await p.locator('#openscied-resume-link').getAttribute('href') === 'openscied-b2-fires.html#cards' && /Resume Fires/.test(await p.locator('#openscied-resume-link').innerText()), 'Resume points at the newest activity and section');
       await p.locator('#openscied-resume-link').click();

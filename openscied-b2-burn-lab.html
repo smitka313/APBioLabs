@@ -71,7 +71,7 @@
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
         <div class="callout callout--safety" id="safety-note"><div class="callout-title">Safety first: a virtual demonstration, not a real fire</div><p>This page replaces nothing. Real burning is a demonstration your teacher does, with goggles, fresh air and everyone 15 feet back, following the OpenSciEd safety steps. The glass dome gets hot, so a real lab uses tongs and heat-safe surfaces. Never burn materials at home.</p></div>
         <div class="part-card"><span class="part-tag">Sections 2–3 · Look and predict</span><p><strong>Five fuels.</strong> Which light fast? Which give the most energy?</p></div>
-        <div class="part-card"><span class="part-tag">Section 4 · Burn demonstration</span><p><strong>Burn each fuel.</strong> Record the BTB color, the temperature and the mass.</p></div>
+        <div class="part-card"><span class="part-tag">Section 4 · Burn demonstration</span><p><strong>Burn each fuel.</strong> Observe the BTB, temperature and mass. The second weighing saves the sample.</p></div>
         <div class="part-card"><span class="part-tag">Sections 5–8 · Make sense</span><p><strong>Where did the matter and energy go?</strong> Then explain why peat burns so much.</p></div>
         <details class="disclose teacher-note"><summary>For teachers</summary><div class="inner"><ul>
           <li>This follows Lesson 2 of OpenSciEd Unit B.2. Use it alongside your own demonstration, or when the real one cannot be run.</li>
@@ -140,7 +140,7 @@
     <header><div class="eyebrow">4 · Burn demonstration</div><h2>Burn each fuel</h2></header>
     <div class="step-body">
       <p class="sim-tag"><strong>SIMULATED.</strong> A model, not a real fire. Your teacher does the real burning.</p>
-      <p class="small muted">Weigh and read the temperature, burn, then weigh and read the temperature again. Watch the dome and the dish of BTB. Tap what you saw, then record. Try all five.</p>
+      <p class="small muted">Weigh and read the temperature, burn, then weigh and read the temperature again. Watch the dome and the dish of BTB. The <strong>second weighing saves the sample automatically</strong>. Add observations if you like. Try all five.</p>
       <div class="scene-host" id="burn-scene" data-scene="burn">
         <canvas role="img" aria-label="A simulated burn demonstration: a half-sphere glass bowl, upside down (the dome), over a tray of fuel with a dish of BTB inside it, a laser thermometer, and a balance." width="960" height="340"></canvas>
         <p class="scene-desc" id="burn-desc">Text description: a simulated burn demonstration. A half-sphere glass bowl, upside down (the dome), stands over a tray with a dish of BTB inside it. Weigh the handful and read the temperature, burn it, then weigh and read the temperature again.</p>
@@ -206,6 +206,8 @@
           <li><strong>Energy</strong> is not made of atoms. It is transferred.</li>
         </ul>
       </div>
+      <p class="small">Choose one category per item. Pick <strong>Both</strong> if the item is matter and the description also highlights energy it stores or releases. Feedback appears next to each choice.</p>
+      <p class="small muted" id="sort-progress"></p>
       <div class="me-grid">
         <fieldset class="mcq mini me-item" data-correct="both" data-id="me-peat"><legend>Peat (the fuel)</legend><div class="me-opts"><label class="choice"><input type="radio" name="me-peat" value="matter" data-why="Try again. Why not: peat is matter, but it also stores chemical energy."> Matter</label><label class="choice"><input type="radio" name="me-peat" value="energy" data-why="Try again. Why not: peat is made of atoms, so it is matter too."> Energy</label><label class="choice"><input type="radio" name="me-peat" value="both" data-why="Yes. Peat is matter (carbon and other atoms) and it stores chemical energy."> Both</label></div></fieldset>
         <fieldset class="mcq mini me-item" data-correct="energy" data-id="me-heat"><legend>Heat from the flame</legend><div class="me-opts"><label class="choice"><input type="radio" name="me-heat" value="matter" data-why="Try again. Why not: heat is not made of atoms."> Matter</label><label class="choice"><input type="radio" name="me-heat" value="energy" data-why="Yes. Heat is energy being transferred. It is not made of atoms."> Energy</label><label class="choice"><input type="radio" name="me-heat" value="both" data-why="Try again. Why not: heat is energy only. It is not a substance."> Both</label></div></fieldset>
@@ -223,12 +225,14 @@
     <header><div class="eyebrow">7 · Explain</div><h2>Why does peat burn so much?</h2></header>
     <div class="step-body">
       <div class="panel cer" id="cer"><h3>Build your claim</h3>
+        <p class="small cer-model-note" id="cer-model-note"></p>
+        <details class="disclose" id="cer-model-data" hidden><summary>See the recorded model data</summary><div class="inner"><div id="cer-data-body"></div></div></details>
         <fieldset class="mcq mini" data-id="cer-claim"><legend>Claim</legend>
           <label class="choice"><input type="radio" name="cer-claim" value="a"> Peat holds a lot of plant matter and stored energy. When it burns, its carbon leaves as carbon dioxide and its energy is released as heat and light. It burns for a long time, so a lot is released.</label>
           <label class="choice"><input type="radio" name="cer-claim" value="b"> Peat burns a lot because it has no carbon in it.</label>
           <label class="choice"><input type="radio" name="cer-claim" value="c"> Peat burns a lot because burning makes new matter.</label>
         </fieldset>
-        <fieldset class="chipset"><legend>Evidence (tap what supports it)</legend>
+        <fieldset class="chipset" id="cer-evidence" aria-describedby="cer-model-note"><legend>Evidence (tap what supports it)</legend>
           <label class="chip"><input type="checkbox" id="cer-ev-1" aria-describedby="cer-ev-1-note"> My peat lost the most mass</label><span class="ev-note" id="cer-ev-1-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-2" aria-describedby="cer-ev-2-note"> My peat made the biggest BTB change</label><span class="ev-note" id="cer-ev-2-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-3" aria-describedby="cer-ev-3-note"> My peat’s temperature rose the most</label><span class="ev-note" id="cer-ev-3-note"></span>
