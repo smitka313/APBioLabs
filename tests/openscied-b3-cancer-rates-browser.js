@@ -21,6 +21,7 @@ const CASES = [
 const REASON = 'Different things may affect how often a cancer is diagnosed and how often people die from it.';
 const CLAIM = 'In my comparison, a higher diagnosis rate was not enough to establish why the groups differed.';
 const LIMIT = 'The data compare populations and cannot tell us the cause or predict what will happen to one person.';
+const CASE_E_TREND = 'rising';
 const DESIGN_NOTES = {
   access:'Compare local facility listings and note that they do not give appointment availability.',
   cost:'4.75',
@@ -188,6 +189,24 @@ async function inspectRace(page, label) {
   await capture(page,label+'-race','#cr-chart');
 }
 
+async function openCaseExhibit(page,size,id) {
+  const dialog=view(page,'cr-case-dialog');
+  const trigger=view(page,id+'-tab');
+  await invoke(trigger,size);
+  await dialog.waitFor({state:'visible'});
+  await dialog.locator('#'+id).waitFor({state:'visible'});
+  return trigger;
+}
+
+async function closeCaseExhibit(page,size,trigger,{escape=false}={}) {
+  const dialog=view(page,'cr-case-dialog');
+  if(escape) await page.keyboard.press('Escape');
+  else await invoke(view(page,'cr-case-close'),size);
+  await dialog.waitFor({state:'hidden'});
+  await trigger.waitFor({state:'visible'});
+  await page.waitForFunction(id=>document.activeElement?.id===id,await trigger.getAttribute('id'));
+}
+
 async function inspectIncomeCards(page,size,label) {
   await view(page,'cr-view').selectOption('michigan');
   const details=view(page,'cr-income-cards');
@@ -197,40 +216,50 @@ async function inspectIncomeCards(page,size,label) {
   const tabs=view(page,'cr-income-tabs');
   await tabs.waitFor({state:'visible'});
   const lesson=['cr-lesson1-diagnoses','cr-lesson1-deaths','cr-lesson1-map'];
-  const addons=['cr-income-access','cr-income-screening'];
+  const addons=['cr-income-access','cr-income-diagnosis'];
   const exhibitOrder=[...lesson,...addons];
   const tabOrder=await tabs.locator('button[id$="-tab"]').evaluateAll(buttons=>buttons.map(button=>button.id.replace(/-tab$/,'')));
   check(JSON.stringify(tabOrder.filter(id=>exhibitOrder.includes(id)))===JSON.stringify(exhibitOrder),
     label+' the three Lesson 1 exhibits come before the two added income exhibits');
+  const dialog=view(page,'cr-case-dialog');
+  check(await dialog.isHidden(),label+' opening the cover does not open a modal');
+  check((await tabs.locator('button[id$="-tab"]').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('aria-haspopup')))).every(value=>value==='dialog'),
+    label+' exhibit controls identify themselves as dialog launchers');
   const shown=async id=>{
-    await visible(page,id);
-    return (await Promise.all(exhibitOrder.filter(other=>other!==id).map(other=>view(page,other).isHidden()))).every(Boolean);
+    await dialog.locator('#'+id).waitFor({state:'visible'});
+    return await dialog.evaluate(element=>element.open) &&
+      (await Promise.all(exhibitOrder.filter(other=>other!==id).map(other=>view(page,other).isHidden()))).every(Boolean);
   };
-  check(await shown(lesson[0]),label+' first opening defaults to the Lesson 1 diagnosis rates exhibit');
-  for (const id of lesson) {
-    if(id!==lesson[0]) await invoke(view(page,id+'-tab'),size);
-    const graph=view(page,id).locator('.cr-lesson-graph').first();
+  const first=await openCaseExhibit(page,size,lesson[0]);
+  check(await page.getByRole('dialog',{name:/\S/}).count()===1 &&
+    await dialog.evaluate(element=>element.contains(document.activeElement)),
+  label+' the named diagnosis dialog takes keyboard focus when opened');
+  for (const [index,id] of lesson.entries()) {
+    if(index) {
+      const prior=dialog.locator('#'+lesson[index-1]);
+      await invoke(prior.locator('[data-case-next]').first(),size);
+    }
+    const graph=dialog.locator('#'+id).locator('.cr-lesson-graph').first();
     await graph.waitFor({state:'visible'});
-    check(await shown(id) && await view(page,id+'-tab').getAttribute('aria-pressed')==='true',
-      label+' the '+id+' exhibit opens with its graph and keeps the other exhibits hidden');
+    check(await shown(id) && await dialog.evaluate(element=>element.contains(document.activeElement)),
+      label+' the '+id+' exhibit keeps its graph and focus in the modal while hiding the other exhibits');
     if(size.deep) await capture(page,label+'-'+id,'#'+id);
   }
+  await closeCaseExhibit(page,size,first,{escape:!size.touch});
+  check(await first.evaluate(element=>element===document.activeElement),
+    label+' closing the exhibit returns focus to the original diagnosis launcher after using Next');
   const cards=[
     {id:'access',correct:'falling',values:[29.3,23.6,17.4,12.6],period:/2022.{0,10}2023/},
-    {id:'screening',correct:'rising',values:[63.1,69.2,74.7,78.0,82.6],period:/2022/}
+    {id:'diagnosis',correct:CASE_E_TREND,values:[46.6,58.2],period:/2006.{0,10}2020/}
   ];
   for (const {id,correct,values,period} of cards) {
     const panelId='cr-income-'+id;
-    const panel=view(page,panelId);
-    const tab=tabs.locator('#cr-income-'+id+'-tab');
-    await invoke(tab,size);
-    check(await shown(panelId) &&
-      await tab.getAttribute('aria-pressed')==='true' &&
-      (await Promise.all(exhibitOrder.filter(other=>other!==panelId).map(other=>view(page,other+'-tab').getAttribute('aria-pressed')))).every(pressed=>pressed==='false'),
-    label+' only the '+id+' income evidence panel is shown and marked active');
+    const panel=dialog.locator('#'+panelId);
+    const trigger=await openCaseExhibit(page,size,panelId);
+    check(await shown(panelId),label+' only the '+id+' income exhibit displays in the dialog');
     const bars=panel.locator('.cr-income-bar');
     check(await bars.count()>=2,label+' '+id+' panel contains a real comparison chart');
-    await fits(page,`#cr-income-cards, #cr-income-tabs, #cr-income-${id}, #cr-income-${id} .cr-income-bar, #cr-income-${id}-answer`,
+    await fits(page,`#cr-case-dialog, #cr-income-${id}, #cr-income-${id} .cr-income-bar, #cr-income-${id}-answer`,
       label+' '+id+' income card');
     await capture(page,label+'-income-'+id,'#cr-income-'+id);
     if (size.deep) {
@@ -239,9 +268,15 @@ async function inspectIncomeCards(page,size,label) {
         rowValues[i].length===1 && /^\d+(?:\.\d+)?\s*%$/.test(rowValues[i][0]) && numeric(rowValues[i][0].replace('%',''))===value),
       label+' '+id+' income bars show the exact source percentages in order');
       const panelText=clean(await panel.textContent());
-      check(period.test(panelText) && (id!=='screening'||/50[^0-9]{1,6}74/.test(panelText)),
-        label+' '+id+' graph retains its source period'+(id==='screening'?' and age band':''));
+      check(period.test(panelText),label+' '+id+' graph retains its source period');
       const answer=view(page,'cr-income-'+id+'-answer');
+      if(id==='diagnosis'){
+        const labels=(await bars.allTextContents()).map(clean);
+        check(/persistent[- ]poverty/i.test(labels[0])&&/other neighborhood/i.test(labels[1])&&/early stage/i.test(panelText),
+          label+' Exhibit E compares early-stage diagnoses in persistent-poverty and other neighborhoods');
+        check(/less common|lower|less often/i.test(await answer.locator('option[value="'+correct+'"]').textContent()),
+          label+' the correct Exhibit E choice reads as a group comparison rather than a generic time trend');
+      }
       const feedback=view(page,'cr-income-'+id+'-feedback');
       const checkButton=view(page,'cr-income-'+id+'-check');
       const prior=/not quite|that matches the graph/i;
@@ -254,10 +289,12 @@ async function inspectIncomeCards(page,size,label) {
       check(!prior.test(await feedback.textContent()),label+' changing the '+id+' choice removes stale feedback');
       await invoke(checkButton,size);
       const response=clean(await feedback.textContent());
-      check(/that matches the graph/i.test(response)&&values.some(value=>valueAppears(response,value)),
+      check(/that matches the graph/i.test(response)&&valueAppears(response,values[0])&&valueAppears(response,values.at(-1)),
         label+' '+id+' practice confirms the trend with the underlying numbers');
-      await a11y(page,'#cr-income-cards',label+' '+id+' income card');
+      await a11y(page,'#cr-case-dialog',label+' '+id+' income exhibit dialog');
     }
+    await closeCaseExhibit(page,size,trigger);
+    check(await trigger.evaluate(element=>element===document.activeElement),label+' explicit Close returns focus to the '+id+' launcher');
   }
   await invoke(details.locator('summary').first(),size);
   check(!await details.evaluate(element=>element.open),label+' students can collapse the extra income evidence again');
@@ -265,23 +302,77 @@ async function inspectIncomeCards(page,size,label) {
 
 async function followupPath(page,size) {
   const details=view(page,'cr-income-cards'), form=view(page,'cr-income-followup');
+  const dashboard=new URL('openscied-dashboard.html',page.url()).href;
+  async function dashboardResume(hash) {
+    await page.goto(dashboard);
+    const resume=view(page,'openscied-resume-link');
+    await resume.waitFor({state:'visible'});
+    const destination=new URL(await resume.getAttribute('href'),dashboard);
+    check(destination.pathname.endsWith('/'+FILE) && destination.hash===hash,
+      'dashboard Resume links directly to '+hash+' on Cancer Rates Data Dive');
+    return resume;
+  }
+  async function followResume(resume,hash) {
+    await invoke(resume,size);
+    await page.waitForURL(url=>url.pathname.endsWith('/'+FILE)&&url.hash===hash);
+  }
   await invoke(details.locator('summary').first(),size);
-  await invoke(view(page,'cr-lesson1-deaths-tab'),size);
-  await invoke(view(page,'cr-lesson1-map-tab'),size);
+  const first=await openCaseExhibit(page,size,'cr-lesson1-deaths');
+  await invoke(view(page,'cr-lesson1-deaths').locator('[data-case-next]').first(),size);
+  await visible(page,'cr-lesson1-map');
+  await closeCaseExhibit(page,size,first);
   check(await form.isHidden(),'follow-up is not asked until both trends are correct');
-  await invoke(view(page,'cr-income-access-tab'),size);
+  const access=await openCaseExhibit(page,size,'cr-income-access');
   await view(page,'cr-income-access-answer').selectOption('falling');
   await invoke(view(page,'cr-income-access-check'),size);
+  await closeCaseExhibit(page,size,access);
   check(await form.isHidden(),'one correct exhibit does not unlock the follow-up');
-  await invoke(view(page,'cr-income-screening-tab'),size);
-  await view(page,'cr-income-screening-answer').selectOption('rising');
-  await invoke(view(page,'cr-income-screening-check'),size);
+  await page.evaluate(key=>{
+    const saved=JSON.parse(localStorage.getItem(key));
+    // The previous screening exhibit was a different graph, not a check on diagnoses.
+    saved.casework.screening='rising';
+    delete saved.casework.diagnosis;
+    localStorage.setItem(key,JSON.stringify(saved));
+  },SAVE);
+  let resume=await dashboardResume('#cr-income-cards');
+  check(/\b1\s*(?:of|\/)\s*2\b/i.test(await view(page,'cancer-rates-progress').textContent()),
+    'dashboard recognizes one verified case-file trend without crediting the replaced screening exhibit');
+  await followResume(resume,'#cr-income-cards');
+  await view(page,'cr-income-tabs').waitFor({state:'visible'});
+  check(await details.evaluate(element=>element.open) && await view(page,'cr-case-dialog').isHidden() && await form.isHidden() &&
+    await view(page,'cr-income-access-answer').inputValue()==='falling' && await view(page,'cr-income-diagnosis-answer').inputValue()==='',
+    'dashboard Resume opens the case file with the first check restored and the question still locked');
+  await openCaseExhibit(page,size,'cr-income-diagnosis');
+  const jump=view(page,'cr-case-question-jump');
+  check(await jump.isDisabled(),'the diagnosis exhibit cannot advance to the question before both checks');
+  await view(page,'cr-income-diagnosis-answer').selectOption(CASE_E_TREND);
+  await invoke(view(page,'cr-income-diagnosis-check'),size);
+  await invoke(jump,size);
+  await view(page,'cr-case-dialog').waitFor({state:'hidden'});
   await form.waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.activeElement?.id==='cr-income-question');
+  check(await view(page,'cr-income-question').evaluate(element=>document.activeElement===element),
+    'the modal’s Write my question action closes it and puts focus in the inline question');
   const next=view(page,'cr-income-explore');
   check(await next.isDisabled(),'both correct trends unlock a question rather than jump straight to data');
-  const investigation='Do counties with higher median household income report more mammograms?';
-  await view(page,'cr-income-question').fill(investigation);
+  const investigation='Do Michigan counties with different household incomes report different rates of late-stage breast cancer?';
+  const question=view(page,'cr-income-question');
+  await question.fill(investigation);
+  resume=await dashboardResume('#cr-income-cards');
+  await followResume(resume,'#cr-income-cards');
+  await form.waitFor({state:'visible'});
+  check(await question.inputValue()===investigation&&await next.isEnabled()&&await view(page,'explore').isHidden(),
+    'returning through the dashboard restores the typed draft without submitting or starting the explorer');
   await invoke(next,size);
+  await visible(page,'explore');
+  resume=await dashboardResume('#explore');
+  const waitingForWorkspace=page.waitForEvent('download');
+  await invoke(view(page,'download-openscied-results'),size);
+  const workspaceFile=await waitingForWorkspace;
+  const workspace=JSON.parse(await fs.readFile(await workspaceFile.path(),'utf8'));
+  check(workspace.responses?.['cancer-rates']?.investigationQuestion===investigation,
+    'the workspace download exposes the submitted question in the readable response section');
+  await followResume(resume,'#explore');
   await visible(page,'explore');
   const datasets=await view(page,'cr-view').locator('option').evaluateAll(options=>options.map(el=>el.value));
   check(['types','states','poverty','race','michigan'].every(x=>datasets.includes(x)),'case file opens the complete explorer without requiring the old prediction');
@@ -579,4 +670,3 @@ async function exercise(browser, base, size) {
     server.close();
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});
-

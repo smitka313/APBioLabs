@@ -18,7 +18,7 @@
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
     { id: 'carbon-journey', name: 'Carbon Atom Journey', file: 'openscied-b2-carbon-journey.html', key: PREFIX + 'b2-carbon-journey:v1', extraKeys: [CARBON_BUDGET_KEY], clears: 'carbon journey, budget trials, predictions and answers', progress: carbonJourneyProgress, ids: carbonResponseIds, answers: true },
-    { id: 'cancer-rates', name: 'Cancer Rates Data Dive', file: 'openscied-b3-cancer-rates.html', key: PREFIX + 'b3-cancer-rates:v1', clears: 'prediction, pinned comparisons, and written responses', progress: cancerRatesProgress, ids: cancerRatesResponseIds },
+    { id: 'cancer-rates', name: 'Cancer Rates Data Dive', file: 'openscied-b3-cancer-rates.html', key: PREFIX + 'b3-cancer-rates:v1', clears: 'prediction, case-file work, pinned comparisons, and written responses', progress: cancerRatesProgress, ids: cancerRatesResponseIds },
     { id: 'cell-cycle', name: 'Cell Cycle & Cancer', file: 'openscied-b3-cell-cycle.html', key: PREFIX + 'b3-cell-cycle:v1', clears: 'game progress, growth-model trials, and answers', progress: cellCycleProgress, ids: responseIds },
     { id: 'dna-workshop', name: 'DNA Workshop: Build, Copy, Decode', file: 'openscied-b3-dna-workshop.html', key: PREFIX + 'b3-dna-workshop:v1', clears: 'piece placements and written responses', progress: dnaWorkshopProgress, ids: dnaWorkshopResponseIds, answers: true },
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
@@ -169,7 +169,12 @@
       summary: started ? rolls + ' rolls recorded · ' + answers + ' of 5 responses written' + (saved.done ? ' · Journey complete' : '') : 'Not started' };
   }
   const CANCER_RATES_SECTIONS = ['predict', 'explore', 'explain'];
+  const CANCER_CASE_DIRECTIONS = ['rising', 'falling', 'flat'];
   function cancerRatesResponseIds() { return ['claim', 'limits']; }
+  function cancerInvestigationQuestion(saved) {
+    const casework = saved?.casework;
+    return casework?.opened === true && written(casework, 'question') ? casework.question : '';
+  }
   function cancerRatesProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
     if (!raw) return empty;
@@ -183,11 +188,21 @@
     const evidence = saved.evidence.filter(row => row && row.a != null && row.b != null && row.view && row.measure).length;
     const completed = saved.completed === true;
     const answers = cancerRatesResponseIds().filter(field).length;
-    if (!prediction && !evidence && !answers && !completed) return empty;
-    const fallback = answers || completed ? 'explain' : evidence ? 'explore' : 'predict';
-    const section = CANCER_RATES_SECTIONS.includes(saved.step) ? saved.step : fallback;
+    const casework = saved.casework || {};
+    // The activity only stores checked directions, not unsuccessful guesses.
+    const trends = ['access', 'diagnosis'].filter(key => CANCER_CASE_DIRECTIONS.includes(casework[key])).length;
+    const question = cancerInvestigationQuestion(saved);
+    const draft = written(casework, 'questionDraft');
+    if (!prediction && !evidence && !answers && !completed && !trends && !question && !draft) return empty;
+    const caseSummary = draft ? 'Question draft saved' : question ? 'Investigation question saved' : trends ? trends+' of 2 case-file trends checked' : '';
+    const fallback = answers || completed ? 'explain' : evidence || question ? 'explore' : 'predict';
+    let section = CANCER_RATES_SECTIONS.includes(saved.step) ? saved.step : fallback;
+    if (draft || (trends && !question && !evidence && !answers && !completed)) section = 'cr-income-cards';
+    else if (question && !evidence) section = 'explore';
     return { started:true, section, visited:Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
-      summary: [completed ? 'Investigation complete' : prediction ? 'Prediction saved' : '', evidence+' pinned '+(evidence === 1 ? 'comparison' : 'comparisons'), answers ? answers+' of 2 responses saved' : ''].filter(Boolean).join(' · ') };
+      summary: [completed ? 'Investigation complete' : prediction ? 'Prediction saved' : '',
+        caseSummary, evidence || !caseSummary ? evidence+' pinned '+(evidence === 1 ? 'comparison' : 'comparisons') : '',
+        answers ? answers+' of 2 responses saved' : ''].filter(Boolean).join(' · ') };
   }
   function cellCycleProgress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
@@ -415,6 +430,8 @@
           if (activity.id === 'cancer-rates') {
             responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
             responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
+            const question = cancerInvestigationQuestion(saved);
+            if (question) responses[activity.id].investigationQuestion = question;
           }
           if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
         });

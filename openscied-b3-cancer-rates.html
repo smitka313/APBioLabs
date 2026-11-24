@@ -29,11 +29,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b3-cancer-rates.css">
+<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-1">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
-<script defer src="openscied-b3-cancer-rates.js"></script>
+<script defer src="openscied-b3-cancer-rates.js?v=case-desk-1"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -48,20 +48,62 @@
     <summary class="cr-case-cover">
       <span class="cr-case-file" aria-hidden="true">UNIT 3 / CASE FILE</span>
       <strong>Evidence Cards: Who Gets Cancer and Why?</strong>
-      <span class="cr-case-action"><span class="cr-case-closed">Open folder</span><span class="cr-case-open">Close folder</span></span>
+      <span class="cr-case-action"><span class="cr-case-closed">Open case file</span><span class="cr-case-open">Collapse case file</span><span class="cr-case-chevron" aria-hidden="true"></span></span>
     </summary>
     <div class="cr-case-content">
-      <p>Start with the three Lesson 1 figures. Then examine two more exhibits on health care and household income.</p>
-      <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an evidence card">
-        <button id="cr-lesson1-diagnoses-tab" class="btn" type="button" aria-pressed="true" aria-controls="cr-lesson1-diagnoses">Exhibit A · Diagnoses</button>
-        <button id="cr-lesson1-deaths-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-lesson1-deaths">Exhibit B · Deaths</button>
-        <button id="cr-lesson1-map-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-lesson1-map">Exhibit C · State map</button>
-        <button id="cr-income-access-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-income-access">Exhibit D · Cost of care</button>
-        <button id="cr-income-screening-tab" class="btn" type="button" aria-pressed="false" aria-controls="cr-income-screening">Exhibit E · Mammography</button>
+      <p class="cr-case-intro">Open each exhibit to study the full-size evidence. Start with the three Lesson 1 figures, then compare what the two exhibits on costs and neighborhood poverty show.</p>
+      <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an exhibit">
+        <button id="cr-lesson1-diagnoses-tab" class="cr-dossier cr-dossier--cases" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit A</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M15 10v21h31M20 14h24M20 20h18M20 26h9"/></svg></span>
+          <span class="cr-dossier-name">Diagnoses</span><span class="cr-dossier-meta">Lesson 1 · Bar graph</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-lesson1-deaths-tab" class="cr-dossier cr-dossier--deaths" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit B</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M15 10v21h31M20 14h19M20 20h14M20 26h8"/></svg></span>
+          <span class="cr-dossier-name">Deaths</span><span class="cr-dossier-meta">Lesson 1 · Bar graph</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-lesson1-map-tab" class="cr-dossier cr-dossier--map" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit C</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M12 11l9-4 10 4 10-4 8 4v19l-8-4-10 4-10-4-9 4zM21 7v19m10-15v19m10-23v19"/></svg></span>
+          <span class="cr-dossier-name">State map</span><span class="cr-dossier-meta">Lesson 1 · U.S. map</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-income-access-tab" class="cr-dossier cr-dossier--access" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit D</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><circle cx="30" cy="20" r="12"/><path d="M30 11v18m5-14h-7a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5h-7"/></svg></span>
+          <span class="cr-dossier-name">Cost of care</span><span class="cr-dossier-meta">Income · Trend check</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-income-diagnosis-tab" class="cr-dossier cr-dossier--stage" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit E</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><circle cx="26" cy="17" r="9"/><path d="m33 24 10 10M22 17h8m-4-4v8"/></svg></span>
+          <span class="cr-dossier-name">Stage at diagnosis</span><span class="cr-dossier-meta">Neighborhood poverty · Comparison</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
       </div>
-      <section class="cr-exhibit" id="cr-lesson1-diagnoses" aria-labelledby="cr-lesson1-diagnoses-title">
+      <p id="cr-income-progress">Check both comparisons to unlock the next step.</p>
+      <form id="cr-income-followup" class="cr-case-debrief" hidden>
+        <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
+        <p>The cost survey and the cancer registry cover different people. Each exhibit can raise a question about access or diagnosis, but these data do not show that cost caused a later diagnosis.</p>
+        <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
+        <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
+        <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
+        <button id="cr-income-explore" class="btn btn--primary" disabled type="submit">Explore More Data</button>
+      </form>
+    </div>
+  </details>
+  <dialog id="cr-case-dialog" class="cr-case-modal" aria-labelledby="cr-lesson1-diagnoses-title">
+    <header class="cr-case-modal-bar">
+      <span id="cr-case-position">Exhibit 1 of 5</span>
+      <button class="btn" id="cr-case-close" type="button"><span aria-hidden="true">× </span>Close exhibit</button>
+    </header>
+    <p id="cr-case-live" class="cr-case-live" role="status" aria-atomic="true"></p>
+      <section class="cr-exhibit" id="cr-lesson1-diagnoses" aria-labelledby="cr-lesson1-diagnoses-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT A · LESSON 1</p>
-        <h2 id="cr-lesson1-diagnoses-title">Top 10 cancers by rate of new cases</h2>
+        <h2 id="cr-lesson1-diagnoses-title" tabindex="-1">Top 10 cancers by rate of new cases</h2>
         <figure class="cr-lesson-graph cr-income-figure">
           <figcaption>United States, 2021 · Rate per 100,000 people</figcaption>
           <ul class="cr-income-bars" aria-label="Exact values in printed figure order">
@@ -83,7 +125,7 @@
       </section>
       <section class="cr-exhibit" id="cr-lesson1-deaths" aria-labelledby="cr-lesson1-deaths-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT B · LESSON 1</p>
-        <h2 id="cr-lesson1-deaths-title">Top 10 cancers by rate of deaths</h2>
+        <h2 id="cr-lesson1-deaths-title" tabindex="-1">Top 10 cancers by rate of deaths</h2>
         <figure class="cr-lesson-graph cr-income-figure">
           <figcaption>United States, 2021 · Rate per 100,000 people</figcaption>
           <ul class="cr-income-bars" aria-label="Exact values in printed figure order">
@@ -105,9 +147,12 @@
       </section>
       <section class="cr-exhibit" id="cr-lesson1-map" aria-labelledby="cr-lesson1-map-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT C · LESSON 1</p>
-        <h2 id="cr-lesson1-map-title">Rate of new cancers by state, 2021</h2>
+        <h2 id="cr-lesson1-map-title" tabindex="-1">Rate of new cancers by state, 2021</h2>
         <figure class="cr-lesson-graph cr-lesson-map">
+          <div class="cr-map-tools"><button class="btn" id="cr-lesson1-map-zoom" type="button" aria-controls="cr-lesson1-map-scroll" aria-pressed="false">Zoom map</button></div>
+          <div id="cr-lesson1-map-scroll" class="cr-map-window" role="region" aria-label="Original map of new cancer rates by state">
           <img width="1700" height="1220" loading="lazy" src="assets/cancer-rates-lesson1-state-map.webp" alt="Map of 2021 new cancer rates by state. Four blue shades indicate increasing rates. See the readable map key below.">
+          </div>
           <figcaption>OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 3. Source: U.S. Cancer Statistics (CDC and NCI). <a href="assets/cancer-rates-lesson1-state-map.webp">Open the full-size map</a>.</figcaption>
         </figure>
         <details class="cr-case-debrief"><summary>Readable map key</summary>
@@ -117,7 +162,7 @@
       </section>
       <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT D</p>
-        <h2 id="cr-income-access-title">When does cost keep people from getting care?</h2>
+        <h2 id="cr-income-access-title" tabindex="-1">When does cost keep people from getting care?</h2>
         <p>Adults who needed to see a doctor in the past year but reported they could not afford to go.</p>
         <figure class="cr-income-figure">
           <figcaption>Annual household income · Could not afford a needed visit (%)</figcaption>
@@ -143,50 +188,44 @@
             <button class="btn btn--primary" id="cr-income-access-check" type="button" disabled>Check my trend</button>
           </div>
           <p id="cr-income-access-feedback" class="cr-case-feedback" hidden></p>
+          <div><button class="btn" type="button" data-case-next="income-diagnosis">Next: stage at diagnosis</button></div>
         </div>
       </section>
-      <section class="cr-exhibit" id="cr-income-screening" aria-labelledby="cr-income-screening-title" hidden>
+      <section class="cr-exhibit" id="cr-income-diagnosis" aria-labelledby="cr-income-diagnosis-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT E</p>
-        <h2 id="cr-income-screening-title">Who reported getting a mammogram?</h2>
-        <p>Women ages 50–74 who reported having a mammogram in the past two years.</p>
-        <figure class="cr-income-figure">
-          <figcaption>Annual household income · Reported a mammogram (%)</figcaption>
-          <ul class="cr-income-bars" aria-label="Exact values by income group">
-            <li class="cr-income-bar" data-value="63.1"><span>Under $15,000</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:63.10%"></span></span> <strong>63.1%</strong></li>
-            <li class="cr-income-bar" data-value="69.2"><span>$15,000–$34,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:69.20%"></span></span> <strong>69.2%</strong></li>
-            <li class="cr-income-bar" data-value="74.7"><span>$35,000–$49,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:74.70%"></span></span> <strong>74.7%</strong></li>
-            <li class="cr-income-bar" data-value="78.0"><span>$50,000–$74,999</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:78.00%"></span></span> <strong>78.0%</strong></li>
-            <li class="cr-income-bar" data-value="82.6"><span>$75,000 or more</span><span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:82.60%"></span></span> <strong>82.6%</strong></li>
+        <h2 id="cr-income-diagnosis-title" tabindex="-1">Who was diagnosed at an early stage?</h2>
+        <p>Researchers used the California Cancer Registry to compare stage at diagnosis for 1,706,573 people age 15 or older with one of nine cancers, 2006–2020.</p>
+        <figure class="cr-income-figure cr-stage-figure">
+          <figcaption>Share of diagnosed patients whose cancer was found at an early stage (%)</figcaption>
+          <ul class="cr-income-bars" aria-label="Exact percentages of diagnosed patients by neighborhood group">
+            <li class="cr-income-bar" data-value="46.6"><span>Neighborhoods with persistent poverty</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:46.60%"></span></span> <strong>46.6%</strong></li>
+            <li class="cr-income-bar" data-value="58.2"><span>Other neighborhoods</span> <span class="cr-income-track" aria-hidden="true"><span style="--cr-extent:58.20%"></span></span> <strong>58.2%</strong></li>
           </ul>
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div></div>
         </figure>
-        <p class="cr-source">2022 U.S. CDC survey. A mammogram is a screening measure here, not a count of diagnoses. <a href="https://www.cdc.gov/mmwr/volumes/73/wr/mm7315e1.htm">CDC Table 2</a></p>
+        <details class="cr-case-debrief">
+          <summary>What do these groups and percentages mean?</summary>
+          <p><strong>Early stage</strong> here means in situ or localized: the cancer had not spread beyond where it started. <strong>Persistent poverty</strong> means a neighborhood poverty rate of at least 20% for roughly 30 years. It does not tell us a patient’s income.</p>
+          <p>Persistent-poverty neighborhoods: 47,426 of 101,820 diagnosed patients. Other neighborhoods: 933,285 of 1,604,753. These totals include people whose stage was unknown (8.3% and 5.7%, respectively). The chart does not show what caused the difference.</p>
+        </details>
+        <p class="cr-source">California Cancer Registry, 2006–2020. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC13151751/">Original study, Table 1</a>.</p>
         <div class="cr-case-question">
           <p class="cr-exhibit-tag">CASE NOTE</p>
-          <label for="cr-income-screening-answer">As household income goes up across the groups shown, what happens to the percentage?</label>
+          <label for="cr-income-diagnosis-answer">Was early-stage diagnosis less common or more common in neighborhoods with persistent poverty than in other neighborhoods?</label>
           <div class="cr-case-controls">
-            <select id="cr-income-screening-answer">
-              <option value="">Choose the trend…</option>
-              <option value="rising">It generally goes up.</option>
-              <option value="falling">It generally goes down.</option>
-              <option value="flat">It stays about the same.</option>
+            <select id="cr-income-diagnosis-answer">
+              <option value="">Choose the comparison…</option>
+              <option value="rising">Less common in neighborhoods with persistent poverty.</option>
+              <option value="falling">More common in neighborhoods with persistent poverty.</option>
+              <option value="flat">About the same in both groups.</option>
             </select>
-            <button class="btn btn--primary" id="cr-income-screening-check" type="button" disabled>Check my trend</button>
+            <button class="btn btn--primary" id="cr-income-diagnosis-check" type="button" disabled>Check my comparison</button>
           </div>
-          <p id="cr-income-screening-feedback" class="cr-case-feedback" hidden></p>
+          <p id="cr-income-diagnosis-feedback" class="cr-case-feedback" hidden></p>
+          <div><button class="btn" id="cr-case-question-jump" type="button" disabled>Write my question →</button></div>
         </div>
       </section>
-      <p id="cr-income-progress">Check both trends to unlock the next step.</p>
-      <form id="cr-income-followup" class="cr-case-debrief" hidden>
-        <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
-        <p>The two cards describe different groups of people. They give you a reason to investigate a possible link, not proof of why someone got a mammogram or skipped one.</p>
-        <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
-        <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
-        <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
-        <button id="cr-income-explore" class="btn btn--primary" disabled type="submit">Explore More Data</button>
-      </form>
-    </div>
-  </details>
+  </dialog>
   <nav class="cr-steps" aria-label="Investigation steps">
     <button type="button" data-step="predict" aria-current="step"><span aria-hidden="true">01</span> Predict</button>
     <button type="button" data-step="explore" disabled><span aria-hidden="true">02</span> Explore More Data</button>

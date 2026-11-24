@@ -317,3 +317,28 @@ test('a cached dashboard without the Cancer Rates card keeps existing cards and 
   assert.equal(s.el('#dna-workshop-progress').textContent, 'Not started');
   assert.equal(s.el('#download-openscied-results').disabled, false);
 });
+
+test('case evidence checks and a question draft are resumable before a comparison is pinned', () => {
+  const key = 'aplab:openscied:b3-cancer-rates:v1';
+  const base = { step:'predict', evidence:[], lastVisitedAt:1800000000000 };
+  const partial = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',screening:'rising'}})});
+  assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 2 case-file trends checked/);
+  assert.equal(partial.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
+  const draft = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',diagnosis:'rising',questionDraft:'Which groups were diagnosed earlier?'}})});
+  assert.match(draft.el('#cancer-rates-progress').textContent,/Question draft saved/);
+  assert.equal(draft.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
+});
+
+test('a submitted case question resumes Explore and is included in readable backup responses', async () => {
+  const key = 'aplab:openscied:b3-cancer-rates:v1';
+  const question = 'How does stage at diagnosis differ by place?';
+  const raw = JSON.stringify({step:'explore',evidence:[],lastVisitedAt:1800000000000,
+    casework:{access:'falling',diagnosis:'rising',question,opened:true}});
+  const s = setup(false,{[key]:raw});
+  assert.match(s.el('#cancer-rates-progress').textContent,/Investigation question saved/);
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#explore');
+  s.el('#download-openscied-results').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.equal(payload.responses['cancer-rates'].investigationQuestion,question);
+  assert.equal(payload.work[key],raw);
+});

@@ -21,10 +21,10 @@
   const newSetting=view=>({measure:view==='michigan'?'late-rate':'incidence',a:spec[view].pair[0],b:spec[view].pair[1],sort:view==='michigan'?'late-rate':'incidence',dir:'desc',query:'',rows:12,region:'all',x:'screening'});
   const defaults={labels:true,marks:true,benchmark:true,'pair-only':false,trend:false};
   const designItems={access:'Access evidence',cost:'Prototype cost ($)',visible:'Trials with visible target',trials:'Total trials',quality:'Image quality',durability:'Durability',recommendation:'Design recommendation and remaining evidence'};
-  const exhibits=['access','screening'];
+  const exhibits=['access','diagnosis'];
   const exhibitValues=Object.fromEntries(exhibits.map(k=>[k,[...$('income-'+k).querySelectorAll('.cr-income-bar')].map(row=>Number(row.dataset.value))]));
   const directions=Object.fromEntries(exhibits.map(k=>[k,L.exhibitTrend(exhibitValues[k])]));
-  const fresh=()=>({casework:{access:'',screening:'',question:'',opened:false},design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
+  const fresh=()=>({casework:{access:'',diagnosis:'',question:'',questionDraft:null,opened:false},design:Object.fromEntries(Object.keys(designItems).map(k=>[k,''])),step:'predict',view:'types',slot:'a',socio:'poverty',prediction:{choice:'',reason:'',locked:false},evidence:[],claim:'',limits:'',completed:false,person:{name:'',period:''},layer:{...defaults},settings:Object.fromEntries(views.map(v=>[v,newSetting(v)])),lastVisitedAt:0});
   let state=fresh(), invalid=false, blocked=false;
   function clean(raw){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Invalid record');
@@ -37,6 +37,7 @@
     next.prediction.reason=str(pr?.reason,1200);
     for(const k of exhibits)if(directions[k]&&raw.casework?.[k]===directions[k])next.casework[k]=directions[k];
     next.casework.question=str(raw.casework?.question,500);
+    next.casework.questionDraft=typeof raw.casework?.questionDraft==='string'?str(raw.casework.questionDraft,500):null;
     next.casework.opened=raw.casework?.opened===true&&!!next.casework.question.trim();
     for(const k of Object.keys(designItems))next.design[k]=str((raw.design ?? raw.ret)?.[k],1600);
     next.claim=str(raw.claim,1600);next.limits=str(raw.limits,1600);
@@ -441,48 +442,90 @@
   });
   // Supplemental evidence cards leave the existing prediction and explorer state intact.
   const casefile=$('income-cards'), question=$('income-question'), followup=$('income-followup');
+  const caseDialog=$('case-dialog'), questionJump=$('case-question-jump');
+  const mapWindow=$('lesson1-map-scroll'), mapZoom=$('lesson1-map-zoom');
+  let caseOpener=null, focusQuestion=false;
   const caseTabs=['lesson1-diagnoses','lesson1-deaths','lesson1-map',...exhibits.map(k=>'income-'+k)];
   const checkedCount=()=>exhibits.filter(k=>state.casework[k]===directions[k]&&directions[k]).length;
   function updateFollowup(){
     const count=checkedCount();
     followup.hidden=count!==2;
     $('income-explore').disabled=count!==2||!question.value.trim();
-    text('income-progress',count===2?'Both exhibits checked. Write your follow-up question.':count+' of 2 trends checked. Check both to unlock the next step.');
-  }
-  function showExhibit(k){
-    for(const id of caseTabs){
-      $(id).hidden=id!==k;
-      $(id+'-tab').setAttribute('aria-pressed',String(id===k));
+    questionJump.disabled=count!==2;
+    text('income-progress',count===2?'Both exhibits checked. Write your follow-up question.':count+' of 2 comparisons checked. Check both to unlock the next step.');
+    for(const k of exhibits){
+      const cover=$('income-'+k+'-tab');
+      const checked=!!state.casework[k];
+      cover.dataset.checked=String(checked);
+      cover.dataset.resume=String(count===1&&!checked&&!state.casework.opened);
+      cover.querySelector('.cr-dossier-link').textContent=checked?'✓ Checked • reopen':cover.dataset.resume==='true'?'Resume here ↗':'Open exhibit ↗';
     }
   }
+  function setMapZoom(zoomed){
+    mapWindow.dataset.zoomed=String(zoomed);
+    mapZoom.setAttribute('aria-pressed',String(zoomed));
+    mapZoom.textContent=zoomed?'Fit map to window':'Zoom map';
+    if(zoomed)mapWindow.tabIndex=0;
+    else{mapWindow.removeAttribute('tabindex');mapWindow.scrollLeft=0;}
+  }
+  function showExhibit(k,opener){
+    if(!caseTabs.includes(k))return;
+    for(const id of caseTabs)$(id).hidden=id!==k;
+    const title=$(k+'-title');
+    caseDialog.setAttribute('aria-labelledby',title.id);
+    text('case-position','Exhibit '+(caseTabs.indexOf(k)+1)+' of '+caseTabs.length);
+    text('case-live','');
+    setMapZoom(false);
+    if(!caseDialog.open){
+      caseOpener=opener??$(k+'-tab');focusQuestion=false;
+      caseDialog.showModal();
+    }
+    caseDialog.scrollTop=0;
+    title.focus({preventScroll:true});
+  }
+  $('case-close').addEventListener('click',()=>caseDialog.close());
+  caseDialog.addEventListener('close',()=>{
+    const target=focusQuestion?question:caseOpener;
+    caseOpener=null;focusQuestion=false;text('case-live','');
+    if(target?.isConnected)target.focus(target===question?{}:{preventScroll:true});
+  });
+  mapZoom.addEventListener('click',()=>setMapZoom(mapZoom.getAttribute('aria-pressed')!=='true'));
+  questionJump.addEventListener('click',()=>{
+    if(checkedCount()!==2)return;
+    focusQuestion=true;caseDialog.close();
+  });
   function feedbackFor(k,right){
     const values=exhibitValues[k],direction=directions[k];
     const from=number(values[0],1)+'%', to=number(values.at(-1),1)+'%';
+    if(k==='diagnosis'){
+      const reason='Early-stage diagnosis was less common in neighborhoods with persistent poverty ('+from+') than in other neighborhoods ('+to+'), a gap of '+number(Math.abs(values[0]-values.at(-1)),1)+' percentage points. This comparison does not tell us why.';
+      return right?'That matches the graph. '+reason:'Not quite. Compare the two labeled percentages. '+reason+' Try again.';
+    }
     const movement=direction==='rising'?'rises':direction==='falling'?'falls':'stays level';
     const reason='From the lowest to the highest income group shown, the percentage '+movement+' from '+from+' to '+to+'.';
     return right?'That matches the graph. '+reason:'Not quite. Compare the first and last bars. '+reason+' Try again.';
   }
   function syncCasefile(){
-    question.value=state.casework.question;
+    question.value=state.casework.questionDraft??state.casework.question;
     for(const k of exhibits){
       const id='income-'+k,fb=$(id+'-feedback'),correct=!!state.casework[k];
       $(id+'-answer').value=state.casework[k];$(id+'-check').disabled=!correct;
       fb.hidden=!correct;fb.textContent=correct?feedbackFor(k,true):'';
       if(correct)fb.dataset.result='correct';else delete fb.dataset.result;
     }
-    showExhibit(caseTabs[0]);updateFollowup();
+    updateFollowup();
   }
-  for(const id of caseTabs)$(id+'-tab').addEventListener('click',()=>showExhibit(id));
-  for(const b of all('[data-case-next]'))b.addEventListener('click',()=>{
-    showExhibit(b.dataset.caseNext);$(b.dataset.caseNext+'-tab').focus();
+  for(const id of caseTabs)$(id+'-tab').addEventListener('click',event=>showExhibit(id,event.currentTarget));
+  for(const b of all('[data-case-next]'))b.addEventListener('click',()=>showExhibit(b.dataset.caseNext));
+  question.addEventListener('input',()=>{
+    state.casework.questionDraft=str(question.value,500);save();updateFollowup();
   });
-  question.addEventListener('input',updateFollowup);
   followup.addEventListener('submit',event=>{
     event.preventDefault();
     if(checkedCount()!==2||!question.value.trim())return;
     const next=question.value.trim();
     if(next!==state.casework.question)state.completed=false;
-    state.casework.question=next;state.casework.opened=true;
+    state.casework.question=next;state.casework.questionDraft=null;state.casework.opened=true;
     casefile.open=false;goto('explore');
   });
   for(const k of exhibits){
@@ -499,12 +542,14 @@
       feedback.textContent=feedbackFor(k,right);
       feedback.dataset.result=right?'correct':'retry';feedback.hidden=false;
       updateFollowup();
-      announce(feedback.textContent+(checkedCount()===2?' Both exhibits checked. You can now write a follow-up question.':''));
+      text('case-live',feedback.textContent+(checkedCount()===2?' Both exhibits checked. You can now write a follow-up question.':''));
     });
   }
   syncCasefile();
   const hash=location.hash.slice(1);
   if(hash==='cr-income-cards')casefile.open=true;
+  const exhibitHash=hash==='cr-income-screening'?'income-diagnosis':hash.startsWith('cr-')?hash.slice(3):'';
+  if(caseTabs.includes(exhibitHash)){casefile.open=true;showExhibit(exhibitHash);}
   if(steps.includes(hash)&&available(hash))state.step=hash;
   if(blocked)text('save','Browser storage is unavailable. Download your work before leaving.');
   if(invalid)text('save','A previous record was preserved. Download this investigation before leaving.');
