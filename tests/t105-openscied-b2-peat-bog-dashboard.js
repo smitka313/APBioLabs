@@ -12,10 +12,11 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
     T.ok(/Not started/.test(await p.locator('#peat-bog-progress').innerText()) && await p.locator('#peat-bog-reset').isDisabled(), 'new visit: Not started, restart disabled');
     T.ok((await p.locator('#peat-bog-open').getAttribute('href')).startsWith('openscied-b2-peat-bog-lab.html'), 'card links to the page');
     const unit2 = p.locator('section[aria-labelledby="unit2"]'), unit3 = p.locator('section[aria-labelledby="unit3"]');
-    T.ok(await unit2.locator('.dashboard-activity').count() === 4 && await unit3.locator('.dashboard-activity').count() === 5 &&
+    T.ok(await unit2.locator('.dashboard-activity').count() === 4 && await unit3.locator('.dashboard-activity').count() === 6 &&
       (await unit2.locator('.dashboard-tag').textContent()).trim() === '4 activities available' &&
-      (await unit3.locator('.dashboard-tag').textContent()).trim() === '5 activities available',
-    'Unit 2 stays at four activities and Unit 3 has five including Cancer Rates Data Dive and DNA Workshop');
+      (await unit3.locator('.dashboard-tag').textContent()).trim() === '6 activities available' &&
+      await unit3.locator('#screening-open').count() === 1,
+    'Unit 2 stays at four activities and Unit 3 has six including Cancer Rates Data Dive, Cancer Screening Design Lab, and DNA Workshop');
     const coming = p.locator('.dashboard-coming-soon');
     T.ok(/Unit 5.*No companion activities yet/.test(await coming.innerText()) && /openscied\.org.*b-5-common-ancestry-speciation/.test(await coming.locator('a').getAttribute('href')),
       'unpublished Unit 5 links to the official unit, not an empty activity');
