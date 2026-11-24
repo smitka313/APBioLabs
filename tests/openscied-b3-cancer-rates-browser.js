@@ -209,10 +209,9 @@ async function closeCaseExhibit(page,size,trigger,{escape=false}={}) {
 }
 
 async function inspectIncomeCards(page,size,label) {
-  await view(page,'cr-view').selectOption('michigan');
   const details=view(page,'cr-income-cards');
   await details.waitFor({state:'visible'});
-  check(!await details.evaluate(element=>element.open),label+' income evidence is optional and starts collapsed');
+  check(!await details.evaluate(element=>element.open),label+' the required Evidence Folder starts collapsed before saving a prediction');
   await invoke(details.locator('summary').first(),size);
   check(await page.locator('.cr-file-stamp').isVisible()&&await details.locator('.cr-case-index').first().isVisible(),label+' case briefing and evidence log are visible');
   await capture(page,label+'-case-dossier');
@@ -231,6 +230,7 @@ async function inspectIncomeCards(page,size,label) {
   const tabOrder=await tabs.locator('button[id$="-tab"]').evaluateAll(buttons=>buttons.map(button=>button.id.replace(/-tab$/,'')));
   check(JSON.stringify(tabOrder)===JSON.stringify(exhibitOrder),
     label+' exactly six exhibits open in the expected sequence');
+  check((await tabs.locator('.cr-dossier-link').allTextContents()).every(t=>/required/i.test(t)),label+' every new exhibit is explicitly labeled required');
   const dialog=view(page,'cr-case-dialog');
   check(await dialog.isHidden(),label+' opening the cover does not open a modal');
   check((await tabs.locator('button[id$="-tab"]').evaluateAll(buttons=>buttons.map(button=>button.getAttribute('aria-haspopup')))).every(value=>value==='dialog'),
@@ -323,6 +323,29 @@ async function inspectIncomeCards(page,size,label) {
   check(!await details.evaluate(element=>element.open),label+' students can collapse the extra income evidence again');
 }
 
+const lessonNotes={ diagnoses:'The breast cancer rate is highest on this chart.', deaths:'Lung and bronchus moves to the top of the death-rate chart.', map:'Kentucky is in a higher rate group than California.' };
+async function saveLessonObservations(page,size){
+  for(const [key,note] of Object.entries(lessonNotes)){
+    const id='cr-lesson1-'+key, trigger=await openCaseExhibit(page,size,id);
+    const input=view(page,id+'-observation'), button=view(page,id+'-save');
+    check(await button.isDisabled(),'blank or unchanged '+key+' observation cannot be saved');
+    await input.fill(note);
+    await invoke(button,size);
+    check(await button.isDisabled(),'the '+key+' observation was saved');
+    await closeCaseExhibit(page,size,trigger);
+  }
+}
+async function finishCaseChecks(page,size){
+  for(const [key,answer] of Object.entries({access:'falling', diagnosis:CASE_E_TREND,'test-cost':CASE_F_CLAIM})){
+    const id='cr-income-'+key, trigger=await openCaseExhibit(page,size,id);
+    if(await view(page,id+'-answer').isEnabled()){
+      await view(page,id+'-answer').selectOption(answer);
+      await invoke(view(page,id+'-check'),size);
+    }
+    await closeCaseExhibit(page,size,trigger);
+  }
+}
+
 async function followupPath(page,size) {
   const details=view(page,'cr-income-cards'), form=view(page,'cr-income-followup');
   const dashboard=new URL('openscied-dashboard.html',page.url()).href;
@@ -344,7 +367,7 @@ async function followupPath(page,size) {
   await invoke(view(page,'cr-lesson1-deaths').locator('[data-case-next]').first(),size);
   await visible(page,'cr-lesson1-map');
   await closeCaseExhibit(page,size,first);
-  check(await form.isHidden(),'follow-up is not asked until all three trends are correct');
+  check(await form.isHidden(),'follow-up is not asked for opening exhibits without completing them');
   const access=await openCaseExhibit(page,size,'cr-income-access');
   await view(page,'cr-income-access-answer').selectOption('falling');
   await invoke(view(page,'cr-income-access-check'),size);
@@ -358,7 +381,7 @@ async function followupPath(page,size) {
     localStorage.setItem(key,JSON.stringify(saved));
   },SAVE);
   let resume=await dashboardResume('#cr-income-cards');
-  check(/\b1\s*(?:of|\/)\s*3\b/i.test(await view(page,'cancer-rates-progress').textContent()),
+  check(/\b1\s*(?:of|\/)\s*6\b/i.test(await view(page,'cancer-rates-progress').textContent()),
     'dashboard recognizes one verified case-file trend without crediting the replaced screening exhibit');
   await followResume(resume,'#cr-income-cards');
   await view(page,'cr-income-tabs').waitFor({state:'visible'});
@@ -374,6 +397,12 @@ async function followupPath(page,size) {
   check(await jump.isDisabled()&&await form.isHidden(),'two checks do not unlock the question on a new run');
   await view(page,'cr-income-test-cost-answer').selectOption(CASE_F_CLAIM);
   await invoke(view(page,'cr-income-test-cost-check'),size);
+  check(await jump.isDisabled()&&await form.isHidden()&&
+    (await view(page,'cr-income-progress').textContent()).includes('Still needed: A, B, C'),
+    'even three successful D–F checks cannot bypass the A–C observations');
+  await closeCaseExhibit(page,size,view(page,'cr-income-diagnosis-tab'));
+  await saveLessonObservations(page,size);
+  await openCaseExhibit(page,size,'cr-income-test-cost');
   await invoke(jump,size);
   await view(page,'cr-case-dialog').waitFor({state:'hidden'});
   await form.waitFor({state:'visible'});
@@ -381,7 +410,7 @@ async function followupPath(page,size) {
   check(await view(page,'cr-income-question').evaluate(element=>document.activeElement===element),
     'the modal’s Write my question action closes it and puts focus in the inline question');
   const next=view(page,'cr-income-explore');
-  check(await next.isDisabled(),'three correct comparisons unlock a question rather than jump straight to data');
+  check(await next.isDisabled(),'six complete exhibits unlock a question rather than jump straight to data');
   const investigation='Do Michigan counties with different household incomes report different rates of late-stage breast cancer?';
   const question=view(page,'cr-income-question');
   await question.fill(investigation);
@@ -585,9 +614,21 @@ async function exercise(browser, base, size) {
     await fits(page,'main, #predict, #cr-prediction, #cr-reason, #cr-lock',label+' Predict');
     await capture(page,label+'-predict','#cr-prediction');
     if (size.deep) await a11y(page,'#predict',label+' Predict');
+    await inspectIncomeCards(page,size,label);
     await view(page,'cr-prediction').selectOption(size.touch ? 'same' : 'different');
     await view(page,'cr-reason').fill(REASON);
     await invoke(view(page,'cr-lock'),size);
+    check(await view(page,'explore').isHidden()&&await page.locator('[data-step="explore"]').isDisabled(),
+      label+' saving a prediction opens the required exhibits without bypassing them');
+    await page.goto(new URL(FILE+'#explore',base).href);
+    await page.reload();
+    check(await view(page,'explore').isHidden(),label+' a direct Explore link cannot bypass incomplete exhibits');
+    await saveLessonObservations(page,size);
+    await finishCaseChecks(page,size);
+    check(await page.locator('[data-step="explore"]').isDisabled()&&await view(page,'cr-income-explore').isDisabled(),
+      label+' six complete exhibits still require a follow-up question');
+    await view(page,'cr-income-question').fill('How can access to care help explain the observed differences?');
+    await invoke(view(page,'cr-income-explore'),size);
     await visible(page,'explore');
     await view(page,'cr-verdict').waitFor({ state:'visible' });
     check(clean(await view(page,'cr-verdict').textContent()).length > 20,label+' prediction is checked against the published comparison');
@@ -615,7 +656,6 @@ async function exercise(browser, base, size) {
       await inspectPoverty(page,label);
       await inspectRace(page,label);
     }
-    await inspectIncomeCards(page,size,label);
     const michigan = size.width===1366 ? await inspectMichigan(page,size,label) : null;
     const pair = await stateSearchAndPair(page,size,label);
     await capture(page,label+'-states','#cr-chart');
@@ -636,6 +676,7 @@ async function exercise(browser, base, size) {
     const evidence = clean(await view(page,'cr-evidence-list').textContent());
     check(pair.every(row=>evidence.includes(row.cells[1]) && valueAppears(evidence,row.cells[2])),
       label+' Explain brings its own evidence next to the student’s writing, with no backtracking');
+    check((await view(page,'cr-lesson-observations').textContent()).includes(lessonNotes.map),label+' the saved Exhibit C observation returns beside Explain');
     if (michigan) {
       check(michigan.names.every((name,i)=>evidence.includes(name)&&valueAppears(evidence,michigan.pair[i].lateRate)),
         label+' Explain carries the exact Michigan evidence without backtracking');

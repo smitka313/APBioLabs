@@ -190,14 +190,16 @@
     const answers = cancerRatesResponseIds().filter(field).length;
     const casework = saved.casework || {};
     // The activity only stores checked directions, not unsuccessful guesses.
-    const trends = Object.entries(CANCER_CASE_ANSWERS).filter(([key,answer]) => casework[key] === answer).length;
+    const checks = Object.entries(CANCER_CASE_ANSWERS).filter(([key,answer]) => casework[key] === answer).length;
+    const notes = ['diagnoses','deaths','map'].filter(key => written(casework.notes ?? {}, key)).length;
+    const trends = checks + notes;
     const question = cancerInvestigationQuestion(saved);
     const draft = written(casework, 'questionDraft');
     if (!prediction && !evidence && !answers && !completed && !trends && !question && !draft) return empty;
-    const caseSummary = draft ? 'Question draft saved' : question ? 'Investigation question saved' : trends ? trends+' of 3 case-file trends checked' : '';
+    const caseSummary = draft ? 'Question draft saved' : question ? 'Investigation question saved' : trends ? trends+' of 6 exhibits complete' : '';
     const fallback = answers || completed ? 'explain' : evidence || question ? 'explore' : 'predict';
     let section = CANCER_RATES_SECTIONS.includes(saved.step) ? saved.step : fallback;
-    if (draft || (trends && !question && !evidence && !answers && !completed)) section = 'cr-income-cards';
+    if (draft || trends < 6 || !question) section = 'cr-income-cards';
     else if (question && !evidence) section = 'explore';
     return { started:true, section, visited:Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       summary: [completed ? 'Investigation complete' : prediction ? 'Prediction saved' : '',

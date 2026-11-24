@@ -250,3 +250,7 @@ body:has(.cr-case-modal[open]){overflow:hidden}
   .cr-case-briefing{padding:.43rem .53rem}
   .cr-exhibit{border-inline-start-width:3px}
 }
+
+/* Keep the exhibit requirement visible alongside the individual completion marks. */
+#cr-income-progress{padding:.48rem .66rem;background:var(--cr-cover);border:1px solid var(--cr-desk-line);border-radius:7px;color:var(--cr-desk-ink);font-weight:700}
+.cr-case-question textarea{width:100%;min-height:4rem}

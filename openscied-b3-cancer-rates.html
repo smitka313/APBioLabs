@@ -29,11 +29,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-3">
+<link rel="stylesheet" href="openscied-b3-cancer-rates.css?v=case-desk-4">
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
-<script defer src="openscied-b3-cancer-rates.js?v=case-desk-2"></script>
+<script defer src="openscied-b3-cancer-rates.js?v=case-desk-4"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -79,7 +79,7 @@
     <div class="cr-case-content">
       <div class="cr-case-briefing">
         <p class="cr-case-index">Evidence log <span>A–F</span></p>
-        <p class="cr-case-intro">Start with the three Lesson 1 records. Then check three leads: the cost of care, stage at diagnosis, and what happens when patients face higher testing costs.</p>
+        <p class="cr-case-intro"><strong>All six exhibits are required.</strong> Record an observation in each of A–C, then answer the checks in D–F correctly. Write your follow-up question to unlock Explore More Data.</p>
       </div>
       <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an exhibit">
         <button id="cr-lesson1-diagnoses-tab" class="cr-dossier cr-dossier--cases" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
@@ -119,7 +119,7 @@
           <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
         </button>
       </div>
-      <p id="cr-income-progress">Check the three comparisons to unlock the next step.</p>
+      <p id="cr-income-progress">0 of 6 exhibits complete. Still needed: A, B, C, D, E, F.</p>
       <form id="cr-income-followup" class="cr-case-debrief" hidden>
         <p class="cr-case-index">Field notebook <span>NEW LEAD</span></p>
         <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
@@ -157,7 +157,9 @@
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>75</span><span>150</span></div></div>
         </figure>
         <p class="cr-source">OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 1. Source: U.S. Cancer Statistics (CDC and NCI). For female-specific and male-specific cancers, the denominator is the indicated population.</p>
-        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Which cancer has the highest new diagnosis rate? What do you notice about the shape of the graph?</p><div><button class="btn" type="button" data-case-next="lesson1-deaths">Next: cancer deaths</button></div></div>
+        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Which cancer has the highest new diagnosis rate? What do you notice about the shape of the graph?</p><label for="cr-lesson1-diagnoses-observation">Your Exhibit A observation</label>
+          <textarea id="cr-lesson1-diagnoses-observation" rows="2" maxlength="500"></textarea>
+          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-diagnoses-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="lesson1-deaths">Next: cancer deaths</button></div></div>
       </section>
       <section class="cr-exhibit" id="cr-lesson1-deaths" aria-labelledby="cr-lesson1-deaths-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT B · LESSON 1</p>
@@ -179,7 +181,9 @@
           <div class="cr-income-scale" aria-hidden="true"><span></span><div><span>0</span><span>20</span><span>40</span></div></div>
         </figure>
         <p class="cr-source">OpenSciEd Lesson 1, <i>US Cancer Data</i>, Figure 2. Source: U.S. Cancer Statistics (CDC and NCI). For female-specific and male-specific cancers, the denominator is the indicated population.</p>
-        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Does the same cancer lead both charts? Find one cancer that appears on both and describe how its position changes.</p><div><button class="btn" type="button" data-case-next="lesson1-map">Next: the state map</button></div></div>
+        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Does the same cancer lead both charts? Find one cancer that appears on both and describe how its position changes.</p><label for="cr-lesson1-deaths-observation">Your Exhibit B observation</label>
+          <textarea id="cr-lesson1-deaths-observation" rows="2" maxlength="500"></textarea>
+          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-deaths-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="lesson1-map">Next: the state map</button></div></div>
       </section>
       <section class="cr-exhibit" id="cr-lesson1-map" aria-labelledby="cr-lesson1-map-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT C · LESSON 1</p>
@@ -194,7 +198,9 @@
         <details class="cr-case-debrief"><summary>Readable map key</summary>
           <p>Rates are new diagnoses per 100,000 people. From light to dark the map bins are 342.2–419.5, 421.2–441.2, 442.1–469.7 and 470.2–509.9. California and Texas are in the lightest bin; Kentucky and Iowa are in the darkest. Michigan is in the second-lightest bin. Hatching means no data shown, not zero. Indiana is hatched.</p>
         </details>
-        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Find two states in different rate groups. What does the map show, and what question does it raise about why rates differ?</p><div><button class="btn" type="button" data-case-next="income-access">Next: cost of care</button></div></div>
+        <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Find two states in different rate groups. What does the map show, and what question does it raise about why rates differ?</p><label for="cr-lesson1-map-observation">Your Exhibit C observation</label>
+          <textarea id="cr-lesson1-map-observation" rows="2" maxlength="500"></textarea>
+          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-map-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="income-access">Next: cost of care</button></div></div>
       </section>
       <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT D</p>
@@ -325,7 +331,7 @@
         <select id="cr-prediction"><option value="">Choose a prediction…</option><option value="same">Yes, the same cancer will top both.</option><option value="different">No, different cancers will top the lists.</option><option value="unsure">I’m not sure yet.</option></select>
         <label for="cr-reason">What makes you think that? <span class="cr-muted">(optional)</span></label>
         <textarea id="cr-reason" rows="2" maxlength="1200"></textarea>
-        <button type="button" class="btn btn--primary" id="cr-lock" disabled>Lock prediction &amp; open the data</button>
+        <button type="button" class="btn btn--primary" id="cr-lock" disabled>Save prediction &amp; open the Evidence Folder</button>
       </div>
       <aside class="cr-context" aria-label="Reading the numbers">
         <h3>Two different measurements</h3>
@@ -398,7 +404,7 @@
   <section id="explain" class="cr-card" aria-labelledby="cr-explain-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">03 · Case report</p><h2 id="cr-explain-title" tabindex="-1">What can you claim?</h2></div><span id="cr-done" class="cr-chip" hidden>Investigation complete</span></div>
     <div class="cr-two cr-explain">
-      <aside class="cr-context" aria-labelledby="cr-evidence-title"><p class="cr-case-index">Case notebook</p><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-explain-test-cost" hidden><summary>Exhibit F: the cost of getting tested</summary><ul id="cr-explain-test-cost-values"></ul><p>Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014. See <a href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">the source, Exhibit 1</a>.</p></details></aside>
+      <aside class="cr-context" aria-labelledby="cr-evidence-title"><p class="cr-case-index">Case notebook</p><h3 id="cr-evidence-title">Your pinned evidence</h3><p id="cr-explain-prediction"></p><p class="cr-question-reminder" id="cr-question-explain" hidden><strong>Your investigation question:</strong> <span id="cr-question-explain-text"></span></p><ol id="cr-evidence-list"></ol><details class="cr-case-debrief" id="cr-lesson-observations" hidden><summary>Your Exhibit A–C observations</summary><ul id="cr-lesson-observation-list"></ul></details><details class="cr-case-debrief" id="cr-explain-test-cost" hidden><summary>Exhibit F: the cost of getting tested</summary><ul id="cr-explain-test-cost-values"></ul><p>Estimated extra months after a switch to higher deductibles versus matched women staying on lower-deductible plans; higher-poverty U.S. neighborhoods, 2004–2014. See <a href="https://www.healthaffairs.org/doi/full/10.1377/hlthaff.2018.05026">the source, Exhibit 1</a>.</p></details></aside>
       <div>
         <label for="cr-claim">Make a claim. Cite two actual values and name the groups you compared.</label>
         <textarea id="cr-claim" rows="3" maxlength="1600" placeholder="In the… view, I noticed…"></textarea>

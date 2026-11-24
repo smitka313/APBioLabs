@@ -290,8 +290,8 @@ test('Cancer Rates Data Dive resumes, backs up its prediction and comparison, an
   const raw = JSON.stringify(saved);
   const s = setup(false, { [key]:raw });
   assert.equal(s.el('#cancer-rates-progress').textContent, 'Investigation complete · 1 pinned comparison · 2 of 2 responses saved');
-  assert.equal(s.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html#explain');
-  assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cancer-rates.html#explain');
+  assert.equal(s.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html#cr-income-cards');
+  assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cancer-rates.html#cr-income-cards');
   s.el('#download-openscied-results').fire('click');
   const whole = JSON.parse(await s.blob().text());
   assert.equal(whole.work[key], raw);
@@ -322,10 +322,10 @@ test('case evidence checks and a question draft are resumable before a compariso
   const key = 'aplab:openscied:b3-cancer-rates:v1';
   const base = { step:'predict', evidence:[], lastVisitedAt:1800000000000 };
   const partial = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',screening:'rising','race-stage':'higher','rural-stage':'higher'}})});
-  assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 3 case-file trends checked/);
+  assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 6 exhibits complete/);
   assert.equal(partial.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
   const sixthOnly = setup(false,{[key]:JSON.stringify({...base,casework:{'test-cost':'longer'}})});
-  assert.match(sixthOnly.el('#cancer-rates-progress').textContent,/1 of 3 case-file trends checked/);
+  assert.match(sixthOnly.el('#cancer-rates-progress').textContent,/1 of 6 exhibits complete/);
   assert.equal(sixthOnly.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
   const draft = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',diagnosis:'rising',questionDraft:'Which groups were diagnosed earlier?'}})});
   assert.match(draft.el('#cancer-rates-progress').textContent,/Question draft saved/);
@@ -336,7 +336,7 @@ test('a submitted case question resumes Explore and is included in readable back
   const key = 'aplab:openscied:b3-cancer-rates:v1';
   const question = 'How does stage at diagnosis differ by place?';
   const raw = JSON.stringify({step:'explore',evidence:[],lastVisitedAt:1800000000000,
-    casework:{access:'falling',diagnosis:'rising',question,opened:true}});
+    casework:{notes:{diagnoses:'A note',deaths:'B note',map:'C note'},access:'falling',diagnosis:'rising','test-cost':'longer',question,opened:true}});
   const s = setup(false,{[key]:raw});
   assert.match(s.el('#cancer-rates-progress').textContent,/Investigation question saved/);
   assert.equal(s.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#explore');
