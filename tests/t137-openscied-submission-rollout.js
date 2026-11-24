@@ -33,8 +33,12 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
         assert.equal(await page.getByRole('button',{name:'Classroom report options',exact:true}).count(),0,slug + ' has no duplicate navigation to the report');
         if (slug === 'b2-peat-bog-lab') {
           await page.locator('.step-nav a[href="#trials"]').click();
-          await launch.waitFor({state:'visible'});
-          assert.equal(await page.locator('[data-ose-report-final]').getByRole('button',{name:'Preview report',exact:true}).count(),1,
+          // The original launcher remains visible until the pager moves it into My trials.
+          // Wait for that specific move, not for a launcher that may still be on the old step.
+          const trialsLauncher = page.locator('#trials [data-ose-report-final]').getByRole('button',{name:'Preview report',exact:true});
+          await trialsLauncher.waitFor({state:'visible', timeout:5000});
+          assert.equal(await launch.count(),1,'Peat: moving into My trials does not duplicate the launcher');
+          assert.equal(await trialsLauncher.count(),1,
             'Peat: the same launcher is in My trials near the recorded work');
           const other = page.getByText('Other downloads and backups',{exact:true});
           assert.ok(await other.isVisible());
