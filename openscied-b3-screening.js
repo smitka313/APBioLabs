@@ -33,12 +33,51 @@
     operator:'<circle cx="28" cy="13" r="8" fill="#ddae86"/><path d="M16 44V30q0-10 12-10t12 10v14Z" fill="#96d1bf" stroke="#2d7878" stroke-width="2"/><path d="M25 28v12m-5-6h10" stroke="#245667" stroke-width="2" />',
     rides:'<path d="M6 13h44v7q-9 5 0 10v8H6v-8q9-5 0-10z" fill="#ffd18b" stroke="#886346" stroke-width="2"/><path d="M30 15v20m-17-5 4-10h8l3 10z" fill="none" stroke="#5e4a55" stroke-width="2" />'
   };
-  function drawProbe(){
-    const offset=Number($('probe').value);
-    $('probe-graphic').setAttribute('transform','translate('+offset+' 0)');
-    $('probe-note').textContent=Math.abs(offset)<25?'The beam crosses the drawn boundary. Different tissues can reflect sound differently. This drawing does not show cancer.':'The beam is off the drawn boundary. Slide it over the middle of the tissue to compare.';
+  const probe=$('probe'), massAt=61, massRadius=16;
+  const svgNS='http://www.w3.org/2000/svg';
+  let marked=false;
+  for(let i=0;i<255;i++){
+    const dot=document.createElementNS(svgNS,'circle');
+    dot.setAttribute('cx',String((i*127+19)%320));dot.setAttribute('cy',String((i*43+Math.floor(i/8)*17)%151));
+    dot.setAttribute('r',String(.35+(i%5)*.23));dot.setAttribute('fill',i%4===0?'#c9d0d4':'#858f98');
+    dot.setAttribute('opacity',String(.2+(i%7)*.08));$('speckle').append(dot);
   }
-  $('probe').oninput=drawProbe;drawProbe();
+  function drawProbe(){
+    const at=Number(probe.value), x=30+2.6*at, distance=Math.abs(at-massAt);
+    const onMass=distance<massRadius;
+    $('probe-graphic').setAttribute('transform','translate('+x+' 0)');
+    $('plane').setAttribute('x1',x);$('plane').setAttribute('x2',x);
+    $('sonogram-mass').setAttribute('visibility',onMass?'visible':'hidden');
+    const slice=onMass?Math.sqrt(1-(distance/massRadius)**2):0;
+    $('dark-shape').setAttribute('rx',Math.max(3,27*slice));$('dark-shape').setAttribute('ry',Math.max(3,17*slice));
+    for(const id of ['point','point-text'])$(id).setAttribute('visibility',onMass&&marked?'visible':'hidden');
+    const status=onMass?'A darker oval is visible in this slice.':'Only the usual layers are visible in this slice.';
+    $('probe-note').textContent=status;
+    $('sonogram').setAttribute('aria-label','Simulated ultrasound image. '+status);
+    probe.setAttribute('aria-valuetext',at+' of 100. '+status);
+    return onMass;
+  }
+  function moveProbe(){
+    marked=false;$('scan-feedback').hidden=true;drawProbe();
+  }
+  probe.oninput=moveProbe;
+  $('mark').onclick=()=>{
+    marked=drawProbe();drawProbe();
+    const msg=$('scan-feedback');msg.hidden=false;
+    msg.textContent=marked?'You found the simulated mass. Different echoes made its outline stand out from nearby tissue. This image shows a shape, not a cancer diagnosis.':'This slice only shows tissue layers. Sweep farther and watch for a new shape. One slice can miss a mass.';
+    msg.focus({preventScroll:true});
+  };
+  const tissue=$('tissue');
+  function positionProbe(e){
+    const box=tissue.getBoundingClientRect(),x=(e.clientX-box.left)/box.width*320;
+    probe.value=Math.max(0,Math.min(100,Math.round((x-30)/2.6)));moveProbe();
+  }
+  tissue.onpointerdown=e=>{
+    if(!e.isPrimary||e.button!==0)return;
+    tissue.setPointerCapture(e.pointerId);positionProbe(e);
+  };
+  tissue.onpointermove=e=>{if(tissue.hasPointerCapture(e.pointerId))positionProbe(e);};
+  drawProbe();
   const toolButtons={};
   function place(zone,key=selected){
     if(!s.started||!key)return;
@@ -111,7 +150,7 @@
     $('action-help').textContent=stage===1?'Follow one patient on the map.':stage===2?(moved?'The team is in place. Test it with the same patients.':'Move the ultrasound team to the mobile clinic.'):'Look at what changed for the same patient, then make your recommendation.';
     $('task').textContent=stage===1?'Watch one patient try to get follow-up at the hospital.':stage===2?'Move one team. Keep screening at the hospital.':'Compare access and cost before choosing a plan.';
     $('quick').hidden=stage!==2;$('advanced').hidden=stage!==3;
-    $('cost-details').hidden=stage===1;$('cart').hidden=stage===1;
+    $('cost-details').hidden=stage===1;
     $('summary-link').hidden=stage!==3;
     team.setAttribute('aria-pressed',String(selected==='team'));
     team.querySelector('small').textContent=moved?'Mobile clinic':'Hospital';
@@ -235,7 +274,7 @@
     if(!s.started){
       s.started=true;view='base';
       const a=get(M.baseline).patients, b=get({...M.baseline,machine:'mobile',operator:'mobile'}).patients;
-      patient=(a.find((p,i)=>p.outcome==='follow-up-missed'&&b[i].outcome==='imaged')||a.find(p=>p.outcome==='follow-up-missed')||a.find(p=>p.outcome!=='screen-missed')||a[0]).id;
+      patient=(a.find((p,i)=>p.outcome==='follow-up-missed'&&b[i].outcome==='imaged')||a.find((p,i)=>p.outcome!==b[i].outcome)||a.find(p=>p.outcome==='follow-up-missed')||a.find(p=>p.outcome!=='screen-missed')||a[0]).id;
       s.evidencePatient=patient;
     }
     else{s.trial={...s.plan};view='trial';s.finished=false;}

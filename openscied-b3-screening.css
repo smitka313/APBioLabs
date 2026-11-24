@@ -35,3 +35,11 @@
 .sd-team{min-height:65px;min-width:140px;padding:.38rem .65rem}.sd-team span{color:var(--accent);font-weight:900;font-size:1.2rem}.sd-hint{font-size:.86rem;color:var(--muted)}
 .sd-story{background:var(--surface-2);border-inline-start:3px solid var(--accent);padding:.55rem .72rem;margin:.45rem 0}.sd-story h4,.sd-story p,.sd-patient h4{margin:.25rem 0}
 .sd-deeper{margin:.5rem 0;padding:.35rem .1rem;border-block-start:1px solid var(--line)}.sd-deeper summary,.sd-supply summary{cursor:pointer;font-weight:720}
+.sd-phantom>summary{color:var(--ink);font-size:1.06rem}
+.sd-scan-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.sd-scan-pair figure{margin:0;padding:.48rem;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);min-width:0}
+.sd-scan-pair figcaption{font-weight:760;margin-bottom:.28rem}
+.sd-scan-pair svg{width:100%;height:auto;display:block;border-radius:7px;margin-bottom:.25rem}
+#sd-tissue{cursor:ew-resize;touch-action:pan-y}
+#sd-mark{margin-top:.5rem;min-height:42px}
+@media(max-width:560px){.sd-scan-pair{grid-template-columns:1fr}}
