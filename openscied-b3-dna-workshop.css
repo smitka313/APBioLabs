@@ -811,11 +811,15 @@
   font:700 .67rem/1.05 var(--f-mono);
   pointer-events:none;
 }
+.dw-translation-scroll .dw-given[data-codon] { grid-template-columns:minmax(0,1fr); }
 .dw-translation-scroll .dw-translation-start {
   grid-column:1/-1;
-  font:750 .59rem/1.04 var(--f-sans);
+  display:block;
+  max-inline-size:100%;
   color:var(--ink);
-  white-space:nowrap;
+  font:750 .64rem/1.12 var(--f-body,system-ui);
+  overflow-wrap:normal;
+  white-space:normal;
 }
 .dw-board[data-current-stage=chain] .dw-translation-hint {
   color:var(--muted);

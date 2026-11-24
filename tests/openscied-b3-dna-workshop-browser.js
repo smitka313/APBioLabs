@@ -516,6 +516,16 @@ async function translationRail(page,label,size) {
     return upper.length===9&&lower.length===9&&upper.every((r,i)=>Math.abs(r.left-lower[i].left)<1.5&&Math.abs(r.width-lower[i].width)<1.5);
   });
   check(aligned,label+' every codon lines up horizontally with its next-step placement slot');
+  const contained = await rail.evaluate(el=>{
+    const fits=(inside,outer,tol=.6)=>inside.width>0&&inside.left>=outer.left-tol&&inside.right<=outer.right+tol;
+    const first=el.querySelector('[data-codon="AUG"]'), badge=first.querySelector('.dw-translation-start');
+    const range=document.createRange();range.selectNodeContents(badge);
+    const tile=first.getBoundingClientRect();
+    const letters=first.querySelector('.dw-chip-symbol').getBoundingClientRect();
+    const words=Array.from(range.getClientRects());
+    return words.length>0&&words.every(r=>fits(r,tile)&&r.top>=letters.bottom-.6&&r.bottom<=tile.bottom+.6);
+  });
+  check(contained,label+' Start and methionine label stays inside the AUG tile, below its codon letters');
   if(size.touch){
     const travel=await rail.evaluate(el=>{
       const last=el.querySelector('[data-dw-slot="chain-product-8"]');
