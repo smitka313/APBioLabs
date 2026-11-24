@@ -589,10 +589,20 @@ async function dashboardGuide(page, base) {
     await action.getAttribute('href') === FILE+'#explain',
     'the saved card has one accessible Continue link that opens the saved Explain step');
   const artwork = card.locator('a.dashboard-preview');
-  check(await artwork.isVisible() && await artwork.getAttribute('aria-hidden') === 'true' &&
-    await artwork.getAttribute('tabindex') === '-1' && await artwork.locator('img[src="assets/rat-generations-preview.svg"]').count() === 1 &&
-    await artwork.getAttribute('href') === FILE+'#explain',
-    'the original preview art opens the same step without an extra keyboard stop');
+  await artwork.scrollIntoViewIfNeeded();
+  check(await artwork.isVisible(), 'the card keeps its clickable artwork visible');
+  check(await artwork.getAttribute('aria-hidden') === 'true',
+    'the decorative artwork does not supply a second accessible link');
+  check(await artwork.getAttribute('tabindex') === '-1', 'the artwork adds no keyboard stop');
+  const illustration = artwork.locator('img[src="assets/rat-generations-preview.svg"]');
+  check(await illustration.count() === 1, 'the card keeps its original illustration');
+  await page.waitForFunction(src => [...document.images].some(img =>
+    img.getAttribute('src') === src && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0
+  ), 'assets/rat-generations-preview.svg');
+  const artHref = await artwork.getAttribute('href');
+  const actionHref = await action.getAttribute('href');
+  check(artHref && actionHref && new URL(artHref, page.url()).href === new URL(actionHref, page.url()).href,
+    'clicking the artwork opens the same saved Explain step as the named action');
   const resume = page.locator('#openscied-resume-link');
   check(await resume.isVisible() && (await resume.getAttribute('href')).startsWith(FILE),
     'dashboard Resume points to the existing Rat Generations trial');
