@@ -6,6 +6,7 @@ const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const Save = require('../openscied-save-session.js');
+const L = require('../migration-logic.js');
 
 const getSource = app => readFileSync(path.join(__dirname, '..', app), 'utf8');
 function section(code, first, last) {
@@ -23,11 +24,14 @@ function fixture(app, identity) {
   const source = getSource('openscied-b1-' + app + '.js');
   const init = section(source, '  const KEY', '  function showSaveConflict');
   const report = migration
-    ? section(source, '  function reportText(kind){', '  function textCopy(')
+    ? section(source, '  function unsavedMonthDrafts(){', '  function submissionData(){') +
+      section(source, '  function reportText(kind){', '  function textCopy(')
     : section(source, '  const report = ', '  const openReport = ');
-  const state = { notes:[], answers: { claim:'Earlier synthetic observation' } };
+  const state = { notes:migration ? L.upsertMonthlyNote([],0,'Earlier notebook version').notes : [],
+    observations:migration ? {0:'Earlier January draft revision'} : undefined,
+    answers: { claim:'Earlier synthetic observation' } };
   let previousRange = localStorage.getItem(rangeKey);
-  const sandbox = { localStorage, window, Lab, state, RESPONSES:[['claim','What did you observe?']],
+  const sandbox = { localStorage, window, Lab, state, L, displayNoteText:L.notebookText, RESPONSES:[['claim','What did you observe?']],
     compareText:()=>'', range:{report:()=>previousRange}, habitat:{report:()=>''},field:{report:()=>''} };
   vm.runInNewContext(init + report + 'globalThis.getReport = ' + (migration ? 'reportText' : 'report') + ';', sandbox);
   return {
@@ -47,7 +51,12 @@ for (const app of ['migration','carrying-capacity']) {
     assert.match(stale, /Earlier synthetic observation/);
     assert.doesNotMatch(stale, /Next QA student|Class period: 7/);
     if (app === 'migration') {
-      assert.match(f.report('notebook'), /Name: Earlier QA student\nClass period: 1/);
+      for (const report of [stale,f.report('notebook')]) {
+        assert.match(report, /Name: Earlier QA student\nClass period: 1/);
+        assert.match(report, /Earlier notebook version/);
+        assert.match(report, /January · draft revision\nEarlier January draft revision/);
+        assert.doesNotMatch(report, /Next QA student|Class period: 7/);
+      }
     }
   });
 }

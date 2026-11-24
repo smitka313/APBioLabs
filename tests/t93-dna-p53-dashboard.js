@@ -36,10 +36,15 @@ const DNA = 'aplab:openscied:b3-dna-p53:v1', CELL = 'aplab:openscied:b3-cell-cyc
       const dnaText = await p.locator('#dna-p53-progress').innerText();
       T.ok(/DNA fork results saved/.test(dnaText) && /2 gene expression runs/.test(dnaText) && /3 of 4 responses written/.test(dnaText), 'DNA card progress counts saved responses: ' + dnaText);
       T.ok(/1 of 31 responses/.test(await p.locator('#cell-cycle-progress').innerText()), 'cell-cycle progress is unchanged (1 of 31)');
-      T.ok(await p.locator('#openscied-resume-link').getAttribute('href') === 'openscied-b3-dna-p53.html#sense6', 'Resume points at the most recent activity and section');
-      T.ok(/Resume DNA Copying/.test(await p.locator('#openscied-resume-link').innerText()), 'Resume names the activity');
+      const savedWork = p.getByRole('region', { name: 'Saved work on this device', exact: true });
+      const continueSaved = savedWork.getByRole('link', { name: 'Continue my saved DNA Copying, p53 & Gene Expression →', exact: true });
+      T.ok(await continueSaved.count() === 1 && await continueSaved.getAttribute('href') === 'openscied-b3-dna-p53.html#sense6',
+        'guest continuation names the most recent activity and links to its saved section');
+      T.ok(await savedWork.isVisible() &&
+        (await savedWork.locator('#openscied-resume-description').innerText()).includes('Continue only if this work is yours. Otherwise, switch students.'),
+        'guest continuation warns about ownership');
       T.ok(await p.locator('#dna-p53-open').getAttribute('href') === 'openscied-b3-dna-p53.html#sense6' && /Continue activity/.test(await p.locator('#dna-p53-open').innerText()), 'DNA card says Continue and links to the last section');
-      await p.locator('#openscied-resume-link').click();
+      await continueSaved.click();
       await p.waitForFunction(() => document.querySelector('#sense6.is-current'));
       T.ok(await p.inputValue('#ms5-summary') === 'Kept' && await p.inputValue('#exit-q2') === 'e', 'Resume opens the activity with the saved answers that still exist');
       T.ok(await p.evaluate(k => { const f = JSON.parse(localStorage.getItem(k)).fields; return f['ms5-q1'] === 'Because' && f['ideas-chromosomes'] === 'DNA'; }, DNA), 'answers from the older, longer page are kept in the saved record');

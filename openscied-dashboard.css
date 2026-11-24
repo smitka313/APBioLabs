@@ -151,6 +151,7 @@
   box-shadow: 0 8px 24px #0003;
 }
 .dashboard-resume { border-inline-start: 5px solid var(--accent); }
+.dashboard-hero-copy > .dashboard-resume { margin-block-start: .75rem; max-width: 32rem; }
 .dashboard-student h2,.dashboard-resume h2 { font-size: 1.22rem; color: var(--ink); }
 .dashboard-resume p { margin: .32rem 0; color: var(--muted); font-size: .87rem; }
 .dashboard-student .id-box { margin: .37rem 0; padding: .5rem .63rem; background: var(--surface-2); color: var(--ink); }
@@ -345,7 +346,7 @@ time.dashboard-last-opened:not([hidden]) { display: block; margin: .22rem 0 .45r
 @media print {
   .dashboard-hero { background: var(--surface); color: var(--ink); border-color: var(--line); }
   .dashboard-hero-copy :is(.dashboard-title,.dashboard-eyebrow,.dashboard-intro) { color: var(--ink); }
-  .dashboard-panorama,.dashboard-masthead,.dashboard-hero-actions,.dashboard-browse,.dashboard-unit-jumps,.dashboard-activity button { display: none !important; }
+  .dashboard-panorama,.dashboard-masthead,.dashboard-hero-actions,.dashboard-resume,.dashboard-browse,.dashboard-unit-jumps,.dashboard-activity button { display: none !important; }
   .dashboard-hero-grid { display: block; padding: 0; }
   .dashboard-activity { break-inside: avoid; }
 }

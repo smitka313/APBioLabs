@@ -64,8 +64,28 @@ async function checkMixedVersionWorkspace(browser,site) {
     await savedWork.waitFor();
     assert.match(await savedWork.locator('#openscied-resume-description').innerText(),
       /Continue only if this work is yours\. Otherwise, switch students\./);
-    assert.equal(await savedWork.getByRole('link', { name:'Continue my saved Hawksbeard Wind Lab →', exact:true }).getAttribute('href'),
-      'openscied-b4-hawksbeard.html#release');
+    const resume = savedWork.getByRole('link', { name:'Continue my saved Hawksbeard Wind Lab →', exact:true });
+    assert.equal(await resume.getAttribute('href'), 'openscied-b4-hawksbeard.html#release');
+    assert.equal(await resume.getAttribute('aria-describedby'), 'openscied-resume-description',
+      'the shared-device warning also describes the focused Resume link');
+    async function placement() {
+      return p.evaluate(()=>{
+        const jump=document.querySelector('.dashboard-unit-jumps'), resume=document.querySelector('#openscied-resume');
+        const left=document.querySelector('.dashboard-hero-copy'), workspace=document.querySelector('.dashboard-student');
+        const a=jump.getBoundingClientRect(), b=resume.getBoundingClientRect(),
+          c=left.getBoundingClientRect(), d=workspace.getBoundingClientRect();
+        return {
+          directlyAfter:jump.nextElementSibling===resume && resume.parentElement===left,
+          belowLinks:b.top>=a.bottom && b.top-a.bottom<=24,
+          withinLeft:b.left>=c.left-1 && b.right<=c.right+1,
+          beforeWorkspace:b.right<d.left || b.bottom<d.top,
+          besideWorkspace:b.right<d.left,
+        };
+      });
+    }
+    const desktop=await placement();
+    assert.deepEqual(desktop,{directlyAfter:true,belowLinks:true,withinLeft:true,beforeWorkspace:true,besideWorkspace:true},
+      'desktop: saved work sits beneath the unit shortcuts, to the left of the workspace');
     const heights=await p.evaluate(()=>{
       const host=document.querySelector('#openscied-student-identity');
       const live=host.querySelector('.id-box:not([data-ph])');
@@ -87,6 +107,13 @@ async function checkMixedVersionWorkspace(browser,site) {
     assert.ok(Math.abs(heights.after-heights.before)<=2,'duplicate reservation must not push down the activities');
     if(screenshots)await p.screenshot({path:path.join(screenshots,'1195-returning-workspace.png'),fullPage:true,animations:'disabled'});
     await p.setViewportSize({width:390,height:844});
+    const phone=await placement();
+    assert.deepEqual(phone,{directlyAfter:true,belowLinks:true,withinLeft:true,beforeWorkspace:true,besideWorkspace:false},
+      'phone: saved work stacks directly under the unit shortcuts and above the workspace');
+    await p.locator('.dashboard-unit-jumps a').last().focus();
+    await p.keyboard.press('Tab');
+    assert.ok(await resume.evaluate(link => document.activeElement===link),
+      'saved activity is the next keyboard stop after the last unit shortcut');
     const active=p.locator('.dashboard-activity').filter({ has:p.locator('#hawksbeard-open') });
     assert.equal(await active.locator('progress.dashboard-activity-progress').isVisible(),true,'saved milestones remain visible on phones');
     assert.equal(await active.locator('#hawksbeard-reset').isVisible(),true,'students can still restart saved activities on phones');
@@ -122,6 +149,8 @@ async function checkMixedVersionWorkspace(browser,site) {
         assert.equal(await p.locator('#openscied-student-identity').isVisible(),true);
         assert.equal(await p.locator('#clear-openscied-results').isVisible(),true);
         assert.equal(await p.locator('#download-openscied-results').isVisible(),true);
+        assert.ok(await p.locator('#openscied-resume').evaluate(panel=>panel.hidden && panel.getClientRects().length===0),
+          'fresh visit: the resume panel leaves no placeholder below unit shortcuts');
         const brand=p.locator('.dashboard-brand');
         await brand.focus();
         await p.keyboard.press('Tab');
@@ -140,14 +169,24 @@ async function checkMixedVersionWorkspace(browser,site) {
         assert.equal(geometry.length,3);
         assert.equal(new Set(geometry.map(c=>c.x)).size,width<580?1:width<920?2:3,'cards use the intended breakout columns');
         assert.ok(geometry.every(c=>c.thumb>0&&Math.abs(c.thumb/c.height-1.6)<.05),'preview artwork keeps the common 8:5 proportions');
-        assert.equal(await p.locator('.dashboard-activity').evaluateAll(cards=>cards.every(card=> {
+        const overflow = await p.locator('.dashboard-activity').evaluateAll(cards=>cards.flatMap(card=> {
           const box=card.getBoundingClientRect();
-          return [...card.querySelectorAll('.dashboard-caption, h3, p, .dashboard-meta, button, .dashboard-open')].every(n=>{
+          const intentionallyEmpty = matchMedia('(max-width: 580px)').matches &&
+            !!card.querySelector('.dashboard-card-restart:disabled');
+          return [...card.querySelectorAll('.dashboard-caption, h3, p, .dashboard-meta, button, .dashboard-open')].flatMap(n=>{
+            const rendered=n.getClientRects().length > 0;
+            // The phone UI intentionally doesn't render disabled Restart or empty progress labels.
+            // A hidden title, description, primary link, or active Restart must still fail.
+            if (!rendered && intentionallyEmpty && n.matches('.dashboard-card-restart:disabled, .dashboard-activity-metric')) return [];
             const r=n.getBoundingClientRect();
-            return r.left>=box.left-1&&r.right<=box.right+1 &&
-              n.scrollWidth<=n.clientWidth+1&&n.scrollHeight<=n.clientHeight+1;
+            if (rendered && r.left>=box.left-1&&r.right<=box.right+1 &&
+              n.scrollWidth<=n.clientWidth+1&&n.scrollHeight<=n.clientHeight+1) return [];
+            return [{card:card.querySelector('h3')?.textContent, control:n.id||n.className||n.tagName,
+              rendered, left:r.left, right:r.right, cardLeft:box.left, cardRight:box.right,
+              scrollWidth:n.scrollWidth, clientWidth:n.clientWidth, scrollHeight:n.scrollHeight, clientHeight:n.clientHeight}];
           });
-        })),true,'descriptions, captions and buttons fit even at the narrower three-column width');
+        }));
+        assert.deepEqual(overflow,[],width+' px: visible descriptions, captions and actions fit within their cards');
         assert.deepEqual(await p.locator('.dashboard-units h2[id^="unit"]').evaluateAll(e=>e.map(x=>x.id)),['unit1','unit2','unit3','unit4']);
         const coming=p.locator('.dashboard-coming-soon');
         assert.match(await coming.innerText(),/Unit 5.*No companion activities yet/);
