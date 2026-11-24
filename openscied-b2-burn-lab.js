@@ -107,7 +107,7 @@
   const obsText = o => o && o.length ? L.OBS.filter(function (x) { return o.includes(x.id); }).map(function (x) { return x.label; }).join(', ') : '—';
   function burnNodes() {
     const rows = L.tableRows(state.burn); if (!rows.length) return [];
-    return [table('Simulated burn results', ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB before → after', 'Dome glass temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'],
+    return [table('Simulated burn results', ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB before → after', 'Fuel temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'],
       rows.map(function (r) { return [r.label + ' (' + r.n + ')', String(r.igniteS), String(r.burnS), L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter), r.tempBefore + ' → ' + r.tempAfter, r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1), obsText(r.obs)]; })),
       el('p', 'small muted', 'SIMULATED burns. Not measurements from a real demonstration. A rise of only a degree or two can be thermometer noise, so compare fuels with big differences.')];
   }

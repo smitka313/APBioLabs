@@ -1,7 +1,7 @@
 /* Burn demonstration (OpenSciEd B.2 Lesson 2 companion, host #burn-scene, scene id "burn").
    A web stand-in for the teacher's Burning Fuels demonstration: five dry fuels (dried grass 4 g, dried leaves 4 g, wood chips 10 g, charcoal 10 g, peat 30 g: the handfuls are not equal, as the Teacher Edition notes) are burned
    on a heat-safe tray under a glass dome (an inverted bowl) that captures the carbon dioxide. A Petri dish of BTB sits INSIDE the dome beside the fuel, exposed to
-   the air under the dome. A balance weighs the sample before and after, and a laser (infrared) thermometer is aimed at the outside of the dome glass.
+   the air under the dome. A balance weighs the sample before and after, and a laser (infrared) thermometer is aimed at the fuel (through the dome glass, before the burn) and at the ash (dome lifted, after it).
    EVERYTHING HERE IS SIMULATED: the
    numbers come from the small model in openscied-b2-burn-logic.js (assumptions at the top of that file and on the page under "What this simulation
    models"), seeded from the student's Dataset ID, not measured from real fuels. This page replaces the real demonstration and none of its safety steps:
@@ -69,13 +69,13 @@
       if (!st) st = { seed: api.seed('burn'), fuel: pending, current: null, records: [], weighed: null };
       st.fuel = pending; st.weighed = { fuel: pending, n }; persist(); render('[data-bn="burn"]');
       const r = view().res;
-      api.announce('Weighed: ' + r.massBefore.toFixed(1) + ' grams. The laser thermometer aimed at the dome glass reads ' + r.tempBefore + ' degrees Celsius. Now burn it.');
+      api.announce('Weighed: ' + r.massBefore.toFixed(1) + ' grams. The laser thermometer aimed at the fuel reads ' + r.tempBefore + ' degrees Celsius. Now burn it.');
     }
     function weighAfter() {
       if (!st || !st.current) return; const v = view(); if (v.phase !== 'finished' || st.current.after) return;
       st.current.after = true; persist(); render('[data-bn="record"]');
       const r = v.res;
-      api.announce('Dome lifted. Weighed: ' + r.massAfter.toFixed(1) + ' grams of ash. The laser thermometer aimed at the dome glass reads ' + r.tempAfter + ' degrees Celsius. Tap what you saw, then record your results.');
+      api.announce('Dome lifted. Weighed: ' + r.massAfter.toFixed(1) + ' grams of ash. The laser thermometer aimed at the ash reads ' + r.tempAfter + ' degrees Celsius. Tap what you saw, then record your results.');
     }
     function burn() {
       const n = sampleNo(pending); if (!n || (st && st.current) || !view().read) return;
@@ -128,7 +128,7 @@
       const wb = h('button', { type: 'button', class: 'btn' + (v.read ? '' : ' btn--primary'), 'data-bn': 'weigh', text: !left ? 'All 3 samples burned' : v.read ? '✓ Weighed and read (before)' : 'Weigh and read temperature (before)' }); wb.disabled = !left || v.read; wb.addEventListener('click', weighBefore);
       const go = h('button', { type: 'button', class: 'btn' + (v.read ? ' btn--primary' : ''), 'data-bn': 'burn', text: 'Burn it (virtual)' }); go.disabled = !left || !v.read; go.addEventListener('click', burn);
       box.appendChild(h('div', { class: 'bn-setup' }, h('div', { class: 'bn-field' }, h('label', { for: 'bn-fuel', text: 'Fuel to burn' }), sel), h('div', { class: 'bn-actions' }, wb, go, resetControl())));
-      box.appendChild(readoutRow([['Sample', left ? (used ? 'Sample ' + left + ' of ' + L.fuelLabel(pending).toLowerCase() : L.massOf(pending) + ' g of ' + L.fuelLabel(pending).toLowerCase()) : 'none left'], ['Mass on the balance (before)', left && v.read ? v.res.massBefore.toFixed(1) + ' g' : '—'], ['Dome glass, laser (before)', left && v.read ? v.res.tempBefore + ' °C' : '—'], ['BTB color', L.btbText(L.START_BTB)]]));
+      box.appendChild(readoutRow([['Sample', left ? (used ? 'Sample ' + left + ' of ' + L.fuelLabel(pending).toLowerCase() : L.massOf(pending) + ' g of ' + L.fuelLabel(pending).toLowerCase()) : 'none left'], ['Mass on the balance (before)', left && v.read ? v.res.massBefore.toFixed(1) + ' g' : '—'], ['Fuel temperature, laser (before)', left && v.read ? v.res.tempBefore + ' °C' : '—'], ['BTB color', L.btbText(L.START_BTB)]]));
       box.appendChild(h('p', { class: 'bn-note', text: 'Step 1: weigh the handful and read the temperature. Step 2: burn it. Step 3: weigh and read the temperature again. ' + (st && st.records.length ? 'A second sample of the same fuel gives slightly different numbers.' : 'Simulated: a real burn takes minutes; here 6 seconds pass every second.') }));
       top.appendChild(box);
     }
@@ -144,7 +144,7 @@
     }
     function renderFinished(v) {
       const r = v.res, box = h('div', { class: 'bn-panel' }, h('h4', { text: v.read ? 'Weighed again: read the instruments.' : 'The ' + r.label.toLowerCase() + ' is out.' }));
-      box.appendChild(readoutRow([['Caught fire after', r.igniteS + ' s'], ['Burned for', r.burnS + ' s'], ['BTB color', L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter)], ['Dome glass, laser', v.read ? r.tempBefore + ' → ' + r.tempAfter + ' °C' : '— (not read yet)'], ['Mass on the balance', v.read ? r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1) + ' g' : '— (not weighed yet)']]));
+      box.appendChild(readoutRow([['Caught fire after', r.igniteS + ' s'], ['Burned for', r.burnS + ' s'], ['BTB color', L.btbText(r.btbBefore) + ' → ' + L.btbText(r.btbAfter)], ['Fuel temperature, laser', v.read ? r.tempBefore + ' → ' + r.tempAfter + ' °C' : '— (not read yet)'], ['Mass on the balance', v.read ? r.massBefore.toFixed(1) + ' → ' + r.massAfter.toFixed(1) + ' g' : '— (not weighed yet)']]));
       if (!v.read) {
         const ab = h('button', { type: 'button', class: 'btn btn--primary', 'data-bn': 'after', text: 'Lift the dome, weigh and read temperature (after)' }); ab.addEventListener('click', weighAfter);
         box.appendChild(h('div', { class: 'bn-actions' }, ab, resetControl()));
@@ -177,7 +177,7 @@
       const wrap = h('div', { class: 'bn-panel' }, h('h4', { text: 'Results: simulated burns' }));
       const tw = h('div', { class: 'table-wrap', role: 'region', tabindex: '0', 'aria-label': 'Burn results table (simulated). Scrolls sideways on narrow screens.' }), t = h('table', { class: 'data bn-table' });
       t.appendChild(h('caption', { text: 'Simulated burn results. ' + rows.length + (rows.length === 1 ? ' sample' : ' samples') + ' recorded.' }));
-      t.appendChild(h('thead', {}, h('tr', {}, ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB color before → after (1 to 6)', 'Dome glass temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'].map(x => h('th', { scope: 'col', text: x })))));
+      t.appendChild(h('thead', {}, h('tr', {}, ['Fuel (sample)', 'Caught fire after (s)', 'Burned for (s)', 'BTB color before → after (1 to 6)', 'Fuel temperature before → after (°C)', 'Mass before → after (g)', 'What I saw'].map(x => h('th', { scope: 'col', text: x })))));
       const tb = h('tbody');
       if (!rows.length) tb.appendChild(h('tr', {}, h('td', { colspan: '7', class: 'bn-miss', text: 'Burn a fuel and record it. Your results will appear here.' })));
       rows.forEach(r => tb.appendChild(h('tr', {}, h('th', { scope: 'row', text: r.label + ' (' + r.n + ')' }), h('td', { class: 'num', text: String(r.igniteS) }), h('td', { class: 'num', text: String(r.burnS) }),
@@ -227,11 +227,16 @@
       const th = 2 * Math.PI - 0.8, domePt = { x: cx + a * Math.cos(th), y: rimY + b * Math.sin(th) };      // a point on the outer glass, upper right (label anchor)
       return { floor, u, a, b, cx, rimY, top: rimY - b, bw, bx0, bcx: bx0 + bw / 2, panY: floor - 46 * u, fx, trayTop, sy, dishX, dishLiqY, ang, dir, domePt };
     }
-    // Where the laser dot lands on the outside of the dome glass (the same spot at both weighings; the dome is a little higher once it is lifted), the gun's muzzle and body centre.
-    function laserPoints(G, lift) {
-      const ye = 0.55 - lift / G.b, D = { x: G.cx - G.a * Math.sqrt(Math.max(0, 1 - ye * ye)), y: G.rimY - 0.55 * G.b };
-      const M = { x: D.x - G.dir.x * 34 * G.u, y: D.y - G.dir.y * 34 * G.u };
-      return { D, M, gunC: { x: M.x - G.dir.x * 27 * G.u, y: M.y - G.dir.y * 27 * G.u } };
+    // The laser thermometer is aimed at the FUEL: before the burn at the sample on the tray (the beam passes through the dome glass, which is down), after the burn at the ash on the
+    // balance (the dome has been lifted, so the beam goes straight to it). The dot is computed from where the sample or the ash is drawn; the area is what the test measures.
+    function laserPoints(G, mode, mf) {
+      const u = G.u;
+      if (mode === 'ash') {
+        const T = { x: G.bcx, y: G.panY - 7 * u }, ang = 0.5, M = { x: T.x - Math.cos(ang) * 34 * u, y: T.y - Math.sin(ang) * 34 * u };
+        return { T, M, ang, gunC: { x: M.x - Math.cos(ang) * 27 * u, y: M.y - Math.sin(ang) * 27 * u }, area: { x: T.x, y: T.y, r: 17 * u } };
+      }
+      const T = { x: G.fx, y: G.sy }, M = { x: G.cx - 116 * u, y: G.sy - 40 * u }, ang = Math.atan2(T.y - M.y, T.x - M.x);
+      return { T, M, ang, gunC: { x: M.x - Math.cos(ang) * 27 * u, y: M.y - Math.sin(ang) * 27 * u }, area: { x: T.x, y: T.y, r: 18 * 0.72 * u * mf } };
     }
     // ----- the fuel sample, drawn from the model's burned fraction -----
     const FRESH = { grass: [201, 165, 74], leaves: [168, 103, 44], wood: [200, 154, 98], charcoal: [48, 46, 46], peat: [74, 51, 33] };
@@ -347,7 +352,7 @@
       const metal = dark ? '#9aa6a2' : '#6c7874', metalLight = dark ? '#cfd8d4' : '#aab6b1', cx = G.cx, a = G.a, b = G.b, rimY = G.rimY;
       const lifted = v.phase === 'finished' && v.read, lift = lifted ? 0.2 * a : 0;                     // after the second weighing the dome has been lifted
       const gunOn = v.read && v.phase !== 'running', gunTemp = v.phase === 'ready' ? res.tempBefore : res.tempAfter;   // the laser is used only at the two weighings
-      const LP = laserPoints(G, lift), restM = { x: Math.max(4 + 54 * u, cx - a - 16 * u), y: G.floor - 26 * u };
+      const LP = laserPoints(G, lifted ? 'ash' : 'fuel', mf), restM = { x: Math.max(4 + 54 * u, cx - a - 16 * u), y: G.floor - 26 * u };
       const gunBodyC = gunOn ? LP.gunC : { x: restM.x - 27 * u, y: restM.y };
       const domePath = (ia, ib) => { ctx.beginPath(); ctx.ellipse(cx, rimY, ia, ib, 0, Math.PI, 2 * Math.PI); ctx.closePath(); };
       // bench
@@ -369,7 +374,7 @@
       ctx.fillStyle = '#7dffb4'; ctx.font = '700 ' + Math.round(12 * Math.max(0.8, u)) + 'px ' + css('--f-mono', 'monospace'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(reading, G.bcx, dy + dh / 2 + 1); ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = dark ? '#aeb9b4' : '#8c9893'; ctx.fillRect(G.bcx - 5 * u, G.panY, 10 * u, baseTop - G.panY);
       ctx.fillStyle = dark ? '#d6dedb' : '#c4cdc9'; ctx.strokeStyle = dark ? '#6c7a74' : '#7b8782'; ctx.beginPath(); ctx.ellipse(G.bcx, G.panY, bw * 0.36, 7 * u, 0, 0, 6.28); ctx.fill(); ctx.stroke();
-      if (v.phase === 'ready') drawSample(ctx, G.bcx, G.panY - 12 * u * mf, 0.62 * u * mf, fuel, 0, 0, dark);
+      if (v.phase === 'ready' && !v.read) drawSample(ctx, G.bcx, G.panY - 12 * u * mf, 0.62 * u * mf, fuel, 0, 0, dark);
       else if (lifted) drawAsh(ctx, G.bcx, G.panY - 3 * u, u, res.massAfter, dark);
       // heat-safe tray on the bench (the ash stays on it, under the dome, until the second weighing)
       const tg = ctx.createLinearGradient(0, G.trayTop, 0, G.floor); tg.addColorStop(0, metalLight); tg.addColorStop(1, metal);
@@ -393,7 +398,7 @@
         ctx.strokeStyle = dark ? '#c3ccc8' : '#2b2f33'; ctx.lineWidth = 5 * u; ctx.beginPath(); ctx.moveTo(sx + 22 * u, G.trayTop - 8 * u); ctx.lineTo(cx + a + 26 * u, G.floor - 62 * u); ctx.stroke();
         drawIgniter(ctx, sx + 20 * u, G.trayTop - 6 * u, u, tm);
       }
-      if (running) drawSample(ctx, sx, sy, 0.72 * u * mf * (1 + 0.15 * (1 - b0)), fuel, b0, sim.glow, dark);   // ready: on the balance; finished: only ash
+      if (running || (v.phase === 'ready' && v.read)) drawSample(ctx, sx, sy, 0.72 * u * mf * (1 + 0.15 * (1 - b0)), fuel, running ? b0 : 0, running ? sim.glow : 0, dark);   // weighed: under the dome on the tray; not yet weighed: on the balance; finished: only ash
       ctx.save(); domePath(a - 5 * u, b - 5 * u); ctx.clip();
       const underDome = !lifted;
       if (underDome && sim.haze > 0.01) { const hg = ctx.createLinearGradient(0, G.top, 0, rimY - 0.3 * b); hg.addColorStop(0, (dark ? 'rgba(205,210,208,' : 'rgba(86,90,88,') + (0.52 * sim.haze).toFixed(3) + ')'); hg.addColorStop(1, (dark ? 'rgba(205,210,208,' : 'rgba(86,90,88,') + '0)'); ctx.fillStyle = hg; ctx.fillRect(cx - a, G.top, 2 * a, b); }
@@ -438,19 +443,20 @@
         if (xx > cx && (!dropAnchor || xx > dropAnchor.x)) dropAnchor = { x: xx, y: yy - lift };
       }
       ctx.restore();
-      // laser (infrared) thermometer: used ONLY at the two weighings. Then it is a handheld gun with a thin laser line and a red dot on the outside of the dome glass;
+      // laser (infrared) thermometer: used ONLY at the two weighings. Then it is a handheld gun with a thin laser line and a red dot on the fuel (before) or the ash (after);
       // otherwise it is put down on the bench with its display off.
       if (gunOn) {
-        ctx.strokeStyle = 'rgba(255,40,40,.9)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(LP.M.x, LP.M.y); ctx.lineTo(LP.D.x, LP.D.y); ctx.stroke();
-        drawGun(ctx, LP.M.x, LP.M.y, G.ang, gunTemp + '°', u, dark, css);
-        ctx.fillStyle = 'rgba(255,60,50,.35)'; ctx.beginPath(); ctx.arc(LP.D.x, LP.D.y, 6 * u, 0, 6.28); ctx.fill(); ctx.fillStyle = '#ff3b30'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(LP.D.x, LP.D.y, 2.8 * u, 0, 6.28); ctx.fill(); ctx.stroke();
-      } else drawGun(ctx, restM.x, restM.y, 0, '', u, dark, css);
+        ctx.strokeStyle = 'rgba(255,40,40,.9)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(LP.M.x, LP.M.y); ctx.lineTo(LP.T.x, LP.T.y); ctx.stroke();
+        drawGun(ctx, LP.M.x, LP.M.y, LP.ang, gunTemp + '°', u, dark, css);
+        ctx.fillStyle = 'rgba(255,60,50,.35)'; ctx.beginPath(); ctx.arc(LP.T.x, LP.T.y, 6 * u, 0, 6.28); ctx.fill(); ctx.fillStyle = '#ff3b30'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(LP.T.x, LP.T.y, 2.8 * u, 0, 6.28); ctx.fill(); ctx.stroke();
+            canvas.dataset.laser = JSON.stringify({ x: Math.round(LP.T.x * 10) / 10, y: Math.round(LP.T.y * 10) / 10, area: { x: Math.round(LP.area.x * 10) / 10, y: Math.round(LP.area.y * 10) / 10, r: Math.round(LP.area.r * 10) / 10 }, target: lifted ? 'ash' : 'fuel' });
+      } else { drawGun(ctx, restM.x, restM.y, 0, '', u, dark, css); canvas.dataset.laser = ''; }
       // labels with leader lines that end in dots on the drawn structures (two rows above the dome on narrow canvases; beside the parts on wider ones)
       const o = { W, H }, wide = W >= 560, laneW = Math.max(80, Math.min(170, W / 2 - 10));
-      const bal = v.phase === 'ready' ? [v.read ? res.massBefore.toFixed(1) + ' g' : 'not weighed yet'] : running ? ['empty while it burns'] : [lifted ? res.massAfter.toFixed(1) + ' g' : 'weigh after the burn'];
+      const bal = v.phase === 'ready' ? [v.read ? 'weighed ' + res.massBefore.toFixed(1) + ' g' : 'not weighed yet'] : running ? ['empty while it burns'] : [lifted ? res.massAfter.toFixed(1) + ' g' : 'weigh after the burn'];
       labelBox(ctx, ['Balance' + (v.phase === 'ready' ? ': ' + res.label.toLowerCase() : '')].concat(bal), G.bcx, G.panY - 62 * u, { x: G.bcx - bw * 0.2, y: G.panY - 1 }, Object.assign({ align: 'center', maxW: bw + 20 }, o));
       const fuelTxt = ['Fuel on a tray', res.label + ' · ' + sim.massTrue.toFixed(1) + ' g left'];
-      const gunTxt = ['Laser thermometer', v.phase === 'ready' ? (v.read ? gunTemp + ' °C (before)' : 'not used yet') : running ? 'put down while it burns' : (lifted ? gunTemp + ' °C (after)' : 'waits for the 2nd weighing')];
+      const gunTxt = ['Laser thermometer', v.phase === 'ready' ? (v.read ? gunTemp + ' °C on the fuel (before)' : 'not used yet') : running ? 'put down while it burns' : (lifted ? gunTemp + ' °C on the ash (after)' : 'waits for the 2nd weighing')];
       const domePtL = { x: G.domePt.x, y: G.domePt.y - lift };
       if (!wide) {
         labelBox(ctx, gunTxt, 4, 4, gunBodyC, Object.assign({ align: 'left', maxW: laneW }, o));
@@ -482,12 +488,12 @@
       const flame = s.flame > 0.02 ? (s.flame >= 0.7 ? 'a bright flame' : 'a small flame') : 'no flame', smoke = s.smoke >= 0.5 ? ' lots of smoke,' : s.smoke >= 0.15 ? ' a little smoke,' : '', ember = s.glow >= 0.3 ? ' a glowing ember,' : '';
       const bowl = 'A half-sphere glass bowl, upside down (the dome), ';
       const tail = ' The BTB in the dish inside the dome is ' + L.btbText(s.btb) + '.' + (s.drops >= 0.2 ? ' Droplets of water have formed on the inside of the dome.' : '') + (s.gas >= 0.2 && !lifted ? ' Carbon dioxide is collecting under the dome.' : '');
-      if (v.phase === 'ready') return 'Simulated burn demonstration. ' + bowl + 'stands over an empty tray with a dish of BTB inside it. Ready to burn ' + name + '. The ' + r.massStart + ' g handful is on the balance' +
-        (v.read ? ', which reads ' + r.massBefore.toFixed(1) + ' grams, and the laser thermometer aimed at the dome glass reads ' + r.tempBefore + ' degrees Celsius (before the burn).' : ', not weighed yet, and the laser thermometer rests on the bench.') + tail;
+      if (v.phase === 'ready') return 'Simulated burn demonstration. ' + bowl + 'stands over ' + (v.read ? 'a tray with the fuel on it and' : 'an empty tray with') + ' a dish of BTB inside it. Ready to burn ' + name + '. The ' + r.massStart + ' g handful ' +
+        (v.read ? 'was weighed (the balance read ' + r.massBefore.toFixed(1) + ' grams) and now sits on the tray under the dome. The laser thermometer aimed at the fuel, through the dome glass, reads ' + r.tempBefore + ' degrees Celsius (before the burn).' : 'is on the balance, not weighed yet, and the laser thermometer rests on the bench.') + tail;
       if (v.phase === 'running') return 'Simulated burn demonstration. ' + bowl + 'over burning ' + name + ', sample ' + r.n + ', with a dish of BTB inside the dome: ' + stageText(v).toLowerCase() + ', ' + secs(v.t) + ' in. It shows ' + flame + ',' + smoke + ember +
         ' and the sample under the dome is down to ' + s.massTrue.toFixed(1) + ' grams. The laser thermometer is put down on the bench and the balance shows no reading while it burns.' + tail;
       return 'Simulated burn demonstration. ' + bowl + (lifted ? 'lifted off the cooled ' : 'still over the ash of ') + name + ', sample ' + r.n + ', with a dish of BTB inside the dome. ' +
-        (lifted ? 'The ash is on the balance, which reads ' + r.massAfter.toFixed(1) + ' grams, and the laser thermometer aimed at the dome glass reads ' + r.tempAfter + ' degrees Celsius (after the burn).' : 'Only ash is left, still under the dome. The laser thermometer rests on the bench until you weigh again.') + tail;
+        (lifted ? 'The ash is on the balance, which reads ' + r.massAfter.toFixed(1) + ' grams, and the laser thermometer aimed at the ash reads ' + r.tempAfter + ' degrees Celsius (after the burn).' : 'Only ash is left, still under the dome. The laser thermometer rests on the bench until you weigh again.') + tail;
     }
     function updateDesc() {
       const v = view(), key = v.phase + ':' + v.res.fuel + ':' + Math.floor(v.t / 3) + ':' + (st ? st.records.length : 0) + ':' + v.read;

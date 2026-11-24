@@ -28,22 +28,23 @@
      which let two near-identical fuels differ by up to 5 degrees.)
    - The apparatus. The fuel burns on a heat-safe tray under a large glass dome. A Petri dish of BTB (lid off) sits inside the dome beside the fuel, exposed to the
      air under the dome. The fuel sample is weighed on a balance before the burn and again after it (the sample sits under the dome during the burn). A laser
-     (infrared) thermometer is used at those two weighings only, not during the burn: it reads the dome glass once before the burn (when the sample is weighed) and once
-     after it (when the dome is lifted and cooled enough to read and the ash is weighed). It shows whole degrees C. This is a simplification: real readings depend on
-     where and when you aim, and which surface to read depends on the teacher's protocol (the dome glass, at the same spot both times, is an assumption here).
+     (infrared) thermometer is used at those two weighings only, not during the burn, and it is aimed at the FUEL: before the burn at the sample (the dome is down over the
+     tray, so the beam passes through the glass), and after the burn at the ash on the balance (the dome has been lifted and has cooled enough to work near). It reads to
+     about 1 degree C. This is a simplification: the laser reads the fuel (or its ash) at each weighing, and real readings depend on where and when you aim.
    - Mass that disappears leaves as gas, mostly carbon dioxide and water vapor (ash stays). Carbon dioxide made (relative) = grams lost x carbon factor. It collects
      under the dome, and a FIXED share (0.6) of it dissolves into the BTB in the dish. The dome is not perfectly sealed, so some gas escapes (the Teacher Edition says
      the system was not totally closed); that is why the BTB shows a color change but not an exact amount, and why 0.6 is a share, not all of it. BTB reading (1 deep blue,
      2 blue, 3 blue-green, 4 green, 5 yellow-green, 6 yellow), starting at 2: 2 + 4 (1 - exp(-dissolved / 3.5)) + noise of +/- 0.2 (the noise is zero when nothing was lost),
      kept from 2 to 6. So for every sample, the BTB change grows with the carbon dioxide made, which grows with grams lost x carbon factor; no mass lost means no
      BTB change. Real BTB color also depends on its starting pH and on how much gas reaches it.
-   - Heat. Temperature rise of the dome glass (the difference between the two laser-thermometer readings taken at the weighings, after minus before) = grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and
-     22 C. The 0.35 stands for the share of the heat that reaches the glass and the air under the dome, and the 8 kJ per degree for the heat capacity of that glass
-     and air. The glass is never cooler after than before.
+   - Heat. The temperature rise is the difference between the two laser readings of the fuel (the ash, after) taken at the weighings, after minus before. It is the
+     temperature of the fuel and its surroundings: what the fuel's heat does. It equals grams burned x kJ per g x 0.35 / 8 kJ per degree C, kept between 2 and 22 C (the 0.35
+     stands for the share of the heat that stays with the fuel, its ash, the tray and the air around them, and the 8 kJ per degree for the heat capacity of those). The reading
+     is never lower after than before.
    - Water. Hydrogen in the fuel joins oxygen and leaves as water vapor. Water made (relative) = grams lost x water factor. It condenses as droplets on the INSIDE of the
      dome glass: most for peat, some for wood, leaves and grass, least for charcoal. The drawing shows droplets in proportion to it.
    - Smoke and carbon dioxide collect under the dome in the drawing in proportion to the smoke each fuel makes and to the carbon dioxide made.
-   - Never impossible: mass after is below mass before and above zero, the dome glass is not cooler after than before, BTB 2 to 6, times positive. */
+   - Never impossible: mass after is below mass before and above zero, the temperature reading is not lower after than before, BTB 2 to 6, times positive. */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory(); else root.B2BurnLogic = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
@@ -238,16 +239,16 @@
     const others = g.filter(x => x.fuel !== fuelId);
     if (!others.length) return { status: 'nodata', message: 'Burn and record at least one other fuel to compare energy.' };
     const avg = mean(others.map(x => x.tempRise)), more = mine.tempRise > avg, ok = (value === 'more') === more;
-    return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed the dome glass ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' };
+    return { status: ok ? 'correct' : 'wrong', message: (ok ? 'Yes. ' : 'Not quite. ') + 'In your data ' + name + ' warmed up ' + mine.tempRise.toFixed(1) + ' °C, ' + (more ? 'more' : 'less') + ' than the others on average (' + avg.toFixed(1) + ' °C).' };
   }
-  // "In my data, ___ turned the BTB most yellow / warmed the dome glass most / caught fire last." Ties count. Needs two fuels.
+  // "In my data, ___ turned the BTB most yellow / warmed up most / caught fire last." Ties count. Needs two fuels.
   function checkDataPick(kind, value, st) {
     if (!value) return { status: 'empty', message: '' };
     const g = byFuel(tableRows(st));
     if (g.length < 2) return { status: 'nodata', message: 'Burn and record at least two fuels first, then check this.' };
     const key = kind === 'yellowest' ? 'btbAfter' : kind === 'warmest' ? 'tempRise' : kind === 'lostmost' ? 'massLost' : 'igniteS';
     const top = Math.max.apply(null, g.map(x => Math.round(x[key] * 10) / 10)), win = g.filter(x => Math.round(x[key] * 10) / 10 === top), names = win.map(x => x.label).join(' and ');
-    const mine = g.find(x => x.fuel === value), what = kind === 'yellowest' ? 'turned the BTB the most yellow' : kind === 'warmest' ? 'warmed the dome glass the most' : kind === 'lostmost' ? 'lost the most mass' : 'took the longest to catch fire';
+    const mine = g.find(x => x.fuel === value), what = kind === 'yellowest' ? 'turned the BTB the most yellow' : kind === 'warmest' ? 'warmed up the most' : kind === 'lostmost' ? 'lost the most mass' : 'took the longest to catch fire';
     if (!mine) return { status: 'wrong', message: 'You have not burned that fuel yet. In your data ' + names + ' ' + what + '.' };
     return win.some(x => x.fuel === value) ? { status: 'correct', message: 'Yes. In your data ' + names + ' ' + what + '.' }
       : { status: 'wrong', message: 'Try again. Why not: look at your table. In your data ' + names + ' ' + what + '.' };
@@ -276,7 +277,7 @@
       cool: 'Try again. Why not: the dish sits next to a hot fire, so it is not there to stay cool.',
       smoke: 'Try again. Why not: BTB shows carbon dioxide, not smoke. Smoke is bits of burning fuel.' } },
     'sense-energy': { correct: ['heat'], why: {
-      heat: 'Yes. Energy stored in the fuel was released as heat and light. The dome glass warmed up.',
+      heat: 'Yes. Energy stored in the fuel was released as heat and light. The fuel and what is around it warmed up.',
       ash: 'Try again. Why not: the ash is what is left over. The energy left with the heat and light.',
       vanish: 'Try again. Why not: energy is never used up. It is transferred.' } },
     'sense-slowest': { correct: ['dense'], why: {

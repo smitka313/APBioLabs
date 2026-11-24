@@ -18,23 +18,27 @@ Positions are computed from the dome geometry (`geom`, `laserPoints`), so the fu
 lower half at every canvas size.
 
 The laser (infrared) thermometer and the balance are used **only at the two weighings**, never during the burn:
-1. **Before** (ready): the handful sits on the balance. "Weigh and read temperature (before)" stores `weighed:{fuel,n}`; the balance then reads the before mass and the laser gun, line and dot
-   (on the outside of the dome glass) show the before temperature. Before this the gun rests on the bench and the balance shows `--.- g`. "Burn it" is off until this is done.
+1. **Before** (ready): the handful sits on the balance waiting to be weighed. "Weigh and read temperature (before)" stores `weighed:{fuel,n}`: the balance then holds the before mass, the fuel is
+   placed on the tray under the dome (dome down), and the laser gun is aimed AT THE FUEL: the beam passes through the dome glass and its dot lies on the sample. Before this the gun rests on
+   the bench and the balance shows `--.- g`. "Burn it" is off until this is done.
 2. **Burn**: the sample is under the dome; the gun is put down on the bench with its display off, the balance shows `--.- g`, and the text description says so. No live reading.
 3. **After** (finished): the dome is still down over the ash and nothing is read. "Lift the dome, weigh and read temperature (after)" stores `current.after = true`: the dome is drawn lifted, the ash is
-   on the balance (after mass) and the laser reads the after temperature at the same spot on the dome glass. Only then can the student tap observations and "Record results (both weighings)",
+   on the balance (after mass) and the laser, with nothing in the way, is aimed at the ash on the balance and reads the after temperature. Only then can the student tap observations and "Record results (both weighings)",
    which fills the table's temperature and mass before → after at the same two steps.
 Reload keeps all of this (flags only; the numbers are recomputed from the seed). Reduced motion shows the finished burn at once; the after weighing is still the student's step.
 
-Assumptions, stated on the page: the temperature rise is the difference of the two laser readings taken at the weighings (a simplification: real readings depend on where and when you aim),
-and which surface to read depends on the teacher's protocol (here, the dome glass at the same spot both times). The Teacher Edition says the system was not totally closed, so some gas escapes;
+The dot is computed from where the sample or the ash is drawn (`laserPoints`), and the scene exposes it with the fuel or ash area it must lie in as `data-laser` on the canvas
+(`{x,y,area:{x,y,r},target:'fuel'|'ash'}`; empty while the gun is not in use); `t107-b2-burn-scene.js` and `t107-b2-burn-layout.js` check the dot is inside that area at every size.
+
+Assumption, stated on the page: the laser reads the fuel (or its ash) at each weighing, and real readings depend on where and when you aim. The temperature rise is the difference of the two
+readings; it is the temperature of the fuel and its surroundings, what the fuel's heat does. The Teacher Edition says the system was not totally closed, so some gas escapes;
 the BTB shows a color change, not an exact amount. Nothing in the page, tables, chips or aria-labels says "flask" (tested).
 
 ## Sections
 
 `overview, ideas, fuels, burn, sense, sort, peat, wrapup`. Section 3 has five fuel cards (no inputs) and ten prediction dropdowns that are checked against the
 student's own table once the fuel has been burned. Section 5 has reasoning rows (BTB, where the mass went, mass lost and BTB change, why the BTB is in a dish inside the dome, where the droplet water came from, energy, why peat ignites last) and three "in my data" rows (lost the most mass, most yellow, warmest). Section 6 is the Matter-Energy chart
-(7 items, matter / energy / both, feedback inside each card). Section 7 is the claim, evidence and reasoning self-check; the four evidence chips (peat lost the most mass, made the biggest BTB change, warmed the dome glass most, burned longest)
+(7 items, matter / energy / both, feedback inside each card). Section 7 is the claim, evidence and reasoning self-check; the four evidence chips (peat lost the most mass, made the biggest BTB change, warmed up most, burned longest)
 are each checked against the student's own table with a text mark naming the fuel, and lose their mark when the table changes.
 
 ## Scene
@@ -70,8 +74,9 @@ shows whole degrees C (true temperature +/- 0.5, rounded), start 22 C. Ignition 
 - Carbon dioxide made (relative) = grams lost x carbon factor. It collects under the dome and a fixed 0.6 of it dissolves into the BTB in the dish (the rest escapes or stays in the air): BTB = 2 + 4 (1 - exp(-dissolved / 3.5)) +/- 0.2 (noise fades to zero when no
   gas was made), 2 to 6. So BTB change is monotonic in carbon dioxide made, which is grams lost x carbon factor; no mass lost means no BTB change. Means: peat about 5.4, charcoal 5.0,
   wood 4.3, grass and leaves 3.0. (Noise is +/- 0.2, not 0.3, so peat's BTB is above every other fuel for every student, tested over 400 seeds x 3 samples.)
-- Temperature rise = the difference between the two laser-thermometer readings of the dome glass, taken at the two weighings (after minus before) = grams burned x kJ per g x 0.35 / 8, kept 2 to 22 C (the 0.35 and 8 stand for how much heat
-  reaches the glass and the air under the dome): peat about 20, charcoal 11, wood 7.7, grass and leaves 2.5. The glass is never cooler after.
+- Temperature rise = the difference between the two laser-thermometer readings of the fuel (its ash, after), taken at the two weighings (after minus before) = grams burned x kJ per g x 0.35 / 8,
+  kept 2 to 22 C (the 0.35 and 8 stand for how much of the heat stays with the fuel, its ash, the tray and the air around them): peat about 20, charcoal 11, wood 7.7, grass and leaves 2.5.
+  The reading is never lower after.
 - Water made = grams lost x water factor; droplets on the inside of the dome grow with it (level = sqrt(water / 12), capped at 1), most for peat, least for charcoal. Observation chip "Droplets
   on the glass" is true for every fuel except charcoal (`obsTruth`).
 - One simulated second is one sixth of a real second.

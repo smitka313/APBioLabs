@@ -77,7 +77,7 @@ test('variation stays near the planned size and the means sit on the nominal val
   }
 });
 
-test('the lesson facts hold for every student: peat loses the most mass, makes the most carbon dioxide and the biggest BTB change, warms the dome glass most, ignites last and burns longest', () => {
+test('the lesson facts hold for every student: peat loses the most mass, makes the most carbon dioxide and the biggest BTB change, warms the fuel most, ignites last and burns longest', () => {
   for (const seed of SEEDS) for (const n of [1, 2, 3]) {
     const r = Object.fromEntries(L.FUEL_IDS.map(f => [f, L.burnResult(seed, f, n)]));
     for (const f of L.FUEL_IDS) if (f !== 'peat') {
@@ -192,6 +192,7 @@ test('smoke haze and carbon dioxide under the dome grow with the burn and follow
   assert.ok(end('peat').gas > end('charcoal').gas && end('charcoal').gas > end('wood').gas && end('wood').gas > end('grass').gas, 'gas follows carbon dioxide made');
   // the BTB dish row and the dome wording
   assert.equal(L.checkPick('sense-dish', 'reach').status, 'correct'); assert.equal(L.checkPick('sense-dish', 'cool').status, 'wrong'); assert.equal(L.checkPick('sense-dish', 'smoke').status, 'wrong');
+  assert.ok(!/dome glass/i.test(L.PICKS['sense-energy'].why.heat + L.checkPrediction('peat', 'energy', 'more', record(3, [['grass', 1], ['peat', 1]])).message + L.checkDataPick('warmest', 'grass', record(3, [['grass', 1], ['peat', 1]])).message), 'the temperature feedback names the fuel, not the dome glass');
   const text = JSON.stringify(L.PICKS) + L.checkPrediction('peat', 'energy', 'more', record(3, [['grass', 1], ['peat', 1]])).message + L.checkDataPick('warmest', 'grass', record(3, [['grass', 1], ['peat', 1]])).message;
   assert.ok(!/flask/i.test(text), 'no flask wording in any feedback');
 });
@@ -256,7 +257,7 @@ test('predictions are checked against the student table and recomputed when it c
   assert.equal(L.checkPrediction('wood', 'ignite', 'slowly', st).status, 'nodata');
   const more = peat.tempRise > grass.tempRise;
   assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, more ? 'correct' : 'wrong');
-  assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, 'correct', 'peat gives more energy than grass'); assert.match(L.checkPrediction('peat', 'energy', 'more', st).message, /warmed the dome glass [12]\d\.\d °C, more than the others/);
+  assert.equal(L.checkPrediction('peat', 'energy', 'more', st).status, 'correct', 'peat gives more energy than grass'); assert.match(L.checkPrediction('peat', 'energy', 'more', st).message, /warmed up [12]\d\.\d °C, more than the others/);
   assert.equal(L.checkPrediction('grass', 'energy', 'more', record(11, [['grass', 1]])).status, 'nodata', 'energy needs another fuel to compare');
   // add charcoal: grass is now clearly below the others on average
   const st2 = record(11, [['grass', 1], ['charcoal', 1], ['wood', 1]]);
