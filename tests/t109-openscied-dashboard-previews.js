@@ -148,10 +148,22 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
       'the new card and its default button open the exact Hawksbeard Wind Lab URL');
     await Promise.all([p.waitForURL(url => url.pathname === '/' + migrationStart), migrationOpen.click()]);
     await p.locator('#explore #month-buttons button').first().waitFor({state:'visible'});
-    T.ok(await p.evaluate(() => scrollY < 4), 'a fresh Migration visit begins at the activity title');
+    const migrationHeading = p.getByRole('heading', { level: 1, name: 'Migration Map Explorer', exact: true });
+    const landing = await p.evaluate(() => ({ y: scrollY, hash: location.hash }));
+    const headingBox = await migrationHeading.boundingBox();
+    T.ok(landing.y < 4 && !landing.hash && !!headingBox && headingBox.y >= 0 && headingBox.y + headingBox.height <= 900,
+      'a fresh Migration visit begins at the activity title without an anchor: ' + JSON.stringify(landing));
     T.ok(await p.locator('#explore #migration-map').isVisible()
       && (await p.locator('[data-page="explore"]').getAttribute('aria-current')) === 'page',
       'first card button opens the live Migration Explorer on Explore the year');
+    await p.locator('[data-page="evidence"]').click();
+    T.ok(await p.evaluate(() => location.hash === '#evidence') && await p.locator('#evidence').isVisible(),
+      'choosing another section still adds its shareable fragment');
+    await p.reload();
+    await p.locator('#evidence .mx-card').first().waitFor({ state: 'visible' });
+    T.ok(await p.evaluate(() => location.hash === '#evidence') &&
+      (await p.locator('[data-page="evidence"]').getAttribute('aria-current')) === 'page',
+      'reloading an explicit fragment keeps that section selected');
     await ctx.close();
   } finally { await b.close(); srv.close(); }
   T.done('t109-openscied-dashboard-previews');

@@ -16,9 +16,14 @@ const B2 = 'aplab:openscied:b2-fires:v1', INH = 'aplab:openscied:b3-inheritance-
       T.ok(await p.evaluate(() => { const a = document.getElementById('unit2'), b = document.getElementById('unit3'); return !!(a && b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)); }), width + ' px: Unit 2 is listed before Unit 3');
       T.ok(await p.locator('section[aria-labelledby="unit2"] .dashboard-activity').count() === 4 && (await p.locator('section[aria-labelledby="unit2"] .dashboard-tag').textContent()).trim() === '4 activities available', width + ' px: Unit 2 has four activities (Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey)');
       T.ok(/Fires/.test(await p.locator('#unit2').innerText()) && /Lessons 3 and 5/.test(await p.locator('section[aria-labelledby="unit2"]').innerText()), 'Unit 2 card names the lessons');
-      T.ok((await p.locator('.dashboard-coming-soon').innerText()) === 'Unit 5: No activities published yet.'
-        && await p.locator('.dashboard-coming-soon :is(a, button, summary)').count() === 0,
-        'Unit 5 is information, not a dead control');
+      const unit5 = p.locator('.dashboard-coming-soon');
+      const officialUnit5 = unit5.getByRole('link', { name: 'See the official OpenSciEd unit' });
+      T.ok(/Unit 5 · Arctic bears:.*No companion activities yet\./s.test(await unit5.innerText())
+        && await unit5.locator('button, summary').count() === 0
+        && await unit5.getByRole('link').count() === 1
+        && await officialUnit5.isVisible()
+        && await officialUnit5.getAttribute('href') === 'https://openscied.org/instructional-materials/b-5-common-ancestry-speciation/',
+        'Unit 5 explains that no companion is published and links to the official Arctic bears unit, without an empty toggle');
       T.ok(await p.locator('#b2-fires-open').getAttribute('href') === 'openscied-b2-fires.html#overview' && /Not started/.test(await p.locator('#b2-fires-progress').innerText()) && await p.locator('#b2-fires-reset').isDisabled(), 'card opens its page, not started, restart disabled');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
       const t = Date.now();

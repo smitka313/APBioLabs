@@ -59,15 +59,25 @@
       ' This tab has not overwritten the saved work. Download a copy of your work here before reopening the activity.';
     const notice = document.getElementById('ose-save-protection');
     if (notice) {
-      if (notice.firstElementChild.textContent !== message) notice.firstElementChild.textContent = message;
+      const changed = notice.hidden || notice.firstElementChild.textContent !== message;
+      if (changed) notice.firstElementChild.textContent = message;
       notice.hidden = false;
       if (focus) notice.focus();
+      // Keep the banner visible and announce it once, without replacing lesson feedback.
+      if (changed && !focus) {
+        const live = document.getElementById('save-announcement');
+        if (live) live.textContent = message;
+      }
     }
     return message;
   }
   function clearSaveProblem() {
     const notice = document.getElementById('ose-save-protection');
-    if (notice) notice.hidden = true;
+    if (notice && !notice.hidden) {
+      notice.hidden = true;
+      const live = document.getElementById('save-announcement');
+      if (live) live.textContent = '';
+    }
   }
   function watchSaveChanges(event) {
     if (event?.type === 'storage' && event.key !== null &&
@@ -103,7 +113,7 @@
 
   function studentIdentity() { return window.Lab && Lab.identity ? Lab.identity.get() : null; }
   function hash32(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  function announce(text) { const el = $('#announcer'); if (!el) return; el.textContent = ''; setTimeout(function () { el.textContent = text; }, 30); }
+  function announce(text) { const el = $('#step-announcement'); if (!el) return; el.textContent = ''; setTimeout(function () { el.textContent = text; }, 30); }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function copy(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
   function byId(id) { return document.getElementById(id); }

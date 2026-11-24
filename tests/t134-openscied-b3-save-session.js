@@ -19,8 +19,8 @@ function sliceFunction(source, name, next) {
 const setup = {
   'cancer-rates': { endSave:'source', key:"D=window.CancerRatesData,L=window.CancerRatesLogic,", field:'claim' },
   'cell-cycle': { endSave:'restoreFields', endReset:'reset', field:'analysis-design' },
-  'dna-p53': { endSave:'restoreFields', endReset:'mountScene', field:'exit-q7' },
-  'inheritance-environment': { endSave:'restoreFields', endReset:'mountScene', field:'exit-q7' }
+  'dna-p53': { endSave:'restoreFields', endReset:'mountScene', field:'exit-q7', oneLiveRegion:true },
+  'inheritance-environment': { endSave:'restoreFields', endReset:'mountScene', field:'exit-q7', oneLiveRegion:true }
 };
 for (const [name, spec] of Object.entries(setup)) {
   const scope = 'b3-' + name, key = 'aplab:openscied:' + scope + ':v1';
@@ -37,6 +37,10 @@ for (const [name, spec] of Object.entries(setup)) {
   const storage = {getItem(k){return disk.get(k)??null;},setItem(k,v){disk.set(k,v);},removeItem(k){disk.delete(k);}};
   function open(value) {
     const handlers={}, elements=new Map(), notice={hidden:true, firstElementChild:{textContent:''}, focus(){this.focused=true;}};
+    let warningUpdates = 0;
+    const warningSpeech = { text:'',
+      get textContent(){return this.text;}, set textContent(next){this.text = next; warningUpdates++;} };
+    const stepSpeech = { textContent:'Step feedback stays intact.' };
     const field = {id:spec.field, value};
     const element = id => {
       if (!elements.has(id)) elements.set(id, {textContent:'',value:'',style:{},close(){},focus(){},addEventListener(t,fn){this[t]=fn;}});
@@ -45,7 +49,8 @@ for (const [name, spec] of Object.entries(setup)) {
     const state = { fields:{},game:{},trials:[],quick:'',mechanism:'',fork:null, expression:{runs:[]},feedback:{},claim:value, lastSection:'overview' };
     let reloads=0;
     const context = {
-      document:{getElementById:()=>notice}, localStorage:storage,
+      document:{getElementById:id=>id==='save-announcement' ? warningSpeech :
+        id==='step-announcement' ? stepSpeech : notice}, localStorage:storage,
       window:{ localStorage:storage,OpenSciEdSaveSession:Save,addEventListener(t,fn){handlers[t]=fn;},location:{reload(){reloads++;}}},
       history:{replaceState(){}},location:{hash:'',pathname:'/',search:'',reload(){reloads++;}},
       state, ready:true, cleared:false, hadSaved:false, invalid:false, blocked:false, RESPONSE_IDS:[spec.field],SCENE_IDS:[],SECTIONS:[],
@@ -55,6 +60,7 @@ for (const [name, spec] of Object.entries(setup)) {
     vm.createContext(context);
     vm.runInContext('const KEY='+JSON.stringify(key)+';\n'+since+'\n'+save+'\n'+reset,context);
     return {save:context.save, notice, state, reloads:()=>reloads,
+      warningSpeech, stepSpeech, warningUpdates:()=>warningUpdates,
       sync(){handlers.storage?.({type:'storage',key});},
       reset: spec.key ? element('reset-confirm').click : context.clearActivity };
   }
@@ -68,6 +74,15 @@ for (const [name, spec] of Object.entries(setup)) {
   check(typeof newer==='string' && disk.get(key)===newer && stale.notice.hidden===false &&
     /changed in another tab/.test(stale.notice.firstElementChild.textContent) && stale.reloads()===0,
     scope+' rejects stale saves and resets while preserving the current tab');
+  if (spec.oneLiveRegion) {
+    const tags = html.match(/<[^>]+(?:aria-live=|role="(?:alert|status)")[^>]*>/g) || [];
+    check(tags.length===1 && /id="announcer"/.test(tags[0]) && /aria-atomic="false"/.test(tags[0]) &&
+      /id="step-announcement"/.test(html) && /id="save-announcement"/.test(html),
+      scope+' routes step and save announcements through one live region');
+    check(stale.warningSpeech.textContent===stale.notice.firstElementChild.textContent &&
+      stale.warningUpdates()===1 && stale.notice.focused && stale.stepSpeech.textContent==='Step feedback stays intact.',
+      scope+' announces the visible save warning once, preserves step feedback, and focuses the warning if Reset is denied');
+  }
   check((spec.key ? stale.state.claim : stale.state.fields[spec.field])==='older locally edited answer',
     scope+' leaves the unsaved answer available to download');
   // A still-open editor cannot resurrect its earlier state after ERASE.

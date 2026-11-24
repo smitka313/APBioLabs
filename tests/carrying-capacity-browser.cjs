@@ -752,7 +752,7 @@ async function companionHeaders(browser, base) {
   for (const cfg of viewportCases) {
     await withPage(browser, { ...cfg, name: cfg.name + '-Unit-1-headers' }, async p => {
       for (const [page, title, asset] of [
-        ['migration', 'Follow the migration.', 'migration-explorer-preview.svg'],
+        ['migration', 'Migration Map Explorer', 'migration-explorer-preview.svg'],
         ['serengeti', 'Serengeti Board Game', 'openscied-serengeti-preview.svg']
       ]) {
         const response = await p.goto(base + 'openscied-b1-' + page + '.html');

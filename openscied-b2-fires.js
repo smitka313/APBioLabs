@@ -55,7 +55,7 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const state = { cards: null, decomp: null, tilt: null, fields: {}, lastSection: 'overview' };
-  let cleared = false, ready = false, preservedSave = false, needsSaveUpgrade = false, hasSavedRecord = false, RESPONSE_IDS = [];
+  let cleared = false, ready = false, preservedSave = false, hasSavedRecord = false, RESPONSE_IDS = [];
   const DATA_PICKS = { 'sense-bluest': 'bluest', 'sense-yellowest': 'yellowest' };
 
   function announce(text) { const e = $('#announcer'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
@@ -71,11 +71,20 @@
       const d = JSON.parse(raw);
       if (!d || d.v !== 1) throw Error('Unknown saved format');
       hasSavedRecord = true;
-      needsSaveUpgrade = !Array.isArray(d.responseIds);
       SCENE_IDS.forEach(function (id) { if (d[id] && typeof d[id] === 'object') state[id] = d[id]; });
       if (d.fields && typeof d.fields === 'object') state.fields = d.fields;
       if (SECTIONS.includes(d.lastSection)) state.lastSection = d.lastSection;
+      return d;
     } catch (e) { preservedSave = true; }
+  }
+  function upgradeLegacyResponseIds(record) {
+    if (!record) return;
+    const oldIds = new Set(Array.isArray(record.responseIds) ? record.responseIds : []);
+    if (Array.isArray(record.responseIds) && record.responseIds.length === RESPONSE_IDS.length &&
+        RESPONSE_IDS.every(id => oldIds.has(id))) return;
+    // Repair only the counting metadata. Do not claim the work was just saved, or change any saved answers or scenes.
+    const result = saveSession?.write(KEY, JSON.stringify({ ...record, responseIds: RESPONSE_IDS }));
+    if (!result?.ok) showSaveConflict(result);
   }
   function collectFields() {
     const f = {};
@@ -405,7 +414,7 @@
     renderPicks(); renderSugar(false); renderHyp(false); renderPredNote(); renderClaim(false);
   }
   function wire() {
-    readStore();
+    const loadedRecord = readStore();
     if (preservedSave) {
       const notice = document.getElementById('save-conflict');
       notice.textContent = 'An unreadable save was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
@@ -435,7 +444,8 @@
     $('#cancel-reset').addEventListener('click', function () { dialog.close(); });
     $('#confirm-reset').addEventListener('click', clearActivity);
     // Do not overwrite a whole saved investigation just because a tab opened. Upgrade legacy counters once.
-    if (needsSaveUpgrade) save(); else renderReport();
+    upgradeLegacyResponseIds(loadedRecord);
+    renderReport();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();
