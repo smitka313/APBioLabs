@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const FIRST_LINE = 'First line: my explanation starts here.';
+const LAST_LINE = 'Last line: my explanation ends here.';
 
 // Exercise a long, scrollable response, not only a short string that fits in its field.
 async function verifyLongResponse(page, field, { name, touch, screenshot }) {
@@ -12,7 +13,7 @@ async function verifyLongResponse(page, field, { name, touch, screenshot }) {
     'I can name a limit of the comparison.',
     'I can say what the numbers support.',
     'I can explain what is still uncertain.',
-    'Last line: my explanation ends here.'
+    LAST_LINE
   ].join('\n');
   assert.equal(await page.getByRole('textbox', { name }).count(), 1, 'the answer has one accessible textbox label');
   if (touch) await field.tap(); // Playwright emulation; not a real device or screen reader.
@@ -32,10 +33,14 @@ async function verifyLongResponse(page, field, { name, touch, screenshot }) {
     const firstLineEnd = firstLineTop + parseFloat(style.lineHeight);
     return { caret:el.selectionStart, firstLineTop, firstLineEnd, height:el.clientHeight };
   });
-  assert.equal(geometry.caret, 0);
-  assert.ok(geometry.firstLineTop >= 0 && geometry.firstLineEnd <= geometry.height,
-    'returning to the start exposes the entire first line: ' + JSON.stringify(geometry));
   await field.screenshot({ path:screenshot, animations:'disabled', timeout:12000 });
+  assert.equal(geometry.caret, 0);
+  // A textarea's scrollTop/clientHeight round to pixels in Chromium, but its
+  // computed em padding can be fractional (Junco uses 5.6 px at 16 px type).
+  const roundingTolerance = 0.5;
+  assert.ok(geometry.firstLineTop >= -roundingTolerance &&
+    geometry.firstLineEnd <= geometry.height + roundingTolerance,
+    'returning to the start exposes the entire first line: ' + JSON.stringify(geometry));
 }
 
 async function writePrintPreview(page, selector, path) {
@@ -53,8 +58,10 @@ async function writePrintPreview(page, selector, path) {
       assert.ifError(extracted.error);
       assert.equal(extracted.status, 0, extracted.stderr);
       const readable = extracted.stdout.replace(/\s+/g, ' ');
-      assert.equal(readable.split(FIRST_LINE).length - 1, 1,
-        'the first line is present once in the print output, not clipped or repeated');
+      for (const line of [FIRST_LINE, LAST_LINE]) {
+        assert.equal(readable.split(line).length - 1, 1,
+          'the printed response includes this line exactly once: ' + line);
+      }
     }
   } finally {
     await page.emulateMedia({ media:null });

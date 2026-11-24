@@ -360,7 +360,15 @@
     ev.preventDefault();const choice=$('input[name=rg-prediction]:checked')?.value;
     if(own(PRED,choice)){state.prediction=choice;go('model');}
   });
+  // Native printing clips text to the textarea's visible rows. Use plain text on paper.
+  const printAnswers = [];
+  window.addEventListener('beforeprint',()=>{
+    for(const [entry,output] of printAnswers)output.textContent=entry.value;
+  });
   for(const entry of $answer){
+    const output=node('div','','rg-print-answer');
+    entry.after(output);
+    printAnswers.push([entry,output]);
     entry.addEventListener('input',()=>{state.answers[entry.dataset.rgAnswer]=entry.value.slice(0,2400);save();gates();});
     entry.addEventListener('blur',()=>{entry.scrollTop=0;});
   }
