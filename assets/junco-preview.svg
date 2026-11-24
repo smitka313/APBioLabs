@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="title desc">
+<title id="title">Dark-eyed juncos in two southern California habitats</title>
+<desc id="desc">Two small, dark-hooded birds with pale pink bills and white outer tail feathers. One stands on a concrete planter in a university courtyard and the other on a fallen branch among mountain pines.</desc>
+<!-- Original vector illustration. Both birds share the same modeled species markings;
+     the landscape is illustrative, not a site map or a depiction of behavioral data. -->
+<defs>
+  <linearGradient id="campus" x2=".2" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#719199"/><stop offset=".6" stop-color="#dbc8a2"/><stop offset="1" stop-color="#e4cc99"/></linearGradient>
+  <linearGradient id="woods" x1=".3" y1="0" x2=".8" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#365c6c"/><stop offset=".65" stop-color="#92a99c"/><stop offset="1" stop-color="#cbca9d"/></linearGradient>
+  <linearGradient id="concrete" x2=".1" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#c9a477"/><stop offset=".26" stop-color="#a98564"/><stop offset="1" stop-color="#5d4c43"/></linearGradient>
+  <linearGradient id="ground" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#7a7650"/><stop offset="1" stop-color="#2c3b35"/></linearGradient>
+  <linearGradient id="bark" x2=".1" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#c6985c"/><stop offset=".34" stop-color="#725642"/><stop offset="1" stop-color="#302d2d"/></linearGradient>
+  <radialGradient id="hood" cx=".32" cy=".27" r=".81"><stop stop-color="#53585e"/><stop offset=".62" stop-color="#2f333b"/><stop offset="1" stop-color="#171f28"/></radialGradient>
+  <linearGradient id="belly" x2=".72" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#fff9e9"/><stop offset=".5" stop-color="#ede3cf"/><stop offset="1" stop-color="#bdb7aa"/></linearGradient>
+  <linearGradient id="back" x2=".55" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#b89071"/><stop offset="1" stop-color="#5c4944"/></linearGradient>
+  <linearGradient id="wing" x2=".58" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#806450"/><stop offset=".6" stop-color="#594b47"/><stop offset="1" stop-color="#3c3a40"/></linearGradient>
+  <radialGradient id="vignette"><stop offset=".52" stop-color="#152a30" stop-opacity="0"/><stop offset="1" stop-color="#17292e" stop-opacity=".36"/></radialGradient>
+  <pattern id="wallgrain" width="29" height="31" patternUnits="userSpaceOnUse"><path d="M2 8h6m13 15h5M14 28h3" stroke="#482f2d" opacity=".21"/><path d="M5 2h3m11 15h5" stroke="#f6dfac" opacity=".33"/></pattern>
+  <clipPath id="frame"><rect x="9" y="9" width="942" height="582" rx="27"/></clipPath>
+  <clipPath id="left"><path d="M0 0h494l-12 600H0z"/></clipPath>
+  <clipPath id="right"><path d="M494 0h466v600H482z"/></clipPath>
+  <path id="pine" d="M0 0c-3 26-13 45-26 61l20-7c-9 23-27 43-40 49l29-7c-12 24-32 43-50 51l38-7c-14 22-34 43-59 51l73-15v36H9v-37l75 11c-30-14-48-30-62-53l38 10c-26-15-41-31-51-55l28 7C22 85 10 65 6 52l18 6C10 40 4 22 0 0z"/>
+  <g id="needle" fill="none" stroke-linecap="round"><path d="M0 0Q39 9 81 0" stroke="#97754f" stroke-width="3"/><path d="M11 2l11-14M15 3l17 14m-9-13 10-20m-6 20 19 14m-12-15 11-22m-8 23 22 13M46 3l13-22M48 4l23 11M58 3l15-16m-12 16 21 7M68 2l15-9" stroke="#74845a" stroke-width="2.2"/><path d="M18 4l9-9m5 9 17 9m0-9 10-11m5 5 10 7" stroke="#b9ae76" stroke-width="1.5"/></g>
+  <g id="junco">
+    <ellipse cx="111" cy="161" rx="102" ry="10" fill="#28272a" opacity=".29"/>
+    <path d="M108 126l-1 13-10 16-18 4m18-4 18 3m-19-3-4 8m28-33 6 12-5 15-14 4m14-4 16 2m-16-2 1 7" fill="none" stroke="#43393a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M108 128l-1 11-10 16m23-26 6 13-5 15" fill="none" stroke="#ba8d7a" stroke-width="2" stroke-linecap="round"/>
+    <path d="M168 98q36 6 88 21l-18 14q-50 1-84-18z" fill="#282e36" stroke="#243039" stroke-width="2.2"/>
+    <path d="M166 106q35 13 87 15l-13 8q-46 3-79-13z" fill="#eee8d9"/>
+    <path d="M178 109q23 8 57 9m-50-13q24 7 50 10" fill="none" stroke="#767278" stroke-width="1.5"/>
+    <path d="M68 42c14-13 36-16 61-7 17 6 26 16 40 34 14 17 27 26 40 32-11 15-27 25-56 30-33 6-59 5-82-3C39 117 25 91 33 68c6-12 19-20 35-26z" fill="url(#belly)" stroke="#342e32" stroke-width="2.6"/>
+    <path d="M66 48c16-22 51-22 76-7s31 41 68 60q-25 12-60 12c-30-2-66-19-77-45z" fill="url(#back)"/>
+    <path d="M52 84c32 2 66 17 99 21l38-7c-12 11-25 18-46 23-41 7-69-5-91-37z" fill="#c99574" opacity=".78"/>
+    <path d="M95 55c24-9 37-3 57 13 16 14 31 21 57 33-21 7-43 12-61 6-24-6-43-15-55-28-7-8-9-15 2-24z" fill="url(#wing)" stroke="#59473e" stroke-width="1.3"/>
+    <path d="M113 60q37 3 55 24m-50-12q40 10 66 25m-64-16q30 13 58 19m-47-9q20 10 37 12" fill="none" stroke="#b08b6e" stroke-width="1.65" stroke-linecap="round" opacity=".84"/>
+    <path d="M36 48C28 33 37 13 53 7c22-9 50-2 65 12 14 13 16 31 7 45-7 10-17 12-25 15-10 4-14 10-23 12-18 2-38-7-46-24-4-8 0-15 5-19z" fill="url(#hood)"/>
+    <path d="M39 40c-9-3-17-2-27 3l-8 7c9 5 24 7 35 1z" fill="#edb9a7" stroke="#493a40" stroke-width="1.6"/>
+    <path d="M6 50q15 0 32-5m-12-3 1-.4" fill="none" stroke="#714e52" stroke-width="1.35" stroke-linecap="round"/>
+    <circle cx="53" cy="35" r="7.2" fill="#4d4950"/><circle cx="53" cy="35" r="5.7" fill="#121820"/><circle cx="51.5" cy="33.2" r="1.75" fill="#fcf8e9"/>
+    <path d="M62 17c12-5 30-6 42 1m-45 4 16-4m-13 53 7 3m4 3 9 1m-31-14 7 5m14-45 8-1m7 33 9-3m-14 8 12-4" fill="none" stroke="#899095" opacity=".36" stroke-width="1.25" stroke-linecap="round"/>
+    <path d="M53 100l12 8m4 1 12 5m5 2 17 4m-3-6 13 1m-46-19 10 4" fill="none" stroke="#fcf4df" opacity=".67" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+</defs>
+<rect width="960" height="600" rx="34" fill="#202c30"/>
+<g clip-path="url(#frame)">
+  <g clip-path="url(#left)">
+    <rect width="500" height="600" fill="url(#campus)"/>
+    <circle cx="115" cy="132" r="78" fill="#f6e2a9" opacity=".28"/>
+    <path d="M0 236c79-25 136-61 214-47 48 9 84 37 121 38 61 1 89-27 159-22v185H0z" fill="#a8aa8e"/>
+    <path d="M0 353c135-41 332-33 499 37v210H0z" fill="#777454"/>
+    <path d="M166 295c47 9 73 28 106 45L0 479v-90zM266 335c62-3 146 31 224 72v166H130z" fill="#c9b08b"/>
+    <path d="M261 342 123 495M288 347l43 145M142 408l285-8M89 438l380-3" fill="none" stroke="#a78d75" stroke-width="2" opacity=".55"/>
+    <!-- Angular San Diego campus architecture: reading floor, buttresses, glazed facade, plaza. -->
+    <path d="M44 145 152 116l153 18 73 46-22 47-109 27L87 226l-45-35z" fill="#ded0af"/>
+    <path d="M45 146l111-23 148 20 69 35-21 21-111 13-148-29z" fill="#426568"/>
+    <path d="M44 148l111-20 147 19 71 31m-279 6 55-15 149 14 57 16m-234-70-14 58m48-63 8 72m30-67 16 76m26-71 20 74m14-69 25 68m13-61 26 57m-274-39 24 30" fill="none" stroke="#adc0b2" stroke-width="2" opacity=".8"/>
+    <path d="M44 146l111-25 151 19 70 39-24 24-110 12-151-29-47-37zm46 48 150 29 109-13m-276-4 91 43 81 12 111-29 22-52" fill="none" stroke="#e5d3ab" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M151 217l31 15 14 92-36 9 8-73zm149 4-24 13-11 90 34 13-4-79z" fill="#dfc8a0"/>
+    <path d="M151 218l21 19 7 26-12 69-15-1 8-71zm150 1-24 21-7 29 9 59 17 8-4-80z" fill="#a58467"/>
+    <path d="M187 265l78 7-4 52-65 2z" fill="#527176"/>
+    <path d="M209 269v57m25-55v54m-45-33 74 4" stroke="#a9ac96" stroke-width="2"/>
+    <path d="M0 340q35-44 107-21 62-27 119 19-117 28-226 56zm352 14q59-40 143-10v49z" fill="#657454"/>
+    <path d="M45 332q-6-76 11-124m0 56-24-27m21 18 28-25m-44 80-14 12m359 27q10-61-2-108m1 53 24-31m-22 18-24-21" fill="none" stroke="#6d5b48" stroke-width="5"/>
+    <path d="M14 244q-20-30 16-42-3-23 31-27 24-15 43 9 34 2 29 23 22 18-8 35-36 4-49 0-31 13-62 2zm331 20q-22-20 7-35 10-35 45-18 25-11 53 8 31 0 29 22-8 16-36 18-48 25-98 5z" fill="#657f58"/>
+    <path d="M15 231q15-28 48-23 9-24 46-12m244 57q23-20 55-13 32-15 55-2" fill="none" stroke="#a9aa70" stroke-width="6" opacity=".52"/>
+    <path d="M0 497 373 454 492 482v50L0 596z" fill="#d0b289"/>
+    <path d="M0 515 492 482v118H0z" fill="url(#concrete)"/>
+    <path d="M0 515 492 482v118H0z" fill="url(#wallgrain)"/>
+    <path d="M0 515 492 482m-265 19 7 91m-164-81 6 89m287-107 6 102" stroke="#e8cba2" stroke-width="2.2" opacity=".6"/>
+    <path d="M0 558q100-35 229-23l111 65H0z" fill="#473f3e" opacity=".27"/>
+    <use href="#junco" transform="translate(96 291) scale(1.22 1.17)"/>
+    <path d="M2 599q22-66 85-81M18 579q4-19 51-25M25 570Q15 540 7 534m45 20q26-50 45-45m-60 62q31-6 74-15m-86 20-23-3" fill="none" stroke="#566747" stroke-width="4" stroke-linecap="round"/>
+    <path d="M0 573q24-28 38-27-12 16-38 27zm38-12q25-32 55-30-20 19-55 30zm5 19q22-22 66-23-25 16-66 23z" fill="#81915e"/>
+  </g>
+  <g clip-path="url(#right)">
+    <rect x="480" width="480" height="600" fill="url(#woods)"/>
+    <path d="m471 309 52-69 49-28 41-52 21 6 38-53 28 16 35-39 62 52 21-8 67 71 79 18v203H482z" fill="#a8b5a4"/>
+    <path d="m471 309 52-69 49-28 41-52 21 6 38-53 28 16 35-39-16 55-34 2-38 43-18-1-59 62z" fill="#bfd0b5" opacity=".79"/>
+    <path d="m477 344 54-33 62-49 62-11 40 20 52-52 30 13 51-37 42 16 31 45 66 23v188H482z" fill="#7f9780"/>
+    <path d="M480 413q101-49 196-49t284 9v227H480z" fill="url(#ground)"/>
+    <g fill="#47696a" opacity=".72">
+      <use href="#pine" transform="translate(531 192) scale(.63 .85)"/><use href="#pine" transform="translate(573 234) scale(.46 .59)"/>
+      <use href="#pine" transform="translate(611 217) scale(.5 .6)"/><use href="#pine" transform="translate(746 227) scale(.42 .59)"/>
+      <use href="#pine" transform="translate(777 218) scale(.55 .63)"/><use href="#pine" transform="translate(842 172) scale(.77 .82)"/>
+    </g>
+    <g fill="#344e49"><use href="#pine" transform="translate(503 125) scale(.82 1.28)"/><use href="#pine" transform="translate(898 116) scale(1.1 1.4)"/><use href="#pine" transform="translate(936 63) scale(1.22 1.72)"/></g>
+    <path d="M926 64q-7 191 10 340m-13-176-34-51m34 14 32-53m-29 135-57-58m56 25 42-49m-36 122 47-45" fill="none" stroke="#a18d68" stroke-width="4" opacity=".5"/>
+    <path d="M487 454q56-22 123-9m178-32q58-34 156-24m-337 37 37-7m53-27 37-9m-57 37 38-1m68 37 36-18m1 7 46-5" fill="none" stroke="#acaa73" stroke-width="3" opacity=".51" stroke-linecap="round"/>
+    <path d="M607 532q29-15 60-38l90-34 101-31 105-5v104l-192 36-109 35-96-1-11-36z" fill="url(#bark)" stroke="#413831" stroke-width="3"/>
+    <path d="M596 542q95-53 213-82 83-19 148-23m-379 129c72-28 145-67 226-77l156-33M610 578q66-27 151-47t195-51m-281 102q106-51 284-84" fill="none" stroke-linecap="round" stroke="#d2a26b" stroke-width="3" opacity=".52"/>
+    <path d="M599 562q56-49 137-55l23-8m-76 65q43-18 76-21m34-75q82-19 157-27m-139 60q95-24 142-33" fill="none" stroke="#4f4137" stroke-width="6" opacity=".59"/>
+    <path d="M539 575q2-20 54-40c20-2 37 12 35 26-1 13-20 31-52 40h-36z" fill="#8d6c51" stroke="#4a3d34" stroke-width="3"/>
+    <path d="M548 589q15-39 52-47 19 7 16 17-6 13-40 26-17 0-8-11 12-15 27-14" fill="none" stroke="#c19169" stroke-width="3" opacity=".85"/>
+    <use href="#junco" transform="translate(876 296) scale(-1.17 1.12) rotate(-6 111 160)"/>
+    <path d="M968 41c-48 41-87 65-151 69m145-81c-66 23-100 34-147 23" fill="none" stroke="#544e3c" stroke-width="8" stroke-linecap="round"/>
+    <use href="#needle" transform="translate(898 77) rotate(169) scale(1.16)"/>
+    <use href="#needle" transform="translate(924 62) rotate(205) scale(1.35)"/>
+    <use href="#needle" transform="translate(965 45) rotate(159) scale(1.08)"/>
+    <use href="#needle" transform="translate(880 111) rotate(146) scale(.86)"/>
+    <use href="#needle" transform="translate(856 110) rotate(170) scale(1.02)"/>
+    <use href="#needle" transform="translate(548 601) rotate(-53) scale(1.4)"/>
+    <use href="#needle" transform="translate(551 585) rotate(-103) scale(1.24)"/>
+    <use href="#needle" transform="translate(538 556) rotate(-135) scale(1.17)"/>
+    <use href="#needle" transform="translate(946 598) rotate(-161) scale(1.46)"/>
+    <use href="#needle" transform="translate(955 580) rotate(-133) scale(1.35)"/>
+  </g>
+  <rect width="960" height="600" fill="url(#vignette)"/>
+  <path d="M494 0 482 600" stroke="#f3e4bc" stroke-width="2.5" opacity=".87"/>
+</g>
+<rect x="10" y="10" width="940" height="580" rx="26" fill="none" stroke="#e1c89c" stroke-opacity=".53" stroke-width="2"/>
+</svg>

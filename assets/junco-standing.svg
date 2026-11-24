@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200" aria-hidden="true">
+<!-- Original standing junco. Foot baseline at x145, y183; the bird faces left. -->
+<defs>  <radialGradient id="hood" cx=".32" cy=".27" r=".81"><stop stop-color="#53585e"/><stop offset=".62" stop-color="#2f333b"/><stop offset="1" stop-color="#171f28"/></radialGradient>
+  <linearGradient id="belly" x2=".72" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#fff9e9"/><stop offset=".5" stop-color="#ede3cf"/><stop offset="1" stop-color="#bdb7aa"/></linearGradient>
+  <linearGradient id="back" x2=".55" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#b89071"/><stop offset="1" stop-color="#5c4944"/></linearGradient>
+  <linearGradient id="wing" x2=".58" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#806450"/><stop offset=".6" stop-color="#594b47"/><stop offset="1" stop-color="#3c3a40"/></linearGradient></defs>
+<g transform="translate(11 6) scale(1.17 1.10)">
+  <g id="junco">
+    <ellipse cx="111" cy="161" rx="66" ry="6" fill="#28272a" opacity=".18"/>
+    <path d="M108 126l-1 13-10 16-18 4m18-4 18 3m-19-3-4 8m28-33 6 12-5 15-14 4m14-4 16 2m-16-2 1 7" fill="none" stroke="#43393a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M108 128l-1 11-10 16m23-26 6 13-5 15" fill="none" stroke="#ba8d7a" stroke-width="2" stroke-linecap="round"/>
+    <path d="M168 98q36 6 88 21l-18 14q-50 1-84-18z" fill="#282e36" stroke="#243039" stroke-width="2.2"/>
+    <path d="M166 106q35 13 87 15l-13 8q-46 3-79-13z" fill="#eee8d9"/>
+    <path d="M178 109q23 8 57 9m-50-13q24 7 50 10" fill="none" stroke="#767278" stroke-width="1.5"/>
+    <path d="M68 42c14-13 36-16 61-7 17 6 26 16 40 34 14 17 27 26 40 32-11 15-27 25-56 30-33 6-59 5-82-3C39 117 25 91 33 68c6-12 19-20 35-26z" fill="url(#belly)" stroke="#342e32" stroke-width="2.6"/>
+    <path d="M66 48c16-22 51-22 76-7s31 41 68 60q-25 12-60 12c-30-2-66-19-77-45z" fill="url(#back)"/>
+    <path d="M52 84c32 2 66 17 99 21l38-7c-12 11-25 18-46 23-41 7-69-5-91-37z" fill="#c99574" opacity=".78"/>
+    <path d="M95 55c24-9 37-3 57 13 16 14 31 21 57 33-21 7-43 12-61 6-24-6-43-15-55-28-7-8-9-15 2-24z" fill="url(#wing)" stroke="#59473e" stroke-width="1.3"/>
+    <path d="M113 60q37 3 55 24m-50-12q40 10 66 25m-64-16q30 13 58 19m-47-9q20 10 37 12" fill="none" stroke="#b08b6e" stroke-width="1.65" stroke-linecap="round" opacity=".84"/>
+    <path d="M36 48C28 33 37 13 53 7c22-9 50-2 65 12 14 13 16 31 7 45-7 10-17 12-25 15-10 4-14 10-23 12-18 2-38-7-46-24-4-8 0-15 5-19z" fill="url(#hood)"/>
+    <path d="M39 40c-9-3-17-2-27 3l-8 7c9 5 24 7 35 1z" fill="#edb9a7" stroke="#493a40" stroke-width="1.6"/>
+    <path d="M6 50q15 0 32-5m-12-3 1-.4" fill="none" stroke="#714e52" stroke-width="1.35" stroke-linecap="round"/>
+    <circle cx="53" cy="35" r="7.2" fill="#4d4950"/><circle cx="53" cy="35" r="5.7" fill="#121820"/><circle cx="51.5" cy="33.2" r="1.75" fill="#fcf8e9"/>
+    <path d="M62 17c12-5 30-6 42 1m-45 4 16-4m-13 53 7 3m4 3 9 1m-31-14 7 5m14-45 8-1m7 33 9-3m-14 8 12-4" fill="none" stroke="#899095" opacity=".36" stroke-width="1.25" stroke-linecap="round"/>
+    <path d="M53 100l12 8m4 1 12 5m5 2 17 4m-3-6 13 1m-46-19 10 4" fill="none" stroke="#fcf4df" opacity=".67" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+</g>
+</svg>

@@ -177,18 +177,20 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   assert.equal(starter.el('#dna-workshop-progress').textContent,'1 piece placed · 1 response saved');
 });
 
-test('Unit 4 shows Hawksbeard then Rat Generations, leaving only Unit 5 under Coming soon', () => {
+test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, leaving only Unit 5 under Coming soon', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';
   const unit = page.split(heading)[1]?.split('</section>')[0] || '';
   assert.equal((page.match(/id="unit4"/g)||[]).length, 1);
   assert.match(unit, /<h2 id="unit4">Unit 4 · Natural Selection &amp; Evolution of Populations<\/h2>/);
-  assert.match(unit, /<span class="dashboard-tag">2 activities available<\/span>/);
-  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 2);
+  assert.match(unit, /<span class="dashboard-tag">3 activities available<\/span>/);
+  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 3);
   assert.match(unit, /href="openscied-b4-hawksbeard\.html"[^>]*><img src="assets\/hawksbeard-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="hawksbeard-open"[^>]*href="openscied-b4-hawksbeard\.html"/);
   assert.match(unit, /href="openscied-b4-rat-generations\.html"[^>]*><img src="assets\/rat-generations-preview\.svg" width="960" height="600"/);
   assert.ok(unit.indexOf('id="hawksbeard-open"') < unit.indexOf('id="rat-generations-open"'));
+  assert.match(unit, /href="openscied-b4-junco\.html"[^>]*><img src="assets\/junco-preview\.svg" width="960" height="600"/);
+  assert.ok(unit.indexOf('id="rat-generations-open"') < unit.indexOf('id="junco-open"'));
   const upcoming = page.split('<details class="dashboard-coming-soon">')[1]?.split('</details>')[0] || '';
   assert.deepEqual([...upcoming.matchAll(/aria-labelledby="(unit\d+)"/g)].map(m=>m[1]), ['unit5']);
 });
@@ -345,4 +347,31 @@ test('a submitted case question resumes Explore and is included in readable back
   assert.equal(payload.responses['cancer-rates'].investigationQuestion,question);
   assert.deepEqual(payload.responses['cancer-rates'].exhibitObservations,{A:'A note',B:'B note',C:'C note'});
   assert.equal(payload.work[key],raw);
+});
+
+
+test('Junco resumes its supported step and backs up prediction and written evidence without clearing other activities', async () => {
+  const key = 'aplab:openscied:b4-junco:v1';
+  const blank = setup(false,{[key]:JSON.stringify({step:'field',prediction:' ',revealed:false})});
+  assert.equal(blank.el('#junco-progress').textContent,'Not started');
+  assert.equal(blank.el('#junco-open').href,'openscied-b4-junco.html');
+  const saved = {step:'cort',prediction:'same',revealed:true,claim:'The aviary compared birds in shared conditions.',
+    limits:'Early experience can still matter.',lastVisitedAt:1800000000000};
+  const raw = JSON.stringify(saved);
+  const s = setup(false,{[key]:raw});
+  assert.equal(s.el('#junco-open').href,'openscied-b4-junco.html#cort');
+  assert.equal(s.el('#openscied-resume-link').href,'openscied-b4-junco.html#cort');
+  assert.equal(s.el('#junco-progress').textContent,'CORT evidence · Aviary results viewed · 2 of 2 responses written');
+  s.el('#junco-reset').fire('click');
+  s.el('#backup-before-openscied-clear').fire('click');
+  const payload = JSON.parse(await s.blob().text());
+  assert.deepEqual(payload.work,{[key]:raw});
+  assert.deepEqual(payload.responses.junco,{prediction:saved.prediction,claim:saved.claim,limits:saved.limits});
+  s.el('#openscied-erase-confirmation').value='ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data[key],undefined);
+  assert.ok(s.data['aplab:openscied:b3-cell-cycle:v1']);
+  assert.ok(s.data['aplab:lab05:results']);
+  const unknown=setup(false,{[key]:JSON.stringify({...saved,step:'https://example.invalid/'})});
+  assert.equal(unknown.el('#junco-open').href,'openscied-b4-junco.html#cort');
 });

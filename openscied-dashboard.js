@@ -24,7 +24,8 @@
     { id: 'dna-p53', name: 'DNA Copying, p53 & Gene Expression', file: 'openscied-b3-dna-p53.html', key: PREFIX + 'b3-dna-p53:v1', clears: 'model results and answers', progress: dnaP53Progress, ids: dnaP53ResponseIds },
     { id: 'inh-env', name: 'Inheritance, Environment & Cancer Risk', file: 'openscied-b3-inheritance-environment.html', key: PREFIX + 'b3-inheritance-environment:v1', clears: 'model results and answers', progress: inhEnvProgress, ids: inhEnvResponseIds },
     { id: 'hawksbeard', name: 'Hawksbeard Wind Lab', file: 'openscied-b4-hawksbeard.html', key: PREFIX + 'b4-hawksbeard:v1', clears: 'seed releases, prediction, and written responses', progress: hawksbeardProgress, ids: hawksbeardResponseIds, answers: true },
-    { id: 'rat-generations', name: 'Rat Generations', file: 'openscied-b4-rat-generations.html', key: PREFIX + 'b4-rat-generations:v1', clears: 'model generations, prediction, and written responses', progress: ratGenerationsProgress, ids: ratGenerationsResponseIds, answers: true }
+    { id: 'rat-generations', name: 'Rat Generations', file: 'openscied-b4-rat-generations.html', key: PREFIX + 'b4-rat-generations:v1', clears: 'model generations, prediction, and written responses', progress: ratGenerationsProgress, ids: ratGenerationsResponseIds, answers: true },
+    { id: 'junco', name: 'Junco Investigation', file: 'openscied-b4-junco.html', key: PREFIX + 'b4-junco:v1', clears: 'prediction, investigation progress, and written responses', progress: juncoProgress, ids: juncoResponseIds }
   ];
   const SECTIONS = ['overview', 'background', 'cell-game', 'growth-model', 'analyze', 'submit'];
   // Written-response fields. The activity saves the ids of every response field it has (saved.responseIds), so the
@@ -347,6 +348,27 @@
     return {summary:s.action+' of 6 model actions recorded'+(n?' · '+n+' of 4 responses saved':''),
       started:true,section,visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0};
   }
+  function juncoResponseIds() { return ['prediction', 'claim', 'limits']; }
+  function juncoProgress(raw) {
+    const empty = { summary:'Not started', started:false, section:'', visited:0 };
+    if (!raw) return empty;
+    let saved;
+    try {
+      saved = JSON.parse(raw);
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw Error('Unknown format');
+    } catch (_) { return { ...empty, summary:'Saved work could not be read. Download a copy before restarting.' }; }
+    const sections = ['field', 'aviary', 'cort'];
+    const prediction = written(saved, 'prediction'), revealed = saved.revealed === true;
+    const answers = ['claim', 'limits'].filter(id => written(saved, id)).length;
+    const fallback = revealed ? (answers ? 'cort' : 'aviary') : 'field';
+    const section = sections.includes(saved.step) && (saved.step !== 'cort' || revealed) ? saved.step : fallback;
+    const simulatedTrials = Array.isArray(saved.sim?.results) ? saved.sim.results.length : 0;
+    const flightStarted = Number.isInteger(saved.sim?.serial) && saved.sim.serial > 0;
+    if (!prediction && !revealed && !answers && !written(saved,'observation') && !flightStarted && section === 'field') return empty;
+    const stage = { field:'Field notes', aviary:'Shared aviary', cort:'CORT evidence' };
+    return { started:true, section, visited:Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
+      summary:[stage[section], simulatedTrials ? simulatedTrials+' simulated '+(simulatedTrials===1?'trial':'trials') : flightStarted ? 'Simulated trial in progress' : '', revealed ? 'Aviary results viewed' : prediction ? 'Prediction saved' : '', answers ? answers+' of 2 responses written' : ''].filter(Boolean).join(' · ') };
+  }
   function hawksbeardProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
     let saved;
@@ -424,11 +446,15 @@
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const fields = saved && (activity.id === 'cancer-rates' ? saved : activity.answers ? saved.answers : saved.fields) || {};
+          const fields = saved && (['cancer-rates', 'junco'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.
           if (['hawksbeard','rat-generations'].includes(activity.id) && typeof saved?.prediction === 'string') responses[activity.id].prediction = saved.prediction;
+          if (activity.id === 'junco' && saved) {
+            if (written(saved, 'observation')) responses[activity.id].observation = saved.observation;
+            if (written(saved, 'reason')) responses[activity.id].predictionReason = saved.reason;
+          }
           if (activity.id === 'cancer-rates') {
             responses[activity.id].prediction = typeof saved?.prediction?.choice === 'string' ? saved.prediction.choice : '';
             responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';

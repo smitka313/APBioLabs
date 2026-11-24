@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="400" viewBox="0 0 960 400" aria-hidden="true">
+<!-- UC San Diego-inspired university grounds, not a reconstruction or site map. Player lane is centered at y300. -->
+<defs>  <linearGradient id="campus" x2=".2" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#719199"/><stop offset=".6" stop-color="#dbc8a2"/><stop offset="1" stop-color="#e4cc99"/></linearGradient>
+<linearGradient id="path" x1="0" x2="0" y2="1"><stop stop-color="#c8ab83"/><stop offset=".82" stop-color="#ab8e73"/><stop offset="1" stop-color="#8a7260"/></linearGradient>
+<pattern id="gravel" width="46" height="28" patternUnits="userSpaceOnUse"><path d="M8 7h4m20 14h5m-18 5h2" stroke="#79685c" opacity=".27"/><path d="M6 20h4m9-10h4m16-6h4" stroke="#ead3a5" opacity=".35"/></pattern>
+</defs>
+<path fill="url(#campus)" d="M0 0h960v400H0z"/>
+<path d="M0 137q100-10 195-45 74-32 175-3 138 35 290-21 104-40 300 56v152H0z" fill="#9fa58a"/>
+<path d="M0 193q177-47 322 7 104-49 272-40 202 10 366-35v165H0z" fill="#6d7d5c"/>
+<path d="M629 111h277v119H629z" fill="#c7b799"/>
+<path d="m617 112 69-22 231 5v17z" fill="#e7d8b6"/>
+<path d="M646 128h242v77H646z" fill="#5c7471"/>
+<path d="M682 129v76m40-76v76m40-76v76m40-76v76m40-76v76m-196-34h242" fill="none" stroke="#abb9a8" stroke-width="2.5"/>
+<path d="M619 205h301v13H619z" fill="#dfcdab"/>
+<path d="M950 242q-4-45-19-104m11 42 18-26m-18 28-22-22" fill="none" stroke="#665749" stroke-width="4"/>
+<path d="M917 168q-19-14-9-30 4-23 28-18 24-12 47 0v46q-41 17-66 2z" fill="#6c855d"/>
+<g transform="translate(-14 -19) scale(1.29 .7)">
+    
+    <circle cx="115" cy="132" r="78" fill="#f6e2a9" opacity=".28"/>
+    <path d="M0 236c79-25 136-61 214-47 48 9 84 37 121 38 61 1 89-27 159-22v185H0z" fill="#a8aa8e"/>
+    <path d="M0 353c135-41 332-33 499 37v210H0z" fill="#777454"/>
+    <path d="M166 295c47 9 73 28 106 45L0 479v-90zM266 335c62-3 146 31 224 72v166H130z" fill="#c9b08b"/>
+    <path d="M261 342 123 495M288 347l43 145M142 408l285-8M89 438l380-3" fill="none" stroke="#a78d75" stroke-width="2" opacity=".55"/>
+    <!-- Angular San Diego campus architecture: reading floor, buttresses, glazed facade, plaza. -->
+    <path d="M44 145 152 116l153 18 73 46-22 47-109 27L87 226l-45-35z" fill="#ded0af"/>
+    <path d="M45 146l111-23 148 20 69 35-21 21-111 13-148-29z" fill="#426568"/>
+    <path d="M44 148l111-20 147 19 71 31m-279 6 55-15 149 14 57 16m-234-70-14 58m48-63 8 72m30-67 16 76m26-71 20 74m14-69 25 68m13-61 26 57m-274-39 24 30" fill="none" stroke="#adc0b2" stroke-width="2" opacity=".8"/>
+    <path d="M44 146l111-25 151 19 70 39-24 24-110 12-151-29-47-37zm46 48 150 29 109-13m-276-4 91 43 81 12 111-29 22-52" fill="none" stroke="#e5d3ab" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M151 217l31 15 14 92-36 9 8-73zm149 4-24 13-11 90 34 13-4-79z" fill="#dfc8a0"/>
+    <path d="M151 218l21 19 7 26-12 69-15-1 8-71zm150 1-24 21-7 29 9 59 17 8-4-80z" fill="#a58467"/>
+    <path d="M187 265l78 7-4 52-65 2z" fill="#527176"/>
+    <path d="M209 269v57m25-55v54m-45-33 74 4" stroke="#a9ac96" stroke-width="2"/>
+    <path d="M0 340q35-44 107-21 62-27 119 19-117 28-226 56zm352 14q59-40 143-10v49z" fill="#657454"/>
+    <path d="M45 332q-6-76 11-124m0 56-24-27m21 18 28-25m-44 80-14 12m359 27q10-61-2-108m1 53 24-31m-22 18-24-21" fill="none" stroke="#6d5b48" stroke-width="5"/>
+    <path d="M14 244q-20-30 16-42-3-23 31-27 24-15 43 9 34 2 29 23 22 18-8 35-36 4-49 0-31 13-62 2zm331 20q-22-20 7-35 10-35 45-18 25-11 53 8 31 0 29 22-8 16-36 18-48 25-98 5z" fill="#657f58"/>
+    <path d="M15 231q15-28 48-23 9-24 46-12m244 57q23-20 55-13 32-15 55-2" fill="none" stroke="#a9aa70" stroke-width="6" opacity=".52"/>
+
+</g>
+<path d="M0 256q105-9 212-5 111-12 222 1 151-14 267-4 156-3 259-16v168H0z" fill="#6a7352"/>
+<path d="M0 265q121-3 197-3 124 2 257-3 143-4 263-1 128 8 243-6v91l-367 11-293-3L0 361z" fill="#e5c99e"/>
+<path d="M0 279q247-5 448-6 156-3 300-2l212-4v91q-152 20-430 9-270-4-530 4z" fill="url(#path)"/>
+<path d="M0 279q247-5 448-6 156-3 300-2l212-4v91q-152 20-430 9-270-4-530 4z" fill="url(#gravel)"/>
+<path d="M0 278q262-6 456-6t504-5m-960 99q188 1 441-4 333 14 519-5" fill="none" stroke="#ead4b3" stroke-width="3" opacity=".85"/>
+<path d="M106 278l-19 87m145-89-7 86m151-88-2 86m149-88 9 91m147-92 20 95m135-97 33 91" fill="none" stroke="#8d7762" opacity=".51" stroke-width="1.5"/>
+<path d="M0 385q103-29 175-7 114 10 279-4 107 4 208 7 144 4 298-17v36H0z" fill="#546347"/>
+<path d="M0 392q281-16 454-9m75-1q71 8 192 4m72 0q94-1 167-13" fill="none" stroke="#7b8860" stroke-width="3"/>
+
+</svg>
