@@ -533,3 +533,66 @@ test('confirming a required Carbon reference card counts as work, but opening do
   s.events.pageshow();
   assert.match(s.el('#openscied-resume-link').href,/carbon-journey\.html/);
 });
+
+test('Junco offers Resume for a trial in progress, but not after canceling the first trial', () => {
+  const key='aplab:openscied:b4-junco:v1';
+  const active={id:1,site:'urban',group:'incubating',step:0,finished:false};
+  const sim={seed:42,serial:1,site:'urban',group:'incubating',active,results:[]};
+  const save=sim=>JSON.stringify({v:1,step:'field',sim});
+  const s=setup(false,{'aplab:openscied:b3-cell-cycle:v1':null,[key]:save(sim)});
+  assert.match(s.el('#junco-progress').textContent,/Simulated trial in progress/);
+  assert.match(s.el('#openscied-resume-link').href,/junco\.html#field$/);
+  s.data[key]=save({...sim,active:null});
+  s.events.pageshow();
+  assert.equal(s.el('#junco-progress').textContent,'Not started');
+  assert.equal(s.el('#openscied-resume').hidden,true);
+  assert.equal(s.el('#junco-reset').disabled,true);
+});
+
+test('Junco setup-only changes do not outrank newer saved evidence', () => {
+  const Resume=require('../openscied-resume.js');
+  let now=1700000000000;
+  const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+  const key='aplab:openscied:b4-junco:v1', hawks='aplab:openscied:b4-hawksbeard:v1';
+  const row={id:1,site:'urban',group:'incubating',step:3};
+  const sim={seed:42,serial:1,site:'urban',group:'incubating',active:{...row,finished:true},results:[row]};
+  const save=sim=>JSON.stringify({v:1,step:'field',sim,lastVisitedAt:now});
+  const prior=JSON.stringify({v:1,step:'field',sim,lastVisitedAt:now-2000});
+  const s=setup(false,{[key]:prior,
+    [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
+  const tracker=Tracker.connect(s.data);
+  assert.match(s.el('#junco-progress').textContent,/1 simulated trial/);
+  now+=1000;
+  s.data[key]=save({...sim,site:'mountain',group:'foraging'});
+  tracker.snapshot('/openscied-b4-junco','exit');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/);
+  now+=1000;
+  const next={id:2,site:'mountain',group:'foraging',step:0,finished:false};
+  s.data[key]=save({...sim,serial:2,site:next.site,group:next.group,active:next});
+  tracker.snapshot('/openscied-b4-junco','exit');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/junco\.html#field$/,'an actual unfinished trial is resumable');
+});
+
+test('Carbon Journey keeps its required-turn meter when the optional Budget has saved work', () => {
+  const carbon='aplab:openscied:b2-carbon-journey:v1', budget='aplab:openscied:b2-carbon-journey:budget:v1';
+  const budgetSave={v:1,position:0,furthest:0,prediction:'I predict a difference.',explanation:'',lastVisitedAt:1};
+  const s=setup(false,{[carbon]:JSON.stringify({version:3,rows:Array.from({length:10},()=>({})),
+    done:true,lastSection:'evidence',lastVisitedAt:2}),[budget]:JSON.stringify(budgetSave)});
+  const meter=s.created.find(el=>el.tag==='progress' && el.attrs['aria-label'].startsWith('Carbon Atom Journey'));
+  assert.equal(meter.value,10);
+  assert.equal(meter.max,10);
+  assert.match(meter.attrs['aria-valuetext'],/required turns recorded/);
+  assert.match(s.el('#carbon-journey-progress').textContent,/Journey complete.*Budget checkpoints: 0 of 8/);
+  assert.match(s.el('#carbon-journey-open').href,/#evidence$/);
+  s.data[budget]=JSON.stringify({...budgetSave,position:3,furthest:3,lastVisitedAt:3});
+  s.events.pageshow();
+  assert.match(s.el('#carbon-journey-open').href,/#budget$/,'a newer Budget save remains resumable');
+  assert.equal(meter.value,10);
+  delete s.data[carbon];
+  s.events.pageshow();
+  assert.equal(meter.value,3);
+  assert.equal(meter.max,8);
+  assert.match(meter.attrs['aria-valuetext'],/budget checkpoints reached/);
+});

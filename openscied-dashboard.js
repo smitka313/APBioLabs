@@ -162,7 +162,11 @@
     const budgetSummary = budget.furthest >= 8 ? 'Budget comparison complete' :
       'Budget checkpoints: '+Math.max(0,budget.furthest)+' of 8';
     return {started:true, section:!journey.started || visited >= journey.visited ? 'budget' : journey.section,
-      visited:Math.max(journey.visited,visited),stepsDone:Math.max(0,budget.furthest),stepsTotal:8,stepsLabel:'Budget checkpoints reached',summary:(journey.started ? journey.summary+' · ' : '')+budgetSummary};
+      visited:Math.max(journey.visited,visited),
+      ...(journey.started
+        ? {stepsDone:journey.stepsDone,stepsTotal:journey.stepsTotal,stepsLabel:journey.stepsLabel}
+        : {stepsDone:Math.max(0,budget.furthest),stepsTotal:8,stepsLabel:'Budget checkpoints reached'}),
+      summary:(journey.started ? journey.summary+' · ' : '')+budgetSummary};
   }
   function originalCarbonJourneyProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: 'play', visited: 0 };
@@ -421,7 +425,7 @@
     const fallback = revealed ? (answers ? 'cort' : 'aviary') : 'field';
     const section = sections.includes(saved.step) && (saved.step !== 'cort' || revealed) ? saved.step : fallback;
     const simulatedTrials = Array.isArray(saved.sim?.results) ? saved.sim.results.length : 0;
-    const flightStarted = Number.isInteger(saved.sim?.serial) && saved.sim.serial > 0;
+    const flightStarted = saved.sim?.active?.finished === false;
     if (!prediction && !revealed && !answers && !written(saved,'observation') && !written(saved,'reason') && !flightStarted && !simulatedTrials) return empty;
     const stage = { field:'Field notes', aviary:'Shared aviary', cort:'CORT evidence' };
     const stepsDone=Number(written(saved,'observation'))+Number(revealed)+Number(answers===2);

@@ -47,15 +47,19 @@
       .map(k => [k,normalize(value[k])]).filter(([,v])=>v!==undefined);
     return pairs.length ? Object.fromEntries(pairs) : undefined;
   }
-  function project(record, keys) {
+  function project(saved, keys) {
     return Object.fromEntries(keys.split(' ').map(k=>{
-      let value=record[k];
-      if (k==='fields' && Array.isArray(record.responseIds) && record.responseIds.length && value) {
-        value=Object.fromEntries(record.responseIds.filter(id=>typeof id==='string' && Object.hasOwn(value,id)).map(id=>[id,value[id]]));
+      let value=saved[k];
+      if (k==='fields' && Array.isArray(saved.responseIds) && saved.responseIds.length && value) {
+        value=Object.fromEntries(saved.responseIds.filter(id=>typeof id==='string' && Object.hasOwn(value,id)).map(id=>[id,value[id]]));
       }
       if (k==='casework' && value) {
         const { opened, ...evidence }=value;
         value=evidence;
+      }
+      if (k==='sim' && record(value)) {
+        // Setup selectors and canceled trial IDs are not evidence; completed trials live in results.
+        value={active:value.active?.finished===false ? value.active : undefined, results:value.results};
       }
       return [k,normalize(value)];
     }).filter(([,v])=>v!==undefined));
