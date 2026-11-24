@@ -15,6 +15,7 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
 (async () => {
   const server = await T.serve();
   const browser = await T.launch();
+  const failures = [];
   try {
     for (const [index, slug] of pages.entries()) {
       const phone = index % 4 === 0;
@@ -47,6 +48,7 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
         await launch.click();
         const dialog = page.getByRole('dialog').filter({has:page.getByRole('button', {name:'Close report'})});
         await dialog.waitFor();
+        assert.equal(await dialog.locator('.osr-title:focus').count(), 1, slug + ' focuses the report title');
         const reportText = await dialog.innerText();
         assert.match(reportText, /In progress/i, slug + ' starts as a draft');
         assert.doesNotMatch(reportText, /Activity complete|Bench-verified stamp/i, slug + ' must not stamp empty work');
@@ -56,7 +58,6 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
         assert.equal(await dialog.getByRole('button', {name:'Download .docx', exact:true}).count(), 0);
         await dialog.getByText('More formats', {exact:true}).click();
         assert.equal(await dialog.getByRole('button', {name:'Download .docx', exact:true}).count(), 1);
-        assert.equal(await dialog.locator('.osr-title:focus').count(), 1, slug + ' focuses the report title');
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), slug + ' page fits the viewport');
         await page.keyboard.press('Escape');
         await dialog.waitFor({state:'hidden'});
@@ -64,10 +65,13 @@ const progress = page => page.evaluate(() => Object.keys(localStorage)
         assert.deepEqual(await progress(page), before, slug + ' preview never modifies stored work');
         assert.deepEqual(errors, [], slug + ' no uncaught browser errors');
         console.log('PASS ' + slug + ' ' + (phone?'390 dark':'1366 light'));
+      } catch (error) {
+        failures.push(slug + ': ' + (error && error.stack || String(error)));
       } finally {
         await context.close();
       }
     }
+    if (failures.length) throw new Error(failures.join('\n\n'));
   } finally {
     await browser.close(); server.close();
   }

@@ -54,7 +54,7 @@ const item = (report, title) => report.sections.flatMap(s => s.items).find(i => 
 const named = (report, text) => report.sections.some(s => s.title.includes(text));
 
 for (const page of ['burn-lab', 'fires', 'peat-bog-lab', 'carbon-journey']) {
-  test(page + ' mounts one optional submission outside its section router and leaves legacy controls intact', () => {
+  test(page + ' has one accessible fallback, a final-section report slot and no extra report opener', () => {
     const html = read(prefix + page + '.html'), js = read(prefix + page + '.js');
     assert.equal((html.match(/id="classroom-submission"/g) || []).length, 1);
     assert.match(html, /href="openscied-submission-report.css"/);
@@ -65,8 +65,20 @@ for (const page of ['burn-lab', 'fires', 'peat-bog-lab', 'carbon-journey']) {
     assert.ok(js.includes("OpenSciEdSubmission?.mount({ target: '#classroom-submission', collect: classroomReport })"));
     const reportAt = html.indexOf('id="classroom-submission"');
     assert.ok(reportAt > html.lastIndexOf('</section>') && reportAt < html.indexOf('</main>'));
-    if (page !== 'carbon-journey') assert.ok(html.includes('data-classroom-submission-link'));
-
+    const fallback = html.match(/<div[^>]+id="classroom-submission"[^>]*>/)[0];
+    assert.ok(!fallback.includes('aria-label'), 'a generic container must not have a prohibited accessible name');
+    assert.equal((html.match(/data-ose-report-final/g) || []).length, 1);
+    const finalSection = page === 'carbon-journey' ? 'sense' : page === 'peat-bog-lab' ? 'trials' : 'wrapup';
+    const sectionAt = html.indexOf('id="' + finalSection + '"');
+    const slotAt = html.indexOf('data-ose-report-final');
+    assert.ok(sectionAt >= 0 && sectionAt < slotAt && slotAt < html.indexOf('</section>', sectionAt));
+    assert.ok(!html.includes('data-classroom-submission-link'), 'retired report shortcut does not reappear');
+    const details = html.slice(html.indexOf('id="legacy-report-tools"')).split('</details>')[0];
+    assert.ok(details.includes('<summary>Other downloads and backups</summary>'));
+    assert.ok(!details.split('>')[0].split(' ').includes('open'), 'legacy formats start collapsed');
+    assert.ok(details.includes(page === 'carbon-journey' ? 'id="download"' : 'id="download-work"'));
+    assert.ok(details.includes(page === 'carbon-journey' ? 'id="print"' : 'id="print-work"'));
+    if (page === 'peat-bog-lab') assert.ok(details.includes('id="download-csv"') && details.includes('id="copy"'));
   });
 }
 

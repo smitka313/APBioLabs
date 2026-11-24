@@ -17,7 +17,11 @@ const T = require('./_h');
         Object.defineProperty(HTMLCanvasElement.prototype, 'width', {get(){return d.get.call(this);}, set(v){window.__w++; d.set.call(this, v);}, configurable:true});
         window.__printed = 0; const real = window.print; window.print = () => { window.__printed++; real.call(window); };
       });
-      if (section === 'submit') { await p.locator('#print-work').click(); T.ok(await p.evaluate(() => window.__printed) === 1, 'Print / Save as PDF calls window.print once'); }
+      if (section === 'submit') {
+        await p.locator('#submit details.ose-report-other > summary').click();
+        await p.locator('#print-work').click();
+        T.ok(await p.evaluate(() => window.__printed) === 1, 'Printing the activity summary calls window.print once');
+      }
       await p.emulateMedia({media:'print'}); await p.waitForTimeout(800);
       const a = await p.evaluate(() => window.__w); await p.waitForTimeout(800); const b = await p.evaluate(() => window.__w);
       T.ok(a <= 4 && a === b, `${section}: in print media the canvases settle (width set ${a} times, then ${b - a} more)`);

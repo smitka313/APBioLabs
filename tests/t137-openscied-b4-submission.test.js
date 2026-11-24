@@ -35,15 +35,34 @@ function collect(slug,prefix,bind,helpers='') {
   return ()=>JSON.parse(JSON.stringify(collect()));
 }
 
-test('Unit 4 includes one persistent mount and preserves legacy and stale-tab recovery actions',()=>{
-  for(const [slug,prefix] of [['hawksbeard','hb'],['rat-generations','rg'],['junco','ju']]){
+test('Unit 4 has one report tray, one final slot, and keeps backup controls separate',()=>{
+  for(const [slug,prefix,finalId] of [['hawksbeard','hb','hb-explain'],['rat-generations','rg','rg-explain'],['junco','ju','cort']]){
     const html=fs.readFileSync(path.join(root,'openscied-b4-'+slug+'.html'),'utf8');
+    const mount='id="'+prefix+'-submission-report"';
+    const slot='data-ose-report-final';
+    const script='src="openscied-submission-report.js"';
     assert.ok(html.includes('href="openscied-submission-report.css"'));
-    assert.ok(html.indexOf('src="openscied-submission-report.js"')<html.indexOf('src="openscied-b4-'+slug+'.js"'));
-    assert.ok(html.lastIndexOf('</section>')<html.indexOf('id="'+prefix+'-submission-report"'));
-    assert.equal((html.match(new RegExp('id="'+prefix+'-submission-report"','g'))||[]).length,1);
-    assert.ok(html.includes('href="#'+prefix+'-submission-report"'));
-    assert.ok(html.includes('id="'+prefix+'-download"')&&html.includes('id="'+prefix+'-download-tab"'));
+    assert.ok(html.includes(script)&&html.indexOf(script)<html.indexOf('src="openscied-b4-'+slug+'.js"'));
+    assert.equal(html.split(mount).length-1,1,slug+' has one early report mount');
+    assert.ok(html.lastIndexOf('</section>')<html.indexOf(mount),slug+' keeps the early mount outside gated steps');
+    assert.equal(html.split(slot).length-1,1,slug+' has one slot for the same report tray');
+    const final=html.indexOf('<section id="'+finalId+'"');
+    assert.ok(final>=0&&final<html.indexOf(slot)&&html.indexOf(slot)<html.lastIndexOf('</section>'),slug+' puts the slot in the final activity step');
+    assert.ok(!html.includes('href="#'+prefix+'-submission-report"')&&!html.includes('ose-submission-jump'),slug+' has no redundant report jump');
+
+    const disclosure=html.match(new RegExp('<details\\b([^>]*\\bid="'+prefix+'-other-downloads"[^>]*)>([\\s\\S]*?)</details>'));
+    assert.ok(disclosure,slug+' has a native backups disclosure');
+    assert.doesNotMatch(disclosure[1],/\bopen\b/,slug+' keeps the backup controls collapsed by default');
+    assert.match(disclosure[2],/<summary>Other downloads and backups<\/summary>/);
+    const download='id="'+prefix+'-download"';
+    assert.ok(disclosure[2].includes(download)&&html.split(download).length===2,slug+' keeps the text download only in backups');
+    if(prefix!=='ju'){
+      const copy='id="'+prefix+'-copy"';
+      assert.ok(disclosure[2].includes(copy)&&html.split(copy).length===2,slug+' keeps text copy only in backups');
+    }
+    const recovery=between(html,'<aside id="'+prefix+'-save-warning"','</aside>');
+    const backup='id="'+prefix+'-download-tab"';
+    assert.ok(recovery.includes(backup)&&html.split(backup).length===2&&!recovery.includes('<details'),slug+' keeps stale-work recovery accessible outside the backups disclosure');
   }
 });
 

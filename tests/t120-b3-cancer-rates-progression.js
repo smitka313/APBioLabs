@@ -112,6 +112,10 @@ async function runStudent(browser, url) {
     await downloadStatus(page, 'In progress');
     await tap('finish');
     ok(await marked(page, 'explain') && await $(page, 'done').isVisible() && (await state(page)).completed, 'Only Finish marks the investigation complete');
+    const preview = page.locator('[data-ose-report-final]').getByRole('button', { name: 'Preview report' });
+    await preview.waitFor({ state: 'visible' });
+    await page.waitForFunction(() => document.querySelector('[data-ose-report-final] .osr-actions button') === document.activeElement);
+    ok(await preview.isVisible(), 'Finish focuses the visible report preview beside the completed investigation');
     await downloadStatus(page, 'Complete');
     await page.reload();
     ok(await marked(page, 'explain') && await $(page, 'done').isVisible(), 'Finished status persists after reload');
@@ -129,6 +133,11 @@ async function runStudent(browser, url) {
   } finally { await ctx.close(); }
 }
 async function downloadStatus(page, expected) {
+  const backups = page.locator('details.ose-report-other');
+  if (!await backups.evaluate(node => node.open)) {
+    ok(await $(page, 'download').isHidden(), 'Text backup is hidden until the backup menu is opened');
+    await backups.locator('summary').tap();
+  }
   const [download] = await Promise.all([page.waitForEvent('download'), $(page, 'download').tap()]);
   const report = await fs.readFile(await download.path(), 'utf8');
   ok(download.suggestedFilename() === 'cancer-rates-investigation.txt' && report.includes('Status: ' + expected + '\n') &&
