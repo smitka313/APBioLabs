@@ -476,6 +476,9 @@ async function parity(page, root, model, label) {
 async function reportCheck(page, state) {
   await page.locator('#rg-name').fill(STUDENT.name);
   await page.locator('#rg-period').fill(STUDENT.period);
+  const backups=page.locator('#rg-other-downloads');
+  check(!await page.locator('#rg-download').isVisible(),'plain-text download is hidden with backups collapsed');
+  await backups.locator('summary').press('Enter');
   const downloaded = page.waitForEvent('download');
   await page.locator('#rg-download').press('Enter');
   const file = await downloaded;

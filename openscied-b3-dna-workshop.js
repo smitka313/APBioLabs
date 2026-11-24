@@ -552,4 +552,26 @@
   E('save').textContent=invalid?'A previous record is preserved. Download this record before leaving or choose Start over to replace it.':
     blocked?'Browser storage is unavailable. Download or copy your work before leaving.':
     state.lastVisitedAt?'Work saved on this device.':'Placements and writing save here as you work.';
+  function submissionReport() {
+    const signedIn = sharedIdentity();
+    const person = {name:(state.person.name||'').trim()||signedIn.name||'',period:(state.person.period||'').trim()||signedIn.period||''};
+    const completed = STEPS.filter(complete).length;
+    const missing = STEPS.filter(step => !complete(step)).map(step => 'Finish ' + LESSON[step].title + '.');
+    const writing = STEPS.filter(step => state.answers[step]?.trim()).length;
+    const sections = STEPS.map(step => {
+      const lesson = LESSON[step], data = model(step), placed = data.slots.filter(slot => Object.hasOwn(state.progress.placed,slot.id)).length;
+      return {title:lesson.title,items:[
+        {type:'text',text:placed + ' of ' + data.slots.length + ' pieces placed' + (complete(step)?' · Complete':'.')},
+        ...(placed ? [{type:'table',title:'My model so far',columns:['Model part','What I built'],rows:evidence(step).map(r=>[r.label,r.result])}] : []),
+        {type:'answer',prompt:lesson.prompt,value:state.answers[step]?.trim() || ''}
+      ]};
+    });
+    sections.push({title:'Model limit',items:[{type:'text',text:'The sequence is fictional. This model focuses on pairing, copying and reading a message; it does not represent a complete gene or all the chemistry inside a cell.'}]});
+    return {title:'DNA Workshop: Build, Copy, Decode',unit:'OpenSciEd Biology B.3',source:'Supplemental classroom model, not an actual gene.',
+      status:invalid || blocked || !saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,
+      student:person.name||person.period?person:null,keyResults:[{label:'Workshop tasks completed',value:completed+' of '+STEPS.length},
+        {label:'Observations entered',value:writing}],sections};
+  }
+
+  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();

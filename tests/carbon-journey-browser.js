@@ -85,6 +85,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       await dashboard.locator('#sense').waitFor({state:'visible'});
       assert.ok(await dashboard.locator('#sense').isVisible());
       await dashboard.close();
+      await p.locator('#legacy-report-tools > summary').click();
       const downloaded = p.waitForEvent('download'); await p.locator('#download').click(); const d = await downloaded;
       assert.match(d.suggestedFilename(), /carbon-atom-journey/);
       const payload = JSON.parse(await fs.promises.readFile(await d.path(), 'utf8'));
@@ -135,6 +136,7 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       await p.locator('#cb-explanation').fill('Four units moved from peat to the air.');
       await p.getByRole('button',{name:'3 · Make sense'}).click();
       await p.reload();
+      await p.locator('#legacy-report-tools > summary').click();
       const downloaded=p.waitForEvent('download');
       await p.locator('#download').click();
       const d=await downloaded, payload=JSON.parse(await fs.promises.readFile(await d.path(),'utf8'));
@@ -161,6 +163,9 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
         } else await page.goto(url);
         const readRaw = () => page.evaluate(key => localStorage.getItem(key), key);
         assert.equal(await readRaw(), raw);
+        // A navigation click can resolve before the controller hydrates protected saved work.
+        await page.waitForFunction(() => document.querySelector('#roll')?.disabled &&
+          document.querySelector('#card-instruction')?.textContent.includes('Open Your evidence'));
         assert.ok(await page.locator('#roll').isDisabled());
         assert.match(await page.locator('#card-instruction').textContent(), /Open Your evidence/);
         await page.locator('[data-page="evidence"]').click();
@@ -212,6 +217,8 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       // Budget has its own export; the combined download is under Journey/Evidence.
       await writer.locator('[data-page="evidence"]').click();
       assert.deepEqual(await read(dash),[null,null],'leaving Budget also cannot recreate erased work');
+      const backups=writer.locator('#legacy-report-tools');
+      if (!await backups.evaluate(el=>el.open)) await backups.locator('summary').click();
       const combined=writer.locator('#download');
       assert.equal(await combined.isVisible(),true);
       const [download]=await Promise.all([writer.waitForEvent('download'),combined.click()]);

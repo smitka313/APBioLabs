@@ -196,6 +196,7 @@ async function report(page) {
   check((await clipboard(page)).length === 0,'nothing writes private workshop notes to the clipboard during the activity');
   await page.locator('#dw-name').fill('DNA Workshop QA');
   await page.locator('#dw-period').fill('6');
+  await page.locator('details.ose-report-other > summary').press('Enter');
   const download=page.waitForEvent('download');
   await page.locator('#dw-download').press('Enter');
   const file=await download;

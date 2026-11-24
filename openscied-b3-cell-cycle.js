@@ -1211,4 +1211,44 @@
     // the dashboard report the activity as started.
     if(hadSaved)save();else renderReport();
   }  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();
+  function submissionReport() {
+    const rounds = [1,2].map(n => [n,roundEvidence(n)]).filter(([,r]) => r);
+    const groups = trialGroups(), completed = [1,2].filter(n => state.game.roundResults[n]).length;
+    const field = id => ($('#'+id)?.value || '').trim();
+    const answered = ids => ids.filter(id => field(id)).length;
+    const missing = [];
+    if (completed < 2) missing.push('Finish both game rounds, or record an early ending in the game.');
+    if (groups.filter(g => g.trials.length === 3).length < 2) missing.push('Record two full three-trial sets so you can compare results.');
+    if (answered(MAKING_SENSE_IDS) < MAKING_SENSE_IDS.length) missing.push('Complete the Making Sense responses (' + answered(MAKING_SENSE_IDS) + ' of ' + MAKING_SENSE_IDS.length + ' entered).');
+    const analysisIds = ANALYSIS_PROMPTS.map(([,id]) => id);
+    if (answered(analysisIds) < analysisIds.length) missing.push('Complete the analysis responses (' + answered(analysisIds) + ' of ' + analysisIds.length + ' entered).');
+    const answer = ([prompt,id]) => ({type:'answer',prompt,value:field(id)});
+    return {title:'Cell Cycle & Cancer',unit:'OpenSciEd Biology B.3',source:'Simulated classroom game and tissue-growth model; no human measurements or cancer probabilities.',
+      status:!saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',missing,student:studentIdentity(),keyResults:[
+        {label:'Game rounds ended',value:completed + ' of 2'},
+        {label:'Recorded growth-model sets',value:groups.length},
+        {label:'Written responses entered',value:answered(RESPONSE_IDS) + ' of ' + RESPONSE_IDS.length}
+      ],sections:[
+        {title:'Cell game evidence',items:[
+          ...(rounds.length ? [{type:'table',columns:['Round','Status','Blue chips','Red chips','Destroyed cells','Turns'],
+            rows:rounds.map(([n,r]) => [n,r.legacy?'Completed with earlier version':r.inProgress?'In progress':r.endedBy==='early'?'Ended early':'Complete',
+              r.legacy?'Not recorded':r.blue,r.legacy?'Not recorded':r.red,r.legacy?'Not recorded':r.destroyed,r.legacy?'Not recorded':r.turns])}]
+            : [{type:'text',text:'No rounds recorded yet.'}]),
+          {type:'text',text:'Blue chips represent non-cancer cells; red chips represent cancer cells in the game model.'}
+        ]},
+        {title:'Growth model: recorded trial sets',items:groups.length ? [{type:'table',columns:['Set / settings','Divisions by trial','Mean divisions','Control changes by trial','Cancer-state units by trial'],
+          rows:groups.map(g => [setLabel(g),g.trials.map(t=>t.divisions).join(', '),g.mean.toFixed(1),
+            g.changes.map(n=>n===null?'Not recorded':n).join(', '),g.trials.map(t=>t.modelVersion===2?t.cancerCount:'Not recorded').join(', ')])}]
+          : [{type:'text',text:'No model trials recorded yet.'}]},
+        {title:'Making sense of the game',items:[
+          {type:'table',title:'Round 1: Making Sense',columns:['Phase or checkpoint','What happened?','What could it represent?'],
+            rows:MAKING_SENSE_ROWS.map(([id,label]) => [label,field('ms-r1-'+id+'-happened'),field('ms-r1-'+id+'-represent')])},
+          ...MAKING_SENSE_PROMPTS.map(answer)
+        ]},
+        {title:'My analysis and model revision',items:ANALYSIS_PROMPTS.concat([['One model limitation','model-limit']]).map(answer)},
+        {title:'Model limits',items:[{type:'text',text:'The model deliberately accelerates control changes to make a pattern visible. Divisions are modeled DNA-copying opportunities, not observations of people or predictions of cancer.'}]}
+      ]};
+  }
+
+  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();

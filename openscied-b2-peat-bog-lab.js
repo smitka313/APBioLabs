@@ -917,7 +917,7 @@
       const fallback = function () {
         const box = byId('copy-trials-text');
         box.value = txt; manual.hidden = false; box.focus(); box.select();
-        byId('logStatus').textContent = 'Full trial data selected. Use your device’s copy command, or download the CSV.';
+        byId('logStatus').textContent = 'Full trial data selected. Use your device’s copy command, or download the CSV here.';
         announce('Full trial data selected. Use your copy command or download the CSV.');
       };
       try { navigator.clipboard.writeText(txt).then(function () { manual.hidden = true; byId('logStatus').textContent = 'Copied. Paste it into a spreadsheet or document.'; announce('Copied the table.'); }, fallback); } catch (e) { fallback(); }
@@ -942,6 +942,41 @@
       settings: state.S, climate: state.climate, current: { photosynthesis: Math.round(m.P), decomposition: Math.round(m.D), burning: Math.round(m.B), peatCarbon: Math.round(m.N), permafrostPercent: Math.round(m.perm * 100) },
       trials: state.trials.map(function (t, i) { const r = L.trialRow(t, i + 1); return { trial: i + 1, label: r.label, inputs: { tilt: t.tilt, temp: t.temp, co2: t.co2, o2: t.o2, wet: t.wet, burn: t.burn }, outputs: L.trialOutputs(t), recordedAt: t.at ? new Date(t.at).toISOString() : null, simulated: true }; }),
       source: 'Peat Bog Carbon Lab, OpenSciEd Unit B.2 companion, https://biologylabbench.com/openscied-b2-peat-bog-lab' };
+  }
+  function classroomReport() {
+    const data = payload(), trials = data.trials, missing = [], sections = [];
+    if (trials.length < 2) missing.push('Record a baseline and a comparison trial in My trials.');
+    else if (!trials.some(t => L.VARS.some(v => t.inputs[v.key] !== trials[0].inputs[v.key]))) {
+      missing.push('Change a setting and record another trial so you can compare the outcomes.');
+    }
+    if (trials.length) {
+      const table = (title, columns, rows) => ({ type: 'table', title, columns, rows });
+      sections.push({ title: 'Recorded trials · simulated', items: [
+        table('Trial setup', ['Trial', 'Label', 'Tilt (°)', 'Temperature control (°C)', 'CO₂ (ppm)'],
+          trials.map(t => [t.trial, t.label, t.inputs.tilt, t.inputs.temp, t.inputs.co2])),
+        table('Trial setup continued', ['Trial', 'Air oxygen (%)', 'Water level (%)', 'Burning setting (%)', 'Peat oxygen (%)'],
+          trials.map(t => [t.trial, t.inputs.o2, t.inputs.wet, t.inputs.burn, t.outputs.peatO2])),
+        table('Modeled rates (teaching scale, 0–100)', ['Trial', 'Summer temperature with tilt (°C)', 'Photosynthesis', 'Decomposition', 'Burning'],
+          trials.map(t => [t.trial, t.outputs.Teff, t.outputs.P, t.outputs.D, t.outputs.B])),
+        table('Modeled outcomes', ['Trial', 'Net peat carbon (model units)', 'Peat frozen (%)', 'Winter fire survival chance (%)'],
+          trials.map(t => [t.trial, t.outputs.N, t.outputs.perm, t.outputs.zc]))
+      ] });
+    }
+    if (state.warmingUsed) {
+      const scenario = L.climate(data.climate.fossil, data.climate.forest).find(row => row.y === data.climate.year);
+      if (scenario) sections.push({ title: 'Current climate scenario · simulated', items: [{ type: 'table',
+        columns: ['Year', 'Fossil fuel input (Gt C/year)', 'Forests and peatlands (% of today)', 'Atmospheric CO₂ (ppm)', 'Modeled warming (°C)'],
+        rows: [[scenario.y, data.climate.fossil, data.climate.forest, +scenario.C.toFixed(1), +scenario.T.toFixed(2)]] }] });
+    }
+    const last = trials.at(-1);
+    return {
+      title: 'Peat Bog Carbon Lab', unit: 'Unit 2',
+      source: 'Simulated bog teaching model for OpenSciEd Unit B.2. Rates use a 0–100 teaching scale, not measurements or forecasts.',
+      status: preservedSave || !saveSession?.check(KEY).ok ? 'recovery' : missing.length ? 'draft' : 'final',
+      missing, student: data.student, keyResults: [{ label: 'Simulated trials recorded', value: trials.length },
+        ...(last ? [{ label: 'Latest trial: frozen peat', value: last.outputs.perm, unit: '%' },
+          { label: 'Latest trial: chance the fire survives winter', value: last.outputs.zc, unit: '%' }] : [])], sections
+    };
   }
   function download() { saveFile('peat-bog-lab-work-simulated.json', JSON.stringify(payload(), null, 2), 'application/json'); byId('save-status').textContent = 'Downloaded peat-bog-lab-work-simulated.json.'; announce('Downloaded your work.'); }
   // Same rule as the other companions: clear this activity's record, then reload fresh at the Overview. Name and class period stay saved.
@@ -1031,6 +1066,7 @@
     let pending = 0;
     window.addEventListener('resize', function () { cancelAnimationFrame(pending); pending = requestAnimationFrame(function () { redrawCharts(); measureNav(); }); }, { passive: true });
     new MutationObserver(function () { redrawCharts(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    window.OpenSciEdSubmission?.mount({ target: '#classroom-submission', collect: classroomReport });
     byId('download-work').addEventListener('click', download);
     byId('print-work').addEventListener('click', function () { renderStudent(); window.print(); });
     const trialDetails = byId('trial-details');

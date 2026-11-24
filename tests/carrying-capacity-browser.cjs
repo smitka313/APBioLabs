@@ -106,9 +106,10 @@ async function compactExplain(p, label, maxFormSpan) {
   check(await p.locator('#cc-explain textarea:visible').count() === 1 &&
     await picker.evaluate(el => !!el.labels?.length) && await fit(p, '#cc-explain-question'),
     label + ': the labeled picker exposes one question and does not overflow');
+  await p.locator('#cc-explain [data-ose-report-final]').getByRole('button', { name: 'Preview report' }).waitFor({ state: 'visible' });
   const compact = await p.locator('#cc-explain').evaluate(el => {
     const rect = selector => el.querySelector(selector).getBoundingClientRect();
-    const pick = rect('#cc-explain-question'), action = rect('#cc-download');
+    const pick = rect('#cc-explain-question'), action = rect('[data-ose-report-final] button');
     return {span: action.bottom - pick.top, actionVisible: action.height > 0,
       details: [...el.querySelectorAll('details[data-cc-evidence]')].length};
   });
@@ -474,6 +475,7 @@ async function followHabitatWorkflow(browser, url) {
     await go(p, 'habitat');
     check(normalizeReport(await comparison.innerText()) === comparisonOutcome, 'both resolved habitat trials survive reload');
     await go(p, 'explain');
+    await p.locator('#cc-other-downloads > summary').click();
     const downloadPromise = p.waitForEvent('download');
     await p.locator('#cc-download').click();
     const download = await downloadPromise;
@@ -1122,6 +1124,7 @@ async function followWorkflow(browser, url) {
     await rangeRunEvidence(p, 'comparison', 8, 7, 9);
     check(await p.locator('#cc-range-estimate').inputValue() === RANGE_NOTE, 'range reasoning also returns to the worksheet on reload');
     await go(p, 'explain');
+    await p.locator('#cc-other-downloads > summary').click();
     const downloadPromise = p.waitForEvent('download');
     await p.locator('#cc-download').click();
     const download = await downloadPromise;

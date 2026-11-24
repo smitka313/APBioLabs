@@ -75,6 +75,7 @@ const answerAll = p => p.evaluate(() => {
     T.ok(done.answered === done.total && done.total === rec.responseIds.length, 'D1: wrap-up reads ' + done.answered + ' of ' + done.total + ' answers saved; the saved responseIds has ' + rec.responseIds.length);
     T.ok(!rec.responseIds.includes('ideas-because') && !rec.responseIds.includes('wrap-question') && rec.responseIds.includes('wrap-sentence'), 'D1: optional text boxes are not counted as required answers');
     await p.evaluate(() => { location.hash = 'wrapup'; }); await p.waitForFunction(() => document.querySelector('#wrapup.is-current'));
+    await p.locator('#legacy-report-tools > summary').click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     T.ok(payload.answersSaved.answered === done.answered && payload.answersSaved.total === done.total && payload.responseIds.length === done.total, 'D1: the download says the same: ' + JSON.stringify(payload.answersSaved));

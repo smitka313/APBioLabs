@@ -15,6 +15,7 @@ const t = (age, divisions) => ({modelVersion:2, age, size:'average', tissue:'ski
     await p.evaluate(({key,trials}) => localStorage.setItem(key, JSON.stringify({v:1,trials,fields:{'analysis-design':'Old answer'}})), {key:KEY,trials});
     await p.reload(); await p.locator('.step-nav a[href="#submit"]').click(); await p.waitForTimeout(150);
     T.ok((await p.locator('#trial-rows tr').count()) === 5, 'the older save still loads all five trials');
+    await p.locator('#submit details.ose-report-other > summary').click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     const st = payload.simulationTrials;

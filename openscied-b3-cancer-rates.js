@@ -451,7 +451,7 @@
     const finished=isComplete(), claim=!!state.claim.trim(), limits=!!state.limits.trim();
     $('finish').disabled=finished||!canFinish();
     $('done').hidden=!finished;
-    text('finish-hint',finished?'Finished. Download your work if you need to turn it in.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':'Select Finish investigation to mark your work complete.');
+    text('finish-hint',finished?'Finished. Preview your report before turning it in.':!claim&&!limits?'Write both responses to unlock Finish investigation.':!claim?'Add a claim to unlock Finish investigation.':!limits?'Add a limit to unlock Finish investigation.':'Select Finish investigation to mark your work complete.');
     renderSteps();
   }
   function report(){
@@ -506,7 +506,9 @@
   });
   $('to-explain').addEventListener('click',()=>goto('explain'));
   for(const k of ['claim','limits'])$(k).addEventListener('input',()=>{state[k]=$(k).value;state.completed=false;save();renderCompletion();});
-  $('finish').addEventListener('click',()=>{if(canFinish()&&!isComplete()){state.completed=true;save();renderCompletion();announce('Investigation complete. Download your work if you need to turn it in.');$('download').focus();}});
+  $('finish').addEventListener('click',()=>{if(canFinish()&&!isComplete()){state.completed=true;save();renderCompletion();announce('Investigation complete. Preview your report before turning it in.');
+    requestAnimationFrame(() => (document.querySelector('[data-ose-report-final] .osr-actions button') ||
+      document.querySelector('#ose-submission-report .osr-actions button') || $('explain-title')).focus());}});
   for(const k of Object.keys(designItems))$('design-'+k).addEventListener('input',()=>{state.design[k]=$('design-'+k).value;save();});
   for(const k of ['name','period']){
     $(k).addEventListener('input',()=>{state.person[k]=$(k).value;save();});
@@ -689,4 +691,59 @@
   if(blocked)text('save','Browser storage is unavailable. Download your work before leaving.');
   if(invalid)text('save','A previous record was preserved. Download this investigation before leaving.');
   syncIdentity();render();
+  function submissionReport() {
+    const cases = caseMarks(state).filter(Boolean).length;
+    const missing = [];
+    if (!state.prediction.locked) missing.push('Save your prediction.');
+    if (cases < 6) missing.push('Complete the remaining ' + (6 - cases) + ' evidence exhibit(s).');
+    if (!state.casework.opened) missing.push('Save your follow-up investigation question.');
+    if (!state.evidence.length) missing.push('Pin at least one comparison.');
+    if (!state.claim.trim()) missing.push('Write your claim.');
+    if (!state.limits.trim()) missing.push('Write a limitation or suggest further evidence.');
+    if (canFinish() && !isComplete()) missing.push('Select Finish investigation.');
+    const person = displayIdentity();
+    const answer = (prompt, x) => ({type:'answer',prompt,value:x || ''});
+    const notes = ['A · Diagnoses', 'B · Deaths', 'C · Map'];
+    const pins = state.evidence.flatMap(pin => {
+      const pair = L.comparison(D, pin);
+      if (!pair) return [];
+      const period = pin.view === 'poverty' ? 'Cancer 2019–2023; Census 2023' : D[pin.view].period;
+      const format = row => [row.name, formatPair(row, pin.measure, pin.view)];
+      return [{type:'table',title:spec[pin.view].title + ' (' + period + ')',columns:['Group or location',labels[pin.measure]],
+        rows:[format(pair.a), format(pair.b)]}, {type:'text',text:evidenceText(pin)}];
+    });
+    const sections = [
+      {title:'Prediction and follow-up question',items:[
+        answer('My prediction',predictions[state.prediction.choice]), answer('My reason',state.prediction.reason),
+        answer('My follow-up question',state.casework.opened ? state.casework.question : state.casework.questionDraft)
+      ]},
+      {title:'Exhibits and pinned comparisons',items:[
+        ...lessonNotes.map((k,i) => answer('Exhibit ' + notes[i] + ' observation',state.casework.notes[k])),
+        ...(state.casework['test-cost'] ? [{type:'table',title:'Exhibit F: diagnostic delays in a published comparison',columns:['Benchmark','Estimated additional months'],
+          rows:testCostRows.map(row => [row.label,row.value])},
+          {type:'text',text:'Higher-poverty U.S. neighborhoods, 2004–2014. Higher-deductible plans versus matched lower-deductible plans. Source: ' + $('test-cost-source').href}] : []),
+        ...pins
+      ]},
+      {title:'My explanation',items:[answer('Claim',state.claim),answer('Limitations or evidence I still need',state.limits)]}
+    ];
+    if (state.evidence.some(p => p.view === 'michigan') && Object.keys(designItems).some(k => state.design[k].trim())) {
+      sections.push({title:'Classroom ultrasound prototype',items:[
+        {type:'text',text:'Classroom phantom testing only. These records do not validate a diagnostic test or describe patients.'},
+        ...Object.entries(designItems).filter(([k]) => state.design[k].trim()).map(([k,label]) => answer(label,state.design[k]))
+      ]});
+    }
+    sections.push({title:'Sources and limits',items:[
+      {type:'text',text:'Published population statistics show patterns, not individual risk, a diagnosis, or proof of what caused a difference. Screening, diagnosis, and deaths are separate measures.'},
+      ...[D.types.source,D.states.source,D.poverty.source,D.poverty.incomeSource.source,D.race.incidence.url,D.race.mortality.url,
+        ...(state.evidence.some(p => p.view === 'michigan') ? Object.values(D.michigan.sources) : [])].map(text => ({type:'text',text}))
+    ]});
+    return {title:'Cancer Rates Data Dive',unit:'OpenSciEd Biology B.3',source:'OpenSciEd lesson evidence and published population data. Prototype results, if entered, are classroom observations.',
+      status:invalid || blocked || !saveSession?.check(KEY).ok ? 'recovery' : isComplete() ? 'final' : 'draft',missing,
+      student:person.name || person.period ? person : null,keyResults:[
+        {label:'Evidence exhibits completed',value:cases + ' of 6'},
+        {label:'Comparisons pinned',value:state.evidence.length}
+      ],sections};
+  }
+
+  window.OpenSciEdSubmission?.mount({target:'#ose-submission-report',collect:submissionReport});
 })();

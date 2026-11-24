@@ -50,6 +50,7 @@ async function download(page, button, filename) {
         assert.equal(await page.locator('#sg-limits').inputValue(),'A fictional next test.');
         const filename='Serengeti-game-evidence.txt';
         const raw=await page.evaluate(k=>localStorage.getItem(k),KEY);
+        await page.locator('#sg-other-downloads > summary').click();
         const report=await download(page,page.locator('#sg-download'),filename);
         assert.match(report,/SIMULATED/);
         assert.match(report,/Season totals\nWinter/);

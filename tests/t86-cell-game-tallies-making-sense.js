@@ -79,8 +79,11 @@ const MS = ['ms-r1-g1-happened','ms-r1-g1-represent','ms-r1-g1cp-happened','ms-r
     await go('submit');
     const report = (await p.locator('#investigation-report').textContent()).replace(/\s+/g,' ');
     T.ok(/21 of 21 Lesson 3 Making Sense responses written/.test(report) && /Answer for ms-r1-g2cp-represent/.test(report) && /Answer for ms-limits-could-not/.test(report), 'the report includes the Making Sense table and questions');
-    const dl = p.waitForEvent('download'); await p.locator('#download-work').click();
-    const payload = JSON.parse(fs.readFileSync(await (await dl).path(), 'utf8'));
+    const backup = p.locator('#download-work');
+    T.ok(await backup.isHidden(), 'JSON backup is hidden until the backup menu is opened');
+    await p.locator('#submit details.ose-report-other > summary').click();
+    const [dl] = await Promise.all([p.waitForEvent('download'), backup.click()]);
+    const payload = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
     T.ok(payload.answers['ms-r2-q3'] === 'Answer for ms-r2-q3' && payload.lesson3MakingSense.round1Table.length === 7 && payload.lesson3MakingSense.round1Table[1].row === 'G1 Checkpoint' && payload.lesson3MakingSense.round1Table[1].couldRepresent === 'Answer for ms-r1-g1cp-represent', 'the download exports the Making Sense answers, also as a labelled table');
     T.ok(payload.cellChips.round2.red === 3 && payload.cellChips.round1.blue === 4, 'the download exports the blue and red chip tallies');
     // Earlier saves: answers keep working; completed rounds stay listed; the old board state is not reused.

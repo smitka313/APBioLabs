@@ -23,6 +23,8 @@
 <script defer src="serengeti-dice-view.js"></script>
 <script defer src="serengeti-field-report.js"></script>
 <script defer src="openscied-save-session.js"></script>
+<link rel="stylesheet" href="openscied-submission-report.css">
+<script defer src="openscied-submission-report.js"></script>
 <script defer src="openscied-b1-serengeti.js"></script>
 <script defer src="serengeti-board-view.js"></script>
 <script defer src="serengeti-expedition-layout.js"></script>
@@ -163,12 +165,16 @@
         </section>
         <div class="sg-answer-actions">
           <button id="sg-answer-next" type="button" class="sg-plain" data-answer-step="claim">Next: Explain →</button>
-          <button id="sg-download" type="button" class="sg-cta" aria-describedby="sg-download-status">Download evidence and responses</button>
         </div>
-        <p id="sg-download-status" class="sg-download-status"></p>
-        <details id="sg-download-fallback" class="sg-download-fallback" hidden>
-          <summary>Copy evidence and responses instead</summary>
-          <label for="sg-download-copy">Text to copy</label><textarea id="sg-download-copy" rows="5" readonly></textarea>
+        <div data-ose-report-final></div>
+        <details id="sg-other-downloads" class="sg-note-disclosure" data-ose-report-legacy>
+          <summary>Other downloads and backups</summary>
+          <button id="sg-download" type="button" class="sg-plain" aria-describedby="sg-download-status">Download evidence and responses (.txt)</button>
+          <p id="sg-download-status" class="sg-download-status"></p>
+          <details id="sg-download-fallback" class="sg-download-fallback" hidden>
+            <summary>Copy evidence and responses instead</summary>
+            <label for="sg-download-copy">Text to copy</label><textarea id="sg-download-copy" rows="5" readonly></textarea>
+          </details>
         </details>
       </div>
       <aside class="sg-panel sg-question sg-analysis-evidence"><h3>Net change by season</h3><div id="sg-analysis-data"></div></aside>
@@ -178,6 +184,7 @@
   <p class="sg-save-warning" id="sg-save-warning" hidden>This device has an unreadable or older game save. It was not replaced. Download that save before confirming a restart.</p>
   <div class="sg-bottom"><span id="sg-save">Progress stays in this browser only.</span><button type="button" class="sg-plain" id="sg-recover" hidden>Download preserved save</button><button type="button" class="sg-plain" id="sg-restart">Restart game</button></div>
   <div id="sg-live" class="sg-visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="sg-submission" tabindex="-1"></div>
 </main>
 <dialog id="sg-board-dialog" class="sg-board-dialog" aria-labelledby="sg-board-dialog-title">
   <div class="sg-board-dialog-frame">
@@ -250,7 +257,7 @@
 </dialog>
 <dialog id="sg-confirm" class="sg-dialog" aria-labelledby="sg-confirm-title">
   <header><h2 id="sg-confirm-title">Restart this game?</h2></header>
-  <p>This clears the recorded events and written responses for this activity only. Download your evidence first if you want to keep it.</p>
+  <p>This clears the recorded events and written responses for this activity only. To keep a classroom report, cancel and use Preview report. Use the backup below if you need the raw record.</p>
   <div class="sg-restart-backup">
     <button type="button" class="sg-plain" id="sg-restart-download" aria-describedby="sg-restart-download-status">Download evidence before restarting</button>
     <p id="sg-restart-download-status" class="sg-download-status" tabindex="-1"></p>

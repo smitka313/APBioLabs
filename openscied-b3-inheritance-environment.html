@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="openscied-b3-inheritance-environment.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
@@ -503,13 +504,16 @@
 
       <div id="investigation-report" class="investigation-report" aria-label="Your summary"></div>
       <div class="submit-card">
-        <p>Work saves in this browser, not online. <strong>Download my work</strong> to keep a copy or share with your teacher.</p>
+        <p>Work saves in this browser, not online. Use <strong>Preview report</strong> to review and save a copy for your teacher.</p>
         <div id="save-status" class="small"></div>
-        <div class="row">
-          <button class="btn btn--primary" type="button" id="download-work">Download my work (.json)</button>
-          <button class="btn" type="button" id="print-work">Print / Save as PDF</button>
-          <button class="btn btn--danger" type="button" id="reset-work">Clear this activity</button>
-        </div>
+        <div data-ose-report-final></div>
+        <details class="ose-report-other"><summary>Other downloads and backups</summary>
+          <div class="row">
+            <button class="btn" type="button" id="download-work">Download work backup (.json)</button>
+            <button class="btn" type="button" id="print-work">Print the activity summary</button>
+          </div>
+        </details>
+        <button class="btn btn--danger" type="button" id="reset-work">Clear this activity</button>
         <p class="small muted">Others on this device may see your saved work.</p>
       </div>
       <div class="attribution">
@@ -520,6 +524,7 @@
       </div>
     </div>
   </section>
+  <div id="ose-submission-report" class="wrap wrap--wide gutter"></div>
 </main>
 <dialog id="reset-dialog" class="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description">
 <h2 id="reset-title">Clear this activity?</h2><p id="reset-description">This erases this activity’s saved results and answers from this browser and starts fresh. Your name and class period stay saved. Download your work first if you want a copy.</p>
@@ -541,6 +546,7 @@
 <script src="investigation-planner-scene.js"></script>
 <script src="yeast-uv-scene.js"></script>
 <script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
 <script src="openscied-b3-inheritance-environment.js?v=save-session-2"></script>
 <script src="companion-pages.js"></script>
 </body>

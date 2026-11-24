@@ -293,6 +293,53 @@
     textAnswers().forEach(function (t) { if (t.answer) { report.appendChild(el('h4', '', t.prompt)); report.appendChild(el('p', 'report-answer', t.answer)); } });
     report.appendChild(el('p', 'small muted', 'Simplified teaching model. Burn results are simulated and do not replace the real demonstration.'));
   }
+  function classroomResponses() {
+    const answer = (prompt, value) => ({ type: 'answer', prompt, value });
+    return [
+      { title: 'Choices and predictions', items: [...picks().map(r => [r.question, r.answer]),
+        ...dropdowns().map(r => [document.getElementById(r.id)?.getAttribute('aria-label') || labelFor(r.id), r.answer])].filter(([, value]) => value).map(([prompt, value]) => answer(prompt, value)) },
+      { title: 'Evidence and self-check selections', items: chips().flatMap(r => [
+        r.chosen.length ? answer(r.question, r.chosen.join('; ')) : null,
+        r.notSupportedByRecordedData?.length ? answer('Draft selections not supported by recorded evidence', r.notSupportedByRecordedData.join('; ')) : null
+      ].filter(Boolean)) },
+      { title: 'Written responses', items: textAnswers().filter(r => r.answer).map(r => answer(r.prompt, r.answer)) }
+    ].filter(section => section.items.length);
+  }
+  function classroomReport() {
+    const recorded = L.tableRows(state.burn), represented = new Set(recorded.map(r => r.fuel));
+    const missing = [], stats = answerStats();
+    if (represented.size < L.FUEL_IDS.length) {
+      const fuels = L.FUELS.filter(f => !represented.has(f.id)).map(f => f.label);
+      missing.push('Record a simulated burn for: ' + fuels.join(', ') + '.');
+    }
+    if (stats.answered < stats.total) missing.push('Complete ' + (stats.total - stats.answered) + ' required answers.');
+    let unreadable = false;
+    const raw = saveSession?.read(KEY);
+    if (raw != null) {
+      try { unreadable = JSON.parse(raw)?.v !== 1; } catch (_) { unreadable = true; }
+    }
+    if (unreadable) missing.push('An unreadable save is not part of this report. Use the dashboard backup if you need the saved file.');
+    const recovering = Boolean(unreadable || lastSaveError || !saveSession?.check(KEY).ok);
+    const sections = classroomResponses();
+    if (recorded.length) sections.unshift({
+      title: 'Recorded burns · simulated', items: [
+        { type: 'table', title: 'Timing and mass', columns: ['Fuel', 'Sample', 'Ignition (s)', 'Burn duration (s)', 'Before (g)', 'After (g)', 'Lost (g)'],
+          rows: recorded.map(r => [r.label, r.n, r.igniteS, r.burnS, r.massBefore, r.massAfter, r.massLost]) },
+        { type: 'table', title: 'Temperature and bromothymol blue (BTB)', columns: ['Fuel', 'Sample', 'Before (°C)', 'After (°C)', 'BTB before', 'BTB after'],
+          rows: recorded.map(r => [r.label, r.n, r.tempBefore, r.tempAfter, r.btbLabelBefore + ' (' + r.btbBefore + ')', r.btbLabelAfter + ' (' + r.btbAfter + ')']) },
+        ...recorded.filter(r => r.obs.length).map(r => ({ type: 'answer', prompt: r.label + ' · sample ' + r.n + ' observations',
+          value: r.obs.map(id => L.OBS.find(o => o.id === id)?.label || id).join('; ') }))
+      ]
+    });
+    return {
+      title: 'Burning Fuels: What Burns and Why', unit: 'Unit 2',
+      source: 'OpenSciEd Unit B.2 Lesson 2 burning demonstration. All burn data are simulated, not measurements from a real demonstration.',
+      status: recovering ? 'recovery' : missing.length ? 'draft' : 'final', missing, student: reportIdentity(unreadable),
+      keyResults: [{ label: 'Recorded simulated burns', value: recorded.length },
+        { label: 'Fuel types recorded', value: represented.size + ' of ' + L.FUEL_IDS.length },
+        { label: 'Required answers completed', value: stats.answered + ' of ' + stats.total }], sections
+    };
+  }
   function download() {
     state.fields = collectFields();
     const scenes = {}; SCENE_IDS.forEach(function (id) { scenes[id] = state[id]; });
@@ -377,6 +424,7 @@
     PICK_IDS.forEach(function (id) { const s = document.getElementById(id); if (s) s.addEventListener('change', function () { renderPick(s, true); }); });
     L.FUEL_IDS.forEach(function (f) { ['ignite', 'energy'].forEach(function (k) { const s = document.getElementById('pred-' + f + '-' + k); if (s) s.addEventListener('change', function () { renderPred(f, true); }); }); });
     $('#cer').addEventListener('change', function () { renderClaim(false); });
+    window.OpenSciEdSubmission?.mount({ target: '#classroom-submission', collect: classroomReport });
     $('#download-work').addEventListener('click', download);
     $('#burn-download-unsaved').addEventListener('click', download);
     $('#print-work').addEventListener('click', function () { renderReport(); window.print(); });

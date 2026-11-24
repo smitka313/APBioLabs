@@ -186,6 +186,7 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     await p.waitForFunction(() => window.B3DnaP53);
     await p.evaluate(h => { location.hash = h; }, 'wrapup');
     await p.fill('#exit-q7', 'My partner helped.');
+    await p.locator("details.ose-report-other > summary").click();
     const [dl] = await Promise.all([p.waitForEvent('download'), p.locator('#download-work').click()]);
     const file = await dl.path();
     const payload = JSON.parse(fs.readFileSync(file, 'utf8'));

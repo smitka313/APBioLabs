@@ -31,6 +31,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=optional">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="openscied-submission-report.css">
 <link rel="stylesheet" href="openscied-b2-peat-bog-lab.css">
 <script>try{var t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -329,17 +330,11 @@
       <div class="row">
         <button class="btn btn--primary" id="record" type="button">Record this trial</button>
         <button class="btn" id="undo" type="button" disabled>Undo last trial</button>
-        <button class="btn" id="copy" type="button">Copy table</button>
-        <button class="btn" id="download-csv" type="button">Download table (.csv)</button>
       </div>
       <p class="small" id="logStatus">Record a baseline first, then change one variable and record again. The label may be shared by trials in the same investigation; use the trial number to identify a single row.</p>
       <p class="small muted" id="trial-settings"></p>
       <div class="table-wrap" id="logWrap"></div>
       <details class="disclose trial-details" id="trial-details" hidden><summary>Show inputs and rates for all trials</summary><div class="inner" id="trial-detail-list"></div></details>
-      <div class="field" id="copy-trials-fallback" hidden>
-        <label for="copy-trials-text">Full trial data to copy</label>
-        <textarea id="copy-trials-text" rows="4" readonly></textarea>
-      </div>
       <details class="disclose" open><summary>Investigations to try</summary><div class="inner"><ul class="try">
         <li><b>High tilt</b>Record your starting trial. Then set the tilt to 24.2°, like about 10,700 years ago. What happens to summer sunlight, temperature, and photosynthesis in the Arctic?</li>
         <li><b>Low tilt</b>Set the tilt to 22.1°. How much of the peat freezes into permafrost? Why can’t decomposers or fire reach frozen peat?</li>
@@ -351,13 +346,25 @@
         <li><b>Thaw</b>Choose “Arctic heat wave.” Is the bog still a carbon sink, or is carbon being released to the atmosphere?</li>
       </ul></div></details>
       <div class="submit-card">
-        <p>Your settings and trials save automatically in this browser. Nothing you choose or type is sent anywhere. Use <strong>Download my work</strong> to keep a copy or give it to your teacher.</p>
+        <p>Choose <strong>Preview report</strong> to review your work, save a PDF, or download a Word file for your teacher. Your work stays in this browser unless you download and share it.</p>
+        <div data-ose-report-final></div>
+        <details class="disclose" id="legacy-report-tools">
+          <summary>Other downloads and backups</summary>
+          <div class="inner">
+            <div class="row">
+              <button class="btn" type="button" id="download-work">Download a backup (.json)</button>
+              <button class="btn" type="button" id="print-work">Print activity summary</button>
+              <button class="btn" id="copy" type="button">Copy table</button>
+              <button class="btn" id="download-csv" type="button">Download table (.csv)</button>
+            </div>
+            <div class="field" id="copy-trials-fallback" hidden>
+              <label for="copy-trials-text">Full trial data to copy</label>
+              <textarea id="copy-trials-text" rows="4" readonly></textarea>
+            </div>
+          </div>
+        </details>
         <div id="save-status" class="small"></div>
-        <div class="row">
-          <button class="btn btn--primary" type="button" id="download-work">Download my work (.json)</button>
-          <button class="btn" type="button" id="print-work">Print / Save as PDF</button>
-          <button class="btn btn--danger" type="button" id="reset-work">Clear this activity</button>
-        </div>
+        <button class="btn btn--ghost btn--sm" type="button" id="reset-work">Clear this activity</button>
         <p class="small muted">Other people using this device may see this work until it is cleared.</p>
       </div>
     </div>
@@ -411,6 +418,7 @@
       </div>
     </div>
   </section>
+<div id="classroom-submission" class="wrap wrap--wide gutter"></div>
 </main>
 <dialog id="reset-dialog" class="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description">
 <h2 id="reset-title">Clear this activity?</h2><p id="reset-description">This erases this activity’s saved settings and recorded trials from this browser and starts fresh. Your name and class period stay saved. Download your work first if you want a copy.</p>
@@ -430,6 +438,7 @@
 <script src="lab.js"></script>
 <script src="openscied-b2-peat-bog-logic.js"></script>
 <script src="openscied-save-session.js"></script>
+<script src="openscied-submission-report.js"></script>
 <script src="openscied-b2-peat-bog-lab.js"></script>
 <script src="companion-pages.js"></script>
 </body>

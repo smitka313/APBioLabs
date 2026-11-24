@@ -6,12 +6,18 @@
   const S = 'aplab:openscied-b1-serengeti:preview-v1';
   const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b1-serengeti';
   const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [S]); } catch (_) { return null; } })();
+  // This game does not load Lab.js (it has its own theme and board controls).
+  // Read only the site's existing identity record, under the same editor save guard.
+  const reportIdentity=saveAPI?.reportIdentity?.(saveSession,[S],()=>{
+    const s=JSON.parse(localStorage.getItem('aplab:student'));
+    return typeof s?.name==='string'&&s.name.trim()?{name:s.name.trim(),period:typeof s.period==='string'?s.period:''}:null;
+  })??(()=>null);
   function readSave() { return saveSession ? saveSession.read(S) : localStorage.getItem(S); }
   function showSaveConflict(result) {
     const n = document.getElementById('save-conflict');
     const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
       result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
-    const copy = message + ' Download or copy this tab’s work before reloading.';
+    const copy = message + ' Use Preview report to keep this tab’s work before reloading.';
     if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; say(copy); }
     return copy;
   }
@@ -882,6 +888,44 @@
     const desc = describeRow(r,Number(answers.evidence));
     return 'Cumulative change: ' + signed(before) + ' → ' + signed(r.population) + ' (event change ' + signed(r.change) + ').' + (desc ? ' ' + desc : '');
   }
+  function submissionData() {
+    const rows=state?.log||[], summary=rawSummary(), seasons=summary.seasons||[], evidence=selectionText(rows);
+    const complete=state?.step==='complete';
+    const finishedSeasons=complete?4:seasons.filter(s=>Number.isFinite(s.end)).length;
+    const missing=[];
+    if(preserveRaw)missing.push('An older save could not be read. This report contains work available in this tab only.');
+    if(!complete)missing.push(finishedSeasons===4?'Use “Finish the year” in Play.':'Finish playing all four seasons.');
+    if(!evidence)missing.push('Choose an event or hunt record to use as evidence.');
+    if(!answers.claim.trim())missing.push('Write your explanation.');
+    if(!answers.limits.trim())missing.push('Describe what you would test again.');
+    const checkRows=Object.entries(conceptProgress).flatMap(([id,response])=>{
+      const check=window.SerengetiChecks?.get(id), choice=check?.choices.find(c=>c.id===response.choiceId);
+      return choice?[[check.title,choice.label,response.correct?'Correct':'Try again',response.attempts]]:[];
+    });
+    const sections=[
+      {title:'Season results',items:seasons.length?[{type:'table',title:'Modeled population change from the starting population',
+        columns:['Season','Starting change','Latest change','Change from cards','Change from hunts'],
+        rows:seasons.map(s=>[seasonName(s.season),signed(s.start),signed(s.end==null?summary.change:s.end),signed(s.cardChange),signed(s.huntChange)])}]:[{type:'text',text:'No season started yet.'}]},
+      {title:'Event and hunt history',items:rows.length?[{type:'table',columns:['Season','Event or hunt','Event change','Cumulative change','What happened'],
+        rows:rows.map((r,i)=>[seasonName(r.season),recordName(r),signed(r.change),signed(r.population),describeRow(r,i)])}]:[{type:'text',text:'No events recorded yet.'}]},
+      {title:'My analysis',items:[
+        ...(answers.question.trim()?[{type:'answer',prompt:'Our investigation question (optional)',value:answers.question}]:[]),
+        {type:'answer',prompt:'Record chosen for the explanation',value:evidence},
+        {type:'answer',prompt:'How did the event affect the wildebeest? Explain using the numbers.',value:answers.claim},
+        {type:'answer',prompt:'What could you test again before drawing a broader conclusion?',value:answers.limits}
+      ]}
+    ];
+    if(checkRows.length)sections.push({title:'Optional concept checks',items:[{type:'table',
+      columns:['Concept','Last response','Feedback','Attempts'],rows:checkRows}]});
+    const shared=roleSetup.mode!=='solo';
+    if(shared)sections.unshift({title:'Shared-device play',items:[{type:'text',text:'This is a group record. No individual name is attached because the game does not collect player names.'}]});
+    return {title:'Serengeti Board Game',unit:'Unit B.1 · Lesson 7',
+      source:'Adapted from OpenSciEd B.1 Lesson 7. The board game simulates change from the starting wildebeest population, not field counts. Dice model chance; births, available food and water, and predator population responses are not modeled.',
+      status:preserveRaw?'recovery':missing.length?'draft':'final',missing,student:shared||preserveRaw?null:reportIdentity(),
+      keyResults:[{label:'Seasons completed',value:finishedSeasons+' / 4'},
+        ...(state?[{label:'Net modeled change',value:signed(summary.change),note:'Relative to the starting population; not a field count'}]:[]),
+        {label:'Events and hunts recorded',value:rows.length}],sections};
+  }
   function evidenceFile() {
     const rows = state ? state.log : [];
     const summary = rawSummary();
@@ -926,6 +970,7 @@
     else say(message);
   }
   qs('#sg-download').addEventListener('click',()=>offerFile(evidenceFile(),qs('#sg-download-status'),qs('#sg-download-fallback')));
+  window.OpenSciEdSubmission?.mount({target:'#sg-submission',collect:submissionData,filename:'serengeti-board-game-report'});
   qs('#sg-restart-download').addEventListener('click',()=>offerFile(preserveRaw ? preservedFile() || evidenceFile() : evidenceFile(),
     qs('#sg-restart-download-status'),qs('#sg-restart-download-fallback')));
   document.querySelectorAll('[data-page]').forEach(el => { el.addEventListener('click', () => openPage(el.dataset.page,true)); });
@@ -971,6 +1016,7 @@
     huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[]; conceptProgress={};
     preserveRaw=false; originalSave=null;
     Object.keys(fields).forEach(k=>{qs(fields[k]).value='';});
+    qs('#sg-other-downloads').open = false;
     qs('#sg-download-status').textContent = '';
     const fallback = qs('#sg-download-fallback');
     fallback.hidden = true; fallback.open = false; fallback.querySelector('textarea').value = '';
