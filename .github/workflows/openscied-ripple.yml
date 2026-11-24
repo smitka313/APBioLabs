@@ -1,0 +1,31 @@
+name: Serengeti Ripple Effects
+on:
+  pull_request:
+    paths:
+      - 'openscied-b1-ripple*'
+      - 'assets/openscied-ripple-preview.svg'
+      - 'tests/openscied-b1-ripple*'
+      - '.github/workflows/openscied-ripple.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ripple-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-b1-ripple-logic.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b1-ripple-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-ripple-viewports
+          path: artifacts/ripple/
+          if-no-files-found: ignore

@@ -4,7 +4,7 @@
 const assert = require('node:assert/strict');
 const T = require('./_h');
 const pages = [
-  'b1-migration','b1-carrying-capacity','b1-serengeti',
+  'b1-migration','b1-carrying-capacity','b1-serengeti','b1-ripple',
   'b2-burn-lab','b2-fires','b2-peat-bog-lab','b2-carbon-journey',
   'b3-cancer-rates','b3-cell-cycle','b3-dna-p53','b3-dna-workshop','b3-inheritance-environment',
   'b4-hawksbeard','b4-rat-generations','b4-junco'

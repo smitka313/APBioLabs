@@ -16,6 +16,7 @@
       [pref+'b1-carrying-capacity:field:v1','entries']
     ],
     'b1-serengeti': [['aplab:openscied-b1-serengeti:preview-v1','game answers']],
+    'b1-ripple': [[pref+'b1-ripple:v1','answers checked choice reason predicted usual fewer claim limit finished']],
     'b2-burn-lab': [[pref+'b2-burn-lab:v1','fields burn',claimChecks]],
     'b2-fires': [[pref+'b2-fires:v1','fields cards decomp tilt',claimChecks]],
     'b2-peat-bog-lab': [[pref+'b2-peat-bog:v1','settings climate warmingUsed trials trialLabel']],

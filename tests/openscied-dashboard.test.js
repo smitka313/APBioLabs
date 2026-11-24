@@ -851,7 +851,7 @@ test('student gets four direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-4])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 16);
+  assert.equal(cards.length, 17);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);
