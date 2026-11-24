@@ -67,3 +67,26 @@ test('three stable randomized cases cover all towns and both care needs, with co
   }
   assert.equal(screeningOnlyTowns.size,3);
 });
+test('itemized route quotes include exact drives and same checkout rules as the simulation',()=>{
+  const alternate={...M.baseline,machine:'mobile',operator:'mobile',rides:'mobile'};
+  for(const seed of [0,1,20,2026]){
+    for(const plan of [M.baseline,alternate]){
+      for(const p of M.run(seed,plan).patients){
+        const s=M.quote(p,plan.screen,'screen',plan);
+        assert.deepEqual(s,p.screen);
+        assert.equal(s.fee,8);
+        assert.equal(s.total,s.fee+s.travel+s.timeCost);
+        const first=M.checkout(s,p.means,p.hours);
+        if(!first.ok){assert.equal(p.outcome,'screen-missed');assert.equal(first.remaining,p.means);continue;}
+        if(!p.needed){assert.equal(p.outcome,'screened');assert.equal(first.remaining,p.means-p.paid);continue;}
+        const f=M.quote(p,plan.machine,'scan',plan);
+        assert.deepEqual(f,p.scan);
+        assert.equal(f.fee,22);
+        const second=M.checkout(f,first.remaining,p.hours);
+        assert.equal(p.outcome,second.ok?'imaged':'follow-up-missed');
+        assert.equal(second.remaining,p.means-p.paid);
+      }
+    }
+  }
+  assert.deepEqual(M.checkout({total:20,time:3},15,2),{ok:false,moneyShort:5,timeShort:1,remaining:15});
+});

@@ -30,6 +30,35 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.equal(initial.filter(t=>t.includes('Screening + ultrasound follow-up')).length,2);
     assert.equal(initial.filter(t=>t.includes('Screening only')).length,1);
     await p.reload();assert.deepEqual(await profiles.allTextContents(),initial);
+    await profiles.first().getByRole('button',{name:/Open cost sheet/}).click();
+    const intake=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b3-screening:v1')));
+    const first=M.scenarios(intake.seed)[0];
+    const prices=id('price-sheet').locator('.sd-visit');
+    assert.equal(await prices.count(),4);
+    for(const [i,[kind,site]] of [['screen','hub'],['screen','mobile'],['scan','hub'],['scan','mobile']].entries()){
+      const quote=M.quote(first,site,kind,M.baseline);
+      const text=await prices.nth(i).innerText();
+      assert.match(text,new RegExp(quote.miles+' mi.*'+quote.time+' h'));
+      assert.match(text,new RegExp('Test fee\\s+'+quote.fee+' cr'));
+      assert.match(text,new RegExp('Drive\\s+'+quote.travel+' cr'));
+    }
+    for(const [name,plan] of [['base',M.baseline],['trial',{...M.baseline,machine:'mobile',operator:'mobile'}]]){
+      await id('pay-plan').selectOption(name);
+      await id('pay-reset').click();
+      let balance=first.means;
+      for(const kind of (first.needed?['screen','scan']:['screen'])){
+        const q=M.quote(first,kind==='screen'?plan.screen:plan.machine,kind,plan);
+        const tx=M.checkout(q,balance,first.hours);
+        await id('book').click();
+        assert.match(await id('pay-result').textContent(),tx.ok?/booked/:/Could not book/);
+        balance=tx.remaining;
+        assert.match(await id('wallet').innerText(),new RegExp(balance+' cr of '+first.means+' cr left'));
+        if(!tx.ok)break;
+      }
+    }
+    assert.ok(await id('map-grid').isHidden());
+    await profiles.first().getByRole('button',{name:/Open cost sheet/}).click();
+    assert.ok(await id('quote-board').isHidden());
     await p.screenshot({path:path.join(out,width+'-patient-intake.png'),fullPage:true,animations:'disabled'});
     assert.equal(await id('stage').textContent(),'Step 1 of 3');
     assert.ok(await id('quick').isHidden());assert.ok(await id('advanced').isHidden());assert.ok(await id('cost-details').isHidden());
@@ -109,7 +138,7 @@ const out=path.join(ROOT,'artifacts','screening');
       if(i===0){await p.reload();assert.match(await id('case-progress').textContent(),/1 of 3/);assert.ok(await id('to-explain').isDisabled());}
     }
     await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);
-    assert.equal(await id('case-evidence').locator('details').count(),3);
+    assert.equal(await id('case-evidence').locator(':scope > details').count(),3);
     assert.match(await id('case-evidence').innerText(),/Hospital plan:.*Redesign:/s);
     await id('claim').fill('The redesign costs more in exchange for more completed ultrasound visits.');
     await id('limit').fill('Vouchers could help with the price of a trip, but cannot create more time.');
@@ -117,7 +146,7 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.match(await id('finished').textContent(),/Investigation complete/);
     assert.match(await id('claim').inputValue(),/redesign/);
     await p.getByRole('button',{name:'Preview report'}).click();
-    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Ultrasound acquisition/s);
+    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Ultrasound acquisition.*Itemized patient cost sheets/s);
     assert.deepEqual(errors,[]);
     console.log('ok: Screening Design '+width+'px — map, staffing gate, budget, fair comparison, reload, report');
    }finally{await ctx.close();}

@@ -182,11 +182,84 @@
   const markers={'screen-missed':'×',screened:'✓','follow-up-missed':'!',imaged:'◆'};
   const need=p=>p.needed?'Screening + ultrasound follow-up':'Screening only';
   const income=p=>p.monthlyIncome.toLocaleString('en-US')+' cr/month';
+  const visits={screen:'Screening',scan:'Ultrasound follow-up'};
+  const mobilePractice={...M.baseline,machine:'mobile',operator:'mobile'};
+  const plansForPractice=()=>[M.baseline,s.trial||mobilePractice];
+  const needKinds=p=>p.needed?['screen','scan']:['screen'];
+  let quoteCase=null,wallet={credits:0,next:0};
+  const quoteRows=q=>[['Test fee',cost(q.fee)],['Drive'+(q.ride?' after voucher':''),cost(q.travel)],['Time away (valued in credits)',cost(q.timeCost)],['Budget used',cost(q.total)]];
+  function quoteTile(kind,zone,q){
+    const tile=el('article');tile.className='sd-visit';
+    tile.append(el('strong',visits[kind]+' · '+label(zone)),el('p',q.miles+' mi one way · '+q.time+' h for the trip and visit'),dl(quoteRows(q)));
+    return tile;
+  }
+  function visitQuote(p,kind,plan){
+    const zone=kind==='screen'?plan.screen:plan.machine;
+    return M.quote(p,zone,kind,plan);
+  }
+  function itemizedQuote(p,plan,title){
+    const d=el('details'),grid=el('div');d.className='sd-deeper';grid.className='sd-visit-grid';
+    for(const kind of needKinds(p)){
+      const q=visitQuote(p,kind,plan);grid.append(quoteTile(kind,q.place,q));
+    }
+    d.append(el('summary',title),grid);return d;
+  }
+  function drawWallet(animate=false){
+    const p=quoteCase, next=needKinds(p)[wallet.next], plan=plansForPractice()[$('pay-plan').value==='base'?0:1];
+    const bar=el('div'), fill=el('span');
+    bar.className='sd-wallet-bar';bar.setAttribute('aria-hidden','true');bar.append(fill);
+    const percent=(v)=>100*v/p.means+'%';
+    fill.style.setProperty('--balance',percent(animate?wallet.previous:wallet.credits));
+    const target=percent(wallet.credits);
+    if(animate)requestAnimationFrame(()=>requestAnimationFrame(()=>fill.style.setProperty('--balance',target)));
+    const balance=el('p',cost(wallet.credits)+' of '+cost(p.means)+' left');balance.className='sd-balance';
+    $('wallet').replaceChildren(balance,bar,el('p',(next?'Next: '+label(visitQuote(p,next,plan).place)+' · ':'')+p.hours+' h available per visit'));
+    $('book').disabled=!next;
+    $('book').textContent=next?'Try booking '+visits[next].toLowerCase():'Care pathway complete';
+  }
+  function resetWallet(){
+    wallet={credits:quoteCase.means,next:0};$('pay-result').textContent='';drawWallet();
+  }
+  const costToggles=[];
+  function openQuote(p){
+    const close=quoteCase===p&&!$('quote-board').hidden;
+    for(const [i,b] of costToggles.entries())b.setAttribute('aria-expanded',String(!close&&p===cases[i]));
+    $('quote-board').hidden=close;
+    if(close){quoteCase=null;return;}
+    quoteCase=p;$('quote-title').textContent='Patient '+p.id+' · '+p.place+' cost sheet';
+    const grid=el('div');grid.className='sd-visit-grid';
+    for(const kind of ['screen','scan'])for(const zone of M.zones){
+      grid.append(quoteTile(kind,zone,M.quote(p,zone,kind,M.baseline)));
+    }
+    $('price-sheet').replaceChildren(el('p','Standard patient prices, before any ride voucher. The services available depend on where the clinic puts its teams.'),grid);
+    $('pay-plan').value='base';$('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound practice';
+    resetWallet();$('quote-title').focus();
+  }
+  $('pay-plan').onchange=resetWallet;$('pay-reset').onclick=resetWallet;
+  $('book').onclick=()=>{
+    if(!quoteCase)return;
+    const p=quoteCase, kinds=needKinds(p), kind=kinds[wallet.next];
+    if(!kind)return;
+    const q=visitQuote(p,kind,plansForPractice()[$('pay-plan').value==='base'?0:1]);
+    const tx=M.checkout(q,wallet.credits,p.hours);
+    if(!tx.ok){
+      const hurdles=[tx.moneyShort&&cost(tx.moneyShort)+' short',tx.timeShort&&tx.timeShort+' h more than the patient has'].filter(Boolean);
+      $('pay-result').textContent='Could not book '+visits[kind].toLowerCase()+': '+hurdles.join(' and ')+'. No credits used. Try the other plan.';
+      return;
+    }
+    wallet={next:wallet.next+1,credits:tx.remaining,previous:wallet.credits};
+    drawWallet(true);
+    $('pay-result').textContent=visits[kind]+' booked: '+cost(q.total)+' used. '+(wallet.next===kinds.length?'Care pathway complete.':'Try booking the follow-up next.');
+  };
   for(const [i,p] of cases.entries()){
     const card=el('article');card.className='sd-profile';
     const k=el('p','Case '+(i+1));k.className='sd-stage';
     const distances=el('ul');distances.append(el('li','Hospital: '+p.distances.hub+' mi'),el('li','Mobile clinic: '+p.distances.mobile+' mi'));
     card.append(k,el('h4','Patient '+p.id+' · '+p.place),el('p',need(p)),el('p','Income: '+income(p)+' · Care budget: '+cost(p.means)),el('p','Time available per visit: '+p.hours+' h'),distances);
+    const quoteButton=el('button','Open cost sheet');quoteButton.type='button';quoteButton.className='btn';
+    quoteButton.setAttribute('aria-label','Open cost sheet for Case '+(i+1)+' · '+p.place);
+    quoteButton.setAttribute('aria-controls','sd-quote-board');quoteButton.setAttribute('aria-expanded','false');quoteButton.onclick=()=>openQuote(p);
+    costToggles.push(quoteButton);card.append(quoteButton);
     $('profiles').append(card);
     const b=el('button');b.type='button';b.className='btn';b.onclick=()=>{
       s.caseId=patient=p.id;save();$('case-feedback').textContent='';drawCases();drawPatient();trip(false);
@@ -234,7 +307,12 @@
     clearTrip();const p=result().patients[patient-1], start=home[p.z], stops=[start];
     if(p.outcome!=='screen-missed')stops.push(...route(start,sites[p.screen.place]).slice(1));
     const split=stops.length-1;
-    if(p.outcome==='imaged')stops.push(...route(sites[p.screen.place],sites[p.scan.place]).slice(1));
+    let followStart=split;
+    if(p.outcome==='imaged'||p.outcome==='follow-up-missed'){
+      stops.push(...route(sites[p.screen.place],start).slice(1));
+      followStart=stops.length-1;
+      if(p.outcome==='imaged')stops.push(...route(start,sites[p.scan.place]).slice(1));
+    }
     const end=stops.at(-1), last=p.outcome.endsWith('missed');
     const event=$('map-event');event.hidden=false;drawSites(view==='trial'&&s.trial?s.trial:M.baseline);
     const planName=view==='base'?'Hospital plan · ':'Redesign · ';
@@ -248,7 +326,7 @@
       if(i===stops.length-1){marker(end,p,last);event.textContent=ending;return;}
       const a=stops[i],b=stops[i+1],f=n-i;
       marker([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],p,false);
-      event.textContent=planName+'Patient '+p.id+(i<split?' is traveling to screening.':' is traveling to ultrasound follow-up.');
+      event.textContent=planName+'Patient '+p.id+(i<split?' is traveling to screening.':i<followStart?' is heading home after screening.':' is traveling to ultrasound follow-up.');
       animation=requestAnimationFrame(tick);
     }
     animation=requestAnimationFrame(tick);
@@ -289,6 +367,10 @@
     if(profile)host.append(el('p',need(profile)+' · Income: '+income(profile)+' · Care budget: '+cost(profile.means)),el('p','One way: '+profile.distances.hub+' mi to hospital · '+profile.distances.mobile+' mi to mobile clinic'));
     host.append(line('Hospital plan',a));
     if(b)host.append(line('Redesign',b));
+    if(profile){
+      host.append(itemizedQuote(profile,M.baseline,'Hospital plan: itemized visit costs'));
+      if(b)host.append(itemizedQuote(profile,s.trial,'Redesign: itemized visit costs'));
+    }
   }
   function render(){
     const explain=s.step==='explain'&&ready();
@@ -324,6 +406,10 @@
     }
     else{s.trial={...s.plan};view='trial';s.finished=false;s.caseChecks=[];s.caseAnswers={};patient=s.caseId;}
     $('case-feedback').textContent='';
+    if(quoteCase){
+      $('pay-plan').options[1].textContent=s.trial?'Your recorded redesign':'Mobile ultrasound practice';
+      resetWallet();
+    }
     save();render();trip(false);
     (s.trial?$('journey-title'):$('action-title')).focus();
     saySafe(view==='base'?'Hospital plan recorded. Watch the selected patient, then move the ultrasound team.':'Redesign recorded. Compare all three patients.');
@@ -354,12 +440,16 @@
     const comparison=s.started?[{type:'table',title:'Fictional district results',columns:cols,rows:comparisons()}]:[];
     const plan=s.trial?[{type:'table',title:'Clinic costs by plan',columns:['Clinic expense','Hospital plan','Redesign'],rows:clinicRows(get(M.baseline)).map(([k,v],i)=>[k,v,clinicRows(get(s.trial))[i][1]])},{type:'table',title:'Recorded redesign',columns:['Equipment or support','Location'],rows:M.pieces.map(k=>[M.names[k],label(s.trial[k])])}]:[];
     const a=get(M.baseline).patients,b=s.trial?get(s.trial).patients:null;
-    const caseItems=[{type:'table',title:'Three patient scenarios',columns:['Patient / town','Income and visit budget','Care needed','Hospital / mobile one-way distance','Hospital plan','Redesign','Comparison'],rows:cases.map(p=>[
+    const caseItems=[{type:'table',title:'Three patient scenarios',columns:['Patient / town','Income and care budget','Care needed','Hospital / mobile one-way distance','Hospital plan','Redesign','Comparison'],rows:cases.map(p=>[
       'Patient '+p.id+' · '+p.place,income(p)+' · '+cost(p.means),need(p),p.distances.hub+' mi / '+p.distances.mobile+' mi',
       s.started?outcomes[a[p.id-1].outcome]:'Not yet tested',b?outcomes[b[p.id-1].outcome]:'Not yet tested',s.caseChecks.includes(p.id)?'Checked':'Not yet checked'
     ])}];
+    const priceItems=s.started?[{type:'table',title:'Itemized patient cost sheets (planned visits, not necessarily completed)',columns:['Case / plan','Service and site','Drive','Test fee','Time away','Budget used'],rows:cases.flatMap((p,i)=>(s.trial?[['Hospital',M.baseline],['Redesign',s.trial]]:[['Hospital',M.baseline]]).flatMap(([planName,plan])=>needKinds(p).map(kind=>{
+      const q=visitQuote(p,kind,plan);return ['Case '+(i+1)+' / '+planName,visits[kind]+' · '+label(q.place),
+        q.miles+' mi one way · '+cost(q.travel),cost(q.fee),q.time+' h · '+cost(q.timeCost),cost(q.total)];
+    })))}]:[];
     return {title:'Cancer Screening Design Lab',unit:'OpenSciEd Biology B.3 · Engineering extension',source:'Fictional classroom simulation. Costs in made-up credits. No real patient records or cancer diagnosis.',status:!savable()?'recovery':complete()?'final':'draft',student:student(),datasetId:'SD-'+s.seed.toString(16).toUpperCase().padStart(8,'0'),missing,
-      sections:[{title:'Evidence',items:[...caseItems,...comparison,...plan]},
+      sections:[{title:'Evidence',items:[...caseItems,...comparison,...plan,...priceItems]},
       {title:'My recommendation',items:[{type:'answer',prompt:'Which plan would you fund?',value:s.claim},{type:'answer',prompt:'Who might still get left out?',value:s.limit}]}]};
   }});
 })();

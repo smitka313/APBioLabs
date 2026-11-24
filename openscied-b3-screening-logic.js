@@ -52,6 +52,10 @@
   function publicProfile(p){
     return {...p,monthlyIncome:p.means*50,distances:distances[p.z]};
   }
+  function checkout(quote,credits,hours){
+    const moneyShort=Math.max(0,quote.total-credits), timeShort=Math.max(0,quote.time-hours);
+    return {ok:!moneyShort&&!timeShort,moneyShort,timeShort,remaining:moneyShort||timeShort?credits:credits-quote.total};
+  }
   const reached=(p)=>p.needed?p.outcome==='imaged':p.outcome==='screened';
   const comparison=(a,b)=>reached(a)?(reached(b)?'both':'base'):(reached(b)?'trial':'neither');
   function validate(p){
@@ -76,12 +80,12 @@
     const invalid=validate(plan);if(invalid)throw new RangeError(invalid);
     const patients=cohort(seed).map(p=>{
       const screen=visit(p,plan.screen,'screen',plan);
-      const scMoney=screen.total>p.means,scTime=screen.time>p.hours;
-      if(scMoney||scTime)return {...p,outcome:'screen-missed',screen,scan:null,paid:0,reason:scTime?'Not enough time for the screening trip.':'Screening, travel, and time cost more than this person’s available credits.'};
+      const first=checkout(screen,p.means,p.hours);
+      if(!first.ok)return {...p,outcome:'screen-missed',screen,scan:null,paid:0,reason:first.timeShort?'Not enough time for the screening trip.':'Screening, travel, and time cost more than this person’s available credits.'};
       if(!p.needed)return {...p,outcome:'screened',screen,scan:null,paid:screen.total,reason:'Screening finished. This case was not referred for ultrasound in the model.'};
       const scan=visit(p,plan.machine,'scan',plan);
-      const scBalance=p.means-screen.total;
-      if(scan.time>p.hours||scan.total>scBalance)return {...p,outcome:'follow-up-missed',screen,scan,paid:screen.total,reason:scan.time>p.hours?'Not enough time for the follow-up trip.':'After screening, the person did not have enough credits for follow-up.'};
+      const follow=checkout(scan,first.remaining,p.hours);
+      if(!follow.ok)return {...p,outcome:'follow-up-missed',screen,scan,paid:screen.total,reason:follow.timeShort?'Not enough time for the follow-up trip.':'After screening, the person did not have enough credits for follow-up.'};
       return {...p,outcome:'imaged',screen,scan,paid:screen.total+scan.total,reason:'Ultrasound finished. An image can guide the next step; it is not a cancer diagnosis.'};
     });
     const summarize=group=>({
@@ -92,5 +96,5 @@
     });
     return {patients,...summarize(patients),areas:places.map((place,z)=>({place,...summarize(patients.filter(p=>p.z===z))})),costs:costs(plan),clinic:total(plan)};
   }
-  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,distances});
+  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,distances,quote:visit,checkout});
 });
