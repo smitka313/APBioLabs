@@ -5,6 +5,7 @@
   const pref = 'aplab:openscied:';
   // Evidence fields only: looking at another section, rearranging a view, or mounting a saved page
   // must not promote an activity above work that was actually changed.
+  const claimChecks = ['cer-ev-1','cer-ev-2','cer-ev-3','cer-ev-4','cer-ev-5','cer-caveat'];
   const sources = {
     'b1-migration': [[pref+'b1-migration:v1','notes answers observations']],
     'b1-carrying-capacity': [
@@ -14,8 +15,8 @@
       [pref+'b1-carrying-capacity:field:v1','entries']
     ],
     'b1-serengeti': [['aplab:openscied-b1-serengeti:preview-v1','game answers']],
-    'b2-burn-lab': [[pref+'b2-burn-lab:v1','fields burn']],
-    'b2-fires': [[pref+'b2-fires:v1','fields cards decomp tilt']],
+    'b2-burn-lab': [[pref+'b2-burn-lab:v1','fields burn',claimChecks]],
+    'b2-fires': [[pref+'b2-fires:v1','fields cards decomp tilt',claimChecks]],
     'b2-peat-bog-lab': [[pref+'b2-peat-bog:v1','settings climate warmingUsed trials trialLabel']],
     'b2-carbon-journey': [
       [pref+'b2-carbon-journey:v1','rows answers pending done presentation coverageReviewed'],
@@ -47,11 +48,11 @@
       .map(k => [k,normalize(value[k])]).filter(([,v])=>v!==undefined);
     return pairs.length ? Object.fromEntries(pairs) : undefined;
   }
-  function project(saved, keys) {
+  function project(saved, keys, extraFields=[]) {
     return Object.fromEntries(keys.split(' ').map(k=>{
       let value=saved[k];
       if (k==='fields' && Array.isArray(saved.responseIds) && saved.responseIds.length && value) {
-        value=Object.fromEntries(saved.responseIds.filter(id=>typeof id==='string' && Object.hasOwn(value,id)).map(id=>[id,value[id]]));
+        value=Object.fromEntries([...new Set([...saved.responseIds,...extraFields])].filter(id=>typeof id==='string' && Object.hasOwn(value,id)).map(id=>[id,value[id]]));
       }
       if (k==='casework' && value) {
         const { opened, ...evidence }=value;
@@ -85,12 +86,12 @@
       try {
         const now=clock(), notes=book(), old=notes[id]||{};
         let stamp=0;
-        const data=sources[id].map(([key,fields])=>{
+        const data=sources[id].map(([key,fields,extraFields])=>{
           try {
             const raw=JSON.parse(storage.getItem(key));
             if (!record(raw)) return null;
             stamp=Math.max(stamp,safeDate(raw.lastVisitedAt,now));
-            const p=project(raw,fields);
+            const p=project(raw,fields,extraFields);
             return Object.keys(p).length ? p : null;
           } catch (_) { return null; }
         });

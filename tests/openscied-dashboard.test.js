@@ -596,3 +596,40 @@ test('Carbon Journey keeps its required-turn meter when the optional Budget has 
   assert.equal(meter.max,8);
   assert.match(meter.attrs['aria-valuetext'],/budget checkpoints reached/);
 });
+
+for (const [id,card] of [['b2-burn-lab','b2-burn'],['b2-fires','b2-fires']]) {
+  test(id+' ranks saved claim checklist edits without counting them as answers', () => {
+    const Resume=require('../openscied-resume.js');
+    let now=1700000000000;
+    const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+    const key='aplab:openscied:'+id+':v1', hawks='aplab:openscied:b4-hawksbeard:v1';
+    const previous={v:1,lastSection:'peat',responseIds:['peat-prompt','cer-claim'],
+      fields:{'cer-claim':'a','cer-ev-5':false,'cer-caveat':false},lastVisitedAt:now-2000};
+    const s=setup(false,{[key]:JSON.stringify(previous),
+      [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
+    const tracker=Tracker.connect(s.data);
+    const change=fields=>{
+      now+=1000;
+      s.data[key]=JSON.stringify({...previous,lastVisitedAt:now,fields});
+      const meta=tracker.snapshot('/openscied-'+id,'exit');
+      s.events.pageshow();
+      return meta.changed;
+    };
+    assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/);
+    const fields={...previous.fields,'cer-ev-5':true,'cer-caveat':true};
+    assert.equal(change(fields),now);
+    assert.match(s.el('#openscied-resume-link').href,new RegExp(id+'\\.html#peat$'));
+    assert.match(s.el('#'+card+'-progress').textContent,/1 of 2 answers saved · Claim checklist saved/);
+    const lastWork=now;
+    assert.equal(change({...fields,'aq-unrelated-pref':'test'}),lastWork,'unrelated controls do not count');
+    assert.equal(change(previous.fields),now,'unchecking a previously saved response updates the work time');
+  });
+  test(id+' can resume a claim checklist even if no answer or model run is saved yet', () => {
+    const key='aplab:openscied:'+id+':v1';
+    const s=setup(false,{'aplab:openscied:b3-cell-cycle:v1':null,
+      [key]:JSON.stringify({v:1,responseIds:['cer-claim'],fields:{'cer-caveat':true}})});
+    assert.equal(s.el('#openscied-resume').hidden,false);
+    assert.match(s.el('#openscied-resume-link').href,new RegExp(id+'\\.html#peat$'));
+    assert.match(s.el('#'+card+'-progress').textContent,/0 of 1 answers saved · Claim checklist saved/);
+  });
+}

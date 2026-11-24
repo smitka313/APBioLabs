@@ -343,6 +343,8 @@
     positive(saved.decomp?.startedAt) || hasList(saved.decomp?.recorded) || positive(saved.modelEvidence?.foamReadings),
     positive(saved.tilt?.startedAt) || saved.tilt?.recorded===true || saved.tilt?.starchDone===true || positive(saved.modelEvidence?.tubesRead)
   ].filter(Boolean).length;
+  const hasClaimChecks = fields => Object.entries(fields).some(([id,value]) =>
+    value === true && /^(?:cer-ev-[1-5]|cer-caveat)$/.test(id));
   function b2FiresProgress(raw) {
     if (!raw) return { summary: 'Not started', started: false, section: 'overview', visited: 0 };
     let saved;
@@ -351,12 +353,13 @@
     const fields = saved.fields || {}, ids = inhEnvResponseIds(saved), answers = ids.filter(id => written(fields, id)).length;
     const models = usedFiresScenes(saved);
     const milestones=firesMilestones(saved);
-    const started = !!(answers || models || milestones);
-    const fallback = answers && answers === ids.length ? 'wrapup' : saved.tilt ? 'sense5' : saved.cards ? 'sense3' : saved.decomp ? 'cards' : answers ? 'ideas' : 'overview';
+    const claim = hasClaimChecks(fields);
+    const started = !!(answers || models || milestones || claim);
+    const fallback = answers && answers === ids.length ? 'wrapup' : claim ? 'peat' : saved.tilt ? 'sense5' : saved.cards ? 'sense3' : saved.decomp ? 'cards' : answers ? 'ideas' : 'overview';
     return { started, section: B2_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:milestones,stepsTotal:3,stepsLabel:'Model evidence milestones complete',
-      summary: started ? models + ' of 3 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved' : 'Not started' };
+      summary: started ? models + ' of 3 interactive models used · ' + answers + ' of ' + ids.length + ' answers saved' + (claim ? ' · Claim checklist saved' : '') : 'Not started' };
   }
   // Peat Bog Carbon Lab (Unit B.2): a simulator with no written answers. Progress is the recorded trials plus whether the bog or warming settings were changed (all simulated data).
   const PEAT_SECTIONS = ['overview', 'bog', 'graph', 'zombie', 'warming', 'trials', 'model'];
@@ -389,12 +392,13 @@
     const records=Array.isArray(saved.burn?.records)?saved.burn.records:[];
     const burns=records.length, fuelIds=['grass','leaves','wood','charcoal','peat'];
     const fuels=new Set(records.filter(rec=>fuelIds.includes(rec?.fuel)).map(rec=>rec.fuel));
-    const started = !!(answers || burns || positive(saved.burn?.current?.startedAt));
-    const fallback = answers && answers === ids.length ? 'wrapup' : burns ? 'sense' : answers ? 'ideas' : 'overview';
+    const claim = hasClaimChecks(fields);
+    const started = !!(answers || burns || positive(saved.burn?.current?.startedAt) || claim);
+    const fallback = answers && answers === ids.length ? 'wrapup' : claim ? 'peat' : burns ? 'sense' : answers ? 'ideas' : 'overview';
     return { started, section: BURN_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:fuels.size,stepsTotal:5,stepsLabel:'Fuels with saved results',
-      summary: started ? burns + ' simulated burn' + (burns === 1 ? '' : 's') + ' recorded · ' + answers + ' of ' + ids.length + ' answers saved' : 'Not started' };
+      summary: started ? burns + ' simulated burn' + (burns === 1 ? '' : 's') + ' recorded · ' + answers + ' of ' + ids.length + ' answers saved' + (claim ? ' · Claim checklist saved' : '') : 'Not started' };
   }
   const HAWKS_SECTIONS = ['predict', 'release', 'compare', 'explain'];
   function hawksbeardResponseIds() { return ['reflection', 'claim', 'evidence', 'limits']; }
