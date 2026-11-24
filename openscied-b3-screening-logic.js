@@ -106,5 +106,22 @@
     });
     return {patients,...summarize(patients),areas:places.map((place,z)=>({place,...summarize(patients.filter(p=>p.z===z))})),costs:costs(plan),clinic:total(plan)};
   }
-  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,mission,distances,quote:visit,checkout});
+  // Include the hospital plan so the attainable net gain is never below zero.
+  const allowedPlans=zones.flatMap(screen=>zones.flatMap(machine=>[null,...zones]
+    .map(rides=>({screen,machine,operator:machine,rides})).filter(plan=>!validate(plan))));
+  function bestGain(seed){
+    const before=run(seed,baseline);
+    return Math.max(...allowedPlans.map(plan=>{
+      const score=mission(before,run(seed,plan));
+      return score.helped.length-score.lost.length;
+    }));
+  }
+  function guidedSeed(next){
+    for(let attempt=0;attempt<8;attempt++){
+      const candidate=next();
+      if(bestGain(candidate)>0)return candidate;
+    }
+    return 1; // Known reachable fallback for a bounded start-up time.
+  }
+  return Object.freeze({bestGain,guidedSeed,zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,mission,distances,quote:visit,checkout});
 });

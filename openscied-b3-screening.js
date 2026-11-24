@@ -4,7 +4,8 @@
   const $=id=>document.getElementById('sd-'+id), say=t=>{$('status').textContent=t;};
   const el=(tag,t)=>Object.assign(document.createElement(tag),{textContent:t??''});
   const cost=n=>n+' cr', label=z=>M.names[z]||'Supply rack';
-  const fresh=()=>({v:1,seed:crypto.getRandomValues(new Uint32Array(1))[0],plan:{...M.baseline},started:false,trial:null,claim:'',limit:'',finished:false,step:'map',caseId:null,caseAnswers:{},caseChecks:[],lastVisitedAt:0});
+  const newSeed=()=>M.guidedSeed(()=>crypto.getRandomValues(new Uint32Array(1))[0]);
+  const fresh=()=>({v:1,seed:null,plan:{...M.baseline},started:false,trial:null,claim:'',limit:'',finished:false,step:'map',caseId:null,caseAnswers:{},caseChecks:[],lastVisitedAt:0});
   const cleanPlan=p=>Object.fromEntries(M.pieces.map(k=>[k,M.zones.includes(p?.[k])?p[k]:null]));
   const str=x=>typeof x==='string'?x.slice(0,1800):'';
   const ready=()=>!!s.trial&&cases.every(p=>s.caseChecks.includes(p.id));
@@ -18,10 +19,11 @@
       if(x?.v!==1||!Number.isInteger(x.seed)||x.seed<0||x.seed>4294967295)throw Error('Invalid save');
       const trial=cleanPlan(x.trial);
       s={...s,seed:x.seed,plan:x.started?cleanPlan(x.plan):{...M.baseline},started:x.started===true,trial:x.started&&!M.validate(trial)&&!same(trial,M.baseline)?trial:null,caseId:x.caseId,caseAnswers:x.caseAnswers,caseChecks:Array.isArray(x.caseChecks)?x.caseChecks:[],claim:str(x.claim),limit:str(x.limit),finished:x.finished===true,lastVisitedAt:Number(x.lastVisitedAt)||0,step:x.step==='explain'?'explain':'map'};
-    }else session.write(KEY,JSON.stringify({v:1,seed:s.seed}));
+    }else{s.seed=newSeed();session.write(KEY,JSON.stringify({v:1,seed:s.seed}));}
     if(s.trial)view='trial';
 
   }catch(_){recovery=true;}
+  if(s.seed===null)s.seed=newSeed();
   const cases=M.scenarios(s.seed);
   const caseIds=cases.map(p=>p.id);
   s.caseId=caseIds.includes(s.caseId)?s.caseId:caseIds[0];
@@ -333,15 +335,19 @@
     const n=s.caseChecks.length;
     $('decision-score').textContent=n?'Among the '+n+' checked: '+counts[0]+' reached needed care with the hospital plan · '+counts[1]+' with the redesign.':'Check a case below to reveal both results on the board.';
   }
+  let attainable;
+  const bestGain=()=>attainable??=(M.bestGain(s.seed));
+  const bestAttainable=score=>!score.won&&score.left>=0&&score.helped.length===score.lost.length&&bestGain()===0;
   function showMission(score){
-    const won=score.won;
+    const won=score.won, tiedBest=bestAttainable(score);
     const lines=[];
     const named=score.helped.find(p=>caseIds.includes(p.id))||score.helped[0];
     if(named)lines.push('Patient '+named.id+' in '+named.place+' missed needed care in the hospital plan and reached it with your redesign.');
     lines.push(score.helped.length+' newly reached needed care in the 30-patient district; '+score.lost.length+' lost access they previously had.');
-    if(!won)lines.push('Try moving services or adding ride vouchers, or use the cost sheets to explain why the result did not improve.');
+    if(tiedBest)lines.push('No permitted redesign gets more patients all the care they need in this district. Use the cost sheets to compare travel, time, and trade-offs.');
+    else if(!won)lines.push('Try moving services or adding ride vouchers, or use the cost sheets to explain why the result did not improve.');
     else if(score.lost.length)lines.push('This is a net gain, not a win for everyone. Use the board and cost sheets to explain who is still left out.');
-    popup('success','Dispatch mission results',won?'Mission won!':'Budget met. Access goal not met yet.',
+    popup('success','Dispatch mission results',won?'Mission won!':tiedBest?'Best attainable result!':'Budget met. Access goal not met yet.',
       'Your redesign stayed within '+cost(M.budget)+' with '+cost(score.left)+' to spare.'+(won?' More patients got all the care they needed than with the hospital plan.':' The number of patients who reached needed care did not go up.'),
       lines,'Review my evidence',$('to-explain'));
   }
@@ -352,7 +358,7 @@
     scoreBox.hidden=!ready();
     if(ready()){
       const score=M.mission(get(M.baseline),get(s.trial));
-      scoreBox.textContent=(score.won?'✓ Mission won':'Budget met · Access goal not met')+' · '+score.helped.length+' gained access · '+score.lost.length+' lost access · '+cost(score.left)+' left';
+      scoreBox.textContent=(score.won?'✓ Mission won':bestAttainable(score)?'✓ Best attainable result':'Budget met · Access goal not met')+' · '+score.helped.length+' gained access · '+score.lost.length+' lost access · '+cost(score.left)+' left';
     }
     story($('story'),s.caseId);
     $('case-form').hidden=!s.trial;
@@ -514,7 +520,7 @@
   for(const k of ['claim','limit']){$(k).value=s[k];$(k).oninput=()=>{s[k]=str($(k).value);s.finished=false;save();$('finish').disabled=!(ready()&&s.claim.trim()&&s.limit.trim());$('finished').textContent='Write both responses to finish.';};}
   $('finish').onclick=()=>{if($('finish').disabled)return;s.finished=true;save();render();saySafe('Report ready.');};
   $('reset').onclick=()=>$('dialog').showModal();
-  $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify({v:1,seed:fresh().seed}));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
+  $('clear').onclick=()=>{const r=session?.reset(KEY,JSON.stringify({v:1,seed:newSeed()}));if(r?.ok)location.reload();else{$('dialog').close();say('Could not reset this activity from this tab.');}};
   window.addEventListener('storage',notice);window.addEventListener('pageshow',notice);
   render();notice();
   window.OpenSciEdSubmission?.mount({target:'#sd-report',filename:'cancer-screening-design',collect:()=>{
@@ -525,7 +531,7 @@
     const score=s.trial&&M.mission(get(M.baseline),get(s.trial));
     const missionItems=score?[{type:'table',title:'Dispatch mission results',columns:['Measure','Result'],rows:[
       ['Clinic credits remaining',cost(score.left)],['Patients newly reaching needed care',String(score.helped.length)],
-      ['Patients losing access they previously had',String(score.lost.length)],['Mission result',score.won?'Won: within budget with a net gain in access':'Within budget; no net gain in access']
+      ['Patients losing access they previously had',String(score.lost.length)],['Mission result',score.won?'Won: within budget with a net gain in access':bestAttainable(score)?'Best attainable: within budget and matched the highest access total':'Within budget; no net gain in access']
     ]}]:[];
     const caseItems=[{type:'table',title:'Three patient scenarios',columns:['Patient / town','Income and care budget','Care needed','Hospital / mobile one-way distance','Hospital plan','Redesign','Comparison'],rows:cases.map(p=>[
       'Patient '+p.id+' · '+p.place,income(p)+' · '+cost(p.means),need(p),p.distances.hub+' mi / '+p.distances.mobile+' mi',

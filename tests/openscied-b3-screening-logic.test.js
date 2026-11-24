@@ -104,3 +104,16 @@ test('dispatch win counts patients newly reaching needed care minus patients los
   assert.equal(M.mission(M.run(1,M.baseline),{...result,clinic:M.budget+1}).won,false);
   assert.equal(M.mission(M.run(1,M.baseline),{...result,clinic:M.budget}).won,true);
 });
+
+test('fresh districts have a winning redesign; a legacy district can have a best attainable tie',()=>{
+  assert.equal(M.bestGain(354),0);
+  assert.equal(M.bestGain(78),2);
+  const rolls=[354,78];
+  assert.equal(M.guidedSeed(()=>rolls.shift()),78);
+  assert.equal(M.guidedSeed(()=>354),1);
+  for(let seed=0;seed<300;seed++){
+    let next=seed;
+    const chosen=M.guidedSeed(()=>next++);
+    assert.ok(M.bestGain(chosen)>0);
+  }
+});

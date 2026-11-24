@@ -14,6 +14,11 @@ const out=path.join(ROOT,'artifacts','screening');
     const p=await ctx.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
     const id=n=>p.locator('#sd-'+n);
     const site=n=>p.locator('[data-zone="'+n+'"]');
+    // One viewport resumes a legacy district for which a tie is the best result.
+    if(width===1920)await p.addInitScript(()=>{
+      const key='aplab:openscied:b3-screening:v1';
+      if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify({v:1,seed:1161}));
+    });
     await p.goto(server.url+'openscied-b3-screening.html');
     const shot=async name=>{
       assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
@@ -32,6 +37,7 @@ const out=path.join(ROOT,'artifacts','screening');
     await p.reload();assert.deepEqual(await profiles.allTextContents(),initial);
     await profiles.first().getByRole('button',{name:/Open cost sheet/}).click();
     const intake=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b3-screening:v1')));
+    assert.ok(width===1920?intake.seed===1161&&M.bestGain(intake.seed)===0:M.bestGain(intake.seed)>0);
     const first=M.scenarios(intake.seed)[0];
     const prices=id('price-sheet').locator('.sd-visit');
     assert.equal(await prices.count(),4);
@@ -152,7 +158,7 @@ const out=path.join(ROOT,'artifacts','screening');
     }
     const mission=M.mission(M.run(saved.seed,M.baseline),M.run(saved.seed,saved.trial));
     assert.ok(await id('mission-dialog').isVisible());
-    assert.match(await id('popup-title').textContent(),mission.won?/Mission won!/:/Access goal not met/);
+    assert.match(await id('popup-title').textContent(),width===1920?/Best attainable result!/:mission.won?/Mission won!/:/Access goal not met/);
     assert.match(await id('popup-message').textContent(),new RegExp(mission.left+' cr to spare'));
     await id('popup-close').click();
     await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);
