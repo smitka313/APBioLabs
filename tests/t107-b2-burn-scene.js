@@ -9,6 +9,9 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
 const go = async (p, id) => { await p.evaluate(h => { location.hash = h; }, id); await p.waitForFunction(h => document.querySelector('#' + h + '.is-current'), id); await p.waitForTimeout(200); };
 const ink = p => p.evaluate(() => { const c = document.querySelector('#burn-scene canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, m = new Map(); let n = 0; for (let i = 0; i < d.length; i += 16) { const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]; m.set(k, (m.get(k) || 0) + 1); n++; } let top = 0; m.forEach(v => { if (v > top) top = v; }); return { colours: m.size, ink: 1 - top / n }; });
 const label = p => p.locator('#burn-scene canvas').getAttribute('aria-label');
+// where the laser dot is, and the drawn area of the fuel (before) or the ash (after), as the scene measured them from its own geometry
+const laser = async p => { const t = await p.locator('#burn-scene canvas').getAttribute('data-laser'); return t ? JSON.parse(t) : null; };
+const dotInArea = l => !!l && Math.hypot(l.x - l.area.x, l.y - l.area.y) <= l.area.r && l.area.r > 4;
 const tempIn = lab => { const m = /reads (\d+) degrees/.exec(lab); return m ? +m[1] : null; };
 const weigh = p => p.locator('[data-bn="weigh"]').click();
 const finishAndRecord = async (p, obs) => { await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="after"]').click(); for (const o of obs || []) await p.locator('fieldset.bn-obs .bn-chip', { hasText: o }).click(); await p.locator('[data-bn="record"]').click(); };
@@ -32,7 +35,7 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     T.ok(await p.locator('[data-bn="weigh"]').isEnabled() && await p.locator('[data-bn="burn"]').isDisabled(), 'Weigh and read is offered; Burn waits until the before reading is taken');
     T.ok(/Weigh and read temperature \(before\)/.test(await p.locator('[data-bn="weigh"]').innerText()), 'button says what it does');
     const readyRead = await p.locator('.bn-read').first().innerText();
-    T.ok(/Mass on the balance \(before\)\s*—/.test(readyRead.replace(/\n/g, ' ')) && /Dome glass, laser \(before\)\s*—/.test(readyRead.replace(/\n/g, ' ')), 'readouts are blank before the first weighing');
+    T.ok(/Mass on the balance \(before\)\s*—/.test(readyRead.replace(/\n/g, ' ')) && /Fuel temperature, laser \(before\)\s*—/.test(readyRead.replace(/\n/g, ' ')), 'readouts are blank before the first weighing');
     T.ok(/Step 1: weigh the handful and read the temperature\. Step 2: burn it\. Step 3: weigh and read the temperature again/.test(await p.locator('.bn-panel').first().innerText()), 'the steps are stated');
 
     // ----- BEFORE: weigh and read
@@ -41,7 +44,9 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     const st1 = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(st1.burn.weighed && st1.burn.weighed.fuel === 'grass' && st1.burn.weighed.n === 1 && st1.burn.current === null && !('tempBefore' in st1.burn), 'the before weighing is stored (fuel and sample number only; the numbers are recomputed)');
     const labW = await label(p);
-    T.ok(tempIn(labW) === model.tb && new RegExp('which reads ' + model.mb + ' grams').test(labW) && /\(before the burn\)/.test(labW), 'before: the picture says the balance reads ' + model.mb + ' g and the laser reads ' + model.tb + ' °C');
+    T.ok(tempIn(labW) === model.tb && new RegExp('the balance read ' + model.mb + ' grams').test(labW) && /aimed at the fuel, through the dome glass/.test(labW) && /\(before the burn\)/.test(labW) && !/aimed at the dome glass/.test(labW), 'before: the picture says the balance read ' + model.mb + ' g and the laser reads ' + model.tb + ' °C');
+    const lb = await laser(p);
+    T.ok(lb && lb.target === 'fuel' && dotInArea(lb), 'before: the laser dot lies inside the drawn fuel sample (' + JSON.stringify(lb) + ')');
     const rw = (await p.locator('.bn-read').first().innerText()).replace(/\n/g, ' ');
     T.ok(rw.includes(model.mb + ' g') && rw.includes(model.tb + ' °C'), 'readouts equal the model at the first weighing');
     T.ok(await p.locator('[data-bn="burn"]').isEnabled() && await p.locator('[data-bn="weigh"]').isDisabled(), 'after the before reading, Burn is enabled and the weigh button is done');
@@ -58,6 +63,7 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     await p.waitForTimeout(1800);
     T.ok(/Burning|lit/.test(await p.locator('[data-bn="stage"]').innerText()) && /Burn time \d+ s/.test(await p.locator('[data-bn="clock"]').innerText()), 'clock and stage show while it runs');
     T.ok(/laser thermometer is put down while it burns/.test(await p.locator('.bn-clock').innerText()), 'the panel says the laser is put down while it burns');
+    T.ok(await laser(p) === null, 'no laser beam or dot while it burns');
     const mid = await label(p);
     T.ok(/half-sphere glass bowl, upside down \(the dome\), over burning dried grass/.test(mid) && /grams/.test(mid) && /BTB in the dish inside the dome/.test(mid) && /put down on the bench and the balance shows no reading/.test(mid) && tempIn(mid) === null && !/flask/i.test(mid), 'during the burn: no live temperature, the laser is put down, the balance shows no reading: ' + mid.slice(0, 110));
     T.ok(await p.locator('[data-bn="weigh"]').count() === 0 && await p.locator('[data-bn="after"]').count() === 0, 'no weighing buttons while it burns');
@@ -81,7 +87,10 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     const stA = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(stA.burn.current && stA.burn.current.after === true, 'the after weighing is stored');
     const labA = await label(p);
-    T.ok(/lifted off the cooled dried grass/.test(labA) && tempIn(labA) === model.ta && new RegExp('which reads ' + model.ma + ' grams').test(labA) && /\(after the burn\)/.test(labA) && tempIn(labA) > tempIn(labW), 'after: the dome is lifted, the ash on the balance reads ' + model.ma + ' g and the laser reads ' + model.ta + ' °C (above the before reading ' + model.tb + ')');
+    T.ok(/lifted off the cooled dried grass/.test(labA) && tempIn(labA) === model.ta && new RegExp('which reads ' + model.ma + ' grams').test(labA) && /aimed at the ash reads/.test(labA) && /\(after the burn\)/.test(labA) && !/dome glass reads/.test(labA) && tempIn(labA) > tempIn(labW), 'after: the dome is lifted, the ash on the balance reads ' + model.ma + ' g and the laser reads ' + model.ta + ' °C (above the before reading ' + model.tb + ')');
+    const la = await laser(p);
+    T.ok(la && la.target === 'ash' && dotInArea(la), 'after: the laser dot lies inside the drawn ash on the balance (' + JSON.stringify(la) + ')');
+    T.ok(!/dome glass/i.test(await p.locator('#burn-scene').innerText()) || /inside the dome|Glass dome/.test(await p.locator('#burn-scene').innerText()), 'the panels never say the reading is of the dome glass');
     const ra = (await p.locator('.bn-read').first().innerText()).replace(/\n/g, ' ');
     T.ok(ra.includes(model.tb + ' → ' + model.ta + ' °C') && ra.includes(model.mb + ' → ' + model.ma + ' g'), 'readouts show both weighings and equal the model');
     T.ok(await p.locator('[data-bn="record"]').isVisible() && /both weighings/.test(await p.locator('[data-bn="record"]').innerText()), 'Record results (both weighings) is offered');

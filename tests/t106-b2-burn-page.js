@@ -127,7 +127,7 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
     await go(p, 'fuels');
     const peatFb = (await fb(p, 'pred-peat')).split('\n')[0], grassFb = await fb(p, 'pred-grass');
     T.ok(/^Yes\. In your data peat caught fire after \d+ s/.test(peatFb) && /^Not quite\. In your data dried grass caught fire after \d s, which is quick/.test(grassFb), 'predictions are checked against the table: ' + peatFb + ' / ' + grassFb);
-    T.ok(/warmed the dome glass \d\d\.\d °C, more than the others/.test(await fb(p, 'pred-peat')), 'peat predicted to give more energy: checked against the table');
+    T.ok(/warmed up \d\d\.\d °C, more than the others/.test(await fb(p, 'pred-peat')), 'peat predicted to give more energy: checked against the table');
     await go(p, 'sense');
     await p.selectOption('#sense-yellowest', 'charcoal');
     T.ok(/^Try again/.test(await fb(p, 'sense-yellowest')) && /Peat/.test(await fb(p, 'sense-yellowest')), 'yellowest row names the right fuel');
