@@ -45,13 +45,17 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
           await waitFor('baseline',1);
           for(const board of ['connected','road']){
             const actors=by('pair-'+board).locator('.wc-mate-parent');
-            assert.equal(await actors.count(),2,'both habitats show their sampled parents during a matched run');
+            assert.equal(await actors.count(),board==='road'?4:2,'both habitats show their sampled parents during a matched run');
             assert.equal(await actors.first().evaluate(e=>getComputedStyle(e).animationName),'wc-find-mate');
           }
           assert.equal(await by('pair-road').locator('.wc-mate-parent[data-crossing="true"]').count(),0);
         }
         await waitFor('baseline',8);
-        assert.equal(await by('pair-road').locator('.wc-mate-child').count(),1);
+        for(const patch of ['west','east']){
+          assert.equal(await by('pair-road').locator('.wc-mate-parent[data-patch="'+patch+'"]').count(),2);
+          assert.equal(await by('pair-road').locator('.wc-map-copy[data-patch="'+patch+'"]').count(),2);
+          assert.equal(await by('pair-road').locator('.wc-mate-child[data-patch="'+patch+'"]').count(),1);
+        }
         assert.match(await by('mix').textContent(),/Parent 1.*Parent 2.*Offspring/s);
         assert.match(await by('mix').textContent(),/A\/A|A\/a|a\/a/);
         await act(by('replay-mix'));

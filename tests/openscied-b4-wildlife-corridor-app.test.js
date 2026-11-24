@@ -60,7 +60,12 @@ test('prediction gates direct links, and an interrupted paired run reloads from 
   assert.equal(first.node('pair-connected').nodes.length,5);
   const roadPair=first.node('pair-road');
   assert.equal(roadPair.hidden,false);
-  assert.equal(roadPair.nodes.filter(n=>n.className?.includes('wc-mate-parent')).length,2);
+  for(const patch of ['west','east']){
+    const parents=roadPair.nodes.filter(n=>n.className?.includes('wc-mate-parent')&&n.dataset.patch===patch);
+    assert.equal(parents.length,2);
+    assert.equal(roadPair.nodes.filter(n=>n.className==='wc-map-copy'&&n.dataset.patch===patch).length,2);
+    assert.equal(roadPair.nodes.filter(n=>n.className?.includes('wc-mate-child')&&n.dataset.patch===patch).length,1);
+  }
   assert.ok(roadPair.nodes.filter(n=>n.className?.includes('wc-mate-parent')).every(parent=>parent.dataset.crossing==='false'));
   assert.ok(first.node('pair-connected').nodes.filter(node=>node.className==='wc-map-copy').every(node=>/[Aa]/.test(node.textContent)));
   assert.equal(first.node('mix-offspring').nodes.length,24);

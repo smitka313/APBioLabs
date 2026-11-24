@@ -106,39 +106,45 @@
     const host=by('pair-'+board);
     if(host){host.hidden=true;host.replaceChildren();}
   }
-  function drawMates(detail,animate,replay=false){
+  function drawMates(detail,animate,replay=false,second=null){
     const board=detail.condition==='connected'?'connected':'road';
     const host=by('pair-'+board);
     if(!host)return;
-    const key=JSON.stringify([detail.condition,detail.generation,detail.patch,detail.animal]);
+    const key=JSON.stringify([detail.condition,detail.generation,detail.patch,detail.animal,second?.animal??null]);
     if(host.dataset.trace===key&&!host.hidden&&!replay)return;
     host.dataset.trace=key;
     host.hidden=false;
     host.dataset.animated=String(animate);
     host.replaceChildren();
-    const [x,y]=position(detail.patch,detail.animal);
-    const joint=[detail.patch===0?34:66,50];
-    detail.parents.forEach((parent,i)=>{
-      const origin=detail.origins[i], [fromX,fromY]=position(origin,parent.index);
-      const actor=make('span',null,'wc-mate wc-mate-parent');
-      actor.dataset.coat=parent.genotype.includes('A')?'dark':'light';
-      actor.dataset.crossing=String(origin!==detail.patch);
-      for(const [key,value] of Object.entries({x:fromX,y:fromY,mx:joint[0]+(i===0?-6:6),my:joint[1],
-          vx:origin!==detail.patch?50:(fromX+joint[0])/2,vy:origin!==detail.patch?50:(fromY+joint[1])/2})){
-        actor.style.setProperty('--wc-'+key,value+'%');
-      }
-      actor.append(make('span',i===0?'P1':'P2','wc-mate-tag'),make('span',genotypeOf(parent.genotype),'wc-mate-gene'));
-      host.append(actor);
-      const copy=make('span',detail.alleles[i],'wc-map-copy');
-      copy.dataset.parent=String(i+1);
-      copy.style.setProperty('--wc-copy-start',(joint[0]+(i===0?-8:8))+'%');
-      copy.style.setProperty('--wc-copy-end',(joint[0]+(i===0?-2:2))+'%');
-      host.append(copy);
-    });
-    const child=make('span',null,'wc-mate wc-mate-child');
-    for(const [key,value] of Object.entries({x,y,mx:joint[0],my:joint[1]}))child.style.setProperty('--wc-'+key,value+'%');
-    child.append(make('span','Offspring','wc-mate-tag'),make('span',genotypeOf(detail.alleles),'wc-mate-gene'));
-    host.append(child);
+    const families=second?[detail,second]:[detail];
+    for(const detail of families){
+      const [x,y]=position(detail.patch,detail.animal);
+      const joint=[detail.patch===0?34:66,50];
+      detail.parents.forEach((parent,i)=>{
+        const origin=detail.origins[i], [fromX,fromY]=position(origin,parent.index);
+        const actor=make('span',null,'wc-mate wc-mate-parent');
+        actor.dataset.patch=patchName(detail.patch).toLowerCase();
+        actor.dataset.coat=parent.genotype.includes('A')?'dark':'light';
+        actor.dataset.crossing=String(origin!==detail.patch);
+        for(const [key,value] of Object.entries({x:fromX,y:fromY,mx:joint[0]+(i===0?-6:6),my:joint[1],
+            vx:origin!==detail.patch?50:(fromX+joint[0])/2,vy:origin!==detail.patch?50:(fromY+joint[1])/2})){
+          actor.style.setProperty('--wc-'+key,value+'%');
+        }
+        actor.append(make('span',i===0?'P1':'P2','wc-mate-tag'),make('span',genotypeOf(parent.genotype),'wc-mate-gene'));
+        host.append(actor);
+        const copy=make('span',detail.alleles[i],'wc-map-copy');
+        copy.dataset.patch=patchName(detail.patch).toLowerCase();
+        copy.dataset.parent=String(i+1);
+        copy.style.setProperty('--wc-copy-start',(joint[0]+(i===0?-8:8))+'%');
+        copy.style.setProperty('--wc-copy-end',(joint[0]+(i===0?-2:2))+'%');
+        host.append(copy);
+      });
+      const child=make('span',null,'wc-mate wc-mate-child');
+      child.dataset.patch=patchName(detail.patch).toLowerCase();
+      for(const [key,value] of Object.entries({x,y,mx:joint[0],my:joint[1]}))child.style.setProperty('--wc-'+key,value+'%');
+      child.append(make('span','Offspring','wc-mate-tag'),make('span',genotypeOf(detail.alleles),'wc-mate-gene'));
+      host.append(child);
+    }
   }
   // Show two inherited copies from one real offspring record, not a separate simulation.
   // The path represents inheritance; it does not imply that an allele crosses a road alone.
@@ -230,7 +236,13 @@
     const paired=process==='baseline'||(!replay&&!inspectedHabitat&&inspectedOffspring===null&&id==='connected'&&models.road.generation>0);
     if(paired){
       drawMates(offspringFor('connected').detail,animate);
-      drawMates(offspringFor('road').detail,animate);
+      // Illustrate a real family in each isolated patch, favoring a pair of
+      // unlike inherited alleles when that outcome actually occurred.
+      const localExamples=models.road.patches.map((offspring,patch)=>{
+        const mixed=offspring.findIndex(a=>a.alleles[0]!==a.alleles[1]);
+        return offspringFor('road',patch*M.PATCH_SIZE+Math.max(0,mixed)).detail;
+      });
+      drawMates(localExamples[0],animate,false,localExamples[1]);
     }else{
       hidePair(id==='connected'?'road':'connected');
       drawMates(detail,animate,replay);
