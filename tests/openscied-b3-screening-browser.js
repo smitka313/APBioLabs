@@ -126,6 +126,7 @@ const out=path.join(ROOT,'artifacts','screening');
     await id('other-cases').locator(':scope > summary').click();
     await shot('comparison');
     assert.ok(await id('to-explain').isDisabled());
+    assert.equal(await id('cases').locator('.sd-unresolved').count(),6);
     for(const [i,c] of M.scenarios(saved.seed).entries()){
       await id('cases').getByRole('button').nth(i).click();
       const answer=M.comparison(baseline.patients[c.id-1],trial.patients[c.id-1]);
@@ -135,6 +136,8 @@ const out=path.join(ROOT,'artifacts','screening');
       }
       await id('case-pick').selectOption(answer);await id('check-case').click();
       assert.match(await id('case-progress').textContent(),new RegExp((i+1)+' of 3'));
+      assert.equal(await id('cases').locator('.sd-decision-stamp').count(),2*(i+1));
+      assert.match(await id('decision-score').textContent(),new RegExp('Among the '+(i+1)+' checked'));
       if(i===0){await p.reload();assert.match(await id('case-progress').textContent(),/1 of 3/);assert.ok(await id('to-explain').isDisabled());}
     }
     await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);

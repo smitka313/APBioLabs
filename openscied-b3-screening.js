@@ -251,11 +251,24 @@
     drawWallet(true);
     $('pay-result').textContent=visits[kind]+' booked: '+cost(q.total)+' used. '+(wallet.next===kinds.length?'Care pathway complete.':'Try booking the follow-up next.');
   };
+  const portraits=[
+    ['#315767','#d9a47e','#283647','#83bdbe','M17 26c-3-17 29-20 31 1l-5-2-3-9-13 8Z'],
+    ['#374d67','#a96648','#342637','#b5b6dc','M17 29c-7-18 13-24 23-16 8-1 11 9 8 17l-6-4-3-9-12 8Z'],
+    ['#385a50','#efc39a','#6a4d46','#c4ce8d','M18 29c-4-17 26-24 30-4l-5 2-9-8-10 8Z']
+  ];
+  function avatar(i){
+    const [bg,skin,hair,shirt,path]=portraits[i],wrap=el('div');
+    wrap.className='sd-avatar';
+    wrap.innerHTML='<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="13" fill="'+bg+'"/><circle cx="32" cy="29" r="14" fill="'+skin+'"/><path d="'+path+'" fill="'+hair+'"/><path d="M11 65v-7c2-10 10-15 21-15s19 5 21 15v7Z" fill="'+shirt+'"/><path d="M25 30h.1m13 0h.1m-11 7q5 3 10 0" fill="none" stroke="#35404a" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    return wrap;
+  }
   for(const [i,p] of cases.entries()){
     const card=el('article');card.className='sd-profile';
     const k=el('p','Case '+(i+1));k.className='sd-stage';
     const distances=el('ul');distances.append(el('li','Hospital: '+p.distances.hub+' mi'),el('li','Mobile clinic: '+p.distances.mobile+' mi'));
-    card.append(k,el('h4','Patient '+p.id+' · '+p.place),el('p',need(p)),el('p','Income: '+income(p)+' · Care budget: '+cost(p.means)),el('p','Time available per visit: '+p.hours+' h'),distances);
+    const head=el('div'),stamp=el('div');head.className='sd-case-head';
+    stamp.append(k,el('h4','Patient '+p.id+' · '+p.place));head.append(avatar(i),stamp);
+    card.append(head,el('p',need(p)),el('p','Income: '+income(p)+' · Care budget: '+cost(p.means)),el('p','Time available per visit: '+p.hours+' h'),distances);
     const quoteButton=el('button','Open cost sheet');quoteButton.type='button';quoteButton.className='btn';
     quoteButton.setAttribute('aria-label','Open cost sheet for Case '+(i+1)+' · '+p.place);
     quoteButton.setAttribute('aria-controls','sd-quote-board');quoteButton.setAttribute('aria-expanded','false');quoteButton.onclick=()=>openQuote(p);
@@ -264,16 +277,33 @@
     const b=el('button');b.type='button';b.className='btn';b.onclick=()=>{
       s.caseId=patient=p.id;save();$('case-feedback').textContent='';drawCases();drawPatient();trip(false);
     };
-    $('cases').append(b);
+    const tr=el('tr'), th=el('th');th.scope='row';th.append(b);tr.append(th,el('td'),el('td'));$('cases').append(tr);
+  }
+  const milestone=(p)=>p.outcome==='screened'||p.outcome==='imaged';
+  function drawDecision(celebrate){
+    const a=get(M.baseline).patients,b=s.trial?get(s.trial).patients:null;
+    const counts=[0,0];
+    for(const [i,tr] of [...$('cases').rows].entries()){
+      const id=caseIds[i],checked=s.caseChecks.includes(id);
+      const chosen=id===s.caseId, button=tr.querySelector('button');
+      button.textContent='Case '+(i+1)+' · '+cases[i].place+(checked?' ✓':'');
+      button.setAttribute('aria-label','Case '+(i+1)+' · '+cases[i].place+(checked?' · checked':''));
+      button.setAttribute('aria-pressed',String(chosen));
+      for(const [j,p] of [a[id-1],b?.[id-1]].entries()){
+        const td=tr.cells[j+1];
+        if(!checked||!p){td.replaceChildren(el('span',!p?'Not run yet':'Check case to reveal'));td.className='sd-unresolved';continue;}
+        const finished=milestone(p);
+        if(finished)counts[j]++;
+        const tag=el('strong',finished?'✓ Care reached':'! Care missed');tag.className='sd-decision-stamp';
+        td.replaceChildren(tag,el('small',outcomes[p.outcome]));td.className=celebrate===id?'sd-reveal':'';
+      }
+    }
+    const n=s.caseChecks.length;
+    $('decision-score').textContent=n?'Among the '+n+' checked: '+counts[0]+' reached needed care with the hospital plan · '+counts[1]+' with the redesign.':'Check a case below to reveal both results on the board.';
   }
   function drawCases(){
     $('case-progress').textContent=s.trial?s.caseChecks.length+' of 3 comparisons checked.':'Hospital results are ready. Test the redesign to compare all three.';
-    const idx=caseIds.indexOf(s.caseId);
-    for(const [i,b] of [...$('cases').children].entries()){
-      const done=s.caseChecks.includes(caseIds[i]);
-      b.textContent='Case '+(i+1)+(done?' ✓':'');b.setAttribute('aria-label','Case '+(i+1)+' · '+cases[i].place+(done?' · checked':''));
-      b.setAttribute('aria-pressed',String(i===idx));
-    }
+    drawDecision();
     story($('story'),s.caseId);
     $('case-form').hidden=!s.trial;
     $('case-pick').value=s.caseChecks.includes(s.caseId)?s.caseAnswers[s.caseId]:'';
@@ -424,7 +454,7 @@
     }
     s.caseAnswers={...s.caseAnswers,[id]:choice};
     if(!s.caseChecks.includes(id))s.caseChecks.push(id);
-    save();render();
+    save();render();drawDecision(id);
     $('case-feedback').textContent=ready()?'Correct. All three comparisons are checked. You can now recommend a plan.':'Correct. Choose an unchecked case to compare next.';
   };
   for(const b of document.querySelectorAll('[data-sd-step]'))b.onclick=()=>nav(b.dataset.sdStep);

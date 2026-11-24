@@ -68,3 +68,24 @@
 #sd-pay-result:not(:empty){margin-top:.45rem;padding:.35rem .5rem;border-inline-start:3px solid var(--accent);background:var(--surface)}
 @media(max-width:540px){.sd-visit-grid{grid-template-columns:minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce){.sd-wallet-bar span{transition:none}}
+
+.sd-hero{display:grid;grid-template-columns:minmax(0,1fr) clamp(115px,22vw,225px);gap:.4rem;align-items:center;overflow:hidden}
+.sd-hero-art{width:100%;filter:drop-shadow(0 6px 8px #081420aa)}
+.sd-hero .sd-mission-label{display:inline-block;padding:.22rem .48rem;border-radius:.35rem;background:#f6d794;color:#20353b;font-size:.83rem;font-weight:850}
+.sd-signal{transform-origin:90px 48px;animation:sd-signal 2.9s ease-in-out infinite}
+@keyframes sd-signal{0%,100%{opacity:.63;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
+.sd-case-head{display:grid;grid-template-columns:clamp(2.5rem,6vw,3.5rem) 1fr;gap:.48rem;align-items:center}
+.sd-avatar svg{width:100%;height:auto;display:block;box-shadow:0 2px 7px #19374437;border-radius:.55rem}
+.sd-profile{border-top:3px solid var(--accent)}
+.sd-decision{border-collapse:separate;border-spacing:.16rem;width:100%;table-layout:fixed;font-size:clamp(.72rem,2vw,.95rem)}
+.sd-decision caption{text-align:left;font-weight:800;margin-bottom:.28rem}
+.sd-decision td,.sd-decision th{text-align:left;padding:.3rem .35rem;border:1px solid var(--line);border-radius:.38rem;overflow-wrap:break-word}
+.sd-decision thead th{background:var(--surface-2)}.sd-decision tbody th{padding:0}
+.sd-decision tbody button{width:100%;min-height:44px;text-align:left;font-size:inherit;white-space:normal;line-height:1.2;padding:.35rem;color:var(--ink)}
+.sd-decision tbody button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:-2px}
+.sd-decision td small,.sd-decision-stamp{display:block}.sd-unresolved{font-size:.89em;color:var(--muted);border-style:dashed!important}
+.sd-decision-stamp{padding:.14rem .25rem;border:1px solid var(--line);border-radius:.36rem;background:var(--surface-2);margin-bottom:.12rem}
+.sd-reveal .sd-decision-stamp{animation:sd-reveal .42s ease-out both}
+@keyframes sd-reveal{from{opacity:.15;transform:translateY(4px) scale(.96)}to{opacity:1;transform:none}}
+@media(max-width:540px){.sd-hero{grid-template-columns:minmax(0,1fr) 88px}.sd-hero h1{font-size:clamp(1.57rem,6.7vw,2rem)}.sd-decision td,.sd-decision th{padding:.24rem}}
+@media(prefers-reduced-motion:reduce){.sd-signal,.sd-reveal .sd-decision-stamp{animation:none}}
