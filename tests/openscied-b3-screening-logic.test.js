@@ -90,3 +90,17 @@ test('itemized route quotes include exact drives and same checkout rules as the 
   }
   assert.deepEqual(M.checkout({total:20,time:3},15,2),{ok:false,moneyShort:5,timeShort:1,remaining:15});
 });
+test('dispatch win counts patients newly reaching needed care minus patients losing it, and enforces the clinic cap',()=>{
+  const mobile={...M.baseline,machine:'mobile',operator:'mobile'};
+  const first=M.mission(M.run(1,M.baseline),M.run(1,mobile));
+  assert.ok(first.won);
+  assert.equal(first.helped.length-first.lost.length,3);
+  assert.equal(first.left,105);
+  const second=M.mission(M.run(2,M.baseline),M.run(2,mobile));
+  assert.equal(second.won,false);
+  assert.ok(second.helped.some(p=>p.id===18));
+  assert.ok(second.lost.some(p=>p.id===29));
+  const result=M.run(1,mobile);
+  assert.equal(M.mission(M.run(1,M.baseline),{...result,clinic:M.budget+1}).won,false);
+  assert.equal(M.mission(M.run(1,M.baseline),{...result,clinic:M.budget}).won,true);
+});

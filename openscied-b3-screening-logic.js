@@ -58,6 +58,16 @@
   }
   const reached=(p)=>p.needed?p.outcome==='imaged':p.outcome==='screened';
   const comparison=(a,b)=>reached(a)?(reached(b)?'both':'base'):(reached(b)?'trial':'neither');
+  function mission(before,after){
+    const helped=[],lost=[];
+    for(const [i,p] of before.patients.entries()){
+      const was=reached(p), now=reached(after.patients[i]);
+      if(!was&&now)helped.push(after.patients[i]);
+      if(was&&!now)lost.push(p);
+    }
+    const left=budget-after.clinic;
+    return {helped,lost,left,won:left>=0&&helped.length>lost.length};
+  }
   function validate(p){
     if(!p||!zones.includes(p.screen))return 'Place the screening team first.';
     if(!zones.includes(p.machine)||!zones.includes(p.operator))return 'Place the ultrasound machine and trained sonographer.';
@@ -96,5 +106,5 @@
     });
     return {patients,...summarize(patients),areas:places.map((place,z)=>({place,...summarize(patients.filter(p=>p.z===z))})),costs:costs(plan),clinic:total(plan)};
   }
-  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,distances,quote:visit,checkout});
+  return Object.freeze({zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,mission,distances,quote:visit,checkout});
 });

@@ -51,6 +51,11 @@ const out=path.join(ROOT,'artifacts','screening');
         const tx=M.checkout(q,balance,first.hours);
         await id('book').click();
         assert.match(await id('pay-result').textContent(),tx.ok?/booked/:/Could not book/);
+        if(!tx.ok||kind==='scan'||!first.needed){
+          assert.ok(await id('mission-dialog').isVisible());
+          assert.match(await id('popup-title').textContent(),tx.ok?/within budget|opened a path/:/Over this patient|Not enough time/);
+          await id('popup-close').click();
+        }
         balance=tx.remaining;
         assert.match(await id('wallet').innerText(),new RegExp(balance+' cr of '+first.means+' cr left'));
         if(!tx.ok)break;
@@ -110,6 +115,11 @@ const out=path.join(ROOT,'artifacts','screening');
     await id('tool-screen').press('Enter');await site('mobile').press('Enter');
     await id('tool-rides').press('Enter');await site('mobile').press('Enter');
     assert.match(await id('setup-note').textContent(),/over the clinic/);assert.ok(await id('run').isDisabled());
+    assert.ok(await id('mission-dialog').isVisible());
+    assert.match(await id('popup-title').textContent(),/Over the clinic budget/);
+    assert.match(await id('popup-message').textContent(),/745 cr.*720 cr.*25 cr/);
+    assert.match(await id('popup-evidence').textContent(),/Ride program.*95 cr/);
+    await id('popup-close').click();
     await id('tool-rides').press('Enter');await site('rack').press('Enter');
     await id('run').click();
     await id('advanced').locator('summary').click();
@@ -140,6 +150,11 @@ const out=path.join(ROOT,'artifacts','screening');
       assert.match(await id('decision-score').textContent(),new RegExp('Among the '+(i+1)+' checked'));
       if(i===0){await p.reload();assert.match(await id('case-progress').textContent(),/1 of 3/);assert.ok(await id('to-explain').isDisabled());}
     }
+    const mission=M.mission(M.run(saved.seed,M.baseline),M.run(saved.seed,saved.trial));
+    assert.ok(await id('mission-dialog').isVisible());
+    assert.match(await id('popup-title').textContent(),mission.won?/Mission won!/:/Access goal not met/);
+    assert.match(await id('popup-message').textContent(),new RegExp(mission.left+' cr to spare'));
+    await id('popup-close').click();
     await id('to-explain').click();assert.match(await id('evidence').innerText(),/Simulated outcome/);
     assert.equal(await id('case-evidence').locator(':scope > details').count(),3);
     assert.match(await id('case-evidence').innerText(),/Hospital plan:.*Redesign:/s);
@@ -149,7 +164,7 @@ const out=path.join(ROOT,'artifacts','screening');
     assert.match(await id('finished').textContent(),/Investigation complete/);
     assert.match(await id('claim').inputValue(),/redesign/);
     await p.getByRole('button',{name:'Preview report'}).click();
-    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Ultrasound acquisition.*Itemized patient cost sheets/s);
+    assert.match(await p.getByRole('dialog').filter({hasText:'Cancer Screening Design Lab'}).innerText(),/Three patient scenarios.*Dispatch mission results.*Ultrasound acquisition.*Itemized patient cost sheets/s);
     assert.deepEqual(errors,[]);
     console.log('ok: Screening Design '+width+'px — map, staffing gate, budget, fair comparison, reload, report');
    }finally{await ctx.close();}

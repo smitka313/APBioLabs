@@ -60,7 +60,7 @@
 <p id="sd-task">Meet your three patients before you run a plan.</p>
 <section id="sd-intake" class="sd-panel" aria-labelledby="sd-intake-title">
  <h3 id="sd-intake-title">Patient dispatch files</h3>
- <p><strong>Your mission:</strong> Get patients to the care they need without running the clinic network over budget. Open a cost sheet to practice booking a visit.</p>
+ <p><strong>Your mission:</strong> Stay within the 720-credit clinic budget and get more people all the care they need than the hospital plan did. Open a cost sheet to practice booking a visit.</p>
  <div id="sd-profiles" class="sd-profiles"></div>
  <p class="sd-hint">All incomes and distances are fictional. This model sets aside 2% of monthly income for test fees, travel, and time away. Distances are one way.</p>
  <section class="sd-quote-board" id="sd-quote-board" aria-labelledby="sd-quote-title" hidden>
@@ -111,7 +111,7 @@
 </div>
 <section class="sd-panel" id="sd-journeys" hidden aria-labelledby="sd-journey-title">
 <h3 id="sd-journey-title" tabindex="-1">Compare your three patients</h3>
-<p id="sd-case-progress"></p>
+<p id="sd-case-progress"></p><p class="sd-mission-score" id="sd-mission-score" hidden></p>
 <table class="sd-decision">
  <caption>Patient decision board</caption>
  <thead><tr><th scope="col">Choose a case</th><th scope="col">Hospital plan</th><th scope="col">Redesign</th></tr></thead>
@@ -196,6 +196,14 @@
 </details>
 <p id="sd-save">Progress stays on this device unless you choose to download a report.</p><div id="sd-report"></div>
 <button type="button" class="btn" id="sd-reset">Start over…</button>
+<dialog class="sd-dispatch-popup" id="sd-mission-dialog" aria-labelledby="sd-popup-title" aria-describedby="sd-popup-message">
+ <div class="sd-popup-seal" id="sd-popup-seal" aria-hidden="true"></div>
+ <p class="sd-stage" id="sd-popup-kicker"></p>
+ <h2 id="sd-popup-title"></h2>
+ <p id="sd-popup-message"></p>
+ <div id="sd-popup-evidence"></div>
+ <form method="dialog"><button class="btn btn--primary" id="sd-popup-close" autofocus>Continue</button></form>
+</dialog>
 <dialog id="sd-dialog"><h2>Clear this investigation?</h2><p>Use Preview report first if you want to keep a copy.</p><form method="dialog"><button class="btn" autofocus>Keep working</button> <button type="button" class="btn" id="sd-clear">Clear this activity</button></form></dialog>
 </main>
 <footer class="site-footer"><div class="wrap wrap--wide gutter"><p><strong>Created by Robert Smitka.</strong> This original activity is licensed <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</p><p>Independent supplement to <a href="https://openscied.org/instructional-materials/b-3-inheritance-variation-of-traits/">OpenSciEd B.3</a>, <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>. New fictional model, prompts and illustrations. Not affiliated with or endorsed by OpenSciEd.</p><p>Student work stays in this browser unless you choose to download a report. Analytics count page visits only.</p></div></footer>
