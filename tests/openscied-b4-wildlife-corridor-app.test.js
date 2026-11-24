@@ -58,6 +58,10 @@ test('prediction gates direct links, and an interrupted paired run reloads from 
   assert.match(first.node('mix').textContent,/Generation 2/);
   assert.match(first.node('mix').textContent,/Parent 1.*Genotype.*Parent 2.*Genotype.*Offspring/);
   assert.equal(first.node('pair-connected').nodes.length,5);
+  const roadPair=first.node('pair-road');
+  assert.equal(roadPair.hidden,false);
+  assert.equal(roadPair.nodes.filter(n=>n.className?.includes('wc-mate-parent')).length,2);
+  assert.ok(roadPair.nodes.filter(n=>n.className?.includes('wc-mate-parent')).every(parent=>parent.dataset.crossing==='false'));
   assert.ok(first.node('pair-connected').nodes.filter(node=>node.className==='wc-map-copy').every(node=>/[Aa]/.test(node.textContent)));
   assert.equal(first.node('mix-offspring').nodes.length,24);
   first.node('mix-habitat').value='road';

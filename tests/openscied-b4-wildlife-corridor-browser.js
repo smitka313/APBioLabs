@@ -41,11 +41,17 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
         await act(by('save-prediction'));
         assert.equal(await by('model').isVisible(),true);
         await act(by('run-baseline'));
-        if(desktop){
+        if(motionEnabled){
           await waitFor('baseline',1);
-          await shot('mid-run','map-connected');
+          for(const board of ['connected','road']){
+            const actors=by('pair-'+board).locator('.wc-mate-parent');
+            assert.equal(await actors.count(),2,'both habitats show their sampled parents during a matched run');
+            assert.equal(await actors.first().evaluate(e=>getComputedStyle(e).animationName),'wc-find-mate');
+          }
+          assert.equal(await by('pair-road').locator('.wc-mate-parent[data-crossing="true"]').count(),0);
         }
         await waitFor('baseline',8);
+        assert.equal(await by('pair-road').locator('.wc-mate-child').count(),1);
         assert.match(await by('mix').textContent(),/Parent 1.*Parent 2.*Offspring/s);
         assert.match(await by('mix').textContent(),/A\/A|A\/a|a\/a/);
         await act(by('replay-mix'));

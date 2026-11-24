@@ -102,13 +102,16 @@
   const patchName=patch=>patch===0?'West':'East';
   const position=(patch,index)=>[(patch===0?10:60)+(index%4)*9.5,37+Math.floor(index/4)*14];
   const animalName=(patch,index)=>patchName(patch)+' '+(index+1);
-  function drawMates(detail,animate){
+  function hidePair(board){
+    const host=by('pair-'+board);
+    if(host){host.hidden=true;host.replaceChildren();}
+  }
+  function drawMates(detail,animate,replay=false){
     const board=detail.condition==='connected'?'connected':'road';
-    const host=by('pair-'+board), other=by('pair-'+(board==='road'?'connected':'road'));
-    if(other){other.hidden=true;other.replaceChildren();}
+    const host=by('pair-'+board);
     if(!host)return;
     const key=JSON.stringify([detail.condition,detail.generation,detail.patch,detail.animal]);
-    if(host.dataset.trace===key&&!host.hidden&&!animate)return;
+    if(host.dataset.trace===key&&!host.hidden&&!replay)return;
     host.dataset.trace=key;
     host.hidden=false;
     host.dataset.animated=String(animate);
@@ -186,20 +189,24 @@
       '. Their offspring in the '+zone(patch)+' patch is '+genotype+'. '+traffic,'wc-mix-summary');
     host.replaceChildren(heading,sub,path,summary);
   }
+  function offspringFor(id,index=null){
+    const m=models[id];
+    const individuals=m.patches.flatMap((patch,zone)=>patch.map((animal,i)=>({...animal,patch:zone,animal:i})));
+    const cross=individuals.findIndex(a=>a.origins?.some(origin=>origin!==a.patch));
+    const selected=index??Math.max(0,cross);
+    return {index:selected,detail:{...individuals[selected],condition:id,generation:m.generation}};
+  }
   function showInheritance(replay=false){
-    const auto=state.generations.corridor>0?'corridor':'connected';
+    const auto=state.generations.corridor>0||process==='corridor'?'corridor':'connected';
     const id=inspectedHabitat&&models[inspectedHabitat].generation>0?inspectedHabitat:auto;
     const m=models[id], host=by('mix'), which=by('mix-habitat'), pick=by('mix-offspring');
     if(!host)return;
     if(!m.generation){
       renderMix(host,null);show('mix-actions',false);
-      for(const board of ['connected','road']){const map=by('pair-'+board);if(map)map.hidden=true;}
+      for(const board of ['connected','road'])hidePair(board);
       return;
     }
-    const individuals=m.patches.flatMap((patch,zone)=>patch.map((animal,i)=>({...animal,patch:zone,animal:i})));
-    const autoIndex=individuals.findIndex(a=>a.origins.some(origin=>origin!==a.patch));
-    const index=inspectedOffspring??Math.max(0,autoIndex);
-    const detail={...individuals[index],condition:id,generation:m.generation};
+    const {index,detail}=offspringFor(id,inspectedOffspring);
     if(which){
       const cases=CONDITIONS.filter(c=>models[c].generation>0);
       if(which.dataset.options!==cases.join(',')){
@@ -210,16 +217,25 @@
     }
     if(pick){
       if(pick.dataset.options===undefined){
-        pick.replaceChildren(...individuals.map((a,i)=>{const opt=make('option',animalName(a.patch,a.animal));opt.value=String(i);return opt;}));
+        pick.replaceChildren(...m.patches.flatMap((patch,zone)=>patch.map((_,i)=>{
+          const opt=make('option',animalName(zone,i));opt.value=String(zone*M.PATCH_SIZE+i);return opt;
+        })));
         pick.dataset.options='ready';
       }
       pick.value=String(index);pick.disabled=!!process;
     }
-    const key=JSON.stringify([id,detail.patch,m.generation,detail.animal,detail.alleles,detail.origins]);
-    const changed=host.dataset.wcMixKey!==key;
+    const animate=!reduced();
+    // The first experiment advances the two populations together. Even a
+    // road with zero gene flow still has parents and offspring on each side.
+    const paired=process==='baseline'||(!replay&&!inspectedHabitat&&inspectedOffspring===null&&id==='connected'&&models.road.generation>0);
+    if(paired){
+      drawMates(offspringFor('connected').detail,animate);
+      drawMates(offspringFor('road').detail,animate);
+    }else{
+      hidePair(id==='connected'?'road':'connected');
+      drawMates(detail,animate,replay);
+    }
     if(replay)delete host.dataset.wcMixKey;
-    const animate=(changed||replay)&&!reduced();
-    drawMates(detail,animate);
     renderMix(host,detail,animate);
     show('mix-actions',true);
   }
@@ -315,6 +331,7 @@
     if(which==='corridor'&&state.generations.corridor===0){
       // Give the reset to the matched starting population a visible frame before the first generation.
       renderMap('corridor','road');
+      showInheritance();
       gates();
     }else render();
     announce(which==='baseline'?'Running two habitats from the same start.':'Restarting the road habitat with the crossing and the same starting animals.');

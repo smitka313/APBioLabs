@@ -100,7 +100,7 @@
   <section class="wc-stage" id="wc-model" data-wc-step="model" aria-labelledby="wc-model-title" hidden>
     <header class="wc-heading"><div><p class="wc-kicker">02 · Run the model</p><h2 id="wc-model-title" tabindex="-1">Test a connection</h2></div><span class="wc-pill">Fictional landscape · <span id="wc-dataset">Dataset</span></span></header>
     <div class="wc-runbar wc-panel">
-      <div><h3>1. Compare both maps</h3><p>Start each map with the same animals. Compare how common A and a are on each side as you run eight generations.</p></div>
+      <div><h3>1. Compare both maps</h3><p>Start each map with the same animals. Watch parents meet on both maps, then compare how common A and a are on each side after eight generations.</p></div>
       <button type="button" class="btn btn--primary" id="wc-run-baseline">Run both maps</button>
     </div>
     <p class="wc-genetics-key"><strong>Read an animal marker:</strong> The slash separates the two inherited copies. <strong>A/A</strong> and <strong>A/a</strong> show a dark coat because <strong>A</strong> is dominant. <strong>a/a</strong> shows a light coat. Neither coat gives an advantage in this model. A double outline shows an animal that inherited a copy from a parent in the other patch.</p>
@@ -122,7 +122,7 @@
         <p class="wc-map-readout" id="wc-map-connected-readout"></p>
       </figure>
       <figure class="wc-panel wc-map-card">
-        <figcaption><span class="wc-kicker">Map B</span><strong>Road-split habitat</strong><span>Look for a route that connects both trail ends.</span></figcaption>
+        <figcaption><span class="wc-kicker">Map B</span><strong>Road-split habitat</strong><span>Without a crossing, parents meet within their own patch.</span></figcaption>
         <div class="wc-map wc-map-road" id="wc-map-road" role="group" aria-label="Road-split map. Place the crossing on the road between the two trail ends.">
           <img src="assets/wildlife-corridor-landscape.svg" width="600" height="360" alt="">
           <div class="wc-road" aria-hidden="true"></div>
@@ -197,6 +197,6 @@
 <script src="openscied-save-session.js"></script>
 <script src="openscied-submission-report.js"></script>
 <script src="openscied-b4-wildlife-corridor-logic.js?v=pairing-map"></script>
-<script src="openscied-b4-wildlife-corridor.js?v=pairing-map"></script>
+<script src="openscied-b4-wildlife-corridor.js?v=paired-habitats"></script>
 </body>
 </html>
