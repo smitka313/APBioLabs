@@ -330,7 +330,18 @@ async function saveLessonObservations(page,size){
     const input=view(page,id+'-observation'), button=view(page,id+'-save');
     check(await button.isDisabled(),'blank or unchanged '+key+' observation cannot be saved');
     await input.fill(note);
+    await page.evaluate(saveKey=>{
+      const write=Storage.prototype.setItem;
+      window.__caseWrites=0;
+      Storage.prototype.setItem=function(key,value){
+        if(this===localStorage&&key===saveKey)window.__caseWrites++;
+        return write.call(this,key,value);
+      };
+      window.__restoreCaseWrites=()=>{Storage.prototype.setItem=write;};
+    },SAVE);
     await invoke(button,size);
+    const writes=await page.evaluate(()=>{window.__restoreCaseWrites();return window.__caseWrites;});
+    check(writes===1,'one save click writes the '+key+' observation once after multiple exhibit opens');
     check(await button.isDisabled(),'the '+key+' observation was saved');
     await closeCaseExhibit(page,size,trigger);
   }
@@ -428,6 +439,9 @@ async function followupPath(page,size) {
   const workspace=JSON.parse(await fs.readFile(await workspaceFile.path(),'utf8'));
   check(workspace.responses?.['cancer-rates']?.investigationQuestion===investigation,
     'the workspace download exposes the submitted question in the readable response section');
+  assert.deepEqual(workspace.responses?.['cancer-rates']?.exhibitObservations,
+    {A:lessonNotes.diagnoses,B:lessonNotes.deaths,C:lessonNotes.map},
+    'the dashboard export groups the actual required written observations by exhibit');
   await followResume(resume,'#explore');
   await visible(page,'explore');
   const datasets=await view(page,'cr-view').locator('option').evaluateAll(options=>options.map(el=>el.value));

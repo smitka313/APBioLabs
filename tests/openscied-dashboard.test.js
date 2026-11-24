@@ -343,5 +343,6 @@ test('a submitted case question resumes Explore and is included in readable back
   s.el('#download-openscied-results').fire('click');
   const payload = JSON.parse(await s.blob().text());
   assert.equal(payload.responses['cancer-rates'].investigationQuestion,question);
+  assert.deepEqual(payload.responses['cancer-rates'].exhibitObservations,{A:'A note',B:'B note',C:'C note'});
   assert.equal(payload.work[key],raw);
 });

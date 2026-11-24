@@ -434,6 +434,11 @@
             responses[activity.id].predictionReason = typeof saved?.prediction?.reason === 'string' ? saved.prediction.reason : '';
             const question = cancerInvestigationQuestion(saved);
             if (question) responses[activity.id].investigationQuestion = question;
+            const savedNotes = saved?.casework?.notes ?? {};
+            const observations = Object.fromEntries(Object.entries({ A:'diagnoses', B:'deaths', C:'map' })
+              .filter(([,key]) => written(savedNotes,key))
+              .map(([exhibit,key]) => [exhibit,savedNotes[key]]));
+            if (Object.keys(observations).length) responses[activity.id].exhibitObservations = observations;
           }
           if (activity.id === 'dna-p53') Object.keys(fields).forEach(id => { if (!(id in responses[activity.id]) && typeof fields[id] === 'string') responses[activity.id][id] = fields[id]; });
         });

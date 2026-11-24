@@ -498,20 +498,7 @@
   }
   function showExhibit(k,opener){
     if(!caseTabs.includes(k))return;
-    for(const k of lessonNotes){
-    const input=$('lesson1-'+k+'-observation'), button=$('lesson1-'+k+'-save');
-    input.addEventListener('input',()=>{button.disabled=!input.value.trim()||input.value.trim()===state.casework.notes[k];});
-    button.addEventListener('click',()=>{
-      const note=str(input.value,500).trim();
-      if(!note)return;
-      state.casework.notes[k]=note;
-      button.disabled=true;save();updateFollowup();render();
-      text('case-live','Observation saved. '+$('income-progress').textContent);
-      button.textContent='Observation saved';
-    });
-    input.addEventListener('input',()=>{button.textContent='Save observation';});
-  }
-  for(const id of caseTabs)$(id).hidden=id!==k;
+    for(const id of caseTabs)$(id).hidden=id!==k;
     const title=$(k+'-title');
     caseDialog.setAttribute('aria-labelledby',title.id);
     text('case-position','Exhibit '+(caseTabs.indexOf(k)+1)+' of '+caseTabs.length);
@@ -566,6 +553,19 @@
       if(correct)fb.dataset.result='correct';else delete fb.dataset.result;
     }
     updateFollowup();
+  }
+  for(const k of lessonNotes){
+    const input=$('lesson1-'+k+'-observation'), button=$('lesson1-'+k+'-save');
+    input.addEventListener('input',()=>{button.disabled=!input.value.trim()||input.value.trim()===state.casework.notes[k];});
+    button.addEventListener('click',()=>{
+      const note=str(input.value,500).trim();
+      if(!note)return;
+      state.casework.notes[k]=note;
+      button.disabled=true;save();updateFollowup();render();
+      text('case-live','Observation saved. '+$('income-progress').textContent);
+      button.textContent='Observation saved';
+    });
+    input.addEventListener('input',()=>{button.textContent='Save observation';});
   }
   for(const id of caseTabs)$(id+'-tab').addEventListener('click',event=>showExhibit(id,event.currentTarget));
   for(const b of all('[data-case-next]'))b.addEventListener('click',()=>showExhibit(b.dataset.caseNext));
