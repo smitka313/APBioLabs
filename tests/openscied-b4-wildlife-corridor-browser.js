@@ -47,15 +47,20 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
         }
         await waitFor('baseline',8);
         await shot('baseline','map-road');
-        const middle=page.locator('button[data-wc-crossing-slot="1"]');
-        if(desktop)await by('crossing-tile').dragTo(middle);
+        const slot=page.getByRole('button',{name:'Place crossing between the two trail ends'});
+        assert.equal(await page.locator('[data-wc-crossing-slot]').count(),1,'only the connection between the trails can accept the crossing');
+        assert.equal(await by('run-crossing').isDisabled(),true);
+        if(desktop)await by('crossing-tile').dragTo(slot);
         else {
+          await act(slot);
+          assert.match(await by('status').textContent(),/select the crossing tile first/i);
+          assert.equal((await saved()).crossing,-1);
           await act(by('crossing-tile'));
-          await act(page.locator('button[data-wc-crossing-slot="0"]'));
-          assert.match(await by('status').textContent(),/rocky north bank/i);
-          await act(middle);
+          assert.equal(await by('crossing-tile').getAttribute('aria-pressed'),'true');
+          await act(slot);
         }
         assert.equal((await saved()).crossing,1);
+        assert.equal(await slot.getAttribute('aria-pressed'),'true');
         await shot('crossing','map-road');
         await act(by('run-crossing'));await waitFor('corridor',8);
         await act(step('explain'));
