@@ -63,6 +63,14 @@ const ann = p => p.locator('#announcer').textContent();
     const cols = csv.split('\r\n')[1].split(',');
     T.ok(+cols[8] - +cols[9] - +cols[10] === +cols[12], 'C1: the CSV row closes: ' + cols.slice(8, 13).join(' '));
 
+    // ---------- The student-facing reaction table reads in one direction ----------
+    await p.evaluate(() => { location.hash = 'overview'; }); await p.waitForFunction(() => document.querySelector('#overview.is-current'));
+    const flow=p.locator('#peat-reaction-flow');
+    const cells=await flow.locator('tbody tr').last().locator('td').allTextContents();
+    T.ok(await flow.isVisible() && cells.length===2 && /Peat.*oxygen/.test(cells[0]) &&
+      /Carbon dioxide.*water.*heat and light/.test(cells[1]) && !/glucose/i.test(cells[1]), 'burning row labels peat as an input and never shows glucose as a product');
+    await p.evaluate(() => { location.hash = 'bog'; }); await p.waitForFunction(() => document.querySelector('#bog.is-current'));
+
     // ---------- C2: status text updates at once ----------
     await p.evaluate(() => B2Peat.setState(B2Peat.logic.DEFAULTS, true));
     await p.waitForTimeout(900);
@@ -85,6 +93,17 @@ const ann = p => p.locator('#announcer').textContent();
     await p.fill('#n-year', '2050'); await p.press('#n-year', 'Enter');
     live = true; try { await p.waitForFunction(() => /^2050: /.test(document.getElementById('announcer').textContent), null, { timeout: 400 }); } catch (e) { live = false; }
     T.ok(live, 'C2: typing a year updates the status text at once: ' + await ann(p));
+
+    await p.evaluate(() => { location.hash = 'bog'; }); await p.waitForFunction(() => document.querySelector('#bog.is-current'));
+    await p.evaluate(() => B2Peat.setState({temp:-5,burn:0}, true));
+    await p.locator('#s-burn').evaluate(el => {
+      el.value='50'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+    let warned = true;
+    try { await p.waitForFunction(() => /Frozen peat won.t burn/.test(document.getElementById('announcer').textContent),null,{timeout:400}); }
+    catch (_) { warned = false; }
+    T.ok(warned && /Frozen peat won.t burn/.test(await p.locator('#notes').innerText()),
+      'a committed slider change promptly announces the same current fire warning as the visible note');
 
     // ---------- C3 page ----------
     await p.evaluate(() => { location.hash = 'bog'; }); await p.waitForFunction(() => document.querySelector('#bog.is-current'));

@@ -251,8 +251,9 @@ test('evidence checks read the student\'s own data and null means not enough dat
     assert.equal(e.warmMost, true); assert.equal(e.coldLeast, true); assert.equal(e.directBluest, true); assert.equal(e.foilYellow, true); assert.equal(e.moreLightBluer, true);
     // Beakers put in the other order: the statement is about the warmest beaker, wherever it is.
     assert.equal(L.evidenceChecks({ seed, temps: [43, 27, 18], recorded: [20] }, null).warmMost, true);
-    // Reading only the first row (everything 0 at time 0): foam is equal, so "most" is trivially true for the warmest but we require a real difference at the last row.
-    assert.equal(L.evidenceChecks({ seed, temps: [18, 27, 43], recorded: [0] }, null).warmMost, true);
+    // A 0-minute all-zero baseline is a valid recorded reading, but it cannot support a CER comparison.
+    assert.equal(L.evidenceChecks({ seed, temps: [18, 27, 43], recorded: [0] }, null).warmMost, null);
+    assert.equal(L.evidenceChecks({ seed, temps: [18, 27, 43], recorded: [0] }, null).coldLeast, null);
     // Unrecorded tubes give no verdict.
     assert.equal(L.evidenceChecks(null, { seed, settings: ['direct', 'tilt45', 'foil'], recorded: false }).directBluest, null);
     // No direct tube: no verdict about it; all one setting: nothing to compare.
@@ -276,4 +277,14 @@ test('seeded random numbers are stable and in range', () => {
   for (let i = 0; i < 100; i++) assert.ok(Number.isFinite(a.normal()));
   assert.ok(Number.isFinite(L.makeRng(NaN).uniform()));
   assert.equal(L.hash32('abc'), L.hash32('abc')); assert.notEqual(L.hash32('abc'), L.hash32('abd'));
+});
+
+test('scene evidence counts actual sorted cards and recorded readings, not just a saved configuration', () => {
+  const empty = { cardsPlaced: 0, cardsRight: 0, foamReadings: 0, foamAfterBaseline: false, tubesRead: 0, starchTested: false };
+  assert.deepEqual(L.sceneEvidence({cards:{},decomp:{seed:1,recorded:[]},tilt:{seed:1,settings:['direct','tilt45','foil'],recorded:false}}),empty);
+  const cards = {placed:Object.fromEntries(L.CARDS.map(c=>[c.id,c.zone]))};
+  const decomp = {seed:1,temps:[18,27,43],recorded:[0,0,2,4,99]};
+  assert.deepEqual(L.sceneEvidence({cards,decomp,tilt:{seed:1,settings:['direct','tilt45','foil'],recorded:true,starchDone:true}}),
+    {cardsPlaced:5,cardsRight:5,foamReadings:3,foamAfterBaseline:true,tubesRead:3,starchTested:true});
+  assert.equal(L.sceneEvidence({tilt:{seed:1,settings:[],recorded:true}}).tubesRead,0);
 });

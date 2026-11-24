@@ -164,7 +164,7 @@
         <label class="choice"><input type="radio" name="yeast-foam" value="c" data-why="Try again. Why not: the yeast use oxygen. They do not make it."> oxygen.</label>
       </fieldset>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner"><ul>
-        <li>Yeast use sugar and make carbon dioxide, which makes foam. Warmer water makes yeast work faster, up to about 43 °C. At 55 °C most yeast die. Near 5 °C they barely work.</li>
+        <li>Yeast use sugar and make carbon dioxide, which makes foam. In this model, activity rises through the 43 °C test setting, falls at 55 °C, and is low at 5 °C. This is not a universal cutoff: real yeast responses depend on the strain, conditions and how long they are exposed to heat.</li>
         <li>Typical foam after 20 minutes: about 10 mm cold (18 °C), 38 mm room (27 °C), 62 mm warm (43 °C). Your beakers differ a little, like real beakers.</li>
         <li>Readings are whole mm with a little error. One simulated minute takes 4 seconds. Real foam also depends on the yeast brand, its age and how it was stirred.</li>
       </ul></div></details>
@@ -293,7 +293,6 @@
         <p class="scene-desc" id="tilt-desc">Text description: three simulated test tubes with a plant in blue BTB solution. Choose a light for each tube, then start the night.</p>
         <p class="scene-notice" id="tilt-notice" hidden>The tilt model could not load. Reload the page to try again.</p>
       </div>
-      <div class="your-data panel" id="data-tilt" aria-labelledby="data-tilt-title"><h3 id="data-tilt-title">Your simulated tubes</h3><div class="your-data-body" id="data-tilt-body"><p class="muted">Run the test first. Your results will appear here.</p></div></div>
       <fieldset class="mcq" data-correct="a" data-id="tilt-pattern"><legend>As more light reaches the plant, the BTB…</legend>
         <label class="choice"><input type="radio" name="tilt-pattern" value="a" data-why="Yes. More light means more photosynthesis, which uses up carbon dioxide, so the BTB gets bluer."> gets bluer.</label>
         <label class="choice"><input type="radio" name="tilt-pattern" value="b" data-why="Try again. Why not: look at your table. The foil tube, with no light, was the yellowest."> gets yellower.</label>
@@ -311,7 +310,7 @@
   <section class="step wrap wrap--wide gutter" id="sense5" data-step="Make sense: tilt">
     <header><div class="eyebrow">Part B · Lesson 5 · 9 · Making Sense</div><h2>What did the tubes show?</h2></header>
     <div class="step-body">
-      <p class="small muted">Use your results table from section 8.</p>
+      <div class="your-data panel" id="data-tilt" aria-labelledby="data-tilt-title"><h3 id="data-tilt-title">Your simulated tubes</h3><div class="your-data-body" id="data-tilt-body"><p class="muted">Run the test first. Your results will appear here.</p></div></div>
       <div class="panel map-card"><h3>Your results</h3>
         <div class="pick-row"><label for="sense-bluest">My bluest tube had…</label>
           <select id="sense-bluest"><option value="">Choose</option><option value="direct">direct light (0°)</option><option value="tilt45">tilted light (45°)</option><option value="tilt70">strongly tilted light (70°)</option><option value="foil">foil (no light)</option></select>
@@ -362,12 +361,14 @@
     <header><div class="eyebrow">Parts A and B · 10 · Explain</div><h2>Why is there so much peat?</h2></header>
     <div class="step-body">
       <div class="panel cer" id="cer"><h3>Build your claim</h3>
+        <p class="small cer-model-note" id="cer-model-note"></p>
+        <details class="disclose" id="cer-model-data" hidden><summary>See the recorded model data</summary><div class="inner"><div id="cer-foam-body"></div><div id="cer-tilt-body"></div></div></details>
         <fieldset class="mcq mini" data-id="cer-claim"><legend>Claim</legend>
           <label class="choice"><input type="radio" name="cer-claim" value="a"> Strong sunlight let plants store a lot of carbon, and cold ground slowed decomposers, so it stayed as peat.</label>
           <label class="choice"><input type="radio" name="cer-claim" value="b"> Cold ground made the plants grow faster.</label>
           <label class="choice"><input type="radio" name="cer-claim" value="c"> Decomposers work faster in the cold, so peat piled up.</label>
         </fieldset>
-        <fieldset class="chipset"><legend>Evidence (tap what supports it)</legend>
+        <fieldset class="chipset" id="cer-evidence" aria-describedby="cer-model-note"><legend>Evidence (tap what supports it)</legend>
           <label class="chip"><input type="checkbox" id="cer-ev-1" aria-describedby="cer-ev-1-note"> My warmest beaker had the most foam</label><span class="ev-note" id="cer-ev-1-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-2" aria-describedby="cer-ev-2-note"> My coldest beaker had the least foam</label><span class="ev-note" id="cer-ev-2-note"></span>
           <label class="chip"><input type="checkbox" id="cer-ev-3" aria-describedby="cer-ev-3-note"> My tube with direct light was the bluest</label><span class="ev-note" id="cer-ev-3-note"></span>

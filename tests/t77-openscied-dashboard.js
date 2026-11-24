@@ -14,9 +14,11 @@ const assert = require('node:assert/strict');
       assert.deepEqual(await p.locator('.dashboard-units > section.dashboard-unit.current').evaluateAll(units=>units.map(unit=>unit.getAttribute('aria-labelledby'))),
         ['unit1','unit2','unit3','unit4'], 'published units are listed in curriculum order');
       assert.equal(await p.locator('.dashboard-activity').first().locator('.dashboard-preview').getAttribute('href'), 'openscied-b1-migration.html');
-      assert.equal(await p.locator('.dashboard-coming-soon').getAttribute('open'), null);
-      assert.equal(await p.locator('.dashboard-coming-soon summary').innerText(), 'Coming soon: Unit 5');
-      assert.deepEqual(await p.locator('.dashboard-coming-soon section').evaluateAll(units=>units.map(unit=>unit.getAttribute('aria-labelledby'))), ['unit5']);
+      assert.equal(await p.locator('.dashboard-coming-soon').innerText(), 'Unit 5: No activities published yet.');
+      assert.equal(await p.locator('.dashboard-coming-soon :is(a, button, summary)').count(), 0);
+      const meta = await p.locator('.dashboard-meta').allTextContents();
+      assert.equal(meta.length, 15);
+      assert.ok(meta.every(label=>/\bmin(?:utes)?\b|class periods/.test(label)), 'every entry has a pacing estimate');
       const theme = p.getByRole('group', { name: 'Color theme', exact: true });
       assert.equal(await theme.count(), 1);
       const palette = () => p.evaluate(() => ({

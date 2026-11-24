@@ -16,7 +16,9 @@ const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r =>
       (await unit2.locator('.dashboard-tag').textContent()).trim() === '4 activities available' &&
       (await unit3.locator('.dashboard-tag').textContent()).trim() === '5 activities available',
     'Unit 2 stays at four activities and Unit 3 has five including Cancer Rates Data Dive and DNA Workshop');
-    T.ok(!/Units 1–2/.test(await p.locator('.dashboard-coming-soon summary').innerText()), 'Unit 2 is no longer "coming soon"');
+    const coming = p.locator('.dashboard-coming-soon');
+    T.ok((await coming.innerText()) === 'Unit 5: No activities published yet.' && await coming.locator(':is(a, button, summary)').count() === 0,
+      'only Unit 5 is marked unpublished, as plain noninteractive text');
     // work the real page, then come back
     const q = await ctx.newPage(); await stub(q);
     await q.goto(srv.url + 'openscied-b2-peat-bog-lab.html#bog'); await q.waitForFunction(() => window.B2Peat);

@@ -100,6 +100,7 @@
     const card = find('sg-interactive') && find('sg-interactive').querySelector('article.sg-card');
     const printed = card && card.querySelector('p');
     const cardText = printed && printed.textContent.trim();
+    const application = card && card.querySelector('.sg-card-app-note')?.textContent.trim();
     const original = activeCardReopen();
     if (cardButton) {
       cardButton.hidden = !original || original.hidden;
@@ -107,7 +108,7 @@
       if (original && original.hasAttribute('aria-controls')) cardButton.setAttribute('aria-controls',original.getAttribute('aria-controls'));
       else cardButton.removeAttribute('aria-controls');
     }
-    const copy = [read('sg-action-copy'), cardText, read('sg-turn-note')].filter(Boolean);
+    const copy = [read('sg-action-copy'), cardText, application, read('sg-turn-note')].filter(Boolean);
     target.replaceChildren(...copy.map(text=>make('p','',text)));
     details.hidden = !copy.length;
     find('sg-expanded-summary').textContent = card ? 'Read event card' : 'Turn instructions';
@@ -126,6 +127,9 @@
     find('sg-expanded-phase').textContent = phase;
     find('sg-expanded-action-title').textContent = title;
     find('sg-expanded-player').textContent = player ? player.textContent + ' turn' : '';
+    const path=find('sg-expanded-season-path'), originalPath=find('sg-season-path');
+    path.hidden=originalPath.hidden;
+    path.replaceChildren(...Array.from(originalPath.children,item=>item.cloneNode(true)));
     const result = read('sg-last');
     const why = read('sg-update-why'), next = read('sg-update-next');
     const actualResult = Boolean(result);
@@ -150,6 +154,12 @@
       if(sourceReading){
         const copy=sourceReading.cloneNode(true); copy.removeAttribute('id'); reading.replaceChildren(copy);
       }else if(reading.firstElementChild)reading.replaceChildren();
+    }
+    const example = find('sg-expanded-dice-example'), sourceExample = find('sg-dice-example');
+    example.hidden = sourceExample.hidden;
+    if (example.dataset.firstRoll !== sourceExample.dataset.firstRoll) {
+      example.dataset.firstRoll = sourceExample.dataset.firstRoll;
+      example.open = example.dataset.firstRoll === 'true';
     }
     mirrorContext(); mirrorDice(); mirrorChooser(); mirrorActions();
     if (focusedId) {

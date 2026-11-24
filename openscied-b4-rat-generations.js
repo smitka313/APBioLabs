@@ -19,7 +19,7 @@
   const percent=(n,d)=>d?new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(100*n/d)+'%':'Not defined';
   const fraction=(n,d)=>d?n+' / '+d+' ('+percent(n,d)+')':'Not defined';
   const selectionName={born:'Born',survived:'Survived'};
-  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',crosses:{},activePair:''});
+  const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',analysisChecked:false,crosses:{},activePair:''});
   let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='';
   function decode(raw) {
     const s=JSON.parse(raw);
@@ -32,6 +32,7 @@
     for (const el of $answer) if (typeof s.answers[el.dataset.rgAnswer]==='string') safe.answers[el.dataset.rgAnswer]=s.answers[el.dataset.rgAnswer].slice(0,2400);
     for (const [key,n] of Object.entries(fields)) if(typeof s.person?.[key]==='string')safe.person[key]=tidy(s.person[key],n);
     if(own(METRICS,s.metric))safe.metric=s.metric;
+    safe.analysisChecked=s.analysisChecked===true&&trial.done;
     safe.crosses=B.cleanMap(s.crosses);
     if(typeof s.activePair==='string'&&/^g[2-5]-pair[1-9][0-9]?$/.test(s.activePair))safe.activePair=s.activePair;
     return safe;
@@ -61,10 +62,20 @@
     if(focus){$('#rg-'+step+'-title').focus({preventScroll:true});$('#rg-'+step).scrollIntoView({block:'start'});}
   }
   function gates() {
+    const done={predict:!!state.prediction,model:model.done,analyze:state.analysisChecked,
+      explain:['claim','evidence','limits'].every(key=>state.answers[key]?.trim())};
+    $('#rg-step-hint').hidden=model.done;
+    set('step-hint',state.prediction?'Finish the colony model to unlock Analyze and Explain.':'Save your prediction to unlock the colony model.');
     for(const b of $$('[data-rg-go]')) {
       const wanted=b.dataset.rgGo;
       b.disabled=!available(wanted);
-      if(b.closest('.rg-steps')&&wanted===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+      if(b.closest('.rg-steps')){
+        if(wanted===state.step)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');
+        b.toggleAttribute('data-ose-complete',Boolean(done[wanted]));
+        if(done[wanted])b.setAttribute('aria-description','Complete');
+        else if(b.disabled)b.setAttribute('aria-description',wanted==='model'?'Save your prediction first.':'Finish the colony model first.');
+        else b.removeAttribute('aria-description');
+      }
     }
   }
   function snapshots(s=model) {
@@ -96,17 +107,22 @@
     }
     host.replaceChildren(group);
   }
-  function needsFirstCross(){
-    if(state.action!==0||viewAction!==null)return false;
+  function needsCross(){
+    if(viewAction!==null||M.preview(model)?.action!=='breed')return false;
     const assigned=M.step(model).generations.at(-1).pairs;
-    return !assigned.some(pair=>B.complete(state.crosses[pair.id]));
+    return assigned.length>0&&!assigned.some(pair=>B.complete(state.crosses[pair.id]));
   }
   function crossGate(){
-    const gated=needsFirstCross();
-    $('#rg-next').disabled=gated;
+    const gated=needsCross();
+    const next=$('#rg-next'), near=$('#rg-produce');
+    next.disabled=gated;
+    near.hidden=viewAction!==null||M.preview(model)?.action!=='breed';
+    near.disabled=gated;
+    near.textContent=next.textContent;
+    set('produce-hint',!near.hidden&&gated?'Build one square above to unlock this action.':'');
     $('#rg-cross-gate').hidden=!gated;
     $('#rg-cross-jump').hidden=!gated;
-    set('cross-gate',gated?'Complete either assigned pair’s Punnett square to continue.':'');
+    set('cross-gate',gated?'Build one Punnett square for this generation to unlock Produce. Choose any assigned pair.':'');
   }
   let burrow, nextMotion=false;
   function drawBurrow(record,row,pair,workbench,showMotion){
@@ -148,7 +164,7 @@
     function show(p) {
       if(future){
         const workbench=B.mount(box,{
-          pair:p,progress:state.crosses[p.id],required:state.action===0,tokenUrl:TOKEN,
+          pair:p,progress:state.crosses[p.id],required:needsCross(),tokenUrl:TOKEN,
           announce:message=>announce(message,true),
           onChange:progress=>{state.crosses[p.id]=progress;state.activePair=p.id;save();crossGate();drawBurrow(record,row,p,workbench,false);}
         });
@@ -303,7 +319,7 @@
   }
   function advance() {
     if(viewAction!==null){viewAction=null;activePair='';renderModel();$('#rg-next').focus({preventScroll:true});return;}
-    if(model.done||!state.prediction||needsFirstCross())return;
+    if(model.done||!state.prediction||needsCross())return;
     model=M.step(model);state.action=model.step;activePair='';state.activePair='';nextMotion=true;save();render();
     announce($('#rg-event-title').textContent+'. '+$('#rg-event-explanation').textContent,true);
     if(model.done)$('#rg-model-analyze').focus({preventScroll:true});
@@ -344,15 +360,24 @@
     ev.preventDefault();const choice=$('input[name=rg-prediction]:checked')?.value;
     if(own(PRED,choice)){state.prediction=choice;go('model');}
   });
-  for(const entry of $answer)entry.addEventListener('input',()=>{state.answers[entry.dataset.rgAnswer]=entry.value.slice(0,2400);save();});
+  for(const entry of $answer){
+    entry.addEventListener('input',()=>{state.answers[entry.dataset.rgAnswer]=entry.value.slice(0,2400);save();gates();});
+    entry.addEventListener('blur',()=>{entry.scrollTop=0;});
+  }
   for(const [key,limit] of Object.entries(fields))$('#rg-'+key).addEventListener('input',e=>{state.person[key]=tidy(e.currentTarget.value,limit);save();});
   $('#rg-next').addEventListener('click',advance);
+  $('#rg-produce').addEventListener('click',()=>{advance();$('#rg-event-title').focus({preventScroll:true});});
+  if(state.analysisChecked){
+    $('input[name=rg-concept][value=alleles]').checked=true;
+    set('check-feedback','Complete. The denominator counts every allele copy, two per rat.');
+  }
   $('#rg-check').addEventListener('submit',e=>{
     e.preventDefault();
     const selected=$('input[name=rg-concept]:checked')?.value;
     const msg=selected==='alleles'?'Right. The denominator counts every allele copy of this gene, two per rat.':
       selected==='rats'?'The number of rats is the denominator for the fraction of rats showing resistance. For allele frequency, count copies.':
       selected==='r'?'R copies are the numerator. The denominator counts both R and B copies.':'Choose a denominator first.';
+    state.analysisChecked=selected==='alleles';save();gates();
     set('check-feedback',msg);announce(msg,true);
   });
   $('#rg-download').addEventListener('click',download);$('#rg-copy').addEventListener('click',()=>copy());

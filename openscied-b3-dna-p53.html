@@ -45,7 +45,7 @@
     <div class="eyebrow">DNA Copying, p53 &amp; Gene Expression · Lessons 5–6 companion</div>
     <h1>How do copying mistakes happen, and how does p53 help?</h1>
     <p class="driving-q">Copy a strand of DNA, find the mistakes, test three versions of p53, then follow a gene from DNA to protein.</p>
-    <div class="tags"><span class="tag">Regular Biology</span><span class="tag">Solo or with a partner</span><span class="tag">≈ 60–75 minutes</span><span class="tag">Progress stays in this browser</span></div>
+    <div class="tags"><span class="tag">Regular Biology</span><span class="tag">Solo or with a partner</span><span class="tag">≈ 60–75 min · 2 periods for the full plan</span><span class="tag">Progress stays in this browser</span></div>
   </div>
 </header>
 <nav class="step-nav" aria-label="Activity steps">
@@ -72,6 +72,7 @@
       <div class="split-main prose">
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
         <p class="lede">What makes chromosomes different, and what does p53 do about it?</p>
+        <p><strong>Full investigation: two periods.</strong> Do Part A (DNA copying and p53) in period 1, then Part B (gene expression) in period 2.</p>
         <div class="journey" aria-label="The activity in two parts">
           <div class="part-card"><span class="part-tag">Part A · Lesson 5</span><p><strong>Copy DNA, find the mistakes, test p53.</strong></p>
             <ol class="flow"><li>DNA fork</li><li>Checklist</li><li>Explain</li></ol></div>
@@ -136,10 +137,11 @@
         <h3 id="data-fork-title">Your data from the DNA fork</h3>
         <div class="your-data-body" id="data-fork-body"><p class="muted">Run the model first. Your counts will appear here.</p></div>
         <p class="small muted">Rate = 100 × substitutions ÷ (correct + substitutions). Simulated.</p>
+        <p class="small"><strong>Model shortcut:</strong> Here p53 removes a wrong letter. In a real cell, p53 helps pause division and coordinate repair; it does not directly remove or replace DNA letters.</p>
       </div>
       <details class="disclose"><summary>What this simulation models</summary><div class="inner">
         <p><strong>Modeled:</strong> unzipping, pairing A with T and G with C, occasional wrong pairs, and three versions of p53.</p>
-        <p><strong>Simplified:</strong> a real cell copies billions of letters, proofreads as it goes, and also gains or loses letters. In a real cell p53 works more like a manager: it senses damage and switches on genes that pause the cell cycle, call in repair proteins, or, if damage is too great, tell the cell to die. In the model only p53 (a) fits and works.</p>
+        <p><strong>Simplified:</strong> a real cell copies billions of letters, proofreads as it goes, and also gains or loses letters. In a real cell, damage signals can activate p53. It works more like a manager: it switches on genes that help pause the cell cycle, support repair, or signal cell death if damage is severe. In the model only p53 (a) fits and works.</p>
       </div></details>
     </div>
   </section>
@@ -306,7 +308,7 @@
           <label class="opt"><input type="radio" name="p-explain-copy" value="b" data-ui><span>letters pair at random</span></label>
           <label class="opt"><input type="radio" name="p-explain-copy" value="c" data-ui><span>a new chromosome appears from nothing</span></label></div></div>
         <div class="rrow rrow--stack" data-row="mistake" data-stem="A mistake happens when"><span class="rlabel">A mistake happens when…</span><div class="opts">
-          <label class="opt" data-ok data-idea="1"><input type="radio" name="p-explain-mistake" value="a" data-ui><span>a wrong letter is paired (a mutation)</span></label>
+          <label class="opt" data-ok data-idea="1"><input type="radio" name="p-explain-mistake" value="a" data-ui><span>a wrong letter is paired (a copying error)</span></label>
           <label class="opt"><input type="radio" name="p-explain-mistake" value="b" data-ui><span>p53 attaches to the strand</span></label>
           <label class="opt"><input type="radio" name="p-explain-mistake" value="c" data-ui><span>the cell finishes mitosis</span></label></div></div>
         <div class="rrow rrow--stack" data-row="p53" data-stem="In the model, p53"><span class="rlabel">In the model, p53…</span><div class="opts">
@@ -333,7 +335,7 @@
       <div class="field analysis-question"><label for="explanation-draft"><span class="question-number">2</span>Now say it in your own words</label>
         <textarea id="explanation-draft" rows="4" maxlength="500" placeholder="DNA copying can go wrong when… p53 helps by…" aria-describedby="explanation-draft-hint"></textarea><span class="len-hint" id="explanation-draft-hint" data-for="explanation-draft">2–3 sentences</span></div>
       <div class="callout callout--safety"><div class="callout-title">Check your wording</div>
-        <p>Mistakes do <strong>not</strong> always cause cancer. p53 <strong>fixes</strong> mistakes after copying; it does not stop them.</p></div>
+        <p>A copying error can become a lasting DNA change if it is not corrected. It does <strong>not</strong> always cause cancer. In this model, p53 removes wrong letters after copying. In real cells, p53 helps coordinate the response; other proteins do the repair.</p></div>
 
       <details class="disclose" id="peer-section"><summary>Peer feedback (with a partner)</summary><div class="inner">
       <fieldset class="qcard" data-q="p-peer" data-type="rows" data-label="Peer feedback on each important idea" data-saved="Saved. Now add one specific thing below.">
@@ -458,7 +460,7 @@
             <path d="M200 100 q14 -22 28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0 t28 0" class="fig-protein" stroke-width="5" fill="none" stroke-linecap="round" transform="translate(40 0)"/>
           </svg>
         </figure>
-        <p>The p53 gene is on chromosome 17. A different DNA code makes a different amino acid chain and protein shape, and shape decides how well p53 fits DNA.</p>
+        <p>The <em>TP53</em> gene is on chromosome 17 and gives instructions for the p53 protein. Some DNA changes alter the amino acid chain and can change how the protein folds or works. Other DNA changes leave the amino acid chain unchanged.</p>
         <details class="disclose disclose--sm"><summary>Show more</summary><div class="inner">
           <p>The real p53 gene is roughly 18,000 to 20,000 base pairs; the model strands had 36 to 39, so the model is about 500 times shorter. The lesson says p53 has 375 amino acids; the usual full-length form has 393. The model had 8 or 9. Either way, real genes and proteins are much bigger. Not all DNA codes for a protein: some turns genes on or off.</p>
         </div></details>

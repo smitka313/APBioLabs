@@ -47,6 +47,7 @@
 <div class="cc-lab">
   <div class="cc-panel cc-station">
     <div class="cc-strip"><div><p class="cc-tag" id="cc-scenario">Baseline · All grass available</p><h3 id="cc-round">Round 0 of 12</h3></div><span class="cc-badge" id="cc-board-phase">Before round 1</span></div>
+    <p class="cc-caption"><strong>Model limit:</strong> Grass is the only limiting resource here. This model does not estimate the size of the real herd.</p>
     <div id="cc-board"></div>
     <p class="cc-caption" id="cc-board-caption">Board shows the starting herd and available grass for the next round. One grass unit feeds one wildebeest in the model.</p>
     <div class="cc-turn"><p class="cc-tag">What happened and why?</p><p id="cc-outcome">No rounds yet. Predict how the herd will change, then run round 1 to see who gets enough grass.</p></div>
@@ -107,7 +108,8 @@
 <div class="cc-lab cc-write">
 <div class="cc-panel cc-content cc-write-paper">
 <div class="cc-explain-toolbar"><label for="cc-explain-question">Choose a question</label><span id="cc-explain-progress" class="cc-badge">0 of 5 core responses</span></div>
-<select id="cc-explain-question">
+<p id="cc-explain-help" class="cc-caption">Five core questions and one optional habitat question.</p>
+<select id="cc-explain-question" aria-describedby="cc-explain-help">
 <option value="claim">1. Grass and herd size</option>
 <option value="shortage-rule">2. If/then shortage rule</option>
 <option value="long-run">3. 50-round prediction</option>
@@ -117,7 +119,7 @@
 </select>
 <div class="cc-question" data-cc-question="claim"><label id="cc-prompt-claim" for="cc-claim">How did grass availability affect the herd in your model?</label><p id="cc-hint-claim" class="cc-caption">Use a specific round or compare two runs. Explain what caused the change, not just whether the herd grew.</p><textarea id="cc-claim" aria-describedby="cc-hint-claim" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="shortage-rule" hidden><label id="cc-prompt-shortage-rule" for="cc-shortage-rule">Write an if/then rule for a grass shortage.</label><p id="cc-hint-shortage-rule" class="cc-caption">If there are more wildebeest than grass units, what happens to survival, births, and the next herd? Use a round to check your rule.</p><textarea id="cc-shortage-rule" aria-describedby="cc-hint-shortage-rule" rows="4" maxlength="4000"></textarea></div>
-<div class="cc-question" data-cc-question="long-run" hidden><label id="cc-prompt-long-run" for="cc-long-run">Predict what the baseline graph would look like after 50 rounds.</label><p id="cc-hint-long-run" class="cc-caption">Assume the rules and the total number of roles stay the same. Use the recurring peaks and dips to support your prediction.</p><textarea id="cc-long-run" aria-describedby="cc-hint-long-run" rows="4" maxlength="4000"></textarea></div>
+<div class="cc-question" data-cc-question="long-run" hidden><label id="cc-prompt-long-run" for="cc-long-run">Predict what the baseline graph would look like after 50 rounds.</label><p id="cc-hint-long-run" class="cc-caption">You only ran 12 rounds. Use their recurring peaks and dips to predict what would happen if the same rules and roles continued to round 50. You do not need to run more rounds.</p><textarea id="cc-long-run" aria-describedby="cc-hint-long-run" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="migration-claim" hidden><label id="cc-prompt-migration-claim" for="cc-migration-claim">How could migration affect carrying capacity?</label><p id="cc-hint-migration-claim" class="cc-caption">Explain how movement can make more grass accessible to the herd without creating more grass at any one site.</p><textarea id="cc-migration-claim" aria-describedby="cc-hint-migration-claim" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="habitat-claim" hidden><label id="cc-prompt-habitat-claim" for="cc-habitat-claim">Optional: How did a limiting factor change the herd in the habitat challenge?</label><p id="cc-hint-habitat-claim" class="cc-caption">Name the factor and use evidence from two runs. A population can still grow when a factor limits it. Did it grow as much as it did without the shortage?</p><textarea id="cc-habitat-claim" aria-describedby="cc-hint-habitat-claim" rows="4" maxlength="4000"></textarea></div>
 <div class="cc-question" data-cc-question="limit" hidden><label id="cc-prompt-limit" for="cc-limit">What is one thing this model cannot tell us about the real herd?</label><p id="cc-hint-limit" class="cc-caption">Consider the difference between a classroom rule and a field observation.</p><textarea id="cc-limit" aria-describedby="cc-hint-limit" rows="4" maxlength="4000"></textarea></div>

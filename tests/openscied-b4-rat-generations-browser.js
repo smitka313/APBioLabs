@@ -339,6 +339,7 @@ async function firstCross(page, row, cfg, seed, label) {
   await relocate(page,'allele-'+opposite(firstHeader),'header-0-0',repeatableInput);
   check(await target(page,'header-0-0').getAttribute('data-rg-placed')==='false' &&
     await next.isDisabled(),label+' rejects a nonmatching letter in a Punnett header');
+  check(/Not placed.*genotype/.test(await page.locator('#rg-cross-feedback').innerText()),label+' incorrect allele gives an actionable nearby message');
   await put(page,'allele-'+firstHeader,'header-0-0',cfg.width===1366?'mouse':repeatableInput,label);
   const partial = await placedTargets(page);
   check(partial.length === 3 && await next.isDisabled(), label + ' a partially built cross cannot be recorded');
@@ -632,8 +633,18 @@ async function play(browser, base, cfg) {
       const preview = Model.preview(model);
       const subsequent = Model.step(model);
       if (action === 1) await firstCross(page, subsequent.generations.at(-1), cfg, seed, label);
-      if (action === 4 || action === 6) check(await page.locator('#rg-next').isEnabled(),
-        label + ' later crosses remain optional for classroom pacing at action ' + action);
+      if ([2,4,6].includes(action)) {
+        const cross=subsequent.generations.at(-1).pairs[0];
+        if(cross){
+          check(await page.locator('#rg-next').isDisabled(),label+' each new generation requires a different square');
+          await use(page.locator('#rg-pairs [data-rg-pair="'+cross.id+'"]'),cfg);
+          const input=cfg.touch?'tap':'keyboard';
+          for(const role of [0,1])await put(page,'parent-'+role,'parent-'+role,input,label);
+          for(const role of [0,1])for(const i of [0,1])await put(page,'allele-'+cross.parents[role].genotype[i],'header-'+role+'-'+i,input,label);
+          for(let i=0;i<4;i++)for(const role of [0,1])await put(page,'allele-'+cross.parents[role].genotype[role===0?Math.floor(i/2):i%2],'cell-'+i+'-'+role,input,label);
+          check(await page.locator('#rg-next').isEnabled(),label+' a finished square unlocks the next generation');
+        }
+      }
       const next = page.locator('#rg-next');
       await use(next, cfg);
       await waitAction(page, action);

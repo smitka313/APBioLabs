@@ -67,12 +67,14 @@ async function shoot(page,label,anchor) {
   await page.screenshot({path:path.join(OUT,label+'.png'),animations:'disabled',timeout:15000});
 }
 async function download(page,size) {
+  await id(page,'ju-name').fill('J. Student');
+  await id(page,'ju-period').fill('4');
   const fileEvent=page.waitForEvent('download');
   await activate(id(page,'ju-download'),size);
   const file=await fileEvent;
   check(/junco.*\.(txt|json|md)$/i.test(file.suggestedFilename()),'the student receives a named junco work export');
   const saved=await fs.readFile(await file.path(),'utf8');
-  check(saved.includes(CLAIM)&&saved.includes(LIMIT)&&saved.includes(OBSERVATION),
+  check(saved.includes(CLAIM)&&saved.includes(LIMIT)&&saved.includes(OBSERVATION)&&saved.includes('Name: J. Student')&&saved.includes('Class period: 4'),
     'the downloaded file contains the original field observation, claim, and limitation');
 }
 
@@ -135,11 +137,32 @@ async function exerciseFlightSimulation(page,size,label) {
     label+' starting another trial is explicit and keeps the chosen settings until changed');
   await runFlight(2,'mountain','incubating',2,0.2);
   const completed=await rows();
+  if(size.width===390) {
+    const trialTable=id(page,'ju-sim-trials');
+    check(await trialTable.getByRole('columnheader',{name:'Trial',exact:true}).count()===1,
+      label+' the compact number heading keeps the accessible name Trial');
+    await page.setViewportSize({width:375,height:size.height});
+    const logFit=await trialTable.evaluate(el=>{
+      const pane=el.closest('details'), context=[...el.querySelectorAll('tbody td')].find(cell=>cell.textContent==='Incubating');
+      if(!pane||!context) return false;
+      const range=document.createRange(); range.selectNodeContents(context);
+      return el.getBoundingClientRect().right<=pane.getBoundingClientRect().right+1
+        && document.documentElement.scrollWidth<=innerWidth+1 && range.getClientRects().length===1;
+    });
+    check(logFit,label+' the trial table fits at 375 px and keeps Incubating readable on one line');
+    await page.setViewportSize({width:size.width,height:size.height});
+  }
   await shoot(page,label+'-1b-flight-finished','ju-sim-frame');
   await a11y(page,'#ju-field-simulation',label+' optional field simulation');
   check(await publishedGroup.inputValue()===initialGroup&&
     JSON.stringify(await plottedMeans(publishedTable))===JSON.stringify(published),
     label+' the simulated choices and results do not change the published evidence');
+  await activate(start,size);
+  const change=id(page,'ju-sim-change');
+  check(await change.isVisible()&&await site.isDisabled(),label+' an unstarted setup error can be corrected');
+  await activate(change,size);
+  check(await site.isEnabled()&&await approach.isDisabled()&&(await rows()).length===2,label+' cancel unlocks setup without discarding or adding records');
+  await site.selectOption('urban');
   await page.reload();
   await id(page,'field').waitFor({state:'visible'});
   if(!await panel.evaluate(el=>el.open)) await activate(panel.locator('summary').first(),size);

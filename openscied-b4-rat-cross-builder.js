@@ -66,9 +66,9 @@
     const grid=create('div','rg-cross-grid');
     const visibleFeedback=create('p','rg-cross-feedback');
     visibleFeedback.id='rg-cross-feedback';
-    shell.append(instruction,sources,parents,grid,visibleFeedback);
+    shell.append(instruction,sources,visibleFeedback,parents,grid);
     host.replaceChildren(shell);
-    function say(message){feedback=message;visibleFeedback.textContent=message;announce?.(message);}
+    function say(message,retry=false){feedback=message;visibleFeedback.textContent=message;visibleFeedback.toggleAttribute('data-retry',retry);announce?.(message);}
     function makeButton(cls,visible,label) {
       const b=create('button',cls,visible);b.type='button';b.setAttribute('aria-label',label);
       return b;
@@ -155,7 +155,11 @@
     }
     function place(key,slot,keepFocus) {
       const result=placements(pair,p,key,slot);
-      if(result.error){say(result.error);return false;}
+      for(const el of shell.querySelectorAll('[data-rg-rejected]'))el.removeAttribute('data-rg-rejected');
+      if(result.error){
+        shell.querySelector('[data-rg-target="'+slot+'"]')?.setAttribute('data-rg-rejected','');
+        say('Not placed. '+result.error,true);return false;
+      }
       p=result.progress;selected='';feedback=result.activity;
       if(complete(p))feedback+=' Cross complete.';
       render(keepFocus);onChange?.(p);say(feedback);return true;
@@ -211,11 +215,12 @@
       const hit=controlAt(doc.elementFromPoint(event.clientX,event.clientY));
       if(!last.moved){
         if(hit===last.control)activate(hit,false);
+        else if(last.key)say('Not placed. Choose a chip, then tap or drag it to an open slot.',true);
         return;
       }
       if(!last.key)return;
       if(!hit?.dataset.rgTarget||!shell.contains(hit)){say('Drop on a parent or allele slot, or tap a chip and then a slot.');return;}
-      if(hit.disabled){say('Choose an open slot for this part of the cross.');return;}
+      if(hit.disabled){say('Not placed. Choose an open slot for this part of the cross.',true);return;}
       place(last.key,hit.dataset.rgTarget,false);
     }
     shell.addEventListener('pointerup',event=>end(event));

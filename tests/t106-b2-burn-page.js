@@ -104,8 +104,9 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
     await p.selectOption('#pred-peat-ignite', 'slowly'); await p.selectOption('#pred-peat-energy', 'more'); await p.selectOption('#pred-grass-ignite', 'slowly');
     T.ok(/Burn and record peat to check/.test(await fb(p, 'pred-peat')) && await p.locator('#feedback-pred-peat').getAttribute('data-state') === 'partial', 'predictions wait for data');
     await go(p, 'peat');
-    await p.check('input[name="cer-claim"][value="a"]'); await p.check('#cer-ev-1'); await p.check('#cer-ev-4'); await p.check('#cer-ev-2'); await p.check('#cer-ev-3');
-    T.ok([1, 2, 4].length === 3 && (await Promise.all([1, 2, 4].map(i => p.locator('#cer-ev-' + i + '-note').innerText()))).every(t => /Burn and record peat and at least one other fuel/.test(t)), 'evidence chips say what is missing before there is data');
+    await p.check('input[name="cer-claim"][value="a"]');
+    T.ok((await Promise.all([1, 2, 3, 4].map(i => p.locator('#cer-ev-' + i).isDisabled()))).every(Boolean) &&
+      /Burn and record peat and at least one other fuel/.test(await p.locator('#cer-model-note').innerText()), 'missing data is explained and cannot be cited');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'foundational', 'level is foundational without data-backed evidence');
 
     // inject honest data through the scene API and watch everything derived recompute
@@ -113,6 +114,7 @@ const ALL = ['grass', 'leaves', 'wood', 'charcoal', 'peat'];
       const seed = B2Burn.seed('check');
       B2Burn.saveState('burn', { seed, fuel: 'peat', current: null, records: a.map(fuel => ({ fuel, n: 1, obs: [] })) });
     }, ALL);
+    for (const i of [1, 2, 3, 4]) await p.check('#cer-ev-' + i);
     T.ok(/^✓ Your data show this: Most mass lost: Peat \(2\d\.\d g\)/.test(await p.locator('#cer-ev-1-note').innerText()), 'peat lost the most mass, verified and named: ' + await p.locator('#cer-ev-1-note').innerText());
     T.ok(/^✓ Your data show this: Biggest BTB change: Peat \(\+3\.\d\)/.test(await p.locator('#cer-ev-2-note').innerText()), 'peat made the biggest BTB change, verified: ' + await p.locator('#cer-ev-2-note').innerText());
     T.ok(/^✓ Your data show this: Temperature rose the most: Peat/.test(await p.locator('#cer-ev-3-note').innerText()) && /^✓ Your data show this: Longest burn: Peat/.test(await p.locator('#cer-ev-4-note').innerText()), 'peat warmest and longest burn verified');

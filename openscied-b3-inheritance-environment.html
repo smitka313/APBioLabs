@@ -76,8 +76,8 @@
       <div class="split-main prose">
         <p class="resume-bar" id="resume-bar" hidden><span>Welcome back.</span> <a class="btn btn--sm btn--primary" href="#overview">Resume</a></p>
         <div class="callout callout--safety" id="content-note"><div class="callout-title">A note before you start</div><p>This activity talks about cancer, young people who have had it, and families who lost relatives. You can pause, skip a part, or step away at any time. Nobody is asked to share anything about their own family’s health.</p></div>
-        <div class="part-card"><span class="part-tag">Part A · Lesson 8 · sections 2–8</span><p><strong>Why do some cancers seem to run in families?</strong> Read pedigrees and follow alleles.</p></div>
-        <div class="part-card"><span class="part-tag">Part B · Lesson 9 · sections 9–14</span><p><strong>How do genes and the environment work together?</strong> Explore skin cancer data and run a virtual UV test.</p></div>
+        <div class="part-card"><span class="part-tag">Part A · Lesson 8 · sections 2–8</span><p><strong>Why does cancer seem to run in some families?</strong> Follow alleles through pedigrees.</p></div>
+        <div class="part-card"><span class="part-tag">Part B · Lesson 9 · sections 9–14</span><p><strong>How can the environment affect cancer risk?</strong> Explore skin cancer data and test UV on virtual yeast.</p></div>
         <p>Cancer is not inevitable and is nobody’s fault. Alleles, UV and chance all matter. Nothing here predicts anyone’s health.</p>
         <details class="disclose teacher-note"><summary>For teachers</summary><div class="inner"><ul>
           <li>Preview the three linked videos. Offer a way to skip them.</li>
@@ -86,7 +86,7 @@
         </ul></div></details>
       </div>
       <aside class="split-side">
-        <div class="callout callout--tip"><div class="callout-title">How it works</div><p>Tap to answer. Feedback is instant. Yeast and gamete data are simulated.</p></div>
+        <div class="callout callout--tip"><div class="callout-title">How it works</div><p>Get instant feedback. Yeast and gamete data are simulated.</p></div>
       </aside>
     </div>
   </section>
@@ -110,7 +110,7 @@
   <section class="step wrap wrap--wide gutter" id="families" data-step="Two families">
     <header><div class="eyebrow">Part A · Lesson 8 · 3 · Two families</div><h2>Meet two young people with Li-Fraumeni syndrome</h2></header>
     <div class="step-body">
-      <p class="small muted">Short interviews with young cancer survivors, on YouTube. Watch with your class, or skip.</p>
+      <p class="small muted">Watch these short interviews with young cancer survivors, or skip.</p>
       <ul class="video-links">
         <!-- TO CONFIRM (owner): which YouTube id is which interview; the links PDF and the Teacher Edition list them in different orders. -->
         <li><a href="https://youtu.be/U1Zifbvvl0Q" target="_blank" rel="noopener noreferrer">Video A: Lauren’s family history <span class="small">(opens in a new tab)</span></a></li>
@@ -118,7 +118,7 @@
         <li><a href="https://youtu.be/-NhqJRIJJsw" target="_blank" rel="noopener noreferrer">Video C: Lauren talks about surgery (about 1 minute) <span class="small">(opens in a new tab)</span></a></li>
       </ul>
       <article class="card-read panel"><h3>What is LFS?</h3>
-        <p>Li-Fraumeni syndrome (LFS) is inherited. A person is born with one p53 allele that does not fix mutations well. That raises the chance of several kinds of cancer. Not everyone with it gets cancer.</p></article>
+        <p>Li-Fraumeni syndrome (LFS) involves a harmful change in <em>TP53</em>, the gene for p53. The change is present at birth and can be inherited. It raises the risk of several cancers without making cancer certain.</p></article>
       <div class="field"><label for="notice">I notice / I wonder <span class="hint">(1 sentence, optional)</span></label><textarea id="notice" rows="2" placeholder="I wonder…" maxlength="240"></textarea></div>
       <details class="disclose"><summary>Words to know</summary><div class="inner"><dl class="glossary">
         <dt>Allele</dt><dd>One version of a gene.</dd>
@@ -167,16 +167,16 @@
   <section class="step wrap wrap--wide gutter" id="lakita" data-step="Lakita’s family">
     <header><div class="eyebrow">Part A · Lesson 8 · 5 · Pedigree model</div><h2>Lakita’s family</h2></header>
     <div class="step-body">
-      <p class="small muted">A fixes mutations. B does not. Tap a person, then pick every genotype that could be true.</p>
+      <p class="small muted">A helps cells respond to DNA damage. B does not. Pick each possible genotype.</p>
       <div class="scene-host" id="pedigree-scene" data-scene="pedigree">
         <canvas role="img" aria-label="Pedigree of Lakita’s family: two grandparents, five children, a mother, and Lakita." width="960" height="340"></canvas>
         <p class="scene-desc" id="pedigree-desc">Text description: Lakita’s grandfather (not shaded) and grandmother (shaded, deceased) have five children: an aunt not tested, a shaded deceased aunt, a shaded deceased uncle, an aunt not tested, and Lakita’s father (shaded, deceased). Lakita’s father and her mother (not shaded) have Lakita (shaded).</p>
         <p class="scene-notice" id="pedigree-notice" hidden>Interactive model coming in the next update. The questions below already work.</p>
       </div>
       <div class="your-data panel" id="data-pedigree" aria-labelledby="data-pedigree-title"><h3 id="data-pedigree-title">Your pedigree picks</h3><div class="your-data-body" id="data-pedigree-body"><p class="muted">Run the model first. Your picks will appear here.</p></div></div>
-      <fieldset class="mcq" data-correct="a" data-id="lk-source"><legend>Lakita’s non-fixing allele came from…</legend>
-        <label class="choice"><input type="radio" name="lk-source" value="a" data-why="Yes. Her father had it and passed it on. Her mother gave her an allele that fixes mutations."> her father.</label>
-        <label class="choice"><input type="radio" name="lk-source" value="b" data-why="Try again. Why not: her mother has only alleles that fix mutations."> her mother.</label>
+      <fieldset class="mcq" data-correct="a" data-id="lk-source"><legend>Lakita inherited allele B from…</legend>
+        <label class="choice"><input type="radio" name="lk-source" value="a" data-why="Yes. She inherited B from her father and A from her mother."> her father.</label>
+        <label class="choice"><input type="radio" name="lk-source" value="b" data-why="Try again. Her mother carries only allele A."> her mother.</label>
         <label class="choice"><input type="radio" name="lk-source" value="c" data-why="Try again. Why not: a change in a skin cell is not in egg or sperm, so it cannot be passed on."> a change in her own skin cell.</label>
       </fieldset>
       <fieldset class="mcq" data-correct="b" data-id="lk-birth"><legend>Her father had the allele…</legend>
@@ -184,8 +184,8 @@
         <label class="choice"><input type="radio" name="lk-birth" value="b" data-why="Yes. It was in his body cells and his sperm cells from birth, so he could pass it on."> since birth, in all his cells.</label>
       </fieldset>
       <fieldset class="mcq" data-correct="a" data-id="lk-how"><legend>How can that allele lead to cancer?</legend>
-        <label class="choice"><input type="radio" name="lk-how" value="a" data-why="Yes. Mutations pile up unrepaired, so cells can grow out of control. It raises risk. It does not guarantee cancer."> Cells cannot fix mutations as well, so more mutations stay.</label>
-        <label class="choice"><input type="radio" name="lk-how" value="b" data-why="Try again. Why not: the allele does not make cancer cells directly. It affects repair."> It turns normal cells into cancer cells at once.</label>
+        <label class="choice"><input type="radio" name="lk-how" value="a" data-why="Yes. Mutations pile up unrepaired, so cells can grow out of control. It raises risk. It does not guarantee cancer."> Less DNA damage is repaired, so mutations can build up.</label>
+        <label class="choice"><input type="radio" name="lk-how" value="b" data-why="Try again. Why not: the allele does not make cancer cells directly. It affects repair."> It immediately turns cells cancerous.</label>
       </fieldset>
       <details class="disclose"><summary>What this models</summary><div class="inner"><ul>
         <li>Shaded means at least one B. The two people the lesson tested have AA. Anyone else who is not shaded could carry a B too, because not everyone with a B gets cancer.</li>
@@ -204,7 +204,7 @@
           <li>Genes sit on <strong>chromosomes</strong>. Genes close together usually travel together, unless <strong>crossing over</strong> swaps pieces.</li>
         </ul>
       </div>
-      <p class="small muted">p53: A fixes, B does not. BRCA1: C lower risk, D higher. Darker shading means more likely to get cancer.</p>
+      <p class="small muted">In this model, TP53 allele A helps respond to DNA damage; B does not. BRCA1: C means lower risk; D means higher. Darker shading shows risk, not a diagnosis.</p>
       <div class="scene-host" id="two-gene-scene" data-scene="twoGene">
         <canvas role="img" aria-label="Two-gene pedigree: a father with chromosomes A-C and B-D, a mother with A-C and A-C, and three children." width="960" height="340"></canvas>
         <p class="scene-desc" id="two-gene-desc">Text description: the father has one chromosome with p53 A and BRCA1 C, and one with p53 B and BRCA1 D (highest likelihood). The mother has A-C on both. Child 1 has A-C and A-C. Child 2 has B-C and A-C. Child 3 has A-D and A-C.</p>
@@ -262,9 +262,9 @@
   <section class="step wrap wrap--wide gutter" id="exit8" data-step="Exit ticket">
     <header><div class="eyebrow">Part A · Lesson 8 · 8 · Exit ticket</div><h2>Check what you learned</h2></header>
     <div class="step-body">
-      <fieldset class="mcq" data-exit="q1" data-id="exit-q1"><legend>Population A makes gametes by meiosis without crossing over. Population B uses crossing over. Which has more variation?</legend>
-        <label class="choice"><input type="radio" name="exit-q1" value="a"> Population A.</label>
-        <label class="choice"><input type="radio" name="exit-q1" value="b"> Population B.</label>
+      <fieldset class="mcq" data-exit="q1" data-id="exit-q1"><legend>Both gamete sets come from the same parent. Set A had no crossing over; set B had crossing over. Which set has more kinds?</legend>
+        <label class="choice"><input type="radio" name="exit-q1" value="a"> Gamete set A.</label>
+        <label class="choice"><input type="radio" name="exit-q1" value="b"> Gamete set B.</label>
         <label class="choice"><input type="radio" name="exit-q1" value="c"> Neither has variation.</label>
       </fieldset>
       <figure class="chrom-figure">
@@ -273,7 +273,7 @@
           <g class="c-gene"><rect x="90" y="24" width="12" height="38"/><rect x="132" y="24" width="12" height="38"/><rect x="290" y="24" width="12" height="38"/><rect x="440" y="24" width="12" height="38"/></g>
           <g class="c-text" text-anchor="middle"><text x="96" y="82">a</text><text x="138" y="82">b</text><text x="296" y="82">c</text><text x="446" y="82">d</text></g></svg>
       </figure>
-      <fieldset class="mcq" data-exit="q2" data-id="exit-q2"><legend>Crossing over is least likely between genes that are close together. Which pair is most likely inherited together?</legend>
+      <fieldset class="mcq" data-exit="q2" data-id="exit-q2"><legend>Crossing over is least likely between nearby genes. Which pair would most often be inherited together?</legend>
         <label class="choice"><input type="radio" name="exit-q2" value="ab"> a and b.</label>
         <label class="choice"><input type="radio" name="exit-q2" value="ac"> a and c.</label>
         <label class="choice"><input type="radio" name="exit-q2" value="ad"> a and d.</label>
@@ -316,7 +316,7 @@
         <h3>Background</h3>
         <ul class="bg-list">
           <li><strong>Melanoma</strong> is a skin cancer that starts in melanin-making cells.</li>
-          <li>A higher <strong>UV index</strong> means stronger UV. Each dot is one place that counts cancer cases.</li>
+          <li>A higher <strong>UV index</strong> means stronger UV. Each dot is one site that counts cases.</li>
         </ul>
       </div>
       <div class="scene-host" id="skin-data-scene" data-scene="skin">
@@ -326,7 +326,7 @@
       </div>
       <div class="your-data panel" id="data-skin" aria-labelledby="data-skin-title"><h3 id="data-skin-title">What you looked at</h3><div class="your-data-body" id="data-skin-body"><p class="muted">Open the graphs first. What you viewed will appear here.</p></div></div>
       <details class="disclose"><summary>Data table (approximate values)</summary><div class="inner"><div id="skin-table"></div><p class="small muted">Approximate values read by eye from the lesson’s figures. Source: Eide and Weinstock, 2005, doi:10.1001/archderm.141.4.477. The figures do not state the y-axis unit.</p></div></details>
-      <div class="callout callout--safety"><div class="callout-title">About the group labels</div><p>These labels (the study used White Non-Hispanic, Black and Black-Hispanic, and White Hispanic) describe registry groups. They are not a biological split of people. Melanin varies within every group, and groups differ in many other ways.</p></div>
+      <div class="callout callout--safety"><div class="callout-title">About the group labels</div><p>The study’s registry categories are not biological divisions. Melanin varies within every group, and groups differ in other ways.</p></div>
       <fieldset class="mcq" data-correct="a" data-id="skin-white"><legend>In the White-labeled graph, as UV goes up, the rate…</legend>
         <label class="choice"><input type="radio" name="skin-white" value="a" data-why="Yes. The trend rises, though sites are not perfectly in line."> tends to rise.</label>
         <label class="choice"><input type="radio" name="skin-white" value="b" data-why="Try again. Why not: look at Hawaii, the highest UV site, which has the highest rate."> tends to fall.</label>
@@ -335,7 +335,7 @@
         <label class="choice"><input type="radio" name="skin-black" value="a" data-why="Try again. Why not: some sites with modest UV have high rates, so the line is not clear."> just as clear.</label>
         <label class="choice"><input type="radio" name="skin-black" value="b" data-why="Yes. It is less clear, so something besides UV is also at work. A graph shows a pattern, not a cause."> less clear.</label>
       </fieldset>
-      <fieldset class="chipset" data-id="skin-other"><legend>What else could differ between sites and groups? Tap all that could matter.</legend>
+      <fieldset class="chipset" data-id="skin-other"><legend>What else might differ across sites or groups? Select all that apply.</legend>
         <label class="chip"><input type="checkbox" id="skin-other-a"> Time outdoors</label>
         <label class="chip"><input type="checkbox" id="skin-other-b"> Clothing and shade</label>
         <label class="chip"><input type="checkbox" id="skin-other-c"> Health care and screening</label>
@@ -353,9 +353,9 @@
         <h3>Background</h3>
         <ul class="bg-list">
           <li><strong>UV light</strong> can damage DNA. Damage that is not repaired can become a mutation.</li>
-          <li><strong>Yeast</strong> are tiny cells. On food in a dish, each survivor grows into a <strong>colony</strong> you can count.</li>
+          <li>Surviving <strong>yeast</strong> cells grow into countable <strong>colonies</strong>.</li>
           <li><em>Wild-type</em> yeast repair most UV damage. <em>UV-sensitive</em> yeast cannot, so more die.</li>
-          <li>A higher <strong>SPF</strong> lets less UV through. Foil blocks all of it. A dark dish gets none.</li>
+          <li>Higher <strong>SPF</strong> lets less UV through. Foil blocks UV; the dark control gets none.</li>
           <li><strong>Fair test:</strong> change one thing, measure one thing, keep the rest the same.</li>
         </ul>
       </div>
@@ -399,7 +399,7 @@
   <section class="step wrap wrap--wide gutter" id="yeast" data-step="Virtual yeast">
     <header><div class="eyebrow">Part B · Lesson 9 · 12 · Virtual experiment</div><h2>Run the virtual yeast test</h2></header>
     <div class="step-body">
-      <p class="sim-tag"><strong>SIMULATED.</strong> A model, not a real lab. Real UV labs need adult supervision.</p>
+      <p class="sim-tag"><strong>SIMULATED.</strong> Colonies show yeast survival, not cancer in people. Real UV labs need adult supervision.</p>
       <div class="scene-host" id="yeast-uv-scene" data-scene="yeast">
         <canvas role="img" aria-label="Virtual petri dishes of UV-sensitive yeast after growing, with different numbers of colonies." width="960" height="340"></canvas>
         <p class="scene-desc" id="yeast-uv-desc">Text description: simulated petri dishes of yeast after UV exposure. Dishes with more UV and less cover show fewer colonies.</p>
@@ -445,7 +445,7 @@
       <div class="card-row">
         <article class="card-read panel"><h3>UV hits DNA</h3><p>UV can change a DNA letter. A common change turns C into T.</p>
           <details class="more"><summary>Show more</summary><p>This is a simplified picture. Real UV damage links neighboring letters, and copying then often puts in a T.</p></details></article>
-        <article class="card-read panel"><h3>Changed letter, changed protein</h3><p>A new letter can change an amino acid and the protein’s shape. A changed p53 may repair less well.</p></article>
+        <article class="card-read panel"><h3>Changed letter, changed protein</h3><p>A DNA change can alter an amino acid and protein shape. Changed p53 may coordinate the response to DNA damage less effectively.</p></article>
         <article class="card-read panel"><h3>Melanin is an umbrella</h3><p>Skin cells make melanin, a pigment. It absorbs UV and gives off heat, so less reaches the DNA. People differ in how much they make.</p>
           <details class="more"><summary>Show more</summary><p>Dr. Jewel Plummer Cobb studied melanin and skin cancer, and did early research on cancer medicines.</p></details></article>
       </div>
@@ -460,7 +460,7 @@
         <li>Melanin is a pigment, not a protein.</li>
         <li>The C-to-T picture simplifies UV damage.</li>
         <li>Yeast repair genes are an analogy to p53, not p53.</li>
-        <li>LFS is an allele that does not fix mutations well, not a missing gene.</li>
+        <li>LFS involves a harmful TP53 change, not a missing gene. p53 helps coordinate the response to DNA damage; it does not repair DNA itself.</li>
       </ul></div></details>
       <fieldset class="mcq" data-correct="b" data-id="uv-enough"><legend>Can we say UV caused fewer colonies in the yeast?</legend>
         <label class="choice"><input type="radio" name="uv-enough" value="a" data-why="Try again. Why not: you did change UV and keep the rest the same, so you can say more than that."> No, only a pattern.</label>
@@ -502,14 +502,14 @@
 
       <div id="investigation-report" class="investigation-report" aria-label="Your summary"></div>
       <div class="submit-card">
-        <p>Your work saves automatically in this browser. Nothing you pick or type is sent anywhere. Use <strong>Download my work</strong> to keep a copy or give it to your teacher.</p>
+        <p>Work saves in this browser, not online. <strong>Download my work</strong> to keep a copy or share with your teacher.</p>
         <div id="save-status" class="small"></div>
         <div class="row">
           <button class="btn btn--primary" type="button" id="download-work">Download my work (.json)</button>
           <button class="btn" type="button" id="print-work">Print / Save as PDF</button>
           <button class="btn btn--danger" type="button" id="reset-work">Clear this activity</button>
         </div>
-        <p class="small muted">Other people using this device may see this work until it is cleared.</p>
+        <p class="small muted">Others on this device may see your saved work.</p>
       </div>
       <div class="attribution">
         <h3>Source and attribution</h3>

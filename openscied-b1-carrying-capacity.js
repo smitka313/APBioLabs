@@ -93,7 +93,7 @@
     if (state.page === 'run') {
       const series = [{name:'Baseline · 100% grass',line:true,dots:true,points:rounds(state.baseline)}];
       if (compared) series.push({name:'Comparison · '+state.comparison.grassPercent+'% grass',line:true,dots:true,dash:[6,4],points:rounds(state.comparison)});
-      const spec = {responsive:true,height:300,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:20,series,simTag:false,hLines:marks};
+      const spec = {responsive:true,height:300,xLabel:'Round',yLabel:'Wildebeest (model individuals)',xMin:0,xMax:ROUNDS,yMin:0,yMax:L.BASELINE.roleSlots,series,simTag:false,hLines:marks};
       if (chart) chart.update(spec); else chart = Lab.chart('#cc-chart',spec);
     }
     range.update({baseline:state.baseline,comparison:state.comparison});
@@ -108,7 +108,7 @@
     $$('[data-cc-question]').forEach(el=>{el.hidden = el.dataset.ccQuestion !== state.question;});
     $('#cc-explain-prev').disabled = index === 0;
     $('#cc-explain-next').disabled = index === questions.length-1;
-    $('#cc-explain-position').textContent = 'Question '+(index+1)+' of '+questions.length;
+    $('#cc-explain-position').textContent = 'Question '+(index+1)+' of '+questions.length+(state.question==='habitat-claim'?' · Optional':'');
     $$('[data-cc-evidence]').forEach(d=>{d.open = d.dataset.ccEvidence===evidenceFor[state.question];});
     $('#cc-writing-migration').hidden = state.question!=='migration-claim';
     updateExplainProgress();

@@ -1,5 +1,5 @@
 /* Burn demonstration scene (openscied-b2-burn-lab.html #burn-scene): the flow is weigh and read the temperature (before), burn, then lift the dome and weigh and read the
-   temperature again (after), tap observations, record. The laser thermometer is used ONLY at the two weighings (no live reading while it burns); the before reading is stored and
+   temperature again (after), which automatically saves the sample. Then add optional observations. The laser thermometer is used ONLY at the two weighings (no live reading while it burns); the before reading is stored and
    survives a reload; the after reading is only available once the burn has finished. The drawing and text description follow the model, the table matches the model, a second
    sample differs, three samples per fuel at most, Start over, reduced motion shows the finished burn, canvas not blank.
    Run: NODE_PATH=$(npm root -g) node tests/t107-b2-burn-scene.js */
@@ -14,8 +14,8 @@ const laser = async p => { const t = await p.locator('#burn-scene canvas').getAt
 const dotInArea = l => !!l && Math.hypot(l.x - l.area.x, l.y - l.area.y) <= l.area.r && l.area.r > 4;
 const tempIn = lab => { const m = /reads (\d+) degrees/.exec(lab); return m ? +m[1] : null; };
 const weigh = p => p.locator('[data-bn="weigh"]').click();
-const finishAndRecord = async (p, obs) => { await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="after"]').click(); for (const o of obs || []) await p.locator('fieldset.bn-obs .bn-chip', { hasText: o }).click(); await p.locator('[data-bn="record"]').click(); };
-const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel); await weigh(p); await p.locator('[data-bn="burn"]').click(); await finishAndRecord(p, obs); };
+const finishAndContinue = async (p, obs) => { if (await p.locator('[data-bn="skip"]').count()) await p.locator('[data-bn="skip"]').click(); await p.locator('[data-bn="after"]').click(); for (const o of obs || []) await p.locator('fieldset.bn-obs .bn-chip', { hasText: o }).click(); await p.locator('[data-bn="next"]').click(); };
+const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel); await weigh(p); await p.locator('[data-bn="burn"]').click(); await finishAndContinue(p, obs); };
 (async () => {
   const browser = await T.launch(), server = await T.serve();
   try {
@@ -77,7 +77,7 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
 
     // ----- finished, dome still down: the after reading is available only now
     if (await p.locator('[data-bn="skip"]').count()) await p.locator('[data-bn="skip"]').click();
-    T.ok(await p.locator('[data-bn="after"]').isVisible() && await p.locator('[data-bn="record"]').count() === 0 && await p.locator('[data-bn="burn"]').count() === 0, 'finished: Lift the dome, weigh and read temperature (after) is offered; Record and Burn are not yet');
+    T.ok(await p.locator('[data-bn="after"]').isVisible() && await p.locator('[data-bn="record"]').count() === 0 && await p.locator('[data-bn="burn"]').count() === 0, 'finished: the second weighing is offered, but the result is not recorded yet');
     const labF = await label(p);
     T.ok(/still over the ash/.test(labF) && /rests on the bench until you weigh again/.test(labF) && tempIn(labF) === null && !/flask/i.test(labF), 'finished, before the second weighing: the dome is still down, no temperature reading');
     const rf = (await p.locator('.bn-read').first().innerText()).replace(/\n/g, ' ');
@@ -85,7 +85,10 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     // ----- AFTER: lift the dome, weigh and read
     await p.locator('[data-bn="after"]').click();
     const stA = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
-    T.ok(stA.burn.current && stA.burn.current.after === true, 'the after weighing is stored');
+    T.ok(stA.burn.current===null && stA.burn.review?.fuel==='grass' && stA.burn.records.length===1,
+      'the second weighing automatically stores one recorded result and opens review');
+    await p.waitForFunction(()=>/Saved dried grass/.test(document.querySelector('#announcer').textContent));
+    T.ok(true, 'saving the finished sample is announced');
     const labA = await label(p);
     T.ok(/lifted off the cooled dried grass/.test(labA) && tempIn(labA) === model.ta && new RegExp('which reads ' + model.ma + ' grams').test(labA) && /aimed at the ash reads/.test(labA) && /\(after the burn\)/.test(labA) && !/dome glass reads/.test(labA) && tempIn(labA) > tempIn(labW), 'after: the dome is lifted, the ash on the balance reads ' + model.ma + ' g and the laser reads ' + model.ta + ' °C (above the before reading ' + model.tb + ')');
     const la = await laser(p);
@@ -93,27 +96,28 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     T.ok(!/dome glass/i.test(await p.locator('#burn-scene').innerText()) || /inside the dome|Glass dome/.test(await p.locator('#burn-scene').innerText()), 'the panels never say the reading is of the dome glass');
     const ra = (await p.locator('.bn-read').first().innerText()).replace(/\n/g, ' ');
     T.ok(ra.includes(model.tb + ' → ' + model.ta + ' °C') && ra.includes(model.mb + ' → ' + model.ma + ' g'), 'readouts show both weighings and equal the model');
-    T.ok(await p.locator('[data-bn="record"]').isVisible() && /both weighings/.test(await p.locator('[data-bn="record"]').innerText()), 'Record results (both weighings) is offered');
+    T.ok(await p.locator('[data-bn="saved"]').isVisible() && await p.locator('[data-bn="record"]').count()===0
+      && await p.locator('[data-bn="next"]').isVisible(), 'review shows the recorded result and a next sample action, with no second Record button');
     await p.reload(); await p.waitForFunction(() => window.B2Burn && document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn');
-    T.ok(await p.locator('[data-bn="record"]').isVisible() && tempIn(await label(p)) === model.ta, 'the after reading survives a reload');
+    T.ok(await p.locator('[data-bn="saved"]').isVisible() && tempIn(await label(p)) === model.ta
+      && await p.locator('.bn-table tbody tr').count()===1, 'the after reading and one record survive a reload');
     c = await ink(p); T.ok(c.ink > 0.01, 'canvas drawn when finished');
     T.ok(await p.locator('fieldset.bn-obs .bn-chip', { hasText: 'Droplets on the glass' }).count() === 1, 'a Droplets on the glass chip is offered');
     await p.locator('.bn-chip', { hasText: 'Bright flame' }).click(); await p.locator('.bn-chip', { hasText: 'Smoke' }).click();
     T.ok(await p.locator('fieldset.bn-obs .bn-chip[aria-pressed="true"]').count() === 2, 'observation chips toggle with a ✓ and aria-pressed');
-    await p.locator('[data-bn="record"]').click();
     const r1 = await p.evaluate(() => { const s = B2Burn.getState().burn; return B2Burn.logic.burnResult(s.seed, 'grass', 1); });
     const row = await p.locator('.bn-table tbody tr').first().innerText();
     T.ok(row.includes('Dried grass (1)') && row.includes(String(r1.igniteS)) && row.includes(r1.btbLabelAfter + ' (' + r1.btbAfter.toFixed(1) + ')') && row.includes(r1.tempBefore + ' → ' + r1.tempAfter) && row.includes(r1.massBefore.toFixed(1) + ' → ' + r1.massAfter.toFixed(1)) && /Bright flame, Smoke/.test(row), 'the table row holds both weighings (temperature and mass before → after) and the chips: ' + row.replace(/\s+/g, ' '));
-    await p.waitForTimeout(150);
-    T.ok(/Recorded dried grass/.test(await p.locator('#announcer').innerText()), 'recording is announced');
     T.ok(await p.locator('.bn-table tbody tr').count() === 1 && /1 sample recorded/.test(await p.locator('.bn-table caption').innerText()), 'caption counts samples (singular)');
     const stR = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
-    T.ok(stR.burn.current === null && !stR.burn.weighed, 'after recording, nothing is left over: the next sample must be weighed again');
+    T.ok(stR.burn.current===null && !stR.burn.weighed && stR.burn.records[0].obs.length===2,
+      'observations update one saved sample, and the next sample must be weighed again');
+    await p.locator('[data-bn="next"]').click();
 
     // ----- a second sample of the same fuel differs; three at most
     await p.selectOption('#bn-fuel', 'grass');
     T.ok(/Sample 2 of dried grass/.test(await p.locator('.bn-read').first().innerText()), 'next sample is sample 2');
-    for (let i = 0; i < 2; i++) { await weigh(p); await p.locator('[data-bn="burn"]').click(); await finishAndRecord(p); }
+    for (let i = 0; i < 2; i++) { await weigh(p); await p.locator('[data-bn="burn"]').click(); await finishAndContinue(p); }
     T.ok(await p.locator('.bn-table tbody tr').count() === 3 && await p.locator('[data-bn="burn"]').isDisabled() && await p.locator('[data-bn="weigh"]').isDisabled(), 'three grass samples recorded, the fourth is not allowed');
     const rows = await p.evaluate(() => B2Burn.logic.tableRows(B2Burn.getState().burn));
     T.ok(new Set(rows.map(r => r.igniteS + ':' + r.burnS + ':' + r.massAfter + ':' + r.btbAfter)).size >= 2, 'samples of the same fuel differ a little');
@@ -136,12 +140,12 @@ const burnFuel = async (p, fuel, obs) => { await p.selectOption('#bn-fuel', fuel
     // ----- Start over; mid-burn pictures differ by fuel
     await p.locator('[data-bn="reset"]').click(); await p.locator('[data-bn="reset-yes"]').click();
     T.ok(await p.evaluate(k => localStorage.getItem(k), KEY).then(v => !v || !JSON.parse(v).burn), 'Start over erases the burns');
-    T.ok(await p.locator('.bn-table tbody tr').count() === 1 && /Burn a fuel and record it/.test(await p.locator('.bn-table tbody').innerText()), 'table is empty again');
+    T.ok(await p.locator('.bn-table tbody tr').count() === 1 && /Complete both weighings/.test(await p.locator('.bn-table tbody').innerText()), 'table is empty again');
     const picture = async fuel => {
       await p.selectOption('#bn-fuel', fuel); await weigh(p); await p.locator('[data-bn="burn"]').click();
       await p.evaluate(() => { const s = B2Burn.getState().burn, L = B2Burn.logic, r = L.burnResult(s.seed, s.current.fuel, s.current.n); s.current.startedAt = Date.now() - (r.igniteS + r.burnS * 0.4) / L.RATE * 1000; B2Burn.saveState('burn', s); });
       await p.reload(); await p.waitForFunction(() => document.querySelector('#burn-scene').dataset.mounted === '1'); await go(p, 'burn'); await p.waitForTimeout(150);
-      const lab = await label(p), i = await ink(p); await finishAndRecord(p); return { lab, i };
+      const lab = await label(p), i = await ink(p); await finishAndContinue(p); return { lab, i };
     };
     const peat = await picture('peat'), char = await picture('charcoal'), grass = await picture('grass');
     T.ok(/\(the dome\), over burning peat/.test(peat.lab) && /lots of smoke/.test(peat.lab) && /a glowing ember/.test(peat.lab) && /a small flame/.test(peat.lab), 'peat picture: dome, smoke, ember, small flame (' + peat.lab.slice(60, 200) + ')');

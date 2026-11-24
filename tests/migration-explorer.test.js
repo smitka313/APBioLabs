@@ -69,6 +69,58 @@ function chartFixture(collection,open=true){
   vm.runInContext(fn,context);
   return {captures,disclosure,draw:()=>vm.runInContext('renderCharts();',context)};
 }
+test('editing pauses the exact playback controller and keeps separate drafts on their months',()=>{
+  const ui=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.js'),'utf8');
+  const cut=(from,to)=>ui.slice(ui.indexOf(from),ui.indexOf(to));
+  const elements=new Map(), intervals=new Map(), document={activeElement:null,addEventListener(){}};
+  const $=id=>{
+    if(!elements.has(id)){
+      const listeners={},attrs={};
+      elements.set(id,{attrs,dataset:{},value:'',addEventListener(e,f){(listeners[e]??=[]).push(f);},
+        setAttribute(e,v){attrs[e]=v;},hasAttribute(e){return e==='data-editor-month'&&Object.hasOwn(this.dataset,'editorMonth');},
+        fire(e){listeners[e]?.forEach(f=>f({target:this}));this['on'+e]?.({target:this});},
+        focus(){document.activeElement=this;this.fire('focus');}});
+    }
+    return elements.get(id);
+  };
+  const field=$('#observation'), play=$('#play');
+  const state={month:4,observations:{},notes:[],visited:[]};
+  let serial=0;
+  const context={L,state,$,$$:()=>[],document,messages:[],corrupt:false,unavailable:false,
+    MigrationScene:{init(){}},save(){},say(text){context.messages.push(text);},
+    setInterval(callback){intervals.set(++serial,callback);return serial;},clearInterval(id){intervals.delete(id);},
+    renderMonth(){vm.runInContext(`if(typeof showDraft==='function')showDraft(state.month);else $('#observation').value=state.observations[state.month]||'';`,context);},
+    region(){context.renderMonth();},renderNotes(){vm.runInContext('renderNoteProgress();',context);}
+  };
+  vm.createContext(context);
+  vm.runInContext(cut('  function cardText(','  function renderInspector(')+
+    cut('  function changeMonth(','  function go(')+
+    cut("  $('#month-slider').oninput","  $('#record-region').onclick"),context);
+  context.renderMonth();
+  play.fire('click');assert.equal(play.attrs['aria-pressed'],'true');
+  field.focus();assert.equal(play.attrs['aria-pressed'],'false','focus interrupts playback before the next tick');
+  field.value='A May draft.';field.fire('input');
+  for(const tick of intervals.values())tick();
+  assert.equal(state.month,4);assert.equal(field.value,'A May draft.');assert.equal(state.notes.length,0);
+  vm.runInContext('changeMonth(5)',context);assert.equal(field.value,'');
+  field.value='A June draft.';field.fire('input');
+  vm.runInContext('changeMonth(4)',context);assert.equal(field.value,'A May draft.');
+  $('#record').fire('click');
+  assert.equal(state.notes.length,1);assert.equal(state.notes[0].id,'month-4');
+  assert.equal(state.observations[5],'A June draft.');assert.match(context.messages.at(-1),/Saved May/);
+});
+test('the three rainfall displays keep the original graph and provide a dark treatment and a raw-color link',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');
+  const css=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.css'),'utf8');
+  assert.equal([...html.matchAll(/<img[^>]+src="assets\/migration-rainfall-source\.png"/g)].length,3);
+  assert.equal([...html.matchAll(/<a[^>]+href="assets\/migration-rainfall-source\.png"/g)].length,3);
+  assert.match(css,/data-theme=dark[^\n]*\.mx-rain-figure img[^\n]*\.mx-rain-source[^\n]*filter:invert\(/);
+});
+test('the field evidence panel states sampling and outbreak limits before students compare cards',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../openscied-b1-migration.html'),'utf8');
+  const evidence=html.slice(html.indexOf('id="collection-cards"'),html.indexOf('id="card-groups"'));
+  for(const phrase of ['monthly group averages for sampled male wildebeest','several studies','outbreak year','whole herd'])assert.ok(evidence.includes(phrase),phrase);
+});
 test('published evidence charts disable the toolkit simulation label',()=>{
   for(const collection of ['cards','rainfall']){
     const {captures,draw}=chartFixture(collection);

@@ -14,7 +14,7 @@
 
    SCENE STATE CONTRACT (all numbers finite; timestamps are ms since 1970; nothing here is ever a timer)
      burn = { seed:uint32, fuel:'grass'|'leaves'|'wood'|'charcoal'|'peat' (the fuel last picked),
-              current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool }   the burn in progress, or finished but not yet recorded; after = the second weighing (balance and
+              current: null | { fuel, n:1..3, startedAt:ms, skipped:bool, after:bool, obs?:[observation chip ids] }   the burn in progress, or finished but not yet recorded; after = the second weighing (balance and
                                                                                 laser thermometer read after the burn, dome lifted) has been done
               weighed: null | { fuel, n }                                       the first weighing (before the burn) is done for the next sample
               records: [ { fuel, n:1..3, obs:[observation chip ids] } ],         one per recorded sample
@@ -126,7 +126,12 @@
     if (speak && r.text) announce(r.text.replace(/\n/g, ' '));
   }
   function renderPreds(speak) { L.FUEL_IDS.forEach(function (f) { renderPred(f, speak); }); }
-  function renderData() { renderPreds(false); renderDataPicks(); renderClaim(false); }
+  function renderData() {
+    const recorded = burnNodes(), data = $('#cer-model-data');
+    data.hidden = !recorded.length;
+    $('#cer-data-body').replaceChildren(...recorded);
+    renderPreds(false); renderDataPicks(); renderClaim(false);
+  }
 
   /* ---------- choices: instant feedback, recomputed from the picks ---------- */
   function feedbackEl(fs) {
@@ -142,9 +147,15 @@
     const text = c.dataset.why || '', correct = fs.dataset.correct;
     return { text, value: c.value, status: correct ? (c.value === correct ? 'correct' : 'wrong') : 'poll' };
   }
+  function renderSort() {
+    const items=$$('fieldset.me-item'), choices=items.map(choiceResult);
+    const answered=choices.filter(Boolean).length, correct=choices.filter(r=>r?.status === 'correct').length;
+    $('#sort-progress').textContent=answered === items.length && correct === items.length ? '✓ All ' + items.length + ' categories match.' : correct + ' of ' + items.length + ' categories match · ' + answered + ' chosen.';
+  }
   function renderChoice(fs, speak) {
     const p = feedbackEl(fs), r = choiceResult(fs);
     p.textContent = r ? r.text : ''; p.dataset.state = r ? r.status : '';
+    if (fs.classList.contains('me-item')) renderSort();
     if (r && speak && r.text) announce(r.text);
   }
 
@@ -180,10 +191,16 @@
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
     const checks = L.evidenceChecks(state.burn), detail = L.evidenceDetail(state.burn), ok = {};
     Object.keys(EV_KEY).forEach(function (id) {
-      const v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = ck(id);
+      const box = $('#' + id), v = checks[EV_KEY[id]], note = $('#' + id + '-note'), on = box.checked;
+      // An older selection remains editable, but it no longer counts if its supporting model record is missing or changes.
+      box.disabled = v === null && !on;
+      box.dataset.evidence = v === true ? 'supported' : v === false ? 'not-supported' : 'unavailable';
       ok[id] = on && v === true;
       if (note) note.textContent = on ? evidenceNote(id, v, detail) : '';
     });
+    $('#cer-model-note').textContent = Object.values(checks).some(v => v !== null)
+      ? 'Use your recorded comparison. A statement counts as model evidence only if your own data support it.'
+      : 'Model evidence is not available yet. Burn and record peat and at least one other fuel. You can still draft a claim and use the reading.';
     const claimOk = !!claimEl && claimEl.value === 'a', reasonOk = !!reason && reason.value === 'a';
     const flags = [claimOk, Object.keys(ok).some(function (k) { return ok[k]; }), ck('cer-ev-5'), reasonOk, ck('cer-caveat')];
     const level = L.claimLevel(flags), out = $('#cer-level');
@@ -209,7 +226,13 @@
     });
   }
   function chips() {
-    return $$('main fieldset.chipset').map(function (fs) { return { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: $$('input:checked', fs).map(function (b) { return b.parentElement.textContent.trim(); }) }; });
+    return $$('main fieldset.chipset').map(function (fs) {
+      const picked = $$('input:checked', fs);
+      const result = { id: fs.dataset.id || legendOf(fs), question: legendOf(fs), chosen: picked.filter(b => !b.dataset.evidence || b.dataset.evidence === 'supported').map(b => b.parentElement.textContent.trim()) };
+      const drafts = picked.filter(b => b.dataset.evidence && b.dataset.evidence !== 'supported');
+      if (drafts.length) result.notSupportedByRecordedData = drafts.map(b => b.parentElement.textContent.trim());
+      return result;
+    });
   }
   function textAnswers() { return $$('main textarea, main input[type=text]').filter(function (t) { return !t.readOnly && t.id; }).map(function (t) { return { id: t.id, prompt: labelFor(t.id), answer: t.value.trim() }; }); }
   // ONE definition of "answers": every id in RESPONSE_IDS (each radio question, each dropdown, each required text box; boxes marked data-optional
@@ -234,6 +257,15 @@
     const st = answerStats(); report.dataset.answered = st.answered; report.dataset.total = st.total;
     [st.answered + ' of ' + st.total + ' answers saved (' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far', burns + (burns === 1 ? ' simulated burn recorded' : ' simulated burns recorded')].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
+    const active = L.cleanState(state.burn)?.current;
+    if (active) {
+      const result = L.burnResult(state.burn.seed, active.fuel, active.n);
+      if (L.simSeconds(active.startedAt, Date.now(), active.skipped, result.runS) >= result.runS) {
+        const status = el('p','bn-pending','Finish weighing to save: ' + result.label + ', sample ' + result.n + '. ');
+        status.appendChild(Object.assign(el('a','','Return to the burn demonstration'), { href:'#burn' }));
+        report.appendChild(status);
+      }
+    }
     burnNodes().forEach(function (n) { report.appendChild(n); });
     textAnswers().forEach(function (t) { if (t.answer) { report.appendChild(el('h4', '', t.prompt)); report.appendChild(el('p', 'report-answer', t.answer)); } });
     report.appendChild(el('p', 'small muted', 'Simplified teaching model. Burn results are simulated and do not replace the real demonstration.'));

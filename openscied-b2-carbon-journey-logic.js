@@ -48,11 +48,79 @@ const cards = {
  sMine:card('sMine','human',3,1,'You are mined by humans as a fossil fuel. The energy flows to another system in the same arrangement of atoms and will be used to power human-made activities.')
 };
 const table={atmosphere:['aStay','aStay','aStay','aOcean','aPlant','aPlant'],ocean:['oStay','oStay','oAir','oAir','oPlant','oSoil'],human:['hHome','hWaste','hMine','hMine','hWell','hWell'],producers:['pGrow','pGrow','pRespire','pRespire','pRespire','pRespire'],producerExit:['pHerb','pOmni','pHuman','pHuman','pDie','pDie'],herbivores:['bRespire','bRespire','bEaten','bStay','bWaste','bDie'],omnivores:['cRespire','cRespire','cStay','cStay','cDie','cWaste'],soil:['sRespire','sGrow','sStay','sFossil','sMine','sMine']};
-function initial(seed){return {version:2,seed:seed>>>0,rows:[],pending:null,answers:{},done:false,producerExit:false,legacyRows:0};}
+// A card sampler, not more rolls. These examples do not change the route,
+// the seed, the die table, the totals, or the original station-card wording.
+const tourExamples=[
+ ['atmosphere','aPlant','Photosynthesis'],
+ ['ocean','oSoil','Sediment settling'],
+ ['human','hMine','Burning fossil fuel'],
+ ['producers','pGrow','Growth'],
+ ['herbivores','bEaten','Feeding'],
+ ['omnivores','cDie','Decomposition after an animal dies'],
+ ['soil','sRespire','Cellular respiration in a decomposer']
+];
+function initial(seed){return {version:3,seed:seed>>>0,rows:[],pending:null,answers:{},done:false,producerExit:false,legacyRows:0,coverageReviewed:[],coverageCheckpoint:null};}
 function current(s){return s.rows.length?s.rows[s.rows.length-1].to:'atmosphere';}
 function outcome(s,roll=s.pending){if(!Number.isInteger(roll)||roll<1||roll>6||!valid(current(s)))throw Error('Roll a six-sided die first.');return cards[table[current(s)==='producers'&&s.producerExit?'producerExit':current(s)][roll-1]];}
-function record(s,input={}){if(s.done)throw Error('This journey is complete.');const c=outcome(s);return {...s,pending:null,producerExit:c.exit,rows:s.rows.concat({turn:s.rows.length+1,from:current(s),die:s.pending,to:c.to,matter:c.matter,energy:c.energy,card:c.id,text:c.text,stage:s.producerExit?'producerExit':'main',note:String(input.note||'').slice(0,1000)})};}
+function record(s,input={}){
+ if(s.done)throw Error('This journey is complete.');
+ const c=outcome(s), prediction=input.prediction;
+ const row={turn:s.rows.length+1,from:current(s),die:s.pending,to:c.to,matter:c.matter,energy:c.energy,card:c.id,text:c.text,stage:s.producerExit?'producerExit':'main',note:String(input.note||'').slice(0,1000)};
+ // Omitted means an earlier version did not save predictions. Null means the
+ // student used "Reveal card without predicting" in a version that saves them.
+ if(prediction===null||valid(prediction))row.prediction=prediction;
+ return {...s,pending:null,producerExit:c.exit,rows:s.rows.concat(row)};
+}
 function totals(s,key,keys){return keys.map(k=>({label:k,count:s.rows.filter(r=>r[key]===k).length}));}
-function readSaved(raw){try{const v=JSON.parse(raw);if(![1,2].includes(v.version)||!Number.isInteger(v.seed)||!Array.isArray(v.rows))return null;let s=initial(v.seed);const legacy=v.version===1?v.rows.length:Math.max(0,Math.min(v.rows.length,Number.isInteger(v.legacyRows)?v.legacyRows:0));for(let i=0;i<v.rows.length;i++){const r=v.rows[i];if(r.from!==current(s)||r.turn!==s.rows.length+1||!Number.isInteger(r.die)||r.die<1||r.die>6||!valid(r.to)||!matter.includes(r.matter)||!energy.includes(r.energy))throw Error();if(i<legacy){s.rows.push({...r,note:String(r.note||'').slice(0,1000),legacy:true});s.legacyRows++;}else{s.pending=r.die;const next=record(s,r),expected=next.rows.at(-1);for(const k of ['to','matter','energy','card','stage'])if(r[k]!==expected[k])throw Error();s=next;}}s.pending=Number.isInteger(v.pending)&&v.pending>=1&&v.pending<=6?v.pending:null;s.answers={};for(const [k,val] of Object.entries(v.answers||{}))if(/^q[2-6]$/.test(k)&&typeof val==='string')s.answers[k]=val.slice(0,20000);s.done=v.done===true&&s.rows.length>=10;return s;}catch{return null;}}
+function tour(s) {
+ const visited=new Set(['atmosphere',...s.rows.flatMap(r=>[r.from,r.to])]);
+ const drawn=new Set(s.rows.map(r=>r.card));
+ return tourExamples.map(([from,id,process])=>({from,process,...cards[id],visited:visited.has(from),drawn:drawn.has(id)}));
+}
+// Do not count reading a reference card as a roll. A station reached on the
+// last move may lack evidence, since its card was never actually drawn.
+function missingCoverage(s) {
+ const origins=new Set(s.rows.map(row=>row.from));
+ const sawDecomposer=s.rows.some(row=>['sRespire','sGrow'].includes(row.card));
+ return tour(s).filter(sample=>!s.coverageReviewed.includes(sample.from) &&
+   (!origins.has(sample.from) || (sample.from==='soil'&&!sawDecomposer)));
+}
+function routeRepeating(s) {
+ if(s.rows.length<4)return false;
+ const heard=new Set(s.rows.slice(0,-3).map(row=>row.card));
+ return s.rows.slice(-3).every(row=>!!row.card&&heard.has(row.card));
+}
+function readSaved(raw){
+ try {
+  const v=JSON.parse(raw);
+  if(![1,2,3].includes(v.version)||!Number.isInteger(v.seed)||!Array.isArray(v.rows))return null;
+  let s=initial(v.seed);
+  const legacy=v.version===1?v.rows.length:Math.max(0,Math.min(v.rows.length,Number.isInteger(v.legacyRows)?v.legacyRows:0));
+  for(let i=0;i<v.rows.length;i++){
+   const r=v.rows[i];
+   if(r.from!==current(s)||r.turn!==s.rows.length+1||!Number.isInteger(r.die)||r.die<1||r.die>6||!valid(r.to)||!matter.includes(r.matter)||!energy.includes(r.energy))throw Error();
+   if(i<legacy){s.rows.push({...r,note:String(r.note||'').slice(0,1000),legacy:true});s.legacyRows++;}
+   else {
+    s.pending=r.die;
+    const next=record(s,r),expected=next.rows.at(-1);
+    for(const k of ['to','matter','energy','card','stage'])if(r[k]!==expected[k])throw Error();
+    s=next;
+   }
+  }
+  s.pending=Number.isInteger(v.pending)&&v.pending>=1&&v.pending<=6?v.pending:null;
+  for(const [key,value] of Object.entries(v.answers||{})){
+   if(typeof value!=='string')continue;
+   if(v.version===3&&/^q[1-5]$/.test(key))s.answers[key]=value.slice(0,20000);
+   else if(v.version<3&&/^q[2-6]$/.test(key))s.answers['q'+(Number(key[1])-1)]=value.slice(0,20000);
+  }
+  s.done=v.done===true&&s.rows.length>=10;
+  s.coverageReviewed=Array.isArray(v.coverageReviewed)?[...new Set(v.coverageReviewed.filter(valid))]:[];
+  if(!s.done&&s.pending===null&&missingCoverage(s).length){
+   if(v.coverageCheckpoint==='finish'&&s.rows.length>=10)s.coverageCheckpoint='finish';
+   else if(v.coverageCheckpoint==='repeat'&&routeRepeating(s))s.coverageCheckpoint='repeat';
+  }
+  return s;
+ } catch {return null;}
+}
 function restore(raw,seed){return readSaved(raw) ?? initial(seed);}
-return {stations,matter,energy,die,initial,current,outcome,record,totals,readSaved,restore};});
+return {stations,matter,energy,die,initial,current,outcome,record,totals,tour,missingCoverage,routeRepeating,readSaved,restore};});

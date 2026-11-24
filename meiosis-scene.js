@@ -296,7 +296,7 @@
 
     // compare populations
     const cmp = el('div', { class: 'ms-cmp' });
-    const cmpPanel = el('div', { class: 'ms-panel' }, [el('h4', { text: 'Two populations, same parent' }), cmp]);
+    const cmpPanel = el('div', { class: 'ms-panel' }, [el('h4', { text: 'Two gamete sets, same parent' }), cmp]);
 
     root.appendChild(el('div', { class: 'ms-grid2' }, [distPanel, tallyPanel]));
     root.appendChild(el('div', { class: 'ms-grid2' }, [checkPanel, cmpPanel]));
@@ -489,7 +489,7 @@
     }
     function renderCompare() {
       const mk = (name, crossing) => { const k = BASE.gameteTypes(ANIM_PARENT, crossing); return el('div', { 'data-pop': crossing ? 'B' : 'A' }, [el('strong', { text: name }), el('p', { text: (crossing ? 'Meiosis WITH crossing over' : 'Meiosis WITHOUT crossing over') }), el('div', { class: 'ms-row' }, k.map(t => el('span', { class: 'ms-token', text: t, 'data-new': isParental(t, ANIM_PARENT) ? '0' : '1' }))), el('p', { class: 'ms-small', text: k.length + ' kinds of gamete' + (crossing ? ': more variation' : '') })]); };
-      cmp.replaceChildren(mk('Population A', false), mk('Population B', true));
+      cmp.replaceChildren(mk('Gamete set A', false), mk('Gamete set B', true));
     }
 
     /* ----- start ----- */

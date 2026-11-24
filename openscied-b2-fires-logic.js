@@ -120,6 +120,13 @@
   }
   function lastRow(rows) { return rows && rows.length ? rows[rows.length - 1] : null; }
 
+  function sceneEvidence(state) {
+    const source = state || {}, rows = foamRows(source.decomp), cards = checkCards(source.cards && source.cards.placed), tilt = source.tilt;
+    const tubesRead = tilt && tilt.recorded === true && num(tilt.seed) && Array.isArray(tilt.settings) && tilt.settings.length === 3 ? 3 : 0;
+    return { cardsPlaced: cards.placed, cardsRight: cards.right, foamReadings: rows.length, foamAfterBaseline: rows.some(row => row.t > 0),
+      tubesRead, starchTested: !!(tubesRead && tilt.starchDone === true) };
+  }
+
   /* ---------- Matter Energy cards (Lesson 3) ---------- */
   const CARDS = [
     { id: 'sugar', label: 'Sugar', zone: 'in', note: 'matter',
@@ -364,7 +371,7 @@
   function evidenceChecks(foamState, tiltState) {
     const out = { warmMost: null, coldLeast: null, directBluest: null, foilYellow: null, moreLightBluer: null };
     const rows = foamRows(foamState), last = lastRow(rows);
-    if (last && foamState) {
+    if (last && last.t > 0 && foamState && Math.max(...last.h) !== Math.min(...last.h)) {
       const temps = normalizeTemps(foamState.temps), h = last.h;
       const hi = Math.max.apply(null, temps), lo = Math.min.apply(null, temps);
       if (hi !== lo) {
@@ -373,11 +380,12 @@
         out.coldLeast = temps.every((t, i) => t !== lo || h[i] === bottom);
       }
     }
-    if (tiltState && tiltState.recorded && num(tiltState.seed)) {
+    if (sceneEvidence({tilt:tiltState}).tubesRead) {
       const res = tiltResults(tiltState.seed, tiltState.settings), pos = res.map(r => r.btb);
       const min = Math.min.apply(null, pos), max = Math.max.apply(null, pos);
-      if (res.some(r => r.light === 'direct') && min !== max) out.directBluest = res.every(r => r.light !== 'direct' || r.btb === min);
-      if (res.some(r => r.light === 'foil') && min !== max) out.foilYellow = res.every(r => r.light !== 'foil' || r.btb === max);
+      const paired = res.some(r => r.light === 'direct') && res.some(r => r.light === 'foil');
+      if (paired && min !== max) out.directBluest = res.every(r => r.light !== 'direct' || r.btb === min);
+      if (paired && min !== max) out.foilYellow = res.every(r => r.light !== 'foil' || r.btb === max);
       const lit = res.filter(r => r.light !== 'foil');
       if (new Set(lit.map(r => r.intensity)).size > 1) out.moreLightBluer = lit.every(a => lit.every(b => a.intensity <= b.intensity || a.btb <= b.btb));
     }
@@ -435,5 +443,5 @@
     CARDS, REACTION, checkCards, PICKS, checkPick, checkSugarSentence, HYP_REASONS, checkHypothesis,
     LIGHTS, LIGHT_IDS, TUBE_IDS, SUGGESTED_SETUP, RESP, NIGHT_MS, NIGHT_HOURS, lightIntensity, photosynthesis, BTB_LABELS, BTB_RGB, BTB_START,
     btbPosition, btbLabel, btbColor, btbAt, plantFactor, tubeFactor, tubeResult, tiltResults, starchLabel, starchDarkness, nightProgress, setupCheck,
-    claimLevel, evidenceChecks, evidenceDetail };
+    claimLevel, evidenceChecks, evidenceDetail, sceneEvidence };
 });

@@ -40,11 +40,12 @@
     <div><p class="ju-kicker">FIELD NOTEBOOK <span> · </span> B.4 / 04</p><h1>Junco Investigation</h1><p class="ju-hero-lead">Why do city juncos act bolder?</p><p>Follow two populations from the field to a shared aviary, then look for a clue in their stress response.</p><p class="ju-chips"><span>Real research</span><span>25–35 min</span></p></div>
     <figure class="ju-cover"><img src="assets/junco-preview.svg" width="960" height="600" alt=""><figcaption><span>UC San Diego</span><span>Mt. Laguna</span></figcaption></figure>
   </header>
-  <nav class="ju-nav" aria-label="Investigation steps">
-    <button type="button" data-step="field" aria-current="step"><span>01</span> In the field</button>
-    <button type="button" data-step="aviary"><span>02</span> Shared aviary</button>
-    <button type="button" data-step="cort" disabled><span>03</span> Hormone clue</button>
+  <nav class="ju-nav" aria-label="Investigation steps" aria-describedby="ju-step-hint">
+    <button type="button" data-step="field" aria-current="step"><span aria-hidden="true">01</span> In the field</button>
+    <button type="button" data-step="aviary"><span aria-hidden="true">02</span> Shared aviary</button>
+    <button type="button" data-step="cort" disabled><span aria-hidden="true">03</span> Hormone clue</button>
   </nav>
+  <p id="ju-step-hint" class="ose-step-hint">To unlock the hormone clue, save your prediction and reveal the shared-aviary results.</p>
   <noscript><p>This activity requires JavaScript to draw graphs and save your notebook.</p></noscript>
 
   <section id="field" class="ju-stage" aria-labelledby="ju-field-title">
@@ -55,6 +56,7 @@
         <label for="ju-sim-site">Population<select id="ju-sim-site"><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label>
         <label for="ju-sim-context">Observation<select id="ju-sim-context"><option value="foraging">Bird looking for food</option><option value="incubating">Female sitting on eggs</option></select></label>
         <button type="button" class="btn" id="ju-sim-start">Start trial</button>
+        <button type="button" class="btn" id="ju-sim-change" hidden>Change setup</button>
       </div>
       <p>Move the observer toward the bird, one step at a time. When the bird flies, record how far away the observer was. Start another trial to compare with a different bird or setting.</p>
       <p class="ju-chart-note">These are simulated birds, not the birds in the published graphs below. The model varies when each bird flies around the published group averages; the amount of variation is illustrative.</p>
@@ -91,7 +93,7 @@
       <details class="ju-data" id="ju-sim-record" hidden>
         <summary>Simulated trial log</summary>
         <p>Distances are recorded at the first step that made the model bird fly, not at the exact threshold between steps.</p>
-        <table id="ju-sim-trials"><thead><tr><th scope="col">Trial</th><th scope="col">Population</th><th scope="col">Context</th><th scope="col">Takeoff distance</th></tr></thead><tbody></tbody></table>
+        <table id="ju-sim-trials"><thead><tr><th scope="col"><span aria-hidden="true">#</span><span class="sr-only">Trial</span></th><th scope="col">Population</th><th scope="col">Context</th><th scope="col">Takeoff distance</th></tr></thead><tbody></tbody></table>
       </details>
     </details>
     <div class="ju-layout">
@@ -123,7 +125,7 @@
           <div class="ju-cage"><b>Identical aviary conditions</b><small>Same food · Same housing · Same exposure to people</small></div>
         </div>
         <p>Researchers brought young birds from both populations into identical aviaries. Later they scored how quickly and extensively each bird explored a new room.</p>
-        <p><strong>The birds were collected after hatching.</strong> They had already spent some time in their home environment.</p>
+        <p><strong>Inherited or learned?</strong> Inherited traits are passed from parents. Behavior can also be learned or shaped by early conditions. These birds were collected after hatching, so matching their current housing cannot separate those explanations.</p>
       </article>
       <aside class="ju-clipboard">
         <p class="ju-kicker">WRITE A PREDICTION</p>
@@ -136,6 +138,8 @@
     <article class="ju-sheet ju-reveal" id="ju-aviary-results" aria-labelledby="ju-aviary-results-title" hidden>
       <div class="ju-heading"><div><p class="ju-kicker">RESULTS RELEASED</p><h3 id="ju-aviary-results-title" tabindex="-1">Exploring a new room</h3></div><label for="ju-aviary-group">Compare <select id="ju-aviary-group"><option value="female">Females</option><option value="male">Males</option></select></label></div>
       <p id="ju-prediction-reminder"></p>
+      <p class="ju-chart-note">Exploring a new room and flying from a person are different behaviors. Compare the patterns, not the numbers across the two graphs.</p>
+      <p class="ju-chart-note">These bars show group averages. The hormone graph shows individual birds, with a wider range of scores. Both use the same measure of how quickly and widely the birds explored.</p>
       <div id="ju-aviary-chart" class="ju-plot"></div>
       <p class="ju-chart-note" id="ju-aviary-note"></p>
       <details class="ju-data"><summary>Read the plotted values</summary><div id="ju-aviary-table"></div></details>
@@ -147,6 +151,7 @@
     <div class="ju-heading"><div><p class="ju-kicker">03 · LOOK FOR A RELATIONSHIP</p><h2 id="ju-cort-title" tabindex="-1">Does the stress response go with exploration?</h2></div><span class="ju-tag">Evidence C</span></div>
     <div class="ju-layout ju-analysis">
       <article class="ju-sheet">
+        <p class="ju-chart-note">A correlation is a pattern between two measurements. It does not show that one causes the other.</p>
         <p><strong>CORT</strong> stands for corticosterone, a hormone involved in the stress response. Look at the points first. Then turn on a best-fit line to check the pattern you noticed.</p>
         <div class="ju-tools" id="ju-cort-tools"><label for="ju-filter">Show <select id="ju-filter"><option value="all">Both populations</option><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label><label class="ju-fit" for="ju-fit"><input id="ju-fit" type="checkbox"> Show best-fit line</label></div>
         <div id="ju-chart" class="ju-plot"></div>
@@ -158,6 +163,11 @@
         <details class="ju-data"><summary>Field and aviary results</summary><div id="ju-evidence"></div><p id="ju-saved-observation"></p></details>
         <label for="ju-claim">How did the aviary results change or support your explanation? Use evidence from at least two parts.</label><textarea id="ju-claim" rows="4" maxlength="1600"></textarea>
         <label for="ju-limits">What can’t these data tell us? Describe a question or comparison you’d investigate next.</label><textarea id="ju-limits" rows="4" maxlength="1600"></textarea>
+        <fieldset class="ju-report-identity"><legend>Put your name on the report (optional)</legend>
+          <div class="field"><label for="ju-name">Name</label><input id="ju-name" type="text" maxlength="100" autocomplete="name"></div>
+          <div class="field"><label for="ju-period">Class period</label><input id="ju-period" type="text" maxlength="24"></div>
+        </fieldset>
+        <p class="ju-chart-note">Your work, name, and class period stay in this browser unless you download the report.</p>
         <button type="button" class="btn btn--primary" id="ju-download">Download field report</button>
       </aside>
     </div>

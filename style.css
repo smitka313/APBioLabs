@@ -170,6 +170,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); width
 .btn--ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn--danger { color: var(--bad); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
+/* Shared OpenSciEd controls. Use a neutral surface and text, not dimmed green. */
+html[data-openscied] :is(.btn, nav[aria-label] button):is(:disabled, [aria-disabled="true"]) {
+  opacity: 1; filter: none; cursor: not-allowed;
+  color: var(--muted); background: var(--surface-2); border: 1px dashed var(--muted);
+}
+html[data-openscied] nav[aria-label] button[data-ose-complete] span:first-child { font-size: 0; }
+html[data-openscied] nav[aria-label] button[data-ose-complete] span:first-child::before {
+  content: "✓"; font: 800 .8rem/1.1 var(--f-body);
+}
+.ose-step-hint { margin: .2rem 0 .65rem; color: var(--muted); font-size: .9rem; }
 .btn--sm { padding: 5px 10px; font-size: .84rem; }
 
 /* Readouts */

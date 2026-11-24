@@ -17,7 +17,7 @@ async function checkMastheadLayout(browser,site,seed,description) {
   try {
     if(seed) await ctx.addInitScript(values=>{for(const [key,value] of Object.entries(values)) localStorage.setItem(key,value);},seed);
     await ctx.route(/https:\/\/(?:fonts\.(?:googleapis|gstatic)\.com|gc\.zgo\.at)\//,route=>route.abort());
-    await ctx.route(/\/(?:lab|openscied-dashboard)\.js$/, async route=>{await gate; await route.continue();});
+    await ctx.route(/\/(?:lab|openscied-dashboard)\.js(?:\?.*)?$/, async route=>{await gate; await route.continue();});
     const p=await ctx.newPage();
     await p.goto(site.url+'openscied-dashboard.html',{waitUntil:'commit'});
     await p.locator('.dashboard-student-note').first().waitFor();
@@ -99,7 +99,11 @@ async function checkMixedVersionWorkspace(browser,site) {
         await p.locator('.dashboard-theme-controls .theme-opt').first().waitFor();
         assert.equal(await p.getByRole('heading',{level:1}).textContent(),'Biology Companion Activities');
         assert.equal(await p.locator('.dashboard-masthead a[href="index.html"]').count(),1);
-        assert.equal(await p.locator('.dashboard-masthead a[href="openscied-teacher-guide.html"]').count(),1);
+        const teacherGuide=p.locator('a[href="openscied-teacher-guide.html"]');
+        assert.equal(await teacherGuide.count(),1,'the Teacher Guide is linked once');
+        assert.equal(await p.locator('.dashboard-masthead .dashboard-teacher').count(),0,'teacher controls are out of the student masthead');
+        assert.equal(await p.locator('.dashboard-footer .dashboard-teacher').isVisible(),true,'teachers can still find their guide');
+        assert.equal(await teacherGuide.evaluate(link=>link.tabIndex),0,'teachers can still tab to the guide');
         assert.equal(await p.locator('.dashboard-hero .dashboard-student').isVisible(),true);
         assert.equal(await p.locator('#openscied-student-identity').isVisible(),true);
         assert.equal(await p.locator('#clear-openscied-results').isVisible(),true);
@@ -107,9 +111,8 @@ async function checkMixedVersionWorkspace(browser,site) {
         const brand=p.locator('.dashboard-brand');
         await brand.focus();
         await p.keyboard.press('Tab');
-        assert.equal(await p.locator('.dashboard-teacher').evaluate(el=>el===document.activeElement),true);
-        await p.keyboard.press('Tab');
-        assert.equal(await p.locator('.dashboard-theme-controls').evaluate(el=>el.contains(document.activeElement)),true);
+        assert.equal(await p.locator('.dashboard-theme-controls').evaluate(el=>el.contains(document.activeElement)),true,
+          'the theme control immediately follows the Lab Bench link in the masthead tab order');
         assert.equal(await p.evaluate(()=>{
           const before=(a,b)=>Boolean(document.querySelector(a).compareDocumentPosition(document.querySelector(b))&Node.DOCUMENT_POSITION_FOLLOWING);
           return before('.dashboard-brand','.dashboard-student')&&before('.dashboard-student','.dashboard-activity');
@@ -131,7 +134,10 @@ async function checkMixedVersionWorkspace(browser,site) {
               n.scrollWidth<=n.clientWidth+1&&n.scrollHeight<=n.clientHeight+1;
           });
         })),true,'descriptions, captions and buttons fit even at the narrower three-column width');
-        assert.deepEqual(await p.locator('.dashboard-units h2[id^="unit"]').evaluateAll(e=>e.map(x=>x.id)),['unit1','unit2','unit3','unit4','unit5']);
+        assert.deepEqual(await p.locator('.dashboard-units h2[id^="unit"]').evaluateAll(e=>e.map(x=>x.id)),['unit1','unit2','unit3','unit4']);
+        const coming=p.locator('.dashboard-coming-soon');
+        assert.equal(await coming.innerText(),'Unit 5: No activities published yet.');
+        assert.equal(await coming.locator('a, button, summary').count(),0,'unpublished units do not offer dead controls');
         assert.equal(await p.locator('#hawksbeard-open').getAttribute('href'),'openscied-b4-hawksbeard.html');
         assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<= innerWidth + 1),true,'no page overflow');
         const saveImage=async label=>{if(screenshots) await p.screenshot({path:path.join(screenshots,width+'-'+label+'.png'),animations:'disabled'});};

@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'), assert=require('node:assert/strict');
 const L=require('../openscied-b3-dna-workshop-logic.js');
+const fs=require('node:fs'), path=require('node:path');
 const place=(p,id,value)=>{
   const result=L.place(p,id,value);
   assert.equal(result.ok,true,result.error);
@@ -147,4 +148,21 @@ test('earlier v1 saves retain completed later steps while the new nucleotide ste
   assert.equal(L.complete('nucleotide',updated),true);
   for(const [id,value] of Object.entries(legacy.placed))assert.equal(updated.placed[id],value);
   assert.equal(L.restore({v:1,placed:{'nucleotide-sugar':'base'}}),null);
+});
+
+test('molecule sprite directly draws every referenced symbol and does not duplicate base geometries',()=>{
+  const art=fs.readFileSync(path.join(__dirname,'../assets/dna-workshop-molecules.svg'),'utf8');
+  const symbols=Object.fromEntries([...art.matchAll(/<symbol id="([^"]+)"[^>]*>([\s\S]*?)<\/symbol>/g)]
+    .map(([,id,drawing])=>[id,drawing.trim()]));
+  const expect=['phosphate','sugar-deoxyribose','sugar-ribose','base-a','amino-met','amino-ala','amino-phe'];
+  const families=[['dna','atcg'],['rna','aucg']].map(([kind,bases])=>
+    [...bases].map(base=>'nucleotide-'+kind+'-'+base));
+  for(const id of [...expect,...families.flat()]){
+    assert.match(symbols[id]||'',/<(?:path|circle)\b/,id+' draws its own shapes');
+    assert.doesNotMatch(symbols[id],/<use\b/,id+' does not depend on a nested reference');
+  }
+  for(const family of families){
+    assert.equal(new Set(family.map(id=>symbols[id])).size,family.length,
+      'different base labels have different schematics');
+  }
 });

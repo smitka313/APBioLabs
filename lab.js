@@ -3641,6 +3641,13 @@
     themeApply();
   }
   window.addEventListener('storage', e => { if (e.key === THEME_KEY) themeApply(); });
+  if (/^openscied-/.test(PAGE.id)) {
+    // A history-restored document skips its head scripts and may have missed
+    // a theme change while it was frozen. Re-sync tokens, controls and canvases.
+    window.addEventListener('pageshow', e => {
+      if (e.persisted && !PRINT.on && !restoreTheme) themeApply();
+    });
+  }
   try { const mq = window.matchMedia('(prefers-color-scheme: dark)'); const f = () => { if (themeGet() === 'auto') themeRedraw(); }; if (mq.addEventListener) mq.addEventListener('change', f); } catch (e) { /* old browser */ }
   /* ---------------- Sound (off by default) ----------------
      Lab.sound.play(name) with name one of click | hiss | beep | pop | chime | buzz | tick. Every sound is synthesized in

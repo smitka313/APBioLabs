@@ -175,21 +175,29 @@
   function cleanState(s) {
     if (!s || typeof s !== 'object' || !num(s.seed)) return null;
     const seen = {}, records = [];
+    const cleanObs = obs => (Array.isArray(obs) ? obs : []).filter((o, i, a) => OBS_IDS.includes(o) && a.indexOf(o) === i);
     (Array.isArray(s.records) ? s.records : []).forEach(r => {
       if (!r || !FUEL[r.fuel]) return;
       const n = clamp(Math.round(num(r.n) ? r.n : 1), 1, MAX_SAMPLES), key = r.fuel + ':' + n;
       if (seen[key]) return; seen[key] = true;
-      records.push({ fuel: r.fuel, n, obs: (Array.isArray(r.obs) ? r.obs : []).filter((o, i, a) => OBS_IDS.includes(o) && a.indexOf(o) === i) });
+      records.push({ fuel: r.fuel, n, obs: cleanObs(r.obs) });
     });
     let current = null;
     if (s.current && FUEL[s.current.fuel] && num(s.current.startedAt)) {
       const n = clamp(Math.round(num(s.current.n) ? s.current.n : 1), 1, MAX_SAMPLES);
-      if (!seen[s.current.fuel + ':' + n]) current = { fuel: s.current.fuel, n, startedAt: s.current.startedAt, skipped: !!s.current.skipped, after: !!s.current.after };
+      if (!seen[s.current.fuel + ':' + n]) {
+        current = { fuel: s.current.fuel, n, startedAt: s.current.startedAt, skipped: !!s.current.skipped, after: !!s.current.after };
+        if (current.after && Array.isArray(s.current.obs)) current.obs = cleanObs(s.current.obs);
+      }
     }
     // the BEFORE weighing (mass and laser temperature read) taken for the next sample; the AFTER weighing is current.after
     let weighed = null;
     if (s.weighed && FUEL[s.weighed.fuel] && !current) { const n = clamp(Math.round(num(s.weighed.n) ? s.weighed.n : 1), 1, MAX_SAMPLES); if (!seen[s.weighed.fuel + ':' + n]) weighed = { fuel: s.weighed.fuel, n }; }
-    return { seed: s.seed >>> 0, fuel: normalizeFuel(s.fuel), current, records, weighed };
+    const out = { seed: s.seed >>> 0, fuel: normalizeFuel(s.fuel), current, records, weighed };
+    if (!current && s.review && records.some(row => row.fuel === s.review.fuel && row.n === s.review.n)) {
+      out.review = { fuel: s.review.fuel, n: s.review.n };
+    }
+    return out;
   }
   const samplesOf = (st, fuelId) => st && Array.isArray(st.records) ? st.records.filter(r => r.fuel === fuelId).length : 0;
   // The sample number the next burn of this fuel would be (1, 2, 3), or 0 when all three are used.

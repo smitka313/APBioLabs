@@ -54,8 +54,9 @@
     <button type="button" data-dw-go="copy" disabled><span aria-hidden="true">3</span> Copy DNA</button>
     <button type="button" data-dw-go="rna" disabled><span aria-hidden="true">4</span> Make RNA</button>
     <button type="button" data-dw-go="chain" disabled><span aria-hidden="true">5</span> Build a chain</button>
-    <button type="button" data-dw-go="sort" disabled><span aria-hidden="true">6</span> Sort the steps</button>
+    <button type="button" data-dw-go="sort" disabled><span aria-hidden="true">6</span> Match products to processes</button>
   </nav>
+  <p class="dw-unlock" id="dw-unlock">Place all 3 parts in Nucleotide to unlock Build DNA.</p>
   <noscript><p>This activity needs JavaScript to place pieces and save your work.</p></noscript>
   <section id="dw-activity" class="dw-activity" aria-labelledby="dw-title">
     <div class="dw-heading">
@@ -64,7 +65,7 @@
     </div>
     <div class="dw-layout">
       <section id="dw-board" class="dw-board" data-current-stage="nucleotide" aria-labelledby="dw-board-title">
-        <header class="dw-board-header"><h3 id="dw-board-title">Workbench</h3><p id="dw-task">A nucleotide is one building block of DNA. Connect phosphate, DNA sugar, and a base.</p></header>
+        <header class="dw-board-header"><h3 id="dw-board-title">Workbench</h3><p id="dw-task">A nucleotide is one building block of DNA. Connect phosphate, DNA sugar, and a base.</p><p id="dw-model-note" class="dw-model-note" hidden></p></header>
         <div id="dw-key" class="dw-key"></div>
         <details class="dw-wheel-reference" id="dw-wheel" hidden>
           <summary>Explore the full RNA codon wheel</summary>
@@ -77,8 +78,8 @@
           <div id="dw-palette" class="dw-palette" role="group" aria-label="Pieces to place"></div>
           <p id="dw-input-help" class="dw-input-help">Drag a piece to a space. Or tap a piece, then a space. With a keyboard, use Tab and Enter or Space.</p>
         </div>
-        <div id="dw-strands" class="dw-strands"></div>
         <p id="dw-feedback" class="dw-status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div id="dw-strands" class="dw-strands"></div>
         <div class="dw-controls">
           <button type="button" class="btn" id="dw-undo" disabled>Undo last placement</button>
           <button type="button" class="btn btn--primary" id="dw-next" disabled>Next: Build DNA</button>
@@ -116,7 +117,7 @@
   <details class="dw-sources">
     <summary>What this model shows and what it leaves out</summary>
     <p>This workshop uses one short, fictional message, not an actual gene or a complete cell. The molecule shapes are simplified diagrams, not exact structures. The labeled ends and arrows show strand order. Matching tiles stand in for chemical interactions. Real cells use enzymes, and copying a fragment here represents a small part of copying DNA before a cell divides.</p>
-    <p>We model RNA made from one DNA template, then a ribosome reading one RNA message in groups of three. We omit extra processing, the transfer molecules that bring amino acids, and the folding of a finished chain. A stop instruction does not add an amino acid.</p>
+    <p>We model RNA made from one DNA template, then a ribosome reading one RNA message in groups of three. We omit RNA processing (such as adding a cap and tail or removing introns), the transfer molecules that bring amino acids, and the folding of a finished chain. A stop instruction does not add an amino acid.</p>
   </details>
   <footer class="dw-footer">
     <p>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Student work is stored on this device.</p>

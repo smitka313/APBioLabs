@@ -35,8 +35,67 @@ async function stationLabels(map,label){
   ok(boxes.every((a,i)=>boxes.slice(i+1).every(b=>a.right<=b.left||b.right<=a.left||
     a.bottom<=b.top||b.bottom<=a.top)),label+': the three station names do not overlap');
 }
+async function auditNotesAndRain(browser,base){
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,colorScheme:'dark',reducedMotion:'reduce'});
+  try{
+    const p=await context.newPage();
+    await p.goto(base+'openscied-b1-migration.html');
+    await p.evaluate(()=>document.documentElement.dataset.theme='dark');
+    await p.locator('[data-month="4"]').tap();
+    const field=p.locator('#observation'),play=p.locator('#play');
+    await play.tap();
+    ok(await play.getAttribute('aria-pressed')==='true','the year starts before note editing');
+    await field.tap();
+    await field.fill('May draft belongs with May.');
+    ok(await play.getAttribute('aria-pressed')==='false','touching or typing in the note stops autoplay');
+    await p.waitForTimeout(1850);
+    ok(await p.locator('#month-title').textContent()==='May'&&await field.inputValue()==='May draft belongs with May.',
+      'the next playback interval cannot switch months or replace the draft');
+    ok(await p.locator('[data-month="4"]').getAttribute('data-draft')==='true'&&
+      await p.locator('#visit-progress').textContent()==='Months with notes: 0 of 12',
+      'a draft is visible on its month without being counted as a notebook entry');
+    await p.locator('#next').tap();
+    ok(await p.locator('#month-note-month').textContent()==='June'&&await field.inputValue()==='',
+      'moving manually opens a separate June draft');
+    await field.fill('June has its own observation.');
+    await p.locator('[data-month="4"]').tap();
+    ok(await field.inputValue()==='May draft belongs with May.','returning to May restores the original draft');
+    await p.reload();
+    await p.evaluate(()=>document.documentElement.dataset.theme='dark');
+    ok(await field.inputValue()==='May draft belongs with May.','an unpinned draft survives reload on its own month');
+    await p.locator('#record').tap();
+    const work=await p.evaluate(key=>JSON.parse(localStorage.getItem(key)),KEY);
+    ok(work.notes.length===1&&work.notes[0].id==='month-4'&&work.notes[0].observation==='May draft belongs with May.'&&
+      work.observations[5]==='June has its own observation.',
+      'saving May pins only May, and June remains a separate draft');
+    ok(await p.locator('[data-month="4"]').getAttribute('data-draft')==='false','saving clears only that month’s draft badge');
+    await p.locator('[data-view="rain"]').tap();
+    const darkGraph=async selector=>{
+      const root=p.locator(selector),image=root.locator('img');
+      await image.evaluate(img=>img.decode());
+      return await image.evaluate(img=>getComputedStyle(img).filter.includes('invert')&&img.getAttribute('src')==='assets/migration-rainfall-source.png')&&
+        await root.locator('a[href="assets/migration-rainfall-source.png"]').isVisible();
+    };
+    ok(await darkGraph('#view-rain'),'dark inline source graph is toned down but original colors remain one tap away');
+    await p.locator('#rain-enlarge').tap();
+    ok(await darkGraph('#rain-dialog'),'dark enlarged graph uses the same source and retains the original-color link');
+    await screenshot(p,'390-dark-original-rainfall');
+    await p.locator('[data-close="rain-dialog"]').tap();
+    await p.locator('[data-page="evidence"]').tap();
+    const limits=await p.locator('.mx-evidence-intro').textContent();
+    ok(/group averages for sampled male wildebeest/.test(limits)&&/several studies/.test(limits)&&/outbreak year/.test(limits)&&/whole herd/.test(limits),
+      'sex, time/sample limits, and outbreak context are visible beside the field cards');
+    await p.locator('[data-collection="rainfall"]').tap();
+    ok(await darkGraph('#collection-rainfall .mx-rain-grid > :last-child'),'Investigate adapts its source image to dark mode too');
+    await p.evaluate(()=>delete document.documentElement.dataset.theme);
+    ok(await p.locator('.mx-rain-source').evaluate(img=>getComputedStyle(img).filter.includes('invert')),'the automatic dark theme follows the system setting');
+    await p.evaluate(()=>document.documentElement.dataset.theme='light');
+    ok(await p.locator('.mx-rain-source').evaluate(img=>getComputedStyle(img).filter==='none'),'light theme leaves the source graph unfiltered');
+  }finally{await context.close();}
+}
 (async()=>{const server=await serve();let browser;try{
   browser=await chromium.launch(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{});
+  await auditNotesAndRain(browser,server.url);
   const context=await browser.newContext({viewport:{width:1366,height:960},reducedMotion:'reduce',acceptDownloads:true});
   const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.goto(server.url+'openscied-b1-migration.html');await p.waitForFunction(()=>document.querySelectorAll('#month-buttons button').length===12);

@@ -30,6 +30,19 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       T.ok(await p.locator('#inh-env-reset').isDisabled(), 'restart disabled with nothing saved');
       T.ok(await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth) <= 0, width + ' px: no horizontal overflow');
 
+      // Loose section navigation can save empty scene shells; opening a scene is not evidence.
+      await p.evaluate(inh => localStorage.setItem(inh, JSON.stringify({
+        v: 1, pedigree: { guesses: {}, view: 'chromosome' }, meiosis: { runs: [] },
+        fields: {}, lastSection: 'passing', lastVisitedAt: Date.now()
+      })), INH);
+      await p.reload();
+      const inhCard = p.locator('#inh-env-progress').locator('xpath=..');
+      T.ok(/Not started/.test(await p.locator('#inh-env-progress').innerText())
+        && await p.locator('#inh-env-reset').isDisabled()
+        && await p.locator('#openscied-resume').isHidden()
+        && await inhCard.locator('progress').getAttribute('value') === '0',
+        width + ' px: untouched scenes and section visits leave the activity at zero');
+
       const t = Date.now();
       await p.evaluate(([inh, dna, cell, t]) => {
         localStorage.setItem(cell, JSON.stringify({ v: 1, trials: [], fields: { 'analysis-design': 'My evidence' }, lastSection: 'analyze', lastVisitedAt: t - 9000 }));
@@ -38,7 +51,10 @@ const INH = 'aplab:openscied:b3-inheritance-environment:v1', DNA = 'aplab:opensc
       }, [INH, DNA, CELL, t]);
       await p.reload();
       const text = await p.locator('#inh-env-progress').innerText();
-      T.ok(/2 of 6 interactive models used/.test(text) && /2 of 4 answers saved/.test(text), 'card counts models and answers: ' + text);
+      T.ok(/1 of 6 interactive models used/.test(text) && /2 of 4 answers saved/.test(text)
+        && await inhCard.locator('progress').getAttribute('value') === '1'
+        && await inhCard.locator('progress').getAttribute('max') === '6',
+        'card counts the recorded pedigree work, not the empty meiosis: ' + text);
       T.ok(/1 of 2 responses written/.test(await p.locator('#dna-p53-progress').innerText()) && /1 of 31 responses/.test(await p.locator('#cell-cycle-progress').innerText()), 'the other two cards are unchanged');
       T.ok(await p.locator('#openscied-resume-link').getAttribute('href') === 'openscied-b3-inheritance-environment.html#exit8' && /Resume Inheritance/.test(await p.locator('#openscied-resume-link').innerText()), 'Resume points at the newest activity and section');
       await p.locator('#openscied-resume-link').click();

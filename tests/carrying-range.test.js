@@ -33,3 +33,12 @@ test('a singular late spike is not the top of a repeating range',()=>{
   assert.equal(range.judgeEstimate(pts,30).code,'incorrect');
   assert.equal(range.readRange(pts,7,11).code,'recheck');
 });
+
+test('baseline and grass shortage estimates share the model-role scale without shifting their starting lines',()=>{
+  const entries=[100,75,50].map(percent=>range.dataset(trial(percent)));
+  assert.deepEqual(entries.map(entry=>entry.maximum),[20,20,20]);
+  for(const entry of entries){
+    const previousStart=Math.max(4,Math.ceil((Math.max(...entry.series.map(point=>point.ending))+1)/4)*4)/2;
+    assert.equal(entry.startLine,previousStart);
+  }
+});

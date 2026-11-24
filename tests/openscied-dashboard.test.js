@@ -4,11 +4,12 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
-function setup(blocked = false, overrides = {}, absent = []) {
-  const elements = new Map();
-  function element() {
+function setup(blocked = false, overrides = {}, absent = [], tracker) {
+  const elements = new Map(), created = [], events = {};
+  function element(tag) {
     const handlers = {};
-    return { value: '', disabled: false, textContent: '', open: false,
+    return { tag, value: '', disabled: false, textContent: '', open: false, attrs:{},
+      setAttribute(k,v) { this.attrs[k]=v; }, before() {}, after() {},
       addEventListener(type, fn) { handlers[type] = fn; },
       fire(type) { handlers[type]?.({ preventDefault() {} }); },
       showModal() { this.open = true; }, close() { this.open = false; },
@@ -23,15 +24,17 @@ function setup(blocked = false, overrides = {}, absent = []) {
   const storage = blocked ? new Proxy({}, { ownKeys() { throw new Error('Storage blocked'); } }) : data;
   Object.defineProperty(data, 'getItem', { value: key => data[key] ?? null });
   Object.defineProperty(data, 'removeItem', { value: key => { delete data[key]; } });
+  Object.defineProperty(data, 'setItem', { value: (key, value) => { data[key]=String(value); } });
   let mounted = '', blob;
   const context = { document: { readyState: 'complete',
+      addEventListener(type, fn) { events[type]=fn; },
       querySelector(selector) { if (absent.includes(selector)) return null; if (!elements.has(selector)) elements.set(selector, element()); return elements.get(selector); },
-      createElement: element, body: { appendChild() {} } },
+      createElement(tag) { const el=element(tag);created.push(el);return el; }, body: { appendChild() {} } },
     Lab: { identity: { mount(selector) { mounted = selector; }, get: () => ({ name: 'Student', period: '2' }) } },
-    localStorage: storage, window: { addEventListener() {} }, Blob,
+    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,addEventListener(type, fn) { events[type]=fn; } }, Blob,
     URL: { createObjectURL(value) { blob = value; return 'blob:backup'; }, revokeObjectURL() {} }, setTimeout() {} };
   vm.runInNewContext(source, context);
-  return { data, el: selector => elements.get(selector), mounted, blob: () => blob };
+  return { data, created, events, el: selector => elements.get(selector), mounted, blob: () => blob };
 }
 test('mounts the shared sign-in and confirms an OpenSciEd-only reset', () => {
   const s = setup(), before = { ...s.data };
@@ -140,7 +143,7 @@ test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustratio
   assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]),
     ['unit1','unit2','unit3','unit4']);
   assert.equal((page.match(/id="unit1"/g)||[]).length,1);
-  assert.match(page, /<summary>Coming soon: Unit 5<\/summary>/);
+  assert.match(page, /<p class="dashboard-coming-soon">Unit 5: No activities published yet\.<\/p>/);
   const unit = page.split('<section class="dashboard-unit current" aria-labelledby="unit1">')[1].split('</section>')[0];
   assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="serengeti-open"[^>]*href="openscied-b1-serengeti\.html"/);
@@ -177,7 +180,7 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   assert.equal(starter.el('#dna-workshop-progress').textContent,'1 piece placed · 1 response saved');
 });
 
-test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, leaving only Unit 5 under Coming soon', () => {
+test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, leaving Unit 5 as non-interactive information', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';
   const unit = page.split(heading)[1]?.split('</section>')[0] || '';
@@ -191,8 +194,8 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, leaving only Unit 5 
   assert.ok(unit.indexOf('id="hawksbeard-open"') < unit.indexOf('id="rat-generations-open"'));
   assert.match(unit, /href="openscied-b4-junco\.html"[^>]*><img src="assets\/junco-preview\.svg" width="960" height="600"/);
   assert.ok(unit.indexOf('id="rat-generations-open"') < unit.indexOf('id="junco-open"'));
-  const upcoming = page.split('<details class="dashboard-coming-soon">')[1]?.split('</details>')[0] || '';
-  assert.deepEqual([...upcoming.matchAll(/aria-labelledby="(unit\d+)"/g)].map(m=>m[1]), ['unit5']);
+  assert.match(page, /<p class="dashboard-coming-soon">Unit 5: No activities published yet\.<\/p>/);
+  assert.doesNotMatch(page, /<details class="dashboard-coming-soon">|aria-labelledby="unit5"/);
 });
 
 test('Hawksbeard continues the saved phase and includes its written answers in a scoped restart backup', async () => {
@@ -287,13 +290,15 @@ test('Cancer Rates Data Dive resumes, backs up its prediction and comparison, an
   assert.equal(starter.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html');
   assert.equal(starter.el('#openscied-resume').hidden, true);
   const saved = { ...fresh, step:'explain', lastVisitedAt:1800000000000, completed:true,
-    prediction:{choice:'lower', reason:'The groups may differ.', locked:true},
-    evidence:[{view:'state', measure:'incidence', a:'MI', b:'OH'}], claim:'I compared two rates.', limits:'These are population data.' };
+    prediction:{choice:'different', reason:'The groups may differ.', locked:true},
+    casework:{notes:{diagnoses:'A note',deaths:'B note',map:'C note'},access:'falling',diagnosis:'rising','test-cost':'longer',
+      question:'How does place compare?',opened:true},
+    evidence:[{view:'states', measure:'incidence', a:'MI', b:'OH'}], claim:'I compared two rates.', limits:'These are population data.' };
   const raw = JSON.stringify(saved);
   const s = setup(false, { [key]:raw });
-  assert.equal(s.el('#cancer-rates-progress').textContent, 'Investigation complete · 1 pinned comparison · 2 of 2 responses saved');
-  assert.equal(s.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html#cr-income-cards');
-  assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cancer-rates.html#cr-income-cards');
+  assert.equal(s.el('#cancer-rates-progress').textContent, 'Investigation complete · Investigation question saved · 1 pinned comparison · 2 of 2 responses saved');
+  assert.equal(s.el('#cancer-rates-open').href, 'openscied-b3-cancer-rates.html#explain');
+  assert.equal(s.el('#openscied-resume-link').href, 'openscied-b3-cancer-rates.html#explain');
   s.el('#download-openscied-results').fire('click');
   const whole = JSON.parse(await s.blob().text());
   assert.equal(whole.work[key], raw);
@@ -302,7 +307,8 @@ test('Cancer Rates Data Dive resumes, backs up its prediction and comparison, an
   const payload = JSON.parse(await s.blob().text());
   assert.deepEqual(payload.work, { [key]:raw });
   assert.deepEqual(payload.responses['cancer-rates'], {
-    claim:saved.claim, limits:saved.limits, prediction:saved.prediction.choice, predictionReason:saved.prediction.reason
+    claim:saved.claim, limits:saved.limits, prediction:saved.prediction.choice, predictionReason:saved.prediction.reason,
+    investigationQuestion:saved.casework.question,exhibitObservations:{A:'A note',B:'B note',C:'C note'}
   });
   s.el('#openscied-erase-confirmation').value = 'ERASE';
   s.el('#clear-openscied-form').fire('submit');
@@ -322,7 +328,7 @@ test('a cached dashboard without the Cancer Rates card keeps existing cards and 
 
 test('case evidence checks and a question draft are resumable before a comparison is pinned', () => {
   const key = 'aplab:openscied:b3-cancer-rates:v1';
-  const base = { step:'predict', evidence:[], lastVisitedAt:1800000000000 };
+  const base = { step:'predict', evidence:[], prediction:{choice:'same',locked:true}, lastVisitedAt:1800000000000 };
   const partial = setup(false,{[key]:JSON.stringify({...base,casework:{access:'falling',screening:'rising','race-stage':'higher','rural-stage':'higher'}})});
   assert.match(partial.el('#cancer-rates-progress').textContent,/1 of 6 exhibits complete/);
   assert.equal(partial.el('#openscied-resume-link').href,'openscied-b3-cancer-rates.html#cr-income-cards');
@@ -337,7 +343,7 @@ test('case evidence checks and a question draft are resumable before a compariso
 test('a submitted case question resumes Explore and is included in readable backup responses', async () => {
   const key = 'aplab:openscied:b3-cancer-rates:v1';
   const question = 'How does stage at diagnosis differ by place?';
-  const raw = JSON.stringify({step:'explore',evidence:[],lastVisitedAt:1800000000000,
+  const raw = JSON.stringify({step:'explore',evidence:[],prediction:{choice:'different',locked:true},lastVisitedAt:1800000000000,
     casework:{notes:{diagnoses:'A note',deaths:'B note',map:'C note'},access:'falling',diagnosis:'rising','test-cost':'longer',question,opened:true}});
   const s = setup(false,{[key]:raw});
   assert.match(s.el('#cancer-rates-progress').textContent,/Investigation question saved/);
@@ -375,3 +381,255 @@ test('Junco resumes its supported step and backs up prediction and written evide
   const unknown=setup(false,{[key]:JSON.stringify({...saved,step:'https://example.invalid/'})});
   assert.equal(unknown.el('#junco-open').href,'openscied-b4-junco.html#cort');
 });
+
+test('navigation, default records and empty scenes do not make Resume appear', () => {
+  const lastVisitedAt=1750000000000;
+  const raw = obj=>JSON.stringify({v:1,lastVisitedAt,...obj});
+  const s=setup(false,{
+    'aplab:openscied:b1-migration:v1':raw({month:1,visited:[0,1],notes:[],observations:{},answers:{}}),
+    'aplab:openscied:b3-cell-cycle:v1':raw({lastSection:'analyze',game:{round:0,roundResults:{}},trials:[],fields:{}}),
+    'aplab:openscied:b3-dna-p53:v1':raw({lastSection:'wrapup',fields:{},fork:{steps:{unwound:false,unzipped:false},stage:'wound'},expression:{runs:[]}}),
+    'aplab:openscied:b3-inheritance-environment:v1':raw({lastSection:'passing',fields:{},pedigree:{guesses:{},view:'chromosome'},planner:{conditions:[],controls:[]}}),
+    'aplab:openscied:b2-fires:v1':raw({lastSection:'cards',fields:{},cards:{placed:{},solved:false}}),
+    'aplab:openscied:b2-peat-bog:v1':raw({lastSection:'bog',settings:{tilt:23.44,temp:10,co2:420,o2:21,wet:75,burn:0},trials:[]}),
+    'aplab:openscied:b2-burn-lab:v1':raw({lastSection:'fuel',fields:{},burn:{records:[]}}),
+    'aplab:openscied:b2-carbon-journey:budget:v1':raw({position:0,furthest:0,prediction:'',explanation:''}),
+    'aplab:openscied:b4-junco:v1':raw({step:'aviary',prediction:'',revealed:false,sim:{serial:0,results:[]}})
+  });
+  for(const id of ['migration','cell-cycle','dna-p53','inh-env','b2-fires','peat-bog','b2-burn','carbon-journey','junco']){
+    assert.equal(s.el('#'+id+'-progress').textContent,'Not started',id);
+  }
+  assert.equal(s.el('#openscied-resume').hidden,true);
+  assert.equal(s.el('#carbon-journey-reset').disabled,true);
+  const inactive=s.created.filter(el=>el.tag==='progress' && !el.hidden);
+  assert.ok(inactive.length>0,'fixed denominators remain visible at zero');
+  assert.ok(inactive.every(el=>el.value===0));
+});
+
+test('Resume ranks changed evidence, separately shows last opened, and renders a known denominator', async () => {
+  const Resume=require('../openscied-resume.js');
+  const base=1700000000000;
+  let now=base;
+  const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+  const migration='aplab:openscied:b1-migration:v1', hawksbeard='aplab:openscied:b4-hawksbeard:v1';
+  const prior = {v:1,month:0,page:'explore',visited:[0],notes:[],answers:{claim:'One old analysis.'},lastVisitedAt:base-2000};
+  const latest = {v:1,prediction:'city',released:2,lastSection:'release',answers:{},lastVisitedAt:base-1000};
+  const s=setup(false,{[migration]:JSON.stringify(prior),[hawksbeard]:JSON.stringify(latest)},[],Tracker);
+  const tracker=Tracker.connect(s.data);
+  const refresh=()=>s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html#release$/);
+  const meter=s.created.find(e=>e.tag==='progress' && e.attrs['aria-label'].includes('Hawksbeard'));
+  assert.equal(meter.value,2);
+  assert.equal(meter.max,5);
+  const stamp=s.created.find(e=>e.tag==='time');
+  assert.match(stamp.textContent,/^Saved: /);
+  now+=1000;
+  tracker.snapshot('/openscied-b1-migration','open');
+  s.data[migration]=JSON.stringify({...prior,page:'explain',lastVisitedAt:now});
+  tracker.snapshot('/openscied-b1-migration','exit');
+  refresh();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html#release$/,'navigation does not promote a different activity');
+  now+=1000;
+  s.data[migration]=JSON.stringify({...prior,page:'explain',answers:{claim:'New analysis.'},lastVisitedAt:now});
+  tracker.snapshot('/openscied-b1-migration','exit');
+  refresh();
+  assert.match(s.el('#openscied-resume-link').href,/migration\.html#explain$/);
+  assert.match(stamp.textContent,/^Last opened: /);
+  assert.equal(stamp.dateTime,new Date(base+1000).toISOString());
+  const ledger=s.data[Resume.META_KEY];
+  assert.doesNotMatch(ledger,/analysis|claim/);
+  s.el('#download-openscied-results').fire('click');
+  const payload=JSON.parse(await s.blob().text());
+  assert.equal(payload.work[Resume.META_KEY],undefined,'metadata never exports as student work');
+});
+
+test('same legacy timestamps yield curriculum order; Carbon Journey v3 keeps its numbered response', async () => {
+  const lastVisitedAt=1700000000000;
+  const s=setup(false,{
+    'aplab:openscied:b2-carbon-journey:v1':JSON.stringify({version:3,rows:[{}],answers:{q1:'A source of carbon.'},lastSection:'sense',lastVisitedAt}),
+    'aplab:openscied:b4-hawksbeard:v1':JSON.stringify({v:1,prediction:'field',released:1,lastSection:'release',lastVisitedAt})
+  });
+  assert.match(s.el('#openscied-resume-link').href,/carbon-journey\.html#sense$/);
+  s.el('#download-openscied-results').fire('click');
+  assert.equal(JSON.parse(await s.blob().text()).responses['carbon-journey'].q1,'A source of carbon.');
+});
+
+
+test('Cancer rates requires the prediction lock and credible evidence before Resume shows completion', () => {
+  const key='aplab:openscied:b3-cancer-rates:v1';
+  const complete={step:'explain', completed:true, claim:'I compared the groups.', limits:'These data are observational.',
+    prediction:{choice:'same',locked:true}, evidence:[{view:'states',measure:'incidence',a:'MI',b:'OH'}],
+    casework:{notes:{diagnoses:'A',deaths:'B',map:'C'},access:'falling',diagnosis:'rising','test-cost':'longer',
+      opened:true,question:'How do the state rates compare?'}};
+  const state = v=>setup(false,{[key]:JSON.stringify({...complete,...v})});
+  const draft=state({prediction:{choice:'same',locked:false}});
+  assert.match(draft.el('#cancer-rates-progress').textContent,/^Prediction draft/);
+  assert.match(draft.el('#openscied-resume-link').href,/#predict$/);
+  const invalidPin=state({evidence:[{view:'states',measure:'incidence',a:'MI',b:'MI'}]});
+  assert.doesNotMatch(invalidPin.el('#cancer-rates-progress').textContent,/Investigation complete/);
+  assert.match(invalidPin.el('#openscied-resume-link').href,/#explore$/);
+});
+
+test('Fires only completes meter milestones on recorded evidence while resuming genuine unfinished work', () => {
+  const key='aplab:openscied:b2-fires:v1';
+  const make=(scenes={})=>setup(false,{[key]:JSON.stringify({v:1,fields:{},lastSection:'tilt',...scenes})});
+  const read=(s)=>s.created.find(el=>el.tag==='progress'&&el.attrs['aria-label'].includes('Fires')).value;
+  const blank=make({cards:{placed:{},solved:false},decomp:{startedAt:0,recorded:[]},tilt:{startedAt:0,recorded:false},
+    modelEvidence:{cardsPlaced:0,cardsRight:0,foamReadings:0,foamAfterBaseline:false,tubesRead:0,starchTested:false}});
+  assert.equal(blank.el('#openscied-resume').hidden,true);
+  assert.equal(read(blank),0);
+  const started=make({cards:{placed:{sugar:'in'}},decomp:{startedAt:1700000000000,recorded:[0]},tilt:{recorded:true,starchDone:false},
+    modelEvidence:{cardsPlaced:1,cardsRight:1,foamReadings:1,foamAfterBaseline:false,tubesRead:3,starchTested:false}});
+  assert.match(started.el('#openscied-resume-link').href,/fires\.html#tilt$/);
+  assert.equal(read(started),0,'initial readings and partial work are resumable without claiming a milestone');
+  const completed=make({modelEvidence:{cardsPlaced:5,cardsRight:5,foamReadings:2,foamAfterBaseline:true,tubesRead:3,starchTested:true}});
+  assert.equal(read(completed),3);
+  const old=make({cards:{placed:{sugar:'in'}},decomp:{recorded:[0,5]},tilt:{recorded:true,starchDone:true}});
+  assert.match(old.el('#openscied-resume-link').href,/fires\.html#tilt$/);
+  assert.equal(read(old),2,'legacy observations remain measurable and resumable');
+});
+
+test('dashboard direct-card clicks prime the first trip without promoting unchanged older work', () => {
+  const Resume=require('../openscied-resume.js');
+  let now=1700000000000;
+  const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+  const hawks='aplab:openscied:b4-hawksbeard:v1', migration='aplab:openscied:b1-migration:v1',
+    carrying='aplab:openscied-b1-carrying-capacity:run-v1';
+  const s=setup(false,{[hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000}),
+    [migration]:JSON.stringify({v:1,month:0,visited:[],notes:[],answers:{claim:'Old idea'},lastVisitedAt:now-2000})},[],Tracker);
+  const open=(pathname,origin='https://biologylabbench.com')=>s.events.click({
+    button:0,target:{closest:()=>({origin,pathname})}
+  });
+  now+=1000;
+  open('/openscied-b1-migration.html');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/,'opening older unchanged work does not promote it');
+  open('/openscied-b1-carrying-capacity.html','https://example.invalid');
+  assert.equal(JSON.parse(s.data[Resume.META_KEY])['b1-carrying-capacity'],undefined);
+  open('/openscied-b1-carrying-capacity');
+  assert.equal(JSON.parse(s.data[Resume.META_KEY])['b1-carrying-capacity'].signature,'');
+  now+=4000;
+  s.data[carrying]=JSON.stringify({baseline:{round:1},comparison:null,answers:{},checks:{}});
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/carrying-capacity\.html$/,'first new save without its own timestamp comes first even if page tracker did not load');
+});
+
+test('confirming a required Carbon reference card counts as work, but opening does not', () => {
+  const Resume=require('../openscied-resume.js');
+  let now=1700000000000;
+  const carbon='aplab:openscied:b2-carbon-journey:v1', hawks='aplab:openscied:b4-hawksbeard:v1';
+  const prior={version:3,rows:[{}],answers:{},coverageReviewed:[],lastSection:'play',lastVisitedAt:now-2000};
+  const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+  const s=setup(false,{[carbon]:JSON.stringify(prior),
+    [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
+  const tracker=Tracker.connect(s.data);
+  now+=1000;
+  tracker.snapshot('/openscied-b2-carbon-journey','open');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/);
+  s.data[carbon]=JSON.stringify({...prior,coverageReviewed:['ocean']});
+  now+=1000;
+  tracker.snapshot('/openscied-b2-carbon-journey','exit');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/carbon-journey\.html/);
+});
+
+test('Junco offers Resume for a trial in progress, but not after canceling the first trial', () => {
+  const key='aplab:openscied:b4-junco:v1';
+  const active={id:1,site:'urban',group:'incubating',step:0,finished:false};
+  const sim={seed:42,serial:1,site:'urban',group:'incubating',active,results:[]};
+  const save=sim=>JSON.stringify({v:1,step:'field',sim});
+  const s=setup(false,{'aplab:openscied:b3-cell-cycle:v1':null,[key]:save(sim)});
+  assert.match(s.el('#junco-progress').textContent,/Simulated trial in progress/);
+  assert.match(s.el('#openscied-resume-link').href,/junco\.html#field$/);
+  s.data[key]=save({...sim,active:null});
+  s.events.pageshow();
+  assert.equal(s.el('#junco-progress').textContent,'Not started');
+  assert.equal(s.el('#openscied-resume').hidden,true);
+  assert.equal(s.el('#junco-reset').disabled,true);
+});
+
+test('Junco setup-only changes do not outrank newer saved evidence', () => {
+  const Resume=require('../openscied-resume.js');
+  let now=1700000000000;
+  const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+  const key='aplab:openscied:b4-junco:v1', hawks='aplab:openscied:b4-hawksbeard:v1';
+  const row={id:1,site:'urban',group:'incubating',step:3};
+  const sim={seed:42,serial:1,site:'urban',group:'incubating',active:{...row,finished:true},results:[row]};
+  const save=sim=>JSON.stringify({v:1,step:'field',sim,lastVisitedAt:now});
+  const prior=JSON.stringify({v:1,step:'field',sim,lastVisitedAt:now-2000});
+  const s=setup(false,{[key]:prior,
+    [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
+  const tracker=Tracker.connect(s.data);
+  assert.match(s.el('#junco-progress').textContent,/1 simulated trial/);
+  now+=1000;
+  s.data[key]=save({...sim,site:'mountain',group:'foraging'});
+  tracker.snapshot('/openscied-b4-junco','exit');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/);
+  now+=1000;
+  const next={id:2,site:'mountain',group:'foraging',step:0,finished:false};
+  s.data[key]=save({...sim,serial:2,site:next.site,group:next.group,active:next});
+  tracker.snapshot('/openscied-b4-junco','exit');
+  s.events.pageshow();
+  assert.match(s.el('#openscied-resume-link').href,/junco\.html#field$/,'an actual unfinished trial is resumable');
+});
+
+test('Carbon Journey keeps its required-turn meter when the optional Budget has saved work', () => {
+  const carbon='aplab:openscied:b2-carbon-journey:v1', budget='aplab:openscied:b2-carbon-journey:budget:v1';
+  const budgetSave={v:1,position:0,furthest:0,prediction:'I predict a difference.',explanation:'',lastVisitedAt:1};
+  const s=setup(false,{[carbon]:JSON.stringify({version:3,rows:Array.from({length:10},()=>({})),
+    done:true,lastSection:'evidence',lastVisitedAt:2}),[budget]:JSON.stringify(budgetSave)});
+  const meter=s.created.find(el=>el.tag==='progress' && el.attrs['aria-label'].startsWith('Carbon Atom Journey'));
+  assert.equal(meter.value,10);
+  assert.equal(meter.max,10);
+  assert.match(meter.attrs['aria-valuetext'],/required turns recorded/);
+  assert.match(s.el('#carbon-journey-progress').textContent,/Journey complete.*Budget checkpoints: 0 of 8/);
+  assert.match(s.el('#carbon-journey-open').href,/#evidence$/);
+  s.data[budget]=JSON.stringify({...budgetSave,position:3,furthest:3,lastVisitedAt:3});
+  s.events.pageshow();
+  assert.match(s.el('#carbon-journey-open').href,/#budget$/,'a newer Budget save remains resumable');
+  assert.equal(meter.value,10);
+  delete s.data[carbon];
+  s.events.pageshow();
+  assert.equal(meter.value,3);
+  assert.equal(meter.max,8);
+  assert.match(meter.attrs['aria-valuetext'],/budget checkpoints reached/);
+});
+
+for (const [id,card] of [['b2-burn-lab','b2-burn'],['b2-fires','b2-fires']]) {
+  test(id+' ranks saved claim checklist edits without counting them as answers', () => {
+    const Resume=require('../openscied-resume.js');
+    let now=1700000000000;
+    const Tracker={...Resume,connect:store=>Resume.connect(store,()=>now)};
+    const key='aplab:openscied:'+id+':v1', hawks='aplab:openscied:b4-hawksbeard:v1';
+    const previous={v:1,lastSection:'peat',responseIds:['peat-prompt','cer-claim'],
+      fields:{'cer-claim':'a','cer-ev-5':false,'cer-caveat':false},lastVisitedAt:now-2000};
+    const s=setup(false,{[key]:JSON.stringify(previous),
+      [hawks]:JSON.stringify({v:1,prediction:'city',released:2,lastVisitedAt:now-1000})},[],Tracker);
+    const tracker=Tracker.connect(s.data);
+    const change=fields=>{
+      now+=1000;
+      s.data[key]=JSON.stringify({...previous,lastVisitedAt:now,fields});
+      const meta=tracker.snapshot('/openscied-'+id,'exit');
+      s.events.pageshow();
+      return meta.changed;
+    };
+    assert.match(s.el('#openscied-resume-link').href,/hawksbeard\.html/);
+    const fields={...previous.fields,'cer-ev-5':true,'cer-caveat':true};
+    assert.equal(change(fields),now);
+    assert.match(s.el('#openscied-resume-link').href,new RegExp(id+'\\.html#peat$'));
+    assert.match(s.el('#'+card+'-progress').textContent,/1 of 2 answers saved · Claim checklist saved/);
+    const lastWork=now;
+    assert.equal(change({...fields,'aq-unrelated-pref':'test'}),lastWork,'unrelated controls do not count');
+    assert.equal(change(previous.fields),now,'unchecking a previously saved response updates the work time');
+  });
+  test(id+' can resume a claim checklist even if no answer or model run is saved yet', () => {
+    const key='aplab:openscied:'+id+':v1';
+    const s=setup(false,{'aplab:openscied:b3-cell-cycle:v1':null,
+      [key]:JSON.stringify({v:1,responseIds:['cer-claim'],fields:{'cer-caveat':true}})});
+    assert.equal(s.el('#openscied-resume').hidden,false);
+    assert.match(s.el('#openscied-resume-link').href,new RegExp(id+'\\.html#peat$'));
+    assert.match(s.el('#'+card+'-progress').textContent,/0 of 1 answers saved · Claim checklist saved/);
+  });
+}

@@ -62,5 +62,38 @@ const shotDir = process.env.SERENGETI_SCREENSHOTS;
         console.log(`PASS event card: ${width}px keyboard, wording, image, effect, state and fit`);
       } finally { await context.close(); }
     }
+    const floodIds = ['flood-a','flood-b'];
+    for (const id of floodIds) {
+      const seed = Array.from({length:200},(_,i)=>i+1).find(n=>L.create(n).deck[0]===id);
+      assert.ok(seed);
+      const ctx = await T.ctxFor(browser,{width:390,height:844,dark:true,reduced:true});
+      try {
+        await ctx.addInitScript(seed=>{
+          const get=crypto.getRandomValues.bind(crypto);
+          crypto.getRandomValues = a => {
+            if (a instanceof Uint32Array && a.length===1) { a[0]=seed; return a; }
+            return get(a);
+          };
+        },seed);
+        const page=await ctx.newPage();
+        await page.goto(server.url+'openscied-b1-serengeti.html');
+        await page.locator('#sg-start').click();
+        await page.locator('#sg-next[data-action="migrate"]').click();
+        await page.locator('#sg-next[data-action="draw"]').click();
+        const modal=page.locator('#sg-event-modal');
+        await modal.waitFor();
+        const printed=L.CARDS.find(c=>c.id===id).text;
+        assert.equal(await modal.locator('#sg-event-wording').textContent(),printed);
+        assert.match(printed,/lion pride clan token/);
+        assert.match(await modal.locator('#sg-event-effect-text').textContent(),/lion pride \(P\), not a hyena clan \(C\)/);
+        await modal.getByRole('button',{name:'Continue to board'}).click();
+        assert.equal(await page.locator('#sg-interactive article p').first().textContent(),printed);
+        assert.match(await page.locator('#sg-interactive .sg-card-app-note').textContent(),/other lions.*cannot hunt/);
+        const targets=await page.locator('#sg-options option').allTextContents();
+        assert.ok(targets.some(x=>/Lion.*Pride/.test(x)));
+        assert.ok(!targets.some(x=>/Hyena|Clan/.test(x)));
+        console.log(`PASS ${id}: exact printed card plus separate lion-pride application note`);
+      } finally { await ctx.close(); }
+    }
   } finally { await browser.close(); server.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

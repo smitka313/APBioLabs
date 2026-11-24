@@ -1,4 +1,4 @@
-/* Lesson 4 companion. This is a study-data explorer, not a simulation. */
+/* Lesson 4 companion. Published graphs and simulated field trials are kept separate. */
 (() => {
   'use strict';
   const D = window.JUNCO_DATA;
@@ -16,7 +16,7 @@
   const $=id=>document.getElementById('ju-'+id);
   const cleanText=(v,n)=>typeof v==='string'?v.slice(0,n):'';
   const pick=(v,valid,d)=>valid.includes(v)?v:d;
-  const blank=()=>({step:'field',prediction:'',revealed:false,reason:'',observation:'',claim:'',limits:'',fieldGroup:'foraging',aviaryGroup:'female',filter:'all',fit:false,lastVisitedAt:0});
+  const blank=()=>({step:'field',prediction:'',revealed:false,reason:'',observation:'',claim:'',limits:'',person:{},fieldGroup:'foraging',aviaryGroup:'female',filter:'all',fit:false,lastVisitedAt:0});
   let state=blank(), canSave=true;
   try{
     const raw=JSON.parse(localStorage.getItem(key) || 'null');
@@ -25,6 +25,7 @@
       state.revealed=raw.revealed===true&&!!state.prediction;
       state.step=pick(raw.step,state.revealed?steps:steps.slice(0,2),'field');
       for(const [k,n] of [['reason',900],['observation',900],['claim',1600],['limits',1600]])state[k]=cleanText(raw[k],n);
+      for(const [k,n] of [['name',100],['period',24]])if(typeof raw.person?.[k]==='string')state.person[k]=cleanText(raw.person[k],n);
       state.fieldGroup=pick(raw.fieldGroup,Object.keys(fieldLabels),'foraging');
       state.aviaryGroup=pick(raw.aviaryGroup,Object.keys(aviaryLabels),'female');
       state.filter=pick(raw.filter,['all',...Object.keys(sites)],'all');
@@ -64,8 +65,8 @@
     const hasError=rows.some(row=>Number.isFinite(row.se));
     const yMax=Math.max(0.1,...domain.map(r=>r.mean+(Number.isFinite(r.se)?r.se:0)));
     const yMin=Math.min(0,...domain.map(r=>r.mean-(Number.isFinite(r.se)?r.se:0)));
-    graph(kind+'-chart',{type:'bar',categories:Object.values(sites),xLabel:'Population of origin',yLabel:kind==='field'?'Flight distance ('+d.unit+')':'Exploration score',yMin:yMin<0?Math.floor(yMin*1.12*2)/2:0,yMax:Math.ceil(yMax*1.12*2)/2,
-      series:[{name:'Population mean',points:rows.map(r=>({x:sites[r.site],y:r.mean,err:Number.isFinite(r.se)?r.se:0}))}]});
+    graph(kind+'-chart',{type:'bar',categories:['Mean by population'],xLabel:'Population of origin',yLabel:kind==='field'?'Flight-initiation distance ('+d.unit+')':'Mean exploration score (PC1)',yMin:yMin<0?Math.floor(yMin*1.12*2)/2:0,yMax:Math.ceil(yMax*1.12*2)/2,
+      series:['urban','mountain'].map((site,i)=>({name:sites[site],color:seriesColors[i],points:rows.filter(r=>r.site===site).map(r=>({x:'Mean by population',y:r.mean,err:Number.isFinite(r.se)?r.se:0}))}))});
     const headers=hasError?['Population','Mean',errName(d),'n']:['Population','Mean','n'];
     tableInto($(kind+'-table'),headers,rows.map(row=>hasError?rowData(row):[sites[row.site],fmt(row.mean),row.n??'—']));
     $(kind+'-note').textContent=[d.note,hasError?'Error bars show '+errName(d)+'.':'',kind==='field'?'The distance scale changes with the selected group.':''].filter(Boolean).join(' ');
@@ -91,7 +92,7 @@
       return;
     }
     const rows=points.filter(p=>!identified||state.filter==='all'||p.site===state.filter);
-    const yName=d.yLabel||'Exploration score', xName=d.xLabel||'CORT';
+    const yName='Individual exploration score (PC1)', xName=d.xLabel||'CORT';
     const graphSeries=identified?(state.filter==='all'?Object.keys(sites):[state.filter]).map(site=>({name:sites[site],color:seriesColors[Object.keys(sites).indexOf(site)],points:rows.filter(p=>p.site===site),line:false,dots:true,fit:state.fit?'linear':undefined})):[{name:'All plotted birds',points:rows,line:false,dots:true,fit:state.fit?'linear':undefined}];
     const ext=(axis,f)=>Math.max(1,Math.ceil(Math.max(...points.map(p=>p[axis]))*1.06/f)*f);
     graph('chart',{type:'xy',xLabel:xName,yLabel:yName,xMin:Math.min(0,...points.map(p=>p.x)),xMax:ext('x',d.xStep||10),yMin:Math.min(0,...points.map(p=>p.y)),yMax:ext('y',d.yStep||5),series:graphSeries});
@@ -115,6 +116,17 @@
     $('evidence').replaceChildren(...evidenceLines().map(s=>mk('p',s)));
     $('saved-observation').textContent=state.observation.trim()?'Your field note: '+state.observation:'';
   }
+  function completion(){
+    const done={field:!!state.observation.trim(),aviary:state.revealed,cort:!!(state.claim.trim()&&state.limits.trim())};
+    $('step-hint').hidden=state.revealed;
+    for(const btn of nav){
+      const step=btn.dataset.step;
+      btn.toggleAttribute('data-ose-complete',done[step]);
+      if(done[step])btn.setAttribute('aria-description','Complete');
+      else if(step==='cort'&&!state.revealed)btn.setAttribute('aria-description','Save your prediction and reveal the shared-aviary results first.');
+      else btn.removeAttribute('aria-description');
+    }
+  }
   function draw(focus=false){
     for(const step of steps)document.getElementById(step).hidden=step!==state.step;
     for(const btn of nav){
@@ -122,6 +134,7 @@
       else btn.removeAttribute('aria-current');
       btn.disabled=btn.dataset.step==='cort'&&!state.revealed;
     }
+    completion();
     $('field-group').value=state.fieldGroup;$('aviary-group').value=state.aviaryGroup;
     $('prediction').value=state.prediction;$('prediction').disabled=state.revealed;
     $('reason').readOnly=state.revealed;
@@ -146,7 +159,8 @@
   for(const [id,k,max] of [['field-entry','observation',900],['reason','reason',900],['claim','claim',1600],['limits','limits',1600]]){
     const el=$(id);
     el.value=state[k];
-    el.addEventListener('input',()=>{state[k]=cleanText(el.value,max);save();});
+    el.addEventListener('blur',()=>{el.scrollTop=0;});
+    el.addEventListener('input',()=>{state[k]=cleanText(el.value,max);save();completion();});
   }
   $('field-group').addEventListener('change',e=>{state.fieldGroup=pick(e.target.value,Object.keys(fieldLabels),'foraging');save();draw();});
   $('aviary-group').addEventListener('change',e=>{state.aviaryGroup=pick(e.target.value,Object.keys(aviaryLabels),'female');save();draw();});
@@ -159,9 +173,14 @@
   $('filter').value=state.filter;$('fit').checked=state.fit;
   $('filter').addEventListener('change',e=>{state.filter=pick(e.target.value,['all',...Object.keys(sites)],'all');save();cort();say($('cort-status').textContent);});
   $('fit').addEventListener('change',e=>{state.fit=e.target.checked;save();cort();});
+  const shared=window.Lab?.identity?.get?.()||{};
+  for(const [k,max] of [['name',100],['period',24]]){
+    const field=$(k);field.value=state.person[k]??shared[k]??'';
+    field.addEventListener('input',()=>{state.person[k]=cleanText(field.value,max);save();});
+  }
   $('download').addEventListener('click',()=>{
     const view=identified?sites[state.filter]||'Both populations':'All plotted birds';
-    const body=['Junco Investigation — Field report','Published study evidence, not simulated data.','',...evidenceLines(),
+    const body=['Junco Investigation — Field report','Name: '+$('name').value.trim(),'Class period: '+$('period').value.trim(),'','PUBLISHED STUDY EVIDENCE',...evidenceLines(),
       '', 'My observation: '+state.observation,'My prediction: '+(choices[state.prediction]||'Not recorded'),'My reasoning: '+state.reason,
       '', 'Hormone graph: '+view,$('cort-status').textContent,'','My explanation:',state.claim,'','Limits or next question:',state.limits,'',
       ...(window.JuncoFlight?.report(state.sim)??[]),

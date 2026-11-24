@@ -159,3 +159,36 @@ test('20 seeded seasons complete with 12 draw rows, valid roll logs, and save ro
   }
   assert.equal(L.restore('not a save'),null);
 });
+
+test('both flood cards preserve the exact printed phrase but only disable hunts in the selected lion pride territory', () => {
+  const printed = 'A flood forces a lion pride to leave their territory. Remove one lion pride clan token from the gameboard. Now none of the remaining individual or small group tokens within the territory you removed the token from can hunt.';
+  for (const id of ['flood-a','flood-b']) {
+    const s=card(id), {card:actual,options}=L.phase(s);
+    assert.equal(actual.text,printed);
+    const anchors=of(s,'lion','pride');
+    assert.deepEqual(options.map(p=>p.tokenId),anchors.map(p=>p.id));
+    const anchor=anchors.find(t=>of(s,'lion').some(r=>r.territory===t.territory&&r.type!=='pride'));
+    const residents=of(s,'lion').filter(t=>t.territory===anchor.territory && t.type!=='pride');
+    const next=go(s,'resolveCard',anchor.id);
+    assert.ok(residents.length>0);
+    assert.ok(residents.every(t=>next.tokens.some(r=>r.id===t.id)));
+    assert.deepEqual(of(next,'hyena'),of(s,'hyena'));
+    assert.equal(L.huntReadiness(next,'lion').eligibleHunters,L.huntReadiness(s,'lion').eligibleHunters-residents.length);
+    assert.ok(L.floodedCells(next).some(c=>addr(c)===addr(anchor.cell)));
+  }
+});
+
+test('the first-hunt worked example in both board views matches the real dice rules', () => {
+  const html=require('node:fs').readFileSync(require('node:path').join(__dirname,'../openscied-b1-serengeti.html'),'utf8');
+  for (const id of ['sg-dice-example','sg-expanded-dice-example']) {
+    const match=html.match(new RegExp('<details id="'+id+'"[^>]*>([^]*?)</details>'));
+    assert.ok(match,id+' exists');
+    const rows=[...match[1].matchAll(/<tr><td>([^<]+)<\/td><td>([^<]+)<\/td><td>([^<]+)<\/td><\/tr>/g)];
+    const outcome=L.compareDice(rows.map(r=>Number(r[1])).filter(Number.isFinite),rows.map(r=>Number(r[2])));
+    assert.deepEqual(outcome.pairs.map(p=>p.winner),['predator','tie']);
+    assert.equal(outcome.predatorRemaining,2);
+    assert.equal(outcome.preyRemaining,2);
+    assert.match(rows[2][3],/no match/);
+    assert.match(match[1],/Predator rolls 2 dice; wildebeest rolls 2 dice/);
+  }
+});

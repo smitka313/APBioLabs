@@ -23,9 +23,16 @@ async function themeContext(browser, options = {}) {
 
   console.log('Head script on every page');
   const SNIP = "localStorage.getItem('aplab:pref:theme')";
+  const redirectScript = '<script>\n' + fs.readFileSync(path.join(T.ROOT, 'domain-redirect.js'), 'utf8') + '</script>';
   for (const f of [...PAGES, '404.html']) {
     const html = fs.readFileSync(path.join(T.ROOT, f), 'utf8');
-    const head = html.slice(0, html.indexOf('</head>'));
+    let head = html.slice(0, html.indexOf('</head>'));
+    if (f === '404.html') {
+      // GitHub Pages needs the embedded redirect on missing paths. Its OpenSciEd-only
+      // branch cannot replace the unconditional 404 theme fallback on any other path.
+      T.ok(head.split(redirectScript).length === 2, '404 embeds one exact copy of the shared redirect');
+      head = head.replace(redirectScript, '');
+    }
     const i = head.indexOf(SNIP), firstLink = head.search(/<link\b[^>]*stylesheet/);
     T.ok(i > 0 && (firstLink < 0 || i < firstLink) && (head.match(/aplab:pref:theme/g) || []).length === 1, f + ': inline theme script in <head>, before the stylesheets');
   }
@@ -71,7 +78,7 @@ async function themeContext(browser, options = {}) {
   console.log('No flash of the wrong theme');
   ctx = await themeContext(b, { dark: false });
   await ctx.addInitScript(k => { try { localStorage.setItem(k, 'dark'); } catch (e) { /* ignore */ } }, KEY);
-  for (const f of ['index.html', 'lab05.html', 'teachers.html']) {
+  for (const f of ['index.html', 'lab05.html', 'teachers.html', '404.html']) {
     const pg = await ctx.newPage();
     await pg.route(/\/(lab\.js|style\.css)$/, r => r.abort());   // nothing but the inline head script can set it
     await pg.goto(srv.url + f, { waitUntil: 'domcontentloaded' });
