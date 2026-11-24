@@ -48,20 +48,47 @@
 .ju-aviary-origins span:first-child{color:var(--ju-city)}
 .ju-aviary-origins span:last-child{color:var(--ju-mtn)}
 .ju-aviary-origins b{font:750 .68rem/1.35 var(--f-mono);border:1px solid currentColor;border-radius:3px;padding:.05rem .13rem;white-space:nowrap}
-.ju-aviary-drawing{display:block;inline-size:100%;block-size:auto;background:#203c33;border:1px solid var(--ju-line);border-radius:8px}
+.ju-aviary-drawing{display:block;inline-size:100%;block-size:auto;background:#203c33;border:1px solid var(--ju-line);border-radius:8px 8px 0 0}
 .ju-aviary-art figcaption{color:var(--ju-ink);font-size:.8rem;line-height:1.36}
 .ju-aviary-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.32rem}
 .ju-aviary-controls button,.ju-aviary-replay{min-inline-size:0;min-block-size:42px;padding:.28rem .4rem;font:750 .87rem/1.18 var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--ju-line);border-radius:5px;cursor:pointer}
 .ju-aviary-controls button[aria-pressed=true]{border-color:var(--ju-ink);box-shadow:inset 0 -3px var(--ju-ink);color:var(--ju-ink)}
 .ju-aviary-controls button[aria-pressed=true]::before{content:"✓ ";font-weight:850}
 .ju-aviary-detail{padding:.42rem .55rem;border-inline-start:3px solid var(--ju-city);background:var(--surface);border-radius:4px;color:var(--ink);font-size:.86rem}
-.ju-aviary-replay{justify-self:start;text-align:start;padding-inline:.55rem}
+.ju-aviary-timeline{display:grid;gap:.4rem;margin-top:-.55rem;padding:.42rem .55rem .55rem;border:1px solid var(--ju-line);border-top:0;border-radius:0 0 8px 8px;background:var(--surface)}
+.ju-aviary-routine-caption{min-block-size:3em;color:var(--ink);font-size:.87rem}
+.ju-aviary-routine-caption strong{color:var(--ju-ink)}
+.ju-aviary-stages{list-style:none;counter-reset:av-step;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.22rem;margin:0;padding:0}
+.ju-aviary-stages li{display:flex;gap:.18rem;min-inline-size:0;padding:.26rem .22rem;border:1px solid var(--ju-line);border-radius:4px;color:var(--ink);font-size:.73rem;line-height:1.22}
+.ju-aviary-stages li::before{counter-increment:av-step;content:counter(av-step);flex:none;align-self:start;padding:0 .23rem;border-radius:50%;border:1px solid var(--ju-line);font-weight:800}
+.ju-aviary-stages li[aria-current=step]{font-weight:850;background:var(--ju-canvas);border-color:var(--ju-ink);box-shadow:inset 0 -2px var(--ju-ink)}
+.ju-aviary-replay{justify-self:start;text-align:start;padding-inline:.55rem;border-color:var(--ju-ink);background:var(--ju-canvas)}
 .ju-aviary-ring{display:none;fill:none;stroke:#ffe4a4;stroke-width:3.6;stroke-dasharray:7 4;paint-order:stroke;filter:drop-shadow(0 1px 2px #192b26);pointer-events:none}
 .ju-aviary-art[data-control=housing] .ju-aviary-ring--housing,.ju-aviary-art[data-control=food] .ju-aviary-ring--food,.ju-aviary-art[data-control=people] .ju-aviary-ring--people{display:block}
-.ju-aviary-art.is-replaying .ju-aviary-caretaker{animation:ju-aviary-routine 1.3s ease-in-out both}
-@keyframes ju-aviary-routine{0%,100%{transform:translateX(0)}34%,66%{transform:translateX(-23px)}}
+/* The two subject groups share the same scene states and coordinates. */
+.ju-aviary-seeds,.ju-aviary-pour,.ju-aviary-match{opacity:0}
+.ju-aviary-pour{fill:none;stroke:#fff1b8;stroke-width:3.6;stroke-linecap:round;stroke-dasharray:1 6}
+.ju-aviary-match{fill:none;stroke:#ffe4a4;stroke-width:3.6}
+.ju-aviary-caretaker{transition:transform .8s ease-in-out}
+.ju-aviary-art.is-resetting .ju-aviary-caretaker{transition:none}
+.ju-aviary-art:not([data-routine=idle]) .ju-aviary-ring--people{display:none}
+.ju-aviary-art[data-routine=approach] .ju-aviary-caretaker{transform:translate(-87px,-7px)}
+.ju-aviary-art[data-routine=refill] .ju-aviary-caretaker{transform:translate(-87px,-22px) rotate(13deg)}
+.ju-aviary-art[data-routine=refill] .ju-aviary-scoop{transform:translate(-17px,-36px) rotate(-28deg);transition:transform .48s ease}
+.ju-aviary-arm--pour,.ju-aviary-art[data-routine=refill] .ju-aviary-arm--carry{opacity:0}
+.ju-aviary-art[data-routine=refill] .ju-aviary-arm--pour{opacity:1}
+.ju-aviary-art[data-routine=refill] .ju-aviary-pour{animation:ju-aviary-pour .88s .35s ease-out both}
+.ju-aviary-art[data-routine=refill] .ju-aviary-seeds{opacity:1;transition:opacity .3s .53s}
+.ju-aviary-art[data-routine=matched] :is(.ju-aviary-seeds,.ju-aviary-match){opacity:1}
+.ju-aviary-art[data-routine=matched] .ju-aviary-bird{animation:ju-aviary-hop .68s ease-in-out both}
+@keyframes ju-aviary-pour{0%,100%{opacity:0;stroke-dashoffset:0}24%{opacity:1}68%{opacity:1;stroke-dashoffset:-14}}
+@keyframes ju-aviary-hop{0%{transform:none}36%{transform:translate(-16px,1px)}100%{transform:translate(-36px,40px)}}
 @media(max-width:390px){.ju-aviary-origins{font-size:.78rem}.ju-aviary-controls button{padding-inline:.18rem;font-size:.8rem}}
-@media(prefers-reduced-motion:reduce){.ju-aviary-art.is-replaying .ju-aviary-caretaker{animation:none}}
+@media(prefers-reduced-motion:reduce){
+  .ju-aviary-art :is(.ju-aviary-caretaker,.ju-aviary-bird,.ju-aviary-pour,.ju-aviary-scoop,.ju-aviary-seeds){animation:none!important;transition:none!important}
+  .ju-aviary-art[data-routine=refill] .ju-aviary-pour{opacity:1}
+  .ju-aviary-art[data-routine=matched] .ju-aviary-bird{transform:translate(-36px,40px)}
+}
 .ju-reveal,.ju-source{margin-top:.72rem}
 .ju-chart-note{font-size:.86rem;color:var(--muted)}.ju-plot{min-width:0;min-height:8rem}.ju-plot svg{display:block;width:100%;height:auto}
 .ju-data{min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:.38rem .52rem;font-size:.88rem}

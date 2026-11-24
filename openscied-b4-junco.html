@@ -120,7 +120,7 @@
     <div class="ju-heading"><div><p class="ju-kicker">02 · CONTROLLED COMPARISON</p><h2 id="ju-aviary-title" tabindex="-1">What if both groups grow up in the same setting?</h2></div><span class="ju-tag">Evidence B</span></div>
     <div class="ju-layout">
       <article class="ju-sheet">
-        <figure class="ju-aviary-art" id="ju-aviary-art" data-control="housing" aria-labelledby="ju-aviary-visual-title">
+        <figure class="ju-aviary-art" id="ju-aviary-art" data-control="housing" data-routine="idle" aria-labelledby="ju-aviary-visual-title">
           <div class="ju-aviary-top">
             <div><p class="ju-kicker">COMMON GARDEN · HOME AVIARIES</p><h3 id="ju-aviary-visual-title">Different origins, matched conditions</h3></div>
             <span class="ju-aviary-stamp">SCHEMATIC</span>
@@ -128,7 +128,7 @@
           <div class="ju-aviary-origins"><span><b>01</b> UC San Diego</span><span><b>02</b> Mt. Laguna</span></div>
           <svg class="ju-aviary-drawing" viewBox="0 0 680 292" role="img" aria-labelledby="ju-cutaway-title ju-cutaway-desc">
             <title id="ju-cutaway-title">Illustrated cutaway of two representative junco home aviaries</title>
-            <desc id="ju-cutaway-desc">The illustration repeats the same mesh room, perches, food dish and caretaker in both panels. The birds represent the two populations, not actual bird counts or positions.</desc>
+            <desc id="ju-cutaway-desc">The illustration repeats the same mesh room, perches, food dish and caretaker in both panels. In the sample routine, the caretaker approaches and refills both dishes, and the birds hop closer. This is not a record of bird behavior.</desc>
             <defs>
               <linearGradient id="ju-av-wall" x2="0" y2="1"><stop stop-color="#d7e9df"/><stop offset="1" stop-color="#7c9d88"/></linearGradient>
               <linearGradient id="ju-av-floor" x2="0" y2="1"><stop stop-color="#7f6954"/><stop offset="1" stop-color="#bd9c73"/></linearGradient>
@@ -180,7 +180,15 @@
                 <path d="M-24-4h48l-5 13c-9 7-30 7-38 0Z" fill="#7d472e" stroke="#48372b" stroke-width="1.5"/>
                 <ellipse cy="-4" rx="25" ry="7" fill="#cf925a" stroke="#68472f" stroke-width="1.5"/>
                 <ellipse cy="-4" rx="17" ry="4" fill="#aa7045"/>
-                <path d="m-14-5 3 1m3-3 3 2m5-1 4 1m4-3 3 2m3 1 3 1m-8 2 3 1m-15-1 3 1" fill="none" stroke="#f3d293" stroke-width="1.9" stroke-linecap="round"/>
+              </g>
+              <g id="ju-av-seeds">
+                <ellipse cy="-4" rx="17" ry="5" fill="#e8b764" stroke="#80562d" stroke-width="1.2"/>
+                <path d="m-14-5 3 1m3-3 3 2m5-1 4 1m4-3 3 2m3 1 3 1m-8 2 3 1m-15-1 3 1" fill="none" stroke="#fff1b8" stroke-width="2.2" stroke-linecap="round"/>
+              </g>
+              <g id="ju-av-scoop">
+                <path d="M-26 5h51v5h-51Z" fill="#b2c8c7" stroke="#273c3a" stroke-width="1.4"/>
+                <path d="m-35 1 23 2-6 12h-13Z" fill="#e7ebe0" stroke="#344b48" stroke-width="1.5"/>
+                <path d="m-32 3 17 2-2 4-15-2Z" fill="#e8b764"/>
               </g>
               <g id="ju-av-person">
                 <ellipse cx="4" cy="48" rx="24" ry="4" fill="#142924" opacity=".4"/>
@@ -189,9 +197,7 @@
                 <path d="M-10 0c8-4 13-4 19 0l6 26-21 4-7-9Z" fill="#54686c" stroke="#243a3b" stroke-width="2"/>
                 <path d="M-1 2 2 25m-10-13 5 2" stroke="#a6b8ad" stroke-width="1.2"/>
                 <path d="m-8 5-8 11 7 8" fill="none" stroke="#51696a" stroke-width="5" stroke-linecap="round"/>
-                <path d="m6 5 8 9 8-5" fill="none" stroke="#4b6265" stroke-width="5" stroke-linecap="round"/>
-                <circle cx="24" cy="8" r="3" fill="#cc9574"/>
-                <path d="m14 6 16-1-2 12-13 1Z" fill="#d8cead" stroke="#536151" stroke-width="1.4"/>
+
                 <path d="M-9-13c0-9 13-12 17-4l2 7-4 4a8 8 0 0 1-12-3Z" fill="#d69773"/>
                 <path d="M-11-14c-1-9 12-12 17-5l7 4-23 3Z" fill="#243e3a"/>
               </g>
@@ -202,31 +208,51 @@
             <path d="M340 13v216" stroke="#adc3ae" stroke-width="1.5" stroke-dasharray="4 6" opacity=".54"/>
             <g transform="translate(17 16)">
               <use href="#ju-av-room"/>
-              <use href="#ju-av-bird" transform="translate(87 96) scale(.72)"/>
+              <ellipse class="ju-aviary-match" cx="125" cy="178" rx="34" ry="18"/>
               <use href="#ju-av-food" transform="translate(126 179)"/>
-              <g transform="translate(255 204)"><g class="ju-aviary-caretaker"><use href="#ju-av-person"/></g></g>
+              <use class="ju-aviary-seeds" href="#ju-av-seeds" transform="translate(126 179)"/>
+              <g class="ju-aviary-bird"><use href="#ju-av-bird" transform="translate(87 96) scale(.72)"/></g>
+              <g transform="translate(255 204)"><g class="ju-aviary-caretaker"><use href="#ju-av-person"/>
+                <g class="ju-aviary-arm--carry"><path d="m4 5-10 12-11-12" fill="none" stroke="#405e63" stroke-width="5.5" stroke-linecap="round"/><circle cx="-18" cy="6" r="3.4" fill="#cc9574"/></g>
+                <g class="ju-aviary-arm--pour"><path d="m4 5-17-15 3-20" fill="none" stroke="#405e63" stroke-width="5.5" stroke-linecap="round"/><circle cx="-10" cy="-31" r="3.4" fill="#cc9574"/></g>
+                <use class="ju-aviary-scoop" href="#ju-av-scoop" transform="translate(-22 1)"/></g></g>
+              <path class="ju-aviary-pour" d="m126 151-2 22m8-20-2 20m5-17-1 15"/>
               <rect class="ju-aviary-ring ju-aviary-ring--housing" x="11" y="14" width="284" height="193" rx="9"/>
               <ellipse class="ju-aviary-ring ju-aviary-ring--food" cx="125" cy="178" rx="34" ry="19"/>
               <rect class="ju-aviary-ring ju-aviary-ring--people" x="227" y="176" width="61" height="81" rx="14"/>
             </g>
             <g transform="translate(360 16)">
               <use href="#ju-av-room"/>
-              <use href="#ju-av-bird" transform="translate(87 96) scale(.72)"/>
+              <ellipse class="ju-aviary-match" cx="125" cy="178" rx="34" ry="18"/>
               <use href="#ju-av-food" transform="translate(126 179)"/>
-              <g transform="translate(255 204)"><g class="ju-aviary-caretaker"><use href="#ju-av-person"/></g></g>
+              <use class="ju-aviary-seeds" href="#ju-av-seeds" transform="translate(126 179)"/>
+              <g class="ju-aviary-bird"><use href="#ju-av-bird" transform="translate(87 96) scale(.72)"/></g>
+              <g transform="translate(255 204)"><g class="ju-aviary-caretaker"><use href="#ju-av-person"/>
+                <g class="ju-aviary-arm--carry"><path d="m4 5-10 12-11-12" fill="none" stroke="#405e63" stroke-width="5.5" stroke-linecap="round"/><circle cx="-18" cy="6" r="3.4" fill="#cc9574"/></g>
+                <g class="ju-aviary-arm--pour"><path d="m4 5-17-15 3-20" fill="none" stroke="#405e63" stroke-width="5.5" stroke-linecap="round"/><circle cx="-10" cy="-31" r="3.4" fill="#cc9574"/></g>
+                <use class="ju-aviary-scoop" href="#ju-av-scoop" transform="translate(-22 1)"/></g></g>
+              <path class="ju-aviary-pour" d="m126 151-2 22m8-20-2 20m5-17-1 15"/>
               <rect class="ju-aviary-ring ju-aviary-ring--housing" x="11" y="14" width="284" height="193" rx="9"/>
               <ellipse class="ju-aviary-ring ju-aviary-ring--food" cx="125" cy="178" rx="34" ry="19"/>
               <rect class="ju-aviary-ring ju-aviary-ring--people" x="227" y="176" width="61" height="81" rx="14"/>
             </g>
           </svg>
-          <figcaption>Representative rooms and birds only. The populations lived apart under matched conditions; this is not a map of the facility or a count of the birds.</figcaption>
+          <div class="ju-aviary-timeline">
+            <p id="ju-aviary-routine-caption" class="ju-aviary-routine-caption"><strong>Try a sample care routine.</strong> Watch what stays the same in both enclosures.</p>
+            <ol class="ju-aviary-stages" aria-label="Sample care routine steps">
+              <li data-aviary-stage="approach">Approach both enclosures</li>
+              <li data-aviary-stage="refill">Refill both dishes</li>
+              <li data-aviary-stage="matched">Same routine for both groups</li>
+            </ol>
+            <button class="ju-aviary-replay" id="ju-aviary-replay" type="button" aria-controls="ju-aviary-routine-caption"><span aria-hidden="true">↻</span> <span id="ju-aviary-replay-label">Play caretaker routine</span></button>
+          </div>
           <div class="ju-aviary-controls" role="group" aria-label="Inspect what the researchers kept the same">
             <button type="button" data-aviary-control="housing" aria-controls="ju-aviary-detail" aria-pressed="true">Housing</button>
             <button type="button" data-aviary-control="food" aria-controls="ju-aviary-detail" aria-pressed="false">Food</button>
             <button type="button" data-aviary-control="people" aria-controls="ju-aviary-detail" aria-pressed="false">Exposure to people</button>
           </div>
           <p id="ju-aviary-detail" class="ju-aviary-detail"><strong>Matched housing:</strong> Birds from the two populations lived separately under the same housing conditions, including similar numbers of birds per unit of floor space.</p>
-          <button class="ju-aviary-replay" id="ju-aviary-replay" type="button"><span aria-hidden="true">↻</span> Replay caretaker routine</button>
+          <figcaption><strong>Illustrated example, not evidence.</strong> The feeding steps and bird movements are imagined and do not show measured reactions or the exact care protocol. The populations lived apart under matched conditions; this is not a map of the facility or a count of the birds.</figcaption>
         </figure>
         <p>Researchers captured young juncos after hatching and raised them under matched conditions. Later, they measured how quickly and widely each bird explored a test room it had never visited. The field walk-up measured a different behavior: when a bird flew away from a person.</p>
         <p><strong>Inherited or learned?</strong> Inherited traits are passed from parents. Behavior can also be learned or shaped by early conditions. These birds were collected after hatching, so matching their current housing cannot separate those explanations.</p>

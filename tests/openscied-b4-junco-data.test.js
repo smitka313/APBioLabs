@@ -100,6 +100,10 @@ test('the home-aviary cutaway repeats the same modeled controls and disclaims in
   assert.match(scene,/UC San Diego[\s\S]*Mt\. Laguna/);
   assert.match(scene,/lived apart under matched conditions/);
   assert.match(scene,/not a map of the facility or a count/);
+  assert.match(scene,/Illustrated example, not evidence/);
+  for(const element of ['caretaker','scoop','pour','seeds','bird','match']){
+    assert.equal([...scene.matchAll(new RegExp('class="ju-aviary-'+element+'"','g'))].length,2,element+' should be present in both panels');
+  }
   assert.match(html,/measured how quickly and widely each bird explored a test room/);
   assert.match(html,/field walk-up measured a different behavior/);
   assert.match(html,/these birds were collected after hatching/i);
@@ -107,19 +111,33 @@ test('the home-aviary cutaway repeats the same modeled controls and disclaims in
 
 test('inspecting a matched control and replay do not persist or reveal results',()=>{
   const js=source('openscied-b4-junco.js');
-  const code=js.match(/  function wireAviaryScene\(\)\{[\s\S]*?\n  \}\n  wireAviaryScene\(\);/)?.[0];
+  const code=js.match(/  function wireAviaryScene\(\)\{[\s\S]*?\n  \}\n  const resetAviaryRoutine=wireAviaryScene\(\);/)?.[0];
   assert.ok(code,'scene must wire its controls');
   const changes=[];
   let reduced=true;
-  const mock=attrs=>({dataset:attrs,attrs:{},handlers:{},setAttribute(k,v){this.attrs[k]=v;},addEventListener(k,f){this.handlers[k]=f;}});
+  const mock=attrs=>({dataset:attrs,attrs:{},handlers:{},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},addEventListener(k,f){this.handlers[k]=f;}});
   const controls=['housing','food','people'].map(aviaryControl=>mock({aviaryControl}));
-  const art={...mock({control:'housing'}),querySelectorAll:()=>controls,classList:new Set(),offsetWidth:540};
+  const stages=['approach','refill','matched'].map(aviaryStage=>mock({aviaryStage}));
+  const art={...mock({control:'housing',routine:'idle'}),querySelectorAll:selector=>selector.includes('stage')?stages:controls,classList:new Set(),offsetWidth:540};
   art.classList.remove=art.classList.delete.bind(art.classList);
   const detail={replaceChildren(...args){this.text=args.join('');}};
-  const replay=mock({});
-  const elements={'aviary-art':art,'aviary-detail':detail,'aviary-replay':replay};
-  const context={$:k=>elements[k],mk:(_,s)=>s,document:{createTextNode:s=>s},window:{matchMedia:()=>({matches:reduced})},say:s=>changes.push(s)};
-  vm.runInNewContext(code,context);
+  const caption={replaceChildren:detail.replaceChildren};
+  const replay=mock({}), label={}, pending=new Map();
+  let sequence=0;
+  const tick=()=>{
+    assert.equal(pending.size,1,'one scheduled phase');
+    const [[id,next]]=pending;
+    assert.ok(next.delay>=1200,'offers time to see and read the phase');
+    pending.delete(id);
+    next.fn();
+  };
+  const elements={'aviary-art':art,'aviary-detail':detail,'aviary-replay':replay,'aviary-routine-caption':caption,'aviary-replay-label':label};
+  const context={$:k=>elements[k],mk:(_,s)=>s,document:{createTextNode:s=>s},window:{
+    matchMedia:()=>({get matches(){return reduced;}}),
+    setTimeout(fn,delay){pending.set(++sequence,{fn,delay});return sequence;},
+    clearTimeout:id=>pending.delete(id)
+  },say:s=>changes.push(s)};
+  const reset=vm.runInNewContext(code+'\nresetAviaryRoutine;',context);
   controls[1].handlers.click();
   assert.equal(art.dataset.control,'food');
   assert.deepEqual(controls.map(b=>b.attrs['aria-pressed']),['false','true','false']);
@@ -127,11 +145,32 @@ test('inspecting a matched control and replay do not persist or reveal results',
   assert.match(detail.text,/wood shavings, not food/);
   replay.handlers.click();
   assert.equal(art.dataset.control,'people');
-  assert.equal(art.classList.has('is-replaying'),false,'reduced-motion preference is honored');
-  assert.match(changes.at(-1),/illustrates that control, not the birds’ measured behavior/);
+  assert.equal(art.dataset.routine,'approach');
+  assert.equal(label.textContent,'Show next step');
+  assert.equal(pending.size,0,'reduced-motion users advance still frames at their own pace');
+  replay.handlers.click();
+  assert.match(caption.text,/Refill both dishes/);
+  assert.equal(stages[1].attrs['aria-current'],'step');
+  replay.handlers.click();
+  assert.match(caption.text,/Same routine for both groups/);
+  assert.match(changes.at(-1),/reactions were not measured/);
+  assert.equal(label.textContent,'Replay caretaker routine');
   reduced=false;
   replay.handlers.click();
-  assert.equal(art.classList.has('is-replaying'),true);
-  art.handlers.animationend({animationName:'ju-aviary-routine'});
-  assert.equal(art.classList.has('is-replaying'),false);
+  assert.equal(art.dataset.routine,'approach');
+  tick();
+  assert.equal(art.dataset.routine,'refill');
+  tick();
+  assert.equal(art.dataset.routine,'matched');
+  assert.equal(pending.size,0,'both full dishes and birds remain in the finished state');
+  replay.handlers.click();
+  assert.equal(art.dataset.routine,'approach','Replay returns to the beginning');
+  controls[0].handlers.click();
+  assert.equal(art.dataset.routine,'idle');
+  assert.equal(pending.size,0,'inspecting a control cancels the routine');
+  assert.equal(art.dataset.control,'housing');
+  assert.match(changes.at(-1),/Matched housing/);
+  replay.handlers.click();
+  reset();
+  assert.equal(pending.size,0,'leaving Shared aviary cancels stage changes and announcements');
 });

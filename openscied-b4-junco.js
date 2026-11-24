@@ -165,6 +165,10 @@
   }
   function go(step,focus=true){
     if(!steps.includes(step)||(step==='cort'&&!state.revealed))return false;
+    if(state.step==='aviary'&&step!=='aviary'){
+      resetAviaryRoutine?.();
+      say('');
+    }
     state.step=step;
     history.replaceState(null,'','#'+step);
     save();draw(focus);return true;
@@ -173,37 +177,72 @@
   // This cutaway illustrates the controlled setup. It adds no data and never changes saved progress.
   function wireAviaryScene(){
     const art=$('aviary-art'), detail=$('aviary-detail'), replay=$('aviary-replay');
-    if(!art||!detail||!replay)return;
+    const caption=$('aviary-routine-caption'), label=$('aviary-replay-label');
+    if(!art||!detail||!replay||!caption||!label)return;
+    const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const stages=[...art.querySelectorAll('[data-aviary-stage]')];
+    const phases={
+      idle:['Try a sample care routine.', 'Watch what stays the same in both enclosures.'],
+      approach:['1. Approach both enclosures.', 'The caretaker brings the same scoop to each enclosure.'],
+      refill:['2. Refill both dishes.', 'Food goes into the dish in each enclosure.'],
+      matched:['3. Same routine for both groups.', 'Both dishes are full. The birds hop closer in this illustration; their reactions were not measured here.']
+    };
+    let timer;
     const controls=[...art.querySelectorAll('[data-aviary-control]')];
     const notes={
       housing:['Matched housing:', 'Birds from the two populations lived separately under the same housing conditions, including similar numbers of birds per unit of floor space.'],
       food:['Matched food:', 'The matching dishes represent the same food conditions in the home aviaries. Later, dishes in the unfamiliar test room held wood shavings, not food.'],
       people:['Matched exposure to people:', 'Both populations had the same exposure to researchers and animal care staff. The replay illustrates that control, not the birds’ measured behavior.']
     };
-    function show(key){
+    function show(key,announce=true){
       if(!Object.hasOwn(notes,key))return;
       art.dataset.control=key;
       for(const button of controls)button.setAttribute('aria-pressed',String(button.dataset.aviaryControl===key));
       const [title,note]=notes[key];
       detail.replaceChildren(mk('strong',title),document.createTextNode(' '+note));
-      say(title+' '+note);
+      if(announce)say(title+' '+note);
+    }
+    function phase(key,announce=true){
+      art.dataset.routine=key;
+      for(const stage of stages){
+        if(stage.dataset.aviaryStage===key)stage.setAttribute('aria-current','step');
+        else stage.removeAttribute('aria-current');
+      }
+      const [title,note]=phases[key];
+      caption.replaceChildren(mk('strong',title),document.createTextNode(' '+note));
+      label.textContent=key==='idle'?'Play caretaker routine':
+        reducedMotion?.matches&&key!=='matched'?'Show next step':'Replay caretaker routine';
+      if(announce)say(title+' '+note);
+    }
+    function reset(){
+      window.clearTimeout(timer);
+      // Snap to the start so Replay works even if pressed during the approach.
+      art.classList.add('is-resetting');
+      phase('idle',false);
+      void art.offsetWidth;
+      art.classList.remove('is-resetting');
     }
     for(const button of controls)button.addEventListener('click',()=>{
-      art.classList.remove('is-replaying');
+      reset();
       show(button.dataset.aviaryControl);
     });
     replay.addEventListener('click',()=>{
-      show('people');
-      art.classList.remove('is-replaying');
-      if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
-      void art.offsetWidth; // Restart the finite CSS animation on repeated clicks.
-      art.classList.add('is-replaying');
+      if(reducedMotion?.matches&&art.dataset.routine==='approach'){phase('refill');return;}
+      if(reducedMotion?.matches&&art.dataset.routine==='refill'){phase('matched');return;}
+      reset();
+      show('people',false);
+      phase('approach');
+      if(reducedMotion?.matches)return;
+      timer=window.setTimeout(()=>{
+        phase('refill');
+        timer=window.setTimeout(()=>phase('matched'),1600);
+      },1250);
     });
-    art.addEventListener('animationend',event=>{
-      if(event.animationName==='ju-aviary-routine')art.classList.remove('is-replaying');
-    });
+    // Change modes without leaving old animation state or action labels on screen.
+    reducedMotion?.addEventListener?.('change',reset);
+    return reset;
   }
-  wireAviaryScene();
+  const resetAviaryRoutine=wireAviaryScene();
   $('to-aviary').addEventListener('click',()=>go('aviary'));
   $('to-cort').addEventListener('click',()=>go('cort'));
   // Native printing clips text to the textarea's visible rows. Use plain text on paper.
@@ -225,6 +264,7 @@
   $('prediction').addEventListener('change',e=>{if(!state.revealed){state.prediction=pick(e.target.value,Object.keys(choices),'');save();draw();}});
   $('reveal').addEventListener('click',()=>{
     if(!state.prediction||state.revealed)return;
+    resetAviaryRoutine?.();
     state.revealed=true;save();draw();
     $('aviary-results-title').focus();say('Aviary results revealed. The hormone clue is now available.');
   });

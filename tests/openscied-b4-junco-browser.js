@@ -222,20 +222,60 @@ async function exercise(browser,base,size) {
       label+' opens the matched food note and highlights both dishes');
     await fits(page,'#ju-aviary-art, .ju-aviary-drawing, .ju-aviary-controls button',label+' aviary cutaway');
     await shoot(page,label+'-2-aviary-controls','ju-aviary-art');
-    await activate(id(page,'ju-aviary-replay'),size);
-    check(await art.getAttribute('data-control')==='people' &&
-      await art.locator('.ju-aviary-ring--people:visible').count()===2 &&
-      !await art.evaluate(el=>el.classList.contains('is-replaying')),
-      label+' reports matched exposure without movement in reduced-motion mode');
+    const routineButton=id(page,'ju-aviary-replay');
+    const routineCaption=id(page,'ju-aviary-routine-caption');
+    const transforms=cls=>art.locator('.ju-aviary-'+cls).evaluateAll(nodes=>nodes.map(node=>getComputedStyle(node).transform));
+    const opacity=cls=>art.locator('.ju-aviary-'+cls).evaluateAll(nodes=>nodes.map(node=>Number(getComputedStyle(node).opacity)));
+    await activate(routineButton,size);
+    check(await art.getAttribute('data-routine')==='approach' &&
+      /Approach both enclosures/.test(await routineCaption.innerText()) &&
+      (await transforms('caretaker')).every(transform=>transform!=='none') &&
+      (await opacity('seeds')).every(value=>value===0),
+      label+' starts both caretakers toward dishes that are still empty, with a text caption');
+    await activate(routineButton,size);
+    check(await art.getAttribute('data-routine')==='refill' &&
+      await art.locator('[data-aviary-stage=refill]').getAttribute('aria-current')==='step' &&
+      (await opacity('seeds')).every(value=>value===1) && (await opacity('pour')).every(value=>value===1),
+      label+' makes both pours and refilled dishes visible in the reduced-motion frame');
+    await shoot(page,label+'-2a-aviary-refill','ju-aviary-art');
+    await activate(routineButton,size);
+    check(await art.getAttribute('data-routine')==='matched' &&
+      /reactions were not measured/.test(await routineCaption.innerText()) &&
+      (await transforms('bird')).every(transform=>transform!=='none') &&
+      (await opacity('match')).every(value=>value===1),
+      label+' finishes on both birds by their food dishes without presenting the action as evidence');
+    await shoot(page,label+'-2b-aviary-matched','ju-aviary-art');
+    await activate(routineButton,size);
+    check(await art.getAttribute('data-routine')==='approach' &&
+      (await transforms('bird')).every(transform=>transform==='none') &&
+      (await opacity('seeds')).every(value=>value===0),
+      label+' replays with birds on the perch and dishes empty again');
+    await activate(art.getByRole('button',{name:'Food',exact:true}),size);
+    check(await art.getAttribute('data-routine')==='idle' &&
+      await art.locator('.ju-aviary-ring--food:visible').count()===2,
+      label+' inspecting a control resets the replay caption and highlights');
     if(size.width===1366){
       await page.emulateMedia({reducedMotion:'no-preference'});
-      await activate(id(page,'ju-aviary-replay'),size);
-      check(await art.locator('.ju-aviary-caretaker').evaluateAll(nodes=>nodes.length===2&&nodes.every(node=>node.getAnimations().length===1)),
-        label+' explicit replay animates both illustrated caretaker routines together');
-      await page.waitForFunction(()=>!document.getElementById('ju-aviary-art').classList.contains('is-replaying'));
+      await activate(routineButton,size);
+      const waitPhase=key=>page.waitForFunction(phase=>document.getElementById('ju-aviary-art').dataset.routine===phase,key);
+      await waitPhase('refill');
+      await page.waitForFunction(()=>[...document.querySelectorAll('.ju-aviary-pour')].every(node=>Number(getComputedStyle(node).opacity)>0.8));
+      check(await art.getAttribute('data-routine')==='refill',
+        label+' makes both seed streams visibly pour during normal playback');
+      await waitPhase('matched');
+      await page.waitForFunction(()=>[...document.querySelectorAll('.ju-aviary-bird')].every(node=>getComputedStyle(node).transform==='matrix(1, 0, 0, 1, -36, 40)'));
+      check((await opacity('seeds')).every(value=>value===1) &&
+        /Same routine for both groups/.test(await routineCaption.innerText()),
+        label+' holds the birds at the dishes and preserves the explanation after motion');
+      assert.deepEqual(await readSaved(page),savedBeforeControl,label+' normal playback also leaves progress untouched');
+      await activate(routineButton,size);
+      await selectStep(page,size,'field');
+      await selectStep(page,size,'aviary');
+      check(await art.getAttribute('data-routine')==='idle' && !await id(page,'ju-live').innerText(),
+        label+' navigating away cancels the routine and clears its announcements');
       await page.emulateMedia({reducedMotion:'reduce'});
     }
-    assert.deepEqual(await readSaved(page),savedBeforeControl,label+' the illustration does not change progress or answers');
+    if(size.width!==1366)assert.deepEqual(await readSaved(page),savedBeforeControl,label+' the illustration does not change progress or answers');
     check(await id(page,'ju-aviary-results').isHidden(),label+' no results reveal when inspecting the setup');
     const reveal=id(page,'ju-reveal');
     check(await reveal.isDisabled(),label+' a choice is required before revealing aviary evidence');
