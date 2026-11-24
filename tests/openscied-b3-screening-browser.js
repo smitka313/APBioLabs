@@ -37,8 +37,8 @@ const out=path.join(ROOT,'artifacts','screening');
     await p.reload();assert.deepEqual(await profiles.allTextContents(),initial);
     await profiles.first().getByRole('button',{name:/Open cost sheet/}).click();
     const intake=await p.evaluate(()=>JSON.parse(localStorage.getItem('aplab:openscied:b3-screening:v1')));
-    assert.ok(width===1920?intake.seed===1161&&M.bestGain(intake.seed)===0:M.bestGain(intake.seed)>0);
-    const first=M.scenarios(intake.seed)[0];
+    assert.ok(width===1920?intake.seed===1161&&M.bestGain(intake.seed)===0:intake.caseMode==='equity'&&M.equityCases(intake.seed).length===3);
+    const first=(intake.caseMode==='equity'?M.equityCases(intake.seed):M.scenarios(intake.seed))[0];
     const prices=id('price-sheet').locator('.sd-visit');
     assert.equal(await prices.count(),4);
     for(const [i,[kind,site]] of [['screen','hub'],['screen','mobile'],['scan','hub'],['scan','mobile']].entries()){
@@ -143,7 +143,8 @@ const out=path.join(ROOT,'artifacts','screening');
     await shot('comparison');
     assert.ok(await id('to-explain').isDisabled());
     assert.equal(await id('cases').locator('.sd-unresolved').count(),6);
-    for(const [i,c] of M.scenarios(saved.seed).entries()){
+    const featured=saved.caseMode==='equity'?M.equityCases(saved.seed):M.scenarios(saved.seed);
+    for(const [i,c] of featured.entries()){
       await id('cases').getByRole('button').nth(i).click();
       const answer=M.comparison(baseline.patients[c.id-1],trial.patients[c.id-1]);
       if(i===0){
@@ -156,7 +157,7 @@ const out=path.join(ROOT,'artifacts','screening');
       assert.match(await id('decision-score').textContent(),new RegExp('Among the '+(i+1)+' checked'));
       if(i===0){await p.reload();assert.match(await id('case-progress').textContent(),/1 of 3/);assert.ok(await id('to-explain').isDisabled());}
     }
-    const mission=M.mission(M.run(saved.seed,M.baseline),M.run(saved.seed,saved.trial));
+    const mission=M.mission(M.run(saved.seed,M.baseline),M.run(saved.seed,saved.trial),saved.caseMode==='equity'?featured:[]);
     assert.ok(await id('mission-dialog').isVisible());
     assert.match(await id('popup-title').textContent(),width===1920?/Best attainable result!/:mission.won?/Mission won!/:/Access goal not met/);
     assert.match(await id('popup-message').textContent(),new RegExp(mission.left+' cr to spare'));

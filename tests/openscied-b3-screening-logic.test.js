@@ -117,3 +117,33 @@ test('fresh districts have a winning redesign; a legacy district can have a best
     assert.ok(M.bestGain(chosen)>0);
   }
 });
+test('equity missions distinguish budgets and have one plan that helps both lower-income cases together',()=>{
+  const plans=M.zones.flatMap(screen=>M.zones.flatMap(machine=>[null,...M.zones].map(rides=>
+    ({screen,machine,operator:machine,rides})).filter(plan=>!M.validate(plan))));
+  const start=(candidate)=>{let n=candidate;return M.equitySeed(()=>n++);};
+  const seen=new Set(), approaches=new Set();
+  for(let i=0;i<300;i++){
+    const seed=start(i), trio=M.equityCases(seed);
+    assert.deepEqual(M.equityCases(seed),trio);
+    assert.deepEqual(trio.map(p=>p.z),[0,1,2]);
+    seen.add(seed);
+    const base=M.run(seed,M.baseline);
+    assert.equal(trio.filter(p=>p.needed).length,2);
+    const higher=trio.filter(p=>p.means>=100), lower=trio.filter(p=>p.means<=80);
+    assert.equal(higher.length,1);assert.equal(lower.length,2);
+    assert.equal(base.patients[higher[0].id-1].outcome,'imaged');
+    for(const p of lower){
+      assert.match(base.patients[p.id-1].outcome,/missed/);
+      const total=M.quote(p,'hub','screen',M.baseline).total+(p.needed?M.quote(p,'hub','scan',M.baseline).total:0);
+      assert.ok(total>p.means);
+    }
+    const winners=plans.filter(plan=>M.mission(base,M.run(seed,plan),trio).won);
+    assert.ok(winners.length);
+    winners.forEach(p=>approaches.add(JSON.stringify(p)));
+    assert.equal(M.mission(base,base,trio).featuredComplete,1);
+  }
+  assert.ok(seen.size>30);
+  assert.ok(approaches.size>2);
+  assert.equal(M.equitySeed(()=>354),419);
+  assert.equal(M.equityCases(419).length,3);
+});

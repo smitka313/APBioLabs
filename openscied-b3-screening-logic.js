@@ -58,7 +58,7 @@
   }
   const reached=(p)=>p.needed?p.outcome==='imaged':p.outcome==='screened';
   const comparison=(a,b)=>reached(a)?(reached(b)?'both':'base'):(reached(b)?'trial':'neither');
-  function mission(before,after){
+  function mission(before,after,featured=[]){
     const helped=[],lost=[];
     for(const [i,p] of before.patients.entries()){
       const was=reached(p), now=reached(after.patients[i]);
@@ -66,7 +66,8 @@
       if(was&&!now)lost.push(p);
     }
     const left=budget-after.clinic;
-    return {helped,lost,left,won:left>=0&&helped.length>lost.length};
+    const featuredComplete=featured.filter(p=>reached(after.patients[p.id-1])).length;
+    return {helped,lost,left,featuredComplete,won:left>=0&&helped.length>lost.length&&featuredComplete===featured.length};
   }
   function validate(p){
     if(!p||!zones.includes(p.screen))return 'Place the screening team first.';
@@ -123,5 +124,35 @@
     }
     return 1; // Known reachable fallback for a bounded start-up time.
   }
-  return Object.freeze({bestGain,guidedSeed,zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,mission,distances,quote:visit,checkout});
+  // Give novice players an income contrast they can resolve, while preserving the
+  // randomly generated district and the same people in every plan they compare.
+  function equityCases(seed){
+    const before=run(seed,baseline), people=before.patients;
+    const wealthy=people.filter(p=>p.means>=100&&p.needed&&reached(p));
+    const lower=people.filter(p=>p.means<=80&&!reached(p)&&
+      p.screen.total+(p.needed?visit(p,'hub','scan',baseline).total:0)>p.means);
+    if(!wealthy.length||lower.length<2)return [];
+    const feasible=allowedPlans.map(plan=>run(seed,plan)).filter(after=>mission(before,after).won);
+    const groups=new Map();
+    for(const rich of wealthy)for(const a of lower)for(const b of lower){
+      if(a.z>=b.z||rich.z===a.z||rich.z===b.z||a.needed===b.needed)continue;
+      const trio=[rich,a,b].sort((x,y)=>x.z-y.z);
+      if(feasible.some(f=>trio.every(p=>reached(f.patients[p.id-1])))){
+        groups.set(trio.map(p=>p.id).join(','),trio);
+      }
+    }
+    if(!groups.size)return [];
+    const choose=random((seed^0x4F12D879)>>>0);
+    return [...groups.values()][Math.floor(choose()*groups.size)].map(p=>publicProfile({
+      id:p.id,place:p.place,z:p.z,needed:p.needed,means:p.means,hours:p.hours,value:p.value,routeExtra:p.routeExtra
+    }));
+  }
+  function equitySeed(next){
+    for(let attempt=0;attempt<32;attempt++){
+      const candidate=next();
+      if(equityCases(candidate).length===3)return candidate;
+    }
+    return 419; // Verified deterministic fallback.
+  }
+  return Object.freeze({equityCases,equitySeed,bestGain,guidedSeed,zones,pieces,places,names,baseline,budget,costs,total,validate,cohort,run,scenarios,comparison,mission,distances,quote:visit,checkout});
 });
