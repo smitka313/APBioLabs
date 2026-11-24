@@ -46,6 +46,9 @@ def page_specs():
         'openscied-b4-junco.html': ('Junco Investigation — OpenSciEd Biology B.4 Lesson 4 | Lab Bench',
                                    'Compare city and mountain juncos in field and shared aviary studies, then explore how corticosterone is associated with exploration.',
                                    'Junco Investigation'),
+        'openscied-b1-ripple.html': ('Serengeti Ripple Effects — OpenSciEd Biology B.1 Lesson 8 | Lab Bench',
+                                    'Connect a Serengeti ecosystem web and compare how fewer visiting wildebeest affect dung beetles, soil, grass, and predator encounters.',
+                                    'Serengeti Ripple Effects'),
         'openscied-b4-wildlife-corridor.html': ('Wildlife Corridor Lab — OpenSciEd Biology B.4 Lessons 8–9 | Lab Bench',
                                                'Compare connected and road-split habitats, place a wildlife crossing, and use a simulation to investigate gene flow across generations.',
                                                'Wildlife Corridor Lab'),
@@ -151,6 +154,13 @@ def structured_data(filename, title, description, label):
                          'teaches': 'Controlled comparisons and the relationship between stress and behavior in juncos',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-4-natural-selection-evolution/'})
+        elif filename == 'openscied-b1-ripple.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive ecosystem model',
+                         'teaches': 'Direct and indirect effects of migration on a local Serengeti ecosystem',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-1-ecosystem-interactions-dynamics/'})
         elif filename == 'openscied-b4-wildlife-corridor.html':
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',

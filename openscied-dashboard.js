@@ -14,6 +14,7 @@
     { id: 'migration', name: 'Migration Map Explorer', file: 'openscied-b1-migration.html', key: PREFIX + 'b1-migration:v1', clears: 'visited months, notebook entries, and written responses', progress: migrationProgress, ids: migrationResponseIds, answers: true },
     { id: 'carrying', name: 'Carrying Capacity', file: 'openscied-b1-carrying-capacity.html', key: CARRYING_KEY, extraKeys: CARRYING_EXTRA_KEYS, clears: 'grass model runs, habitat trials, range estimates, field evidence work, and written responses', progress: carryingProgress, ids: carryingResponseIds, answers: true },
     { id: 'serengeti', name: 'Serengeti Board Game', file: 'openscied-b1-serengeti.html', key: SERENGETI_KEY, clears: 'board game record, concept checks, and answers', progress: serengetiProgress, ids: serengetiResponseIds, answers: true },
+    { id: 'ripple', name: 'Serengeti Ripple Effects', file: 'openscied-b1-ripple.html', key: PREFIX + 'b1-ripple:v1', clears: 'connections, prediction, run results, and written responses', progress: rippleProgress, ids: rippleResponseIds },
     { id: 'b2-burn', name: 'Burning Fuels: What Burns and Why', file: 'openscied-b2-burn-lab.html', key: PREFIX + 'b2-burn-lab:v1', clears: 'burn results and answers', progress: b2BurnProgress, ids: inhEnvResponseIds },
     { id: 'b2-fires', name: 'Fires: Peat, Decomposition & Earth\u2019s Tilt', file: 'openscied-b2-fires.html', key: PREFIX + 'b2-fires:v1', clears: 'model results and answers', progress: b2FiresProgress, ids: inhEnvResponseIds },
     { id: 'peat-bog', name: 'Peat Bog Carbon Lab', file: 'openscied-b2-peat-bog-lab.html', key: PREFIX + 'b2-peat-bog:v1', clears: 'bog settings, recorded trials, and global warming settings', progress: peatBogProgress, ids: noResponseIds },
@@ -88,6 +89,22 @@
       ...(baseline || comparison ? {stepsDone:baseline+comparison,stepsTotal:model?.comparison?24:12,stepsLabel:'Population model rounds'} : {})};
   }
   // Serengeti restores its last page from the existing saved record rather than a URL hash.
+  function rippleResponseIds(){return ['choice','reason','claim','limit'];}
+  function rippleProgress(raw){
+    const empty={started:false,section:'',summary:'Not started',visited:0};
+    if(raw==null)return empty;
+    let s;
+    try{s=JSON.parse(raw);if(s?.v!==1||!Array.isArray(s.answers)||!Number.isInteger(s.seed)||s.seed<0||s.seed>4294967295)throw Error('Invalid save');}
+    catch(_){return {...empty,summary:'Saved work could not be read. Download a copy before restarting.'};}
+    const linked=s.checked===true&&[1,1,1,1,-1,1].every((sign,i)=>s.answers[i]===sign);
+    const predicted=linked&&s.predicted===true&&written(s,'reason')&&['decrease','same','increase'].includes(s.choice);
+    const ran=predicted&&s.usual===true&&s.fewer===true;
+    const finished=ran&&s.finished===true&&written(s,'claim')&&written(s,'limit');
+    if(!s.answers.some(a=>a===1||a===-1)&&!rippleResponseIds().some(id=>written(s,id)))return empty;
+    const n=[linked,predicted,ran,finished].filter(Boolean).length;
+    return {started:true,section:'',visited:Number.isFinite(s.lastVisitedAt)?s.lastVisitedAt:0,stepsDone:n,stepsTotal:4,stepsLabel:'Investigation steps completed',
+      summary:finished?'Investigation complete':ran?'Comparison recorded':predicted?'Prediction saved':linked?'Web checked':'Connections in progress'};
+  }
   function serengetiResponseIds() { return ['question','evidence','claim','limits']; }
   function serengetiProgress(raw) {
     const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
@@ -506,7 +523,7 @@
   // Published, fixed denominators. A zero is meaningful even before a student starts.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
-    serengeti:[4,'Seasons completed'],'b2-burn':[5,'Fuels with saved results'],'b2-fires':[3,'Model evidence milestones complete'],
+    serengeti:[4,'Seasons completed'],ripple:[4,'Investigation steps completed'],'b2-burn':[5,'Fuels with saved results'],'b2-fires':[3,'Model evidence milestones complete'],
     'peat-bog':[2,'Trials saved for a comparison'],'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
@@ -687,7 +704,7 @@
         ACTIVITIES.filter(activity => keys.includes(activity.key)).forEach(activity => {
           let saved = null;
           try { saved = JSON.parse(work[activity.key]); } catch (e) { return; }
-          const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
+          const fields = saved && (['cancer-rates', 'junco', 'wildlife-corridor', 'ripple'].includes(activity.id) ? saved : activity.answers ? saved.answers : saved.fields) || {};
           responses[activity.id] = {};
           activity.ids(saved).forEach(id => { responses[activity.id][id] = typeof fields[id] === 'string' ? fields[id] : ''; });
           // The DNA activity was shortened: answers saved by the longer version are no longer in its id list, so keep them in the copy.

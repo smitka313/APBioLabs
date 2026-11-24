@@ -4,7 +4,7 @@
 const T = require('./_h');
 const fs = require('fs'), path = require('path');
 const stub = pg => pg.route(/gc\.zgo\.at|fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: /gc\.zgo\.at/.test(r.request().url()) ? 'application/javascript' : 'text/css', body: '' }));
-const UNIT1 = ['openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html'];
+const UNIT1 = ['openscied-b1-migration.html', 'openscied-b1-carrying-capacity.html', 'openscied-b1-serengeti.html', 'openscied-b1-ripple.html'];
 const MIGRATION_PREVIEW = 'assets/migration-explorer-preview.svg';
 const CARRYING_PREVIEW = 'assets/carrying-capacity-preview.svg';
 const SERENGETI_PREVIEW = 'assets/openscied-serengeti-preview.svg';
@@ -28,7 +28,7 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
       const hrefs = sel => p.$$eval(sel + ' .dashboard-preview', as => as.map(a => a.getAttribute('href')));
       const units = await p.$$eval('.dashboard-units > section.dashboard-unit.current', sections=>sections.map(s=>s.getAttribute('aria-labelledby')));
       T.ok(JSON.stringify(units) === JSON.stringify(['unit1','unit2','unit3','unit4']), width + ' px: all published units appear in curriculum order');
-      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, and Serengeti Board Game');
+      T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit1"]')) === JSON.stringify(UNIT1), width + ' px: first unit links to Migration Explorer, Carrying Capacity Lab, Serengeti Board Game, and Ripple Effects');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit2"]')) === JSON.stringify(UNIT2), width + ' px: Unit 2 cards are Burning Fuels, Fires, Peat Bog Carbon Lab, Carbon Atom Journey');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit3"]')) === JSON.stringify(UNIT3), width + ' px: Unit 3 starts with the data dive, and DNA Workshop immediately precedes DNA Copying and p53');
       T.ok(JSON.stringify(await hrefs('section[aria-labelledby="unit4"]')) === JSON.stringify(UNIT4), width + ' px: Unit 4 links to Hawksbeard, Rat Generations, Junco, and Wildlife Corridor in lesson order');
@@ -56,6 +56,9 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
       const corridorImage=p.locator('img[src="'+CORRIDOR_PREVIEW+'"]');
       await corridorImage.scrollIntoViewIfNeeded();
       await corridorImage.evaluate(img=>img.decode());
+      const rippleImage=p.locator('img[src="assets/openscied-ripple-preview.svg"]');
+      await rippleImage.scrollIntoViewIfNeeded();
+      await rippleImage.evaluate(img=>img.decode());
       const m = await p.$$eval('.dashboard-activity', cards => cards.map(c => {
         const a = c.querySelector('.dashboard-preview'), svg = a && a.querySelector('svg'), img = a && a.querySelector('img'), media = svg || img, cap = c.querySelector('.dashboard-caption'), fig = c.querySelector('.dashboard-figure');
         const ar = a.getBoundingClientRect(), cr = cap.getBoundingClientRect(), fr = fig.getBoundingClientRect();
@@ -76,11 +79,11 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         };
       }));
       const svgCards = m.filter(x=>x.svg);
-      T.ok(m.length === 16 && svgCards.length === 7 && m.filter(x=>x.img).length === 9, width + ' px: sixteen cards: seven inline illustrations and nine linked SVG illustrations');
+      T.ok(m.length === 17 && svgCards.length === 7 && m.filter(x=>x.img).length === 10, width + ' px: seventeen cards: seven inline illustrations and ten linked SVG illustrations');
       T.ok(svgCards.every(x => x.hidden === 'true' && !x.role), width + ' px: inline SVGs stay decorative (aria-hidden, no role)');
       const actionCounts = await Promise.all((await p.locator('.dashboard-activity').all()).map(card => card.getByRole('link').count()));
       T.ok(m.every(x => x.previewHidden && /^Open activity: .+/.test(x.label)) &&
-        new Set(m.map(x => x.label)).size === 16 && actionCounts.every(n => n === 1),
+        new Set(m.map(x => x.label)).size === 17 && actionCounts.every(n => n === 1),
         width + ' px: pointer artwork remains linked without duplicating the one named keyboard action for each activity');
       T.ok(m.every(x=>!x.pill) && svgCards.every(x=>x.shapes>40), width + ' px: no pill inside any picture, and every SVG has real art');
       const first = m[0], poster = first?.img;
@@ -118,6 +121,10 @@ const CORRIDOR_PREVIEW='assets/openscied-wildlife-corridor-preview.svg';
         corridor.img.widthAttr==='960' && corridor.img.heightAttr==='600' &&
         corridor.label==='Open activity: Wildlife Corridor Lab' && corridor.simText==='Simulated',
         width + ' px: Wildlife Corridor reserves its original model artwork and describes it as simulated');
+      const ripple=m.find(x=>x.img?.src==='assets/openscied-ripple-preview.svg');
+      T.ok(ripple?.img?.complete && ripple.img.w===960 && ripple.img.h===600 && ripple.img.alt==='' &&
+        ripple.label==='Open activity: Serengeti Ripple Effects' && ripple.simText==='Simulated',
+        width + ' px: Ripple Effects shows the original illustration and simulated-data badge');
       const workshop=m.find(x=>x.img?.src==='assets/dna-workshop-preview.svg');
       T.ok(workshop?.img?.complete && workshop.img.w===960 && workshop.img.h===600 &&
         workshop.img.alt==='' && workshop.label === 'Open activity: DNA Workshop: Build, Copy, Decode',
