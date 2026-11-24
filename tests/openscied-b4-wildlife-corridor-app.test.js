@@ -98,6 +98,8 @@ test('crossing needs a valid trail connection; cannot be moved during run; only 
   assert.deepEqual(b.record().generations,{baseline:8,corridor:8});
   b.lists['[data-wc-go]'][2].click();
   assert.match(b.node('explain-evidence').textContent,/East: allele copies/);
+  assert.match(b.node('results').textContent,/gap in A copies may shrink, stay the same, or grow/);
+  assert.match(b.node('explain-evidence').textContent,/Use your own results/);
   assert.equal(b.report().status,'draft');
   for(const [k,value] of [['claim','The comparison provides evidence.'],['limits','Real populations might shrink.']]){
     b.node(k).value=value;b.node(k).fire('input');
@@ -107,6 +109,7 @@ test('crossing needs a valid trail connection; cannot be moved during run; only 
   const report=b.report();
   assert.equal(report.status,'final');assert.equal(report.datasetId,'WC-AA-0000002A');
   assert.equal(report.sections[1].items.length,4);
+  assert.match(report.sections[1].items[0].text,/gap in A copies may shrink, stay the same, or grow/);
   for(const [i,id] of ['connected','road','corridor'].entries()){
     const end=M.run(42,id).history.at(-1), p=end.patches;
     assert.deepEqual(Array.from(report.sections[1].items[i+1].rows[8]),[8,...p.map(({variantCounts:c})=>c.A+' A, '+c.a+' a'),Math.abs(p[0].variantCounts.A-p[1].variantCounts.A),end.crossPatchContributions]);

@@ -108,6 +108,7 @@ const KEY='aplab:openscied:b4-wildlife-corridor:v1';
         await act(by('run-crossing'));await waitFor('corridor',8);
         await act(step('explain'));
         const evidence=by('explain-evidence');
+        assert.match(await evidence.textContent(),/gap in A copies may shrink, stay the same, or grow/);
         const rows=await evidence.locator('tbody tr').evaluateAll(rows=>rows.map(r=>[...r.cells].slice(1).map(c=>c.textContent)));
         const {seed}=await saved();
         assert.deepEqual(rows,['connected','road','corridor'].map(id=>{

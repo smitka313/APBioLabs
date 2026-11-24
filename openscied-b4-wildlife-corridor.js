@@ -86,6 +86,7 @@
   const headers=['West: allele copies','East: allele copies','Gap in A copies','Copies from the other side'];
   const endHeaders=['Habitat at generation '+END,...headers];
   const startingNote='At the start: West had 20 A and 4 a; East had 4 A and 20 a. Each patch has 24 copies total. A smaller gap means the two patches are more similar.';
+  const crossingNote='A crossing allows gene flow, but the gap in A copies may shrink, stay the same, or grow in a single run. Use your own results to explain what happened.';
   function table(host,caption,cols,rows){
     if(!host)return;
     const t=make('table',null,'wc-data-table'), h=make('thead'), hr=make('tr'), body=make('tbody');
@@ -280,13 +281,14 @@
           const s=conditionSummary(id);return [LABEL[id],models[id].generation,...stats(s)];
         }));
         host.append(make('p',startingNote,'wc-note'));
+        if(state.generations.corridor===END)host.append(make('p',crossingNote,'wc-note'));
       }
     }
     if(next){
       next.replaceChildren();
       if(state.generations.corridor===END){
         table(next,'Your evidence · same starting animals, '+END+' generations',endHeaders,finalRows());
-        next.append(make('p',startingNote,'wc-note'));
+        next.append(make('p',startingNote,'wc-note'),make('p',crossingNote,'wc-note'));
       }
     }
   }
@@ -394,7 +396,7 @@
     if(!state.claim.trim())missing.push('Write your evidence-based claim.');
     if(!state.limits.trim())missing.push('Explain a limit of the model.');
     if(!state.finished)missing.push('Choose Finish investigation.');
-    const notes=[{type:'text',text:'All values come from a seeded classroom model of fictional animals. Each patch has '+M.PATCH_SIZE+' animals with two inherited copies each. Population size is held fixed, so the differences are in allele counts and gene flow, not survival. A is dominant for coat appearance only.'}];
+    const notes=[{type:'text',text:'All values come from a seeded classroom model of fictional animals. Each patch has '+M.PATCH_SIZE+' animals with two inherited copies each. Population size is held fixed, so the differences are in allele counts and gene flow, not survival. A is dominant for coat appearance only. '+crossingNote}];
     for(const id of experimentIds()){
       const m=models[id];
       const rows=m.history.map(s=>[s.generation,...stats(s)]);
