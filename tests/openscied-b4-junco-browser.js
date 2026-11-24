@@ -301,7 +301,13 @@ async function exercise(browser,base,size) {
     await id(page,'cort').waitFor({state:'visible'});
     const chart=id(page,'ju-chart');
     await chart.locator('svg').first().waitFor({state:'visible'});
-    await fits(page,'main, #cort, #ju-chart, #ju-claim, #ju-limits',label+' CORT comparison');
+    const guide=page.getByRole('region',{name:'How to read this graph'});
+    check(await guide.isVisible() &&
+      /15 and 30 minutes after capture/.test(await guide.innerText()) &&
+      /38\.4 ng\/mL and −0\.8/.test(await guide.innerText()),
+      label+' the visible CORT graph reading guide describes both tests and a real example dot');
+    await fits(page,'main, #cort, #ju-chart-guide, #ju-chart, #ju-claim, #ju-limits',label+' CORT comparison');
+    await shoot(page,label+'-3a-cort-guide','ju-chart-guide');
     await shoot(page,label+'-3-cort','ju-chart');
     await verifyLongResponse(page,id(page,'ju-claim'),{
       name:/How did the aviary results change or support your explanation/i,

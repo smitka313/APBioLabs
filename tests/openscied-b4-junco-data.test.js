@@ -109,6 +109,20 @@ test('the home-aviary cutaway repeats the same modeled controls and disclaims in
   assert.match(html,/these birds were collected after hatching/i);
 });
 
+test('the CORT reading guide distinguishes the two measures and uses the actual rightmost dot',()=>{
+  const html=source('openscied-b4-junco.html');
+  const guide=html.match(/<section class="ju-chart-guide"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(guide,'students should see an inline reading guide');
+  assert.match(guide,/same bird’s results from two separate tests/);
+  assert.match(guide,/15 and 30 minutes after capture<\/strong>, not the starting level/);
+  assert.match(guide,/separate 20-minute test/);
+  assert.match(guide,/no units[\s\S]*not negative movements/);
+  const rightmost=data.cort.rows.reduce((a,b)=>a.x>b.x?a:b);
+  assert.ok(guide.includes(rightmost.x.toFixed(1)+' ng/mL'));
+  assert.ok(guide.includes(rightmost.y.toFixed(1).replace('-','−')));
+  assert.match(guide,/doesn’t identify its population/);
+});
+
 test('inspecting a matched control and replay do not persist or reveal results',()=>{
   const js=source('openscied-b4-junco.js');
   const code=js.match(/  function wireAviaryScene\(\)\{[\s\S]*?\n  \}\n  const resetAviaryRoutine=wireAviaryScene\(\);/)?.[0];

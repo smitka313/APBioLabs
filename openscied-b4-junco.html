@@ -281,8 +281,18 @@
     <div class="ju-heading"><div><p class="ju-kicker">03 · LOOK FOR A RELATIONSHIP</p><h2 id="ju-cort-title" tabindex="-1">Does the stress response go with exploration?</h2></div><span class="ju-tag">Evidence C</span></div>
     <div class="ju-layout ju-analysis">
       <article class="ju-sheet">
-        <p class="ju-chart-note">A correlation is a pattern between two measurements. It does not show that one causes the other.</p>
-        <p><strong>CORT</strong> stands for corticosterone, a hormone involved in the stress response. Look at the points first. Then turn on a best-fit line to check the pattern you noticed.</p>
+        <section class="ju-chart-guide" id="ju-chart-guide" aria-labelledby="ju-chart-guide-title">
+          <h3 id="ju-chart-guide-title">How to read this graph</h3>
+          <p>Each dot shows the <strong>same bird’s results from two separate tests.</strong></p>
+          <dl class="ju-axis-guide">
+            <div><dt><span aria-hidden="true">X →</span> Across: Maximum CORT</dt>
+              <dd>CORT (corticosterone) is a stress hormone. Researchers used the higher of two blood levels, measured <strong>15 and 30 minutes after capture</strong>, not the starting level. The unit is ng/mL (nanograms per milliliter).</dd></div>
+            <div><dt><span aria-hidden="true">Y ↑</span> Up: Exploration score (PC1)</dt>
+              <dd>This score combines how quickly the bird moved to new places, how many places it visited, and how often it moved in a separate 20-minute test. Higher scores mean quicker and more extensive exploration. The score has no units. Below zero means a lower score, not negative movements.</dd></div>
+          </dl>
+          <p class="ju-dot-example"><strong>Try one dot:</strong> Find the far-right dot, at about <strong>38.4 ng/mL</strong> and <strong>−0.8</strong>. Those are one bird’s maximum CORT and exploration score. The coordinates are estimated, and the graph doesn’t identify its population.</p>
+        </section>
+        <p class="ju-chart-note">Look at the dots before turning on the best-fit line. A correlation is a pattern between two measurements, not proof that one causes the other.</p>
         <div class="ju-tools" id="ju-cort-tools"><label for="ju-filter">Show <select id="ju-filter"><option value="all">Both populations</option><option value="urban">UC San Diego</option><option value="mountain">Mt. Laguna</option></select></label><label class="ju-fit" for="ju-fit"><input id="ju-fit" type="checkbox"> Show best-fit line</label></div>
         <div id="ju-chart" class="ju-plot"></div>
         <p id="ju-cort-status" class="ju-chart-note"></p>
