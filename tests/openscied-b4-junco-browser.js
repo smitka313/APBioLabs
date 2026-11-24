@@ -257,28 +257,7 @@ async function exercise(browser,base,size) {
     check(await art.getAttribute('data-routine')==='idle' &&
       await art.locator('.ju-aviary-ring--food:visible').count()===2,
       label+' inspecting a control resets the replay caption and highlights');
-    if(size.width===1366){
-      await page.emulateMedia({reducedMotion:'no-preference'});
-      await activate(routineButton,size);
-      const waitPhase=key=>page.waitForFunction(phase=>document.getElementById('ju-aviary-art').dataset.routine===phase,key);
-      await waitPhase('refill');
-      await page.waitForFunction(()=>[...document.querySelectorAll('.ju-aviary-pour')].every(node=>Number(getComputedStyle(node).opacity)>0.8));
-      check(await art.getAttribute('data-routine')==='refill',
-        label+' makes both seed streams visibly pour during normal playback');
-      await waitPhase('matched');
-      await page.waitForFunction(()=>[...document.querySelectorAll('.ju-aviary-bird')].every(node=>getComputedStyle(node).transform==='matrix(1, 0, 0, 1, -36, 40)'));
-      check((await opacity('seeds')).every(value=>value===1) &&
-        /Same routine for both groups/.test(await routineCaption.innerText()),
-        label+' holds the birds at the dishes and preserves the explanation after motion');
-      assert.deepEqual(await readSaved(page),savedBeforeControl,label+' normal playback also leaves progress untouched');
-      await activate(routineButton,size);
-      await selectStep(page,size,'field');
-      await selectStep(page,size,'aviary');
-      check(await art.getAttribute('data-routine')==='idle' && !await id(page,'ju-live').innerText(),
-        label+' navigating away cancels the routine and clears its announcements');
-      await page.emulateMedia({reducedMotion:'reduce'});
-    }
-    if(size.width!==1366)assert.deepEqual(await readSaved(page),savedBeforeControl,label+' the illustration does not change progress or answers');
+    assert.deepEqual(await readSaved(page),savedBeforeControl,label+' the illustration does not change progress or answers');
     check(await id(page,'ju-aviary-results').isHidden(),label+' no results reveal when inspecting the setup');
     const reveal=id(page,'ju-reveal');
     check(await reveal.isDisabled(),label+' a choice is required before revealing aviary evidence');
@@ -344,6 +323,50 @@ async function exercise(browser,base,size) {
   }
 }
 
+async function exerciseNormalMotion(browser,base) {
+  // Choose the preference before document load. Changing it on the reduced-motion page
+  // queues the real scene reset, which can cancel a Play sent immediately afterward.
+  const size={width:1366,height:768};
+  const context=await browser.newContext({viewport:size,colorScheme:'light',reducedMotion:'no-preference'});
+  try {
+    const origin=new URL(base).origin;
+    await context.route('**/*',route=>new URL(route.request().url()).origin===origin?route.continue():route.abort());
+    const page=await context.newPage();
+    const errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    page.setDefaultTimeout(8000);
+    await page.goto(new URL(PAGE,base).href);
+    await selectStep(page,size,'aviary');
+    const art=id(page,'ju-aviary-art'), routineButton=id(page,'ju-aviary-replay');
+    const routineCaption=id(page,'ju-aviary-routine-caption');
+    const savedBeforeControl=await readSaved(page);
+    const waitPhase=key=>art.locator('[data-aviary-stage="'+key+'"][aria-current="step"]').waitFor();
+    check(await page.evaluate(()=>matchMedia('(prefers-reduced-motion: no-preference)').matches),
+      '1366-light normal playback uses a fresh context with motion enabled');
+    await activate(routineButton,size);
+    await waitPhase('approach');
+    await waitPhase('refill');
+    await page.waitForFunction(()=>[...document.querySelectorAll('.ju-aviary-pour')].every(node=>Number(getComputedStyle(node).opacity)>0.8));
+    check(await art.getAttribute('data-routine')==='refill',
+      '1366-light makes both seed streams visibly pour during normal playback');
+    await waitPhase('matched');
+    await page.waitForFunction(()=>[...document.querySelectorAll('.ju-aviary-bird')].every(node=>getComputedStyle(node).transform==='matrix(1, 0, 0, 1, -36, 40)'));
+    const seedOpacity=await art.locator('.ju-aviary-seeds').evaluateAll(nodes=>nodes.map(node=>Number(getComputedStyle(node).opacity)));
+    check(seedOpacity.length===2 && seedOpacity.every(value=>value===1) &&
+      /Same routine for both groups/.test(await routineCaption.innerText()),
+      '1366-light holds the birds at the dishes and preserves the explanation after motion');
+    assert.deepEqual(await readSaved(page),savedBeforeControl,'normal playback also leaves progress untouched');
+    await activate(routineButton,size);
+    await selectStep(page,size,'field');
+    await selectStep(page,size,'aviary');
+    check(await art.getAttribute('data-routine')==='idle' && !await id(page,'ju-live').innerText(),
+      '1366-light navigating away cancels the routine and clears its announcements');
+    check(errors.length===0,'1366-light normal playback has no uncaught browser errors '+errors.join(', '));
+  } finally {
+    await context.close();
+  }
+}
+
 async function verifyCortData(page,label) {
   const filter=id(page,'ju-filter');
   const origins=await id(page,'ju-cort-table').locator('tbody tr[data-site]').evaluateAll(rows=>rows.map(row=>row.getAttribute('data-site')));
@@ -369,6 +392,7 @@ async function verifyCortData(page,label) {
     browser=await chromium.launch(executablePath?{executablePath}:{});
     await fs.mkdir(OUT,{recursive:true});
     for(const size of SIZES) await exercise(browser,server.url,size);
+    await exerciseNormalMotion(browser,server.url);
     await verifySaveConflict(browser, server.url, {
       file:PAGE, key:SAVE, warning:'#ju-save-warning', backup:'#ju-download-tab', check,
       async edit(page,n){ await page.locator('#ju-field-entry').fill('Field note '+n); },
