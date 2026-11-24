@@ -1,0 +1,32 @@
+name: Junco Investigation
+on:
+  pull_request:
+    paths:
+      - 'openscied-b4-junco*'
+      - 'assets/junco-preview.svg'
+      - 'tests/openscied-b4-junco*'
+      - '.github/workflows/openscied-junco.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  junco-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-b4-junco-data.test.js tests/openscied-dashboard.test.js tests/openscied-teacher-guide.test.js
+      - run: python3 tools/build-seo.py --check
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b4-junco-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-junco-viewports
+          path: artifacts/openscied-b4-junco/
+          if-no-files-found: ignore

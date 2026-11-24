@@ -43,6 +43,9 @@ def page_specs():
         'openscied-b4-rat-generations.html': ('Rat Generations — OpenSciEd Biology B.4 companion | Lab Bench',
                                                'Model natural selection across five generations of a simulated rat colony. Inspect Punnett squares and compare population size, trait share and allele frequency.',
                                                'Rat Generations'),
+        'openscied-b4-junco.html': ('Junco Investigation — OpenSciEd Biology B.4 Lesson 4 | Lab Bench',
+                                   'Compare city and mountain juncos in field and shared aviary studies, then explore how corticosterone is associated with exploration.',
+                                   'Junco Investigation'),
         'getting-started.html': ('AP Biology Virtual Labs: Teacher Quick Start | Lab Bench',
                                  'Start teaching with free AP Biology virtual labs in five minutes. Choose a lab, share links, explain saving, collect reports, and review class progress.',
                                  'Teacher quick start'),
@@ -138,6 +141,13 @@ def structured_data(filename, title, description, label):
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'}})
             if guide:
                 page['isBasedOn'] = url(f'lab{lab["id"]:02}.html')
+        elif filename == 'openscied-b4-junco.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive data investigation',
+                         'teaches': 'Controlled comparisons and the relationship between stress and behavior in juncos',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-4-natural-selection-evolution/'})
         elif filename == 'openscied-b3-cancer-rates.html':
             page.update({'@type': ['WebPage', 'LearningResource'],
                          'educationalLevel': 'High school biology',
