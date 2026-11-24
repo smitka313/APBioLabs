@@ -1213,7 +1213,20 @@
     try { Lab.timelapse.eraseAll(); } catch (e) { /* recorded runs live in IndexedDB */ }
     try { Object.keys(sessionStorage).filter(k => k.startsWith('aplab:')).forEach(k => sessionStorage.removeItem(k)); } catch (e) { /* ignore */ }
   }
+  function invalidateOpenSciEdEditors() {
+    // This non-personal marker survives wipe(), even when Lab Bench is the open page.
+    const key = 'aplab:pref:openscied-save-session:v1:global';
+    try {
+      const marker = globalThis.crypto?.randomUUID?.() ?? Date.now().toString(36) + ':' + Math.random().toString(36).slice(2);
+      localStorage.setItem(key, marker);
+      return true;
+    } catch (_) {
+      Lab.toast('Could not safely clear saved work. Check browser storage and try again.', {type:'error'});
+      return false;
+    }
+  }
   function doSignOut() {
+    if (!invalidateOpenSciEdEditors()) return;
     wipe(k => KEEP_PREFS.some(p => k.startsWith(p)));
     memIdentity = null; memBackup = null;
     sessionSet(FLASH_KEY, 'signout');
@@ -1221,6 +1234,7 @@
     if (IS_LAB) location.assign('index.html'); else location.reload();
   }
   function doStartOverAll() {
+    if (!invalidateOpenSciEdEditors()) return;
     const idn = storedIdentity();
     const next = {};
     if (idn) LAB_IDS.forEach(id => { next[`aplab:dataset:${id}:${studentKey(idn)}`] = (+gstore.get(`dataset:${id}:${studentKey(idn)}`) || 1) + 1; });
@@ -1444,10 +1458,15 @@
     try { return await fn(); } finally { Math.random = seeded; }
   }
   /* Temporarily force light-theme tokens (print/report views). Returns a restore function. */
-  function forceLight() {
+  function forceLight(followPreference = false) {
     const root = document.documentElement, prev = root.getAttribute('data-theme');
+    const preference = followPreference ? themeGet() : null;
     root.setAttribute('data-theme', 'light');
-    return () => { if (prev == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', prev); };
+    return () => {
+      // Print/report mode can stay open long enough for another tab to change the shared preference.
+      if (followPreference && themeGet() !== preference) { themeApply(); return; }
+      if (prev == null) root.removeAttribute('data-theme'); else root.setAttribute('data-theme', prev);
+    };
   }
   /* ---- Printing: light colors and static pictures of every canvas ----
      A canvas is drawn with the colors of the theme that was on screen (dark mode gives pale lines on a dark scene) and a part that is
@@ -1463,7 +1482,7 @@
   function printPrepare() {
     if (PRINT.on) return PRINT.snaps.length;
     PRINT.on = true;
-    if (isDarkNow()) { PRINT.restoreTheme = forceLight(); }
+    PRINT.restoreTheme = forceLight(true);
     redrawEverything();
     $$('canvas').forEach(cv => {
       if (cv.closest('.print-snap') || !cv.getClientRects().length || !cv.clientWidth || !cv.clientHeight) return;
@@ -1759,7 +1778,7 @@
     reportOpener = o.opener || document.activeElement;
     const rep = await renderCharts(collectReport());
     rep.stamp = reportStamp(rep);
-    restoreTheme = forceLight();
+    restoreTheme = forceLight(true);
     const run = { left: (rep.name || '(name not entered)') + (rep.period ? ' · Class ' + rep.period : ''), right: rep.labTitle, bottomLeft: 'Dataset ID: ' + rep.datasetId };
     const rvStyle = printPageStyle('rv-page-style', run, '.7in .6in .6in');
     document.head.append(rvStyle);
@@ -3640,7 +3659,7 @@
     mountSoundToggle(sw);
     themeApply();
   }
-  window.addEventListener('storage', e => { if (e.key === THEME_KEY) themeApply(); });
+  window.addEventListener('storage', e => { if (e.key === THEME_KEY && !PRINT.on && !restoreTheme) themeApply(); });
   if (/^openscied-/.test(PAGE.id)) {
     // A history-restored document skips its head scripts and may have missed
     // a theme change while it was frozen. Re-sync tokens, controls and canvases.

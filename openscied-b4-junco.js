@@ -17,9 +17,13 @@
   const cleanText=(v,n)=>typeof v==='string'?v.slice(0,n):'';
   const pick=(v,valid,d)=>valid.includes(v)?v:d;
   const blank=()=>({step:'field',prediction:'',revealed:false,reason:'',observation:'',claim:'',limits:'',person:{},fieldGroup:'foraging',aviaryGroup:'female',filter:'all',fit:false,lastVisitedAt:0});
-  let state=blank(), canSave=true;
+  const scope='b4-junco', guard=window.OpenSciEdSaveSession;
+  let session;
+  try {session=guard?.open(window.localStorage,scope,[key]);} catch (_) {}
+  let state=blank(), invalid=false, warned='';
   try{
-    const raw=JSON.parse(localStorage.getItem(key) || 'null');
+    const saved=session?.read(key) ?? null, raw=JSON.parse(saved ?? 'null');
+    if(saved!==null&&(!raw||typeof raw!=='object'||Array.isArray(raw))) throw Error('Unreadable notebook');
     if(raw && typeof raw==='object'){
       state.prediction=pick(raw.prediction,Object.keys(choices),'');
       state.revealed=raw.revealed===true&&!!state.prediction;
@@ -32,13 +36,25 @@
       state.fit=raw.fit===true;
       if(window.JuncoFlight)state.sim=window.JuncoFlight.clean(raw.sim,D.field.rows);
     }
-  }catch(e){canSave=false;}
+  }catch(_){invalid=true;}
+  function notSaved(reason) {
+    const text=reason==='unreadable' ? 'The previous notebook could not be read and has not been overwritten.' :
+      reason==='changed' ? 'A newer copy of this activity was saved in another tab. This tab will not overwrite it.' :
+      reason==='erased' ? 'Saved work was cleared on this device. This tab will not bring it back.' :
+      'This browser could not save the work in this tab.';
+    const message=text+' Download a copy before closing this tab.';
+    $('save-warning').hidden=false;$('save-warning-text').textContent=message;
+    if(warned!==message) {warned=message;say(message);}
+    return false;
+  }
   function save(){
     state.lastVisitedAt=Date.now();
-    if(canSave){try{localStorage.setItem(key,JSON.stringify(state));}catch(_){canSave=false;}}
-    if(!canSave)$('live').textContent='This browser could not save your notebook. Download a report before you leave.';
+    if(invalid)return notSaved('unreadable');
+    const result=session?.write(key,JSON.stringify(state));
+    if(!result?.ok) return notSaved(result?.reason);
+    warned='';$('save-warning').hidden=true;return true;
   }
-  function say(s){if(canSave)$('live').textContent=s;}
+  function say(s){$('live').textContent=s;}
   const fmt=n=>Number.isFinite(n)?new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(n):'—';
   const mk=(tag,t)=>Object.assign(document.createElement(tag),{textContent:t??''});
   const nav=[...document.querySelectorAll('[data-step]')];
@@ -186,7 +202,7 @@
     const field=$(k);field.value=state.person[k]??shared[k]??'';
     field.addEventListener('input',()=>{state.person[k]=cleanText(field.value,max);save();});
   }
-  $('download').addEventListener('click',()=>{
+  function download(){
     const view=identified?sites[state.filter]||'Both populations':'All plotted birds';
     const body=['Junco Investigation — Field report','Name: '+$('name').value.trim(),'Class period: '+$('period').value.trim(),'','PUBLISHED STUDY EVIDENCE',...evidenceLines(),
       '', 'My observation: '+state.observation,'My prediction: '+(choices[state.prediction]||'Not recorded'),'My reasoning: '+state.reason,
@@ -196,7 +212,9 @@
     const a=mk('a'),url=URL.createObjectURL(new Blob([body],{type:'text/plain;charset=utf-8'}));
     a.href=url;a.download='junco-field-report.txt';document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),2000);say('Field report downloaded.');
-  });
+  }
+  $('download').addEventListener('click',download);
+  $('download-tab').addEventListener('click',download);
   const dataSources=$('source-data');
   [D.field,D.aviary,D.cort].forEach((d,i)=>{
     if(!d.url)return;
@@ -208,4 +226,14 @@
   if(steps.includes(requested)&&(requested!=='cort'||state.revealed))state.step=requested;
   draw();
   if(requested==='cort'&&!state.revealed)say('Make a prediction and reveal the aviary results before opening the hormone clue.');
+  if(invalid)notSaved('unreadable');
+  const monitorSave=()=>{
+    const result=session?.check(key);
+    if(!result?.ok) notSaved(result?.reason);
+  };
+  window.addEventListener('storage',event=>{
+    if(!event.key||event.key===key||(guard&&[guard.globalKey,guard.scopeKey(scope),guard.resetKey(key)].includes(event.key))) monitorSave();
+  });
+  window.addEventListener('pageshow',monitorSave);
+  monitorSave();
 })();

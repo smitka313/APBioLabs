@@ -39,6 +39,47 @@
 (function () {
   'use strict';
   const KEY = 'aplab:openscied:b3-inheritance-environment:v1';
+  const saveScope = 'b3-inheritance-environment', saveAPI = window.OpenSciEdSaveSession;
+  const saveSession = (() => {
+    try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
+    catch (_) { return null; }
+  })();
+  const unavailableSave = { ok:false, reason:'unavailable' };
+  function showSaveProblem(result, focus = false) {
+    const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
+      result?.reason === 'changed' ? 'This activity changed in another tab.' : 'This browser could not save your work.') +
+      ' This tab has not overwritten the saved work. Download a copy of your work here before reopening the activity.';
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) {
+      const changed = notice.hidden || notice.firstElementChild.textContent !== message;
+      if (changed) notice.firstElementChild.textContent = message;
+      notice.hidden = false;
+      if (focus) notice.focus();
+      // Keep the banner visible and announce it once, without replacing lesson feedback.
+      if (changed && !focus) {
+        const live = document.getElementById('save-announcement');
+        if (live) live.textContent = message;
+      }
+    }
+    return message;
+  }
+  function clearSaveProblem() {
+    const notice = document.getElementById('ose-save-protection');
+    if (notice && !notice.hidden) {
+      notice.hidden = true;
+      const live = document.getElementById('save-announcement');
+      if (live) live.textContent = '';
+    }
+  }
+  function watchSaveChanges(event) {
+    if (event?.type === 'storage' && event.key !== null &&
+        ![KEY, saveAPI?.globalKey, saveAPI?.scopeKey(saveScope), saveAPI?.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession?.check(KEY);
+    if (result && !result.ok && result.reason !== 'unavailable') showSaveProblem(result);
+  }
+  window.addEventListener('storage', watchSaveChanges);
+  window.addEventListener('pageshow', watchSaveChanges);
+
   const SECTIONS = ['overview', 'ideas', 'families', 'reader', 'lakita', 'twogene', 'passing', 'exit8', 'envideas', 'skindata', 'plan', 'yeast', 'uvdna', 'wrapup'];
   const SCENE_IDS = ['pedigree', 'twoGene', 'meiosis', 'skin', 'planner', 'yeast'];
   const HOSTS = { pedigree: ['#pedigree-scene', '#pedigree-notice', '#pedigree-desc'], twoGene: ['#two-gene-scene', '#two-gene-notice', '#two-gene-desc'],
@@ -52,7 +93,7 @@
   const STEP_LABELS = { copy: 'The DNA is copied', cross: 'Matching chromosomes swap sections', divide: 'Two divisions make four cells', join: 'Egg and sperm join' };
 
   function hash32(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-  function announce(text) { const e = $('#announcer'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
+  function announce(text) { const e = $('#step-announcement'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function copy(o) { try { return JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
   function studentIdentity() { return window.Lab && Lab.identity ? Lab.identity.get() : null; }
@@ -61,7 +102,7 @@
   /* ---------- saved state ---------- */
   function readStore() {
     try {
-      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+      const d = JSON.parse((saveSession?.read(KEY) ?? null) || 'null');
       if (!d || d.v !== 1) return;
       hadSaved = true;
       SCENE_IDS.forEach(function (id) { if (d[id] && typeof d[id] === 'object') state[id] = d[id]; });
@@ -88,8 +129,9 @@
       if (SECTIONS.includes(section)) state.lastSection = section;
       const rec = { v: 1, question: state.question, fields: state.fields, responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now() };
       SCENE_IDS.forEach(function (id) { rec[id] = state[id]; });
-      localStorage.setItem(KEY, JSON.stringify(rec));
-      $('#save-status').textContent = 'Saved on this device.';
+      const result = saveSession?.write(KEY, JSON.stringify(rec)) ?? unavailableSave;
+      if (result.ok) clearSaveProblem();
+      $('#save-status').textContent = result.ok ? 'Saved on this device.' : showSaveProblem(result);
     } catch (e) { $('#save-status').textContent = 'This browser could not save your work. Download a copy before leaving.'; }
     renderReport();
   }
@@ -328,10 +370,11 @@
   }
   // Same rule as the other companions: clear this activity's record, then reload fresh at the Overview. Name and class period stay saved.
   function clearActivity() {
+    const result = saveSession?.reset(KEY) ?? unavailableSave;
+    if (!result.ok) { $('#reset-dialog').close(); $('#save-status').textContent = showSaveProblem(result, true); return; }
     $$('textarea, input[type=text], input[type=hidden], select').forEach(function (e) { if (e.tagName === 'SELECT') e.selectedIndex = 0; else e.value = ''; });
     $$('input[type=checkbox],input[type=radio]').forEach(function (e) { e.checked = e.defaultChecked; });
     cleared = true;
-    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     try { history.replaceState(null, '', location.pathname + location.search + '#overview'); } catch (e) { /* ignore */ }
     location.reload();
   }

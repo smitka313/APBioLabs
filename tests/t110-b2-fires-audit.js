@@ -86,10 +86,24 @@ const answerAll = p => p.evaluate(() => {
     const less = await counts(p); await d.reload(); await d.waitForSelector('#b2-fires-progress');
     const m2 = /(\d+) of (\d+) answers saved/.exec(await d.locator('#b2-fires-progress').innerText());
     T.ok(less.answered === done.answered - 1 && m2 && +m2[1] === less.answered && +m2[2] === less.total, 'D1: with one answer cleared both show ' + less.answered + ' of ' + less.total + ' (dashboard ' + (m2 && m2[0]) + ')');
-    await p.evaluate(k => { const r = JSON.parse(localStorage.getItem(k)); r.responseIds = r.responseIds.concat(['ideas-because', 'wrap-question']); localStorage.setItem(k, JSON.stringify(r)); }, KEY);
+    const legacy = await p.evaluate(k => {
+      const r = JSON.parse(localStorage.getItem(k));
+      r.responseIds = r.responseIds.concat(['ideas-because', 'wrap-question']);
+      localStorage.setItem(k, JSON.stringify(r));
+      return r;
+    }, KEY);
     await p.reload(); await p.waitForFunction(() => window.B2Fires && document.querySelector('.step.is-current'));
     const rec2 = await p.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
     T.ok(rec2.responseIds.length === less.total && !rec2.responseIds.includes('wrap-question'), 'D1: an older record that counted the optional boxes is normalized on the next visit');
+    T.ok(JSON.stringify(rec2) === JSON.stringify({ ...legacy, responseIds: rec.responseIds }),
+      'D1: the migration preserves optional notes, model records and last-work time exactly');
+    const savedBytes = JSON.stringify(rec2);
+    await p.reload(); await p.waitForFunction(() => window.B2Fires && document.querySelector('.step.is-current'));
+    T.ok(await p.evaluate(k => localStorage.getItem(k), KEY) === savedBytes,
+      'D1: later visits do not rewrite the corrected record');
+    await d.reload(); await d.waitForSelector('#b2-fires-progress');
+    T.ok(new RegExp(less.answered + ' of ' + less.total + ' answers saved').test(await d.locator('#b2-fires-progress').innerText()),
+      'D1: the dashboard counts the corrected legacy record using the same total');
     T.ok(errs.length === 0, 'no page errors ' + errs.join());
     await ctx.close();
   } finally { await browser.close(); server.close(); }

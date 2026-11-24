@@ -60,10 +60,10 @@
       b&&compareText(state)].filter(Boolean).join('\n');
   }
 
-  function mount(host,{announce}={}){
+  function mount(host,{announce,getSaveSession,onSaveConflict}={}){
     if(!host||!L)return null;
     let state=blank(),storage='ok',raw=null;
-    try{raw=root.localStorage.getItem(KEY);const s=restore(raw);if(s)state=s;else storage='preserved';}
+    try{raw=getSaveSession?.() ? getSaveSession().read(KEY) : root.localStorage.getItem(KEY);const s=restore(raw);if(s)state=s;else storage='preserved';}
     catch(_){storage='blocked';}
     let selected='',inspected='',gesture=null,ghost=null,suppress=null,lastMessage='',recent='';
     host.classList.add('cc-habitat-ui');
@@ -80,8 +80,10 @@
     }
     function persist(){
       if(storage==='preserved')return;
-      try{root.localStorage.setItem(KEY,JSON.stringify(state));storage='ok';}
-      catch(_){storage='blocked';}
+      let result;
+      try{result=getSaveSession?.()?.write(KEY,JSON.stringify(state));}catch(_){}
+      storage=result?.ok?'ok':'blocked';
+      if(!result?.ok)onSaveConflict?.(result);
     }
     function focus(selector){$(selector)?.focus({preventScroll:true});}
     function storageNote(){
@@ -89,10 +91,14 @@
       if(storage==='blocked')return '<p class="cc-habitat-notice">This browser could not save the habitat work. Keep the page open and download your investigation before leaving.</p>';
       return '';
     }
-    function reset(){
-      selected='';inspected='';recent='';lastMessage='';state=blank();
-      try{root.localStorage.removeItem(KEY);storage='ok';}catch(_){storage='blocked';}
+    function reset(alreadyCleared=false){
+      if(!alreadyCleared){
+        const result=getSaveSession?.()?.reset(KEY);
+        if(!result?.ok){onSaveConflict?.(result);return false;}
+      }
+      selected='';inspected='';recent='';lastMessage='';state=blank();storage='ok';
       draw();
+      return true;
     }
     function setup(){
       const picked=scenario(state.scenario), reference=L.create();
@@ -260,7 +266,10 @@
         focus('#cc-habitat-result');
       }
       if(control.id==='cc-habitat-clear')$('#cc-habitat-reset-dialog').showModal();
-      if(control.id==='cc-habitat-reset-confirm'){reset();tell('Habitat challenge reset.');focus('#cc-habitat-draw');}
+      if(control.id==='cc-habitat-reset-confirm'){
+        $('#cc-habitat-reset-dialog').close();
+        if(reset()){tell('Habitat challenge reset.');focus('#cc-habitat-draw');}
+      }
     });
     host.addEventListener('keydown',e=>{
       if(e.key==='Escape'&&selected&&!$('#cc-habitat-reset-dialog')?.open){

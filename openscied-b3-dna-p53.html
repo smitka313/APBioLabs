@@ -61,8 +61,9 @@
     <li><a href="#wrapup"><span class="n">9</span><span>Wrap up</span></a></li>
   </ol></div>
 </nav>
-<p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+<p id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="false"><span id="step-announcement"></span><span id="save-announcement"></span></p>
 <main id="main">
+  <div id="ose-save-protection" class="wrap wrap--wide gutter" role="group" aria-label="Saving problem" aria-describedby="ose-save-protection-message" tabindex="-1" hidden><p id="ose-save-protection-message" class="callout callout--safety"></p></div>
 
 
   <!-- 1 ---------------------------------------------------------------- -->
@@ -220,39 +221,6 @@
   <section class="step wrap wrap--wide gutter" id="checklist" data-step="Checklist and reading">
     <header><div class="eyebrow">Part A · Lesson 5 · 5 · Evidence</div><h2>What must a good explanation include?</h2></header>
     <div class="step-body">
-      <p>Tap <strong>I know it</strong> or <strong>I need it</strong> for each idea. Read the card, then update.</p>
-      <ul class="checklist" id="checklist-table" aria-label="Gotta-Have-It checklist">
-        <li class="cl-row" id="cl-row-relation" data-row="relation"><span class="cl-name" id="cl-name-relation">How DNA and chromosomes are related</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-relation"><label class="opt know"><input type="radio" name="cl-relation-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-relation-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: How DNA and chromosomes are related</legend><label class="chip"><input type="checkbox" id="cl-relation-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-relation-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-relation-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-relation-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-relation-status"><span class="row-status" id="cl-status-relation"></span></li>
-        <li class="cl-row" id="cl-row-why" data-row="why"><span class="cl-name" id="cl-name-why">Why, how and when DNA copies</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-why"><label class="opt know"><input type="radio" name="cl-why-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-why-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: Why, how and when DNA copies</legend><label class="chip"><input type="checkbox" id="cl-why-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-why-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-why-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-why-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-why-status"><span class="row-status" id="cl-status-why"></span></li>
-        <li class="cl-row" id="cl-row-process" data-row="process"><span class="cl-name" id="cl-name-process">The steps of copying</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-process"><label class="opt know"><input type="radio" name="cl-process-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-process-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: The steps of copying</legend><label class="chip"><input type="checkbox" id="cl-process-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-process-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-process-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-process-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-process-status"><span class="row-status" id="cl-status-process"></span></li>
-        <li class="cl-row" id="cl-row-errors" data-row="errors"><span class="cl-name" id="cl-name-errors">Where, how and why errors happen</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-errors"><label class="opt know"><input type="radio" name="cl-errors-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-errors-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: Where, how and why errors happen</legend><label class="chip"><input type="checkbox" id="cl-errors-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-errors-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-errors-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-errors-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-errors-status"><span class="row-status" id="cl-status-errors"></span></li>
-        <li class="cl-row" id="cl-row-corrected" data-row="corrected"><span class="cl-name" id="cl-name-corrected">Where, how and why errors are corrected</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-corrected"><label class="opt know"><input type="radio" name="cl-corrected-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-corrected-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: Where, how and why errors are corrected</legend><label class="chip"><input type="checkbox" id="cl-corrected-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-corrected-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-corrected-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-corrected-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-corrected-status"><span class="row-status" id="cl-status-corrected"></span></li>
-        <li class="cl-row" id="cl-row-after" data-row="after"><span class="cl-name" id="cl-name-after">What happens to DNA after copying</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-after"><label class="opt know"><input type="radio" name="cl-after-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-after-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: What happens to DNA after copying</legend><label class="chip"><input type="checkbox" id="cl-after-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-after-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-after-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-after-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-after-status"><span class="row-status" id="cl-status-after"></span></li>
-        <li class="cl-row" id="cl-row-cancer" data-row="cancer"><span class="cl-name" id="cl-name-cancer">How mutations relate to cancer cells with different chromosomes</span>
-          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-cancer"><label class="opt know"><input type="radio" name="cl-cancer-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-cancer-r" value="need" data-ui><span>I need it</span></label></div>
-          <fieldset class="src"><legend class="sr-only">Where I got it: How mutations relate to cancer cells with different chromosomes</legend><label class="chip"><input type="checkbox" id="cl-cancer-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-cancer-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-cancer-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-cancer-src-other"><span>Other</span></label></fieldset>
-          <input type="hidden" id="cl-cancer-status"><span class="row-status" id="cl-status-cancer"></span></li>
-      </ul>
-      <p class="small" id="checklist-count">0 of 7 ideas sorted.</p>
-
       <article class="reading panel" aria-labelledby="reading-dna-title">
         <div class="eyebrow">Short reading</div>
         <h3 id="reading-dna-title">DNA and chromosomes</h3>
@@ -288,6 +256,39 @@
           <p>A human cell copies about 6 billion letters. Copying is very accurate, and cells fix many mistakes. Most mutations are harmless, and cancer usually takes several changes in genes that control cell division.</p>
         </div></details>
       </article>
+      <p>After reading, mark <strong>I know it</strong> or <strong>I need it</strong> for each idea.</p>
+      <ul class="checklist" id="checklist-table" aria-label="Gotta-Have-It checklist">
+        <li class="cl-row" id="cl-row-relation" data-row="relation"><span class="cl-name" id="cl-name-relation">How DNA and chromosomes are related</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-relation"><label class="opt know"><input type="radio" name="cl-relation-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-relation-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: How DNA and chromosomes are related</legend><label class="chip"><input type="checkbox" id="cl-relation-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-relation-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-relation-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-relation-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-relation-status"><span class="row-status" id="cl-status-relation"></span></li>
+        <li class="cl-row" id="cl-row-why" data-row="why"><span class="cl-name" id="cl-name-why">Why, how and when DNA copies</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-why"><label class="opt know"><input type="radio" name="cl-why-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-why-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: Why, how and when DNA copies</legend><label class="chip"><input type="checkbox" id="cl-why-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-why-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-why-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-why-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-why-status"><span class="row-status" id="cl-status-why"></span></li>
+        <li class="cl-row" id="cl-row-process" data-row="process"><span class="cl-name" id="cl-name-process">The steps of copying</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-process"><label class="opt know"><input type="radio" name="cl-process-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-process-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: The steps of copying</legend><label class="chip"><input type="checkbox" id="cl-process-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-process-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-process-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-process-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-process-status"><span class="row-status" id="cl-status-process"></span></li>
+        <li class="cl-row" id="cl-row-errors" data-row="errors"><span class="cl-name" id="cl-name-errors">Where, how and why errors happen</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-errors"><label class="opt know"><input type="radio" name="cl-errors-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-errors-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: Where, how and why errors happen</legend><label class="chip"><input type="checkbox" id="cl-errors-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-errors-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-errors-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-errors-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-errors-status"><span class="row-status" id="cl-status-errors"></span></li>
+        <li class="cl-row" id="cl-row-corrected" data-row="corrected"><span class="cl-name" id="cl-name-corrected">Where, how and why errors are corrected</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-corrected"><label class="opt know"><input type="radio" name="cl-corrected-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-corrected-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: Where, how and why errors are corrected</legend><label class="chip"><input type="checkbox" id="cl-corrected-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-corrected-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-corrected-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-corrected-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-corrected-status"><span class="row-status" id="cl-status-corrected"></span></li>
+        <li class="cl-row" id="cl-row-after" data-row="after"><span class="cl-name" id="cl-name-after">What happens to DNA after copying</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-after"><label class="opt know"><input type="radio" name="cl-after-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-after-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: What happens to DNA after copying</legend><label class="chip"><input type="checkbox" id="cl-after-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-after-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-after-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-after-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-after-status"><span class="row-status" id="cl-status-after"></span></li>
+        <li class="cl-row" id="cl-row-cancer" data-row="cancer"><span class="cl-name" id="cl-name-cancer">How mutations relate to cancer cells with different chromosomes</span>
+          <div class="cl-ctl" role="radiogroup" aria-labelledby="cl-name-cancer"><label class="opt know"><input type="radio" name="cl-cancer-r" value="know" data-ui><span>I know it</span></label><label class="opt need"><input type="radio" name="cl-cancer-r" value="need" data-ui><span>I need it</span></label></div>
+          <fieldset class="src"><legend class="sr-only">Where I got it: How mutations relate to cancer cells with different chromosomes</legend><label class="chip"><input type="checkbox" id="cl-cancer-src-sim"><span>Simulation</span></label><label class="chip"><input type="checkbox" id="cl-cancer-src-game"><span>Cell Game</span></label><label class="chip"><input type="checkbox" id="cl-cancer-src-read"><span>Reading</span></label><label class="chip"><input type="checkbox" id="cl-cancer-src-other"><span>Other</span></label></fieldset>
+          <input type="hidden" id="cl-cancer-status"><span class="row-status" id="cl-status-cancer"></span></li>
+      </ul>
+      <p class="small" id="checklist-count">0 of 7 ideas sorted.</p>
+
       <details class="disclose"><summary>Check my checklist against the key ideas</summary><div class="inner">
         <ul class="key-list"><li>Chromosomes are made of DNA (reading).</li><li>DNA is copied in S phase so each new cell gets a full set (Cell Game).</li><li>Unwind, unzip, then pair A with T and G with C (simulation).</li><li>A wrong letter is a substitution, a kind of mutation (simulation).</li><li>p53 (a) removes a mismatch from the finished copy; (b) and (c) do not fit (simulation).</li><li>Each new cell gets a copy (Cell Game).</li><li>An unfixed mutation is copied into the new cell, so its chromosomes differ. Most changes alone do not cause cancer.</li></ul>
         <p class="small">Watch out: in the model, p53 fixes a mistake <em>after</em> copying. It does not stop mistakes.</p>
@@ -490,25 +491,25 @@
     <div class="step-body">
       <div class="cards">
         <fieldset class="qcard" data-q="exit-q1" data-type="single" data-label="Exit ticket 1: How is genetic information organized in cells?" data-wrong="Try again. Why not: this idea is true, but it is only one part. Look for the answer that uses both the reading and the picture in section 5.">
-          <legend><span class="question-number">1</span>How is genetic information organized? Use the section 5 reading and picture.</legend>
+          <legend><span class="question-number">1</span>How is DNA organized? Use the reading and picture.</legend>
           <div class="opts">
-            <label class="opt" data-ok data-why="Yes. The reading says DNA is organized into chromosomes and genes code for proteins, and the picture shows that genes are sections of the chromosome. This answer uses both."><input type="radio" name="exit-q1-r" value="a" data-ui><span>DNA makes up chromosomes, which are organized into genes that code for proteins.</span></label>
+            <label class="opt" data-ok data-why="Yes. The reading says DNA is organized into chromosomes and genes code for proteins, and the picture shows that genes are sections of the chromosome. This answer uses both."><input type="radio" name="exit-q1-r" value="a" data-ui><span>Genes are parts of chromosomal DNA with instructions for proteins.</span></label>
             <label class="opt" data-why="Try again. Why not: this is true, but it leaves out where genes are. The picture shows that genes are sections of a chromosome."><input type="radio" name="exit-q1-r" value="b" data-ui><span>Chromosomes are made of DNA. Genes code for proteins.</span></label>
             <label class="opt" data-why="Try again. Why not: this is true and comes from the picture, but it leaves out that chromosomes are made of DNA and that genes code for proteins, which come from the reading."><input type="radio" name="exit-q1-r" value="c" data-ui><span>Genes are located on chromosomes.</span></label>
           </div><input type="hidden" id="exit-q1"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="exit-q2" data-type="single" data-label="Exit ticket 2: Why are there versions of p53 that work differently?" data-wrong="Try again. Why not: this idea is true and helps, but it is only one part. Reread all the choices, and look for the one that includes everything.">
-          <legend><span class="question-number">2</span>Why do p53 versions work differently?</legend>
+          <legend><span class="question-number">2</span>Which fully explains how p53 versions work differently?</legend>
           <div class="opts">
-            <label class="opt"><input type="radio" name="exit-q2-r" value="a" data-ui><span>Some p53 genes have mutations in the code.</span></label>
-            <label class="opt"><input type="radio" name="exit-q2-r" value="b" data-ui><span>Different DNA codes make proteins with different shapes.</span></label>
-            <label class="opt"><input type="radio" name="exit-q2-r" value="c" data-ui><span>Different shapes fit the DNA better or worse.</span></label>
-            <label class="opt"><input type="radio" name="exit-q2-r" value="d" data-ui><span>The better the fit, the better p53 corrects mutations.</span></label>
-            <label class="opt" data-ok data-why="Yes. All four ideas help: a changed code can make a protein with a different shape, and a different shape fits the DNA better or worse, which changes how well p53 can correct mutations."><input type="radio" name="exit-q2-r" value="e" data-ui><span>All of the above.</span></label>
+            <label class="opt"><input type="radio" name="exit-q2-r" value="a" data-ui><span>Some p53 genes have mutations.</span></label>
+            <label class="opt"><input type="radio" name="exit-q2-r" value="b" data-ui><span>A DNA change can alter protein shape.</span></label>
+            <label class="opt"><input type="radio" name="exit-q2-r" value="c" data-ui><span>Shape affects fit with DNA.</span></label>
+            <label class="opt"><input type="radio" name="exit-q2-r" value="d" data-ui><span>Better fit helps p53 work.</span></label>
+            <label class="opt" data-ok data-why="Yes. This connects the gene change, protein shape, fit, and function in the model."><input type="radio" name="exit-q2-r" value="e" data-ui><span>A DNA change can alter p53’s shape, fit with DNA, and function.</span></label>
           </div><input type="hidden" id="exit-q2"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-exit3" data-type="single" data-label="Exit ticket 3: an everyday example of structure affecting function" data-saved="Saved. Shape decides how things fit, from keys to proteins.">
-          <legend><span class="question-number">3</span>Which shows structure affecting function?</legend>
+          <legend><span class="question-number">3</span>Pick any example of shape affecting function.</legend>
           <div class="opts">
             <label class="opt"><input type="radio" name="p-exit3-r" value="a" data-ui><span>A key’s shape fits only its lock</span></label>
             <label class="opt"><input type="radio" name="p-exit3-r" value="b" data-ui><span>A glove’s shape fits a hand</span></label>
@@ -516,13 +517,13 @@
           </div><input type="hidden" id="p-exit3"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="exit-q4" data-type="single" data-label="Exit ticket 4: how the structure of p53 differs in versions that correct mutations and versions that do not" data-wrong="Try again. Why not: this idea is true and helps, but it is only one part. Reread all the choices, and look for the one that includes everything.">
-          <legend><span class="question-number">4</span>How does p53 (a) differ from p53 (b)?</legend>
+          <legend><span class="question-number">4</span>Which best connects sequence to shape?</legend>
           <p class="seqs"><strong>p53 (a)</strong> Phe-Ser-Arg-Gly-Ile-Thr-Arg-Glu-Asp<br><strong>p53 (b)</strong> Phe-Ser-Arg-Gly-Ile-Pro-Arg-Ala</p>
           <div class="opts">
             <label class="opt"><input type="radio" name="exit-q4-r" value="a" data-ui><span>p53 (a) has 9 amino acids.</span></label>
-            <label class="opt"><input type="radio" name="exit-q4-r" value="b" data-ui><span>p53 (b) has 8, and one is different.</span></label>
-            <label class="opt"><input type="radio" name="exit-q4-r" value="c" data-ui><span>The difference gives the protein a different shape.</span></label>
-            <label class="opt" data-ok data-why="Yes. All three statements are true. p53 (a) has 9 amino acids, p53 (b) has 8 with one different, and the difference changes the protein’s shape."><input type="radio" name="exit-q4-r" value="d" data-ui><span>All of the above.</span></label>
+            <label class="opt"><input type="radio" name="exit-q4-r" value="b" data-ui><span>p53 (b) has 8 amino acids.</span></label>
+            <label class="opt"><input type="radio" name="exit-q4-r" value="c" data-ui><span>Chain changes can affect folding.</span></label>
+            <label class="opt" data-ok data-why="Yes. Version (a) has nine amino acids and version (b) has eight. At positions six and eight, the two sequences list different amino acids. Changes like these can affect how the protein folds."><input type="radio" name="exit-q4-r" value="d" data-ui><span>(a) has nine amino acids; (b) has eight and two position differences. This can affect folding.</span></label>
           </div><input type="hidden" id="exit-q4"><p class="q-fb"></p>
         </fieldset>
         <fieldset class="qcard" data-q="p-exit5" data-type="multi" data-label="Exit ticket 5: which sources helped me make sense of p53" data-saved="Saved. Using several sources makes an explanation stronger.">
@@ -554,11 +555,11 @@
         <input type="hidden" id="p-progress"><p class="q-fb"></p>
       </fieldset>
       <div class="cards">
-        <div class="field analysis-question"><label for="wrap-reflection"><span class="question-number">A</span>Looking back at section 2, what would you change?</label>
+        <div class="field analysis-question"><label for="wrap-reflection"><span class="question-number">A</span>What would you change about your first ideas?</label>
           <textarea id="wrap-reflection" rows="2" maxlength="300" placeholder="Now I would add…" aria-describedby="wrap-reflection-hint"></textarea><span class="len-hint" id="wrap-reflection-hint" data-for="wrap-reflection">1–2 sentences</span></div>
       </div>
       <details class="disclose write-more"><summary>Write more (optional)</summary><div class="inner">
-        <div class="field"><label for="wrap-more">Anything else you figured out or want to ask. This is where the long handout answers can go.</label>
+        <div class="field"><label for="wrap-more">Other findings, questions, or longer handout answers.</label>
           <textarea id="wrap-more" rows="5"></textarea></div>
       </div></details>
       <details class="disclose" id="earlier-answers" hidden><summary>Earlier answers from the longer version of this page</summary><div class="inner"><p class="small muted">These were saved before this page was shortened. They stay in your download.</p><div id="earlier-answers-body"></div></div></details>
@@ -598,7 +599,8 @@
 <script src="openscied-b3-dna-p53-logic.js"></script>
 <script src="dna-replication-scene.js"></script>
 <script src="gene-expression-scene.js"></script>
-<script src="openscied-b3-dna-p53.js"></script>
+<script src="openscied-save-session.js"></script>
+<script src="openscied-b3-dna-p53.js?v=save-session-2"></script>
 <script src="companion-pages.js"></script>
 </body>
 </html>

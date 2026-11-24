@@ -166,3 +166,70 @@ test('molecule sprite directly draws every referenced symbol and does not duplic
       'different base labels have different schematics');
   }
 });
+
+test('actual DNA Workshop response and section navigation cannot overwrite newer or erased work',()=>{
+  const vm=require('node:vm'), S=require('../openscied-save-session.js');
+  const app=fs.readFileSync(path.join(__dirname,'../openscied-b3-dna-workshop.js'),'utf8');
+  const key='aplab:openscied:b3-dna-workshop:v1', scope='b3-dna-workshop';
+  const data=new Map();
+  const storage={ getItem:key=>data.get(key)??null,setItem:(key,raw)=>data.set(key,raw),removeItem:key=>data.delete(key) };
+  function tab(hash){
+    const nodes=new Map(), events=new Map(), downloads=[];
+    function element(){return { textContent:'',value:'',dataset:{},style:{}, events:{},
+      classList:{remove(){},add(){},toggle(){}},
+      addEventListener(type,fn){this.events[type]=fn;},
+      setAttribute(){},removeAttribute(){},append(){},replaceChildren(){},focus(){},scrollIntoView(){},
+      click(){if(this.download)downloads.push(this.download);else this.events.click?.();},
+      remove(){},querySelector:get,querySelectorAll:()=>[] };
+    }
+    function get(s){ if(!nodes.has(s))nodes.set(s,element());return nodes.get(s); }
+    const window={DNAWorkshopLogic:L,OpenSciEdSaveSession:S,
+      Lab:{identity:{get:()=>JSON.parse(storage.getItem('aplab:student'))}},
+      addEventListener(name,fn){if(!events.has(name))events.set(name,[]);events.get(name).push(fn);} };
+    const document={ querySelector:get,querySelectorAll:()=>[],createElement:element,createElementNS:element,body:element() };
+    const location={hash};
+    const Blob=function(parts){downloads.push(parts.join(''));};
+    const env={ window,document,localStorage:storage,location,history:{replaceState(a,b,value){location.hash=value;}},
+      Blob,URL:{createObjectURL:()=>'blob:fictional',revokeObjectURL(){}},setTimeout(){} };
+    vm.runInNewContext(app,env);
+    return {get,downloads,next(value){location.hash=value;events.get('hashchange').forEach(fn=>fn());},
+      storageEvent(key){events.get('storage')?.forEach(fn=>fn({key}));} };
+  }
+  const scopeSteps=['nucleotide','build','copy','rna','chain','sort'];
+  const first=solve('nucleotide');
+  const all=L.STAGES.reduce((p,s)=>solve(s.id,p),L.create());
+  const record=(progress,stage)=>JSON.stringify({v:1,step:stage,progress:L.serialize(progress),
+    actions:Object.keys(progress.placed),answers:{},person:{},lastVisitedAt:17});
+  storage.setItem(key,record(first,'nucleotide'));
+  const older=tab('#nucleotide');
+  storage.setItem(key,record(all,'sort'));
+  const newer=tab('#sort');
+  const retained=storage.getItem(key);
+  older.next('#build');
+  assert.equal(storage.getItem(key),retained);
+  assert.match(older.get('#dw-save-conflict').textContent,/changed in another tab/);
+  assert.equal(scopeSteps.filter(step=>L.complete(step,L.restore(JSON.parse(retained).progress))).length,6);
+  assert.equal(S.erase(storage,scope,[key]).ok,true);
+  newer.storageEvent(S.scopeKey(scope));
+  newer.next('#nucleotide');
+  assert.equal(storage.getItem(key),null);
+  assert.match(newer.get('#dw-save-conflict').textContent,/cleared in another tab/);
+  newer.get('#dw-response').events.input({target:{value:'Local answer to download'}});
+  assert.equal(storage.getItem(key),null);
+  newer.get('#dw-download').click();
+  assert.match(newer.downloads[0],/Local answer to download/);
+
+  storage.setItem('aplab:student',JSON.stringify({name:'Current QA',period:'4'}));
+  const fresh=tab('#nucleotide');
+  assert.equal(fresh.get('#dw-name').value,'Current QA');
+  assert.equal(fresh.get('#dw-period').value,'4');
+  fresh.get('#dw-response').events.input({target:{value:'An answer with inherited sign-in'}});
+  assert.deepEqual(JSON.parse(storage.getItem(key)).person,{},'inherited fields are not stored as personal overrides');
+  fresh.get('#dw-name').events.input({target:{value:'Teacher override'}});
+  storage.setItem('aplab:student',JSON.stringify({name:'Changed QA',period:'5'}));fresh.storageEvent('aplab:student');
+  assert.equal(fresh.get('#dw-name').value,'Teacher override');
+  assert.equal(fresh.get('#dw-period').value,'5');
+  fresh.get('#dw-download').click();
+  assert.match(fresh.downloads[0],/Name: Teacher override/);
+  assert.match(fresh.downloads[0],/Class period: 5/);
+});

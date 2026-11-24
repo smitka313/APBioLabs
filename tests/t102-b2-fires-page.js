@@ -115,8 +115,30 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
     await go(p, 'peat');
     await p.check('input[name="cer-claim"][value="a"]');
     T.ok(await p.locator('#cer-ev-1').isDisabled() && await p.locator('#cer-ev-3').isDisabled() &&
-      /Record a foam reading.*Read and record a direct-light and a foil comparison/.test(await p.locator('#cer-model-note').innerText()), 'missing model data is explained and cannot be cited');
+      /Record a foam reading.*Record a tilt comparison/.test(await p.locator('#cer-model-note').innerText()), 'missing model data is explained and cannot be cited');
+    T.ok(/direct-light tube and one tube with a different light setting/.test(await p.locator('#cer-ev-3-note').innerText()) &&
+      /foil-covered tube and one lit tube at any angle/.test(await p.locator('#cer-ev-4-note').innerText()), 'each missing tube claim shows its specific evidence requirement before selection');
+    await p.locator('#cer-tilt-recovery a').click();
+    await p.waitForFunction(() => document.querySelector('#tilt.is-current'));
+    await go(p, 'peat');
     T.ok(await p.locator('#cer-level').getAttribute('data-level') === 'foundational', 'level is foundational with an unchecked evidence chip');
+
+    // Each supported comparison works independently; the other checkbox still explains what is missing.
+    const saveTubeSetup = settings => p.evaluate(settings => {
+      B2Fires.saveState('tilt', { seed: 42, startedAt: Date.now() - 1e6, skipped: true, settings, recorded: true, starchDone: false });
+    }, settings);
+    await saveTubeSetup(['direct', 'tilt45', 'tilt70']);
+    T.ok(await p.locator('#cer-ev-3').isEnabled() && await p.locator('#cer-ev-4').isDisabled() &&
+      /foil-covered/.test(await p.locator('#cer-ev-4-note').innerText()), 'direct vs tilted records unlock direct evidence without a foil tube');
+    await p.check('#cer-ev-3');
+    T.ok(/Your data show this/.test(await p.locator('#cer-ev-3-note').innerText()), 'recorded direct evidence counts');
+    await p.uncheck('#cer-ev-3');
+    await saveTubeSetup(['tilt45', 'tilt70', 'foil']);
+    T.ok(await p.locator('#cer-ev-3').isDisabled() && await p.locator('#cer-ev-4').isEnabled() &&
+      /direct-light/.test(await p.locator('#cer-ev-3-note').innerText()), 'foil vs tilted records unlock foil evidence without a direct-light tube');
+    await p.check('#cer-ev-4');
+    T.ok(/Your data show this/.test(await p.locator('#cer-ev-4-note').innerText()), 'recorded foil evidence counts');
+    await p.uncheck('#cer-ev-4');
 
     // inject honest data through the scene API and watch every derived thing recompute
     await p.evaluate(() => {

@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const F=require('../carrying-field');
+const Save=require('../openscied-save-session');
 
 test('classroom scatter values are exactly the 20 nonblank source entries',()=>{
   assert.deepEqual(F.DATA.map(p=>[p.year,p.population]),[
@@ -50,8 +51,17 @@ test('mounted activity keeps independent rates, checks, reasoning and reset on o
     const host={classList:{add(){}},ownerDocument:{defaultView:{localStorage}},innerHTML:'',
       querySelector(selector){return nodes[selector]??={dataset:{},focus(){}};},
       addEventListener(type,fn){listeners[type]=fn;}};
-    const api=F.mount(host);
-    return {api,host,change:(id,value,checked)=>listeners.change({target:{id,value,checked}}),
+    const scope='b1-carrying-capacity';
+    let session=Save.open(localStorage,scope,[F.key]);
+    const api=F.mount(host,{getSaveSession:()=>session});
+    const reset=()=>{
+      // The page now erases its shared scope before resetting the mounted studies.
+      assert.equal(session.check(F.key).ok,true);
+      assert.equal(Save.erase(localStorage,scope,[F.key]).ok,true);
+      session=Save.open(localStorage,scope,[F.key]);
+      api.reset();
+    };
+    return {api,host,reset,change:(id,value,checked)=>listeners.change({target:{id,value,checked}}),
       input:(id,value)=>listeners.input({target:{id,value}}),
       check:()=>listeners.click({target:{closest:s=>s==='#cc-rate-check'}})};
   }
@@ -84,7 +94,7 @@ test('mounted activity keeps independent rates, checks, reasoning and reset on o
   view.change('cc-interval','1961-1977');
   assert.match(view.host.innerHTML,/value="\+71,040"/);
   assert.equal(view.host.querySelector('#cc-rate-feedback').dataset.fieldState,'correct');
-  view.api.reset();
+  view.reset();
   assert.equal(view.api.report(),'');
   assert(!db.has(F.key));
   db.set(F.key,'{bad record');

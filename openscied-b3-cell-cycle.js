@@ -1,6 +1,37 @@
 (function(){
   'use strict';
   const KEY='aplab:openscied:b3-cell-cycle:v1';
+  const saveScope = 'b3-cell-cycle', saveAPI = window.OpenSciEdSaveSession;
+  const saveSession = (() => {
+    try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
+    catch (_) { return null; }
+  })();
+  const unavailableSave = { ok:false, reason:'unavailable' };
+  function showSaveProblem(result, focus = false) {
+    const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
+      result?.reason === 'changed' ? 'This activity changed in another tab.' : 'This browser could not save your work.') +
+      ' This tab has not overwritten the saved work. Download a copy of your work here before reopening the activity.';
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) {
+      if (notice.firstElementChild.textContent !== message) notice.firstElementChild.textContent = message;
+      notice.hidden = false;
+      if (focus) notice.focus();
+    }
+    return message;
+  }
+  function clearSaveProblem() {
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) notice.hidden = true;
+  }
+  function watchSaveChanges(event) {
+    if (event?.type === 'storage' && event.key !== null &&
+        ![KEY, saveAPI?.globalKey, saveAPI?.scopeKey(saveScope), saveAPI?.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession?.check(KEY);
+    if (result && !result.ok && result.reason !== 'unavailable') showSaveProblem(result);
+  }
+  window.addEventListener('storage', watchSaveChanges);
+  window.addEventListener('pageshow', watchSaveChanges);
+
   const $=function(s,root){return (root||document).querySelector(s);};
   const $$=function(s,root){return Array.from((root||document).querySelectorAll(s));};
   function blankGame(){return {schema:3,mode:'solo',players:1,round:0,active:0,turns:0,complete:false,playersState:[],chanceDeck:[],logs:[],lastDice:[],lastRollSummary:'',roundResults:{},chanceNotice:null,checkpointNotice:null,event:{title:'Your cell is ready',copy:'Choose your players and start Round 1 to begin.',icon:'🧬',kicker:'Cell cycle'}};}
@@ -34,7 +65,7 @@
   // Every written-response field, saved with the work so the OpenSciEd dashboard counts what this activity asks.
   const RESPONSE_IDS=MAKING_SENSE_IDS.concat(ANALYSIS_PROMPTS.map(function(x){return x[1];}));
   function readStore(){
-    try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1){hadSaved=true;if(d.game&&d.game.schema===3){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();});}
+    try{const d=JSON.parse((saveSession?.read(KEY) ?? null)||'null');if(d&&d.v===1){hadSaved=true;if(d.game&&d.game.schema===3){state.game=Object.assign(blankGame(),d.game);(state.game.playersState||[]).forEach(function(p){p.score=p.score||zeroScore();});}
       // Games saved under the earlier rules (schema 2) used a different board. Keep which rounds were completed, marked
       // as earlier results, and start the board fresh.
       else if(d.game&&d.game.schema===2){const old=d.game.roundResults||{},kept={};for(const n of [1,2])if(old[n])kept[n]={legacy:true};state.game=Object.assign(blankGame(),{mode:d.game.mode||'solo',players:d.game.players||1,roundResults:kept});}if(Array.isArray(d.trials))state.trials=d.trials;if(d.fields)state.fields=d.fields;if(d.quick)state.quick=d.quick;if(d.mechanism)state.mechanism=d.mechanism;if(SECTIONS.includes(d.lastSection))state.lastSection=d.lastSection;}}
@@ -52,8 +83,9 @@
         else state.fields[el.id]=el.value;
       });
       const section=location.hash.slice(1);if(SECTIONS.includes(section))state.lastSection=section;
-      localStorage.setItem(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()}));
-      $('#save-status').textContent='Saved on this device.';
+      const result=saveSession?.write(KEY,JSON.stringify({v:1,game:state.game,trials:state.trials,fields:state.fields,responseIds:RESPONSE_IDS,quick:state.quick,mechanism:state.mechanism,lastSection:state.lastSection,lastVisitedAt:Date.now()})) ?? unavailableSave;
+      if(result.ok)clearSaveProblem();
+      $('#save-status').textContent=result.ok?'Saved on this device.':showSaveProblem(result);
       renderReport();renderBaselineEcho();
     }catch(e){$('#save-status').textContent='This browser could not save your work. Download a copy before leaving.';}
   }
@@ -1026,13 +1058,14 @@
   // fresh activity at the Overview. The student's name and class period are shared with the whole site and stay saved,
   // as they do on the dashboard. Uses the page's own confirm dialog (window.confirm can be suppressed by the browser).
   function clearActivity(){
+    const result=saveSession?.reset(KEY) ?? unavailableSave;
+    if(!result.ok){$('#save-status').textContent=showSaveProblem(result,true);return;}
     // Blank the fields first so a browser that restores form values on reload cannot save the old answers again.
     $$('textarea').forEach(function(el){el.value='';});
     $$('input[type=checkbox],input[type=radio]').forEach(function(el){el.checked=el.defaultChecked;});
     $$('select').forEach(function(el){Array.from(el.options).forEach(function(o){o.selected=o.defaultSelected;});});
     $$('input[type=range]').forEach(function(el){el.value=el.defaultValue;});
     cleared=true;
-    try{localStorage.removeItem(KEY);}catch(e){}
     try{history.replaceState(null,'',location.pathname+location.search+'#overview');}catch(e){}
     window.location.reload();
   }
@@ -1041,6 +1074,11 @@
   }
   function wire(){
     readStore();state.game.rolling=false;restoreFields();renderTrials();renderGame();renderCellType();showAnalysisPage(0);
+    // Refresh the open summary when the shared local sign-in changes; no work record is written.
+    window.addEventListener('storage', function (event) {
+      if (event.key === null || event.key === 'aplab:student') renderReport();
+    });
+    window.addEventListener('pageshow', renderReport);
     window.addEventListener('hashchange',save);
     window.addEventListener('resize',function(){fitGameViewport();renderBoard();},{passive:true});
     document.addEventListener('companion:show',function(){requestAnimationFrame(fitGameViewport);});

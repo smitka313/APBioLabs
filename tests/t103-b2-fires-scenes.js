@@ -85,6 +85,21 @@ const ink = (p, sel) => p.evaluate(s => { const c = document.querySelector(s + '
     await p.locator('[data-dc="reset-yes"]').click();
     T.ok(await p.locator('[data-dc="start"]').count() === 1 && await p.evaluate(k => JSON.parse(localStorage.getItem(k)).decomp, KEY) === null, 'start over clears the test');
     T.ok(/Run the test first/.test(await p.locator('#data-decomp-body').innerText()) && await p.locator('#pred-note').isHidden(), 'derived boxes empty again');
+    // Skipping to the end before recording any sample must distinguish the backlog from the clock.
+    await p.locator('[data-dc="start"]').click();
+    await p.locator('[data-dc="skip"]').click();
+    T.ok(/Finished: 20 of 20 min/.test(await p.locator('[data-dc="clock"]').innerText()) &&
+      /Record next unrecorded sample \(0 min\)/.test(await p.locator('[data-dc="record"]').innerText()) &&
+      /reached minute 20.*sample is from minute 0.*record all missing readings/.test(await p.locator('[data-dc="hint"]').innerText()),
+      'the clock and queued 0-minute sample are separately labeled');
+    await p.locator('[data-dc="record"]').click();
+    T.ok(/Record next unrecorded sample \(2 min\)/.test(await p.locator('[data-dc="record"]').innerText()) &&
+      await p.evaluate(k => JSON.parse(localStorage.getItem(k)).decomp.recorded.join(), KEY) === '0',
+      'the single-record button still uses the original time order');
+    await p.locator('[data-dc="record-all"]').click();
+    T.ok(await p.evaluate(k => JSON.parse(localStorage.getItem(k)).decomp.recorded.length, KEY) === L.TIMES.length,
+      'all readings are recorded with the catch-up button');
+
 
     // ---- tilt ----
     await go(p, 'tilt');
@@ -106,6 +121,16 @@ const ink = (p, sel) => p.evaluate(s => { const c = document.querySelector(s + '
     const trows = await p.locator('.tl-table tbody tr').evaluateAll(trs => trs.map(tr => Array.from(tr.children).map(c => c.textContent.trim())));
     const exp = L.tiltResults(t0.seed, t0.settings);
     T.ok(trows.length === 3 && trows.every((r, i) => r[0] === 'Tube ' + exp[i].tube && r[3] === exp[i].btb.toFixed(1) && r[4] === exp[i].btbLabel), 'table equals the model: ' + JSON.stringify(trows.map(r => r[3] + ' ' + r[4])));
+    const readoutA = p.locator('[data-tube-readout="A"]'), readoutB = p.locator('[data-tube-readout="B"]');
+    T.ok(await readoutA.isVisible() && await readoutB.isVisible() &&
+      (await readoutA.innerText()).includes('Direct (0°) · 100% light') &&
+      (await readoutB.innerText()).includes('Tilted (45°) · 71% light') &&
+      (await readoutA.innerText()).includes('BTB ' + exp[0].btb.toFixed(1)) &&
+      (await readoutB.innerText()).includes('BTB ' + exp[1].btb.toFixed(1)),
+      'different light exposures and the actual BTB values are visible without telling colors apart');
+    T.ok(/same color.*different readings/.test(await p.locator('[data-tl="hint"]').innerText()),
+      'students are prompted to compare numeric readings even when the colors look the same');
+
     T.ok(Number(trows[0][3]) <= Number(trows[1][3]) && Number(trows[1][3]) < Number(trows[2][3]) && Number(trows[2][3]) >= 5.3, 'direct bluest, foil yellowest');
     T.ok(await p.locator('.tl-chart svg').count() >= 1 && /BTB reading/.test(await p.locator('.tl-chart').innerText()), 'bar chart with axis titles');
     T.ok((await ink(p, '#tilt-scene')).ink > 0.05, 'tubes drawn');

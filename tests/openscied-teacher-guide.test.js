@@ -40,10 +40,9 @@ test('each dashboard activity has one implementation card in lesson order', () =
   }
 });
 
-test('both teacher entry points link to the guide and the guide links to encrypted notes', () => {
-  for (const source of [dashboard, read('teachers.html')]) {
-    assert.match(source, /href="openscied-teacher-guide\.html"/);
-  }
+test('the teacher landing page, not the student dashboard, links to the guide and encrypted notes', () => {
+  assert.match(read('teachers.html'), /href="openscied-teacher-guide\.html"/);
+  assert.doesNotMatch(dashboard, /href="openscied-teacher-guide\.html"/);
   assert.match(guide, /href="openscied-teacher-notes\.html"/);
   const notes = read('openscied-teacher-notes.html');
   assert.match(notes, /<meta name="robots" content="noindex">/);

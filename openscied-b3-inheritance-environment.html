@@ -66,8 +66,9 @@
     <li><a href="#wrapup"><span class="n">14</span><span>Wrap up</span></a></li>
   </ol></div>
 </nav>
-<p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+<p id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="false"><span id="step-announcement"></span><span id="save-announcement"></span></p>
 <main id="main">
+  <div id="ose-save-protection" class="wrap wrap--wide gutter" role="group" aria-label="Saving problem" aria-describedby="ose-save-protection-message" tabindex="-1" hidden><p id="ose-save-protection-message" class="callout callout--safety"></p></div>
 
   <!-- 1 ---------------------------------------------------------------- -->
   <section class="step wrap wrap--wide gutter" id="overview" data-step="Overview">
@@ -539,7 +540,8 @@
 <script src="skin-data-scene.js"></script>
 <script src="investigation-planner-scene.js"></script>
 <script src="yeast-uv-scene.js"></script>
-<script src="openscied-b3-inheritance-environment.js"></script>
+<script src="openscied-save-session.js"></script>
+<script src="openscied-b3-inheritance-environment.js?v=save-session-2"></script>
 <script src="companion-pages.js"></script>
 </body>
 </html>

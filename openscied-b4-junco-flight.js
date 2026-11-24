@@ -81,7 +81,7 @@
       bird.dataset.state=a?.finished?'flying':'stay';
       bird.classList.toggle('is-launch',launch);
       status.textContent=a
-        ?'Trial '+a.id+' · '+(a.finished?'Took flight at '+showDistance(a.group,a.step)+'. Recorded in the trial log.':a.step?'Stayed put at '+showDistance(a.group,a.step)+'. You can approach again.':'Bird is in place. Approach in '+context[a.group].increment+' m steps, or change setup.')
+        ?'Trial '+a.id+' · '+(a.finished?'Took flight at '+showDistance(a.group,a.step)+'. Recorded in the trial log.':a.step?'The bird stayed put at '+showDistance(a.group,a.step)+'. Select Approach to move '+context[a.group].increment+' m closer and check again.':'Bird is in place. Approach in '+context[a.group].increment+' m steps, or change setup.')
         :sim.serial?'Choose a population and observation for your next trial.':'Choose a setting and start a trial.';
       $('sim-record').hidden=!sim.results.length;
       if(launch)$('sim-record').open=true;

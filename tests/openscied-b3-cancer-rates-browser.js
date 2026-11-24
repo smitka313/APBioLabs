@@ -253,8 +253,12 @@ async function inspectIncomeCards(page,size,label) {
   label+' the named diagnosis dialog takes keyboard focus when opened');
   for (const [index,id] of lesson.entries()) {
     if(index) {
-      const prior=dialog.locator('#'+lesson[index-1]);
-      await invoke(prior.locator('[data-case-next]').first(),size);
+      const prior=dialog.locator('#'+lesson[index-1]), next=prior.locator('[data-case-next]').first();
+      check(await next.isDisabled(),label+' Next waits for an observation on exhibit '+index);
+      await prior.locator('textarea').fill('This exhibit compares published data.');
+      await invoke(prior.locator('button[id$="-save"]'),size);
+      check(!await next.isDisabled(),label+' a saved observation unlocks Next');
+      await invoke(next,size);
     }
     const graph=dialog.locator('#'+id).locator('.cr-lesson-graph').first();
     await graph.waitFor({state:'visible'});
@@ -313,6 +317,7 @@ async function inspectIncomeCards(page,size,label) {
       await answer.selectOption(wrong);
       await invoke(checkButton,size);
       check(/not quite/i.test(await feedback.textContent()),label+' '+id+' practice gives specific feedback after checking a wrong choice');
+      if(id!=='test-cost')check(await panel.locator('[data-case-next]').isDisabled(),label+' a wrong answer cannot unlock Next');
       if(id==='test-cost')check(/not which test was more accurate/i.test(await feedback.textContent()),
         label+' Exhibit F distinguishes access from diagnostic accuracy');
       await answer.selectOption(correct);
@@ -391,8 +396,7 @@ async function followupPath(page,size) {
   await invoke(view(page,'cr-lock'),size);
   check(await details.evaluate(element=>element.open),'saving the resumed prediction reveals the Evidence Folder');
   const first=await openCaseExhibit(page,size,'cr-lesson1-deaths');
-  await invoke(view(page,'cr-lesson1-deaths').locator('[data-case-next]').first(),size);
-  await visible(page,'cr-lesson1-map');
+  check(await view(page,'cr-lesson1-deaths').locator('[data-case-next]').first().isDisabled(),'Next cannot skip the required deaths observation');
   await closeCaseExhibit(page,size,first);
   check(await form.isHidden(),'follow-up is not asked for opening exhibits without completing them');
   const access=await openCaseExhibit(page,size,'cr-income-access');

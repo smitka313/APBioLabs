@@ -166,13 +166,13 @@ const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain',
     await pick('exit-q2-r', 'a');
     T.ok(/Try again\. Why not/.test(await p.locator('[data-q="exit-q2"] .q-fb').innerText()), 'a partial answer is not marked correct and says why');
     await pick('exit-q2-r', 'e');
-    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q2"] .q-fb').innerText()), 'Q2 "all of the above" is correct');
+    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q2"] .q-fb').innerText()), 'Q2 complete sequence-to-function explanation is correct');
     await pick('exit-q1-r', 'a');
     T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q1"] .q-fb').innerText()), 'Q1 correct answer accepted');
     await pick('exit-q1-r', 'c');
     T.ok(/leaves out/.test(await p.locator('[data-q="exit-q1"] .q-fb').innerText()), 'Q1 wrong answer explains what it leaves out');
     await pick('exit-q4-r', 'd');
-    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q4"] .q-fb').innerText()), 'Q4 all of the above is correct');
+    T.ok(/^Yes\./.test(await p.locator('[data-q="exit-q4"] .q-fb').innerText()), 'Q4 complete sequence comparison is correct');
     await p.check('[data-q="p-exit5"] input[value="model"]'); await p.check('[data-q="p-exit5"] input[value="people"]');
     T.ok(await p.evaluate(() => document.getElementById('p-exit5').value) === 'model,people', 'a multi-pick card stores the chosen values');
     await p.reload();

@@ -100,10 +100,7 @@ async function checkMixedVersionWorkspace(browser,site) {
         assert.equal(await p.getByRole('heading',{level:1}).textContent(),'Biology Companion Activities');
         assert.equal(await p.locator('.dashboard-masthead a[href="index.html"]').count(),1);
         const teacherGuide=p.locator('a[href="openscied-teacher-guide.html"]');
-        assert.equal(await teacherGuide.count(),1,'the Teacher Guide is linked once');
-        assert.equal(await p.locator('.dashboard-masthead .dashboard-teacher').count(),0,'teacher controls are out of the student masthead');
-        assert.equal(await p.locator('.dashboard-footer .dashboard-teacher').isVisible(),true,'teachers can still find their guide');
-        assert.equal(await teacherGuide.evaluate(link=>link.tabIndex),0,'teachers can still tab to the guide');
+        assert.equal(await teacherGuide.count(),0,'teacher navigation stays on the teacher landing page');
         assert.equal(await p.locator('.dashboard-hero .dashboard-student').isVisible(),true);
         assert.equal(await p.locator('#openscied-student-identity').isVisible(),true);
         assert.equal(await p.locator('#clear-openscied-results').isVisible(),true);
@@ -136,8 +133,8 @@ async function checkMixedVersionWorkspace(browser,site) {
         })),true,'descriptions, captions and buttons fit even at the narrower three-column width');
         assert.deepEqual(await p.locator('.dashboard-units h2[id^="unit"]').evaluateAll(e=>e.map(x=>x.id)),['unit1','unit2','unit3','unit4']);
         const coming=p.locator('.dashboard-coming-soon');
-        assert.equal(await coming.innerText(),'Unit 5: No activities published yet.');
-        assert.equal(await coming.locator('a, button, summary').count(),0,'unpublished units do not offer dead controls');
+        assert.match(await coming.innerText(),/Unit 5.*No companion activities yet/);
+        assert.match(await coming.getByRole('link').getAttribute('href'),/^https:\/\/openscied\.org\/instructional-materials\/b-5-common-ancestry-speciation\/$/);
         assert.equal(await p.locator('#hawksbeard-open').getAttribute('href'),'openscied-b4-hawksbeard.html');
         assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<= innerWidth + 1),true,'no page overflow');
         const saveImage=async label=>{if(screenshots) await p.screenshot({path:path.join(screenshots,width+'-'+label+'.png'),animations:'disabled'});};

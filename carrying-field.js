@@ -108,11 +108,11 @@
       <thead><tr><th scope="col">Year</th><th scope="col">Estimated wildebeest</th></tr></thead>
       <tbody>${DATA.map(p=>`<tr data-field-row="${p.year}"${endpoint(t).includes(p.year)?' data-endpoint':''}><th scope="row">${p.year}</th><td>${number(p.population)}</td></tr>`).join('')}</tbody></table></div>`;
   }
-  function mount(host,{announce}={}){
+  function mount(host,{announce,getSaveSession,onSaveConflict}={}){
     if(!host)return null;
     const store=host.ownerDocument?.defaultView||globalThis;
     let state=fresh(),storage='ok',inspection='',openTable=false;
-    try{const from=restore(store.localStorage.getItem(KEY));if(from)state=from;else storage='preserved';}
+    try{const from=restore(getSaveSession?.() ? getSaveSession().read(KEY) : store.localStorage.getItem(KEY));if(from)state=from;else storage='preserved';}
     catch(_){storage='blocked';}
     host.classList.add('cc-field-ui');
     const $=s=>host.querySelector(s);
@@ -120,7 +120,10 @@
     const speak=message=>announce?.(message);
     function persist(){
       if(storage==='preserved')return;
-      try{store.localStorage.setItem(KEY,JSON.stringify(state));storage='ok';}catch(_){storage='blocked';}
+      let result;
+      try{result=getSaveSession?.()?.write(KEY,JSON.stringify(state));}catch(_){}
+      storage=result?.ok?'ok':'blocked';
+      if(!result?.ok)onSaveConflict?.(result);
     }
     const warning=()=>storage==='preserved'?'The earlier field record could not be read and was preserved. Export this session’s work before leaving.':storage==='blocked'?'Field work cannot save on this device. Export it before leaving.':'';
     function currentResult(t,entry){return entry.checked?(t.gap?checkGap(entry.answer):checkRate(t.id,entry.answer)):null;}
@@ -213,7 +216,7 @@
     }
     function reset(){
       state=fresh();inspection='';openTable=false;
-      try{store.localStorage.removeItem(KEY);storage='ok';}catch(_){storage='blocked';}
+      storage='ok';
       draw();
     }
     draw();

@@ -2,6 +2,37 @@
 (()=>{
   'use strict';
   const D=window.CancerRatesData,L=window.CancerRatesLogic,KEY='aplab:openscied:b3-cancer-rates:v1';
+  const saveScope = 'b3-cancer-rates', saveAPI = window.OpenSciEdSaveSession;
+  const saveSession = (() => {
+    try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
+    catch (_) { return null; }
+  })();
+  const unavailableSave = { ok:false, reason:'unavailable' };
+  function showSaveProblem(result, focus = false) {
+    const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
+      result?.reason === 'changed' ? 'This activity changed in another tab.' : 'This browser could not save your work.') +
+      ' This tab has not overwritten the saved work. Download a copy of your work here before reopening the activity.';
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) {
+      if (notice.firstElementChild.textContent !== message) notice.firstElementChild.textContent = message;
+      notice.hidden = false;
+      if (focus) notice.focus();
+    }
+    return message;
+  }
+  function clearSaveProblem() {
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) notice.hidden = true;
+  }
+  function watchSaveChanges(event) {
+    if (event?.type === 'storage' && event.key !== null &&
+        ![KEY, saveAPI?.globalKey, saveAPI?.scopeKey(saveScope), saveAPI?.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession?.check(KEY);
+    if (result && !result.ok && result.reason !== 'unavailable') showSaveProblem(result);
+  }
+  window.addEventListener('storage', watchSaveChanges);
+  window.addEventListener('pageshow', watchSaveChanges);
+
   const steps=['predict','explore','explain'], views=Object.keys(D), svgNS='http://www.w3.org/2000/svg';
   const $=id=>document.getElementById('cr-'+id), all=selector=>[...document.querySelectorAll(selector)], finite=Number.isFinite;
   const spec={
@@ -72,12 +103,15 @@
     return next;
   }
   function cleanContext(p){return {x:p?.x==='income'?'income':'poverty',trend:p?.trend===true,query:str(p?.query,80),region:['urban','rural'].includes(p?.region)?p.region:'all'};}
-  try{const saved=localStorage.getItem(KEY);if(saved!==null){try{state=clean(JSON.parse(saved));}catch(_){invalid=true;}}}catch(_){blocked=true;}
+  try{const saved=(saveSession?.read(KEY) ?? null);if(saved!==null){try{state=clean(JSON.parse(saved));}catch(_){invalid=true;}}}catch(_){blocked=true;}
   function save(){
     state.lastVisitedAt=Date.now();
-    if(invalid){$('save').textContent='A previous record was preserved. Download this investigation before leaving.';return;}
-    try{localStorage.setItem(KEY,JSON.stringify(state));blocked=false;$('save').textContent='Work saved on this device.';}
-    catch(_){blocked=true;$('save').textContent='This browser could not save your work. Download it before leaving.';}
+    if(invalid){$('save').textContent='A previous record was preserved. Download this investigation before leaving.';return false;}
+    const result=saveSession?.write(KEY,JSON.stringify(state)) ?? unavailableSave;
+    blocked=!result.ok;
+    if(result.ok)clearSaveProblem();
+    $('save').textContent=result.ok?'Work saved on this device.':showSaveProblem(result);
+    return result.ok;
   }
   const node=(tag,t,cl)=>{const el=document.createElement(tag);if(t!==undefined)el.textContent=t;if(cl)el.className=cl;return el;};
   const svg=(tag,attrs={},t)=>{const el=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));if(t!==undefined)el.textContent=t;return el;};
@@ -420,7 +454,8 @@
     renderSteps();
   }
   function report(){
-    const lines=['Cancer Rates Data Dive — Investigation','Name: '+state.person.name,'Class period: '+state.person.period,'Status: '+(isComplete()?'Complete':'In progress'),'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
+    const person=displayIdentity();
+    const lines=['Cancer Rates Data Dive — Investigation','Name: '+person.name,'Class period: '+person.period,'Status: '+(isComplete()?'Complete':'In progress'),'','PREDICTION',predictions[state.prediction.choice]||'Not recorded',state.prediction.reason,state.prediction.locked?firstResult():'',...(state.casework.opened?['','INVESTIGATION QUESTION',state.casework.question]:[]),...(lessonNotes.some(k=>state.casework.notes[k])?[
       '','LESSON 1 EVIDENCE OBSERVATIONS',...lessonNotes.flatMap((key,i)=>state.casework.notes[key]?['Exhibit '+'ABC'[i]+': '+state.casework.notes[key]]:[])
     ]:[]),...(state.casework['test-cost']?[
       '','EXHIBIT F: THE COST OF GETTING TESTED',
@@ -430,7 +465,16 @@
     ]:[]),'','PINNED EVIDENCE',...state.evidence.map((p,i)=>(i+1)+'. '+evidenceText(p)),'','CLAIM',state.claim,'','LIMITS AND NEXT EVIDENCE',state.limits,'',...(state.evidence.some(p=>p.view==='michigan')?['ULTRASOUND DESIGN REVIEW (classroom testing, not clinical validation)',...Object.entries(designItems).filter(([k])=>state.design[k].trim()).map(([k,title])=>title+': '+state.design[k]),'','MICHIGAN EVIDENCE SOURCES',...Object.entries(D.michigan.sources).map(([k,url])=>k+': '+url),'']:[]),'SOURCES','Type rankings: '+D.types.source+' (printed p. 65)','States: '+D.states.source,'Census poverty: '+D.poverty.source,'Census household income: '+D.poverty.incomeSource.source,'Race and ethnicity diagnosis rates: '+D.race.incidence.url,'Race and ethnicity death rates: '+D.race.mortality.url,'','Population averages are not individual predictions or explanations of cause.'];
     return lines.join('\n')+'\n';
   }
-  function syncIdentity(){for(const k of ['name','period'])$(k).value=state.person[k];}
+  function displayIdentity(){
+    const shared=window.Lab?.identity?.get?.() ?? {};
+    return Object.fromEntries(['name','period'].map(k=>[k,state.person[k].trim() || str(shared[k],k==='name'?100:24)]));
+  }
+  function syncIdentity(){
+    const person=displayIdentity();
+    for(const k of ['name','period'])if(document.activeElement!==$(k))$(k).value=person[k];
+  }
+  window.addEventListener('storage',event=>{if(event.key===null||event.key==='aplab:student')syncIdentity();});
+  window.addEventListener('pageshow',syncIdentity);
   for(const b of all('[data-step]'))b.addEventListener('click',()=>goto(b.dataset.step));
   $('prediction').addEventListener('change',()=>{state.prediction.choice=$('prediction').value;save();$('lock').disabled=!state.prediction.choice;});
   $('reason').addEventListener('input',()=>{if(!state.prediction.locked){state.prediction.reason=$('reason').value;save();}});
@@ -463,14 +507,19 @@
   for(const k of ['claim','limits'])$(k).addEventListener('input',()=>{state[k]=$(k).value;state.completed=false;save();renderCompletion();});
   $('finish').addEventListener('click',()=>{if(canFinish()&&!isComplete()){state.completed=true;save();renderCompletion();announce('Investigation complete. Download your work if you need to turn it in.');$('download').focus();}});
   for(const k of Object.keys(designItems))$('design-'+k).addEventListener('input',()=>{state.design[k]=$('design-'+k).value;save();});
-  for(const k of ['name','period'])$(k).addEventListener('input',()=>{state.person[k]=$(k).value;save();});
+  for(const k of ['name','period']){
+    $(k).addEventListener('input',()=>{state.person[k]=$(k).value;save();});
+    $(k).addEventListener('blur',syncIdentity);
+  }
   $('download').addEventListener('click',()=>{
     const url=URL.createObjectURL(new Blob([report()],{type:'text/plain;charset=utf-8'})),a=node('a');
     a.href=url;a.download='cancer-rates-investigation.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);announce('Investigation downloaded.');
   });
   $('reset').addEventListener('click',()=>$('reset-dialog').showModal());
   $('reset-confirm').addEventListener('click',()=>{
-    try{localStorage.removeItem(KEY);invalid=false;blocked=false;}catch(_){blocked=true;}
+    const result=saveSession?.reset(KEY) ?? unavailableSave;
+    if(!result.ok){$('reset-dialog').close();$('save').textContent=showSaveProblem(result,true);return;}
+    invalid=false;blocked=false;clearSaveProblem();
     state=fresh();syncCasefile();syncIdentity();$('reset-dialog').close();
     try{history.replaceState(null,'',location.pathname+location.search);}catch(_){}
     text('save','Work stays on this device unless you download it.');render();announce('Investigation reset.');$('predict-title').focus();
@@ -503,6 +552,12 @@
     followup.hidden=!ready;
     $('income-explore').disabled=!ready||!question.value.trim();
     questionJump.disabled=!ready;
+    for(const next of all('[data-case-next]')){
+      const i=caseTabs.indexOf(next.dataset.caseNext)-1;
+      next.disabled=!marks[i];
+      text('next-'+next.dataset.caseNext+'-hint',!next.disabled?'':i<lessonNotes.length?
+        'Save an observation to unlock Next.':'Check this exhibit and get it right to unlock Next.');
+    }
     text('income-progress',count+' of 6 exhibits complete. '+(ready
       ?'Write or revise your follow-up question to explore the data.':'Still needed: '+remaining.join(', ')+'.'));
     caseTabs.forEach((id,i)=>{
@@ -584,14 +639,17 @@
       const note=str(input.value,500).trim();
       if(!note)return;
       state.casework.notes[k]=note;
-      button.disabled=true;save();updateFollowup();render();
-      text('case-live','Observation saved. '+$('income-progress').textContent);
-      button.textContent='Observation saved';
+      button.disabled=true;const saved=save();updateFollowup();render();
+      text('case-live',(saved?'Observation saved. ':$('save').textContent+' ')+$('income-progress').textContent);
+      button.textContent=saved?'Observation saved':'Observation kept in this tab';
     });
     input.addEventListener('input',()=>{button.textContent='Save observation';});
   }
   for(const id of caseTabs)$(id+'-tab').addEventListener('click',event=>showExhibit(id,event.currentTarget));
-  for(const b of all('[data-case-next]'))b.addEventListener('click',()=>showExhibit(b.dataset.caseNext));
+  for(const b of all('[data-case-next]'))b.addEventListener('click',()=>{
+    const i=caseTabs.indexOf(b.dataset.caseNext)-1;
+    if(caseMarks(state)[i])showExhibit(b.dataset.caseNext);
+  });
   question.addEventListener('input',()=>{
     state.casework.questionDraft=str(question.value,500);save();updateFollowup();
   });
@@ -613,8 +671,9 @@
     check.addEventListener('click',()=>{
       if(!answer.value||!directions[k])return;
       const right=answer.value===directions[k];
-      if(right){state.casework[k]=directions[k];answer.disabled=true;check.disabled=true;save();}
-      feedback.textContent=feedbackFor(k,right,answer.value);
+      let saved=true;
+      if(right){state.casework[k]=directions[k];answer.disabled=true;check.disabled=true;saved=save();}
+      feedback.textContent=feedbackFor(k,right,answer.value)+(saved?'':' '+$('save').textContent);
       feedback.dataset.result=right?'correct':'retry';feedback.hidden=false;
       updateFollowup();render();
       text('case-live',feedback.textContent+' '+$('income-progress').textContent);

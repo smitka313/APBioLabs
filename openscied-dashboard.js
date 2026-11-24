@@ -112,7 +112,7 @@
   }
   function migrationResponseIds() { return ['question', 'prediction', 'patterns', 'absence', 'rain-prediction', 'rain-claim', 'regions', 'claim', 'limits', 'next']; }
   function migrationProgress(raw) {
-    const empty = { summary: 'Not started', started: false, section: 'explore', visited: 0 };
+    const empty = { summary: 'Not started', started: false, section: '', visited: 0 };
     if (!raw) return empty;
     let saved;
     try {
@@ -136,7 +136,7 @@
     const started = !!(notes || answers || Object.values(saved.observations || {}).some(v => typeof v === 'string' && v.trim()));
     const evidence = saved.notes.some(n=>n && typeof n.id==='string' && !/^month-/.test(n.id)) ||
       ['patterns','absence','rain-prediction','rain-claim','regions'].some(id=>written(saved.answers,id));
-    const section = saved.page==='explain' && started ? 'explain' : saved.page==='evidence' && evidence ? 'evidence' : 'explore';
+    const section = !started ? '' : saved.page==='explain' ? 'explain' : saved.page==='evidence' && evidence ? 'evidence' : 'explore';
     return { started, section,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
       stepsDone:months,stepsTotal:12,stepsLabel:'Months with saved observations',
@@ -379,6 +379,7 @@
     const fallback = trials ? 'trials' : warmChanged ? 'warming' : bogChanged ? 'bog' : 'overview';
     return { started, section: PEAT_SECTIONS.includes(saved.lastSection) ? saved.lastSection : fallback,
       visited: Number.isFinite(saved.lastVisitedAt) ? saved.lastVisitedAt : 0,
+      stepsDone:Math.min(trials,2),stepsTotal:2,stepsLabel:'Trials saved for a comparison',
       summary: started ? trials + ' simulated trial' + (trials === 1 ? '' : 's') + ' recorded · bog settings ' + (bogChanged ? 'changed' : 'unchanged') + ' · warming ' + (warmChanged ? 'explored' : 'not explored') : 'Not started' };
   }
   // Burning Fuels (Unit B.2, Lesson 2): the activity saves the ids of every response; the burn scene may save recorded samples.
@@ -454,11 +455,10 @@
     return { summary, started, section, visited, stepsDone:saved.released,stepsTotal:5,stepsLabel:'Plant pairs released' };
   }
   // Published, fixed denominators. A zero is meaningful even before a student starts.
-  // The Peat Bog invites an open-ended set of trials, so its card reports saved work without a fabricated percentage.
   const STEP_SCALES = {
     migration:[12,'Months with saved observations'],carrying:[12,'Population model rounds'],
     serengeti:[4,'Seasons completed'],'b2-burn':[5,'Fuels with saved results'],'b2-fires':[3,'Model evidence milestones complete'],
-    'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],
+    'peat-bog':[2,'Trials saved for a comparison'],'carbon-journey':[10,'Required turns recorded'],'cancer-rates':[6,'Case-file exhibits completed'],
     'cell-cycle':[2,'Cell game rounds completed'],'dna-workshop':[6,'Workshop practices completed'],
     'dna-p53':[2,'Interactive models used'],'inh-env':[6,'Interactive models used'],
     hawksbeard:[5,'Plant pairs released'],'rat-generations':[4,'Investigation parts completed'],junco:[3,'Investigation steps completed']
@@ -639,7 +639,10 @@
       event.preventDefault();
       if (confirmation.value !== 'ERASE') return;
       try {
-        (clearTarget ? activityKeys(clearTarget) : savedKeys()).forEach(key => localStorage.removeItem(key));
+        const keys = clearTarget ? activityKeys(clearTarget) : savedKeys();
+        const scope = clearTarget?.file.replace(/^openscied-|\.html$/g, '') ?? null;
+        const result = window.OpenSciEdSaveSession?.erase(localStorage, scope, keys);
+        if (!result?.ok) throw Error('Could not protect the reset');
         dialog.close();
         refresh(clearTarget ? clearTarget.name + ' results cleared. Other activities and your student sign-in are still saved.' : 'OpenSciEd results cleared. Your name, class period, and AP Biology work are still saved.');
       } catch (e) {

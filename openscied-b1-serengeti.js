@@ -4,6 +4,25 @@
   const L = window.SerengetiLogic, qs = s => document.querySelector(s);
   if (!L) { qs('#sg-load-error').hidden = false; return; }
   const S = 'aplab:openscied-b1-serengeti:preview-v1';
+  const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b1-serengeti';
+  const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [S]); } catch (_) { return null; } })();
+  function readSave() { return saveSession ? saveSession.read(S) : localStorage.getItem(S); }
+  function showSaveConflict(result) {
+    const n = document.getElementById('save-conflict');
+    const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
+      result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
+    const copy = message + ' Download or copy this tab’s work before reloading.';
+    if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; say(copy); }
+    return copy;
+  }
+  function checkSaveConflict(event) {
+    if (!saveSession) return;
+    if (event.type === 'storage' && event.key && ![S, saveAPI.globalKey, saveAPI.scopeKey(saveScope), saveAPI.resetKey(S)].includes(event.key)) return;
+    const result = saveSession.check(S);
+    if (!result.ok) showSaveConflict(result);
+  }
+  window.addEventListener('storage', checkSaveConflict);
+  window.addEventListener('pageshow', checkSaveConflict);
   const LABEL = {wildebeest:'Wildebeest', hyena:'Hyenas', lion:'Lions'};
   const SINGULAR = {wildebeest:'Wildebeest', hyena:'Hyena', lion:'Lion'};
   const TYPES = {individual:'Individual', smallGroup:'Small group', herd:'Herd', clan:'Clan', pride:'Pride'};
@@ -167,7 +186,7 @@
   // Keep the original save key so prior local games remain readable. Student names are never stored here.
   let originalSave = null;
   try {
-    originalSave = localStorage.getItem(S);
+    originalSave = readSave();
     const payload = originalSave === null ? null : JSON.parse(originalSave);
     if (originalSave !== null && (!payload || payload.v !== 1 || !Object.prototype.hasOwnProperty.call(payload,'game') || !payload.answers || typeof payload.answers !== 'object')) {
       preserveRaw = true;
@@ -230,11 +249,12 @@
     }
     qs('#sg-recover').hidden = true;
     qs('#sg-save-warning').hidden = true;
+    let result;
     try {
-      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,answerStep,roleSetup,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
-      saveUnavailable = false;
-    } catch (_) { saveUnavailable = true; }
-    qs('#sg-save').textContent = saveUnavailable ? 'This browser blocked saving. Download your work before closing.' : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
+      result = saveSession?.write(S, JSON.stringify({v:1,game:state,answers,page,answerStep,roleSetup,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
+    } catch (_) {}
+    saveUnavailable = !result?.ok;
+    qs('#sg-save').textContent = saveUnavailable ? showSaveConflict(result) : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
   }
   function showAnswerStep(step,focus=false) {
     if(!ANSWER_STEPS.includes(step))return;
@@ -269,7 +289,7 @@
       targetHeading.focus({preventScroll:true});
       if (qs('.sg-toolbar').getBoundingClientRect().top < 0) qs('.sg-toolbar').scrollIntoView({block:'start'});
     }
-    save();
+    if (moveFocus) save();
   }
   function clearBoardSelection() {
     if (!currentMoveToken && !optionId) return;
@@ -943,10 +963,9 @@
   });
   resetConfirm.addEventListener('close',()=>{
     if (resetConfirm.returnValue!=='restart') return;
-    if (preserveRaw) {
-      try { localStorage.setItem(S, JSON.stringify({v:1,game:null,answers:BLANK(),page:'play'})); }
-      catch (_) { say('Restart could not replace this save. The previous data is still preserved.'); return; }
-    }
+    const result = saveSession?.reset(S);
+    if (!result?.ok) { showSaveConflict(result); return; }
+    qs('#save-conflict').hidden = true;
     state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK(); roleSetup=starterRoles(); answerStep='evidence';historyIndex=null;
     qs('#sg-question-details').open=false;qs('#sg-evidence-maps').open=false;
     huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[]; conceptProgress={};
@@ -980,6 +999,8 @@
     updateTheme();
   });
   openPage(page,false);
+  if (preserveRaw) save();
+  else if (state) qs('#sg-save').textContent = 'Progress saved on this device.';
   paint(false);
 })();
 

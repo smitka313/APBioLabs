@@ -54,6 +54,8 @@
     function isDone() { return !!st && minutes() >= L.END_MIN; }
     const dueTimes = () => L.TIMES.filter(t => t <= minutes() + 1e-9);
     const nextDue = () => L.TIMES.find(t => !(st && st.recorded.includes(t)));
+    const readingLabel = (due, allRec) => allRec ? 'All 11 readings recorded' :
+      due.length ? 'Record next unrecorded sample (' + due[0] + ' min)' : 'Next reading at ' + nextDue() + ' min';
     function persist() { api.saveState('decomp', { seed: st.seed, startedAt: st.startedAt, skipped: st.skipped, temps: st.temps, recorded: st.recorded, updatedAt: Date.now() }); }
     const tempLabel = t => t + ' °C';
     const tempWord = t => L.TEMP_NAMES[t] || '';
@@ -116,7 +118,7 @@
       const bar = h('div', { class: 'dc-bar', role: 'presentation' }, h('i', { 'data-dc': 'bar', style: 'width:' + Math.round(m / L.END_MIN * 100) + '%' }));
       clock.appendChild(strong); clock.appendChild(bar);
       clock.appendChild(h('p', { class: 'dc-note', 'data-dc': 'hint', text: hint(due, done, allRec) }));
-      const rec = h('button', { type: 'button', class: 'btn btn--primary', 'data-dc': 'record', text: allRec ? 'All 11 readings recorded' : due.length ? 'Record the ' + due[0] + ' minute reading' : 'Next reading at ' + nextDue() + ' min' });
+      const rec = h('button', { type: 'button', class: 'btn btn--primary', 'data-dc': 'record', text: readingLabel(due, allRec) });
       rec.disabled = !due.length; rec.addEventListener('click', () => record(false));
       const recAll = h('button', { type: 'button', class: 'btn', 'data-dc': 'record-all', text: 'Record all readings so far' }); recAll.disabled = due.length < 2; recAll.addEventListener('click', () => record(true));
       const actions = h('div', { class: 'dc-actions' }, rec, recAll);
@@ -129,7 +131,9 @@
     }
     function hint(due, done, allRec) {
       if (allRec) return 'Every reading is recorded. Look at the table and the chart.';
-      if (done) return 'The 20 minutes are over. Record the readings you have not recorded yet.';
+      if (done) return 'The test reached minute 20. The next unrecorded sample is from minute ' + due[0] +
+        (due.length > 1 ? '. Record it first, or record all missing readings together.' : '. Record it to finish your table.');
+      if (due.length > 1) return 'The button records the oldest unrecorded sample first, not the current clock time. Record all readings so far to catch up.';
       if (due.length) return 'A reading is ready. Beaker temperatures: ' + st.temps.map((t, i) => L.BEAKER_NAMES[i] + ' ' + tempLabel(t)).join(', ') + '.';
       return 'Next reading at ' + nextDue() + ' minutes. Watch the foam rise.';
     }
@@ -291,7 +295,7 @@
       const clock = top.querySelector('[data-dc="clock"]'), bar = top.querySelector('[data-dc="bar"]'), rec = top.querySelector('[data-dc="record"]'), recAll = top.querySelector('[data-dc="record-all"]'), hintEl = top.querySelector('[data-dc="hint"]');
       if (clock) clock.textContent = done ? 'Finished: 20 of 20 min' : 'Minute ' + Math.floor(m) + ' of 20';
       if (bar) bar.style.width = Math.round(m / L.END_MIN * 100) + '%';
-      if (rec && !allRec) { rec.disabled = !due.length; rec.textContent = due.length ? 'Record the ' + due[0] + ' minute reading' : 'Next reading at ' + nextDue() + ' min'; }
+      if (rec && !allRec) { rec.disabled = !due.length; rec.textContent = readingLabel(due, allRec); }
       if (recAll) recAll.disabled = due.length < 2;
       if (hintEl) hintEl.textContent = hint(due, done, allRec);
       if (reduced()) draw();

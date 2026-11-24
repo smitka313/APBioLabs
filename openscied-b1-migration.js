@@ -2,6 +2,25 @@
   'use strict';
   const L=window.MigrationLogic,$=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
   const KEY='aplab:openscied:b1-migration:v1';
+  const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b1-migration';
+  const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [KEY]); } catch (_) { return null; } })();
+  function readSave() { return saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY); }
+  function showSaveConflict(result) {
+    const n = document.getElementById('save-conflict');
+    const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
+      result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
+    const copy = message + ' Download or copy this tab’s work before reloading.';
+    if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; say(copy); }
+    return copy;
+  }
+  function checkSaveConflict(event) {
+    if (!saveSession) return;
+    if (event.type === 'storage' && event.key && ![KEY, saveAPI.globalKey, saveAPI.scopeKey(saveScope), saveAPI.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession.check(KEY);
+    if (!result.ok) showSaveConflict(result);
+  }
+  window.addEventListener('storage', checkSaveConflict);
+  window.addEventListener('pageshow', checkSaveConflict);
   const ANNUAL_SOURCE='OpenSciEd B.1 Lesson 4 · Data Excursion 2: Annual Rainfall and Wildebeest Occupancy (one classroom example year)';
   const ANNUAL_URL='https://openscied.org/simulation/b-1-l4b-data-excursion-2-annual-rainfall-and-wildebeest-occupancy/';
   const RESPONSES=[
@@ -24,16 +43,25 @@
     west:{name:'West · a seasonal opportunity',facts:['Long grass, bushes, and trees give predators places to hide.','Grass takes nutrients into its blades during the dry season; during the wet season, it stores nutrients in its roots.','Mating occurs here when nutritional health is high. Mating uses energy, especially for males.','Wet clay-like soil can stick to hooves. In July, fires in tall grass can reduce available food.'],short:'Seasonal grass nutrition; mating; predators; clay soil and fire.'}
   };
   const ANNUAL=[{region:'South',rain:1160,occupancy:52},{region:'West',rain:1180,occupancy:26},{region:'North',rain:1310,occupancy:6}];
-  let corrupt=false,unavailable=false,state={v:1,month:0,region:'south',page:'explore',view:'field',collection:'cards',visited:[],notes:[],answers:{},responseStage:0,observations:{},weather:true,sort:'month',filter:'all',measure:'fat',lastVisitedAt:0};
+  let corrupt=false,unavailable=false,hydrating=true,state={v:1,month:0,region:'south',page:'explore',view:'field',collection:'cards',visited:[],notes:[],answers:{},responseStage:0,observations:{},weather:true,sort:'month',filter:'all',measure:'fat',lastVisitedAt:0};
   try{
-    const raw=localStorage.getItem(KEY);
+    const raw=readSave();
     if(raw){const s=JSON.parse(raw);if(s.v!==1||!Number.isInteger(s.month)||s.month<0||s.month>11||!Array.isArray(s.notes)||!Array.isArray(s.visited)||!s.answers||typeof s.answers!=='object'||Array.isArray(s.answers))throw Error('Unknown save');
       state={...state,...s,region:REGIONS[s.region]?s.region:'south',page:['explore','evidence','explain'].includes(s.page)?s.page:'explore',view:['field','region','rain'].includes(s.view)?s.view:'field',collection:['cards','rainfall','notebook'].includes(s.collection)?s.collection:'cards',notes:L.normalizeNotebook(s.notes),responseStage:validResponseStage(s.responseStage)?s.responseStage:0,visited:Array.from(new Set(s.visited.filter(n=>Number.isInteger(n)&&n>=0&&n<12))),observations:s.observations&&typeof s.observations==='object'&&!Array.isArray(s.observations)?s.observations:{}};
       for(const n of state.notes)if(n.type==='map-observation'&&n.observation&&typeof state.observations[n.month]!=='string')state.observations[n.month]=n.observation;
     }
   }catch(e){corrupt=true;}
   function say(text){$('#mx-status').textContent=text;}
-  function save(){state.responseIds=RESPONSES.map(r=>r[0]);state.lastSection=state.page;state.lastVisitedAt=Date.now();if(corrupt){$('#save-state').textContent='Saved record needs attention';return;}try{localStorage.setItem(KEY,JSON.stringify(state));$('#save-state').textContent='Work saved on this device';unavailable=false;}catch(e){unavailable=true;$('#save-state').textContent='Not saved · download a copy';say('This browser could not save your work. Download your investigation before leaving.');}}
+  function save(){
+    if(hydrating)return;
+    state.responseIds=RESPONSES.map(r=>r[0]);state.lastSection=state.page;state.lastVisitedAt=Date.now();
+    if(corrupt){$('#save-state').textContent='Saved record needs attention';return;}
+    let result;
+    try{result=saveSession?.write(KEY,JSON.stringify(state));}catch(e){}
+    unavailable=!result?.ok;
+    $('#save-state').textContent=unavailable?'Not saved · download a copy':'Work saved on this device';
+    if(unavailable)showSaveConflict(result);
+  }
   function el(tag,text,cls){const n=document.createElement(tag);if(text!=null)n.textContent=String(text);if(cls)n.className=cls;return n;}
   function shortMonth(m){return L.MONTHS[m].slice(0,3);}
   function cardText(c){return `${L.MONTHS[c.month]} · Location ${c.location} · ${L.GROUPS[c.group]}: ${c.fat}% bone-marrow fat; ${c.health.toLowerCase()}; ${c.anthrax}% of the sampled group had anthrax. Monthly group average for sampled male wildebeest, not a herd-wide rate.`;}
@@ -63,7 +91,7 @@
       const hasDraft=Boolean(draft)&&draft!==saved;
       b.dataset.visited=String(hasNote);
       b.dataset.draft=String(hasDraft);
-      b.setAttribute('aria-label','Explore '+L.MONTHS[m]+(hasNote?' · note saved':'')+(hasDraft?' · draft not yet in notebook':''));
+      b.setAttribute('aria-label','Explore '+L.MONTHS[m]+(hasNote?(unavailable||corrupt?' · note in this tab':' · note saved'):'')+(hasDraft?' · draft not yet in notebook':''));
     });
     $('#record').textContent=months.includes(state.month)?'Update month note':'Save month note';
     const feedback=$('#month-note-status');
@@ -99,7 +127,8 @@
     host.append(box);scene.set(m,{weather:state.weather,region:state.region});$('#large-prev').disabled=m===0;$('#large-next').disabled=m===11;$('#previous').disabled=m===0;$('#next').disabled=m===11;renderNoteProgress();
   }
   function changeMonth(m,user=true){keepDraft();state.month=L.monthIndex(m);if(user)observeMonth();region(L.fieldRegion(state.month));}
-  function go(page,focus=true){if(!['explore','evidence','explain'].includes(page))page='explore';pause();state.page=page;$$('.mx-page').forEach(n=>n.hidden=n.id!==page);$$('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});if(location.hash!=='#'+page)history.replaceState(null,'','#'+page);if(focus){$('#'+page+'-title').focus({preventScroll:true});$('.mx-pages').scrollIntoView({block:'start'});}if(page==='explore')scene.resize();if(page==='evidence')renderCharts();if(page==='explain')renderNotes();save();}
+  // Preserve the incoming fragment during startup: adding #explore can anchor-scroll past the title.
+  function go(page,focus=true){if(!['explore','evidence','explain'].includes(page))page='explore';pause();state.page=page;$$('.mx-page').forEach(n=>n.hidden=n.id!==page);$$('[data-page]').forEach(b=>{if(b.dataset.page===page)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});if(!hydrating&&location.hash!=='#'+page)history.replaceState(null,'','#'+page);if(focus){$('#'+page+'-title').focus({preventScroll:true});$('.mx-pages').scrollIntoView({block:'start'});}if(page==='explore')scene.resize();if(page==='evidence')renderCharts();if(page==='explain')renderNotes();save();}
   function view(v){state.view=v;renderInspector();$$('.mx-viewpanel').forEach(n=>n.hidden=n.id!=='view-'+v);$$('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v)));if(v==='field')scene.resize();save();}
   function collection(v){state.collection=v;['cards','rainfall','notebook'].forEach(id=>$('#collection-'+id).hidden=id!==v);$$('[data-collection]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.collection===v)));renderCharts();renderNotes();save();}
   function region(r,open=false){if(!REGIONS[r])return;state.region=r;const data=REGIONS[r];$('#region-rain-station').textContent=$('#map-station-'+r).textContent;$('#region-facts').replaceChildren(...data.facts.map(f=>el('li',f)));if(open)view('region');scene.set(state.month,{region:r});renderMonth();save();}
@@ -107,7 +136,7 @@
   function displayNoteText(n){return n.id==='rainfall-example'?L.notebookText(n).replace('Lesson 4 slides X–Y',ANNUAL_SOURCE):L.notebookText(n);}
   function renderNotes(){renderNoteProgress();const make=(n,canRemove)=>{const box=el('article',null,'mx-note');box.append(el('h4',n.title),el('p',displayNoteText(n)));if(canRemove){const b=el('button','Remove entry');b.type='button';b.setAttribute('aria-label','Remove '+n.title);b.onclick=()=>{state.notes=state.notes.filter(x=>x.id!==n.id);save();renderNotes();renderCards();say('Removed notebook entry.');};box.append(b);}return box;};$('#note-count').textContent=state.notes.length;$('#writing-note-count').textContent='('+state.notes.length+')';const main=$('#notebook-list'),side=$('#writing-notes');main.replaceChildren();side.replaceChildren();if(!state.notes.length){main.append(el('p','Your notebook is empty. Save a month, a regional observation, or a field card to begin.','mx-panel mx-note'));side.append(el('p','Save useful observations or cards in Explore or Investigate. They will appear here while you write.'));}else{const grid=el('div',null,'mx-notes');state.notes.forEach(n=>grid.append(make(n,true)));main.append(grid);state.notes.forEach(n=>side.append(make(n,false)));}}
   const animal=`<svg viewBox="0 0 180 100" aria-hidden="true"><defs><linearGradient id="body-%ID%" x2="0" y2="1"><stop stop-color="#9e9077"/><stop offset="1" stop-color="#555c4c"/></linearGradient></defs><ellipse cx="96" cy="91" rx="66" ry="5" fill="#718068" opacity=".2"/><path d="M60 59 57 86 53 93M74 65 69 86 72 94M129 64 126 82 132 92M139 60 144 82 150 92" fill="none" stroke="#40493e" stroke-width="3"/><path d="M56 29Q70 15 88 32L119 37Q145 34 147 54Q147 72 124 69L78 61 57 68 45 47Z" fill="url(#body-%ID%)"/><path d="M52 30 36 32 27 62Q24 70 36 69L48 59 60 42Z" fill="#424d40"/><path d="m30 58-8 5 3 8 16-3" fill="#b9b08a"/><path d="M41 32Q21 27 24 13M44 32Q62 27 57 13" fill="none" stroke="#b5a682" stroke-width="3" stroke-linecap="round"/><path d="M58 27 65 40M65 25 71 41M72 26 79 43M43 59 47 75 53 58M146 44Q165 41 159 70" fill="none" stroke="#354233" stroke-width="3"/><circle cx="39" cy="46" r="1.5" fill="#e4dabb"/></svg>`;
-  function renderCards(){const filter=state.filter;const cards=filter==='all'?L.CARDS:L.forMonth(+filter),host=$('#card-groups');host.replaceChildren();L.groups(state.sort,cards).forEach(group=>{const section=el('section',null,'mx-card-group');const heading=el('h3',group.label);heading.append(el('span',group.cards.length+' cards'));section.append(heading);const grid=el('div',null,'mx-cards');group.cards.forEach(c=>{const card=el('article',null,'mx-card');card.dataset.card=c.id;card.append(el('div',shortMonth(c.month)+' · LOCATION '+c.location,'mx-card-id'),el('h4',L.GROUPS[c.group]));const image=el('div');image.innerHTML=animal.replaceAll('%ID%',c.id);card.append(image);const measure=el('div',c.fat+'%','mx-fat');measure.append(el('small','bone-marrow fat'));card.append(measure);const meter=el('div',null,'mx-meter');meter.setAttribute('aria-hidden','true');const fill=el('span');fill.style.width=c.fat+'%';meter.append(fill);card.append(meter,el('p',c.health),el('p',c.anthrax+'% of sampled group had anthrax'));const b=el('button',state.notes.some(n=>n.id==='card-'+c.id)?'Saved ✓':'＋ Save card');b.type='button';b.disabled=state.notes.some(n=>n.id==='card-'+c.id);b.setAttribute('aria-label','Save '+L.MONTHS[c.month]+' '+L.GROUPS[c.group]+' card');b.onclick=()=>addNote({id:'card-'+c.id,title:L.MONTHS[c.month]+' · '+L.GROUPS[c.group],text:cardText(c),type:'source-card'});card.append(b);grid.append(card);});section.append(grid);host.append(section);});}
+  function renderCards(){const filter=state.filter;const cards=filter==='all'?L.CARDS:L.forMonth(+filter),host=$('#card-groups');host.replaceChildren();L.groups(state.sort,cards).forEach(group=>{const section=el('section',null,'mx-card-group');const heading=el('h3',group.label);heading.append(el('span',group.cards.length+' cards'));section.append(heading);const grid=el('div',null,'mx-cards');group.cards.forEach(c=>{const card=el('article',null,'mx-card');card.dataset.card=c.id;card.append(el('div',shortMonth(c.month)+' · LOCATION '+c.location,'mx-card-id'),el('h4',L.GROUPS[c.group]));const image=el('div');image.innerHTML=animal.replaceAll('%ID%',c.id);card.append(image);const measure=el('div',c.fat+'%','mx-fat');measure.append(el('small','bone-marrow fat'));card.append(measure);const meter=el('div',null,'mx-meter');meter.setAttribute('aria-hidden','true');const fill=el('span');fill.style.width=c.fat+'%';meter.append(fill);card.append(meter,el('p',c.health),el('p',c.anthrax+'% of sampled group had anthrax'));const b=el('button',state.notes.some(n=>n.id==='card-'+c.id)?(unavailable||corrupt?'In notebook ✓':'Saved ✓'):'＋ Save card');b.type='button';b.disabled=state.notes.some(n=>n.id==='card-'+c.id);b.setAttribute('aria-label','Save '+L.MONTHS[c.month]+' '+L.GROUPS[c.group]+' card');b.onclick=()=>addNote({id:'card-'+c.id,title:L.MONTHS[c.month]+' · '+L.GROUPS[c.group],text:cardText(c),type:'source-card'});card.append(b);grid.append(card);});section.append(grid);host.append(section);});}
   function table(headers,rows){const t=el('table'),thead=el('thead'),tr=el('tr');headers.forEach(h=>{const th=el('th',h);th.scope='col';tr.append(th);});thead.append(tr);t.append(thead);const body=el('tbody');rows.forEach(row=>{const tr=el('tr');row.forEach(x=>tr.append(el('td',x)));body.append(tr);});t.append(body);return t;}
   let healthChart=null,occupancyChart=null;
   function renderCharts(){if(state.page!=='evidence')return;if(state.collection==='cards'&&$('#health-chart-disclosure').open){const measure=state.measure==='anthrax'?'anthrax':'fat';const opt={simTag:false,responsive:true,height:360,xLabel:'Month number (5 = May, 10 = October)',yLabel:measure==='fat'?'Bone-marrow fat (%)':'Sampled group with anthrax (%)',xMin:5,xMax:10,yMin:0,yMax:100,series:L.GROUPS.map((name,g)=>({name,line:true,dots:true,points:L.CARDS.filter(c=>c.group===g).map(c=>({x:c.month+1,y:c[measure]}))}))};if(healthChart)healthChart.update(opt);else healthChart=Lab.chart('#health-chart',opt);}if(state.collection==='rainfall'){const opt={simTag:false,responsive:true,height:360,xLabel:'Annual regional rainfall (mm)',yLabel:'Time in region (% of year)',xMin:1100,xMax:1350,yMin:0,yMax:60,series:ANNUAL.map(a=>({name:a.region+' · '+a.rain+' mm / '+a.occupancy+'%',dots:true,line:false,points:[{x:a.rain,y:a.occupancy}]}))};if(occupancyChart)occupancyChart.update(opt);else occupancyChart=Lab.chart('#occupancy-chart',opt);}}
@@ -290,6 +319,10 @@
   const mapWrap=$('#map-wrap'),placeholder=el('div');$('#enlarge').onclick=()=>{pause();mapWrap.before(placeholder);$('#large-map-host').append(mapWrap);$('#map-dialog').showModal();scene.resize();};$('#map-dialog').addEventListener('close',()=>{placeholder.replaceWith(mapWrap);scene.resize();});$('#large-prev').onclick=()=>changeMonth(Math.max(0,state.month-1));$('#large-next').onclick=()=>changeMonth(Math.min(11,state.month+1));
   window.addEventListener('hashchange',()=>go(location.hash.slice(1)));
   try{Lab.identity.mount('#migration-identity');const identityHost=$('#migration-identity');const clarify=()=>{identityHost.querySelectorAll('p.small.muted').forEach(p=>{if(p.textContent.includes('simulated data'))p.textContent='Your name and class period label your downloads. Everyone investigates the same published source evidence in this activity.';});};clarify();new MutationObserver(clarify).observe(identityHost,{childList:true,subtree:true});}catch(e){say('Name entry is unavailable. You can still complete and download your investigation.');}
-  renderMonth();region(state.region);view(state.view);renderCards();renderNotes();collection(state.collection);const requested=location.hash.slice(1);go(['explore','evidence','explain'].includes(requested)?requested:state.page,false);
-  if(corrupt)say('An existing saved record could not be read. It has been preserved. Work in this session and download a copy; use the dashboard to back up or clear the unreadable record.');else if(!unavailable)say('Start with a month. Compare locations, save useful evidence, and build your explanation.');
+  renderMonth();region(state.region);view(state.view);renderCards();renderNotes();collection(state.collection);const requested=location.hash.slice(1);go(['explore','evidence','explain'].includes(requested)?requested:state.page,false);hydrating=false;
+  if(corrupt){
+    const notice=$('#save-conflict');
+    notice.textContent='Saved work could not be read and was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
+    notice.hidden=false;$('#save-state').textContent='Saved record needs attention';say(notice.textContent);
+  }else if(!unavailable)say('Start with a month. Compare locations, save useful evidence, and build your explanation.');
 })();

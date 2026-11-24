@@ -27,7 +27,7 @@
    seed(salt) / rng(salt) (per-student, stable across reloads), logic (B2BurnLogic). */
 (function () {
   'use strict';
-  const KEY = 'aplab:openscied:b2-burn-lab:v1';
+  const KEY = 'aplab:openscied:b2-burn-lab:v1', SAVE_SCOPE = 'b2-burn-lab';
   const SECTIONS = ['overview', 'ideas', 'fuels', 'burn', 'sense', 'sort', 'peat', 'wrapup'];
   const SCENE_IDS = ['burn'];
   const HOSTS = { burn: ['#burn-scene', '#burn-notice'] };
@@ -36,6 +36,7 @@
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const state = { burn: null, fields: {}, lastSection: 'overview' };
   let cleared = false, hadSaved = false, ready = false, RESPONSE_IDS = [];
+  let saveSession = null, storedResponseIds = null, lastSaveError = '';
   const DATA_PICKS = { 'sense-lostmost': 'lostmost', 'sense-yellowest': 'yellowest', 'sense-warmest': 'warmest' };
 
   function announce(text) { const e = $('#announcer'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
@@ -46,9 +47,10 @@
   /* ---------- saved state ---------- */
   function readStore() {
     try {
-      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+      const d = JSON.parse((saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY)) || 'null');
       if (!d || d.v !== 1) return;
       hadSaved = true;
+      storedResponseIds = Array.isArray(d.responseIds) ? JSON.stringify(d.responseIds) : null;
       SCENE_IDS.forEach(function (id) { if (d[id] && typeof d[id] === 'object') state[id] = d[id]; });
       if (d.fields && typeof d.fields === 'object') state.fields = d.fields;
       if (SECTIONS.includes(d.lastSection)) state.lastSection = d.lastSection;
@@ -64,18 +66,39 @@
     });
     return f;
   }
-  function save() {
-    if (cleared || !ready) return;
-    try {
-      state.fields = collectFields();
-      const section = location.hash.slice(1);
-      if (SECTIONS.includes(section)) state.lastSection = section;
-      const rec = { v: 1, fields: state.fields, responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now() };
-      SCENE_IDS.forEach(function (id) { rec[id] = state[id]; });
-      localStorage.setItem(KEY, JSON.stringify(rec));
-      $('#save-status').textContent = 'Saved on this device.';
-    } catch (e) { $('#save-status').textContent = 'This browser could not save your work. Download a copy before leaving.'; }
+  function saveResult(result) {
+    const message = result?.ok ? '' :
+      result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot restore it automatically. Download this tab’s work if you need it, then refresh.' :
+      result?.reason === 'changed' ? 'Another tab saved newer work. This tab will not overwrite it. Download this tab’s work if you need it, then refresh.' :
+      'This browser could not save your work. Download a copy before leaving.';
+    $('#save-status').textContent = message || 'Saved on this device.';
+    $('#burn-save-warning-text').textContent = message;
+    $('#burn-save-warning').hidden = !message;
+    if (message && message !== lastSaveError) announce(message);
+    lastSaveError = message;
+    return !message;
+  }
+  function save(routeOnly = false) {
+    if (cleared || !ready) return false;
+    const section = location.hash.slice(1);
+    // Merely viewing a page does not create a record. On an existing record, keep the
+    // resume destination current, but never overwrite work saved by a different tab.
+    if (routeOnly && (!hadSaved || !SECTIONS.includes(section) || section === state.lastSection)) return false;
+    state.fields = collectFields();
+    if (SECTIONS.includes(section)) state.lastSection = section;
+    const rec = { v:1, fields:state.fields, responseIds:RESPONSE_IDS, lastSection:state.lastSection, lastVisitedAt:Date.now() };
+    SCENE_IDS.forEach(function (id) { rec[id] = state[id]; });
+    const written = saveResult(saveSession?.write(KEY, JSON.stringify(rec)));
+    if (written) {
+      hadSaved = true;
+      storedResponseIds = JSON.stringify(RESPONSE_IDS);
+    }
     renderReport();
+    return written;
+  }
+  function checkExternalSave() {
+    const result = saveSession?.check(KEY);
+    if (result && !result.ok) saveResult(result);
   }
   function restoreFields() {
     Object.keys(state.fields || {}).forEach(function (id) {
@@ -271,7 +294,7 @@
     report.appendChild(el('p', 'small muted', 'Simplified teaching model. Burn results are simulated and do not replace the real demonstration.'));
   }
   function download() {
-    save();
+    state.fields = collectFields();
     const scenes = {}; SCENE_IDS.forEach(function (id) { scenes[id] = state[id]; });
     const simulated = { burns: L.tableRows(state.burn).map(function (r) { return { fuel: r.fuel, sample: r.n, caughtFireAfterSeconds: r.igniteS, burnedForSeconds: r.burnS, btbBefore: r.btbBefore, btbBeforeColor: r.btbLabelBefore, btbAfter: r.btbAfter, btbAfterColor: r.btbLabelAfter,
       temperatureBeforeC: r.tempBefore, temperatureAfterC: r.tempAfter, massBeforeG: r.massBefore, massAfterG: r.massAfter, observations: r.obs }; }) };
@@ -284,10 +307,15 @@
   }
   // Same rule as the other companions: clear this activity's record, then reload fresh at the Overview. Name and class period stay saved.
   function clearActivity() {
+    const result = saveSession?.reset(KEY);
+    if (!result?.ok) {
+      $('#reset-dialog').close();
+      saveResult(result);
+      return;
+    }
     $$('textarea, input[type=text], input[type=hidden], select').forEach(function (e) { if (e.tagName === 'SELECT') e.selectedIndex = 0; else e.value = ''; });
     $$('input[type=checkbox],input[type=radio]').forEach(function (e) { e.checked = e.defaultChecked; });
     cleared = true;
-    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     try { history.replaceState(null, '', location.pathname + location.search + '#overview'); } catch (e) { /* ignore */ }
     location.reload();
   }
@@ -297,7 +325,7 @@
   const api = {
     version: 1, logic: L,
     getState: function () { const o = {}; SCENE_IDS.forEach(function (id) { o[id] = copy(state[id]); }); return o; },
-    saveState: function (id, data) { if (!SCENE_IDS.includes(id)) return; state[id] = data && typeof data === 'object' ? copy(data) : null; if (state[id]) state[id].updatedAt = state[id].updatedAt || Date.now(); renderData(); save(); },
+    saveState: function (id, data) { if (!SCENE_IDS.includes(id)) return; state[id] = data && typeof data === 'object' ? copy(data) : null; if (state[id]) state[id].updatedAt = state[id].updatedAt || Date.now(); renderData(); return save(); },
     update: function (id, patch) { if (!SCENE_IDS.includes(id) || !patch || typeof patch !== 'object') return; api.saveState(id, Object.assign({}, state[id] || {}, copy(patch), { updatedAt: Date.now() })); },
     announce: announce,
     seed: function (salt) { const base = window.Lab && Lab.identity && Lab.identity.seed ? Lab.identity.seed.seed : 0; return (base + L.hash32(String(salt || ''))) >>> 0; },
@@ -324,6 +352,7 @@
     renderPicks(); renderPreds(false); renderClaim(false);
   }
   function wire() {
+    try { saveSession = window.OpenSciEdSaveSession?.open(localStorage, SAVE_SCOPE, [KEY]); } catch (_) { /* Export remains available if browser storage is blocked. */ }
     readStore();
     RESPONSE_IDS = Array.from(new Set($$('main input[type=radio]').map(function (r) { return r.name; }).concat(
       $$('main textarea').filter(function (t) { return !t.readOnly && t.id && !t.hasAttribute('data-optional'); }).map(function (t) { return t.id; }),
@@ -334,20 +363,28 @@
     (window.B2Scenes || []).forEach(function (s) { api.registerScene(s); });
     window.B2Scenes = { push: function (s) { api.registerScene(s); } };
     SCENE_IDS.forEach(function (id) { if (!scenes[id]) { const n = $(HOSTS[id][1]); if (n) n.hidden = false; } });
-    window.addEventListener('hashchange', save);
-    $$('main input, main textarea, main select').forEach(function (e) { if (!e.closest('.scene-host')) { e.addEventListener('change', save); e.addEventListener('input', save); } });
+    window.addEventListener('hashchange', () => save(true));
+    window.addEventListener('storage', event => {
+      const storage = window.OpenSciEdSaveSession;
+      if (storage && (event.key === null || event.key === KEY || event.key === storage.globalKey ||
+          event.key === storage.scopeKey(SAVE_SCOPE) || event.key === storage.resetKey(KEY))) checkExternalSave();
+    });
+    window.addEventListener('pageshow', event => { if (event.persisted) checkExternalSave(); });
+    $$('main input, main textarea, main select').forEach(function (e) { if (!e.closest('.scene-host')) { e.addEventListener('change', () => save()); e.addEventListener('input', () => save()); } });
     $$('main fieldset.mcq[data-id]').forEach(function (fs) { fs.addEventListener('change', function () { renderChoice(fs, true); if (/^cer-/.test(fs.dataset.id)) renderClaim(true); }); });
     PICK_IDS.forEach(function (id) { const s = document.getElementById(id); if (s) s.addEventListener('change', function () { renderPick(s, true); }); });
     L.FUEL_IDS.forEach(function (f) { ['ignite', 'energy'].forEach(function (k) { const s = document.getElementById('pred-' + f + '-' + k); if (s) s.addEventListener('change', function () { renderPred(f, true); }); }); });
     $('#cer').addEventListener('change', function () { renderClaim(false); });
     $('#download-work').addEventListener('click', download);
+    $('#burn-download-unsaved').addEventListener('click', download);
     $('#print-work').addEventListener('click', function () { renderReport(); window.print(); });
     const dialog = $('#reset-dialog');
     $('#reset-work').addEventListener('click', function () { dialog.showModal(); });
     $('#cancel-reset').addEventListener('click', function () { dialog.close(); });
     $('#confirm-reset').addEventListener('click', clearActivity);
-    // Only refresh an existing record on load: saving a blank page right after "Clear this activity" would make the dashboard show it as started.
-    if (hadSaved) save(); else renderReport();
+    // Update older answer metadata once, without changing ownership when another tab merely opens.
+    if (hadSaved && storedResponseIds !== JSON.stringify(RESPONSE_IDS)) save();
+    else renderReport();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();

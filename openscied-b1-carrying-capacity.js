@@ -2,6 +2,27 @@
   'use strict';
   const L = window.CarryingLogic, ROUNDS = 12;
   const KEY = 'aplab:openscied-b1-carrying-capacity:run-v1';
+  const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b1-carrying-capacity';
+  const keys = [KEY, ...['habitat','range','field'].map(part => 'aplab:openscied:b1-carrying-capacity:' + part + ':v1')];
+  const reopen = () => { try { return saveAPI?.open(localStorage, saveScope, keys); } catch (_) { return null; } };
+  let saveSession = reopen(), preservedSave = false;
+  const getSaveSession = () => saveSession;
+  function showSaveConflict(result) {
+    const n = document.getElementById('save-conflict');
+    const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
+      result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
+    const copy = message + ' Download or copy this tab’s work before reloading.';
+    if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; speak(copy); }
+    return copy;
+  }
+  function checkSaveConflict(event) {
+    if (!saveSession) return;
+    if (event.type === 'storage' && event.key && ![...keys, saveAPI.globalKey, saveAPI.scopeKey(saveScope), ...keys.map(saveAPI.resetKey)].includes(event.key)) return;
+    const result = keys.map(key => saveSession.check(key)).find(x => !x.ok);
+    if (result) showSaveConflict(result);
+  }
+  window.addEventListener('storage', checkSaveConflict);
+  window.addEventListener('pageshow', checkSaveConflict);
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => [...document.querySelectorAll(s)];
   const optionalQuestion = 'habitat-claim';
@@ -27,7 +48,9 @@
   };
   let state = fresh();
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY));
+    const saved = saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY);
+    const raw = saved === null ? null : JSON.parse(saved);
+    if (saved !== null && (!raw || typeof raw !== 'object' || Array.isArray(raw))) throw Error('Unknown saved format');
     if (raw && typeof raw === 'object') {
       const a = cleaned(raw.baseline), b = cleaned(raw.comparison);
       if (a?.grassPercent === 100) state.baseline = a;
@@ -41,10 +64,17 @@
       for (const id of strings) if (typeof raw.answers?.[id] === 'string') state.answers[id] = raw.answers[id].slice(0,4000);
       for (const [key, choices] of Object.entries({food:['grass','herd'],field:['yes','no']})) if (choices.includes(raw.checks?.[key])) state.checks[key] = raw.checks[key];
     }
-  } catch {}
+  } catch { preservedSave = true; }
+  if (preservedSave) {
+    const notice = document.getElementById('save-conflict');
+    notice.textContent = 'An unreadable save was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
+    notice.hidden = false;
+  }
   const save = () => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); $('#cc-save-status').textContent = 'Work saves on this device'; }
-    catch { $('#cc-save-status').textContent = 'Device storage is unavailable. Download your work before leaving.'; }
+    if (preservedSave) return;
+    let result;
+    try { result = saveSession?.write(KEY, JSON.stringify(state)); } catch (_) {}
+    $('#cc-save-status').textContent = result?.ok ? 'Work saves on this device' : showSaveConflict(result);
   };
   const speak = (text) => { $('#cc-status').textContent = text; };
   const current = () => state[state.selected];
@@ -65,13 +95,13 @@
     return 'Over the last four rounds, the herd averaged '+first+' in the baseline and '+second+' with '+state.comparison.grassPercent+'% grass available. A herd can fluctuate from round to round; compare the pattern, not just the last point.';
   };
   const scene = window.CarryingScene.mount($('#cc-board'));
-  const habitat = window.CarryingHabitatUI.mount($('#cc-habitat-app'), {announce:speak});
+  const habitat = window.CarryingHabitatUI.mount($('#cc-habitat-app'), {announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
   let chart, marks = [];
-  const range = window.CarryingRange.mount($('#cc-range-app'), {announce:speak,onMarks:(selected)=>{
+  const range = window.CarryingRange.mount($('#cc-range-app'), {announce:speak,getSaveSession,onSaveConflict:showSaveConflict,onMarks:(selected)=>{
     marks = selected;
     if (chart && state.page === 'run') chart.update({hLines:marks});
   }});
-  const field = window.CarryingField.mount($('#cc-field-app'),{announce:speak});
+  const field = window.CarryingField.mount($('#cc-field-app'),{announce:speak,getSaveSession,onSaveConflict:showSaveConflict});
   function renderLab() {
     const s = current(), last = s.rows.at(-1), done = s.round === ROUNDS, compared = !!state.comparison;
     const scenario = state.selected === 'baseline' ? 'Baseline · All grass available' : 'Comparison · '+s.grassPercent+'% grass available';
@@ -257,7 +287,13 @@
   }
   $('#cc-reset').addEventListener('click',()=>$('#cc-reset-dialog').showModal());
   $('#cc-reset-confirm').addEventListener('click',()=>{
-    state=fresh(); habitat.reset(); range.reset(); field.reset(); save(); $('#cc-reset-dialog').close(); $('#cc-grass').value='50';
+    const conflict = saveSession && keys.map(key => saveSession.check(key)).find(x => !x.ok);
+    let result;
+    if (saveSession && !conflict) try { result = saveAPI.erase(localStorage, saveScope, keys); } catch (_) {}
+    $('#cc-reset-dialog').close();
+    if (!result?.ok) { showSaveConflict(conflict || result); return; }
+    saveSession = reopen(); preservedSave = false; $('#save-conflict').hidden = true;
+    state=fresh(); habitat.reset(true); range.reset(); field.reset(); $('#cc-grass').value='50';
     for (const id of strings) $('#cc-'+id).value='';
     $$('input[type="radio"]').forEach((el)=>{el.checked=false;});
     for (const id of ['cc-feedback','cc-field-feedback']) {$('#'+id).hidden=true;$('#'+id).textContent='';}

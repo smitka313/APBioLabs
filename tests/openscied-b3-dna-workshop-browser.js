@@ -491,6 +491,12 @@ async function exercise(browser,base,size) {
       await button(page,'build').getAttribute('aria-describedby')==='dw-unlock' &&
       await page.locator('#dw-next').getAttribute('aria-describedby')==='dw-unlock',
       label+' explains what to do to unlock the next step before students try it');
+    const disabled=await page.locator('#dw-next').evaluate(el=>{
+      const css=getComputedStyle(el);
+      const channels=css.backgroundColor.match(/\d+/g).slice(0,3);
+      return css.borderTopStyle==='dashed' && new Set(channels).size===1;
+    });
+    check(disabled,label+' a disabled Next uses neutral gray and a dashed border');
     await fits(page,'main, #dw-board, #dw-board [data-dw-slot]',label+' initial board');
     await shot(page,label+'-starting-nucleotide');
     const phosphate=source(page,'phosphate');

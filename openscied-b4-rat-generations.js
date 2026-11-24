@@ -20,7 +20,10 @@
   const fraction=(n,d)=>d?n+' / '+d+' ('+percent(n,d)+')':'Not defined';
   const selectionName={born:'Born',survived:'Survived'};
   const newRecord=()=>({v:1,seed:freshSeed(),step:'predict',action:0,lastVisitedAt:0,prediction:'',answers:{},person:{},metric:'population',analysisChecked:false,crosses:{},activePair:''});
-  let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='';
+  const scope='b4-rat-generations', guard=window.OpenSciEdSaveSession;
+  let session;
+  try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
+  let state=newRecord(), model, invalid=false, writeBlocked=false, viewAction=null, activePair='', warned='';
   function decode(raw) {
     const s=JSON.parse(raw);
     const trial=s&&M.restore({v:s.v,seed:s.seed,step:s.action});
@@ -38,15 +41,31 @@
     return safe;
   }
   try {
-    const raw=localStorage.getItem(KEY);
+    const raw=session?.read(KEY) ?? null;
     if(raw!==null)try{state=decode(raw);}catch(_){invalid=true;}
   } catch(_){writeBlocked=true;}
   model=M.restore({v:1,seed:state.seed,step:state.action});
-  function save(replace=false) {
+  function notSaved(reason) {
+    writeBlocked=true;
+    const text=reason==='changed' ? 'A newer copy of this activity was saved in another tab. This tab will not overwrite it.' :
+      reason==='erased' ? 'Saved work was cleared on this device. This tab will not bring it back.' :
+      'This browser could not save the work in this tab.';
+    const message=text+' Download a copy before closing this tab.';
+    $('#rg-save-warning').hidden=false;set('save-warning-text',message);
+    set('save','Not saved · download a copy');
+    if(warned!==message) {warned=message;announce(message);}
+    return false;
+  }
+  function saved() {
+    invalid=false;writeBlocked=false;warned='';
+    $('#rg-save-warning').hidden=true;set('save','Work saved on this device.');
+    return true;
+  }
+  function save() {
     state.lastVisitedAt=Date.now();
-    if(invalid&&!replace){set('save','An older record is preserved. Download this trial before leaving.');return;}
-    try {localStorage.setItem(KEY,JSON.stringify(state));invalid=false;writeBlocked=false;set('save','Work saved on this device.');}
-    catch(_){writeBlocked=true;set('save','Work could not be saved on this device. Download it before leaving.');}
+    if(invalid){set('save','An older record is preserved. Download this trial before leaving.');return false;}
+    const result=session?.write(KEY,JSON.stringify(state));
+    return result?.ok ? saved() : notSaved(result?.reason);
   }
   function available(step) {
     return step==='predict'||(step==='model'&&!!state.prediction)||(['analyze','explain'].includes(step)&&model.done);
@@ -383,12 +402,12 @@
     e.preventDefault();
     const selected=$('input[name=rg-concept]:checked')?.value;
     const msg=selected==='alleles'?'Right. The denominator counts every allele copy of this gene, two per rat.':
-      selected==='rats'?'The number of rats is the denominator for the fraction of rats showing resistance. For allele frequency, count copies.':
-      selected==='r'?'R copies are the numerator. The denominator counts both R and B copies.':'Choose a denominator first.';
+      selected==='rats'?'Not quite. The number of rats is the denominator for the fraction showing resistance. For allele frequency, count two copies per rat.':
+      selected==='r'?'Not quite. R copies are the numerator. The denominator counts both R and B copies.':'Choose a denominator first.';
     state.analysisChecked=selected==='alleles';save();gates();
     set('check-feedback',msg);announce(msg,true);
   });
-  $('#rg-download').addEventListener('click',download);$('#rg-copy').addEventListener('click',()=>copy());
+  $('#rg-download').addEventListener('click',download);$('#rg-download-tab').addEventListener('click',download);$('#rg-copy').addEventListener('click',()=>copy());
   $('#rg-copy-select').addEventListener('click',async()=>{
     const field=$('#rg-copy-text');field.focus();field.select();
     try {await navigator.clipboard.writeText(field.value);set('copy-hint','Copied.');}
@@ -397,10 +416,12 @@
   for(const b of $$('[data-rg-close]'))b.addEventListener('click',()=>b.closest('dialog').close());
   $('#rg-reset').addEventListener('click',()=>$('#rg-reset-dialog').showModal());
   $('#rg-confirm-reset').addEventListener('click',()=>{
-    state=newRecord();model=M.create(state.seed);viewAction=null;activePair='';set('check-feedback','');
+    const next={...newRecord(),lastVisitedAt:Date.now()},result=session?.reset(KEY,JSON.stringify(next));
+    if(!result?.ok) {$('#rg-reset-dialog').close();return notSaved(result?.reason);}
+    state=next;model=M.create(state.seed);viewAction=null;activePair='';set('check-feedback','');
     for(const name of ['analysis-table','evidence-table','evidence-summary','metrics'])$('#rg-'+name).replaceChildren();
     for(const r of $$('input[name=rg-concept]'))r.checked=false;
-    fill();render();save(true);$('#rg-reset-dialog').close();go('predict',{persist:false});
+    fill();render();saved();$('#rg-reset-dialog').close();go('predict',{persist:false});
     if(!writeBlocked)announce('A new trial is ready to start.');
   });
   window.addEventListener('hashchange',()=>{
@@ -411,5 +432,13 @@
   const request=location.hash.slice(1);
   go(available(request)?request:available(state.step)?state.step:'predict',{focus:false,persist:false});
   if(invalid)set('save','An older record is preserved. Download this trial before leaving.');
-  if(writeBlocked)set('save','This browser cannot save work. Download your report before leaving.');
+  const monitorSave=()=>{
+    const result=session?.check(KEY);
+    if(!result?.ok) notSaved(result?.reason);
+  };
+  window.addEventListener('storage',event=>{
+    if(!event.key||event.key===KEY||(guard&&[guard.globalKey,guard.scopeKey(scope),guard.resetKey(KEY)].includes(event.key))) monitorSave();
+  });
+  window.addEventListener('pageshow',monitorSave);
+  monitorSave();
 })();

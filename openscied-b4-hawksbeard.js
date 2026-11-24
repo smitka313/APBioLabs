@@ -68,32 +68,44 @@
     }
     return {...s,answers,person,disclosures,page:PAGES.includes(s.page) ? s.page : 'predict'};
   }
+  const scope='b4-hawksbeard', guard=window.OpenSciEdSaveSession;
+  let session;
+  try {session=guard?.open(window.localStorage,scope,[KEY]);} catch (_) {}
   let state = fresh(), preserved = false, blocked = false, running = false, frame = 0, trial;
+  let warned='';
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = session?.read(KEY) ?? null;
     if (raw !== null) {
       try { state = restore(raw); } catch (_) { preserved = true; }
     }
   } catch (_) { blocked = true; }
-  function save(replacing = false) {
+  function notSaved(reason) {
+    blocked=true;
+    const text=reason==='changed' ? 'A newer copy of this activity was saved in another tab. This tab will not overwrite it.' :
+      reason==='erased' ? 'Saved work was cleared on this device. This tab will not bring it back.' :
+      'This browser could not save the work in this tab.';
+    const message=text+' Download a copy before closing this tab.';
+    $('#hb-save-warning').hidden=false;
+    setText('#hb-save-warning-text',message);
+    setText('#hb-save-status','Not saved · download a copy');
+    if(warned!==message) {warned=message;announce(message);}
+    return false;
+  }
+  function saved() {
+    blocked=false;preserved=false;warned='';
+    $('#hb-save-warning').hidden=true;
+    setText('#hb-save-status','Work saved on this device');
+    return true;
+  }
+  function save() {
     state.lastSection = state.page;
     state.lastVisitedAt = Date.now();
-    if (preserved && !replacing) {
+    if (preserved) {
       setText('#hb-save-status','An older trial is preserved. Download this session before leaving.');
       return false;
     }
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      blocked = false;
-      preserved = false;
-      setText('#hb-save-status','Work saved on this device');
-      return true;
-    } catch (_) {
-      blocked = true;
-      setText('#hb-save-status',preserved ? 'Older work preserved; this trial did not save' : 'Not saved · download a copy');
-      announce('This browser could not save this trial. Download or copy your report before leaving.');
-      return false;
-    }
+    const result=session?.write(KEY,JSON.stringify(state));
+    return result?.ok ? saved() : notSaved(result?.reason);
   }
   const siteName = site => site === 'field' ? 'Field' : 'City';
   const typeName = type => TYPES[type];
@@ -518,7 +530,7 @@
     gates();renderCompletion();
     setText('#hb-dataset-id',datasetId(state.seed));
     showReleaseResult();
-    if (state.prediction) setText('#hb-prediction-feedback','Prediction saved: '+choices[state.prediction]+'. You can change it and test your thinking with the model.');
+    if (state.prediction) setText('#hb-prediction-feedback','Prediction: '+choices[state.prediction]+'. You can change it and test your thinking with the model.');
     else setText('#hb-prediction-feedback','');
     if (!running && state.released === PAIRS) {
       const s=currentSummary();
@@ -616,15 +628,24 @@
   }
   function fillInputs() {
     for (const field of $$('input[name="hb-prediction"]')) field.checked=field.value===state.prediction;
+    updatePredictionButton();
     for (const f of answerInputs) f.value=state.answers[f.dataset.hbAnswer] || '';
     fillPerson();
   }
+  function updatePredictionButton() {
+    const picked = $('input[name="hb-prediction"]:checked')?.value;
+    const disabled=!isOwn(choices,picked);
+    $('#hb-save-prediction').disabled=disabled;
+    $('#hb-prediction-hint').hidden=!disabled;
+  }
   function reset() {
+    const next={...fresh(),lastVisitedAt:Date.now()}, result=session?.reset(KEY,JSON.stringify(next));
+    if(!result?.ok) {$('#hb-reset-dialog')?.close();return notSaved(result?.reason);}
     if (frame) {cancelAnimationFrame(frame);frame=0;}
     running=false;
-    state=fresh();trial=L.makeTrial(state.seed);
+    state=next;trial=L.makeTrial(state.seed);
     for (const id of DETAIL_IDS) {const details=$('#'+id);if(details) details.open=false;}
-    save(true);fillInputs();render();settled();
+    saved();fillInputs();render();settled();
     $('#hb-reset-dialog')?.close();go('predict',{persist:false});
     if (!blocked) announce('Started a new matched trial on this device.');
   }
@@ -634,6 +655,7 @@
     if (b.getAttribute('aria-disabled')==='true') {announce(!state.prediction?'Save a prediction before releasing seeds.':'Release all five matched plant pairs first.');return;}
     go(b.dataset.hbPage||b.dataset.hbGo);
   });
+  $('#hb-prediction')?.addEventListener('change',updatePredictionButton);
   $('#hb-prediction')?.addEventListener('submit',event=>{
     event.preventDefault();
     const choice=$('input[name="hb-prediction"]:checked',event.currentTarget)?.value;
@@ -651,6 +673,7 @@
   rememberDisclosure($('#hb-method'));
   $('#hb-release-next')?.addEventListener('click',release);
   $('#hb-download')?.addEventListener('click',download);
+  $('#hb-download-tab')?.addEventListener('click',download);
   $('#hb-copy')?.addEventListener('click',()=>copyText(false));
   $('#hb-copy-select')?.addEventListener('click',async ()=>{
     const f=$('#hb-copy-text');if (!f) return;
@@ -682,8 +705,14 @@
   if (preserved) {
     setText('#hb-save-status','Unreadable saved trial preserved');
     announce('The earlier record is unreadable and has not been overwritten. Download your current session before leaving or explicitly restart.');
-  } else if (blocked) {
-    setText('#hb-save-status','Device storage unavailable');
-    announce('This browser cannot access saved work. Download your report before closing the page.');
   }
+  const monitorSave=()=>{
+    const result=session?.check(KEY);
+    if(!result?.ok) notSaved(result?.reason);
+  };
+  window.addEventListener('storage',event=>{
+    if(!event.key||event.key===KEY||(guard&&[guard.globalKey,guard.scopeKey(scope),guard.resetKey(KEY)].includes(event.key))) monitorSave();
+  });
+  window.addEventListener('pageshow',monitorSave);
+  monitorSave();
 })();

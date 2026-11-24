@@ -1,5 +1,7 @@
 'use strict';
 
+const { verifySaveConflict } = require('./openscied-b4-save-conflict-check');
+
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -118,6 +120,8 @@ async function exerciseFlightSimulation(page,size,label) {
     let traveled=begin;
     for(let attempt=0;attempt<Math.ceil(begin/step)&&await state()==='stay';attempt++) {
       await activate(approach,size);
+      if (await state()==='stay') check(/stayed put.*Select Approach to move .* closer/i.test(await id(page,'ju-sim-status').textContent()),
+        label+' a bird that stays put gives a specific next action');
       const now=await meters();
       assert.ok(Math.abs(now-Math.max(0,traveled-step))<1e-6,
         label+' each approach in '+contextChoice+' is exactly '+step+' m');
@@ -292,6 +296,11 @@ async function verifyCortData(page,label) {
     browser=await chromium.launch(executablePath?{executablePath}:{});
     await fs.mkdir(OUT,{recursive:true});
     for(const size of SIZES) await exercise(browser,server.url,size);
+    await verifySaveConflict(browser, server.url, {
+      file:PAGE, key:SAVE, warning:'#ju-save-warning', backup:'#ju-download-tab', check,
+      async edit(page,n){ await page.locator('#ju-field-entry').fill('Field note '+n); },
+      read:saved=>Number(saved?.observation?.match(/\d+$/)?.[0]), draft:/Field note 2/
+    });
     console.log('openscied-b4-junco-browser: '+checks+' checks passed');
   }finally{
     if(browser) await browser.close();
