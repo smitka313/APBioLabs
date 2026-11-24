@@ -6,7 +6,7 @@ const path = require('node:path');
 const SaveSession = require('../openscied-save-session.js');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
 const workspaceEpochKey = 'aplab:pref:workspace-handoff:v1';
-function setup(blocked = false, overrides = {}, absent = [], tracker) {
+function setup(blocked = false, overrides = {}, absent = [], tracker, workshopLogic) {
   const elements = new Map(), created = [], events = {};
   function element(tag) {
     const handlers = {};
@@ -38,7 +38,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker) {
       data: { workspaceEpochKey, workspaceStatus: () => blocked ? 'unavailable' :
         (data[workspaceEpochKey] ?? null) === workspaceEpoch ? 'current' : 'changed' }
     },
-    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,addEventListener(type, fn) { events[type]=fn; } }, Blob,
+    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,DNAWorkshopLogic:workshopLogic,addEventListener(type, fn) { events[type]=fn; } }, Blob,
     URL: { createObjectURL(value) { if (failBackup) throw Error('blocked download'); blob = value; return 'blob:backup'; }, revokeObjectURL() {} }, setTimeout() {} };
   vm.runInNewContext(source, context);
   return { data, created, events, el: selector => elements.get(selector), mounted, mountOptions, blob: () => blob, blockBackup: () => { failBackup = true; } };
@@ -190,6 +190,42 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   const starter=setup(false,{[key]:primer});
   assert.equal(starter.el('#dna-workshop-open').href,'openscied-b3-dna-workshop.html#nucleotide');
   assert.equal(starter.el('#dna-workshop-progress').textContent,'1 piece placed · 1 response saved');
+});
+
+test('dashboard loads the codon wheel first and counts a seeded long Workshop board', () => {
+  const root = path.join(__dirname, '..');
+  const html = fs.readFileSync(path.join(root, 'openscied-dashboard.html'), 'utf8');
+  const links = [...html.matchAll(/<script\b[^>]*\bsrc="([^"?]+)(?:\?[^"]*)?"[^>]*>/g)]
+    .map(match => ({name: match[1], tag: match[0]}));
+  const wheelAt = links.findIndex(script => script.name === 'openscied-b3-dna-workshop-codon-wheel.js');
+  const logicAt = links.findIndex(script => script.name === 'openscied-b3-dna-workshop-logic.js');
+  const dashboardAt = links.findIndex(script => script.name === 'openscied-dashboard.js');
+  assert.ok(wheelAt >= 0 && wheelAt < logicAt && logicAt < dashboardAt,
+    'the same reference table used by the Workshop model is available before dashboard startup');
+  const required = [links[wheelAt], links[logicAt], links[dashboardAt]];
+  const deferred = script => /\bdefer\b/i.test(script.tag);
+  for (const [i, script] of required.entries()) {
+    assert.doesNotMatch(script.tag, /\basync\b/i, 'the model and dashboard do not load out of order');
+    if (i > 0 && deferred(required[i-1])) assert.ok(deferred(script), 'a dependent script cannot run before its deferred dependency');
+  }
+  const window = vm.createContext({});
+  for (const script of required.slice(0, 2)) {
+    vm.runInContext(fs.readFileSync(path.join(root, script.name), 'utf8'), window);
+  }
+  const logic = window.DNAWorkshopLogic;
+  assert.ok(logic, 'the real browser model loads without a CommonJS require');
+  const seed = logic.create(4471);
+  const translation = logic.stage('chain', seed);
+  assert.equal(translation.slots.length, 9);
+  const record = {
+    v: 1, step: 'chain', lastVisitedAt: Date.now(), answers: {},
+    progress: {...seed, placed: Object.fromEntries(translation.slots.map(slot => [slot.id, slot.expected]))},
+  };
+  const s = setup(false, {'aplab:openscied:b3-dna-workshop:v1': JSON.stringify(record)}, [], null, logic);
+  const meter = s.created.find(el => el.tag === 'progress' && el.attrs['aria-label']?.startsWith('DNA Workshop:'));
+  assert.equal(meter?.attrs['aria-valuetext'], '1 of 6 workshop practices completed');
+  assert.equal(s.el('#dna-workshop-progress').textContent, '9 pieces placed');
+  assert.equal(s.el('#dna-workshop-open').href, 'openscied-b3-dna-workshop.html#chain');
 });
 
 test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curriculum link for unpublished Unit 5', () => {

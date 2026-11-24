@@ -29,14 +29,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <script>try{const t=localStorage.getItem('aplab:pref:theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(_){}</script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="openscied-b3-dna-workshop.css?v=storage1">
+<link rel="stylesheet" href="openscied-b3-dna-workshop.css?v=translation-2">
 <link rel="stylesheet" href="openscied-submission-report.css">
 <script defer src="lab.js"></script>
-<script defer src="openscied-b3-dna-workshop-logic.js"></script>
-<script defer src="openscied-b3-dna-workshop-codon-wheel.js"></script>
+<script defer src="openscied-b3-dna-workshop-codon-wheel.js?v=translation-2"></script>
+<script defer src="openscied-b3-dna-workshop-logic.js?v=translation-2"></script>
 <script defer src="openscied-save-session.js?v=1"></script>
 <script defer src="openscied-submission-report.js"></script>
-<script defer src="openscied-b3-dna-workshop.js?v=storage1"></script>
+<script defer src="openscied-b3-dna-workshop.js?v=translation-2"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
@@ -47,16 +47,16 @@
     <div>
       <p class="eyebrow">Unit 3 · Supplemental practice · 15–20 minutes</p>
       <h1>DNA Workshop</h1>
-      <p>Start with one DNA building block. Then build a small DNA message, copy it, and use it to make an amino acid chain.</p>
+      <p>Start with one DNA building block. Then practice copying DNA (replication), making RNA (transcription), and reading RNA to build an amino acid chain (translation).</p>
     </div>
     <img class="dw-step-art" src="assets/dna-workshop-preview.svg" width="960" height="600" alt="">
   </header>
   <nav class="dw-stage-nav" aria-label="Workshop steps">
     <button type="button" data-dw-go="nucleotide" aria-current="step"><span aria-hidden="true">1</span> Nucleotide</button>
     <button type="button" data-dw-go="build" disabled><span aria-hidden="true">2</span> Build DNA</button>
-    <button type="button" data-dw-go="copy" disabled><span aria-hidden="true">3</span> Copy DNA</button>
-    <button type="button" data-dw-go="rna" disabled><span aria-hidden="true">4</span> Make RNA</button>
-    <button type="button" data-dw-go="chain" disabled><span aria-hidden="true">5</span> Build a chain</button>
+    <button type="button" data-dw-go="copy" disabled><span aria-hidden="true">3</span> Copy DNA (Replication)</button>
+    <button type="button" data-dw-go="rna" disabled><span aria-hidden="true">4</span> Make RNA (Transcription)</button>
+    <button type="button" data-dw-go="chain" disabled><span aria-hidden="true">5</span> Build a Chain (Translation)</button>
     <button type="button" data-dw-go="sort" disabled><span aria-hidden="true">6</span> Match products to processes</button>
   </nav>
   <p id="dw-save-conflict" class="callout" role="status" hidden></p>
@@ -123,8 +123,8 @@
   </section>
   <details class="dw-sources">
     <summary>What this model shows and what it leaves out</summary>
-    <p>This workshop uses one short, fictional message, not an actual gene or a complete cell. The molecule shapes are simplified diagrams, not exact structures. The labeled ends and arrows show strand order. Matching tiles stand in for chemical interactions. Real cells use enzymes, and copying a fragment here represents a small part of copying DNA before a cell divides.</p>
-    <p>We model RNA made from one DNA template, then a ribosome reading one RNA message in groups of three. We omit RNA processing (such as adding a cap and tail or removing introns), the transfer molecules that bring amino acids, and the folding of a finished chain. A stop instruction does not add an amino acid.</p>
+    <p>This workshop uses two fictional examples, not actual genes or an entire cell. The molecule shapes are simplified diagrams, not exact structures. The labeled ends and arrows show strand order. Matching tiles stand in for chemical interactions. Real cells use enzymes, and copying a fragment here represents a small part of copying DNA before a cell divides.</p>
+    <p>We model RNA made from one DNA template, then a ribosome reading a separate, longer practice message in groups of three. We omit RNA processing (such as adding a cap and tail or removing introns), the transfer molecules that bring amino acids, and the folding of a finished chain. A stop instruction does not add an amino acid.</p>
   </details>
   <footer class="dw-footer">
     <p>Created by Robert Smitka. <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. Student work is stored on this device.</p>
