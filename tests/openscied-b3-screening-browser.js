@@ -43,7 +43,7 @@ const out=path.join(ROOT,'artifacts','screening');
     else await drag(id('tool-team'),site('mobile'));
     assert.match(await id('mobile-items').textContent(),/Ultrasound · Sonographer/);
     assert.match(await id('hub-items').textContent(),/Screening/);
-    assert.match(await id('budget').textContent(),/595 \/ 720/);
+    assert.match(await id('budget').textContent(),/615 \/ 720/);
     await p.reload();assert.match(await id('mobile-items').textContent(),/Ultrasound · Sonographer/);
     assert.equal(await id('story').locator('h4').textContent(),starter);
     await id('run').click();assert.equal(await id('stage').textContent(),'Step 3 of 3');
