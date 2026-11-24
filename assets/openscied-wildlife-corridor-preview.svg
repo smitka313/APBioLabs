@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600">
+  <defs>
+    <linearGradient id="land" x2=".78" y2="1">
+      <stop stop-color="#293e43"/><stop offset=".56" stop-color="#3c544d"/><stop offset="1" stop-color="#203f41"/>
+    </linearGradient>
+    <linearGradient id="stone" x2="1" y2=".76">
+      <stop stop-color="#a28253"/><stop offset=".53" stop-color="#70634e"/><stop offset="1" stop-color="#534c41"/>
+    </linearGradient>
+    <linearGradient id="bank" x2=".12" y2="1">
+      <stop stop-color="#a58450"/><stop offset="1" stop-color="#4c5144"/>
+    </linearGradient>
+    <linearGradient id="span" x2="0" y2="1">
+      <stop stop-color="#8ca470"/><stop offset=".50" stop-color="#627d56"/><stop offset="1" stop-color="#4b6847"/>
+    </linearGradient>
+    <radialGradient id="light" cx=".47" cy=".45" r=".66">
+      <stop stop-color="#fecb77" stop-opacity=".22"/><stop offset="1" stop-color="#17282d" stop-opacity=".25"/>
+    </radialGradient>
+    <pattern id="sand" width="35" height="38" patternUnits="userSpaceOnUse">
+      <path d="m5 10 2-1m14 15 3 1M9 32l3-1m10-25 3 1" stroke="#d6b97e" stroke-opacity=".26" stroke-width="1.35" stroke-linecap="round"/>
+    </pattern>
+    <g id="oak">
+      <ellipse cx="4" cy="6" rx="20" ry="11" fill="#1d3233" opacity=".58"/>
+      <path d="M-16 5c-9-3-7-14 0-18 0-10 13-12 20-8 9-4 20 1 20 12 9 6 4 17-5 20-12 6-24 3-35-6Z" fill="#2f5347" stroke="#708060" stroke-width="1.5"/>
+      <path d="M-15-3c6-1 10-9 13-11m0 6c7-5 10-6 14-2m-17 14C3 1 10 0 17 1" fill="none" stroke="#81916d" stroke-opacity=".7" stroke-linecap="round" stroke-width="1.7"/>
+    </g>
+    <g id="yucca">
+      <path d="M0 8Q0 0-8-5m8 9q1-9-3-13m4 12q1-6 7-12M0 7q4-6 12-5m-12 6q-5-5-11-4" fill="none" stroke="#b4a76e" stroke-width="1.5" stroke-linecap="round"/>
+    </g>
+    <g id="track">
+      <path d="M0 1C-8-6-6-12-2-11 1-11 1-4 0 1Zm3 1c8-5 9-11 5-12C5-10 3-5 3 2Z" fill="#ffe8a7"/>
+    </g>
+    <g id="deer" stroke="#fff0c3" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="0" cy="0" rx="35" ry="34" fill="#253f3d" stroke="#e9bc70" stroke-width="2"/>
+      <path d="M-18-1c6-7 15-7 25-4l5-5 0-7 5 3 7-2-1 5-4 4-1 8c-6 8-23 9-29 4l-5 9-3 6m21-14 3 8 3 6m4-18 3 11 4 6m-34-23-5-4" fill="#ccaa76" stroke-width="2"/>
+      <path d="m-16 0 7-3 13 2" fill="none" stroke-width="1.2" opacity=".65"/>
+    </g>
+  </defs>
+  <path fill="url(#land)" d="M0 0h960v600H0z"/>
+  <path fill="url(#stone)" d="M0 179 72 155l54-54 139 31 100-65 62 54 3 354-73 31-65-49-98 77-110-20L0 572Zm960-63-116 25-39-19-98 55-98-50-71 21-16 329 70-16 112 47 50-58 125 14 81-40Z"/>
+  <path fill="url(#bank)" d="M0 197 72 174l55-55 133 32 105-64 48 49-2 314-51 28-65-51-107 77-97-31-91 55Zm960-64-116 20-39-15-97 58-91-51-68 19-13 284 58-17 110 49 51-62 126 25 79-41Z"/>
+  <path fill="url(#sand)" d="M0 197 72 174l55-55 133 32 105-64 48 49-2 314-51 28-65-51-107 77-97-31-91 55Zm960-64-116 20-39-15-97 58-91-51-68 19-13 284 58-17 110 49 51-62 126 25 79-41Z"/>
+  <g fill="none" stroke="#d8b577" opacity=".43" stroke-width="2">
+    <path d="M-12 218Q80 194 123 150t126 23q28 30 56-3t63-57m-29 38q-44 86-114 65T77 218L-7 250m389 192q-36 10-68-25t-89 29-97 15T-8 477m225-65q-56 42-107 20T0 443"/>
+    <path d="M960 162q-84 12-112 18t-42-4-69 27-61 15-59-28-71 0m414 5q-83 31-117 22t-42-12-58 29-73 11-46-21-54-7m382 174-76 17-116-22-65 60-98-50-51 16m403-54q-104 45-138 18t-86 16"/>
+  </g>
+  <path d="M0 320q43 22 82-7t91-36 83 3 80-20 94-4m118 22q61-17 89 8t107-8 97-44 119 16" fill="none" stroke="#c6a96e" stroke-width="10" stroke-opacity=".55" stroke-linecap="round"/>
+  <g>
+    <use href="#oak" transform="translate(106 115) scale(1.25)"/><use href="#oak" transform="translate(151 147) scale(.8)"/><use href="#oak" transform="translate(188 66) scale(1.1)"/><use href="#oak" transform="translate(270 102) scale(.84)"/><use href="#oak" transform="translate(308 137) scale(1)"/>
+    <use href="#oak" transform="translate(73 403) scale(1.27)"/><use href="#oak" transform="translate(125 361) scale(.87)"/><use href="#oak" transform="translate(169 413) scale(.75)"/><use href="#oak" transform="translate(278 379) scale(.9)"/><use href="#oak" transform="translate(343 417) scale(.82)"/>
+    <use href="#oak" transform="translate(622 103) scale(1.07)"/><use href="#oak" transform="translate(667 142) scale(.77)"/><use href="#oak" transform="translate(731 97) scale(1.02)"/><use href="#oak" transform="translate(860 158) scale(1.27)"/><use href="#oak" transform="translate(888 204) scale(.8)"/>
+    <use href="#oak" transform="translate(628 367) scale(.85)"/><use href="#oak" transform="translate(682 425) scale(1.16)"/><use href="#oak" transform="translate(789 381) scale(.83)"/><use href="#oak" transform="translate(833 423) scale(1.1)"/><use href="#oak" transform="translate(921 394) scale(1.4)"/>
+  </g>
+  <g>
+    <use href="#yucca" transform="translate(79 233)"/><use href="#yucca" transform="translate(196 220) scale(1.2)"/><use href="#yucca" transform="translate(306 318)"/><use href="#yucca" transform="translate(297 349) scale(.8)"/><use href="#yucca" transform="translate(369 201)"/>
+    <use href="#yucca" transform="translate(595 330)"/><use href="#yucca" transform="translate(694 288)"/><use href="#yucca" transform="translate(781 345)"/><use href="#yucca" transform="translate(837 267) scale(.8)"/><use href="#yucca" transform="translate(923 323)"/>
+  </g>
+  <path d="M405-40c17 131 60 189 36 296S421 431 472 638h111c-56-190-50-286-30-373 29-127-14-219-31-305Z" fill="#21282b" opacity=".4" transform="translate(8 8)"/>
+  <path d="M405-40c17 131 60 189 36 296S421 431 472 638h99c-56-190-50-286-30-373 29-127-14-219-31-305Z" fill="#303940" stroke="#b29d76" stroke-width="5"/>
+  <path d="M457-39c16 115 60 192 34 301s-20 207 31 364" fill="none" stroke="#dfbd73" stroke-width="3.5" stroke-dasharray="19 16"/>
+  <path d="M417-35c16 118 62 193 35 295s-22 206 29 374m21-669c17 124 58 201 31 309s-13 205 31 352" fill="none" stroke="#dbd2ae" opacity=".67" stroke-width="2"/>
+  <path d="M398 238c37 13 115 15 168 1l19 88c-57-8-136-10-190 4Z" fill="#142c2e" opacity=".7" transform="translate(6 14)"/>
+  <path d="M389 229c53 12 131 9 181-4l23 90c-64-7-135-7-207 7Z" fill="url(#span)" stroke="#d0bb80" stroke-width="4"/>
+  <path d="M392 241q86 16 181-3M388 307q98-15 200-5" fill="none" stroke="#b7ac73" stroke-width="4" opacity=".84"/>
+  <g>
+    <use href="#oak" transform="translate(424 256) scale(.48)"/><use href="#oak" transform="translate(547 251) scale(.5)"/><use href="#oak" transform="translate(449 304) scale(.44)"/><use href="#oak" transform="translate(521 299) scale(.47)"/><use href="#yucca" transform="translate(479 303) scale(.82)"/><use href="#yucca" transform="translate(497 249) scale(.82)"/>
+  </g>
+  <path d="M197 301c67-41 107-39 146-27 35 11 102 6 158-1 96-12 116 29 205 30 26 0 41-7 61-18" fill="none" stroke="#2f4136" stroke-width="15" opacity=".55" stroke-linecap="round"/>
+  <path d="M197 301c67-41 107-39 146-27 35 11 102 6 158-1 96-12 116 29 205 30 26 0 41-7 61-18" fill="none" stroke="#ffe6a0" stroke-width="4.2" stroke-dasharray="2 11" stroke-linecap="round"/>
+  <g><use href="#track" transform="translate(354 276) rotate(92)"/><use href="#track" transform="translate(462 272) rotate(70)"/><use href="#track" transform="translate(562 274) rotate(104)"/><use href="#track" transform="translate(667 299) rotate(95)"/></g>
+  <path d="M0 0h960v600H0z" fill="url(#light)"/>
+  <use href="#deer" transform="translate(178 306) scale(1.22)"/>
+  <use href="#deer" transform="translate(789 273) scale(-1.15 1.15)"/>
+  <g fill="none" stroke="#ebcb90" stroke-linecap="round" stroke-width="2" opacity=".45"><path d="M79 66h20m-20 0v20m802-20h-20m20 0v20M79 534h20m-20 0v-20m802 20h-20m20 0v-20"/></g>
+</svg>

@@ -46,6 +46,9 @@ def page_specs():
         'openscied-b4-junco.html': ('Junco Investigation — OpenSciEd Biology B.4 Lesson 4 | Lab Bench',
                                    'Compare city and mountain juncos in field and shared aviary studies, then explore how corticosterone is associated with exploration.',
                                    'Junco Investigation'),
+        'openscied-b4-wildlife-corridor.html': ('Wildlife Corridor Lab — OpenSciEd Biology B.4 Lessons 8–9 | Lab Bench',
+                                               'Compare connected and road-split habitats, place a wildlife crossing, and use a simulation to investigate gene flow across generations.',
+                                               'Wildlife Corridor Lab'),
         'getting-started.html': ('AP Biology Virtual Labs: Teacher Quick Start | Lab Bench',
                                  'Start teaching with free AP Biology virtual labs in five minutes. Choose a lab, share links, explain saving, collect reports, and review class progress.',
                                  'Teacher quick start'),
@@ -146,6 +149,13 @@ def structured_data(filename, title, description, label):
                          'educationalLevel': 'High school biology',
                          'learningResourceType': 'Interactive data investigation',
                          'teaches': 'Controlled comparisons and the relationship between stress and behavior in juncos',
+                         'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
+                         'isBasedOn': 'https://openscied.org/instructional-materials/b-4-natural-selection-evolution/'})
+        elif filename == 'openscied-b4-wildlife-corridor.html':
+            page.update({'@type': ['WebPage', 'LearningResource'],
+                         'educationalLevel': 'High school biology',
+                         'learningResourceType': 'Interactive simulation and guided activity',
+                         'teaches': 'Habitat fragmentation, wildlife corridors, and gene flow between populations over generations',
                          'audience': {'@type': 'EducationalAudience', 'educationalRole': 'student'},
                          'isBasedOn': 'https://openscied.org/instructional-materials/b-4-natural-selection-evolution/'})
         elif filename == 'openscied-b3-cancer-rates.html':

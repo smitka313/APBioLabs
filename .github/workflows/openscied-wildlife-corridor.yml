@@ -1,0 +1,31 @@
+name: Wildlife Corridor Lab
+on:
+  pull_request:
+    paths:
+      - 'openscied-b4-wildlife-corridor*'
+      - 'assets/*wildlife-corridor*.svg'
+      - 'tests/openscied-b4-wildlife-corridor*'
+      - '.github/workflows/openscied-wildlife-corridor.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wildlife-corridor-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: node --test tests/openscied-b4-wildlife-corridor-logic.test.js tests/openscied-b4-wildlife-corridor-app.test.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/openscied-b4-wildlife-corridor-browser.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openscied-wildlife-corridor-viewports
+          path: artifacts/openscied-wildlife-corridor/
+          if-no-files-found: ignore

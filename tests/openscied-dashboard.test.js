@@ -234,16 +234,71 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curricul
   const unit = page.split(heading)[1]?.split('</section>')[0] || '';
   assert.equal((page.match(/id="unit4"/g)||[]).length, 1);
   assert.match(unit, /<h2 id="unit4"[^>]*>Unit 4 · Natural Selection &amp; Evolution of Populations<\/h2>/);
-  assert.match(unit, /<span class="dashboard-tag">3 activities available<\/span>/);
-  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 3);
+  assert.match(unit, /<span class="dashboard-tag">4 activities available<\/span>/);
+  assert.equal((unit.match(/<article class="dashboard-activity">/g)||[]).length, 4);
   assert.match(unit, /href="openscied-b4-hawksbeard\.html"[^>]*><img src="assets\/hawksbeard-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="hawksbeard-open"[^>]*href="openscied-b4-hawksbeard\.html"/);
   assert.match(unit, /href="openscied-b4-rat-generations\.html"[^>]*><img src="assets\/rat-generations-preview\.svg" width="960" height="600"/);
   assert.ok(unit.indexOf('id="hawksbeard-open"') < unit.indexOf('id="rat-generations-open"'));
   assert.match(unit, /href="openscied-b4-junco\.html"[^>]*><img src="assets\/junco-preview\.svg" width="960" height="600"/);
   assert.ok(unit.indexOf('id="rat-generations-open"') < unit.indexOf('id="junco-open"'));
+  assert.match(unit, /href="openscied-b4-wildlife-corridor\.html"[^>]*><img src="assets\/openscied-wildlife-corridor-preview\.svg" width="960" height="600"/);
+  assert.match(unit, /id="wildlife-corridor-open"[^>]*href="openscied-b4-wildlife-corridor\.html"/);
+  assert.ok(unit.indexOf('id="junco-open"') < unit.indexOf('id="wildlife-corridor-open"'));
   assert.match(page, /<p class="dashboard-coming-soon">[\s\S]*?No companion activities yet\.[\s\S]*?b-5-common-ancestry-speciation\//);
   assert.doesNotMatch(page, /<details class="dashboard-coming-soon">|aria-labelledby="unit5"/);
+});
+
+test('Wildlife Corridor tracks real work, resumes without a hash, and preserves both raw and readable work in scoped backups', async () => {
+  const key='aplab:openscied:b4-wildlife-corridor:v1', file='openscied-b4-wildlife-corridor.html';
+  const base={v:1,model:'Aa',seed:4892,step:'predict',prediction:null,generations:{baseline:0,corridor:0},
+    crossing:-1,claim:'',limits:'',finished:false,lastVisitedAt:1800000000000};
+  const state = input => setup(false,{[key]:JSON.stringify(input)});
+  const empty=state(base);
+  assert.equal(empty.el('#wildlife-corridor-progress').textContent,'Not started');
+  assert.equal(empty.el('#wildlife-corridor-reset').disabled,true,'an untouched record is not progress to reset');
+  const partial=state({...base,step:'model',prediction:{choice:'connected',reason:'Gene versions can mix.'},
+    generations:{baseline:8,corridor:4},crossing:1});
+  assert.match(partial.el('#wildlife-corridor-progress').textContent,/Prediction saved.*First comparison: 8 of 8.*Crossing trial: 4 of 8/);
+  assert.equal(partial.el('#wildlife-corridor-open').href,file);
+  assert.equal(partial.el('#openscied-resume-link').href,file);
+  const saved={...base,step:'explain',prediction:{choice:'connected',reason:'Gene versions can mix.'},
+    generations:{baseline:8,corridor:8},crossing:1,claim:'The west and east frequencies converged.',limits:'This does not measure real animals.',finished:true};
+  const invalid=state({...saved,crossing:-1});
+  assert.doesNotMatch(invalid.el('#wildlife-corridor-progress').textContent,/Investigation complete/);
+  const earlierPreview=state({...saved,model:undefined});
+  assert.equal(earlierPreview.el('#wildlife-corridor-progress').textContent,'Not started');
+  const finished=state(saved);
+  assert.equal(finished.el('#wildlife-corridor-progress').textContent,'Investigation complete');
+  finished.el('#wildlife-corridor-reset').fire('click');
+  finished.el('#backup-before-openscied-clear').fire('click');
+  const payload=JSON.parse(await finished.blob().text());
+  assert.deepEqual(payload.work,{[key]:JSON.stringify(saved)});
+  assert.equal(payload.student,null);
+  assert.deepEqual(payload.responses['wildlife-corridor'],{claim:saved.claim,limits:saved.limits,
+    prediction:saved.prediction.choice,predictionReason:saved.prediction.reason});
+  finished.el('#openscied-erase-confirmation').value='ERASE';
+  finished.el('#clear-openscied-form').fire('submit');
+  assert.equal(finished.data[key],undefined);
+  assert.ok(finished.data['aplab:openscied:b3-cell-cycle:v1']);
+});
+
+test('corridor resume dates follow changes to evidence, not view-only movement', () => {
+  const resume=require('../openscied-resume.js');
+  const slug='b4-wildlife-corridor', path='/openscied-'+slug+'.html', key='aplab:openscied:'+slug+':v1';
+  assert.equal(resume.route(path),slug);
+  let now=5000;
+  const data=new Map();
+  const tracker=resume.connect({getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)},()=>now);
+  const original={v:1,lastVisitedAt:4000,step:'model',generations:{baseline:2,corridor:0}};
+  data.set(key,JSON.stringify(original));
+  assert.equal(tracker.snapshot(path,'open').changed,4000);
+  now=6000;
+  data.set(key,JSON.stringify({...original,lastVisitedAt:now,step:'predict'}));
+  assert.equal(tracker.snapshot(path,'exit').changed,4000);
+  now=7000;
+  data.set(key,JSON.stringify({...original,lastVisitedAt:now,generations:{baseline:3,corridor:0}}));
+  assert.equal(tracker.snapshot(path,'exit').changed,7000);
 });
 
 test('Hawksbeard continues the saved phase and includes its written answers in a scoped restart backup', async () => {
@@ -796,7 +851,7 @@ test('student gets four direct unit jumps, one named card link, and no live-regi
   const units = html.match(/<nav class="dashboard-unit-jumps"[^>]*>([\s\S]*?)<\/nav>/)?.[1] || '';
   assert.deepEqual([...units.matchAll(/href="#(unit[1-4])"/g)].map(m => m[1]), ['unit1','unit2','unit3','unit4']);
   const cards = [...html.matchAll(/<article class="dashboard-activity">([\s\S]*?)<\/article>/g)].map(m=>m[1]);
-  assert.equal(cards.length, 15);
+  assert.equal(cards.length, 16);
   const names = cards.map(card => {
     const image = card.match(/<a class="dashboard-preview"[^>]*>/)?.[0];
     assert.match(image || '', /tabindex="-1"/);

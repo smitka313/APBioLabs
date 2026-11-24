@@ -197,7 +197,7 @@ async function checkMixedVersionWorkspace(browser,site) {
           const cards = p.locator('.dashboard-activity');
           assert.equal(await cards.locator('.dashboard-card-restart:visible').count(),0,'blank phone cards do not show inactive Restart');
           assert.equal(await cards.locator('.dashboard-activity-metric:visible, .dashboard-activity-progress:visible').count(),0,'blank phone cards do not show empty measures');
-          assert.equal(await cards.locator('.dashboard-open:visible').count(),15,'each blank phone card still has its Open activity action');
+          assert.equal(await cards.locator('.dashboard-open:visible').count(),16,'each blank phone card still has its Open activity action');
         }
         const saveImage=async label=>{if(screenshots) await p.screenshot({path:path.join(screenshots,width+'-'+label+'.png'),animations:'disabled'});};
         await saveImage('masthead');
