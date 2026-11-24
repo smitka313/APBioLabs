@@ -33,11 +33,16 @@ const fb = (p, id) => p.locator('#feedback-' + id).innerText();
     T.ok(/Lessons 3 and 5 of OpenSciEd Biology Unit B\.2: Ecosystems Matter & Energy: Fires \(OpenSciEd Unit B\.2\)/.test(foot), 'footer credits Unit B.2 Lessons 3 and 5');
     T.ok(await p.locator('.site-footer a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1 && await p.locator('.site-footer a[href="https://www.openscied.org/"]').count() >= 1, 'footer links CC BY-NC 4.0 and openscied.org');
     T.ok(/Adapted and reorganized as an interactive web companion with simulated data/.test(foot) && /Not affiliated with, endorsed by, or sponsored by OpenSciEd/.test(foot), 'footer states what changed and the non-endorsement');
-    T.ok(/GoatCounter/.test(foot) && /Nothing you type/.test(foot), 'privacy line');
+    T.ok(/counts anonymous page visits without cookies/.test(foot) && /Nothing you type/.test(foot) && !/GoatCounter/.test(foot), 'privacy line');
     T.ok(await p.locator('.attribution a[href="https://creativecommons.org/licenses/by-nc/4.0/"]').count() === 1, 'attribution block links the license');
 
     T.ok(await p.locator('.step-nav a[href^="#"]').count() === 11 && await p.locator('main > section.step').count() === 11, 'eleven sections in the nav and the page');
     for (const id of SECTIONS) await go(p, id);
+    await go(p, 'yeast');
+    const limit = p.locator('#yeast-model-limit');
+    T.ok(await limit.isVisible() && /doesn’t mean 43 °C is best for all yeast/.test(await limit.innerText()) &&
+      await limit.evaluate(el => el.nextElementSibling.id === 'decomp-scene' && !el.closest('details')),
+      'the 43 °C model caveat is visible beside the yeast controls without opening a disclosure');
     await p.locator('.step-nav a[href="#ideas"]').click();
     await p.waitForFunction(() => document.querySelector('#ideas.is-current'));
     await p.locator('#ideas .pager-next').click();

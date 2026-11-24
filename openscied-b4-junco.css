@@ -86,3 +86,10 @@
 #ju-sim-status{font-weight:750;min-height:1.48em}
 @media(max-width:620px){.ju-sim-setup{grid-template-columns:repeat(2,minmax(0,1fr))}.ju-sim-setup .btn{grid-column:1/-1;justify-self:start}}
 @media(prefers-reduced-motion:reduce){#ju-sim-observer{transition:none}#ju-sim-bird[data-state=flying].is-launch .ju-sim-flight{animation:none}}
+
+/* Print the complete answer, without changing the screen editor. */
+.ju-print-answer{display:none}
+@media print{
+  .ju-shell textarea:has(+.ju-print-answer){display:none}
+  .ju-print-answer{display:block;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;margin:4px 0 8px}
+}

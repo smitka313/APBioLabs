@@ -799,3 +799,10 @@ dialog[id^=rg-]::backdrop{background:#101b20a8}
 .rg-allele-key ul{margin:0;padding:0;list-style:none;display:grid;gap:3px 7px}
 .rg-allele-key li{line-height:1.38}.rg-allele-key li strong{display:inline-block;min-width:2rem;color:var(--accent);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 @media(max-width:630px){.rg-allele-key{grid-template-columns:1fr;gap:4px;padding:7px 9px}.rg-allele-key li strong{min-width:1.85rem}}
+
+/* Print the complete answer, without changing the screen editor. */
+.rg-print-answer{display:none}
+@media print{
+  .rg-shell textarea:has(+.rg-print-answer){display:none}
+  .rg-print-answer{display:block;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;margin:4px 0 8px}
+}

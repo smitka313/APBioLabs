@@ -179,10 +179,10 @@
       graph.onclick=()=>openRainGraph(3);
       body.append(el('p','April range on the source map: '+L.RANGES[3]+'.'),
         el('p','April station comparison on the monthly graph: Simiyu (south) is below Handajega (west), which is below Kogatende (north).'),
-        graph,caption('OpenSciEd B.1 Lesson 4, Data Excursion 1. These are station averages from 1961–1990, not rainfall in the example year below.'),
+        graph,caption('These are station averages from 1961–1990, not rainfall in the example year below. Source: OpenSciEd B.1 Lesson 4 rainfall investigation (Data Excursion 1).'),
         contextTable('Annual rainfall and time in each region · one example year',['Region','Rainfall (mm)','Time in region (%)'],
           ANNUAL.map(a=>[a.region,a.rain,a.occupancy])),
-        caption('OpenSciEd B.1 Lesson 4, Data Excursion 2. The three shown regions cover 84% of the year.'));
+        caption('The three regions shown cover 84% of the year. Source: OpenSciEd B.1 Lesson 4 rainfall and herd location investigation (Data Excursion 2).'));
     }else if(i===3){
       const regions=el('div',null,'mx-context-regions');
       for(const key of ['south','west','north']){
@@ -264,7 +264,7 @@
     noteSay((result.status==='updated'?'Updated ':'Saved ')+L.MONTHS[month]+' note in your notebook.'+(corrupt||unavailable?' Not stored on this device; download or copy it before leaving.':''));
   };
   $('#record-region').onclick=()=>addNote({id:'region-'+state.region,title:REGIONS[state.region].name,text:REGIONS[state.region].facts.join('\n'),type:'regional-source'});
-  $('#save-rain').onclick=()=>addNote({id:'rainfall-example',title:'Annual rainfall & occupancy · one example year',text:ANNUAL.map(a=>a.region+': '+a.rain+' mm annual rainfall; '+a.occupancy+'% of the year.').join('\n')+'\nSource: '+ANNUAL_SOURCE+'. Selected regions total 84%; this is not the full multi-year CODAP dataset.',type:'rainfall-source'});
+  $('#save-rain').onclick=()=>addNote({id:'rainfall-example',title:'Annual rainfall & occupancy · one example year',text:ANNUAL.map(a=>a.region+': '+a.rain+' mm annual rainfall; '+a.occupancy+'% of the year.').join('\n')+'\nSource: '+ANNUAL_SOURCE+'. Selected regions total 84%; this is not the full multi-year dataset used in the interactive data tool.',type:'rainfall-source'});
   $('#card-sort').value=state.sort;$('#card-month').value=state.filter;$('#health-measure').value=state.measure;
   $('#card-sort').onchange=e=>{state.sort=e.target.value;renderCards();save();};$('#card-month').onchange=e=>{state.filter=e.target.value;renderCards();save();};$('#health-measure').onchange=e=>{state.measure=e.target.value;renderCharts();save();};
   $('#health-table').append(table(['Month / location','Group','Fat (%)','Nutrition','Anthrax (%)'],L.CARDS.map(c=>[shortMonth(c.month)+' / '+c.location,L.GROUPS[c.group],c.fat,c.health,c.anthrax])));

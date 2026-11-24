@@ -83,6 +83,18 @@
 .sg-control {padding:.77rem;position:sticky;top:.55rem;}
 .sg-rolebar {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.3rem;margin-bottom:.67rem;}
 .sg-role {border:1px solid var(--sg-line);padding:.24rem .25rem;text-align:center;border-radius:8px;color:var(--sg-soft);font-size:.8rem;line-height:1.2;}
+.sg-rolebar[hidden],.sg-seat-pickers[hidden] {display:none;}
+.sg-role-seat {display:block;margin:.12rem 0 0;font-size:.66rem;}
+.sg-role-setup {min-inline-size:0;margin:.2rem 0 .55rem;padding:.43rem .55rem .55rem;border:1px solid var(--sg-line);border-radius:8px;}
+.sg-role-setup legend {padding:0 .25rem;font-size:.84rem;font-weight:700;color:var(--sg-ink);}
+.sg-play-modes {display:flex;flex-wrap:wrap;gap:.3rem .65rem;}
+.sg-mode {display:inline-flex;align-items:center;gap:.37rem;min-block-size:2rem;font-size:.85rem;color:var(--sg-ink);cursor:pointer;}
+.sg-mode input {margin:0;accent-color:var(--sg-accent-text);}
+.sg-seat-pickers {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8.4rem),1fr));gap:.3rem .46rem;}
+.sg-seat-pickers .sg-chooser {margin:0;}
+.sg-seat-note {grid-column:1/-1;margin:0;font-size:.78rem;color:var(--sg-soft);}
+.sg-seat-pickers select {inline-size:100%;min-inline-size:0;min-block-size:2rem;}
+.sg-season-change-label {font-size:.82rem;margin:.25rem 0;color:var(--sg-soft);}
 .sg-role b {display:block;color:var(--sg-ink);font-size:.83rem;}
 .sg-role em {display:block;font-style:normal;font-size:.63rem;margin-top:.12rem;}
 .sg-role[aria-current=true] {border-color:var(--sg-accent);background:var(--sg-accent-soft);color:var(--sg-accent-text);}
@@ -449,7 +461,6 @@
   .sg-evidence-totals .sg-totals,.sg-analysis-evidence .sg-totals,#sg-finish-totals .sg-totals {grid-template-columns:repeat(4,minmax(0,1fr));gap:.23rem;}
   .sg-evidence-totals .sg-totals li,.sg-analysis-evidence .sg-totals li,#sg-finish-totals .sg-totals li {padding:.24rem .17rem;font-size:.69rem;text-align:center;gap:0;}
   .sg-evidence-totals .sg-totals strong,.sg-analysis-evidence .sg-totals strong,#sg-finish-totals .sg-totals strong {font-size:.78rem;}
-  .sg-evidence-totals .sg-totals li span:nth-child(3),.sg-analysis-evidence .sg-totals li span:nth-child(3),#sg-finish-totals .sg-totals li span:nth-child(3) {display:none;}
   #sg-evidence-maps {margin:.4rem 0;}
   .sg-answer-actions button {font-size:.8rem;}
   .sg-answer-steps button {font-size:.8rem;}
@@ -474,8 +485,7 @@
 .sg-season-path > [data-status=current] {border-color:var(--sg-accent);color:var(--sg-accent-text);font-weight:750;}
 .sg-season-path > [data-status=done] {color:var(--sg-ink);}
 .sg-expanded-turn .sg-season-path {margin:0;font-size:.68rem;gap:.06rem .24rem;}
-#sg-play[data-phase=setup] .sg-role {border-style:dashed;background:none;}
 /* The interactive view already shows each season’s totals; hide only the duplicate plain list. */
-#sg-finish:has(> #sg-finish-details[open]) #sg-finish-totals .sg-totals,
+#sg-finish:has(> #sg-finish-details[open]) #sg-finish-totals :is(.sg-season-change-label,.sg-totals),
 #sg-evidence:has(> #sg-evidence-maps[open]) .sg-evidence-totals {display:none;}
 #sg-evidence:has(> #sg-evidence-maps[open]) #sg-evidence-body {grid-template-columns:minmax(0,1fr);}

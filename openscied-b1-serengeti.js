@@ -21,6 +21,19 @@
   const tokenType = x => TYPES[x] || '';
   const freshSeed = () => window.crypto && window.crypto.getRandomValues ? window.crypto.getRandomValues(new Uint32Array(1))[0] : Date.now() >>> 0;
   const roleName = role => LABEL[role] || 'All roles';
+  const starterRoles = () => ({mode:'shared', seats:{wildebeest:1, hyena:2, lion:3}});
+  const seatName = number => 'Player or team ' + number;
+  const seatOptions = [1,2,3];
+  let roleSetup = starterRoles();
+  function restoreRoleSetup(saved) {
+    const result = starterRoles();
+    if (saved?.mode === 'solo') result.mode = 'solo';
+    for (const role of L.ROLES) {
+      const seat = saved?.seats?.[role];
+      if (seatOptions.includes(seat)) result.seats[role] = seat;
+    }
+    return result;
+  }
   let state = null, answers = BLANK(), saveUnavailable = false, preserveRaw = false, page = 'play', optionId = '', chosenPhase = '';
   let answerStep='evidence', historyIndex=null;
   let currentMoveToken = '', scene = null, currentOptions = [], currentPhase = '';
@@ -166,6 +179,7 @@
       Object.keys(fields).forEach(key => {
         if (payload.answers && typeof payload.answers[key] === 'string') answers[key] = payload.answers[key].slice(0, 750);
       });
+      roleSetup = restoreRoleSetup(payload.roleSetup);
       if (['play','evidence','analyze'].includes(payload.page)) page = payload.page;
       if(ANSWER_STEPS.includes(payload.answerStep)) answerStep=payload.answerStep;
       conceptProgress = state ? window.SerengetiChecks?.restore(payload.conceptProgress) || {} : {};
@@ -217,7 +231,7 @@
     qs('#sg-recover').hidden = true;
     qs('#sg-save-warning').hidden = true;
     try {
-      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,answerStep,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
+      localStorage.setItem(S, JSON.stringify({v:1,game:state,answers,page,answerStep,roleSetup,huntReview,huntStart,huntDetails,turnDecision:decision,conceptProgress,lastVisitedAt:Date.now()}));
       saveUnavailable = false;
     } catch (_) { saveUnavailable = true; }
     qs('#sg-save').textContent = saveUnavailable ? 'This browser blocked saving. Download your work before closing.' : state ? 'Progress saved on this device.' : 'Progress stays in this browser only.';
@@ -389,6 +403,7 @@
     const reviewHasNext = review && underlying.kind==='hunt' && underlying.role===review.row.role;
     const p = review ? {kind:'huntReview',role:review.row.role,battle:review.battle} : underlying;
     const activeRole = p.role || {migration:'wildebeest',hyenaMove:'hyena',lionMove:'lion'}[p.kind] || null;
+    const roleSeat = activeRole && roleSetup.mode === 'shared' ? seatName(roleSetup.seats[activeRole]) : '';
     paintSeasonPath(st,p,review);
     const last = state && state.log.length ? state.log[state.log.length - 1] : null;
     qs('#sg-evidence-count').textContent = state ? state.log.length : 0;
@@ -406,9 +421,16 @@
       if (i === season && p.kind !== 'complete') d.setAttribute('aria-current','step');
       return d;
     }));
-    qs('#sg-rolebar').replaceChildren(...L.ROLES.map(role => {
-      const d = node('div','sg-role'); d.append(node('b','',roleName(role)),node('em','',role === activeRole ? 'Your turn' : p.kind === 'setup' ? 'Read and play' : ''));
-      if (role === activeRole) d.setAttribute('aria-current','true');
+    const rolebar = qs('#sg-rolebar');
+    rolebar.hidden = p.kind === 'setup';
+    rolebar.replaceChildren(...L.ROLES.map(role => {
+      const d = node('div','sg-role');
+      d.append(node('b','',roleName(role)));
+      if (roleSetup.mode === 'shared') d.append(node('span','sg-role-seat',seatName(roleSetup.seats[role])));
+      if (role === activeRole) {
+        d.setAttribute('aria-current','true');
+        d.append(node('em','','Your turn'));
+      }
       return d;
     }));
     const tokens = st.tokens || [], currentPrey = tokens.filter(t => t.species === 'wildebeest');
@@ -489,11 +511,11 @@
 
     if (p.kind === 'setup') {
       phaseLabel = 'Set up'; title = 'One device, three roles';
-      desc = 'Choose who will read cards and play each of the three roles. Assign roles out loud; there are no names to enter. Everyone shares the same board.';
+      desc = 'Play all three roles on your own, or assign the roles on one shared device. No names are needed.';
       const list = node('div','sg-card');
       list.append(node('h3','','A year in the ecosystem'),node('p','','Set up in winter, then play four seasons: migrate, draw three cards, and resolve hyena and lion hunts.'),
         node('p','sg-model-scope','This model follows one simulated year. It does not estimate the real herd size or how many animals the habitat can support.'));
-      interact.append(list);
+      interact.append(roleChooser(),list);
       actions.append(button('sg-start','Start winter', () => { state=L.create(freshSeed()); decision=decisionFor('start',null,state,null,null,false,null); optionId=''; chosenPhase=''; save(); paint(true); (qs('#sg-next') || qs('#sg-action-title')).focus({preventScroll:true}); },null,'start'));
     } else if (p.kind === 'migration') {
       phaseLabel = '1 · Migration'; title = season === 0 ? 'Place the winter herd' : 'Move to the ' + seasonName(season).toLowerCase() + ' range';
@@ -506,7 +528,7 @@
       note = currentOptions.some(o => o.cornerFallback) ? 'Board-fit exception: a corner may count as touching when side-by-side placements do not fit.' : currentPrey.length === 1 ? 'Only one wildebeest token survives, so it has no neighbor.' : currentPrey.length === 0 ? 'No wildebeest tokens remain to migrate.' : 'Each token shares a side with another; separate groups are allowed.';
     } else if (p.kind === 'card') {
       phaseLabel = '2 · Event cards'; title = p.card ? (p.card.title || 'Read and apply the card') : roleName(activeRole) + ' draw a card';
-      desc = p.card ? 'Apply this event even when it affects a different role.' : 'Pass the device to this role to reveal the next event.';
+      desc = p.card ? 'Apply this event even when it affects a different role.' : 'Reveal the next event for this role.';
       if (p.card) {
         const c = node('article','sg-card');
         c.dataset.cardId = p.card.id; c.dataset.cardRole = activeRole; c.dataset.cardSeason = String(season);
@@ -597,7 +619,7 @@
     const primary = qs('#sg-next') || qs('#sg-start');
     const explanation = window.SerengetiTurn?.explain({
       state,phase:p,underlying,decision,review,readiness:activeRole==='hyena'||activeRole==='lion'?moveReadiness(st,activeRole):null,
-      nextLabel:primary?.textContent,priorLabel:title,selected,selectedToken:source,activeRole,
+      nextLabel:primary?.textContent,priorLabel:title,selected,selectedToken:source,activeRole,roleSeat,solo:roleSetup.mode === 'solo',
       selectionPending:chooseDestination,primaryDisabled:Boolean(primary?.disabled),
       selectedLabel:selected && (p.kind==='migration' ? placementLabel(selected,planMarkers(currentOptions)) : selected.label),
       last,lastHuntMessage:last?.kind==='hunt' ? huntDetails[state.log.length-1] : '',
@@ -607,14 +629,17 @@
     const why = qs('#sg-update-why'), next = qs('#sg-update-next');
     if (why) why.textContent = explanation.why;
     if (next) next.textContent = explanation.next;
-    if (announce) say([explanation.what,explanation.why,explanation.next].filter(Boolean).join(' '));
+    if (announce) {
+      const handoff = roleSeat ? roleSeat + ' (' + roleName(activeRole) + '), your turn.' : '';
+      say([handoff,explanation.what,explanation.why,explanation.next].filter(Boolean).join(' '));
+    }
     const finish=qs('#sg-finish'), totals=qs('#sg-finish-totals');
     if(finish)finish.hidden=p.kind!=='complete';
     if(totals&&p.kind==='complete'){
       const summary=rawSummary();
       const headline=node('p','','Board tokens: '+sample.tokens.filter(t=>t.species==='wildebeest').length+' → '+currentPrey.length
         +'. Population change: '+signed(summary.change)+' wildebeest from the start. Token totals count game pieces, not individual animals.');
-      totals.replaceChildren(headline,compareCards(summary));
+      totals.replaceChildren(headline,node('h4','sg-season-change-label','Net change by season'),compareCards(summary));
       qs('#sg-finish-details').hidden=!window.SerengetiFieldReport;
       if(qs('#sg-finish-details').open)updateFieldReport('sg-finish-report');
     } else {
@@ -624,6 +649,49 @@
     if (page !== 'play') renderEvidence();
     conceptView?.update(state,p,conceptProgress);
     notifyTurn();
+  }
+  function roleChooser() {
+    const group = node('fieldset','sg-role-setup');
+    group.id = 'sg-role-setup';
+    group.append(node('legend','','How are you playing?'));
+    const choices = node('div','sg-play-modes');
+    const seats = node('div','sg-seat-pickers');
+    seats.id = 'sg-seat-pickers';
+    seats.hidden = roleSetup.mode !== 'shared';
+    for (const [id,title] of [['shared','Shared device'],['solo','Solo']]) {
+      const label = node('label','sg-mode');
+      const control = node('input');
+      control.type = 'radio'; control.name = 'sg-play-mode'; control.value = id;
+      control.checked = roleSetup.mode === id;
+      label.append(control,node('span','',title)); choices.append(label);
+      control.addEventListener('change',()=>{
+        if (!control.checked) return;
+        roleSetup.mode = id;
+        seats.hidden = id !== 'shared';
+        save();
+      });
+    }
+    for (const role of L.ROLES) {
+      const label = node('label','sg-chooser',roleName(role));
+      const select = node('select');
+      select.id = 'sg-seat-' + role;
+      for (const number of seatOptions) {
+        const option = node('option','',seatName(number));
+        option.value = String(number);
+        select.append(option);
+      }
+      select.value = String(roleSetup.seats[role]);
+      select.addEventListener('change',()=>{
+        const seat = Number(select.value);
+        if (!seatOptions.includes(seat)) return;
+        roleSetup.seats[role] = seat;
+        save();
+      });
+      label.append(select); seats.append(label);
+    }
+    seats.append(node('p','sg-seat-note','One player or team can take more than one role.'));
+    group.append(choices,seats);
+    return group;
   }
   function travelChooser(options,tokens) {
     const group=Array.from(new Set(options.filter(moving).map(o=>o.tokenId)));
@@ -712,8 +780,9 @@
     L.SEASONS.forEach((name,i) => {
       const s = (summary.seasons || []).find(x => x.season === i) || null;
       const li = node('li');
-      li.append(node('span','',name),node('strong','',s ? signed(s.start) + ' → ' + signed(s.end == null ? summary.change : s.end) : 'Not started'));
-      if (s) li.append(node('span','','Cards ' + signed(s.cardChange) + ' · Hunts ' + signed(s.huntChange)));
+      li.append(node('span','',name),
+        node('strong','',s ? signed((s.end ?? summary.population) - s.start) : 'Not started'));
+      if (s && s.end == null) li.append(node('span','','In progress'));
       list.append(li);
     });
     return list;
@@ -757,7 +826,7 @@
     const rows=state?state.log:[],summary=rawSummary();
     const es=qs('#sg-evidence-body'),aside=qs('#sg-analysis-data'),selected=qs('#sg-evidence-choice');
     const totals=node('section','sg-panel sg-ledger sg-evidence-totals');
-    totals.append(node('h3','','Season totals'),compareCards(summary));
+    totals.append(node('h3','','Net change by season'),compareCards(summary));
     const log=node('section','sg-panel sg-ledger sg-compact-history');
     log.append(node('h3','','Event and hunt history'));
     if(rows.length){
@@ -878,7 +947,7 @@
       try { localStorage.setItem(S, JSON.stringify({v:1,game:null,answers:BLANK(),page:'play'})); }
       catch (_) { say('Restart could not replace this save. The previous data is still preserved.'); return; }
     }
-    state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK(); answerStep='evidence';historyIndex=null;
+    state=null; page='play'; optionId=''; chosenPhase=''; answers=BLANK(); roleSetup=starterRoles(); answerStep='evidence';historyIndex=null;
     qs('#sg-question-details').open=false;qs('#sg-evidence-maps').open=false;
     huntReview=null; huntStart=null; huntDetails=Object.create(null); decision=null; cardChangedCells=[]; conceptProgress={};
     preserveRaw=false; originalSave=null;

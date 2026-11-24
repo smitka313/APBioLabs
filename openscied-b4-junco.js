@@ -156,8 +156,16 @@
   for(const btn of nav)btn.addEventListener('click',()=>go(btn.dataset.step));
   $('to-aviary').addEventListener('click',()=>go('aviary'));
   $('to-cort').addEventListener('click',()=>go('cort'));
+  // Native printing clips text to the textarea's visible rows. Use plain text on paper.
+  const printAnswers=[];
+  window.addEventListener('beforeprint',()=>{
+    for(const [entry,output] of printAnswers)output.textContent=entry.value;
+  });
   for(const [id,k,max] of [['field-entry','observation',900],['reason','reason',900],['claim','claim',1600],['limits','limits',1600]]){
-    const el=$(id);
+    const el=$(id),output=mk('div');
+    output.className='ju-print-answer';
+    el.after(output);
+    printAnswers.push([el,output]);
     el.value=state[k];
     el.addEventListener('blur',()=>{el.scrollTop=0;});
     el.addEventListener('input',()=>{state[k]=cleanText(el.value,max);save();completion();});

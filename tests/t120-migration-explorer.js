@@ -168,6 +168,9 @@ async function auditNotesAndRain(browser,base){
   await p.locator('[data-view="rain"]').click();ok(await p.locator('#view-rain img').evaluate(i=>i.complete&&i.naturalWidth>1000),'original rainfall source image loads');await p.locator('#rain-enlarge').click();ok(await p.locator('#rain-dialog').evaluate(d=>d.open),'rainfall graph enlarges');await p.keyboard.press('Escape');
   ok(/Read the rainfall graph/.test(await p.locator('#inspector-title').textContent()),'rainfall inspector heading identifies the panel');
   ok(await p.locator('#rain-focus').textContent()==='Reading May on the original graph','rainfall focus follows May rather than showing a static unmarked graph');
+  ok(await p.locator('#view-rain a[href^="https://codap.concord.org"]').textContent()==='Open the interactive monthly rainfall table ↗' &&
+    /Data Excursion 1/.test(await p.locator('#view-rain .mx-caption').first().textContent()),
+    'the monthly data link has a plain action label and retains its source attribution');
   const rainPosition=await p.locator('#view-rain .mx-rain-figure').evaluate(n=>n.style.getPropertyValue('--mx-rain-month'));
   await p.locator('[data-month="7"]').click();
   ok(/Mara River/.test(await p.locator('#habitat-clue').textContent()),'the seasonal field clue explains how reliable north water supports the herd');
@@ -200,7 +203,10 @@ async function auditNotesAndRain(browser,base){
   await p.locator('[data-card="m7g1"] button').click();ok(await p.locator('#note-count').textContent()==='3','source card added to notebook');
   await p.locator('#health-measure').selectOption('anthrax');ok(/anthrax/.test(await p.locator('#health-chart').textContent()),'graph switches to disease measure');
   await p.locator('#card-month').selectOption('all');ok(await p.locator('#health-chart .sim-tag-svg').count()===0,'published health evidence is not stamped simulated');await screenshot(p,'1366-light-evidence');
-  await p.locator('[data-collection="rainfall"]').click();ok(/1160/.test(await p.locator('#occupancy-table').textContent()),'annual example retains verified source values');ok(/84%/.test(await p.locator('#collection-rainfall').textContent()),'selected-region percentage total explained');await p.locator('#save-rain').click();
+  await p.locator('[data-collection="rainfall"]').click();ok(/1160/.test(await p.locator('#occupancy-table').textContent()),'annual example retains verified source values');ok(/84%/.test(await p.locator('#collection-rainfall').textContent()),'selected-region percentage total explained');ok(await p.locator('#collection-rainfall a[href^="https://codap.concord.org"]').textContent()==='Open the interactive rainfall and herd data ↗' &&
+    await p.locator('#collection-rainfall a[href*="data-excursion-2"]').textContent()==='Source: OpenSciEd Lesson 4, Data Excursion 2 ↗',
+    'the annual data link describes the activity and separately credits the named lesson source');
+  await p.locator('#save-rain').click();
   ok(await p.locator('#occupancy-chart .sim-tag-svg').count()===0,'published annual example is not stamped simulated');await screenshot(p,'1366-light-rainfall');
   await p.locator('[data-collection="notebook"]').click();
   const notebookDownload=p.waitForEvent('download');await p.locator('#download-notebook').click();

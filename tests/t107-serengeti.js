@@ -16,7 +16,7 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
   try {
     for (const [width, height, dark] of [[390, 844, true],[768, 960, false],[1366, 900, false],[1920, 1080, false]]) {
       const reduced = width === 390;
-      const context = await T.ctxFor(browser, { width, height, dark, reduced });
+      const context = await T.ctxFor(browser, { width, height, dark, reduced, touch:width===390 });
       try {
         await context.addInitScript(() => {
           const original = crypto.getRandomValues.bind(crypto);
@@ -29,8 +29,28 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
         page.on('pageerror', error => errors.push(error.message));
         await page.goto(server.url + 'openscied-b1-serengeti.html');
         await page.locator('#sg-start').waitFor();
-        T.ok(/Choose who will read cards and play each/.test(await page.locator('#sg-action-copy').textContent()) &&
-          await page.locator('#sg-rolebar button').count()===0,'setup assigns roles aloud; status labels never require a click');
+        const playMode=page.getByRole('group',{name:'How are you playing?'});
+        const shared=playMode.getByRole('radio',{name:'Shared device'}), solo=playMode.getByRole('radio',{name:'Solo'});
+        const herdSeat=playMode.getByRole('combobox',{name:'Wildebeest'}), hyenaSeat=playMode.getByRole('combobox',{name:'Hyenas'});
+        const lionsSeat=playMode.getByRole('combobox',{name:'Lions'});
+        T.ok(await shared.isChecked() && await herdSeat.inputValue()==='1' && await hyenaSeat.inputValue()==='2' &&
+          await lionsSeat.inputValue()==='3' && await page.locator('#sg-rolebar').isHidden(),
+          width+' px: shared-device defaults are clearly labeled on setup');
+        if(width===390){
+          await herdSeat.selectOption('3');
+          await lionsSeat.selectOption('1');
+          await page.reload();
+          T.ok(await shared.isChecked() && await herdSeat.inputValue()==='3' && await lionsSeat.inputValue()==='1' &&
+            await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).game===null,SAVE_KEY),
+            'numbered role edits persist without starting a game');
+        }
+        if(width===768){
+          await shared.focus();
+          await page.keyboard.press('ArrowRight');
+          T.ok(await solo.isChecked() && await herdSeat.isHidden(),'keyboard can select Solo, which hides the seat assignments');
+          await page.reload();
+          T.ok(await solo.isChecked() && await herdSeat.isHidden(),'Solo persists on reload');
+        }
         T.ok(await fit(page), width + ' px: no horizontal overflow before play');
         T.ok((await page.locator('meta[name="robots"]').getAttribute('content')).includes('noindex'), 'draft is not indexed');
         await shot(page, width + '-setup');
@@ -41,7 +61,19 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
             'Analyze explains that no evidence is available before the first turn');
           await page.locator('.sg-tabs [data-page="play"]').click();
         }
-        await page.locator('#sg-start').click();
+        if(width===390) await page.locator('#sg-start').tap();
+        else await page.locator('#sg-start').click();
+        const activeSeat=page.locator('#sg-rolebar .sg-role[aria-current=true]');
+        T.ok(await playMode.isHidden() && (await activeSeat.innerText()).includes('Wildebeest'),
+          'play keeps the official roles and hides setup-only controls');
+        if(width===390){
+          T.ok((await activeSeat.innerText()).includes('Player or team 3') &&
+            (await page.locator('#sg-live').textContent()).includes('Player or team 3 (Wildebeest), your turn.'),
+            'the reassigned team gets the first turn visually and in the announcement');
+        }
+        if(width===768){
+          T.ok(!(await activeSeat.innerText()).includes('Player or team'),'Solo never asks for a team handoff');
+        }
         const next = page.locator('#sg-next');
         await next.waitFor();
         const firstPath=page.locator('#sg-season-path');
@@ -206,6 +238,8 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
               const phase = await page.locator('#sg-phase').textContent();
               await page.reload();
               T.ok(await page.locator('#sg-phase').textContent() === phase, 'reload resumes the current phase');
+              if(width===390) T.ok((await page.locator('#sg-rolebar .sg-role-seat').allTextContents()).join('|')===
+                'Player or team 3|Player or team 2|Player or team 1','reload restores the role assignment midgame');
             }
           }
           T.ok(draws === 12, 'three cards are drawn in each of four seasons (got ' + draws + ')');
@@ -213,6 +247,13 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           T.ok(checkedDice, 'the playthrough exercises the expanded dice animation');
           T.ok(actions.has('nextSeason'), 'later seasons can be reached');
           T.ok(/year complete/i.test(await page.locator('#sg-phase').textContent()), 'fall ends the four-season model');
+          const seasonCards=page.locator('#sg-finish-totals .sg-totals li');
+          const seasonDeltas=await page.evaluate(key=>SerengetiLogic.results(JSON.parse(localStorage.getItem(key)).game)
+            .seasons.map(s=>s.end-s.start),SAVE_KEY);
+          const format=n=>n<0?'−'+Math.abs(n):n>0?'+'+n:'0';
+          T.ok((await seasonCards.locator('strong').allTextContents()).join('|')===seasonDeltas.map(format).join('|') &&
+            (await seasonCards.getByText(/Cards|Hunts|→/).count())===0,
+            'the final recap shows each season’s net change only; breakdown stays in the maps and export');
           const fieldReport=page.locator('#sg-finish-report');
           T.ok(await fieldReport.isHidden(),'final tally does not start with four full maps and a record list');
           await page.locator('#sg-finish-details > summary').click();
@@ -221,6 +262,8 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
           T.ok(await fieldReport.locator('.sg-field-season svg').count()===4, 'final report includes four official grazing maps');
           await fieldReport.locator('.sg-field-season[data-season="0"]').click();
           T.ok(await fieldReport.getByRole('heading',{name:'Winter evidence'}).isVisible(), 'selecting a map opens evidence from that season');
+          T.ok((await fieldReport.locator('.sg-field-metrics dt').allTextContents()).join('|')==='Cumulative change|Event cards|Hunts',
+            'expanded evidence keeps cumulative and source totals without repeating the season picker’s net change');
           await fieldReport.locator('[data-filter="migration"]').click();
           T.ok(await fieldReport.locator('.sg-field-records .sg-field-kind').allTextContents().then(kinds=>kinds.length===1&&kinds[0]==='Migration'),
             'field report filters the actual season record');
@@ -296,6 +339,13 @@ const SAVE_KEY = 'aplab:openscied-b1-serengeti:preview-v1';
             await page.locator('.sg-tabs [data-page="evidence"]').click();
             T.ok(await page.evaluate(k => localStorage.getItem(k),key) === unreadable, 'changing sections leaves unreadable saved work untouched');
           }
+        }
+        if(width===768){
+          await page.locator('#sg-restart').click();
+          await page.locator('#sg-confirm').getByRole('button',{name:'Restart game'}).click();
+          T.ok(await shared.isChecked() && await herdSeat.inputValue()==='1' && await lionsSeat.inputValue()==='3' &&
+            await page.evaluate(k=>JSON.parse(localStorage.getItem(k)).game===null,SAVE_KEY),
+            'confirmed restart returns to the shared defaults with no game started');
         }
         assert.deepEqual(errors, [], 'no page errors at ' + width + ' px');
       } finally { await context.close(); }
