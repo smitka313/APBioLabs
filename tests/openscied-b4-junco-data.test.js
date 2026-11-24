@@ -83,3 +83,108 @@ test('flight notebook restores validated trials and exports them as simulations'
   assert.equal(saved.active.finished,true);
   assert.match(flight.report(saved).join('\n'),/SIMULATED WALK-UP TRIALS.*\nTrial 1:/);
 });
+
+const {readFileSync}=require('node:fs');
+const {join}=require('node:path');
+const vm=require('node:vm');
+const ROOT=process.env.JUNCO_SCENE_ROOT||join(__dirname,'..');
+const source=name=>readFileSync(join(ROOT,name),'utf8');
+
+test('the home-aviary cutaway repeats the same modeled controls and disclaims invented study details',()=>{
+  const html=source('openscied-b4-junco.html');
+  const scene=html.match(/<figure class="ju-aviary-art"[\s\S]*?<\/figure>/)?.[0];
+  assert.ok(scene,'shared aviary should have an illustrated interactive cutaway');
+  for(const part of ['room','bird','food','person']) {
+    assert.equal([...scene.matchAll(new RegExp('<use href="#ju-av-'+part+'"','g'))].length,2,part+' is matched in two panels');
+  }
+  assert.match(scene,/UC San Diego[\s\S]*Mt\. Laguna/);
+  assert.match(scene,/lived apart under matched conditions/);
+  assert.match(scene,/not a map of the facility or a count/);
+  assert.match(scene,/Illustrated example, not evidence/);
+  for(const element of ['caretaker','scoop','pour','seeds','bird','match']){
+    assert.equal([...scene.matchAll(new RegExp('class="ju-aviary-'+element+'"','g'))].length,2,element+' should be present in both panels');
+  }
+  assert.match(html,/measured how quickly and widely each bird explored a test room/);
+  assert.match(html,/field walk-up measured a different behavior/);
+  assert.match(html,/these birds were collected after hatching/i);
+});
+
+test('the CORT reading guide distinguishes the two measures and uses the actual rightmost dot',()=>{
+  const html=source('openscied-b4-junco.html');
+  const guide=html.match(/<section class="ju-chart-guide"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(guide,'students should see an inline reading guide');
+  assert.match(guide,/same bird’s results from two separate tests/);
+  assert.match(guide,/15 and 30 minutes after capture<\/strong>, not the starting level/);
+  assert.match(guide,/separate 20-minute test/);
+  assert.match(guide,/no units[\s\S]*not negative movements/);
+  const rightmost=data.cort.rows.reduce((a,b)=>a.x>b.x?a:b);
+  assert.ok(guide.includes(rightmost.x.toFixed(1)+' ng/mL'));
+  assert.ok(guide.includes(rightmost.y.toFixed(1).replace('-','−')));
+  assert.match(guide,/doesn’t identify its population/);
+});
+
+test('inspecting a matched control and replay do not persist or reveal results',()=>{
+  const js=source('openscied-b4-junco.js');
+  const code=js.match(/  function wireAviaryScene\(\)\{[\s\S]*?\n  \}\n  const resetAviaryRoutine=wireAviaryScene\(\);/)?.[0];
+  assert.ok(code,'scene must wire its controls');
+  const changes=[];
+  let reduced=true;
+  const mock=attrs=>({dataset:attrs,attrs:{},handlers:{},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},addEventListener(k,f){this.handlers[k]=f;}});
+  const controls=['housing','food','people'].map(aviaryControl=>mock({aviaryControl}));
+  const stages=['approach','refill','matched'].map(aviaryStage=>mock({aviaryStage}));
+  const art={...mock({control:'housing',routine:'idle'}),querySelectorAll:selector=>selector.includes('stage')?stages:controls,classList:new Set(),offsetWidth:540};
+  art.classList.remove=art.classList.delete.bind(art.classList);
+  const detail={replaceChildren(...args){this.text=args.join('');}};
+  const caption={replaceChildren:detail.replaceChildren};
+  const replay=mock({}), label={}, pending=new Map();
+  let sequence=0;
+  const tick=()=>{
+    assert.equal(pending.size,1,'one scheduled phase');
+    const [[id,next]]=pending;
+    assert.ok(next.delay>=1200,'offers time to see and read the phase');
+    pending.delete(id);
+    next.fn();
+  };
+  const elements={'aviary-art':art,'aviary-detail':detail,'aviary-replay':replay,'aviary-routine-caption':caption,'aviary-replay-label':label};
+  const context={$:k=>elements[k],mk:(_,s)=>s,document:{createTextNode:s=>s},window:{
+    matchMedia:()=>({get matches(){return reduced;}}),
+    setTimeout(fn,delay){pending.set(++sequence,{fn,delay});return sequence;},
+    clearTimeout:id=>pending.delete(id)
+  },say:s=>changes.push(s)};
+  const reset=vm.runInNewContext(code+'\nresetAviaryRoutine;',context);
+  controls[1].handlers.click();
+  assert.equal(art.dataset.control,'food');
+  assert.deepEqual(controls.map(b=>b.attrs['aria-pressed']),['false','true','false']);
+  assert.match(detail.text,/home aviaries/);
+  assert.match(detail.text,/wood shavings, not food/);
+  replay.handlers.click();
+  assert.equal(art.dataset.control,'people');
+  assert.equal(art.dataset.routine,'approach');
+  assert.equal(label.textContent,'Show next step');
+  assert.equal(pending.size,0,'reduced-motion users advance still frames at their own pace');
+  replay.handlers.click();
+  assert.match(caption.text,/Refill both dishes/);
+  assert.equal(stages[1].attrs['aria-current'],'step');
+  replay.handlers.click();
+  assert.match(caption.text,/Same routine for both groups/);
+  assert.match(changes.at(-1),/reactions were not measured/);
+  assert.equal(label.textContent,'Replay caretaker routine');
+  reduced=false;
+  replay.handlers.click();
+  assert.equal(art.dataset.routine,'approach');
+  tick();
+  assert.equal(art.dataset.routine,'refill');
+  tick();
+  assert.equal(art.dataset.routine,'matched');
+  assert.equal(pending.size,0,'both full dishes and birds remain in the finished state');
+  replay.handlers.click();
+  assert.equal(art.dataset.routine,'approach','Replay returns to the beginning');
+  controls[0].handlers.click();
+  assert.equal(art.dataset.routine,'idle');
+  assert.equal(pending.size,0,'inspecting a control cancels the routine');
+  assert.equal(art.dataset.control,'housing');
+  assert.match(changes.at(-1),/Matched housing/);
+  replay.handlers.click();
+  reset();
+  assert.equal(pending.size,0,'leaving Shared aviary cancels stage changes and announcements');
+});
