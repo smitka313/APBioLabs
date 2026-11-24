@@ -52,13 +52,34 @@
     safe.lastVisitedAt=Number.isFinite(record.lastVisitedAt)?record.lastVisitedAt:0;
     return safe;
   }
-  try{const raw=localStorage.getItem(KEY);if(raw!==null)try{state=decode(raw);}catch(_){invalid=true;}}catch(_){blocked=true;}
+  const scope='b3-dna-workshop', guard=window.OpenSciEdSaveSession;
+  let saveSession;
+  try {
+    saveSession=guard?.open(localStorage,scope,[KEY]);
+    const raw=saveSession?saveSession.read(KEY):localStorage.getItem(KEY);
+    if(raw!==null)try{state=decode(raw);}catch(_){invalid=true;}
+  } catch(_){blocked=true;}
+  function conflict(result){
+    if(!result||result.ok||result.reason==='unavailable')return false;
+    const note=E('save-conflict');
+    note.hidden=false;
+    note.textContent=(result.reason==='erased'?'This workshop was cleared in another tab.':'This workshop was changed in another tab.')+
+      ' This tab will not overwrite it. Download or copy your open work before reloading.';
+    E('save').textContent='New changes in this tab are not saved.';
+    return true;
+  }
   function save(){
     if(invalid){E('save').textContent='A previous record is preserved. Download this record before leaving or choose Start over to replace it.';return;}
     state.lastVisitedAt=Date.now();
-    try{localStorage.setItem(KEY,JSON.stringify({...state,progress:M.serialize(state.progress)}));blocked=false;E('save').textContent='Work saved on this device.';}
-    catch(_){blocked=true;E('save').textContent='Work could not be saved on this device. Download or copy it before leaving.';}
+    const result=saveSession?.write(KEY,JSON.stringify({...state,progress:M.serialize(state.progress)}));
+    if(result?.ok){blocked=false;E('save').textContent='Work saved on this device.';return;}
+    if(!conflict(result)){blocked=true;E('save').textContent='Work could not be saved on this device. Download or copy it before leaving.';}
   }
+  window.addEventListener('storage',event=>{
+    if(saveSession&&(!event.key||[KEY,guard.globalKey,guard.scopeKey(scope),guard.resetKey(KEY)].includes(event.key))){
+      conflict(saveSession.check(KEY));
+    }
+  });
   const complete=step=>M.complete(step,state.progress);
   const model=step=>M.stage(step);
   const available=step=>STEPS.includes(step)&&STEPS.slice(0,STEPS.indexOf(step)).every(complete);
@@ -390,8 +411,16 @@
     E('palette').querySelector('button')?.focus({preventScroll:true});
     announce('Last placement removed.');
   }
+  const sharedIdentity=()=>window.Lab?.identity?.get?.()||{};
+  function refreshIdentity(){
+    const signedIn=sharedIdentity();
+    for(const key of ['name','period']){
+      const entry=E(key);
+      if(document.activeElement!==entry)entry.value=(state.person[key]||'').trim()||signedIn[key]||'';
+    }
+  }
   function report(){
-    const id=window.Lab?.identity?.get?.()||{};
+    const id=sharedIdentity();
     const name=(state.person.name||'').trim()||id.name||'';
     const period=(state.person.period||'').trim()||id.period||'';
     const lines=['DNA Workshop investigation','Fictional classroom model. Not an actual gene.'];
@@ -485,18 +514,32 @@
   mouseShell.addEventListener('dragstart',event=>event.preventDefault());
   for(const b of $$('[data-dw-go]'))b.addEventListener('click',()=>goto(b.dataset.dwGo));
   E('response').addEventListener('input',event=>{state.answers[state.step]=event.target.value.slice(0,2400);save();});
+  refreshIdentity();
   for(const key of ['name','period']){
-    E(key).value=state.person[key]||'';
-    E(key).addEventListener('input',event=>{state.person[key]=event.target.value.slice(0,key==='name'?100:24);save();});
+    const entry=E(key);
+    entry.addEventListener('input',event=>{
+      const value=event.target.value.slice(0,key==='name'?100:24);
+      if(value.trim())state.person[key]=value;
+      else delete state.person[key];
+      save();
+    });
+    entry.addEventListener('blur',()=>{if(!state.person[key])entry.value=sharedIdentity()[key]||'';});
   }
+  window.addEventListener('storage',event=>{if(!event.key||event.key==='aplab:student')refreshIdentity();});
+  window.addEventListener('pageshow',refreshIdentity);
   E('download').addEventListener('click',download);
   E('copy').addEventListener('click',copy);
   E('reset').addEventListener('click',()=>{returnFocus=E('reset');E('reset-dialog').showModal();});
   E('reset-dialog').addEventListener('close',()=>{returnFocus?.focus({preventScroll:true});returnFocus=null;});
   E('reset-confirm').addEventListener('click',()=>{
-    try{localStorage.removeItem(KEY);invalid=false;blocked=false;}
-    catch(_){blocked=true;}
-    state=fresh();E('name').value=E('period').value=E('record-text').value='';
+    const cleared=saveSession?.reset(KEY);
+    if(!cleared?.ok){
+      if(!conflict(cleared))E('save').textContent='Could not clear the worksheet on this device. Your open work was not changed.';
+      E('reset-dialog').close();
+      return;
+    }
+    invalid=false;blocked=false;
+    state=fresh();E('record-text').value='';refreshIdentity();
     E('record').open=false;E('record').hidden=true;
     if(blocked)E('save').textContent='Browser storage is unavailable. The open worksheet was reset.';
     else E('save').textContent='Workshop cleared on this device.';

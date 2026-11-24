@@ -22,6 +22,7 @@
 <script defer src="serengeti-scene.js"></script>
 <script defer src="serengeti-dice-view.js"></script>
 <script defer src="serengeti-field-report.js"></script>
+<script defer src="openscied-save-session.js"></script>
 <script defer src="openscied-b1-serengeti.js"></script>
 <script defer src="serengeti-board-view.js"></script>
 <script defer src="serengeti-expedition-layout.js"></script>
@@ -173,6 +174,7 @@
       <aside class="sg-panel sg-question sg-analysis-evidence"><h3>Net change by season</h3><div id="sg-analysis-data"></div></aside>
     </div>
   </section>
+  <p class="sg-save-warning" id="save-conflict" hidden></p>
   <p class="sg-save-warning" id="sg-save-warning" hidden>This device has an unreadable or older game save. It was not replaced. Download that save before confirming a restart.</p>
   <div class="sg-bottom"><span id="sg-save">Progress stays in this browser only.</span><button type="button" class="sg-plain" id="sg-recover" hidden>Download preserved save</button><button type="button" class="sg-plain" id="sg-restart">Restart game</button></div>
   <div id="sg-live" class="sg-visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -242,6 +244,7 @@
     <li>Hyenas hunt, then lions hunt where eligible. Sort the dice high to low; matching dice compete. The lower die is removed, ties and unmatched dice remain. Reroll only surviving dice until one side has none.</li>
     <li>Record what changes for all roles. Try the quick concept check that appears each season. After fall, compare your evidence across seasons.</li>
   </ol>
+  <p id="sg-help-dice-example"><strong>Worked example:</strong> Predator rolls 6 and 2; wildebeest rolls 5, 2 and 1. The 6 beats 5, the two 2s tie, and the unmatched 1 stays. Predator keeps 6 and 2; wildebeest keeps 2 and 1. Each side rolls two fresh dice next.</p>
   <p class="sg-teacher-scope"><strong>What this game models:</strong> Use four seasons of migration, event cards and dice-based hunts to explore short-term population changes. The game does not model wildebeest births, resource supply, prey-dependent changes in predator populations, or carrying capacity.</p>
   <p><a href="https://youtu.be/6-ooaGN1lSk" target="_blank" rel="noopener noreferrer">OpenSciEd’s game walkthrough (opens in a new tab)</a></p>
 </dialog>

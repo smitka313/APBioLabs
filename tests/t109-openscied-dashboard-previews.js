@@ -137,8 +137,8 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
     const firstCard = p.locator('.dashboard-activity').first();
     T.ok((await firstCard.locator('.dashboard-preview').getAttribute('href')) === UNIT1[0], 'first card (Migration Explorer) preview links to the exact activity URL');
     const migrationOpen = firstCard.locator('.dashboard-open');
-    const migrationStart = UNIT1[0] + '#explore';
-    T.ok((await migrationOpen.getAttribute('href')) === migrationStart, 'first card button links to the Migration Explorer default section');
+    const migrationStart = UNIT1[0];
+    T.ok((await migrationOpen.getAttribute('href')) === migrationStart, 'a fresh Migration card opens the activity without a scroll anchor');
     const burnCard = p.locator('section[aria-labelledby="unit2"] .dashboard-activity').first();
     T.ok((await burnCard.locator('.dashboard-preview').getAttribute('href')) === UNIT2[0], 'first Unit 2 card (Burning Fuels) preview still links to its activity');
     T.ok((await burnCard.locator('.dashboard-open').getAttribute('href')).startsWith(UNIT2[0]), 'first Unit 2 card button still opens Burning Fuels');
@@ -146,8 +146,9 @@ const HAWKSBEARD_PREVIEW = 'assets/hawksbeard-preview.svg';
     T.ok((await hawksbeardCard.locator('.dashboard-preview').getAttribute('href')) === UNIT4[0]
       && (await hawksbeardCard.locator('.dashboard-open').getAttribute('href')) === UNIT4[0],
       'the new card and its default button open the exact Hawksbeard Wind Lab URL');
-    await Promise.all([p.waitForURL(srv.url + migrationStart), migrationOpen.click()]);
+    await Promise.all([p.waitForURL(url => url.pathname === '/' + migrationStart), migrationOpen.click()]);
     await p.locator('#explore #month-buttons button').first().waitFor({state:'visible'});
+    T.ok(await p.evaluate(() => scrollY < 4), 'a fresh Migration visit begins at the activity title');
     T.ok(await p.locator('#explore #migration-map').isVisible()
       && (await p.locator('[data-page="explore"]').getAttribute('aria-current')) === 'page',
       'first card button opens the live Migration Explorer on Explore the year');

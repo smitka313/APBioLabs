@@ -1,5 +1,7 @@
 'use strict';
 
+const { verifySaveConflict } = require('./openscied-b4-save-conflict-check');
+
 // Classroom-path browser regression for the paired Hawksbeard releases.
 // Model tests separately validate the science and the seeded calculations.
 const assert = require('node:assert/strict');
@@ -418,6 +420,8 @@ async function play(browser, base, cfg) {
       await page.locator('.hb-steps [data-hb-go="compare"]').isDisabled() &&
       await page.locator('.hb-steps [data-hb-go="explain"]').isDisabled(),
       at + ' investigation starts with a genuine prediction gate');
+    check(await page.locator('#hb-save-prediction').isDisabled() && await page.locator('#hb-prediction-hint').isVisible(),
+      at + ' blank prediction has a visibly disabled Save button and a hint');
     await completedSteps(page, [], at + ' new trial');
     await fits(page, 'main, #hb-predict', at + ' prediction');
     await shot(page, at + '-prediction');
@@ -432,6 +436,7 @@ async function play(browser, base, cfg) {
       await page.keyboard.press('Space');
     }
     check(await choice.isChecked(), at + ' prediction form works via ' + (cfg.touch ? 'touch' : 'keyboard'));
+    check(await page.locator('#hb-save-prediction').isEnabled(), at + ' selecting a prediction enables Save');
     await use(page, '#hb-prediction button[type="submit"]', cfg);
     await page.waitForFunction(({ key, value }) => {
       const incoming = JSON.parse(localStorage.getItem(key) || 'null');
@@ -680,6 +685,15 @@ async function dashboardLinks(page, base) {
     browser = await chromium.launch(executablePath ? { executablePath } : {});
     await fs.mkdir(OUT, { recursive: true });
     for (const viewport of VIEWPORTS) await play(browser, server.url, viewport);
+    await verifySaveConflict(browser, server.url, {
+      file:FILE, key:SAVE, warning:'#hb-save-warning', backup:'#hb-download-tab', check,
+      async edit(page,n) {
+        if(!await page.locator('#hb-predict').isVisible()) await page.locator('.hb-steps [data-hb-go="predict"]').click();
+        await page.locator('input[name="hb-prediction"]').nth(n).check();
+        await page.locator('#hb-prediction button[type="submit"]').click();
+      },
+      read:saved=>['field','city','same'].indexOf(saved?.prediction), draft:/Prediction: About the same/i
+    });
     console.log('openscied-b4-hawksbeard-browser: ' + checks + ' checks passed');
   } finally {
     if (browser) await browser.close();

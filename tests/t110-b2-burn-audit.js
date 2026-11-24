@@ -86,6 +86,40 @@ const answerAll = (p, skip) => p.evaluate(skipIds => {
       T.ok((await data()).records.map(row=>row.fuel).join(',')==='grass,wood','old already-weighed pending burn migrates once without disturbing saved samples');
       T.ok(await q.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'pending and recorded controls do not overflow the phone');
     } finally { await phone.close(); }
+    // Two pages share a real browser origin, but their editor state is independent.
+    const shared = await T.ctxFor(browser, {width:390,height:844,dark:true,reduced:true});
+    try {
+      const stale=await shared.newPage(), active=await shared.newPage(), dashboard=await shared.newPage();
+      for (const p of [stale,active,dashboard]) await stub(p);
+      for (const p of [stale,active]) {
+        await p.goto(server.url+PAGE+'#burn');
+        await p.locator('[data-bn="weigh"]').waitFor();
+      }
+      await active.locator('[data-bn="weigh"]').click();
+      await active.locator('[data-bn="burn"]').click();
+      await active.locator('[data-bn="after"]').click();
+      await go(stale,'wrapup');
+      await stale.locator('#burn-save-warning').waitFor();
+      T.ok(/newer work/.test(await stale.locator('#burn-save-warning').innerText()) &&
+        await stale.evaluate(key=>JSON.parse(localStorage.getItem(key)).burn.records.length,KEY)===1,
+        'a stale tab warns instead of losing a recorded burn when changing sections');
+
+      await dashboard.goto(server.url+'openscied-dashboard.html');
+      await dashboard.locator('#b2-burn-reset').click();
+      await dashboard.locator('#openscied-erase-confirmation').fill('ERASE');
+      await dashboard.locator('#confirm-openscied-clear').click();
+      await active.locator('#burn-save-warning').waitFor();
+      await go(active,'sense');
+      T.ok(/cleared in another tab/.test(await active.locator('#burn-save-warning').innerText()) &&
+        await active.evaluate(key=>localStorage.getItem(key),KEY)===null,
+        'dashboard ERASE cannot be reversed by another tab changing sections');
+      const downloaded=active.waitForEvent('download');
+      await active.locator('#burn-download-unsaved').click();
+      const backup=JSON.parse(fs.readFileSync(await (await downloaded).path(),'utf8'));
+      T.ok(backup.simulatedData.burns.length===1 && await active.evaluate(key=>localStorage.getItem(key),KEY)===null,
+        'the already-open tab can download its in-memory burn without recreating erased storage');
+    } finally { await shared.close(); }
+
     const ctx = await T.ctxFor(browser, { width: 1366, height: 900 });
     const p = await ctx.newPage(); await stub(p);
     const errs = []; p.on('pageerror', e => errs.push(e.message));

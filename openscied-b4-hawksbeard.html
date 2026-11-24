@@ -35,6 +35,7 @@
 <body>
 <a class="skip-link" href="#main">Skip to activity</a>
 <main id="main" class="hb-shell">
+  <aside id="hb-save-warning" class="hb-panel" aria-label="Saving notice" hidden><p id="hb-save-warning-text"></p><button class="btn" id="hb-download-tab" type="button">Download the work in this tab</button></aside>
 <div class="hb-top"><a href="openscied-dashboard.html#unit4">← Biology Companion Activities</a><span data-ph="theme"></span></div>
 <header class="hb-hero">
   <div class="hb-hero-copy"><p class="eyebrow">Unit 4 · Lesson 2 · Virtual investigation</p><h1>Hawksbeard Wind Lab</h1><p>Same seeds. Same wind. Different places to land.</p></div>
@@ -62,7 +63,8 @@
         <label class="hb-choice"><input type="radio" name="hb-prediction" value="city"> City with separate soil patches</label>
         <label class="hb-choice"><input type="radio" name="hb-prediction" value="same"> About the same in both</label>
       </fieldset>
-      <div class="hb-actions"><button class="btn btn--primary" type="submit">Save prediction</button><button class="btn" type="button" data-hb-go="release">Go to Release</button></div>
+      <div class="hb-actions"><button class="btn btn--primary" type="submit" id="hb-save-prediction" aria-describedby="hb-prediction-hint" disabled>Save prediction</button><button class="btn" type="button" data-hb-go="release">Go to Release</button></div>
+      <p id="hb-prediction-hint">Choose a prediction to enable Save prediction.</p>
       <p id="hb-prediction-feedback" class="hb-status"></p>
     </form>
   </div>
@@ -157,6 +159,7 @@
 </div></footer>
 <script src="lab.js"></script>
 <script src="openscied-b4-hawksbeard-logic.js"></script>
+<script src="openscied-save-session.js"></script>
 <script src="openscied-b4-hawksbeard.js"></script>
 </body>
 </html>

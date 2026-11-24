@@ -271,6 +271,36 @@ test('evidence checks read the student\'s own data and null means not enough dat
   assert.match(d.bluestTube, /^Tube A \(Direct/); assert.match(d.yellowestTube, /^Tube C \(Foil/);
 });
 
+test('each tube evidence statement accepts any informative recorded contrast', () => {
+  const direct = ['direct', 'tilt45', 'tilt70'], foil = ['tilt45', 'foil', 'tilt70'];
+  for (const seed of SEEDS.slice(0, 60)) {
+    const lights = { seed, recorded:true, settings:direct };
+    const dark = { seed, recorded:true, settings:foil };
+    const d = L.evidenceChecks(null, lights), f = L.evidenceChecks(null, dark);
+    assert.equal(d.directBluest, true); assert.equal(d.foilYellow, null);
+    assert.equal(f.foilYellow, true); assert.equal(f.directBluest, null);
+  }
+  const repeated = { seed:1, recorded:true, settings:['direct','direct','foil'] };
+  const btb = L.tiltResults(repeated.seed, repeated.settings).map(r => r.btb);
+  assert.notEqual(btb[0], btb[1], 'the separately simulated direct tubes must have different readings');
+  assert.equal(L.evidenceChecks(null, repeated).directBluest, true, 'one of two direct tubes can be the bluest');
+  assert.match(L.evidenceDetail(null, repeated).bluestTube, /^Tube B \(Direct/);
+});
+
+test('missing tilt evidence explains what to record without manufacturing a comparison', () => {
+  const direct = { seed:42, recorded:true, settings:['direct', 'tilt45', 'tilt70'] };
+  const foil = { seed:42, recorded:true, settings:['tilt45', 'tilt70', 'foil'] };
+  assert.equal(L.tiltEvidenceGap('directBluest', direct), '');
+  assert.equal(L.tiltEvidenceGap('foilYellow', foil), '');
+  assert.match(L.tiltEvidenceGap('foilYellow', direct), /foil-covered tube and one lit tube at any angle/);
+  assert.match(L.tiltEvidenceGap('directBluest', foil), /direct-light tube and one tube with a different light setting/);
+  const repeated = { seed:42, recorded:true, settings:['direct','direct','direct'] };
+  const invalid = { seed:42, recorded:true, settings:['direct','tilt45','fictional-setting'] };
+  assert.equal(L.evidenceChecks(null, repeated).directBluest, null);
+  assert.equal(L.evidenceChecks(null, invalid).directBluest, null);
+  assert.equal(L.evidenceChecks(null, {...foil, recorded:false}).foilYellow, null);
+});
+
 test('seeded random numbers are stable and in range', () => {
   const a = L.makeRng(42), b = L.makeRng(42);
   for (let i = 0; i < 100; i++) { const x = a.uniform(); assert.equal(x, b.uniform()); assert.ok(x >= 0 && x < 1); }

@@ -21,6 +21,25 @@
   'use strict';
   const L = window.B2PeatBogLogic;
   const KEY = 'aplab:openscied:b2-peat-bog:v1';
+  const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b2-peat-bog-lab';
+  const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [KEY]); } catch (_) { return null; } })();
+  function readSave() { return saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY); }
+  function showSaveConflict(result) {
+    const n = document.getElementById('save-conflict');
+    const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
+      result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
+    const copy = message + ' Download or copy this tab’s work before reloading.';
+    if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; announce(copy); }
+    return copy;
+  }
+  function checkSaveConflict(event) {
+    if (!saveSession) return;
+    if (event.type === 'storage' && event.key && ![KEY, saveAPI.globalKey, saveAPI.scopeKey(saveScope), saveAPI.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession.check(KEY);
+    if (!result.ok) showSaveConflict(result);
+  }
+  window.addEventListener('storage', checkSaveConflict);
+  window.addEventListener('pageshow', checkSaveConflict);
   const SECTIONS = ['overview', 'bog', 'graph', 'zombie', 'warming', 'trials', 'model'];
   const NS = 'http://www.w3.org/2000/svg';
   const RAD = Math.PI / 180;
@@ -32,7 +51,7 @@
   const reduceMotion = () => !!(motionQuery && motionQuery.matches);
 
   const state = { S: Object.assign({}, L.DEFAULTS), climate: { fossil: 10, forest: 100, year: 2100 }, warmingUsed: false, explore: 'temp', season: 0, motionPaused: false, trials: [], trialLabel: '', lastSection: 'overview' };
-  let cleared = false, hadSaved = false, ready = false, cur = null, rows = [], playTimer = null, nextId = 1;
+  let cleared = false, hadSaved = false, ready = false, preservedSave = false, cur = null, rows = [], playTimer = null, nextId = 1;
 
   function svgEl(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -61,8 +80,10 @@
   /* ---------- saved state ---------- */
   function readStore() {
     try {
-      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if (!d || d.v !== 1) return;
+      const raw = readSave();
+      if (raw === null) return;
+      const d = JSON.parse(raw);
+      if (!d || d.v !== 1) throw Error('Unknown saved format');
       hadSaved = true;
       if (d.settings) state.S = L.sanitize(d.settings);
       if (d.climate) state.climate = L.sanitizeClimate(d.climate);
@@ -74,20 +95,27 @@
       nextId = state.trials.reduce(function (m, t) { return Math.max(m, t.id); }, 0) + 1;
       if (typeof d.trialLabel === 'string') state.trialLabel = d.trialLabel.slice(0, 60);
       if (SECTIONS.includes(d.lastSection)) state.lastSection = d.lastSection;
-    } catch (e) { /* unreadable saved work: start fresh in memory */ }
+    } catch (e) { preservedSave = true; }
   }
   function record() {
     return { v: 1, settings: state.S, climate: state.climate, warmingUsed: state.warmingUsed, explore: state.explore, season: state.season, motionPaused: state.motionPaused, trials: state.trials, trialLabel: state.trialLabel,
       responseIds: [], fields: {}, lastSection: state.lastSection, lastVisitedAt: Date.now() };
   }
   function save() {
-    if (cleared || !ready) return;
+    if (cleared || !ready) return false;
     try {
       const section = location.hash.slice(1);
       if (SECTIONS.includes(section)) state.lastSection = section;
-      localStorage.setItem(KEY, JSON.stringify(record()));
+      if (preservedSave) return false;
+      const result = saveSession?.write(KEY, JSON.stringify(record()));
+      if (!result?.ok) {
+        byId('save-status').textContent = showSaveConflict(result);
+        return false;
+      }
+      hadSaved = true;
       byId('save-status').textContent = 'Saved on this device.';
-    } catch (e) { byId('save-status').textContent = 'This browser could not save your work. Download a copy before leaving.'; }
+      return true;
+    } catch (e) { byId('save-status').textContent = showSaveConflict(); return false; }
   }
 
   /* ---------- controls: sliders with number boxes ---------- */
@@ -848,9 +876,12 @@
   function recordTrial(source) {
     const label = state.trialLabel.trim() || L.autoLabel(state.S, source);
     state.trials.push(Object.assign({}, state.S, { id: nextId++, label: label, at: Date.now() }));
-    renderLog(); save();
-    byId('logStatus').textContent = 'Recorded trial ' + state.trials.length + ': ' + label + '.';
-    flash('Saved as trial ' + state.trials.length + (source === 'zombie' ? ' (' + label + '). Open My trials to see it.' : '.'));
+    renderLog();
+    const saved = save();
+    const warning = saved ? '' : ' Only in this tab; download a copy before reloading.';
+    byId('logStatus').textContent = 'Recorded trial ' + state.trials.length + ': ' + label + '.' + warning;
+    flash((saved ? 'Saved as trial ' : 'Recorded in this tab as trial ') + state.trials.length +
+      (source === 'zombie' ? ' (' + label + '). Open My trials to see it.' : '.') + warning);
   }
   function wireTrials() {
     const input = byId('trialLabel'); input.value = state.trialLabel;
@@ -866,7 +897,9 @@
     byId('logWrap').addEventListener('change', function (e) {
       if (!e.target.matches('.lbl-input')) return;
       state.trials[+e.target.dataset.i].label = e.target.value.replace(/\s+/g, ' ').trim().slice(0, 60);
-      save(); renderLog(); byId('logStatus').textContent = 'Label saved.'; announce('Label saved.');
+      const saved = save(); renderLog();
+      const message = saved ? 'Label saved.' : 'Label changed in this tab only. Download a copy before reloading.';
+      byId('logStatus').textContent = message; announce(message);
     });
     byId('undo').addEventListener('click', function () {
       if (!state.trials.length) return;
@@ -906,11 +939,12 @@
       trials: state.trials.map(function (t, i) { const r = L.trialRow(t, i + 1); return { trial: i + 1, label: r.label, inputs: { tilt: t.tilt, temp: t.temp, co2: t.co2, o2: t.o2, wet: t.wet, burn: t.burn }, outputs: L.trialOutputs(t), recordedAt: t.at ? new Date(t.at).toISOString() : null, simulated: true }; }),
       source: 'Peat Bog Carbon Lab, OpenSciEd Unit B.2 companion, https://biologylabbench.com/openscied-b2-peat-bog-lab' };
   }
-  function download() { save(); saveFile('peat-bog-lab-work-simulated.json', JSON.stringify(payload(), null, 2), 'application/json'); byId('save-status').textContent = 'Downloaded peat-bog-lab-work-simulated.json.'; announce('Downloaded your work.'); }
+  function download() { saveFile('peat-bog-lab-work-simulated.json', JSON.stringify(payload(), null, 2), 'application/json'); byId('save-status').textContent = 'Downloaded peat-bog-lab-work-simulated.json.'; announce('Downloaded your work.'); }
   // Same rule as the other companions: clear this activity's record, then reload fresh at the Overview. Name and class period stay saved.
   function clearActivity() {
+    const result = saveSession?.reset(KEY);
+    if (!result?.ok) { byId('reset-dialog').close(); showSaveConflict(result); return; }
     cleared = true;
-    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     try { history.replaceState(null, '', location.pathname + location.search + '#overview'); } catch (e) { /* ignore */ }
     location.reload();
   }
@@ -974,6 +1008,11 @@
   /* ---------- wiring ---------- */
   function wire() {
     readStore();
+    if (preservedSave) {
+      const notice = document.getElementById('save-conflict');
+      notice.textContent = 'An unreadable save was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
+      notice.hidden = false;
+    }
     buildSliders(); buildExplore(); buildBog(); wireZombie(); wireClimate(); wireTrials(); wireEnlarge();
     byId('motion-btn').addEventListener('click', function () { state.motionPaused = !state.motionPaused; syncMotionButton(); kick(); save(); announce(state.motionPaused ? 'Motion paused.' : 'Motion playing.'); });
     syncMotionButton();
@@ -983,7 +1022,7 @@
     measureNav(); if ('ResizeObserver' in window) { const n = $('.step-nav'); if (n) new ResizeObserver(measureNav).observe(n); }
     numbarWatch();
     document.addEventListener('companion:show', function () { measureNav(); redrawCharts(); placeDots(); kick(); renderStudent(); });
-    window.addEventListener('hashchange', function () { save(); kick(); });
+    window.addEventListener('hashchange', function () { if (hadSaved) save(); kick(); });
     document.addEventListener('visibilitychange', kick);
     let pending = 0;
     window.addEventListener('resize', function () { cancelAnimationFrame(pending); pending = requestAnimationFrame(function () { redrawCharts(); measureNav(); }); }, { passive: true });
@@ -1004,11 +1043,8 @@
     byId('reset-work').addEventListener('click', function () { dialog.showModal(); });
     byId('cancel-reset').addEventListener('click', function () { dialog.close(); });
     byId('confirm-reset').addEventListener('click', clearActivity);
-    window.addEventListener('pagehide', function () { if (hadSaved || state.trials.length) save(); });
     // A test hook, like the other companions: read-only access to the model and the page state.
     window.B2Peat = { state: state, logic: L, setState: setState, record: recordTrial, announce: announce, current: function () { return cur; } };
-    // Only refresh an existing record on load: saving a blank page right after "Clear this activity" would make the dashboard show it as started.
-    if (hadSaved) save();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();

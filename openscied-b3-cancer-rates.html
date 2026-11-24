@@ -33,12 +33,14 @@
 <script defer src="lab.js"></script>
 <script defer src="openscied-b3-cancer-rates-data.js"></script>
 <script defer src="openscied-b3-cancer-rates-logic.js"></script>
-<script defer src="openscied-b3-cancer-rates.js?v=case-desk-5"></script>
+<script defer src="openscied-save-session.js"></script>
+<script defer src="openscied-b3-cancer-rates.js?v=save-session-1"></script>
 <script data-goatcounter="https://smitka313.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to activity</a>
 <main id="main" class="cr-shell">
+  <div id="ose-save-protection" class="wrap wrap--wide gutter" role="alert" tabindex="-1" hidden><p class="callout callout--safety"></p></div>
   <div class="cr-top"><a href="openscied-dashboard.html#unit3">← Biology Companion Activities</a><span data-ph="theme"></span></div>
   <header class="cr-hero cr-file-hero">
     <div>
@@ -70,67 +72,6 @@
       </g>
     </svg>
   </header>
-  <details id="cr-income-cards" class="cr-case" hidden>
-    <summary class="cr-case-cover">
-      <span class="cr-case-file" aria-hidden="true">B3-01 / EVIDENCE FOLDER</span>
-      <strong>Evidence Cards: Who Gets Cancer and Why?</strong>
-      <span class="cr-case-action"><span class="cr-case-closed">Open case file</span><span class="cr-case-open">Collapse case file</span><span class="cr-case-chevron" aria-hidden="true"></span></span>
-    </summary>
-    <div class="cr-case-content">
-      <div class="cr-case-briefing">
-        <p class="cr-case-index">Evidence log <span>A–F</span></p>
-        <p class="cr-case-intro"><strong>All six exhibits are required.</strong> Record an observation in each of A–C, then answer the checks in D–F correctly. Write your follow-up question to unlock Explore More Data.</p>
-      </div>
-      <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an exhibit">
-        <button id="cr-lesson1-diagnoses-tab" class="cr-dossier cr-dossier--cases" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
-          <span class="cr-dossier-code">Exhibit A</span>
-          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M15 10v21h31M20 14h24M20 20h18M20 26h9"/></svg></span>
-          <span class="cr-dossier-name">Diagnoses</span><span class="cr-dossier-meta">Lesson 1 · Bar graph</span>
-          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
-        </button>
-        <button id="cr-lesson1-deaths-tab" class="cr-dossier cr-dossier--deaths" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
-          <span class="cr-dossier-code">Exhibit B</span>
-          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M15 10v21h31M20 14h19M20 20h14M20 26h8"/></svg></span>
-          <span class="cr-dossier-name">Deaths</span><span class="cr-dossier-meta">Lesson 1 · Bar graph</span>
-          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
-        </button>
-        <button id="cr-lesson1-map-tab" class="cr-dossier cr-dossier--map" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
-          <span class="cr-dossier-code">Exhibit C</span>
-          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M12 11l9-4 10 4 10-4 8 4v19l-8-4-10 4-10-4-9 4zM21 7v19m10-15v19m10-23v19"/></svg></span>
-          <span class="cr-dossier-name">State map</span><span class="cr-dossier-meta">Lesson 1 · U.S. map</span>
-          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
-        </button>
-        <button id="cr-income-access-tab" class="cr-dossier cr-dossier--access" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
-          <span class="cr-dossier-code">Exhibit D</span>
-          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><circle cx="30" cy="20" r="12"/><path d="M30 11v18m5-14h-7a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5h-7"/></svg></span>
-          <span class="cr-dossier-name">Cost of care</span><span class="cr-dossier-meta">Income · Trend check</span>
-          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
-        </button>
-        <button id="cr-income-diagnosis-tab" class="cr-dossier cr-dossier--stage" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
-          <span class="cr-dossier-code">Exhibit E</span>
-          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><circle cx="26" cy="17" r="9"/><path d="m33 24 10 10M22 17h8m-4-4v8"/></svg></span>
-          <span class="cr-dossier-name">Stage at diagnosis</span><span class="cr-dossier-meta">Neighborhood poverty · Comparison</span>
-          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
-        </button>
-        <button id="cr-income-test-cost-tab" class="cr-dossier cr-dossier--test-cost" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
-          <span class="cr-dossier-code">Exhibit F</span>
-          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M17 7h26v26H17zM22 13h15m-15 6h11m-11 6h13"/><circle cx="39" cy="25" r="2"/></svg></span>
-          <span class="cr-dossier-name">The cost of getting tested</span><span class="cr-dossier-meta">Insurance costs · Time to care</span>
-          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
-        </button>
-      </div>
-      <p id="cr-income-progress">0 of 6 exhibits complete. Still needed: A, B, C, D, E, F.</p>
-      <form id="cr-income-followup" class="cr-case-debrief" hidden>
-        <p class="cr-case-index">Field notebook <span>NEW LEAD</span></p>
-        <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
-        <p>A test can only help if people can get it. What would you need to measure before recommending a less expensive option that still gives reliable results?</p>
-        <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
-        <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
-        <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
-        <button id="cr-income-explore" class="btn btn--primary" disabled type="submit">Explore More Data</button>
-      </form>
-    </div>
-  </details>
   <dialog id="cr-case-dialog" class="cr-case-modal" aria-labelledby="cr-lesson1-diagnoses-title">
     <header class="cr-case-modal-bar">
       <div class="cr-case-id"><span aria-hidden="true">FILE B3-01</span><span id="cr-case-position">Exhibit 1 of 6</span></div>
@@ -160,7 +101,7 @@
         <p class="cr-source"><strong>NOS</strong> means “not otherwise specified.” The exact part of the uterus was not recorded for the cases labeled NOS.</p>
         <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Which cancer has the highest new diagnosis rate? What do you notice about the shape of the graph?</p><label for="cr-lesson1-diagnoses-observation">Your Exhibit A observation</label>
           <textarea id="cr-lesson1-diagnoses-observation" rows="2" maxlength="500"></textarea>
-          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-diagnoses-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="lesson1-deaths">Next: cancer deaths</button></div></div>
+          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-diagnoses-save" disabled>Save observation</button><button class="btn" type="button" disabled data-case-next="lesson1-deaths" aria-describedby="cr-next-lesson1-deaths-hint">Next: cancer deaths</button><span id="cr-next-lesson1-deaths-hint" class="small cr-next-hint"></span></div></div>
       </section>
       <section class="cr-exhibit" id="cr-lesson1-deaths" aria-labelledby="cr-lesson1-deaths-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT B · LESSON 1</p>
@@ -185,7 +126,7 @@
         <p class="cr-source"><strong>NOS</strong> means “not otherwise specified.” The exact part of the uterus was not recorded for the cases labeled NOS.</p>
         <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Does the same cancer lead both charts? Find one cancer that appears on both and describe how its position changes.</p><label for="cr-lesson1-deaths-observation">Your Exhibit B observation</label>
           <textarea id="cr-lesson1-deaths-observation" rows="2" maxlength="500"></textarea>
-          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-deaths-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="lesson1-map">Next: the state map</button></div></div>
+          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-deaths-save" disabled>Save observation</button><button class="btn" type="button" disabled data-case-next="lesson1-map" aria-describedby="cr-next-lesson1-map-hint">Next: the state map</button><span id="cr-next-lesson1-map-hint" class="small cr-next-hint"></span></div></div>
       </section>
       <section class="cr-exhibit" id="cr-lesson1-map" aria-labelledby="cr-lesson1-map-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT C · LESSON 1</p>
@@ -202,7 +143,7 @@
         </details>
         <div class="cr-case-question"><p class="cr-exhibit-tag">NOTICE &amp; WONDER</p><p>Find two states in different rate groups. What does the map show, and what question does it raise about why rates differ?</p><label for="cr-lesson1-map-observation">Your Exhibit C observation</label>
           <textarea id="cr-lesson1-map-observation" rows="2" maxlength="500"></textarea>
-          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-map-save" disabled>Save observation</button><button class="btn" type="button" data-case-next="income-access">Next: cost of care</button></div></div>
+          <div class="cr-buttons"><button class="btn btn--primary" type="button" id="cr-lesson1-map-save" disabled>Save observation</button><button class="btn" type="button" disabled data-case-next="income-access" aria-describedby="cr-next-income-access-hint">Next: cost of care</button><span id="cr-next-income-access-hint" class="small cr-next-hint"></span></div></div>
       </section>
       <section class="cr-exhibit" id="cr-income-access" aria-labelledby="cr-income-access-title" hidden>
         <p class="cr-exhibit-tag">EXHIBIT D</p>
@@ -232,7 +173,7 @@
             <button class="btn btn--primary" id="cr-income-access-check" type="button" disabled>Check my trend</button>
           </div>
           <p id="cr-income-access-feedback" class="cr-case-feedback" hidden></p>
-          <div><button class="btn" type="button" data-case-next="income-diagnosis">Next: stage at diagnosis</button></div>
+          <div><button class="btn" type="button" disabled data-case-next="income-diagnosis" aria-describedby="cr-next-income-diagnosis-hint">Next: stage at diagnosis</button><span id="cr-next-income-diagnosis-hint" class="small cr-next-hint"></span></div>
         </div>
       </section>
       <section class="cr-exhibit" id="cr-income-diagnosis" aria-labelledby="cr-income-diagnosis-title" hidden>
@@ -266,7 +207,7 @@
             <button class="btn btn--primary" id="cr-income-diagnosis-check" type="button" disabled>Check my comparison</button>
           </div>
           <p id="cr-income-diagnosis-feedback" class="cr-case-feedback" hidden></p>
-          <div><button class="btn" type="button" data-case-next="income-test-cost">Next: the cost of getting tested</button></div>
+          <div><button class="btn" type="button" disabled data-case-next="income-test-cost" aria-describedby="cr-next-income-test-cost-hint">Next: the cost of getting tested</button><span id="cr-next-income-test-cost-hint" class="small cr-next-hint"></span></div>
         </div>
       </section>
       <section class="cr-exhibit" id="cr-income-test-cost" aria-labelledby="cr-income-test-cost-title" hidden>
@@ -344,6 +285,67 @@
       </aside>
     </div>
   </section>
+  <details id="cr-income-cards" class="cr-case" hidden>
+    <summary class="cr-case-cover">
+      <span class="cr-case-file" aria-hidden="true">B3-01 / EVIDENCE FOLDER</span>
+      <strong>Evidence Cards: Who Gets Cancer and Why?</strong>
+      <span class="cr-case-action"><span class="cr-case-closed">Open case file</span><span class="cr-case-open">Collapse case file</span><span class="cr-case-chevron" aria-hidden="true"></span></span>
+    </summary>
+    <div class="cr-case-content">
+      <div class="cr-case-briefing">
+        <p class="cr-case-index">Evidence log <span>A–F</span></p>
+        <p class="cr-case-intro"><strong>All six exhibits are required.</strong> Record an observation in each of A–C, then answer the checks in D–F correctly. Write your follow-up question to unlock Explore More Data.</p>
+      </div>
+      <div id="cr-income-tabs" class="cr-case-tabs" role="group" aria-label="Choose an exhibit">
+        <button id="cr-lesson1-diagnoses-tab" class="cr-dossier cr-dossier--cases" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit A</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M15 10v21h31M20 14h24M20 20h18M20 26h9"/></svg></span>
+          <span class="cr-dossier-name">Diagnoses</span><span class="cr-dossier-meta">Lesson 1 · Bar graph</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-lesson1-deaths-tab" class="cr-dossier cr-dossier--deaths" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit B</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M15 10v21h31M20 14h19M20 20h14M20 26h8"/></svg></span>
+          <span class="cr-dossier-name">Deaths</span><span class="cr-dossier-meta">Lesson 1 · Bar graph</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-lesson1-map-tab" class="cr-dossier cr-dossier--map" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit C</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M12 11l9-4 10 4 10-4 8 4v19l-8-4-10 4-10-4-9 4zM21 7v19m10-15v19m10-23v19"/></svg></span>
+          <span class="cr-dossier-name">State map</span><span class="cr-dossier-meta">Lesson 1 · U.S. map</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-income-access-tab" class="cr-dossier cr-dossier--access" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit D</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><circle cx="30" cy="20" r="12"/><path d="M30 11v18m5-14h-7a2.5 2.5 0 0 0 0 5h4a2.5 2.5 0 0 1 0 5h-7"/></svg></span>
+          <span class="cr-dossier-name">Cost of care</span><span class="cr-dossier-meta">Income · Trend check</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-income-diagnosis-tab" class="cr-dossier cr-dossier--stage" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit E</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><circle cx="26" cy="17" r="9"/><path d="m33 24 10 10M22 17h8m-4-4v8"/></svg></span>
+          <span class="cr-dossier-name">Stage at diagnosis</span><span class="cr-dossier-meta">Neighborhood poverty · Comparison</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+        <button id="cr-income-test-cost-tab" class="cr-dossier cr-dossier--test-cost" type="button" aria-haspopup="dialog" aria-controls="cr-case-dialog">
+          <span class="cr-dossier-code">Exhibit F</span>
+          <span class="cr-dossier-illustration" aria-hidden="true"><svg viewBox="0 0 60 40" focusable="false"><path d="M17 7h26v26H17zM22 13h15m-15 6h11m-11 6h13"/><circle cx="39" cy="25" r="2"/></svg></span>
+          <span class="cr-dossier-name">The cost of getting tested</span><span class="cr-dossier-meta">Insurance costs · Time to care</span>
+          <span class="cr-dossier-link">Open exhibit <span aria-hidden="true">↗</span></span>
+        </button>
+      </div>
+      <p id="cr-income-progress">0 of 6 exhibits complete. Still needed: A, B, C, D, E, F.</p>
+      <form id="cr-income-followup" class="cr-case-debrief" hidden>
+        <p class="cr-case-index">Field notebook <span>NEW LEAD</span></p>
+        <h3 tabindex="-1" id="cr-income-followup-title">What do you want to investigate next?</h3>
+        <p>A test can only help if people can get it. What would you need to measure before recommending a less expensive option that still gives reliable results?</p>
+        <label for="cr-income-question">Write one question you could explore with the cancer data.</label>
+        <p id="cr-income-question-help">Try: “How does ___ compare across ___?” or “Do places with higher ___ also tend to have higher ___?”</p>
+        <textarea id="cr-income-question" rows="2" maxlength="500" required aria-describedby="cr-income-question-help"></textarea>
+        <button id="cr-income-explore" class="btn btn--primary" disabled type="submit">Explore More Data</button>
+      </form>
+    </div>
+  </details>
   <section id="explore" class="cr-card" aria-labelledby="cr-explore-title" hidden>
     <div class="cr-heading"><div><p class="eyebrow">02 · Follow the clues</p><h2 id="cr-explore-title" tabindex="-1">Find a pattern worth saving</h2></div><span class="cr-chip" id="cr-pin-count">0 comparisons pinned</span></div>
     <p class="cr-question-reminder" id="cr-question-explore" hidden><strong>Your investigation question:</strong> <span id="cr-question-explore-text"></span></p>

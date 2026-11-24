@@ -26,10 +26,13 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 const journeyPage = fs.readFileSync(path.join(__dirname, '../openscied-b2-carbon-journey.js'), 'utf8');
-function openFictionalJourney(snapshot, hash = '', budgetRecord) {
-  const nodes = new Map(), downloads = [], writes = [];
-  const key = 'aplab:openscied:b2-carbon-journey:v1';
-  let stored = snapshot, blocked = false;
+const sessionGuard=require('../openscied-save-session.js');
+const key = 'aplab:openscied:b2-carbon-journey:v1';
+const budgetKey = 'aplab:openscied:b2-carbon-journey:budget:v1';
+function openFictionalJourney(snapshot, hash = '', budgetRecord, shared) {
+  const nodes = new Map(), downloads = [], writes = [], windowEvents = {};
+  const data=shared || new Map([[key,snapshot],[budgetKey,budgetRecord===undefined?null:JSON.stringify(budgetRecord)]]);
+  let blocked = false;
   function node() {
     return {
       set id(value) { this.localId = value; nodes.set('#' + value, this); },
@@ -37,28 +40,34 @@ function openFictionalJourney(snapshot, hash = '', budgetRecord) {
       value: '', textContent: 'Download journey and budget', dataset: {}, style: {}, events: {},
       classList: { toggle() {}, add() {}, remove() {} },
       addEventListener(event, handler) { this.events[event] = handler; },
-      click() { if (this.download) downloads.push(this.download); else this.events.click?.(); },
-      querySelectorAll() { return []; }, append() {}, replaceChildren() {}, setAttribute() {},
+      click() { if (typeof this.download === 'string') downloads.push(this.download); else this.events.click?.(); },
+      querySelectorAll() { return []; }, querySelector: get, append() {}, replaceChildren() {}, setAttribute() {},
       showModal() { this.open = true; }, close() { this.open = false; }, reset() {}, focus() {}
     };
   }
   function get(selector) { if (!nodes.has(selector)) nodes.set(selector, node()); return nodes.get(selector); }
   const window = {
     CarbonJourney: L, CarbonJourneyScene: { render() {} }, scrollTo() {},
-    CarbonBudgetLogic: require('../carbon-budget-logic')
+    CarbonBudgetLogic: require('../carbon-budget-logic'),
+    OpenSciEdSaveSession:sessionGuard, addEventListener(name, callback) {
+      (windowEvents[name] ??= []).push(callback);
+    }
   };
   const env = {
     window,
     document: { body: node(), querySelector: get, querySelectorAll(selector) {
-      return selector === '.journey-page' ? ['play', 'evidence', 'sense'].map(id => Object.assign(get('#' + id), { id })) : [];
+      return selector === '.journey-page' ? ['play', 'evidence', 'sense', 'budget'].map(id => Object.assign(get('#' + id), { id })) :
+        selector==='[data-page]' ? ['play', 'evidence', 'sense', 'budget'].map(page => Object.assign(get('[data-page="'+page+'"]'),{dataset:{page}})) : [];
     }, createElement: node, addEventListener() {} },
-    Lab: { init() {}, identity: { seed: { seed: 42 } }, reducedMotion() { return true; }, chart() { return { update() {} }; } },
+    Lab: { init() {}, identity: { seed: { seed: 42 }, get:()=>{try{return JSON.parse(data.get('aplab:student'));}catch(_){return null;}} }, reducedMotion() { return true; }, chart() { return { update() {} }; } },
     localStorage: {
-      getItem(k) {
-        if(k==='aplab:openscied:b2-carbon-journey:budget:v1')return budgetRecord===undefined?null:JSON.stringify(budgetRecord);
-        a.equal(k, key); return stored;
+      getItem: k => data.get(k) ?? null,
+      setItem(k, value) {
+        if(blocked && k===key)throw Error('fictional failed write');
+        if(k===key)writes.push(value);
+        data.set(k,value);
       },
-      setItem(k, value) { a.equal(k, key); if (blocked) throw Error('fictional failed write'); writes.push(value); stored = value; }
+      removeItem: k => data.delete(k)
     },
     location: { hash }, history: { replaceState(_, _title, hash) { this.hash = hash; } },
     matchMedia() { return { matches: false, addEventListener() {} }; },
@@ -66,9 +75,11 @@ function openFictionalJourney(snapshot, hash = '', budgetRecord) {
     URL: { createObjectURL() { return 'blob:fictional'; }, revokeObjectURL() {} },
     setTimeout() {}
   };
+  window.Lab=env.Lab;
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../carbon-budget.js'),'utf8'),env);
   vm.runInNewContext(journeyPage, env);
-  return { get, writes, downloads, setBlocked(value) { blocked = value; }, read() { return stored; } };
+  return { get, writes, downloads, storage:env.localStorage, setBlocked(value) { blocked = value; },
+    onStorage(key){windowEvents.storage?.forEach(fn=>fn({key}));}, read() { return env.localStorage.getItem(key); } };
 }
 for (const [name, raw, hash] of [
   ['unsupported version', ' {"version":99,"seed":17,"rows":[],"answers":{"q4":"Keep this fictional answer."}}\n', '#play'],
@@ -216,6 +227,62 @@ test('a short route cannot finish without evidence from every missing station an
   const saved=JSON.parse(page.downloads[0]);
   a.equal(saved.referenceCardsReviewed.length,6);
   a.match(saved.referenceCardsReviewed.find(r=>r.from==='soil').text,/decomposer/);
+});
+
+test('two actual Journey pages cannot undo dashboard ERASE by opening Your evidence',()=>{
+  let state=L.initial(42);
+  const roll=()=>{state=L.record({...state,pending:L.die(state.seed,state.rows.length)});};
+  roll();
+  const shared=new Map([[key,JSON.stringify(state)]]);
+  const older=openFictionalJourney(null,'#play',undefined,shared);
+  a.equal(older.writes.length,0,'opening a current record must not stale another tab');
+  a.equal(JSON.parse(older.read()).rows.length,1);
+  for(let i=0;i<5;i++)roll();
+  shared.set(key,JSON.stringify(state));
+  const newer=openFictionalJourney(null,'#play',undefined,shared);
+  a.equal(JSON.parse(newer.read()).rows.length,6);
+  older.get('[data-show-evidence]').click();
+  a.equal(JSON.parse(older.read()).rows.length,6,'old page cannot undo newly saved rolls');
+  a.match(older.get('#journey-save-conflict').textContent,/changed in another tab/);
+  a.equal(sessionGuard.erase(newer.storage,null,[key,budgetKey]).ok,true);
+  for(const tab of [newer,older]){
+    tab.onStorage(sessionGuard.globalKey);
+    tab.get('[data-show-evidence]').click();
+    a.equal(tab.read(),null,'old navigation cannot restore the erased work');
+    a.match(tab.get('#journey-save-conflict').textContent,/cleared in another tab/);
+  }
+  newer.get('#download').click();
+  a.equal(JSON.parse(newer.downloads[0]).rows.length,6,'conflicted work remains available for a deliberate local download');
+  const fresh=openFictionalJourney(null,'#play',undefined,shared);
+  fresh.get('#roll').click();
+  a.equal(JSON.parse(fresh.read()).rows.length,0,'a page opened after ERASE can save new work');
+  a.notEqual(JSON.parse(fresh.read()).pending,null);
+});
+
+test('a Budget tab opened after ERASE by an older Journey page cannot recreate erased work',()=>{
+  const saved={v:1,position:-1,furthest:-1,prediction:'Old budget evidence',explanation:''};
+  const shared=new Map([[budgetKey,JSON.stringify(saved)]]);
+  const tab=openFictionalJourney(null,'#play',undefined,shared);
+  a.equal(sessionGuard.erase(tab.storage,null,[key,budgetKey]).ok,true);
+  tab.get('[data-page="budget"]').click();
+  a.equal(tab.get('#cb-prediction').value,saved.prediction,'still available to download from the older page');
+  a.match(tab.get('#cb-save-status').textContent,/budget was cleared/i);
+  tab.get('#cb-prediction').value='A fictional late edit';
+  tab.get('#cb-prediction').events.input();
+  a.equal(tab.storage.getItem(budgetKey),null);
+  tab.get('#download').click();
+  a.equal(JSON.parse(tab.downloads[0]).budget.prediction,'A fictional late edit');
+});
+
+test('Carbon Journey download uses the current shared sign-in, not a stale page name',()=>{
+  const shared=new Map([['aplab:student',JSON.stringify({name:'Initial QA',period:'1'})]]);
+  const tab=openFictionalJourney(null,'#play',undefined,shared);
+  shared.set('aplab:student',JSON.stringify({name:'Current QA',period:'4'}));
+  tab.get('#download').click();
+  a.deepEqual(JSON.parse(tab.downloads[0]).student,{name:'Current QA',period:'4'});
+  a.equal(tab.read(),null,'reading the activity and exporting do not create a saved record');
+  shared.delete('aplab:student');tab.get('#download').click();
+  a.equal(Object.hasOwn(JSON.parse(tab.downloads[2]),'student'),false);
 });
 
 test('blank journey Restart is inert, then unlocks for actual journey work and resets to disabled', () => {

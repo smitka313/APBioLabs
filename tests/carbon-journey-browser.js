@@ -181,5 +181,49 @@ const http = require('node:http'), fs = require('node:fs'), path = require('node
       }
       console.log('PASS unreadable work stays downloadable and cannot be overwritten before confirmed restart');
     } finally { await protectedCtx.close(); }
+    const multiCtx = await browser.newContext({viewport:{width:1366,height:768},reducedMotion:'reduce'});
+    try {
+      const writer=await multiCtx.newPage(), stale=await multiCtx.newPage(), dash=await multiCtx.newPage();
+      const keys=['aplab:openscied:b2-carbon-journey:v1','aplab:openscied:b2-carbon-journey:budget:v1'];
+      await writer.goto(url);
+      const recordTurn=async()=>{
+        await writer.locator('#roll').click();await writer.locator('#skip-prediction').click();await writer.locator('#record').click();
+      };
+      await recordTurn();
+      await stale.goto(url);
+      await recordTurn();
+      await writer.getByRole('button',{name:'Carbon & Energy Budget',exact:true}).click();
+      await writer.locator('#cb-prediction').fill('This test budget is only on this device.');
+      await stale.locator('[data-page="evidence"]').click();
+      const read=p=>p.evaluate(([journey,budget])=>[localStorage.getItem(journey),localStorage.getItem(budget)],keys);
+      assert.equal(JSON.parse((await read(stale))[0]).rows.length,2);
+      await dash.goto(url.replace('openscied-b2-carbon-journey.html','openscied-dashboard.html'));
+      assert.match(await dash.locator('#carbon-journey-progress').textContent(),/2 rolls recorded/);
+      await dash.locator('#clear-openscied-results').click();
+      await dash.locator('#openscied-erase-confirmation').fill('ERASE');
+      await dash.locator('#confirm-openscied-clear').click();
+      assert.equal(await dash.locator('#openscied-resume').isVisible(),false);
+      await stale.locator('[data-page="sense"]').click();
+      assert.match(await stale.locator('#journey-save-conflict').textContent(),/cleared in another tab/);
+      await writer.locator('#cb-prediction').fill('This late edit is not stored.');
+      assert.match(await writer.locator('#cb-save-status').textContent(),/cleared in another tab/);
+      assert.deepEqual(await read(dash),[null,null]);
+      assert.equal(await dash.locator('#openscied-resume').isVisible(),false);
+      // Budget has its own export; the combined download is under Journey/Evidence.
+      await writer.locator('[data-page="evidence"]').click();
+      assert.deepEqual(await read(dash),[null,null],'leaving Budget also cannot recreate erased work');
+      const combined=writer.locator('#download');
+      assert.equal(await combined.isVisible(),true);
+      const [download]=await Promise.all([writer.waitForEvent('download'),combined.click()]);
+      const payload=JSON.parse(fs.readFileSync(await download.path(),'utf8'));
+      assert.equal(payload.rows.length,2);
+      assert.equal(payload.budget.prediction,'This late edit is not stored.');
+      await writer.reload();
+      await writer.locator('[data-page="play"]').click();
+      await writer.locator('#roll').click();
+      assert.ok(JSON.parse((await read(writer))[0]).pending);
+      console.log('PASS same-origin tabs: stale Journey cannot rewind current progress; dashboard ERASE stays erased; Budget download still works');
+    } finally { await multiCtx.close(); }
+
   } finally { if (browser) await browser.close(); await new Promise(r => server.close(r)); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

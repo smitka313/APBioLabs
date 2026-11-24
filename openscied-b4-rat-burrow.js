@@ -154,7 +154,7 @@
         item.style.setProperty('--rg-rat-scale',movable ? 1 : nursery ? .88 : left.length>9 ? .70 : stage==='born' ? .83 : 1);
         point(item,pos);
         item.append(ratImage('rg-burrow-rat-art',rat),node('span','rg-burrow-rat-label',rat.genotype));
-        if(role>=0&&!rat.excluded)item.append(node('span','rg-burrow-role',String(role+1)));
+        if(role>=0&&!rat.excluded)item.append(node('span','rg-burrow-role','P'+(role+1)));
         colony.append(item);
         if(transition&&stage==='born')animateArrival(item,[{opacity:0},{opacity:1}],{duration:260,delay:Math.min(i*27,250),fill:'backwards'});
         if(transition&&rat.excluded)animateArrival(item,[{opacity:1},{opacity:.28}],{duration:400,fill:'backwards'});
@@ -169,7 +169,7 @@
         if(enabled)n.disabled=has;
         else {n.setAttribute('role','img');n.setAttribute('aria-label',label);}
         point(n,pos);
-        n.append(node('span','rg-burrow-nest-number',String(slot+1)));
+        n.append(node('span','rg-burrow-nest-number','P'+(slot+1)));
         if(has){
           const img=ratImage('rg-burrow-nest-rat',rat);
           img.dataset.rgBurrowNestRat=rat.id;
@@ -179,7 +179,7 @@
       });
       if(enabled)instruction.textContent=seats.every(Boolean)
         ? 'Both assigned rats are in their nests. Use their allele chips to build the cross.'
-        : 'Move the two numbered rats into their matching nests. Drag, or select a rat and then its nest.';
+        : 'P1 and P2 mark parent assignments, not rat IDs. Drag each marked rat to its nest, or select the rat and then its nest.';
       else instruction.textContent=stage==='survived'
         ? 'Only surviving rats can parent the next generation in this model.'
         : stage==='born'?'The newborn colony replaces the parent generation.':'This is the starting colony.';
@@ -196,11 +196,11 @@
     function choose(id){
       if(!canMove())return;
       const role=roleOf(id);
-      if(role<0){say('This rat is not assigned to this pair. Choose a numbered rat.');return;}
+      if(role<0){say('This rat is not assigned to this pair. Choose a rat marked P1 or P2.');return;}
       if(filled()[role])return;
       selected=selected===id?'':id;
       syncPressed();
-      say(selected?'Rat '+(role+1)+' selected. Choose Parent '+(role+1)+' nest.':'Selection cleared.');
+      say(selected?'Parent '+(role+1)+' selected. Choose the Parent '+(role+1)+' nest.':'Selection cleared.');
     }
     function flyingSprite(rat,start,end){
       if(!motion()||!start||!end||start.width<1||end.width<1)return;
@@ -221,9 +221,9 @@
     }
     function place(id,slot,{focus=false,start=null}={}){
       if(!canMove())return false;
-      if(!id){say('Choose a numbered rat first, then its nest.');return false;}
+      if(!id){say('Choose a rat marked P1 or P2 first, then its nest.');return false;}
       const role=roleOf(id);
-      if(role<0){say('That rat is not assigned to this pair. Choose a numbered rat.');return false;}
+      if(role<0){say('That rat is not assigned to this pair. Choose a rat marked P1 or P2.');return false;}
       if(role!==slot){say('Not placed. This rat belongs in the Parent '+(role+1)+' nest.');return false;}
       if(filled()[slot]){say('This rat is already in its nest.');return false;}
       const rat=parents()[slot], pairKey=view.pair?.id;
@@ -295,7 +295,7 @@
       const hit=near(doc.elementFromPoint(event.clientX,event.clientY));
       if(!g.moved){if(hit===g.el)activate(hit);return;}
       if(!g.id||!hit||!own(hit.dataset,'rgBurrowTarget')||!board.contains(hit)){
-        if(g.id)say('Drop the numbered rat on a parent nest, or tap a rat and then its nest.');
+        if(g.id)say('Drop the marked rat on its parent nest, or tap the rat and then its nest.');
         return;
       }
       place(g.id,Number(hit.dataset.rgBurrowTarget),{start});

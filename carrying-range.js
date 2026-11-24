@@ -107,10 +107,10 @@
     }catch(_){return null;}
   }
 
-  function mount(host,{announce,onMarks}={}){
+  function mount(host,{announce,onMarks,getSaveSession,onSaveConflict}={}){
     if(!host)return null;
     let state=fresh(),status='ok',trials={baseline:null,comparison:null},graphKey='',paintKey='',pointer=null;
-    try{const saved=restore(root.localStorage.getItem(KEY));if(saved)state=saved;else status='preserved';}
+    try{const saved=restore(getSaveSession?.() ? getSaveSession().read(KEY) : root.localStorage.getItem(KEY));if(saved)state=saved;else status='preserved';}
     catch(_){status='blocked';}
     host.classList.add('cc-range');
     const $=s=>host.querySelector(s);
@@ -122,8 +122,10 @@
     const estimateState=k=>trials[k]&&lockFor(k)?judgeEstimate(trials[k].points,estimateFor(k)):null;
     function persist(){
       if(status==='preserved')return;
-      try{root.localStorage.setItem(KEY,JSON.stringify(state));status='ok';}
-      catch(_){status='blocked';}
+      let result;
+      try{result=getSaveSession?.()?.write(KEY,JSON.stringify(state));}catch(_){}
+      status=result?.ok?'ok':'blocked';
+      if(!result?.ok)onSaveConflict?.(result);
     }
     function storageCopy(){
       if(status==='preserved')return 'The earlier range study could not be read and was kept. Changes in this session will not overwrite it. Download your notes before leaving.';
@@ -259,7 +261,7 @@
       return lines.join('\n');
     }
     function reset(){
-      state=fresh();pointer=null;try{root.localStorage.removeItem(KEY);status='ok';}catch(_){status='blocked';}
+      state=fresh();pointer=null;status='ok';
       paintKey='';graphKey='';draw();emitMarks();
     }
     host.addEventListener('change',e=>{

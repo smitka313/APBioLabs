@@ -29,6 +29,25 @@
 (function () {
   'use strict';
   const KEY = 'aplab:openscied:b2-fires:v1';
+  const saveAPI = window.OpenSciEdSaveSession, saveScope = 'b2-fires';
+  const saveSession = (() => { try { return saveAPI?.open(localStorage, saveScope, [KEY]); } catch (_) { return null; } })();
+  function readSave() { return saveSession ? saveSession.read(KEY) : localStorage.getItem(KEY); }
+  function showSaveConflict(result) {
+    const n = document.getElementById('save-conflict');
+    const message = result?.reason === 'erased' ? 'Saved work was cleared in another tab. This tab cannot write it back.' :
+      result?.reason === 'changed' ? 'A newer save from another tab was kept.' : 'This tab could not save on this device.';
+    const copy = message + ' Download or copy this tab’s work before reloading.';
+    if (n && (n.hidden || n.textContent !== copy)) { n.textContent = copy; n.hidden = false; announce(copy); }
+    return copy;
+  }
+  function checkSaveConflict(event) {
+    if (!saveSession) return;
+    if (event.type === 'storage' && event.key && ![KEY, saveAPI.globalKey, saveAPI.scopeKey(saveScope), saveAPI.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession.check(KEY);
+    if (!result.ok) showSaveConflict(result);
+  }
+  window.addEventListener('storage', checkSaveConflict);
+  window.addEventListener('pageshow', checkSaveConflict);
   const SECTIONS = ['overview', 'ideas', 'plan', 'yeast', 'cards', 'sense3', 'hypothesis', 'tilt', 'sense5', 'peat', 'wrapup'];
   const SCENE_IDS = ['cards', 'decomp', 'tilt'];
   const HOSTS = { cards: ['#cards-scene', '#cards-notice'], decomp: ['#decomp-scene', '#decomp-notice'], tilt: ['#tilt-scene', '#tilt-notice'] };
@@ -36,7 +55,7 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const state = { cards: null, decomp: null, tilt: null, fields: {}, lastSection: 'overview' };
-  let cleared = false, hadSaved = false, ready = false, RESPONSE_IDS = [];
+  let cleared = false, ready = false, preservedSave = false, needsSaveUpgrade = false, hasSavedRecord = false, RESPONSE_IDS = [];
   const DATA_PICKS = { 'sense-bluest': 'bluest', 'sense-yellowest': 'yellowest' };
 
   function announce(text) { const e = $('#announcer'); if (!e) return; e.textContent = ''; setTimeout(function () { e.textContent = text; }, 30); }
@@ -47,13 +66,16 @@
   /* ---------- saved state ---------- */
   function readStore() {
     try {
-      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if (!d || d.v !== 1) return;
-      hadSaved = true;
+      const raw = readSave();
+      if (raw === null) return;
+      const d = JSON.parse(raw);
+      if (!d || d.v !== 1) throw Error('Unknown saved format');
+      hasSavedRecord = true;
+      needsSaveUpgrade = !Array.isArray(d.responseIds);
       SCENE_IDS.forEach(function (id) { if (d[id] && typeof d[id] === 'object') state[id] = d[id]; });
       if (d.fields && typeof d.fields === 'object') state.fields = d.fields;
       if (SECTIONS.includes(d.lastSection)) state.lastSection = d.lastSection;
-    } catch (e) { /* unreadable saved work: start fresh in memory */ }
+    } catch (e) { preservedSave = true; }
   }
   function collectFields() {
     const f = {};
@@ -73,9 +95,19 @@
       if (SECTIONS.includes(section)) state.lastSection = section;
       const rec = { v: 1, fields: state.fields, responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now(), modelEvidence: L.sceneEvidence(state) };
       SCENE_IDS.forEach(function (id) { rec[id] = state[id]; });
-      localStorage.setItem(KEY, JSON.stringify(rec));
+      if (preservedSave) {
+        renderReport();
+        return;
+      }
+      const result = saveSession?.write(KEY, JSON.stringify(rec));
+      if (!result?.ok) {
+        $('#save-status').textContent = showSaveConflict(result);
+        renderReport();
+        return;
+      }
+      hasSavedRecord = true;
       $('#save-status').textContent = 'Saved on this device.';
-    } catch (e) { $('#save-status').textContent = 'This browser could not save your work. Download a copy before leaving.'; }
+    } catch (e) { $('#save-status').textContent = showSaveConflict(); }
     renderReport();
   }
   function restoreFields() {
@@ -221,7 +253,7 @@
       : k === 'directBluest' ? d.bluestTube && d.bluestTube + ' was bluest.' : d.yellowestTube && d.yellowestTube + ' was yellowest.';
     if (v === true) return '✓ Your data show this' + (who ? ': ' + who : '.');
     if (v === false) return '✕ Your data do not show this' + (who ? ': ' + who : '.') + ' Check your table.';
-    return k === 'warmMost' || k === 'coldLeast' ? 'Record your foam readings, with different temperatures, to check this.' : 'Run the tilt test, record the tubes, and use a direct and a foil tube to check this.';
+    return k === 'warmMost' || k === 'coldLeast' ? 'Record your foam readings, with different temperatures, to check this.' : L.tiltEvidenceGap(k, state.tilt);
   }
   function renderClaim(speak) {
     const ck = id => $('#' + id).checked, claimEl = $('input[name="cer-claim"]:checked'), reason = $('input[name="cer-reason"]:checked');
@@ -232,12 +264,14 @@
       box.disabled = v === null && !on;
       box.dataset.evidence = v === true ? 'supported' : v === false ? 'not-supported' : 'unavailable';
       ok[id] = on && v === true;
-      if (note) note.textContent = on ? evidenceNote(id, v, detail) : '';
+      const isTube = id === 'cer-ev-3' || id === 'cer-ev-4';
+      if (note) note.textContent = on || (isTube && v === null) ? evidenceNote(id, v, detail) : '';
     });
     const hasFoam = checks.warmMost !== null || checks.coldLeast !== null;
     const hasTubes = checks.directBluest !== null || checks.foilYellow !== null;
     const needFoam = 'Record a foam reading after 0 min with different temperatures.';
-    const needTubes = 'Read and record a direct-light and a foil comparison.';
+    const needTubes = 'Record a tilt comparison that supports one of the tube statements below.';
+    $('#cer-tilt-recovery').hidden = checks.directBluest !== null && checks.foilYellow !== null;
     $('#cer-model-note').textContent = hasFoam && hasTubes
       ? 'Use your recorded comparisons. A strong explanation cites evidence about both decomposition and light.'
       : 'Model evidence still needed: ' + (!hasFoam ? needFoam + ' ' : '') + (!hasTubes ? needTubes : '');
@@ -296,7 +330,8 @@
     const graded = $$('main fieldset.mcq[data-correct]').length + dd.filter(function (d) { return L.PICKS[d.id] ? L.PICKS[d.id].correct.length : !!DATA_PICKS[d.id]; }).length;
     const ul = el('ul', 'report-checks');
     const st = answerStats(); report.dataset.answered = st.answered; report.dataset.total = st.total;
-    [st.answered + ' of ' + st.total + ' answers saved (questions and writing only; ' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
+    const answerState = document.getElementById('save-conflict')?.hidden === false ? 'answers in this tab' : 'answers saved';
+    [st.answered + ' of ' + st.total + ' ' + answerState + ' (questions and writing only; ' + st.writtenAnswered + ' of ' + st.writtenTotal + ' written)', good.length + ' of ' + graded + ' checkable questions correct so far'].forEach(function (t) { ul.appendChild(el('li', '', t)); });
     report.appendChild(ul);
     const ev = L.sceneEvidence(state);
     report.appendChild(el('h4','','Model records (counted separately)'));
@@ -312,7 +347,7 @@
     report.appendChild(el('p', 'small muted', 'Simplified teaching models. Yeast foam, plant and BTB results are simulated and do not replace real laboratory work.'));
   }
   function download() {
-    save();
+    state.fields = collectFields();
     const scenes = {}; SCENE_IDS.forEach(function (id) { scenes[id] = state[id]; });
     const d = state.decomp, t = state.tilt;
     const simulated = {
@@ -328,10 +363,11 @@
   }
   // Same rule as the other companions: clear this activity's record, then reload fresh at the Overview. Name and class period stay saved.
   function clearActivity() {
+    const result = saveSession?.reset(KEY);
+    if (!result?.ok) { $('#reset-dialog').close(); showSaveConflict(result); return; }
     $$('textarea, input[type=text], input[type=hidden], select').forEach(function (e) { if (e.tagName === 'SELECT') e.selectedIndex = 0; else e.value = ''; });
     $$('input[type=checkbox],input[type=radio]').forEach(function (e) { e.checked = e.defaultChecked; });
     cleared = true;
-    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     try { history.replaceState(null, '', location.pathname + location.search + '#overview'); } catch (e) { /* ignore */ }
     location.reload();
   }
@@ -370,6 +406,11 @@
   }
   function wire() {
     readStore();
+    if (preservedSave) {
+      const notice = document.getElementById('save-conflict');
+      notice.textContent = 'An unreadable save was kept. Download it from the dashboard before clearing it. Download any new work from this tab before reloading.';
+      notice.hidden = false;
+    }
     RESPONSE_IDS = Array.from(new Set($$('main input[type=radio]').map(function (r) { return r.name; }).concat(
       $$('main textarea').filter(function (t) { return !t.readOnly && t.id && !t.hasAttribute('data-optional'); }).map(function (t) { return t.id; }),
       $$('main select').filter(function (s) { return s.id && !s.closest('.scene-host'); }).map(function (s) { return s.id; }))));
@@ -379,7 +420,7 @@
     (window.B2Scenes || []).forEach(function (s) { api.registerScene(s); });
     window.B2Scenes = { push: function (s) { api.registerScene(s); } };
     SCENE_IDS.forEach(function (id) { if (!scenes[id]) { const n = $(HOSTS[id][1]); if (n) n.hidden = false; } });
-    window.addEventListener('hashchange', save);
+    window.addEventListener('hashchange', function () { if (hasSavedRecord) save(); });
     $$('main input, main textarea, main select').forEach(function (e) { if (!e.closest('.scene-host')) { e.addEventListener('change', save); e.addEventListener('input', save); } });
     $$('main fieldset.mcq[data-id]').forEach(function (fs) { fs.addEventListener('change', function () { renderChoice(fs, true); if (/^cer-/.test(fs.dataset.id)) renderClaim(true); }); });
     $$('main fieldset.chipset').forEach(function (fs) { fs.addEventListener('change', function () { renderChips(fs, true); }); });
@@ -393,8 +434,8 @@
     $('#reset-work').addEventListener('click', function () { dialog.showModal(); });
     $('#cancel-reset').addEventListener('click', function () { dialog.close(); });
     $('#confirm-reset').addEventListener('click', clearActivity);
-    // Only refresh an existing record on load: saving a blank page right after "Clear this activity" would make the dashboard show it as started.
-    if (hadSaved) save(); else renderReport();
+    // Do not overwrite a whole saved investigation just because a tab opened. Upgrade legacy counters once.
+    if (needsSaveUpgrade) save(); else renderReport();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 })();

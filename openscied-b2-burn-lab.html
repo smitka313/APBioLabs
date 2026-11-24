@@ -61,6 +61,7 @@
   </ol></div>
 </nav>
 <p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
+<div id="burn-save-warning" class="wrap wrap--wide gutter" hidden><div class="callout callout--safety"><p id="burn-save-warning-text"></p><button id="burn-download-unsaved" class="btn" type="button">Download this tab’s work (.json)</button></div></div>
 <main id="main">
 
   <!-- 1 ---------------------------------------------------------------- -->
@@ -161,7 +162,7 @@
   <section class="step wrap wrap--wide gutter" id="sense" data-step="Make sense">
     <header><div class="eyebrow">5 · Make sense</div><h2>Where did the matter and energy go?</h2></header>
     <div class="step-body">
-      <p class="small muted">Use your table. Three rows check your own data.</p>
+      <p class="small muted">Use your burn table as you answer. The last three questions check your own recorded data; the earlier ones ask you to interpret what you saw.</p>
       <div class="pick-row"><label for="sense-btb">When the BTB in the dish turned from blue toward yellow, the air under the dome had more…</label>
         <select id="sense-btb"><option value="">Choose</option><option value="co2">carbon dioxide</option><option value="o2">oxygen</option><option value="water">water</option></select>
         <p class="feedback" id="feedback-sense-btb"></p></div>
@@ -298,6 +299,7 @@
   <p><a href="index.html">Return to AP Bio Digital Lab Bench</a> · <a href="openscied-dashboard.html">Biology Companion Activities</a></p>
 </div></footer>
 <script src="lab.js"></script>
+<script src="openscied-save-session.js"></script>
 <script src="openscied-b2-burn-logic.js"></script>
 <script src="burn-lab-scene.js"></script>
 <script src="openscied-b2-burn-lab.js"></script>

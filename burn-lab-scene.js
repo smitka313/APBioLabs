@@ -63,7 +63,7 @@
       const n = sampleNo(pending) || L.MAX_SAMPLES, res = L.burnResult(seedNow(), pending, n), w = st && st.weighed;
       return { phase: 'ready', res, sim: L.stateAt(res, 0), t: 0, read: !!(w && w.fuel === pending && w.n === sampleNo(pending)) };
     }
-    function persist() { api.saveState('burn', { seed: st.seed, fuel: st.fuel, current: st.current, records: st.records, weighed: st.weighed || null, review: st.review || null, updatedAt: Date.now() }); }
+    function persist() { return api.saveState('burn', { seed: st.seed, fuel: st.fuel, current: st.current, records: st.records, weighed: st.weighed || null, review: st.review || null, updatedAt: Date.now() }); }
     const stageText = v => v.phase === 'ready' ? (v.read ? 'Weighed and read, ready to burn' : 'Ready: not weighed yet') : v.sim.stage === 'heating' ? 'Being lit with a lighter' : v.sim.stage === 'burning' ? 'Burning' : v.sim.stage === 'dying' ? 'Dying out' : v.read ? 'Weighed again' : 'Out and cooled';
     const secs = s => Math.round(s) + ' s';
 
@@ -76,23 +76,23 @@
       api.announce('Weighed: ' + r.massBefore.toFixed(1) + ' grams. The laser thermometer aimed at the fuel reads ' + r.tempBefore + ' degrees Celsius. Now burn it.');
     }
     function finishReading() {
-      if (!st?.current || view().phase !== 'finished') return false;
+      if (!st?.current || view().phase !== 'finished') return null;
       const c = st.current;
       // Complete evidence once, after both weighings. A review points at that record, not a second burn.
       if (!st.records.some(row => row.fuel === c.fuel && row.n === c.n)) {
         st.records = st.records.concat([{ fuel: c.fuel, n: c.n, obs: (c.obs || []).slice() }]);
       }
       st.review = { fuel: c.fuel, n: c.n }; st.current = null; st.weighed = null; pending = c.fuel;
-      lastStage = ''; lastDescKey = ''; persist();
-      return true;
+      lastStage = ''; lastDescKey = ''; return persist();
     }
     function weighAfter() {
       if (!st || !st.current) return;
       const v = view(); if (v.phase !== 'finished') return;
-      if (!finishReading()) return;
+      const saved = finishReading();
+      if (saved === null) return;
       render('[data-bn="saved"]');
       const r = v.res;
-      api.announce('Saved ' + r.label.toLowerCase() + ', sample ' + r.n + '. Ash: ' + r.massAfter.toFixed(1) + ' grams and ' + r.tempAfter + ' degrees Celsius. You can add observations or choose the next sample.');
+      api.announce((saved ? 'Saved ' : 'Recorded only in this tab. Download a copy before leaving. ') + r.label.toLowerCase() + ', sample ' + r.n + '. Ash: ' + r.massAfter.toFixed(1) + ' grams and ' + r.tempAfter + ' degrees Celsius. You can add observations or choose the next sample.');
     }
     function burn() {
       const n = sampleNo(pending); if (!n || (st && st.current) || !view().read) return;

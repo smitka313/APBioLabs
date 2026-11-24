@@ -82,7 +82,7 @@
     <details class="cb-panel cb-detail" id="cb-download-fallback" hidden><summary>Copy the budget evidence instead</summary>
       <label for="cb-copy">Text to copy</label><textarea id="cb-copy" rows="5" readonly></textarea>
     </details>
-    <p id="cb-save-status" class="cb-save-status" hidden></p>
+    <p id="cb-save-status" class="cb-save-status" role="status" hidden></p>
     <dialog id="cb-reset-dialog" aria-labelledby="cb-reset-title">
       <form method="dialog"><h3 id="cb-reset-title">Start a new budget?</h3>
         <p>This clears the comparison and your responses here. Your atom journey stays unchanged.</p>
@@ -104,10 +104,10 @@
     }
     return states;
   }
-  function savedBudget(last) {
+  function savedBudget(last, session) {
     let original=null;
     try {
-      original=localStorage.getItem(KEY);
+      original=session ? session.read(KEY) : localStorage.getItem(KEY);
       if(original===null)return {memory:empty(),preserve:false,original};
       const data=JSON.parse(original);
       if(data && data.v===1 && Number.isInteger(data.position) && Number.isInteger(data.furthest) &&
@@ -135,7 +135,7 @@
     const frames=buildFrames(model), saved=savedBudget(frames.length-1);
     return budgetData(saved.memory,frames,model,saved.preserve?saved.original:null);
   }
-  function mount(host,{announce=()=>{},journeyEvidence=()=>''}={}) {
+  function mount(host,{announce=()=>{},journeyEvidence=()=>'',saveSession}={}) {
     const model=global.CarbonBudgetLogic;
     if(!host || !model)return null;
     if(host.__carbonBudgetUI)return host.__carbonBudgetUI;
@@ -144,18 +144,35 @@
     const q=id=>host.querySelector('#'+id);
     const frames=buildFrames(model), last=frames.length-1;
     const fireIndex=frames.findIndex(f=>f.fire.ledger.at(-1)?.id==='peat-fire');
-    let {memory,preserve,original}=savedBudget(last);
+    let {memory,preserve,original}=savedBudget(last,saveSession);
     const saveNote=q('cb-save-status');
     function status(message) {
       saveNote.hidden=!message;
       saveNote.textContent=message;
     }
+    function conflict(result) {
+      if(!result || result.ok || result.reason==='unavailable') return false;
+      status((result.reason==='erased'?'The budget was cleared in another tab.':'The budget was changed in another tab.')+
+        ' This tab will not overwrite it. Download your open work before reloading.');
+      return true;
+    }
     function save() {
       if(preserve)return false;
-      try {localStorage.setItem(KEY,JSON.stringify({...memory,lastVisitedAt:Date.now()})); status('');return true;}
-      catch(_){status('This browser blocked saving. Download or copy your work before closing.');return false;}
+      const result=saveSession?.write(KEY,JSON.stringify({...memory,lastVisitedAt:Date.now()}));
+      if(result?.ok){status('');return true;}
+      if(!conflict(result))status('This browser blocked saving. Download or copy your work before closing.');
+      return false;
     }
     if(preserve)status('Earlier budget progress could not be read and was not overwritten. Download or copy any new work before closing.');
+    if(saveSession){
+      const guard=global.OpenSciEdSaveSession;
+      conflict(saveSession.check(KEY));
+      global.addEventListener('storage',event=>{
+        if(!event.key||[KEY,guard.globalKey,guard.scopeKey('b2-carbon-journey'),guard.resetKey(KEY)].includes(event.key)){
+          conflict(saveSession.check(KEY));
+        }
+      });
+    }
     function descriptor(position) {
       if(position<1)return {title:'Starting budgets',description:'Check that both trials begin with the same amounts. Advance the two trials together.'};
       const entry=model.STEPS[position-1]||{};
@@ -311,6 +328,9 @@
     function exportReport(){
       if(memory.position<0&&!memory.prediction.trim()&&!memory.explanation.trim())return '';
       const lines=['Carbon & Energy Budget (simulated model units)','Matched trials: without fire and with peat fire. Not measured field data.'];
+      const student=global.Lab?.identity?.get?.();
+      if(student?.name)lines.push('Name: '+student.name);
+      if(student?.period)lines.push('Class period: '+student.period);
       if(memory.prediction.trim())lines.push('Prediction: '+memory.prediction.trim());
       if(memory.furthest>=0){
         lines.push('Last checkpoint reached: '+descriptor(memory.furthest).title);
@@ -358,8 +378,8 @@
       announce(note.textContent);
     }
     function reset() {
-      try {localStorage.removeItem(KEY);}
-      catch(_){status('Budget progress could not be cleared here.');return false;}
+      const result=saveSession?.reset(KEY);
+      if(!result?.ok){if(!conflict(result))status('Budget progress could not be cleared here.');return false;}
       original=null;preserve=false;memory=empty();status('');
       q('cb-prediction').value='';q('cb-explanation').value='';
       q('cb-copy').value='';q('cb-download-status').textContent='';

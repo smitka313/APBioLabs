@@ -19,6 +19,7 @@
     '.tl-setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.tl-field{display:grid;gap:4px;min-width:0}.tl-field label{font-weight:650;font-size:.92rem}.tl-field select{font:inherit;min-height:40px;max-width:100%;padding:4px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);color:var(--ink)}' +
     '.tl-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.tl-actions .btn{min-height:40px}.tl-clock{display:grid;gap:6px}.tl-clock strong{font:700 1.15rem var(--f-mono)}.tl-bar{height:12px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);overflow:hidden}.tl-bar i{display:block;height:100%;background:var(--accent);width:0}' +
     '.tl-note{margin:0;font-size:.88rem;color:var(--muted)}.tl-msg{margin:0;font-weight:600}.tl-confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.tl-table th,.tl-table td{white-space:normal;text-align:left}.tl-fig{margin:0;display:grid;gap:6px}.tl-chart{max-width:100%}' +
+    '.tl-tube-readouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;list-style:none;margin:0;padding:0}.tl-tube-readouts li{display:grid;gap:3px;align-content:start;overflow-wrap:anywhere;padding:6px;border:1px solid var(--line);border-radius:var(--r-sm);font-size:.83rem}.tl-tube-readouts b{color:var(--ink)}' +
     '.tl-leaves{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.tl-leaf{display:grid;gap:4px;justify-items:center;text-align:center;font-size:.88rem;margin:0}.tl-leaf svg{width:100%;max-width:150px;height:auto}' +
     '.scene-host.tall canvas{aspect-ratio:auto;height:clamp(300px,40vw,380px);min-height:0}@media(max-width:560px){.scene-host.tall canvas{height:340px}.tl-table{font-size:.82rem}.tl-table th,.tl-table td{padding:5px 4px}.tl-actions .btn{flex:1 1 auto}}';
 
@@ -111,10 +112,23 @@
       actions.appendChild(resetControl());
       clock.appendChild(actions);
       top.appendChild(clock);
+      renderTubeReadouts();
       if (st.recorded) resultsPanel();
     }
+    function renderTubeReadouts() {
+      const list = h('ul', { class: 'tl-tube-readouts', 'aria-label': 'Tube light settings and recorded BTB readings' });
+      results().forEach(row => {
+        const item = h('li', { 'data-tube-readout': row.tube },
+          h('b', { text: 'Tube ' + row.tube }),
+          h('span', { text: lightName(row.light) + ' · ' + Math.round(row.intensity * 100) + '% light' }),
+          h('span', { text: st.recorded ? 'BTB ' + row.btb.toFixed(1) + ' · ' + row.btbLabel :
+            L.LIGHTS[row.light].foil ? 'BTB hidden under foil' : 'BTB not yet recorded' }));
+        list.appendChild(item);
+      });
+      top.appendChild(list);
+    }
     function hint(done) {
-      if (st.recorded) return 'The tubes are unwrapped. Read each color in the table.';
+      if (st.recorded) return 'Compare the BTB numbers too. Tubes can look the same color and still have different readings.';
       if (done) return 'The night is over. Unwrap the foil and read every tube.';
       return 'The tubes stay under the lights. The foil tube’s color stays hidden until morning.';
     }

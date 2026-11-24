@@ -47,6 +47,37 @@
 (function () {
   'use strict';
   const KEY = 'aplab:openscied:b3-dna-p53:v1';
+  const saveScope = 'b3-dna-p53', saveAPI = window.OpenSciEdSaveSession;
+  const saveSession = (() => {
+    try { return saveAPI?.open(window.localStorage, saveScope, [KEY]); }
+    catch (_) { return null; }
+  })();
+  const unavailableSave = { ok:false, reason:'unavailable' };
+  function showSaveProblem(result, focus = false) {
+    const message = (result?.reason === 'erased' ? 'Saved work was cleared in another tab.' :
+      result?.reason === 'changed' ? 'This activity changed in another tab.' : 'This browser could not save your work.') +
+      ' This tab has not overwritten the saved work. Download a copy of your work here before reopening the activity.';
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) {
+      if (notice.firstElementChild.textContent !== message) notice.firstElementChild.textContent = message;
+      notice.hidden = false;
+      if (focus) notice.focus();
+    }
+    return message;
+  }
+  function clearSaveProblem() {
+    const notice = document.getElementById('ose-save-protection');
+    if (notice) notice.hidden = true;
+  }
+  function watchSaveChanges(event) {
+    if (event?.type === 'storage' && event.key !== null &&
+        ![KEY, saveAPI?.globalKey, saveAPI?.scopeKey(saveScope), saveAPI?.resetKey(KEY)].includes(event.key)) return;
+    const result = saveSession?.check(KEY);
+    if (result && !result.ok && result.reason !== 'unavailable') showSaveProblem(result);
+  }
+  window.addEventListener('storage', watchSaveChanges);
+  window.addEventListener('pageshow', watchSaveChanges);
+
   const SECTIONS = ['overview', 'ideas', 'fork', 'sense5', 'checklist', 'explain', 'expression', 'sense6', 'wrapup'];
   const L = window.B3DnaP53Logic;
   const $ = (s, r) => (r || document).querySelector(s);
@@ -81,7 +112,7 @@
   /* ---------- saved state ---------- */
   function readStore() {
     try {
-      const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+      const d = JSON.parse((saveSession?.read(KEY) ?? null) || 'null');
       if (!d || d.v !== 1) return;
       hadSaved = true;
       if (d.fork && typeof d.fork === 'object') state.fork = d.fork;
@@ -114,9 +145,10 @@
       state.fields = collectFields();
       const section = location.hash.slice(1);
       if (SECTIONS.includes(section)) state.lastSection = section;
-      localStorage.setItem(KEY, JSON.stringify({ v: 1, fork: state.fork, expression: state.expression, fields: state.fields, feedback: state.feedback,
-        responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now() }));
-      $('#save-status').textContent = 'Saved on this device.';
+      const result = saveSession?.write(KEY, JSON.stringify({ v: 1, fork: state.fork, expression: state.expression, fields: state.fields, feedback: state.feedback,
+        responseIds: RESPONSE_IDS, lastSection: state.lastSection, lastVisitedAt: Date.now() })) ?? unavailableSave;
+      if (result.ok) clearSaveProblem();
+      $('#save-status').textContent = result.ok ? 'Saved on this device.' : showSaveProblem(result);
     } catch (e) { $('#save-status').textContent = 'This browser could not save your work. Download a copy before leaving.'; }
     refreshAll();
   }
@@ -540,8 +572,9 @@
   // Same rule as the Cell Cycle companion: clear this activity's record, then reload fresh at the Overview.
   // Name and class period are site-wide and stay saved.
   function clearActivity() {
+    const result = saveSession?.reset(KEY) ?? unavailableSave;
+    if (!result.ok) { $('#reset-dialog').close(); $('#save-status').textContent = showSaveProblem(result, true); return; }
     cleared = true;
-    try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
     try { history.replaceState(null, '', location.pathname + location.search + '#overview'); } catch (e) { /* ignore */ }
     location.reload();
   }
@@ -635,6 +668,11 @@
     (window.B3DnaP53Scenes || []).forEach(function (s) { api.registerScene(s); });
     window.B3DnaP53Scenes = { push: function (s) { api.registerScene(s); } };
     showPlaceholders();
+    // Refresh the open summary when the shared local sign-in changes; no work record is written.
+    window.addEventListener('storage', function (event) {
+      if (event.key === null || event.key === 'aplab:student') renderReport();
+    });
+    window.addEventListener('pageshow', renderReport);
     window.addEventListener('hashchange', save);
     let pending = 0;
     window.addEventListener('resize', function () { cancelAnimationFrame(pending); pending = requestAnimationFrame(function () { Object.keys(HOSTS).forEach(drawPreview); }); }, { passive: true });

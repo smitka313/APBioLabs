@@ -3,8 +3,14 @@
   const L = window.CarbonJourney, $ = s => document.querySelector(s);
   const key = 'aplab:openscied:b2-carbon-journey:v1';
   Lab.init({ id: 'openscied-b2-carbon-journey' });
-  let raw = null;
-  try { raw = localStorage.getItem(key); } catch (_) {}
+  const budgetKey = 'aplab:openscied:b2-carbon-journey:budget:v1';
+  const scope = 'b2-carbon-journey';
+  const guard = window.OpenSciEdSaveSession;
+  let saveSession, raw = null;
+  try {
+    saveSession = guard?.open(localStorage, scope, [key,budgetKey]);
+    raw = saveSession ? saveSession.read(key) : localStorage.getItem(key);
+  } catch (_) {}
   const restored = L.readSaved(raw);
   let unreadable = raw !== null && restored === null ? raw : null;
   let state = restored ?? L.initial(Lab.identity.seed.seed);
@@ -13,8 +19,12 @@
   const downloadLabel = downloadButton.textContent;
   if (unreadable !== null) downloadButton.textContent = 'Download saved backup';
   let guess = null, revealed = false, rolling = false, questionIndex = 0, chart;
-  let section = 'play';
-  if (restored) try { const v = JSON.parse(raw); if (['play', 'evidence', 'sense'].includes(v.lastSection)) section = v.lastSection; } catch (_) {}
+  let section = 'play', migrateLegacy = false;
+  if (restored) try {
+    const v = JSON.parse(raw);
+    if (['play', 'evidence', 'sense'].includes(v.lastSection)) section = v.lastSection;
+    migrateLegacy = v.version !== state.version;
+  } catch (_) {}
   try { const old = JSON.parse(raw); if (state.pending !== null && old.presentation) { guess = L.stations.some(s => s[0] === old.presentation.guess) ? old.presentation.guess : null; revealed = old.presentation.revealed === true; if (typeof old.presentation.note === 'string') $('#note').value = old.presentation.note.slice(0,1000); } } catch (_) {}
   const name = id => L.stations.find(s => s[0] === id)[1];
   const mobile = () => matchMedia('(max-width:850px)').matches;
@@ -25,20 +35,37 @@
     $('#restart').disabled = !hasWork;
     $('#restart-hint').hidden = !!hasWork;
   }
-  function save(message, replaceUnreadable = false) {
-    updateRestart();
-    if (unreadable !== null && !replaceUnreadable) { announce(backupWarning); return; }
-    try {
-      localStorage.setItem(key, JSON.stringify({ ...state, lastSection: section, lastVisitedAt: Date.now(), presentation: { guess, revealed, note: $('#note').value } }));
+  function conflict(result) {
+    if (!result || result.ok || result.reason === 'unavailable') return false;
+    const note = $('#journey-save-conflict');
+    note.hidden = false;
+    note.textContent = (result.reason === 'erased' ? 'This journey was cleared in another tab.' : 'This journey was changed in another tab.') +
+      ' This tab will not overwrite it. Download your open work before reloading.';
+    return true;
+  }
+  function saved(result, message, replacing = false) {
+    if (result?.ok) {
       unreadable = null;
       downloadButton.textContent = downloadLabel;
       announce(message || 'Journey saved on this device.');
-    } catch (_) {
-      announce(unreadable !== null
-        ? 'Could not start a new saved journey. Your previous save has not been changed. Download the saved backup before trying again.'
-        : 'Could not save on this device. Keep this page open and download your journey.');
+      return true;
     }
+    if (!conflict(result)) announce(replacing
+      ? 'Could not start a new saved journey. Your previous save has not been changed. Download the saved backup before trying again.'
+      : 'Could not save on this device. Keep this page open and download your journey.');
+    return false;
   }
+  function save(message) {
+    updateRestart();
+    if (unreadable !== null) { announce(backupWarning); return false; }
+    return saved(saveSession?.write(key, JSON.stringify({ ...state, lastSection: section, lastVisitedAt: Date.now(),
+      presentation: { guess, revealed, note: $('#note').value } })), message);
+  }
+  window.addEventListener('storage', event => {
+    if (saveSession && (!event.key || [key,guard.globalKey,guard.scopeKey(scope),guard.resetKey(key)].includes(event.key))) {
+      conflict(saveSession.check(key));
+    }
+  });
   let budgetUI;
   function setPage(id, saveSection = true) {
     const budgeting = id === 'budget';
@@ -56,6 +83,7 @@
     if (budgeting) {
       if (!budgetUI) budgetUI = window.CarbonBudgetUI?.mount($('#carbon-budget-host'), {
         announce,
+        saveSession,
         journeyEvidence: () => {
           const last = state.rows.at(-1);
           if (!last) return '';
@@ -270,15 +298,23 @@
   $('#analyze').addEventListener('click', () => { $('#complete-dialog').close(); setPage('evidence'); });
   $('#restart').addEventListener('click', () => { if (!$('#restart').disabled) $('#reset-dialog').showModal(); }); $('#cancel-reset').addEventListener('click', () => $('#reset-dialog').close());
   $('#confirm-reset').addEventListener('click', () => {
-    state = L.initial((state.seed + 0x6D2B79F5) >>> 0); guess = null; revealed = false; questionIndex = 0; tourStation = '';
-    questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset(); $('#reset-dialog').close();
-    section = 'play'; save('New journey ready.', true); render(); showQuestion(); setPage('play', false);
+    const next = L.initial((state.seed + 0x6D2B79F5) >>> 0);
+    const raw = JSON.stringify({ ...next, lastSection:'play', lastVisitedAt:Date.now(), presentation:{ guess:null, revealed:false, note:'' } });
+    const cleared = saved(saveSession?.reset(key, raw), 'New journey ready.', true);
+    $('#reset-dialog').close();
+    if (!cleared) return;
+    state = next; guess = null; revealed = false; questionIndex = 0; tourStation = '';
+    questions.forEach(([id]) => $('#' + id).value = ''); $('#record-form').reset();
+    section = 'play'; render(); showQuestion(); setPage('play', false);
   });
   $('#download').addEventListener('click', () => {
     const backup = unreadable !== null;
+    const identity = Lab.identity.get?.();
+    const student = identity?.name ? { name:identity.name, period:identity.period||'' } : null;
     const payload = backup ? null : {
       format: 'openscied-carbon-journey-v2', mode: 'official-station-cards', simulated: true,
       exportedAt: new Date().toISOString(), ...state, questions: Object.fromEntries(questions),
+      ...(student ? { student } : {}),
       pendingPresentation: state.pending === null ? null : { revealed, ...(revealed ? {prediction: guess} : {}), note: $('#note').value },
       referenceCardsReviewed: L.tour(state).filter(sample => state.coverageReviewed.includes(sample.from))
         .map(({from,to,process,text})=>({from,to,process,text})),
@@ -305,5 +341,7 @@
   document.querySelectorAll('[data-total-tab]').forEach(b => b.addEventListener('click', () => { totalTab = b.dataset.totalTab; document.querySelectorAll('[data-total-tab]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); showTotal(); }));
   render();
   const linked = location.hash.slice(1);
-  setPage(['play', 'evidence', 'sense', 'budget'].includes(linked) ? linked : section);
+  // Opening another tab is read-only for current saves. Legacy formats still migrate
+  // deliberately, with the same conflict guard as every other autosave.
+  setPage(['play', 'evidence', 'sense', 'budget'].includes(linked) ? linked : section, migrateLegacy);
 })();

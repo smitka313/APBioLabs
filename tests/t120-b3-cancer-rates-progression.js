@@ -49,6 +49,11 @@ async function runStudent(browser, url) {
   try {
     await page.goto(url + FILE);
     const tap = id => $(page, id).tap();
+    const shared = await page.evaluate(() => window.Lab.identity.get());
+    ok(shared?.name && await $(page, 'name').inputValue() === shared.name &&
+      await $(page, 'period').inputValue() === shared.period, 'Report fields use the shared sign-in when there is no override');
+    ok(await page.evaluate(() => document.querySelector('#predict').compareDocumentPosition(document.querySelector('#cr-income-cards')) &
+      Node.DOCUMENT_POSITION_FOLLOWING), 'Predict comes before the Evidence Folder in reading order');
     ok(await $(page, 'lock').isDisabled() && await $(page, 'income-cards').isHidden(), 'Evidence is hidden until a student saves a prediction');
     ok(await page.getByText(/20 diagnoses among 200,000 people in one year is 10 diagnoses per 100,000 people/).isVisible(), 'Predict defines a rate through a worked example');
     ok(/prediction first/i.test(await step(page, 'explore').getAttribute('aria-description')), 'Locked Explore gives a readable prerequisite');
@@ -128,6 +133,9 @@ async function downloadStatus(page, expected) {
   const report = await fs.readFile(await download.path(), 'utf8');
   ok(download.suggestedFilename() === 'cancer-rates-investigation.txt' && report.includes('Status: ' + expected + '\n') &&
     report.includes(full) && report.includes(claim) && report.includes(limits), 'Download includes Status: ' + expected + ' and the actual written work');
+  const shared=await page.evaluate(()=>window.Lab.identity.get());
+  ok(report.includes('Name: '+shared.name+'\n') && report.includes('Class period: '+shared.period+'\n'),
+    'Report includes the active shared name and period without a local override');
 }
 async function verifyLegacy(browser, url) {
   const { ctx, page, errors } = await setup(browser);

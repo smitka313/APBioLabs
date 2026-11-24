@@ -361,6 +361,22 @@
     if (f[0] && f[1] && n >= 3) return 'linked';
     return 'foundational';
   }
+  // CER requires an actual target tube and a differently lit comparison, not a particular pair of settings.
+  function recordedTiltComparison(tiltState) {
+    if (!sceneEvidence({tilt:tiltState}).tubesRead || !tiltState.settings.every(id => LIGHT_IDS.includes(id))) return null;
+    const rows = tiltResults(tiltState.seed, tiltState.settings), positions = rows.map(row => row.btb);
+    return { rows, min: Math.min(...positions), max: Math.max(...positions) };
+  }
+  function tiltEvidenceGap(key, tiltState) {
+    const target = key === 'directBluest' ? 'direct' : key === 'foilYellow' ? 'foil' : null;
+    if (!target) return '';
+    const comparison = recordedTiltComparison(tiltState);
+    const setup = target === 'direct' ? 'Record one direct-light tube and one tube with a different light setting.'
+      : 'Record one foil-covered tube and one lit tube at any angle.';
+    if (!comparison || !comparison.rows.some(row => row.light === target) ||
+        !comparison.rows.some(row => row.light !== target)) return setup;
+    return comparison.min === comparison.max ? 'All recorded BTB readings tied. Try different light settings and record again.' : '';
+  }
   /* Does the student's own data back up each evidence statement? true / false, or null when there is not enough data to say. A self-check of
      the student's reading of their own data, not a grade.
        warmMost:   the warmest beaker has the most foam at the last reading (needs a reading and two different temperatures)
@@ -380,13 +396,16 @@
         out.coldLeast = temps.every((t, i) => t !== lo || h[i] === bottom);
       }
     }
-    if (sceneEvidence({tilt:tiltState}).tubesRead) {
-      const res = tiltResults(tiltState.seed, tiltState.settings), pos = res.map(r => r.btb);
-      const min = Math.min.apply(null, pos), max = Math.max.apply(null, pos);
-      const paired = res.some(r => r.light === 'direct') && res.some(r => r.light === 'foil');
-      if (paired && min !== max) out.directBluest = res.every(r => r.light !== 'direct' || r.btb === min);
-      if (paired && min !== max) out.foilYellow = res.every(r => r.light !== 'foil' || r.btb === max);
-      const lit = res.filter(r => r.light !== 'foil');
+    const comparison = recordedTiltComparison(tiltState);
+    if (comparison) {
+      const { rows, min, max } = comparison;
+      if (min !== max && rows.some(r => r.light === 'direct') && rows.some(r => r.light !== 'direct')) {
+        out.directBluest = rows.some(r => r.light === 'direct' && r.btb === min);
+      }
+      if (min !== max && rows.some(r => r.light === 'foil') && rows.some(r => r.light !== 'foil')) {
+        out.foilYellow = rows.some(r => r.light === 'foil' && r.btb === max);
+      }
+      const lit = rows.filter(r => r.light !== 'foil');
       if (new Set(lit.map(r => r.intensity)).size > 1) out.moreLightBluer = lit.every(a => lit.every(b => a.intensity <= b.intensity || a.btb <= b.btb));
     }
     return out;
@@ -400,10 +419,13 @@
       d.leastBeaker = BEAKER_NAMES[last.h.indexOf(bottom)] + ' (' + temps[last.h.indexOf(bottom)] + ' °C)';
       d.minute = last.t;
     }
-    if (tiltState && tiltState.recorded && num(tiltState.seed)) {
-      const res = tiltResults(tiltState.seed, tiltState.settings), pos = res.map(r => r.btb);
-      const b = res[pos.indexOf(Math.min.apply(null, pos))], y = res[pos.indexOf(Math.max.apply(null, pos))];
-      d.bluestTube = 'Tube ' + b.tube + ' (' + LIGHTS[b.light].short + ')'; d.yellowestTube = 'Tube ' + y.tube + ' (' + LIGHTS[y.light].short + ')';
+    const comparison = recordedTiltComparison(tiltState);
+    if (comparison) {
+      const { rows, min, max } = comparison;
+      const describe = r => 'Tube ' + r.tube + ' (' + LIGHTS[r.light].short + ')';
+      const bluest = rows.filter(r => r.btb === min), yellowest = rows.filter(r => r.btb === max);
+      d.bluestTube = describe(bluest.find(r => r.light === 'direct') || bluest[0]);
+      d.yellowestTube = describe(yellowest.find(r => r.light === 'foil') || yellowest[0]);
     }
     return d;
   }
@@ -443,5 +465,5 @@
     CARDS, REACTION, checkCards, PICKS, checkPick, checkSugarSentence, HYP_REASONS, checkHypothesis,
     LIGHTS, LIGHT_IDS, TUBE_IDS, SUGGESTED_SETUP, RESP, NIGHT_MS, NIGHT_HOURS, lightIntensity, photosynthesis, BTB_LABELS, BTB_RGB, BTB_START,
     btbPosition, btbLabel, btbColor, btbAt, plantFactor, tubeFactor, tubeResult, tiltResults, starchLabel, starchDarkness, nightProgress, setupCheck,
-    claimLevel, evidenceChecks, evidenceDetail, sceneEvidence };
+    claimLevel, evidenceChecks, evidenceDetail, tiltEvidenceGap, sceneEvidence };
 });

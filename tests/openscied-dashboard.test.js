@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
+const SaveSession = require('../openscied-save-session.js');
 const source = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.js'), 'utf8');
 function setup(blocked = false, overrides = {}, absent = [], tracker) {
   const elements = new Map(), created = [], events = {};
@@ -31,7 +32,7 @@ function setup(blocked = false, overrides = {}, absent = [], tracker) {
       querySelector(selector) { if (absent.includes(selector)) return null; if (!elements.has(selector)) elements.set(selector, element()); return elements.get(selector); },
       createElement(tag) { const el=element(tag);created.push(el);return el; }, body: { appendChild() {} } },
     Lab: { identity: { mount(selector) { mounted = selector; }, get: () => ({ name: 'Student', period: '2' }) } },
-    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,addEventListener(type, fn) { events[type]=fn; } }, Blob,
+    localStorage: storage, window: { location:{origin:'https://biologylabbench.com'},OpenSciEdResume:tracker,OpenSciEdSaveSession:SaveSession,addEventListener(type, fn) { events[type]=fn; } }, Blob,
     URL: { createObjectURL(value) { blob = value; return 'blob:backup'; }, revokeObjectURL() {} }, setTimeout() {} };
   vm.runInNewContext(source, context);
   return { data, created, events, el: selector => elements.get(selector), mounted, blob: () => blob };
@@ -53,8 +54,8 @@ test('mounts the shared sign-in and confirms an OpenSciEd-only reset', () => {
   s.el('#openscied-erase-confirmation').fire('input');
   assert.equal(s.el('#confirm-openscied-clear').disabled, false);
   s.el('#clear-openscied-form').fire('submit');
-  assert.deepEqual(Object.keys(s.data).sort(), Object.keys(before).filter(k => !k.startsWith('aplab:openscied:')).sort());
-  for (const key of Object.keys(s.data)) assert.equal(s.data[key], before[key]);
+  assert.deepEqual(Object.keys(s.data).sort(), [...Object.keys(before).filter(k => !k.startsWith('aplab:openscied:')), SaveSession.globalKey].sort());
+  for (const key of Object.keys(s.data).filter(k => k!==SaveSession.globalKey)) assert.equal(s.data[key], before[key]);
   assert.equal(s.el('#clear-openscied-dialog').open, false);
   assert.equal(s.el('#clear-openscied-results').disabled, true);
 });
@@ -99,7 +100,9 @@ test('per-activity restart preserves other OpenSciEd activities and offers a sco
   s.el('#openscied-erase-confirmation').value = 'ERASE';
   s.el('#clear-openscied-form').fire('submit');
   assert.equal(s.data['aplab:openscied:b3-cell-cycle:v1'], undefined);
-  for (const key of Object.keys(s.data)) assert.equal(s.data[key], before[key]);
+  const marker = SaveSession.scopeKey('b3-cell-cycle');
+  assert.ok(s.data[marker]);
+  for (const key of Object.keys(s.data).filter(k => k!==marker)) assert.equal(s.data[key], before[key]);
   assert.equal(s.el('#cell-cycle-reset').disabled, true);
   assert.equal(s.el('#openscied-resume').hidden, true);
   assert.equal(s.el('#cell-cycle-progress').textContent, 'Not started');
@@ -143,7 +146,7 @@ test('Unit 1 precedes Units 2 and 3 with a linked original Serengeti illustratio
   assert.deepEqual([...page.matchAll(/<section class="dashboard-unit current" aria-labelledby="(unit\d+)">/g)].map(m=>m[1]),
     ['unit1','unit2','unit3','unit4']);
   assert.equal((page.match(/id="unit1"/g)||[]).length,1);
-  assert.match(page, /<p class="dashboard-coming-soon">Unit 5: No activities published yet\.<\/p>/);
+  assert.match(page, /<p class="dashboard-coming-soon">[\s\S]*?No companion activities yet\.[\s\S]*?b-5-common-ancestry-speciation\//);
   const unit = page.split('<section class="dashboard-unit current" aria-labelledby="unit1">')[1].split('</section>')[0];
   assert.match(unit, /href="openscied-b1-serengeti\.html"[^>]*><img src="assets\/openscied-serengeti-preview\.svg" width="960" height="600"/);
   assert.match(unit, /id="serengeti-open"[^>]*href="openscied-b1-serengeti\.html"/);
@@ -180,7 +183,7 @@ test('DNA Workshop comes before DNA Copying and saves a resumable local practice
   assert.equal(starter.el('#dna-workshop-progress').textContent,'1 piece placed · 1 response saved');
 });
 
-test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, leaving Unit 5 as non-interactive information', () => {
+test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, with a real curriculum link for unpublished Unit 5', () => {
   const page = fs.readFileSync(path.join(__dirname, '../openscied-dashboard.html'), 'utf8');
   const heading = '<section class="dashboard-unit current" aria-labelledby="unit4">';
   const unit = page.split(heading)[1]?.split('</section>')[0] || '';
@@ -194,7 +197,7 @@ test('Unit 4 shows Hawksbeard, Rat Generations, then Junco, leaving Unit 5 as no
   assert.ok(unit.indexOf('id="hawksbeard-open"') < unit.indexOf('id="rat-generations-open"'));
   assert.match(unit, /href="openscied-b4-junco\.html"[^>]*><img src="assets\/junco-preview\.svg" width="960" height="600"/);
   assert.ok(unit.indexOf('id="rat-generations-open"') < unit.indexOf('id="junco-open"'));
-  assert.match(page, /<p class="dashboard-coming-soon">Unit 5: No activities published yet\.<\/p>/);
+  assert.match(page, /<p class="dashboard-coming-soon">[\s\S]*?No companion activities yet\.[\s\S]*?b-5-common-ancestry-speciation\//);
   assert.doesNotMatch(page, /<details class="dashboard-coming-soon">|aria-labelledby="unit5"/);
 });
 
@@ -321,7 +324,7 @@ test('Cancer Rates Data Dive resumes, backs up its prediction and comparison, an
 test('a cached dashboard without the Cancer Rates card keeps existing cards and saves usable', () => {
   const absent = ['progress','open','reset'].map(suffix=> '#cancer-rates-'+suffix);
   const s = setup(false, {}, absent);
-  assert.equal(s.el('#migration-open').href, 'openscied-b1-migration.html#explore');
+  assert.equal(s.el('#migration-open').href, 'openscied-b1-migration.html');
   assert.equal(s.el('#dna-workshop-progress').textContent, 'Not started');
   assert.equal(s.el('#download-openscied-results').disabled, false);
 });
@@ -633,3 +636,64 @@ for (const [id,card] of [['b2-burn-lab','b2-burn'],['b2-fires','b2-fires']]) {
     assert.match(s.el('#'+card+'-progress').textContent,/0 of 1 answers saved · Claim checklist saved/);
   });
 }
+
+
+test('dashboard ERASE rejects stale editors and allows a fresh editor', () => {
+  const scope='b2-carbon-journey', key='aplab:openscied:'+scope+':v1';
+  const s=setup(false,{[key]:JSON.stringify({version:3,rows:[{}],answers:{}})});
+  const editor=SaveSession.open(s.data,scope,[key]);
+  const previous=editor.read(key);
+  s.el('#clear-openscied-results').fire('click');
+  s.el('#openscied-erase-confirmation').value='ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(s.data[key],undefined);
+  assert.equal(editor.write(key,previous).reason,'erased');
+  assert.equal(s.data[key],undefined);
+  const fresh=SaveSession.open(s.data,scope,[key]);
+  assert.equal(fresh.write(key,previous).ok,true);
+});
+
+test('one activity reset does not invalidate a different editor or erase work in it', () => {
+  const scope='b2-carbon-journey', key='aplab:openscied:'+scope+':v1', otherScope='b3-dna-workshop';
+  const otherKey='aplab:openscied:'+otherScope+':v1';
+  const s=setup(false,{[key]:JSON.stringify({version:3,rows:[{}],answers:{}}),[otherKey]:'{}'});
+  const carbon=SaveSession.open(s.data,scope,[key]), other=SaveSession.open(s.data,otherScope,[otherKey]);
+  s.el('#carbon-journey-reset').fire('click');
+  s.el('#openscied-erase-confirmation').value='ERASE';
+  s.el('#clear-openscied-form').fire('submit');
+  assert.equal(carbon.write(key,carbon.read(key)).reason,'erased');
+  assert.equal(other.write(otherKey,'{"value":"kept"}').ok,true);
+  assert.equal(s.data[SaveSession.globalKey],undefined);
+});
+
+test('Lab sign-out and full reset set the same non-personal guard before wiping work', () => {
+  const src=fs.readFileSync(path.join(__dirname,'../lab.js'),'utf8');
+  const code=src.slice(src.indexOf('  function invalidateOpenSciEdEditors()'),src.indexOf('  function doStartOverLab()'));
+  const store=new Map(), order=[];
+  const localStorage={getItem:k=>store.get(k)??null,setItem(k,v){order.push('mark');store.set(k,v);},removeItem(k){store.delete(k);}};
+  const key='aplab:openscied:b2-carbon-journey:v1';
+  localStorage.setItem(key,'{}');
+  const old=SaveSession.open(localStorage,'b2-carbon-journey',[key]);order.length=0;
+  const sandbox={localStorage,wipe(keep){order.push('wipe');for(const k of store.keys())if(!keep(k))store.delete(k);},
+    KEEP_PREFS:['aplab:ui:','aplab:pref:'],sessionSet(){},FLASH_KEY:'flash',IS_LAB:false,location:{reload(){}},
+    Lab:{toast(){}},storedIdentity:()=>null,memIdentity:null,memBackup:null};
+  vm.runInNewContext(code+'; doSignOut(); doStartOverAll();',sandbox);
+  assert.deepEqual(order,['mark','wipe','mark','wipe']);
+  assert.equal(old.write(key,'{}').reason,'erased');
+  assert.equal(localStorage.getItem(key),null);
+  assert.ok(localStorage.getItem(SaveSession.globalKey));
+});
+
+
+test('Peat Bog shows trial collection progress without inventing completion', () => {
+  const key='aplab:openscied:b2-peat-bog:v1';
+  const s=setup();
+  const meter=s.created.find(el=>el.tag==='progress' && el.attrs['aria-label'].startsWith('Peat Bog'));
+  assert.equal(meter.max,2); assert.equal(meter.value,0);
+  s.data[key]=JSON.stringify({v:1,trials:[{}]}); s.events.pageshow();
+  assert.equal(meter.value,1);
+  s.data[key]=JSON.stringify({v:1,trials:[{},{},{}]}); s.events.pageshow();
+  assert.equal(meter.value,2);
+  assert.match(s.el('#peat-bog-progress').textContent,/3 simulated trials/);
+  assert.match(meter.attrs['aria-label'],/Trials saved for a comparison/);
+});

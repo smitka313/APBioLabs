@@ -1,5 +1,7 @@
 'use strict';
 
+const { verifySaveConflict } = require('./openscied-b4-save-conflict-check');
+
 // Classroom regression for the five-generation B.4 Lesson 3 model.
 // This browser path independently counts ratios from actual genotype totals.
 const assert = require('node:assert/strict');
@@ -550,7 +552,7 @@ async function denominatorCheck(page) {
   const quiz = page.locator('#rg-check');
   const feedback = quiz.locator('#rg-check-feedback');
   check(clean(await feedback.textContent()) === '', 'denominator check starts without feedback');
-  for (const [value, expected] of [['rats', /two|copies|twice/i], ['alleles', /right|yes|correct/i]]) {
+  for (const [value, expected] of [['rats', /Not quite.*two copies/i], ['alleles', /right|yes|correct/i]]) {
     const choice = quiz.locator('input[name="rg-concept"][value="' + value + '"]');
     await choice.focus();
     await page.keyboard.press('Space');
@@ -758,6 +760,16 @@ async function play(browser, base, cfg) {
     browser = await chromium.launch(executablePath ? { executablePath } : {});
     await fs.mkdir(OUT, { recursive:true });
     for (const viewport of VIEWPORTS) await play(browser, server.url, viewport);
+    await verifySaveConflict(browser, server.url, {
+      file:FILE, key:SAVE, warning:'#rg-save-warning', backup:'#rg-download-tab', check,
+      async edit(page,n) {
+        if(!await page.locator('#rg-predict').isVisible()) await page.locator('.rg-steps [data-rg-go="predict"]').click();
+        const value=['increase','same','decrease'][n];
+        await page.locator('input[name="rg-prediction"][value="'+value+'"]').check();
+        await page.locator('#rg-prediction button[type="submit"]').click();
+      },
+      read:saved=>['increase','same','decrease'].indexOf(saved?.prediction), draft:/Prediction: Decrease/i
+    });
     console.log('openscied-b4-rat-generations-browser: ' + checks + ' checks passed');
   } finally {
     if (browser) await browser.close();

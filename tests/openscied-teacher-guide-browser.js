@@ -217,12 +217,12 @@ async function publicAndLock(browser, base, viewport, expectedCards) {
       check(await field.inputValue() === '' && await field.evaluate(el => document.activeElement === el),
         'rejected credentials are cleared and keyboard focus returns to the password field');
 
-      for (const from of ['openscied-dashboard.html', 'teachers.html']) {
-        await page.goto(base + from);
-        await link(page, GUIDE).click();
-        await loaded(page, 'OpenSciEd Teacher Guide');
-        check(new URL(page.url()).pathname === '/' + GUIDE, from + ' links to the shared OpenSciEd Teacher Guide');
-      }
+      await page.goto(base + 'openscied-dashboard.html');
+      check(await link(page, GUIDE).count() === 0, 'student dashboard does not expose teacher navigation');
+      await page.goto(base + 'teachers.html');
+      await link(page, GUIDE).click();
+      await loaded(page, 'OpenSciEd Teacher Guide');
+      check(new URL(page.url()).pathname === '/' + GUIDE, 'teacher landing page links to the shared OpenSciEd Teacher Guide');
     }
     check(errors.length === 0, at + ' no uncaught browser errors: ' + errors.join(', '));
   } finally {

@@ -65,6 +65,7 @@
 </nav>
 <p id="announcer" class="sr-only" role="status" aria-live="polite"></p>
 <main id="main">
+<p id="save-conflict" class="wrap wrap--wide gutter small" hidden></p>
 
   <!-- 1 ---------------------------------------------------------------- -->
   <section class="step wrap wrap--wide gutter" id="overview" data-step="Overview">
@@ -363,6 +364,7 @@
     <div class="step-body">
       <div class="panel cer" id="cer"><h3>Build your claim</h3>
         <p class="small cer-model-note" id="cer-model-note"></p>
+        <p class="small cer-model-note" id="cer-tilt-recovery" hidden><a href="#tilt">Return to the tilt test to record a comparison</a></p>
         <details class="disclose" id="cer-model-data" hidden><summary>See the recorded model data</summary><div class="inner"><div id="cer-foam-body"></div><div id="cer-tilt-body"></div></div></details>
         <fieldset class="mcq mini" data-id="cer-claim"><legend>Claim</legend>
           <label class="choice"><input type="radio" name="cer-claim" value="a"> Strong sunlight let plants store a lot of carbon, and cold ground slowed decomposers, so it stayed as peat.</label>
@@ -440,6 +442,7 @@
 <script src="matter-energy-scene.js"></script>
 <script src="decomposition-scene.js"></script>
 <script src="tilt-scene.js"></script>
+<script src="openscied-save-session.js"></script>
 <script src="openscied-b2-fires.js"></script>
 <script src="companion-pages.js"></script>
 </body>
