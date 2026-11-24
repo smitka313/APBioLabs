@@ -129,7 +129,7 @@
 .cr-case-cover::-webkit-details-marker{display:none}
 .cr-case-file,.cr-exhibit-tag{font:750 .75rem/1.3 var(--f-mono);letter-spacing:.075em}
 .cr-case-file{border:1px solid var(--cr-case-label);color:var(--cr-case-label);border-radius:4px;padding:.2rem .36rem}
-.cr-case-cover strong{font-size:clamp(1rem,2.2vw,1.23rem)}
+.cr-case-cover strong{color:#f4fbff;font-size:clamp(1rem,2.2vw,1.23rem)}
 .cr-case-action{display:flex;align-items:center;gap:.48rem;margin-inline-start:auto;color:var(--cr-case-label);font-size:.83rem;font-weight:750;white-space:nowrap}
 .cr-case-chevron{display:inline-block;width:.52rem;height:.52rem;margin:.15rem .15rem 0 0;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
 .cr-case[open] .cr-case-chevron{margin-block:.36rem 0;transform:rotate(225deg)}

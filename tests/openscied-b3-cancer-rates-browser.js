@@ -215,6 +215,13 @@ async function inspectIncomeCards(page,size,label) {
   await invoke(details.locator('summary').first(),size);
   const tabs=view(page,'cr-income-tabs');
   await tabs.waitFor({state:'visible'});
+  check(await details.locator('.cr-case-cover strong').evaluate(title=>{
+    const contrast=(color)=>[...color.matchAll(/\d+(?:\.\d+)?/g)].slice(0,3).map(m=>{
+      const c=Number(m[0])/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4;
+    }).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
+    const ls=[contrast(getComputedStyle(title).color),contrast(getComputedStyle(title.closest('summary')).backgroundColor)].sort((a,b)=>b-a);
+    return (ls[0]+.05)/(ls[1]+.05)>=4.5;
+  }),label+' case-file cover title meets text contrast against the navy header');
   const lesson=['cr-lesson1-diagnoses','cr-lesson1-deaths','cr-lesson1-map'];
   const addons=['cr-income-access','cr-income-diagnosis'];
   const exhibitOrder=[...lesson,...addons];
