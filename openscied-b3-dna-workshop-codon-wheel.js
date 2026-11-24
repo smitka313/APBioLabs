@@ -136,7 +136,7 @@
     // Merge neighboring synonymous codons within the same second-base sector.
     for (var start = 0, end = 1; start < CODE.length; start = end, end = start + 1) {
       while (end < CODE.length && end % 4 !== 0 && CODE[end] === CODE[start]) end += 1;
-      sector(3, start, end, AMINO[CODE[start]][1], null, CODE[start] === '*');
+      sector(3, start, end, CODE[start] === 'M' ? 'Met*' : AMINO[CODE[start]][1], null, CODE[start] === '*');
     }
     return { svg: svg, segments: segments };
   }
@@ -152,7 +152,7 @@
 
     var controls = element(doc, 'div', 'dw-codon-wheel-controls');
     var legend = element(doc, 'p', 'dw-codon-wheel-caption',
-      'Read from the center outward: first base → second base → third base → amino acid or Stop. Read the mRNA codon in the 5′ to 3′ direction.');
+      'Read from the center outward: first base → second base → third base → amino acid or Stop. Read the mRNA codon in the 5′ to 3′ direction. Met* marks AUG: Start and methionine.');
     controls.appendChild(legend);
 
     var row = element(doc, 'div', 'dw-codon-wheel-selects');
@@ -201,7 +201,7 @@
 
       if (!reading) result.textContent = 'Choose all three mRNA bases to look up a codon.';
       else if (reading.stop) result.textContent = reading.codon + ' → Stop. This codon tells the ribosome to stop translation; it does not add an amino acid.';
-      else if (reading.start) result.textContent = 'AUG → Methionine (Met). AUG is also the usual start codon.';
+      else if (reading.start) result.textContent = 'AUG → Start + methionine (Met). At the beginning, AUG tells the ribosome where to start and adds methionine.';
       else result.textContent = reading.codon + ' → ' + reading.name + ' (' + reading.abbreviation + ').';
     }
     selectors.forEach(function (select) { select.addEventListener('change', update); });

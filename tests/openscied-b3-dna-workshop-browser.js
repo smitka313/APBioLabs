@@ -149,6 +149,7 @@ const NOTES = {
   sort:'Copying made two DNA molecules; reading the transcript made a chain.'
 };
 const Model = require('../openscied-b3-dna-workshop-logic.js');
+const Wheel = require('../openscied-b3-dna-workshop-codon-wheel.js');
 const readRecord = page => page.evaluate(key => JSON.parse(localStorage.getItem(key) || 'null'), SAVE);
 const clipboard = page => page.evaluate(() => window.__workshopClipboard.slice());
 function savedPlacements(record) {
@@ -179,8 +180,16 @@ async function place(page, slot, value, input, label) {
   check(await target(page,slot).getAttribute('data-dw-placed') === value,
     label + ' ' + input + ' sets the exact piece in ' + slot);
 }
-const slotsOf = name => Model.stage(MODEL_IDS[name]).slots.map(item =>
-  typeof item === 'string' ? Model.slot(item) : item);
+const resolve = (name, progress) => Model.stage(MODEL_IDS[name],progress);
+async function activeModel(page,name) {
+  const raw=(await readRecord(page))?.progress;
+  const progress=raw?Model.restore(raw):null;
+  if(raw)assert.ok(progress,'the production model restores the saved progress for '+name);
+  return resolve(name,progress);
+}
+const chainOrder = data => data.codons.map(entry=>Wheel.translate(entry.codon).abbreviation);
+const chainEvidence = data => data.codons.filter(entry=>!entry.stop).map(entry=>Wheel.translate(entry.codon).name).join(' → ')+
+  '; Stop ends the chain (adds no amino acid)';
 async function rejectFirstPair(page, first, input, label, kind='base') {
   const wrong=first.choices.find(piece=>piece!==first.expected);
   assert.ok(wrong,'the base slot offers a meaningful incorrect choice');
@@ -205,7 +214,10 @@ async function report(page) {
     /DNA Workshop/i.test(text) && /toy|model/i.test(text) &&
     /DNA Workshop QA/.test(text) && /(?:class |classroom )?period: 6/i.test(text) &&
     Object.values(NOTES).every(note=>text.includes(note)),
-    'the downloaded report includes saved reflections from all five stages and identifies the toy activity');
+    'the downloaded report includes saved reflections from all six stages and identifies the fictional activity');
+  const data=await activeModel(page,'chain');
+  check(text.includes(data.codons.map(entry=>entry.codon).join(' | ')) && text.includes(chainEvidence(data)),
+    'the downloaded report records the exact assigned RNA and complete chain');
   check((await clipboard(page)).length === 0,'downloading leaves the clipboard untouched');
   await page.locator('#dw-copy').press('Enter');
   await page.waitForFunction(() => window.__workshopClipboard.length === 1);
@@ -245,21 +257,24 @@ const expectedRows = {
     'copy-daughter-a-original':DNA_A,'copy-daughter-a-new':DNA_B,
     'copy-daughter-b-new':DNA_A,'copy-daughter-b-original':DNA_B
   },
-  rna:{ 'rna-template':DNA_B,'rna-product':MSG },
-  chain:{ 'chain-codons':'AUG GCU UUU UAA','chain-product':'Met Ala Phe Stop' }
+  rna:{ 'rna-template':DNA_B,'rna-product':MSG }
 };
 const moleculeArt = (tile,fragment) => tile.locator('.dw-molecule-icon use').evaluate((glyph,fragment)=>
   glyph.getAttribute('href')?.endsWith('dna-workshop-molecules.svg#'+fragment),fragment);
-async function exactStage(page,name,slots,label) {
+async function exactStage(page,name,data,label) {
+  const slots=data.slots;
   check((await Promise.all(slots.map(slot => target(page,slot.id).getAttribute('data-dw-placed'))))
     .every((value,i)=>value===slots[i].expected),label+' '+name+' preserves placements in their exact positions');
-  if(expectedRows[name]){
+  const expected=name==='chain'?{
+    'chain-codons':data.codons.map(entry=>entry.codon).join(' '),'chain-product':chainOrder(data).join(' ')
+  }:expectedRows[name];
+  if(expected){
     const actual=await board(page).locator('[data-dw-row]').evaluateAll(rows=>Object.fromEntries(rows.map(row=>{
       const items=[...row.querySelectorAll('[data-dw-value]')].map(node=>node.dataset.dwValue);
       const spacing=items.some(item=>item.length>1)?' ':'';
       return [row.dataset.dwRow,items.join(spacing)];
     })));
-    check(same(actual,expectedRows[name]),label+' '+name+' shows each base, codon, and placed product in strand order');
+    check(same(actual,expected),label+' '+name+' shows each base, codon, and placed product in strand order');
   }
   if(name==='build'||name==='copy'){
     check(await moleculeArt(source(page,'A'),'nucleotide-dna-a'),
@@ -292,14 +307,13 @@ async function exactStage(page,name,slots,label) {
   } else if(name==='chain'){
     const chain=page.locator('#dw-history [data-dw-evidence-row="chain-product"] dd');
     const product=tidy(await chain.innerText());
-    check(await target(page,'chain-product-3').getAttribute('data-stop')==='true' &&
-      await target(page,'chain-product-3').getAttribute('data-dw-placed')==='Stop' &&
-      await board(page).locator('[data-dw-chain-count="3"]').count()===1 &&
-      /^Methionine → Alanine → Phenylalanine; Stop ends the chain/i.test(product) &&
-      /no amino acid|does not add/i.test(await board(page).innerText()),
-      label+' the last codon is a stop signal and the product counts only three amino acids');
+    const sense=data.codons.length-1, end=target(page,'chain-product-'+sense);
+    check(await end.getAttribute('data-stop')==='true' && await end.getAttribute('data-dw-placed')==='Stop' &&
+      await board(page).locator('[data-dw-chain-count="'+sense+'"]').count()===1 &&
+      product===chainEvidence(data) && /no amino acid|does not add/i.test(await board(page).innerText()),
+      label+' Stop ends translation and the product counts exactly '+sense+' amino acids');
   }
-  const directions=Model.stage(MODEL_IDS[name]).rows.filter(row=>row.direction);
+  const directions=data.rows.filter(row=>row.direction);
   if(directions.length)check((await Promise.all(directions.map(row=>
     board(page).locator('[data-dw-row="'+row.id+'"] .dw-direction').getAttribute('aria-label'))))
     .every((text,i)=>text==='Left end '+directions[i].direction[0]+', right end '+directions[i].direction[1]),
@@ -345,7 +359,7 @@ async function evidenceBySort(page,label) {
       label+' Sort carries the student’s exact completed product '+name);
   }
   const chain=history.locator('[data-dw-evidence-row="chain-product"] dd');
-  check(await chain.isVisible() && /Methionine → Alanine → Phenylalanine; Stop ends the chain/i.test(await chain.innerText()),
+  check(await chain.isVisible() && tidy(await chain.innerText())===chainEvidence(await activeModel(page,'chain')),
     label+' Sort carries the completed chain with its separate Stop signal');
 }
 
@@ -383,13 +397,17 @@ async function legacyResume(browser,base) {
   const size=CASES[2];
   const context=await makeContext(browser,base,size);
   try{
-    let oldProgress=Model.create();
-    for(const name of CONTROL.slice(1))for(const slot of slotsOf(name)){
-      oldProgress=Model.place(oldProgress,slot.id,slot.expected).progress;
-    }
+    // Literal pre-upgrade v1 record. Do not generate these placements from the new stages.
+    const oldProgress={v:1,placed:{
+      'pair-lower-0':'T','pair-lower-1':'A','pair-lower-2':'C','pair-lower-4':'G',
+      'copy-daughter-a-new-2':'C','copy-daughter-a-new-3':'C','copy-daughter-b-new-0':'A','copy-daughter-b-new-4':'C',
+      'rna-product-0':'A','rna-product-1':'U','rna-product-2':'G','rna-product-4':'C',
+      'chain-product-0':'Met','chain-product-1':'Ala','chain-product-2':'Phe','chain-product-3':'Stop',
+      'sort-copy':'copy-product','sort-rna':'rna-product','sort-chain':'chain-product'
+    }};
     const oldWriting='Before this update I matched the products of all three processes.';
     const old={
-      v:1,step:'sort',progress:Model.serialize(oldProgress),actions:Object.keys(oldProgress.placed),
+      v:1,step:'sort',progress:oldProgress,actions:Object.keys(oldProgress.placed),
       answers:{sort:oldWriting},person:{},lastVisitedAt:1700000000000
     };
     await context.addInitScript(({key,record,file})=>{
@@ -400,7 +418,7 @@ async function legacyResume(browser,base) {
     await stage(page,'nucleotide');
     check(await button(page,'sort').isDisabled()&&same(savedPlacements(await readRecord(page)),oldProgress.placed),
       'legacy v1 work retains all prior placements as the new first activity is offered');
-    for(const slot of slotsOf('nucleotide'))await place(page,slot.id,slot.expected,'keyboard','legacy resume');
+    for(const slot of resolve('nucleotide').slots)await place(page,slot.id,slot.expected,'keyboard','legacy resume');
     const savedPlacementsAfter=savedPlacements(await readRecord(page));
     check(await button(page,'sort').isEnabled()&&Object.entries(oldProgress.placed).every(([id,value])=>
       savedPlacementsAfter[id]===value),
@@ -412,11 +430,18 @@ async function legacyResume(browser,base) {
     check(await page.locator('#dw-response').inputValue()===oldWriting,
       'legacy v1 session restores the existing Sort writing once the new intro is completed');
     await evidenceBySort(page,'legacy resume');
+    await button(page,'chain').press('Enter');
+    await stage(page,'chain');
+    const oldChain=await activeModel(page,'chain');
+    check(oldChain.practice===false && oldChain.slots.length===4 &&
+      same(oldChain.codons.map(entry=>entry.codon),['AUG','GCU','UUU','UAA']) &&
+      await board(page).locator('[data-dw-chain-count="3"]').count()===1,
+      'legacy v1 keeps its original four positions and completed three-amino-acid product');
   }finally{
     await context.close();
   }
 }
-async function codonWheel(page,label,size) {
+async function codonWheel(page,label,size,assignment) {
   const wheel=page.locator('#dw-wheel');
   await wheel.waitFor();
   const saved=await readRecord(page);
@@ -452,18 +477,24 @@ async function codonWheel(page,label,size) {
   await keyboardBase(2,'U');
   await keyboardBase(3,'G');
   await output.waitFor();
-  check(/AUG/.test(await output.innerText()) && /Methionine/i.test(await output.innerText()) &&
-    /starts?|start signal/i.test(await output.innerText()),
+  check(/AUG → Start \+ methionine \(Met\)/i.test(await output.innerText()) &&
+    /tells the ribosome where to start.*adds methionine/i.test(await output.innerText()),
     label+' keyboard decoding of AUG announces methionine and the start signal');
   const highlighted=await wheel.locator('svg [data-dw-selected] text').allTextContents();
-  check(same(highlighted,['A','U','G','Met']),
-    label+' the highlighted path runs from A through U and G out to Met');
-  await keyboardBase(1,'U');
-  await keyboardBase(2,'A');
-  await keyboardBase(3,'A');
-  check(/UAA/.test(await output.innerText()) && /stop/i.test(await output.innerText()) &&
-    /no amino acid|does not add/i.test(await output.innerText()),
-    label+' UAA stops the chain without adding an amino acid');
+  check(same(highlighted,['A','U','G','Met*']),
+    label+' the highlighted path runs from A through U and G out to Met*');
+  async function wheelLookup(codon) {
+    for(const [index,base] of [...codon].entries())await pick(index+1).selectOption(base);
+    return output.innerText();
+  }
+  const interior=Wheel.translate(assignment.codons[1].codon);
+  const middle=await wheelLookup(interior.codon);
+  check(middle.includes(interior.codon) && middle.includes(interior.name),
+    label+' the chart decodes an actual assigned sense codon according to the standard code');
+  const stop=assignment.codons.at(-1).codon, stopReading=await wheelLookup(stop);
+  check(stopReading.includes(stop) && /stop/i.test(stopReading) &&
+    /no amino acid|does not add/i.test(stopReading),
+    label+' the assigned '+stop+' stops the chain without adding an amino acid');
   await fits(page,'main, #dw-wheel, #dw-wheel svg, #dw-wheel select',label+' open codon wheel');
   if(size.touch)await a11y(page,'#dw-wheel',label+' codon wheel');
   await shot(page,label+'-codon-wheel');
@@ -474,6 +505,76 @@ async function codonWheel(page,label,size) {
   await invoke(toggle,size);
 }
 
+async function translationRail(page,label,size) {
+  const rail=board(page).getByRole('region',{name:'mRNA codons and amino-acid slots'});
+  check(await rail.isVisible() && await rail.getAttribute('tabindex')==='0',
+    label+' both translation rows share one keyboard-focusable scrolling region');
+  const aligned=await rail.evaluate(el=>{
+    const rects=selector=>Array.from(el.querySelectorAll(selector)).map(n=>n.getBoundingClientRect());
+    const upper=rects('[data-dw-row="chain-codons"] [data-codon]');
+    const lower=rects('[data-dw-slot^="chain-product-"]');
+    return upper.length===9&&lower.length===9&&upper.every((r,i)=>Math.abs(r.left-lower[i].left)<1.5&&Math.abs(r.width-lower[i].width)<1.5);
+  });
+  check(aligned,label+' every codon lines up horizontally with its next-step placement slot');
+  const labelFit = await rail.evaluate(el=>{
+    const first=el.querySelector('[data-codon="AUG"]'), badge=first.querySelector('.dw-translation-start');
+    const parts=Array.from(badge.querySelectorAll('span'));
+    const bounds=r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width});
+    const textRects=node=>{
+      const range=document.createRange(); range.selectNodeContents(node);
+      return Array.from(range.getClientRects(),bounds).filter(r=>r.width>0);
+    };
+    const tile=bounds(first.getBoundingClientRect());
+    const letters=textRects(first.querySelector('.dw-chip-symbol'));
+    const rows=parts.map(part=>({text:part.textContent,rects:textRects(part)}));
+    const fits=(r,below)=>r.left>=tile.left-.6&&r.right<=tile.right+.6&&r.top>=below-.6&&r.bottom<=tile.bottom+.6;
+    const endOf=rects=>Math.max(...rects.map(r=>r.bottom));
+    const pass=rows.length===2&&rows[0].text==='Start'&&rows[1].text==='Met'&&letters.length>0&&
+      rows.every((row,i)=>row.rects.length===1&&row.rects.every(r=>fits(r,endOf(i?rows[i-1].rects:letters))));
+    return {pass,tile,letters,rows};
+  });
+  if(!labelFit.pass) {
+    await shot(page,'translation-start-label-failure-'+size.width).catch(error=>console.warn('Label-failure screenshot:',error.message));
+  }
+  check(labelFit.pass,label+' Start and Met each fit on their own line below the AUG letters: '+JSON.stringify(labelFit));
+  if(size.touch){
+    const travel=await rail.evaluate(el=>{
+      const last=el.querySelector('[data-dw-slot="chain-product-8"]');
+      el.scrollLeft=0;
+      const clip=el.getBoundingClientRect();
+      const wasBeyond=last.getBoundingClientRect().right>clip.right;
+      el.scrollLeft=el.scrollWidth;
+      const slot=last.getBoundingClientRect();
+      const codon=el.querySelectorAll('[data-codon]')[8].getBoundingClientRect();
+      const fits=r=>r.left>=clip.left-1&&r.right<=clip.right+1;
+      const result=wasBeyond&&el.scrollLeft>0&&fits(slot)&&fits(codon);
+      el.scrollLeft=0;
+      return result;
+    });
+    check(travel,label+' scrolling reveals the final codon and its slot together inside the same region');
+  }
+}
+async function resetDraw(page,label) {
+  const old=(await readRecord(page)).progress.seed;
+  const fairSeed=old===42?9:42; // deterministic test-only draw to prove reset asks for a new seed
+  await page.evaluate(seed=>{
+    const draw=crypto.getRandomValues.bind(crypto);
+    Object.defineProperty(crypto,'getRandomValues',{configurable:true,value(target){
+      if(target instanceof Uint32Array&&target.length===1){target[0]=seed;return target;}
+      return draw(target);
+    }});
+  },fairSeed);
+  await page.locator('#dw-reset').press('Enter');
+  await page.locator('#dw-reset-confirm').press('Enter');
+  await stage(page,'nucleotide');
+  check(await readRecord(page)===null,label+' reset erases the saved workshop without creating fake progress');
+  const slot=resolve('nucleotide').slots[0];
+  await place(page,slot.id,slot.expected,'keyboard',label+' reset');
+  const next=(await readRecord(page)).progress.seed;
+  const codons=seed=>resolve('chain',Model.create(seed)).codons.map(c=>c.codon);
+  check(next===fairSeed && next!==old && !same(codons(old),codons(next)),
+    label+' reset starts a new seed and a different fictional RNA message');
+}
 async function exercise(browser,base,size) {
   const context=await makeContext(browser,base,size);
   try {
@@ -489,6 +590,9 @@ async function exercise(browser,base,size) {
       await button(page,'nucleotide').isEnabled() &&
       (await Promise.all(CONTROL.slice(1).map(name=>button(page,name).isDisabled()))).every(Boolean),
       label+' opens for a novice with only the Nucleotide tab available, even from a direct link to a later step');
+    for(const [id,process] of [['copy','Replication'],['rna','Transcription'],['chain','Translation']]){
+      check((await button(page,id).innerText()).includes('('+process+')'),label+' navigation names '+process);
+    }
     const gate=page.locator('#dw-unlock');
     check(await gate.isVisible() && /Place all 3 parts in Nucleotide to unlock Build DNA/.test(await gate.textContent()) &&
       await button(page,'build').getAttribute('aria-describedby')==='dw-unlock' &&
@@ -524,7 +628,21 @@ async function exercise(browser,base,size) {
     const ordinary=size.touch?'tap':'keyboard';
     for(const [index,name] of CONTROL.entries()) {
       await stage(page,name);
-      const slots=slotsOf(name);
+      const assignment=await activeModel(page,name), slots=assignment.slots;
+      if(name==='build'||name==='rna')check(slots.length===8 && await board(page).locator('[data-dw-slot]').count()===8,
+        label+' '+name+' gives students eight base placements');
+      if(name==='chain'){
+        const choices=await page.locator('#dw-palette [data-dw-piece]').evaluateAll(nodes=>nodes.map(el=>el.dataset.dwPiece));
+        const first=board(page).locator('[data-dw-row="chain-codons"] [data-codon]').first();
+        check(slots.length===9 && await board(page).locator('[data-dw-slot]').count()===9 &&
+          choices.length===21 && same([...choices].sort(),[...new Set(Wheel.BASES.flatMap(a=>Wheel.BASES.flatMap(b=>Wheel.BASES.map(c=>Wheel.translate(a+b+c).abbreviation))))].sort()),
+          label+' offers nine codon slots and all 20 amino acids plus Stop');
+        check(same(await first.locator('.dw-translation-start > span').allTextContents(),['Start','Met']) &&
+          /AUG, Start and methionine/.test(await first.getAttribute('aria-label')) &&
+          /AUG → Start \+ Met/.test(await page.locator('#dw-key').innerText()),
+          label+' first AUG is both visibly and accessibly Start plus methionine');
+        await translationRail(page,label,size);
+      }
       assert.ok(slots.length,'test fixture has active slots for '+name);
       if(index<CONTROL.length-1)check(await page.locator('#dw-next').isDisabled(),label+' '+name+' starts with a completion gate');
       if(name==='nucleotide') {
@@ -533,7 +651,7 @@ async function exercise(browser,base,size) {
         await rejectFirstPair(page,slots[0],ordinary,label,'nucleotide component');
       }
       if(name==='build')await rejectFirstPair(page,slots[0],ordinary,label);
-      if(name==='chain'&&(size.touch||size.width===1366))await codonWheel(page,label,size);
+      if(name==='chain'&&(size.touch||size.width===1366))await codonWheel(page,label,size,assignment);
       if(name==='sort') {
         await evidenceBySort(page,label);
         const wrong=slots[0].choices.find(piece=>piece!==slots[0].expected);
@@ -544,7 +662,24 @@ async function exercise(browser,base,size) {
       for(const [i,slot] of slots.entries()) {
         const drag=(name==='nucleotide'||name==='build')&&i===0;
         const input=drag&&size.width===1366?'mouse':drag&&size.touch?'touch-drag':ordinary;
-        await place(page,slot.id,slot.expected,input,label);
+        if(name==='chain'&&size.touch&&i===slots.length-1){
+          const rail=board(page).locator('.dw-translation-scroll');
+          await rail.evaluate(el=>el.scrollLeft=el.scrollWidth);
+          const offset=await rail.evaluate(el=>el.scrollLeft);
+          await place(page,slot.id,slot.expected,input,label);
+          check(offset>0&&Math.abs((await rail.evaluate(el=>el.scrollLeft))-offset)<2,
+            label+' replacing the row after placement retains the student’s scroll position');
+        } else await place(page,slot.id,slot.expected,input,label);
+        if(name==='chain'&&size.width===1366&&i===0){
+          const before=await readRecord(page);
+          await page.reload();
+          await stage(page,'chain');
+          const restored=await activeModel(page,'chain');
+          check(before.progress.seed===(await readRecord(page)).progress.seed &&
+            same(restored.codons.map(c=>c.codon),assignment.codons.map(c=>c.codon)) &&
+            await target(page,slot.id).getAttribute('data-dw-placed')===slot.expected,
+            'reload keeps the exact assigned RNA and the placed first amino acid');
+        }
         if(name==='nucleotide')await nucleotideBonds(page,slots.slice(0,i+1).map(item=>item.expected),label);
         if(name==='build'&&i===0&&size.width===1366) {
           await page.locator('#dw-undo').press('Enter');
@@ -561,14 +696,15 @@ async function exercise(browser,base,size) {
             await page.locator('#dw-next').isDisabled(),'reload restores partial work with the same unfinished gate');
         }
       }
-      await exactStage(page,name,slots,label);
+      await exactStage(page,name,assignment,label);
       check(await button(page,name).getAttribute('data-ose-complete')==='true' &&
         await button(page,name).getAttribute('aria-description')==='Complete',
         label+' finished '+name+' has a visible and accessible completion indicator');
       if(name==='copy')check(/short DNA fragment.*leaves out.*enzymes/i.test(await page.locator('#dw-task').textContent()),
         label+' notes the copying model’s limits beside the task');
       await page.locator('#dw-response').fill(NOTES[name]);
-      await fits(page,'main, #dw-board, #dw-board [data-dw-slot], #dw-response',label+' '+name+' completed board');
+      await fits(page,name==='chain'?'main, #dw-board, .dw-translation-scroll, #dw-palette, #dw-response':
+        'main, #dw-board, #dw-board [data-dw-slot], #dw-response',label+' '+name+' completed board');
       await shot(page,label+'-'+name);
       if(index<CONTROL.length-1) {
         check(await page.locator('#dw-next').isEnabled() && await button(page,CONTROL[index+1]).isEnabled(),
@@ -598,6 +734,8 @@ async function exercise(browser,base,size) {
       await stage(page,'sort');
       await report(page);
       await dashboard(page,base);
+      await page.goto(base+FILE+'#sort');
+      await resetDraw(page,label);
     }
     check(errors.length===0,label+' no uncaught browser errors '+errors.join(', '));
   } finally {

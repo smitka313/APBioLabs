@@ -374,15 +374,16 @@
   padding:.18rem .29rem;
 }
 .dw-board[data-current-stage=chain] .dw-track .dw-sequence { gap:.32rem; }
-.dw-board[data-current-stage=chain] .dw-track[data-strand=chain] .dw-slot:is([data-amino=Met],[data-amino=Ala],[data-amino=Phe]):has(+.dw-slot:is([data-amino=Met],[data-amino=Ala],[data-amino=Phe]))::after {
+.dw-board[data-current-stage=chain] .dw-track[data-strand=chain] .dw-slot[data-amino]:not([data-amino=Stop]):has(+.dw-slot[data-amino]:not([data-amino=Stop]))::after {
   content:"";
   position:absolute;
-  inset:50% -.36rem auto auto;
-  width:.36rem;
+  inset-block-start:50%;
+  inset-inline-end:calc(0px - var(--dw-translation-gap,.36rem));
+  width:var(--dw-translation-gap,.36rem);
   border-block-start:2px solid var(--dw-edge);
   pointer-events:none;
 }
-.dw-board[data-current-stage=chain] .dw-track .dw-slot:is([data-amino=Met],[data-amino=Ala],[data-amino=Phe]) { border-radius:999px; }
+.dw-board[data-current-stage=chain] .dw-track .dw-slot[data-amino]:not([data-amino=Stop]) { border-radius:999px; }
 .dw-board[data-current-stage=chain] .dw-track .dw-slot[data-amino=Stop] { border:2px dashed var(--dw-g); }
 .dw-shell .dw-chain-length {
   margin:0;
@@ -754,3 +755,138 @@
   stroke-width: 2.4;
 }
 .dw-codon-segment.is-selected text { fill: var(--accent-ink); }
+
+/* Translation: one scroll surface for both rows. The width and spacing of each
+   column must be identical whether its chip is a codon, a blank, or a placed amino acid. */
+.dw-translation-scroll {
+  --dw-translation-cell:clamp(3.36rem,5.3vw,4rem);
+  --dw-translation-gap:.29rem;
+  min-inline-size:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:.27rem;
+  overflow-x:auto;
+  padding:.24rem .29rem .36rem;
+  scroll-padding-inline:.35rem;
+  overscroll-behavior-inline:contain;
+  border:1px solid var(--line);
+  border-radius:.5rem;
+  background:var(--bg);
+}
+.dw-translation-scroll:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+.dw-translation-scroll > .dw-track {
+  inline-size:max-content;
+  min-inline-size:100%;
+  box-sizing:border-box;
+  border-inline-start-width:3px;
+}
+.dw-translation-scroll .dw-row-label {
+  position:sticky;
+  inset-inline-start:.33rem;
+  inline-size:max-content;
+  max-inline-size:min(100%,17rem);
+  justify-content:flex-start;
+}
+.dw-board[data-current-stage=chain] .dw-translation-scroll .dw-sequence {
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:var(--dw-translation-cell);
+  gap:var(--dw-translation-gap);
+  inline-size:max-content;
+  max-inline-size:none;
+  align-items:stretch;
+}
+.dw-board[data-current-stage=chain] .dw-translation-scroll .dw-sequence > :is(.dw-slot,.dw-given) {
+  min-width:0;
+  inline-size:100%;
+  min-block-size:44px;
+  box-sizing:border-box;
+  padding-inline:.13rem;
+}
+.dw-translation-scroll .dw-translation-index {
+  order:-1;
+  grid-column:1/-1;
+  padding:.01rem .14rem;
+  color:var(--muted);
+  font:700 .67rem/1.05 var(--f-mono);
+  pointer-events:none;
+}
+.dw-board[data-current-stage=chain] .dw-translation-scroll .dw-given[data-codon] {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+}
+.dw-translation-scroll .dw-translation-start {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.04rem;
+  inline-size:100%;
+  min-inline-size:0;
+  margin-block-start:.17rem;
+  padding-block-end:.06rem;
+  color:var(--ink);
+  font:700 .64rem/1.25 system-ui,sans-serif;
+  text-align:center;
+}
+.dw-translation-scroll .dw-translation-start > span {
+  max-inline-size:100%;
+  overflow-wrap:anywhere;
+}
+.dw-board[data-current-stage=chain] .dw-translation-hint {
+  color:var(--muted);
+  font-size:.76rem;
+  margin:.06rem .19rem;
+}
+
+/* The complete amino-acid palette stays visible without a second scrollbar.
+   Large drag/tap targets carry their full names, not color or abbreviations alone. */
+.dw-board[data-current-stage=chain] .dw-toolbox { display:grid; }
+.dw-board[data-current-stage=chain] .dw-toolbox .dw-input-help { max-inline-size:none; }
+.dw-board[data-current-stage=chain] .dw-palette {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,5.9rem),1fr));
+  align-items:stretch;
+  gap:.23rem;
+}
+.dw-board[data-current-stage=chain] .dw-palette-label {
+  grid-column:1/-1;
+  margin:0;
+}
+.dw-board[data-current-stage=chain] .dw-palette .dw-piece {
+  min-width:0;
+  min-block-size:44px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-content:center;
+  gap:.03rem .17rem;
+  padding:.14rem .13rem;
+}
+.dw-board[data-current-stage=chain] .dw-palette .dw-piece > .dw-molecule-icon {
+  grid-column:1;
+  grid-row:1;
+  inline-size:1.12rem;
+  block-size:.95rem;
+  justify-self:end;
+}
+.dw-board[data-current-stage=chain] .dw-palette .dw-piece > .dw-chip-symbol {
+  grid-column:2;
+  grid-row:1;
+  justify-self:start;
+  font-size:.8rem;
+}
+.dw-board[data-current-stage=chain] .dw-palette .dw-piece > .dw-piece-name {
+  grid-column:1/-1;
+  grid-row:2;
+  justify-self:center;
+  font-size:.7rem;
+  line-height:1.12;
+  overflow-wrap:anywhere;
+}
+.dw-board[data-current-stage=chain] .dw-palette .dw-piece[data-amino=Stop] {
+  display:flex;
+  flex-direction:column;
+  border:2px dashed currentColor;
+}
