@@ -77,7 +77,8 @@ const fb = (p, name) => p.locator('#feedback-' + name).innerText();
     const bodyText = await p.locator('main').textContent();
     T.ok(!/bad gene|defective gene|inevitable cancer|you will get cancer/i.test(bodyText) && /not inevitable/.test(bodyText) && /not a prediction|Nothing here predicts/.test(bodyText), 'careful, non-stigmatizing wording');
     T.ok(!/mortality|deaths? rate/i.test(await p.locator('#skindata').innerText()), 'skin data section carries no mortality numbers');
-    T.ok(/not a biological split/.test(await p.locator('#skindata').innerText()), 'framing note on group labels');
+    const framing = await p.locator('#skindata .callout--safety').innerText();
+    T.ok(/registry categories are not biological divisions/.test(framing) && /Melanin varies within every group/.test(framing), 'framing note explains registry labels and variation within groups');
 
     // --- choices: instant feedback, stale marks removed ---
     await go(p, 'reader');
